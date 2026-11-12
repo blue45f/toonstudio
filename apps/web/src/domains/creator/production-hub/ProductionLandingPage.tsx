@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
+  ChevronDown,
   ClipboardCheck,
   CloudOff,
   Columns2,
@@ -17,7 +18,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -80,38 +81,30 @@ interface FlowStep {
   readonly art: string;
 }
 
-/** 샘플 체험 순서: 개요 → 공정 보드 → 회차 룸(핀 코멘트) → 버전 비교·승인. */
+/** 샘플 진입 뒤 바로 선택할 수 있는 세 가지 제작 목적. */
 const FLOW_STEPS: readonly FlowStep[] = [
-  {
-    id: "overview",
-    icon: LayoutDashboard,
-    title: { ko: "개요", en: "Overview" },
-    copy: { ko: "진행률·마감 임박 회차·내 할 일을 한눈에", en: "Progress, deadlines and your tasks at a glance" },
-    href: `${SAMPLE_BASE}/overview`,
-    art: "materials",
-  },
   {
     id: "board",
     icon: Kanban,
-    title: { ko: "공정 보드", en: "Process board" },
-    copy: { ko: "콘티·선화·채색 담당과 마감을 옮기며 관리", en: "Move storyboard, line art and color work" },
+    title: { ko: "공정 정리", en: "Organize production" },
+    copy: { ko: "담당과 마감을 정하고 진행 상태를 확인하세요.", en: "Set owners and deadlines, then follow progress." },
     href: `${SAMPLE_BASE}/production?boardLayout=process`,
     art: "storyboard",
   },
   {
     id: "room",
     icon: MessageSquareMore,
-    title: { ko: "회차 룸", en: "Episode room" },
-    copy: { ko: "원고 위에 핀을 꽂아 수정 요청을 남기기", en: "Pin feedback right on the page" },
+    title: { ko: "원고 피드백", en: "Give manuscript feedback" },
+    copy: { ko: "원고 위에 수정할 곳을 표시하세요.", en: "Mark the places that need changes on the page." },
     href: `${SAMPLE_BASE}/episodes/episode-12`,
     art: "canvas-noir",
   },
   {
     id: "approve",
     icon: BadgeCheck,
-    title: { ko: "비교·승인", en: "Compare & approve" },
-    copy: { ko: "선화와 채색을 슬라이더로 비교하고 승인", en: "Slide between versions, then approve" },
-    href: `${SAMPLE_BASE}/episodes/episode-12?roomView=compare`,
+    title: { ko: "검수·승인", en: "Review and approve" },
+    copy: { ko: "수정 요청과 승인 상태를 확인하세요.", en: "Check requested changes and approvals." },
+    href: `${SAMPLE_BASE}/review`,
     art: "project-crimson",
   },
 ];
@@ -120,19 +113,19 @@ interface ModuleCard {
   readonly icon: LucideIcon;
   readonly title: Copy;
   readonly copy: Copy;
-  readonly tagline: string;
   readonly href: string;
 }
 
 const MODULES: readonly ModuleCard[] = [
-  { icon: Kanban, title: { ko: "공정 보드", en: "Process board" }, copy: { ko: "담당·마감·상태와 동시 진행 한도", en: "Owners, due dates, status and WIP" }, tagline: "Move the Work", href: `${SAMPLE_BASE}/production` },
-  { icon: MessageSquareMore, title: { ko: "회차 룸", en: "Episode room" }, copy: { ko: "원고 뷰어와 핀 코멘트", en: "Page viewer with pinned comments" }, tagline: "Feedback on the Page", href: `${SAMPLE_BASE}/episodes/episode-12` },
-  { icon: Layers3, title: { ko: "원고·버전", en: "Manuscripts" }, copy: { ko: "최신본과 최종본을 나눠 관리", en: "Latest vs. final versions" }, tagline: "Every Version Kept", href: `${SAMPLE_BASE}/manuscripts` },
-  { icon: ClipboardCheck, title: { ko: "검수·승인", en: "Review" }, copy: { ko: "역할별 승인과 게시 차단", en: "Role approvals that gate publishing" }, tagline: "Approve with Evidence", href: `${SAMPLE_BASE}/review` },
-  { icon: Users, title: { ko: "사람·권한", en: "People & access" }, copy: { ko: "소유자·관리자·멤버·게스트", en: "Owner, admin, member, guest" }, tagline: "Right People, Right Access", href: "/team/people" },
-  { icon: BriefcaseBusiness, title: { ko: "구인·의뢰", en: "Hiring" }, copy: { ko: "팀원 모집과 작업 의뢰", en: "Recruit and commission work" }, tagline: "Find Your Crew", href: "/collaborate" },
-  { icon: GalleryVerticalEnd, title: { ko: "검수본 공개 전시", en: "Approved showcase" }, copy: { ko: "작가가 공개를 허락한 검수본", en: "Reviews creators chose to show" }, tagline: "Share Your Story", href: "/showcase/reviews" },
-  { icon: LayoutDashboard, title: { ko: "샘플 프로젝트", en: "Sample project" }, copy: { ko: "로그인 없이 전체 흐름 체험", en: "Try the whole flow without signing in" }, tagline: "Try It Now", href: `${SAMPLE_BASE}/overview` },
+  { icon: Kanban, title: { ko: "공정 보드", en: "Process board" }, copy: { ko: "담당·마감·진행 상태 관리", en: "Manage owners, deadlines and progress" }, href: `${SAMPLE_BASE}/production` },
+  { icon: MessageSquareMore, title: { ko: "회차 룸", en: "Episode room" }, copy: { ko: "원고 뷰어와 핀 코멘트", en: "Page viewer with pinned comments" }, href: `${SAMPLE_BASE}/episodes/episode-12` },
+  { icon: Layers3, title: { ko: "원고·버전", en: "Manuscripts" }, copy: { ko: "최신본과 최종본을 나눠 관리", en: "Latest vs. final versions" }, href: `${SAMPLE_BASE}/manuscripts` },
+  { icon: Columns2, title: { ko: "버전 비교", en: "Compare versions" }, copy: { ko: "선화와 채색을 나란히 확인", en: "Compare line art and color versions" }, href: `${SAMPLE_BASE}/episodes/episode-12?roomView=compare` },
+  { icon: ClipboardCheck, title: { ko: "검수·승인", en: "Review" }, copy: { ko: "역할별 승인과 게시 조건 확인", en: "Check role approvals and publishing requirements" }, href: `${SAMPLE_BASE}/review` },
+  { icon: Users, title: { ko: "사람·권한", en: "People & access" }, copy: { ko: "소유자·관리자·멤버·게스트", en: "Owner, admin, member, guest" }, href: "/team/people" },
+  { icon: BriefcaseBusiness, title: { ko: "구인·의뢰", en: "Hiring" }, copy: { ko: "팀원 모집과 작업 의뢰", en: "Recruit and commission work" }, href: "/collaborate" },
+  { icon: GalleryVerticalEnd, title: { ko: "검수본 공개 전시", en: "Approved showcase" }, copy: { ko: "작가가 공개를 허락한 검수본", en: "Reviews creators chose to show" }, href: "/showcase/reviews" },
+  { icon: LayoutDashboard, title: { ko: "샘플 프로젝트", en: "Sample project" }, copy: { ko: "로그인 없이 전체 흐름 체험", en: "Try the whole flow without signing in" }, href: `${SAMPLE_BASE}/overview` },
 ];
 
 const INBOX_BUCKETS: Readonly<Record<ProductionPersonalInboxItem["bucket"], { readonly label: Copy; readonly tone: ProductionTone }>> = {
@@ -158,7 +151,7 @@ function HeroPreview() {
   const crimson = artSources("project-crimson");
   return (
     <figure className="relative mx-auto w-full max-w-md" aria-label={bt("샘플 회차 룸 화면 예시", "Example of a sample episode room")}>
-      <div className="relative aspect-square overflow-hidden rounded-3xl border border-accent/35 shadow-2xl">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-3xl border border-accent/35 shadow-2xl sm:aspect-square">
         <img {...crimson} sizes="(min-width: 1024px) 28rem, 90vw" alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover" loading="eager" decoding="async" />
         <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r-2 border-fg/80">
           <img {...noir} sizes="(min-width: 1024px) 28rem, 90vw" alt="" aria-hidden="true" className="absolute inset-y-0 left-0 h-full w-[200%] max-w-none object-cover" loading="eager" decoding="async" />
@@ -184,15 +177,15 @@ function HeroPreview() {
 function FlowCards() {
   const bt = useBilingual("ProductionLandingPage");
   return (
-    <section aria-labelledby="production-flow-title" className="mt-10">
+    <section aria-labelledby="production-flow-title" className="mt-6 sm:mt-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="production-flow-title" className="text-xl font-black tracking-tight text-fg">{bt("샘플로 따라가는 협업 흐름", "Follow the collaboration flow")}</h2>
-          <p className="mt-1 text-sm text-fg-2">{bt("네 단계를 누르면 실제 화면이 열립니다. 모든 사람·일정·원고는 예시입니다.", "Each step opens the real screen. All people, dates and pages are examples.")}</p>
+          <h2 id="production-flow-title" className="text-xl font-black tracking-tight text-fg">{bt("어떤 작업을 해 볼까요?", "What would you like to try?")}</h2>
+          <p className="mt-1 text-sm text-fg-2">{bt("샘플에서 필요한 작업을 바로 열어 보세요.", "Open the task you need in the sample.")}</p>
         </div>
         <ProductionSampleBadge label={bt("예시 데이터", "Example data")} />
       </div>
-      <ol className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <ol className="mt-4 grid gap-3 sm:grid-cols-3">
         {FLOW_STEPS.map((step, index) => {
           const Icon = step.icon;
           const art = artSources(step.art);
@@ -200,19 +193,19 @@ function FlowCards() {
             <li key={step.id}>
               <Link
                 to={step.href}
-                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-card outline-none transition-colors hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                className="group flex h-full min-h-24 overflow-hidden rounded-2xl border border-line bg-card outline-none transition-colors hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none sm:flex-col"
               >
-                <span className="relative block aspect-[16/9] overflow-hidden">
-                  <img {...art} sizes="(min-width: 1280px) 20rem, (min-width: 640px) 45vw, 90vw" alt="" aria-hidden="true" loading="lazy" decoding="async" className="size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
-                  <span className="absolute left-3 top-3 grid size-8 place-items-center rounded-full bg-accent text-sm font-black text-on-accent shadow-lg">{index + 1}</span>
+                <span className="relative block w-20 shrink-0 overflow-hidden sm:aspect-[16/9] sm:w-full">
+                  <img {...art} sizes="(min-width: 640px) 30vw, 5rem" alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
+                  <span className="absolute left-2 top-2 grid size-7 place-items-center rounded-full bg-accent text-xs font-black text-on-accent shadow-lg">{index + 1}</span>
                 </span>
-                <span className="flex flex-1 flex-col p-4">
+                <span className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
                   <span className="flex items-center gap-2 text-sm font-black text-fg group-hover:text-accent">
                     <Icon className="size-4 text-accent" aria-hidden="true" />
                     {bt(step.title.ko, step.title.en)}
                   </span>
                   <span className="mt-1 text-xs leading-5 text-fg-2">{bt(step.copy.ko, step.copy.en)}</span>
-                  <span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-bold text-accent">
+                  <span className="mt-auto inline-flex items-center gap-1 pt-2 text-xs font-bold text-accent">
                     {bt("열어 보기", "Open")}
                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
                   </span>
@@ -228,29 +221,50 @@ function FlowCards() {
 
 function ModuleGrid() {
   const bt = useBilingual("ProductionLandingPage");
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const details = detailsRef.current;
+    if (!details) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || !details?.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      details.open = false;
+      details.querySelector("summary")?.focus();
+    }
+    details.addEventListener("keydown", closeOnEscape);
+    return () => details.removeEventListener("keydown", closeOnEscape);
+  }, []);
   return (
-    <section aria-labelledby="production-modules-title" className="mt-10">
-      <h2 id="production-modules-title" className="text-xl font-black tracking-tight text-fg">{bt("협업에 필요한 화면", "Everything for collaboration")}</h2>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {MODULES.map((module) => {
-          const Icon = module.icon;
-          return (
-            <li key={module.href + module.title.ko}>
-              <Link
-                to={module.href}
-                className="group flex h-full min-h-28 flex-col rounded-2xl border border-line bg-gradient-to-br from-card to-panel p-4 outline-none transition-colors hover:border-accent/45 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="grid size-9 place-items-center rounded-xl bg-accent-soft text-accent"><Icon className="size-4" aria-hidden="true" /></span>
-                  <strong className="text-sm text-fg group-hover:text-accent">{bt(module.title.ko, module.title.en)}</strong>
-                </span>
-                <span className="mt-2 text-xs leading-5 text-fg-2">{bt(module.copy.ko, module.copy.en)}</span>
-                <span className="mt-auto pt-2 text-[0.6875rem] italic text-fg-3">{module.tagline}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+    <section className="mt-6" aria-label={bt("제작 관리 도구", "Production management tools")}>
+      <details ref={detailsRef} aria-labelledby="production-tools-title" className="group/tools rounded-2xl border border-line bg-card p-3 sm:p-4">
+        <summary id="production-tools-title" className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 text-sm font-bold text-fg outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+          {bt("제작 도구 더 보기", "More production tools")}
+          <ChevronDown className="size-4 shrink-0 transition-transform group-open/tools:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
+        <p className="mt-2 text-xs leading-5 text-fg-2">{bt("원고·버전과 팀 관리, 구인·의뢰를 찾을 수 있습니다. 샘플 화면의 데이터는 모두 예시입니다.", "Find manuscripts, versions, team management and hiring. Data in sample screens is illustrative.")}</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {MODULES.map((module) => {
+            const Icon = module.icon;
+            return (
+              <li key={module.href + module.title.ko}>
+                <Link
+                  to={module.href}
+                  className="group flex h-full min-h-12 items-start gap-3 rounded-xl border border-line bg-panel p-3 outline-none transition-colors hover:border-accent/45 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent"><Icon className="size-4" aria-hidden="true" /></span>
+                  <span className="min-w-0">
+                    <strong className="block text-sm text-fg group-hover:text-accent">{bt(module.title.ko, module.title.en)}</strong>
+                    <span className="mt-1 block text-xs leading-5 text-fg-2">{bt(module.copy.ko, module.copy.en)}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+        <SiteArtSurfaceSpotlight cardId="nb-production-control" compact className="mt-4" />
+      </details>
+      <p className="mt-2 px-1 text-xs text-fg-3">{bt("원고·버전, 사람·권한, 구인·의뢰는 더 보기에서 찾으세요.", "Find manuscripts, people, access and hiring in More tools.")}</p>
     </section>
   );
 }
@@ -516,7 +530,7 @@ export function ProductionLandingPage() {
         ];
       })} />
       <div className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
-        <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-6 sm:p-8 lg:p-10">
+        <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-4 sm:p-8 lg:p-10">
           {/* 배경은 생성형 AI로 만든 개념 영상이다. 장식이라 본문 흐름에서 빼고,
               움직임 최소화를 선호하면 숨긴다(다른 표면의 장식 영상 계약과 동일). */}
           <ProductionLandingBackdropMedia />
@@ -534,25 +548,22 @@ export function ProductionLandingPage() {
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-fg-2 sm:text-base">
                 {bt(
-                  "공정 보드에서 담당과 마감을 옮기고, 원고 위에 핀 코멘트를 남기고, 버전을 비교해 승인까지. 팀도 1인 작가도 다음 할 일을 바로 압니다.",
-                  "Move owners and deadlines on the board, pin comments on pages, compare versions and approve. Teams and solo creators always know what's next.",
+                  "공정을 정리하고, 원고에 피드백을 남기고, 검수하세요. 샘플로 먼저 둘러볼 수 있습니다.",
+                  "Organize production, give manuscript feedback and review. Explore the sample first.",
                 )}
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link className={buttonClass({ size: "lg", className: "gap-2" })} to={`${SAMPLE_BASE}/overview`}>
+                <Link className={buttonClass({ size: "lg", className: "min-h-12 w-full gap-2 sm:w-auto" })} to={`${SAMPLE_BASE}/overview`}>
                   {bt("샘플 프로젝트로 체험하기", "Try the sample project")} <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
                 <Link className={buttonClass({ variant: "outline", size: "lg" })} to="/create">
                   {bt("작품 시작하기", "Start a work")}
                 </Link>
                 {userId ? <ProductionCreateProjectEntry key={userId} actorId={userId} /> : null}
-                <Link className={buttonClass({ variant: "ghost", size: "lg" })} to="/team/people">
-                  {bt("사람·권한", "People & roles")}
-                </Link>
               </div>
               <p className="mt-4 flex items-center gap-2 text-xs text-fg-3">
                 <CloudOff className="size-3.5 shrink-0" aria-hidden="true" />
-                {bt("샘플은 로그인·서버 없이 이 브라우저에서만 동작하고, 사람·일정·원고는 모두 예시입니다.", "The sample runs only in this browser without signing in; all people, dates and pages are examples.")}
+                {bt("로그인 없는 예시입니다. 변경은 같은 탭에서만 유지되고 새로고침하면 초기화됩니다.", "A sample without sign-in. Changes last in this tab and reset on reload.")}
               </p>
               <div className="mt-3">
                 <ProductionLandingBackdropBadge />
@@ -563,8 +574,6 @@ export function ProductionLandingPage() {
             </div>
           </div>
         </header>
-
-        <SiteArtSurfaceSpotlight cardId="nb-production-control" compact className="mt-6" />
 
         {userId ? (
           <PortfolioSection

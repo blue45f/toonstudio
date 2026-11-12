@@ -1,0 +1,114 @@
+{
+  "kind": "정적 제안용 자료. 실제 제품 화면·조회·성능 검증 아님",
+  "sourceCommit": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+  "actualCatalogCount": 154,
+  "categories": [
+    {
+      "id": "drawing",
+      "label": "드로잉·렌더링"
+    },
+    {
+      "id": "local-first",
+      "label": "로컬 우선·저장"
+    },
+    {
+      "id": "realtime",
+      "label": "협업·WebRTC"
+    },
+    {
+      "id": "virtual-space",
+      "label": "가상 스튜디오"
+    },
+    {
+      "id": "three-d",
+      "label": "3D·캐릭터"
+    },
+    {
+      "id": "ai",
+      "label": "AI·추론"
+    },
+    {
+      "id": "interaction",
+      "label": "입력·상호작용"
+    },
+    {
+      "id": "web-platform",
+      "label": "차세대 웹·한계 돌파"
+    },
+    {
+      "id": "open-data",
+      "label": "오픈소스·Open API"
+    },
+    {
+      "id": "platform-ops",
+      "label": "백엔드·품질·운영"
+    }
+  ],
+  "actualCards": [
+    {
+      "id": "pointer-input-contract",
+      "name": "Pointer Events",
+      "category": "drawing",
+      "title": "펜이 지나간 점과 브라우저가 짐작한 점 나누기",
+      "summary": "하드웨어가 준 샘플만 저장하고, 예측 샘플은 미리보기에만 씁니다.",
+      "sourceStatus": "live",
+      "technologies": [
+        "Pointer Events",
+        "Canvas2D"
+      ]
+    },
+    {
+      "id": "autosave-crash-recovery-journal",
+      "name": "OPFS recovery journal",
+      "category": "local-first",
+      "title": "크래시에서 살아남는 자동저장",
+      "summary": "편집이 멈추면 1.5초 뒤, 펜을 뗄 때마다 기기 안 파일에 기록해 크래시 뒤에도 복구합니다.",
+      "sourceStatus": "live",
+      "technologies": [
+        "OPFS",
+        "Web Locks",
+        "SQLite WASM"
+      ]
+    },
+    {
+      "id": "pointer-drag-kanban",
+      "name": "Pointer Events (drag)",
+      "category": "interaction",
+      "title": "칸반 카드를 라이브러리 없이 포인터로 끌어 옮기기",
+      "summary": "마우스·펜·터치를 한 모델로 받아 5px 넘게 끌면 시작하고, 취소와 Esc 는 저장 없이 정리합니다.",
+      "sourceStatus": "live",
+      "technologies": [
+        "Pointer Events",
+        "requestAnimationFrame",
+        "React"
+      ]
+    }
+  ],
+  "mapReferences": [
+    {
+      "id": "free-tier",
+      "title": "무료로 세운 서비스",
+      "rows": 26
+    },
+    {
+      "id": "open-source",
+      "title": "서비스에 쓰인 오픈소스 지도",
+      "rows": 44
+    },
+    {
+      "id": "open-api",
+      "title": "서비스가 활용한 Open API 지도",
+      "rows": 43
+    },
+    {
+      "id": "competitors",
+      "title": "경쟁·참고 제품 지도",
+      "rows": 292
+    },
+    {
+      "id": "ai-dev",
+      "title": "AI 개발 도구 지도",
+      "rows": 24
+    }
+  ]
+}

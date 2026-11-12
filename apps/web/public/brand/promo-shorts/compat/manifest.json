@@ -1,0 +1,4737 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-11-11T20:06:47.162438+00:00",
+  "state": "local-generation-verified",
+  "purpose": "기존 원본·다운로드를 보존하는 저용량 카드 재생용 H.264/AAC 호환본",
+  "conditions": {
+    "tools": "설치되어 있던 로컬 FFmpeg/ffprobe만 사용",
+    "networkRequests": 0,
+    "newInstallations": 0,
+    "paidCalls": 0,
+    "androidHardwareVerified": false,
+    "safariHardwareVerified": false,
+    "productionDeployed": false,
+    "originalAssetsReplaced": false,
+    "scope": "코덱·컨테이너·전체 디코딩 검증이며 Android 실기기 재생·립싱크 육안 확인을 대신하지 않음"
+  },
+  "ffmpegVersion": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "profile": {
+    "width": 480,
+    "height": 840,
+    "fps": 24,
+    "videoCodec": "h264",
+    "videoProfile": "Constrained Baseline",
+    "videoLevel": 31,
+    "pixelFormat": "yuv420p",
+    "audioCodec": "aac",
+    "audioProfile": "LC",
+    "audioSampleRate": 48000,
+    "audioChannels": 1,
+    "crf": 24,
+    "maxrate": "1400k",
+    "bufsize": "2800k",
+    "preset": "medium",
+    "threads": 1,
+    "faststart": true,
+    "sizeReviewThresholdBytes": 62914560
+  },
+  "original49Sha256": {
+    "/brand/promo-shorts/shorts-1-drawing-autocolor.mp4": "8e1b1219b5bb9e44e012fa92d0b2782e472845199ded05824009e68d9ec8b1ec",
+    "/brand/promo-shorts/shorts-2-bg3d-collab.mp4": "92fd1e7bcb93d49fd44862a0914ecc16f8368f4d2e279d69e3a6b9ace0e840b9",
+    "/brand/promo-shorts/shorts-3-serial-deadline.mp4": "b0e7008aa071c3f4d488877bd149c29bcdab474453addaf9b5ab23add99e6bba",
+    "/brand/promo-shorts/shorts-4-shaper.mp4": "95394c559df974d3334d555bd24cb28e62005a996c32e7f6b1383b6917e62c1c",
+    "/brand/promo-shorts/shorts-5-plan.mp4": "a6a76884d20007ffd31ffc9d3a335bab00ad5e9b06238b1e84fa95c1d1f38f32",
+    "/brand/promo-shorts/shorts-6-space.mp4": "4db33e82bba1a54ee4c08b9f44c7cff283af045ff79797aa28b0c642c843c7c1",
+    "/brand/promo-shorts/shorts-7-assist.mp4": "88b00f2d483ca47180c601aaf4ab22eb036cbcb2827de888ca7b62d449361bdf",
+    "/brand/promo-shorts/shorts-8-finish.mp4": "35bb652b7e59d4b51b634df6c1877cbcd607c3e385988b2327587a2073ac32a0",
+    "/brand/promo-shorts/shorts-9-brush.mp4": "615731cbfa5249f12b1b6c5200865cc4409012a91bd5bc8ecabf6c275826db43",
+    "/brand/promo-shorts/shorts-10-layers.mp4": "e8d5b71a4dec2d0c5355d31e4fe0051aea2632d3249bf2452ba45b05392e6c9a",
+    "/brand/promo-shorts/shorts-11-storyboard.mp4": "f2fff1b2cf511dabe80711a8d8fd3684da3f481172196579c5567cdaf31d17c0",
+    "/brand/promo-shorts/shorts-12-compare.mp4": "99703cb0a9f0d3d3c291ebb5f6c4c1dac44397f1296fbb4b5f1df425f9e69085",
+    "/brand/promo-shorts/shorts-13-continuity.mp4": "f05d8f21c8df1be5ecfee31cd259c42f6589d55d1f8d31a47ec420fc5facb3b3",
+    "/brand/promo-shorts/shorts-14-assets.mp4": "118ed4c8fb6f8b68576cfeba714bdbbfae89ed26202e840688a51d2d7b12ff18",
+    "/brand/promo-shorts/shorts-15-tone.mp4": "31a2f5965b23baa01f265e40e23cb3ddbb381bf6190b006d78407a0d5ebc73ef",
+    "/brand/promo-shorts/shorts-16-expression.mp4": "7719ab7f91e0de5074005620e980132c8af8609aab7082b84964adfd819a7558",
+    "/brand/promo-shorts/shorts-17-camera.mp4": "d78aa32c15ea10e17ea6c981b0e1995f3b5349ec8b3fb4e49db9e66a8190b9fb",
+    "/brand/promo-shorts/shorts-19-rewind.mp4": "def4666753d829a5fa5d760d38fdbf6f924f91b0ac7715b151ec1e2fcf3a630c",
+    "/brand/promo-shorts/shorts-20-send.mp4": "60fb95d77e8ab1e6378ee39b8399c9f951ef2f1ae42a8df646a777062d94d97c",
+    "/brand/promo-shorts/shorts-21-schedule.mp4": "24fa76c804ec903808b40e5a522ab5a9c82bf084f08242c905fa4bbea0ef5329",
+    "/brand/promo-shorts/shorts-22-desk-tour.mp4": "9a0559b9c6fc635ca32e26483207b2d9e5996a16973fa1566482369c114c549b",
+    "/brand/promo-shorts/shorts-23-pastel.mp4": "6b2f3004ed67d1a09c6ef98f2e2ded14313bf8f51f12abb8a70d5a2eb30f26f3",
+    "/brand/promo-shorts/shorts-24-nightwork.mp4": "2b65dd223c6a8bb589b2ebcacfbceda39fd4358acb9373ef0e2ccd0b4ea4e9ab",
+    "/brand/promo-shorts/shorts-25-reader.mp4": "3e6dd86ffda48e210eedaf203ba05fe1a76e6be574195a18ff354c87cf17a763",
+    "/brand/promo-shorts/shorts-26-handcam.mp4": "7cf2e22b2465af16b2229233b497bd959e0955010aa66da29d25a52b7a48902f",
+    "/brand/promo-shorts/shorts-27-alert.mp4": "0cea88979f36cd005e864e04c7f1d5089c786770e38f8fcfe855419ab869bd5a",
+    "/brand/promo-shorts/shorts-28-library.mp4": "704be197b45b69d0e1147dd0c3abea40171f9a63c995bbd56e5b4e2a47553ee5",
+    "/brand/promo-shorts/shorts-29-dawn.mp4": "45323511e94cfcf89f431b0bcc6eb830d02eb419b0e4a9d4a6327cc1a4192b29",
+    "/brand/promo-shorts/shorts-30-team.mp4": "9a86d0105bdbcbcd1e0391a69b81ebc6e5f8727c77a106a7c695a8790e8f8b68",
+    "/brand/promo-shorts/shorts-31-sketchwalk.mp4": "45679dbb81d3f16636ff2577c1edbdb88d394af582821d1caf70d73442f97c84",
+    "/brand/promo-shorts/shorts-32-ink.mp4": "2e4da89006f203b2a71a08dee06d69c305e40f9bc8b5a4b82117a47b0f3e8c43",
+    "/brand/promo-shorts/shorts-33-eraser.mp4": "92d9842228b8f629efead5fe8f1983b991d88052430de0e7b594a2900a51729d",
+    "/brand/promo-shorts/shorts-34-sharpen.mp4": "817ed8be696dce3bf0fe2f9f1af7dcb933b78f1b41d044e11dc2b02dae88232e",
+    "/brand/promo-shorts/shorts-35-palette.mp4": "fd7d452d4247dd59472e779822fcf941894ed491eb1500b7c02a9ea65d4e6cfc",
+    "/brand/promo-shorts/shorts-36-freshnote.mp4": "9a070390bea3ab2f8d28cde96316f7c62961ae5b360b9317bc15160259aec600",
+    "/brand/promo-shorts/shorts-37-coffee.mp4": "b39f14c1ce29ec115e047a00aa576c951b71bb9415275d45fda93fe526a25cdb",
+    "/brand/promo-shorts/shorts-38-rainink.mp4": "a02ed443a8e45e9cb3d43e469621d27c8cee1260f5c2c3eb5e83217003efaa02",
+    "/brand/promo-shorts/shorts-39-morningdesk.mp4": "0e97abbd95d004df9e44b9368995c33f6b2fe2484d19f137cf8b7496bf0cc1bf",
+    "/brand/promo-shorts/shorts-40-bookstack.mp4": "f89a2d404fc30e39e47934b736c87a5a00dbfcc0475a1d0b9e691a7498a79915",
+    "/brand/promo-shorts/shorts-41-teacup.mp4": "34f5fbeb955755c773644d3d6c59a458457e4b76a4fadaf3fc5822ea2e45ae1d",
+    "/brand/promo-shorts/shorts-42-candlelight.mp4": "408caf8e8960262f39a76f7a468eca633b9a2c897197a22e6b8e0c1d8445f35b",
+    "/brand/promo-shorts/shorts-43-fountainpen.mp4": "6e54aed7eb7278303ef0b7cf57f82f0d0307c7fdb6b288cc7793edd3a9e628b7",
+    "/brand/promo-shorts/shorts-44-plantwater.mp4": "cdb7f509a216d894f9a732b8e1a7c37a7de10f0d15d03c1db878c494e31f6ac7",
+    "/brand/promo-shorts/shorts-45-seashell.mp4": "5b3aa54c495d1e761323dfe245f311841e4efacd5308d837cecd7f7b9bf76bf8",
+    "/brand/promo-shorts/shorts-46-steamkettle.mp4": "6073ce31211250588fb3a13f3340803ebc887d0d82fce9722d5a432a8e4c35cc",
+    "/brand/promo-shorts/shorts-48-hourglass.mp4": "d7883e2382bb13e013baef51f3636aa02ff4a418932339a1366808901773b033",
+    "/brand/promo-shorts/shorts-49-typebars.mp4": "db74179a8e05d5a85ddd0e24650fee885de7b1eb0d25ec36ec812a1491b842bb",
+    "/brand/promo-shorts/shorts-50-lantern.mp4": "a7c351cbed9e43b52fc3c75866bf859420b9585ca405d7d869ffdf2574524506",
+    "/brand/promo-shorts/shorts-18-reactions.mp4": "9287e0fe3e3577b84bdacb7196263580b7b6eb10e3bdcc70b8a6c9e9e2388c4b"
+  },
+  "items": [
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-1-drawing-autocolor.mp4",
+      "sourceSha256": "8e1b1219b5bb9e44e012fa92d0b2782e472845199ded05824009e68d9ec8b1ec",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-1-drawing-autocolor.mp4",
+      "sha256": "e6d0b92976093c35eacf162f6c47d7201bdaee926bfe3c35758f8ec9537f9928",
+      "bytes": 4629406,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "5032500/213667",
+            "start_time": "0.000000",
+            "duration": "28.488933",
+            "bit_rate": "1916876",
+            "nb_frames": "671"
+          },
+          {
+            "index": 1,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "28.830292",
+            "bit_rate": "125625",
+            "nb_frames": "482"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "28.830292",
+          "size": "7300990",
+          "bit_rate": "2025921"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "28.541667",
+            "bit_rate": "1196461",
+            "nb_frames": "685"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "28.918000",
+            "bit_rate": "95340",
+            "nb_frames": "1357"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "28.918000",
+          "size": "4629406",
+          "bit_rate": "1280698"
+        }
+      },
+      "durationDeltaSeconds": 0.087708,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 15845
+        },
+        {
+          "type": "free",
+          "offset": 15877,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 15885,
+          "bytes": 4613521
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-1-drawing-autocolor.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-1-drawing-autocolor.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-1-drawing-autocolor.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 17.636,
+      "encodeWarnings": "[aac @ 0x557c47a02f80] Queue input is backward in time\n[aost#0:1/aac @ 0x557c479aa040] Non-monotonic DTS; previous: 693771, current: 692923; changing to 693772. This may result in incorrect timestamps in the output file.\n",
+      "audioTimestampRepair": {
+        "reason": "원본 Opus의 DTS 역행 경고를 보존하고 영상 스트림 복사·오디오 시간축만 교정",
+        "filter": "aresample=async=1:first_pts=0",
+        "beforeSha256": "a679addd975421abc468fef619bb0056251fa37e4045ded6af0c5fc08f1ef722",
+        "argv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "warning",
+          "-n",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/shorts-1-drawing-autocolor.mp4",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-1-drawing-autocolor.mp4",
+          "-map",
+          "1:v:0",
+          "-map",
+          "0:a:0",
+          "-c:v",
+          "copy",
+          "-af",
+          "aresample=async=1:first_pts=0",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ar",
+          "48000",
+          "-ac",
+          "1",
+          "-threads",
+          "1",
+          "-movflags",
+          "+faststart",
+          "apps/web/public/brand/promo-shorts/compat/shorts-1-drawing-autocolor.audio-repair.part.mp4"
+        ],
+        "decodeArgv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "error",
+          "-xerror",
+          "-threads",
+          "1",
+          "-filter_threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-1-drawing-autocolor.audio-repair.part.mp4",
+          "-map",
+          "0:v:0",
+          "-map",
+          "0:a:0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "warningsAfter": "",
+        "videoPacketDataHashesUnchanged": true,
+        "videoPacketCount": 685,
+        "packetValidation": {
+          "1": {
+            "packets": 1357,
+            "strictlyIncreasingDts": true,
+            "firstDts": -1024,
+            "lastDts": 1387520
+          },
+          "0": {
+            "packets": 685,
+            "strictlyIncreasingDts": true,
+            "firstDts": 0,
+            "lastDts": 350208
+          }
+        },
+        "audioPresentationStartSeconds": 0,
+        "lipSyncHardwareViewed": false
+      },
+      "packetValidation": {
+        "1": {
+          "packets": 1357,
+          "strictlyIncreasingDts": true,
+          "firstDts": -1024,
+          "lastDts": 1387520
+        },
+        "0": {
+          "packets": 685,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 350208
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-2-bg3d-collab.mp4",
+      "sourceSha256": "92fd1e7bcb93d49fd44862a0914ecc16f8368f4d2e279d69e3a6b9ace0e840b9",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-2-bg3d-collab.mp4",
+      "sha256": "26e7699c91db566960670dd0b86380cfa29a19ca02c0cd47f42c76b176f714d2",
+      "bytes": 3939864,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "180000/7927",
+            "start_time": "0.000000",
+            "duration": "28.537200",
+            "bit_rate": "1920268",
+            "nb_frames": "648"
+          },
+          {
+            "index": 1,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "28.841604",
+            "bit_rate": "128214",
+            "nb_frames": "482"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "28.841604",
+          "size": "7331228",
+          "bit_rate": "2033514"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "28.583333",
+            "bit_rate": "1000111",
+            "nb_frames": "686"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "28.918000",
+            "bit_rate": "96932",
+            "nb_frames": "1357"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "28.918000",
+          "size": "3939864",
+          "bit_rate": "1089940"
+        }
+      },
+      "durationDeltaSeconds": 0.076396,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 15857
+        },
+        {
+          "type": "free",
+          "offset": 15889,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 15897,
+          "bytes": 3923967
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-2-bg3d-collab.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-2-bg3d-collab.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-2-bg3d-collab.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 15.903,
+      "encodeWarnings": "[aac @ 0x555848e91f00] Queue input is backward in time\n[aost#0:1/aac @ 0x555848e33000] Non-monotonic DTS; previous: 693721, current: 692873; changing to 693722. This may result in incorrect timestamps in the output file.\n",
+      "audioTimestampRepair": {
+        "reason": "원본 Opus의 DTS 역행 경고를 보존하고 영상 스트림 복사·오디오 시간축만 교정",
+        "filter": "aresample=async=1:first_pts=0",
+        "beforeSha256": "b7f9cf553c2cede5a45903d66ea5f24b07e8b6bc73762f32f053f1cfcd7002a2",
+        "argv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "warning",
+          "-n",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/shorts-2-bg3d-collab.mp4",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-2-bg3d-collab.mp4",
+          "-map",
+          "1:v:0",
+          "-map",
+          "0:a:0",
+          "-c:v",
+          "copy",
+          "-af",
+          "aresample=async=1:first_pts=0",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ar",
+          "48000",
+          "-ac",
+          "1",
+          "-threads",
+          "1",
+          "-movflags",
+          "+faststart",
+          "apps/web/public/brand/promo-shorts/compat/shorts-2-bg3d-collab.audio-repair.part.mp4"
+        ],
+        "decodeArgv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "error",
+          "-xerror",
+          "-threads",
+          "1",
+          "-filter_threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-2-bg3d-collab.audio-repair.part.mp4",
+          "-map",
+          "0:v:0",
+          "-map",
+          "0:a:0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "warningsAfter": "",
+        "videoPacketDataHashesUnchanged": true,
+        "videoPacketCount": 686,
+        "packetValidation": {
+          "1": {
+            "packets": 1357,
+            "strictlyIncreasingDts": true,
+            "firstDts": -1024,
+            "lastDts": 1387520
+          },
+          "0": {
+            "packets": 686,
+            "strictlyIncreasingDts": true,
+            "firstDts": 0,
+            "lastDts": 350720
+          }
+        },
+        "audioPresentationStartSeconds": 0,
+        "lipSyncHardwareViewed": false
+      },
+      "packetValidation": {
+        "1": {
+          "packets": 1357,
+          "strictlyIncreasingDts": true,
+          "firstDts": -1024,
+          "lastDts": 1387520
+        },
+        "0": {
+          "packets": 686,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 350720
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-5-plan.mp4",
+      "sourceSha256": "a6a76884d20007ffd31ffc9d3a335bab00ad5e9b06238b1e84fa95c1d1f38f32",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-5-plan.mp4",
+      "sha256": "9a2579d98728d9197d862a805e34373a21b9a9286456e2716e42a6099be982a0",
+      "bytes": 2766884,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404229",
+            "bit_rate": "129308"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "10290000/424141",
+            "start_time": "0.000000",
+            "duration": "14.159300",
+            "bit_rate": "2109144"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404229",
+          "size": "3964758",
+          "bit_rate": "2201996"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.166667",
+            "bit_rate": "1456659",
+            "nb_frames": "340"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.386458",
+            "bit_rate": "97022",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442458",
+          "size": "2766884",
+          "bit_rate": "1532638"
+        }
+      },
+      "durationDeltaSeconds": 0.038229,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12857
+        },
+        {
+          "type": "free",
+          "offset": 12889,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12897,
+          "bytes": 2753987
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-5-plan.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-5-plan.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-5-plan.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 8.353,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 340,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 173568
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693174
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-6-space.mp4",
+      "sourceSha256": "4db33e82bba1a54ee4c08b9f44c7cff283af045ff79797aa28b0c642c843c7c1",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-6-space.mp4",
+      "sha256": "098bbac2969bfe31bd57954a6b2a39e47675c343d72fdb522ded786294753013",
+      "bytes": 1986503,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404104",
+            "bit_rate": "129121"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "1705000/70341",
+            "start_time": "0.000000",
+            "duration": "14.051100",
+            "bit_rate": "2563289"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404104",
+          "size": "4744639",
+          "bit_rate": "2635159"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.041667",
+            "bit_rate": "1023877",
+            "nb_frames": "337"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.386396",
+            "bit_rate": "98376",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442396",
+          "size": "1986503",
+          "bit_rate": "1100373"
+        }
+      },
+      "durationDeltaSeconds": 0.038292,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12425
+        },
+        {
+          "type": "free",
+          "offset": 12457,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12465,
+          "bytes": 1974038
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-6-space.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-6-space.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-6-space.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 5.534,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 337,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 172032
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693171
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-7-assist.mp4",
+      "sourceSha256": "88b00f2d483ca47180c601aaf4ab22eb036cbcb2827de888ca7b62d449361bdf",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-7-assist.mp4",
+      "sha256": "52e94e81d253a267a082070c1c22264609cd61657b47c30634c72d893f4532b5",
+      "bytes": 1426511,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.450479",
+            "bit_rate": "129127"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "10260000/426503",
+            "start_time": "0.000000",
+            "duration": "14.245300",
+            "bit_rate": "1938956"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.450479",
+          "size": "3683717",
+          "bit_rate": "2039360"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.250000",
+            "bit_rate": "697491",
+            "nb_frames": "342"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.518000",
+            "bit_rate": "96534",
+            "nb_frames": "682"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.518000",
+          "size": "1426511",
+          "bit_rate": "786064"
+        }
+      },
+      "durationDeltaSeconds": 0.067521,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 8613
+        },
+        {
+          "type": "free",
+          "offset": 8645,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 8653,
+          "bytes": 1417858
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-7-assist.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-7-assist.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-7-assist.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.146,
+      "encodeWarnings": "[aac @ 0x5582d8c8c480] Queue input is backward in time\n[aost#0:1/aac @ 0x5582d8c57e00] Non-monotonic DTS; previous: 7746, current: 7570; changing to 7747. This may result in incorrect timestamps in the output file.\n",
+      "audioTimestampRepair": {
+        "reason": "원본 Opus의 DTS 역행 경고를 보존하고 영상 스트림 복사·오디오 시간축만 교정",
+        "filter": "aresample=async=1:first_pts=0",
+        "beforeSha256": "d296374f0b25972e7301afb08dad3abe5202c7971706d72dbb3b5583100799bf",
+        "argv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "warning",
+          "-n",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/shorts-7-assist.mp4",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-7-assist.mp4",
+          "-map",
+          "1:v:0",
+          "-map",
+          "0:a:0",
+          "-c:v",
+          "copy",
+          "-af",
+          "aresample=async=1:first_pts=0",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ar",
+          "48000",
+          "-ac",
+          "1",
+          "-threads",
+          "1",
+          "-movflags",
+          "+faststart",
+          "apps/web/public/brand/promo-shorts/compat/shorts-7-assist.audio-repair.part.mp4"
+        ],
+        "decodeArgv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "error",
+          "-xerror",
+          "-threads",
+          "1",
+          "-filter_threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-7-assist.audio-repair.part.mp4",
+          "-map",
+          "0:v:0",
+          "-map",
+          "0:a:0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "warningsAfter": "",
+        "videoPacketDataHashesUnchanged": true,
+        "videoPacketCount": 342,
+        "packetValidation": {
+          "1": {
+            "packets": 682,
+            "strictlyIncreasingDts": true,
+            "firstDts": -1024,
+            "lastDts": 696320
+          },
+          "0": {
+            "packets": 342,
+            "strictlyIncreasingDts": true,
+            "firstDts": 0,
+            "lastDts": 174592
+          }
+        },
+        "audioPresentationStartSeconds": 0,
+        "lipSyncHardwareViewed": false
+      },
+      "packetValidation": {
+        "1": {
+          "packets": 682,
+          "strictlyIncreasingDts": true,
+          "firstDts": -1024,
+          "lastDts": 696320
+        },
+        "0": {
+          "packets": 342,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174592
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-8-finish.mp4",
+      "sourceSha256": "35bb652b7e59d4b51b634df6c1877cbcd607c3e385988b2327587a2073ac32a0",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-8-finish.mp4",
+      "sha256": "38d580318511944c592821b60d2e8e858f5a2f04f28255e38c95df0761aa3f59",
+      "bytes": 2808405,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.473812",
+            "bit_rate": "128587"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "1029000/42713",
+            "start_time": "0.000000",
+            "duration": "14.239300",
+            "bit_rate": "2076719"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.473813",
+          "size": "3933335",
+          "bit_rate": "2174042"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.250000",
+            "bit_rate": "1470987",
+            "nb_frames": "342"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.456042",
+            "bit_rate": "97153",
+            "nb_frames": "678"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.512042",
+          "size": "2808405",
+          "bit_rate": "1548179"
+        }
+      },
+      "durationDeltaSeconds": 0.038229,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12605
+        },
+        {
+          "type": "free",
+          "offset": 12637,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12645,
+          "bytes": 2795760
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-8-finish.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-8-finish.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-8-finish.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 8.582,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 342,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174592
+        },
+        "1": {
+          "packets": 678,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 695682
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-11-storyboard.mp4",
+      "sourceSha256": "f2fff1b2cf511dabe80711a8d8fd3684da3f481172196579c5567cdaf31d17c0",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-11-storyboard.mp4",
+      "sha256": "308f731486cc4445e83ec3410c5f1a6f53dfeea63fda314c5ba3a62661c21add",
+      "bytes": 1626864,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415729",
+            "bit_rate": "129269"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "10320000/431287",
+            "start_time": "0.000000",
+            "duration": "14.409200",
+            "bit_rate": "1993314"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415729",
+          "size": "3819730",
+          "bit_rate": "2119756"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.416667",
+            "bit_rate": "799443",
+            "nb_frames": "346"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.045000",
+            "duration": "14.409583",
+            "bit_rate": "96191",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.454583",
+          "size": "1626864",
+          "bit_rate": "900400"
+        }
+      },
+      "durationDeltaSeconds": 0.038854,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12893
+        },
+        {
+          "type": "free",
+          "offset": 12925,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12933,
+          "bytes": 1613931
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-11-storyboard.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-11-storyboard.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-11-storyboard.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.803,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 346,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 176640
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2160,
+          "lastDts": 693756
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-12-compare.mp4",
+      "sourceSha256": "99703cb0a9f0d3d3c291ebb5f6c4c1dac44397f1296fbb4b5f1df425f9e69085",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-12-compare.mp4",
+      "sha256": "02ea3b123636d18f27e9eafbcff5f2dc54bdee30c1abe108a546477d1776c710",
+      "bytes": 1107898,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.392583",
+            "bit_rate": "129132"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "10290000/424937",
+            "start_time": "0.000000",
+            "duration": "14.188833",
+            "bit_rate": "2114623"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.392583",
+          "size": "3981136",
+          "bit_rate": "2212882"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.208333",
+            "bit_rate": "518661",
+            "nb_frames": "341"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.374833",
+            "bit_rate": "96820",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.430833",
+          "size": "1107898",
+          "bit_rate": "614183"
+        }
+      },
+      "durationDeltaSeconds": 0.03825,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12713
+        },
+        {
+          "type": "free",
+          "offset": 12745,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12753,
+          "bytes": 1095145
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-12-compare.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-12-compare.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-12-compare.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 4.991,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 341,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174080
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 692616
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-13-continuity.mp4",
+      "sourceSha256": "f05d8f21c8df1be5ecfee31cd259c42f6589d55d1f8d31a47ec420fc5facb3b3",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-13-continuity.mp4",
+      "sha256": "4ec14234fa5a20a6ced8497550f6396eaf4ee8080b083982399e7c53fa2869b6",
+      "bytes": 2098798,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.462271",
+            "bit_rate": "129373"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "139/6",
+            "avg_frame_rate": "10230000/427441",
+            "start_time": "0.000000",
+            "duration": "14.231533",
+            "bit_rate": "1920257"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.462271",
+          "size": "3658156",
+          "bit_rate": "2023558"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.250000",
+            "bit_rate": "1072196",
+            "nb_frames": "342"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.444479",
+            "bit_rate": "97449",
+            "nb_frames": "678"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.500479",
+          "size": "2098798",
+          "bit_rate": "1157919"
+        }
+      },
+      "durationDeltaSeconds": 0.038208,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12949
+        },
+        {
+          "type": "free",
+          "offset": 12981,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12989,
+          "bytes": 2085809
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-13-continuity.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-13-continuity.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-13-continuity.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 7.274,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 342,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174592
+        },
+        "1": {
+          "packets": 678,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 695127
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-14-assets.mp4",
+      "sourceSha256": "118ed4c8fb6f8b68576cfeba714bdbbfae89ed26202e840688a51d2d7b12ff18",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-14-assets.mp4",
+      "sha256": "cb8fd5bdbbec27d4b881b3c914794dcdf27f6acdd236be714b7d697f596fb1ab",
+      "bytes": 1913982,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.462125",
+            "bit_rate": "129320"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "2058000/84199",
+            "start_time": "0.000000",
+            "duration": "14.059567",
+            "bit_rate": "2000864"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.462125",
+          "size": "3748139",
+          "bit_rate": "2073354"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.083333",
+            "bit_rate": "982432",
+            "nb_frames": "338"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.518000",
+            "bit_rate": "96771",
+            "nb_frames": "682"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.518000",
+          "size": "1913982",
+          "bit_rate": "1054680"
+        }
+      },
+      "durationDeltaSeconds": 0.055875,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 8565
+        },
+        {
+          "type": "free",
+          "offset": 8597,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 8605,
+          "bytes": 1905377
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-14-assets.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-14-assets.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-14-assets.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 7.888,
+      "encodeWarnings": "[aac @ 0x562e99f3e200] Queue input is backward in time\n[aost#0:1/aac @ 0x562e99f09e00] Non-monotonic DTS; previous: 11284, current: 11097; changing to 11285. This may result in incorrect timestamps in the output file.\n",
+      "audioTimestampRepair": {
+        "reason": "원본 Opus의 DTS 역행 경고를 보존하고 영상 스트림 복사·오디오 시간축만 교정",
+        "filter": "aresample=async=1:first_pts=0",
+        "beforeSha256": "2e92c776ea2102fc8de4935b9979166b7de3e25c5bbbedf853d275db56997257",
+        "argv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "warning",
+          "-n",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/shorts-14-assets.mp4",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-14-assets.mp4",
+          "-map",
+          "1:v:0",
+          "-map",
+          "0:a:0",
+          "-c:v",
+          "copy",
+          "-af",
+          "aresample=async=1:first_pts=0",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ar",
+          "48000",
+          "-ac",
+          "1",
+          "-threads",
+          "1",
+          "-movflags",
+          "+faststart",
+          "apps/web/public/brand/promo-shorts/compat/shorts-14-assets.audio-repair.part.mp4"
+        ],
+        "decodeArgv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "error",
+          "-xerror",
+          "-threads",
+          "1",
+          "-filter_threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-14-assets.audio-repair.part.mp4",
+          "-map",
+          "0:v:0",
+          "-map",
+          "0:a:0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "warningsAfter": "",
+        "videoPacketDataHashesUnchanged": true,
+        "videoPacketCount": 338,
+        "packetValidation": {
+          "1": {
+            "packets": 682,
+            "strictlyIncreasingDts": true,
+            "firstDts": -1024,
+            "lastDts": 696320
+          },
+          "0": {
+            "packets": 338,
+            "strictlyIncreasingDts": true,
+            "firstDts": 0,
+            "lastDts": 172544
+          }
+        },
+        "audioPresentationStartSeconds": 0,
+        "lipSyncHardwareViewed": false
+      },
+      "packetValidation": {
+        "1": {
+          "packets": 682,
+          "strictlyIncreasingDts": true,
+          "firstDts": -1024,
+          "lastDts": 696320
+        },
+        "0": {
+          "packets": 338,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 172544
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-15-tone.mp4",
+      "sourceSha256": "31a2f5965b23baa01f265e40e23cb3ddbb381bf6190b006d78407a0d5ebc73ef",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-15-tone.mp4",
+      "sha256": "763e94f3bba40e02e67f3199754bd584cdca410939984ede1f90616701bd3349",
+      "bytes": 2821888,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404167",
+            "bit_rate": "129466"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "2010000/84959",
+            "start_time": "0.000000",
+            "duration": "14.189267",
+            "bit_rate": "2306429"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404167",
+          "size": "4319488",
+          "bit_rate": "2399021"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.208333",
+            "bit_rate": "1481917",
+            "nb_frames": "341"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.386500",
+            "bit_rate": "98391",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442500",
+          "size": "2821888",
+          "bit_rate": "1563102"
+        }
+      },
+      "durationDeltaSeconds": 0.038333,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12953
+        },
+        {
+          "type": "free",
+          "offset": 12985,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12993,
+          "bytes": 2808895
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-15-tone.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-15-tone.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-15-tone.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.374,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 341,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174080
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693176
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-16-expression.mp4",
+      "sourceSha256": "7719ab7f91e0de5074005620e980132c8af8609aab7082b84964adfd819a7558",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-16-expression.mp4",
+      "sha256": "94e9eb640374f535fa382925632986775c5e67ac7d03347e7861adb261f51bdd",
+      "bytes": 1545922,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404063",
+            "bit_rate": "129824"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "3410000/141821",
+            "start_time": "0.000000",
+            "duration": "14.168333",
+            "bit_rate": "1973404"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404063",
+          "size": "3736211",
+          "bit_rate": "2075087"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.166667",
+            "bit_rate": "766879",
+            "nb_frames": "340"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.386167",
+            "bit_rate": "97302",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442167",
+          "size": "1545922",
+          "bit_rate": "856337"
+        }
+      },
+      "durationDeltaSeconds": 0.038104,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12881
+        },
+        {
+          "type": "free",
+          "offset": 12913,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12921,
+          "bytes": 1533001
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-16-expression.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-16-expression.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-16-expression.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 7.363,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 340,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 173568
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693160
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-17-camera.mp4",
+      "sourceSha256": "d78aa32c15ea10e17ea6c981b0e1995f3b5349ec8b3fb4e49db9e66a8190b9fb",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-17-camera.mp4",
+      "sha256": "b295e8702cf1088897ed68e53ec8e3ac50b6d1295c61633a080cbc5b5aa1669e",
+      "bytes": 1978482,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415687",
+            "bit_rate": "129273"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "5175000/213851",
+            "start_time": "0.000000",
+            "duration": "14.272567",
+            "bit_rate": "1970559"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415688",
+          "size": "3749412",
+          "bit_rate": "2080739"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.291667",
+            "bit_rate": "1002880",
+            "nb_frames": "343"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.068000",
+            "duration": "14.386250",
+            "bit_rate": "96699",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.454250",
+          "size": "1978482",
+          "bit_rate": "1095031"
+        }
+      },
+      "durationDeltaSeconds": 0.038562,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12937
+        },
+        {
+          "type": "free",
+          "offset": 12969,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12977,
+          "bytes": 1965505
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-17-camera.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-17-camera.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-17-camera.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 8.829,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 343,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 175104
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 3264,
+          "lastDts": 693740
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-19-rewind.mp4",
+      "sourceSha256": "def4666753d829a5fa5d760d38fdbf6f924f91b0ac7715b151ec1e2fcf3a630c",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-19-rewind.mp4",
+      "sha256": "2e9bf418fb1b912cffaa96d6ae7315049d4aa51e51991c7222cd48a9a4f2ab23",
+      "bytes": 1219617,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404146",
+            "bit_rate": "129204"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "1023000/42227",
+            "start_time": "0.000000",
+            "duration": "14.113600",
+            "bit_rate": "2187581"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404146",
+          "size": "4086307",
+          "bit_rate": "2269517"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.125000",
+            "bit_rate": "584339",
+            "nb_frames": "339"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.068000",
+            "duration": "14.374937",
+            "bit_rate": "97378",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442938",
+          "size": "1219617",
+          "bit_rate": "675550"
+        }
+      },
+      "durationDeltaSeconds": 0.038792,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12869
+        },
+        {
+          "type": "free",
+          "offset": 12901,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12909,
+          "bytes": 1206708
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-19-rewind.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-19-rewind.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-19-rewind.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 5.125,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 339,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 173056
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 3264,
+          "lastDts": 693197
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-20-send.mp4",
+      "sourceSha256": "60fb95d77e8ab1e6378ee39b8399c9f951ef2f1ae42a8df646a777062d94d97c",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-20-send.mp4",
+      "sha256": "c458a72daa3c0b1850913a4a986055eb2d614d3a0bdc141f7c64cb1dee14ab36",
+      "bytes": 1981800,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415521",
+            "bit_rate": "129382"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "1700000/70333",
+            "start_time": "0.000000",
+            "duration": "14.078133",
+            "bit_rate": "1802480"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415521",
+          "size": "3407001",
+          "bit_rate": "1890740"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.083333",
+            "bit_rate": "1020065",
+            "nb_frames": "338"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.068000",
+            "duration": "14.386396",
+            "bit_rate": "96401",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.454396",
+          "size": "1981800",
+          "bit_rate": "1096856"
+        }
+      },
+      "durationDeltaSeconds": 0.038875,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12653
+        },
+        {
+          "type": "free",
+          "offset": 12685,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12693,
+          "bytes": 1969107
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-20-send.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-20-send.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-20-send.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.817,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 338,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 172544
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 3264,
+          "lastDts": 693747
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-23-pastel.mp4",
+      "sourceSha256": "6b2f3004ed67d1a09c6ef98f2e2ded14313bf8f51f12abb8a70d5a2eb30f26f3",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-23-pastel.mp4",
+      "sha256": "0355cfb5dc3b1804a267e6ddded56e7768d31f6d99ef75a3d93d671aae94ff22",
+      "bytes": 1896112,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415771",
+            "bit_rate": "129021"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "1700000/70233",
+            "start_time": "0.000000",
+            "duration": "14.071267",
+            "bit_rate": "2459049"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415771",
+          "size": "4554682",
+          "bit_rate": "2527610"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.083333",
+            "bit_rate": "970813",
+            "nb_frames": "338"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.057000",
+            "duration": "14.397458",
+            "bit_rate": "96940",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.454458",
+          "size": "1896112",
+          "bit_rate": "1049426"
+        }
+      },
+      "durationDeltaSeconds": 0.038687,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12565
+        },
+        {
+          "type": "free",
+          "offset": 12597,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12605,
+          "bytes": 1883507
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-23-pastel.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-23-pastel.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-23-pastel.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.453,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 338,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 172544
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2736,
+          "lastDts": 693750
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-24-nightwork.mp4",
+      "sourceSha256": "2b65dd223c6a8bb589b2ebcacfbceda39fd4358acb9373ef0e2ccd0b4ea4e9ab",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-24-nightwork.mp4",
+      "sha256": "a2d748b6c378183f4ef1e4356294a49f05f321131bafc3e866177ffcf36281c7",
+      "bytes": 1548617,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404187",
+            "bit_rate": "129431"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "2058000/85373",
+            "start_time": "0.000000",
+            "duration": "14.248433",
+            "bit_rate": "1876492"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404188",
+          "size": "3575216",
+          "bit_rate": "1985653"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.250000",
+            "bit_rate": "763736",
+            "nb_frames": "342"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.074000",
+            "duration": "14.368771",
+            "bit_rate": "97530",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.442771",
+          "size": "1548617",
+          "bit_rate": "857794"
+        }
+      },
+      "durationDeltaSeconds": 0.038583,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12989
+        },
+        {
+          "type": "free",
+          "offset": 13021,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 13029,
+          "bytes": 1535588
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-24-nightwork.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-24-nightwork.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-24-nightwork.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 6.939,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 342,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174592
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 3552,
+          "lastDts": 693189
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-25-reader.mp4",
+      "sourceSha256": "3e6dd86ffda48e210eedaf203ba05fe1a76e6be574195a18ff354c87cf17a763",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-25-reader.mp4",
+      "sha256": "725c4858ba36a4bcbd4541b76cb6f4eced79a60557a45e335e2378876fca1473",
+      "bytes": 2090292,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415792",
+            "bit_rate": "129278"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "280000/11777",
+            "start_time": "0.000000",
+            "duration": "14.137800",
+            "bit_rate": "1892122"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415792",
+          "size": "3580151",
+          "bit_rate": "1986793"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.166667",
+            "bit_rate": "1075006",
+            "nb_frames": "340"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.398167",
+            "bit_rate": "96628",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.454167",
+          "size": "2090292",
+          "bit_rate": "1156921"
+        }
+      },
+      "durationDeltaSeconds": 0.038375,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12677
+        },
+        {
+          "type": "free",
+          "offset": 12709,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12717,
+          "bytes": 2077575
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-25-reader.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-25-reader.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-25-reader.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 7.612,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 340,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 173568
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693736
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-26-handcam.mp4",
+      "sourceSha256": "7cf2e22b2465af16b2229233b497bd959e0955010aa66da29d25a52b7a48902f",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-26-handcam.mp4",
+      "sha256": "5ebfbae8d781e518bad23ba1f94ed3c587a7d58a7f1988a19945ccbc59a4bad1",
+      "bytes": 1843678,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.404229",
+            "bit_rate": "129339"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "5145000/213539",
+            "start_time": "0.000000",
+            "duration": "14.257633",
+            "bit_rate": "2113911"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.404229",
+          "size": "3999052",
+          "bit_rate": "2221043"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.250000",
+            "bit_rate": "931356",
+            "nb_frames": "342"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.465000",
+            "bit_rate": "97219",
+            "nb_frames": "680"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.465000",
+          "size": "1843678",
+          "bit_rate": "1019662"
+        }
+      },
+      "durationDeltaSeconds": 0.060771,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 8605
+        },
+        {
+          "type": "free",
+          "offset": 8637,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 8645,
+          "bytes": 1835033
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-26-handcam.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-26-handcam.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-26-handcam.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 8.632,
+      "encodeWarnings": "[aac @ 0x55faf7098200] Queue input is backward in time\n[aost#0:1/aac @ 0x55faf7095800] Non-monotonic DTS; previous: 8305, current: 8115; changing to 8306. This may result in incorrect timestamps in the output file.\n",
+      "audioTimestampRepair": {
+        "reason": "원본 Opus의 DTS 역행 경고를 보존하고 영상 스트림 복사·오디오 시간축만 교정",
+        "filter": "aresample=async=1:first_pts=0",
+        "beforeSha256": "aa4e7aa5e7b8da303130f678a579a05962321a0d402ea847fb6955581f56dab6",
+        "argv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "warning",
+          "-n",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/shorts-26-handcam.mp4",
+          "-threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-26-handcam.mp4",
+          "-map",
+          "1:v:0",
+          "-map",
+          "0:a:0",
+          "-c:v",
+          "copy",
+          "-af",
+          "aresample=async=1:first_pts=0",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "96k",
+          "-ar",
+          "48000",
+          "-ac",
+          "1",
+          "-threads",
+          "1",
+          "-movflags",
+          "+faststart",
+          "apps/web/public/brand/promo-shorts/compat/shorts-26-handcam.audio-repair.part.mp4"
+        ],
+        "decodeArgv": [
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-v",
+          "error",
+          "-xerror",
+          "-threads",
+          "1",
+          "-filter_threads",
+          "1",
+          "-i",
+          "apps/web/public/brand/promo-shorts/compat/shorts-26-handcam.audio-repair.part.mp4",
+          "-map",
+          "0:v:0",
+          "-map",
+          "0:a:0",
+          "-f",
+          "null",
+          "-"
+        ],
+        "warningsAfter": "",
+        "videoPacketDataHashesUnchanged": true,
+        "videoPacketCount": 342,
+        "packetValidation": {
+          "1": {
+            "packets": 680,
+            "strictlyIncreasingDts": true,
+            "firstDts": -1024,
+            "lastDts": 694272
+          },
+          "0": {
+            "packets": 342,
+            "strictlyIncreasingDts": true,
+            "firstDts": 0,
+            "lastDts": 174592
+          }
+        },
+        "audioPresentationStartSeconds": 0,
+        "lipSyncHardwareViewed": false
+      },
+      "packetValidation": {
+        "1": {
+          "packets": 680,
+          "strictlyIncreasingDts": true,
+          "firstDts": -1024,
+          "lastDts": 694272
+        },
+        "0": {
+          "packets": 342,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 174592
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-27-alert.mp4",
+      "sourceSha256": "0cea88979f36cd005e864e04c7f1d5089c786770e38f8fcfe855419ab869bd5a",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-27-alert.mp4",
+      "sha256": "ef82263b366a8c1be33ed6f58630a39d962f427da067536fb8383808078e2d4c",
+      "bytes": 1856696,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.473792",
+            "bit_rate": "129321"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "3420000/141371",
+            "start_time": "0.000000",
+            "duration": "14.160933",
+            "bit_rate": "1971161"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.473792",
+          "size": "3721636",
+          "bit_rate": "2057034"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.166667",
+            "bit_rate": "942357",
+            "nb_frames": "340"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.455937",
+            "bit_rate": "96997",
+            "nb_frames": "678"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.511938",
+          "size": "1856696",
+          "bit_rate": "1023541"
+        }
+      },
+      "durationDeltaSeconds": 0.038146,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12617
+        },
+        {
+          "type": "free",
+          "offset": 12649,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12657,
+          "bytes": 1844039
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-27-alert.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-27-alert.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-27-alert.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 11.716,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 340,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 173568
+        },
+        "1": {
+          "packets": 678,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 695677
+        }
+      }
+    },
+    {
+      "sourceUrl": "/brand/promo-shorts/shorts-18-reactions.mp4",
+      "sourceSha256": "9287e0fe3e3577b84bdacb7196263580b7b6eb10e3bdcc70b8a6c9e9e2388c4b",
+      "playbackUrl": "/brand/promo-shorts/compat/shorts-18-reactions.mp4",
+      "sha256": "eb529670f995074dae7fb7ec2332f0af14839f07536722ae1cff886e01bf3bb1",
+      "bytes": 2701011,
+      "sourceProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "opus",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.000000",
+            "duration": "14.415833",
+            "bit_rate": "129122"
+          },
+          {
+            "index": 1,
+            "codec_name": "vp9",
+            "profile": "Profile 0",
+            "codec_type": "video",
+            "width": 768,
+            "height": 1344,
+            "pix_fmt": "yuv420p",
+            "level": -99,
+            "r_frame_rate": "30000/1",
+            "avg_frame_rate": "10080000/420871",
+            "start_time": "0.000000",
+            "duration": "14.009567",
+            "bit_rate": "2056123"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.415833",
+          "size": "3842987",
+          "bit_rate": "2132647"
+        }
+      },
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "profile": "Constrained Baseline",
+            "codec_type": "video",
+            "width": 480,
+            "height": 840,
+            "pix_fmt": "yuv420p",
+            "level": 31,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "start_time": "0.000000",
+            "duration": "14.000000",
+            "bit_rate": "1436236",
+            "nb_frames": "336"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "profile": "LC",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 1,
+            "channel_layout": "mono",
+            "r_frame_rate": "0/0",
+            "avg_frame_rate": "0/0",
+            "start_time": "0.056000",
+            "duration": "14.397958",
+            "bit_rate": "97091",
+            "nb_frames": "676"
+          }
+        ],
+        "format": {
+          "start_time": "0.000000",
+          "duration": "14.453958",
+          "size": "2701011",
+          "bit_rate": "1494959"
+        }
+      },
+      "durationDeltaSeconds": 0.038125,
+      "topLevelAtoms": [
+        {
+          "type": "ftyp",
+          "offset": 0,
+          "bytes": 32
+        },
+        {
+          "type": "moov",
+          "offset": 32,
+          "bytes": 12809
+        },
+        {
+          "type": "free",
+          "offset": 12841,
+          "bytes": 8
+        },
+        {
+          "type": "mdat",
+          "offset": 12849,
+          "bytes": 2688162
+        }
+      ],
+      "moovBeforeMdat": true,
+      "fullVideoAudioDecodeExitCode": 0,
+      "beginMidEndDecoded": true,
+      "encodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "warning",
+        "-n",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/shorts-18-reactions.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-vf",
+        "fps=24,scale=480:-2:flags=lanczos,format=yuv420p",
+        "-c:v",
+        "libx264",
+        "-profile:v",
+        "baseline",
+        "-level:v",
+        "3.1",
+        "-preset",
+        "medium",
+        "-crf",
+        "24",
+        "-maxrate",
+        "1400k",
+        "-bufsize",
+        "2800k",
+        "-threads",
+        "1",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "96k",
+        "-ar",
+        "48000",
+        "-ac",
+        "1",
+        "-movflags",
+        "+faststart",
+        "apps/web/public/brand/promo-shorts/compat/shorts-18-reactions.part.mp4"
+      ],
+      "decodeArgv": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-v",
+        "error",
+        "-xerror",
+        "-threads",
+        "1",
+        "-filter_threads",
+        "1",
+        "-i",
+        "apps/web/public/brand/promo-shorts/compat/shorts-18-reactions.part.mp4",
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a:0",
+        "-f",
+        "null",
+        "-"
+      ],
+      "localElapsedSeconds": 9.065,
+      "encodeWarnings": "",
+      "packetValidation": {
+        "0": {
+          "packets": 336,
+          "strictlyIncreasingDts": true,
+          "firstDts": 0,
+          "lastDts": 171520
+        },
+        "1": {
+          "packets": 676,
+          "strictlyIncreasingDts": true,
+          "firstDts": 2688,
+          "lastDts": 693726
+        }
+      }
+    }
+  ],
+  "progress": {
+    "generated": 21,
+    "total": 21,
+    "bytes": 45815669,
+    "durationWeightedEstimatedTotalBytes": 45815669
+  },
+  "sizeReview": {
+    "previousThresholdBytes": 41943040,
+    "newThresholdBytes": 62914560,
+    "reason": "부모가 대표2개 실측을 검토하고 로컬 생성 예산60MiB 확장 승인",
+    "resumedAt": "2026-11-11T20:08:37.491721+00:00",
+    "remoteUploadPerformed": false
+  },
+  "finishedAt": "2026-11-11T20:12:29.503868+00:00",
+  "summary": {
+    "generated": 21,
+    "bytes": 45789230,
+    "original49Unchanged": true,
+    "durationDeltaMaxAbsSeconds": 0.087708,
+    "fullVideoAudioDecodePassed": 21,
+    "faststartPassed": 21,
+    "strictPacketDtsPassed": 21,
+    "audioTimestampRepairs": 5,
+    "encodeWarningSources": [
+      "shorts-1-drawing-autocolor.mp4",
+      "shorts-2-bg3d-collab.mp4",
+      "shorts-7-assist.mp4",
+      "shorts-14-assets.mp4",
+      "shorts-26-handcam.mp4"
+    ],
+    "unresolvedEncodeWarnings": 0
+  }
+}

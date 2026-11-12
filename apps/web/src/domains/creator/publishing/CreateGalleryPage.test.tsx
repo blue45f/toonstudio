@@ -4,7 +4,10 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CreateGalleryPage } from "../CreateGalleryPage";
+import { GalleryToolbar } from "./GalleryControls";
+import { parseGalleryView } from "./gallery-query";
 
+import { useI18n } from "@/shared/lib/i18n";
 import { useApp } from "@/shared/lib/store";
 
 import type { SeriesSummary, WorkSummary } from "@/platform/creator-client";
@@ -91,6 +94,42 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   useApp.setState({ userId: null });
+  useI18n.setState({ lang: "ko" });
+});
+
+describe("GalleryToolbar 조건 이름", () => {
+  it.each([
+    { lang: "ko", purpose: "작품 조건 더 보기", latest: "최신", popular: "인기", works: "전체 작품", series: "시리즈" },
+    { lang: "en", purpose: "More work filters", latest: "Latest", popular: "Popular", works: "All works", series: "Series" },
+  ] as const)("$lang에서 현재 정렬을 읽고 같은 조건·키보드 조작을 유지한다", ({ lang, purpose, latest, popular, works, series }) => {
+    useI18n.setState({ lang });
+    const onPatch = vi.fn();
+    const { rerender } = render(<GalleryToolbar view={parseGalleryView(new URLSearchParams())} onPatch={onPatch} compactFilters />);
+    const details = screen.getByRole("group", { name: purpose });
+    const summary = details.querySelector("summary");
+    if (!summary) throw new Error("조건을 여는 native summary가 필요합니다.");
+    // 보이는 조건·정렬 문구가 native 이름을 이룬다. 고정 aria-label로 정렬을 가리지 않는다.
+    expect(summary.getAttribute("aria-label")).toBeNull();
+    expect(summary.getAttribute("aria-labelledby")).toBeNull();
+    expect(summary.textContent).toContain(latest);
+    expect(fireEvent.keyDown(summary, { key: "Enter" })).toBe(true);
+    expect(fireEvent.keyDown(summary, { key: " " })).toBe(true);
+    // jsdom은 native Enter 토글을 실행하지 않으므로 클릭 기본 동작으로 같은 disclosure를 연다.
+    fireEvent.click(summary);
+    expect(details.hasAttribute("open")).toBe(true);
+    fireEvent.click(within(details).getByRole("button", { name: popular }));
+    expect(onPatch).toHaveBeenLastCalledWith({ sort: "likes" });
+    rerender(<GalleryToolbar view={parseGalleryView(new URLSearchParams("sort=likes"))} onPatch={onPatch} compactFilters />);
+    expect(summary.textContent).toContain(popular);
+    expect(summary.textContent).not.toContain(latest);
+    expect(within(details).getByRole("button", { name: popular }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("group", { name: purpose })).toBe(details);
+    const currentTab = screen.getByRole("tab", { name: works });
+    currentTab.focus();
+    fireEvent.keyDown(currentTab, { key: "ArrowRight" });
+    expect(onPatch).toHaveBeenLastCalledWith({ tab: "series" });
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: series }));
+  });
 });
 
 describe("CreateGalleryPage", () => {

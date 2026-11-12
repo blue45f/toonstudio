@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
+import { useI18n } from "@/shared/lib/i18n";
 
 import { useMarketResourceDetail } from "../hooks/use-market-resource-detail";
 import { useMarketResources } from "../hooks/use-market-resources";
@@ -64,6 +65,7 @@ const emptyResources = {
 
 afterEach(() => {
   cleanup();
+  useI18n.getState().setLang("ko");
   vi.clearAllMocks();
 });
 
@@ -140,7 +142,8 @@ describe("MarketResourceDetailPage", () => {
     expect(screen.queryByText("리소스를 찾을 수 없어요")).toBeNull();
   });
 
-  it("surfaces Rights BOM provenance status and direct Studio Asset Hub bridge in quick actions", () => {
+  it.each(["ko", "en"] as const)("%s에서 쉬운 이용 조건 진입과 기존 원고 도구 링크를 제공한다", (locale) => {
+    useI18n.getState().setLang(locale);
     const sampleRecord = {
       id: "brush-ink-pro",
       name: "프로 먹선 브러시 팩",
@@ -168,10 +171,12 @@ describe("MarketResourceDetailPage", () => {
     );
 
     const actions = screen.getByTestId("market-detail-quick-actions");
-    expect(within(actions).getByTestId("market-detail-rights-bom-pill").textContent).toContain("Rights BOM");
-    expect(within(actions).getByRole("link", { name: "원고 위 시험 (Fit Lab)" }).getAttribute("href"))
+    expect(within(actions).getByRole("link", { name: locale === "ko" ? "이용 조건 확인" : "Check usage terms" }).getAttribute("href"))
+      .toBe("/market/resource/brush-ink-pro#market-trust-guarantee-heading");
+    expect(actions.textContent).not.toContain("Rights BOM");
+    expect(within(actions).getByRole("link", { name: locale === "ko" ? "원고 위 시험 (Fit Lab)" : "Test in Fit Lab" }).getAttribute("href"))
       .toBe("/market/fit-lab?slug=brush-ink-pro");
-    expect(within(actions).getByRole("link", { name: "Studio 에셋 허브 열기" }).getAttribute("href"))
+    expect(within(actions).getByRole("link", { name: locale === "ko" ? "Studio 에셋 허브 열기" : "Open Studio Asset Hub" }).getAttribute("href"))
       .toBe("/studio/assets");
   });
 });

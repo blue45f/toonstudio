@@ -5,6 +5,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { CREATE_DISABLED_REASON_ID, CREATE_SIZE_REASON_ID } from "./studio-mode-project-create-helpers";
+import { useStudioCreateStepReturn } from "./useStudioCreateStepFlow";
 import { DisabledReason } from "./StudioTaskFlow";
 
 const SUMMARY_ID = "studio-create-launch-summary";
@@ -29,10 +30,12 @@ interface StudioCreateLaunchSummaryProps {
 /** 상세 설정 끝에서도 같은 시작 버튼으로 돌아간다. 생성 행동은 복제하지 않는다. */
 export function StudioCreateReturnToStart() {
   const bt = useBilingual("StudioCreateLaunchSummary");
+  const returnToReview = useStudioCreateStepReturn();
   return (
     <button type="button" data-studio-create-return="true"
       className="mt-4 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-bold text-accent underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       onClick={() => {
+        if (returnToReview) { returnToReview(); return; }
         const start = document.getElementById(BUTTON_ID);
         // 비활성 버튼은 초점을 받지 못하므로 오류 복구가 있는 요약 구역으로 이동한다.
         if (start instanceof HTMLButtonElement && !start.disabled) start.focus();

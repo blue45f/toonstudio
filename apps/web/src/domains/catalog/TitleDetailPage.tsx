@@ -8,7 +8,7 @@ import {
 import { SITE_URL } from "@toonstudio/core/business";
 import { Bookmark, Eye, Heart, Layers, MapPin, MessageSquareText, PenLine, Star } from "lucide-react";
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import type { StudioPublicWiki } from "@/domains/creator/public/world-wiki";
 
@@ -95,6 +95,7 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 export function TitleDetailPage() {
   useBilingualI18nRevision();
   const { slug } = useParams();
+  const { hash } = useLocation();
   const titleApiUrl = slug ? `/api/titles/${encodeURIComponent(slug)}` : null;
   const rawResource = useApiResource<TitleDetailResponse>(
     titleApiUrl,
@@ -103,7 +104,7 @@ export function TitleDetailPage() {
   const { data, loading, error, notFound, reload } = useLocalCatalogFallback(titleApiUrl, rawResource);
   useDocumentTitle(data?.title?.title);
   // 시놉시스 원문은 저작권 리스크가 있어 관리자 킬스위치로 끌 수 있다(끄면 문단 자체를 숨김).
-  const { showSynopsis } = useAppConfig();
+  const { showSynopsis, showAvailability } = useAppConfig();
 
   const t = data?.title;
   const metaDesc = t
@@ -171,21 +172,31 @@ export function TitleDetailPage() {
     if (viewedId) addRecentlyViewed(viewedId);
   }, [viewedId, addRecentlyViewed]);
 
-  // 접힌 보조 콘텐츠도 직접 링크·뒤로/앞으로 이동에서 실제 내용을 열어 준다.
+  // 목적별 접기에서도 기존 직접 링크·뒤로/앞으로 이동은 해당 내용을 연다.
   useEffect(() => {
-    const revealSection = () => {
-      const id = window.location.hash.slice(1);
-      if (!["metrics", "title-character-talk"].includes(id)) return;
-      const details = document.getElementById("title-detail-related-tools");
-      if (details instanceof HTMLDetailsElement) {
-        details.open = true;
-        document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "instant" });
+    const revealSection = (requestedHash: string) => {
+      const id = requestedHash.slice(1);
+      if (!["episodes", "title-episodes-anchor", "title-introduction", "title-reviews", "title-availability", "title-detail-secondary-tools", "metrics", "title-character-talk"].includes(id)) return;
+      const target = document.getElementById(id);
+      if (!(target instanceof HTMLElement)) return;
+      let ancestor: HTMLElement | null = target;
+      while (ancestor) {
+        if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+        ancestor = ancestor.parentElement;
       }
+      if (!target.hasAttribute("tabindex")) target.tabIndex = -1;
+      target.scrollIntoView({ block: "start", behavior: "instant" });
+      target.focus({ preventScroll: true });
     };
-    revealSection();
-    window.addEventListener("hashchange", revealSection);
-    return () => window.removeEventListener("hashchange", revealSection);
-  }, [viewedId]);
+    const revealWindowHash = () => revealSection(window.location.hash);
+    revealSection(hash || window.location.hash);
+    window.addEventListener("hashchange", revealWindowHash);
+    window.addEventListener("popstate", revealWindowHash);
+    return () => {
+      window.removeEventListener("hashchange", revealWindowHash);
+      window.removeEventListener("popstate", revealWindowHash);
+    };
+  }, [viewedId, hash]);
 
   if (loading) {
     return (
@@ -193,7 +204,7 @@ export function TitleDetailPage() {
       <Container size="wide" className="relative py-8 lg:py-10">
         <TitleDetailBreadcrumb />
         {/* 로딩 골격도 무대 구도(포스터 + 카피 열)를 따라 첫 화면이 흔들리지 않게 한다. */}
-        <div className="flex flex-col gap-7 lg:flex-row lg:gap-10">
+        <div role="status" aria-label={bi("작품 정보를 불러오는 중", "Loading title details")} aria-busy="true" className="flex flex-col gap-7 lg:flex-row lg:gap-10">
           <div className="skeleton aspect-[3/4] w-40 shrink-0 rounded-2xl sm:w-52 lg:w-72" />
           <div className="flex-1 space-y-5">
             <div className="skeleton h-8 w-40" />
@@ -215,7 +226,7 @@ export function TitleDetailPage() {
       <PageEntrance variant="pop">
       <Container size="wide" className="py-10">
         <TitleDetailBreadcrumb />
-        <ErrorState className="[&>button]:[min-block-size:2.75rem]!" title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세를 불러오지 못했습니다.")} message={error} onRetry={reload} />
+        <ErrorState className="[&>button]:[min-block-size:3rem]!" title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 상세를 불러오지 못했습니다.")} message={error} onRetry={reload} />
       </Container>
       </PageEntrance>
     );
@@ -238,12 +249,12 @@ export function TitleDetailPage() {
     { icon: Bookmark, label: "관심", value: fmtStat(title.stats.bookmarks) },
     { icon: Star, label: "평가", value: fmtStat(reviewCount) },
   ];
-  // 회차는 API 상세 응답 루트의 episodes 로 온다(스냅샷 수집 작품만). 없으면 undefined → 빈 상태.
+  // 확인된 공개 회차만 내부 안내로 연결하며, 회차가 없는 카탈로그에 1화를 만들지 않는다.
   const episodes = resolveTitleEpisodes(data);
-  const firstEpisodeHref =
-    !episodes && title.totalEpisodes === 0
-      ? null
-      : `/title/${encodeURIComponent(title.slug)}/read/1`;
+  const firstPublishedEpisode = episodes?.find((episode) => episode.status !== "scheduled");
+  const firstEpisodeHref = firstPublishedEpisode
+    ? `/title/${encodeURIComponent(title.slug)}/read/${firstPublishedEpisode.number}`
+    : null;
 
   return (
     <PageEntrance variant="pop">
@@ -255,18 +266,101 @@ export function TitleDetailPage() {
         reviewCount={reviewCount}
         estimated={estimated}
         showSynopsis={showSynopsis}
+        showAvailability={showAvailability}
         firstEpisodeHref={firstEpisodeHref}
       />
 
       <PersonalContentPreferenceNotice title={title} />
       <TitleEarlyAccessNotice titleId={title.id} />
 
-      <div id="title-episodes-anchor" className="mt-4 grid scroll-mt-24 gap-4 sm:mt-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div id="title-episodes-anchor" tabIndex={-1} className="title-primary-episodes">
         <TitleEpisodeSection title={title} episodes={episodes} />
+      </div>
+
+      <details id="title-introduction" className="title-purpose-section">
+        <summary>{bi("작품 소개", "About this story")}</summary>
+        <div className="title-introduction-body">
+          {showSynopsis && title.synopsis ? <p>{title.synopsis}</p> : <p className="text-fg-2">{bi("현재 제공되는 작품 소개가 없어요.", "A synopsis isn't available right now.")}</p>}
+          <dl className="title-introduction-facts">
+            {title.altTitles && title.altTitles.length > 0 && <div><dt>{bi("다른 제목", "Other titles")}</dt><dd>{title.altTitles.join(" · ")}</dd></div>}
+            <div><dt>{bi("장르", "Genres")}</dt><dd>{title.genres.join(" · ") || bi("미정", "Unspecified")}</dd></div>
+            <div><dt>{bi("발표 연도", "Release year")}</dt><dd>{title.releaseYear}</dd></div>
+            {title.updateDays && title.updateDays.length > 0 && <div><dt>{bi("연재 일정", "Release days")}</dt><dd>{title.updateDays.join(" · ")}</dd></div>}
+          </dl>
+        </div>
+      </details>
+
+      <details id="title-reviews" className="title-purpose-section">
+        <summary>{bi("독자 리뷰", "Reader reviews")}</summary>
+      <Section
+        className="mt-10 sm:mt-14"
+        eyebrow="REVIEWS"
+        title={
+          <span className="flex items-baseline gap-3">
+            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "리뷰")}
+            {reviewsAvailable ? (
+              <span className="numeral text-lg text-fg-3">{reviews.length}</span>
+            ) : (
+              <Badge tone="warn">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableBadge", "현재 확인 불가")}</Badge>
+            )}
+            {reviewsAvailable && reviews.length > 0 && (
+              <span className="flex items-center gap-1.5 text-sm font-normal text-fg-3">
+                <Stars value={reviewAvg} size="sm" /> {reviewAvg.toFixed(1)}
+              </span>
+            )}
+          </span>
+        }
+      >
+        {!reviewsAvailable ? (
+          <div role="status" className="rounded-2xl border border-warn/35 bg-warn/10 p-6 text-sm text-fg-2">
+            <p className="font-semibold text-fg">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableTitle", "리뷰 기능을 일시적으로 사용할 수 없습니다.")}</p>
+            <p className="mt-1 leading-relaxed">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableDescription", "리뷰 목록이 비어 있다는 뜻은 아닙니다. 작품 정보와 다른 탐색 기능은 계속 사용할 수 있습니다.")}</p>
+            <Link href="/status" className="mt-3 inline-flex min-h-12 items-center text-sm font-semibold text-accent hover:text-accent-2">
+              서비스 상태 확인
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr] lg:items-start">
+            <div className="lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
+              <ReviewForm titleId={title.id} />
+            </div>
+            <div className="flex flex-col gap-3">
+              {reviews.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center">
+                <span className="grid size-12 place-items-center rounded-2xl bg-raised text-fg-3">
+                  <MessageSquareText size={22} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "아직 리뷰가 없어요.")}</p>
+                  <p className="mt-1 text-sm text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "첫 리뷰를 남기면 취향 분석에도 반영됩니다.")}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("review-text")?.focus()}
+                  className="inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
+                >
+                  <PenLine size={14} aria-hidden="true" />
+                  {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "첫 리뷰 남기기")}
+                </button>
+              </div>
+            ) : (
+              reviews.map((review) => <ReviewCard key={review.id} review={review} enableReplies />)
+              )}
+            </div>
+          </div>
+        )}
+      </Section>
+      </details>
+
+      <details id="title-detail-secondary-tools" data-testid="title-detail-secondary-tools" className="title-purpose-section">
+        <summary className="min-h-12 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          {bi("내 기록 · 관련 작품 · 더 보기", "My records, related stories and more")}
+        </summary>
+        <details id="title-availability" className="title-purpose-subsection">
+          <summary>{bi("공식 감상처 · 이용 조건", "Official platforms and access")}</summary>
         <div className="flex flex-col gap-4">
           {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 시그니처 Starlight 라우터 카드 (D-9 · 시안 E) */}
           <div
-            id="title-availability"
             data-title-where-to-read-router="true"
             className="relative scroll-mt-24 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-b from-accent/10 via-panel/85 to-card p-4 shadow-sm"
           >
@@ -280,7 +374,7 @@ export function TitleDetailPage() {
                 </span>
                 <div>
                   <p className="font-display text-[10px] font-extrabold uppercase tracking-wider text-accent">
-                    WHERE TO READ · ROUTER
+                    {bi("공식 감상처", "Official reading platforms")}
                   </p>
                   <p className="text-sm font-bold text-fg">
                     {bi("어디서 볼 수 있나요", "Where to read")}
@@ -307,7 +401,7 @@ export function TitleDetailPage() {
             </p>
           </div>
           <details className="rounded-2xl border border-line bg-card p-4">
-            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            <summary className="min-h-12 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
               {bi("가격 · 지표 요약", "Pricing and metrics")}
             </summary>
           <PriceCompare availability={title.availability} />
@@ -338,21 +432,15 @@ export function TitleDetailPage() {
             </dl>
             <a
               href="#metrics"
-              className="mt-4 inline-flex min-h-11 items-center text-xs font-semibold text-accent transition-colors hover:text-accent-2"
+              className="mt-4 inline-flex min-h-12 items-center text-xs font-semibold text-accent transition-colors hover:text-accent-2"
             >
               {bi("지표 자세히 보기", "View detailed metrics")}
             </a>
           </section>
           </details>
         </div>
-      </div>
-
+        </details>
       <TitleDetailCreationBridgeCard slug={title.slug} titleName={title.title} />
-
-      <details data-testid="title-detail-secondary-tools" className="mt-6 rounded-2xl border border-line bg-card p-4">
-        <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-          {bi("내 기록 · 알림 · 더 보기", "My records, alerts and more")}
-        </summary>
         <div className="pt-4">
           <SiteContextualSubNav pathnameOverride="/discover" className="mb-4" />
           <nav
@@ -362,23 +450,23 @@ export function TitleDetailPage() {
           >
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wider text-accent">
-                SERIES HUB · QUICK JUMP
+                {bi("다른 활동", "More activities")}
               </span>
               <a
                 href="#title-episodes-anchor"
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {bi("회차 목록", "Episodes")}
               </a>
               <a
                 href="#title-availability"
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {bi("연재처 · 가격 비교", "Platforms & pricing")}
               </a>
               <a
                 href="#metrics"
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {bi("완독률 · 정주행 지표", "Completion & binge metrics")}
               </a>
@@ -386,19 +474,19 @@ export function TitleDetailPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 href="/cuts"
-                className="inline-flex min-h-11 items-center rounded-full border border-accent/35 bg-accent/10 px-3.5 font-bold text-accent transition-colors hover:bg-accent/20"
+                className="inline-flex min-h-12 items-center rounded-full border border-accent/35 bg-accent/10 px-3.5 font-bold text-accent transition-colors hover:bg-accent/20"
               >
                 {bi("숏폼 컷츠 보기", "Watch short-form cuts")}
               </Link>
               <Link
                 href="/compare"
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {bi("작품 스펙 비교", "Compare title specs")}
               </Link>
               <Link
                 href="/showcase/promo"
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
               >
                 {bi("트레일러 제작", "Create trailer")}
               </Link>
@@ -431,7 +519,7 @@ export function TitleDetailPage() {
                     <Link
                       key={tag}
                       href={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "en", "/explore?tags={v0}"), { v0: String(encodeURIComponent(tag)) })}
-                      className="inline-flex items-center rounded-full border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent pointer-coarse:px-3 pointer-coarse:py-1.5"
+                      className="inline-flex min-h-12 items-center rounded-full border border-line bg-raised/50 px-2.5 py-1 text-xs text-fg-2 transition-colors hover:border-accent/50 hover:bg-accent-soft/40 hover:text-accent pointer-coarse:px-3 pointer-coarse:py-1.5"
                     >
                       #{tag}
                     </Link>
@@ -453,7 +541,6 @@ export function TitleDetailPage() {
             </div>
           </div>
         </div>
-      </details>
 
       <AuthorNoticeSection authorName={title.author} workTitle={title.title} className="mt-10 sm:mt-14" />
 
@@ -464,7 +551,7 @@ export function TitleDetailPage() {
       ) : null}
 
       <details id="title-detail-related-tools" data-testid="title-detail-related-tools" className="mt-4 rounded-2xl border border-line bg-card p-4">
-        <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <summary className="min-h-12 cursor-pointer content-center text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
           {translateBilingualValueForActiveLocale("TitleDetailPage", "작품 지표 · 관련 콘텐츠", "Title metrics and related content")}
         </summary>
       <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
@@ -543,7 +630,7 @@ export function TitleDetailPage() {
           </p>
           <Link
             href={`/character-chat?work=${encodeURIComponent(title.slug ?? slug ?? "")}`}
-            className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent/90"
+            className="inline-flex min-h-12 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent/90"
           >
             {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "캐릭터와 대화하기")}
           </Link>
@@ -552,67 +639,6 @@ export function TitleDetailPage() {
       </div>
 
       </details>
-
-      <div id="title-reviews" className="scroll-mt-24">
-      <Section
-        className="mt-10 sm:mt-14"
-        eyebrow="REVIEWS"
-        title={
-          <span className="flex items-baseline gap-3">
-            {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "리뷰")}
-            {reviewsAvailable ? (
-              <span className="numeral text-lg text-fg-3">{reviews.length}</span>
-            ) : (
-              <Badge tone="warn">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableBadge", "현재 확인 불가")}</Badge>
-            )}
-            {reviewsAvailable && reviews.length > 0 && (
-              <span className="flex items-center gap-1.5 text-sm font-normal text-fg-3">
-                <Stars value={reviewAvg} size="sm" /> {reviewAvg.toFixed(1)}
-              </span>
-            )}
-          </span>
-        }
-      >
-        {!reviewsAvailable ? (
-          <div role="status" className="rounded-2xl border border-warn/35 bg-warn/10 p-6 text-sm text-fg-2">
-            <p className="font-semibold text-fg">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableTitle", "리뷰 기능을 일시적으로 사용할 수 없습니다.")}</p>
-            <p className="mt-1 leading-relaxed">{catalogStatusText("catalog.status.titleDetail.reviewsUnavailableDescription", "리뷰 목록이 비어 있다는 뜻은 아닙니다. 작품 정보와 다른 탐색 기능은 계속 사용할 수 있습니다.")}</p>
-            <Link href="/status" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-accent hover:text-accent-2">
-              서비스 상태 확인
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr] lg:items-start">
-            <div className="lg:sticky lg:top-[var(--site-header-sticky-offset,5rem)]">
-              <ReviewForm titleId={title.id} />
-            </div>
-            <div className="flex flex-col gap-3">
-              {reviews.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line bg-card/50 p-10 text-center">
-                <span className="grid size-12 place-items-center rounded-2xl bg-raised text-fg-3">
-                  <MessageSquareText size={22} aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "아직 리뷰가 없어요.")}</p>
-                  <p className="mt-1 text-sm text-fg-3">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "첫 리뷰를 남기면 취향 분석에도 반영됩니다.")}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => document.getElementById("review-text")?.focus()}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-3.5 py-1.5 text-xs font-medium text-fg-2 transition-colors hover:bg-raised"
-                >
-                  <PenLine size={14} aria-hidden="true" />
-                  {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "첫 리뷰 남기기")}
-                </button>
-              </div>
-            ) : (
-              reviews.map((review) => <ReviewCard key={review.id} review={review} enableReplies />)
-              )}
-            </div>
-          </div>
-        )}
-      </Section>
-      </div>
 
       {byAuthor.length > 0 && !isPlaceholderAuthorName(title.author) && (
         <Section
@@ -643,6 +669,7 @@ export function TitleDetailPage() {
           </Rail>
         </Section>
       )}
+      </details>
     </Container>
     </PageEntrance>
   );

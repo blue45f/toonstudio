@@ -30,7 +30,9 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
   for (const match of source.matchAll(pattern)) {
     const entries: Record<string, string> = {};
     for (const entry of (match[2] ?? "").matchAll(/"([^"]+)":\s*"((?:[^"\\]|\\.)*)"/g)) {
-      entries[entry[1] ?? ""] = (entry[2] ?? "").replace(/\\(.)/g, "$1");
+      const value: unknown = JSON.parse(`"${entry[2] ?? ""}"`);
+      if (typeof value !== "string") throw new Error("번역 등록값은 문자열이어야 합니다.");
+      entries[entry[1] ?? ""] = value;
     }
     blocks[match[1] ?? ""] = { ...(blocks[match[1] ?? ""] ?? {}), ...entries };
   }
@@ -254,13 +256,13 @@ const EXPECTED_KO: Readonly<Record<string, string>> = {
   "studio.panelStatus.brandKit.logoLoading": "로고 불러오는 중…",
   "studio.panelStatus.brandKit.logoLoadingTitle": "로고를 불러오는 중이에요. 잠시만 기다려주세요.",
   "studio.panelStatus.brandKit.mutationFailed": "브랜드 킷 변경을 적용하지 못했습니다.",
-  "studio.panelStatus.brandKit.openFailed": "SQLite/OPFS 브랜드 킷을 열지 못했습니다: {detail}. 기존 브라우저 키는 자동으로 읽지 않습니다.",
-  "studio.panelStatus.brandKit.paletteLoadFailed": "연결할 SQLite 팔레트를 불러오지 못했습니다: {detail}",
+  "studio.panelStatus.brandKit.openFailed": "브랜드 킷을 불러오지 못했습니다. 저장 공간을 확인한 뒤 패널을 다시 열어 주세요.\n\n[details] {detail}",
+  "studio.panelStatus.brandKit.paletteLoadFailed": "연결할 팔레트를 불러오지 못했습니다. 저장 공간을 확인하고 다시 열어 주세요.\n\n[details] {detail}",
   "studio.panelStatus.brandKit.palettesEmpty": "저장된 팔레트가 없어요. 먼저 팔레트 탭에서 만들어보세요.",
   "studio.panelStatus.brandKit.retryAfterFix": "{message} 항목을 줄이거나 데이터를 고친 뒤 다시 시도해 주세요.",
-  "studio.panelStatus.brandKit.saveFailedMemoryOnly": "SQLite/OPFS 저장에 실패해 변경을 현재 탭 메모리에만 유지합니다. 새로고침하면 사라집니다: {detail}",
-  "studio.panelStatus.brandKit.storageChecking": "SQLite/OPFS 브랜드 킷 확인 중",
-  "studio.panelStatus.brandKit.storageUnavailable": "SQLite/OPFS 사용 불가 · 저장되지 않음",
+  "studio.panelStatus.brandKit.saveFailedMemoryOnly": "변경을 저장하지 못해 현재 탭에만 유지합니다. 새로고침하면 사라집니다. 패널을 닫지 말고 저장 공간을 확보한 뒤 다시 시도해 주세요.\n\n[details] {detail}",
+  "studio.panelStatus.brandKit.storageChecking": "이 기기의 브랜드 킷 확인 중",
+  "studio.panelStatus.brandKit.storageUnavailable": "이 기기에 저장할 수 없음 · 저장되지 않음",
   "studio.panelStatus.browserTransfer.clipboardUnavailable": "클립보드를 사용할 수 없습니다. 입력란의 내용을 직접 선택해 복사해 주세요.",
   "studio.panelStatus.bundleLibrary.insertCanvasUnavailable": "캔버스에 삽입하지 못했습니다. 편집 가능한 컷을 선택해 주세요.",
   "studio.panelStatus.bundleLibrary.insertFailed": "에셋 삽입에 실패했습니다.",

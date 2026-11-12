@@ -497,15 +497,15 @@ export function AccessibleWebtoonGuidePage() {
       <section
         data-own-control-size=""
         data-testid="accessible-guide-rea-wcag-bar"
-        aria-label={pickLang("배리어프리 웹툰 WCAG 벤치마크 워크벤치", "Barrier-free webtoon WCAG benchmark workbench")}
+        aria-label={pickLang("읽기 환경 미리보기", "Preview reading conditions")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-semibold text-accent">
-            {pickLang("REA 시각 시뮬레이션 · 읽기 보조 규격 워크벤치", "REA Vision Simulation & Reading Aid Workbench")}
+            {pickLang("읽기 보조와 화면 보기 연습", "Explore reading aids and display options")}
           </span>
           <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
-            W3C WCAG 2.2 AA · Naver Barrier-Free Webtoon · Audio Webtoon Standard
+            {pickLang("참고 기준: WCAG 2.2 AA · 읽기 보조와 오디오 웹툰", "Reference: WCAG 2.2 AA · Reading aids and audio webtoons")}
           </span>
         </div>
         <div
@@ -568,6 +568,8 @@ export function AccessibleWebtoonGuidePage() {
             );
           })}
         </div>
+        <details className="mt-3 rounded-xl border border-line bg-panel px-3 py-2">
+          <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg-2">{pickLang("보기 방식의 기준과 설명", "Guidelines for the selected display options")}</summary>
         <p
           data-testid="accessible-guide-rea-status"
           aria-live="polite"
@@ -578,6 +580,7 @@ export function AccessibleWebtoonGuidePage() {
             `${activeVision.en} + ${activeAid.en} · ${activeVision.detailEn} (${activeAid.detailEn})`,
           )}
         </p>
+        </details>
       </section>
 
       {GUIDE_SECTIONS.map((section) => (

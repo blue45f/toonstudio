@@ -421,6 +421,48 @@ describe("StudioCommandSearchDialog — 스크린리더 계약", () => {
 });
 
 describe("StudioCommandSearchHost", () => {
+  it("F1 검색의 입력 초점이 준비되기 전에도 첫 Escape가 검색을 닫는다", async () => {
+    render(<><h2 tabIndex={-1}>현재 패널</h2><StudioCommandSearchHost /></>);
+    const origin = screen.getByRole("heading", { name: "현재 패널" });
+    origin.focus();
+    fireEvent.keyDown(window, { key: "F1" });
+    await screen.findByRole("dialog");
+    // 실제 인스펙터가 검색 입력보다 먼저 초점을 받는 전이 구간을 재현한다.
+    origin.focus();
+    fireEvent.keyDown(origin, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(origin));
+  });
+
+  it("검색 밖의 별도 대화상자가 받은 Escape는 가로채지 않는다", () => {
+    const onClose = vi.fn();
+    render(<><section role="dialog" aria-label="다른 작업"><input aria-label="다른 입력" /></section><StudioCommandSearchDialog open onClose={onClose} /></>);
+    const other = screen.getByRole("textbox", { name: "다른 입력" });
+    other.focus();
+    fireEvent.keyDown(other, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("검색을 내린 뒤에는 배경 Escape 리스너를 해제한다", () => {
+    const onClose = vi.fn();
+    const { unmount } = render(<StudioCommandSearchDialog open onClose={onClose} />);
+    unmount();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("초점 전이 중에도 IME와 이미 소비한 Escape는 유지한다", () => {
+    const onClose = vi.fn();
+    render(<><h2 tabIndex={-1}>전이 중인 패널</h2><StudioCommandSearchDialog open onClose={onClose} /></>);
+    const origin = screen.getByRole("heading", { name: "전이 중인 패널" });
+    origin.focus();
+    fireEvent.keyDown(origin, { key: "Escape", isComposing: true });
+    const handled = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    handled.preventDefault();
+    fireEvent(origin, handled);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("F1 이 통합 검색을 연다", async () => {
     const onRequestOpen = vi.fn();
     render(<StudioCommandSearchHost onRequestOpen={onRequestOpen} />);

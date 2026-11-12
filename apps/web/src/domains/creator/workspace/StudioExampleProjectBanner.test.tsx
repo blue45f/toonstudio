@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,8 +12,9 @@ import {
   EXAMPLE_DOCUMENT_ID,
   EXAMPLE_PROJECT_ID,
   readExampleJourney,
+  setExampleJourneyDismissed,
 } from "../studio-example-project-content";
-import { readStudioProjectLibrary } from "../studio-project-library-store";
+import { readStudioProjectLibrary, STUDIO_PROJECT_LIBRARY_UPDATED_EVENT } from "../studio-project-library-store";
 import { StudioExampleProjectBanner } from "./StudioExampleProjectBanner";
 
 // 내구 저장소(OPFS/SQLite)와 로그인 세션은 jsdom 에 없으므로 심는 훅을 가짜로 바꿔 배선만 확인한다.
@@ -43,10 +44,10 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-function renderBanner() {
+function renderBanner(compact = false) {
   return render(
     <MemoryRouter>
-      <StudioExampleProjectBanner />
+      <StudioExampleProjectBanner compact={compact} />
     </MemoryRouter>,
   );
 }
@@ -112,4 +113,93 @@ describe("StudioExampleProjectBanner", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("button", { name: /다시 시도|Try again/u })).toBeTruthy();
   });
+
+  it("접힌 안내에서도 시딩과 진도를 보존하고 다시 열면 같은 체크 상태를 보여 준다", async () => {
+    const { container } = renderBanner(true);
+    const summary = await screen.findByText(/^(예제로 첫 작품 완성하기|Finish your first work with an example)$/u);
+    const details = summary.closest("details");
+    expect(details?.open).toBe(false);
+    await waitFor(() => expect(persistence.persist).toHaveBeenCalledOnce());
+    expect(readStudioProjectLibrary(window.localStorage).projects.map((project) => project.id)).toEqual([EXAMPLE_PROJECT_ID]);
+    fireEvent.click(summary);
+    expect(details?.open).toBe(true);
+    expect(container.querySelectorAll("ol li")).toHaveLength(6);
+    const step = screen.getByRole("checkbox", { name: /예제 프로젝트 열기|Open the example project/u });
+    fireEvent.click(step);
+    expect(readExampleJourney(window.localStorage).doneIds).toEqual(["open-example"]);
+    fireEvent.click(summary);
+    expect(details?.open).toBe(false);
+    expect(details?.querySelector("summary")?.textContent).toContain("1/6");
+    fireEvent.click(summary);
+    expect((step as HTMLInputElement).checked).toBe(true);
+    expect(screen.queryByRole("button", { name: /접어 두기|Collapse/u })).toBeNull();
+  });
+
+  it("접힌 안내에서도 진행 저장 실패를 보여 주고 다시 열어 재시도할 수 있다", async () => {
+    renderBanner(true);
+    const summary = await screen.findByText(/^(예제로 첫 작품 완성하기|Finish your first work with an example)$/u);
+    fireEvent.click(summary);
+    const step = screen.getByRole("checkbox", { name: /예제 프로젝트 열기|Open the example project/u });
+    const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    fireEvent.click(step);
+    fireEvent.click(summary);
+    const alert = await screen.findByRole("alert");
+    expect(alert.closest("details")).toBeNull();
+    expect(summary.closest("details")?.open).toBe(false);
+    expect((step as HTMLInputElement).checked).toBe(false);
+    write.mockRestore();
+    fireEvent.click(summary);
+    fireEvent.click(step);
+    expect(readExampleJourney(window.localStorage).doneIds).toEqual(["open-example"]);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("컴팩트 표시의 준비 실패와 재시도도 접힘 밖에 둔다", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
+    renderBanner(true);
+    expect((await screen.findByRole("alert")).closest("details")).toBeNull();
+    expect(screen.getByRole("button", { name: /다시 시도|Try again/u }).closest("details")).toBeNull();
+  });
+
+
+  it("기존 접기 기록을 바꾸지 않고 하나의 펼치기로 완주 단계를 다시 제공한다", async () => {
+    setExampleJourneyDismissed(window.localStorage, true);
+    renderBanner(true);
+    const summary = await screen.findByText(/^(예제로 첫 작품 완성하기|Finish your first work with an example)$/u);
+    expect(summary.closest("details")?.open).toBe(false);
+    fireEvent.click(summary);
+    expect(summary.closest("details")?.open).toBe(true);
+    expect(screen.getByRole("checkbox", { name: /예제 프로젝트 열기|Open the example project/u })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /여정 다시 보기|Show the journey again/u })).toBeNull();
+    expect(readExampleJourney(window.localStorage).dismissed).toBe(true);
+  });
+
+  it.each(["written", "kept-existing", "busy", "unavailable"] as const)(
+    "세션 확정이 늦어도 실제 쓰기 완료(%s)만 목록 미리보기를 갱신한다",
+    async (outcome) => {
+      persistence.ownerReady = false;
+      let finish: (result: StudioSeedDurableOutcome) => void = () => { throw new Error("pending 저장 준비 전"); };
+      const pending = new Promise<StudioSeedDurableOutcome>((resolve) => { finish = resolve; });
+      persistence.persist.mockReturnValue(pending);
+      const view = renderBanner();
+      await screen.findByRole("heading", { name: /예제 프로젝트로 한 컷을 완주|Finish one panel/u });
+      const before = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === EXAMPLE_PROJECT_ID);
+      expect(before?.lastOpenedDocumentId).toBeTruthy();
+      expect(persistence.persist).not.toHaveBeenCalled();
+
+      persistence.ownerReady = true;
+      view.rerender(<MemoryRouter><StudioExampleProjectBanner /></MemoryRouter>);
+      await waitFor(() => expect(persistence.persist).toHaveBeenCalledOnce());
+      const dispatch = vi.spyOn(window, "dispatchEvent");
+      const updates = () => dispatch.mock.calls.filter(([event]) => event.type === STUDIO_PROJECT_LIBRARY_UPDATED_EVENT);
+      expect(updates()).toHaveLength(0);
+      await act(async () => { finish(outcome); await pending; });
+      expect(updates()).toHaveLength(outcome === "written" ? 1 : 0);
+      const after = readStudioProjectLibrary(window.localStorage).projects.find((project) => project.id === EXAMPLE_PROJECT_ID);
+      expect(after?.lastOpenedDocumentId).toBe(before?.lastOpenedDocumentId);
+      expect(after?.title).toBe(before?.title);
+      if (outcome !== "written") expect(after?.lastOpenedAt).toBe(before?.lastOpenedAt);
+    },
+  );
+
 });

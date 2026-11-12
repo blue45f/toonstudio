@@ -2,6 +2,7 @@ import type {
   StudioLocalDatabase,
   StudioSqliteSupportProbe,
 } from "./studio-local-database";
+import { isStudioLocalDatabaseOwnershipBusyError } from "./studio-local-database-ownership";
 
 /**
  * One app-lifetime SQLite proxy shared by history, renderer tournament, and subsequent local
@@ -29,6 +30,21 @@ export function acquireStudioLocalDatabase(
     openDatabase ?? openStudioLocalDatabaseProductWorker,
   );
   return sharedDatabase;
+}
+
+/** 명시적 재시도만 사용한다. 소유권 경합으로 실패한 동일 세대만 해제하며 새 연결은 열지 않는다. */
+export async function resetFailedStudioLocalDatabaseOwnership(): Promise<boolean> {
+  const opening = sharedDatabase;
+  if (!opening) return false;
+  try {
+    await opening;
+    return false;
+  } catch (cause) {
+    // 기다리는 동안 다른 소비자가 교체한 연결이나 정상 연결을 닫지 않는다.
+    if (sharedDatabase !== opening || !isStudioLocalDatabaseOwnershipBusyError(cause)) return false;
+    await closeStudioLocalDatabaseRuntime({ preserveBrushMemorySession: true });
+    return true;
+  }
 }
 
 /**

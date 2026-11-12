@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ServiceDegradedBanner } from "./ServiceDegradedBanner";
+import { StudioSaveSyncStatusCenter } from "@/domains/creator/StudioSaveSyncStatusCenter";
+import { createEmptyOperationJournal } from "@/domains/creator/studio-operation-recovery-coordinator";
 
 import { useI18n } from "@/shared/lib/i18n";
-import { registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
+import { getActiveEditorStatusSlot, registerEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 
 const availableCapabilities = {
   publicCatalog: "available",
@@ -104,7 +106,8 @@ it("몰입 화면의 상단 도구를 덮지 않고 장애 상세를 펼치거�
   // 가상 스튜디오 도크가 게시하는 여백 변수보다 위에 뜨고, 변수가 없으면 기존 5.5rem을 유지한다.
   expect(status.className).toContain("bottom-[calc(max(5.5rem,var(--immersive-dock-clearance,0px),calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem))+env(safe-area-inset-bottom))]");
   expect(status.className).not.toContain("top-");
-  expect(status.className).toContain("max-sm:bg-panel");
+  expect(status.className.split(" ")).toContain("bg-panel");
+  expect(status.className).not.toContain("bg-warn/10");
   expect(status.querySelector("div")?.className).toContain("max-sm:grid-cols-[auto_minmax(0,1fr)]");
   const detail = screen.getByText(/로컬 편집은 계속 사용할 수 있습니다/);
   expect(detail.hidden).toBe(true);
@@ -310,7 +313,7 @@ describe("연결 준비 칩의 자리", () => {
   });
 
   it("알림 열(왼쪽 아래)의 맨 아래 칸에 놓이고 휴대폰에서는 조작 열을 비켜 한 줄 칩이 된다", () => {
-    renderBanner(false);
+    renderBanner(true);
     const chip = screen.getByRole("status");
 
     expect(chip.className).toContain("left-4");
@@ -325,7 +328,7 @@ describe("연결 준비 칩의 자리", () => {
   });
 
   it("점유 높이를 게시해 그 위의 OST·베타 안내가 칩을 가리지 않게 하고, 사라지면 거둔다", () => {
-    const view = renderBanner(false);
+    const view = renderBanner(true);
     const chip = screen.getByRole("status");
     chip.style.position = "fixed";
     const bounds = vi.spyOn(chip, "getBoundingClientRect").mockReturnValue(new DOMRect(12, 700, 240, 34));
@@ -334,6 +337,24 @@ describe("연결 준비 칩의 자리", () => {
     expect(document.documentElement.style.getPropertyValue(property)).toBe(`${window.innerHeight - 700 + 12}px`);
 
     view.unmount();
+    expect(document.documentElement.style.getPropertyValue(property)).toBe("");
+    bounds.mockRestore();
+  });
+
+  it("일반 페이지에서는 상태를 본문 흐름에 남기고 몰입형 알림의 점유 높이를 해제한다", () => {
+    const view = renderBanner(true);
+    const chip = screen.getByRole("status");
+    chip.style.position = "fixed";
+    const bounds = vi.spyOn(chip, "getBoundingClientRect").mockReturnValue(new DOMRect(12, 700, 240, 34));
+    fireEvent(window, new Event("resize"));
+    expect(document.documentElement.style.getPropertyValue(property)).not.toBe("");
+
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive={false} /></MemoryRouter>);
+
+    const inline = screen.getByRole("status");
+    expect(inline.getAttribute("data-service-status-placement")).toBe("page-inline");
+    expect(inline.className).not.toContain("fixed");
+    expect(inline.textContent).toContain("온라인 기능을 연결하는 중이에요.");
     expect(document.documentElement.style.getPropertyValue(property)).toBe("");
     bounds.mockRestore();
   });
@@ -394,4 +415,105 @@ it("몰입 알림의 조작부를 펼친 모바일 작업 메뉴의 실측 높�
   render(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
   expect(screen.getByRole("status").className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
   expect(screen.getByRole("button", { name: "서비스 상태 알림 펼치기" })).toBeTruthy();
+});
+
+
+it("연결 준비 안내도 실제 모바일 도크 높이 위에 머문다", () => {
+  mocks.state = { ...mocks.state, report: null, warmingUp: true };
+  render(<ServiceDegradedBanner immersive />);
+  const chip = screen.getByRole("status");
+  expect(chip.getAttribute("data-service-degraded-banner")).toBe("warming");
+  expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem)");
+  expect(chip.className).toContain("calc(var(--studio-mobile-dock-measured-height,0px)+0.75rem+env(safe-area-inset-bottom))");
+});
+
+function EditorStatusHarness({ editor = true }: { readonly editor?: boolean }) {
+  return <MemoryRouter>
+    <ServiceDegradedBanner immersive />
+    {editor ? <StudioSaveSyncStatusCenter journal={createEmptyOperationJournal("notice-test")} /> : null}
+  </MemoryRouter>;
+}
+
+describe("편집기에서 저장·연결 상태 한곳으로 이동", () => {
+  it("닫힌 패널에서는 한 번 알리고, 같은 버튼을 열면 원문·재확인·상태 페이지를 제공한다", () => {
+    render(<EditorStatusHarness />);
+    const trigger = screen.getByRole("button", { name: "저장 상태 열기: 아직 저장 기록 없음" });
+    const summary = screen.getByRole("status");
+    expect(trigger.contains(summary)).toBe(true);
+    expect(summary.textContent).toContain("온라인 기능 확인 필요");
+    expect(summary.className).not.toContain("fixed");
+    expect(screen.queryByRole("link", { name: "상태 자세히" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "다시 확인" })).toBeNull();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+
+    fireEvent.click(trigger);
+    const panel = screen.getByRole("dialog", { name: "저장 상태 상세" });
+    expect(within(panel).getByText(/커뮤니티 조회 · 클라우드 저장이 제한됩니다/u)).toBeTruthy();
+    expect(within(panel).getByRole("link", { name: "상태 자세히" }).getAttribute("href")).toBe("/status");
+    fireEvent.click(within(panel).getByRole("button", { name: "다시 확인" }));
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "저장 상태 상세" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "상태 자세히" })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("연결 준비·제한·복구가 바뀌어도 원고 저장 성공으로 표시하지 않는다", () => {
+    mocks.state = { ...mocks.state, report: null, warmingUp: true };
+    const view = render(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 연결 확인 중");
+    mocks.state = { ...mocks.state, warmingUp: false };
+    view.rerender(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 기능 확인 필요");
+    mocks.state = { ...mocks.state, status: "available", recoveredAt: Date.now() };
+    view.rerender(<EditorStatusHarness />);
+    expect(screen.getByRole("status").textContent).toContain("온라인 기능 복구");
+    expect(screen.getByRole("button", { name: "저장 상태 열기: 아직 저장 기록 없음" })).toBeTruthy();
+    expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
+  });
+
+  it("모달 알림 우선·닫은 뒤 편집기 복귀·편집기 해제 뒤 기본 배치를 유지한다", () => {
+    const view = render(<EditorStatusHarness />);
+    const editor = getActiveEditorStatusSlot();
+    const modal = document.createElement("div");
+    document.body.appendChild(modal);
+    let close = () => {};
+    act(() => { close = registerModalStatusSlot(modal); });
+    try {
+      expect(modal.contains(screen.getByRole("status"))).toBe(true);
+      expect(getActiveEditorStatusSlot()).toBe(editor);
+    } finally {
+      act(() => close());
+      modal.remove();
+    }
+    expect(editor?.summary.contains(screen.getByRole("status"))).toBe(true);
+    view.rerender(<EditorStatusHarness editor={false} />);
+    expect(getActiveEditorStatusSlot()).toBeNull();
+    expect(screen.getByRole("status").className).toContain("fixed");
+  });
+});
+
+
+it("그리기 저장 요약은 연결 준비를 상세에 두고 실제 제한·복구는 계속 알린다", () => {
+  const summary = document.createElement("span"), details = document.createElement("div");
+  summary.dataset.studioDrawingSaveSummary = "true";
+  document.body.append(summary, details);
+  const release = registerEditorStatusSlot(details, summary);
+  mocks.state = { ...mocks.state, warmingUp: true, report: null };
+  const view = renderBanner(true);
+  try {
+    expect(summary.textContent).toBe("");
+    expect(within(details).getByText("온라인 기능을 연결하는 중이에요.")).toBeTruthy();
+    expect(within(details).getByRole("link", { name: "상태 자세히" })).toBeTruthy();
+    mocks.state = { ...mocks.state, warmingUp: false };
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+    expect(within(summary).getByRole("status").textContent).toContain("온라인 기능 확인 필요");
+    mocks.state = { ...mocks.state, status: "available", recoveredAt: Date.now() };
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive /></MemoryRouter>);
+    expect(within(summary).getByRole("status").textContent).toContain("온라인 기능 복구");
+    expect(screen.queryByText("이 기기에 저장됨")).toBeNull();
+  } finally {
+    view.unmount(); release(); summary.remove(); details.remove();
+  }
 });

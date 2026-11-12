@@ -73,7 +73,14 @@ describe("사업계획서 페이지 본문 데이터", () => {
   it("붙임에서 실제 수치와 검증 목표를 별도 표로 구분한다", () => {
     const appendix = BUSINESS_PLAN_SECTIONS.find((section) => section.id === "appendix");
     const captions = appendix?.tables.map((table) => table.caption) ?? [];
-    expect(captions).toContain("실제 제품 수치 (서비스·공개 소스 코드 기준)");
+    expect(captions).toContain("기능·기술 기록 (운영 성공 지표가 아니다)");
     expect(captions).toContain("검증 목표 (결과가 아니다)");
+  });
+
+  it("현재 배포 안내와 개발 기록을 구분하고 퇴역 환경의 성공을 보장하지 않는다", () => {
+    const serialized = JSON.stringify(BUSINESS_PLAN_SECTIONS);
+    expect(serialized).toContain("Cloudflare 정적 웹과 onpod API·DB");
+    expect(serialized).toContain("승인·검증 후 수동 배포");
+    expect(serialized).not.toMatch(/7개 환경|Vercel|171개|프리플라이트 100% 통과|96\.84|96\.74/);
   });
 });

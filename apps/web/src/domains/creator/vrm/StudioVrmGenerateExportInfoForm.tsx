@@ -147,7 +147,7 @@ export function StudioVrmGenerateExportInfoForm({
         {profileStatus === "memory-only"
           ? vrmGenerateStatusText(
             "studio.vrmGenerateStatus.profileMemoryOnly",
-            "이 기기의 저장소(SQLite/OPFS)를 쓸 수 없어 제작자 정보를 이번 화면에서만 유지해요.",
+            "기기에 저장할 수 없어 제작자 정보를 이번 화면에서만 유지해요. 닫거나 새로고침하기 전에 내보내기 내용을 확인해 주세요.",
           )
           : !customized
             ? vrmGenerateStatusText(

@@ -296,7 +296,7 @@ export const SITE_ROUTE_AUTHORITIES = Object.freeze([
     id: "studio-home",
     path: "/studio",
     titleKey: "route.studio",
-    label: { ko: "제작", en: "Create" },
+    label: { ko: "내 작업", en: "My work" },
     description: {
       ko: "최근 작품·공유 작업·복구 항목을 한곳에서",
       en: "Recent projects, shared work and recovery in one place",

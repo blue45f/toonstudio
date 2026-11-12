@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -74,11 +74,24 @@ describe("DiscoverSpotlight", () => {
   it("shows the lead story with its meta, rating and two more picks", () => {
     renderSpotlight({ snapshot: snapshot(), loading: false });
     const card = screen.getByRole("article", { name: "작품 lead" });
-    expect(within(card).getByRole("link", { name: "작품 lead" }).getAttribute("href")).toBe("/title/slug-lead");
+    expect(within(card).getByRole("link", { name: "작품 lead 작품 보기" }).getAttribute("href")).toBe("/title/slug-lead");
     expect(card.textContent).toContain("작가 · 로맨스·드라마 · 완결");
     expect(card.textContent).toContain("4.6");
+    expect(card.querySelector('a[href*="/read/"]')).toBeNull();
+    const disclosure = within(card).getByText("함께 추천하는 작품").closest("details");
+    const storedPick = disclosure?.querySelector('a[href="/title/slug-f1"]');
+    if (!disclosure || !storedPick) throw new Error("접힌 추가 추천이나 실제 작품 목적지가 없습니다.");
+    // 닫힌 details는 자손 DOM을 지우지 않는다. 시각 비노출은 실제 브라우저에서 별도로 측정한다.
+    expect(disclosure.open).toBe(false);
+    expect(storedPick.closest("summary")).toBeNull();
+    fireEvent.click(within(card).getByText("함께 추천하는 작품"));
+    expect(disclosure.open).toBe(true);
     const more = within(card).getAllByRole("link").filter((link) => link.getAttribute("href") !== "/title/slug-lead");
     expect(more.map((link) => link.getAttribute("href"))).toEqual(["/title/slug-f1", "/title/slug-f2"]);
+    expect(more[0]).toBe(storedPick);
+    fireEvent.click(within(card).getByText("함께 추천하는 작품"));
+    expect(disclosure.open).toBe(false);
+    expect(disclosure.contains(storedPick)).toBe(true);
   });
 
   it("falls back to theme-token artwork instead of the story's warm cover colors", () => {

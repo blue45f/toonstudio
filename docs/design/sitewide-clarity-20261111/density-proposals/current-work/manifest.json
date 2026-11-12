@@ -1,0 +1,39 @@
+{
+  "status": "target",
+  "runtimeReference": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d / 399bf5bf0013",
+  "sharedBeforeImplementation": true,
+  "library": "https://chatgpt.com/space/page_1e4bdd165d908191b152ae11b81a568c",
+  "files": [
+    {
+      "file": "index.html",
+      "bytes": 13534,
+      "sha256": "bb986be5ce46066f5649193e9ef611a7decac750f20306436a94b69f8068c2a0"
+    },
+    {
+      "file": "content.json",
+      "bytes": 3445,
+      "sha256": "4089e3b67ddd66d0ec7b8ce07440784865f12d1e472142372afad0060d7a5f7a"
+    },
+    {
+      "file": "proposal-active-work-closed-390.png",
+      "bytes": 59937,
+      "sha256": "659e01131be1507bda706ef8f48ec313e98623d4caa870a04a8512fc8809da2b"
+    },
+    {
+      "file": "proposal-active-work-open-390.png",
+      "bytes": 94076,
+      "sha256": "c483f05bd38aaf3f11766394849efb6a785533b0811e124c186801792ab3106d"
+    },
+    {
+      "file": "proposal-active-work-closed-1440.png",
+      "bytes": 82504,
+      "sha256": "ab5773def27a9d31fb396f006b880a7f1ddc1249b114bce9ed476eaf37ef3d05"
+    },
+    {
+      "file": "proposal-active-work-open-1440.png",
+      "bytes": 126310,
+      "sha256": "20157bbbfd3367588a652b69fb065cfd9304961f707a31f9473f1fd0eb9270c6"
+    }
+  ],
+  "qualification": "현재 작품 안내만 검토하는 시안이다. 기본 약 66px에서 작품명과 샘플 표시를 유지하고 기존 선택·프로젝트·실습·안내 숨김을 펼쳐 찾는다. 아래 본문은 높이 비교용 자리이며 학습/마켓 전체 재설계가 아니다. 실제 session·URL/Back·저장 상태는 구현 뒤 검증한다. 샘플은 고정 예제 ID로 구분하고 저장 완료 배지를 쓰지 않는다."
+}

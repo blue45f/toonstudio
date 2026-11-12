@@ -4,12 +4,26 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { LearningResourcesPage } from "./LearningResourcesPage";
+import { useI18n } from "@/shared/lib/i18n";
 
 afterEach(() => {
   cleanup();
 });
 
 describe("강좌·자료 라이브러리 접근성 및 스킬트리 토글", () => {
+  it("영어에서도 새 목적 이름으로 분야를 선택하고 자료 필터 상태를 알 수 있다", () => {
+    const originalLanguage = useI18n.getState().lang;
+    useI18n.setState({ lang: "en" });
+    try {
+      render(<MemoryRouter initialEntries={["/learn/resources"]}><LearningResourcesPage /></MemoryRouter>);
+      const area = screen.getByRole("group", { name: "Find lessons for your work" });
+      expect(within(area).getByRole("group", { name: "Practice area" })).toBeTruthy();
+      fireEvent.click(within(area).getByRole("button", { name: "Color and lighting" }));
+      expect(screen.getByTestId("learn-resources-rea-skilltree-status").textContent).toContain("Showing resources for working with color and light");
+      expect(area.textContent).not.toContain("REA");
+    } finally { cleanup(); useI18n.setState({ lang: originalLanguage }); }
+  });
+
   it("스킬트리 그룹 시맨틱(role=group), aria-pressed, min-h-11/data-own-control-size, 포커스 링 및 대비 클래스를 검증한다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/learn/resources"]}>
@@ -28,7 +42,7 @@ describe("강좌·자료 라이브러리 접근성 및 스킬트리 토글", () 
     const labeledDivsWithoutRole = container.querySelectorAll("div[aria-label]:not([role])");
     expect(labeledDivsWithoutRole).toHaveLength(0);
 
-    const trackGroup = within(skilltreeBar).getByRole("group", { name: "직무별 커리큘럼 스킬트리" });
+    const trackGroup = within(skilltreeBar).getByRole("group", { name: "연습 분야" });
     const trackButtons = within(trackGroup).getAllByRole("button");
     expect(trackButtons).toHaveLength(4);
     for (const btn of trackButtons) {
@@ -42,7 +56,7 @@ describe("강좌·자료 라이브러리 접근성 및 스킬트리 토글", () 
     fireEvent.click(screen.getByTestId("learn-resources-rea-track-anatomy-croquis"));
     expect(screen.getByTestId("learn-resources-rea-track-anatomy-croquis").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("learn-resources-rea-track-storyboard-pacing").getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("learn-resources-rea-skilltree-status").textContent).toContain("30초 포스(Force) 크로키");
+    expect(screen.getByTestId("learn-resources-rea-skilltree-status").textContent).toContain("인체의 움직임과 선 그리기");
 
     fireEvent.click(screen.getByTestId("learn-resources-rea-track-storyboard-pacing"));
     expect((screen.getByLabelText("직군") as HTMLSelectElement).value).toBe("story");

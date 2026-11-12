@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
@@ -29,8 +29,8 @@ function episodesHref(project: ProductionProjectSummary): string {
 /**
  * 사이트 홈(/)의 "지금 할 일" (BLUEPRINT §3.2 확산, S3-5).
  *
- * §3.3 홈 밴드 ②는 "로그인 시 이어하기/지금 할 일, 게스트는 예시 작품 선반"이다 —
- * 그래서 게스트에게는 카드를 만들지 않는다(작품이 없다고 단정할 근거가 없다).
+ * 실제 이어하기·가까운 일정은 소개보다 먼저, 빈 상태·완료·불러오기 폴백은 소개 다음에 둔다.
+ * 게스트에게는 카드를 만들지 않는다(작품이 없다고 단정할 근거가 없다).
  * 로그인 사용자는 연재 센터 현황이 쓰는 같은 권위(listProductionProjects)로
  * 작품 목록을 읽어 공용 순수 함수(deriveNowCard)에 신호만 넘긴다. 목록을 읽는
  * 동안·실패하면 기존 개인 스트립이 그대로 개인 동선을 소유한다 — 카드가
@@ -38,7 +38,7 @@ function episodesHref(project: ProductionProjectSummary): string {
  * 정렬은 연재 센터 현황과 같은 기준(밀린 작품 먼저, 다음 발행이 가까운 순)을
  * 써서 두 표면이 같은 작품을 "다음"으로 지목하게 한다.
  */
-export function HomeNowCard() {
+export function HomeNowCard({ children }: { readonly children?: ReactNode }) {
   const bi = useBilingualLocalizer("domains.marketing.ReferenceCreatorDashboard");
   const { status } = useSession();
   const userId = useApp((state) => state.userId);
@@ -104,10 +104,13 @@ export function HomeNowCard() {
     }, bi);
   }, [projects, bi]);
 
-  if (status !== "authenticated") return null;
-  if (!nowCard) return <HomePersonalStrip />;
-  return (
+  // 비동기 목록이 도착해 순서가 바뀌어도 입력·Luna의 DOM과 초점을 보존한다.
+  const introduction = children == null ? null : <Fragment key="home-introduction">{children}</Fragment>;
+  if (status !== "authenticated") return introduction;
+  if (!nowCard) return <>{introduction}<HomePersonalStrip key="personal-strip" /></>;
+  const card = (
     <NowCard
+      key="home-now-card"
       className="mt-5"
       eyebrow={bi("지금 할 일", "Do this now")}
       title={nowCard.title}
@@ -123,4 +126,6 @@ export function HomeNowCard() {
       )}
     />
   );
+  return <>{nowCard.ruleId === "resume" || nowCard.ruleId === "deadline"
+    ? [card, introduction] : [introduction, card]}</>;
 }

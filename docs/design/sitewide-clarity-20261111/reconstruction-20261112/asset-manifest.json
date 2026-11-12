@@ -1,0 +1,640 @@
+{
+  "status": "migration-selected-assets-archived-current-local-verification-linked",
+  "generatedAt": "2026-11-12T06:41:23.470223+00:00",
+  "intendedRepositoryDirectory": "docs/design/sitewide-clarity-20261111/reconstruction-20261112",
+  "baseline": {
+    "gitSha": "57bee8c191e2f87f17c3c9687cee16a0197fd15a",
+    "buildId": "aead678b8310",
+    "entry": "/assets/index-D5Xt6yn8.js",
+    "entrySha256": "d6a20229851ba4fcb0b4c4693033c78699376804fe80a379cbfcd631479d5aca",
+    "productionBuildAndLocalByteGatePassed": true,
+    "productionDeploymentVerified": false
+  },
+  "assets": [
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/creation-mobile-board.png",
+      "archive": "assets/creation-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "creation",
+      "sha256": "10c6b45deb48ca914ab0e76bfb8078005c4869dd1751cc641c4e84dab94a0530",
+      "bytes": 476680,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/reading-mobile-board.png",
+      "archive": "assets/reading-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "reading",
+      "sha256": "7797b74233042db7d38fb4a5a20922b49f6d9fee7e5aad3ef96e89b256bc5671",
+      "bytes": 346498,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/resources-mobile-board.png",
+      "archive": "assets/resources-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "resources",
+      "sha256": "72d88295980eeca0b8d297f421d367e26ad623b84c124187bf13d5b905020393",
+      "bytes": 359737,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/operations-mobile-board.png",
+      "archive": "assets/operations-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "operations",
+      "sha256": "03bc5a021d729e39588e9cc7bea4a9e55bebc180452e2fe293cd0f92ae93e8ba",
+      "bytes": 347157,
+      "width": 1440,
+      "height": 2208,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/support-mobile-board.png",
+      "archive": "assets/support-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "support",
+      "sha256": "579e5cedbd9a4dd39e28b6140cf0e74650c04f8edc84fc82384e0d06a5e9a6b6",
+      "bytes": 618930,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/proposal-first-save-390.png",
+      "archive": "assets/proposal-first-save-390.png",
+      "kind": "static-proposal",
+      "sha256": "2cea6d8e8ee5a0ef263b59625b755e6320a9e24ceabb405d6f479ba658d4aa31",
+      "bytes": 54759,
+      "width": 390,
+      "height": 844,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": null,
+      "newImplementationAfterCaptureAvailable": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/proposal-first-save-1440.png",
+      "archive": "assets/proposal-first-save-1440.png",
+      "kind": "static-proposal",
+      "sha256": "08a61a7ca026b3178d3ca2dcab9183a63f25b2fd0ad05683a47c6690d1d24a03",
+      "bytes": 78724,
+      "width": 1440,
+      "height": 1000,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": null,
+      "newImplementationAfterCaptureAvailable": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/actual-versus-proposal-first-save-390.png",
+      "archive": "assets/actual-versus-proposal-first-save-390.png",
+      "kind": "actual-and-static-proposal-comparison",
+      "sha256": "ca96514ee29c4f42279116e0b9933fa39b7abd97306b33d8007a47627927507f",
+      "bytes": 197686,
+      "width": 852,
+      "height": 1010,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": "57bee8c191e2f87f17c3c9687cee16a0197fd15a",
+      "newImplementationAfterCaptureAvailable": false
+    }
+  ],
+  "selectedCount": 8,
+  "selectedBytes": 2480171,
+  "copyStatus": "8개 PNG를 저장소에 보존했고 각 파일의 SHA-256을 다시 확인함; 정적 제안이며 운영 구현 증거와 구분",
+  "excludedFromArchive": [
+    "all1323per-routePNGs",
+    "privateLibrary/PageopaqueIDs",
+    "largeZIPpackages",
+    "profiles and raw API bodies"
+  ],
+  "webProposalCoverage": {
+    "addressLedger": 441,
+    "staticPngs": 1323,
+    "viewports": [
+      390,
+      768,
+      1440
+    ],
+    "aliasAddresses": 49,
+    "dynamicExamples": 92,
+    "attributesOverlap": true,
+    "reusedLayoutCount": 13,
+    "layouts": [
+      "canvas",
+      "catalog",
+      "dashboard",
+      "detail",
+      "document",
+      "form",
+      "landing",
+      "reader",
+      "scene",
+      "status",
+      "table",
+      "timeline",
+      "wizard"
+    ],
+    "independentUsabilitySuccessCount": null,
+    "routeTemplatesAreImplementedRoutes": false,
+    "companionNavigatorCorrectionConditions": 3
+  },
+  "additionalProposalCoverage": {
+    "total": 29,
+    "systemApps": 10,
+    "dccModes": 6,
+    "experimental": 13,
+    "viewports": [
+      390,
+      768,
+      1440
+    ],
+    "staticPngs": 87,
+    "implemented": false,
+    "experimentalShipping": false
+  },
+  "geminiDesignation": {
+    "meaning": "사용자가 Gemini 원본으로 지정한5SVG; 기존 접근/XML 확인 기록 재사용",
+    "sources": [
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-a-b-home-and-studio-lobby.svg",
+        "sha256": "be82464a4e61a9f51cd970b84973b9538e94cea5569ff9cf6fbaa8dd1268a4fe"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-b-c-editor-2d-and-3d-live-ink.svg",
+        "sha256": "3c240e24c75f8e6a7219e6c39e6adcff0cb7c7dab5645daf9de8ef74e9869825"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-e-n-discover-spectrum-and-reader.svg",
+        "sha256": "1df6b84b5f537c1a430e804bf8707927142cf44bf68717b63ae60d378ef39f5d"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+        "sha256": "c2e79d8e8254f39239e427649bc0e5a5fe87e446a62d70111d9bea16779697a1"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-m1-m4-mobile-starlight-suite.svg",
+        "sha256": "22b2fb1a2a94decc25a58da45616ce64b5435c206d9b0b9ea6eec22099b0fcd3"
+      }
+    ],
+    "independentGenerationToolLogsVerified": false,
+    "newVisualReviewPerformedForThisStaging": false
+  },
+  "competitorMethod": {
+    "reaMcpExecutedInThisFollowup": false,
+    "historicalOfficialSites": 3,
+    "reference": "docs/design/sitewide-clarity-20261111/competitor-rea.md",
+    "reuse": "기존 REA CLI/CDP·공개 JS·공식 자료; 신규 전체 경쟁사 분석 아님"
+  },
+  "evidence": [
+    {
+      "location": ".qa/full-reconstruction-20261112/packages/manifest.json",
+      "sha256": "da327047e84f5f2b4d9123a6cfeabf834e7a9e5f35baa01cf4c295bb1aa2aa34",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/final-image-index.json",
+      "sha256": "e77286a2ae444fcfb64282efd50de4ce039474bf94f68ef77f637577d416fb3d",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/final-boards/manifest.json",
+      "sha256": "e3ffcecb8653d0e7380d183914eee96253c2cf55e74b3556679ad5c6ae90f966",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/extras-render/canvas-frame-v2/packages.json",
+      "sha256": "252eb8dd2fb49cca3b5e5d618240eeed70c2536f8f91e18bf5a4da036cc4e075",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/extras-render/canvas-frame-v2/correction-index.json",
+      "sha256": "63d74277718e37bbdc97cdc16c810191d138fb15586828e4c347f3e100dbe0b7",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/manifest.json",
+      "sha256": "970d903aece133fb6a01d632a384b6aae22d11df9d40cd53798a2697fbda3bbf",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/mobile-first-implementation-20261112/budget-fix-record.json",
+      "sha256": "f5162db7bde00d4518fb5b6c02793685dff0676eb3d3206f7bca7dd199385aaa",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/mobile-first-implementation-20261112/retry-1/preview-gate.json",
+      "sha256": "74da262c0014e9d581f9cd2974a35e8830d2e2d36033897efeb3dc7860401bb1",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/mobile-first-reading-followups/handoff-resumed.json",
+      "sha256": "2e53567aa992d939042cb257aa7262a606e118ec12efc9a94089a948a3b8210a",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/learn-mobile-first/post-browser-fix-57bee/handoff.json",
+      "sha256": "5a27fa105dbdd98d9154b0ba386f5a58d134c946c4ef19f7dec1ac82deb5da6b",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/first-save-dialog-implementation/handoff.json",
+      "sha256": "a1e0d66bcee957b847364d6ac24b593c052994ff442b6ae472b1774d5b187d42",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    }
+  ],
+  "pending": [
+    "V5 동일원고/컷/모델 재접속복원 실패 원인 분리 및 복구·원고 적용 검증",
+    "후속소스까지 포함한 새 최종 번들·전체타입·전체하네스 및 영향 경로 실제 after",
+    "Drawing F1 첫Escape·후속모바일상태/기기안내,Studio48탭,Market가림/행카드제안,PC메뉴/고정도구의 실제 검증",
+    "6화면군26배치는 준비만: 새READY/별도1worker슬롯 후 지정 배치와 남은 핵심 실사용 검증",
+    "동일콘텐츠·상태·테마·뷰포트 시안/실제 비교의 잔여 범위; PNG수를 완료로 세지 않음",
+    "원격main/CI·운영배포 및 실제 해당프런트 SHA·핵심흐름 확인"
+  ],
+  "privacy": {
+    "libraryReferencesIncluded": false,
+    "pageIdsIncluded": false,
+    "secretsIncluded": false
+  },
+  "verificationUpdatedAt": "2026-11-12T10:57:55.746353+00:00",
+  "baselineRole": "역사 정적 시안 보존 기준. 아래 최신 로컬 검증 기준으로 대체하거나 8개 정적 이미지를 새 실제 화면으로 재분류하지 않음",
+  "currentLocalVerification": {
+    "status": "partial-real-local-flows-with-open-gaps",
+    "gitSha": "4d48ac5845219982b8ed06a90300cb0049a3dab4",
+    "buildId": "9f16aec04d6b",
+    "entry": "/assets/index-kaDoJpjc.js",
+    "entrySha256": "4f09afcc5d9b771f399a02b11d218a7ce795e4773228f1470e04b3a6ef946488",
+    "localProductionModeBuildNotDeployment": true,
+    "viewportsObservedAcrossRuns": [
+      320,
+      390,
+      834,
+      1440
+    ],
+    "allStatesTestedAtEveryViewport": false,
+    "sourceChangesAfterThisBuild": {
+      "firstIntegrationEvidenceId": "post-bundle-source-integration",
+      "files": 23,
+      "unitSuites": 25,
+      "unitTestsPassed": 1092,
+      "unitDurationSeconds": 90.08,
+      "secondDeltaIncludedInTheseUnits": false,
+      "pendingFinalDeltasReportedByRoot": [
+        "save-popover viewport clamp",
+        "save-status surface matching",
+        "audio enabled-state label"
+      ],
+      "pendingFinalEvidenceStatus": "Root reports integration/verification underway; final source commit and bundle not available",
+      "actualAfterForIntegratedDeltasAvailable": false,
+      "finalBundleComplete": false,
+      "finalFullHarnessRun": false
+    },
+    "evidence": [
+      {
+        "id": "current-local-gate",
+        "location": ".qa/fidelity-refinement-bundle-20261112/preview-gate.json",
+        "sha256": "12ed436d1f9b6fda3a9fd56a0c4790a00e883c6584eb491d42665b1def216889",
+        "purpose": "검증된 로컬 production-mode 번들 바이트. production=true는 운영 배포 확인이 아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "explore-calendar",
+        "location": ".qa/explore-calendar-after-20261112/handoff-4d48.json",
+        "sha256": "aa5196edb8e2f6c1f4e9ce245a6456a539ed5b4ace2c371f2149bbe17527b219",
+        "purpose": "13통과·원본5실패와 후속 분류; 지정 작품 fixture/기존 Calendar 데이터",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "explore-native-focus",
+        "location": ".qa/explore-calendar-after-20261112/native-focus-handoff-4d48.json",
+        "sha256": "9a252b6a2e93cbd5d13f6c2b199c25f86a97c49b0ba1463ce888d1272d0155e6",
+        "purpose": "4폭 native dialog 배경 초점·스크롤 차단, Escape/복귀 후속4조건",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "learn-after",
+        "location": "sideworktree:.qa/learn-mobile-first/after-gap-css-preparation-20261112/actual-after-handoff.json",
+        "sha256": "ab4c3051dfa77003ad3467053dded3833760655cc4d7f5e1e12c85dffe905cfe",
+        "purpose": "7/7 새 회귀; 이전61개 검사와 별도",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "studio-after",
+        "location": ".qa/studio-visual-review-next-bundle/after-results-summary.json",
+        "sha256": "84bfa0261ef9fab8d6fce0bf1f97fb317fb12a179836393881fbb69d786d56f6",
+        "purpose": "각4폭20통과/탭3개48px 미달, 기존작업390의 잔여 실패 분리",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "drawing-after",
+        "location": "sideworktree:.qa/drawing-fresh-persistent-20261112/validation-handoff-4d48.json",
+        "sha256": "25086c877905d4645b38f940385d99f20160bc5d79b329fec9728fe0c19b7518",
+        "purpose": "17/18; 실제 두 획·로컬 복원 receipt·native PNG·F1 collector race",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "drawing-residuals",
+        "location": "sideworktree:.qa/drawing-fresh-persistent-20261112/residual-ui-owners.json",
+        "sha256": "f198d119fd07763a3175732a21853594e7bd05224ec94dc141c6b64ebf05f626",
+        "purpose": "기기 안내/저장 상태 중복·원고명 중복 소유 및 실제 관측 조건",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "market-initial",
+        "location": "sideworktree:.qa/market-density-after/runs/4d48ac58-market-after-1/results.json",
+        "sha256": "0d3ccdf14fc20d9c5b0b6c4e5d8ebf556349fc90d14fe2de53db4b95056a1096",
+        "purpose": "원본12통과/17실패 보존: 존재하지 않는CC0 brush 전제 및 미관측 후속 포함",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "market-fixture-correction",
+        "location": "sideworktree:.qa/market-density-after/fixture-correction.json",
+        "sha256": "c03a9e1a19d400574f6fc4079a4398f9c454ac0f58183c2ce44d05360a6aab76",
+        "purpose": "실제 정본 자산으로 QA 전제 교정; 원본 결과 삭제 안 함",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "market-followup",
+        "location": "sideworktree:.qa/market-density-after/runs/4d48ac58-market-after-followup-1/results.json",
+        "sha256": "c12533cbb6e2ee51e2b9d0bda64680792c5616dcea686370c629851ff59e0a36",
+        "purpose": "18통과/4실패. 상세·Back·실패/재시도,320 sticky 넘침·1440 geometry 잔여",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "market-finish",
+        "location": "sideworktree:.qa/market-density-after/runs/4d48ac58-market-finish-proposal-1/results.json",
+        "sha256": "75eb5c724d30e2314ae611b97f8ea41197072e5f38809c7a2e5a57b71d52c712",
+        "purpose": "1440 행동 후속 통과와3 geometry 실패 분리; 새 모바일 행카드는 정적 제안",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "promo-after",
+        "location": ".qa/promo-final-regression-20261112/handoff-9f16aec04d6b.json",
+        "sha256": "7d8c951a96fa87c784978f7672adc799728a39b74b27e423ed91a1ae532456cc",
+        "purpose": "12통과, 최신3편 정상속도 완주·503재시도·4폭; PC다운로드 가림 잔여",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "promo-historical-reuse",
+        "location": ".qa/coverage-visual-next-bundle/shorts-evidence-reuse-20261112.json",
+        "sha256": "48e8de3778bea00b78cab6bac68292409ca290fb0339c51975f33f1f5731dcbe",
+        "purpose": "이전49편완주:5player소스와원본49/호환21미디어SHA 비교 후 제한 재사용",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "promo-source-comparison",
+        "location": ".qa/coverage-visual-next-bundle/shorts-historical-source-comparison.json",
+        "sha256": "bc22ce66eb140d6a36e4e0e63a00c76591da91f5c9bd6dfefe49caa93b243954",
+        "purpose": "Root의6d597→4d48 player소스5파일비교; 새49편완주아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "virtual-avatar-after",
+        "location": ".qa/virtual-final-review-20261112/after-handoff.json",
+        "sha256": "1eaea7357367760b928533be65423b9e6bdb8091e04591e7c261fe7e45b01951",
+        "purpose": "12통과: 실제 로컬 avatar저장실패/재시도/재진입·4방향·포즈; 자연스러움 전체성공아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "virtual-bg3d-after",
+        "location": ".qa/virtual-bg3d-after-20261112/after-handoff.json",
+        "sha256": "57465009cdaf78e91017467f5e6104cc755f213c98480ca93415ce05e75d531d",
+        "purpose": "실제 authored GLB배치·컷생성 후 재접속복원실패; 원인미확정",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "root-direct-visual",
+        "location": ".qa/mobile-visual-followup-integration-20261112/root-visual-review.json",
+        "sha256": "2e7914f19f9fa7b7ef6efab20a7f21bb86afca4ed0eecb6beb721d9779507fb7",
+        "purpose": "Root직접열람2PNG의경로/SHA명시; 전체직접검토아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "post-bundle-source-integration",
+        "location": ".qa/mobile-visual-followup-integration-20261112/integrated.json",
+        "sha256": "335d9985ccb09367307f031a0d7239898cbd5b26542ec21a1c13fd1bcc49dceb",
+        "purpose": "4d48기반후속23파일통합기록;9f16화면은이변경의after가아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "post-bundle-unit-inputs",
+        "location": ".qa/mobile-visual-followup-integration-20261112/unit-inputs.json",
+        "sha256": "9bdb0265781e87f826a8e5dd300fed3a16478088e7d8390418d3bb7aef2b9d1d",
+        "purpose": "후속첫통합단위검사입력25suite;2차delta미포함",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "post-bundle-unit-log",
+        "location": ".qa/mobile-visual-followup-integration-20261112/unit.log",
+        "sha256": "1ee96c9d0e007713fd27d4c94929272b8104dcbda2c11cd656bd8fc98a718bd9",
+        "purpose": "25suite/1092통과90.08초;전체타입/빌드/하네스아님",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "post-bundle-unit-exit",
+        "location": ".qa/mobile-visual-followup-integration-20261112/unit.exit",
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "purpose": "단위검사exit0",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "route-wave-prepared",
+        "location": ".qa/coverage-visual-next-bundle/final-wave-preparation-20261112.json",
+        "sha256": "01714696a5729613e4fdc36a5ee509221717d97e332e34aa508cdf3e32ef6406",
+        "purpose": "6화면군86주소172조건26batch준비;새전수실행0",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "route-batch-plan",
+        "location": ".qa/coverage-visual-next-bundle/batch-plan.json",
+        "sha256": "1e7f4d1d8e27b7f8d6acd5ca4b8a452c521bede22032066751321cc7dc01e2b4",
+        "purpose": "441주소882조건126batch기존계획;주소수≠과업성공수",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      },
+      {
+        "id": "historical-route-image-index",
+        "location": ".qa/coverage-visual-next-bundle/indexes/2026-11-12T08-22-14-683Z-9b48c6e999/route-image-index.json",
+        "sha256": "3940ce2899d7a6d2e4686cf87af6af80d26bf036a6acea42a7acb836f430ddde",
+        "purpose": "과거882관측/877PNG존재/59실패/5누락;운영자44게이트≠운영44성공",
+        "reusedExistingEvidence": true,
+        "newExecutionForThisDocumentation": false
+      }
+    ],
+    "reviewScope": {
+      "rootExplicitLedgerEvidenceId": "root-direct-visual",
+      "rootExplicitLedgerPngCount": 2,
+      "rootAdditionallyReportedViews": [
+        {
+          "scope": "Explore actual390 and UTF-8 corrected comparison",
+          "method": "Root collaboration message; exact prior tool log not re-read in this documentation task",
+          "evidenceId": "explore-calendar"
+        },
+        {
+          "scope": "Studio390 firstfold",
+          "method": "Reported by Root in Studio agent handoff",
+          "evidenceId": "studio-after"
+        }
+      ],
+      "agentReportedViews": [
+        {
+          "evidenceId": "studio-after",
+          "count": 7
+        },
+        {
+          "evidenceId": "learn-after",
+          "count": 4,
+          "includesBeforeImage": true
+        },
+        {
+          "evidenceId": "promo-after",
+          "actualCount": 12,
+          "proposalCount": 2
+        },
+        {
+          "evidenceId": "virtual-avatar-after",
+          "count": 14
+        },
+        {
+          "evidenceId": "virtual-bg3d-after",
+          "count": 7
+        }
+      ],
+      "countsAreNotUniqueAndMustNotBeSummed": true,
+      "newImageViewsByDocumentationTask": 0,
+      "rootAllPagesReviewed": false,
+      "fullVisualFidelityPass": false
+    },
+    "criticalOpenConditions": [
+      "V5 actual local-cut reconnect failed with ownership lock error; root cause not confirmed; manuscript insertion not verified",
+      "Drawing F1 first Escape unverified because collector asserted before lazy dialog mount",
+      "Market320 sticky overflow;1440 native controls44 vs48 standard; mobile row card is proposal only",
+      "Studio eachwidth3tabs44 vs48 standard; post-build source fix requires new actual after",
+      "Promo1440 download-edge overlap visually observed;9point download test pending; fixed-control delta requires new after",
+      "No authenticated admin/real external publish/cloud backup workflow success"
+    ],
+    "historicalReuse": {
+      "oldRouteConditions": 882,
+      "oldPngPathsExisting": 877,
+      "oldFailedObservations": 59,
+      "oldMissingPngs": 5,
+      "oldAdminAuthGateConditionsNotOperationSuccess": 44,
+      "old49ShortsEvidenceId": "promo-historical-reuse",
+      "new3ShortsCompletionsAreNotNew49": true
+    },
+    "remainingRoutePlan": {
+      "evidenceId": "route-wave-prepared",
+      "families": 6,
+      "routes": 86,
+      "conditions": 172,
+      "batches": 26,
+      "firstMobileBatches": 6,
+      "firstMobileConditions": 35,
+      "newRouteBatchesExecuted": 0,
+      "requiresNewRootReadyAndSeparateCoverageSlot": true,
+      "currentPromoAndVirtualEvidenceDoesNotCompleteRouteBatches": true
+    },
+    "physicalAndroidSamsungInternetSafariTested": false,
+    "remoteMainIntegratedVerified": false,
+    "productionDeploymentVerified": false,
+    "productionFrontendCommitVerified": false,
+    "independentAllPageUsabilitySuccess": false
+  },
+  "postBundleReview": {
+    "at": "2026-11-12T11:12:00Z",
+    "status": "source-integrated-local-checks-passed-final-bundle-browser-and-full-harness-pending",
+    "changedFiles": 40,
+    "changedTypeScriptFiles": 33,
+    "unitEvidence": [
+      {
+        "path": ".qa/mobile-visual-followup-integration-20261112/final-unit/unit.log",
+        "suitesPassed": 29,
+        "testsPassed": 1157,
+        "sha256": "c6910dcc2e7b62afaced81e07c03e47f61a420af380c66f9210d8294ab70c29f"
+      },
+      {
+        "path": ".qa/mobile-visual-followup-integration-20261112/closing-checks/unit.log",
+        "suitesPassed": 9,
+        "suitesFailed": 2,
+        "testsPassed": 123,
+        "testsFailed": 11,
+        "retainedRawFailure": true,
+        "sha256": "55f1ac9689f83c587304e0c490956b154d2433d4902ba038db561306f085bd1b"
+      },
+      {
+        "path": ".qa/mobile-visual-followup-integration-20261112/test-fixture-followup/unit.log",
+        "suitesPassed": 2,
+        "testsPassed": 29,
+        "scope": "Both failed fixtures corrected; assertions preserved",
+        "sha256": "100997b61d035d9752bf38bbb53da517df34709a401d023db2199b910f9040a9"
+      }
+    ],
+    "doNotSumOverlappingTests": true,
+    "semanticDiagnostics": 0,
+    "semanticCoverage": "33 changed TS/TSX union in full program context; not whole repository typecheck",
+    "lintPassed": true,
+    "architecturePassed": true,
+    "finalBuildPassed": false,
+    "finalFullHarnessPassed": false,
+    "actualAfterScreensAvailable": false,
+    "ownershipRetry": "Explicit failed-generation reset only; actual V5 reopen still pending; initial contention owner not proven"
+  }
+}

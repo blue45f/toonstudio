@@ -474,14 +474,14 @@ export function CommunityPage() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href="/community/reviews"
+                    href="/reviews"
                     className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
                   >
                     {t(COPY.quickReviews)}
                     <ArrowRight size={12} aria-hidden="true" />
                   </Link>
                   <Link
-                    href="/community/timelapse"
+                    href="/community/timelapses"
                     className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
                   >
                     {t(COPY.quickTimelapse)}
@@ -633,7 +633,7 @@ export function CommunityPage() {
                   CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK · DLSITE · COMIKET
                 </span>
                 {([
-                  { href: "/community/timelapse", label: COPY.reaLinkTimelapse },
+                  { href: "/community/timelapses", label: COPY.reaLinkTimelapse },
                   { href: "/community?provenance=human-verified", label: COPY.reaLinkHuman },
                   { href: "/community?provenance=ai-assisted", label: COPY.reaLinkAiProvenance },
                   { href: "/creator/membership", label: COPY.reaLinkMembership },

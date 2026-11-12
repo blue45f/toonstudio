@@ -61,6 +61,11 @@ export function LanguagePicker({
   const listId = useId();
   const dialogId = useId();
   const label = ariaLabel ?? (korean ? "언어 선택" : "Choose language");
+  const currentLabel = current?.label ?? value;
+  const progressLabel = korean ? "번역 진행 중" : "Translation in progress";
+  const triggerLabel = compact
+    ? label
+    : `${currentLabel}${current?.translationInProgress ? ` ${progressLabel}` : ""} · ${label}`;
 
   const visibleOptions = useMemo(() => {
     const normalizedQuery = normalizeSearch(query);
@@ -145,7 +150,7 @@ export function LanguagePicker({
         ref={triggerRef}
         type="button"
         disabled={disabled}
-        aria-label={label}
+        aria-label={triggerLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? dialogId : undefined}
@@ -156,10 +161,10 @@ export function LanguagePicker({
         )}
       >
         <Languages size={15} aria-hidden />
-        <span className={cx("max-w-48 truncate", compact && "sr-only")}>{current?.label ?? value}</span>
+        <span className={cx("max-w-48 truncate", compact && "sr-only")}>{currentLabel}</span>
         {current?.translationInProgress && !compact ? (
           <span className="shrink-0 rounded-full bg-raised px-1.5 py-0.5 text-[0.6rem] font-semibold text-fg-2">
-            {korean ? "번역 진행 중" : "Translation in progress"}
+            {progressLabel}
           </span>
         ) : null}
         {/* 셀렉트 표준(2026-10-02): 열리는 컨트롤임을 알리는 chevron — 열리면 180도 회전 */}

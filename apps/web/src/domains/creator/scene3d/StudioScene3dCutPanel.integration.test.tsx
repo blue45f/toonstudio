@@ -9,6 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { StudioBg3dProfessionalWorkspace } from "../bg3d/StudioBg3dProfessionalWorkspace";
 import { useStudioBg3dCanonicalDocumentState } from "../bg3d/useStudioBg3dCanonicalDocumentState";
 import { useStudioBg3dModelMaterialLease } from "../bg3d/useStudioBg3dModelMaterialLease";
@@ -148,11 +149,13 @@ function Workspace({ rendererReady = true, rendererGeneration = 0, materialBacke
     history = historyRef.current;
   });
   return (
-    <StudioBg3dProfessionalWorkspace
-      outliner={<span>계층</span>}
-      inspector={<span>속성</span>}
-      viewport={<Viewport h={hostRef.current} />}
-    />
+    <MemoryRouter initialEntries={["/studio/bg3d"]}>
+      <StudioBg3dProfessionalWorkspace
+        outliner={<span>계층</span>}
+        inspector={<span>속성</span>}
+        viewport={<Viewport h={hostRef.current} />}
+      />
+    </MemoryRouter>
   );
 }
 function host() {

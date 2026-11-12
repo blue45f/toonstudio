@@ -104,6 +104,7 @@
   box-shadow: inset 0 1px 0 color-mix(in oklch, var(--color-fg) 10%, transparent);
 }
 .site-header__utilities { display: flex; align-items: center; flex-shrink: 0; gap: 6px; margin-left: auto; }
+.site-header__notifications { display: contents; }
 .site-header__search-label,
 .site-header__search-shortcut { display: none; }
 .site-header__search { width: 44px; padding-inline: 0; border-radius: 999px; }
@@ -148,9 +149,14 @@
 .site-menu-directory > svg:last-child { margin-left: auto; }
 .site-menu-directory:hover, .site-menu-directory[aria-current="page"] { border-color: var(--color-accent); color: var(--color-accent); }
 .site-menu-directory:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-.site-menu-group { min-width: 0; padding: 4px 0; }
+.site-menu-group { min-width: 0; border-bottom: 1px solid var(--color-line); }
+.site-menu-group__summary { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; cursor: pointer; list-style: none; }
+.site-menu-group__summary::-webkit-details-marker { display: none; }
+.site-menu-group__summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.site-menu-group[open] > .site-menu-group__summary > svg { transform: rotate(180deg); }
+.site-menu-group > ul { padding: 4px 12px 12px; }
 /* 단일 지도에서 현재 여정 구간만 강조한다. 지도 자체는 모든 화면에서 같다. */
-.site-menu-group[data-current-journey="true"] { border-radius: 14px; outline: 1px solid var(--color-accent); outline-offset: 6px; background: var(--color-accent-soft); }
+.site-menu-group[data-current-journey="true"] { border-radius: var(--site-control-radius); background: var(--color-accent-soft); }
 .site-menu-group__current { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; color: var(--color-on-accent); background: var(--color-accent); font-size: 0.625rem; font-weight: 700; letter-spacing: 0.04em; vertical-align: 2px; }
 
 .public-footer-invitation {
@@ -160,9 +166,10 @@
   --color-fg-2: oklch(0.8 0.012 78);
   --color-line: oklch(0.305 0.012 64);
   --color-line-strong: oklch(0.42 0.013 64);
-  --color-accent: oklch(0.72 0.185 42);
-  --color-accent-2: oklch(0.66 0.2 38);
-  --color-on-accent: oklch(0.2 0.02 60);
+  /* 아트 표면의 중립색과 별개로 행동색은 사용자가 선택한 문서 테마를 따른다. */
+  --color-accent: var(--unified-accent);
+  --color-accent-2: var(--unified-accent-2);
+  --color-on-accent: var(--unified-on-accent);
   position: relative;
   isolation: isolate;
   display: grid;
@@ -227,9 +234,14 @@
   .public-footer-invitation::after { background: linear-gradient(0deg, var(--color-panel) 8%, oklch(0.185 0.009 68 / 0.94) 42%, oklch(0.185 0.009 68 / 0.25)); }
 }
 
+@media (width < 640px) {
+  .site-header__notifications { display: none; }
+  .site-header :is(.site-header__brand, .site-header__search, [data-auth-trigger]) { min-width: 48px; min-height: 48px; }
+  .site-header__search { width: 48px; }
+}
+
 @media (width < 400px) {
-  .site-header__brand-copy { display: none; }
-  .site-header__brand { min-width: 44px; }
+  .site-header__brand-mark { display: none; }
   .site-menu-actions { flex-direction: column; align-items: stretch; gap: 8px; }
   .site-menu-actions a { gap: 8px; padding-inline: 12px; }
   .site-menu-actions__create,

@@ -175,6 +175,7 @@ export function StudioLiveCollaborationQuickControls({
         onClick={() => setOpen((current) => !current)}
       >
         <CursorModeIcon mode={preferences.cursorVisibility} />
+        <span data-studio-mobile-cursor-label="true" className="hidden text-xs font-semibold">커서 보기 · {currentModeCopy.label}</span>
         {live.availability === "ready" ? (
           <span
             aria-hidden

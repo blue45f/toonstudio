@@ -3,149 +3,32 @@
  *
  * Page-owned artwork may remain cinematic, but application chrome, navigation,
  * controls, cards and accessibility states always inherit one document palette.
- * These aliases are concrete on purpose: nested workspace shells previously
- * shadowed --color-* and prevented light/signature/high-contrast themes from
- * reaching most routes.
+ * root의 --ui-palette-* 정본을 computed 별칭으로 상속한다. color와 unified를
+ * 각각 정본에 연결해 지역 color 덮어쓰기와 미리보기의 기존 상속을 유지한다.
+ * 자식 workspace는 상속된 unified 값만 참조하므로 변수 순환을 만들지 않는다.
  */
-:root[data-design-theme="aurora"] {
-  --unified-canvas: oklch(0.968 0.018 285);
-  --unified-panel: oklch(0.988 0.012 275);
-  --unified-card: oklch(0.997 0.008 300);
-  --unified-raised: oklch(0.925 0.035 270);
-  --unified-line: oklch(0.82 0.045 275);
-  /* line-strong doubles as the control-border fallback: keep it at WCAG 1.4.11 3:1 against every surface (was 0.7, 2.15:1 on raised). */
-  --unified-line-strong: oklch(0.61 0.06 275);
-  --unified-fg: oklch(0.22 0.035 275);
-  --unified-fg-2: oklch(0.34 0.04 275);
-  --unified-fg-3: oklch(0.41 0.045 275);
-  --unified-accent: oklch(0.43 0.19 300);
-  --unified-accent-2: oklch(0.4 0.19 315);
-  --unified-accent-soft: oklch(0.67 0.16 300 / 0.16);
-  --unified-on-accent: oklch(0.99 0.008 285);
-}
-:root[data-design-theme="blossom"] {
-  --unified-canvas: oklch(0.972 0.02 30);
-  --unified-panel: oklch(0.99 0.014 35);
-  --unified-card: oklch(0.998 0.008 35);
-  --unified-raised: oklch(0.925 0.038 28);
-  --unified-line: oklch(0.82 0.045 25);
-  /* line-strong doubles as the control-border fallback: keep it at WCAG 1.4.11 3:1 against every surface (was 0.7, 2.17:1 on raised). */
-  --unified-line-strong: oklch(0.61 0.06 20);
-  --unified-fg: oklch(0.23 0.04 18);
-  --unified-fg-2: oklch(0.35 0.045 18);
-  --unified-fg-3: oklch(0.42 0.045 18);
-  --unified-accent: oklch(0.44 0.19 18);
-  --unified-accent-2: oklch(0.4 0.18 350);
-  --unified-accent-soft: oklch(0.69 0.15 20 / 0.16);
-  --unified-on-accent: oklch(0.99 0.008 35);
-}
-:root[data-design-theme="starlight"] {
-  --unified-canvas: #070a14;
-  --unified-panel: #0b101d;
-  --unified-card: #101726;
-  --unified-raised: #192235;
-  --unified-line: #303b54;
-  --unified-line-strong: #667796;
-  --unified-fg: #f1f4ff;
-  --unified-fg-2: #c5cede;
-  --unified-fg-3: #a5b3c9;
-  --unified-accent: #b39bff;
-  --unified-accent-2: #6edaff;
-  --unified-accent-soft: rgb(151 121 255 / 16%);
-  --unified-on-accent: #121226;
-}
-:root[data-design-theme="dark"] {
-  --unified-canvas: oklch(0.155 0.008 70);
-  --unified-panel: oklch(0.185 0.009 68);
-  --unified-card: oklch(0.208 0.01 66);
-  --unified-raised: oklch(0.247 0.011 64);
-  --unified-line: oklch(0.305 0.012 64);
-  /* line-strong doubles as the control-border fallback: keep it at WCAG 1.4.11 3:1 against every surface (was 0.42, 1.9:1 on raised). */
-  --unified-line-strong: oklch(0.53 0.013 64);
-  --unified-fg: oklch(0.95 0.01 85);
-  --unified-fg-2: oklch(0.745 0.012 78);
-  --unified-fg-3: oklch(0.655 0.012 76);
-  --unified-accent: oklch(0.72 0.185 42);
-  --unified-accent-2: oklch(0.66 0.2 38);
-  --unified-accent-soft: oklch(0.72 0.185 42 / 0.14);
-  --unified-on-accent: oklch(0.2 0.02 60);
-}
-:root[data-design-theme="light"] {
-  --unified-canvas: oklch(0.972 0.008 85);
-  --unified-panel: oklch(0.992 0.006 85);
-  --unified-card: oklch(0.998 0.004 85);
-  --unified-raised: oklch(0.945 0.009 82);
-  --unified-line: oklch(0.88 0.012 80);
-  /* line-strong doubles as the control-border fallback: keep it at WCAG 1.4.11 3:1 against every surface (was 0.78, 1.71:1 on raised). */
-  --unified-line-strong: oklch(0.62 0.014 78);
-  --unified-fg: oklch(0.26 0.02 60);
-  --unified-fg-2: oklch(0.42 0.018 66);
-  --unified-fg-3: oklch(0.49 0.016 70);
-  --unified-accent: oklch(0.5 0.2 41);
-  --unified-accent-2: oklch(0.47 0.2 36);
-  --unified-accent-soft: oklch(0.62 0.2 40 / 0.12);
-  --unified-on-accent: oklch(0.99 0.01 85);
-}
-:root[data-design-theme="graphite"] {
-  --unified-canvas: oklch(0.23 0 0);
-  --unified-panel: oklch(0.265 0 0);
-  --unified-card: oklch(0.285 0 0);
-  --unified-raised: oklch(0.315 0 0);
-  --unified-line: oklch(0.46 0 0);
-  --unified-line-strong: oklch(0.58 0 0);
-  --unified-fg: oklch(0.96 0 0);
-  --unified-fg-2: oklch(0.81 0 0);
-  --unified-fg-3: oklch(0.73 0 0);
-  --unified-accent: oklch(0.8 0.12 80);
-  --unified-accent-2: oklch(0.76 0.12 80);
-  --unified-accent-soft: oklch(0.8 0.12 80 / 0.16);
-  --unified-on-accent: oklch(0.2 0 0);
-}
-:root[data-design-theme="midnight"] {
-  --unified-canvas: oklch(0.205 0.026 260);
-  --unified-panel: oklch(0.245 0.028 260);
-  --unified-card: oklch(0.265 0.029 260);
-  --unified-raised: oklch(0.295 0.032 260);
-  --unified-line: oklch(0.44 0.038 260);
-  --unified-line-strong: oklch(0.58 0.04 260);
-  --unified-fg: oklch(0.96 0.01 250);
-  --unified-fg-2: oklch(0.81 0.018 250);
-  --unified-fg-3: oklch(0.73 0.02 250);
-  --unified-accent: oklch(0.8 0.1 235);
-  --unified-accent-2: oklch(0.76 0.1 235);
-  --unified-accent-soft: oklch(0.8 0.1 235 / 0.16);
-  --unified-on-accent: oklch(0.2 0.02 260);
-}
-:root[data-design-theme="sepia"] {
-  --unified-canvas: oklch(0.93 0.024 85);
-  --unified-panel: oklch(0.957 0.02 85);
-  --unified-card: oklch(0.973 0.016 85);
-  --unified-raised: oklch(0.905 0.028 82);
-  --unified-line: oklch(0.76 0.035 78);
-  /* line-strong doubles as the control-border fallback: keep it at WCAG 1.4.11 3:1 against every surface (was 0.61, 2.87:1 on raised). */
-  --unified-line-strong: oklch(0.595 0.04 72);
-  --unified-fg: oklch(0.26 0.024 60);
-  --unified-fg-2: oklch(0.38 0.024 64);
-  --unified-fg-3: oklch(0.46 0.023 65);
-  --unified-accent: oklch(0.43 0.1 50);
-  --unified-accent-2: oklch(0.4 0.1 50);
-  --unified-accent-soft: oklch(0.43 0.1 50 / 0.12);
-  --unified-on-accent: oklch(0.98 0.008 85);
-}
+:root[data-design-theme="aurora"],
+:root[data-design-theme="blossom"],
+:root[data-design-theme="starlight"],
+:root[data-design-theme="dark"],
+:root[data-design-theme="light"],
+:root[data-design-theme="graphite"],
+:root[data-design-theme="midnight"],
+:root[data-design-theme="sepia"],
 :root[data-design-theme="contrast"] {
-  --unified-canvas: oklch(0.15 0 0);
-  --unified-panel: oklch(0.18 0 0);
-  --unified-card: oklch(0.2 0 0);
-  --unified-raised: oklch(0.23 0 0);
-  --unified-line: oklch(0.64 0 0);
-  --unified-line-strong: oklch(0.8 0 0);
-  --unified-fg: oklch(0.98 0 0);
-  --unified-fg-2: oklch(0.94 0 0);
-  --unified-fg-3: oklch(0.87 0 0);
-  --unified-accent: oklch(0.89 0.14 100);
-  --unified-accent-2: oklch(0.85 0.14 100);
-  --unified-accent-soft: oklch(0.89 0.14 100 / 0.2);
-  --unified-on-accent: oklch(0.17 0 0);
+  --unified-canvas: var(--ui-palette-canvas);
+  --unified-panel: var(--ui-palette-panel);
+  --unified-card: var(--ui-palette-card);
+  --unified-raised: var(--ui-palette-raised);
+  --unified-line: var(--ui-palette-line);
+  --unified-line-strong: var(--ui-palette-line-strong);
+  --unified-fg: var(--ui-palette-fg);
+  --unified-fg-2: var(--ui-palette-fg-2);
+  --unified-fg-3: var(--ui-palette-fg-3);
+  --unified-accent: var(--ui-palette-accent);
+  --unified-accent-2: var(--ui-palette-accent-2);
+  --unified-accent-soft: var(--ui-palette-accent-soft);
+  --unified-on-accent: var(--ui-palette-on-accent);
 }
 
 :root[data-design-theme] {
@@ -193,6 +76,10 @@
  * (BLUEPRINT §6.1 (6)·§6.2 (5)): base → 640px → 1024px 3단계이고 Tailwind sm·lg와 같은 지점이다.
  * 테마 전용 시트는 이 변수들을 재정의하지 않는다(테마를 바꿔도 글자 크기가 변하지 않는다).
  */
+:root {
+  --site-task-heading-size: clamp(1.5rem, 4vw, 2rem);
+}
+
 [data-site-experience] {
   --site-content-max: var(--layout-content-standard);
   --site-page-gutter: var(--layout-gutter);
@@ -245,6 +132,12 @@
   letter-spacing: -0.045em;
   line-height: 1.2;
   text-wrap: balance;
+}
+
+/* 작업형 공통 헤더는 전역 히어로 제목 크기보다 자신의 간결한 크기를 우선한다. */
+[data-site-experience] .route-stage[data-theme-contract="unified"] [data-page-container] > header[data-site-page-header-size="default"] h1 {
+  font-size: var(--site-task-heading-size);
+  letter-spacing: -0.025em;
 }
 
 /* 에디토리얼 변형 (BLUEPRINT §6.2 (5)) — 세리프 이탤릭을 명시적으로 고른 표면만 켠다(opt-in 속성).

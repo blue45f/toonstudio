@@ -1,0 +1,177 @@
+{
+  "state": "target-static-proposal-shared-and-archived",
+  "archivedAt": "2026-11-11T22:39:33.011138+00:00",
+  "sourceCommit": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+  "shared": {
+    "status": "사용자 공유 완료 — root 작업 지시로 전달받음. 이 작업에서 외부 재조회/업로드하지 않음.",
+    "libraryPage": "https://chatgpt.com/space/page_1e4bdd165d908191b152ae11b81a568c",
+    "libraryImageCount": 10
+  },
+  "implementation": "별도 worktree에서 진행 중. 이 폴더는 제품 source/dist 또는 적용 완료 증거가 아니다.",
+  "files": [
+    {
+      "file": "index.html",
+      "kind": "기존 정적 목업 원본",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/index.html",
+      "bytes": 23635,
+      "sha256": "379ecb90b3d66da26490d037a1006c03b5b0e6672746552220e99363ed2df705"
+    },
+    {
+      "file": "content.json",
+      "kind": "기존 정적 목업 원본",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/content.json",
+      "bytes": 2891,
+      "sha256": "97297e068bc3d24da4bab54fcbe8c54214e21d05b47bd81dbd68090fcc8a7a6c"
+    },
+    {
+      "file": "proposal-atlas-find-390.png",
+      "kind": "사용자 공유 완료한 정적 목업 PNG. 실제 제품 캡처 아님.",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/render-attempt1/proposal-atlas-find-390.png",
+      "bytes": 81991,
+      "sha256": "b9bfa90633dc5ea28aaf8b04d40819533e621d3ddb3779a761b1bb70c55b67a2",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "find"
+    },
+    {
+      "file": "proposal-atlas-maps-390.png",
+      "kind": "사용자 공유 완료한 정적 목업 PNG. 실제 제품 캡처 아님.",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/render-attempt1/proposal-atlas-maps-390.png",
+      "bytes": 61944,
+      "sha256": "70bd7407d70a032bd77077cc5c2575675ed6c28de57d579c1e3a2f2792b27609",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "view": "maps"
+    },
+    {
+      "file": "proposal-atlas-find-1440.png",
+      "kind": "사용자 공유 완료한 정적 목업 PNG. 실제 제품 캡처 아님.",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/render-attempt1/proposal-atlas-find-1440.png",
+      "bytes": 163674,
+      "sha256": "9813c87362e0a367d83f4901c57a0b2997c94b6546fb5e194a51d769e65cfcf2",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "view": "find"
+    },
+    {
+      "file": "proposal-atlas-maps-1440.png",
+      "kind": "사용자 공유 완료한 정적 목업 PNG. 실제 제품 캡처 아님.",
+      "sourcePath": "/workspace/toonstudio/.qa/atlas-density-proposal/render-attempt1/proposal-atlas-maps-1440.png",
+      "bytes": 102456,
+      "sha256": "2fdfcadad73d3d969b8611b7b3f41cd577fe243b19f3ca0150017e4dc6070d5d",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "view": "maps"
+    }
+  ],
+  "dataTruth": {
+    "actualCatalogCount": 154,
+    "realCardCopies": 3,
+    "otherCardSlots": "151개는 배치 예시. 첫 페이지 12개 중 원문3개·예시9개; 페이지/검색/분야 필터는 목업 데이터만 사용",
+    "mapReferences": "기존 5개 지도 제목·행 수만 인용; 실제 표/도식 429행은 목업에 포함하지 않음"
+  },
+  "productContracts": [
+    "실제 구현은 전체154개 source 검색 후 페이지 표시. 현재 페이지12개만 검색하지 않음",
+    "첫12개·현재n–m·전체검색결과건수·다음페이지·필터초기화 표시",
+    "지도 본문은 별도 목적 선택/열기 때 마운트하되 지도명·항목 수는 초기부터 발견 가능",
+    "유효한 hash는 필터/페이지를 맞춰 대상 카드·펼침/키보드 문맥을 복원",
+    "전체 인쇄 때154개와지도429행·접힌본문을 준비하고 인쇄종료 뒤 원래조건 복원",
+    "키보드·모바일·초점/스크롤·뒤로가기·모션감소와실제부하를새제품에서별도검증"
+  ],
+  "designSources": {
+    "geminiDesignatedBoard": {
+      "path": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+      "sha256": "c2e79d8e8254f39239e427649bc0e5a5fe87e446a62d70111d9bea16779697a1",
+      "viewBox": "0 0 1440 860",
+      "directRead": true,
+      "matches933GitBlob": true,
+      "generationProvider": "사용자 지정 Gemini 원본. 독립 생성 로그는 확인하지 못함",
+      "visualReference": "기존 followups .qa/gemini-codex-implementation-comparison/delivery-check-final/original-4-direct-display.png를 직접 열어 참고함. 새 렌더 아님"
+    },
+    "clarityTrust": {
+      "path": "docs/design/sitewide-clarity-20261111/index.html",
+      "sha256": "db2e9ed57025fbfdbf4b80dd9dd7c07db8a400c30b4d8ad45c1a9427a0f3c399",
+      "family": "trust / 신뢰·정책·기술 문서 / P·M4",
+      "adopted": "문서 제목·목차·검색 우선, 관련 링크는 부가 영역, 모바일 긴 목차 접기"
+    },
+    "actualCards": {
+      "path": "apps/web/src/domains/legal/technology/engineering-atlas-content.ts",
+      "ids": [
+        "pointer-input-contract",
+        "autosave-crash-recovery-journal",
+        "pointer-drag-kanban"
+      ],
+      "count": 3,
+      "copy": "이름·제목·tagline·분야를 현재 source 그대로 재사용. 기능·정확성 재검증 주장 아님"
+    }
+  },
+  "designSourcesByteChecks": [
+    {
+      "id": "geminiDesignatedBoard",
+      "path": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+      "sha256": "c2e79d8e8254f39239e427649bc0e5a5fe87e446a62d70111d9bea16779697a1",
+      "byteMatchAtArchive": true
+    },
+    {
+      "id": "clarityTrust",
+      "path": "docs/design/sitewide-clarity-20261111/index.html",
+      "sha256": "db2e9ed57025fbfdbf4b80dd9dd7c07db8a400c30b4d8ad45c1a9427a0f3c399",
+      "byteMatchAtArchive": true
+    }
+  ],
+  "independentGeminiGenerationLogVerified": false,
+  "reuseMeaning": "기존 사용자 지정 Gemini 생태계보드·Clarity trust계열을 재사용. 새 원본 보드/AI 이미지 생성 없음.",
+  "priorRender": {
+    "sourceReportPath": "/workspace/toonstudio/.qa/atlas-density-proposal/render-attempt1/report.json",
+    "sourceReportSha256": "1ffde01c8c93c7a6cd958f2be345b1c60d2be7bb5031a74824b40d98cb8d7094",
+    "inputHtml": {
+      "path": ".qa/atlas-density-proposal/index.html",
+      "bytes": 23635,
+      "sha256": "379ecb90b3d66da26490d037a1006c03b5b0e6672746552220e99363ed2df705"
+    },
+    "status": "정적 지정 렌더 4개 통과 / PNG 4개 직접 시각 검토 완료",
+    "reviewScope": "이 검토는 390/1440 첫 화면 정적 시안에 한정한다. 320px, 키보드 전체 동선, 보조기기, 모바일 실기기, 전체 스크롤, 실제 154개 데이터 검색·지도 본문·해시 복귀·전체 인쇄·제품 성능은 검증하지 않았다. 하단 내비게이션은 비대화형 표현용 요소다.",
+    "originalInitialManifestSha256": "44b8c4a85b5e2ca7b02ec71e144c0e662cff3dddec0f84c37fb51a9040a0237d",
+    "initialManifestMeaning": "원래 render-pending과 오래된 HTML 해시는 원본 .qa의 역사 기록으로 보존. 현재 성공 렌더 inputHtml과 구분."
+  },
+  "archiveChecks": {
+    "jsonParsed": true,
+    "htmlStaticParsed": true,
+    "inlineJsonMatchesContent": true,
+    "uniqueHtmlIds": true,
+    "externalAutoResources": 0,
+    "relativeHtmlFragmentsExist": true,
+    "sixCopiedFilesByteIdentical": true,
+    "fourPngHashesAndViewportsMatchRenderReport": true,
+    "originalDesignSourcesUnchanged": true,
+    "parentReadmeAppendOnly": true,
+    "existingDensityFilesUnchanged": true
+  },
+  "notPerformed": [
+    "새 브라우저/렌더/제품source변경",
+    "설치/pnpm/외부실행/유료호출",
+    "제품154개전체검색·성능",
+    "전체키보드/보조기기/320px/실기기IME",
+    "지도429행·hash/Back·전체인쇄",
+    "Git stage/commit/빌드/운영배포"
+  ],
+  "selectedOnly": {
+    "copied": "index.html/content.json/공유PNG4개",
+    "omitted": "QA runner/prototype-script.mjs/실패보고서/큰로그/프로필"
+  },
+  "parentReadme": {
+    "file": "../README.md",
+    "beforeSha256": "83749e0948beaedf024ad02b2b17fb477af0c5307583577041780dbe262d822d",
+    "afterSha256": "ae43c5f9de73ce63adf055d5d01c7d65cd91d7d60fff98166780128cf7b79ad7",
+    "change": "기존 바이트 전체를 prefix로 보존하고 도감 링크1문단만 추가"
+  },
+  "readmeSha256": "3d5831aa53c87f9eb775eb8eafc731ef701600eff9538fec332d3c4a7ccd0cab"
+}

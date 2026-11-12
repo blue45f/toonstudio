@@ -140,7 +140,7 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus4.draft.basisSolo": "단독 탭 기준",
   "studio.frozenStatus4.draft.basisChecking": "담당 확인 중",
   "studio.frozenStatus4.draft.outboxRecordFailed": "저장 예약을 새로고침 복구 영역에 기록하지 못했습니다. 이 탭을 유지하고 연결 후 다시 저장해 주세요.",
-  "studio.frozenStatus4.draft.outboxClearFailed": "서버 저장 예약을 정리하지 못했습니다. 중복 저장은 revision 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요.",
+  "studio.frozenStatus4.draft.outboxClearFailed": "서버 저장 예약을 정리하지 못했습니다. 중복 저장은 버전 검증으로 차단되지만 새로고침 전에 상태를 다시 확인해 주세요.",
   "studio.frozenStatus4.draft.offlineKept": "서버에 연결할 수 없어 이 기기에 저장 예약을 보관했습니다. 연결이 복구되면 자동으로 다시 저장합니다.",
   "studio.frozenStatus4.draft.revisionsLoading": "버전 기록 불러오는 중",
   "studio.frozenStatus4.draft.intentOpening": "저장 대기 안내 여는 중…",
@@ -211,9 +211,6 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus4.assets.openToolFailed": "도구를 열지 못했습니다.",
   "studio.frozenStatus4.assets.importLocked": "검토 잠금을 해제한 뒤 이미지를 가져와 주세요.",
   "studio.frozenStatus4.assets.importFailed": "이미지를 가져오지 못했습니다.",
-  "studio.frozenStatus4.assets.busyProcessing": "처리 중…",
-  "studio.frozenStatus4.assets.emptyNoAssets": "조건에 맞는 에셋이 없습니다.",
-  "studio.frozenStatus4.assets.emptySelectAsset": "에셋을 선택하면 실제 미리보기와 적용 옵션이 표시됩니다.",
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus4.assets.successOpened": "Opened the {title} editing tool.",
@@ -227,9 +224,6 @@ registerI18nLocaleEntries("en", {
   "studio.frozenStatus4.assets.openToolFailed": "Could not open the tool.",
   "studio.frozenStatus4.assets.importLocked": "Release the review lock before importing images.",
   "studio.frozenStatus4.assets.importFailed": "Could not import the image.",
-  "studio.frozenStatus4.assets.busyProcessing": "Processing…",
-  "studio.frozenStatus4.assets.emptyNoAssets": "No assets match these conditions.",
-  "studio.frozenStatus4.assets.emptySelectAsset": "Select an asset to see its actual preview and apply options.",
 });
 
 // ── StudioInsertHubWorkspace
@@ -643,7 +637,7 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus4.vrmD.errorEngineTitle": "동작 인식 엔진 오류",
   "studio.frozenStatus4.vrmD.errorCameraTitle": "카메라 권한 및 연결 오류",
   "studio.frozenStatus4.vrmD.calibApplied": " · 적용됨",
-  "studio.frozenStatus4.vrmD.calibSavedSqlite": " · SQLite 저장됨",
+  "studio.frozenStatus4.vrmD.calibSavedSqlite": " · 이 기기에 저장됨",
   "studio.frozenStatus4.vrmD.calibSaving": " · 저장 중",
   "studio.frozenStatus4.vrmD.calibMemoryOnly": " · 현재 탭만",
 });
@@ -661,7 +655,7 @@ registerI18nLocaleEntries("en", {
   "studio.frozenStatus4.vrmD.errorEngineTitle": "Motion recognition engine error",
   "studio.frozenStatus4.vrmD.errorCameraTitle": "Camera permission and connection error",
   "studio.frozenStatus4.vrmD.calibApplied": " · Applied",
-  "studio.frozenStatus4.vrmD.calibSavedSqlite": " · Saved in SQLite",
+  "studio.frozenStatus4.vrmD.calibSavedSqlite": " · Saved on this device",
   "studio.frozenStatus4.vrmD.calibSaving": " · Saving",
   "studio.frozenStatus4.vrmD.calibMemoryOnly": " · Current tab only",
 });

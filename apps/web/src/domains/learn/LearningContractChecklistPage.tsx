@@ -43,14 +43,14 @@ export function LearningContractChecklistPage() {
         </p>
       </header>
       <section
-        aria-label={bt("REA 표준계약서 MG·RS 손익분기 및 2차 저작물 권리 시뮬레이터", "REA Standard Contract MG/RS Break-Even & Secondary IP Simulator")}
+        aria-label={bt("계약 조항과 수익 배분 연습", "Contract and revenue-sharing practice")}
         data-own-control-size=""
         data-testid="contract-rea-mg-rs-simulator"
         className="rounded-2xl border border-line bg-card/85 p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-extrabold text-fg">
-            {bt("문체부 만화 표준계약서 · KOCCA · Author's Guild · 일본 프리랜서 신법 공정 조항 시뮬레이터", "MCST Standard Contract / KOCCA / Author's Guild / Japan Freelance Act Clause Simulator")}
+            {bt("계약에서 확인할 권리와 정산 조건을 비교해 보세요", "Compare rights and payment terms to review in a contract")}
           </span>
           <span data-testid="contract-rea-mg-rs-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
             {clauseFocus === "mg-recoup-net"

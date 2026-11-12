@@ -30,6 +30,7 @@ import {
   readSiteBgmPreferences,
   resolveSiteBgmExperience,
   resolveSiteOstTrackIndex,
+  SITE_OST_PANEL_OPEN_EVENT,
   SITE_OST_PANEL_TOGGLE_EVENT,
   siteOstTrackToPlaylistEntry,
   type SiteOstIntensity,
@@ -75,6 +76,8 @@ function focusOstEntryPoint(preferred: HTMLElement | null): void {
     preferred.focus();
     return;
   }
+  const menuToggle = document.querySelector<HTMLElement>("[data-site-mobile-menu-trigger]");
+  if (isRendered(menuToggle)) { menuToggle.focus(); return; }
   const settingsToggle = document.querySelector<HTMLElement>("[data-floating-controls-toggle]");
   if (isRendered(settingsToggle)) settingsToggle.focus();
 }
@@ -175,8 +178,16 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
   // 모바일 설정 묶음의 OST 버튼이 보내는 요청. 열면 패널로, 닫으면 진입점으로 초점을 옮긴다.
   useEffect(() => {
     const togglePanel = () => changeExpanded(!expanded, expanded ? "entry" : "panel");
+    const openPanel = () => {
+      if (expanded) panelClose.current?.focus();
+      else changeExpanded(true, "panel");
+    };
     window.addEventListener(SITE_OST_PANEL_TOGGLE_EVENT, togglePanel);
-    return () => window.removeEventListener(SITE_OST_PANEL_TOGGLE_EVENT, togglePanel);
+    window.addEventListener(SITE_OST_PANEL_OPEN_EVENT, openPanel);
+    return () => {
+      window.removeEventListener(SITE_OST_PANEL_TOGGLE_EVENT, togglePanel);
+      window.removeEventListener(SITE_OST_PANEL_OPEN_EVENT, openPanel);
+    };
   }, [changeExpanded, expanded]);
 
   // Esc는 OST 영역 안에서 눌렀을 때만 패널을 닫는다(다른 대화상자의 Esc를 가로채지 않는다).
@@ -332,6 +343,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
       data-testid="site-background-music-player"
       data-site-ost="mounted"
       data-site-ost-expanded={expanded || undefined}
+      data-site-ost-enabled={(playing && !sourceError) || undefined}
       className={dock ? "relative z-50" : "fixed bottom-[max(1rem,var(--service-status-overlay-clearance,0px))] left-4 z-50 max-w-[calc(100vw-2rem)] max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))] max-md:left-3"}
       aria-label={korean ? "툰스튜디오 오리지널 OST" : "ToonStudio original OST"}
     >

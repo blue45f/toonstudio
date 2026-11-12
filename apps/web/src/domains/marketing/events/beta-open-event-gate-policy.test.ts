@@ -17,6 +17,11 @@ describe("betaOpenEventGateEligible", () => {
     expect(betaOpenEventGateEligible("/brand-film/")).toBe(false);
   });
 
+  it.each(["/promo-library", "/promo-library/", "/PROMO-LIBRARY///"])("홍보 영상 자료실 %s의 재생 제어를 가입 안내로 가리지 않는다", (pathname) => {
+    expect(betaOpenEventGateEligible(pathname)).toBe(false);
+    expect(betaOpenEventGateVariant(pathname)).toBeNull();
+  });
+
   it.each(["/create", "/create/", "/CREATE///"])("이야기 입력과 초안 선택 %s를 홍보로 가리지 않는다", (pathname) => {
     expect(betaOpenEventGateEligible(pathname)).toBe(false);
     expect(betaOpenEventGateVariant(pathname)).toBeNull();

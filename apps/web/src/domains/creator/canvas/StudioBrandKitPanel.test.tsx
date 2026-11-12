@@ -46,7 +46,7 @@ function renderPanel(repository: StudioBrandKitLibraryRepository) {
 }
 
 async function openCreatorAndName(name: string): Promise<void> {
-  await screen.findByText("주입 저장소");
+  await screen.findByText("현재 실행 환경의 저장소 사용 중");
   fireEvent.click(screen.getByRole("button", { name: "새 브랜드 킷" }));
   fireEvent.change(screen.getByPlaceholderText("브랜드 킷 이름"), { target: { value: name } });
   fireEvent.click(screen.getByRole("button", { name: "브랜드 킷 만들기" }));
@@ -77,7 +77,7 @@ describe("StudioBrandKitPanel durable authority", () => {
     renderPanel(repository);
 
     expect(await screen.findByText("기존 브랜드")).toBeTruthy();
-    expect(screen.getByText("주입 저장소")).toBeTruthy();
+    expect(screen.getByText("현재 실행 환경의 저장소 사용 중")).toBeTruthy();
   });
 
   it("keeps a failed durable mutation in explicit current-tab memory", async () => {
@@ -100,8 +100,8 @@ describe("StudioBrandKitPanel durable authority", () => {
 
     await openCreatorAndName("오프라인 브랜드");
 
-    expect(await screen.findByText("현재 탭 메모리 임시 · 새로고침 시 사라짐")).toBeTruthy();
-    expect(screen.getByRole("alert").textContent).toContain("현재 탭 메모리에만 유지");
+    expect(await screen.findByText("현재 탭에만 유지 · 새로고침하면 사라짐")).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain("현재 탭에만 유지");
     expect(screen.getByText("오프라인 브랜드")).toBeTruthy();
   });
 
@@ -126,7 +126,7 @@ describe("StudioBrandKitPanel durable authority", () => {
     await openCreatorAndName("잘리면 안 되는 브랜드");
 
     expect((await screen.findByRole("alert")).textContent).toContain("40개 상한");
-    expect(screen.getByText("주입 저장소")).toBeTruthy();
+    expect(screen.getByText("현재 실행 환경의 저장소 사용 중")).toBeTruthy();
     expect(screen.queryByText("잘리면 안 되는 브랜드")).toBeNull();
   });
 

@@ -12,6 +12,7 @@ import {
   ProductionProjectPage,
 } from "./ProductionHubPage";
 import { resetProductionDemoSession } from "./production-demo-adapter";
+import { useI18n } from "@/shared/lib/i18n";
 
 async function settleProductionSurfaces() {
   do {
@@ -37,19 +38,77 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("웹툰 제작을 한 흐름으로");
     expect(screen.getByRole("link", { name: /샘플 프로젝트로 체험하기/u }).getAttribute("href"))
       .toBe("/production/projects/sample-project/overview");
-    expect(screen.getByRole("link", { name: "사람·권한" }).getAttribute("href")).toBe("/team/people");
+    const primary = screen.getByRole("link", { name: /샘플 프로젝트로 체험하기/u });
+    const hero = primary.closest("header");
+    expect(hero).not.toBeNull();
+    expect(within(hero as HTMLElement).getAllByRole("link")[0]).toBe(primary);
+    expect(within(hero as HTMLElement).queryByRole("link", { name: "사람·권한" })).toBeNull();
+    expect(screen.getByText(/변경은 같은 탭에서만 유지되고 새로고침하면 초기화됩니다/u)).toBeTruthy();
     // 샘플은 샘플이라고 표시하고, 근거 없는 숫자 대신 실제로 따라갈 흐름을 보여 준다.
     expect(screen.getAllByText("예시 데이터").length).toBeGreaterThan(0);
-    const flow = screen.getByRole("heading", { name: "샘플로 따라가는 협업 흐름" }).closest("section");
+    const flow = screen.getByRole("heading", { name: "어떤 작업을 해 볼까요?" }).closest("section");
     expect(flow).not.toBeNull();
     const steps = within(flow as HTMLElement).getAllByRole("link");
     expect(steps.map((link) => link.getAttribute("href"))).toEqual([
-      "/production/projects/sample-project/overview",
       "/production/projects/sample-project/production?boardLayout=process",
       "/production/projects/sample-project/episodes/episode-12",
-      "/production/projects/sample-project/episodes/episode-12?roomView=compare",
+      "/production/projects/sample-project/review",
     ]);
     expect(screen.queryByText("100%")).toBeNull();
+  });
+
+  it("keeps management and version comparison discoverable without competing with the three tasks", async () => {
+    await renderProduction(<MemoryRouter><ProductionLandingPage /></MemoryRouter>);
+    const tools = screen.getByRole("group", { name: "제작 도구 더 보기" }) as HTMLDetailsElement;
+    const summary = within(tools).getByText("제작 도구 더 보기");
+    expect(tools.open).toBe(false);
+    // jsdom의 role 조회는 닫힌 details의 자식도 찾으므로 실제 접힘 계약과 소유 위치를 확인한다.
+    const people = within(tools).getByRole("link", { name: /사람·권한/u });
+    expect(people.closest("details")).toBe(tools);
+
+    fireEvent.click(summary);
+    expect(tools.open).toBe(true);
+    expect(people.getAttribute("href")).toBe("/team/people");
+    expect(within(tools).getByRole("link", { name: /버전 비교/u }).getAttribute("href"))
+      .toBe("/production/projects/sample-project/episodes/episode-12?roomView=compare");
+    expect(within(tools).getByRole("link", { name: /구인·의뢰/u }).getAttribute("href"))
+      .toBe("/collaborate");
+
+    people.focus();
+    fireEvent.keyDown(people, { key: "Escape" });
+    expect(tools.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    fireEvent.click(summary);
+    expect(within(tools).getAllByRole("link").map((link) => link.getAttribute("href")))
+      .toEqual(expect.arrayContaining([
+        "/production/projects/sample-project/overview",
+        "/production/projects/sample-project/production",
+        "/production/projects/sample-project/episodes/episode-12",
+        "/production/projects/sample-project/manuscripts",
+        "/production/projects/sample-project/episodes/episode-12?roomView=compare",
+        "/production/projects/sample-project/review",
+        "/team/people", "/collaborate", "/showcase/reviews",
+      ]));
+  });
+
+  it("provides the same three purposes and honest sample scope in English", async () => {
+    const previousLanguage = useI18n.getState().lang;
+    try {
+      act(() => useI18n.setState({ lang: "en" }));
+      await renderProduction(<MemoryRouter><ProductionLandingPage /></MemoryRouter>);
+      expect(screen.getByRole("link", { name: "Try the sample project" }).getAttribute("href"))
+        .toBe("/production/projects/sample-project/overview");
+      const flow = screen.getByRole("region", { name: "What would you like to try?" });
+      expect(within(flow).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+        "/production/projects/sample-project/production?boardLayout=process",
+        "/production/projects/sample-project/episodes/episode-12",
+        "/production/projects/sample-project/review",
+      ]);
+      expect(screen.getByText("A sample without sign-in. Changes last in this tab and reset on reload.")).toBeTruthy();
+      expect((screen.getByRole("group", { name: "More production tools" }) as HTMLDetailsElement).open).toBe(false);
+    } finally {
+      act(() => useI18n.setState({ lang: previousLanguage }));
+    }
   });
 
   it("opens the project on a four-part dashboard and keeps operations detail one click away", async () => {
@@ -65,6 +124,11 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.getByRole("heading", { name: "마감 임박 회차" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "내 할 일" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "최근 피드백" })).toBeTruthy();
+    const planningGuide = screen.getByRole("group", { name: "제작 계획·검수 안내" });
+    expect((planningGuide as HTMLDetailsElement).open).toBe(false);
+    expect(screen.getByRole("heading", { name: "내 할 일" }).compareDocumentPosition(planningGuide)
+      & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.querySelector('[data-testid="production-rea-dag-workload-bar"]')).toBeNull();
     // 막힌 질문이 있으면 "지금 할 일"이 그 회차 룸으로 곧장 안내한다.
     expect(screen.getByText("막힌 질문에 먼저 답해 주세요")).toBeTruthy();
     expect(screen.getByRole("link", { name: /회차 룸에서 답하기/u }).getAttribute("href"))

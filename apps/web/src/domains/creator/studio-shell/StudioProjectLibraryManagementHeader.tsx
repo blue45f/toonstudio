@@ -1,29 +1,19 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, BookOpen, Clock3, FolderOpen, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import { Archive, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
-import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
-import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
-import { StudioProjectLibraryFastStartStrip } from "./StudioProjectLibraryFastStartStrip";
-import { STUDIO_LIBRARY_SECTION_ID, studioLobbyRecentProjects } from "./studio-creator-lobby-model";
-import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectIsTemporaryWork, studioProjectLibraryDateLabel, studioProjectLibraryManagementViewHref, studioProjectLibraryTypeLabel, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
+import { STUDIO_LIBRARY_SECTION_ID } from "./studio-creator-lobby-model";
+import { studioLibraryRecentWork } from "./studio-library-recent-work";
+import { STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS, studioProjectLibraryManagementViewHref, type StudioProjectLibrarySortMode } from "./studio-project-library-management-model";
 import type { StudioProjectLibraryManagementController } from "./useStudioProjectLibraryManagementController";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioProjectLibraryManagementHeader", ko, en);
-
-const BENTO_STAGE_STEPS = [
-  { ko: "콘티", en: "Board" },
-  { ko: "3D", en: "3D" },
-  { ko: "작화", en: "Ink" },
-  { ko: "식자", en: "Type" },
-  { ko: "출고", en: "Ship" },
-] as const;
 
 export function StudioProjectLibraryManagementHeader({
   controller,
@@ -32,182 +22,82 @@ export function StudioProjectLibraryManagementHeader({
 }) {
   useBilingualI18nRevision();
   const {
-    locale: _locale, view, library, profiles, query, setQuery, sort, setSort,
+    view, library, profiles, query, setQuery, sort, setSort,
     setSelectedIds, notice, setNotice, setDeleteRequest, listedProjects,
     viewCounts, visibleProjects, selectedProjects, allVisibleSelected,
     toggleVisibleSelection, archiveProjects, trashProjects, restoreProjects,
-    projectOverviewHref, projectResumeTarget,
+    projectResumeTarget,
   } = controller;
   const hasSearchQuery = query.trim().length > 0;
-  const userProjects = listedProjects.filter(
-    (project) => project.id !== EXAMPLE_PROJECT_ID && project.id !== SAMPLE_PROJECT_ID,
-  );
-  const recentCandidates = userProjects.length > 0 ? userProjects : listedProjects;
   const recentProject = view === "active" && !hasSearchQuery
-    ? studioLobbyRecentProjects(recentCandidates, 1)[0] ?? null
+    ? studioLibraryRecentWork(listedProjects, projectResumeTarget)[0] ?? null
     : null;
-  const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
-  const recentIsTemporary = recentProject
-    ? studioProjectIsTemporaryWork(profiles.profileFor(recentProject.id))
-    : false;
+  const entryActions = (
+    <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
+      <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"}
+        data-studio-library-primary-action={recentProject ? undefined : "new"}
+        className={buttonClass({ variant: recentProject ? "outline" : "solid", className: "min-h-12 min-w-0 gap-2 whitespace-normal rounded-xl px-4" })}>
+        <Plus size={16} aria-hidden="true" />
+        {bi("새 작업", "New work")}
+      </Link>
+      {!recentProject ? <Link href="/studio/import" className={buttonClass({ variant: "quiet", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-3 text-fg-2" })}>
+        {bi("파일 가져오기", "Import files")}
+      </Link> : null}
+    </div>
+  );
+  const selectionTools = (
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="text-xs font-semibold text-fg-3">
+        <span className="sr-only">{bi("정렬", "Sort")}</span>
+        <select
+          value={sort}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => setSort(event.target.value as StudioProjectLibrarySortMode)}
+          className="min-h-[44px] rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg outline-none focus:border-accent"
+        >
+          <option value="recent">{bi("최근 작업순", "Recently opened")}</option>
+          <option value="name">{bi("이름순", "Name")}</option>
+          <option value="created">{bi("최근 생성순", "Recently created")}</option>
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={visibleProjects.length === 0}
+        onClick={toggleVisibleSelection}
+        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px]" })}
+      >
+        {allVisibleSelected
+          ? bi("선택 해제", "Clear selection")
+          : formatI18nTemplate(String(bi("전체 선택 ({value0})", "Select all ({value0})")), { value0: visibleProjects.length })}
+      </button>
+    </div>
+  );
   return (
     <section
       id={STUDIO_LIBRARY_SECTION_ID}
       tabIndex={-1}
       data-studio-library-toolbar="true"
       aria-label={bi("프로젝트 라이브러리 도구", "Project library tools")}
-      className="scroll-mt-4 focus:outline-none"
+      className="studio-library-mobile-home scroll-mt-4 focus:outline-none"
     >
-      <header className="relative flex flex-col gap-3 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:gap-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
-        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90" />
+      <header className="studio-library-heading">
         <div className="min-w-0">
-          <p className="hidden w-fit items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 font-display text-[0.66rem] font-black uppercase tracking-[0.16em] text-accent sm:inline-flex">
-            <Sparkles size={12} aria-hidden="true" />
-            TOONSTUDIO · STARLIGHT ATELIER
-          </p>
-          <h1 className="text-2xl font-black tracking-tight text-fg sm:mt-2.5 sm:text-4xl">
+          <h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
-          <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-fg-2 sm:block sm:text-base">
-            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
-          </p>
-          <p className="mt-1 text-xs text-fg-2 sm:hidden">
-            {bi("작업을 이어 하고 저장 상태를 확인하세요.", "Continue your work and check its save status.")}
-          </p>
+          {!recentProject ? <p className="mt-1 text-sm leading-5 text-fg-2">
+            {view === "active" && !hasSearchQuery && !recentProject
+              ? listedProjects.length > 0
+                ? bi("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.", "You have no personal work yet. Try an example below.")
+                : bi("새 작업을 시작하거나 원고 파일을 가져오세요.", "Start new work or import a manuscript file.")
+              : view === "active"
+                ? bi("작업을 이어 하거나 목록에서 원고를 찾으세요.", "Continue your work or find a manuscript below.")
+                : bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
+          </p> : null}
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" data-studio-primary-entry-actions="true">
-          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"} className={buttonClass({ className: "min-h-11 min-w-0 gap-2 whitespace-normal rounded-full px-4" })}>
-            <Plus size={16} aria-hidden="true" />
-            {bi("새 작업", "New work")}
-          </Link>
-          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-11 min-w-0 whitespace-normal rounded-full px-4" })}>
-            {bi("파일 가져오기", "Import files")}
-          </Link>
-        </div>
+        {entryActions}
       </header>
 
-      {view === "active" && !hasSearchQuery ? (
-        <div
-          data-studio-atelier-bento="true"
-          className="mt-4 grid gap-3.5 lg:grid-cols-12"
-        >
-          {recentProject && recentResumeTarget ? (
-            <div
-              role="region"
-              aria-label={bi("최근 작업 빠른 이어하기", "Quick resume recent work")}
-              data-studio-recent-work-bar="true"
-              className="flex flex-col justify-between gap-4 rounded-2xl border border-accent/35 bg-gradient-to-br from-accent-soft/55 via-card to-panel p-4 shadow-sm lg:col-span-5"
-            >
-              <div className="space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-[0.65rem] font-black uppercase tracking-wider text-on-accent">
-                    <Clock3 size={12} aria-hidden="true" />
-                    {bi("최근 작업 이어하기", "Resume Latest")}
-                  </span>
-                  <span
-                    data-studio-recent-save-badge="true"
-                    className={cn(
-                      "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[0.65rem] font-bold",
-                      recentIsTemporary
-                        ? "bg-panel text-fg-2"
-                        : "bg-good/15 text-good",
-                    )}
-                  >
-                    <ShieldCheck size={12} aria-hidden="true" />
-                    {recentIsTemporary
-                      ? bi("오프라인 자동저장됨", "Offline autosaved")
-                      : bi("정식 저장 연결됨", "Formal save linked")}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p
-                    title={recentProject.title}
-                    data-studio-recent-work-title="true"
-                    className="truncate text-base font-black tracking-tight text-fg sm:text-lg"
-                  >
-                    {recentProject.title}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-fg-2">
-                    {`${studioProjectLibraryTypeLabel(recentProject)} · ${studioProjectLibraryDateLabel(recentProject.lastOpenedAt, _locale)}`}
-                  </p>
-                </div>
-                <ol
-                  aria-label={bi("5단계 제작 공정 흐름", "5-stage production flow")}
-                  className="grid grid-cols-5 gap-1 pt-1"
-                >
-                  {BENTO_STAGE_STEPS.map((step, idx) => (
-                    <li
-                      key={step.en}
-                      className={cn(
-                        "rounded-lg px-1.5 py-1 text-center text-[0.62rem] font-bold",
-                        idx <= 2 ? "bg-accent/20 text-accent" : "bg-panel/80 text-fg-3",
-                      )}
-                    >
-                      {bi(step.ko, step.en)}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
-                <Link
-                  href={recentResumeTarget.href}
-                  onClick={() => {
-                    library.touch(recentProject.id, recentResumeTarget.documentId);
-                  }}
-                  data-studio-recent-work-open="true"
-                  className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 px-3.5 text-xs font-black" })}
-                >
-                  <FolderOpen size={14} aria-hidden="true" />
-                  {bi("최근 작업 열기", "Open recent work")}
-                </Link>
-                <Link
-                  href={projectOverviewHref(recentProject)}
-                  data-studio-recent-work-overview="true"
-                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 px-3 text-xs font-bold" })}
-                >
-                  <BookOpen size={14} aria-hidden="true" />
-                  {bi("작품 단계", "Project stages")}
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col justify-between gap-4 rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft/45 via-card to-panel p-4 shadow-sm lg:col-span-5">
-              <div className="space-y-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[0.65rem] font-black text-accent">
-                  <Sparkles size={12} aria-hidden="true" />
-                  {bi("1초 첫 캔버스", "1-Second First Canvas")}
-                </span>
-                <p className="text-base font-black text-fg sm:text-lg">
-                  {bi("오른쪽 규격 카드를 고르면 원고 캔버스가 즉시 열립니다", "Pick a format card on the right to open your canvas in 1 second")}
-                </p>
-                <p className="text-xs leading-5 text-fg-2">
-                  {bi("로그인 전에도 이 기기 원고 금고(OPFS·SQLite)에 안전하게 자동 저장됩니다.", "Autosaved safely to your local manuscript vault even before signing in.")}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
-                <Link
-                  href="/studio/new?kind=webtoon&template=webtoon-vertical"
-                  className={buttonClass({ size: "sm", className: "min-h-11 flex-1 gap-1.5 text-xs font-black" })}
-                >
-                  <Plus size={14} aria-hidden="true" />
-                  {bi("새 세로 웹툰 열기", "New vertical webtoon")}
-                </Link>
-                <Link
-                  href="/studio/recovery"
-                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 text-xs font-bold" })}
-                >
-                  {bi("복구 금고", "Recovery vault")}
-                </Link>
-              </div>
-            </div>
-          )}
-          <div className="lg:col-span-7">
-            <StudioProjectLibraryFastStartStrip className="h-full" />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-4 sm:mt-5">
+      {view !== "active" ? <div className="mt-3">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (
@@ -216,7 +106,7 @@ export function StudioProjectLibraryManagementHeader({
                 href={studioProjectLibraryManagementViewHref(candidate)}
                 aria-current={candidate === view ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold",
+                  "inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-bold",
                   candidate === view
                     ? "bg-accent text-on-accent"
                     : "text-fg-2 hover:bg-raised hover:text-fg",
@@ -231,23 +121,23 @@ export function StudioProjectLibraryManagementHeader({
           </div>
         </nav>
 
-      </div>
+      </div> : null}
 
       {notice ? (
-        <div role="status" aria-live="polite" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
+        <div role="status" aria-live="polite" tabIndex={-1} data-studio-library-notice="true" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent-soft/20 px-3 py-2 text-sm font-semibold text-fg">
           <span>{notice.message}</span>
           <span className="flex items-center gap-3">
             {notice.action ? (
-              <button type="button" onClick={notice.action} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
+              <button type="button" onClick={notice.action} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </button>
             ) : null}
             {notice.actionHref && notice.actionLabel ? (
-              <Link href={notice.actionHref} className="inline-flex min-h-11 items-center text-xs font-black text-accent underline underline-offset-4">
+              <Link href={notice.actionHref} className="inline-flex min-h-12 items-center text-xs font-black text-accent underline underline-offset-4">
                 {notice.actionLabel}
               </Link>
             ) : null}
-            <button type="button" onClick={() => setNotice(null)} className="min-h-11 text-xs underline underline-offset-4">
+            <button type="button" onClick={() => setNotice(null)} className="min-h-12 text-xs underline underline-offset-4">
               {bi("닫기", "Dismiss")}
             </button>
           </span>
@@ -264,20 +154,20 @@ export function StudioProjectLibraryManagementHeader({
                 library.reload();
                 profiles.reload();
               }}
-              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-lg border border-danger/40 px-3 text-xs font-black text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               <RotateCcw size={14} aria-hidden="true" />
               {bi("다시 시도", "Try again")}
             </button>
             <Link
               href="/studio/import"
-              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {bi("파일에서 열기", "Open from file")}
             </Link>
             <Link
               href="/studio/new"
-              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {bi("새 작업 시작", "Start new work")}
             </Link>
@@ -285,8 +175,8 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       ) : null}
 
-      <section className="mt-3 rounded-2xl border border-line bg-card p-3 sm:p-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <section data-studio-project-search-row="true" className="studio-library-search-row mt-3" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
+        <div className="studio-library-search-controls">
           <div className="flex min-w-0 flex-1 items-center gap-2 lg:max-w-xl">
             <label className="relative block min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
@@ -309,74 +199,28 @@ export function StudioProjectLibraryManagementHeader({
                       ?.focus();
                   }
                 }}
-                placeholder={bi("제목·종류·설명 검색", "Search title, type or description")}
-                className="min-h-11 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
+                placeholder={bi("내 작품 찾기", "Find my work")}
+                className="min-h-12 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
               />
             </label>
             {query.trim().length > 0 ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0" })}
+                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 shrink-0" })}
               >
                 {bi("검색어 지우기", "Clear search")}
               </button>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-semibold text-fg-3">
-              <span className="sr-only">{bi("정렬", "Sort")}</span>
-              <select
-                value={sort}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => setSort(event.target.value as StudioProjectLibrarySortMode)}
-                className="min-h-[44px] rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg outline-none focus:border-accent"
-              >
-                <option value="recent">{bi("최근 작업순", "Recently opened")}</option>
-                <option value="name">{bi("이름순", "Name")}</option>
-                <option value="created">{bi("최근 생성순", "Recently created")}</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              disabled={visibleProjects.length === 0}
-              onClick={toggleVisibleSelection}
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px]" })}
-            >
-              {allVisibleSelected
-                ? bi("선택 해제", "Clear selection")
-                : formatI18nTemplate(String(bi("전체 선택 ({value0})", "Select all ({value0})")), { value0: visibleProjects.length })}
-            </button>
-          </div>
+          {view === "active" ? (
+            <details className="studio-library-list-options">
+              <summary>{bi("정렬·선택", "Sort & select")}</summary>
+              {selectionTools}
+            </details>
+          ) : selectionTools}
         </div>
       </section>
-
-      <details className="mt-2 rounded-xl border border-line bg-card">
-        <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-          {bi("저장·내보내기·제작 관리", "Save, export and production")}
-        </summary>
-        <div className="px-3 pb-3">
-          <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
-            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
-          </p>
-        <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
-          <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
-          </Link>
-          <Link href="/studio?view=storage" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("저장·백업", "Save & backup")}
-          </Link>
-          <Link href="/studio?view=exports" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("내보내기", "Export")}
-          </Link>
-          <Link href="/studio?view=publications" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
-            {bi("게시", "Publishing")}
-          </Link>
-        </nav>
-          <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-11 whitespace-normal" })}>
-            {bi("제작 관리", "Production management")}
-          </Link>
-        </div>
-      </details>
 
       {selectedProjects.length > 0 ? (
         <section className="sticky top-3 z-30 mt-3 rounded-2xl border border-accent/35 bg-card/95 p-3 shadow-lg backdrop-blur" aria-label={bi("선택 작업", "Selection actions")}>
@@ -392,33 +236,33 @@ export function StudioProjectLibraryManagementHeader({
             <div className="flex flex-wrap gap-2">
               {view === "active" ? (
                 <>
-                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => archiveProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <Archive size={14} aria-hidden="true" />{bi("선택 보관", "Archive selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : view === "archived" ? (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => trashProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 삭제", "Trash selected")}
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}>
+                  <button type="button" onClick={() => restoreProjects(selectedProjects.map((project) => project.id))} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}>
                     <RotateCcw size={14} aria-hidden="true" />{bi("선택 복원", "Restore selected")}
                   </button>
-                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}>
+                  <button type="button" onClick={() => setDeleteRequest({ ids: selectedProjects.map((project) => project.id), source: "selected" })} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}>
                     <Trash2 size={14} aria-hidden="true" />{bi("선택 완전 삭제", "Delete selected")}
                   </button>
                 </>
               )}
-              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11" })}>
+              <button type="button" onClick={() => setSelectedIds(new Set())} className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12" })}>
                 {bi("선택 해제", "Clear")}
               </button>
             </div>
@@ -431,7 +275,7 @@ export function StudioProjectLibraryManagementHeader({
           <button
             type="button"
             onClick={() => restoreProjects(listedProjects.map((project) => project.id))}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12 gap-1.5" })}
           >
             <RotateCcw size={14} aria-hidden="true" />
             {view === "trash"
@@ -442,7 +286,7 @@ export function StudioProjectLibraryManagementHeader({
             <button
               type="button"
               onClick={() => setDeleteRequest({ ids: listedProjects.map((project) => project.id), source: "all" })}
-              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 gap-1.5 text-danger" })}
+              className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 gap-1.5 text-danger" })}
             >
               <Trash2 size={14} aria-hidden="true" />
               {bi("휴지통 비우기", "Empty Trash")}

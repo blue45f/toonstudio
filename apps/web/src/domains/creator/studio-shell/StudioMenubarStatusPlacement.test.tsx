@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps, ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +12,9 @@ import {
 import { INITIAL_STUDIO_LIVE_SYNC_SNAPSHOT } from "../live/studio-live-sync-safety";
 import { StudioDraftOperationSyncAssistant } from "../StudioDraftOperationSyncAssistant";
 import { StudioDraftSaveCenter } from "../StudioDraftSaveCenter";
+import { StudioSaveSyncStatusCenter } from "../StudioSaveSyncStatusCenter";
+import { createEmptyOperationJournal } from "../studio-operation-recovery-coordinator";
+import { getActiveEditorStatusSlot } from "@/shared/lib/modal-status-slot";
 import { resetStudioReliabilityStatus } from "../studio-reliability-status-store";
 import {
   STUDIO_MENUBAR_STATUS_SLOT_REFS,
@@ -32,7 +35,7 @@ function MenubarSlots() {
   );
 }
 
-function SaveCenter({ mobileImmersive = false }: { readonly mobileImmersive?: boolean }) {
+function SaveCenter({ mobileImmersive = false, canvasOnlyMode = false, ...overrides }: Partial<ComponentProps<typeof StudioDraftSaveCenter>> = {}) {
   return (
     <StudioDraftSaveCenter
       saving={false}
@@ -40,11 +43,17 @@ function SaveCenter({ mobileImmersive = false }: { readonly mobileImmersive?: bo
       loadedWork={{ id: "work-1", revision: 7 }}
       autosaveDocumentLeadership={{ role: "leader", basis: "web-lock" }}
       mobileImmersive={mobileImmersive}
+      canvasOnlyMode={canvasOnlyMode}
       onSaveDraft={vi.fn(() => Promise.resolve())}
       onOpenVersions={vi.fn()}
       onExportBackup={vi.fn(() => Promise.resolve())}
+      {...overrides}
     />
   );
+}
+
+function ClarityMobileSaveSlot() {
+  return <div data-testid="mobile-save-slot" data-studio-clarity-mobile-save-slot="true" ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.save} />;
 }
 
 function saveRoot(): HTMLElement {
@@ -70,6 +79,49 @@ describe("studioMenubarPopoverPosition", () => {
 });
 
 describe("desktop menubar status placement", () => {
+  it("모바일 저장 버튼에서 Enter로 열면 실제 팝오버의 첫 조작으로 진입하고 Escape·닫기는 복귀한다", async () => {
+    setOnline(false);
+    render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive /></>);
+    const trigger = within(screen.getByTestId("mobile-save-slot")).getByRole("button", { name: /저장 상태:/ });
+    trigger.focus(); fireEvent.keyDown(trigger, { key: "Enter" });
+    // jsdom에는 버튼의 기본 키보드 클릭이 없어 그 기본 동작을 명시한다. 실제 Enter는 브라우저 검증으로 구분한다.
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "초안 저장 센터" });
+    const close = within(dialog).getByRole("button", { name: "초안 저장 센터 닫기" });
+    await waitFor(() => expect(document.activeElement).toBe(close));
+    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }); fireEvent(close, tab);
+    expect(tab.defaultPrevented).toBe(false);
+    fireEvent.keyDown(close, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "초안 저장 센터" })).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger);
+    const reopened = await screen.findByRole("button", { name: "초안 저장 센터 닫기" });
+    await waitFor(() => expect(document.activeElement).toBe(reopened));
+    fireEvent.click(reopened); expect(document.activeElement).toBe(trigger);
+  });
+
+  it("비동기 저장 실패로 상세가 다시 열려도 다른 입력창의 초점을 가져가지 않는다", async () => {
+    setOnline(true);
+    let rejectSave: ((reason: Error) => void) | undefined;
+    const pending = new Promise<void>((_resolve, reject) => { rejectSave = reject; });
+    const onSaveDraft = vi.fn(() => pending);
+    render(<><input aria-label="작업 중인 원고 이름" /><ClarityMobileSaveSlot /><SaveCenter mobileImmersive onSaveDraft={onSaveDraft} /></>);
+    const trigger = within(screen.getByTestId("mobile-save-slot")).getByRole("button", { name: /저장 상태:/ });
+    trigger.focus(); fireEvent.click(trigger);
+    await screen.findByRole("dialog", { name: "초안 저장 센터" });
+    fireEvent.click(screen.getByRole("button", { name: "지금 서버에 저장" }));
+    // 정본 어댑터는 Promise.resolve().then(saveDraft)로 실제 요청을 시작한다.
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    fireEvent.keyDown(document, { key: "Escape" });
+    const editing = screen.getByRole("textbox", { name: "작업 중인 원고 이름" }); editing.focus();
+    if (!rejectSave) throw new Error("비동기 저장 요청 누락");
+    const failSave = rejectSave;
+    await act(async () => { failSave(new Error("비동기 저장 결과를 확인하지 못했습니다")); await pending.catch(() => undefined); });
+    await screen.findByRole("dialog", { name: "초안 저장 센터" });
+    expect(screen.getByRole("button", { name: "서버 저장 다시 시도" })).toBeTruthy();
+    expect(document.activeElement).toBe(editing);
+  });
+
   it("keeps the floating chip when no menubar slot exists", () => {
     setOnline(false);
     render(<SaveCenter />);
@@ -108,6 +160,7 @@ describe("desktop menubar status placement", () => {
     expect(screen.getByTestId("menubar-actions").contains(dialog)).toBe(false);
     expect(dialog.parentElement).toBe(document.body);
     expect(dialog.className).toContain("fixed");
+    expect(dialog.style.left).toBe("");
     expect(dialog.style.top).not.toBe("");
     expect(dialog.style.right).not.toBe("");
 
@@ -128,6 +181,109 @@ describe("desktop menubar status placement", () => {
     expect(screen.getByTestId("save-slot").contains(root)).toBe(false);
     expect(root.getAttribute("data-studio-draft-save-placement")).toBe("floating");
     expect(root.className).toContain("bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)]");
+  });
+
+  it("모바일 저장 자리가 없으면 기존 하단 부유 버튼을 유지한다", () => {
+    render(<SaveCenter mobileImmersive />);
+    expect(saveRoot().getAttribute("data-studio-draft-save-placement")).toBe("floating");
+    expect(saveRoot().className).toContain("bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)]");
+  });
+
+  it("명시한 모바일 저장 자리에서만 버튼을 올리고 대화상자는 body와 Escape 초점을 유지한다", async () => {
+    setOnline(false);
+    const view = render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive /></>);
+    const host = screen.getByTestId("mobile-save-slot");
+    const trigger = within(host).getByRole("button", { name: "저장 상태: 오프라인 · 기기 저장" });
+    expect(host.contains(saveRoot())).toBe(true);
+    expect(saveRoot().getAttribute("data-studio-draft-save-placement")).toBe("menubar");
+    expect(saveRoot().getAttribute("data-studio-shell-inline-docked")).toBe("true");
+    expect(saveRoot().className).not.toContain("fixed");
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "초안 저장 센터" });
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog.style.top).not.toBe("");
+    expect(dialog.style.right).not.toBe("");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(trigger);
+    view.rerender(<SaveCenter mobileImmersive />);
+    expect(saveRoot().getAttribute("data-studio-draft-save-placement")).toBe("floating");
+    expect(saveRoot().className).toContain("bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)]");
+  });
+
+  it.each([false, true])("명시한 모바일 자리가 남아 있어도 캔버스 전용 모드에서는 부유 배치를 유지한다 (mobileImmersive=%s)", (mobileImmersive) => {
+    render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive={mobileImmersive} canvasOnlyMode /></>);
+    expect(screen.getByTestId("mobile-save-slot").contains(saveRoot())).toBe(false);
+    expect(saveRoot().getAttribute("data-studio-draft-save-placement")).toBe("floating");
+    expect(saveRoot().className).toContain("bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)]");
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태:/ }));
+    const dialog = screen.getByRole("dialog", { name: "초안 저장 센터" });
+    expect(dialog.className).toContain("absolute right-0");
+    expect(dialog.style.left).toBe("");
+    expect(dialog.style.right).toBe("");
+  });
+
+  it.each([320, 390, 834])("왼쪽 모바일 저장 버튼의 팝오버를 %spx 화면의 8px 여백 안에 배치한다", async (width) => {
+    vi.stubGlobal("innerWidth", width);
+    try {
+      render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive /></>);
+      const trigger = within(screen.getByTestId("mobile-save-slot")).getByRole("button", { name: /저장 상태:/ });
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue(new DOMRect(8, 136, 48, 48));
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole("dialog", { name: "초안 저장 센터" });
+      expect(dialog.parentElement).toBe(document.body);
+      expect(dialog.className).toContain("fixed");
+      expect(dialog.style.top).toBe("192px");
+      expect(dialog.style.left).toBe("8px");
+      expect(dialog.style.right).toBe("8px");
+      // 상단 192px과 아래 여백 8px을 먼저 합쳐 실제 사용 가능 높이를 제한한다.
+      expect(dialog.style.maxHeight).toBe("calc(100dvh - 200px)");
+      // 폭도 화면보다 16px 작게 제한하므로 왼쪽 버튼에 오른쪽 정렬해 화면 밖으로 밀리지 않는다.
+      expect(dialog.className).toContain("w-[min(26rem,calc(100vw-1rem))]");
+      expect(dialog.style.right).not.toBe(`${width - 56}px`);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
+  it("모바일 저장 자리에서도 서버 실패를 닫고 다시 열어 재시도·백업·버전을 사용할 수 있다", async () => {
+    setOnline(true);
+    const onSaveDraft = vi.fn().mockRejectedValueOnce(new Error("서버 저장 요청이 실패했습니다")).mockResolvedValue(undefined);
+    const onExportBackup = vi.fn(() => Promise.resolve());
+    const onOpenVersions = vi.fn();
+    render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive onSaveDraft={onSaveDraft} onExportBackup={onExportBackup} onOpenVersions={onOpenVersions} /></>);
+    const host = screen.getByTestId("mobile-save-slot");
+    fireEvent.click(within(host).getByRole("button", { name: "저장 상태: 서버 저장 기록 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "지금 서버에 저장" }));
+    const retry = await screen.findByRole("button", { name: "서버 저장 다시 시도" });
+    expect(onSaveDraft).toHaveBeenCalledTimes(1);
+    expect(retry.closest('[role="dialog"]')?.parentElement).toBe(document.body);
+    const failedTrigger = within(host).getByRole("button", { name: "저장 상태: 서버 저장 실패" });
+    expect(saveRoot().getAttribute("data-studio-shell-force-visible")).toBe("true");
+    expect(screen.getByText("현재 저장 번호 #7")).not.toBeNull();
+    expect(document.querySelector("[data-studio-last-server-save]")).toBeNull();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(failedTrigger);
+    fireEvent.click(failedTrigger);
+    fireEvent.click(screen.getByRole("button", { name: "프로젝트 백업" }));
+    expect(onExportBackup).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "서버 저장 다시 시도" }));
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(2));
+    await screen.findByRole("button", { name: "저장 상태: 서버 저장 기록 확인" });
+    // 단순 Promise 완료를 새 서버 저장 시각이나 버전 증가로 표시하지 않는다.
+    expect(screen.getByText("현재 저장 번호 #7")).not.toBeNull();
+    expect(document.querySelector("[data-studio-last-server-save]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "버전·체크포인트" }));
+    expect(onOpenVersions).toHaveBeenCalledTimes(1);
+  });
+
+  it("모바일 저장 자리에서도 서버 충돌은 덮어쓰기 대신 버전 비교로 연결한다", () => {
+    setOnline(true);
+    const onSaveDraft = vi.fn();
+    const onOpenVersions = vi.fn();
+    render(<><ClarityMobileSaveSlot /><SaveCenter mobileImmersive error={new Error("다른 팀원이 먼저 저장했습니다. 최신 공동 문서를 다시 불러와 주세요.")} onSaveDraft={onSaveDraft} onOpenVersions={onOpenVersions} /></>);
+    fireEvent.click(within(screen.getByTestId("mobile-save-slot")).getByRole("button", { name: "저장 상태: 저장 충돌 확인" }));
+    fireEvent.click(screen.getByRole("button", { name: "버전 비교·복원" }));
+    expect(onOpenVersions).toHaveBeenCalledTimes(1);
+    expect(onSaveDraft).not.toHaveBeenCalled();
   });
 
   it("falls back to the floating chip after the menubar unmounts", () => {
@@ -266,5 +422,77 @@ describe("desktop menubar status placement", () => {
     expect(trigger.className).toContain("max-2xl:w-11");
     expect(trigger.className).toContain("2xl:w-48");
     expect(trigger.className).not.toContain("max-w-[13rem]");
+  });
+});
+
+
+function embeddedDrawingSave(overrides: Partial<ComponentProps<typeof StudioDraftSaveCenter>> = {}) {
+  render(<><StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("drawing-embedded")} /><SaveCenter mobileImmersive {...overrides} /></>);
+  const dialog = document.querySelector<HTMLDialogElement>('[data-studio-drawing-save-dialog="true"]');
+  if (!dialog) throw new Error("drawing save purpose screen missing");
+  dialog.showModal = vi.fn(() => dialog.setAttribute("open", ""));
+  dialog.close = vi.fn(() => { dialog.removeAttribute("open"); dialog.dispatchEvent(new Event("close")); });
+  return dialog;
+}
+
+describe("drawing save screen embeds existing draft authorities", () => {
+  it("keeps backup and actual server actions in one dialog, moving version counts into named records", async () => {
+    setOnline(true);
+    const onSaveDraft = vi.fn(() => Promise.resolve()), onExportBackup = vi.fn(), onOpenVersions = vi.fn();
+    const dialog = embeddedDrawingSave({ onSaveDraft, onExportBackup, onOpenVersions, localCheckpointCount: 3,
+      serverCurrentRevision: 7, serverRevisions: [{ revision: 7, createdAt: "2026-11-12T08:35:20.156Z" }] });
+    expect(document.querySelector('[data-studio-draft-save-trigger]')).toBeNull();
+    expect(document.querySelectorAll('[data-studio-drawing-save-details="true"]')).toHaveLength(1);
+    const embedded = dialog.querySelector('[data-studio-draft-save-dialog="embedded"]');
+    expect(embedded).not.toBeNull(); expect(embedded?.getAttribute("role")).toBe("region");
+    expect(screen.queryByRole("button", { name: "프로젝트 백업" })).toBeNull();
+    const trigger = screen.getByRole("button", { name: /저장 상태 열기:/u });
+    fireEvent.click(trigger);
+    expect(screen.getAllByRole("dialog")).toEqual([dialog]);
+    const backup = screen.getByRole("button", { name: "프로젝트 백업" });
+    const server = screen.getByRole("button", { name: "지금 서버에 저장" });
+    expect(backup.compareDocumentPosition(server) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    fireEvent.click(backup); fireEvent.click(server);
+    expect(onExportBackup).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    expect(dialog.open).toBe(true);
+    const records = within(dialog).getByText("버전·저장 기록 보기").closest("details");
+    expect(records?.open).toBe(false);
+    expect(records?.querySelector('[data-studio-save-record-metrics="true"]')).not.toBeNull();
+    expect(within(records!).getByText("버전·체크포인트").closest("details")).toBe(records);
+    records!.open = true;
+    fireEvent.click(within(dialog).getByRole("button", { name: "버전·체크포인트" }));
+    expect(onOpenVersions).toHaveBeenCalledTimes(1);
+    expect(dialog.open).toBe(false); expect(document.activeElement).toBe(trigger);
+  });
+
+  it("keeps failures and retry reachable without leaking a raw technical error into the header", async () => {
+    setOnline(true);
+    const raw = "서버 초안 저장 실패: SQLite write failure: raw_private_engine_detail";
+    const onSaveDraft = vi.fn(() => Promise.resolve());
+    const dialog = embeddedDrawingSave({ error: new Error(raw), onSaveDraft });
+    const slot = getActiveEditorStatusSlot();
+    expect(slot?.summary.textContent).toBe("서버 저장 확인 필요");
+    expect(slot?.summary.textContent).not.toContain(raw);
+    expect(slot?.summary.querySelector('[role="status"]')).toBeNull();
+    expect(screen.getAllByRole("status").some((node) => node.textContent?.includes("서버"))).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기:/u }));
+    expect(getActiveEditorStatusSlot()?.element.querySelectorAll('[role="status"]')).toHaveLength(2);
+    const troubleshoot = within(dialog).getByText("문제 해결 정보").closest("details");
+    expect(troubleshoot?.open).toBe(false); expect(troubleshoot?.textContent).toContain(raw);
+    const retry = within(dialog).getByRole("button", { name: "서버 저장 다시 시도" });
+    fireEvent.click(retry); await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    expect(dialog.open).toBe(true);
+  });
+
+  it("closes only the presentation before opening the existing required-information workflow", () => {
+    setOnline(true);
+    const onContinuePendingSave = vi.fn(), onSaveDraft = vi.fn();
+    const dialog = embeddedDrawingSave({ pendingSaveIntent: "draft", onContinuePendingSave, onSaveDraft });
+    fireEvent.click(screen.getByRole("button", { name: /저장 상태 열기:/u }));
+    const action = within(dialog).getByRole("button", { name: "초안 저장 계속" });
+    fireEvent.click(action);
+    expect(onContinuePendingSave).toHaveBeenCalledTimes(1); expect(onSaveDraft).not.toHaveBeenCalled();
+    expect(dialog.open).toBe(false);
   });
 });

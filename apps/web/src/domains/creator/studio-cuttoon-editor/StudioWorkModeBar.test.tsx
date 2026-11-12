@@ -34,6 +34,13 @@ describe("StudioWorkModeBar", () => {
     expect(html).not.toContain("다음 단계:");
   });
 
+  it("전체 도구 모드를 실제 제작 단계로 추정하거나 다음 공정을 안내하지 않는다", () => {
+    const html = renderToStaticMarkup(<StudioWorkModeBar mode="all" onModeChange={() => undefined} />);
+    expect(html).toContain('aria-label="도구 모드"');
+    expect(html).not.toContain("다음 단계:");
+    expect(html).toContain('data-work-mode="draw"');
+  });
+
   it("단계 제안이 현재 모드와 다르면 제안 배너가 뜬다", () => {
     const html = renderToStaticMarkup(
       <StudioWorkModeBar

@@ -23,11 +23,23 @@ describe("floating menu design contracts", () => {
     expect(css).toContain(".ts-float-enter");
   });
 
-  it("마켓 스티키 바가 떠 있을 때 데스크톱 플로팅 클러스터를 위로 들어 올린다", () => {
-    expect(css).toContain('[data-market-sticky-bar="true"]');
-    expect(css).toContain('[data-floating-controls="true"]');
-    expect(css).toContain('[data-back-to-top="true"]');
-    expect(css).toContain("@media (min-width: 768px)");
+  it("마켓 바의 실측 높이 위에 모바일·PC 조작 열을 놓고 기존 기준선은 보존한다", () => {
+    const marketRules = [...css.matchAll(/html:has\(\[data-market-sticky-bar="true"\]\)[^{]*\{([^}]*)\}/gu)]
+      .map((match) => match[1]);
+    expect(marketRules).toHaveLength(6);
+    // sticky bar의 bottom도 site-float-base를 읽는다. 이를 높이면 측정값과 서로 밀어 올리는 순환이 생긴다.
+    for (const declarations of marketRules) {
+      expect(declarations).not.toMatch(/--site-float-base\s*:|z-index\s*:|display\s*:|visibility\s*:/u);
+    }
+    expect(css).toContain("--site-float-voice-bottom: calc(max(var(--site-float-base), var(--service-status-overlay-clearance, 0px)) + var(--site-float-controls-slot));");
+    expect(css).toContain("bottom: max(var(--site-float-base), var(--service-status-overlay-clearance, 0px)) !important;");
+    expect(css).toContain("bottom: max(var(--site-float-top-bottom), var(--service-status-overlay-clearance, 0px)) !important;");
+    expect(css).toContain("bottom: max(5.25rem, var(--service-status-overlay-clearance, 0px)) !important;");
+    expect(css).toContain("bottom: max(8.75rem, calc(var(--service-status-overlay-clearance, 0px) + var(--site-float-slot))) !important;");
+  });
+
+  it("마켓에 전체 메뉴가 없으면 살아 있는 설정 fallback의 칸도 확보한다", () => {
+    expect(css).toMatch(/html:has\(\[data-market-sticky-bar="true"\]\):not\(:has\(\[data-site-menu-entry="available"\], \[data-site-mobile-utilities="available"\]\)\):has\(\[data-floating-controls-mobile="disabled"\]\)\s*\{\s*--site-float-controls-slot: var\(--site-float-slot\);/u);
   });
 
   it("reduced-motion·고대비·강제색상을 지원한다", () => {
@@ -50,8 +62,8 @@ describe("floating menu design contracts", () => {
     // 오른쪽 조작 열: ⚙ → 음성 안내 → 맨 위로 순으로 한 칸(3.5rem)씩 쌓인다.
     expect(sitewideCss).toContain("--site-float-voice-bottom: calc(var(--site-float-base) + var(--site-float-controls-slot));");
     expect(sitewideCss).toContain("--site-float-top-bottom: calc(var(--site-float-voice-bottom) + var(--site-float-voice-slot));");
-    // ⚙ 묶음이 있으면 OST 알약을 따로 띄우지 않고, OST 버튼은 플레이어가 있을 때만 보인다.
-    expect(sitewideCss).toContain(':root:has([data-floating-controls="true"]) [data-site-ost-pill]');
+    // 활성 설정 묶음이 있으면 OST 알약을 따로 띄우지 않고, 비활성 fallback은 구분한다.
+    expect(sitewideCss).toContain(':root:has([data-floating-controls="true"]:not([data-floating-controls-mobile="disabled"])) [data-site-ost-pill]');
     expect(css).toContain(':root:not(:has([data-site-ost="mounted"])) [data-floating-ost-toggle]');
   });
 

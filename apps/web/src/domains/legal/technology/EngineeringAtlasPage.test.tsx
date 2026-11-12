@@ -25,7 +25,12 @@ vi.mock("./engineering-map-content", async () => {
   };
 });
 
-afterEach(cleanup);
+const scrollDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollIntoView");
+afterEach(() => {
+  cleanup();
+  if (scrollDescriptor) Object.defineProperty(HTMLElement.prototype, "scrollIntoView", scrollDescriptor);
+  else Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+});
 
 /** 카드 본문은 처음 열릴 때 그려진다(접힌 동안은 머리만). 열림 이벤트를 흉내 내 모든 카드를 연다. */
 function openAllCards(container: HTMLElement): void {
@@ -37,7 +42,13 @@ function openAllCards(container: HTMLElement): void {
   });
 }
 
+function openMap(): void {
+  fireEvent.click(screen.getByRole("button", { name: /^(기술 비교 지도|Technology maps)$/u }));
+  fireEvent.click(screen.getByRole("button", { name: /무료로 세운 서비스.*지도 열기|Services built on free tiers.*Open map/u }));
+}
+
 function renderPage() {
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
   return render(
     <MemoryRouter initialEntries={["/about/technology/atlas"]}>
       <EngineeringAtlasPage />
@@ -49,9 +60,9 @@ describe("EngineeringAtlasPage", () => {
   it("카드 본문은 열기 전에는 그리지 않고, 열면 배경·쓰인 곳·샘플·링크·발표 보조 섹션을 보여준다", () => {
     const { container } = renderPage();
     expect(container.querySelector("#fixture-opfs h4")).toBeNull();
-    expect(container.querySelector("#fixture-opfs figure.eng-dia")).toBeTruthy();
+    expect(container.querySelector("#fixture-opfs figure.eng-dia")).toBeNull();
     openAllCards(container);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/기술을 한 장씩|One card for every technology/u);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/기술 도감|Technology atlas/u);
     const card = container.querySelector("#fixture-opfs") as HTMLElement;
     expect(card).toBeTruthy();
     expect(card.querySelector("figure.eng-dia")).toBeTruthy();
@@ -77,17 +88,17 @@ describe("EngineeringAtlasPage", () => {
     const { container } = renderPage();
     expect(container.querySelector("[data-atlas-result-count]")?.textContent).toMatch(/2/u);
 
-    fireEvent.click(screen.getByRole("button", { name: /^(AI·추론|AI · inference)/u }));
+    fireEvent.change(screen.getByRole("combobox", { name: /^(분야|Category)$/u }), { target: { value: "ai" } });
     expect(container.querySelector("#fixture-opfs")).toBeNull();
     expect(container.querySelector("#fixture-free-budget")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /^(전체|All)/u }));
+    fireEvent.change(screen.getByRole("combobox", { name: /^(분야|Category)$/u }), { target: { value: "all" } });
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "opfs" } });
     expect(container.querySelector("#fixture-free-budget")).toBeNull();
     expect(container.querySelector("#fixture-opfs")).toBeTruthy();
 
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "configured" } });
+    fireEvent.change(screen.getByRole("combobox", { name: /현재 상태|Current status/u }), { target: { value: "configured" } });
     expect(container.querySelector("#fixture-opfs")).toBeNull();
     expect(container.querySelector("#fixture-free-budget")).toBeTruthy();
   });
@@ -107,6 +118,7 @@ describe("EngineeringAtlasPage", () => {
 
   it("지도는 표와 카드 목록을 함께 그리고, 이름은 공식 사이트로, 도감 카드 칩은 보이는 카드로 잇는다", () => {
     const { container } = renderPage();
+    openMap();
     const section = container.querySelector("#map-free-tier") as HTMLElement;
     expect(section).toBeTruthy();
     expect(within(section).getByRole("heading", { level: 3 }).textContent).toMatch(/무료로 세운 서비스|Services built on free tiers/u);
@@ -132,9 +144,14 @@ describe("EngineeringAtlasPage", () => {
     })) as unknown as typeof window.matchMedia;
     try {
       const { container } = renderPage();
+      openMap();
       const section = container.querySelector("#map-free-tier") as HTMLElement;
       expect(section.querySelector("[data-map-table]")).toBeNull();
       expect(section.querySelectorAll("[data-map-cards] > li").length).toBeGreaterThanOrEqual(2);
+      const rowAnchors = section.querySelectorAll("#map-free-tier-cloudflare-workers");
+      expect(rowAnchors).toHaveLength(1);
+      expect(rowAnchors[0]?.tagName).toBe("LI");
+      expect(rowAnchors[0]?.classList.contains("scroll-mt-32")).toBe(true);
     } finally {
       window.matchMedia = original;
     }
@@ -142,6 +159,7 @@ describe("EngineeringAtlasPage", () => {
 
   it("분야 필터를 특정 분야로 좁히면 지도는 숨고, 검색어는 지도 행에도 적용된다", () => {
     const { container } = renderPage();
+    openMap();
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "quota ledger" } });
     const section = container.querySelector("#map-free-tier") as HTMLElement;
     expect(section.querySelectorAll("table tbody tr").length).toBe(1);
@@ -150,9 +168,9 @@ describe("EngineeringAtlasPage", () => {
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "cloudflare workers" } });
     expect(container.querySelector("#fixture-opfs")).toBeNull();
     expect(container.querySelector("#map-free-tier")).toBeTruthy();
-    expect(screen.queryByText(/조건에 맞는 카드가 없습니다|No cards match/u)).toBeNull();
+    expect(container.querySelector("#atlas-map-results")?.hasAttribute("hidden")).toBe(false);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: /^(AI·추론|AI · inference)/u }));
+    fireEvent.change(screen.getByRole("combobox", { name: /^(분야|Category)$/u }), { target: { value: "ai" } });
     expect(container.querySelector("#map-free-tier")).toBeNull();
   });
 });

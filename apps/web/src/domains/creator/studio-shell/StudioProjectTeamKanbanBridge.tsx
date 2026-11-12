@@ -20,10 +20,10 @@ const KANBAN_STAGE_STEPS = [
     stepCode: "STAGE 02",
     accentBarClass: "bg-cool",
     icon: Box,
-    ko: "2. 3D세트",
-    en: "2. 3D Set",
-    roleKo: "카메라·은선 추출",
-    roleEn: "Camera & line extract",
+    ko: "2. 3D 배경",
+    en: "2. 3D background",
+    roleKo: "구도·배경 선 정리",
+    roleEn: "Scene framing and lines",
     resolveHref: (encodedId: string) => `/studio/bg3d?project=${encodedId}`,
   },
   {
@@ -44,8 +44,8 @@ const KANBAN_STAGE_STEPS = [
     icon: Palette,
     ko: "4. 채색",
     en: "4. Coloring",
-    roleKo: "지정색·조명 LUT",
-    roleEn: "Flats & lighting LUT",
+    roleKo: "색과 조명 정리",
+    roleEn: "Color and lighting",
     resolveHref: (encodedId: string) => `/studio/p/${encodedId}/assets`,
   },
   {
@@ -53,10 +53,10 @@ const KANBAN_STAGE_STEPS = [
     stepCode: "STAGE 05",
     accentBarClass: "bg-good",
     icon: CheckCircle2,
-    ko: "5. 식자·승인",
-    en: "5. Typeset & Sign-off",
-    roleKo: "규격 검수·출고 승인",
-    roleEn: "Preflight & sign-off",
+    ko: "5. 글자·최종 확인",
+    en: "5. Lettering & final review",
+    roleKo: "읽기·출력 상태 확인",
+    roleEn: "Check reading and output",
     resolveHref: (encodedId: string) => `/studio/p/${encodedId}/export`,
   },
 ] as const;
@@ -71,7 +71,7 @@ export function StudioProjectTeamKanbanBridge({
 
   return (
     <section
-      aria-label={bt("팀 프로덕션 5열 공정 칸반 브리지", "Team production 5-stage Kanban bridge")}
+      aria-label={bt("팀 제작 진행 단계", "Team production stages")}
       data-testid="studio-project-team-kanban-bridge"
       className="relative mt-4 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
     >
@@ -82,12 +82,12 @@ export function StudioProjectTeamKanbanBridge({
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 font-display text-[11px] font-black tracking-wide text-accent">
                 <Kanban size={12} aria-hidden="true" />
-                {bt("통합 공정 칸반", "Unified Stage Kanban")}
+                {bt("회차 제작 진행", "Episode progress")}
               </span>
               <span className="text-xs font-semibold text-fg-2">
                 {bt(
-                  "회차별 5열 공정 상태와 권리 BOM·인계 기록을 프로젝트 문맥 유지 채 이어갑니다.",
-                  "Track the 5-stage episode pipeline, handoffs, and Rights BOM while keeping project context.",
+                  "이 작품의 회차별 진행 상황과 작업 전달 기록, 소재 이용 조건을 확인하세요.",
+                  "Check episode progress, handoff history and asset usage terms for this project.",
                 )}
               </span>
             </div>
@@ -98,7 +98,7 @@ export function StudioProjectTeamKanbanBridge({
               className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
             >
               <Kanban size={14} aria-hidden="true" />
-              {bt("회차 공정 칸반 열기", "Open Episode Kanban")}
+              {bt("회차 진행 보기", "View episode progress")}
               <ArrowRight size={13} aria-hidden="true" />
             </Link>
             <Link
@@ -106,14 +106,14 @@ export function StudioProjectTeamKanbanBridge({
               className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
             >
               <GitBranch size={14} aria-hidden="true" />
-              {bt("공정 인계 (Handoff)", "Stage Handoff")}
+              {bt("작업 전달 기록", "Handoff history")}
             </Link>
             <Link
               href={`/production/projects/${encodedId}/rights`}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
             >
               <ShieldCheck size={14} aria-hidden="true" />
-              {bt("권리 BOM 원장", "Rights BOM Ledger")}
+              {bt("소재 이용 조건", "Asset usage terms")}
             </Link>
           </div>
         </div>

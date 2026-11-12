@@ -24,7 +24,25 @@ function renderCreate(initialEntry = "/studio/new") {
   );
 }
 
+function goStep(step: 1 | 2 | 3) {
+  const button = document.querySelector<HTMLButtonElement>(`[data-studio-create-step-link="${step}"]`);
+  if (!button) throw new Error("생성 단계 이동이 없습니다.");
+  if (button.getAttribute("aria-current") !== "step") fireEvent.click(button);
+}
+function createControl(role: "button" | "textbox" | "combobox", options: { name: RegExp }) {
+  goStep(role === "textbox" || (role === "combobox" && /시작 템플릿|Starting template/u.test(options.name.source))
+    || (role === "button" && /확인하기/u.test(options.name.source)) ? 2 : 3);
+  return screen.getByRole(role, options);
+}
+function startPointButton(container: HTMLElement, value: string): HTMLButtonElement {
+  goStep(3);
+  const button = container.querySelector<HTMLButtonElement>(`[data-studio-start-point="${value}"]`);
+  if (!button) throw new Error("시작점 선택이 없습니다.");
+  return button;
+}
+
 function formatButton(container: HTMLElement, format: string): HTMLButtonElement {
+  goStep(1);
   const button = container.querySelector<HTMLButtonElement>(`[data-studio-create-format="${format}"]`);
   if (!button) throw new Error(`Missing project format button: ${format}`);
   return button;
@@ -42,7 +60,7 @@ afterEach(() => {
 describe("StudioProjectCreatePage", () => {
   it("fills the working title from a studio-home idea and keeps it when the format changes", () => {
     const { container } = renderCreate(`/studio/new?title=${encodeURIComponent("  비 오는 날의   첫사랑 ")}`);
-    const titleInput = screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
+    const titleInput = createControl("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
 
     expect(titleInput.value).toBe("비 오는 날의 첫사랑");
     fireEvent.click(formatButton(container, "illustration"));
@@ -54,12 +72,12 @@ describe("StudioProjectCreatePage", () => {
   it("shows the imported idea at the top and preselects the idea start point", () => {
     const { container } = renderCreate("/studio/new?title=%EB%B9%84+%EC%98%A4%EB%8A%94+%EB%82%A0&start=idea");
     const chip = container.querySelector<HTMLElement>("[data-studio-imported-idea]");
-    const titleInput = screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
+    const titleInput = createControl("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
 
     expect(chip?.textContent).toMatch(/가져온 아이디어|Imported idea/u);
     expect(chip?.textContent).toContain("비 오는 날");
     expect(container.querySelector('[data-studio-start-point="idea"]')?.getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: /확인하기|Review/u }));
+    fireEvent.click(createControl("button", { name: /확인하기|Review/u }));
     expect(document.activeElement).toBe(titleInput);
   });
 
@@ -93,10 +111,10 @@ describe("StudioProjectCreatePage", () => {
   it("creates a vertical webtoon definition and routes an idea start to project planning", async () => {
     renderCreate();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), {
+    fireEvent.change(createControl("textbox", { name: /프로젝트 이름|Project name/u }), {
       target: { value: "테스트 웹툰" },
     });
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 
@@ -145,18 +163,18 @@ describe("StudioProjectCreatePage", () => {
     const { container } = renderCreate();
 
     fireEvent.click(formatButton(container, "cuttoon"));
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-studio-start-point="storyboard"]')!);
-    const template = screen.getByRole("combobox", { name: /시작 템플릿|Starting template/u }) as HTMLSelectElement;
+    fireEvent.click(startPointButton(container, "storyboard"));
+    const template = createControl("combobox", { name: /시작 템플릿|Starting template/u }) as HTMLSelectElement;
     expect(Array.from(template.options, (option) => option.value)).toEqual([
       "cuttoon-square-4",
       "cuttoon-portrait-8",
       "cuttoon-story-10",
     ]);
     fireEvent.change(template, { target: { value: "cuttoon-portrait-8" } });
-    fireEvent.change(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), {
+    fireEvent.change(createControl("textbox", { name: /프로젝트 이름|Project name/u }), {
       target: { value: "여덟 장 이야기" },
     });
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /컷툰·SNS 만화 시작|Start Card comic & social series/u,
     }));
 
@@ -186,11 +204,11 @@ describe("StudioProjectCreatePage", () => {
     const { container } = renderCreate();
 
     fireEvent.click(formatButton(container, "page-comic"));
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-studio-start-point="storyboard"]')!);
-    fireEvent.change(screen.getByRole("combobox", { name: /시작 템플릿|Starting template/u }), {
+    fireEvent.click(startPointButton(container, "storyboard"));
+    fireEvent.change(createControl("combobox", { name: /시작 템플릿|Starting template/u }), {
       target: { value: "page-comic-b5-24" },
     });
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /페이지 만화 시작|Start Page comic/u,
     }));
 
@@ -217,10 +235,10 @@ describe("StudioProjectCreatePage", () => {
     const { container } = renderCreate();
 
     fireEvent.click(formatButton(container, "motion-toon"));
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-studio-start-point="storyboard"]')!);
+    fireEvent.click(startPointButton(container, "storyboard"));
     expect(container.querySelector('[data-studio-format-preview="motion-toon"]')).not.toBeNull();
     expect(container.querySelector('[data-studio-mode-preview="animation"]')).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /모션툰·세로 영상 시작|Start Motion toon & vertical video/u,
     }));
 
@@ -249,10 +267,10 @@ describe("StudioProjectCreatePage", () => {
   it("creates the project definition first and routes to import when files are the starting material", async () => {
     const { container } = renderCreate();
 
-    const files = container.querySelector<HTMLButtonElement>('[data-studio-start-point="files"]');
+    const files = startPointButton(container, "files");
     expect(files).not.toBeNull();
     fireEvent.click(files!);
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /프로젝트 만들고 파일 가져오기|Create project and import files/u,
     }));
 
@@ -272,15 +290,15 @@ describe("StudioProjectCreatePage", () => {
     );
 
     expect(screen.getByText(/회차 제작 계획까지 함께 준비|Prepare the episode production plan/u)).toBeTruthy();
-    expect((screen.getByRole("combobox", {
+    expect((createControl("combobox", {
       name: /현재 가지고 있는 자료|What you already have/u,
     }) as HTMLSelectElement).value).toBe("script");
     expect(screen.getByRole("heading", { name: /대본 잠금 트랙|Script lock track/u })).toBeTruthy();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), {
+    fireEvent.change(createControl("textbox", { name: /프로젝트 이름|Project name/u }), {
       target: { value: "연재 준비 프로젝트" },
     });
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /프로젝트와 제작 계획 만들기|Create project and production plan/u,
     }));
 
@@ -312,7 +330,7 @@ describe("StudioProjectCreatePage", () => {
     renderCreate();
 
     expect(screen.getByText(/작업은 이 기기에 자동 저장됩니다|Your work is autosaved on this device/u)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 
@@ -332,7 +350,7 @@ describe("StudioProjectCreatePage", () => {
     );
 
     expect(formatButton(container, "illustration").getAttribute("aria-pressed")).toBe("true");
-    expect((screen.getByRole("combobox", {
+    expect((createControl("combobox", {
       name: /시작 템플릿|Starting template/u,
     }) as HTMLSelectElement).value).toBe("illustration-portrait");
     expect(container.querySelector('[data-studio-format-preview="illustration"]')).not.toBeNull();
@@ -345,15 +363,15 @@ describe("StudioProjectCreatePage", () => {
 
     expect(container.querySelector("[data-studio-auxiliary-workspaces]")?.hasAttribute("open")).toBe(true);
     expect(container.querySelector('[data-studio-auxiliary-kind="slides"]')?.getAttribute("aria-pressed")).toBe("true");
-    expect((screen.getByRole("combobox", {
+    expect((createControl("combobox", {
       name: /시작 템플릿|Starting template/u,
     }) as HTMLSelectElement).value).toBe("slides-pitch");
     expect(container.querySelector('[data-studio-mode-preview="slides"]')).not.toBeNull();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), {
+    fireEvent.change(createControl("textbox", { name: /프로젝트 이름|Project name/u }), {
       target: { value: "피치덱" },
     });
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /발표 자료 시작|Start Presentation/u,
     }));
 
@@ -382,7 +400,7 @@ describe("StudioProjectCreatePage", () => {
     const { container } = renderCreate("/studio/new?lane=blank");
 
     expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("blank");
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 
@@ -401,7 +419,7 @@ describe("StudioProjectCreatePage", () => {
 
     expect(container.querySelector('[data-studio-start-point="storyboard"]')?.getAttribute("aria-pressed")).toBe("true");
     expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("storyboard");
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 
@@ -416,7 +434,7 @@ describe("StudioProjectCreatePage", () => {
     const { container } = renderCreate("/studio/new?template=webtoon-vertical-episode");
 
     expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("template");
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 
@@ -430,9 +448,9 @@ describe("StudioProjectCreatePage", () => {
   it("keeps an explicit idea lane landing on planning, and follows the start point when the user changes it (S2-7)", async () => {
     const { container } = renderCreate("/studio/new?lane=blank");
 
-    fireEvent.click(container.querySelector<HTMLButtonElement>('[data-studio-start-point="idea"]')!);
+    fireEvent.click(startPointButton(container, "idea"));
     expect(container.querySelector("[data-studio-create-lane]")?.getAttribute("data-studio-create-lane")).toBe("idea");
-    fireEvent.click(screen.getByRole("button", {
+    fireEvent.click(createControl("button", {
       name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
     }));
 

@@ -122,6 +122,7 @@ per-Worker Editor token은 최소 권한 후보지만 정확한 지원 scope와 
 
 실제 배포는 기존 단위별 승인 정책(유효한 checked-in standing approval의 대체 경로 포함), 정확한 main SHA, clean worktree, 필수 CI, 산출물 검증, 컷오버 이후 정상 rollback 후보가 필요하다. 매 릴리스 수동 승인 sentinel이 항상 필요하다고 해석하지 않는다.
 preflight 성공은 승인 대체가 아니다. onpod는 상시 승인 범위 밖이다. 실패 시 설정을 자동 수정하지 않고 원인을 보고한다.
-퇴역 Render나 pre-cutover Worker로 롤백하지 않는다. onpod rollback은 이미지와 환경변수 세대를 함께 되돌리므로
-API·Worker secret 짝과 DB credential 유효성을 검토한 뒤 별도 승인으로 실행한다.
+퇴역 Render나 pre-cutover Worker로 롤백하지 않는다. onpod 복구는 상시 승인 범위 밖이므로 사용자의 별도 명시 승인을 받은 뒤
+`onpod app update toonstudio-api --image <컷오버-이후-직전-정상-이미지>`로 이미지만 교체한다.
+`onpod app rollback`은 환경변수 세대까지 되돌려 API·Worker secret 짝과 DB credential을 파손할 수 있으므로 사용하지 않는다.
 문서·계약 변경 자체의 복구는 이 diff를 되돌리는 것이며 운영 영향은 없다.

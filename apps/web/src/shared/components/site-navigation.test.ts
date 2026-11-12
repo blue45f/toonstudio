@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MOBILE_SITE_TABS,
   PRIMARY_SITE_NAVIGATION,
   SITE_NAVIGATION_GROUPS,
   SITE_NAVIGATION_ITEMS,
@@ -11,6 +12,8 @@ import {
   TOONSTUDIO_MOBILE_TABS,
   TOONSTUDIO_NAVIGATION_GROUPS,
   TOONSTUDIO_PRIMARY_NAVIGATION,
+  UNIFIED_MOBILE_TABS,
+  effectiveNavigationTier,
   mobileSiteTabsForPath,
   primarySiteNavigationForPath,
   siteNavigationContextForPath,
@@ -50,7 +53,7 @@ describe("site navigation information architecture", () => {
     expect(SITE_NAVIGATION_ITEMS.technology.href).toBe("/about/technology");
     expect(SITE_NAVIGATION_ITEMS.technology.label.ko).toBe("제작 기술");
     expect(SITE_NAVIGATION_ITEMS.research.label.ko).toBe("리서치 데스크");
-    expect(SITE_NAVIGATION_ITEMS.market.label.ko).toBe("소재 마켓");
+    expect(SITE_NAVIGATION_ITEMS.market.label.ko).toBe("소재 찾기");
   });
 
   it("학습과 작업 자료를 먼저 제공하고, 운세는 쉬어가기 메뉴에서 제공한다", () => {
@@ -209,13 +212,35 @@ describe("site navigation information architecture", () => {
     expect(mobileSiteTabsForPath("/studio")).toBe(TOONSTUDIO_MOBILE_TABS);
   });
 
-  it("keeps the same purposes while giving public and personal home distinct URLs", () => {
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.id)).toEqual([
-      "workspace-home", "studio", "explore", "community", "all-menu",
-    ]);
-    expect(TOONSPECTRUM_MOBILE_TABS.map((item) => item.id)).toEqual([
-      "home", "studio", "explore", "community", "all-menu",
-    ]);
+  it("모든 모바일 문맥에서 네 정본 목적지를 같은 순서와 라벨로 제공한다", () => {
+    const expected = [SITE_NAVIGATION_ITEMS.studio, SITE_NAVIGATION_ITEMS.explore, SITE_NAVIGATION_ITEMS.market, SITE_NAVIGATION_ITEMS.me];
+    for (const tabs of [TOONSTUDIO_MOBILE_TABS, TOONSPECTRUM_MOBILE_TABS, UNIFIED_MOBILE_TABS, MOBILE_SITE_TABS]) {
+      expect(tabs).toEqual(expected);
+      expect(tabs.map((item) => item.href)).toEqual(["/studio", "/discover", "/market", "/my"]);
+      expect(tabs.map((item) => item.label.ko)).toEqual(["내 작업", "작품 찾기", "소재 찾기", "내 정보"]);
+      expect(tabs.map((item) => item.label.en)).toEqual(["My work", "Discover", "Assets", "My account"]);
+    }
+    for (const pathname of ["/", "/discover", "/market", "/my", "/home", "/studio", "/studio/p/example/canvas", "/team", "/settings", "/help"]) {
+      expect(mobileSiteTabsForPath(pathname), pathname).toBe(TOONSTUDIO_MOBILE_TABS);
+    }
+    expect(TOONSPECTRUM_MOBILE_TABS).toBe(TOONSTUDIO_MOBILE_TABS);
+    expect(SITE_NAVIGATION_ITEMS.allMenu.href).toBe("/sitemap");
+    expect(TOONSPECTRUM_PRIMARY_NAVIGATION).toContain(SITE_NAVIGATION_ITEMS.allMenu);
+  });
+
+  it("고정 탭 노출은 개인·팀·프로젝트 접근 정책을 승격하지 않는다", () => {
+    const guest = { signedIn: false, hasTeam: false, hasProject: false, isSeller: false };
+    const member = { ...guest, signedIn: true };
+    expect(SITE_NAVIGATION_ITEMS.me.audience).toBe("signed-in");
+    expect(effectiveNavigationTier(SITE_NAVIGATION_ITEMS.me, guest)).toBe("directory");
+    expect(effectiveNavigationTier(SITE_NAVIGATION_ITEMS.me, member)).toBe("contextual");
+    expect(effectiveNavigationTier(SITE_NAVIGATION_ITEMS.workspaceTeam, member)).toBe("directory");
+    expect(effectiveNavigationTier(SITE_NAVIGATION_ITEMS.production, member)).toBe("directory");
+    expect(SITE_NAVIGATION_ITEMS.studio.exact).toBe(true);
+    expect(SITE_NAVIGATION_ITEMS.me.href).not.toBe(SITE_NAVIGATION_ITEMS.settings.href);
+    for (const pathname of ["/studio-other", "/marketplace-other", "/discoveries", "/myth"]) {
+      expect(siteNavigationGroupForPath(pathname), pathname).toBeNull();
+    }
   });
 
   it("keeps notifications, Help, Settings and account destinations available from the utility area", () => {

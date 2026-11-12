@@ -70,7 +70,7 @@ describe("3D 테마 재질·벽면 원화", () => {
       const review = scene.getObjectByName("room-floor-hq-review-room");
       if (!(desk instanceof THREE.Mesh) || !(desk.material instanceof THREE.MeshStandardMaterial)
         || !(review instanceof THREE.Mesh) || !(review.material instanceof THREE.MeshStandardMaterial)) throw new Error("방 재질을 찾지 못했습니다.");
-      const surface = studioThreeSurfaceRecipe(theme);
+      const surface = studioThreeSurfaceRecipe(theme, manifest.rooms[0]?.id);
       expect(desk.material.color.getHex()).toBe(surface.floors.wood.base);
       expect(review.material.color.getHex()).toBe(surface.floors.carpet.base);
       expect(desk.material.roughness).toBe(surface.floors.wood.roughness);
@@ -83,6 +83,53 @@ describe("3D 테마 재질·벽면 원화", () => {
     }
     expect(colors[0]).not.toBe(colors[1]);
     expect(JSON.stringify(manifest.colliders)).toBe(colliders);
+  });
+
+  it("HQ만 따뜻한 돌·남색·보라·청록으로 구분하고 기존 wood/oak와 다른 테마를 유지한다", () => {
+    const baseline = studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME);
+    const hq = studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME, "hq-lobby");
+    expect(hq.floors.stone.base).toBe(0xd8cbb2);
+    expect(hq.floors.carpet.base).toBe(0x4d5d82);
+    expect(hq.decorAccent).toBe(0x7858ee);
+    expect(hq.wallTints.stone).toBe(0x4b9895);
+    expect(hq.floors.wood).toBe(baseline.floors.wood);
+    expect(hq.floors.oak).toBe(baseline.floors.oak);
+    expect(studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME, "personal-atelier")).toBe(baseline);
+    expect(studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME, "forest-atelier").decorAccent).toBe(0xe4b55a);
+    expect(studioThreeSurfaceRecipe(recipe("sflab"), "hq-lobby")).toEqual(studioThreeSurfaceRecipe(recipe("sflab")));
+  });
+
+  it("HQ 바깥벽도 같은 팔레트를 쓰며 mesh·기하·변환·투명도와 정본 manifest는 보존한다", () => {
+    const source = studioVirtualToonHqManifest(false);
+    const border = { x: -8, y: 0, width: 8, height: source.height };
+    const manifest = { ...source, colliders: [...source.colliders, border] };
+    const original = JSON.stringify(manifest);
+    const unchangedPaletteManifest = { ...manifest, rooms: manifest.rooms.map((room) => ({ ...room, id: room.id.replace(/^hq-/u, "reference-") })) };
+    const scene = new THREE.Scene(), reference = new THREE.Scene();
+    const world = buildStudioThreeWorldArchitecture(scene, manifest);
+    const referenceWorld = buildStudioThreeWorldArchitecture(reference, unchangedPaletteManifest);
+    const meshShape = (root: THREE.Scene) => {
+      const shapes: unknown[] = [];
+      root.traverse((node) => {
+        if (!(node instanceof THREE.Mesh)) return;
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        shapes.push({
+          type: node.geometry.type, vertices: Array.from(node.geometry.getAttribute("position").array),
+          indices: node.geometry.index ? Array.from(node.geometry.index.array) : null,
+          position: node.position.toArray(), rotation: node.quaternion.toArray(), scale: node.scale.toArray(),
+          opacity: materials.map((material) => [material.opacity, material.transparent]),
+        });
+      });
+      return shapes;
+    };
+    try {
+      const outerWall = scene.children.find((node) => node.name === "manifest-wall"
+        && node.position.x === (border.x + border.width / 2) / 32 && node.position.z === (border.y + border.height / 2) / 32);
+      if (!(outerWall instanceof THREE.Mesh) || !(outerWall.material instanceof THREE.MeshStandardMaterial)) throw new Error("HQ 바깥벽 재질이 없습니다.");
+      expect(outerWall.material.color.getHex()).toBe(studioThreeSurfaceRecipe(DEFAULT_VIRTUAL_THREE_THEME, "hq-lobby").wallTints.marble);
+      expect(meshShape(scene)).toEqual(meshShape(reference));
+      expect(JSON.stringify(manifest)).toBe(original);
+    } finally { world.dispose(); referenceWorld.dispose(); }
   });
 
   it("원본 3:2 아트는 세로 벽면 액자에만 매핑하고 geometry를 먼저 준비한다", async () => {

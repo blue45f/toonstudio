@@ -113,6 +113,7 @@ export function StudioEditorRoute({ resolution }: {
           const touchPlan = resolveStudioMobileTouchPlan(route.surface);
           return (
             <MobileFullEditNotice
+              startCollapsed={route.surface === "canvas"}
               surfaceId={`studio-editor-${route.surface}`}
               surfaceLabel={touchPlan.label}
               mobileCapabilities={touchPlan.canDo}

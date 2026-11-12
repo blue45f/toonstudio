@@ -1,12 +1,15 @@
 // 작품 시작 시트(/create) — 작품을 시작하는 유일한 정문(S2-6).
-import { ArrowLeft, ArrowRight, BookHeart, BookOpen, CheckCircle2, Clapperboard, LayoutTemplate, Plus, Sparkles, Upload } from "lucide-react";
-import { Suspense, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, BookHeart, BookOpen, Clapperboard, LayoutTemplate, MessageSquare, Plus, Upload } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
-import { studioLobbyRecentProjects } from "./studio-shell/studio-creator-lobby-model";
+import { studioLibraryRecentWork } from "./studio-shell/studio-library-recent-work";
+import { resolveStudioProjectResumeTarget } from "./studio-project-resume-target";
+import "./studio-shell/create-start-mobile-first.css";
 import { studioProjectLibraryLocale } from "./studio-shell/studio-project-library-management-model";
 import { useStudioProjectLibrary } from "./studio-shell/useStudioProjectLibrary";
+import { useResolvedStudioProjectThumbnailUrl } from "./studio-shell/useStudioProjectThumbnailUrl";
 import {
   isMyStoryTemplateId,
   MY_STORY_TEMPLATE_IDS,
@@ -42,14 +45,36 @@ const RECENT_PROJECT_LIMIT = 4;
 /** `?intent=` 값 — 질문형 인터뷰 입구. */
 const MY_STORY_INTENT = "my-story";
 
-function useRecentStudioProjects(
-  locale: string,
-): readonly StudioProjectLibraryEntry[] {
+function useRecentStudioProjects(locale: string) {
   const library = useStudioProjectLibrary(locale, "active");
-  return useMemo(
-    () => studioLobbyRecentProjects(library.projects, RECENT_PROJECT_LIMIT),
-    [library.projects],
+  const projects = useMemo(
+    () => studioLibraryRecentWork(library.projects, (project) => resolveRecentTarget(project, locale), RECENT_PROJECT_LIMIT),
+    [library.projects, locale],
   );
+  return { projects, error: library.error, reload: library.reload };
+}
+
+/** 개인 원고가 없거나 저장소가 막혔을 때는 기존 작품 홈으로 돌아간다. */
+function resolveRecentTarget(project: StudioProjectLibraryEntry, locale: string) {
+  const fallback = { href: `/studio/p/${encodeURIComponent(project.id)}/overview`, exact: false };
+  try {
+    if (typeof window !== "undefined") {
+      return resolveStudioProjectResumeTarget(window.localStorage, project, locale.startsWith("ko") ? "ko" : "en");
+    }
+  } catch {
+    // 저장소 접근이 막혀도 기존 작품의 홈 링크는 유지한다.
+    return fallback;
+  }
+  return fallback;
+}
+
+/** 저장된 썸네일 로케이터를 해석하고, 실패 시 개인 작품의 제목으로 돌아간다. */
+function RecentWorkThumbnail({ project }: { readonly project: StudioProjectLibraryEntry }) {
+  const thumbnailUrl = useResolvedStudioProjectThumbnailUrl(project.thumbnailUrl);
+  const [failed, setFailed] = useState(false);
+  return thumbnailUrl && !failed
+    ? <img src={thumbnailUrl} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+    : <span className="create-start-recent-placeholder" aria-hidden="true">{project.title.trim().charAt(0) || "•"}</span>;
 }
 
 const CHOICE_CARD_CLASS =
@@ -58,27 +83,31 @@ const CHOICE_ICON_CLASS =
   "flex size-11 items-center justify-center rounded-xl bg-accent/15 text-accent";
 
 const PIPELINE_MODE_EN_COPY: Readonly<
-  Record<string, { readonly label: string; readonly description: string; readonly ctaLabel: string }>
+  Record<string, { readonly step: string; readonly label: string; readonly description: string; readonly ctaLabel: string }>
 > = {
   "worldbuilding-synopsis": {
-    label: "Worldbuilding · Logline · Genre Plot",
-    description: "Structure core story beats, character arcs, and synopses for webtoons and novel-comics.",
-    ctaLabel: "Open Plot Board",
+    step: "1 · Plan",
+    label: "Plan your story",
+    description: "Write down the world, characters, and story direction in a planning worksheet and keep your draft.",
+    ctaLabel: "Open planning worksheet",
   },
   "novel-to-script": {
-    label: "Webnovel to Webtoon Script & Beats",
-    description: "Break prose chapters into 60–80 panel scripts, speech balloons, and camera angle cues.",
-    ctaLabel: "Draft New Script",
+    step: "2 · New work",
+    label: "Choose a format and title",
+    description: "Set the format and title for a new work. In the editor, arrange your writing into dialogue and panels.",
+    ctaLabel: "Open new work settings",
   },
   "storyboard-3d-blocking": {
-    label: "Vertical Storyboard & 3D Blocking",
-    description: "Stage 3D character poses and scene angles per panel to validate scroll pacing and eye flow.",
-    ctaLabel: "Open Storyboard",
+    step: "3 · Edit",
+    label: "Arrange panels, balloons, and artwork",
+    description: "Place panels, speech balloons, and artwork in the webtoon editor. Choose resources and 3D tools when you need them.",
+    ctaLabel: "Open webtoon editor",
   },
   "ink-render-publish": {
-    label: "Ink, Color & Simultaneous Cuts Launch",
-    description: "Run final export checks and publish both the episode and a 9:16 promo cut in one flow.",
-    ctaLabel: "Open Publish Center",
+    step: "4 · Finish",
+    label: "Prepare episode publication",
+    description: "Review the episode and publication settings. Preparing files does not publish them externally; upload and schedule in the destination channel.",
+    ctaLabel: "Open episode publishing settings",
   },
 };
 
@@ -88,22 +117,47 @@ export function CreateStartPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const language = useI18n((state) => state.lang);
   const locale = studioProjectLibraryLocale(language);
-  const recentProjects = useRecentStudioProjects(locale);
-  const urlSection = searchParams.get("section") ?? "all";
-  const [selectedSection, setSelectedSection] = useState<string>(urlSection);
-  const activeSection = selectedSection !== urlSection && searchParams.get("section") !== null
-    ? urlSection
-    : selectedSection;
+  const { projects: recentProjects, error: recentError, reload: reloadRecentProjects } = useRecentStudioProjects(locale);
+  const requestedSection = searchParams.get("section");
+  const activeSection = requestedSection === "lanes" || requestedSection === "pipeline" || requestedSection === "continue"
+    ? requestedSection : "all";
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const restoreRecommendedFocus = useRef(false);
+  useEffect(() => {
+    if (activeSection !== "all" || !restoreRecommendedFocus.current) return;
+    restoreRecommendedFocus.current = false;
+    headingRef.current?.focus({ preventScroll: true });
+  }, [activeSection]);
   const showLanes = activeSection === "all" || activeSection === "lanes";
   const showPipeline = activeSection === "all" || activeSection === "pipeline";
-  const showContinue = activeSection === "all" || activeSection === "continue";
+  const recentProject = recentProjects[0];
+  const recentTarget = recentProject ? resolveRecentTarget(recentProject, locale) : null;
+  const storyParams = new URLSearchParams(searchParams);
+  storyParams.delete("section");
+  storyParams.set("intent", MY_STORY_INTENT);
+  const storyHref = `/create?${storyParams.toString()}`;
+  const recentWorkError = recentError ? (
+    <div className="rounded-xl border border-line bg-panel p-4">
+      <p role="alert" className="text-sm font-semibold text-fg">{bt("최근 작업을 확인하지 못했어요.", "We couldn't check your recent work.")}</p>
+      <p className="mt-2 text-sm leading-6 text-fg-2">{bt("브라우저의 저장소 접근을 확인한 뒤 다시 시도해 주세요. 저장된 작품은 변경하지 않았어요.", "Check this browser's storage access, then retry. Your saved work has not been changed.")}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button type="button" onClick={reloadRecentProjects} className={buttonClass({ variant: "outline", size: "lg", className: "min-h-12" })}>{bt("다시 불러오기", "Reload recent work")}</button>
+        <Link href="/studio" className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-accent">{bt("내 작업 보기", "View my work")}<ArrowRight size={17} aria-hidden /></Link>
+      </div>
+    </div>
+  ) : null;
 
   const selectSection = (section: "all" | "lanes" | "pipeline" | "continue") => {
-    setSelectedSection(section);
+    if (section === activeSection) return;
     const next = new URLSearchParams(searchParams);
     if (section === "all") next.delete("section");
     else next.set("section", section);
-    setSearchParams(next, { replace: true });
+    setSearchParams(next);
+  };
+
+  const backToRecommendedStarts = () => {
+    restoreRecommendedFocus.current = true;
+    selectSection("all");
   };
 
   const handleSectionToggleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -136,11 +190,14 @@ export function CreateStartPage() {
 
   if (searchParams.get("intent") === MY_STORY_INTENT) {
     const requestedTopic = searchParams.get("topic");
+    const returnParams = new URLSearchParams(searchParams);
+    returnParams.delete("intent");
+    const returnHref = returnParams.size ? `/create?${returnParams.toString()}` : "/create";
     return (
       <Container size="wide" className="py-6 sm:py-10">
         <Link
-          href="/create"
-          style={{ minHeight: "44px" }}
+          href={returnHref}
+          style={{ minHeight: "48px" }}
           className="mb-5 inline-flex min-h-11 scroll-my-24 items-center gap-1.5 text-sm font-semibold text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <ArrowLeft size={15} aria-hidden />
@@ -154,170 +211,90 @@ export function CreateStartPage() {
   }
 
   return (
-    <Container size="wide" className="py-6 sm:py-10">
-      {/* 비주얼 아틀리에 히어로 배너 */}
-      <div className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/12 via-panel/90 to-card p-5 shadow-sm sm:p-6">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-        <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.16em] text-on-accent">
-                <Sparkles size={12} aria-hidden="true" />
-                {bt("시작하기 · TOONSTUDIO ATELIER", "START · TOONSTUDIO ATELIER")}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success-soft/20 px-2.5 py-1 text-[0.68rem] font-bold text-success">
-                <CheckCircle2 size={12} aria-hidden="true" />
-                {bt("가입 없이 이 기기에 자동 저장", "Autosaved locally without sign-up")}
-              </span>
-            </div>
-            <h1 className="mt-3 text-3xl font-black leading-tight tracking-tight text-fg sm:text-4xl">
-              {bt("작품 시작하기", "Start a work")}
-            </h1>
-            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-fg-2 sm:text-base sm:leading-7">
-              {bt(
-                "복잡한 캔버스 숫자부터 고민할 필요 없어요. 원하는 분위기 카드를 고르거나 질문에 답하면 알맞은 웹툰·4컷 규격이 바로 열립니다.",
-                "Skip complex canvas math. Pick a mood preset or answer a few story questions to open a ready-to-draw workspace.",
-              )}
-            </p>
-            <div
-              role="group"
-              aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")}
-              data-testid="create-start-section-group"
-              style={{ gap: "8px" }}
-              className="mt-5 flex flex-wrap items-center gap-2"
-            >
-              {([
-                ["all", "추천 시작", "Recommended"],
-                ["lanes", "다른 시작 방법", "More ways to start"],
-                ["pipeline", "주제 · 제작 도구", "Topics & tools"],
-                ["continue", "이어서 작업", "Continue Work"],
-              ] as const).map(([id, ko, en]) => {
-                const active = activeSection === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    data-testid={`create-start-section-${id}`}
-                    data-state={active ? "active" : "inactive"}
-                    aria-pressed={active}
-                    onClick={() => selectSection(id)}
-                    onKeyDown={handleSectionToggleKeyDown}
-                    style={{ minHeight: "44px", minWidth: "44px" }}
-                    className={`inline-flex min-h-11 min-w-11 max-w-full scroll-my-24 items-center justify-center rounded-full border px-3.5 py-2 text-xs font-bold leading-snug break-words [overflow-wrap:anywhere] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                      active
-                        ? "border-accent bg-accent text-on-accent"
-                        : "border-line bg-panel/70 text-fg-2 hover:border-accent/50 hover:text-fg"
-                    }`}
-                  >
-                    <span className="break-words [overflow-wrap:anywhere]">{bt(ko, en)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+    <Container size="wide" className="create-start-page py-6 sm:py-10">
+      <header className="create-start-heading">
+        {activeSection !== "all" ? (
+          <button type="button" onClick={backToRecommendedStarts} className="create-start-back">
+            <ArrowLeft size={18} aria-hidden />{bt("추천 시작으로", "Back to recommended starts")}
+          </button>
+        ) : null}
+        <h1 ref={headingRef} tabIndex={-1}>{activeSection === "lanes" ? bt("다른 시작 방법", "More ways to start")
+          : activeSection === "pipeline" ? bt("주제 · 제작 도구", "Topics & creation tools")
+          : activeSection === "continue" ? bt("이어서 작업", "Continue your work")
+          : bt("어떻게 시작할까요?", "How would you like to start?")}</h1>
+        <p>{activeSection === "all"
+          ? bt("지금 하고 싶은 것부터 선택하세요.", "Choose what you would like to do now.")
+          : bt("필요한 방법을 고르고, 하던 작업으로 이어가세요.", "Choose the next step for your work.")}</p>
+      </header>
 
-          <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-canvas shadow-sm">
-            <img
-              src="/brand/atelier-process-960.webp"
-              alt=""
-              aria-hidden="true"
-              loading="eager"
-              decoding="async"
-              className="h-44 w-full object-cover sm:h-52"
-            />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent"
-            />
-            <div className="absolute inset-x-3.5 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-card/90 p-2.5">
-              <div>
-                <p className="text-[0.65rem] font-extrabold uppercase tracking-wider text-accent">
-                  {bt("30초 빠른 시작", "30-SECOND LAUNCH")}
-                </p>
-                <p className="text-xs font-bold text-fg">
-                  {bt("기획 · 드로잉 · 출고 규격 자동 연결", "Story, drawing & export specs pre-wired")}
-                </p>
+      {activeSection === "all" ? (
+        <>
+          <section className="create-start-choice-grid" data-testid="create-start-persona-guide"
+            aria-label={bt("작품을 시작하는 두 가지 방법", "Two ways to start a work")}>
+            <article className="create-start-choice">
+              <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/storyboard-768.webp"
+                srcSet="/brand/lobby-hq-20261003/storyboard-480.webp 480w, /brand/lobby-hq-20261003/storyboard-768.webp 768w"
+                sizes="(min-width: 640px) 50vw, 56vw" alt="" aria-hidden="true" loading="eager" decoding="async" />
+              <div className="create-start-choice-copy">
+                <p className="create-start-choice-kind"><MessageSquare size={18} aria-hidden />{bt("생각부터 차근차근", "Start with an idea")}</p>
+                <h2>{bt("이야기부터 시작", "Start with a story")}</h2>
+                <p className="create-start-choice-description">{bt("인물과 이야기를 첫 장면으로.", "Bring your characters and story to a first scene.")}</p>
+                <Link href={storyHref} className="create-start-choice-action">
+                  {bt("이야기 시작하기", "Start my story")}<ArrowRight size={19} aria-hidden />
+                </Link>
               </div>
-              <Link
-                href="/studio/new?lane=blank"
-                style={{ minHeight: "44px" }}
-                className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 scroll-my-24 gap-1.5" })}
-              >
-                {bt("새 작품 만들기", "Create a new work")}
-                <ArrowRight size={14} aria-hidden="true" />
+            </article>
+            <StudioQuickStart locale={locale} presentation="drawing-card" />
+          </section>
+
+          <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
+            <Link href="/studio/templates">{bt("템플릿 고르기", "Choose a template")}<ArrowRight size={18} aria-hidden /></Link>
+            <Link href="/studio/import">{bt("파일 가져오기", "Import a file")}<Upload size={18} aria-hidden /></Link>
+          </nav>
+
+          <section className="create-start-recent" aria-label={bt("최근 작업", "Recent work")}>
+            {recentWorkError ?? (recentProject && recentTarget ? (
+              <Link href={recentTarget.href} className="create-start-recent-link"
+                aria-label={bt(`${recentProject.title} 이어서 작업`, `Continue ${recentProject.title}`)}>
+                <RecentWorkThumbnail key={`${recentProject.id}:${recentProject.thumbnailUrl ?? ""}`} project={recentProject} />
+                <span className="create-start-recent-copy"><small>{bt("작업하던 작품이 있나요?", "Ready to pick up your work?")}</small><strong>{recentProject.title}</strong></span>
+                <span className="create-start-recent-action">{bt("이어서 작업", "Continue")}<ArrowRight size={18} aria-hidden /></span>
               </Link>
-            </div>
-          </div>
-        </div>
+            ) : (
+              <div className="create-start-recent-empty"><span>{bt("아직 작업한 작품이 없어요.", "No works yet.")}</span><Link href="/studio">{bt("내 작업 보기", "View my work")}<ArrowRight size={17} aria-hidden /></Link></div>
+            ))}
+          </section>
+        </>
+      ) : null}
+
+      <div role="group" aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")}
+        data-testid="create-start-section-group" style={{ gap: "8px" }} className="create-start-section-nav">
+        {([
+          ["all", "추천 시작", "Recommended"],
+          ["lanes", "다른 시작 방법", "More ways to start"],
+          ["pipeline", "주제 · 제작 도구", "Topics & tools"],
+          ["continue", "이어서 작업", "Continue work"],
+        ] as const).map(([id, ko, en]) => (
+          <button key={id} type="button" data-testid={`create-start-section-${id}`}
+            data-state={activeSection === id ? "active" : "inactive"} aria-pressed={activeSection === id}
+            onClick={() => selectSection(id)} onKeyDown={handleSectionToggleKeyDown}
+            style={{ minHeight: "48px", minWidth: "48px" }}
+            className="min-h-11 min-w-11 scroll-my-24 break-words [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+            {bt(ko, en)}
+          </button>
+        ))}
       </div>
-
-      <StudioJourneyStepBar currentStep="start" className="mt-5" />
-
-      <section
-        data-testid="create-start-persona-guide"
-        aria-label={bt("상황별 추천 시작 방법", "Recommended start by situation")}
-        className="relative mt-6 overflow-hidden rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/8 via-panel/85 to-card p-4 shadow-sm sm:p-5"
-      >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
-            {bt("어떻게 시작하고 싶나요?", "How would you like to start?")}
-          </p>
-          <span className="text-xs text-fg-3">
-            {bt("어떤 방식이 맞을지 고민된다면 내 현재 상황을 골라보세요", "Not sure where to begin? Pick what matches you best")}
-          </span>
-        </div>
-        <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href={`/create?intent=${MY_STORY_INTENT}`}
-            style={{ minHeight: "44px" }}
-            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none"
-          >
-            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
-              {bt("그림·스토리 모두 처음이에요", "New to both drawing & story")}
-            </span>
-            <span className="mt-2 text-[11px] font-extrabold text-accent">
-              {bt("질문 답변형 초안 생성 →", "Generate draft via Q&A →")}
-            </span>
-          </Link>
-          <StudioQuickStart locale={locale} presentation="drawing-card" />
-          <Link
-            href="/studio/templates"
-            style={{ minHeight: "44px" }}
-            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/70 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-accent/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none"
-          >
-            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
-              {bt("웹툰·인스타툰 규격이 헷갈려요", "Unsure about canvas specs")}
-            </span>
-            <span className="mt-2 text-[11px] font-extrabold text-accent">
-              {bt("표준 규격 프리셋 선택 →", "Pick standard spec preset →")}
-            </span>
-          </Link>
-          <Link
-            href="/studio/import"
-            style={{ minHeight: "44px" }}
-            className="flex min-h-11 scroll-my-24 flex-col justify-between rounded-xl border border-line/80 bg-panel/70 p-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-accent/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none"
-          >
-            <span className="text-xs font-bold text-fg break-words [overflow-wrap:anywhere]">
-              {bt("클튜·포토샵 작업 파일이 있어요", "Have Clip Studio / PSD files")}
-            </span>
-            <span className="mt-2 text-[11px] font-extrabold text-accent">
-              {bt("외부 작업 파일 열기 →", "Open external work files →")}
-            </span>
-          </Link>
-        </div>
-      </section>
-
-      <CreateStartGenreStarterSection />
 
       {showPipeline ? (
       <details open={activeSection === "pipeline"} className="mt-6 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
         <summary
-          style={{ minHeight: "44px" }}
+          style={{ minHeight: "48px" }}
           className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {bt("주제별 질문과 제작 도구 더 보기", "More story topics and creation tools")}
         </summary>
+        <CreateStartGenreStarterSection />
+        <StudioJourneyStepBar currentStep="start" className="mt-5" />
         <SiteContextualSubNav pathnameOverride="/create" className="mt-4" />
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
@@ -330,12 +307,12 @@ export function CreateStartPage() {
               {bt("4단계 제작 흐름", "4-STEP WORKFLOW")}
             </p>
             <h2 className="text-sm font-bold text-fg">
-              {bt("줄거리 정리부터 콘티 · 3D 배경 · 연재 준비까지 차례대로 이어가요", "Follow four clear steps from story notes to boards, 3D scenes, and release")}
+              {bt("줄거리 정리부터 콘티 · 3D 배경 · 연재 준비까지 차례대로 이어가요", "Follow four clear steps from story notes to boards, 3D scenes, and release preparation")}
             </h2>
           </div>
           <Link
             href="/studio/ai-lab"
-            style={{ minHeight: "44px" }}
+            style={{ minHeight: "48px" }}
             className="inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-accent/40 bg-accent-soft px-3.5 py-2 text-[11px] font-bold text-accent hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {bt("AI 창작 도우미 열기 →", "Open AI Creative Helper →")}
@@ -344,6 +321,9 @@ export function CreateStartPage() {
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
             const enMode = PIPELINE_MODE_EN_COPY[mode.id];
+            const descriptionKo = mode.id === "ink-render-publish"
+              ? "회차와 게시 설정을 확인해요. 게시용 파일 준비는 외부 게시 완료와 달라요. 외부 채널에는 직접 업로드·예약해 주세요."
+              : mode.description;
             return (
               <Link
                 key={mode.id}
@@ -352,10 +332,10 @@ export function CreateStartPage() {
               >
                 <div>
                   <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                    {mode.step}
+                    {bt(mode.step, enMode?.step ?? mode.step)}
                   </span>
                   <p className="mt-2 text-xs font-bold text-fg">{bt(mode.label, enMode?.label ?? mode.label)}</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{bt(mode.description, enMode?.description ?? mode.description)}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{bt(descriptionKo, enMode?.description ?? descriptionKo)}</p>
                 </div>
                 <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-accent">
                   {bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)} →
@@ -392,7 +372,7 @@ export function CreateStartPage() {
           </div>
           <Link
             href={`/create?intent=${MY_STORY_INTENT}`}
-            style={{ minHeight: "44px" }}
+            style={{ minHeight: "48px" }}
             className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 scroll-my-24 shrink-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}
           >
             {bt("내 이야기 풀어내기", "Tell my story")}
@@ -404,7 +384,7 @@ export function CreateStartPage() {
             <li key={topicId}>
               <Link
                 href={`/create?intent=${MY_STORY_INTENT}&topic=${topicId}`}
-                style={{ minHeight: "44px" }}
+                style={{ minHeight: "48px" }}
                 className="fx-press inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg break-words [overflow-wrap:anywhere] transition-colors hover:border-accent/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {bt(MY_STORY_TOPIC_TITLES[topicId].ko, MY_STORY_TOPIC_TITLES[topicId].en)}
@@ -419,7 +399,7 @@ export function CreateStartPage() {
       {showLanes ? (
       <details open={activeSection === "lanes"} className="mt-4 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
         <summary
-          style={{ minHeight: "44px" }}
+          style={{ minHeight: "48px" }}
           className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")}
@@ -548,12 +528,9 @@ export function CreateStartPage() {
       </details>
       ) : null}
 
-      <CreateStartContinueSection
-        recentProjects={recentProjects}
-        locale={locale}
-        userId={userId}
-        showContinue={showContinue}
-      />
+      {activeSection === "continue" ? (
+        recentWorkError ?? <CreateStartContinueSection recentProjects={recentProjects} locale={locale} userId={userId} showContinue />
+      ) : null}
     </Container>
   );
 }

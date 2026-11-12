@@ -1,20 +1,22 @@
-/* UI-only palettes. The existing dark/light attribute remains the semantic mode. */
+/* UI 팔레트의 원시값은 --ui-palette-* 정본으로 한 번만 정의한다.
+ * color는 root·미리보기에서, unified는 root에서 각각 이 값을 참조한다.
+ * 기존 dark/light 속성의 의미와 의미색·대비 값은 유지한다. */
 :root[data-design-theme="aurora"],
 [data-appearance-preview="aurora"] {
   color-scheme: light;
-  --color-canvas: oklch(0.968 0.018 285);
-  --color-panel: oklch(0.988 0.012 275);
-  --color-card: oklch(0.997 0.008 300);
-  --color-raised: oklch(0.925 0.035 270);
-  --color-line: oklch(0.82 0.045 275);
-  --color-line-strong: oklch(0.61 0.06 275); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.7, raised 2.15:1) */
-  --color-fg: oklch(0.22 0.035 275);
-  --color-fg-2: oklch(0.34 0.04 275);
-  --color-fg-3: oklch(0.41 0.045 275);
-  --color-accent: oklch(0.43 0.19 300);
-  --color-accent-2: oklch(0.4 0.19 315);
-  --color-accent-soft: oklch(0.67 0.16 300 / 0.16);
-  --color-on-accent: oklch(0.99 0.008 285);
+  --ui-palette-canvas: oklch(0.968 0.018 285);
+  --ui-palette-panel: oklch(0.988 0.012 275);
+  --ui-palette-card: oklch(0.997 0.008 300);
+  --ui-palette-raised: oklch(0.925 0.035 270);
+  --ui-palette-line: oklch(0.82 0.045 275);
+  --ui-palette-line-strong: oklch(0.61 0.06 275); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.7, raised 2.15:1) */
+  --ui-palette-fg: oklch(0.22 0.035 275);
+  --ui-palette-fg-2: oklch(0.34 0.04 275);
+  --ui-palette-fg-3: oklch(0.41 0.045 275);
+  --ui-palette-accent: oklch(0.43 0.19 300);
+  --ui-palette-accent-2: oklch(0.4 0.19 315);
+  --ui-palette-accent-soft: oklch(0.67 0.16 300 / 0.16);
+  --ui-palette-on-accent: oklch(0.99 0.008 285);
   --color-cool: oklch(0.425 0.15 225); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.44, 4.38:1) */
   --color-good: oklch(0.43 0.14 155); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.45, 4.29:1) */
   --color-warn: oklch(0.45 0.15 75);
@@ -26,19 +28,19 @@
 :root[data-design-theme="blossom"],
 [data-appearance-preview="blossom"] {
   color-scheme: light;
-  --color-canvas: oklch(0.972 0.02 30);
-  --color-panel: oklch(0.99 0.014 35);
-  --color-card: oklch(0.998 0.008 35);
-  --color-raised: oklch(0.925 0.038 28);
-  --color-line: oklch(0.82 0.045 25);
-  --color-line-strong: oklch(0.61 0.06 20); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.7, raised 2.17:1) */
-  --color-fg: oklch(0.23 0.04 18);
-  --color-fg-2: oklch(0.35 0.045 18);
-  --color-fg-3: oklch(0.42 0.045 18);
-  --color-accent: oklch(0.44 0.19 18);
-  --color-accent-2: oklch(0.4 0.18 350);
-  --color-accent-soft: oklch(0.69 0.15 20 / 0.16);
-  --color-on-accent: oklch(0.99 0.008 35);
+  --ui-palette-canvas: oklch(0.972 0.02 30);
+  --ui-palette-panel: oklch(0.99 0.014 35);
+  --ui-palette-card: oklch(0.998 0.008 35);
+  --ui-palette-raised: oklch(0.925 0.038 28);
+  --ui-palette-line: oklch(0.82 0.045 25);
+  --ui-palette-line-strong: oklch(0.61 0.06 20); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.7, raised 2.17:1) */
+  --ui-palette-fg: oklch(0.23 0.04 18);
+  --ui-palette-fg-2: oklch(0.35 0.045 18);
+  --ui-palette-fg-3: oklch(0.42 0.045 18);
+  --ui-palette-accent: oklch(0.44 0.19 18);
+  --ui-palette-accent-2: oklch(0.4 0.18 350);
+  --ui-palette-accent-soft: oklch(0.69 0.15 20 / 0.16);
+  --ui-palette-on-accent: oklch(0.99 0.008 35);
   --color-cool: oklch(0.43 0.13 225);
   --color-good: oklch(0.425 0.14 155); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.45, 4.22:1) */
   --color-warn: oklch(0.44 0.15 75); /* accent 틴트 위 warn 텍스트 4.5:1 확보 (was 0.45, 틴트 raised 4.49:1) */
@@ -50,19 +52,19 @@
 :root[data-design-theme="starlight"],
 [data-appearance-preview="starlight"] {
   color-scheme: dark;
-  --color-canvas: #070a14;
-  --color-panel: #0b101d;
-  --color-card: #101726;
-  --color-raised: #192235;
-  --color-line: #303b54;
-  --color-line-strong: #667796;
-  --color-fg: #f1f4ff;
-  --color-fg-2: #c5cede;
-  --color-fg-3: #a5b3c9;
-  --color-accent: #b39bff;
-  --color-accent-2: #6edaff;
-  --color-accent-soft: rgb(151 121 255 / 16%);
-  --color-on-accent: #121226;
+  --ui-palette-canvas: #070a14;
+  --ui-palette-panel: #0b101d;
+  --ui-palette-card: #101726;
+  --ui-palette-raised: #192235;
+  --ui-palette-line: #303b54;
+  --ui-palette-line-strong: #667796;
+  --ui-palette-fg: #f1f4ff;
+  --ui-palette-fg-2: #c5cede;
+  --ui-palette-fg-3: #a5b3c9;
+  --ui-palette-accent: #b39bff;
+  --ui-palette-accent-2: #6edaff;
+  --ui-palette-accent-soft: rgb(151 121 255 / 16%);
+  --ui-palette-on-accent: #121226;
   --color-cool: oklch(0.8 0.12 225);
   --color-good: oklch(0.8 0.14 155);
   --color-warn: oklch(0.84 0.14 80);
@@ -74,19 +76,19 @@
 :root[data-design-theme="dark"],
 [data-appearance-preview="dark"] {
   color-scheme: dark;
-  --color-canvas: oklch(0.155 0.008 70);
-  --color-panel: oklch(0.185 0.009 68);
-  --color-card: oklch(0.208 0.01 66);
-  --color-raised: oklch(0.247 0.011 64);
-  --color-line: oklch(0.305 0.012 64);
-  --color-line-strong: oklch(0.53 0.013 64); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.42, raised 1.90:1) */
-  --color-fg: oklch(0.95 0.01 85);
-  --color-fg-2: oklch(0.745 0.012 78);
-  --color-fg-3: oklch(0.655 0.012 76);
-  --color-accent: oklch(0.72 0.185 42);
-  --color-accent-2: oklch(0.66 0.2 38);
-  --color-accent-soft: oklch(0.72 0.185 42 / 0.14);
-  --color-on-accent: oklch(0.2 0.02 60);
+  --ui-palette-canvas: oklch(0.155 0.008 70);
+  --ui-palette-panel: oklch(0.185 0.009 68);
+  --ui-palette-card: oklch(0.208 0.01 66);
+  --ui-palette-raised: oklch(0.247 0.011 64);
+  --ui-palette-line: oklch(0.305 0.012 64);
+  --ui-palette-line-strong: oklch(0.53 0.013 64); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.42, raised 1.90:1) */
+  --ui-palette-fg: oklch(0.95 0.01 85);
+  --ui-palette-fg-2: oklch(0.745 0.012 78);
+  --ui-palette-fg-3: oklch(0.655 0.012 76);
+  --ui-palette-accent: oklch(0.72 0.185 42);
+  --ui-palette-accent-2: oklch(0.66 0.2 38);
+  --ui-palette-accent-soft: oklch(0.72 0.185 42 / 0.14);
+  --ui-palette-on-accent: oklch(0.2 0.02 60);
   --color-cool: oklch(0.8 0.11 232);
   --color-good: oklch(0.8 0.15 150);
   --color-warn: oklch(0.82 0.15 80);
@@ -98,19 +100,19 @@
 :root[data-design-theme="light"],
 [data-appearance-preview="light"] {
   color-scheme: light;
-  --color-canvas: oklch(0.972 0.008 85);
-  --color-panel: oklch(0.992 0.006 85);
-  --color-card: oklch(0.998 0.004 85);
-  --color-raised: oklch(0.945 0.009 82);
-  --color-line: oklch(0.88 0.012 80);
-  --color-line-strong: oklch(0.62 0.014 78); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.78, raised 1.71:1) */
-  --color-fg: oklch(0.26 0.02 60);
-  --color-fg-2: oklch(0.42 0.018 66);
-  --color-fg-3: oklch(0.49 0.016 70);
-  --color-accent: oklch(0.5 0.2 41);
-  --color-accent-2: oklch(0.47 0.2 36);
-  --color-accent-soft: oklch(0.62 0.2 40 / 0.12);
-  --color-on-accent: oklch(0.99 0.01 85);
+  --ui-palette-canvas: oklch(0.972 0.008 85);
+  --ui-palette-panel: oklch(0.992 0.006 85);
+  --ui-palette-card: oklch(0.998 0.004 85);
+  --ui-palette-raised: oklch(0.945 0.009 82);
+  --ui-palette-line: oklch(0.88 0.012 80);
+  --ui-palette-line-strong: oklch(0.62 0.014 78); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.78, raised 1.71:1) */
+  --ui-palette-fg: oklch(0.26 0.02 60);
+  --ui-palette-fg-2: oklch(0.42 0.018 66);
+  --ui-palette-fg-3: oklch(0.49 0.016 70);
+  --ui-palette-accent: oklch(0.5 0.2 41);
+  --ui-palette-accent-2: oklch(0.47 0.2 36);
+  --ui-palette-accent-soft: oklch(0.62 0.2 40 / 0.12);
+  --ui-palette-on-accent: oklch(0.99 0.01 85);
   --color-cool: oklch(0.45 0.13 232); /* 시맨틱 텍스트 4.5:1 확보 — raised 평면·자기 틴트 16%/raised (was 0.52, 4.44:1·3.58:1) */
   --color-good: oklch(0.445 0.15 150); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.5, 3.78:1) */
   --color-warn: oklch(0.46 0.15 80);
@@ -122,19 +124,19 @@
 :root[data-design-theme="graphite"],
 [data-appearance-preview="graphite"] {
   color-scheme: dark;
-  --color-canvas: oklch(0.23 0 0);
-  --color-panel: oklch(0.265 0 0);
-  --color-card: oklch(0.285 0 0);
-  --color-raised: oklch(0.315 0 0);
-  --color-line: oklch(0.46 0 0);
-  --color-line-strong: oklch(0.58 0 0);
-  --color-fg: oklch(0.96 0 0);
-  --color-fg-2: oklch(0.81 0 0);
-  --color-fg-3: oklch(0.73 0 0);
-  --color-accent: oklch(0.8 0.12 80);
-  --color-accent-2: oklch(0.76 0.12 80);
-  --color-accent-soft: oklch(0.8 0.12 80 / 0.16);
-  --color-on-accent: oklch(0.2 0 0);
+  --ui-palette-canvas: oklch(0.23 0 0);
+  --ui-palette-panel: oklch(0.265 0 0);
+  --ui-palette-card: oklch(0.285 0 0);
+  --ui-palette-raised: oklch(0.315 0 0);
+  --ui-palette-line: oklch(0.46 0 0);
+  --ui-palette-line-strong: oklch(0.58 0 0);
+  --ui-palette-fg: oklch(0.96 0 0);
+  --ui-palette-fg-2: oklch(0.81 0 0);
+  --ui-palette-fg-3: oklch(0.73 0 0);
+  --ui-palette-accent: oklch(0.8 0.12 80);
+  --ui-palette-accent-2: oklch(0.76 0.12 80);
+  --ui-palette-accent-soft: oklch(0.8 0.12 80 / 0.16);
+  --ui-palette-on-accent: oklch(0.2 0 0);
   --color-cool: oklch(0.8 0.11 232);
   --color-good: oklch(0.8 0.15 150);
   --color-warn: oklch(0.82 0.15 80);
@@ -146,19 +148,19 @@
 :root[data-design-theme="midnight"],
 [data-appearance-preview="midnight"] {
   color-scheme: dark;
-  --color-canvas: oklch(0.205 0.026 260);
-  --color-panel: oklch(0.245 0.028 260);
-  --color-card: oklch(0.265 0.029 260);
-  --color-raised: oklch(0.295 0.032 260);
-  --color-line: oklch(0.44 0.038 260);
-  --color-line-strong: oklch(0.58 0.04 260);
-  --color-fg: oklch(0.96 0.01 250);
-  --color-fg-2: oklch(0.81 0.018 250);
-  --color-fg-3: oklch(0.73 0.02 250);
-  --color-accent: oklch(0.8 0.1 235);
-  --color-accent-2: oklch(0.76 0.1 235);
-  --color-accent-soft: oklch(0.8 0.1 235 / 0.16);
-  --color-on-accent: oklch(0.2 0.02 260);
+  --ui-palette-canvas: oklch(0.205 0.026 260);
+  --ui-palette-panel: oklch(0.245 0.028 260);
+  --ui-palette-card: oklch(0.265 0.029 260);
+  --ui-palette-raised: oklch(0.295 0.032 260);
+  --ui-palette-line: oklch(0.44 0.038 260);
+  --ui-palette-line-strong: oklch(0.58 0.04 260);
+  --ui-palette-fg: oklch(0.96 0.01 250);
+  --ui-palette-fg-2: oklch(0.81 0.018 250);
+  --ui-palette-fg-3: oklch(0.73 0.02 250);
+  --ui-palette-accent: oklch(0.8 0.1 235);
+  --ui-palette-accent-2: oklch(0.76 0.1 235);
+  --ui-palette-accent-soft: oklch(0.8 0.1 235 / 0.16);
+  --ui-palette-on-accent: oklch(0.2 0.02 260);
   --color-cool: oklch(0.8 0.11 232);
   --color-good: oklch(0.8 0.15 150);
   --color-warn: oklch(0.82 0.15 80);
@@ -170,19 +172,19 @@
 :root[data-design-theme="sepia"],
 [data-appearance-preview="sepia"] {
   color-scheme: light;
-  --color-canvas: oklch(0.93 0.024 85);
-  --color-panel: oklch(0.957 0.02 85);
-  --color-card: oklch(0.973 0.016 85);
-  --color-raised: oklch(0.905 0.028 82);
-  --color-line: oklch(0.76 0.035 78);
-  --color-line-strong: oklch(0.595 0.04 72); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.61, raised 2.87:1) */
-  --color-fg: oklch(0.26 0.024 60);
-  --color-fg-2: oklch(0.38 0.024 64);
-  --color-fg-3: oklch(0.46 0.023 65);
-  --color-accent: oklch(0.43 0.1 50);
-  --color-accent-2: oklch(0.4 0.1 50);
-  --color-accent-soft: oklch(0.43 0.1 50 / 0.12);
-  --color-on-accent: oklch(0.98 0.008 85);
+  --ui-palette-canvas: oklch(0.93 0.024 85);
+  --ui-palette-panel: oklch(0.957 0.02 85);
+  --ui-palette-card: oklch(0.973 0.016 85);
+  --ui-palette-raised: oklch(0.905 0.028 82);
+  --ui-palette-line: oklch(0.76 0.035 78);
+  --ui-palette-line-strong: oklch(0.595 0.04 72); /* unified 계약과 동일 값으로 미러링 — 정적 폴백 경계 3:1 (was 0.61, raised 2.87:1) */
+  --ui-palette-fg: oklch(0.26 0.024 60);
+  --ui-palette-fg-2: oklch(0.38 0.024 64);
+  --ui-palette-fg-3: oklch(0.46 0.023 65);
+  --ui-palette-accent: oklch(0.43 0.1 50);
+  --ui-palette-accent-2: oklch(0.4 0.1 50);
+  --ui-palette-accent-soft: oklch(0.43 0.1 50 / 0.12);
+  --ui-palette-on-accent: oklch(0.98 0.008 85);
   --color-cool: oklch(0.42 0.13 232); /* 시맨틱 텍스트 4.5:1 확보 — canvas 평면·자기 틴트 16%/raised (was 0.52, 4.24:1·3.20:1) */
   --color-good: oklch(0.415 0.15 150); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.47, 3.78:1; 평면 raised 보정 0.5→0.47 선행) */
   --color-warn: oklch(0.445 0.15 80); /* 시맨틱 텍스트 4.5:1 확보 — 자기 틴트 16%/raised (was 0.46, 4.33:1) */
@@ -194,19 +196,19 @@
 :root[data-design-theme="contrast"],
 [data-appearance-preview="contrast"] {
   color-scheme: dark;
-  --color-canvas: oklch(0.15 0 0);
-  --color-panel: oklch(0.18 0 0);
-  --color-card: oklch(0.2 0 0);
-  --color-raised: oklch(0.23 0 0);
-  --color-line: oklch(0.64 0 0);
-  --color-line-strong: oklch(0.8 0 0);
-  --color-fg: oklch(0.98 0 0);
-  --color-fg-2: oklch(0.94 0 0);
-  --color-fg-3: oklch(0.87 0 0);
-  --color-accent: oklch(0.89 0.14 100);
-  --color-accent-2: oklch(0.85 0.14 100);
-  --color-accent-soft: oklch(0.89 0.14 100 / 0.2);
-  --color-on-accent: oklch(0.17 0 0);
+  --ui-palette-canvas: oklch(0.15 0 0);
+  --ui-palette-panel: oklch(0.18 0 0);
+  --ui-palette-card: oklch(0.2 0 0);
+  --ui-palette-raised: oklch(0.23 0 0);
+  --ui-palette-line: oklch(0.64 0 0);
+  --ui-palette-line-strong: oklch(0.8 0 0);
+  --ui-palette-fg: oklch(0.98 0 0);
+  --ui-palette-fg-2: oklch(0.94 0 0);
+  --ui-palette-fg-3: oklch(0.87 0 0);
+  --ui-palette-accent: oklch(0.89 0.14 100);
+  --ui-palette-accent-2: oklch(0.85 0.14 100);
+  --ui-palette-accent-soft: oklch(0.89 0.14 100 / 0.2);
+  --ui-palette-on-accent: oklch(0.17 0 0);
   --color-cool: oklch(0.8 0.11 232);
   --color-good: oklch(0.8 0.15 150);
   --color-warn: oklch(0.82 0.15 80);
@@ -498,6 +500,23 @@
   --color-selection-bg: var(--color-accent);
   --color-selection-fg: var(--color-on-accent);
   --color-overlay: var(--color-canvas);
+}
+
+:root:is([data-design-theme="aurora"],[data-design-theme="blossom"],[data-design-theme="starlight"],[data-design-theme="dark"],[data-design-theme="light"],[data-design-theme="graphite"],[data-design-theme="midnight"],[data-design-theme="sepia"],[data-design-theme="contrast"]),
+:is([data-appearance-preview="aurora"],[data-appearance-preview="blossom"],[data-appearance-preview="starlight"],[data-appearance-preview="dark"],[data-appearance-preview="light"],[data-appearance-preview="graphite"],[data-appearance-preview="midnight"],[data-appearance-preview="sepia"],[data-appearance-preview="contrast"]) {
+  --color-canvas: var(--ui-palette-canvas);
+  --color-panel: var(--ui-palette-panel);
+  --color-card: var(--ui-palette-card);
+  --color-raised: var(--ui-palette-raised);
+  --color-line: var(--ui-palette-line);
+  --color-line-strong: var(--ui-palette-line-strong);
+  --color-fg: var(--ui-palette-fg);
+  --color-fg-2: var(--ui-palette-fg-2);
+  --color-fg-3: var(--ui-palette-fg-3);
+  --color-accent: var(--ui-palette-accent);
+  --color-accent-2: var(--ui-palette-accent-2);
+  --color-accent-soft: var(--ui-palette-accent-soft);
+  --color-on-accent: var(--ui-palette-on-accent);
 }
 
 .appearance-current {

@@ -1,0 +1,24 @@
+/* 소재 찾기의 기본 동선만 압축한다. 다른 마켓 화면의 공통 내비·토큰은 유지한다. */
+.market-browse-search .market-browse-extra-menu { border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-panel); }
+.market-browse-search .market-browse-extra-menu > summary { display: flex; min-height: 3rem; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .75rem; cursor: pointer; list-style: none; font-size: 1rem; font-weight: 600; }
+.market-browse-search .market-browse-extra-menu > summary::-webkit-details-marker { display: none; }
+.market-browse-search .market-browse-extra-menu > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.market-browse-menu-body { max-height: min(65dvh, 32rem); overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--color-line); padding: .75rem; }
+.market-browse-search .market-browse-menu-body :is(a, button), .market-browse-search button, .market-browse-search select { min-height: 3rem; }
+.market-browse-search .market-browse-menu-body a { white-space: normal; }
+.market-browse-search :is(input, select) { min-width: 0; font-size: 1rem; }
+
+.market-browse-search button { min-width: 3rem; }
+
+/* 같은 자산·실제 사용권을 유지하는 명명된 행 변형. 그리드와 다른 화면은 바꾸지 않는다. */
+.market-browse-search .market-resource-card--row { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: .75rem; padding: .625rem; }
+.market-browse-search .market-resource-card--row > .market-resource-card__cover { width: 6rem; height: 7.125rem; min-height: 0; aspect-ratio: auto; align-self: center; }
+.market-browse-search .market-resource-card__cover > img { object-fit: cover; }
+.market-browse-search .market-resource-card__body { display: flex; flex-direction: column; gap: .375rem; }
+.market-browse-search .market-resource-card__heading { min-height: 2.25rem; }
+.market-browse-search .market-resource-card__title { font-size: .875rem; line-height: 1.25rem; }
+.market-browse-search .market-resource-card__actions { margin-top: auto; }
+@media (max-width: 340px) {
+  .market-browse-search .market-resource-card--row { grid-template-columns: 5.25rem minmax(0, 1fr); gap: .5625rem; padding: .5625rem; }
+  .market-browse-search .market-resource-card--row > .market-resource-card__cover { width: 5.25rem; }
+}

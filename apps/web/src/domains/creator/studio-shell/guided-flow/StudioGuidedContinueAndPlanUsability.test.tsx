@@ -13,7 +13,7 @@ import {
 } from "@/shared/lib/webtoon-production-onboarding";
 
 import { CreateStartPage } from "../../CreateStartPage";
-import { writeStudioExactResumeContext } from "../../studio-exact-resume-context";
+import { readStudioExactResumeContext, writeStudioExactResumeContext } from "../../studio-exact-resume-context";
 import type {
   StudioProjectCollaboration,
   StudioProjectPurpose,
@@ -189,12 +189,20 @@ describe("CreateStartContinueSection · 기존 작업 복귀 사용성 검증", 
     // ko-KR 로케일에서도 영어로 폴백되지 않고 한국어 작업 위치 요약을 표시한다.
     const canvasDest = screen.getByTestId("continue-destination-proj-canvas").textContent ?? "";
     expect(canvasDest).toContain("마지막 작업 위치:");
-    expect(canvasDest).toContain("2페이지 · 확대 125%");
+    // 내부 페이지 ID를 이름으로 노출하지 않아도 복원할 위치와 배율·선택은 보존한다.
+    expect(canvasDest).toContain("최근 페이지 · 확대 125% · 선택 1개");
+    expect(canvasDest).not.toContain("2페이지");
 
     const canvasPrimary = screen.getByRole("link", { name: "방금 그리던 원고 이어서 작업" });
     const canvasOverview = screen.getByTestId("continue-overview-proj-canvas");
     expect(canvasPrimary.getAttribute("href")).toContain("/studio/p/proj-canvas/d/");
     expect(canvasPrimary.getAttribute("href")).toContain("resume=latest");
+    const resumeUrl = new URL(canvasPrimary.getAttribute("href") ?? "", "http://localhost");
+    const documentId = resumeUrl.pathname.split("/").at(-1);
+    if (!documentId) throw new Error("이어갈 문서 ID가 없습니다.");
+    expect(readStudioExactResumeContext(window.localStorage, "proj-canvas", documentId)).toMatchObject({
+      pageId: "2페이지", zoom: 1.25, selectedElementIds: ["panel-1"],
+    });
     expect(canvasOverview.getAttribute("href")).toBe("/studio/p/proj-canvas/overview");
     expect(canvasOverview.style.minHeight).toBe("44px");
     expect(canvasOverview.style.minWidth).toBe("44px");
@@ -392,7 +400,7 @@ describe("StudioCreateProductionPlanSection · 제작 계획 선택·프리셋·
     );
   });
 
-  it("상위 생성·시작 화면과 결합했을 때 세부 자료(시놉시스)·1클릭 프리셋 생성·이어 만들기 동선이 기존 계약 그대로 동작한다", async () => {
+  it("상위 생성·시작 화면의 단계 이동에서도 세부 자료(시놉시스)·프리셋 확인·이어 만들기 동선을 보존한다", async () => {
     const { unmount } = render(
       <MemoryRouter initialEntries={["/studio/new"]}>
         <StudioProjectCreatePage />
@@ -400,9 +408,14 @@ describe("StudioCreateProductionPlanSection · 제작 계획 선택·프리셋·
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "다음: 작품 이름" }));
     fireEvent.change(screen.getByRole("textbox", { name: /프로젝트 이름/u }), {
       target: { value: "공모전 단편 1화" },
     });
+    const confirmStep = document.querySelector<HTMLButtonElement>('[data-studio-create-step-link="3"]');
+    if (!confirmStep) throw new Error("시작 확인 단계가 없습니다.");
+    fireEvent.click(confirmStep);
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
     fireEvent.click(screen.getByTestId("production-plan-preset-contest-pitch"));
     // 상위 onSyncStartPoint 호출 시에도 시놉시스 같은 세부 선택이 'idea'로 덮어써지지 않는지 확인한다.
     fireEvent.change(screen.getByLabelText("현재 가지고 있는 자료"), {
@@ -410,8 +423,9 @@ describe("StudioCreateProductionPlanSection · 제작 계획 선택·프리셋·
     });
     expect(screen.getByRole("heading", { name: "시리즈 개발 트랙" })).toBeTruthy();
 
-    // 다시 공모전 프리셋을 눌러 최종 생성한다.
+    // 프리셋 선택은 생성하지 않는다. 최종 확인 버튼에서만 생성한다.
     fireEvent.click(screen.getByTestId("production-plan-preset-contest-pitch"));
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: /프로젝트와 제작 계획 만들기/u }));
 
     await waitFor(() => {

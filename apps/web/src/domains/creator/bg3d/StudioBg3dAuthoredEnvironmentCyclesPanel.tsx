@@ -95,7 +95,6 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
   const [activePass, setActivePass] = useState<CyclesPassKey>("beauty");
   const [layerOverrides, setLayerOverrides] = useState<StudioBg3dCyclesLayerOverrideMap>({});
   const [psdReceiptText, setPsdReceiptText] = useState<string | null>(null);
-  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
 
   const visibleAuthoredAssets = STUDIO_BG3D_ENVIRONMENT_ASSETS_AUTHORED_V1.filter(
     (asset) => themeFilter === "all" || asset.theme === themeFilter,
@@ -157,7 +156,6 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
 
   const handleAddEnvironment = (environmentId: string) => {
     if (disabled) return;
-    setLastAddedId(environmentId);
     onAdd(environmentId);
   };
 
@@ -299,7 +297,7 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
                         onClick={() => handleAddEnvironment(asset.id)}
                         className="w-full rounded border border-accent/50 bg-accent-soft px-2 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
                       >
-                        {lastAddedId === asset.id ? "CC0 배경 배치됨" : "CC0 배경 장면에 배치"}
+                        배치 위치 고르기
                       </button>
                     </article>
                   );
@@ -324,9 +322,7 @@ export function StudioBg3dAuthoredEnvironmentCyclesPanel({
                       onClick={() => handleAddEnvironment(selectedV6Asset.id)}
                       className="rounded border border-accent/50 bg-accent-soft px-2.5 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
                     >
-                      {lastAddedId === selectedV6Asset.id
-                        ? "V6 3D 환경 배치됨"
-                        : `${selectedV6Asset.name} 3D 장면에 배치`}
+                      {`${selectedV6Asset.name} 배치 위치 고르기`}
                     </button>
                   ) : null}
                   <button

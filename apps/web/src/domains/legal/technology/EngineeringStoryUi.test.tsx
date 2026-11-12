@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -95,5 +95,80 @@ describe("EngineeringPageFrame 이어보기 및 시안 P 좌측 고정·모바�
   it("읽기 순서는 큰 그림 두 해설로 시작해 라이선스로 끝난다", () => {
     expect(ENGINEERING_PAGES.map((page) => page.id).slice(0, 3)).toEqual(["architecture", "libraries", "story"]);
     expect(ENGINEERING_PAGES.at(-1)?.id).toBe("licenses");
+  });
+});
+
+
+describe("도감 전용 간결한 문서 틀", () => {
+  const menuName = /기술 문서 메뉴·목차|Documents & index/u;
+  function catalogFrame() {
+    return render(<MemoryRouter initialEntries={["/about/technology/atlas"]}>
+      <EngineeringPageFrame pageId="atlas" variant="catalog"><p>도감 본문</p></EngineeringPageFrame>
+    </MemoryRouter>);
+  }
+
+  it("기본 틀의 모든 유일한 소개·문서·이어보기 링크와 현재 선택을 한 메뉴로 보존한다", () => {
+    const original = render(<MemoryRouter initialEntries={["/about/technology/atlas"]}>
+      <EngineeringPageFrame pageId="atlas"><p>도감 본문</p></EngineeringPageFrame>
+    </MemoryRouter>);
+    const hrefs = (container: HTMLElement) => [...new Set([...container.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")))].sort();
+    const before = hrefs(original.container);
+    original.unmount();
+    const { container } = catalogFrame();
+    expect(hrefs(container)).toEqual(before);
+    const menu = container.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    expect(menu?.open).toBe(false);
+    const summary = menu?.querySelector("summary");
+    expect(summary?.textContent).toMatch(menuName);
+    expect(summary?.classList.contains("min-h-11")).toBe(true);
+    expect(menu?.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/about/technology/atlas");
+    expect(menu?.querySelector('[aria-current="location"]')?.getAttribute("href")).toBe("/about/technology");
+    expect(container.querySelectorAll('a[href="/about/technology/atlas"]')).toHaveLength(1);
+    expect(screen.queryByTestId("engineering-atlas-sticky-toc")).toBeNull();
+    expect(screen.queryByTestId("engineering-atlas-mobile-toc")).toBeNull();
+    expect(screen.getByRole("navigation", { name: /기술 문서 이어보기|Continue through/u })).toBeTruthy();
+  });
+
+  it("네이티브 summary 활성화를 유지하고 긴 목차 안 Escape는 메뉴를 닫아 초점을 돌린다", () => {
+    const { container } = catalogFrame();
+    const menu = container.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    const summary = menu?.querySelector("summary");
+    if (!menu || !summary) throw new Error("도감 메뉴와 네이티브 summary가 필요합니다.");
+    expect(summary.hasAttribute("role")).toBe(false);
+    for (const key of ["Enter", " "]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      // JSDOM은 summary의 키보드 기본 동작을 구현하지 않으므로 기본 동작을 취소하지 않는 계약만 검사한다.
+      expect(summary.dispatchEvent(event)).toBe(true);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    fireEvent.click(summary);
+    expect(menu.open).toBe(true);
+    const index = within(menu).getByRole("navigation", { name: /기술 문서 목차|Engineering document index/u });
+    const links = within(index).getAllByRole("link");
+    expect(links).toHaveLength(ENGINEERING_PAGES.length);
+    const last = links[links.length - 1];
+    if (!last) throw new Error("마지막 목차 링크가 필요합니다.");
+    last.focus();
+    fireEvent.keyDown(last, { key: "Escape" });
+    expect(menu.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    expect(menu.querySelector("div")?.className).toContain("overflow-y-auto");
+    expect(menu.querySelector("div")?.className).toContain("max-h-[min(65dvh,28rem)]");
+    const closedEscape = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    expect(summary.dispatchEvent(closedEscape)).toBe(true);
+  });
+
+  it("도감 머리말의 제목·인쇄를 같은 행에 놓고 설명을 유지하며 다른 문서 안내는 줄이지 않는다", () => {
+    const compact = render(<MemoryRouter><EngineeringPageIntro variant="catalog" eyebrow="TECH ATLAS" title="기술 도감" description="검색 안내" aside={<button>전체 인쇄</button>} /></MemoryRouter>);
+    const heading = screen.getByRole("heading", { level: 1, name: "기술 도감" });
+    const header = heading.closest("header");
+    expect(header?.className).toContain("grid-cols-[minmax(0,1fr)_auto]");
+    expect(header?.className).toContain("py-4");
+    expect(within(header as HTMLElement).getByRole("button", { name: "전체 인쇄" })).toBeTruthy();
+    expect(screen.getByText("검색 안내")).toBeTruthy();
+    compact.unmount();
+    render(<MemoryRouter><EngineeringPageIntro variant="catalog" pageId="story" eyebrow="STORY" title="제목" description="설명" /></MemoryRouter>);
+    expect(screen.getByText("이 페이지가 답하는 질문")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).closest("header")?.className).toContain("py-8");
   });
 });

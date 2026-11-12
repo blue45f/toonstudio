@@ -16,17 +16,25 @@ function handleTabKeys<T extends string>(
   value: T,
   onChange: (v: T) => void
 ) {
-  const idx = items.findIndex((it) => it.value === value);
-  let next: number;
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % items.length;
-  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + items.length) % items.length;
-  else if (e.key === "Home") next = 0;
-  else if (e.key === "End") next = items.length - 1;
-  else return;
+  if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(e.key)) return;
   e.preventDefault();
-  onChange(items[next].value);
   const list = e.currentTarget.closest('[role="tablist"]');
-  list?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  const available = Array.from(list?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []).flatMap((node, index) => {
+    const item = items[index];
+    return item && node.closest('[role="tablist"]') === list && !node.disabled && node.getAttribute("aria-disabled") !== "true"
+      ? [{ node, value: item.value }] : [];
+  });
+  if (!available.length) return;
+  // 부모의 URL·선택 반영이 늦어도 이미 이동한 실제 초점에서 다음 키를 이어간다.
+  const focused = available.findIndex((entry) => entry.node === e.currentTarget);
+  const idx = focused >= 0 ? focused : available.findIndex((entry) => entry.value === value);
+  let next: number;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % available.length;
+  else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx <= 0 ? available.length : idx) - 1;
+  else if (e.key === "Home") next = 0;
+  else next = available.length - 1;
+  onChange(available[next].value);
+  available[next].node.focus();
 }
 
 // 세그먼티드 컨트롤 — 알약형. active 뒤로 슬라이딩 인디케이터.

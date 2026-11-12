@@ -23,7 +23,7 @@ export function PublishSurfaceCrossBridge({
         <div className="min-w-0">
           <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
             <Sparkles size={13} aria-hidden="true" />
-            <span>PUBLISH & TRUST ATLAS · RIGHTS BOM READY</span>
+            <span>{pick("원고 출력 · 제작·권리 안내", "MANUSCRIPT EXPORT · PRODUCTION & RIGHTS GUIDE")}</span>
           </span>
           <p className="mt-1 text-xs font-semibold text-fg-2 sm:text-sm">
             {pick(
@@ -38,7 +38,7 @@ export function PublishSurfaceCrossBridge({
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
           >
             <Send size={14} aria-hidden="true" />
-            {pick("스튜디오 원고 검수·출고", "Studio Manuscript Export")}
+            {pick("회차 게시 설정", "Episode publishing settings")}
           </Link>
           <Link
             href="/about/technology/architecture"

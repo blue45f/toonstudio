@@ -1,3 +1,5 @@
+import { creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
+import { StudioDeviceStorageMessage } from "../storage-feedback/StudioDeviceStorageMessage";
 import "../studio-3d-ui/studio-3d-reference-workspace.css";
 /**
  * Studio VRM poser view slice extracted from `StudioVrmPoser.tsx` (behavior unchanged).
@@ -163,7 +165,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
               notice.variant === "info" && "border-line bg-raised text-fg-2",
             )}
           >
-            <span className="whitespace-pre-line">{notice.message}</span>
+            <div><StudioDeviceStorageMessage message={notice.message} /></div>
             <button
               type="button"
               className="shrink-0 rounded px-2 py-1 font-semibold opacity-80 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -182,13 +184,13 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
             aria-live="polite"
             data-studio-vrm-recent-persistence-warning="memory-only"
           >
-            <span>{recentPreferencesSnapshot.message}</span>
+            <div className="min-w-0"><StudioDeviceStorageMessage message={recentPreferencesSnapshot.message} /></div>
             <button
               type="button"
               className="shrink-0 rounded border border-warn/40 bg-card px-2.5 py-1 font-semibold hover:bg-raised"
               onClick={() => void recentPreferencesRuntime.retry()}
             >
-              SQLite/OPFS 다시 연결
+              {creatorStorageText("기기 저장 다시 시도", "Retry device saving")}
             </button>
           </div>
         ) : null}

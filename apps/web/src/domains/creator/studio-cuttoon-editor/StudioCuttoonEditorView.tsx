@@ -23,6 +23,8 @@ import { StudioCuttoonEditorDialogs } from "./StudioCuttoonEditorDialogs";
 import { StudioCuttoonEditorHosts } from "./StudioCuttoonEditorHosts";
 import { StudioCuttoonEditorWorkspace } from "./StudioCuttoonEditorWorkspace";
 import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
+import { StudioDrawingClarityProvider } from "./StudioDrawingClarity";
+import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import { StudioScopedWriteTargetPicker } from "./StudioScopedWriteTargetPicker";
 import { StudioScopedWriteAuthorityContext } from "../studio-collab/studio-scoped-write-context";
 import { hasVisibleLegacyMixboxStrokes } from "../brush-lab/brush-studio-v6-legacy-pigment";
@@ -38,6 +40,12 @@ const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLeg
 export type { StudioCuttoonEditorViewSession };
 
 export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
+  const drawingPresentation = useStudioDrawingPresentation();
+  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation}><StudioCuttoonEditorViewContent {...s} drawingPresentation={drawingPresentation} /></StudioDrawingClarityProvider>;
+}
+
+function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { readonly drawingPresentation: "integrated" | "app" }) {
+  const clarity = useStudioDrawingClarity();
   const {
     activePage,
     appSettings,
@@ -66,7 +74,7 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
     workMode,
     watermarkPreferenceSnapshot,
   } = s;
-  const drawingPresentation = useStudioDrawingPresentation();
+  const drawingPresentation = s.drawingPresentation;
   const drawingAppPresentation = drawingPresentation === "app";
   const legacyPagePigment = hasVisibleLegacyMixboxStrokes(s.elements, s.groups);
   const legacyMasterPigment = !s.masterEditMode && !s.activePage.hideMaster && hasVisibleLegacyMixboxStrokes(s.master.elements, []);
@@ -108,6 +116,9 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
       ref={studioRootRef}
       data-studio-mobile-immersive={mobileImmersive ? "true" : "false"}
       data-studio-ui-density={uiDensityMode}
+      data-studio-drawing-clarity={clarity?.active ? "true" : undefined}
+      data-studio-drawing-clarity-panel={clarity?.active ? clarity.panel ?? undefined : undefined}
+      data-studio-drawing-clarity-mobile={clarity?.active && isMobile ? "true" : undefined}
       data-studio-work-mode={workMode ?? "all"}
       data-studio-drawing-presentation={drawingPresentation}
       data-studio-tool-hint-mode={appSettings.general.toolHintMode}
@@ -184,14 +195,14 @@ export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
             <StudioSaveStatusChromeMount
               store={s.saveSyncStore}
               onRequestSaveFlush={s.requestSaveFlush}
-              publishSuggestion={{
+              publishSuggestion={s.workMode === "finish" ? {
                 // 1회성 기억의 단위는 문서(오토세이브 키)다 — 문서가 바뀌면 새 첫 게시 흐름으로 본다.
                 scope: s.saveIntentScope?.documentKey ?? s.effectiveWorkId ?? s.workId ?? "new-work",
                 cutCount: s.activePage?.elements?.length ?? 0,
                 alreadyPublished: s.loadedWork?.status === "published",
                 // "게시 준비 확인하기"의 도착지는 호스트의 게시 사전검사(게시 센터)다.
                 onCheckPublishReady: () => s.setPublishPreflightOpen(true),
-              }}
+              } : undefined}
             />
           </Suspense>
         ) : null}

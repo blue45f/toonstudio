@@ -65,4 +65,14 @@ describe("site route authority", () => {
         "/studio/publish",
       ]);
   });
+
+  it("내 작업의 정본 라벨을 바꿔도 주소와 접근·프로젝트 문맥을 바꾸지 않는다", () => {
+    expect(primarySiteRouteAuthority("studio-home")).toMatchObject({
+      canonicalPath: "/studio",
+      label: { ko: "내 작업", en: "My work" },
+      purpose: "manage",
+      access: "public",
+      projectContext: "optional",
+    });
+  });
 });

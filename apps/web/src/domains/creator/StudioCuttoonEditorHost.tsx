@@ -1,4 +1,5 @@
 import { enterStudioSelectionTransform } from "./studio-transform-entry";
+import { preloadStudioAssetToolPopoverBody } from "./studio-tool-belt-lazy-ui";
 import "./studio-host-status-i18n";
 import { hostErrorText } from "./status-i18n/studio-host-reason-i18n";
 import { resolveStudioShortcutAnnouncement } from "./status-i18n/studio-producer-error-i18n-shortcut";
@@ -969,7 +970,7 @@ import {
   useStudioUiBooleanPreferenceHydration,
   useStudioWorkspacePanelOpenOverrides,
 } from "./studio-page-workspace-persistence";
-import { studioExactResumeRequested, studioExactResumeSourceReady } from "./studio-exact-resume-context";
+import { studioExactResumeRequested, studioExactResumeSourceReady, studioExactResumeSummary } from "./studio-exact-resume-context";
 import { useStudioExactResumeContext } from "./useStudioExactResumeContext";
 import {
   DEFAULT_STUDIO_PAPER_SURFACE,
@@ -1317,6 +1318,7 @@ import {
 import { resolveStudioWorkspaceCanvasDockInsets } from "./studio-workspace-canvas-dock";
 import { readStudioWorkspaceDeviceSignalsFromGlobals } from "./studio-workspace-device-signals";
 import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-presentation-layout";
+import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
   studio2dSurfaceNavigationHref,
   type Studio2dWorkspaceSurface,
@@ -3175,9 +3177,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const abortRef = autoActionAbortRef;
     return () => abortRef.current?.abort();
   }, []);
-  // 작업공간은 원고 내용과 분리된 계정/브라우저별 UI 상태다. 첫 페인트는 안전한 기본값으로
-  // 시작하고, owner-scoped SQLite/OPFS snapshot을 비동기로 hydration한다. 그 사이의 UI 편집은
-  // 아래 dirty revision fence가 보존하므로 늦은 load가 사용자의 새 배치를 덮지 않는다.
   const taskWorkspaceId = studioTaskWorkspaceId(studioRoute.documentWorkspace, uiDensityMode);
   const currentWorkspaceOwnerScope = studioWorkspaceOwnerScope(studioAuthUserId);
   const [workspacePersistence, setWorkspacePersistence] = useState<StudioWorkspaceLoadResult>(() => ({
@@ -3193,6 +3192,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [workspaceSyncNotice, setWorkspaceSyncNotice] = useState<string | null>(null);
   const [workspaceMenuEpoch, setWorkspaceMenuEpoch] = useState(0);
   const workspaceState = workspacePersistence.state;
+  const [studioDrawingClarityBaseline, setStudioDrawingClarityBaseline] = useState<StudioDrawingClarityBaseline | null>(null);
   const [drawingLayoutRestorePoint, setDrawingLayoutRestorePoint] = useState<{
     ownerScope: string;
     layout: StudioWorkspaceLayout;
@@ -3922,6 +3922,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setPendingExternalWorkspaceSync,
     setWorkspaceMenuEpoch,
     setWorkspacePersistence,
+    setStudioDrawingClarityBaseline,
     setWorkspaceSyncNotice,
     setWorkspaceSyncRetryEpoch,
     studioAuthUserId,
@@ -3941,8 +3942,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const persistStudioWorkspaceStateFromEffect = useEffectEvent(
     persistStudioWorkspaceState,
   );
-  // 활성 프리셋 스냅샷은 그대로 두고 liveLayout만 저장한다. 패널 폭은 pointerup까지 기다려
-  // 최종값 한 번만 SQLite에 기록한다.
+  // 프리셋은 보존하고 liveLayout만 저장한다. 패널 폭은 pointerup 최종값만 기록한다.
   useEffect(() => {
     const ownerScope = currentWorkspaceOwnerScope;
     if (workspacePersistence.ownerScope !== ownerScope) return;
@@ -7278,7 +7278,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setDrawMode,
     onRestored: (context) => {
       setStatusNotice(
-        `최근 작업 위치를 복원했어요. ${context.pageId ?? "최근 페이지"} · 확대 ${Math.round(context.zoom * 100)}%`
+        `최근 작업 위치를 복원했어요. ${studioExactResumeSummary(context, studioSaveLocale.startsWith("ko") ? "ko" : "en", pages.find((page) => page.id === context.pageId)?.name)}`
       );
     },
   });
@@ -14499,14 +14499,12 @@ const puppetWarpArmed =
   const showQuickStart = !canvasOnlyMode && !quickComicOpen && (
     quickStartOpen ||
     (uiBooleanPreferencesReady
-      && workHydrated
-      && autosaveChecked
-      && !hasAutosave
+      && projectBackupUnavailableReason === null
       && !quickStartDismissed
+      && elements.length === 0
       && (quickStartYielded
         || (uiDensityMode !== "focus"
-          && !menu
-          && elements.length === 0)))
+          && !menu)))
   );
 
   // 삭제된 요소의 노드 참조가 nodeRefs에 남지 않도록 정리(누수 방지).
@@ -17503,7 +17501,7 @@ const puppetWarpArmed =
     !mobileHintDismissed &&
     workHydrated &&
     !showQuickStart &&
-    !hasAutosave &&
+    !hasAutosave && elements.length === 0 &&
     drawingShortcutNotice === null;
   function openQuickStartMenu(nextMenu: Extract<StudioMenu, "template" | "char" | "bubble">) {
     setTool("select");
@@ -25543,10 +25541,7 @@ function clearSelectionForEdit() {
             setAppSettingsOpen(true);
           },
           openStudioMenu: setMenu,
-          openAssetMenu: () => {
-            preloadStudioAssetMenuPanel();
-            setMenu("template");
-          },
+          openAssetMenu: () => { preloadStudioAssetToolPopoverBody(); setMenu("asset"); },
           createAdjustmentLayer: studioMainMenuActions.createAdjustmentLayer,
           requestImageInsert: () => editMenuImageInputRef.current?.click(),
           openMannequinPoser: () => setMannequinPoserOpen(true),
@@ -28371,7 +28366,7 @@ function clearSelectionForEdit() {
       cancelStudioPointCommentComposer={cancelStudioPointCommentComposer}
       canvasFlipH={canvasFlipH}
       canvasGuides={canvasGuides}
-      canvasH={canvasH}
+      canvasH={canvasH} canvasStartGuideReady={projectBackupUnavailableReason === null}
       canvasInteractionBlocked={canvasInteractionBlocked}
       canvasOnlyMode={canvasOnlyMode}
       canvasRotation={canvasRotation}
@@ -29349,6 +29344,7 @@ function clearSelectionForEdit() {
       workspaceMenuEpoch={workspaceMenuEpoch}
       workspacePersistence={workspacePersistence}
       workspaceState={workspaceState}
+      studioDrawingClarityBaseline={studioDrawingClarityBaseline}
       workspaceSyncNotice={workspaceSyncNotice}
       wrapRef={wrapRef}
       writerRoom={writerRoom}

@@ -1,0 +1,86 @@
+{
+  "status": "current-observation-before-followup-fixes",
+  "kind": "actual-development-implementation",
+  "baseCommit": "53f184adac261710813c44f41da936e13751d430",
+  "sourceDiffSha256": "2f1adf6f42bae5ae7732eff1f96dac290ee1fa9943f8af22dc906176fc7f5193",
+  "conditions": {
+    "user": "게스트 QA 전용 프로젝트",
+    "backend": "로컬 API 연결 불가; 성공 응답을 시딩하지 않음",
+    "persistence": "앱의 실제 OPFS/SQLite 저장 리더로 텍스트·이미지 및 저장 시각 확인",
+    "mobilePicker": "1440→390 전환 후 검색·선택 초기화가 관측된 상태",
+    "newUser": "사용자가 생성한 작업 없음; 기본 예시 2개는 존재",
+    "scope": "최종 빌드·배포·전수 사용성 완료 증거가 아님"
+  },
+  "images": [
+    {
+      "file": "before-new-user-with-samples-1440.png",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "sha256": "b3e01882edc92cfdca91823df75fae9baaa81fccd0282447956379b6ed131f39"
+    },
+    {
+      "file": "before-new-user-with-samples-390.png",
+      "viewportWidth": 390,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "sha256": "fae2716f665cae2de04582460f0b6b2414ad83ab2c23aca8894d835d335c33ee"
+    },
+    {
+      "file": "before-recent-work-1440.png",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "sha256": "847c51ac71dc7f43a37c2a6dafc8f34031bc2c71bca7b147982c1ae5295c118c"
+    },
+    {
+      "file": "before-recent-work-390.png",
+      "viewportWidth": 390,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "sha256": "853bda21e17016e1cf584fb504d4d9ba23c7de6850b42bb8d17e3760ff524f78"
+    },
+    {
+      "file": "before-editor-saved-text-1440.png",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "sha256": "9fa5a867dd9b430e3203811056ec558076cff07419f77047a56f00ebf9cc8b19"
+    },
+    {
+      "file": "before-editor-saved-text-390.png",
+      "viewportWidth": 390,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "sha256": "a09d564b51976212f433c234177f0b7b9bb9fcc01defff269369acabd83933d5"
+    },
+    {
+      "file": "before-asset-picker-1440.png",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "sha256": "3acda565a01cf91385aa10447535b953fbfc1268eacdacd0aa0255a0965ca1d6"
+    },
+    {
+      "file": "before-asset-picker-390.png",
+      "viewportWidth": 390,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "sha256": "0a70271beac2eeb5bd489688c900841f49fabcb5561720a7fbc7e18186f9fdfa"
+    },
+    {
+      "file": "before-editor-applied-asset-1440.png",
+      "viewportWidth": 1440,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "sha256": "fd51e4529e05f5d6e0bb8226315bc8fd0c2a6be6b4d9a532f1c91c3e71b9d7cf"
+    },
+    {
+      "file": "before-editor-applied-asset-390.png",
+      "viewportWidth": 390,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "sha256": "840771359d674db29f31d71a56a2f9b5081fe56efcfee50588ac4d13675fe8bf"
+    }
+  ]
+}

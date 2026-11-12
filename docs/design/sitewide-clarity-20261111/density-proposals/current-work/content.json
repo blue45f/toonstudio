@@ -1,0 +1,81 @@
+{
+  "kind": "정적 디자인 제안 — 현재 작품 안내 component만. 실제 제품 화면/적용/저장 성공 증거 아님.",
+  "sourceCommit": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d",
+  "sources": [
+    {
+      "path": "apps/web/src/domains/creator/studio-shell/ActiveProjectContextBridge.tsx",
+      "sha256": "fe70af8cd6a5ec67d4392504364ca518bbdcbd282fefbacd6331010c99c2deac"
+    },
+    {
+      "path": "apps/web/src/domains/creator/studio-shell/active-project-context.ts",
+      "sha256": "4ad774e8a8dace45302e2d1a6a35e90ae481c945d9949c07ee3eedba59a23f44"
+    },
+    {
+      "path": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+      "sha256": "c2e79d8e8254f39239e427649bc0e5a5fe87e446a62d70111d9bea16779697a1"
+    },
+    {
+      "path": "docs/design/sitewide-clarity-20261111/index.html",
+      "sha256": "db2e9ed57025fbfdbf4b80dd9dd7c07db8a400c30b4d8ad45c1a9427a0f3c399"
+    },
+    {
+      "path": "docs/design/sitewide-clarity-20261111/density-proposals/proposal-story-390.png",
+      "sha256": "d3b1801a30f97b453da0a7f5267c21ebb048e4eb908c661faa682c20ccf795c3"
+    }
+  ],
+  "reuse": "기존 사용자 지정 Gemini 보드의 선택 표시, Clarity 보라/청록·중립 표면·라운드, 공유 Story의 보조 기능 접기 방향. 독립 Gemini 생성 로그 미확인.",
+  "projects": [
+    {
+      "id": "sample-manuscript-trace",
+      "title": "샘플 원고 · 비 오는 날의 우체통",
+      "sample": true
+    },
+    {
+      "id": "example-first-webtoon",
+      "title": "예제 · 첫 웹툰 한 컷",
+      "sample": true
+    }
+  ],
+  "initialProject": "sample-manuscript-trace",
+  "exampleArea": "learn",
+  "selectionContract": [
+    "현재 pathname+search의 수동 선택",
+    "URL 명시 project/projectId",
+    "sessionStorage의 현재 작품",
+    "최근 active 작품"
+  ],
+  "dismissContract": "선택 삭제가 아닌 영역(path 첫 segment)+작품ID별 session 안내 숨김. 같은 영역·같은 작품에서는 뒤로 가도 숨김 유지. 다른 작품은 별도. 이번 목업은 저장소를 쓰지 않고 화면 내 임시 상태만 시뮬레이션.",
+  "supportedAreas": [
+    "market",
+    "research",
+    "learn",
+    "collaborate",
+    "community",
+    "showcase"
+  ],
+  "actions": {
+    "project": "/studio/p/:projectId/overview",
+    "learn": {
+      "label": "이 작품에서 실습",
+      "href": "/learn?project=:projectId"
+    },
+    "market": {
+      "label": "이 작품에 소재 추가",
+      "href": "/studio/assets?project=:projectId&view=market"
+    }
+  },
+  "notInScope": [
+    "Learn/Market 내비게이션·본문 재설계",
+    "제품 선택 저장/URL/Back/실제 링크 이동 검증",
+    "자료 실제 적용/원고 저장/저장 완료 배지",
+    "전체 제품 키보드/접근성·실기기/성능"
+  ],
+  "implementationContracts": [
+    "선택순위·sessionStorage 키/영역+작품별 숨김·기존href/권한 유지",
+    "접기와 안내 숨김 구분; 접어도 선택/문맥 유지",
+    "선택 제목·샘플 여부와 더보기는 기본 노출, 모든 조작44px 이상",
+    "여러작품일때만 기존 select, 단일작품의 불필요 select 생략",
+    "펼친 영역에서 작품바꾸기·프로젝트·문맥별CTA·안내숨기기 재발견 가능",
+    "키보드 Enter/Space 접기·Escape 초점 복귀, 실제Back/포커스/모션감소 회귀는제품적용후"
+  ]
+}

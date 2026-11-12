@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { AdminApiError } from "../../../platform/http/admin-api";
 
 import { applyOperationPolicy, loadOperationPolicy, previewOperationPolicy } from "./api/operation-policy-api";
 
@@ -67,15 +69,28 @@ export function OperationPolicyPanel() {
   const [impact, setImpact] = useState<OperationPolicyPreview | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const mutationId = useRef("");
 
+  const reportFailure = useCallback((cause: unknown, fallback: string) => {
+    const status = cause instanceof AdminApiError ? cause.status : null;
+    setFailureStatus(status);
+    setError(cause instanceof Error ? cause.message : fallback);
+    if (status === 401 || status === 403) {
+      setData(null);
+      setDraft(null);
+      setImpact(null);
+    }
+  }, []);
+
   useEffect(() => {
     let current = true;
     setBusy(true);
     setError("");
+    setFailureStatus(null);
     setData(null);
     setDraft(null);
     setImpact(null);
@@ -88,7 +103,7 @@ export function OperationPolicyPanel() {
         }
       })
       .catch((cause: unknown) => {
-        if (current) setError(cause instanceof Error ? cause.message : "불러오기 실패");
+        if (current) reportFailure(cause, "불러오기 실패");
       })
       .finally(() => {
         if (current) setBusy(false);
@@ -96,7 +111,7 @@ export function OperationPolicyPanel() {
     return () => {
       current = false;
     };
-  }, [reload]);
+  }, [reload, reportFailure]);
 
   const change = (value: OperationPolicyDraft) => {
     setDraft(value);
@@ -131,13 +146,14 @@ export function OperationPolicyPanel() {
     if (!draft || !data) return;
     setBusy(true);
     setError("");
+    setFailureStatus(null);
     setImpact(null);
     try {
       const result = await previewOperationPolicy(data.policy.revision, draft);
       mutationId.current = crypto.randomUUID();
       setImpact(result);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "미리보기 실패");
+      reportFailure(cause, "미리보기 실패");
     } finally {
       setBusy(false);
     }
@@ -147,12 +163,13 @@ export function OperationPolicyPanel() {
     if (!draft || !data || !impact) return;
     setBusy(true);
     setError("");
+    setFailureStatus(null);
     try {
       const result = await applyOperationPolicy(data.policy.revision, draft, impact.digest, reason.trim(), mutationId.current);
       setNotice(`정책 revision ${result.acceptedRevision} 저장 완료. 사용자 청구는 시작되지 않았습니다.`);
       setReload((value) => value + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "저장 실패");
+      reportFailure(cause, "저장 실패");
     } finally {
       setBusy(false);
     }
@@ -209,8 +226,9 @@ export function OperationPolicyPanel() {
         <div role="alert" className="policy-alert">
           <span>{error}</span>{" "}
           <button type="button" disabled={busy} onClick={() => setReload((value) => value + 1)}>
-            최신 설정 다시 읽기
+            {failureStatus === 401 || failureStatus === 403 ? "로그인·권한 다시 확인" : failureStatus === 409 ? "변경된 정책 다시 읽기" : "연결 확인 후 다시 읽기"}
           </button>
+          {(failureStatus === 401 || failureStatus === 403) && <p>로그인 또는 서비스 관리자 권한이 필요합니다. 웹 관리자에서 계정을 확인한 뒤 다시 시도하세요.</p>}
         </div>
       )}
       {notice && <p role="status" className="policy-notice">{notice}</p>}

@@ -150,7 +150,7 @@ export function stageStudioOfflineSceneTransition(
   const result = offlineBranch.stageSceneTransition(previousPages, nextPages);
   if (result.staged) {
     reportNotice(
-      "변경을 Automerge 오프라인 branch에 보호했습니다. 서버 정본 연결 후 안전하게 합칩니다.",
+      "오프라인 변경을 보관하는 중입니다. 연결 후 반영 상태를 확인하세요.",
     );
     return true;
   }

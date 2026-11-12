@@ -29,8 +29,8 @@ export const STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS: Readonly<
   Record<StudioProjectLibraryManagementView, Readonly<Record<StudioProjectLibraryAuthoredLocale, string>>>
 > = {
   active: {
-    ko: "임시 자동저장 작업과 정식 저장한 프로젝트를 한곳에서 이어서 관리합니다.",
-    en: "Continue temporary autosaves and formally saved projects from one place.",
+    ko: "작업을 이어 하거나 새로 시작하세요. 실제 저장 상태는 원고에서 확인할 수 있습니다.",
+    en: "Continue a work or start something new. Check its current save status in the document.",
   },
   archived: {
     ko: "잠시 치워 둔 프로젝트를 선택하거나 한꺼번에 내 작업으로 복구합니다.",

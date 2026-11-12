@@ -12,7 +12,7 @@ import Link from "@/shared/navigation/router-link";
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("SiteCreationCompass", ko, en);
 
-/** A compact contextual brief. Expanded guidance is opt-in, not another hero. */
+/** 본문 작업을 마친 뒤 선택해서 여는 창작 활용 안내다. */
 export function SiteCreationCompass() {
   useBilingualI18nRevision();
   const { pathname } = useLocation();
@@ -33,10 +33,16 @@ export function SiteCreationCompass() {
         </summary>
         <div id={id} className="site-creation-compass__brief">
           <div className="site-creation-compass__image"><SiteArtwork purpose={workflowVisualForPath(pathname)} image={direction.image} alt="" sizes="(max-width: 767px) calc(100vw - 58px), 150px" /></div>
-          <div><h2>{title}</h2><p>{description}</p><small>{bi("브러시 · 레이어 · 컷 · 말풍선 — 웹툰을 직접 그리는 전문 작업실", "Brushes · layers · panels · dialogue — a professional drawing workspace")}</small></div>
+          <div>
+            <h2>{title}</h2>
+            <p>{description}</p>
+            <small>{bi("브러시 · 레이어 · 컷 · 말풍선 — 웹툰을 직접 그리는 전문 작업실", "Brushes · layers · panels · dialogue — a professional drawing workspace")}</small>
+            <div>
+              <Link href={direction.href} className="site-creation-compass__action">{action}<ArrowUpRight size={16} aria-hidden="true" /></Link>
+            </div>
+          </div>
         </div>
       </details>
-      <Link href={direction.href} className="site-creation-compass__action">{action}<ArrowUpRight size={16} aria-hidden="true" /></Link>
     </aside>
   );
 }

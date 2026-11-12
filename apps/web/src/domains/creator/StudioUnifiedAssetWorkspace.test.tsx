@@ -2,6 +2,7 @@
 
 import {
   cleanup,
+  act,
   fireEvent,
   render,
   screen,
@@ -11,6 +12,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StudioUnifiedAssetWorkspace } from "./StudioUnifiedAssetWorkspace";
+import { StudioUnifiedAssetWorkspaceSessionProvider } from "./asset-workspace/StudioUnifiedAssetWorkspaceSessionProvider";
 
 import type { SceneTemplate } from "./studio-scene-templates";
 import type { StudioUnifiedAssetItem } from "./studio-unified-asset-catalog";
@@ -260,7 +262,7 @@ describe("StudioUnifiedAssetWorkspace", () => {
     expect(await screen.findByText("비 오는 밤 학교을(를) 캔버스에 삽입했습니다.")).toBeTruthy();
   });
 
-  it("uses double click as a fast path for safe cards", async () => {
+  it("미리보기 더블클릭은 원고를 변경하지 않는다", () => {
     const onUseItem = vi.fn().mockResolvedValue(true);
     render(
       <StudioUnifiedAssetWorkspace
@@ -272,10 +274,10 @@ describe("StudioUnifiedAssetWorkspace", () => {
     );
 
     fireEvent.doubleClick(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" }));
-    await waitFor(() => expect(onUseItem).toHaveBeenCalledWith(items[0], "auto"));
+    expect(onUseItem).not.toHaveBeenCalled();
   });
 
-  it("uses Enter as the keyboard insertion shortcut while Space keeps selection semantics", async () => {
+  it("미리보기의 Enter·Space·클릭은 삽입 없이 상세를 선택한다", async () => {
     const onUseItem = vi.fn().mockResolvedValue(true);
     render(
       <StudioUnifiedAssetWorkspace
@@ -288,7 +290,14 @@ describe("StudioUnifiedAssetWorkspace", () => {
 
     const card = screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" });
     fireEvent.keyDown(card, { key: "Enter" });
-    await waitFor(() => expect(onUseItem).toHaveBeenCalledWith(items[0], "auto"));
+    fireEvent.keyDown(card, { key: " " });
+    fireEvent.click(card);
+    expect(onUseItem).not.toHaveBeenCalled();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "비 오는 밤 학교", level: 3 })));
+    fireEvent.click(screen.getByRole("button", { name: "목록으로" }));
+    await waitFor(() => expect(document.activeElement).toBe(card));
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 배경 삽입" }));
+    await waitFor(() => expect(onUseItem).toHaveBeenCalledOnce());
   });
 
   it("shows an interactive 3D detail preview and routes the selected model", async () => {
@@ -349,7 +358,7 @@ describe("StudioUnifiedAssetWorkspace", () => {
     await waitFor(() => expect(onUseItem).toHaveBeenCalledWith(items[5], "auto"));
   });
 
-  it("guides caution assets to the rights checkpoint on fast paths", async () => {
+  it("권리 확인 소재도 미리보기에서 삽입하지 않고 명시적 삽입에서 확인을 요구한다", async () => {
     const onUseItem = vi.fn().mockResolvedValue(true);
     render(
       <StudioUnifiedAssetWorkspace
@@ -360,13 +369,71 @@ describe("StudioUnifiedAssetWorkspace", () => {
       />,
     );
 
-    fireEvent.doubleClick(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
     expect(onUseItem).not.toHaveBeenCalled();
-    expect(await screen.findByText(/권리와 출처 확인이 필요한 에셋/)).toBeTruthy();
+    expect(screen.getByRole("checkbox")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "배경 삽입" }) as HTMLButtonElement).disabled).toBe(true);
 
     fireEvent.keyDown(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }), { key: "Enter" });
     expect(onUseItem).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 배경 삽입" }));
     expect(await screen.findByText(/권리와 출처 확인이 필요한 에셋/)).toBeTruthy();
+  });
+
+  it("상세 하단의 권리 확인은 본문으로 이동하고 동의 전 적용을 허용하지 않는다", async () => {
+    const onUseItem = vi.fn().mockResolvedValue(true);
+    render(
+      <StudioUnifiedAssetWorkspace
+        items={items}
+        legacyContent={null}
+        onUseItem={onUseItem}
+        onOpenAi={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
+
+    const actions = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const apply = within(actions).getByRole("button", { name: "배경 삽입" });
+    expect(within(actions).getAllByRole("button", { name: "배경 삽입" })).toHaveLength(1);
+    const acknowledgement = screen.getByRole("checkbox");
+    const rightsLabel = acknowledgement.parentElement;
+    if (!rightsLabel) throw new Error("권리 확인 본문이 없습니다");
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(rightsLabel, "scrollIntoView", { value: scrollIntoView });
+
+    fireEvent.click(within(actions).getByRole("button", { name: "권리·출처 확인" }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "center" });
+    expect(document.activeElement).toBe(acknowledgement);
+    expect((acknowledgement as HTMLInputElement).checked).toBe(false);
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(apply);
+    expect(onUseItem).not.toHaveBeenCalled();
+
+    fireEvent.click(acknowledgement);
+    expect(within(actions).queryByRole("button", { name: "권리·출처 확인" })).toBeNull();
+    expect((apply as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(apply);
+    await waitFor(() => expect(onUseItem).toHaveBeenCalledWith(items[5], "auto"));
+  });
+
+  it("상세 하단 적용도 검토 잠금 상태에서는 실행되지 않는다", () => {
+    const onUseItem = vi.fn();
+    render(
+      <StudioUnifiedAssetWorkspace
+        items={items}
+        legacyContent={null}
+        onUseItem={onUseItem}
+        onOpenAi={vi.fn()}
+        reviewLocked
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" }));
+    const actions = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const apply = within(actions).getByRole("button", { name: "배경 삽입" });
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    expect(within(actions).getByText("검토 잠금을 해제한 뒤 추가할 수 있습니다.")).toBeTruthy();
+    fireEvent.click(apply);
+    expect(onUseItem).not.toHaveBeenCalled();
   });
 
   it("keeps placement choices in the selected asset detail instead of before results", async () => {
@@ -526,5 +593,69 @@ describe("StudioUnifiedAssetWorkspace", () => {
     if (!(input instanceof HTMLInputElement)) throw new Error("이미지 가져오기 입력이 파일 입력이 아니에요");
     expect(input.type).toBe("file");
     expect(input.accept).toBe("image/*");
+  });
+
+  it("반응형 하위 트리를 다시 마운트해도 검색·필터·선택·보기를 유지한다", async () => {
+    const tree = (surface: string) => <StudioUnifiedAssetWorkspaceSessionProvider>
+      <div key={surface}><StudioUnifiedAssetWorkspace items={items} legacyContent={<div>기존 보관함</div>} onUseItem={vi.fn()} onOpenAi={vi.fn()} /></div>
+    </StudioUnifiedAssetWorkspaceSessionProvider>;
+    const view = render(tree("desktop"));
+    fireEvent.change(screen.getByRole("searchbox", { name: "에셋 통합 검색" }), { target: { value: "학교" } });
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 즐겨찾기 추가" }));
+    fireEvent.click(screen.getByText("필터·도구"));
+    fireEvent.click(screen.getByRole("button", { name: /2D 배경/u }));
+    fireEvent.click(screen.getByRole("button", { name: "즐겨찾기" }));
+    fireEvent.click(screen.getByRole("button", { name: "작은 그리드" }));
+    fireEvent.click(screen.getByRole("button", { name: "결과 1개 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" }));
+
+    view.rerender(tree("mobile"));
+    expect((screen.getByRole("searchbox", { name: "에셋 통합 검색" }) as HTMLInputElement).value).toBe("학교");
+    expect(screen.getByRole("heading", { level: 3, name: "비 오는 밤 학교" })).toBeTruthy();
+    expect(view.container.querySelector("[data-studio-asset-results-grid]")?.getAttribute("data-density")).toBe("compact");
+    expect(view.container.querySelector(".studio-unified-assets__filter-current")?.textContent).toContain("2D 배경");
+    expect(view.container.querySelector(".studio-unified-assets__filter-current")?.textContent).toContain("즐겨찾기");
+    fireEvent.click(screen.getByRole("button", { name: "목록으로" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" })));
+    fireEvent.click(screen.getByRole("button", { name: "보관함 · 마켓" }));
+    view.rerender(tree("desktop-again"));
+    expect(screen.getByText("기존 보관함")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "통합 탐색" }));
+    expect((screen.getByRole("searchbox", { name: "에셋 통합 검색" }) as HTMLInputElement).value).toBe("학교");
+  });
+
+  it("삽입 처리 중 다시 마운트해도 권리 동의와 중복 삽입 방지를 유지한다", async () => {
+    let finish: ((value: boolean) => void) | undefined;
+    const pending = new Promise<boolean>((resolve) => { finish = resolve; });
+    const onUseItem = vi.fn(() => pending);
+    const tree = (surface: string) => <StudioUnifiedAssetWorkspaceSessionProvider>
+      <div key={surface}><StudioUnifiedAssetWorkspace items={items} legacyContent={null} onUseItem={onUseItem} onOpenAi={vi.fn()} /></div>
+    </StudioUnifiedAssetWorkspaceSessionProvider>;
+    const view = render(tree("desktop"));
+    fireEvent.change(screen.getByRole("searchbox", { name: "에셋 통합 검색" }), { target: { value: "권리" } });
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "배경 삽입" }));
+    expect(onUseItem).toHaveBeenCalledOnce();
+
+    view.rerender(tree("mobile"));
+    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(true);
+    const footer = screen.getByRole("group", { name: "선택한 소재 적용" });
+    const pendingApply = within(footer).getByRole("button", { name: "처리 중…" });
+    expect((pendingApply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(pendingApply);
+    expect(onUseItem).toHaveBeenCalledOnce();
+    const apply = screen.getByRole("button", { name: "출처 확인 배경 배경 삽입" });
+    expect((apply as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(apply);
+    expect(onUseItem).toHaveBeenCalledOnce();
+    await act(async () => { if (!finish) throw new Error("삽입 완료 콜백이 없습니다"); finish(true); });
+    await waitFor(() => expect((screen.getByRole("button", { name: "배경 삽입" }) as HTMLButtonElement).disabled).toBe(false));
+    expect(screen.getByText("출처 확인 배경을(를) 캔버스에 삽입했습니다.")).toBeTruthy();
+    expect(window.localStorage.getItem("toonstudio-studio-insert-hub:v1")).toContain("scene:caution");
+    fireEvent.change(screen.getByRole("searchbox", { name: "에셋 통합 검색" }), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "비 오는 밤 학교 상세 미리보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "출처 확인 배경 상세 미리보기" }));
+    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(false);
   });
 });

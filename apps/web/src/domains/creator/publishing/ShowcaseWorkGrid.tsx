@@ -15,12 +15,15 @@ export function ShowcaseWorkGrid({
   resetKey,
   initial = SHOWCASE_GRID_INITIAL,
   step = SHOWCASE_GRID_STEP,
+  desktopColumns = 5,
 }: {
   readonly works: readonly WorkSummary[];
   /** 목록 조건(정렬·필터·탭)이 바뀌면 달라지는 값 — 바뀌면 다시 처음 분량으로 돌아간다. */
   readonly resetKey: string;
   readonly initial?: number;
   readonly step?: number;
+  /** 쇼케이스는 공유한 탐색 시안과 같은 PC 4열, 기존 소비자는 5열을 유지한다. */
+  readonly desktopColumns?: 4 | 5;
 }) {
   const bt = useBilingual("ShowcaseWorkGrid");
   return (
@@ -31,7 +34,7 @@ export function ShowcaseWorkGrid({
       resetKey={resetKey}
       initial={initial}
       step={step}
-      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      className={desktopColumns === 4 ? "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"}
       moreLabel={(remaining) => formatI18nTemplate(bt("더 보기 · 남은 작품 {count}개", "Show more · {count} left"), { count: remaining })}
     />
   );

@@ -146,7 +146,7 @@ describe("mobile site shell accessibility", () => {
 
     const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
     expect(Array.from(quickNavigation?.querySelectorAll("a") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/", "/studio", "/discover", "/community", "/sitemap"]);
-    expect(quickNavigation?.firstElementChild?.className).toContain("grid-cols-5");
+    expect(quickNavigation?.querySelector(":scope > .grid")?.className).toContain("grid-cols-5");
     expect(within(quickNavigation as HTMLElement).getByRole("link", { name: "탐색" }).getAttribute("aria-current")).toBe("page");
   });
 
@@ -155,7 +155,7 @@ describe("mobile site shell accessibility", () => {
 
     render(<FloatingControls placement="static" showTheme={false} />);
 
-    const language = screen.getByRole("button", { name: "언어 선택" });
+    const language = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
     expect(useI18n.getState().lang).toBe("ko");
     expect(language.textContent).toContain("한국어");
     expect(screen.queryByRole("listbox", { name: "언어 검색 결과" })).toBeNull();
@@ -165,7 +165,7 @@ describe("mobile site shell accessibility", () => {
     useI18n.getState().setLang("ko");
     render(<FloatingControls placement="static" showTheme={false} />);
 
-    const trigger = screen.getByRole("button", { name: "언어 선택" });
+    const trigger = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
     expect(screen.queryAllByRole("option")).toHaveLength(0);
     fireEvent.click(trigger);
 

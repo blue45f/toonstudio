@@ -2,8 +2,10 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
-import { SeriesForm } from "./creator-community-ui";
+import { SeriesForm, WorkCard } from "./creator-community-ui";
+import type { WorkSummary } from "@/platform/creator-client";
 
 const creatorClient = vi.hoisted(() => ({
   createSeries: vi.fn(),
@@ -37,6 +39,23 @@ beforeEach(() => {
   vi.clearAllMocks();
   creatorClient.createSeries.mockResolvedValue(SAVED_SERIES);
   creatorClient.updateSeries.mockResolvedValue(SAVED_SERIES);
+});
+
+describe("공개 작품 카드의 목록 복귀 문맥", () => {
+  it("공개 작품 ID로만 복귀 키를 표시하고 목적지·제목·작가를 유지한다", () => {
+    const work: WorkSummary = {
+      id: "public-work", title: "별빛 기록", description: "공개 작품", cover: "/covers/public-work.webp", tags: [],
+      format: "upload", titleId: null, status: "published",
+      author: { id: "public-author", name: "별빛 작가", avatar: "" },
+      likes: 0, comments: 0, views: 0, liked: false, createdAt: "2026-11-12T00:00:00Z",
+    };
+    const { container } = render(<MemoryRouter><WorkCard work={work} /></MemoryRouter>);
+    const link = container.querySelector("a");
+    expect(link?.dataset.routeReturnFocus).toBe("work:public-work");
+    expect(link?.getAttribute("href")).toBe("/showcase/work/public-work");
+    expect(link?.textContent).toContain("별빛 기록");
+    expect(link?.textContent).toContain("별빛 작가");
+  });
 });
 
 describe("SeriesForm lifecycle controls", () => {

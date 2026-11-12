@@ -10,6 +10,7 @@ import {
   acquireStudioLocalDatabase,
   closeStudioLocalDatabaseRuntime,
   probeStudioLocalDatabaseRuntime,
+  resetFailedStudioLocalDatabaseOwnership,
 } from "./studio-local-database-runtime";
 
 const productWorker = vi.hoisted(() => ({
@@ -144,6 +145,75 @@ describe("studio local database runtime", () => {
     await expect(acquireStudioLocalDatabase(async () => database)).resolves.toBe(database);
   });
 
+  it("명시 소유권 재시도는 정상 연결을 닫거나 새 Worker를 열지 않는다", async () => {
+    const database = { close: vi.fn(async () => undefined) } as unknown as StudioLocalDatabase;
+    productWorker.acquire.mockResolvedValue(database);
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(false);
+    await acquireStudioLocalDatabase();
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(false);
+    expect(productWorker.acquire).toHaveBeenCalledOnce();
+    expect(productWorker.close).not.toHaveBeenCalled();
+    expect(database.close).not.toHaveBeenCalled();
+  });
+
+  it("소유권 경합 외의 실패는 재시도로 폐기하지 않는다", async () => {
+    const failure = new Error("disk unavailable");
+    productWorker.acquire.mockRejectedValue(failure);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(false);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    expect(productWorker.acquire).toHaveBeenCalledOnce();
+    expect(productWorker.close).not.toHaveBeenCalled();
+  });
+
+  it("실패한 동일 세대만 한 번 닫고 다음 명시 획득에서만 새 Worker를 연다", async () => {
+    const failure = new SqliteUnavailableError("Studio OPFS SQLite is already owned by another page");
+    const database = { close: vi.fn(async () => undefined) } as unknown as StudioLocalDatabase;
+    productWorker.acquire.mockRejectedValueOnce(failure).mockResolvedValueOnce(database);
+    productWorker.close.mockResolvedValue(undefined);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    await expect(Promise.all([
+      resetFailedStudioLocalDatabaseOwnership(), resetFailedStudioLocalDatabaseOwnership(),
+    ])).resolves.toEqual([true, false]);
+    expect(productWorker.close).toHaveBeenCalledOnce();
+    expect(productWorker.acquire).toHaveBeenCalledOnce();
+    await expect(acquireStudioLocalDatabase()).resolves.toBe(database);
+    expect(productWorker.acquire).toHaveBeenCalledTimes(2);
+    expect(database.close).not.toHaveBeenCalled();
+  });
+
+  it("실패를 기다리는 동안 다른 소비자가 교체한 세대는 건드리지 않는다", async () => {
+    const pending = deferred<StudioLocalDatabase>();
+    const replacement = { close: vi.fn(async () => undefined) } as unknown as StudioLocalDatabase;
+    productWorker.acquire.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(replacement);
+    productWorker.close.mockResolvedValue(undefined);
+    const oldOpening = acquireStudioLocalDatabase();
+    const oldFailure = oldOpening.catch(() => undefined);
+    const retry = resetFailedStudioLocalDatabaseOwnership();
+    const otherClose = closeStudioLocalDatabaseRuntime({ preserveBrushMemorySession: true });
+    const nextOpening = acquireStudioLocalDatabase();
+    pending.reject(new SqliteUnavailableError("Studio OPFS SQLite is already owned by another page"));
+    await Promise.all([oldFailure, otherClose]);
+    await expect(retry).resolves.toBe(false);
+    await expect(nextOpening).resolves.toBe(replacement);
+    expect(productWorker.close).toHaveBeenCalledOnce();
+    expect(replacement.close).not.toHaveBeenCalled();
+    await expect(acquireStudioLocalDatabase()).resolves.toBe(replacement);
+    expect(productWorker.acquire).toHaveBeenCalledTimes(2);
+  });
+
+  it("다른 소유자가 유지되면 명시 재시도 한 번 뒤에도 실패를 유지한다", async () => {
+    const failure = new SqliteUnavailableError("Studio OPFS SQLite is already owned by another page");
+    productWorker.acquire.mockRejectedValue(failure);
+    productWorker.close.mockResolvedValue(undefined);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(true);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    await expect(acquireStudioLocalDatabase()).rejects.toBe(failure);
+    expect(productWorker.acquire).toHaveBeenCalledTimes(2);
+    expect(productWorker.close).toHaveBeenCalledOnce();
+  });
+
   it("invalidates the brush catalog generation when the shared database session closes", async () => {
     productWorker.acquire.mockRejectedValue(
       new SqliteUnavailableError("Studio OPFS is already owned by another page"),
@@ -170,7 +240,7 @@ describe("studio local database runtime", () => {
     expect(productWorker.acquire).toHaveBeenCalledTimes(2);
   });
 
-  it("retains the tab-lifetime brush fallback while another product surface retries OPFS", async () => {
+  it("명시 소유권 재시도는 현재 탭의 미저장 브러시를 보존한다", async () => {
     productWorker.acquire.mockRejectedValue(
       new SqliteUnavailableError("Studio OPFS is already owned by another page"),
     );
@@ -187,7 +257,7 @@ describe("studio local database runtime", () => {
       lastUsedAt: null,
     });
 
-    await closeStudioLocalDatabaseRuntime({ preserveBrushMemorySession: true });
+    await expect(resetFailedStudioLocalDatabaseOwnership()).resolves.toBe(true);
     const reopened = await openProductBrushLibraryRepository();
 
     expect(reopened).toBe(first);

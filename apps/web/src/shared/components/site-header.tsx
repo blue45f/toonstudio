@@ -1,3 +1,4 @@
+import { siteMobilePurposeHref } from "./site-mobile-purpose";
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
@@ -203,9 +204,6 @@ function childrenFromNavGroup(
  * - learnClassroom(/learn/classroom)·learnGuide(/guide): 학습 하위 목적지로 지도에 없다.
  * - collaborateEntry: 맥락형 메뉴의 "협업"이라는 묶음 이름은 지도 그룹 어디에도 없다
  *   (connect 그룹은 "함께 보기"). 묶음 자체는 유지하되 문구는 여기에만 둔다.
- * - marketShortLabel: 지도의 이름은 "소재 마켓"이지만 헤더 1차 메뉴는 폭 예산
- *   (header-width-budget) 때문에 짧은 이름 "마켓"을 쓴다. 이름이 하나여야 한다는
- *   원칙과의 긴장은 이 주석으로 명시하고, 지도 쪽 이름을 바꿀 때 함께 지운다.
  */
 const HEADER_EXTRA_CHILDREN = {
   teamPeople: {
@@ -255,7 +253,6 @@ const HEADER_EXTRA_ENTRY_TEXT: {
     readonly label: SiteNavigationText;
     readonly description: SiteNavigationText;
   };
-  readonly marketShortLabel: SiteNavigationText;
 } = {
   collaborate: {
     label: { ko: "협업", en: "Collaborate" },
@@ -264,7 +261,6 @@ const HEADER_EXTRA_ENTRY_TEXT: {
       en: "Works, episodes, stages and feedback with your team",
     },
   },
-  marketShortLabel: { ko: "마켓", en: "Market" },
 };
 
 /**
@@ -328,7 +324,7 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
     id: "market",
     href: NAV_ITEMS.market.href,
-    label: HEADER_EXTRA_ENTRY_TEXT.marketShortLabel,
+    label: NAV_ITEMS.market.label,
     description: NAV_ITEMS.market.description,
   },
 ];
@@ -488,18 +484,16 @@ function purposeActive(
 function matchesMobileNavigationViewport() {
   return (
     typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 767px)").matches
+    window.matchMedia("(max-width: 1179px)").matches
   );
 }
-
-const DESKTOP_NAVIGATION_QUERY = "(min-width: 1180px)";
 
 function useMobileNavigationViewport() {
   useBilingualI18nRevision();
   const [isMobile, setIsMobile] = useState(matchesMobileNavigationViewport);
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)");
+    const media = window.matchMedia("(max-width: 1179px)");
     const sync = () => setIsMobile(media.matches);
     sync();
     media.addEventListener("change", sync);
@@ -690,12 +684,13 @@ export function SiteHeader({
   const openSearch = useUi((state) => state.openCommandPalette);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuRequested, setMenuRequested] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const isMobileNavigationViewport = useMobileNavigationViewport();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const shouldRenderMobileNavigation = menuOpen || isMobileNavigationViewport;
+  const shouldRenderMobileNavigation = menuRequested || menuOpen || isMobileNavigationViewport;
   const hideBottomTabs = isImmersiveMobileRoute(pathname);
   const navigationContext = siteNavigationContextForPath(pathname);
   const isPublicPage = isPublicCreativeRoute(pathname);
@@ -742,17 +737,6 @@ export function SiteHeader({
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", syncScrolled);
     };
-  }, []);
-
-  useEffect(() => {
-    const desktopNavigation = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
-    const closeAtDesktop = () => {
-      if (desktopNavigation.matches) setMenuOpen(false);
-    };
-    closeAtDesktop();
-    desktopNavigation.addEventListener("change", closeAtDesktop);
-    return () =>
-      desktopNavigation.removeEventListener("change", closeAtDesktop);
   }, []);
 
   return (
@@ -816,21 +800,24 @@ export function SiteHeader({
             {/* 화면 분위기 전환은 홈 머리글과 설정 화면에만 둔다(하위 페이지 머리글을 가볍게). */}
             {isHomePage && <PublicSiteAppearanceToggle locale={locale} className="site-header__appearance" />}
 
-            {notificationsSlot}
+            <div className="site-header__notifications">{notificationsSlot}</div>
 
             {authMenuSlot}
 
             <button
               ref={triggerRef}
               type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label={menuOpen ? `${t("nav.allMenu")} ${t("common.close")}` : t("nav.allMenu")}
-              aria-haspopup="dialog"
+              onClick={() => { setMenuRequested(true); setMenuOpen((open) => !open); }}
+              aria-haspopup="dialog" data-site-mobile-menu-trigger="true" data-site-menu-entry="available"
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              className="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-card/85 text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97] min-[1180px]:hidden"
+              className="flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-card/85 px-3 text-sm font-semibold text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97]"
             >
               {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+              <span className="sr-only min-[1180px]:not-sr-only">
+                <span className="block">{t("nav.allMenu")}{menuOpen && <span className="sr-only"> {t("common.close")}</span>}</span>
+                <span data-site-menu-music-enabled="true">{bi("음악 켜짐", "Music enabled")}</span>
+              </span>
             </button>
           </div>
         </div>
@@ -842,9 +829,9 @@ export function SiteHeader({
             menuOpen={menuOpen}
             menuId={menuId}
             panelRef={panelRef}
-            closeMenu={closeMenu}
+            closeMenu={closeMenu} closeForUtility={() => setMenuOpen(false)}
             isActive={isActive}
-            isPurposeActive={isPurposeActive}
+            isPurposeActive={isPurposeActive} currentPurposeHref={siteMobilePurposeHref(pathname)}
             hideBottomTabs={hideBottomTabs}
             isMobileViewport={isMobileNavigationViewport}
           />

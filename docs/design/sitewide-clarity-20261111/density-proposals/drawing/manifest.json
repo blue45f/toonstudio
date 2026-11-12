@@ -1,0 +1,34 @@
+{
+  "status": "target",
+  "runtimeReference": "107c11ff43516a2e90fb9b40ccb42b7771a2b61d / 399bf5bf0013",
+  "sharedBeforeImplementation": true,
+  "library": "https://chatgpt.com/space/page_1e4bdd165d908191b152ae11b81a568c",
+  "files": [
+    {
+      "file": "index.html",
+      "bytes": 531642,
+      "sha256": "5d3c6362ef27b8d0d53dea8d133a564b7e5f2523b37441fbf6e6f7d5c37010d0"
+    },
+    {
+      "file": "index-desktop-v1.html",
+      "bytes": 530920,
+      "sha256": "a3926690d2ee1aec37fdbb8cfe5cb24eff51b5950860f9da4f10f0316511acad"
+    },
+    {
+      "file": "proposal-a-canvas-1440.png",
+      "bytes": 132738,
+      "sha256": "fddc8a29a4c3c6341fddb3f50c418b168b4711f68367a7daf05ac66947656312"
+    },
+    {
+      "file": "proposal-b-layers-1440.png",
+      "bytes": 98516,
+      "sha256": "7d67c0cb99e11e64e2747a699ed4f9793cc7f2f8722418f37afb23814c36e6f7"
+    },
+    {
+      "file": "proposal-a-canvas-390-save-status-v2.png",
+      "bytes": 26365,
+      "sha256": "92eb35a38f3d27821c9b3a65b9e0062e5ff22ced98954251121da2df0b6db1f2"
+    }
+  ],
+  "qualification": "PC 두 장은 보존한 v1 HTML(a3926690…)의 기본/레이어 상태, 모바일 한 장은 v2 HTML(5d3c6362…)의 저장 상태 보완본이다. 원고 한 획과 14:32는 기존 QA 자료의 예시다. 실제 저장 완료·빈 상태 재접속 증거로 쓰지 않는다. 원본 Gemini 편집 보드·Clarity의 선택 상태·보라/청록·라운드를 재사용했다. 실기기·전체 접근성은 이 정적 목업으로 완료 처리하지 않는다."
+}

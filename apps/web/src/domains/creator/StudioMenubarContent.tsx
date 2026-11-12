@@ -128,6 +128,7 @@ import type { WorkDetail } from "@/platform/creator-client";
 import { AppearanceTrigger } from "@/shared/components/appearance/AppearanceTrigger";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 /**
@@ -1164,7 +1165,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
     collaborationDocumentLocked && !sharedDocument?.capabilities.view;
   const scopedDraftSaveState = useStudioScopedDraftSaveState(), scopedDraftSaveAvailable = scopedDraftSaveState.available;
   // 복합 제목은 제공된 번역 또는 카탈로그 원문을 사용한다.
-  const menuT = useT(), pendingSaveLabel = menuT("studio.mainMenu.item.file.confirm-pending-save", "저장 상태 확인");
+  const menuT = useT(), bt = useBilingual("studio.menubar"), pendingSaveLabel = menuT("studio.mainMenu.item.file.confirm-pending-save", "저장 상태 확인");
   const compositeMenuLabel = (id: "insert" | "create"): string | undefined => {
     const key = `studio.mainMenu.group.${id}.label`;
     const translated = menuT(key, "");
@@ -2390,7 +2391,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
           <StudioToolHintTarget
             hint={{
               ...MENUBAR_HINTS.draft,
-              title: scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장",
+              title: scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? bt("공동 저장", "Save together") : bt("초안 저장", "Save draft"),
             }}
             disabled={saving || (collaborationDocumentLocked && !scopedDraftSaveAvailable)}
             unavailableReason={collaborationDocumentLocked && !scopedDraftSaveAvailable ? collaborationLockMessage() : saving ? frozenStatus3Text("studio.frozenStatus3.menubar.saveBusyRetry", "현재 저장 작업이 끝난 뒤 다시 시도하세요.") : undefined}
@@ -2400,7 +2401,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
               type="button"
               onClick={() => handleSave("draft")}
               disabled={saving || (collaborationDocumentLocked && !scopedDraftSaveAvailable)}
-              aria-label={scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
+              aria-label={scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? bt("공동 저장", "Save together") : bt("초안 저장", "Save draft")}
               className={cn(
                 buttonClass({
                   size: "sm",
@@ -2408,7 +2409,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                   className: "min-h-11 min-w-11 shrink-0 whitespace-nowrap gap-1.5 disabled:cursor-not-allowed disabled:opacity-50",
                 }),
                 isMobile &&
-                  "min-h-11 max-[429px]:size-11 max-[429px]:justify-center max-[429px]:px-0",
+                  "min-h-11 max-[429px]:size-11 max-[429px]:flex-col max-[429px]:justify-center max-[429px]:gap-0.5 max-[429px]:px-0",
                 mobileImmersive && "rounded-full border border-line/70 bg-raised/80 px-2.5 max-[429px]:px-0"
               )}
             >
@@ -2417,9 +2418,8 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
               ) : (
                 <Save size={14} className="hidden max-[429px]:block" aria-hidden />
               )}
-              <span className="max-[429px]:sr-only">
-                {scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? "공동 저장" : "초안 저장"}
-              </span>
+              <span className="max-[429px]:sr-only">{scopedDraftSaveState.pendingConfirmation ? pendingSaveLabel : sharedDocument && sharedDocument.role !== "owner" ? bt("공동 저장", "Save together") : bt("초안 저장", "Save draft")}</span>
+              <span aria-hidden className="hidden text-[0.6875rem] leading-none max-[429px]:block">{scopedDraftSaveState.pendingConfirmation ? bt("확인", "Check") : bt("저장", "Save")}</span>
             </button>
           </StudioToolHintTarget>
           {!sharedDocument || sharedDocument.role === "owner" ? (

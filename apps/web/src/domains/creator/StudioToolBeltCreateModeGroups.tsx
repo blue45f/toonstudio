@@ -47,6 +47,7 @@ import { StudioToolBeltCreateModeInsertTools } from "./StudioToolBeltCreateModeI
 import { StudioToolBeltCreateModeUtilityButtons } from "./StudioToolBeltCreateModeUtilityButtons";
 import { StudioToolHintTarget } from "./StudioToolHint";
 import { StudioWorkflowAccess } from "./StudioWorkflowAccess";
+import { StudioUnifiedAssetWorkspaceSessionProvider } from "./asset-workspace/StudioUnifiedAssetWorkspaceSessionProvider";
 
 import type { StudioUiChromeRegion } from "./studio-ui-density";
 import { studioWorkModeAllowsRegion } from "./studio-cuttoon-editor/runtime/studio-work-mode-gating";
@@ -162,7 +163,7 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
   const toolBtn = (active: boolean) => studioToolButtonClass(active, { dense: true });
 
   return (
-    <>
+    <StudioUnifiedAssetWorkspaceSessionProvider>
       <StudioWorkflowAccess
         expanded={showAdvanced}
         canCollapse={uiDensityMode !== "full"}
@@ -653,6 +654,6 @@ export const StudioToolBeltCreateModeGroups = memo(function StudioToolBeltCreate
         />
       ) : null}
       </div>
-    </>
+    </StudioUnifiedAssetWorkspaceSessionProvider>
   );
 });

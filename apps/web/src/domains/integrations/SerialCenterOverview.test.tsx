@@ -66,8 +66,10 @@ describe("SerialCenterOverview", () => {
 
   it("비로그인에서는 현황을 부르지 않고 로그인 안내와 캘린더 구분을 보여준다", () => {
     renderOverview();
+    expect(screen.getByRole("heading", { name: "내 작품은 지금 어디까지 왔나" })).toBeTruthy();
     expect(screen.getByText(/로그인하면 내 작품의 다음 발행 예정/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "제작 프로젝트 만들러 가기" })).toBeNull();
     expect(screen.getByRole("link", { name: "연재 캘린더" }).getAttribute("href")).toBe("/calendar");
     expect(api.listProductionProjects).not.toHaveBeenCalled();
   });
@@ -122,9 +124,27 @@ describe("SerialCenterOverview", () => {
     api.listProductionProjects.mockResolvedValue({ projects: [] });
     renderOverview();
 
-    expect(await screen.findByText(/아직 제작 중인 작품이 없어요/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: /작품 시작하기/ }).getAttribute("href")).toBe("/create");
+    expect(await screen.findByText(/아직 제작 프로젝트가 없어요/)).toBeTruthy();
+    const create = screen.getByRole("link", { name: /제작 프로젝트 만들러 가기/ });
+    expect(create.getAttribute("href")).toBe("/production/projects");
+    expect(screen.getByText(/아직 제작 프로젝트가 없어요/).compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다/)).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("작품 선택의 빈 상태는 긴 설명보다 실제 생성 행동을 먼저 한 번만 제공한다", async () => {
+    useApp.setState({ userId: "user-1", sessionToken: "token" });
+    api.listProductionProjects.mockResolvedValue({ projects: [] });
+    const onSelectProject = vi.fn();
+    render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    const create = await screen.findByRole("link", { name: "제작 프로젝트 만들러 가기" });
+    const explanation = screen.getByText(/아직 제작 프로젝트가 없어요/);
+    expect(create.getAttribute("href")).toBe("/production/projects");
+    expect(screen.getAllByRole("link", { name: "제작 프로젝트 만들러 가기" })).toHaveLength(1);
+    expect(create.compareDocumentPosition(explanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(explanation.textContent).toContain("브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(onSelectProject).not.toHaveBeenCalled();
   });
 
   it("불러오기 실패는 오류 상태로 구분하고 다시 시도가 재호출한다", async () => {
@@ -139,5 +159,36 @@ describe("SerialCenterOverview", () => {
       expect(api.listProductionProjects).toHaveBeenCalledTimes(2);
     });
     expect(await screen.findByText("별빛 항해자")).toBeTruthy();
+  });
+
+  it("작품 선택 모드에서는 운영 수치를 앞세우지 않고 같은 실제 프로젝트를 선택한다", async () => {
+    useApp.setState({ userId: "user-1", sessionToken: "token" });
+    const project = summary({ overdueTaskCount: 3, criticalRiskCount: 1 });
+    api.listProductionProjects.mockResolvedValue({ projects: [project] });
+    const onSelectProject = vi.fn();
+    render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(screen.getByRole("region", { name: "제작 프로젝트 선택" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "내 제작 프로젝트" })).toBeNull();
+    expect(await screen.findByText("별빛 항해자")).toBeTruthy();
+    expect(screen.queryByText("밀린 작업")).toBeNull();
+    expect(screen.queryByRole("link", { name: /회차 관리/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /이 작품으로 게시 준비/ }));
+    expect(onSelectProject).toHaveBeenCalledWith(project);
+  });
+
+  it("게시 작품 선택의 로그인 안내는 선택 목적만 설명하고 같은 로그인 경로를 유지한다", () => {
+    const onSelectProject = vi.fn();
+    const { rerender } = render(<MemoryRouter><SerialCenterOverview ko selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(screen.getByText("제작 프로젝트를 고르려면 로그인해 주세요.")).toBeTruthy();
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.queryByText(/다음 발행 예정/)).toBeNull();
+    expect(screen.getByRole("link", { name: "로그인하기" }).getAttribute("href")).toBe("/auth/login");
+    expect(api.listProductionProjects).not.toHaveBeenCalled();
+    expect(onSelectProject).not.toHaveBeenCalled();
+    rerender(<MemoryRouter><SerialCenterOverview ko={false} selectionMode onSelectProject={onSelectProject} /></MemoryRouter>);
+    expect(screen.getByRole("region", { name: "Choose a production project" })).toBeTruthy();
+    expect(screen.getByText("Sign in to choose a production project.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/auth/login");
+    expect(api.listProductionProjects).not.toHaveBeenCalled();
   });
 });

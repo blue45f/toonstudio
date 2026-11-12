@@ -23,6 +23,7 @@ import {
 import { StudioViewToolsHud } from "../studio-view-tools-hud-loader";
 
 import { localizeText } from "./studio-canvas-viewport-primitives";
+import { StudioCanvasCollaborationDisclosure } from "./StudioCanvasCollaborationDisclosure";
 
 import "../status-i18n/studio-brush-canvas-status-i18n-core";
 
@@ -57,6 +58,7 @@ export interface StudioCanvasStickyBannersContext {
   readonly fitCanvasToWidth: () => void;
   readonly followingStudioSessionId: string | null;
   readonly navigate: NavigateFunction;
+  readonly mobileImmersive?: boolean;
   readonly pages: PageState[];
   readonly remixId: string | null;
   readonly resetView: () => void;
@@ -99,6 +101,7 @@ export function renderStudioCanvasStickyBanners({
   fitCanvasToWidth,
   fitCanvasToViewport = fitCanvasToWidth,
   followingStudioSessionId,
+  mobileImmersive = false,
   navigate,
   pages,
   remixId,
@@ -179,6 +182,7 @@ export function renderStudioCanvasStickyBanners({
         className='pointer-events-none sticky top-2 z-[56] h-0 [[data-studio-mobile-immersive="true"]_&]:top-16'
       >
         <div className="flex flex-col gap-2">
+          <StudioCanvasCollaborationDisclosure mobileImmersive={mobileImmersive} following={followingStudioSessionId !== null} onOpenTeam={openTeam}>
           <div
             data-studio-presence-controls
             className="flex items-start justify-end gap-1.5 pr-2"
@@ -212,6 +216,7 @@ export function renderStudioCanvasStickyBanners({
               />
             </Suspense>
           </div>
+          </StudioCanvasCollaborationDisclosure>
           {viewTool ? (
             <div className="pointer-events-none flex items-start justify-center px-2">
               <Suspense fallback={null}>

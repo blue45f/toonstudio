@@ -197,6 +197,7 @@ function WebFloatingControls() {
     <Suspense fallback={null}>
       <FloatingControls
         placement="bottom-right"
+        mobileMode="menu"
         showSound={false}
         showBgm={false}
       />

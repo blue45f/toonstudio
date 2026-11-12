@@ -282,7 +282,7 @@ export function StudioBg3dProfessionalWorkspace({
             href="/studio/new?template=webtoon&from=bg3d-cut"
             className="hidden min-h-11 items-center rounded-full bg-accent px-3.5 text-xs font-extrabold text-on-accent shadow-sm transition-colors hover:bg-accent-2 md:inline-flex"
           >
-            {bi("원고 컷에 바로 굽기", "Bake directly into panel")}
+            {bi("새 웹툰 시작하기", "Start a new webtoon")}
           </Link>
           <button
             type="button"

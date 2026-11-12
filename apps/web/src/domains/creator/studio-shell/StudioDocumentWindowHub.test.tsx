@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { useI18n } from "@/shared/lib/i18n";
+
 import type {
   OpenStudioDocumentWorkspaceInput,
   StudioDocumentWindowOpenStatus,
@@ -54,13 +56,13 @@ function resolution() {
   return parsed;
 }
 
-function renderHub() {
+function renderHub(locale = "ko") {
   const onChangeWorkspace = vi.fn();
   const onToggleQuickMode = vi.fn();
   render(
     <MemoryRouter>
       <StudioDocumentWindowHub
-        locale="ko"
+        locale={locale}
         resolution={resolution()}
         search="?workspace=draw&focus=cut%3A2&language=ko&version=v3&room=team-a"
         quickMode={false}
@@ -73,6 +75,7 @@ function renderHub() {
 }
 
 beforeEach(() => {
+  useI18n.getState().setLang("ko");
   runtime.open.mockReset().mockReturnValue("opened");
   runtime.focus.mockReset().mockReturnValue(true);
   runtime.snapshot.peers = [];
@@ -85,6 +88,18 @@ afterEach(() => {
 });
 
 describe("StudioDocumentWindowHub", () => {
+  it.each([
+    ["ko", "1 창 · 작업공간·창 메뉴", "창"],
+    ["en", "1 views · Workspaces and windows", "views"],
+  ])("창 메뉴의 보이는 수와 이름을 %s 음성 명령 이름에 함께 담는다", (locale, accessibleName, caption) => {
+    useI18n.getState().setLang(locale);
+    renderHub(locale);
+    const trigger = screen.getByRole("button", { name: accessibleName });
+    expect(trigger.querySelector(".tabular-nums")?.textContent).toBe("1");
+    expect(within(trigger).getByText(caption)).toBeTruthy();
+    expect(trigger.getAttribute("aria-label")).toContain(`1 ${caption}`);
+  });
+
   it("keeps the workspace switcher clear of the app menubar and below tool popovers", () => {
     renderHub();
 
@@ -150,7 +165,7 @@ describe("StudioDocumentWindowHub", () => {
 
   it("opens production presets as positioned companion windows", () => {
     renderHub();
-    fireEvent.click(screen.getByRole("button", { name: "1창" }));
+    fireEvent.click(screen.getByRole("button", { name: "1 창 · 작업공간·창 메뉴" }));
     const preset = screen.getByRole("heading", { name: "원고 제작" }).closest("article");
     if (!preset) throw new Error("preset article missing");
 
@@ -167,6 +182,18 @@ describe("StudioDocumentWindowHub", () => {
     ]);
   });
 
+  it("키보드로 작업공간 메뉴에 진입하고 Escape로 원래 메뉴 버튼에 복귀한다", async () => {
+    renderHub();
+    const trigger = screen.getByRole("button", { name: "1 창 · 작업공간·창 메뉴" });
+    trigger.focus();
+    fireEvent.keyDown(window, { key: "m", ctrlKey: true, shiftKey: true });
+    const currentWorkspace = screen.getByRole("button", { name: "그리기·채색" });
+    await waitFor(() => expect(document.activeElement).toBe(currentWorkspace));
+    fireEvent.keyDown(currentWorkspace, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("discovers a peer and requests focus without exposing its internal id", () => {
     runtime.snapshot.peers = [{
       instanceId: "studio-window-review-5678",
@@ -178,7 +205,7 @@ describe("StudioDocumentWindowHub", () => {
     }];
     renderHub();
 
-    fireEvent.click(screen.getByRole("button", { name: "2창" }));
+    fireEvent.click(screen.getByRole("button", { name: "2 창 · 작업공간·창 메뉴" }));
     fireEvent.click(screen.getByRole("button", { name: "이 탭으로 전환" }));
     expect(runtime.focus).toHaveBeenCalledWith("studio-window-review-5678");
     expect(screen.getByRole("dialog").textContent).not.toContain(
@@ -193,22 +220,29 @@ describe("StudioDocumentWindowHub", () => {
     fireEvent.click(screen.getByRole("button", {
       name: "현재 작업공간을 독립 창으로 열기",
     }));
-    fireEvent.click(screen.getByRole("button", { name: "1창" }));
+    fireEvent.click(screen.getByRole("button", { name: "1 창 · 작업공간·창 메뉴" }));
 
     expect(screen.getByRole("status").textContent).toContain(
       "브라우저가 새 창을 차단했습니다",
     );
   });
 
-  it("exposes the 5-stage canonical production pill bar for one-click stage switching", () => {
+  it("기본 도구 줄은 현재 작업공간을 유지하고 다른 작업공간은 메뉴에서 선택한다", () => {
     const { onChangeWorkspace } = renderHub();
-
-    const stageNav = screen.getByRole("navigation", { name: "5단계 제작 공정 전환" });
+    expect(screen.queryByRole("navigation", { name: "작업공간 바로가기" })).toBeNull();
+    expect(document.querySelector('[data-studio-autosave-dot="true"]')).toBeNull();
+    const trigger = screen.getByRole("button", { name: "1 창 · 작업공간·창 메뉴" });
+    fireEvent.click(trigger);
+    const stageNav = screen.getByRole("navigation", { name: "작업공간 바로가기" });
     expect(stageNav.getAttribute("data-studio-stage-pill-bar")).toBe("true");
-    expect(within(stageNav).getByRole("button", { name: "3. 작화·채색" }).getAttribute("aria-pressed")).toBe("true");
-    expect(within(stageNav).getByRole("button", { name: "1. 콘티" }).getAttribute("aria-pressed")).toBe("false");
+    expect(within(stageNav).getByRole("button", { name: "그리기·채색" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(stageNav).getByRole("button", { name: "콘티" }).getAttribute("aria-pressed")).toBe("false");
+    expect(stageNav.textContent).not.toMatch(/\d\.|식자|공정/u);
 
-    fireEvent.click(within(stageNav).getByRole("button", { name: "4. 식자" }));
+    fireEvent.click(within(stageNav).getByRole("button", { name: "웹툰 편집" }));
     expect(onChangeWorkspace).toHaveBeenCalledWith("comic");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    expect((screen.getByRole("combobox", { name: "문서 작업공간" }) as HTMLSelectElement).value).toBe("draw");
   });
 });

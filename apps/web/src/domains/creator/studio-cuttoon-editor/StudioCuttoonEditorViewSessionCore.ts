@@ -145,6 +145,7 @@ export type StudioCuttoonEditorViewSessionCore = {
   canvasFlipH: boolean;
   canvasGuides: { horizontal: number[]; vertical: number[]; };
   canvasH: number;
+  canvasStartGuideReady: boolean;
   canvasInteractionBlocked: boolean;
   canvasOnlyMode: boolean;
   canvasRotation: 0 | 180 | 90 | 270;

@@ -8,6 +8,7 @@ import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presenc
 import { TOON_HQ_CAMPUS_PORTAL, TOON_HQ_PHYSICS_PROPS } from "./hq/toon-hq-blueprint";
 import { studioVirtualToonHqManifest } from "./hq/toon-hq-manifest";
 import { advanceOffice2dActor, createOffice2dActor, office2dActorBob, office2dActorFrame } from "./office2d-actors";
+import { Office2dParticles } from "./office2d-particles";
 import type { Office2dCanvas2D } from "./office2d-procedural-art";
 import type { Office2dDrawable, Office2dRendererHost } from "./office2d-renderer";
 import { Office2dRuntime, type Office2dRuntimeCallbacks } from "./office2d-runtime";
@@ -20,6 +21,7 @@ class FakeGradient {
 class FakeContext implements Office2dCanvas2D {
   calls = new Map<string, number>();
   veilAlphas: number[] = [];
+  rotations: number[] = [];
   fillStyle: string | CanvasGradient | CanvasPattern = "#000";
   strokeStyle: string | CanvasGradient | CanvasPattern = "#000";
   lineWidth = 1;
@@ -36,7 +38,7 @@ class FakeContext implements Office2dCanvas2D {
   restore(): void { this.count("restore"); }
   translate(): void {}
   scale(): void {}
-  rotate(): void {}
+  rotate(angle: number): void { this.rotations.push(angle); }
   setTransform(): void { this.count("setTransform"); }
   fillRect(_x?: number, _y?: number, width?: number, height?: number): void {
     this.count("fillRect");
@@ -384,6 +386,80 @@ describe("Office2dRuntime", () => {
     expect(runtime.debugState().facing).toBe("up");
     const lastLocal = callbacks.onLocalState.mock.calls.at(-1)?.[0];
     expect(lastLocal?.pose).toBe("sit");
+  });
+
+  it("빈 바닥의 눕기 요청을 그림과 상태에 반영하고 이동하면 일어선다", () => {
+    const { runtime, bridge, callbacks, run } = setup({ withImages: true });
+    runtime.start();
+    bridge.requestPose("rest");
+    run(0.3);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].pose).toBe("lie");
+    const lying = new FakeContext();
+    runtime.draw(lying, 1);
+    expect(lying.rotations).toContain(Math.PI / 2);
+    runtime.keyDown("ArrowLeft");
+    run(0.3);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].pose).toBe("stand");
+    const standing = new FakeContext();
+    runtime.draw(standing, 1);
+    expect(standing.rotations).not.toContain(Math.PI / 2);
+  });
+
+  it("누운 상태에서 작업 좌석으로 순간 이동하면 기립 후 기존 자동 착석으로 복귀한다", () => {
+    const { runtime, bridge, callbacks, run } = setup();
+    bridge.requestPose("rest");
+    run(0.3);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].pose).toBe("lie");
+    const seat = runtime.scene.seats[0];
+    if (!seat) throw new Error("검증할 책상 좌석이 없습니다.");
+    bridge.requestTeleport(seat.anchor);
+    run(0.3);
+    expect(bridge.getPose()).toBe("stand");
+    expect(runtime.debugState().seated).toBe(true);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].pose).toBe("sit");
+  });
+
+  it("자동 착석 뒤 명시적으로 일어서면 같은 좌석에서 다시 앉지 않고 휴식 요청으로 다시 앉을 수 있다", () => {
+    const { runtime, bridge, callbacks, run } = setup();
+    const seat = runtime.scene.seats[0];
+    if (!seat) throw new Error("검증할 책상 좌석이 없습니다.");
+    bridge.requestTeleport(seat.anchor);
+    run(0.3);
+    expect(runtime.debugState().seated).toBe(true);
+    bridge.requestPose("stand");
+    run(1);
+    expect(runtime.debugState().seated).toBe(false);
+    expect(callbacks.onLocalState.mock.calls.at(-1)?.[0].pose).toBe("stand");
+    bridge.requestPose("rest");
+    run(0.3);
+    expect(runtime.debugState().seated).toBe(true);
+  });
+
+  it.each([true, false])("모션 줄이기 %s에서 이모트 글리프는 보존하고 장식 파티클 생성만 제한한다", (reducedMotion) => {
+    const { runtime, bridge, run } = setup({ reducedMotion });
+    const emit = vi.spyOn(Office2dParticles.prototype, "emitComboBurst");
+    const render = vi.spyOn(runtime.renderer, "render").mockImplementation(() => {});
+    try {
+      bridge.requestEmote("wave");
+      run(1 / 60);
+      runtime.draw(new FakeContext(), 1);
+      const frame = render.mock.calls.at(-1)?.[1];
+      expect(frame?.actors.find((actor) => actor.id === frame.selfId)?.emote?.kind).toBe("wave");
+      expect(emit.mock.calls.some(([preset]) => preset === "emote")).toBe(!reducedMotion);
+    } finally { emit.mockRestore(); render.mockRestore(); }
+  });
+
+  it("이모트 재생 도중 모션 줄이기를 켜면 기존 파티클도 더 그리지 않는다", () => {
+    const settings = { reducedMotion: false };
+    const { runtime, bridge, run } = setup(settings);
+    bridge.requestEmote("wave");
+    run(1 / 60);
+    const draw = vi.spyOn(Office2dParticles.prototype, "draw");
+    try {
+      settings.reducedMotion = true;
+      runtime.draw(new FakeContext(), 1);
+      expect(draw).not.toHaveBeenCalled();
+    } finally { draw.mockRestore(); }
   });
 
   it("로컬 채팅 말풍선이 만료되면 즉시 사라지고 self.typing 상태를 반영한다", () => {

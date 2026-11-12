@@ -1,0 +1,140 @@
+/* 공유한 원고 중심 홈 시안. 기존 4밴드와 테마 토큰은 유지한다. */
+.reference-dashboard :is(.rd-clarity-hero, .rd-clarity-journey, .rd-clarity-helpers) {
+  width: 100%;
+  max-width: 1160px;
+  margin-inline: auto;
+  min-width: 0;
+}
+.reference-dashboard .rd-clarity-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr);
+  gap: 44px;
+  align-items: center;
+  padding-block: 24px 36px;
+}
+.rd-clarity-copy { position: relative; z-index: 1; min-width: 0; }
+.reference-dashboard .rd-clarity-copy h1 {
+  color: var(--rd-fg);
+  font: 800 clamp(38px, 4.5vw, 58px)/1.12 var(--font-sans), sans-serif;
+  letter-spacing: -.045em;
+}
+.rd-clarity-copy h1 > span { color: var(--rd-accent); }
+.reference-dashboard .rd-clarity-copy > p { margin-block: 20px 28px; color: var(--rd-muted); font-size: 18px; line-height: 1.55; }
+.rd-clarity-actions { display: grid; gap: 8px; max-width: 310px; }
+.reference-dashboard .rd-clarity-actions > a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+.rd-clarity-actions svg, .rd-clarity-journey svg { flex: none; }
+.reference-dashboard .rd-clarity-actions > .rd-clarity-start { min-height: 56px; background: var(--rd-accent); color: var(--color-on-accent); }
+.reference-dashboard .rd-clarity-actions > .rd-clarity-browse { color: var(--rd-fg); }
+.rd-clarity-art { position: relative; min-width: 0; height: 510px; isolation: isolate; }
+.rd-clarity-art::before {
+  content: "";
+  position: absolute;
+  inset: 12% 0 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--rd-accent) 24%, transparent), transparent 68%);
+}
+.rd-clarity-manuscript {
+  position: absolute;
+  inset: 8px 20px 32px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 8px;
+  padding: 12px;
+  overflow: hidden;
+  transform: rotate(4deg);
+  border: 1px solid var(--rd-border);
+  border-radius: 18px;
+  background: var(--rd-card);
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--rd-art-scrim) 35%, transparent);
+}
+.creator-home .reference-dashboard .rd-clarity-art img { display: block; width: 100%; height: 100%; block-size: 100%; min-width: 0; object-fit: cover; border-radius: 5px; }
+.rd-clarity-manuscript img:first-child { object-position: 45% center; }
+.rd-clarity-manuscript img:last-child { object-position: 55% center; }
+.rd-clarity-sketch { position: absolute; left: 0; bottom: 8px; width: 180px; height: 132px; padding: 7px; border-radius: 10px; background: var(--rd-paper); transform: rotate(-7deg); box-shadow: 0 12px 25px color-mix(in srgb, var(--rd-art-scrim) 28%, transparent); }
+.rd-clarity-sketch img { object-position: 50% 27%; }
+.rd-clarity-art > figcaption { position: absolute; right: 22px; bottom: 10px; color: var(--rd-muted); font-size: 12px; line-height: 1.4; }
+.reference-dashboard .rd-clarity-journey { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; padding-top: 26px; border-top: 1px solid var(--rd-border); }
+.rd-clarity-journey > a { display: flex; align-items: center; gap: 15px; min-width: 0; min-height: 76px; padding: 10px 0; border-radius: 12px; color: var(--rd-fg); }
+.rd-clarity-journey-icon { display: grid; place-items: center; flex: none; width: 54px; height: 54px; border-radius: 16px; background: var(--rd-accent-soft); color: var(--rd-accent); }
+.rd-clarity-journey strong { display: block; font-size: 18px; line-height: 1.4; }
+.rd-clarity-journey small { display: block; margin-top: 3px; color: var(--rd-muted); font-size: 14px; line-height: 1.4; }
+.rd-clarity-journey > a > svg { margin-left: auto; color: var(--rd-muted); }
+.reference-dashboard .rd-clarity-helpers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+.rd-clarity-helpers > details { min-width: 0; }
+.rd-clarity-helpers > details[open] { grid-column: 1 / -1; }
+.reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border-color: var(--rd-border); background: var(--rd-panel); color: var(--rd-muted); }
+.reference-dashboard .rd-idea-help .rd-idea { margin-top: 10px; border-radius: 16px; box-shadow: none; }
+.reference-dashboard .rd-idea-help .rd-idea-modes > button,
+.reference-dashboard .rd-idea-help .rd-idea-submit,
+.reference-dashboard .rd-clarity-helpers .rd-luna-form > button { min-height: 48px; min-width: 48px; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input { min-height: 48px; font-size: 16px; }
+.reference-dashboard .rd-clarity-helpers .rd-luna-form input { min-height: 48px; }
+@media (hover: hover) {
+  .rd-clarity-actions > a, .rd-clarity-journey > a { transition: background-color 160ms ease, border-color 160ms ease; }
+  .reference-dashboard .rd-clarity-actions > a:hover { border-color: var(--rd-accent); }
+  .rd-clarity-journey > a:hover { background: var(--rd-accent-soft); }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .reference-dashboard .rd-clarity-hero { grid-template-columns: minmax(0, .95fr) minmax(0, 1fr); gap: 16px; padding-top: 8px; }
+  .rd-clarity-art { height: 400px; }
+  .reference-dashboard .rd-clarity-copy h1 { font-size: 40px; }
+  .reference-dashboard .rd-clarity-copy > p { font-size: 16px; }
+  .rd-clarity-manuscript { inset: 8px 10px 32px 12px; padding: 8px; gap: 6px; }
+  .rd-clarity-sketch { width: 120px; height: 94px; }
+  .rd-clarity-art > figcaption { right: 8px; font-size: 11px; }
+  .reference-dashboard .rd-clarity-journey { gap: 16px; }
+  .rd-clarity-journey > a { gap: 10px; }
+  .rd-clarity-journey strong { font-size: 16px; }
+  .rd-clarity-journey small { font-size: 13px; }
+}
+@media (max-width: 639px) {
+  .reference-dashboard .rd-clarity-hero { display: flex; flex-direction: column; gap: 0; padding: 8px 0 24px; }
+  .reference-dashboard .rd-clarity-art { order: -1; width: 100%; height: 264px; margin-bottom: 24px; }
+  .rd-clarity-manuscript { inset: 0 18px 12px; transform: rotate(3deg); padding: 7px; gap: 5px; border-radius: 14px; }
+  .rd-clarity-sketch { left: 3px; bottom: 0; width: 96px; height: 76px; padding: 4px; border-radius: 7px; }
+  .rd-clarity-art > figcaption { right: 14px; bottom: -13px; font-size: 11px; }
+  .rd-clarity-copy { width: 100%; }
+  .reference-dashboard .rd-clarity-copy h1 { font-size: 34px; line-height: 1.17; }
+  .reference-dashboard .rd-clarity-copy > p { margin-block: 12px 20px; font-size: 15px; }
+  .rd-clarity-actions { max-width: none; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-start { min-height: 52px; justify-content: space-between; padding-inline: 18px; gap: 8px; }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-browse { padding-inline: 14px; border-color: var(--rd-border); }
+  .rd-clarity-browse > svg { display: none; }
+  .reference-dashboard .rd-clarity-journey { gap: 10px; padding-top: 20px; }
+  .rd-clarity-journey > a { flex-direction: column; align-items: flex-start; gap: 8px; min-height: 92px; }
+  .rd-clarity-journey-icon { width: 44px; height: 44px; border-radius: 12px; }
+  .rd-clarity-journey strong { font-size: 14px; }
+  .rd-clarity-journey small, .rd-clarity-journey > a > svg { display: none; }
+  .reference-dashboard .rd-clarity-helpers { grid-template-columns: minmax(0, 1fr); margin-top: 16px; }
+  .reference-dashboard .rd-idea-help .rd-idea { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; }
+  .rd-idea-help .rd-idea-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rd-idea-help .rd-idea-modes > button { justify-content: center; padding-inline: 8px; white-space: normal; }
+  .reference-dashboard .rd-idea-help .rd-idea input { order: 0; width: 100%; }
+  .reference-dashboard .rd-idea-help .rd-idea-submit { justify-content: center; width: 100%; margin-left: 0; border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-clarity-actions > a, .rd-clarity-journey > a { transition: none; }
+}
+@media (prefers-contrast: more), (forced-colors: active) {
+  .reference-dashboard .rd-clarity-actions > a, .rd-clarity-journey > a { border: 2px solid currentColor; }
+  .rd-clarity-manuscript, .rd-clarity-sketch { box-shadow: none; }
+}
+@media (forced-colors: active) {
+  .rd-clarity-art::before { display: none; }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-start { background: ButtonFace; color: ButtonText; }
+}

@@ -17,7 +17,7 @@ export function TitleDetailBreadcrumb({ title }: { title?: string }) {
     <nav aria-label={bi("작품 탐색 경로", "Story navigation")} className="relative mb-5 min-w-0">
       <ol className="flex min-w-0 items-center gap-2 text-sm">
         <li className="shrink-0">
-          <Link href="/explore" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          <Link href="/explore" className="inline-flex min-h-12 min-w-12 [min-block-size:3rem]! items-center gap-1.5 rounded-lg px-2 text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
             <ArrowLeft size={16} aria-hidden="true" />
             {bi("작품 목록", "Story list")}
           </Link>

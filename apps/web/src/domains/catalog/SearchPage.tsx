@@ -22,8 +22,8 @@ import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
 const SEARCH_MODES = [
-  { id: "search", icon: Search, ko: "바로 찾기", en: "Search" },
-  { id: "explore", icon: Compass, ko: "조건으로 둘러보기", en: "Explore" },
+  { id: "search", icon: Search, ko: "작품 검색", en: "Search" },
+  { id: "explore", icon: Compass, ko: "조건으로 찾기", en: "Explore" },
   { id: "recommend", icon: Sparkles, ko: "취향 추천", en: "Recommendations" },
 ] as const;
 
@@ -45,40 +45,38 @@ export function SearchPage() {
     <PageEntrance variant="pop">
       <Container size="wide" className="search-page-workspace py-4 sm:py-6">
         <div className="search-page-heading-shell">
-        <header className="search-page-heading">
-          <div className="min-w-0">
-            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-accent">
-              <Search size={14} aria-hidden="true" />
-              {t("search.badge")}
-            </p>
-            <h1 className="text-balance text-2xl font-bold leading-tight text-fg sm:text-3xl">
-              {t("search.title")}
+          <header className="search-page-heading search-page-heading-compact">
+            <h1 className="text-balance text-xl font-bold leading-tight text-fg sm:text-2xl">
+              {bt("작품 검색", "Search stories")}
             </h1>
-          </div>
-          <a
-            href="#toonstudio-search-explorer-top"
-            className={buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 shrink-0 gap-1.5" })}
-          >
-            <SlidersHorizontal size={14} aria-hidden="true" />
-            {t("search.filterButton")}
-          </a>
-        </header>
+            <details className="search-page-methods" data-testid="search-page-methods">
+              <summary className="search-page-methods-summary">
+                <span>{bt("다른 찾기 방법", "Other ways to find")}</span>
+                <ChevronDown size={16} aria-hidden="true" />
+              </summary>
+              <nav aria-label={bt("검색 방식", "Search modes")} className="search-page-modes">
+                {SEARCH_MODES.map(({ id, icon: Icon, ko, en }) => (
+                  <Link
+                    key={id}
+                    href={catalogDiscoveryHref(id, searchParams)}
+                    aria-current={id === "search" ? "page" : undefined}
+                    className="search-page-mode"
+                  >
+                    <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />
+                    <span>{bt(ko, en)}</span>
+                  </Link>
+                ))}
+              </nav>
+              <a
+                href="#toonstudio-search-explorer-top"
+                className={buttonClass({ size: "sm", variant: "quiet", className: "min-h-12 shrink-0 gap-1.5" })}
+              >
+                <SlidersHorizontal size={14} aria-hidden="true" />
+                {bt("검색·조건으로 이동", "Jump to search and filters")}
+              </a>
+            </details>
+          </header>
         </div>
-
-        {/* 기존 모드 URL 계약을 재사용한다. 긴 목적별 안내는 결과 뒤에서 펼친다. */}
-        <nav aria-label={bt("검색 방식", "Search modes")} className="search-page-modes">
-          {SEARCH_MODES.map(({ id, icon: Icon, ko, en }) => (
-            <Link
-              key={id}
-              href={catalogDiscoveryHref(id, searchParams)}
-              aria-current={id === "search" ? "page" : undefined}
-              className="search-page-mode"
-            >
-              <Icon size={16} aria-hidden="true" className="hidden shrink-0 sm:block" />
-              <span>{bt(ko, en)}</span>
-            </Link>
-          ))}
-        </nav>
 
         {/* key를 바꾸거나 안내 접힘에 따라 재마운트하지 않아 입력 초안·시트·paging을 보존한다. */}
         <div
@@ -140,7 +138,7 @@ export function SearchPage() {
                 <p className="text-sm leading-relaxed text-fg-2">{t("search.subtitle")}</p>
                 <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-3">
                   <span>{t("search.currentQuery")}: <strong className="text-fg">{state.query ? `"${state.query}"` : t("search.queryAll")}</strong></span>
-                  <span>{t("search.freeOnlyLabel")}: {freeOnly ? "ON" : "OFF"}</span>
+                  <span>{t("search.freeOnlyLabel")}: {freeOnly ? bt("무료·기다리면 무료", "Free and wait-free") : bt("모든 가격 방식", "All pricing")}</span>
                 </p>
               </div>
             </div>

@@ -32,12 +32,12 @@ export function ProductionSampleJourneyGuide({ location }: { readonly location: 
             </h2>
           </div>
           <p className="mt-1 text-[0.6875rem] text-fg-3 sm:hidden">
-            {bt("예시 데이터 · 이 브라우저에서만 동작", "Example data · runs only in this browser")}
+            {bt("예시 데이터 · 새로고침하면 초기화", "Example data · resets on reload")}
           </p>
           <p className="mt-1.5 hidden text-xs leading-5 text-fg-2 sm:block">
             {bt(
-              "사람·일정·원고는 모두 예시입니다. 서버 없이 이 브라우저에서만 동작하며, 새로고침하면 처음 상태로 돌아갑니다. 내 프로젝트와 섞이지 않습니다.",
-              "People, dates and pages are examples. It runs only in this browser without a server, resets on reload and never mixes with your projects.",
+              "사람·일정·원고는 모두 예시입니다. 변경은 같은 탭에서만 유지되며, 새로고침하면 처음 상태로 돌아갑니다. 내 프로젝트와 섞이지 않습니다.",
+              "People, dates and pages are examples. Changes last in this tab, reset on reload and never mix with your projects.",
             )}
           </p>
         </div>

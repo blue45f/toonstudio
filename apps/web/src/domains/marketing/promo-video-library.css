@@ -1,11 +1,20 @@
-/* 홍보 영상 자료실(/promo-library) — 카테고리별 영상 카드 목록 및
-   KakaoPage 3-Mode 뷰 스위처(Card / Poster / List), 다축 필터 바, REA 벤치마크 패널.
+/* 홍보 영상 자료실(/promo-library) — 검색·분류·미리보기를 먼저 제공하고,
+   활용 안내·보기 방식·제작 참고는 이름 있는 보조 영역에서 다시 찾는다.
    색·표면은 marketing-page.css의 --mk-* 토큰과 지각 균일 oklch()를 쓴다. */
 
 .promo-library__hero {
   display: grid;
-  gap: 16px;
+  gap: 8px;
 }
+
+.promo-library__heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.promo-library__heading .mk-title { font-size: clamp(24px, 2.5vw, 32px); line-height: 1.3; letter-spacing: -0.045em; }
+.promo-library__concept { margin: 0; color: var(--mk-fg-2); font-size: 13px; line-height: 1.65; }
+.promo-library__facts { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 2px 0 0; color: var(--mk-fg-2); font-size: 12px; }
+.promo-library__facts strong { color: var(--mk-fg); }
+.promo-library__related { position: relative; flex-shrink: 0; }
+.promo-library__related > summary { min-height: 44px; display: flex; align-items: center; padding: 8px 12px; border: 1px solid var(--mk-line); border-radius: 10px; background: var(--mk-card); font-size: 13px; cursor: pointer; }
+.promo-library__related-panel { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: min(390px, calc(100vw - 32px)); padding: 12px; border: 1px solid var(--mk-line); border-radius: 12px; background: var(--mk-card); box-shadow: 0 12px 32px -14px #0009; }
 
 .promo-library__notice {
   border-left: 3px solid var(--mk-accent);
@@ -26,17 +35,16 @@
 
 .promo-library__controls {
   display: grid;
-  gap: 14px;
-  margin-top: 8px;
-  padding: 16px 18px;
-  border: 1px solid var(--mk-line);
-  border-radius: 16px;
-  background: color-mix(in oklch, var(--mk-raised) 88%, transparent);
+  gap: 4px;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .promo-library__controls-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 205px 170px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -54,7 +62,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 6px 12px;
   border: 1px solid var(--mk-line);
   border-radius: 999px;
@@ -87,10 +95,10 @@
   flex: 1 1 240px;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 4px 12px;
   border: 1px solid var(--mk-line);
-  border-radius: 999px;
+  border-radius: 11px;
   background: var(--mk-card);
 }
 
@@ -101,6 +109,40 @@
   color: var(--mk-fg);
   font-size: 13.5px;
   outline: none;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.promo-library__select { min-width: 0; }
+.promo-library__select select { width: 100%; min-width: 0; min-height: 46px; padding: 8px 10px; border: 1px solid var(--mk-line); border-radius: 11px; background: var(--mk-card); color: var(--mk-fg); font: inherit; font-size: 13px; appearance: auto; }
+.promo-library__controls-secondary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; }
+.promo-library__results-count { margin: 0 auto 0 0; color: var(--mk-fg-2); font-size: 12px; }
+.promo-library__guidance > summary, .promo-library__view-options > summary { display: flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--mk-fg-2); cursor: pointer; }
+.promo-library__guidance[open], .promo-library__view-options[open] { flex: 0 0 100%; order: 2; }
+.promo-library__guidance-panel { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--mk-line); border-radius: 12px; background: var(--mk-card); }
+.promo-library__guidance-panel .mk-body { font-size: 14px; }
+.promo-library__view-options .promo-library__view-switcher { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; padding: 8px; border: 1px solid var(--mk-line); border-radius: 12px; background: var(--mk-card); }
+.promo-library__view-options .promo-library__filter-btn { min-width: 44px; justify-content: center; border-radius: 10px; padding: 8px; }
+.promo-library__nav-chip[aria-disabled="true"] { color: var(--mk-fg-3); }
+.promo-library__related summary:focus-visible, .promo-library__guidance > summary:focus-visible, .promo-library__view-options > summary:focus-visible, .promo-library__select select:focus-visible { outline: 2px solid var(--mk-accent); outline-offset: 3px; }
+
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark) > summary { gap: 8px; }
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark) > summary::after {
+  content: "";
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+}
+:is(.promo-library__related, .promo-library__guidance, .promo-library__view-options, .promo-library__rea-benchmark)[open] > summary::after { transform: rotate(225deg); }
+
+.promo-library__search-box:focus-within {
+  outline: 2px solid var(--mk-accent);
+  outline-offset: 2px;
 }
 
 .promo-library__rea-benchmark {
@@ -116,6 +158,9 @@
   font-size: 13.5px;
   font-weight: 800;
   color: var(--mk-fg);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 .promo-library__rea-grid {
@@ -157,7 +202,7 @@
 .promo-library__section {
   display: grid;
   gap: 14px;
-  margin-top: 56px;
+  margin-top: 24px;
   scroll-margin-top: 24px;
 }
 
@@ -195,16 +240,22 @@
 
 .promo-library__card {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   overflow: hidden;
   min-width: 0;
 }
 
+.promo-library__card-heading { display: flex; align-items: center; min-height: 68px; padding: 12px 14px; border-bottom: 1px solid var(--mk-line); }
+.promo-library__card-heading h3 { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.45; letter-spacing: -0.02em; }
+
 .promo-library[data-view-mode="list"] .promo-library__card {
   grid-template-columns: 220px minmax(0, 1fr);
-  grid-template-rows: auto;
+  grid-template-rows: auto 1fr;
   align-items: center;
 }
+.promo-library[data-view-mode="list"] .promo-library__card-heading { grid-column: 2; grid-row: 1; }
+.promo-library[data-view-mode="list"] .promo-clip-player { grid-column: 1; grid-row: 1 / span 2; }
+.promo-library[data-view-mode="list"] .promo-library__card-copy { grid-column: 2; grid-row: 2; }
 
 .promo-library__card video {
   display: block;
@@ -217,7 +268,7 @@
 
 .promo-library__grid--portrait .promo-library__card video {
   aspect-ratio: 9 / 16;
-  max-height: 520px;
+  max-height: 320px;
 }
 
 .promo-library[data-view-mode="list"] .promo-library__card video {
@@ -298,6 +349,7 @@
 .promo-library__back {
   margin-top: 28px;
 }
+.promo-library__empty { display: grid; justify-items: start; gap: 14px; margin-top: 24px; }
 
 @media (max-width: 1100px) {
   .promo-library__grid--portrait,
@@ -307,6 +359,14 @@
 }
 
 @media (max-width: 720px) {
+  .promo-library__controls-row { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 8px; }
+  .promo-library__search-box { grid-column: 1 / -1; }
+  .promo-library__heading .mk-title { font-size: 24px; }
+  .promo-library__concept { font-size: 12px; }
+  .promo-library__facts { gap: 4px 8px; font-size: 11px; }
+  .promo-library__related > summary { padding-inline: 10px; font-size: 12px; }
+  .promo-library__controls-secondary { gap: 4px 8px; }
+  .promo-library__guidance > summary, .promo-library__view-options > summary { font-size: 12px; }
   .promo-library__grid,
   .promo-library__grid--portrait,
   .promo-library[data-view-mode="poster"] .promo-library__grid,
@@ -315,17 +375,28 @@
   }
 
   .promo-library__grid--portrait .promo-library__card video {
-    max-height: none;
+    max-height: 260px;
   }
+
+  .promo-library[data-view-mode="list"] :is(.promo-library__card-heading, .promo-clip-player, .promo-library__card-copy) { grid-column: auto; grid-row: auto; }
+  .promo-library[data-view-mode="list"] .promo-library__card { grid-template-rows: auto auto 1fr; }
 
   .promo-library__card-copy {
     padding: 16px;
   }
 
   .promo-library__section {
-    margin-top: 44px;
+    margin-top: 16px;
   }
 }
+
+@media (max-width: 360px) {
+  .promo-library__grid--portrait .promo-library__card video { max-height: 220px; }
+  .promo-library__facts span:last-child { flex-basis: 100%; }
+}
+
+/* 작은 미리보기 모드에서도 실패 안내와 재시도는 잘리지 않는다. */
+.promo-library .promo-clip-player:has(.promo-clip-player__recovery) video { min-height: 260px; }
 
 @media (prefers-reduced-motion: reduce) {
   .promo-library__filter-btn {

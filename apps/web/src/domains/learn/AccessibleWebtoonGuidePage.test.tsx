@@ -233,7 +233,9 @@ describe("REA 배리어프리 WCAG 워크벤치", () => {
     renderGuide();
 
     const bar = screen.getByTestId("accessible-guide-rea-wcag-bar");
-    expect(bar.textContent).toContain("W3C WCAG 2.2 AA · Naver Barrier-Free Webtoon · Audio Webtoon Standard");
+    expect(bar.textContent).toContain("참고 기준: WCAG 2.2 AA");
+    const detail = screen.getByText("보기 방식의 기준과 설명", { selector: "summary" }).closest("details");
+    expect(detail?.open).toBe(false);
 
     const visContrast = screen.getByTestId("a11y-guide-rea-vision-wcag-aa-contrast-45");
     const visDeuter = screen.getByTestId("a11y-guide-rea-vision-deuteranopia-safe");

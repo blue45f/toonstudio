@@ -77,8 +77,8 @@ export function IntegrationCenterPage() {
             </span>
             <span className="mt-1 block text-sm text-fg-2">
               {ko
-                ? "AI API 키·Unsplash 키를 마스킹 표시로 안전하게 확인하고 원클릭으로 연결하세요."
-                : "Review AI and Unsplash keys safely masked, and connect with one click."}
+                ? "키는 일부만 표시됩니다. 연결 상태를 확인하고 필요한 서비스만 연결하세요."
+                : "Keys are partially hidden. Review connection status and connect the services you need."}
             </span>
           </span>
         </span>

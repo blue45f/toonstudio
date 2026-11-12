@@ -1,37 +1,5 @@
-/* 탐색 첫 화면만 소유한다. 다른 페이지의 공통 헤더·작품 카드는 변경하지 않는다. */
-.discover-hub-hero {
-  position: relative;
-  display: grid;
-  min-width: 0;
-  gap: 1.125rem;
-  align-items: start;
-  padding: 1.25rem;
-  border: 1px solid color-mix(in oklch, var(--color-accent) 26%, var(--color-line));
-  border-radius: 1.5rem;
-  background: linear-gradient(
-    150deg,
-    color-mix(in oklch, var(--color-accent) 9%, var(--color-panel)),
-    color-mix(in oklch, var(--color-cool, var(--color-accent-2)) 6%, var(--color-card))
-  );
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 8%, transparent),
-    var(--unified-shadow-soft);
-}
-:root[data-design-theme="contrast"] .discover-hub-hero {
-  border-color: var(--color-line-strong);
-  background: var(--color-panel);
-  box-shadow: none;
-}
-@media (forced-colors: active) {
-  .discover-hub-hero {
-    border: 2px solid CanvasText;
-    background: Canvas;
-    box-shadow: none;
-  }
-}
-.discover-hub-intro,
-.discover-hub-header,
-.discover-hub-spotlight {
+/* 탐색의 검색·작품 무대만 소유한다. 공통 내비게이션과 작품 카드는 바꾸지 않는다. */
+.discover-hub-hero,.discover-hub-intro,.discover-hub-header,.discover-hub-spotlight {
   min-width: 0;
 }
 .discover-hub-header {
@@ -39,87 +7,529 @@
   padding: 0;
 }
 .discover-hub-title {
-  margin: .5rem 0 0;
-  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  margin: 0;
+  font-size: clamp(1.5rem,3.2vw,2.25rem);
   line-height: 1.2;
-  letter-spacing: -0.03em;
+  letter-spacing: -.035em;
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+.discover-hub-search {
+  margin-top: 1rem;
+}
+.discover-hub-search-form {
+  grid-template-columns: minmax(0,1fr) auto;
+}
+.discover-hub-submit {
+  min-width: 3rem;
+  padding-inline: .75rem;
+}
+.discover-hub-purpose-nav {
+  display: flex;
+  gap: .75rem;
+  margin-top: .5rem;
+  border-bottom: 1px solid var(--color-line);
+  overflow-x: auto;
+}
+.discover-hub-purpose-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding-inline: .5rem;
+  color: var(--color-fg-2);
+  font-size: .875rem;
+  white-space: nowrap;
+}
+.discover-hub-purpose-nav [aria-current="page"] {
+  color: var(--color-fg);
+  box-shadow: inset 0 -3px var(--color-accent);
+  font-weight: 700;
+}
+.discover-hub-purpose-nav a:hover {
+  color: var(--color-accent);
+}
+.discover-hub-stories {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+.discover-hub-stories:empty {
+  display: none;
+}
+.discover-hub-shelves {
+  margin-top: 1.5rem;
 }
 .discover-hub-snapshot {
   margin-top: .75rem;
 }
-.discover-hub-shelves {
-  margin-top: 1.25rem;
+/* 표지는 실제 카탈로그 그대로 사용하고, 글자 뒤 명암만 테마 토큰으로 만든다. */
+.discover-spotlight {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  background: var(--color-panel);
 }
-@media (max-width: 359px) {
-  .discover-hub-search-form {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.discover-spotlight-stage {
+  position: relative;
+  isolation: isolate;
+  min-height: 15.5rem;
+  overflow: hidden;
 }
-@media (min-width: 1024px) {
-  .discover-hub-hero {
-    padding: 1.5rem 1.75rem;
-  }
-  .discover-hub-hero[data-has-spotlight="true"] {
-    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
-    gap: 1.5rem;
-  }
+.discover-spotlight-stage>.discover-spotlight-art {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 72%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
 }
-
-/* 시안처럼 전체 장르는 첫 줄에서 바로 접근하며 나머지는 목적지에서 고른다. */
+.discover-spotlight-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg,var(--color-canvas) 3%,color-mix(in oklch,var(--color-canvas) 94%,transparent) 24%,color-mix(in oklch,var(--color-canvas) 48%,transparent) 64%,color-mix(in oklch,var(--color-canvas) 8%,transparent));
+}
+.discover-spotlight-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: center;
+  min-height: 15.5rem;
+  padding: 1.25rem;
+  width: 77%;
+  max-width: 29rem;
+}
+.discover-spotlight-topline {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.discover-spotlight-kicker {
+  color: var(--color-accent);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.discover-spotlight-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--color-fg-2);
+  font-size: .75rem;
+}
+.discover-spotlight-copy h2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: .5rem 0 0;
+  color: var(--color-fg);
+  font-size: clamp(1.5rem,3.3vw,2.375rem);
+  font-weight: 750;
+  line-height: 1.18;
+  letter-spacing: -.035em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.discover-spotlight-meta {
+  max-width: 100%;
+  overflow: hidden;
+  margin-top: .5rem;
+  color: var(--color-fg-2);
+  font-size: .75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-spotlight-synopsis {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: .625rem;
+  color: var(--color-fg-2);
+  font-size: .8125rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.discover-spotlight-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  margin-top: 1rem;
+  padding: .625rem 1rem;
+  border: 1px solid transparent;
+  border-radius: .875rem;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: .875rem;
+  font-weight: 700;
+}
+.discover-spotlight-action:hover {
+  background: var(--color-accent-2);
+}
+.discover-spotlight-more {
+  border-top: 1px solid var(--color-line);
+}
+.discover-spotlight-more>summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-height: 3rem;
+  padding: .625rem 1rem;
+  color: var(--color-fg-2);
+  font-size: .8125rem;
+  cursor: pointer;
+  list-style: none;
+}
+.discover-spotlight-more>summary::-webkit-details-marker {
+  display: none;
+}
+.discover-spotlight-more[open]>summary>span {
+  transform: rotate(45deg);
+}
+.discover-spotlight-more-list {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .75rem;
+  padding: .25rem 1rem 1rem;
+}
+.discover-spotlight-more-link {
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  border-radius: .625rem;
+}
+.discover-spotlight-loading {
+  position: relative;
+  min-height: 15.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  background: var(--color-panel);
+}
+.discover-spotlight-loading-art {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 55%;
+}
+.discover-spotlight-loading-copy {
+  position: relative;
+  width: 75%;
+  padding: 3rem 1.25rem;
+}
+/* 방문 기록은 가로 목록으로 유지한다. 진도나 저장 성공으로 표시하지 않는다. */
+.discover-recent-shelf {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 1.125rem;
+  background: var(--color-card);
+  padding: .5rem .875rem .75rem;
+}
+.discover-recent-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 0;
+}
+.discover-recent-heading h2 {
+  color: var(--color-fg);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.discover-recent-heading>a {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  color: var(--color-fg-2);
+  font-size: .8125rem;
+  white-space: nowrap;
+}
+.discover-recent-list {
+  display: flex;
+  gap: 1rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding: .25rem;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: .25rem;
+}
+.discover-recent-list>li {
+  min-width: 0;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+.discover-recent-link {
+  display: flex;
+  align-items: center;
+  gap: .875rem;
+  min-width: 3rem;
+  min-height: 5.75rem;
+  border-radius: .75rem;
+}
+.discover-recent-art {
+  display: block;
+  flex: 0 0 3.5rem;
+  overflow: hidden;
+  width: 3.5rem;
+  height: 4.625rem;
+  border-radius: .625rem;
+  background: var(--color-panel);
+}
+.discover-recent-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(150deg,color-mix(in oklch,var(--color-accent) 30%,var(--color-panel)),color-mix(in oklch,var(--color-cool,var(--color-accent-2)) 20%,var(--color-canvas)));
+  color: var(--color-fg);
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+.discover-recent-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: .375rem;
+}
+.discover-recent-copy>strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--color-fg);
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.discover-recent-copy>span {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  color: var(--color-accent);
+  font-size: .8125rem;
+}
+.discover-recent-state {
+  padding: .5rem 0;
+  color: var(--color-fg-2);
+  font-size: .875rem;
+  line-height: 1.6;
+}
+.discover-recent-state>button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: 3rem;
+  margin-top: .5rem;
+  padding: .5rem 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: .75rem;
+  background: var(--color-panel);
+  color: var(--color-fg);
+}
+.discover-recent-loading {
+  display: flex;
+  gap: .75rem;
+  padding: .5rem 0;
+}
+.discover-recent-loading>span:first-child {
+  width: 3.5rem;
+  height: 4.625rem;
+  border-radius: .625rem;
+}
+.discover-recent-loading>span:last-child {
+  width: 60%;
+  height: 1.25rem;
+  margin-top: 1rem;
+  border-radius: .5rem;
+}
+/* 모든 장르·출처·연재 방식은 이름 있는 보조 영역에서 다시 찾을 수 있다. */
 .discover-hub-quick-genres {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
   min-width: 0;
-  padding-bottom: .25rem;
+  padding: .5rem 0;
 }
-.discover-hub-quick-genre:nth-child(n + 4) {
+.discover-hub-quick-genres a,.discover-hub-catalog a,.discover-hub-genres>summary,.discover-hub-catalog>summary {
+  min-width: 3rem;
+  min-height: 3rem;
+  font-size: .875rem;
+}
+.discover-hub-catalog,.discover-hub-genres {
+  margin-top: .5rem;
+  color: var(--color-fg-2);
+}
+.discover-hub-catalog>summary,.discover-hub-genres>summary {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+}
+.discover-hub-catalog>summary::after,.discover-hub-genres>summary::after {
+  content: "+";
+  color: var(--color-accent);
+  font-size: 1.125rem;
+}
+.discover-hub-catalog[open]>summary::after,.discover-hub-genres[open]>summary::after {
+  content: "−";
+}
+.discover-hub-catalog>summary::-webkit-details-marker,.discover-hub-genres>summary::-webkit-details-marker {
   display: none;
 }
-@media (min-width: 1024px) {
-  .discover-hub-quick-genre:nth-child(n + 4) {
-    display: list-item;
-  }
+.discover-hub-catalog .discover-hub-snapshot {
+  margin-top: .25rem;
 }
-
-/* 시안의 다섯 트랙을 한 줄로 유지하되 44px 터치 영역과 상세 목적지는 보존한다. */
 .discover-hub-track-tabs {
-  display: grid;
-  grid-template-columns: minmax(44px, 1fr) minmax(68px, 1.4fr) minmax(48px, 1.2fr) minmax(44px, 1fr) minmax(44px, 1fr);
-  gap: .25rem;
+  display: flex;
+  gap: .5rem;
   min-width: 0;
+  overflow-x: auto;
+  padding: .25rem;
 }
-/* 공통 오류 화면을 바꾸지 않고 탐색 오류만 작은 가로 안내로 표시한다. */
+.discover-hub-track-tabs>button {
+  flex: 0 0 auto;
+  min-width: 5rem;
+  min-height: 3rem;
+  padding-inline: .75rem;
+  font-size: .875rem;
+  white-space: nowrap;
+}
+.discover-hub-track-disclosure .discover-hub-tracks {
+  margin-top: 0;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
 .discover-hub-error {
   display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr);
+  grid-template-columns: 1.5rem minmax(0,1fr);
   align-items: start;
   column-gap: .75rem;
   padding: 1rem;
   text-align: start;
 }
-.discover-hub-error > svg {
+.discover-hub-error>svg {
   grid-column: 1;
-  grid-row: 1 / 4;
+  grid-row: 1/4;
   margin: 0;
 }
-.discover-hub-error > p,
-.discover-hub-error > button {
+.discover-hub-error>p,.discover-hub-error>button {
   grid-column: 2;
 }
-.discover-hub-error > button {
+.discover-hub-error>button {
   justify-self: start;
+  min-height: 3rem;
   margin-top: .75rem;
 }
-.discover-hub-track-tabs > button {
-  padding-inline: .125rem;
-  font-size: .625rem;
-  white-space: nowrap;
+.discover-hub-purpose-nav a:focus-visible,.discover-hub-catalog>summary:focus-visible,.discover-hub-genres>summary:focus-visible,.discover-spotlight a:focus-visible,.discover-spotlight summary:focus-visible,.discover-recent-shelf a:focus-visible,.discover-recent-shelf button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
-@media (min-width: 640px) {
-  .discover-hub-track-tabs > button {
-    font-size: .75rem;
+@media (min-width:640px) {
+  .discover-hub-purpose-nav {
+    gap: 1rem;
+  }
+  .discover-hub-purpose-nav a {
+    padding-inline: 1rem;
+  }
+  .discover-hub-submit {
+    padding-inline: 1.25rem;
+  }
+  .discover-spotlight-copy {
+    padding: 1.75rem;
+  }
+  .discover-spotlight-copy,.discover-spotlight-stage {
+    min-height: 20rem;
+  }
+}
+@media (min-width:768px) {
+  .discover-hub-stories:has(>.discover-hub-spotlight):has(>.discover-recent-shelf) {
+    grid-template-columns: minmax(0,1.5fr) minmax(15rem,1fr);
+  }
+  .discover-hub-stories:has(>.discover-hub-spotlight)>.discover-recent-shelf {
+    align-self: start;
+  }
+}
+@media (min-width:1024px) {
+  .discover-hub-search-form {
+    max-width: 54rem;
+  }
+  .discover-hub-stories {
+    gap: 1.5rem;
+  }
+  .discover-spotlight-copy,.discover-spotlight-stage {
+    min-height: 22rem;
+  }
+  .discover-spotlight-copy {
+    padding: 2rem;
+  }
+  .discover-hub-shelves {
+    margin-top: 2rem;
+  }
+}
+@media (max-width:359px) {
+  .discover-hub-purpose-nav {
+    gap: .25rem;
+  }
+  .discover-hub-purpose-nav a {
+    padding-inline: .375rem;
+    font-size: .8125rem;
+  }
+  .discover-spotlight-copy {
+    padding: 1rem;
+    width: 82%;
+  }
+  .discover-spotlight-copy h2 {
+    font-size: 1.5rem;
+  }
+  .discover-spotlight-more-list {
+    grid-template-columns: 1fr;
+  }
+  .discover-spotlight-topline {
+    gap: .5rem;
+  }
+}
+:root[data-design-theme="contrast"] .discover-spotlight-scrim {
+  background: linear-gradient(90deg,var(--color-canvas) 12%,color-mix(in oklch,var(--color-canvas) 96%,transparent) 38%,color-mix(in oklch,var(--color-canvas) 65%,transparent));
+}
+@media (forced-colors:active) {
+  .discover-spotlight,.discover-recent-shelf {
+    border: 2px solid CanvasText;
+    background: Canvas;
+  }
+  .discover-spotlight-scrim {
+    background: Canvas;
+  }
+  .discover-spotlight-action {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .discover-spotlight .skeleton,.discover-recent-shelf .skeleton {
+    animation: none;
+  }
+  .discover-recent-list {
+    scroll-behavior: auto;
   }
 }

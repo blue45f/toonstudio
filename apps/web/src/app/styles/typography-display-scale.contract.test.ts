@@ -37,6 +37,7 @@ describe("디스플레이 타이포 스케일 단일화 계약", () => {
   it("unified의 헤딩 크기 할당은 layout-tokens display 단계값(base·sm·lg)뿐이다", () => {
     expect(assignments(unified, "--site-heading-size")).toEqual(["2rem", "2.25rem", "3.75rem"]);
     expect(assignments(unified, "--site-section-title-size")).toEqual(["1.5rem", "1.875rem", "2.25rem"]);
+    expect(assignments(unified, "--site-task-heading-size")).toEqual(["clamp(1.5rem, 4vw, 2rem)"]);
   });
 
   it("단계 지점은 Tailwind sm·lg와 같은 640px·1024px 미디어 쿼리로 선언된다", () => {
@@ -58,6 +59,7 @@ describe("디스플레이 타이포 스케일 단일화 계약", () => {
     expect(scaleBlock).toContain('heading: { base: "2rem", sm: "2.25rem", lg: "3.75rem" }');
     expect(scaleBlock).toContain('sectionTitle: { base: "1.5rem", sm: "1.875rem", lg: "2.25rem" }');
     expect(scaleBlock).toContain('heading: "clamp(2.25rem, 3.4vw, 3.375rem)"');
+    expect(scaleBlock).toContain('taskHeading: "clamp(1.5rem, 4vw, 2rem)"');
   });
 
   it("display 변형 클래스 문자열은 기존 단계값을 그대로 유지한다 (회귀 고정)", () => {
