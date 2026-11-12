@@ -72,11 +72,12 @@ jobs:
     timeout-minutes: 35
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR: ${{ runner.temp }}/studio-chemy-toolchain
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: 고정 Chemy 도구 설치 경로 준비
+        run: echo "TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR=$RUNNER_TEMP/studio-chemy-toolchain" >> "$GITHUB_ENV"
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:

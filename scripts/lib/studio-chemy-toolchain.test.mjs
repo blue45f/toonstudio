@@ -60,6 +60,7 @@ test("CI의 별도 설치도 고정 원래 manifest의 모든 도구 버전을 �
   for (const name of ["playwright", "vite", "spectral.js", "colormix"]) {
     assert.ok(workflow.includes(`${name}@${manifest.dependencies[name].version}`));
   }
-  assert.match(workflow, /TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR: \$\{\{ runner\.temp \}\}\/studio-chemy-toolchain/u);
+  assert.ok(workflow.includes('echo "TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR=$RUNNER_TEMP/studio-chemy-toolchain" >> "$GITHUB_ENV"'));
+  assert.doesNotMatch(workflow, /TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR: \$\{\{ runner\.temp \}\}/u);
   assert.ok(workflow.includes('node "$TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR/node_modules/playwright/cli.js" install --with-deps chromium'));
 });
