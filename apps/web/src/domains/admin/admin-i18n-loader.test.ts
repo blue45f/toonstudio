@@ -35,12 +35,13 @@ function parseRegisterModule(source: string): Record<"ko" | "en", Record<string,
 }
 
 const MODULE_FILE = "admin-i18n-loader.ts";
-const PREFIX = "adminRest.status.";
-const CONSUMERS = [
+const PREFIXES = ["adminRest.status.", "admin.ciQuality."] as const;
+const STATUS_CONSUMERS = [
   "components/AdminIntegrations.tsx",
   "traffic/WebVitalsDashboardPage.tsx",
 ] as const;
-const MIGRATED_FILES = CONSUMERS;
+const CONSUMERS = [...STATUS_CONSUMERS, "components/AdminOps.tsx"] as const;
+const MIGRATED_FILES = STATUS_CONSUMERS;
 
 const blocks = parseRegisterModule(readSource(MODULE_FILE));
 const ALL_KEYS = Object.keys(blocks.ko).sort();
@@ -169,8 +170,9 @@ describe("admin rest status i18n r3c14", () => {
     for (const key of ALL_KEYS) {
       expect(consumerSource.includes(`"${key}"`), `unreferenced key: ${key}`).toBe(true);
     }
+    const prefixes = PREFIXES.map((prefix) => prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
     const referenced = new Set(
-      [...consumerSource.matchAll(new RegExp(`"(${PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[A-Za-z0-9.]+)"`, "g"))].map((m) => m[1] ?? ""),
+      [...consumerSource.matchAll(new RegExp(`"((?:${prefixes})[A-Za-z0-9.]+)"`, "g"))].map((m) => m[1] ?? ""),
     );
     for (const key of referenced) {
       expect(ALL_KEYS.includes(key), `dangling key reference: ${key}`).toBe(true);

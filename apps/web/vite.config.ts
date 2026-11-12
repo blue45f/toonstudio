@@ -14,6 +14,7 @@ import { build as viteBuild, createLogger, defineConfig, type Logger, type Plugi
 import { compactBootstrapAssets } from "./config/compact-bootstrap-assets";
 import { createStudioManualChunks } from "./config/vite-manual-chunks";
 import { pigmentLicenseBoundaryPlugin } from "./config/vite-pigment-license-boundary";
+import { adminQualityEntryPlugin } from "./config/vite-admin-quality-entry";
 import { STUDIO_I18N_NAMESPACES } from "./src/shared/lib/i18n-asset-manifest";
 import {
   STUDIO_SERVICE_WORKER_STATIC_CRITICAL_URLS,
@@ -655,6 +656,7 @@ export default defineConfig(({ command, mode }) => ({
     preferImplementationOverTestModulePlugin(),
     studioCrossOriginIsolationPlugin(),
     studioServiceWorkerPlugin(),
+    adminQualityEntryPlugin({ repositoryRoot }),
     react(),
     createWebReactCompilerPlugin(),
     // Last on purpose: the visualizer must observe the final bundle.

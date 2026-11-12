@@ -216,6 +216,11 @@ jobs:
           set -euo pipefail
           pnpm run typecheck
           pnpm run typecheck:cloudflare-realtime
+      - name: 독립 관리자 타입과 CI·QA 기록 기능 검증
+        run: |
+          set -euo pipefail
+          pnpm run typecheck:admin
+          pnpm exec vitest run apps/admin-web/src
       - name: Enforce type-coverage ratchet (typed identifier floor)
         run: pnpm run check:type-coverage
       - name: 완료한 Core 타입 검사 영수증 기록
@@ -799,6 +804,16 @@ jobs:
       - name: 제작 작업 보드 실제 흐름과 반응형 접근성 검증
         if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
         run: pnpm exec playwright test --config playwright.production-workflows.config.ts
+      - name: 관리자 CI·QA 기록·권한·JSON·모바일 브라우저 검증
+        if: github.event_name != 'workflow_dispatch' || inputs.pigment_diagnostics != true || github.ref == 'refs/heads/main'
+        run: pnpm run test:admin:e2e
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: core-admin-quality-browser-attempt-${{ github.run_attempt }}
+          path: artifacts/operation-policy-browser
+          retention-days: 7
+          if-no-files-found: warn
       - name: 자체 안료 실제 제품 UI·저장·재열기·명시 전환
         if: ${{ !cancelled() && steps.chromium.outcome == 'success' }}
         timeout-minutes: 10

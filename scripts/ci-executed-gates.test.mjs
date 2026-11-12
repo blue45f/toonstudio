@@ -934,7 +934,7 @@ test("focused ToonStudio checkout includes imported metadata, validated artwork 
     "experience-v8/landmarks-pastel.png",
     "experience-v8/backdrop-neon-city.png",
   ].map((file) => `apps/web/public/assets/virtual-studio/${file}`);
-  const requiredInputs = [...manifests, ...validatedArt];
+  const requiredInputs = [...manifests, ...validatedArt, "apps/web/public/assets/3d/environments/bundle-v1/deploy-index.b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c.json"];
   const faultEvidence = "tests/benchmarks/results/v12-runtime-fault-matrix.json";
   const unrelatedResult = "tests/benchmarks/results/unrelated-benchmark.json";
   const artwork = "apps/web/public/assets/3d/environments/unrelated-pack/large-model.glb";
