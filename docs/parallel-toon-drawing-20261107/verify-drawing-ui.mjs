@@ -18,14 +18,18 @@ const VIEWPORTS = [
 
 async function waitReady(url, timeoutMs = 45000) {
   const start = Date.now();
+  let lastError;
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(Math.max(1, timeoutMs - (Date.now() - start))) });
       if (res.ok) return;
-    } catch {}
-    await new Promise((r) => setTimeout(r, 400));
+      lastError = new Error(`서버 준비 응답 오류: HTTP ${res.status} ${res.statusText}`);
+    } catch (cause) {
+      lastError = cause;
+    }
+    await new Promise((r) => setTimeout(r, Math.min(400, Math.max(0, timeoutMs - (Date.now() - start)))));
   }
-  throw new Error(`Server did not start within ${timeoutMs}ms: ${url}`);
+  throw new Error(`Server did not start within ${timeoutMs}ms: ${url}`, { cause: lastError });
 }
 
 async function dismissOverlays(page) {
@@ -78,13 +82,20 @@ async function main() {
         localStorage.setItem("toonstudio-studio-mobile-hint-dismissed", "1");
         localStorage.setItem("toonstudio-lang", JSON.stringify({ state: { lang: "ko" }, version: 0 }));
         localStorage.setItem("toonstudio-studio-ui-density:v1", JSON.stringify({ mode: "full" }));
-      } catch {}
+        globalThis.__toonstudioDrawingStorageInitialization = { ok: true, error: "" };
+      } catch (cause) {
+        globalThis.__toonstudioDrawingStorageInitialization = { ok: false, error: cause instanceof Error ? cause.message : String(cause) };
+      }
     });
 
     await page.goto(`${ORIGIN}/studio/canvas?drawingShell=app&startTool=draw`, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
+    const storageInitialization = await page.evaluate(() => globalThis.__toonstudioDrawingStorageInitialization);
+    if (!storageInitialization?.ok) {
+      throw new Error(`브라우저 저장소 초기화 검증 실패: ${storageInitialization?.error ?? "초기화 결과를 확인할 수 없습니다."}`);
+    }
     await page.locator("[data-studio-canvas-viewport]").waitFor({ state: "visible", timeout: 60000 });
     await dismissOverlays(page);
 
