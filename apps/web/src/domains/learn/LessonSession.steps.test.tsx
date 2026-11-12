@@ -38,6 +38,22 @@ describe("한 과제 중심 강좌 단계", () => {
     expect(stepButton("목표").getAttribute("aria-current")).toBe("step");
   });
 
+  it("결과 카드에서 긴 과제 설명보다 먼저 시작하고 원래 과제는 다음 단계에도 보존한다", () => {
+    const lesson = LESSONS.reduce((longest, item) => item.task.length > longest.task.length ? item : longest);
+    openLesson(`/learn/lessons/${lesson.id}`);
+    const goal = screen.getByRole("region", { name: "이번에 만들 결과" });
+    const outcome = goal.querySelector(".learn-step-outcome");
+    if (!(outcome instanceof HTMLElement)) throw new Error("시작 행동과 연결된 수업 결과가 필요합니다.");
+    const start = within(outcome).getByRole("button", { name: "한 과제 시작 →" });
+    const task = within(goal).getByText(lesson.task);
+    expect(start.compareDocumentPosition(task) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(start);
+    expect(stepButton("한 과제").getAttribute("aria-current")).toBe("step");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "직접 만들어 보세요" }));
+    expect(within(screen.getByRole("region", { name: "직접 만들어 보세요" })).getByText(lesson.task)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "학습 완료됨" })).toBeNull();
+  });
+
   it("단계만 선택해도 완료 처리하지 않고, 맥락과 예제 입력을 유지한 채 Back으로 원래 조작에 복귀한다", () => {
     const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     openLesson("/learn/lessons/story-board?from=first-three-panels&project=retained&labValue=35&lesson-step=goal");

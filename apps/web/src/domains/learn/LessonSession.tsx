@@ -185,10 +185,12 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
       <div className="learn-step-content">
         <section hidden={step !== "goal"} aria-labelledby={`${id}-goal`}>
           <h2 id={`${id}-goal`} ref={step === "goal" ? stepHeadingRef : undefined} tabIndex={-1} className="learn-step-heading">{t("이번에 만들 결과", "What you will make")}</h2>
-          <div className="learn-step-outcome"><strong>{meta.outcome}</strong></div>
+          <div className="learn-step-outcome">
+            <strong>{meta.outcome}</strong>
+            <div className="learn-step-actions"><button type="button" className="learn-primary" onClick={(event) => goToStep("practice", event.currentTarget)}>{t("한 과제 시작", "Start the task")} →</button></div>
+          </div>
           <h3>{t("오늘의 한 과제", "Today's one task")}</h3>
           <p className="learn-step-task">{lesson.task}</p>
-          <div className="learn-step-actions"><button type="button" className="learn-primary" onClick={(event) => goToStep("practice", event.currentTarget)}>{t("한 과제 시작", "Start the task")} →</button></div>
           <figure className="learn-goal-diagram">
             <LessonDiagram kind={lesson.lab} value={LAB_CONFIGS[lesson.lab].initial} frame={100} />
             <figcaption>{t("학습용 개념도 · 다음 단계에서 직접 조절할 수 있습니다.", "Learning diagram · Adjust the example in the next step.")}</figcaption>

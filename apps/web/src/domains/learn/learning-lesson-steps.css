@@ -6,9 +6,9 @@
 }
 
 .learn-stepped-lesson [hidden] { display: none !important; }
-.learn-stepped-lesson .learn-guided-lesson-header { margin: 0 0 1.25rem; }
-.learn-stepped-lesson .learn-lesson-header h1 { font-size: clamp(1.65rem, 3.5vw, 2.5rem); }
-.learn-stepped-lesson .learn-intro { font-size: 1rem; line-height: 1.7; margin-bottom: .75rem; }
+.learn-stepped-lesson .learn-guided-lesson-header { margin: 0 0 1rem; }
+.learn-stepped-lesson .learn-lesson-header h1 { font-size: clamp(1.65rem, 3.5vw, 2.5rem); margin-bottom: .75rem; }
+.learn-stepped-lesson .learn-intro { font-size: 1rem; line-height: 1.6; margin-bottom: .5rem; }
 .learn-stepped-lesson .learn-eyebrow { letter-spacing: .02em; }
 .learn-stepped-lesson .learn-lesson-record-status { margin: 0; color: var(--learn-muted); font-size: .875rem; }
 
@@ -68,6 +68,7 @@
 }
 
 .learn-step-outcome strong { font-size: 1.125rem; line-height: 1.6; }
+.learn-step-outcome .learn-step-actions { margin: 1rem 0 0; }
 .learn-step-content .learn-step-task { font-size: 1rem; }
 .learn-goal-diagram { margin: 1.5rem 0; padding: .75rem; border: 1px solid var(--learn-line); border-radius: 1.25rem; background: var(--learn-bg); }
 .learn-goal-diagram .learn-diagram { min-width: 0; width: 100%; }
@@ -77,6 +78,16 @@
 .learn-step-task-card .learn-small { margin: 1rem 0 0; }
 .learn-step-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0; }
 .learn-step-actions .learn-primary { flex: 1; }
+.learn-page .learn-stepped-lesson .learn-primary,
+#main-content .learn-stepped-lesson .learn-primary {
+  min-block-size: 48px;
+  min-height: 48px;
+  height: auto;
+  padding: .625rem 1.25rem;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .learn-stepped-lesson :is(button, .learn-primary, .learn-secondary, .learn-back) { min-height: 3rem; }
 .learn-stepped-lesson .learn-check { min-height: 3rem; font-size: 1rem; }
 .learn-stepped-lesson .learn-check input { flex-shrink: 0; }
