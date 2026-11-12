@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { ENGINEERING_ATLAS_ENTRIES } from "./engineering-atlas-content";
@@ -93,9 +93,13 @@ export function useAtlasNavigation() {
   const filters = useMemo(() => filtersFromSearch(location.search), [location.search]);
   const visible = useMemo(() => filterEntries(filters), [filters]);
 
+  // Router 반영 전 이어진 조작은 마지막 요청 URL에 합친다. commit 뒤에는 URL을 다시 정본으로 쓴다.
+  const pending = useRef<{ key: string; search: string; hash: string } | null>(null);
+  useLayoutEffect(() => { pending.current = null; }, [location]);
   const update = useCallback((patch: Partial<AtlasFilters>, replace = false): void => {
-    const next = { ...filters, ...patch };
-    const params = new URLSearchParams(location.search);
+    const base = pending.current?.key === location.key ? pending.current : location;
+    const next = { ...filtersFromSearch(base.search), ...patch };
+    const params = new URLSearchParams(base.search);
     const values = { category: next.category === "all" ? "" : next.category,
       status: next.status === "all" ? "" : next.status, q: next.query,
       "atlas-page": next.page > 1 ? String(next.page) : "",
@@ -104,10 +108,11 @@ export function useAtlasNavigation() {
       if (value) params.set(key, value); else params.delete(key);
     }
     const search = params.toString();
-    const hash = destinationHasTarget(hashId(location.hash), next) ? location.hash : "";
-    if (search === new URLSearchParams(location.search).toString() && hash === location.hash) return;
+    const hash = destinationHasTarget(hashId(base.hash), next) ? base.hash : "";
+    if (search === new URLSearchParams(base.search).toString() && hash === base.hash) return;
+    pending.current = { key: location.key, search, hash };
     navigate({ pathname: location.pathname, search: search ? `?${search}` : "", hash }, { replace, state: location.state });
-  }, [filters, location.hash, location.pathname, location.search, location.state, navigate]);
+  }, [location, navigate]);
 
   const nativePopHref = useRef("");
   // 네이티브 앵커도 라우터와 같은 URL 문맥을 사용한다. 별도 저장소·스크롤 소유자는 만들지 않는다.

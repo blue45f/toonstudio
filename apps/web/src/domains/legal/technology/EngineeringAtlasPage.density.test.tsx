@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { BrowserRouter, MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -216,6 +216,47 @@ describe("기술 도감의 목적 분리와 결과 페이지", () => {
     expect(params.get("unrelated")).toBe(queryChanges ? "keep" : null);
     expect(currentUrl().hash).toBe("#fixture-sample-2");
     expect(currentUrl().state).toEqual({ caller: "after" });
+  });
+
+  it("빠른 초기화·검색·분야·상태 조작은 아직 렌더되지 않은 직전 입력을 덮지 않는다", () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    window.history.replaceState({ usr: { caller: "rapid" }, key: "rapid", idx: 0 }, "", "/about/technology/atlas?q=일치없음&unrelated=keep#outside-section");
+    render(<BrowserRouter><HistoryControls /><EngineeringAtlasPage /></BrowserRouter>);
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: /검색 조건 초기화|Reset filters/u }));
+      fireEvent.change(search(), { target: { value: "OPFS" } });
+      fireEvent.change(screen.getByRole("combobox", { name: /^(분야|Category)$/u }), { target: { value: "local-first" } });
+      fireEvent.change(screen.getByRole("combobox", { name: /현재 상태|Current status/u }), { target: { value: "live" } });
+    });
+    const params = new URLSearchParams(currentUrl().search);
+    expect(search().value).toBe("OPFS");
+    expect(params.get("q")).toBe("OPFS");
+    expect(params.get("category")).toBe("local-first");
+    expect(params.get("status")).toBe("live");
+    expect(params.get("unrelated")).toBe("keep");
+    expect(currentUrl().hash).toBe("#outside-section");
+    expect(currentUrl().state).toEqual({ caller: "rapid" });
+  });
+
+  it("같은 렌더에서 목적 전환과 검색이 이어져도 새 목적과 검색을 함께 보존한다", async () => {
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: vi.fn() });
+    window.history.replaceState({ usr: { caller: "purpose" }, key: "purpose", idx: 0 }, "", "/about/technology/atlas?unrelated=keep");
+    render(<BrowserRouter><HistoryControls /><EngineeringAtlasPage /></BrowserRouter>);
+    act(() => {
+      fireEvent.click(maps());
+      fireEvent.change(search(), { target: { value: "OPFS" } });
+    });
+    expect(maps().getAttribute("aria-current")).toBe("page");
+    expect(search().value).toBe("OPFS");
+    expect(new URLSearchParams(currentUrl().search).get("atlas-view")).toBe("maps");
+    expect(new URLSearchParams(currentUrl().search).get("q")).toBe("OPFS");
+    expect(currentUrl().state).toEqual({ caller: "purpose" });
+    fireEvent.click(screen.getByRole("button", { name: "이전 기록" }));
+    await waitFor(() => expect(maps().getAttribute("aria-current")).toBeNull());
+    fireEvent.change(search(), { target: { value: "quota ledger" } });
+    expect(maps().getAttribute("aria-current")).toBeNull();
+    expect(new URLSearchParams(currentUrl().search).get("q")).toBe("quota ledger");
+    expect(new URLSearchParams(currentUrl().search).get("atlas-view")).toBeNull();
   });
 
   it("전체 인쇄는 검색 밖 카드와 모든 지도 원문을 구성하고 URL·조건·페이지·접힘 상태를 복구한다", () => {
