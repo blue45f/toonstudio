@@ -18,10 +18,10 @@ describe("StudioProjectTeamKanbanBridge", () => {
 
     const section = screen.getByTestId("studio-project-team-kanban-bridge");
     expect(within(section).getByText("1. 콘티")).toBeTruthy();
-    expect(within(section).getByText("2. 3D세트")).toBeTruthy();
+    expect(within(section).getByText("2. 3D 배경")).toBeTruthy();
     expect(within(section).getByText("3. 선화")).toBeTruthy();
     expect(within(section).getByText("4. 채색")).toBeTruthy();
-    expect(within(section).getByText("5. 식자·승인")).toBeTruthy();
+    expect(within(section).getByText("5. 글자·최종 확인")).toBeTruthy();
 
     const storyboardCard = within(section).getByTestId("studio-kanban-stage-card-storyboard");
     expect(within(storyboardCard).getByRole("link").className).toContain("min-h-11");
@@ -33,11 +33,11 @@ describe("StudioProjectTeamKanbanBridge", () => {
     const exportCard = within(section).getByTestId("studio-kanban-stage-card-lettering");
     expect(within(exportCard).getByRole("link").getAttribute("href")).toBe("/studio/p/proj-alpha/export");
 
-    expect(within(section).getByRole("link", { name: /회차 공정 칸반 열기/u }).getAttribute("href"))
+    expect(within(section).getByRole("link", { name: /회차 진행 보기/u }).getAttribute("href"))
       .toBe("/production/projects/proj-alpha/production");
-    expect(within(section).getByRole("link", { name: /공정 인계/u }).getAttribute("href"))
+    expect(within(section).getByRole("link", { name: /작업 전달 기록/u }).getAttribute("href"))
       .toBe("/production/projects/proj-alpha/handoff");
-    expect(within(section).getByRole("link", { name: /권리 BOM 원장/u }).getAttribute("href"))
+    expect(within(section).getByRole("link", { name: /소재 이용 조건/u }).getAttribute("href"))
       .toBe("/production/projects/proj-alpha/rights");
   });
 });

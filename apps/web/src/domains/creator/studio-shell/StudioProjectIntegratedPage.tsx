@@ -224,8 +224,8 @@ function SectionWorkflow({
         <details className="rounded-2xl border border-line bg-card/85">
           <summary className="min-h-12 cursor-pointer px-4 py-3 text-sm font-bold text-fg-2 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
             {bt(
-              "전문 제작 파이프라인 · 멀티 툴체인 확장 도구 열기",
-              "Open specialist pipeline & multi-toolchain workbenches",
+              "제작·검토 도구 더 보기",
+              "More production and review tools",
             )}
           </summary>
           <div className="space-y-4 border-t border-line p-3 sm:p-4">

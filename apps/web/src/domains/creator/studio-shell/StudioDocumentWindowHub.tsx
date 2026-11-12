@@ -460,7 +460,7 @@ export function StudioDocumentWindowHub({
                 {bi("여러 창 작업공간", "Multi-window workspace")}
               </h2>
               <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fg-3 sm:text-sm">
-                {bi("같은 문서를 역할별 탭과 창으로 나눕니다. 문서 저장·실시간 협업 권위는 기존 편집기 한곳을 그대로 사용합니다.", "Split one document into role-specific tabs and windows while preserving the editor's existing save and collaboration authority.")}
+                {bi("같은 원고를 작업에 맞게 나눠 보세요. 탭이나 창을 바꿔도 같은 원고에서 이어집니다.", "Arrange views of the same manuscript for each task. Tabs and windows keep working on that manuscript.")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.65rem] font-bold text-fg-3">
                 <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-1">

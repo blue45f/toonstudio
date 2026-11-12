@@ -1,4 +1,4 @@
-import { translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
+import { translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { AlertTriangle, CheckCircle2, FileUp, ShieldCheck } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -131,12 +131,12 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
           <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
-            {translateCurrentStaticSourceText("domains.creator.studio.shell.StudioImportIntake", "en", "SAFE IMPORT")}</p>
+            {bi("파일 가져오기", "Import files")}</p>
           <h2 id="studio-import-intake-title" className="mt-1 text-xl font-black text-fg">
-            {bi("먼저 분석하고, 기존 편집기로 안전하게 전달", "Analyze first, then hand off safely to the editor")}
+            {bi("파일 내용을 확인하고 불러오세요", "Preview your file before importing")}
           </h2>
           <p className="mt-2 text-sm leading-6 text-fg-3">
-            {bi("ToonStudio 프로젝트·JSON·PSD·ORA·CBZ·브러시 팩과 이미지 파일은 보존 항목과 변환 손실을 확인한 뒤 검증된 가져오기 경로로 전달합니다. 프로젝트 파일은 원고 스냅샷까지 새 로컬 프로젝트로 복원합니다.", "ToonStudio projects, JSON, PSD, ORA, CBZ, brush packs and images are previewed for preservation and loss, then sent through verified import paths. Project packages restore canvas snapshots into a new local project.")}
+            {bi("파일을 고르면 유지되는 내용과 달라질 수 있는 내용을 먼저 볼 수 있어요. ToonStudio 작업 파일은 원고를 새 프로젝트로 불러옵니다.", "Choose a file to see what will be kept and what may change. ToonStudio project files restore the manuscript into a new project.")}
           </p>
         </div>
         <label className={buttonClass({ size: "lg", className: "shrink-0 cursor-pointer gap-2" })}>
@@ -151,6 +151,11 @@ export function StudioImportIntake({ locale }: { readonly locale: StudioImportIn
           />
         </label>
       </div>
+
+      <details className="mt-3 text-xs leading-5 text-fg-2">
+        <summary className="min-h-12 cursor-pointer content-center font-semibold">{bi("지원 파일 형식", "Supported file formats")}</summary>
+        <p>{bi("ToonStudio 프로젝트, JSON, PSD, ORA, CBZ, 브러시 팩과 이미지 파일을 확인할 수 있어요. 실제 보존 내용과 제한은 파일을 선택한 뒤 표시됩니다.", "You can preview ToonStudio projects, JSON, PSD, ORA, CBZ, brush packs and image files. Preservation details and limitations appear after you select a file.")}</p>
+      </details>
 
       {selection ? (
         <article className="mt-5 rounded-2xl border border-line bg-panel/55 p-4">
