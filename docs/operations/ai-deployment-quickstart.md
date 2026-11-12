@@ -25,6 +25,13 @@
 
 모든 배포는 **검토된 `origin/main` 끝의 소문자 40자리 SHA 1개**만 대상으로 하며, 변경된 배포 단위만 수동 반영한다.
 
+`deploy:web`의 운영 전제 중 스크립트가 직접 검사하는 항목은 승인 조건, `main`·clean worktree·로컬 HEAD,
+동일 SHA의 로컬 완료 원장이다. `--skip-build`이면 사전 빌드 메타의 SHA 일치도 검사한다.
+배포 시점의 원격 `origin/main` 일치, 해당 SHA의 `core`·`verify` 성공, 원격의 진행 중·완료 배포와 현재 무료 잔량은
+**운영자가 실행 전에 확인할 게이트**이며, 이 명령이 자동 조회하지 않는다. 사후 스모크도 별도로 수행한다.
+무료 우선 정책 검사 통과만으로 현재 과금 상태가 증명되지는 않는다. 추가 과금 0원이 요구되는 작업에서
+CI runner·아티팩트 보관·R2 작업량 등의 비용 가능성이 미확정이면 외부 실행을 보류한다.
+
 | 단계 | 정본 진입 명령 | 성공 판정 기준 | 금지 사항 |
 | --- | --- | --- | --- |
 | **1. 검증 (Verify)** | `pnpm run deploy:verify`<br>`pnpm run deploy:preflight`<br>(단위 지정 시: `pnpm run deploy:preflight --operation static-deploy --unit static-worker`) | - `deploy:verify`(무료 인프라 정책 + Cloudflare `static`·`apex-redirect`·`realtime`·`analytics` 규칙·타입·단위 테스트·드라이런) 종료 코드 `0`<br>- `deploy:preflight`가 계약 오류 없이 `status: "offline-contract-only"`(미주입 환경에서는 예상된 `MISSING_*`만 보고) 반환<br>- 대상 40자리 SHA가 원격 `origin/main`과 일치하고 GitHub Actions 필수 체크(`core`, `verify`)가 `completed` + `success`임이 확인됨 | - `offline-contract-only`(`deploymentAuthorized: false`)나 로컬 커밋만으로 배포 승인·원격 CI 통과를 주장 금지<br>- 원격 CI 미확인·실패 SHA를 통과로 간주하거나 `--no-verify`로 우회 금지 |
