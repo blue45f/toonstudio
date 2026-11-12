@@ -16,18 +16,19 @@ function desktopInspector() {
 const serverDesktopInspector = () => false;
 
 /** Consent remains modal; opt-in desktop inspectors do not make the workspace inert. */
-export function WorkspaceContextPanel({ open, title, onClose, children, initialFocusRef, presentation = "modal" }: {
+export function WorkspaceContextPanel({ open, title, onClose, children, initialFocusRef, returnFocusRef, presentation = "modal" }: {
   readonly presentation?: "modal" | "adaptive";
   readonly open: boolean;
   readonly title: string;
   readonly onClose: () => void;
   readonly children: ReactNode;
   readonly initialFocusRef?: RefObject<HTMLElement | null>;
+  readonly returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const desktop = useSyncExternalStore(subscribeDesktopInspector, desktopInspector, serverDesktopInspector);
   const nonModal = presentation === "adaptive" && desktop;
   const ref = useRef<HTMLDialogElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const returnFocusTargetRef = useRef<HTMLElement | null>(null);
   const headingId = useId();
   const locale = useI18n((state) => state.lang);
   useEffect(() => {
@@ -38,16 +39,19 @@ export function WorkspaceContextPanel({ open, title, onClose, children, initialF
       const shouldRestore = !nonModal || dialog.contains(document.activeElement) || document.activeElement === document.body;
       dialog.close();
       // React may replace the focused child before native focus restoration runs.
-      const target = returnFocusRef.current;
+      const target = returnFocusTargetRef.current;
       if (shouldRestore && target?.isConnected) target.focus({ preventScroll: true });
     };
     if (open && !dialog.open) {
-      returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const invoker = returnFocusRef?.current;
+      returnFocusTargetRef.current = invoker?.isConnected
+        ? invoker
+        : document.activeElement instanceof HTMLElement ? document.activeElement : null;
       if (nonModal) dialog.show(); else dialog.showModal();
       initialFocusRef?.current?.focus();
     } else if (!open) close();
     return close;
-  }, [open, initialFocusRef, nonModal]);
+  }, [open, initialFocusRef, returnFocusRef, nonModal]);
   return (
     <dialog ref={ref} className="workspace-inspector" aria-labelledby={headingId} aria-modal={nonModal ? false : true} data-presentation={nonModal ? "nonmodal" : "modal"}
       data-space-interactive="true" data-app-tooltip-exclude="true" onCancel={(event) => { event.preventDefault(); onClose(); }}
