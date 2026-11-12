@@ -11,7 +11,7 @@ export function EmptyTeach({
   icon: typeof Star;
   title: string;
   desc: string;
-  cta?: { label: string; href: string };
+  cta?: { label: string; href: string; returnFocusKey?: string };
 }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line bg-card/40 px-4 py-3 text-center sm:gap-3 sm:px-6 sm:py-16">
@@ -34,6 +34,7 @@ export function EmptyTeach({
       {cta && (
         <Link
           href={cta.href}
+          data-route-return-focus={cta.returnFocusKey}
           className="mt-1 inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent transition-opacity hover:opacity-90"
         >
           {cta.label}
