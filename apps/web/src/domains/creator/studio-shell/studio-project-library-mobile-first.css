@@ -1,6 +1,6 @@
 /* 작업 홈에만 적용한다. 공통 셸·저장 정본과 캔버스의 스타일은 바꾸지 않는다. */
-.studio-library-entry-actions { display: flex; gap: .5rem; margin: 1rem 0; flex-wrap: wrap; }
-.studio-library-entry-actions > a { flex: 1; min-height: 48px; font-size: 1rem; }
+.studio-library-entry-actions { display: flex; gap: .5rem; margin: .75rem 0; }
+.studio-library-entry-actions > a { flex: 1; min-width: 0; min-height: 48px; font-size: 1rem; }
 .studio-library-resume { min-width: 0; border: 1px solid var(--color-line); border-radius: 1.25rem; overflow: hidden; background: var(--color-card); }
 .studio-library-resume-cover { height: clamp(220px, 50vw, 310px); background: var(--color-panel); }
 .studio-library-resume-content { position: relative; margin-top: -190px; min-height: 190px; padding: 3rem 1rem 1rem; color: white; background: linear-gradient(transparent, rgb(15 20 39 / 92%)); }
@@ -12,8 +12,6 @@
 .studio-library-resume-state p { flex-basis: 100%; margin: .25rem 0; }
 .studio-library-resume-state a { display: inline-flex; align-items: center; gap: .375rem; min-height: 48px; text-decoration: underline; text-underline-offset: .2rem; }
 .studio-library-resume-state [data-studio-recent-save-attention] { color: var(--color-danger); font-weight: 700; }
-.studio-library-first-work { padding: 1rem; border-radius: 1.25rem; border: 1px solid var(--color-line); background: var(--color-card); background-image: linear-gradient(90deg, var(--color-card) 55%, transparent), url('/brand/workflow-20260928/create-320.webp'); background-size: auto, 160px; background-position: center, right center; background-repeat: no-repeat; }
-.studio-library-first-work > div { max-width: 28rem; }
 .studio-library-compact-grid { margin-top: 1rem; display: grid; gap: .75rem; }
 .studio-library-project-row { min-width: 0; border: 1px solid var(--color-line); border-radius: 1rem; padding: .75rem; background: var(--color-card); }
 .studio-library-project-row[data-selected] { border-color: var(--color-accent); outline: 2px solid var(--color-accent); outline-offset: 2px; }
@@ -43,6 +41,21 @@
 .studio-library-alternative-starts > summary { min-height: 48px; padding: .5rem; font-size: .875rem; }
 .studio-library-alternative-starts[open] { flex-basis: 100%; }
 .studio-library-mobile-home input, .studio-library-mobile-home select { min-height: 48px; font-size: 1rem; }
-@media (min-width: 360px) and (max-width: 767px) { [data-studio-project-search-row] > div { flex-direction: row; gap: .5rem; } [data-studio-project-search-row] > div > div:last-child { flex-wrap: nowrap; } [data-studio-project-search-row] select { max-width: 110px; } }
 .studio-library-row-resume-context { margin-top: .375rem; }
 .studio-library-row-resume-context p { overflow-wrap: anywhere; }
+/* 목록 찾기는 직접, 반복 관리 동작은 같은 위치의 이름 있는 보조 도구로 제공한다. */
+.studio-library-search-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: .5rem; }
+.studio-library-list-options { min-width: 0; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); }
+.studio-library-list-options > summary { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: .5rem .75rem; color: var(--color-fg-2); font-size: .875rem; font-weight: 700; cursor: pointer; list-style: none; }
+.studio-library-list-options > summary::-webkit-details-marker { display: none; }
+.studio-library-list-options > summary::after { content: '+'; margin-left: .5rem; }
+.studio-library-list-options[open] { grid-column: 1 / -1; }
+.studio-library-list-options[open] > summary { justify-content: flex-start; }
+.studio-library-list-options[open] > summary::after { content: '−'; }
+.studio-library-list-options > div { padding: 0 .75rem .75rem; }
+.studio-library-list-options button { min-height: 48px; }
+.studio-library-list-options > summary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+.studio-library-secondary-tools { display: flex; flex-wrap: wrap; align-items: start; gap: .5rem; margin-top: .5rem; }
+.studio-library-secondary-tools > details { flex: 1; min-width: 0; }
+.studio-library-secondary-tools > details[open] { flex-basis: 100%; }
+.studio-library-secondary-tools > details > summary { display: flex; align-items: center; min-height: 48px; padding: .5rem .75rem; font-size: .8125rem; line-height: 1.4; }

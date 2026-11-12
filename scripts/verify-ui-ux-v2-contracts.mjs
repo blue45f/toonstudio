@@ -192,7 +192,7 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/marketing/ReferenceCreatorDashboard.tsx", "home-v2-spectrum-launchpad"],
     ["apps/web/src/domains/marketing/reference-creator-dashboard.css", "rd-v2-spectrum-ribbon"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryFastStartStrip.tsx", "studio-fast-start-strip"],
-    ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementHeader.tsx", "data-studio-atelier-bento"],
+    ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementHeader.tsx", "data-studio-primary-entry-actions"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementUi.tsx", "data-studio-card-accent-bar"],
     ["apps/web/src/domains/creator/studio-shell/StudioDocumentStagePillBar.tsx", "data-studio-stage-pill-bar"],
     ["apps/web/src/domains/creator/studio-shell/StudioDocumentWindowHub.tsx", "data-studio-workspace-menu-trigger"],
