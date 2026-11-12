@@ -45,6 +45,7 @@ function fakePage() {
   const noticeState = { compact: false };
   const welcomeState = { collapsed: false };
   const hintState = { visible: false };
+  const clarityState = { active: false, guideAttached: false, guideVisible: false, headerVisible: false, toolsVisible: false };
   const press = vi.fn(async (key: string) => { expect(key).toBe("Escape"); hintState.visible = false; });
   const calls: Array<{ surface: Surface | "target"; options: { timeout: number } }> = [];
   const close = vi.fn(async (surface: Surface, options: { timeout: number }) => {
@@ -83,6 +84,19 @@ function fakePage() {
     keyboard: { press },
     getByRole: (role: string) => { expect(role).toBe("tooltip"); return { first: () => ({ isVisible: async () => hintState.visible }) }; },
     locator: (selector: string) => {
+      if (selector === '[data-studio-editor="true"][data-studio-drawing-clarity="true"][data-studio-drawing-clarity-mobile="true"]') return {
+        count: async () => clarityState.active ? 1 : 0,
+        isVisible: async () => clarityState.active,
+        locator: (child: string) => {
+          if (child === '[data-studio-cinematic-canvas-welcome="collapsed"]') return {
+            count: async () => clarityState.guideAttached ? 1 : 0,
+            isVisible: async () => clarityState.guideVisible,
+          };
+          if (child === '[data-studio-drawing-clarity-mobile-header="true"]') return { isVisible: async () => clarityState.headerVisible };
+          if (child === '[data-studio-mobile-primary-actions="true"]') return { isVisible: async () => clarityState.toolsVisible };
+          throw new Error(`허용하지 않은 Clarity locator: ${child}`);
+        },
+      };
       if (!locators[selector]) throw new Error(`허용하지 않은 locator: ${selector}`);
       return locators[selector];
     },
@@ -93,12 +107,60 @@ function fakePage() {
     calls.push({ surface: "target", options });
   });
   const target = { click: targetClick } as unknown as Locator;
-  return { page, visible, noticeState, welcomeState, hintState, press, calls, close, isVisible, target, targetClick };
+  return { page, visible, noticeState, welcomeState, hintState, clarityState, press, calls, close, isVisible, target, targetClick };
 }
 
 describe("그리기 검증기 UI readiness", () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
+
+  it("현재 Clarity 모바일의 숨겨진 접힌 안내를 실제 닫기와 구분해 보고한다", async () => {
+    const f = fakePage();
+    Object.assign(f.clarityState, { active: true, guideAttached: true, headerVisible: true, toolsVisible: true });
+    expect(await waitForStudioDrawingReady(f.page, { requireWelcome: true })).toEqual({
+      welcomeDismissed: false, guidePresentation: "clarity-mobile-collapsed",
+    });
+    expect(f.close).not.toHaveBeenCalled();
+  });
+
+  it.each(["active", "guideAttached", "headerVisible", "toolsVisible"] as const)("Clarity의 %s 증거가 빠지면 없는 안내를 정상 닫기로 간주하지 않는다", async (missing) => {
+    const f = fakePage();
+    Object.assign(f.clarityState, { active: true, guideAttached: true, headerVisible: true, toolsVisible: true });
+    f.clarityState[missing] = false;
+    const result = expect(waitForStudioDrawingReady(f.page, { requireWelcome: true, timeoutMs: 450 })).rejects.toThrow("안내 닫기=false");
+    await vi.runAllTimersAsync();
+    await result;
+    expect(f.close).not.toHaveBeenCalled();
+  });
+
+  it("접힌 안내가 실제로 보이면 Clarity 준비 상태로 대신 통과시키지 않는다", async () => {
+    const f = fakePage();
+    Object.assign(f.clarityState, { active: true, guideAttached: true, guideVisible: true, headerVisible: true, toolsVisible: true });
+    const result = expect(waitForStudioDrawingReady(f.page, { requireWelcome: true, timeoutMs: 450 })).rejects.toThrow("안내 닫기=false");
+    await vi.runAllTimersAsync();
+    await result;
+  });
+
+  it("Clarity에서도 펼친 안내는 실제 닫기와 숨김 전환을 요구한다", async () => {
+    const f = fakePage();
+    Object.assign(f.clarityState, { active: true, guideAttached: true, headerVisible: true, toolsVisible: true });
+    f.visible.welcome = true;
+    const result = waitForStudioDrawingReady(f.page, { requireWelcome: true });
+    await vi.runAllTimersAsync();
+    expect(await result).toEqual({ welcomeDismissed: true });
+    expect(f.calls.map(({ surface }) => surface)).toEqual(["welcome"]);
+  });
+
+  it("초기화 뒤에는 이전 문서의 Clarity 접힘 관측을 재사용하지 않는다", async () => {
+    const f = fakePage();
+    Object.assign(f.clarityState, { active: true, guideAttached: true, headerVisible: true, toolsVisible: true });
+    expect(await waitForStudioDrawingReady(f.page, { requireWelcome: true })).toEqual({ welcomeDismissed: false, guidePresentation: "clarity-mobile-collapsed" });
+    const reset = vi.fn(async () => { f.clarityState.guideAttached = false; return true; });
+    const result = expect(prepareStudioDrawingUi(f.page, reset, 450)).rejects.toThrow("안내 닫기=false");
+    await vi.runAllTimersAsync();
+    await result;
+    expect(reset).toHaveBeenCalledOnce();
+  });
 
   it("일반 readiness는 도구 설명을 보존하고 픽셀 전용 옵션만 Escape로 닫는다", async () => {
     const f = fakePage();
