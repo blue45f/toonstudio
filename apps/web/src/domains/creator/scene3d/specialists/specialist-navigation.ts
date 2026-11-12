@@ -4,7 +4,6 @@ import {
   NavMeshQuery,
   exportNavMesh,
   getNavMeshPositionsAndIndices,
-  Raw,
 } from "recast-navigation";
 import { generateSoloNavMesh } from "recast-navigation/generators";
 import { SPECIALIST_LIMITS, SpecialistError } from "./specialist-contract";
@@ -60,6 +59,7 @@ export async function processNavigation(
       "Navigation voxel grid exceeds the memory budget. Increase cell size.",
     );
   await init();
+  // keepIntermediates=false이면 생성기가 buildContext를 소유하고 성공·실패 시 해제한다.
   const generated = generateSoloNavMesh(
     positions,
     indices,
@@ -141,6 +141,5 @@ export async function processNavigation(
   } finally {
     query?.destroy();
     if (generated.success) generated.navMesh.destroy();
-    Raw.destroy(generated.intermediates.buildContext.raw);
   }
 }
