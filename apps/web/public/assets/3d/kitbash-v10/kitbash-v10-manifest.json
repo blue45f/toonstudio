@@ -1,0 +1,105 @@
+{
+  "pack": "ToonStudio Background Objects Modeling Pack V10",
+  "scope": "background-3d-and-background-objects-only",
+  "generator": "scripts/blender/generate_bg_objects_pack_v10.py",
+  "blenderVersion": "5.2.0 LTS",
+  "license": "CC0-1.0",
+  "assets": {
+    "alley_ac_meter_pipe_wall_v10": {
+      "labelKo": "골목길 2단 실외기·가스계량기·배관 세트 (V10)",
+      "dimensionsM": [
+        1.39,
+        0.525,
+        1.84
+      ],
+      "bytes": 109532,
+      "meshes": 27,
+      "materials": 6,
+      "triangles": 3508
+    },
+    "subway_turnstile_gate_set_v10": {
+      "labelKo": "지하철 개찰구·교통카드 플랩 게이트 (V10)",
+      "dimensionsM": [
+        1.68,
+        1.59,
+        1.08
+      ],
+      "bytes": 109784,
+      "meshes": 22,
+      "materials": 6,
+      "triangles": 3832
+    },
+    "creator_dual_monitor_desk_v10": {
+      "labelKo": "웹툰 작업실 듀얼모니터·액정태블릿 데스크 (V10)",
+      "dimensionsM": [
+        1.64,
+        0.78,
+        1.451
+      ],
+      "bytes": 81320,
+      "meshes": 22,
+      "materials": 6,
+      "triangles": 2528
+    },
+    "street_recycling_station_a_board_v10": {
+      "labelKo": "도심 분리수거 스테이션·입간판·볼라드 (V10)",
+      "dimensionsM": [
+        2.551,
+        0.959,
+        1.631
+      ],
+      "bytes": 142728,
+      "meshes": 23,
+      "materials": 7,
+      "triangles": 5372
+    },
+    "classroom_podium_locker_wall_v10": {
+      "labelKo": "교실 와이드 칠판·교탁·3×3 사물함 (V10)",
+      "dimensionsM": [
+        3.78,
+        1.091,
+        2.56
+      ],
+      "bytes": 113576,
+      "meshes": 31,
+      "materials": 7,
+      "triangles": 3852
+    },
+    "hanok_jangdokdae_courtyard_v10": {
+      "labelKo": "한옥 장독대 석단·옹기 군락·석등·기와담장 (V10)",
+      "dimensionsM": [
+        3.014,
+        1.68,
+        1.695
+      ],
+      "bytes": 298424,
+      "meshes": 39,
+      "materials": 6,
+      "triangles": 12060
+    },
+    "hospital_corridor_station_v10": {
+      "labelKo": "병원 복도 대기석·수액 폴대·호출 보드 (V10)",
+      "dimensionsM": [
+        2.38,
+        0.767,
+        2.08
+      ],
+      "bytes": 124296,
+      "meshes": 34,
+      "materials": 7,
+      "triangles": 3848
+    },
+    "fantasy_alchemy_bookshelf_rack_v10": {
+      "labelKo": "판타지 마탑 아치 서가·포션·촛대 세트 (V10)",
+      "dimensionsM": [
+        2.022,
+        0.5,
+        2.408
+      ],
+      "bytes": 281356,
+      "meshes": 36,
+      "materials": 8,
+      "triangles": 11836
+    }
+  }
+}

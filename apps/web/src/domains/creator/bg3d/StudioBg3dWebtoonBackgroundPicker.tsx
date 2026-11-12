@@ -59,6 +59,7 @@ import {
   toBgPrimitives,
   type StudioBg3dReaCompetitorId,
 } from "./studio-bg3d-rea-webtoon-background-engine";
+import { StudioBg3dBackgroundObjectClusterSection } from "./StudioBg3dBackgroundObjectClusterSection";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -753,6 +754,24 @@ export function StudioBg3dWebtoonBackgroundPicker({
           </div>
         ) : null}
       </div>
+
+      <StudioBg3dBackgroundObjectClusterSection
+        disabled={disabled}
+        onBuildGenerated={(buildCluster, labelKo) => {
+          let parts: BgPrimitive[] = [];
+          let anchorX = 0;
+          const accepted = onBuild((existingCount) => {
+            anchorX = existingCount > 0 ? (existingCount % 5) * 2.4 : 0;
+            parts = buildCluster(existingCount);
+            return parts;
+          });
+          setNotice(
+            accepted && parts.length > 0
+              ? { kind: "built", label: labelKo, objectCount: parts.length, hiddenWalls: summarizeStudioBg3dHiddenWalls(parts), wallsRestored: false, anchorX }
+              : { kind: "failed" },
+          );
+        }}
+      />
 
       <div className="mt-2.5 rounded-xl border border-line bg-card/70 px-3">
         <TemplateToggleRow

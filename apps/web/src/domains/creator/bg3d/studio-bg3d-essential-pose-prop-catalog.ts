@@ -15,6 +15,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "essential-prop-3d"
   | "refined-v8-prop-3d"
   | "kitbash-v9-prop-3d"
+  | "kitbash-v10-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -50,6 +51,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "블렌더 킷배시 V9",
       labelEn: "Blender Kitbash V9",
       descriptionKo: "편의점 파사드·전신주 변압기·옥상 공조기·카페 어닝 부스·각성 포털·캐릭터 조형 흉상 6종",
+    },
+    {
+      id: "kitbash-v10-prop-3d",
+      labelKo: "블렌더 배경 오브젝트 V10",
+      labelEn: "Blender Background Objects V10",
+      descriptionKo: "골목 2단 실외기·지하철 개찰구·듀얼모니터 데스크·분리수거함·교실 칠판사물함·한옥 장독대·병원 대기석·판타지 서가 8종",
     },
     {
       id: "original-scene-prop-3d",
@@ -124,6 +131,17 @@ const RAW_KITBASH_V9_ROWS: readonly RawAssetRow[] = [
   ["cafe_terrace_kiosk_set_v9", "오픈 카페 어닝 부스·테라스 (V9)", "Open Cafe Terrace Kiosk V9"],
   ["arcane_portal_sanctum_v9", "각성 룬 관문·성소 제단 (V9)", "Arcane Portal Sanctum V9"],
   ["stylized_hero_mannequin_bust_v9", "8등신 캐릭터 조형 마네킹 흉상 (V9)", "Stylized Hero Mannequin Bust V9"],
+];
+
+const RAW_KITBASH_V10_ROWS: readonly RawAssetRow[] = [
+  ["alley_ac_meter_pipe_wall_v10", "골목 2단 실외기·가스배관 세트 (V10)", "Alley Dual AC & Gas Meter Rig V10"],
+  ["subway_turnstile_gate_set_v10", "지하철 개찰구·교통카드 플랩 게이트 (V10)", "Subway Turnstile Flap Gate Set V10"],
+  ["creator_dual_monitor_desk_v10", "웹툰 작업실 듀얼모니터·액정태블릿 데스크 (V10)", "Creator Dual Monitor & Pen Display Desk V10"],
+  ["street_recycling_station_a_board_v10", "도심 분리수거 스테이션·입간판·볼라드 (V10)", "Street Recycling Station & A-Board V10"],
+  ["classroom_podium_locker_wall_v10", "교실 와이드 칠판·교탁·3×3 사물함 (V10)", "Classroom Blackboard Podium & Lockers V10"],
+  ["hanok_jangdokdae_courtyard_v10", "한옥 장독대 석단·옹기 군락·석등·기와담장 (V10)", "Hanok Jangdokdae Courtyard & Lantern V10"],
+  ["hospital_corridor_station_v10", "병원 복도 대기석·수액 폴대·호출 보드 (V10)", "Hospital Corridor Bench & IV Pole Set V10"],
+  ["fantasy_alchemy_bookshelf_rack_v10", "판타지 마탑 아치 서가·포션·촛대 세트 (V10)", "Fantasy Gothic Bookshelf & Alchemy Rack V10"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -298,6 +316,21 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${normalizedSlug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "character", "kitbash-v9", "킷배시", "배경모델링", "캐릭터조형", slug, normalizedSlug, labelKo, labelEn]),
+      });
+    }),
+    ...RAW_KITBASH_V10_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry => {
+      const normalizedSlug = slug.replace(/_/gu, "-");
+      return Object.freeze({
+        id: `kitbash-v10-${normalizedSlug}`,
+        category: "kitbash-v10-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/assets/3d/kitbash-v10/${slug}.glb`,
+        previewUrl: `/assets/3d/kitbash-v10/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${normalizedSlug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "bg-object", "kitbash-v10", "배경오브젝트", "생활감소품", slug, normalizedSlug, labelKo, labelEn]),
       });
     }),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

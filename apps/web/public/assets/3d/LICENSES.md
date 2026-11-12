@@ -115,3 +115,21 @@ CC0: https://creativecommons.org/publicdomain/zero/1.0/
 
 ToonStudio은 위 6개 원본 모델과 썸네일 렌더(`kitbash-v9/thumbnails/*.png`)를 **CC0 1.0**으로 제공합니다.
 
+## ToonStudio 고밀도 배경 오브젝트 전용 팩 v10 (`kitbash-v10/`)
+
+아래 8개 GLB(`apps/web/public/assets/3d/kitbash-v10/`)는 외부 모델·텍스처를 사용하지 않고 ToonStudio이 Blender 5.2.0 LTS와 `scripts/blender/generate_bg_objects_pack_v10.py`로 직접 제작한 배경 전용 다중 부품(22~39 서브메시) 3D 오브젝트 에셋입니다. 모든 파일은 미터 단위, 바닥 `Z=0`(glTF `Y=0`), 베벨(Bevel)·가중 법선(Weighted Normal)·6~8종 Principled BSDF 재질과 자체 포함 바이너리로 내보냈으며 외부 URI가 없습니다.
+
+| 파일 | 에셋 | 기준 크기 | 라이선스 |
+| --- | --- | --- | --- |
+| `kitbash-v10/alley_ac_meter_pipe_wall_v10.glb` | 한국형 골목 2단 에어컨 실외기·가스계량기·배관 세트 V10 | 1.39 × 0.53 × 1.84 m | CC0 1.0 |
+| `kitbash-v10/subway_turnstile_gate_set_v10.glb` | 도심 지하철 개찰구·교통카드 단말기·유도블록 세트 V10 | 1.68 × 1.59 × 1.08 m | CC0 1.0 |
+| `kitbash-v10/creator_dual_monitor_desk_v10.glb` | 웹툰 작업실 모션데스크·액정태블릿·듀얼모니터 세트 V10 | 1.64 × 0.78 × 1.45 m | CC0 1.0 |
+| `kitbash-v10/street_recycling_station_a_board_v10.glb` | 도심 3구 분리수거 스테이션·카페 입간판·볼라드 세트 V10 | 2.55 × 0.96 × 1.63 m | CC0 1.0 |
+| `kitbash-v10/classroom_podium_locker_wall_v10.glb` | 학교 교실 교탁·와이드 칠판·9칸 사물함 벽면 세트 V10 | 3.78 × 1.09 × 2.56 m | CC0 1.0 |
+| `kitbash-v10/hanok_jangdokdae_courtyard_v10.glb` | 전통 한옥 기와담장·2단 장독대 옹기·석등 마당 세트 V10 | 3.01 × 1.68 × 1.70 m | CC0 1.0 |
+| `kitbash-v10/hospital_corridor_station_v10.glb` | 대학병원 복도 대기벤치·이동식 수액폴대·호출모니터 세트 V10 | 2.38 × 0.77 × 2.08 m | CC0 1.0 |
+| `kitbash-v10/fantasy_alchemy_bookshelf_rack_v10.glb` | 로판·판타지 고딕 아치 서가·연금술 포션·촛대 세트 V10 | 2.02 × 0.50 × 2.41 m | CC0 1.0 |
+
+ToonStudio은 위 8개 원본 배경 오브젝트 모델과 썸네일 렌더(`kitbash-v10/thumbnails/*.png`)를 **CC0 1.0**으로 제공합니다.
+
+

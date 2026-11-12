@@ -2,7 +2,10 @@
 // 상대 위치로 조합된 형태를 코드로 합성한다. 외부 glTF 에셋 없이 기존 PRIMITIVE_DEFS의 13종
 // 지오메트리만 재사용(studio-background-3d-primitives.ts §makeGeometry 확장 없음) — 라이선스/
 // 파일크기 리스크를 피하기 위한 설계 결정.
-import { KITBASH_COMPOSITE_PRESETS } from "./studio-background-3d-kitbash-presets";
+import {
+  KITBASH_COMPOSITE_PRESETS,
+  KITBASH_V10_BG_OBJECT_PRESETS,
+} from "./studio-background-3d-kitbash-presets";
 import { uid, type BgPrimitive, type BgPrimitiveKind } from "./studio-background-3d-primitives";
 
 export type BgCompositeCategory = "building" | "nature" | "vehicle" | "prop";
@@ -646,6 +649,7 @@ export const COMPOSITE_PRESETS: BgCompositePreset[] = [
     ],
   },
   ...KITBASH_COMPOSITE_PRESETS,
+  ...KITBASH_V10_BG_OBJECT_PRESETS,
 ];
 
 /**
