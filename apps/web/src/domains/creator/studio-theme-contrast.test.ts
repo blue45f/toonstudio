@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { readThemeCustomProperties, resolveThemeCustomProperty } from "../../shared/lib/theme-css-test-kit";
+
 import {
   compositeStudioColor,
   studioColorContrast,
@@ -26,29 +28,17 @@ const BOUNDARY_MINIMUM = 3;
 type ThemeTokens = ReadonlyMap<string, string>;
 
 function tokensFor(themeId: string): ThemeTokens {
-  const block = new RegExp(
-    `:root\\[data-design-theme="${themeId}"\\] \\{([^}]*)\\}`,
-    "u",
-  ).exec(contractCss);
-  if (!block?.[1]) throw new Error(`Unified theme block is missing: ${themeId}`);
-  const tokens = new Map<string, string>();
-  for (const match of block[1].matchAll(/(--unified-[a-z0-9-]+):\s*([^;]+);/gu)) {
-    if (match[1] && match[2]) tokens.set(match[1], match[2].trim());
-  }
-  return tokens;
+  return readThemeCustomProperties(themeId, true);
 }
 
 function token(tokens: ThemeTokens, name: string): string {
-  const value = tokens.get(`--unified-${name}`);
-  if (!value) throw new Error(`Unified token is missing: --unified-${name}`);
-  return value;
+  return resolveThemeCustomProperty(tokens, `--unified-${name}`);
 }
 
 describe("unified theme token contrast (9 themes x primary surfaces)", () => {
   it("declares exactly the nine selectable themes in the contract", () => {
-    const declared = [...contractCss.matchAll(/:root\[data-design-theme="([a-z-]+)"\] \{/gu)]
-      .map((match) => match[1])
-      .slice(0, THEME_IDS.length);
+    const declared = [...new Set([...contractCss.matchAll(/:root\[data-design-theme="([a-z-]+)"\]/gu)]
+      .map((match) => match[1]))];
     expect(declared).toEqual([...THEME_IDS]);
   });
 
@@ -119,28 +109,12 @@ describe("unified theme token contrast (9 themes x primary surfaces)", () => {
   }
 });
 
-const designCss = readFileSync(
-  new URL("../../app/styles/design-themes.css", import.meta.url),
-  "utf8",
-);
-
 function designTokensFor(themeId: string): ThemeTokens {
-  const block = new RegExp(
-    `:root\\[data-design-theme="${themeId}"\\],[^\\{]*\\{([^}]*)\\}`,
-    "u",
-  ).exec(designCss);
-  if (!block?.[1]) throw new Error(`Design theme block is missing: ${themeId}`);
-  const tokens = new Map<string, string>();
-  for (const match of block[1].matchAll(/(--color-[a-z0-9-]+):\s*([^;]+);/gu)) {
-    if (match[1] && match[2]) tokens.set(match[1], match[2].trim());
-  }
-  return tokens;
+  return readThemeCustomProperties(themeId);
 }
 
 function designToken(tokens: ThemeTokens, name: string): string {
-  const value = tokens.get(`--color-${name}`);
-  if (!value) throw new Error(`Design token is missing: --color-${name}`);
-  return value;
+  return resolveThemeCustomProperty(tokens, `--color-${name}`);
 }
 
 /** Tokens the two files share: design-themes.css --color-* mirrors the contract. */
@@ -164,11 +138,8 @@ function withAlpha(value: string, alpha: number): string {
 }
 
 describe("design-themes.css parity with the unified contract", () => {
-  // design-themes.css carries the same palette under --color-*. Surfaces that
-  // never enter the unified shell still paint these values directly, so the
-  // whole shared palette — not just the strong boundary — must not drift from
-  // the contract values that carry the contrast guarantees (single source:
-  // the unified contract; design-themes.css is its --color-* mirror).
+  // 원시 팔레트는 design-themes.css 한 곳에 있다. color와 unified의 실제 별칭을
+  // 각각 해석해, 셸 밖 문서와 중첩 작업 셸의 모든 공유 토큰·대비를 계속 대조한다.
   for (const themeId of THEME_IDS) {
     it(`${themeId}: mirrors every shared token of the unified contract`, () => {
       const unified = tokensFor(themeId);
