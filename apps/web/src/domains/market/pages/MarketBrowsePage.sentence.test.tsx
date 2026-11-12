@@ -61,7 +61,7 @@ function renderPage(entry = "/market/browse") {
 }
 
 const params = () => new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "");
-const keywordBox = () => screen.getByRole("searchbox", { name: "마켓 리소스 검색" }) as HTMLInputElement;
+const keywordBox = () => screen.getByRole("searchbox", { name: "어떤 소재가 필요한가요?" }) as HTMLInputElement;
 const sentenceBox = () => screen.getByRole("textbox", { name: "찾는 자료를 문장으로 적기" }) as HTMLInputElement;
 const lastQuery = () => useResources.mock.lastCall?.[0];
 
