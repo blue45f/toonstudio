@@ -52,6 +52,12 @@ import {
   type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
 import {
+  analyzeStudioMannequinGesture,
+  applyStudioMannequinBreathingParams,
+  applyStudioMannequinGazeTarget,
+  buildStudioMannequinContrappostoPose,
+} from "./studio-mannequin-gesture-dynamics";
+import {
   STUDIO_MANNEQUIN_BODY_PRESETS,
   STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
   STUDIO_MANNEQUIN_FINGER_NAMES,
@@ -60,6 +66,7 @@ import {
   clampStudioMannequinBodyParams,
   clampStudioMannequinFingerPose,
   clampStudioMannequinJointRotation,
+  resolveStudioMannequinArchetypeParams,
   type StudioMannequinBodyParams,
   type StudioMannequinFingerName,
   type StudioMannequinFingerPose,
@@ -67,6 +74,10 @@ import {
   type StudioMannequinMaterialStyle,
   type StudioMannequinVec3,
 } from "./studio-mannequin-model";
+import {
+  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
+  clampStudioMannequinFovDeg,
+} from "./studio-mannequin-quad-view";
 import { createStudioMannequinPhotoPoseApplyPlan } from "./studio-mannequin-photo-pose-apply";
 import {
   createStudioMannequinHandFrameResult,
@@ -228,6 +239,7 @@ export function StudioMannequinPoserPanel({
   const [surfaceMode, setSurfaceMode] = useState<StudioMannequinSurfaceMode>("ecorche");
   const [pectoralVolume, setPectoralVolume] = useState(1);
   const [muscleDefinition, setMuscleDefinition] = useState(1);
+  const [breathPhase, setBreathPhase] = useState(0);
   const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(() => clampStudioMannequinFingerPose(undefined));
   const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
@@ -241,6 +253,8 @@ export function StudioMannequinPoserPanel({
   const [tab, setTab] = useState<MannequinTabId>("pose");
   const [selectedJointId, setSelectedJointId] = useState<StudioMannequinJointId | null>(null);
   const [projection, setProjection] = useState<StudioMannequinProjection>("perspective");
+  const [quadView, setQuadView] = useState(false);
+  const [cameraFovDeg, setCameraFovDeg] = useState(STUDIO_MANNEQUIN_FOV_DEFAULT_DEG);
   const [cameraPreset, setCameraPreset] = useState<StudioMannequinCameraPreset>("home");
   const [selectedCameraAngle, setSelectedCameraAngle] = useState<StudioMannequinCameraPreset | null>(null);
   const [captureNotice, setCaptureNotice] = useState<string | null>(null);
@@ -707,11 +721,16 @@ export function StudioMannequinPoserPanel({
     };
   }, [commitPose, releaseHandTrackingResources, releaseWebcamResources, webcamActive]);
 
+  const effectiveParams = useMemo(
+    () => applyStudioMannequinBreathingParams(params, breathPhase),
+    [params, breathPhase],
+  );
   const spec = useMemo(
-    () => buildStudioMannequinSpec(params, { fingerPose }),
-    [params, fingerPose],
+    () => buildStudioMannequinSpec(effectiveParams, { fingerPose }),
+    [effectiveParams, fingerPose],
   );
   const balanceReport = useMemo(() => analyzeStudioMannequinBalance(spec, pose), [spec, pose]);
+  const gestureAnalysis = useMemo(() => analyzeStudioMannequinGesture(spec, pose), [spec, pose]);
 
   const poseFromSceneRef = useRef(false);
 
@@ -889,6 +908,14 @@ export function StudioMannequinPoserPanel({
   }, [guideVisibility]);
 
   useEffect(() => {
+    sceneRef.current?.setQuadView?.(quadView);
+  }, [quadView]);
+
+  useEffect(() => {
+    sceneRef.current?.setCameraFovDeg?.(cameraFovDeg);
+  }, [cameraFovDeg]);
+
+  useEffect(() => {
     if (poseFromSceneRef.current) {
       poseFromSceneRef.current = false;
       return;
@@ -975,6 +1002,20 @@ export function StudioMannequinPoserPanel({
   const handleAutoBalance = useCallback(() => {
     const stabilized = stabilizeStudioMannequinCenterOfMass(spec, poseRef.current);
     commitPoseWithHistory(stabilized);
+  }, [commitPoseWithHistory, spec]);
+
+  const handleApplyContrapposto = useCallback(
+    (weightSide: "left" | "right") => {
+      const next = buildStudioMannequinContrappostoPose(spec, poseRef.current, weightSide, 0.8, jointLocksRef.current);
+      commitPoseWithHistory(next);
+    },
+    [commitPoseWithHistory, spec],
+  );
+
+  const handleLookAtCamera = useCallback(() => {
+    const target = sceneRef.current?.getCameraWorldPosition?.() ?? [0, spec.heightM * 0.88, 3.1];
+    const next = applyStudioMannequinGazeTarget(spec, poseRef.current, target, jointLocksRef.current, 1);
+    commitPoseWithHistory(next);
   }, [commitPoseWithHistory, spec]);
 
   const handleExportJson = useCallback(() => {
@@ -1399,12 +1440,18 @@ export function StudioMannequinPoserPanel({
                   surfaceMode={surfaceMode}
                   pectoralVolume={pectoralVolume}
                   muscleDefinition={muscleDefinition}
+                  breathPhase={breathPhase}
                   onParamsChange={(next) => {
                     morphBaseParamsRef.current = next;
                     commitParams(next);
                   }}
                   onApplyPreset={(presetId) => {
                     const next = STUDIO_MANNEQUIN_BODY_PRESETS[presetId].params;
+                    morphBaseParamsRef.current = next;
+                    commitParams(next);
+                  }}
+                  onApplyArchetype={(archetypeId) => {
+                    const next = resolveStudioMannequinArchetypeParams(archetypeId);
                     morphBaseParamsRef.current = next;
                     commitParams(next);
                   }}
@@ -1418,6 +1465,7 @@ export function StudioMannequinPoserPanel({
                   }}
                   onPectoralVolumeChange={setPectoralVolume}
                   onMuscleDefinitionChange={setMuscleDefinition}
+                  onBreathPhaseChange={setBreathPhase}
                   onImportCsp3dp={() => csp3dpInputRef.current?.click()}
                   onExportCsp3dp={handleExportCsp3dp}
                 />
@@ -1471,6 +1519,7 @@ export function StudioMannequinPoserPanel({
                     scapulohumeralRhythm={scapulohumeralRhythm}
                     guideVisibility={guideVisibility}
                     balanceReport={balanceReport}
+                    gestureAnalysis={gestureAnalysis}
                     onSelectJoint={(jointId) => {
                       setSelectedJointId(jointId);
                       sceneRef.current?.selectJoint(jointId);
@@ -1482,6 +1531,8 @@ export function StudioMannequinPoserPanel({
                     onToggleScapulohumeralRhythm={setScapulohumeralRhythm}
                     onGuideVisibilityChange={(patch) => setGuideVisibility((prev) => ({ ...prev, ...patch }))}
                     onAutoBalance={handleAutoBalance}
+                    onApplyContrapposto={handleApplyContrapposto}
+                    onLookAtCamera={handleLookAtCamera}
                     onApplyHandPad={handleApplyHandPad}
                     onImportCspPep={() => cspPepInputRef.current?.click()}
                     onExportCspPep={handleExportCspPep}
@@ -1495,6 +1546,20 @@ export function StudioMannequinPoserPanel({
                     onProjectionChange={(next) => {
                       setProjection(next);
                       sceneRef.current?.setProjection(next);
+                    }}
+                    quadView={quadView}
+                    onToggleQuadView={() => {
+                      setQuadView((prev) => {
+                        const next = !prev;
+                        sceneRef.current?.setQuadView?.(next);
+                        return next;
+                      });
+                    }}
+                    cameraFovDeg={cameraFovDeg}
+                    onCameraFovChange={(nextFov) => {
+                      const clamped = clampStudioMannequinFovDeg(nextFov);
+                      setCameraFovDeg(clamped);
+                      sceneRef.current?.setCameraFovDeg?.(clamped);
                     }}
                     captureScale={captureScale}
                     onCaptureScaleChange={setCaptureScale}

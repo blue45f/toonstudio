@@ -53,6 +53,11 @@ import {
 } from "./studio-mannequin-pro-kinematics";
 import { createStudioMannequinProOverlayController } from "./studio-mannequin-pro-overlays";
 import {
+  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
+  clampStudioMannequinFovDeg,
+  createStudioMannequinQuadOrthoRig,
+} from "./studio-mannequin-quad-view";
+import {
   buildStudioMannequinJointRangeArc,
   resolveStudioMannequinOutlineMode,
   resolveStudioMannequinOutlineVisible,
@@ -208,6 +213,11 @@ export interface StudioMannequinSceneHandle {
   getJointLocks?(): StudioMannequinJointLockMap;
   setScapulohumeralRhythm?(enabled: boolean): void;
   getBalanceReport?(): StudioMannequinBalanceReport;
+  setQuadView?(enabled: boolean): void;
+  getQuadView?(): boolean;
+  setCameraFovDeg?(fovDeg: number): void;
+  getCameraFovDeg?(): number;
+  getCameraWorldPosition?(): StudioMannequinVec3;
   dispose(): void;
 }
 
@@ -596,8 +606,10 @@ export function createStudioMannequinScene(
   let viewWidth = initialWidth;
   let viewHeight = initialHeight;
   let projection: StudioMannequinProjection = "perspective";
+  let quadViewEnabled = false;
+  const quadOrthoRig = createStudioMannequinQuadOrthoRig();
   const perspectiveCamera = new THREE.PerspectiveCamera(
-    35,
+    STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
     viewWidth / viewHeight,
     0.05,
     60,
@@ -672,6 +684,22 @@ export function createStudioMannequinScene(
     if (disposed) return;
     syncJointRangeArc();
     proOverlays.syncBalanceOverlay(spec, lead.readPose());
+    if (quadViewEnabled) {
+      scene.updateMatrixWorld(true);
+      const bounds = new THREE.Box3();
+      for (const figure of allFigures()) {
+        for (const mesh of figure.bodyMeshes()) bounds.expandByObject(mesh);
+      }
+      quadOrthoRig.renderQuadView({
+        renderer,
+        scene,
+        mainCamera: activeCamera,
+        bounds,
+        viewWidth,
+        viewHeight,
+      });
+      return;
+    }
     renderer.render(scene, activeCamera);
   }
 
@@ -1367,6 +1395,29 @@ export function createStudioMannequinScene(
     },
     getBalanceReport() {
       return analyzeStudioMannequinBalance(spec, lead.readPose());
+    },
+    setQuadView(enabled) {
+      if (disposed) return;
+      quadViewEnabled = enabled === true;
+      invalidate();
+    },
+    getQuadView() {
+      return quadViewEnabled;
+    },
+    setCameraFovDeg(fovDeg) {
+      if (disposed) return;
+      const nextFov = clampStudioMannequinFovDeg(fovDeg);
+      if (Math.abs(perspectiveCamera.fov - nextFov) < 1e-3) return;
+      perspectiveCamera.fov = nextFov;
+      perspectiveCamera.updateProjectionMatrix();
+      frameFigures();
+      invalidate();
+    },
+    getCameraFovDeg() {
+      return perspectiveCamera.fov;
+    },
+    getCameraWorldPosition() {
+      return [activeCamera.position.x, activeCamera.position.y, activeCamera.position.z];
     },
     dispose() {
       if (disposed) return;

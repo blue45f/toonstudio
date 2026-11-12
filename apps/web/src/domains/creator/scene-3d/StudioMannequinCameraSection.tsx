@@ -1,16 +1,20 @@
 /**
- * Studio 3D 데생 인형 — 카메라·캡처 섹션(웹캠 동작 인식·앵글 프리셋·투영·캡처 배율·캡처).
+ * Studio 3D 데생 인형 — 카메라·캡처 섹션(웹캠 동작 인식·앵글 프리셋·사면도·만화 원근 화각·투영·캡처).
  *
  * `StudioMannequinPoserPanel.tsx`에서 분리한 표시 섹션이다. 상태는 패널이 소유하고 props로 받는다.
- * 앵글 프리셋 6개는 원근·직교 칩과 같은 선택 칩(aria-pressed)이라 지금 고른 앵글이 보이고,
- * 궤도 회전·이동·부위 확대로 화면이 프리셋에서 벗어나면 패널이 선택을 푼다(selectedCameraAngle=null).
  */
 
-import { Camera, FlipHorizontal2, Hand, Loader2, Lock, RotateCcw, ScanFace, Unlock, Video } from "lucide-react";
+import { Camera, FlipHorizontal2, Grid2x2, Hand, Loader2, Lock, RotateCcw, ScanFace, Unlock, Video } from "lucide-react";
 import type { ReactElement } from "react";
 
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
-import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
+import { StudioSectionHeader, StudioSliderRow, StudioToggleChip } from "../studio-panel-ui";
+import {
+  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
+  STUDIO_MANNEQUIN_FOV_MAX_DEG,
+  STUDIO_MANNEQUIN_FOV_MIN_DEG,
+  STUDIO_MANNEQUIN_LENS_PRESETS,
+} from "./studio-mannequin-quad-view";
 import type { StudioMannequinCameraPreset, StudioMannequinProjection } from "./studio-mannequin-scene";
 import { StudioMannequinFramingHud } from "./StudioMannequinFramingHud";
 
@@ -47,13 +51,16 @@ export function StudioMannequinCameraSection({
   handTrackingError = null,
   facialTracking = true,
   onToggleFacialTracking,
+  quadView = false,
+  onToggleQuadView,
+  cameraFovDeg = STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
+  onCameraFovChange,
 }: {
   projection: StudioMannequinProjection;
   onProjectionChange: (projection: StudioMannequinProjection) => void;
   captureScale: number;
   onCaptureScaleChange: (scale: number) => void;
   onCameraPreset: (preset: "front" | "side" | "back" | "top" | "high" | "low") => void;
-  /** 마지막으로 고른 앵글. 궤도 회전·리셋 뒤에는 null(어떤 칩도 선택되지 않음). */
   selectedCameraAngle?: StudioMannequinCameraPreset | null;
   onResetCamera: () => void;
   onCapture: () => void;
@@ -74,6 +81,10 @@ export function StudioMannequinCameraSection({
   handTrackingError?: string | null;
   facialTracking?: boolean;
   onToggleFacialTracking?: () => void;
+  quadView?: boolean;
+  onToggleQuadView?: (next: boolean) => void;
+  cameraFovDeg?: number;
+  onCameraFovChange?: (fovDeg: number) => void;
 }): ReactElement {
   const webcamLoading = webcamLoadingStage !== null;
 
@@ -207,9 +218,9 @@ export function StudioMannequinCameraSection({
           </p>
         ) : null}
       </div>
+
       <div className="space-y-1">
         <span className="text-xs text-fg-2">카메라 앵글 프리셋</span>
-        {/* 원근·직교 칩과 같은 선택 칩 — 고른 앵글이 눌린 상태(aria-pressed)로 남는다. 궤도 회전 뒤에는 풀린다. */}
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="카메라 앵글">
           {([["front", "정면"], ["side", "측면"], ["back", "후면"], ["top", "탑뷰"], ["high", "하이앵글"], ["low", "로우앵글"]] as const).map(([id, label]) => (
             <StudioToggleChip key={id} active={selectedCameraAngle === id} onClick={() => onCameraPreset(id)}>
@@ -218,15 +229,53 @@ export function StudioMannequinCameraSection({
           ))}
         </div>
       </div>
+
       <StudioMannequinFramingHud onCameraPreset={onCameraPreset} />
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="투영 방식">
+
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="투영 방식">
         <StudioToggleChip active={projection === "perspective"} onClick={() => onProjectionChange("perspective")}>
           원근
         </StudioToggleChip>
         <StudioToggleChip active={projection === "orthographic"} onClick={() => onProjectionChange("orthographic")}>
           직교
         </StudioToggleChip>
+        {onToggleQuadView ? (
+          <StudioToggleChip
+            active={quadView}
+            onClick={() => onToggleQuadView(!quadView)}
+            title="투시·정면·측면·탑뷰 4개 각도를 한 화면에서 동시에 검증합니다(클립스튜디오 EX 사면도 대응)"
+          >
+            <Grid2x2 size={12} aria-hidden /> 4분할 사면도
+          </StudioToggleChip>
+        ) : null}
       </div>
+
+      {onCameraFovChange && projection === "perspective" ? (
+        <div className="space-y-1.5 rounded-xl border border-line/70 bg-card/50 p-2.5">
+          <StudioSliderRow
+            label="만화 원근 화각(FOV)"
+            min={STUDIO_MANNEQUIN_FOV_MIN_DEG}
+            max={STUDIO_MANNEQUIN_FOV_MAX_DEG}
+            step={1}
+            value={Math.round(cameraFovDeg)}
+            onChange={onCameraFovChange}
+            readout={`${Math.round(cameraFovDeg)}°`}
+          />
+          <div className="flex flex-wrap gap-1" role="group" aria-label="렌즈 화각 프리셋">
+            {STUDIO_MANNEQUIN_LENS_PRESETS.map((lens) => (
+              <StudioToggleChip
+                key={lens.id}
+                active={Math.abs(cameraFovDeg - lens.fovDeg) <= 1}
+                onClick={() => onCameraFovChange(lens.fovDeg)}
+                title={lens.desc}
+              >
+                {lens.label}
+              </StudioToggleChip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="캡처 배율">
         <span className="text-xs text-fg-2">캡처 배율</span>
         {CAPTURE_SCALES.map((scale) => (

@@ -404,6 +404,7 @@ export interface StudioMannequinGuideVisibility {
   readonly torsoCenterline: boolean;
   readonly limbCrossContours: boolean;
   readonly balancePlumbLine: boolean;
+  readonly lineOfAction?: boolean;
 }
 
 export const STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY: StudioMannequinGuideVisibility =
@@ -412,6 +413,7 @@ export const STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY: StudioMannequinGuideVisi
     torsoCenterline: true,
     limbCrossContours: true,
     balancePlumbLine: true,
+    lineOfAction: true,
   });
 
 export interface StudioMannequinGuidePolyline {

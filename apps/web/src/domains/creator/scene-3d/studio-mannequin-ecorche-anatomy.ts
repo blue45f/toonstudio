@@ -1,5 +1,5 @@
 /**
- * Studio 3D 데생 인형 v3 — 에코르셰(Écorché) 해부학 근육 면·유기 단면 로프트·2D 핸드 셋업 엔진.
+ * Studio 3D 데생 인형 v4 — 에코르셰(Écorché) 해부학 근육 면·유기 단면 로프트·아사로 두상/골반·2D 핸드 셋업 엔진.
  *
  * 클립스튜디오 기본 데생 인형의 단조로운 튜브형 실루엣을 넘어, 작가가 인체의 큰 면 전환(Asaro/Loomis),
  * 흉곽 아치·대흉근·삼각근·복직근·외복사근·견갑골·광배근·목빗근·내측광근(VMO)·비복근·비대칭 복숭아뼈,
@@ -57,6 +57,31 @@ export function resolveStudioMannequinSurfaceMode(
     : "ecorche";
 }
 
+const LOFT_REPLACED_JOINTS: ReadonlySet<StudioMannequinJointId> = new Set([
+  "pelvis",
+  "spine",
+  "chest",
+  "leftUpperArm",
+  "rightUpperArm",
+  "leftLowerArm",
+  "rightLowerArm",
+  "leftUpperLeg",
+  "rightUpperLeg",
+  "leftLowerLeg",
+  "rightLowerLeg",
+]);
+
+/** 에코르셰·아사로 모드에서 로프트 곡면과 중복되는 레거시 코어 body 프리미티브를 걸러내 Z-파이팅을 없앤다. */
+export function shouldSkipLegacyCoreBodyPrimitive(
+  primitive: StudioMannequinPrimitiveSpec,
+  surfaceMode: StudioMannequinSurfaceMode,
+): boolean {
+  if (surfaceMode === "standard") return false;
+  if ((primitive.materialRole ?? "body") !== "body") return false;
+  if (surfaceMode === "planar" && primitive.jointId === "head") return true;
+  return LOFT_REPLACED_JOINTS.has(primitive.jointId);
+}
+
 function clamp(value: unknown, min: number, max: number, fallback: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
@@ -66,24 +91,16 @@ function rad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
 
-// ── 관절 굴곡 기반 능동 근육 팽창(Dynamic Flexion Bulge) ────────────────────
-
 export interface StudioMannequinFlexionBulge {
-  /** 왼팔 팔꿈치 굴곡에 따른 상완 이두·전완 근복 팽창 배율 (1.0 ~ 1.22). */
   readonly leftBicepScale: number;
   readonly rightBicepScale: number;
-  /** 무릎 굴곡에 따른 종아리 비복근·대퇴 후면 팽창 배율 (1.0 ~ 1.18). */
   readonly leftCalfScale: number;
   readonly rightCalfScale: number;
-  /** 고관절 굴곡에 따른 둔근 신장/수축 배율 (0.94 ~ 1.14). */
   readonly leftGluteScale: number;
   readonly rightGluteScale: number;
 }
 
-/**
- * 포즈의 팔꿈치·무릎·고관절 굽힘 각도로부터 능동 근육 부피 변화율을 계산한다.
- * 클립스튜디오처럼 두 원통이 단순히 파고드는 대신, 팔을 접으면 이두박근이 자연스럽게 부풀어 오른다.
- */
+/** 포즈의 팔꿈치·무릎·고관절 굽힘 각도로부터 능동 근육 부피 변화율을 계산한다. */
 export function computeStudioMannequinFlexionBulge(
   pose?: StudioMannequinPose | null,
   muscleDefinition = 1,
@@ -99,20 +116,12 @@ export function computeStudioMannequinFlexionBulge(
       rightGluteScale: 1,
     };
   }
-  const elbowRatio = (jointId: "leftLowerArm" | "rightLowerArm"): number => {
-    const x = pose.joints[jointId]?.[0] ?? 0;
-    // 팔꿈치 굴곡은 음수 X (-158° ~ 0°)
-    return Math.min(1, Math.max(0, -x / rad(145)));
-  };
-  const kneeRatio = (jointId: "leftLowerLeg" | "rightLowerLeg"): number => {
-    const x = pose.joints[jointId]?.[0] ?? 0;
-    // 무릎 굴곡은 양수 X (0° ~ +158°)
-    return Math.min(1, Math.max(0, x / rad(145)));
-  };
-  const hipRatio = (jointId: "leftUpperLeg" | "rightUpperLeg"): number => {
-    const x = pose.joints[jointId]?.[0] ?? 0;
-    return Math.min(1, Math.max(-0.5, -x / rad(110)));
-  };
+  const elbowRatio = (jointId: "leftLowerArm" | "rightLowerArm"): number =>
+    Math.min(1, Math.max(0, -(pose.joints[jointId]?.[0] ?? 0) / rad(145)));
+  const kneeRatio = (jointId: "leftLowerLeg" | "rightLowerLeg"): number =>
+    Math.min(1, Math.max(0, (pose.joints[jointId]?.[0] ?? 0) / rad(145)));
+  const hipRatio = (jointId: "leftUpperLeg" | "rightUpperLeg"): number =>
+    Math.min(1, Math.max(-0.5, -(pose.joints[jointId]?.[0] ?? 0) / rad(110)));
 
   return {
     leftBicepScale: 1 + 0.22 * elbowRatio("leftLowerArm") * def,
@@ -123,8 +132,6 @@ export function computeStudioMannequinFlexionBulge(
     rightGluteScale: 1 + 0.12 * hipRatio("rightUpperLeg") * def,
   };
 }
-
-// ── 유기적 다중 단면 로프트(Organic Multi-Section Loft) 스펙 ────────────────
 
 export interface StudioMannequinLoftSection {
   readonly center: StudioMannequinVec3;
@@ -137,7 +144,6 @@ export interface StudioMannequinLoftTubeSpec {
   readonly id: string;
   readonly jointId: StudioMannequinJointId;
   readonly materialRole: StudioMannequinPrimitiveMaterialRole;
-  /** 슈퍼엘립스 지수: 2.0=타원, 1.4~1.85=근육 평면감이 살아있는 사각-타원 단면. */
   readonly superellipsePower: number;
   readonly radialSegments: number;
   readonly flatShaded: boolean;
@@ -147,16 +153,11 @@ export interface StudioMannequinLoftTubeSpec {
 export interface StudioMannequinEcorcheOptions {
   readonly surfaceMode?: StudioMannequinSurfaceMode;
   readonly pose?: StudioMannequinPose | null;
-  /** 흉부/대흉근 볼륨 배율 (0.75 ~ 1.4). 기본 1.0. */
   readonly pectoralVolume?: number;
-  /** 에코르셰 근육 선명도 (0.0 ~ 1.5). 기본 1.0. */
   readonly muscleDefinition?: number;
 }
 
-/**
- * 에코르셰 및 아사로 다면체 모드용 유기적 단면 로프트 튜브 목록을 생성한다.
- * 기존 프리미티브와 달리 상완→전완 회내 테이퍼, 허벅지→무릎, 종아리→아킬레스건 수축을 한 덩어리 곡면으로 잇는다.
- */
+/** 에코르셰 및 아사로 다면체 모드용 유기적 단면 로프트 튜브 목록을 생성한다. */
 export function buildStudioMannequinLoftTubes(
   spec: StudioMannequinSpec,
   options: StudioMannequinEcorcheOptions = {},
@@ -170,6 +171,7 @@ export function buildStudioMannequinLoftTubes(
   const bulge = computeStudioMannequinFlexionBulge(options.pose, options.muscleDefinition ?? 1);
   const torsoDepth = p.torsoDepth ?? 1;
   const chestWidth = p.chestWidth ?? 1;
+  const pelvisDepth = p.pelvisDepth ?? 1;
   const waistWidth = p.waistWidth ?? 1;
   const limbR = build.limbRadius * (p.limbThickness ?? 1);
   const upperArmR = limbR * (p.upperArmThickness ?? 1);
@@ -190,7 +192,19 @@ export function buildStudioMannequinLoftTubes(
     (neckJoint?.offset[1] ?? 0.18);
 
   const tubes: StudioMannequinLoftTubeSpec[] = [
-    // 복부~흉곽 연결 코어 로프트
+    {
+      id: "loft-pelvis-basin",
+      jointId: "pelvis",
+      materialRole: "body",
+      superellipsePower: power,
+      radialSegments: segs,
+      flatShaded: isPlanar,
+      sections: [
+        { center: [0, -0.15 * hu, -0.01 * hu], radiusX: 0.25 * hu * p.pelvisWidth, radiusZ: 0.19 * hu * torsoDepth * pelvisDepth, twistRad: 0 },
+        { center: [0, 0.03 * hu, 0], radiusX: 0.38 * hu * p.pelvisWidth * build.torsoLower, radiusZ: 0.25 * hu * torsoDepth * pelvisDepth, twistRad: 0 },
+        { center: [0, 0.16 * hu, 0.005 * hu], radiusX: 0.35 * hu * p.pelvisWidth, radiusZ: 0.23 * hu * torsoDepth, twistRad: 0 },
+      ],
+    },
     {
       id: "loft-spine-waist",
       jointId: "spine",
@@ -200,7 +214,7 @@ export function buildStudioMannequinLoftTubes(
       flatShaded: isPlanar,
       sections: [
         { center: [0, -0.22 * torsoLen, 0], radiusX: 0.34 * hu * p.pelvisWidth, radiusZ: 0.23 * hu * torsoDepth, twistRad: 0 },
-        { center: [0, 0.02 * torsoLen, 0.01 * hu], radiusX: 0.29 * hu * build.torsoLower * waistWidth, radiusZ: 0.21 * hu * torsoDepth, twistRad: 0 },
+        { center: [0, 0.02 * torsoLen, 0.01 * hu], radiusX: 0.28 * hu * build.torsoLower * waistWidth, radiusZ: 0.205 * hu * torsoDepth, twistRad: 0 },
         { center: [0, 0.28 * torsoLen, 0.012 * hu], radiusX: 0.34 * hu * build.torsoUpper * waistWidth, radiusZ: 0.24 * hu * torsoDepth, twistRad: 0 },
       ],
     },
@@ -219,6 +233,26 @@ export function buildStudioMannequinLoftTubes(
       ],
     },
   ];
+
+  if (isPlanar) {
+    const fw = p.faceWidth ?? 1;
+    const cl = p.chinLength ?? 1;
+    tubes.push({
+      id: "loft-head-asaro",
+      jointId: "head",
+      materialRole: "body",
+      superellipsePower: 1.34,
+      radialSegments: 8,
+      flatShaded: true,
+      sections: [
+        { center: [0, (0.03 * hu) / cl, 0.14 * hu], radiusX: 0.13 * hu * fw, radiusZ: 0.15 * hu, twistRad: 0 },
+        { center: [0, 0.28 * hu, 0.04 * hu], radiusX: 0.33 * hu * fw, radiusZ: 0.36 * hu, twistRad: 0 },
+        { center: [0, 0.56 * hu, -0.01 * hu], radiusX: 0.38 * hu * fw, radiusZ: 0.42 * hu, twistRad: 0 },
+        { center: [0, 0.86 * hu, -0.02 * hu], radiusX: 0.32 * hu * fw, radiusZ: 0.37 * hu, twistRad: 0 },
+        { center: [0, 0.99 * hu, -0.02 * hu], radiusX: 0.14 * hu * fw, radiusZ: 0.18 * hu, twistRad: 0 },
+      ],
+    });
+  }
 
   for (const side of ["left", "right"] as const) {
     const sign = side === "left" ? 1 : -1;
@@ -349,7 +383,6 @@ export function buildStudioMannequinEcorchePrimitives(
     const uLegLen = spec.chains[isLeft ? "leftLeg" : "rightLeg"].upperLength;
     const lLegLen = spec.chains[isLeft ? "leftLeg" : "rightLeg"].lowerLength;
 
-    // 1. 대흉근(Pectoralis Major) + 흉곽 하단 아치(Costal Arch) + 견갑골(Scapula) + 광배근(Latissimus) + 승모근(Trapezius)
     out.push(
       {
         kind: "sphere",
@@ -393,21 +426,15 @@ export function buildStudioMannequinEcorchePrimitives(
         endRadius: 0.038 * hu * muscleScale,
         materialRole: "body",
       },
-    );
-
-    // 2. 목빗근(SCM) V라인 랜드마크
-    out.push({
-      kind: "capsule",
-      jointId: "neck",
-      from: [side * 0.035 * hu, 0.01 * hu, 0.088 * hu],
-      to: [side * 0.105 * hu * (p.neckThickness ?? 1), neckLen * 0.92, -0.015 * hu],
-      radius: 0.022 * hu * muscleScale,
-      endRadius: 0.018 * hu * muscleScale,
-      materialRole: "landmark",
-    });
-
-    // 3. 복직근(Rectus Abdominis) 2단 + 외복사근(External Oblique) 옆구리 패드
-    out.push(
+      {
+        kind: "capsule",
+        jointId: "neck",
+        from: [side * 0.035 * hu, 0.01 * hu, 0.088 * hu],
+        to: [side * 0.105 * hu * (p.neckThickness ?? 1), neckLen * 0.92, -0.015 * hu],
+        radius: 0.022 * hu * muscleScale,
+        endRadius: 0.018 * hu * muscleScale,
+        materialRole: "landmark",
+      },
       {
         kind: "sphere",
         jointId: "spine",
@@ -432,10 +459,6 @@ export function buildStudioMannequinEcorchePrimitives(
         scale: [0.58, 1.35, 0.92 * torsoDepth],
         materialRole: "body",
       },
-    );
-
-    // 4. 상전장골극(ASIS) 골반 전면 랜드마크 + 대둔근(Gluteus Maximus) 능동 부피
-    out.push(
       {
         kind: "sphere",
         jointId: "pelvis",
@@ -452,10 +475,6 @@ export function buildStudioMannequinEcorchePrimitives(
         scale: [0.92, 1.04, 0.86 * pelvisDepth],
         materialRole: "body",
       },
-    );
-
-    // 5. 삼각근 티어드롭 캡 + 능동 팽창 이두근 + 척골 경상돌기(손목 뼈) + 무지구(Thenar)
-    out.push(
       {
         kind: "sphere",
         jointId: uArmId,
@@ -487,10 +506,6 @@ export function buildStudioMannequinEcorchePrimitives(
         scale: [0.78, 1.15, 0.68],
         materialRole: "body",
       },
-    );
-
-    // 6. 내측광근(VMO) 티어드롭 + 비복근 능동 팽창 + 비대칭 내·외과 복숭아뼈
-    out.push(
       {
         kind: "sphere",
         jointId: uLegId,
@@ -507,7 +522,6 @@ export function buildStudioMannequinEcorchePrimitives(
         scale: [0.78, 1.55, 0.92],
         materialRole: "body",
       },
-      // 안쪽 복숭아뼈(내과): 더 높고 약간 앞쪽
       {
         kind: "sphere",
         jointId: footId,
@@ -515,7 +529,6 @@ export function buildStudioMannequinEcorchePrimitives(
         radius: 0.028 * hu,
         materialRole: "landmark",
       },
-      // 바깥쪽 복숭아뼈(외과): 더 낮고 약간 뒤쪽
       {
         kind: "sphere",
         jointId: footId,
@@ -529,13 +542,7 @@ export function buildStudioMannequinEcorchePrimitives(
   return out;
 }
 
-// ── 2D 핸드 셋업 패드 + 손가락 벌림(Spread) & 엄지 대립(Opposition) ───────────
-
-export type StudioMannequinFistStyleId =
-  | "standard"
-  | "catPaw"
-  | "cylinderGrip"
-  | "pinchPoint";
+export type StudioMannequinFistStyleId = "standard" | "catPaw" | "cylinderGrip" | "pinchPoint";
 
 export const STUDIO_MANNEQUIN_FIST_STYLES: readonly {
   readonly id: StudioMannequinFistStyleId;
@@ -548,64 +555,28 @@ export const STUDIO_MANNEQUIN_FIST_STYLES: readonly {
   { id: "pinchPoint", label: "검지 포인팅", desc: "검지를 펴고 나머지 손가락을 말아 쥐는 지시형" },
 ]);
 
-export type StudioMannequinFingerSplayMap = Readonly<
-  Record<StudioMannequinFingerName, number>
->;
+export type StudioMannequinFingerSplayMap = Readonly<Record<StudioMannequinFingerName, number>>;
 
 export interface StudioMannequinHandPadInput {
-  /** 손가락 벌림 (-0.25 밀착 ~ 0 기본 ~ 1.0 최대 벌림). */
   readonly spread: number;
-  /** 주먹 쥐기 강도 (0.0 편 손 ~ 1.0 완전 주먹). */
   readonly clench: number;
-  /** 엄지 맞섬/대립 강도 (0.0 바깥 ~ 1.0 손바닥 중앙 대립). */
   readonly thumbOpposition?: number;
   readonly fistStyle?: StudioMannequinFistStyleId;
-  /** 잠긴 손가락은 현재 지정된 단일 컬(0~100)을 유지한다. */
   readonly lockedFingerCurls?: Partial<Record<StudioMannequinFingerName, number>>;
 }
 
 export interface StudioMannequinHandPadOutput {
-  readonly segmentCurls: Readonly<
-    Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>
-  >;
-  /** 각 손가락의 좌우 벌림 각도(deg, 손바닥 외측 방향 양수). */
+  readonly segmentCurls: Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>;
   readonly splayDeg: StudioMannequinFingerSplayMap;
 }
 
 const FIST_STYLE_CURL_TARGETS: Readonly<
-  Record<
-    StudioMannequinFistStyleId,
-    Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>
-  >
+  Record<StudioMannequinFistStyleId, Readonly<Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>>>
 > = Object.freeze({
-  standard: {
-    thumb: [72, 78, 68],
-    index: [88, 94, 86],
-    middle: [92, 96, 90],
-    ring: [95, 98, 92],
-    little: [98, 100, 95],
-  },
-  catPaw: {
-    thumb: [38, 52, 45],
-    index: [22, 86, 92],
-    middle: [24, 88, 94],
-    ring: [26, 90, 94],
-    little: [30, 92, 96],
-  },
-  cylinderGrip: {
-    thumb: [58, 54, 48],
-    index: [62, 68, 56],
-    middle: [66, 72, 60],
-    ring: [70, 76, 64],
-    little: [74, 80, 68],
-  },
-  pinchPoint: {
-    thumb: [48, 36, 24],
-    index: [6, 8, 4],
-    middle: [84, 92, 86],
-    ring: [90, 95, 90],
-    little: [94, 98, 92],
-  },
+  standard: { thumb: [72, 78, 68], index: [88, 94, 86], middle: [92, 96, 90], ring: [95, 98, 92], little: [98, 100, 95] },
+  catPaw: { thumb: [38, 52, 45], index: [22, 86, 92], middle: [24, 88, 94], ring: [26, 90, 94], little: [30, 92, 96] },
+  cylinderGrip: { thumb: [58, 54, 48], index: [62, 68, 56], middle: [66, 72, 60], ring: [70, 76, 64], little: [74, 80, 68] },
+  pinchPoint: { thumb: [48, 36, 24], index: [6, 8, 4], middle: [84, 92, 86], ring: [90, 95, 90], little: [94, 98, 92] },
 });
 
 const FINGER_SPREAD_WEIGHTS: Readonly<Record<StudioMannequinFingerName, number>> = Object.freeze({
@@ -616,10 +587,6 @@ const FINGER_SPREAD_WEIGHTS: Readonly<Record<StudioMannequinFingerName, number>>
   little: -22,
 });
 
-/**
- * 2D 핸드 셋업 패드 좌표(가로: 벌림, 세로: 쥐기)와 주먹 변형으로부터
- * 5손가락×3마디 개별 굴곡값과 손가락 벌림(Splay) 각도를 결정적으로 산출한다.
- */
 export function resolveStudioMannequinHandPadPose(
   input: StudioMannequinHandPadInput,
 ): StudioMannequinHandPadOutput {
@@ -628,14 +595,9 @@ export function resolveStudioMannequinHandPadPose(
   const thumbOpp = clamp(input.thumbOpposition, 0, 1, 0);
   const style = input.fistStyle ?? "standard";
   const targets = FIST_STYLE_CURL_TARGETS[style] ?? FIST_STYLE_CURL_TARGETS.standard;
-
-  // 주먹을 강하게 쥘수록 손가락 사이 벌어짐은 해부학적으로 자연 수축(MCP 측부인대 긴장)한다.
   const effectiveSpread = spread * (1 - 0.68 * clench);
 
-  const segmentCurls = {} as Record<
-    StudioMannequinFingerName,
-    StudioMannequinFingerSegmentCurls
-  >;
+  const segmentCurls = {} as Record<StudioMannequinFingerName, StudioMannequinFingerSegmentCurls>;
   const splayDeg = {} as Record<StudioMannequinFingerName, number>;
 
   for (const finger of STUDIO_MANNEQUIN_FINGER_NAMES) {
@@ -662,7 +624,6 @@ export function resolveStudioMannequinHandPadPose(
   return { segmentCurls, splayDeg };
 }
 
-/** 양손 패드 출력을 StudioMannequinFingerPose로 합친다. */
 export function mergeHandPadIntoFingerPose(
   current: StudioMannequinFingerPose | undefined,
   side: "left" | "right" | "both",
@@ -675,10 +636,6 @@ export function mergeHandPadIntoFingerPose(
   };
 }
 
-/**
- * 손가락 벌림(Splay)까지 반영한 고해상도 손가락 프리미티브 빌더.
- * splay가 전부 0이면 기존 buildStudioMannequinSpec의 손가락 체인과 동일하게 호환된다.
- */
 export function buildSplayedHandDigitPrimitives(
   jointId: "leftHand" | "rightHand",
   handLen: number,
@@ -690,14 +647,10 @@ export function buildSplayedHandDigitPrimitives(
     { name: "little", x: -0.16, knuckleY: -0.76, middleY: -0.94, endY: -1.07, radius: 0.047 },
     { name: "ring", x: -0.055, knuckleY: -0.77, middleY: -0.98, endY: -1.14, radius: 0.049 },
     { name: "middle", x: 0.055, knuckleY: -0.77, middleY: -1.0, endY: -1.17, radius: 0.05 },
-    { name: "index", x: 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
+    { name: "index", x: -0 + 0.16, knuckleY: -0.75, middleY: -0.95, endY: -1.1, radius: 0.046 },
   ] as const;
 
-  const rotateAroundKnuckleZ = (
-    origin: StudioMannequinVec3,
-    point: StudioMannequinVec3,
-    angleRad: number,
-  ): StudioMannequinVec3 => {
+  const rotateAroundKnuckleZ = (origin: StudioMannequinVec3, point: StudioMannequinVec3, angleRad: number): StudioMannequinVec3 => {
     if (Math.abs(angleRad) < 1e-6) return point;
     const dx = point[0] - origin[0];
     const dy = point[1] - origin[1];

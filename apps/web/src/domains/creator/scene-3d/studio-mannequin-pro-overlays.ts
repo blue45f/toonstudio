@@ -1,14 +1,16 @@
 /**
- * Studio 3D 데생 인형 v3 — Three.js 유기 단면 로프트 메시 빌더 & 작화 보조선·무게중심(CoM) 오버레이.
+ * Studio 3D 데생 인형 v4 — Three.js 유기 단면 로프트 메시 빌더 & 작화 보조선·동세선·무게중심(CoM) 오버레이.
  *
- * 순수 데이터 계층(`studio-mannequin-ecorche-anatomy.ts`, `studio-mannequin-pro-kinematics.ts`)이
- * 산출한 다중 단면 로프트 스펙, 루미스 두상 십자선, 단축법 등고선, 생체역학 무게중심 추선을
- * Three.js 지오메트리와 온디맨드 오버레이 그룹으로 변환·수명 관리한다.
+ * 순수 데이터 계층(`studio-mannequin-ecorche-anatomy.ts`, `studio-mannequin-pro-kinematics.ts`,
+ * `studio-mannequin-gesture-dynamics.ts`)이 산출한 다중 단면 로프트 스펙, 루미스 두상 십자선,
+ * 단축법 등고선, 3D 동세선(Line of Action), 생체역학 무게중심 추선을 Three.js 지오메트리와
+ * 온디맨드 오버레이 그룹으로 변환·수명 관리한다.
  */
 
 import * as THREE from "three";
 
 import type { StudioMannequinLoftTubeSpec } from "./studio-mannequin-ecorche-anatomy";
+import { analyzeStudioMannequinGesture } from "./studio-mannequin-gesture-dynamics";
 import type { StudioMannequinJointId, StudioMannequinSpec } from "./studio-mannequin-model";
 import type { StudioMannequinPose } from "./studio-mannequin-poses";
 import {
@@ -144,6 +146,9 @@ const BALANCE_COLORS = Object.freeze({
   airborne: 0x38bdf8,
 });
 
+const LOA_SEGMENTS_PER_SPAN = 6;
+const LOA_POINT_COUNT = 6 * LOA_SEGMENTS_PER_SPAN + 1;
+
 export function createStudioMannequinProOverlayController(
   initialVisibility: Partial<StudioMannequinGuideVisibility> = STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
 ): StudioMannequinProOverlayController {
@@ -170,6 +175,12 @@ export function createStudioMannequinProOverlayController(
     color: 0x22d3ee,
     transparent: true,
     opacity: 0.56,
+  });
+  const actionLineMaterial = new THREE.LineBasicMaterial({
+    color: 0xfb7185,
+    transparent: true,
+    opacity: 0.92,
+    depthTest: false,
   });
 
   const plumbMaterial = new THREE.LineBasicMaterial({
@@ -202,7 +213,14 @@ export function createStudioMannequinProOverlayController(
   const supportRing = new THREE.Line(ringGeometry, plumbMaterial);
   supportRing.renderOrder = 13;
 
-  rootGroup.add(plumbLine, plumbBob, supportRing);
+  const loaPositions = new Float32Array(LOA_POINT_COUNT * 3);
+  const loaGeometry = new THREE.BufferGeometry();
+  loaGeometry.setAttribute("position", new THREE.BufferAttribute(loaPositions, 3));
+  const actionLine = new THREE.Line(loaGeometry, actionLineMaterial);
+  actionLine.name = "studio-mannequin-line-of-action";
+  actionLine.renderOrder = 16;
+
+  rootGroup.add(plumbLine, plumbBob, supportRing, actionLine);
 
   let jointGuideLines: THREE.Line[] = [];
 
@@ -215,7 +233,13 @@ export function createStudioMannequinProOverlayController(
   }
 
   function applyVisibilityFlags(): void {
-    rootGroup.visible = !captureHidden && visibility.balancePlumbLine;
+    const showPlumb = !captureHidden && visibility.balancePlumbLine;
+    const showLoa = !captureHidden && (visibility.lineOfAction ?? true);
+    rootGroup.visible = !captureHidden && (showPlumb || showLoa);
+    plumbLine.visible = showPlumb;
+    plumbBob.visible = showPlumb;
+    supportRing.visible = showPlumb;
+    actionLine.visible = showLoa;
     for (const line of jointGuideLines) {
       const kind = line.userData.guideKind as "loomis" | "centerline" | "contour";
       if (captureHidden) {
@@ -295,6 +319,19 @@ export function createStudioMannequinProOverlayController(
       ringPositions[i * 3 + 2] = report.supportCenter[2] + r * Math.sin(th);
     }
     (ringGeometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+
+    const gesture = analyzeStudioMannequinGesture(spec, pose, LOA_SEGMENTS_PER_SPAN);
+    const pts = gesture.lineOfActionPoints;
+    const count = Math.min(LOA_POINT_COUNT, pts.length);
+    for (let i = 0; i < count; i += 1) {
+      const pt = pts[i] ?? [0, 0, 0];
+      loaPositions[i * 3] = pt[0];
+      loaPositions[i * 3 + 1] = pt[1];
+      loaPositions[i * 3 + 2] = pt[2];
+    }
+    loaGeometry.setDrawRange(0, count);
+    (loaGeometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+
     applyVisibilityFlags();
     return report;
   }
@@ -319,12 +356,15 @@ export function createStudioMannequinProOverlayController(
       plumbLine.removeFromParent();
       plumbBob.removeFromParent();
       supportRing.removeFromParent();
+      actionLine.removeFromParent();
       plumbGeometry.dispose();
       bobGeometry.dispose();
       ringGeometry.dispose();
+      loaGeometry.dispose();
       loomisMaterial.dispose();
       centerlineMaterial.dispose();
       contourMaterial.dispose();
+      actionLineMaterial.dispose();
       plumbMaterial.dispose();
       bobMaterial.dispose();
       rootGroup.removeFromParent();

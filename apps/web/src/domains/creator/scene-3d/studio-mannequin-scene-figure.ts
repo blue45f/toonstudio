@@ -14,6 +14,7 @@ import {
   buildStudioMannequinLoftTubes,
   computeStudioMannequinFlexionBulge,
   resolveStudioMannequinSurfaceMode,
+  shouldSkipLegacyCoreBodyPrimitive,
   type StudioMannequinFingerSplayMap,
   type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
@@ -368,6 +369,9 @@ export function createStudioMannequinSceneFigure(input: {
     const handLen = 0.085 * spec.heightM * spec.params.armLength * (spec.params.handScale ?? 1);
 
     for (const primitive of spec.primitives) {
+      if (shouldSkipLegacyCoreBodyPrimitive(primitive, ecorcheState.surfaceMode)) {
+        continue;
+      }
       if (
         (replaceLeftDigits && primitive.jointId === "leftHand" && primitive.kind !== "box")
         || (replaceRightDigits && primitive.jointId === "rightHand" && primitive.kind !== "box")

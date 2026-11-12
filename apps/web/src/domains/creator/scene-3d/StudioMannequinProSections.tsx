@@ -1,12 +1,12 @@
 /**
- * Studio 3D 데생 인형 v3 — 체형(에코르셰 조형·.3dp 호환) 및 관절(잠금·견갑상완 리듬·무게중심·보조선·2D 핸드 패드·.pep 호환) 섹션.
+ * Studio 3D 데생 인형 v4 — 체형(에코르셰·웹툰 원형·호흡 확장·.3dp 호환) 및 관절(잠금·견갑상완 리듬·동세선·콘트라포스토·시선 응시·무게중심·2D 핸드 패드·.pep 호환) 섹션.
  *
  * `StudioMannequinPoserPanel.tsx`의 비대화를 막고 클립스튜디오를 능가하는 프로 작화 제어 기능을
  * 모듈화한다. 정적 연결 게이트(`check-unconnected-code`) 준수를 위해 실제 JSX에 마운트되는
  * 두 섹션 컴포넌트만 export 한다.
  */
 
-import { Compass, Download, Hand, Lock, RotateCcw, Scale, Unlock, Upload } from "lucide-react";
+import { Compass, Download, Eye, Hand, Lock, RotateCcw, Scale, Sparkles, Unlock, Upload } from "lucide-react";
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactElement } from "react";
 
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
@@ -25,8 +25,10 @@ import {
   type StudioMannequinHandPadOutput,
   type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
+import type { StudioMannequinGestureAnalysis } from "./studio-mannequin-gesture-dynamics";
 import {
   STUDIO_MANNEQUIN_ANATOMY_PARAM_RANGES,
+  STUDIO_MANNEQUIN_ARCHETYPE_PRESETS,
   STUDIO_MANNEQUIN_BODY_PRESETS,
   STUDIO_MANNEQUIN_HEAD_PARAM_RANGES,
   STUDIO_MANNEQUIN_HEAD_PRESETS,
@@ -37,6 +39,7 @@ import {
   clampStudioMannequinBodyParams,
   getStudioMannequinJointLimit,
   type StudioMannequinAnatomyParamKey,
+  type StudioMannequinArchetypePresetId,
   type StudioMannequinBodyParams,
   type StudioMannequinBodyPresetId,
   type StudioMannequinCoreParamKey,
@@ -80,11 +83,7 @@ const BODY_SLIDERS: readonly {
   },
 ]);
 
-const ANATOMY_SLIDERS: readonly {
-  key: StudioMannequinAnatomyParamKey;
-  label: string;
-  step: number;
-}[] = Object.freeze([
+const ANATOMY_SLIDERS: readonly { key: StudioMannequinAnatomyParamKey; label: string; step: number }[] = Object.freeze([
   { key: "torsoDepth", label: "몸통 깊이", step: 0.02 },
   { key: "chestWidth", label: "흉곽 너비", step: 0.02 },
   { key: "pelvisDepth", label: "골반 깊이", step: 0.02 },
@@ -126,12 +125,15 @@ export function StudioMannequinBodySection({
   surfaceMode = "ecorche",
   pectoralVolume = 1,
   muscleDefinition = 1,
+  breathPhase = 0,
   onParamsChange,
   onApplyPreset,
+  onApplyArchetype,
   onMaterialStyleChange,
   onSurfaceModeChange,
   onPectoralVolumeChange,
   onMuscleDefinitionChange,
+  onBreathPhaseChange,
   onImportCsp3dp,
   onExportCsp3dp,
 }: {
@@ -140,40 +142,63 @@ export function StudioMannequinBodySection({
   readonly surfaceMode?: StudioMannequinSurfaceMode;
   readonly pectoralVolume?: number;
   readonly muscleDefinition?: number;
+  readonly breathPhase?: number;
   readonly onParamsChange: (next: StudioMannequinBodyParams) => void;
   readonly onApplyPreset: (presetId: StudioMannequinBodyPresetId) => void;
+  readonly onApplyArchetype?: (presetId: StudioMannequinArchetypePresetId) => void;
   readonly onMaterialStyleChange: (style: StudioMannequinMaterialStyle) => void;
   readonly onSurfaceModeChange?: (mode: StudioMannequinSurfaceMode) => void;
   readonly onPectoralVolumeChange?: (next: number) => void;
   readonly onMuscleDefinitionChange?: (next: number) => void;
+  readonly onBreathPhaseChange?: (next: number) => void;
   readonly onImportCsp3dp?: () => void;
   readonly onExportCsp3dp?: () => void;
 }): ReactElement {
   return (
     <div className="space-y-4">
+      {onApplyArchetype ? (
+        <div className="space-y-1.5 rounded-xl border border-accent/25 bg-accent-soft/25 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
+              <Sparkles size={13} className="text-accent" aria-hidden /> 웹툰 캐릭터 원형 프리셋
+            </span>
+            <span className="text-[0.62rem] text-fg-3">23종 해부·두상 통합</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="웹툰 캐릭터 원형 프리셋">
+            {(Object.keys(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS) as StudioMannequinArchetypePresetId[]).map((id) => (
+              <StudioPanelChip
+                key={id}
+                onClick={() => onApplyArchetype(id)}
+                title={STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[id].desc}
+              >
+                {STUDIO_MANNEQUIN_ARCHETYPE_PRESETS[id].label}
+              </StudioPanelChip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <StudioSectionHeader
         title="체형 프리셋"
         description="다양한 등신 비율 및 신장 파라미터를 선택하세요."
       />
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="체형 프리셋">
-        {(Object.keys(STUDIO_MANNEQUIN_BODY_PRESETS) as StudioMannequinBodyPresetId[]).map(
-          (presetId) => (
-            <StudioPanelChip
-              key={presetId}
-              onClick={() => onApplyPreset(presetId)}
-              title={`${STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label} 체형 프리셋 적용`}
-            >
-              {STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label}
-            </StudioPanelChip>
-          ),
-        )}
+        {(Object.keys(STUDIO_MANNEQUIN_BODY_PRESETS) as StudioMannequinBodyPresetId[]).map((presetId) => (
+          <StudioPanelChip
+            key={presetId}
+            onClick={() => onApplyPreset(presetId)}
+            title={`${STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label} 체형 프리셋 적용`}
+          >
+            {STUDIO_MANNEQUIN_BODY_PRESETS[presetId].label}
+          </StudioPanelChip>
+        ))}
       </div>
 
       {onSurfaceModeChange ? (
         <div className="space-y-2 rounded-xl border border-line/70 bg-card/50 p-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-fg-2">에코르셰 조형 모드</span>
-            <span className="text-[0.64rem] text-accent">v3 해부학</span>
+            <span className="text-[0.64rem] text-accent">v4 싱글스킨 로프트</span>
           </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="에코르셰 조형 모드">
             {STUDIO_MANNEQUIN_SURFACE_MODES.map((mode) => (
@@ -187,32 +212,41 @@ export function StudioMannequinBodySection({
               </StudioToggleChip>
             ))}
           </div>
-          {surfaceMode !== "standard" ? (
-            <div className="space-y-1.5 pt-1">
-              {onMuscleDefinitionChange ? (
-                <StudioSliderRow
-                  label="근육 선명도"
-                  min={0}
-                  max={1.5}
-                  step={0.05}
-                  value={muscleDefinition}
-                  onChange={onMuscleDefinitionChange}
-                  readout={`${Math.round(muscleDefinition * 100)}%`}
-                />
-              ) : null}
-              {onPectoralVolumeChange ? (
-                <StudioSliderRow
-                  label="대흉근 볼륨"
-                  min={0.75}
-                  max={1.4}
-                  step={0.05}
-                  value={pectoralVolume}
-                  onChange={onPectoralVolumeChange}
-                  readout={`${Math.round(pectoralVolume * 100)}%`}
-                />
-              ) : null}
-            </div>
-          ) : null}
+          <div className="space-y-1.5 pt-1">
+            {surfaceMode !== "standard" && onMuscleDefinitionChange ? (
+              <StudioSliderRow
+                label="근육 선명도"
+                min={0}
+                max={1.5}
+                step={0.05}
+                value={muscleDefinition}
+                onChange={onMuscleDefinitionChange}
+                readout={`${Math.round(muscleDefinition * 100)}%`}
+              />
+            ) : null}
+            {surfaceMode !== "standard" && onPectoralVolumeChange ? (
+              <StudioSliderRow
+                label="대흉근 볼륨"
+                min={0.75}
+                max={1.4}
+                step={0.05}
+                value={pectoralVolume}
+                onChange={onPectoralVolumeChange}
+                readout={`${Math.round(pectoralVolume * 100)}%`}
+              />
+            ) : null}
+            {onBreathPhaseChange ? (
+              <StudioSliderRow
+                label="흉곽 호흡 확장"
+                min={-1}
+                max={1}
+                step={0.05}
+                value={breathPhase}
+                onChange={onBreathPhaseChange}
+                readout={breathPhase > 0.05 ? `들숨 +${Math.round(breathPhase * 100)}%` : breathPhase < -0.05 ? `날숨 ${Math.round(breathPhase * 100)}%` : "평상시"}
+              />
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -244,9 +278,7 @@ export function StudioMannequinBodySection({
               max={max}
               step={step}
               value={params[key]}
-              onChange={(next) =>
-                onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))
-              }
+              onChange={(next) => onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))}
               readout={format(params[key])}
             />
           );
@@ -270,9 +302,7 @@ export function StudioMannequinBodySection({
                 max={max}
                 step={step}
                 value={value}
-                onChange={(next) =>
-                  onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))
-                }
+                onChange={(next) => onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))}
                 readout={`${Math.round(value * 100)}%`}
               />
             );
@@ -286,24 +316,15 @@ export function StudioMannequinBodySection({
           description="웹툰·애니 스타일의 머리 형태와 턱선·눈·코 비율을 조절합니다."
         />
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="헤드 프리셋">
-          {(Object.keys(STUDIO_MANNEQUIN_HEAD_PRESETS) as StudioMannequinHeadPresetId[]).map(
-            (headId) => (
-              <StudioPanelChip
-                key={headId}
-                onClick={() =>
-                  onParamsChange(
-                    clampStudioMannequinBodyParams({
-                      ...params,
-                      ...STUDIO_MANNEQUIN_HEAD_PRESETS[headId].params,
-                    }),
-                  )
-                }
-                title={`${STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label} 헤드 프리셋 적용`}
-              >
-                {STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label}
-              </StudioPanelChip>
-            ),
-          )}
+          {(Object.keys(STUDIO_MANNEQUIN_HEAD_PRESETS) as StudioMannequinHeadPresetId[]).map((headId) => (
+            <StudioPanelChip
+              key={headId}
+              onClick={() => onParamsChange(clampStudioMannequinBodyParams({ ...params, ...STUDIO_MANNEQUIN_HEAD_PRESETS[headId].params }))}
+              title={`${STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label} 헤드 프리셋 적용`}
+            >
+              {STUDIO_MANNEQUIN_HEAD_PRESETS[headId].label}
+            </StudioPanelChip>
+          ))}
         </div>
         <div className="space-y-2">
           {HEAD_SLIDERS.map(({ key, label, step, format }) => {
@@ -317,11 +338,7 @@ export function StudioMannequinBodySection({
                 max={max}
                 step={step}
                 value={value}
-                onChange={(next) =>
-                  onParamsChange(
-                    clampStudioMannequinBodyParams({ ...params, [key]: next }),
-                  )
-                }
+                onChange={(next) => onParamsChange(clampStudioMannequinBodyParams({ ...params, [key]: next }))}
                 readout={format(value)}
               />
             );
@@ -374,13 +391,15 @@ function HandSetupPad2D({
   const [thumbOpposition, setThumbOpposition] = useState(0.2);
 
   const emitFromCoords = (nextSpread: number, nextClench: number, nextOpp: number, nextStyle: StudioMannequinFistStyleId) => {
-    const out = resolveStudioMannequinHandPadPose({
-      spread: nextSpread,
-      clench: nextClench,
-      thumbOpposition: nextOpp,
-      fistStyle: nextStyle,
-    });
-    onApplyHandPad(side, out);
+    onApplyHandPad(
+      side,
+      resolveStudioMannequinHandPadPose({
+        spread: nextSpread,
+        clench: nextClench,
+        thumbOpposition: nextOpp,
+        fistStyle: nextStyle,
+      }),
+    );
   };
 
   const updateFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -405,13 +424,7 @@ function HandSetupPad2D({
           <Hand size={13} className="text-accent" aria-hidden /> 2D 핸드 셋업 패드
         </span>
         <div className="flex gap-1" role="group" aria-label="핸드 패드 대상 손">
-          {(
-            [
-              ["left", "왼손"],
-              ["right", "오른손"],
-              ["both", "양손"],
-            ] as const
-          ).map(([id, label]) => (
+          {([["left", "왼손"], ["right", "오른손"], ["both", "양손"]] as const).map(([id, label]) => (
             <StudioToggleChip key={id} active={side === id} onClick={() => setSide(id)}>
               {label}
             </StudioToggleChip>
@@ -481,6 +494,7 @@ export function StudioMannequinJointSection({
   scapulohumeralRhythm = true,
   guideVisibility = STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
   balanceReport,
+  gestureAnalysis,
   onSelectJoint,
   onRotate,
   onResetJoint,
@@ -489,6 +503,8 @@ export function StudioMannequinJointSection({
   onToggleScapulohumeralRhythm,
   onGuideVisibilityChange,
   onAutoBalance,
+  onApplyContrapposto,
+  onLookAtCamera,
   onApplyHandPad,
   onImportCspPep,
   onExportCspPep,
@@ -499,6 +515,7 @@ export function StudioMannequinJointSection({
   readonly scapulohumeralRhythm?: boolean;
   readonly guideVisibility?: StudioMannequinGuideVisibility;
   readonly balanceReport?: StudioMannequinBalanceReport;
+  readonly gestureAnalysis?: StudioMannequinGestureAnalysis;
   readonly onSelectJoint: (jointId: StudioMannequinJointId) => void;
   readonly onRotate: (rotation: StudioMannequinVec3) => void;
   readonly onResetJoint: () => void;
@@ -507,6 +524,8 @@ export function StudioMannequinJointSection({
   readonly onToggleScapulohumeralRhythm?: (enabled: boolean) => void;
   readonly onGuideVisibilityChange?: (patch: Partial<StudioMannequinGuideVisibility>) => void;
   readonly onAutoBalance?: () => void;
+  readonly onApplyContrapposto?: (weightSide: "left" | "right") => void;
+  readonly onLookAtCamera?: () => void;
   readonly onApplyHandPad?: (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => void;
   readonly onImportCspPep?: () => void;
   readonly onExportCspPep?: () => void;
@@ -514,14 +533,13 @@ export function StudioMannequinJointSection({
   const jointLimit = selectedJointId ? getStudioMannequinJointLimit(selectedJointId) : null;
   const isSelectedLocked = selectedJointId ? jointLocks[selectedJointId] === true : false;
   const lockedCount = countStudioMannequinLockedJoints(jointLocks);
-  const axes: readonly { axis: 0 | 1 | 2; label: string; range: readonly [number, number] }[] =
-    jointLimit
-      ? [
-          { axis: 0, label: "X 회전", range: jointLimit.x },
-          { axis: 1, label: "Y 회전", range: jointLimit.y },
-          { axis: 2, label: "Z 회전", range: jointLimit.z },
-        ]
-      : [];
+  const axes: readonly { axis: 0 | 1 | 2; label: string; range: readonly [number, number] }[] = jointLimit
+    ? [
+        { axis: 0, label: "X 회전", range: jointLimit.x },
+        { axis: 1, label: "Y 회전", range: jointLimit.y },
+        { axis: 2, label: "Z 회전", range: jointLimit.z },
+      ]
+    : [];
 
   return (
     <div className="space-y-3">
@@ -554,13 +572,10 @@ export function StudioMannequinJointSection({
           aria-label="편집할 관절 선택"
           className="h-8 min-w-0 flex-1 rounded-md border border-line bg-card px-2 text-[0.72rem] text-fg outline-none focus:border-accent/60 pointer-coarse:min-h-11"
         >
-          <option value="" disabled>
-            관절을 선택하세요
-          </option>
+          <option value="" disabled>관절을 선택하세요</option>
           {STUDIO_MANNEQUIN_JOINT_IDS.map((jointId) => (
             <option key={jointId} value={jointId}>
-              {STUDIO_MANNEQUIN_JOINT_LABELS[jointId]}
-              {jointLocks[jointId] ? " (잠김)" : ""}
+              {STUDIO_MANNEQUIN_JOINT_LABELS[jointId]}{jointLocks[jointId] ? " (잠김)" : ""}
             </option>
           ))}
         </select>
@@ -627,12 +642,7 @@ export function StudioMannequinJointSection({
             <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
               <Scale size={13} className="text-accent" aria-hidden /> 무게중심(CoM) 밸런스
             </span>
-            <span
-              className={cn(
-                "rounded-full border px-2 py-0.5 text-[0.64rem] font-semibold",
-                BALANCE_LABELS[balanceReport.state].tone,
-              )}
-            >
+            <span className={cn("rounded-full border px-2 py-0.5 text-[0.64rem] font-semibold", BALANCE_LABELS[balanceReport.state].tone)}>
               {BALANCE_LABELS[balanceReport.state].label} · 편차 {balanceReport.horizontalOffsetCm}cm
             </span>
           </div>
@@ -649,12 +659,50 @@ export function StudioMannequinJointSection({
         </div>
       ) : null}
 
+      {gestureAnalysis || onApplyContrapposto || onLookAtCamera ? (
+        <div className="space-y-2 rounded-xl border border-line/70 bg-card/50 p-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
+              <Sparkles size={13} className="text-accent" aria-hidden /> 동세·콘트라포스토·시선
+            </span>
+            {gestureAnalysis ? (
+              <span className="text-[0.64rem] text-fg-3">
+                반대기울기 {gestureAnalysis.contrappostoAngleDeg}° · 만곡 {gestureAnalysis.actionCurveBowCm}cm
+              </span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {onApplyContrapposto ? (
+              <>
+                <StudioPanelChip onClick={() => onApplyContrapposto("left")} title="왼다리 지지 콘트라포스토 S-리듬 생성">
+                  좌측 콘트라포스토
+                </StudioPanelChip>
+                <StudioPanelChip onClick={() => onApplyContrapposto("right")} title="오른다리 지지 콘트라포스토 S-리듬 생성">
+                  우측 콘트라포스토
+                </StudioPanelChip>
+              </>
+            ) : null}
+            {onLookAtCamera ? (
+              <StudioPanelChip onClick={onLookAtCamera} title="현재 카메라를 향해 가슴(15%)·목(35%)·머리(50%) 시선을 배분합니다">
+                <Eye size={12} aria-hidden /> 카메라 시선 응시
+              </StudioPanelChip>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {onGuideVisibilityChange ? (
         <div className="space-y-1.5 rounded-xl border border-line/70 bg-card/50 p-2.5">
           <span className="flex items-center gap-1 text-xs font-semibold text-fg-2">
             <Compass size={13} className="text-accent" aria-hidden /> 작화 보조선 (캡처 시 자동 숨김)
           </span>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="작화 보조선 표시">
+            <StudioToggleChip
+              active={guideVisibility.lineOfAction !== false}
+              onClick={() => onGuideVisibilityChange({ lineOfAction: !(guideVisibility.lineOfAction !== false) })}
+            >
+              3D 동세선
+            </StudioToggleChip>
             <StudioToggleChip
               active={guideVisibility.loomisHead}
               onClick={() => onGuideVisibilityChange({ loomisHead: !guideVisibility.loomisHead })}
