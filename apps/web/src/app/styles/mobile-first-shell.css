@@ -34,7 +34,7 @@
 @media (max-width: 767px) {
   :root { --site-control-size: 48px; }
   .site-menu-utility { flex-direction: column; align-items: flex-start; }
-  .site-menu-utility small { font-size: 0.75rem; line-height: 1.5; }
+  .site-menu-utility small { line-height: 1.5; }
   [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
   [data-slot="button"][data-size="icon"]:not([data-own-control-size]) { min-inline-size: 48px; }
 }

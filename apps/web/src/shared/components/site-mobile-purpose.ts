@@ -16,7 +16,10 @@ function target(id: "studio" | "explore" | "market" | "me"): SiteMobilePurposeHr
   return href;
 }
 
-const TARGET = { work: target("studio"), read: target("explore"), materials: target("market"), account: target("me") } as const;
+const WORK = target("studio");
+const READ = target("explore");
+const MATERIALS = target("market");
+const ACCOUNT = target("me");
 
 /** 계정 모듈 중 정본 내비 항목에 없는 경로만 보완한다. */
 const ACCOUNT_MODULES = ["/account", "/me", "/messages", "/membership/usage"] as const;
@@ -34,21 +37,21 @@ export function siteMobilePurposeHref(input: string): SiteMobilePurposeHref | nu
   ), null);
 
   // 서재는 계정 설정이 아니라 작품 감상으로 돌아가는 목적지다.
-  if (entry?.id === SITE_NAVIGATION_ITEMS.library.id) return TARGET.read;
+  if (entry?.id === SITE_NAVIGATION_ITEMS.library.id) return READ;
   if ([SITE_NAVIGATION_ITEMS.me, SITE_NAVIGATION_ITEMS.settings, SITE_NAVIGATION_ITEMS.notifications]
-    .some((item) => matches(path, item.href)) || ACCOUNT_MODULES.some((prefix) => matches(path, prefix))) return TARGET.account;
+    .some((item) => matches(path, item.href)) || ACCOUNT_MODULES.some((prefix) => matches(path, prefix))) return ACCOUNT;
 
-  if (entry?.id === SITE_NAVIGATION_ITEMS.market.id || entry?.id === SITE_NAVIGATION_ITEMS.research.id) return TARGET.materials;
+  if (entry?.id === SITE_NAVIGATION_ITEMS.market.id || entry?.id === SITE_NAVIGATION_ITEMS.research.id) return MATERIALS;
   if (path !== SITE_NAVIGATION_ITEMS.make.href && matches(path, SITE_NAVIGATION_ITEMS.make.href)
-    && isPublicCreativeRoute(path)) return TARGET.read;
+    && isPublicCreativeRoute(path)) return READ;
   if (group?.id === "create" || group?.id === "publish"
     || entry?.id === SITE_NAVIGATION_ITEMS.workspaceHome.id || entry?.id === SITE_NAVIGATION_ITEMS.workspaceTeam.id
-    || path === "/publish" || (metadata.product === "studio" && metadata.purpose === "create")) return TARGET.work;
+    || path === "/publish" || (metadata.product === "studio" && metadata.purpose === "create")) return WORK;
 
   // /create 자체는 작업 시작이고 기존 /create/:id 별칭은 공개 작품이다.
   if (isDiscoverPurposeRoute(path) || group?.id === "discover"
     || entry?.id === SITE_NAVIGATION_ITEMS.gallery.id
-    || path === "/read/spatial" || matches(path, "/lists")) return TARGET.read;
+    || path === "/read/spatial" || matches(path, "/lists")) return READ;
 
   return null;
 }
