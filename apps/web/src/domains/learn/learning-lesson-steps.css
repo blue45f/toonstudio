@@ -1,5 +1,6 @@
 /* 강좌 전용 단계 화면. 공통 셸·편집기·학습 홈의 스타일에는 영향을 주지 않는다. */
 .learn-stepped-lesson {
+  --site-control-size: max(48px, 3rem);
   max-width: 62rem;
   margin-inline: auto;
   font-size: 1rem;
@@ -121,6 +122,18 @@
   .learn-step-actions > button { width: 100%; }
   .learn-step-content :is(.learn-guided-practice, .learn-guided-quiz, .learn-step-task-card) { padding: 1rem; }
   .learn-stepped-lesson .learn-mission-heading { flex-wrap: wrap; }
+}
+
+/* 좁은 강좌 화면은 내용을 줄이지 않고 첫 행동 앞의 여백만 압축한다. */
+@media (max-width: 360px) {
+  .learn-stepped-lesson .learn-back { margin-bottom: 0; }
+  .learn-stepped-lesson .learn-guided-lesson-header { margin-bottom: .5rem; }
+  .learn-stepped-lesson .learn-lesson-header h1 { margin-bottom: .5rem; }
+  .learn-stepped-lesson .learn-intro { margin-bottom: .25rem; }
+  .learn-stepped-lesson .learn-step-navigation ol { margin-bottom: .75rem; }
+  .learn-stepped-lesson .learn-step-heading { margin-bottom: .5rem; }
+  .learn-stepped-lesson .learn-step-outcome { padding: .75rem; }
+  .learn-stepped-lesson .learn-step-outcome .learn-step-actions { margin-top: .5rem; }
 }
 
 @media (prefers-contrast: more) {
