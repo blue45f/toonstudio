@@ -156,6 +156,7 @@ export function StudioDocumentWindowHub({
   const shellRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  const workspacePanelRef = useRef<HTMLElement>(null);
   const currentWorkspace = studioDocumentWorkspaceById(resolution.workspace);
   const recommended = studioRecommendedCompanionWorkspaces(resolution.workspace);
   const openCount = snapshot.peers.length + 1;
@@ -243,6 +244,7 @@ export function StudioDocumentWindowHub({
       ) {
         event.preventDefault();
         setOpen((value) => !value);
+        if (open) triggerRef.current?.focus({ preventScroll: true });
       }
       if (event.key === "Escape" && open) {
         event.preventDefault();
@@ -252,6 +254,14 @@ export function StudioDocumentWindowHub({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const panel = workspacePanelRef.current;
+    const target = panel?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]') ?? panel?.querySelector<HTMLButtonElement>("button");
+    const frame = window.requestAnimationFrame(() => target?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
   useEffect(() => {
@@ -270,8 +280,8 @@ export function StudioDocumentWindowHub({
     activeWorkspaceCounts.set(peer.workspace, (activeWorkspaceCounts.get(peer.workspace) ?? 0) + 1);
   }
 
-  // DESIGN.md §1.1 & §5.2 (시안 B): 데스크톱에서는 단일 44px 상단바 중앙에 5단계 공정 스위처를 인라인 도킹해
-  // 이중 막대가 원고 시야를 가리지 않도록 하고, 좁은 화면(<1280px)에서만 가로 스냅 줄로 자연스럽게 개행한다.
+  // 기본 도구 줄에는 현재 작업공간만 두고, 다른 작업공간은 메뉴에서 선택한다.
+  // 실제 회차 단계와 저장 결과는 각각의 상태 소유자가 제공하는 크롬 슬롯을 사용한다.
   const workspaceBar = (
       <div
         ref={barRef}
@@ -335,23 +345,9 @@ export function StudioDocumentWindowHub({
             </div>
           </div>
 
-          <StudioDocumentStagePillBar
-            workspace={resolution.workspace}
-            onSelectWorkspace={onChangeWorkspace}
-            className="order-3 w-full border-t border-line/50 pt-1 xl:order-2 xl:mx-auto xl:w-auto xl:border-t-0 xl:pt-0"
-          />
-
           <div className="order-2 ml-auto flex shrink-0 items-center gap-1 xl:order-3 xl:ml-0">
             <div id="studio-mode-chrome-slot" className="shrink-0 empty:hidden" />
             <div id="studio-episode-stage-chrome-slot" className="shrink-0 empty:hidden" />
-            <span
-              data-studio-autosave-dot="true"
-              title={bi("로컬 원고 금고 실시간 보호 중", "Protected by local manuscript vault")}
-              className="hidden items-center gap-1.5 rounded-full bg-good/12 px-2.5 py-1 text-[0.65rem] font-bold text-good 2xl:inline-flex"
-            >
-              <span className="size-1.5 rounded-full bg-good" aria-hidden="true" />
-              {bi("안전 저장", "Saved")}
-            </span>
             {resolution.workspace === "draw" ? (
               <button
                 type="button"
@@ -417,12 +413,14 @@ export function StudioDocumentWindowHub({
               aria-controls={panelId}
               aria-expanded={open}
               aria-haspopup="dialog"
+              data-studio-workspace-menu-trigger="true"
               className={buttonClass({
                 variant: open ? "solid" : "outline",
                 size: "sm",
                 className: "min-h-11 shrink-0 gap-1.5 rounded-xl px-2.5",
               })}
               title={bi("여러 창 작업공간 · ⌘/Ctrl+Shift+M", "Multi-window workspace · ⌘/Ctrl+Shift+M")}
+              aria-label={`${openCount} ${bi("창", "views")} · ${bi("작업공간·창 메뉴", "Workspaces and windows")}`}
               onClick={() => setOpen((value) => !value)}
             >
               <MonitorUp size={16} aria-hidden="true" />
@@ -444,9 +442,11 @@ export function StudioDocumentWindowHub({
 
       {open ? (
         <section
+          ref={workspacePanelRef}
           id={panelId}
           role="dialog"
           aria-modal="false"
+          data-studio-shortcut-boundary="true"
           aria-label={bi("여러 창 작업공간", "Multi-window workspace")}
           className="fixed bottom-3 left-1/2 top-[4.25rem] z-[122] flex w-[min(96vw,64rem)] -translate-x-1/2 flex-col overflow-hidden rounded-3xl border border-line bg-card/95 shadow-2xl backdrop-blur-xl print:hidden"
           data-studio-document-window-count={openCount}
@@ -460,7 +460,7 @@ export function StudioDocumentWindowHub({
                 {bi("여러 창 작업공간", "Multi-window workspace")}
               </h2>
               <p className="mt-1 max-w-3xl text-xs leading-relaxed text-fg-3 sm:text-sm">
-                {bi("같은 문서를 역할별 탭과 창으로 나눕니다. 문서 저장·실시간 협업 권위는 기존 편집기 한곳을 그대로 사용합니다.", "Split one document into role-specific tabs and windows while preserving the editor's existing save and collaboration authority.")}
+                {bi("같은 원고를 작업에 맞게 나눠 보세요. 탭이나 창을 바꿔도 같은 원고에서 이어집니다.", "Arrange views of the same manuscript for each task. Tabs and windows keep working on that manuscript.")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-[0.65rem] font-bold text-fg-3">
                 <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-1">
@@ -487,6 +487,15 @@ export function StudioDocumentWindowHub({
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            <StudioDocumentStagePillBar
+              workspace={resolution.workspace}
+              onSelectWorkspace={(workspace) => {
+                onChangeWorkspace(workspace);
+                setOpen(false);
+                triggerRef.current?.focus({ preventScroll: true });
+              }}
+              className="mb-4"
+            />
             <p
               role="status"
               aria-live="polite"

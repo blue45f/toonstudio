@@ -57,4 +57,3 @@ function ApprovalMemo({ approval, onSave }: { approval: QualityApproval; onSave:
 export function CiQualityApprovals({ board, onSave }: { board: QualityBoard; onSave: (id: QualityApproval["id"], note: string) => void }) {
   return <section aria-label="승인 대기"><h2>승인 대기</h2><p className="ci-quality-warning">저장은 검토 메모 기록입니다. 승인·작업 실행·유료 전환을 수행하지 않습니다. 세 항목의 상태는 승인 대기로 유지합니다.</p><div className="ci-quality-approval-grid">{board.approvals.map((approval) => <ApprovalMemo key={approval.id} approval={approval} onSave={onSave} />)}</div></section>;
 }
-

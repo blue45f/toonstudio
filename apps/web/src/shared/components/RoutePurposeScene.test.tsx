@@ -88,6 +88,19 @@ describe("route purpose scene", () => {
     expect(screen.getByRole("button", { name: "페이지 모션 일시정지" })).not.toBeNull();
   });
 
+  it("오프라인 연결 안내는 창작 단계 배지를 생략하고 다른 페이지의 기본 배지는 유지한다", () => {
+    const offline = scene("/offline");
+    expect(screen.getByText("연결·기기 보관")).not.toBeNull();
+    expect(offline.container.querySelector(".nb-site-purpose-pill")).toBeNull();
+    expect(screen.getByTestId("route-purpose-quick-flow").textContent).toContain("기기 보관");
+    expect(offline.container.querySelector("img")).not.toBeNull();
+    expect(offline.container.querySelector("video")).toBeNull();
+    expect(resolveSiteRouteVisual("/offline").video).toBeUndefined();
+    offline.unmount();
+    const discover = scene("/discover");
+    expect(discover.container.querySelector(".nb-site-purpose-pill")?.textContent).toBe("STAGE 01 · 작품 발견 허브");
+  });
+
   it("pauses offscreen and through the visible motion control", () => {
     const result = scene("/story-lab");
     const region = result.container.querySelector<HTMLElement>("[data-route-visual-kind]")!;

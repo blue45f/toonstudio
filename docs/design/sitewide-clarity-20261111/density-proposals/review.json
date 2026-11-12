@@ -1,0 +1,131 @@
+{
+  "recordedAt": "2026-11-11T18:16:48.414356+00:00",
+  "sourceHead": "4911a5b0f3ddf179f0827d6c62ae3a8e51eab401",
+  "status": "proposal-before-new-build-render",
+  "method": [
+    "existing actual PNG visual inspection",
+    "current source read-only comparison",
+    "local HTML mockup alternatives; no production implementation"
+  ],
+  "limits": [
+    "No new product browser executed",
+    "Historical first-viewport PNGs do not measure full page height",
+    "Source-only candidates require populated/loading actual screenshots",
+    "No all-route or independent-screen success count"
+  ],
+  "candidates": [
+    {
+      "id": "library",
+      "status": "confirmed-historical-visual-and-same-source; implementation delegated by root",
+      "source": "apps/web/src/domains/creator/studio-shell/StudioProjectLibraryManagementHeader.tsx:126",
+      "evidence": [
+        "/workspace/toonstudio/.qa/clarity-20261111/dot-review-after/studio-empty-390.png",
+        "/workspace/toonstudio/.qa/clarity-20261111/dot-review-after/studio-empty-1440.png"
+      ],
+      "finding": "No-personal-work state repeats top New Work, first-work card and four start cards; recent-work state already collapses alternative starts.",
+      "recommendation": "Keep the new-work primary and recovery; use the existing named alternative-start disclosure for no-personal-work too."
+    },
+    {
+      "id": "showcase",
+      "status": "source-only; populated/loading actual render pending",
+      "source": "apps/web/src/domains/creator/publishing/ShowcaseSpotlight.tsx:303",
+      "finding": "Spotlight before gallery controls: populated mobile min-height544px/desktop576px plus cover rail; loading512px plus rail. Tag link min-h-8.",
+      "recommendation": "Search and results first, compact editorial highlight; preserve tag discoverability and44px targets."
+    },
+    {
+      "id": "story",
+      "status": "source-only; actual render pending",
+      "source": "apps/web/src/domains/creator-resources/StoryLabPage.tsx:149",
+      "finding": "8textareas in one continuous fieldset with save after them; desktop preview column does not shorten input length.",
+      "recommendation": "Compare three purpose groups with direct stage access and persistent save/draft context; preserve all8fields/conflict and owner logic."
+    },
+    {
+      "id": "publish",
+      "status": "source-only; local fixture actual render pending",
+      "source": "apps/web/src/domains/integrations/PublishCenterPage.tsx:317",
+      "finding": "Prepare action above details/channels; empty result/feed/followup compete below. Desktop2columns mitigate length.",
+      "recommendation": "Project→details/channels→JSON result; retain optional feed purpose and honest unpublished state, preserve failed input."
+    },
+    {
+      "id": "learn",
+      "status": "source-only; actual lesson render pending",
+      "source": "apps/web/src/domains/learn/LearnContent.tsx:296",
+      "finding": "Metadata, shortcuts, outcome and full outline before lesson; outcome/progress/resources also follow body.",
+      "recommendation": "Mobile body first with named outline/shortcut disclosure; preserve desktop sticky reading support and long lesson content."
+    }
+  ],
+  "alreadyImplementedOrExcluded": [
+    "Recent-work priority and alternative starts already collapsed",
+    "Resource picker results first, collapsed filters, query/selection responsive preservation already verified",
+    "Reader extras collapsed and official reading action direct already verified",
+    "StoryLab creation tools, Showcase participation, Publish optional fields/plans, Production planning guide already collapsed",
+    "Long manuscript pixels and long teaching text are purposeful content, not automatic density failures",
+    "Market hero observed1440/390 and source hero remains; search/direct browse visible, so keep as watch rather than assume failure",
+    "Baseline home/discover images show timeout/loading, not valid normal-content density evidence",
+    "Guest/auth/503 screens do not establish populated operator success"
+  ],
+  "fidelityContract": {
+    "status": "target-comparison-required-after-implementation",
+    "reuse": "existing3proposals and6PNGs only; no duplicate mockup generation",
+    "screens": [
+      "story",
+      "showcase",
+      "publish"
+    ],
+    "viewportPairs": [
+      {
+        "proposalWidth": 390,
+        "actualWidth": 390,
+        "height": 844
+      },
+      {
+        "proposalWidth": 1440,
+        "actualWidth": 1440,
+        "height": 1000
+      }
+    ],
+    "sameState": [
+      "match selected stage/filter and data state; use native UI for actual worksheet fields",
+      "state whether actual data, local fixture, loading,empty,error or auth gate; do not compare different states as same",
+      "same scroll position,stable fonts/images and ready state; preserve raw captures",
+      "stamp actual commit/buildId and proposal image version/hash separately"
+    ],
+    "visualAxes": [
+      "layout regions and priority",
+      "semantic color/theme roles",
+      "spacing and density",
+      "typography scale and wrapping",
+      "component geometry/44px primary controls",
+      "selected/empty/error appearance"
+    ],
+    "comparisonOutput": "paired proposal and actual at each viewport/state; record matched,intended difference,unresolved discrepancy per axis",
+    "intentionalDifferences": [
+      {
+        "difference": "existing product common shell/navigation retained",
+        "reason": "mockups use simplified shell to review content structure; shared shell ownership and user context must be preserved",
+        "impact": "header height may change first-viewport coordinates; report rather than claim pixel identity"
+      },
+      {
+        "difference": "proposal label/sampledata removed from real user flow",
+        "reason": "design labeling is review metadata, not product copy",
+        "impact": "vertical offset and visible example titles differ; compare content regions and task hierarchy explicitly"
+      },
+      {
+        "difference": "actual catalog assets and product semantic tokens replace mock sample images/exact hex values",
+        "reason": "preserve live content,theme,rights and common component contracts",
+        "impact": "judge semantic roles/legibility/uniformity rather than demand exact illustrative asset identity"
+      }
+    ],
+    "separateFunctionalEvidence": [
+      "native steps/Back and focus restoration",
+      "input and owner-scoped draft preservation",
+      "save/retry/conflict contracts",
+      "search/filter/detail-return state",
+      "keyboard/touch/44px target and small screens",
+      "prefers-reduced-motion",
+      "no new external execution or unsupported automation"
+    ],
+    "completionRule": "do not mark proposal implemented solely from route coverage or automated accessibility; require paired actual rendering and separately recorded affected core journeys",
+    "currentActualRenderStatus": "not performed by this reviewer; root assigned next implementation phase"
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
@@ -7,7 +7,10 @@ import { downloadText, useCreatorWorkspace } from "./workspace";
 
 import type { StoryDraft } from "@/shared/lib/creator-workspace-persistence";
 
-import { STORY_FIELDS, STORY_LABELS, storyMarkdown } from "@/shared/lib/creator-resources";
+import { STORY_FIELDS, STORY_LABELS, storyMarkdown, type StoryField } from "@/shared/lib/creator-resources";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { cn } from "@/shared/lib/utils";
+import { safeDecodeRouteText } from "@/shared/lib/safe-route-text";
 import {
   changedStoryFields, creatorStoryDraftStorageKey, editStoryDraft, parseStoryDraft,
   resolveStoryConflict, storyDraftConflicts, storyDraftView,
@@ -15,6 +18,7 @@ import {
 import {
   formatI18nTemplate,
   translateCurrentStaticSourceText,
+  useBilingual,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { MotionIllustration } from "@/shared/motion-assets";
@@ -26,6 +30,30 @@ import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-pla
 const SCOPE = "domains.creator.resources.StoryLabPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
+interface StoryWorksheetStep {
+  readonly id: "character" | "conflict" | "ending";
+  readonly label: readonly [string, string];
+  readonly hint: readonly [string, string];
+  readonly heading: readonly [string, string];
+  readonly fields: readonly StoryField[];
+}
+
+const STORY_STEPS: readonly StoryWorksheetStep[] = [
+  { id: "character", label: ["인물·목표", "Character & goal"], hint: ["가제 · 주인공 · 욕망", "Title · character · desire"], heading: ["누가 무엇을 원하나요?", "Who wants what?"], fields: ["title", "protagonist", "desire"] },
+  { id: "conflict", label: ["갈등·세계", "Conflict & world"], hint: ["장애물 · 대가 · 규칙", "Obstacle · stakes · rules"], heading: ["무엇이 선택을 어렵게 하나요?", "What makes the choice difficult?"], fields: ["obstacle", "stakes", "world"] },
+  { id: "ending", label: ["전환·결말", "Turn & ending"], hint: ["첫 화 · 변화 · 검토", "First episode · change · review"], heading: ["처음과 끝은 어떻게 달라지나요?", "What changes between the beginning and end?"], fields: ["turn", "ending"] },
+];
+
+function focusStoryElement(id: string) {
+  const element = document.getElementById(id);
+  element?.focus();
+  element?.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+}
+
+function isNativeStoryHistoryReturn(): boolean {
+  return globalThis.performance?.getEntriesByType?.("navigation").some((entry) => "type" in entry && entry.type === "back_forward") ?? false;
+}
+
 const STORY_PIPELINE_ART_MAP: Readonly<Record<string, string>> = {
   "worldbuilding-synopsis": "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp",
   "novel-to-script": "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp",
@@ -33,8 +61,18 @@ const STORY_PIPELINE_ART_MAP: Readonly<Record<string, string>> = {
   "ink-render-publish": "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp",
 };
 
+const STORY_PIPELINE_DESTINATIONS: Readonly<Record<string, {
+  readonly title: readonly [string, string]; readonly action: readonly [string, string];
+}>> = {
+  "worldbuilding-synopsis": { title: ["기획서 작성", "Write a story plan"], action: ["기획 워크시트 열기", "Open story worksheet"] },
+  "novel-to-script": { title: ["새 작업 준비", "Prepare a new work"], action: ["새 작업 설정 열기", "Open new work settings"] },
+  "storyboard-3d-blocking": { title: ["웹툰 원고 편집", "Edit a webtoon"], action: ["웹툰 편집기 열기", "Open webtoon editor"] },
+  "ink-render-publish": { title: ["게시 전 확인", "Prepare to publish"], action: ["게시 준비 열기", "Open publishing preparation"] },
+};
+
 export function StoryLabPage() {
   useBilingualI18nRevision();
+  const bt = useBilingual("StoryLabPage");
   const { workspace, saveStory, clearError, error, ready, saving, writable, ownerKey } = useCreatorWorkspace();
   // 임시 초안도 워크스페이스와 같은 소유자 파티션에 둔다 — 같은 탭에서
   // 계정을 바꿔도 이전 계정의 미저장 기획이 새 계정의 화면에 섞이지 않는다.
@@ -46,8 +84,88 @@ export function StoryLabPage() {
   const [corruptDraft, setCorruptDraft] = useState(false);
   const [notice, setNotice] = useState("");
   const [draftError, setDraftError] = useState("");
+  const [inputError, setInputError] = useState<{ readonly field: StoryField; readonly message: string } | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [pipelineExpanded, setPipelineExpanded] = useState(false);
+  const pipelineSummary = useRef<HTMLElement | null>(null);
+  const pipelineBody = useRef<HTMLDivElement | null>(null);
+  const pipelineOwnedFocus = useRef(false);
+  const desktopPreview = useMediaQuery("(min-width: 1024px)");
+  const pendingFocus = useRef<string | null>(null);
+  const handlingInvalid = useRef(false);
+  const nativeReturnPending = useRef<boolean | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const stepId = new URLSearchParams(location.search).get("story-step");
+  const stepIndex = Math.max(0, STORY_STEPS.findIndex((step) => step.id === stepId));
+  const openStep = (index: number, focusId?: string) => {
+    const step = STORY_STEPS[index];
+    if (!step) return;
+    pendingFocus.current = focusId ?? `story-step-heading-${step.id}`;
+    if (index === stepIndex) { focusStoryElement(pendingFocus.current); pendingFocus.current = null; return; }
+    const params = new URLSearchParams(location.search);
+    params.set("story-step", step.id);
+    navigate(`${location.pathname}?${params}${location.hash}`, { replace: true, state: location.state });
+  };
+  useLayoutEffect(() => {
+    if (!pendingFocus.current) return;
+    focusStoryElement(pendingFocus.current); pendingFocus.current = null;
+  }, [stepIndex, previewExpanded, desktopPreview]);
+  useLayoutEffect(() => {
+    const focused = document.activeElement;
+    const lostFocus = focused === document.body || focused?.id === "main-content";
+    if (!desktopPreview && !pipelineExpanded && ((focused && pipelineBody.current?.contains(focused)) || (pipelineOwnedFocus.current && lostFocus))) { pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false; }
+    else if (desktopPreview && focused === pipelineSummary.current) pipelineBody.current?.focus();
+  }, [desktopPreview, pipelineExpanded]);
+  useEffect(() => {
+    if (desktopPreview || !pipelineExpanded) return;
+    const details = pipelineBody.current?.closest("details");
+    if (!details) return;
+    const closeTools = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || !(event.target instanceof Node) || !details.contains(event.target)) return;
+      event.preventDefault(); event.stopPropagation();
+      const nested = event.target instanceof Element ? event.target.closest("details[open]") : null;
+      if (nested instanceof HTMLDetailsElement && nested !== details) { nested.open = false; nested.querySelector("summary")?.focus(); return; }
+      details.open = false; setPipelineExpanded(false); pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false;
+    };
+    document.addEventListener("keydown", closeTools);
+    return () => document.removeEventListener("keydown", closeTools);
+  }, [desktopPreview, pipelineExpanded]);
+  // Studio 경계의 문서 이동은 유지하고 native Back에서만 현재 입력 묶음의 키보드 문맥을 되돌린다.
+  useEffect(() => {
+    if (nativeReturnPending.current === null) nativeReturnPending.current = isNativeStoryHistoryReturn();
+    let frame = 0;
+    const restoreStepContext = () => {
+      if (!nativeReturnPending.current || !draftReady || !ready) return;
+      nativeReturnPending.current = false;
+      const anchorId = location.hash.length > 1 ? safeDecodeRouteText(location.hash.slice(1)) : "";
+      if (pendingFocus.current || handlingInvalid.current) return;
+      const focused = document.activeElement;
+      if (focused && focused !== document.body && focused.id !== "main-content") return;
+      const anchor = anchorId ? document.getElementById(anchorId) : null;
+      if (anchor) {
+        // 처음 hash를 복원하는 소유자는 유지하고 native Back의 유효한 현재 입력만 읽기 완료 뒤 보완한다.
+        if (!(anchor instanceof HTMLTextAreaElement) || anchor.form?.id !== "story-worksheet" || anchor.matches(":disabled") || anchor.closest("[hidden]")) return;
+        const style = window.getComputedStyle(anchor);
+        if (style.display === "none" || style.visibility === "hidden") return;
+        focusStoryElement(anchor.id); return;
+      }
+      const step = STORY_STEPS[stepIndex];
+      if (step) focusStoryElement(`story-step-heading-${step.id}`);
+    };
+    const scheduleRestore = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(restoreStepContext);
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      nativeReturnPending.current = true;
+      scheduleRestore();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    if (nativeReturnPending.current && draftReady && ready) scheduleRestore();
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("pageshow", onPageShow); };
+  }, [draftReady, ready, stepIndex, location.hash]);
   const seedAttempted = useRef(false);
   useEffect(() => {
     active.current = true;
@@ -55,7 +173,7 @@ export function StoryLabPage() {
     let storageAvailable = true;
     // 소유자가 바뀌면 이전 소유자의 화면 상태(초안·손상 표시)를 비우고
     // 새 소유자 파티션의 초안으로 갈아끼운다 — 미저장 편집은 넘어가지 않는다.
-    setDraft(null); latestDraft.current = null; setCorruptDraft(false); setDraftError("");
+    setDraft(null); latestDraft.current = null; setCorruptDraft(false); setDraftError(""); setInputError(null);
     try { raw = window.sessionStorage.getItem(draftKey); }
     catch {
       storageAvailable = false;
@@ -87,7 +205,9 @@ export function StoryLabPage() {
     seedAttempted.current = true;
     const idea = new URLSearchParams(location.search).get("idea")?.trim();
     if (!idea) return;
-    navigate(`${location.pathname}${location.hash}`, { replace: true });
+    const params = new URLSearchParams(location.search);
+    params.delete("idea");
+    navigate(`${location.pathname}${params.size ? `?${params}` : ""}${location.hash}`, { replace: true, state: location.state });
     if (corruptDraft) return;
     const current = latestDraft.current;
     if (storyDraftView(workspace.story, current).title?.trim()) return;
@@ -96,7 +216,7 @@ export function StoryLabPage() {
     try { window.sessionStorage.setItem(draftKey, JSON.stringify(seeded)); }
     catch { /* 임시 보관 실패 안내는 기존 편집 경로가 담당한다. */ }
     setNotice(tx("홈에서 입력한 아이디어를 작품 가제로 가져왔습니다. 다듬은 뒤 기획서를 저장하세요."));
-  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, navigate, workspace.story, draftKey]);
+  }, [draftReady, corruptDraft, location.search, location.pathname, location.hash, location.state, navigate, workspace.story, draftKey]);
   const remember = (next: StoryDraft) => {
     clearError();
     latestDraft.current = next; setDraft(next); setDraftError("");
@@ -112,11 +232,12 @@ export function StoryLabPage() {
     if (!window.confirm(tx("이 탭의 미저장 초안을 지우고 최신 저장본으로 돌아갈까요? 필요한 내용은 먼저 내보내세요."))) return;
     try {
       window.sessionStorage.removeItem(draftKey);
-      clearError(); latestDraft.current = null; setDraft(null); setCorruptDraft(false); setDraftError(""); setNotice(tx("임시 초안을 지웠습니다. 최신 저장본을 표시합니다."));
+      clearError(); latestDraft.current = null; setDraft(null); setCorruptDraft(false); setDraftError(""); setInputError(null); setNotice(tx("임시 초안을 지웠습니다. 최신 저장본을 표시합니다."));
     } catch { setDraftError(tx("임시 초안을 지우지 못했습니다. 브라우저 저장소 설정을 확인하세요.")); }
   };
   const submit = async () => {
     if (!draft || !dirty || saving) return;
+    setInputError(null);
     const submitted = draft;
     const saved = await saveStory(submitted);
     if (!saved || !active.current || latestDraft.current !== submitted) return;
@@ -127,114 +248,62 @@ export function StoryLabPage() {
   const story = storyDraftView(workspace.story, draft);
   const conflicts = draft ? storyDraftConflicts(workspace.story, draft) : [];
   const completedCount = STORY_FIELDS.filter((field) => story[field]?.trim()).length;
-  const [sectionView, setSectionView] = useState<"all" | "worksheet" | "pipeline">("all");
-  return <ResourceLayout title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}
-    mastheadArt={{
-      src: "/brand/hero-20261009-wave10/story-lab-board-1680.webp",
-      srcSet: "/brand/hero-20261009-wave10/story-lab-board-960.webp 960w, /brand/hero-20261009-wave10/story-lab-board-1680.webp 1680w",
-      alt: tx("인물 스케치와 사건 사진을 붉은 실로 이어 붙인 스토리 연구실의 코르크보드와 램프가 켜진 책상"),
+  const reviewStory = () => {
+    if (desktopPreview || previewExpanded || conflicts.length) { focusStoryElement("story-preview-title"); return; }
+    pendingFocus.current = "story-preview-title"; setPreviewExpanded(true);
+  };
+  return <ResourceLayout compact title={tx("스토리 연구실")} intro={tx("인물, 욕망, 장애물과 선택을 차근차근 정리하세요. 외부 AI 호출 없이 직접 작성하는 기획 워크시트입니다.")}>
+    <details open={desktopPreview || pipelineExpanded} className="rounded-xl border border-line bg-panel px-3 lg:border-0 lg:bg-transparent lg:px-0" onToggle={(event) => {
+      if (event.target !== event.currentTarget || desktopPreview) return;
+      setPipelineExpanded(event.currentTarget.open);
+      const focused = document.activeElement;
+      if (!event.currentTarget.open && ((focused && pipelineBody.current?.contains(focused)) || (pipelineOwnedFocus.current && (focused === document.body || focused?.id === "main-content")))) { pipelineSummary.current?.focus(); pipelineOwnedFocus.current = false; }
     }}>
-    <SiteContextualSubNav pathnameOverride="/story-lab" className="mb-5" />
-    <SiteArtSurfaceSpotlight cardId="nb-planning-storylab" compact className="mb-5" />
-    <nav
-      aria-label={tx("스토리 연구실 화면 보기 모드 전환")}
-      className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 p-2.5"
-    >
-      <div className="flex flex-wrap gap-1.5">
-        {(
-          [
-            { id: "all", label: tx("전체 통합 보기") },
-            { id: "worksheet", label: tx("기획 워크시트 집중") },
-            { id: "pipeline", label: tx("4단계 제작·스마트 AI 보조") },
-          ] as const
-        ).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            aria-pressed={sectionView === item.id}
-            onClick={() => setSectionView(item.id)}
-            className={`rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors ${
-              sectionView === item.id
-                ? "border-accent bg-accent text-canvas shadow-sm"
-                : "border-line bg-panel text-fg-2 hover:border-accent/45 hover:text-fg"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+      <summary ref={pipelineSummary} className="flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-2 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent lg:hidden">
+        {bt("다른 제작 도구로 이동", "Other creation tools")}<span className="text-xs font-normal text-fg-2">{bt("원고 편집·게시 등", "Editing, publishing and more")}</span>
+      </summary>
+      <div ref={pipelineBody} id="story-related-tools" role="region" aria-label={bt("다른 제작 도구", "Other creation tools")} tabIndex={-1} onFocusCapture={() => { pipelineOwnedFocus.current = true; }} onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) pipelineOwnedFocus.current = false; }} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <SiteContextualSubNav pathnameOverride="/story-lab" />
       </div>
-      <Link
-        href="/studio/ai-lab"
-        className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent-soft/60 px-3 py-1 text-xs font-bold text-accent hover:border-accent"
-      >
-        ✦ {tx("스마트 AI 창작 보조 워크벤치")} →
-      </Link>
+    </details>
+    <nav aria-label={bt("기획 입력 단계", "Story planning steps")} className="grid grid-cols-3 gap-2">
+      {STORY_STEPS.map((step, index) => <button key={step.id} type="button" aria-current={stepIndex === index ? "step" : undefined} aria-controls={`story-step-${step.id}`} onClick={() => openStep(index)} className={cn(RESOURCE_BUTTON, "min-w-0 flex-col px-1 text-xs motion-reduce:transition-none sm:px-2 sm:text-sm", stepIndex === index ? "border-accent bg-accent-soft text-accent" : "bg-canvas text-fg-2")}>
+        <span>{`${index + 1}. ${bt(...step.label)}`}</span><span className="mt-1 text-[0.6875rem] font-normal text-fg-2">{bt(...step.hint)}</span>
+      </button>)}
     </nav>
-    {(sectionView === "all" || sectionView === "pipeline") && (
-    <section
-      aria-label={tx("노블코믹스 · 원작 각색 → 콘티 4단계 파이프라인")}
-      data-testid="story-lab-rea-pipeline"
-      className="mb-6 rounded-2xl border border-line bg-panel/70 p-4"
-    >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-extrabold uppercase tracking-wider text-accent">
-          STORY LAB → NOVELCOMICS → CONTI PIPELINE
-        </p>
-        <span className="text-xs text-fg-3">
-          {tx("기획서 작성 후 대본·콘티·3D 블로킹·연재 발행까지 바로 이동")}
-        </span>
-      </div>
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-        {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => (
-          <Link
-            key={mode.id}
-            href={mode.targetHref}
-            className="group flex flex-col justify-between overflow-hidden rounded-xl border border-line bg-canvas text-left transition-colors hover:border-accent/50"
-          >
-            <div className="relative h-24 w-full overflow-hidden border-b border-line/60 bg-panel">
-              <img
-                src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp"}
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <span className="absolute left-2 top-2 inline-block rounded bg-canvas/90 px-1.5 py-0.5 text-[10px] font-extrabold text-accent backdrop-blur-sm">
-                {mode.step}
-              </span>
-            </div>
-            <div className="flex flex-1 flex-col justify-between p-3">
-              <p className="text-xs font-bold text-fg">{mode.label}</p>
-              <span className="mt-2 text-[11px] font-bold text-accent">{mode.ctaLabel} →</span>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-    )}
-    {(sectionView === "all" || sectionView === "worksheet") && (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <form className="space-y-5 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
+    <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,.85fr)]">
+      <form id="story-worksheet" aria-label={bt("기획 워크시트", "Story worksheet")} className="min-w-0 space-y-5 rounded-2xl border border-line bg-panel p-4 sm:p-5" onSubmit={(event) => { event.preventDefault(); void submit(); }} onInvalid={(event) => {
+        const input = event.target;
+        if (!(input instanceof HTMLTextAreaElement)) return;
+        event.preventDefault();
+        if (pendingFocus.current || handlingInvalid.current) return;
+        const field = STORY_FIELDS.find((candidate) => input.id === `story-${candidate}`);
+        if (!field) return;
+        handlingInvalid.current = true;
+        queueMicrotask(() => { handlingInvalid.current = false; });
+        setInputError({ field, message: input.validationMessage });
+        openStep(STORY_STEPS.findIndex((step) => step.fields.some((candidate) => candidate === field)), input.id);
+      }}>
         <p className="text-sm text-fg-2">{formatI18nTemplate(tx("작성한 항목 {v0}/8 · 미저장 변경 {v1}개"), { v0: completedCount, v1: dirty })}</p>
-        <fieldset disabled={!ready || !draftReady || saving || corruptDraft} className="space-y-5">
-          <legend className="sr-only">{tx("웹툰 기획 항목")}</legend>
-          {STORY_FIELDS.map((field) => <label key={field} htmlFor={`story-${field}`} className="block text-sm font-semibold">{tx(STORY_LABELS[field])}
-            <textarea id={`story-${field}`} className={`${RESOURCE_INPUT} mt-2 resize-y`} rows={field === "title" ? 1 : 3} maxLength={2000} value={story[field] ?? ""} onChange={(event) => remember(editStoryDraft(draft, workspace.story, field, event.target.value))} />
+        {STORY_STEPS.map((step, index) => <fieldset key={step.id} id={`story-step-${step.id}`} hidden={stepIndex !== index} disabled={!ready || !draftReady || saving || corruptDraft} className="min-w-0 space-y-5">
+          <legend className="sr-only">{bt(...step.label)}</legend>
+          <h2 id={`story-step-heading-${step.id}`} tabIndex={-1} className="scroll-mt-4 text-lg font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt(...step.heading)}</h2>
+          {step.fields.map((field) => <label key={field} htmlFor={`story-${field}`} className="block text-sm font-semibold">{tx(STORY_LABELS[field])}
+            <textarea id={`story-${field}`} className={`${RESOURCE_INPUT} mt-2 scroll-mb-48 resize-y`} rows={field === "title" ? 1 : 3} maxLength={2000} aria-invalid={inputError?.field === field || undefined} aria-describedby={inputError?.field === field ? "story-input-error" : undefined} value={story[field] ?? ""} onChange={(event) => { setInputError(null); remember(editStoryDraft(draft, workspace.story, field, event.target.value)); }} />
           </label>)}
-        </fieldset>
-        <div className="flex flex-wrap gap-3">
-          <button type="submit" className={RESOURCE_BUTTON} disabled={!ready || !draftReady || !writable || saving || !dirty || conflicts.length > 0 || corruptDraft}>{saving ? tx("저장 중…") : tx("기획서 저장")}</button>
-          {(dirty > 0 || corruptDraft) && <button type="button" className={RESOURCE_BUTTON} disabled={saving} onClick={discard}>{tx("임시 초안 지우기")}</button>}
-        </div>
+        </fieldset>)}
+        {inputError && <p id="story-input-error" role="alert" className="text-sm text-fg">{`${tx(STORY_LABELS[inputError.field])}: ${inputError.message}`}</p>}
+        {(dirty > 0 || corruptDraft) && <button type="button" className={RESOURCE_BUTTON} disabled={saving} onClick={discard}>{tx("임시 초안 지우기")}</button>}
         <p role="status" className="text-sm leading-6 text-fg-2">{notice}</p>
         {draftError && <p role="alert" className="text-sm leading-6">{draftError}</p>}
-        <p className="text-xs leading-6 text-fg-2">{tx("임시 초안은 이 탭의 세션 저장소에 보관합니다. 새로고침·페이지 이동 후 복구할 수 있지만, 탭 종료·브라우저 정책·저장소 삭제 후 복구는 보장하지 않습니다. 중요 작업은 파일로 내보내세요.")}</p>
+        <details className="rounded-xl border border-line px-3"><summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("저장·복구 안내", "Saving and recovery")}</summary><p className="pb-3 text-xs leading-6 text-fg-2">{tx("임시 초안은 이 탭의 세션 저장소에 보관합니다. 새로고침·페이지 이동 후 복구할 수 있지만, 탭 종료·브라우저 정책·저장소 삭제 후 복구는 보장하지 않습니다. 중요 작업은 파일로 내보내세요.")}</p></details>
       </form>
-      <section className="space-y-5 rounded-2xl border border-line p-6" aria-labelledby="story-preview-title">
+      <details open={desktopPreview || previewExpanded || conflicts.length > 0} onToggle={(event) => { if (!desktopPreview && !conflicts.length) setPreviewExpanded(event.currentTarget.open); }} className="min-w-0 self-start rounded-2xl border border-line bg-panel p-4 sm:p-5">
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent lg:hidden">{bt("입력 내용 미리보기", "Preview your story")}</summary>
+        <section className="space-y-5" aria-labelledby="story-preview-title">
         <div className="flex items-center gap-3">
           <MotionIllustration name="lightbulb" size="md" className="shrink-0 text-accent" title={tx("이야기의 중심 질문 일러스트")} />
-          <h2 id="story-preview-title" className="text-xl font-bold">{tx("내 이야기의 중심 질문")}</h2>
+          <h2 id="story-preview-title" tabIndex={-1} className="scroll-mt-4 text-xl font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("내 이야기의 중심 질문")}</h2>
         </div>
         <p className="whitespace-pre-wrap break-words rounded-xl bg-accent-soft p-5 text-lg leading-9">{formatI18nTemplate(tx("{v0}은(는) {v1}을 얻으려 하지만, {v2} 때문에 선택을 해야 한다. 실패하면 {v3}이(가) 걸려 있다."), {
           v0: story.protagonist || tx("[주인공]"),
@@ -251,8 +320,8 @@ export function StoryLabPage() {
             <p className="whitespace-pre-wrap break-words text-sm">{formatI18nTemplate(tx("저장본: {v0}"), { v0: workspace.story[field] || tx("(비어 있음)") })}</p>
             <p className="whitespace-pre-wrap break-words text-sm">{formatI18nTemplate(tx("내 초안: {v0}"), { v0: draft.story[field] || tx("(비어 있음)") })}</p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className={RESOURCE_BUTTON} onClick={() => remember(resolveStoryConflict(draft, workspace.story, field, "saved"))}>{tx("저장본 유지")}</button>
-              <button type="button" className={RESOURCE_BUTTON} onClick={() => remember(resolveStoryConflict(draft, workspace.story, field, "draft"))}>{tx("내 초안 선택")}</button>
+              <button type="button" className={RESOURCE_BUTTON} onClick={() => { setPreviewExpanded(true); remember(resolveStoryConflict(draft, workspace.story, field, "saved")); focusStoryElement("story-preview-title"); }}>{tx("저장본 유지")}</button>
+              <button type="button" className={RESOURCE_BUTTON} onClick={() => { setPreviewExpanded(true); remember(resolveStoryConflict(draft, workspace.story, field, "draft")); focusStoryElement("story-preview-title"); }}>{tx("내 초안 선택")}</button>
             </div>
           </div>)}
         </section>}
@@ -261,8 +330,41 @@ export function StoryLabPage() {
         <button className={RESOURCE_BUTTON} onClick={() => downloadText("webtoon-story-plan.md", storyMarkdown(story))}>{tx("현재 기획서 내보내기")}</button>
         <p className="text-sm leading-7 text-fg-2">{tx("고전·공개 소재를 각색하는 경우에도 사용한 원문, 번역문, 삽화의 권리를 각각 확인하고 창작 보드에 출처를 남기세요.")}</p>
       </section>
+      </details>
     </div>
-    )}
+    {/* 단일 열에서는 첫 입력을 가리지 않도록 단계 끝에 두고, 두 열부터 하단 고정을 유지한다. */}
+    <div data-story-worksheet-actions="true" className="static bottom-[var(--site-float-base,1rem)] z-10 grid grid-cols-3 gap-2 rounded-xl border border-line bg-panel p-2 shadow-lg sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:p-3 lg:sticky">
+      <p className="mr-auto hidden text-sm text-fg-2 sm:block">{`${stepIndex + 1} / ${STORY_STEPS.length} · ${bt("모든 항목은 위 단계에서 다시 열 수 있어요", "Revisit any field from the steps above")}`}</p>
+      <button type="button" className={cn(RESOURCE_BUTTON, "min-w-0 px-1 text-xs sm:px-3 sm:text-sm")} disabled={stepIndex === 0} onClick={() => openStep(stepIndex - 1)}>{bt("이전 단계", "Previous")}</button>
+      <button type="submit" form="story-worksheet" className={cn(RESOURCE_BUTTON, "min-w-0 px-1 text-xs sm:px-3 sm:text-sm")} disabled={!ready || !draftReady || !writable || saving || !dirty || conflicts.length > 0 || corruptDraft}>{saving ? bt("저장 중…", "Saving…") : bt("기획서 저장", "Save story plan")}</button>
+      <button type="button" className={cn(RESOURCE_BUTTON, "min-w-0 border-accent bg-accent px-1 text-xs text-on-accent hover:bg-accent-2 sm:px-3 sm:text-sm")} onClick={() => stepIndex < STORY_STEPS.length - 1 ? openStep(stepIndex + 1) : reviewStory()}>{stepIndex === 0 ? bt("다음: 갈등 정리", "Next: conflict") : stepIndex === 1 ? bt("다음: 전환과 결말", "Next: ending") : bt("기획 검토하기", "Review plan")}</button>
+    </div>
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
+    <details className="mt-6 rounded-2xl border border-line bg-panel/70 p-4">
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        {bt("다음 작업·제작 도구", "Next steps and creation tools")}
+      </summary>
+      <section aria-label={bt("관련 제작 도구", "Related creation tools")} data-testid="story-lab-rea-pipeline" className="mt-4">
+        <p className="mb-3 text-sm text-fg-2">{bt("기획서를 저장하거나 파일로 내보낸 뒤 필요한 도구를 여세요. 이동한 도구에서 설정과 실행을 선택할 수 있습니다.", "Save or export your story plan, then open the tool you need. Choose its settings and actions after opening it.")}</p>
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
+            const destination = STORY_PIPELINE_DESTINATIONS[mode.id];
+            return (
+              <Link key={mode.id} href={mode.targetHref} className="group flex min-h-11 flex-col justify-between overflow-hidden rounded-xl border border-line bg-canvas text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                <img src={STORY_PIPELINE_ART_MAP[mode.id] ?? "/assets/site-experience/site-art-v1/cards/nb-planning-storylab-640.webp"} alt="" aria-hidden="true" loading="lazy" decoding="async" className="h-24 w-full border-b border-line/60 object-cover" />
+                <div className="flex flex-1 flex-col justify-between p-3">
+                  <p className="text-xs font-bold text-fg">{destination ? bt(...destination.title) : tx(mode.label)}</p>
+                  <span className="mt-2 text-xs font-bold text-accent">{destination ? bt(...destination.action) : tx(mode.ctaLabel)} →</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        <Link href="/studio/ai-lab" className="mt-4 inline-flex min-h-11 items-center gap-1 rounded-full border border-accent/40 bg-accent-soft/60 px-3 py-2 text-sm font-bold text-accent hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          {bt("AI 도구 열기", "Open AI tools")} →
+        </Link>
+        <SiteArtSurfaceSpotlight cardId="nb-planning-storylab" compact className="mt-5" />
+      </section>
+    </details>
   </ResourceLayout>;
 }

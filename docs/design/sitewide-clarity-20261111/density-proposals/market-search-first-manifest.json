@@ -1,0 +1,16 @@
+{
+  "status": "migration",
+  "at": "2026-11-12T01:04:34.538467+00:00",
+  "proposalHtml": "market-search-first.html",
+  "sha256": "df06c94a5a8bcc6e8c59ec9ac2401ccb965da2ef07d5181a3562ea60ac15ec75",
+  "bytes": 12310,
+  "renderedPng": false,
+  "renderBlock": "file:// navigation ERR_BLOCKED_BY_ADMINISTRATOR, attempt preserved, no renderer fallback",
+  "scripts": 0,
+  "externalAssets": 0,
+  "sharedBeforeImplementation": true,
+  "sharedPage": "https://chatgpt.com/space/page_1e4bdd165d908191b152ae11b81a568c",
+  "implementationCommit": "570649b29c",
+  "actualAfterVerification": "pending new production bundle",
+  "beforeActual": "784d5ce11556930ffff7f4a2d411ad3858854ad7 / 2163e10d7ad3, 390 viewport search y817.55–865.55 behind nav775–844"
+}

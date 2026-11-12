@@ -21,7 +21,7 @@ import {
   office2dActorOpacity,
   type Office2dActor,
 } from "./office2d-actors";
-import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot } from "./office2d-actor-geometry";
+import { OFFICE2D_ACTOR_HEIGHT, OFFICE2D_FOOT_RATIO, office2dActorFoot, office2dActorRestTransform } from "./office2d-actor-geometry";
 import { paintOffice2dAvatarAccessory } from "./office2d-avatar-appearance";
 import { office2dAtlasDrawFrame, office2dAtlasImageMatches } from "./office2d-atlas-frames";
 import { resolveOffice2dEmoteTransform } from "./office2d-emote-motion";
@@ -195,7 +195,7 @@ export class Office2dRenderer {
       (sprite, x, y, width, tone) => this.drawObjectSprite(ctx, sprite, undefined, x, y, width, undefined, tone, false),
     );
     this.drawGuides(ctx, frame);
-    frame.particles.draw(ctx);
+    if (!frame.reducedMotion) frame.particles.draw(ctx);
     this.drawLighting(ctx, frame, visible);
     if (frame.schematicMode ?? frame.extensions?.schematicMode) {
       paintOffice2dSchematicOverlay(
@@ -516,10 +516,12 @@ export class Office2dRenderer {
     if (opacity <= 0.01) return;
     const avatarProfile = actor.id === frame.selfId ? this.host.selfAvatarProfile?.() : null;
     const seated = actor.seat !== null;
+    const rest = office2dActorRestTransform(actor);
+    const lying = rest.tiltRad !== 0;
     const emoteTransform = resolveOffice2dEmoteTransform(actor, frame.now, frame.reducedMotion);
     const effectiveFacing = !actor.moving && !seated && emoteTransform.facingOverride ? emoteTransform.facingOverride : actor.facing;
-    const poseActor = effectiveFacing !== actor.facing
-      ? { ...actor, facing: effectiveFacing, gesture: effectiveFacing === "down" ? actor.gesture : null }
+    const poseActor = effectiveFacing !== actor.facing || lying
+      ? { ...actor, facing: effectiveFacing, gaitBlend: lying ? 0 : actor.gaitBlend, gesture: !lying && effectiveFacing === "down" ? actor.gesture : null }
       : actor;
     const pose = office2dPoseFrame(poseActor, frame.time, frame.now, frame.reducedMotion);
     const walkFrame = pose.sheet === "walk" ? pose : office2dActorFrame(poseActor);
@@ -530,10 +532,10 @@ export class Office2dRenderer {
     const generatedWalkImage = walkCandidate && office2dAtlasImageMatches(actor.character, "walk", walkFrame.row, walkFrame.col, walkCandidate) ? walkCandidate : null;
     const walkImage = generatedWalkImage ?? (workImage ? null : this.host.image(office2dLegacyCharacterUrl(actor.character)));
     // 작업 자세 시트가 없으면(로딩 실패) 보행 시트의 같은 방향 정지 프레임으로 대신한다.
-    const bob = office2dActorBob(actor, frame.time, frame.reducedMotion);
+    const bob = office2dActorBob(actor, frame.time, frame.reducedMotion || lying);
     const foot = office2dActorFoot(actor);
-    const footX = foot.x + emoteTransform.offsetX;
-    const footY = seated ? foot.y : actor.y + 3;
+    const footX = foot.x + emoteTransform.offsetX + rest.offsetX;
+    const footY = (seated ? foot.y : actor.y + 3) + rest.offsetY;
     const height = ACTOR_HEIGHT * bob.scaleY;
     const width = ACTOR_HEIGHT * (OFFICE2D_CHARACTER_CELL.width / OFFICE2D_CHARACTER_CELL.height) * (seated ? 1 : bob.scaleX);
     ctx.globalAlpha = opacity;
@@ -555,10 +557,10 @@ export class Office2dRenderer {
       ctx.stroke();
     }
     const anchorY = footY + bob.offsetY + emoteTransform.offsetY;
-    const reaction = resolveOffice2dStandingExpression(poseActor, pose, frame, (url) => this.host.image(url));
+    const reaction = lying ? null : resolveOffice2dStandingExpression(poseActor, pose, frame, (url) => this.host.image(url));
     const image = reaction?.image ?? workImage ?? walkImage;
     const drawHeight = seated && !workImage ? height * 0.9 : height;
-    const tilt = (!seated && !workImage ? bob.tiltRad : 0) + emoteTransform.tiltRad;
+    const tilt = (!seated && !workImage ? bob.tiltRad : 0) + emoteTransform.tiltRad + rest.tiltRad;
 
     // 전력 질주 잔상(Afterimage Ghost Trail) 렌더링
     if (!frame.reducedMotion && !seated && actor.afterimages && actor.afterimages.length > 0) {
@@ -605,7 +607,11 @@ export class Office2dRenderer {
           target.width / 128 * width, target.height / 192 * drawHeight);
       } finally { ctx.restore(); }
     } else {
-      paintOffice2dFallbackActor(ctx, footX, anchorY, height, actor.accent, effectiveFacing, actor.stride / 10);
+      ctx.save();
+      ctx.translate(footX, anchorY);
+      ctx.rotate(tilt);
+      paintOffice2dFallbackActor(ctx, 0, 0, height, actor.accent, effectiveFacing, actor.stride / 10);
+      ctx.restore();
     }
 
     // 고유 위상 기반 자연스러운 눈 깜빡임(Micro Eye Blink) 오버레이

@@ -90,19 +90,21 @@ function lightPosition(center: THREE.Vector3, azimuth: number, elevation: number
 
 /**
  * 기존 preset 적용 직후 호출한다. 광원·target의 생성/scene 연결/해제 권위는 Canvas에 남긴다.
- * baseline은 preset의 색·광량을 보존하고 기존 key 위치/target 및 꺼진 fill로 복귀한다.
+ * baseline은 preset의 색·광량을 보존하고 기존 key 위치/target으로 복귀한다. fill의 기본값은 0이며 Canvas는 기존 preset 값을 명시한다.
  */
 export function applyVirtualThreeThemeLighting(
   theme: VirtualThreeTheme,
   manifest: Pick<StudioVirtualSpaceWorldManifest, "width" | "height">,
   lights: VirtualThreeThemeLights,
+  baselineFillIntensity = 0,
 ): void {
   if (lights.key === lights.fill) throw new TypeError("3D 테마 key와 fill은 독립 광원이어야 합니다.");
   if (theme.kind === "preserved-baseline") {
+    requireLux(baselineFillIntensity);
     lights.key.position.set(36, 48, 28);
     lights.key.target.position.set(0, 0, 0);
     lights.key.target.updateMatrixWorld(true);
-    lights.fill.intensity = 0;
+    lights.fill.intensity = baselineFillIntensity;
     lights.fill.castShadow = false;
     return;
   }

@@ -1,5 +1,4 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
-import { Folder } from "lucide-react";
 
 import { STUDIO_RASTER_ASSETS } from "./render/studio-raster-assets";
 
@@ -9,7 +8,6 @@ import { StudioUnifiedAssetWorkspace } from "./StudioUnifiedAssetWorkspace";
 import { CANVAS_W } from "./studio-assets";
 import { BG_SCENES } from "./studio-bg-scenes";
 import { BG_SCENES_EXTRA } from "./studio-bg-scenes-extra";
-import { StudioMenuPopoverHeader } from "./studio-chrome-ui";
 import { elBounds } from "./studio-element-geometry";
 import { listStudioElementLibrary } from "./studio-elements-catalog";
 import {
@@ -226,11 +224,6 @@ export function StudioUnifiedAssetToolPopoverContent({
 
   return (
     <>
-      <StudioMenuPopoverHeader
-        icon={Folder}
-        title="에셋 워크스페이스"
-        description="2D 배경·장면 레시피·스토리 연출·3D·내 에셋을 실제 미리보기로 비교하고 바로 캔버스에 배치합니다."
-      />
       <StudioUnifiedAssetWorkspace
         initialView={initialView}
         items={items}

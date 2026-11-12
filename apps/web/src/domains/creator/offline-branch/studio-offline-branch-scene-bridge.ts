@@ -5,6 +5,7 @@ import {
   studioElementToCrdtSceneElement,
   studioLayerGroupToCrdtGroup,
 } from "../live/studio-crdt-page-bridge";
+import { isStudioCrdtPayloadSceneElementType } from "../live/studio-crdt-scene-schema";
 import { studioDrawElementToCrdtStroke } from "../live/studio-crdt-draw-bridge";
 import { resolveStudioCrdtPageBridgeErrorFromCause } from "../status-i18n/studio-producer-error-i18n-live-crdt";
 import {
@@ -151,6 +152,33 @@ function preparedDelete(
   };
 }
 
+/** 신규·삭제 요소를 제외하고, 남은 기존 요소 모두와의 상대 순서가 같은 ID만 고른다. */
+function retainedOrderUnchangedIds(previous: readonly El[], next: readonly El[]): ReadonlySet<string> {
+  const previousIds = new Set(previous.map((element) => element.id));
+  const nextIds = new Set(next.map((element) => element.id));
+  if (previousIds.size !== previous.length || nextIds.size !== next.length) return new Set();
+  const previousRetained = previous.filter((element) => nextIds.has(element.id));
+  const previousRank = new Map(previousRetained.map((element, index) => [element.id, index]));
+  const nextRetained = next.filter((element) => previousIds.has(element.id));
+  const ranks = nextRetained.map((element) => previousRank.get(element.id) ?? -1);
+  if (ranks.some((rank) => rank < 0)) return new Set();
+  const suffixMinimum = new Array<number>(ranks.length + 1).fill(Infinity);
+  for (let index = ranks.length - 1; index >= 0; index -= 1) {
+    const rank = ranks[index];
+    if (rank === undefined) return new Set();
+    suffixMinimum[index] = Math.min(rank, suffixMinimum[index + 1] ?? Infinity);
+  }
+  let prefixMaximum = -1;
+  const unchanged = new Set<string>();
+  for (const [index, element] of nextRetained.entries()) {
+    const rank = ranks[index];
+    if (rank === undefined) return new Set();
+    if (prefixMaximum < rank && (suffixMinimum[index + 1] ?? Infinity) > rank) unchanged.add(element.id);
+    prefixMaximum = Math.max(prefixMaximum, rank);
+  }
+  return unchanged;
+}
+
 function planElementMutations(
   previous: PageState,
   next: PageState,
@@ -160,15 +188,25 @@ function planElementMutations(
   const mutations: StudioOfflinePreparedMutation[] = [];
   const previousById = new Map(previous.elements.map((element) => [element.id, element]));
   const nextById = new Map(next.elements.map((element) => [element.id, element]));
-  const previousIndexById = new Map(previous.elements.map((element, index) => [element.id, index]));
+  const unchangedOrderIds = retainedOrderUnchangedIds(previous.elements, next.elements);
+  let workingElements = [...previous.elements];
 
-  for (let index = 0; index < next.elements.length; index += 1) {
+  // 뒤쪽 anchor를 먼저 만든다. 각 CAS는 앞선 명령까지 투영한 상태를 기준으로 계산한다.
+  for (let index = next.elements.length - 1; index >= 0; index -= 1) {
     const element = next.elements[index]!;
     if (blockedIds.has(element.id)) continue;
     try {
+      const originalElement = previousById.get(element.id);
+      // 불변 참조는 편집 대상이 아니다. 신규·변형·레이어·순서·페이지 이동과 삭제의 거절은 유지한다.
+      if (originalElement && element.type !== "draw"
+        && !isStudioCrdtPayloadSceneElementType(element.type)
+        && unchangedOrderIds.has(element.id)
+        && stableStudioOfflineBranchJson(originalElement) === stableStudioOfflineBranchJson(element)
+        && studioElementToCrdtSceneElement(next.id, element).payload.type === "reference") continue;
       const encoded = canonicalElementInput(next.id, element);
       const beforeId = nextElementId(next.elements, index, encoded.targetType);
-      const previousElement = previousById.get(element.id);
+      const previousIndex = workingElements.findIndex((candidate) => candidate.id === element.id);
+      const previousElement = workingElements[previousIndex];
       const previousEncoded = previousElement
         ? canonicalElementInput(previous.id, previousElement)
         : null;
@@ -176,10 +214,9 @@ function planElementMutations(
         unsupported.push(`${element.id}: 요소 종류 변경은 온라인 정본 연결이 필요합니다.`);
         continue;
       }
-      const previousIndex = previousIndexById.get(element.id);
-      const previousBeforeId = previousIndex === undefined || !previousEncoded
+      const previousBeforeId = previousIndex < 0 || !previousEncoded
         ? null
-        : nextElementId(previous.elements, previousIndex, previousEncoded.targetType);
+        : nextElementId(workingElements, previousIndex, previousEncoded.targetType);
       const mutation = preparedUpsert(
         encoded.targetType,
         encoded.value,
@@ -187,7 +224,10 @@ function planElementMutations(
         beforeId,
         previousBeforeId,
       );
-      if (mutation) mutations.push(mutation);
+      if (mutation) {
+        mutations.push(mutation);
+        workingElements = replaceOrInsert(workingElements, element, beforeId);
+      }
     } catch (cause) {
       unsupported.push(
         // A4 D4 (R13) 집계자 예외: unsupported는 문자열 배열 경계라, 구조화 오류는 코드가 문자열로 굳기 전인 이 누적 지점에서 해석한다(설계 §3.2).
@@ -204,8 +244,9 @@ function planElementMutations(
       mutations.push(preparedDelete(
         encoded.targetType,
         encoded.value,
-        nextElementId(previous.elements, index, encoded.targetType),
+        nextElementId(workingElements, workingElements.findIndex((candidate) => candidate.id === element.id), encoded.targetType),
       ));
+      workingElements = workingElements.filter((candidate) => candidate.id !== element.id);
     } catch (cause) {
       unsupported.push(
         `${element.id}: ${resolveStudioCrdtPageBridgeErrorFromCause(cause) ?? (cause instanceof Error ? cause.message : "오프라인 삭제 제안을 만들지 못했습니다.")}`,

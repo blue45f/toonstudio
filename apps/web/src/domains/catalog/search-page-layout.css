@@ -17,7 +17,7 @@
 .search-page-mode {
   display: flex;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: center;
   gap: .5rem;
@@ -52,7 +52,7 @@
   display: flex;
   flex-wrap: wrap;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: space-between;
   gap: .5rem .75rem;
@@ -70,6 +70,15 @@
 
 /* min-content 너비를 제한하되 접근 가능한 컨트롤을 잘라내지 않는다. */
 .search-page-results { min-width: 0; }
+.search-page-results [data-search-query-field] input {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+.search-page-results button {
+  min-height: 3rem;
+  min-width: 3rem;
+}
+.search-page-heading > a { min-height: 3rem; }
 .search-page-results > section {
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
@@ -88,7 +97,7 @@
 /* 시안의 네 가지 유형 이동을 세부 검색 목록과 분리한다. */
 .search-other-types { min-width: 0; margin-top: 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1rem; }
 .search-other-types-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .75rem; }
-.search-other-types-link { display: flex; min-width: 0; min-height: 2.75rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .8125rem; font-weight: 600; }
+.search-other-types-link { display: flex; min-width: 0; min-height: 3rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .875rem; font-weight: 600; }
 .search-other-types-link svg { flex-shrink: 0; color: var(--color-accent); }
 .search-other-types-link svg:last-child { margin-left: auto; }
 .search-other-types-link:hover { border-color: var(--color-accent); }
@@ -119,3 +128,16 @@
 .search-facet-group > summary { list-style: none; }
 .search-facet-group > summary::-webkit-details-marker { display: none; }
 .search-facet-group[open] > summary svg { transform: rotate(180deg); }
+
+/* 작품 검색과 결과를 다른 탐색 방식보다 먼저 표시한다. */
+.search-page-heading-compact { position: relative; display: block; min-height: 3rem; margin-bottom: .75rem; }
+.search-page-heading-compact > h1 { display: flex; min-height: 3rem; align-items: center; padding-right: 9.5rem; }
+.search-page-methods { min-width: 0; }
+.search-page-methods-summary { position: absolute; top: 0; right: 0; display: flex; max-width: 9rem; min-height: 3rem; align-items: center; gap: .375rem; padding: .5rem .625rem; border: 1px solid var(--color-line); border-radius: .75rem; color: var(--color-fg-2); font-size: .875rem; cursor: pointer; list-style: none; }
+.search-page-methods-summary > svg { flex-shrink: 0; }
+.search-page-methods-summary::-webkit-details-marker { display: none; }
+.search-page-methods-summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.search-page-methods[open] > .search-page-methods-summary svg { transform: rotate(180deg); }
+.search-page-methods > .search-page-modes { max-width: none; margin: .75rem 0 .5rem; }
+.search-page-methods > a { margin-bottom: .5rem; }
+@media (max-width: 639px) { .search-page-heading-compact > h1 { font-size: 1.25rem; } }

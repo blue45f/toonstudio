@@ -1,5 +1,6 @@
 import { Check, CloudRain, Sun, Sparkles } from "lucide-react";
 import { useEffect, useState, useId, useMemo } from "react";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
   Studio3DAtmosphereEngine,
@@ -20,8 +21,8 @@ export interface StudioBg3dAtmospherePanelProps {
 }
 
 /**
- * 12종 3D 하늘·기상 프리셋 갤러리 + 태양 고도/방위각 다이얼.
- * `currentPresetId`(LT 문서 권위)가 바뀌면 내부 선택 상태도 따라갑니다.
+ * 하늘·기상과 태양 값의 계획 미리보기다. 현재 장면 적용·저장 명령은 연결하지 않는다.
+ * `currentPresetId`가 바뀌면 미리보기 선택 상태도 따라간다.
  */
 export function StudioBg3dAtmospherePanel({
   currentPresetId = "golden-hour",
@@ -29,12 +30,13 @@ export function StudioBg3dAtmospherePanel({
   onSunAngleChange,
   disabled = false,
 }: StudioBg3dAtmospherePanelProps) {
+  const bt = useBilingual("StudioBg3dAtmospherePanel");
   const idPrefix = useId();
   const [selectedId, setSelectedId] = useState<WeatherPresetId>(currentPresetId);
   const [azimuth, setAzimuth] = useState(45);
   const [elevation, setElevation] = useState(30);
 
-  // LT 문서 권위의 현재 프리셋이 바뀌면 내부 선택 상태도 따라갑니다.
+  // 외부에서 전달한 기준 프리셋을 미리보기 선택에 반영한다.
   useEffect(() => {
     setSelectedId(currentPresetId);
   }, [currentPresetId]);
@@ -94,11 +96,10 @@ export function StudioBg3dAtmospherePanel({
     >
       <div>
         <span id={titleId} className="mb-1 block text-[0.75rem] font-bold text-fg">
-          3D 하늘 및 기상 분위기 프리셋 (12종)
+          {bt("하늘·기상 설정 미리보기 (12종)", "Sky and weather preview (12 presets)")}
         </span>
         <p className="mb-2 text-[0.65rem] leading-relaxed text-fg-3">
-          하늘·안개·파티클이 한 세트로 바뀌는 배경 무드입니다. 먼저 골라보고,
-          아래 태양 다이얼로 시간대를 더하세요.
+          {bt("색상·안개·태양 값을 살펴보는 미리보기입니다. 현재 3D 장면에는 적용하거나 저장하지 않습니다.", "Preview color, fog and sun settings. These controls do not apply or save changes to the current 3D scene.")}
         </p>
         <div
           className="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
@@ -203,7 +204,7 @@ export function StudioBg3dAtmospherePanel({
       <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5">
         <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2">
           <Sun className="h-3.5 w-3.5 text-accent" aria-hidden />
-          <span>태양 고도 및 방위각 제어</span>
+          <span>{bt("태양 고도·방위각 미리보기", "Sun elevation and azimuth preview")}</span>
         </div>
 
         <div className="flex flex-col gap-1">

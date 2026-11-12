@@ -37,6 +37,7 @@ function StretchedTitleLink({ title }: { title: Title }) {
   return (
     <Link
       href={`/title/${title.slug}`}
+      data-route-return-focus={`catalog-title:${title.id}`}
       data-no-sfx
       onPointerDown={popOnTitleTap}
       aria-label={title.title}
@@ -194,6 +195,7 @@ export function TitleRow({ title, className }: { title: Title; className?: strin
   return (
     <Link
       href={`/title/${title.slug}`}
+      data-route-return-focus={`catalog-title-row:${title.id}`}
       data-no-sfx
       onPointerDown={popOnTitleTap}
       className={cn(

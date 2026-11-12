@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { STUDIO_EXACT_RESUME_UPDATED_EVENT, studioExactResumeStorageKey, writeStudioExactResumeContext } from "../studio-exact-resume-context";
+import { STUDIO_EXACT_RESUME_UPDATED_EVENT, readStudioExactResumeContext, studioExactResumeStorageKey, writeStudioExactResumeContext } from "../studio-exact-resume-context";
 import { ensureInitialStudioProjectDocument } from "../studio-project-document-store";
 import { STUDIO_PROJECT_DOCUMENTS_UPDATED_EVENT } from "../studio-project-document-reader";
 import { createStudioProject } from "../studio-project-library-store";
@@ -43,13 +43,15 @@ describe("목록 이어하기 읽기 캐시", () => {
     const { projects, documents, store, notify } = fixture();
     const first = store.resolve(projects[0]);
     const second = store.resolve(projects[1]);
-    for (const pageId of ["page-2", "page-3"]) {
-      writeStudioExactResumeContext(window.localStorage, { projectId: projects[0].id, documentId: documents[0].id, workspace: "comic", pageId, updatedAt: DATE }, window);
+    for (const [pageId, zoom] of [["page-2", 1.25], ["page-3", 1.5]] as const) {
+      writeStudioExactResumeContext(window.localStorage, { projectId: projects[0].id, documentId: documents[0].id, workspace: "comic", pageId, zoom, updatedAt: DATE }, window);
     }
     await Promise.resolve();
     expect(notify).toHaveBeenCalledTimes(1);
     expect(store.resolve(projects[0])).not.toBe(first);
-    expect(store.resolve(projects[0]).summary).toContain("page-3");
+    expect(store.resolve(projects[0])).toMatchObject({ documentId: documents[0].id, exact: true, summary: "최근 페이지 · 확대 150%" });
+    expect(store.resolve(projects[0]).summary).not.toMatch(/page-[23]/u);
+    expect(readStudioExactResumeContext(window.localStorage, projects[0].id, documents[0].id)).toMatchObject({ pageId: "page-3", zoom: 1.5 });
     expect(store.resolve(projects[1])).toBe(second);
   });
 
@@ -92,9 +94,11 @@ describe("목록 이어하기 읽기 캐시", () => {
     const { projects, documents } = fixture();
     const store = createStudioProjectLibraryResumeCache({ projects, locale: "ko", readStorage: () => window.localStorage, host: window });
     store.resolve(projects[0]);
-    writeStudioExactResumeContext(window.localStorage, { projectId: projects[0].id, documentId: documents[0].id, workspace: "comic", pageId: "page-gap", updatedAt: DATE });
+    writeStudioExactResumeContext(window.localStorage, { projectId: projects[0].id, documentId: documents[0].id, workspace: "comic", pageId: "page-gap", selectedElementIds: ["panel-kept"], updatedAt: DATE });
     detachments.push(store.subscribe(vi.fn()));
-    expect(store.resolve(projects[0]).summary).toContain("page-gap");
+    expect(store.resolve(projects[0])).toMatchObject({ documentId: documents[0].id, exact: true, summary: "최근 페이지 · 확대 100% · 선택 1개" });
+    expect(store.resolve(projects[0]).summary).not.toContain("page-gap");
+    expect(readStudioExactResumeContext(window.localStorage, projects[0].id, documents[0].id)).toMatchObject({ pageId: "page-gap", selectedElementIds: ["panel-kept"] });
     const unavailable = createStudioProjectLibraryResumeCache({ projects, locale: "ko", readStorage: () => { throw new Error("합성 저장소 접근 실패"); } });
     expect(unavailable.resolve(projects[0]).href).toBe("/studio/p/first/overview");
   });

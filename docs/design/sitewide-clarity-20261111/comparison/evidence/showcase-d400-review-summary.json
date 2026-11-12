@@ -1,0 +1,464 @@
+{
+  "status": "Phase7 요청 잔여 검증·같은 viewport 시각검토 완료; 자동미완료 항목은 별도",
+  "build": {
+    "gitSha": "d400de4bdf3efea5ef6650d18136e10c37371a68",
+    "buildId": "b5c24948e4d0",
+    "entry": "/assets/index-DA9sBPEA.js",
+    "htmlSha256": "3a5cd1efa782f85bb33400819f02874515f73d92d5a50359a40fc8fb9bcb5ccd"
+  },
+  "scope": "Phase7:390/320잔여동작만+390/320/1440새렌더·시안비교;Phase6통과조건재사용",
+  "primary": {
+    "results": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/results.json",
+    "log": ".qa/showcase-density-review/run-phase7-20261111T213441Z/run.log",
+    "exit": 0,
+    "groups": 9,
+    "passed": 9,
+    "failures": [],
+    "pageErrors": [],
+    "browserClosed": true,
+    "staticServerClosed": true,
+    "actualAppPNGs": 13,
+    "pngViewportDimensionsChecked": true
+  },
+  "previousFailuresPreserved": ".qa/showcase-density-review/after-6d597b8571cc-2026-11-11T20-36-14.800Z/results.json",
+  "resolvedEvidence": {
+    "nativeHeaderOcclusion": [
+      {
+        "viewportWidth": 390,
+        "stage": "native-info-to-conditions-shift-tab",
+        "x": 299,
+        "y": 72.546875,
+        "width": 46,
+        "height": 44,
+        "scrollY": 305,
+        "headerBottom": 61,
+        "headerGap": 11.546875,
+        "centerHit": true,
+        "hit": "SPAN.",
+        "focused": true,
+        "activeTag": "SUMMARY",
+        "activeText": "조건조건 더 보기 ·최신"
+      },
+      {
+        "viewportWidth": 320,
+        "stage": "native-info-to-conditions-shift-tab",
+        "x": 229,
+        "y": 73.09375,
+        "width": 46,
+        "height": 44,
+        "scrollY": 356,
+        "headerBottom": 61,
+        "headerGap": 12.09375,
+        "centerHit": true,
+        "hit": "SPAN.",
+        "focused": true,
+        "activeTag": "SUMMARY",
+        "activeText": "조건조건 더 보기 ·최신"
+      }
+    ],
+    "nearestHelper": [
+      {
+        "viewportWidth": 390,
+        "stage": "after-nearest-scroll-helper",
+        "x": 299,
+        "y": 72.546875,
+        "width": 46,
+        "height": 44,
+        "scrollY": 305,
+        "headerBottom": 61,
+        "headerGap": 11.546875,
+        "centerHit": true,
+        "hit": "SPAN.",
+        "focused": true,
+        "activeTag": "SUMMARY",
+        "activeText": "조건조건 더 보기 ·최신"
+      },
+      {
+        "viewportWidth": 320,
+        "stage": "after-nearest-scroll-helper",
+        "x": 229,
+        "y": 73.09375,
+        "width": 46,
+        "height": 44,
+        "scrollY": 356,
+        "headerBottom": 61,
+        "headerGap": 12.09375,
+        "centerHit": true,
+        "hit": "SPAN.",
+        "focused": true,
+        "activeTag": "SUMMARY",
+        "activeText": "조건조건 더 보기 ·최신"
+      }
+    ],
+    "historyBack": [
+      {
+        "stage": "phase7-detail503-back",
+        "viewportWidth": 390,
+        "beforeBack": {
+          "scrollY": 241,
+          "focusedHref": "/showcase/work/local-search-work-20",
+          "focusKey": "work:local-search-work-20"
+        },
+        "afterBack": {
+          "scrollY": 241,
+          "focusedHref": "/showcase/work/local-search-work-20",
+          "focusKey": "work:local-search-work-20"
+        },
+        "classification": "현재history 공개anchor명시opt-in 초점·q·필터·스크롤복원;상세503fixture라실제읽기성공아님"
+      },
+      {
+        "stage": "phase7-detail503-back",
+        "viewportWidth": 320,
+        "beforeBack": {
+          "scrollY": 297,
+          "focusedHref": "/showcase/work/local-search-work-20",
+          "focusKey": "work:local-search-work-20"
+        },
+        "afterBack": {
+          "scrollY": 297,
+          "focusedHref": "/showcase/work/local-search-work-20",
+          "focusKey": "work:local-search-work-20"
+        },
+        "classification": "현재history 공개anchor명시opt-in 초점·q·필터·스크롤복원;상세503fixture라실제읽기성공아님"
+      }
+    ],
+    "independentSyntheticIME": [
+      {
+        "stage": "independent-synthetic-ime",
+        "viewportWidth": 390,
+        "passed": true,
+        "classification": "브라우저합성composition이벤트;실제Android/OSIME아님"
+      },
+      {
+        "stage": "independent-synthetic-ime",
+        "viewportWidth": 320,
+        "passed": true,
+        "classification": "브라우저합성composition이벤트;실제Android/OSIME아님"
+      }
+    ],
+    "externalURLBack": [
+      {
+        "stage": "independent-external-url-back",
+        "viewportWidth": 390,
+        "passed": true
+      },
+      {
+        "stage": "independent-external-url-back",
+        "viewportWidth": 320,
+        "passed": true
+      }
+    ],
+    "layout": [
+      {
+        "stage": "populated-order",
+        "width": 390,
+        "before": {
+          "width": 390,
+          "stage": "showcase-populated-order",
+          "top": 1337.453125,
+          "scrollY": 0,
+          "viewportHeight": 844,
+          "firstViewportGalleryHeading": false,
+          "fixture": "200가상6작품;실제게시콘텐츠아님;cover없음fallback타일"
+        },
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "usableBottom": 775,
+        "galleryCenterHit": true,
+        "scroll": 0,
+        "title": {
+          "x": 16,
+          "y": 187,
+          "width": 343,
+          "height": 28.796875,
+          "bottom": 215.796875
+        },
+        "search": {
+          "x": 16,
+          "y": 287.546875,
+          "width": 343,
+          "height": 68,
+          "bottom": 355.546875
+        },
+        "toolbar": {
+          "x": 25,
+          "y": 376.546875,
+          "width": 261,
+          "height": 50,
+          "bottom": 426.546875
+        },
+        "spotlight": {
+          "x": 16,
+          "y": 451.546875,
+          "width": 343,
+          "height": 184,
+          "bottom": 635.546875
+        },
+        "gallery": {
+          "x": 16,
+          "y": 655.546875,
+          "width": 343,
+          "height": 28,
+          "bottom": 683.546875
+        },
+        "titles": [
+          "마음에 드는 작품을 찾아보세요"
+        ],
+        "repeatedBackgroundCopies": 0,
+        "state": "ready",
+        "firstViewportGalleryHeading": true,
+        "criteria": "제목 전체가 하단 고정 메뉴 위에 있고 중심이 다른 UI에 가려지지 않음"
+      },
+      {
+        "stage": "loading-order",
+        "width": 390,
+        "before": {
+          "width": 390,
+          "stage": "showcase-loading-order",
+          "top": 1244,
+          "scrollY": 0,
+          "viewportHeight": 844,
+          "firstViewportGalleryHeading": false
+        },
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "usableBottom": 775,
+        "galleryCenterHit": true,
+        "scroll": 0,
+        "title": {
+          "x": 16,
+          "y": 187,
+          "width": 343,
+          "height": 28.796875,
+          "bottom": 215.796875
+        },
+        "search": {
+          "x": 16,
+          "y": 287.546875,
+          "width": 343,
+          "height": 68,
+          "bottom": 355.546875
+        },
+        "toolbar": {
+          "x": 25,
+          "y": 376.546875,
+          "width": 261,
+          "height": 50,
+          "bottom": 426.546875
+        },
+        "spotlight": {
+          "x": 16,
+          "y": 451.546875,
+          "width": 343,
+          "height": 120,
+          "bottom": 571.546875
+        },
+        "gallery": {
+          "x": 16,
+          "y": 591.546875,
+          "width": 343,
+          "height": 28,
+          "bottom": 619.546875
+        },
+        "titles": [
+          "마음에 드는 작품을 찾아보세요"
+        ],
+        "repeatedBackgroundCopies": 0,
+        "state": "loading",
+        "firstViewportGalleryHeading": true,
+        "criteria": "제목 전체가 하단 고정 메뉴 위에 있고 중심이 다른 UI에 가려지지 않음"
+      },
+      {
+        "stage": "populated-order",
+        "width": 320,
+        "viewport": {
+          "width": 320,
+          "height": 844
+        },
+        "usableBottom": 775,
+        "galleryCenterHit": true,
+        "scroll": 0,
+        "title": {
+          "x": 16,
+          "y": 187,
+          "width": 273,
+          "height": 57.59375,
+          "bottom": 244.59375
+        },
+        "search": {
+          "x": 16,
+          "y": 339.09375,
+          "width": 273,
+          "height": 68,
+          "bottom": 407.09375
+        },
+        "toolbar": {
+          "x": 25,
+          "y": 428.09375,
+          "width": 191,
+          "height": 50,
+          "bottom": 478.09375
+        },
+        "spotlight": {
+          "x": 16,
+          "y": 503.09375,
+          "width": 273,
+          "height": 184,
+          "bottom": 687.09375
+        },
+        "gallery": {
+          "x": 16,
+          "y": 707.09375,
+          "width": 273,
+          "height": 28,
+          "bottom": 735.09375
+        },
+        "titles": [
+          "마음에 드는 작품을 찾아보세요"
+        ],
+        "repeatedBackgroundCopies": 0,
+        "state": "ready",
+        "firstViewportGalleryHeading": true,
+        "criteria": "제목 전체가 하단 고정 메뉴 위에 있고 중심이 다른 UI에 가려지지 않음"
+      },
+      {
+        "stage": "populated-order",
+        "width": 1440,
+        "before": {
+          "width": 1440,
+          "stage": "showcase-populated-order",
+          "top": 1218.796875,
+          "scrollY": 0,
+          "viewportHeight": 1000,
+          "firstViewportGalleryHeading": false,
+          "fixture": "200가상6작품;실제게시콘텐츠아님;cover없음fallback타일"
+        },
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "usableBottom": 1000,
+        "galleryCenterHit": true,
+        "scroll": 0,
+        "title": {
+          "x": 84.5,
+          "y": 245,
+          "width": 517.125,
+          "height": 38.390625,
+          "bottom": 283.390625
+        },
+        "search": {
+          "x": 84.5,
+          "y": 374.390625,
+          "width": 1256,
+          "height": 68,
+          "bottom": 442.390625
+        },
+        "toolbar": {
+          "x": 97.5,
+          "y": 467.390625,
+          "width": 370.671875,
+          "height": 54,
+          "bottom": 521.390625
+        },
+        "spotlight": {
+          "x": 84.5,
+          "y": 550.390625,
+          "width": 1256,
+          "height": 155.5,
+          "bottom": 705.890625
+        },
+        "gallery": {
+          "x": 84.5,
+          "y": 725.890625,
+          "width": 1256,
+          "height": 32,
+          "bottom": 757.890625
+        },
+        "titles": [
+          "마음에 드는 작품을 찾아보세요"
+        ],
+        "repeatedBackgroundCopies": 0,
+        "state": "ready",
+        "firstViewportGalleryHeading": true,
+        "criteria": "제목 전체가 하단 고정 메뉴 위에 있고 중심이 다른 UI에 가려지지 않음"
+      }
+    ]
+  },
+  "accessibility": {
+    "scope": "390 가상4작품·기존 브랜드 표지 populated 한 상태 / WCAG2A·2AA·2.1A·2.1AA",
+    "violations": [],
+    "incomplete": [
+      "aria-valid-attr-value",
+      "color-contrast"
+    ],
+    "labelMismatchResolved": true,
+    "notWholeAppOrNoviceTaskProof": true
+  },
+  "reducedMotionSupplement": {
+    "file": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/supplement-reduced-motion.json",
+    "scope": "Phase7 390px reduced-motion computed style 1상태 보완; 본9군재실행아님",
+    "ok": true,
+    "raw": {
+      "prefersReduced": true,
+      "animationName": "none",
+      "animationDuration": "1e-05s",
+      "infoChevronTransitionDuration": "1e-05s"
+    },
+    "pageErrors": [],
+    "browserClosed": true,
+    "note": "본9군은 reduce 미디어 컨텍스트로 실행했고 새버전 computed raw 값을390 한 상태에서4초 좁게 보완; 기존9군재실행아님"
+  },
+  "visualReview": {
+    "method": "view_image로 선택 시안/새 actual·4911 before/새 actual을390·1440 각쌍 직접 시각검토",
+    "images": [
+      {
+        "file": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-390.png",
+        "sha256": "e7057ab665fa6de23c01d5dbd1f7cf20f52669ac7ae131636c405ffc8eed0905"
+      },
+      {
+        "file": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-1440.png",
+        "sha256": "64fa8ed7bf1d2a5168f497350f6e20d5057259009a86ea102f560dcf480c284e"
+      },
+      {
+        "file": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-before-after-390.png",
+        "sha256": "09b87713f2b1c77df9cf3b17c05ac8d2d685ab39eb298fade226949148726c20"
+      },
+      {
+        "file": ".qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-before-after-1440.png",
+        "sha256": "8ade71f0c383cd814b1cb6f1c77920f1a6901924850fcf586962ab97a5911167"
+      }
+    ],
+    "assessment": "검색·조건→짧은 실제추천→결과의 위계와 보라·청록·라운드·타이포가 일관된다. 긴제목과 표지없음에서 원본 반복 배경 중첩은 사라졌고 모바일 목록목적이 고정하단메뉴 위 첫화면에서 확인된다. 390/320 초점경로도 이제 헤더 아래11~12px 여유를 유지한다.",
+    "intentionalDifferences": [
+      "시안의1184폭·간소화 전역 셸 대신 실제1320 공통 셸과 현재선택 메뉴를 유지한다. 모바일 메뉴만 단일 DOM native접힘이다.",
+      "전역 검색 API를 가정하지 않고 현재 불러온 works/saved의 제목·작가만 찾는다. N개 중 M개로 범위를 구분한다.",
+      "실제4개 보기와 지원하는 필터를 쓰고 시안의 새작품·완결 가상조건을 추가하지 않는다.",
+      "원본 카드·작가·태그·권한과 작품정보/컬렉션 발견성을 유지하여 추가컬렉션접힘·작품수행과 grid 첫카드 위치는 시안보다 낮다.",
+      "상단 공개CTA중복을 제거하고 참여 안내의 발행하러 가기에 모았다.",
+      "아래 영역의 전역 연결중 알림은 기타API503 로컬fixture 조건이다. 운영정상 상태라고 주장하지 않으며 검색/조건/목록제목 가림은 없었다."
+    ]
+  },
+  "reusedPriorPassingEvidence": {
+    "file": ".qa/showcase-density-review/after-6d597b8571cc-2026-11-11T20-36-14.800Z/results.json",
+    "passed": [
+      "390/320 firstfold·즉시Enter·320 popup44/hit",
+      "1440 네 동작군",
+      "loading/empty/error/retry",
+      "2/4열·reduced-motion"
+    ],
+    "note": "새 SHA의 동작 성공으로 합산하지 않고 동작코드 미변경 범위의 이전 검증으로 표기한다."
+  },
+  "limitations": [
+    "로컬 가상콘텐츠6/20/4와 명시 API503; 실제 작품 게시·서버검색·권한범위·상세읽기 성공 증거가 아니다.",
+    "Chromium viewport/터치와 합성 composition 이벤트이며 실제 Android/Samsung Internet/Safari/OS IME 검증이 아니다.",
+    "1440은 새버전 시안·렌더·geometry만 확인했고 네 동작군은 변경되지 않은 이전6d 통과결과를 재사용했다.",
+    "axe incomplete2개는 확정위반0과 별도로 유지한다. 전페이지완료나신규사용자실사용성공으로 확대하지 않는다.",
+    "추가비용0/외부origin차단/GETfixture전용; product source/Git/build/remote 변경없음"
+  ],
+  "currentBrowsers": 0
+}

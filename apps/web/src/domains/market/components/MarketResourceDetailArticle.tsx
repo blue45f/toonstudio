@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Cpu,
   Download,
-  FileJson,
   Heart,
   LogIn,
   ShieldCheck,
@@ -85,13 +84,6 @@ import { SharePageButton } from "@/shared/components/share-page-button";
 import { compactPublicShareDescription } from "@/shared/lib/public-share-policy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
-
-const ENGINE_LABELS: Record<string, string> = {
-  canvas2d: "Canvas 2D",
-  webgl2: "WebGL 2",
-  webgpu: "WebGPU",
-  three: "Three.js",
-};
 
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -364,7 +356,7 @@ export function MarketResourceDetailArticle({
             </section>
           )}
 
-          <MarketDetailPackageInspector record={record} />
+          <MarketDetailPackageInspector record={record} onDownloadMetadata={() => downloadMetadataSnapshot(record)} />
 
           <MarketResourceReleaseHistory resourceId={record.id} />
 
@@ -421,7 +413,7 @@ export function MarketResourceDetailArticle({
             />
             <Link
               href={studioHandoff.href}
-              className={buttonClass({ variant: "solid", size: "md", className: "w-full" })}
+              className={buttonClass({ variant: "solid", size: "md", className: "w-full min-h-12 [--site-control-size:48px]" })}
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               {studioActionLabel}
@@ -496,13 +488,6 @@ export function MarketResourceDetailArticle({
                 <span>{translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "에셋 정보 수정 / 판올림")}</span>
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => downloadMetadataSnapshot(record)}
-              className={buttonClass({ variant: "outline", size: "sm", className: "w-full" })}
-            >
-              <FileJson className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-              {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "메타데이터 스냅샷 다운로드")}</button>
             <Link
               href={formatI18nTemplate(translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "en", "/market/browse?kind={v0}"), { v0: String(record.kind) })}
               className={buttonClass({ variant: "ghost", size: "sm", className: "w-full" })}
@@ -581,14 +566,6 @@ export function MarketResourceDetailArticle({
                   {translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "이 배급자의 마켓 리소스")}</Link>
               </span>
             </MetaRow>
-            <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "패키지 ID")}>
-              <span className="block max-w-full break-all font-mono text-[0.68rem] text-fg-2">
-                {record.packageId}
-              </span>
-            </MetaRow>
-            <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "버전")}>
-              <span className="numeral tnum">v{record.resourceVersion}</span>
-            </MetaRow>
             <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "라이선스")}>
               <span className="flex max-w-[190px] flex-col items-end gap-1">
                 <span className="inline-flex items-center gap-1">
@@ -613,12 +590,6 @@ export function MarketResourceDetailArticle({
                 </span>
                 <span className="font-normal leading-relaxed text-fg-2">{license.summary}</span>
               </span>
-            </MetaRow>
-            <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "호환 엔진")}>
-              {record.compatibility.engines.map((engine) => ENGINE_LABELS[engine] ?? engine).join(", ")}
-            </MetaRow>
-            <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "최소 스튜디오 버전")}>
-              <span className="numeral tnum">v{record.minimumStudioVersion}</span>
             </MetaRow>
             <MetaRow label={translateCurrentStaticSourceText("domains.market.components.MarketResourceDetailArticle", "ko", "AI 사용")}>
               <span className="inline-flex items-center gap-1">

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import type { ReactNode } from "react";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createStudioProject,
@@ -18,11 +19,17 @@ function LocationProbe() {
   return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
 }
 
-function renderStartSheet(initialEntry: string) {
+function HistoryBack() {
+  const navigate = useNavigate();
+  return <button type="button" onClick={() => navigate(-1)}>테스트 이전 주소</button>;
+}
+
+function renderStartSheet(initialEntry: string, extra?: ReactNode) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <CreateStartPage />
       <LocationProbe />
+      {extra}
     </MemoryRouter>,
   );
 }
@@ -57,6 +64,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("CreateStartPage (작품 시작 시트)", () => {
@@ -64,12 +72,10 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     renderStartSheet("/create");
     openMoreStartMethods();
 
-    expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
-    // 새 작품 링크는 시작 카드와 이어가기 빈 상태 두 곳에 있을 수 있다 — 전부 같은 정문을 가리킨다.
-    const newWorkLinks = screen.getAllByRole("link", { name: /새 작품 만들기/ });
-    expect(newWorkLinks.length).toBeGreaterThan(0);
-    // 이어가기 빈 상태의 "새 작품 만들기"도 레인 없는 bare 링크가 아니라 빈 캔버스 레인을 명시한다(A5).
-    expect(newWorkLinks.every((link) => link.getAttribute("href") === "/studio/new?lane=blank")).toBe(true);
+    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
+    // 추천 시작을 보여 주거나 보조 방법을 펼쳐도 생성은 명시 클릭 전까지 실행하지 않는다.
+    expect(screen.getByRole("button", { name: "캔버스 열기" })).toBeTruthy();
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
     // 콘티 레인은 레인을 명시해 넘긴다(S2-7) — 양식 시작점 초기값은 storyboard, 생성 뒤 에디터에 착지한다.
     expect(screen.getByRole("link", { name: /콘티부터 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=storyboard&start=storyboard");
@@ -80,11 +86,13 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("link", { name: /빈 캔버스로 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
     // 가져오기 레인 — 가진 파일로 이어 시작하는 길도 관문의 레인 중 하나다.
     expect(screen.getByRole("link", { name: /가져와서 시작하기/ }).getAttribute("href")).toBe("/studio/import");
+    fireEvent.click(screen.getByTestId("create-start-section-continue"));
     expect(screen.getByRole("heading", { name: "이어서 작업하기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /새 작품 만들기/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
   });
 
   it("최근 작품이 없으면 비어 있음을 알리고 새 작품 만들기로 먼저 안내한다", () => {
-    renderStartSheet("/create");
+    renderStartSheet("/create?section=continue");
 
     expect(screen.getByText(/아직 작업한 작품이 없어요/)).toBeTruthy();
     // 빈 상태의 주 행동은 첫 작품 만들기다. 둘러보기는 보조로 남는다.
@@ -100,7 +108,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
 
   it("최근 작품은 최근에 연 순서로 작품 화면 링크와 함께 보여 준다", () => {
     seedTwoProjects();
-    renderStartSheet("/create");
+    renderStartSheet("/create?section=continue");
 
     const newer = screen.getByRole("link", { name: /최근 작품 이어서 작업/ });
     const older = screen.getByRole("link", { name: /오래된 작품 이어서 작업/ });
@@ -125,7 +133,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
       })),
     };
     window.localStorage.setItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY, JSON.stringify(next));
-    renderStartSheet("/create");
+    renderStartSheet("/create?section=continue");
 
     const withThumb = screen.getByRole("link", { name: /표지 있는 작품 이어서 작업/ });
     expect(withThumb.querySelector("img")?.getAttribute("src")).toBe("https://example.test/cover.webp");
@@ -135,7 +143,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
   });
 
   it("갤러리는 /showcase와 창작자 갤러리로 안내만 하고 본문을 중복하지 않는다", () => {
-    renderStartSheet("/create");
+    renderStartSheet("/create?section=continue");
 
     expect(screen.getByRole("link", { name: /창작 갤러리/ }).getAttribute("href")).toBe("/showcase");
     expect(screen.getByRole("link", { name: /창작자 커리어 갤러리/ }).getAttribute("href")).toBe("/collaborate/gallery");
@@ -147,39 +155,54 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByTestId("location").textContent).toBe(
       "/showcase?tab=works&sort=popular&tag=%EC%95%A1%EC%85%98",
     );
-    expect(screen.queryByRole("heading", { name: "작품 시작하기" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "어떻게 시작할까요?" })).toBeNull();
   });
 
   it("갤러리와 무관한 조건만 있으면 시작 시트를 그대로 연다", () => {
     renderStartSheet("/create?from=home");
 
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
-    expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
   });
 
-  it("상황별 시작 가이드를 먼저 보여 주고 제작 도구는 접어 둔다", () => {
+  it("큰 이미지 두 선택을 먼저 보여 주고 제작 도구는 접어 둔다", () => {
     renderStartSheet("/create");
     const guide = screen.getByTestId("create-start-persona-guide");
-    expect(within(guide).getByText("어떻게 시작하고 싶나요?")).toBeTruthy();
+    expect(within(guide).getByRole("heading", { name: "이야기부터 시작" })).toBeTruthy();
+    expect(within(guide).getByRole("heading", { name: "바로 그리기" })).toBeTruthy();
+    expect(within(guide).getAllByRole("link")).toHaveLength(1);
+    expect(within(guide).getAllByRole("button")).toHaveLength(1);
     expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(false);
     expect(screen.getByText("주제별 질문과 제작 도구 더 보기").closest("details")?.open).toBe(false);
-    expect(within(guide).getByRole("link", { name: /그림·스토리 모두 처음이에요/ }).getAttribute("href")).toBe("/create?intent=my-story");
-    expect(within(guide).getByRole("button", { name: /일단 펜으로 바로 그리고 싶어요/ }).textContent).toContain("새 캔버스 바로 열기");
+    expect(within(guide).getByRole("link", { name: "이야기 시작하기" }).getAttribute("href")).toBe("/create?intent=my-story");
+    expect(within(guide).getByRole("button", { name: "캔버스 열기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "템플릿 고르기" }).getAttribute("href")).toBe("/studio/templates");
+    expect(screen.getByRole("link", { name: "파일 가져오기" }).getAttribute("href")).toBe("/studio/import");
+    expect(screen.queryByText(/가입 없이 이 기기에 자동 저장/)).toBeNull();
   });
 
-  it("영어 로케일(en)에서 4단계 스토리 파이프라인과 상황별 시작 가이드에 한글이 누수되지 않고 44px 높이를 지킨다", () => {
+  it("영어 로케일에서 두 시작 선택과 별도 제작 도구 화면에 한글이 누수되지 않는다", () => {
     useI18n.setState({ lang: "en" });
-    renderStartSheet("/create?section=pipeline");
-    const pipeline = screen.getByTestId("create-rea-story-pipeline");
+    renderStartSheet("/create");
     const guide = screen.getByTestId("create-start-persona-guide");
-    expect(pipeline.textContent).not.toMatch(/[가-힣]/u);
     expect(guide.textContent).not.toMatch(/[가-힣]/u);
+    fireEvent.click(screen.getByTestId("create-start-section-pipeline"));
+    const pipeline = screen.getByTestId("create-rea-story-pipeline");
+    expect(pipeline.textContent).not.toMatch(/[가-힣]/u);
+    for (const step of ["1 · Plan", "2 · New work", "3 · Edit", "4 · Finish"]) {
+      expect(within(pipeline).getByText(step)).toBeTruthy();
+    }
+    const publishStep = within(pipeline).getByRole("link", { name: /Open episode publishing settings/ });
+    expect(publishStep.getAttribute("href")).toBe("/studio/publish");
+    expect(publishStep.textContent).toContain("Preparing files does not publish them externally");
+    expect(publishStep.textContent).toContain("upload and schedule in the destination channel");
+    expect(screen.queryByTestId("create-start-persona-guide")).toBeNull();
     for (const stepLink of within(pipeline).getAllByRole("link")) {
       expect(stepLink.className).toContain("min-h-11");
     }
   });
 
-  it("GAP-R6-04: 시작 화면 구역 전환 토글이 44px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
+  it("GAP-R6-04: 시작 화면 구역 전환 토글이 48px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
     renderStartSheet("/create");
     const group = screen.getByRole("group", { name: "시작 화면 구역 보기 전환" });
     expect(group.getAttribute("data-testid")).toBe("create-start-section-group");
@@ -194,8 +217,8 @@ describe("CreateStartPage (작품 시작 시트)", () => {
       expect(button.className).toContain("scroll-my-24");
       expect(button.className).toContain("break-words");
       expect(button.className).toContain("[overflow-wrap:anywhere]");
-      expect(button.style.minHeight).toBe("44px");
-      expect(button.style.minWidth).toBe("44px");
+      expect(button.style.minHeight).toBe("48px");
+      expect(button.style.minWidth).toBe("48px");
     }
 
     const allBtn = screen.getByTestId("create-start-section-all");
@@ -224,7 +247,116 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(allBtn.getAttribute("aria-pressed")).toBe("false");
     expect(allBtn.getAttribute("data-state")).toBe("inactive");
     expect(screen.getByTestId("location").textContent).toBe("/create?section=pipeline");
+    expect(screen.getByRole("link", { name: /회차 게시 설정 열기/ }).textContent)
+      .toContain("게시용 파일 준비는 외부 게시 완료와 달라요");
   });
+
+  it("기본 화면은 실제 최근 작업 한 건을 먼저 보여 주고 전체 이어가기는 별도 화면에서 찾는다", () => {
+    seedTwoProjects();
+    renderStartSheet("/create");
+    expect(screen.getByRole("link", { name: "최근 작품 이어서 작업" }).getAttribute("href")).toContain("/studio/p/newer");
+    expect(screen.queryByRole("link", { name: "오래된 작품 이어서 작업" })).toBeNull();
+    fireEvent.click(screen.getByTestId("create-start-section-continue"));
+    expect(screen.getByRole("link", { name: "오래된 작품 이어서 작업" })).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe("/create?section=continue");
+  });
+
+  it("최근 작업 이미지가 열리지 않아도 제목과 이어가기 경로를 유지한다", () => {
+    seedTwoProjects();
+    const state = readStudioProjectLibrary(window.localStorage);
+    window.localStorage.setItem(STUDIO_PROJECT_LIBRARY_STORAGE_KEY, JSON.stringify({
+      ...state,
+      projects: state.projects.map((project) => ({ ...project, thumbnailUrl: "/missing-cover.webp" })),
+    }));
+    renderStartSheet("/create");
+    const recent = screen.getByRole("link", { name: "최근 작품 이어서 작업" });
+    const image = recent.querySelector("img");
+    expect(image).not.toBeNull();
+    if (!image) throw new Error("최근 작품 이미지가 없습니다.");
+    fireEvent.error(image);
+    expect(recent.querySelector("img")).toBeNull();
+    expect(recent.textContent).toContain("최근 작품");
+    expect(recent.getAttribute("href")).toContain("/studio/p/newer");
+  });
+
+  it.each(["/create", "/create?section=continue"])("%s에서 목록 읽기 실패를 빈 상태로 표시하지 않고 재시도 후 원래 작품을 복원한다", (route) => {
+    seedTwoProjects();
+    const original = readStudioProjectLibrary(window.localStorage);
+    const getItem = Storage.prototype.getItem;
+    const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, key: string) {
+      if (key === STUDIO_PROJECT_LIBRARY_STORAGE_KEY) throw new DOMException("Storage denied", "SecurityError");
+      return getItem.call(this, key);
+    });
+    renderStartSheet(route);
+    expect(screen.getByRole("alert").textContent).toBe("최근 작업을 확인하지 못했어요.");
+    expect(screen.queryByText(/아직 작업한 작품이 없어요/)).toBeNull();
+    expect(screen.getByRole("link", { name: "내 작업 보기" }).getAttribute("href")).toBe("/studio");
+    fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
+    expect(screen.getByRole("alert").textContent).toContain("확인하지 못했어요");
+    expect(screen.queryByText(/아직 작업한 작품이 없어요/)).toBeNull();
+    read.mockRestore();
+    fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("link", { name: "최근 작품 이어서 작업" }).getAttribute("href")).toContain("/studio/p/newer");
+    expect(screen.getByTestId("location").textContent).toBe(route);
+    expect(readStudioProjectLibrary(window.localStorage)).toEqual(original);
+  });
+
+  it.each(["lanes", "pipeline", "continue"])("%s에서 추천 시작으로 돌아오면 목적 제목으로 초점을 복원한다", (section) => {
+    renderStartSheet(`/create?from=home&section=${section}`);
+    const back = screen.getByRole("button", { name: "추천 시작으로" });
+    back.focus();
+    expect(document.activeElement).toBe(back);
+
+    fireEvent.click(back);
+
+    const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
+    expect(heading.getAttribute("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(heading);
+    expect(screen.queryByRole("button", { name: "추천 시작으로" })).toBeNull();
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
+  });
+
+  it("첫 진입과 일반 구역 전환에서는 제목으로 초점을 옮기지 않는다", () => {
+    renderStartSheet("/create");
+    const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
+    expect(document.activeElement).not.toBe(heading);
+
+    const pipeline = screen.getByTestId("create-start-section-pipeline");
+    pipeline.focus();
+    fireEvent.click(pipeline);
+    expect(document.activeElement).toBe(pipeline);
+
+    const recommended = screen.getByTestId("create-start-section-all");
+    recommended.focus();
+    fireEvent.click(recommended);
+    expect(screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" })).toBe(heading);
+    expect(document.activeElement).toBe(recommended);
+  });
+
+  it("구역 이동 뒤 브라우저 Back으로 추천 시작과 URL을 함께 복원한다", async () => {
+    renderStartSheet("/create?from=home", <HistoryBack />);
+    fireEvent.click(screen.getByTestId("create-start-section-pipeline"));
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home&section=pipeline");
+    expect(screen.queryByTestId("create-start-persona-guide")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "테스트 이전 주소" }));
+    expect(await screen.findByTestId("create-start-persona-guide")).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
+    expect(screen.getByTestId("create-start-section-all").getAttribute("aria-pressed")).toBe("true");
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
+  it("기본 이야기 선택은 전달받은 아이디어와 주제를 잃지 않는다", () => {
+    const idea = "달에서 길 잃은 로봇";
+    renderStartSheet(`/create?topic=free-story&idea=${encodeURIComponent(idea)}`);
+    const href = screen.getByRole("link", { name: "이야기 시작하기" }).getAttribute("href");
+    const query = new URL(href ?? "", "http://localhost").searchParams;
+    expect(query.get("intent")).toBe("my-story");
+    expect(query.get("topic")).toBe("free-story");
+    expect(query.get("idea")).toBe(idea);
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
 });
 
 /** 지연 로딩된 질문형 인터뷰를 기다리는 시간 — 부하가 큰 CI에서 첫 로딩이 기본 1초를 넘길 수 있다. */
@@ -268,7 +400,7 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" }, LAZY_FLOW_WAIT)).toBeTruthy();
     expect(screen.getByRole("link", { name: "다른 시작 방법 보기" }).getAttribute("href")).toBe("/create");
-    expect(screen.queryByRole("heading", { name: "작품 시작하기" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "어떻게 시작할까요?" })).toBeNull();
     expect(screen.queryByRole("link", { name: /콘티부터 시작하기/ })).toBeNull();
     expect(screen.getByRole("heading", { name: "어떤 이야기를 남기고 싶나요?" })).toBeTruthy();
   });
@@ -285,6 +417,11 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
     renderStartSheet(`/create?intent=my-story&topic=free-story&idea=${encodeURIComponent(idea)}`);
     const input = await screen.findByRole("textbox", { name: "어떤 이야기를 만들고 싶나요?" }, LAZY_FLOW_WAIT);
     expect((input as HTMLTextAreaElement).value).toBe(idea);
+    const returnHref = screen.getByRole("link", { name: "다른 시작 방법 보기" }).getAttribute("href");
+    const returnQuery = new URL(returnHref ?? "", "http://localhost").searchParams;
+    expect(returnQuery.get("idea")).toBe(idea);
+    expect(returnQuery.get("topic")).toBe("free-story");
+    expect(returnQuery.has("intent")).toBe(false);
   });
 
   it("기존 구역 바로가기는 해당 도구를 펼친 상태로 연다", () => {
@@ -302,7 +439,7 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
   it("모르는 intent 값은 일반 시작 시트로 취급한다", () => {
     renderStartSheet("/create?intent=other");
 
-    expect(screen.getByRole("heading", { name: "작품 시작하기" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
     expect(screen.queryByRole("heading", { level: 1, name: "내 이야기를 웹툰으로" })).toBeNull();
   });
 });

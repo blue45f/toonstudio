@@ -1,6 +1,7 @@
 import { Navigate } from "react-router-dom";
 
 import { defineAppRoutes } from "../app-route-definition";
+import { LegacyCanvasRedirect } from "./LegacyCanvasRedirect";
 
 /**
  * 레거시 단축 URL을 인앱 404 대신 실제 목적지로 연결한다.
@@ -36,7 +37,7 @@ export const legacyRedirectRoutes = defineAppRoutes([
   // 모바일 탭 "스토리" -> 스토리 기획 랩.
   { id: "legacy-story", path: "/story", element: <Navigate to="/story-lab" replace /> },
   // 모바일 탭 "캔버스" -> Studio 캔버스 에디터 (`/studio/*` 라우터가 처리).
-  { id: "legacy-canvas", path: "/canvas", element: <Navigate to="/studio/canvas" replace /> },
+  { id: "legacy-canvas", path: "/canvas", element: <LegacyCanvasRedirect /> },
   // 구 마켓 단축 주소 -> 소재 마켓 홈.
   { id: "legacy-marketplace", path: "/marketplace", element: <Navigate to="/market" replace /> },
 ]);

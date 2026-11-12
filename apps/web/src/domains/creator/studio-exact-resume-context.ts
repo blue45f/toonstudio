@@ -261,21 +261,17 @@ export function studioExactResumeSourceReady(input: {
   return input.autosaveChecked && !input.hasAutosave && !input.localDocumentLocked;
 }
 
-function isInternalResumePageId(pageId: string): boolean {
-  return /^(?:jam-page|work-instant)-/iu.test(pageId);
-}
-
 export function studioExactResumeSummary(
   context: StudioExactResumeContextV1,
   locale: "ko" | "en",
+  pageName?: string | null,
 ): string {
   const zoom = `${Math.round(context.zoom * 100)}%`;
   const selected = context.selectedElementIds.length;
-  const pageLabel = context.pageId && !isInternalResumePageId(context.pageId)
-    ? context.pageId
-    : locale === "ko"
+  // 복원 대상 ID는 일치 검사에만 쓰고, 표시는 호출자가 가진 페이지 이름을 사용한다.
+  const pageLabel = pageName?.trim() || (locale === "ko"
       ? "최근 페이지"
-      : "Recent page";
+      : "Recent page");
   if (locale === "ko") {
     return `${pageLabel} · 확대 ${zoom}${selected > 0 ? ` · 선택 ${selected}개` : ""}`;
   }

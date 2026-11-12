@@ -1,0 +1,63 @@
+{
+  "recordedAt": "2026-11-11T18:21:58.660Z",
+  "kind": "local-static-design-proposal",
+  "productBrowserExecuted": false,
+  "network": "temporary loopback HTTP serves only static mock HTML and3known local brand assets; all other origins blocked",
+  "fileProtocolAttempt": "ERR_BLOCKED_BY_ADMINISTRATOR preserved; no browser policy modified",
+  "browserClosed": true,
+  "staticServerClosed": true,
+  "results": [
+    {
+      "screen": "showcase",
+      "width": 1440,
+      "name": "proposal-showcase-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "width": 1440,
+        "height": 1016
+      },
+      "search": {
+        "text": "검색",
+        "width": 59.765625,
+        "height": 44,
+        "top": 265.625,
+        "bottom": 309.625,
+        "whiteSpace": "nowrap",
+        "centerHit": true
+      },
+      "primary": null,
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    },
+    {
+      "screen": "publish",
+      "width": 1440,
+      "name": "proposal-publish-1440.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "document": {
+        "width": 1440,
+        "height": 1111
+      },
+      "search": null,
+      "primary": {
+        "text": "게시 정보 JSON 준비 →",
+        "width": 178.96875,
+        "height": 44,
+        "top": 941,
+        "bottom": 985,
+        "whiteSpace": "normal",
+        "centerHit": true
+      },
+      "imageCount": 5,
+      "loadedImages": 5,
+      "kind": "static-proposal-not-product-runtime"
+    }
+  ]
+}

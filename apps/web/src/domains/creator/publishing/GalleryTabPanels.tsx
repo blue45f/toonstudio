@@ -3,6 +3,7 @@
 import {
   Bookmark,
   BookOpen,
+  ChevronDown,
   PenLine,
   Sparkles,
   Trophy,
@@ -144,29 +145,32 @@ function IllustratedEmptyState({ title, description, onResetFilters }: {
   );
 }
 
-function WorkResultCount({ count }: { count: number }) {
+function WorkResultCount({ count, loadedCount }: { count: number; loadedCount?: number }) {
   const bt = useBilingual("CreateGalleryPage");
   return (
     <p className="mb-3 text-sm text-fg-2" aria-live="polite">
-      {formatI18nTemplate(bt("작품 {count}개", "{count} works"), { count: formatCount(count) })}
+      {loadedCount === undefined ? formatI18nTemplate(bt("작품 {count}개", "{count} works"), { count: formatCount(count) }) : formatI18nTemplate(bt("불러온 {total}개 중 {count}개", "{count} matches among {total} loaded works"), { total: formatCount(loadedCount), count: formatCount(count) })}
     </p>
   );
 }
 
-function WorkGrid({ works, resetKey }: { works: readonly WorkSummary[]; resetKey: string }) {
+function WorkGrid({ works, resetKey, desktopColumns }: { works: readonly WorkSummary[]; resetKey: string; desktopColumns?: 4 | 5 }) {
   return (
     <>
       <CampusObjectSource objects={spatialShowcaseObjects(works)} />
-      <ShowcaseWorkGrid works={works} resetKey={resetKey} />
+      <ShowcaseWorkGrid works={works} resetKey={resetKey} desktopColumns={desktopColumns} />
     </>
   );
 }
 
 // ── 전체 작품·북마크 탭 ────────────────────────────────────────────────
-function WorksTab({ query, bookmarked = false, onResetFilters }: {
+function WorksTab({ query, bookmarked = false, onResetFilters, searchText = "", onClearSearch, desktopColumns }: {
   query: WorksQuery;
   bookmarked?: boolean;
   onResetFilters: () => void;
+  searchText?: string;
+  onClearSearch?: () => void;
+  desktopColumns?: 4 | 5;
 }) {
   const userId = useApp((state) => state.userId);
   const bt = useBilingual("CreateGalleryPage");
@@ -232,10 +236,17 @@ function WorksTab({ query, bookmarked = false, onResetFilters }: {
       />
     );
   }
+  const needle = searchText.trim().normalize("NFKC").toLocaleLowerCase();
+  const matchingWorks = needle ? works.data.filter(work => (work.title + " " + work.author.name).normalize("NFKC").toLocaleLowerCase().includes(needle)) : works.data;
   return (
     <>
-      <WorkResultCount count={works.data.length} />
-      <WorkGrid works={works.data} resetKey={requestKey ?? ""} />
+      <WorkResultCount count={matchingWorks.length} loadedCount={needle ? works.data.length : undefined} />
+      {matchingWorks.length === 0 ? (
+        <div className="rounded-2xl border border-line bg-panel p-5 text-sm text-fg-2" role="status">
+          <p>{bt("불러온 작품에서 일치하는 제목·작가가 없습니다.", "No matching title or creator in the loaded works.")}</p>
+          {onClearSearch ? <button type="button" onClick={onClearSearch} className={buttonClass({ variant: "outline", className: "mt-3 min-h-11" })}>{bt("검색 지우기", "Clear search")}</button> : null}
+        </div>
+      ) : <WorkGrid works={matchingWorks} resetKey={(requestKey ?? "") + "|" + needle} desktopColumns={desktopColumns} />}
     </>
   );
 }
@@ -356,19 +367,30 @@ function FollowingTab() {
   return <WorkGrid works={feed.data} resetKey="following" />;
 }
 
-/** 선택한 탭의 본문. 전체 작품 탭은 조건이 없을 때 추천 섹션(챌린지·인기·태그·리믹스)을 목록 위에 둔다. */
-export function GalleryTabPanel({ view, onResetFilters }: {
+/** 선택한 탭의 본문. 쇼케이스만 추가 추천을 접고, 다른 소비자는 기존 배치를 유지한다. */
+export function GalleryTabPanel({ view, onResetFilters, searchText = "", onClearSearch, featuredCollapsed = false }: {
   readonly view: GalleryView;
   readonly onResetFilters: () => void;
+  /** 서버 검색이 아닌, 이 목록 요청으로 반환된 제목·작가의 로컬 찾기다. */
+  readonly searchText?: string;
+  readonly onClearSearch?: () => void;
+  readonly featuredCollapsed?: boolean;
 }) {
   const { tab, query } = view;
+  const bt = useBilingual("CreateGalleryPage");
+  const showFeatured = tab === "works" && !hasActiveFilters(query) && !searchText.trim();
   return (
     <div role="tabpanel" id={TABPANEL_ID} aria-labelledby={galleryTabId(tab)}>
-      {tab === "works" && !hasActiveFilters(query) ? <CreateFeaturedSections /> : null}
+      {showFeatured ? featuredCollapsed ? (
+        <details className="group/featured mb-4 rounded-xl border border-line bg-panel px-3" aria-label={bt("추천 컬렉션·챌린지", "Featured collections and challenges")}>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg text-sm font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">{bt("추천 컬렉션·챌린지 더 보기", "More collections and challenges")}<ChevronDown size={15} aria-hidden className="shrink-0 transition-transform group-open/featured:rotate-180 motion-reduce:transition-none" /></summary>
+          <div className="border-t border-line pt-4"><CreateFeaturedSections /></div>
+        </details>
+      ) : <CreateFeaturedSections /> : null}
       {tab === "works" ? (
-        <WorksTab query={query} onResetFilters={onResetFilters} />
+        <WorksTab query={query} onResetFilters={onResetFilters} searchText={searchText} onClearSearch={onClearSearch} desktopColumns={featuredCollapsed ? 4 : 5} />
       ) : tab === "saved" ? (
-        <WorksTab query={{ ...query, tag: "", contentType: "all", provenance: undefined, portfolio: false }} bookmarked onResetFilters={onResetFilters} />
+        <WorksTab query={{ ...query, tag: "", contentType: "all", provenance: undefined, portfolio: false }} bookmarked onResetFilters={onResetFilters} searchText={searchText} onClearSearch={onClearSearch} desktopColumns={featuredCollapsed ? 4 : 5} />
       ) : tab === "series" ? (
         <SeriesTab sort={query.sort} />
       ) : (

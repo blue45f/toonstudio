@@ -1,6 +1,7 @@
 import { Layers, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import {
   evaluateFormatCompatibility,
@@ -73,7 +74,7 @@ interface WorkbenchTabMeta {
 }
 
 const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
-  { id: "atmosphere", labelKo: "기상·하늘 (12종)", groupKo: "환경·VFX" },
+  { id: "atmosphere", labelKo: "기상·하늘 미리보기", groupKo: "환경·VFX" },
   { id: "particle-vfx", labelKo: "파티클 VFX", groupKo: "환경·VFX" },
   { id: "postprocess-vfx", labelKo: "렌즈·셀 필터", groupKo: "환경·VFX" },
   { id: "halftone-screentone", labelKo: "스크린톤·망점", groupKo: "셰이더·재질" },
@@ -89,7 +90,7 @@ const STUDIO_BG3D_WORKBENCH_TABS: readonly WorkbenchTabMeta[] = Object.freeze([
   { id: "spatial-modeler", labelKo: "공간 모델러", groupKo: "캐릭터·DCC" },
   { id: "dcc-pipeline", labelKo: "DCC·도시·렌즈·품질", groupKo: "캐릭터·DCC" },
   { id: "vrm-hybrid-dcc", labelKo: "VRM·아바타·하이브리드 DCC", groupKo: "캐릭터·DCC" },
-  { id: "place-set-package", labelKo: "장소 세트 정본", groupKo: "세트·XR" },
+  { id: "place-set-package", labelKo: "장소 세트 예시", groupKo: "세트·XR" },
   { id: "spatial-webtoon", labelKo: "AR·VR 공간 웹툰", groupKo: "세트·XR" },
   { id: "virtual-space-collab", labelKo: "가상 공간 협업·소셜·미니앱", groupKo: "세트·XR" },
 ]);
@@ -200,15 +201,17 @@ export function StudioBg3dAdvancedWorkbenchHub({
   onSyncSceneLineArt,
 }: StudioBg3dAdvancedWorkbenchHubProps) {
   const t = useT();
+  const bt = useBilingual("StudioBg3dAdvancedWorkbenchHub");
   const proSuiteRuntime = useStudioBg3dProSuiteRuntime();
   const [activeTab, setActiveTab] = useState<StudioBg3dWorkbenchTabId>(defaultTab);
-  const [lastActionSummary, setLastActionSummary] = useState<string>("준비 완료");
+  const [lastActionSummary, setLastActionSummary] = useState<string>(() => bt("도구를 선택하세요", "Choose a tool"));
   const [insertedPrimitiveCount, setInsertedPrimitiveCount] = useState(0);
   const [cuts, setCuts] = useState<readonly StoryboardCut[]>(INITIAL_CUTS);
-  const [placeSet, setPlaceSet] = useState<StudioBg3dPlaceSetPackage>(() => {
+  // 현재 문서와 연결되지 않은 버전·영향 예시다. 실제 정본의 저장·발행 상태로 사용하지 않는다.
+  const [placeSet] = useState<StudioBg3dPlaceSetPackage>(() => {
     const v1 = createStudioBg3dPlaceSetPackage({
       placeId: "place-school-classroom",
-      placeName: "2학년 3반 교실",
+      placeName: "예시 · 2학년 3반 교실",
       state: INITIAL_PLACE_SET_STATE,
       createdAt: "2026-10-25T09:00:00Z",
       note: "초기 교실 정본 등록",
@@ -320,28 +323,6 @@ export function StudioBg3dAdvancedWorkbenchHub({
     setLastActionSummary(`컷 화면비 변경: ${aspectRatio}`);
   };
 
-  const handlePublishPlaceSet = () => {
-    const latest = placeSet.versions[placeSet.versions.length - 1];
-    if (!latest) return;
-    const nextFov = latest.state.camera.fovDegrees === 38 ? 35 : 38;
-    const published = publishStudioBg3dPlaceSetVersion(
-      placeSet,
-      {
-        ...latest.state,
-        camera: {
-          ...latest.state.camera,
-          fovDegrees: nextFov,
-        },
-      },
-      {
-        createdAt: "2026-10-25T12:00:00Z",
-        note: `정본 카메라 화각 ${nextFov}° 업데이트`,
-      },
-    );
-    setPlaceSet(published.placeSet);
-    setLastActionSummary(`세트 정본 v${published.publishedVersion?.version ?? latest.version} 발행`);
-  };
-
   return (
     <section
       data-testid="bg3d-advanced-workbench-hub"
@@ -354,11 +335,6 @@ export function StudioBg3dAdvancedWorkbenchHub({
           <span>3D 웹툰·DCC 스페셜리스트 워크벤치 (14종 도구)</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <StudioBg3dPlaceSetImpactBadge
-            notices={placeSetNotices}
-            acknowledgedIds={acknowledgedNoticeIds}
-            onClick={() => setActiveTab("place-set-package")}
-          />
           <span
             data-testid="bg3d-workbench-dcc-compat-badge"
             className="rounded bg-raised px-2 py-0.5 font-mono text-[0.62rem] text-fg-2"
@@ -414,8 +390,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
         {activeTab === "atmosphere" ? (
           <StudioBg3dAtmospherePanel
             disabled={disabled}
-            onPresetChange={(preset) => setLastActionSummary(`기상 프리셋: ${preset.name}`)}
-            onSunAngleChange={(az, el) => setLastActionSummary(`태양 각도: 방위 ${az}° / 고도 ${el}°`)}
+            onPresetChange={(preset) => setLastActionSummary(bt(`기상 미리보기: ${preset.name}`, `Weather preview: ${preset.name}`))}
+            onSunAngleChange={(az, el) => setLastActionSummary(bt(`태양 미리보기: 방위 ${az}° / 고도 ${el}°`, `Sun preview: azimuth ${az}° / elevation ${el}°`))}
           />
         ) : null}
 
@@ -610,6 +586,10 @@ export function StudioBg3dAdvancedWorkbenchHub({
 
         {activeTab === "place-set-package" ? (
           <div className="p-3">
+            <p role="note" className="mb-3 rounded-lg border border-line bg-panel p-3 text-sm leading-relaxed text-fg-2">
+              {bt("장소 세트 예시 미리보기입니다. 아래 버전과 사용처는 샘플이며 현재 원고의 장면·저장 상태가 아닙니다. 정본 발행과 회차 이동은 연결되어 있지 않습니다.", "This is a sample place-set preview. The versions and usages below are examples, not the current manuscript's scene or save status. Publishing and episode navigation are not connected.")}
+            </p>
+            <StudioBg3dPlaceSetImpactBadge notices={placeSetNotices} acknowledgedIds={acknowledgedNoticeIds} />
             <StudioBg3dPlaceSetPackagePanel
               placeSet={placeSet}
               notices={placeSetNotices}
@@ -618,16 +598,12 @@ export function StudioBg3dAdvancedWorkbenchHub({
                 setAcknowledgedNoticeIds((prev) =>
                   acknowledgeStudioBg3dPlaceSetImpact(prev, noticeId),
                 );
-                setLastActionSummary(`세트 변경 영향 확인: ${noticeId}`);
+                setLastActionSummary(bt("예시 세트의 변경 영향을 확인했어요", "Reviewed the sample set's change impact"));
               }}
               onAcknowledgeAll={() => {
                 setAcknowledgedNoticeIds(acknowledgeAllStudioBg3dPlaceSetImpacts(placeSetNotices));
-                setLastActionSummary("세트 변경 영향 전체 확인");
+                setLastActionSummary(bt("예시 세트의 변경 영향을 모두 확인했어요", "Reviewed all sample set change impacts"));
               }}
-              onPublishCurrent={handlePublishPlaceSet}
-              onSelectUsage={(notice) =>
-                setLastActionSummary(`사용처 이동: ${notice.usage.episodeLabel}`)
-              }
             />
           </div>
         ) : null}

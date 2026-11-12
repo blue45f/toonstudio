@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 
@@ -55,54 +55,16 @@ it("labels the back link from the source query param", () => {
   expect(backLink.getAttribute("href")).toBe("/studio");
 });
 
-it("switches BYOK routing policy and failover probe mode interactively", () => {
-  render(
-    <MemoryRouter initialEntries={["/settings/ai"]}>
-      <AiSettingsPage />
-    </MemoryRouter>,
-  );
+it("shows real connection settings without disconnected policy or probe controls", () => {
+  render(<MemoryRouter initialEntries={["/settings/ai"]}><AiSettingsPage /></MemoryRouter>);
+  expect(screen.getByTestId("unified-ai-settings")).toBeTruthy();
+  expect(screen.getByTestId("claude-connection-card")).toBeTruthy();
+  expect(screen.queryByRole("group", { name: "라우팅 정책 선택" })).toBeNull();
+  expect(screen.queryByRole("group", { name: "페일오버 프로브 모드" })).toBeNull();
+  expect(screen.queryByText(/페일오버 활성|무중단 우회|Zero-Retention|Cursor/)).toBeNull();
+});
 
-  const bar = screen.getByTestId("ai-settings-rea-byok-failover-bar");
-  expect(bar).toBeTruthy();
-  expect(bar.hasAttribute("data-own-control-size")).toBe(true);
-  expect(screen.getByRole("group", { name: "라우팅 정책 선택" })).toBeTruthy();
-  expect(screen.getByRole("group", { name: "페일오버 프로브 모드" })).toBeTruthy();
-
-  const defaultPolicyBtn = screen.getByTestId("ai-settings-rea-policy-byok-12key-auto-rotate");
-  const localBridgeBtn = screen.getByTestId("ai-settings-rea-policy-comfy-invoke-local-bridge");
-  const defaultProbeBtn = screen.getByTestId("ai-settings-rea-probe-realtime-verify");
-  const failoverProbeBtn = screen.getByTestId("ai-settings-rea-probe-429-auto-failover");
-
-  expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("true");
-  expect(defaultPolicyBtn.className).toContain("text-on-accent");
-  expect(defaultPolicyBtn.className).not.toContain("text-white");
-  expect(defaultPolicyBtn.className).toContain("min-h-11");
-  expect(defaultPolicyBtn.className).toContain("focus-visible:outline-2");
-  expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("false");
-  expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("true");
-  expect(defaultProbeBtn.className).toContain("text-on-accent");
-  expect(defaultProbeBtn.className).not.toContain("text-white");
-  expect(defaultProbeBtn.className).toContain("min-h-11");
-  expect(defaultProbeBtn.className).toContain("focus-visible:outline-2");
-  expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("false");
-
-  const status = screen.getByTestId("ai-settings-rea-byok-status");
-  expect(status.textContent).toContain("byok-12key-auto-rotate");
-  expect(status.textContent).toContain("realtime-verify");
-  expect(status.textContent).toContain("Cursor");
-  expect(status.textContent).toContain("ComfyUI");
-
-  fireEvent.click(localBridgeBtn);
-  fireEvent.click(failoverProbeBtn);
-
-  expect(defaultPolicyBtn.getAttribute("aria-pressed")).toBe("false");
-  expect(localBridgeBtn.getAttribute("aria-pressed")).toBe("true");
-  expect(localBridgeBtn.className).toContain("text-on-accent");
-  expect(localBridgeBtn.className).not.toContain("text-white");
-  expect(defaultProbeBtn.getAttribute("aria-pressed")).toBe("false");
-  expect(failoverProbeBtn.getAttribute("aria-pressed")).toBe("true");
-  expect(failoverProbeBtn.className).toContain("text-on-accent");
-  expect(failoverProbeBtn.className).not.toContain("text-white");
-  expect(status.textContent).toContain("comfy-invoke-local-bridge");
-  expect(status.textContent).toContain("429-auto-failover");
+it("returns to the runtime when opened from inference settings", () => {
+  render(<MemoryRouter initialEntries={["/settings/ai?source=inference"]}><AiSettingsPage /></MemoryRouter>);
+  expect(screen.getByRole("link", { name: /AI 런타임/ }).getAttribute("href")).toBe("/studio/ai-runtime");
 });

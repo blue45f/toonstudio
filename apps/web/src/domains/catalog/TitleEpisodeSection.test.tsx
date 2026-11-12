@@ -80,6 +80,16 @@ function renderSection(title: Title, episodes?: readonly TitleEpisode[]) {
   );
 }
 
+function openEpisodeTools() {
+  const summary = screen.getByText("회차 찾기 · 보기 설정");
+  const details = summary.closest("details");
+  if (!details) throw new Error("회차 찾기 설정이 없습니다.");
+  expect(details.open).toBe(false);
+  fireEvent.click(summary);
+  expect(details.open).toBe(true);
+  return details;
+}
+
 beforeEach(() => {
   useI18n.setState({ lang: "ko" });
   appConfigState.showAvailability = true;
@@ -214,6 +224,7 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
 
   it("정렬 토글로 첫 화부터로 바꿀 수 있다", () => {
     renderSection(makeTitle(), EPISODES);
+    openEpisodeTools();
     fireEvent.click(screen.getByRole("button", { name: "첫 화부터" }));
     const items = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(items[0]?.textContent).toContain("신호의 시작");
@@ -239,6 +250,8 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
     const ep2 = items.find((item) => item.textContent?.includes("안개가 짙어지면"));
     expect(ep1?.textContent).toContain("읽음");
     expect(ep2?.textContent).toContain("읽는 중 82%");
+    expect(continueLink.closest("details")).toBeNull();
+    openEpisodeTools();
     expect(screen.getByTestId("episodes-binge-estimate").textContent).toContain("예상 정주행 약 12분");
 
     const searchInput = screen.getByTestId("episodes-search-input");
@@ -252,6 +265,26 @@ describe("TitleEpisodeSection — 회차 데이터가 있을 때", () => {
 
 
 describe("회차 이어보기 공개 상태", () => {
+  it.each([0.5, 1])("기존 진도 %s가 있어도 미확인 회차를 이어보기로 만들지 않는다", (ratio) => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 2, ratio, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle({ totalEpisodes: 100 }));
+    expect(screen.queryByRole("link", { name: "이어서 읽기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "다음 화 보기" })).toBeNull();
+    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href")?.includes("/read/"))).toBe(false);
+  });
+
+  it("부분 회차 목록의 빈 번호를 다음 화로 만들지 않는다", () => {
+    window.localStorage.setItem(
+      "toonstudio.reader-progress.v1.guest",
+      JSON.stringify({ "fog-signal": { episode: 2, ratio: 1, updatedAt: Date.now() } }),
+    );
+    renderSection(makeTitle({ totalEpisodes: 100 }), [{ number: 2 }, { number: 4 }]);
+    expect(screen.queryByRole("link", { name: "다음 화 보기" })).toBeNull();
+  });
+
   it("다 읽은 회차 다음이 공개 예정이면 다음 화 버튼을 만들지 않는다", () => {
     window.localStorage.setItem(
       "toonstudio.reader-progress.v1.guest",
@@ -274,11 +307,12 @@ describe("회차 이어보기 공개 상태", () => {
 
 
 describe("회차 탐색의 모바일 터치 영역", () => {
-  it("검색과 정렬·표시 방식 전환을 최소 44px 높이로 제공한다", () => {
+  it("검색과 정렬·표시 방식에 48px 최소높이와 16px 입력을 지정한다 (실측 아님)", () => {
     renderSection(makeTitle(), EPISODES);
-    expect(screen.getByRole("searchbox").className).toContain("h-11");
+    openEpisodeTools();
+    expect(screen.getByRole("searchbox").className).toContain("min-h-12");
     for (const label of ["최신부터", "첫 화부터", "리스트형", "컴팩트형"]) {
-      expect(screen.getByRole("button", { name: label }).className).toContain("min-h-11");
+      expect(screen.getByRole("button", { name: label }).className).toContain("min-h-12");
     }
     fireEvent.click(screen.getByRole("button", { name: "컴팩트형" }));
     expect(screen.getByRole("button", { name: "컴팩트형" }).getAttribute("aria-pressed")).toBe("true");
@@ -289,17 +323,42 @@ describe("회차 탐색의 모바일 터치 영역", () => {
 });
 
 
-it("검색 결과가 없으면 안내하고 검색을 지워 원래 회차 목록으로 돌아간다", () => {
+it("검색 결과가 없으면 설정을 다시 열고 검색을 지워 원래 목록으로 돌아간다", () => {
   renderSection(makeTitle(), EPISODES);
+  const tools = openEpisodeTools();
   fireEvent.change(screen.getByRole("searchbox"), { target: { value: "없는 회차" } });
   expect(screen.getByRole("status").textContent).toContain("검색 결과가 없어요");
   expect(screen.queryByTestId("title-episodes-empty")).toBeNull();
   expect(screen.queryByRole("list")).toBeNull();
+  fireEvent.click(screen.getByText("회차 찾기 · 보기 설정"));
+  expect(tools.open).toBe(false);
   const clear = screen.getByRole("button", { name: "검색 지우기" });
-  expect(clear.className).toContain("min-h-11");
+  expect(clear.className).toContain("min-h-12");
   fireEvent.click(clear);
+  expect(tools.open).toBe(true);
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.getByRole("searchbox").getAttribute("value")).toBe("");
   expect(screen.getAllByRole("listitem")).toHaveLength(EPISODES.length);
   expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+});
+
+it("설정을 접어도 검색어·정렬·목록 선택과 원래 입력 노드를 유지한다", () => {
+  renderSection(makeTitle(), EPISODES);
+  const tools = openEpisodeTools();
+  const field = screen.getByRole("searchbox") as HTMLInputElement;
+  fireEvent.change(field, { target: { value: "안개" } });
+  fireEvent.click(screen.getByRole("button", { name: "첫 화부터" }));
+  fireEvent.click(screen.getByRole("button", { name: "컴팩트형" }));
+  const summary = tools.querySelector("summary");
+  if (!summary) throw new Error("설정 제목이 없습니다.");
+  summary.focus();
+  fireEvent.click(summary);
+  expect(tools.open).toBe(false);
+  expect(document.activeElement).toBe(summary);
+  fireEvent.click(summary);
+  expect(tools.open).toBe(true);
+  expect(screen.getByRole("searchbox")).toBe(field);
+  expect(field.value).toBe("안개");
+  expect(screen.getByRole("button", { name: "첫 화부터" }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByRole("button", { name: "컴팩트형" }).getAttribute("aria-pressed")).toBe("true");
 });

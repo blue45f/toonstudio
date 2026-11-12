@@ -2,8 +2,9 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
+import { ArrowRight, ChevronDown, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
   SITE_UTILITY_NAVIGATION,
@@ -15,12 +16,16 @@ import {
   siteNavigationText,
 } from "./site-navigation";
 import { ToonStudioMark } from "./toonstudio-mark";
+import { SiteMenuUtilities } from "./SiteMenuUtilities";
+import { useSiteMenuAudioHandoff } from "./use-site-menu-audio-handoff";
+import type { SiteMobilePurposeHref } from "./site-mobile-purpose";
 import { ToonStudioWordmark } from "./toonstudio-brand";
 
-import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
+
+import "./site-menu.css";
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("site-header-mobile-nav", ko, en);
@@ -35,8 +40,10 @@ interface MobileHeaderNavigationProps {
   menuId: string;
   panelRef: RefObject<HTMLDivElement | null>;
   closeMenu: () => void;
+  closeForUtility?: () => void;
   isActive: (href: string, exact?: boolean) => boolean;
   isPurposeActive: (href: string, exact?: boolean) => boolean;
+  currentPurposeHref?: SiteMobilePurposeHref | null;
   hideBottomTabs?: boolean;
   /** Responsive gate: the bottom tab bar renders only on the mobile viewport,
    * even if the CSS `md:hidden` rule were ever lost in a build. */
@@ -49,6 +56,7 @@ const FOCUSABLE_SELECTOR = [
   "input:not([disabled]):not([type='hidden'])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
@@ -63,7 +71,10 @@ function focusableElements(dialog: HTMLElement): HTMLElement[] {
     (element) =>
       element.tabIndex >= 0 &&
       !element.hidden &&
-      !element.closest("[hidden], [inert], [aria-hidden='true']")
+      !element.closest("[hidden], [inert], [aria-hidden='true']") &&
+      ![...dialog.querySelectorAll<HTMLDetailsElement>("details:not([open])")].some(
+        (details) => details.contains(element) && !details.querySelector(":scope > summary")?.contains(element),
+      )
   );
 }
 
@@ -109,13 +120,17 @@ export function MobileHeaderNavigation({
   menuId,
   panelRef,
   closeMenu,
+  closeForUtility,
   isActive,
   isPurposeActive,
+  currentPurposeHref,
   hideBottomTabs = false,
   isMobileViewport = true,
 }: MobileHeaderNavigationProps) {
   useBilingualI18nRevision();
-  const pathname = usePathname();
+  const { pathname, key: locationKey } = useLocation();
+  const previousLocationKey = useRef(locationKey);
+  const openMusic = useSiteMenuAudioHandoff(menuOpen, locationKey, closeForUtility ?? closeMenu);
   const language = useI18n((state) => state.lang);
   const locale = siteNavigationLocale(language);
   const t = useT();
@@ -146,6 +161,14 @@ export function MobileHeaderNavigation({
           "영감을 찾고, 그리고, 함께 나누는 작업실",
           "Discover inspiration, draw and share your work"
         );
+
+  useEffect(() => {
+    const committed = previousLocationKey.current !== locationKey;
+    previousLocationKey.current = locationKey;
+    // RouterLink와 이동 취소 가드가 먼저 처리되도록, 실제 이동이 반영된 뒤에만 닫는다.
+    // 동일 경로 이동도 새 key를 만들지만, 취소·수정키·새 탭은 현재 메뉴를 유지한다.
+    if (committed && menuOpen) closeMenu();
+  }, [locationKey, menuOpen, closeMenu]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -216,10 +239,11 @@ export function MobileHeaderNavigation({
 
   return (
     <>
+      <span hidden data-site-mobile-utilities="available" />
       {menuOpen && (
         <div
           ref={overlayRef}
-          className="fixed inset-0 z-[110] min-[1180px]:hidden"
+          className="fixed inset-0 z-[110]"
         >
           <div
             aria-hidden="true"
@@ -235,14 +259,7 @@ export function MobileHeaderNavigation({
             aria-label={t("nav.allMenu")}
             tabIndex={-1}
             data-site-product={navigationContext}
-            onClickCapture={(event) => {
-              if (
-                !event.defaultPrevented &&
-                (event.target as HTMLElement | null)?.closest("a[href]")
-              ) {
-                closeMenu();
-              }
-            }}
+            data-site-menu-panel="true"
             className="absolute inset-x-0 top-0 z-[110] max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
           >
             <div className="sticky top-0 z-10 border-b border-line/60 bg-canvas/92 backdrop-blur-2xl">
@@ -283,23 +300,19 @@ export function MobileHeaderNavigation({
                 </Link>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                {navigationGroups.map((group, groupIndex) => (
-                  <section
+              <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
+              <div className="grid items-start gap-2">
+                {navigationGroups.map((group) => (
+                  <details
                     key={group.id}
                     aria-labelledby={`${menuId}-${group.id}`}
                     className="site-menu-group"
+                    open={group.id === currentGroupId}
                     data-current-journey={group.id === currentGroupId ? "true" : undefined}
                   >
-                    <div className="mb-3 flex items-start gap-3 px-1 sm:px-2">
-                      <span
-                        aria-hidden="true"
-                        className="font-display text-[0.68rem] font-bold tracking-[0.14em] text-accent"
-                      >
-                        0{groupIndex + 1}
-                      </span>
-                      <div>
-                        <h2
+                    <summary className="site-menu-group__summary">
+                      <span>
+                        <span
                           id={`${menuId}-${group.id}`}
                           className="font-display text-sm font-bold text-fg"
                         >
@@ -309,12 +322,10 @@ export function MobileHeaderNavigation({
                               {bi("현재 여정", "Current journey")}
                             </span>
                           )}
-                        </h2>
-                        <p className="mt-1 text-xs leading-5 text-fg-3">
-                          {siteNavigationText(group.description, locale)}
-                        </p>
-                      </div>
-                    </div>
+                        </span>
+                      </span>
+                      <ChevronDown size={18} aria-hidden="true" />
+                    </summary>
                     <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       {group.items.filter((item) => !PINNED_MENU_HREFS.has(item.href)).map((item) => {
                         const active = isActive(item.href, item.exact);
@@ -367,7 +378,7 @@ export function MobileHeaderNavigation({
                         );
                       })}
                     </ul>
-                  </section>
+                  </details>
                 ))}
               </div>
 
@@ -377,8 +388,8 @@ export function MobileHeaderNavigation({
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 sm:grid-cols-4">
-                {SITE_UTILITY_NAVIGATION.map((item) => {
+              <div className="mt-4 grid gap-2 border-t border-line pt-4">
+                {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;
                   const label = siteNavigationText(item.label, locale);
@@ -403,7 +414,7 @@ export function MobileHeaderNavigation({
                             : "text-fg-3 group-hover:text-accent"
                         }
                       />
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span className="min-w-0 break-words">{label}</span>
                       <span
                         aria-hidden="true"
                         className={cx(
@@ -422,11 +433,11 @@ export function MobileHeaderNavigation({
         </div>
       )}
 
-      {showBottomTabs && (
+      {showBottomTabs && !menuOpen && (
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl md:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl min-[1180px]:hidden"
         >
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div
@@ -436,7 +447,9 @@ export function MobileHeaderNavigation({
             )}
           >
             {mobileTabs.map((item) => {
-              const active = isPurposeActive(item.href, item.exact);
+              const active = currentPurposeHref === undefined
+                ? isPurposeActive(item.href, item.exact)
+                : currentPurposeHref === item.href;
               const Icon = item.icon;
               const label = siteNavigationText(item.label, locale);
               return (

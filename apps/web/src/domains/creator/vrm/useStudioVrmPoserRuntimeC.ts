@@ -12,6 +12,7 @@ import {
   EXTRA_POSE_PRESETS,
   NATURAL_IDLE_POSES,
 } from "../studio-pose-presets";
+import { creatorStorageDetail, creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 
 import {
   parseAvatarForgeState,
@@ -580,9 +581,10 @@ export function useStudioVrmPoserRuntimeC(h: StudioVrmPoserHost): void {
       ) return;
       setVrmCreativePersistenceStatus("read-error");
       setVrmCreativePersistenceMessage(
-        `SQLite/OPFS 포즈 데이터를 검증해 불러오지 못했습니다. 기존 원문 보호를 위해 저장을 막았습니다: ${
-          caughtError instanceof Error ? caughtError.message : String(caughtError)
-        }`,
+        creatorStorageDetail(creatorStorageText(
+          "저장된 포즈를 안전하게 불러오지 못했습니다. 기존 작업을 보호하려고 변경을 막았습니다. 저장 공간을 확인하고 다시 불러와 주세요.",
+          "Could not safely load saved poses. Changes are blocked to protect existing work. Check device storage and reload the poses.",
+        ), caughtError),
       );
     });
 
@@ -612,9 +614,10 @@ export function useStudioVrmPoserRuntimeC(h: StudioVrmPoserHost): void {
       ) return;
       setCalibrationPersistenceStatus("read-error");
       setCalibrationPersistenceMessage(
-        `SQLite/OPFS 캘리브레이션을 검증해 불러오지 못했습니다: ${
-          caughtError instanceof Error ? caughtError.message : String(caughtError)
-        }`,
+        creatorStorageDetail(creatorStorageText(
+          "저장된 정면 보정을 안전하게 불러오지 못했습니다. 저장 공간을 확인한 뒤 다시 열어 주세요.",
+          "Could not safely load the saved front-facing adjustment. Check device storage and reopen this panel.",
+        ), caughtError),
       );
     });
     return () => {
@@ -683,9 +686,10 @@ export function useStudioVrmPoserRuntimeC(h: StudioVrmPoserHost): void {
       ) return;
       setCalibrationPersistenceStatus("read-error");
       setCalibrationPersistenceMessage(
-        `SQLite/OPFS 캘리브레이션 삭제에 실패했습니다. 새로고침하면 이전 값이 복원될 수 있습니다: ${
-          caughtError instanceof Error ? caughtError.message : String(caughtError)
-        }`,
+        creatorStorageDetail(creatorStorageText(
+          "저장된 정면 보정을 지우지 못했습니다. 새로고침하면 이전 값이 돌아올 수 있습니다. 저장 공간을 확인하고 다시 지워 주세요.",
+          "Could not remove the saved front-facing adjustment. The previous value may return on refresh. Check device storage and try removing it again.",
+        ), caughtError),
       );
     });
   };

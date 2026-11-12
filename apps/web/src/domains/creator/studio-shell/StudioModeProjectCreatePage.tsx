@@ -1,6 +1,6 @@
 import {
   Lightbulb,
-  Sparkles, Upload,
+  Upload,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -25,9 +25,7 @@ import {
 import {
   STUDIO_AUXILIARY_WORKSPACE_OPTIONS,
   STUDIO_PROJECT_COLLABORATION_OPTIONS,
-  STUDIO_PROJECT_FORMAT_PROFILES,
   STUDIO_PROJECT_PURPOSE_OPTIONS,
-  STUDIO_PROJECT_START_POINT_OPTIONS,
   studioProjectDefinitionFromSelection,
   studioProjectFormatDocumentTitle,
   studioProjectFormatProfile,
@@ -54,17 +52,12 @@ import { createStudioProjectWithInitialDocument } from "../studio-project-creati
 import { STUDIO_PROJECT_CREATE_TEMPLATES } from "../save-first/studio-project-create-options";
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import {
-  AUXILIARY_ICONS,
   CANVAS_DIMENSION_MAX,
   CANVAS_DIMENSION_MIN,
   CANVAS_HEIGHT_INPUT_ID,
   CANVAS_WIDTH_INPUT_ID,
   COLLABORATION_ICONS,
-  CREATE_DISABLED_REASON_ID,
-  CREATE_SIZE_REASON_ID,
   PROJECT_TITLE_INPUT_ID,
-  START_POINT_ICONS,
-  focusProjectTitle,
   hrefWithFormat,
   normalizedRequestedTemplate,
   onboardingStartPointFromProject,
@@ -86,10 +79,13 @@ import { StudioCreateLaunchSummary, StudioCreateReturnToStart } from "./StudioCr
 import { StudioCreateQuickPresetStrip, type StudioCreateQuickPreset } from "./StudioCreateQuickPresetStrip";
 import { StudioCreateReviewDetails } from "./StudioCreateReviewDetails";
 import { StudioJourneyStepBar } from "./StudioJourneyStepBar";
-import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
+import { StudioCreateFormatStep, StudioCreateStartStep } from "./StudioCreateChoiceSteps";
+import { StudioCreateStepActions, StudioCreateStepNavigation, StudioCreateStepPanel, StudioCreateStepScope } from "./StudioCreateStepFlow";
+import { useStudioCreateStepFlow } from "./useStudioCreateStepFlow";
 import { STUDIO_PROJECT_TITLE_MAX_LENGTH, normalizeStudioProjectTitleDraft } from "./studio-project-title";
 import "./studio-illustrated-project-surfaces.css";
 import "./studio-create-focused-flow.css";
+import "./studio-create-step-flow.css";
 
 export function StudioModeProjectCreatePage() {
   const bt = useBilingual("StudioModeProjectCreatePage");
@@ -149,6 +145,7 @@ export function StudioModeProjectCreatePage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const advancedSettingsRef = useRef<HTMLDetailsElement>(null);
+  const stepFlow = useStudioCreateStepFlow(initialPreset || explicitEntryLane || requestedTemplateId ? 2 : 1);
 
   const format = studioProjectFormatProfile(formatId);
   const auxiliary = STUDIO_AUXILIARY_WORKSPACE_OPTIONS.find((option) => option.id === auxiliaryKind) ?? null;
@@ -190,7 +187,7 @@ export function StudioModeProjectCreatePage() {
             : bt("다음: 편집기", "Next: editor");
   function focusCanvasSize() {
     if (advancedSettingsRef.current) advancedSettingsRef.current.open = true;
-    document.getElementById(customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID)?.focus();
+    stepFlow.goTo(2, customWidth === null ? CANVAS_WIDTH_INPUT_ID : CANVAS_HEIGHT_INPUT_ID);
   }
 
   function syncStartPointSelection(next: StudioProjectStartPoint, supportsPlan = supportsProductionPlan) {
@@ -326,7 +323,15 @@ export function StudioModeProjectCreatePage() {
     }
   }
 
+  function focusName() { stepFlow.goTo(2, PROJECT_TITLE_INPUT_ID); }
+  function returnToReview() { stepFlow.goTo(3, titleReady && sizeReady ? "studio-create-primary-action" : "studio-create-launch-summary"); }
+  function submitStep(): boolean {
+    if (stepFlow.step < 3) { stepFlow.goTo(stepFlow.step === 1 ? 2 : 3); return false; }
+    return create();
+  }
+
   return (
+    <StudioCreateStepScope onReturn={returnToReview}>
     <div
       data-page-template="form"
       data-route-ready="studio-new"
@@ -339,29 +344,22 @@ export function StudioModeProjectCreatePage() {
       <Container size="wide" className="py-4 sm:py-7">
         <StudioCreateKeyboardForm label={bt("새 프로젝트 설정", "New project settings")}
           titleReady={titleReady} sizeReady={sizeReady} creating={creating}
-          onCreate={create} onFixName={focusProjectTitle} onFixSize={focusCanvasSize}>
+          onCreate={submitStep} onFixName={focusName} onFixSize={focusCanvasSize}>
           {(onInputKeyDown) => <>
-          <StudioJourneyStepBar currentStep="start" startHref="/create" allowCurrentStepLink className="mb-4" />
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
-            eyebrow={(
-              <>
-                <Sparkles size={14} aria-hidden="true" />
-                {bt("새 프로젝트", "New project")}
-              </>
-            )}
-            title={bt("어떤 작품을 만들까요?", "What would you like to create?")}
-            description={bt(
-              "만들 형식과 시작 단계만 고르면 바로 작업실이 열려요. 해상도나 협업 설정은 필요할 때만 아래에서 펼쳐 보세요.",
-              "Pick a format and starting step to open your workspace right away. Extra settings stay folded until you need them.",
-            )}
+            className="studio-create-purpose-header"
+            title={stepFlow.step === 1 ? bt("새 작품 만들기", "Create a new work")
+              : stepFlow.step === 2 ? bt("이름과 기본 크기", "Name and starting size")
+                : bt("시작할 준비가 됐나요?", "Ready to start?")}
             secondaryActions={(
-              <Link href="/studio/import" className={buttonClass({ variant: "outline" })}>
+              <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-12" })}>
                 <Upload size={16} aria-hidden="true" />
-                {bt("가진 파일 불러오기", "Import an existing file")}
+                {bt("파일 불러오기", "Import a file")}
               </Link>
             )}
           />
+          <StudioCreateStepNavigation step={stepFlow.step} onStep={stepFlow.goTo} />
 
           {importedIdea ? (
             <p
@@ -373,7 +371,7 @@ export function StudioModeProjectCreatePage() {
               <span className="min-w-0 break-words font-bold [word-break:keep-all]">{importedIdea}</span>
               <button
                 type="button"
-                onClick={focusProjectTitle}
+                onClick={focusName}
                 className="ml-auto inline-flex min-h-11 items-center rounded-lg px-2 text-xs font-bold text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
               >
                 {bt("프로젝트 이름으로 채웠어요 · 확인하기", "Used as the project name · Review")}
@@ -381,130 +379,24 @@ export function StudioModeProjectCreatePage() {
             </p>
           ) : null}
 
+          <StudioCreateStepPanel step={1} current={stepFlow.step}>
+            <StudioCreateFormatStep format={format} auxiliary={auxiliary} locale={locale} onFormat={chooseFormat} onAuxiliary={chooseAuxiliary}
+              primaryAction={<StudioCreateStepActions step={1} onStep={stepFlow.goTo} />} />
+            <details className="studio-create-genre-options" data-studio-create-genres="true" open={Boolean(activeQuickPresetId) || undefined}>
+              <summary>{bt("장르 예시로 시작하기", "Start from a genre example")}</summary>
           <StudioCreateQuickPresetStrip
             activePresetId={activeQuickPresetId}
             onSelectPreset={applyQuickPreset}
-            onQuickStart={titleReady && sizeReady ? () => { create(); } : undefined}
+            onQuickStart={titleReady && sizeReady ? returnToReview : undefined}
+            quickStartLabel={bt("시작 전 확인", "Review before starting")}
             quickStartSummary={`${title.trim() || targetTitle} · ${documentWidth} × ${documentHeight}px · ${nextStepLabel}`}
             creating={creating}
           />
-
-          <FormStepSection
-            step={1}
-            titleId="studio-format-title"
-            title={bt("만들 작품 형식을 골라 주세요", "Choose the format to create")}
-            description={bt("독자가 보게 될 화면 형태를 고르면 알맞은 캔버스 크기를 자동으로 맞춰 드려요.", "Choose how readers will view your work and we will set the right canvas size.")}
-          >
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
-              {STUDIO_PROJECT_FORMAT_PROFILES.map((profile) => {
-                const active = !auxiliary && profile.id === format.id;
-                const outputs = locale === "ko" ? profile.outputsKo : profile.outputsEn;
-                return (
-                  <button
-                    key={profile.id}
-                    type="button"
-                    aria-pressed={active}
-                    data-studio-create-format={profile.id}
-                    onClick={() => chooseFormat(profile)}
-                    className={cn(
-                      "min-w-0 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-                      active
-                        ? "border-accent bg-accent-soft/45"
-                        : "border-line bg-panel/45 hover:border-line-strong hover:bg-raised",
-                    )}
-                  >
-                    <span className="studio-format-illustration" data-format={profile.id} aria-hidden="true">
-                      <span>{bt("안내 일러스트", "Guide illustration")}</span>
-                    </span>
-                    <StudioProjectFormatVisual profile={profile} active={active} className="h-32" />
-                    <strong className="mt-3 block break-words text-sm text-fg">{bt(profile.titleKo, profile.titleEn)}</strong>
-                    <span className="mt-1 block min-h-5 text-xs font-bold text-accent">{active ? bt("✓ 선택됨", "✓ Selected") : null}</span>
-                    <span className="mt-1 block break-words text-xs leading-5 text-fg-2">
-                      {bt(profile.descriptionKo, profile.descriptionEn)}
-                    </span>
-                    <span className={cn("mt-2 block break-words text-xs font-bold", active ? "text-fg" : "text-fg-2")}>
-                      {bt("출력", "Output")} · {outputs.slice(0, 2).join(" · ")}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <details className="mt-4 rounded-2xl border border-line bg-panel/35" open={Boolean(auxiliary) || undefined} data-studio-auxiliary-workspaces="true">
-              <summary className="min-h-12 cursor-pointer content-center px-4 text-sm font-bold text-fg-2">
-                {bt("작품 프로젝트가 아닌 단일 작업실로 시작", "Start with a standalone workspace")}
-                <span className="ml-2 text-xs font-medium text-fg-2">
-                  {bt("스토리보드·이미지 편집·3D·홍보·발표", "Storyboard, image, 3D, promotion or slides")}
-                </span>
-              </summary>
-              <div className="grid gap-2 border-t border-line p-3 sm:grid-cols-2 lg:grid-cols-5">
-                {STUDIO_AUXILIARY_WORKSPACE_OPTIONS.map((option) => {
-                  const Icon = AUXILIARY_ICONS[option.id];
-                  const active = auxiliary?.id === option.id;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      aria-pressed={active}
-                      data-studio-auxiliary-kind={option.id}
-                      onClick={() => chooseAuxiliary(option)}
-                      className={cn(
-                        "min-h-24 rounded-xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
-                        active ? "border-accent bg-accent-soft/45" : "border-line bg-card hover:bg-raised",
-                      )}
-                    >
-                      <Icon size={18} className={active ? "text-accent" : "text-fg-2"} aria-hidden="true" />
-                      <strong className="mt-2 block text-xs text-fg">{bt(option.titleKo, option.titleEn)}</strong>
-                      <span className="mt-1 line-clamp-2 block text-[0.68rem] leading-5 text-fg-2">
-                        {bt(option.descriptionKo, option.descriptionEn)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
             </details>
-          </FormStepSection>
+          </StudioCreateStepPanel>
+          <StudioCreateStepPanel step={2} current={stepFlow.step}>
           <FormStepSection
             step={2}
-            titleId="studio-start-point-title"
-            title={bt("지금 어디서부터 시작할까요?", "Where would you like to start?")}
-            description={bt("고른 단계에 맞춰 가장 먼저 필요한 작업 화면으로 바로 안내해 드려요.", "Jump straight to the first workspace that matches what you have ready.")}
-          >
-            <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
-              {STUDIO_PROJECT_START_POINT_OPTIONS.map((option) => {
-                const Icon = START_POINT_ICONS[option.id];
-                const active = effectiveStartPoint === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    aria-pressed={active}
-                    data-studio-start-point={option.id}
-                    onClick={() => chooseStartPoint(option.id)}
-                    className={cn(
-                      "flex min-h-24 min-w-0 flex-col items-start gap-2 rounded-2xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:flex-row sm:gap-3",
-                      active ? "border-accent bg-accent-soft/45" : "border-line bg-panel/45 hover:bg-raised",
-                    )}
-                  >
-                    <span className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-xl",
-                      active ? "bg-accent text-on-accent" : "bg-card text-fg-2",
-                    )}>
-                      <Icon size={17} aria-hidden="true" />
-                    </span>
-                    <span className="min-w-0 break-words">
-                      <strong className="block text-sm text-fg">{bt(option.titleKo, option.titleEn)}</strong>
-                      <span className="mt-1 block text-xs leading-5 text-fg-2">
-                        {bt(option.descriptionKo, option.descriptionEn)}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </FormStepSection>
-          <FormStepSection
-            step={3}
             titleId="studio-project-details-title"
             title={bt("이름과 기본 크기를 확인하세요", "Check the name and starting size")}
             description={bt("별도 규격이 없다면 미리 채워진 값으로 시작하세요.", "Use the prefilled values unless your project needs a different specification.")}
@@ -518,7 +410,7 @@ export function StudioModeProjectCreatePage() {
                     onKeyDown={onInputKeyDown}
                     enterKeyHint="go"
                     aria-invalid={!titleReady || undefined}
-                    aria-describedby={!titleReady ? CREATE_DISABLED_REASON_ID : undefined}
+                    aria-describedby={!titleReady ? "studio-create-name-step-reason" : undefined}
                     value={title}
                     maxLength={STUDIO_PROJECT_TITLE_MAX_LENGTH}
                     onChange={(event) => {
@@ -529,7 +421,10 @@ export function StudioModeProjectCreatePage() {
                     className="mt-2 min-h-11 w-full rounded-xl border border-line bg-panel px-3 text-sm font-bold text-fg outline-none focus:border-accent"
                   />
                 </label>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5" aria-label={bt("임시 제목 예시", "Working title examples")}>
+                {!titleReady ? <p id="studio-create-name-step-reason" role="alert" className="mt-2 text-sm text-danger">{bt("프로젝트 이름을 입력해 주세요.", "Enter a project name.")}</p> : null}
+                <details className="studio-create-genre-options" aria-label={bt("임시 제목 예시", "Working title examples")}>
+                  <summary>{bt("이름 예시 보기", "See name examples")}</summary>
+                <div className="flex flex-wrap items-center gap-1.5 p-2">
                   <span className="text-[0.68rem] text-fg-3">{bt("임시 제목:", "Quick title:")}</span>
                   {([
                     ["1화 초안", "Episode 1 Draft"],
@@ -546,13 +441,14 @@ export function StudioModeProjectCreatePage() {
                           setTitle(sample);
                           setTitleEdited(true);
                         }}
-                        className="min-h-8 rounded-full border border-line bg-panel/70 px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                        className="min-h-12 rounded-full border border-line bg-panel/70 px-2.5 py-1 text-[0.68rem] font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                       >
                         {sample}
                       </button>
                     );
                   })}
                 </div>
+                </details>
               </div>
               <label className="block text-xs font-bold text-fg-2" htmlFor="studio-mode-template">
                 {bt("형식·초기 크기", "Format and initial size")}
@@ -580,26 +476,22 @@ export function StudioModeProjectCreatePage() {
                 ) : null}
               </label>
             </div>
+            <details className="studio-create-genre-options">
+              <summary>{bt("원고 크기 미리보기", "Preview the canvas size")}</summary>
             <StudioCanvasSafeZoneSimulator
               width={documentWidth}
               height={documentHeight}
               formatId={auxiliary ? undefined : format.id}
               pageCount={selectedPageCount}
             />
+            </details>
           </FormStepSection>
-
-          <StudioCreateLaunchSummary
-            targetTitle={targetTitle} width={documentWidth} height={documentHeight}
-            titleReady={titleReady} sizeReady={sizeReady} structuredWebtoon={structuredWebtoon}
-            creating={creating} startLabel={startLabel} nextStepLabel={nextStepLabel} error={error}
-            onFixName={focusProjectTitle} onFixSize={focusCanvasSize}
-          />
-
           <details ref={advancedSettingsRef} className="mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5" data-studio-create-advanced="true">
             <summary className="min-h-12 cursor-pointer content-center rounded-xl text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
               {bt("크기·제작 목적·협업 설정 (선택)", "Size, purpose and collaboration (optional)")}
               <span className="mt-1 block text-xs font-normal leading-5 text-fg-2">{bt("직접 정할 필요가 있을 때만 바꾸세요. 접어도 선택한 값은 유지됩니다.", "Change these only when needed. Collapsing this section keeps your choices.")}</span>
             </summary>
+            {!sizeReady ? <p id="studio-create-size-step-reason" role="alert" className="mt-3 text-sm text-danger">{bt("너비와 높이는 1부터 1,000,000 사이의 정수로 입력해 주세요.", "Enter width and height as whole numbers between 1 and 1,000,000.")}</p> : null}
             <fieldset className="mt-4" data-studio-create-custom-size="true">
               <legend className="text-xs font-bold text-fg-2">
                 {bt("캔버스 크기 직접 입력", "Enter canvas size directly")}
@@ -617,7 +509,7 @@ export function StudioModeProjectCreatePage() {
                     step={1}
                     value={sizeOverride?.width ?? String(modePlan.document.width)}
                     aria-invalid={sizeOverride !== null && customWidth === null ? true : undefined}
-                    aria-describedby={sizeOverride !== null && customWidth === null ? CREATE_SIZE_REASON_ID : undefined}
+                    aria-describedby={sizeOverride !== null && customWidth === null ? "studio-create-size-step-reason" : undefined}
                     onChange={(event) => {
                       setActiveQuickPresetId(null);
                       setSizeOverride({
@@ -641,7 +533,7 @@ export function StudioModeProjectCreatePage() {
                     step={1}
                     value={sizeOverride?.height ?? String(modePlan.document.height)}
                     aria-invalid={sizeOverride !== null && customHeight === null ? true : undefined}
-                    aria-describedby={sizeOverride !== null && customHeight === null ? CREATE_SIZE_REASON_ID : undefined}
+                    aria-describedby={sizeOverride !== null && customHeight === null ? "studio-create-size-step-reason" : undefined}
                     onChange={(event) => {
                       setActiveQuickPresetId(null);
                       setSizeOverride({
@@ -741,7 +633,23 @@ export function StudioModeProjectCreatePage() {
             )}
             <StudioCreateReturnToStart />
           </details>
-
+            <StudioCreateStepActions step={2} onStep={stepFlow.goTo} ready={titleReady && sizeReady} />
+          </StudioCreateStepPanel>
+          <StudioCreateStepPanel step={3} current={stepFlow.step}>
+            <StudioCreateStepActions step={3} onStep={stepFlow.goTo} />
+            {auxiliary ? (
+              <FormStepSection step={3} titleId="studio-start-point-title"
+                title={bt("열릴 작업실을 확인하세요", "Review your workspace")}
+                description={bt("단일 작업실은 선택한 도구와 첫 문서를 준비해요.", "A standalone workspace prepares its tools and first document.")}>
+                <p className="mt-3 text-base font-semibold text-fg">{targetTitle}</p>
+              </FormStepSection>
+            ) : <StudioCreateStartStep effectiveStartPoint={effectiveStartPoint} onStartPoint={chooseStartPoint} />}
+          <StudioCreateLaunchSummary
+            targetTitle={targetTitle} width={documentWidth} height={documentHeight}
+            titleReady={titleReady} sizeReady={sizeReady} structuredWebtoon={structuredWebtoon}
+            creating={creating} startLabel={startLabel} nextStepLabel={nextStepLabel} error={error}
+            onFixName={focusName} onFixSize={focusCanvasSize}
+          />
           <StudioCreateReviewDetails format={auxiliary ? null : format} workspace={modePlan.profile} locale={locale} pageCount={selectedPageCount} />
 
           {/* 명시적인 제작 계획 선택은 기존 토글·온보딩 상태를 유지한다. */}
@@ -756,9 +664,15 @@ export function StudioModeProjectCreatePage() {
               onSyncCollaboration={setCollaboration}
             />
           ) : null}
+          <details className="studio-create-genre-options">
+            <summary>{bt("작품 제작 흐름 보기", "See the production journey")}</summary>
+            <StudioJourneyStepBar currentStep="start" startHref="/create" allowCurrentStepLink />
+          </details>
+          </StudioCreateStepPanel>
           </>}
         </StudioCreateKeyboardForm>
       </Container>
     </div>
+    </StudioCreateStepScope>
   );
 }

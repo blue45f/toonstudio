@@ -96,6 +96,33 @@ describe("StudioBg3dAdvancedWorkbenchHub", () => {
     cleanup();
   });
 
+  it("기상·태양 값은 미리보기로 표시하고 실제 장면과 카메라 명령을 바꾸지 않는다", () => {
+    const { host, live } = materialHost();
+    const before = JSON.stringify(live);
+    const camera = vi.fn();
+    render(<StudioBg3dAdvancedWorkbenchHub {...createStudioBg3dWorkbenchHostPorts(host)} onApplySceneCamera={camera} />);
+    expect(screen.getByText("현재 3D 장면에는 적용하거나 저장하지 않습니다.", { exact: false })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /촉촉한 봄비/u }));
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain("기상 미리보기:");
+    fireEvent.change(screen.getByRole("slider", { name: /태양 고도/u }), { target: { value: "60" } });
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).toContain("태양 미리보기:");
+    expect(JSON.stringify(live)).toBe(before);
+    expect(camera).not.toHaveBeenCalled();
+  });
+
+  it("장소 세트는 예시임을 밝히고 실제 정본 발행·회차 이동을 제공하지 않는다", () => {
+    const { host, live } = materialHost();
+    const before = JSON.stringify(live);
+    render(<StudioBg3dAdvancedWorkbenchHub defaultTab="place-set-package" {...createStudioBg3dWorkbenchHostPorts(host)} />);
+    expect(screen.getByRole("note").textContent).toContain("장소 세트 예시 미리보기");
+    expect(screen.queryByRole("button", { name: "현재 상태를 새 정본으로 발행" })).toBeNull();
+    const usage = screen.getByRole("button", { name: /1화 등교길/u });
+    expect(usage).toHaveProperty("disabled", true);
+    fireEvent.click(usage);
+    expect(screen.getByTestId("bg3d-workbench-last-action").textContent).not.toContain("사용처 이동");
+    expect(JSON.stringify(live)).toBe(before);
+  });
+
   it("MatCap 구매 재질을 현재 도형·모델에 적용하고 적용 표시와 잠금 거부를 실제 장면에서 읽는다", () => {
     const material = STUDIO_BG3D_PURCHASED_SURFACE_MATERIALS.find((entry) => entry.variants.some((variant) => variant.sourceVariant === "native-8k"));
     const native = material?.variants.find((variant) => variant.sourceVariant === "native-8k");

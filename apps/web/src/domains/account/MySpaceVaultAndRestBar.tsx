@@ -10,14 +10,14 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("MySpaceVaultAndRestBar", ko, en);
 
 /**
- * 시안 K (My Space Unified Vault & Breather) — 로컬 암호화 키·오프라인 원고 복구 금고 및 쉬어가기 2열 아틀리에 카드.
+ * 작업 복구·연결 설정과 쉬어가기 목적을 구분하는 개인 공간 카드.
  */
 export function MySpaceVaultAndRestBar() {
   useBilingualI18nRevision();
 
   return (
     <section
-      aria-label={bi("보안 볼트 및 쉬어가기 코너", "Security vault and rest corner")}
+      aria-label={bi("작업 복구와 쉬어가기", "Work recovery and a break")}
       data-testid="my-space-vault-rest-bar"
       className="mt-4 grid gap-3.5 lg:grid-cols-2"
     >
@@ -26,42 +26,39 @@ export function MySpaceVaultAndRestBar() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
             <ShieldCheck size={13} aria-hidden="true" />
-            <span>ATELIER VAULT · AES-GCM & OPFS</span>
-          </span>
-          <span className="rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[10.5px] font-bold text-good">
-            {bi("브라우저 격리 보호", "Local Isolated Vault")}
+            <span>{bi("기기 보관과 복구", "Device storage and recovery")}</span>
           </span>
         </div>
         <p className="mt-2 text-sm font-bold text-fg">
-          {bi("통합 키 볼트 · 오프라인 원고 복구", "Unified Key Vault & Manuscript Recovery")}
+          {bi("원고 복구와 연결 설정", "Recover work and manage connections")}
         </p>
         <p className="mt-0.5 text-xs text-fg-2">
           {bi(
-            "외부 AI API 키와 미동기화 원고 스냅샷을 서버 평문 노출 없이 안전하게 관리합니다.",
-            "Manage external AI API keys and unsynced manuscript snapshots with zero plaintext exposure.",
+            "작업 복구 자료와 외부 서비스 연결 설정을 확인하세요.",
+            "Find recovery data for your work and manage connections to other services.",
           )}
         </p>
         <div className="mt-3.5 flex flex-wrap gap-2">
           <Link
-            href="/settings/api-keys"
+            href="/studio/recovery"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
           >
-            <KeyRound size={14} aria-hidden="true" />
-            {bi("통합 API 키 볼트", "API Key Vault")}
+            <ShieldAlert size={14} aria-hidden="true" />
+            {bi("작업 복구 자료", "Work recovery data")}
           </Link>
           <Link
-            href="/studio/recovery"
+            href="/settings/api-keys"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
           >
-            <ShieldAlert size={14} aria-hidden="true" />
-            {bi("원고 복구 금고", "Manuscript Recovery Vault")}
+            <KeyRound size={14} aria-hidden="true" />
+            {bi("외부 서비스 연결 설정", "Service connection settings")}
           </Link>
           <Link
             href="/sitemap"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
           >
             <Compass size={14} aria-hidden="true" />
-            {bi("전체 사이트맵", "Full Sitemap")}
+            {bi("전체 기능", "All tools")}
           </Link>
         </div>
       </div>
@@ -71,16 +68,16 @@ export function MySpaceVaultAndRestBar() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-fg-2">
             <Sparkles size={13} className="text-accent" aria-hidden="true" />
-            <span>CREATOR LOUNGE · DAILY SPARK</span>
+            <span>{bi("창작 영감", "Creative inspiration")}</span>
           </span>
         </div>
         <p className="mt-2 text-sm font-bold text-fg">
-          {bi("쉬어가기 · 오늘의 창작 영감", "Take a Breather & Daily Spark")}
+          {bi("잠깐 쉬어가기", "Take a break")}
         </p>
         <p className="mt-0.5 text-xs text-fg-2">
           {bi(
-            "마감 사이 막힌 콘티 호흡을 환기하는 가벼운 창작 타로·실험실·오늘의 영감 보드입니다.",
-            "Refresh your creative rhythm between deadlines with tarot prompts, mini-experiments, and live sparks.",
+            "작업에서 잠시 벗어나 새로운 아이디어를 찾아보세요.",
+            "Step away from your work for a moment and explore new ideas.",
           )}
         </p>
         <div className="mt-3.5 flex flex-wrap gap-2">
@@ -103,7 +100,7 @@ export function MySpaceVaultAndRestBar() {
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg"
           >
             <Sun size={14} aria-hidden="true" />
-            {bi("지금 영감 보드", "Now Inspiration")}
+            {bi("영감 둘러보기", "Explore inspiration")}
           </Link>
         </div>
       </div>

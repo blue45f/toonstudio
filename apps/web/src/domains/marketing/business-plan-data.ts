@@ -97,7 +97,7 @@ export const BUSINESS_PLAN_SECTIONS: readonly PlanSection[] = [
       "역할·권한·과금 연동과 보안도 설득 포인트이다. 로그인·권한·과금 단위를 연동해 관리자가 부여한 역할의 화면만 보이게 하는 구조가 이미 있다는 것이 2회차 원문의 설명이다. 작업용 역할 집합은 원문의 스토리 작가·그림 작가·PD이며, 제품 화면의 정확한 권한 라벨은 제품과 대조할 확인 사항으로만 남기고 최종 권한 명칭으로 단정하지 않는다.",
     ],
     bullets: [
-      "3-Labs(3D Labs · Character Labs · Brush Labs) 통합 제작 브리지(X_LABS=96.84)와 Verify AI 자동 검증 게이트(96.74점), 7개 환경(Cloudflare · Vercel · Docker · K8s · AWS · GCP · GitHub Pages) 배포 스크립트 검증(171개 테스트 통과, 개발 코드 기준이며 고객 실사용 결과가 아님)",
+      "배경·캐릭터·브러시 연결과 결과 확인 기능은 개발 중 점검 항목이다. 내부 점수나 배포 예제의 테스트 수를 실제 작품 품질·운영 성능·고객 실사용 성공의 지표로 사용하지 않는다.",
     ],
     tables: [
       {
@@ -213,7 +213,7 @@ export const BUSINESS_PLAN_SECTIONS: readonly PlanSection[] = [
     bullets: [],
     tables: [
       {
-        caption: "실제 제품 수치 (서비스·공개 소스 코드 기준)",
+        caption: "기능·기술 기록 (운영 성공 지표가 아니다)",
         headers: ["항목", "수치"],
         rows: [
           ["테마 팩", "42개"],
@@ -222,11 +222,11 @@ export const BUSINESS_PLAN_SECTIONS: readonly PlanSection[] = [
           ["배경 생성 프리셋", "226개"],
           [
             "3-Labs 통합 제작 브리지 (3D · Character · Brush)",
-            "X_LABS = 96.84 / Verify AI = 96.74점 (171개 자동 테스트 통과, 2026-11-09 0d380996 기준)",
+            "도구 연결과 결과 확인을 위한 개발 기능. 실제 작품과 사용자 흐름은 별도 검증이 필요하다.",
           ],
           [
             "다중 클라우드 · 자체 환경 배포 매트릭스",
-            "7개 환경(Cloudflare · Vercel · Docker · K8s · AWS · GCP · GitHub Pages) 프리플라이트 100% 통과",
+            "현재 운영은 Cloudflare 정적 웹과 onpod API·DB. 승인·검증 후 수동 배포하며, 다른 환경의 예제는 운영 성공 증거가 아니다.",
           ],
         ],
       },

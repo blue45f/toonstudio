@@ -25,13 +25,55 @@ function fixture(workId = "work-a", supported = true) {
     subscribe: () => () => undefined, subscribeVoice: () => () => undefined,
   } as unknown as StudioLiveRoom;
 }
-function view(room: StudioLiveRoom | null, canChat = true, overrides: Partial<StudioLiveCollaborationContextValue> = {}, placement: "floating" | "inline" = "floating") {
+function view(room: StudioLiveRoom | null, canChat = true, overrides: Partial<StudioLiveCollaborationContextValue> = {}, placement: "floating" | "inline" = "floating", idleChromeTargetId?: string) {
   return <StudioLiveCollaborationContext.Provider value={{ ...EMPTY_STUDIO_LIVE_CONTEXT, room, canChat, availability: "ready", ...overrides }}>
-    <StudioP2pHuddleLauncher placement={placement} />
+    <StudioP2pHuddleLauncher placement={placement} idleChromeTargetId={idleChromeTargetId} />
   </StudioLiveCollaborationContext.Provider>;
 }
-afterEach(() => { resetStudioStrokeFocusActivityForTests(); cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); getUserMedia.mockClear(); track.stop.mockClear(); });
+afterEach(() => { resetStudioStrokeFocusActivityForTests(); cleanup(); document.getElementById("studio-collaboration-huddle-slot")?.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); getUserMedia.mockClear(); track.stop.mockClear(); });
 describe("P2P launcher consent and lifetime", () => {
+  it("대기 중 제어만 함께 작업 슬롯에 두고 사용자가 연 대화 패널은 접힘 밖에 유지한다", () => {
+    environment();
+    const slot = document.createElement("div"); slot.id = "studio-collaboration-huddle-slot"; document.body.append(slot);
+    render(view(fixture(), true, {}, "floating", slot.id));
+    const trigger = screen.getByRole("button", { name: "채팅·통화" });
+    expect(slot.contains(trigger)).toBe(true);
+    expect(trigger.closest("aside")?.dataset.studioHuddlePlacement).toBe("inline");
+    trigger.focus();
+    fireEvent.click(trigger);
+    const opened = screen.getByRole("complementary", { name: "협업 대화" });
+    expect(slot.contains(opened)).toBe(false);
+    expect(opened.dataset.studioHuddlePlacement).toBe("floating");
+    const close = screen.getByRole("button", { name: "대화 패널 접기" });
+    expect(document.activeElement).toBe(close);
+    fireEvent.click(close);
+    expect(slot.contains(screen.getByRole("button", { name: "채팅·통화" }))).toBe(true);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "채팅·통화" }));
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("참여한 통화는 슬롯이 숨겨져도 마이크와 나가기 경로 및 같은 세션을 유지한다", async () => {
+    environment();
+    const slot = document.createElement("div"); slot.id = "studio-collaboration-huddle-slot"; document.body.append(slot);
+    render(view(fixture(), true, {}, "floating", slot.id));
+    fireEvent.click(screen.getByRole("button", { name: "채팅·통화" }));
+    fireEvent.click(screen.getByRole("button", { name: "동의하고 P2P 채팅 참여" }));
+    fireEvent.click(screen.getByRole("button", { name: "마이크 켜기" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "마이크 끄기" })).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "대화 패널 접기" }));
+    slot.hidden = true;
+    const dock = screen.getByRole("complementary", { name: "협업 대화" });
+    expect(slot.contains(dock)).toBe(false);
+    expect(dock.dataset.studioShellForceVisible).toBe("true");
+    expect(getUserMedia).toHaveBeenCalledOnce(); expect(track.stop).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /P2P 대화 중/u }));
+    fireEvent.click(screen.getByRole("button", { name: "마이크 끄기" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "마이크 켜기" })).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "나가기" }));
+    expect(studioHuddleAudioFocusSnapshot()).toBe(false);
+    expect(track.stop).toHaveBeenCalledOnce();
+  });
+
   it("keeps inline controls in normal flow instead of covering the create action", () => {
     environment(); render(view(fixture(), true, {}, "inline"));
     const dock = screen.getByRole("complementary", { name: "협업 대화" });

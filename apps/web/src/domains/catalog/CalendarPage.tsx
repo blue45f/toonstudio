@@ -2,6 +2,7 @@ import "./catalog-page-controls.css";
 import { CalendarDays, CalendarPlus, RotateCcw } from "lucide-react";
 import { motion } from "motion/react";
 import { useId, useState, type KeyboardEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import type { PlatformId, Title, TitleCard } from "@/shared/lib/types";
 
@@ -65,15 +66,17 @@ const WEEK_DAY_LABEL: Readonly<Record<string, readonly [string, string]>> = {
   "토": ["토요일", "Saturday"],
   "일": ["일요일", "Sunday"],
 };
+const CALENDAR_DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 const asTitle = (card: TitleCard) => card as unknown as Title;
 const asTitleList = (cards: TitleCard[]) => cards as unknown as Title[];
 
 // 캘린더 작품 행 — 데스크톱 7열 컬럼과 모바일 요일 목록에서 공용.
-function CalItem({ title, className }: { title: TitleCard; className?: string }) {
+function CalItem({ title, day, className }: { title: TitleCard; day: string; className?: string }) {
   return (
     <Link
       href={`/title/${title.slug}`}
+      data-route-return-focus={`catalog-calendar:${day}:${title.id}`}
       className={cn(
         "group flex min-h-11 gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-raised",
         className
@@ -107,7 +110,7 @@ function CalendarDayItems({ items, day, compact = false }: { items: TitleCard[];
   const visible = items.slice(0, limit);
   return <>
     <div id={listId} className={compact ? "flex flex-col gap-2.5" : "grid gap-2 sm:grid-cols-2"}>
-      {visible.map((title) => <CalItem key={title.id} title={title} className={compact ? undefined : "border border-line bg-panel/30 p-2"} />)}
+      {visible.map((title) => <CalItem key={title.id} title={title} day={day} className={compact ? undefined : "border border-line bg-panel/30 p-2"} />)}
     </div>
     {items.length > (compact ? 12 : 24) && <div className="mt-3 border-t border-line pt-3">
       <p role="status" className="mb-2 text-xs text-fg-3">{formatI18nTemplate(bt("{v0} {v1} / {v2}편", "{v0} · {v1} / {v2} stories"), { v0: dayLabel, v1: visible.length.toLocaleString(locale), v2: items.length.toLocaleString(locale) })}</p>
@@ -120,6 +123,8 @@ export function CalendarPage() {
   useBilingualI18nRevision();
   const bt = useBilingual("CalendarPage");
   const locale = getCurrentUiLocale();
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
   const { data, loading, error, reload } = useApiResource<CalendarResponse>(
     "/api/calendar",
     bt("연재 캘린더를 불러오지 못했습니다.", "Couldn't load the release calendar.")
@@ -132,8 +137,18 @@ export function CalendarPage() {
   const platformFilterActive = filters.platforms.length > 0;
 
   const dayTabsId = useId();
-  // 모바일: 요일 탭으로 하루씩 본다(null = 오늘). 데스크톱(xl)은 7열 그리드 유지.
-  const [selectedDayIdx, setSelectedDayIdx] = useState<number | null>(null);
+  // 선택한 요일은 URL에 남겨 상세에서 돌아오거나 새로고침해도 같은 목록을 연다.
+  const requestedDay = new URLSearchParams(search).get("day");
+  const selectedDayIdx = CALENDAR_DAY_KEYS.findIndex((day) => day === requestedDay);
+  const selectDay = (index: number | null) => {
+    const day = index === null ? null : CALENDAR_DAY_KEYS[index];
+    if (index !== null && !day) return;
+    const next = new URLSearchParams(search);
+    if (day) next.set("day", day);
+    else next.delete("day");
+    const nextSearch = next.toString();
+    navigate({ pathname, search: nextSearch ? `?${nextSearch}` : "", hash }, { replace: true, preventScrollReset: true });
+  };
   const applyBmPreset = (nextBmId: CalendarBmFilterId) => {
     runSameDocumentViewTransition(() => {
       if (nextBmId === "all") {
@@ -176,7 +191,7 @@ export function CalendarPage() {
   // 오늘 편수도 오늘 칸(days[todayIdx]) 기준으로 센다. 응답의 todayCount 는 서버 기준
   // 오늘로 계산돼 자정 경계에서 클라이언트의 오늘 라벨과 어긋날 수 있다.
   const todayCount = days[todayIdx]?.items.length ?? 0;
-  const selDay = Math.min(selectedDayIdx ?? todayIdx, Math.max(0, days.length - 1));
+  const selDay = Math.min(selectedDayIdx < 0 ? todayIdx : selectedDayIdx, Math.max(0, days.length - 1));
   const selItems = days[selDay]?.items ?? [];
   const selDayPair = WEEK_DAY_LABEL[days[selDay]?.day ?? ""];
   const selDayLabel = selDayPair ? bt(...selDayPair) : (days[selDay]?.day ?? "");
@@ -188,7 +203,7 @@ export function CalendarPage() {
         : event.key === "Home" ? 0 : event.key === "End" ? days.length - 1 : null;
     if (next === null) return;
     event.preventDefault();
-    setSelectedDayIdx(next);
+    selectDay(next);
     // 좁은 화면의 가로 요일 목록에서도 키보드로 선택한 탭이 화면 안에 들어오게 한다.
     event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]').item(next).focus();
   };
@@ -216,7 +231,7 @@ export function CalendarPage() {
 
   // "오늘 연재" 밴드의 이동 버튼 — 데스크톱은 오늘 컬럼으로 스크롤, 모바일은 오늘 탭으로.
   const jumpToToday = () => {
-    setSelectedDayIdx(todayIdx);
+    selectDay(null);
     const target =
       document.getElementById("calendar-today-col") ??
       document.getElementById(`${dayTabsId}-panel`);
@@ -229,7 +244,7 @@ export function CalendarPage() {
       <div className="mb-5 min-w-0">
         <header className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-          <p className="eyebrow inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent"><CalendarDays size={14} aria-hidden="true" /> STARLIGHT SCHEDULE · RELEASE CALENDAR</p>
+          <p className="eyebrow inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent"><CalendarDays size={14} aria-hidden="true" />{bt("연재 캘린더", "Release calendar")}</p>
           <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
           <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
             {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
@@ -346,7 +361,7 @@ export function CalendarPage() {
                     aria-controls={`${dayTabsId}-panel`}
                     tabIndex={on ? 0 : -1}
                     onKeyDown={(event) => onDayKey(event, index)}
-                    onClick={() => setSelectedDayIdx(index)}
+                    onClick={() => selectDay(index)}
                     className={cn(
                       "relative inline-flex min-h-12 shrink-0 flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-xl border px-4 py-2 transition-colors sm:px-2",
                       on

@@ -32,10 +32,13 @@ import { cn } from "@/shared/lib/utils";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
+import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
+import { StudioDrawingClarityBar, StudioDrawingClarityEntry } from "./StudioDrawingClarityBar";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
 
 export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
+  const clarity = useStudioDrawingClarity();
   const {
     activeCatalogBrush,
     activePage,
@@ -357,9 +360,6 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
     retryPending: studioMarketplaceCloudSyncRetryPending,
     statusNotice: studioStatusNotice,
   });
-  // 데스크톱 맥락 옵션 바는 메뉴바의 하단 행(subRow)으로 붙여 상단 크롬이 하나의
-  // 앱바 단위로 읽히게 한다. 몰입 모드에서는 메뉴바가 플로팅 필로 바뀌므로 예전처럼
-  // 상태 레일 아래 독립 행으로 렌더한다.
   const desktopOptionsBars = !isMobile && !canvasOnlyMode ? (
     <Suspense fallback={<div aria-hidden="true" className="min-h-16 shrink-0 border-b border-line bg-panel" />}>
       <StudioOptionsBars
@@ -371,16 +371,16 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   ) : null;
   return (
     <>
-      <StudioAppMenubar
+      {clarity?.active ? <StudioDrawingClarityBar session={s} /> : <StudioAppMenubar
         aria-label="문서 메뉴"
-        subRow={mobileImmersive ? undefined : desktopOptionsBars}
+        subRow={isMobile ? <div className="studio-drawing-clarity-entry-mobile"><StudioDrawingClarityEntry /></div> : mobileImmersive ? undefined : desktopOptionsBars}
         className={cn(
           canvasOnlyMode && "hidden",
           mobileImmersive &&
             "h-auto min-h-11 border-0 bg-transparent shadow-none"
         )}
       >
-        <Suspense
+        {!isMobile ? <StudioDrawingClarityEntry /> : null}<Suspense
           fallback={(
             <div
               aria-hidden
@@ -536,10 +536,10 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
             ) : null}
           </button>
         </StudioToolHintTarget>
-      </StudioAppMenubar>
+      </StudioAppMenubar>}
 
       {/* 단계 안내는 밀도 정책을 따르며, 집중 화면에서는 도구와 캔버스를 먼저 보여 준다. */}
-      {!canvasOnlyMode && !mobileImmersive && studioUiDensityAllows(uiDensityMode, "workflow-guide") && workMode && setWorkMode ? (
+      {!clarity?.active && !canvasOnlyMode && !mobileImmersive && studioUiDensityAllows(uiDensityMode, "workflow-guide") && workMode && setWorkMode ? (
         <StudioWorkModeBar
           mode={workMode}
           onModeChange={setWorkMode}

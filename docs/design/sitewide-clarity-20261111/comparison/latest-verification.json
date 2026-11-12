@@ -1,0 +1,125 @@
+{
+  "checkedAt": "2026-11-11T22:15:45.514709+00:00",
+  "state": "current-static-connection-verification",
+  "scope": "comparison docs/이미지 연결만. 브라우저·제품·빌드·Git·원격 실행 없음.",
+  "checks": {
+    "htmlStaticParse": true,
+    "uniqueIds": true,
+    "inlineManifestMatches": true,
+    "all37ManifestAssetFilesAndHashes": true,
+    "newComparisonImages": 8,
+    "sourceAndCopyByteIdentical": true,
+    "historical29AssetsUnchanged": true,
+    "historical14LocalPngUnchanged": true,
+    "original5SvgUnchanged": true,
+    "families18Unchanged": true,
+    "baselineScenarios8Unchanged": true,
+    "localLinksExist": true,
+    "libraryPageLinked": true,
+    "supplementaryShowcaseReviewCopyByteIdentical": true
+  },
+  "historicalDirectoryFilesBefore": 17,
+  "modifiedDocuments": [
+    "index.html",
+    "manifest.json",
+    "README.md"
+  ],
+  "newImages": [
+    {
+      "file": "assets/latest-story-d400de4bdf3e-390.png",
+      "sha256": "71ccd39974e71fc2e4f57be9b934599cf45515e62a45198aef465684c78c7e97",
+      "bytes": 145701,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/story-proposal-versus-phase7-actual-390.png"
+    },
+    {
+      "file": "assets/latest-story-d400de4bdf3e-1440.png",
+      "sha256": "269a494c2687aabf845c83312d5c332b00ab6455aff99af1224b82a6afdc5feb",
+      "bytes": 310128,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/story-proposal-versus-phase7-actual-1440.png"
+    },
+    {
+      "file": "assets/latest-showcase-d400de4bdf3e-390.png",
+      "sha256": "e7057ab665fa6de23c01d5dbd1f7cf20f52669ac7ae131636c405ffc8eed0905",
+      "bytes": 355669,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-390.png"
+    },
+    {
+      "file": "assets/latest-showcase-d400de4bdf3e-1440.png",
+      "sha256": "64fa8ed7bf1d2a5168f497350f6e20d5057259009a86ea102f560dcf480c284e",
+      "bytes": 1044908,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/compare-proposal-actual-1440.png"
+    },
+    {
+      "file": "assets/latest-publish-107c11ff4351-390.png",
+      "sha256": "f480e7c92d4f3aca51cb92c2e8e7f2cd924c17eef4d3a3e631333462bc5930fd",
+      "bytes": 245437,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/phase8-proposal-vs-actual-publish-390x844.png"
+    },
+    {
+      "file": "assets/latest-publish-107c11ff4351-1440.png",
+      "sha256": "5268de6cf1f28012557d9354606b340408709ce541a1ae13fa7aef6999d93aca",
+      "bytes": 492856,
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/phase8-proposal-vs-actual-publish-1440x1000.png"
+    },
+    {
+      "file": "assets/latest-promo-107c11ff4351-390.png",
+      "sha256": "7e2934014461bced585a5ba2525694d5d47a4674752bef7404d520e3eecdc3f6",
+      "bytes": 342653,
+      "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/proposal-versus-actual-390.png"
+    },
+    {
+      "file": "assets/latest-promo-107c11ff4351-1440.png",
+      "sha256": "dc2d27bc938aca59a8f9d5108259cd1f2991144332819e679aa82b7e50d1baac",
+      "bytes": 1004835,
+      "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/proposal-versus-actual-1440.png"
+    }
+  ],
+  "sourceEvidenceReports": [
+    {
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/story-after-fidelity/phase7-actual-attempt1/manual-visual-review.json",
+      "sha256": "1fa7e43d8029bad7a7d2adbf7ce9d509df7f2bcfd1a726c834637ba246c3c853"
+    },
+    {
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/after-d400de4bdf3e-2026-11-11T21-34-43.115Z/results.json",
+      "sha256": "074dd9994dc95e1ee96c3bf291e4eee2a865c867a736a3cfdd5fe3835e18a3b7"
+    },
+    {
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/wave4-purpose-review/phase8-107c11ff-publish-final-v1/manual-final-review.json",
+      "sha256": "a1c0e8bb798dba1c7c3b1e506d24ea3c550aa989b258121c406e7fad1933ea95"
+    },
+    {
+      "sourcePath": "/workspace/toonstudio/.qa/promo-landing-density/phase8-built-arrows-attempt2/manual-handoff.json",
+      "sha256": "0b71d54665661995cec18e24732cb077b8d74cea79793547f90e74c2ac85ce0a"
+    },
+    {
+      "file": "evidence/showcase-d400-review-summary.json",
+      "sourcePath": "/workspace/toonstudio-ux-followups/.qa/showcase-density-review/phase7-review-summary.json",
+      "sha256": "abe5283955a80767745cebedcdf640b10c3ffee809a1f19239e9738d98010626",
+      "scope": "담당자의390/1440시안·actual및4911before·after4쌍view_image직접검토+390motion별도확인.원본results.pending은변경하지않음."
+    }
+  ],
+  "oldDocumentHashesBefore": {
+    "manifest.json": "22041033bb71a5f69606d29f96cb7e7b4f7e586936c1ecf455e212cbc0ae5f06",
+    "index.html": "f1d55d1dd4b8ac71d0eff69c15626612c8c7c743de0c7e05be884577b6400461",
+    "README.md": "c40a75172803e9d2f2fe7c3a0b2c935e16f36cf45f7bf4cbbc79fd19f1959d01"
+  },
+  "browserValidationOfUpdatedViewer": false,
+  "entireSiteUsabilityComplete": false,
+  "documentHashesAfter": {
+    "README.md": "7be7a53bd4c0e51d89fb061ba98e9951af822da8e9a84ac6fa729bf18ffabbe4",
+    "index.html": "4ab3af8e670b9cb57adcc45bb702c8247ad735d1967e8861ef66f1e052d62503",
+    "manifest.json": "a619d10df2e799e2853069753a4bf39d805404d6dd5e74730e12ba840f346515"
+  },
+  "newFiles": [
+    "latest-verification.json",
+    "assets/latest-story-d400de4bdf3e-390.png",
+    "assets/latest-story-d400de4bdf3e-1440.png",
+    "assets/latest-showcase-d400de4bdf3e-390.png",
+    "assets/latest-showcase-d400de4bdf3e-1440.png",
+    "assets/latest-publish-107c11ff4351-390.png",
+    "assets/latest-publish-107c11ff4351-1440.png",
+    "assets/latest-promo-107c11ff4351-390.png",
+    "assets/latest-promo-107c11ff4351-1440.png",
+    "evidence/showcase-d400-review-summary.json"
+  ]
+}

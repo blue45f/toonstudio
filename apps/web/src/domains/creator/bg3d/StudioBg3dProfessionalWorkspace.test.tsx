@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { resolveStudioRoute } from "../studio-router/studio-route-manifest";
 
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
 import {
@@ -66,12 +69,14 @@ describe("Studio BG3D professional workspace layout", () => {
 
   it("supports keyboard resize, dock controls, presets, and scoped persistence", async () => {
     render(
-      <StudioBg3dProfessionalWorkspace
-        scopeKey="project-a:scene-1"
-        outliner={<div>장면 계층</div>}
-        viewport={<main>뷰포트</main>}
-        inspector={<aside>속성</aside>}
-      />,
+      <MemoryRouter initialEntries={["/studio/bg3d"]}>
+        <StudioBg3dProfessionalWorkspace
+          scopeKey="project-a:scene-1"
+          outliner={<div>장면 계층</div>}
+          viewport={<main>뷰포트</main>}
+          inspector={<aside>속성</aside>}
+        />
+      </MemoryRouter>,
     );
 
     const outlinerSeparator = screen.getByRole("separator", { name: "장면 계층 패널 너비" });
@@ -130,8 +135,20 @@ describe("Studio BG3D professional workspace layout", () => {
     const dccBar = screen.getByTestId("studio-bg3d-dcc-mode-bar");
     expect(within(dccBar).getByRole("link", { name: "스컬프트" }).getAttribute("href"))
       .toBe("/studio/3d/dcc/sculpt");
-    expect(within(dccBar).getByRole("link", { name: "보조기기 컴패니언" }).getAttribute("href"))
-      .toBe("/studio/companion/canvas");
+    const companionHref = within(dccBar).getByRole("link", { name: "보조기기 컴패니언" }).getAttribute("href");
+    if (!companionHref) throw new Error("컴패니언 이동 주소가 없습니다.");
+    const companionUrl = new URL(companionHref, "https://toonstudio.test");
+    expect(resolveStudioRoute({ pathname: companionUrl.pathname, search: companionUrl.search }))
+      .toMatchObject({ kind: "companion", surface: "workspace" });
+
+    const shelf = screen.getByTestId("studio-bg3d-asset-shelf");
+    expect(within(shelf).queryByRole("button", { name: /Split-Wipe/u })).toBeNull();
+    expect(within(shelf).getByRole("link", { name: "원고 편집기로 이동" }).getAttribute("href"))
+      .toBe("/studio/comic");
+    expect(within(shelf).getByRole("link", { name: /학교 교실·복도 모듈/u }).textContent)
+      .toContain("열기");
+    expect(screen.getByRole("link", { name: "새 웹툰 시작하기" }).getAttribute("href"))
+      .toBe("/studio/new?template=webtoon&from=bg3d-cut");
 
     fireEvent.click(screen.getByRole("button", { name: "캐릭터·포즈" }));
     expect(screen.getByText("기본 체형 더미·포즈 릭")).toBeTruthy();

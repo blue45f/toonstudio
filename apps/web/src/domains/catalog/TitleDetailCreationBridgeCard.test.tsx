@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -16,30 +16,62 @@ afterEach(() => {
 });
 
 describe("TitleDetailCreationBridgeCard", () => {
-  it("renders 44px creation, spatial reader, and character talk links in Korean and English", () => {
-    useI18n.setState({ lang: "ko" });
+  it.each([
+    {
+      lang: "ko" as const,
+      title: "안개 속의 신호",
+      summary: "창작·뷰어 체험",
+      create: "3컷 이야기 만들기",
+      spatial: "공간 뷰어 체험",
+      chat: "캐릭터와 대화하기",
+    },
+    {
+      lang: "en" as const,
+      title: "Fog Signal",
+      summary: "Create or try the viewer",
+      create: "Create a 3-panel story",
+      spatial: "Try the spatial viewer",
+      chat: "Chat with characters",
+    },
+  ])("$lang: 부가 활동을 접어 시작하고 펼치면 기존 목적지 3개를 제공한다", (copy) => {
+    useI18n.setState({ lang: copy.lang });
     render(
       <MemoryRouter>
-        <TitleDetailCreationBridgeCard slug="fog-signal" titleName="안개 속의 신호" />
+        <TitleDetailCreationBridgeCard slug="fog-signal" titleName={copy.title} />
       </MemoryRouter>,
     );
 
     const card = screen.getByTestId("title-detail-creation-bridge");
-    const createLink = within(card).getByRole("link", { name: "이 연출 템플릿으로 3컷 시작" });
-    expect(createLink.getAttribute("href")).toBe("/create");
-    expect(createLink.className).toContain("min-h-11");
-    expect(within(card).getByRole("link", { name: "2.5D 공간 리더 체험" }).getAttribute("href")).toBe("/read/spatial");
-    expect(within(card).getByRole("link", { name: "캐릭터와 대화하기" }).getAttribute("href")).toBe("/character-chat?work=fog-signal");
+    const summary = within(card).getByText(copy.summary, { selector: "summary" });
+    expect(card.tagName).toBe("DETAILS");
+    expect(card.hasAttribute("open")).toBe(false);
+    // jsdom은 닫힌 details의 렌더링을 생략하지 않아 native open 상태와 링크 소속을 확인한다.
+    expect(within(card).getAllByRole("link").every((link) => link.closest("details") === card)).toBe(true);
+    expect(summary.className).toContain("min-h-11");
 
-    cleanup();
-    useI18n.setState({ lang: "en" });
+    fireEvent.click(summary);
+    expect(card.hasAttribute("open")).toBe(true);
+    const links = within(card).getAllByRole("link");
+    expect(links).toHaveLength(3);
+    expect(links.every((link) => link.className.includes("min-h-11"))).toBe(true);
+    expect(within(card).getByRole("link", { name: copy.create }).getAttribute("href")).toBe("/create");
+    expect(within(card).getByRole("link", { name: copy.spatial }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(card).getByRole("link", { name: copy.chat }).getAttribute("href")).toBe("/character-chat?work=fog-signal");
+    expect(within(card).getByText(new RegExp(copy.title))).toBeTruthy();
+    if (copy.lang === "en") expect(card.textContent).not.toMatch(/[가-힣]/u);
+
+    fireEvent.click(summary);
+    expect(card.hasAttribute("open")).toBe(false);
+  });
+
+  it("캐릭터 대화의 작품 식별자를 안전하게 인코딩한다", () => {
+    useI18n.setState({ lang: "ko" });
     render(
       <MemoryRouter>
-        <TitleDetailCreationBridgeCard slug="fog-signal" titleName="Fog Signal" />
+        <TitleDetailCreationBridgeCard slug="fog & signal" titleName="안개 속의 신호" />
       </MemoryRouter>,
     );
-    const enCard = screen.getByTestId("title-detail-creation-bridge");
-    expect(enCard.textContent).not.toMatch(/[가-힣]/u);
-    expect(within(enCard).getByRole("link", { name: "Start 3-panel story" }).getAttribute("href")).toBe("/create");
+    fireEvent.click(screen.getByText("창작·뷰어 체험", { selector: "summary" }));
+    expect(screen.getByRole("link", { name: "캐릭터와 대화하기" }).getAttribute("href")).toBe("/character-chat?work=fog%20%26%20signal");
   });
 });

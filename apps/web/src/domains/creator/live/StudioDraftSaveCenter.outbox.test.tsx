@@ -175,6 +175,7 @@ describe("StudioDraftSaveCenter reload-safe outbox", () => {
     });
 
     await waitFor(() => expect(onSaveDraft).toHaveBeenCalledTimes(1));
+    await screen.findByRole("button", { name: "저장 상태: 서버 저장 실패" });
     await waitFor(() => expect(readStudioDraftSaveOutbox({
       storage: window.sessionStorage,
       workId: "work-1",

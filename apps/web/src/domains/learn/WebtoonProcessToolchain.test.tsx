@@ -171,7 +171,7 @@ describe("공정별 도구 섹션 렌더", () => {
     expect(kindButtons[0]?.getAttribute("aria-pressed")).toBe("true");
     expect(kindButtons[0]?.className).toContain("text-on-accent");
 
-    const labGroup = screen.getByRole("group", { name: "아카데미 실습 랩 모드" });
+    const labGroup = screen.getByRole("group", { name: "연습할 내용" });
     const labButtons = within(labGroup).getAllByRole("button");
     expect(labButtons).toHaveLength(4);
     for (const btn of labButtons) {
@@ -193,7 +193,7 @@ describe("공정별 도구 섹션 렌더", () => {
     }
 
     const canvasCta = screen.getByRole("link", { name: /스튜디오 실습 캔버스 열기/u });
-    const roleCta = screen.getByRole("link", { name: /15개 세부직무 맞춤 배치 설정/u });
+    const roleCta = screen.getByRole("link", { name: /내 작업에 맞게 화면 설정/u });
     expect(canvasCta.className).toContain("min-h-11");
     expect(canvasCta.className).toContain("focus-visible:outline-2");
     expect(roleCta.className).toContain("min-h-11");

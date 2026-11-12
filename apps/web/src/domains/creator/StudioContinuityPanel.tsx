@@ -590,8 +590,8 @@ export function StudioContinuityPanel({
             </p>
             <p className="mt-1 text-xs text-fg-3" role="status">
               {!reviewStateReady ? frozenStatus3Text("studio.frozenStatus3.cont.reviewLoading", "검토 기록을 불러오는 중…") : null}
-              {reviewStateReady && reviewPersistence === "saving" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaving", "검토 기록을 SQLite/OPFS에 저장 중…") : null}
-              {reviewStateReady && reviewPersistence === "saved" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaved", "검토 기록: SQLite/OPFS 저장됨") : null}
+              {reviewStateReady && reviewPersistence === "saving" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaving", "검토 기록을 이 기기에 저장 중…") : null}
+              {reviewStateReady && reviewPersistence === "saved" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewSaved", "검토 기록: 이 기기에 저장됨") : null}
               {reviewStateReady && reviewPersistence === "memory" ? frozenStatus3Text("studio.frozenStatus3.cont.reviewMemory", "검토 기록은 현재 탭에만 보관됩니다. 저장된 원본은 변경하지 않습니다.") : null}
             </p>
           </div>
@@ -1084,7 +1084,7 @@ export function StudioContinuityPanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-9 items-center rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors duration-200 hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/65 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+            className="inline-flex min-h-9 items-center rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors duration-200 hover:bg-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/65 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           >
             닫기
           </button>

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Title } from "@/shared/lib/types";
+import { useI18n } from "@/shared/lib/i18n";
 
 import { CoverCard } from "./cover-card";
 
@@ -22,7 +23,8 @@ const TITLE = {
   ageRating: "all",
 } as unknown as Title;
 
-afterEach(cleanup);
+beforeEach(() => useI18n.setState({ lang: "ko" }));
+afterEach(() => { cleanup(); useI18n.setState({ lang: "ko" }); });
 
 describe("CoverCard 렌더링 계약 (S3-15)", () => {
   it("표지 이미지가 없으면 즉시 보이는 타이포 폴백(제목·저자)이 기본이다", () => {
@@ -30,8 +32,22 @@ describe("CoverCard 렌더링 계약 (S3-15)", () => {
     expect(container.querySelector("[data-cover-card]")?.getAttribute("data-cover-ratio")).toBe("portrait");
     expect(screen.getByRole("heading", { name: "비 오는 날의 첫사랑" })).toBeTruthy();
     expect(screen.getByText(/김작가/u)).toBeTruthy();
+    expect(container.textContent).not.toContain("IDX");
     // 빈 타일이 아니라 폴백 포스터가 첫 페인트부터 서 있다.
     expect(container.querySelector(".cover-card-poster")).not.toBeNull();
+  });
+
+  it.each([
+    ["webtoon", "웹툰", "Webtoon"],
+    ["webnovel", "웹소설", "Web novel"],
+  ] as const)("%s 형식이 언어 변경에 맞춰 읽기 쉬운 명칭으로 바뀐다", (type, korean, english) => {
+    render(<CoverCard title={{ ...TITLE, type }} />);
+    expect(screen.getByText(korean)).toBeTruthy();
+    act(() => { useI18n.setState({ lang: "en" }); });
+    expect(screen.getByText(english)).toBeTruthy();
+    expect(screen.queryByText(korean)).toBeNull();
+    expect(screen.getByRole("heading", { name: TITLE.title })).toBeTruthy();
+    expect(screen.getByText(TITLE.author)).toBeTruthy();
   });
 
   it("ratio=wide면 마켓 변형 데이터 속성이 붙는다", () => {

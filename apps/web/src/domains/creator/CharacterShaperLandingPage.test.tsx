@@ -249,7 +249,8 @@ describe("CharacterShaperLandingPage", () => {
     expect(screen.getAllByText(/VRM 0\.x/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/shape key/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/MediaPipe/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/SQLite\/OPFS/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/기기 보관이 확인된 작업/)).toBeTruthy();
+    expect(screen.queryByText(/SQLite\/OPFS/)).toBeNull();
     expect(screen.getAllByText(/권한에 동의한 뒤에만/).length).toBeGreaterThan(0);
 
     const faq = container.querySelector<HTMLElement>("[data-character-shaper-faq]");
@@ -258,7 +259,7 @@ describe("CharacterShaperLandingPage", () => {
     expect(scope?.querySelectorAll("details")).toHaveLength(6);
     // 한계는 접어 둬도 제목에 드러난다.
     expect(scope?.textContent).toContain("얼굴 프리셋은 모델에 따라");
-    expect(scope?.textContent).toContain("저장은 이 기기에");
+    expect(scope?.textContent).toContain("저장 위치 확인");
     for (const item of container.querySelectorAll("details > summary")) {
       expect(item.textContent?.trim().length).toBeGreaterThan(0);
     }

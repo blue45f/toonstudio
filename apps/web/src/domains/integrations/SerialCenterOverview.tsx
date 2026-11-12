@@ -24,9 +24,13 @@ import { integrationsStatusText } from "./integrations-status-i18n";
 export function SerialCenterOverview({
   ko,
   onSelectProject,
+  selectionDisabled = false,
+  selectionMode = false,
 }: Readonly<{
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
+  selectionDisabled?: boolean;
+  selectionMode?: boolean;
 }>) {
   const userId = useApp((state) => state.userId);
   const [projects, setProjects] = useState<readonly ProductionProjectSummary[]>([]);
@@ -77,10 +81,16 @@ export function SerialCenterOverview({
     () => projects.reduce((sum, project) => sum + project.readyBufferCount, 0),
     [projects],
   );
+  const createProjectAction = <Link
+    href="/production/projects"
+    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
+  >
+    <PackageOpen size={15} aria-hidden /> {ko ? "제작 프로젝트 만들러 가기" : "Go to create a production project"}
+  </Link>;
 
   return (
-    <section className="rounded-3xl border border-line bg-card p-5 sm:p-6" aria-label={ko ? "내 작품 연재 현황" : "My works' serialization status"}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className={selectionMode ? "py-3" : "rounded-3xl border border-line bg-card p-5 sm:p-6"} aria-label={selectionMode ? (ko ? "제작 프로젝트 선택" : "Choose a production project") : (ko ? "내 작품 연재 현황" : "My works' serialization status")}>
+      {!selectionMode ? <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
             {ko ? "연재 현황" : "Serialization status"}
@@ -89,19 +99,21 @@ export function SerialCenterOverview({
             {ko ? "내 작품은 지금 어디까지 왔나" : "Where each of my works stands"}
           </h2>
         </div>
-        {userId && !loading && !error && projects.length > 0 ? (
+        {userId && !selectionMode && !loading && !error && projects.length > 0 ? (
           <p className="text-sm text-fg-2" role="status">
             {ko
               ? `작품 ${projects.length}개 · 밀린 작업 ${overdueTotal}개 · 바로 올릴 수 있는 회차 ${readyTotal}개`
               : `${projects.length} work(s) · ${overdueTotal} overdue task(s) · ${readyTotal} episode(s) ready to publish`}
           </p>
         ) : null}
-      </div>
+      </div> : null}
 
       {!userId ? (
-        <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5">
+        <div className={selectionMode ? "flex flex-col items-start gap-3 py-2" : "mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5"}>
           <p className="text-sm leading-6 text-fg-2">
-            {ko
+            {selectionMode
+              ? (ko ? "제작 프로젝트를 고르려면 로그인해 주세요." : "Sign in to choose a production project.")
+              : ko
               ? "로그인하면 내 작품의 다음 발행 예정, 준비된 회차, 밀린 작업을 여기서 한눈에 볼 수 있어요."
               : "Sign in to see each work's next release, ready episodes, and overdue tasks at a glance."}
           </p>
@@ -136,28 +148,24 @@ export function SerialCenterOverview({
           </button>
         </div>
       ) : projects.length === 0 ? (
-        <div className="mt-5 flex flex-col items-start gap-3 rounded-2xl bg-panel/60 p-5">
+        <div className={`flex flex-col items-start gap-3 rounded-2xl bg-panel/60 ${selectionMode ? "mt-3 p-4" : "mt-5 p-5"}`}>
+          {selectionMode ? createProjectAction : null}
           <p className="text-sm leading-6 text-fg-2">
             {ko
-              ? "아직 제작 중인 작품이 없어요. 첫 작품을 시작하면 연재 현황이 여기에 모입니다."
-              : "No works in production yet. Start your first work and its serialization status will gather here."}
+              ? "아직 제작 프로젝트가 없어요. 제작 관리에서 프로젝트를 만든 뒤 여기서 선택하세요. 브라우저에 보관한 원고와 제작 프로젝트는 별도로 관리됩니다."
+              : "No production projects yet. Create one in Production, then choose it here. Browser-saved manuscripts and production projects are managed separately."}
           </p>
-          <Link
-            href="/create"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-on-accent"
-          >
-            <PackageOpen size={15} aria-hidden /> {ko ? "작품 시작하기" : "Start a work"}
-          </Link>
+          {!selectionMode ? createProjectAction : null}
         </div>
       ) : (
         <ul className="mt-5 grid gap-3 sm:grid-cols-2">
           {sorted.map((project) => (
-            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} />
+            <SerialProjectCard key={project.projectId} project={project} ko={ko} onSelectProject={onSelectProject} selectionDisabled={selectionDisabled} selectionMode={selectionMode} />
           ))}
         </ul>
       )}
 
-      <p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-fg-3">
+      {!selectionMode ? <p className="mt-5 border-t border-line pt-4 text-xs leading-5 text-fg-3">
         {ko
           ? "이 현황은 내 작품(제작 프로젝트) 기준입니다. 외부 플랫폼 작품은 여기에 없어요 — 독자들이 보는 요일별 연재표는 "
           : "This status covers my works (production projects) only. External platform titles are not listed here — readers see them in the "}
@@ -165,7 +173,7 @@ export function SerialCenterOverview({
           {ko ? "연재 캘린더" : "serialization calendar"}
         </Link>
         {ko ? "에서 확인하세요." : "."}
-      </p>
+      </p> : null}
     </section>
   );
 }
@@ -174,10 +182,14 @@ function SerialProjectCard({
   project,
   ko,
   onSelectProject,
+  selectionDisabled,
+  selectionMode,
 }: Readonly<{
   project: ProductionProjectSummary;
   ko: boolean;
   onSelectProject: (project: ProductionProjectSummary) => void;
+  selectionDisabled: boolean;
+  selectionMode: boolean;
 }>) {
   const nextReleaseLabel = project.nextReleaseAt
     ? new Date(project.nextReleaseAt).toLocaleString(ko ? "ko-KR" : "en-US", { dateStyle: "medium", timeStyle: "short" })
@@ -186,13 +198,13 @@ function SerialProjectCard({
     <li className="flex flex-col rounded-2xl border border-line bg-panel/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <strong className="min-w-0 truncate text-base font-bold text-fg">{project.title}</strong>
-        {project.criticalRiskCount > 0 ? (
+        {!selectionMode && project.criticalRiskCount > 0 ? (
           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-[0.7rem] font-semibold text-danger">
             <TriangleAlert size={11} aria-hidden /> {ko ? `위험 ${project.criticalRiskCount}` : `${project.criticalRiskCount} risk(s)`}
           </span>
         ) : null}
       </div>
-      <dl className="mt-3 space-y-1.5 text-sm">
+      {!selectionMode ? <dl className="mt-3 space-y-1.5 text-sm">
         <div className="flex items-center gap-2">
           <dt className="inline-flex shrink-0 items-center gap-1 text-fg-3">
             <Clock3 size={13} aria-hidden /> {ko ? "다음 발행" : "Next release"}
@@ -221,30 +233,31 @@ function SerialProjectCard({
             </dd>
           </div>
         ) : null}
-      </dl>
-      <div className="mt-3">
+      </dl> : null}
+      {!selectionMode ? <div className="mt-3">
         <SummaryBufferShield readyBufferCount={project.readyBufferCount} />
-      </div>
+      </div> : null}
       <div className="mt-4 flex flex-wrap gap-2 pt-1">
         <button
           type="button"
+          disabled={selectionDisabled}
           onClick={() => onSelectProject(project)}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-bold text-on-accent"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3 text-sm font-bold text-on-accent disabled:opacity-50"
         >
           {ko ? "이 작품으로 게시 준비" : "Prepare release"} <ArrowRight size={14} aria-hidden />
         </button>
-        <Link
+        {!selectionMode ? <Link
           href={`/production/projects/${encodeURIComponent(project.projectId)}/episodes`}
           className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
         >
           <Layers size={14} aria-hidden /> {ko ? "회차 관리" : "Manage episodes"}
-        </Link>
-        <Link
+        </Link> : null}
+        {!selectionMode ? <Link
           href={`/production/projects/${encodeURIComponent(project.projectId)}/overview`}
           className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg"
         >
           <CalendarDays size={14} aria-hidden /> {ko ? "제작 현황" : "Production status"}
-        </Link>
+        </Link> : null}
       </div>
     </li>
   );

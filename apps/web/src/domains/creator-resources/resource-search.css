@@ -1,0 +1,20 @@
+/* 기관별 검색 화면에만 적용한다. 제공처 소개·공통 문서의 기본 배치는 바꾸지 않는다. */
+.resource-search-page .resource-atelier { padding-block: 1rem; }
+.resource-search-page .resource-atelier > :not([hidden]) ~ :not([hidden]) { margin-block-start: 1.25rem; }
+.resource-search-page .resource-search-header { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-width: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.resource-search-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+.resource-search-page :is(button, select, input, summary, a.fx-press) { min-height: 3rem; }
+.resource-search-page :is(input, select) { min-width: 0; font-size: 1rem; }
+.resource-search-page .resource-search-submit { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+.resource-search-disclosures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: .5rem; }
+.resource-search-disclosures details { min-width: 0; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-panel); }
+.resource-search-disclosures details[open] { grid-column: 1 / -1; }
+.resource-search-disclosures summary, .resource-search-tools > summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .75rem; cursor: pointer; font-size: 1rem; font-weight: 600; list-style: none; }
+.resource-search-disclosures summary::-webkit-details-marker, .resource-search-tools > summary::-webkit-details-marker { display: none; }
+.resource-search-disclosures summary:focus-visible, .resource-search-tools > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.resource-search-disclosure-body { display: grid; gap: 1rem; max-height: min(65dvh, 32rem); overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--color-line); padding: .75rem; }
+.resource-search-disclosure-body a.fx-press { justify-content: flex-start; white-space: normal; text-align: left; }
+.resource-search-tools { border: 1px solid var(--color-line); border-radius: .75rem; }
+@media (prefers-reduced-motion: reduce) { .resource-search-page * { scroll-behavior: auto; } }
+
+.resource-search-page button { min-width: 3rem; }

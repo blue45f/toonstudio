@@ -9,6 +9,10 @@ function read(relativePath: string): string {
 const wrapperSource = read("./StudioAssetToolPopoverWorkspace.tsx");
 const contentSource = read("./StudioUnifiedAssetToolPopoverContent.tsx");
 const workspaceSource = read("./StudioUnifiedAssetWorkspace.tsx");
+const resultsSource = read("./asset-workspace/StudioUnifiedAssetWorkspaceResults.tsx");
+const detailSource = read("./asset-workspace/StudioUnifiedAssetWorkspaceDetail.tsx");
+const sessionSource = read("./asset-workspace/studio-unified-asset-workspace-state.ts");
+const workspaceCss = read("./asset-workspace/studio-unified-asset-workspace.css");
 const previewSource = read("./StudioUnifiedAssetPreviewSurface.tsx");
 const previewModelSource = read("./studio-unified-asset-preview.ts");
 const insertModelSource = read("./studio-insert-hub-model.ts");
@@ -44,13 +48,16 @@ describe("Studio asset workspace boundaries", () => {
     expect(contentSource).not.toContain("./StudioInsertHubWorkspace");
   });
 
-  it("keeps browser storage and discovery state inside the lazy visual workspace", () => {
+  it("keeps persisted browser storage lazy and transient state above responsive portal remounts", () => {
     expect(contentSource).not.toContain("window.localStorage");
     expect(workspaceSource).toContain("window.localStorage");
     expect(workspaceSource).toContain("loadStudioInsertHubPreferences");
     expect(workspaceSource).toContain("saveStudioInsertHubPreferences");
     expect(insertModelSource).toContain("STUDIO_INSERT_HUB_MAX_RECENTS");
     expect(insertModelSource).toContain("STUDIO_INSERT_HUB_MAX_FAVORITES");
+    expect(sessionSource).not.toContain("window.localStorage");
+    expect(sessionSource).toContain("claimPending");
+    expect(createModeGroupsSource).toContain("<StudioUnifiedAssetWorkspaceSessionProvider>");
   });
 
   it("ships cold-entry 2D, template, and 3D catalogs without legacy tab visits", () => {
@@ -76,7 +83,8 @@ describe("Studio asset workspace boundaries", () => {
     expect(previewSource).toContain('import("three/examples/jsm/loaders/GLTFLoader.js")');
     expect(previewSource).toContain('canvasToDataUrlAsync(renderer.domElement, "image/webp", 0.86)');
     expect(previewSource).toContain("disposeObject");
-    expect(workspaceSource).toContain("<StudioUnifiedAssetPreviewSurface");
+    expect(resultsSource).toContain("<StudioUnifiedAssetPreviewSurface");
+    expect(detailSource).toContain("<StudioUnifiedAssetPreviewSurface");
   });
 
   it("hands zero-result context to the prompt actually consumed by AI Assist", () => {
@@ -110,7 +118,8 @@ describe("Studio asset workspace boundaries", () => {
     expect(contentSource).not.toContain("StudioInsertBatchPreflight");
     expect(contentSource).not.toContain("StudioUnifiedAssetSmartLibrary");
     expect(contentSource).not.toContain("StudioAssetLibraryCollections");
-    expect(workspaceSource).toContain("responsive-three-pane");
+    expect(contentSource).not.toContain("StudioMenuPopoverHeader");
+    expect(workspaceSource).toContain('data-studio-asset-workspace-layout="results-first"');
   });
 
   it("routes native semantic assets to their owned editor", () => {
@@ -139,12 +148,14 @@ describe("Studio asset workspace boundaries", () => {
 
   it("uses the asset window as the responsive breakpoint owner", () => {
     expect(workspaceSource).toContain('data-studio-asset-workspace-grid="true"');
-    expect(workspaceSource).toContain('data-studio-asset-results-grid="true"');
+    expect(resultsSource).toContain('data-studio-asset-results-grid="true"');
     expect(workspaceSource).not.toContain(
       "lg:grid-cols-[11rem_minmax(22rem,1fr)_20rem]",
     );
     expect(studioRouteSource).toContain("container-name: studio-asset-workspace");
     expect(studioRouteSource).toContain("@container studio-asset-workspace (min-width: 46rem)");
     expect(studioRouteSource).toContain("@container studio-asset-workspace (min-width: 64rem)");
+    expect(workspaceCss).toContain("@container studio-unified-assets (min-width: 20rem)");
+    expect(workspaceCss).toContain("@container studio-unified-assets (min-width: 64rem)");
   });
 });

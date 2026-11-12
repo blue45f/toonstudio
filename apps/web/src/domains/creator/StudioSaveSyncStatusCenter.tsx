@@ -25,12 +25,15 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
+import { registerEditorStatusSlot, registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
+import { STUDIO_MENUBAR_STATUS_SLOT_REFS } from "./studio-shell/studio-menubar-status-slot";
 
 import { resolveSaveRecoveryView } from "./studio-save-recovery-ux";
 import {
@@ -48,6 +51,8 @@ const bi = (ko: string, en: string): string =>
 
 export interface StudioSaveSyncStatusCenterProps {
   readonly journal: StudioOperationJournalState;
+  readonly presentation?: "default" | "drawing";
+  readonly readOnlyTab?: boolean;
   readonly isOnline?: boolean;
   readonly isOpfsActive?: boolean;
   readonly onForceCheckpoint?: () => void;
@@ -89,6 +94,8 @@ function cloudStatusCopy(
 
 export function StudioSaveSyncStatusCenter({
   journal,
+  presentation = "default",
+  readOnlyTab = false,
   isOnline = true,
   isOpfsActive = true,
   onForceCheckpoint,
@@ -99,6 +106,12 @@ export function StudioSaveSyncStatusCenter({
 }: StudioSaveSyncStatusCenterProps) {
   useBilingualI18nRevision();
   const [open, setOpen] = useState(false);
+  const drawing = presentation === "drawing";
+  const dialogRef = useRef<HTMLDialogElement>(null), closeRequested = useRef(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const noticeSummaryId = useId();
+  const [noticeElement, setNoticeElement] = useState<HTMLDivElement | null>(null);
+  const [noticeSummary, setNoticeSummary] = useState<HTMLSpanElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const peakPendingRef = useRef(0);
@@ -115,17 +128,39 @@ export function StudioSaveSyncStatusCenter({
   const peakPendingCount = Math.max(peakPendingRef.current, status.pendingOperationsCount);
   const drainedPendingCount = Math.max(0, peakPendingCount - status.pendingOperationsCount);
 
+  useEffect(() => noticeElement && noticeSummary
+    ? registerEditorStatusSlot(noticeElement, noticeSummary)
+    : undefined, [noticeElement, noticeSummary]);
+
+  const closeAndRestoreFocus = useCallback(() => {
+    if (drawing && closeRequested.current) return;
+    closeRequested.current = true;
+    const node = dialogRef.current;
+    if (node?.open) { if (typeof node.close === "function") node.close(); else node.removeAttribute("open"); }
+    setOpen(false);
+    triggerRef.current?.focus({ preventScroll: true });
+  }, [drawing]);
+  useEffect(() => {
+    const node = dialogRef.current;
+    if (!drawing || !node) return;
+    if (open) {
+      closeRequested.current = false; node.returnValue = "";
+      if (!node.open) { if (typeof node.showModal === "function") { node.showModal(); node.setAttribute("aria-modal", "true"); } else { node.setAttribute("open", ""); node.setAttribute("aria-modal", "false"); } }
+      closeButtonRef.current?.focus({ preventScroll: true });
+    } else if (node.open) { if (typeof node.close === "function") node.close(); else node.removeAttribute("open"); }
+  }, [drawing, open]);
+  useEffect(() => drawing && open && noticeElement ? registerModalStatusSlot(noticeElement) : undefined, [drawing, open, noticeElement]);
+
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      setOpen(false);
-      triggerRef.current?.focus();
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault(); event.stopPropagation();
+      closeAndRestoreFocus();
     };
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
-      if (target instanceof Node && containerRef.current?.contains(target)) return;
+      if (target instanceof Node && (containerRef.current?.contains(target) || dialogRef.current?.contains(target))) return;
       setOpen(false);
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -134,7 +169,7 @@ export function StudioSaveSyncStatusCenter({
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("pointerdown", handlePointerDown);
     };
-  }, [open]);
+  }, [open, closeAndRestoreFocus]);
 
   const view = resolveSaveRecoveryView(status, connectivity);
   // 필 라벨은 복구 모델(view.kind)을 정본으로 삼는다 (C6, 2026-10-22):
@@ -179,52 +214,18 @@ export function StudioSaveSyncStatusCenter({
         ? "text-accent"
         : "text-success";
 
-  return (
-    <div
-      ref={containerRef}
-      data-studio-save-sync-status-center
-      className="relative inline-block text-xs"
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label={`저장 상태 열기: ${saveLabel}`}
-        className="flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"
-      >
-        <StatusIcon
-          className={`size-3.5 ${statusTone} ${view.kind === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`}
-          aria-hidden
-        />
-        <span>{saveLabel}</span>
-      </button>
-
-      {open ? (
-        <div
-          role="dialog"
-          aria-label="저장 상태 상세"
-          className="absolute right-0 top-full z-50 mt-1.5 max-h-[calc(100dvh-4rem)] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-xl border border-line bg-card p-3.5 text-fg shadow-xl"
-        >
-          <div className="flex items-center justify-between border-b border-line/50 pb-2">
-            <div>
-              <p className="font-semibold text-fg">저장 상태</p>
-              <p className="mt-0.5 text-[0.72rem] text-fg-3">
-                내 작업이 어디까지 안전하게 보관됐는지 확인해요.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="저장 상태 닫기"
-              className="grid min-h-8 min-w-8 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:min-h-11 pointer-coarse:min-w-11"
-            >
-              <X className="size-4" aria-hidden />
-            </button>
-          </div>
-
-          <div className="mt-3 space-y-2 text-[0.75rem]">
+  const recordedCandidate = status.lastSavedAt > 0 && Number.isFinite(status.lastSavedAt) ? new Date(status.lastSavedAt) : null;
+  const recorded = recordedCandidate && Number.isFinite(recordedCandidate.getTime()) ? recordedCandidate : null;
+  const recordedTime = recorded ? new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(recorded) : "";
+  const drawingState = readOnlyTab ? "readonly" : !status.localDurable ? "failed"
+    : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending" ? "pending" : recorded ? "saved" : "empty";
+  const drawingLabel = drawingState === "readonly" ? bi("다른 탭이 기기 저장 담당", "Another tab saves on this device")
+    : drawingState === "failed" ? bi("저장 확인 필요", "Check the save")
+      : drawingState === "pending" ? bi("이 기기에 저장 중", "Saving on this device")
+        : drawingState === "saved" ? bi("이 기기", "This device") : bi("아직 저장 전", "Not saved yet");
+  const drawingName = `${drawingLabel}${drawingState === "saved" ? ` · ${recordedTime}` : ""}`;
+  const SummaryIcon = drawing ? drawingState === "failed" ? TriangleAlert : drawingState === "pending" ? Clock : drawingState === "saved" ? CheckCircle2 : CloudOff : StatusIcon;
+  const deviceInfo = (
             <section className="rounded-lg bg-panel/60 p-2.5">
               <div className="flex items-start gap-2">
                 <HardDrive className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
@@ -233,12 +234,13 @@ export function StudioSaveSyncStatusCenter({
                   <p className="mt-0.5 leading-relaxed text-fg-3">
                     {!status.localDurable
                       ? "이 기기에 복구 가능한 작업을 남기지 못하고 있어요. 이 화면을 닫기 전에 프로젝트를 내보내 주세요."
-                      : status.pendingOperationsCount > 0
+                      : status.pendingOperationsCount > 0 || status.cloudSyncStatus === "pending"
                         ? bi("최근 변경을 이 기기에 저장하고 있어요. 저장 완료를 확인한 뒤 화면을 닫아 주세요.", "Saving recent changes on this device. Wait for saving to finish before closing this page.")
                         : hasLocalReceipt
                           ? bi("최근 작업이 이 기기에 저장됐어요.", "Your recent work is saved on this device.")
                           : bi("아직 이 기기에 저장된 기록이 없어요.", "No save has been recorded on this device yet.")}
                   </p>
+                  {drawing && recorded ? <p className="mt-2 text-xs text-fg-3">{bi("마지막 기기 저장", "Last saved on this device")} · <time dateTime={recorded.toISOString()}>{recordedTime}</time></p> : null}
                   {status.pendingOperationsCount > 0 ? (
                     <progress
                       aria-label={bi("이 기기 저장 대기열 진행률", "Local save queue progress")}
@@ -250,7 +252,8 @@ export function StudioSaveSyncStatusCenter({
                 </div>
               </div>
             </section>
-
+  );
+  const serverInfo = (
             <section className="rounded-lg bg-panel/60 p-2.5">
               <div className="flex items-start gap-2">
                 {status.cloudSyncStatus === "offline" ? (
@@ -266,7 +269,8 @@ export function StudioSaveSyncStatusCenter({
                 </div>
               </div>
             </section>
-
+  );
+  const recoveryInfo = (
             <section className="rounded-lg bg-panel/60 p-2.5">
               <div className="flex items-start gap-2">
                 <Clock className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
@@ -280,7 +284,28 @@ export function StudioSaveSyncStatusCenter({
                 </div>
               </div>
             </section>
+  );
+  const detailsBody = <>
+          <div data-studio-drawing-save-header={drawing ? "true" : undefined} className={drawing ? "studio-drawing-dialog-header" : "flex items-center justify-between border-b border-line/50 pb-2"}>
+            <div>
+              <p className="font-semibold text-fg">{drawing ? bi("저장과 복구", "Save and recovery") : "저장 상태"}</p>
+              <p className="mt-0.5 text-[0.72rem] text-fg-3">
+                내 작업이 어디까지 안전하게 보관됐는지 확인해요.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeAndRestoreFocus}
+              ref={closeButtonRef}
+              aria-label="저장 상태 닫기"
+              className="grid min-h-8 min-w-8 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
           </div>
+
+          <div data-studio-drawing-save-content={drawing ? "true" : undefined} className={drawing ? "studio-drawing-dialog-content" : undefined}>
+          <div className="mt-3 space-y-2 text-[0.75rem]">{deviceInfo}{!drawing ? <>{serverInfo}{recoveryInfo}</> : null}</div>
 
           <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-line/50 pt-3">
             {view.canRetrySave && onRetrySave ? (
@@ -314,6 +339,12 @@ export function StudioSaveSyncStatusCenter({
               </button>
             ) : null}
           </div>
+
+          {drawing ? <>
+            <div ref={STUDIO_MENUBAR_STATUS_SLOT_REFS.save} data-studio-clarity-mobile-save-slot="true" data-studio-drawing-save-details="true" className="studio-drawing-draft-save-section" />
+            <details className="mt-4 border-t border-line pt-2"><summary className="cursor-pointer py-3 text-sm font-semibold">{bi("연결·복구 기록 보기", "Connection and recovery records")}</summary>{serverInfo}{recoveryInfo}</details>
+          </> : null}
+          <div ref={setNoticeElement} data-studio-connection-notice-details="true" />
 
           <details className="mt-3 rounded-lg border border-line bg-panel/35">
             <summary className="cursor-pointer px-2.5 py-2 text-[0.72rem] font-semibold text-fg-2">
@@ -351,8 +382,41 @@ export function StudioSaveSyncStatusCenter({
               </button>
             </div>
           </details>
-        </div>
-      ) : null}
+          </div>
+  </>;
+  const details = drawing && typeof document !== "undefined" ? createPortal(
+    <dialog ref={dialogRef} hidden={!open} data-studio-shortcut-boundary="true" className="studio-drawing-dialog" aria-label={bi("저장과 복구", "Save and recovery")}
+      data-studio-drawing-save-dialog="true" onCancel={(event) => { event.preventDefault(); closeAndRestoreFocus(); }} onClose={(event) => { if (event.currentTarget.open) return; if (event.currentTarget.returnValue === "next-task") { closeRequested.current = true; setOpen(false); } else closeAndRestoreFocus(); }}>
+      {detailsBody}
+    </dialog>, document.body,
+  ) : <div hidden={!open} role="dialog" aria-label="저장 상태 상세"
+    className="absolute right-0 top-full z-50 mt-1.5 max-h-[calc(100dvh-4rem)] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain rounded-xl border border-line bg-card p-3.5 text-fg shadow-xl">
+      {detailsBody}
+    </div>;
+  return (
+    <div ref={containerRef} data-studio-save-sync-status-center className={drawing ? "studio-drawing-save-center" : "relative inline-block text-xs"}>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label={`저장 상태 열기: ${drawing ? drawingName : saveLabel}`}
+        data-studio-drawing-save-summary={drawing ? "true" : undefined}
+        data-studio-local-save-state={drawing ? drawingState : undefined}
+        aria-describedby={noticeSummaryId}
+        className={drawing ? "studio-drawing-save-summary" : "flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"}
+      >
+        <SummaryIcon
+          className={`size-3.5 ${drawing && drawingState === "saved" ? "text-success" : statusTone} ${view.kind === "reconnecting" ? "animate-spin motion-reduce:animate-none" : ""}`}
+          aria-hidden
+        />
+        <span className="min-w-0 text-left">
+          {drawing ? <span data-studio-clarity-receipt="true">{drawingLabel}{drawingState === "saved" && recorded ? <> · <time dateTime={recorded.toISOString()}>{recordedTime}</time></> : null}</span> : <span>{saveLabel}</span>}
+          <span ref={setNoticeSummary} id={noticeSummaryId} className="flex flex-wrap items-center gap-x-2" data-studio-connection-notice-summary="true" data-studio-drawing-save-summary={drawing ? "true" : undefined} />
+        </span>
+      </button>
+      {details}
     </div>
   );
 }

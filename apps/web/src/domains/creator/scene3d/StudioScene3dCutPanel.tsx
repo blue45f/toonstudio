@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { isStudioLocalDatabaseOwnershipBusyError } from "../studio-local-database-ownership";
 import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
 import type { compareStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
 
@@ -32,16 +33,21 @@ export function StudioScene3dCutPanel({
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const expanded = userExpanded ?? preferredExpanded ?? true;
   const backupUrl = useRef<string | null>(null);
+  const localAction = useRef<symbol | null>(null);
+  const [localActionSession, setLocalActionSession] = useState<StudioScene3dCutSession | null>(null);
   useEffect(() => {
     if (session.read().phase === "loading") void session.restore();
     return () => {
+      localAction.current = null;
       session.dispose();
       if (backupUrl.current) URL.revokeObjectURL(backupUrl.current);
     };
   }, [session]);
   const operationBusy = ["loading", "saving", "applying"].includes(state.phase);
-  const busy = hostPreparing || operationBusy;
+  const busy = hostPreparing || operationBusy || localActionSession === session;
   const available = Boolean(state.project) && !busy;
+  const ownershipBusy = state.phase === "error" && isStudioLocalDatabaseOwnershipBusyError(state.notice);
+  const preserveUnsavedCuts = ownershipBusy && state.dirty;
   const cuts = state.project?.shotVersions?.cuts ?? [];
   const selected = cuts.find((cut) => cut.id === state.selectedId);
   const act = (fn: () => void) => session.run(fn);
@@ -51,6 +57,30 @@ export function StudioScene3dCutPanel({
         throw error;
       })
     );
+  };
+  const runLocalAction = async (mode: "restore" | "save") => {
+    if (localAction.current || busy) return;
+    const snapshot = session.read();
+    const ownershipFailed = snapshot.phase === "error" && isStudioLocalDatabaseOwnershipBusyError(snapshot.notice);
+    if (mode === "restore" && ownershipFailed && snapshot.dirty) return;
+    const token = Symbol("local-cut-action");
+    localAction.current = token;
+    setLocalActionSession(session);
+    try {
+      if (ownershipFailed) {
+        const { resetFailedStudioLocalDatabaseOwnership } = await import("../studio-local-database-runtime");
+        await resetFailedStudioLocalDatabaseOwnership();
+      }
+      if (localAction.current !== token) return;
+      // 연결을 기다리는 사이 추가된 미저장 컷도 다시 불러오기로 덮지 않는다.
+      if (mode === "restore" && ownershipFailed && session.read().dirty) return;
+      await session[mode]();
+    } finally {
+      if (localAction.current === token) {
+        localAction.current = null;
+        setLocalActionSession(null);
+      }
+    }
   };
   const compare = () => {
     if (selected)
@@ -104,11 +134,19 @@ export function StudioScene3dCutPanel({
           aria-live="polite"
           className="text-xs"
         >
-          {state.notice}
+          {ownershipBusy
+            ? t("이 기기의 저장소를 사용할 수 없어요. 다른 작업 창을 확인한 뒤 다시 시도해 주세요.", "Local storage is unavailable. Check other work windows, then try again.")
+            : state.notice}
           {state.dirty
             ? ` · ${t("저장하지 않은 변경", "Unsaved changes")}`
             : ""}
         </div>
+        {ownershipBusy && (
+          <details data-testid="scene3d-cut-error-details" className="rounded border border-line">
+            <summary className={BUTTON}>{t("문제 해결 정보", "Troubleshooting details")}</summary>
+            <p className="whitespace-pre-wrap break-words px-3 pb-3 text-xs text-fg-2">{state.notice}</p>
+          </details>
+        )}
         {session.host.blockedReason() && (
           <p role="note" className="text-xs text-fg-2">
             {session.host.blockedReason()}
@@ -126,8 +164,8 @@ export function StudioScene3dCutPanel({
           <button
             type="button"
             className={BUTTON}
-            disabled={busy}
-            onClick={() => asyncAct(() => session.restore())}
+            disabled={busy || preserveUnsavedCuts}
+            onClick={() => asyncAct(() => runLocalAction("restore"))}
           >
             {t("로컬 다시 불러오기", "Reload local project")}
           </button>
@@ -144,7 +182,7 @@ export function StudioScene3dCutPanel({
             type="button"
             className={BUTTON}
             disabled={!available || !session.repository.supportsAtomicWrites}
-            onClick={() => asyncAct(() => session.save())}
+            onClick={() => asyncAct(() => runLocalAction("save"))}
           >
             {t("로컬 저장", "Save locally")}
           </button>
@@ -165,6 +203,11 @@ export function StudioScene3dCutPanel({
             {t("컷 다시 실행", "Redo cut edit")}
           </button>
         </div>
+        {preserveUnsavedCuts && (
+          <p role="note" className="text-xs text-fg-2">
+            {t("저장하지 않은 컷을 유지하고 있어요. 로컬 저장을 다시 시도하거나 아래에서 JSON으로 백업하세요.", "Your unsaved cuts are kept. Retry Save locally or back them up as JSON below.")}
+          </p>
+        )}
         <p className="text-xs text-fg-2">
           {t(
             "컷 실행 취소는 컷 목록과 버전 변경을 되돌립니다. 장면 변경은 편집기의 실행 취소를 사용하세요.",

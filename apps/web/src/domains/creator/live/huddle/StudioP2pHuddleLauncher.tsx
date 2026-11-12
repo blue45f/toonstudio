@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { MessageCircle, Mic, MicOff, Video, MonitorUp, PhoneOff, Hand, VolumeX, X } from "lucide-react";
 import { formatI18nTemplate, translateCurrentStaticSourceText, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { creatorSub2StatusText } from "../../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
@@ -14,10 +15,12 @@ import { acquireStudioHuddleAudioFocus } from "./studio-p2p-huddle-audio-focus";
 import { resolveStudioHuddleAuthority, type StudioHuddleAuthority } from "./studio-p2p-huddle-authority";
 import { canRetryStudioHuddleConnection, resolveStudioHuddleAvailability, STUDIO_HUDDLE_AVAILABILITY_COPY } from "./studio-p2p-huddle-availability";
 import { validateStudioExternalMeetingLink } from "./studio-p2p-call-quality";
+import { useStudioChromePortalTarget } from "../../studio-shell/use-studio-chrome-portal-target";
 
-export default function StudioP2pHuddleLauncher({ placement = "floating" }: { readonly placement?: "floating" | "inline" } = {}) {
+export default function StudioP2pHuddleLauncher({ placement = "floating", idleChromeTargetId }: { readonly placement?: "floating" | "inline"; readonly idleChromeTargetId?: string } = {}) {
   const live = useStudioLiveCollaboration();
   const bt = useBilingual("domains.creator.live.huddle.StudioP2pHuddleLauncher");
+  const chromeTarget = useStudioChromePortalTarget(idleChromeTargetId ?? "");
   const strokeFocusPhase = useSyncExternalStore(
     subscribeStudioStrokeFocusActivity,
     studioStrokeFocusActivitySnapshot,
@@ -40,7 +43,15 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
   const nearbyPeerIdsRef = useRef<string[]>([]);
   const proximityMediaRef = useRef(true);
   const log = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const pendingChromeFocus = useRef<"panel" | "trigger" | null>(null);
   const active = snapshot !== null && !snapshot.closed;
+  useLayoutEffect(() => {
+    const next = pendingChromeFocus.current;
+    pendingChromeFocus.current = null;
+    if (next) (next === "panel" ? closeRef : triggerRef).current?.focus({ preventScroll: true });
+  }, [open, chromeTarget]);
   useEffect(() => active ? acquireStudioHuddleAudioFocus() : undefined, [active]);
   const room = live.room;
   // The room is mutable: subscribe to its capability rather than memoizing room.direct
@@ -201,19 +212,22 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
   }
   if (!live.canChat) return null;
   const mediaAvailable = Boolean(navigator.mediaDevices?.getUserMedia);
-  return <aside
-    className={placement === "inline" ? "studio-p2p-huddle-dock pointer-events-none relative ml-auto flex shrink-0 flex-col items-end" : "studio-p2p-huddle-dock pointer-events-none fixed bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)] right-3 z-[65] flex max-h-[calc(100dvh-var(--studio-canvas-bottom-inset,7rem)-5rem)] max-w-[calc(100vw-1.5rem)] flex-col items-end sm:bottom-3 sm:max-h-[calc(100dvh-1.5rem)]"}
-    data-studio-huddle-placement={placement}
+  // 대기 중 표현만 접힘 안으로 옮긴다. 전역 세션 소유자는 유지하고 통화·오류·열린 패널은 숨기지 않는다.
+  const idleTarget = placement === "floating" && !active && !open && !notice && !snapshot?.error ? chromeTarget : null;
+  const dockPlacement = idleTarget ? "inline" : placement;
+  const dock = <aside
+    className={dockPlacement === "inline" ? "studio-p2p-huddle-dock pointer-events-none relative ml-auto flex shrink-0 flex-col items-end" : "studio-p2p-huddle-dock pointer-events-none fixed bottom-[calc(var(--studio-canvas-bottom-inset,7rem)+4.25rem)] right-3 z-[65] flex max-h-[calc(100dvh-var(--studio-canvas-bottom-inset,7rem)-5rem)] max-w-[calc(100vw-1.5rem)] flex-col items-end sm:bottom-3 sm:max-h-[calc(100dvh-1.5rem)]"}
+    data-studio-huddle-placement={dockPlacement}
     aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "협업 대화")}
-    data-studio-shell-floating-target={placement === "floating" ? "collaboration" : undefined}
+    data-studio-shell-floating-target={dockPlacement === "floating" ? "collaboration" : undefined}
     data-studio-shell-force-visible={active ? translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "en", "true") : undefined}
   >
-    <section id="studio-p2p-huddle-panel" hidden={!open} style={{ display: open ? "flex" : undefined, ...(placement === "inline" ? { position: "absolute", bottom: "100%", right: 0, zIndex: 65, maxWidth: "calc(100vw - 2.25rem)", maxHeight: "min(680px, calc(100dvh - 10rem))" } as const : {}) }} className="studio-p2p-huddle-panel pointer-events-auto mb-2 min-h-0 w-[min(760px,calc(100vw-1.5rem))] max-w-full flex-col overflow-hidden rounded-2xl border border-accent/40 bg-panel text-fg shadow-2xl"
+    <section id="studio-p2p-huddle-panel" hidden={!open} style={{ display: open ? "flex" : undefined, ...(dockPlacement === "inline" ? { position: "absolute", bottom: "100%", right: 0, zIndex: 65, maxWidth: "calc(100vw - 2.25rem)", maxHeight: "min(680px, calc(100dvh - 10rem))" } as const : {}) }} className="studio-p2p-huddle-panel pointer-events-auto mb-2 min-h-0 w-[min(760px,calc(100vw-1.5rem))] max-w-full flex-col overflow-hidden rounded-2xl border border-accent/40 bg-panel text-fg shadow-2xl"
       aria-labelledby="studio-p2p-huddle-heading" data-studio-p2p-huddle="true">
       <header className="flex shrink-0 items-center justify-between border-b border-line p-3">
         <div><h3 id="studio-p2p-huddle-heading" className="text-sm font-bold">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "Virtual Studio · Huddle")}</h3>
           <p className="text-[11px] text-fg-3">{translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "근접 P2P 우선 · 카메라·마이크는 직접 켤 때만 사용")}</p></div>
-        <button type="button" className={`${controlClass} min-w-11 shrink-0`} aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "대화 패널 접기")} onClick={() => setOpen(false)}><X size={16} /></button>
+        <button ref={closeRef} type="button" className={`${controlClass} min-w-11 shrink-0`} aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "대화 패널 접기")} onClick={() => { if (chromeTarget && placement === "floating") pendingChromeFocus.current = "trigger"; setOpen(false); }}><X size={16} /></button>
       </header>
       <div className="min-h-0 max-h-[68dvh] space-y-3 overflow-y-auto overscroll-contain p-3">
         {!active ? <div className="space-y-3 text-xs leading-relaxed text-fg-2">
@@ -308,9 +322,10 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
         {(notice || snapshot?.error) && <p role="status" className="text-xs leading-relaxed text-warn">{notice ?? snapshot?.error}</p>}
       </div>
     </section>
-    <button type="button" aria-controls="studio-p2p-huddle-panel" aria-expanded={open} className="pointer-events-auto ml-auto flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-panel px-4 text-xs font-bold text-fg shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+    <button ref={triggerRef} type="button" aria-controls="studio-p2p-huddle-panel" aria-expanded={open} className="pointer-events-auto ml-auto flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-panel px-4 text-xs font-bold text-fg shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
       onClick={() => {
         const nextOpen = !open;
+        if (chromeTarget && placement === "floating") pendingChromeFocus.current = nextOpen ? "panel" : "trigger";
         if (nextOpen) {
           proximityPeerIds.current = null;
           controller.current?.refreshPeers();
@@ -321,4 +336,5 @@ export default function StudioP2pHuddleLauncher({ placement = "floating" }: { re
       {active && <span className="size-2 rounded-full bg-good" aria-label={translateCurrentStaticSourceText("domains.creator.live.huddle.StudioP2pHuddleLauncher", "ko", "대화 참여 중")} />}
     </button>
   </aside>;
+  return idleTarget ? createPortal(dock, idleTarget) : dock;
 }

@@ -1,0 +1,37 @@
+/* 전체 메뉴가 열릴 때 메뉴 컴포넌트와 함께 읽는 표면·반응형 규칙. */
+.site-menu-utilities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+  margin-block: 1rem 1.25rem;
+}
+.site-menu-utility {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-block-size: 3.5rem;
+  min-inline-size: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background: var(--color-card);
+  color: var(--color-fg-2);
+  text-align: start;
+}
+.site-menu-utility > svg { flex-shrink: 0; color: var(--color-accent); }
+.site-menu-utility > span { min-inline-size: 0; }
+.site-menu-utility strong { display: block; font-size: 0.875rem; font-weight: 650; }
+.site-menu-utility small { display: block; margin-block-start: 0.25rem; font-size: 0.75rem; color: var(--color-fg-3); }
+.site-menu-utility:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.site-menu-utility[aria-current="page"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent); }
+:root:not(:has([data-site-ost="mounted"])) [data-site-menu-ost="true"] { display: none; }
+@media (min-width: 1180px) {
+  [data-site-menu-panel] { inset: 12px 24px auto auto; width: min(520px, calc(100vw - 48px)); max-height: calc(100dvh - 24px); border: 1px solid var(--color-line-strong); border-radius: 20px; }
+}
+@media (max-width: 767px) {
+  .site-menu-utility { flex-direction: column; align-items: flex-start; }
+  .site-menu-utility small { line-height: 1.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-utility { transition: none; }
+}

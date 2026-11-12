@@ -3,7 +3,7 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowRight, PanelsTopLeft, PencilLine, Plus, Zap } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -50,6 +50,7 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
       en,
     );
   const navigate = useNavigate();
+  const errorId = useId();
   const starting = useRef(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,16 +85,22 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
 
   if (presentation === "drawing-card") {
     return (
-      <div className="flex min-w-0 flex-col">
-        <button type="button" disabled={busyId !== null} onClick={() => start(QUICK_STARTS[1])}
-          className="flex min-h-20 flex-1 flex-col justify-between rounded-xl border border-line/80 bg-panel/60 p-3 text-left transition-colors hover:border-accent/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-wait"
-          aria-busy={busyId !== null}>
-          <span className="text-xs font-bold text-fg">{copy("일단 펜으로 바로 그리고 싶어요", "Just want to start drawing now")}</span>
-          <span className="mt-1.5 text-[11px] font-semibold text-accent">{busyId ? copy("새 캔버스 여는 중…", "Opening a new canvas…") : copy("새 캔버스 바로 열기 →", "Open a new canvas →")}</span>
-          <span className="mt-1 text-[11px] text-fg-2">{copy("4:3 가로형 · 새 그림", "4:3 landscape · New drawing")}</span>
-        </button>
-        {error ? <p role="alert" className="mt-2 text-xs leading-5 text-danger">{error}</p> : null}
-      </div>
+      <article className="create-start-choice create-start-choice-drawing">
+        <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/canvas-noir-768.webp"
+          srcSet="/brand/lobby-hq-20261003/canvas-noir-480.webp 480w, /brand/lobby-hq-20261003/canvas-noir-768.webp 768w"
+          sizes="(min-width: 640px) 50vw, 56vw" alt="" aria-hidden="true" loading="eager" decoding="async" />
+        <div className="create-start-choice-copy">
+          <p className="create-start-choice-kind"><PencilLine size={18} aria-hidden="true" />{copy("그리며 떠올리기", "Think through drawing")}</p>
+          <h2>{copy("바로 그리기", "Draw right away")}</h2>
+          <p className="create-start-choice-description">{copy("빈 캔버스에서 자유롭게.", "Create freely on a blank canvas.")}</p>
+          <button type="button" disabled={busyId !== null} onClick={() => start(QUICK_STARTS[1])}
+            className="create-start-choice-action" aria-busy={busyId !== null} aria-describedby={error ? errorId : undefined}>
+            {busyId ? copy("새 캔버스 여는 중…", "Opening a new canvas…") : copy("캔버스 열기", "Open canvas")}
+            <ArrowRight size={19} aria-hidden="true" />
+          </button>
+          {error ? <p id={errorId} role="alert" className="create-start-choice-error">{error}</p> : null}
+        </div>
+      </article>
     );
   }
 

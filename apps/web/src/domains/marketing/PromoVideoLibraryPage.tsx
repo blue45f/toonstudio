@@ -2,7 +2,6 @@ import { SITE_URL } from "@toonstudio/core/business";
 import {
   ArrowLeft,
   ArrowRight,
-  Clapperboard,
   Download,
   LayoutGrid,
   List,
@@ -10,7 +9,8 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
@@ -40,6 +40,8 @@ import {
   promoVideosByCategory,
   type PromoVideoItem,
 } from "./promo-video-library";
+import { PromoClipPlayer } from "./PromoClipPlayer";
+import { promoClipPoster } from "./promo-clip-posters";
 
 import "./marketing-page.css";
 import "./promo-video-library.css";
@@ -83,9 +85,19 @@ const COPY = {
     searchPlaceholder: "영상 제목·설명·쓰는 곳으로 검색",
     resetFilter: "필터 초기화",
     reaBenchmarkTitle:
-      "글로벌 웹툰·창작·에셋 플랫폼 13종 REA 라우터·동선 역공학 아키텍처 기준표 보기",
+      "웹툰·창작 서비스의 구성과 사용 흐름 참고 자료",
     pipelineLabel: "창작·예고편·배포 6단계 통합 동선",
     discoveryPresetsLabel: "경쟁사 표준 탐색·랭킹 바로가기",
+    relatedMenu: "홍보 메뉴",
+    conceptNotice: "생성형 AI 개념 영상입니다. 실제 제품 화면과 다를 수 있어요.",
+    categoryFilterLabel: "영상 분류",
+    categoryAll: "전체 분류",
+    viewOptions: "보기 설정",
+    helpLabel: "다운로드·활용 안내",
+    referenceLabel: "제작·탐색 참고 자료",
+    emptyTitle: "조건에 맞는 영상이 없어요",
+    emptyBody: "검색어·분류·화면 비율을 확인하거나 필터를 초기화해 주세요.",
+    jumpHelp: "현재 조건에 맞는 영상이 있는 분류로 이동합니다. 다른 분류를 보려면 위에서 전체 분류를 선택하세요.",
   },
   en: {
     pageTitle: "Promo Video Library",
@@ -125,11 +137,46 @@ const COPY = {
     searchPlaceholder: "Search by clip title, description or usage",
     resetFilter: "Reset filters",
     reaBenchmarkTitle:
-      "View REA router & user-flow reverse-engineering benchmark across 13 webtoon & creator platforms",
+      "Reference material on webtoon and creator service workflows",
     pipelineLabel: "6-Step Creator-to-Promotion Pipeline",
     discoveryPresetsLabel: "Competitor-Standard Discovery & Ranking Presets",
+    relatedMenu: "Promo menu",
+    conceptNotice: "AI-generated concept clips. They may differ from the actual product.",
+    categoryFilterLabel: "Clip category",
+    categoryAll: "All categories",
+    viewOptions: "View settings",
+    helpLabel: "Download and usage guide",
+    referenceLabel: "Creation and discovery references",
+    emptyTitle: "No clips match these filters",
+    emptyBody: "Check the search, category or aspect ratio, or reset the filters.",
+    jumpHelp: "Jump to categories that match the current filters. Select all categories above to browse another category.",
   },
 } as const;
+
+function readPromoFilter(search: string): PromoMediaFilterState {
+  const params = new URLSearchParams(search);
+  return {
+    viewMode: SERIES_LANDING_VIEW_MODES.find((mode) => mode.id === params.get("promo-view"))?.id ?? DEFAULT_PROMO_MEDIA_FILTER_STATE.viewMode,
+    aspectFilter: (["all", "landscape-16-9", "vertical-9-16", "square-1-1"] as const).find((aspect) => aspect === params.get("promo-ratio")) ?? "all",
+    categoryFilter: PROMO_VIDEO_CATEGORIES.find((category) => category.id === params.get("promo-category"))?.id ?? "all",
+    searchQuery: params.get("promo-q") ?? "",
+  };
+}
+
+function samePromoFilter(left: PromoMediaFilterState, right: PromoMediaFilterState): boolean {
+  return left.viewMode === right.viewMode && left.aspectFilter === right.aspectFilter
+    && left.categoryFilter === right.categoryFilter && left.searchQuery === right.searchQuery;
+}
+
+function closePromoDisclosure(event: globalThis.KeyboardEvent, root: HTMLElement | null): void {
+  if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || !(event.target instanceof Element) || !root?.contains(event.target)) return;
+  const owner = event.target.closest("[data-promo-disclosure]");
+  const nested = event.target instanceof Element ? event.target.closest("details[open]") : null;
+  if (!(nested instanceof HTMLDetailsElement) || !owner || !owner.contains(nested)) return;
+  event.preventDefault(); event.stopPropagation();
+  nested.open = false;
+  nested.querySelector("summary")?.focus();
+}
 
 function PromoVideoCard({ item }: { readonly item: PromoVideoItem }) {
   const bi = useBilingualLocalizer("domains.marketing.PromoVideoLibraryPage");
@@ -139,23 +186,20 @@ function PromoVideoCard({ item }: { readonly item: PromoVideoItem }) {
   const note = item.note ? bi(item.note.ko, item.note.en) : undefined;
   return (
     <li className="promo-library__card mk-card" data-promo-video={item.id}>
+      <header className="promo-library__card-heading"><h3>{itemCopy.title}</h3></header>
       {/*
         자료실은 목록 페이지라 자동재생을 쓰지 않는다. 수십 개 영상이 한꺼번에
         움직이면 어지럽고 데이터도 많이 쓰며, 움직임 최소화를 선호하는
         사용자에게도 안전하지 않다. 재생은 사용자가 직접 누를 때만 일어난다.
       */}
-      <video
-        controls
-        muted
-        playsInline
-        preload="metadata"
+      <PromoClipPlayer
         src={item.src}
+        poster={promoClipPoster(item.src)}
         width={item.width}
         height={item.height}
-        aria-label={itemCopy.title}
+        title={itemCopy.title}
       />
       <div className="promo-library__card-copy">
-        <h3>{itemCopy.title}</h3>
         <p>{itemCopy.body}</p>
         {note ? <p className="promo-library__note">{note}</p> : null}
         <div className="promo-library__meta">
@@ -188,9 +232,52 @@ export function PromoVideoLibraryPage() {
   const documentLocale = normalizeLocaleCode(language) || "en";
   const isKo = documentLocale === "ko";
   const copy = bi(COPY.ko, COPY.en);
-  const [filter, setFilter] = useState<PromoMediaFilterState>(
-    DEFAULT_PROMO_MEDIA_FILTER_STATE,
-  );
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const routeRef = useRef(location);
+  routeRef.current = location;
+  const mounted = useRef(true);
+  const [filter, setFilter] = useState<PromoMediaFilterState>(() => readPromoFilter(location.search));
+  const filterRef = useRef(filter);
+  const authoredSearch = useRef<string | null>(null);
+  const composing = useRef(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => {
+    const closeDisclosure = (event: globalThis.KeyboardEvent) => closePromoDisclosure(event, rootRef.current);
+    document.addEventListener("keydown", closeDisclosure);
+    return () => document.removeEventListener("keydown", closeDisclosure);
+  }, []);
+  useLayoutEffect(() => {
+    if (navigationType !== "POP" && authoredSearch.current === location.search) { authoredSearch.current = null; return; }
+    authoredSearch.current = null; composing.current = false;
+    const restored = readPromoFilter(location.search);
+    if (samePromoFilter(filterRef.current, restored)) return;
+    filterRef.current = restored; setFilter(restored);
+  }, [location.key, location.search, navigationType]);
+  const patchFilter = (patch: Partial<PromoMediaFilterState>, writeUrl = true) => {
+    if (!mounted.current) return;
+    const next = { ...filterRef.current, ...patch };
+    filterRef.current = next; setFilter(next);
+    if (!writeUrl) return;
+    const currentRoute = routeRef.current;
+    const params = new URLSearchParams(currentRoute.search);
+    for (const [key, value, defaultValue] of [
+      ["promo-q", next.searchQuery, ""], ["promo-category", next.categoryFilter, "all"],
+      ["promo-ratio", next.aspectFilter, "all"], ["promo-view", next.viewMode, "card"],
+    ] as const) { if (value === defaultValue) params.delete(key); else params.set(key, value); }
+    const search = params.size ? `?${params.toString()}` : "";
+    let hash = currentRoute.hash;
+    if (hash.startsWith("#promo-category-")) {
+      const targetCategory = hash.slice("#promo-category-".length);
+      if (!PROMO_VIDEO_ITEMS.some((item) => item.categoryId === targetCategory && matchesPromoMediaFilter(item, next))) hash = "";
+    }
+    if (search === currentRoute.search && hash === currentRoute.hash) return;
+    authoredSearch.current = search;
+    navigate({ pathname: currentRoute.pathname, search, hash }, { replace: true, state: currentRoute.state });
+  };
 
   useDocumentTitle(copy.pageTitle);
   useMetaDescription(copy.metaDescription);
@@ -204,13 +291,13 @@ export function PromoVideoLibraryPage() {
 
   const updateViewMode = (viewMode: SeriesLandingViewMode) => {
     runSameDocumentViewTransition(() => {
-      setFilter((prev) => ({ ...prev, viewMode }));
+      patchFilter({ viewMode });
     });
   };
 
   const updateAspectFilter = (aspectFilter: MediaAspectFilter) => {
     runSameDocumentViewTransition(() => {
-      setFilter((prev) => ({ ...prev, aspectFilter }));
+      patchFilter({ aspectFilter });
     });
   };
 
@@ -219,12 +306,8 @@ export function PromoVideoLibraryPage() {
     filter.categoryFilter !== "all" ||
     filter.searchQuery.trim().length > 0;
 
-  const facts = [
-    `${PROMO_VIDEO_ITEMS.length}${copy.clipsUnit}`,
-    `${PROMO_VIDEO_CATEGORIES.length}${bi("개 카테고리", " categories")}`,
-    bi("세로 쇼츠 49편 포함", "49 vertical shorts included"),
-    bi("전부 생성형 AI 개념 영상", "All AI-generated concept clips"),
-  ];
+  const categoryResults = PROMO_VIDEO_CATEGORIES.map((category) => ({ category, items: promoVideosByCategory(category.id).filter((item) => matchesPromoMediaFilter(item, filter)) }));
+  const resultCount = categoryResults.reduce((count, result) => count + result.items.length, 0);
 
   const aspectOptions: readonly { id: MediaAspectFilter; label: string }[] = [
     { id: "all", label: copy.aspectAll },
@@ -235,127 +318,82 @@ export function PromoVideoLibraryPage() {
 
   return (
     <div
+      ref={rootRef}
       className="mk-page promo-library"
       lang={documentLocale}
       data-view-mode={filter.viewMode}
     >
       <header className="mk-shell promo-library__hero">
-        <SiteContextualSubNav pathnameOverride="/promo-library" />
-        <p className="mk-eyebrow">
-          <Clapperboard size={15} aria-hidden="true" />
-          {copy.eyebrow}
-        </p>
-        <h1 className="mk-title">
-          {copy.title[0]} <em>{copy.title[1]}</em>
-        </h1>
-        <p className="mk-lead">{copy.lead}</p>
-        <p className="mk-body promo-library__notice">{copy.notice}</p>
-        <p className="mk-body">{copy.howto}</p>
-        <div className="mk-actions" aria-label={copy.wayfindingLabel}>
-          <Link href="/showcase/promo" className="mk-button mk-button--primary">
-            {copy.closingPromoStudio}
-            <ArrowRight size={17} aria-hidden="true" />
-          </Link>
-          <Link href="/community/promote" className="mk-button">
-            {copy.closingPromoteBoard}
-          </Link>
-          <Link href="/cuts" className="mk-button">
-            {copy.closingCuts}
-          </Link>
+        <div className="promo-library__heading">
+          <h1 className="mk-title">{copy.pageTitle}</h1>
+          <details className="promo-library__related" data-promo-disclosure="true">
+            <summary>{copy.relatedMenu}</summary>
+            <div className="promo-library__related-panel"><SiteContextualSubNav pathnameOverride="/promo-library" /></div>
+          </details>
         </div>
-        <ul className="mk-chip-list" aria-label={copy.factsLabel}>
-          {facts.map((fact) => (
-            <li key={fact} className="mk-chip">{fact}</li>
-          ))}
-        </ul>
-        <nav className="promo-library__nav" aria-label={copy.jumpLabel}>
-          {PROMO_VIDEO_CATEGORIES.map((category) => {
-            const categoryCopy = bi(category.ko, category.en);
-            const count = promoVideosByCategory(category.id).length;
-            return (
-              <a key={category.id} href={`#promo-category-${category.id}`} className="mk-chip promo-library__nav-chip">
-                {categoryCopy.title} · {count}
-              </a>
-            );
-          })}
-        </nav>
-
-        <div className="promo-library__controls">
+        <p className="promo-library__concept">{copy.conceptNotice}</p>
+        <div className="promo-library__facts" role="group" aria-label={copy.factsLabel}>
+          <strong>{bi(`전체 ${PROMO_VIDEO_ITEMS.length}편`, `${PROMO_VIDEO_ITEMS.length} clips total`)}</strong>
+          <span>{bi(`세로 쇼츠 ${promoVideosByCategory("shorts").length}편 포함`, `${promoVideosByCategory("shorts").length} vertical shorts included`)}</span>
+          <span>{bi("원본 MP4 제공", "Original MP4 files")}</span>
+        </div>
+        <form className="promo-library__controls" aria-label={bi("홍보 영상 찾기", "Find promo clips")} onSubmit={(event) => {
+          event.preventDefault();
+          if (!composing.current) patchFilter({ searchQuery: searchInput.current?.value ?? filterRef.current.searchQuery });
+        }}>
           <div className="promo-library__controls-row">
-            <div
-              className="promo-library__view-switcher"
-              role="group"
-              aria-label={copy.viewModeLabel}
-            >
-              {SERIES_LANDING_VIEW_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  aria-pressed={filter.viewMode === mode.id}
-                  onClick={() => updateViewMode(mode.id)}
-                  className="promo-library__filter-btn"
-                  data-view-switcher={mode.id}
-                >
-                  {mode.id === "list" ? (
-                    <List size={14} aria-hidden="true" />
-                  ) : (
-                    <LayoutGrid size={14} aria-hidden="true" />
-                  )}
-                  <span>{isKo ? mode.koLabel : mode.enLabel}</span>
-                </button>
-              ))}
-            </div>
-
-            <div
-              className="promo-library__aspect-filter"
-              role="group"
-              aria-label={copy.aspectFilterLabel}
-            >
-              {aspectOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={filter.aspectFilter === option.id}
-                  onClick={() => updateAspectFilter(option.id)}
-                  className="promo-library__filter-btn"
-                  data-aspect-filter={option.id}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
             <label className="promo-library__search-box">
               <Search size={15} aria-hidden="true" />
               <span className="sr-only">{copy.searchPlaceholder}</span>
-              <input
-                type="search"
-                value={filter.searchQuery}
-                onChange={(event) =>
-                  setFilter((prev) => ({
-                    ...prev,
-                    searchQuery: event.target.value,
-                  }))
-                }
-                placeholder={copy.searchPlaceholder}
-              />
+              <input ref={searchInput} type="search" value={filter.searchQuery} placeholder={copy.searchPlaceholder}
+                onChange={(event) => patchFilter({ searchQuery: event.currentTarget.value }, !composing.current)}
+                onCompositionStart={() => { composing.current = true; }}
+                onCompositionEnd={(event) => { composing.current = false; patchFilter({ searchQuery: event.currentTarget.value }); }}
+                onKeyDown={(event) => { if (event.key === "Enter" && (composing.current || event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault(); }} />
             </label>
-
-            {hasActiveFilter ? (
-              <button
-                type="button"
-                onClick={() => setFilter(DEFAULT_PROMO_MEDIA_FILTER_STATE)}
-                className="promo-library__filter-btn"
-              >
-                <RotateCcw size={14} aria-hidden="true" />
-                {copy.resetFilter}
-              </button>
-            ) : null}
+            <label className="promo-library__select">
+              <span className="sr-only">{copy.categoryFilterLabel}</span>
+              <select data-select-native="true" aria-label={copy.categoryFilterLabel} value={filter.categoryFilter} onChange={(event) => {
+                const categoryFilter = PROMO_VIDEO_CATEGORIES.find((category) => category.id === event.currentTarget.value)?.id ?? "all";
+                patchFilter({ categoryFilter });
+              }}>
+                <option value="all">{`${copy.categoryAll} · ${PROMO_VIDEO_ITEMS.length}${copy.clipsUnit}`}</option>
+                {PROMO_VIDEO_CATEGORIES.map((category) => <option key={category.id} value={category.id}>{`${bi(category.ko, category.en).title} · ${promoVideosByCategory(category.id).length}${copy.clipsUnit}`}</option>)}
+              </select>
+            </label>
+            <label className="promo-library__select">
+              <span className="sr-only">{copy.aspectFilterLabel}</span>
+              <select data-select-native="true" aria-label={copy.aspectFilterLabel} value={filter.aspectFilter} onChange={(event) => {
+                const aspect = aspectOptions.find((option) => option.id === event.currentTarget.value)?.id;
+                if (aspect) updateAspectFilter(aspect);
+              }}>{aspectOptions.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+            </label>
           </div>
-        </div>
-
+          <div className="promo-library__controls-secondary">
+            <p role="status" aria-live="polite" aria-atomic="true" className="promo-library__results-count">{bi(`${resultCount} / ${PROMO_VIDEO_ITEMS.length}편`, `${resultCount} / ${PROMO_VIDEO_ITEMS.length} clips`)}</p>
+            {hasActiveFilter && resultCount > 0 ? <button type="button" onClick={() => patchFilter(DEFAULT_PROMO_MEDIA_FILTER_STATE)} className="promo-library__filter-btn"><RotateCcw size={14} aria-hidden="true" />{copy.resetFilter}</button> : null}
+            <details className="promo-library__guidance" data-promo-disclosure="true">
+              <summary>{copy.helpLabel}</summary>
+              <div className="promo-library__guidance-panel">
+                <p className="mk-body">{copy.lead}</p><p className="mk-body promo-library__notice">{copy.notice}</p><p className="mk-body">{copy.howto}</p>
+                <nav className="mk-actions" aria-label={copy.wayfindingLabel}>
+                  <Link href="/showcase/promo" className="mk-button">{copy.closingPromoStudio}<ArrowRight size={17} aria-hidden="true" /></Link>
+                  <Link href="/community/promote" className="mk-button">{copy.closingPromoteBoard}</Link><Link href="/cuts" className="mk-button">{copy.closingCuts}</Link>
+                </nav>
+                <details className="promo-library__rea-benchmark">
+                  <summary>{bi("분류별 영상 안내", "About each clip category")}</summary>
+                  {PROMO_VIDEO_CATEGORIES.map((category) => <div key={category.id}><h3>{bi(category.ko, category.en).title}</h3><p className="mk-body">{bi(category.ko, category.en).body}</p></div>)}
+                </details>
+                <p className="mk-body">{copy.jumpHelp}</p>
+                <nav className="promo-library__nav" aria-label={copy.jumpLabel}>
+                  {categoryResults.map(({ category, items }) => {
+                    const label = `${bi(category.ko, category.en).title} · ${items.length}${copy.clipsUnit}`;
+                    return items.length > 0 ? <a key={category.id} href={`#promo-category-${category.id}`} className="mk-chip promo-library__nav-chip">{label}</a> : <span key={category.id} className="mk-chip promo-library__nav-chip" aria-disabled="true">{label}</span>;
+                  })}
+                </nav>
         <details className="promo-library__rea-benchmark">
-          <summary>{copy.reaBenchmarkTitle}</summary>
+          <summary>{copy.referenceLabel}</summary>
+          <p className="mk-body">{copy.reaBenchmarkTitle}</p>
           <ul className="promo-library__rea-grid">
             {COMPETITOR_PLATFORM_REA_LEDGER.map((entry) => (
               <li key={entry.id} className="promo-library__rea-item" data-rea-platform={entry.id}>
@@ -392,18 +430,29 @@ export function PromoVideoLibraryPage() {
             ))}
           </nav>
         </details>
+              </div>
+            </details>
+            <details className="promo-library__view-options" data-promo-disclosure="true">
+              <summary>{copy.viewOptions}</summary>
+              <div className="promo-library__view-switcher" role="group" aria-label={copy.viewModeLabel}>
+                {SERIES_LANDING_VIEW_MODES.map((mode) => <button key={mode.id} type="button" aria-pressed={filter.viewMode === mode.id} onClick={() => updateViewMode(mode.id)} className="promo-library__filter-btn" data-view-switcher={mode.id}>
+                  {mode.id === "list" ? <List size={14} aria-hidden="true" /> : <LayoutGrid size={14} aria-hidden="true" />}<span>{isKo ? mode.koLabel : mode.enLabel}</span>
+                </button>)}
+              </div>
+            </details>
+          </div>
+        </form>
       </header>
+      {resultCount === 0 ? <section className="mk-shell promo-library__empty" aria-labelledby="promo-library-empty-title"><h2 id="promo-library-empty-title" className="mk-h2">{copy.emptyTitle}</h2><p className="mk-body">{copy.emptyBody}</p><button type="button" className="mk-button mk-button--primary" onClick={() => patchFilter(DEFAULT_PROMO_MEDIA_FILTER_STATE)}>{copy.resetFilter}</button></section> : null}
 
-      {PROMO_VIDEO_CATEGORIES.map((category) => {
+      {categoryResults.map(({ category, items }) => {
         const categoryCopy = bi(category.ko, category.en);
-        const items = promoVideosByCategory(category.id).filter((item) =>
-          matchesPromoMediaFilter(item, filter),
-        );
         if (items.length === 0) return null;
         return (
           <section
             key={category.id}
             id={`promo-category-${category.id}`}
+            tabIndex={-1}
             className="mk-shell promo-library__section"
             aria-labelledby={`promo-category-${category.id}-title`}
           >
@@ -411,7 +460,6 @@ export function PromoVideoLibraryPage() {
               <h2 id={`promo-category-${category.id}-title`} className="mk-h2">{categoryCopy.title}</h2>
               <span className="promo-library__count">{items.length}{copy.clipsUnit}</span>
             </div>
-            <p className="mk-body">{categoryCopy.body}</p>
             <ul className={`promo-library__grid${category.id === "shorts" ? " promo-library__grid--portrait" : ""}`}>
               {items.map((item) => (
                 <PromoVideoCard key={item.id} item={item} />

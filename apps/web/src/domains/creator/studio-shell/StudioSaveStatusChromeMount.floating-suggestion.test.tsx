@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { StudioSaveStatusChromeMount } from "../StudioSaveStatusChromeMount";
@@ -129,5 +129,50 @@ describe("StudioSaveStatusChromeMount: 게시 제안 카드는 메뉴바 흐름 
     });
     expect(menubar.querySelector(ANCHOR)).toBeNull();
     expect(document.querySelector(SUGGESTION)).toBeNull();
+  });
+});
+
+
+describe("drawing header receipt presentation", () => {
+  it("uses one local receipt result and preserves its live announcer in the document title slot", async () => {
+    const { menubar, slot } = mountMenubar();
+    menubar.dataset.studioDrawingClarityHeader = "true";
+    const store = createStudioSaveSyncSignalStore();
+    store.reset("drawing"); store.noteDurability("available"); store.noteOnline(true);
+    const savedAtMs = Date.parse("2026-11-12T08:35:20.156Z");
+    store.noteDurableReceipt({ savedAtMs, authority: "opfs-journal", sequence: 1, revision: 1, generation: 1 });
+    await act(async () => { render(<StudioSaveStatusChromeMount store={store} />); });
+    const mount = slot.querySelector('[data-studio-save-presentation="drawing"]');
+    expect(mount).not.toBeNull();
+    expect(mount?.querySelectorAll('button[data-studio-drawing-save-summary="true"]')).toHaveLength(1);
+    expect(mount?.querySelector('[data-studio-clarity-receipt] time')?.getAttribute("datetime")).toBe("2026-11-12T08:35:20.156Z");
+    expect(mount?.querySelector('[role="status"]')).not.toBeNull();
+    expect(mount?.textContent).not.toMatch(/서버 연결 안 됨 ·/u);
+    expect(document.querySelectorAll('[data-studio-drawing-save-details="true"]')).toHaveLength(1);
+  });
+});
+
+
+describe("drawing modal save announcements", () => {
+  it("keeps the existing single local-save live region inside the active native screen and returns it on close", async () => {
+    const { menubar, slot } = mountMenubar(); menubar.dataset.studioDrawingClarityHeader = "true";
+    const store = createStudioSaveSyncSignalStore(); store.reset("drawing-live"); store.noteDurability("available"); store.noteOnline(true);
+    store.noteDurableReceipt({ savedAtMs: 1_700_000_000_000, authority: "opfs-journal", sequence: 1, revision: 1, generation: 1 });
+    await act(async () => { render(<StudioSaveStatusChromeMount store={store} />); });
+    const dialog = document.querySelector<HTMLDialogElement>('[data-studio-drawing-save-dialog="true"]')!;
+    dialog.showModal = () => dialog.setAttribute("open", "");
+    dialog.close = () => { dialog.removeAttribute("open"); dialog.dispatchEvent(new Event("close")); };
+    const trigger = slot.querySelector<HTMLButtonElement>('button[data-studio-drawing-save-summary="true"]')!;
+    fireEvent.click(trigger);
+    const detailHost = dialog.querySelector('[data-studio-connection-notice-details="true"]')!;
+    expect(detailHost.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(slot.querySelector('[role="status"]')).toBeNull();
+    await act(async () => { store.noteEditGeneration(2); });
+    await act(async () => { store.noteDurableReceipt({ savedAtMs: 1_700_000_060_000, authority: "opfs-journal", sequence: 2, revision: 2, generation: 2 }); });
+    expect(detailHost.querySelector('[role="status"]')?.textContent).toMatch(/모든 변경이 이 기기에 저장|All changes saved on this device/u);
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(detailHost.querySelector('[role="status"]')).toBeNull();
+    expect(slot.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(document.activeElement).toBe(trigger);
   });
 });

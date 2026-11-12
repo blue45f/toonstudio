@@ -1,0 +1,20 @@
+/* 화면별 작업은 유지하고 탐색·설정의 간격과 이름을 같은 규칙으로 묶는다. */
+/* 연결된 전체 메뉴가 있는 화면만 접힌 고정 진입을 대신한다. 열린 패널은 유지한다. */
+:root:has([data-site-menu-entry="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
+[data-site-menu-music-enabled] { display: none; font-size: 0.75rem; }
+:root:has([data-site-ost-enabled]) [data-site-menu-music-enabled] { display: block; }
+@media (max-width: 1179px) {
+  :root { --site-control-size: 48px; }
+  [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
+  [data-slot="button"][data-size="icon"]:not([data-own-control-size]) { min-inline-size: 48px; }
+  :root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }
+  :root:has([data-site-mobile-utilities="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
+  :root:has(nav[data-site-product]) #main-content { padding-block-end: max(6rem, var(--floating-stack-clearance, 0px)); }
+  :root:has(nav[data-site-product]) .site-footer__meta { padding-block-end: calc(6rem + env(safe-area-inset-bottom)); }
+}
+
+/* 실제 공통 메뉴가 연결된 Workspace의 새 기본 메뉴 버튼만 기존 5탭과 맞춘다. */
+@media (max-width: 767px) {
+  .workspace-nav > [data-workspace-menu-trigger] { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:66px; gap:3px; padding:5px 2px; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--color-fg-2); font-size:12px; }
+  .workspace-nav > [data-workspace-menu-trigger]:is(:hover,:focus-visible) { border-color:var(--color-line-strong); background:var(--color-raised); }
+}

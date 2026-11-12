@@ -1,6 +1,6 @@
 import { useFx } from "@toonstudio/core/fx";
-import { Compass, RefreshCw, RotateCcw, Shuffle, SlidersHorizontal, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Compass, LayoutGrid, RefreshCw, RotateCcw, Rows3, Search, Shuffle, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { SortKey } from "@/shared/lib/search";
@@ -17,10 +17,9 @@ import { TitleCard } from "@/shared/components/title-card";
 import { TitleFilterPanel } from "@/shared/components/title-filter-panel";
 
 import { ExploreReaDirectoryBar } from "./ExploreReaDirectoryBar";
-import { ExploreResultsControls } from "./ExploreResultsControls";
 import { snapshotDateLabel } from "./discover-home";
 import { filterTitlesByLocalQuery, normalizePlatformId, useLocalCatalogFallback } from "./local-catalog-fallback";
-import { genreBorder, genreColor, genreTextColor, genreTint, spectrumGradient } from "@/shared/lib/genre-color";
+import { genreBorder, genreColor, genreTextColor, genreTint } from "@/shared/lib/genre-color";
 import { catalogDiscoveryHref, parseCatalogDiscoveryState, writeCatalogDiscoveryState } from "@/shared/lib/catalog-discovery-state";
 import { formatI18nTemplate, useBilingual, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useSavedTitleIds } from "@/shared/lib/store";
@@ -80,7 +79,10 @@ export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const savedIds = useSavedTitleIds();
   const [panelOpen, setPanelOpen] = useState(false);
-  const [showAllGenres, setShowAllGenres] = useState(false);
+  const [panelView, setPanelView] = useState<"filters" | "genres">("filters");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const panelTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const localQueryRef = useRef<HTMLInputElement>(null);
   const [showAllTags, setShowAllTags] = useState(false);
   const urlLocalQuery = searchParams.get("q") ?? "";
   const [localQuery, setLocalQuery] = useState(() => urlLocalQuery);
@@ -91,6 +93,28 @@ export function ExplorePage() {
   useEffect(() => {
     setLocalQuery(urlLocalQuery);
   }, [urlLocalQuery]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (!panelOpen) { if (dialog.open) dialog.close(); return; }
+    if (!dialog.open) dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [panelOpen]);
+  const openPanel = (view: "filters" | "genres", trigger: HTMLButtonElement) => {
+    panelTriggerRef.current = trigger;
+    setPanelView(view);
+    setPanelOpen(true);
+  };
+  const closeDisclosure = (event: KeyboardEvent<HTMLElement>) => {
+    const details = event.currentTarget.closest("details");
+    if (event.key !== "Escape" || event.nativeEvent.isComposing || !details?.open) return;
+    event.preventDefault(); event.stopPropagation();
+    details.open = false;
+    details.querySelector("summary")?.focus({ preventScroll: true });
+  };
 
   const updateLocalQuery = (nextValue: string) => {
     setLocalQuery(nextValue);
@@ -114,9 +138,7 @@ export function ExplorePage() {
   const showParam = searchParams.get("show") ?? undefined;
   const activeFilters = countActiveTitleFilters(filters);
   const heroGenre = filters.genres[0];
-  const visibleGenres = showAllGenres
-    ? [...GENRES]
-    : [...new Set([...filters.genres, ...GENRES.slice(0, 8)])];
+  const visibleGenres = [...new Set([...filters.genres, ...GENRES.filter((genre) => ["로맨스", "판타지", "액션"].includes(genre))])];
 
   const writeState = (
     nextFilters: TitleFilterState,
@@ -234,27 +256,43 @@ export function ExplorePage() {
       <Container size="wide" className="explore-page-layout">
         {/* 전역 Container 직계 header 장식을 피하고 탐색 도구를 첫 화면에 둔다. */}
         <div className="explore-page-heading-wrap">
-          <header className="explore-page-heading">
-            <p className="explore-page-eyebrow"><Compass size={14} aria-hidden="true" />{bt("GENRE SPECTRUM / 탐색", "GENRE SPECTRUM / EXPLORE")}</p>
-            <h1>{bt("조건으로 작품 찾기", "Find titles by condition")}</h1>
-            <p>{bt("장르·태그·유형으로 좁혀보세요.", "Narrow it down by genre, tag and type.")}</p>
-          </header>
+          <header className="explore-page-heading"><h1>{bt("조건으로 작품 찾기", "Find titles by condition")}</h1></header>
+          <details className="explore-page-mode-menu" data-testid="explore-page-mode-menu">
+            <summary onKeyDown={closeDisclosure}>{bt("다른 찾는 방법", "Other ways to find titles")}<ChevronDown size={14} aria-hidden="true" /></summary>
+            <nav className="explore-page-modes" aria-label={bt("탐색 방식", "Explore modes")}>
+              {([
+                { mode: "search", label: ["바로 찾기", "Search"] },
+                { mode: "explore", label: ["조건으로 둘러보기", "Explore"] },
+                { mode: "recommend", label: ["취향 추천", "Recommendations"] },
+              ] as const).map(({ mode, label }) => (
+                <Link key={mode} onKeyDown={closeDisclosure} href={catalogDiscoveryHref(mode, searchParams)} aria-current={mode === "explore" ? "page" : undefined}>
+                  {bt(label[0], label[1])}
+                </Link>
+              ))}
+            </nav>
+          </details>
         </div>
-
-        <nav className="explore-page-modes" aria-label={bt("탐색 방식", "Explore modes")}>
-          {([
-            { mode: "search", label: ["바로 찾기", "Search"] },
-            { mode: "explore", label: ["조건으로 둘러보기", "Explore"] },
-            { mode: "recommend", label: ["취향 추천", "Recommendations"] },
-          ] as const).map(({ mode, label }) => (
-            <Link key={mode} href={catalogDiscoveryHref(mode, searchParams)} aria-current={mode === "explore" ? "page" : undefined}>
-              {bt(label[0], label[1])}
-            </Link>
-          ))}
-        </nav>
-
+        <div className="explore-page-tools">
+          <div role="search" aria-label={bt("현재 목록에서 찾기", "Filter this list")} className="explore-page-local-search">
+            <Search size={16} aria-hidden="true" />
+            <input ref={localQueryRef} type="search" value={localQuery} onChange={(event) => updateLocalQuery(event.target.value)} placeholder={bt("현재 목록에서 찾기", "Filter this list")} aria-label={bt("현재 목록에서 제목·작가·태그 찾기", "Filter this list by title, author or tag")} aria-describedby="explore-local-query-help" />
+            <span id="explore-local-query-help" className="sr-only">{bt("불러온 작품 목록만 좁힙니다. 전체 검색은 다른 찾는 방법의 바로 찾기를 이용하세요.", "Filters the loaded list only. For a full search, choose Search under Other ways to find titles.")}</span>
+            {localQuery.length > 0 && <button type="button" onClick={() => { updateLocalQuery(""); localQueryRef.current?.focus({ preventScroll: true }); }} aria-label={bt("검색어 지우기", "Clear search query")}><X size={16} aria-hidden="true" /></button>}
+          </div>
+          <div className="explore-page-compact-controls">
+            <select aria-label={bt("작품 유형", "Work type")} value={filters.types.length > 1 ? "multiple" : (filters.types[0] ?? "all")} onChange={(event) => { const value = event.target.value; if (value === "all" || value === "webtoon" || value === "webnovel") applyFilters({ ...filters, types: value === "all" ? [] : [value] }); }}>
+              {filters.types.length > 1 && <option value="multiple" disabled>{bt("여러 유형 선택", "Multiple types selected")}</option>}
+              {TYPES.map((entry) => <option key={entry.value} value={entry.value}>{entry.value === "all" ? bt("전체 유형", "All types") : bt(...entry.label)}</option>)}
+            </select>
+            <select aria-label={bt("정렬", "Sort")} value={sort} onChange={(event) => { const selected = SORTS.find((entry) => entry.key === event.target.value); if (selected) changeSort(selected.key); }}>
+              {SORTS.map((entry) => <option key={entry.key} value={entry.key}>{bt(...entry.label)}</option>)}
+            </select>
+            <button type="button" aria-label={activeFilters > 0 ? formatI18nTemplate(bt("상세 필터·태그 · {v0}개 선택", "Filters and tags · {v0} selected"), { v0: activeFilters }) : bt("상세 필터·태그", "Filters and tags")} aria-haspopup="dialog" aria-expanded={panelOpen && panelView === "filters"} aria-controls="explore-page-filter-panel" onClick={(event) => openPanel("filters", event.currentTarget)} className={cn("explore-page-filter-trigger", activeFilters > 0 && "is-active")}>
+              <SlidersHorizontal size={15} aria-hidden="true" />{bt("필터", "Filters")}{activeFilters > 0 && <span>{activeFilters}</span>}
+            </button>
+          </div>
+        </div>
         <section aria-label={bt("장르 선택", "Choose genres")}>
-          <div className="explore-page-spectrum" style={{ background: spectrumGradient([...GENRES]) }} aria-hidden="true" />
             <div className="explore-page-genres">
               {visibleGenres.map((entry) => {
                 const active = filters.genres.includes(entry);
@@ -303,227 +341,89 @@ export function ExplorePage() {
                   </button>
                 );
               })}
-              {GENRES.length > visibleGenres.length ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAllGenres(true)}
-                  className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
-                >
-                  {formatI18nTemplate(bt("모든 장르 보기 · {v0}개", "Show all genres · {v0}"), { v0: GENRES.length - visibleGenres.length })}
-                </button>
-              ) : showAllGenres ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAllGenres(false)}
-                  className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
-                >
-                  {bt("자주 쓰는 장르만 보기", "Show common genres only")}
-                </button>
-              ) : null}
+              <button type="button" aria-haspopup="dialog" aria-expanded={panelOpen && panelView === "genres"} aria-controls="explore-page-filter-panel" onClick={(event) => openPanel("genres", event.currentTarget)} className="explore-page-all-genres">
+                {bt("모든 장르", "All genres")}
+              </button>
             </div>
 
         </section>
 
-        <details className="explore-page-disclosure" data-testid="explore-page-tags">
-          <summary>{bt("태그로 좁히기", "Narrow down by tags")}{filters.tags.length > 0 && <span className="explore-page-selection-count">{formatI18nTemplate(bt("{v0}개 선택", "{v0} selected"), { v0: filters.tags.length })}</span>}</summary>
-          <div className="explore-page-disclosure-body">
-          <div className="flex flex-wrap gap-2">
-            {visibleTags.map(({ tag: entry, count }) => {
-              const active = filters.tags.includes(entry);
-              return (
-                <button
-                  key={entry}
-                  type="button"
-                  data-no-sfx
-                  onClick={(event) => {
-                    if (!active) {
-                      fx.sfx("pop");
-                      fx.burstAt(event.currentTarget, {
-                        count: 10,
-                        spread: 0.7,
-                      });
-                    }
-                    applyFilters({
-                      ...filters,
-                      tags: toggleValue(filters.tags, entry),
-                    });
-                  }}
-                  aria-pressed={active}
-                  className={cn(
-                    "group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
-                    active
-                      ? "border-accent/60 bg-accent-soft text-accent shadow-[0_4px_16px_-8px_oklch(0.72_0.185_42/0.5)]"
-                      : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      active
-                        ? "text-accent"
-                        : "text-fg-3 group-hover:text-accent",
-                    )}
-                  >
-                    #
-                  </span>
-                  {entry}
-                  <span className="tnum text-xs text-fg-3">{count}</span>
-                </button>
-              );
-            })}
-            {hiddenTagCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => setShowAllTags(true)}
-                className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
-              >
-                {formatI18nTemplate(bt("태그 더 보기 · {v0}개", "Show more tags · {v0}"), { v0: hiddenTagCount })}
-              </button>
-            ) : showAllTags && tags.length > 12 ? (
-              <button
-                type="button"
-                onClick={() => setShowAllTags(false)}
-                className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
-              >
-                {bt("주요 태그만 보기", "Show main tags only")}
-              </button>
-            ) : null}
-          </div>
+        <dialog ref={dialogRef} id="explore-page-filter-panel" className="explore-page-filter-dialog" aria-labelledby="explore-filter-title" onCancel={(event) => { event.preventDefault(); setPanelOpen(false); }} onClose={() => { setPanelOpen(false); panelTriggerRef.current?.focus({ preventScroll: true }); }}>
+          <div className="explore-page-filter-heading"><h2 id="explore-filter-title">{panelView === "genres" ? bt("모든 장르", "All genres") : bt("필터·태그", "Filters and tags")}</h2><button type="button" onClick={() => setPanelOpen(false)} aria-label={bt("필터 닫기", "Close filters")}><X size={18} aria-hidden="true" /></button></div>
+          {panelOpen && <>
+            <TitleFilterPanel value={filters} onChange={applyFilters} facets={panelView === "genres" ? ["genre"] : [...FACETS]} platformOptions={platformOptions} savedCount={savedIds.size} />
+            {panelView === "filters" && <>
+              <details className="explore-page-disclosure" data-testid="explore-page-tags">
+                <summary>{bt("태그로 좁히기", "Narrow down by tags")}{filters.tags.length > 0 && <span className="explore-page-selection-count">{formatI18nTemplate(bt("{v0}개 선택", "{v0} selected"), { v0: filters.tags.length })}</span>}</summary>
+                <div className="explore-page-disclosure-body">
+                <div className="flex flex-wrap gap-2">
+                  {visibleTags.map(({ tag: entry, count }) => {
+                    const active = filters.tags.includes(entry);
+                    return (
+                      <button
+                        key={entry}
+                        type="button"
+                        data-no-sfx
+                        onClick={(event) => {
+                          if (!active) {
+                            fx.sfx("pop");
+                            fx.burstAt(event.currentTarget, {
+                              count: 10,
+                              spread: 0.7,
+                            });
+                          }
+                          applyFilters({
+                            ...filters,
+                            tags: toggleValue(filters.tags, entry),
+                          });
+                        }}
+                        aria-pressed={active}
+                        className={cn(
+                          "group inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-150 active:scale-[0.96]",
+                          active
+                            ? "border-accent/60 bg-accent-soft text-accent shadow-[0_4px_16px_-8px_oklch(0.72_0.185_42/0.5)]"
+                            : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            active
+                              ? "text-accent"
+                              : "text-fg-3 group-hover:text-accent",
+                          )}
+                        >
+                          #
+                        </span>
+                        {entry}
+                        <span className="tnum text-xs text-fg-3">{count}</span>
+                      </button>
+                    );
+                  })}
+                  {hiddenTagCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTags(true)}
+                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-line bg-card px-3 text-sm font-semibold text-fg transition-colors hover:border-accent/45 hover:text-accent"
+                    >
+                      {formatI18nTemplate(bt("태그 더 보기 · {v0}개", "Show more tags · {v0}"), { v0: hiddenTagCount })}
+                    </button>
+                  ) : showAllTags && tags.length > 12 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTags(false)}
+                      className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-fg-3 hover:text-fg"
+                    >
+                      {bt("주요 태그만 보기", "Show main tags only")}
+                    </button>
+                  ) : null}
+                </div>
 
-          </div>
-        </details>
+                </div>
+              </details>
 
-        <div className="explore-page-toolbar">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-            <div
-              className="inline-flex items-center rounded-lg border border-line bg-card p-0.5"
-              role="group"
-              aria-label={bt("작품 유형", "Work type")}
-            >
-              {TYPES.map((entry) => {
-                const active =
-                  entry.value === "all"
-                    ? filters.types.length === 0
-                    : filters.types.length === 1 &&
-                      filters.types[0] === entry.value;
-                return (
-                  <button
-                    key={entry.value}
-                    type="button"
-                    onClick={() =>
-                      applyFilters({
-                        ...filters,
-                        types: entry.value === "all" ? [] : [entry.value],
-                      })
-                    }
-                    aria-pressed={active}
-                    className={cn(
-                      "min-h-11 whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors duration-150",
-                      active
-                        ? "bg-accent text-on-accent"
-                        : "text-fg-2 hover:text-fg",
-                    )}
-                  >
-                    {bt(...entry.label)}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1" role="group" aria-label={bt("정렬", "Sort")}>
-              {SORTS.map((entry) => {
-                const active = entry.key === sort;
-                return (
-                  <button
-                    key={entry.key}
-                    type="button"
-                    onClick={() => changeSort(entry.key)}
-                    aria-pressed={active}
-                    className={cn(
-                      "min-h-11 whitespace-nowrap rounded-md px-2.5 py-1 text-sm transition-colors duration-150",
-                      active
-                        ? "font-semibold text-fg"
-                        : "font-medium text-fg-3 hover:text-fg-2",
-                    )}
-                  >
-                    {bt(...entry.label)}
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setPanelOpen((open) => !open)}
-              aria-expanded={panelOpen}
-              aria-controls="explore-page-filter-panel"
-              className={cn(
-                "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors duration-150",
-                panelOpen || activeFilters > 0
-                  ? "border-accent/60 bg-accent-soft/60 text-fg"
-                  : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
-              )}
-            >
-              <SlidersHorizontal size={14} className="text-accent" />
-              {bt("상세 필터", "More filters")}
-              {activeFilters > 0 && (
-                <span className="rounded-full bg-accent/15 px-1.5 text-xs text-accent">
-                  {activeFilters}
-                </span>
-              )}
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <p className="text-sm text-fg-2" role="status" aria-label={bt("탐색 결과 상태", "Explore result status")} aria-live="polite">
-              {loading ? bt("불러오는 중…", "Loading…") : error ? bt("작품 수 확인 불가", "Title count unavailable") : <>
-              {bt("작품", "Titles")}{" "}
-              <CountUp
-                key={results.length}
-                value={results.length}
-                duration={0.7}
-                separator={results.length >= 1000}
-                className="numeral text-base text-fg"
-              />
-              {bt("편", "")}
-              </>}
-            </p>
-            {!loading && !error && data && (
-              <span data-testid="catalog-provenance-meta" className="text-xs text-fg-3">
-                {snapshotDateLabel(data.generatedAt) ? <>{snapshotDateLabel(data.generatedAt)} {bt("기준 공개 스냅샷", "public snapshot")}</> : bt("공개 카탈로그 스냅샷", "Public catalog snapshot")}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={reload}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
-            >
-              <RefreshCw size={13} className={cn(loading && "animate-spin")} />
-              {bt("갱신", "Refresh")}
-            </button>
-            {hasFilter && (
-              <Link
-                href="/explore"
-                onClick={() => setLocalQuery("")}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
-              >
-                <RotateCcw size={13} />
-                {bt("필터 초기화", "Reset filters")}
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {panelOpen && (
-          <div id="explore-page-filter-panel">
-          <TitleFilterPanel
-            value={filters}
-            onChange={applyFilters}
-            facets={[...FACETS]}
-            platformOptions={platformOptions}
-            savedCount={savedIds.size}
-          />
-          </div>
-        )}
+            </>}
+          </>}
+        </dialog>
 
         {/* 수익화 OFF면 렌더되지 않음(기본 invisible). 결과 그리드 위 광고 지면(탐색 전용 슬롯). */}
         <AdSlot
@@ -541,16 +441,57 @@ export function ExplorePage() {
           aria-busy={loading}
         >
         <div className="explore-page-results-heading">
-          <h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
-          <ExploreResultsControls
-            query={localQuery}
-            onQueryChange={updateLocalQuery}
-            density={density}
-            onDensityChange={setDensity}
-          />
+          <div className="explore-page-result-label"><h2 className="explore-page-results-title">{bt("탐색 결과", "Explore results")}</h2>
+            <p className="explore-page-count" role="status" aria-label={bt("탐색 결과 상태", "Explore result status")} aria-live="polite">
+              {loading ? bt("불러오는 중…", "Loading…") : error ? bt("작품 수 확인 불가", "Title count unavailable") : <>
+              {bt("작품", "Titles")}{" "}
+              <CountUp
+                key={results.length}
+                value={results.length}
+                duration={0.7}
+                separator={results.length >= 1000}
+                className="numeral text-base text-fg"
+              />
+              {bt("편", "")}
+              </>}
+            </p>
+          </div>
+          <details className="explore-page-view" data-testid="explore-page-view">
+            <summary onKeyDown={closeDisclosure}>{bt("보기 설정", "View settings")}{density === "compact" && <span>{bt("조밀", "Compact")}</span>}<ChevronDown size={14} aria-hidden="true" /></summary>
+            <div className="explore-page-view-body">
+              <div role="group" aria-label={bt("카드 밀도", "Card density")} className="explore-page-density">
+                {([{ key: "comfortable", label: ["표준", "Standard"], Icon: LayoutGrid }, { key: "compact", label: ["조밀", "Compact"], Icon: Rows3 }] as const).map(({ key, label, Icon }) => <button type="button" key={key} onKeyDown={closeDisclosure} onClick={() => setDensity(key)} aria-pressed={density === key}><Icon size={14} aria-hidden="true" />{bt(label[0], label[1])}</button>)}
+              </div>
+            {!loading && !error && data && (
+              <span data-testid="catalog-provenance-meta" className="text-xs text-fg-3">
+                {snapshotDateLabel(data.generatedAt) ? <>{snapshotDateLabel(data.generatedAt)} {bt("기준 공개 스냅샷", "public snapshot")}</> : bt("공개 카탈로그 스냅샷", "Public catalog snapshot")}
+              </span>
+            )}
+            <button
+              type="button"
+              onKeyDown={closeDisclosure}
+              onClick={reload}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
+            >
+              <RefreshCw size={13} className={cn(loading && "animate-spin")} />
+              {bt("갱신", "Refresh")}
+            </button>
+            {hasFilter && (
+              <Link
+                href="/explore"
+                onKeyDown={closeDisclosure}
+                onClick={() => setLocalQuery("")}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
+              >
+                <RotateCcw size={13} />
+                {bt("필터 초기화", "Reset filters")}
+              </Link>
+            )}
+            </div>
+          </details>
         </div>
         {loading ? (
-          <div aria-label={bt("작품을 불러오는 중", "Loading titles")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          <div aria-label={bt("작품을 불러오는 중", "Loading titles")} className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
             {Array.from({ length: 10 }).map((_, index) => (
               <div key={index} className="space-y-3">
                 <span className="skeleton block aspect-[3/4] rounded-xl" />
@@ -567,7 +508,7 @@ export function ExplorePage() {
           />
         ) : results.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
               {shown.map((title) => (
                 <TitleCard
                   key={title.id}
@@ -627,7 +568,7 @@ export function ExplorePage() {
                 data-testid="explore-empty-art-fallback"
                 className="relative mb-2 flex h-24 w-full max-w-sm items-center justify-center rounded-2xl border border-line/60 bg-panel/70 px-4 text-xs font-semibold tracking-wider text-fg-3"
               >
-                GENRE SPECTRUM · EMPTY RESULT
+                {bt("조건에 맞는 작품 없음", "No titles match these filters")}
               </div>
             )}
             <span

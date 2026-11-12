@@ -68,30 +68,37 @@ pnpm run verify
 
 ## 2. 정적 웹과 Core API 배포
 
-정적 웹은 Git push로 자동 배포하지 않습니다. 검토된 `main`의 clean worktree에서 다음 순서로
-번들·헤더·라우팅을 확인한 뒤 수동 승인 배포합니다.
+정적 웹의 현행 진입점은 저장소 루트에서 실행하는 아래 명령 하나입니다. `onpod-current`
+프로필로 기존 Core API origin을 선택하고 웹 빌드·정적 에셋 준비·R2 동기화·Worker 배포를
+순서대로 수행합니다. Git push나 PR 병합으로 실행되지 않으며, 운영 웹과 공개 에셋을 변경합니다.
 
 ```bash
-pnpm run verify:free-infrastructure
-pnpm run verify:cloudflare-static
-pnpm run cloudflare:static:dry-run
-
-RENDER_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai pnpm run verify:render-core-origin
-export CLOUDFLARE_CORE_API_ORIGIN=https://toonstudio-api.onpod.ai
-export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
-export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
-pnpm run cloudflare:static:deploy
+pnpm run deploy:web
 ```
 
-`pnpm run cloudflare:static:deploy`(`scripts/deploy-cloudflare-static.mjs --production`)는 빌드·R2 동기화·Worker 배포를
-시작하기 전에 아래를 모두 요구하고, 하나라도 어긋나면 중단합니다.
+명령을 실행하기 전에 아래 조건을 모두 확인합니다. 세부 명령과 성공 판정은
+[정본 배포 안내의 5단계](docs/operations/ai-deployment-quickstart.md#2-5단계-정본-진입-명령--성공-판정--금지-사항)에만 모아 둡니다.
+
+- 검토된 clean `main`의 40자리 SHA가 배포 시점 `origin/main` 끝과 같고, 그 SHA의 필수 CI `core`·`verify`가 모두 성공해야 합니다. 로컬 커밋·오프라인 점검만으로 대체하지 않습니다.
+- `pnpm run deploy:verify`, 웹 빌드와 번들 검사, `pnpm run deploy:web:dry-run`을 통과해야 합니다. 정적 웹 목적의 환경 점검은 `pnpm run deploy:preflight --operation static-deploy --unit static-worker`입니다. `offline-contract-only`는 원격 권한·배포 완료를 뜻하지 않습니다.
+- 승인된 세션에 `CLOUDFLARE_API_TOKEN`과 `CLOUDFLARE_ACCOUNT_ID`를 제공해야 합니다. 토큰은 기존 `toonspectrum-web`의 코드·Static Assets 배포와 `toonspectrum-public-assets`의 객체 목록 조회·업로드를 수행할 수 있어야 합니다. 현재 R2 동기화는 REST API 토큰을 요구하므로 Wrangler OAuth 로그인만으로 전체 명령의 실행 가능성을 보장하지 않습니다.
+- 직전 정상인 **컷오버 이후** Worker 버전 ID를 기록하고, 동일 SHA의 로컬 배포 원장이 없는지 확인합니다. 배포 후에는 원점 준비성·에지 출처 인증·주요 화면·로그인·제품 투어·Studio 격리 검증을 수행합니다. 실패하면 기록한 정상 Worker 버전으로 복구하고 상태 검증을 다시 수행합니다.
+
+실제 비밀값은 기존 승인된 secret store에서 필요한 세션으로만 주입합니다. 로컬 env·Keychain을
+복사하거나 값을 채팅·명령 인자에 쓰지 않습니다. 권한이 없으면 위 명령과 미충족 조건을 전달하고
+중단합니다. 이 웹 배포에는 onpod 이미지 교체·DB·DNS·기존 runtime secret 변경이 필요하지 않습니다.
+
+`deploy:web`과 호환 진입점 `cloudflare:static:deploy`는 같은
+`scripts/deploy-cloudflare-static.mjs`를 사용합니다. 기존 CI·하네스의 호환 스크립트 이름은
+유지하며, 현재 운영 안내에는 프로필을 포함하는 `deploy:*` 이름을 사용합니다. 배포 스크립트는
+다음 조건이 맞지 않으면 빌드·R2 동기화·Worker 배포 전에 중단합니다.
 
 - `TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production` — 사용자의 별도 명시적 승인 뒤에만 설정합니다. 상시 승인 파일(`deploy/cloudflare-static/STANDING_APPROVAL.json`)이 유효하면 이 변수 없이 배포합니다.
-- `TOONSPECTRUM_APPROVED_MAIN_SHA` — 사용자가 승인한 `main` 커밋의 **소문자 40자리 16진수** SHA입니다.
+- 수동 승인 방식을 쓸 때 `TOONSPECTRUM_APPROVED_MAIN_SHA`는 사용자가 승인한 `main` 커밋의 **소문자 40자리 16진수** SHA입니다.
   `$(git rev-parse HEAD)`로 자동 채우면 승인 절차가 의미를 잃으므로 승인된 값을 그대로 입력합니다.
 - 현재 브랜치가 `main`입니다.
 - 작업 트리가 깨끗합니다(`git status --porcelain`이 비어 있음).
-- `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같습니다.
+- 수동 승인 방식에서는 `git rev-parse HEAD`가 `TOONSPECTRUM_APPROVED_MAIN_SHA`와 같습니다. 상시 승인 방식에서도 위의 원격 `origin/main`·CI 확인은 생략하지 않습니다.
 - `--skip-build`로 사전 빌드 산출물을 재사용할 때는 `dist/.vite/build-meta.json`의 `gitSha`가 현재 `HEAD`와 정확히 일치해야 합니다(구버전 `dist/` 배포 차단).
 - 로컬 배포 원장(`.git/toonstudio-deploy-ledger/cloudflare-static/<sha>.json`)에 동일 SHA 완료 기록이 없어야 하며, 배포 시 Worker 변수 `RELEASE_SHA`에 승인된 40자리 SHA를 함께 바인딩합니다.
 
@@ -111,7 +118,7 @@ pnpm run cloudflare:static:deploy
 
 | scope | 배포 단위와 절차 | 롤백 |
 | --- | --- | --- |
-| `cloudflare-static-production` | 위 "정적 웹" 절차(`pnpm run cloudflare:static:deploy`) | 직전 Worker 버전으로 `wrangler versions deploy` |
+| `cloudflare-static-production` | 위 "정적 웹" 절차(`pnpm run deploy:web`) | 직전 Worker 버전으로 `wrangler versions deploy` |
 | `cloudflare-apex-redirect-production` | `pnpm run verify:cloudflare-apex-redirect` 통과 후 `wrangler versions upload` → `wrangler versions deploy <version-id>@100 --yes` (`deploy/cloudflare-apex-redirect/README.md`) | 직전 Worker 버전 |
 | `core-api-container-release` | `api-container-release.yml`에 `origin/main` 끝의 40자리 SHA를 넣어 GHCR 이미지(`ghcr.io/blue45f/toonspectrum-core-api:<sha>`)를 만든다. 운영에는 아직 반영되지 않는다 | 해당 없음(이미지 생성만) |
 | `render-core-api-image-deploy` | 위에서 만든 이미지 태그를 Render `toonspectrum-core-api`에 이미지 지정 배포(`POST /v1/services/{id}/deploys`의 `imageUrl`, 또는 대시보드 Manual Deploy). **서비스 설정의 `imagePath`는 옛 태그라서 이미지 지정 없는 재배포(`trigger_deploy`)는 옛 버전으로 되돌아가므로 쓰지 않는다** | 직전 정상 배포의 이미지 태그를 같은 방법으로 재배포 |
@@ -119,7 +126,8 @@ pnpm run cloudflare:static:deploy
 
 이 표는 `deploy/STANDING_APPROVAL.json`에 남아 있는 승인 범위의 설명입니다. Render scope가 남아 있어도 삭제된 서비스를 재생성하거나 onpod에 승계할 권한은 아닙니다. 운영 DB workflow도 아직 Neon·Supabase 대상이므로 onpod DB에 그대로 실행하지 않습니다(인프라 지도 8절). onpod 이미지 교체는 별도 승인을 받은 뒤 지도 6.6절을 따릅니다.
 
-기존 승인 단위의 공통 조건과 순서(Render 단계는 컷오버 이전 기록):
+기존 승인 단위의 공통 조건과 순서입니다. **아래 2번의 Render 순서는 컷오버 이전 퇴역 기록**이며
+현행 onpod 실행 순서가 아닙니다. 현재 웹 배포는 이 절의 `deploy:*` 진입점과 정본 배포 안내를 따릅니다.
 
 1. 대상은 배포 시점 `origin/main` 끝의 40자리 SHA 하나이며 필수 CI(`core`·`verify`)가 그 SHA에서 녹색이어야 한다. 같은 SHA의 중복 배포·자동 재시도는 하지 않는다.
 2. 순서는 migration(추가형 여부를 SQL로 다시 확인) → 컨테이너 릴리스 → Render 이미지 배포 → 정적 웹 → apex Worker이며, 배포 단위 사이에 health·로그인·자산 업로드 같은 스모크를 확인한다.
@@ -304,24 +312,10 @@ upgrade 전용이므로 base relation이 없으면 DDL 전에 실패하며, 새 
 승인 작업으로 먼저 완료해야 합니다. 앱의 build/start/health 명령에서는 DDL이나
 `drizzle-kit push`를 실행하지 않습니다.
 
-프로덕션 배포는 `origin/main` push와 분리합니다. 정적 웹의 기본 권위는
-`deploy/cloudflare-static`의 Cloudflare Static Assets입니다.
-PR 생성, main merge, scheduled catalog commit은 배포를 만들지 않습니다. 검토된 운영자가 clean
-`main`에서 명시적 approval 문자열을 제공한 수동 명령만 실행할 수 있습니다.
-
-```bash
-pnpm run validate:architecture
-pnpm run verify:free-infrastructure
-pnpm run verify:cloudflare-static
-pnpm run cloudflare:static:dry-run
-
-export CLOUDFLARE_CORE_API_ORIGIN=https://<reviewed-core-api-origin>
-export TOONSPECTRUM_MANUAL_DEPLOY_APPROVAL=cloudflare-static-production
-export TOONSPECTRUM_APPROVED_MAIN_SHA=<사용자가 승인한 main의 소문자 40자리 SHA>
-pnpm run cloudflare:static:deploy
-```
-
-승인 문구와 승인 SHA를 비롯한 스크립트의 production 요구 조건은 위 "2. 정적 웹과 Core API 배포"에 정리했습니다.
+현행 정적 웹 배포 명령과 승인·SHA·CI·롤백 조건은
+[2. 정적 웹과 Core API 배포](#2-정적-웹과-core-api-배포)로 모았습니다. 유효한 상시 승인 파일은
+매 릴리스 approval 문자열을 대체하지만 clean `main`·정확한 SHA·필수 CI 조건을 대체하지 않습니다.
+PR 생성, main merge, scheduled catalog commit 자체로는 배포되지 않습니다.
 
 `main`은 브랜치 보호로 PR 전용이며 CI의 `core` 체크(lint·typecheck·회귀 5샤드·직렬 성능
 회귀·접근성 스모크·빌드·DB 검수 불변식) 성공이 머지 조건입니다. `core`는 병렬 잡 `lint`·
@@ -330,7 +324,9 @@ pnpm run cloudflare:static:deploy
 릴리스 전에는 운영에 반영되지 않습니다. 우회 이유는 PR이나 커밋 본문에 기록하고 다음 PR에서
 필수 검증을 다시 녹색으로 돌립니다.
 
-migration을 동반하는 release는 expand/contract 두 번의 reviewed merge로 나눕니다. 자동 배포가
+다음 migration 순서는 **legacy exception — 컷오버 이전 분리 역할·Render 구성 기록**입니다.
+현재 onpod DB에 실행하지 않으며 현행 절차·승인은 인프라 지도를 먼저 확인합니다.
+기록상의 migration을 동반하는 release는 expand/contract 두 번의 reviewed merge로 나눕니다. 자동 배포가
 없어졌으므로 migration과 runtime 순서를 명시적으로 제어할 수 있지만, release migration workflow는
 release SHA가 이미 `origin/main`의 ancestor일 것을 요구합니다. 기존 runtime이 migration 동안 계속
 서비스하므로 expand migration은 구 runtime과도 호환되어야 합니다.

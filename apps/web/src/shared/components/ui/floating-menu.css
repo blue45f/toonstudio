@@ -96,14 +96,29 @@
   display: none;
 }
 
-/* 마켓 스티키 액션바가 떠 있을 때(데스크톱): 우하단 플로팅 클러스터를 바 위로 들어 올린다.
- * 모바일은 하단 탭 기준선(--site-float-base) 위에 한 열로 쌓여 겹치지 않는다. */
-@media (min-width: 768px) {
+/* 마켓 바는 실제 점유 높이를 게시한다. 바 자체의 하단 탭 기준선은 바꾸지 않고
+ * 조작 열만 그 위에 놓아 모바일 줄바꿈·안전 영역에서도 주요 행동을 가리지 않는다. */
+@media (max-width: 767px) {
+  html:has([data-market-sticky-bar="true"]) {
+    --site-float-voice-bottom: calc(max(var(--site-float-base), var(--service-status-overlay-clearance, 0px)) + var(--site-float-controls-slot));
+  }
+  /* 전체 메뉴가 없는 화면의 설정 fallback도 한 칸을 차지한다. 기능을 숨기지 않는다. */
+  html:has([data-market-sticky-bar="true"]):not(:has([data-site-menu-entry="available"], [data-site-mobile-utilities="available"])):has([data-floating-controls-mobile="disabled"]) {
+    --site-float-controls-slot: var(--site-float-slot);
+  }
   html:has([data-market-sticky-bar="true"]) [data-floating-controls="true"] {
-    bottom: 5.25rem !important;
+    bottom: max(var(--site-float-base), var(--service-status-overlay-clearance, 0px)) !important;
   }
   html:has([data-market-sticky-bar="true"]) [data-back-to-top="true"] {
-    bottom: 8.75rem !important;
+    bottom: max(var(--site-float-top-bottom), var(--service-status-overlay-clearance, 0px)) !important;
+  }
+}
+@media (min-width: 768px) {
+  html:has([data-market-sticky-bar="true"]) [data-floating-controls="true"] {
+    bottom: max(5.25rem, var(--service-status-overlay-clearance, 0px)) !important;
+  }
+  html:has([data-market-sticky-bar="true"]) [data-back-to-top="true"] {
+    bottom: max(8.75rem, calc(var(--service-status-overlay-clearance, 0px) + var(--site-float-slot))) !important;
   }
 }
 

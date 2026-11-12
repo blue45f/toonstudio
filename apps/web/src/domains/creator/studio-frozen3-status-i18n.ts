@@ -309,8 +309,8 @@ registerI18nLocaleEntries("en", {
 // ── StudioContinuityPanel
 registerI18nLocaleEntries("ko", {
   "studio.frozenStatus3.cont.reviewLoading": "검토 기록을 불러오는 중…",
-  "studio.frozenStatus3.cont.reviewSaving": "검토 기록을 SQLite/OPFS에 저장 중…",
-  "studio.frozenStatus3.cont.reviewSaved": "검토 기록: SQLite/OPFS 저장됨",
+  "studio.frozenStatus3.cont.reviewSaving": "검토 기록을 이 기기에 저장 중…",
+  "studio.frozenStatus3.cont.reviewSaved": "검토 기록: 이 기기에 저장됨",
   "studio.frozenStatus3.cont.reviewMemory": "검토 기록은 현재 탭에만 보관됩니다. 저장된 원본은 변경하지 않습니다.",
   "studio.frozenStatus3.cont.summaryAllDone": "자동 검사와 최종 수동 확인을 모두 마쳤습니다",
   "studio.frozenStatus3.cont.summaryResolveBlocking": "마감 전에 차단 {blocking}개·오류 {error}개를 해결하세요",
@@ -326,8 +326,8 @@ registerI18nLocaleEntries("ko", {
 });
 registerI18nLocaleEntries("en", {
   "studio.frozenStatus3.cont.reviewLoading": "Loading the review records…",
-  "studio.frozenStatus3.cont.reviewSaving": "Saving the review records to SQLite/OPFS…",
-  "studio.frozenStatus3.cont.reviewSaved": "Review records: saved in SQLite/OPFS",
+  "studio.frozenStatus3.cont.reviewSaving": "Saving review records on this device…",
+  "studio.frozenStatus3.cont.reviewSaved": "Review records: saved on this device",
   "studio.frozenStatus3.cont.reviewMemory": "Review records are kept only in the current tab. The saved original is not changed.",
   "studio.frozenStatus3.cont.summaryAllDone": "All automatic checks and the final manual review are complete",
   "studio.frozenStatus3.cont.summaryResolveBlocking": "Resolve {blocking} blocking items and {error} errors before the deadline",

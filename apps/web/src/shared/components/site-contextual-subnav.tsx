@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { ChevronDown } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
@@ -10,6 +11,7 @@ import {
   resolveContextualSubNavForPath,
   resolvePageSimplicityProfile,
   type ContextualSubNavGroup,
+  type ContextualSubNavItem,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { resolveSiteArtCardMetaForSubNavGroup } from "./site-experience/site-art-card-meta";
 
@@ -26,7 +28,7 @@ export function SiteContextualSubNav({
   readonly className?: string;
 } = {}) {
   useBilingualI18nRevision();
-  const { pathname: currentPathname } = useLocation();
+  const { pathname: currentPathname, search: currentSearch } = useLocation();
   const pathname = canonicalSitePath(pathnameOverride ?? currentPathname);
   const lang = useI18n((state) => state.lang);
   const isKo = lang.toLowerCase().startsWith("ko");
@@ -40,6 +42,34 @@ export function SiteContextualSubNav({
   const simplicity = resolvePageSimplicityProfile(group.id);
   const goalCopy = isKo ? simplicity.koPrimaryGoal : simplicity.enPrimaryGoal;
   const simplicityBadge = isKo ? "이곳에서 할 수 있는 일" : "What you can do here";
+  const search = new URLSearchParams(
+    pathnameOverride?.includes("?")
+      ? pathnameOverride.slice(pathnameOverride.indexOf("?"))
+      : pathname === canonicalSitePath(currentPathname) ? currentSearch : "",
+  );
+  // 같은 경로의 서재 탭은 쿼리까지 비교하고, 가장 구체적인 목적지 하나만 현재 위치로 표시한다.
+  const currentItem = group.items.filter((item) => {
+    const itemPath = canonicalSitePath(item.href);
+    const pathMatches = item.exact ? pathname === itemPath
+      : pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+    const params = new URLSearchParams(item.href.split("?")[1]);
+    return pathMatches && [...params].every(([key, value]) => search.get(key) === value);
+  }).sort((left, right) => right.href.length - left.href.length)[0];
+  const primaryItems = group.items.slice(0, 4);
+  if (currentItem && !primaryItems.includes(currentItem)) primaryItems.splice(3, 1, currentItem);
+  const secondaryItems = group.items.filter((item) => !primaryItems.includes(item));
+
+  const renderItem = (item: ContextualSubNavItem) => (
+    <li key={item.id}>
+      <Link
+        href={item.href}
+        aria-current={item === currentItem ? "page" : undefined}
+        className="site-contextual-subnav__link"
+      >
+        {isKo ? item.koLabel : item.enLabel}
+      </Link>
+    </li>
+  );
 
   return (
     <nav
@@ -52,61 +82,23 @@ export function SiteContextualSubNav({
       style={style}
     >
       <div className="site-contextual-subnav__header">
-        <span className="nb-site-subnav-brand" aria-hidden="true">
-          <img
-            src={nbCard.src320}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            width={34}
-            height={20}
-            className="nb-site-subnav-thumb"
-          />
-          <span className="site-contextual-subnav__dot" aria-hidden="true" />
-        </span>
         <span>{title}</span>
-        <span
-          className="site-contextual-subnav__simplicity"
-          data-testid="site-ux-simplicity-pill"
-          title={goalCopy}
-        >
-          <span className="site-contextual-subnav__simplicity-grade">
-            {simplicityBadge}
-          </span>
-          <span className="site-contextual-subnav__simplicity-goal">
-            {goalCopy}
-          </span>
-        </span>
       </div>
       <ul className="site-contextual-subnav__list">
-        {group.items.map((item) => {
-          const itemPath = canonicalSitePath(item.href);
-          const isCurrent = item.exact
-            ? pathname === itemPath
-            : pathname === itemPath || pathname.startsWith(`${itemPath}/`);
-          const label = isKo ? item.koLabel : item.enLabel;
-          return (
-            <li key={item.id}>
-              <Link
-                href={item.href}
-                aria-current={isCurrent ? "page" : undefined}
-                className="site-contextual-subnav__link"
-              >
-                <span>{label}</span>
-                {item.badge ? (
-                  <span
-                    className="site-contextual-subnav__badge"
-                    data-badge={item.badge}
-                  >
-                    {item.badge}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
+        {primaryItems.map(renderItem)}
       </ul>
+      <details key={`${pathname}${search.toString()}`} className="site-contextual-subnav__more">
+        <summary>
+          {isKo ? "더 보기" : "More"}
+          <ChevronDown size={14} aria-hidden="true" />
+        </summary>
+        <div className="site-contextual-subnav__additional">
+          <p data-testid="site-ux-simplicity-pill" className="text-xs leading-5 text-fg-2">
+            <span className="font-semibold">{simplicityBadge}</span>{" · "}{goalCopy}
+          </p>
+          <ul className="site-contextual-subnav__list">{secondaryItems.map(renderItem)}</ul>
+        </div>
+      </details>
     </nav>
   );
 }

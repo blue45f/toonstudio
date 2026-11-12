@@ -4,6 +4,7 @@
  * 객체 하나만 넘기고, 내부에서 원래 지역 이름으로 구조 분해해 본문을 손대지 않는다.
  */
 import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
+import { creatorStorageDetail, creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 
 import { BlinkStabilizer } from "./studio-vrm-blink-stabilizer";
 import { createStudioVrmVideoHandFrameResult } from "./studio-vrm-video-hand";
@@ -444,9 +445,10 @@ export function useStudioVrmWebcamSession({
                       ) return;
                       setCalibrationPersistenceStatus("memory");
                       setCalibrationPersistenceMessage(
-                        `캘리브레이션은 현재 탭에만 적용됩니다. SQLite/OPFS 저장 실패: ${
-                          caughtError instanceof Error ? caughtError.message : String(caughtError)
-                        }`,
+                        creatorStorageDetail(creatorStorageText(
+                          "정면 보정을 저장하지 못해 현재 탭에만 적용합니다. 새로고침하면 사라집니다. 저장 공간을 확보한 뒤 다시 보정해 주세요.",
+                          "The front-facing adjustment could not be saved and applies to this tab only. It will be lost on refresh. Free device storage and adjust again.",
+                        ), caughtError),
                       );
                     });
                     channelSmootherRef.current.reset();

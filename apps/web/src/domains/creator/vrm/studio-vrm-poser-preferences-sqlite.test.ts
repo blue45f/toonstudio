@@ -279,7 +279,7 @@ describe("Studio VRM poser SQLite preferences", () => {
       recentPoses: { ids: ["memory-pose"] },
       recentCharacters: { ids: ["memory-character"] },
     });
-    expect(runtime.getSnapshot().message).toContain("현재 탭 메모리");
+    expect(runtime.getSnapshot().message).toContain("현재 탭에만 유지");
     expect(runtime.getSnapshot().message).toContain("OPFS permission denied");
   });
 

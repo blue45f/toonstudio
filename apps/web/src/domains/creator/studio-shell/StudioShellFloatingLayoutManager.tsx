@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useCallback,
   useRef,
   useState,
   useSyncExternalStore,
@@ -39,7 +40,9 @@ import {
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
 import { StudioShellFloatingTarget } from "./StudioShellFloatingTarget";
+import { useStudioChromePortalTarget } from "./use-studio-chrome-portal-target";
 import { STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT } from "./studio-shell-floating-layout-events";
+import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import {
   STUDIO_SHELL_FLOATING_SURFACES,
   STUDIO_SHELL_FLOATING_VISIBILITY_IDS,
@@ -51,6 +54,7 @@ import {
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { Switch } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 const PRESETS: readonly {
   readonly id: StudioShellFloatingPresetId;
@@ -81,6 +85,8 @@ function surfaceIdsForVisibility(
 
 export function StudioShellFloatingLayoutManager() {
   const shell = useStudioShellFloatingLayout();
+  const menubar = useStudioChromePortalTarget("studio-menubar");
+  const drawing = useStudioDrawingClarity()?.active === true || menubar?.dataset.studioDrawingClarityHeader === "true", bt = useBilingual("studio.drawingClarity");
   const desktop = useMediaQuery(STUDIO_DESKTOP_FLOATING_QUERY);
   const arranging = useSyncExternalStore(
     subscribeStudioWorkspaceArranging,
@@ -91,6 +97,15 @@ export function StudioShellFloatingLayoutManager() {
   const [notice, setNotice] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const externalTrigger = useRef<HTMLElement | null>(null);
+  const restoreLauncherFocus = useCallback(() => {
+    const editor = (menubar ?? launcherRef.current)?.closest('[data-studio-editor="true"]');
+    const target = externalTrigger.current?.isConnected ? externalTrigger.current : drawing
+      ? editor?.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]') : launcherRef.current;
+    externalTrigger.current = null;
+    target?.focus({ preventScroll: true });
+  }, [drawing, menubar]);
+  const closeManager = useCallback(() => { setOpen(false); restoreLauncherFocus(); }, [restoreLauncherFocus]);
   const configuredVisibleCount = STUDIO_SHELL_FLOATING_VISIBILITY_IDS
     .filter(shell.isConfiguredVisible).length;
   const visibleCount = STUDIO_SHELL_FLOATING_VISIBILITY_IDS
@@ -101,7 +116,16 @@ export function StudioShellFloatingLayoutManager() {
     && shell.drawingAutoHideActive;
 
   useEffect(() => {
-    const openManager = (): void => setOpen(true);
+    const openManager = (event: Event): void => {
+      const detail: unknown = (event as CustomEvent<unknown>).detail;
+      const trigger = detail && typeof detail === "object" && "trigger" in detail ? detail.trigger : null;
+      const editor = launcherRef.current?.closest('[data-studio-editor="true"]');
+      if (trigger instanceof HTMLElement) {
+        if (!trigger.isConnected || (editor && !editor.contains(trigger))) return;
+        externalTrigger.current = trigger;
+      }
+      setOpen(true);
+    };
     window.addEventListener(STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT, openManager);
     return () => window.removeEventListener(STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT, openManager);
   }, []);
@@ -148,12 +172,11 @@ export function StudioShellFloatingLayoutManager() {
         setNotice("배치 편집을 완료했어요.");
         return;
       }
-      setOpen(false);
-      launcherRef.current?.focus({ preventScroll: true });
+      closeManager();
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, [arranging, open]);
+  }, [arranging, closeManager, open]);
 
   const actionClass = cn(
     "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-line px-3",
@@ -168,10 +191,6 @@ export function StudioShellFloatingLayoutManager() {
     setNotice("상시 플로팅 UI와 열린 작업 패널의 위치·크기·잠금을 기본값으로 복원했어요.");
   };
 
-  const closeManager = (): void => {
-    setOpen(false);
-    launcherRef.current?.focus({ preventScroll: true });
-  };
 
   const panel = (
     <div
@@ -192,7 +211,7 @@ export function StudioShellFloatingLayoutManager() {
                 <MonitorCog size={18} aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="text-sm font-black">{desktop ? "플로팅 UI 작업공간" : "보기 · 플로팅 UI"}</h2>
+                <h2 className="text-sm font-black">{drawing ? bt("화면과 작업 환경", "Display and workspace") : desktop ? "플로팅 UI 작업공간" : "보기 · 플로팅 UI"}</h2>
                 <p className="mt-1 text-xs leading-5 text-fg-3">
                   표시 여부를 고르고, 배치 편집에서 화면을 보며 직접 이동·도킹·크기 조절할 수 있어요.
                 </p>
@@ -203,8 +222,7 @@ export function StudioShellFloatingLayoutManager() {
                   aria-label="보기 설정 닫기"
                   className={cn(actionClass, "size-10 shrink-0 px-0 pointer-coarse:size-11")}
                   onClick={() => {
-                    setOpen(false);
-                    launcherRef.current?.focus({ preventScroll: true });
+                    closeManager();
                   }}
                 >
                   <X size={16} aria-hidden />
@@ -547,7 +565,7 @@ export function StudioShellFloatingLayoutManager() {
       {open && desktop ? (
         <StudioDesktopFloatingSurface
           surfaceId="shell-floating-layout-manager"
-          label="보기 · 플로팅 UI"
+          label={drawing ? bt("화면과 작업 환경", "Display and workspace") : "보기 · 플로팅 UI"}
           defaultLayout={STUDIO_FLOATING_MENU_LAYOUTS.viewOptions}
           onClose={closeManager}
           minWidth={440}
@@ -569,6 +587,7 @@ export function StudioShellFloatingLayoutManager() {
 
       <div
         data-studio-shell-view-options="true"
+        hidden={drawing && !open && !arranging && !shell.failure}
         data-studio-shell-drawing-auto-hide-active={drawingAutoHideRunning ? "true" : "false"}
         aria-hidden={drawingAutoHideRunning ? true : undefined}
         inert={drawingAutoHideRunning ? true : undefined}

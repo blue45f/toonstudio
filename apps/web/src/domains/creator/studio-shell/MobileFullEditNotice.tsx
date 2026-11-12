@@ -1,5 +1,5 @@
 import { Check, ChevronDown, CircleSlash, MonitorSmartphone, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   dismissMobileFullEditNotice,
@@ -13,6 +13,7 @@ import {
 
 import { useBilingual, type BilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { subscribeStudioMobileDeviceGuide } from "./mobile-device-guide-channel";
 
 /** StudioEditorRoute 의 데스크톱 프리로드 분기와 같은 경계. 이보다 좁으면 풀 편집 도구가 접힌다. */
 export const MOBILE_FULL_EDIT_NOTICE_QUERY = STUDIO_TOUCH_NARROW_QUERY;
@@ -21,6 +22,8 @@ export const MOBILE_FULL_EDIT_NOTICE_QUERY = STUDIO_TOUCH_NARROW_QUERY;
 export const MOBILE_TOUCH_TABLET_NOTICE_QUERY = STUDIO_TOUCH_TABLET_QUERY;
 
 export interface MobileFullEditNoticeProps {
+  /** 캔버스는 작업을 먼저 보여 주고, 사용자가 기기 안내를 선택하면 제한을 펼친다. */
+  readonly startCollapsed?: boolean;
   /** 표면별 닫힘 기억 키. 예: "studio-editor-canvas". */
   readonly surfaceId: string;
   /** 안내 제목에 들어가는 표면 이름. 예: { ko: "캔버스 편집기", en: "Canvas editor" }. */
@@ -64,6 +67,7 @@ export function MobileFullEditNotice(props: MobileFullEditNoticeProps) {
 }
 
 function MobileFullEditNoticeContent({
+  startCollapsed = false,
   surfaceId,
   surfaceLabel,
   mobileCapabilities,
@@ -74,19 +78,30 @@ function MobileFullEditNoticeContent({
   const [dismissed, setDismissed] = useState(() => isMobileFullEditNoticeDismissed(surfaceId));
   const [expanded, setExpanded] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const returnTriggerRef = useRef<HTMLElement | null>(null);
   const detailsId = useId();
   const limitations = mobileLimitations ?? [];
-  const compact = dismissed && !expanded;
+  const compact = (startCollapsed || dismissed) && !expanded;
   // 정본 계획의 제한을 그대로 요약에 써서, 펼치기 전에도 현재 도구의 경계를 알린다.
   const firstLimitation = limitations[0];
-  const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), env(safe-area-inset-bottom))";
+  const reservedBottom = "max(var(--studio-canvas-bottom-inset, 4.75rem), var(--studio-mobile-dock-measured-height, 0px), var(--service-status-overlay-clearance, 0px), env(safe-area-inset-bottom))";
+
+  useEffect(() => subscribeStudioMobileDeviceGuide(surfaceId, (trigger) => {
+    returnTriggerRef.current = trigger;
+    setExpanded(true);
+  }), [surfaceId]);
+  useLayoutEffect(() => {
+    if (expanded && returnTriggerRef.current) toggleRef.current?.focus({ preventScroll: true });
+  }, [expanded]);
 
   const close = () => {
     dismissMobileFullEditNotice(surfaceId);
     setDismissed(true);
     setExpanded(false);
-    // 토글은 닫힘 전후 같은 DOM 노드다. 사라지는 버튼에 포커스를 남기지 않는다.
-    toggleRef.current?.focus({ preventScroll: true });
+    // 더보기에서 열었다면 접힘 뒤 사라지는 안내 대신 같은 트리거로 돌아간다.
+    const target = returnTriggerRef.current?.isConnected ? returnTriggerRef.current : toggleRef.current;
+    returnTriggerRef.current = null;
+    target?.focus({ preventScroll: true });
   };
 
   const handleEscape = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -100,6 +115,7 @@ function MobileFullEditNoticeContent({
     <aside
       data-testid="mobile-full-edit-notice"
       data-studio-mobile-full-edit-notice="true"
+      data-studio-device-guide-surface={surfaceId}
       data-studio-mobile-touch-tier={touchTier}
       data-studio-mobile-notice-expanded={expanded}
       data-studio-mobile-notice-compact={compact}
@@ -107,7 +123,7 @@ function MobileFullEditNoticeContent({
       aria-label={bt("모바일 편집 안내", "Mobile editing notice")}
       className={cn(
         "fixed z-[90] flex flex-col overflow-hidden rounded-2xl border border-line bg-card/95 text-fg shadow-lg backdrop-blur-md",
-        compact ? "right-3 max-w-[calc(100vw-1.5rem)]" : "inset-x-3 mx-auto max-w-lg",
+        compact ? "right-3 max-w-[calc(100vw-1.5rem)] max-[429px]:left-3 max-[429px]:right-auto" : "inset-x-3 mx-auto max-w-lg",
       )}
       style={{
         bottom: `calc(${reservedBottom} + 0.5rem)`,
@@ -120,7 +136,7 @@ function MobileFullEditNoticeContent({
           type="button"
           aria-expanded={expanded}
           aria-controls={detailsId}
-          onClick={() => setExpanded((value) => !value)}
+          onClick={() => { if (expanded && returnTriggerRef.current) close(); else setExpanded((value) => !value); }}
           onKeyDown={handleEscape}
           className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-xl px-2 text-left text-sm font-bold hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent motion-reduce:transition-none"
         >

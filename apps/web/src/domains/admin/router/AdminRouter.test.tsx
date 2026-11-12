@@ -27,9 +27,12 @@ vi.mock("../components/AdminReports", () => ({ AdminReports: ({ userId }: { user
 vi.mock("../components/AdminSecurity", () => ({ AdminSecurity: ({ userId }: { userId: string }) => <p>security:{userId}</p> }));
 vi.mock("../components/AdminAuditLogs", () => ({ AdminAuditLogs: ({ userId }: { userId: string }) => <p>audit:{userId}</p> }));
 vi.mock("../components/AdminCampaigns", () => ({ AdminCampaigns: ({ uid }: { uid: string }) => <p>campaigns:{uid}</p> }));
-vi.mock("../components/AdminOperatingMode", () => ({ AdminOperatingMode: ({ uid }: { uid: string }) => <p>operation-policy:{uid}</p> }));
+vi.mock("@/platform/api", async () => {
+  const { initialOperationPolicy } = await import("@toonstudio/contracts/operation-policy");
+  return { api: { get: vi.fn(async () => ({ policy: { revision: 0, draft: initialOperationPolicy() } })) }, getApiErrorMessage: async () => "정책 조회 실패" };
+});
 vi.mock("../components/AdminOps", () => ({ AdminOps: ({ uid }: { uid: string }) => <p>ops:{uid}</p> }));
-// 운영 경로는 연동 화면도 함께 그린다. 실제 화면은 상태 문구 사전까지 불러와 느리게 풀리고, 이 시험은 길 안내만 본다.
+// 운영 경로의 목적별 전환은 실제 workspace를 사용하며 업무 컴포넌트만 격리한다.
 vi.mock("../components/AdminIntegrations", () => ({ AdminIntegrations: () => <p>integrations</p> }));
 vi.mock("../AdminMembersPage", () => ({ AdminMembersPage: () => { const gate = useAdminGate(); return <p>members:{gate.uid}:{gate.gate.kind}</p>; } }));
 vi.mock("../AdminCommunityPage", () => ({ AdminCommunityPage: () => { const gate = useAdminGate(); return <p>community:{gate.uid}:{gate.gate.kind}</p>; } }));
@@ -97,11 +100,14 @@ describe("AdminRouter access and real route transitions", () => {
     open(path); expect(await screen.findByText(content)).toBeTruthy();
     expect(screen.getByLabelText("Current location").textContent).toBe(path);
   });
-  it("renders operating policy in the canonical operations route and its legacy redirect", async () => {
+  it("opens one operations task and preserves the canonical legacy destination", async () => {
     open("/admin?tab=ops");
-    expect(await screen.findByText("operation-policy:actor-a")).toBeTruthy();
-    expect(screen.getByText("ops:actor-a")).toBeTruthy();
+    expect(await screen.findByText("ops:actor-a")).toBeTruthy();
+    expect(screen.queryByText("admin.operatingMode.title")).toBeNull();
     expect(screen.getByLabelText("Current location").textContent).toBe("/admin/platform/operations");
+    fireEvent.click(screen.getByRole("button", { name: "운영 정책" }));
+    expect(await screen.findByText("admin.operatingMode.title")).toBeTruthy();
+    expect(screen.getByLabelText("Current location").textContent).toBe("/admin/platform/operations?view=policy");
   });
   it("redirects legacy URLs without losing unrelated search and anchor", async () => {
     open("/admin?tab=reports&source=shortcut#latest");

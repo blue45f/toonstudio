@@ -128,6 +128,7 @@ const LAYOUT_CSS_TOKENS = [
   ["--layout-content-standard", "82.5rem"],
   ["--layout-content-app", "100rem"],
   ["--layout-content-full", "none"],
+  ["--layout-control-radius", "0.625rem"],
 ] as const;
 
 const TS_FIELD_BY_TOKEN: Record<string, string> = {
@@ -135,6 +136,7 @@ const TS_FIELD_BY_TOKEN: Record<string, string> = {
   "--layout-content-standard": "contentStandard",
   "--layout-content-app": "contentApp",
   "--layout-content-full": "contentFull",
+  "--layout-control-radius": "controlRadius",
 };
 
 describe("레이아웃 토큰 단일화 계약 (L0)", () => {

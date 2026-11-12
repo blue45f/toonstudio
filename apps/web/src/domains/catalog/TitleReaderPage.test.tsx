@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Title } from "@/shared/lib/types";
@@ -14,13 +14,16 @@ const resource = vi.hoisted(() => ({
   error: null as string | null,
   notFound: false,
   data: null as unknown,
+  reload: vi.fn(),
 }));
 vi.mock("@/platform/use-api-resource", () => ({
-  useApiResource: () => ({ ...resource, reload: vi.fn() }),
+  useApiResource: () => ({ ...resource }),
 }));
 vi.mock("@/domains/auth/public/session/auth-session-state", () => ({
   getAuthUserId: () => null,
 }));
+const appConfig = vi.hoisted(() => ({ showAvailability: true }));
+vi.mock("@/platform/environment/use-app-config", () => ({ useAppConfig: () => appConfig }));
 vi.mock("@/shared/components/cover-image", () => ({
   CoverImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
 }));
@@ -61,25 +64,35 @@ function makeTitle(overrides: Partial<Title> = {}): Title {
   };
 }
 
-function renderReader(path: string) {
-  return render(
+function LocationProbe() {
+  const location = useLocation();
+  return <output data-testid="reader-location">{location.pathname}{location.search}</output>;
+}
+
+function readerElement(path: string) {
+  return (
     <MemoryRouter initialEntries={[path]}>
+      <LocationProbe />
       <Routes>
         <Route path="/title/:slug/read/:episode" element={<TitleReaderPage />} />
         <Route path="/title/:slug" element={<h1>작품 상세 도착</h1>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
+
+function renderReader(path: string) { return render(readerElement(path)); }
 
 beforeEach(() => {
   useI18n.setState({ lang: "ko" });
   window.localStorage.clear();
+  appConfig.showAvailability = true;
+  resource.reload.mockReset();
   Object.assign(resource, {
     loading: false,
     error: null,
     notFound: false,
-    data: { title: makeTitle() },
+    data: { title: makeTitle(), episodes: [{ number: 1 }, { number: 2 }, { number: 3 }] },
   });
 });
 
@@ -92,10 +105,10 @@ describe("TitleReaderPage — 뷰어 셸", () => {
   it("공식 감상 안내·간결한 회차 정보·상하단 회차 동선을 그린다", () => {
     renderReader("/title/fog-signal/read/2");
     expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("2화")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1, name: "이 회차는 외부 플랫폼에서 읽어요" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "공식 플랫폼에서 작품을 감상하세요" })).toBeTruthy();
     // 플랫폼 딥링크가 1차 동선이다
     const platform = screen.getByRole("link", { name: /에서 읽기/ });
-    expect(platform.getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(platform.getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     // 상단 닫기 → 작품 상세, 하단 목록 → 상세의 회차 앵커
     expect(screen.getByRole("link", { name: "작품 상세로 나가기" }).getAttribute("href")).toBe(
       "/title/fog-signal",
@@ -172,10 +185,61 @@ describe("TitleReaderPage — 뷰어 셸", () => {
 });
 
 describe("TitleReaderPage — 상태 구분", () => {
+  it.each([undefined, 120])("총 회차=%s만으로 회차·다음 화·빠른 이동을 만들지 않는다", (totalEpisodes) => {
+    resource.data = { title: makeTitle({ totalEpisodes }) };
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.getByRole("link", { name: /에서 읽기.*새 탭/u }).getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
+    expect(screen.queryByRole("button", { name: "회차 빠른 이동" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "이전 화" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "다음 화" })).toBeNull();
+    expect(screen.queryByText(/마지막 회차예요/u)).toBeNull();
+    fireEvent.keyDown(window, { key: "]" });
+    expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("공식 감상 안내")).toBeTruthy();
+  });
+
+  it("공개가 확인된 번호만 이동하며 예약 회차와 비어 있는 번호를 건너뛴다", () => {
+    resource.data = { title: makeTitle(), episodes: [{ number: 1 }, { number: 4 }, { number: 6, status: "scheduled" }, { number: 8 }] };
+    renderReader("/title/fog-signal/read/4");
+    expect(screen.getByRole("link", { name: "이전 화" }).getAttribute("href")).toBe("/title/fog-signal/read/1");
+    expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe("/title/fog-signal/read/8");
+    fireEvent.click(screen.getByRole("button", { name: "회차 빠른 이동" }));
+    const drawer = screen.getByRole("region", { name: "회차 빠른 이동 목록" });
+    expect(within(drawer).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/title/fog-signal#episodes", "/title/fog-signal/read/1", "/title/fog-signal/read/4", "/title/fog-signal/read/8",
+    ]);
+  });
+
+  it("미확인 안내 주소를 열고 나가도 수동으로 남긴 읽기 기록을 바꾸지 않는다", () => {
+    const key = "toonstudio.reader-progress.v1.guest";
+    const original = JSON.stringify({ "fog-signal": { episode: 7, ratio: 1, updatedAt: Date.now() } });
+    window.localStorage.setItem(key, original);
+    resource.data = { title: makeTitle() };
+    const view = renderReader("/title/fog-signal/read/2");
+    expect(within(screen.getByRole("region", { name: "회차 정보" })).getByText("공식 감상 안내")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "다음 화" })).toBeNull();
+    fireEvent.scroll(window);
+    fireEvent.keyDown(window, { key: "Escape" });
+    view.unmount();
+    expect(window.localStorage.getItem(key)).toBe(original);
+  });
+
+  it("플랫폼 노출 킬스위치와 URL 검증을 직접 방문한 안내에도 적용한다", () => {
+    appConfig.showAvailability = false;
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.queryByRole("link", { name: /에서 읽기/u })).toBeNull();
+    expect(screen.getByRole("link", { name: "작품 상세로" }).getAttribute("href")).toBe("/title/fog-signal");
+    cleanup();
+    appConfig.showAvailability = true;
+    resource.data = { title: makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free", url: "javascript:alert(1)" }] }) };
+    renderReader("/title/fog-signal/read/2");
+    expect(screen.queryByRole("link", { name: /에서 읽기/u })).toBeNull();
+  });
+
   it("로딩 중에는 리더 캔버스 위에 스켈레톤을 보여준다", () => {
     Object.assign(resource, { loading: true, data: null });
     renderReader("/title/fog-signal/read/1");
     expect(screen.getByRole("status", { name: "불러오는 중" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "작품 상세로" }).getAttribute("href")).toBe("/title/fog-signal");
   });
 
   it("작품이 없으면 작품 없음 화면으로 구분한다", () => {
@@ -190,6 +254,20 @@ describe("TitleReaderPage — 상태 구분", () => {
     expect(screen.getByText("작품을 불러오지 못했습니다")).toBeTruthy();
     // ErrorState의 재시도 버튼 (라벨은 셸 사전이 주입하므로 존재 자체로 확인)
     expect(within(screen.getByRole("alert")).getByRole("button")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "작품 상세로" }).getAttribute("href")).toBe("/title/fog-signal");
+  });
+
+  it("조회 실패 후 재시도를 실행하고 응답이 돌아오면 같은 회차의 공식 감상 경로로 복구한다", () => {
+    Object.assign(resource, { error: "연결 실패", data: null });
+    const view = renderReader("/title/fog-signal/read/2");
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button"));
+    expect(resource.reload).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("link", { name: /에서 읽기/ })).toBeNull();
+    Object.assign(resource, { error: null, data: { title: makeTitle(), episodes: [{ number: 1 }, { number: 2 }, { number: 3 }] } });
+    view.rerender(readerElement("/title/fog-signal/read/2"));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByTestId("reader-location").textContent).toBe("/title/fog-signal/read/2");
+    expect(screen.getByRole("link", { name: /에서 읽기/ }).getAttribute("href")).toContain("/api/go/naver-webtoon");
   });
 
   it("회차 번호가 숫자가 아니면 없는 회차로 안내한다", () => {
@@ -223,6 +301,7 @@ describe("TitleReaderPage — 상태 구분", () => {
     });
     renderReader("/title/fog-signal/read/5");
     expect(screen.getByRole("heading", { name: "5화는 아직 공개 전이에요" })).toBeTruthy();
+    expect(screen.queryByText(/이 주소에서 바로 읽을 수/u)).toBeNull();
   });
 });
 
@@ -301,29 +380,29 @@ it("원고 없는 안내에서는 보기 설정을 열어 둔 메뉴가 시간 �
 });
 
 describe("TitleReaderPage — 페이지 소유 터치 크기 계약 (실측 아님)", () => {
-  it("보기 설정·톤·폭 버튼에 44px 논리 최소크기를 명시한다", () => {
+  it("보기 설정·톤·폭 버튼에 48px 논리 최소크기를 명시한다", () => {
     renderReader("/title/fog-signal/read/2");
     const settings = screen.getByRole("button", { name: "보기 설정" });
-    expect(settings.classList.contains("size-11")).toBe(true);
+    expect(settings.classList.contains("size-12")).toBe(true);
     fireEvent.click(settings);
     for (const button of within(screen.getByRole("region", { name: "뷰어 환경 설정" })).getAllByRole("button")) {
-      expect(button.classList.contains("[min-block-size:2.75rem]!")).toBe(true);
-      expect(button.classList.contains("[min-inline-size:2.75rem]!")).toBe(true);
+      expect(button.classList.contains("[min-block-size:3rem]!")).toBe(true);
+      expect(button.classList.contains("[min-inline-size:3rem]!")).toBe(true);
     }
   });
 
-  it("회차 선택·서랍·아이콘 전용 이전/다음에 44px 크기 의도를 둔다", () => {
+  it("회차 선택·서랍·가시 명칭이 있는 이전/다음에 48px 크기 의도를 둔다", () => {
     renderReader("/title/fog-signal/read/2");
     const toggle = screen.getByRole("button", { name: "회차 빠른 이동" });
-    expect(toggle.classList.contains("[min-block-size:2.75rem]!")).toBe(true);
+    expect(toggle.classList.contains("[min-block-size:3rem]!")).toBe(true);
     for (const name of ["이전 화", "다음 화"]) {
-      expect(screen.getByRole("link", { name }).classList.contains("min-w-11")).toBe(true);
+      expect(screen.getByRole("link", { name }).classList.contains("min-w-12")).toBe(true);
     }
     fireEvent.click(toggle);
     for (const link of within(screen.getByRole("region", { name: "회차 빠른 이동 목록" })).getAllByRole("link")) {
-      expect(link.classList.contains("min-h-11")).toBe(true);
+      expect(link.classList.contains("min-h-12")).toBe(true);
       if (link.getAttribute("href")?.includes("/read/")) {
-        expect(link.classList.contains("min-w-11")).toBe(true);
+        expect(link.classList.contains("min-w-12")).toBe(true);
       }
     }
   });
@@ -342,7 +421,7 @@ describe("TitleReaderPage — 페이지 소유 터치 크기 계약 (실측 아�
     Object.assign(resource, { error: "네트워크 오류", data: null });
     renderReader("/title/fog-signal/read/1");
     const alert = screen.getByRole("alert");
-    expect(alert.classList.contains("[&>button]:[min-block-size:2.75rem]!")).toBe(true);
+    expect(alert.classList.contains("[&>button]:[min-block-size:3rem]!")).toBe(true);
     expect(within(alert).getByRole("button").parentElement).toBe(alert);
   });
 });
@@ -417,7 +496,7 @@ describe("TitleReaderPage — 숨긴 메뉴와 Escape 초점", () => {
     renderReader("/title/fog-signal/read/2");
     const toggle = screen.getByRole("button", { name: "보기 설정" });
     toggle.focus();
-    fireEvent.pointerDown(screen.getByRole("heading", { name: "이 회차는 외부 플랫폼에서 읽어요" }));
+    fireEvent.pointerDown(screen.getByRole("heading", { name: "공식 플랫폼에서 작품을 감상하세요" }));
     expect(document.activeElement).not.toBe(toggle);
     fireEvent.keyDown(document.activeElement ?? window, { key: "m" });
     expect(document.activeElement).toBe(toggle);
@@ -434,23 +513,48 @@ describe("TitleReaderPage — 숨긴 메뉴와 Escape 초점", () => {
   });
 });
 
-it("모바일 footer와 본문 여백은 기존 셸의 하단 안전 기준선을 사용하고 z-index를 올리지 않는다 (실측 아님)", () => {
+it("모든 폭에서 footer와 본문은 상태 알림의 실측 여백을 소비하고 모바일 기준선과 z-index를 유지한다 (실측 아님)", () => {
   const { container } = renderReader("/title/fog-signal/read/2");
   const footer = screen.getByRole("contentinfo");
-  expect(footer.classList.contains("max-md:bottom-[var(--site-float-base)]")).toBe(true);
-  expect(footer.classList.contains("bottom-0")).toBe(true);
+  expect(footer.classList.contains("max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))]")).toBe(true);
+  expect(footer.classList.contains("bottom-[max(0px,var(--service-status-overlay-clearance,0px))]")).toBe(true);
   expect(footer.classList.contains("z-40")).toBe(true);
-  expect(container.querySelector('[class*="max-md:pb-[calc(9rem+var(--site-float-base))]"]')).not.toBeNull();
+  const body = container.querySelector(".reader-reference-body");
+  expect(body?.classList.contains("pb-[calc(9rem+max(0px,var(--service-status-overlay-clearance,0px)))]")).toBe(true);
+  expect(body?.classList.contains("max-md:pb-[calc(9rem+max(var(--site-float-base),var(--service-status-overlay-clearance,0px)))]")).toBe(true);
 });
 
 
 describe("리더 시안의 공식 감상 동선", () => {
+  it("공식 안내 카드에 실제 표지를 사용하고 표지 데이터가 없으면 같은 작품의 활자 폴백을 쓴다", () => {
+    resource.data = { title: makeTitle({ coverImage: "/real-catalog-cover.webp" }), episodes: [{ number: 2 }] };
+    const view = renderReader("/title/fog-signal/read/2");
+    const content = screen.getByRole("region", { name: "회차 내용" });
+    expect(within(content).getByRole("img", { name: "안개 속의 신호 표지" }).getAttribute("src")).toBe("/real-catalog-cover.webp");
+    expect(within(content).getByRole("region", { name: "회차 정보" }).textContent).toContain("안개 속의 신호");
+    resource.data = { title: makeTitle(), episodes: [{ number: 2 }] };
+    view.rerender(readerElement("/title/fog-signal/read/2"));
+    expect(within(content).queryByRole("img")).toBeNull();
+    expect(content.querySelector(".reader-platform-cover")?.textContent).toContain("안개 속의 신호");
+  });
+
+  it.each([["[", "/title/fog-signal/read/1"], ["]", "/title/fog-signal/read/3"]])("%s 회차 이동은 기존 보기 설정을 유지하고 이전 회차의 임의 page/scroll query를 전파하지 않는다", (key, destination) => {
+    window.localStorage.setItem("toonstudio.reader-comfort.v1", JSON.stringify({ theme: "sepia", width: "wide", speed: 1 }));
+    const { container } = renderReader("/title/fog-signal/read/2?page=old-panel&scroll=0.8");
+    expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe("/title/fog-signal/read/3");
+    fireEvent.keyDown(window, { key });
+    expect(screen.getByTestId("reader-location").textContent).toBe(destination);
+    expect(container.querySelector("[data-reader-theme]")?.getAttribute("data-reader-theme")).toBe("sepia");
+    expect(container.querySelector("[data-reader-width]")?.getAttribute("data-reader-width")).toBe("wide");
+    expect(screen.getByRole("link", { name: /에서 읽기/ }).getAttribute("href")).not.toContain("scroll");
+  });
+
   it("공식 감상 링크와 상세 링크를 중심에 모으고 원고 제공을 예고하지 않는다", () => {
     renderReader("/title/fog-signal/read/2");
     const content = screen.getByRole("region", { name: "회차 내용" });
     const links = within(content).getAllByRole("link");
     expect(links).toHaveLength(2);
-    expect(links[0].getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(links[0].getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     expect(links[0].getAttribute("target")).toBe("_blank");
     expect(links[0].getAttribute("rel")).toBe("noopener noreferrer");
     expect(links[1].getAttribute("href")).toBe("/title/fog-signal");
@@ -471,23 +575,42 @@ describe("리더 시안의 공식 감상 동선", () => {
   it("영문에서도 같은 공식 감상 경로와 진도 미기록 안내를 보존한다", () => {
     useI18n.setState({ lang: "en" });
     renderReader("/title/fog-signal/read/2");
-    expect(screen.getByRole("heading", { name: "Read this episode on its official platform" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("https://comic.naver.com/example");
+    expect(screen.getByRole("heading", { name: "Read this title on its official platform" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Read on/ }).getAttribute("href")).toBe("/api/go/naver-webtoon?to=https%3A%2F%2Fcomic.naver.com%2Fexample");
     expect(screen.getByText("Reading progress is not recorded because panels are not provided.")).toBeTruthy();
   });
 
-  it("시안 N 몰입형 2.5D 공간 리더·3컷 창작·제품 투어 브리지 링크를 한·영으로 렌더링한다", () => {
+  it("읽기 동선을 유지하며 부가 활동 3개를 한·영 접이식 메뉴로 제공한다", () => {
     renderReader("/title/fog-signal/read/2");
     const bar = screen.getByTestId("reader-spatial-creation-bar");
-    expect(within(bar).getByRole("link", { name: "2.5D 공간 리더 체험" }).getAttribute("href")).toBe("/read/spatial");
-    expect(within(bar).getByRole("link", { name: "이 감성으로 3컷 창작" }).getAttribute("href")).toBe("/create");
-    expect(within(bar).getByRole("link", { name: "인터랙티브 제품 투어" }).getAttribute("href")).toBe("/product-tour");
+    const summary = within(bar).getByText("창작·뷰어 체험", { selector: "summary" });
+    expect(bar.tagName).toBe("DETAILS");
+    expect(bar.hasAttribute("open")).toBe(false);
+    // jsdom의 가시성 계산 대신 native 접힘 상태와 부가 링크의 소속을 검사한다.
+    expect(within(bar).getAllByRole("link").every((link) => link.closest("details") === bar)).toBe(true);
+    expect(screen.getByRole("link", { name: "다음 화" }).getAttribute("href")).toBe("/title/fog-signal/read/3");
+    expect(screen.getByRole("link", { name: /에서 읽기/ }).closest("details")).toBeNull();
+
+    fireEvent.click(summary);
+    expect(bar.hasAttribute("open")).toBe(true);
+    expect(within(bar).getAllByRole("link")).toHaveLength(3);
+    expect(within(bar).getByRole("link", { name: "공간 뷰어 체험" }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(bar).getByRole("link", { name: "3컷 이야기 만들기" }).getAttribute("href")).toBe("/create");
+    expect(within(bar).getByRole("link", { name: "사용법 둘러보기" }).getAttribute("href")).toBe("/product-tour");
+    expect(within(bar).getAllByRole("link").every((link) => link.className.includes("min-h-11"))).toBe(true);
+
+    fireEvent.click(summary);
+    expect(bar.hasAttribute("open")).toBe(false);
 
     cleanup();
     useI18n.setState({ lang: "en" });
     renderReader("/title/fog-signal/read/2");
     const enBar = screen.getByTestId("reader-spatial-creation-bar");
     expect(enBar.textContent).not.toMatch(/[가-힣]/u);
-    expect(within(enBar).getByRole("link", { name: "Try 2.5D Spatial Reader" }).getAttribute("href")).toBe("/read/spatial");
+    expect(enBar.hasAttribute("open")).toBe(false);
+    fireEvent.click(within(enBar).getByText("Create or try the viewer", { selector: "summary" }));
+    expect(within(enBar).getByRole("link", { name: "Try the spatial viewer" }).getAttribute("href")).toBe("/read/spatial");
+    expect(within(enBar).getByRole("link", { name: "Create a 3-panel story" }).getAttribute("href")).toBe("/create");
+    expect(within(enBar).getByRole("link", { name: "Take a product tour" }).getAttribute("href")).toBe("/product-tour");
   });
 });

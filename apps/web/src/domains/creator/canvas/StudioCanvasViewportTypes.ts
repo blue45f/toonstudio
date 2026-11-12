@@ -307,6 +307,7 @@ export interface StudioCanvasViewportProps {
   canvasFlipH: boolean;
   canvasRotation: StudioViewRotation;
   canvasH: number;
+  canvasStartGuideReady: boolean;
   canvasOnlyMode: boolean;
   /**
    * 플로팅 3D 레퍼런스 오버레이(B-5) 옵트인. true일 때 캔버스 뷰포트 위에

@@ -367,12 +367,12 @@ export const CAPABILITY_NOTES: readonly CapabilityNote[] = [
     icon: Box,
     copy: {
       ko: {
-        title: "저장은 이 기기에",
-        body: "작업은 스튜디오 문서와 함께 SQLite/OPFS 로컬 저장소에 저장됩니다. 클라우드 백업을 뜻하지는 않습니다.",
+        title: "저장 위치 확인",
+        body: "저장 상태에서 기기 보관이 확인된 작업은 이 기기에서 다시 열 수 있습니다. 클라우드 백업은 별도로 연결해 주세요.",
       },
       en: {
-        title: "Saved on this device",
-        body: "Your work is stored with the studio document in local SQLite/OPFS storage. This is not cloud backup.",
+        title: "Check where work is saved",
+        body: "When device saving is confirmed, you can reopen work on this device. Connect cloud backup separately.",
       },
     },
   },

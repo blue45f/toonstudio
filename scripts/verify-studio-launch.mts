@@ -900,7 +900,7 @@ async function runMobileDrawing(browser: Browser, url: string): Promise<MobileRu
     );
     await page.waitForTimeout(200);
   }
-  const dotRecorded = await dock.getByRole("button", { name: "실행취소" }).isEnabled();
+  const dotRecorded = await dock.getByRole("button", { name: "되돌리기 · 실행취소", exact: true }).isEnabled();
   const stageAfterDot = stageBox ? await stage.screenshot() : null;
   const dotRendered = Boolean(
     stageBeforeDot && stageAfterDot && !stageBeforeDot.equals(stageAfterDot)

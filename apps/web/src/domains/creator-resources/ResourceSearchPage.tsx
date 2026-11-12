@@ -1,12 +1,13 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
-import { ProviderStatus } from "./ProviderStatus";
 import { resourceStatusText } from "./resource-status-i18n";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
 import { WeatherLightBoard } from "./WeatherLightBoard";
 import { downloadText, useCreatorWorkspace } from "./workspace";
+
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { TypographicCover } from "@/shared/components/typographic-cover";
 
@@ -15,8 +16,10 @@ import type { CreatorResource, ResourceSearchResult } from "@/shared/lib/creator
 import { attributionMarkdown, deadlineCalendar, deadlineLabel, parseSearchResult, RESOURCE_LABELS } from "@/shared/lib/creator-resources";
 import { apiFetch, apiPath } from "@/platform/api";
 
-import { OpenDataSourceStage, type SourceStageCopy } from "./OpenDataSourceStage";
-import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
+import type { SourceStageCopy } from "./OpenDataSourceStage";
+import { ResourceSearchHeader } from "./ResourceSearchHeader";
+import "./resource-search.css";
+import { researchSourceIdentity } from "./research-source-identity";
 import { RESOURCE_SEARCH_CONFIG, RESOURCE_SEARCH_TRANSLATED_PROVIDERS, isServerAliasResolvedQuery } from "./resource-search-config";
 
 import type { ResourceSearchProvider } from "./resource-search-config";
@@ -54,7 +57,7 @@ function GoogleFontPreview({ family }: { family: string }) {
 export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideTile }: { item: CreatorResource; saved: boolean; onToggle: () => void; disabled: boolean; kindLabel?: string | null; wideTile?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
-  return <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
+  return <article data-resource-card="" className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
     {/* 아트 타일 — 이미지는 풀블리드로 채우고, 없거나 불러오지 못하면 타이포그래픽 커버가 자리를 지킨다.
         제공처·이용조건은 법적 고지라 지우지 않고 타일 아래 배지로 압축한다.
         kindLabel·wideTile은 종류 구분이 있는 제공처 표면(Poly Haven)만 넘긴다 — 종류 배지는
@@ -75,7 +78,7 @@ export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideT
       {item.description && <p className="break-words text-sm leading-6 text-fg-2">{item.description}</p>}
       {item.provider === "bizinfo" && <div className="rounded-lg bg-raised p-3 text-sm leading-6"><p className="font-semibold">{deadlineLabel(item.deadline)}</p><p>신청 대상: {item.eligibility}</p></div>}
       {item.isbn && <p className="text-xs text-fg-2">ISBN: {item.isbn}</p>}
-      <details className="text-xs leading-6 text-fg-2"><summary className="cursor-pointer py-2">출처·이용조건·조회일</summary>
+      <details className="text-base leading-7 text-fg-2"><summary className="cursor-pointer py-2">출처·이용조건·조회일</summary>
         <p>{item.credit || "크레딧 원문 확인"}</p><p>{resourceUsageDescription(item)}</p>
         {item.licenseUrl && <a className="underline" href={item.licenseUrl} target="_blank" rel="noopener noreferrer">이용조건 확인 ↗</a>}
         <p>조회: {item.fetchedAt}</p>
@@ -279,10 +282,26 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
    */
   stageCopy?: SourceStageCopy;
 }) {
+  const bt = useBilingual("ResourceSearchPage");
+  const tools = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const owner = tools.current;
+    if (!owner) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !owner.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      owner.open = false;
+      owner.querySelector("summary")?.focus({ preventScroll: true });
+    };
+    owner.addEventListener("keydown", closeOnEscape);
+    return () => owner.removeEventListener("keydown", closeOnEscape);
+  }, []);
   const config = RESOURCE_SEARCH_CONFIG[provider];
   const identity = researchSourceIdentity(provider);
-  const stageArt = heroStage ? researchSourceArtSrc(identity) : null;
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const query = params.get("q") ?? "";
   // 영문 인덱스 제공처는 한글 검색어를 공용 변환 계층으로 영문 변환해 보낸다.
   // URL에는 사용자 원문을 유지하고, 변환은 표시·수정 가능한 상태로만 얹는다.
@@ -336,38 +355,31 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
         : value.saved.some((saved) => saved.id === item.id) ? value.saved : [...value.saved, item],
     }));
   };
-  const searchFor = (q: string) => { setSavedOnly(false); setParams({ q, page: "1" }); };
-  return <ResourceLayout title={config.title} intro={config.intro} sourceIdentity={identity} heroStage={stageArt ? <OpenDataSourceStage provider={provider} stageCopy={stageCopy} /> : undefined}>
-    <ProviderStatus provider={provider} />
-    {/* 역할 분담 안내 — 웹툰 작품은 /search·/explore, 단행본·작법서·창작 자료는 여기서 */}
-    <div className="rounded-2xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2" role="note" aria-label="자료 검색 역할 안내">
-      <p>
-        <strong className="text-fg">웹툰 작품</strong>은{" "}
-        <Link className="font-medium text-accent underline underline-offset-4 hover:opacity-80" to="/search">통합 검색</Link>
-        {" "}·{" "}
-        <Link className="font-medium text-accent underline underline-offset-4 hover:opacity-80" to="/explore">탐색</Link>
-        에서 찾고, <strong className="text-fg">단행본·작법서·창작 자료</strong>는 여기서 검색하세요.
-      </p>
-    </div>
-    {/* 날씨·빛 페이지는 타일 대신 빛 비교 참고판이 본체다 (시안 S4-05). 검색·상태 구분은 아래 그대로 유지한다. */}
-    {provider === "metweather" && <WeatherLightBoard />}
+  // 검색 소유 값만 바꾸고 원고에서 온 복귀 문맥·해시·다른 쿼리는 그대로 둔다.
+  const changeSearchPage = (q: string, nextPage: number) => {
+    const next = new URLSearchParams(params);
+    next.set("q", q);
+    next.set("page", String(nextPage));
+    navigate({ pathname: location.pathname, search: `?${next.toString()}`, hash: location.hash }, { state: location.state });
+  };
+  const searchFor = (q: string) => { setSavedOnly(false); changeSearchPage(q, 1); };
+  return <div className="resource-search-page"><ResourceLayout menu={false} title={config.title} intro={config.intro} sourceIdentity={identity}
+    heroStage={<ResourceSearchHeader provider={provider} stage={heroStage} stageCopy={stageCopy}>
     <section aria-labelledby="resource-search-heading">
     <h2 id="resource-search-heading" className="sr-only">자료 검색</h2>
-    <form className="space-y-3 rounded-2xl border border-line bg-panel p-5" onSubmit={(event) => { event.preventDefault(); searchFor(draft.trim()); }}>
-      <label htmlFor={`resource-query-${provider}`} className="block text-sm font-semibold">{RESOURCE_LABELS[provider]} 검색</label>
-      <div className="flex flex-col gap-3 sm:flex-row"><input id={`resource-query-${provider}`} className={RESOURCE_INPUT} type="search" required minLength={2} maxLength={80} value={draft} placeholder={config.hint} onChange={(event) => setDraft(event.target.value)} /><button className={`${RESOURCE_BUTTON} shrink-0 bg-accent-soft`} type="submit">검색하기</button></div>
+    <form className="space-y-3 rounded-2xl border border-line bg-panel p-4" onSubmit={(event) => { event.preventDefault(); searchFor(draft.trim()); }}>
+      <label htmlFor={`resource-query-${provider}`} className="block text-base font-semibold">{RESOURCE_LABELS[provider]} 검색</label>
+      <div className="resource-search-submit"><input id={`resource-query-${provider}`} className={RESOURCE_INPUT} type="search" required minLength={2} maxLength={80} value={draft} placeholder={config.hint} onChange={(event) => setDraft(event.target.value)} /><button className={`${RESOURCE_BUTTON} shrink-0 bg-accent-soft`} type="submit">검색하기</button></div>
       <div className="flex flex-wrap gap-2">{config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => searchFor(value)}>{value}</button>)}</div>
     </form>
     {translationEnabled && query && <TranslatedQueryNotice state={translated} />}
     <div className="flex flex-wrap items-center gap-3">
       <button className={RESOURCE_BUTTON} aria-pressed={!savedOnly} onClick={() => setSavedOnly(false)}>검색 결과</button>
       <button className={RESOURCE_BUTTON} aria-pressed={savedOnly} onClick={() => setSavedOnly(true)}>저장한 자료 {savedItems.length}</button>
-      <button className={RESOURCE_BUTTON} disabled={!savedItems.length} onClick={() => downloadText(`${provider}-sources.md`, attributionMarkdown(savedItems))}>출처 내보내기</button>
-      <Link className={RESOURCE_BUTTON} to="/research">전체 저장 보드 검색·정렬</Link>
-      <a href={config.url} className={RESOURCE_BUTTON} target="_blank" rel="noopener noreferrer">공식 사이트 ↗</a>
-      {provider === "kakao" && <Link className={RESOURCE_BUTTON} to="/search">기존 웹툰·작품 검색</Link>}
     </div>
     </section>
+    </ResourceSearchHeader>}>
+    {provider === "metweather" && <WeatherLightBoard />}
     <section aria-labelledby="resource-results-heading">
     <h2 id="resource-results-heading" className="sr-only">검색 결과</h2>
     <div aria-live="polite" aria-atomic="true" className="text-sm leading-6 text-fg-2">
@@ -417,12 +429,22 @@ export function ResourceSearchPage({ provider, preSearchGuide, cardDecoration, h
       </div>
     )}
     {!savedOnly && result && (result.status === "ready" || result.status === "partial") && <nav className="flex items-center justify-center gap-4" aria-label="검색 결과 페이지">
-      <button className={RESOURCE_BUTTON} disabled={page <= 1 || loading} onClick={() => setParams({ q: query, page: String(page - 1) })}>이전</button><span>{page} 페이지</span>
-      <button className={RESOURCE_BUTTON} disabled={!result.hasMore || loading} onClick={() => setParams({ q: query, page: String(page + 1) })}>다음</button>
+      <button className={RESOURCE_BUTTON} disabled={page <= 1 || loading} onClick={() => changeSearchPage(query, page - 1)}>이전</button><span>{page} 페이지</span>
+      <button className={RESOURCE_BUTTON} disabled={!result.hasMore || loading} onClick={() => changeSearchPage(query, page + 1)}>다음</button>
     </nav>}
     </section>
+    <details ref={tools} className="resource-search-tools">
+      <summary>{bt("보관·출처 도구", "Saved sources & credits")} <span aria-hidden="true">⌄</span></summary>
+      <div className="flex flex-wrap gap-2 p-3">
+      <button className={RESOURCE_BUTTON} disabled={!savedItems.length} onClick={() => downloadText(`${provider}-sources.md`, attributionMarkdown(savedItems))}>출처 내보내기</button>
+      <Link className={RESOURCE_BUTTON} to="/research">전체 저장 보드 검색·정렬</Link>
+      <a href={config.url} className={RESOURCE_BUTTON} target="_blank" rel="noopener noreferrer">공식 사이트 ↗</a>
+      {provider === "kakao" && <Link className={RESOURCE_BUTTON} to="/search">기존 웹툰·작품 검색</Link>}
+
+      </div>
+    </details>
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
-  </ResourceLayout>;
+  </ResourceLayout></div>;
 }
 export function ReferencesPage() { return <ResourceSearchPage provider="met" />; }
 export function OpportunitiesPage() { return <ResourceSearchPage provider="bizinfo" />; }

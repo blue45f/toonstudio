@@ -1,0 +1,64 @@
+{
+  "status": "target-static-design-proposal-before-implementation",
+  "kind": "local-HTML-render-not-product-screenshot",
+  "htmlSha256": "c914b6329fffd358958b5b0d8ff019f54f5aad61a6de1757834646ad7f8851a9",
+  "originalMockHtmlSha256": "87bafdd20a071b387d93ec28283f6dd703894f03bc8468b292825476b90884a5",
+  "images": [
+    {
+      "file": "proposal-publish-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 103249,
+      "sha256": "48e131795161efd79394ed6fd31c07cbd92af0e3430fbc8c58086371939478fc",
+      "renderVersion": 2
+    },
+    {
+      "file": "proposal-publish-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 60853,
+      "sha256": "2224218c0635300d5f823dbdd8d0eed88a0e7aa9de2ab4df59e5fcc9ad761548",
+      "renderVersion": 1
+    },
+    {
+      "file": "proposal-showcase-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 508562,
+      "sha256": "c19e125c04456e1e44eec693858676a60f4082f5270964a0bbd057d5efffefba",
+      "renderVersion": 2
+    },
+    {
+      "file": "proposal-showcase-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 203623,
+      "sha256": "b487a596f26d0f2e7a28094fc9d784663c797fd15cebe4ff0cbdbb647714238e",
+      "renderVersion": 1
+    },
+    {
+      "file": "proposal-story-1440.png",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 104514,
+      "sha256": "a1559ed49577356ec6b1f6f51edd8421903fb5a9fc53958c0e881365986b2c84",
+      "renderVersion": 1
+    },
+    {
+      "file": "proposal-story-390.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 57034,
+      "sha256": "d3b1801a30f97b453da0a7f5267c21ebb048e4eb908c661faa682c20ccf795c3",
+      "renderVersion": 1
+    }
+  ],
+  "versionHistory": {
+    "v1": "all6initialproposalPNGs and HTML preserved in local QA archive-v1",
+    "v2": "1440Showcase search nowrap and1440Publish footer viewport availability only; other4PNGs unchanged"
+  },
+  "externalExecution": false,
+  "productBrowserExecuted": false,
+  "browserPolicyModified": false,
+  "network": "temporary read-only loopback static server; other origins blocked; all closed"
+}

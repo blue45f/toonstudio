@@ -2,6 +2,7 @@ import { restStatusText } from "../rest-status-i18n";
 import { apiFetch } from "@/platform/api";
 import { Sparkles, BookHeart, Star, Compass, BellRing, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { CollectionsTab } from "./library-view-collections";
 import {
@@ -33,6 +34,8 @@ import { WEEK_DAYS } from "@/shared/lib/taxonomy";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
+const LIBRARY_TABS: readonly Tab[] = ["shelf", "rated", "diary", "taste", "collections", "alerts"];
+
 export function LibraryView({
   initialTab = "shelf",
   diaryEntries = [],
@@ -55,8 +58,21 @@ export function LibraryView({
   const setAdultVerified = useApp((s) => s.setAdultVerified);
   const resetAll = useApp((s) => s.resetAll);
 
-  const [tab, setTab] = useState<Tab>(initialTab);
-  const [readTab, setReadTab] = useState<ReadState>("want");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const tabValues = params.getAll("tab");
+  const readValues = params.getAll("libraryRead");
+  const tab = (tabValues.length === 1 ? LIBRARY_TABS.find((value) => value === tabValues[0]) : undefined) ?? initialTab;
+  const readTab = (readValues.length === 1 ? READ_TABS.find((entry) => entry.value === readValues[0])?.value : undefined) ?? "want";
+  // 화면 선택만 URL에 두고 작품 데이터나 브라우저의 뒤로 가기 기록은 늘리지 않는다.
+  const setSelection = (key: "tab" | "libraryRead", value: Tab | ReadState) => {
+    const next = new URLSearchParams(location.search);
+    next.set(key, value);
+    void navigate({ pathname: location.pathname, search: next.toString(), hash: location.hash }, {
+      replace: true, state: location.state, preventScrollReset: true,
+    });
+  };
   const [ratedSort, setRatedSort] = useState<RatedSort>("high");
   const [titlesById, setTitlesById] = useState<Record<string, Title>>({});
   const [profile, setProfile] = useState<TasteProfile>(EMPTY_PROFILE);
@@ -160,9 +176,9 @@ export function LibraryView({
 
   return (
     <div className="flex flex-col gap-6">
-      <UnderlineTabs
+      <UnderlineTabs<Tab>
         value={tab}
-        onChange={(v) => setTab(v as Tab)}
+        onChange={(value) => setSelection("tab", value)}
         items={[
           { value: "shelf", label: `서재 ${readIds.length || ""}`.trim() },
           { value: "rated", label: `평가 ${ratedIds.length || ""}`.trim() },
@@ -201,7 +217,7 @@ export function LibraryView({
           )}
           <Segmented
             value={readTab}
-            onChange={setReadTab}
+            onChange={(value) => setSelection("libraryRead", value)}
             items={READ_TABS.map((t) => ({
               value: t.value,
               label: `${t.label}${counts[t.value] ? ` ${counts[t.value]}` : ""}`,
@@ -212,7 +228,7 @@ export function LibraryView({
               icon={BookHeart}
               title={restStatusText("rest.status.library.emptyShelf", "아직 담은 작품이 없어요")}
               desc="작품 카드의 북마크나 상세 페이지의 상태 버튼으로 서재를 채워보세요."
-              cta={{ label: "작품 탐색하기", href: "/explore" }}
+              cta={{ label: "작품 탐색하기", href: "/explore", returnFocusKey: `library:shelf:${readTab}:explore` }}
             />
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
@@ -232,7 +248,7 @@ export function LibraryView({
               icon={Star}
               title={restStatusText("rest.status.library.emptyRated", "평가한 작품이 없어요")}
               desc="별점을 남기면 취향 분석과 추천이 정교해집니다."
-              cta={{ label: "평가하러 가기", href: "/ranking" }}
+              cta={{ label: "평가하러 가기", href: "/ranking", returnFocusKey: "library:rated:ranking" }}
             />
           ) : (
             <div className="flex flex-col gap-4">
@@ -295,7 +311,7 @@ export function LibraryView({
               icon={Compass}
               title="취향 데이터를 모으는 중"
               desc="작품을 평가하거나 서재에 담으면, 당신의 취향 스펙트럼을 분석해 드려요."
-              cta={{ label: "지금 평가하기", href: "/ranking" }}
+              cta={{ label: "지금 평가하기", href: "/ranking", returnFocusKey: "library:taste:ranking" }}
             />
           ) : (
             <>
@@ -389,7 +405,7 @@ export function LibraryView({
               icon={BellRing}
               title={restStatusText("rest.status.library.emptySubscriptions", "구독한 연재가 없어요")}
               desc="작품 상세에서 '연재 알림 받기'를 켜면 요일별 업데이트를 모아 보여드려요."
-              cta={{ label: "연재 캘린더 보기", href: "/calendar" }}
+              cta={{ label: "연재 캘린더 보기", href: "/calendar", returnFocusKey: "library:alerts:calendar" }}
             />
           ) : (
             <>

@@ -241,8 +241,8 @@ export const SITE_NAVIGATION_ITEMS = {
     "market",
     "/market",
     Store,
-    "소재 마켓",
-    "Materials market",
+    "소재 찾기",
+    "Assets",
     "호환성과 사용 권리를 확인하고 새 에셋 탐색",
     "Discover assets with compatibility and rights information",
     false, "discovery", "primary", "public",
@@ -261,7 +261,7 @@ export const SITE_NAVIGATION_ITEMS = {
     "explore",
     "/discover",
     Compass,
-    "탐색",
+    "작품 찾기",
     "Discover",
     "검색·취향·추천에서 원하는 작품 발견",
     "Find stories through search, taste and recommendations",
@@ -422,8 +422,8 @@ export const SITE_NAVIGATION_ITEMS = {
     "me",
     "/my",
     UserRound,
-    "내 공간",
-    "My space",
+    "내 정보",
+    "My account",
     "작품·활동·프로필과 계정 관리",
     "Works, activity, profile and account",
     false, "personal", "contextual", "signed-in",
@@ -575,8 +575,9 @@ export const SITE_NAVIGATION_GROUPS: readonly SiteNavigationGroup[] = [
 export const TOONSTUDIO_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
 export const TOONSPECTRUM_NAVIGATION_GROUPS = SITE_NAVIGATION_GROUPS;
 
-export const TOONSTUDIO_MOBILE_TABS = TOONSTUDIO_PRIMARY_NAVIGATION;
-export const TOONSPECTRUM_MOBILE_TABS = TOONSPECTRUM_PRIMARY_NAVIGATION;
+/** 모바일·태블릿의 목적지 순서는 공개/개인 문맥에서 동일하다. 권한은 각 기존 목적지가 확인한다. */
+export const TOONSTUDIO_MOBILE_TABS = [I.studio, I.explore, I.market, I.me] as const;
+export const TOONSPECTRUM_MOBILE_TABS = TOONSTUDIO_MOBILE_TABS;
 export const UNIFIED_MOBILE_TABS = TOONSPECTRUM_MOBILE_TABS;
 
 /** Compatibility export for consumers not yet context-aware. */

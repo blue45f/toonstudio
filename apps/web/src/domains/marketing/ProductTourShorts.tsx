@@ -3,6 +3,8 @@ import { Sparkles } from "lucide-react";
 import { useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
 import { PRODUCT_TOUR_SHORTS } from "./product-tour-shorts";
+import { PromoClipPlayer } from "./PromoClipPlayer";
+import { promoClipPoster } from "./promo-clip-posters";
 
 /**
  * 쇼츠로 보는 ToonStudio — 세로(9:16) 홍보 쇼츠 48편을 나란히 보여 주는 카드 섹션.
@@ -26,15 +28,12 @@ export function ProductTourShorts() {
           const copy = bi(short.ko, short.en);
           return (
             <li key={short.id} className="product-tour__short mk-card" data-short={short.id}>
-              <video
-                controls
-                muted
-                playsInline
-                preload="metadata"
+              <PromoClipPlayer
                 src={short.src}
+                poster={promoClipPoster(short.src)}
                 width={short.width}
                 height={short.height}
-                aria-label={copy.title}
+                title={copy.title}
               />
               <div className="product-tour__short-copy">
                 <h3>{copy.title}</h3>

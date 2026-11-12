@@ -74,6 +74,17 @@
 /* Luna 안내 — 히어로 우측 패널 (제안 칩 + 실제 대화) */
 .rd-luna { min-width: 0; max-width: 880px; }
 .rd-poster-inner .rd-luna { width: 100%; }
+.rd-luna-help { min-width: 0; width: 100%; color: var(--rd-on-art); }
+.rd-luna-help > .rd-optional-summary { border-color: var(--rd-art-line); background: var(--rd-art-card); color: var(--rd-on-art); }
+.rd-luna-help > .rd-luna { margin-top: 10px; }
+.rd-launchpad-help { margin-top: 18px; }
+.rd-launchpad-help .rd-v2-bento { margin-top: 10px; }
+.rd-optional-summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--rd-border); border-radius: 12px; background: var(--rd-panel); color: var(--rd-muted); cursor: pointer; list-style: none; font-size: 14px; font-weight: 600; }
+.rd-optional-summary::-webkit-details-marker { display: none; }
+.rd-optional-summary > svg { flex: none; }
+.rd-optional-summary > svg:last-child { margin-left: auto; }
+.rd-optional-summary:focus-visible { outline: 3px solid var(--rd-cyan); outline-offset: 3px; }
+details[open] > .rd-optional-summary > svg:last-child { transform: rotate(180deg); }
 .rd-luna-card { display: flex; flex-direction: column; gap: 10px; max-height: 440px; padding: 14px; border: 1px solid color-mix(in srgb, var(--rd-accent) 48%, transparent); border-radius: 18px; background: linear-gradient(160deg, color-mix(in oklch, var(--rd-accent) 18%, var(--rd-art-card)), var(--rd-art-card)); backdrop-filter: blur(18px) saturate(1.25); box-shadow: inset 0 1px 0 color-mix(in oklch, var(--rd-on-art) 14%, transparent), 0 18px 40px color-mix(in oklch, var(--rd-art-scrim) 62%, transparent); }
 .rd-luna-head { display: flex; align-items: center; gap: 10px; }
 .creator-home .reference-dashboard .rd-luna-head > img { width: 44px; height: 44px; block-size: 44px; border-radius: 12px; object-fit: cover; object-position: center 14%; }
@@ -275,7 +286,8 @@
   .rd-idea { flex-wrap: wrap; gap: 6px; min-height: 54px; margin-top: 12px; padding: 8px; border-radius: 20px; }
   :is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea input { order: -1; flex: 1 1 100%; padding-inline: 8px; border-bottom: 1px solid color-mix(in oklch, var(--rd-on-art) 16%, transparent) !important; }
   .rd-idea-modes > button { padding: 0 10px; }
-  .rd-idea-modes > button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .rd-idea-modes { flex-wrap: wrap; border: 0; border-radius: 12px; }
+  .rd-idea-modes > button > span { font-size: 12px; }
   .rd-idea-submit { margin-left: auto; padding: 0 16px; }
   .rd-luna { max-width: none; }
   .rd-luna-card { max-height: 430px; }
@@ -371,8 +383,8 @@
 .rd-v2-card-body > small { color: var(--rd-muted); font-size: 12px; line-height: 1.45; }
 .rd-v2-cta { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; color: var(--rd-cyan); font-size: 12.5px; font-weight: 750; }
 .rd-v2-card--primary .rd-v2-cta { color: var(--rd-accent); }
-@media (max-width: 1199px) { .rd-v2-bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 599px) { .rd-v2-bento-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; } .rd-v2-bento-head { padding: 10px 12px 8px; } }
+@media (max-width: 1279px) { .rd-v2-bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .rd-v2-bento-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; } .rd-v2-bento-head { padding: 10px 12px 8px; } }
 @media (prefers-reduced-motion: reduce) { .rd-v2-card:hover { transform: none; } }
 @media (prefers-contrast: more), (forced-colors: active) {
   .rd-v2-bento, .rd-v2-card, .rd-v2-trust-pill, .rd-v2-spec, .rd-v2-glyph { border: 2px solid currentColor; background: Canvas; color: CanvasText; box-shadow: none; }

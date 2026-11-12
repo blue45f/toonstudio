@@ -1,641 +1,287 @@
-import { CheckCircle2, ChevronDown, CircleAlert, Download, FileCheck2, PackageCheck, Rss, Send } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, Download, FileCheck2, Rss } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "@/platform/api";
 import { useI18n } from "@/shared/lib/i18n";
 import { useApp } from "@/shared/lib/store";
+import { Container } from "@/shared/components/container";
+import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
+import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
+import { EpisodeStageStepper } from "@/shared/components/episode-stage-stepper";
+import { representativeEpisodeStage, type RepresentativeEpisodeStage } from "@/domains/creator/public/episode-stage";
+import { getProductionProject } from "@/domains/creator/public/production-projects";
 
-import {
-  IntegrationError,
-  IntegrationLoading,
-  IntegrationPage,
-} from "./IntegrationUi";
+import { IntegrationError, IntegrationLoading } from "./IntegrationUi";
 import { INTEGRATION_PROVIDER_STATUS_LABELS } from "./integration-platform-copy";
 import { integrationPlatformClient } from "./integration-platform-client";
-import {
-  downloadIntegrationJson,
-  downloadIntegrationText,
-} from "./integration-platform-storage";
 import type { IntegrationProviderStatus, PublishPackageResponse } from "./integration-platform-types";
 import { PublishSurfaceCrossBridge } from "./PublishSurfaceCrossBridge";
 import { SerialCenterOverview } from "./SerialCenterOverview";
 import { integrationsStatusText } from "./integrations-status-i18n";
-
-import { PublishSurfaceGuide } from "@/shared/components/publish-surface-guide";
-import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
-import { EpisodeStageStepper } from "@/shared/components/episode-stage-stepper";
-import {
-  representativeEpisodeStage,
-  type RepresentativeEpisodeStage,
-} from "@/domains/creator/public/episode-stage";
-import { getProductionProject } from "@/domains/creator/public/production-projects";
 import { useIntegrationCatalog } from "./use-integration-catalog";
+import { PublishPreparedFiles } from "./PublishPreparedFiles";
+import { downloadPreparedPublication, downloadPreparedRss, type PublishFeedResult } from "./publish-prepared-file-downloads";
 
-/**
- * 작품 포스터 그라디언트 — 표지 아트가 없어도 제목이 주인공이 되도록,
- * 제목(없으면 프로젝트 ID) 해시로 색을 정하는 타이포그래픽 포스터.
- * 같은 작품은 언제나 같은 색을 갖는다.
- */
-function posterBackground(seed: string): string {
-  let hash = 0;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash * 31 + seed.charCodeAt(index)) % 360;
-  }
-  return [
-    `radial-gradient(120% 90% at 18% 8%, oklch(0.78 0.1 ${hash} / 0.55), transparent 55%)`,
-    `linear-gradient(155deg, oklch(0.64 0.13 ${hash}), oklch(0.48 0.14 ${(hash + 42) % 360}) 58%, oklch(0.36 0.11 ${(hash + 84) % 360}))`,
-  ].join(", ");
-}
+import "./publish-center.css";
 
-function providerDotColor(providerId: string): string {
-  let hash = 0;
-  for (let index = 0; index < providerId.length; index += 1) {
-    hash = (hash * 31 + providerId.charCodeAt(index)) % 360;
-  }
-  return `oklch(0.62 0.14 ${hash})`;
-}
-
-type SliceTargetId = "naver-690px-smart" | "kakao-720px-alive" | "global-800px-2mb";
-type ReleaseWindowId = "kst-2300-prime" | "global-6tz-simulcast" | "embargo-preview-holdback";
-
-const SLICE_TARGET_OPTIONS: readonly {
-  readonly id: SliceTargetId;
-  readonly ko: string;
-  readonly en: string;
-  readonly detailKo: string;
-  readonly detailEn: string;
-}[] = [
-  {
-    id: "naver-690px-smart",
-    ko: "네이버 690px 스마트 컷분할",
-    en: "Naver 690px Smart Slice",
-    detailKo: "가로 690px 고정 · 말풍선 경계 회피 자동 슬라이스 · 컷당 20MB 이하 규격 검사",
-    detailEn: "690px width · balloon-safe auto-slicing · under 20MB per slice validation",
-  },
-  {
-    id: "kakao-720px-alive",
-    ko: "카카오 720px 얼라이브 규격",
-    en: "Kakao 720px Alive Spec",
-    detailKo: "가로 720px · 상하 여백 400px 패딩 · 대표 썸네일 3:4 비율 동시 검증",
-    detailEn: "720px width · 400px top/bottom scroll padding · 3:4 key art ratio check",
-  },
-  {
-    id: "global-800px-2mb",
-    ko: "글로벌 800px · 2MB 슬라이스",
-    en: "Global 800px 2MB Slice",
-    detailKo: "가로 800px · 높이 1280px 분할 · 개별 JPG 2MB 및 총합 20MB 한도 검사",
-    detailEn: "800x1280px slice grid · 2MB per JPG and 20MB total bundle cap check",
-  },
-];
-
-const RELEASE_WINDOW_OPTIONS: readonly {
-  readonly id: ReleaseWindowId;
-  readonly ko: string;
-  readonly en: string;
-  readonly detailKo: string;
-  readonly detailEn: string;
-}[] = [
-  {
-    id: "kst-2300-prime",
-    ko: "KST 23:00 프라임 예약",
-    en: "KST 23:00 Prime Slot",
-    detailKo: "국내 요일 웹툰 야간 오픈 시간대(23:00 KST) 기준 원고 마감 카운트다운",
-    detailEn: "Korean prime-time nightly release slot (23:00 KST) deadline lock",
-  },
-  {
-    id: "global-6tz-simulcast",
-    ko: "글로벌 6개 시간대 동시 연재",
-    en: "Global 6-TZ Simulcast",
-    detailKo: "KST·JST·UTC·EST·PST·CET 6개 권역 식자본 동시 배포 타임라인 동기화",
-    detailEn: "Synchronized simulcast release across KST, JST, UTC, EST, PST, and CET",
-  },
-  {
-    id: "embargo-preview-holdback",
-    ko: "유료 미리보기 엠바고 홀드백",
-    en: "Preview Embargo Holdback",
-    detailKo: "유료 미리보기 3~5화 선공개 기간 동안 무료 공개 피드 자동 홀드백 잠금",
-    detailEn: "Holds back public RSS and free channels during 3-to-5 episode FastPass window",
-  },
-];
+type PreparationStep = "project" | "details" | "files";
+const STEPS: readonly PreparationStep[] = ["project", "details", "files"];
+const fieldClass = "mt-2 min-h-12 w-full scroll-mb-40 scroll-mt-24 rounded-xl border border-line bg-canvas px-3 py-2.5 text-base text-fg focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-60";
+const quietButton = "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-3 py-2 text-sm font-semibold text-fg disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-accent";
+const primaryButton = "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2 text-base font-bold text-on-accent disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-cool sm:flex-none";
 
 export function PublishCenterPage() {
-  const lang = useI18n((state) => state.lang);
-  const isKo = lang.startsWith("ko");
-  const pickLang = (ko: string, en: string) => (isKo ? ko : en);
-  const ko = isKo;
-  const [sliceTarget, setSliceTarget] = useState<SliceTargetId>("naver-690px-smart");
-  const [releaseWindow, setReleaseWindow] = useState<ReleaseWindowId>("kst-2300-prime");
-  const activeSlice = SLICE_TARGET_OPTIONS.find((item) => item.id === sliceTarget) ?? SLICE_TARGET_OPTIONS[0];
-  const activeWindow = RELEASE_WINDOW_OPTIONS.find((item) => item.id === releaseWindow) ?? RELEASE_WINDOW_OPTIONS[0];
-  const { catalog, error, loading, refresh } = useIntegrationCatalog();
-  const publishingProviders = useMemo(
-    () => catalog?.providers.filter((provider) => provider.category === "publishing") ?? [],
-    [catalog],
-  );
   const [searchParams] = useSearchParams();
-  // 제작 허브 등에서 넘어올 때는 ?projectId=(와 ?title=)로 작품을 들고 온다.
-  // 쿼리가 없으면 기존 직접 방문 흐름의 시작값을 유지한다.
-  const initialProjectId = searchParams.get("projectId")?.trim() || "demo-project";
-  const [projectId, setProjectId] = useState(initialProjectId);
-  // 회차 단계 compact 칩 (S2-5): 선택한 작품 1건의 aggregate만 읽어 제작 허브
-  // 개요와 같은 합성(representativeEpisodeStage)으로 대표 회차 단계를 도출한다.
-  // 같은 함수를 쓰므로 같은 회차는 이 표면에서도 같은 단계로 표시된다.
-  // 로그인 전이거나 작품을 읽지 못하면 칩 근거가 없는 것이므로 stage는 null로
-  // 두고 칩을 그리지 않는다 — 연재 현황 요약 수치로 단계를 지어내지 않는다.
   const userId = useApp((state) => state.userId);
+  return <PublishCenterSession key={JSON.stringify([userId, searchParams.get("projectId")?.trim() ?? ""])} />;
+}
+
+function PublishCenterSession() {
+  const ko = useI18n((state) => state.lang).startsWith("ko");
+  const userId = useApp((state) => state.userId);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { catalog, error, loading, refresh } = useIntegrationCatalog();
+  const publishingProviders = useMemo(() => catalog?.providers.filter((provider) => provider.category === "publishing") ?? [], [catalog]);
+  // 작품·계정이 바뀌면 바깥 세션을 교체하지만 단계 이동은 같은 입력 소유자를 유지한다.
+  const initialProjectId = searchParams.get("projectId")?.trim() ?? "";
+  const projectId = initialProjectId;
+  const [projectTitle, setProjectTitle] = useState("");
+  const [verifiedProjectId, setVerifiedProjectId] = useState<string | null>(null);
+  const [projectChecking, setProjectChecking] = useState(false);
+  const [projectError, setProjectError] = useState(false);
+  const [projectReload, setProjectReload] = useState(0);
   const [stage, setStage] = useState<RepresentativeEpisodeStage | null>(null);
-  useEffect(() => {
-    if (!userId || !projectId) {
-      setStage(null);
-      return;
-    }
-    let active = true;
-    void getProductionProject(projectId)
-      .then((record) => {
-        if (active) setStage(representativeEpisodeStage(record.aggregate));
-      })
-      .catch(() => {
-        if (active) setStage(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [userId, projectId]);
   const [title, setTitle] = useState(() => searchParams.get("title")?.trim() ?? "");
   const [description, setDescription] = useState("");
-  const [canonicalUrl, setCanonicalUrl] = useState(() => `${globalThis.location?.origin ?? "https://example.com"}/showcase`);
+  const [canonicalUrl, setCanonicalUrl] = useState(() => searchParams.get("canonicalUrl")?.trim() ?? "");
   const [scheduledAt, setScheduledAt] = useState("");
   const [tags, setTags] = useState("");
   const [channels, setChannels] = useState<readonly string[]>(["external-webtoon-platforms", "rss-json-feed"]);
   const [result, setResult] = useState<PublishPackageResponse | null>(null);
-  const [feedResult, setFeedResult] = useState<Awaited<ReturnType<typeof integrationPlatformClient.buildFeedPreview>> | null>(null);
+  const [feedResult, setFeedResult] = useState<PublishFeedResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [validationField, setValidationField] = useState<string | null>(null);
+  const [optionalOpen, setOptionalOpen] = useState(false);
+  const [projectChoicesOpen, setProjectChoicesOpen] = useState(!initialProjectId || !userId);
+  const [focusNonce, setFocusNonce] = useState(0);
+  const pendingFocus = useRef<{ readonly id: string; readonly search: string } | null>(null);
+  const alive = useRef(true);
+  const currentLocationKey = useRef(location.key);
+  currentLocationKey.current = location.key;
+  const projectVerified = Boolean(userId && projectId && verifiedProjectId === projectId);
+  const hasFiles = Boolean(result || feedResult);
+  const requestedStep = searchParams.get("step");
+  const step: PreparationStep = requestedStep === "project" ? "project" : requestedStep === "files" && hasFiles ? "files" : requestedStep === "details" || projectId ? "details" : "project";
+  const stepIndex = STEPS.indexOf(step);
+  const stepNames = ko ? ["작품", "게시 정보", "준비 파일"] : ["Work", "Details", "File"];
 
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  useEffect(() => {
+    setStage(null); setVerifiedProjectId(null); setProjectError(false);
+    if (!userId || !projectId) { setProjectChecking(false); return; }
+    let active = true;
+    setProjectChecking(true);
+    void getProductionProject(projectId).then((record) => {
+      if (!active) return;
+      if (record.aggregate.projectId !== projectId) { setProjectError(true); return; }
+      setStage(representativeEpisodeStage(record.aggregate));
+      setVerifiedProjectId(projectId); setProjectTitle(record.aggregate.title);
+      setTitle((current) => current.trim() ? current : record.aggregate.title);
+    }).catch(() => { if (active) setProjectError(true); })
+      .finally(() => { if (active) setProjectChecking(false); });
+    return () => { active = false; };
+  }, [userId, projectId, projectReload]);
+
+  // 단계 전환과 브라우저 Back은 같은 입력을 두고 현재 단계의 제목으로 초점을 옮긴다.
+  useEffect(() => {
+    if (!focusNonce && !searchParams.has("step")) return;
+    if (pendingFocus.current && pendingFocus.current.search !== location.search) return;
+    const target = document.getElementById(pendingFocus.current?.id ?? `publish-step-heading-${step}`);
+    if (!target || target.closest("[hidden]")) return;
+    pendingFocus.current = null;
+    target.focus(); target.scrollIntoView?.({ block: "nearest", behavior: "auto" });
+  }, [step, location.key, location.search, focusNonce, searchParams]);
+
+  const setPreparationSearch = (params: URLSearchParams, replace = false) => {
+    navigate({ pathname: location.pathname, search: `?${params.toString()}`, hash: location.hash }, { replace, state: location.state });
+  };
+  const goToStep = (next: PreparationStep, targetId?: string) => {
+    const nextParams = new URLSearchParams(searchParams); nextParams.set("step", next);
+    pendingFocus.current = { id: targetId ?? `publish-step-heading-${next}`, search: `?${nextParams.toString()}` };
+    setFocusNonce((current) => current + 1);
+    if (nextParams.toString() !== searchParams.toString()) setPreparationSearch(nextParams);
+  };
+  const clearPreparedFiles = () => { setResult(null); setFeedResult(null); setValidationField(null); };
   const toggleChannel = (id: string) => {
-    setChannels((current) => current.includes(id)
-      ? current.filter((item) => item !== id)
-      : [...current, id]);
+    if (busy) return;
+    clearPreparedFiles(); setChannels((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  };
+  const validateDetails = (needsChannel: boolean) => {
+    let field: string | null = null;
+    if (!projectVerified) field = "publish-project-choice";
+    else if (!title.trim()) field = "publish-title";
+    else if (!canonicalUrl.trim() || !document.getElementById("publish-canonical-url")?.matches(":valid")) field = "publish-canonical-url";
+    else if (needsChannel && channels.length === 0) field = "publish-channel-list";
+    else if (scheduledAt && !Number.isFinite(new Date(scheduledAt).getTime())) field = "publish-planned-at";
+    setValidationField(field);
+    if (!field) return true;
+    if (field === "publish-planned-at") setOptionalOpen(true);
+    goToStep(field === "publish-project-choice" ? "project" : "details", field);
+    return false;
   };
 
   const buildPackage = async () => {
-    setBusy(true);
-    setMessage(null);
-    setResult(null);
+    if (busy || !validateDetails(true)) return;
+    const requestedLocationKey = location.key;
+    setBusy(true); setMessage(null); setResult(null);
     try {
       const response = await integrationPlatformClient.buildPublishPackage({
-        projectId,
-        title,
-        description,
-        canonicalUrl,
+        projectId: projectId.trim(), title: title.trim(), description, canonicalUrl: canonicalUrl.trim(),
         ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
-        channels,
-        tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+        channels, tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       });
+      if (!alive.current) return;
       setResult(response);
+      if (currentLocationKey.current === requestedLocationKey) goToStep("files");
     } catch (reason) {
-      setMessage(await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.packageFailed", "게시 패키지를 만들지 못했습니다.")));
-    } finally {
-      setBusy(false);
-    }
+      const failure = await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.packageFailed", "게시 정보 파일을 만들지 못했습니다."));
+      if (alive.current) {
+        setMessage(failure);
+        if (currentLocationKey.current === requestedLocationKey) { pendingFocus.current = { id: "publish-preparation-error", search: location.search }; setFocusNonce((current) => current + 1); }
+      }
+    } finally { if (alive.current) setBusy(false); }
   };
-
   const buildFeeds = async () => {
-    setBusy(true);
-    setMessage(null);
+    if (busy || !validateDetails(false)) return;
+    const requestedLocationKey = location.key;
+    setBusy(true); setFeedResult(null); setMessage(null);
     try {
-      const publishedAt = scheduledAt
-        ? new Date(scheduledAt).toISOString()
-        : new Date().toISOString();
+      const publishedAt = scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString();
       const response = await integrationPlatformClient.buildFeedPreview({
-        title: `${title || "ToonStudio"} feed`,
-        homePageUrl: canonicalUrl,
-        feedUrl: `${canonicalUrl.replace(/\/$/u, "")}/feed.xml`,
-        description,
-        items: [{
-          id: `${projectId}:${publishedAt}`,
-          url: canonicalUrl,
-          title: title || "Untitled release",
-          summary: description,
-          datePublished: publishedAt,
-        }],
+        title: `${title || "ToonStudio"} feed`, homePageUrl: canonicalUrl,
+        feedUrl: `${canonicalUrl.replace(/\/$/u, "")}/feed.xml`, description,
+        items: [{ id: `${projectId}:${publishedAt}`, url: canonicalUrl, title: title || "Untitled release", summary: description, datePublished: publishedAt }],
       });
+      if (!alive.current) return;
       setFeedResult(response);
+      if (currentLocationKey.current === requestedLocationKey) goToStep("files");
     } catch (reason) {
-      setMessage(await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.feedPreviewFailed", "피드 미리보기를 만들지 못했습니다.")));
-    } finally {
-      setBusy(false);
-    }
+      const failure = await getApiErrorMessage(reason, integrationsStatusText("integrations.status.publish.feedPreviewFailed", "피드 미리보기를 만들지 못했습니다."));
+      if (alive.current) {
+        setMessage(failure);
+        if (currentLocationKey.current === requestedLocationKey) { pendingFocus.current = { id: "publish-preparation-error", search: location.search }; setFocusNonce((current) => current + 1); }
+      }
+    } finally { if (alive.current) setBusy(false); }
   };
-
-  // compact 칩은 현재 단계가 있을 때만 존재한다(공용 스텝퍼 compact와 같은 규칙).
   const stageCurrent = stage?.states.find((state) => state.status === "current") ?? null;
-  const trimmedTitle = title.trim();
-  const canBuild = Boolean(trimmedTitle && canonicalUrl.trim() && channels.length > 0);
-  const missingHints = [
-    !trimmedTitle ? (ko ? "제목" : "a title") : null,
-    !canonicalUrl.trim() ? (ko ? "작품 대표 주소" : "the work's main URL") : null,
-    channels.length === 0 ? (ko ? "채널 한 곳" : "at least one channel") : null,
-  ].filter((hint): hint is string => hint !== null);
-  // 태그·설명 같은 선택 입력은 기본 화면에서 접어 둔다 — 처음 온 사람이 마주하는 결정은
-  // 제목·대표 주소·예약 셋뿐이어야 한다. 값이 들어 있으면 펼친 채로 시작한다.
-  const [optionalOpen, setOptionalOpen] = useState(false);
-  const optionalVisible = optionalOpen || Boolean(tags || description);
-  const scheduledLabel = scheduledAt
-    ? new Date(scheduledAt).toLocaleString(ko ? "ko-KR" : "en-US", { dateStyle: "medium", timeStyle: "short" })
-    : null;
+  const fieldError = validationField ? (ko ? "필수 정보를 확인해 주세요. 입력한 내용은 유지됩니다." : "Check the required information. Your input is retained.") : null;
 
-  return (
-    <IntegrationPage
-      eyebrow={ko ? "연재 센터" : "Serialization center"}
-      title={ko ? "연재 센터" : "Serialization center"}
-      description={ko
-        ? "내 작품의 연재 현황을 확인하고, 공식 API 채널과 수동 업로드 채널을 같은 패키지로 준비합니다. 공식 승인 없는 웹툰 플랫폼은 규격 검사·ZIP·복사·수동 확인까지만 제공합니다."
-        : "Check your works' serialization status and prepare official API channels and manual handoff channels in one package. Platforms without approved APIs remain validation and human-confirmed upload flows."}
-      art={{ kind: "publish", caption: ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen" }}
-    >
-      <SiteContextualSubNav pathnameOverride="/studio/publish" className="mb-5" />
-      <PublishSurfaceGuide surface="serial" />
-      <section
-        data-testid="publish-center-rea-multispec-bar"
-        aria-label={pickLang("멀티플랫폼 원고 규격·릴리스 워크벤치", "Multi-platform manuscript spec and release workbench")}
-        className="mb-5 rounded-2xl border border-line bg-card p-4"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-accent">
-            {pickLang("REA 멀티플랫폼 컷 분할 · 글로벌 연재 시뮬레이터", "REA Multi-Spec Slicer & Release Window Simulator")}
-          </span>
-          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
-            Naver Webtoon(690px) · Kakao Webtoon(720px) · WEBTOON Global(800px) · Piccoma
-          </span>
-        </div>
-        <div
-          className="mt-3 flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label={pickLang("플랫폼 컷 분할 규격", "Platform slice specification")}
-        >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("원고 규격", "Slice Spec")}
-          </span>
-          {SLICE_TARGET_OPTIONS.map((item) => {
-            const active = item.id === sliceTarget;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`publish-rea-slice-${item.id}`}
-                aria-pressed={active}
-                onClick={() => setSliceTarget(item.id)}
-                className={
-                  active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-                }
-              >
-                {pickLang(item.ko, item.en)}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          className="mt-2 flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label={pickLang("연재 오픈 타임라인", "Release window timeline")}
-        >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("발행 창구", "Release Window")}
-          </span>
-          {RELEASE_WINDOW_OPTIONS.map((item) => {
-            const active = item.id === releaseWindow;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`publish-rea-window-${item.id}`}
-                aria-pressed={active}
-                onClick={() => setReleaseWindow(item.id)}
-                className={
-                  active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
-                }
-              >
-                {pickLang(item.ko, item.en)}
-              </button>
-            );
-          })}
-        </div>
-        <p
-          data-testid="publish-center-rea-status"
-          aria-live="polite"
-          className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg"
-        >
-          {pickLang(
-            `${activeSlice.ko} + ${activeWindow.ko} · ${activeSlice.detailKo} (${activeWindow.detailKo})`,
-            `${activeSlice.en} + ${activeWindow.en} · ${activeSlice.detailEn} (${activeWindow.detailEn})`,
-          )}
-        </p>
-      </section>
-      <PublishSurfaceCrossBridge ko={ko} />
-      <div className="mb-6">
-        <SerialCenterOverview
-          ko={ko}
-          onSelectProject={(project) => {
-            setProjectId(project.projectId);
-            setTitle(project.title);
-            document.getElementById("serial-publish-target")?.scrollIntoView({ block: "start" });
-          }}
-        />
+  return <Container size="standard" className="publish-center py-6 sm:py-8" style={{ maxWidth: "74rem" }}>
+    <header className="mb-5">
+      <p className="mb-2 text-xs font-semibold text-accent">{ko ? "게시 준비 · 정보 파일" : "Publication · information file"}</p>
+      <h1 className="text-[length:var(--site-task-heading-size)] font-bold leading-[1.2] tracking-[-0.025em] text-fg">{ko ? "게시 정보 파일 준비" : "Prepare publication information"}</h1>
+      <p className="mt-2 text-base leading-6 text-fg-2">{ko ? "작품의 제목·대표 주소·채널을 파일로 준비하세요." : "Prepare a file with the work's title, main URL and channels."}</p>
+    </header>
+    <nav aria-label={ko ? "게시 정보 준비 단계" : "Publication preparation steps"} className="publish-center__steps mb-5">
+      {STEPS.map((item, index) => <button key={item} type="button" disabled={busy || (item === "files" && !hasFiles)} aria-label={`${index + 1}. ${stepNames[index]}`} aria-current={step === item ? "step" : undefined} onClick={() => goToStep(item)} className="publish-center__step focus-visible:outline-2 focus-visible:outline-cool disabled:opacity-50">
+        <span className="publish-center__step-number" aria-hidden>{index + 1}</span><span>{stepNames[index]}</span>
+      </button>)}
+    </nav>
+    {projectChecking ? <p className="mb-4 text-sm text-fg-2" role="status">{ko ? "선택한 제작 프로젝트를 확인하고 있어요." : "Checking the selected production project."}</p> : null}
+    {projectError ? <div role="alert" className="mb-4 rounded-xl border border-warn/30 bg-panel p-4 text-sm text-fg-2"><p>{ko ? "제작 프로젝트를 확인하지 못했어요. 입력은 유지됩니다. 다시 확인하거나 작품 선택 단계에서 프로젝트를 고르세요." : "Could not verify this production project. Your input is retained. Retry or choose a project in the first step."}</p><button type="button" disabled={busy || projectChecking} onClick={() => setProjectReload((current) => current + 1)} className={`${quietButton} mt-3`}>{ko ? "프로젝트 다시 확인" : "Retry project check"}</button></div> : null}
+    {message ? <p id="publish-preparation-error" tabIndex={-1} className="mb-4 rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger" role="alert">{message}</p> : null}
+    {fieldError ? <p className="mb-4 text-sm text-danger" role="alert">{fieldError}</p> : null}
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.85fr)]">
+      <div className="publish-center__body min-w-0 rounded-2xl border border-line bg-panel p-4 sm:p-5">
+        <section hidden={step !== "project"} aria-labelledby="publish-step-heading-project">
+          <h2 id="publish-step-heading-project" tabIndex={-1} className="text-lg font-bold text-fg">{ko ? "어떤 작품의 정보를 준비할까요?" : "Which work should the file describe?"}</h2>
+          {projectVerified ? <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-card p-4"><CheckCircle2 size={20} aria-hidden className="shrink-0 text-cool" /><div className="min-w-0"><p className="break-words font-bold text-fg">{projectTitle}</p><p className="mt-1 text-xs text-fg-2">{ko ? "선택한 제작 프로젝트 · 정보 입력을 이어갈 수 있어요" : "Selected production project · Continue with its details"}</p></div></div> : null}
+          <details id="publish-project-selection" open={projectChoicesOpen || !projectVerified} onToggle={(event) => setProjectChoicesOpen(event.currentTarget.open)} className="mt-4 rounded-xl border border-line px-3">
+            <summary className="flex min-h-12 cursor-pointer items-center text-base font-semibold text-fg-2">{projectVerified ? (ko ? "다른 제작 프로젝트 선택" : "Choose another production project") : (ko ? "제작 프로젝트" : "Production project")}</summary>
+          <div id="publish-project-choice" tabIndex={-1} className="rounded-xl pb-3 focus-visible:outline-2 focus-visible:outline-accent"><SerialCenterOverview ko={ko} selectionMode selectionDisabled={busy} onSelectProject={(project) => {
+            if (busy) return;
+            setProjectChoicesOpen(false);
+            if (project.projectId === projectId) { goToStep("details"); return; }
+            // 새 작품은 새 입력 소유자로 열고, Back 목적지도 같은 작품의 선택 단계로 만든다.
+            const projectParams = new URLSearchParams(searchParams);
+            projectParams.set("projectId", project.projectId); projectParams.set("step", "project");
+            projectParams.delete("title"); projectParams.delete("canonicalUrl");
+            setPreparationSearch(projectParams, true);
+            const detailsParams = new URLSearchParams(projectParams); detailsParams.set("step", "details");
+            setPreparationSearch(detailsParams);
+          }} /></div></details>
+          {!projectId ? <p className="mt-4 text-sm leading-6 text-fg-2" role="status">{ko ? "작품을 고르면 게시 정보를 입력할 수 있어요." : "Choose a work to continue with its publication details."}</p> : null}
+        </section>
+        <section hidden={step !== "details"} aria-labelledby="publish-step-heading-details">
+          <h2 id="publish-step-heading-details" tabIndex={-1} className="text-lg font-bold text-fg">{ko ? "정보와 채널 확인" : "Check details and channels"}</h2>
+          <p className="mt-2 break-words text-sm text-fg-2">{projectTitle || (ko ? "작품 선택 단계에서 제작 프로젝트를 고르세요." : "Choose a production project in the first step.")}</p>
+          <label htmlFor="publish-title" className="mt-5 block text-sm font-semibold text-fg">{ko ? "제목" : "Title"}</label>
+          <input id="publish-title" required maxLength={200} disabled={busy} aria-invalid={validationField === "publish-title" || undefined} value={title} onChange={(event) => { setTitle(event.currentTarget.value); clearPreparedFiles(); }} className={fieldClass} />
+          <label htmlFor="publish-canonical-url" className="mt-4 block text-sm font-semibold text-fg">{ko ? "작품 대표 주소" : "Work's main URL"}</label>
+          <input id="publish-canonical-url" required type="url" maxLength={2048} aria-describedby="publish-canonical-help" aria-invalid={validationField === "publish-canonical-url" || undefined} disabled={busy} value={canonicalUrl} onChange={(event) => { setCanonicalUrl(event.currentTarget.value); clearPreparedFiles(); }} className={fieldClass} />
+          <p id="publish-canonical-help" className="mt-2 text-xs leading-5 text-fg-2">{ko ? "독자가 실제로 작품을 볼 수 있는 주소를 입력하세요." : "Enter the actual address where readers can view this work."}</p>
+          {loading ? <div className="mt-5"><IntegrationLoading /></div> : null}
+          {error ? <div className="mt-5"><IntegrationError message={error} onRetry={refresh} /></div> : null}
+          <fieldset id="publish-channel-list" tabIndex={-1} aria-describedby="publish-channel-help" aria-invalid={validationField === "publish-channel-list" || undefined} className="mt-5 space-y-2 rounded-xl focus-visible:outline-2 focus-visible:outline-accent">
+            <legend className="mb-2 text-sm font-bold text-fg">{ko ? "파일에 넣을 채널" : "Channels to include"}</legend>
+            <p id="publish-channel-help" className="pb-1 text-sm leading-6 text-fg-2">{ko ? "선택한 채널 정보를 JSON 파일에 담아요. 업로드·예약은 해당 채널에서 진행해 주세요." : "Selected channel information goes into a JSON file. Upload and schedule in the destination channel."}</p>
+            {publishingProviders.map((provider) => <ChannelCard key={provider.id} provider={provider} selected={channels.includes(provider.id)} ko={ko} onToggle={() => toggleChannel(provider.id)} disabled={busy} />)}
+            {!loading && !error && publishingProviders.length === 0 ? <div className="rounded-xl border border-line p-3"><p role="status" className="text-sm leading-6 text-fg-2">{ko ? "현재 선택할 수 있는 게시 채널이 없어요." : "No publication channels are available to choose."}</p><button type="button" disabled={busy} onClick={() => void refresh()} className={`${quietButton} mt-2`}>{ko ? "채널 다시 불러오기" : "Reload channels"}</button></div> : null}
+          </fieldset>
+          {publishingProviders.length > 0 ? <details className="mt-2 border-b border-line" aria-label={ko ? "채널별 지원 범위" : "Channel capabilities"}>
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-fg-2">{ko ? "채널별 지원 범위" : "Channel capabilities"}<ChevronDown size={15} aria-hidden /></summary>
+            <dl className="space-y-3 pb-3 text-sm leading-6 text-fg-2">{publishingProviders.map((provider) => <div key={provider.id}><dt className="font-semibold text-fg">{provider.name} · {ko ? "지원 안내" : "capabilities"}</dt><dd>{provider.summary}</dd><dd>{provider.statusReason}</dd></div>)}</dl>
+          </details> : null}
+          <details open={optionalOpen} onToggle={(event) => setOptionalOpen(event.currentTarget.open)} className="mt-4 rounded-xl border border-line px-3">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-fg-2">{ko ? "선택 입력 · 일정·태그·설명" : "Optional · planned time, tags and description"}<ChevronDown size={15} aria-hidden /></summary>
+            <div className="space-y-4 border-t border-line pb-4 pt-3">
+              <div><label htmlFor="publish-planned-at" className="text-sm font-semibold text-fg">{ko ? "게시 희망 시각 · 계획 기록" : "Planned publication time · record only"}</label><input id="publish-planned-at" aria-describedby="publish-planned-help" type="datetime-local" disabled={busy} value={scheduledAt} onChange={(event) => { setScheduledAt(event.currentTarget.value); clearPreparedFiles(); }} className={fieldClass} /><p id="publish-planned-help" className="mt-2 text-xs leading-5 text-fg-2">{ko ? "JSON과 피드 미리보기에 날짜를 기록합니다. 외부 플랫폼의 예약을 등록하지 않습니다." : "Records a date in the JSON and feed preview. It does not book a release in an external platform."}</p></div>
+              <div><label htmlFor="publish-tags" className="text-sm font-semibold text-fg">{ko ? "태그(쉼표 구분)" : "Tags (comma separated)"}</label><input id="publish-tags" disabled={busy} value={tags} onChange={(event) => { setTags(event.currentTarget.value); clearPreparedFiles(); }} className={fieldClass} /></div>
+              <div><label htmlFor="publish-description" className="text-sm font-semibold text-fg">{ko ? "설명" : "Description"}</label><textarea id="publish-description" disabled={busy} value={description} maxLength={5000} onChange={(event) => { setDescription(event.currentTarget.value); clearPreparedFiles(); }} rows={3} className={fieldClass} /></div>
+            </div>
+          </details>
+        </section>
+        <section hidden={step !== "files"} aria-labelledby="publish-step-heading-files">
+          <h2 id="publish-step-heading-files" tabIndex={-1} className="mb-4 text-lg font-bold text-fg">{ko ? "파일 결과를 확인하세요" : "Check the prepared files"}</h2>
+          <PublishPreparedFiles ko={ko} result={result} feedResult={feedResult} />
+        </section>
       </div>
-      {loading ? <IntegrationLoading /> : null}
-      {error ? <IntegrationError message={error} onRetry={refresh} /> : null}
-      {catalog ? (
-        <div className="space-y-6">
-          {/* 발행할 작품 히어로 — 제목 포스터·준비 상태·다음 행동을 한눈에. */}
-          <section id="serial-publish-target" className="scroll-mt-24 overflow-hidden rounded-3xl border border-line bg-card" aria-label={ko ? "발행할 작품" : "Work to publish"}>
-            <div className="flex flex-col gap-5 p-5 sm:flex-row sm:p-6">
-              <div
-                aria-hidden="true"
-                className="relative aspect-[3/4] w-28 shrink-0 overflow-hidden rounded-2xl sm:w-36"
-                style={{ background: posterBackground(trimmedTitle || projectId) }}
-              >
-                <span className="absolute -right-3 -top-5 select-none text-[6.5rem] font-black leading-none text-[oklch(0.98_0.01_70/0.22)]">
-                  {(trimmedTitle || projectId).slice(0, 1)}
-                </span>
-                <span className="absolute inset-x-3 bottom-3 line-clamp-3 text-sm font-black leading-snug text-[oklch(0.98_0.01_70)]">
-                  {trimmedTitle || (ko ? "제목 없는 작품" : "Untitled work")}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent">
-                  {ko ? "이번에 발행할 작품" : "Publishing this time"}
-                </p>
-                <h2 className="mt-1.5 truncate text-2xl font-black tracking-tight text-fg">
-                  {trimmedTitle || (ko ? "제목 없는 작품" : "Untitled work")}
-                </h2>
-                <p className="mt-1 truncate text-sm text-fg-3">
-                  {canonicalUrl.trim() || (ko ? "작품 대표 주소 미입력" : "No main URL yet")}
-                </p>
-                <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={ko ? "준비 상태" : "Readiness"}>
-                  <li className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${trimmedTitle ? "bg-good/10 text-good" : "bg-warn/10 text-warn"}`}>
-                    {trimmedTitle ? <CheckCircle2 size={13} aria-hidden /> : <CircleAlert size={13} aria-hidden />}
-                    {ko ? "제목" : "Title"} {trimmedTitle ? (ko ? "입력됨" : "set") : (ko ? "비어 있음" : "missing")}
-                  </li>
-                  <li className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${channels.length > 0 ? "bg-good/10 text-good" : "bg-warn/10 text-warn"}`}>
-                    {channels.length > 0 ? <CheckCircle2 size={13} aria-hidden /> : <CircleAlert size={13} aria-hidden />}
-                    {ko ? `채널 ${channels.length}곳 선택` : `${channels.length} channel(s) selected`}
-                  </li>
-                  <li className="inline-flex items-center gap-1 rounded-full bg-panel px-2.5 py-1 text-xs font-semibold text-fg-2">
-                    {scheduledLabel
-                      ? (ko ? `예약 ${scheduledLabel}` : `Scheduled ${scheduledLabel}`)
-                      : (ko ? "예약 없음 · 바로 발행" : "No schedule · publish now")}
-                  </li>
-                  {result ? (
-                    <li className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${result.ready ? "bg-good/10 text-good" : "bg-danger/10 text-danger"}`}>
-                      <PackageCheck size={13} aria-hidden />
-                      {result.ready ? (ko ? "패키지 준비 완료" : "Package ready") : (ko ? "규격 검사 실패" : "Validation failed")}
-                    </li>
-                  ) : null}
-                </ul>
-                {stage && stageCurrent ? (
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold text-fg-3">
-                      {stage.selection?.episodeNumber
-                        ? (ko ? `${stage.selection.episodeNumber}화 단계` : `Episode ${stage.selection.episodeNumber} stage`)
-                        : (ko ? "지금 만드는 회차 단계" : "Current episode stage")}
-                    </span>
-                    <EpisodeStageStepper states={stage.states} variant="compact" />
-                  </div>
-                ) : null}
-                <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={busy || !canBuild}
-                    onClick={() => void buildPackage()}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-on-accent disabled:opacity-50"
-                  >
-                    <Send size={16} aria-hidden /> {busy ? (ko ? "생성 중" : "Building") : (ko ? "패키지 만들기" : "Build package")}
-                  </button>
-                  <p className="text-sm leading-6 text-fg-2" role="status">
-                    {result
-                      ? (ko ? "패키지가 준비됐어요. 아래 결과에서 채널별 검사를 확인하세요." : "Your package is ready. Review each channel below.")
-                      : missingHints.length > 0
-                        ? (ko ? `${missingHints.join(" · ")}만 채우면 만들 수 있어요.` : `Add ${missingHints.join(", ")} and you can build.`)
-                        : (ko ? "준비가 끝났어요. 패키지를 만들면 채널별 규격 검사가 함께 돌아요." : "All set. Building runs each channel's spec check too.")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-          {message ? <p className="rounded-xl border border-danger/30 bg-danger/5 p-3 text-sm text-danger" role="alert">{message}</p> : null}
-          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
-            <div className="space-y-6">
-              <section className="rounded-2xl border border-line bg-card p-5">
-                <h2 className="flex items-center gap-2 text-lg font-bold text-fg">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-black text-on-accent" aria-hidden>1</span>
-                  <FileCheck2 size={19} aria-hidden /> {ko ? "게시 정보" : "Publication details"}
-                </h2>
-                {/* 작품은 위 연재 현황에서 고르거나 링크로 들고 온다 — 내부 식별자(프로젝트 ID)를
-                    사람이 직접 입력하게 하지 않는다. 식별자는 상태로만 들고 다닌다. */}
-                <p className="mt-4 rounded-xl bg-panel px-3 py-2.5 text-sm text-fg-2" role="status">
-                  {trimmedTitle
-                    ? (ko ? `선택한 작품 · ${trimmedTitle}` : `Selected work · ${trimmedTitle}`)
-                    : (ko ? "위 연재 현황에서 작품을 고르면 여기에 표시돼요. 직접 왔다면 제목부터 입력하세요." : "Pick a work from the status list above, or start by typing its title.")}
-                </p>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm font-semibold text-fg-2">
-                    {ko ? "제목" : "Title"}
-                    <input required value={title} onChange={(event) => setTitle(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                  </label>
-                  <label className="text-sm font-semibold text-fg-2">
-                    {ko ? "예약 시각" : "Schedule"}
-                    <input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                  </label>
-                  <label className="text-sm font-semibold text-fg-2 sm:col-span-2">
-                    {ko ? "작품 대표 주소" : "Work's main URL"}
-                    <input type="url" value={canonicalUrl} onChange={(event) => setCanonicalUrl(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                    <span className="mt-1 block text-xs font-normal leading-5 text-fg-3">
-                      {ko ? "독자가 이 작품을 보는 대표 링크예요. 보통은 그대로 두면 돼요." : "The main link readers use to open this work. The default usually works."}
-                    </span>
-                  </label>
-                </div>
-                <details
-                  open={optionalVisible}
-                  onToggle={(event) => setOptionalOpen(event.currentTarget.open)}
-                  className="group mt-4 rounded-xl border border-line/70"
-                >
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-sm font-semibold text-fg-2 outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
-                    {ko ? "선택 입력 · 태그와 설명" : "Optional · tags and description"}
-                    <ChevronDown size={15} aria-hidden className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
-                  </summary>
-                  <div className="grid gap-4 border-t border-line/70 p-3 sm:grid-cols-2">
-                    <label className="text-sm font-semibold text-fg-2">
-                      {ko ? "태그(쉼표 구분)" : "Tags (comma separated)"}
-                      <input value={tags} onChange={(event) => setTags(event.currentTarget.value)} className="mt-1 min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-fg" />
-                    </label>
-                    <label className="text-sm font-semibold text-fg-2">
-                      {ko ? "설명" : "Description"}
-                      <textarea value={description} onChange={(event) => setDescription(event.currentTarget.value)} rows={3} className="mt-1 w-full rounded-xl border border-line bg-canvas p-3 text-fg" />
-                    </label>
-                  </div>
-                </details>
-              </section>
-              <section className="rounded-2xl border border-line bg-card p-5">
-                <fieldset>
-                  <legend className="flex items-center gap-2 text-lg font-bold text-fg">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-black text-on-accent" aria-hidden>2</span>
-                    {ko ? "어디에 내보낼까요" : "Where to publish"}
-                  </legend>
-                  <p className="mt-2 text-sm leading-6 text-fg-2">
-                    {ko
-                      ? "카드를 눌러 채널을 고르세요. 승인 API가 없는 플랫폼은 직접 업로드용 패키지로 준비됩니다."
-                      : "Tap a card to pick a channel. Platforms without an approved API are prepared as manual-upload packages."}
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {publishingProviders.map((provider) => (
-                      <ChannelCard
-                        key={provider.id}
-                        provider={provider}
-                        selected={channels.includes(provider.id)}
-                        ko={ko}
-                        onToggle={() => toggleChannel(provider.id)}
-                      />
-                    ))}
-                    <div className="flex flex-col rounded-2xl border border-dashed border-line bg-panel/50 p-4">
-                      <strong className="flex items-center gap-2 text-sm text-fg">
-                        <Rss size={16} aria-hidden className="text-accent" /> {ko ? "내 피드로 내보내기" : "Export as my feed"}
-                      </strong>
-                      <span className="mt-1.5 text-xs leading-5 text-fg-3">
-                        {ko
-                          ? "RSS · JSON Feed · ActivityPub — 외부 계정 없이 구독 링크를 만들어요."
-                          : "RSS · JSON Feed · ActivityPub — subscription links without any external account."}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={busy || !canonicalUrl.trim()}
-                        onClick={() => void buildFeeds()}
-                        className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg disabled:opacity-50"
-                      >
-                        <Rss size={15} aria-hidden /> {ko ? "피드 미리보기" : "Preview feeds"}
-                      </button>
-                    </div>
-                  </div>
-                </fieldset>
-              </section>
-            </div>
-            <aside className="space-y-5">
-              <section className="rounded-2xl border border-line bg-card p-5" aria-label={ko ? "패키지 결과" : "Package result"}>
-                <h2 className="flex items-center gap-2 text-lg font-bold text-fg">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-black text-on-accent" aria-hidden>3</span>
-                  {ko ? "패키지 결과" : "Package result"}
-                </h2>
-                {!result ? <p className="mt-3 text-sm leading-6 text-fg-2">{ko ? "입력과 채널을 확인한 뒤 게시 패키지를 생성하세요." : "Build a package after reviewing details and channels."}</p> : (
-                  <>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-panel p-3"><p className="text-xs text-fg-3">{ko ? "규격" : "Valid"}</p><p className="mt-1 font-bold text-fg">{result.ready ? integrationsStatusText("integrations.status.publish.validationPassed", "통과") : integrationsStatusText("integrations.status.publish.validationFailed", "실패")}</p></div>
-                      <div className="rounded-xl bg-panel p-3"><p className="text-xs text-fg-3">{ko ? "직접 실행" : "Direct"}</p><p className="mt-1 font-bold text-fg">{result.directlyExecutable ? "바로 실행" : "전달 필요"}</p></div>
-                    </div>
-                    <ul className="mt-4 space-y-2">
-                      {result.channels.map((channel) => (
-                        <li key={channel.id} className="flex gap-3 rounded-xl border border-line p-3 text-sm">
-                          {channel.valid
-                            ? <CheckCircle2 size={18} aria-hidden className="mt-0.5 shrink-0 text-good" />
-                            : <CircleAlert size={18} aria-hidden className="mt-0.5 shrink-0 text-danger" />}
-                          <div className="min-w-0">
-                            <strong className="text-fg">{channel.name ?? channel.id}</strong>
-                            <span className="mt-0.5 block text-xs text-fg-3">
-                              {channel.mode} · {channel.status ?? "unsupported"} · {channel.executable ? (ko ? "바로 실행 가능" : "Executable") : (ko ? "전달 후 수동 확인" : "Manual confirmation")}
-                            </span>
-                            {channel.reason ? <span className="mt-1 block text-xs leading-5 text-fg-2">{channel.reason}</span> : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                    {result.notices.map((notice) => (
-                      <p key={notice} className="mt-3 rounded-xl bg-warn/10 p-3 text-xs leading-5 text-warn">{notice}</p>
-                    ))}
-                    <p className="mt-4 break-all rounded-xl bg-panel p-3 font-mono text-[0.68rem] text-fg-3">sha256:{result.packageDigest}</p>
-                    <button type="button" onClick={() => downloadIntegrationJson(`publish-${result.projectId}.json`, result)} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold text-fg">
-                      <Download size={15} aria-hidden /> {ko ? "패키지 다운로드" : "Download package"}
-                    </button>
-                  </>
-                )}
-              </section>
-              <section className="rounded-2xl border border-line bg-card p-5">
-                <h2 className="text-lg font-bold text-fg">RSS · JSON Feed · ActivityPub</h2>
-                {!feedResult ? <p className="mt-3 text-sm leading-6 text-fg-2">{ko ? "공개 구독용 피드는 외부 계정 없이 생성할 수 있습니다." : "Open subscription feeds can be generated without a provider account."}</p> : (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button type="button" onClick={() => downloadIntegrationText("feed.xml", feedResult.rss, "application/rss+xml;charset=utf-8")} className="rounded-xl border border-line px-3 py-2 text-sm font-semibold">RSS</button>
-                    <button type="button" onClick={() => downloadIntegrationJson("feed.json", feedResult.jsonFeed)} className="rounded-xl border border-line px-3 py-2 text-sm font-semibold">JSON Feed</button>
-                    <button type="button" onClick={() => downloadIntegrationJson("activitypub.json", feedResult.activityPub)} className="rounded-xl border border-line px-3 py-2 text-sm font-semibold">ActivityPub</button>
-                    <p className="w-full break-all pt-2 font-mono text-[0.68rem] text-fg-3">sha256:{feedResult.digest}</p>
-                  </div>
-                )}
-              </section>
-              <section className="rounded-2xl border border-line bg-panel/50 p-5 text-sm leading-6 text-fg-2">
-                <strong className="block text-fg">{ko ? "자동 게시 경계" : "Automation boundary"}</strong>
-                {ko
-                  ? "공급자 승인과 자격 증명이 확인된 공식 API만 직접 실행할 수 있습니다. 네이버·카카오·WEBTOON 등 승인 API가 없는 채널은 비밀번호나 Headless Browser를 사용하지 않고 수동 업로드 영수증으로 종료합니다."
-                  : "Only approved official APIs with active credentials can execute directly. Channels without approved APIs end in a manual upload receipt without passwords or headless browser automation."}
-              </section>
-            </aside>
-          </div>
-        </div>
-      ) : null}
-    </IntegrationPage>
-  );
+      <aside className="min-w-0 space-y-4" aria-label={ko ? "준비 중인 내용" : "Preparation summary"}>
+        <div className="hidden rounded-2xl border border-line bg-panel p-5 lg:block"><h2 className="text-lg font-bold text-fg">{ko ? "준비 중인 내용" : "Preparation summary"}</h2><dl className="mt-4 space-y-3 text-sm"><div><dt className="text-fg-2">{ko ? "제작 프로젝트" : "Production project"}</dt><dd className="mt-1 break-words font-bold text-fg">{projectTitle || (ko ? "작품 선택 필요" : "Choose a work")}</dd></div><div><dt className="text-fg-2">{ko ? "파일 형식" : "File format"}</dt><dd className="mt-1 text-fg">JSON · {ko ? "게시 정보" : "publication information"}</dd></div></dl></div>
+        {step !== "project" ? <details className="rounded-xl border border-line bg-panel px-4"><summary className="flex min-h-12 cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-fg-2">{ko ? "다른 전달 형식 · 피드 파일" : "Other handoff formats · feed files"}<ChevronDown size={15} aria-hidden /></summary><div className="space-y-3 border-t border-line pb-4 pt-3"><p className="text-sm leading-6 text-fg-2">{ko ? "RSS · JSON Feed · ActivityPub 파일 내용을 준비합니다. 구독 주소의 게시·호스팅은 별도로 진행하세요." : "Prepare RSS, JSON Feed and ActivityPub file contents. Publish and host the subscription address separately."}</p><button type="button" disabled={busy || !projectVerified} onClick={() => void buildFeeds()} className={quietButton}><Rss size={15} aria-hidden />{ko ? "피드 파일 미리보기" : "Preview feed files"}</button></div></details> : null}
+        <Link to={projectVerified ? `/production/projects/${encodeURIComponent(projectId)}/overview` : "/production/projects"} className="inline-flex min-h-12 items-center gap-2 text-sm font-semibold text-accent hover:underline"><ArrowLeft size={15} aria-hidden />{projectVerified ? (ko ? "선택한 프로젝트로 돌아가기" : "Return to this project") : (ko ? "제작 프로젝트 목록으로" : "Production projects")}</Link>
+        {projectVerified && stage && stageCurrent ? <details className="rounded-xl border border-line bg-panel px-4"><summary className="flex min-h-12 cursor-pointer items-center text-sm font-semibold text-fg-2">{ko ? "선택한 작품의 제작 단계" : "Production stage for this work"}</summary><div className="pb-4"><EpisodeStageStepper states={stage.states} variant="compact" /></div></details> : null}
+        <nav aria-label={ko ? "다른 작업" : "Related tasks"} className="border-t border-line pt-2">
+          <Link to="/studio/publish" className="flex min-h-12 items-center justify-between gap-3 text-sm text-fg-2">{ko ? "원고 출력·검수" : "Manuscript export and checks"}<ArrowRight size={16} aria-hidden /></Link>
+          <Link to="/settings/integrations" className="flex min-h-12 items-center justify-between gap-3 text-sm text-fg-2">{ko ? "연동 채널 확인" : "Check channel connections"}<ArrowRight size={16} aria-hidden /></Link>
+        </nav>
+      </aside>
+    </div>
+    {step !== "project" || projectVerified ? <div data-publish-preparation-actions="true" className="publish-center__actions sticky bottom-[calc(3.75rem+env(safe-area-inset-bottom))] z-20 mt-5 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel p-3 md:bottom-0 sm:p-4">
+      <p className="mr-auto hidden text-xs text-fg-2 sm:block">{stepIndex + 1} / 3 · {ko ? "이전 단계로 돌아가도 입력과 선택 유지" : "Details and selections stay when returning to a step"}</p>
+      {step !== "project" ? <button type="button" disabled={busy} onClick={() => goToStep(step === "files" ? "details" : "project")} className={quietButton}><ArrowLeft size={15} aria-hidden />{step === "files" ? (ko ? "입력 내용 수정" : "Edit details") : (ko ? "작품 선택" : "Choose work")}</button> : null}
+      {step === "project" ? <button type="button" disabled={busy || !projectVerified} onClick={() => goToStep("details")} className={primaryButton}>{ko ? "정보와 채널 확인" : "Check details and channels"}<ArrowRight size={15} aria-hidden /></button> : step === "details" ? <button type="button" disabled={busy || !projectVerified || !catalog || publishingProviders.length === 0} onClick={() => void buildPackage()} className={primaryButton}><FileCheck2 size={16} aria-hidden />{busy ? (ko ? "준비 중" : "Preparing") : (ko ? "파일 준비하기" : "Prepare file")}</button> : result ? <button type="button" onClick={() => downloadPreparedPublication(result)} className={primaryButton}><Download size={15} aria-hidden />{ko ? "게시 정보 파일 받기" : "Download information file"}</button> : feedResult ? <button type="button" onClick={() => downloadPreparedRss(feedResult)} className={primaryButton}><Download size={15} aria-hidden />RSS</button> : null}
+    </div> : null}
+    {hasFiles && step !== "files" ? <button type="button" disabled={busy} onClick={() => goToStep("files")} className={`${quietButton} mt-3`}>{ko ? "준비된 파일 다시 보기" : "Return to prepared files"}<ArrowRight size={15} aria-hidden /></button> : null}
+    <details className="mt-5 rounded-2xl border border-line bg-panel" aria-label={ko ? "원고 출력·게시 계획 안내" : "Manuscript export and publication planning guide"}>
+      <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-fg">{ko ? "게시 정보 파일 안내" : "About the information file"}<ChevronDown size={15} aria-hidden /></summary>
+      <div className="space-y-4 border-t border-line p-4 text-sm leading-6 text-fg-2"><p>{ko ? "파일 형식은 JSON입니다. 제목·주소·채널과 선택 입력을 담습니다. 원고 이미지는 작업실에서 내보내세요." : "The file format is JSON. It contains the title, URL, channels and optional details. Export manuscript images from Studio."}</p><p>{ko ? "업로드·공개·예약과 유료 미리보기 기간은 각 플랫폼에서 설정·확인해 주세요." : "Set and confirm uploads, publication, scheduling and paid-preview windows in each platform."}</p><PublishSurfaceGuide surface="serial" /><PublishSurfaceCrossBridge ko={ko} /><SiteContextualSubNav /></div>
+    </details>
+  </Container>;
 }
 
-function ChannelCard({
-  provider,
-  selected,
-  ko,
-  onToggle,
-}: Readonly<{
-  provider: IntegrationProviderStatus;
-  selected: boolean;
-  ko: boolean;
-  onToggle: () => void;
-}>) {
+function ChannelCard({ provider, selected, ko, onToggle, disabled }: {
+  readonly provider: IntegrationProviderStatus; readonly selected: boolean; readonly ko: boolean;
+  readonly onToggle: () => void; readonly disabled: boolean;
+}) {
   const inputId = `publish-channel-${provider.id}`;
-  const ready = provider.status === "ready" || provider.status === "manual";
-  return (
-    <label
-      htmlFor={inputId}
-      className={`flex cursor-pointer flex-col rounded-2xl border p-4 transition ${
-        selected
-          ? "border-accent bg-accent/5 ring-1 ring-accent"
-          : "border-line bg-card hover:border-fg-3"
-      }`}
-    >
-      <span className="flex items-start justify-between gap-3">
-        <strong className="flex items-center gap-2 text-sm text-fg">
-          <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: providerDotColor(provider.id) }} />
-          {provider.name}
-        </strong>
-        <input
-          id={inputId}
-          type="checkbox"
-          checked={selected}
-          onChange={onToggle}
-          className="mt-0.5 h-5 w-5 shrink-0 [accent-color:var(--color-accent)]"
-        />
-      </span>
-      <span className="mt-2 line-clamp-2 text-xs leading-5 text-fg-2">{provider.summary}</span>
-      <span className="mt-3 flex flex-wrap items-center gap-1.5">
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[0.7rem] font-semibold ${ready ? "bg-good/10 text-good" : "bg-warn/10 text-warn"}`}>
-          {INTEGRATION_PROVIDER_STATUS_LABELS[provider.status]}
-        </span>
-        <span className="inline-flex items-center rounded-full border border-line px-2 py-0.5 text-[0.7rem] text-fg-3">
-          {provider.connectionMode}
-        </span>
-      </span>
-      {provider.status === "manual" ? (
-        <span className="mt-2 text-xs font-semibold text-fg-2">
-          {ko ? "직접 업로드용 패키지로 준비돼요" : "Prepared as a manual-upload package"}
-        </span>
-      ) : null}
-    </label>
-  );
+  const status = ko ? { ...INTEGRATION_PROVIDER_STATUS_LABELS, manual: "직접 업로드" }[provider.status] : { ready: "Available", manual: "Manual upload", "configuration-required": "Setup required", "approval-required": "Approval required" }[provider.status];
+  return <label htmlFor={inputId} className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border bg-canvas px-3 py-2.5 ${selected ? "border-accent/60" : "border-line"}`}>
+    <input id={inputId} type="checkbox" aria-label={provider.name} checked={selected} disabled={disabled} onChange={onToggle} className="size-5 shrink-0 [accent-color:var(--color-accent)]" />
+    <span className="min-w-0 flex-1 text-base font-semibold text-fg">{provider.name}</span><span className="shrink-0 text-xs text-fg-2">{status}</span>
+  </label>;
 }

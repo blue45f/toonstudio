@@ -13,14 +13,24 @@ function LocationProbe() {
   return <output aria-label="location">{`${location.pathname}${location.search}`}</output>;
 }
 function renderCreate(entry = "/studio/new") {
-  return render(<MemoryRouter initialEntries={[entry]}><StudioProjectCreatePage /><LocationProbe /></MemoryRouter>);
+  const result = render(<MemoryRouter initialEntries={[entry]}><StudioProjectCreatePage /><LocationProbe /></MemoryRouter>);
+  goStep(2);
+  return result;
 }
+function goStep(step: 1 | 2 | 3) {
+  const button = document.querySelector<HTMLButtonElement>(`[data-studio-create-step-link="${step}"]`);
+  if (!button) throw new Error("생성 단계 이동이 없습니다.");
+  if (button.getAttribute("aria-current") !== "step") fireEvent.click(button);
+}
+function nameInput() { goStep(2); return screen.getByRole<HTMLInputElement>("textbox", { name: /프로젝트 이름|Project name/u }); }
+function recoveryButton(name: RegExp) { goStep(3); return screen.getByRole("button", { name }); }
 function required<T extends Element>(container: HTMLElement, selector: string): T {
   const result = container.querySelector<T>(selector);
   if (!result) throw new Error(`필수 요소 누락: ${selector}`);
   return result;
 }
 function startButton(container: HTMLElement): HTMLButtonElement {
+  goStep(3);
   const region = required<HTMLElement>(container, "[data-studio-create-submit]");
   return within(region).getByRole<HTMLButtonElement>("button", {
     name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
@@ -43,7 +53,8 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     const preview = required<HTMLDetailsElement>(container, "[data-studio-create-preview]");
     expect(startButton(container).disabled).toBe(false);
     expect(container.querySelectorAll("[data-studio-create-submit]")).toHaveLength(1);
-    expect(submit.compareDocumentPosition(advanced(container)) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    expect(submit.closest("[data-studio-create-step-panel]")?.getAttribute("data-studio-create-step-panel")).toBe("3");
+    expect(advanced(container).closest("[data-studio-create-step-panel]")?.getAttribute("data-studio-create-step-panel")).toBe("2");
     expect(submit.compareDocumentPosition(preview) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     expect(advanced(container).open).toBe(false);
     expect(preview.open).toBe(false);
@@ -53,6 +64,7 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
 
   it("선택한 형식을 색상뿐 아니라 텍스트와 aria-pressed로 알려 준다", () => {
     const { container } = renderCreate();
+    goStep(1);
     const illustration = required<HTMLButtonElement>(container, '[data-studio-create-format="illustration"]');
     fireEvent.click(illustration);
     expect(illustration.getAttribute("aria-pressed")).toBe("true");
@@ -83,7 +95,7 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     advanced(container).open = false;
     expect(startButton(container).disabled).toBe(true);
     expect(width.getAttribute("aria-invalid")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: /크기 수정하기|Fix the size/u }));
+    fireEvent.click(recoveryButton(/크기 수정하기|Fix the size/u));
     expect(advanced(container).open).toBe(true);
     expect(document.activeElement).toBe(width);
     const reason = width.getAttribute("aria-describedby");
@@ -99,18 +111,18 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     if (!height) throw new Error("높이 입력란이 없습니다.");
     fireEvent.change(height, { target: { value: "0" } });
     advanced(container).open = false;
-    fireEvent.click(screen.getByRole("button", { name: /크기 수정하기|Fix the size/u }));
+    fireEvent.click(recoveryButton(/크기 수정하기|Fix the size/u));
     expect(document.activeElement).toBe(height);
     expect(startButton(container).disabled).toBe(true);
   });
 
   it("이름 오류를 입력란에 연결하고 바로 수정할 수 있게 한다", () => {
     const { container } = renderCreate();
-    const name = screen.getByRole<HTMLInputElement>("textbox", { name: /프로젝트 이름|Project name/u });
+    const name = nameInput();
     fireEvent.change(name, { target: { value: "   " } });
     expect(name.getAttribute("aria-invalid")).toBe("true");
     expect(startButton(container).disabled).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: /이름 입력하기|Enter a name/u }));
+    fireEvent.click(recoveryButton(/이름 입력하기|Enter a name/u));
     expect(document.activeElement).toBe(name);
     expect(name.getAttribute("aria-describedby")).toBeTruthy();
   });
@@ -140,13 +152,14 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     fireEvent.click(within(advanced(container)).getByRole("button", { name: /시작 설정으로 돌아가기|Back to start settings/u }));
     expect(document.activeElement).toBe(required<HTMLElement>(container, "[data-studio-create-submit]"));
     expect(startButton(container).disabled).toBe(true);
-    expect(screen.getByRole("button", { name: /크기 수정하기|Fix the size/u })).toBeTruthy();
+    expect(recoveryButton(/크기 수정하기|Fix the size/u)).toBeTruthy();
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
   it("미리보기를 펼쳐 확인한 뒤 시작 버튼으로 돌아갈 수 있다", () => {
     const { container } = renderCreate();
     const preview = required<HTMLDetailsElement>(container, "[data-studio-create-preview]");
+    goStep(3);
     preview.open = true;
     expect(within(preview).getByRole("heading", { name: /세로 연재 웹툰|Vertical serial webtoon/u })).toBeTruthy();
     fireEvent.click(within(preview).getByRole("button", { name: /시작 설정으로 돌아가기|Back to start settings/u }));
@@ -155,6 +168,7 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
 
   it("제작 계획과 파일 재료를 함께 고르면 버튼과 다음 화면 안내의 우선순위가 같다", () => {
     const { container } = renderCreate("/studio/new?onboarding=production&start=files");
+    goStep(3);
     const submit = required<HTMLElement>(container, "[data-studio-create-submit]");
     expect(within(submit).getByRole("button", { name: /프로젝트와 제작 계획 만들기|Create project and production plan/u })).toBeTruthy();
     expect(required<HTMLElement>(container, "[data-studio-create-next-step]").textContent).toMatch(/제작 계획에 맞춘 작업 화면|planned workspace/u);
@@ -178,17 +192,20 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
 
   it("제작 계획 상세 편집 뒤의 복귀도 새 프로젝트를 만들지 않는다", () => {
     const { container } = renderCreate("/studio/new?onboarding=production&start=script");
+    goStep(3);
     const plan = required<HTMLElement>(container, "[data-studio-create-optional-settings]");
     fireEvent.click(within(plan).getByRole("button", { name: /시작 설정으로 돌아가기|Back to start settings/u }));
     expect(document.activeElement?.id).toBe("studio-create-primary-action");
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
-  it("프로젝트 이름 Enter로 저장과 기존 기획 화면 이동을 수행한다", async () => {
+  it("이름 Enter는 확인 단계로 이동하고 최종 제출에서 기존 기획 화면으로 간다", async () => {
     const { container } = renderCreate();
-    const name = screen.getByRole<HTMLInputElement>("textbox", { name: /프로젝트 이름|Project name/u });
+    const name = nameInput();
     fireEvent.change(name, { target: { value: "키보드로 만든 이야기" } });
     fireEvent.keyDown(name, { key: "Enter", code: "Enter" });
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+    fireEvent.submit(required<HTMLFormElement>(container, "[data-studio-create-form]"));
     await waitFor(() => expect(screen.getByLabelText("location").textContent).toMatch(/^\/studio\/p\/[^/]+\/story$/u));
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);
     expect(readStudioProjectLibrary(window.localStorage).projects[0]?.title).toBe("키보드로 만든 이야기");
@@ -197,7 +214,7 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
 
   it("한글 조합의 Enter와 조합종료 경계229에서는 저장하지 않는다", () => {
     renderCreate();
-    const name = screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u });
+    const name = nameInput();
     fireEvent.compositionStart(name); fireEvent.keyDown(name, { key: "Enter" });
     fireEvent.compositionEnd(name); fireEvent.keyDown(name, { key: "Enter", keyCode: 229 });
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
@@ -208,13 +225,14 @@ describe("새 프로젝트의 필수 선택·주 행동·추가 설정 위계", 
     advanced(container).open = true;
     const width = widthInput(container);
     fireEvent.change(width, { target: { value: "0" } }); advanced(container).open = false;
-    fireEvent.keyDown(screen.getByRole("textbox", { name: /프로젝트 이름|Project name/u }), { key: "Enter" });
+    fireEvent.keyDown(nameInput(), { key: "Enter" });
     expect(advanced(container).open).toBe(true); expect(document.activeElement).toBe(width);
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
   it("동기 submit이 연속으로 와도 프로젝트를 하나만 만든다", () => {
     const { container } = renderCreate();
+    goStep(3);
     const form = required<HTMLFormElement>(container, "[data-studio-create-form]");
     fireEvent.submit(form); fireEvent.submit(form); fireEvent.submit(form);
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(1);

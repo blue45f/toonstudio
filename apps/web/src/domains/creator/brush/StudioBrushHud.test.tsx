@@ -258,3 +258,50 @@ describe("시작 도크와 실제 그리기 영역 구분", () => {
     expect(overlap).toBe(0);
   });
 });
+
+
+describe("보조 협업 UI와 실제 스크롤포트 경계", () => {
+  it.each(["studioCollaborationSummary", "studioCollaborationBody"])("%s의 pointerup을 원고 위 획 종료로 오인하지 않는다", (attribute) => {
+    const { host, bag } = renderHud();
+    const control = document.createElement(attribute === "studioCollaborationSummary" ? "summary" : "div");
+    control.dataset[attribute] = "true";
+    const label = document.createElement("span");
+    label.textContent = "함께 작업";
+    control.append(label); host.append(control);
+    const clicked = vi.fn(); control.addEventListener("click", clicked);
+    revealHud(host); expect(hudNode().style.visibility).toBe("visible");
+    for (const dispatch of [fireEvent.pointerMove, fireEvent.pointerDown, fireEvent.pointerUp]) {
+      expect(dispatch(label, { clientX: 600, clientY: 400 })).toBe(true);
+      flushFrames();
+      expect(hudNode().style.visibility).toBe("hidden");
+      expect(hudNode().style.pointerEvents).toBe("none");
+    }
+    fireEvent.click(label); expect(clicked).toHaveBeenCalledOnce();
+    expect(bag.onStrokeWidthChange).not.toHaveBeenCalled();
+    revealHud(host); expect(hudNode().style.visibility).toBe("visible");
+    fireEvent.pointerDown(host, { clientX: 600, clientY: 400 }); flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    fireEvent.pointerUp(host, { clientX: 600, clientY: 400 }); flushFrames();
+    expect(hudNode().style.visibility).toBe("visible");
+  });
+
+  it("폭 변경으로 이전 anchor가 캔버스 밖이 되면 HUD를 숨기고 유효한 위치에서 다시 추적한다", () => {
+    const { host } = renderHud(); revealHud(host);
+    expect(hudNode().style.visibility).toBe("visible");
+    host.getBoundingClientRect = () => new DOMRect(224, 500, 900, 344);
+    fireEvent(window, new Event("resize")); flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    fireEvent.pointerMove(host, { clientX: 600, clientY: 600 }); flushFrames();
+    expect(hudNode().style.visibility).toBe("visible");
+  });
+
+  it("DOM 자식이더라도 현재 스크롤포트 위에서 끝난 접촉에 HUD를 표시하지 않는다", () => {
+    const { host } = renderHud();
+    host.getBoundingClientRect = () => new DOMRect(0, 254, 320, 590);
+    const child = document.createElement("div"); host.append(child);
+    fireEvent.pointerDown(child, { clientX: 260, clientY: 220 }); flushFrames();
+    fireEvent.pointerUp(child, { clientX: 260, clientY: 220 }); flushFrames();
+    expect(hudNode().style.visibility).toBe("hidden");
+    expect(hudNode().style.pointerEvents).toBe("none");
+  });
+});

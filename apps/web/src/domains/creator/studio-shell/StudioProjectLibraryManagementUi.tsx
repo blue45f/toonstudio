@@ -1,13 +1,11 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import {
+  AlertTriangle,
   Check,
-  CheckCircle2,
   Cloud,
-  CloudOff,
   Copy,
   Download,
   FolderOpen,
-  HardDrive,
   RotateCcw,
   Save,
   Trash2,
@@ -19,10 +17,7 @@ import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 
-import {
-  studioSaveSafetySummary,
-  type StudioSaveProfile,
-} from "../save-first/studio-save-profile";
+import type { StudioSaveProfile } from "../save-first/studio-save-profile";
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
 import { StudioProjectCardThumbnail } from "./StudioProjectCardThumbnail";
 import { useStudioModalSheet } from "../useStudioModalSheet";
@@ -45,25 +40,21 @@ export function StudioProjectSaveBadge({
   readonly locale: StudioProjectLibraryLocale;
 }) {
   useBilingualI18nRevision();
-  if (studioProjectIsTemporaryWork(profile)) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/35 bg-warning-soft/20 px-2.5 py-1 text-[0.68rem] font-bold text-warning">
-        <HardDrive size={13} aria-hidden="true" />
-        {bi("임시 자동저장", "Temporary autosave")}
-      </span>
-    );
-  }
-  const summary = studioSaveSafetySummary(profile);
-  const Icon = summary.needsBackup ? CloudOff : CheckCircle2;
+  const attention = profile.bindings.some((binding) => binding.syncState === "conflict")
+    ? bi("저장 충돌 확인 필요", "Review save conflict")
+    : profile.bindings.some((binding) => binding.syncState === "error")
+      ? bi("저장 오류 확인 필요", "Review save error")
+      : profile.bindings.some((binding) => binding.connectionRequired)
+        ? bi("저장소 연결 필요", "Storage connection needed")
+        : null;
+  const Icon = attention ? AlertTriangle : FolderOpen;
   return (
     <span className={cn(
       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold",
-      summary.needsBackup
-        ? "border-warning/35 bg-warning-soft/20 text-warning"
-        : "border-success/35 bg-success-soft/20 text-success",
+      attention ? "border-warning/35 bg-warning-soft/20 text-warning" : "border-line bg-panel text-fg-2",
     )}>
       <Icon size={13} aria-hidden="true" />
-      {bi(summary.headline, summary.needsBackup ? "Backup needs attention" : "Backup ready")}
+      {attention ?? (studioProjectIsTemporaryWork(profile) ? bi("임시 작업", "Temporary work") : bi("프로젝트", "Project"))}
     </span>
   );
 }
@@ -327,14 +318,14 @@ export function StudioProjectLibraryCard({
           <p className="font-semibold text-fg-3">{bi("작업 상태", "Work status")}</p>
           <p className="mt-0.5 font-black text-fg sm:mt-1">
             {temporary
-              ? bi("이 기기 임시본", "Temporary on device")
+              ? bi("임시 작업", "Temporary work")
               : bi("프로젝트", "Project")}
           </p>
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-fg-3">{bi("마지막 정식 저장", "Last explicit save")}</p>
+          <p className="font-semibold text-fg-3">{bi("저장 정보 업데이트", "Save information updated")}</p>
           <p className="mt-0.5 font-black text-fg sm:mt-1">
-            {studioProjectLibraryDateLabel(profile.lastManualSaveAt, locale)}
+            {studioProjectLibraryDateLabel(profile.updatedAt, locale)}
           </p>
         </div>
       </div>

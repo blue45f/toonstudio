@@ -26,12 +26,20 @@
   border-color: var(--color-accent);
   box-shadow: inset 3px 0 var(--color-accent);
 }
-[data-studio-illustrated-surface] :where([data-studio-library-toolbar] > header, [data-studio-project-simple-header]) {
+[data-studio-illustrated-surface] :where([data-studio-project-simple-header]) {
   padding: 1rem;
   border: 1px solid var(--illustrated-line);
   border-top-color: color-mix(in srgb, var(--color-accent) 62%, var(--color-line));
   border-radius: .75rem;
   background: linear-gradient(110deg, var(--illustrated-card), var(--illustrated-panel));
+}
+[data-studio-illustrated-surface] :where([data-studio-library-toolbar] > header) {
+  padding: 0 0 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--illustrated-line);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 [data-studio-illustrated-surface] :where([data-studio-library-toolbar] > header) :is(h1, h2) { font-size: 1.35rem; }
 [data-studio-illustrated-surface] :where([data-studio-library-toolbar] > header) p { font-size: .8125rem; line-height: 1.65; }

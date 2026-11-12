@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 # core.hooksPath 는 husky 가 생성하는 .husky/_ 가 아니라 이 디렉터리(.husky)를 가리킨다.
 # Tier 2 (Changed-Scope Push Gate): 아키텍처·UI/UX v2.2 계약, 타입체크, 변경 파일 린트·시크릿을
-# 병렬 실행하고 경량 변경 단위 테스트를 이어 실행해 20초 이내에 검증한다.
+# 병렬 실행하고 변경 단위 테스트를 이어 실행한다.
+# 전체 Web/API 타입 검사가 포함되므로 실행 시간은 코드 규모와 환경에 따라 달라진다.
 set -e
 
 if ! command -v pnpm >/dev/null 2>&1; then

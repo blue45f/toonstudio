@@ -1,4 +1,4 @@
-import { Box, Camera, ChevronDown, Layers, PenTool, Sparkles, SunMedium, UserRound } from "lucide-react";
+import { Box, Camera, ChevronDown, Layers, PenTool, Sparkles, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -54,7 +54,7 @@ const DCC_MODE_LINKS: readonly {
   { id: "material", ko: "머티리얼", en: "Material", href: "/studio/3d/dcc/material" },
   { id: "cad", ko: "정밀 CAD", en: "Precision CAD", href: "/studio/3d/dcc/cad" },
   { id: "shot", ko: "카메라 샷", en: "Camera Shot", href: "/studio/3d/dcc/shot" },
-  { id: "companion", ko: "보조기기 컴패니언", en: "Companion Pad", href: "/studio/companion/canvas" },
+  { id: "companion", ko: "보조기기 컴패니언", en: "Companion Pad", href: "/studio/companion/workspace" },
   { id: "storyworld", ko: "세계관·컬러", en: "Storyworld & Color", href: "/studio/storyworld" },
 ] as const;
 
@@ -142,11 +142,11 @@ const SHELF_ENTRIES: readonly AssetShelfEntry[] = [
   {
     id: "light-cc0",
     category: "lighting",
-    spec: "CC0 · RIGHTS BOM",
+    spec: "CC0",
     titleKo: "ambientCG CC0 PBR 재질",
     titleEn: "ambientCG CC0 PBR Materials",
-    metaKo: "Rights BOM 출처 자동 보존 즉시 적용",
-    metaEn: "Zero-attribution CC0 with Rights BOM tracking",
+    metaKo: "출처와 이용 조건을 확인하고 적용",
+    metaEn: "Check source and usage terms before applying",
     href: "/research/open-data/ambientcg",
   },
 ] as const;
@@ -158,7 +158,6 @@ export function StudioBg3dAssetShelf({
 }) {
   useBilingualI18nRevision();
   const [category, setCategory] = useState<AssetShelfCategoryId>("rooms");
-  const [splitWipePreview, setSplitWipePreview] = useState(true);
   const items = SHELF_ENTRIES.filter((entry) => entry.category === category);
 
   return (
@@ -191,29 +190,13 @@ export function StudioBg3dAssetShelf({
           })}
         </ol>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={splitWipePreview}
-            onClick={() => setSplitWipePreview((prev) => !prev)}
-            className={cn(
-              "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors",
-              splitWipePreview
-                ? "border-cool/50 bg-cool/15 text-cool"
-                : "border-line bg-card text-fg-2 hover:text-fg",
-            )}
-          >
-            <SunMedium size={14} aria-hidden="true" />
-            {splitWipePreview
-              ? bi("2D 선화 Split-Wipe ON", "2D Lineart Split-Wipe ON")
-              : bi("2D 선화 Split-Wipe OFF", "2D Lineart Split-Wipe OFF")}
-          </button>
           <Link
             href="/studio/comic"
             data-testid="studio-bg3d-bake-to-panel-cta"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-3.5 text-xs font-black text-on-accent shadow-sm transition-colors hover:bg-accent-2"
           >
             <Sparkles size={14} aria-hidden="true" />
-            {bi("원고 컷에 바로 굽기", "Bake to Manuscript Cut")}
+            {bi("원고 편집기로 이동", "Open manuscript editor")}
           </Link>
         </div>
       </div>
@@ -265,7 +248,7 @@ export function StudioBg3dAssetShelf({
               </span>
             </span>
             <span className="shrink-0 rounded-lg bg-accent-soft px-2.5 py-1 text-[0.68rem] font-extrabold text-accent">
-              {bi("배치", "Mount")}
+              {bi("열기", "Open")}
             </span>
           </Link>
         ))}

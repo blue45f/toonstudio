@@ -9,6 +9,33 @@ import { DEFAULT_APPEARANCE, THEME_IDS, THEME_PRESETS, getThemePreset, normalize
 const bootstrap = readFileSync(new URL("../../../public/bootstrap-theme.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../../app/styles/design-themes.css", import.meta.url), "utf8");
 
+function resolvePaletteTokens(raw: ReadonlyMap<string, string>): Record<string, string> {
+  const resolve = (name: string, trail: readonly string[] = []): string => {
+    if (trail.includes(name)) throw new Error(`팔레트 변수 순환: ${[...trail, name].join(" → ")}`);
+    const value = raw.get(name);
+    if (!value?.trim()) throw new Error(`필수 팔레트 변수 누락: ${name}`);
+    const resolved = value.replace(/var\((--[\w-]+)\)/gu, (_, target: string) => resolve(target, [...trail, name]));
+    if (resolved.includes("var(")) throw new Error(`해석하지 못한 팔레트 별칭: ${name}`);
+    return resolved;
+  };
+  return Object.fromEntries([...raw.keys()].filter((name) => name.startsWith("--color-"))
+    .map((name) => [name.slice("--color-".length), resolve(name)]));
+}
+
+function paletteTokens(themeId: string): Record<string, string> {
+  const marker = `[data-appearance-preview="${themeId}"]`;
+  const raw = new Map<string, string>();
+  const source = css.replace(/\/\*[\s\S]*?\*\//gu, "");
+  for (const [, selector, declarations] of source.matchAll(/([^{}]+)\{([^{}]*)\}/gu)) {
+    if (!selector.includes(marker)) continue;
+    for (const [, name, value] of declarations.matchAll(/(--(?:color|ui-palette)-[\w-]+):\s*([^;]+);/gu)) {
+      raw.set(name, value.trim());
+    }
+  }
+  if (!raw.size) throw new Error(`검증할 미리보기 팔레트가 없습니다: ${themeId}`);
+  return resolvePaletteTokens(raw);
+}
+
 function bootstrapFromStorage(serialized: string | null, pathname: string, dark: boolean, blocked = false, contrast = false) {
   const attributes: Record<string, string> = {};
   runInNewContext(bootstrap, {
@@ -97,9 +124,16 @@ describe("appearance preferences and first paint", () => {
 });
 
 describe("palette text contrast", () => {
+  it("대비 검증에서 누락·순환 별칭을 임의의 색으로 대체하지 않는다", () => {
+    expect(() => resolvePaletteTokens(new Map([["--color-fg", "var(--ui-palette-fg)"]]))).toThrow(/변수 누락/u);
+    expect(() => resolvePaletteTokens(new Map([
+      ["--color-fg", "var(--ui-palette-fg)"],
+      ["--ui-palette-fg", "var(--color-fg)"],
+    ]))).toThrow(/변수 순환/u);
+  });
+
   it.each(THEME_PRESETS)("$id text and primary buttons meet 4.5:1", ({ id }) => {
-    const block = css.split(`[data-appearance-preview="${id}"] {`)[1]?.split("}")[0] ?? "";
-    const tokens = Object.fromEntries([...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]));
+    const tokens = paletteTokens(id);
     for (const surface of ["canvas", "panel", "card", "raised"]) {
       for (const foreground of ["fg", "fg-2", "fg-3", "accent"]) {
         expect(new Color(tokens[foreground]).contrast(new Color(tokens[surface]), "WCAG21"), `${id}: ${foreground}/${surface}`).toBeGreaterThanOrEqual(4.5);
@@ -110,8 +144,7 @@ describe("palette text contrast", () => {
     }
   });
   it.each(THEME_PRESETS)("$id semantic error text remains legible on tinted surfaces", ({ id }) => {
-    const block = css.split(`[data-appearance-preview="${id}"] {`)[1]?.split("}")[0] ?? "";
-    const tokens = Object.fromEntries([...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]));
+    const tokens = paletteTokens(id);
     const error = new Color(tokens.bad);
     for (const surface of ["canvas", "panel", "card", "raised"]) {
       const base = new Color(tokens[surface]);
@@ -120,8 +153,7 @@ describe("palette text contrast", () => {
     }
   });
   it.each(THEME_PRESETS)("$id warning text remains legible on accent-tinted surfaces", ({ id }) => {
-    const block = css.split(`[data-appearance-preview="${id}"] {`)[1]?.split("}")[0] ?? "";
-    const tokens = Object.fromEntries([...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]));
+    const tokens = paletteTokens(id);
     const warning = new Color(tokens.warn);
     const accent = new Color(tokens.accent);
     const accentAlpha = new Color(tokens["accent-soft"]).alpha;
@@ -131,8 +163,7 @@ describe("palette text contrast", () => {
     }
   });
   it.each(THEME_PRESETS)("$id essential control boundaries meet 3:1", ({ id }) => {
-    const block = css.split(`[data-appearance-preview="${id}"] {`)[1]?.split("}")[0] ?? "";
-    const tokens = Object.fromEntries([...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]));
+    const tokens = paletteTokens(id);
     const boundary = new Color(tokens.fg).mix(new Color(tokens.card), 0.45, { space: "oklch" });
     for (const surface of ["canvas", "panel", "card", "raised"]) {
       expect(boundary.contrast(new Color(tokens[surface]), "WCAG21"), `${id}: control/${surface}`).toBeGreaterThanOrEqual(3);
@@ -140,8 +171,7 @@ describe("palette text contrast", () => {
   });
 
   it("keeps maximum-contrast text and strong boundaries above 7:1", () => {
-    const block = css.split(`[data-appearance-preview="contrast"] {`)[1]?.split("}")[0] ?? "";
-    const tokens = Object.fromEntries([...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]));
+    const tokens = paletteTokens("contrast");
     for (const surface of ["canvas", "panel", "card", "raised"]) {
       expect(new Color(tokens["fg-3"]).contrast(new Color(tokens[surface]), "WCAG21")).toBeGreaterThanOrEqual(7);
       expect(new Color(tokens["line-strong"]).contrast(new Color(tokens[surface]), "WCAG21")).toBeGreaterThanOrEqual(7);

@@ -71,7 +71,7 @@ describe("campus state continuity", () => {
   });
   it("has no map, scene, return context or storage writes on a protected invitation", () => {
     render(<MemoryRouter initialEntries={["/fortune?shareToken=private-token"]}><Fixture /></MemoryRouter>);
-    expect(screen.queryByRole("button", { name: "공간 지도 열기" })).toBeNull();
+    expect(document.querySelector("[data-campus-controls] > button[aria-haspopup=dialog]")).toBeNull();
     expect(screen.queryByTestId("scene")).toBeNull();
     expect(sessionStorage.getItem(CAMPUS_RETURN_KEY)).toBeNull();
   });
@@ -82,7 +82,7 @@ describe("campus state continuity", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("button", { name: "공간 지도 열기" })).toBeNull();
+    expect(document.querySelector("[data-campus-controls] > button[aria-haspopup=dialog]")).toBeNull();
     expect(screen.queryByTestId("scene")).toBeNull();
     expect(document.documentElement.dataset.campusMode).toBe("focus");
     expect(screen.getByRole("textbox", { name: "private draft" })).toBeTruthy();
@@ -95,7 +95,7 @@ describe("campus state continuity", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.queryByRole("button", { name: "공간 지도 열기" })).toBeNull();
+    expect(document.querySelector("[data-campus-controls] > button[aria-haspopup=dialog]")).toBeNull();
     expect(screen.queryByTestId("scene")).toBeNull();
     expect(document.documentElement.dataset.campusMode).toBe("focus");
     expect(screen.getByRole("textbox", { name: "private draft" })).toBeTruthy();
@@ -103,7 +103,7 @@ describe("campus state continuity", () => {
 
   it("supports a native, keyboard-accessible map and restores focus", async () => {
     render(<MemoryRouter initialEntries={["/fortune"]}><Fixture /></MemoryRouter>);
-    const trigger = screen.getByRole("button", { name: "공간 지도 열기" });
+    const trigger = screen.getByRole("button", { name: "별빛 관측소 · 공간 지도 열기" });
     trigger.focus(); fireEvent.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "창작 세계의 공간 지도" });
     expect(dialog.querySelectorAll(".campus-place")).toHaveLength(9);

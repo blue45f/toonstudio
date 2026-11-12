@@ -8,6 +8,7 @@
  */
 import { studioSpaceEmoteById } from "../studio-virtual-space-emote-catalog";
 import type { StudioVirtualSpaceFacing } from "../studio-virtual-space-model";
+import type { StudioSpacePose } from "../studio-virtual-space-pose-controller";
 import type { Office2dCharacterKey, Office2dGesture } from "./office2d-sprite-catalog";
 import { OFFICE2D_CHARACTER_ROWS, OFFICE2D_CHARACTER_WALK_FRAMES, office2dHashIndex } from "./office2d-sprite-catalog";
 import type { Office2dSeatVisual } from "./office2d-scene";
@@ -62,6 +63,8 @@ export interface Office2dActor {
   afterimageTimer: number;
   /** 전력 질주 시 남는 반투명 스피드 잔상 버퍼(최대 3개). */
   afterimages: Office2dActorAfterimage[];
+  /** 로컬 자세 요청의 표시 상태. 좌석 점유·문서 저장 권위와 구분한다. */
+  pose: StudioSpacePose;
   seat: Office2dSeatVisual | null;
   alpha: number;
   bubble: string | null;
@@ -124,6 +127,7 @@ export function createOffice2dActor(input: {
     footstepSide: 1,
     afterimageTimer: 0,
     afterimages: [],
+    pose: "stand",
     seat: null,
     alpha: 1,
     bubble: null,

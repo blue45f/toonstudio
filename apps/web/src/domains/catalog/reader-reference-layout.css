@@ -1,22 +1,20 @@
 /* 리더 안내에만 적용한다. 작품 원고·내보내기와 사이트의 색 설정은 바꾸지 않는다. */
 .reader-reference-body { padding-top: 4.5rem; }
+.reader-reference-root :where(a, button, summary) { min-block-size: 48px; min-inline-size: 48px; }
 .reader-episode-context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.75rem;
-  padding-inline-start: 0.75rem;
-  border-inline-start: 3px solid #c4b5fd;
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
   color: rgb(255 255 255 / 80%);
   font-size: 0.8125rem;
   line-height: 1.6;
 }
-.reader-episode-context-title { min-width: 0; overflow-wrap: anywhere; }
+.reader-episode-context-number { color: #c4b5fd; font-size: 0.75rem; }
+.reader-episode-context-title { min-width: 0; color: #fff; font-size: 1.125rem; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
 .reader-episode-context-meta { color: rgb(255 255 255 / 65%); }
-.reader-platform-notice { padding: 2rem 0 1.5rem; text-align: center; }
-.reader-platform-art { position: relative; width: 6rem; height: 6rem; margin: 0 auto 1.25rem; color: #c4b5fd; }
-.reader-platform-sparkles { position: absolute; width: 2.3rem; height: 2.3rem; top: 0; inset-inline-end: 0.4rem; }
-.reader-platform-book { position: absolute; width: 5.4rem; height: 3.8rem; bottom: 0; inset-inline-start: 0; }
+.reader-platform-notice { margin: 0.5rem 0 1.5rem; padding: 1.5rem; border: 1px solid rgb(255 255 255 / 15%); border-radius: 1.5rem; background: rgb(255 255 255 / 4%); text-align: center; }
+.reader-platform-identity { display: flex; align-items: center; gap: 1rem; max-width: 30rem; margin: 0 auto 1.5rem; text-align: start; }
+.reader-platform-cover { width: 112px; flex: 0 0 112px; }
 .reader-platform-notice h1 { max-width: 38rem; margin-inline: auto; color: #fff; font-size: clamp(1.4rem, 3.5vw, 1.85rem); font-weight: 750; line-height: 1.4; text-wrap: balance; }
 .reader-platform-description { max-width: 32rem; margin: 0.85rem auto 0; color: rgb(255 255 255 / 80%); font-size: 0.9375rem; line-height: 1.7; text-wrap: pretty; }
 .reader-platform-actions { display: grid; max-width: 24rem; gap: 0.65rem; margin: 1.5rem auto 0; }
@@ -29,13 +27,25 @@
 .reader-platform-progress-note { max-width: 30rem; margin: 1rem auto 0; color: rgb(255 255 255 / 70%); font-size: 0.75rem; line-height: 1.7; }
 .reader-reference-body [data-testid="reader-rea-finish-bridge"] { margin-top: 0.5rem; padding: 0.25rem 1rem; }
 .reader-reference-body [data-testid="reader-rea-finish-bridge"][open] { padding-bottom: 1rem; }
+.reader-navigation-controls { padding-block: 0.5rem; }
+.reader-navigation-controls :where(a, button) { min-block-size: 48px; }
+.reader-episode-action-label { white-space: nowrap; }
 @media (max-width: 639px) {
-  .reader-episode-context-meta { display: none; }
-  .reader-platform-notice { padding-top: 1.5rem; }
-  .reader-platform-art { width: 5rem; height: 5.3rem; margin-bottom: 1rem; }
-  .reader-platform-book { width: 4.7rem; height: 3.3rem; }
+  .reader-platform-notice { padding: 1.25rem; }
+  .reader-platform-cover { width: 88px; flex-basis: 88px; }
+  .reader-platform-identity { gap: 0.875rem; margin-bottom: 1.25rem; }
+  .reader-episode-context-meta { font-size: 0.75rem; overflow-wrap: anywhere; }
+  .reader-platform-notice h1 { font-size: 1.375rem; }
   .reader-platform-description { font-size: 0.875rem; }
   .reader-platform-actions { margin-top: 1.25rem; }
+  .reader-navigation-controls { gap: 0.25rem; padding-inline: 0.5rem; }
+  .reader-navigation-controls :where(a, button) { padding-inline: 0.5rem; font-size: 0.75rem; }
+}
+@media (max-width: 359px) {
+  .reader-platform-notice { padding: 1rem; }
+  .reader-platform-cover { width: 72px; flex-basis: 72px; }
+  .reader-episode-context-title { font-size: 1rem; }
+  .reader-platform-notice h1 { font-size: 1.25rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .reader-platform-actions > a { transition: none; }

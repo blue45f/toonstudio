@@ -28,10 +28,11 @@ export function studioThreeFillLightIntensity(preset: StudioThreeLightingPreset)
 
 export function readStoredStudioThreeLightingPreset(
   fallback: StudioThreeLightingPreset,
-  storage: Pick<Storage, "getItem"> | null | undefined = typeof globalThis !== "undefined" ? globalThis.sessionStorage : null,
+  storage?: Pick<Storage, "getItem"> | null,
 ): StudioThreeLightingPreset {
   try {
-    const raw = storage?.getItem(STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY);
+    const target = storage === undefined ? globalThis.sessionStorage : storage;
+    const raw = target?.getItem(STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY);
     return isStudioThreeLightingPreset(raw) ? raw : fallback;
   } catch {
     return fallback;
@@ -40,13 +41,14 @@ export function readStoredStudioThreeLightingPreset(
 
 export function writeStoredStudioThreeLightingPreset(
   preset: StudioThreeLightingPreset,
-  storage: Pick<Storage, "setItem"> | null | undefined = typeof globalThis !== "undefined" ? globalThis.sessionStorage : null,
+  storage?: Pick<Storage, "setItem"> | null,
 ): void {
   if (!isStudioThreeLightingPreset(preset)) return;
   try {
-    storage?.setItem(STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY, preset);
+    const target = storage === undefined ? globalThis.sessionStorage : storage;
+    target?.setItem(STUDIO_THREE_LIGHTING_PRESET_STORAGE_KEY, preset);
   } catch {
-    // Storage access can be blocked in privacy mode; ignore and keep runtime state.
+    // 저장소 getter 자체가 차단돼도 현재 화면의 선택은 유지한다.
   }
 }
 

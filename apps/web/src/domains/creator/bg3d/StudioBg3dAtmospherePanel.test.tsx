@@ -20,14 +20,15 @@ describe("StudioBg3dAtmospherePanel", () => {
       />,
     );
 
-    expect(markup).toContain("3D 하늘 및 기상 분위기 프리셋 (12종)");
+    expect(markup).toContain("하늘·기상 설정 미리보기 (12종)");
+    expect(markup).toContain("현재 3D 장면에는 적용하거나 저장하지 않습니다.");
     expect(markup).toContain("쾌청한 한낮");
     expect(markup).toContain("골든 아워");
     expect(markup).toContain("사이버펑크 네온 나이트");
     expect(markup).toContain("폭풍우와 번개");
     expect(markup).toContain("흩날리는 벚꽃잎");
     expect(markup).toContain("환상적인 오로라 &amp; 별빛");
-    expect(markup).toContain("태양 고도 및 방위각 제어");
+    expect(markup).toContain("태양 고도·방위각 미리보기");
   });
 
   it("renders disabled state when disabled prop is provided", () => {

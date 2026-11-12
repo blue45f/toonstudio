@@ -235,7 +235,8 @@ export class Office2dSpriteStore<TImage extends Office2dImageSource = HTMLImageE
 
   load(url: string): Promise<TImage | null> {
     const loaded = this.images.get(url);
-    if (loaded !== undefined) return Promise.resolve(loaded);
+    // 실패 표시는 폴백용으로 남기되 명시적으로 다시 불러오면 재시도한다. 성공 캐시와 진행 중 요청은 재사용한다.
+    if (loaded !== undefined && loaded !== null) return Promise.resolve(loaded);
     const inflight = this.pending.get(url);
     if (inflight) return inflight;
     const promise = this.loadImage(url)

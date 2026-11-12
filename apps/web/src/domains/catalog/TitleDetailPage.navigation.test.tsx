@@ -55,14 +55,33 @@ describe("작품 상세에서 목록 복귀", () => {
     const navigation = screen.getByRole("navigation", { name: "작품 탐색 경로" });
     expect(within(navigation).getByRole("link", { name: "작품 목록" }).getAttribute("href")).toBe("/explore");
     expect(navigation.querySelector('[aria-current="page"]')?.textContent).toBe("작품 상세");
+    if (loading) expect(screen.getByRole("status", { name: "작품 정보를 불러오는 중" })).toBeTruthy();
   });
 });
 
-it("오류 재시도에 페이지 호출부의 44px 논리 최소크기를 지정한다 (실측 아님)", () => {
+it("오류 재시도에 페이지 호출부의 48px 논리 최소크기를 지정한다 (실측 아님)", () => {
   useI18n.setState({ lang: "ko" });
   Object.assign(resource, { loading: false, error: "상세 조회 실패", notFound: false });
   render(<MemoryRouter initialEntries={["/title/unavailable"]}><TitleDetailPage /></MemoryRouter>);
   const alert = screen.getByRole("alert");
-  expect(alert.classList.contains("[&>button]:[min-block-size:2.75rem]!")).toBe(true);
+  expect(alert.classList.contains("[&>button]:[min-block-size:3rem]!")).toBe(true);
   expect(within(alert).getByRole("button").parentElement).toBe(alert);
+});
+
+it.each([undefined, "아주 긴 작품 제목을 가진 현재 작품"])("작품 목록 복귀는 제목=%s에서도 48px 논리 경계와 실제 목록 경로를 유지한다 (실측 아님)", (title) => {
+  useI18n.setState({ lang: "ko" });
+  render(<MemoryRouter initialEntries={["/title/direct-visit"]}>
+    <Routes>
+      <Route path="/title/:slug" element={<TitleDetailBreadcrumb title={title} />} />
+      <Route path="/explore" element={<h1>작품 목록 도착</h1>} />
+    </Routes>
+  </MemoryRouter>);
+  const back = within(screen.getByRole("navigation", { name: "작품 탐색 경로" })).getByRole("link", { name: "작품 목록" });
+  expect(back.classList.contains("min-h-12")).toBe(true);
+  expect(back.classList.contains("min-w-12")).toBe(true);
+  expect(back.classList.contains("[min-block-size:3rem]!")).toBe(true);
+  back.focus();
+  expect(document.activeElement).toBe(back);
+  fireEvent.click(back);
+  expect(screen.getByRole("heading", { name: "작품 목록 도착" })).toBeTruthy();
 });

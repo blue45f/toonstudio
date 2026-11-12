@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { registerModalStatusSlot } from "@/shared/lib/modal-status-slot";
 import { StudioSaveStatusBar } from "../StudioSaveStatusBar";
 import {
   createStudioSaveSyncSignalStore,
@@ -150,5 +151,38 @@ describe("StudioSaveStatusBar", () => {
     expect(bar?.getAttribute("data-save-state")).toBe("saving");
     expect(bar?.innerHTML).toContain("tabular-nums");
     expect(bar?.innerHTML).toContain("motion-reduce:animate-none");
+  });
+});
+
+
+describe("drawing save announcer", () => {
+  it("moves one live announcement into the active More modal and returns it when closed", () => {
+    const modal = document.createElement("div"); document.body.append(modal);
+    let stop: (() => void) | undefined;
+    try {
+      const view = render(<StudioSaveStatusBar presentation="drawing" status={status()} />);
+      act(() => { stop = registerModalStatusSlot(modal); });
+      view.rerender(<StudioSaveStatusBar presentation="drawing" status={status({ localDurable: false })} />);
+      expect(screen.getAllByRole("status")).toHaveLength(1);
+      expect(modal.querySelector('[role="status"]')?.textContent).toMatch(/확인|confirm/u);
+      expect(view.container.querySelector('[role="status"]')).toBeNull();
+      act(() => stop?.()); stop = undefined;
+      expect(modal.querySelector('[role="status"]')).toBeNull();
+      expect(view.container.querySelector('[role="status"]')?.textContent).toMatch(/확인|confirm/u);
+    } finally { if (stop) act(stop); modal.remove(); }
+  });
+  it("keeps local failure retry and live transitions without a duplicate connection button", () => {
+    const retry = vi.fn(), recheck = vi.fn();
+    const { rerender, container } = render(<StudioSaveStatusBar presentation="drawing" companionCenterMounted
+      status={status({ pendingOperationsCount: 1, cloudSyncStatus: "pending" })}
+      connectivity={connectivity("server-unavailable")} onRetrySave={retry} onRecheckConnection={recheck} />);
+    expect(screen.queryByRole("button", { name: /연결 다시 확인|Check connection/ })).toBeNull();
+    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+    rerender(<StudioSaveStatusBar presentation="drawing" companionCenterMounted status={status({ localDurable: false })}
+      connectivity={connectivity("server-unavailable")} onRetrySave={retry} onRecheckConnection={recheck} />);
+    expect(screen.getByRole("status").textContent).toMatch(/확인|confirm/u);
+    fireEvent.click(screen.getByRole("button", { name: /다시 시도|Retry/u }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(recheck).not.toHaveBeenCalled();
   });
 });

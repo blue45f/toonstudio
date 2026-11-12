@@ -8,6 +8,7 @@ import { StudioWorkspaceActivityRail } from "./StudioWorkspaceActivityRail";
 import { StudioWorkspaceRecentWorks } from "./StudioWorkspaceRecentWorks";
 import { StudioWorkspaceLibraryEmptyState } from "./StudioWorkspaceLibraryEmptyState";
 import { StudioWorkspaceWorld } from "./StudioWorkspaceWorld";
+import { StudioWorkspaceLibraryShell } from "./StudioWorkspaceLibraryShell";
 import { WorkspaceBrand, WorkspaceSidebar } from "@/shared/components/workspace/WorkspaceChrome";
 
 vi.mock("@/shared/lib/i18n-bilingual-copy", () => ({ useBilingual: () => (ko: string) => ko }));
@@ -19,6 +20,14 @@ function project() {
 }
 
 describe("studio-first visual redesign retains real actions", () => {
+  it("라이브러리 검색도 보이는 문구와 단축키를 포함한 음성 이름을 사용한다", () => {
+    render(<MemoryRouter><StudioWorkspaceLibraryShell><textarea aria-label="기존 원고" defaultValue="보존할 입력" /></StudioWorkspaceLibraryShell></MemoryRouter>);
+    const search = screen.getByRole("button", { name: "작품·도구·메뉴 검색 ⌘ K" });
+    expect(within(search).getByText("⌘ K")).toBeTruthy();
+    expect(search.getAttribute("aria-label")).toContain(within(search).getByText("작품·도구·메뉴 검색").textContent);
+    expect(screen.getByRole("textbox", { name: "기존 원고" })).toHaveProperty("value", "보존할 입력");
+  });
+
   it("presents actual empty state instead of invented work or live statistics", () => {
     render(<MemoryRouter><StudioWorkspaceActivityRail project={null} links={workspaceProjectLinks(null)} resume={null} resumeLabel={null} /></MemoryRouter>);
     expect(screen.getByRole("link", { name: "내 첫 작품 만들기" }).getAttribute("href")).toBe("/create");
@@ -58,7 +67,9 @@ describe("studio-first visual redesign retains real actions", () => {
     expect(within(nav).getByRole("link", { name: "제작" }).getAttribute("href")).toBe("/studio");
     expect(within(nav).getByRole("link", { name: "탐색" }).getAttribute("href")).toBe("/discover");
     expect(within(nav).getByRole("link", { name: "전체 메뉴" }).getAttribute("href")).toBe("/sitemap");
-    expect(screen.getByRole("link", { name: "ToonStudio 홈" }).getAttribute("href")).toBe("/home");
+    const brand = screen.getByRole("link", { name: value => value.replace(/\s/gu, "") === "ToonStudioSTORYCOMESTOLIFE홈" });
+    expect(brand.hasAttribute("aria-label")).toBe(false);
+    expect(brand.getAttribute("href")).toBe("/home");
   });
 });
 

@@ -20,16 +20,52 @@ describe("LanguagePicker", () => {
   it("keeps the worldwide catalog out of the closed accessibility tree", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
-    expect(screen.getByRole("button", { name: "언어 선택" }).textContent).toContain("한국어");
+    expect(screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" }).textContent).toContain("한국어");
     expect(screen.queryAllByRole("option")).toHaveLength(0);
     expect(document.querySelectorAll("option")).toHaveLength(0);
+  });
+
+  it("보이는 현재 언어와 사용자 지정 목적을 이름에 함께 담고 선택 변경도 반영한다", () => {
+    const onChange = vi.fn();
+    const view = render(<LanguagePicker value="ko" onChange={onChange} ariaLabel="작품 언어" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "한국어 / Korean · 작품 언어" }));
+    expect(screen.getByRole("dialog", { name: "언어 선택" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("option", { name: /^English\s*en$/ }));
+    expect(onChange).toHaveBeenCalledExactlyOnceWith("en");
+
+    view.rerender(<LanguagePicker value="en" onChange={onChange} ariaLabel="작품 언어" />);
+    expect(screen.getByRole("button", { name: "English · 작품 언어" }).textContent).toBe("English");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it.each([
+    ["ko", "번역 진행 중", "작품 언어"],
+    ["en", "Translation in progress", "Work language"],
+  ])("%s의 보이는 번역 진행 상태도 음성 입력 이름에 포함한다", (language, progress, label) => {
+    useI18n.getState().setLang(language);
+    render(<LanguagePicker value="tlh" onChange={() => undefined} ariaLabel={label} />);
+
+    const trigger = screen.getByRole("button");
+    const visibleLabel = trigger.querySelector("span")?.textContent;
+    expect(visibleLabel).toBeTruthy();
+    expect(trigger.textContent).toBe(`${visibleLabel}${progress}`);
+    expect(trigger.getAttribute("aria-label")).toBe(`${visibleLabel} ${progress} · ${label}`);
+  });
+
+  it("아이콘 전용 버튼은 지정 이름을 유지하고 보이지 않는 번역 배지를 이름에 추가하지 않는다", () => {
+    render(<LanguagePicker value="tlh" onChange={() => undefined} ariaLabel="작품 언어" compact />);
+
+    const trigger = screen.getByRole("button", { name: "작품 언어" });
+    expect(trigger.querySelector("span")?.className).toContain("sr-only");
+    expect(trigger.textContent).not.toContain("번역 진행 중");
   });
 
   it("shows translated choices first and searches every locale on demand", () => {
     const onChange = vi.fn();
     render(<LanguagePicker value="ko" onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" }));
     const initial = screen.getAllByRole("option");
     expect(initial.length).toBeGreaterThan(1);
     expect(initial.length).toBeLessThan(NORMALIZED_LOCALE_OPTIONS.length);
@@ -47,7 +83,7 @@ describe("LanguagePicker", () => {
   it("labels in-progress locales instead of presenting them as finished translations", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "언어 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" }));
     const choices = within(screen.getByRole("dialog", { name: "언어 선택" }));
     const localeOption = (code: string) => {
       const option = choices.getByText(code, { exact: true }).closest('[role="option"]');
@@ -79,7 +115,7 @@ describe("LanguagePicker", () => {
 
   it("caps broad results and restores the trigger after Escape", () => {
     render(<LanguagePicker value="ko" onChange={() => undefined} />);
-    const trigger = screen.getByRole("button", { name: "언어 선택" });
+    const trigger = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
     fireEvent.click(trigger);
     fireEvent.change(screen.getByRole("searchbox", { name: "언어 검색" }), {
       target: { value: "a" },
@@ -97,7 +133,7 @@ describe("LanguagePicker", () => {
     try {
       render(<LanguagePicker value="ko" onChange={() => undefined} />);
 
-      const trigger = screen.getByRole("button", { name: "언어 선택" });
+      const trigger = screen.getByRole("button", { name: "한국어 / Korean · 언어 선택" });
       fireEvent.click(trigger);
 
       const dialog = screen.getByRole("dialog", { name: "언어 선택" });

@@ -1,4 +1,4 @@
-import { Brush, Layers, PlayCircle } from "lucide-react";
+import { Brush, ChevronDown, Layers, PlayCircle } from "lucide-react";
 
 import {
   translateBilingualValueForActiveLocale,
@@ -13,33 +13,40 @@ export function TitleReaderImmersiveCreationBar() {
   useBilingualI18nRevision();
 
   return (
-    <nav
-      aria-label={bi("몰입형 감상·창작 전환", "Immersive reader and creation bridge")}
+    <details
       data-testid="reader-spatial-creation-bar"
-      className="relative mt-4 flex flex-wrap items-center justify-center gap-2 overflow-hidden rounded-2xl border border-accent/35 bg-reader-panel/85 p-3.5 shadow-sm backdrop-blur-md"
+      className="group mt-4 rounded-xl border border-current/20 bg-reader-panel/85 text-inherit"
     >
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-      <Link
-        href="/read/spatial"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 text-xs font-semibold text-white transition-colors hover:border-accent/60 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+        {bi("창작·뷰어 체험", "Create or try the viewer")}
+        <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
+      </summary>
+      <nav
+        aria-label={bi("창작·뷰어 체험", "Create or try the viewer")}
+        className="flex flex-wrap gap-2 border-t border-current/20 p-3"
       >
-        <Layers size={14} aria-hidden />
-        {bi("2.5D 공간 리더 체험", "Try 2.5D Spatial Reader")}
-      </Link>
-      <Link
-        href="/create"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/55 bg-accent px-4 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-      >
-        <Brush size={14} aria-hidden />
-        {bi("이 감성으로 3컷 창작", "Create 3-panel story")}
-      </Link>
-      <Link
-        href="/product-tour"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 text-xs font-semibold text-white/90 transition-colors hover:border-accent/60 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-      >
-        <PlayCircle size={14} aria-hidden />
-        {bi("인터랙티브 제품 투어", "Interactive Product Tour")}
-      </Link>
-    </nav>
+        <Link
+          href="/read/spatial"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-current/20 px-3 text-sm text-inherit hover:bg-reader-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Layers size={16} aria-hidden="true" />
+          {bi("공간 뷰어 체험", "Try the spatial viewer")}
+        </Link>
+        <Link
+          href="/create"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-current/20 px-3 text-sm text-inherit hover:bg-reader-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Brush size={16} aria-hidden="true" />
+          {bi("3컷 이야기 만들기", "Create a 3-panel story")}
+        </Link>
+        <Link
+          href="/product-tour"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-current/20 px-3 text-sm text-inherit hover:bg-reader-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <PlayCircle size={16} aria-hidden="true" />
+          {bi("사용법 둘러보기", "Take a product tour")}
+        </Link>
+      </nav>
+    </details>
   );
 }

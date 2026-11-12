@@ -99,7 +99,7 @@ function TemplatePreview({
   };
 
   return (
-    <aside className="rounded-3xl border border-line bg-card p-5 shadow-sm lg:sticky lg:top-6 lg:self-start sm:p-6">
+    <aside aria-label={bt("선택한 템플릿 구성", "Selected template structure")} className="rounded-3xl border border-line bg-card p-5 shadow-sm lg:sticky lg:top-6 lg:self-start sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent-soft text-accent">
           <LayoutTemplate size={22} aria-hidden="true" />
@@ -308,8 +308,6 @@ export function StudioTemplatesPage() {
   const selected = useMemo(() => (
     templates.find((template) => template.id === selectedId)
     ?? templates[0]
-    ?? STUDIO_TEMPLATE_CATALOG.find((template) => template.id === selectedId)
-    ?? STUDIO_TEMPLATE_CATALOG[0]
   ), [selectedId, templates]);
 
   // 카드 주 행동이 상세 패널과 같은 핸드오프를 준비한다 — 어느 쪽에서 눌러도 시작은 하나다.

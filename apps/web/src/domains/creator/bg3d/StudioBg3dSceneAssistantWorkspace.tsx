@@ -938,7 +938,7 @@ export function StudioBg3dSceneAssistantWorkspace({
               ? `${selectedCount}개 선택 · ${TRANSFORM_ACTIONS.find((item) => item.id === h.transformMode)?.label ?? "위치 조정"}`
               : hasScene
                 ? "물체를 누르면 바로 조정할 수 있어요"
-                : "먼저 오른쪽에서 장면을 골라 주세요"}
+                : "시작점 선택에서 장면을 골라 주세요"}
         </div>
       </div>
 

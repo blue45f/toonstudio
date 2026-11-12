@@ -1,12 +1,12 @@
 # ToonStudio 전수 UI/UX 고도화 시안 및 통합 개편 설계서 (v2 Blueprint)
 
-- 문서 상태: **current + migration** (기준일: `2026-11-11` — **데스크톱 16대 전수 화면군 `시안 A ~ 시안 P` + 모바일 전수 화면군 `모바일 시안 M1 ~ M4` 100% 코드·단위 테스트·자동 품질 게이트 반영 완료**, 기존 북마크·외부 공유 URL 호환을 위한 레거시 별칭 경로는 `legacy exception`으로 100% 무손실 보존)
+- 문서 상태: **migration / target / 초기 연결 기록** (기준일: `2026-11-11`). 데스크톱 A–P와 모바일 M1–M4의 설계·연결 관계를 보존한 문서다. 이전의 100% 반영·무손실 완료 선언은 현재 런타임·사용성 검증의 근거가 아니다. 현행 구현·미적용은 [화면군 대조표](../design/sitewide-clarity-20261111/verification-matrix.md), 실제 검증·원격 반영·운영 배포는 [검증 및 반영 기록](../design/sitewide-clarity-20261111/validation-and-release.md)에서 구분한다.
 - 시각 시안 아틀라스 및 아트보드 번들: [Starlight Atelier v2.6 디자인 시안 패키지](../design/starlight-atelier-v2-mockups-2026-11-11/README.md) · [인터랙티브 HTML 시안 갤러리](../design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-interactive-gallery.html) · [정밀 토큰 원장](../design/starlight-atelier-v2-mockups-2026-11-11/starlight-atelier-design-tokens.json)
 - 상위 정본: 제품 범위와 원칙은 [PRODUCT.md](../../PRODUCT.md), 시각·토큰·레이아웃 계약은 [DESIGN.md](../../DESIGN.md), 아키텍처 경계는 [ARCHITECTURE.md](../../ARCHITECTURE.md), 품질 게이트 정책은 [quality-gates-policy.md](../operations/quality-gates-policy.md)를 따른다.
 
 ## 1. 개편 배경 및 모노레포 전수 감사 요약
 
-모노레포 산하 **7개 애플리케이션(`web`, `api`, `admin-web`, `brush-lab`, `character-lab`, `mobile`, `desktop-sync`), 웹 라우트 24개 그룹(총 376개 경로·패턴·별칭), 스튜디오 문서 작업공간 13종, 에디터 메인 메뉴 18개 그룹, 3D 하이브리드 DCC 6대 전문 모드, 운영자 콘솔 16개 탭, 데스크톱 루프백 동기화 충돌 콘솔, 모바일 네이티브 런처/오프라인 셸**을 전수 대조 감사하여 Wave 1 ~ Wave 7에 걸쳐 코드와 자동 품질 게이트로 완비했다.
+초기 개편은 **7개 애플리케이션(`web`, `api`, `admin-web`, `brush-lab`, `character-lab`, `mobile`, `desktop-sync`), 당시 집계한 웹 라우트 24개 그룹(376개 경로·패턴·별칭), 문서 작업공간·에디터 메뉴·DCC 모드·운영자 콘솔·데스크톱 동기화·모바일 셸**을 대상으로 삼았다. 아래 Wave별 설명은 그때의 구현 대응 기록이며, 현재 완료 상태를 일괄 선언하지 않는다. 현행 정적 AST 확장 441개 주소도 독립 화면 수·parser-only 변형·실사용 성공 횟수와 구분한다.
 
 1. **진입 관문 중복 및 초기 세션 대기 병목 해소**: `/studio` 상단 1초 포맷 스타터 Bento + 최근 작업 오프라인 안전 배지를 배치하고, 백엔드 콜드스타트 시에도 3초 내(`INITIAL_SESSION_READY_DEADLINE_MS = 3_000`) 게스트·로컬 화면이 즉시 열리도록 비차단 세션을 적용했다.
 2. **에디터 상단 크롬 및 모바일 한손 조작 고도화**: 에디터 상단에 `콘티·3D·작화·식자·검수` 5단계 제작 공정 1클릭 스냅 피일 바(`44px` 모바일 터치 보장)를 결합하고, 모바일 에디터 하단 6슬롯 Thumb-Arc 독·왼손/오른손 전환(`mobileControlSide`)·선택 문맥 빠른 작업 바를 정렬했다.

@@ -48,6 +48,8 @@ export interface FloatingControlsProps {
   wakeRadiusPx?: number;
   /** 추가 클래스(루트). */
   className?: string;
+  /** 전체 메뉴가 설정을 제공하는 웹 셸에서는 좁은 화면의 고정 묶음을 생략한다. */
+  mobileMode?: "floating" | "menu";
 }
 
 const PILL =
@@ -80,6 +82,7 @@ export function FloatingControls({
   hideAfterMs = 4000,
   wakeRadiusPx = 120,
   className,
+  mobileMode = "floating",
 }: FloatingControlsProps) {
   void _showBgm;
   const theme = useTheme((s) => s.theme);
@@ -248,6 +251,7 @@ export function FloatingControls({
     <div
       ref={rootRef}
       data-floating-controls="true"
+      data-floating-controls-mobile={mobileMode === "menu" ? "disabled" : undefined}
       data-floating-controls-open={open || undefined}
       className={cx(PLACEMENT_CLASS[placement], className)}
       onMouseEnter={hold}

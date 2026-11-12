@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -16,6 +16,37 @@ afterEach(() => {
 });
 
 describe("StudioTemplatesPage", () => {
+  it("검색 결과가 없으면 이전 선택의 시작 행동을 숨기고 초기화로 복구한다", () => {
+    render(<MemoryRouter><StudioTemplatesPage /></MemoryRouter>);
+    const search = screen.getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "일치하지않는템플릿검색어" } });
+
+    expect(screen.getByRole("heading", { name: /조건에 맞는 템플릿이 없어요|No matching templates/u })).toBeTruthy();
+    expect(screen.queryByRole("complementary", { name: /선택한 템플릿 구성|Selected template structure/u })).toBeNull();
+    expect(screen.queryByRole("link", { name: /이 템플릿으로 시작|Start with this template/u })).toBeNull();
+    expect(search).toHaveProperty("value", "일치하지않는템플릿검색어");
+
+    fireEvent.click(screen.getByRole("button", { name: /전체 템플릿 보기|Show all templates/u }));
+    expect(search).toHaveProperty("value", "");
+    const preview = screen.getByRole("complementary", { name: /선택한 템플릿 구성|Selected template structure/u });
+    expect(within(preview).getByRole("link", { name: /이 템플릿으로 시작|Start with this template/u }).getAttribute("href"))
+      .toContain("template=webtoon-vertical-episode");
+  });
+
+  it("빈 즐겨찾기에는 시작 행동이 없고 검색 결과를 바꾸면 일치하는 구성만 표시한다", () => {
+    render(<MemoryRouter><StudioTemplatesPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /^즐겨찾기$|^Favorites$/u }));
+    expect(screen.queryByRole("complementary", { name: /선택한 템플릿 구성|Selected template structure/u })).toBeNull();
+    expect(screen.queryByRole("link", { name: /이 템플릿으로 시작|Start with this template/u })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /전체 템플릿 보기|Show all templates/u }));
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "피칭" } });
+    const preview = screen.getByRole("complementary", { name: /선택한 템플릿 구성|Selected template structure/u });
+    expect(within(preview).getByRole("heading", { name: /웹툰 피칭 자료|Webtoon pitch deck/u })).toBeTruthy();
+    expect(within(preview).getByRole("link", { name: /이 템플릿으로 시작|Start with this template/u }).getAttribute("href"))
+      .toContain("template=presentation-webtoon-pitch");
+  });
+
   it("searches the canonical catalog and keeps one clear start action", () => {
     render(
       <MemoryRouter>

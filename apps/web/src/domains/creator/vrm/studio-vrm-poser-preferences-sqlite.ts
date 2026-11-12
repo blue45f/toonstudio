@@ -1,3 +1,4 @@
+import { creatorStorageDetail, creatorStorageText } from "../storage-feedback/studio-device-storage-copy";
 import {
   normalizeStudioVrmRecentState,
   rememberStudioVrmRecent,
@@ -164,8 +165,7 @@ export function resetStudioVrmPoserPreferencesRepositoryForTests(): void {
 }
 
 function memoryOnlyMessage(cause: unknown): string {
-  const detail = cause instanceof Error ? cause.message : String(cause);
-  return `SQLite/OPFS에 최근 포즈·캐릭터를 저장하지 못했습니다. 현재 탭 메모리에서만 유지되며 새로고침하면 사라집니다: ${detail}`;
+  return creatorStorageDetail(creatorStorageText("최근 포즈·캐릭터를 저장하지 못했습니다. 현재 탭에만 유지되며 새로고침하면 사라집니다. 기기 저장을 다시 시도해 주세요.", "Recent poses and characters could not be saved. They remain in this tab only and will be lost on refresh. Retry device saving."), cause);
 }
 
 /**

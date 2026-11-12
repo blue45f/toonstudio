@@ -1,0 +1,572 @@
+{
+  "status": "versioned-development-and-local-production-observations",
+  "kind": "actual-application-observation-collection",
+  "recordedAt": "2026-11-11T15:06:05.519538+00:00",
+  "reuse": {
+    "newCapture": false,
+    "pixelModification": false,
+    "method": "existing QA PNGs copied byte-for-byte; no source PNG overwritten"
+  },
+  "source": {
+    "phase2ApplicationCommit": "70c577828b35886ec6ae71a1b37949798eab4323",
+    "integratedCommit": "e780510fd4928ee244f965f9ff697d71544e6d25",
+    "phase2ApplicationTree": "6a21c55ce90426cb15b540b73fe9356bc8320acd",
+    "integratedApplicationTree": "a5396e54109ae3093e9c5b3742bb3420037ce190",
+    "applicationTreeDifferences": [
+      "apps/web/src/app/service-worker/studio-service-worker-precache-plan.test.ts"
+    ],
+    "sameRuntimeApplicationSources": true,
+    "runtimeSourceFingerprint": {
+      "sha256": "6454f9533d655f0488993e0567f0749d425377d2c7ee80243412102300b6dce0",
+      "method": "SHA256 of sorted NUL-separated git ls-tree entry identities under apps/web, excluding filenames matching .test.* or .spec.*",
+      "trackedEntryCount": 27185
+    },
+    "captureCommitStamped": false,
+    "note": "선별 PNG는 Phase2 후속 개선의 개발 서버 관측이다. 캡처 당시 Git SHA는 PNG/QA JSON에 별도 기록되지 않았다. 이후 고정된 70c577 체크포인트와 통합 HEAD의 apps/web 차이는 명시한 테스트 1파일이며 런타임 앱 소스는 같다. 최종 프로덕션 번들·운영 화면으로 표시하지 않는다."
+  },
+  "conditions": {
+    "library": {
+      "baseUrl": "http://127.0.0.1:5276",
+      "theme": "starlight",
+      "auth": "실제 게스트 로컬 프로필; API 성공 fixture 없음",
+      "data": "사용자 작업이 없는 프로필의 기본 예시 2개 또는 실제 UI로 만든 QA 작업",
+      "backend": "실제 로컬 백엔드 연결 불가",
+      "captureScope": "첫 뷰포트; 온라인 연결 안내와 일부 프로젝트 미리보기 지연 로딩이 보이는 실제 상태",
+      "evidence": ".qa/clarity-20261111/dot-review-after/creator-library-evidence.json"
+    },
+    "resource": {
+      "baseUrl": "http://127.0.0.1:5276",
+      "theme": "starlight",
+      "auth": "실제 게스트; API fixture 없음",
+      "data": "실제 내장 래스터 소재 카탈로그; UI로 생성한 동일 원고",
+      "backend": "실제 로컬 백엔드 연결 불가",
+      "gpu": "software ANGLE/SwiftShader; 3D 모델링 미검증",
+      "state": "검색어·즐겨찾기·선택·밀도를 유지한 1440→390→1440 전환; 미리보기와 명시적 삽입을 구분",
+      "persistence": "별도 core JSON에서 이미지 0→미리보기 0→삽입 1→재열기 1 확인",
+      "evidence": ".qa/clarity-20261111/dot-review-after/resource-core-results.json"
+    },
+    "catalog": {
+      "baseUrl": "http://127.0.0.1:5276",
+      "theme": "starlight",
+      "auth": "게스트 fixture",
+      "otherApi": "503 fixture",
+      "data": "실제 생성 공개 카탈로그; 빈 추천은 home JSON의 명시적 빈 목록 fixture, 상세 오류는 공개 snapshot 요청의 명시적 503 fixture",
+      "state": "실패 상태와 복구 행동의 화면; 정상 목록·외부 회차 감상 화면이 아님",
+      "evidence": ".qa/clarity-20261111/catalog-core-flow/results.json"
+    }
+  },
+  "production": {
+    "status": "partial-visual-evidence",
+    "kind": "actual-local-production-preview",
+    "recordedAt": "2026-11-11T15:29:28.914570+00:00",
+    "baseUrl": "http://127.0.0.1:5276",
+    "build": {
+      "gitSha": "e780510fd4928ee244f965f9ff697d71544e6d25",
+      "buildId": "35fcb401d50e"
+    },
+    "buildProvenance": "root-reported fixed build; production HTML status/hash/module asset identities also recorded in core sourceEvidence",
+    "availableImageCount": 4,
+    "visualEvidenceComplete": false,
+    "operatingDeploymentVerified": false,
+    "conditions": {
+      "auth": "실제 게스트 QA 문서; 기존 populated 원고 재사용",
+      "backend": "실제 로컬 백엔드 연결 불가; API 성공 fixture 없음",
+      "persistence": "배포용 번들이 사용하는 canonical OPFS/SQLite 리더; 원고 상태 주입 없음",
+      "gpu": "ANGLE/SwiftShader; 3D 모델링 미검증",
+      "serviceWorkers": "QA context에서 차단",
+      "reuse": "검증 담당의 기존 PNG를 바이트 그대로 복사; 새 캡처·픽셀 수정 없음"
+    },
+    "functionalEvidence": {
+      "core": {
+        "passed": 6,
+        "total": 6,
+        "errors": 0,
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource/results.json",
+        "finishedAt": "2026-11-11T15:21:34.245Z"
+      },
+      "desktop": {
+        "passed": 2,
+        "total": 2,
+        "errors": 0,
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource-desktop/results.json",
+        "finishedAt": "2026-11-11T15:24:20.927Z"
+      },
+      "consistency": {
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource/consistency.json",
+        "countSequence": {
+          "before": 1,
+          "afterEnter": 1,
+          "afterSpace": 1,
+          "afterApply": 2,
+          "afterUndo": 1,
+          "afterReload": 1,
+          "afterFinalPreview": 1
+        },
+        "unchangedNormalizedPages": {
+          "afterEnter": true,
+          "afterSpace": true,
+          "afterUndo": true,
+          "afterReload": true,
+          "afterFinalPreview": true
+        },
+        "baselineNote": "원래 있던 비이미지 draw 요소까지 포함해 Enter/Space·Undo·재열기의 전체 정규화 원소 메타데이터가 기준과 같다. 선택 래스터 수만 명시적 삽입 시 1→2로 바뀐다."
+      }
+    },
+    "missingVisualEvidence": [
+      {
+        "requestedFile": "editor-final-1440.png",
+        "status": "timeout",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource-desktop/results.json",
+        "errorClass": "TimeoutError",
+        "timeoutMs": 20000
+      }
+    ],
+    "note": "완료된 원본 PNG 4개만 추가했다. 데스크톱 편집기 1440px 캡처는 시간 초과로 미완료이며 초기 계획의 6장 완료를 주장하지 않는다. 모바일 목록 썸네일 paint 전 빈 영역도 그대로 보존한다. 기능 core6/6과 desktop2/2는 화면 증거 완전성과 별개다. 운영 배포·전체 주소·로그인·GPU 업무 성공을 뜻하지 않는다.",
+    "images": [
+      {
+        "file": "after-production-editor-final-390.png",
+        "kind": "actual-local-production-preview",
+        "state": "editor-final",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/production-resource/editor-final-390.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource/results.json",
+        "originalFileModifiedAt": "2026-11-11T15:20:32.884809+00:00",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "pngWidth": 390,
+        "pngHeight": 844,
+        "bytes": 116378,
+        "sha256": "c52865a04e8dfbc76ca87471e023aaab9f2f3a2c35ea0f9c903b5f1c4ba9b1f0",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "Undo 후 같은 문서를 새로고침한 실제 원고; 내장 래스터 1개와 기존 비이미지 draw 요소를 보존한다."
+      },
+      {
+        "file": "after-production-asset-detail-390.png",
+        "kind": "actual-local-production-preview",
+        "state": "asset-detail",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/production-resource/asset-detail-390.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource/results.json",
+        "originalFileModifiedAt": "2026-11-11T15:21:29.548219+00:00",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "pngWidth": 390,
+        "pngHeight": 844,
+        "bytes": 137420,
+        "sha256": "4396cad34b72c12efb67a54d2617853c5ae69d5a0110cca24c9ab77f9e28e5f7",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "실제 내장 래스터 상세 이미지가 표시된다. 하단 정보는 패널 스크롤 범위다."
+      },
+      {
+        "file": "after-production-asset-picker-390.png",
+        "kind": "actual-local-production-preview",
+        "state": "asset-picker",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/production-resource/asset-picker-390.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource/results.json",
+        "originalFileModifiedAt": "2026-11-11T15:21:18.000339+00:00",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "pngWidth": 390,
+        "pngHeight": 844,
+        "bytes": 91377,
+        "sha256": "2c383c42417cc20a666b14fd509b59b7278dbba9c38380928097a043295de410",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "검색 결과의 텍스트·명시적 삽입 행동은 보이나 첫 썸네일 paint 전 빈 미리보기 영역이 캡처됐다. 이미지 표시 완료 화면이 아니다."
+      },
+      {
+        "file": "after-production-asset-picker-1440.png",
+        "kind": "actual-local-production-preview",
+        "state": "asset-picker",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/production-resource-desktop/asset-picker-1440.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/production-resource-desktop/results.json",
+        "originalFileModifiedAt": "2026-11-11T15:24:20.910433+00:00",
+        "viewportWidth": 1440,
+        "viewportHeight": 1000,
+        "pngWidth": 1440,
+        "pngHeight": 1000,
+        "bytes": 334101,
+        "sha256": "4522abce2632c4404617c087008c02ccf5fbf4525a04a85080ffec5cf67a53d9",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "검색 목록과 선택 상세의 실제 이미지가 모두 표시된다. 온라인 연결 재확인 안내를 보존한다."
+      }
+    ]
+  },
+  "images": [
+    {
+      "file": "after-dev-new-user-with-samples-1440.png",
+      "kind": "actual-development-implementation",
+      "state": "new-user-with-samples",
+      "conditionsRef": "library",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/creator-library-evidence.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/studio-empty-1440.png",
+      "originalFileModifiedAt": "2026-11-11T13:50:36.768418+00:00",
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "bytes": 326037,
+      "sha256": "9d5a56816973f64e2f5c012c14f8b844457584e724cb824835fcefd1dece6aca",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-new-user-with-samples-390.png",
+      "kind": "actual-development-implementation",
+      "state": "new-user-with-samples",
+      "conditionsRef": "library",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/creator-library-evidence.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/studio-empty-390.png",
+      "originalFileModifiedAt": "2026-11-11T13:50:39.180393+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "bytes": 137685,
+      "sha256": "ac3fbf2a5709ef767b606ce746dee12088564f5ae742d5d227a140f4e9cd9401",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-recent-work-1440.png",
+      "kind": "actual-development-implementation",
+      "state": "recent-work",
+      "conditionsRef": "library",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/creator-library-evidence.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/studio-withwork-1440.png",
+      "originalFileModifiedAt": "2026-11-11T13:51:04.356101+00:00",
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "bytes": 320764,
+      "sha256": "f5f24f5afe9930c918c297e1821b5f59c25de5b4b5bfcf9fda78d1618a9f8ba9",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-recent-work-390.png",
+      "kind": "actual-development-implementation",
+      "state": "recent-work",
+      "conditionsRef": "library",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/creator-library-evidence.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/studio-withwork-390.png",
+      "originalFileModifiedAt": "2026-11-11T13:51:08.536056+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "bytes": 134399,
+      "sha256": "32a15cf3983a1374454f828fe8e4e788ac60479f8a24d4e3ae9d7fa3685b6c5b",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-asset-picker-1440.png",
+      "kind": "actual-development-implementation",
+      "state": "asset-picker",
+      "conditionsRef": "resource",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/resource-core-results.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/asset-picker-1440.png",
+      "originalFileModifiedAt": "2026-11-11T14:39:16.398090+00:00",
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "pngWidth": 1440,
+      "pngHeight": 1000,
+      "bytes": 320451,
+      "sha256": "7c4575851179003c9c233322e4b1a00349322a287db5d8b52c07a17ac0dab772",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-asset-picker-390.png",
+      "kind": "actual-development-implementation",
+      "state": "asset-picker",
+      "conditionsRef": "resource",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/resource-core-results.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/asset-picker-390.png",
+      "originalFileModifiedAt": "2026-11-11T14:39:03.394226+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "bytes": 105807,
+      "sha256": "1ae1a80407fb3e65b6a180766157139481eb10f1647c4a83567f0c96a9440c96",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-asset-detail-390.png",
+      "kind": "actual-development-implementation",
+      "state": "asset-detail",
+      "conditionsRef": "resource",
+      "sourceEvidence": ".qa/clarity-20261111/dot-review-after/resource-core-results.json",
+      "originalPath": ".qa/clarity-20261111/dot-review-after/asset-detail-390.png",
+      "originalFileModifiedAt": "2026-11-11T14:38:53.090333+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "pngWidth": 390,
+      "pngHeight": 844,
+      "bytes": 133215,
+      "sha256": "f35cfe484585f4b23259beb14cc723b47f872466705beb4a68d037673460728a",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-catalog-empty-390.png",
+      "kind": "actual-development-implementation",
+      "state": "catalog-empty",
+      "conditionsRef": "catalog",
+      "sourceEvidence": ".qa/clarity-20261111/catalog-core-flow/results.json",
+      "originalPath": ".qa/clarity-20261111/catalog-core-flow/empty-picks-390.png",
+      "originalFileModifiedAt": "2026-11-11T14:28:28.928838+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 900,
+      "pngWidth": 390,
+      "pngHeight": 900,
+      "bytes": 119811,
+      "sha256": "dd36bffa8852427f052a956838d2c8b474f06034835d3d6669b9e646a0f5b39c",
+      "copyVerifiedByteForByte": true
+    },
+    {
+      "file": "after-dev-catalog-error-390.png",
+      "kind": "actual-development-implementation",
+      "state": "catalog-error",
+      "conditionsRef": "catalog",
+      "sourceEvidence": ".qa/clarity-20261111/catalog-core-flow/results.json",
+      "originalPath": ".qa/clarity-20261111/catalog-core-flow/detail-error-390.png",
+      "originalFileModifiedAt": "2026-11-11T14:28:40.608717+00:00",
+      "viewportWidth": 390,
+      "viewportHeight": 900,
+      "pngWidth": 390,
+      "pngHeight": 900,
+      "bytes": 111116,
+      "sha256": "32b79abc7f1d2897d42fabff81c26308766bc0544f3079fd3565c5fb50cbd85a",
+      "copyVerifiedByteForByte": true
+    }
+  ],
+  "phase3": {
+    "status": "historical-fixed-build-core-journey-observed-followups-pending",
+    "kind": "actual-local-production-preview-and-downloaded-artifact",
+    "recordedAt": "2026-11-11T17:57:46Z",
+    "capturedFrom": "2026-11-11T17:00:22.033Z",
+    "capturedThrough": "2026-11-11T17:01:15.114Z",
+    "build": {
+      "gitSha": "9d641f1c067905ec6921bcb97474ef3ed2026103",
+      "buildId": "086eb4202efb",
+      "origin": "http://127.0.0.1:5276",
+      "hashedAssets": true,
+      "viteClient": false
+    },
+    "sourceWorkingTreeCleanAtCapture": true,
+    "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+    "detailedSourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/evidence.json",
+    "conditions": {
+      "auth": "실제 게스트 로컬 원고; 실제 UI로 생성한 기존 문서",
+      "backend": "실제 로컬 백엔드 연결 불가; API 성공 fixture·정본 데이터 주입·서버 ACK 조작 없음",
+      "gpu": "ANGLE/SwiftShader; 하드웨어 GPU·3D 모델링 성공을 뜻하지 않음",
+      "serviceWorkers": "QA context에서 차단",
+      "content": "기존 텍스트·이미지와 누적 QA 내용을 삭제·배치 보정·합성하지 않음",
+      "reuse": "기존 QA 원본 5개를 바이트 그대로 복사; 새 캡처·픽셀 수정 없음"
+    },
+    "functionalEvidence": {
+      "checks": [
+        {
+          "name": "original canonical manuscript preserved",
+          "ok": true
+        },
+        {
+          "name": "offline proposal has exact durable journal and verified text CAS",
+          "ok": true
+        },
+        {
+          "name": "actual offline layer projection preserves new text and prior IDs",
+          "ok": true
+        },
+        {
+          "name": "same document reload restores durable proposal and actual layer IDs",
+          "ok": true
+        }
+      ],
+      "checksPassed": 4,
+      "offlineJourneyPassed": true,
+      "exportPassed": true,
+      "pageErrors": [],
+      "sameDocumentReopen": {
+        "projectId": "project-yv58so",
+        "documentId": "ep01-1te2igr",
+        "baselineElementIdsPreserved": true,
+        "actualLayerCountAfterReload": 8,
+        "sameScopeVerified": true,
+        "samePageIdVerified": true
+      },
+      "offline": {
+        "journalBytesAndTextPayloadVerified": true,
+        "canonicalMarkerAbsentWhileOffline": true,
+        "offlineReceipt": null
+      },
+      "onlineReopen": {
+        "receipt": {
+          "appliedAt": 1794416440561,
+          "operationId": "offline-op-a0146d83-0981-4b29-a781-f56e1c1e5047",
+          "serverSequence": null,
+          "state": "canonical-local",
+          "yjsUpdateId": "offline-op-a0146d83-0981-4b29-a781-f56e1c1e5047"
+        },
+        "canonicalSavedAt": "2026-11-11T17:00:40.363Z",
+        "sameScopeVerified": true,
+        "samePageIdVerified": true,
+        "allBaselineIdsPreserved": true,
+        "cloudSyncVerified": false,
+        "serverAckVerified": false
+      },
+      "fit": [
+        {
+          "at": "2026-11-11T17:00:54.322Z",
+          "stage": "reload",
+          "width": 390,
+          "actualFitControl": {
+            "x": 59,
+            "y": 728.40625,
+            "width": 181,
+            "height": 44
+          },
+          "zoom": "100%"
+        },
+        {
+          "at": "2026-11-11T17:00:57.279Z",
+          "stage": "reload",
+          "width": 320,
+          "actualFitControl": {
+            "x": 59,
+            "y": 728.40625,
+            "width": 128.5,
+            "height": 44
+          },
+          "zoom": "100%"
+        }
+      ],
+      "horizontalOverflow": {
+        "1440": 0,
+        "390": 0,
+        "320": 0
+      },
+      "actualDownload": {
+        "actualExportDownloaded": true,
+        "bytes": 340021,
+        "sha256": "bf95c728a9f243eb25b1f0baf4ec93d47e85fa3a0b998fd1ab68dfd6a5d3401b",
+        "width": 720,
+        "height": 5333
+      }
+    },
+    "availableScreenCaptureCount": 4,
+    "availableDownloadedArtifactCount": 1,
+    "operatingDeploymentVerified": false,
+    "allPageUsabilityVerified": false,
+    "knownFollowups": [
+      {
+        "id": "drawing-mobile-320-hud",
+        "observedBuild": "9d641f1c067905ec6921bcb97474ef3ed2026103",
+        "status": "native-tap-failed-source-fix-awaiting-next-build",
+        "sourceEvidence": ".qa/clarity-20261111/production-interactions/ui-browser-2026-11-11T17-10-07-951Z/results.json",
+        "note": "11개 선행 검사 후 320px 함께 작업 summary의 native tap이 브러시 HUD slider에 막혔다. 390px 탭·320px 키보드 통과를 이 실패의 해결로 합산하지 않는다."
+      },
+      {
+        "id": "resource-desktop-1440-sticky",
+        "observedBuild": "9d641f1c067905ec6921bcb97474ef3ed2026103",
+        "status": "clipped-action-failed-source-fix-awaiting-next-build",
+        "sourceEvidence": ".qa/resource-detail-footer/production/results.json",
+        "note": "390/320px의 8개 검사는 통과했지만 1440px 적용 버튼 하단972.75px가 외부 clip840px 밖이었다. 별도 오래된 restored chunk 오류 기록도 보존하며 sticky 실패를 정상으로 간주하지 않는다."
+      }
+    ],
+    "releaseSnapshot": {
+      "recordedAt": "2026-11-11T17:57:46Z",
+      "lastObservedOriginMain": "933caa71cf57f79d783a7703ccfc60bb93a98e00",
+      "localCheckpoint": "9d641f1c067905ec6921bcb97474ef3ed2026103",
+      "phase4": "followups 작업본의 미커밋 구현·검증 중; 이 PNG에 포함되지 않음",
+      "remotePush": "이 기록 시점에 미실시",
+      "mainIntegration": "이 UX 브랜치의 원격 main 반영 미실시",
+      "operatingDeployment": "미실시; 원격 실행 환경의 기존 Cloudflare 인증 연결 부족"
+    },
+    "limitations": [
+      "Guest-local actual manuscript; external backend unavailable. Canonical-local receipt is not server acknowledgement.",
+      "Preserved existing text/image overlap and accumulated QA content; no original content was cleaned or hidden.",
+      "Earlier failed attempts retained separately. Prior immediate reload partial layer observation did not establish durable loss: read-only preserved copy contained all original elements. Final bounded-readiness run passed."
+    ],
+    "images": [
+      {
+        "file": "after-phase3-editor-reopened-1440.png",
+        "kind": "actual-local-production-preview",
+        "state": "reopened-populated-manuscript",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/editor-final-1440.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+        "capturedAt": "2026-11-11T17:01:05.808Z",
+        "originalFileModifiedAt": "2026-11-11T17:01:05.802077+00:00",
+        "pngWidth": 1440,
+        "pngHeight": 1000,
+        "bytes": 588127,
+        "sha256": "ef6646bedc7b91068b12b1067c3cef1130da97369828a5292eeed0a118dc6f95",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "같은 원고 재접속 후 실제 레이어 8개와 기존 QA 내용을 보존한 데스크톱 화면. 완성 원고용 아트나 전체 편집 UX 완료 화면이 아니다.",
+        "viewportWidth": 1440,
+        "viewportHeight": 1000
+      },
+      {
+        "file": "after-phase3-editor-reopened-390.png",
+        "kind": "actual-local-production-preview",
+        "state": "reopened-populated-manuscript",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/editor-final-390.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+        "capturedAt": "2026-11-11T17:00:55.351Z",
+        "originalFileModifiedAt": "2026-11-11T17:00:55.346185+00:00",
+        "pngWidth": 390,
+        "pngHeight": 844,
+        "bytes": 142028,
+        "sha256": "3200b1d51f707cd5999447fe8c5f5adf18160e55b9bc2fb4299dd11044547533",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "같은 원고 재접속 후 모바일 화면. 온라인 연결 재확인 안내와 기존 텍스트·이미지 겹침을 그대로 보존한다.",
+        "viewportWidth": 390,
+        "viewportHeight": 844
+      },
+      {
+        "file": "after-phase3-editor-reopened-320.png",
+        "kind": "actual-local-production-preview",
+        "state": "reopened-populated-manuscript",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/editor-final-320.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+        "capturedAt": "2026-11-11T17:00:57.900Z",
+        "originalFileModifiedAt": "2026-11-11T17:00:57.894159+00:00",
+        "pngWidth": 320,
+        "pngHeight": 844,
+        "bytes": 116315,
+        "sha256": "170492216dba3c6a1d0b3e5a4197508ea207477798961336419de63ec74cced1",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "같은 원고 재접속 후 320px 화면. 이 캡처는 뒤의 별도 실행에서 발견한 브러시 HUD 탭 가림의 해결 증거가 아니다.",
+        "viewportWidth": 320,
+        "viewportHeight": 844
+      },
+      {
+        "file": "after-phase3-export-png-options-1440.png",
+        "kind": "actual-local-production-preview",
+        "state": "export-png-options",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/export-png-options.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+        "capturedAt": "2026-11-11T17:01:10.217Z",
+        "originalFileModifiedAt": "2026-11-11T17:01:10.214031+00:00",
+        "pngWidth": 1440,
+        "pngHeight": 1000,
+        "bytes": 611085,
+        "sha256": "e0018e19cfe1a6853798af08e5568f60a76f8735d3a05202f82a0dff68db4849",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "PNG 선택과 720×5333px 출력 요약이 보이는 실제 화면. 다운로드 성공은 별도 산출물 해시로 확인한다.",
+        "viewportWidth": 1440,
+        "viewportHeight": 1000
+      },
+      {
+        "file": "after-phase3-actual-current-page.png",
+        "kind": "actual-downloaded-png",
+        "state": "downloaded-current-page",
+        "originalPath": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/actual-current-page.png",
+        "sourceEvidence": ".qa/clarity-20261111/dot-review-after/phase3-offline-2026-11-11T17-00-22-033Z/summary.json",
+        "capturedAt": "2026-11-11T17:01:15.111Z",
+        "originalFileModifiedAt": "2026-11-11T17:01:15.097259+00:00",
+        "pngWidth": 720,
+        "pngHeight": 5333,
+        "bytes": 340021,
+        "sha256": "bf95c728a9f243eb25b1f0baf4ec93d47e85fa3a0b998fd1ab68dfd6a5d3401b",
+        "copyVerifiedByteForByte": true,
+        "visualNote": "실제 현재 페이지 PNG 다운로드 원본. 앱 UI 스크린샷이 아니며 QA 텍스트·이미지 겹침을 보정하지 않았다."
+      }
+    ]
+  }
+}

@@ -1642,7 +1642,6 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
 @media (max-width: 1023.98px), (pointer: coarse) {
   .space-zoom__presets { display: none; }
 }
-
 @media (max-width: 1023.98px) {
   .space-hud { --space-gutter: 10px; }
   .space-hud__slot--top-left { right: calc(var(--space-gutter) + var(--space-safe-right)); max-width: none; }
@@ -1663,6 +1662,8 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   }
   .space-hud[data-handedness="left"] .space-hud__slot--bottom-end { right: auto; left: calc(var(--space-gutter) + var(--space-safe-left)); }
   .space-location { min-height: 48px; padding-right: 10px; }
+  .space-location[data-compact] .space-location__text { min-width: 0; }
+  .space-location[data-compact] .space-location__engine-toggle { min-height: 44px; }
   .space-location[data-compact] .space-location__zone { font-size: 13px; }
   .space-coach { width: 100%; }
   .space-proximity__card { padding: 4px; }
@@ -1688,7 +1689,6 @@ button.space-status-chip { cursor: pointer; padding-right: 14px; font-weight: 70
   .space-proximity__actions .space-icon-button:first-child { display: none; }
   .space-help__row { grid-template-columns: 96px minmax(0, 1fr); }
 }
-
 /* ── 구역 진입 스플래시 ────────────────────────────────────── */
 .space-zone-splash {
   position: absolute;

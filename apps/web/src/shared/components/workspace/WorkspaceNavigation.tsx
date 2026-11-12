@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -105,8 +105,12 @@ function workspaceShortcutActiveId(pathname: string): string | null {
   return SHORTCUT_MATCHERS.find((matcher) => matcher.test(path))?.id ?? null;
 }
 
-export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }: {
+export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, onOpenMenu, menuOpen, menuId, navigationRef }: {
   readonly activeId?: string;
+  readonly onOpenMenu?: (trigger: HTMLButtonElement) => void;
+  readonly menuOpen?: boolean;
+  readonly menuId?: string;
+  readonly navigationRef?: Ref<HTMLElement>;
   readonly context?: WorkspaceNavigationContext;
   readonly studioHref?: string;
   readonly teamHref?: string;
@@ -126,7 +130,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
     : autoSelected;
   return (
     <>
-      <nav className="workspace-nav" aria-label={locale.startsWith("ko") ? "주 메뉴" : "Main navigation"}>
+      <nav ref={navigationRef} className="workspace-nav" data-site-mobile-utilities={onOpenMenu ? "available" : undefined} aria-label={locale.startsWith("ko") ? "주 메뉴" : "Main navigation"}>
         {TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
           const art = PREMIUM_NAV_ART[item.id];
@@ -136,14 +140,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
               ? teamHref ?? workspaceNavigationHref(item.href, navigationContext)
               : workspaceNavigationHref(item.href, navigationContext);
 
-          return (
-            <Link
-              key={item.id}
-              href={href}
-              aria-current={selected === item.id ? "page" : undefined}
-              data-navigation-entry={item.id}
-              title={siteNavigationText(item.description, locale)}
-            >
+          const content = <>
               <span className="workspace-nav-visual" aria-hidden="true">
                 <span className="workspace-nav-visual-art" />
                 {art ? <WorkspaceNavArtImage src={art} /> : null}
@@ -160,7 +157,18 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context }:
                 aria-hidden="true"
               />
               <span>{siteNavigationText(item.label, locale)}</span>
-            </Link>
+          </>;
+          if (item.id === "all-menu" && onOpenMenu) return (
+            <button key={item.id} type="button" data-navigation-entry={item.id}
+              data-site-mobile-menu-trigger="true" data-workspace-menu-trigger="true"
+              aria-haspopup="dialog" aria-expanded={menuOpen ?? false}
+              aria-controls={menuOpen ? menuId : undefined}
+              title={siteNavigationText(item.description, locale)}
+              onClick={(event) => onOpenMenu(event.currentTarget)}>{content}</button>
+          );
+          return (
+            <Link key={item.id} href={href} aria-current={selected === item.id ? "page" : undefined}
+              data-navigation-entry={item.id} title={siteNavigationText(item.description, locale)}>{content}</Link>
           );
         })}
       </nav>

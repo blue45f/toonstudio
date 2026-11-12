@@ -568,8 +568,7 @@ describe("StudioMenubarContent", () => {
     const stableHandlers = { ...createHandlers(), togglePageSequence: vi.fn() };
     render(<StudioMenubarContent {...createProps({ isMobile: true, stableHandlers })} />);
 
-    // 모바일 폭(≤429px) 전체에서 아이콘 전용 44px 로 접힌다 — 359px 경계로는 360~430px 창모드에서
-    // 액션 클러스터가 레인을 넘쳐 게시 버튼이 잘렸다(`verify:studio-mobile-top`).
+    // 모바일 액션은 44px를 유지하며 저장은 아이콘 아래 짧은 캡션으로 구분한다.
     for (const name of ["전체 화면 드로잉", "초안 저장", "게시하기"] as const) {
       const action = screen.getByRole("button", { name });
       expect(action.className).toContain("max-[429px]:size-11");
@@ -577,6 +576,7 @@ describe("StudioMenubarContent", () => {
         span.textContent?.includes(name === "전체 화면 드로잉" ? "전체화면" : name),
       );
       expect(label?.className).toContain("max-[429px]:sr-only");
+      if (name === "초안 저장") expect(within(action).getByText("저장").className).toContain("max-[429px]:block");
     }
 
     expect(screen.getByRole("button", { name: "프로젝트 센터" }).className)
@@ -995,12 +995,14 @@ describe("StudioMenubarContent", () => {
 
   it("takes slot names, the settings dialog, and its hint from the locale pack", async () => {
     useI18n.setState({ lang: "en" });
-    render(<StudioMenubarContent {...createProps()} />);
-
+    const props = createProps();
+    render(<StudioMenubarContent {...props} />);
     expect(screen.getByRole("group", { name: "Quick command bar" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Undo" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Slot 4: Export options" })).toBeTruthy();
-
+    const draft = screen.getByRole("button", { name: "Save draft" });
+    expect(draft.getAttribute("aria-label")).toContain(within(draft).getByText("Save").textContent);
+    fireEvent.click(draft); expect(props.stableHandlers.handleSave).toHaveBeenCalledWith("draft");
     const settings = screen.getByRole("button", { name: "Command bar settings" });
     fireEvent.click(settings);
     expect(
@@ -1121,8 +1123,6 @@ describe("StudioMenubarContent", () => {
     }
   });
 });
-
-
 describe("PSD original-quality import controls", () => {
   afterEach(cleanup);
   it("keeps cancellation available even if document editing permission changes", () => {

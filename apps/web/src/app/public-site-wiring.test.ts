@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { resolveShellChrome, usesFloatingServiceNotice } from "./shell-chrome-policy";
 
 const app = readFileSync(new URL("./App.tsx", import.meta.url), "utf8");
 const compatibilityBridge = readFileSync(new URL("./BrowserCompatibilityBridge.tsx", import.meta.url), "utf8");
@@ -32,9 +33,19 @@ describe("public shell integration", () => {
   });
 
   it("오프라인 작업실 홈에서는 상태 안내를 흐름에 배치해 작업 버튼을 가리지 않는다", () => {
-    expect(shell).toMatch(
-      /<ServiceDegradedBanner immersive=\{\s*isStudioWorkspaceRoutePathname\(pathname\)\s*\|\|\s*\(immersiveVirtualExperience && normalizedPath !== "\/home"\)\s*\} \/>/u
-    );
+    expect(shell).toContain("<ServiceDegradedBanner immersive={usesFloatingServiceNotice(normalizedPath, shellChrome, {");
+    expect(shell).toContain('focusedTask: taskRoute?.chrome === "focused"');
+    const home = resolveShellChrome({ pathname: "/home", normalizedPath: "/home", hasTaskRoute: false, protectedCampus: false });
+    const offline = resolveShellChrome({ pathname: "/offline", normalizedPath: "/offline", hasTaskRoute: false, protectedCampus: true });
+    expect(usesFloatingServiceNotice("/home", home)).toBe(false);
+    expect(usesFloatingServiceNotice("/offline", offline)).toBe(false);
+  });
+
+  it("창작 활용 안내는 현재 페이지의 본문 작업 뒤에서 선택해 연다", () => {
+    expect(shell.match(/<SiteCreationCompass\s*\/>/gu)).toHaveLength(1);
+    expect(shell.indexOf("<AppRouter />")).toBeLessThan(shell.indexOf("<SiteCreationCompass />"));
+    expect(shell.indexOf("<SiteCreationCompass />")).toBeLessThan(shell.indexOf("</main>"));
+    expect(shell).toContain("{enhancedSite ? <SiteConnectionNotice /> : null}");
   });
 
   it("retains a single lifecycle-preserving owner for history and late fragments", () => {

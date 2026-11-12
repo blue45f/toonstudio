@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Eye, Layers, Lock, Pencil, RotateCcw } from "lucide-react";
+import { ArrowRight, ChevronDown, Eye, Layers, Lock, Pencil, RotateCcw } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -28,13 +28,14 @@ type CardState =
   | { readonly kind: "error" };
 
 /**
- * 라이브러리 상단: 완성 샘플 원고를 구조 그대로 여는 연습 표면.
+ * 완성 샘플 원고를 구조 그대로 여는 연습 표면.
+ * compact 표시는 목록 뒤에서 안내를 접되 원본·사본 상태와 실패 안내를 유지한다.
  *
  * 원본은 "뜯어보기" 전용 기준본으로 시딩만 하고, 실제 그리기는 연습 사본에서만
  * 일어난다. 따라 그리기 사본은 원본을 흐리게 잠가 깔아 두므로, 사본에서 무엇을
  * 해도 원본 원고는 바뀌지 않는다.
  */
-export function StudioSampleManuscriptCard() {
+export function StudioSampleManuscriptCard({ compact = false }: { readonly compact?: boolean } = {}) {
   const bt = useBilingual("StudioSampleManuscriptCard");
   const [state, setState] = useState<CardState>({ kind: "loading" });
   const [copyError, setCopyError] = useState(false);
@@ -54,10 +55,10 @@ export function StudioSampleManuscriptCard() {
         return;
       }
       setState({ kind: "ready", copy: findSampleManuscriptPracticeCopy(window.localStorage) });
-      // 원본 샘플 초안도 편집기가 복구할 수 있는 내구 저장소에 심는다(첫 시딩이면 미리보기가 읽도록 한 번 더 표시).
+      // 세션 지연으로 metadata가 먼저 생겼어도 실제 내구 쓰기 완료 뒤 미리보기를 갱신한다.
       if (ownerReady) {
         void persist(result.autosave).then((outcome) => {
-          if (outcome !== "written" || result.status !== "seeded") return;
+          if (outcome !== "written") return;
           markStudioProjectOpened(window.localStorage, SAMPLE_PROJECT_ID, result.documentId, {
             at: new Date().toISOString(),
             target: window,
@@ -135,7 +136,7 @@ export function StudioSampleManuscriptCard() {
         </p>
         <button
           type="button"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
+          className="mt-3 inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
           onClick={() => { setState({ kind: "loading" }); setAttempt((value) => value + 1); }}
         >
           <RotateCcw size={13} aria-hidden="true" />
@@ -161,7 +162,7 @@ export function StudioSampleManuscriptCard() {
         </p>
         <button
           type="button"
-          className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
+          className="mt-2 inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-fg"
           onClick={() => {
             try {
               restoreStudioProject(window.localStorage, SAMPLE_PROJECT_ID, { target: window });
@@ -180,12 +181,7 @@ export function StudioSampleManuscriptCard() {
 
   const { copy } = state;
 
-  return (
-    <section
-      className="mt-6 rounded-3xl border border-line bg-card px-5 py-6"
-      aria-labelledby="sample-manuscript-card-title"
-      data-sample-manuscript-card="ready"
-    >
+  const content = (<>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="inline-flex items-center gap-1.5 text-[0.68rem] font-black uppercase tracking-widest text-fg-3">
@@ -205,7 +201,7 @@ export function StudioSampleManuscriptCard() {
         </div>
         <Link
           href={SAMPLE_EDITOR_HREF}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-black text-fg"
+          className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-black text-fg"
         >
           <Eye size={15} aria-hidden="true" />
           {bt("원본 열기 · 구조 보기", "Open original · view structure")}
@@ -229,7 +225,7 @@ export function StudioSampleManuscriptCard() {
         {copy ? (
           <Link
             href={copy.editorHref}
-            className="inline-flex items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
+            className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
           >
             {copy.mode === "trace"
               ? bt("연습 사본 이어서 따라 그리기", "Keep tracing in your practice copy")
@@ -240,7 +236,7 @@ export function StudioSampleManuscriptCard() {
           <>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
+              className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-fg px-4 py-2 text-sm font-black text-bg"
               onClick={() => createCopy("trace")}
             >
               <Pencil size={15} aria-hidden="true" />
@@ -248,7 +244,7 @@ export function StudioSampleManuscriptCard() {
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-black text-fg"
+              className="inline-flex min-h-12 items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm font-black text-fg"
               onClick={() => createCopy("study")}
             >
               {bt("구조 복습 사본 만들기", "Make a structure study copy")}
@@ -261,6 +257,24 @@ export function StudioSampleManuscriptCard() {
         </span>
       </div>
 
+
+  </>);
+
+  return (
+    <section
+      className={compact ? "mt-3 rounded-2xl border border-line bg-card px-4 py-2" : "mt-6 rounded-3xl border border-line bg-card px-5 py-6"}
+      aria-labelledby={compact ? undefined : "sample-manuscript-card-title"}
+      data-sample-manuscript-card="ready"
+    >
+      {compact ? (
+        <details className="group" data-studio-library-learning="manuscript">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-xl text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0 flex-1">{bt("완성 원고로 따라 그리기", "Learn from a finished manuscript")}</span>
+            <ChevronDown size={16} aria-hidden="true" className="shrink-0 group-open:rotate-180" />
+          </summary>
+          <div className="pb-3 pt-2">{content}</div>
+        </details>
+      ) : content}
       {copyError ? (
         <p role="alert" className="mt-3 text-xs font-bold text-warning">
           {bt("연습 사본을 만들지 못했습니다. 브라우저 저장 공간을 확인해 주세요.", "The practice copy couldn't be created. Check your browser storage.")}

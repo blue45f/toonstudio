@@ -13,7 +13,7 @@
 |---|---|---|
 | SPA·정적 카탈로그·일반 에셋 | Cloudflare Static Assets | 정적 요청은 Worker 실행량을 사용하지 않는다. |
 | 동적 경로 게이트웨이·edge liveness | Cloudflare Worker | `/api/health/live`는 Worker가 직접 응답하므로 Core API 생존 증거가 아니다. |
-| 대형 불변 파일 | 압축 Static Assets + R2 | Range 요청만 R2 원본을 사용한다. |
+| 대형 불변 파일 | 압축 Static Assets + R2 | 등록된 대형 에셋·이관 미디어의 일반 GET·HEAD·Range 요청은 R2 원본에서 제공한다. |
 | Core API | onpod `toonstudio-api`(서울) | `API_RUNTIME_ROLE=full`, GHCR 이미지 지정 수동 교체(`onpod app update --image`). 상시 승인 범위 밖이라 별도 명시 승인이 필요하다. |
 | 임시 실시간 조정 | Cloudflare Durable Objects | presence·cursor·comment·signaling. |
 | PostgreSQL 원장 | onpod `toonstudio-db`(서울; 과거 Supabase 미사용·과거 Neon 삭제) | migration은 단일 쓰기 경계로 검토한다. 정본은 [`canonical-database-topology.md`](./canonical-database-topology.md)의 컷오버 기록과 [인프라 지도](./infrastructure-map.md). |

@@ -40,7 +40,7 @@ describe("recovered marketplace integrity", () => {
       containsAi: false,
     };
     const { container } = detail(record);
-    const rights = screen.getByRole("region", { name: "게시 manifest 기반 권리·호환성 확인" });
+    const rights = screen.getByRole("region", { name: "이용 조건과 호환성" });
     expect(rights.textContent).toContain("CC BY-NC");
     expect(rights.textContent).toContain("AI 사용 미포함으로 공개");
     expect(container.textContent).not.toContain("상업용 웹툰 정식 연재 100% 허용");
