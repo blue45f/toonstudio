@@ -5,7 +5,7 @@
   min-width: 0;
   gap: 1.125rem;
   align-items: start;
-  padding: 1.25rem;
+  padding: 1rem;
   border: 1px solid color-mix(in oklch, var(--color-accent) 26%, var(--color-line));
   border-radius: 1.5rem;
   background: linear-gradient(
@@ -84,12 +84,13 @@
   }
 }
 
-/* 시안의 다섯 트랙을 한 줄로 유지하되 44px 터치 영역과 상세 목적지는 보존한다. */
+/* 긴 연재 방식 이름을 줄이지 않고 옆으로 탐색한다. */
 .discover-hub-track-tabs {
-  display: grid;
-  grid-template-columns: minmax(44px, 1fr) minmax(68px, 1.4fr) minmax(48px, 1.2fr) minmax(44px, 1fr) minmax(44px, 1fr);
-  gap: .25rem;
+  display: flex;
+  gap: .5rem;
   min-width: 0;
+  overflow-x: auto;
+  padding: .25rem;
 }
 /* 공통 오류 화면을 바꾸지 않고 탐색 오류만 작은 가로 안내로 표시한다. */
 .discover-hub-error {
@@ -114,12 +115,66 @@
   margin-top: .75rem;
 }
 .discover-hub-track-tabs > button {
-  padding-inline: .125rem;
-  font-size: .625rem;
+  flex: 0 0 auto;
+  min-width: 5rem;
+  min-height: 3rem;
+  padding-inline: .75rem;
+  font-size: .875rem;
   white-space: nowrap;
 }
-@media (min-width: 640px) {
-  .discover-hub-track-tabs > button {
-    font-size: .75rem;
-  }
+.discover-hub-quick-genres a,
+.discover-hub-catalog a,
+.discover-hub-catalog > summary {
+  min-height: 3rem;
+  font-size: .875rem;
+}
+.discover-hub-catalog {
+  margin-top: .5rem;
+  color: var(--color-fg-2);
+}
+.discover-hub-catalog > summary {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+}
+.discover-hub-catalog > summary::after {
+  content: "+";
+  color: var(--color-accent);
+  font-size: 1.125rem;
+}
+.discover-hub-catalog[open] > summary::after { content: "−"; }
+.discover-hub-catalog > summary::-webkit-details-marker { display: none; }
+.discover-hub-catalog > summary:focus-visible,
+.discover-hub-method:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.discover-hub-catalog .discover-hub-snapshot { margin-top: .25rem; }
+.discover-hub-track-disclosure .discover-hub-tracks {
+  margin-top: 0;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.discover-hub-methods {
+  display: grid;
+  gap: .75rem;
+}
+.discover-hub-method {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 5rem;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: var(--color-card);
+}
+.discover-hub-method:hover { border-color: var(--color-accent); }
+@media (min-width: 768px) {
+  .discover-hub-methods { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

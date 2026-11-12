@@ -187,15 +187,15 @@ describe("검색 페이지 결과 우선 배치", () => {
 
   it("native anchor와 초점 가능한 검색 목적지를 유지한다", () => {
     page();
-    expect(screen.getByRole("link", { name: "search.filterButton" }).getAttribute("href")).toBe("#toonstudio-search-explorer-top");
+    expect(screen.getByRole("link", { name: /검색·조건으로 이동|Jump to search and filters/ }).getAttribute("href")).toBe("#toonstudio-search-explorer-top");
     const destination = document.getElementById("toonstudio-search-explorer-top");
     expect(destination?.getAttribute("tabindex")).toBe("-1");
     expect(destination?.closest("details")).toBeNull();
   });
 
-  it("검색 전용 CSS에 44px 목표와 반응형 최소 폭을 두고 동작 애니메이션을 추가하지 않는다", () => {
+  it("검색 전용 CSS에 48px 목표와 반응형 최소 폭을 두고 동작 애니메이션을 추가하지 않는다", () => {
     const css = readFileSync(resolve(import.meta.dirname, "search-page-layout.css"), "utf8");
-    expect(css).toContain("min-height: 2.75rem");
+    expect(css).toContain("min-height: 3rem");
     expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
     expect(css).toContain("grid-template-columns: 16rem minmax(0, 1fr)");
     expect(css).toContain(":focus-visible");

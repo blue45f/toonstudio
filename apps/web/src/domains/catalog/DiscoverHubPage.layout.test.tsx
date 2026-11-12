@@ -45,6 +45,7 @@ describe("탐색 허브 작품 우선 배치", () => {
     const hero = container.querySelector(".discover-hub-hero");
     expect(hero?.getAttribute("data-has-spotlight")).toBe(hasSpotlight);
     const search = screen.getByRole("search");
+    fireEvent.click(screen.getByText("카탈로그 출처와 집계"));
     const summary = screen.getByRole("group", { name: "공개 카탈로그 요약" });
     expect(search.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(hero?.contains(search)).toBe(true);
@@ -68,6 +69,7 @@ describe("탐색 허브 작품 우선 배치", () => {
     page();
     const retry = await screen.findByRole("button", { name: "추천 재시도" });
     expect(screen.getByRole("search").compareDocumentPosition(retry) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByText("연재 방식으로 찾기"));
     expect(retry.compareDocumentPosition(screen.getByRole("tablist")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(retry);
     expect(resource.reload).toHaveBeenCalledTimes(1);
@@ -90,6 +92,7 @@ describe("탐색 허브 작품 우선 배치", () => {
     view.rerender(<MemoryRouter><DiscoverHubPage /></MemoryRouter>);
     expect(screen.queryByTestId("spotlight")).toBeNull();
     expect(screen.getByText("60,229")).toBeTruthy();
+    fireEvent.click(screen.getByText("카탈로그 출처와 집계"));
     expect(screen.getByRole("link", { name: "데이터 출처" }).getAttribute("href")).toBe("/about/data");
     expect(screen.getByRole("group", { name: "공개 카탈로그 요약" }).textContent).toContain("2026");
   });
@@ -97,7 +100,7 @@ describe("탐색 허브 작품 우선 배치", () => {
     const { container } = page();
     const tools = screen.getByText("더 많은 탐색 도구").closest("details");
     expect(tools?.open).toBe(false);
-    for (const route of ["/search", "/explore", "/recommend", "/ranking", "/calendar", "/random", "/compare", "/library", "/cuts", "/character-chat", "/community", "/research", "/explore?status=ongoing&sort=popular", "/explore?status=completed&sort=binge", "/explore?minRating=4.5&sort=rating"]) {
+    for (const route of ["/search", "/explore", "/recommend", "/ranking", "/calendar", "/random", "/compare", "/library", "/cuts", "/character-chat", "/community", "/research", "/create", "/explore?status=ongoing&sort=popular", "/explore?status=completed&sort=binge", "/explore?minRating=4.5&sort=rating"]) {
       expect(Array.from(container.querySelectorAll("a")).some((a) => a.getAttribute("href") === route)).toBe(true);
     }
     expect(screen.getByRole("link", { name: /조건으로 탐색/ }).closest("details")).toBeNull();
@@ -113,17 +116,19 @@ describe("탐색 허브 작품 우선 배치", () => {
     expect(allGenres.closest("li")?.classList.contains("discover-hub-quick-genre")).toBe(false);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "달" } });
     const clear = screen.getByRole("button", { name: "검색어 지우기" });
-    expect(clear.className).toContain("size-11");
+    expect(clear.className).toContain("size-12");
     fireEvent.click(clear);
     expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("");
   });
   it("연재 트랙 키보드와 원본 목적지를 유지한다", () => {
     page();
+    fireEvent.click(screen.getByText("연재 방식으로 찾기"));
     const tabs = screen.getAllByRole("tab");
     expect(tabs[0].tabIndex).toBe(0);
     expect(screen.getByRole("tablist").className).toBe("discover-hub-track-tabs");
-    expect(tabs.map((tab) => tab.textContent)).toEqual(["전체", "ORIGINALS", "CANVAS", "WUF", "CUTS"]);
-    expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual(DISCOVER_SERIALIZATION_TRACKS.map((track) => track.label));
+    expect(tabs.map((tab) => tab.textContent)).toEqual(["전체", "정기 연재", "자유 연재", "기다리면 무료", "짧은 영상"]);
+    expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual(DISCOVER_SERIALIZATION_TRACKS.map((track) => expect.stringContaining(track.label)));
+    for (const tab of tabs) expect(tab.getAttribute("aria-label")).toContain(tab.textContent);
     fireEvent.keyDown(tabs[0], { key: "End" });
     expect(tabs[tabs.length - 1].getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(tabs[tabs.length - 1]);
@@ -134,6 +139,32 @@ describe("탐색 허브 작품 우선 배치", () => {
       expect(panel.getAttribute("aria-labelledby")).toBe(tabs[index].id);
     }
   });
+  it("검색·조건은 바로 보이고 보조 정보를 펼쳐도 입력과 초점을 빼앗지 않는다", () => {
+    page();
+    expect(screen.queryByTestId("discover-facet-tab-strip")).toBeNull();
+    const create = document.querySelector('a[href="/create"]');
+    expect(create?.closest("details")?.open).toBe(false);
+    const field = screen.getByRole("searchbox") as HTMLInputElement;
+    expect(field.closest("details")).toBeNull();
+    expect(screen.getByRole("link", { name: "전체 장르" }).closest("details")).toBeNull();
+    fireEvent.change(field, { target: { value: "작성 중인 검색어" } });
+    for (const label of ["카탈로그 출처와 집계", "연재 방식으로 찾기"]) {
+      const summary = screen.getByText(label).closest("summary");
+      const details = summary?.closest("details");
+      expect(details?.open).toBe(false);
+      expect(summary).not.toBeNull();
+      if (!summary || !details) throw new Error("보조 정보 접기가 없습니다.");
+      summary.focus();
+      fireEvent.click(summary);
+      expect(details.open).toBe(true);
+      fireEvent.click(summary);
+      expect(details.open).toBe(false);
+      expect(document.activeElement).toBe(summary);
+      expect(screen.getByRole("searchbox")).toBe(field);
+      expect(field.value).toBe("작성 중인 검색어");
+    }
+  });
+
   it("기억 찾기는 최초로 펼칠 때만 렌더한다", async () => {
     page();
     expect(resource.memory).not.toHaveBeenCalled();

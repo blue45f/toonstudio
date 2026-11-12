@@ -17,7 +17,7 @@
 .search-page-mode {
   display: flex;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: center;
   gap: .5rem;
@@ -52,7 +52,7 @@
   display: flex;
   flex-wrap: wrap;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: 3rem;
   align-items: center;
   justify-content: space-between;
   gap: .5rem .75rem;
@@ -70,6 +70,15 @@
 
 /* min-content 너비를 제한하되 접근 가능한 컨트롤을 잘라내지 않는다. */
 .search-page-results { min-width: 0; }
+.search-page-results [data-search-query-field] input {
+  min-height: 3rem;
+  font-size: 1rem;
+}
+.search-page-results button {
+  min-height: 3rem;
+  min-width: 3rem;
+}
+.search-page-heading > a { min-height: 3rem; }
 .search-page-results > section {
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
@@ -88,7 +97,7 @@
 /* 시안의 네 가지 유형 이동을 세부 검색 목록과 분리한다. */
 .search-other-types { min-width: 0; margin-top: 1.5rem; border-top: 1px solid var(--color-line); padding-top: 1rem; }
 .search-other-types-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .75rem; }
-.search-other-types-link { display: flex; min-width: 0; min-height: 2.75rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .8125rem; font-weight: 600; }
+.search-other-types-link { display: flex; min-width: 0; min-height: 3rem; align-items: center; gap: .5rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .75rem; background: var(--color-card); color: var(--color-fg); font-size: .875rem; font-weight: 600; }
 .search-other-types-link svg { flex-shrink: 0; color: var(--color-accent); }
 .search-other-types-link svg:last-child { margin-left: auto; }
 .search-other-types-link:hover { border-color: var(--color-accent); }

@@ -114,7 +114,7 @@ describe("DiscoverHubPage", () => {
     renderPage();
 
     expect(resource.read).toHaveBeenCalledWith("/data/home.json", expect.any(String));
-    expect(screen.getByRole("heading", { level: 1, name: "새로운 이야기를 발견하세요" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "다음 이야기를 찾아요" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "오늘 업데이트되는 웹툰" }, { timeout: 4000 })).toBeTruthy();
     expect(within(screen.getByRole("list", { name: "평점 랭킹 상위 작품" })).getByRole("link", { name: "작품-rated" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /무료 작품 더 보기/ }).getAttribute("href")).toBe("/search?pricing=free,wait-free");
@@ -231,6 +231,7 @@ describe("DiscoverHubPage", () => {
     ]) {
       expect(presets.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
     }
+    fireEvent.click(screen.getByText("카탈로그 출처와 집계"));
     expect(screen.getByRole("link", { name: "데이터 출처" }).getAttribute("href")).toBe("/about/data");
   });
 
@@ -257,6 +258,7 @@ describe("DiscoverHubPage", () => {
     mockResource({ data: snapshot(currentKstWeekDay()) });
     renderPage();
 
+    fireEvent.click(screen.getByText("연재 방식으로 찾기"));
     const switcher = screen.getByTestId("discover-serialization-track-switcher");
     const canvasTab = within(switcher).getByRole("tab", {
       name: /오픈 연재 \(CANVAS · 베스트도전\)/u,
