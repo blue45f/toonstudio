@@ -1,0 +1,292 @@
+{
+  "status": "migration-selected-assets-archived",
+  "generatedAt": "2026-11-12T06:41:23.470223+00:00",
+  "intendedRepositoryDirectory": "docs/design/sitewide-clarity-20261111/reconstruction-20261112",
+  "baseline": {
+    "gitSha": "57bee8c191e2f87f17c3c9687cee16a0197fd15a",
+    "buildId": "aead678b8310",
+    "entry": "/assets/index-D5Xt6yn8.js",
+    "entrySha256": "d6a20229851ba4fcb0b4c4693033c78699376804fe80a379cbfcd631479d5aca",
+    "productionBuildAndLocalByteGatePassed": true,
+    "productionDeploymentVerified": false
+  },
+  "assets": [
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/creation-mobile-board.png",
+      "archive": "assets/creation-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "creation",
+      "sha256": "10c6b45deb48ca914ab0e76bfb8078005c4869dd1751cc641c4e84dab94a0530",
+      "bytes": 476680,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/reading-mobile-board.png",
+      "archive": "assets/reading-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "reading",
+      "sha256": "7797b74233042db7d38fb4a5a20922b49f6d9fee7e5aad3ef96e89b256bc5671",
+      "bytes": 346498,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/resources-mobile-board.png",
+      "archive": "assets/resources-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "resources",
+      "sha256": "72d88295980eeca0b8d297f421d367e26ad623b84c124187bf13d5b905020393",
+      "bytes": 359737,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/operations-mobile-board.png",
+      "archive": "assets/operations-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "operations",
+      "sha256": "03bc5a021d729e39588e9cc7bea4a9e55bebc180452e2fe293cd0f92ae93e8ba",
+      "bytes": 347157,
+      "width": 1440,
+      "height": 2208,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/full-reconstruction-20261112/final-boards/support-mobile-board.png",
+      "archive": "assets/support-mobile-board.png",
+      "kind": "static-proposal-board",
+      "group": "support",
+      "sha256": "579e5cedbd9a4dd39e28b6140cf0e74650c04f8edc84fc82384e0d06a5e9a6b6",
+      "bytes": 618930,
+      "width": 1440,
+      "height": 2174,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/proposal-first-save-390.png",
+      "archive": "assets/proposal-first-save-390.png",
+      "kind": "static-proposal",
+      "sha256": "2cea6d8e8ee5a0ef263b59625b755e6320a9e24ceabb405d6f479ba658d4aa31",
+      "bytes": 54759,
+      "width": 390,
+      "height": 844,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": null,
+      "newImplementationAfterCaptureAvailable": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/proposal-first-save-1440.png",
+      "archive": "assets/proposal-first-save-1440.png",
+      "kind": "static-proposal",
+      "sha256": "08a61a7ca026b3178d3ca2dcab9183a63f25b2fd0ad05683a47c6690d1d24a03",
+      "bytes": 78724,
+      "width": 1440,
+      "height": 1000,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": null,
+      "newImplementationAfterCaptureAvailable": false
+    },
+    {
+      "source": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/actual-versus-proposal-first-save-390.png",
+      "archive": "assets/actual-versus-proposal-first-save-390.png",
+      "kind": "actual-and-static-proposal-comparison",
+      "sha256": "ca96514ee29c4f42279116e0b9933fa39b7abd97306b33d8007a47627927507f",
+      "bytes": 197686,
+      "width": 852,
+      "height": 1010,
+      "sourceHashVerified": true,
+      "userFileShareAccessConfirmed": true,
+      "previousDirectVisualReview": true,
+      "newVisualReviewPerformedForThisStaging": false,
+      "actualImplementationCapture": false,
+      "actualLeftOriginalBuild": "57bee8c191e2f87f17c3c9687cee16a0197fd15a",
+      "newImplementationAfterCaptureAvailable": false
+    }
+  ],
+  "selectedCount": 8,
+  "selectedBytes": 2480171,
+  "copyStatus": "metadata only; parent must materialize these8PNGs before publishing linked README",
+  "excludedFromArchive": [
+    "all1323per-routePNGs",
+    "privateLibrary/PageopaqueIDs",
+    "largeZIPpackages",
+    "profiles and raw API bodies"
+  ],
+  "webProposalCoverage": {
+    "addressLedger": 441,
+    "staticPngs": 1323,
+    "viewports": [
+      390,
+      768,
+      1440
+    ],
+    "aliasAddresses": 49,
+    "dynamicExamples": 92,
+    "attributesOverlap": true,
+    "reusedLayoutCount": 13,
+    "layouts": [
+      "canvas",
+      "catalog",
+      "dashboard",
+      "detail",
+      "document",
+      "form",
+      "landing",
+      "reader",
+      "scene",
+      "status",
+      "table",
+      "timeline",
+      "wizard"
+    ],
+    "independentUsabilitySuccessCount": null,
+    "routeTemplatesAreImplementedRoutes": false,
+    "companionNavigatorCorrectionConditions": 3
+  },
+  "additionalProposalCoverage": {
+    "total": 29,
+    "systemApps": 10,
+    "dccModes": 6,
+    "experimental": 13,
+    "viewports": [
+      390,
+      768,
+      1440
+    ],
+    "staticPngs": 87,
+    "implemented": false,
+    "experimentalShipping": false
+  },
+  "geminiDesignation": {
+    "meaning": "사용자가 Gemini 원본으로 지정한5SVG; 기존 접근/XML 확인 기록 재사용",
+    "sources": [
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-a-b-home-and-studio-lobby.svg",
+        "sha256": "be82464a4e61a9f51cd970b84973b9538e94cea5569ff9cf6fbaa8dd1268a4fe"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-b-c-editor-2d-and-3d-live-ink.svg",
+        "sha256": "3c240e24c75f8e6a7219e6c39e6adcff0cb7c7dab5645daf9de8ef74e9869825"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-e-n-discover-spectrum-and-reader.svg",
+        "sha256": "1df6b84b5f537c1a430e804bf8707927142cf44bf68717b63ae60d378ef39f5d"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-g-h-i-k-p-ecosystem-hubs.svg",
+        "sha256": "c2e79d8e8254f39239e427649bc0e5a5fe87e446a62d70111d9bea16779697a1"
+      },
+      {
+        "source": "docs/design/starlight-atelier-v2-mockups-2026-11-11/boards/board-m1-m4-mobile-starlight-suite.svg",
+        "sha256": "22b2fb1a2a94decc25a58da45616ce64b5435c206d9b0b9ea6eec22099b0fcd3"
+      }
+    ],
+    "independentGenerationToolLogsVerified": false,
+    "newVisualReviewPerformedForThisStaging": false
+  },
+  "competitorMethod": {
+    "reaMcpExecutedInThisFollowup": false,
+    "historicalOfficialSites": 3,
+    "reference": "docs/design/sitewide-clarity-20261111/competitor-rea.md",
+    "reuse": "기존 REA CLI/CDP·공개 JS·공식 자료; 신규 전체 경쟁사 분석 아님"
+  },
+  "evidence": [
+    {
+      "location": ".qa/full-reconstruction-20261112/packages/manifest.json",
+      "sha256": "da327047e84f5f2b4d9123a6cfeabf834e7a9e5f35baa01cf4c295bb1aa2aa34",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/final-image-index.json",
+      "sha256": "e77286a2ae444fcfb64282efd50de4ce039474bf94f68ef77f637577d416fb3d",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/final-boards/manifest.json",
+      "sha256": "e3ffcecb8653d0e7380d183914eee96253c2cf55e74b3556679ad5c6ae90f966",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/extras-render/canvas-frame-v2/packages.json",
+      "sha256": "252eb8dd2fb49cca3b5e5d618240eeed70c2536f8f91e18bf5a4da036cc4e075",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/full-reconstruction-20261112/extras-render/canvas-frame-v2/correction-index.json",
+      "sha256": "63d74277718e37bbdc97cdc16c810191d138fb15586828e4c347f3e100dbe0b7",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/first-save-dialog-proposal/renders/2026-11-12T06-07-14-363Z-nKdvJ2/manifest.json",
+      "sha256": "970d903aece133fb6a01d632a384b6aae22d11df9d40cd53798a2697fbda3bbf",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/mobile-first-implementation-20261112/budget-fix-record.json",
+      "sha256": "f5162db7bde00d4518fb5b6c02793685dff0676eb3d3206f7bca7dd199385aaa",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": ".qa/mobile-first-implementation-20261112/retry-1/preview-gate.json",
+      "sha256": "74da262c0014e9d581f9cd2974a35e8830d2e2d36033897efeb3dc7860401bb1",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/mobile-first-reading-followups/handoff-resumed.json",
+      "sha256": "2e53567aa992d939042cb257aa7262a606e118ec12efc9a94089a948a3b8210a",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/learn-mobile-first/post-browser-fix-57bee/handoff.json",
+      "sha256": "5a27fa105dbdd98d9154b0ba386f5a58d134c946c4ef19f7dec1ac82deb5da6b",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    },
+    {
+      "location": "sideworktree:.qa/first-save-dialog-implementation/handoff.json",
+      "sha256": "a1e0d66bcee957b847364d6ac24b593c052994ff442b6ae472b1774d5b187d42",
+      "purpose": "기존 근거 재사용; 새 렌더·실행 아님"
+    }
+  ],
+  "pending": [
+    "후속 새 번들의 동일 상태 시안·실제 이미지 비교",
+    "후속 소스 통합·정확 SHA의 타입/빌드·실제 after 검증",
+    "원격main/CI·운영배포 및 실제 해당프런트 SHA 확인"
+  ],
+  "privacy": {
+    "libraryReferencesIncluded": false,
+    "pageIdsIncluded": false,
+    "secretsIncluded": false
+  }
+}

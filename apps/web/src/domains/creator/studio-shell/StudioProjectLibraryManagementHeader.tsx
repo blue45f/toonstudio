@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, ChevronDown, Plus, RotateCcw, Search, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -37,24 +37,42 @@ export function StudioProjectLibraryManagementHeader({
   const recentResumeTarget = recentProject ? projectResumeTarget(recentProject) : null;
   const entryActions = (
     <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
-          <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"}
-            data-studio-library-primary-action={recentProject ? undefined : "new"}
-            className={buttonClass({ variant: recentProject ? "outline" : "solid", className: "min-h-12 min-w-0 gap-2 whitespace-normal rounded-xl px-4" })}>
-            <Plus size={16} aria-hidden="true" />
-            {bi("새 작업", "New work")}
-          </Link>
-          <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-4" })}>
-            {bi("파일 가져오기", "Import files")}
-          </Link>
-
-          {view === "active" && !hasSearchQuery ? <details className="studio-library-alternative-starts group rounded-xl border border-line bg-card" data-studio-other-starts="true">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-              {bi("다른 작업 시작", "Start something else")}
-              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
-            </summary>
-            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
-          </details> : null}
-        </div>
+      <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"}
+        data-studio-library-primary-action={recentProject ? undefined : "new"}
+        className={buttonClass({ variant: recentProject ? "outline" : "solid", className: "min-h-12 min-w-0 gap-2 whitespace-normal rounded-xl px-4" })}>
+        <Plus size={16} aria-hidden="true" />
+        {bi("새 작업", "New work")}
+      </Link>
+      <Link href="/studio/import" className={buttonClass({ variant: "quiet", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-3 text-fg-2" })}>
+        {bi("파일 가져오기", "Import files")}
+      </Link>
+    </div>
+  );
+  const selectionTools = (
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="text-xs font-semibold text-fg-3">
+        <span className="sr-only">{bi("정렬", "Sort")}</span>
+        <select
+          value={sort}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => setSort(event.target.value as StudioProjectLibrarySortMode)}
+          className="min-h-[44px] rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg outline-none focus:border-accent"
+        >
+          <option value="recent">{bi("최근 작업순", "Recently opened")}</option>
+          <option value="name">{bi("이름순", "Name")}</option>
+          <option value="created">{bi("최근 생성순", "Recently created")}</option>
+        </select>
+      </label>
+      <button
+        type="button"
+        disabled={visibleProjects.length === 0}
+        onClick={toggleVisibleSelection}
+        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px]" })}
+      >
+        {allVisibleSelected
+          ? bi("선택 해제", "Clear selection")
+          : formatI18nTemplate(String(bi("전체 선택 ({value0})", "Select all ({value0})")), { value0: visibleProjects.length })}
+      </button>
+    </div>
   );
   return (
     <section
@@ -69,63 +87,35 @@ export function StudioProjectLibraryManagementHeader({
           <h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
-          <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-fg-2 sm:block sm:text-base">
-            {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
-          </p>
-          <p className="mt-1 text-xs text-fg-2 sm:hidden">
-            {bi("작업을 이어 하고 저장 상태를 확인하세요.", "Continue your work and check its save status.")}
+          <p className="mt-1 text-sm leading-5 text-fg-2">
+            {view === "active" && !hasSearchQuery && !recentProject
+              ? listedProjects.length > 0
+                ? bi("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.", "You have no personal work yet. Try an example below.")
+                : bi("새 작업을 시작하거나 원고 파일을 가져오세요.", "Start new work or import a manuscript file.")
+              : view === "active"
+                ? bi("작업을 이어 하거나 목록에서 원고를 찾으세요.", "Continue your work or find a manuscript below.")
+                : bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
           </p>
         </div>
       </header>
 
-      {!recentProject ? entryActions : null}
-
-      {view === "active" && !hasSearchQuery ? (
-        <div
-          data-studio-atelier-bento="true"
-          className={cn("mt-4 grid gap-3.5", !recentProject && "lg:grid-cols-12")}
-        >
-          {recentProject && recentResumeTarget ? (
-            <StudioProjectLibraryResumeCard
-              project={recentProject}
-              profile={profiles.profileFor(recentProject.id)}
-              authUserId={authUserId}
-              locale={_locale}
-              resumeHref={recentResumeTarget.href}
-              overviewHref={projectOverviewHref(recentProject)}
-              onResume={() => { library.touch(recentProject.id, recentResumeTarget.documentId); }}
-            />
-          ) : (
-            <div className="studio-library-first-work lg:col-span-5">
-              <div className="space-y-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2.5 py-1 text-[0.65rem] font-black text-accent">
-                  <Sparkles size={12} aria-hidden="true" />
-                  {bi("첫 작품 시작", "Start your first work")}
-                </span>
-                <p className="text-base font-black text-fg sm:text-lg">
-                  {bi("만들고 싶은 작업을 선택하세요", "Choose what you want to make")}
-                </p>
-                <p className="text-xs leading-5 text-fg-2">
-                  {bi("웹툰·4컷 만화를 시작하거나 작업 중인 파일을 불러올 수 있어요.", "Start a webtoon or comic, or import a file you are working on.")}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
-                <Link
-                  href="/studio/recovery"
-                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 text-xs font-bold" })}
-                >
-                  {bi("작업 복구", "Recover work")}
-                </Link>
-              </div>
-            </div>
-          )}
-
+      {recentProject && recentResumeTarget ? (
+        <div className="mt-3">
+          <StudioProjectLibraryResumeCard
+            project={recentProject}
+            profile={profiles.profileFor(recentProject.id)}
+            authUserId={authUserId}
+            locale={_locale}
+            resumeHref={recentResumeTarget.href}
+            overviewHref={projectOverviewHref(recentProject)}
+            onResume={() => { library.touch(recentProject.id, recentResumeTarget.documentId); }}
+          />
         </div>
       ) : null}
 
-      {recentProject ? entryActions : null}
+      {entryActions}
 
-      <div className="mt-4 sm:mt-5">
+      <div className="mt-3">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
           <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (
@@ -203,8 +193,8 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       ) : null}
 
-      <section data-studio-project-search-row="true" className="mt-3 rounded-2xl border border-line bg-card p-3 sm:p-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <section data-studio-project-search-row="true" className="studio-library-search-row mt-3" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
+        <div className="studio-library-search-controls">
           <div className="flex min-w-0 flex-1 items-center gap-2 lg:max-w-xl">
             <label className="relative block min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
@@ -241,34 +231,24 @@ export function StudioProjectLibraryManagementHeader({
               </button>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-semibold text-fg-3">
-              <span className="sr-only">{bi("정렬", "Sort")}</span>
-              <select
-                value={sort}
-                onChange={(event: ChangeEvent<HTMLSelectElement>) => setSort(event.target.value as StudioProjectLibrarySortMode)}
-                className="min-h-[44px] rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg outline-none focus:border-accent"
-              >
-                <option value="recent">{bi("최근 작업순", "Recently opened")}</option>
-                <option value="name">{bi("이름순", "Name")}</option>
-                <option value="created">{bi("최근 생성순", "Recently created")}</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              disabled={visibleProjects.length === 0}
-              onClick={toggleVisibleSelection}
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px]" })}
-            >
-              {allVisibleSelected
-                ? bi("선택 해제", "Clear selection")
-                : formatI18nTemplate(String(bi("전체 선택 ({value0})", "Select all ({value0})")), { value0: visibleProjects.length })}
-            </button>
-          </div>
+          {view === "active" ? (
+            <details className="studio-library-list-options">
+              <summary>{bi("정렬·선택", "Sort & select")}</summary>
+              {selectionTools}
+            </details>
+          ) : selectionTools}
         </div>
       </section>
 
-      <details className="mt-2 rounded-xl border border-line bg-card">
+      <div className="studio-library-secondary-tools">
+        {view === "active" && !hasSearchQuery ? <details className="studio-library-alternative-starts group rounded-xl border border-line bg-card" data-studio-other-starts="true">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+              {bi("다른 작업 시작", "Start something else")}
+              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
+            </summary>
+            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
+          </details> : null}
+      <details className="studio-library-auxiliary-management rounded-xl border border-line bg-card">
         <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           {bi("저장·내보내기·제작 관리", "Save, export and production")}
         </summary>
@@ -277,6 +257,9 @@ export function StudioProjectLibraryManagementHeader({
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
           </p>
         <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
+          <Link href="/studio/recovery" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+            {bi("작업 복구", "Recover work")}
+          </Link>
           <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
             {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
           </Link>
@@ -295,6 +278,7 @@ export function StudioProjectLibraryManagementHeader({
           </Link>
         </div>
       </details>
+      </div>
 
       {selectedProjects.length > 0 ? (
         <section className="sticky top-3 z-30 mt-3 rounded-2xl border border-accent/35 bg-card/95 p-3 shadow-lg backdrop-blur" aria-label={bi("선택 작업", "Selection actions")}>
