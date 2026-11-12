@@ -236,10 +236,10 @@ const QUALITY_GATES: ArchitectureGuideSection = {
       source: "config/architecture-source-ratchet.json",
     },
     {
-      value: "16",
+      value: "23",
       label: t(
-        "PR 마다 도는 접근성 스모크 시험 수(데스크톱 10 · 모바일 4 · 터치 2, 그중 axe 15)",
-        "Accessibility smoke tests per PR (10 desktop, 4 mobile, 2 touch; 15 of them run axe)",
+        "PR 마다 도는 접근성 스모크 시험 수(데스크톱 10 · 모바일 4 · 상호작용 3 · CSS 6, 그중 axe 15)",
+        "Accessibility smoke tests per PR (10 desktop, 4 mobile, 3 interaction, 6 CSS; 15 of them run axe)",
       ),
       source: "e2e/a11y-smoke.spec.ts",
     },
