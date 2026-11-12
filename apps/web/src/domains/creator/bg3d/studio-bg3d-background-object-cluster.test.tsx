@@ -411,6 +411,7 @@ describe("studio-bg3d-background-object-cluster — 6 core flows + post-reload p
     });
     expect(reopened.ok).toBe(true);
     expect(reopened.primitives).toEqual(afterSecond);
+    expect(reopened.primitives[0]?.tags).toEqual(["BgCluster_class", "BgObject_Cluster_V10"]);
     expect(
       collectStudioBg3dEffectivelyVisibleEntityIds(
         reopened.primitives,
@@ -420,6 +421,29 @@ describe("studio-bg3d-background-object-cluster — 6 core flows + post-reload p
     expect(collectStudioBg3dEffectivelyVisibleEntityIds(reopened.primitives).size).toBe(
       afterSecond.length,
     );
+
+    // 8종 전체 아키타입(ㄱ자 코너 회전 포함) 문서 v3 직렬화·역직렬화 무손실 deepEqual 검증
+    for (const arch of STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES) {
+      const cornerBuilt = buildBg3dObjectClusterPrimitives({
+        archetype: arch.id,
+        moduleCount: 2,
+        clutterDensity: "lived-in",
+        arrangement: "l-corner",
+        surfaceTheme: "daylight-neutral",
+      });
+      const cornerSaved = adaptStudioBg3dRuntimeToDocument({
+        primitives: cornerBuilt.primitives,
+        customModels: [],
+        attachmentByStorageModelId: new Map(),
+      });
+      expect(cornerSaved.counts.droppedPrimitives).toBe(0);
+      expect(cornerSaved.diagnostics).toEqual([]);
+      const cornerHydrated = hydrateStudioBg3dDocumentToRuntime({
+        document: parseStudioBg3dSceneDocument(cornerSaved.serialized)!,
+        storageModelIdByAttachmentId: new Map(),
+      });
+      expect(cornerHydrated.primitives).toEqual(cornerBuilt.primitives);
+    }
 
     // 저장/복원 3: PNG 캡처 DataURL 해시(레거시 + 모델 확장 해시) 왕복 검증
     const legacyDataUrl = `data:image/png;base64,AAAA#${encodeBg3dSceneHash([...afterSecond])}`;

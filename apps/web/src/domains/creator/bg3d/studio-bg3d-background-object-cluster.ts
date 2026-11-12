@@ -5,7 +5,8 @@
  * - 캐릭터·데생인형·브러시 모듈과 완전히 독립된 순수 배경 오브젝트 합성기다.
  * - `makeGeometry`의 단위 메시 치수(`cylinder` 지름 0.6, `cone` 지름 0.8, `torus` 1.1×1.1×0.3) 보정,
  *   Three.js 기본 오일러 `'XYZ'` 월드 Y축 회전 행렬 합성(짐벌락 방지), 회전 OBB 기준 바닥 접지(`minY === 0`),
- *   반복 삽입 시 충돌 없는 노드 ID(`NODE_ID_PATTERN`) 및 비중첩 간격 계산, 장면 문서 v3 무손실 직렬화 정규형을 보장한다.
+ *   장면 문서 v3 정규화 계약(`STUDIO_BG3D_TAG_MAX_CODE_POINTS = 32`, `normalizedRotation` `[-π, π)` 래핑)과
+ *   1:1 일치하는 무손실 필드 출력 및 반복 삽입 비중첩·고유 ID 생성을 보장한다.
  */
 
 import type { BgPrimitive, BgPrimitiveKind } from "../studio-background-3d-metadata";
@@ -201,13 +202,16 @@ function round4(n: number): number {
   return Object.is(r, -0) ? 0 : r;
 }
 
-function round6(n: number): number {
-  const r = Math.round(n * 1000000) / 1000000;
-  return Object.is(r, -0) ? 0 : r;
-}
-
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
+}
+
+/** `studio-bg3d-scene-document.ts`의 `normalizedRotation`과 동일한 IEEE-754 `[-π, π)` 정본 각도로 맞춘다. */
+function canonicalizeSceneRotationAngle(angle: number): number {
+  if (!Number.isFinite(angle)) return 0;
+  const wrapped = ((angle + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+  const out = wrapped - Math.PI;
+  return Object.is(out, -0) ? 0 : out;
 }
 
 function sanitizeInstanceKey(raw: string | undefined): string {
@@ -241,13 +245,19 @@ export function unitMeshFullSizeForKind(kind: BgPrimitiveKind): readonly [number
   }
 }
 
-/** Three.js 기본 오일러 `'XYZ'`(`M = Rx * Ry * Rz`) 로컬 회전에 월드 Y축 회전을 좌측 곱셈해 정규 오일러를 돌려준다. */
+/** Three.js 기본 오일러 `'XYZ'`(`L = Rx * Ry * Rz`) 로컬 회전에 월드 Y축 회전(`Ry(yaw)`)을 좌측 곱셈해 정규 오일러를 돌려준다. */
 export function composeWorldYawWithLocalEulerXyz(
   localRot: readonly [number, number, number],
   yawRad: number,
 ): [number, number, number] {
   const [rx, ry, rz] = localRot;
-  if (Math.abs(yawRad) < 1e-7) return [round6(rx), round6(ry), round6(rz)];
+  if (Math.abs(yawRad) < 1e-7) {
+    return [
+      canonicalizeSceneRotationAngle(rx),
+      canonicalizeSceneRotationAngle(ry),
+      canonicalizeSceneRotationAngle(rz),
+    ];
+  }
   const a = Math.cos(rx);
   const b = Math.sin(rx);
   const c = Math.cos(ry);
@@ -269,14 +279,20 @@ export function composeWorldYawWithLocalEulerXyz(
   const m00 = cy * l00 + sy * l20;
   const m01 = cy * l01 + sy * l21;
   const m02 = cy * l02 + sy * l22;
+  const m11 = l11;
+  const m12 = l12;
   const m21 = -sy * l01 + cy * l21;
   const m22 = -sy * l02 + cy * l22;
 
   const sinY = clamp(m02, -1, 1);
   const outY = Math.asin(sinY);
-  const outX = Math.abs(sinY) < 0.9999995 ? Math.atan2(-m12, m22) : Math.atan2(m21, l11);
+  const outX = Math.abs(sinY) < 0.9999995 ? Math.atan2(-m12, m22) : Math.atan2(m21, m11);
   const outZ = Math.abs(sinY) < 0.9999995 ? Math.atan2(-m01, m00) : 0;
-  return [round6(outX), round6(outY), round6(outZ)];
+  return [
+    canonicalizeSceneRotationAngle(outX),
+    canonicalizeSceneRotationAngle(outY),
+    canonicalizeSceneRotationAngle(outZ),
+  ];
 }
 
 function rotateVecEulerXyz(
@@ -585,7 +601,8 @@ export function buildBg3dObjectClusterPrimitives(rawSpec: Bg3dObjectClusterSpec)
     STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES[0]!;
 
   const { spanX, parts: baseParts } = buildSingleModuleParts(rawSpec.archetype, densityNum, pal);
-  const canonicalTags = Object.freeze([`BgCluster_${rawSpec.archetype}`, "BgObject_Cluster_V10"].sort());
+  // STUDIO_BG3D_TAG_MAX_CODE_POINTS(32자) 상한 안에서 아키타입별 고유 태그와 V10 공통 태그를 코드 유닛 순으로 고정한다.
+  const canonicalTags = Object.freeze([`BgCluster_${meta.shortCode}`, "BgObject_Cluster_V10"].sort());
 
   interface StagedPrim {
     readonly id: string;
