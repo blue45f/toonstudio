@@ -206,6 +206,8 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     const onFile = vi.fn();
     render(<StudioBg3dEssentialPosePropPanel onFile={onFile} />);
 
+    expect(screen.getByText(/V11 상부배경 6종/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /115종/u })).toBeTruthy();
     fireEvent.click(screen.getByTestId("bg3d-essential-pose-prop-toggle"));
     expect(screen.getByTestId("bg3d-essential-item-pose-neutral-3d")).toBeTruthy();
     expect(screen.getByTestId("bg3d-essential-item-prop-desk")).toBeTruthy();
@@ -219,8 +221,11 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     fireEvent.click(screen.getByTestId("bg3d-essential-cat-kitbash-v10-prop-3d"));
     expect(screen.getByTestId("bg3d-essential-item-kitbash-v10-alley-ac-meter-pipe-wall-v10")).toBeTruthy();
 
-    fireEvent.click(screen.getByTestId("bg3d-essential-cat-kitbash-v11-prop-3d"));
+    fireEvent.click(screen.getByRole("button", { name: "블렌더 상부 배경 V11 (6)" }));
     expect(screen.getByTestId("bg3d-essential-item-kitbash-v11-window-venetian-blind-pelmet")).toBeTruthy();
+    expect(screen.getAllByText("CC0-1.0 · V11 상부배경")).toHaveLength(6);
+    expect(screen.getByText("6종 표시")).toBeTruthy();
+    expect(screen.queryByTestId("bg3d-essential-item-kitbash-v10-alley-ac-meter-pipe-wall-v10")).toBeNull();
 
     fireEvent.click(screen.getByTestId("bg3d-essential-cat-original-scene-prop-3d"));
     expect(screen.queryByTestId("bg3d-essential-item-pose-neutral-3d")).toBeNull();

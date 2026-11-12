@@ -32,6 +32,8 @@ function categoryShortLabel(category: StudioBg3dEssentialAssetCategory): string 
       return "V9 킷배시";
     case "kitbash-v10-prop-3d":
       return "V10 배경소품";
+    case "kitbash-v11-prop-3d":
+      return "V11 상부배경";
     case "original-scene-prop-3d":
       return "배경·가구";
     case "original-hand-wear-prop-3d":
@@ -86,7 +88,7 @@ export function StudioBg3dEssentialPosePropPanel({
             3D 인체 포즈 마네킹 · 필수 건축/히어로/오리지널 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
           </h4>
           <p className="mt-0.5 text-[0.62rem] text-fg-3">
-            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · 오리지널 68종 (CC0 1.0)
+            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · 오리지널 68종 (CC0 1.0)
           </p>
         </div>
         <button
