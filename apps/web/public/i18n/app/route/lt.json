@@ -91,5 +91,6 @@
   "route.technologyStory": "Kūrimo istorija",
   "route.technologyVideos": "Vaizdo įrašai",
   "route.terms": "Paslaugų sąlygos",
-  "route.unknown": "Puslapis"
+  "route.unknown": "Puslapis",
+  "route.offline": "Connection & on-device content"
 }

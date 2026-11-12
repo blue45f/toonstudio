@@ -91,5 +91,6 @@
   "route.technologyStory": "ისტორია",
   "route.technologyVideos": "ვიდეოები",
   "route.terms": "მომსახურების პირობები",
-  "route.unknown": "გვერდი"
+  "route.unknown": "გვერდი",
+  "route.offline": "Connection & on-device content"
 }

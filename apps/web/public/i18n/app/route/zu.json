@@ -91,5 +91,6 @@
   "route.technologyStory": "Indaba",
   "route.technologyVideos": "Amavidiyo",
   "route.terms": "Imigomo yokusebenza",
-  "route.unknown": "Ikhasi"
+  "route.unknown": "Ikhasi",
+  "route.offline": "Connection & on-device content"
 }

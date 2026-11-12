@@ -91,5 +91,6 @@
   "route.technologyStory": "創作故事",
   "route.technologyVideos": "影片",
   "route.terms": "服務條款",
-  "route.unknown": "頁"
+  "route.unknown": "頁",
+  "route.offline": "Connection & on-device content"
 }

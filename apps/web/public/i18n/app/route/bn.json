@@ -91,5 +91,6 @@
   "route.technologyStory": "গল্প",
   "route.technologyVideos": "ভিডিও",
   "route.terms": "পরিষেবা শর্তাবলী",
-  "route.unknown": "পাতা"
+  "route.unknown": "পাতা",
+  "route.offline": "Connection & on-device content"
 }

@@ -91,5 +91,6 @@
   "route.technologyStory": "Història",
   "route.technologyVideos": "Vídeos",
   "route.terms": "Condicions de servei",
-  "route.unknown": "Pàgina"
+  "route.unknown": "Pàgina",
+  "route.offline": "Connection & on-device content"
 }

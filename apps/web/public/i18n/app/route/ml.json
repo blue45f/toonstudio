@@ -91,5 +91,6 @@
   "route.technologyStory": "കഥ",
   "route.technologyVideos": "വീഡിയോകൾ",
   "route.terms": "സേവന നിബന്ധന",
-  "route.unknown": "പേജ്"
+  "route.unknown": "പേജ്",
+  "route.offline": "Connection & on-device content"
 }

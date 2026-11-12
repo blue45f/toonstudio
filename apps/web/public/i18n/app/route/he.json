@@ -91,5 +91,6 @@
   "route.technologyStory": "סיפור",
   "route.technologyVideos": "סרטונים",
   "route.terms": "תנאי השירות",
-  "route.unknown": "דף"
+  "route.unknown": "דף",
+  "route.offline": "Connection & on-device content"
 }

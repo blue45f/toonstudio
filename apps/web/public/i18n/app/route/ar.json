@@ -91,5 +91,6 @@
   "route.technologyStory": "القصة",
   "route.technologyVideos": "مقاطع الفيديو",
   "route.terms": "شروط الخدمة",
-  "route.unknown": "الصفحة"
+  "route.unknown": "الصفحة",
+  "route.offline": "Connection & on-device content"
 }

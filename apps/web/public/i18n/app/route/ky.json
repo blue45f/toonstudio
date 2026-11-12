@@ -91,5 +91,6 @@
   "route.technologyStory": "Окуя",
   "route.technologyVideos": "Видеолор",
   "route.terms": "Кызматтын шарттары",
-  "route.unknown": "Бет"
+  "route.unknown": "Бет",
+  "route.offline": "Connection & on-device content"
 }

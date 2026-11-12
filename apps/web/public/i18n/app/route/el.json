@@ -91,5 +91,6 @@
   "route.technologyStory": "Ιστορία δημιουργίας",
   "route.technologyVideos": "Βίντεο",
   "route.terms": "Όροι παροχής υπηρεσιών",
-  "route.unknown": "Σελίδα"
+  "route.unknown": "Σελίδα",
+  "route.offline": "Connection & on-device content"
 }

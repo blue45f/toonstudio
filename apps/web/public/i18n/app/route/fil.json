@@ -91,5 +91,6 @@
   "route.technologyStory": "Kuwento ng paggawa",
   "route.technologyVideos": "Mga video",
   "route.terms": "Mga Termino ng Paglilingkod",
-  "route.unknown": "pahina"
+  "route.unknown": "pahina",
+  "route.offline": "Connection & on-device content"
 }

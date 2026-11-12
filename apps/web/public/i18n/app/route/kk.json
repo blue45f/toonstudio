@@ -91,5 +91,6 @@
   "route.technologyStory": "Оқиға",
   "route.technologyVideos": "Бейнелер",
   "route.terms": "Қызмет көрсету шарттары",
-  "route.unknown": "Бет"
+  "route.unknown": "Бет",
+  "route.offline": "Connection & on-device content"
 }

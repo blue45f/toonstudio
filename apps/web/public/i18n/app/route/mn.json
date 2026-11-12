@@ -91,5 +91,6 @@
   "route.technologyStory": "Түүх",
   "route.technologyVideos": "Видеонууд",
   "route.terms": "Үйлчилгээний нөхцөл",
-  "route.unknown": "Хуудас"
+  "route.unknown": "Хуудас",
+  "route.offline": "Connection & on-device content"
 }

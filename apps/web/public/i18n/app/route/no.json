@@ -91,5 +91,6 @@
   "route.technologyStory": "Historie",
   "route.technologyVideos": "Videoer",
   "route.terms": "Tjenestevilkår",
-  "route.unknown": "Siden"
+  "route.unknown": "Siden",
+  "route.offline": "Connection & on-device content"
 }

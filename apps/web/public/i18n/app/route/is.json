@@ -91,5 +91,6 @@
   "route.technologyStory": "Saga",
   "route.technologyVideos": "Myndbönd",
   "route.terms": "Þjónustuskilmálar",
-  "route.unknown": "Síða"
+  "route.unknown": "Síða",
+  "route.offline": "Connection & on-device content"
 }

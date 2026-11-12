@@ -91,5 +91,6 @@
   "route.technologyStory": "ເລື່ອງລາວ",
   "route.technologyVideos": "ວິດີໂອ",
   "route.terms": "ເງື່ອນໄຂການບໍລິການ",
-  "route.unknown": "ຫນ້າ"
+  "route.unknown": "ຫນ້າ",
+  "route.offline": "Connection & on-device content"
 }

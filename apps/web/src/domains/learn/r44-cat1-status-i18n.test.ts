@@ -36,6 +36,7 @@ const KEYS = Object.keys(DICTS.ko).sort();
 
 const CONSUMERS = [
   "LearnContent.tsx",
+  "LessonSession.tsx",
   "LearningLinkButton.tsx",
   "StreakRecoveryPanel.tsx",
 ] as const;

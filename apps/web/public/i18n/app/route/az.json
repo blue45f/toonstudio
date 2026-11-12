@@ -91,5 +91,6 @@
   "route.technologyStory": "Hekayə",
   "route.technologyVideos": "Videolar",
   "route.terms": "Xidmət şərtləri",
-  "route.unknown": "Səhifə"
+  "route.unknown": "Səhifə",
+  "route.offline": "Connection & on-device content"
 }

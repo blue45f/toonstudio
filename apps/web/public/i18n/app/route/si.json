@@ -91,5 +91,6 @@
   "route.technologyStory": "කතාව",
   "route.technologyVideos": "වීඩියෝ",
   "route.terms": "සේවා කොන්දේසි",
-  "route.unknown": "පිටුව"
+  "route.unknown": "පිටුව",
+  "route.offline": "Connection & on-device content"
 }

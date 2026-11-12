@@ -91,5 +91,6 @@
   "route.technologyStory": "Câu chuyện sản xuất",
   "route.technologyVideos": "Video",
   "route.terms": "Điều khoản sử dụng",
-  "route.unknown": "Trang"
+  "route.unknown": "Trang",
+  "route.offline": "Connection & on-device content"
 }
