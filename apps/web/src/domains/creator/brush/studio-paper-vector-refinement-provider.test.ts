@@ -159,7 +159,7 @@ describe("StudioPaperVectorRefinementProvider", () => {
       command: "simplify",
       requestSequence: 1,
       engineEpoch: 4,
-      package: { name: "paper", version: "0.12.18" },
+      package: { name: "paper", version: "0.17.0" },
       execution: {
         stage: "settled",
         geometryBoundary: "studio-engine-vector-geometry-provider",

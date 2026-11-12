@@ -6,6 +6,10 @@ import { readStudioInspectorAsideSurface } from "../read-studio-inspector-aside-
 import { readStudioCuttoonEditorSource } from "../studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
 const pageSource = readStudioCuttoonEditorSource();
+const workspacePersistenceSource = readFileSync(
+  new URL("../studio-page-workspace-persistence.ts", import.meta.url),
+  "utf8",
+);
 const inspectorSource = readStudioInspectorAsideSurface();
 const stackSource = readFileSync(
   new URL("./StudioDrawingPaletteStack.tsx", import.meta.url),
@@ -127,20 +131,20 @@ describe("Studio drawing palette workspace integration boundary", () => {
       "workspace apply",
     );
     const ownerSync = sourceBetween(
-      pageSource,
-      "// owner가 바뀔 때마다 별도의 SQLite/OPFS runtime을 열고",
-      "// 드래그나 작업공간 메뉴 편집과 겹친 외부 revision은",
+      workspacePersistenceSource,
+      "function runStudioWorkspaceOwnerHydration(",
+      "function replayStudioPendingExternalWorkspaceSync(",
       "workspace owner hydration",
     );
     const pendingReplay = sourceBetween(
-      pageSource,
-      "// 드래그나 작업공간 메뉴 편집과 겹친 외부 revision은",
-      "// 활성 프리셋 스냅샷은 그대로 두고",
+      workspacePersistenceSource,
+      "function replayStudioPendingExternalWorkspaceSync(",
+      "export function useStudioPageWorkspacePersistence(",
       "pending external workspace replay",
     );
     const autosave = sourceBetween(
       pageSource,
-      "// 활성 프리셋 스냅샷은 그대로 두고",
+      "const persistStudioWorkspaceStateFromEffect = useEffectEvent(",
       "// 재사용 클립 보관함",
       "workspace autosave",
     );
@@ -204,15 +208,15 @@ describe("Studio drawing palette workspace integration boundary", () => {
 
   it("keeps menu edits session-atomic until verified SQLite persistence completes", () => {
     const persist = sourceBetween(
-      pageSource,
-      "function persistStudioWorkspaceState",
-      "// owner가 바뀔 때마다 별도의 SQLite/OPFS runtime을 열고",
+      workspacePersistenceSource,
+      "function persistStudioWorkspaceStateWithContext(",
+      "function runStudioWorkspaceOwnerHydration(",
       "direct workspace persistence",
     );
     const pendingReplay = sourceBetween(
-      pageSource,
-      "// 드래그나 작업공간 메뉴 편집과 겹친 외부 revision은",
-      "// 활성 프리셋 스냅샷은 그대로 두고",
+      workspacePersistenceSource,
+      "function replayStudioPendingExternalWorkspaceSync(",
+      "export function useStudioPageWorkspacePersistence(",
       "pending external workspace replay",
     );
 
