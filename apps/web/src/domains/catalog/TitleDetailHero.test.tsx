@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +17,15 @@ vi.mock("@/shared/components/cover-image", () => ({
 }));
 
 const initialLanguage = useI18n.getState().lang;
+const heroStyleText = readFileSync(resolve(process.cwd(), "apps/web/src/domains/catalog/title-detail-purpose-layout.css"), "utf8");
+
+function mountHeroStyles() {
+  const style = document.createElement("style");
+  style.dataset.titleHeroTestStyle = "true";
+  style.textContent = heroStyleText;
+  document.head.append(style);
+}
+
 
 function makeTitle(overrides: Partial<Title> = {}): Title {
   return {
@@ -52,7 +63,7 @@ function makeTitle(overrides: Partial<Title> = {}): Title {
 
 function renderHero(title: Title, firstEpisodeHref: string | null = "/title/fog-signal/read/1", showAvailability = true) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/title/${title.slug}?source=library&source=discover`]}>
       <TitleDetailHero
         title={title}
         reviewAvg={9.8}
@@ -73,6 +84,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  document.querySelectorAll("style[data-title-hero-test-style]").forEach((style) => style.remove());
   useI18n.setState({ lang: initialLanguage });
 });
 
@@ -111,16 +123,18 @@ describe("TitleDetailHero", () => {
     expect(screen.queryByText(/공식 감상 링크/u)).toBeNull();
   });
 
-  it("제목·작가·평점·장르·줄거리와 주 행동을 보여준다", () => {
+  it("제목·작가·평점·짧은 소개와 실제 읽기 행동을 보여준다", () => {
     renderHero(makeTitle());
     expect(screen.getByRole("heading", { level: 1, name: "안개 속의 신호" })).toBeTruthy();
-    expect(screen.getByText("Signal in the Fog")).toBeTruthy();
+    const introduction = screen.getByRole("link", { name: "소개 더 보기" });
+    const introductionUrl = new URL(introduction.getAttribute("href") ?? "", "https://example.test");
+    expect(introductionUrl.hash).toBe("#title-introduction");
+    expect(introductionUrl.searchParams.getAll("source")).toEqual(["library", "discover"]);
     expect(screen.getByRole("link", { name: "김작가" }).getAttribute("href")).toBe(
       "/author/%EA%B9%80%EC%9E%91%EA%B0%80",
     );
     expect(screen.getByText("9.8")).toBeTruthy();
-    expect(screen.getByText("미스터리")).toBeTruthy();
-    expect(screen.getAllByText(/안개 낀 항구 도시에서/)).toHaveLength(2);
+    expect(screen.getAllByText(/안개 낀 항구 도시에서/)).toHaveLength(1);
     const readLink = screen.getByRole("link", { name: /회차 안내 보기/ });
     expect(readLink.getAttribute("href")).toBe("/title/fog-signal/read/1");
   });
@@ -137,11 +151,11 @@ describe("TitleDetailHero", () => {
     expect(heading.closest("[class*='overflow-wrap:anywhere']")).not.toBeNull();
     const author = screen.getByRole("link", { name: title.author });
     expect(author.getAttribute("href")).toBe(`/author/${encodeURIComponent(title.author)}`);
-    expect(author.classList.contains("focus-visible:outline-white")).toBe(true);
+    expect(author.classList.contains("focus-visible:outline-accent")).toBe(true);
     author.focus();
     expect(document.activeElement).toBe(author);
-    expect(screen.getByText(title.altTitles?.[0] ?? "")).toBeTruthy();
-    expect(screen.getAllByText(title.synopsis)).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "소개 더 보기" }).getAttribute("href")).toContain("#title-introduction");
+    expect(screen.getAllByText(title.synopsis)).toHaveLength(1);
   });
 
   it("서재에 담기는 읽기 상태를 토글하고 눌림 상태를 알린다", () => {
@@ -186,39 +200,41 @@ describe("TitleDetailHero", () => {
     expect(screen.queryByText(/안개 낀 항구 도시에서/)).toBeNull();
   });
 
-  it("작품 상세 섹션 바로가기 내비게이션 칩을 제공한다", () => {
+  it("회차·소개·리뷰·더 보기의 네 목적을 구분하고 기존 query를 유지한다", () => {
     renderHero(makeTitle());
     const nav = screen.getByTestId("title-detail-section-nav");
-    expect(nav.querySelector('a[href="#title-episodes-anchor"]')?.textContent).toBe("회차 목록");
-    expect(nav.querySelector('a[href="#title-availability"]')?.textContent).toBe("감상 플랫폼·가격");
-    expect(nav.querySelector('a[href="#title-reviews"]')?.textContent).toBe("독자 리뷰");
     const links = within(nav).getAllByRole("link");
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(4);
+    expect(links.map((link) => link.textContent)).toEqual(["회차", "작품 소개", "리뷰", "더 보기"]);
+    expect(links.map((link) => new URL(link.getAttribute("href") ?? "", "https://example.test").hash)).toEqual(["#title-episodes-anchor", "#title-introduction", "#title-reviews", "#title-detail-secondary-tools"]);
     for (const link of links) {
-      expect(link.classList.contains("min-h-11")).toBe(true);
-      expect(link.classList.contains("focus-visible:outline-white")).toBe(true);
+      const url = new URL(link.getAttribute("href") ?? "", "https://example.test");
+      expect(url.pathname).toBe("/title/fog-signal");
+      expect(url.searchParams.getAll("source")).toEqual(["library", "discover"]);
+      expect(link.classList.contains("min-h-12")).toBe(true);
       link.focus();
       expect(document.activeElement).toBe(link);
     }
+    fireEvent.click(within(nav).getByRole("link", { name: "작품 소개" }));
+    expect(within(nav).getByRole("link", { name: "작품 소개" }).getAttribute("aria-current")).toBe("location");
   });
+
 });
 
-describe("TitleDetailHero — 접힌 소개와 핵심 동선", () => {
-  it("줄거리만 접고 제목·읽기·저장·섹션 동선은 밖에 유지한다", () => {
+describe("TitleDetailHero — 소개와 읽기 목적 분리", () => {
+  it("소개는 목적 링크로 연결하고 읽기·저장·제목을 별도로 유지한다", () => {
     renderHero(makeTitle());
-    const synopsis = screen.getAllByText(/안개 낀 항구 도시에서/).find((element) => element.tagName === "P");
-    if (!synopsis) throw new Error("줄거리 본문 누락");
-    const details = synopsis.closest("details");
-    expect(details?.open).toBe(false);
+    const preview = screen.getByText(makeTitle().synopsis);
+    expect(preview.getAttribute("aria-hidden")).toBe("true");
+    expect(preview.closest("details")).toBeNull();
     expect(screen.getByRole("heading", { level: 1 }).closest("details")).toBeNull();
     expect(screen.getByRole("link", { name: /회차 안내 보기/ }).closest("details")).toBeNull();
-    expect(screen.getByRole("button", { name: /서재에 담기/ }).closest("details")).toBeNull();
-    expect(screen.getByTestId("title-detail-section-nav").closest("details")).toBeNull();
-    if (!details) throw new Error("줄거리 disclosure 누락");
-    const summary = details.querySelector("summary");
-    if (!summary) throw new Error("줄거리 summary 누락");
-    for (let i = 0; i < 3; i += 1) { fireEvent.click(summary); }
-    expect(synopsis.textContent).toBe(makeTitle().synopsis);
+    const save = screen.getByRole("button", { name: /서재에 담기/ });
+    expect(save.closest("details")).toBeNull();
+    fireEvent.click(save);
+    fireEvent.click(screen.getByRole("link", { name: "소개 더 보기" }));
+    expect(screen.getByRole("button", { name: /서재에 담김/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("link", { name: /회차 안내 보기/ }).getAttribute("href")).toBe("/title/fog-signal/read/1");
   });
 });
 
@@ -245,7 +261,12 @@ describe("TitleDetailHero — 빈 작가·미상·다중 작가·초장문 이�
     const longTitle = "초장문제목_".repeat(20) + "끝";
     renderHero(makeTitle({ title: longTitle, author: "채은, 고다고 / 미상" }));
     const heading = screen.getByRole("heading", { level: 1, name: longTitle });
-    expect(heading.className).toContain("[overflow-wrap:anywhere]");
+    mountHeroStyles();
+    // 전용 CSS로 옮긴 줄바꿈 규칙을 확인한다. 실제 좁은 화면의 크기는 브라우저에서 측정한다.
+    expect(getComputedStyle(heading).overflowWrap).toBe("anywhere");
+    expect(getComputedStyle(heading).wordBreak).toBe("keep-all");
+    expect(heading.textContent).toBe(longTitle);
+    expect(getComputedStyle(heading).textOverflow).not.toBe("ellipsis");
     expect(screen.getByRole("link", { name: "채은" }).getAttribute("href")).toBe(
       "/author/%EC%B1%84%EC%9D%80",
     );
@@ -257,13 +278,27 @@ describe("TitleDetailHero — 빈 작가·미상·다중 작가·초장문 이�
 });
 
 
-it("시안처럼 핵심 버튼은 모바일 동일 너비, 섹션 링크는 별도 가로 탐색줄에 둔다", () => {
-  renderHero(makeTitle());
+it("공식 읽기는 전체 행, 보조 행동은 같은 트랙이며 목적 메뉴는 표지 무대 밖에 둔다 (실측 아님)", () => {
+  mountHeroStyles();
+  renderHero(makeTitle({ availability: [{ platformId: "naver-webtoon", pricing: "free", url: "https://comic.naver.com/webtoon/list?titleId=1" }] }));
   const nav = screen.getByTestId("title-detail-section-nav");
-  expect(nav.className).toContain("col-span-2");
-  expect(nav.className).toContain("overflow-x-auto");
-  expect(nav.className).not.toContain("lg:col-start-2");
   const actions = screen.getByRole("link", { name: /회차 안내 보기/ }).parentElement;
-  expect(actions?.className).toContain("grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]");
-  expect(screen.getByText(makeTitle().synopsis, { selector: "span" }).getAttribute("aria-hidden")).toBe("true");
+  const official = screen.getByTestId("title-official-read-link");
+  if (!actions) throw new Error("읽기 행동 영역이 없습니다.");
+  expect(nav.closest(".title-detail-hero-stage")).toBeNull();
+  expect(nav.parentElement).toBe(actions.closest(".title-detail-hero"));
+  expect(getComputedStyle(nav).display).toBe("flex");
+  expect(getComputedStyle(nav).overflowX).toBe("auto");
+  expect(getComputedStyle(actions).display).toBe("grid");
+  expect(getComputedStyle(actions).gridTemplateColumns.replace(/\s/gu, "")).toBe("repeat(2,minmax(0,1fr))");
+  expect(getComputedStyle(official).gridColumn.replace(/\s/gu, "")).toBe("1/-1");
+  expect(within(actions).getAllByRole("link")).toHaveLength(2);
+  expect(within(actions).getByRole("button", { name: /서재에 담기/ })).toBeTruthy();
+  for (const target of [...within(actions).getAllByRole("link"), within(actions).getByRole("button")]) {
+    expect(getComputedStyle(target).minHeight).toBe("3rem");
+    target.focus();
+    expect(document.activeElement).toBe(target);
+  }
+  expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["회차", "작품 소개", "리뷰", "더 보기"]);
+  expect(screen.getByText(makeTitle().synopsis, { selector: "p" }).getAttribute("aria-hidden")).toBe("true");
 });

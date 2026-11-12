@@ -59,11 +59,11 @@ describe("작품 상세에서 목록 복귀", () => {
   });
 });
 
-it("오류 재시도에 페이지 호출부의 44px 논리 최소크기를 지정한다 (실측 아님)", () => {
+it("오류 재시도에 페이지 호출부의 48px 논리 최소크기를 지정한다 (실측 아님)", () => {
   useI18n.setState({ lang: "ko" });
   Object.assign(resource, { loading: false, error: "상세 조회 실패", notFound: false });
   render(<MemoryRouter initialEntries={["/title/unavailable"]}><TitleDetailPage /></MemoryRouter>);
   const alert = screen.getByRole("alert");
-  expect(alert.classList.contains("[&>button]:[min-block-size:2.75rem]!")).toBe(true);
+  expect(alert.classList.contains("[&>button]:[min-block-size:3rem]!")).toBe(true);
   expect(within(alert).getByRole("button").parentElement).toBe(alert);
 });

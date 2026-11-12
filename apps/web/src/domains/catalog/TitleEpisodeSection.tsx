@@ -246,7 +246,6 @@ export function TitleEpisodeSection({
     <section id="episodes" aria-labelledby="title-episodes-heading" className="scroll-mt-24">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow text-accent">EPISODES</p>
           <h2 id="title-episodes-heading" className="mt-1 flex flex-wrap items-baseline gap-2.5 text-xl font-bold tracking-tight text-fg sm:text-2xl">
             {bi("회차", "Episodes")}
             {total != null && (
@@ -254,21 +253,30 @@ export function TitleEpisodeSection({
                 {formatI18nTemplate(bi("총 {v0}화", "{v0} episodes"), { v0: formatCount(total) })}
               </span>
             )}
-            {hasEpisodes && sorted ? (
-              <span
-                data-testid="episodes-binge-estimate"
-                className="rounded-full border border-line bg-card px-2.5 py-0.5 text-xs font-semibold text-fg-2"
-              >
-                {formatI18nTemplate(
-                  bi("예상 정주행 약 {v0}분", "Est. binge ~{v0}m"),
-                  { v0: String(Math.max(3, sorted.length * 3)) },
-                )}
-              </span>
-            ) : null}
+
           </h2>
         </div>
-        {sorted && sorted.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2">
+      </div>
+
+      {continueTarget && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 px-4 py-3">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-on-accent">
+            <BookOpen size={16} aria-hidden />
+          </span>
+          <p className="min-w-0 flex-1 text-sm font-medium text-fg">{continueTarget.label}</p>
+          <Link
+            href={`/title/${encodeURIComponent(title.slug)}/read/${continueTarget.episode}`}
+            className="inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
+          >
+            {continueTarget.action}
+          </Link>
+        </div>
+      )}
+
+      {sorted && sorted.length > 1 && (
+        <details className="title-episode-tools">
+          <summary>{bi("회차 찾기 · 보기 설정", "Find episodes and change view")}</summary>
+          <div className="title-episode-tools-controls">
             <input
               type="search"
               ref={episodeSearchRef}
@@ -277,7 +285,7 @@ export function TitleEpisodeSection({
               placeholder={bi("회차 번호·제목 검색", "Filter episode # or title")}
               aria-label={bi("회차 번호 또는 제목 검색", "Search episode number or title")}
               data-testid="episodes-search-input"
-              className="h-11 w-40 rounded-full border border-line bg-card px-3 text-xs text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-48"
+              className="min-h-12 [min-block-size:3rem]! w-full min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg outline-none transition-colors placeholder:text-fg-3 focus:border-accent sm:w-64"
             />
             <div className="flex rounded-full border border-line bg-card p-0.5" role="group" aria-label={bi("회차 정렬", "Episode order")}>
               {(
@@ -292,7 +300,7 @@ export function TitleEpisodeSection({
                   aria-pressed={order === option.value}
                   onClick={() => setOrder(option.value)}
                   className={cn(
-                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
+                    "min-h-12 [min-block-size:3rem]! rounded-full px-3.5 text-xs font-semibold transition-colors duration-150",
                     order === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -322,7 +330,7 @@ export function TitleEpisodeSection({
                     });
                   }}
                   className={cn(
-                    "min-h-11 [min-block-size:2.75rem]! rounded-full px-3 text-xs font-semibold transition-colors duration-150",
+                    "min-h-12 [min-block-size:3rem]! rounded-full px-3 text-xs font-semibold transition-colors duration-150",
                     viewMode === option.value ? "bg-accent text-on-accent" : "text-fg-3 hover:text-fg",
                   )}
                 >
@@ -331,23 +339,14 @@ export function TitleEpisodeSection({
               ))}
             </div>
           </div>
-        )}
-      </div>
-
-      {continueTarget && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-accent/30 bg-accent-soft/40 px-4 py-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-on-accent">
-            <BookOpen size={16} aria-hidden />
-          </span>
-          <p className="min-w-0 flex-1 text-sm font-medium text-fg">{continueTarget.label}</p>
-          <Link
-            href={`/title/${encodeURIComponent(title.slug)}/read/${continueTarget.episode}`}
-            className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full bg-accent px-4 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90"
-          >
-            {continueTarget.action}
-          </Link>
-        </div>
+          {hasEpisodes && sorted ? (
+            <p data-testid="episodes-binge-estimate" className="pt-3 text-xs text-fg-2">
+              {formatI18nTemplate(bi("예상 정주행 약 {v0}분", "Est. binge ~{v0}m"), { v0: String(Math.max(3, sorted.length * 3)) })}
+            </p>
+          ) : null}
+        </details>
       )}
+
 
       {hasEpisodes && filteredEpisodes?.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-card/50 p-5 sm:p-6">
@@ -361,9 +360,11 @@ export function TitleEpisodeSection({
             type="button"
             onClick={() => {
               setEpisodeQuery("");
+              const tools = episodeSearchRef.current?.closest("details");
+              if (tools) tools.open = true;
               episodeSearchRef.current?.focus();
             }}
-            className="mt-3 inline-flex min-h-11 [min-block-size:2.75rem]! items-center rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="mt-3 inline-flex min-h-12 [min-block-size:3rem]! items-center rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg transition-colors hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {bi("검색 지우기", "Clear search")}
           </button>
@@ -427,8 +428,8 @@ export function TitleEpisodeSection({
                       )}
                       className={
                         index === 0
-                          ? "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
-                          : "inline-flex min-h-11 [min-block-size:2.75rem]! items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                          ? "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-bold text-on-accent transition-colors hover:bg-accent/90"
+                          : "inline-flex min-h-12 [min-block-size:3rem]! items-center gap-1.5 rounded-full border border-line bg-card px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
                       }
                     >
                       {formatI18nTemplate(bi("{v0}에서 보기", "View on {v0}"), { v0: platformName })}
@@ -440,7 +441,7 @@ export function TitleEpisodeSection({
                 {hiddenExternalLinkCount > 0 && (
                   <a
                     href="#title-availability"
-                    className="inline-flex min-h-11 [min-block-size:2.75rem]! items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                    className="inline-flex min-h-12 [min-block-size:3rem]! items-center px-2 text-sm font-semibold text-accent transition-colors hover:text-accent-2"
                   >
                     {formatI18nTemplate(
                       bi("다른 플랫폼 {v0}곳 더 보기", "See {v0} more platforms"),
