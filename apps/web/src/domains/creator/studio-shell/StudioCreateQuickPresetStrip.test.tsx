@@ -28,6 +28,12 @@ function LocationProbe() {
   return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
 }
 
+function goCreateStep(step: 1 | 2 | 3) {
+  const button = document.querySelector<HTMLButtonElement>(`[data-studio-create-step-link="${step}"]`);
+  if (!button) throw new Error("생성 단계 이동이 없습니다.");
+  if (button.getAttribute("aria-current") !== "step") fireEvent.click(button);
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
@@ -91,6 +97,7 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     // 프리셋 샘플 가제는 '가져온 아이디어' 배너로 오표시되지 않는다.
     expect(container.querySelector('[data-studio-imported-idea="true"]')).toBeNull();
 
+    goCreateStep(2);
     const titleInput = screen.getByRole("textbox", {
       name: /프로젝트 이름|Project name/u,
     }) as HTMLInputElement;
@@ -99,11 +106,14 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     // 제목을 직접 수정하면 프리셋 선택 표시가 해제되고, 다시 프리셋을 고르면 복원된다.
     fireEvent.change(titleInput, { target: { value: "직접 수정한 제목" } });
     expect(romancePreset.getAttribute("aria-pressed")).toBe("false");
+    goCreateStep(1);
     fireEvent.click(romancePreset);
     expect(romancePreset.getAttribute("aria-pressed")).toBe("true");
 
-    // 스크롤 없이 상단 프리셋 바에서 바로 프로젝트를 시작할 수 있다.
+    // 장르 예시는 먼저 확인 단계로 연결하고, 최종 제출에서만 프로젝트를 만든다.
     fireEvent.click(screen.getByTestId("studio-quick-preset-start-now"));
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u }));
 
     await waitFor(() => {
       expect(screen.getByTestId("location").textContent).toContain("/story");
@@ -125,13 +135,18 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
       </MemoryRouter>,
     );
 
+    goCreateStep(2);
     const simulator = screen.getByTestId("studio-canvas-safe-zone-simulator");
+    const previewToggle = simulator.closest("details")?.querySelector("summary");
+    if (!previewToggle) throw new Error("크기 미리보기 열기가 없습니다.");
+    fireEvent.click(previewToggle);
     expect(simulator.getAttribute("data-preview-mode")).toBe("vertical-scroll");
     expect(simulator.textContent).toContain("2컷 호흡");
     fireEvent.click(screen.getByTestId("safe-zone-rhythm-snappy"));
     expect(simulator.textContent).toContain("3컷 호흡");
 
     const dailyPreset = screen.getByTestId("studio-quick-preset-daily-cuttoon");
+    goCreateStep(1);
     fireEvent.click(dailyPreset);
 
     expect(dailyPreset.getAttribute("aria-pressed")).toBe("true");
@@ -142,11 +157,13 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
     expect(simulator.textContent).toContain("SNS 카드 4장 구성");
     expect(simulator.textContent).toContain("4장 세트");
 
+    goCreateStep(2);
     const titleInput = screen.getByRole("textbox", {
       name: /프로젝트 이름|Project name/u,
     }) as HTMLInputElement;
     expect(titleInput.value).toBe("오늘 하루 네 컷 일기");
 
+    goCreateStep(3);
     fireEvent.click(
       screen.getByRole("button", {
         name: /컷툰·SNS 만화 시작|Start Card comic & social series/u,

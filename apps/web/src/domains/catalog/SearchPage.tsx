@@ -22,8 +22,8 @@ import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
 const SEARCH_MODES = [
-  { id: "search", icon: Search, ko: "바로 찾기", en: "Search" },
-  { id: "explore", icon: Compass, ko: "조건으로 둘러보기", en: "Explore" },
+  { id: "search", icon: Search, ko: "작품 검색", en: "Search" },
+  { id: "explore", icon: Compass, ko: "조건으로 찾기", en: "Explore" },
   { id: "recommend", icon: Sparkles, ko: "취향 추천", en: "Recommendations" },
 ] as const;
 
@@ -52,7 +52,7 @@ export function SearchPage() {
               {t("search.badge")}
             </p>
             <h1 className="text-balance text-2xl font-bold leading-tight text-fg sm:text-3xl">
-              {t("search.title")}
+              {bt("어떤 작품을 찾으세요?", "Which story are you looking for?")}
             </h1>
           </div>
           <a
@@ -60,7 +60,7 @@ export function SearchPage() {
             className={buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 shrink-0 gap-1.5" })}
           >
             <SlidersHorizontal size={14} aria-hidden="true" />
-            {t("search.filterButton")}
+            {bt("검색·조건으로 이동", "Jump to search and filters")}
           </a>
         </header>
         </div>
@@ -140,7 +140,7 @@ export function SearchPage() {
                 <p className="text-sm leading-relaxed text-fg-2">{t("search.subtitle")}</p>
                 <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-3">
                   <span>{t("search.currentQuery")}: <strong className="text-fg">{state.query ? `"${state.query}"` : t("search.queryAll")}</strong></span>
-                  <span>{t("search.freeOnlyLabel")}: {freeOnly ? "ON" : "OFF"}</span>
+                  <span>{t("search.freeOnlyLabel")}: {freeOnly ? bt("무료·기다리면 무료", "Free and wait-free") : bt("모든 가격 방식", "All pricing")}</span>
                 </p>
               </div>
             </div>

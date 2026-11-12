@@ -42,7 +42,7 @@ export function StudioNewIntegratedPage() {
         <Container size="wide" className="py-2">
           <Link
             href={STUDIO_START_FORM_BACK_HREF}
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent"
+            className="inline-flex min-h-12 items-center gap-1.5 text-sm font-semibold text-accent"
           >
             <ArrowLeft size={15} aria-hidden />
             {bt("시작 방법 다시 고르기", "Choose another way to start")}
@@ -75,7 +75,7 @@ export function StudioNewIntegratedPage() {
               </div>
               <Link
                 href="/studio/new"
-                className="inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:text-fg sm:w-auto sm:shrink-0"
+                className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-xs font-bold text-fg-2 hover:text-fg sm:w-auto sm:shrink-0"
               >
                 <X size={14} className="shrink-0" aria-hidden="true" />
                 <span className="break-words">{bt("템플릿 없이 시작", "Start without template")}</span>
