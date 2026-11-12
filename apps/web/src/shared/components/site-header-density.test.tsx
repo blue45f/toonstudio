@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -12,6 +12,7 @@ import type { ExperienceMode } from "./site-experience/site-experience-model";
 
 import { useI18n } from "@/shared/lib/i18n";
 import { useUi } from "@/shared/lib/ui-store";
+import { SITE_OST_PANEL_OPEN_EVENT } from "@/shared/lib/site-background-music";
 
 vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
   AuthMenuShell: () => <button type="button">계정</button>,
@@ -57,6 +58,74 @@ afterEach(() => {
 });
 
 describe("단일 창작 헤더", () => {
+  it("PC 전체 메뉴를 닫은 뒤에도 음악 열기 요청을 전달하고 배경 잠금을 해제한다", async () => {
+    const listener = vi.fn(() => {
+      expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull();
+      expect(document.body.style.overflow).toBe("");
+    });
+    window.addEventListener(SITE_OST_PANEL_OPEN_EVENT, listener);
+    try {
+      render(<HeaderWithAppearance pathname="/promo-library" />);
+      const trigger = screen.getByRole("button", { name: /^전체 메뉴/u });
+      expect(trigger.getAttribute("data-site-menu-entry")).toBe("available");
+      fireEvent.click(trigger);
+      const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+      expect(within(dialog).getByRole("link", { name: /화면·언어 설정/u }).getAttribute("href")).toBe("/settings");
+      fireEvent.click(within(dialog).getByRole("button", { name: /배경 음악/u }));
+      await waitFor(() => expect(listener).toHaveBeenCalledOnce());
+      expect(trigger.isConnected).toBe(true);
+      expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    } finally { window.removeEventListener(SITE_OST_PANEL_OPEN_EVENT, listener); }
+  });
+
+  it("메뉴에서 설정으로 이동하면 사라진 메뉴 링크 대신 안정된 전체 메뉴 버튼으로 초점을 돌린다", async () => {
+    render(<HeaderWithAppearance pathname="/promo-library" />);
+    const trigger = screen.getByRole("button", { name: /^전체 메뉴/u });
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    const settings = within(dialog).getByRole("link", { name: /화면·언어 설정/u });
+    fireEvent.click(settings);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(settings.isConnected).toBe(false);
+    expect(trigger.isConnected).toBe(true);
+  });
+
+  it("모바일과 PC 사이 크기를 바꾸어도 열린 메뉴의 그룹·초점과 배경 잠금을 유지한다", async () => {
+    let mobile = true;
+    const listeners = new Set<() => void>();
+    vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
+      get matches() { return query === "(max-width: 1179px)" && mobile; },
+      media: query, onchange: null,
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+      addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    })));
+    render(<HeaderWithAppearance pathname="/promo-library" />);
+    const trigger = screen.getByRole("button", { name: /^전체 메뉴/u });
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
+    await waitFor(() => expect(document.activeElement).toBe(close));
+    const group = dialog.querySelector("details");
+    if (!group) throw new Error("전체 메뉴 그룹 없음");
+    group.open = true;
+    const summary = group.querySelector("summary");
+    if (!summary) throw new Error("전체 메뉴 그룹 제목 없음");
+    summary.focus();
+    for (const next of [false, true]) {
+      act(() => { mobile = next; for (const listener of listeners) listener(); });
+      expect(screen.getByRole("dialog", { name: "전체 메뉴" })).toBe(dialog);
+      expect(group.open).toBe(true);
+      expect(document.activeElement).toBe(summary);
+      expect(document.body.style.overflow).toBe("hidden");
+      expect(trigger.closest("[inert]")).not.toBeNull();
+    }
+    fireEvent.keyDown(summary, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(document.body.style.overflow).toBe("");
+  });
+
   it("홈은 중복 바로가기 줄을 렌더하지 않고 주요 목적지를 새 구조로 유지한다", () => {
     const { container } = render(<HeaderWithAppearance />);
     const header = screen.getByRole("banner");

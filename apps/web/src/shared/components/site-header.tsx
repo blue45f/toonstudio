@@ -488,8 +488,6 @@ function matchesMobileNavigationViewport() {
   );
 }
 
-const DESKTOP_NAVIGATION_QUERY = "(min-width: 1180px)";
-
 function useMobileNavigationViewport() {
   useBilingualI18nRevision();
   const [isMobile, setIsMobile] = useState(matchesMobileNavigationViewport);
@@ -686,12 +684,13 @@ export function SiteHeader({
   const openSearch = useUi((state) => state.openCommandPalette);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuRequested, setMenuRequested] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const isMobileNavigationViewport = useMobileNavigationViewport();
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const shouldRenderMobileNavigation = menuOpen || isMobileNavigationViewport;
+  const shouldRenderMobileNavigation = menuRequested || menuOpen || isMobileNavigationViewport;
   const hideBottomTabs = isImmersiveMobileRoute(pathname);
   const navigationContext = siteNavigationContextForPath(pathname);
   const isPublicPage = isPublicCreativeRoute(pathname);
@@ -738,17 +737,6 @@ export function SiteHeader({
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", syncScrolled);
     };
-  }, []);
-
-  useEffect(() => {
-    const desktopNavigation = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
-    const closeAtDesktop = () => {
-      if (desktopNavigation.matches) setMenuOpen(false);
-    };
-    closeAtDesktop();
-    desktopNavigation.addEventListener("change", closeAtDesktop);
-    return () =>
-      desktopNavigation.removeEventListener("change", closeAtDesktop);
   }, []);
 
   return (
@@ -819,14 +807,17 @@ export function SiteHeader({
             <button
               ref={triggerRef}
               type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label={menuOpen ? `${t("nav.allMenu")} ${t("common.close")}` : t("nav.allMenu")}
-              aria-haspopup="dialog" data-site-mobile-menu-trigger="true"
+              onClick={() => { setMenuRequested(true); setMenuOpen((open) => !open); }}
+              aria-haspopup="dialog" data-site-mobile-menu-trigger="true" data-site-menu-entry="available"
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              className="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-card/85 text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97] min-[1180px]:hidden"
+              className="flex min-h-12 min-w-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-line bg-card/85 px-3 text-sm font-semibold text-fg-2 outline-none transition-[border-color,background-color,color,transform] hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.97]"
             >
               {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+              <span className="sr-only min-[1180px]:not-sr-only">
+                <span className="block">{t("nav.allMenu")}{menuOpen && <span className="sr-only"> {t("common.close")}</span>}</span>
+                <span data-site-menu-music-enabled="true">{bi("음악 켜짐", "Music enabled")}</span>
+              </span>
             </button>
           </div>
         </div>

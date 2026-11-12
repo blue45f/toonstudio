@@ -22,12 +22,16 @@ function renderCluster() {
 }
 
 describe("FloatingControls 휴대폰 설정 묶음", () => {
-  it("전체 메뉴가 설정을 제공하면 휴대폰 고정 토글을 생략하고 기존 기본 동작은 보존한다", () => {
+  it("메뉴 연결 모드도 실제 전체 메뉴가 없는 화면에서는 설정 토글과 음악 진입을 보존한다", () => {
     const view = render(<FloatingControls placement="bottom-right" mobileMode="menu" />);
-    expect(screen.queryByRole("button", { name: "화면·언어·OST 설정" })).toBeNull();
+    const toggle = screen.getByRole("button", { name: "화면·언어·OST 설정" });
     const root = view.container.querySelector('[data-floating-controls="true"]');
     expect(root?.getAttribute("data-floating-controls-mobile")).toBe("disabled");
-    expect(root?.className).toContain("min-[1180px]:block");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "오리지널 OST 열기" })).toBeTruthy();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(toggle);
   });
 
   it("하단 탭 기준선 변수 위에 단일 토글로 놓이고 펼침 상태를 data 속성으로 알린다", () => {

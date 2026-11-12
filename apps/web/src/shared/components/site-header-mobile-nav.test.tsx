@@ -210,7 +210,7 @@ describe("모바일 전체 메뉴", () => {
     expect(screen.queryByRole("navigation", { name: "nav.quickAccess" })).toBeNull();
   });
 
-  it("현재 경로를 가리키는 링크를 눌러도 전체 메뉴를 닫고 유틸리티 라벨 말줄임을 유지한다", () => {
+  it("현재 경로를 가리키는 링크를 눌러도 전체 메뉴를 닫고 도움 링크 이름은 자르지 않는다", () => {
     const closeMenu = vi.fn();
     render(menu(true, closeMenu, "/market"));
     const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });
@@ -225,7 +225,8 @@ describe("모바일 전체 메뉴", () => {
     const notificationsLink = dialog.querySelector<HTMLAnchorElement>('a[href="/notifications"]');
     const labelSpan = notificationsLink?.querySelector("span");
     expect(labelSpan?.className).toContain("min-w-0");
-    expect(labelSpan?.className).toContain("truncate");
+    expect(labelSpan?.className).not.toContain("truncate");
+    expect(labelSpan?.textContent).toBe(notificationsLink?.getAttribute("aria-label"));
   });
 });
 

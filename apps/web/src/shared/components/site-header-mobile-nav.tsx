@@ -25,6 +25,8 @@ import Link from "@/shared/navigation/router-link";
 import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
 
+import "./site-menu.css";
+
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("site-header-mobile-nav", ko, en);
 
@@ -241,7 +243,7 @@ export function MobileHeaderNavigation({
       {menuOpen && (
         <div
           ref={overlayRef}
-          className="fixed inset-0 z-[110] min-[1180px]:hidden"
+          className="fixed inset-0 z-[110]"
         >
           <div
             aria-hidden="true"
@@ -257,6 +259,7 @@ export function MobileHeaderNavigation({
             aria-label={t("nav.allMenu")}
             tabIndex={-1}
             data-site-product={navigationContext}
+            data-site-menu-panel="true"
             className="absolute inset-x-0 top-0 z-[110] max-h-[100dvh] overflow-y-auto overscroll-contain border-b border-line-strong bg-canvas/95 shadow-2xl backdrop-blur-2xl motion-safe:animate-fade-up"
           >
             <div className="sticky top-0 z-10 border-b border-line/60 bg-canvas/92 backdrop-blur-2xl">
@@ -385,7 +388,7 @@ export function MobileHeaderNavigation({
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 sm:grid-cols-4">
+              <div className="mt-4 grid gap-2 border-t border-line pt-4">
                 {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
                   const Icon = item.icon;
@@ -411,7 +414,7 @@ export function MobileHeaderNavigation({
                             : "text-fg-3 group-hover:text-accent"
                         }
                       />
-                      <span className="min-w-0 truncate">{label}</span>
+                      <span className="min-w-0 break-words">{label}</span>
                       <span
                         aria-hidden="true"
                         className={cx(
@@ -430,7 +433,7 @@ export function MobileHeaderNavigation({
         </div>
       )}
 
-      {showBottomTabs && (
+      {showBottomTabs && !menuOpen && (
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}

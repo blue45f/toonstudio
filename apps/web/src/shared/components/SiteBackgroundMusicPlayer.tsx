@@ -343,6 +343,7 @@ export function SiteBackgroundMusicPlayer({ suspended: externallySuspended = fal
       data-testid="site-background-music-player"
       data-site-ost="mounted"
       data-site-ost-expanded={expanded || undefined}
+      data-site-ost-enabled={(playing && !sourceError) || undefined}
       className={dock ? "relative z-50" : "fixed bottom-[max(1rem,var(--service-status-overlay-clearance,0px))] left-4 z-50 max-w-[calc(100vw-2rem)] max-md:bottom-[max(var(--site-float-base),var(--service-status-overlay-clearance,0px))] max-md:left-3"}
       aria-label={korean ? "툰스튜디오 오리지널 OST" : "ToonStudio original OST"}
     >

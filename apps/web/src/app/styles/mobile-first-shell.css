@@ -1,45 +1,16 @@
 /* 화면별 작업은 유지하고 탐색·설정의 간격과 이름을 같은 규칙으로 묶는다. */
-.site-menu-utilities {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.625rem;
-  margin-block: 1rem 1.25rem;
-}
-.site-menu-utility {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  min-block-size: 3.5rem;
-  min-inline-size: 0;
-  padding: 0.75rem;
-  border: 1px solid var(--color-line);
-  border-radius: 0.875rem;
-  background: var(--color-card);
-  color: var(--color-fg-2);
-  text-align: start;
-}
-.site-menu-utility > svg { flex-shrink: 0; color: var(--color-accent); }
-.site-menu-utility > span { min-inline-size: 0; }
-.site-menu-utility strong { display: block; font-size: 0.875rem; font-weight: 650; }
-.site-menu-utility small { display: block; margin-block-start: 0.25rem; font-size: 0.75rem; color: var(--color-fg-3); }
-.site-menu-utility:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
-.site-menu-utility[aria-current="page"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent); }
-:root:not(:has([data-site-ost="mounted"])) [data-site-menu-ost="true"] { display: none; }
+/* 연결된 전체 메뉴가 있는 화면만 접힌 고정 진입을 대신한다. 열린 패널은 유지한다. */
+:root:has([data-site-menu-entry="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
+[data-site-menu-music-enabled] { display: none; font-size: 0.75rem; }
+:root:has([data-site-ost-enabled]) [data-site-menu-music-enabled] { display: block; }
 @media (max-width: 1179px) {
   :root { --site-control-size: 48px; }
   [data-slot="button"]:not([data-own-control-size]) { min-block-size: 48px; }
   [data-slot="button"][data-size="icon"]:not([data-own-control-size]) { min-inline-size: 48px; }
   :root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }
-  :root:has([data-site-mobile-utilities="available"]) [data-site-ost-pill] { display: none; }
+  :root:has([data-site-mobile-utilities="available"]) :is([data-floating-controls-mobile="disabled"]:not([data-floating-controls-open]), [data-site-ost]:not([data-site-ost-expanded]) [data-site-ost-pill]) { display: none; }
   :root:has(nav[data-site-product]) #main-content { padding-block-end: max(6rem, var(--floating-stack-clearance, 0px)); }
   :root:has(nav[data-site-product]) .site-footer__meta { padding-block-end: calc(6rem + env(safe-area-inset-bottom)); }
-}
-@media (max-width: 767px) {
-  .site-menu-utility { flex-direction: column; align-items: flex-start; }
-  .site-menu-utility small { line-height: 1.5; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .site-menu-utility { transition: none; }
 }
 
 /* 실제 공통 메뉴가 연결된 Workspace의 새 기본 메뉴 버튼만 기존 5탭과 맞춘다. */

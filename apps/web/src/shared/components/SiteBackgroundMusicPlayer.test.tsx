@@ -11,6 +11,7 @@ import { requestSiteOstPanelOpen, requestSiteOstPanelToggle } from "@/shared/lib
 const mocks = vi.hoisted(() => ({
   moodId: "pop",
   enabled: false,
+  muted: false,
   setEnabled: vi.fn(),
   setMood: vi.fn(),
   setVolume: vi.fn(),
@@ -47,7 +48,7 @@ vi.mock("@toonstudio/core/fx", () => ({
   useAudioState: () => ({
     sfxEnabled: true,
     bgmEnabled: mocks.enabled,
-    muted: false,
+    muted: mocks.muted,
     volume: 0.55,
     bgmVolume: 0.48,
     currentMood: "",
@@ -141,6 +142,7 @@ describe("SiteBackgroundMusicPlayer", () => {
     vi.clearAllMocks();
     mocks.moodId = "pop";
     mocks.enabled = false;
+    mocks.muted = false;
     mocks.setEnabled.mockImplementation((value: boolean) => { mocks.enabled = value; });
     // clearAllMocks 는 쓰이지 않은 mockImplementationOnce 를 지우지 않아 앞 테스트의 실패가 뒤로 번진다.
     mocks.resumeAudio.mockReset();
@@ -152,6 +154,38 @@ describe("SiteBackgroundMusicPlayer", () => {
     cleanup();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  it("게시된 음악이 켜지고 음소거되지 않았을 때만 공통 메뉴에 설정 켜짐을 알린다", async () => {
+    const view = renderAt("/ranking");
+    await catalogueReady();
+    const player = screen.getByTestId("site-background-music-player");
+    expect(player.hasAttribute("data-site-ost-enabled")).toBe(false);
+    mocks.enabled = true;
+    view.rerender(<MemoryRouter initialEntries={["/ranking"]}><SiteBackgroundMusicPlayer /></MemoryRouter>);
+    expect(player.getAttribute("data-site-ost-enabled")).toBe("true");
+    mocks.muted = true;
+    view.rerender(<MemoryRouter initialEntries={["/ranking"]}><SiteBackgroundMusicPlayer /></MemoryRouter>);
+    expect(player.hasAttribute("data-site-ost-enabled")).toBe(false);
+    mocks.muted = false;
+    mocks.enabled = false;
+    view.rerender(<MemoryRouter initialEntries={["/ranking"]}><SiteBackgroundMusicPlayer /></MemoryRouter>);
+    expect(player.hasAttribute("data-site-ost-enabled")).toBe(false);
+  });
+
+  it("알려진 재생 오류가 남아 있으면 설정 값이 켜져도 헤더에 켜짐 힌트를 표시하지 않는다", async () => {
+    mocks.resumeAudio.mockRejectedValueOnce(new Error("local playback unavailable"));
+    const view = renderAt("/ranking");
+    await catalogueReady();
+    await expandPlayer();
+    fireEvent.click(screen.getByRole("button", { name: "음악 재생" }));
+    await screen.findByText("음악 재생을 시작하지 못했습니다. 재생 버튼을 다시 눌러 주세요.");
+    // opt-in 복원과 오류 상태가 함께 남아도 성공/재생으로 해석하지 않는다.
+    mocks.enabled = true;
+    view.rerender(<MemoryRouter initialEntries={["/ranking"]}><SiteBackgroundMusicPlayer /></MemoryRouter>);
+    expect(screen.getByTestId("site-background-music-player").hasAttribute("data-site-ost-enabled")).toBe(false);
+    expect(screen.getByRole("button", { name: "잠시 멈춤" })).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "OST 음량" })).toBeTruthy();
   });
 
   it("selects the route theme and starts only after an explicit play gesture", async () => {
