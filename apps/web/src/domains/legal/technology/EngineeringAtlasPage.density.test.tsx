@@ -47,6 +47,32 @@ const mapChoice = () => screen.getByRole("button", { name: /무료로 세운 서
 const currentUrl = () => JSON.parse(screen.getByTestId("atlas-url").textContent ?? "{}");
 
 describe("기술 도감의 목적 분리와 결과 페이지", () => {
+  it("문서 메뉴를 접어도 검색·분야·상태·목적 탭·첫 결과는 메뉴 밖에 남고 닫기에서 URL을 바꾸지 않는다", () => {
+    const { container } = renderPage("/about/technology/atlas?unrelated=keep&q=OPFS");
+    const menu = container.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    const summary = menu?.querySelector("summary");
+    if (!menu || !summary) throw new Error("도감 전용 메뉴가 필요합니다.");
+    expect(menu.open).toBe(false);
+    const purpose = screen.getByRole("navigation", { name: /도감에서 할 일|Atlas purpose/u });
+    for (const control of [search(), ...screen.getAllByRole("combobox"), ...within(purpose).getAllByRole("button")]) {
+      expect(control.closest("details")).toBeNull();
+    }
+    expect(container.querySelector("[data-atlas-card]")?.closest("[data-engineering-catalog-menu]")).toBeNull();
+    const before = screen.getByTestId("atlas-url").textContent;
+    fireEvent.click(summary);
+    expect(menu.open).toBe(true);
+    const links = within(menu).getAllByRole("link");
+    const last = links[links.length - 1];
+    if (!last) throw new Error("문서 메뉴 링크가 필요합니다.");
+    last.focus();
+    fireEvent.keyDown(last, { key: "Escape" });
+    expect(menu.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    expect(search().value).toBe("OPFS");
+    expect(screen.getByTestId("atlas-url").textContent).toBe(before);
+    expect(container.querySelectorAll("[data-atlas-card]")).toHaveLength(12);
+  });
+
   it("첫 12개와 현재 범위를 알리고 마지막 1개까지 이동하며 결과 제목으로 초점을 옮긴다", () => {
     const { container } = renderPage();
     expect(container.querySelectorAll("[data-atlas-card]")).toHaveLength(12);
@@ -264,6 +290,10 @@ describe("기술 도감의 목적 분리와 결과 페이지", () => {
     const first = container.querySelector<HTMLDetailsElement>("[data-atlas-card] details");
     if (!first) throw new Error("첫 카드 접기 요소가 필요합니다.");
     act(() => { first.open = true; fireEvent(first, new Event("toggle")); });
+    const menu = container.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    if (!menu) throw new Error("접힌 문서 메뉴가 필요합니다.");
+    fireEvent.click(menu.querySelector("summary") as HTMLElement);
+    expect(menu.open).toBe(true);
     const before = screen.getByTestId("atlas-url").textContent;
     act(() => window.dispatchEvent(new Event("beforeprint")));
     expect(container.querySelectorAll("[data-atlas-card]")).toHaveLength(25);
@@ -278,6 +308,7 @@ describe("기술 도감의 목적 분리와 결과 페이지", () => {
     expect(screen.getByTestId("atlas-url").textContent).toBe(before);
     expect(container.querySelector<HTMLDetailsElement>("[data-atlas-card] details")?.open).toBe(true);
     expect(container.querySelectorAll<HTMLDetailsElement>("[data-atlas-card] details")[1]?.open).toBe(false);
+    expect(menu.open).toBe(true);
   });
 
   it.each(["?atlas-page=-4", "?atlas-page=999999", "?atlas-page=NaN", "#%E0", "#unknown-card"])("잘못된 경계 %s에서도 유효한 범위로 읽고 예외를 던지지 않는다", (suffix) => {

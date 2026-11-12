@@ -98,8 +98,8 @@ export function EngineeringAtlasPage() {
   const reset = () => update({ category: "all", status: "all", query: "", page: 1 }, true);
 
   return (
-    <EngineeringPageFrame pageId="atlas">
-      <EngineeringPageIntro eyebrow="TECH ATLAS" title={bi("기술 도감", "Technology atlas")}
+    <EngineeringPageFrame pageId="atlas" variant="catalog">
+      <EngineeringPageIntro variant="catalog" eyebrow="TECH ATLAS" title={bi("기술 도감", "Technology atlas")}
         description={bi("필요한 기술을 찾아 쓰인 곳과 예제를 확인하세요.", "Find a technology, where it is used, and its examples.")}
         aside={<button type="button" className={controlClass} onClick={() => window.print()}><Printer size={16} className="mr-2 inline" aria-hidden="true" />{bi("전체 인쇄", "Print all")}</button>} />
 

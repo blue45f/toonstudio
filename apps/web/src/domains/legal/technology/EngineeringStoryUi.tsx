@@ -11,7 +11,7 @@ import {
   LayoutGrid,
   Presentation,
 } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { AboutSectionNav } from "../AboutSectionNav";
 import {
@@ -263,6 +263,44 @@ function EngineeringAtlasSideToc({ currentId }: { readonly currentId: Engineerin
   );
 }
 
+/** 도감 검색을 가리지 않도록 중복 문서 메뉴를 한 곳에 모으되 기존 링크와 선택 상태를 유지한다. */
+function EngineeringCatalogMenu({ currentId }: { readonly currentId: EngineeringPageId }) {
+  useBilingualI18nRevision();
+  const current = findEngineeringPage(currentId);
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    // summary의 네이티브 키 동작은 그대로 두고, 열린 메뉴 내부 Escape만 보완한다.
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !menu.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      menu.open = false;
+      menu.querySelector("summary")?.focus({ preventScroll: true });
+    };
+    menu.addEventListener("keydown", closeOnEscape);
+    return () => menu.removeEventListener("keydown", closeOnEscape);
+  }, []);
+  return (
+    <details ref={menuRef} className="group rounded-2xl border border-line/70 bg-panel/70 print:hidden" data-engineering-catalog-menu="">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3 text-sm font-bold text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+        <span>{bi("기술 문서 메뉴·목차", "Documents & index")}</span>
+        <span className="flex min-w-0 items-center gap-2 text-xs text-fg-2">
+          {current ? bi(current.label.ko, current.label.en) : null}
+          <ChevronDown size={15} aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+        </span>
+      </summary>
+      <div className="max-h-[min(65dvh,28rem)] overflow-y-auto overscroll-contain border-t border-line/70 p-3">
+        <AboutSectionNav variant="compact" />
+        <nav aria-label={bi("기술 문서 목차", "Engineering document index")} className="mt-4">
+          <AtlasTocGroups currentId={currentId} />
+        </nav>
+      </div>
+    </details>
+  );
+}
+
 /* ── 페이지 머리말 ─────────────────────────────────────────── */
 
 function PageMeta({ page }: { readonly page: EngineeringPageEntry }) {
@@ -369,7 +407,9 @@ export function EngineeringPageIntro({
   description,
   aside,
   pageId,
+  variant = "document",
 }: {
+  readonly variant?: "document" | "catalog";
   readonly eyebrow: string;
   readonly title: string;
   readonly description: string;
@@ -383,6 +423,19 @@ export function EngineeringPageIntro({
   useBilingualI18nRevision();
   const page = pageId ? findEngineeringPage(pageId) : undefined;
   const group = page ? ENGINEERING_PAGE_GROUPS.find((entry) => entry.id === page.group) : undefined;
+  // 레지스트리 머리말의 안내·정체성은 유지하고, 별도 안내가 없는 도감 검색 화면만 압축한다.
+  if (variant === "catalog" && !page) {
+    return (
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 py-4 sm:py-5">
+        <div className="min-w-0">
+          <p className="eyebrow text-accent">{eyebrow}</p>
+          <h1 className="mt-1 text-balance break-keep text-2xl font-black tracking-tight text-fg sm:text-3xl">{title}</h1>
+        </div>
+        {aside ? <div className="shrink-0">{aside}</div> : null}
+        <p className="col-span-full max-w-3xl text-sm leading-6 text-fg-2">{description}</p>
+      </header>
+    );
+  }
   return (
     <header className="flex flex-col gap-7 py-8 sm:py-12">
       {page ? <EngineeringPageHeroArt page={page} /> : null}
@@ -499,12 +552,26 @@ export function EngineeringPageFrame({
   children,
   className,
   pager = true,
+  variant = "document",
 }: {
+  /** 도감만 중복 메뉴를 접어 검색과 결과를 먼저 보여준다. 문서 기본 배치는 유지한다. */
+  readonly variant?: "document" | "catalog";
   readonly pageId: EngineeringPageId;
   readonly children: ReactNode;
   readonly className?: string;
   readonly pager?: boolean;
 }) {
+  if (variant === "catalog") {
+    return (
+      <Container size="wide" className={cx("py-3 sm:py-5", className)}>
+        <EngineeringCatalogMenu currentId={pageId} />
+        <div className="min-w-0">
+          {children}
+          {pager ? <EngineeringPathPager current={pageId} /> : null}
+        </div>
+      </Container>
+    );
+  }
   return (
     <Container size="wide" className={cx("py-6 sm:py-8 lg:py-10", className)}>
       <AboutSectionNav variant="compact" />
