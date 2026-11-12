@@ -102,7 +102,8 @@ jobs:
           apps/web/src/domains/creator/character-shaper/CharacterShaperBlenderPackage.workflow.test.tsx
 
       - name: Type-check the web workspace
-        run: pnpm exec tsc -p tsconfig.json --noEmit --incremental false
+        # 단일 tsc의 heap 초과를 피하고 같은 root tsconfig의 전체 파일을 분할 검사한다.
+        run: pnpm run typecheck:web
 
   real-blender:
     name: real-blender-5.2-authoring-and-roundtrip

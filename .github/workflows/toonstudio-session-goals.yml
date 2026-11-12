@@ -46,9 +46,20 @@ jobs:
           fetch-depth: ${{ github.event_name != 'pull_request' && 1 || 0 }}
           filter: blob:none
           sparse-checkout-cone-mode: false
+          # PR 카탈로그 실물 검증에 필요한 GLB·썸네일·Cycles 패스만 함께 받는다.
           sparse-checkout: |
             /*
             !/apps/web/public/assets/
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/refined-v8/thumbnails/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/kitbash-v9/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/kitbash-v9/thumbnails/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/kitbash-v10/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/kitbash-v10/thumbnails/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/authored-v1/*.glb' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/authored-v1/thumbnails/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/refined-v6/passes/**/*.png' || '' }}
             /apps/web/public/assets/3d/outfits/
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json
