@@ -61,6 +61,7 @@ const INTERNAL_MATERIAL_NODE_IDS = Object.freeze([
   "physics-dry-contact", "physics-thin-film", "physics-bristle", "physics-particles", "physics-reaction", "physics-height",
   "physics-backrun-capillary", "physics-pigment-sedimentation", "physics-bristle-split-merge",
   "physics-centripetal-adaptive-stamp", "physics-centrifugal-bristle-turn",
+  "physics-dual-mask-boolean", "physics-barrel-twist-chisel", "physics-nib-split-pooling",
   "pattern-none", "pattern-dot-tone", "pattern-cross-hatch", "pattern-weave", "pattern-brick", "pattern-foliage",
   "pattern-stitch", "pattern-kaleido", "pattern-vector-flow", "pattern-vector-vortex", "pattern-vector-contour",
   "pattern-textile-satin", "pattern-textile-twill", "pattern-rainbow",

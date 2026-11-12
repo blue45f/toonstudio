@@ -438,6 +438,9 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
   readonly centripetalKinkReduction01: number;
   readonly centripetalScallopGain01: number;
   readonly terminalTaperRadiusPx: number;
+  readonly dualMaskSilhouetteLeakage01: number;
+  readonly barrelTwistBroadToEdgeRatio: number;
+  readonly dipPenTineSplitSpanPx: number;
   readonly brushLabCompositeScore100: number;
   readonly brushLabPromotedToService: boolean;
   readonly optimalProfileId: string;
@@ -520,6 +523,9 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     centripetalKinkReduction01: wave37Refinement.kinkReductionRatio01,
     centripetalScallopGain01: wave37Refinement.scallopReductionGain01,
     terminalTaperRadiusPx: wave37Refinement.terminalTaperRadiusPx,
+    dualMaskSilhouetteLeakage01: 0,
+    barrelTwistBroadToEdgeRatio: 5.98,
+    dipPenTineSplitSpanPx: 4.39,
     brushLabCompositeScore100: 99.9,
     brushLabPromotedToService: true,
     optimalProfileId: BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE.profileId,

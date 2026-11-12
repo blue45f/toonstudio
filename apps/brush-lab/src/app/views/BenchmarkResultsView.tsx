@@ -16,14 +16,18 @@ import {
 } from "../../bench/metrics/webtoon-brush-verify-ai-remix";
 import {
   QUADRATIC_PIGMENT_MODEL,
+  evaluateAnisotropicFiberFeatherAndChromaSeparation,
   evaluateAnisotropicSmudgeReservoirAndRake,
+  evaluateBarrelTwistChiselNibProjection,
   evaluateCapillaryCauliflowerAndGranulation,
   evaluateCentrifugalBristleTurnSplayAndTilt,
   evaluateCentripetalCatmullCurvatureAdaptiveStamps,
+  evaluateDualBrushBooleanMasking,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateQuadraticPigmentMix,
   evaluateSpectral38BandKubelkaMunkMix,
   evaluateSubpixelDualEnvelopeLineartAA,
+  evaluateVelocityInkPoolingAndNibSplit,
 } from "../../engine/brush-engine/competitor-quality-kernels";
 import { downloadJson } from "../../platform/download";
 import { useLab } from "../shell/lab-context";
@@ -45,6 +49,7 @@ export function BenchmarkResultsView() {
   const [showModeBDraft, setShowModeBDraft] = useState<boolean>(false);
   const [turnRateRadPerSec, setTurnRateRadPerSec] = useState<number>(9.5);
   const [tiltAltitudeDeg, setTiltAltitudeDeg] = useState<number>(28);
+  const [barrelTwistDeg, setBarrelTwistDeg] = useState<number>(35);
 
   const summaryReport = useMemo(() => runBrushLabCompetitorQualityBenchmark(seed), [seed]);
   const engineMatrix = useMemo(() => runMultiEngineBrushMatrixBenchmark(seed), [seed]);
@@ -136,8 +141,22 @@ export function BenchmarkResultsView() {
       colorDepositRate01: 0.68,
       rakeBristleDepth01: 0.62,
     });
-    return { centripetal, subpixelAa, bristleTurn, capillary, smudge };
-  }, [pigmentMixRatio01, seed, tiltAltitudeDeg, turnRateRadPerSec]);
+    const dualMask = evaluateDualBrushBooleanMasking({
+      canvasSizePx: 48, primaryRadiusPx: 16, secondaryGrainScalePx: 4.5, carveDepth01: pigmentMixRatio01, combineMode: "linear-height-subtract", seed,
+    });
+    const barrelTwist = evaluateBarrelTwistChiselNibProjection({
+      nibWidthPx: 24, nibThicknessRatio01: 0.14, strokeDirectionRad: 0, tiltAltitudeDeg, azimuthDeg: 20, sweepTwistAnglesDeg: [barrelTwistDeg, 0, 90, 180, 359, 1],
+    });
+    const dipPen = evaluateVelocityInkPoolingAndNibSplit({
+      baseRadiusPx: 8, pressure01: 0.9, speedPxPerSec: 75, cornerTurnAngleDeg: 108, inkLoad01: 0.34,
+    });
+    const fiberFeather = evaluateAnisotropicFiberFeatherAndChromaSeparation({
+      baseRadiusPx: 14, wetness01: 0.84, fiberAnisotropy01: 0.78,
+      heavyPigmentRgb01: { r: 0.12, g: 0.22, b: 0.68 }, lightDyeRgb01: { r: 0.08, g: 0.74, b: 0.78 },
+      dyeMobilityBias01: 0.82, targetWashCeiling01: 0.68,
+    });
+    return { centripetal, subpixelAa, bristleTurn, capillary, smudge, dualMask, barrelTwist, dipPen, fiberFeather };
+  }, [barrelTwistDeg, pigmentMixRatio01, seed, tiltAltitudeDeg, turnRateRadPerSec]);
 
   const brushVerifyAiReport = useMemo(
     () =>
@@ -461,9 +480,22 @@ export function BenchmarkResultsView() {
             data-testid="lab-wave37-tilt-altitude-slider"
             onChange={(e) => setTiltAltitudeDeg(Number(e.target.value))}
           />
+          <label htmlFor="lab-wave38-barrel-twist-slider">
+            배럴 트위스트(°): <span className="lab-mono">{barrelTwistDeg}°</span>
+          </label>
+          <input
+            id="lab-wave38-barrel-twist-slider"
+            type="range"
+            min={0}
+            max={359}
+            step={5}
+            value={barrelTwistDeg}
+            data-testid="lab-wave38-barrel-twist-slider"
+            onChange={(e) => setBarrelTwistDeg(Number(e.target.value))}
+          />
         </div>
         <p className="lab-mono" data-testid="lab-wave37-live-readout">
-          구심 Catmull 스탬프 {liveWave37.centripetal.adaptiveStamps.length}개(콩알자국 이득 -{(liveWave37.centripetal.scallopReductionGain01 * 100).toFixed(1)}% · 코너 꺾임 -{(liveWave37.centripetal.cornerKinkReductionRatio01 * 100).toFixed(1)}%) · 서브픽셀 SDF AA 계단 분산 -{(liveWave37.subpixelAa.edgeStaircaseVarianceReduction01 * 100).toFixed(1)}%(끝선 반경 {liveWave37.subpixelAa.terminalRadiusPx.toFixed(2)}px) · 원심 강모 부채꼴 {liveWave37.bristleTurn.centrifugalFanSplayRatio.toFixed(2)}×(기울기 측면 종횡비 {liveWave37.bristleTurn.tiltedBroadSideAspectRatio.toFixed(2)}×) · 모세관 엣지 링 대비 +{(liveWave37.capillary.edgeRingContrastGain01 * 100).toFixed(1)}%(천장 위반 {liveWave37.capillary.ghostCeilingViolationCount}건) · 스머지 연속성 {(liveWave37.smudge.pickupContinuityScore01 * 100).toFixed(1)}%
+          구심 Catmull 스탬프 {liveWave37.centripetal.adaptiveStamps.length}개(콩알자국 이득 -{(liveWave37.centripetal.scallopReductionGain01 * 100).toFixed(1)}% · 코너 꺾임 -{(liveWave37.centripetal.cornerKinkReductionRatio01 * 100).toFixed(1)}%) · 서브픽셀 SDF AA 계단 분산 -{(liveWave37.subpixelAa.edgeStaircaseVarianceReduction01 * 100).toFixed(1)}%(끝선 반경 {liveWave37.subpixelAa.terminalRadiusPx.toFixed(2)}px) · 원심 강모 부채꼴 {liveWave37.bristleTurn.centrifugalFanSplayRatio.toFixed(2)}×(기울기 측면 종횡비 {liveWave37.bristleTurn.tiltedBroadSideAspectRatio.toFixed(2)}×) · 모세관 엣지 링 대비 +{(liveWave37.capillary.edgeRingContrastGain01 * 100).toFixed(1)}%(천장 위반 {liveWave37.capillary.ghostCeilingViolationCount}건) · 스머지 연속성 {(liveWave37.smudge.pickupContinuityScore01 * 100).toFixed(1)}% · 듀얼 각인 누출 {liveWave37.dualMask.outsideSilhouetteLeakage01.toFixed(3)}(대비 +{liveWave37.dualMask.internalGrainContrastGain01.toFixed(3)}) · 치즐 선폭 {(liveWave37.barrelTwist.sweepSamples[0]?.effectiveStrokeWidthPx ?? 0).toFixed(1)}px({liveWave37.barrelTwist.broadToEdgeWidthRatio.toFixed(2)}×) · 닙 갈라짐 {liveWave37.dipPen.highPressureTineSplitSpanPx.toFixed(2)}px · 섬유 이방성 {liveWave37.fiberFeather.fiberAnisotropyAspectRatio.toFixed(2)}×
         </p>
       </div>
 

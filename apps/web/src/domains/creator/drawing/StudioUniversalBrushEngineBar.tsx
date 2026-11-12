@@ -738,6 +738,8 @@ export function StudioUniversalBrushEngineBar({
           <span>·</span>
           <span data-studio-wave37-stroke-refinement="true">{tx("구심꺾임·콩알·칼끝")}: -{Math.round(activeUniversalTelemetry.competitorQualityEval.centripetalKinkReduction01 * 100)}%/+{Math.round(activeUniversalTelemetry.competitorQualityEval.centripetalScallopGain01 * 100)}%/{activeUniversalTelemetry.competitorQualityEval.terminalTaperRadiusPx.toFixed(1)}px</span>
           <span>·</span>
+          <span data-studio-wave38-dual-twist-nib="true">{tx("듀얼각인·트위스트·닙분리")}: {activeUniversalTelemetry.competitorQualityEval.dualMaskSilhouetteLeakage01.toFixed(2)}/{activeUniversalTelemetry.competitorQualityEval.barrelTwistBroadToEdgeRatio.toFixed(1)}×/{activeUniversalTelemetry.competitorQualityEval.dipPenTineSplitSpanPx.toFixed(1)}px</span>
+          <span>·</span>
           <span>{tx("QR 바이트")}: {activeUniversalTelemetry.qrLength}B</span>
         </span>
       </div>

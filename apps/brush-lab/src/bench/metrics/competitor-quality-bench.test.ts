@@ -145,6 +145,11 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(report.bristleCentrifugalFanSplayRatio).toBeGreaterThan(1.2);
     expect(report.capillaryEdgeRingContrastGain01).toBeGreaterThan(0.01);
     expect(report.smudgeReservoirContinuity01).toBeGreaterThan(0.6);
+    expect(report.dualBrushLeakage01).toBe(0);
+    expect(report.dualBrushInternalContrastGain01).toBeGreaterThan(0.08);
+    expect(report.barrelTwistBroadToEdgeRatio).toBeGreaterThan(3.2);
+    expect(report.dipPenTineSplitSpanPx).toBeGreaterThan(3.0);
+    expect(report.fiberFeatherAnisotropyRatio).toBeGreaterThan(1.25);
     expect(report.webgpuZeroCopyHotPathMapAsyncCount).toBe(0);
     expect(report.webgpuCpuDrawCallLoopCount).toBe(0);
     expect(report.compositeQualityScore100).toBeGreaterThanOrEqual(99);

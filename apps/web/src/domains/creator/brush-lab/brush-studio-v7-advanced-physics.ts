@@ -178,6 +178,71 @@ export function sampleBrushStudioV7SubpixelEnvelopeTaper(input: {
   });
 }
 
+/**
+ * V7.4 듀얼 브러시 실루엣 보존 불리언 각인(`physics-dual-mask-boolean`).
+ */
+export function sampleBrushStudioV7DualMaskCarve(input: {
+  readonly x: number;
+  readonly y: number;
+  readonly seed: number;
+  readonly surfaceTooth01: number;
+  readonly granulation01: number;
+}): {
+  readonly opacityScale: number;
+  readonly minorRadiusScale: number;
+} {
+  const coarse = hashNoise(Math.floor(input.x / 3.5), Math.floor(input.y / 3.5), input.seed ^ 0x4455414c);
+  const fine = hashNoise(Math.floor((input.x + 7.1) / 1.7), Math.floor((input.y - 4.3) / 1.7), input.seed ^ 0x43415256);
+  const mask = unit(coarse * 0.64 + fine * 0.36);
+  const depth = unit(0.28 + unit(input.surfaceTooth01) * 0.42 + unit(input.granulation01) * 0.24);
+  const opacityScale = Math.max(0.14, Math.min(1, 1 - depth * (1 - mask) * 0.86));
+  const minorRadiusScale = Math.max(0.58, Math.min(1, 1 - depth * (1 - coarse) * 0.32));
+  return Object.freeze({ opacityScale, minorRadiusScale });
+}
+
+/**
+ * V7.4 스타일러스 배럴 트위스트(0~360°) + 기울기 3D 치즐 닙 투영(`physics-barrel-twist-chisel`).
+ */
+export function sampleBrushStudioV7BarrelTwistChisel(input: {
+  readonly baseRadiusPx: number;
+  readonly twistDeg: number;
+  readonly tilt01: number;
+  readonly strokeDirectionRad: number;
+}): {
+  readonly majorRadiusPx: number;
+  readonly minorRadiusPx: number;
+  readonly nibAngleRad: number;
+} {
+  const twistRad = ((input.twistDeg % 360) * Math.PI) / 180;
+  const tilt = unit(input.tilt01);
+  const majorRadiusPx = Math.max(0.25, input.baseRadiusPx * (1.12 + tilt * 0.42));
+  const minorRadiusPx = Math.max(0.16, input.baseRadiusPx * (0.16 + tilt * 0.22));
+  const nibAngleRad = twistRad + Math.sin(twistRad - input.strokeDirectionRad) * 0.08;
+  return Object.freeze({ majorRadiusPx, minorRadiusPx, nibAngleRad });
+}
+
+/**
+ * V7.4 딥펜(G펜·마루펜) 코너 체류 잉크 고임 & 고필압 펜촉 트윈 레일 분리(`physics-nib-split-pooling`).
+ */
+export function sampleBrushStudioV7NibSplitPooling(input: {
+  readonly radiusPx: number;
+  readonly pressure01: number;
+  readonly angularDeltaRad: number;
+  readonly segmentDistancePx: number;
+}): {
+  readonly dwellOpacityBoost: number;
+  readonly tineSplitOffsetPx: number;
+  readonly railRadiusPx: number;
+} {
+  const turnNorm = unit(Math.abs(input.angularDeltaRad) / (Math.PI * 0.65));
+  const slowNorm = Math.exp(-Math.max(0, input.segmentDistancePx) / Math.max(1.5, input.radiusPx * 1.8));
+  const dwellOpacityBoost = 1 + (0.12 * slowNorm + 0.16 * turnNorm * (0.45 + 0.55 * slowNorm));
+  const splitOver = unit((unit(input.pressure01) - 0.66) / 0.34);
+  const tineSplitOffsetPx = input.radiusPx * splitOver * 0.44;
+  const railRadiusPx = Math.max(0.16, input.radiusPx * (0.42 - splitOver * 0.08));
+  return Object.freeze({ dwellOpacityBoost, tineSplitOffsetPx, railRadiusPx });
+}
+
 export function sampleBrushStudioV7BackrunLobes(input: {
   readonly x: number;
   readonly y: number;

@@ -2,11 +2,14 @@ import {
   COMPETITOR_BRUSH_QUALITY_REA_EVIDENCE,
   COMPETITOR_WAVE36_12ENGINE_REA_EVIDENCE,
   QUADRATIC_PIGMENT_MODEL,
+  evaluateAnisotropicFiberFeatherAndChromaSeparation,
   evaluateAnisotropicSmudgeReservoirAndRake,
+  evaluateBarrelTwistChiselNibProjection,
   evaluateCapillaryCauliflowerAndGranulation,
   evaluateCentrifugalBristleTurnSplayAndTilt,
   evaluateCentripetalCatmullCurvatureAdaptiveStamps,
   evaluateDliSunflowerBristleAndGgxImpasto,
+  evaluateDualBrushBooleanMasking,
   evaluateLazySimplexAndFlatnessBezier,
   evaluateP5BrushWatercolorPolygonBleedAndGaussianPressure,
   evaluateQuadraticPigmentMix,
@@ -14,6 +17,7 @@ import {
   evaluateSpectral38BandKubelkaMunkMix,
   evaluateSubpixelDualEnvelopeLineartAA,
   evaluateTegakiGhostBufferWashAndBayerTone,
+  evaluateVelocityInkPoolingAndNibSplit,
   evaluateWebGlFluidVorticityAndDyeAdvection,
   synthesizeSumiUltraQualityTextureDab,
 } from "../../engine/brush-engine/competitor-quality-kernels";
@@ -53,6 +57,11 @@ export interface BrushLabCompetitorQualityBenchReport {
   readonly bristleCentrifugalFanSplayRatio: number;
   readonly capillaryEdgeRingContrastGain01: number;
   readonly smudgeReservoirContinuity01: number;
+  readonly dualBrushLeakage01: number;
+  readonly dualBrushInternalContrastGain01: number;
+  readonly barrelTwistBroadToEdgeRatio: number;
+  readonly dipPenTineSplitSpanPx: number;
+  readonly fiberFeatherAnisotropyRatio: number;
   readonly webgpuZeroCopyHotPathMapAsyncCount: number;
   readonly webgpuCpuDrawCallLoopCount: number;
   readonly compositeQualityScore100: number;
@@ -341,6 +350,20 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     colorDepositRate01: 0.68,
     rakeBristleDepth01: 0.62,
   });
+  const dualMask = evaluateDualBrushBooleanMasking({
+    canvasSizePx: 48, primaryRadiusPx: 16, secondaryGrainScalePx: 4.5, carveDepth01: 0.72, combineMode: "linear-height-subtract", seed,
+  });
+  const barrelTwist = evaluateBarrelTwistChiselNibProjection({
+    nibWidthPx: 24, nibThicknessRatio01: 0.14, strokeDirectionRad: 0, tiltAltitudeDeg: 52, azimuthDeg: 20,
+  });
+  const dipPenSplit = evaluateVelocityInkPoolingAndNibSplit({
+    baseRadiusPx: 8, pressure01: 0.9, speedPxPerSec: 75, cornerTurnAngleDeg: 108, inkLoad01: 0.34,
+  });
+  const fiberFeather = evaluateAnisotropicFiberFeatherAndChromaSeparation({
+    baseRadiusPx: 14, wetness01: 0.84, fiberAnisotropy01: 0.78,
+    heavyPigmentRgb01: { r: 0.12, g: 0.22, b: 0.68 }, lightDyeRgb01: { r: 0.08, g: 0.74, b: 0.78 },
+    dyeMobilityBias01: 0.82, targetWashCeiling01: 0.68,
+  });
 
   const compositeQualityScore100 = Number(
     Math.min(
@@ -374,6 +397,12 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     bristleTurn.centrifugalFanSplayRatio > 1.2 &&
     capillary.ghostCeilingViolationCount === 0 &&
     smudge.pickupContinuityScore01 > 0.6 &&
+    dualMask.outsideSilhouetteLeakage01 === 0 &&
+    dualMask.internalGrainContrastGain01 > 0.08 &&
+    barrelTwist.broadToEdgeWidthRatio > 3.2 &&
+    dipPenSplit.highPressureTineSplitSpanPx > 3.0 &&
+    fiberFeather.ghostCeilingViolationCount === 0 &&
+    fiberFeather.fiberAnisotropyAspectRatio > 1.25 &&
     frameReport.hotPathMapAsyncCount === 0 &&
     frameReport.cpuDrawCallLoopCount === 0;
 
@@ -404,6 +433,11 @@ export function runBrushLabCompetitorQualityBenchmark(seed = 20261027): BrushLab
     bristleCentrifugalFanSplayRatio: bristleTurn.centrifugalFanSplayRatio,
     capillaryEdgeRingContrastGain01: capillary.edgeRingContrastGain01,
     smudgeReservoirContinuity01: smudge.pickupContinuityScore01,
+    dualBrushLeakage01: dualMask.outsideSilhouetteLeakage01,
+    dualBrushInternalContrastGain01: dualMask.internalGrainContrastGain01,
+    barrelTwistBroadToEdgeRatio: barrelTwist.broadToEdgeWidthRatio,
+    dipPenTineSplitSpanPx: dipPenSplit.highPressureTineSplitSpanPx,
+    fiberFeatherAnisotropyRatio: fiberFeather.fiberAnisotropyAspectRatio,
     webgpuZeroCopyHotPathMapAsyncCount: frameReport.hotPathMapAsyncCount,
     webgpuCpuDrawCallLoopCount: frameReport.cpuDrawCallLoopCount,
     compositeQualityScore100,

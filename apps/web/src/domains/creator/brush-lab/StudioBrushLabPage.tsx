@@ -17,6 +17,10 @@ import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
 
 import { registerStudioBrushGrainSourcesV1 } from "../brush/studio-brush-grain-source-catalog-v1";
+import {
+  STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS,
+  pinStudioCompetitorFavoritesToProductRepository,
+} from "../brush/studio-competitor-favorite-slots";
 import { refineStudioCompetitorFreehandStroke } from "../brush/studio-competitor-stroke-refinement";
 import {
   STUDIO_BRUSH_LABELS,
@@ -76,6 +80,20 @@ const WAVE37_FLAGSHIP_RECIPES = [
     taper: 0.85,
   },
   {
+    id: "csp-dual-chalk-ink-liner",
+    ko: "듀얼 초크 건식 펜선",
+    en: "Dual-Chalk Dry Ink Liner",
+    spacing: 0.08,
+    taper: 0.78,
+  },
+  {
+    id: "calligraphy-barrel-twist-nib",
+    ko: "배럴 트위스트 납작 닙",
+    en: "Barrel-Twist Chisel Nib",
+    spacing: 0.08,
+    taper: 0.68,
+  },
+  {
     id: "procreate-6b-tilt-graphite",
     ko: "6B 틸트 그래파이트",
     en: "6B Tilt Graphite",
@@ -109,6 +127,7 @@ export function StudioBrushLabPage() {
   const [stylusCurve, setStylusCurve] = useState<(typeof STYLUS_CURVES)[number]["id"]>("scurve-soft-ink");
   const [wave37RecipeId, setWave37RecipeId] =
     useState<(typeof WAVE37_FLAGSHIP_RECIPES)[number]["id"]>("csp-real-gpen-aa");
+  const [pinnedSlotsCount, setPinnedSlotsCount] = useState<number | null>(null);
   const activeKernel = KERNEL_MODES.find((item) => item.id === kernelMode) ?? KERNEL_MODES[0];
   const activeCurve = STYLUS_CURVES.find((item) => item.id === stylusCurve) ?? STYLUS_CURVES[0];
   const activeWave37Recipe =
@@ -454,6 +473,35 @@ export function StudioBrushLabPage() {
               {pickLang(recipe.ko, recipe.en)}
             </button>
           ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <button
+            type="button"
+            data-testid="brush-lab-pin-favorites-btn"
+            onClick={() => {
+              void pinStudioCompetitorFavoritesToProductRepository().then((res) => {
+                setPinnedSlotsCount(res.pinnedCount);
+              });
+            }}
+            className="rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20"
+          >
+            {pickLang(
+              `원고 캔버스 빠른 선반에 플래그십 ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length}종 고정 배치`,
+              `Pin ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length} Flagships to Canvas Quick Shelf`,
+            )}
+          </button>
+          {pinnedSlotsCount !== null ? (
+            <span
+              role="status"
+              data-testid="brush-lab-pin-favorites-status"
+              className="font-mono text-xs font-semibold text-accent"
+            >
+              {pickLang(
+                `원고 캔버스 즐겨찾기 빠른 선반에 ${pinnedSlotsCount}종 고정 완료`,
+                `Pinned ${pinnedSlotsCount} flagship brushes to canvas quick shelf`,
+              )}
+            </span>
+          ) : null}
         </div>
         <p
           data-testid="brush-lab-wave37-metrics"

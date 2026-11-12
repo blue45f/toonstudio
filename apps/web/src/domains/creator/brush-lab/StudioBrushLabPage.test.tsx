@@ -74,14 +74,18 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("heavy-chisel-tilt");
   });
 
-  it("Wave 37 플래그십 레시피 전환 시 구심 곡률 보간 및 출필 테이퍼 지표가 갱신된다", () => {
+  it("Wave 37/38 플래그십 레시피 전환 및 원고 캔버스 빠른 선반 원클릭 고정 배치가 동작한다", async () => {
     renderBrushLab();
     expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("csp-real-gpen-aa");
-    fireEvent.click(screen.getByTestId("brush-lab-wave37-recipe-krita-impasto-fan-bristle"));
+    fireEvent.click(screen.getByTestId("brush-lab-wave37-recipe-calligraphy-barrel-twist-nib"));
     expect(
-      screen.getByTestId("brush-lab-wave37-recipe-krita-impasto-fan-bristle").getAttribute("aria-pressed"),
+      screen.getByTestId("brush-lab-wave37-recipe-calligraphy-barrel-twist-nib").getAttribute("aria-pressed"),
     ).toBe("true");
-    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("krita-impasto-fan-bristle");
+    expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("calligraphy-barrel-twist-nib");
+
+    fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
+    const pinnedStatus = await screen.findByTestId("brush-lab-pin-favorites-status");
+    expect(pinnedStatus.textContent).toContain("6종 고정 완료");
   });
 
   it("en 로케일에서는 한글이 전혀 포함되지 않는다", () => {

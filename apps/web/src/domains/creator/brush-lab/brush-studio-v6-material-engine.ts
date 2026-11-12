@@ -6,8 +6,11 @@ import {
   computeBrushStudioV7ImpastoShading,
   interpolateBrushStudioV7CentripetalSegment,
   sampleBrushStudioV7BackrunLobes,
+  sampleBrushStudioV7BarrelTwistChisel,
   sampleBrushStudioV7BristleBundle,
   sampleBrushStudioV7CentrifugalBristleTurn,
+  sampleBrushStudioV7DualMaskCarve,
+  sampleBrushStudioV7NibSplitPooling,
   sampleBrushStudioV7Sediment,
   sampleBrushStudioV7SubpixelEnvelopeTaper,
   sampleBrushStudioV7VectorField,
@@ -102,6 +105,8 @@ export function brushStudioV6MaterialActiveTuningKeys(program: BrushStudioV6Mate
   if (program.slots.physics.includes("physics-bristle-split-merge")) for (const key of ["bristleStrands", "friction", "viscosity"] as const) result.add(key);
   if (program.slots.physics.includes("physics-centrifugal-bristle-turn")) for (const key of ["bristleStrands", "friction", "viscosity", "gloss"] as const) result.add(key);
   if (program.slots.physics.includes("physics-centripetal-adaptive-stamp")) result.add("stabilization");
+  if (program.slots.physics.includes("physics-dual-mask-boolean")) for (const key of ["surfaceTooth", "granulation"] as const) result.add(key);
+  if (program.slots.physics.includes("physics-barrel-twist-chisel")) result.add("friction");
   if (program.slots.finish.includes("finish-directional-relief")) for (const key of ["relief", "gloss"] as const) result.add(key);
   if (pattern && mode !== "particle") { activeTuningKeysCache.set(program, result); return result; }
   const modeKeys: Readonly<Record<typeof mode, readonly (keyof BrushStudioV6Tuning)[]>> = {
@@ -194,6 +199,7 @@ export interface BrushStudioV6ResolvedTipProfile {
   readonly spacing: number; readonly step: number; readonly seed: number; readonly physics: ReadonlySet<string>;
   readonly backrun: boolean; readonly sedimentation: boolean; readonly splitMerge: boolean;
   readonly centripetalAdaptive: boolean; readonly centrifugalBristle: boolean; readonly subpixelSdfAa: boolean;
+  readonly dualMaskBoolean: boolean; readonly barrelTwistChisel: boolean; readonly nibSplitPooling: boolean;
   readonly directionalRelief: boolean; readonly bristle: boolean; readonly wet: boolean; readonly knife: boolean;
   readonly particles: boolean; readonly chisel: boolean; readonly dualTip: boolean; readonly motifTip: boolean;
   readonly luminousDeposit: boolean; readonly wetSheen: boolean; readonly chromaFringe: boolean;
@@ -222,6 +228,9 @@ export function resolveTipProfile(program: BrushStudioV6MaterialProgram): BrushS
   const splitMerge = enhancedAdapters && physics.has("physics-bristle-split-merge");
   const centripetalAdaptive = enhancedAdapters && physics.has("physics-centripetal-adaptive-stamp");
   const centrifugalBristle = enhancedAdapters && physics.has("physics-centrifugal-bristle-turn");
+  const dualMaskBoolean = enhancedAdapters && physics.has("physics-dual-mask-boolean");
+  const barrelTwistChisel = enhancedAdapters && physics.has("physics-barrel-twist-chisel");
+  const nibSplitPooling = enhancedAdapters && physics.has("physics-nib-split-pooling");
   const subpixelSdfAa = enhancedAdapters && program.slots.finish.includes("finish-subpixel-sdf-aa");
   const directionalRelief = enhancedAdapters && program.slots.finish.includes("finish-directional-relief");
   const bristle = mode === "bristle", wet = mode === "wet", knife = mode === "relief", particles = mode === "particle";
@@ -240,7 +249,8 @@ export function resolveTipProfile(program: BrushStudioV6MaterialProgram): BrushS
   const palette = materialPaletteCache.get(t.primaryColor, t.secondaryColor, pigmentProvider.id);
   const profile: BrushStudioV6ResolvedTipProfile = Object.freeze({
     enhancedAdapters, pickup, smudgeAdapter, size, mode, spacing, step, seed, physics,
-    backrun, sedimentation, splitMerge, centripetalAdaptive, centrifugalBristle, subpixelSdfAa, directionalRelief,
+    backrun, sedimentation, splitMerge, centripetalAdaptive, centrifugalBristle, subpixelSdfAa,
+    dualMaskBoolean, barrelTwistChisel, nibSplitPooling, directionalRelief,
     bristle, wet, knife, particles, chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId,
     nativeVectorPattern, laneCount, maxPatternMarks, palette,
     roundness: chisel ? 0.28 : 1, angleRad: chisel || knife ? Math.PI / 4 : 0, hardness: program.slots.deposition === "deposit-marker" ? 0.65 : 1,
@@ -258,7 +268,8 @@ export function createBrushStudioV6MaterialStroke(
   const t = program.tuning;
   const {
     pickup, smudgeAdapter, size, mode, step, seed, physics, backrun, sedimentation, splitMerge,
-    centripetalAdaptive, centrifugalBristle, subpixelSdfAa, directionalRelief, bristle, wet, knife, particles,
+    centripetalAdaptive, centrifugalBristle, subpixelSdfAa, dualMaskBoolean, barrelTwistChisel, nibSplitPooling,
+    directionalRelief, bristle, wet, knife, particles,
     chisel, dualTip, motifTip, luminousDeposit, wetSheen, chromaFringe, patternId, nativeVectorPattern, laneCount, maxPatternMarks, palette,
   } = resolveTipProfile(program);
   const markBudget = Math.round(bounded(options.maxMarksPerPush ?? 8192, 64, 32768));
@@ -266,7 +277,7 @@ export function createBrushStudioV6MaterialStroke(
   const advancedWetMarks = (backrun ? 4 : 0) + (sedimentation ? 5 : 0);
   const directionalReliefMarks = directionalRelief && mode === "relief" ? 5 : 0;
   const bristleMarks = bristle ? laneCount * (splitMerge ? 2 : 1) : 0;
-  const aaMarks = subpixelSdfAa ? 2 : 0;
+  const aaMarks = (subpixelSdfAa ? 2 : 0) + (nibSplitPooling ? 2 : 0);
   const baseMarksPerDab = topology ? topology.maxPrimitivesPerDab * 3 : (patternId !== "pattern-none" ? maxPatternMarks + (particles ? 36 : 0) : bristle ? bristleMarks : mode === "grain" ? 36 : particles ? 36 : 6) + 4 + advancedWetMarks + directionalReliefMarks + aaMarks;
   const marksPerDab = baseMarksPerDab * (1 + (dualTip ? 1 : 0) + (motifTip ? 1 : 0));
   const laneX = new Float64Array(topology ? 0 : laneCount), laneY = new Float64Array(topology ? 0 : laneCount);
@@ -314,7 +325,8 @@ export function createBrushStudioV6MaterialStroke(
       rotation: number, opacity: number, mix = 0, height = 0, shape: BrushStudioV6MaterialMark["shape"] = "ellipse"): void => {
       const sourceMix = unit(mix);
       const resolvedMix = smudgeAdapter ? unit(sourceMix * (1 - pickup) + smudgeMix * pickup) : sourceMix;
-      pushMark(kind, x, y, rx, ry, rotation, opacity, resolvedMix, height, shape);
+      const carve = dualMaskBoolean ? sampleBrushStudioV7DualMaskCarve({ x, y, seed, surfaceTooth01: t.surfaceTooth, granulation01: t.granulation }) : null;
+      pushMark(kind, x, y, rx, carve ? ry * carve.minorRadiusScale : ry, rotation, carve ? opacity * carve.opacityScale : opacity, resolvedMix, height, shape);
       if (smudgeAdapter) {
         const gathered = unit(sourceMix + random(37, 0x534d5544) * 0.28);
         smudgeMix = unit(smudgeMix * (0.86 + (1 - pickup) * 0.1) + gathered * pickup * 0.08);
@@ -537,22 +549,32 @@ export function createBrushStudioV6MaterialStroke(
 
     const marker = program.slots.deposition === "deposit-marker";
     const advancedSurface = isBrushStudioV7AdvancedSurface(program.slots.surface);
-    const adjustedRoundness = chisel ? tipProfile.roundness + tilt * 0.2 : tipProfile.roundness;
-    const sdfEnvelope = subpixelSdfAa ? sampleBrushStudioV7SubpixelEnvelopeTaper({ dabIndex: index, pressure01: pressure, radiusPx: radius }) : null;
-    const effectiveRadius = sdfEnvelope ? radius * sdfEnvelope.coreRadiusScale : radius;
-    if (sdfEnvelope) emit("ink", point.x, point.y, sdfEnvelope.haloRadiusPx, sdfEnvelope.haloRadiusPx * adjustedRoundness, angle, alpha * sdfEnvelope.haloOpacityScale, 0, 0, chisel ? "rect" : "ellipse");
+    const twistChisel = barrelTwistChisel ? sampleBrushStudioV7BarrelTwistChisel({ baseRadiusPx: radius, twistDeg: finite(point.twist ?? 0), tilt01: tilt, strokeDirectionRad: direction }) : null;
+    const nibSplit = nibSplitPooling ? sampleBrushStudioV7NibSplitPooling({ radiusPx: radius, pressure01: pressure, angularDeltaRad, segmentDistancePx: segmentDistPx }) : null;
+    const inkAngle = twistChisel ? twistChisel.nibAngleRad : angle;
+    const inkAlpha = alpha * (nibSplit?.dwellOpacityBoost ?? 1);
+    const adjustedRoundness = twistChisel ? twistChisel.minorRadiusPx / Math.max(0.25, twistChisel.majorRadiusPx) : chisel ? tipProfile.roundness + tilt * 0.2 : tipProfile.roundness;
+    const baseMajorR = twistChisel ? twistChisel.majorRadiusPx : radius;
+    const sdfEnvelope = subpixelSdfAa ? sampleBrushStudioV7SubpixelEnvelopeTaper({ dabIndex: index, pressure01: pressure, radiusPx: baseMajorR }) : null;
+    const effectiveRadius = sdfEnvelope ? baseMajorR * sdfEnvelope.coreRadiusScale : baseMajorR;
+    if (sdfEnvelope) emit("ink", point.x, point.y, sdfEnvelope.haloRadiusPx, sdfEnvelope.haloRadiusPx * adjustedRoundness, inkAngle, inkAlpha * sdfEnvelope.haloOpacityScale, 0, 0, chisel ? "rect" : "ellipse");
     if (advancedSurface) {
       const surfaceContact = sampleBrushStudioV7SurfaceContact(program.slots.surface, point.x, point.y, seed);
       const fiberInfluence = surfaceContact.anisotropy * (marker ? 0.24 : 0.1);
-      const contactAngle = angle + Math.sin(surfaceContact.fiberAngle - angle) * fiberInfluence;
+      const contactAngle = inkAngle + Math.sin(surfaceContact.fiberAngle - inkAngle) * fiberInfluence;
       const bleed = marker ? 1 + surfaceContact.localAbsorbency * unit(t.absorbency) * 0.2 : 1;
       const toothGain = 1 - surfaceContact.tooth * unit(t.surfaceTooth) * 0.14;
       const aspect = chisel ? adjustedRoundness : adjustedRoundness - surfaceContact.anisotropy * 0.09;
-      emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * aspect, contactAngle, alpha * tipProfile.hardness * toothGain, 0, 0, chisel ? "rect" : "ellipse");
-      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * 0.42, contactAngle, alpha * t.edgeDarkening * (0.82 + surfaceContact.localAbsorbency * 0.24), 0, 0, "ring");
+      emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * aspect, contactAngle, inkAlpha * tipProfile.hardness * toothGain, 0, 0, chisel ? "rect" : "ellipse");
+      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius * bleed, effectiveRadius * 0.42, contactAngle, inkAlpha * t.edgeDarkening * (0.82 + surfaceContact.localAbsorbency * 0.24), 0, 0, "ring");
     } else {
-      emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * adjustedRoundness, angle, alpha * tipProfile.hardness, 0, 0, chisel ? "rect" : "ellipse");
-      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * 0.42, angle, alpha * t.edgeDarkening, 0, 0, "ring");
+      emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * adjustedRoundness, inkAngle, inkAlpha * tipProfile.hardness, 0, 0, chisel ? "rect" : "ellipse");
+      if (marker && t.edgeDarkening > 0) emit("ink", point.x, point.y, effectiveRadius, effectiveRadius * 0.42, inkAngle, inkAlpha * t.edgeDarkening, 0, 0, "ring");
+    }
+    if (nibSplit && nibSplit.tineSplitOffsetPx > 0.2 && directional) {
+      const nx = -Math.sin(direction) * nibSplit.tineSplitOffsetPx, ny = Math.cos(direction) * nibSplit.tineSplitOffsetPx;
+      emit("ink", point.x + nx, point.y + ny, nibSplit.railRadiusPx, nibSplit.railRadiusPx * 0.72, direction, inkAlpha * 0.42, 0, 0, "capsule");
+      emit("ink", point.x - nx, point.y - ny, nibSplit.railRadiusPx, nibSplit.railRadiusPx * 0.72, direction, inkAlpha * 0.42, 0, 0, "capsule");
     }
   }
 
