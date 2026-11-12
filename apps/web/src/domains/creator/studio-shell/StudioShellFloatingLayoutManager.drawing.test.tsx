@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -28,6 +28,21 @@ describe("화면과 작업 환경의 목적별 진입", () => {
     const close = screen.getByRole("button", { name: "보기 설정 닫기" }); expect(document.activeElement).toBe(close);
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
+  });
+  it("실제 document host처럼 Provider 밖에 있어도 연결된 상단으로 기본 화면을 알고 More 진입·복귀를 유지한다", async () => {
+    function SiblingHost({ simple }: { readonly simple: boolean }) { return <>
+      <div data-studio-editor="true"><header key={simple ? "drawing" : "legacy"} id="studio-menubar" data-studio-drawing-clarity-header={simple ? "true" : undefined}>
+        <button data-studio-clarity-more-trigger="true" onClick={event => requestStudioShellFloatingLayoutManagerOpen(event.currentTarget)}>동일 화면 더보기</button>
+      </header></div><StudioShellFloatingLayoutManager />
+    </>; }
+    const view = render(<SiblingHost simple />), trigger = screen.getByRole("button", { name: "동일 화면 더보기" });
+    await waitFor(() => expect(document.querySelector("[data-studio-shell-view-options]")?.hasAttribute("hidden")).toBe(true));
+    fireEvent.click(trigger); expect(screen.getByRole("heading", { name: "화면과 작업 환경" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" }); expect(document.activeElement).toBe(trigger);
+    expect(document.querySelector("[data-studio-shell-view-options]")?.hasAttribute("hidden")).toBe(true);
+    view.rerender(<SiblingHost simple={false} />);
+    await waitFor(() => expect(document.querySelector("[data-studio-shell-view-options]")?.hasAttribute("hidden")).toBe(false));
+    expect(screen.getByRole("button", { name: /보기 설정/ })).toBeTruthy();
   });
   it("기존 무인수 요청과 비Clarity launcher는 그대로 지원한다", () => {
     render(<Surface active={false} />); expect(screen.getByRole("button", { name: /보기 설정/ })).toBeTruthy();

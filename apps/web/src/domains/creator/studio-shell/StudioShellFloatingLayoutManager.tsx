@@ -40,6 +40,7 @@ import {
 import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status-i18n-r3c11";
 import { useStudioShellFloatingLayout } from "./studio-shell-floating-layout-context";
 import { StudioShellFloatingTarget } from "./StudioShellFloatingTarget";
+import { useStudioChromePortalTarget } from "./use-studio-chrome-portal-target";
 import { STUDIO_SHELL_FLOATING_LAYOUT_OPEN_EVENT } from "./studio-shell-floating-layout-events";
 import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 import {
@@ -84,7 +85,8 @@ function surfaceIdsForVisibility(
 
 export function StudioShellFloatingLayoutManager() {
   const shell = useStudioShellFloatingLayout();
-  const drawing = useStudioDrawingClarity()?.active === true, bt = useBilingual("studio.drawingClarity");
+  const menubar = useStudioChromePortalTarget("studio-menubar");
+  const drawing = useStudioDrawingClarity()?.active === true || menubar?.dataset.studioDrawingClarityHeader === "true", bt = useBilingual("studio.drawingClarity");
   const desktop = useMediaQuery(STUDIO_DESKTOP_FLOATING_QUERY);
   const arranging = useSyncExternalStore(
     subscribeStudioWorkspaceArranging,
@@ -97,12 +99,12 @@ export function StudioShellFloatingLayoutManager() {
   const launcherRef = useRef<HTMLButtonElement>(null);
   const externalTrigger = useRef<HTMLElement | null>(null);
   const restoreLauncherFocus = useCallback(() => {
-    const editor = launcherRef.current?.closest('[data-studio-editor="true"]');
+    const editor = (menubar ?? launcherRef.current)?.closest('[data-studio-editor="true"]');
     const target = externalTrigger.current?.isConnected ? externalTrigger.current : drawing
       ? editor?.querySelector<HTMLElement>('[data-studio-clarity-more-trigger="true"]') : launcherRef.current;
     externalTrigger.current = null;
     target?.focus({ preventScroll: true });
-  }, [drawing]);
+  }, [drawing, menubar]);
   const closeManager = useCallback(() => { setOpen(false); restoreLauncherFocus(); }, [restoreLauncherFocus]);
   const configuredVisibleCount = STUDIO_SHELL_FLOATING_VISIBILITY_IDS
     .filter(shell.isConfiguredVisible).length;
