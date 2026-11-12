@@ -227,6 +227,39 @@ describe("CI·QA 관리자 보드", () => {
     openCheck(); expect((screen.getByLabelText("검증 요약") as HTMLInputElement).value).toBe("용량 초과 시 보존할 입력");
   });
 
+  it("다른 창의 저장과 충돌하면 양쪽 기록을 보존하고 백업·확인 후 최신본을 읽는다", () => {
+    show();
+    // 같은 원본으로 시작한 다른 창이 먼저 검사 결과를 저장한다.
+    const otherWindow = createQualityBoard();
+    otherWindow.checks[0].summary = "다른 창에서 저장한 검증 결과";
+    localStorage.setItem(getQualityStorageKey(user), exportQualityBoardJson(otherWindow));
+    fireEvent.click(screen.getByRole("button", { name: "승인 대기 3" }));
+    fireEvent.change(screen.getByLabelText("코드 수정 검토 메모"), { target: { value: "현재 창의 미저장 메모" } });
+    fireEvent.click(screen.getByRole("button", { name: "코드 수정 메모 저장" }));
+    expect(screen.getByRole("alert").textContent).toContain("다른 창에서 저장된 기록이 변경");
+    expect((screen.getByRole("button", { name: "저장 다시 시도" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(loadQualityBoard(user).board?.checks[0].summary).toBe("다른 창에서 저장한 검증 결과");
+    expect(loadQualityBoard(user).board?.approvals[0].note).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "복구 JSON 관리" }));
+    const draft = JSON.parse((screen.getByLabelText("보드 JSON") as HTMLTextAreaElement).value) as QualityBoard;
+    expect(draft.approvals[0].note).toBe("현재 창의 미저장 메모");
+    expect(draft.checks[0].summary).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "대화상자 닫기" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장된 기록 다시 읽기" }));
+    expect((screen.getByLabelText("코드 수정 검토 메모") as HTMLTextAreaElement).value).toBe("현재 창의 미저장 메모");
+    fireEvent.click(screen.getByRole("button", { name: "다시 읽기 취소" }));
+    expect(screen.getByText("저장되지 않은 기록 있음 · JSON 백업 필요")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "저장된 기록 다시 읽기" }));
+    fireEvent.click(screen.getByRole("button", { name: "미저장 변경을 버리고 최신 저장본 읽기" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect((screen.getByLabelText("코드 수정 검토 메모") as HTMLTextAreaElement).value).toBe("");
+    fireEvent.change(screen.getByLabelText("코드 수정 검토 메모"), { target: { value: "최신본 위에 기록한 메모" } });
+    fireEvent.click(screen.getByRole("button", { name: "코드 수정 메모 저장" }));
+    expect(loadQualityBoard(user).board?.checks[0].summary).toBe("다른 창에서 저장한 검증 결과");
+    expect(loadQualityBoard(user).board?.approvals[0].note).toBe("최신본 위에 기록한 메모");
+  });
+
   it("큰 기존 자료도 JSON 관리 화면을 중단하지 않고 용량 오류를 알린다", () => {
     const board = createQualityBoard();
     for (const check of board.checks.slice(0, 11)) check.ciJson = { payload: "x".repeat(190_000) };

@@ -41,7 +41,7 @@ test("실패 분석·CI JSON·통계를 기록하고 다시 열어도 보존한�
   await page.goto(boardPath);
   await page.getByRole("button", { name: "Vitest 결과 기록", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Vitest 결과 기록", exact: true });
-  await dialog.getByLabel("진행 상태", { exact: true }).selectOption("failed");
+  await dialog.getByRole("combobox", { name: "진행 상태", exact: true }).selectOption("failed");
   await dialog.getByLabel("근거 범위", { exact: true }).fill("product shard · 브라우저 검증 fixture");
   await dialog.getByLabel("근거 커밋 SHA (40자리)").fill(createQualityBoard().commit.sha);
   await dialog.getByLabel("실행 시각 (이 기기의 시간대)").fill(await currentLocalMinute(page));
@@ -51,7 +51,7 @@ test("실패 분석·CI JSON·통계를 기록하고 다시 열어도 보존한�
   await dialog.getByLabel("건너뜀", { exact: true }).fill("0");
   await dialog.getByLabel("전체", { exact: true }).fill("10");
   await dialog.getByRole("button", { name: "실패 분석", exact: true }).click();
-  await dialog.getByLabel("실패 분류", { exact: true }).selectOption("regression");
+  await dialog.getByRole("combobox", { name: "실패 분류", exact: true }).selectOption("regression");
   await dialog.getByLabel("관련 변경", { exact: true }).fill("예산 기준 변경");
   await dialog.getByLabel("이전 정상 상태 · SHA · 실행 시각", { exact: true }).fill("이전 정상 fixture SHA와 실행");
   await dialog.getByLabel("이전 정상 상태와의 차이", { exact: true }).fill("예상값과 실제값 차이");
@@ -100,7 +100,7 @@ test("Testifly 참고 결과와 승인 메모를 저장해도 외부 작업·정
   await page.getByRole("button", { name: "참고 결과 기록", exact: true }).click();
   const qa = page.getByRole("dialog", { name: "외부 QA 참고 결과 기록", exact: true });
   await qa.getByLabel("참고 결과 제목", { exact: true }).fill("수동 참고 결과");
-  await qa.getByLabel("참고 결과 상태", { exact: true }).selectOption("done");
+  await qa.getByRole("combobox", { name: "참고 결과 상태", exact: true }).selectOption("done");
   await qa.getByLabel("참고 결과 실행 시각 (이 기기의 시간대)").fill(await currentLocalMinute(page));
   await qa.getByLabel("참고 결과 URL", { exact: true }).fill("https://example.com/qa");
   await qa.getByRole("button", { name: "참고 결과 저장", exact: true }).click();
@@ -108,13 +108,13 @@ test("Testifly 참고 결과와 승인 메모를 저장해도 외부 작업·정
   await expect(page.getByText("정본 CI 통계·완료 수에서 제외", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "승인 대기 3", exact: true }).click();
   for (const title of ["코드 수정", "외부 배포", "계정 설정 변경"]) {
-    await page.getByLabel(`${title} 검토 메모`, { exact: true }).fill(`${title} 검토만 요청`);
+    await page.getByRole("textbox", { name: `${title} 검토 메모`, exact: true }).fill(`${title} 검토만 요청`);
     await page.getByRole("button", { name: `${title} 메모 저장`, exact: true }).click();
   }
   await expect(page.locator(".ci-quality-approval-grid .ci-quality-status--approval")).toHaveCount(3);
   await page.reload();
   await page.getByRole("button", { name: "승인 대기 3", exact: true }).click();
-  await expect(page.getByLabel("외부 배포 검토 메모", { exact: true })).toHaveValue("외부 배포 검토만 요청");
+  await expect(page.getByRole("textbox", { name: "외부 배포 검토 메모", exact: true })).toHaveValue("외부 배포 검토만 요청");
   expect(fixture.writes).toEqual([]);
 });
 
@@ -123,13 +123,13 @@ test("JSON 내보내기·파일 가져오기·검토 후 대체와 정책 위반
   await page.goto(boardPath);
   await page.getByRole("button", { name: "JSON 관리", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "JSON 관리", exact: true });
-  const exported = JSON.parse(await dialog.getByLabel("보드 JSON", { exact: true }).inputValue()) as ReturnType<typeof createQualityBoard>;
+  const exported = JSON.parse(await dialog.getByRole("textbox", { name: "보드 JSON", exact: true }).inputValue()) as ReturnType<typeof createQualityBoard>;
   expect(exported.checks).toHaveLength(12);
   const download = page.waitForEvent("download");
   await dialog.getByRole("button", { name: "현재 기록 내보내기", exact: true }).click();
   expect((await download).suggestedFilename()).toMatch(/^toonstudio-ci-qa-.*\.json$/u);
   const invalid = { ...exported, qa: { ...exported.qa, integration: "active" } };
-  await dialog.getByLabel("보드 JSON", { exact: true }).fill(JSON.stringify(invalid));
+  await dialog.getByRole("textbox", { name: "보드 JSON", exact: true }).fill(JSON.stringify(invalid));
   await dialog.getByRole("button", { name: "가져오기 검토", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("reference-only");
   exported.checks[0].summary = "가져오기 검증 fixture";
@@ -161,7 +161,38 @@ test("계정별 기록을 격리하고 권한 거부·비관리자에게 보드�
   await expect(page.getByLabel("코드 수정 검토 메모", { exact: true })).toHaveValue("");
 });
 
-test("390px에서 화면 넘침 없이 키보드로 대화상자를 열고 닫는다", async ({ page }) => {
+test("같은 관리자의 두 탭 저장 충돌은 기존 기록을 보호하고 백업·최신본 읽기를 제공한다", async ({ page, context }) => {
+  await adminFixture(page);
+  await page.goto(boardPath);
+  await page.getByRole("button", { name: "승인 대기 3", exact: true }).click();
+  const second = await context.newPage();
+  await adminFixture(second);
+  await second.goto(boardPath);
+  await second.getByRole("button", { name: "승인 대기 3", exact: true }).click();
+
+  await page.bringToFront();
+  await page.getByRole("textbox", { name: "코드 수정 검토 메모", exact: true }).fill("첫 탭에서 저장한 기록");
+  await page.getByRole("button", { name: "코드 수정 메모 저장", exact: true }).click();
+  await second.bringToFront();
+  await second.getByRole("textbox", { name: "외부 배포 검토 메모", exact: true }).fill("둘째 탭의 미저장 기록");
+  await second.getByRole("button", { name: "외부 배포 메모 저장", exact: true }).click();
+  await expect(second.getByRole("alert")).toContainText("다른 창에서 저장된 기록이 변경되었습니다");
+  await expect(second.getByRole("button", { name: "저장 다시 시도", exact: true })).toBeDisabled();
+  const saved = await second.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "null"), getQualityStorageKey("quality-admin-a"));
+  expect(saved.approvals[0].note).toBe("첫 탭에서 저장한 기록");
+  expect(saved.approvals[1].note).toBe("");
+
+  await second.getByRole("button", { name: "복구 JSON 관리", exact: true }).click();
+  const backup = second.getByRole("dialog", { name: "JSON 관리", exact: true });
+  await expect(backup.getByRole("textbox", { name: "보드 JSON", exact: true })).toHaveValue(/둘째 탭의 미저장 기록/u);
+  await backup.getByRole("button", { name: "대화상자 닫기", exact: true }).click();
+  await second.getByRole("button", { name: "저장된 기록 다시 읽기", exact: true }).click();
+  await second.getByRole("button", { name: "미저장 변경을 버리고 최신 저장본 읽기", exact: true }).click();
+  await expect(second.getByRole("textbox", { name: "코드 수정 검토 메모", exact: true })).toHaveValue("첫 탭에서 저장한 기록");
+  await expect(second.getByRole("textbox", { name: "외부 배포 검토 메모", exact: true })).toHaveValue("");
+});
+
+test("390px에서 화면 넘침 없이 키보드로 대화상자를 열고 닫는다", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await adminFixture(page);
   await page.goto(boardPath);
@@ -178,5 +209,5 @@ test("390px에서 화면 넘침 없이 키보드로 대화상자를 열고 닫�
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeFocused();
-  await page.screenshot({ path: "artifacts/operation-policy-browser/ci-quality-390.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("ci-quality-390.png"), fullPage: true });
 });

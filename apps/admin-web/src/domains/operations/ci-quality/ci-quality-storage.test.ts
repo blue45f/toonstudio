@@ -25,7 +25,7 @@ describe("관리자별 CI·QA 로컬 저장", () => {
     board.checks[0].status = "failed";
     board.checks[0].failure.cause = "추정한 원인";
     board.approvals[0].note = "변경 제안";
-    expect(saveQualityBoard("admin-a", board, storage, NOW)).toEqual({ ok: true, error: null });
+    expect(saveQualityBoard("admin-a", board, null, storage, NOW)).toMatchObject({ ok: true, error: null });
     expect(loadQualityBoard("admin-a", storage, NOW).board?.checks[0].failure.cause).toBe("추정한 원인");
     expect(loadQualityBoard("admin-a", storage, NOW).board?.approvals[0].note).toBe("변경 제안");
     expect(loadQualityBoard("admin-b", storage, NOW).board?.checks[0].status).toBe("unknown");
@@ -50,11 +50,48 @@ describe("관리자별 CI·QA 로컬 저장", () => {
 
   it("저장 한도·권한·검증 실패를 성공으로 표시하지 않는다", () => {
     const blocked: QualityStorage = { getItem: () => null, setItem: () => { throw new Error("QuotaExceededError"); } };
-    expect(saveQualityBoard("admin-a", createQualityBoard(NOW), blocked, NOW)).toMatchObject({ ok: false, error: expect.stringContaining("QuotaExceededError") });
+    expect(saveQualityBoard("admin-a", createQualityBoard(NOW), null, blocked, NOW)).toMatchObject({ ok: false, error: expect.stringContaining("QuotaExceededError") });
     const storage = memoryStorage();
     const invalid = createQualityBoard(NOW);
     Object.assign(invalid.qa, { integration: "active" });
-    expect(saveQualityBoard("admin-a", invalid, storage, NOW).ok).toBe(false);
+    expect(saveQualityBoard("admin-a", invalid, null, storage, NOW).ok).toBe(false);
     expect(storage.writes).toBe(0);
+  });
+
+  it("동일 원본을 읽은 두 창의 뒤늦은 저장과 재시도가 최신 기록을 덮어쓰지 않는다", () => {
+    const storage = memoryStorage();
+    const first = loadQualityBoard("admin-a", storage, NOW);
+    const second = loadQualityBoard("admin-a", storage, NOW);
+    const boardA = createQualityBoard(NOW);
+    boardA.checks[0].summary = "첫 창의 검증 결과";
+    const saved = saveQualityBoard("admin-a", boardA, first.source, storage, NOW);
+    expect(saved.ok).toBe(true);
+    const boardB = createQualityBoard(NOW);
+    boardB.approvals[0].note = "둘째 창의 승인 메모";
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      expect(saveQualityBoard("admin-a", boardB, second.source, storage, NOW)).toMatchObject({ ok: false, conflict: true });
+    }
+    expect(storage.writes).toBe(1);
+    expect(loadQualityBoard("admin-a", storage, NOW).board?.checks[0].summary).toBe("첫 창의 검증 결과");
+
+    const latest = loadQualityBoard("admin-a", storage, NOW);
+    expect(saveQualityBoard("admin-a", { ...boardA, approvals: boardB.approvals }, latest.source, storage, NOW).ok).toBe(true);
+    expect(loadQualityBoard("admin-a", storage, NOW).board?.approvals[0].note).toBe("둘째 창의 승인 메모");
+    expect(loadQualityBoard("admin-a", storage, NOW).board?.checks[0].summary).toBe("첫 창의 검증 결과");
+  });
+
+  it("같은 창의 연속 저장은 반환된 원본으로 갱신하고 삭제·미확인 원본은 보호한다", () => {
+    const storage = memoryStorage();
+    const board = createQualityBoard(NOW);
+    const first = saveQualityBoard("admin-a", board, null, storage, NOW);
+    if (!first.ok) throw new Error(first.error);
+    board.checks[0].summary = "연속 저장";
+    const second = saveQualityBoard("admin-a", board, first.source, storage, NOW);
+    expect(second.ok).toBe(true);
+    storage.values.delete(getQualityStorageKey("admin-a"));
+    if (!second.ok) throw new Error(second.error);
+    expect(saveQualityBoard("admin-a", board, second.source, storage, NOW)).toMatchObject({ ok: false, conflict: true });
+    expect(saveQualityBoard("admin-a", board, undefined, storage, NOW).ok).toBe(false);
+    expect(storage.writes).toBe(2);
   });
 });

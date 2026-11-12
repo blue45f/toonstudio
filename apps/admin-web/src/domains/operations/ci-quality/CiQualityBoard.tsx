@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { appendQualityHistory, exportQualityBoardJson, statusLabels, summarizeQualityBoard, validateQualityBoard } from "./ci-quality-model";
 import { loadQualityBoard, saveQualityBoard } from "./ci-quality-storage";
@@ -24,9 +24,12 @@ export function CiQualityBoard({ userIdentity }: { userIdentity: string }) {
 
 function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
   const [loaded] = useState(() => loadQualityBoard(userIdentity));
+  const source = useRef(loaded.source);
   const [board, setBoard] = useState<QualityBoard | null>(loaded.board);
   const [storageError, setStorageError] = useState(loaded.error ?? "");
   const [unsaved, setUnsaved] = useState(false);
+  const [storageConflict, setStorageConflict] = useState(false);
+  const [confirmReload, setConfirmReload] = useState(false);
   const [page, setPage] = useState<QualityPage>("checks");
   const [modal, setModal] = useState<QualityModal>(null);
   const [notice, setNotice] = useState("");
@@ -38,11 +41,26 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
   }, []);
 
   function persist(next: QualityBoard): boolean {
-    const result = saveQualityBoard(userIdentity, next);
+    const result = saveQualityBoard(userIdentity, next, source.current);
+    if (result.ok) source.current = result.source;
     setStorageError(result.error ?? "");
     setUnsaved(!result.ok);
+    setStorageConflict(!result.ok && result.conflict);
     setNotice(result.ok ? "이 관리자의 브라우저에 기록을 저장했습니다." : "기록은 현재 화면에 남아 있습니다. JSON으로 내보내 백업하세요.");
     return result.ok;
+  }
+
+  function reloadStoredBoard(): void {
+    const result = loadQualityBoard(userIdentity);
+    setStorageError(result.error ?? "");
+    setConfirmReload(false);
+    if (!result.board) return;
+    source.current = result.source;
+    setBoard(result.board);
+    setUnsaved(false);
+    setStorageConflict(false);
+    setModal(null);
+    setNotice("최신 저장본을 다시 읽었습니다.");
   }
 
   function commit(next: QualityBoard, text: string): { error: string | null; persisted: boolean } {
@@ -90,7 +108,7 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
       <div><p className="ci-quality-eyebrow">ToonStudio / 검증 운영</p><h1 id="ci-quality-title">CI·QA 검증</h1><p>무료 범위의 수동 기록 · 자동 CI 연결 없음 · 외부 작업 실행 없음</p></div>
       <div className="ci-quality-actions"><button type="button" onClick={() => setModal({ kind: "json" })}>JSON 관리</button><button type="button" disabled={!board} onClick={() => setModal({ kind: "settings" })}>기준 커밋·최신성</button><button type="button" disabled={!board} className="ci-quality-primary" onClick={() => setModal({ kind: "picker" })}>결과 기록</button></div>
     </header>
-    {storageError && <div role="alert" className="ci-quality-error"><strong>브라우저 저장을 확인하세요.</strong><p>{storageError}</p><p>기록을 자동 초기화하지 않습니다. JSON으로 복구하거나 백업할 수 있습니다.</p><div className="ci-quality-actions"><button type="button" onClick={() => { if (board && unsaved) persist(board); else { const result = loadQualityBoard(userIdentity); setBoard(result.board); setStorageError(result.error ?? ""); } }}>{board && unsaved ? "저장 다시 시도" : "저장된 기록 다시 읽기"}</button><button type="button" onClick={() => setModal({ kind: "json" })}>복구 JSON 관리</button></div></div>}
+    {storageError && <div role="alert" className="ci-quality-error"><strong>브라우저 저장을 확인하세요.</strong><p>{storageError}</p><p>기록을 자동 초기화하지 않습니다. JSON으로 복구하거나 백업할 수 있습니다.</p><div className="ci-quality-actions">{board && unsaved && <button type="button" disabled={storageConflict} onClick={() => persist(board)}>저장 다시 시도</button>}<button type="button" onClick={() => { if (unsaved) setConfirmReload(true); else reloadStoredBoard(); }}>저장된 기록 다시 읽기</button><button type="button" onClick={() => setModal({ kind: "json" })}>복구 JSON 관리</button></div>{confirmReload && <div><p>현재 화면의 미저장 변경을 버립니다. 먼저 JSON으로 백업하세요.</p><div className="ci-quality-actions"><button type="button" onClick={reloadStoredBoard}>미저장 변경을 버리고 최신 저장본 읽기</button><button type="button" onClick={() => setConfirmReload(false)}>다시 읽기 취소</button></div></div>}</div>}
     {notice && <p role="status" className="ci-quality-notice">{notice}</p>}
     {board && summary ? <>
       <section className="ci-quality-release" aria-label="기준 커밋과 검증 요약">
