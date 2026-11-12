@@ -2,7 +2,7 @@ import { synchronizeServerSessionState } from "@/domains/auth/public/session/aut
 
 import type { WorkDetail } from "@/platform/creator-client";
 
-import type { StudioSharedDocument } from "./studio-shared-document-client";
+import type { StudioSharedDocument } from "../../studio-shared-document-client";
 
 interface StudioDocumentSourceSession {
   readonly workId: string | null;
@@ -46,7 +46,7 @@ export async function loadStudioDocumentSource(options: StudioDocumentSourceSess
   const { workId, authScopeKey, signal, targetId, remixId, isCurrent } = options;
   if (await verifyStudioDocumentSourceSession(options) === "identity-changed" || !isCurrent()) return null;
   if (workId && authScopeKey) {
-    const { getStudioSharedDocument } = await import("./studio-shared-document-client");
+    const { getStudioSharedDocument } = await import("../../studio-shared-document-client");
     signal.throwIfAborted();
     if (!isCurrent()) return null;
     const shared = await getStudioSharedDocument(workId, signal);

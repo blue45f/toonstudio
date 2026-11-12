@@ -9,7 +9,7 @@ import type { ServerSessionSynchronization } from "@/domains/auth/public/session
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ synchronizeServerSessionState: vi.fn() }));
 const sourceApi = vi.hoisted(() => ({ getWork: vi.fn(), getShared: vi.fn() }));
 vi.mock("@/platform/creator-client", () => ({ getWork: sourceApi.getWork }));
-vi.mock("./studio-shared-document-client", () => ({ getStudioSharedDocument: sourceApi.getShared }));
+vi.mock("../../studio-shared-document-client", () => ({ getStudioSharedDocument: sourceApi.getShared }));
 
 const synchronize = vi.mocked(synchronizeServerSessionState);
 const authenticated: ServerSessionSynchronization = {

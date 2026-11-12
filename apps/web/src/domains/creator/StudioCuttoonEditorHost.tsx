@@ -1501,7 +1501,7 @@ import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
-import { loadStudioDocumentSource } from "./studio-document-source-session";
+import { loadStudioDocumentSource } from "./studio-cuttoon-editor/runtime/studio-document-source-session";
 import { loadStudioWriterRoomRuntime } from "./studio-cuttoon-editor/runtime/loadStudioWriterRoomRuntime";
 import {
   afterInspectorCommit,
