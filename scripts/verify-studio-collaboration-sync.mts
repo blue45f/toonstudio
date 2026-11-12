@@ -33,7 +33,7 @@ import {
 } from "../apps/web/src/domains/creator/studio-beta-notice-storage";
 import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/studio-workspace-route";
 
-import {
+import { drawingCaptureEvidence, recordDrawingStrokePath, verifyDrawingCapturePaths,
   drawableCanvasBand,
   drawingCaptureRegion,
   drawingCaptureRegions,
@@ -212,8 +212,8 @@ async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFing
   await page.bringToFront();
   const documentSurface = page.locator('[data-studio-post-processing-scope=""]').first();
   await documentSurface.waitFor({ state: "visible" });
-  await documentSurface.waitFor({ state: "visible" });
   const clip = await drawingCaptureRegion(page);
+  await verifyDrawingCapturePaths(page, clip);
   // Page-level capture reads the browser compositor. Element screenshots can reuse a transparent
   // or stale backing store when CanvasKit owns document pixels with preserveDrawingBuffer=false.
   const screenshot = await page.screenshot({
@@ -223,7 +223,10 @@ async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFing
     scale: "css",
     type: "png",
   });
-  return fingerprintStudioCompositedPng(screenshot);
+  const fingerprint = fingerprintStudioCompositedPng(screenshot);
+  assert.equal(fingerprint.width, clip.width, "픽셀 비교 영역 너비가 바뀌었습니다.");
+  assert.equal(fingerprint.height, clip.height, "픽셀 비교 영역 높이가 바뀌었습니다.");
+  return fingerprint;
 }
 
 async function settleCanvas(page: Page): Promise<StudioCompositedCanvasFingerprint> {
@@ -454,7 +457,7 @@ async function drawStroke(
   );
   const capture = await drawingCaptureRegion(page);
   assert.ok(capture.y >= band.top && capture.y + capture.height <= band.bottom,
-    "픽셀 비교 영역이 현재 가시 캔버스 띠를 벗어났습니다.");
+    `픽셀 비교 영역이 현재 가시 캔버스 띠를 벗어났습니다: ${JSON.stringify({ capture, band, bounds })}`);
   const y = capture.y + amplitude + (capture.height - amplitude * 2) * verticalFraction;
   const path = Array.from({ length: 49 }, (_, step) => {
     const progress = step / 48;
@@ -470,6 +473,7 @@ async function drawStroke(
     [],
     `stroke path at ${verticalFraction} does not reach the drawing canvas`,
   );
+  await recordDrawingStrokePath(page, path);
   const [start, ...rest] = path;
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
@@ -710,6 +714,7 @@ try {
     pageC.screenshot({ path: join(SCRATCH, "tab-c-late-join.png"), fullPage: true }),
   ]);
 
+  report.captureEvidence = drawingCaptureEvidence(pageA);
   report.captureRegions = {
     A: drawingCaptureRegions.get(pageA), B: drawingCaptureRegions.get(pageB), C: drawingCaptureRegions.get(pageC),
   };
