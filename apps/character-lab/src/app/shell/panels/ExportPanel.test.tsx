@@ -656,4 +656,52 @@ describe("ExportPanel", () => {
     expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
     expect(screen.getByTestId("export-receipt").textContent).toContain("128×48");
   });
+
+  it("2×2 종합 설정시트 PNG 저장 및 로컬 클립보드 레시피 복사·붙여넣기 왕복이 동작하고 빈 클립보드 오류를 노출한다", async () => {
+    const calls: SaveCall[] = [];
+    const dispatched: LabCommand[] = [];
+    const engine = createMockEngine();
+    const paintSession = createPaintSession({ layerSize: 8, brush: { radiusPx: 2, hardness: 1, opacity: 1, color: "#cc2244" } });
+    paintSession.beginStroke({ u: 0.5, v: 0.5, pressure: 1 }, "head");
+    paintSession.endStroke();
+
+    let clipboardText = "";
+    render(
+      <MockLabProvider engineSession={readySession(engine)} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <ExportPanel
+          session={paintSession}
+          deps={{
+            save: fakeSave(calls),
+            now: () => 10,
+            writeClipboard: async (text) => {
+              clipboardText = text;
+            },
+            readClipboard: async () => clipboardText,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "32" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "40" } });
+    fireEvent.click(screen.getByTestId("export-quad-sheet-png"));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.fileName).toBe("character-mock-64x80-quad-sheet.png");
+    expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
+
+    fireEvent.click(screen.getByTestId("export-paste-recipe-clipboard"));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/recipe-clipboard-empty/u));
+
+    fireEvent.click(screen.getByTestId("export-copy-recipe-clipboard"));
+    await waitFor(() => expect(clipboardText.length).toBeGreaterThan(20));
+    act(() => {
+      paintSession.replaceLayers([]);
+    });
+    expect(paintSession.layersForExport()).toHaveLength(0);
+
+    fireEvent.click(screen.getByTestId("export-paste-recipe-clipboard"));
+    await waitFor(() => expect(dispatched.some((cmd) => cmd.type === "recipe/load")).toBe(true));
+    expect(paintSession.layersForExport()).toHaveLength(1);
+    expect(paintSession.layersForExport()[0]?.part).toBe("head");
+  });
 });

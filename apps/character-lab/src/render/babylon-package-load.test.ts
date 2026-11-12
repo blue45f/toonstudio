@@ -463,3 +463,34 @@ describe("shaper-atelier-protagonist 제작 패키지(7.5등신 풀파츠·_Outl
     expect(receipt.appliedMorphs).toBe(2);
   });
 });
+
+describe("shaper-atelier-male-lead 제작 패키지(8등신 풀파츠·T-Pose·_Outline 셸·워드로브)", () => {
+  const ID = "shaper-atelier-male-lead";
+
+  it("55 휴머노이드 T-Pose 본·분리형 워드로브(top/bottom/shoes/accessory)·헤어 _Outline 셸·morph가 NullEngine에서 정상 구동된다", async () => {
+    const { engine } = await loadPackage(ID);
+    const rig = engine.inspectRig();
+    expect(rig?.kind).toBe("package");
+    expect(rig?.skeletonBoneCount).toBe(55);
+    expect(rig?.humanoidBoneCount).toBe(55);
+
+    const roles = new Set(rig?.parts.map((part) => part.role) ?? []);
+    expect(roles.has("top")).toBe(true);
+    expect(roles.has("bottom")).toBe(true);
+    expect(roles.has("shoes")).toBe(true);
+    expect(roles.has("accessory")).toBe(true);
+    expect(roles.has("head")).toBe(true);
+    expect(roles.has("skin")).toBe(true);
+
+    const hairLod0 = rig?.parts.find((part) => part.id === "TS_AuthoredHair_short-layered_LOD0");
+    expect(hairLod0?.visible).toBe(true);
+    expect(hairLod0?.outlineMeshNames).toEqual(["TS_AuthoredHair_short-layered_LOD0_Outline"]);
+    expect(hairLod0?.outlineShellVisible).toBe(false);
+
+    engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
+    expect(engine.inspectRig()?.parts.find((part) => part.id === "TS_AuthoredHair_short-layered_LOD0")?.outlineShellVisible).toBe(true);
+
+    const receipt = engine.applyPlan(applyPlanFixture({ morphWeights: { "param:jawWidth:+": 0.5, "facs:browDown": 0.9 } }));
+    expect(receipt.appliedMorphs).toBe(2);
+  });
+});

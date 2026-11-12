@@ -250,4 +250,45 @@ describe("PaintPanel", () => {
     expect(engine.paintUploads).toHaveLength(1);
     expect(engine.paintUploads[0]?.part).toBe("head");
   });
+
+  it("SHAPER 서브레이어(Layer 0~5) 전환·개별 숨김/불투명도·선택 서브레이어 비우기가 마스터 텍스처에 즉시 합성된다", () => {
+    const engine = createMockEngine();
+    const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
+    engineSession.setEngine(engine);
+    const dispatched: LabCommand[] = [];
+    const session = createPaintSession({ layerSize: 64, activePart: "head", brush: { radiusPx: 6, hardness: 1, opacity: 1, color: "#112233" } });
+
+    act(() => {
+      session.setActiveSublayer(0);
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+
+    render(
+      <MockLabProvider engineSession={engineSession} dispatchSpy={(cmd) => dispatched.push(cmd)}>
+        <PaintPanel session={session} />
+      </MockLabProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-1"));
+    expect(session.getState().activeSublayer).toBe(1);
+    expect(screen.getByTestId("shaper-paint-stroke-readout").textContent).toContain("서브레이어 L1");
+
+    act(() => {
+      session.setBrush({ color: "#ff3366", opacity: 1, hardness: 1 });
+      session.beginStroke({ u: 0.5, v: 0.5, pressure: 1 });
+      session.endStroke();
+    });
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([255, 51, 102, 255]);
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+    expect(engine.paintUploads.length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByTestId("paint-sublayer-visible"));
+    fireEvent.change(screen.getByTestId("paint-sublayer-opacity"), { target: { value: "0.6" } });
+    fireEvent.click(screen.getByTestId("paint-clear-sublayer"));
+    expect(dispatched.some((cmd) => cmd.type === "paint/stroke")).toBe(true);
+    expect(readPixel(session.layer("head"), 32, 32)).toEqual([17, 34, 51, 255]);
+  });
 });

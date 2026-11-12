@@ -1,5 +1,5 @@
 /**
- * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·투명 격자·원고 컷 매칭 포함) + HUD 오버레이 + 관절 핸들(SVG) + SHAPER 형상 제어점(ControlPoint) + 모델 위 드로잉 오버레이.
+ * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭 포함) + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -18,40 +18,18 @@ import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, 
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import {
-  SHAPER_BUILTIN_ARCHETYPE_PRESETS,
-  SHAPER_BUILTIN_PART_PRESETS,
-  SHAPER_BUILTIN_POSE_PRESETS,
-  SHAPER_GIZMO_MODES,
-  buildShaperPresetCommands,
-  computeShaperBoneScaleDrag,
-  computeShaperControlPointDrag,
-  computeShaperControlPoints,
-  computeShaperIkHandleDrag,
+  SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, SHAPER_GIZMO_MODES,
+  buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
+import { ViewportBackdropLayers, ViewportCompositionBar, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
-  ViewportBackdropLayers,
-  ViewportCompositionBar,
-  ViewportOnboardingCard,
-  ViewportSvgGizmoLayer,
-  clampReferenceOpacity,
-} from "./viewport-backdrop-overlay";
-import {
-  SHAPER_BUILTIN_BODY_PRESETS,
-  SHAPER_BUILTIN_FACE_PRESETS,
-  applySymmetryToPose,
-  computeJointDrag,
-  computeVisibleBoneLinks,
-  handlesKey,
-  hudRows,
-  jointLabelKo,
-  resolveDragPivotWithMode,
-  resolveShaperViewportKeyShortcut,
-  visibleHandles,
+  SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
+  handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
-import type { ReferenceCutPlacement, ReferenceCutState } from "./viewport-backdrop-overlay";
+import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
@@ -120,6 +98,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const plan = useApplyPlan();
   const paint = paintSession ?? getDefaultPaintSession();
   const activePart = useSyncExternalStore(paint.subscribe, () => paint.getState().activePart, () => paint.getState().activePart);
+  const activeSublayer = useSyncExternalStore(paint.subscribe, () => paint.getState().activeSublayer, () => paint.getState().activeSublayer);
   const brushRadius = useSyncExternalStore(paint.subscribe, () => Math.round(paint.getState().brush.radiusPx), () => Math.round(paint.getState().brush.radiusPx));
   const toolMode = useSyncExternalStore(paint.subscribe, () => paint.getState().toolMode, () => paint.getState().toolMode);
   const paintSymmetry = useSyncExternalStore(paint.subscribe, () => paint.getState().symmetry, () => paint.getState().symmetry);
@@ -133,7 +112,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [showHud, setShowHud] = useState(initialOverlays?.hud ?? false);
   const [framing, setFraming] = useState<CameraFraming["mode"]>(DEFAULT_FRAMING.mode);
   const [activeYawDeg, setActiveYawDeg] = useState<number | null>(null);
+  const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
+  const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -191,9 +172,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   useEffect(() => registry.setRenewer(() => flushSync(() => setCanvasGeneration((generation) => generation + 1))), [registry]);
 
   useEffect(() => {
-    if (!engine) return undefined;
+    if (!engine || !containerRef.current) return undefined;
     const container = containerRef.current;
-    if (!container) return undefined;
     const apply = (): void => {
       const rect = container.getBoundingClientRect();
       if (!(rect.width > 0) || !(rect.height > 0)) return;
@@ -282,6 +262,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         engine.setCamera({ ...DEFAULT_FRAMING, mode });
         setFraming(mode);
         setActiveYawDeg(0);
+        setActivePitchDeg(0);
         setNotice(null);
       } catch (error) {
         setNotice(failureText(error, "카메라를 바꾸지 못했습니다."));
@@ -293,15 +274,32 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const onSelectTurnaround = useCallback(
     (yawDeg: 0 | 35 | 90 | 180): void => {
       if (!engine) return;
+      const pitchDeg = activePitchDeg ?? 0;
       try {
-        engine.setCamera({ ...DEFAULT_FRAMING, mode: framing, yawDeg, pitchDeg: 0, distanceScale: 1 });
+        engine.setCamera({ ...DEFAULT_FRAMING, mode: framing, yawDeg, pitchDeg, distanceScale: 1 });
         setActiveYawDeg(yawDeg);
         setNotice(`4방향 시점 전환: ${yawDeg}°`);
       } catch (error) {
         setNotice(failureText(error, "시점을 바꾸지 못했습니다."));
       }
     },
-    [engine, framing],
+    [engine, framing, activePitchDeg],
+  );
+
+  const onSelectPitch = useCallback(
+    (pitchDeg: ViewportPitchDeg): void => {
+      if (!engine) return;
+      const yawDeg = activeYawDeg ?? 0;
+      try {
+        engine.setCamera({ ...DEFAULT_FRAMING, mode: framing, yawDeg, pitchDeg, distanceScale: 1 });
+        setActivePitchDeg(pitchDeg);
+        const tag = pitchDeg < 0 ? "로우앵글" : pitchDeg > 0 ? "하이앵글" : "아이레벨";
+        setNotice(`웹툰 연출 앵글 전환: ${tag} (${pitchDeg > 0 ? `+${pitchDeg}°` : `${pitchDeg}°`})`);
+      } catch (error) {
+        setNotice(failureText(error, "연출 앵글을 바꾸지 못했습니다."));
+      }
+    },
+    [engine, framing, activeYawDeg],
   );
 
   const onLoadReferenceFile = useCallback((file: File): void => {
@@ -310,12 +308,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setNotice("이 브라우저 환경에서는 로컬 이미지 미리보기 URL을 생성할 수 없습니다.");
       return;
     }
-    setReferenceCut((prev) => ({
-      url,
-      fileName: file.name,
-      opacity: prev ? prev.opacity : 0.45,
-      placement: prev ? prev.placement : "underlay",
-    }));
+    setReferenceCut((prev) => ({ url, fileName: file.name, opacity: prev ? prev.opacity : 0.45, placement: prev ? prev.placement : "underlay" }));
     setNotice(`원고 컷 참조 로드됨: ${file.name}`);
   }, []);
 
@@ -331,10 +324,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     (backend: EngineBackend): void => {
       const canvas = registry.claim();
       if (!canvas) {
-        store.applyEvent({
-          type: "failure",
-          failure: failVisible("viewport-canvas-missing", "뷰포트 캔버스를 찾을 수 없어 엔진을 만들 수 없습니다. 뷰포트가 마운트된 뒤 다시 선택하세요."),
-        });
+        store.applyEvent({ type: "failure", failure: failVisible("viewport-canvas-missing", "뷰포트 캔버스를 찾을 수 없어 엔진을 만들 수 없습니다. 뷰포트가 마운트된 뒤 다시 선택하세요.") });
         return;
       }
       void engineSession.select(backend, canvas);
@@ -347,6 +337,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     try {
       engine.setCamera({ ...DEFAULT_FRAMING, mode: framing });
       setActiveYawDeg(0);
+      setActivePitchDeg(0);
       setNotice(null);
     } catch (error) {
       setNotice(failureText(error, "시점을 초기화하지 못했습니다."));
@@ -399,10 +390,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       }
       if (!engine || ctrlOrMeta || event.altKey) return;
       const shaperAction = resolveShaperViewportKeyShortcut(event.key, { shift: event.shiftKey, ctrl: ctrlOrMeta, alt: event.altKey });
-      if (shaperAction?.kind === "reset-camera") {
-        onResetView();
-        return;
-      }
+      if (shaperAction?.kind === "reset-camera") { onResetView(); return; }
       if (shaperAction?.kind === "gizmo-mode") {
         setGizmoMode(shaperAction.mode);
         const modeInfo = SHAPER_GIZMO_MODES.find((m) => m.mode === shaperAction.mode);
@@ -490,10 +478,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       return;
     }
     const skelErr = diagnoseSkeletonData(skeleton);
-    if (skelErr) {
-      reportSkeletonFailure(skelErr);
-      return;
-    }
+    if (skelErr) { reportSkeletonFailure(skelErr); return; }
     const mode = gizmoModeRef.current;
     if (mode === 0) {
       setDraggingBone(handle.bone);
@@ -672,7 +657,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
   return (
     <div ref={containerRef} className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-      <ViewportBackdropLayers checkerboard={checkerboard} referenceCut={referenceCut} />
+      <ViewportBackdropLayers checkerboard={checkerboard} manuscriptGuide={manuscriptGuide} referenceCut={referenceCut} />
       <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} style={{ position: "relative", zIndex: 1 }} />
 
       <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "absolute", top: 8, left: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -690,10 +675,14 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         <ViewportCompositionBar
           engineReady={Boolean(engine)}
           checkerboard={checkerboard}
+          manuscriptGuide={manuscriptGuide}
           activeYawDeg={activeYawDeg}
+          activePitchDeg={activePitchDeg}
           referenceCut={referenceCut}
           onToggleCheckerboard={() => setCheckerboard((prev) => !prev)}
+          onToggleManuscriptGuide={() => setManuscriptGuide((prev) => !prev)}
           onSelectTurnaround={onSelectTurnaround}
+          onSelectPitch={onSelectPitch}
           onLoadReferenceFile={onLoadReferenceFile}
           onChangeReferenceOpacity={onChangeReferenceOpacity}
           onChangeReferencePlacement={onChangeReferencePlacement}
@@ -738,28 +727,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
       {engine && (showHandles || showControlPoints) ? (
         <ViewportSvgGizmoLayer
-          svgRef={svgRef}
-          gizmoMode={gizmoMode}
-          viewBox={viewBox}
-          ratio={ratio}
-          showHandles={showHandles}
-          showControlPoints={showControlPoints}
-          skeletonCorrupted={skeletonCorrupted}
-          boneLinks={boneLinks}
-          handles={handles}
-          activeHandle={activeHandle}
-          draggingBone={draggingBone}
-          controlPoints={controlPoints}
-          draggingCp={draggingCp}
-          onHandleDown={onHandleDown}
-          onHandleMove={onHandleMove}
-          onHandleUp={(event) => finishDrag(event, true)}
-          onHandleCancel={(event) => finishDrag(event, false)}
+          svgRef={svgRef} gizmoMode={gizmoMode} viewBox={viewBox} ratio={ratio} showHandles={showHandles} showControlPoints={showControlPoints} skeletonCorrupted={skeletonCorrupted}
+          boneLinks={boneLinks} handles={handles} activeHandle={activeHandle} draggingBone={draggingBone} controlPoints={controlPoints} draggingCp={draggingCp}
+          onHandleDown={onHandleDown} onHandleMove={onHandleMove} onHandleUp={(event) => finishDrag(event, true)} onHandleCancel={(event) => finishDrag(event, false)}
           onHandleLostCapture={(event) => { if (dragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
-          onControlPointDown={onControlPointDown}
-          onControlPointMove={onControlPointMove}
-          onControlPointUp={(event) => finishControlPointDrag(event, true)}
-          onControlPointCancel={(event) => finishControlPointDrag(event, false)}
+          onControlPointDown={onControlPointDown} onControlPointMove={onControlPointMove} onControlPointUp={(event) => finishControlPointDrag(event, true)} onControlPointCancel={(event) => finishControlPointDrag(event, false)}
           onControlPointLostCapture={(event) => { if (cpDragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
         />
       ) : null}
@@ -770,7 +742,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
       {engine && ui.drawingMode ? (
         <p className="cl-viewport-hint" style={{ position: "absolute", top: 44, left: 8, margin: 0 }}>
-          드로잉 모드({toolMode === "eraser" ? "지우개" : "브러시"}{paintSymmetry ? " · 대칭 ON" : ""}) · 레이어 {PART_ROLE_LABELS_KO[activePart]} · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
+          드로잉 모드({toolMode === "eraser" ? "지우개" : "브러시"}{paintSymmetry ? " · 대칭 ON" : ""}) · 레이어 {PART_ROLE_LABELS_KO[activePart]}(L{activeSublayer}) · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
         </p>
       ) : null}
 

@@ -150,6 +150,45 @@
           "sha256": "1599ebcc4329e272af031d4014f4cb4eccd5edda92b267cd865faae265762d2d"
         }
       }
+    },
+    {
+      "id": "shaper-atelier-male-lead",
+      "displayName": "SHAPER Atelier · Male Lead Hunter (8등신 풀파츠)",
+      "role": "shaper-male-lead",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-12",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 4,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        4176,
+        1596,
+        846
+      ],
+      "glbTriangles": 13502,
+      "files": {
+        "glb": {
+          "path": "shaper-atelier-male-lead/shaper-atelier-male-lead.glb",
+          "bytes": 631088,
+          "sha256": "34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18"
+        },
+        "manifest": {
+          "path": "shaper-atelier-male-lead/manifest.json",
+          "bytes": 36814,
+          "sha256": "7a58c67545807a0650ae68d3b91412686f950f255a0a5b3d0d1c24c2f693f731"
+        },
+        "slotMapping": {
+          "path": "shaper-atelier-male-lead/slot-mapping.json",
+          "bytes": 4251,
+          "sha256": "0c861886a2cf7914f67a1e106afa79d4a9ca4239cb4d7fe2719263ef254b44c9"
+        },
+        "contactSheet": {
+          "path": "shaper-atelier-male-lead/contact-sheet.png",
+          "bytes": 177918,
+          "sha256": "b45eb1872d85985c0a0f72ba400ab27f27b8524acf082e5bd855303ad59a2690"
+        }
+      }
     }
   ]
 }

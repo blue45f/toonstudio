@@ -7,6 +7,7 @@ export * from "./paint-layer-record";
 export * from "./png-encoder";
 export * from "./psd-assemble";
 export * from "./psd-plan";
+export * from "./quad-reference-sheet";
 export * from "./raster-convert";
 export * from "./recipe-file";
 export * from "./save-bytes";

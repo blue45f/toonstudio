@@ -14,7 +14,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방향 시점 바", () => {
+describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방향 시점·연출 앵글 바", () => {
   function renderReadyViewport(dispatchSpy?: (cmd: LabCommand) => void) {
     const engine = createMockEngine();
     const engineSession = createMockEngineSession({ phase: "ready", backend: engine.backend, diagnostics: engine.diagnostics });
@@ -27,20 +27,34 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     return engine;
   }
 
-  it("투명 격자 토글과 0°·35°·90°·180° 4방향 시점 버튼이 카메라 yawDeg를 즉시 변경한다", () => {
+  it("투명 격자 토글과 0°·35°·90°·180° 4방향 시점 및 로우/하이앵글 프리셋이 카메라 yawDeg·pitchDeg를 조합해 변경한다", () => {
     const engine = renderReadyViewport();
     expect(screen.queryByTestId("viewport-checkerboard")).toBeNull();
     fireEvent.click(screen.getByTestId("viewport-toggle-checkerboard"));
     expect(screen.getByTestId("viewport-checkerboard")).toBeTruthy();
+
+    expect(screen.queryByTestId("viewport-manuscript-guide")).toBeNull();
+    fireEvent.click(screen.getByTestId("viewport-toggle-manuscript-guide"));
+    expect(screen.getByTestId("viewport-manuscript-guide")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("viewport-turnaround-35"));
     expect(screen.getByTestId("viewport-turnaround-35").getAttribute("aria-pressed")).toBe("true");
     const lastSetCamera = engine.calls.filter((call) => call.method === "setCamera").at(-1);
     expect(lastSetCamera?.args[0]).toMatchObject({ mode: "full-body", yawDeg: 35, pitchDeg: 0 });
 
+    // 35° 반측면을 유지한 채 로우앵글(-18°)과 하이앵글(+22°) 전환
+    fireEvent.click(screen.getByTestId("viewport-pitch--18"));
+    expect(screen.getByTestId("viewport-pitch--18").getAttribute("aria-pressed")).toBe("true");
+    const lowAngleCall = engine.calls.filter((call) => call.method === "setCamera").at(-1);
+    expect(lowAngleCall?.args[0]).toMatchObject({ mode: "full-body", yawDeg: 35, pitchDeg: -18 });
+
+    fireEvent.click(screen.getByTestId("viewport-pitch-22"));
+    const highAngleCall = engine.calls.filter((call) => call.method === "setCamera").at(-1);
+    expect(highAngleCall?.args[0]).toMatchObject({ mode: "full-body", yawDeg: 35, pitchDeg: 22 });
+
     fireEvent.click(screen.getByTestId("viewport-turnaround-180"));
     const backCall = engine.calls.filter((call) => call.method === "setCamera").at(-1);
-    expect(backCall?.args[0]).toMatchObject({ mode: "full-body", yawDeg: 180 });
+    expect(backCall?.args[0]).toMatchObject({ mode: "full-body", yawDeg: 180, pitchDeg: 22 });
   });
 
   it("원고 컷 참조 이미지를 로드해 언더레이/오버레이 배치와 투명도를 조절하고 해제 시 Object URL을 반환한다", () => {

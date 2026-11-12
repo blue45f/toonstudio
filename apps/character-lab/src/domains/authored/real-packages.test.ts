@@ -52,13 +52,14 @@ async function loadIndexEntries(): Promise<readonly AuthoredIndexEntry[]> {
 }
 
 describe("authored/real-packages (public/assets/characters)", () => {
-  it("index.json은 Orion(primary)·reference·tripo-h31·shaper-atelier-protagonist 네 항목을 낸다", async () => {
+  it("index.json은 Orion(primary)·reference·tripo-h31·shaper-atelier 2종까지 다섯 항목을 낸다", async () => {
     const entries = await loadIndexEntries();
     expect(entries.map((entry) => entry.characterId)).toEqual([
       "avatar-orion-authored",
       "reference-character",
       "tripo-h31-rigged-webtoon",
       "shaper-atelier-protagonist",
+      "shaper-atelier-male-lead",
     ]);
     expect(entries[0]?.primary).toBe(true);
     expect(entries[0]?.manifestFormat).toBe("authored-character");
@@ -68,6 +69,8 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(entries[2]?.summary.skeleton).toBe(true);
     expect(entries[3]?.summary.skeleton).toBe(true);
     expect(entries[3]?.summary.hairLodTriangles).toEqual([3296, 1712, 948]);
+    expect(entries[4]?.summary.skeleton).toBe(true);
+    expect(entries[4]?.summary.hairLodTriangles).toEqual([4176, 1596, 846]);
   });
 
   it("Orion: GLB 실측 SHA-256 = manifest·index 값, 플랜·매핑·능력 판정이 선언과 ears·accessory만 다르다", async () => {
@@ -198,6 +201,34 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(plan.meshRoles.TS_Shoes_loafers).toBe("shoes");
     expect(plan.meshRoles.TS_Accessory_ribbon).toBe("accessory");
     expect(detail.hairLod).toMatchObject({ style: "wolf-layered", lods: [0, 1, 2], chosen: 0 });
+    expect(detail.judgement.facsUnits.length).toBeGreaterThanOrEqual(12);
+    const unavailableSlots = CHARACTER_SLOT_KINDS.filter((slot) => plan.capabilities[slot].status === "unavailable");
+    expect(unavailableSlots).toEqual([]);
+    const comparison = compareCapabilities(detail.judgement.ruleOnly, plan.capabilities);
+    expect(comparison.divergent).toEqual([]);
+  });
+
+  it("shaper-atelier-male-lead: Blender 5.2 제작 8등신 남주인공(55본·24 의미축·12 FACS·3-LOD 헤어·분리형 의상 4종)이 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async () => {
+    const entries = await loadIndexEntries();
+    const maleLead = entries.find((entry) => entry.characterId === "shaper-atelier-male-lead");
+    if (!maleLead) throw new Error("shaper-atelier-male-lead");
+    const loaded = await loadAuthoredPackageFlow(fsPort(), maleLead, { sha256, now: 1 });
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const { plan, detail } = loaded;
+    expect(detail.observedSha256).toBe("34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18");
+    expect(plan.glbBytes).toBe(631_088);
+    expect(detail.warnings).toEqual([]);
+    expect(Object.values(plan.boneMap)).toHaveLength(55);
+    expect(detail.judgement.mappings.bones.required.missing).toEqual([]);
+    expect(detail.judgement.mappings.bones.fingers.missing).toEqual([]);
+    expect(plan.boneMap["TS_ShaperEye.L"]).toBe("leftEye");
+    expect(plan.boneMap["TS_ShaperEye.R"]).toBe("rightEye");
+    expect(plan.meshRoles["TS_Top_trench-coat"]).toBe("top");
+    expect(plan.meshRoles.TS_Bottom_slacks).toBe("bottom");
+    expect(plan.meshRoles.TS_Shoes_boots).toBe("shoes");
+    expect(plan.meshRoles.TS_Accessory_earring).toBe("accessory");
+    expect(detail.hairLod).toMatchObject({ style: "short-layered", lods: [0, 1, 2], chosen: 0 });
     expect(detail.judgement.facsUnits.length).toBeGreaterThanOrEqual(12);
     const unavailableSlots = CHARACTER_SLOT_KINDS.filter((slot) => plan.capabilities[slot].status === "unavailable");
     expect(unavailableSlots).toEqual([]);

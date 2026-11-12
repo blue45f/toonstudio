@@ -1,6 +1,6 @@
 /**
- * PaintPanel: 브러시/지우개 모드, 좌우 대칭 그리기(U축 미러), 웹툰 디테일 스탬프(데칼),
- * 브러시 크기·색·불투명도·경도·간격, 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기.
+ * PaintPanel: 브러시/지우개 모드, SHAPER 다중 드로잉 서브레이어(Layer 0~5), 좌우 대칭 그리기(U축 미러),
+ * 웹툰 디테일 스탬프(데칼), 브러시 크기·색·불투명도·경도·간격, 레이어(부위) 선택, UV 랩, 페인트 undo·레이어 비우기.
  * 브러시 상태는 paint/paint-session(React 밖 스토어)에 있고 뷰포트 드로잉 포인터가 같은 세션을 쓴다.
  */
 import { useCallback, useId, useSyncExternalStore } from "react";
@@ -12,7 +12,10 @@ import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { WEBTOON_DECAL_SPECS } from "../../../paint/webtoon-decals";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
+import { PaintSublayerControls } from "./paint-sublayer-controls";
+
 import type { PaintSession, PaintSessionState } from "../../../paint/paint-session";
+import type { PaintSublayerIndex } from "../../../paint/paint-sublayers";
 import type { WebtoonDecalId } from "../../../paint/webtoon-decals";
 
 export interface PaintPanelProps {
@@ -51,6 +54,7 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
   const engineSession = useEngineSession();
   const ids = useId();
   const activeLayer = state.layers.get(state.activePart);
+  const activeSublayerMetas = state.sublayers.get(state.activePart);
   const engineReady = labState.engine.phase === "ready";
   const sourceKind = labState.recipe.source.kind;
   const activeKitWarning = kitPaintWarningKo(sourceKind, state.activePart);
@@ -67,6 +71,35 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
     dispatch({ type: "paint/stroke", undoToken: token });
     engineSession.engine()?.updatePaintTexture(session.layer(part));
   }, [dispatch, engineSession, session, state.activePart]);
+
+  const onClearSublayer = useCallback(
+    (index: PaintSublayerIndex) => {
+      const part = state.activePart;
+      const token = session.clearSublayer(part, index);
+      if (!token) return;
+      dispatch({ type: "paint/stroke", undoToken: token });
+      engineSession.engine()?.updatePaintTexture(session.layer(part));
+    },
+    [dispatch, engineSession, session, state.activePart],
+  );
+
+  const onToggleSublayerVisible = useCallback(
+    (index: PaintSublayerIndex, nextVisible: boolean) => {
+      const part = state.activePart;
+      session.setSublayerVisible(part, index, nextVisible);
+      engineSession.engine()?.updatePaintTexture(session.layer(part));
+    },
+    [engineSession, session, state.activePart],
+  );
+
+  const onChangeSublayerOpacity = useCallback(
+    (index: PaintSublayerIndex, opacity: number) => {
+      const part = state.activePart;
+      session.setSublayerOpacity(part, index, opacity);
+      engineSession.engine()?.updatePaintTexture(session.layer(part));
+    },
+    [engineSession, session, state.activePart],
+  );
 
   const onStampDecal = useCallback(
     (decalId: WebtoonDecalId) => {
@@ -113,6 +146,15 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
           ))}
         </ul>
       ) : null}
+      <PaintSublayerControls
+        activePart={state.activePart}
+        activeSublayer={state.activeSublayer}
+        metas={activeSublayerMetas}
+        onSelectSublayer={(index) => session.setActiveSublayer(index)}
+        onToggleVisible={onToggleSublayerVisible}
+        onChangeOpacity={onChangeSublayerOpacity}
+        onClearSublayer={onClearSublayer}
+      />
       <div className="cl-paint-row" role="group" aria-label="드로잉 도구 모드" data-testid="paint-tool-mode-group">
         <button
           type="button"
@@ -176,7 +218,7 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
             type="button"
             className="cl-preset-chip"
             data-testid={`paint-decal-${spec.id}`}
-            title={`${spec.labelKo} 디테일 스탬프를 현재 레이어(${PART_ROLE_LABELS_KO[state.activePart]})에 추가합니다`}
+            title={`${spec.labelKo} 디테일 스탬프를 현재 레이어(${PART_ROLE_LABELS_KO[state.activePart]} · L${state.activeSublayer})에 추가합니다`}
             onClick={() => onStampDecal(spec.id)}
           >
             {`스탬프: ${spec.labelKo}`}
@@ -220,9 +262,9 @@ export function PaintPanel({ session = getDefaultPaintSession() }: PaintPanelPro
         />
       </div>
       <p className="cl-paint-hint" data-testid="shaper-paint-stroke-readout">
-        도구 {state.toolMode === "eraser" ? "지우개" : "브러시"} · 대칭 {state.symmetry ? "ON" : "OFF"} · 기준 반지름 {state.brush.radiusPx.toFixed(1)} px · 의상 마스킹 {state.bodyLineMaskEnabled ? "ON" : "OFF"}
+        도구 {state.toolMode === "eraser" ? "지우개" : "브러시"} · 서브레이어 L{state.activeSublayer} · 대칭 {state.symmetry ? "ON" : "OFF"} · 기준 반지름 {state.brush.radiusPx.toFixed(1)} px · 의상 마스킹 {state.bodyLineMaskEnabled ? "ON" : "OFF"}
       </p>
-      <p className="cl-paint-hint">가상 필압은 스트로크를 끝내면 양끝이 가늘어집니다. 좌우 대칭 그리기를 켜면 양볼 볼터치나 대칭 문양이 U축 반대편에도 함께 기록됩니다.</p>
+      <p className="cl-paint-hint">선화(L0)·볼터치(L1)·문양(L2)·음영(L3)을 서브레이어별로 분리해 그리면 눈썹·선화를 지우지 않고 볼터치나 문양만 켜고 끌 수 있습니다.</p>
       <p className="cl-paint-status">
         {PART_ROLE_LABELS_KO[state.activePart]} 레이어 {activeLayer ? `${activeLayer.width}×${activeLayer.height} · 개정 ${activeLayer.revision}` : "(아직 없음)"}
         {state.strokeActive ? " · 스트로크 진행 중" : ""}
