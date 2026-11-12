@@ -30,19 +30,6 @@ import type {
   StrokeReceipt,
 } from "../lane";
 
-/**
- * 붓털 dab 합성(두 물리 붓 레인 공통부)과 공통 레인 뼈대.
- *
- * 시뮬레이션 틱마다 털끝의 이동 경로를 따라 작은 둥근 dab를 찍는다: 반경 r_b(털 접촉 반경), 흐름 ∝ 적재량 × 압력,
- * 색은 `options.color`(선형 premultiplied로 변환). 찍는 곳은 `cpu-reference` 레인과 같은 엔진 래스터 표면(`Surface`)이라 합성·
- * 해시·readback이 기존 경로와 같다. 레인 둘(자체 PBD / Rapier)은 월드 팩토리만 다르다.
- *
- * 프로그램에서 옮기는 필드(BL-4a): 팁 지름, 접촉 물리(`physics.contact`)와 압력에 묶인 크기 동역학이 만드는 **압력 → 선 반폭**(벌어짐 곡선 표에 결합),
- * 압력에 묶인 흐름 동역학, 종이·흑연 그레인 응답, 팁 경도·초타원 지수, `deposition.flow`. dab 반경은 현재 벌어짐 반경을 따라가
- * 압력이 낮으면 좁은 선, 높으면 넓은 선이 된다. 불투명도·블렌드는 표면의 획 합성이 그대로 적용한다.
- * 옮기지 않은 필드는 영수증 `unmappedKo`로 드러낸다(근사하지 않는다). 습식·임파스토·smudge·지우개는 거부한다.
- */
-
 /** 래스터 배치 용량(dab). 가득 차면 표면에 제출하고 비운다. */
 export const BRISTLE_BATCH_CAPACITY = 4096;
 /** dab 간격(지름 대비). SP-A 렌더 규약과 같다. */
@@ -74,10 +61,7 @@ export const BRISTLE_HEADING_MAJOR_SCALE = 1.12;
 export const BRISTLE_HEADING_MINOR_SCALE = 0.9;
 /** 정착 최대 시간(ms). */
 export const BRISTLE_SETTLE_MAX_MS = 300;
-/**
- * 표본 좌표 한계(px). f32 범위(약 3.4e38)를 넘는 값은 `Number.isFinite`는 통과하지만 f32 미러에서 Infinity가 되어 틱 도중 던지고,
- * 그 근처의 큰 값도 제곱 연산에서 넘친다. 문서 좌표로 의미가 있는 범위보다 훨씬 넉넉한 안전 상한으로 막는다.
- */
+/** 표본 좌표 안전 상한(px). */
 export const BRISTLE_MAX_ABS_COORD_PX = 1e7;
 
 /** 합성기 통계(영수증용). */
@@ -103,8 +87,12 @@ export class BristleDabSynthesizer implements BristleTickSink {
   private activeIndex = 0;
   private frameDabs = 0;
   private readonly carry: Float32Array;
+  private readonly strandDabCount: Uint32Array;
   private readonly dab: DabInstance;
   private index = 0;
+  private prevHeadingAngleRad: number | null = null;
+  private currentTurnRate01 = 0;
+  private currentTiltMagnitude01 = 0;
 
   constructor(
     private readonly surface: Surface,
@@ -117,6 +105,7 @@ export class BristleDabSynthesizer implements BristleTickSink {
     private readonly response: BristleDabResponse | null = null,
   ) {
     this.carry = new Float32Array(count);
+    this.strandDabCount = new Uint32Array(count);
     this.dab = {
       x: 0,
       y: 0,
@@ -154,12 +143,24 @@ export class BristleDabSynthesizer implements BristleTickSink {
     this.frameDabs = 0;
   }
 
+  /** Wave 37 옵트인 기울기 크기(0..1)를 현재 표본에서 갱신한다. */
+  setSampleTiltDegrees(tiltXDeg: number, tiltYDeg: number): void {
+    if (!Number.isFinite(tiltXDeg) || !Number.isFinite(tiltYDeg)) {
+      this.currentTiltMagnitude01 = 0;
+      return;
+    }
+    const tiltDeg = Math.hypot(tiltXDeg, tiltYDeg);
+    this.currentTiltMagnitude01 = Math.max(0, Math.min(1, tiltDeg / 65));
+  }
+
   /** 털마다 현재 위치에 dab 하나씩(탭 한 번에 점이 찍히게). 정지 상태라 속도는 0·방향은 유지된다. */
   stamp(tick: BristleTick): void {
     if (tick.pressure <= BRISTLE_MIN_PRESSURE) return;
     const rad = this.dabRadius(tick.spreadRadiusPx);
     const flowBase = this.flowBase(tick.pressure, tick.spreadRadiusPx, rad, 0);
-    for (let i = 0; i < this.count; i += 1) this.place(i, tick.curX[i] ?? 0, tick.curY[i] ?? 0, tick.load[i] ?? 0, tick.pressure, flowBase, rad, tick.headingX, tick.headingY, 0);
+    for (let i = 0; i < this.count; i += 1) {
+      this.place(i, tick.curX[i] ?? 0, tick.curY[i] ?? 0, tick.load[i] ?? 0, tick.pressure, flowBase, rad, tick.headingX, tick.headingY, 0, tick.handleX, tick.handleY);
+    }
   }
 
   /** 손잡이 속도(px/s) → 농도 배율 0..1. 보통 필기 속도에서는 거의 1이고 빠른 획에서 옅어진다. */
@@ -176,13 +177,6 @@ export class BristleDabSynthesizer implements BristleTickSink {
     return 1 + Math.min(BRISTLE_SPEED_STEP_MAX_GAIN, q * q);
   }
 
-  /**
-   * 이 틱에서 적재량 1인 털 dab 하나의 흐름.
-   * 응답이 없으면 예전 규약(기준 흐름 × 압력 이득 × 밀도 정규화)이다.
-   * 응답이 있으면 털 N올의 dab가 선 폭 안에서 평균적으로 겹치는 깊이 D(털 수 × 폭 방향 겹침 비율 × 이동 방향 겹침)를 어림해,
-   * 선 전체의 평균 겹친 합 1 − (1 − a)^D가 목표 농도(프로그램 흐름 × 흐름 동역학)가 되도록 a를 정한다. 그래서 좁은 선도 넓은 선도 같은 농도로 칠해지고
-   * 흐름이 낮은 프리셋(연필)은 묽게, 높은 프리셋(G펜)은 짙게 나온다. 적재량이 낮은 털은 이 값에 적재량을 곱해 연해진다.
-   */
   private flowBase(pressure: number, spreadRadiusPx: number, rad: number, speedPxPerSec: number): number {
     const gain = BristleDabSynthesizer.speedFlowGain(speedPxPerSec);
     const r = this.response;
@@ -209,12 +203,27 @@ export class BristleDabSynthesizer implements BristleTickSink {
   onTick(tick: BristleTick): void {
     const rad = this.dabRadius(tick.spreadRadiusPx);
     const speed = Math.hypot(tick.handleVX ?? 0, tick.handleVY ?? 0);
+    const hx = tick.headingX ?? 1;
+    const hy = tick.headingY ?? 0;
+    if (this.response?.turnFanSplayGain && speed >= BRISTLE_HEADING_MIN_SPEED_PX_PER_SEC && Math.hypot(hx, hy) > 1e-6) {
+      const curAngle = Math.atan2(hy, hx);
+      if (this.prevHeadingAngleRad !== null) {
+        let dTheta = curAngle - this.prevHeadingAngleRad;
+        while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+        while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+        // 240Hz 틱 기준 순간 선회 각속도 × 손잡이 속도 원심 가속 정규화(-1..1 부호 유지)
+        const signedCentrifugal = (dTheta * 240 * Math.min(speed, 2400)) / 9600;
+        this.currentTurnRate01 = Math.max(-1, Math.min(1, this.currentTurnRate01 * 0.65 + signedCentrifugal * 0.35));
+      }
+      this.prevHeadingAngleRad = curAngle;
+    } else if (this.response?.turnFanSplayGain) {
+      this.currentTurnRate01 *= 0.8;
+    }
+
     const stepBase = Math.max(BRISTLE_MIN_STEP_PX, 2 * rad * BRISTLE_DAB_SPACING);
     const step = stepBase * BristleDabSynthesizer.speedStepGain(speed);
     const lifted = tick.pressure <= BRISTLE_MIN_PRESSURE;
     const flowBase = lifted ? 0 : this.flowBase(tick.pressure, tick.spreadRadiusPx, rad, speed);
-    const hx = tick.headingX ?? 1;
-    const hy = tick.headingY ?? 0;
     let estimatedDabs = 0;
     if (!lifted) {
       for (let i = 0; i < this.count; i += 1) {
@@ -243,14 +252,26 @@ export class BristleDabSynthesizer implements BristleTickSink {
           this.carry[i] = carried + len;
           continue;
         }
-        // 이 구간에서 간격마다 dab를 둔다. 프레임 예산을 넘으면 경로는 따라가되 dab는 건너뛴다.
         let pos = step - carried;
         while (pos <= len) {
           const t = pos / len;
           if (lifted) this.stats.skippedLift += 1;
           else if (this.frameDabs >= BRISTLE_FRAME_DAB_BUDGET) this.stats.budgetSkipped += 1;
           else {
-            this.place(i, x0 + dx * t, y0 + dy * t, tick.load[i] ?? 0, tick.pressure, flowBase, rad, hx, hy, speed);
+            this.place(
+              i,
+              x0 + dx * t,
+              y0 + dy * t,
+              tick.load[i] ?? 0,
+              tick.pressure,
+              flowBase,
+              rad,
+              hx,
+              hy,
+              speed,
+              tick.handleX,
+              tick.handleY,
+            );
             this.frameDabs += 1;
           }
           pos += step;
@@ -261,7 +282,6 @@ export class BristleDabSynthesizer implements BristleTickSink {
       return;
     }
 
-    // 한 틱에 남은 프레임 예산을 넘기는 고속 도약: 가닥 간 라운드로빈으로 골고루 방출하고 조기 중단된 가닥의 carry는 stepBase로 상한을 둔다.
     const x0Arr = new Float64Array(this.count);
     const y0Arr = new Float64Array(this.count);
     const dxArr = new Float64Array(this.count);
@@ -309,6 +329,8 @@ export class BristleDabSynthesizer implements BristleTickSink {
             hx,
             hy,
             speed,
+            tick.handleX,
+            tick.handleY,
           );
           this.frameDabs += 1;
           pos += step;
@@ -334,16 +356,11 @@ export class BristleDabSynthesizer implements BristleTickSink {
     }
   }
 
-  /**
-   * 털이 모여 있을수록(낮은 압력의 좁은 벌어짐) 같은 면적에 dab가 몰려 물감이 뭉친다. 벌어짐 반경이 기준 반경보다 작으면 흐름을 비례해 줄인다
-   * (하한 BRISTLE_DENSITY_FLOOR: 좁은 획도 보이게).
-   */
   private densityScale(spreadRadiusPx: number): number {
     const r = spreadRadiusPx / this.referenceSpreadPx;
     return r < BRISTLE_DENSITY_FLOOR ? BRISTLE_DENSITY_FLOOR : r > 1 ? 1 : r;
   }
 
-  /** 쌓인 dab를 표면에 제출한다. place()가 예산에서 자동 제출하므로 나머지는 예산 미만이다. */
   flush(): void {
     this.submitActive();
   }
@@ -354,7 +371,6 @@ export class BristleDabSynthesizer implements BristleTickSink {
     return b;
   }
 
-  /** 활성 배치를 통째로 제출하고 비어 있는 다른 배치로 바꾼다. 제출 순서를 유지하므로 최종 픽셀은 같다. */
   private submitActive(): void {
     const batch = this.active();
     if (batch.count === 0) return;
@@ -366,7 +382,20 @@ export class BristleDabSynthesizer implements BristleTickSink {
     this.activeIndex = 1 - this.activeIndex;
   }
 
-  private place(i: number, x: number, y: number, load: number, pressure: number, flowBase: number, rad: number, headingX: number, headingY: number, speedPxPerSec: number): void {
+  private place(
+    i: number,
+    x: number,
+    y: number,
+    load: number,
+    pressure: number,
+    flowBase: number,
+    rad: number,
+    headingX: number,
+    headingY: number,
+    speedPxPerSec: number,
+    handleX?: number,
+    handleY?: number,
+  ): void {
     if (load <= BRISTLE_MIN_LOAD) {
       this.stats.skippedDry += 1;
       return;
@@ -380,22 +409,57 @@ export class BristleDabSynthesizer implements BristleTickSink {
         return;
       }
     }
+
+    let placeX = x;
+    let placeY = y;
+    let effRad = rad;
+    let taperScale = 1;
+
+    // Wave 37 옵트인 1: 급선회 원심 부채꼴 벌어짐(기본값 0일 때는 분기 미진입 — 기존 픽셀 비트 동일)
+    if (response?.turnFanSplayGain && Math.abs(this.currentTurnRate01) > 1e-4 && handleX !== undefined && handleY !== undefined) {
+      const hNorm = Math.max(1e-6, Math.hypot(headingX, headingY));
+      const nx = -headingY / hNorm;
+      const ny = headingX / hNorm;
+      // 우회전/좌회전 외측 법선 방향으로 가닥 편차에 비례한 부채꼴 확산 변위 추가
+      const relCross = (x - handleX) * nx + (y - handleY) * ny;
+      const outwardSign = -Math.sign(this.currentTurnRate01);
+      const isOuterStrand = relCross * outwardSign >= 0;
+      const fanAmount = Math.abs(this.currentTurnRate01) * response.turnFanSplayGain * (isOuterStrand ? 1.15 : 0.35);
+      placeX += nx * outwardSign * (Math.abs(relCross) * fanAmount + rad * fanAmount * 0.45);
+      placeY += ny * outwardSign * (Math.abs(relCross) * fanAmount + rad * fanAmount * 0.45);
+    }
+
+    // Wave 37 옵트인 2: 입필·출필 테이퍼 감쇠
+    if (response?.strokeTaperDabs && response.strokeTaperDabs > 0) {
+      const strandIdx = this.strandDabCount[i] ?? 0;
+      this.strandDabCount[i] = strandIdx + 1;
+      const entryRamp = Math.min(1, (strandIdx + 1) / response.strokeTaperDabs);
+      const releaseRamp = pressure < 0.18 ? Math.max(0.22, pressure / 0.18) : 1;
+      taperScale = entryRamp * releaseRamp;
+      effRad = Math.max(response.minRadiusPx * 0.5, rad * (0.35 + 0.65 * taperScale));
+    }
+
     const dab = this.dab;
     const follow = speedPxPerSec >= BRISTLE_HEADING_MIN_SPEED_PX_PER_SEC && Math.hypot(headingX, headingY) > 1e-6;
-    const flow = Math.min(1, flowBase * load);
-    dab.x = x;
-    dab.y = y;
+    const tiltScale =
+      response?.tiltBroadSideGain && this.currentTiltMagnitude01 > 0
+        ? 1 + this.currentTiltMagnitude01 * response.tiltBroadSideGain
+        : 1;
+    const flow = Math.min(1, flowBase * load * taperScale * (tiltScale > 1 ? 1 / Math.sqrt(tiltScale) : 1));
+    dab.x = placeX;
+    dab.y = placeY;
     if (follow) {
-      dab.rx = rad * BRISTLE_HEADING_MAJOR_SCALE;
-      dab.ry = rad * BRISTLE_HEADING_MINOR_SCALE;
+      dab.rx = effRad * BRISTLE_HEADING_MAJOR_SCALE;
+      dab.ry = effRad * BRISTLE_HEADING_MINOR_SCALE * tiltScale;
       dab.angle = Math.atan2(headingY, headingX);
     } else {
-      dab.rx = rad;
-      dab.ry = rad;
+      dab.rx = effRad;
+      dab.ry = effRad * tiltScale;
       dab.angle = 0;
     }
     dab.flow = flow;
-    dab.grain = response?.grain ? response.grain.eval(pressure) : 0;
+    const baseGrain = response?.grain ? response.grain.eval(pressure) : 0;
+    dab.grain = tiltScale > 1 ? Math.min(1, baseGrain + this.currentTiltMagnitude01 * 0.25) : baseGrain;
     dab.seed = hashU32(i, this.index, this.seed) & 0x00ff_ffff;
     this.index += 1;
     const active = this.active();
@@ -441,10 +505,6 @@ interface Session {
   frameTimes: number[];
 }
 
-/**
- * 붓털 물리 레인 공통 뼈대. 서브클래스는 `prepareWorldFactory`(init에서 호출 — 외부 모듈 로드는 여기서)와 식별 필드만 채운다.
- * 표면은 `Surface`(cpu-reference와 같은 래스터)라 abortStroke는 표면의 되돌림 저널이 문서를 beginStroke 직전 상태로 복원한다.
- */
 export abstract class BristleLaneBase implements BrushEngineLane {
   abstract readonly id: LaneId;
   abstract readonly label: string;
@@ -468,7 +528,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
 
   abstract probe(env: LaneEnvironment): Promise<LaneCapabilityReport>;
 
-  /** init에서 불리며 월드 팩토리를 돌려준다. 외부 모듈 로드·초기화가 있으면 여기서 하고 실패는 `LaneUnavailableError`로 던진다. */
   protected abstract prepareWorldFactory(env: LaneEnvironment): Promise<() => PhysicsWorld2D>;
 
   protected isDisposed(): boolean {
@@ -484,9 +543,7 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     const opts: { strokeCapacityTiles?: number; wetCapacityTiles?: number } = {};
     if (config.strokeCapacityTiles !== undefined) opts.strokeCapacityTiles = config.strokeCapacityTiles;
     if (config.wetCapacityTiles !== undefined) opts.wetCapacityTiles = config.wetCapacityTiles;
-    // 획 도중 다시 init하면 진행 중이던 세션의 월드를 먼저 해제한다(그냥 버리면 Rapier wasm 월드가 누수된다).
     this.closeSession();
-    // 외부 모듈 로드가 실패하면 표면을 만들기 전에 던진다(반쯤 초기화된 레인을 남기지 않는다).
     const factory = await this.prepareWorldFactory(env);
     this.assertAlive("init");
     this.surface = new Surface(config.width, config.height, opts);
@@ -496,7 +553,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
   }
 
   beginStroke(program: BrushProgram, seed: number, options?: StrokeOptions): void {
-    // 색 검증(획을 열기 전에 거부한다) → 지원 여부 → 상태 검사 순.
     const color = resolveStrokeColor(options) ?? [0, 0, 0, 1];
     const surface = this.requireSurface("beginStroke");
     if (this.session) throw new InvalidStateError("beginStroke: 이전 획이 endStroke되지 않았다");
@@ -521,9 +577,8 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     const surface = this.requireSurface("addSamples");
     const session = this.session;
     if (!session) throw new InvalidStateError("addSamples: beginStroke 전에 호출됐다");
-    // 배치 전체를 먼저 검사한다(일부만 적용된 채 던지지 않는다). 유한성뿐 아니라 f32 미러에서 넘치지 않는 범위인지도 본다:
-    // 1e39 같은 좌표는 isFinite를 통과하지만 f32로는 Infinity라 틱 도중 RangeError가 나고 앞선 틱은 이미 진행돼 있다.
     const tiltHeading = this.laneOptions.headingSource === "tilt";
+    const tiltShading = Boolean(this.laneOptions.enableTiltSizeShading);
     for (let i = 0; i < samples.length; i += 1) {
       const s = samples[i];
       if (!s) continue;
@@ -533,8 +588,8 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       if (Math.abs(s.x) > BRISTLE_MAX_ABS_COORD_PX || Math.abs(s.y) > BRISTLE_MAX_ABS_COORD_PX) {
         throw new InvalidStateError(`addSamples: 표본 ${i}의 좌표가 허용 범위(±${BRISTLE_MAX_ABS_COORD_PX} px)를 넘는다(x ${s.x}, y ${s.y})`);
       }
-      if (tiltHeading && (!Number.isFinite(s.tiltXDeg) || !Number.isFinite(s.tiltYDeg))) {
-        throw new InvalidStateError(`addSamples: 표본 ${i}의 기울기가 유한하지 않다(tiltXDeg ${s.tiltXDeg}, tiltYDeg ${s.tiltYDeg}) — tilt 방향 출처에서는 기울기가 필요하다`);
+      if ((tiltHeading || tiltShading) && (!Number.isFinite(s.tiltXDeg) || !Number.isFinite(s.tiltYDeg))) {
+        throw new InvalidStateError(`addSamples: 표본 ${i}의 기울기가 유한하지 않다(tiltXDeg ${s.tiltXDeg}, tiltYDeg ${s.tiltYDeg}) — tilt 방향·측면 셰이딩에서는 기울기가 필요하다`);
       }
     }
     const clock = this.clock;
@@ -542,13 +597,13 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     const before = session.synth ? { dabs: session.synth.stats.dabs, submits: session.synth.stats.submits } : { dabs: 0, submits: 0 };
     session.synth?.beginFrame();
     for (const s of samples) {
-      // 예측 표본은 표시 전용이라 물리에 넣지 않는다.
       if (s.source === "predicted") continue;
       const pressure = s.pressure < 0 ? 0 : s.pressure > 1 ? 1 : s.pressure;
       if (!session.brush || !session.synth) this.startBrush(session, surface, s.x, s.y, s.tMs, pressure);
       const brush = session.brush;
       const synth = session.synth;
       if (!brush || !synth) continue;
+      if (tiltShading) synth.setSampleTiltDegrees(s.tiltXDeg, s.tiltYDeg);
       let azX = 0;
       let azY = 0;
       if (tiltHeading) {
@@ -584,8 +639,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       if (brush && synth) {
         synth.beginFrame();
         brush.settle(synth, BRISTLE_SETTLE_MAX_MS);
-        // 탭(움직임 없이 끝난 획)에는 털마다 현재 위치에 dab 하나씩 찍어 점이 남게 한다.
-        // 움직인 획의 시작에는 찍지 않는다(털이 모여 있는 시작점에 물감이 뭉치는 것을 막는다).
         if (synth.stats.dabs === 0) synth.stamp(brush.snapshot(brush.lastState().pressure));
         synth.flush();
       }
@@ -618,7 +671,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
         droppedTicks: diag?.droppedTicks ?? 0,
         stiffnessUpdates: diag?.stiffnessUpdates ?? 0,
         skippedDry: stats?.skippedDry ?? 0,
-        /** 프레임 예산을 넘어 건너뛴 dab 수. */
         budgetSkipped: stats?.budgetSkipped ?? 0,
         worldDiagnostics,
         notesKo,
@@ -631,22 +683,15 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       this.lifetime.lastReceipt = receipt;
       return receipt;
     } catch (error) {
-      // 획 마감이 실패하면 그 획은 버린다: 표면의 되돌림 저널로 복원을 시도하고, 직후 abortStroke 호출자에게는
-      // 복원 가능 여부(합성 도중 실패 시 documentPreserved: false)를 돌려준다.
       const unsubmitted = session.synth?.pending() ?? 0;
       const aborted = surface.abortStroke();
       this.pendingAbort = aborted.aborted ? abortReceipt(aborted.discardedDabs + unsubmitted, aborted.restored, aborted.reasonKo) : null;
       throw error;
     } finally {
-      // 성공이든 실패든 세션은 닫는다(남기면 다음 beginStroke가 '이전 획이 endStroke되지 않았다'로 영구히 실패한다).
       this.closeSession();
     }
   }
 
-  /**
-   * 진행 중인 획을 버린다. 문서는 `endStroke`의 합성에서만 바뀌므로 표면의 되돌림 저널이 beginStroke 직전 상태를 복원한다.
-   * `discardedDabs`는 버려진 dab(표면 획 레이어 + 아직 제출하지 않은 합성 배치) 수다. 획 밖이면 no-op(멱등).
-   */
   abortStroke(): StrokeAbortReceipt {
     this.assertAlive("abortStroke");
     if (this.pendingAbort) {
@@ -676,7 +721,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     return { ...this.lifetime };
   }
 
-  /** 현재 표면(테스트·증거용). init 전·dispose 후는 null. */
   currentSurface(): Surface | null {
     return this.surface;
   }
@@ -690,7 +734,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
     this.disposed = true;
   }
 
-  /** 월드 구현 식별자(영수증용). */
   protected abstract backendId(): string;
 
   private startBrush(session: Session, surface: Surface, x: number, y: number, tMs: number, pressure: number): void {
@@ -704,7 +747,6 @@ export abstract class BristleLaneBase implements BrushEngineLane {
       brush.begin(x, y, tMs, pressure);
       synth = new BristleDabSynthesizer(surface, session.mapping.config.count, brush.bristleRadiusPx, session.mapping.baseFlow, session.colorLinear, session.seed, bristleSpreadRadiusPx(session.mapping.config, 0.5), session.mapping.dabResponse);
     } catch (error) {
-      // 세션에 대입하기 전에 던지면 closeSession/dispose/abortStroke 어디서도 월드를 해제하지 못한다 — 여기서 보장한다.
       world.dispose();
       throw error;
     }

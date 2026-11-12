@@ -1,5 +1,5 @@
 /**
- * 페인트 레이어: 부위(PartRole)별 RGBA8 straight 텍스처와 소프트 dab 스탬프, 타일 undo 토큰.
+ * 페인트 레이어: 부위(PartRole)별 RGBA8 straight 텍스처와 소프트 dab 스탬프, 지우개·대칭 미러, 타일 undo 토큰.
  *
  * 규약
  * - 레이어는 top-down 행 순서, straight alpha(contracts/paint.ts). UV v=0이 첫 행이다(glTF 텍스처 규약).
@@ -103,6 +103,33 @@ export function compositePixelLinear(rgba: Uint8ClampedArray, index: number, src
   rgba[index + 3] = Math.round(outA * 255);
 }
 
+/**
+ * 한 픽셀의 straight alpha를 감쇠시켜 지운다(제자리). 알파가 0이 되면 RGB 잔여 바이트도 0으로 정리한다.
+ */
+export function erasePixelAlpha(rgba: Uint8ClampedArray, index: number, eraseStrength: number): boolean {
+  const s = clamp01(eraseStrength);
+  if (s <= 0) return false;
+  const prevA = rgba[index + 3] ?? 0;
+  if (prevA === 0) return false;
+  const nextA = Math.round(prevA * (1 - s));
+  if (nextA === prevA) return false;
+  rgba[index + 3] = nextA;
+  if (nextA === 0) {
+    rgba[index] = 0;
+    rgba[index + 1] = 0;
+    rgba[index + 2] = 0;
+  }
+  return true;
+}
+
+/**
+ * SHAPER 좌우 대칭 그리기(`u' = 1 - u`) 미러 dab을 반환한다.
+ */
+export function mirrorDabHorizontal(dab: BrushDab, wrap = true): BrushDab {
+  const mirroredU = 1 - (wrap ? wrapUnit(dab.u) : clamp01(dab.u));
+  return { u: wrap ? wrapUnit(mirroredU) : clamp01(mirroredU), v: dab.v, pressure: dab.pressure };
+}
+
 // ---------------------------------------------------------------- 타일 스냅샷(undo)
 
 export interface TileSnapshotSet {
@@ -153,20 +180,29 @@ export function toUndoToken(set: TileSnapshotSet): PaintUndoToken {
   return { part: set.layer.part, tiles, tileSize: PAINT_TILE_SIZE };
 }
 
-/** 여러 토큰을 하나로(같은 타일은 먼저 나온 토큰 우선 = 가장 이른 변경 전 상태). */
+/** 여러 토큰을 하나로(같은 타일은 먼저 나온 토큰 우선 = 가장 이른 변경 전 상태, 서브레이어 단계는 시간순 연결). */
 export function mergeUndoTokens(tokens: readonly PaintUndoToken[]): PaintUndoToken | null {
   const first = tokens[0];
   if (!first) return null;
   const seen = new Map<string, PaintUndoTile>();
+  const steps: number[] = [];
   for (const token of tokens) {
     if (token.part !== first.part) throw new Error(`mergeUndoTokens: 부위가 다른 토큰(${token.part} ≠ ${first.part})은 합칠 수 없습니다.`);
     for (const tile of token.tiles) {
       const key = `${tile.x},${tile.y}`;
       if (!seen.has(key)) seen.set(key, tile);
     }
+    if (token.sublayerSteps) {
+      for (const stepId of token.sublayerSteps) steps.push(stepId);
+    }
   }
   const tiles = [...seen.values()].sort((a, b) => a.y - b.y || a.x - b.x);
-  return { part: first.part, tiles, tileSize: PAINT_TILE_SIZE };
+  return {
+    part: first.part,
+    tiles,
+    tileSize: PAINT_TILE_SIZE,
+    ...(steps.length > 0 ? { sublayerSteps: steps } : {}),
+  };
 }
 
 /**
@@ -196,7 +232,7 @@ export function applyUndoToken(layer: MutablePaintLayer, token: PaintUndoToken):
   return { part: token.part, tiles: inverse, tileSize: PAINT_TILE_SIZE };
 }
 
-// ---------------------------------------------------------------- dab 스탬프
+// ---------------------------------------------------------------- dab 스탬프 · 지우개
 
 export interface StampOptions {
   /** UV 경계를 넘는 dab을 반대편으로 감는다(기본 true). */
@@ -255,6 +291,55 @@ export function stampDab(layer: MutablePaintLayer, dab: BrushDab, brush: BrushSe
     }
   }
   layer.revision += 1;
+  const tiles = [...touched.values()].sort((a, b) => a.y - b.y || a.x - b.x);
+  return { part: layer.part, tiles, tileSize: PAINT_TILE_SIZE };
+}
+
+/**
+ * 지우개 dab 하나를 레이어에 적용한다(제자리). 실제로 알파가 줄어든 픽셀의 타일만 스냅샷해
+ * 빈 곳에 지우개를 문질러도 불필요한 undo 토큰을 만들지 않는다.
+ */
+export function eraseDab(layer: MutablePaintLayer, dab: BrushDab, brush: BrushSettings, options: StampOptions = {}): PaintUndoToken {
+  const wrap = options.wrap ?? true;
+  const { width, height, rgba } = layer;
+  const radius = effectiveRadius(brush, layer, wrap);
+  const strength = clamp01(brush.opacity) * clamp01(dab.pressure);
+  const cx = (wrap ? wrapUnit(dab.u) : dab.u) * width;
+  const cy = (wrap ? wrapUnit(dab.v) : dab.v) * height;
+  const snapshots = options.snapshots ?? createTileSnapshotSet(layer);
+  const touched = new Map<string, PaintUndoTile>();
+  let changed = false;
+
+  const x0 = Math.floor(cx - radius - 1);
+  const x1 = Math.ceil(cx + radius + 1);
+  const y0 = Math.floor(cy - radius - 1);
+  const y1 = Math.ceil(cy + radius + 1);
+  for (let py = y0; py <= y1; py += 1) {
+    const y = wrap ? ((py % height) + height) % height : py;
+    if (y < 0 || y >= height) continue;
+    const dy = py + 0.5 - cy;
+    for (let px = x0; px <= x1; px += 1) {
+      const x = wrap ? ((px % width) + width) % width : px;
+      if (x < 0 || x >= width) continue;
+      const idx = (y * width + x) * 4;
+      if ((rgba[idx + 3] ?? 0) === 0) continue;
+      const dx = px + 0.5 - cx;
+      const mask = dabMask(Math.sqrt(dx * dx + dy * dy), radius, brush.hardness);
+      if (mask <= 0) continue;
+      const sa = strength * mask;
+      if (sa <= 0) continue;
+      const tx = Math.floor(x / PAINT_TILE_SIZE);
+      const ty = Math.floor(y / PAINT_TILE_SIZE);
+      const key = `${tx},${ty}`;
+      if (!snapshots.tiles.has(key)) {
+        snapshotTile(snapshots, tx, ty);
+        const tile = snapshots.tiles.get(key);
+        if (tile) touched.set(key, tile);
+      }
+      if (erasePixelAlpha(rgba, idx, sa)) changed = true;
+    }
+  }
+  if (changed) layer.revision += 1;
   const tiles = [...touched.values()].sort((a, b) => a.y - b.y || a.x - b.x);
   return { part: layer.part, tiles, tileSize: PAINT_TILE_SIZE };
 }

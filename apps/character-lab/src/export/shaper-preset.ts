@@ -1,3 +1,5 @@
+import { stripUtf8Bom } from "../shared/json-safety";
+
 import type { Vec3 } from "../contracts";
 
 export interface ShaperPresetTransformRecord {
@@ -162,7 +164,8 @@ export function tokenizeShaperPresetLines(text: string): {
   readonly version: string;
   readonly pairs: readonly (readonly [string, string])[];
 } {
-  const lines = text
+  const { text: clean } = stripUtf8Bom(text);
+  const lines = clean
     .replace(/\r\n/gu, "\n")
     .split("\n")
     .map((line) => line.trim())
@@ -188,20 +191,25 @@ export function tokenizeShaperPresetLines(text: string): {
  * 안구(`ebtid*`, `eblt*`, `ebrt*`, `ebht*`, `ebhp*`, `ebha*`), 3-구간 Seam(`sposC/L/R*`),
  * 골격(`bN*`, `bP*`, `bA*`, `bS*`), 체형(`sex*`, `muscle*`, `fat*`), 카메라(`camP/R/Fov*`),
  * 의상 색상·윤곽선(`cC*`, `oR*`), 장신구(`acc*`) 토큰을 모두 파싱한다.
+ * 동일 ID의 헤어(`h*`)·라인(`l*`)·본 이름(`bN*`)이 중복 등장하면 최신 레코드로 병합해 중복 ID를 막는다.
  */
 export function parseShaperPartPreset(text: string): ShaperPartPresetData {
   const { version, pairs } = tokenizeShaperPresetLines(text);
   const controlVertices: Vec3[] = [];
   const controlPowers: number[] = [];
   const hairs: ShaperPresetHairStrandRecord[] = [];
+  const hairIndexById = new Map<number, number>();
   const hairControlTransforms: ShaperPresetTransformRecord[] = [];
   const hairBaseZones: ShaperPresetHairBaseZoneRecord[] = [];
   const lines: ShaperPresetLineRecord[] = [];
+  const lineIndexById = new Map<number, number>();
   const lineBaseMeshTypes: number[] = [];
   const linePoints: ShaperPresetLinePointRecord[] = [];
   const linePointBaseMeshTypes: number[] = [];
   const accessories: ShaperPresetAccessoryRecord[] = [];
   const boneNames: string[] = [];
+  const boneIndexByName = new Map<string, number>();
+  let activeBoneIndex = -1;
   const bonePositions: Vec3[] = [];
   const boneAngles: Vec3[] = [];
   const boneScales: Vec3[] = [];
@@ -258,7 +266,7 @@ export function parseShaperPartPreset(text: string): ShaperPartPresetData {
       case "h": {
         const parts = val.split("/");
         if (parts.length >= 16) {
-          hairs.push({
+          const strand: ShaperPresetHairStrandRecord = {
             id: Number.parseInt(parts[0] ?? "0", 10),
             baseMeshId: Number.parseInt(parts[1] ?? "0", 10),
             scaleCurveTime0: Number.parseFloat(parts[2] ?? "0"),
@@ -279,7 +287,14 @@ export function parseShaperPartPreset(text: string): ShaperPartPresetData {
             ],
             rotationAligned: Number.parseInt(parts[14] ?? "0", 10) !== 0,
             outlineEnabled: Number.parseInt(parts[15] ?? "1", 10) !== 0,
-          });
+          };
+          const prevIdx = hairIndexById.get(strand.id);
+          if (prevIdx !== undefined) {
+            hairs[prevIdx] = strand;
+          } else {
+            hairIndexById.set(strand.id, hairs.length);
+            hairs.push(strand);
+          }
         }
         break;
       }
@@ -314,7 +329,7 @@ export function parseShaperPartPreset(text: string): ShaperPartPresetData {
             colorMode === 2 && parts.length >= 10
               ? rgbFloatStringsToHex(parts.slice(7, 10))
               : undefined;
-          lines.push({
+          const lineRecord: ShaperPresetLineRecord = {
             id: Number.parseInt(parts[0] ?? "0", 10),
             scaleCurveTime0: Number.parseFloat(parts[1] ?? "0"),
             scaleCurveTime1: Number.parseFloat(parts[2] ?? "1"),
@@ -323,7 +338,14 @@ export function parseShaperPartPreset(text: string): ShaperPartPresetData {
             pressureMode: Number.parseInt(parts[5] ?? "0", 10),
             colorMode,
             ...(colorHex !== undefined ? { colorHex } : {}),
-          });
+          };
+          const prevIdx = lineIndexById.get(lineRecord.id);
+          if (prevIdx !== undefined) {
+            lines[prevIdx] = lineRecord;
+          } else {
+            lineIndexById.set(lineRecord.id, lines.length);
+            lines.push(lineRecord);
+          }
         }
         break;
       }
@@ -410,22 +432,39 @@ export function parseShaperPartPreset(text: string): ShaperPartPresetData {
         if (v) out.seamPosR = v;
         break;
       }
-      case "bN":
-        boneNames.push(val);
+      case "bN": {
+        const existingIdx = boneIndexByName.get(val);
+        if (existingIdx !== undefined) {
+          activeBoneIndex = existingIdx;
+        } else {
+          activeBoneIndex = boneNames.length;
+          boneIndexByName.set(val, activeBoneIndex);
+          boneNames.push(val);
+        }
         break;
+      }
       case "bP": {
         const v = parseVec3Slash(val);
-        if (v) bonePositions.push(v);
+        if (v) {
+          if (activeBoneIndex >= 0 && activeBoneIndex < bonePositions.length) bonePositions[activeBoneIndex] = v;
+          else bonePositions.push(v);
+        }
         break;
       }
       case "bA": {
         const v = parseVec3Slash(val);
-        if (v) boneAngles.push(v);
+        if (v) {
+          if (activeBoneIndex >= 0 && activeBoneIndex < boneAngles.length) boneAngles[activeBoneIndex] = v;
+          else boneAngles.push(v);
+        }
         break;
       }
       case "bS": {
         const v = parseVec3Slash(val);
-        if (v) boneScales.push(v);
+        if (v) {
+          if (activeBoneIndex >= 0 && activeBoneIndex < boneScales.length) boneScales[activeBoneIndex] = v;
+          else boneScales.push(v);
+        }
         break;
       }
       case "sex":
@@ -706,64 +745,10 @@ export function evaluateShaperPresetAssetUpdates(options: {
   return results;
 }
 
-export type Shaper3mfModelUnit = "micron" | "millimeter" | "centimeter" | "inch" | "foot" | "meter";
-
-export interface Shaper3mfMeshObject {
-  readonly id: number;
-  readonly name: string;
-  readonly vertices: readonly Vec3[];
-  readonly triangles: readonly (readonly [number, number, number])[];
-}
-
-export interface Shaper3mfModelDocument {
-  readonly unit: Shaper3mfModelUnit;
-  readonly objects: readonly Shaper3mfMeshObject[];
-}
-
-/**
- * SHAPER IxMilia.ThreeMf.dll (ThreeMfModel::ToXElement 0x060000de & ThreeMfMesh 0x060000b1) 역공학 내재화:
- * 3D 프린팅·외부 CAD 호환을 위한 3MF(`3D/3dmodel.model`) XML 문서를 생성한다.
- */
-export function buildShaper3mfModelXml(doc: Shaper3mfModelDocument): string {
-  const unit = doc.unit || "millimeter";
-  const objectNodes = doc.objects
-    .map((obj) => {
-      const verts = obj.vertices.map((v) => `          <vertex x="${v[0]}" y="${v[1]}" z="${v[2]}" />`).join("\n");
-      const tris = obj.triangles.map((t) => `          <triangle v1="${t[0]}" v2="${t[1]}" v3="${t[2]}" />`).join("\n");
-      return `    <object id="${obj.id}" name="${obj.name}" type="model">\n      <mesh>\n        <vertices>\n${verts}\n        </vertices>\n        <triangles>\n${tris}\n        </triangles>\n      </mesh>\n    </object>`;
-    })
-    .join("\n");
-  const buildItems = doc.objects.map((obj) => `    <item objectid="${obj.id}" />`).join("\n");
-  return `<?xml version="1.0" encoding="utf-8"?>\n<model unit="${unit}" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">\n  <resources>\n${objectNodes}\n  </resources>\n  <build>\n${buildItems}\n  </build>\n</model>`;
-}
-
-/**
- * SHAPER IxMilia.ThreeMf.dll (ThreeMfModel::LoadXml 0x060000e1) 역공학 내재화:
- * 3MF(`3D/3dmodel.model`) XML 문자열에서 단위(`unit`) 및 메시 오브젝트(`vertices`, `triangles`)를 파싱한다.
- */
-export function parseShaper3mfModelXml(xml: string): Shaper3mfModelDocument {
-  const unitMatch = /<model\b[^>]*\bunit="([^"]+)"/u.exec(xml);
-  const unit = (unitMatch?.[1] as Shaper3mfModelUnit | undefined) ?? "millimeter";
-  const objects: Shaper3mfMeshObject[] = [];
-  const objRegex = /<object\b[^>]*\bid="(\d+)"[^>]*\bname="([^"]*)"[^>]*>([\s\S]*?)<\/object>/gu;
-  for (let objMatch = objRegex.exec(xml); objMatch !== null; objMatch = objRegex.exec(xml)) {
-    const id = Number.parseInt(objMatch[1] ?? "1", 10);
-    const name = objMatch[2] ?? "";
-    const body = objMatch[3] ?? "";
-    const vertices: Vec3[] = [];
-    const vertRegex = /<vertex\b[^>]*\bx="([^"]+)"[^>]*\by="([^"]+)"[^>]*\bz="([^"]+)"/gu;
-    for (let vMatch = vertRegex.exec(body); vMatch !== null; vMatch = vertRegex.exec(body)) {
-      vertices.push([Number.parseFloat(vMatch[1] ?? "0"), Number.parseFloat(vMatch[2] ?? "0"), Number.parseFloat(vMatch[3] ?? "0")]);
-    }
-    const triangles: (readonly [number, number, number])[] = [];
-    const triRegex = /<triangle\b[^>]*\bv1="(\d+)"[^>]*\bv2="(\d+)"[^>]*\bv3="(\d+)"/gu;
-    for (let tMatch = triRegex.exec(body); tMatch !== null; tMatch = triRegex.exec(body)) {
-      triangles.push([Number.parseInt(tMatch[1] ?? "0", 10), Number.parseInt(tMatch[2] ?? "0", 10), Number.parseInt(tMatch[3] ?? "0", 10)]);
-    }
-    objects.push({ id, name, vertices, triangles });
-  }
-  return { unit, objects };
-}
-
-
-
+export {
+  buildShaper3mfModelXml,
+  parseShaper3mfModelXml,
+  type Shaper3mfMeshObject,
+  type Shaper3mfModelDocument,
+  type Shaper3mfModelUnit,
+} from "./shaper-3mf";

@@ -67,7 +67,7 @@ const NODE_LABELS: Readonly<Record<string, string>> = Object.freeze({
   "surface-coldpress": "Cold-press Watercolor", "surface-printmaking": "Printmaking Tooth",
   "surface-linen": "Linen Canvas", "surface-porous": "Porous Fiber",
   "surface-realbrush": "Captured Material Surface", "deposit-ink": "Ink Deposit",
-  "deposit-marker": "Marker Deposit", "deposit-dry": "Dry Deposit", "deposit-wet": "Wet Deposit",
+  "deposit-marker": "Marker Deposit", "deposit-dry": "Dry Deposit", "deposit-watercolor": "Capillary Watercolor", "deposit-wet": "Wet Deposit",
   "deposit-oil": "Oil Deposit", "deposit-particles": "Particle Deposit", "deposit-light": "Light Deposit",
   "pickup-none": "No Pickup", "pickup-krita-smudge": "Krita Color Smudge",
   "pickup-pigment-reservoir": "Local Pigment Reservoir", "pigment-rgb": "RGB / OKLab",
@@ -77,13 +77,19 @@ const NODE_LABELS: Readonly<Record<string, string>> = Object.freeze({
   "physics-porous-paper": "Porous Paper", "physics-inkwash": "Inkwash Wet Flow",
   "physics-thin-film": "Thin-film Gravity", "physics-bristle": "Bristle Dynamics",
   "physics-particles": "Particle Ballistics", "physics-reaction": "Reaction–Diffusion",
-  "physics-height": "Height Field", "pattern-none": "No Pattern", "pattern-dot-tone": "Document Dot Tone",
+  "physics-height": "Height Field", "physics-backrun-capillary": "Capillary Backrun",
+  "physics-pigment-sedimentation": "Pigment Sedimentation", "physics-bristle-split-merge": "Bristle Split / Merge",
+  "physics-centripetal-adaptive-stamp": "Centripetal Adaptive Stamp", "physics-centrifugal-bristle-turn": "Centrifugal Bristle Fan-Splay",
+  "physics-dual-mask-boolean": "Dual-Brush Boolean Carve", "physics-barrel-twist-chisel": "3D Barrel-Twist Chisel Nib",
+  "physics-nib-split-pooling": "Dip-Pen Nib Split & Pooling",
+  "pattern-none": "No Pattern", "pattern-dot-tone": "Document Dot Tone",
   "pattern-cross-hatch": "Contour Cross Hatch", "pattern-weave": "Fabric Weave",
   "pattern-brick": "Brick Mortar", "pattern-foliage": "Foliage Cluster",
   "pattern-stitch": "Stitch / Chain", "pattern-kaleido": "Kaleido Graph",
   "pattern-flow-field": "Flow-field Mass", "pattern-rainbow": "Rainbow Flow",
   "finish-edge-bloom": "Edge Bloom", "finish-wet-sheen": "Wet Sheen",
-  "finish-relief": "Relief Lighting", "finish-neon": "Neon Bloom", "finish-grain": "Grain Boost",
+  "finish-relief": "Relief Lighting", "finish-directional-relief": "Directional Relief Lighting",
+  "finish-neon": "Neon Bloom", "finish-grain": "Grain Boost", "finish-subpixel-sdf-aa": "Subpixel SDF Anti-Aliasing",
   "finish-chroma": "Chromatic Fringe", "output-contact-canvas-svg": "Canvas Contacts + SVG",
   "output-raster-tiles": "Raster Tile Authority", "output-hybrid": "Hybrid Editable Authority",
   "output-vector": "Vector Authority",
@@ -194,7 +200,12 @@ function v6Traits(seed: BrushStudioV6RecipeSeed, stages: readonly StudioBrushEng
     ids.includes("output-vector") || ids.includes("carrier-perfect-outline"),
     "벡터 선화",
   );
-  add(ids.includes("carrier-perfect-outline"), "정밀 테이퍼");
+  add(ids.includes("carrier-perfect-outline") || ids.includes("finish-subpixel-sdf-aa"), "서브픽셀 칼선");
+  add(ids.includes("physics-centripetal-adaptive-stamp"), "구심 곡률 보간");
+  add(ids.includes("physics-dual-mask-boolean"), "듀얼 불리언 각인");
+  add(ids.includes("physics-barrel-twist-chisel"), "배럴 트위스트 치즐");
+  add(ids.includes("physics-nib-split-pooling"), "펜촉 갈라짐·고임");
+  add(ids.includes("physics-centrifugal-bristle-turn"), "원심 부채꼴 강모");
   add((tuning?.size ?? 18) <= 4, "극세 제도");
   add(ids.includes("tip-chisel-sdf"), "틸트 치즐");
   add(ids.includes("tip-grain-exemplar"), "캡처 입자 촉");
@@ -203,7 +214,7 @@ function v6Traits(seed: BrushStudioV6RecipeSeed, stages: readonly StudioBrushEng
   add(ids.includes("surface-linen"), "리넨 결");
   add(ids.includes("physics-dry-contact"), "마른 접촉");
   add(ids.includes("physics-height"), "입체 물감");
-  add(ids.includes("deposit-wet") || ids.includes("physics-inkwash"), "습식 번짐");
+  add(ids.includes("deposit-wet") || ids.includes("deposit-watercolor") || ids.includes("physics-inkwash"), "습식 번짐");
   add(ids.includes("physics-porous-paper"), "종이 흡수");
   add((tuning?.granulation ?? 0) >= 0.55, "고과립");
   add(ids.includes("physics-reaction"), "반응·결정");

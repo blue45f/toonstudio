@@ -1,8 +1,9 @@
 /**
  * 스트로크 세션: pointerdown ~ pointerup 사이의 dab을 한 레이어에 스탬프하고
  * 타일 스냅샷을 공유해 **1 스트로크 = 1 undo 토큰**으로 끝낸다.
+ * SHAPER 호환 브러시/지우개 모드(`toolMode`) 및 좌우 대칭 그리기(`symmetry`)를 함께 지원한다.
  */
-import { applyUndoToken, createTileSnapshotSet, stampDab, toUndoToken } from "./paint-layer";
+import { applyUndoToken, createTileSnapshotSet, eraseDab, mirrorDabHorizontal, stampDab, toUndoToken } from "./paint-layer";
 import { pressureBrush } from "./paint-pressure";
 import { interpolateDabs } from "./uv-stroke";
 
@@ -10,9 +11,17 @@ import type { BrushDab, BrushSettings, PaintUndoToken } from "../contracts";
 import type { MutablePaintLayer } from "./paint-layer";
 import type { PaintPressureMode } from "./paint-pressure";
 
+export type PaintToolMode = "brush" | "eraser";
+
+export function isPaintToolMode(value: string): value is PaintToolMode {
+  return value === "brush" || value === "eraser";
+}
+
 export interface StrokeSessionOptions {
   readonly wrap?: boolean;
   readonly pressureMode?: PaintPressureMode;
+  readonly toolMode?: PaintToolMode;
+  readonly symmetry?: boolean;
 }
 
 export interface StrokeSession {
@@ -32,6 +41,8 @@ export interface StrokeSession {
 export function createStrokeSession(layer: MutablePaintLayer, brush: BrushSettings, options: StrokeSessionOptions = {}): StrokeSession {
   const wrap = options.wrap ?? true;
   const pressureMode = options.pressureMode ?? "constant";
+  const toolMode = options.toolMode ?? "brush";
+  const symmetry = options.symmetry ?? false;
   const snapshots = createTileSnapshotSet(layer);
   let last: BrushDab | null = null;
   let carry = 0;
@@ -39,11 +50,23 @@ export function createStrokeSession(layer: MutablePaintLayer, brush: BrushSettin
   let ended = false;
   const dabs: BrushDab[] = [];
 
+  const applySingle = (targetDab: BrushDab, nextBrush: BrushSettings): void => {
+    const effectiveDab = { ...targetDab, pressure: pressureMode === "fake" ? 1 : targetDab.pressure };
+    if (toolMode === "eraser") {
+      eraseDab(layer, effectiveDab, nextBrush, { wrap, snapshots });
+    } else {
+      stampDab(layer, effectiveDab, nextBrush, { wrap, snapshots });
+    }
+  };
+
   const stamp = (dab: BrushDab, finalProgress?: number): void => {
     const mode = pressureMode === "fake" && finalProgress === undefined ? "constant" : pressureMode;
     const nextBrush = pressureBrush(brush, mode, dab.pressure, finalProgress);
     if (nextBrush.radiusPx <= 1e-6) return;
-    stampDab(layer, { ...dab, pressure: pressureMode === "fake" ? 1 : dab.pressure }, nextBrush, { wrap, snapshots });
+    applySingle(dab, nextBrush);
+    if (symmetry && Math.abs(dab.u - 0.5) * layer.width >= 0.5) {
+      applySingle(mirrorDabHorizontal(dab, wrap), nextBrush);
+    }
   };
 
   const assertOpen = (): void => {

@@ -91,5 +91,6 @@
   "route.technologyStory": "Priča",
   "route.technologyVideos": "Videozapisi",
   "route.terms": "Uslovi korištenja",
-  "route.unknown": "Stranica"
+  "route.unknown": "Stranica",
+  "route.offline": "Connection & on-device content"
 }

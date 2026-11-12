@@ -63,4 +63,4 @@ jobs:
       - name: Command registry package typecheck
         run: pnpm exec tsc -p packages/studio-command-registry/tsconfig.json
       - name: Studio app typecheck
-        run: pnpm exec tsc -p tsconfig.json --noEmit
+        run: pnpm run typecheck:web

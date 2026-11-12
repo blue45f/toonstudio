@@ -91,5 +91,6 @@
   "route.technologyStory": "Tarina",
   "route.technologyVideos": "Videot",
   "route.terms": "Palvelun ehdot",
-  "route.unknown": "Sivu"
+  "route.unknown": "Sivu",
+  "route.offline": "Connection & on-device content"
 }

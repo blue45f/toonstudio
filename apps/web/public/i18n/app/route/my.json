@@ -91,5 +91,6 @@
   "route.technologyStory": "ဖန်တီးမှု စတိုရီ",
   "route.technologyVideos": "ဗီဒီယိုများ",
   "route.terms": "ဝန်ဆောင်မှု သတ်မှတ်ချက်များ",
-  "route.unknown": "စာမျက်နှာ"
+  "route.unknown": "စာမျက်နှာ",
+  "route.offline": "Connection & on-device content"
 }

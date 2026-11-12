@@ -187,18 +187,53 @@ function isCanonicalPartner(
   return isCanonicalParams(input.params, canonical.params) && isCanonicalPose(input.pose, canonical.pose);
 }
 
+function isCanonicalRigState(
+  input: unknown,
+  canonical: NonNullable<StudioMannequinPersistentState["rig"]>,
+): boolean {
+  if (!isPlainRecord(input) || definedKeys(input) !== definedKeys(canonical as unknown as Record<string, unknown>)) {
+    return false;
+  }
+  if (canonical.handContacts !== undefined) {
+    if (
+      !isPlainRecord(input.handContacts) ||
+      definedKeys(input.handContacts) !== definedKeys(canonical.handContacts as unknown as Record<string, unknown>) ||
+      input.handContacts.left !== canonical.handContacts.left ||
+      input.handContacts.right !== canonical.handContacts.right
+    ) {
+      return false;
+    }
+  } else if (input.handContacts !== undefined) {
+    return false;
+  }
+  if (input.contrapposto !== canonical.contrapposto) return false;
+  if (input.quadView !== canonical.quadView) return false;
+  if (canonical.cameraFovDeg !== undefined) {
+    if (typeof input.cameraFovDeg !== "number" || !sameQuantizedPoseNumber(input.cameraFovDeg, canonical.cameraFovDeg)) {
+      return false;
+    }
+  } else if (input.cameraFovDeg !== undefined) {
+    return false;
+  }
+  return input.projection === canonical.projection;
+}
+
 function isCanonicalMannequinInput(
   input: StudioMannequinPersistentState,
   canonical: StudioMannequinPersistentState,
 ): boolean {
   if (!isPlainRecord(input)) return false;
   const record = input as unknown as Record<string, unknown>;
-  const expectedKeys = canonical.partner ? "params|partner|pose" : "params|pose";
+  const expectedKeyList = ["params", "pose"];
+  if (canonical.partner) expectedKeyList.push("partner");
+  if (canonical.rig) expectedKeyList.push("rig");
+  const expectedKeys = expectedKeyList.sort().join("|");
   if (definedKeys(record) !== expectedKeys) return false;
   if (!isCanonicalParams(record.params, canonical.params) || !isCanonicalPose(record.pose, canonical.pose)) {
     return false;
   }
-  return !canonical.partner || isCanonicalPartner(record.partner, canonical.partner);
+  if (canonical.partner && !isCanonicalPartner(record.partner, canonical.partner)) return false;
+  return !canonical.rig || isCanonicalRigState(record.rig, canonical.rig);
 }
 
 export function parseCanonicalStudioMannequinSqliteState(

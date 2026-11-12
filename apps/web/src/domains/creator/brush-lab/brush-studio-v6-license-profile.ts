@@ -56,14 +56,17 @@ const INTERNAL_MATERIAL_NODE_IDS = Object.freeze([
   "carrier-webgpu-centerline", "carrier-webgpu-ribbon", "carrier-webgpu-particles",
   "tip-round-sdf", "tip-chisel-sdf", "tip-grain-exemplar", "tip-motif-atlas",
   "surface-smooth", "surface-kent", "surface-coldpress", "surface-printmaking", "surface-linen", "surface-porous",
-  "deposit-ink", "deposit-marker", "deposit-dry", "deposit-oil", "deposit-particles", "deposit-light",
+  "deposit-ink", "deposit-marker", "deposit-dry", "deposit-watercolor", "deposit-oil", "deposit-particles", "deposit-light",
   "pickup-none", "pickup-pigment-reservoir", "pigment-rgb",
   "physics-dry-contact", "physics-thin-film", "physics-bristle", "physics-particles", "physics-reaction", "physics-height",
   "physics-backrun-capillary", "physics-pigment-sedimentation", "physics-bristle-split-merge",
+  "physics-centripetal-adaptive-stamp", "physics-centrifugal-bristle-turn",
+  "physics-dual-mask-boolean", "physics-barrel-twist-chisel", "physics-nib-split-pooling",
   "pattern-none", "pattern-dot-tone", "pattern-cross-hatch", "pattern-weave", "pattern-brick", "pattern-foliage",
   "pattern-stitch", "pattern-kaleido", "pattern-vector-flow", "pattern-vector-vortex", "pattern-vector-contour",
   "pattern-textile-satin", "pattern-textile-twill", "pattern-rainbow",
   "finish-edge-bloom", "finish-wet-sheen", "finish-relief", "finish-directional-relief", "finish-neon", "finish-grain",
+  "finish-subpixel-sdf-aa",
   "output-contact-canvas-svg",
 ]);
 
@@ -92,13 +95,10 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     integration: "connected", productPath: "material-contact", materialExecution: "native",
     roles: ["pigment", "palette"], nodeIds: ["pigment-colormix-lab"],
   }),
-  // 같은 안료 슬롯의 자체 구현. 코드·계수·격자표를 쓰지 않고 저장소의 KM 파이프라인에서 직접 적합했다.
-  // 서면 합의 식별자·특허 확인이 끝나기 전까지 권리 상태는 문서(docs/features/latent-pigment-mixing.md)를 따른다.
   provider({
     id: "toonstudio-latent-pigment-v1", label: "ToonStudio Latent Pigment", version: "1",
     license: "Project license", rights: "internal", runtime: "javascript",
     integration: "connected", productPath: "material-contact", materialExecution: "native",
-    // 이전 저장 노드 식별자는 보존하되 실행 영수증에는 자체 엔진의 정체성을 기록한다.
     roles: ["pigment", "palette"], nodeIds: ["pigment-latent", "pigment-mixbox"],
   }),
   provider({
@@ -157,8 +157,6 @@ export const BRUSH_STUDIO_V6_PROVIDER_MANIFEST = Object.freeze([
     roles: ["hairy", "dual-tip", "color-smudge", "contact-adapter"],
     nodeIds: ["carrier-krita-hairy", "tip-krita-dual", "pickup-krita-smudge"],
   }),
-  // Klecks sketchy·chemy 알고리즘을 CPU 접촉 커널로 이식했다(MIT, third_party/klecks). 캔버스 판독·Canvas fill 을
-  // 쓰지 않는 근사이므로 원본 실행이 아니라 호환 이식으로 기록한다.
   provider({
     id: "klecks-procedural-port-v1", label: "Klecks Sketchy·Chemy 이식", version: "1",
     license: "MIT (Klecks, Copyright (c) 2026 bitbof) + project adapter", rights: "permissive", runtime: "javascript",
@@ -249,7 +247,6 @@ export function brushStudioV6ProviderManifestById(id: string): BrushStudioV6Prov
 export function brushStudioV6ProviderManifestForNode(
   nodeId: string,
 ): BrushStudioV6ProviderManifestEntry | null {
-  // 명시 배정(예: 외부 코드 이식 커널)이 접두사 기본값보다 우선한다.
   const explicit = PROVIDER_BY_NODE.get(nodeId);
   if (explicit) return explicit;
   if (nodeId.startsWith("carrier-cpu-") || nodeId.startsWith("surface-v7-")) {

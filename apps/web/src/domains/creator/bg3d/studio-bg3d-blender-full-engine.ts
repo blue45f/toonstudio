@@ -9,6 +9,8 @@
  * - 시네마틱 카메라 (`PERSP`/`ORTHO`/`PANO`, `FISHEYE_LENS_POLYNOMIAL` K0..K4, `shift_x`/`shift_y`, 보케 조리개)
  */
 
+import { Euler, Quaternion, Vector3 } from "three";
+
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
 
@@ -390,18 +392,84 @@ export function evaluateBlenderEditSculptSession(
   const dyntopoTriangleCount = Math.round(resultingQuadCount * 2 * detailFactor);
   const faceSetCount = config.sculptTool === "face_set_edit" ? 8 : 4;
 
+  const coreKind: BgPrimitive["kind"] =
+    config.editOperator === "tosphere"
+      ? "sphere"
+      : config.editOperator === "spin"
+        ? "torus"
+        : config.editOperator === "bevel"
+          ? "hexPrism"
+          : "capsule";
+
   const primitives: BgPrimitive[] = [
+    {
+      id: "blender-sculpt-pedestal",
+      name: "Sculpt_Turntable_Base",
+      kind: "cylinder",
+      position: [0, 0.08, 0],
+      rotation: [0, 0, 0],
+      scale: [2.2, 0.16, 2.2],
+      color: "#475569",
+      tags: ["Blender_EditSculpt"],
+    },
     {
       id: "blender-sculpt-core",
       name: `Sculpt_${config.sculptTool}`,
-      kind: config.editOperator === "tosphere" ? "sphere" : "capsule",
-      position: [0, 1.4, 0],
+      kind: coreKind,
+      position: [0, 1.38, 0],
       rotation: [0, 0, 0],
-      scale: [1.5, 2.2, 1.5],
+      scale: [1.35, 2.05, 1.15],
       color: "#c2a6d6",
       tags: ["Blender_EditSculpt"],
     },
+    {
+      id: "blender-sculpt-collar-ring",
+      name: `FaceSet_Crest_${config.editOperator}`,
+      kind: "torus",
+      position: [0, 2.05, 0],
+      rotation: [Math.PI / 2, 0, 0],
+      scale: [1.25, 1.25, 0.28],
+      color: "#9f86c0",
+      tags: ["Blender_EditSculpt"],
+    },
+    {
+      id: "blender-sculpt-head",
+      name: "Sculpt_Cranium_Block",
+      kind: "sphere",
+      position: [0, 2.52, 0],
+      rotation: [0, 0, 0],
+      scale: [0.68, 0.76, 0.72],
+      color: "#d8c2e8",
+      tags: ["Blender_EditSculpt"],
+    },
   ];
+
+  if (config.symmetryAxes.includes("X")) {
+    for (const sx of [-1, 1] as const) {
+      primitives.push(
+        {
+          id: `blender-sculpt-sym-shoulder-${sx < 0 ? "L" : "R"}`,
+          name: `Symmetry_Shoulder_${sx < 0 ? "L" : "R"}`,
+          kind: "hemisphere",
+          position: [round3(sx * 0.86), 1.92, 0],
+          rotation: [0, 0, round3(-sx * 0.35)],
+          scale: [0.58, 0.45, 0.58],
+          color: "#b79ced",
+          tags: ["Blender_EditSculpt"],
+        },
+        {
+          id: `blender-sculpt-sym-limb-${sx < 0 ? "L" : "R"}`,
+          name: `Symmetry_Form_${sx < 0 ? "L" : "R"}`,
+          kind: "capsule",
+          position: [round3(sx * 0.98), 1.22, 0.12],
+          rotation: [-0.28, 0, round3(-sx * 0.18)],
+          scale: [0.36, 1.05, 0.36],
+          color: "#cdb4db",
+          tags: ["Blender_EditSculpt"],
+        },
+      );
+    }
+  }
 
   return {
     editOperator: config.editOperator,
@@ -411,7 +479,7 @@ export function evaluateBlenderEditSculptSession(
     faceSetCount,
     symmetryMultiplier: symMult,
     primitives,
-    summaryKo: `Edit(${config.editOperator}) + Sculpt(${config.sculptTool}): Dyntopo ${dyntopoTriangleCount.toLocaleString("ko-KR")} tris (대칭 ×${symMult})`,
+    summaryKo: `Edit(${config.editOperator}) + Sculpt(${config.sculptTool}): Dyntopo ${dyntopoTriangleCount.toLocaleString("ko-KR")} tris · 조형 파츠 ${primitives.length}개 (대칭 ×${symMult})`,
   };
 }
 
@@ -593,6 +661,24 @@ export function evaluateBlenderCameraRig(
 /**
  * 6B. Blender 5.2 대표 판타지·웹툰 3D 배경 세트 프리셋 생성기 (`BgPrimitive[]`).
  */
+/** 지원되는 두 사각뿔의 밑면을 맞붙여 팔면체 실루엣을 구성한다. 원래 중심·회전·외곽 크기는 유지한다. */
+function buildCrystalPyramids(source: Omit<BgPrimitive, "kind">): BgPrimitive[] {
+  const rotation = new Euler(...source.rotation);
+  const upperQuaternion = new Quaternion().setFromEuler(rotation);
+  const lowerRotation = new Euler().setFromQuaternion(
+    upperQuaternion.clone().multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI)),
+  );
+  const offset = new Vector3(0, source.scale[1] / 4, 0).applyEuler(rotation);
+  return [1, -1].map((side) => ({
+    ...source,
+    id: `${source.id}-${side > 0 ? "upper" : "lower"}`,
+    kind: "pyramid",
+    position: [source.position[0] + side * offset.x, source.position[1] + side * offset.y, source.position[2] + side * offset.z],
+    rotation: side > 0 ? [...source.rotation] : [lowerRotation.x, lowerRotation.y, lowerRotation.z],
+    scale: [source.scale[0], source.scale[1] / 2, source.scale[2]],
+  }));
+}
+
 export function buildBlenderPresetScenePrimitives(
   themeId: BlenderScenePresetThemeId,
 ): { readonly labelKo: string; readonly primitives: readonly BgPrimitive[] } {
@@ -602,9 +688,16 @@ export function buildBlenderPresetScenePrimitives(
         labelKo: "왕국 대성채 알현실 & 어검 제단 세트",
         primitives: [
           { id: "bl-citadel-floor", name: "Citadel_Floor", kind: "box", position: [0, 0.1, 0], rotation: [0, 0, 0], scale: [10, 0.2, 12], color: "#d6ccc2", tags: ["Blender_Citadel"] },
-          { id: "bl-citadel-throne", name: "Citadel_Throne_Dais", kind: "box", position: [0, 0.7, -3.5], rotation: [0, 0, 0], scale: [3.6, 1.2, 2.4], color: "#c9a876", tags: ["Blender_Citadel"] },
-          { id: "bl-citadel-pillar-l", name: "Citadel_Pillar_L", kind: "cylinder", position: [-3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.8, 4.2, 0.8], color: "#e9ecef", tags: ["Blender_Citadel"] },
-          { id: "bl-citadel-pillar-r", name: "Citadel_Pillar_R", kind: "cylinder", position: [3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.8, 4.2, 0.8], color: "#e9ecef", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-carpet", name: "Citadel_Royal_Carpet", kind: "box", position: [0, 0.22, 0.6], rotation: [0, 0, 0], scale: [1.8, 0.04, 8.8], color: "#9e2a2b", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-step-1", name: "Citadel_Dais_Step_1", kind: "box", position: [0, 0.32, -2.6], rotation: [0, 0, 0], scale: [4.4, 0.24, 3.4], color: "#ddb892", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-throne", name: "Citadel_Throne_Dais", kind: "box", position: [0, 0.72, -3.5], rotation: [0, 0, 0], scale: [3.6, 0.8, 2.4], color: "#c9a876", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-throne-back", name: "Citadel_High_Throne_Back", kind: "box", position: [0, 1.95, -4.15], rotation: [0, 0, 0], scale: [1.35, 1.9, 0.28], color: "#b08968", tags: ["Blender_Citadel"] },
+          ...buildCrystalPyramids({ id: "bl-citadel-sword", name: "Citadel_Relic_Sword", position: [0, 2.15, -3.05], rotation: [0, 0, 0], scale: [0.32, 1.55, 0.16], color: "#90e0ef", tags: ["Blender_Citadel"] }),
+          { id: "bl-citadel-pillar-l1", name: "Citadel_Pillar_L1", kind: "cylinder", position: [-3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-pillar-r1", name: "Citadel_Pillar_R1", kind: "cylinder", position: [3.2, 2.2, -1.5], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-pillar-l2", name: "Citadel_Pillar_L2", kind: "cylinder", position: [-3.2, 2.2, 1.8], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-pillar-r2", name: "Citadel_Pillar_R2", kind: "cylinder", position: [3.2, 2.2, 1.8], rotation: [0, 0, 0], scale: [0.72, 4.2, 0.72], color: "#e9ecef", tags: ["Blender_Citadel"] },
+          { id: "bl-citadel-arch-ring", name: "Citadel_Vault_Ring", kind: "torus", position: [0, 4.15, -3.5], rotation: [Math.PI / 2, 0, 0], scale: [4.6, 4.6, 0.36], color: "#d4a373", tags: ["Blender_Citadel"] },
           { id: "bl-citadel-dome", name: "Citadel_Sanctum_Dome", kind: "hemisphere", position: [0, 4.2, -3.5], rotation: [0, 0, 0], scale: [4.8, 2.4, 4.8], color: "#b7a8d6", tags: ["Blender_Citadel"] },
         ],
       };
@@ -613,27 +706,46 @@ export function buildBlenderPresetScenePrimitives(
         labelKo: "네온 사이버펑크 뒷골목 & 홀로그램 타워",
         primitives: [
           { id: "bl-cyber-road", name: "Cyber_Wet_Asphalt", kind: "box", position: [0, 0.08, 0], rotation: [0, 0, 0], scale: [8, 0.16, 14], color: "#343a40", tags: ["Blender_Cyber"] },
-          { id: "bl-cyber-tower-l", name: "Cyber_Tower_L", kind: "box", position: [-3.2, 2.8, 0], rotation: [0, 0, 0], scale: [2.2, 5.6, 6.0], color: "#495057", tags: ["Blender_Cyber"] },
-          { id: "bl-cyber-tower-r", name: "Cyber_Tower_R", kind: "box", position: [3.2, 2.5, -1.0], rotation: [0, 0, 0], scale: [2.2, 5.0, 5.4], color: "#6c757d", tags: ["Blender_Cyber"] },
-          { id: "bl-cyber-neon-ring", name: "Cyber_Holo_Ring", kind: "torus", position: [0, 3.2, -2.0], rotation: [0, 0, 0], scale: [2.2, 2.2, 0.5], color: "#7fa6b8", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-curb-l", name: "Cyber_Curb_Walk_L", kind: "box", position: [-2.35, 0.18, 0], rotation: [0, 0, 0], scale: [1.1, 0.2, 13.6], color: "#495057", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-curb-r", name: "Cyber_Curb_Walk_R", kind: "box", position: [2.35, 0.18, 0], rotation: [0, 0, 0], scale: [1.1, 0.2, 13.6], color: "#495057", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-tower-l", name: "Cyber_Tower_L", kind: "box", position: [-3.4, 2.8, 0], rotation: [0, 0, 0], scale: [2.0, 5.6, 6.4], color: "#3d405b", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-tower-r", name: "Cyber_Tower_R", kind: "box", position: [3.4, 2.5, -0.8], rotation: [0, 0, 0], scale: [2.0, 5.0, 5.8], color: "#4a4e69", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-duct-bridge", name: "Cyber_Overhead_PipeBridge", kind: "cylinder", position: [0, 3.85, -0.8], rotation: [0, 0, Math.PI / 2], scale: [0.34, 4.8, 0.34], color: "#6c757d", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-sign-cyan", name: "Cyber_Neon_Blade_Cyan", kind: "box", position: [-2.2, 3.1, 1.1], rotation: [0, 0, 0], scale: [0.95, 1.85, 0.14], color: "#00f5d4", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-sign-pink", name: "Cyber_Neon_Blade_Pink", kind: "box", position: [2.2, 2.75, -0.6], rotation: [0, 0, 0], scale: [0.9, 1.55, 0.14], color: "#f72585", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-vending", name: "Cyber_Alley_Vending", kind: "box", position: [-2.15, 1.15, 2.4], rotation: [0, 0, 0], scale: [0.85, 1.85, 0.68], color: "#4cc9f0", tags: ["Blender_Cyber"] },
+          { id: "bl-cyber-neon-ring", name: "Cyber_Holo_Ring", kind: "torus", position: [0, 3.2, -2.2], rotation: [0, 0, 0], scale: [2.2, 2.2, 0.45], color: "#72efdd", tags: ["Blender_Cyber"] },
         ],
       };
     case "arcane-astronomy-tower":
       return {
         labelKo: "대마법사 아스트랄 천문대 & 부유 성환",
         primitives: [
-          { id: "bl-arcane-base", name: "Arcane_Tower_Base", kind: "hexPrism", position: [0, 1.2, 0], rotation: [0, 0, 0], scale: [4.5, 2.4, 4.5], color: "#9fb4c9", tags: ["Blender_Arcane"] },
-          { id: "bl-arcane-ring-1", name: "Astrolabe_Ring_Outer", kind: "torus", position: [0, 3.2, 0], rotation: [0.4, 0.2, 0], scale: [3.2, 3.2, 0.35], color: "#d6b26a", tags: ["Blender_Arcane"] },
-          { id: "bl-arcane-core", name: "Astrolabe_Core_Orb", kind: "sphere", position: [0, 3.2, 0], rotation: [0, 0, 0], scale: [1.2, 1.2, 1.2], color: "#8ec2c2", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-plaza", name: "Arcane_Star_Floor", kind: "cylinder", position: [0, 0.12, 0], rotation: [0, 0, 0], scale: [7.6, 0.24, 7.6], color: "#3c096c", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-base", name: "Arcane_Tower_Base", kind: "hexPrism", position: [0, 1.2, 0], rotation: [0, 0, 0], scale: [4.2, 2.1, 4.2], color: "#9fb4c9", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-rune-circle", name: "Arcane_Rune_Ring_Floor", kind: "torus", position: [0, 2.3, 0], rotation: [Math.PI / 2, 0, 0], scale: [3.8, 3.8, 0.22], color: "#e0aaff", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-ring-1", name: "Astrolabe_Ring_Outer", kind: "torus", position: [0, 3.4, 0], rotation: [0.4, 0.2, 0], scale: [3.2, 3.2, 0.32], color: "#d6b26a", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-ring-2", name: "Astrolabe_Ring_Inner", kind: "torus", position: [0, 3.4, 0], rotation: [-0.55, 0.65, 0.2], scale: [2.35, 2.35, 0.24], color: "#ffd166", tags: ["Blender_Arcane"] },
+          { id: "bl-arcane-core", name: "Astrolabe_Core_Orb", kind: "sphere", position: [0, 3.4, 0], rotation: [0, 0, 0], scale: [1.15, 1.15, 1.15], color: "#8ec2c2", tags: ["Blender_Arcane"] },
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-n", name: "Floating_Crystal_N", position: [0, 2.9, -2.9], rotation: [0.1, 0.4, 0], scale: [0.55, 1.25, 0.55], color: "#90e0ef", tags: ["Blender_Arcane"] }),
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-e", name: "Floating_Crystal_E", position: [2.9, 3.1, 0], rotation: [0, 0.2, -0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
+          ...buildCrystalPyramids({ id: "bl-arcane-crystal-w", name: "Floating_Crystal_W", position: [-2.9, 3.1, 0], rotation: [0, -0.2, 0.12], scale: [0.55, 1.25, 0.55], color: "#c77dff", tags: ["Blender_Arcane"] }),
+          { id: "bl-arcane-lectern", name: "Arcane_Grimoire_Lectern", kind: "cylinder", position: [0, 2.75, 1.65], rotation: [0, 0, 0], scale: [0.42, 0.92, 0.42], color: "#c9a876", tags: ["Blender_Arcane"] },
         ],
       };
     case "boss-raid-altar":
       return {
         labelKo: "심연의 레이드 보스 투기장 & 오벨리스크",
         primitives: [
-          { id: "bl-boss-arena", name: "Boss_Arena_Platform", kind: "cylinder", position: [0, 0.2, 0], rotation: [0, 0, 0], scale: [9.0, 0.4, 9.0], color: "#6c757d", tags: ["Blender_BossArena"] },
-          { id: "bl-boss-obelisk-1", name: "Runic_Obelisk_NW", kind: "pyramid", position: [-3.2, 1.8, -3.2], rotation: [0, 0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
-          { id: "bl-boss-obelisk-2", name: "Runic_Obelisk_NE", kind: "pyramid", position: [3.2, 1.8, -3.2], rotation: [0, -0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-arena", name: "Boss_Arena_Platform", kind: "cylinder", position: [0, 0.2, 0], rotation: [0, 0, 0], scale: [9.0, 0.4, 9.0], color: "#495057", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-inner-seal", name: "Boss_Seal_Ring", kind: "torus", position: [0, 0.44, 0], rotation: [Math.PI / 2, 0, 0], scale: [5.6, 5.6, 0.24], color: "#e63946", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-altar-center", name: "Boss_Blood_Altar", kind: "hexPrism", position: [0, 0.85, -1.2], rotation: [0, 0, 0], scale: [2.2, 0.9, 2.2], color: "#343a40", tags: ["Blender_BossArena"] },
+          ...buildCrystalPyramids({ id: "bl-boss-core-shard", name: "Abyss_Core_Shard", position: [0, 2.25, -1.2], rotation: [0.2, 0.5, 0], scale: [0.85, 1.75, 0.85], color: "#f72585", tags: ["Blender_BossArena"] }),
+          { id: "bl-boss-obelisk-nw", name: "Runic_Obelisk_NW", kind: "pyramid", position: [-3.2, 1.9, -3.2], rotation: [0, 0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-obelisk-ne", name: "Runic_Obelisk_NE", kind: "pyramid", position: [3.2, 1.9, -3.2], rotation: [0, -0.4, 0], scale: [1.1, 3.6, 1.1], color: "#c9909f", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-obelisk-sw", name: "Runic_Obelisk_SW", kind: "pyramid", position: [-3.2, 1.65, 2.8], rotation: [0, -0.35, 0], scale: [0.95, 3.1, 0.95], color: "#9d4edd", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-obelisk-se", name: "Runic_Obelisk_SE", kind: "pyramid", position: [3.2, 1.65, 2.8], rotation: [0, 0.35, 0], scale: [0.95, 3.1, 0.95], color: "#9d4edd", tags: ["Blender_BossArena"] },
+          { id: "bl-boss-bridge", name: "Boss_Approach_Causeway", kind: "box", position: [0, 0.26, 4.9], rotation: [0, 0, 0], scale: [2.4, 0.28, 3.2], color: "#6c757d", tags: ["Blender_BossArena"] },
         ],
       };
   }

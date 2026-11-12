@@ -14,7 +14,7 @@ export function brushStudioV6TopologyActiveTuning(program: BrushStudioV6Material
   if (topology.model === "orbit" || topology.model === "weave" || isBrushStudioV6ArtistryModel(topology.model)) keys.delete("spacing");
   if (topology.model === "orbit" && program.tuning.patternJitter === 0) keys.delete("patternDensity");
   if (program.slots.deposition === "deposit-dry" || program.slots.tip === "tip-grain-exemplar") keys.add("granulation");
-  if (program.slots.deposition === "deposit-wet") for (const key of ["wetness", "diffusion", "absorbency", "granulation"] as const) keys.add(key);
+  if (program.slots.deposition === "deposit-wet" || program.slots.deposition === "deposit-watercolor") for (const key of ["wetness", "diffusion", "absorbency", "granulation"] as const) keys.add(key);
   if (program.slots.deposition === "deposit-oil") { keys.add("relief"); keys.add("plasticity"); }
   if (program.slots.deposition === "deposit-marker") keys.add("edgeDarkening");
   return keys;
@@ -44,7 +44,7 @@ export function isBrushStudioV6TopologyNodeCompatible(id: string): boolean {
   return Boolean(brushStudioV6Topology(id)) || isBrushStudioV7AdvancedSurface(id) || [
     "input-pointer-v3", "motion-direct", "tip-round-sdf", "tip-chisel-sdf", "tip-grain-exemplar", "tip-krita-dual",
     "surface-smooth", "surface-kent", "surface-coldpress", "surface-printmaking", "surface-linen", "surface-porous",
-    "deposit-ink", "deposit-dry", "deposit-wet", "deposit-oil", "deposit-marker",
+    "deposit-ink", "deposit-dry", "deposit-wet", "deposit-watercolor", "deposit-oil", "deposit-marker",
     "pigment-spectral-js", "pigment-open-km-spectral", "pigment-colormix-lab", "pigment-latent",
     "pickup-none", "pickup-krita-smudge", "pigment-rgb", "pigment-spectral", "pigment-mixbox", "pattern-none", "finish-neon", "output-contact-canvas-svg",
   ].includes(id);
@@ -59,7 +59,7 @@ export function paintBrushStudioV6TopologyPrimitive(program: BrushStudioV6Materi
 ): void {
   const t = program.tuning, deposition = program.slots.deposition;
   const dry = deposition === "deposit-dry" || program.slots.tip === "tip-grain-exemplar";
-  const wet = deposition === "deposit-wet", oil = deposition === "deposit-oil";
+  const wet = deposition === "deposit-wet" || deposition === "deposit-watercolor", oil = deposition === "deposit-oil";
   let contact = 1 - paper * unit(t.surfaceTooth) * 0.8;
   let width = mark.radiusY, mix = mark.mix;
   if (dry) {

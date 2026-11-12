@@ -3,13 +3,16 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STUDIO_BRUSH_QUARANTINED_PRESET_IDS } from "./studio-brush-quarantine";
 import { STUDIO_V6_BRUSH_CATALOG_ITEMS } from "./studio-brush-v6-catalog";
 import { StudioBrushTray } from "./StudioBrushTray";
+
+import type { StudioBrushTrayItem } from "../studio-creative-ux";
 
 const traySource = readFileSync(
   resolve(process.cwd(), "apps/web/src/domains/creator/brush/StudioBrushTray.tsx"),
@@ -33,6 +36,7 @@ describe("StudioBrushTray", () => {
     );
     expect(html).toContain('data-studio-brush-tray="true"');
     expect(html).toContain('data-studio-brush-surface-role="quick-subtools"');
+    expect(html).toContain('data-studio-active-brush-id="pen"');
     expect(html).toContain('role="listbox"');
     // Names live in aria-label / title only — no short-label text chips
     expect(html).toContain('aria-label="');
@@ -71,6 +75,7 @@ describe("StudioBrushTray", () => {
     const tray = screen.getByRole("listbox").closest("[data-studio-brush-tray]");
     expect(tray?.getAttribute("aria-busy")).toBe("true");
     expect(tray?.getAttribute("data-studio-pro-catalog-state")).toBe("loading");
+    await act(() => vi.dynamicImportSettled());
     const heart = await screen.findByRole("option", {
       name: /즐겨찾기 브러시 잎송이 · 질감/,
     });
@@ -104,6 +109,7 @@ describe("StudioBrushTray", () => {
       />
     );
 
+    await act(() => vi.dynamicImportSettled());
     const option = await screen.findByRole("option", {
       name: new RegExp(`즐겨찾기 브러시 ${v6.name}`),
     });
@@ -142,6 +148,7 @@ describe("StudioBrushTray", () => {
         onOpenLibrary={vi.fn()}
       />
     );
+    await act(() => vi.dynamicImportSettled());
     const heart = await screen.findByRole("option", {
       name: /즐겨찾기 브러시 잎송이/,
     });
@@ -195,5 +202,98 @@ describe("StudioBrushTray", () => {
 
     fireEvent.keyDown(options[1]!, { key: "End" });
     expect(document.activeElement).toBe(options.at(-1));
+  });
+
+  it("blocks provider-unavailable V6 presets without mutating active brush and restores focus on retry/dismiss", async () => {
+    const blockedV6 = STUDIO_V6_BRUSH_CATALOG_ITEMS.find(
+      (item) => item.id === "v6:mineral-bloom",
+    )!;
+    expect(blockedV6).toBeDefined();
+    const onSelect = vi.fn();
+
+    render(
+      <StudioBrushTray
+        activeBrushId="pen"
+        favoriteBrushIds={["pen", blockedV6.id]}
+        onSelect={onSelect}
+        onOpenLibrary={vi.fn()}
+      />
+    );
+
+    await act(() => vi.dynamicImportSettled());
+    const blockedOption = await screen.findByRole("option", {
+      name: new RegExp(`즐겨찾기 브러시 ${blockedV6.name}`),
+    });
+    const penOption = screen.getByRole("option", { name: /즐겨찾기 브러시 매끈한 펜/ });
+
+    fireEvent.click(blockedOption);
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(penOption.getAttribute("aria-selected")).toBe("true");
+    expect(blockedOption.getAttribute("aria-selected")).toBe("false");
+    expect(blockedOption.getAttribute("data-studio-brush-apply-state")).toBe(
+      "provider-unavailable",
+    );
+
+    const alert = screen.getByTestId("studio-brush-tray-error-alert");
+    expect(alert.getAttribute("data-error-kind")).toBe("provider-unavailable");
+    expect(alert.getAttribute("data-blocked-nodes")).toContain("deposit-wet");
+    expect(alert.textContent).toContain("deposit-wet");
+
+    const retryButton = screen.getByTestId("studio-brush-tray-retry-button");
+    retryButton.focus();
+    fireEvent.click(retryButton);
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(blockedOption);
+
+    const dismissButton = screen.getByTestId("studio-brush-tray-dismiss-error");
+    dismissButton.focus();
+    fireEvent.keyDown(dismissButton, { key: "Escape" });
+    expect(screen.queryByTestId("studio-brush-tray-error-alert")).toBeNull();
+    expect(document.activeElement).toBe(blockedOption);
+  });
+
+  it("preserves active preset on transient onSelect error and syncs active chip after retry while restoring focus", () => {
+    let failNext = true;
+
+    function ControlledTrayHarness() {
+      const [activeId, setActiveId] = useState("pen");
+      return (
+        <StudioBrushTray
+          activeBrushId={activeId}
+          favoriteBrushIds={["pen", "marker"]}
+          onSelect={(item: StudioBrushTrayItem) => {
+            if (item.id === "marker" && failNext) {
+              throw new Error("세션 브러시 전환 지연");
+            }
+            setActiveId(item.id);
+          }}
+          onOpenLibrary={vi.fn()}
+        />
+      );
+    }
+
+    render(<ControlledTrayHarness />);
+    const penChip = screen.getByRole("option", { name: /즐겨찾기 브러시 매끈한 펜/ });
+    const markerChip = screen.getByRole("option", { name: /즐겨찾기 브러시 반투명 마커/ });
+
+    // 1차 시도 실패: 기존 pen 활성 상태가 유지된다.
+    fireEvent.click(markerChip);
+    expect(penChip.getAttribute("aria-selected")).toBe("true");
+    expect(markerChip.getAttribute("aria-selected")).toBe("false");
+    const alert = screen.getByTestId("studio-brush-tray-error-alert");
+    expect(alert.getAttribute("data-error-kind")).toBe("apply-failed");
+    expect(alert.textContent).toContain("세션 브러시 전환 지연");
+
+    // 2차 다시 시도 성공: 선택된 marker 칩이 현재 적용 프리셋과 일치하고 포커스가 복원된다.
+    failNext = false;
+    const retryBtn = screen.getByTestId("studio-brush-tray-retry-button");
+    retryBtn.focus();
+    fireEvent.click(retryBtn);
+
+    expect(screen.queryByTestId("studio-brush-tray-error-alert")).toBeNull();
+    expect(markerChip.getAttribute("aria-selected")).toBe("true");
+    expect(penChip.getAttribute("aria-selected")).toBe("false");
+    expect(document.activeElement).toBe(markerChip);
   });
 });

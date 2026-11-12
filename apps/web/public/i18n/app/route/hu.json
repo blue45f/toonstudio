@@ -91,5 +91,6 @@
   "route.technologyStory": "Történet",
   "route.technologyVideos": "Videók",
   "route.terms": "Felhasználási feltételek",
-  "route.unknown": "Oldal"
+  "route.unknown": "Oldal",
+  "route.offline": "Connection & on-device content"
 }

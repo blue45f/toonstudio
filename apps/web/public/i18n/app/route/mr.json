@@ -91,5 +91,6 @@
   "route.technologyStory": "कथा",
   "route.technologyVideos": "व्हिडिओ",
   "route.terms": "सेवा अटी",
-  "route.unknown": "पृष्ठ"
+  "route.unknown": "पृष्ठ",
+  "route.offline": "Connection & on-device content"
 }

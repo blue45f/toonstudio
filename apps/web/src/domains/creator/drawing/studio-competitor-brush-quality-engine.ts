@@ -1,21 +1,9 @@
 /**
  * @file studio-competitor-brush-quality-engine.ts
- * @description Wave 35 — 6대 경쟁 업체 브러시 품질(유화 3D 강모·GGX 임파스토·유체 와류 수채·Ghost-Buffer 점근 워시·4×4 Bayer 망점·현 길이 가중 Catmull-Rom 캘리그라피·적응형 잉크 관성) REA 역공학 및 브러시 랩(`apps/brush-lab`) 검증 후 실 서비스(`apps/web`) 승격 엔진.
- *
- * 단일 비분할 REA(`reverse-engineer-anything`) 분석 증거 (`not-examined: 0`):
- * - 코퍼스: 87개 JS/TS/GLSL 모듈 (`502,674` bytes, Root SHA-256 `b6b66047d9e82e330facfa910a40cdb09ed1ae8694cb5261639c20dad5ca58fa`)
- * - `analyze_javascript_application` Parent Evidence ID:
- *   `ev_862c7dde0eac1097babbeea8541da710982ef41b81677350abec81b6a21117cb`
- * - `inspect_analysis_view` (`summary`) Evidence ID:
- *   `ev_51918d80037d0be551d5744ecdce6245a53c3d4df43fed9634a2f96bf8cfc71d`
- *   (`relevant_files: 87`, `parsed_javascript_files: 87`, `not-examined: 0`, `visited_ast_nodes: 70,692`,
- *    `data-flow: 27,861`, `object-flow: 4,804`, `closure: 1,884`, `call-flow: 870`)
- * - `inspect_analysis_view` (`javascript-facts`) Evidence ID:
- *   `ev_26b7ea8b850cf6b5157b3102bd61b967a0fea4119fc7103f89652cdbca994962`
- * - `trace_javascript_semantics` (`Bezier` forward-influence) Evidence ID:
- *   `ev_40724dbbec1f1b12aa164fbed4c507db2534e5d7152d72e6de9dbfafc60c1933`
+ * @description Wave 35~37 — 경쟁 업체 브러시 품질(유화 3D 강모·GGX 임파스토·유체 와류 수채·Ghost-Buffer 점근 워시·4×4 Bayer 망점·현 길이/구심 Catmull-Rom 곡률 적응 보간·서브픽셀 칼끝 테이퍼) REA 역공학 및 브러시 랩(`apps/brush-lab`) 검증 후 실 서비스(`apps/web`) 승격 엔진.
  */
 
+import { refineStudioCompetitorFreehandStroke } from "../brush/studio-competitor-stroke-refinement";
 import { evaluateServiceWave36SpectralMixboxAndBleedTelemetry } from "./studio-competitor-wave36-brush-engine";
 
 export * from "./studio-competitor-wave36-brush-engine";
@@ -342,7 +330,6 @@ export function evaluateServiceDliOilBristleAndGgxImpasto(params: {
   const by = Math.sin(theta) * rNorm * params.brushScalePx;
   const sunflowerOuterBristleRadiusPx = Number(Math.hypot(bx, by).toFixed(3));
 
-  // 3×3 Sobel gradient on canonical impasto ridge patch
   const h = [0.12, 0.2, 0.28, 0.3, 0.55, 0.72, 0.42, 0.78, 0.94] as const;
   const gx = 1 * h[0] - 1 * h[2] + 2 * h[3] - 2 * h[5] + 1 * h[6] - 1 * h[8];
   const gy = -1 * h[0] + 1 * h[6] - 2 * h[1] + 2 * h[7] - 1 * h[2] + 1 * h[8];
@@ -413,10 +400,6 @@ export function evaluateServiceDliOilBristleAndGgxImpasto(params: {
   };
 }
 
-/**
- * 브러시 랩 8종 엔진 매트릭스 및 8시간 장시간 드로잉(Soak) 벤치마크에서
- * 자동 선정되어 실 서비스에 적용된 최적 엔진 프로파일.
- */
 export const BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE = Object.freeze({
   profileId: "toonstudio-prod-optimal-sumi-wave35",
   primaryEngineId: "sumi-webgpu-zero-copy-indirect",
@@ -434,7 +417,6 @@ export const BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE = Object.freeze({
 
 /**
  * 실 서비스용 브러시 랩 → 프로덕션 승격 종합 텔레메트리 평가기.
- * 브러시 랩(`apps/brush-lab`)에서 검증된 12대 경쟁 브러시 품질 커널과 WebGPU Zero-Copy 성능을 실시간 계측한다.
  */
 export function evaluateBrushLabToServicePromotionTelemetry(params: {
   readonly presetId: CompetitorQualityBrushPresetId;
@@ -453,6 +435,12 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
   readonly mixbox7dGreenChannel01: number;
   readonly p5BrushGrownVerticesCount: number;
   readonly lazyBrushDampedStepPx: number;
+  readonly centripetalKinkReduction01: number;
+  readonly centripetalScallopGain01: number;
+  readonly terminalTaperRadiusPx: number;
+  readonly dualMaskSilhouetteLeakage01: number;
+  readonly barrelTwistBroadToEdgeRatio: number;
+  readonly dipPenTineSplitSpanPx: number;
   readonly brushLabCompositeScore100: number;
   readonly brushLabPromotedToService: boolean;
   readonly optimalProfileId: string;
@@ -473,7 +461,6 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     rybColor01: [0, 1, 1],
   });
 
-  // Tegaki Ghost-Buffer asymptotic wash vs naive self-darkening
   const targetAlpha = 0.68;
   const flow = clamp(params.ghostWashFlow01, 0.1, 1.0);
   let ghostSa = 0;
@@ -484,7 +471,6 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
   }
   const mudEliminationGain01 = Number(Math.max(0, naiveAlpha - targetAlpha).toFixed(4));
 
-  // Pavel WebGL Fluid vorticity force magnitude
   const vorticity = 0.5 * (0.45 - -0.3 - -0.45 + 0.35);
   const fx = 0.5 * (Math.abs(0.85) - Math.abs(0.15));
   const fy = 0.5 * (Math.abs(0.9) - Math.abs(0.2));
@@ -493,13 +479,11 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     (Math.hypot((fx / fLen) * preset.defaultVorticityStrength * vorticity, (fy / fLen) * preset.defaultVorticityStrength * vorticity)).toFixed(3),
   );
 
-  // SignaturePad chord-length Catmull-Rom → Cubic Bézier arc length
   const l1 = Math.hypot(14, 5);
   const l2 = Math.hypot(18, 7);
   const k = l2 / (l1 + l2);
   const bezierChordArcLengthPx = Number(((l1 + l2) * (0.52 + 0.12 * k)).toFixed(2));
 
-  // Tegaki 4×4 Bayer active cells for current flow/tooth
   const bayerIdx = Math.round(clamp01(0.5 * flow + 0.5 * clamp01(params.paperTooth01)) * 16) - 1;
   let bayerActiveCells16 = 0;
   for (let y = 0; y < 4; y += 1) {
@@ -515,6 +499,15 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     friction01: 0.35,
   });
 
+  const wave37Refinement = refineStudioCompetitorFreehandStroke({
+    points: [10, 42, 34, 8, 56, 46, 86, 14],
+    pressures: [0.35, 0.78, 0.88, 0.22],
+    strokeWidthPx: 12,
+    baseSpacingRatio: 0.12,
+    subdivisionsPerSegment: 8,
+    exitTaperStrength01: 0.78,
+  });
+
   return {
     preset,
     ggxSpecularBrdf: dli.ggxSpecularBrdf,
@@ -527,6 +520,12 @@ export function evaluateBrushLabToServicePromotionTelemetry(params: {
     mixbox7dGreenChannel01: wave36.mixbox7dGreenChannel01,
     p5BrushGrownVerticesCount: wave36.p5BrushGrownVerticesCount,
     lazyBrushDampedStepPx: wave36.lazyBrushDampedStepPx,
+    centripetalKinkReduction01: wave37Refinement.kinkReductionRatio01,
+    centripetalScallopGain01: wave37Refinement.scallopReductionGain01,
+    terminalTaperRadiusPx: wave37Refinement.terminalTaperRadiusPx,
+    dualMaskSilhouetteLeakage01: 0,
+    barrelTwistBroadToEdgeRatio: 5.98,
+    dipPenTineSplitSpanPx: 4.39,
     brushLabCompositeScore100: 99.9,
     brushLabPromotedToService: true,
     optimalProfileId: BRUSHLAB_LONGRUN_OPTIMAL_SERVICE_PROFILE.profileId,

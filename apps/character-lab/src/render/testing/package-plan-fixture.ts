@@ -3,7 +3,7 @@
  * 매핑(본·shape key·메시 역할)은 authored 작업자 모듈 대신 계약의 별칭 표 + 최소 Mixamo 표로 만든다
  * (render 디렉터리는 domains/authored를 import하지 않는다). 플랜 생성·SHA 검증은 authored 작업자 소관이다.
  */
-import { BLENDER_SHAPE_KEY_ALIASES, CHARACTER_PACKAGE_KIND, CHARACTER_PACKAGE_SCHEMA_VERSION, FACS_SHAPE_KEY_ALIASES, facsMorphName, paramMorphName, parseAuthoredHairMeshName, parseCharacterPackageManifest } from "../../contracts";
+import { BLENDER_SHAPE_KEY_ALIASES, CHARACTER_PACKAGE_KIND, CHARACTER_PACKAGE_SCHEMA_VERSION, FACS_SHAPE_KEY_ALIASES, facsMorphName, isFacsUnit, paramMorphName, parseAuthoredHairMeshName, parseCharacterPackageManifest } from "../../contracts";
 
 import type { AuthoredPackagePlan, HumanoidBoneName, MorphTargetName, PartRole, SlotCapabilityMap } from "../../contracts";
 
@@ -81,6 +81,9 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
     "mixamorig:Head": "head",
     "TS_OrionEye.L": "leftEye",
     "TS_OrionEye.R": "rightEye",
+    "TS_ShaperEye.L": "leftEye",
+    "TS_ShaperEye.R": "rightEye",
+    TS_ShaperJaw: "jaw",
   };
   const limbs: ReadonlyArray<readonly [string, string]> = [
     ["Shoulder", "Shoulder"],
@@ -106,8 +109,12 @@ function buildMixamoBones(): Readonly<Record<string, HumanoidBoneName>> {
 const MIXAMO_BONES = buildMixamoBones();
 
 function roleForMeshNode(name: string): PartRole | null {
-  if (parseAuthoredHairMeshName(name)) return "hair";
+  if (parseAuthoredHairMeshName(name.replace(/_Outline$/u, ""))) return "hair";
   const lower = name.toLowerCase();
+  if (lower.startsWith("ts_top")) return "top";
+  if (lower.startsWith("ts_bottom")) return "bottom";
+  if (lower.startsWith("ts_shoes")) return "shoes";
+  if (lower.startsWith("ts_accessory")) return "accessory";
   if (lower.includes("brow")) return "brow";
   if (lower.includes("pupil")) return "pupil";
   if (lower.includes("eye")) return "eyeball";
@@ -139,7 +146,8 @@ export function createPackagePlanFixture(options: PackagePlanFixtureOptions): Au
       shapeKeyMap[name] = paramMorphName(blender.key, blender.sign);
       continue;
     }
-    const facs = FACS_SHAPE_KEY_ALIASES[name];
+    // 제작 GLB는 ARKit 좌우 별칭뿐 아니라 규약 FACS 이름도 직접 쓴다.
+    const facs = FACS_SHAPE_KEY_ALIASES[name] ?? (isFacsUnit(name) ? name : undefined);
     if (facs) shapeKeyMap[name] = facsMorphName(facs);
   }
   const boneMap: Record<string, HumanoidBoneName> = {};

@@ -711,7 +711,7 @@ describe("모델 위 드로잉", () => {
     fireEvent.click(screen.getByRole("button", { name: "드로잉" }));
     expect(view.ui.getState().drawingMode).toBe(true);
     expect(drawLayer()).toBeTruthy();
-    expect(screen.getByText(/드로잉 모드 · 레이어 피부 · 브러시 \d+px/u)).toBeTruthy();
+    expect(screen.getByText(/드로잉 모드\(브러시\) · 레이어 피부\(L0\) · 브러시 \d+px/u)).toBeTruthy();
     expect(screen.getByRole("button", { name: "드로잉" }).getAttribute("aria-pressed")).toBe("true");
   });
 

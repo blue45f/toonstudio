@@ -50,14 +50,17 @@ import type {
   StudioMannequinScenePartnerListener,
 } from "./studio-mannequin-scene";
 
-/** 패널 영속 스냅샷에 상대를 얹는다. 상대가 없으면 키 자체를 빼 v1 문서 그대로 저장되게 한다. */
+/** 패널 영속 스냅샷에 상대를 얹는다. 상대·리그 설정이 없으면 키 자체를 빼 v1 문서 그대로 저장되게 한다. */
 export function composeStudioMannequinDuoState(
-  state: Pick<StudioMannequinPersistentState, "params" | "pose">,
+  state: Pick<StudioMannequinPersistentState, "params" | "pose" | "rig">,
   partner: StudioMannequinPersistentPartner | null,
 ): StudioMannequinPersistentState {
-  return partner
-    ? { params: state.params, pose: state.pose, partner }
-    : { params: state.params, pose: state.pose };
+  return {
+    params: state.params,
+    pose: state.pose,
+    ...(partner ? { partner } : {}),
+    ...(state.rig ? { rig: state.rig } : {}),
+  };
 }
 
 /**

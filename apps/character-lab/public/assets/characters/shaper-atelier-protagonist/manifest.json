@@ -1,0 +1,1532 @@
+{
+  "schema": "toonstudio.character-lab.authored-character/1",
+  "id": "shaper-atelier-protagonist",
+  "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 풀파츠)",
+  "role": "shaper-flagship",
+  "license": "CC0-1.0",
+  "generatedAt": "2026-11-12",
+  "generator": {
+    "pipeline": "Blender 5.2.0 LTS SHAPER Atelier Multi-Part Pipeline (pipelineVersion 1)",
+    "blenderVersion": "5.2.0 LTS"
+  },
+  "pipelineRun": {
+    "pipelineManifestConfigDigest": "9b3a89fc2725be591bc05fea6ba8c5f737dd4ece5991d6473900b6f915f06341",
+    "toonstudioPackageKind": "toonstudio.character-package"
+  },
+  "sourceProvenance": {
+    "license": "CC0-1.0",
+    "author": "ToonStudio Character Lab (Original Procedural BMesh + Delight Textures in Blender 5.2)",
+    "note": "외부 스캔·AI 생성물 없이 Blender 5.2에서 직접 로프팅 제작한 7.5등신 웹툰 주인공 패키지(55 휴머노이드 본 + 얼굴 24·표정 13 셰이프 키 + 헤어 3-LOD & _Outline + 상/하의/신발/리본 분리 워드로브)."
+  },
+  "files": {
+    "glb": {
+      "path": "shaper-atelier-protagonist.glb",
+      "bytes": 1010448,
+      "sha256": "9b3a89fc2725be591bc05fea6ba8c5f737dd4ece5991d6473900b6f915f06341"
+    },
+    "contactSheet": {
+      "path": "contact-sheet.png",
+      "bytes": 516884,
+      "sha256": "1599ebcc4329e272af031d4014f4cb4eccd5edda92b267cd865faae265762d2d"
+    },
+    "slotMapping": {
+      "path": "slot-mapping.json",
+      "bytes": 4257,
+      "sha256": "0416a065cb95a289fe0897491caabcde6642ae895b6105643e7123751d31920e"
+    }
+  },
+  "skeleton": {
+    "present": true,
+    "rootNode": "Armature",
+    "skins": [
+      {
+        "name": "Armature",
+        "jointCount": 55,
+        "joints": [
+          "mixamorig:Hips",
+          "mixamorig:LeftUpLeg",
+          "mixamorig:LeftLeg",
+          "mixamorig:LeftFoot",
+          "mixamorig:LeftToeBase",
+          "mixamorig:RightUpLeg",
+          "mixamorig:RightLeg",
+          "mixamorig:RightFoot",
+          "mixamorig:RightToeBase",
+          "mixamorig:Spine",
+          "mixamorig:Spine1",
+          "mixamorig:Spine2",
+          "mixamorig:LeftShoulder",
+          "mixamorig:LeftArm",
+          "mixamorig:LeftForeArm",
+          "mixamorig:LeftHand",
+          "mixamorig:LeftHandIndex1",
+          "mixamorig:LeftHandIndex2",
+          "mixamorig:LeftHandIndex3",
+          "mixamorig:LeftHandMiddle1",
+          "mixamorig:LeftHandMiddle2",
+          "mixamorig:LeftHandMiddle3",
+          "mixamorig:LeftHandPinky1",
+          "mixamorig:LeftHandPinky2",
+          "mixamorig:LeftHandPinky3",
+          "mixamorig:LeftHandRing1",
+          "mixamorig:LeftHandRing2",
+          "mixamorig:LeftHandRing3",
+          "mixamorig:LeftHandThumb1",
+          "mixamorig:LeftHandThumb2",
+          "mixamorig:LeftHandThumb3",
+          "mixamorig:Neck",
+          "mixamorig:Head",
+          "TS_ShaperEye.L",
+          "TS_ShaperEye.R",
+          "TS_ShaperJaw",
+          "mixamorig:RightShoulder",
+          "mixamorig:RightArm",
+          "mixamorig:RightForeArm",
+          "mixamorig:RightHand",
+          "mixamorig:RightHandIndex1",
+          "mixamorig:RightHandIndex2",
+          "mixamorig:RightHandIndex3",
+          "mixamorig:RightHandMiddle1",
+          "mixamorig:RightHandMiddle2",
+          "mixamorig:RightHandMiddle3",
+          "mixamorig:RightHandPinky1",
+          "mixamorig:RightHandPinky2",
+          "mixamorig:RightHandPinky3",
+          "mixamorig:RightHandRing1",
+          "mixamorig:RightHandRing2",
+          "mixamorig:RightHandRing3",
+          "mixamorig:RightHandThumb1",
+          "mixamorig:RightHandThumb2",
+          "mixamorig:RightHandThumb3"
+        ]
+      }
+    ],
+    "boneNaming": "Mixamo(mixamorig:*) + ToonStudio 안구·턱 본(TS_ShaperEye.L/R, TS_ShaperJaw)"
+  },
+  "humanoidBones": [
+    {
+      "vrm": "hips",
+      "node": "mixamorig:Hips",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "spine",
+      "node": "mixamorig:Spine",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "chest",
+      "node": "mixamorig:Spine1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "upperChest",
+      "node": "mixamorig:Spine2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "neck",
+      "node": "mixamorig:Neck",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "head",
+      "node": "mixamorig:Head",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftEye",
+      "node": "TS_ShaperEye.L",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightEye",
+      "node": "TS_ShaperEye.R",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "jaw",
+      "node": "TS_ShaperJaw",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftUpperLeg",
+      "node": "mixamorig:LeftUpLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLowerLeg",
+      "node": "mixamorig:LeftLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftFoot",
+      "node": "mixamorig:LeftFoot",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftToes",
+      "node": "mixamorig:LeftToeBase",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftShoulder",
+      "node": "mixamorig:LeftShoulder",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftUpperArm",
+      "node": "mixamorig:LeftArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLowerArm",
+      "node": "mixamorig:LeftForeArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftHand",
+      "node": "mixamorig:LeftHand",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbMetacarpal",
+      "node": "mixamorig:LeftHandThumb1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbProximal",
+      "node": "mixamorig:LeftHandThumb2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftThumbDistal",
+      "node": "mixamorig:LeftHandThumb3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexProximal",
+      "node": "mixamorig:LeftHandIndex1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexIntermediate",
+      "node": "mixamorig:LeftHandIndex2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftIndexDistal",
+      "node": "mixamorig:LeftHandIndex3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleProximal",
+      "node": "mixamorig:LeftHandMiddle1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleIntermediate",
+      "node": "mixamorig:LeftHandMiddle2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftMiddleDistal",
+      "node": "mixamorig:LeftHandMiddle3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingProximal",
+      "node": "mixamorig:LeftHandRing1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingIntermediate",
+      "node": "mixamorig:LeftHandRing2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftRingDistal",
+      "node": "mixamorig:LeftHandRing3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleProximal",
+      "node": "mixamorig:LeftHandPinky1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleIntermediate",
+      "node": "mixamorig:LeftHandPinky2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "leftLittleDistal",
+      "node": "mixamorig:LeftHandPinky3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightUpperLeg",
+      "node": "mixamorig:RightUpLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLowerLeg",
+      "node": "mixamorig:RightLeg",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightFoot",
+      "node": "mixamorig:RightFoot",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightToes",
+      "node": "mixamorig:RightToeBase",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightShoulder",
+      "node": "mixamorig:RightShoulder",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightUpperArm",
+      "node": "mixamorig:RightArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLowerArm",
+      "node": "mixamorig:RightForeArm",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightHand",
+      "node": "mixamorig:RightHand",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbMetacarpal",
+      "node": "mixamorig:RightHandThumb1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbProximal",
+      "node": "mixamorig:RightHandThumb2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightThumbDistal",
+      "node": "mixamorig:RightHandThumb3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexProximal",
+      "node": "mixamorig:RightHandIndex1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexIntermediate",
+      "node": "mixamorig:RightHandIndex2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightIndexDistal",
+      "node": "mixamorig:RightHandIndex3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleProximal",
+      "node": "mixamorig:RightHandMiddle1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleIntermediate",
+      "node": "mixamorig:RightHandMiddle2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightMiddleDistal",
+      "node": "mixamorig:RightHandMiddle3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingProximal",
+      "node": "mixamorig:RightHandRing1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingIntermediate",
+      "node": "mixamorig:RightHandRing2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightRingDistal",
+      "node": "mixamorig:RightHandRing3",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleProximal",
+      "node": "mixamorig:RightHandPinky1",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleIntermediate",
+      "node": "mixamorig:RightHandPinky2",
+      "presentInGlb": true
+    },
+    {
+      "vrm": "rightLittleDistal",
+      "node": "mixamorig:RightHandPinky3",
+      "presentInGlb": true
+    }
+  ],
+  "shapeKeys": [
+    {
+      "name": "faceEyeSizeBig",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 0,
+      "kind": "semantic-identity",
+      "axis": "eyeSize",
+      "direction": "positive",
+      "meaningKo": "눈 크기 증가",
+      "contractMorphName": "param:eyeSize:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEyeSizeSmall",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 1,
+      "kind": "semantic-identity",
+      "axis": "eyeSize",
+      "direction": "negative",
+      "meaningKo": "눈 크기 감소",
+      "contractMorphName": "param:eyeSize:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEyeSpacingWide",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 2,
+      "kind": "semantic-identity",
+      "axis": "eyeSpacing",
+      "direction": "positive",
+      "meaningKo": "눈 간격 증가",
+      "contractMorphName": "param:eyeSpacing:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEyeSpacingNarrow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 3,
+      "kind": "semantic-identity",
+      "axis": "eyeSpacing",
+      "direction": "negative",
+      "meaningKo": "눈 간격 감소",
+      "contractMorphName": "param:eyeSpacing:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEyeTiltUp",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 4,
+      "kind": "semantic-identity",
+      "axis": "eyeTilt",
+      "direction": "positive",
+      "meaningKo": "눈꼬리 올림",
+      "contractMorphName": "param:eyeTilt:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEyeTiltDown",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 5,
+      "kind": "semantic-identity",
+      "axis": "eyeTilt",
+      "direction": "negative",
+      "meaningKo": "눈꼬리 내림",
+      "contractMorphName": "param:eyeTilt:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseHeightHigh",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 6,
+      "kind": "semantic-identity",
+      "axis": "noseHeight",
+      "direction": "positive",
+      "meaningKo": "코 위치 높임",
+      "contractMorphName": "param:noseHeight:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseHeightLow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 7,
+      "kind": "semantic-identity",
+      "axis": "noseHeight",
+      "direction": "negative",
+      "meaningKo": "코 위치 낮춤",
+      "contractMorphName": "param:noseHeight:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseWidthWide",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 8,
+      "kind": "semantic-identity",
+      "axis": "noseWidth",
+      "direction": "positive",
+      "meaningKo": "코 너비 넓힘",
+      "contractMorphName": "param:noseWidth:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseWidthNarrow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 9,
+      "kind": "semantic-identity",
+      "axis": "noseWidth",
+      "direction": "negative",
+      "meaningKo": "코 너비 좁힘",
+      "contractMorphName": "param:noseWidth:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseDepthHigh",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 10,
+      "kind": "semantic-identity",
+      "axis": "noseDepth",
+      "direction": "positive",
+      "meaningKo": "콧대 높임",
+      "contractMorphName": "param:noseDepth:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceNoseDepthLow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 11,
+      "kind": "semantic-identity",
+      "axis": "noseDepth",
+      "direction": "negative",
+      "meaningKo": "콧대 낮춤",
+      "contractMorphName": "param:noseDepth:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceMouthWidthWide",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 12,
+      "kind": "semantic-identity",
+      "axis": "mouthWidth",
+      "direction": "positive",
+      "meaningKo": "입 너비 넓힘",
+      "contractMorphName": "param:mouthWidth:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceMouthWidthNarrow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 13,
+      "kind": "semantic-identity",
+      "axis": "mouthWidth",
+      "direction": "negative",
+      "meaningKo": "입 너비 좁힘",
+      "contractMorphName": "param:mouthWidth:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceLipFullnessHigh",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 14,
+      "kind": "semantic-identity",
+      "axis": "lipFullness",
+      "direction": "positive",
+      "meaningKo": "입술 도톰하게",
+      "contractMorphName": "param:lipFullness:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceLipFullnessLow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 15,
+      "kind": "semantic-identity",
+      "axis": "lipFullness",
+      "direction": "negative",
+      "meaningKo": "입술 얇게",
+      "contractMorphName": "param:lipFullness:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceJawWidthWide",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 16,
+      "kind": "semantic-identity",
+      "axis": "jawWidth",
+      "direction": "positive",
+      "meaningKo": "턱 너비 넓힘",
+      "contractMorphName": "param:jawWidth:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceJawWidthNarrow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 17,
+      "kind": "semantic-identity",
+      "axis": "jawWidth",
+      "direction": "negative",
+      "meaningKo": "턱 너비 갸름하게",
+      "contractMorphName": "param:jawWidth:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceChinLengthLong",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 18,
+      "kind": "semantic-identity",
+      "axis": "chinLength",
+      "direction": "positive",
+      "meaningKo": "턱 길이 늘림",
+      "contractMorphName": "param:chinLength:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceChinLengthShort",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 19,
+      "kind": "semantic-identity",
+      "axis": "chinLength",
+      "direction": "negative",
+      "meaningKo": "턱 길이 줄임",
+      "contractMorphName": "param:chinLength:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceCheekVolumeHigh",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 20,
+      "kind": "semantic-identity",
+      "axis": "cheekVolume",
+      "direction": "positive",
+      "meaningKo": "볼 볼륨 통통하게",
+      "contractMorphName": "param:cheekVolume:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceCheekVolumeLow",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 21,
+      "kind": "semantic-identity",
+      "axis": "cheekVolume",
+      "direction": "negative",
+      "meaningKo": "볼 볼륨 슬림하게",
+      "contractMorphName": "param:cheekVolume:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEarSizeBig",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 22,
+      "kind": "semantic-identity",
+      "axis": "earSize",
+      "direction": "positive",
+      "meaningKo": "귀 크기 키움",
+      "contractMorphName": "param:earSize:+",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "faceEarSizeSmall",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 23,
+      "kind": "semantic-identity",
+      "axis": "earSize",
+      "direction": "negative",
+      "meaningKo": "귀 크기 줄임",
+      "contractMorphName": "param:earSize:-",
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "mouthSmile",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 24,
+      "kind": "expression-source",
+      "meaningKo": "미소",
+      "facsHint": {
+        "units": [
+          "mouthSmile"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "mouthFrown",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 25,
+      "kind": "expression-source",
+      "meaningKo": "입꼬리 내림",
+      "facsHint": {
+        "units": [
+          "mouthFrown"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "jawOpen",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 26,
+      "kind": "expression-source",
+      "meaningKo": "입 벌림",
+      "facsHint": {
+        "units": [
+          "jawOpen"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "mouthPucker",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 27,
+      "kind": "expression-source",
+      "meaningKo": "입 오므림",
+      "facsHint": {
+        "units": [
+          "mouthPucker"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "mouthFunnel",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 28,
+      "kind": "expression-source",
+      "meaningKo": "오 발음 입모양",
+      "facsHint": {
+        "units": [
+          "mouthFunnel"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkLeft",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 29,
+      "kind": "expression-source",
+      "meaningKo": "왼쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkLeft"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkRight",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 30,
+      "kind": "expression-source",
+      "meaningKo": "오른쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkRight"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeWide",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 31,
+      "kind": "expression-source",
+      "meaningKo": "눈 크게 뜨기",
+      "facsHint": {
+        "units": [
+          "eyeWide"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeSquint",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 32,
+      "kind": "expression-source",
+      "meaningKo": "눈 가늘게 뜨기",
+      "facsHint": {
+        "units": [
+          "eyeSquint"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "browInnerUp",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 33,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 안쪽 올림",
+      "facsHint": {
+        "units": [
+          "browInnerUp"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "browDown",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 34,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 찌푸림",
+      "facsHint": {
+        "units": [
+          "browDown"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "cheekPuff",
+      "mesh": "TS_Shaper_Head",
+      "targetIndex": 35,
+      "kind": "expression-source",
+      "meaningKo": "볼 부풀리기",
+      "facsHint": {
+        "units": [
+          "cheekPuff"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.2",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "HappyBrow",
+      "mesh": "TS_Shaper_Brow_L",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 올림",
+      "facsHint": {
+        "units": [
+          "browOuterUp"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "AngryBrow",
+      "mesh": "TS_Shaper_Brow_L",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 찌푸림",
+      "facsHint": {
+        "units": [
+          "browDown"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "HappyBrow",
+      "mesh": "TS_Shaper_Brow_R",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 올림",
+      "facsHint": {
+        "units": [
+          "browOuterUp"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "AngryBrow",
+      "mesh": "TS_Shaper_Brow_R",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 찌푸림",
+      "facsHint": {
+        "units": [
+          "browDown"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ]
+    }
+  ],
+  "expressions": {
+    "vrmPresets": [
+      {
+        "name": "happy",
+        "contractFacsUnit": "mouthSmile",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "mouthSmile",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "sad",
+        "contractFacsUnit": "mouthFrown",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "mouthFrown",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "aa",
+        "contractFacsUnit": "jawOpen",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "jawOpen",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "angry",
+        "contractFacsUnit": "browDown",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "browDown",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "surprised",
+        "contractFacsUnit": "eyeWide",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "eyeWide",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "blinkLeft",
+        "contractFacsUnit": "eyeBlinkLeft",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "eyeBlinkLeft",
+            "weight": 1.0
+          }
+        ]
+      },
+      {
+        "name": "blinkRight",
+        "contractFacsUnit": "eyeBlinkRight",
+        "morphTargetBinds": [
+          {
+            "mesh": "TS_Shaper_Head",
+            "target": "eyeBlinkRight",
+            "weight": 1.0
+          }
+        ]
+      }
+    ],
+    "vrmCustom": []
+  },
+  "partMeshes": [
+    {
+      "node": "Stage_StudioFloor",
+      "part": "body",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": false,
+      "triangles": 2,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "Stage_StudioFloor"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Accessory_ribbon",
+      "part": "accessory",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 216,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Accessory_ribbon"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD0",
+      "part": "hair",
+      "lod": 0,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 3296,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_AuthoredHair_wolf-layered_LOD0"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD0_Outline",
+      "part": "hair",
+      "lod": 0,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 3296,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_AuthoredHair_wolf-layered_LOD0_Outline"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD1",
+      "part": "hair",
+      "lod": 1,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 1712,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_AuthoredHair_wolf-layered_LOD1"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_AuthoredHair_wolf-layered_LOD2",
+      "part": "hair",
+      "lod": 2,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 948,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_AuthoredHair_wolf-layered_LOD2"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Bottom_pleated-skirt",
+      "part": "bottom",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 384,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Bottom_pleated-skirt"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Body",
+      "part": "body",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 1736,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Body"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Brow_L",
+      "part": "brow",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 208,
+      "morphTargets": [
+        "HappyBrow",
+        "AngryBrow"
+      ],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Brow_L"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Brow_R",
+      "part": "brow",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 208,
+      "morphTargets": [
+        "HappyBrow",
+        "AngryBrow"
+      ],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Brow_R"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Eye_L",
+      "part": "eye",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 396,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Eye_L"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Eye_R",
+      "part": "eye",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 396,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Eye_R"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Head",
+      "part": "head",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 544,
+      "morphTargets": [
+        "faceEyeSizeBig",
+        "faceEyeSizeSmall",
+        "faceEyeSpacingWide",
+        "faceEyeSpacingNarrow",
+        "faceEyeTiltUp",
+        "faceEyeTiltDown",
+        "faceNoseHeightHigh",
+        "faceNoseHeightLow",
+        "faceNoseWidthWide",
+        "faceNoseWidthNarrow",
+        "faceNoseDepthHigh",
+        "faceNoseDepthLow",
+        "faceMouthWidthWide",
+        "faceMouthWidthNarrow",
+        "faceLipFullnessHigh",
+        "faceLipFullnessLow",
+        "faceJawWidthWide",
+        "faceJawWidthNarrow",
+        "faceChinLengthLong",
+        "faceChinLengthShort",
+        "faceCheekVolumeHigh",
+        "faceCheekVolumeLow",
+        "faceEarSizeBig",
+        "faceEarSizeSmall",
+        "mouthSmile",
+        "mouthFrown",
+        "jawOpen",
+        "mouthPucker",
+        "mouthFunnel",
+        "eyeBlinkLeft",
+        "eyeBlinkRight",
+        "eyeWide",
+        "eyeSquint",
+        "browInnerUp",
+        "browDown",
+        "cheekPuff"
+      ],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Head"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Highlight_L",
+      "part": "highlight",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 20,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Highlight_L"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Highlight_R",
+      "part": "highlight",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 20,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Highlight_R"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Iris_L",
+      "part": "iris",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 100,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Iris_L"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Iris_R",
+      "part": "iris",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 100,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Iris_R"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shoes_loafers",
+      "part": "shoes",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 288,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shoes_loafers"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Top_blazer",
+      "part": "top",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 668,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Top_blazer"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    }
+  ],
+  "quality": {
+    "score": 100,
+    "passed": true,
+    "minimumScore": 86,
+    "issues": [],
+    "capabilities": {
+      "authoredHair": {
+        "enabled": true,
+        "style": "wolf-layered",
+        "lodTriangles": [
+          3296,
+          1712,
+          948
+        ],
+        "replacedSourceMeshes": []
+      },
+      "semanticFaceShapes": {
+        "mode": "semantic-shape-keys",
+        "confidence": 1.0,
+        "objects": [
+          "TS_Shaper_Head"
+        ],
+        "shapeKeys": [
+          "TS_Shaper_Head:faceEyeSizeBig",
+          "TS_Shaper_Head:faceEyeSizeSmall",
+          "TS_Shaper_Head:faceEyeSpacingWide",
+          "TS_Shaper_Head:faceEyeSpacingNarrow",
+          "TS_Shaper_Head:faceEyeTiltUp",
+          "TS_Shaper_Head:faceEyeTiltDown",
+          "TS_Shaper_Head:faceNoseHeightHigh",
+          "TS_Shaper_Head:faceNoseHeightLow",
+          "TS_Shaper_Head:faceNoseWidthWide",
+          "TS_Shaper_Head:faceNoseWidthNarrow",
+          "TS_Shaper_Head:faceNoseDepthHigh",
+          "TS_Shaper_Head:faceNoseDepthLow",
+          "TS_Shaper_Head:faceMouthWidthWide",
+          "TS_Shaper_Head:faceMouthWidthNarrow",
+          "TS_Shaper_Head:faceLipFullnessHigh",
+          "TS_Shaper_Head:faceLipFullnessLow",
+          "TS_Shaper_Head:faceJawWidthWide",
+          "TS_Shaper_Head:faceJawWidthNarrow",
+          "TS_Shaper_Head:faceChinLengthLong",
+          "TS_Shaper_Head:faceChinLengthShort",
+          "TS_Shaper_Head:faceCheekVolumeHigh",
+          "TS_Shaper_Head:faceCheekVolumeLow",
+          "TS_Shaper_Head:faceEarSizeBig",
+          "TS_Shaper_Head:faceEarSizeSmall"
+        ]
+      },
+      "mtoonReady": true,
+      "vrmCustomExpressions": {
+        "status": "ready",
+        "names": [
+          "mouthSmile",
+          "mouthFrown",
+          "jawOpen",
+          "mouthPucker",
+          "mouthFunnel",
+          "eyeBlinkLeft",
+          "eyeBlinkRight",
+          "eyeWide",
+          "eyeSquint",
+          "browInnerUp",
+          "browDown",
+          "cheekPuff",
+          "browOuterUp"
+        ]
+      },
+      "lods": true
+    }
+  },
+  "gaps": []
+}

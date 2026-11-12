@@ -14,9 +14,11 @@ import {
   STUDIO_MANNEQUIN_POSE_PRESETS,
   STUDIO_MANNEQUIN_STATE_DOC_DUO_VERSION,
   STUDIO_MANNEQUIN_STATE_DOC_KIND,
+  STUDIO_MANNEQUIN_STATE_DOC_RIG_VERSION,
   STUDIO_MANNEQUIN_STATE_DOC_VERSION,
   applyStudioMannequinHandPreset,
   canonicalizeStudioMannequinPartner,
+  canonicalizeStudioMannequinRigState,
   countStudioMannequinPosePresetsByCategory,
   createStudioMannequinRestPose,
   encodeStudioMannequinShareHash,
@@ -30,6 +32,10 @@ import {
   serializeStudioMannequinPose,
   serializeStudioMannequinState,
 } from "./studio-mannequin-poses";
+import {
+  importStudioMannequinStateWithDiagnostics,
+  parseStudioMannequinShareHashWithDiagnostics,
+} from "./studio-mannequin-semantic-persistence";
 
 const LIMIT_EPSILON = 1e-5;
 
@@ -345,5 +351,111 @@ describe("studio-mannequin-poses 카테고리·검색·손 분리 확장", () =>
 
     const leftOnly = applyStudioMannequinHandPreset(walk.pose, fist, "left");
     expect(leftOnly.joints.rightHand).toEqual(walk.pose.joints.rightHand);
+  });
+});
+
+describe("studio-mannequin-poses v3 손 접촉·콘트라포스토·사면도 영속 및 안전 복구", () => {
+  const samplePose = findStudioMannequinPosePreset("sit-chair")!.pose;
+
+  it("기본 뷰·무접촉 상태는 rig 키를 생략해 기존 v1/v2 문서와 바이트 단위로 동일하다", () => {
+    expect(canonicalizeStudioMannequinRigState({})).toBeUndefined();
+    expect(
+      canonicalizeStudioMannequinRigState({
+        quadView: false,
+        cameraFovDeg: 35,
+        projection: "perspective",
+      }),
+    ).toBeUndefined();
+
+    const soloDefault = serializeStudioMannequinState({
+      params: STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+      pose: samplePose,
+      rig: canonicalizeStudioMannequinRigState({ cameraFovDeg: 35 }),
+    });
+    expect((JSON.parse(soloDefault) as { version: number }).version).toBe(STUDIO_MANNEQUIN_STATE_DOC_VERSION);
+  });
+
+  it("비기본 손 접촉·콘트라포스토·사면도·화각·투영은 v3 정본으로 직렬화되고 공유 해시까지 무손실 왕복한다", () => {
+    const raw = serializeStudioMannequinState({
+      params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 176 },
+      pose: samplePose,
+      rig: {
+        handContacts: { left: "hip", right: "chin" },
+        contrapposto: "right",
+        quadView: true,
+        cameraFovDeg: 22,
+        projection: "orthographic",
+      },
+    });
+    const doc = JSON.parse(raw) as { version: number };
+    expect(doc.version).toBe(STUDIO_MANNEQUIN_STATE_DOC_RIG_VERSION);
+    const parsed = parseStudioMannequinState(raw);
+    expect(parsed?.rig).toEqual({
+      handContacts: { left: "hip", right: "chin" },
+      contrapposto: "right",
+      quadView: true,
+      cameraFovDeg: 22,
+      projection: "orthographic",
+    });
+    expect(serializeStudioMannequinState(parsed!)).toBe(raw);
+
+    const shareHash = encodeStudioMannequinShareHash(parsed!);
+    expect(parseStudioMannequinShareHash(shareHash)).toEqual(parsed);
+  });
+
+  it("구버전(pose-v1·비버전)과 부분 오염된 rig 문서는 기존 포즈 데이터를 보존하며 안전하게 복구하고, 손상/미지원 문서는 명확한 한글 사유를 반환한다", () => {
+    const poseOnlyRaw = serializeStudioMannequinPose(samplePose);
+    const recoveredPoseV1 = importStudioMannequinStateWithDiagnostics(poseOnlyRaw, {
+      fallbackParams: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 181 },
+    });
+    expect(recoveredPoseV1.ok).toBe(true);
+    if (recoveredPoseV1.ok) {
+      expect(recoveredPoseV1.sourceFormat).toBe("pose-v1");
+      expect(recoveredPoseV1.state.params.heightCm).toBe(181);
+      expect(recoveredPoseV1.state.pose).toEqual(normalizeStudioMannequinPose(samplePose));
+      expect(recoveredPoseV1.warnings.length).toBeGreaterThan(0);
+    }
+
+    const partialDirtyV3 = JSON.stringify({
+      kind: STUDIO_MANNEQUIN_STATE_DOC_KIND,
+      version: 3,
+      params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 164 },
+      pose: samplePose,
+      rig: {
+        handContacts: { left: "chin", right: "invalid-target" },
+        contrapposto: "sideways",
+        quadView: true,
+        cameraFovDeg: 220,
+      },
+    });
+    const recoveredDirty = importStudioMannequinStateWithDiagnostics(partialDirtyV3);
+    expect(recoveredDirty.ok).toBe(true);
+    if (recoveredDirty.ok) {
+      expect(recoveredDirty.state.params.heightCm).toBe(164);
+      expect(recoveredDirty.state.pose).toEqual(normalizeStudioMannequinPose(samplePose));
+      expect(recoveredDirty.state.rig).toEqual({
+        handContacts: { left: "chin" },
+        quadView: true,
+        cameraFovDeg: 85,
+      });
+      expect(recoveredDirty.warnings[0]).toContain("안전한 기본값으로 복구");
+    }
+
+    const corrupt = importStudioMannequinStateWithDiagnostics("{broken-json");
+    expect(corrupt).toMatchObject({ ok: false, reason: "corrupt-json" });
+    if (!corrupt.ok) expect(corrupt.messageKo).toContain("기존 포즈 데이터를 그대로 유지");
+
+    const futureVer = importStudioMannequinStateWithDiagnostics(
+      JSON.stringify({ kind: STUDIO_MANNEQUIN_STATE_DOC_KIND, version: 99, pose: samplePose }),
+    );
+    expect(futureVer).toMatchObject({ ok: false, reason: "unsupported-version" });
+
+    const wrongKind = importStudioMannequinStateWithDiagnostics(
+      JSON.stringify({ kind: "studio-bg3d-scene", version: 1 }),
+    );
+    expect(wrongKind).toMatchObject({ ok: false, reason: "invalid-kind" });
+
+    const brokenHash = parseStudioMannequinShareHashWithDiagnostics("#mannequin=%%%bad%%%");
+    expect(brokenHash).toMatchObject({ ok: false, reason: "corrupt-json" });
   });
 });

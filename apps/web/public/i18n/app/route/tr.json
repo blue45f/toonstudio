@@ -91,5 +91,6 @@
   "route.technologyStory": "Hikâye",
   "route.technologyVideos": "Videolar",
   "route.terms": "Hizmet koşulları",
-  "route.unknown": "Sayfa"
+  "route.unknown": "Sayfa",
+  "route.offline": "Connection & on-device content"
 }

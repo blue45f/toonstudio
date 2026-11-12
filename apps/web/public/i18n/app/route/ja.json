@@ -91,5 +91,6 @@
   "route.technologyStory": "制作ストーリー",
   "route.technologyVideos": "動画",
   "route.terms": "利用規約",
-  "route.unknown": "ページ"
+  "route.unknown": "ページ",
+  "route.offline": "Connection & on-device content"
 }

@@ -91,5 +91,6 @@
   "route.technologyStory": "கதை",
   "route.technologyVideos": "காணொளிகள்",
   "route.terms": "சேவை விதிமுறைகள்",
-  "route.unknown": "பக்கம்"
+  "route.unknown": "பக்கம்",
+  "route.offline": "Connection & on-device content"
 }

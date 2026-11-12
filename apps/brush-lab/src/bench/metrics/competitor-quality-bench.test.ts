@@ -35,7 +35,6 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
   });
 
   it("David Li 3D 황금각 브리슬 배치·3절 굽힘·3x3 Sobel GGX 임파스토 BRDF·8꼭짓점 RYB 보간을 정확히 계산한다", () => {
-    // 노랑 + 파랑 (r=0, g=1, b=1 in RYB corner table) → 에메랄드 그린 계열 RGB
     const greenRgb = interpolateRybToRgbTrilinear({ r: 0, g: 1, b: 1 });
     expect(greenRgb.g).toBeGreaterThan(greenRgb.r);
     expect(greenRgb.g).toBeGreaterThan(greenRgb.b);
@@ -122,7 +121,7 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(out.atramentAdaptiveThicknessPx).toBeLessThanOrEqual(6.25);
   });
 
-  it("Sumi 초고품질 다브 합성기와 브러시 랩 종합 벤치마크가 실 서비스 승격 게이트를 통과한다", () => {
+  it("Sumi 초고품질 다브 합성기와 브러시 랩 종합 벤치마크가 Wave 37 보간·AA·강모·수채·스머지 품질 게이트를 통과한다", () => {
     const dab = synthesizeSumiUltraQualityTextureDab({
       sizePx: 64,
       pressure01: 0.72,
@@ -140,6 +139,17 @@ describe("Competitor Brush Quality REA Kernels & Brush Lab Promotion Benchmark",
     expect(report.grainContrastPreservationRatio).toBeLessThanOrEqual(1.1);
     expect(report.pressureGrainSpearman).toBeGreaterThanOrEqual(0.99);
     expect(report.pressureWidthSpearman).toBeGreaterThanOrEqual(0.99);
+    expect(report.centripetalScallopReductionGain01).toBeGreaterThan(0.02);
+    expect(report.centripetalCornerKinkReduction01).toBeGreaterThan(0.5);
+    expect(report.subpixelAaStaircaseReduction01).toBeGreaterThan(0.15);
+    expect(report.bristleCentrifugalFanSplayRatio).toBeGreaterThan(1.2);
+    expect(report.capillaryEdgeRingContrastGain01).toBeGreaterThan(0.01);
+    expect(report.smudgeReservoirContinuity01).toBeGreaterThan(0.6);
+    expect(report.dualBrushLeakage01).toBe(0);
+    expect(report.dualBrushInternalContrastGain01).toBeGreaterThan(0.08);
+    expect(report.barrelTwistBroadToEdgeRatio).toBeGreaterThan(3.2);
+    expect(report.dipPenTineSplitSpanPx).toBeGreaterThan(3.0);
+    expect(report.fiberFeatherAnisotropyRatio).toBeGreaterThan(1.25);
     expect(report.webgpuZeroCopyHotPathMapAsyncCount).toBe(0);
     expect(report.webgpuCpuDrawCallLoopCount).toBe(0);
     expect(report.compositeQualityScore100).toBeGreaterThanOrEqual(99);

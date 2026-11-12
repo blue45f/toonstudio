@@ -5,15 +5,21 @@ import type { CharacterArchetype } from "../scene-3d/studio-3d-shaper-toon-maker
 import type { CutAspectRatio } from "../scene-3d/studio-3d-storyboard-cut-strip";
 import type { CreatorPlusEmotionPreset, EmoteSfxKind } from "../scene-3d/studio-3d-emotion-fx";
 
+import type { BgPrimitive } from "../studio-background-3d-metadata";
 import { Studio3dCharacterStudioInspectorPanel } from "./Studio3dCharacterStudioInspectorPanel";
+import { StudioBg3dKitbashCharacterModelerPanel } from "./StudioBg3dKitbashCharacterModelerPanel";
 
 export interface StudioBg3dShaperCharacterStudioPanelProps {
   readonly onExportPsd?: () => void;
+  readonly onStatusChange?: (summaryKo: string) => void;
+  readonly onInsertScenePrimitives?: (primitives: readonly BgPrimitive[], labelKo: string) => void;
   readonly disabled?: boolean;
 }
 
 export function StudioBg3dShaperCharacterStudioPanel({
   onExportPsd,
+  onStatusChange,
+  onInsertScenePrimitives,
   disabled = false,
 }: StudioBg3dShaperCharacterStudioPanelProps) {
   const [activeTab, setActiveTab] = useState<"shaper" | "tooning" | "storyboard">("shaper");
@@ -292,6 +298,14 @@ export function StudioBg3dShaperCharacterStudioPanel({
           </div>
         </div>
       )}
+
+      {/* 파라메트릭 3D 캐릭터 아나토미·복식·포즈 블록아웃 & 배경 킷배시 모델러 */}
+      <StudioBg3dKitbashCharacterModelerPanel
+        defaultMode="character"
+        disabled={disabled}
+        onStatusChange={onStatusChange}
+        onInsertScenePrimitives={onInsertScenePrimitives}
+      />
 
       {/* Tooning 3D Studio (TD) Complete 5-Tab Inspector, 23 Camera Presets & 3D Asset Store */}
       <Studio3dCharacterStudioInspectorPanel disabled={disabled} />

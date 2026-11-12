@@ -33,6 +33,12 @@ import {
 } from "../apps/web/src/domains/creator/studio-beta-notice-storage";
 import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/studio-workspace-route";
 
+import {
+  drawableCanvasBand,
+  drawingCaptureRegion,
+  drawingCaptureRegions,
+  parkStudioCollaborationCursors,
+} from "./lib/studio-collaboration-drawing-capture";
 import { installStudioCollaborationPreviewSession } from "./lib/studio-collaboration-preview-session";
 import { waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
 import {
@@ -184,27 +190,30 @@ async function waitForDocumentLane(
 
 async function enableBrushTool(page: Page): Promise<void> {
   await dismissOverlays(page);
-  const drawOptions = page.locator('[data-studio-draw-options="true"]').first();
-  if (await drawOptions.isVisible().catch(() => false)) return;
-  const drawTool = page.locator('[data-studio-rail-tool-id="draw"]').first();
-  if (await drawTool.isVisible().catch(() => false)) {
-    await drawTool.click();
-  } else {
-    await page.keyboard.press("b");
+  // 복제·재진입 탭은 저장된 전체 배치를 복원할 수 있어 같은 출시된 그리기 화면에서 픽셀을 비교한다.
+  const simpleEntry = page.locator('[data-studio-clarity-entry="true"]');
+  if (await simpleEntry.isVisible()) {
+    await simpleEntry.click();
+    await page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').waitFor({ state: "visible" });
   }
-  await drawOptions.waitFor({
+  // 사용자가 보는 펜 버튼의 실제 선택 상태를 확인한다.
+  const pen = page.getByRole("button", { name: /^(펜(?: \(B\))?|Pen(?: \(B\))?)$/u }).first();
+  await pen.waitFor({ state: "visible", timeout: 10_000 });
+  if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
+  await pen.and(page.locator('[aria-pressed="true"]')).waitFor({
     state: "visible",
     timeout: 10_000,
   });
 }
 
 async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFingerprint> {
+  await parkStudioCollaborationCursors(page);
   // Firefox의 비활성 탭 합성 프레임이 아니라 사용자가 탭을 열었을 때의 실제 출력을 확인한다.
   await page.bringToFront();
   const documentSurface = page.locator('[data-studio-post-processing-scope=""]').first();
   await documentSurface.waitFor({ state: "visible" });
-  const clip = await documentSurface.boundingBox();
-  assert.ok(clip, "composited document surface has no browser bounds");
+  await documentSurface.waitFor({ state: "visible" });
+  const clip = await drawingCaptureRegion(page);
   // Page-level capture reads the browser compositor. Element screenshots can reuse a transparent
   // or stale backing store when CanvasKit owns document pixels with preserveDrawingBuffer=false.
   const screenshot = await page.screenshot({
@@ -409,44 +418,6 @@ interface CanvasPoint {
   readonly y: number;
 }
 
-/**
- * 캔버스 뷰포트 위에는 플로팅 크롬(캔버스 상태 막대·프레즌스 독·복구 안내)이 겹쳐 있고, 탭마다 상단 안내
- * 높이가 달라 같은 뷰포트 비율이 서로 다른 화면 위치가 된다. 뷰포트 경계 비율만으로 고른 획은 크롬 위에
- * 떨어져 캔버스에 닿지 않고 조용히 사라지므로, 실제로 펜 입력을 받는 가장 긴 캔버스 띠를 찾는다.
- */
-async function drawableCanvasBand(
-  page: Page,
-  bounds: { readonly y: number; readonly height: number },
-  columns: readonly number[],
-): Promise<{ readonly top: number; readonly bottom: number }> {
-  const band = await page.evaluate(({ top, bottom, xs }) => {
-    let best = { top: 0, bottom: -1 };
-    let runTop = -1;
-    let lastOpen = -1;
-    for (let y = Math.ceil(top) + 1; y < bottom; y += 2) {
-      const open = xs.every((x) => {
-        const hit = document.elementFromPoint(x, y);
-        return hit instanceof HTMLCanvasElement
-          && hit.closest('[data-studio-canvas-viewport="true"]') !== null;
-      });
-      if (open) {
-        if (runTop < 0) runTop = y;
-        lastOpen = y;
-      } else if (runTop >= 0) {
-        if (lastOpen - runTop > best.bottom - best.top) best = { top: runTop, bottom: lastOpen };
-        runTop = -1;
-      }
-    }
-    if (runTop >= 0 && lastOpen - runTop > best.bottom - best.top) best = { top: runTop, bottom: lastOpen };
-    return best;
-  }, { top: bounds.y, bottom: bounds.y + bounds.height, xs: [...columns] });
-  assert.ok(
-    band.bottom - band.top >= bounds.height * 0.4,
-    `drawable canvas band is too small: ${JSON.stringify({ band, bounds })}`,
-  );
-  return band;
-}
-
 async function strokePathObstructions(
   page: Page,
   path: readonly CanvasPoint[],
@@ -481,7 +452,10 @@ async function drawStroke(
     bounds,
     Array.from({ length: 9 }, (_, index) => startX + (endX - startX) * (index / 8)),
   );
-  const y = band.top + amplitude + (band.bottom - band.top - amplitude * 2) * verticalFraction;
+  const capture = await drawingCaptureRegion(page);
+  assert.ok(capture.y >= band.top && capture.y + capture.height <= band.bottom,
+    "픽셀 비교 영역이 현재 가시 캔버스 띠를 벗어났습니다.");
+  const y = capture.y + amplitude + (capture.height - amplitude * 2) * verticalFraction;
   const path = Array.from({ length: 49 }, (_, step) => {
     const progress = step / 48;
     return {
@@ -736,6 +710,9 @@ try {
     pageC.screenshot({ path: join(SCRATCH, "tab-c-late-join.png"), fullPage: true }),
   ]);
 
+  report.captureRegions = {
+    A: drawingCaptureRegions.get(pageA), B: drawingCaptureRegions.get(pageB), C: drawingCaptureRegions.get(pageC),
+  };
   report.status = "PASS";
   report.roomUrl = roomUrl;
   report.phases = { initial: { A: phaseA, B: phaseB, C: phaseC }, settled: settledPhases };

@@ -59,6 +59,7 @@ import {
   toBgPrimitives,
   type StudioBg3dReaCompetitorId,
 } from "./studio-bg3d-rea-webtoon-background-engine";
+import { StudioBg3dBackgroundObjectClusterSection } from "./StudioBg3dBackgroundObjectClusterSection";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 
@@ -78,7 +79,10 @@ export interface StudioBg3dWebtoonBackgroundPickerProps {
   readonly autoCutaway: boolean;
   readonly onAutoCutawayChange: (next: boolean) => void;
   /** 호스트의 도형 묶음 추가: 장면에 반영했으면 true(또는 더한 도형 목록), 한도·준비 상태 때문에 못 했으면 false. */
-  readonly onBuild: (buildParts: StudioBg3dWebtoonBuildParts) => boolean | readonly BgPrimitive[] | undefined;
+  readonly onBuild: (
+    buildParts: StudioBg3dWebtoonBuildParts,
+    options?: { readonly labelKo?: string; readonly selectAll?: boolean; readonly immediateHistory?: boolean },
+  ) => boolean | readonly BgPrimitive[] | undefined;
   /** "숨긴 벽 되돌리기": 이 id 의 도형을 다시 보이게 한다. 주지 않으면 버튼을 그리지 않는다. */
   readonly onShowParts?: ((ids: readonly string[]) => void) | undefined;
   /** "새로 만든 곳 보기": 방금 선택된 새 배경으로 화면을 맞춘다. 주지 않으면 버튼을 그리지 않는다. */
@@ -753,6 +757,25 @@ export function StudioBg3dWebtoonBackgroundPicker({
           </div>
         ) : null}
       </div>
+
+      <StudioBg3dBackgroundObjectClusterSection
+        disabled={disabled}
+        onBuildGenerated={(buildCluster, meta) => {
+          let built: { readonly primitives: BgPrimitive[]; readonly anchorX: number } = { primitives: [], anchorX: 0 };
+          const accepted = onBuild(
+            (existingCount) => {
+              built = buildCluster(existingCount);
+              return built.primitives;
+            },
+            { labelKo: meta.labelKo, selectAll: true, immediateHistory: true },
+          );
+          setNotice(
+            accepted && built.primitives.length > 0
+              ? { kind: "built", label: meta.labelKo, objectCount: built.primitives.length, hiddenWalls: summarizeStudioBg3dHiddenWalls(built.primitives), wallsRestored: false, anchorX: built.anchorX }
+              : { kind: "failed" },
+          );
+        }}
+      />
 
       <div className="mt-2.5 rounded-xl border border-line bg-card/70 px-3">
         <TemplateToggleRow

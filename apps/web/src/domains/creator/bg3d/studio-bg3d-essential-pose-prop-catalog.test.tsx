@@ -63,19 +63,23 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
-  it("registers all 95 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
-    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(95);
-    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(5);
+  it("registers all 109 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 6 kitbash-v9 + 8 kitbash-v10 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
+    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(109);
+    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(7);
 
     const poses = listStudioBg3dEssentialAssetsByCategory("pose-3d");
     const essentialProps = listStudioBg3dEssentialAssetsByCategory("essential-prop-3d");
     const refinedV8Props = listStudioBg3dEssentialAssetsByCategory("refined-v8-prop-3d");
+    const kitbashV9Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v9-prop-3d");
+    const kitbashV10Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v10-prop-3d");
     const originalSceneProps = listStudioBg3dEssentialAssetsByCategory("original-scene-prop-3d");
     const originalHandWearProps = listStudioBg3dEssentialAssetsByCategory("original-hand-wear-prop-3d");
 
     expect(poses).toHaveLength(8);
     expect(essentialProps).toHaveLength(8);
     expect(refinedV8Props).toHaveLength(11);
+    expect(kitbashV9Props).toHaveLength(6);
+    expect(kitbashV10Props).toHaveLength(8);
     expect(originalSceneProps).toHaveLength(33);
     expect(originalHandWearProps).toHaveLength(35);
 
@@ -164,6 +168,9 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
 
     fireEvent.click(screen.getByTestId("bg3d-essential-turnaround-btn-pose-neutral-3d"));
     expect(screen.getByTestId("bg3d-essential-turnaround-viewer")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("bg3d-essential-cat-kitbash-v10-prop-3d"));
+    expect(screen.getByTestId("bg3d-essential-item-kitbash-v10-alley-ac-meter-pipe-wall-v10")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("bg3d-essential-cat-original-scene-prop-3d"));
     expect(screen.queryByTestId("bg3d-essential-item-pose-neutral-3d")).toBeNull();

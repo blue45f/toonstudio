@@ -1,0 +1,638 @@
+/**
+ * Studio 3D 데생 인형 v5 — 동세선(Line of Action)·콘트라포스토·1인 손발 접촉 솔버·시선 응시·호흡 흉곽 엔진.
+ *
+ * 실사용 작화 품질을 위해 다음 5가지 결정적 생체역학 연산을 제공한다:
+ * 1. 3D 동세선(Line of Action): 정수리 → 목 → 흉추 → 요추 → 골반 → 주 지지발 Catmull-Rom 스플라인.
+ * 2. 접지·상지 균형 통합 콘트라포스토 생성기: 어깨·골반 반대 기울기 + 상지 자연 이완 + 발바닥 지면(y=0) 정확 밀착.
+ * 3. 1인 손-신체·바닥 밀착 IK 솔버(`applyStudioMannequinHandContact`): 체형(5등신 SD ~ 근육질 악역)이 달라도
+ *    턱 괴기(`chin`), 골반 손얹기(`hip`), 가슴 얹기(`chest`), 뒷머리 받치기(`occiput`), 바닥 짚기(`ground`)를
+ *    다중 해부학 폴 선택 IK와 손바닥 오프셋으로 관통·부유 없이 밀착시킨다.
+ * 4. 경추-흉추 분산 시선 응시(Gaze Look-At): 가슴(15%)·목(35%)·머리(50%) 회전 배분.
+ * 5. 호흡 흉곽 확장(Breathing Modulation): 들숨(+1) ↔ 날숨(-1) 생리학적 흉곽·허리 부피 변조.
+ *
+ * Three.js 비의존 순수 모듈 — 단위 테스트와 직렬화가 안전하다.
+ */
+
+import {
+  computeStudioMannequinJointFrames,
+  studioMannequinMat3Apply,
+  type StudioMannequinMat3,
+} from "./studio-mannequin-forward-kinematics";
+import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
+import {
+  blendStudioMannequinBuild,
+  clampStudioMannequinBodyParams,
+  clampStudioMannequinJointRotation,
+  getStudioMannequinJointLimit,
+  type StudioMannequinBodyParams,
+  type StudioMannequinJointId,
+  type StudioMannequinSpec,
+  type StudioMannequinVec3,
+} from "./studio-mannequin-model";
+import {
+  groundStudioMannequinPoseForSupport,
+  measureStudioMannequinBodyFloor,
+} from "./studio-mannequin-pose-ground-contact";
+import { normalizeStudioMannequinPose, type StudioMannequinPose } from "./studio-mannequin-poses";
+import {
+  applyStudioMannequinJointLocks,
+  applyStudioMannequinScapulohumeralRhythm,
+  computeStudioMannequinWorldJointPositions,
+  stabilizeStudioMannequinCenterOfMass,
+  type StudioMannequinJointLockMap,
+} from "./studio-mannequin-pro-kinematics";
+
+function clamp(v: number, min: number, max: number): number {
+  if (!Number.isFinite(v)) return 0;
+  return Math.min(max, Math.max(min, v));
+}
+
+function rad(degVal: number): number {
+  return (degVal * Math.PI) / 180;
+}
+
+function deg(radVal: number): number {
+  return (radVal * 180) / Math.PI;
+}
+
+function transposeMat3(m: StudioMannequinMat3): StudioMannequinMat3 {
+  return [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
+}
+
+// ── 1. 3D 동세선(Line of Action) & 콘트라포스토 기울기 분석 ───────────────────
+
+export interface StudioMannequinGestureAnalysis {
+  readonly lineOfActionPoints: readonly StudioMannequinVec3[];
+  readonly shoulderTiltDeg: number;
+  readonly pelvisTiltDeg: number;
+  readonly contrappostoAngleDeg: number;
+  readonly hasCounterTilt: boolean;
+  readonly actionCurveBowCm: number;
+}
+
+function catmullRomPoint(
+  p0: StudioMannequinVec3,
+  p1: StudioMannequinVec3,
+  p2: StudioMannequinVec3,
+  p3: StudioMannequinVec3,
+  t: number,
+): StudioMannequinVec3 {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const evalAxis = (i: 0 | 1 | 2): number =>
+    0.5 * (
+      2 * p1[i] +
+      (-p0[i] + p2[i]) * t +
+      (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * t2 +
+      (-p0[i] + 3 * p1[i] - 3 * p2[i] + p3[i]) * t3
+    );
+  return [evalAxis(0), evalAxis(1), evalAxis(2)];
+}
+
+export function analyzeStudioMannequinGesture(
+  spec: StudioMannequinSpec,
+  pose: StudioMannequinPose,
+  segmentsPerSpan = 6,
+): StudioMannequinGestureAnalysis {
+  const world = computeStudioMannequinWorldJointPositions(spec, pose);
+  const headBase = world.head;
+  const neck = world.neck;
+  const chest = world.chest;
+  const spine = world.spine;
+  const pelvis = world.pelvis;
+
+  const headDirX = headBase[0] - neck[0];
+  const headDirY = headBase[1] - neck[1];
+  const headDirZ = headBase[2] - neck[2];
+  const headDirLen = Math.hypot(headDirX, headDirY, headDirZ) || 1;
+  const crown: StudioMannequinVec3 = [
+    headBase[0] + (headDirX / headDirLen) * spec.headUnit * 0.92,
+    headBase[1] + (headDirY / headDirLen) * spec.headUnit * 0.92,
+    headBase[2] + (headDirZ / headDirLen) * spec.headUnit * 0.92,
+  ];
+
+  const lFoot = world.leftFoot;
+  const rFoot = world.rightFoot;
+  const leftScore = lFoot[1] + Math.hypot(lFoot[0] - pelvis[0], lFoot[2] - pelvis[2]) * 0.35;
+  const rightScore = rFoot[1] + Math.hypot(rFoot[0] - pelvis[0], rFoot[2] - pelvis[2]) * 0.35;
+  const useLeftLeg = leftScore <= rightScore;
+  const knee = useLeftLeg ? world.leftLowerLeg : world.rightLowerLeg;
+  const ankle = useLeftLeg ? lFoot : rFoot;
+
+  const anchors: readonly StudioMannequinVec3[] = [crown, neck, chest, spine, pelvis, knee, ankle];
+  const steps = Math.max(2, Math.min(12, Math.floor(segmentsPerSpan)));
+  const sampled: StudioMannequinVec3[] = [];
+  for (let i = 0; i < anchors.length - 1; i += 1) {
+    const p0 = anchors[Math.max(0, i - 1)] as StudioMannequinVec3;
+    const p1 = anchors[i] as StudioMannequinVec3;
+    const p2 = anchors[i + 1] as StudioMannequinVec3;
+    const p3 = anchors[Math.min(anchors.length - 1, i + 2)] as StudioMannequinVec3;
+    const limit = i === anchors.length - 2 ? steps : steps - 1;
+    for (let s = 0; s <= limit; s += 1) {
+      sampled.push(catmullRomPoint(p0, p1, p2, p3, s / steps));
+    }
+  }
+
+  const lArm = world.leftUpperArm;
+  const rArm = world.rightUpperArm;
+  const lHip = world.leftUpperLeg;
+  const rHip = world.rightUpperLeg;
+  const shoulderTiltRad = Math.atan2(
+    lArm[1] - rArm[1],
+    Math.max(1e-4, Math.hypot(lArm[0] - rArm[0], lArm[2] - rArm[2])),
+  );
+  const pelvisTiltRad = Math.atan2(
+    lHip[1] - rHip[1],
+    Math.max(1e-4, Math.hypot(lHip[0] - rHip[0], lHip[2] - rHip[2])),
+  );
+  const shoulderTiltDeg = Math.round(deg(shoulderTiltRad) * 10) / 10;
+  const pelvisTiltDeg = Math.round(deg(pelvisTiltRad) * 10) / 10;
+  const contrappostoAngleDeg = Math.round(Math.abs(shoulderTiltDeg - pelvisTiltDeg) * 10) / 10;
+  const hasCounterTilt =
+    Math.abs(shoulderTiltDeg) >= 1.5 &&
+    Math.abs(pelvisTiltDeg) >= 1.5 &&
+    Math.sign(shoulderTiltDeg) !== Math.sign(pelvisTiltDeg);
+
+  const chord: StudioMannequinVec3 = [ankle[0] - crown[0], ankle[1] - crown[1], ankle[2] - crown[2]];
+  const chordLenSq = chord[0] ** 2 + chord[1] ** 2 + chord[2] ** 2;
+  let maxBowM = 0;
+  if (chordLenSq > 1e-8) {
+    for (const pt of [chest, spine, pelvis]) {
+      const rel: StudioMannequinVec3 = [pt[0] - crown[0], pt[1] - crown[1], pt[2] - crown[2]];
+      const proj = clamp(
+        (rel[0] * chord[0] + rel[1] * chord[1] + rel[2] * chord[2]) / chordLenSq,
+        0,
+        1,
+      );
+      const dist = Math.hypot(
+        rel[0] - chord[0] * proj,
+        rel[1] - chord[1] * proj,
+        rel[2] - chord[2] * proj,
+      );
+      if (dist > maxBowM) maxBowM = dist;
+    }
+  }
+
+  return {
+    lineOfActionPoints: sampled,
+    shoulderTiltDeg,
+    pelvisTiltDeg,
+    contrappostoAngleDeg,
+    hasCounterTilt,
+    actionCurveBowCm: Math.round(maxBowM * 1000) / 10,
+  };
+}
+
+/**
+ * 접지·상지 균형 통합 콘트라포스토 자세 생성:
+ * 지지 다리(`weightSide`) 골반 거상 + 흉곽 반대 기울기 + 양팔 자연 이완 + 수평 무게중심 안착 + 지면(y=0) 발바닥 정확 접지를 함께 수행한다.
+ */
+export function buildStudioMannequinContrappostoPose(
+  spec: StudioMannequinSpec,
+  basePose: StudioMannequinPose,
+  weightSide: "left" | "right",
+  intensity01 = 0.75,
+  locks: StudioMannequinJointLockMap = {},
+): StudioMannequinPose {
+  const k = clamp(intensity01, 0, 1.2);
+  const sign = weightSide === "left" ? 1 : -1;
+
+  const candidate = normalizeStudioMannequinPose({
+    joints: {
+      ...basePose.joints,
+      pelvis: clampStudioMannequinJointRotation("pelvis", [
+        rad(-2.5 * k),
+        rad(-sign * 5 * k),
+        rad(sign * 8.5 * k),
+      ]),
+      spine: clampStudioMannequinJointRotation("spine", [
+        rad(2 * k),
+        rad(sign * 3.5 * k),
+        rad(-sign * 6.5 * k),
+      ]),
+      chest: clampStudioMannequinJointRotation("chest", [
+        rad(-1.5 * k),
+        rad(sign * 4 * k),
+        rad(-sign * 7.5 * k),
+      ]),
+      neck: clampStudioMannequinJointRotation("neck", [
+        0,
+        rad(-sign * 2.5 * k),
+        rad(sign * 3.5 * k),
+      ]),
+      head: clampStudioMannequinJointRotation("head", [
+        rad(2 * k),
+        rad(-sign * 3 * k),
+        rad(sign * 2.5 * k),
+      ]),
+      leftShoulder: clampStudioMannequinJointRotation("leftShoulder", [0, 0, rad(-sign * 3 * k)]),
+      rightShoulder: clampStudioMannequinJointRotation("rightShoulder", [0, 0, rad(-sign * 3 * k)]),
+      leftUpperArm: clampStudioMannequinJointRotation("leftUpperArm", [
+        rad((weightSide === "left" ? 5 : -4) * k),
+        0,
+        rad((weightSide === "left" ? 7 : 11) * k),
+      ]),
+      leftLowerArm: clampStudioMannequinJointRotation("leftLowerArm", [rad(-12 * k), 0, 0]),
+      rightUpperArm: clampStudioMannequinJointRotation("rightUpperArm", [
+        rad((weightSide === "right" ? 5 : -4) * k),
+        0,
+        rad(-(weightSide === "right" ? 7 : 11) * k),
+      ]),
+      rightLowerArm: clampStudioMannequinJointRotation("rightLowerArm", [rad(-12 * k), 0, 0]),
+      leftUpperLeg:
+        weightSide === "left"
+          ? clampStudioMannequinJointRotation("leftUpperLeg", [rad(2 * k), 0, rad(-6.5 * k)])
+          : clampStudioMannequinJointRotation("leftUpperLeg", [rad(-14 * k), rad(8 * k), rad(6 * k)]),
+      leftLowerLeg:
+        weightSide === "left"
+          ? clampStudioMannequinJointRotation("leftLowerLeg", [rad(2 * k), 0, 0])
+          : clampStudioMannequinJointRotation("leftLowerLeg", [rad(24 * k), 0, 0]),
+      leftFoot:
+        weightSide === "left"
+          ? clampStudioMannequinJointRotation("leftFoot", [rad(-2 * k), 0, rad(5 * k)])
+          : clampStudioMannequinJointRotation("leftFoot", [rad(8 * k), 0, 0]),
+      rightUpperLeg:
+        weightSide === "right"
+          ? clampStudioMannequinJointRotation("rightUpperLeg", [rad(2 * k), 0, rad(6.5 * k)])
+          : clampStudioMannequinJointRotation("rightUpperLeg", [rad(-14 * k), rad(-8 * k), rad(-6 * k)]),
+      rightLowerLeg:
+        weightSide === "right"
+          ? clampStudioMannequinJointRotation("rightLowerLeg", [rad(2 * k), 0, 0])
+          : clampStudioMannequinJointRotation("rightLowerLeg", [rad(24 * k), 0, 0]),
+      rightFoot:
+        weightSide === "right"
+          ? clampStudioMannequinJointRotation("rightFoot", [rad(-2 * k), 0, rad(-5 * k)])
+          : clampStudioMannequinJointRotation("rightFoot", [rad(8 * k), 0, 0]),
+    },
+    pelvisOffset: basePose.pelvisOffset,
+  });
+
+  // 1) 지지발 초기 접지 → 2) 접지 발 고정 수평 CoM 보정 → 3) 최종 전신 최저점 y=0 정밀 접지
+  const preGrounded = groundStudioMannequinPoseForSupport(spec, candidate, {
+    support: "standing",
+    contacts: [weightSide === "left" ? "leftFoot" : "rightFoot"],
+  });
+  const balanced = stabilizeStudioMannequinCenterOfMass(spec, preGrounded);
+  const exactGrounded = groundStudioMannequinPoseForSupport(spec, balanced, { support: "standing" });
+  return applyStudioMannequinJointLocks(basePose, exactGrounded, locks);
+}
+
+// ── 2. 1인 손-신체·바닥 밀착 IK 솔버 (Hand Surface Contact) ──────────────────
+
+export type StudioMannequinHandContactTargetId = "hip" | "chin" | "chest" | "occiput" | "ground";
+
+export const STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS: readonly {
+  readonly id: StudioMannequinHandContactTargetId;
+  readonly label: string;
+  readonly desc: string;
+}[] = Object.freeze([
+  { id: "hip", label: "골반 손얹기", desc: "현재 골반 너비·깊이에 맞춰 장골능 표면에 손을 밀착합니다" },
+  { id: "chin", label: "턱 괴기", desc: "현재 두상·턱 길이에 맞춰 턱 밑 표면에 손을 밀착합니다" },
+  { id: "chest", label: "가슴 얹기", desc: "현재 흉곽 두께에 맞춰 대흉근 앞 표면에 손을 밀착합니다" },
+  { id: "occiput", label: "뒷머리 받치기", desc: "현재 두개골 뒤통수 표면에 손을 밀착합니다" },
+  { id: "ground", label: "바닥 손짚기", desc: "무릎·허리를 자연스럽게 낮춰 지면(y=0)에 손바닥을 정확히 접지합니다" },
+]);
+
+export interface StudioMannequinHandContactReport {
+  readonly pose: StudioMannequinPose;
+  /** 목표 접촉 위치와 실제 손목·손바닥(또는 바닥 최저점) 사이의 잔여 거리(m). */
+  readonly residualDistanceM: number;
+}
+
+/**
+ * 선택한 손(`side`)을 지정된 신체 부위 또는 지면(`targetId`) 표면에 관통·부유 없이 정확히 밀착시킨다.
+ */
+export function applyStudioMannequinHandContact(
+  spec: StudioMannequinSpec,
+  basePose: StudioMannequinPose,
+  side: "left" | "right",
+  targetId: StudioMannequinHandContactTargetId,
+  locks: StudioMannequinJointLockMap = {},
+): StudioMannequinHandContactReport {
+  const sign = side === "left" ? 1 : -1;
+  const chainId = side === "left" ? "leftArm" : "rightArm";
+  const shoulderJointId = side === "left" ? "leftShoulder" : "rightShoulder";
+  const upperArmJointId = side === "left" ? "leftUpperArm" : "rightUpperArm";
+  const lowerArmJointId = side === "left" ? "leftLowerArm" : "rightLowerArm";
+  const handJointId = side === "left" ? "leftHand" : "rightHand";
+  const hu = spec.headUnit;
+  const p = spec.params;
+  const build = blendStudioMannequinBuild(p.build);
+  const torsoDepth = p.torsoDepth ?? 1;
+  const chestWidth = p.chestWidth ?? 1;
+  const faceWidth = p.faceWidth ?? 1;
+  const chinLength = p.chinLength ?? 1;
+  const handLen = 0.085 * spec.heightM * p.armLength * (p.handScale ?? 1);
+  const palmSurfaceRadius = 0.014;
+
+  if (targetId === "ground") {
+    // 5등신 SD부터 장신 체형까지 모두 지면(y=0)에 손바닥이 안정적으로 닿는 3점 착지 스쿼트 형성
+    const crouchCandidate = normalizeStudioMannequinPose({
+      joints: {
+        ...basePose.joints,
+        pelvis: clampStudioMannequinJointRotation("pelvis", [rad(40), rad(-sign * 6), 0]),
+        spine: clampStudioMannequinJointRotation("spine", [rad(38), rad(sign * 5), 0]),
+        chest: clampStudioMannequinJointRotation("chest", [rad(34), rad(sign * 6), 0]),
+        neck: clampStudioMannequinJointRotation("neck", [rad(-38), 0, 0]),
+        head: clampStudioMannequinJointRotation("head", [rad(-28), 0, 0]),
+        leftUpperLeg: clampStudioMannequinJointRotation("leftUpperLeg", [rad(-118), rad(12), rad(10)]),
+        leftLowerLeg: clampStudioMannequinJointRotation("leftLowerLeg", [rad(144), 0, 0]),
+        leftFoot: clampStudioMannequinJointRotation("leftFoot", [rad(-26), 0, 0]),
+        rightUpperLeg: clampStudioMannequinJointRotation("rightUpperLeg", [rad(-118), rad(-12), rad(-10)]),
+        rightLowerLeg: clampStudioMannequinJointRotation("rightLowerLeg", [rad(144), 0, 0]),
+        rightFoot: clampStudioMannequinJointRotation("rightFoot", [rad(-26), 0, 0]),
+        [upperArmJointId]: clampStudioMannequinJointRotation(upperArmJointId, [rad(-92), 0, rad(sign * 6)]),
+        [lowerArmJointId]: clampStudioMannequinJointRotation(lowerArmJointId, [rad(-8), 0, 0]),
+        [handJointId]: clampStudioMannequinJointRotation(handJointId, [rad(58), 0, 0]),
+      },
+      pelvisOffset: basePose.pelvisOffset,
+    });
+    const groundedCrouch = groundStudioMannequinPoseForSupport(spec, crouchCandidate, {
+      support: "kneeling",
+      contacts: ["leftFoot", "rightFoot", handJointId],
+    });
+    const finalGroundPose = applyStudioMannequinJointLocks(basePose, groundedCrouch, locks);
+    const floorReport = measureStudioMannequinBodyFloor(spec, finalGroundPose);
+    return {
+      pose: finalGroundPose,
+      residualDistanceM: Math.abs(floorReport.regionLowestY[handJointId]),
+    };
+  }
+
+  // 먼저 지면 침투가 없도록 기준 높이를 정렬한 뒤 신체 표면 월드 목표점을 산출한다.
+  const initialFloorY = measureStudioMannequinBodyFloor(spec, basePose).lowestY;
+  const shoulderSeedJoints: Partial<Record<StudioMannequinJointId, StudioMannequinVec3>> = {
+    ...basePose.joints,
+  };
+  if (targetId === "hip" && !locks[shoulderJointId]) {
+    shoulderSeedJoints[shoulderJointId] = clampStudioMannequinJointRotation(shoulderJointId, [
+      0,
+      0,
+      rad(-sign * 12),
+    ]);
+  } else if (targetId === "chest" && !locks[shoulderJointId]) {
+    shoulderSeedJoints[shoulderJointId] = clampStudioMannequinJointRotation(shoulderJointId, [
+      0,
+      rad(sign * 14),
+      0,
+    ]);
+  }
+  const workingPose = normalizeStudioMannequinPose({
+    joints: shoulderSeedJoints,
+    pelvisOffset: [
+      basePose.pelvisOffset[0],
+      basePose.pelvisOffset[1] - Math.min(0, initialFloorY),
+      basePose.pelvisOffset[2],
+    ],
+  });
+
+  const frames = computeStudioMannequinJointFrames(spec, workingPose);
+  const toWorld = (jointId: StudioMannequinJointId, local: StudioMannequinVec3): StudioMannequinVec3 => {
+    const f = frames.get(jointId);
+    if (!f) return local;
+    const rot = studioMannequinMat3Apply(f.rotation, local);
+    return [f.position[0] + rot[0], f.position[1] + rot[1], f.position[2] + rot[2]];
+  };
+
+  const spineOffY = spec.joints.find((j) => j.id === "spine")?.offset[1] ?? 0.16;
+  const chestOffY = spec.joints.find((j) => j.id === "chest")?.offset[1] ?? 0.18;
+
+  let surfacePoint: StudioMannequinVec3;
+  let wristTarget: StudioMannequinVec3;
+  let wristRot: StudioMannequinVec3;
+  let candidatePoles: readonly StudioMannequinVec3[];
+
+  if (targetId === "hip") {
+    surfacePoint = toWorld("pelvis", [
+      sign * (0.35 * hu * p.pelvisWidth * build.torsoLower + palmSurfaceRadius),
+      0.55 * spineOffY,
+      0.03 * hu,
+    ]);
+    wristTarget = [
+      surfacePoint[0] + sign * 0.12 * handLen,
+      surfacePoint[1] + 0.46 * handLen,
+      surfacePoint[2] - 0.06 * handLen,
+    ];
+    wristRot = clampStudioMannequinJointRotation(handJointId, [rad(14), rad(-sign * 18), rad(-sign * 34)]);
+    candidatePoles = [
+      [sign * 0.32, -0.12, -0.42],
+      [sign * 0.38, -0.05, -0.25],
+      [sign * 0.18, -0.22, -0.48],
+    ];
+  } else if (targetId === "chin") {
+    const chinY = hu * (0.12 - 0.04 * (chinLength - 1));
+    surfacePoint = toWorld("head", [
+      sign * 0.06 * hu * faceWidth,
+      chinY,
+      hu * 0.22 + palmSurfaceRadius,
+    ]);
+    wristTarget = [
+      surfacePoint[0] + sign * 0.16 * handLen,
+      surfacePoint[1] - 0.18 * handLen,
+      surfacePoint[2] + 0.42 * handLen,
+    ];
+    wristRot = clampStudioMannequinJointRotation(handJointId, [rad(-44), rad(sign * 16), rad(sign * 14)]);
+    candidatePoles = [
+      [sign * 0.22, -0.38, 0.25],
+      [sign * 0.32, -0.35, 0.05],
+      [sign * 0.25, -0.30, -0.35],
+    ];
+  } else if (targetId === "chest") {
+    surfacePoint = toWorld("chest", [
+      sign * 0.15 * hu * chestWidth,
+      0.42 * chestOffY,
+      0.25 * hu * torsoDepth + palmSurfaceRadius,
+    ]);
+    wristTarget = [
+      surfacePoint[0] + sign * 0.32 * handLen,
+      surfacePoint[1] - 0.34 * handLen,
+      surfacePoint[2] + 0.08 * handLen,
+    ];
+    wristRot = clampStudioMannequinJointRotation(handJointId, [rad(-18), rad(-sign * 24), rad(-sign * 28)]);
+    candidatePoles = [
+      [sign * 0.35, -0.35, -0.20],
+      [sign * 0.28, -0.40, -0.35],
+      [sign * 0.42, -0.25, -0.05],
+    ];
+  } else {
+    surfacePoint = toWorld("head", [
+      sign * 0.10 * hu * faceWidth,
+      0.54 * hu,
+      -(0.41 * hu + palmSurfaceRadius),
+    ]);
+    wristTarget = [
+      surfacePoint[0] + sign * 0.34 * handLen,
+      surfacePoint[1] - 0.32 * handLen,
+      surfacePoint[2] - 0.06 * handLen,
+    ];
+    wristRot = clampStudioMannequinJointRotation(handJointId, [rad(24), rad(sign * 20), rad(sign * 24)]);
+    candidatePoles = [
+      [sign * 0.38, 0.22, 0.22],
+      [sign * 0.42, 0.10, 0.05],
+      [sign * 0.30, 0.28, -0.20],
+    ];
+  }
+
+  const chain = spec.chains[chainId];
+  const upperSpec = spec.joints.find((j) => j.id === upperArmJointId);
+  const upperLimit = getStudioMannequinJointLimit(upperArmJointId);
+  const lowerLimit = getStudioMannequinJointLimit(lowerArmJointId);
+
+  const solveArmBestPole = (current: StudioMannequinPose): StudioMannequinPose => {
+    if (!upperSpec) return current;
+    const fMap = computeStudioMannequinJointFrames(spec, current);
+    const parentFrame = fMap.get(shoulderJointId);
+    if (!parentFrame) return current;
+    const invParent = transposeMat3(parentFrame.rotation);
+    const localTarget = studioMannequinMat3Apply(invParent, [
+      wristTarget[0] - parentFrame.position[0],
+      wristTarget[1] - parentFrame.position[1],
+      wristTarget[2] - parentFrame.position[2],
+    ]);
+    let bestPose = current;
+    let bestErr = Number.POSITIVE_INFINITY;
+
+    for (const poleDelta of candidatePoles) {
+      const poleLocal: StudioMannequinVec3 = [
+        upperSpec.offset[0] + poleDelta[0],
+        upperSpec.offset[1] + poleDelta[1],
+        upperSpec.offset[2] + poleDelta[2],
+      ];
+      const ik = solveStudioMannequinTwoBoneIk(
+        {
+          root: upperSpec.offset,
+          target: localTarget,
+          pole: poleLocal,
+          upperLength: chain.upperLength,
+          lowerLength: chain.lowerLength,
+          hingeSign: chain.hingeSign,
+        },
+        {
+          upper: { x: upperLimit.x, y: upperLimit.y, z: upperLimit.z },
+          lower: { x: lowerLimit.x, y: lowerLimit.y, z: lowerLimit.z },
+        },
+      );
+      const candidatePose = normalizeStudioMannequinPose({
+        joints: {
+          ...current.joints,
+          [upperArmJointId]: ik.upperEuler,
+          [lowerArmJointId]: ik.lowerEuler,
+          [handJointId]: wristRot,
+        },
+        pelvisOffset: current.pelvisOffset,
+      });
+      const wristWorld = computeStudioMannequinJointFrames(spec, candidatePose).get(handJointId)?.position;
+      if (!wristWorld) continue;
+      const err = Math.hypot(
+        wristWorld[0] - wristTarget[0],
+        wristWorld[1] - wristTarget[1],
+        wristWorld[2] - wristTarget[2],
+      );
+      if (err < bestErr) {
+        bestErr = err;
+        bestPose = candidatePose;
+      }
+      if (err < 1e-4) break;
+    }
+    return bestPose;
+  };
+
+  let solved = solveArmBestPole(workingPose);
+  if (targetId !== "hip") {
+    const otherShoulderJointId = side === "left" ? "rightShoulder" : "leftShoulder";
+    solved = applyStudioMannequinScapulohumeralRhythm(
+      solved,
+      { ...locks, [otherShoulderJointId]: true },
+      1,
+    );
+  }
+  solved = solveArmBestPole(solved);
+
+  const floorAfter = measureStudioMannequinBodyFloor(spec, solved);
+  if (floorAfter.lowestY < -1e-4) {
+    solved = groundStudioMannequinPoseForSupport(spec, solved, { support: "standing" });
+  }
+
+  const finalPose = applyStudioMannequinJointLocks(basePose, solved, locks);
+  const finalWrist = computeStudioMannequinJointFrames(spec, finalPose).get(handJointId)?.position ?? wristTarget;
+  const residualDistanceM = Math.hypot(
+    finalWrist[0] - wristTarget[0],
+    finalWrist[1] - wristTarget[1],
+    finalWrist[2] - wristTarget[2],
+  );
+
+  return { pose: finalPose, residualDistanceM };
+}
+
+// ── 3. 경추-흉추 분산 시선 응시(Gaze Look-At Solver) ─────────────────────────
+
+export function applyStudioMannequinGazeTarget(
+  spec: StudioMannequinSpec,
+  pose: StudioMannequinPose,
+  targetWorld: StudioMannequinVec3,
+  locks: StudioMannequinJointLockMap = {},
+  blend01 = 1,
+): StudioMannequinPose {
+  const b = clamp(blend01, 0, 1);
+  if (b <= 0) return pose;
+
+  const world = computeStudioMannequinWorldJointPositions(spec, pose);
+  const eyeCenter: StudioMannequinVec3 = [
+    world.head[0],
+    world.head[1] + spec.headUnit * 0.56,
+    world.head[2],
+  ];
+  const dx = targetWorld[0] - eyeCenter[0];
+  const dy = targetWorld[1] - eyeCenter[1];
+  const dz = targetWorld[2] - eyeCenter[2];
+  const horizDist = Math.hypot(dx, dz);
+  if (horizDist < 1e-4 && Math.abs(dy) < 1e-4) return pose;
+
+  const pelvisYaw = pose.joints.pelvis?.[1] ?? 0;
+  const worldYaw = Math.atan2(dx, dz);
+  let relYaw = worldYaw - pelvisYaw;
+  while (relYaw > Math.PI) relYaw -= Math.PI * 2;
+  while (relYaw < -Math.PI) relYaw += Math.PI * 2;
+  relYaw = clamp(relYaw, -rad(115), rad(115));
+
+  const relPitch = clamp(-Math.atan2(dy, Math.max(0.08, horizDist)), -rad(65), rad(65));
+
+  const weights: readonly { id: StudioMannequinJointId; yawW: number; pitchW: number }[] = [
+    { id: "chest", yawW: 0.15, pitchW: 0.12 },
+    { id: "neck", yawW: 0.35, pitchW: 0.38 },
+    { id: "head", yawW: 0.50, pitchW: 0.50 },
+  ];
+
+  const nextJoints: Partial<Record<StudioMannequinJointId, StudioMannequinVec3>> = { ...pose.joints };
+  for (const { id, yawW, pitchW } of weights) {
+    if (locks[id]) continue;
+    const prev = pose.joints[id] ?? [0, 0, 0];
+    const targetRot: StudioMannequinVec3 = [
+      prev[0] * (1 - b) + relPitch * pitchW * b,
+      prev[1] * (1 - b) + relYaw * yawW * b,
+      prev[2],
+    ];
+    nextJoints[id] = clampStudioMannequinJointRotation(id, targetRot);
+  }
+
+  return normalizeStudioMannequinPose({
+    joints: nextJoints,
+    pelvisOffset: pose.pelvisOffset,
+  });
+}
+
+// ── 4. 호흡 흉곽 확장(Breathing Ribcage Modulation) ──────────────────────────
+
+export function applyStudioMannequinBreathingParams(
+  baseParams: StudioMannequinBodyParams,
+  breathPhase: number,
+): StudioMannequinBodyParams {
+  const phase = clamp(breathPhase, -1, 1);
+  if (Math.abs(phase) < 1e-4) return baseParams;
+  return clampStudioMannequinBodyParams({
+    ...baseParams,
+    torsoDepth: (baseParams.torsoDepth ?? 1) * (1 + 0.11 * phase),
+    chestWidth: (baseParams.chestWidth ?? 1) * (1 + 0.07 * phase),
+    waistWidth: (baseParams.waistWidth ?? 1) * (1 - 0.04 * phase),
+  });
+}

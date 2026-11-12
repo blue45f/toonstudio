@@ -91,5 +91,6 @@
   "route.technologyStory": "Produktionsberättelse",
   "route.technologyVideos": "Videor",
   "route.terms": "Användarvillkor",
-  "route.unknown": "Sidan"
+  "route.unknown": "Sidan",
+  "route.offline": "Connection & on-device content"
 }

@@ -91,5 +91,6 @@
   "route.technologyStory": "የአመራረት ታሪክ",
   "route.technologyVideos": "ቪዲዮዎች",
   "route.terms": "የአገልግሎት ውል",
-  "route.unknown": "ገጽ"
+  "route.unknown": "ገጽ",
+  "route.offline": "Connection & on-device content"
 }

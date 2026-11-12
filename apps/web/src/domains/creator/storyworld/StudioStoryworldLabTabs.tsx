@@ -35,24 +35,11 @@ import {
   friendlyStoryworldFileError,
   parseStoryworldProject,
 } from "./studio-storyworld-document";
-import { scoreTone } from "./studio-storyworld-lab-display";
-
-const MATURITY_LABELS: Readonly<Record<StoryworldCapabilityMaturity, string>> = {
-  engine: "바로 사용 가능",
-  adapter: "다른 기능과 연결",
-  experimental: "시험 중 기능",
-};
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat("ko-KR").format(value);
-}
-
-function formatMinutes(value: number): string {
-  if (value < 60) return `${formatNumber(value)}분`;
-  const hours = Math.floor(value / 60);
-  const minutes = value % 60;
-  return minutes === 0 ? `${hours}시간` : `${hours}시간 ${minutes}분`;
-}
+import {
+  STORYWORLD_MATURITY_LABELS,
+  formatStoryworldMinutes,
+  scoreTone,
+} from "./studio-storyworld-lab-display";
 
 export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditElement }: {
   readonly project: StoryworldProject;
@@ -103,7 +90,7 @@ export function OverviewTab({ project, result, onOpenIssues, onOpenData, onEditE
             </Panel>
             <Panel title="제작 예상" description="이야기의 문제와 제작 시간을 함께 견줘 봅니다.">
               <dl className="storyworld-stat-list">
-                <div><dt>예상 총 작업</dt><dd>{formatMinutes(result.production.totalMinutes)}</dd></div>
+                <div><dt>예상 총 작업</dt><dd>{formatStoryworldMinutes(result.production.totalMinutes)}</dd></div>
                 <div><dt>가용량 사용</dt><dd>{result.production.utilizationPercent === null ? "미설정" : `${result.production.utilizationPercent}%`}</dd></div>
                 <div><dt>고유 자산</dt><dd>{result.production.uniqueAssetCount}</dd></div>
                 <div><dt>재사용 가능</dt><dd>{result.production.reusableAssetCount}</dd></div>
@@ -350,7 +337,7 @@ export function CapabilitiesTab() {
       <div className="storyworld-segmented" data-own-control-size="" role="group" aria-label="기능 성숙도 필터">
         {(["all", "engine", "adapter", "experimental"] as const).map((value) => (
           <button aria-pressed={maturity === value} className="min-h-11 px-3" key={value} onClick={() => setMaturity(value)} type="button">
-            {value === "all" ? "전체" : MATURITY_LABELS[value]}
+            {value === "all" ? "전체" : STORYWORLD_MATURITY_LABELS[value]}
           </button>
         ))}
       </div>
@@ -365,7 +352,7 @@ export function CapabilitiesTab() {
                 <article key={capability.id}>
                   <div className="storyworld-capability-grid__topline">
                     <BrainCircuit aria-hidden size={18} />
-                    <span data-maturity={capability.maturity}>{MATURITY_LABELS[capability.maturity]}</span>
+                    <span data-maturity={capability.maturity}>{STORYWORLD_MATURITY_LABELS[capability.maturity]}</span>
                   </div>
                   <h3>{capability.name}</h3>
                   <p>{capability.oneLine}</p>

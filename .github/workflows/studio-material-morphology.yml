@@ -19,6 +19,8 @@ on:
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
       - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/lib/studio-chemy-toolchain.mjs
+      - scripts/lib/studio-chemy-toolchain.test.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
@@ -40,6 +42,8 @@ on:
       - scripts/verify-studio-chemy-v1-original-linux-reference.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/original-source-manifest.json
       - scripts/lib/studio-chemy-v1-pressure-baselines.ts
+      - scripts/lib/studio-chemy-toolchain.mjs
+      - scripts/lib/studio-chemy-toolchain.test.mjs
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/baseline.json
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/low.png
       - scripts/fixtures/studio-chemy-v1-pressure/linux-x64/high.png
@@ -68,6 +72,7 @@ jobs:
     timeout-minutes: 35
     env:
       NODE_OPTIONS: --max-old-space-size=8192
+      TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR: ${{ runner.temp }}/studio-chemy-toolchain
     steps:
       - uses: actions/checkout@v7
         with:
@@ -91,6 +96,7 @@ jobs:
             apps/web/src/domains/creator/studio-competitor-specialty-brush-expansion.test.ts \
             scripts/studio-brush-long-matrix-quality.test.ts \
             scripts/studio-material-atlas-boundary.test.ts \
+            scripts/lib/studio-chemy-toolchain.test.mjs \
             2>&1 | tee "$RUNNER_TEMP/studio-material-morphology/brush-tests.log"
       - name: Quiet performance and incremental live streaming regressions
         run: |
@@ -105,6 +111,13 @@ jobs:
         run: pnpm exec tsx scripts/audit-studio-brush-quality-portfolio.mts
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: 원래 Chemy 골든의 고정 도구·Chromium 별도 설치
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        run: |
+          npm install --prefix "$TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR" --ignore-scripts --no-audit --no-fund --save-exact \
+            playwright@1.64.1 vite@8.3.4 spectral.js@3.0.0 colormix@3.2.0
+          node "$TOONSPECTRUM_CHEMY_TOOLCHAIN_DIR/node_modules/playwright/cli.js" install --with-deps chromium
       - name: Compare all shipped materials in the real Canvas2D renderer at DPR 1, 2 and 3
         env:
           TOONSPECTRUM_MATERIAL_VERIFY_DIR: ${{ runner.temp }}/studio-material-morphology

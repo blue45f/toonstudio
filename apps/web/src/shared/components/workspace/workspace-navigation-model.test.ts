@@ -18,9 +18,15 @@ describe("studio-first navigation contract", () => {
   ])("keeps %s in the right global destination", (path, id) => {
     expect(workspaceNavigationActiveId(path!)).toBe(id);
   });
-  it("uses the same five labels on mobile and desktop", () => {
-    expect(TOONSTUDIO_MOBILE_TABS.map((item) => item.id)).toEqual(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id));
-    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "제작", "탐색", "커뮤니티", "전체 메뉴"]);
+  it("주 메뉴 다섯 목적지와 모바일 네 가지 바로가기의 정본 이름·경로를 유지한다", () => {
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id)).toEqual(["workspace-home", "studio", "explore", "community", "all-menu"]);
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.label.ko)).toEqual(["작업 홈", "내 작업", "작품 찾기", "커뮤니티", "전체 메뉴"]);
+    expect(TOONSTUDIO_MOBILE_TABS.map((item) => [item.id, item.label.ko, item.href])).toEqual([
+      ["studio", "내 작업", "/studio"],
+      ["explore", "작품 찾기", "/discover"],
+      ["market", "소재 찾기", "/market"],
+      ["me", "내 정보", "/my"],
+    ]);
   });
   it.each(["/", "/home", "/team", "/hub"])("does not duplicate workspace chrome with a promotional scene on %s", (path) => {
     expect(supportsRoutePurposeScene(path)).toBe(false);

@@ -91,5 +91,6 @@
   "route.technologyStory": "Stāsts",
   "route.technologyVideos": "Video",
   "route.terms": "Pakalpojuma noteikumi",
-  "route.unknown": "Lapa"
+  "route.unknown": "Lapa",
+  "route.offline": "Connection & on-device content"
 }

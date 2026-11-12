@@ -91,5 +91,6 @@
   "route.technologyStory": "Zgodba",
   "route.technologyVideos": "Videoposnetki",
   "route.terms": "Pogoji uporabe",
-  "route.unknown": "Stran"
+  "route.unknown": "Stran",
+  "route.offline": "Connection & on-device content"
 }

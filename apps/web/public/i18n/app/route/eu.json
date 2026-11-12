@@ -91,5 +91,6 @@
   "route.technologyStory": "Istorioa",
   "route.technologyVideos": "Bideoak",
   "route.terms": "Zerbitzuaren baldintzak",
-  "route.unknown": "Orria"
+  "route.unknown": "Orria",
+  "route.offline": "Connection & on-device content"
 }
