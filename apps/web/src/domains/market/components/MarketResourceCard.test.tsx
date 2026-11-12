@@ -77,8 +77,8 @@ describe("MarketResourceCard", () => {
     expect(html).toContain("text-on-accent");
     expect(html).toContain("찜하기");
     expect(html).toContain("비교 목록에 추가");
-    expect(html).toContain('data-market-rights-bom="true"');
-    expect(html).toContain("Rights BOM 자동 보존");
+    expect(html).not.toContain('data-market-rights-bom="true"');
+    expect(html).not.toContain("Rights BOM");
     expect(html).toContain("원고 위 시험 (Fit Lab)");
     expect(html).toContain("min-h-11");
     expect(html).toContain(`/market/fit-lab?slug=${encodeURIComponent(record.packageId)}`);

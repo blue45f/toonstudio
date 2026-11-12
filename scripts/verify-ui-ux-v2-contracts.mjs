@@ -207,7 +207,8 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/catalog/TitleDetailCreationBridgeCard.tsx", "title-detail-creation-bridge"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "studio-kanban-stage-card"],
     ["apps/web/src/domains/creator/studio-shell/StudioProjectTeamKanbanBridge.tsx", "data-kanban-stage-accent"],
-    ["apps/web/src/domains/market/components/MarketResourceCard.tsx", "data-market-rights-bom"],
+    // 내부 보존 방식 대신 사용자가 판단할 실제 이용 조건 표시를 유지한다.
+    ["apps/web/src/domains/market/components/MarketResourceCard.tsx", "data-market-license-badge"],
     ["apps/web/src/domains/creator-resources/OpenDataPurposeFilterBar.tsx", "open-data-purpose-filter-bar"],
     ["apps/web/src/domains/creator/publishing/ShowcaseSocialHubBar.tsx", "showcase-social-hub-bar"],
     ["apps/web/src/domains/creator/studio-shell/StudioSpecialistSuiteBar.tsx", "studio-specialist-suite-bar"],

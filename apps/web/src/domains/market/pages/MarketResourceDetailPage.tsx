@@ -1,4 +1,4 @@
-import { ArrowLeft, SearchX, ShieldCheck } from "lucide-react";
+import { ArrowLeft, SearchX } from "lucide-react";
 import { useParams } from "react-router-dom";
 
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -108,13 +108,12 @@ export function MarketResourceDetailPage() {
               <span className="text-xs font-semibold text-fg-2">
                 {t("이 에셋을 내 원고 환경에서 바로 점검하거나 비교해 보세요", "Test or compare this asset directly in your manuscript workflow")}
               </span>
-              <span
-                data-testid="market-detail-rights-bom-pill"
-                className="inline-flex items-center gap-1 rounded-full border border-good/30 bg-good/10 px-2.5 py-1 text-[11px] font-bold text-good"
+              <Link
+                href="#market-trust-guarantee-heading"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-semibold text-fg-2 hover:border-accent/50 hover:text-fg"
               >
-                <ShieldCheck size={13} aria-hidden="true" />
-                {t("Rights BOM 출처·사용권 자동 보존", "Rights BOM provenance auto-preserved")}
-              </span>
+                {t("이용 조건 확인", "Check usage terms")}
+              </Link>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Link

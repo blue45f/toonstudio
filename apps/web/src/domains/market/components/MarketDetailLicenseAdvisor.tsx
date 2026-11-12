@@ -97,15 +97,16 @@ export function MarketDetailLicenseAdvisor({
       <div>
         <h2
           id="market-trust-guarantee-heading"
+          tabIndex={-1}
           className="flex items-center gap-2 text-sm font-bold text-fg"
         >
           <ShieldCheck className="h-4 w-4 text-good" aria-hidden="true" />
-          {t("게시 manifest 기반 권리·호환성 확인", "Manifest rights & compatibility declaration")}
+          {t("이용 조건과 호환성", "Usage terms and compatibility")}
         </h2>
         <p className="mt-1 text-[0.68rem] leading-relaxed text-fg-3">
           {t(
-            "아래 내용은 배급자가 게시한 현재 릴리스의 선언입니다. 독립적인 법률·성능 보증으로 해석하지 말고 실제 프로젝트 적용 전에 세부 조건을 확인하세요.",
-            "The statements below reflect the publisher's declaration in the current release manifest. Verify detailed terms before production use.",
+            "제공자가 안내한 이용 조건과 호환 정보입니다. 작업에 적용하기 전에 세부 조건을 확인하세요.",
+            "These usage terms and compatibility details are provided by the publisher. Check the conditions before using the material in your work.",
           )}
         </p>
       </div>

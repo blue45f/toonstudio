@@ -34,7 +34,7 @@ interface MarketResourceCardProps {
 }
 
 /**
- * 마켓 리소스 카드: 커버 아트·가격·라이선스·Rights BOM·No-AI 공개·용량·사전점검 배지와 함께
+ * 마켓 리소스 카드: 커버 아트·가격·라이선스·No-AI 공개·용량·사전점검 배지와 함께
  * 배급자 스토어 링크, 빠른 미리보기, 후보 비교(MarketCompareToggle), 원고 위 시험(Fit Lab)으로 바로 연결한다.
  */
 export function MarketResourceCard({
@@ -190,13 +190,6 @@ export function MarketResourceCard({
 
         <div className="flex flex-wrap items-center gap-1.5">
           <MarketProductionFitBadge record={record} showCounts />
-          <span
-            data-market-rights-bom="true"
-            className="inline-flex items-center gap-1 rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[0.68rem] font-bold text-good"
-          >
-            <ShieldCheck className="size-3" aria-hidden="true" />
-            {bi("Rights BOM 자동 보존", "Rights BOM auto-preserved")}
-          </span>
           {!record.containsAi ? (
             <span
               data-market-no-ai-disclosed="true"

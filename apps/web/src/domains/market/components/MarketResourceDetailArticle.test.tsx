@@ -5,6 +5,8 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MarketResourceDetailArticle } from "./MarketResourceDetailArticle";
+import { MarketDetailLicenseAdvisor } from "./MarketDetailLicenseAdvisor";
+import { useI18n } from "@/shared/lib/i18n";
 
 import type {
   CreatorMarketplaceResourceKind,
@@ -31,6 +33,7 @@ vi.mock("./MarketResourceReleaseHistory", () => ({
 
 afterEach(() => {
   cleanup();
+  useI18n.getState().setLang("ko");
   localStorage.removeItem(CREATOR_MARKETPLACE_INSTALL_RECEIPT_STORAGE_KEY);
   vi.restoreAllMocks();
 });
@@ -112,6 +115,22 @@ function renderDetail(record: CreatorMarketplaceResourceRecord) {
 }
 
 describe("MarketResourceDetailArticle actions and metadata", () => {
+  it.each(["ko", "en"] as const)("%s 이용 조건 제목을 읽고 바로 초점을 옮길 수 있다", (locale) => {
+    useI18n.getState().setLang(locale);
+    render(<MarketDetailLicenseAdvisor record={marketRecord("asset")} />);
+    const heading = screen.getByRole("heading", {
+      name: locale === "ko" ? "이용 조건과 호환성" : "Usage terms and compatibility",
+    });
+    expect(heading.id).toBe("market-trust-guarantee-heading");
+    heading.focus();
+    expect(document.activeElement).toBe(heading);
+    const region = screen.getByRole("region", {
+      name: locale === "ko" ? "이용 조건과 호환성" : "Usage terms and compatibility",
+    });
+    expect(region.textContent).toContain(locale === "ko" ? "제공자가 안내한" : "provided by the publisher");
+    expect(screen.getByTestId("market-license-permission-matrix")).toBeTruthy();
+  });
+
   it("describes asset insertion and connects publisher profile, catalog, and license routes", () => {
     const record = marketRecord("asset");
     const { container } = renderDetail(record);
@@ -133,7 +152,7 @@ describe("MarketResourceDetailArticle actions and metadata", () => {
       .toBe("/market/browse?kind=asset");
     expect(screen.getByRole("link", { name: "ToonStudio 표준 사용권" }).getAttribute("href"))
       .toBe("/terms");
-    expect(screen.getByRole("heading", { name: "게시 manifest 기반 권리·호환성 확인" }))
+    expect(screen.getByRole("heading", { name: "이용 조건과 호환성" }))
       .toBeTruthy();
     expect(screen.getByRole("button", { name: "메타데이터 스냅샷 다운로드" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "세션 확인 중" })).toBeTruthy();
