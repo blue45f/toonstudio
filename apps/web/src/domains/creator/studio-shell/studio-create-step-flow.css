@@ -14,11 +14,32 @@
 .studio-create-genre-options > :not(summary) { margin: 0; border: 0; }
 .studio-create-format-description { min-height: 3rem; margin-top: .75rem; font-size: .875rem; line-height: 1.6; color: var(--color-fg-2); }
 .studio-create-step-navigation button:focus-visible, .studio-create-step-actions button:focus-visible, .studio-create-genre-options > summary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+/* 선택 그림·형식 이름·다음 행동을 먼저 묶고 부가 작업실은 그 아래에서 찾는다. */
+[data-studio-outcome-create="true"] .studio-create-purpose-header { margin-bottom: .75rem; }
+.studio-create-purpose-header > div { flex-wrap: nowrap; align-items: center; gap: .5rem; }
+.studio-create-purpose-header h1 { font-size: clamp(1.25rem, 3.5vw, 1.75rem); }
+.studio-create-purpose-header a { padding-inline: .625rem; font-size: .8125rem; }
+.studio-create-purpose-header > div > :last-child { flex-shrink: 0; }
+[data-studio-outcome-create="true"] .studio-create-format-section { margin-top: 0; padding: 0; border: 0; background: transparent; }
+.studio-create-format-section > div:first-child { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.studio-create-format-section [data-studio-format-count] { margin-top: 0; }
+[data-studio-outcome-create="true"] .studio-create-format-section [data-studio-create-format] { min-height: 0; padding: .5rem; overflow: hidden; }
+.studio-create-format-art { position: relative; display: block; height: 5rem; overflow: hidden; border-radius: .5rem; }
+.studio-create-format-art > img { width: 100%; height: 100%; object-fit: cover; object-position: center 35%; }
+.studio-create-format-art > [data-studio-format-visual] { position: absolute; inset: 0; height: 100%; background: transparent; border: 0; pointer-events: none; }
+.studio-create-format-art > [data-studio-format-visual] > div { transform: scale(.4); transform-origin: center top; filter: drop-shadow(0 2px 3px rgb(0 0 0 / .35)); }
+[data-studio-outcome-create="true"] .studio-create-format-section [data-studio-create-format] strong { margin-top: .5rem; line-height: 1.35; }
+.studio-create-format-selected { position: absolute; top: .625rem; right: .625rem; padding: .125rem .375rem; border-radius: .375rem; color: var(--color-accent); background: var(--color-card); font-size: .75rem; font-weight: 750; }
+.studio-create-format-section .studio-create-step-actions { margin: .75rem 0; }
+.studio-create-format-section .studio-create-format-description { min-height: 0; }
 @media (max-width: 639px) {
-  [data-studio-create-step-panel='1'] [data-studio-create-format] { padding: .625rem; min-height: 112px; }
-  [data-studio-create-step-panel='1'] [data-studio-create-format] > [data-studio-format-visual] { height: 3.5rem; }
-  [data-studio-create-step-panel='1'] [data-studio-create-format] strong { margin-top: .5rem; font-size: .875rem; }
-  [data-studio-create-step-panel='1'] [data-studio-create-format] .studio-format-illustration { display: none; }
+  [data-studio-outcome-create="true"] > [data-page-container] { padding-block: .75rem 1.5rem; }
+  .studio-create-step-navigation { margin-bottom: .75rem; }
+  .studio-create-step-navigation button { padding: .25rem .375rem; gap: .25rem; font-size: .8125rem; line-height: 1.35; }
+  .studio-create-step-navigation button span { width: 20px; height: 20px; }
+  .studio-create-format-art { height: 3rem; }
+  .studio-create-format-art > [data-studio-format-visual] > div { transform: scale(.3); }
+  [data-studio-outcome-create="true"] .studio-create-format-section [data-studio-create-format] strong { font-size: .875rem; }
   [data-studio-create-step-panel='2'] :is(input, select) { font-size: 1rem; min-height: 48px; }
 }
 @media (prefers-reduced-motion: reduce) { .studio-create-step-navigation *, .studio-create-step-actions * { transition: none; scroll-behavior: auto; } }

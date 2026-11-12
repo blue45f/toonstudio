@@ -72,6 +72,23 @@ describe("같은 생성 정본을 쓰는 세 단계", () => {
     expect(readStudioSaveProfiles(window.localStorage).profiles[work.id]?.lastManualSaveAt).toBeNull();
   });
 
+  it("추가 작업실을 고른 뒤 다음 행동으로 초점을 돌려 선택한 작업실 이름을 이어간다", () => {
+    const { container } = show();
+    const details = container.querySelector<HTMLDetailsElement>("[data-studio-auxiliary-workspaces]");
+    const summary = details?.querySelector("summary");
+    const choice = details?.querySelector<HTMLButtonElement>('[data-studio-auxiliary-kind="three-d"]');
+    if (!details || !summary || !choice) throw new Error("추가 작업실 선택이 없습니다.");
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    fireEvent.click(choice);
+    const next = screen.getByRole("button", { name: "다음: 작품 이름" });
+    expect(document.activeElement).toBe(next);
+    expect(choice.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(next);
+    expect(name().value).toBe("새 3D 장면");
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
+  });
+
   it("빈 제목은 이름 단계에서 이유를 알리고 입력·초점을 보존한다", () => {
     const { container } = show();go(container, 2);
     const input = name();fireEvent.change(input, { target: { value: "  " } });

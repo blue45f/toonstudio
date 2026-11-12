@@ -10,7 +10,7 @@ export function StudioCreateStepNavigation({ step, onStep }: {
   readonly step: StudioCreateStep; readonly onStep: (step: StudioCreateStep) => void;
 }) {
   const bt = useBilingual("StudioCreateStepFlow");
-  const labels = [bt("형식", "Format"), bt("이름·기본 크기", "Name & size"), bt("시작 확인", "Review & start")];
+  const labels = [bt("형식", "Format"), bt("이름·크기", "Name & size"), bt("시작 확인", "Review & start")];
   return <nav className="studio-create-step-navigation" aria-label={bt("새 작품 만들기 단계", "New work steps")}>
     {([1, 2, 3] as const).map((index) => <button key={index} type="button"
       data-studio-create-step-link={index} aria-current={step === index ? "step" : undefined}

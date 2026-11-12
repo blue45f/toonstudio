@@ -39,7 +39,7 @@ export function StudioNewIntegratedPage() {
       {/* 복귀 맥락 (A5): 양식으로 직행해 들어와도 시작 방법을 다시 고를 수 있게,
           관문(/create)으로 돌아가는 길을 항상 위에 둔다. */}
       <div className="border-b border-line/60">
-        <Container size="wide" className="py-2">
+        <Container size="wide" className="py-0">
           <Link
             href={STUDIO_START_FORM_BACK_HREF}
             className="inline-flex min-h-12 items-center gap-1.5 text-sm font-semibold text-accent"

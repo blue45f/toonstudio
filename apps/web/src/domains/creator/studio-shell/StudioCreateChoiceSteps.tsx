@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { FormStepSection } from "@/shared/components/layout/FormStepSection";
 import { cn } from "@/shared/lib/utils";
@@ -7,11 +8,20 @@ import type { StudioProjectStartPoint } from "../studio-project-definition";
 import { AUXILIARY_ICONS, START_POINT_ICONS } from "./studio-mode-project-create-helpers";
 import { StudioProjectFormatVisual } from "./StudioProjectFormatPreview";
 
+const FORMAT_ART: Readonly<Record<StudioProjectFormatProfile["id"], string>> = {
+  "vertical-webtoon": "/brand/illustrated-20260928/canvas-noir-320.webp",
+  cuttoon: "/brand/illustrated-20260928/project-romance-320.webp",
+  "page-comic": "/brand/illustrated-20260928/project-crimson-320.webp",
+  "motion-toon": "/brand/illustrated-20260928/character-blue-320.webp",
+  illustration: "/brand/illustrated-20260928/character-pink-320.webp",
+};
+
 /** 형식 선택 UI만 분리한다. 생성·템플릿·착지 상태의 권위는 부모에 남긴다. */
-export function StudioCreateFormatStep({ format, auxiliary, locale, onFormat, onAuxiliary }: {
+export function StudioCreateFormatStep({ format, auxiliary, locale, onFormat, onAuxiliary, primaryAction }: {
   readonly format: StudioProjectFormatProfile; readonly auxiliary: StudioAuxiliaryWorkspaceOption | null;
   readonly locale: "ko" | "en"; readonly onFormat: (profile: StudioProjectFormatProfile) => void;
   readonly onAuxiliary: (option: StudioAuxiliaryWorkspaceOption) => void;
+  readonly primaryAction: ReactNode;
 }) {
   const bt = useBilingual("StudioModeProjectCreatePage");
   return (
@@ -19,7 +29,7 @@ export function StudioCreateFormatStep({ format, auxiliary, locale, onFormat, on
             step={1}
             titleId="studio-format-title"
             title={bt("만들 작품 형식을 골라 주세요", "Choose the format to create")}
-            description={bt("독자가 보게 될 화면 형태를 고르면 알맞은 캔버스 크기를 자동으로 맞춰 드려요.", "Choose how readers will view your work and we will set the right canvas size.")}
+            className="studio-create-format-section"
           >
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" data-studio-format-count={STUDIO_PROJECT_FORMAT_PROFILES.length}>
               {STUDIO_PROJECT_FORMAT_PROFILES.map((profile) => {
@@ -38,23 +48,23 @@ export function StudioCreateFormatStep({ format, auxiliary, locale, onFormat, on
                         : "border-line bg-panel/45 hover:border-line-strong hover:bg-raised",
                     )}
                   >
-                    <span className="studio-format-illustration" data-format={profile.id} aria-hidden="true">
-                      <span>{bt("안내 일러스트", "Guide illustration")}</span>
+                    <span className="studio-create-format-art" aria-hidden="true">
+                      <img src={FORMAT_ART[profile.id]} alt="" width={320} height={180} decoding="async" />
+                      <StudioProjectFormatVisual profile={profile} active={active} className="studio-create-format-preview" />
                     </span>
-                    <StudioProjectFormatVisual profile={profile} active={active} className="h-32" />
                     <strong className="mt-3 block break-words text-sm text-fg">{bt(profile.titleKo, profile.titleEn)}</strong>
-                    <span className="mt-1 block min-h-5 text-xs font-bold text-accent">{active ? bt("✓ 선택됨", "✓ Selected") : null}</span>
-
-
+                    {active ? <span className="studio-create-format-selected">{bt("✓ 선택됨", "✓ Selected")}</span> : null}
                   </button>
                 );
               })}
             </div>
 
             <p className="studio-create-format-description" role="status" aria-atomic="true">
-              {auxiliary ? bt(auxiliary.descriptionKo, auxiliary.descriptionEn) : bt(format.descriptionKo, format.descriptionEn)}
+              {auxiliary ? `${bt(auxiliary.titleKo, auxiliary.titleEn)} · ${bt(auxiliary.descriptionKo, auxiliary.descriptionEn)}` : bt(format.descriptionKo, format.descriptionEn)}
               {!auxiliary ? ` · ${(locale === "ko" ? format.outputsKo : format.outputsEn).slice(0, 2).join(" · ")}` : null}
             </p>
+
+            {primaryAction}
 
             <details className="mt-4 rounded-2xl border border-line bg-panel/35" open={Boolean(auxiliary) || undefined} data-studio-auxiliary-workspaces="true">
               <summary className="min-h-12 cursor-pointer content-center px-4 text-sm font-bold text-fg-2">
@@ -73,7 +83,10 @@ export function StudioCreateFormatStep({ format, auxiliary, locale, onFormat, on
                       type="button"
                       aria-pressed={active}
                       data-studio-auxiliary-kind={option.id}
-                      onClick={() => onAuxiliary(option)}
+                      onClick={(event) => {
+                        onAuxiliary(option);
+                        event.currentTarget.closest("section")?.querySelector<HTMLElement>("[data-studio-create-step-next]")?.focus();
+                      }}
                       className={cn(
                         "min-h-24 rounded-xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                         active ? "border-accent bg-accent-soft/45" : "border-line bg-card hover:bg-raised",

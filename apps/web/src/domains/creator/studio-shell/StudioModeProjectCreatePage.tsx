@@ -1,6 +1,6 @@
 import {
   Lightbulb,
-  Sparkles, Upload,
+  Upload,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -346,28 +346,20 @@ export function StudioModeProjectCreatePage() {
           titleReady={titleReady} sizeReady={sizeReady} creating={creating}
           onCreate={submitStep} onFixName={focusName} onFixSize={focusCanvasSize}>
           {(onInputKeyDown) => <>
-          <StudioCreateStepNavigation step={stepFlow.step} onStep={stepFlow.goTo} />
           {/* 기본 선택 뒤에 주 행동 하나를 두고 추가 설정·미리보기는 뒤로 분리한다. */}
           <PurposeHeader
-            eyebrow={(
-              <>
-                <Sparkles size={14} aria-hidden="true" />
-                {bt("새 프로젝트", "New project")}
-              </>
-            )}
-            title={stepFlow.step === 1 ? bt("어떤 작품을 만들까요?", "What would you like to create?")
+            className="studio-create-purpose-header"
+            title={stepFlow.step === 1 ? bt("새 작품 만들기", "Create a new work")
               : stepFlow.step === 2 ? bt("이름과 기본 크기", "Name and starting size")
                 : bt("시작할 준비가 됐나요?", "Ready to start?")}
-            description={stepFlow.step === 1 ? bt("형식을 고르면 알맞은 크기를 준비해요.", "Choose a format and we will prepare the starting size.")
-              : stepFlow.step === 2 ? bt("이름을 정하고 기본 크기를 확인하세요.", "Name your work and check the starting size.")
-                : bt("원하는 시작점을 고른 뒤 새 작업을 만들어요.", "Choose where to begin, then create your work.")}
             secondaryActions={(
               <Link href="/studio/import" className={buttonClass({ variant: "outline", className: "min-h-12" })}>
                 <Upload size={16} aria-hidden="true" />
-                {bt("가진 파일 불러오기", "Import an existing file")}
+                {bt("파일 불러오기", "Import a file")}
               </Link>
             )}
           />
+          <StudioCreateStepNavigation step={stepFlow.step} onStep={stepFlow.goTo} />
 
           {importedIdea ? (
             <p
@@ -388,7 +380,8 @@ export function StudioModeProjectCreatePage() {
           ) : null}
 
           <StudioCreateStepPanel step={1} current={stepFlow.step}>
-            <StudioCreateFormatStep format={format} auxiliary={auxiliary} locale={locale} onFormat={chooseFormat} onAuxiliary={chooseAuxiliary} />
+            <StudioCreateFormatStep format={format} auxiliary={auxiliary} locale={locale} onFormat={chooseFormat} onAuxiliary={chooseAuxiliary}
+              primaryAction={<StudioCreateStepActions step={1} onStep={stepFlow.goTo} />} />
             <details className="studio-create-genre-options" data-studio-create-genres="true" open={Boolean(activeQuickPresetId) || undefined}>
               <summary>{bt("장르 예시로 시작하기", "Start from a genre example")}</summary>
           <StudioCreateQuickPresetStrip
@@ -400,7 +393,6 @@ export function StudioModeProjectCreatePage() {
             creating={creating}
           />
             </details>
-            <StudioCreateStepActions step={1} onStep={stepFlow.goTo} />
           </StudioCreateStepPanel>
           <StudioCreateStepPanel step={2} current={stepFlow.step}>
           <FormStepSection
