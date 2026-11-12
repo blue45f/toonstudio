@@ -40,7 +40,7 @@ import { drawingCaptureEvidence, recordDrawingStrokePath, verifyDrawingCapturePa
   parkStudioCollaborationCursors,
 } from "./lib/studio-collaboration-drawing-capture";
 import { installStudioCollaborationPreviewSession } from "./lib/studio-collaboration-preview-session";
-import { waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
+import { selectStudioCollaborationPen, waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
 import {
   fingerprintStudioCompositedPng,
   type StudioCompositedCanvasFingerprint,
@@ -196,14 +196,7 @@ async function enableBrushTool(page: Page): Promise<void> {
     await simpleEntry.click();
     await page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').waitFor({ state: "visible" });
   }
-  // 사용자가 보는 펜 버튼의 실제 선택 상태를 확인한다.
-  const pen = page.getByRole("button", { name: /^(펜(?: \(B\))?|Pen(?: \(B\))?)$/u }).first();
-  await pen.waitFor({ state: "visible", timeout: 10_000 });
-  if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
-  await pen.and(page.locator('[aria-pressed="true"]')).waitFor({
-    state: "visible",
-    timeout: 10_000,
-  });
+  await selectStudioCollaborationPen(page);
 }
 
 async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFingerprint> {

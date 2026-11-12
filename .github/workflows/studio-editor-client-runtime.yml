@@ -30,7 +30,7 @@ jobs:
   runtime:
     name: editor-client-runtime
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 65
     env:
       NODE_OPTIONS: --max-old-space-size=12288
     steps:

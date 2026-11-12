@@ -7,7 +7,8 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 const view = read("./studio-cuttoon-editor/StudioCuttoonEditorView.tsx");
 const adapter = read("./StudioDraftSaveCenter.tsx");
 const implementation = read("./StudioDraftSaveCenterImpl.tsx");
-const center = `${adapter}\n${implementation}`;
+const metrics = read("./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics.tsx");
+const center = `${adapter}\n${implementation}\n${metrics}`;
 const model = read("./studio-draft-save-center-model.ts");
 const outbox = read("./studio-draft-save-outbox.ts");
 
@@ -72,6 +73,12 @@ describe("draft save center product boundary", () => {
     expect(center).toContain("이 기기");
     expect(center).toContain("서버 초안");
     expect(center).toContain("기기 체크포인트");
+    expect(implementation).toContain('import { StudioDraftSaveRecordMetrics } from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics"');
+    expect(implementation).toContain("<StudioDraftSaveRecordMetrics checkpointCount={checkpointCount} serverRevision={serverRevision} serverRevisionLoading={serverRevisionLoading} serverRevisionCount={serverRevisions.length} lastServerSaveAt={lastServerSaveAt}");
+    expect(metrics).toContain("서버 저장 번호");
+    expect(metrics).toContain("{serverRevision ?? \"—\"}");
+    expect(metrics).toContain("{checkpointCount}");
+    expect(metrics).toContain('lastServerSaveAt === null ? "—" : formatStudioDraftSaveTime(lastServerSaveAt)');
     expect(center).toContain('window.addEventListener("online", onOnline)');
     expect(center).toContain("setDeferredSave(true)");
     expect(center).toContain("readStudioDraftSaveOutbox");

@@ -7,7 +7,7 @@
  * 멀티 클라우드·로컬 운영 배포 릴리스 번들을 생성한다.
  */
 
-import type { FreshIdeaLensId, FreshIdeaLensRemix } from "./studio-bg3d-fresh-ideas-verify-ai";
+import type { FreshIdeaLensRemix } from "./studio-bg3d-fresh-ideas-verify-ai";
 
 export interface CrossLabsInputMetrics {
   readonly bg3dOverallScore100: number;
@@ -120,7 +120,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
 
   const remixes: readonly FreshIdeaLensRemix[] = Object.freeze([
     {
-      id: "contrarian-take" as FreshIdeaLensId,
+      id: "contrarian-take",
       badgeKo: "1. 🔥 CONTRARIAN TAKE",
       lensTitle:
         "3D 배경·3D 캐릭터·2D 브러시를 각각 고도화해도 컷이 어색한 이유는 '세 도구의 광원 각도와 외곽선 필압 비율이 따로 놀기 때문'입니다.",
@@ -129,7 +129,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       angleKo: `배경 대비율(${input.bg3dContrastRatio}:1)과 캐릭터 얼굴 SDF 클린도(${input.characterFaceSdfScore100}점), 브러시 테이퍼 예리도(${input.brushTaperSharpness100}점)를 실시간 교차 검증하여 조명-선화 정합성 ${crossLabsCoherenceIndex100}점을 달성합니다.`,
     },
     {
-      id: "personal-story-angle" as FreshIdeaLensId,
+      id: "personal-story-hook",
       lensTitle:
         "배경 어시스턴트의 3D 성채 위에 캐릭터 작화가의 선화를 얹었을 때 주인공이 배경에서 붕 떠 보이던 마감 새벽의 해결책",
       badgeKo: "2. 📖 PERSONAL STORY HOOK",
@@ -138,7 +138,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       angleKo: `설정 단계에서 캐릭터 외곽선(${input.characterOutlineWidthMm}mm)과 브러시 G펜 평균 선폭(${input.brushAverageStrokePx}px)을 자동 매칭(${characterToBrushLineWeightMatch100}점)해, 수정 지시 없이 한 번에 원고 컷을 통과시켰습니다.`,
     },
     {
-      id: "data-evidence-hook" as FreshIdeaLensId,
+      id: "data-evidence-angle",
       badgeKo: "3. 📊 DATA / EVIDENCE ANGLE",
       lensTitle: `전사 통합 Verify AI ${unifiedVerifyAiReleaseScore100}점 · Cross-Labs 정합성(X_LABS) ${crossLabsCoherenceIndex100}점 · Blender 5.2 라이브 오브젝트 ${BLENDER_WAVE2_CROSS_LABS_OBJECTS.length}종 검증`,
       pitchKo:
@@ -146,7 +146,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       angleKo: `3D 배경(${input.bg3dOverallScore100}점) × 캐릭터 랩스(${input.characterOverallScore100}점) × 브러시 랩스(${input.brushOverallScore100}점) × 상용 저작권 BOM(${input.rightsBomScore100}점)을 종합해 무결점 출판 및 클라우드 배포 기준을 충족합니다.`,
     },
     {
-      id: "practical-playbook" as FreshIdeaLensId,
+      id: "practical-playbook",
       badgeKo: "4. ✅ PRACTICAL PLAYBOOK",
       lensTitle:
         "3D 배경 × 캐릭터 × 브러시 통합 컷 제작 및 멀티 클라우드 배포 4단계 플레이북",
@@ -162,7 +162,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       ],
     },
     {
-      id: "what-they-missed" as FreshIdeaLensId,
+      id: "what-they-missed",
       badgeKo: "5. 🎯 WHAT THEY MISSED",
       lensTitle:
         "창작 툴 고도화의 마지막 퍼즐은 '어떤 클라우드나 로컬 환경에서도 동일한 WebGPU·WASM·3D 품질로 즉시 재현되는 포터블 배포'입니다.",
@@ -171,7 +171,7 @@ export function evaluateCrossLabsUnifiedProductionBridge(
       angleKo:
         "아무리 뛰어난 3D·캐릭터·브러시 엔진도 작가의 로컬 환경이나 클라우드 서버마다 결과가 다르면 실전 연재에 쓸 수 없습니다. 결정론적 시드 검증과 멀티 환경 배포 번들로 어디서나 100% 동일한 원고 픽셀을 보장합니다.",
     },
-  ]);
+  ] satisfies FreshIdeaLensRemix[]);
 
   return Object.freeze({
     sceneObjectsSynced: BLENDER_WAVE2_CROSS_LABS_OBJECTS.length,

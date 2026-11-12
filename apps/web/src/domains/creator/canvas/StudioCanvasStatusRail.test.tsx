@@ -616,7 +616,12 @@ describe("StudioCanvasStatusRail", () => {
     expect((rail as HTMLElement | null)?.style.top).toBe("8rem");
   });
 
-  it.each(["zoom", "rotate"] as const)("모바일 알림은 협업 접힘과 %s 도구 아래에 머물고 HUD 닫힘에 맞춰 이동한다", (mode) => {
+  it.each([
+    { mode: "zoom", mobileImmersive: true },
+    { mode: "rotate", mobileImmersive: true },
+    { mode: "zoom", mobileImmersive: false },
+    { mode: "rotate", mobileImmersive: false },
+  ] as const)("모바일 알림은 협업 배치($mobileImmersive)와 $mode 도구 아래에 머문다", ({ mode, mobileImmersive }) => {
     viewportState.mobile = true;
     const resizeCallbacks: Array<() => void> = [];
     const observe = vi.fn();
@@ -639,7 +644,7 @@ describe("StudioCanvasStatusRail", () => {
       return new DOMRect();
     });
 
-    const stickyProps = { ...createStickyProps(mode), mobileImmersive: true };
+    const stickyProps = { ...createStickyProps(mode), mobileImmersive };
     const railProps = createProps({ mobileImmersive: true, hasAutosave: true });
     const viewport = (viewTool: typeof mode | null) => (
       <div data-testid="viewport" data-studio-mobile-immersive="true">
@@ -661,9 +666,11 @@ describe("StudioCanvasStatusRail", () => {
     const disclosure = stack?.firstElementChild;
     expect(disclosure?.tagName).toBe("DETAILS");
     expect(disclosure?.querySelector("[data-studio-presence-controls]")).toBe(presence);
-    expect(disclosure?.hasAttribute("open")).toBe(false);
-    expect(disclosure?.querySelector("summary")?.getAttribute("aria-expanded")).toBe("false");
-    expect(disclosure?.querySelector("[data-studio-collaboration-body]")?.hasAttribute("hidden")).toBe(true);
+    expect(disclosure?.hasAttribute("open")).toBe(!mobileImmersive);
+    const summary = disclosure?.querySelector("summary");
+    expect(summary?.hasAttribute("hidden")).toBe(!mobileImmersive);
+    if (mobileImmersive) expect(summary?.getAttribute("aria-expanded")).toBe("false");
+    expect(disclosure?.querySelector("[data-studio-collaboration-body]")?.hasAttribute("hidden")).toBe(mobileImmersive);
     expect(stack?.lastElementChild).toBe(hud.parentElement);
     expect(presence?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);
     expect(hud.parentElement?.className).not.toMatch(/\bsticky\b|\bh-0\b/u);

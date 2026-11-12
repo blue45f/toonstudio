@@ -7,6 +7,9 @@ import { describe, expect, it } from "vitest";
 const repositoryRoot = process.cwd();
 const apiRequire = createRequire(join(repositoryRoot, "apps/api/package.json"));
 const nestRequire = createRequire(apiRequire.resolve("@nestjs/platform-express"));
+const lhciRequire = createRequire(
+  realpathSync(join(repositoryRoot, "node_modules/@lhci/cli/package.json")),
+);
 const wranglerRequire = createRequire(
   realpathSync(join(repositoryRoot, "node_modules/wrangler/package.json")),
 );
@@ -42,8 +45,9 @@ async function withExpressServer(express, run) {
 }
 
 describe.each([
-  ["Express 4", apiRequire("express")],
+  ["API Express 5", apiRequire("express")],
   ["NestJS Express 5", nestRequire("express")],
+  ["LHCI Express 4", lhciRequire("express")],
 ])("security-patched %s HTTP dependencies", (_name, express) => {
   it("routes page parameters, nested queries and form bodies through the actual app", async () => {
     await withExpressServer(express, async (url) => {
@@ -86,8 +90,9 @@ describe.each([
 
 describe("security-patched path-to-regexp consumer APIs", () => {
   it("retains the callable legacy API required by Express 4", () => {
-    const expressRequire = createRequire(apiRequire.resolve("express"));
+    const expressRequire = createRequire(lhciRequire.resolve("express"));
     const pathToRegexp = expressRequire("path-to-regexp");
+    expect(lhciRequire("express/package.json").version).toMatch(/^4\./u);
     const keys = [];
 
     expect(typeof pathToRegexp).toBe("function");

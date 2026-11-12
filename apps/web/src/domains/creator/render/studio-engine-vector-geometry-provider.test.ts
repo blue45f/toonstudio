@@ -15,6 +15,9 @@ interface NodeModuleLoader {
 
 const nodeModuleLoader = Module as unknown as NodeModuleLoader;
 const originalNodeModuleLoad = nodeModuleLoader._load;
+const declaredPaperVersion = (JSON.parse(readFileSync(
+  new URL("../../../../../../package.json", import.meta.url), "utf8",
+)) as { dependencies: { paper: string } }).dependencies.paper;
 
 // Paper's Node adapter opportunistically creates a jsdom canvas when jsdom happens to
 // be installed. Geometry does not need one. Making that optional dependency unavailable
@@ -110,7 +113,7 @@ describe("StudioEngineVectorGeometryProvider", () => {
       subpathCount: 1,
       provider: {
         packageName: "paper",
-        packageVersion: "0.12.18",
+        packageVersion: declaredPaperVersion,
         role: "ephemeral-vector-geometry",
         sceneAuthority: false,
         vendorObjectsReturned: false,

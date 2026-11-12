@@ -21,7 +21,11 @@ const KOREAN_LABEL: Record<StudioHistoryControlKind, string> = {
 export function studioHistoryControlSelector(kind: StudioHistoryControlKind): string {
   return [
     `button[data-studio-command-bar-command="${kind}"]`,
+    `button[data-studio-primary-action="${kind}"]`,
     `button[aria-label="${KOREAN_LABEL[kind]}"]`,
+    // 단순 화면은 보이는 이름과 목적을 함께 말하며 같은 기존 기록 명령을 호출한다.
+    `.studio-drawing-clarity-history button[aria-label$=" · ${KOREAN_LABEL[kind]}"]`,
+    `.studio-drawing-clarity-history button[aria-label="${kind === "undo" ? "Undo" : "Redo"}"]`,
   ].join(", ");
 }
 

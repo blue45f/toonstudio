@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,11 +10,40 @@ import { createServer } from "vite";
 import { decodePng } from "image-js";
 
 const WIDTH = 733, HEIGHT = 769;
-const EXPECTED_BROWSER = process.env.GRAPHITE_EXPECTED_BROWSER ?? "156.0.8078.4";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const message = (value) => value instanceof Error ? value.message : String(value);
 function check(value, reason) { if (!value) throw new Error(reason); }
 function git(root, args) { return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim(); }
+
+/** 기본 레인은 설치된 고정 Playwright의 Chromium 한 버전이며, 명시한 실험 버전은 그대로 우선한다. */
+export function resolveGraphiteBrowserPin(metadata, override) {
+  if (override !== undefined) {
+    check(typeof override === "string" && /^\d+\.\d+\.\d+\.\d+$/.test(override), "명시한 고정 browser version 형식이 아닙니다.");
+    return { version: override, source: "GRAPHITE_EXPECTED_BROWSER" };
+  }
+  const candidates = Array.isArray(metadata?.browsers)
+    ? metadata.browsers.filter((entry) => entry?.name === "chromium") : [];
+  check(candidates.length === 1, "공식 Playwright 메타데이터의 Chromium 항목이 하나가 아닙니다. 고정 의존성 설치를 확인하세요.");
+  const { browserVersion, revision } = candidates[0];
+  check(typeof browserVersion === "string" && /^\d+\.\d+\.\d+\.\d+$/.test(browserVersion)
+    && typeof revision === "string" && /^\d+$/.test(revision), "공식 Playwright Chromium 버전·revision이 올바르지 않습니다.");
+  return { version: browserVersion, revision, source: "playwright-core/browsers.json" };
+}
+
+export function readInstalledGraphiteBrowserPin() {
+  const playwrightManifest = createRequire(import.meta.url).resolve("playwright/package.json");
+  // chromium을 import한 Playwright의 의존성에서 찾는다. 우연히 hoist된 다른 core는 사용하지 않는다.
+  const coreManifest = createRequire(playwrightManifest).resolve("playwright-core/package.json");
+  const metadata = readFileSync(join(dirname(coreManifest), "browsers.json"));
+  return { ...resolveGraphiteBrowserPin(JSON.parse(metadata.toString("utf8"))),
+    playwrightVersion: JSON.parse(readFileSync(playwrightManifest, "utf8")).version,
+    coreVersion: JSON.parse(readFileSync(coreManifest, "utf8")).version,
+    metadataSha256: sha256(metadata) };
+}
+
+export function assertGraphiteBrowserVersion(actual, expected) {
+  check(actual === expected, `고정 Chromium version이 아닙니다. 기대: ${expected}, 실제: ${actual}`);
+}
 export function getViteBrowserModuleUrl(root, file, candidateDirectory) {
   const absolute = realpathSync(file), inside = relative(root, absolute);
   if (inside && inside !== ".." && !inside.startsWith(".." + sep)) {
@@ -74,11 +104,15 @@ async function run() {
   let cache, sourceBefore;
   const errors = [], diagnostics = [], rows = [], cleanup = [];
   const receipt = { scope: "controlled actual Canvas2D browser screenshot; full UI/GPU성능 또는 정확한 CI UI 재현 주장이 아님",
-    startedAt: new Date().toISOString(), browserExpected: EXPECTED_BROWSER,
+    startedAt: new Date().toISOString(), browserExpected: null,
     flowOverridden: false, rgbTolerance: 2, meaningfulMinimum: { changedPixels: 4, maxChannelDelta: 4 },
     modes: ["white", "transparent"], phaseIndices: [0,1,2,3,4,5,6,7], pixelsRead: false };
   try {
-    check(/^\d+\.\d+\.\d+\.\d+$/.test(EXPECTED_BROWSER), "고정 browser version 형식이 아닙니다.");
+    const pin = process.env.GRAPHITE_EXPECTED_BROWSER === undefined
+      ? readInstalledGraphiteBrowserPin()
+      : resolveGraphiteBrowserPin(null, process.env.GRAPHITE_EXPECTED_BROWSER);
+    receipt.browserExpected = pin.version;
+    receipt.browserPin = pin;
     cache = mkdtempSync(join(tmpdir(), "studio-graphite-vite-"));
     sourceBefore = fence(root, entry); receipt.sourceBefore = sourceBefore;
     if (process.env.GITHUB_ACTIONS === "true") {
@@ -104,8 +138,8 @@ async function run() {
     const origin = "http://127.0.0.1:" + address.port;
     const launchArgs = ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
     browser = await chromium.launch({ channel: "chromium", headless: true, args: launchArgs });
-    check(browser.version() === EXPECTED_BROWSER, "고정 Chromium version이 아닙니다.");
     receipt.browserVersion = browser.version();
+    assertGraphiteBrowserVersion(receipt.browserVersion, pin.version);
     receipt.browser = { executablePath: chromium.executablePath(), channel: "chromium", headless: true,
       additionalLaunchArgs: launchArgs, platform: process.platform, architecture: process.arch, nodeVersion: process.version };
     context = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT }, deviceScaleFactor: 1 });

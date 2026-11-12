@@ -5,8 +5,11 @@ on:
     branches: [main]
     paths:
       - 'apps/web/src/domains/creator/StudioWorkflowAccess*'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/StudioWorkflowAccess.test.tsx'
       - 'apps/web/src/domains/creator/StudioToolBelt*'
       - 'apps/web/src/domains/creator/studio-toolbar-disclosure*'
+      - 'apps/web/src/domains/creator/live/studio-toolbar-disclosure.test.ts'
+      - 'apps/web/src/domains/creator/studio-cuttoon-editor/studio-ui-density.test.ts'
       - '.github/workflows/studio-approachable-ux.yml'
   workflow_dispatch:
 
@@ -35,19 +38,19 @@ jobs:
         run: >-
           pnpm exec eslint --max-warnings=0
           apps/web/src/domains/creator/StudioWorkflowAccess.tsx
-          apps/web/src/domains/creator/StudioWorkflowAccess.test.tsx
+          apps/web/src/domains/creator/studio-cuttoon-editor/StudioWorkflowAccess.test.tsx
           apps/web/src/domains/creator/studio-toolbar-disclosure.ts
-          apps/web/src/domains/creator/studio-toolbar-disclosure.test.ts
+          apps/web/src/domains/creator/live/studio-toolbar-disclosure.test.ts
           apps/web/src/domains/creator/StudioToolBeltCreateModeGroups.tsx
           apps/web/src/domains/creator/StudioToolBeltCreateModeGroups.disclosure.test.tsx
       - name: Task-first workflow and existing Studio toolbar contracts
         run: |
           set -euo pipefail
           pnpm exec vitest run \
-            apps/web/src/domains/creator/studio-toolbar-disclosure.test.ts \
-            apps/web/src/domains/creator/StudioWorkflowAccess.test.tsx \
+            apps/web/src/domains/creator/live/studio-toolbar-disclosure.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/StudioWorkflowAccess.test.tsx \
             apps/web/src/domains/creator/StudioToolBeltCreateModeGroups.disclosure.test.tsx \
-            apps/web/src/domains/creator/studio-ui-density.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-ui-density.test.ts \
             apps/web/src/domains/creator/studio-tool-belt-workflow-order.test.ts \
             apps/web/src/domains/creator/studio-tool-belt-content-boundary.test.ts \
             apps/web/src/domains/creator/studio-tool-belt-lazy-ui-boundary.test.ts \

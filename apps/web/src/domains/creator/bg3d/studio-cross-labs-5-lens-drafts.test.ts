@@ -25,11 +25,12 @@ describe("studio-cross-labs-5-lens-drafts", () => {
     expect(drafts).toHaveLength(5);
     expect(drafts.map((d) => d.id)).toEqual([
       "contrarian-take",
-      "personal-story-angle",
-      "data-evidence-hook",
+      "personal-story-hook",
+      "data-evidence-angle",
       "practical-playbook",
       "what-they-missed",
     ]);
+    expect(report.remixes.map((remix) => remix.id)).toEqual(drafts.map((draft) => draft.id));
 
     for (const draft of drafts) {
       expect(draft.headlineKo.length).toBeGreaterThan(15);

@@ -175,8 +175,8 @@ const OUTPUT_ROWS: readonly EngineeringMapRow[] = [
       license: t("Remotion License(SPDX 아님)", "Remotion License (not an SPDX ID)"),
       mode: t("런타임 · 마케팅 페이지", "Runtime · marketing page"),
       note: t(
-        "4.0.536은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용해 설명된 개인·1인 운영 전제로 유지한다. 일반 FAQ의 기준은 조직 전체 3명 이하이며, 실제 인원은 독립 검증하지 않았다. 무료 자격 밖이면 Company License가 필요하다.",
-        "Version 4.0.536 permits free commercial use for individuals and for-profit entities with up to 3 employees; retained under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. A Company License applies outside free eligibility.",
+        "4.0.541은 개인·직원 3명 이하 영리 조직의 무료 상업 사용을 허용해 설명된 개인·1인 운영 전제로 유지한다. 일반 FAQ의 기준은 조직 전체 3명 이하이며, 실제 인원은 독립 검증하지 않았다. 무료 자격 밖이면 Company License가 필요하다.",
+        "Version 4.0.541 permits free commercial use for individuals and for-profit entities with up to 3 employees; retained under the stated individual, one-person premise. The general FAQ uses total organizational headcount of up to 3 people; actual headcount is not independently verified. A Company License applies outside free eligibility.",
       ),
     },
     evidence: [
@@ -222,8 +222,8 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 61개 — 보안 권고 대응·도구 버전 통일·저장소 보안 대체본 지정). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (61 overrides for security advisories, tool-version alignment and repository security replacements). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 62개 — 보안 권고 대응·도구 버전 통일·저장소 보안 대체본 지정). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (62 overrides for security advisories, tool-version alignment and repository security replacements). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),

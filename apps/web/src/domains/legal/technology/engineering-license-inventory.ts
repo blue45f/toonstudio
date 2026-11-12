@@ -179,7 +179,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "@remotion/player",
-    version: "4.0.536",
+    version: "4.0.541",
     license: "Remotion License",
     url: "https://www.remotion.dev/docs/player",
     surface: "web",
@@ -589,7 +589,7 @@ export const ENGINEERING_LIBRARY_LICENSES: readonly EngineeringLibraryLicense[] 
   },
   {
     name: "remotion",
-    version: "4.0.536",
+    version: "4.0.541",
     license: "Remotion License",
     url: "https://www.remotion.dev/docs/remotion",
     surface: "web",

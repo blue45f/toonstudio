@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { mobileSiteTabsForPath } from "./site-navigation";
+import { mobileSiteTabsForPath, resolveNavigationGroupsFor, SITE_NAVIGATION_ITEMS, SITE_UTILITY_NAVIGATION } from "./site-navigation";
 
 const source = (relativePath: string) =>
   readFileSync(new URL(relativePath, import.meta.url), "utf8");
@@ -38,7 +38,7 @@ describe("mobile route density contract", () => {
     expect(marketBrowse).toContain('aria-label={t("라이선스 필터", "License filter")}');
   });
 
-  it("reserves safe mobile space for global overlays and the five-part journey", () => {
+  it("reserves safe mobile space for global overlays and keeps four purposes with every other destination reachable", () => {
     const floating = source("./FloatingControls.tsx");
     const beta = source("../../domains/creator/StudioBetaNoticeGate.tsx");
     const shell = source("./public-site-shell.css");
@@ -49,11 +49,31 @@ describe("mobile route density contract", () => {
     // 휴대폰 ⚙ 묶음은 고정 9rem 대신 실제 하단 탭 높이에서 계산한 기준선 위에 놓인다.
     expect(floating).toContain("max-md:bottom-[var(--site-float-base)]");
     expect(floating).not.toContain("calc(9rem+env(safe-area-inset-bottom))");
-    expect(beta).toContain("bottom-[calc(5.75rem+env(safe-area-inset-bottom))]");
+    // 베타 안내는 하단 탐색 안전 영역과 실제 연결 알림 높이 중 더 큰 값 위에 놓인다.
+    expect(beta).toContain("bottom-[max(calc(5.75rem+env(safe-area-inset-bottom)),var(--service-status-overlay-clearance,0px))]");
+    expect(beta).toContain("md:bottom-[max(1rem,var(--service-status-overlay-clearance,0px))]");
     expect(beta).toContain('data-studio-beta-notice-mode="compact"');
     // 헤더 아래 두 번째 탐색 줄은 주 메뉴와 선택 표시가 겹쳐 제거했다(모바일은 하단 탭이 같은 역할).
     expect(shell).not.toContain(".public-site-journey");
-    expect(mobileSiteTabsForPath("/explore")).toHaveLength(5);
+    const purposes = [
+      ["/studio", "내 작업"], ["/discover", "작품 찾기"], ["/market", "소재 찾기"], ["/my", "내 정보"],
+    ];
+    for (const route of ["/", "/studio", "/explore", "/market", "/my"]) {
+      expect(mobileSiteTabsForPath(route).map((item) => [item.href, item.label.ko])).toEqual(purposes);
+    }
+    const header = source("./site-header.tsx");
+    const trigger = header.match(/data-site-mobile-menu-trigger="true"[\s\S]*?className="([^"]*)"/u)?.[1] ?? "";
+    expect(trigger).not.toBe("");
+    expect(trigger).not.toMatch(/(?:^|\s)(?:hidden|\S+:hidden)(?:\s|$)/u);
+    expect(mobileNavigation).toContain("const navigationGroups = resolveNavigationGroupsFor()");
+    expect(mobileNavigation).toContain("navigationGroups.map((group)");
+    expect(mobileNavigation).toContain('<Link href="/sitemap"');
+    expect(mobileNavigation).toContain("<SiteMenuUtilities");
+    const reachable = new Set([
+      ...resolveNavigationGroupsFor().flatMap((group) => group.items),
+      ...SITE_UTILITY_NAVIGATION, SITE_NAVIGATION_ITEMS.allMenu,
+    ].map((item) => item.href));
+    for (const item of Object.values(SITE_NAVIGATION_ITEMS)) expect(reachable.has(item.href), item.id).toBe(true);
     expect(mobileNavigation).toContain('mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"');
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");

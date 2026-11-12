@@ -461,7 +461,6 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(webTests).toBeGreaterThanOrEqual(5100);
     expect(gitFiles("e2e").filter((path) => /\.spec\.(?:ts|mts)$/u.test(path)).length).toBe(Number(factOf(slide, 1, "E2E 스펙")));
     expect(gitFiles(".github/workflows").filter((path) => /\.ya?ml$/u.test(path)).length).toBe(Number(factOf(slide, 2, "워크플로")));
-
     const ratchetSource = read("config/architecture-boundary-ratchet.json");
     const ratchet = JSON.parse(ratchetSource) as Record<string, number>;
     for (const key of ["webToAdmin", "webToApi", "adminToWeb", "adminToApi", "apiToWeb", "apiToAdmin"]) expect(ratchet[key], key).toBe(0);
@@ -481,19 +480,20 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     expect(slide.notes.ko).toContain(`실측은 ${measured}입니다`);
     expect(slide.notes.en).toContain(`measured deep imports are ${measured}`);
     expect(slide.points.map((point) => point.ko).join("\n")).toContain(`실측은 ${measured}`);
-
     const targets = read("scripts/ci-required-vitest-targets.txt").split("\n").filter((line) => line.trim() && !line.trim().startsWith("#")).length;
     expect(slide.points.map((point) => point.ko).join("\n")).toContain(`${targets}개 대상`);
     expect(slide.points.map((point) => point.en).join("\n")).toContain(`${targets} curated targets`);
     const required = /const required = \[([^\]]*)\];/u.exec(read(".github/workflows/ci.yml"))?.[1]?.split(",").length;
     expect(required).toBe(Number(factOf(slideOf("talk-ai-dev"), 1, "필수 검사")));
-
-    // 접근성: 코어 필수 게이트(pnpm run test:a11y)는 기본 Playwright 설정의 axe 스모크라 모션 감소·강제 색상·키보드 점검이 그 안에 없다.
+    // 접근성: 스펙이 모션 감소를 명시하고 터치·초점 복귀를 함께 검사한다. 강제 색상·키보드 탐색 전수 검증은 별개다.
     expect(read("package.json")).toMatch(/"test:a11y": "[^"]*playwright test e2e\/a11y-smoke\.spec\.ts"/u);
     expect(read("package.json")).not.toMatch(/"test:a11y": "[^"]*--config/u);
     expect(read("playwright.config.ts")).not.toContain("reducedMotion");
-    expect(read("e2e/a11y-smoke.spec.ts")).not.toMatch(/keyboard\.|\.press\(|forcedColors|forced-colors/u);
-    expect(slide.notes.ko).toMatch(/axe 스모크\(기본 설정, 모션 감소 없음\)[^\n]*모션 감소·강제 색상은 수동[^\n]*키보드 점검은 스모크에 없습니다/u);
+    const accessibilitySpec = read("e2e/a11y-smoke.spec.ts");
+    expect(accessibilitySpec).toContain('test.use({ reducedMotion: "reduce" })');
+    expect(accessibilitySpec).toContain(".toBeFocused()");
+    expect(accessibilitySpec).not.toMatch(/keyboard\.|\.press\(|forcedColors|forced-colors/u);
+    expect(slide.notes.ko).toMatch(/모션 감소 설정에서 axe·터치·초점 복귀[^\n]*강제 색상은 수동 매트릭스[^\n]*키보드 탐색 전수 검증은 아닙니다/u);
   });
 
   it("성능: 번들 기준선과 참고 예산, 크기 상한 없음(관찰)은 기준선·검사 스크립트와 같다", () => {

@@ -203,12 +203,12 @@
 .public-footer-invitation__content { max-width: 590px; word-break: keep-all; }
 .public-support-panel { scroll-margin-top: calc(var(--site-header-sticky-offset, 4.5rem) + 0.75rem); }
 
-/* 표준 브레이크포인트 1024px (BLUEPRINT §5.2 (6)): 최상위 항목이 5개로 수렴(S1-2)한 뒤 1차 내비 전환을 전용 지점 1180에서 내렸다. */
-@media (width >= 1024px) {
+/* LAYOUT_SITE_NAVIGATION: 하단 탐색이 끝나는 1180px에서 같은 목적의 상단 주 메뉴를 시작한다. */
+@media (width >= 1180px) {
   .site-header__primary { display: flex; }
 }
 
-/* 주 메뉴가 펼쳐지는 1024~1599px에서는 검색을 아이콘으로 접어 5개 주 메뉴와 계정 조작 공간을 지킨다. */
+/* 주 메뉴가 펼쳐지는 1180~1599px에서는 검색을 아이콘으로 접어 메뉴와 계정 조작 공간을 지킨다. */
 @media (768px <= width < 1180px), (width >= 1600px) {
   .site-header__search { width: clamp(9rem, 13vw, 11rem); padding-inline: 10px; }
   .site-header__search-label { display: inline; }

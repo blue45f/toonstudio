@@ -13,6 +13,7 @@ import { useLessonStep } from "./use-lesson-step";
 import { useLearningPractice } from "./use-learning-practice";
 import type { LearningStore } from "./use-learning-progress";
 import { learnStatusText } from "./learn-status-i18n";
+import { r44LearnStatusText } from "./r44-cat1-status-i18n";
 import "./learning-lesson-steps.css";
 
 const LEVEL_LABELS = { starter: "처음 시작", growing: "기초를 익힌 뒤", advanced: "완성·게시 단계" } as const;
@@ -202,11 +203,11 @@ export function LessonSession({ lesson, store }: { lesson: Lesson; store: Learni
           <div id={`${lesson.id}-practice`} className="learn-step-task-card learn-anchor-target" tabIndex={-1}>
             {mission && <h3>{mission.title}</h3>}
             <p className="learn-step-task">{lesson.task}</p>
-            <p>{t("종이나 평소 쓰는 도구로 해도 괜찮습니다. 스튜디오에서는 새 탭으로 열립니다.", "Use paper or your usual tools. Studio practice opens in a new tab.")}</p>
+            <p>{t("종이나 평소 쓰는 도구로 해도 괜찮습니다.", "Use paper or your usual tools.")}</p>
             <div className="learn-actions">
               <a className="learn-primary" href={mission ? buildStudioPracticeUrl(mission) : "/studio"} target="_blank" rel="noopener noreferrer" onClick={() => practice.startMission(lesson.id)}>{t("스튜디오에서 실습하기", "Practice in Studio")} <span aria-hidden="true">↗</span></a>
             </div>
-            <p className="learn-small">{t("기존 작품을 자동 변경하거나 실습 결과를 자동 채점하지 않습니다.", "Your existing work is not changed and practice is not automatically graded.")}</p>
+            <p className="learn-small">{r44LearnStatusText("r44cat1.learn.learnContent.missionIdleNote", "새 탭에서 열립니다. 기존 작업을 자동 변경하지 않습니다.")} {t("실습 결과를 자동 채점하지 않습니다.", "Practice is not automatically graded.")}</p>
           </div>
           <details className="learn-lesson-disclosure" open={exampleOpen} onToggle={(event) => setExampleOpen(event.currentTarget.open)}>
             <summary onClick={(event) => { event.preventDefault(); setExampleOpen(!exampleOpen); }}>{t("예제 움직여 보며 이해하기", "Explore the interactive example")}</summary>

@@ -65,6 +65,7 @@ function host(
   };
 }
 
+// 실제 정밀 작업실의 내부 링크가 사용하는 라우터를 모든 render/rerender에 유지한다.
 function StudioRouterContext({ children }: PropsWithChildren) {
   return <MemoryRouter initialEntries={["/studio/bg3d"]}>{children}</MemoryRouter>;
 }

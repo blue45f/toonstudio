@@ -7,25 +7,44 @@ export async function assertStudioWorkspaceHome(page) {
   await expect(home).toBeVisible({ timeout: 30000 });
   await expect(page.locator("main h1")).toHaveCount(1);
   await expect(home.locator("#workspace-title")).toBeVisible();
-  const navigation = home.locator(".workspace-nav a");
+  const mainNavigation = home.locator(".workspace-nav");
+  const navigation = mainNavigation.locator("a");
   const mobile = await page.evaluate(() => matchMedia("(max-width: 767px)").matches);
-  await expect(navigation).toHaveCount(mobile ? 4 : 5);
-  assert.deepEqual(await navigation.evaluateAll((links) => links.map((link) => new URL(link.href).pathname)),
-    mobile ? ["/home", "/studio", "/discover", "/community"]
-      : ["/home", "/studio", "/discover", "/community", "/sitemap"]);
   await expect(home.locator("dialog[open]")).toHaveCount(0);
   if (mobile) {
-    // 모바일의 다섯 번째 목적지는 body portal의 전체 메뉴를 여는 버튼이다.
-    const allMenu = home.locator('.workspace-nav button[data-navigation-entry="all-menu"]');
-    await expect(allMenu).toHaveAttribute("aria-haspopup", "dialog");
-    await allMenu.click();
-    await expect(allMenu).toHaveAttribute("aria-expanded", "true");
-    const navigationPanel = page.getByRole("dialog");
-    await expect(navigationPanel.locator('a[href="/sitemap"]').first()).toBeVisible();
+    // 정상 모바일은 메뉴 청크 준비를 기다린다. 링크 폴백만 보고 성공 처리하지 않는다.
+    await expect(mainNavigation).toHaveAttribute("data-site-mobile-utilities", "available");
+    await expect(navigation).toHaveCount(4);
+    assert.deepEqual(await navigation.evaluateAll((links) => links.map((link) => new URL(link.href).pathname)),
+      ["/home", "/studio", "/discover", "/community"]);
+    const menuTrigger = mainNavigation.locator('button[data-navigation-entry="all-menu"][data-workspace-menu-trigger="true"]');
+    await expect(menuTrigger).toHaveAccessibleName(/^(전체 메뉴|All menu)$/u);
+    await expect(menuTrigger).toHaveAttribute("aria-haspopup", "dialog");
+    await expect(menuTrigger).toHaveAttribute("aria-expanded", "false");
+    await menuTrigger.click();
+    // 공통 전체 메뉴는 home 밖의 body 포털이며, 작업 도구의 native dialog와 별개다.
+    const menuPanel = page.locator('[data-site-menu-panel="true"][role="dialog"]');
+    await expect(menuPanel).toHaveCount(1);
+    await expect(menuPanel).toBeVisible();
+    await expect(menuPanel).toHaveAccessibleName(/\S/u);
+    await expect(menuTrigger).toHaveAttribute("aria-expanded", "true");
+    const menuId = await menuPanel.getAttribute("id");
+    assert(menuId, "Full menu must have a dialog ID");
+    await expect(menuTrigger).toHaveAttribute("aria-controls", menuId);
+    await expect(menuPanel.locator('a[href="/sitemap"]')).toBeVisible();
+    await expect.poll(() => menuPanel.evaluate((element) => element.contains(document.activeElement)),
+      { message: "Full menu must receive focus" }).toBe(true);
     await page.keyboard.press("Escape");
-    await expect(navigationPanel).toHaveCount(0);
-    await expect(allMenu).toBeFocused();
+    await expect(menuPanel).toHaveCount(0);
+    await expect(menuTrigger).toHaveAttribute("aria-expanded", "false");
+    await expect(menuTrigger).toBeFocused();
+  } else {
+    await expect(navigation).toHaveCount(5);
+    assert.deepEqual(await navigation.evaluateAll((links) => links.map((link) => new URL(link.href).pathname)),
+      ["/home", "/studio", "/discover", "/community", "/sitemap"]);
+    await expect(mainNavigation.locator("button")).toHaveCount(0);
   }
+  await expect(home.locator("dialog[open]")).toHaveCount(0);
   await expect(page.locator(".vs2-bottom, .public-site-journey, video")).toHaveCount(0);
   const primary = home.locator(".workspace-statusbar .workspace-primary, .workspace-live-status .workspace-live-actions > a");
   await expect(primary).toBeVisible();

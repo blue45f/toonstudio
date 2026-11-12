@@ -18,7 +18,7 @@ export interface StudioModeCreationPlan {
     readonly pageCount: number;
   };
   readonly launch: {
-    readonly uiMode: "focus" | "basic" | "full";
+    readonly uiMode: "focus" | "basic" | "full" | null;
     readonly startTool: "draw" | "select";
   };
 }
@@ -47,7 +47,8 @@ export function resolveStudioModeCreationPlan(
       pageCount: 1,
     }),
     launch: Object.freeze({
-      uiMode: quickSketch ? "focus" : legacyDensity(profile),
+      // 새 스케치는 저장한 화면 선택을 따르고, 선택이 없으면 기본 단순 화면을 쓴다.
+      uiMode: quickSketch ? null : legacyDensity(profile),
       startTool: profile.launch.primaryTool,
     }),
   });
@@ -60,7 +61,7 @@ export function buildStudioModeLaunchHref(
   const [pathname = result.href, rawSearch = ""] = result.href.split("?", 2);
   const search = new URLSearchParams(rawSearch);
   search.set("workspace", plan.document.workspace);
-  search.set("uiMode", plan.launch.uiMode);
+  if (plan.launch.uiMode !== null) search.set("uiMode", plan.launch.uiMode);
   search.set("startTool", plan.launch.startTool);
   const serialized = search.toString();
   return serialized ? `${pathname}?${serialized}` : pathname;

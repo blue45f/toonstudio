@@ -9,6 +9,8 @@ on:
       - 'scripts/seed/admin-qa*'
       - 'scripts/verify-admin-qa-live.mjs'
       - '.github/workflows/admin-hardening-regression.yml'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
   push:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - 'scripts/seed/admin-qa*'
       - 'scripts/verify-admin-qa-live.mjs'
       - '.github/workflows/admin-hardening-regression.yml'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
   workflow_dispatch:
 
 permissions:
@@ -65,8 +69,12 @@ jobs:
           apps/web/src/domains/admin apps/api/src/modules/admin
           scripts/seed/admin-qa-seed.mjs scripts/verify-admin-qa-live.mjs
       - name: Full frontend and API type checks
+        id: types
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm run typecheck
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs record "$RUNNER_TEMP/typechecked-build-inputs.json"
+          pnpm run typecheck
       - name: Bootstrap disposable loopback QA database
         id: bootstrap
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -94,8 +102,15 @@ jobs:
           TOONSPECTRUM_ADMIN_QA_SEED: '1'
         run: node --import tsx scripts/verify-admin-qa-live.mjs
       - name: Production build and CSP
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm run build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' && steps.types.outcome == 'success' }}
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.types.outcome }}
+        run: |
+          set -euo pipefail
+          pnpm run prebuild
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"
+          pnpm run build:bundle
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"
       - name: Verify complete unit and real API evidence
         if: ${{ !cancelled() && steps.bootstrap.outcome == 'success' }}
         env:

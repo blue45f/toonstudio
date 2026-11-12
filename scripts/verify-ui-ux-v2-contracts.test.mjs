@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
 
 import { evaluateUiUxV2Contracts } from "./verify-ui-ux-v2-contracts.mjs";
+
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 describe("verify-ui-ux-v2-contracts", () => {
   it("실제 저장소가 디자인 시안 패키지·데스크톱(시안 A~P)·모바일(시안 M1~M4)·Starlight Atelier·무스피너·39대 허브 정본 경로·44px 계약을 통과한다", () => {

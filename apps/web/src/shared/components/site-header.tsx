@@ -1,4 +1,5 @@
 import { siteMobilePurposeHref } from "./site-mobile-purpose";
+import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-site-navigation";
 import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
@@ -484,7 +485,7 @@ function purposeActive(
 function matchesMobileNavigationViewport() {
   return (
     typeof window !== "undefined" &&
-    window.matchMedia("(max-width: 1179px)").matches
+    window.matchMedia(LAYOUT_SITE_NAVIGATION.mobileQuery).matches
   );
 }
 
@@ -493,7 +494,7 @@ function useMobileNavigationViewport() {
   const [isMobile, setIsMobile] = useState(matchesMobileNavigationViewport);
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 1179px)");
+    const media = window.matchMedia(LAYOUT_SITE_NAVIGATION.mobileQuery);
     const sync = () => setIsMobile(media.matches);
     sync();
     media.addEventListener("change", sync);
@@ -508,7 +509,7 @@ function MobileNavigationFallback() {
   return (
     <nav
       aria-hidden="true"
-      className="fixed inset-x-0 bottom-0 z-50 h-[calc(3.75rem+env(safe-area-inset-bottom))] border-t border-line/80 bg-panel/90 backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 h-[calc(3.75rem+env(safe-area-inset-bottom))] border-t border-line/80 bg-panel/90 backdrop-blur-xl min-[1180px]:hidden"
     />
   );
 }

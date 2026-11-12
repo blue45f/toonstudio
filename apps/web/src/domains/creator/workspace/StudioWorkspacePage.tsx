@@ -98,6 +98,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
   const panel = workspacePanel(params.get("panel"));
   const reducedMotion = useReducedMotion();
   const projectSearchRef = useRef<HTMLInputElement>(null);
+  const panelReturnFocusRef = useRef<HTMLElement | null>(null);
   const characterPreference = useMemo(() => readStudioVirtualSpaceEntryPreference(), []);
   const characterArtStyle = useMemo(() => readStudioVirtualArtStyle(), []);
   const characterSource = characterPreference.confirmed
@@ -110,7 +111,8 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
     ? "/studio/space"
     : "/onboarding/character?next=%2Fstudio%2Fspace";
 
-  const setPanel = (next: typeof panel) => {
+  const setPanel = (next: typeof panel, invoker?: HTMLElement) => {
+    if (invoker) panelReturnFocusRef.current = invoker;
     setParams((current) => {
       const value = new URLSearchParams(current);
       if (next) value.set("panel", next);
@@ -167,7 +169,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
         <button
           type="button"
           className="workspace-icon-button workspace-project-find"
-          onClick={() => setPanel("projects")}
+          onClick={(event) => setPanel("projects", event.currentTarget)}
           aria-haspopup="dialog"
           aria-expanded={panel === "projects"}
           aria-label={bt("작품 찾아 전환", "Find and switch work")}
@@ -182,7 +184,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
         <button
           type="button"
           className="workspace-work-shortcut"
-          onClick={() => setPanel("work")}
+          onClick={(event) => setPanel("work", event.currentTarget)}
           aria-haspopup="dialog"
           aria-expanded={panel === "work"}
           aria-label={bt("작업 바로가기 열기", "Open work shortcuts")}
@@ -205,6 +207,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
         >
           <WorkspaceContextPanel
             open
+            returnFocusRef={panelReturnFocusRef}
             initialFocusRef={panel === "projects" ? projectSearchRef : undefined}
             title={panel === "projects"
               ? bt("작품 찾아 전환", "Find and switch work")
@@ -400,7 +403,7 @@ export function StudioWorkspacePage({ surface = "home" }: { readonly surface?: W
           <button
             type="button"
             className="workspace-icon-button"
-            onClick={() => setPanel("tools")}
+            onClick={(event) => setPanel("tools", event.currentTarget)}
             aria-haspopup="dialog"
             aria-expanded={panel === "tools"}
             aria-label={bt("도구와 공간 메뉴", "Tools and space menu")}

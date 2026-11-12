@@ -214,7 +214,7 @@ for (const width of [320, 390, 820, 1440]) {
 test("task-first search opens the global command palette without losing the query", async ({ page }) => {
   await seedGuestSession(page);
   await page.goto("/home");
-  await page.getByRole("button", { name: "작품·도구·메뉴 검색", exact: true }).click();
+  await page.getByRole("button", { name: "작품·도구·메뉴 검색 ⌘ K", exact: true }).click();
   const search = page.getByPlaceholder(/작품 제목, 작가, 기능 명령/u);
   await expect(search).toBeVisible();
   await search.fill("비 오는 교실 배경");
@@ -310,8 +310,26 @@ for (const width of [320, 390, 912, 1024, 1280]) {
     await expect(startNew).toHaveAttribute("href", STUDIO_START_GATEWAY_HREF);
     await expect(importWork).toBeVisible();
     await expect(importWork).toHaveAttribute("href", "/studio/import");
-    const views = library.getByRole("navigation", { name: "내 작업 보기", exact: true });
-    await expect(views.getByRole("link")).toHaveCount(3);
+    const management = library.locator("details.studio-library-view-management");
+    const managementSummary = management.locator(":scope > summary");
+    await expect(management).not.toHaveAttribute("open");
+    await expect(managementSummary).toHaveText("작품 관리·가져오기");
+    await managementSummary.scrollIntoViewIfNeeded();
+    await managementSummary.focus(); await managementSummary.press("Enter");
+    await expect(management).toHaveAttribute("open");
+    const views = management.getByRole("navigation", { name: "내 작업 보기", exact: true });
+    const viewLinks = views.getByRole("link");
+    await expect(viewLinks).toHaveCount(4);
+    expect(await viewLinks.evaluateAll((links) => links.map((link) => link.getAttribute("href"))))
+      .toEqual(["/studio", "/studio?view=archived", "/studio?view=trash", "/studio/import"]);
+    await expect(views.locator('a[aria-current="page"]')).toHaveAttribute("href", "/studio");
+    for (const link of await viewLinks.all()) {
+      await link.scrollIntoViewIfNeeded(); await expect(link).toBeVisible();
+      await link.click({ trial: true });
+    }
+    await managementSummary.focus(); await managementSummary.press("Enter");
+    await expect(management).not.toHaveAttribute("open");
+    await expect(managementSummary).toBeFocused();
     const storageGuide = library.locator("details").filter({ has: page.locator("summary", { hasText: "저장·내보내기·제작 관리" }) });
     await expect(storageGuide).not.toHaveAttribute("open", "");
     await storageGuide.locator("summary").click();
@@ -349,19 +367,40 @@ test("new project flow explains a disabled start action and preserves the chosen
   await expect(page.locator('[data-workspace-surface="focused"]')).toBeVisible();
   await expect(page.locator(".workspace-sidebar, .campus-toolbar")).toHaveCount(0);
   await expect(page.getByTestId("site-background-music-player")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "완성할 콘텐츠를 선택하세요", exact: true })).toBeVisible();
-  await expect(page.locator('[data-studio-create-format="vertical-webtoon"]')).toHaveAttribute("aria-pressed", "true");
+  // 템플릿 딥링크는 이름·크기 단계로 들어온다. 형식과 시작 확인은 실제 단계 버튼으로 연다.
+  const steps = page.getByRole("navigation", { name: "새 작품 만들기 단계", exact: true });
+  await expect(steps.getByRole("button")).toHaveCount(3);
+  await expect(steps.locator('[data-studio-create-step-link="2"]')).toHaveAttribute("aria-current", "step");
+  await expect(page.getByRole("heading", { level: 1, name: "이름과 기본 크기", exact: true })).toBeVisible();
+  const formatStep = steps.locator('[data-studio-create-step-link="1"]');
+  await formatStep.focus(); await formatStep.press("Enter");
+  await expect(formatStep).toHaveAttribute("aria-current", "step");
+  // 형식 제목은 중복 설명을 줄이기 위해 시각적으로만 접는다. 의미·진입 초점과 실제 선택 UI를 따로 확인한다.
+  const formatHeading = page.getByRole("heading", { name: "만들 작품 형식을 골라 주세요", exact: true });
+  await expect(formatHeading).toHaveCount(1);
+  await expect(formatHeading).toBeFocused();
+  const selectedFormat = page.locator('[data-studio-create-format="vertical-webtoon"]');
+  await expect(selectedFormat).toBeVisible();
+  await expect(selectedFormat).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-studio-auxiliary-workspaces="true"]')).not.toHaveAttribute("open", "");
+  const formatNext = page.getByRole("button", { name: "다음: 작품 이름", exact: true });
+  await expect(formatNext).toBeVisible();
+  await formatNext.click();
+  await expect(steps.locator('[data-studio-create-step-link="2"]')).toHaveAttribute("aria-current", "step");
   await expect(page.getByRole("combobox", { name: "시작 템플릿", exact: true })).toHaveValue("webtoon-vertical");
+  const projectName = page.getByLabel("프로젝트 이름");
+  await projectName.fill("");
+  await expect(page.getByRole("button", { name: "다음: 시작 확인", exact: true })).toBeDisabled();
+  // 시작 확인으로 직접 이동해도 잘못된 입력의 실제 시작 동작은 잠겨 있어야 한다.
+  const reviewStep = steps.locator('[data-studio-create-step-link="3"]');
+  await reviewStep.focus(); await reviewStep.press("Enter");
+  await expect(steps.locator('[data-studio-create-step-link="3"]')).toHaveAttribute("aria-current", "step");
   const preview = page.locator('[data-studio-create-preview="true"]');
   await expect(preview).toHaveJSProperty("open", false);
   await preview.locator("summary").click();
   await expect(preview).toHaveJSProperty("open", true);
   await expect(page.locator('[data-studio-format-preview="vertical-webtoon"]')).toBeVisible();
   await expect(page.locator('[data-studio-mode-preview="webtoon"]')).toBeVisible();
-  await expect(page.locator('[data-studio-auxiliary-workspaces="true"]')).not.toHaveAttribute("open", "");
-
-  const projectName = page.getByLabel("프로젝트 이름");
-  await projectName.fill("");
   const startButton = page.locator('button[aria-describedby*="studio-create-disabled-reason"]');
   await expect(startButton).toBeDisabled();
   const reason = page.locator("#studio-create-disabled-reason");
@@ -371,8 +410,11 @@ test("new project flow explains a disabled start action and preserves the chosen
   await expect(projectName).toBeFocused();
 
   await projectName.fill("별빛 식당 1화");
-  await expect(startButton).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "시작 템플릿", exact: true })).toHaveValue("webtoon-vertical");
   await expect(projectName).toHaveValue("별빛 식당 1화");
+  await page.getByRole("button", { name: "다음: 시작 확인", exact: true }).click();
+  await expect(steps.locator('[data-studio-create-step-link="3"]')).toHaveAttribute("aria-current", "step");
+  await expect(startButton).toHaveCount(0);
   await expect(page.getByRole("button", { name: /시작$/u }).last()).toBeEnabled();
   await expect(page.getByText("이 기기에 저장됨", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/작업은 이 기기에 자동 저장됩니다/u)).toBeVisible();
