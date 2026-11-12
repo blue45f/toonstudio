@@ -38,19 +38,21 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     cleanup();
   });
 
-  it("registers all 95 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
-    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(95);
-    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(5);
+  it("registers all 101 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 6 kitbash-v9 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
+    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(101);
+    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(6);
 
     const poses = listStudioBg3dEssentialAssetsByCategory("pose-3d");
     const essentialProps = listStudioBg3dEssentialAssetsByCategory("essential-prop-3d");
     const refinedV8Props = listStudioBg3dEssentialAssetsByCategory("refined-v8-prop-3d");
+    const kitbashV9Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v9-prop-3d");
     const originalSceneProps = listStudioBg3dEssentialAssetsByCategory("original-scene-prop-3d");
     const originalHandWearProps = listStudioBg3dEssentialAssetsByCategory("original-hand-wear-prop-3d");
 
     expect(poses).toHaveLength(8);
     expect(essentialProps).toHaveLength(8);
     expect(refinedV8Props).toHaveLength(11);
+    expect(kitbashV9Props).toHaveLength(6);
     expect(originalSceneProps).toHaveLength(33);
     expect(originalHandWearProps).toHaveLength(35);
 

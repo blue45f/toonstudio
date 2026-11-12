@@ -519,6 +519,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
         {activeTab === "shaper-tooning" ? (
           <StudioBg3dShaperCharacterStudioPanel
             disabled={disabled}
+            onStatusChange={setLastActionSummary}
+            onInsertScenePrimitives={onInsertScenePrimitives ? handleInsertScenePrimitives : undefined}
             onExportPsd={() => setLastActionSummary("셰이퍼·캐릭터 스튜디오 8레이어 PSD 내보내기 완료")}
           />
         ) : null}

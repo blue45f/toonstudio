@@ -99,3 +99,19 @@ URI가 없습니다.
 The 12 files in `wearable-v5-manifest.json` are original geometry authored for ToonStudio by `scripts/generate-studio-wearable-v5.mts`, dedicated to CC0-1.0. No third-party models or textures were copied. The manifest records metre-scale anchors, geometry counts and SHA-256 hashes. These files supersede the older geometry for matching filenames; source-code licensing is unchanged.
 
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
+
+## ToonStudio 고밀도 배경 킷배시 & 캐릭터 조형 팩 v9 (`kitbash-v9/`)
+
+아래 6개 GLB(`apps/web/public/assets/3d/kitbash-v9/`)는 외부 모델·텍스처를 사용하지 않고 ToonStudio이 Blender 5.2.0 LTS와 `scripts/blender/generate_kitbash_modeling_pack_v9.py`로 직접 제작한 절차형 다중 부품 3D 에셋입니다. 모든 파일은 미터 단위, 바닥 `Z=0`(glTF `Y=0`), 베벨(Bevel)·가중 법선(Weighted Normal)·5~7종 Principled BSDF 재질과 자체 포함 바이너리로 내보냈으며 외부 URI가 없습니다.
+
+| 파일 | 에셋 | 라이선스 |
+| --- | --- | --- |
+| `kitbash-v9/convenience_storefront_v9.glb` | 한국형 편의점·상가 쇼윈도·어닝·간판 파사드 V9 | CC0 1.0 |
+| `kitbash-v9/urban_utility_pole_cluster_v9.glb` | 도심 전신주·주상변압기·완철·가로등 클러스터 V9 | CC0 1.0 |
+| `kitbash-v9/rooftop_hvac_watertank_rig_v9.glb` | 옥상 듀얼 팬 공조기·물탱크·점검 사다리 설비 V9 | CC0 1.0 |
+| `kitbash-v9/cafe_terrace_kiosk_set_v9.glb` | 오픈 카페 어닝 부스·에스프레소 바·테라스 세트 V9 | CC0 1.0 |
+| `kitbash-v9/arcane_portal_sanctum_v9.glb` | 판타지 각성 룬 관문·오벨리스크·성소 제단 V9 | CC0 1.0 |
+| `kitbash-v9/stylized_hero_mannequin_bust_v9.glb` | 웹툰 8등신 캐릭터 조형 마네킹·하이칼라 흉상 V9 | CC0 1.0 |
+
+ToonStudio은 위 6개 원본 모델과 썸네일 렌더(`kitbash-v9/thumbnails/*.png`)를 **CC0 1.0**으로 제공합니다.
+

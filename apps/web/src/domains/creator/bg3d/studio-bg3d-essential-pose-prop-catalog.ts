@@ -1,10 +1,12 @@
 /**
  * Studio BG3D 필수 3D 포즈 마네킹(8종) · 필수 건축 소품(8종) · Refined V8 히어로 소품(11종) ·
+ * Blender 5.2 Kitbash V9 고밀도 배경/캐릭터 조형(6종) ·
  * ToonStudio 오리지널 배경/가구/거대 소품(33종) · 오리지널 일상/착용/무기 소품(35종) 통합 카탈로그.
  *
  * `apps/web/public/creator-essentials/*.glb` (16종),
  * `apps/web/public/assets/3d/refined-v8/*.glb` (11종),
- * `apps/web/public/assets/3d/*.glb` (68종)의 총 95종 CC0-1.0 1st-party GLB 모델을
+ * `apps/web/public/assets/3d/kitbash-v9/*.glb` (6종),
+ * `apps/web/public/assets/3d/*.glb` (68종)의 총 101종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
 
@@ -12,6 +14,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "pose-3d"
   | "essential-prop-3d"
   | "refined-v8-prop-3d"
+  | "kitbash-v9-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -41,6 +44,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "고품질 히어로 소품 V8",
       labelEn: "Refined Hero Props V8",
       descriptionKo: "칠판·신호등·우체통·소파·버블티·여우가면·로봇펫 등 11종 디테일 소품",
+    },
+    {
+      id: "kitbash-v9-prop-3d",
+      labelKo: "블렌더 킷배시 V9",
+      labelEn: "Blender Kitbash V9",
+      descriptionKo: "편의점 파사드·전신주 변압기·옥상 공조기·카페 어닝 부스·각성 포털·캐릭터 조형 흉상 6종",
     },
     {
       id: "original-scene-prop-3d",
@@ -106,6 +115,15 @@ const RAW_REFINED_V8_ROWS: readonly RawAssetRow[] = [
   ["ice_cream_cone", "아이스크림 콘 (V8)", "Ice Cream Cone V8"],
   ["fox_mask", "축제 여우 가면 (V8)", "Festival Fox Mask V8"],
   ["robot_pet", "반려 로봇 펫 (V8)", "Companion Robot Pet V8"],
+];
+
+const RAW_KITBASH_V9_ROWS: readonly RawAssetRow[] = [
+  ["convenience_storefront_v9", "편의점·상가 파사드 모듈 (V9)", "Convenience Storefront Facade V9"],
+  ["urban_utility_pole_cluster_v9", "도심 전신주·변압기·가로등 (V9)", "Urban Utility Pole Cluster V9"],
+  ["rooftop_hvac_watertank_rig_v9", "옥상 공조기·물탱크·배관 설비 (V9)", "Rooftop HVAC & Water Tank Rig V9"],
+  ["cafe_terrace_kiosk_set_v9", "오픈 카페 어닝 부스·테라스 (V9)", "Open Cafe Terrace Kiosk V9"],
+  ["arcane_portal_sanctum_v9", "각성 룬 관문·성소 제단 (V9)", "Arcane Portal Sanctum V9"],
+  ["stylized_hero_mannequin_bust_v9", "8등신 캐릭터 조형 마네킹 흉상 (V9)", "Stylized Hero Mannequin Bust V9"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -265,6 +283,21 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-refined-v8-${normalizedSlug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "prop", "refined-v8", "히어로소품", slug, normalizedSlug, labelKo, labelEn]),
+      });
+    }),
+    ...RAW_KITBASH_V9_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry => {
+      const normalizedSlug = slug.replace(/_/gu, "-");
+      return Object.freeze({
+        id: `kitbash-v9-${normalizedSlug}`,
+        category: "kitbash-v9-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/assets/3d/kitbash-v9/${slug}.glb`,
+        previewUrl: `/assets/3d/kitbash-v9/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${normalizedSlug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "character", "kitbash-v9", "킷배시", "배경모델링", "캐릭터조형", slug, normalizedSlug, labelKo, labelEn]),
       });
     }),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [
