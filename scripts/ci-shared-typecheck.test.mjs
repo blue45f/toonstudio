@@ -39,7 +39,8 @@ test("CI는 실제 Core 성공 뒤 영수증을 만들고 두 도메인은 전�
   assert(feedback.includes("id: types\n        continue-on-error: true"));
   assert(feedback.includes("TYPES: ${{ steps.types.outcome }}"));
   assert(feedback.includes("if os.environ.get(key) != 'success'"));
-  assert(feedback.includes("pnpm run build 2>&1 | tee artifacts/feedback/production-build.log"));
+  assert(feedback.includes("pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log"));
+  assert(feedback.includes("steps.types.outcome == 'success'"));
   for (const file of ["ci-shared-typecheck", "ci-typecheck-receipt", "ci-typecheck-lookup"]) {
     assert(ci.includes("scripts/" + file + ".test.mjs"));
   }
