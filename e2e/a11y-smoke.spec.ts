@@ -192,32 +192,134 @@ test.describe("mobile shell accessibility", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
-  test("서비스 장애 알림과 OST는 펼친 상태에서도 서로 터치를 가리지 않는다", async ({ page }) => {
+  const readServiceOstGeometry = (page: Page) => page.evaluate(() => {
+    const notice = document.querySelector<HTMLElement>("[data-service-degraded-banner]");
+    const ost = document.querySelector<HTMLElement>('[data-testid="site-background-music-player"]');
+    const settings = ost?.querySelector<HTMLElement>(":scope > div");
+    if (!notice || !ost) return { surfacesPresent: false };
+    const rect = (element: Element) => {
+      const r = element.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height, left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    };
+    const inViewport = (r: ReturnType<typeof rect>) => r.width > 0 && r.height > 0
+      && r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight;
+    const hits = (element: Element, r: ReturnType<typeof rect>) => inViewport(r)
+      && [0.2, 0.5, 0.8].every((x) => [0.2, 0.5, 0.8].every((y) =>
+        element.contains(document.elementFromPoint(r.x + r.width * x, r.y + r.height * y))));
+    const controls = (surface: Element, selector: string) => [...surface.querySelectorAll<HTMLElement>(selector)]
+      .filter((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden")
+      .map((element) => {
+        const r = rect(element);
+        return { label: element.getAttribute("aria-label") ?? element.textContent?.trim(), rect: r,
+          touchAndHit: r.width >= 44 && r.height >= 44 && hits(element, r) };
+      });
+    const bannerRect = rect(notice), panelRect = settings ? rect(settings) : null, position = getComputedStyle(notice).position;
+    const pill = controls(ost, "[data-site-ost-pill] button"), bannerControls = controls(notice, "button, a");
+    const expanded = ost.getAttribute("data-site-ost-expanded") === "true";
+    const settingsVisible = Boolean(settings && settings.querySelector('button[aria-label="OST 플레이어 접기"]')
+      && settings.getClientRects().length > 0 && getComputedStyle(settings).visibility !== "hidden");
+    return { surfacesPresent: true, expanded, settingsVisible, position, floating: position === "fixed", bannerRect, panelRect, pill, bannerControls,
+      ostVisible: rect(ost).width > 0 && rect(ost).height > 0 && getComputedStyle(ost).visibility !== "hidden",
+      pillCount: pill.length, bannerControlCount: bannerControls.length,
+      bannerInViewport: inViewport(bannerRect), bannerOnTop: hits(notice, bannerRect),
+      bannerTouchAndHit: bannerControls.length === 3 && bannerControls.every((control) => control.touchAndHit),
+      panelInViewport: panelRect !== null && inViewport(panelRect),
+      noOverlap: panelRect !== null && (panelRect.right <= bannerRect.left || bannerRect.right <= panelRect.left || panelRect.bottom <= bannerRect.top || bannerRect.bottom <= panelRect.top),
+      floatingOrder: position !== "fixed" || (panelRect !== null && panelRect.bottom < bannerRect.top),
+      touchAndHit: pill.length === 2 && [...pill, ...bannerControls].every((control) => control.touchAndHit) };
+  });
+
+  async function assertOstExpanded(page: Page, entry: "menu" | "pill") {
+    const player = page.getByTestId("site-background-music-player");
+    await expect(player).toHaveCount(1);
+    await expect(player).toBeVisible();
+    await expect(player).toHaveAttribute("data-site-ost-expanded", "true");
+    const focusedControl = entry === "menu"
+      ? player.getByRole("button", { name: "OST 플레이어 접기", exact: true })
+      : player.getByRole("button", { name: /오리지널 애니·웹툰 OST/u });
+    await expect(focusedControl).toBeFocused();
+    await expect(player.locator("[data-site-ost-pill] button")).toHaveCount(2);
+  }
+
+  test("서비스 장애 알림과 OST: 본문 연결 안내는 세 폭에서 터치를 가리지 않는다", async ({ page }) => {
+    // 기존 전체 API 503의 실제 연결 준비 상태에는 펼침 버튼이 없다.
     await assertNoBlockingViolations(page, "/studio");
-    const banner = page.locator("[data-service-degraded-banner]");
+    const banner = page.locator('[data-service-degraded-banner="warming"][data-service-status-placement="page-inline"]');
     const player = page.getByTestId("site-background-music-player");
     await expect(banner).toBeVisible();
-    await expect(player).toBeVisible();
+    await expect(banner.locator("button, a")).toHaveCount(0);
+    await expect(player).toHaveCount(1);
+    await expect(player).toBeHidden();
+    const scrollBeforeMenu = await page.evaluate(() => ({ body: document.body.style.overflow, root: document.documentElement.style.overflow }));
+    const menuTrigger = page.locator('button[data-site-mobile-menu-trigger="true"]:visible');
+    await expect(menuTrigger).toHaveCount(1);
+    const menu = page.locator('[role="dialog"][data-site-menu-panel="true"]');
+    for (const width of [390, 320, 430]) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect(player).toBeHidden();
+      await menuTrigger.click();
+      await expect(menu).toHaveCount(1);
+      await expect(menu).toBeVisible();
+      await menu.locator('button[data-site-menu-ost="true"]').click();
+      await expect(menu).toHaveCount(0);
+      await assertOstExpanded(page, "menu");
+      await expect.poll(async () => player.evaluate((element) => element.closest("[inert]") === null)).toBe(true);
+      await expect.poll(async () => page.evaluate(() => ({ body: document.body.style.overflow, root: document.documentElement.style.overflow }))).toEqual(scrollBeforeMenu);
+      // 명시적으로 연 옵션 패널은 본문을 덮을 수 있다. 조작 없는 inline 안내에 원래 고정 배너의
+      // 동시 비겹침 조건을 적용하지 않고, 실제 패널 조작과 닫은 뒤 본문·초점 복원을 검사한다.
+      await expect.poll(() => readServiceOstGeometry(page), { message: `본문 연결 안내·OST ${width}px` }).toMatchObject({
+        surfacesPresent: true, expanded: true, settingsVisible: true, floating: false, pillCount: 2, bannerControlCount: 0,
+        panelInViewport: true, touchAndHit: true,
+      });
+      await player.getByRole("button", { name: "OST 플레이어 접기", exact: true }).click();
+      await expect(player).not.toHaveAttribute("data-site-ost-expanded", "true");
+      await expect(player).toBeHidden();
+      await expect(menuTrigger).toBeFocused();
+      await expect(banner).toBeVisible();
+      await expect.poll(() => readServiceOstGeometry(page), { message: `OST 닫은 뒤 본문 안내 복원 ${width}px` }).toMatchObject({
+        surfacesPresent: true, expanded: false, settingsVisible: false, ostVisible: false,
+        floating: false, bannerControlCount: 0, bannerInViewport: true, bannerOnTop: true,
+      });
+    }
+  });
+
+  test("서비스 장애 알림과 OST: 고정 장애 배너의 여섯 상태가 터치를 가리지 않는다", async ({ page }) => {
+    // production-workflows의 서비스 응답 계약을 재사용한다. DOM·CSS·저장소를 강제로 바꾸지 않는다.
+    await page.route(/\/health\/capabilities(?:\?.*)?$/u, (route) => route.fulfill({ json: {
+      status: "degraded", incidentId: "qa-ost-floating-notice", retryAfterSeconds: 60,
+      checkedAt: new Date().toISOString(),
+      capabilities: {
+        publicCatalog: "unavailable", authSession: "available", communityRead: "unavailable", communityWrite: "unavailable",
+        marketplaceRead: "unavailable", studioLocalEditing: "available", studioProjectRead: "unavailable",
+        studioCloudSave: "unavailable", realtimeCollaboration: "unavailable", publishing: "unavailable", serverAi: "unavailable",
+      },
+    } }));
+    // 모바일 캐릭터 로비는 OST 전체를 숨긴다(space-lobby.css). 고정 알림과 OST를 강제로
+    // 합성하지 않고, 기존 여섯 상태의 실제 알림 조작·화면 경계와 OST 비노출을 함께 검증한다.
+    // 캐릭터 선택·입장·저장은 실행하지 않는다.
+    await page.goto("/onboarding/character", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("main").first()).toBeVisible();
+    const banner = page.locator('[data-service-degraded-banner="degraded"]');
+    const player = page.getByTestId("site-background-music-player");
+    await expect(banner).toHaveCount(1);
+    await expect(banner).toBeVisible();
+    await expect.poll(() => banner.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
+    await expect(player).toHaveCount(1);
+    await expect(player).toBeHidden();
     for (const width of [390, 320, 430]) {
       await page.setViewportSize({ width, height: 844 });
       for (const expanded of [false, true]) {
-        if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 펼치기" }).click();
-        await expect.poll(async () => player.locator("button").evaluateAll((buttons) => buttons.every((button) => {
-          const r = button.getBoundingClientRect();
-          return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth
-            && [0.2, 0.5, 0.8].every((x) => [0.2, 0.5, 0.8].every((y) =>
-              button.contains(document.elementFromPoint(r.x + r.width * x, r.y + r.height * y))));
-        }))).toBe(true);
-        if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 접기" }).click();
+        if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 펼치기", exact: true }).click();
+        await expect(banner.getByRole("button", { name: expanded ? "서비스 상태 알림 접기" : "서비스 상태 알림 펼치기", exact: true })).toHaveAttribute("aria-expanded", String(expanded));
+        await expect(player).toBeHidden();
+        await expect.poll(() => readServiceOstGeometry(page), { message: `고정 서비스 알림·OST 비노출 ${width}px / ${expanded ? "펼침" : "접힘"}` }).toMatchObject({
+          surfacesPresent: true, expanded: false, settingsVisible: false, ostVisible: false, floating: true,
+          pillCount: 0, bannerControlCount: 3, bannerInViewport: true, bannerTouchAndHit: true,
+        });
+        if (expanded) await banner.getByRole("button", { name: "서비스 상태 알림 접기", exact: true }).click();
       }
     }
-    await player.getByRole("button", { name: /오리지널 애니·웹툰 OST/u }).click();
-    const settings = player.locator(":scope > div").first();
-    const bounds = await settings.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds?.y).toBeGreaterThanOrEqual(0);
-    const bannerBounds = await banner.boundingBox();
-    expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThan(bannerBounds?.y ?? 0);
+    await expect(player).toBeHidden();
   });
 
   for (const route of MOBILE_A11Y_ROUTES) {
