@@ -38,6 +38,8 @@ const sceneHandle: StudioMannequinSceneHandle = {
   setCameraPreset: vi.fn(),
   setProjection: vi.fn(),
   getProjection: vi.fn(() => "perspective" as const),
+  setQuadView: vi.fn(),
+  setCameraFovDeg: vi.fn(),
   resetCamera: vi.fn(),
   resize: vi.fn(),
   invalidate: vi.fn(),
@@ -1337,5 +1339,148 @@ describe("StudioMannequinPoserPanel 실사용 감사 B 수정", () => {
     fireEvent.click(screen.getByRole("button", { name: /^손 \d+$/ }));
     expect(screen.getByRole("button", { name: "주먹 (Fist)" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "일도양단 발도세" })).toBeNull();
+  });
+});
+
+describe("StudioMannequinPoserPanel 손 접촉·콘트라포스토·사면도 영속 및 체형·Undo 일관성", () => {
+  it("손 접촉·콘트라포스토·사면도·화각·정투영 설정을 SQLite v3 상태로 저장하고 재오픈 시 UI와 씬에 그대로 복원한다", async () => {
+    let persistedSnapshot: unknown = null;
+    persistenceRuntimeMocks.save.mockImplementation(async (state: unknown) => {
+      persistedSnapshot = state;
+      return state;
+    });
+
+    const onClose = vi.fn();
+    const firstView = renderPanel({ onClose });
+    await waitForPersistenceReady();
+
+    // 관절 탭에서 좌측 콘트라포스토 + 오른손 턱 괴기 활성화
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    fireEvent.click(screen.getByRole("button", { name: "좌측 콘트라포스토" }));
+    fireEvent.click(screen.getByRole("button", { name: "턱 괴기" }));
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+
+    // 카메라 탭에서 4분할 사면도 + 정투영 + 망원 22° 프리셋 설정
+    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    fireEvent.click(screen.getByRole("button", { name: /4분할 사면도/ }));
+    fireEvent.click(screen.getByRole("button", { name: "정투영" }));
+    fireEvent.click(screen.getByRole("button", { name: /망원 22°/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "3D 데생 인형 닫기" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(persistedSnapshot).toMatchObject({
+      rig: {
+        handContacts: { right: "chin" },
+        contrapposto: "left",
+        quadView: true,
+        cameraFovDeg: 22,
+        projection: "orthographic",
+      },
+    });
+    firstView.unmount();
+
+    // 저장된 스냅샷으로 재오픈 → 사면도·화각·정투영·손 접촉·콘트라포스토가 그대로 복원된다
+    vi.clearAllMocks();
+    persistenceRuntimeMocks.load.mockResolvedValueOnce(persistedSnapshot);
+    renderPanel();
+    await waitForPersistenceReady();
+
+    expect(sceneHandle.setProjection).toHaveBeenCalledWith("orthographic");
+    expect(sceneHandle.setQuadView).toHaveBeenCalledWith(true);
+    expect(sceneHandle.setCameraFovDeg).toHaveBeenCalledWith(22);
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: /^카메라/ }));
+    expect(screen.getByRole("button", { name: /4분할 사면도 ON/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("체형 변경 시 활성 손 접촉·콘트라포스토 목표를 새 체형에 맞춰 유지하고 Undo/Redo 시 토글 상태까지 일관되게 되돌린다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    fireEvent.click(screen.getByRole("button", { name: "좌측 콘트라포스토" }));
+    fireEvent.click(screen.getByRole("button", { name: "턱 괴기" }));
+    const poseBeforeBodyChange = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    expect(poseBeforeBodyChange).toBeDefined();
+
+    // 체형 탭에서 5등신 SD 원형으로 변경 → 포즈가 새 체형 턱·지면 높이에 맞춰 자동 재계산된다
+    vi.mocked(sceneHandle.setPose).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^체형/ }));
+    fireEvent.click(screen.getByRole("button", { name: "5등신 SD" }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
+    const poseAfterSd = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    expect(poseAfterSd?.pelvisOffset[1]).not.toBeCloseTo(poseBeforeBodyChange!.pelvisOffset[1], 2);
+
+    // 관절 탭으로 돌아가도 접촉 고정 상태가 살아 있고 Undo/Redo로 정확히 오간다
+    fireEvent.click(screen.getByRole("button", { name: /^관절/ }));
+    expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: /되돌리기/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("false");
+      expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /다시실행/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "턱 괴기" }).getAttribute("aria-pressed")).toBe("true");
+      expect(screen.getByRole("button", { name: "좌측 콘트라포스토" }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
+  it("잘못된/미지원 JSON 가져오기는 기존 포즈를 보존한 채 오류를 안내하고, 구버전/부분 오염 JSON은 안전 복구 후 안내한다", async () => {
+    renderPanel();
+    await waitForPersistenceReady();
+
+    fireEvent.click(screen.getByRole("button", { name: "달리기" }));
+    await waitFor(() => expect(sceneHandle.setPose).toHaveBeenCalled());
+    const runPose = vi.mocked(sceneHandle.setPose).mock.calls.at(-1)?.[0];
+    vi.mocked(sceneHandle.setPose).mockClear();
+
+    const fileInput = document.querySelector('input[accept=".mannequin,.json"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+
+    // 1) 미지원 상위 버전(v99) 파일 → 기존 달리기 포즈 유지 + 명확한 한글 안내
+    const futureFile = new File(
+      [JSON.stringify({ kind: "studio-mannequin-state", version: 99, pose: { joints: {}, pelvisOffset: [0, 0, 0] } })],
+      "future.mannequin",
+      { type: "application/json" },
+    );
+    fireEvent.change(fileInput, { target: { files: [futureFile] } });
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain("지원하지 않는 데생 인형 문서 버전");
+    });
+    expect(sceneHandle.setPose).not.toHaveBeenCalled();
+
+    // 2) 비정상 rig 하위 필드가 섞인 v3 파일 → 유효한 체형·포즈·사면도는 살리고 복구 안내 표시
+    const sitPreset = STUDIO_MANNEQUIN_POSE_PRESETS.find((p) => p.id === "sit-chair")!;
+    const partialDirtyFile = new File(
+      [
+        JSON.stringify({
+          kind: "studio-mannequin-state",
+          version: 3,
+          params: { ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, heightCm: 175 },
+          pose: sitPreset.pose,
+          rig: { quadView: true, contrapposto: "invalid-dir", cameraFovDeg: 500 },
+        }),
+      ],
+      "dirty.mannequin",
+      { type: "application/json" },
+    );
+    fireEvent.change(fileInput, { target: { files: [partialDirtyFile] } });
+    await waitFor(() => {
+      expect(sceneHandle.setPose).toHaveBeenCalled();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.getByText(/안전한 기본값으로 복구/)).toBeTruthy();
+    });
+    expect(sceneHandle.setQuadView).toHaveBeenCalledWith(true);
+    expect(sceneHandle.setCameraFovDeg).toHaveBeenCalledWith(85);
+    expect(runPose).toBeDefined();
   });
 });

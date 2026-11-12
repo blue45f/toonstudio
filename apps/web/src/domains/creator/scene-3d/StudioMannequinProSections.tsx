@@ -507,6 +507,8 @@ export function StudioMannequinJointSection({
   guideVisibility = STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
   balanceReport,
   gestureAnalysis,
+  activeContrapposto = null,
+  activeHandContacts = {},
   onSelectJoint,
   onRotate,
   onResetJoint,
@@ -517,6 +519,7 @@ export function StudioMannequinJointSection({
   onAutoBalance,
   onApplyContrapposto,
   onApplyHandContact,
+  onClearSemanticContacts,
   onLookAtCamera,
   onApplyHandPad,
   onImportCspPep,
@@ -530,6 +533,8 @@ export function StudioMannequinJointSection({
   readonly guideVisibility?: StudioMannequinGuideVisibility;
   readonly balanceReport?: StudioMannequinBalanceReport;
   readonly gestureAnalysis?: StudioMannequinGestureAnalysis;
+  readonly activeContrapposto?: "left" | "right" | null;
+  readonly activeHandContacts?: { readonly left?: StudioMannequinHandContactTargetId; readonly right?: StudioMannequinHandContactTargetId };
   readonly onSelectJoint: (jointId: StudioMannequinJointId) => void;
   readonly onRotate: (rotation: StudioMannequinVec3) => void;
   readonly onResetJoint: () => void;
@@ -540,6 +545,7 @@ export function StudioMannequinJointSection({
   readonly onAutoBalance?: () => void;
   readonly onApplyContrapposto?: (weightSide: "left" | "right") => void;
   readonly onApplyHandContact?: (side: "left" | "right", targetId: StudioMannequinHandContactTargetId) => void;
+  readonly onClearSemanticContacts?: () => void;
   readonly onLookAtCamera?: () => void;
   readonly onApplyHandPad?: (side: "left" | "right" | "both", output: StudioMannequinHandPadOutput) => void;
   readonly onImportCspPep?: () => void;
@@ -693,12 +699,12 @@ export function StudioMannequinJointSection({
           <div className="flex flex-wrap gap-1.5">
             {onApplyContrapposto ? (
               <>
-                <StudioPanelChip onClick={() => onApplyContrapposto("left")} title="왼다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착">
+                <StudioToggleChip active={activeContrapposto === "left"} onClick={() => onApplyContrapposto("left")} title="왼다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착 (체형 변경 시 유지)">
                   좌측 콘트라포스토
-                </StudioPanelChip>
-                <StudioPanelChip onClick={() => onApplyContrapposto("right")} title="오른다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착">
+                </StudioToggleChip>
+                <StudioToggleChip active={activeContrapposto === "right"} onClick={() => onApplyContrapposto("right")} title="오른다리 지지 콘트라포스토 S-리듬 및 발바닥 밀착 (체형 변경 시 유지)">
                   우측 콘트라포스토
-                </StudioPanelChip>
+                </StudioToggleChip>
               </>
             ) : null}
             {onLookAtCamera ? (
@@ -717,16 +723,21 @@ export function StudioMannequinJointSection({
               <Hand size={13} className="text-accent" aria-hidden /> 손 신체·바닥 밀착 스냅
             </span>
             <div className="flex gap-1" role="group" aria-label="손 밀착 대상 팔">
-              <StudioToggleChip active={contactSide === "left"} onClick={() => setContactSide("left")}>왼손</StudioToggleChip>
-              <StudioToggleChip active={contactSide === "right"} onClick={() => setContactSide("right")}>오른손</StudioToggleChip>
+              <StudioToggleChip active={contactSide === "left"} onClick={() => setContactSide("left")}>왼손{activeHandContacts.left ? " •" : ""}</StudioToggleChip>
+              <StudioToggleChip active={contactSide === "right"} onClick={() => setContactSide("right")}>오른손{activeHandContacts.right ? " •" : ""}</StudioToggleChip>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="손 밀착 위치">
             {STUDIO_MANNEQUIN_HAND_CONTACT_TARGETS.map((target) => (
-              <StudioPanelChip key={target.id} onClick={() => onApplyHandContact(contactSide, target.id)} title={target.desc}>
+              <StudioToggleChip key={target.id} active={activeHandContacts[contactSide] === target.id} onClick={() => onApplyHandContact(contactSide, target.id)} title={target.desc}>
                 {target.label}
-              </StudioPanelChip>
+              </StudioToggleChip>
             ))}
+            {(activeContrapposto || activeHandContacts.left || activeHandContacts.right) && onClearSemanticContacts ? (
+              <StudioPanelChip onClick={onClearSemanticContacts} title="현재 자세를 유지한 채 체형 연동 접촉·콘트라포스토 고정을 해제합니다">
+                접촉 고정 해제
+              </StudioPanelChip>
+            ) : null}
           </div>
         </div>
       ) : null}

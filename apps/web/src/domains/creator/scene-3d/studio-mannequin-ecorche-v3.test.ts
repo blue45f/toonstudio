@@ -69,6 +69,13 @@ import {
   computeStudioMannequinQuadViewRects,
   resolveStudioMannequinQuadPointerNdc,
 } from "./studio-mannequin-quad-view";
+import {
+  mirrorStudioMannequinSemanticContacts,
+  reconcileStudioMannequinSemanticContactsAfterManualEdit,
+  resolveUndoRedoSemanticStep,
+  retargetStudioMannequinSemanticPose,
+} from "./studio-mannequin-semantic-persistence";
+import { createStudioPoseHistory, recordStudioPoseHistory } from "./studio-pose-history";
 
 const DEG = Math.PI / 180;
 
@@ -379,5 +386,95 @@ describe("클립스튜디오 .pep / .3dp 양방향 호환 브리지", () => {
     expect(imported.headCount).toBeGreaterThanOrEqual(7.6);
     expect(imported.build).toBeGreaterThan(1.6);
     expect(imported.shoulderWidth).toBeCloseTo(1.18, 2);
+  });
+});
+
+describe("체형 변경 후 접촉 목표 유지 · 양손 무간섭 · Undo/Redo 체형 연동", () => {
+  it("양손 동시 접촉 시 반대편 어깨 리듬이 먼저 맞춘 손을 흔들지 않고 체형(hero8→sd5→muscleVillain)·호흡 변경 뒤에도 접촉을 유지한다", () => {
+    const meta = {
+      contrapposto: "left" as const,
+      handContacts: { left: "hip" as const, right: "chin" as const },
+    };
+    for (const archetypeId of ["hero8", "sd5", "muscleVillain"] as const) {
+      const baseParams = resolveStudioMannequinArchetypeParams(archetypeId);
+      const inhaledSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(baseParams, 0.9));
+      const retargeted = retargetStudioMannequinSemanticPose(
+        inhaledSpec,
+        createStudioMannequinRestPose(),
+        meta,
+      );
+      const leftCheck = applyStudioMannequinHandContact(inhaledSpec, retargeted, "left", "hip");
+      const rightCheck = applyStudioMannequinHandContact(inhaledSpec, retargeted, "right", "chin");
+      expect(leftCheck.residualDistanceM).toBeLessThan(0.035);
+      expect(rightCheck.residualDistanceM).toBeLessThan(0.035);
+      expect(retargeted.joints.leftUpperArm).toEqual(leftCheck.pose.joints.leftUpperArm);
+      expect(measureStudioMannequinBodyFloor(inhaledSpec, retargeted).lowestY).toBeCloseTo(0, 3);
+    }
+
+    const sdSpec = buildStudioMannequinSpec(resolveStudioMannequinArchetypeParams("sd5"));
+    const bothGround = retargetStudioMannequinSemanticPose(sdSpec, createStudioMannequinRestPose(), {
+      handContacts: { left: "ground", right: "ground" },
+    });
+    const floor = measureStudioMannequinBodyFloor(sdSpec, bothGround);
+    expect(floor.lowestY).toBeCloseTo(0, 3);
+    expect(Math.abs(floor.regionLowestY.leftHand)).toBeLessThan(0.02);
+    expect(Math.abs(floor.regionLowestY.rightHand)).toBeLessThan(0.02);
+  });
+
+  it("Undo 후 체형을 바꾼 뒤 Redo 해도 새 체형 표면에 맞춰 손 접촉이 자동 재적용되며, 미러·수동 편집도 접촉 고정을 일관되게 조율한다", () => {
+    const rest = createStudioMannequinRestPose();
+    const heroSpec = buildStudioMannequinSpec(resolveStudioMannequinArchetypeParams("hero8"));
+    const sdSpec = buildStudioMannequinSpec(resolveStudioMannequinArchetypeParams("sd5"));
+
+    const heroChinMeta = { handContacts: { right: "chin" as const }, contrapposto: "left" as const };
+    const heroChinPose = retargetStudioMannequinSemanticPose(heroSpec, rest, heroChinMeta);
+
+    const history = recordStudioPoseHistory(createStudioPoseHistory(), rest);
+    const undone = resolveUndoRedoSemanticStep({
+      direction: "undo",
+      history,
+      currentPose: heroChinPose,
+      currentMeta: heroChinMeta,
+      spec: heroSpec,
+      locks: {},
+    })!;
+    expect(undone.meta).toEqual({});
+    expect(undone.pose).toEqual(rest);
+
+    const redoneOnSd = resolveUndoRedoSemanticStep({
+      direction: "redo",
+      history: undone.history,
+      currentPose: undone.pose,
+      currentMeta: undone.meta,
+      spec: sdSpec,
+      locks: {},
+    })!;
+    expect(redoneOnSd.meta).toEqual(heroChinMeta);
+    expect(redoneOnSd.pose.pelvisOffset[1]).not.toBeCloseTo(heroChinPose.pelvisOffset[1], 2);
+    expect(measureStudioMannequinBodyFloor(sdSpec, redoneOnSd.pose).lowestY).toBeCloseTo(0, 3);
+
+    expect(
+      mirrorStudioMannequinSemanticContacts({
+        handContacts: { left: "hip", right: "chin" },
+        contrapposto: "left",
+      }),
+    ).toEqual({
+      handContacts: { left: "chin", right: "hip" },
+      contrapposto: "right",
+    });
+
+    const leftEdited = normalizeStudioMannequinPose({
+      joints: { ...heroChinPose.joints, leftUpperArm: [-0.7, 0, 0.3] },
+      pelvisOffset: heroChinPose.pelvisOffset,
+    });
+    expect(
+      reconcileStudioMannequinSemanticContactsAfterManualEdit(heroChinPose, leftEdited, {
+        handContacts: { left: "hip", right: "chin" },
+        contrapposto: "left",
+      }),
+    ).toEqual({
+      handContacts: { right: "chin" },
+      contrapposto: "left",
+    });
   });
 });

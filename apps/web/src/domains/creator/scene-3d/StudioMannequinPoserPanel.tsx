@@ -1,8 +1,9 @@
 /**
- * Studio 3D 데생 인형 포저 패널 (v3 에코르셰 해부학·견갑상완 리듬·무게중심 추선·2D 핸드 셋업·CSP 호환 통합).
+ * Studio 3D 데생 인형 포저 패널 (v5 에코르셰 해부학·견갑상완 리듬·무게중심 추선·2D 핸드 셋업·접촉/사면도 영속·CSP 호환 통합).
  *
  * 클립스튜디오 데생 인형을 능가하는 에코르셰 근육 면·유기 단면 로프트·아사로 다면체 모드,
  * 관절 잠금(Joint Lock), 견갑상완 리듬, 생체역학 무게중심(CoM) 자동 균형, 루미스·단축 등고선 가이드,
+ * 손 접촉·콘트라포스토·사면도(Quad View)·화각 저장/복원 및 Undo/Redo·체형 변경 연동,
  * 2D 핸드 셋업 패드(벌림·쥐기·엄지 대립), 클립스튜디오 `.pep`/`.3dp` 양방향 변환을 제공한다.
  */
 
@@ -55,8 +56,6 @@ import {
   analyzeStudioMannequinGesture,
   applyStudioMannequinBreathingParams,
   applyStudioMannequinGazeTarget,
-  applyStudioMannequinHandContact,
-  buildStudioMannequinContrappostoPose,
   type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
 import {
@@ -90,16 +89,30 @@ import {
 } from "./studio-mannequin-hand-tracking";
 import {
   STUDIO_MANNEQUIN_POSE_PRESETS,
+  canonicalizeStudioMannequinRigState,
   createStudioMannequinRestPose,
   encodeStudioMannequinShareHash,
   exportStudioMannequinStateToJSON,
-  importStudioMannequinStateFromJSON,
   normalizeStudioMannequinPose,
+  studioMannequinPosePresetScope,
+  type StudioMannequinHandContactMap,
   type StudioMannequinPersistentPartner,
+  type StudioMannequinPersistentRigState,
   type StudioMannequinPersistentState,
   type StudioMannequinPose,
   type StudioMannequinPoseCategory,
 } from "./studio-mannequin-poses";
+import {
+  hasActiveStudioMannequinSemanticContacts,
+  importStudioMannequinStateWithDiagnostics,
+  mirrorStudioMannequinSemanticContacts,
+  parseStudioMannequinShareHashWithDiagnostics,
+  reconcileStudioMannequinSemanticContactsAfterManualEdit,
+  resolveContrappostoToggleTransition,
+  resolveHandContactToggleTransition,
+  resolveUndoRedoSemanticStep,
+  retargetStudioMannequinSemanticPose,
+} from "./studio-mannequin-semantic-persistence";
 import {
   STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
   analyzeStudioMannequinBalance,
@@ -123,9 +136,8 @@ import {
   createStudioPoseHistory,
   describeStudioPoseHistory,
   recordStudioPoseHistory,
-  redoStudioPoseHistory,
+  type StudioMannequinPoseSemanticMeta,
   type StudioPoseHistory,
-  undoStudioPoseHistory,
 } from "./studio-pose-history";
 import {
   createStudioMannequinScene,
@@ -247,9 +259,9 @@ export function StudioMannequinPoserPanel({
   const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [jointLocks, setJointLocks] = useState<StudioMannequinJointLockMap>({});
   const [scapulohumeralRhythm, setScapulohumeralRhythm] = useState(true);
-  const [guideVisibility, setGuideVisibility] = useState<StudioMannequinGuideVisibility>(
-    STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
-  );
+  const [guideVisibility, setGuideVisibility] = useState<StudioMannequinGuideVisibility>(STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY);
+  const [activeContrapposto, setActiveContrapposto] = useState<"left" | "right" | null>(null);
+  const [activeHandContacts, setActiveHandContacts] = useState<StudioMannequinHandContactMap>({});
 
   const [poseCategory, setPoseCategory] = useState<StudioMannequinPoseCategory | "all">("all");
   const [tab, setTab] = useState<MannequinTabId>("pose");
@@ -308,17 +320,57 @@ export function StudioMannequinPoserPanel({
   const poseRef = useRef(pose);
   const jointLocksRef = useRef(jointLocks);
   const rhythmRef = useRef(scapulohumeralRhythm);
+  const activeContrappostoRef = useRef<"left" | "right" | null>(activeContrapposto);
+  const activeHandContactsRef = useRef<StudioMannequinHandContactMap>(activeHandContacts);
+  const projectionRef = useRef<StudioMannequinProjection>(projection);
+  const quadViewRef = useRef(quadView);
+  const cameraFovDegRef = useRef(cameraFovDeg);
+  const breathPhaseRef = useRef(breathPhase);
+  const fingerPoseRef = useRef(fingerPose);
+  const duoPartnerRef = useRef<StudioMannequinPersistentPartner | null>(null);
   jointLocksRef.current = jointLocks;
   rhythmRef.current = scapulohumeralRhythm;
+  activeContrappostoRef.current = activeContrapposto;
+  activeHandContactsRef.current = activeHandContacts;
+  projectionRef.current = projection;
+  quadViewRef.current = quadView;
+  cameraFovDegRef.current = cameraFovDeg;
+  breathPhaseRef.current = breathPhase;
+  fingerPoseRef.current = fingerPose;
+
+  const readCurrentSemanticMeta = useCallback((): StudioMannequinPoseSemanticMeta => ({
+    ...(activeHandContactsRef.current.left || activeHandContactsRef.current.right ? { handContacts: activeHandContactsRef.current } : {}),
+    ...(activeContrappostoRef.current ? { contrapposto: activeContrappostoRef.current } : {}),
+  }), []);
+
+  const buildCurrentCanonicalRig = useCallback(
+    (): StudioMannequinPersistentRigState | undefined =>
+      canonicalizeStudioMannequinRigState({
+        handContacts: activeHandContactsRef.current,
+        contrapposto: activeContrappostoRef.current ?? undefined,
+        quadView: quadViewRef.current ? true : undefined,
+        cameraFovDeg: cameraFovDegRef.current,
+        projection: projectionRef.current === "orthographic" ? "orthographic" : undefined,
+      }),
+    [],
+  );
+
   const stateRef = useRef<StudioMannequinPersistentState>({ params, pose });
 
   const commitDuoPartnerState = useCallback((partner: StudioMannequinPersistentPartner | null, userEdit: boolean) => {
+    duoPartnerRef.current = partner;
     if (userEdit) stateRevisionRef.current += 1;
-    stateRef.current = composeStudioMannequinDuoState(stateRef.current, partner);
-  }, []);
+    stateRef.current = composeStudioMannequinDuoState(
+      { params: stateRef.current.params, pose: stateRef.current.pose, rig: buildCurrentCanonicalRig() },
+      partner,
+    );
+  }, [buildCurrentCanonicalRig]);
+
   const duo = useStudioMannequinDuoPartner({ sceneRef, onPartnerCommitted: commitDuoPartnerState, groundPose: groundFootPose });
   const { attachScene: attachDuoScene, placeDuo, applyPoseToPartner, restorePartner: restoreDuoPartner } = duo;
-  stateRef.current = composeStudioMannequinDuoState({ params, pose }, duo.partner);
+  duoPartnerRef.current = duo.partner;
+  stateRef.current = composeStudioMannequinDuoState({ params, pose, rig: buildCurrentCanonicalRig() }, duo.partner);
+
   const webcamLoading = webcamLoadingStage !== null;
   webcamActiveRef.current = webcamActive;
   webcamLoadingRef.current = webcamLoading;
@@ -327,33 +379,60 @@ export function StudioMannequinPoserPanel({
   poseFrozenRef.current = poseFrozen;
   mirrorModeRef.current = mirrorMode;
 
+  const syncStateSnapshot = useCallback((nextParams: StudioMannequinBodyParams, nextPose: StudioMannequinPose) => {
+    stateRef.current = composeStudioMannequinDuoState({ params: nextParams, pose: nextPose, rig: buildCurrentCanonicalRig() }, duoPartnerRef.current);
+  }, [buildCurrentCanonicalRig]);
+
+  const applySemanticMeta = useCallback((meta: StudioMannequinPoseSemanticMeta | undefined) => {
+    const nextHandContacts: StudioMannequinHandContactMap = {
+      ...(meta?.handContacts?.left ? { left: meta.handContacts.left } : {}),
+      ...(meta?.handContacts?.right ? { right: meta.handContacts.right } : {}),
+    };
+    const nextContrapposto: "left" | "right" | null =
+      meta?.contrapposto === "left" || meta?.contrapposto === "right" ? meta.contrapposto : null;
+    activeHandContactsRef.current = nextHandContacts;
+    activeContrappostoRef.current = nextContrapposto;
+    setActiveHandContacts(nextHandContacts);
+    setActiveContrapposto(nextContrapposto);
+    syncStateSnapshot(stateRef.current.params, poseRef.current);
+  }, [syncStateSnapshot]);
+
   const commitParams = useCallback((nextParams: StudioMannequinBodyParams) => {
     stateRevisionRef.current += 1;
-    stateRef.current = { ...stateRef.current, params: nextParams };
+    const currentMeta = readCurrentSemanticMeta();
+    let nextPose = poseRef.current;
+    if (hasActiveStudioMannequinSemanticContacts(currentMeta)) {
+      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(nextParams, breathPhaseRef.current), { fingerPose: fingerPoseRef.current });
+      nextPose = retargetStudioMannequinSemanticPose(nextSpec, poseRef.current, currentMeta, jointLocksRef.current);
+      poseRef.current = nextPose;
+      setPose(nextPose);
+    }
+    syncStateSnapshot(nextParams, nextPose);
     setParams(nextParams);
-  }, []);
+  }, [readCurrentSemanticMeta, syncStateSnapshot]);
 
   const commitPose = useCallback((nextPose: StudioMannequinPose): StudioMannequinPose => {
     stateRevisionRef.current += 1;
     poseRef.current = nextPose;
-    stateRef.current = { ...stateRef.current, pose: nextPose };
+    syncStateSnapshot(stateRef.current.params, nextPose);
     setPose(nextPose);
     return nextPose;
-  }, []);
+  }, [syncStateSnapshot]);
 
-  function recordPoseHistory(): void {
-    poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current);
+  const recordPoseHistory = useCallback(() => {
+    poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current, readCurrentSemanticMeta());
     setPoseHistorySnapshot(poseHistoryRef.current);
-  }
+  }, [readCurrentSemanticMeta]);
 
   const commitPoseWithHistory = useCallback(
-    (nextPose: StudioMannequinPose): StudioMannequinPose => {
+    (nextPose: StudioMannequinPose, nextMeta: StudioMannequinPoseSemanticMeta = {}): StudioMannequinPose => {
       const locked = applyStudioMannequinJointLocks(poseRef.current, nextPose, jointLocksRef.current);
       recordPoseHistory();
       rotateGestureRecordedRef.current = true;
+      applySemanticMeta(nextMeta);
       return commitPose(groundFootPose(locked, stateRef.current.params).pose);
     },
-    [commitPose, groundFootPose],
+    [applySemanticMeta, commitPose, groundFootPose, recordPoseHistory],
   );
 
   const resetPoseHistoryGesture = useCallback(() => {
@@ -363,9 +442,9 @@ export function StudioMannequinPoserPanel({
   const recordPoseHistoryOncePerGesture = useCallback(() => {
     if (rotateGestureRecordedRef.current) return;
     rotateGestureRecordedRef.current = true;
-    poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current);
+    poseHistoryRef.current = recordStudioPoseHistory(poseHistoryRef.current, poseRef.current, readCurrentSemanticMeta());
     setPoseHistorySnapshot(poseHistoryRef.current);
-  }, []);
+  }, [readCurrentSemanticMeta]);
 
   const resetPoseHistoryGestureOnKey = (event: React.KeyboardEvent) => {
     if (!event.repeat) resetPoseHistoryGesture();
@@ -380,22 +459,26 @@ export function StudioMannequinPoserPanel({
   const magicPoserScene = useMemo<StudioMagicPoserScene>(
     () => ({
       setPose: (nextPose: StudioMannequinPose) => {
-        const locked = applyStudioMannequinJointLocks(poseRef.current, nextPose, jointLocksRef.current);
+        const prevPose = poseRef.current;
+        const grounded = groundFootPose(applyStudioMannequinJointLocks(prevPose, nextPose, jointLocksRef.current), stateRef.current.params).pose;
         recordPoseHistoryOncePerGesture();
-        return commitPose(groundFootPose(locked, stateRef.current.params).pose);
+        applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, grounded, readCurrentSemanticMeta()));
+        return commitPose(grounded);
       },
       getPose: () => poseRef.current,
       setJointRotation: (jointId, rotation) => {
         if (jointLocksRef.current[jointId]) return;
+        const prevPose = poseRef.current;
         const clamped = clampStudioMannequinJointRotation(jointId, rotation);
         recordPoseHistoryOncePerGesture();
         let next = normalizeStudioMannequinPose({
-          joints: { ...poseRef.current.joints, [jointId]: clamped },
-          pelvisOffset: poseRef.current.pelvisOffset,
+          joints: { ...prevPose.joints, [jointId]: clamped },
+          pelvisOffset: prevPose.pelvisOffset,
         });
         if (rhythmRef.current && (jointId === "leftUpperArm" || jointId === "rightUpperArm")) {
           next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
         }
+        applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, next, readCurrentSemanticMeta()));
         commitPose(next);
       },
       setFingerCurls: (side, curls) => {
@@ -403,14 +486,9 @@ export function StudioMannequinPoserPanel({
           const handPatch: Partial<Record<StudioMannequinFingerName, readonly [number, number, number]>> = {};
           for (const fname of STUDIO_MANNEQUIN_FINGER_NAMES) {
             const c = curls[fname];
-            if (typeof c === "number" && Number.isFinite(c)) {
-              handPatch[fname] = [c, c, c];
-            }
+            if (typeof c === "number" && Number.isFinite(c)) handPatch[fname] = [c, c, c];
           }
-          return clampStudioMannequinFingerPose({
-            ...prev,
-            [side]: { ...prev[side], ...handPatch },
-          });
+          return clampStudioMannequinFingerPose({ ...prev, [side]: { ...prev[side], ...handPatch } });
         });
       },
       setLightingRig: (rig: StudioMannequinLightingRig) => {
@@ -419,7 +497,7 @@ export function StudioMannequinPoserPanel({
       },
       getLightingRig: () => sceneRef.current?.getLightingRig() ?? lightingRigRef.current,
     }),
-    [commitPose, groundFootPose, recordPoseHistoryOncePerGesture],
+    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture],
   );
 
   const morphBaseParamsRef = useRef<StudioMannequinBodyParams | null>(null);
@@ -431,21 +509,29 @@ export function StudioMannequinPoserPanel({
     [commitParams],
   );
 
-  const handleUndoPose = useCallback(() => {
-    const step = undoStudioPoseHistory(poseHistoryRef.current, poseRef.current);
-    if (!step) return;
-    poseHistoryRef.current = step.history;
-    setPoseHistorySnapshot(step.history);
-    commitPose(step.pose);
-  }, [commitPose]);
+  const effectiveParams = useMemo(() => applyStudioMannequinBreathingParams(params, breathPhase), [params, breathPhase]);
+  const spec = useMemo(() => buildStudioMannequinSpec(effectiveParams, { fingerPose }), [effectiveParams, fingerPose]);
+  const balanceReport = useMemo(() => analyzeStudioMannequinBalance(spec, pose), [spec, pose]);
+  const gestureAnalysis = useMemo(() => analyzeStudioMannequinGesture(spec, pose), [spec, pose]);
 
-  const handleRedoPose = useCallback(() => {
-    const step = redoStudioPoseHistory(poseHistoryRef.current, poseRef.current);
-    if (!step) return;
-    poseHistoryRef.current = step.history;
-    setPoseHistorySnapshot(step.history);
-    commitPose(step.pose);
-  }, [commitPose]);
+  const stepHistory = useCallback((direction: "undo" | "redo") => {
+    const resolved = resolveUndoRedoSemanticStep({
+      direction,
+      history: poseHistoryRef.current,
+      currentPose: poseRef.current,
+      currentMeta: readCurrentSemanticMeta(),
+      spec,
+      locks: jointLocksRef.current,
+    });
+    if (!resolved) return;
+    poseHistoryRef.current = resolved.history;
+    setPoseHistorySnapshot(resolved.history);
+    applySemanticMeta(resolved.meta);
+    commitPose(resolved.pose);
+  }, [applySemanticMeta, commitPose, readCurrentSemanticMeta, spec]);
+
+  const handleUndoPose = useCallback(() => stepHistory("undo"), [stepHistory]);
+  const handleRedoPose = useCallback(() => stepHistory("redo"), [stepHistory]);
 
   const poseHistoryDescription = useMemo(() => describeStudioPoseHistory(poseHistorySnapshot), [poseHistorySnapshot]);
 
@@ -723,18 +809,53 @@ export function StudioMannequinPoserPanel({
     };
   }, [commitPose, releaseHandTrackingResources, releaseWebcamResources, webcamActive]);
 
-  const effectiveParams = useMemo(
-    () => applyStudioMannequinBreathingParams(params, breathPhase),
-    [params, breathPhase],
-  );
-  const spec = useMemo(
-    () => buildStudioMannequinSpec(effectiveParams, { fingerPose }),
-    [effectiveParams, fingerPose],
-  );
-  const balanceReport = useMemo(() => analyzeStudioMannequinBalance(spec, pose), [spec, pose]);
-  const gestureAnalysis = useMemo(() => analyzeStudioMannequinGesture(spec, pose), [spec, pose]);
-
   const poseFromSceneRef = useRef(false);
+
+  const hydrateLoadedMannequinState = useCallback(
+    (loaded: StudioMannequinPersistentState, userEdit = false) => {
+      const rig = canonicalizeStudioMannequinRigState(loaded.rig);
+      const nextProjection: StudioMannequinProjection = rig?.projection === "orthographic" ? "orthographic" : "perspective";
+      const nextQuadView = rig?.quadView === true;
+      const nextFov = rig?.cameraFovDeg ?? STUDIO_MANNEQUIN_FOV_DEFAULT_DEG;
+      const nextHandContacts = rig?.handContacts ?? {};
+      const nextContrapposto = rig?.contrapposto ?? null;
+      const nextMeta: StudioMannequinPoseSemanticMeta = {
+        ...(nextHandContacts.left || nextHandContacts.right ? { handContacts: nextHandContacts } : {}),
+        ...(nextContrapposto ? { contrapposto: nextContrapposto } : {}),
+      };
+      const nextPose = userEdit && hasActiveStudioMannequinSemanticContacts(nextMeta)
+        ? retargetStudioMannequinSemanticPose(
+            buildStudioMannequinSpec(applyStudioMannequinBreathingParams(loaded.params, breathPhaseRef.current), { fingerPose: fingerPoseRef.current }),
+            loaded.pose,
+            nextMeta,
+            {},
+          )
+        : loaded.pose;
+
+      projectionRef.current = nextProjection;
+      quadViewRef.current = nextQuadView;
+      cameraFovDegRef.current = nextFov;
+      activeHandContactsRef.current = nextHandContacts;
+      activeContrappostoRef.current = nextContrapposto;
+      morphBaseParamsRef.current = loaded.params;
+      poseRef.current = nextPose;
+      duoPartnerRef.current = loaded.partner ?? null;
+      if (userEdit) stateRevisionRef.current += 1;
+      stateRef.current = composeStudioMannequinDuoState({ params: loaded.params, pose: nextPose, rig }, loaded.partner ?? null);
+      setProjection(nextProjection);
+      setQuadView(nextQuadView);
+      setCameraFovDeg(nextFov);
+      setActiveHandContacts(nextHandContacts);
+      setActiveContrapposto(nextContrapposto);
+      setParams(loaded.params);
+      setPose(nextPose);
+      sceneRef.current?.setProjection(nextProjection);
+      sceneRef.current?.setQuadView?.(nextQuadView);
+      sceneRef.current?.setCameraFovDeg?.(nextFov);
+      restoreDuoPartner(loaded.partner ?? null, { userEdit });
+    },
+    [restoreDuoPartner],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -818,11 +939,17 @@ export function StudioMannequinPoserPanel({
         return;
       }
       if (stored) {
-        stateRef.current = stored;
-        poseRef.current = stored.pose;
-        setParams(stored.params);
-        setPose(stored.pose);
-        restoreDuoPartner(stored.partner ?? null);
+        hydrateLoadedMannequinState(stored, false);
+      } else if (typeof window !== "undefined" && window.location.hash.includes("mannequin=")) {
+        const hashResult = parseStudioMannequinShareHashWithDiagnostics(window.location.hash, { fallbackParams: stateRef.current.params });
+        if (hashResult) {
+          if (hashResult.ok) {
+            hydrateLoadedMannequinState(hashResult.state, true);
+            if (hashResult.warnings.length > 0) setCaptureNotice(hashResult.warnings.join(" "));
+          } else {
+            setError(hashResult.messageKo);
+          }
+        }
       }
       hydrationSafeForFinalFlushRef.current = true;
       setPersistenceStatus("ready");
@@ -836,7 +963,7 @@ export function StudioMannequinPoserPanel({
       active = false;
       if (hydrationGenerationRef.current === generation) hydrationGenerationRef.current += 1;
     };
-  }, [open, restoreDuoPartner, stateRepository]);
+  }, [hydrateLoadedMannequinState, open, stateRepository]);
 
   useEffect(() => {
     if (!open) return;
@@ -853,14 +980,19 @@ export function StudioMannequinPoserPanel({
         onSelectJoint: (jointId) => setSelectedJointId(jointId),
         onPoseEdited: (editedPose) => {
           notePoseEdited();
-          const locked = applyStudioMannequinJointLocks(poseRef.current, editedPose, jointLocksRef.current);
+          const prevPose = poseRef.current;
+          const locked = applyStudioMannequinJointLocks(prevPose, editedPose, jointLocksRef.current);
           const grounded = groundFootPose(locked, stateRef.current.params);
-          if (!studioMannequinPosesNearlyEqual(grounded.pose, poseRef.current)) recordPoseHistoryOncePerGesture();
+          if (!studioMannequinPosesNearlyEqual(grounded.pose, prevPose)) {
+            recordPoseHistoryOncePerGesture();
+            applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, grounded.pose, readCurrentSemanticMeta()));
+          }
           poseFromSceneRef.current = !grounded.applied;
           commitPose(grounded.pose);
         },
       });
       sceneRef.current = handle;
+      if (projectionRef.current !== "perspective") handle.setProjection(projectionRef.current);
       attachDuoScene(handle);
       setSceneError(null);
     } catch (cause) {
@@ -880,7 +1012,7 @@ export function StudioMannequinPoserPanel({
       sceneRef.current = null;
       handle.dispose();
     };
-  }, [attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, recordPoseHistoryOncePerGesture]);
+  }, [applySemanticMeta, attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture]);
 
   useEffect(() => {
     sceneRef.current?.setBodySpec(spec);
@@ -942,11 +1074,15 @@ export function StudioMannequinPoserPanel({
     setLastPosePresetId(presetId);
     if (isStudioMannequinDuoPreset(preset)) {
       const leadPose = resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current);
-      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose);
+      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose, {});
       return;
     }
     if (applyPoseToPartner((partner) => resolveStudioMannequinLibraryPresetPose(preset, partner.params, partner.pose))) return;
-    commitPoseWithHistory(resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current));
+    const nextMeta: StudioMannequinPoseSemanticMeta =
+      studioMannequinPosePresetScope(preset) === "hand-only" && activeContrappostoRef.current
+        ? { contrapposto: activeContrappostoRef.current }
+        : {};
+    commitPoseWithHistory(resolveStudioMannequinLibraryPresetPose(preset, params, poseRef.current), nextMeta);
   }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
   const applyWebtoonPosePreset = useCallback((presetId: string) => {
@@ -955,11 +1091,11 @@ export function StudioMannequinPoserPanel({
     setLastPosePresetId(presetId);
     if (isStudioMannequinDuoPreset(preset)) {
       const leadPose = resolveStudioMannequinWebtoonPresetPose(preset, params);
-      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose);
+      commitPoseWithHistory(placeDuo({ presetId: preset.id, leadPose, leadParams: params }).leadPose, {});
       return;
     }
     if (applyPoseToPartner((partner) => resolveStudioMannequinWebtoonPresetPose(preset, partner.params))) return;
-    commitPoseWithHistory(resolveStudioMannequinWebtoonPresetPose(preset, params));
+    commitPoseWithHistory(resolveStudioMannequinWebtoonPresetPose(preset, params), {});
   }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
   const starterPresetAppliedRef = useRef(false);
@@ -978,18 +1114,20 @@ export function StudioMannequinPoserPanel({
   const handleRotateSelected = useCallback(
     (rotation: StudioMannequinVec3) => {
       if (!selectedJointId || jointLocksRef.current[selectedJointId]) return;
+      const prevPose = poseRef.current;
       recordPoseHistoryOncePerGesture();
       const clamped = clampStudioMannequinJointRotation(selectedJointId, rotation);
       let next = normalizeStudioMannequinPose({
-        joints: { ...poseRef.current.joints, [selectedJointId]: clamped },
-        pelvisOffset: poseRef.current.pelvisOffset,
+        joints: { ...prevPose.joints, [selectedJointId]: clamped },
+        pelvisOffset: prevPose.pelvisOffset,
       });
       if (rhythmRef.current && (selectedJointId === "leftUpperArm" || selectedJointId === "rightUpperArm")) {
         next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
       }
+      applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, next, readCurrentSemanticMeta()));
       commitPose(next);
     },
-    [commitPose, recordPoseHistoryOncePerGesture, selectedJointId],
+    [applySemanticMeta, commitPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, selectedJointId],
   );
 
   const handleApplyHandPad = useCallback(
@@ -1001,38 +1139,88 @@ export function StudioMannequinPoserPanel({
     [],
   );
 
+  const handleBreathPhaseChange = useCallback((nextBreath: number) => {
+    breathPhaseRef.current = nextBreath;
+    setBreathPhase(nextBreath);
+    const currentMeta = readCurrentSemanticMeta();
+    if (hasActiveStudioMannequinSemanticContacts(currentMeta)) {
+      const nextSpec = buildStudioMannequinSpec(applyStudioMannequinBreathingParams(stateRef.current.params, nextBreath), { fingerPose: fingerPoseRef.current });
+      commitPose(retargetStudioMannequinSemanticPose(nextSpec, poseRef.current, currentMeta, jointLocksRef.current));
+    }
+  }, [commitPose, readCurrentSemanticMeta]);
+
   const handleAutoBalance = useCallback(() => {
     const stabilized = stabilizeStudioMannequinCenterOfMass(spec, poseRef.current);
-    commitPoseWithHistory(stabilized);
-  }, [commitPoseWithHistory, spec]);
+    commitPoseWithHistory(stabilized, readCurrentSemanticMeta());
+  }, [commitPoseWithHistory, readCurrentSemanticMeta, spec]);
 
-  const handleApplyContrapposto = useCallback(
-    (weightSide: "left" | "right") => {
-      const next = buildStudioMannequinContrappostoPose(spec, poseRef.current, weightSide, 0.8, jointLocksRef.current);
-      commitPoseWithHistory(next);
-    },
-    [commitPoseWithHistory, spec],
-  );
+  const handleApplyContrapposto = useCallback((weightSide: "left" | "right") => {
+    recordPoseHistory();
+    rotateGestureRecordedRef.current = true;
+    const res = resolveContrappostoToggleTransition({
+      spec,
+      currentPose: poseRef.current,
+      currentMeta: readCurrentSemanticMeta(),
+      weightSide,
+      locks: jointLocksRef.current,
+      groundFallback: (p) => groundFootPose(p, stateRef.current.params).pose,
+    });
+    applySemanticMeta(res.meta);
+    commitPose(res.pose);
+  }, [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistory, spec]);
 
-  const handleApplyHandContact = useCallback(
-    (side: "left" | "right", targetId: StudioMannequinHandContactTargetId) => {
-      const result = applyStudioMannequinHandContact(spec, poseRef.current, side, targetId, jointLocksRef.current);
-      commitPoseWithHistory(result.pose);
-    },
-    [commitPoseWithHistory, spec],
-  );
+  const handleApplyHandContact = useCallback((side: "left" | "right", targetId: StudioMannequinHandContactTargetId) => {
+    recordPoseHistory();
+    rotateGestureRecordedRef.current = true;
+    const res = resolveHandContactToggleTransition({
+      spec,
+      currentPose: poseRef.current,
+      currentMeta: readCurrentSemanticMeta(),
+      side,
+      targetId,
+      locks: jointLocksRef.current,
+      groundFallback: (p) => groundFootPose(p, stateRef.current.params).pose,
+    });
+    applySemanticMeta(res.meta);
+    commitPose(res.pose);
+  }, [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistory, spec]);
+
+  const handleClearSemanticContacts = useCallback(() => {
+    if (!hasActiveStudioMannequinSemanticContacts(readCurrentSemanticMeta())) return;
+    recordPoseHistory();
+    stateRevisionRef.current += 1;
+    applySemanticMeta({});
+  }, [applySemanticMeta, readCurrentSemanticMeta, recordPoseHistory]);
+
+  const handleMirrorPose = useCallback(() => {
+    recordPoseHistory();
+    rotateGestureRecordedRef.current = true;
+    const mirroredBase = resolveStudioMannequinRenderFrame({ params, pose: poseRef.current, mirror: true, ground: true }).pose;
+    const mirroredLocked = applyStudioMannequinJointLocks(poseRef.current, mirroredBase, jointLocksRef.current);
+    const mirroredMeta = mirrorStudioMannequinSemanticContacts(readCurrentSemanticMeta());
+    applySemanticMeta(mirroredMeta);
+    const nextPose = hasActiveStudioMannequinSemanticContacts(mirroredMeta)
+      ? retargetStudioMannequinSemanticPose(spec, mirroredLocked, mirroredMeta, jointLocksRef.current)
+      : groundFootPose(mirroredLocked, stateRef.current.params).pose;
+    commitPose(nextPose);
+  }, [applySemanticMeta, commitPose, groundFootPose, params, readCurrentSemanticMeta, recordPoseHistory, spec]);
 
   const handleLookAtCamera = useCallback(() => {
     const target = sceneRef.current?.getCameraWorldPosition?.() ?? [0, spec.heightM * 0.88, 3.1];
-    const next = applyStudioMannequinGazeTarget(spec, poseRef.current, target, jointLocksRef.current, 1);
-    commitPoseWithHistory(next);
-  }, [commitPoseWithHistory, spec]);
+    const currentMeta = readCurrentSemanticMeta();
+    let next = applyStudioMannequinGazeTarget(spec, poseRef.current, target, jointLocksRef.current, 1);
+    if (currentMeta.handContacts?.left || currentMeta.handContacts?.right) {
+      next = retargetStudioMannequinSemanticPose(spec, next, { handContacts: currentMeta.handContacts }, jointLocksRef.current);
+    }
+    commitPoseWithHistory(next, currentMeta);
+  }, [commitPoseWithHistory, readCurrentSemanticMeta, spec]);
 
   const handleViewportKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (!selectedJointId || jointLocksRef.current[selectedJointId]) return;
       const stepRad = ((event.shiftKey ? 0.5 : 2) * Math.PI) / 180;
-      const cur = poseRef.current.joints[selectedJointId] ?? [0, 0, 0];
+      const prevPose = poseRef.current;
+      const cur = prevPose.joints[selectedJointId] ?? [0, 0, 0];
       let nextRot: [number, number, number] | null = null;
       if (event.key === "ArrowUp") nextRot = [cur[0] - stepRad, cur[1], cur[2]];
       else if (event.key === "ArrowDown") nextRot = [cur[0] + stepRad, cur[1], cur[2]];
@@ -1044,16 +1232,44 @@ export function StudioMannequinPoserPanel({
       recordPoseHistoryOncePerGesture();
       const clamped = clampStudioMannequinJointRotation(selectedJointId, nextRot);
       let next = normalizeStudioMannequinPose({
-        joints: { ...poseRef.current.joints, [selectedJointId]: clamped },
-        pelvisOffset: poseRef.current.pelvisOffset,
+        joints: { ...prevPose.joints, [selectedJointId]: clamped },
+        pelvisOffset: prevPose.pelvisOffset,
       });
       if (rhythmRef.current && (selectedJointId === "leftUpperArm" || selectedJointId === "rightUpperArm")) {
         next = applyStudioMannequinScapulohumeralRhythm(next, jointLocksRef.current, 1);
       }
-      commitPose(groundFootPose(next, stateRef.current.params).pose);
+      const grounded = groundFootPose(next, stateRef.current.params).pose;
+      applySemanticMeta(reconcileStudioMannequinSemanticContactsAfterManualEdit(prevPose, grounded, readCurrentSemanticMeta()));
+      commitPose(grounded);
     },
-    [commitPose, groundFootPose, recordPoseHistoryOncePerGesture, resetPoseHistoryGesture, selectedJointId],
+    [applySemanticMeta, commitPose, groundFootPose, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, resetPoseHistoryGesture, selectedJointId],
   );
+
+  const handleProjectionChange = useCallback((next: StudioMannequinProjection) => {
+    projectionRef.current = next;
+    stateRevisionRef.current += 1;
+    syncStateSnapshot(stateRef.current.params, poseRef.current);
+    setProjection(next);
+    sceneRef.current?.setProjection(next);
+  }, [syncStateSnapshot]);
+
+  const handleToggleQuadView = useCallback(() => {
+    const next = !quadViewRef.current;
+    quadViewRef.current = next;
+    stateRevisionRef.current += 1;
+    syncStateSnapshot(stateRef.current.params, poseRef.current);
+    setQuadView(next);
+    sceneRef.current?.setQuadView?.(next);
+  }, [syncStateSnapshot]);
+
+  const handleCameraFovChange = useCallback((nextFov: number) => {
+    const clamped = clampStudioMannequinFovDeg(nextFov);
+    cameraFovDegRef.current = clamped;
+    stateRevisionRef.current += 1;
+    syncStateSnapshot(stateRef.current.params, poseRef.current);
+    setCameraFovDeg(clamped);
+    sceneRef.current?.setCameraFovDeg?.(clamped);
+  }, [syncStateSnapshot]);
 
   const handleExportJson = useCallback(() => {
     const json = exportStudioMannequinStateToJSON(stateRef.current);
@@ -1065,19 +1281,20 @@ export function StudioMannequinPoserPanel({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const imported = importStudioMannequinStateFromJSON(e.target?.result);
-      if (imported) {
-        commitParams(imported.params);
-        commitPoseWithHistory(imported.pose);
-        restoreDuoPartner(imported.partner ?? null, { userEdit: true });
-        setError(null);
-      } else {
-        setError("유효하지 않은 데생 인형 JSON 파일입니다.");
+      const result = importStudioMannequinStateWithDiagnostics(e.target?.result, { fallbackParams: stateRef.current.params });
+      if (!result.ok) {
+        setError(result.messageKo);
+        return;
       }
+      recordPoseHistory();
+      rotateGestureRecordedRef.current = true;
+      hydrateLoadedMannequinState(result.state, true);
+      setError(null);
+      if (result.warnings.length > 0) setCaptureNotice(result.warnings.join(" "));
     };
     reader.readAsText(file);
     event.target.value = "";
-  }, [commitParams, commitPoseWithHistory, restoreDuoPartner]);
+  }, [hydrateLoadedMannequinState, recordPoseHistory]);
 
   const handleImportCspPep = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1088,7 +1305,7 @@ export function StudioMannequinPoserPanel({
         const xml = typeof e.target?.result === "string" ? e.target.result : "";
         const imported = importCspPepPoseToMannequin(xml);
         setFingerPose(imported.fingerPose);
-        commitPoseWithHistory(imported.pose);
+        commitPoseWithHistory(imported.pose, {});
         setCaptureNotice(`클립스튜디오 포즈 적용됨 (${imported.aliasName} · ${imported.mappedBoneCount}본)`);
         setError(null);
       } catch (cause) {
@@ -1112,6 +1329,7 @@ export function StudioMannequinPoserPanel({
       try {
         const xml = typeof e.target?.result === "string" ? e.target.result : "";
         const nextParams = importCsp3dpToMannequinParams(xml, stateRef.current.params);
+        morphBaseParamsRef.current = nextParams;
         commitParams(nextParams);
         setCaptureNotice("클립스튜디오 .3dp 체형 비율이 적용되었습니다.");
         setError(null);
@@ -1154,7 +1372,7 @@ export function StudioMannequinPoserPanel({
       setError("사진에서 안전하게 적용할 수 있는 관절이 부족해 기존 포즈를 유지했습니다. 팔·다리가 선명한 전신 사진을 다시 선택해 주세요.");
       return false;
     }
-    photoPoseAppliedPoseRef.current = commitPoseWithHistory(plan.pose);
+    photoPoseAppliedPoseRef.current = commitPoseWithHistory(plan.pose, {});
     setPhotoPoseApplyStatus({
       sourceName: payload.sourceName,
       confidencePercent: Math.round(payload.confidence.overall * 100),
@@ -1191,7 +1409,7 @@ export function StudioMannequinPoserPanel({
     else if (sel.nose === "nose-bridge") nextParams = { ...nextParams, noseHeight: 1.14 };
     commitParams(nextParams);
 
-    if (sel.bodypose === "pose-stand") commitPoseWithHistory(createStudioMannequinRestPose());
+    if (sel.bodypose === "pose-stand") commitPoseWithHistory(createStudioMannequinRestPose(), {});
     else if (sel.bodypose === "pose-run") applyPosePreset("dash");
     else if (sel.bodypose === "pose-sit") applyPosePreset("sit-chair");
     else if (sel.bodypose === "pose-hip") applyPosePreset("cross-arms");
@@ -1504,7 +1722,7 @@ export function StudioMannequinPoserPanel({
                   }}
                   onPectoralVolumeChange={setPectoralVolume}
                   onMuscleDefinitionChange={setMuscleDefinition}
-                  onBreathPhaseChange={setBreathPhase}
+                  onBreathPhaseChange={handleBreathPhaseChange}
                   onImportCsp3dp={() => csp3dpInputRef.current?.click()}
                   onExportCsp3dp={handleExportCsp3dp}
                 />
@@ -1533,8 +1751,8 @@ export function StudioMannequinPoserPanel({
                     onApplyPreset={applyPosePreset}
                     onApplyWebtoonPreset={applyWebtoonPosePreset}
                     applyDisabled={capturing}
-                    onMirror={() => commitPoseWithHistory(resolveStudioMannequinRenderFrame({ params, pose: poseRef.current, mirror: true, ground: true }).pose)}
-                    onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose())}
+                    onMirror={handleMirrorPose}
+                    onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose(), {})}
                   />
                   <StudioMannequinDuoPartnerCard duo={duo} />
                 </>
@@ -1560,6 +1778,8 @@ export function StudioMannequinPoserPanel({
                     guideVisibility={guideVisibility}
                     balanceReport={balanceReport}
                     gestureAnalysis={gestureAnalysis}
+                    activeContrapposto={activeContrapposto}
+                    activeHandContacts={activeHandContacts}
                     onSelectJoint={(jointId) => {
                       setSelectedJointId(jointId);
                       sceneRef.current?.selectJoint(jointId);
@@ -1573,6 +1793,7 @@ export function StudioMannequinPoserPanel({
                     onAutoBalance={handleAutoBalance}
                     onApplyContrapposto={handleApplyContrapposto}
                     onApplyHandContact={handleApplyHandContact}
+                    onClearSemanticContacts={handleClearSemanticContacts}
                     onLookAtCamera={handleLookAtCamera}
                     onApplyHandPad={handleApplyHandPad}
                     onImportCspPep={() => cspPepInputRef.current?.click()}
@@ -1584,24 +1805,11 @@ export function StudioMannequinPoserPanel({
                 <>
                   <StudioMannequinCameraSection
                     projection={projection}
-                    onProjectionChange={(next) => {
-                      setProjection(next);
-                      sceneRef.current?.setProjection(next);
-                    }}
+                    onProjectionChange={handleProjectionChange}
                     quadView={quadView}
-                    onToggleQuadView={() => {
-                      setQuadView((prev) => {
-                        const next = !prev;
-                        sceneRef.current?.setQuadView?.(next);
-                        return next;
-                      });
-                    }}
+                    onToggleQuadView={handleToggleQuadView}
                     cameraFovDeg={cameraFovDeg}
-                    onCameraFovChange={(nextFov) => {
-                      const clamped = clampStudioMannequinFovDeg(nextFov);
-                      setCameraFovDeg(clamped);
-                      sceneRef.current?.setCameraFovDeg?.(clamped);
-                    }}
+                    onCameraFovChange={handleCameraFovChange}
                     captureScale={captureScale}
                     onCaptureScaleChange={setCaptureScale}
                     onCameraPreset={(preset) => {

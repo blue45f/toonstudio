@@ -338,4 +338,46 @@ describe("mannequin and BG3D LT shared SQLite repositories", () => {
       message: expect.stringContaining("SAH pool blocked"),
     });
   });
+
+  it("손 접촉·콘트라포스토·사면도·화각 설정이 있는 v3 상태를 정본 바이트로 저장·복원하고 비정본 rig 값은 거부한다", async () => {
+    const database = await memoryDatabase();
+    const repository = createStudioMannequinStateSqliteRepository({
+      acquireDatabase: async () => database,
+    });
+    const authored: StudioMannequinPersistentState = {
+      ...duoMannequinState(),
+      rig: {
+        handContacts: { left: "hip", right: "chin" },
+        contrapposto: "left",
+        quadView: true,
+        cameraFovDeg: 22,
+        projection: "orthographic",
+      },
+    };
+    const saved = await repository.save(authored);
+    const raw = await database.kvGet(
+      STUDIO_MANNEQUIN_STATE_SQLITE_NAMESPACE,
+      STUDIO_MANNEQUIN_STATE_SQLITE_KEY,
+    );
+    expect((JSON.parse(raw!) as { version: number }).version).toBe(3);
+    expect(raw).toBe(serializeStudioMannequinState(saved));
+
+    const reopened = createStudioMannequinStateSqliteRepository({
+      acquireDatabase: async () => database,
+    });
+    await expect(reopened.load()).resolves.toEqual(saved);
+
+    const invalidRigCandidates = [
+      { ...mannequinState(), rig: {} },
+      { ...mannequinState(), rig: { cameraFovDeg: 35 } },
+      { ...mannequinState(), rig: { cameraFovDeg: 140 } },
+      { ...mannequinState(), rig: { quadView: false } },
+      { ...mannequinState(), rig: { handContacts: { left: "unknown" } } },
+    ] as unknown as StudioMannequinPersistentState[];
+
+    for (const candidate of invalidRigCandidates) {
+      await expect(Promise.resolve().then(() => repository.save(candidate)))
+        .rejects.toMatchObject({ code: "invalid" });
+    }
+  });
 });

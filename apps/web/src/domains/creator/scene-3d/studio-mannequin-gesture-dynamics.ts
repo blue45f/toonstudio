@@ -539,7 +539,12 @@ export function applyStudioMannequinHandContact(
 
   let solved = solveArmBestPole(workingPose);
   if (targetId !== "hip") {
-    solved = applyStudioMannequinScapulohumeralRhythm(solved, locks, 1);
+    const otherShoulderJointId = side === "left" ? "rightShoulder" : "leftShoulder";
+    solved = applyStudioMannequinScapulohumeralRhythm(
+      solved,
+      { ...locks, [otherShoulderJointId]: true },
+      1,
+    );
   }
   solved = solveArmBestPole(solved);
 
