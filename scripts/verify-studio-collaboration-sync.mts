@@ -34,7 +34,7 @@ import {
 import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/studio-workspace-route";
 
 import { installStudioCollaborationPreviewSession } from "./lib/studio-collaboration-preview-session";
-import { waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
+import { selectStudioCollaborationPen, waitForStudioCollaborationDocumentLane } from "./lib/studio-collaboration-readiness";
 import {
   fingerprintStudioCompositedPng,
   type StudioCompositedCanvasFingerprint,
@@ -184,18 +184,7 @@ async function waitForDocumentLane(
 
 async function enableBrushTool(page: Page): Promise<void> {
   await dismissOverlays(page);
-  const drawOptions = page.locator('[data-studio-draw-options="true"]').first();
-  if (await drawOptions.isVisible().catch(() => false)) return;
-  const drawTool = page.locator('[data-studio-rail-tool-id="draw"]').first();
-  if (await drawTool.isVisible().catch(() => false)) {
-    await drawTool.click();
-  } else {
-    await page.keyboard.press("b");
-  }
-  await drawOptions.waitFor({
-    state: "visible",
-    timeout: 10_000,
-  });
+  await selectStudioCollaborationPen(page);
 }
 
 async function canvasFingerprint(page: Page): Promise<StudioCompositedCanvasFingerprint> {
