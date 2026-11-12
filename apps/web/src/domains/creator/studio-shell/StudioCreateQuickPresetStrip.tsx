@@ -17,12 +17,14 @@ export function StudioCreateQuickPresetStrip({
   onQuickStart,
   quickStartSummary,
   creating = false,
+  quickStartLabel,
 }: {
   readonly activePresetId: string | null;
   readonly onSelectPreset: (preset: StudioCreateQuickPreset) => void;
   readonly onQuickStart?: () => void;
   readonly quickStartSummary?: string;
   readonly creating?: boolean;
+  readonly quickStartLabel?: string;
 }) {
   const bt = useBilingual("StudioCreateQuickPresetStrip");
   const activePreset = STUDIO_GUIDED_GENRE_STARTERS.find(
@@ -31,7 +33,7 @@ export function StudioCreateQuickPresetStrip({
 
   return (
     <section
-      aria-label={bt("1초 장르 스타터", "1-second genre starters")}
+      aria-label={bt("장르 예시", "Genre examples")}
       data-testid="studio-create-quick-presets"
       className="mt-4 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent-soft to-panel p-4 shadow-sm sm:p-5"
     >
@@ -39,7 +41,7 @@ export function StudioCreateQuickPresetStrip({
         <div>
           <p className="inline-flex items-center gap-1.5 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
             <Sparkles size={13} aria-hidden="true" />
-            {bt("초보자 맞춤 추천 · 1초 장르 스타터", "BEGINNER QUICK STARTERS")}
+            {bt("처음 시작할 때 참고할 장르 예시", "BEGINNER QUICK STARTERS")}
           </p>
           <h2 className="mt-1 text-base font-black text-fg sm:text-lg">
             {bt(
@@ -133,7 +135,7 @@ export function StudioCreateQuickPresetStrip({
             onClick={onQuickStart}
             className={buttonClass({ className: "min-h-11 shrink-0 gap-2" })}
           >
-            {bt("이 프리셋으로 바로 시작", "Start right away with preset")}
+            {quickStartLabel ?? bt("이 프리셋으로 바로 시작", "Start right away with preset")}
             <ArrowRight size={15} aria-hidden="true" />
           </button>
         </div>
