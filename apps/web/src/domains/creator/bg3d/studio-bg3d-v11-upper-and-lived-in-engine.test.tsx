@@ -13,6 +13,7 @@ import {
   STUDIO_BG3D_LOWER_ARCHETYPE_LABELS_KO,
   applyBg3dDeterministicLivedInJitter,
   assembleBg3dV11RoomPipeline,
+  assembleBg3dV11UpperRoomPlacement,
   buildBg3dV11UpperClusterPrimitives,
   buildBg3dV11VisibilityHiddenTags,
   measureV11PrimitivesWorldBounds,
@@ -179,6 +180,39 @@ describe("studio-bg3d-v11-upper-and-lived-in-engine", () => {
 });
 
 describe("V11 방 치수·밀도·주요 설비 계약", () => {
+  it("하부가 맞지 않아도 상부를 독립 배치하고 전체 배치와 같은 상부 결과를 사용한다", () => {
+    const spec = {
+      room: { width: 5, depth: 4, wallHeight: 2.5 },
+      lowerArchetype: "classroom-front-locker-rig" as const,
+      upperArchetype: "ceiling-hvac-cassette-duct" as const,
+      density: "lived-in" as const,
+      seed: 20261113,
+      messiness: 0.4,
+    };
+    expect(() => assembleBg3dV11RoomPipeline(spec)).toThrow("방보다 큽니다");
+    const upper = assembleBg3dV11UpperRoomPlacement(spec);
+    const bounds = measureV11PrimitivesWorldBounds(upper.upperPrimitives);
+    expect(upper.upperPrimitives).toHaveLength(4);
+    expect(bounds.min[0]).toBeGreaterThanOrEqual(-spec.room.width / 2);
+    expect(bounds.max[0]).toBeLessThanOrEqual(spec.room.width / 2);
+    expect(bounds.min[2]).toBeGreaterThanOrEqual(-spec.room.depth / 2);
+    expect(bounds.max[2]).toBeLessThanOrEqual(spec.room.depth / 2);
+    expect(bounds.min[1]).toBeGreaterThanOrEqual(0);
+    expect(bounds.max[1]).toBeLessThanOrEqual(spec.room.wallHeight);
+    const larger = { ...spec, room: { width: 6.4, depth: 5.2, wallHeight: 2.85 } };
+    expect(assembleBg3dV11UpperRoomPlacement(larger).upperPrimitives).toEqual(
+      assembleBg3dV11RoomPipeline(larger).upperPrimitives,
+    );
+    for (const room of [
+      { width: 2, depth: 2, wallHeight: 2.5 },
+      { width: 6.4, depth: 5.2, wallHeight: 1 },
+    ]) {
+      expect(() => assembleBg3dV11UpperRoomPlacement({ ...spec, room })).toThrow(
+        "방보다 큽니다",
+      );
+    }
+  });
+
   it("8종 하부·3밀도·4테마·2앵커에서 전체 파츠를 방 안에 유지한다", () => {
     for (const lowerArchetype of Object.keys(
       STUDIO_BG3D_LOWER_ARCHETYPE_LABELS_KO,
@@ -312,6 +346,44 @@ describe("V11 방 치수·밀도·주요 설비 계약", () => {
 });
 
 describe("V11 패널 거부·상태·다국어 계약", () => {
+  it("전체 세트 오류와 상부 단독 가능 상태를 구분하고 상부 경계 실패는 거부한다", () => {
+    const insert = vi.fn((_primitives: readonly Bg3dV11ScenePrimitive[]) => true);
+    const view = render(
+      <StudioBg3dV11UpperRoomAssemblerPanel
+        roomDimensions={{ width: 5, depth: 4, wallHeight: 2.5 }}
+        onInsertPrimitives={insert}
+      />,
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "하부 메인 클러스터" }), {
+      target: { value: "classroom-front-locker-rig" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "상부 페어링 설비 (천장·창호·간판)" }), {
+      target: { value: "ceiling-hvac-cassette-duct" },
+    });
+    const full = screen.getByRole("button", { name: "상·하부 세트 원클릭 배치" });
+    const upper = screen.getByRole("button", { name: "상부 설비만 단독 배치" });
+    expect(full.hasAttribute("disabled")).toBe(true);
+    expect(upper.hasAttribute("disabled")).toBe(false);
+    expect(screen.getByRole("alert").textContent).toContain("상·하부 세트가 방보다 커요");
+    expect(screen.getByText("상부 설비는 현재 방에 맞아 단독 배치할 수 있어요.")).toBeTruthy();
+    fireEvent.click(full);
+    expect(insert).not.toHaveBeenCalled();
+    fireEvent.click(upper);
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(insert.mock.calls[0]![0].every((p) => p.tags?.includes("BgV11_Upper"))).toBe(true);
+    view.rerender(
+      <StudioBg3dV11UpperRoomAssemblerPanel
+        roomDimensions={{ width: 2, depth: 2, wallHeight: 1 }}
+        onInsertPrimitives={insert}
+      />,
+    );
+    expect(upper.hasAttribute("disabled")).toBe(true);
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.queryByText("상부 설비는 현재 방에 맞아 단독 배치할 수 있어요.")).toBeNull();
+    fireEvent.click(upper);
+    expect(insert).toHaveBeenCalledTimes(1);
+  });
+
   it("실제 기본 원룸에서 맞는 초기 세트를 추천하고 두 삽입 명령을 바로 사용할 수 있다", () => {
     const room = getStudioBg3dRoomPreset("studio-flat")!.spec;
     const insert = vi.fn((_primitives: readonly Bg3dV11ScenePrimitive[]) => true);

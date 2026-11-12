@@ -436,9 +436,14 @@ export function buildBg3dV11VisibilityHiddenTags(options: {
   return [...tags].filter((tag) => [...tag].length <= 32).slice(0, 64);
 }
 
-export function assembleBg3dV11RoomPipeline(
+/** 단독·전체 배치가 같은 상부 생성·분산·스냅·방 경계 검사를 사용한다. */
+export function assembleBg3dV11UpperRoomPlacement(
   spec: AssembleBg3dV11RoomPipelineSpec,
-): AssembleBg3dV11RoomPipelineResult {
+): {
+  upperPrimitives: Bg3dV11ScenePrimitive[];
+  pairedUpperArchetype: AssembleBg3dV11RoomPipelineResult["pairedUpperArchetype"];
+  upperArchetypeTag: string;
+} {
   validateRoom(spec.room);
   const density = spec.density ?? "detailed";
   const theme = spec.theme ?? "daylight-neutral";
@@ -451,31 +456,6 @@ export function assembleBg3dV11RoomPipeline(
   const upperMeta =
     STUDIO_BG3D_V11_UPPER_ARCHETYPES.find((m) => m.id === pairedUpper) ??
     DEFAULT_UPPER_META;
-
-  const rawLowerBase = buildBg3dObjectClusterPrimitives({
-    archetype: spec.lowerArchetype,
-    moduleCount: 1,
-    clutterDensity: density,
-    arrangement: spec.lowerAnchor === "nw-corner" ? "l-corner" : "linear-wall",
-    surfaceTheme: theme,
-  });
-  const rawLower = rawLowerBase.primitives.map((prim, idx) => ({
-    ...prim,
-    id: `${prefix}-low-${idx + 1}`,
-    tags: [...new Set([...(prim.tags ?? []), "BgCluster"])].sort(),
-  }));
-
-  const snappedLower = snapBg3dClusterToRoomAnchor(
-    applyBg3dDeterministicLivedInJitter(rawLower, { seed, messiness }),
-    spec.room,
-    spec.lowerAnchor ?? "north-wall",
-  );
-  const lowerPrimitives = snappedLower.snappedPrimitives;
-
-  const beforeUpperEdgeMetrics = evaluateBg3dViewportEdgeDistribution(
-    lowerPrimitives,
-    spec.room,
-  );
 
   const upperAnchor: Bg3dV11RoomAnchor =
     upperMeta.mountZone === "window-head"
@@ -508,6 +488,48 @@ export function assembleBg3dV11RoomPipeline(
     upperAnchor,
   );
   const upperPrimitives = snappedUpper.snappedPrimitives;
+  validateRoomFit(upperPrimitives, spec.room);
+
+  return {
+    upperPrimitives,
+    pairedUpperArchetype: upperMeta.id,
+    upperArchetypeTag: `BgV11_${upperMeta.shortCode}`,
+  };
+}
+
+export function assembleBg3dV11RoomPipeline(
+  spec: AssembleBg3dV11RoomPipelineSpec,
+): AssembleBg3dV11RoomPipelineResult {
+  validateRoom(spec.room);
+  const density = spec.density ?? "detailed";
+  const theme = spec.theme ?? "daylight-neutral";
+  const seed = spec.seed ?? 20261113;
+  const messiness = spec.messiness ?? 0.35;
+  const prefix = sanitizeSafeToken(spec.instancePrefix ?? "rmv11", 24);
+  const rawLowerBase = buildBg3dObjectClusterPrimitives({
+    archetype: spec.lowerArchetype,
+    moduleCount: 1,
+    clutterDensity: density,
+    arrangement: spec.lowerAnchor === "nw-corner" ? "l-corner" : "linear-wall",
+    surfaceTheme: theme,
+  });
+  const rawLower = rawLowerBase.primitives.map((prim, idx) => ({
+    ...prim,
+    id: `${prefix}-low-${idx + 1}`,
+    tags: [...new Set([...(prim.tags ?? []), "BgCluster"])].sort(),
+  }));
+  const snappedLower = snapBg3dClusterToRoomAnchor(
+    applyBg3dDeterministicLivedInJitter(rawLower, { seed, messiness }),
+    spec.room,
+    spec.lowerAnchor ?? "north-wall",
+  );
+  const lowerPrimitives = snappedLower.snappedPrimitives;
+  const beforeUpperEdgeMetrics = evaluateBg3dViewportEdgeDistribution(
+    lowerPrimitives,
+    spec.room,
+  );
+  const upperPlacement = assembleBg3dV11UpperRoomPlacement(spec);
+  const { upperPrimitives } = upperPlacement;
 
   const combinedPrimitives = [...lowerPrimitives, ...upperPrimitives];
   validateRoomFit(combinedPrimitives, spec.room);
@@ -524,7 +546,7 @@ export function assembleBg3dV11RoomPipeline(
     lowerPrimitives,
     upperPrimitives,
     combinedPrimitives,
-    pairedUpperArchetype: pairedUpper,
+    pairedUpperArchetype: upperPlacement.pairedUpperArchetype,
     beforeUpperEdgeMetrics,
     afterUpperEdgeMetrics,
     humanSnapPoints: resolveBg3dClusterHumanSnapPoints({
@@ -537,7 +559,7 @@ export function assembleBg3dV11RoomPipeline(
       allClusterTag: "BgCluster",
       lowerArchetypeTag,
       upperZoneTag: "BgV11_Upper",
-      upperArchetypeTag: `BgV11_${upperMeta.shortCode}`,
+      upperArchetypeTag: upperPlacement.upperArchetypeTag,
     },
   };
 }

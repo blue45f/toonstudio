@@ -9,6 +9,7 @@ import {
 import {
   STUDIO_BG3D_V11_UPPER_ARCHETYPES,
   assembleBg3dV11RoomPipeline,
+  assembleBg3dV11UpperRoomPlacement,
   Bg3dV11PlacementError,
   type Bg3dV11RoomDimensions,
   type Bg3dV11UpperArchetypeId,
@@ -109,27 +110,17 @@ export function StudioBg3dV11UpperRoomAssemblerPanel({
   const [status, setStatus] = useState<
     "inserted" | "hidden" | "shown" | "failed" | null
   >(null);
-  const computed = useMemo(() => {
-    try {
-      return {
-        ok: true as const,
-        preview: assembleBg3dV11RoomPipeline({
-          room: roomDimensions,
-          lowerArchetype,
-          upperArchetype: upperOverride === "auto" ? undefined : upperOverride,
-          lowerAnchor,
-          density,
-          theme,
-          seed,
-          messiness: messinessPct / 100,
-          instancePrefix: `v11r${ordinal}`,
-        }),
-      };
-    } catch (error) {
-      if (!(error instanceof Bg3dV11PlacementError)) throw error;
-      return { ok: false as const, code: error.code };
-    }
-  }, [
+  const placementSpec = useMemo(() => ({
+    room: roomDimensions,
+    lowerArchetype,
+    upperArchetype: upperOverride === "auto" ? undefined : upperOverride,
+    lowerAnchor,
+    density,
+    theme,
+    seed,
+    messiness: messinessPct / 100,
+    instancePrefix: `v11r${ordinal}`,
+  }), [
     roomDimensions,
     lowerArchetype,
     upperOverride,
@@ -140,17 +131,41 @@ export function StudioBg3dV11UpperRoomAssemblerPanel({
     messinessPct,
     ordinal,
   ]);
+  const computed = useMemo(() => {
+    try {
+      return {
+        ok: true as const,
+        preview: assembleBg3dV11RoomPipeline(placementSpec),
+      };
+    } catch (error) {
+      if (!(error instanceof Bg3dV11PlacementError)) throw error;
+      return { ok: false as const, code: error.code };
+    }
+  }, [placementSpec]);
+  const upperComputed = useMemo(() => {
+    try {
+      return {
+        ok: true as const,
+        preview: assembleBg3dV11UpperRoomPlacement(placementSpec),
+      };
+    } catch (error) {
+      if (!(error instanceof Bg3dV11PlacementError)) throw error;
+      return { ok: false as const, code: error.code };
+    }
+  }, [placementSpec]);
   const upperTag = organization?.view.tags.find(
     ({ tag }) => tag === "BgV11_Upper",
   );
   const hideUpper = organization?.view.hiddenTags.has("BgV11_Upper") ?? false;
   const insert = (upperOnly: boolean) => {
-    if (disabled || !computed.ok || !onInsertPrimitives) return;
+    if (disabled || !onInsertPrimitives) return;
+    const primitives = upperOnly
+      ? upperComputed.ok ? upperComputed.preview.upperPrimitives : null
+      : computed.ok ? computed.preview.combinedPrimitives : null;
+    if (!primitives) return;
     try {
       const accepted = onInsertPrimitives(
-        upperOnly
-          ? computed.preview.upperPrimitives
-          : computed.preview.combinedPrimitives,
+        primitives,
         bt(
           upperOnly ? "상부 설비 배치" : "상·하부 룸 세트 배치",
           upperOnly
@@ -393,8 +408,8 @@ export function StudioBg3dV11UpperRoomAssemblerPanel({
             <p role="alert" className="text-xs text-bad">
               {computed.code === "room-too-small"
                 ? bt(
-                    "선택한 세트가 방보다 커요. 방 치수를 늘리거나 더 작은 클러스터를 선택해 주세요.",
-                    "The set does not fit. Increase room dimensions or choose a smaller cluster.",
+                    "상·하부 세트가 방보다 커요. 방 치수를 늘리거나 더 작은 클러스터를 선택해 주세요.",
+                    "The upper and lower set does not fit. Increase room dimensions or choose a smaller cluster.",
                   )
                 : bt(
                     "방 치수·높이를 유효한 숫자로 입력해 주세요.",
@@ -443,6 +458,14 @@ export function StudioBg3dV11UpperRoomAssemblerPanel({
               </ul>
             </div>
           )}
+          {!computed.ok && upperComputed.ok && (
+            <p role="status" className="text-xs text-fg-2">
+              {bt(
+                "상부 설비는 현재 방에 맞아 단독 배치할 수 있어요.",
+                "The upper fixtures fit this room and can be inserted separately.",
+              )}
+            </p>
+          )}
           {!onInsertPrimitives && (
             <p className="text-xs text-fg-2">
               {bt(
@@ -463,7 +486,7 @@ export function StudioBg3dV11UpperRoomAssemblerPanel({
             <button
               type="button"
               className={CONTROL}
-              disabled={disabled || !computed.ok || !onInsertPrimitives}
+              disabled={disabled || !upperComputed.ok || !onInsertPrimitives}
               onClick={() => insert(true)}
             >
               {bt("상부 설비만 단독 배치", "Insert upper fixtures only")}

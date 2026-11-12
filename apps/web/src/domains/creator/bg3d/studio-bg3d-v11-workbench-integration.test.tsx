@@ -32,7 +32,7 @@ type GeneratedPorts = Parameters<
 >[0];
 
 /** 실제 생성 묶음·조직 계획·history·문서 adapter를 연결하고 renderer 입출력만 대체한다. */
-function fixture() {
+function fixture(roomBuilderSpec = { width: 6.4, depth: 5.2, wallHeight: 2.85 }) {
   const existing: BgPrimitive = {
     id: "existing",
     kind: "box",
@@ -115,7 +115,7 @@ function fixture() {
       return createStudioBg3dWorkbenchHostPorts({
         ...host,
         outlinerController: { organization: organization() },
-        roomBuilderSpec: { width: 6.4, depth: 5.2, wallHeight: 2.85 },
+        roomBuilderSpec,
       });
     },
     read: () => live,
@@ -134,6 +134,67 @@ beforeEach(() => useI18n.setState({ lang: "ko" }));
 afterEach(cleanup);
 
 describe("V11 실제 작업대 삽입·표시·영속화 계약", () => {
+  it("하부가 맞지 않는 방의 상부 단독 삽입을 원자 Undo/Redo하고 정본 참조를 저장한다", () => {
+    const f = fixture({ width: 5, depth: 4, wallHeight: 2.5 });
+    render(
+      <StudioBg3dAdvancedWorkbenchHub
+        defaultTab="spatial-modeler"
+        {...f.ports()}
+      />,
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "하부 메인 클러스터" }), {
+      target: { value: "classroom-front-locker-rig" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: "상부 페어링 설비 (천장·창호·간판)" }), {
+      target: { value: "ceiling-hvac-cassette-duct" },
+    });
+    const before = createStudioBg3dHistorySnapshot(f.read());
+    const full = screen.getByRole("button", { name: "상·하부 세트 원클릭 배치" });
+    const upper = screen.getByRole("button", { name: "상부 설비만 단독 배치" });
+    expect(full.hasAttribute("disabled")).toBe(true);
+    expect(upper.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(full);
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(before);
+    fireEvent.click(upper);
+    const after = createStudioBg3dHistorySnapshot(f.read());
+    expect(after.primitives).toHaveLength(5);
+    expect(after.primitives[0]).toEqual(before.primitives[0]);
+    expect(after.document.meta?.hiddenTags).toEqual(["Existing"]);
+    const asset = findStudioBg3dEssentialAsset("kitbash-v11-ceiling-hvac-cassette-duct");
+    const expectUpper = (primitives: readonly BgPrimitive[]) => {
+      const inserted = primitives.filter(({ id }) => id !== "existing");
+      expect(inserted).toHaveLength(4);
+      expect(new Set(primitives.map(({ id }) => id)).size).toBe(primitives.length);
+      for (const part of inserted) {
+        expect(part.tags).toContain("BgV11_Upper");
+        expect(part.componentRef).toEqual({ id: asset?.id, name: asset?.labelKo });
+      }
+    };
+    expectUpper(after.primitives);
+    f.restore("undo");
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(before);
+    f.restore("redo");
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(after);
+    const saved = adaptStudioBg3dRuntimeToDocument({
+      ...f.read(),
+      baseDocument: f.read().document,
+      attachmentByStorageModelId: new Map(),
+    });
+    const parsed = parseStudioBg3dSceneDocument(saved.serialized);
+    if (!parsed) throw new Error("상부 단독 배치 장면을 다시 읽지 못했습니다.");
+    const reopened = hydrateStudioBg3dDocumentToRuntime({
+      document: parsed,
+      storageModelIdByAttachmentId: new Map(),
+    });
+    expect(reopened.ok).toBe(true);
+    expectUpper(reopened.primitives);
+    f.reject();
+    const historyIndex = f.history.historyIndexRef.current;
+    fireEvent.click(upper);
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(after);
+    expect(f.history.historyIndexRef.current).toBe(historyIndex);
+  });
+
   it("6종 상부의 정본 카탈로그 참조와 기존 하부 참조를 저장·재열기 뒤에도 보존한다", () => {
     const f = fixture();
     render(
