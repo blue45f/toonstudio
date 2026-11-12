@@ -7,11 +7,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MarketResourceCard } from "./MarketResourceCard";
 
-import type { CreatorMarketplaceResourceManifest } from "@/shared/lib/creator-marketplace-resource-contract";
+import type { CreatorMarketplaceResourceManifest, CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
 import { createCreatorMarketplacePortableDelivery } from "@/platform/creator-marketplace-client";
 
 const wishlist = vi.hoisted(() => ({ toggle: vi.fn(), error: "" }));
+const commerce = vi.hoisted((): { isPaidMode: boolean; defaultPriceKrw: number | null } => ({ isPaidMode: false, defaultPriceKrw: null }));
 vi.mock("../hooks/use-market-wishlist", () => ({
   useMarketWishlist: () => ({
     isWishlisted: () => false,
@@ -20,10 +21,16 @@ vi.mock("../hooks/use-market-wishlist", () => ({
   }),
 }));
 vi.mock("../hooks/use-commerce-config", () => ({
-  useCommerceConfig: () => ({ config: null, isPaidMode: false }),
+  useCommerceConfig: () => ({
+    config: commerce.defaultPriceKrw === null ? null : { defaultMarketPriceKrw: commerce.defaultPriceKrw },
+    isPaidMode: commerce.isPaidMode,
+  }),
 }));
 
-afterEach(() => { cleanup(); wishlist.toggle.mockClear(); wishlist.error = ""; });
+afterEach(() => {
+  cleanup(); wishlist.toggle.mockClear(); wishlist.error = "";
+  commerce.isPaidMode = false; commerce.defaultPriceKrw = null;
+});
 
 async function manifest(): Promise<CreatorMarketplaceResourceManifest> {
   const delivery = await createCreatorMarketplacePortableDelivery("palette", {
@@ -50,6 +57,20 @@ async function manifest(): Promise<CreatorMarketplaceResourceManifest> {
       name: "느와르 블라썸",
       delivery,
     }],
+  };
+}
+
+async function resourceRecord(): Promise<CreatorMarketplaceResourceRecord> {
+  return {
+    ...await manifest(),
+    id: "123e4567-e89b-42d3-a456-426614174000",
+    manifestHash: "a".repeat(64),
+    manifestByteSize: 256,
+    publisher: { id: "author-1", name: "테스트 작가", avatar: null },
+    createdAt: "2026-07-27T01:00:00.000Z",
+    updatedAt: "2026-08-01T01:00:00.000Z",
+    isOwner: false,
+    access: "free",
   };
 }
 
@@ -145,5 +166,58 @@ describe("MarketResourceCard", () => {
     expect(screen.getByRole("alert").textContent).toBe(wishlist.error);
     expect(screen.getByRole("link", { name: `${record.name} 자세히 보기` }).getAttribute("href"))
       .toBe(`/market/resource/${record.id}`);
+  });
+
+  it("행 카드의 단일 미리보기는 원본을 전달하고 이용 조건으로 직접 이어진다", async () => {
+    const record = await resourceRecord();
+    const preview = vi.fn();
+    wishlist.error = "이 브라우저에서 찜 목록을 저장하지 못했습니다.";
+    const { container } = render(<MemoryRouter><MarketResourceCard record={record} presentation="row" onQuickPreview={preview} /></MemoryRouter>);
+    expect(container.querySelector("article")?.classList.contains("market-resource-card--row")).toBe(true);
+    expect(container.querySelector(".market-resource-card__cover")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: record.name }).textContent).toBe(record.name);
+    expect(container.querySelector('[data-market-price="free"]')?.textContent).toBe("무료");
+    expect(container.querySelector('[data-market-license-badge="true"]')?.textContent).toBe("CC BY 4.0");
+    expect(screen.getByText("출처 표기 필요")).toBeTruthy();
+    const previewButton = screen.getByRole("button", { name: `${record.name} 미리보기` });
+    expect(screen.getAllByRole("button", { name: `${record.name} 미리보기` })).toHaveLength(1);
+    fireEvent.click(previewButton);
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(preview).toHaveBeenCalledWith(record);
+    const terms = screen.getByRole("link", { name: `${record.name} 이용 조건` });
+    expect(terms.getAttribute("href")).toBe(`/market/resource/${record.id}#market-trust-guarantee-heading`);
+    // 클래스 계약이며 실제 48px 경계·가림은 새 번들 브라우저에서 별도로 검증한다.
+    expect(previewButton.classList.contains("min-h-12")).toBe(true);
+    expect(terms.classList.contains("min-h-12")).toBe(true);
+    expect(screen.getByRole("alert").textContent).toBe(wishlist.error);
+    expect(screen.getByRole("link", { name: `${record.name} 상세 보기` }).getAttribute("href")).toBe(`/market/resource/${record.id}`);
+  });
+
+  it.each([
+    ["cc0-1.0", "CC0 1.0", "공개 이용"],
+    ["cc-by-4.0", "CC BY 4.0", "출처 표기 필요"],
+    ["cc-by-nc-4.0", "CC BY-NC 4.0", "비상업 · 출처 표기 필요"],
+    ["toonspectrum-standard", "ToonStudio 표준 사용권", "리소스 재배포 불가"],
+    ["toonstudio-standard", "ToonStudio 표준 사용권", "리소스 재배포 불가"],
+  ] as const)("행 카드가 %s의 실제 사용권과 짧은 제한을 보존한다", async (license, label, condition) => {
+    const record = { ...await resourceRecord(), license };
+    const { container } = render(<MemoryRouter><MarketResourceCard record={record} presentation="row" /></MemoryRouter>);
+    expect(container.querySelector('[data-market-license-badge="true"]')?.textContent).toBe(label);
+    expect(screen.getByText(condition)).toBeTruthy();
+    expect(screen.getByRole("link", { name: `${record.name} 이용 조건` }).getAttribute("href")).toBe(`/market/resource/${record.id}#market-trust-guarantee-heading`);
+    expect(screen.queryByRole("button", { name: `${record.name} 미리보기` })).toBeNull();
+    expect(container.textContent).not.toContain("Rights BOM");
+  });
+
+  it("행 카드도 유료 운영의 표준 가격과 미확정 가격을 구분한다", async () => {
+    const record = await resourceRecord();
+    commerce.isPaidMode = true;
+    commerce.defaultPriceKrw = 1500;
+    const { container, rerender } = render(<MemoryRouter><MarketResourceCard record={record} presentation="row" /></MemoryRouter>);
+    expect(container.querySelector('[data-market-price="paid"]')?.textContent).toBe("1,500원표준 가격");
+    commerce.defaultPriceKrw = null;
+    rerender(<MemoryRouter><MarketResourceCard record={record} presentation="row" /></MemoryRouter>);
+    expect(container.querySelector('[data-market-price="paid-unknown"]')?.textContent).toBe("유료");
+    expect(container.querySelector('[data-market-price="free"]')).toBeNull();
   });
 });

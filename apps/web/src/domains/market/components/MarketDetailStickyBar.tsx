@@ -76,17 +76,17 @@ export function MarketDetailStickyBar({
       data-market-sticky-bar="true"
       style={{ bottom: "max(0px, calc(var(--site-float-base, 1rem) - 1rem))" }}
       className={cn(
-        "fixed bottom-0 inset-x-0 z-40 border-t border-line/80 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-xl",
+        "fixed bottom-0 inset-x-0 z-40 [--site-control-size:48px] border-t border-line/80 bg-card/90 backdrop-blur-md px-4 py-2.5 shadow-xl",
         "animate-fade-up duration-200",
       )}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
         {/* Left info */}
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-raised text-accent font-bold">
             <kind.icon className="size-4.5" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="truncate text-xs font-bold text-fg sm:text-sm">
                 {record.name}
@@ -99,10 +99,14 @@ export function MarketDetailStickyBar({
               {record.publisher.name} · <span className="text-good font-semibold">라이선스 조건 확인</span>
             </p>
           </div>
+          {!acquired ? <MarketGuestLoginNotice
+            variant="compact"
+            id={MARKET_GUEST_LOGIN_NOTICE_STICKY_ID}
+          /> : null}
         </div>
 
         {/* Right actions */}
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
           <button
             type="button"
             onClick={() => toggleWishlist(record)}
@@ -129,10 +133,6 @@ export function MarketDetailStickyBar({
             </span>
           ) : (
             <>
-              <MarketGuestLoginNotice
-                variant="compact"
-                id={MARKET_GUEST_LOGIN_NOTICE_STICKY_ID}
-              />
               <button
                 type="button"
                 onClick={onOpenAcquisition}

@@ -9,3 +9,16 @@
 .market-browse-search :is(input, select) { min-width: 0; font-size: 1rem; }
 
 .market-browse-search button { min-width: 3rem; }
+
+/* 같은 자산·실제 사용권을 유지하는 명명된 행 변형. 그리드와 다른 화면은 바꾸지 않는다. */
+.market-browse-search .market-resource-card--row { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: .75rem; padding: .625rem; }
+.market-browse-search .market-resource-card--row > .market-resource-card__cover { width: 6rem; height: 7.125rem; min-height: 0; aspect-ratio: auto; align-self: center; }
+.market-browse-search .market-resource-card__cover > img { object-fit: cover; }
+.market-browse-search .market-resource-card__body { display: flex; flex-direction: column; gap: .375rem; }
+.market-browse-search .market-resource-card__heading { min-height: 2.25rem; }
+.market-browse-search .market-resource-card__title { font-size: .875rem; line-height: 1.25rem; }
+.market-browse-search .market-resource-card__actions { margin-top: auto; }
+@media (max-width: 340px) {
+  .market-browse-search .market-resource-card--row { grid-template-columns: 5.25rem minmax(0, 1fr); gap: .5625rem; padding: .5625rem; }
+  .market-browse-search .market-resource-card--row > .market-resource-card__cover { width: 5.25rem; }
+}

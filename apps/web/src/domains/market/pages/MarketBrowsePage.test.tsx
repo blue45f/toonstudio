@@ -10,6 +10,8 @@ import { MarketBrowsePage } from "./MarketBrowsePage";
 
 import type { MarketResourcesPage } from "../hooks/use-market-resources";
 
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
+
 import { CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS } from "@/shared/lib/creator-marketplace-resource-contract";
 
 vi.mock("../hooks/use-market-resources", () => ({
@@ -28,6 +30,9 @@ vi.mock("@/shared/seo/use-document-title", () => ({
   useMetaDescription: vi.fn(),
   usePageSocialMeta: vi.fn(),
 }));
+
+vi.mock("@/shared/hooks/use-media-query", () => ({ useMediaQuery: vi.fn(() => false) }));
+const useMobileQuery = vi.mocked(useMediaQuery);
 
 const useResources = vi.mocked(useMarketResources);
 
@@ -70,6 +75,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  useMobileQuery.mockReturnValue(false);
   useResources.mockReturnValue(marketPage());
 });
 
@@ -371,7 +377,8 @@ describe("market discovery experience", () => {
     expect(screen.getByRole("button", { name: "목록 보기" }).getAttribute("aria-pressed")).toBe("true");
     expect(useResources.mock.lastCall?.[0]).not.toHaveProperty("layout");
     fireEvent.click(screen.getByRole("button", { name: "카드 보기" }));
-    expect(screen.getByLabelText("현재 검색 쿼리").textContent).not.toContain("layout");
+    expect(Object.fromEntries(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "")))
+      .toEqual({ q: "ink", kind: "brush", layout: "grid" });
   });
 
   it("removes the kind independently of search and license", () => {
@@ -542,4 +549,37 @@ it("모바일 종류 선택은 검색·사용권을 보존하고 전체 소재�
   fireEvent.change(kind, { target: { value: "all" } });
   const reset = new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "");
   expect(reset.get("kind")).toBeNull(); expect(reset.get("q")).toBe("ink"); expect(reset.get("license")).toBe("cc0-1.0");
+});
+
+
+describe("반응형 기본 보기와 명시적 선택", () => {
+  it("모바일 기본 행 보기는 URL이나 서버 검색 계약을 새로 쓰지 않는다", () => {
+    useMobileQuery.mockReturnValue(true);
+    const { container } = render(<MemoryRouter initialEntries={["/market/browse?q=ink&license=cc0-1.0"]}><MarketBrowsePage /><LocationProbe /></MemoryRouter>);
+    expect(container.querySelector(".market-browse-results--list")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "목록 보기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("?q=ink&license=cc0-1.0");
+    expect(useResources.mock.lastCall?.[0]).not.toHaveProperty("layout");
+    expect(screen.getByRole("button", { name: "검색" }).getAttribute("type")).toBe("submit");
+  });
+
+  it.each([
+    [true, "grid"], [false, "list"],
+  ] as const)("기기 기본보다 명시 layout 선택을 우선한다 mobile=%s layout=%s", (mobile, layout) => {
+    useMobileQuery.mockReturnValue(mobile);
+    const { container } = render(<MemoryRouter initialEntries={[`/market/browse?q=ink&kind=brush&layout=${layout}`]}><MarketBrowsePage /><LocationProbe /></MemoryRouter>);
+    expect(container.querySelector(`.market-browse-results--${layout}`)).toBeTruthy();
+    expect(screen.getByRole("button", { name: layout === "grid" ? "카드 보기" : "목록 보기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "").get("layout")).toBe(layout);
+  });
+
+  it("모바일 보기 선택 후 검색 조건 변경과 Back에도 같은 명시 선택을 복원한다", () => {
+    useMobileQuery.mockReturnValue(true);
+    render(<MemoryRouter initialEntries={["/market/browse?q=old&layout=grid", "/market/browse?q=ink&kind=brush&layout=list"]}><MarketBrowsePage /><LocationProbe /><BackButton /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("combobox", { name: "소재 종류 필터" }), { target: { value: "3d" } });
+    expect(new URLSearchParams(screen.getByLabelText("현재 검색 쿼리").textContent ?? "").get("layout")).toBe("list");
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+    expect(screen.getByRole("button", { name: "카드 보기" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByLabelText("현재 검색 쿼리").textContent).toBe("?q=old&layout=grid");
+  });
 });

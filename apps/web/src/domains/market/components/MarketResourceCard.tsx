@@ -27,6 +27,7 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 interface MarketResourceCardProps {
   readonly record: CreatorMarketplaceResourceRecord;
   readonly className?: string;
+  readonly presentation?: "card" | "row";
   readonly onQuickPreview?: (record: CreatorMarketplaceResourceRecord) => void;
 }
 
@@ -37,6 +38,7 @@ interface MarketResourceCardProps {
 export function MarketResourceCard({
   record,
   className,
+  presentation = "card",
   onQuickPreview,
 }: MarketResourceCardProps) {
   useBilingualI18nRevision();
@@ -50,6 +52,78 @@ export function MarketResourceCard({
     defaultPriceKrw: config?.defaultMarketPriceKrw,
   });
   const wishlisted = isWishlisted(record.id);
+
+  if (presentation === "row") {
+    const usageCondition = record.license === "cc-by-nc-4.0"
+      ? bi("비상업 · 출처 표기 필요", "Non-commercial · attribution required")
+      : record.license === "cc-by-4.0"
+        ? bi("출처 표기 필요", "Attribution required")
+        : record.license === "cc0-1.0"
+          ? bi("공개 이용", "Open use")
+          : bi("리소스 재배포 불가", "No raw redistribution");
+
+    return (
+      <article
+        className={cn(
+          "market-resource-card--row relative overflow-hidden rounded-2xl border border-line bg-card shadow-sm",
+          className,
+        )}
+      >
+        <div className="market-resource-card__cover relative overflow-hidden rounded-xl">
+          <Link
+            href={`/market/resource/${record.id}`}
+            aria-label={bi(`${record.name} 상세 보기`, `View ${record.name} details`)}
+            className="absolute inset-0 z-[1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70"
+          >
+            <span className="sr-only">{bi(`${record.name} 상세 보기`, `View ${record.name} details`)}</span>
+          </Link>
+          <MarketResourceCover record={record} />
+        </div>
+        <div className="market-resource-card__body min-w-0">
+          <div className="market-resource-card__heading flex min-w-0 items-start justify-between gap-1.5">
+            <h3 className="market-resource-card__title min-w-0 text-sm font-bold leading-snug text-fg">
+              <span className="line-clamp-2 break-words [overflow-wrap:anywhere]">{record.name}</span>
+            </h3>
+            <span
+              data-market-price={price.kind}
+              className={cn("market-resource-card__price shrink-0 text-right text-xs font-bold", price.kind === "free" ? "text-good" : "text-fg")}
+            >
+              {price.label}
+              {price.caption ? <span className="block text-[0.65rem] font-medium text-fg-3">{price.caption}</span> : null}
+            </span>
+          </div>
+          <p className="market-resource-card__conditions flex flex-wrap gap-x-1 text-xs leading-relaxed text-fg-2">
+            <span>{bi(kind.label, kind.english)}</span>
+            <span aria-hidden="true">·</span>
+            <span data-market-license-badge="true">{license.label}</span>
+            <span>{usageCondition}</span>
+          </p>
+          {storageError ? (
+            <p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-2 text-xs text-fg">{storageError}</p>
+          ) : null}
+          <div className={cn("market-resource-card__actions grid gap-1.5", onQuickPreview ? "grid-cols-2" : "grid-cols-1")}>
+            {onQuickPreview ? (
+              <button
+                type="button"
+                onClick={() => onQuickPreview(record)}
+                aria-label={bi(`${record.name} 미리보기`, `Preview ${record.name}`)}
+                className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-accent px-1 text-xs font-bold text-on-accent transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none"
+              >
+                {bi("미리보기", "Preview")}
+              </button>
+            ) : null}
+            <Link
+              href={`/market/resource/${record.id}#market-trust-guarantee-heading`}
+              aria-label={bi(`${record.name} 이용 조건`, `Usage terms for ${record.name}`)}
+              className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl border border-line bg-panel px-1 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none"
+            >
+              {bi("이용 조건", "Usage terms")}
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article

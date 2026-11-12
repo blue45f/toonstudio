@@ -49,6 +49,7 @@ import { ListTemplate } from "@/shared/components/layout/ListTemplate";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
   CreatorMarketplaceResourceSearchQuerySchema,
@@ -89,6 +90,7 @@ const PROCESS_PRESET_FILTERS: readonly ProcessPresetFilter[] = [
 
 export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boolean } = {}) {
   const t = useBilingual("MarketBrowsePage");
+  const mobile = useMediaQuery("(max-width: 639px)");
   const searchInputId = useId();
   const supplementaryMenus = useRef<HTMLDivElement>(null);
   const filterTrigger = useRef<HTMLButtonElement>(null);
@@ -128,7 +130,9 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const navigationType = useNavigationType();
-  const layout = searchParams.get("layout") === "list" ? "list" : "grid";
+  const requestedLayout = searchParams.get("layout");
+  const layout = requestedLayout === "grid" || requestedLayout === "list"
+    ? requestedLayout : mobile ? "list" : "grid";
   const composingRef = useRef(false);
   const serializedSearchParams = searchParams.toString();
   const searchParamsRef = useRef(new URLSearchParams(searchParams));
@@ -250,7 +254,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
     cancelPendingSearchCommit();
     const next = new URLSearchParams(rawSearch.startsWith("?") ? rawSearch.slice(1) : rawSearch);
     const currentLayout = searchParamsRef.current.get("layout");
-    if (currentLayout === "list") next.set("layout", "list");
+    if (currentLayout === "list" || currentLayout === "grid") next.set("layout", currentLayout);
     searchParamsRef.current = next;
     setDraftSearch(next.get("q") ?? "");
     setSearchParams(next, { replace: true });
@@ -282,12 +286,12 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
   };
 
   return (
-    <div ref={supplementaryMenus} className="market-browse-page market-browse-search">
+    <div ref={supplementaryMenus} className="market-browse-page market-browse-search [--site-control-size:48px]">
       <CampusObjectSource objects={hasInvalidQuery ? [] : page.items.map((record) => ({
         id: record.id, title: record.name, href: `/market/resource/${encodeURIComponent(record.id)}`,
       }))} />
       <section className="border-b border-line bg-ledger">
-        <Container size="wide" className="py-4 sm:py-6">
+        <Container size="wide" className="py-3 sm:py-6">
           <h1 className="font-display text-2xl font-bold text-fg sm:text-3xl">{pageTitle}</h1>
 
           <form
@@ -305,7 +309,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
               }
             }}
           >
-            <label htmlFor={searchInputId} className="text-sm font-medium text-fg">{t("어떤 소재가 필요한가요?", "What material do you need?")}</label>
+            <label htmlFor={searchInputId} className="text-sm font-medium text-fg max-sm:sr-only">{t("어떤 소재가 필요한가요?", "What material do you need?")}</label>
             <div className="flex min-w-0 items-center gap-2">
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-3" aria-hidden="true" />
@@ -336,7 +340,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
         </Container>
       </section>
 
-      <Container size="wide" className="py-4 sm:py-6">
+      <Container size="wide" className="py-3 sm:py-6">
         {compareCount > 0 ? (
           <div
             data-market-compare-tray-banner="true"
@@ -371,7 +375,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
 
         <div className="flex items-end gap-2">
           <label className="grid min-w-0 flex-1 gap-1.5 text-sm font-medium text-fg">
-            {t("소재 종류", "Material kind")}
+            <span className="max-sm:sr-only">{t("소재 종류", "Material kind")}</span>
             <select aria-label={t("소재 종류 필터", "Material kind filter")} value={activeFamily?.id ?? "all"}
               onChange={(event) => selectFamily(MARKET_RESOURCE_FAMILIES.find((family) => family.id === event.target.value) ?? null)}
               className="min-h-12 min-w-0 rounded-xl border border-line bg-card px-3 text-base text-fg">
@@ -533,7 +537,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
           ) : <span />}
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <MarketViewToggle value={layout} onChange={(value) => patchParams({ layout: value === "grid" ? null : value })} />
+            <MarketViewToggle value={layout} onChange={(value) => patchParams({ layout: value })} />
 
 
 
@@ -595,7 +599,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
             <ul aria-busy={page.loading || undefined} className={`market-browse-results market-browse-results--${layout}`}>
               {page.loading && page.items.length === 0
                 ? Array.from({ length: PAGE_SIZE }, (_, index) => <li key={index} aria-hidden="true"><div className="skeleton aspect-[16/9] w-full rounded-t-xl" /><div className="space-y-2 rounded-b-xl border border-t-0 border-line bg-card p-3.5"><div className="skeleton h-4 w-4/5" /><div className="skeleton h-3 w-2/5" /></div></li>)
-                : visibleItems.map((record, index) => <li key={record.id} {...introItemProps(index)}><MarketResourceCard record={record} onQuickPreview={setQuickPreviewRecord} className="h-full" /></li>)}
+                : visibleItems.map((record, index) => <li key={record.id} {...introItemProps(index)}><MarketResourceCard record={record} presentation={layout === "list" ? "row" : "card"} onQuickPreview={setQuickPreviewRecord} className="h-full" /></li>)}
             </ul>
 
             {!page.loading && page.items.length === 0 ? (
