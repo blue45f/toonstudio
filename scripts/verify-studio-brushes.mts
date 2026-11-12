@@ -101,6 +101,7 @@ import {
   prepareStudioDrawingUi,
   waitForStudioDrawingReady,
 } from "./lib/studio-drawing-readiness";
+import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
 import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   isStaticPreviewReadinessResponse,
@@ -912,10 +913,11 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
     ].join("\n"),
   });
   await dismissTransientChrome(page);
-  // 초기 연결 상태 안내가 캔버스를 재배치하기 전에 그리기 좌표를 확정하지 않는다.
-  // 정적 미리보기에서는 API가 없어 서버 절전 해제 구간("warming")으로 분류되므로, 안내의 종류는 가리지 않고 기다린다.
+  // 접힌 warming 안내도 실제 저장·복구 창에서 확인하고 닫은 뒤 그리기 좌표를 정한다.
+  // 온라인 연결 진단과 기기 저장 완료 시각은 독립된 관측으로 남긴다.
   if (await page.locator("html").getAttribute("data-service-capability-state") === "degraded") {
-    await page.locator("[data-service-degraded-banner]").first().waitFor({ state: "visible" });
+    const connectionAccess = await verifyStudioServiceStatusAccess(page);
+    log(`service status UI: ${JSON.stringify(connectionAccess)}`);
   }
   const shellState = await page.evaluate(() => ({
     bodyTextLength: document.body.innerText.trim().length,

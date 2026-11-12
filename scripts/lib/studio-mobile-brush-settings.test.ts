@@ -39,7 +39,7 @@ function fixture(mode: "pen" | "eraser" | "shape" | "pixel", clarity = true) {
       if (selector === '[data-studio-mobile-workspace-menu="true"]') return {
         waitFor: async () => { expect(state.menu).toBe(false); waits.push("menu"); },
       };
-      expect(selector).toContain('[data-studio-mobile-primary-layout="simple"]');
+      expect(selector).toContain(':scope[data-studio-mobile-primary-layout="simple"]');
       expect(selector).toContain('[aria-pressed="true"]');
       expect(selector).toContain(':not([data-studio-mobile-tool])');
       return control;

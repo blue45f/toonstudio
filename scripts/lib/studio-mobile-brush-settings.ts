@@ -19,7 +19,7 @@ export async function openMobileBrushSettings(page: Page, dock: Locator): Promis
   // Clarity는 현재 펜·지우개를 다시 누른다. 지우개를 펜으로 바꾸거나 기존 배치 전체를 켜지 않는다.
   // 두 경로를 매 클릭 때 다시 판정하므로 준비 도중 Clarity가 늦게 나타나도 숨겨진 옛 메뉴에 묶이지 않는다.
   const control = dock.locator([
-    '[data-studio-mobile-primary-layout="simple"] [data-studio-mobile-primary-actions="true"] button[aria-controls="studio-mobile-draw-settings"][aria-pressed="true"]',
+    ':scope[data-studio-mobile-primary-layout="simple"] [data-studio-mobile-primary-actions="true"] button[aria-controls="studio-mobile-draw-settings"][aria-pressed="true"]',
     '[data-studio-mobile-workspace-menu="true"] button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action]):not([data-studio-mobile-tool])',
   ].join(", ")).filter({ visible: true });
   await clickStudioControlAfterReadiness(
