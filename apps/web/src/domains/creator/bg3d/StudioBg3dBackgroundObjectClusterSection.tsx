@@ -1,11 +1,13 @@
 import { Boxes, Search, Sparkles, X } from "lucide-react";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import {
   STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES,
   buildBg3dObjectClusterPrimitives,
   computeBg3dClusterNonOverlappingOffsetXZ,
+  createBg3dClusterUniqueInstanceKey,
+  resolveBg3dClusterPlacementOrdinal,
   searchStudioBg3dObjectClusterArchetypes,
   type Bg3dObjectClusterArchetypeId,
   type Bg3dObjectClusterArrangement,
@@ -86,6 +88,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
   onInsertScenePrimitives,
   onStatusChange,
 }: StudioBg3dBackgroundObjectClusterSectionProps) {
+  const bodyId = useId();
   const [expanded, setExpanded] = useState<boolean>(defaultExpanded);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [archetype, setArchetype] =
@@ -95,8 +98,9 @@ export function StudioBg3dBackgroundObjectClusterSection({
   const [arrangement, setArrangement] = useState<Bg3dObjectClusterArrangement>("linear-wall");
   const [surfaceTheme, setSurfaceTheme] = useState<Bg3dObjectSurfaceTheme>("daylight-neutral");
 
-  const placementSeqRef = useRef<number>(0);
+  const usedOrdinalsRef = useRef<Set<number>>(new Set());
   const workbenchOrdinalRef = useRef<number>(0);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const archRadioRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const densityRadioRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const arrangementRadioRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -131,6 +135,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
   );
 
   const handleArchetypeKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (disabled) return;
     const nextIdx = nextRovingIndex(event.key, index, filteredArchetypes.length);
     if (nextIdx === null) return;
     event.preventDefault();
@@ -141,6 +146,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
   };
 
   const handleDensityKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (disabled) return;
     const nextIdx = nextRovingIndex(event.key, index, DENSITY_LABELS.length);
     if (nextIdx === null) return;
     event.preventDefault();
@@ -151,6 +157,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
   };
 
   const handleArrangementKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (disabled) return;
     const nextIdx = nextRovingIndex(event.key, index, ARRANGEMENT_LABELS.length);
     if (nextIdx === null) return;
     event.preventDefault();
@@ -162,14 +169,16 @@ export function StudioBg3dBackgroundObjectClusterSection({
 
   const handlePlaceCluster = () => {
     if (disabled || filteredArchetypes.length === 0) return;
-    placementSeqRef.current += 1;
-    const seq = placementSeqRef.current;
 
     if (onBuildGenerated) {
+      const instanceKey = createBg3dClusterUniqueInstanceKey("p");
       onBuildGenerated(
         (existingCount) => {
-          const placementOrd =
-            existingCount > 0 ? Math.max(1, Math.floor(existingCount / Math.max(1, previewBuild.partCount))) : 0;
+          const placementOrd = resolveBg3dClusterPlacementOrdinal(
+            existingCount,
+            previewBuild.partCount,
+            usedOrdinalsRef.current,
+          );
           const offsetXZ = computeBg3dClusterNonOverlappingOffsetXZ(
             placementOrd,
             previewBuild.footprintMeters,
@@ -181,7 +190,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
             arrangement,
             surfaceTheme,
             anchorOffsetXZ: offsetXZ,
-            instanceKey: `p${existingCount}-${seq}`,
+            instanceKey,
           });
           return { primitives: [...built.primitives], anchorX: offsetXZ[0] };
         },
@@ -204,7 +213,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
         arrangement,
         surfaceTheme,
         anchorOffsetXZ: offsetXZ,
-        instanceKey: `w${seq}`,
+        instanceKey: createBg3dClusterUniqueInstanceKey("w"),
       });
       const inserted = onInsertScenePrimitives(built.primitives, built.summaryKo);
       if (inserted) {
@@ -237,7 +246,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
           type="button"
           disabled={disabled}
           aria-expanded={expanded}
-          aria-controls="bg3d-object-cluster-body"
+          aria-controls={expanded ? bodyId : undefined}
           data-testid="bg3d-object-cluster-toggle"
           onClick={() => setExpanded((prev) => !prev)}
           className="shrink-0 rounded-md border border-line bg-panel px-2 py-0.5 text-[0.6rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-45"
@@ -248,7 +257,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
 
       {expanded ? (
         <div
-          id="bg3d-object-cluster-body"
+          id={bodyId}
           data-testid="bg3d-object-cluster-body"
           className="mt-2 space-y-2 border-t border-line/60 pt-2"
         >
@@ -259,6 +268,7 @@ export function StudioBg3dBackgroundObjectClusterSection({
                 aria-hidden
               />
               <input
+                ref={searchInputRef}
                 type="search"
                 value={searchQuery}
                 disabled={disabled}
@@ -281,7 +291,10 @@ export function StudioBg3dBackgroundObjectClusterSection({
                 type="button"
                 disabled={disabled}
                 data-testid="bg3d-object-cluster-search-clear"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
                 className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-line bg-panel px-1.5 py-1 text-[0.58rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
               >
                 <X className="size-2.5" aria-hidden />
@@ -447,6 +460,8 @@ export function StudioBg3dBackgroundObjectClusterSection({
 
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-panel px-2.5 py-1.5">
             <span
+              role="status"
+              aria-live="polite"
               data-testid="bg3d-object-cluster-readout"
               className="font-mono text-[0.58rem] text-fg-2"
             >

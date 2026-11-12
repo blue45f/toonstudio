@@ -22,11 +22,7 @@ export type Bg3dObjectClusterArchetypeId =
 
 export type Bg3dObjectClutterDensity = "essential" | "detailed" | "lived-in";
 export type Bg3dObjectClusterArrangement = "linear-wall" | "l-corner" | "staggered-street";
-export type Bg3dObjectSurfaceTheme =
-  | "daylight-neutral"
-  | "weathered-urban"
-  | "night-glow"
-  | "warm-wood";
+export type Bg3dObjectSurfaceTheme = "daylight-neutral" | "weathered-urban" | "night-glow" | "warm-wood";
 
 export interface Bg3dObjectClusterArchetypeMeta {
   readonly id: Bg3dObjectClusterArchetypeId;
@@ -67,99 +63,64 @@ export interface Bg3dPrimitivesWorldBoundsSummary {
   readonly size: readonly [number, number, number];
 }
 
-export const STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES: readonly Bg3dObjectClusterArchetypeMeta[] =
-  Object.freeze([
-    {
-      id: "alley-wall-utility-clutter",
-      shortCode: "alley",
-      labelKo: "골목 2단 실외기·가스배관 세트",
-      genreTagKo: "현대·스릴러",
-      descriptionKo: "앵글 브래킷 2단 실외기·도시가스 계량기·동관/배수 파이프·차단 밸브를 벽면에 밀착 배치해요.",
-      v10GlbAssetId: "kitbash-v10-alley-ac-meter-pipe-wall-v10",
-      keywordsKo: Object.freeze(["골목", "실외기", "에어컨", "가스계량기", "배관", "파이프", "스릴러", "느와르"]),
-    },
-    {
-      id: "classroom-front-locker-rig",
-      shortCode: "class",
-      labelKo: "교실 와이드 칠판·교탁·사물함",
-      genreTagKo: "학원·청춘",
-      descriptionKo: "웨인스코팅 벽체·녹색 칠판·분필받이·교탁·3×3 철제 사물함과 벽시계를 한 번에 구성해요.",
-      v10GlbAssetId: "kitbash-v10-classroom-podium-locker-wall-v10",
-      keywordsKo: Object.freeze(["교실", "학교", "칠판", "교탁", "사물함", "로커", "시계", "학원물"]),
-    },
-    {
-      id: "office-creator-workstation",
-      shortCode: "desk",
-      labelKo: "작업실 모션데스크·액정태블릿",
-      genreTagKo: "오피스·일상",
-      descriptionKo: "전동 데스크·기울임 펜 디스플레이·서브 모니터 암·타공판 선반·데스크 램프·스피커를 배치해요.",
-      v10GlbAssetId: "kitbash-v10-creator-dual-monitor-desk-v10",
-      keywordsKo: Object.freeze(["작업실", "오피스", "책상", "모션데스크", "액정태블릿", "모니터", "컴퓨터", "스피커"]),
-    },
-    {
-      id: "convenience-patio-street-furniture",
-      shortCode: "street",
-      labelKo: "도심 분리수거함·입간판·볼라드",
-      genreTagKo: "일상·스트리트",
-      descriptionKo: "캐노피 3색 분리수거 스테이션·원목 A보드 카페 입간판·반사띠 볼라드로 보도블록을 채워요.",
-      v10GlbAssetId: "kitbash-v10-street-recycling-station-a-board-v10",
-      keywordsKo: Object.freeze(["거리", "도심", "분리수거", "쓰레기통", "입간판", "카페", "볼라드", "파라솔"]),
-    },
-    {
-      id: "subway-platform-gate-bay",
-      shortCode: "subway",
-      labelKo: "지하철 개찰구·플랩 게이트 베이",
-      genreTagKo: "도시·액션",
-      descriptionKo: "스테인리스 개찰구 하우징·교통카드 단말기·강화유리 플랩·점자 유도 타일 통로를 생성해요.",
-      v10GlbAssetId: "kitbash-v10-subway-turnstile-gate-set-v10",
-      keywordsKo: Object.freeze(["지하철", "역사", "개찰구", "게이트", "교통카드", "점자블록", "플랫폼", "도시"]),
-    },
-    {
-      id: "hospital-ward-corridor-set",
-      shortCode: "ward",
-      labelKo: "병원 복도 대기석·수액 폴대 세트",
-      genreTagKo: "메디컬·드라마",
-      descriptionKo: "복도 범퍼레일 벽체·3인용 대기 벤치·5발 이동식 IV 수액 폴대·진료 호출 모니터를 조합해요.",
-      v10GlbAssetId: "kitbash-v10-hospital-corridor-station-v10",
-      keywordsKo: Object.freeze(["병원", "병동", "복도", "대기석", "벤치", "수액", "링거", "모니터", "메디컬"]),
-    },
-    {
-      id: "hanok-jangdokdae-stone-wall",
-      shortCode: "hanok",
-      labelKo: "한옥 기와담장·장독대·석등 마당",
-      genreTagKo: "사극·무협·전통",
-      descriptionKo: "암수키와 토담·2단 장대석 단상·배흘림 옹기 독 군락·사각 화강암 석등으로 전통 마당을 꾸며요.",
-      v10GlbAssetId: "kitbash-v10-hanok-jangdokdae-courtyard-v10",
-      keywordsKo: Object.freeze(["한옥", "전통", "사극", "무협", "기와", "담장", "장독대", "옹기", "항아리", "석등"]),
-    },
-    {
-      id: "fantasy-dungeon-alchemy-props",
-      shortCode: "alchemy",
-      labelKo: "마탑 고딕 아치 서가·포션·촛대",
-      genreTagKo: "로판·판타지",
-      descriptionKo: "황동 아치 고목 서가·마도서 묶음·발광 엘릭서 플라스크·3구 스탠드 촛대로 실내 밀도를 높여요.",
-      v10GlbAssetId: "kitbash-v10-fantasy-alchemy-bookshelf-rack-v10",
-      keywordsKo: Object.freeze(["판타지", "로판", "마탑", "서가", "책장", "마도서", "포션", "연금술", "촛대"]),
-    },
-  ]);
+export const STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES: readonly Bg3dObjectClusterArchetypeMeta[] = Object.freeze([
+  {
+    id: "alley-wall-utility-clutter", shortCode: "alley", labelKo: "골목 2단 실외기·가스배관 세트", genreTagKo: "현대·스릴러",
+    descriptionKo: "앵글 브래킷 2단 실외기·도시가스 계량기·동관/배수 파이프·차단 밸브를 벽면에 밀착 배치해요.",
+    v10GlbAssetId: "kitbash-v10-alley-ac-meter-pipe-wall-v10",
+    keywordsKo: Object.freeze(["골목", "실외기", "에어컨", "가스계량기", "배관", "파이프", "스릴러", "느와르"]),
+  },
+  {
+    id: "classroom-front-locker-rig", shortCode: "class", labelKo: "교실 와이드 칠판·교탁·사물함", genreTagKo: "학원·청춘",
+    descriptionKo: "웨인스코팅 벽체·녹색 칠판·분필받이·교탁·3×3 철제 사물함과 벽시계를 한 번에 구성해요.",
+    v10GlbAssetId: "kitbash-v10-classroom-podium-locker-wall-v10",
+    keywordsKo: Object.freeze(["교실", "학교", "칠판", "교탁", "사물함", "로커", "시계", "학원물"]),
+  },
+  {
+    id: "office-creator-workstation", shortCode: "desk", labelKo: "작업실 모션데스크·액정태블릿", genreTagKo: "오피스·일상",
+    descriptionKo: "전동 데스크·기울임 펜 디스플레이·서브 모니터 암·타공판 선반·데스크 램프·스피커를 배치해요.",
+    v10GlbAssetId: "kitbash-v10-creator-dual-monitor-desk-v10",
+    keywordsKo: Object.freeze(["작업실", "오피스", "책상", "모션데스크", "액정태블릿", "모니터", "컴퓨터", "스피커"]),
+  },
+  {
+    id: "convenience-patio-street-furniture", shortCode: "street", labelKo: "도심 분리수거함·입간판·볼라드", genreTagKo: "일상·스트리트",
+    descriptionKo: "캐노피 3색 분리수거 스테이션·원목 A보드 카페 입간판·반사띠 볼라드로 보도블록을 채워요.",
+    v10GlbAssetId: "kitbash-v10-street-recycling-station-a-board-v10",
+    keywordsKo: Object.freeze(["거리", "도심", "분리수거", "쓰레기통", "입간판", "카페", "볼라드", "파라솔"]),
+  },
+  {
+    id: "subway-platform-gate-bay", shortCode: "subway", labelKo: "지하철 개찰구·플랩 게이트 베이", genreTagKo: "도시·액션",
+    descriptionKo: "스테인리스 개찰구 하우징·교통카드 단말기·강화유리 플랩·점자 유도 타일 통로를 생성해요.",
+    v10GlbAssetId: "kitbash-v10-subway-turnstile-gate-set-v10",
+    keywordsKo: Object.freeze(["지하철", "역사", "개찰구", "게이트", "교통카드", "점자블록", "플랫폼", "도시"]),
+  },
+  {
+    id: "hospital-ward-corridor-set", shortCode: "ward", labelKo: "병원 복도 대기석·수액 폴대 세트", genreTagKo: "메디컬·드라마",
+    descriptionKo: "복도 범퍼레일 벽체·3인용 대기 벤치·5발 이동식 IV 수액 폴대·진료 호출 모니터를 조합해요.",
+    v10GlbAssetId: "kitbash-v10-hospital-corridor-station-v10",
+    keywordsKo: Object.freeze(["병원", "병동", "복도", "대기석", "벤치", "수액", "링거", "모니터", "메디컬"]),
+  },
+  {
+    id: "hanok-jangdokdae-stone-wall", shortCode: "hanok", labelKo: "한옥 기와담장·장독대·석등 마당", genreTagKo: "사극·무협·전통",
+    descriptionKo: "암수키와 토담·2단 장대석 단상·배흘림 옹기 독 군락·사각 화강암 석등으로 전통 마당을 꾸며요.",
+    v10GlbAssetId: "kitbash-v10-hanok-jangdokdae-courtyard-v10",
+    keywordsKo: Object.freeze(["한옥", "전통", "사극", "무협", "기와", "담장", "장독대", "옹기", "항아리", "석등"]),
+  },
+  {
+    id: "fantasy-dungeon-alchemy-props", shortCode: "alchemy", labelKo: "마탑 고딕 아치 서가·포션·촛대", genreTagKo: "로판·판타지",
+    descriptionKo: "황동 아치 고목 서가·마도서 묶음·발광 엘릭서 플라스크·3구 스탠드 촛대로 실내 밀도를 높여요.",
+    v10GlbAssetId: "kitbash-v10-fantasy-alchemy-bookshelf-rack-v10",
+    keywordsKo: Object.freeze(["판타지", "로판", "마탑", "서가", "책장", "마도서", "포션", "연금술", "촛대"]),
+  },
+]);
 
 /** 검색어로 8종 배경 오브젝트 클러스터 아키타입을 필터링한다 (한/영 키워드·장르·설명 매칭). */
-export function searchStudioBg3dObjectClusterArchetypes(
-  query: string,
-): readonly Bg3dObjectClusterArchetypeMeta[] {
+export function searchStudioBg3dObjectClusterArchetypes(query: string): readonly Bg3dObjectClusterArchetypeMeta[] {
   const normalized = query.normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
   if (!normalized) return STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES;
   const tokens = normalized.split(/\s+/u).filter(Boolean);
   return STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES.filter((item) => {
-    const haystack = [
-      item.id,
-      item.shortCode,
-      item.labelKo,
-      item.genreTagKo,
-      item.descriptionKo,
-      item.v10GlbAssetId,
-      ...item.keywordsKo,
-    ]
+    const haystack = [item.id, item.shortCode, item.labelKo, item.genreTagKo, item.descriptionKo, item.v10GlbAssetId, ...item.keywordsKo]
       .join(" ")
       .normalize("NFKC")
       .toLocaleLowerCase("ko-KR");
@@ -182,6 +143,43 @@ export function computeBg3dClusterNonOverlappingOffsetXZ(
   return [round4(col * stepX), round4(row * stepZ)];
 }
 
+let clusterInstanceSequence = 0;
+
+function randomBase36Token(length: number): string {
+  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+  if (typeof globalThis.crypto?.getRandomValues === "function") {
+    const bytes = new Uint8Array(length);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => alphabet[byte % 36]!).join("");
+  }
+  let out = "";
+  for (let i = 0; i < length; i += 1) out += alphabet[Math.floor(Math.random() * 36)]!;
+  return out;
+}
+
+/** 저장 후 재불러오기·탭 재마운트·다중 패널 마운트에서도 기존 노드 ID와 충돌하지 않는 인스턴스 키를 만든다. */
+export function createBg3dClusterUniqueInstanceKey(prefix = "c"): string {
+  clusterInstanceSequence = (clusterInstanceSequence + 1) % 1_679_616;
+  const safePrefix = prefix.replace(/[^a-z0-9]/giu, "").toLowerCase().slice(0, 3) || "c";
+  return `${safePrefix}${clusterInstanceSequence.toString(36)}-${randomBase36Token(5)}`;
+}
+
+/** 기존 장면 도형 수와 클러스터 파츠 수로부터 소수 기존 도형·부분 삭제에서도 겹치지 않는 배치 순번을 계산한다. */
+export function resolveBg3dClusterPlacementOrdinal(
+  existingCount: number,
+  partCount: number,
+  usedOrdinals?: Set<number>,
+): number {
+  const safeExisting = Math.max(0, Math.floor(existingCount));
+  const safeParts = Math.max(1, Math.floor(partCount));
+  let ord = safeExisting > 0 ? Math.floor((safeExisting - 1) / safeParts) + 1 : 0;
+  if (usedOrdinals) {
+    while (usedOrdinals.has(ord)) ord += 1;
+    usedOrdinals.add(ord);
+  }
+  return ord;
+}
+
 interface ThemePalette {
   readonly base: string;
   readonly metal: string;
@@ -192,38 +190,10 @@ interface ThemePalette {
 }
 
 const SURFACE_THEMES: Readonly<Record<Bg3dObjectSurfaceTheme, ThemePalette>> = Object.freeze({
-  "daylight-neutral": {
-    base: "#e2e0d8",
-    metal: "#94a3b8",
-    wood: "#8b5a36",
-    accent: "#0284c7",
-    glow: "#38bdf8",
-    dark: "#1e293b",
-  },
-  "weathered-urban": {
-    base: "#cbd5e1",
-    metal: "#64748b",
-    wood: "#6b442a",
-    accent: "#d97706",
-    glow: "#fbbf24",
-    dark: "#0f172a",
-  },
-  "night-glow": {
-    base: "#334155",
-    metal: "#475569",
-    wood: "#452c1e",
-    accent: "#06b6d4",
-    glow: "#22d3ee",
-    dark: "#090d16",
-  },
-  "warm-wood": {
-    base: "#ede4d5",
-    metal: "#a8a29e",
-    wood: "#9a5b32",
-    accent: "#2f6f5e",
-    glow: "#fde68a",
-    dark: "#292524",
-  },
+  "daylight-neutral": { base: "#e2e0d8", metal: "#94a3b8", wood: "#8b5a36", accent: "#0284c7", glow: "#38bdf8", dark: "#1e293b" },
+  "weathered-urban": { base: "#cbd5e1", metal: "#64748b", wood: "#6b442a", accent: "#d97706", glow: "#fbbf24", dark: "#0f172a" },
+  "night-glow": { base: "#334155", metal: "#475569", wood: "#452c1e", accent: "#06b6d4", glow: "#22d3ee", dark: "#090d16" },
+  "warm-wood": { base: "#ede4d5", metal: "#a8a29e", wood: "#9a5b32", accent: "#2f6f5e", glow: "#fde68a", dark: "#292524" },
 });
 
 function round4(n: number): number {
@@ -241,8 +211,7 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function sanitizeInstanceKey(raw: string | undefined): string {
-  if (!raw) return "";
-  return raw.replace(/[^A-Za-z0-9._~-]/gu, "").slice(0, 20);
+  return raw ? raw.replace(/[^A-Za-z0-9._~-]/gu, "").slice(0, 20) : "";
 }
 
 function rotateXZ(x: number, z: number, yawRad: number): readonly [number, number] {
@@ -252,10 +221,7 @@ function rotateXZ(x: number, z: number, yawRad: number): readonly [number, numbe
   return [x * c + z * s, -x * s + z * c];
 }
 
-/**
- * `makeGeometry(kind)`의 단위 메시 전체 크기 `[baseX, baseY, baseZ]`.
- * 목표 물리 치수(m)를 이 값으로 나누어 `BgPrimitive.scale`에 넣으면 뷰포트에서 1:1 미터 규격으로 그려진다.
- */
+/** `makeGeometry(kind)`의 단위 메시 전체 크기 `[baseX, baseY, baseZ]`. */
 export function unitMeshFullSizeForKind(kind: BgPrimitiveKind): readonly [number, number, number] {
   switch (kind) {
     case "cylinder":
@@ -275,18 +241,13 @@ export function unitMeshFullSizeForKind(kind: BgPrimitiveKind): readonly [number
   }
 }
 
-/**
- * Three.js 기본 오일러 `'XYZ'`(`M = Rx * Ry * Rz`) 로컬 회전에 월드 Y축 회전(`Ry(yaw)`)을 좌측 곱셈해
- * 짐벌락과 축 뒤틀림 없는 정규 `'XYZ'` 오일러 라디안 `[rx, ry, rz]`를 반환한다.
- */
+/** Three.js 기본 오일러 `'XYZ'`(`M = Rx * Ry * Rz`) 로컬 회전에 월드 Y축 회전을 좌측 곱셈해 정규 오일러를 돌려준다. */
 export function composeWorldYawWithLocalEulerXyz(
   localRot: readonly [number, number, number],
   yawRad: number,
 ): [number, number, number] {
   const [rx, ry, rz] = localRot;
-  if (Math.abs(yawRad) < 1e-7) {
-    return [round6(rx), round6(ry), round6(rz)];
-  }
+  if (Math.abs(yawRad) < 1e-7) return [round6(rx), round6(ry), round6(rz)];
   const a = Math.cos(rx);
   const b = Math.sin(rx);
   const c = Math.cos(ry);
@@ -297,7 +258,6 @@ export function composeWorldYawWithLocalEulerXyz(
   const l00 = c * e;
   const l01 = -c * f;
   const l02 = d;
-  const l10 = a * f + b * e * d;
   const l11 = a * e - b * f * d;
   const l12 = -b * c;
   const l20 = b * f - a * e * d;
@@ -306,27 +266,16 @@ export function composeWorldYawWithLocalEulerXyz(
 
   const cy = Math.cos(yawRad);
   const sy = Math.sin(yawRad);
-
   const m00 = cy * l00 + sy * l20;
   const m01 = cy * l01 + sy * l21;
   const m02 = cy * l02 + sy * l22;
-  const m11 = l11;
-  const m12 = l12;
   const m21 = -sy * l01 + cy * l21;
   const m22 = -sy * l02 + cy * l22;
-  void l10;
 
   const sinY = clamp(m02, -1, 1);
   const outY = Math.asin(sinY);
-  let outX: number;
-  let outZ: number;
-  if (Math.abs(sinY) < 0.9999995) {
-    outX = Math.atan2(-m12, m22);
-    outZ = Math.atan2(-m01, m00);
-  } else {
-    outX = Math.atan2(m21, m11);
-    outZ = 0;
-  }
+  const outX = Math.abs(sinY) < 0.9999995 ? Math.atan2(-m12, m22) : Math.atan2(m21, l11);
+  const outZ = Math.abs(sinY) < 0.9999995 ? Math.atan2(-m01, m00) : 0;
   return [round6(outX), round6(outY), round6(outZ)];
 }
 
@@ -377,18 +326,9 @@ export function computePrimitiveWorldHalfExtents(
 }
 
 /** 배치된 `BgPrimitive[]` 묶음 전체의 월드 AABB(`min`, `max`, `size`)를 계산한다. */
-export function measureBg3dPrimitivesWorldBounds(
-  primitives: readonly BgPrimitive[],
-): Bg3dPrimitivesWorldBoundsSummary {
-  if (primitives.length === 0) {
-    return { min: [0, 0, 0], max: [0, 0, 0], size: [0, 0, 0] };
-  }
-  let minX = Infinity;
-  let minY = Infinity;
-  let minZ = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  let maxZ = -Infinity;
+export function measureBg3dPrimitivesWorldBounds(primitives: readonly BgPrimitive[]): Bg3dPrimitivesWorldBoundsSummary {
+  if (primitives.length === 0) return { min: [0, 0, 0], max: [0, 0, 0], size: [0, 0, 0] };
+  let [minX, minY, minZ, maxX, maxY, maxZ] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
   for (const prim of primitives) {
     const [hx, hy, hz] = computePrimitiveWorldHalfExtents(prim.kind, prim.rotation, prim.scale);
     minX = Math.min(minX, prim.position[0] - hx);
@@ -410,24 +350,16 @@ interface LocalPart {
   readonly name: string;
   readonly kind: BgPrimitiveKind;
   readonly pos: readonly [number, number, number];
-  /** 회전 전 로컬 축 기준 목표 물리 외곽 크기 `[widthX, heightY, depthZ]` (m). */
   readonly size: readonly [number, number, number];
-  /** `triangularPrism` 등 직접 로컬 스케일 배율을 지정할 때만 사용. */
   readonly rawScale?: readonly [number, number, number];
   readonly color: string;
   readonly rot?: readonly [number, number, number];
 }
 
 function resolvePartScale(part: LocalPart): readonly [number, number, number] {
-  if (part.rawScale) {
-    return [round4(part.rawScale[0]), round4(part.rawScale[1]), round4(part.rawScale[2])];
-  }
+  if (part.rawScale) return [round4(part.rawScale[0]), round4(part.rawScale[1]), round4(part.rawScale[2])];
   const [ux, uy, uz] = unitMeshFullSizeForKind(part.kind);
-  return [
-    round4(part.size[0] / ux),
-    round4(part.size[1] / uy),
-    round4(part.size[2] / uz),
-  ];
+  return [round4(part.size[0] / ux), round4(part.size[1] / uy), round4(part.size[2] / uz)];
 }
 
 function buildSingleModuleParts(
@@ -562,9 +494,7 @@ function buildSingleModuleParts(
         );
       }
       if (density >= 3) {
-        parts.push(
-          { suffix: "fire-hydrant", name: "Station_Fire_Cabinet", kind: "box", pos: [1.05, 0.62, -0.45], size: [0.42, 1.24, 0.22], color: "#dc2626" },
-        );
+        parts.push({ suffix: "fire-hydrant", name: "Station_Fire_Cabinet", kind: "box", pos: [1.05, 0.62, -0.45], size: [0.42, 1.24, 0.22], color: "#dc2626" });
       }
       return { spanX: 2.35, parts };
     }
@@ -589,9 +519,7 @@ function buildSingleModuleParts(
         );
       }
       if (density >= 3) {
-        parts.push(
-          { suffix: "sanitizer", name: "Hand_Sanitizer_Unit", kind: "box", pos: [0.48, 1.28, -0.26], size: [0.14, 0.26, 0.10], color: "#f8fafc" },
-        );
+        parts.push({ suffix: "sanitizer", name: "Hand_Sanitizer_Unit", kind: "box", pos: [0.48, 1.28, -0.26], size: [0.14, 0.26, 0.10], color: "#f8fafc" });
       }
       return { spanX: 2.45, parts };
     }
@@ -615,9 +543,7 @@ function buildSingleModuleParts(
         );
       }
       if (density >= 3) {
-        parts.push(
-          { suffix: "lantern-cap", name: "Lantern_Pyramid_Cap", kind: "pyramid", pos: [1.06, 1.15, 0.12], size: [0.48, 0.22, 0.48], color: pal.dark },
-        );
+        parts.push({ suffix: "lantern-cap", name: "Lantern_Pyramid_Cap", kind: "pyramid", pos: [1.06, 1.15, 0.12], size: [0.48, 0.22, 0.48], color: pal.dark });
       }
       return { spanX: 3.05, parts };
     }
@@ -640,24 +566,17 @@ function buildSingleModuleParts(
         );
       }
       if (density >= 3) {
-        parts.push(
-          { suffix: "chest", name: "Arcane_Relic_Chest", kind: "box", pos: [0.88, 0.22, -0.32], size: [0.58, 0.44, 0.38], color: pal.wood },
-        );
+        parts.push({ suffix: "chest", name: "Arcane_Relic_Chest", kind: "box", pos: [0.88, 0.22, -0.32], size: [0.58, 0.44, 0.38], color: pal.wood });
       }
       return { spanX: 2.15, parts };
     }
   }
 }
 
-/**
- * 선택된 아키타입·모듈 수·밀도·배치 대형에 맞춰 배경 전용 다중 파츠 오브젝트 클러스터를 생성한다.
- */
-export function buildBg3dObjectClusterPrimitives(
-  rawSpec: Bg3dObjectClusterSpec,
-): Bg3dObjectClusterBuildResult {
+/** 선택된 아키타입·모듈 수·밀도·배치 대형에 맞춰 배경 전용 다중 파츠 오브젝트 클러스터를 생성한다. */
+export function buildBg3dObjectClusterPrimitives(rawSpec: Bg3dObjectClusterSpec): Bg3dObjectClusterBuildResult {
   const modules = clamp(Math.round(rawSpec.moduleCount), 1, 4);
-  const densityNum =
-    rawSpec.clutterDensity === "lived-in" ? 3 : rawSpec.clutterDensity === "detailed" ? 2 : 1;
+  const densityNum = rawSpec.clutterDensity === "lived-in" ? 3 : rawSpec.clutterDensity === "detailed" ? 2 : 1;
   const pal = SURFACE_THEMES[rawSpec.surfaceTheme];
   const [anchorX, anchorZ] = rawSpec.anchorOffsetXZ ?? [0, 0];
   const safeKey = sanitizeInstanceKey(rawSpec.instanceKey);
@@ -666,9 +585,7 @@ export function buildBg3dObjectClusterPrimitives(
     STUDIO_BG3D_OBJECT_CLUSTER_ARCHETYPES[0]!;
 
   const { spanX, parts: baseParts } = buildSingleModuleParts(rawSpec.archetype, densityNum, pal);
-  const canonicalTags = Object.freeze(
-    [`BgCluster_${rawSpec.archetype}`, "BgObject_Cluster_V10"].sort(),
-  );
+  const canonicalTags = Object.freeze([`BgCluster_${rawSpec.archetype}`, "BgObject_Cluster_V10"].sort());
 
   interface StagedPrim {
     readonly id: string;
@@ -707,7 +624,6 @@ export function buildBg3dObjectClusterPrimitives(
       const mutableScale: [number, number, number] = [scale[0], scale[1], scale[2]];
       const half = computePrimitiveWorldHalfExtents(part.kind, rot, mutableScale);
       const wx = round4(anchorX + modOffsetX + rx);
-      // 회전·스케일된 OBB 바닥이 절대 y < 0으로 파고들지 않도록 보정한다.
       const wy = Math.max(half[1], part.pos[1]);
       const wz = round4(anchorZ + modOffsetZ + rz);
       const idCore = safeKey ? `${meta.shortCode}-${safeKey}` : meta.shortCode;
@@ -727,19 +643,11 @@ export function buildBg3dObjectClusterPrimitives(
     }
   }
 
-  // 클러스터 최하단이 지면(y === 0)에 정확히 밀착되도록 수직 영점 정규화를 수행한다.
   let rawMinY = Infinity;
-  for (const item of staged) {
-    rawMinY = Math.min(rawMinY, item.wy - item.half[1]);
-  }
+  for (const item of staged) rawMinY = Math.min(rawMinY, item.wy - item.half[1]);
   const groundShiftY = Number.isFinite(rawMinY) ? rawMinY : 0;
 
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let maxY = 0;
-  let minZ = Infinity;
-  let maxZ = -Infinity;
-
+  let [minX, maxX, maxY, minZ, maxZ] = [Infinity, -Infinity, 0, Infinity, -Infinity];
   const primitives: BgPrimitive[] = staged.map((item) => {
     const finalY = round4(Math.max(item.half[1], item.wy - groundShiftY));
     minX = Math.min(minX, item.wx - item.half[0]);
@@ -765,11 +673,7 @@ export function buildBg3dObjectClusterPrimitives(
   });
 
   const estimatedLineArtEdges = primitives.length * 14;
-  const monotonyReliefScore = clamp(
-    Math.round(78 + primitives.length * 0.55 + (densityNum - 1) * 4),
-    80,
-    99,
-  );
+  const monotonyReliefScore = clamp(Math.round(78 + primitives.length * 0.55 + (densityNum - 1) * 4), 80, 99);
   const footprintMeters: readonly [number, number, number] = [
     round4(Math.max(0.5, maxX - minX)),
     round4(Math.max(0.5, maxY)),
