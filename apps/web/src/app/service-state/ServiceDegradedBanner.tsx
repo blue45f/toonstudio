@@ -87,7 +87,7 @@ export function ServiceDegradedBanner({ immersive = false }: { immersive?: boole
         />,
         modalStatusSlot,
       )
-      : <ServiceWarmupNotice />;
+      : <ServiceWarmupNotice immersive={immersive} />;
   }
 
   const recovered = state.status === "available" && recoveryVisible;
@@ -206,14 +206,13 @@ const WARMUP_CHIP_CLASS = cn(
 );
 
 /**
- * 무료 서버가 절전에서 깨어나는 동안(최대 약 1분) 보이는 조용한 안내.
- * 전체 장애 경고처럼 화면을 밀어내지 않고, 자동 재확인이 끝나면 저절로 사라진다.
- * 휴대폰에서는 한 줄 칩으로 줄여 오른쪽 조작 열·하단 탭 라벨과 겹치지 않는다.
+ * 연결 준비 중임을 알리는 안내. 일반 페이지는 머리글 아래 본문 흐름에 놓아 행동을 덮지 않는다.
+ * 몰입 화면에서는 기존 한 줄 칩과 모달 상태 자리를 유지한다.
  */
-function ServiceWarmupNotice() {
+function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
   const bt = useBilingual(COPY_SCOPE);
   const chipRef = useRef<HTMLDivElement>(null);
-  useOverlayClearance(chipRef, true);
+  useOverlayClearance(chipRef, immersive);
   return (
     <div
       ref={chipRef}
@@ -221,7 +220,8 @@ function ServiceWarmupNotice() {
       aria-live="polite"
       aria-atomic="true"
       data-service-degraded-banner="warming"
-      className={WARMUP_CHIP_CLASS}
+      data-service-status-placement={immersive ? "floating" : "page-inline"}
+      className={immersive ? WARMUP_CHIP_CLASS : "flex min-w-0 items-center justify-center gap-2 border-b border-line bg-panel px-3 py-1 text-xs text-fg-2"}
     >
       <LoaderCircle className="size-4 shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
       <span className="min-w-0 break-keep">

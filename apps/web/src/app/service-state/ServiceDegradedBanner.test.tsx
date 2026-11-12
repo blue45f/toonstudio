@@ -311,7 +311,7 @@ describe("연결 준비 칩의 자리", () => {
   });
 
   it("알림 열(왼쪽 아래)의 맨 아래 칸에 놓이고 휴대폰에서는 조작 열을 비켜 한 줄 칩이 된다", () => {
-    renderBanner(false);
+    renderBanner(true);
     const chip = screen.getByRole("status");
 
     expect(chip.className).toContain("left-4");
@@ -326,7 +326,7 @@ describe("연결 준비 칩의 자리", () => {
   });
 
   it("점유 높이를 게시해 그 위의 OST·베타 안내가 칩을 가리지 않게 하고, 사라지면 거둔다", () => {
-    const view = renderBanner(false);
+    const view = renderBanner(true);
     const chip = screen.getByRole("status");
     chip.style.position = "fixed";
     const bounds = vi.spyOn(chip, "getBoundingClientRect").mockReturnValue(new DOMRect(12, 700, 240, 34));
@@ -335,6 +335,24 @@ describe("연결 준비 칩의 자리", () => {
     expect(document.documentElement.style.getPropertyValue(property)).toBe(`${window.innerHeight - 700 + 12}px`);
 
     view.unmount();
+    expect(document.documentElement.style.getPropertyValue(property)).toBe("");
+    bounds.mockRestore();
+  });
+
+  it("일반 페이지에서는 상태를 본문 흐름에 남기고 몰입형 알림의 점유 높이를 해제한다", () => {
+    const view = renderBanner(true);
+    const chip = screen.getByRole("status");
+    chip.style.position = "fixed";
+    const bounds = vi.spyOn(chip, "getBoundingClientRect").mockReturnValue(new DOMRect(12, 700, 240, 34));
+    fireEvent(window, new Event("resize"));
+    expect(document.documentElement.style.getPropertyValue(property)).not.toBe("");
+
+    view.rerender(<MemoryRouter><ServiceDegradedBanner immersive={false} /></MemoryRouter>);
+
+    const inline = screen.getByRole("status");
+    expect(inline.getAttribute("data-service-status-placement")).toBe("page-inline");
+    expect(inline.className).not.toContain("fixed");
+    expect(inline.textContent).toContain("온라인 기능을 연결하는 중이에요.");
     expect(document.documentElement.style.getPropertyValue(property)).toBe("");
     bounds.mockRestore();
   });
