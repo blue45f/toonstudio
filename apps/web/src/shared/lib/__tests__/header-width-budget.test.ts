@@ -7,7 +7,7 @@ const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 // 헤더 폭 예산 — 제품 문맥별 핵심 목적지와 전체 메뉴, 검색, 생성·계정 동작을 한 줄에 유지한다.
 // 현재 헤더는 9개 고정 링크 대신 상시 5개(제작·탐색·커뮤니티·배우기·마켓)와 협업 구역의 맥락형 1개만
-// 표준 브레이크포인트 1024px(BLUEPRINT §5.2 (6))부터 노출하므로, 1차 링크는 글자만 두고
+// 일반 셸의 1180px 탐색 전환부터 노출하므로, 1차 링크는 글자만 두고
 // 드롭다운 목적 아이콘, 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
 describe("header width budget", () => {
   it("keeps the purpose navigation compact and gated to the measured desktop width", () => {
@@ -30,14 +30,15 @@ describe("header width budget", () => {
     expect(primaryNavigation).toContain('className="site-header__primary"');
     expect(primaryNavigation).toContain('className="site-header__primary-link group"');
     expect(css).toMatch(/\.site-header__primary\s*\{[^}]*display:\s*none/u);
-    expect(css).toMatch(/@media\s*\(width\s*>=\s*1024px\)\s*\{\s*\.site-header__primary\s*\{\s*display:\s*flex/u);
-    // 전용 1180 전환점은 폐지됐다 — 레이아웃 토큰 계약(BP)이 같은 규칙을 파일 수준에서 고정한다.
-    expect(css).not.toMatch(/@media\s*\(width\s*>=\s*1180px\)/u);
+    expect(css).toMatch(/@media\s*\(width\s*>=\s*1180px\)\s*\{\s*\.site-header__primary\s*\{\s*display:\s*flex/u);
+    // 1024~1179px에서 하단 탐색과 주 메뉴가 동시에 노출되지 않는다.
+    expect(css).not.toMatch(/@media\s*\(width\s*>=\s*1024px\)\s*\{\s*\.site-header__primary/u);
     const linkRule = css.match(/\.site-header__primary-link\s*\{([^}]*)\}/u)?.[1] ?? "";
     expect(linkRule).toContain("min-height: 44px");
     expect(linkRule).toContain("flex-shrink: 0");
     expect(linkRule).toContain("white-space: nowrap");
-    expect(linkRule).toContain("padding: 8px 9px");
+    expect(linkRule).toContain("min-width: 44px");
+    expect(linkRule).toContain("padding: 8px 10px");
     expect(primaryNavigation).not.toContain("xl:grid");
     expect(primaryNavigation).not.toContain("<Icon");
     expect(primaryNavigation).toContain("size={13}");
@@ -52,7 +53,10 @@ describe("header width budget", () => {
 
     expect(header).toContain("site-header__search");
     expect(header).toContain("sm:justify-between sm:px-3");
-    expect(css).toContain(".site-header__search { width: 44px; padding-inline: 0; }");
+    const searchRule = css.match(/\.site-header__search\s*\{([^}]*)\}/u)?.[1] ?? "";
+    expect(searchRule).toContain("width: 44px");
+    expect(searchRule).toContain("padding-inline: 0");
+    expect(css).toMatch(/@media\s*\(width < 640px\)\s*\{[^}]*\.site-header__notifications[^}]*\}[\s\S]*?min-width: 48px; min-height: 48px/u);
     expect(header).toContain("site-header__search-label truncate text-sm");
     // ⌘K 배지는 기본 숨김 상태를 유지하고 sm 이상에서 버튼 확장과 함께 노출된다.
     expect(header).toContain("site-header__search-shortcut");

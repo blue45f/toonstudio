@@ -362,12 +362,13 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
     expect(results?.getAttribute("data-density")).toBe("comfortable");
     expect(screen.getAllByTestId("title-card")).toHaveLength(2);
 
+    fireEvent.click(within(screen.getByTestId("explore-page-view")).getByText("보기 설정", { selector: "summary" }));
     const densityGroup = screen.getByRole("group", { name: "카드 밀도" });
     fireEvent.click(within(densityGroup).getByRole("button", { name: "조밀" }));
     expect(results?.getAttribute("data-density")).toBe("compact");
     expect(screen.getAllByTestId("title-card")[0]?.getAttribute("data-compact")).toBe("true");
 
-    const searchInput = screen.getByRole("searchbox", { name: "결과 내 제목·작가·태그 필터" });
+    const searchInput = screen.getByRole("searchbox", { name: "현재 목록에서 제목·작가·태그 찾기" });
     fireEvent.change(searchInput, { target: { value: "검술" } });
     expect(screen.getAllByTestId("title-card")).toHaveLength(1);
     fireEvent.change(searchInput, { target: { value: "해화" } });
@@ -377,10 +378,10 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
     fireEvent.click(screen.getByRole("button", { name: "허브 이동" }));
     expect(screen.getByTestId("explore-loc").textContent).toBe("/discover");
     fireEvent.click(screen.getByRole("button", { name: "뒤로 이동" }));
-    expect((screen.getByRole("searchbox", { name: "결과 내 제목·작가·태그 필터" }) as HTMLInputElement).value).toBe("해화");
+    expect((screen.getByRole("searchbox", { name: "현재 목록에서 제목·작가·태그 찾기" }) as HTMLInputElement).value).toBe("해화");
     expect(screen.getAllByTestId("title-card")).toHaveLength(1);
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "결과 내 제목·작가·태그 필터" }), {
+    fireEvent.change(screen.getByRole("searchbox", { name: "현재 목록에서 제목·작가·태그 찾기" }), {
       target: { value: "존재하지않는작품명" },
     });
     const emptyImg = container.querySelector('img[src="/images/empty-generic.webp"]') as HTMLImageElement;
@@ -391,8 +392,8 @@ describe("탐색 페이지 간격·검색·카드 밀도·이미지 fallback 및
 
     fireEvent.click(screen.getByRole("button", { name: "검색어 지우기" }));
     expect(screen.getAllByTestId("title-card")).toHaveLength(2);
+    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "현재 목록에서 제목·작가·태그 찾기" }));
     unmount();
-
     resource.read.mockReturnValue({
       data: {
         results: [],

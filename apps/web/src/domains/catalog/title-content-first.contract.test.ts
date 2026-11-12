@@ -44,7 +44,7 @@ describe("작품 상세 콘텐츠 우선 JSX 계약 (화면 렌더 검증 아님
 });
 
 
-it("시안의 보조 지표·관련 콘텐츠는 접되 리뷰와 오류는 접기 밖에 유지한다", () => {
+it("리뷰 목적 구간과 오류·빈 상태를 관련 지표보다 먼저 독립 제공한다", () => {
   const related = byAttribute("data-testid", "title-detail-related-tools");
   expect(related.openingElement.tagName.getText(source)).toBe("details");
   expect(related.openingElement.attributes.properties.some((attr) => ts.isJsxAttribute(attr) && attr.name.getText(source) === "open")).toBe(false);
@@ -52,5 +52,17 @@ it("시안의 보조 지표·관련 콘텐츠는 접되 리뷰와 오류는 접�
   expect(related.getText(source)).toContain('id="title-character-talk"');
   expect(related.getText(source)).not.toContain('id="title-reviews"');
   expect(related.getText(source)).not.toContain("reviewsUnavailableTitle");
-  expect(related.pos).toBeLessThan(byAttribute("id", "title-reviews").pos);
+  const reviews = byAttribute("id", "title-reviews");
+  expect(reviews.parent).toBe(byAttribute("data-testid", "title-detail-secondary-tools").parent);
+  expect(reviews.pos).toBeLessThan(related.pos);
+  expect(reviews.openingElement.tagName.getText(source)).toBe("details");
+  expect(reviews.openingElement.attributes.properties.some((attr) => ts.isJsxAttribute(attr) && attr.name.getText(source) === "open")).toBe(false);
+  const reviewText = reviews.getText(source);
+  expect(reviewText).toContain('bi("독자 리뷰", "Reader reviews")');
+  expect(reviewText).toContain("!reviewsAvailable ?");
+  expect(reviewText).toContain("reviewsUnavailableTitle");
+  expect(reviewText).toContain("reviewsUnavailableDescription");
+  expect(reviewText).toContain("리뷰 목록이 비어 있다는 뜻은 아닙니다.");
+  expect(reviewText).toContain("reviews.length === 0");
+  expect(reviewText).toContain("<ReviewForm");
 });

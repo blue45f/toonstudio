@@ -56,7 +56,8 @@ export const LAYOUT_DIMENSIONS = {
 
 /**
  * 반응형 전환 지점 (BLUEPRINT §5.1 (6)·§5.2 (6)) — 표준 5개와 max-width 동반값(표준−1).
- * 신규 코드는 이 값만 쓴다. 아직 소진되지 않은 전용 지점은 대조 테스트의 파일별 잔존
+ * 신규 본문은 이 값을 쓰고, 일반 셸 탐색만 아래 LAYOUT_SITE_NAVIGATION 예외를 공유한다.
+ * 아직 소진되지 않은 전용 지점은 대조 테스트의 파일별 잔존
  * 목록에 고정돼 있고, 목록은 감소 방향으로만 갱신한다.
  */
 export const LAYOUT_BREAKPOINTS = {
@@ -70,6 +71,18 @@ export const LAYOUT_BREAKPOINTS = {
   maxLg: "1023px",
   maxXl: "1279px",
   max2xl: "1535px",
+} as const;
+
+/**
+ * 일반 셸 탐색의 명시된 예외: 1180px 전에는 모바일·태블릿 하단 탐색을 사용한다.
+ * 구현 계획 reconstruction-20261112 §2의 기존 경계를 보존하며, 주 메뉴·전체 메뉴·
+ * 지연 로드 자리·본문 안전 여백이 같은 순간에 전환한다. Workspace의 768px 경계는 별개다.
+ * CSS 미디어와 Tailwind 정적 클래스는 layout-token-contract의 교차 검사로 이 값과 맞춘다.
+ */
+export const LAYOUT_SITE_NAVIGATION = {
+  desktopMin: "1180px",
+  mobileMax: "1179px",
+  mobileQuery: "(max-width: 1179px)",
 } as const;
 
 /**

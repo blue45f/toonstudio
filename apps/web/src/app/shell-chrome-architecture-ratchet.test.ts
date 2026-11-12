@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
  * - 전역 헤더(`site-header`)와 푸터(`site-footer`)는 `app/App.tsx`만 import한다.
  *   AppShell은 헤더·푸터를 props로 받을 뿐 직접 만들지 않는다.
  * - 몰입(전역 크롬 제거) 판정은 `app/shell-chrome-policy.ts`가 단일 기준이고,
- *   그 모듈을 import하는 production 파일은 `app/AppShell.tsx`뿐이다.
+ *   AppShell이 몰입 판정을 소유하고 App은 같은 READER_PATTERN만 재사용해 지연 로드 전 전역 오버레이를 막는다.
  * - 라우트 그룹·페이지·도메인이 위 모듈들을 새로 import하면 — 즉 정책 파일을 거치지 않고
  *   자체 전역 크롬을 만들거나 몰입 판정을 복제하면 — 이 테스트가 실패한다.
  *   새 몰입 예외가 필요하면 정책 파일의 명시 목록에 추가하는 것이 유일한 경로다.
@@ -30,14 +30,14 @@ const SRC_DIR = path.resolve(APP_DIR, "..");
 const SKIPPED_DIRECTORIES = new Set(["node_modules", "dist", "build", "coverage", ".vite"]);
 const TEST_FILE_PATTERN = /\.(test|spec)\.(ts|tsx)$/;
 
-/** 모듈 식별자 끝 이름 → 그 모듈을 import할 수 있는 유일한 production 파일(동결). */
+/** 모듈 식별자 끝 이름 → 검토한 production 소유 파일(동결). 페이지·도메인으로 확장하지 않는다. */
 const CHROME_MODULE_OWNERS: readonly {
   readonly moduleTail: string;
   readonly owners: readonly string[];
 }[] = [
   { moduleTail: "site-header", owners: ["app/App.tsx"] },
   { moduleTail: "site-footer", owners: ["app/App.tsx"] },
-  { moduleTail: "shell-chrome-policy", owners: ["app/AppShell.tsx"] },
+  { moduleTail: "shell-chrome-policy", owners: ["app/App.tsx", "app/AppShell.tsx"] },
 ];
 
 const PREFILTER_TOKENS = CHROME_MODULE_OWNERS.map((entry) => entry.moduleTail);
@@ -115,7 +115,18 @@ describe("셸 크롬 아키텍처 래칫", () => {
     expect(importers.get("site-footer")).toEqual(["app/App.tsx"]);
   });
 
-  it("몰입 판정 정책은 AppShell만 import한다 — 정책 밖 몰입 판정 복제를 금지한다", () => {
-    expect(importers.get("shell-chrome-policy")).toEqual(["app/AppShell.tsx"]);
+  it("몰입 정책은 AppShell과 초기 리더 크롬 경계만 재사용한다 — 페이지의 판정 복제를 금지한다", () => {
+    expect(importers.get("shell-chrome-policy")).toEqual(["app/App.tsx", "app/AppShell.tsx"]);
+    const source = readFileSync(path.join(APP_DIR, "App.tsx"), "utf8");
+    const app = ts.createSourceFile("App.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const policyBindings = app.statements.filter(ts.isImportDeclaration)
+      .filter((node) => ts.isStringLiteral(node.moduleSpecifier) && moduleTailOf(node.moduleSpecifier.text) === "shell-chrome-policy")
+      .flatMap((node) => {
+        const bindings = node.importClause?.namedBindings;
+        if (!bindings || !ts.isNamedImports(bindings)) throw new Error("초기 리더 크롬은 명시한 정책 이름만 가져와야 합니다.");
+        return bindings.elements.map((entry) => (entry.propertyName ?? entry.name).text);
+      });
+    expect(policyBindings).toEqual(["READER_PATTERN"]);
+    expect(source).toContain("studioImmersive || adminChrome || READER_PATTERN.test(pathname)");
   });
 });
