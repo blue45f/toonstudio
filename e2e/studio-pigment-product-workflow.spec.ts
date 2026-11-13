@@ -304,6 +304,9 @@ test("기본 권리 차단과 자체 안료 선택·SQLite 저장·재열기·�
   await page.getByRole("button", { name: /^자체 안료 팔레트 나이프/u }).click();
   const save = page.getByRole("button", { name: "브러시로 저장", exact: true });
   await expect(save).toBeDisabled();
+  await expect(page.getByRole("status").filter({ hasText: "자체 안료 팔레트 나이프 레시피를 불러왔습니다." }))
+    .toContainText("Normal-mapped Tip 무폴백 실행 불가");
+  await page.locator("summary").filter({ hasText: /^진단·비교 정보$/u }).click();
   await expect(page.getByText("Normal-mapped Tip 라이선스 프로필에서 제외", { exact: true }).first()).toBeVisible();
   // 레시피 선택은 재료·질감 영역을 연다. 실제 탐색 버튼으로 목록을 다시 연다.
   await page.getByRole("navigation", { name: "브러시 스튜디오 영역", exact: true })
