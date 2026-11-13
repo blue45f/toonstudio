@@ -18,7 +18,7 @@ function binding(): CharacterShaperBinding {
     recipe: createEmptyCharacterRecipe(), baselineRecipe: createEmptyCharacterRecipe(),
     history: { canUndo: false, canRedo: false, recentLabels: [], length: 0 },
     busyReason: null, handSide: "both", compareActive: false,
-    evaluate: vi.fn(() => ({ status: "available", reason: null, missing: [] })),
+    evaluate: vi.fn<CharacterShaperBinding["evaluate"]>(() => ({ status: "available", reason: null, missing: [] })),
     plan: vi.fn(), commitPreset: vi.fn(), commit: vi.fn(), clear: vi.fn(() => null), remove: vi.fn(() => null),
     setHandSide: vi.fn(), undo: vi.fn(), redo: vi.fn(), setCompareActive: vi.fn(), resetToBaseline: vi.fn(),
     commitFaceParams: vi.fn(), commitSemanticMorphs: vi.fn(), commitHairParams: vi.fn(), commitColor: vi.fn(),

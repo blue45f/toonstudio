@@ -40,7 +40,7 @@ describe("StudioImmersiveHubPage", () => {
     const stages = within(flow).getAllByRole("heading", { level: 3 });
     expect(stages).toHaveLength(STUDIO_IMMERSIVE_STAGES.length);
     expect(within(flow).getAllByRole("link").length).toBeGreaterThanOrEqual(STUDIO_IMMERSIVE_STAGES.length);
-    fireEvent.click(screen.getByRole("link", { name: "기기 지원 확인", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "기기 지원 확인" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("link", { name: /새 프로젝트 시작/u }).getAttribute("href")).toBe("/studio/new");
   });

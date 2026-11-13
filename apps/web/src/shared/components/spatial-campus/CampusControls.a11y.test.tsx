@@ -37,7 +37,7 @@ describe("공간 지도 이름과 현재 공간", () => {
     expect(value.setPrivacyMode).toHaveBeenCalledWith(true);
     fireEvent.click(summary);
     expect(menu?.open).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "공간", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "공간" }));
     expect(value.setMode).toHaveBeenCalledWith("scene");
     expect(screen.getByRole("link", { name: "작업으로 돌아가기" }).getAttribute("href")).toBe("/studio");
   });

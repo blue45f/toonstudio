@@ -134,8 +134,8 @@ describe("목적 화면으로 여는 드로잉 더보기", () => {
     expect(screen.getByRole("navigation", { name: "원고 도구 목적 고르기" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /원고와 레이어/ }));
     expect(dialog.querySelectorAll('[data-studio-clarity-action]')).toHaveLength(3);
-    expect(screen.getByRole("button", { name: "레이어", exact: true })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "보기 설정", exact: true })).toBeNull();
+    expect(screen.getByRole("button", { name: "레이어" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "보기 설정" })).toBeNull();
   });
   it("내부 포인터는 닫기를 선행하지 않고 native를 닫은 뒤 원본 트리거로 실제 행동을 한 번 실행한다", () => {
     const next = document.createElement("button"); next.textContent = "다음 작업"; document.body.append(next);
