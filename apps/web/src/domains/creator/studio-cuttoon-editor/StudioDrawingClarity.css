@@ -61,8 +61,6 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%}
 .studio-drawing-task-action{display:flex;align-items:center;gap:12px;min-height:56px;min-width:48px;width:100%;padding:10px 0;border:0;border-bottom:1px solid var(--color-line);background:transparent;color:var(--color-fg);font-size:14px;text-align:left}
 .studio-drawing-task-action>span{flex:1;min-width:0}
 .studio-drawing-task-action>svg{flex-shrink:0;color:var(--color-fg-2)}
-.studio-drawing-task-advanced{margin-top:16px;padding-top:8px;border-top:1px solid var(--color-line);font-size:13px;color:var(--color-fg-2)}
-.studio-drawing-task-advanced>summary{display:flex;align-items:center;min-height:48px;cursor:pointer;font-size:14px}
 .studio-drawing-dialog button,.studio-drawing-dialog summary{min-height:48px;min-width:48px}
 .studio-drawing-dialog [data-studio-drawing-save-header]>div>p:first-child{font-size:18px}
 [data-studio-drawing-save-details=true]>section{width:100%}

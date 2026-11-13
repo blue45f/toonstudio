@@ -8,11 +8,12 @@ import type { Page } from "@playwright/test";
 vi.mock("../../e2e/helpers/studio-editor-a11y", () => ({ waitForEditorSettled: vi.fn() }));
 afterEach(() => { vi.clearAllMocks(); });
 
-function entry({ simple = true, actionError, detachError, changedUrl, lateSimple = false, commonError, afterSettledSimple = false, recursive = false, repeatAfterHandler = false, cleanupError, repeatAfterSettled = false, recheckError }: {
+function entry({ simple = true, taskOpen = false, category = false, backCount = 1, workspaceCount = 1, backError, actionError, detachError, changedUrl, lateSimple = false, commonError, afterSettledSimple = false, recursive = false, repeatAfterHandler = false, cleanupError, repeatAfterSettled = false, recheckError }: {
   simple?: boolean; actionError?: Error; detachError?: Error; changedUrl?: string; lateSimple?: boolean;
+  taskOpen?: boolean; category?: boolean; backCount?: number; workspaceCount?: number; backError?: Error;
   commonError?: Error; afterSettledSimple?: boolean; recursive?: boolean; repeatAfterHandler?: boolean; cleanupError?: Error; repeatAfterSettled?: boolean; recheckError?: Error;
 } = {}) {
-  const state = { simple, workspaceSelected: false, modal: false, legacyMenuVisible: !simple, reconnectVisible: !simple,
+  const state = { simple, category, workspaceSelected: false, modal: taskOpen, legacyMenuVisible: !simple, reconnectVisible: !simple,
     url: "http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1" };
   const calls: string[] = [];
   let settledCount = 0;
@@ -28,14 +29,23 @@ function entry({ simple = true, actionError, detachError, changedUrl, lateSimple
     expect(timeout).toBeGreaterThan(0); expect(timeout).toBeLessThanOrEqual(60_000);
     calls.push("choose-saved-layout");
     if (actionError) throw actionError;
-    state.modal = false; state.simple = false; state.legacyMenuVisible = true; state.reconnectVisible = true;
+    state.modal = false; state.category = false; state.simple = false; state.legacyMenuVisible = true; state.reconnectVisible = true;
     if (changedUrl) state.url = changedUrl;
   });
   const workspace = {
-    count: async () => 1,
+    count: async () => state.category ? 0 : workspaceCount,
     click: vi.fn(async ({ timeout }: { timeout: number }) => {
       expect(timeout).toBeGreaterThan(0); expect(timeout).toBeLessThanOrEqual(60_000);
+      expect(state.category).toBe(false); state.category = true;
       state.workspaceSelected = true; calls.push("choose-workspace");
+    }),
+  };
+  const back = {
+    count: async () => state.category ? backCount : 0,
+    click: vi.fn(async ({ timeout }: { timeout: number }) => {
+      expect(timeout).toBeGreaterThan(0); expect(timeout).toBeLessThanOrEqual(60_000);
+      if (backError) throw backError;
+      state.category = false; calls.push("back-to-categories");
     }),
   };
   const task = {
@@ -48,7 +58,9 @@ function entry({ simple = true, actionError, detachError, changedUrl, lateSimple
     }),
     locator: (selector: string) => { expect(selector).toBe('[data-drawing-task-category="workspace"]'); return workspace; },
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
-      expect(role).toBe("button"); expect(query).toEqual({ name: "프로젝트·창 도구 보기", exact: true });
+      expect(role).toBe("button"); expect(query.exact).toBe(true);
+      if (query.name === "원고 도구 분류로 돌아가기") return back;
+      expect(query.name).toBe("프로젝트·창 도구 보기");
       if (!state.workspaceSelected) throw new Error("화면과 도움말 목적을 고르기 전에는 작업 배치를 선택할 수 없습니다.");
       return { click: showSavedLayout };
     },
@@ -61,6 +73,7 @@ function entry({ simple = true, actionError, detachError, changedUrl, lateSimple
     }),
   };
   const trigger = { first() { return this; }, click: vi.fn(async () => {
+    if (state.modal) throw new Error("열린 native 창 뒤의 더보기를 누를 수 없습니다.");
     state.modal = true; calls.push("open-more");
     if (recursive && registered) await fireHandler();
   }) };
@@ -98,7 +111,7 @@ function entry({ simple = true, actionError, detachError, changedUrl, lateSimple
     calls.push("original-settled-end");
     if (afterSettledSimple && (settledCount === 1 || repeatAfterSettled)) state.simple = true;
   });
-  return { page, state, calls, showSavedLayout, trigger, eventErrors, blockedMenuError };
+  return { page, state, calls, showSavedLayout, trigger, eventErrors, blockedMenuError, back };
 }
 
 describe("안료 준비의 지연 Clarity handler 수명", () => {
@@ -115,6 +128,27 @@ describe("안료 준비의 지연 Clarity handler 수명", () => {
     expect(f.showSavedLayout).toHaveBeenCalledOnce();
     expect(waitForEditorSettled).toHaveBeenCalledExactlyOnceWith(f.page);
     expect(f.calls.at(-1)).toBe("remove-handler");
+  });
+  it("이미 열린 다른 목적은 실제 분류 복귀 뒤 고르고 handler를 한 번 해제한다", async () => {
+    const f = entry({ taskOpen: true, category: true });
+    await waitForPigmentEditorSettled(f.page);
+    expect(f.trigger.click).not.toHaveBeenCalled(); expect(f.back.click).toHaveBeenCalledOnce();
+    expect(f.calls).toEqual(["register-handler", "original-settled-start", "task-visible", "back-to-categories", "choose-workspace", "choose-saved-layout", "task-detached", "clarity-detached", "original-settled-end", "remove-handler"]);
+    expect(f.page.addLocatorHandler).toHaveBeenCalledOnce(); expect(f.page.removeLocatorHandler).toHaveBeenCalledOnce();
+  });
+  it("실제 분류 복귀 실패와 원래 준비 실패를 모두 보존하고 handler를 해제한다", async () => {
+    const error = new Error("실제 분류 복귀 실패"), f = entry({ taskOpen: true, category: true, backError: error });
+    await expect(waitForPigmentEditorSettled(f.page)).rejects.toMatchObject({ errors: [error, f.blockedMenuError], cause: f.blockedMenuError });
+    expect(f.showSavedLayout).not.toHaveBeenCalled(); expect(f.page.removeLocatorHandler).toHaveBeenCalledOnce();
+  });
+  it.each([0, 2])("복귀 뒤 목적이 %s개이면 배치 실행을 하지 않고 실패한다", async (workspaceCount) => {
+    const f = entry({ taskOpen: true, category: true, workspaceCount });
+    await expect(waitForPigmentEditorSettled(f.page)).rejects.toMatchObject({
+      errors: [expect.objectContaining({ message: "안료 준비의 화면과 도움말 목적은 하나여야 합니다." }), f.blockedMenuError],
+      cause: f.blockedMenuError,
+    });
+    expect(f.back.click).toHaveBeenCalledOnce(); expect(f.showSavedLayout).not.toHaveBeenCalled();
+    expect(f.page.removeLocatorHandler).toHaveBeenCalledOnce();
   });
 
   it("기존 배치에서는 설정을 고르지 않고 원래 준비 조건만 유지한다", async () => {

@@ -160,6 +160,11 @@ try {
     await more.click();
     await tools.waitFor({ state: "visible" });
     const documentTask = tools.locator('[data-drawing-task-category="document"]');
+    if (await documentTask.count() === 0) {
+      const back = tools.getByRole("button", { name: "원고 도구 분류로 돌아가기", exact: true });
+      assert.equal(await back.count(), 1, "원고 도구 분류로 돌아가기 버튼은 하나여야 합니다");
+      await back.click();
+    }
     assert.equal(await documentTask.count(), 1, "원고와 레이어 목적은 하나여야 합니다");
     await documentTask.click();
     await tools.getByRole("button", { name: "레이어·속성 보기", exact: true }).click();

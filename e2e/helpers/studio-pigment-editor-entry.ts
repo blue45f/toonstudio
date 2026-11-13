@@ -27,6 +27,11 @@ export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
       .click({ timeout: remaining() });
     await task.waitFor({ state: "visible", timeout: remaining() });
     const workspace = task.locator('[data-drawing-task-category="workspace"]');
+    if (await workspace.count() === 0) {
+      const back = task.getByRole("button", { name: "원고 도구 분류로 돌아가기", exact: true });
+      if (await back.count() !== 1) throw new Error("안료 준비의 분류로 돌아가기 버튼은 하나여야 합니다.");
+      await back.click({ timeout: remaining() });
+    }
     if (await workspace.count() !== 1) throw new Error("안료 준비의 화면과 도움말 목적은 하나여야 합니다.");
     await workspace.click({ timeout: remaining() });
     await task.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true })
