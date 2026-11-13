@@ -326,6 +326,31 @@ describe("V6 brush experiments in the workbench", () => {
     expect(screen.getByRole("alert").textContent).toContain("Pigment Painter LUT");
   });
 
+  it("접힌 진단을 열지 않아도 저장 차단 원인을 알리고 허용 레시피로 바꾸면 해제한다", () => {
+    render(<StudioBrushV6Workbench scope="test" />);
+    fireEvent.change(screen.getByRole("searchbox", { name: "브러시 레시피 검색" }), { target: { value: "mixbox-palette-knife" } });
+    fireEvent.click(screen.getByRole("button", { name: /^자체 안료 팔레트 나이프/u }));
+    const status = screen.getByRole("status");
+    const reason = "Normal-mapped Tip 무폴백 실행 불가";
+    expect(within(status).getByText(reason)).toBeTruthy();
+    expect(status.textContent).toContain("자체 안료 팔레트 나이프 레시피를 불러왔습니다.");
+    expect(status.closest("details")).toBeNull();
+    const diagnostics = screen.getByText("진단·비교 정보").closest("details");
+    expect(diagnostics?.open).toBe(false);
+    const button = screen.getByRole("button", { name: "브러시로 저장" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(save).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /^시작 레시피 \d+$/u }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "브러시 레시피 검색" }), { target: { value: "mixbox-pigment-spray" } });
+    fireEvent.click(screen.getByRole("button", { name: /^자체 잠재 안료 스프레이/u }));
+    expect(within(status).queryByText(reason)).toBeNull();
+    expect(status.textContent).toContain("자체 잠재 안료 스프레이 레시피를 불러왔습니다.");
+    expect(button.disabled).toBe(false);
+    expect(diagnostics?.open).toBe(false);
+  });
+
   it("preserves an unsupported execution-bound draft instead of autosaving defaults", () => {
     const document = JSON.parse(serializeBrushStudioV6Authoring(createBrushStudioV6Program()));
     document.materialReceipt.runtime.bindings[0].version = "unsupported-future";
