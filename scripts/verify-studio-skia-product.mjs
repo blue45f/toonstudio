@@ -21,7 +21,9 @@ async function gpuReady(count) {
 }
 async function viewTool(id) {
   await page.getByRole('button', { name: '전체 도구', exact: true }).click();
-  await page.locator(`[data-studio-catalog-tool-id="${id}"]`).click();
+  const catalog = page.getByRole('dialog', { name: '전체 도구', exact: true });
+  await catalog.getByRole('searchbox', { name: '전체 도구 검색', exact: true }).fill(id);
+  await catalog.locator(`[data-studio-catalog-tool-id="${id}"]`).click();
 }
 try {
   page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'ko-KR' });

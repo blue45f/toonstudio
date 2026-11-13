@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
+import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
+
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
  *
@@ -579,11 +581,8 @@ async function openStudio3dRailTool(
     await allTools.click();
     const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
     await expect(catalog).toBeVisible();
-    // 이름 쪽 버튼('… 사용')은 도구를 바로 실행하고, 같은 행의 '… 고정' 버튼이 레일 배치를
-    // 바꾼다. `data-studio-hidden-tool-id` 는 레일에 고정되지 않은 도구의 행에만 붙는다.
-    // 목록은 지연 로드되므로 auto-wait 하는 질의로만 집는다.
-    const hiddenToolRow = catalog.locator(`[data-studio-hidden-tool-id="${toolId}"]`).locator("..");
-    await hiddenToolRow.getByRole("button", { name: / 고정$/u }).click();
+    // 분류 정문에서 ID로 검색한 뒤 실행 버튼 대신 같은 도구의 고정 버튼을 누른다.
+    await pinStudioRailToolInCatalog(catalog, toolId);
     await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
     await expect(catalog).toBeHidden();
     // 닫으면 키보드 포커스가 '전체 도구' 버튼으로 돌아오되 코치(툴 힌트)는 다시 뜨지 않는다.

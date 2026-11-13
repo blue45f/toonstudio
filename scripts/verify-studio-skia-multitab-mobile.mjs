@@ -61,7 +61,9 @@ async function selectPen(page) {
   if (await rail.isVisible().catch(() => false)) await rail.click();
   else {
     await page.getByRole('button', { name: '전체 도구', exact: true }).click();
-    await page.locator('[data-studio-catalog-tool-id="pen"]').click();
+    const catalog = page.getByRole('dialog', { name: '전체 도구', exact: true });
+    await catalog.getByRole('searchbox', { name: '전체 도구 검색', exact: true }).fill('pen');
+    await catalog.locator('[data-studio-catalog-tool-id="pen"]').click();
   }
   await page.locator('[data-studio-brush-active-pill]').waitFor({ timeout: 30_000 });
 }

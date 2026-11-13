@@ -109,6 +109,7 @@ import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
 } from "./lib/studio-preview-readiness";
+import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
 import { measureStudioSmartShapeCanvasSpace, placeStudioSmartShapeGrid, requiresStudioSmartShapeOfflinePanel, waitForStudioSmartShapeFloatingReady } from "./lib/studio-smart-shape-visible-grid";
 import { meetsStudioMinimumTouchTarget } from "./lib/studio-touch-target-measurement.mjs";
 import {
@@ -4113,8 +4114,7 @@ async function revealStudioViewTool(page: Page, mode: "zoom" | "rotate"): Promis
   if (!(await trigger.isVisible())) {
     if (await more.getAttribute("aria-expanded") !== "true") await more.click();
     const toolId = mode === "zoom" ? "zoom" : "rotate-view";
-    const row = picker.locator(`[data-studio-catalog-tool-id="${toolId}"]`).locator("..");
-    await row.getByRole("button", { name: / 고정$/u }).click();
+    await pinStudioRailToolInCatalog(picker, toolId);
   }
   if (await picker.isVisible()) await picker.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
   await picker.waitFor({ state: "hidden" });
