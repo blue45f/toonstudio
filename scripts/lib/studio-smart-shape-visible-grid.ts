@@ -116,6 +116,7 @@ export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartS
     connectivity: document.documentElement.dataset.studioConnectivity ?? null,
     networkFeatures: document.documentElement.dataset.studioNetworkFeatures ?? null,
     canvas,
+    viewport: { left: 0, top: 0, right: innerWidth, bottom: innerHeight },
     targets: [...document.querySelectorAll('[data-studio-shell-floating-target="offline-readiness"], [data-studio-shell-floating-target="collaboration"]')]
       .map((node) => {
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
@@ -130,6 +131,29 @@ export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartS
           rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
         };
       }),
+    statusCenters: [...document.querySelectorAll('[data-studio-offline-presentation="status-center"]')].map((panel) => {
+      const center = panel.closest("[data-studio-save-sync-status-center]");
+      const candidates = [...document.querySelectorAll('[data-studio-save-sync-status-center] > button[aria-haspopup="dialog"]')];
+      // 그리기 화면의 상세는 body portal에 있다. 새 context의 단일 상태 버튼만 연결한다.
+      const trigger = center?.querySelector(':scope > button[aria-haspopup="dialog"]')
+        ?? (panel.closest("[data-studio-drawing-save-dialog]") && candidates.length === 1 ? candidates[0] : null);
+      const summary = trigger?.querySelector("[data-studio-connection-notice-summary]");
+      const rect = trigger?.getBoundingClientRect();
+      const style = trigger ? getComputedStyle(trigger) : null;
+      const hit = rect && rect.width > 0 && rect.height > 0
+        ? document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) : null;
+      return {
+        localOnly: panel.getAttribute("data-studio-local-only"),
+        linked: Boolean(panel.closest("[data-studio-connection-notice-details]") && summary?.id
+          && trigger?.getAttribute("aria-describedby")?.split(/\s+/u).includes(summary.id)),
+        expanded: trigger?.getAttribute("aria-expanded") ?? null,
+        summary: trigger?.textContent?.trim() ?? null,
+        visible: Boolean(rect && rect.width > 0 && rect.height > 0 && style
+          && style.display !== "none" && style.visibility !== "hidden" && style.visibility !== "collapse"
+          && !trigger?.closest("[inert]") && hit && trigger?.contains(hit)),
+        rect: rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null,
+      };
+    }),
   };
   return { canvas, obstructions: [...obstructions.values()], floating };
 }
@@ -138,6 +162,15 @@ export interface StudioSmartShapeFloatingReadiness {
   readonly connectivity: string | null;
   readonly networkFeatures: string | null;
   readonly canvas: StudioSmartShapeRect | null;
+  readonly viewport?: StudioSmartShapeRect;
+  readonly statusCenters?: readonly {
+    readonly localOnly: string | null;
+    readonly linked: boolean;
+    readonly expanded: string | null;
+    readonly summary: string | null;
+    readonly visible: boolean;
+    readonly rect: StudioSmartShapeRect | null;
+  }[];
   readonly targets: readonly {
     readonly id: string | null;
     readonly managed: string | null;
@@ -160,6 +193,17 @@ export function studioSmartShapeFloatingReady(state: StudioSmartShapeFloatingRea
   if (state.targets.some((target) => target.visible && (target.managed !== "true" || target.hidden !== "false" || !validRect(target.rect)))) return false;
   if (!requiresOfflinePanel) return true;
   const offline = state.targets.filter(({ id }) => id === "offline-readiness");
+  const statusCenters = state.statusCenters ?? [];
+  if (offline.length + statusCenters.length !== 1) return false;
+  if (statusCenters.length === 1) {
+    const status = statusCenters[0], viewport = state.viewport;
+    // 접힌 상세를 열거나 안내를 숨기지 않는다. 실제 상태 슬롯과 보이는 요약 버튼을 확인한다.
+    return state.connectivity === "server-unavailable" && state.networkFeatures === "local-only"
+      && Boolean(state.canvas && validRect(state.canvas) && status?.localOnly === "true" && status.linked
+        && status.expanded === "false" && status.visible && status.summary?.trim() && status.rect && validRect(status.rect)
+        && viewport && validRect(viewport) && status.rect.left >= viewport.left && status.rect.top >= viewport.top
+        && status.rect.right <= viewport.right && status.rect.bottom <= viewport.bottom);
+  }
   const target = offline[0], canvas = state.canvas;
   // 새 context에는 사용자 저장 배치가 없다. checking 중의 화면 가장자리 배치를 확정하지 않는다.
   return state.connectivity === "server-unavailable" && state.networkFeatures === "local-only"

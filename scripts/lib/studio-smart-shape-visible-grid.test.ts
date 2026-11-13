@@ -177,11 +177,83 @@ describe("Smart Shape 준비는 DOM을 바꾸지 않고 실제 가림을 관측�
     const before = dom.window.document.body.innerHTML;
     expect(measureStudioSmartShapeCanvasSpace(stage).floating).toEqual({
       connectivity: "server-unavailable", networkFeatures: "local-only", canvas,
+      viewport: { left: 0, top: 0, right: 1440, bottom: 1100 }, statusCenters: [],
       targets: [{ id: "offline-readiness", managed: "true", hidden: "false", localOnly: "true",
         summary: "로컬 작업 중", visible: true, rect: { left: 938, top: 779, right: 1083, bottom: 841 } }],
     });
     expect(dom.window.document.body.innerHTML).toBe(before);
     dom.window.close();
+  });
+});
+
+function statusCenterFixture(nativeDialog = false) {
+  const fixture = domFixture(), { document } = fixture.dom.window;
+  fixture.aside.remove();
+  document.documentElement.dataset.studioConnectivity = "server-unavailable";
+  document.documentElement.dataset.studioNetworkFeatures = "local-only";
+  const center = document.createElement("div");
+  center.setAttribute("data-studio-save-sync-status-center", "");
+  center.innerHTML = `<button aria-haspopup="dialog" aria-expanded="false" aria-describedby="notice-summary">
+    서버 연결 안 됨 · 이 기기 저장<span id="notice-summary" data-studio-connection-notice-summary="true"></span></button>`;
+  const details = document.createElement(nativeDialog ? "dialog" : "div");
+  details.hidden = true;
+  if (nativeDialog) details.setAttribute("data-studio-drawing-save-dialog", "true");
+  details.innerHTML = `<div data-studio-connection-notice-details="true"><section
+    data-studio-offline-presentation="status-center" data-studio-local-only="true">연결 안내 상세</section></div>`;
+  center.append(...(nativeDialog ? [] : [details]));
+  document.body.append(center, ...(nativeDialog ? [details] : []));
+  const trigger = center.querySelector("button")!, panel = details.querySelector("section")!;
+  const headerRect = { left: 900, top: 180, right: 1120, bottom: 224 };
+  trigger.getBoundingClientRect = () => new fixture.dom.window.DOMRect(headerRect.left, headerRect.top,
+    headerRect.right - headerRect.left, headerRect.bottom - headerRect.top);
+  const previousHit = document.elementFromPoint.bind(document);
+  document.elementFromPoint = vi.fn((x, y) => x >= headerRect.left && x < headerRect.right
+    && y >= headerRect.top && y < headerRect.bottom ? trigger : previousHit(x, y));
+  return { ...fixture, center, trigger, panel, statusDetails: details, headerRect };
+}
+
+describe("현재 연결 안내는 접힌 저장 상태 슬롯의 실제 표시와 연결을 검사한다", () => {
+  it.each([false, true])("일반 popover와 네이티브 portal의 상세를 열지 않고 보이는 요약을 확인한다 (native=%s)", (native) => {
+    const { dom, stage, trigger, statusDetails, headerRect } = statusCenterFixture(native);
+    const before = dom.window.document.body.innerHTML;
+    const measurement = measureStudioSmartShapeCanvasSpace(stage);
+    expect(measurement.floating.statusCenters).toEqual([{
+      localOnly: "true", linked: true, expanded: "false", summary: "서버 연결 안 됨 · 이 기기 저장",
+      visible: true, rect: headerRect,
+    }]);
+    expect(headerRect.bottom).toBeLessThan(canvas.top);
+    expect(studioSmartShapeFloatingReady(measurement.floating, true)).toBe(true);
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(statusDetails.hidden).toBe(true);
+    expect(dom.window.document.body.innerHTML).toBe(before);
+    dom.window.close();
+  });
+
+  const failures: Array<[string, (fixture: ReturnType<typeof statusCenterFixture>) => void]> = [
+    ["다른 요약 참조", ({ trigger }) => trigger.setAttribute("aria-describedby", "another-summary")],
+    ["열린 상세", ({ trigger }) => trigger.setAttribute("aria-expanded", "true")],
+    ["로컬 저장 권위 미확정", ({ panel }) => panel.setAttribute("data-studio-local-only", "false")],
+    ["숨긴 버튼", ({ trigger }) => { trigger.style.display = "none"; }],
+    ["입력 비활성 조상", ({ center }) => center.setAttribute("inert", "")],
+    ["다른 요소가 가림", ({ dom, button }) => { dom.window.document.elementFromPoint = vi.fn(() => button); }],
+    ["viewport 밖", ({ trigger, dom }) => { trigger.getBoundingClientRect = () => new dom.window.DOMRect(-10, 180, 230, 44); }],
+    ["연결 안내 슬롯 없음", ({ panel, center }) => center.append(panel)],
+    ["중복 상태 패널", ({ panel }) => panel.after(panel.cloneNode(true))],
+    ["빈 요약", ({ trigger }) => { trigger.textContent = ""; }],
+    ["이전 floating과 중복", ({ aside, dom }) => dom.window.document.body.append(aside)],
+  ];
+  it.each(failures)("%s 상태는 실제 준비 완료로 인정하지 않는다", (_label, mutate) => {
+    const fixture = statusCenterFixture();
+    mutate(fixture);
+    expect(studioSmartShapeFloatingReady(measureStudioSmartShapeCanvasSpace(fixture.stage).floating, true)).toBe(false);
+    fixture.dom.window.close();
+  });
+
+  it("네이티브 portal에 연결할 상태 버튼이 둘이면 임의로 하나를 고르지 않는다", () => {
+    const fixture = statusCenterFixture(true);
+    fixture.center.after(fixture.center.cloneNode(true));
+    expect(studioSmartShapeFloatingReady(measureStudioSmartShapeCanvasSpace(fixture.stage).floating, true)).toBe(false);
+    fixture.dom.window.close();
   });
 });
 
