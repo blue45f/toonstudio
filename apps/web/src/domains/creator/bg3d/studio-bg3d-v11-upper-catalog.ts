@@ -30,6 +30,8 @@ export interface Bg3dV11RoomDimensions {
   width: number;
   depth: number;
   wallHeight: number;
+  /** 룸 빌더의 벽 중심선 사이 치수에서 실내 면을 구한다. 기존 치수 전용 호출은 두께 0이다. */
+  wallThickness?: number;
 }
 
 export interface Bg3dV11UpperArchetypeMeta {
