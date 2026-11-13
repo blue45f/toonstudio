@@ -3,6 +3,8 @@
 .studio-library-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 [data-studio-illustrated-surface="library"] .studio-library-heading { padding: 0; border: 0; }
 [data-studio-illustrated-surface="library"] .studio-library-heading h1 { font-size: clamp(1.75rem, 3vw, 2.125rem); }
+.studio-library-storage-note { display: flex; align-items: center; gap: 6px; margin-top: 5px; color: var(--color-fg-2); font-size: .75rem; line-height: 1.5; }
+.studio-library-storage-note svg { flex: none; }
 .studio-library-heading > div:first-child { min-width: 0; flex: 1 1 120px; }
 .studio-library-entry-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .studio-library-entry-actions > a { min-width: 0; min-height: 48px; font-size: .875rem; }
@@ -41,25 +43,29 @@
 .studio-library-work-list-heading h2 { color: var(--color-fg); font-size: 1.25rem; font-weight: 800; }
 .studio-library-work-list-heading button { min-height: 48px; padding: .5rem .75rem; border-radius: .75rem; color: var(--color-fg-2); font-size: .875rem; }
 .studio-library-work-list-heading button[aria-pressed=true] { background: var(--color-accent); color: var(--color-on-accent); }
-.studio-library-compact-grid { display: grid; min-width: 0; }
-.studio-library-project-row { min-width: 0; border-bottom: 1px solid var(--color-line); padding: .75rem 0 .25rem; }
+.studio-library-compact-grid { display: grid; min-width: 0; gap: 12px; }
+.studio-library-project-row { min-width: 0; border: 1px solid var(--color-line); padding: 12px; }
 /* 기존 카드 전역의 !important 장식은 이 간결한 원고 목록에 한해서 해제한다. */
-.studio-library-workspace .studio-library-project-row { border-color: var(--color-line) !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; transition: none !important; }
+.studio-library-workspace .studio-library-project-row { border-color: var(--color-line) !important; border-radius: 14px !important; background: var(--color-panel) !important; box-shadow: none !important; transition: none !important; }
 .studio-library-workspace [data-studio-project-card]:hover { transform: none; }
 .studio-library-workspace .studio-library-resume { background: var(--color-card) !important; }
 [data-studio-recovery-list] :is(button, a) { min-height: 48px; }
 [data-studio-recovery-list] [data-studio-selection-checkbox] { width: 48px; height: 48px; }
 .studio-library-project-row[data-selected], .studio-library-resume[data-selected] { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: .875rem; }
-.studio-library-project-row-main { display: flex; align-items: center; gap: .625rem; min-width: 0; }
-.studio-library-project-row-thumbnail { width: 62px; height: 72px; flex-shrink: 0; border-radius: .625rem; overflow: hidden; }
+.studio-library-project-row-main { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 4px 12px; min-width: 0; }
+.studio-library-project-row-thumbnail { grid-row: 1 / 3; width: 88px; height: 108px; flex-shrink: 0; border-radius: .625rem; overflow: hidden; }
 .studio-library-project-row-thumbnail > [data-studio-project-thumbnail] { margin: 0; height: 100%; width: 100%; aspect-ratio: auto; border: 0; }
-.studio-library-project-row-main:has([data-studio-selection-checkbox]) .studio-library-project-row-thumbnail { width: 48px; height: 64px; }
+.studio-library-project-row-main:has([data-studio-selection-checkbox]) { grid-template-columns: 48px 64px minmax(0, 1fr); }
+.studio-library-project-row-main:has([data-studio-selection-checkbox]) .studio-library-project-row-thumbnail { grid-column: 2; width: 64px; height: 88px; }
+.studio-library-project-row-main:has([data-studio-selection-checkbox]) .studio-library-project-row-description { grid-column: 3; }
 .studio-library-project-row [data-studio-selection-checkbox], .studio-library-resume [data-studio-selection-checkbox] { width: 48px; height: 48px; border-radius: .5rem; }
 .studio-library-project-row-description { min-width: 0; flex: 1; }
 .studio-library-project-row-description h3 { font-size: 1rem; font-weight: 750; overflow-wrap: anywhere; }
 .studio-library-project-row-description h3 a { display: flex; align-items: center; min-height: 48px; }
 .studio-library-row-resume-context { color: var(--color-fg-2); font-size: .8125rem; line-height: 1.5; overflow-wrap: anywhere; }
-.studio-library-row-continue { display: inline-flex; width: 48px; min-height: 48px; align-items: center; justify-content: center; flex-shrink: 0; border-radius: .75rem; color: var(--color-fg); }
+.studio-library-row-continue { grid-column: 2; display: inline-flex; min-width: 0; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--color-accent); color: var(--color-on-accent); font-size: .8125rem; font-weight: 700; }
+.studio-library-row-continue > svg { flex: none; }
+.studio-library-project-row-main:has([data-studio-selection-checkbox]) .studio-library-row-continue { grid-column: 3; }
 .studio-library-project-row-actions { display: flex; align-items: start; flex-wrap: wrap; gap: .25rem .5rem; }
 .studio-library-row-save-attention { display: inline-flex; align-items: center; min-height: 48px; }
 .studio-library-project-row-management { min-width: 0; margin-left: auto; }
@@ -84,12 +90,14 @@
   [data-studio-illustrated-surface="library"] :is(a, button, input, select, summary) { scroll-margin-block: 16px max(calc(84px + env(safe-area-inset-bottom)), var(--service-status-overlay-clearance, 0px)); }
 }
 @media (min-width: 768px) {
+  .studio-library-workspace[data-has-recent-work="false"] .studio-library-compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .studio-library-workspace[data-has-recent-work=true] { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.5rem; }
   .studio-library-resume-cover { height: 230px; }
   .studio-library-resume-cover::after { inset-block-start: 170px; }
   .studio-library-resume-content { padding: .5rem 1.25rem 0; }
 }
 @media (min-width: 1200px) {
+  .studio-library-workspace[data-has-recent-work="false"] .studio-library-compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .studio-library-workspace[data-has-recent-work=true] { gap: 2rem; }
   .studio-library-resume-cover { height: 280px; }
   .studio-library-resume-cover::after { inset-block-start: 220px; }

@@ -209,23 +209,11 @@ h1[data-type-variant="editorial"],
   isolation: isolate;
   min-width: 0;
   color: var(--color-fg);
-  background:
-    radial-gradient(52rem 28rem at 12% -6%, color-mix(in oklch, var(--route-accent) 11%, transparent), transparent 72%),
-    radial-gradient(46rem 26rem at 90% -5%, color-mix(in oklch, var(--color-cool, var(--unified-accent-2)) 9%, transparent), transparent 70%),
-    var(--color-canvas);
+  background: var(--color-canvas);
 }
+/* 작업·읽기 화면의 장식 격자는 실제 본문과 현재 위치 표시를 가리지 않는다. */
 :root[data-design-theme="starlight"] .route-stage[data-theme-contract="unified"]:not([data-route-surface-identity="editor"])::before {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: min(38rem, 100%);
-  content: "";
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, color-mix(in oklch, var(--color-line) 28%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklch, var(--color-line) 28%, transparent) 1px, transparent 1px);
-  background-size: 36px 36px;
-  mask-image: radial-gradient(ellipse 86% 78% at 50% 0%, black 18%, transparent 78%);
+  display: none;
 }
 .route-stage[data-route-purpose="discover"] { --route-accent: var(--color-cool); }
 .route-stage[data-route-purpose="learn"] { --route-accent: var(--color-good); }
@@ -248,9 +236,7 @@ h1[data-type-variant="editorial"],
   article.bg-card,
   aside.bg-card
 ) {
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 7%, transparent),
-    var(--unified-shadow-soft);
+  box-shadow: none;
 }
 
 .route-stage[data-theme-contract="unified"] :where(a, button, input, select, textarea) {
@@ -280,10 +266,7 @@ h1[data-type-variant="editorial"],
   --color-accent-soft: var(--unified-accent-soft);
   --color-on-accent: var(--unified-on-accent);
   color: var(--color-fg);
-  background:
-    radial-gradient(circle at 82% -10%, color-mix(in oklch, var(--workspace-accent-2, var(--color-cool)) 10%, transparent), transparent 34rem),
-    radial-gradient(circle at 13% 8%, color-mix(in oklch, var(--workspace-accent, var(--color-accent)) 10%, transparent), transparent 31rem),
-    linear-gradient(145deg, color-mix(in oklch, var(--color-canvas) 97%, var(--workspace-accent, var(--color-accent)) 3%), var(--color-canvas));
+  background: var(--color-canvas);
 }
 
 :root[data-design-theme] :is(.workspace-shell, .workspace-focused-shell)::before {
@@ -300,19 +283,23 @@ h1[data-type-variant="editorial"],
 
 :root[data-design-theme] :is(.workspace-topbar, .workspace-focused-topbar) {
   border-color: var(--color-line) !important;
-  background: linear-gradient(105deg,
-    color-mix(in oklch, var(--color-panel) 94%, transparent),
-    color-mix(in oklch, var(--color-card) 90%, transparent)) !important;
-  box-shadow: 0 0.75rem 2.5rem color-mix(in oklch, var(--color-fg) 7%, transparent), inset 0 -1px var(--color-line);
+  background: var(--color-panel) !important;
+  box-shadow: none;
 }
 :root[data-design-theme] .workspace-sidebar {
   border-color: var(--color-line);
-  background: linear-gradient(180deg, var(--color-panel), color-mix(in oklch, var(--color-panel) 94%, var(--color-canvas)));
-  box-shadow: 0.75rem 0 2.4rem color-mix(in oklch, var(--color-fg) 6%, transparent);
+  background: var(--color-panel);
+  box-shadow: none;
 }
 :root[data-design-theme] .workspace-main {
-  background: linear-gradient(180deg, color-mix(in oklch, var(--color-panel) 32%, transparent), transparent);
+  background: var(--color-canvas);
   scrollbar-color: color-mix(in oklch, var(--color-accent) 52%, transparent) transparent;
+}
+:root[data-design-theme] .workspace-sidebar .workspace-nav a[aria-current="page"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-accent);
+  box-shadow: inset 0 -2px var(--color-accent);
 }
 :root[data-design-theme] :is(.workspace-search-trigger, .workspace-focused-search) {
   border-color: var(--color-control-border) !important;
@@ -332,8 +319,16 @@ h1[data-type-variant="editorial"],
 }
 :root[data-design-theme] :is(.workspace-statusbar, .campus-toolbar) {
   border-color: var(--color-line);
-  background: var(--unified-glass);
-  box-shadow: var(--unified-shadow-soft);
+  background: var(--color-panel);
+  box-shadow: none;
+}
+:root[data-design-theme] .campus-toolbar {
+  margin-bottom: 12px;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
 }
 :root[data-design-theme] .campus-control,
 :root[data-design-theme] .campus-modes,

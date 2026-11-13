@@ -61,7 +61,7 @@ describe("MarketHomePage", () => {
     render(<MemoryRouter initialEntries={["/market"]}><MarketHomePage /></MemoryRouter>);
 
     const heading = screen.getByRole("heading", { level: 1 });
-    const browse = screen.getAllByRole("link", { name: "소재 찾기" }).find((link) => link.getAttribute("href") === "/market/browse");
+    const browse = screen.getByRole("link", { name: "전체 소재 보기" });
     const types = screen.getByRole("group", { name: "에셋 프리셋 선택" });
     const recent = screen.getByRole("heading", { name: "최근 공유" });
     const navigation = screen.getByRole("navigation", { name: "마켓 작업 선택" });
@@ -231,8 +231,27 @@ it.each(["buy", "explore", "sell", "guide"] as const)("%s 목적 화면은 해�
 function HistoryControls() {
   const navigate = useNavigate();
   const location = useLocation();
-  return <><button type="button" onClick={() => navigate(-1)}>이전 화면으로</button><output aria-label="현재 주소">{location.pathname}{location.search}</output></>;
+  return <><button type="button" onClick={() => navigate(-1)}>이전 화면으로</button><button type="button" onClick={() => navigate(1)}>다음 화면으로</button><output aria-label="현재 주소">{location.pathname}{location.search}{location.hash}</output><output aria-label="현재 이동 상태">{JSON.stringify(location.state)}</output></>;
 }
+
+it("모바일 목적 선택도 중복 쿼리·해시·이동 상태와 앞뒤 기록을 유지한다", () => {
+  useResources.mockReturnValue(marketPage());
+  render(<MemoryRouter initialEntries={[{ pathname: "/market", search: "?tag=a&tag=b", hash: "#materials", state: { source: "my-work" } }]}><HistoryControls /><MarketHomePage /></MemoryRouter>);
+  const purpose = screen.getByRole("combobox", { name: "마켓 작업 선택" });
+  fireEvent.change(screen.getByRole("searchbox", { name: "찾고 싶은 소재" }), { target: { value: "미저장 브러시 검색" } });
+  expect(purpose).toHaveProperty("value", "buy");
+  fireEvent.change(purpose, { target: { value: "guide" } });
+  expect(screen.getByLabelText("현재 주소").textContent).toBe("/market?tag=a&tag=b&section=guide#materials");
+  expect(screen.getByLabelText("현재 이동 상태").textContent).toBe('{"source":"my-work"}');
+  expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
+  fireEvent.click(screen.getByRole("button", { name: "이전 화면으로" }));
+  expect(purpose).toHaveProperty("value", "buy");
+  expect(screen.getByLabelText("현재 주소").textContent).toBe("/market?tag=a&tag=b#materials");
+  expect(screen.getByRole("searchbox", { name: "찾고 싶은 소재" })).toHaveProperty("value", "미저장 브러시 검색");
+  fireEvent.click(screen.getByRole("button", { name: "다음 화면으로" }));
+  expect(purpose).toHaveProperty("value", "guide");
+  expect(screen.getByLabelText("현재 이동 상태").textContent).toBe('{"source":"my-work"}');
+});
 
 it("목적 이동과 뒤로가기는 URL·기존 쿼리·소재 유형 선택을 보존한다", () => {
   useResources.mockReturnValue(marketPage({ items: [{ ...cachedRecord, kind: "brush" }] }));
@@ -321,6 +340,9 @@ it("짧은 유형 이름 뒤에 상세 안내를 접어 두되 장착과 카탈�
   expect(details?.open).toBe(false);
   expect(details?.textContent).toContain("ALL ASSETS");
   expect(within(section).getByText("브러시").getAttribute("aria-hidden")).toBe("true");
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("소재 안내 진입점이 없습니다.");
+  fireEvent.click(summary);
   expect(within(section).getByRole("link", { name: "스튜디오 보관함 열기" }).getAttribute("href")).toBe("/studio/assets");
   fireEvent.click(within(section).getByRole("button", { name: "2D 펜 · 브러시 · 선화" }));
   expect(details?.textContent).toContain("펜선, 수채, 이펙트 브러시");

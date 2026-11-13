@@ -188,13 +188,13 @@ jobs:
           mkdir -p /tmp/studio-stability-unit-evidence
           git rev-parse HEAD > /tmp/studio-stability-unit-evidence/commit.txt
           pnpm exec vitest run \
-            apps/web/src/domains/creator/studio-image-filter-worker-client.test.ts \
-            apps/web/src/domains/creator/studio-image-filter-worker-stability.test.ts \
+            apps/web/src/domains/creator/scene3d/studio-image-filter-worker-client.test.ts \
+            apps/web/src/domains/creator/scene3d/studio-image-filter-worker-stability.test.ts \
             apps/web/src/domains/creator/brush/studio-brush-r8-grain-hydrator.test.ts \
             apps/web/src/domains/creator/brush/studio-brush-r8-png-decoder.test.ts \
             apps/web/src/domains/creator/brush/studio-brush-browser-harness-boundary.test.ts \
-            apps/web/src/domains/creator/studio-detail.test.ts \
-            apps/web/src/domains/creator/studio-detail-median-stability.test.ts \
+            apps/web/src/domains/creator/ai/studio-detail.test.ts \
+            apps/web/src/domains/creator/ai/studio-detail-median-stability.test.ts \
             scripts/studio-review-host-qa-runtime.test.mjs \
             scripts/verify-studio-graphite-coverage.test.mjs \
             scripts/isolated-market-api.test.ts \

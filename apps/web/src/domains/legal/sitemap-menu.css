@@ -24,6 +24,7 @@
 }
 .sitemap-menu-destination > svg, .sitemap-menu-section > svg { flex-shrink: 0; color: var(--color-fg-2); }
 .sitemap-menu-destination > span, .sitemap-menu-section > span { min-width: 0; flex: 1; }
+.sitemap-menu-section > .site-purpose-graphic { flex: none; }
 .sitemap-menu-page strong { display: block; font-size: .9375rem; font-weight: 700; line-height: 1.5; }
 .sitemap-menu-page small { display: block; margin-top: .2rem; color: var(--color-fg-2); font-size: .8125rem; line-height: 1.55; }
 .sitemap-menu-start > :first-child { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }

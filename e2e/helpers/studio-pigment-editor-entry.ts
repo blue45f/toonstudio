@@ -26,11 +26,10 @@ export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
     if (!(await task.isVisible())) await page.locator('[data-studio-clarity-more-trigger="true"]').first()
       .click({ timeout: remaining() });
     await task.waitFor({ state: "visible", timeout: remaining() });
-    const advanced = task.locator("details.studio-drawing-task-advanced");
-    if (await advanced.getAttribute("open", { timeout: remaining() }) === null) {
-      await advanced.locator("summary").click({ timeout: remaining() });
-    }
-    await advanced.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true })
+    const workspace = task.locator('[data-drawing-task-category="workspace"]');
+    if (await workspace.count() !== 1) throw new Error("안료 준비의 화면과 도움말 목적은 하나여야 합니다.");
+    await workspace.click({ timeout: remaining() });
+    await task.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true })
       .click({ timeout: remaining() });
     await task.waitFor({ state: "detached", timeout: remaining() });
     await clarity.waitFor({ state: "detached", timeout: remaining() });

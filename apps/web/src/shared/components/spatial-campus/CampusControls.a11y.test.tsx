@@ -42,8 +42,8 @@ describe("공간 지도 이름과 현재 공간", () => {
     expect(screen.getByRole("link", { name: "작업으로 돌아가기" }).getAttribute("href")).toBe("/studio");
   });
   it.each([
-    ["ko", false, "안내·설정관", "안내·설정관 · 공간 지도 열기"],
-    ["en", false, "Help & settings", "Help & settings · Open campus map"],
+    ["ko", false, "공간 지도", "안내·설정관 · 공간 지도 열기"],
+    ["en", false, "Campus", "Help & settings · Open campus map"],
     ["ko", true, "공간 지도", "공간 지도 열기"],
     ["en", true, "Campus", "Open campus map"],
   ] as const)("%s의 compact=%s 지도 이름이 보이는 명칭과 열기 목적을 유지한다", (locale, compact, caption, accessibleName) => {
@@ -70,7 +70,8 @@ describe("공간 지도 이름과 현재 공간", () => {
     view.rerender(controls(next));
     const nextCaption = locale === "ko" ? next.district.label.ko : next.district.label.en;
     expect(screen.getByRole("button", { name: `${nextCaption} · ${purpose}` })).toBe(trigger);
-    expect(trigger.textContent).toBe(nextCaption);
+    expect(trigger.textContent).toBe(locale === "ko" ? "공간 지도" : "Campus");
+    expect(trigger.getAttribute("title")).toBe(nextCaption);
   });
 
   it("native가 아닌 작업의 compact 지도 비노출 계약을 이름 변경으로 넓히지 않는다", () => {

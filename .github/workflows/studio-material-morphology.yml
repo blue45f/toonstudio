@@ -93,8 +93,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/studio-material-morphology"
           pnpm exec vitest run \
             apps/web/src/domains/creator/brush \
-            apps/web/src/domains/creator/studio-sketchpad-specialty.test.ts \
-            apps/web/src/domains/creator/studio-competitor-specialty-brush-expansion.test.ts \
+            apps/web/src/domains/creator/studio-cuttoon-editor/studio-sketchpad-specialty.test.ts \
+            apps/web/src/domains/creator/brush/studio-competitor-specialty-brush-expansion.test.ts \
             scripts/studio-brush-long-matrix-quality.test.ts \
             scripts/studio-material-atlas-boundary.test.ts \
             scripts/lib/studio-chemy-toolchain.test.mjs \

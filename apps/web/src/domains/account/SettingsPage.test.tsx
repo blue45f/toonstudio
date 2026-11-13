@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SettingsPage } from "./SettingsPage";
@@ -21,7 +21,8 @@ vi.mock("./LibraryBackupImport", () => ({ LibraryBackupImport: () => <div data-t
 
 function LocationProbe() {
   const location = useLocation();
-  return <output data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</output>;
+  const navigate = useNavigate();
+  return <><output data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</output><button onClick={() => navigate(-1)}>검증용 뒤로</button><button onClick={() => navigate(1)}>검증용 앞으로</button></>;
 }
 
 function renderSettings(entry = "/settings?view=display") {
@@ -32,6 +33,26 @@ beforeEach(() => window.localStorage.clear());
 afterEach(cleanup);
 
 describe("설정 화면 탭", () => {
+  it("목록에서 처음 연 계정 초안도 목록 왕복과 Back·Forward 중 같은 입력 DOM을 유지한다", () => {
+    renderSettings("/settings?project=keep");
+    fireEvent.click(within(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).getByRole("link", { name: "계정" }));
+    fireEvent.click(screen.getByRole("button", { name: /연동 계정·계정 병합/ }));
+    const draft = screen.getByLabelText("계정 통합 초안");
+    fireEvent.change(draft, { target: { value: "first-visit-draft-placeholder" } });
+    fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
+    expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
+    expect(draft.closest("[hidden]")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "검증용 뒤로" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=account");
+    expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
+    expect(draft.closest("[hidden]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "검증용 앞으로" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep");
+    expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
+    fireEvent.click(within(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).getByRole("link", { name: "계정" }));
+    expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
+    expect(draft).toHaveProperty("value", "first-visit-draft-placeholder");
+  });
   it("설정 목록으로 왕복해도 방문한 계정 폼의 미저장 입력 DOM을 보존한다", () => {
     renderSettings("/settings?view=account");
     fireEvent.click(screen.getByRole("button", { name: /연동 계정·계정 병합/ }));

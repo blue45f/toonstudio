@@ -42,10 +42,10 @@ export function useSiteTabs<T extends string>({
   const fromUrl = ids.find((id) => id === raw);
   const value: T = param ? fromUrl ?? fallback : localValue;
   const [visited, setVisited] = useState<ReadonlySet<T>>(() => new Set<T>([value]));
+  // Link·Back·Forward로 열린 탭도 떠나기 전에 기록해 미저장 입력 DOM을 유지한다.
+  if (!visited.has(value)) setVisited(new Set<T>(visited).add(value));
 
   const select = useCallback((next: T) => {
-    // 주소(뒤로 가기)로 열린 탭도 떠날 때 함께 기억해 다시 돌아왔을 때 입력값을 유지한다.
-    setVisited((previous) => (previous.has(next) && previous.has(value) ? previous : new Set<T>(previous).add(value).add(next)));
     if (!param) {
       setLocalValue(next);
       return;
@@ -56,7 +56,7 @@ export function useSiteTabs<T extends string>({
       else updated.set(param, next);
       return updated;
     }, { replace: true, preventScrollReset: true });
-  }, [fallback, param, serializeFallback, setParams, value]);
+  }, [fallback, param, serializeFallback, setParams]);
 
   const isMounted = useCallback((id: T) => id === value || visited.has(id), [value, visited]);
 

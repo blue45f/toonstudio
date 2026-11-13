@@ -43,6 +43,7 @@ import { captureStudioDocumentBeforeDeadline, captureStudioDocumentRoi } from ".
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
+import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -576,10 +577,7 @@ async function toolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
   await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
   const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
   await catalog.waitFor({ state: "visible", timeout: 16_000 });
-  const entry = catalog.locator(`button[data-studio-catalog-tool-id="${id}"]`);
-  await entry.waitFor({ state: "visible", timeout: 16_000 });
-  const pin = entry.locator("..").locator("button[aria-pressed]");
-  if (await pin.getAttribute("aria-pressed") !== "true") await pin.click();
+  await pinStudioRailToolInCatalog(catalog, id, 16_000);
   await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
   await locator.first().waitFor({ state: "visible", timeout: 16_000 });
   return visibleLocator(locator);

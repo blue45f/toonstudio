@@ -1,4 +1,5 @@
 import "../studio-shell/creator-workflow-surfaces.css";
+import "./production-front-door.css";
 import {
   AlertTriangle,
   ArrowRight,
@@ -32,7 +33,6 @@ import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
-import { ProductionLandingBackdropBadge, ProductionLandingBackdropMedia } from "./ProductionLandingBackdrop";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
@@ -65,7 +65,6 @@ import { useT } from "@/shared/lib/i18n";
 import { trimTrailingSlashes } from "@/shared/lib/trim-trailing-slashes";
 
 const SAMPLE_BASE = "/production/projects/sample-project";
-const ART = "/brand/illustrated-20260928";
 
 interface Copy {
   readonly ko: string;
@@ -137,39 +136,16 @@ const INBOX_BUCKETS: Readonly<Record<ProductionPersonalInboxItem["bucket"], { re
   blockingOthers: { label: { ko: "다른 작업 차단", en: "Blocking others" }, tone: "danger" },
 };
 
-function artSources(name: string) {
-  return {
-    src: `${ART}/${name}-640.webp`,
-    srcSet: `${ART}/${name}-320.webp 320w, ${ART}/${name}-640.webp 640w`,
-  };
-}
 
-/** 히어로 오른쪽의 샘플 화면 예시: 선화·채색 비교와 핀 코멘트가 어떻게 보이는지 보여 주는 장식. */
+/** 브랜드 원고 한 장으로 제작 흐름을 안내하며 실제 프로젝트 화면과 구분한다. */
 function HeroPreview() {
   const bt = useBilingual("ProductionLandingPage");
-  const noir = artSources("canvas-noir");
-  const crimson = artSources("project-crimson");
   return (
-    <figure className="relative mx-auto w-full max-w-md" aria-label={bt("샘플 회차 룸 화면 예시", "Example of a sample episode room")}>
-      <div className="relative aspect-[16/10] overflow-hidden rounded-3xl border border-accent/35 shadow-2xl sm:aspect-square">
-        <img {...crimson} sizes="(min-width: 1024px) 28rem, 90vw" alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover" loading="eager" decoding="async" />
-        <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden border-r-2 border-fg/80">
-          <img {...noir} sizes="(min-width: 1024px) 28rem, 90vw" alt="" aria-hidden="true" className="absolute inset-y-0 left-0 h-full w-[200%] max-w-none object-cover" loading="eager" decoding="async" />
-        </div>
-        <span className="absolute left-3 top-3 rounded-full bg-canvas/80 px-2.5 py-1 text-[0.6875rem] font-bold text-fg">{bt("선화 v2", "Line art v2")}</span>
-        <span className="absolute right-3 top-3 rounded-full bg-canvas/80 px-2.5 py-1 text-[0.6875rem] font-bold text-fg">{bt("채색 v1", "Color v1")}</span>
-        <span aria-hidden="true" className="absolute left-[58%] top-[64%] grid size-8 -translate-x-1/2 -translate-y-full place-items-center rounded-full rounded-bl-sm border-2 border-fg/90 bg-bad text-xs font-black text-canvas">1</span>
-        <span aria-hidden="true" className="absolute left-[22%] top-[30%] grid size-8 -translate-x-1/2 -translate-y-full place-items-center rounded-full rounded-bl-sm border-2 border-fg/90 bg-warn text-xs font-black text-canvas">2</span>
-      </div>
-      <figcaption className="mt-3 rounded-2xl border border-line bg-panel/95 p-3 shadow-xl backdrop-blur">
-        <p className="flex items-center gap-2 text-xs font-bold text-fg">
-          <ProductionSampleBadge label={bt("샘플 화면", "Sample")} />
-          {bt("12화 · 돌아온 봉투", "Ep. 12 · The Returned Envelope")}
-        </p>
-        <p className="mt-1 text-[0.6875rem] leading-5 text-fg-2">
-          {bt("필수 수정 핀 1개가 남아 있어 '시각 연출' 승인이 잠겨 있어요.", "One required-fix pin keeps the visual approval locked.")}
-        </p>
-      </figcaption>
+    <figure className="production-front-preview" aria-label={bt("선화에서 채색으로 이어지는 제작 안내 이미지", "Production artwork from line art to color")}>
+      <img src="/brand/workflow-20260928/create-640.webp"
+        srcSet="/brand/workflow-20260928/create-320.webp 320w, /brand/workflow-20260928/create-640.webp 640w, /brand/workflow-20260928/create-960.webp 960w"
+        sizes="(min-width: 1024px) 32rem, 90vw" width={960} height={600} alt="" aria-hidden="true" loading="eager" decoding="async" />
+      <figcaption>{bt("제작 안내를 위한 브랜드 아트", "Brand artwork illustrating production")}</figcaption>
     </figure>
   );
 }
@@ -177,7 +153,7 @@ function HeroPreview() {
 function FlowCards() {
   const bt = useBilingual("ProductionLandingPage");
   return (
-    <section aria-labelledby="production-flow-title" className="mt-6 sm:mt-8">
+    <section aria-labelledby="production-flow-title" className="production-front-flow mt-6 sm:mt-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="production-flow-title" className="text-xl font-black tracking-tight text-fg">{bt("어떤 작업을 해 볼까요?", "What would you like to try?")}</h2>
@@ -186,22 +162,17 @@ function FlowCards() {
         <ProductionSampleBadge label={bt("예시 데이터", "Example data")} />
       </div>
       <ol className="mt-4 grid gap-3 sm:grid-cols-3">
-        {FLOW_STEPS.map((step, index) => {
+        {FLOW_STEPS.map((step) => {
           const Icon = step.icon;
-          const art = artSources(step.art);
           return (
             <li key={step.id}>
               <Link
                 to={step.href}
                 className="group flex h-full min-h-24 overflow-hidden rounded-2xl border border-line bg-card outline-none transition-colors hover:border-accent/50 focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none sm:flex-col"
               >
-                <span className="relative block w-20 shrink-0 overflow-hidden sm:aspect-[16/9] sm:w-full">
-                  <img {...art} sizes="(min-width: 640px) 30vw, 5rem" alt="" aria-hidden="true" loading="lazy" decoding="async" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
-                  <span className="absolute left-2 top-2 grid size-7 place-items-center rounded-full bg-accent text-xs font-black text-on-accent shadow-lg">{index + 1}</span>
-                </span>
+                <span className="production-front-step" aria-hidden="true"><Icon size={22} /></span>
                 <span className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
                   <span className="flex items-center gap-2 text-sm font-black text-fg group-hover:text-accent">
-                    <Icon className="size-4 text-accent" aria-hidden="true" />
                     {bt(step.title.ko, step.title.en)}
                   </span>
                   <span className="mt-1 text-xs leading-5 text-fg-2">{bt(step.copy.ko, step.copy.en)}</span>
@@ -521,10 +492,7 @@ export function ProductionLandingPage() {
 
   const IntroHeading = userId ? "h2" : "h1";
   const intro = (
-    <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-4 sm:p-8 lg:p-10">
-          {/* 배경은 생성형 AI로 만든 개념 영상이다. 장식이라 본문 흐름에서 빼고,
-              움직임 최소화를 선호하면 숨긴다(다른 표면의 장식 영상 계약과 동일). */}
-          <ProductionLandingBackdropMedia />
+    <header className="creator-workflow-intro production-front-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-4 sm:p-8 lg:p-10">
           <span aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-accent/10 blur-3xl" />
           <span aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-10 size-96 rounded-full bg-cool/10 blur-3xl" />
           <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -543,7 +511,7 @@ export function ProductionLandingPage() {
                   "Organize production, give manuscript feedback and review. Explore the sample first.",
                 )}
               </p>
-              <div className="mt-7 flex flex-wrap gap-3">
+              <div className="production-front-actions mt-7 flex flex-wrap gap-3">
                 <Link className={buttonClass({ size: "lg", className: "min-h-12 w-full gap-2 sm:w-auto" })} to={`${SAMPLE_BASE}/overview`}>
                   {bt("샘플 프로젝트로 체험하기", "Try the sample project")} <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
@@ -556,9 +524,6 @@ export function ProductionLandingPage() {
                 <CloudOff className="size-3.5 shrink-0" aria-hidden="true" />
                 {bt("로그인 없는 예시입니다. 변경은 같은 탭에서만 유지되고 새로고침하면 초기화됩니다.", "A sample without sign-in. Changes last in this tab and reset on reload.")}
               </p>
-              <div className="mt-3">
-                <ProductionLandingBackdropBadge />
-              </div>
             </div>
             <div className="pb-6">
               <HeroPreview />

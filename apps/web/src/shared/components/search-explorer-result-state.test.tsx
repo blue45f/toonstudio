@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   saved: new Set<string>(),
   recentSearches: [] as string[],
   addRecentSearch: vi.fn(), removeRecentSearch: vi.fn(), clearRecentSearches: vi.fn(),
+  staleFailure: false, revalidating: false,
 }));
 
 // 검색기·실제 페이지 훅·요약은 실행하고 원격 전송과 결과 카드 내부만 격리한다.
@@ -19,6 +20,16 @@ vi.mock("@/platform/search-client", () => ({
   fetchSearchResponse: mocks.fetch,
   isSearchAbortError: (error: unknown) => error instanceof Error && error.name === "AbortError",
 }));
+vi.mock("@/platform/use-paginated-search", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/platform/use-paginated-search")>();
+  return {
+    usePaginatedSearch(...args: Parameters<typeof actual.usePaginatedSearch>) {
+      const result = actual.usePaginatedSearch(...args);
+      return result.items.length > 0 && (mocks.staleFailure || mocks.revalidating)
+        ? { ...result, failed: mocks.staleFailure, loading: mocks.revalidating } : result;
+    },
+  };
+});
 vi.mock("@/shared/lib/store", () => ({
   useApp: (selector: (state: typeof mocks) => unknown) => selector(mocks),
   useSavedTitleIds: () => mocks.saved,
@@ -65,7 +76,7 @@ function expectUnknownCount() {
   expect(summary().textContent).not.toContain("결과가 없어요");
   expect(summary().textContent).not.toContain("유형 없음");
 }
-beforeEach(() => { mocks.fetch.mockReset(); });
+beforeEach(() => { mocks.fetch.mockReset(); mocks.staleFailure = false; mocks.revalidating = false; });
 afterEach(() => { cleanup(); document.body.style.overflow = ""; });
 
 describe("검색 응답과 요약의 일치", () => {
@@ -82,10 +93,40 @@ describe("검색 응답과 요약의 일치", () => {
     renderExplorer();
     await waitFor(() => expect(summary().getAttribute("data-search-result-state")).toBe("error"));
     expectUnknownCount();
-    expect(summary().textContent).toContain("검색 데이터를 불러오지 못했어요");
+    expect(summary().textContent).not.toContain("검색 데이터를 불러오지 못했어요");
+    expect(screen.getAllByText(/검색 데이터를 불러오지 못했어요/)).toHaveLength(1);
     expect(within(screen.getByRole("alert")).getByRole("button", { name: "재시도" })).not.toBeNull();
     expect(screen.queryByText("조건에 맞는 작품이 없어요.")).toBeNull();
     expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("빈 검색의 추천 실패는 짧게 안내하고 결과 재시도 한 곳에서 두 상태를 복구한다", async () => {
+    mocks.fetch.mockRejectedValueOnce(new Error("HTTP 503")).mockResolvedValueOnce(response());
+    renderExplorer("/search?sort=popular");
+    await waitFor(() => expect(summary().getAttribute("data-search-result-state")).toBe("error"));
+    expectUnknownCount();
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^(재시도|다시 시도)$/ })).toHaveLength(1);
+    expect(screen.getByRole("note").textContent).toContain("추천 검색어를 불러오지 못했어요");
+    const location = screen.getByLabelText("location").textContent;
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "재시도" }));
+    await waitFor(() => expect(summary().getAttribute("data-search-result-state")).toBe("empty"));
+    expect(screen.queryByRole("note")).toBeNull();
+    expect(screen.getByLabelText("location").textContent).toBe(location);
+    expect(mocks.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["failed", "loading"])("남아 있는 결과는 %s 상태에서도 빈 화면으로 교체하지 않는다", async (state) => {
+    mocks.staleFailure = state === "failed";
+    mocks.revalidating = state === "loading";
+    mocks.fetch.mockResolvedValue(response(1, 2));
+    renderExplorer();
+    await waitFor(() => expect(screen.getAllByRole("article")).toHaveLength(2));
+    expect(summary().getAttribute("data-search-result-state")).toBe(state === "failed" ? "error" : "loading");
+    expectUnknownCount();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("조건에 맞는 작품이 없어요.")).toBeNull();
+    expect(screen.getByRole("article", { name: "검증 작품 0" })).not.toBeNull();
   });
 
   it("사용자가 재시도한 뒤 성공한 빈 응답만 0건으로 확정하고 URL을 유지한다", async () => {

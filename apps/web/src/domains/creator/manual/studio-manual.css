@@ -23,6 +23,7 @@
 .studio-manual button,
 .studio-manual input,
 .studio-manual select { font: inherit; color: inherit; }
+.studio-manual button { min-inline-size: 44px; }
 .studio-manual button,
 .studio-manual summary,
 .studio-manual select { cursor: pointer; }
@@ -132,7 +133,7 @@
 .manual-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .manual-chips > span { font-size: 12px; font-weight: 700; color: var(--color-fg-3); }
 .manual-chips button {
-  min-height: 36px; padding: 0 14px; border: 1px solid var(--manual-line); border-radius: 999px;
+  min-height: 44px; padding: 0 14px; border: 1px solid var(--manual-line); border-radius: 999px;
   background: var(--manual-surface); font-size: 13px; font-weight: 600;
 }
 .manual-chips button:hover,
@@ -237,7 +238,7 @@
   border: 1px solid var(--manual-line); border-radius: 16px; background: var(--manual-surface); line-height: 1.7;
 }
 .manual-step-count { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; background: var(--manual-accent); color: var(--color-on-accent); font-size: 14px; font-weight: 900; }
-.manual-note { margin: 20px 0; padding: 16px 20px; border-left: 3px solid var(--manual-accent); border-radius: 0 14px 14px 0; background: var(--manual-soft); font-size: 14px; }
+.manual-note { margin: 20px 0; padding: 16px 20px; border: 1px solid var(--manual-line); border-radius: 14px; background: var(--manual-soft); font-size: 14px; }
 .manual-note strong { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
 .manual-note p { margin: 4px 0 0; color: var(--color-fg); }
 .manual-table-wrap { overflow-x: auto; }

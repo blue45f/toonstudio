@@ -379,7 +379,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
         expect(coreArt.has(src), src).toBe(true);
       } else if (src.startsWith("/assets/studio/scene-assistant/")) {
         expect(img.closest(".rd-mini-workspace--background")).not.toBeNull();
-      } else if (src === "/brand/lobby-hq-20261003/storyboard-480.webp") {
+      } else if (src === "/brand/workflow-20260928/create-640.webp") {
         expect(img.closest(".rd-clarity-art")).not.toBeNull();
       } else {
         expect(src).toMatch(/^\/brand\/illustrated-20260928\/(?:(hero|canvas-noir|luna|character-pink|character-blue|background-city|project-romance|project-crimson|blank-canvas|storyboard|materials|background-classroom)-(320|640)\.webp|(hero|luna)\.webp)$/u);
@@ -387,7 +387,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
     // 브랜드 원고 아트는 실제 사용자의 저장 작품으로 표시하지 않는다.
     const artwork = screen.getByRole("figure", { name: "선화에서 완성작으로 이어지는 브랜드 예시 원고" });
-    expect(within(artwork).getAllByRole("img")).toHaveLength(3);
+    expect(within(artwork).getAllByRole("img")).toHaveLength(1);
     expect(artwork.textContent).toBe("ToonStudio 브랜드 아트");
     expect(artwork.textContent).not.toMatch(/저장됨|이어서 작업/u);
   });
@@ -529,6 +529,8 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
   it("준비·그리기·완성은 실제 시작·원고·내보내기 화면으로 이어진다", async () => {
     const observedNavigation = await dashboard();
     const steps = screen.getByRole("navigation", { name: "작품을 만드는 순서" });
+    expect(within(steps).getByRole("list").tagName).toBe("OL");
+    expect(within(steps).getAllByRole("listitem")).toHaveLength(3);
     const links = within(steps).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual(["/create?intent=my-story", "/studio/new?lane=blank", "/studio?view=exports"]);
     fireEvent.click(within(steps).getByRole("link", { name: /원고 그리기/u }));

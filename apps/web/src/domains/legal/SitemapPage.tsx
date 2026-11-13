@@ -9,6 +9,7 @@ import {
   type SiteNavigationItem,
 } from "@/shared/components/site-navigation";
 import { OpenSearchButton } from "@/shared/components/open-search-button";
+import { SitePurposeGraphic } from "@/shared/components/SiteMenuDestinations";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -61,9 +62,8 @@ export function SitemapPage() {
 
     <nav className="sitemap-menu-sections" aria-label={bt("목적별 메뉴", "Menus by purpose")}>
       {SITE_NAVIGATION_GROUPS.map((group) => {
-        const Icon = group.items[0]?.icon;
         return <Link key={group.id} href={`/sitemap/${group.id}`} className="sitemap-menu-section">
-          {Icon ? <Icon size={22} aria-hidden="true" /> : null}
+          <SitePurposeGraphic group={group} />
           <span><strong>{siteNavigationText(group.label, locale)}</strong><small>{siteNavigationText(group.description, locale)}</small></span>
           <ChevronRight size={19} aria-hidden="true" />
         </Link>;

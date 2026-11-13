@@ -7,10 +7,10 @@ import { studioHistoryControlSelector } from "./studio-verify-history-controls.m
 
 import type { Locator, Page } from "@playwright/test";
 
-function fixture({ mode = "clarity", switchBeforeClick = false, entryError, exportError, downloadError, noOutcome = false }: {
-  mode?: "clarity" | "legacy"; switchBeforeClick?: boolean; entryError?: Error; exportError?: Error; downloadError?: Error; noOutcome?: boolean;
+function fixture({ mode = "clarity", switchBeforeClick = false, entryError, categoryError, exportError, downloadError, noOutcome = false }: {
+  mode?: "clarity" | "legacy"; switchBeforeClick?: boolean; entryError?: Error; categoryError?: Error; exportError?: Error; downloadError?: Error; noOutcome?: boolean;
 } = {}) {
-  const state = { mode, task: false, panel: false, blocked: false };
+  const state = { mode, task: false, category: null as "output" | null, panel: false, blocked: false };
   const calls: string[] = [];
   const outcomeError = new Error("실제 차단 또는 도구 선택 화면에 도착하지 않았습니다.");
   const blocked = {} as Locator;
@@ -26,7 +26,13 @@ function fixture({ mode = "clarity", switchBeforeClick = false, entryError, expo
     calls.push("entry-" + state.mode); if (entryError) throw entryError;
     if (!noOutcome) { if (state.mode === "clarity") state.task = true; else state.blocked = true; }
   }) };
+  const chooseOutput = vi.fn(async () => {
+    calls.push("choose-output"); expect(state.task).toBe(true);
+    if (categoryError) throw categoryError;
+    state.category = "output";
+  });
   const exportAction = vi.fn(async () => {
+    expect(state.category).toBe("output");
     calls.push("choose-export"); if (exportError) throw exportError;
     expect(state.task).toBe(true); state.task = false; state.panel = true;
   });
@@ -37,6 +43,10 @@ function fixture({ mode = "clarity", switchBeforeClick = false, entryError, expo
   const task = {
     or: (other: Locator) => { expect(other).toBe(blocked); return arrived; },
     isVisible: async () => state.task,
+    locator: (selector: string) => {
+      expect(selector).toBe('[data-drawing-task-category="output"]');
+      return { click: chooseOutput };
+    },
     getByRole: (role: string, options: unknown) => {
       expect(role).toBe("button"); expect(options).toEqual({ name: "원고 내보내기", exact: true });
       return { click: exportAction };
@@ -58,19 +68,21 @@ function fixture({ mode = "clarity", switchBeforeClick = false, entryError, expo
     if (selector === '[data-studio-export-menu-panel="true"]') return panel;
     throw new Error("허용하지 않은 우회 조작: " + selector);
   } } as unknown as Page;
-  return { page, blocked, state, calls, exportAction, download, outcomeError };
+  return { page, blocked, state, calls, chooseOutput, exportAction, download, outcomeError };
 }
 
 describe("이전 안료 원고의 실제 내보내기 차단 진입", () => {
   it("단순 화면에서 More→원고 내보내기→현재 PNG를 요청하고 실제 패널 닫힘을 확인한다", async () => {
     const f = fixture(); await clickPigmentBlockedPngExport(f.page, f.blocked);
-    expect(f.calls).toEqual(["entry-clarity", "wait-actual-outcome", "choose-export", "tools-closed", "panel-visible", "request-current-png", "panel-hidden"]);
+    expect(f.calls).toEqual(["entry-clarity", "wait-actual-outcome", "choose-output", "choose-export", "tools-closed", "panel-visible", "request-current-png", "panel-hidden"]);
+    expect(f.chooseOutput).toHaveBeenCalledOnce();
     expect(f.state.blocked).toBe(true); expect(f.exportAction).toHaveBeenCalledOnce(); expect(f.download).toHaveBeenCalledOnce();
   });
 
   it("기존 배치의 실제 버튼은 차단 결과까지 진행하고 More·추가 다운로드를 실행하지 않는다", async () => {
     const f = fixture({ mode: "legacy" }); await clickPigmentBlockedPngExport(f.page, f.blocked);
     expect(f.calls).toEqual(["entry-legacy", "wait-actual-outcome"]);
+    expect(f.chooseOutput).not.toHaveBeenCalled();
     expect(f.state.blocked).toBe(true); expect(f.exportAction).not.toHaveBeenCalled(); expect(f.download).not.toHaveBeenCalled();
   });
 
@@ -83,7 +95,16 @@ describe("이전 안료 원고의 실제 내보내기 차단 진입", () => {
   it("진입 클릭 실패를 숨기거나 다른 기능으로 우회하지 않는다", async () => {
     const error = new Error("실제 진입 클릭 실패"), f = fixture({ entryError: error });
     await expect(clickPigmentBlockedPngExport(f.page, f.blocked)).rejects.toBe(error);
+    expect(f.chooseOutput).not.toHaveBeenCalled();
     expect(f.exportAction).not.toHaveBeenCalled(); expect(f.download).not.toHaveBeenCalled();
+  });
+
+  it("출력 목적 선택 실패를 그대로 전하고 원고·PNG 내보내기를 실행하지 않는다", async () => {
+    const error = new Error("실제 출력 목적 선택 실패"), f = fixture({ categoryError: error });
+    await expect(clickPigmentBlockedPngExport(f.page, f.blocked)).rejects.toBe(error);
+    expect(f.calls).toEqual(["entry-clarity", "wait-actual-outcome", "choose-output"]);
+    expect(f.exportAction).not.toHaveBeenCalled(); expect(f.download).not.toHaveBeenCalled();
+    expect(f.state).toMatchObject({ task: true, category: null, panel: false, blocked: false });
   });
 
   it("원고 내보내기 선택 실패를 유지한다", async () => {

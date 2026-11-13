@@ -8,11 +8,11 @@ import type { Page } from "@playwright/test";
 vi.mock("../../e2e/helpers/studio-editor-a11y", () => ({ waitForEditorSettled: vi.fn() }));
 afterEach(() => { vi.clearAllMocks(); });
 
-function entry({ simple = true, expanded = false, actionError, detachError, changedUrl, lateSimple = false, commonError, afterSettledSimple = false, recursive = false, repeatAfterHandler = false, cleanupError, repeatAfterSettled = false, recheckError }: {
-  simple?: boolean; expanded?: boolean; actionError?: Error; detachError?: Error; changedUrl?: string; lateSimple?: boolean;
+function entry({ simple = true, actionError, detachError, changedUrl, lateSimple = false, commonError, afterSettledSimple = false, recursive = false, repeatAfterHandler = false, cleanupError, repeatAfterSettled = false, recheckError }: {
+  simple?: boolean; actionError?: Error; detachError?: Error; changedUrl?: string; lateSimple?: boolean;
   commonError?: Error; afterSettledSimple?: boolean; recursive?: boolean; repeatAfterHandler?: boolean; cleanupError?: Error; repeatAfterSettled?: boolean; recheckError?: Error;
 } = {}) {
-  const state = { simple, expanded, modal: false, legacyMenuVisible: !simple, reconnectVisible: !simple,
+  const state = { simple, workspaceSelected: false, modal: false, legacyMenuVisible: !simple, reconnectVisible: !simple,
     url: "http://127.0.0.1:4173/studio/draft/work-1?workspace=draw&materialBrush=brush-1" };
   const calls: string[] = [];
   let settledCount = 0;
@@ -31,17 +31,12 @@ function entry({ simple = true, expanded = false, actionError, detachError, chan
     state.modal = false; state.simple = false; state.legacyMenuVisible = true; state.reconnectVisible = true;
     if (changedUrl) state.url = changedUrl;
   });
-  const advanced = {
-    getAttribute: async (name: string) => { expect(name).toBe("open"); return state.expanded ? "" : null; },
-    locator: (selector: string) => {
-      expect(selector).toBe("summary");
-      return { click: vi.fn(async () => { state.expanded = true; calls.push("expand-advanced"); }) };
-    },
-    getByRole: (role: string, query: { name: string; exact: boolean }) => {
-      expect(role).toBe("button"); expect(query).toEqual({ name: "프로젝트·창 도구 보기", exact: true });
-      if (!state.expanded) throw new Error("접힌 메뉴의 숨긴 버튼은 선택할 수 없습니다.");
-      return { click: showSavedLayout };
-    },
+  const workspace = {
+    count: async () => 1,
+    click: vi.fn(async ({ timeout }: { timeout: number }) => {
+      expect(timeout).toBeGreaterThan(0); expect(timeout).toBeLessThanOrEqual(60_000);
+      state.workspaceSelected = true; calls.push("choose-workspace");
+    }),
   };
   const task = {
     isVisible: async () => state.modal,
@@ -51,7 +46,12 @@ function entry({ simple = true, expanded = false, actionError, detachError, chan
       if (expected === "detached" && detachError) throw detachError;
       expect(state.modal).toBe(expected === "visible");
     }),
-    locator: (selector: string) => { expect(selector).toBe("details.studio-drawing-task-advanced"); return advanced; },
+    locator: (selector: string) => { expect(selector).toBe('[data-drawing-task-category="workspace"]'); return workspace; },
+    getByRole: (role: string, query: { name: string; exact: boolean }) => {
+      expect(role).toBe("button"); expect(query).toEqual({ name: "프로젝트·창 도구 보기", exact: true });
+      if (!state.workspaceSelected) throw new Error("화면과 도움말 목적을 고르기 전에는 작업 배치를 선택할 수 없습니다.");
+      return { click: showSavedLayout };
+    },
   };
   const clarity = {
     first() { return this; },
@@ -102,9 +102,9 @@ function entry({ simple = true, expanded = false, actionError, detachError, chan
 }
 
 describe("안료 준비의 지연 Clarity handler 수명", () => {
-  it("실제 More와 고급 펼침 뒤 기존 배치를 고르고 원래 준비 검사를 마친 뒤 handler를 해제한다", async () => {
+  it("실제 More와 화면과 도움말 목적 뒤 기존 배치를 고르고 원래 준비 검사를 마친 뒤 handler를 해제한다", async () => {
     const f = entry(); await waitForPigmentEditorSettled(f.page);
-    expect(f.calls).toEqual(["register-handler", "original-settled-start", "open-more", "task-visible", "expand-advanced", "choose-saved-layout", "task-detached", "clarity-detached", "original-settled-end", "remove-handler"]);
+    expect(f.calls).toEqual(["register-handler", "original-settled-start", "open-more", "task-visible", "choose-workspace", "choose-saved-layout", "task-detached", "clarity-detached", "original-settled-end", "remove-handler"]);
     expect(waitForEditorSettled).toHaveBeenCalledExactlyOnceWith(f.page);
   });
 
@@ -125,7 +125,7 @@ describe("안료 준비의 지연 Clarity handler 수명", () => {
 
   it("재열기마다 handler를 새로 등록하고 해당 준비가 끝나면 제거한다", async () => {
     const f = entry(); await waitForPigmentEditorSettled(f.page);
-    f.state.simple = true; f.state.expanded = false;
+    f.state.simple = true; f.state.workspaceSelected = false;
     await waitForPigmentEditorSettled(f.page);
     expect(f.page.addLocatorHandler).toHaveBeenCalledTimes(2); expect(f.page.removeLocatorHandler).toHaveBeenCalledTimes(2);
     expect(f.showSavedLayout).toHaveBeenCalledTimes(2); expect(waitForEditorSettled).toHaveBeenCalledTimes(2);

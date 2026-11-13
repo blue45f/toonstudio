@@ -657,6 +657,7 @@ export function SearchExplorer({
           <SearchResultSummary
             query={q} search={search} textSettling={textSettling}
             hasConditions={activeCount > 0 || savedOnly}
+            errorInResults={Boolean(error) && !hasResult}
           />
 
           {/* 최근 검색어 — 입력이 비었을 때만 노출, 칩 클릭으로 즉시 복귀(각 칩은 개별 삭제 가능). */}
@@ -710,7 +711,7 @@ export function SearchExplorer({
               suggestions={emptyQuerySuggestions}
               onPickTerm={runSuggestedTerm}
               onPickGenre={toggleSuggestedGenre}
-              onRetry={retrySuggestions}
+              onRetry={retrySuggestions} errorPresentation="note"
             />
           )}
 
@@ -855,8 +856,7 @@ export function SearchExplorer({
           </div>,
           document.body,
         ) : null}
-
-        {loading ? (
+        {loading && !hasResult ? (
           <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, index) => (
               <div key={index} className="space-y-3">
@@ -866,12 +866,12 @@ export function SearchExplorer({
               </div>
             ))}
           </div>
-        ) : error ? (
+        ) : error && !hasResult ? (
           <ErrorState
             title={t("search.explorer.error.title")}
             message={error}
             onRetry={() => setRetryKey((value) => value + 1)}
-            className="mt-10"
+            className="mt-5 p-5 text-left [&>svg]:mx-0 [&_button:hover]:text-fg"
           />
         ) : !hasResult ? (
           <div className="mt-10 rounded-xl border border-dashed border-line bg-card/40 px-5 py-12 text-center">

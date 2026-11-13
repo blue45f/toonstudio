@@ -31,8 +31,8 @@ describe("sitewide visual identity v3 contract", () => {
     expect(routeVisual.match(/image: "\/assets\/studio\/generated-backgrounds\/gpt25-v1/gu)).toHaveLength(14);
   });
 
-  it("keeps image-backed navigation and motion accessible", () => {
-    expect(workspaceCss).toContain(".workspace-nav-visual-art");
+  it("탐색의 선 아이콘과 모션·강제 색상 접근 경계를 유지한다", () => {
+    expect(workspaceCss).toContain(".workspace-nav-visual>.workspace-nav-line-icon");
     expect(workspaceCss).toContain("@media(prefers-reduced-motion:reduce)");
     expect(workspaceCss).toContain("@media(forced-colors:active)");
   });

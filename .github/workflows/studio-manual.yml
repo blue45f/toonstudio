@@ -7,6 +7,7 @@ on:
     paths:
       - 'apps/web/src/domains/creator/manual/**'
       - 'apps/web/src/domains/creator/studio-help-menu-items*'
+      - 'apps/web/src/domains/creator/live/studio-help-menu-items*.test.ts'
       - 'apps/web/src/domains/creator/studio-command-catalog*'
       - 'apps/web/src/domains/creator/studio-main-menu-group-spec-help.ts'
       - 'apps/web/src/app/routes/groups/creator.routes.tsx'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'apps/web/src/domains/creator/manual/**'
       - 'apps/web/src/domains/creator/studio-help-menu-items*'
+      - 'apps/web/src/domains/creator/live/studio-help-menu-items*.test.ts'
       - 'apps/web/src/domains/creator/studio-command-catalog*'
       - 'apps/web/src/domains/creator/studio-main-menu-group-spec-help.ts'
       - 'apps/web/src/app/routes/groups/creator.routes.tsx'
@@ -54,7 +56,8 @@ jobs:
           pnpm exec vitest run
           apps/web/src/domains/creator/manual/studio-manual.test.ts
           apps/web/src/app/routes/groups/studio-manual.routes.test.tsx
-          apps/web/src/domains/creator/studio-help-menu-items.test.ts
+          apps/web/src/domains/creator/live/studio-help-menu-items.test.ts
+          apps/web/src/domains/creator/live/studio-help-menu-items-help-hub.test.ts
           apps/web/src/domains/creator/studio-command-catalog.test.ts
           apps/web/src/domains/creator/studio-main-menu-groups.test.ts
           apps/web/src/domains/creator/studio-main-menu-group-spec.test.ts
@@ -63,7 +66,8 @@ jobs:
           pnpm exec eslint apps/web/src/domains/creator/manual
           apps/web/src/app/routes/groups/creator.routes.tsx apps/web/src/app/routes/groups/studio-manual.routes.test.tsx
           apps/web/src/app/routes/app-route-title-ownership.ts apps/web/src/domains/creator/studio-help-menu-items.ts
-          apps/web/src/domains/creator/studio-help-menu-items.test.ts apps/web/src/domains/creator/studio-command-catalog.ts
+          apps/web/src/domains/creator/live/studio-help-menu-items.test.ts
+          apps/web/src/domains/creator/live/studio-help-menu-items-help-hub.test.ts apps/web/src/domains/creator/studio-command-catalog.ts
           apps/web/src/domains/creator/studio-command-catalog-base.ts
           apps/web/src/domains/creator/studio-main-menu-group-spec-help.ts scripts/verify-studio-manual.mjs
       - run: pnpm run build:bundle

@@ -565,7 +565,7 @@ function StudioBrushV6Editor({ scope, initialProgram }: {
           <div className={SUB}><p className="text-xs font-bold text-fg-2">{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "조합 진단")}</p><p className="mt-1 text-sm font-black text-fg">{analysis.valid ? translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "조합 검사 통과") : translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "확인할 조합 있음")}</p><p className="mt-1 text-[0.68rem] text-fg-3">{analysis.issues.filter((issue) => issue.severity !== "info").length}{translateCurrentStaticSourceText("domains.creator.brush.lab.StudioBrushV6Workbench", "ko", "개 확인 사항 · 설정 자동 저장")}</p></div>
           </div></details>
         </div>
-        <p role="status" className="mt-3 rounded-xl border border-line bg-raised/55 px-3 py-2 text-xs text-fg-2">{status}</p>
+        <p role="status" className="mt-3 rounded-xl border border-line bg-raised/55 px-3 py-2 text-xs text-fg-2">{status}{!analysis.valid ? <strong className="mt-1 block font-semibold text-fg">{analysis.issues.find((issue) => issue.severity === "error")?.title}</strong> : null}</p>
       </div>
 
       {pendingMigration ? <section aria-label="이전 안료 브러시 가져오기" className={CARD}>

@@ -1,0 +1,33 @@
+/* 제작 정문의 안내와 샘플 체험만 소유한다. 실제 프로젝트·원고·검수 화면은 바꾸지 않는다. */
+[data-creator-workflow="production-home"] .production-front-intro {
+  padding: 20px;
+  border-radius: 18px;
+  border-color: var(--color-line);
+  background: var(--color-panel);
+  box-shadow: none;
+}
+.production-front-intro > span[aria-hidden] { display: none; }
+[data-creator-workflow="production-home"] .production-front-intro > .grid { gap: 24px; margin-top: 0; }
+[data-creator-workflow="production-home"] .production-front-intro :is(h1, h2) { margin-top: 12px; font-size: clamp(1.75rem, 3.5vw, 2.75rem); line-height: 1.2; letter-spacing: -.035em; }
+[data-creator-workflow="production-home"] .production-front-intro p { line-height: 1.65; }
+.production-front-actions { margin-top: 20px; }
+.production-front-actions > a { min-height: 48px; }
+.production-front-preview { position: relative; margin: 0; overflow: hidden; border: 1px solid var(--color-line); border-radius: 14px; background: var(--color-card); }
+.production-front-preview > img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; }
+.production-front-preview > figcaption { position: absolute; bottom: 8px; right: 8px; padding: 4px 8px; border-radius: 6px; color: var(--color-fg-2); background: var(--color-card); font-size: 11px; }
+.production-front-flow ol > li > a { display: flex; flex-direction: row; align-items: center; min-height: 88px; }
+.production-front-step { display: grid; place-items: center; width: 44px; height: 44px; flex: none; margin-left: 12px; border-radius: 12px; color: var(--color-accent); background: var(--color-accent-soft); }
+.production-front-flow ol > li > a > span:last-child > span:last-child { display: none; }
+@media (min-width: 1024px) {
+  [data-creator-workflow="production-home"] .production-front-intro { padding: 32px; }
+  .production-front-intro > .grid > div:last-child { padding-bottom: 0; }
+}
+@media (max-width: 639px) {
+  [data-creator-workflow="production-home"] .production-front-intro { padding: 16px; }
+  .production-front-actions { display: grid; gap: 6px; }
+  .production-front-actions > a:nth-child(2) { justify-self: start; padding-inline: 0; border-color: transparent; background: transparent; }
+  .production-front-intro > .grid > div:last-child { padding-bottom: 0; }
+  .production-front-flow > div > div > p { display: none; }
+  .production-front-flow ol { gap: 8px; }
+  .production-front-flow ol > li > a { min-height: 76px; }
+}

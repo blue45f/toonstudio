@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { act, cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { WorkspaceHomeRoute } from "./WorkspaceHomeRoute";
 import { SessionContext, type SessionContextValue } from "@/domains/auth/public/session/auth-session-store";
@@ -103,14 +103,21 @@ describe("WorkspaceHomeRoute", () => {
 
   it("opens the authentication modal when clicking the sign-in button on the welcome gate", async () => {
     renderWithSession(visitorSession, "/home");
-    fireEvent.click(screen.getByRole("button", { name: "로그인하기" }));
+    // 첫 인증 요청은 실제 모달 청크를 지연 로드하므로 모듈 준비 후 열린 상태를 검증한다.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "로그인하기" }));
+      await vi.dynamicImportSettled();
+    });
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 
   it("opens the authentication modal when clicking the sign-in button in the guest mode banner", async () => {
     startGuestSession();
     renderWithSession(visitorSession, "/home");
-    fireEvent.click(screen.getByRole("button", { name: "로그인하고 저장하기" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "로그인하고 저장하기" }));
+      await vi.dynamicImportSettled();
+    });
     expect(await screen.findByRole("dialog")).toBeTruthy();
   });
 

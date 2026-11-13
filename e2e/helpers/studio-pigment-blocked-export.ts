@@ -9,6 +9,7 @@ export async function clickPigmentBlockedPngExport(page: Page, blocked: Locator)
   // 기존 버튼은 차단 결과로, 단순 화면은 실제 도구 선택 화면으로 도착해야 한다.
   await task.or(blocked).filter({ visible: true }).first().waitFor({ state: "visible" });
   if (!(await task.isVisible())) return;
+  await task.locator('[data-drawing-task-category="output"]').click();
   await task.getByRole("button", { name: "원고 내보내기", exact: true }).click();
   await task.waitFor({ state: "detached" });
   const panel = page.locator('[data-studio-export-menu-panel="true"]');

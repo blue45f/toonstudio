@@ -196,9 +196,31 @@ for (const width of [320, 390, 820, 1440]) {
       expect(actionBox?.height ?? 0).toBeGreaterThanOrEqual(44);
     }
 
-    // 지연 로드된 알림·인증 컨트롤이 나타나도 작은 화면의 헤더 액션이 잘리지 않아야 한다.
-    await page.getByRole("link", { name: "알림 센터", exact: true }).first().waitFor({ state: "visible" });
     const header = page.locator('[data-site-chrome="header"]');
+    // 휴대폰은 전체 메뉴 검색으로 알림에 접근하고, 넓은 화면은 헤더의 알림 링크를 바로 제공한다.
+    if (width < 640) {
+      const menuTrigger = header.locator('[data-site-mobile-menu-trigger="true"]');
+      await menuTrigger.click();
+      const menu = page.getByRole("dialog", { name: "전체 메뉴", exact: true });
+      await expect(menu).toBeVisible();
+      await menu.getByPlaceholder("메뉴 이름이나 하고 싶은 일 검색").fill("알림");
+      const notifications = menu.locator(".site-menu-results").getByRole("link", { name: "알림 센터", exact: true });
+      await expect(notifications).toBeVisible();
+      await expect(notifications).toHaveAttribute("href", "/notifications");
+      const notificationBox = await notifications.boundingBox();
+      expect(notificationBox).not.toBeNull();
+      expect(notificationBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+      expect(notificationBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+      await notifications.focus();
+      await expect(notifications).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeHidden();
+      await expect(menuTrigger).toBeFocused();
+      await expect(page).toHaveURL(/\/about\/studio$/u);
+    } else {
+      await page.getByRole("link", { name: "알림 센터", exact: true }).first().waitFor({ state: "visible" });
+    }
+    // 지연 로드된 알림·인증 컨트롤과 전체 메뉴가 작은 화면의 헤더 액션을 잘라서는 안 된다.
     const headerActions = header.locator(':scope > div').first().locator('button:visible, a:visible');
     for (const action of await headerActions.all()) {
       const box = await action.boundingBox();

@@ -8,11 +8,12 @@ type SearchSummary = Pick<ReturnType<typeof usePaginatedSearch>,
 >;
 
 /** 응답을 받지 못한 상태를 0건으로 해석하지 않는 표시 전용 요약이다. */
-export function SearchResultSummary({ query, search, textSettling, hasConditions }: {
+export function SearchResultSummary({ query, search, textSettling, hasConditions, errorInResults = false }: {
   query: string;
   search: SearchSummary;
   textSettling: boolean;
   hasConditions: boolean;
+  errorInResults?: boolean;
 }) {
   const t = useT();
   const pending = search.loading || textSettling;
@@ -20,7 +21,7 @@ export function SearchResultSummary({ query, search, textSettling, hasConditions
   const state = pending ? "loading" : search.failed ? "error"
     : !confirmed ? "loading" : search.moreFailed ? "moreError"
       : search.total > 0 ? "success" : query.trim() || hasConditions ? "notfound" : "empty";
-  const resultText = state === "error" ? t("search.explorer.error.title")
+  const resultText = state === "error" ? errorInResults ? null : t("search.explorer.error.title")
     : state === "loading" ? t("search.explorer.loading")
       : search.total > 0
         ? t("search.explorer.resultCount").replace("{count}", compactNumber(search.total))
@@ -44,8 +45,10 @@ export function SearchResultSummary({ query, search, textSettling, hasConditions
         {t("search.explorer.search.label")}: {" "}
         <strong>{query ? `"${query}"` : t("search.queryAll")}</strong>
       </span>
-      <span className="h-1 w-1 rounded-full bg-line-strong" aria-hidden="true" />
-      <span>{resultText}</span>
+      {resultText !== null ? <>
+        <span className="h-1 w-1 rounded-full bg-line-strong" aria-hidden="true" />
+        <span>{resultText}</span>
+      </> : null}
       {typeSummary !== null ? <>
         <span className="h-1 w-1 rounded-full bg-line-strong" aria-hidden="true" />
         <span>{typeSummary}</span>

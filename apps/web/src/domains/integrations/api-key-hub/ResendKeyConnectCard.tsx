@@ -174,14 +174,14 @@ export function ResendKeyConnectCard() {
                 placeholder="re_…"
                 autoComplete="off"
                 spellCheck={false}
-                className="w-full rounded-xl border border-line bg-panel py-2.5 pl-3 pr-10 font-mono text-sm text-fg outline-none transition placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/25"
+                className="w-full rounded-xl border border-line bg-panel py-2.5 pl-3 pr-14 font-mono text-sm text-fg outline-none transition placeholder:text-fg-3 focus:border-accent focus:ring-2 focus:ring-accent/25"
               />
               <button
                 type="button"
                 onClick={() => setShowInput((value) => !value)}
                 aria-label={showInput ? "키 가리기" : "키 보기"}
                 aria-pressed={showInput}
-                className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-fg-3 transition hover:bg-panel hover:text-fg"
+                className="absolute right-1 top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-fg-2 transition hover:bg-panel hover:text-fg"
               >
                 {showInput ? (
                   <EyeOff className="h-4 w-4" aria-hidden />

@@ -103,12 +103,14 @@ import {
   waitForStudioDrawingReady,
 } from "./lib/studio-drawing-readiness";
 import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
+import { waitForStudioDurabilityPublication } from "./lib/studio-durability-publication-readiness";
 import { createStudioDurabilityViewportAudit, studioDurabilityDocumentRoi, type DeferredDurabilityResult } from "./lib/studio-durability-viewport";
 import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
 } from "./lib/studio-preview-readiness";
+import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
 import { measureStudioSmartShapeCanvasSpace, placeStudioSmartShapeGrid, requiresStudioSmartShapeOfflinePanel, waitForStudioSmartShapeFloatingReady } from "./lib/studio-smart-shape-visible-grid";
 import { meetsStudioMinimumTouchTarget } from "./lib/studio-touch-target-measurement.mjs";
 import {
@@ -4113,8 +4115,7 @@ async function revealStudioViewTool(page: Page, mode: "zoom" | "rotate"): Promis
   if (!(await trigger.isVisible())) {
     if (await more.getAttribute("aria-expanded") !== "true") await more.click();
     const toolId = mode === "zoom" ? "zoom" : "rotate-view";
-    const row = picker.locator(`[data-studio-catalog-tool-id="${toolId}"]`).locator("..");
-    await row.getByRole("button", { name: / 고정$/u }).click();
+    await pinStudioRailToolInCatalog(picker, toolId);
   }
   if (await picker.isVisible()) await picker.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
   await picker.waitFor({ state: "hidden" });
@@ -4987,8 +4988,7 @@ async function runDeferredDurabilityAudit(
       const noticeVisible = await recoveryText.isVisible();
       recoveryBannerShown ||= noticeVisible;
       if (noticeVisible) {
-        // Unresolved leadership requires an explicit user choice; a compatible leader restores
-        // automatically. An automatic failure is a product failure, not a reason to silently retry.
+        // 미확정 리더십은 명시 선택, 호환 리더는 자동 복원하며 자동 실패를 재시도로 숨기지 않는다.
         const manualRestore = recoveryText.getByRole("button", { name: "이어서 그리기", exact: true });
         if (await manualRestore.isVisible() && await manualRestore.isEnabled()) {
           invariant(recoveryMode !== "manual", "manual recovery did not restore the saved drawing");
@@ -5015,12 +5015,12 @@ async function runDeferredDurabilityAudit(
       `recovery did not repaint the at-risk stroke across its route (${recoveredStrokeVisibleSegments}/3 segments, ${recoveredStrokeChangedPixels} pixels)`,
     );
     await recoveryText.waitFor({ state: "detached", timeout: 8_000 });
+    log(`durability publication ready: ${JSON.stringify(await waitForStudioDurabilityPublication(page, recoveryDeadline))}`);
     const restored = await viewportAudit.capture(inkRoi, "restored");
     invariant(restored, "복원된 문서 ROI를 캡처하지 못했습니다.");
     const recoveredPixelsChanged = !baseline.equals(restored);
     invariant(recoveredPixelsChanged, "restored emergency autosave did not repaint the deferred stroke");
-    // Against the empty baseline, repainting stroke one alone would pass. Compare against the
-    // canvas that already held stroke one so the assertion is about the at-risk stroke.
+    // 빈 baseline만으로는 첫 획 복원도 통과하므로, 둘째 획은 첫 획이 있는 화면과 비교한다.
     invariant(
       !afterReceiptStroke.equals(restored),
       "recovery repainted only the proven stroke; the released stroke is missing from the canvas",

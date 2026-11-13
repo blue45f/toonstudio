@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronRight, Search, X } from "lucide-react";
+import { ArrowRight, BookOpen, ChevronRight, Coffee, Compass, FolderOpen, LayoutGrid, Palette, Search, Send, Users, X, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -8,8 +8,21 @@ import {
   resolveNavigationGroupsFor,
   siteNavigationText,
   type SiteNavigationLocale,
+  type SiteNavigationGroup,
 } from "./site-navigation";
 import { searchSiteMenu } from "./site-menu-search";
+import "./site-menu.css";
+
+const TASK_PICTOGRAMS: Readonly<Partial<Record<string, LucideIcon>>> = {
+  discover: Compass, create: Palette, grow: BookOpen, publish: Send,
+  connect: Users, rest: Coffee, personal: FolderOpen,
+};
+
+/** 같은 목적은 전체 메뉴와 사이트맵에서 같은 그림으로 알아본다. */
+export function SitePurposeGraphic({ group }: { readonly group: SiteNavigationGroup }) {
+  const Icon = TASK_PICTOGRAMS[group.id] ?? LayoutGrid;
+  return <span className="site-purpose-graphic" aria-hidden="true"><Icon size={30} strokeWidth={1.7} /></span>;
+}
 
 /** 전체 기능을 한 패널에 쌓지 않고 목적별 페이지 또는 검색 결과로 연결한다. */
 export function SiteMenuDestinations({ locale, currentGroupId, isActive, menuId }: {
@@ -72,7 +85,8 @@ export function SiteMenuDestinations({ locale, currentGroupId, isActive, menuId 
           {resolveNavigationGroupsFor().map((group) => <li key={group.id}>
             <Link href={`/sitemap/${group.id}`} className="site-menu-task"
               data-current-journey={group.id === currentGroupId ? "true" : undefined}>
-              <span><strong>{siteNavigationText(group.label, locale)}</strong><small>{siteNavigationText(group.description, locale)}</small></span>
+              <SitePurposeGraphic group={group} />
+              <span className="site-menu-task__copy"><strong>{siteNavigationText(group.label, locale)}</strong><small>{siteNavigationText(group.description, locale)}</small></span>
               <span className="site-menu-task__count">{group.id === currentGroupId ? bt("현재", "Current") : group.items.length}</span><ChevronRight size={18} aria-hidden="true" />
             </Link>
           </li>)}

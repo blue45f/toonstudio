@@ -8,8 +8,14 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS, CreatorMarketplaceResourceSearchQuerySchema } from "@/shared/lib/creator-marketplace-resource-contract";
 import Link from "@/shared/navigation/router-link";
 
-export function MarketHomeSearch({ className }: { readonly className?: string } = {}) {
-  const [query, setQuery] = useState("");
+export function MarketHomeSearch({ className, queryValue, onQueryChange }: {
+  readonly className?: string;
+  readonly queryValue?: string;
+  readonly onQueryChange?: (query: string) => void;
+} = {}) {
+  const [localQuery, setLocalQuery] = useState("");
+  const query = queryValue ?? localQuery;
+  const setQuery = onQueryChange ?? setLocalQuery;
   const composing = useRef(false);
   const [invalid, setInvalid] = useState(false);
   const errorId = useId();

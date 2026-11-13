@@ -599,9 +599,11 @@ describe("Studio native-raster browser gate policy", () => {
     expect(durableAutosaveSource).toContain('url.includes("/@vite/client")');
     expect(durableAutosaveSource).toContain("readDurableStudioAutosaveError");
     expect(source).toContain('button[data-studio-rail-tool-id="${id}"]');
-    expect(source).toContain('button[data-studio-catalog-tool-id="${id}"]');
+    const catalogPinSource = readFileSync(new URL("./lib/studio-rail-tool-catalog-pin.ts", import.meta.url), "utf8");
+    expect(source).toContain("await pinStudioRailToolInCatalog(catalog, id, 16_000)");
+    expect(catalogPinSource).toContain('button[data-studio-catalog-tool-id="${id}"]');
     expect(source).toContain('name: "전체 도구 닫기"');
-    expect(source).toContain('await pin.click()');
+    expect(catalogPinSource).toContain('await pin.click()');
     expect(source).toContain('kind === "rect" ? "marquee-rect" : "marquee-circle"');
     expect(source).toContain('toolButton(page, "fill")');
     const fillGesture = source.slice(source.indexOf("async function performPaintBucket("),
