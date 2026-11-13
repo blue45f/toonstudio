@@ -13,8 +13,12 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
+import { MarketHomePresets } from "../components/MarketHomePresets";
+import { MarketHomeSectionNavigation } from "../components/MarketHomeSectionNavigation";
+import { MARKET_HOME_SECTIONS, marketHomeSectionFromSearch } from "../components/market-home-section";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketMaterialPreview } from "../components/MarketMaterialPreview";
@@ -37,17 +41,13 @@ import { SiteStepList } from "@/domains/legal/public/site-step-list";
 import { useMobileShowMore } from "@/domains/legal/public/site-show-more";
 import { useServiceCapabilityState } from "@/platform/service-capability-state";
 import { Container } from "@/shared/components/section";
-import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
-import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 import {
-  MARKET_ECOSYSTEM_PRESETS,
-  runSameDocumentViewTransition,
   type MarketEcosystemPresetId,
 } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import {
@@ -60,18 +60,11 @@ import {
 const MOBILE_RECENT_LIMIT = 6;
 const POPULAR_TAG_LIMIT = 8;
 
-const PRESET_EN_COPY: Readonly<Record<MarketEcosystemPresetId, { readonly label: string; readonly description: string; readonly studioMountLabel: string }>> = {
-  all: { label: "All Creator Materials", description: "Browse every production category from 2D brushes and screentones to 3D stages and character poses.", studioMountLabel: "Open Studio Asset Library" },
-  "brush-2d": { label: "2D Pens, Brushes & Line Art", description: "Mount ink pens, watercolor nibs, and effect brushes straight into the Studio Brush Engine.", studioMountLabel: "Mount in Brush Manager" },
-  "bg-3d": { label: "3D Webtoon Stages & Rooms", description: "Stage interior, city, and fantasy 3D environments with camera angles and lighting for your panels.", studioMountLabel: "Open in 3D Scene Lab" },
-  "char-pose-3d": { label: "3D Characters, Dolls & Poses", description: "Lock tricky high-angle and low-angle anatomy or hand poses in the 3D Character Lab.", studioMountLabel: "Open in 3D Character Lab" },
-  "tone-sfx": { label: "Screentones, Balloons & SFX", description: "Equip print-and-scroll screentones, dialogue balloons, and sound-effect lettering packs.", studioMountLabel: "Mount in Comic Studio" },
-  "free-point": { label: "Curated Time-Saving Picks", description: "Verified time-saving assets most downloaded by webtoon creators this week.", studioMountLabel: "View My Purchased Assets" },
-};
-
-/** 마켓 홈 4밴드 구성: ① buy · ② explore · ③ sell · ④ guide */
+/** 마켓 목적별 화면은 URL로 나누고 실제 소재·미리보기 상태는 유지한다. */
 export function MarketHomePage() {
   const t = useBilingual("MarketHomePage");
+  const { search } = useLocation();
+  const section = marketHomeSectionFromSearch(search);
   const marketHomeDescription = t(
     "웹툰 템플릿, 2D·3D 에셋, 브러시, 팔레트와 필터를 찾고 미리 본 뒤 ToonStudio 프로젝트에 바로 연결하세요.",
     "Find and preview webtoon templates, 2D/3D assets, brushes, palettes, and filters, then connect them straight to your ToonStudio project.",
@@ -88,7 +81,8 @@ export function MarketHomePage() {
     if (recoveredAt !== null && hasFatalLatestError) reloadLatest();
   }, [recoveredAt, hasFatalLatestError, reloadLatest]);
 
-  useDocumentTitle(t("소재 마켓", "Material Market"));
+  const sectionInfo = MARKET_HOME_SECTIONS.find((item) => item.id === section) ?? MARKET_HOME_SECTIONS[0];
+  useDocumentTitle(section === "buy" ? t("소재 마켓", "Material Market") : t(...sectionInfo.title));
   useMetaDescription(marketHomeDescription);
   usePageSocialMeta({
     canonicalPath: "/market",
@@ -112,22 +106,10 @@ export function MarketHomePage() {
   const materials3D = latest.items.filter(
     (item) => item.kind === "3d-asset" || item.kind === "3d-preset",
   );
-  const presetShortLabels: Record<MarketEcosystemPresetId, string> = {
-    all: t("전체", "All"),
-    "brush-2d": t("브러시", "Brushes"),
-    "bg-3d": t("3D 배경", "3D scenes"),
-    "char-pose-3d": t("캐릭터·포즈", "Character poses"),
-    "tone-sfx": t("톤·효과", "Tones & effects"),
-    "free-point": t("추천 소재", "Featured"),
-  };
   const allPresetRef = useRef<HTMLButtonElement>(null);
   const [activePresetId, setActivePresetId] = useState<MarketEcosystemPresetId>("all");
   const [quickPreviewRecord, setQuickPreviewRecord] =
     useState<CreatorMarketplaceResourceRecord | null>(null);
-  const activePreset =
-    MARKET_ECOSYSTEM_PRESETS.find((preset) => preset.id === activePresetId) ??
-    MARKET_ECOSYSTEM_PRESETS[0];
-
   const presetFilteredItems = useMemo(() => {
     if (activePresetId === "all") return latest.items;
     return latest.items.filter((item) => {
@@ -170,18 +152,19 @@ export function MarketHomePage() {
 
   return (
     <div>
+      <MarketHomeSectionNavigation section={section} />
+      {section === "buy" ? <>
       <div data-market-band="buy">
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-6 sm:py-8 lg:py-10">
-          <SiteContextualSubNav pathnameOverride="/market" className="mb-5" />
           <SitePageHeader
             size="hero"
             icon={Store}
             eyebrow="MATERIAL MARKET"
-            title={<>{t("웹툰의 한 컷을,", "One panel of your webtoon,")}<br />{t("더 깊게 만드는 재료.", "crafted with deeper materials.")}</>}
+            title={t("장면에 필요한 소재", "Materials for your scene")}
             description={t(
-              "템플릿·2D·3D 에셋·브러시·색 보정 소재를 미리 보고, 사용 조건을 확인한 뒤 내 원고에 바로 연결하세요.",
-              "Preview templates, 2D/3D assets, brushes and color resources, check the license, then connect them straight to your manuscript.",
+              "배경·브러시·템플릿을 찾고, 사용 조건을 확인하세요.",
+              "Find backgrounds, brushes and templates, then check their usage conditions.",
             )}
             aside={<MarketMaterialPreview />}
             asideClassName="market-home-masthead__aside hidden lg:block"
@@ -203,94 +186,7 @@ export function MarketHomePage() {
       </section>
 
       <Container size="wide" className="pt-6 sm:pt-8">
-        <section
-          aria-label={t("2D·3D 창작 에셋 프리셋 및 스튜디오 즉시 장착", "2D/3D creator asset presets & 1-click Studio mount")}
-          data-testid="market-rea-ecosystem-presets"
-          className="mb-6 rounded-2xl border border-line bg-card/85 p-4 shadow-sm sm:p-5"
-        >
-          <div className="space-y-3">
-            <h2 className="text-sm font-bold text-fg sm:text-base">
-              {t("소재 유형", "Material types")}
-            </h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="group" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
-              {MARKET_ECOSYSTEM_PRESETS.map((preset) => {
-                const selected = preset.id === activePresetId;
-                return (
-                  <button
-                    key={preset.id}
-                    ref={preset.id === "all" ? allPresetRef : undefined}
-                    type="button"
-                    aria-pressed={selected}
-                    title={t(preset.label, PRESET_EN_COPY[preset.id].label)}
-                    onClick={() => {
-                      runSameDocumentViewTransition(() => {
-                        setActivePresetId(preset.id);
-                      });
-                    }}
-                    className={cn(
-                      "inline-flex min-h-11 [min-block-size:2.75rem]! items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                      selected
-                        ? "border-accent bg-accent text-canvas shadow-sm"
-                        : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
-                    )}
-                  >
-                    <span aria-hidden="true">{presetShortLabels[preset.id]}</span>
-                    <span className="sr-only">{t(preset.label, PRESET_EN_COPY[preset.id].label)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {activePreset ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line/70 pt-3 text-xs text-fg-2">
-              <details className="w-full">
-                <summary className="flex min-h-11 [min-block-size:2.75rem]! cursor-pointer items-center gap-2 rounded-lg px-2 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-accent">
-                  <HelpCircle size={16} aria-hidden="true" />
-                  {t("선택한 소재 안내", "About this material type")}
-                  <span aria-hidden="true">⌄</span>
-                </summary>
-                <div className="flex items-center gap-3 px-2 pb-3 pt-2">
-                <img
-                  src={
-                    activePreset.id === "brush-2d"
-                      ? "/assets/site-experience/site-art-v1/cards/nb-create-canvas-640.webp"
-                      : activePreset.id === "bg-3d" || activePreset.id === "char-pose-3d"
-                        ? "/assets/site-experience/site-art-v1/cards/nb-spatial-stage-640.webp"
-                        : activePreset.id === "tone-sfx"
-                          ? "/assets/site-experience/site-art-v1/cards/nb-production-control-640.webp"
-                          : "/assets/site-experience/site-art-v1/cards/nb-market-atelier-640.webp"
-                  }
-                  alt=""
-                  aria-hidden="true"
-                  loading="lazy"
-                  decoding="async"
-                  className="h-12 w-20 shrink-0 rounded-xl border border-line/70 object-cover"
-                />
-                <div className="max-w-2xl">
-                  <p className="mb-1 text-[10px] font-bold text-fg-3">{activePreset.badge}</p>
-                  <p>{t(activePreset.description, PRESET_EN_COPY[activePreset.id].description)}</p>
-                </div>
-                </div>
-              </details>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={activePreset.studioMountRoute}
-                  className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 [min-block-size:2.75rem]! gap-1.5 rounded-full px-4 text-xs font-bold" })}
-                >
-                  {t(activePreset.studioMountLabel, PRESET_EN_COPY[activePreset.id].studioMountLabel)}
-                  <ArrowRight size={13} aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/market/browse"
-                  className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 [min-block-size:2.75rem]! rounded-full px-3.5 text-xs font-semibold" })}
-                >
-                  {t("전체 에셋 카탈로그", "Full asset catalog")}
-                </Link>
-              </div>
-            </div>
-          ) : null}
-        </section>
-        <MarketCategoryTiles />
+        <MarketHomePresets activeId={activePresetId} onSelect={setActivePresetId} allButtonRef={allPresetRef} />
       </Container>
 
       <Container size="wide" className="pb-10 pt-8 sm:pb-12 sm:pt-10">
@@ -394,9 +290,11 @@ export function MarketHomePage() {
       </Container>
 
       </div>
+      </> : null}
 
-      <div data-market-band="explore">
+      {section === "explore" ? <div data-market-band="explore">
       <Container size="wide">
+        <MarketCategoryTiles />
         <MarketNavHeader />
         <SiteArtSurfaceSpotlight cardId="nb-market-atelier" compact className="mt-4" />
       </Container>
@@ -696,9 +594,9 @@ export function MarketHomePage() {
         </Container>
       ) : null}
 
-      </div>
+      </div> : null}
 
-      <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
+      {section === "sell" ? <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
         <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-2xl">
             <p className="eyebrow text-accent">FOR SELLERS</p>
@@ -726,9 +624,9 @@ export function MarketHomePage() {
             </Link>
           </div>
         </Container>
-      </section>
+      </section> : null}
 
-      <div data-market-band="guide">
+      {section === "guide" ? <div data-market-band="guide">
       <Container size="wide" className="pb-14">
         <SiteDisclosure
           className="mb-10"
@@ -774,7 +672,7 @@ export function MarketHomePage() {
           </ul>
         </SiteDisclosure>
       </Container>
-      </div>
+      </div> : null}
       <MarketQuickPreviewDialog
         record={quickPreviewRecord}
         onClose={() => setQuickPreviewRecord(null)}

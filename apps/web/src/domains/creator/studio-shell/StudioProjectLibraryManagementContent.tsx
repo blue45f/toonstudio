@@ -6,6 +6,7 @@ import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import type { StudioProjectLibraryEntry } from "../studio-project-library-store";
+import { STUDIO_START_GATEWAY_HREF } from "../studio-start-entry";
 import { studioLibraryRecentWork } from "./studio-library-recent-work";
 import {
   StudioProjectLibraryRecoveryRow, StudioProjectSelectionCheckbox,
@@ -159,7 +160,7 @@ export function StudioProjectLibraryManagementContent({
                   >
                     {bi("검색어 지우기", "Clear search")}
                   </button>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12" })}>
+                  <Link href={STUDIO_START_GATEWAY_HREF} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
                   <Link href="/studio/import" className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12" })}>
@@ -171,7 +172,7 @@ export function StudioProjectLibraryManagementContent({
                   <Link href="/studio" className={buttonClass({ size: "sm", className: "min-h-12" })}>
                     {bi("내 작업으로 돌아가기", "Back to My work")}
                   </Link>
-                  <Link href="/studio/new" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12" })}>
+                  <Link href={STUDIO_START_GATEWAY_HREF} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-12" })}>
                     {bi("새 작업 시작", "Start new work")}
                   </Link>
                 </>

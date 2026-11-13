@@ -26,6 +26,7 @@ const PRIVATE_WORKFLOW_PAGES = new Set([
 ]);
 
 const PUBLIC_DETAIL_ROUTES = [
+  /^\/sitemap\/[^/]+$/u,
   /^\/events\/[^/]+$/u,
   /^\/(?:title|author|pencafe)\/[^/]+$/u,
   /^\/market\/resource\/[^/]+$/u,
@@ -52,6 +53,7 @@ export function isPublicCreativeRoute(pathname: string): boolean {
 export function supportsPublicSiteOnwardJourney(pathname: string): boolean {
   const normalized = trimTrailingSlashes(pathname.toLowerCase()) || "/";
   return normalized !== "/"
+    && normalized !== "/sitemap" && !normalized.startsWith("/sitemap/")
     && !["/create", "/terms", "/privacy", "/copyright", "/ir/present"].includes(normalized)
     && isPublicCreativeRoute(normalized);
 }

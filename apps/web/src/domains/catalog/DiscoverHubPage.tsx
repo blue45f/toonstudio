@@ -327,7 +327,7 @@ export function DiscoverHubPage() {
               placeholder={searchLabel}
               enterKeyHint="search"
               autoComplete="off"
-              className="min-w-0 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-fg-3"
+              className="min-h-[44px] min-w-0 flex-1 bg-transparent text-base text-fg outline-none placeholder:text-fg-3"
             />
             {query ? (
               <button
@@ -340,7 +340,7 @@ export function DiscoverHubPage() {
               </button>
             ) : null}
           </label>
-          <button type="submit" aria-label={bt("작품 검색", "Search stories")} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-bold" })}>
+          <button type="submit" aria-label={bt("작품 검색", "Search stories")} style={{ minInlineSize: 48, minBlockSize: 48 }} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-bold" })}>
             <Search size={19} aria-hidden="true" />
             <span className="hidden sm:inline">{bt("검색", "Search")}</span>
           </button>

@@ -23,7 +23,9 @@ test("workspace primary controls keep their explicit foreground colors", async (
   await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.goto("/sitemap");
-  await expectReadableControl(page.getByRole("link", { name: "새 프로젝트", exact: true }));
+  await expectReadableControl(page.getByRole("navigation", { name: "바로 시작", exact: true }).getByRole("link", { name: /^작품 시작하기/u }));
+  await page.getByRole("link", { name: "전체 기능 목록 보기", exact: true }).click();
+  await expect(page).toHaveURL(/\/sitemap\/all$/u);
   await expectReadableControl(page.getByRole("link", { name: "제보·제안", exact: true }));
 
   await page.goto("/events");

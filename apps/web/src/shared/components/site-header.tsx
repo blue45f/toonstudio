@@ -1,4 +1,3 @@
-import { siteMobilePurposeHref } from "./site-mobile-purpose";
 import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-site-navigation";
 import {
   translateBilingualValueForActiveLocale,
@@ -832,7 +831,7 @@ export function SiteHeader({
             panelRef={panelRef}
             closeMenu={closeMenu} closeForUtility={() => setMenuOpen(false)}
             isActive={isActive}
-            isPurposeActive={isPurposeActive} currentPurposeHref={siteMobilePurposeHref(pathname)}
+            isPurposeActive={isPurposeActive}
             hideBottomTabs={hideBottomTabs}
             isMobileViewport={isMobileNavigationViewport}
           />

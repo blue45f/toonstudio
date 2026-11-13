@@ -20,7 +20,7 @@ beforeEach(() => useTheme.setState({ resolvedTheme: "dark" }));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); useTheme.setState({ resolvedTheme: originalTheme }); });
 
 describe("public creative art direction", () => {
-  it.each(["/discover", "/explore", "/ranking", "/search", "/calendar", "/library", "/compare", "/research", "/references", "/insights/resources", "/learn", "/help", "/market", "/make", "/showcase", "/community", "/reviews", "/about", "/support", "/contact", "/sitemap"])("connects %s to a supported next action", (path) => {
+  it.each(["/discover", "/explore", "/ranking", "/search", "/calendar", "/library", "/compare", "/research", "/references", "/insights/resources", "/learn", "/help", "/market", "/make", "/showcase", "/community", "/reviews", "/about", "/support", "/contact"])("connects %s to a supported next action", (path) => {
     const direction = siteArtDirection(path);
     expect(direction).not.toBeNull();
     expect(direction?.href).toMatch(/^\/(?:studio(?:\?uiMode=simple)?|research|showcase\/promo)$/u);
@@ -79,6 +79,10 @@ describe("artwork study controls", () => {
 });
 
 describe("contextual creation compass", () => {
+  it.each(["/sitemap", "/sitemap/all", "/sitemap/create", "/SITEMAP/REST/"])("메뉴 선택 %s 뒤에 다른 창작 안내를 쌓지 않는다", (path) => {
+    const result = render(<MemoryRouter initialEntries={[path]}><SiteCreationCompass /></MemoryRouter>);
+    expect(result.container.innerHTML).toBe("");
+  });
   it("다음 작업 행동을 기본 접힘 안내 안에 둔다", () => {
     const result = render(<MemoryRouter initialEntries={["/learn"]}><SiteCreationCompass /></MemoryRouter>);
     const details = result.container.querySelector("details");

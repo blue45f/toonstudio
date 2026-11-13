@@ -1,4 +1,5 @@
 import { useState, type Ref } from "react";
+import { ChevronDown, Palette } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -172,6 +173,8 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           );
         })}
       </nav>
+      <details className="workspace-shortcut-group" open={shortcutActive !== null}>
+      <summary><Palette size={18} aria-hidden="true" /><span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span><ChevronDown size={16} aria-hidden="true" /></summary>
       <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
         {WORKSPACE_SHORTCUTS.map((item) => {
           const Icon = item.icon;
@@ -202,6 +205,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           );
         })}
       </nav>
+      </details>
     </>
   );
 }

@@ -58,7 +58,7 @@ describe("Workspace의 공통 전체 메뉴", () => {
     const dialog = await screen.findByRole("dialog");
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(dialog.closest(".workspace-sidebar")).toBeNull();
-    expect(within(dialog).getByRole("link", { name: "전체 기능" }).getAttribute("href")).toBe("/sitemap");
+    expect(within(dialog).getByRole("link", { name: "전체 기능" }).getAttribute("href")).toBe("/sitemap/all");
     expect(within(dialog).getByRole("button", { name: /배경 음악/u })).toBeTruthy();
     expect(document.querySelector('nav[data-site-product]')).toBeNull();
   });

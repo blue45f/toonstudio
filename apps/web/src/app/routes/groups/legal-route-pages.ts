@@ -92,6 +92,14 @@ export const SitemapPage = lazyRetry(
   () => import("@/domains/legal/SitemapPage").then((module) => ({ default: module.SitemapPage })),
   "SitemapPage",
 );
+export const SitemapSectionPage = lazyRetry(
+  () => import("@/domains/legal/SitemapPage").then((module) => ({ default: module.SitemapSectionPage })),
+  "SitemapSectionPage",
+);
+export const SitemapDirectoryPage = lazyRetry(
+  () => import("@/domains/legal/SitemapDirectoryPage").then((module) => ({ default: module.SitemapDirectoryPage })),
+  "SitemapDirectoryPage",
+);
 export const CopyrightPage = lazyRetry(
   () => import("@/domains/legal/CopyrightPage").then((module) => ({ default: module.CopyrightPage })),
   "CopyrightPage",

@@ -1,7 +1,7 @@
 // 작품 시작 시트(/create) — 작품을 시작하는 유일한 정문(S2-6).
 import { ArrowLeft, ArrowRight, BookHeart, BookOpen, Clapperboard, LayoutTemplate, MessageSquare, Plus, Upload } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 
 import type { StudioProjectLibraryEntry } from "./studio-project-library-store";
 import { studioLibraryRecentWork } from "./studio-shell/studio-library-recent-work";
@@ -18,7 +18,6 @@ import {
 
 import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
-import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useI18n } from "@/shared/lib/i18n";
@@ -26,11 +25,9 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
-import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
 import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { CreateStartGenreStarterSection } from "./studio-shell/CreateStartGenreStarterSection";
 import { CreateStartContinueSection } from "./studio-shell/guided-flow/CreateStartContinueSection";
-import { StudioJourneyStepBar } from "./studio-shell/StudioJourneyStepBar";
 import { StudioQuickStart } from "./studio-shell/StudioQuickStart";
 
 /** 질문형 인터뷰는 "내 이야기"를 고른 사람만 쓰므로 시작 시트 본문과 분리해 늦게 불러온다. */
@@ -114,28 +111,33 @@ const PIPELINE_MODE_EN_COPY: Readonly<
 export function CreateStartPage() {
   const bt = useBilingual("CreateStartPage");
   const userId = useApp((state) => state.userId);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const { hash } = useLocation();
   const language = useI18n((state) => state.lang);
   const locale = studioProjectLibraryLocale(language);
   const { projects: recentProjects, error: recentError, reload: reloadRecentProjects } = useRecentStudioProjects(locale);
   const requestedSection = searchParams.get("section");
   const activeSection = requestedSection === "lanes" || requestedSection === "pipeline" || requestedSection === "continue"
+    || requestedSection === "topics" || requestedSection === "presets" || requestedSection === "tools"
     ? requestedSection : "all";
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const restoreRecommendedFocus = useRef(false);
+  const previousSection = useRef(activeSection);
   useEffect(() => {
-    if (activeSection !== "all" || !restoreRecommendedFocus.current) return;
-    restoreRecommendedFocus.current = false;
-    headingRef.current?.focus({ preventScroll: true });
+    if (previousSection.current === activeSection) return;
+    previousSection.current = activeSection;
+    headingRef.current?.focus();
   }, [activeSection]);
-  const showLanes = activeSection === "all" || activeSection === "lanes";
-  const showPipeline = activeSection === "all" || activeSection === "pipeline";
   const recentProject = recentProjects[0];
   const recentTarget = recentProject ? resolveRecentTarget(recentProject, locale) : null;
   const storyParams = new URLSearchParams(searchParams);
   storyParams.delete("section");
   storyParams.set("intent", MY_STORY_INTENT);
-  const storyHref = `/create?${storyParams.toString()}`;
+  const storyHref = `/create?${storyParams.toString()}${hash}`;
+  const storyTopicHref = (topicId: string) => {
+    const next = new URLSearchParams(storyParams);
+    next.set("topic", topicId);
+    return `/create?${next.toString()}${hash}`;
+  };
   const recentWorkError = recentError ? (
     <div className="rounded-xl border border-line bg-panel p-4">
       <p role="alert" className="text-sm font-semibold text-fg">{bt("최근 작업을 확인하지 못했어요.", "We couldn't check your recent work.")}</p>
@@ -147,41 +149,11 @@ export function CreateStartPage() {
     </div>
   ) : null;
 
-  const selectSection = (section: "all" | "lanes" | "pipeline" | "continue") => {
-    if (section === activeSection) return;
+  const sectionHref = (section: "all" | "lanes" | "pipeline" | "continue" | "topics" | "presets" | "tools") => {
     const next = new URLSearchParams(searchParams);
     if (section === "all") next.delete("section");
     else next.set("section", section);
-    setSearchParams(next);
-  };
-
-  const backToRecommendedStarts = () => {
-    restoreRecommendedFocus.current = true;
-    selectSection("all");
-  };
-
-  const handleSectionToggleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
-      return;
-    }
-    const group = event.currentTarget.parentElement;
-    if (!group) return;
-    const buttons = Array.from(group.querySelectorAll<HTMLButtonElement>("button:not([disabled])"));
-    if (buttons.length === 0) return;
-    const currentIndex = buttons.indexOf(event.currentTarget);
-    if (currentIndex === -1) return;
-    event.preventDefault();
-    let nextIndex = currentIndex;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      nextIndex = (currentIndex + 1) % buttons.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = buttons.length - 1;
-    }
-    buttons[nextIndex]?.focus();
+    return `/create${next.size ? `?${next.toString()}` : ""}${hash}`;
   };
 
   if (GALLERY_VIEW_PARAM_KEYS.some((key) => searchParams.has(key))) {
@@ -192,7 +164,7 @@ export function CreateStartPage() {
     const requestedTopic = searchParams.get("topic");
     const returnParams = new URLSearchParams(searchParams);
     returnParams.delete("intent");
-    const returnHref = returnParams.size ? `/create?${returnParams.toString()}` : "/create";
+    const returnHref = `/create${returnParams.size ? `?${returnParams.toString()}` : ""}${hash}`;
     return (
       <Container size="wide" className="py-6 sm:py-10">
         <Link
@@ -214,12 +186,14 @@ export function CreateStartPage() {
     <Container size="wide" className="create-start-page py-6 sm:py-10">
       <header className="create-start-heading">
         {activeSection !== "all" ? (
-          <button type="button" onClick={backToRecommendedStarts} className="create-start-back">
-            <ArrowLeft size={18} aria-hidden />{bt("추천 시작으로", "Back to recommended starts")}
-          </button>
+          <Link href={sectionHref("all")} className="create-start-back">
+            <ArrowLeft size={18} aria-hidden />{bt("작품 시작으로 돌아가기", "Back to start")}
+          </Link>
         ) : null}
         <h1 ref={headingRef} tabIndex={-1}>{activeSection === "lanes" ? bt("다른 시작 방법", "More ways to start")
-          : activeSection === "pipeline" ? bt("주제 · 제작 도구", "Topics & creation tools")
+          : activeSection === "pipeline" || activeSection === "tools" ? bt("제작 단계와 도구", "Creation steps & tools")
+          : activeSection === "topics" ? bt("이야기 주제 고르기", "Choose a story topic")
+          : activeSection === "presets" ? bt("장르 프리셋 고르기", "Choose a genre preset")
           : activeSection === "continue" ? bt("이어서 작업", "Continue your work")
           : bt("어떻게 시작할까요?", "How would you like to start?")}</h1>
         <p>{activeSection === "all"
@@ -267,35 +241,22 @@ export function CreateStartPage() {
         </>
       ) : null}
 
-      <div role="group" aria-label={bt("시작 화면 구역 보기 전환", "Switch start screen view")}
-        data-testid="create-start-section-group" style={{ gap: "8px" }} className="create-start-section-nav">
+      {activeSection === "all" ? <nav aria-label={bt("다른 시작 화면", "More start pages")}
+        data-testid="create-start-section-group" className="create-start-section-nav">
         {([
-          ["all", "추천 시작", "Recommended"],
           ["lanes", "다른 시작 방법", "More ways to start"],
-          ["pipeline", "주제 · 제작 도구", "Topics & tools"],
-          ["continue", "이어서 작업", "Continue work"],
+          ["pipeline", "제작 도구", "Creation tools"],
+          ["continue", "최근 작업 전체 보기", "View all recent work"],
         ] as const).map(([id, ko, en]) => (
-          <button key={id} type="button" data-testid={`create-start-section-${id}`}
-            data-state={activeSection === id ? "active" : "inactive"} aria-pressed={activeSection === id}
-            onClick={() => selectSection(id)} onKeyDown={handleSectionToggleKeyDown}
+          <Link key={id} href={sectionHref(id)} data-testid={`create-start-section-${id}`}
             style={{ minHeight: "48px", minWidth: "48px" }}
             className="min-h-11 min-w-11 scroll-my-24 break-words [overflow-wrap:anywhere] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-            {bt(ko, en)}
-          </button>
+            {bt(ko, en)}<ArrowRight size={18} aria-hidden />
+          </Link>
         ))}
-      </div>
+      </nav> : null}
 
-      {showPipeline ? (
-      <details open={activeSection === "pipeline"} className="mt-6 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
-        <summary
-          style={{ minHeight: "48px" }}
-          className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {bt("주제별 질문과 제작 도구 더 보기", "More story topics and creation tools")}
-        </summary>
-        <CreateStartGenreStarterSection />
-        <StudioJourneyStepBar currentStep="start" className="mt-5" />
-        <SiteContextualSubNav pathnameOverride="/create" className="mt-4" />
+      {activeSection === "pipeline" || activeSection === "tools" ? (
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
         data-testid="create-rea-story-pipeline"
@@ -346,8 +307,11 @@ export function CreateStartPage() {
         </div>
       </section>
 
-      <SiteArtSurfaceSpotlight cardId="nb-create-canvas" compact className="mt-6" />
+      ) : null}
 
+      {activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
+
+      {activeSection === "topics" ? (
       <section
         aria-labelledby="create-start-my-story-title"
         className="mt-8 rounded-2xl border border-accent/40 bg-accent-soft p-5 sm:p-6"
@@ -371,7 +335,7 @@ export function CreateStartPage() {
             </p>
           </div>
           <Link
-            href={`/create?intent=${MY_STORY_INTENT}`}
+            href={storyHref}
             style={{ minHeight: "48px" }}
             className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 scroll-my-24 shrink-0 gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" })}
           >
@@ -383,7 +347,7 @@ export function CreateStartPage() {
           {MY_STORY_TEMPLATE_IDS.map((topicId) => (
             <li key={topicId}>
               <Link
-                href={`/create?intent=${MY_STORY_INTENT}&topic=${topicId}`}
+                href={storyTopicHref(topicId)}
                 style={{ minHeight: "48px" }}
                 className="fx-press inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-line bg-panel px-3.5 py-2 text-sm font-semibold text-fg break-words [overflow-wrap:anywhere] transition-colors hover:border-accent/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
@@ -393,17 +357,10 @@ export function CreateStartPage() {
           ))}
         </ul>
       </section>
-      </details>
       ) : null}
 
-      {showLanes ? (
-      <details open={activeSection === "lanes"} className="mt-4 rounded-2xl border border-line bg-panel/40 p-4 sm:p-5">
-        <summary
-          style={{ minHeight: "48px" }}
-          className="min-h-11 scroll-my-24 cursor-pointer py-2 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")}
-        </summary>
+      {activeSection === "lanes" ? (
+      <section aria-label={bt("다른 시작 방법 · 기획, 콘티, 템플릿, 파일", "More ways to start: plans, boards, templates and files")} className="mt-4">
       <StaggerReveal className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5" aria-label={bt("시작 방법 고르기", "Choose how to start")}>
         <Link href="/studio/new?lane=idea&start=idea" className={CHOICE_CARD_CLASS}>
           <span
@@ -525,7 +482,23 @@ export function CreateStartPage() {
           </span>
         </Link>
       </StaggerReveal>
-      </details>
+      </section>
+      ) : null}
+
+      {activeSection !== "all" && activeSection !== "continue" ? (
+        <nav className="create-start-section-nav" aria-label={bt("관련 시작 화면", "Related start pages")}>
+          {([
+            ["topics", "이야기 주제 고르기", "Choose a story topic"],
+            ["presets", "장르 프리셋 고르기", "Choose a genre preset"],
+            ["tools", "제작 단계와 도구", "Creation steps & tools"],
+            ["lanes", "다른 시작 방법", "More ways to start"],
+          ] as const).filter(([id]) => id !== activeSection && !(activeSection === "pipeline" && id === "tools"))
+            .map(([id, ko, en]) => (
+              <Link key={id} href={sectionHref(id)}>
+                {bt(ko, en)}<ArrowRight size={18} aria-hidden />
+              </Link>
+            ))}
+        </nav>
       ) : null}
 
       {activeSection === "continue" ? (

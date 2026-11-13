@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/site-navigation";
 import { canonicalSitePath } from "@/shared/lib/site-route-metadata";
 
-const SITEMAP_SOURCE = "apps/web/src/domains/legal/SitemapPage.tsx";
+const SITEMAP_SOURCE = "apps/web/src/domains/legal/SitemapDirectoryPage.tsx";
 const PUBLIC_ROUTE_SOURCE_FILES = [
   "apps/web/src/app/routes/groups/account.routes.tsx",
   "apps/web/src/app/routes/groups/catalog.routes.tsx",
@@ -47,6 +47,8 @@ const INTENTIONAL_NON_DIRECTORY_ROUTES = new Set([
   "/production/pinned-review",
   "/showcase",
   "/sitemap",
+  // 전체 메뉴 자체의 상세 화면은 메뉴 허브에서 직접 연결한다.
+  "/sitemap/all",
   "/studio/brush-lab",
 ]);
 
@@ -186,7 +188,7 @@ describe("site directory experience contracts", () => {
   });
 
   it("keeps creator entry points and the product tour visible before the long directory", () => {
-    expect(sitemapSource).toContain('href="/studio/new"');
+    expect(sitemapSource).toContain('href="/create"');
     expect(sitemapSource).toContain('href="/studio"');
     expect(sitemapSource).toContain('href="/product-tour"');
     expect(sitemapSource.indexOf('href="/product-tour"')).toBeLessThan(

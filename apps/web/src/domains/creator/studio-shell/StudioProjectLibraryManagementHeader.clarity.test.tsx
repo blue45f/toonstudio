@@ -2,13 +2,13 @@
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import { EXAMPLE_PROJECT_ID } from "../studio-example-project-content";
-import { archiveStudioProject, createStudioProject, trashStudioProject } from "../studio-project-library-store";
+import { archiveStudioProject, createStudioProject, STUDIO_PROJECT_LIBRARY_STORAGE_KEY, trashStudioProject } from "../studio-project-library-store";
 import { SAMPLE_PROJECT_ID } from "../studio-sample-manuscript-content";
 import { StudioProjectLibraryManagementContent } from "./StudioProjectLibraryManagementContent";
 import { StudioProjectLibraryManagementHeader } from "./StudioProjectLibraryManagementHeader";
@@ -30,11 +30,29 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   window.localStorage.clear();
   useI18n.setState({ lang: "ko" });
 });
 
 describe("작업 홈의 첫 행동과 상태 안내", () => {
+  it.each(["archived", "trash"])("%s의 새 작업도 같은 시작 화면으로 이동한다", (view) => {
+    showHeader(`/studio?view=${view}`, true);
+    expect(screen.getByRole("link", { name: "새 작업" }).getAttribute("href")).toBe("/create");
+  });
+
+  it("저장소를 읽지 못해도 새 작업은 시작 화면으로, 파일 복구는 가져오기로 안내한다", () => {
+    const read = Storage.prototype.getItem;
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, key: string) {
+      if (key === STUDIO_PROJECT_LIBRARY_STORAGE_KEY) throw new DOMException("Storage unavailable", "SecurityError");
+      return read.call(this, key);
+    });
+    showHeader();
+    const recovery = screen.getByRole("alert");
+    expect(within(recovery).getByRole("link", { name: "파일에서 열기" }).getAttribute("href")).toBe("/studio/import");
+    expect(within(recovery).getByRole("link", { name: "새 작업 시작" }).getAttribute("href")).toBe("/create");
+  });
+
   it("빈 목록에서도 방향·시간 약속 없이 시작과 불러오기를 안내한다", () => {
     const { container } = showHeader();
     expect(screen.getByText("새 작업을 시작하거나 원고 파일을 가져오세요.")).toBeTruthy();

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useMarketResources } from "../hooks/use-market-resources";
@@ -56,27 +56,34 @@ afterEach(() => {
 });
 
 describe("MarketHomePage", () => {
-  it("첫 화면은 표제·검색 뒤에 카테고리 아트 타일과 최근 공유를 두고 스토어 내비게이션은 그 아래에 둔다", () => {
+  it("첫 화면은 검색·유형·실제 소재 목록에 집중하고 상세 탐색은 별도 화면으로 연결한다", () => {
     useResources.mockReturnValue(marketPage());
     render(<MemoryRouter initialEntries={["/market"]}><MarketHomePage /></MemoryRouter>);
 
     const heading = screen.getByRole("heading", { level: 1 });
-    const browse = screen.getByRole("link", { name: "소재 찾기" });
-    const categories = screen.getByRole("navigation", { name: "소재 카테고리" });
+    const browse = screen.getAllByRole("link", { name: "소재 찾기" }).find((link) => link.getAttribute("href") === "/market/browse");
+    const types = screen.getByRole("group", { name: "에셋 프리셋 선택" });
     const recent = screen.getByRole("heading", { name: "최근 공유" });
-    const navigation = screen.getByRole("navigation", { name: "마켓 주요 내비게이션" });
-    // 첫 화면의 주인공은 카테고리 아트 타일과 상품 카드다. 스토어 내비게이션은 지우지 않고 그 아래로 내린다.
+    const navigation = screen.getByRole("navigation", { name: "마켓 작업 선택" });
+    if (!browse) throw new Error("소재 목록 진입이 없습니다.");
     expect(heading.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(heading.compareDocumentPosition(categories) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(categories.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(recent.compareDocumentPosition(navigation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.compareDocumentPosition(types) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(types.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(browse.getAttribute("href")).toBe("/market/browse");
-    const tiles = within(categories);
+    expect(screen.queryByRole("navigation", { name: "소재 카테고리" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "마켓 주요 내비게이션" })).toBeNull();
+    expect(within(navigation).getByRole("link", { name: "소재 둘러보기" }).getAttribute("href")).toBe("/market?section=explore");
+  });
+
+  it("상세 탐색 화면에서 카테고리와 개인·판매·비교 목적지를 그대로 찾을 수 있다", () => {
+    useResources.mockReturnValue(marketPage());
+    render(<MemoryRouter initialEntries={["/market?section=explore"]}><MarketHomePage /></MemoryRouter>);
+    const tiles = within(screen.getByRole("navigation", { name: "소재 카테고리" }));
     for (const label of ["템플릿", "2D 에셋", "3D", "브러시", "색·보정"]) {
       expect(tiles.getByRole("link", { name: new RegExp(label) })).toBeTruthy();
     }
     expect(tiles.getByRole("link", { name: /템플릿/ }).getAttribute("href")).toBe("/market/browse?kind=template");
-    const menu = within(navigation);
+    const menu = within(screen.getByRole("navigation", { name: "마켓 주요 내비게이션" }));
     // 판매 진입은 "판매자 센터" 하나만 노출한다 (S1-5). 등록·관리는 센터의 탭이라 "배포하기" 링크는 따로 두지 않는다.
     for (const label of ["찾아보기", "내 에셋", "찜 목록", "판매자 센터", "조건 맞춤", "후보 비교"]) {
       expect(menu.getByRole("link", { name: label })).toBeTruthy();
@@ -91,7 +98,7 @@ describe("MarketHomePage", () => {
     useResources.mockReturnValue(marketPage({ loading: true }));
 
     const { container } = render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/market"]}>
         <MarketHomePage />
       </MemoryRouter>
     );
@@ -105,7 +112,7 @@ describe("MarketHomePage", () => {
     useResources.mockReturnValue(marketPage());
 
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/market?section=sell"]}>
         <MarketHomePage />
       </MemoryRouter>
     );
@@ -119,7 +126,7 @@ describe("MarketHomePage", () => {
     useResources.mockReturnValue(marketPage());
 
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={["/market?section=guide"]}>
         <MarketHomePage />
       </MemoryRouter>
     );
@@ -179,7 +186,7 @@ it("빈 공개 마켓에서 가입 없는 기본 소재로 이동할 수 있다"
 
 it("사용권 안내는 접어 두되 네 가지 사용권 링크를 그대로 둔다", () => {
   useResources.mockReturnValue(marketPage());
-  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/market?section=guide"]}><MarketHomePage /></MemoryRouter>);
   const guide = screen.getByText("사용권 안내").closest("details") as HTMLDetailsElement;
   expect(guide.open).toBe(false);
   expect(within(guide).getAllByRole("link", { name: /사용권 전문 보기/ })).toHaveLength(4);
@@ -197,7 +204,7 @@ it("최근 공유는 휴대폰에서 처음 6개만 보이고 '더 보기'로 �
 
 it("작업군은 모바일에서 옆으로 넘기는 한 줄로 묶이고 제작 순서를 유지한다", () => {
   useResources.mockReturnValue(marketPage());
-  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/market?section=explore"]}><MarketHomePage /></MemoryRouter>);
   const rail = screen.getByRole("list", { name: "리소스 작업군" });
   expect(rail.hasAttribute("data-site-rail")).toBe(true);
   const titles = within(rail).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
@@ -205,25 +212,52 @@ it("작업군은 모바일에서 옆으로 넘기는 한 줄로 묶이고 제작
 });
 
 
-it("마켓 홈은 구매 밴드 → 탐색 밴드 → 판매자 밴드 → 안내 밴드 순서이고 판매자는 구매 밴드 밖에 있다", () => {
+it.each(["buy", "explore", "sell", "guide"] as const)("%s 목적 화면은 해당 기능만 렌더하고 나머지는 URL로 연결한다", (section) => {
   useResources.mockReturnValue(marketPage());
-  const { container } = render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
-  const bands = Array.from(container.querySelectorAll("[data-market-band]")).map((el) => el.getAttribute("data-market-band"));
-  expect(bands).toEqual(["buy", "explore", "sell", "guide"]);
-  const buy = container.querySelector('[data-market-band="buy"]') as HTMLElement;
-  const explore = container.querySelector('[data-market-band="explore"]') as HTMLElement;
-  const sell = container.querySelector('[data-market-band="sell"]') as HTMLElement;
-  expect(within(buy).getByRole("heading", { name: "최근 공유" })).toBeTruthy();
-  expect(within(buy).queryByRole("heading", { name: "만든 소재를 공유하고 판매해 보세요" })).toBeNull();
-  expect(within(explore).getByRole("heading", { name: "장르·제작 목적 컬렉션" })).toBeTruthy();
-  expect(within(explore).queryByRole("link", { name: "소재 공유하기" })).toBeNull();
-  expect(within(sell).getByRole("link", { name: "소재 공유하기" }).getAttribute("href")).toBe("/market/publish");
-  expect(within(sell).getByRole("link", { name: "Studio에서 공유" }).getAttribute("href")).toBe("/studio?assetMarket=community&communityView=share");
+  const route = section === "buy" ? "/market" : `/market?section=${section}`;
+  const { container } = render(<MemoryRouter initialEntries={[route]}><MarketHomePage /></MemoryRouter>);
+  expect([...container.querySelectorAll("[data-market-band]")].map((element) => element.getAttribute("data-market-band")))
+    .toEqual([section]);
+  expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  const navigation = screen.getByRole("navigation", { name: "마켓 작업 선택" });
+  expect(within(navigation).getAllByRole("link")).toHaveLength(4);
+  expect(within(navigation).getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page")).toHaveLength(1);
+  if (section === "sell") {
+    expect(screen.getByRole("link", { name: "소재 공유하기" }).getAttribute("href")).toBe("/market/publish");
+    expect(screen.getByRole("link", { name: "Studio에서 공유" }).getAttribute("href")).toBe("/studio?assetMarket=community&communityView=share");
+  }
+});
+
+function HistoryControls() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return <><button type="button" onClick={() => navigate(-1)}>이전 화면으로</button><output aria-label="현재 주소">{location.pathname}{location.search}</output></>;
+}
+
+it("목적 이동과 뒤로가기는 URL·기존 쿼리·소재 유형 선택을 보존한다", () => {
+  useResources.mockReturnValue(marketPage({ items: [{ ...cachedRecord, kind: "brush" }] }));
+  render(<MemoryRouter initialEntries={["/market?context=kept"]}><HistoryControls /><MarketHomePage /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: /2D 펜 · 브러시 · 선화/u }));
+  const navigation = screen.getByRole("navigation", { name: "마켓 작업 선택" });
+  fireEvent.click(within(navigation).getByRole("link", { name: "이용 안내" }));
+  expect(screen.getByLabelText("현재 주소").textContent).toBe("/market?context=kept&section=guide");
+  expect(screen.queryByRole("heading", { name: "최근 공유" })).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
+  fireEvent.click(screen.getByRole("button", { name: "이전 화면으로" }));
+  expect(screen.getByLabelText("현재 주소").textContent).toBe("/market?context=kept");
+  expect(screen.getByRole("button", { name: /2D 펜 · 브러시 · 선화/u }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.getByTestId("resource-cached-resource")).toBeTruthy();
+});
+
+it("알 수 없는 목적은 실제 소재 찾기로 복귀한다", () => {
+  useResources.mockReturnValue(marketPage());
+  render(<MemoryRouter initialEntries={["/market?section=unknown"]}><MarketHomePage /></MemoryRouter>);
+  expect(screen.getByRole("heading", { name: "최근 공유" })).toBeTruthy();
 });
 
 it("웹툰 5대 공정별 필수 에셋 스타터 가이드를 통해 공정별 필터 탐색과 Fit Lab으로 바로 연결한다", () => {
   useResources.mockReturnValue(marketPage());
-  render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={["/market?section=explore"]}><MarketHomePage /></MemoryRouter>);
 
   const starterSection = screen.getByRole("region", { name: "웹툰 5대 공정별 필수 에셋 스타터 가이드" });
   expect(starterSection).toBeTruthy();

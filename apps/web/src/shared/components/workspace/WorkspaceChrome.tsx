@@ -9,6 +9,7 @@ import { CampusControls } from "../spatial-campus/CampusControls";
 import { ToonStudioMark } from "../toonstudio-mark";
 import { ToonStudioWordmark } from "../toonstudio-brand";
 import type { WorkspaceNavigationContext } from "./workspace-navigation-model";
+import { SITE_NAVIGATION_ITEMS, siteNavigationText } from "../site-navigation";
 
 const WorkspaceMenuNavigation = lazyRetry(
   () => import("./WorkspaceMenuNavigation").then(
@@ -51,8 +52,8 @@ export function WorkspaceSidebar({ activeId, context, children }: {
     </Suspense>
     {children}
     <nav className="workspace-support-nav" aria-label={korean ? "도움과 환경 설정" : "Help and preferences"}>
-      <Link href="/help"><HelpCircle size={18} aria-hidden="true" /><span>{korean ? "사용 가이드" : "User guide"}</span></Link>
-      <Link href="/settings"><Settings size={18} aria-hidden="true" /><span>{korean ? "환경 설정" : "Preferences"}</span></Link>
+      <Link href="/help"><HelpCircle size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, korean ? "ko" : "en")}</span></Link>
+      <Link href="/settings"><Settings size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.settings.label, korean ? "ko" : "en")}</span></Link>
     </nav>
   </aside>;
 }

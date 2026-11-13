@@ -39,6 +39,9 @@ const IGNORED_CONSOLE_PATTERNS = [
 async function collectCanonicalDirectoryRoutes(page: Page): Promise<string[]> {
   await page.goto("/sitemap", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  const menuHrefs = await page.locator('main a[href^="/sitemap/"]').evaluateAll((anchors) => anchors.map((anchor) => new URL((anchor as HTMLAnchorElement).href).pathname));
+  await page.getByRole("link", { name: "전체 기능 목록 보기", exact: true }).click();
+  await expect(page).toHaveURL(/\/sitemap\/all$/u);
   await expect.poll(async () => page.locator('main a[href]').count(), { timeout: 30_000 }).toBeGreaterThan(80);
   const hrefs = await page.locator('main a[href]').evaluateAll((anchors) => anchors
     .map((anchor) => {
@@ -46,7 +49,7 @@ async function collectCanonicalDirectoryRoutes(page: Page): Promise<string[]> {
       return ["http:", "https:"].includes(url.protocol) ? url.pathname : "";
     })
     .filter((href) => href.startsWith("/") && !href.startsWith("//")));
-  return [...new Set([...hrefs, "/sitemap"])].sort();
+  return [...new Set([...hrefs, ...menuHrefs, "/sitemap"])].sort();
 }
 
 async function inspectRoute(page: Page, href: string): Promise<RouteHealthResult> {

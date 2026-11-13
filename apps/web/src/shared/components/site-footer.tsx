@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 
 import {
   SITE_NAVIGATION_ITEMS,
@@ -63,6 +63,12 @@ export function SiteFooter() {
           </Link>
         </div>
 
+        <nav className="site-footer__quick" aria-label={bi("메뉴와 도움말", "Menus and help")}>
+          <Link href="/sitemap">{siteNavigationText(SITE_NAVIGATION_ITEMS.allMenu.label, locale)}<ArrowRight size={15} aria-hidden="true" /></Link>
+          <Link href="/help">{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, locale)}</Link>
+        </nav>
+        <details className="site-footer__more">
+          <summary>{bi("서비스 안내 더 보기", "More service information")}<ChevronDown size={16} aria-hidden="true" /></summary>
         <div className="site-footer__navigation">
           <div className="site-footer__introduction">
             <p>{bi("상상에서 첫 장면으로, 첫 장면에서 완성한 작품으로.", "From an idea to your first scene, and from a scene to a finished story.")}</p>
@@ -119,6 +125,9 @@ export function SiteFooter() {
             <Link href="/promo-library">{bi("홍보 영상 자료실", "Promo video library")}</Link>
             <Link href="/install">{bi("앱 설치", "Install app")}</Link>
           </nav>
+        </div>
+        </details>
+        <div className="site-footer__meta">
           <nav aria-label={bi("이용 정책", "Policies")}>
             {POLICY_LINKS.map((link) => <Link key={link.href} href={link.href}>{t(link.key)}</Link>)}
           </nav>
