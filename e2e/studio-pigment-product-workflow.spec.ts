@@ -296,6 +296,10 @@ test("기본 권리 차단과 자체 안료 선택·SQLite 저장·재열기·�
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.goto("/studio/assets/brushes/new", { waitUntil: "domcontentloaded" });
+  const adjustBrush = page.getByRole("navigation", { name: "브러시 작업 선택", exact: true })
+    .getByRole("link", { name: "브러시 조절", exact: true });
+  await adjustBrush.click();
+  await expect(adjustBrush).toHaveAttribute("aria-current", "page");
   await page.getByRole("searchbox", { name: "브러시 레시피 검색", exact: true }).fill(BLOCKED_RECIPE_ID);
   await page.getByRole("button", { name: /^자체 안료 팔레트 나이프/u }).click();
   const save = page.getByRole("button", { name: "브러시로 저장", exact: true });
