@@ -10,7 +10,7 @@ vi.mock("@/shared/lib/i18n", () => ({ useI18n: (selector: (state: { lang: string
 afterEach(cleanup);
 
 describe("public site experience boundaries", () => {
-  it.each(["/", "/studio", "/studio/assets", "/settings", "/my", "/admin", "/privacy", "/market/manage"])("does not add promotional next steps on %s", (pathname) => {
+  it.each(["/", "/studio", "/studio/assets", "/settings", "/my", "/admin", "/privacy", "/market/manage", "/sitemap", "/sitemap/all", "/sitemap/create"])("does not add promotional next steps on %s", (pathname) => {
     const { container } = render(<MemoryRouter><PublicSiteNextSteps pathname={pathname} /></MemoryRouter>);
     expect(container.children.length).toBe(0);
   });
@@ -26,7 +26,13 @@ describe("public site experience boundaries", () => {
   });
 
   it("offers contextual, named onward links rather than another home hero", () => {
-    render(<MemoryRouter><PublicSiteNextSteps pathname="/learn" /></MemoryRouter>);
+    const { container } = render(<MemoryRouter><PublicSiteNextSteps pathname="/learn" /></MemoryRouter>);
+    const onward = container.querySelector<HTMLDetailsElement>(".site-journey-disclosure");
+    expect(onward?.open).toBe(false);
+    const summary = onward?.querySelector(":scope > summary");
+    if (!summary) throw new Error("다음 작업을 여는 조작부가 없습니다.");
+    fireEvent.click(summary);
+    expect(onward?.open).toBe(true);
     expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("다음 행동");
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(3);
     for (const link of screen.getAllByRole("link")) {
@@ -35,17 +41,30 @@ describe("public site experience boundaries", () => {
     }
   });
 
-  it("다음 작업을 먼저 보여 주고 기존 도구 체험은 선택해 펼칠 수 있다", () => {
+  it("다음 작업과 기존 도구 체험을 별도 조작부에서 선택해 펼칠 수 있다", () => {
     const { container } = render(<MemoryRouter><PublicSiteAtelierJourney pathname="/learn" /></MemoryRouter>);
-    const preview = container.querySelector("details");
+    const onward = container.querySelector<HTMLDetailsElement>(".site-journey-disclosure");
+    const onwardSummary = onward?.querySelector(":scope > summary");
+    expect(onward?.open).toBe(false);
+    expect(onwardSummary?.textContent).toContain("다음 작업 찾기");
+    const preview = container.querySelector<HTMLDetailsElement>(".public-site-demo");
     const summary = preview?.querySelector("summary");
     expect(preview?.open).toBe(false);
     expect(summary?.textContent).toContain("작업실 미리 체험하기");
-    expect(container.firstElementChild?.classList.contains("public-site-next")).toBe(true);
+    expect(container.firstElementChild).toBe(onward);
+    expect(onward?.querySelector(".public-site-next")).not.toBeNull();
+    if (!onwardSummary) throw new Error("다음 작업을 여는 조작부가 없습니다.");
+    fireEvent.click(onwardSummary);
+    expect(onward?.open).toBe(true);
+    expect(onward?.querySelectorAll(".public-site-next__card")).toHaveLength(3);
+    expect(preview?.open).toBe(false);
+    fireEvent.click(onwardSummary);
+    expect(onward?.open).toBe(false);
     expect(summary).not.toBeNull();
     if (!summary) throw new Error("체험 열기 조작부가 없습니다.");
     fireEvent.click(summary);
     expect(preview?.open).toBe(true);
+    expect(onward?.open).toBe(false);
     expect(container.querySelector('[data-testid="site-atelier-chapter"]')).toBeTruthy();
     fireEvent.click(summary);
     expect(preview?.open).toBe(false);
@@ -54,7 +73,14 @@ describe("public site experience boundaries", () => {
   it.each(["/about/studio", "/ABOUT/STUDIO/", "/product-tour"])("%s에서 제공하지 않는 빈 체험을 열도록 안내하지 않는다", (pathname) => {
     const { container } = render(<MemoryRouter><PublicSiteAtelierJourney pathname={pathname} /></MemoryRouter>);
     expect(container.querySelector("[data-public-wayfinder]")).not.toBeNull();
-    expect(container.querySelector("details")).toBeNull();
+    expect(container.querySelector(".public-site-demo")).toBeNull();
+    const onward = container.querySelector<HTMLDetailsElement>(".site-journey-disclosure");
+    expect(onward?.open).toBe(false);
+    const summary = onward?.querySelector(":scope > summary");
+    if (!summary) throw new Error("다음 작업을 여는 조작부가 없습니다.");
+    fireEvent.click(summary);
+    expect(onward?.open).toBe(true);
+    expect(onward?.querySelectorAll(".public-site-next__card")).toHaveLength(3);
     expect(container.querySelector('[data-testid="site-atelier-chapter"]')).toBeNull();
   });
 

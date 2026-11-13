@@ -2,23 +2,24 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import { ArrowRight, ChevronDown, FolderOpen, LayoutGrid, Palette, X } from "lucide-react";
+import { ArrowRight, LayoutGrid, X } from "lucide-react";
 import { useEffect, useRef, type RefObject } from "react";
 import { useLocation } from "react-router-dom";
 
 import {
   SITE_UTILITY_NAVIGATION,
+  SITE_NAVIGATION_ITEMS,
   mobileSiteTabsForPath,
-  resolveNavigationGroupsFor,
   siteNavigationContextForPath,
   siteNavigationGroupForPath,
   siteNavigationLocale,
   siteNavigationText,
 } from "./site-navigation";
+import { SiteMenuDestinations } from "./SiteMenuDestinations";
 import { ToonStudioMark } from "./toonstudio-mark";
 import { SiteMenuUtilities } from "./SiteMenuUtilities";
 import { useSiteMenuAudioHandoff } from "./use-site-menu-audio-handoff";
-import type { SiteMobilePurposeHref } from "./site-mobile-purpose";
+import { siteMobilePurposeHref, type SiteMobilePurposeHref } from "./site-mobile-purpose";
 import { ToonStudioWordmark } from "./toonstudio-brand";
 
 import Link from "@/shared/navigation/router-link";
@@ -31,9 +32,6 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("site-header-mobile-nav", ko, en);
 
 /** 목적지 이름은 단일 지도의 정본 라벨을 그대로 쓴다. 표면별 덮어씀 금지. */
-
-/** 메뉴 맨 위 고정 행동(작품 시작하기·내 프로젝트)과 같은 목적지는 그룹 목록에서 반복하지 않는다. */
-const PINNED_MENU_HREFS: ReadonlySet<string> = new Set(["/create", "/studio"]);
 
 interface MobileHeaderNavigationProps {
   menuOpen: boolean;
@@ -122,7 +120,6 @@ export function MobileHeaderNavigation({
   closeMenu,
   closeForUtility,
   isActive,
-  isPurposeActive,
   currentPurposeHref,
   hideBottomTabs = false,
   isMobileViewport = true,
@@ -136,17 +133,10 @@ export function MobileHeaderNavigation({
   const t = useT();
   const overlayRef = useRef<HTMLDivElement>(null);
   const navigationContext = siteNavigationContextForPath(pathname);
-  /**
-   * S1-3: 그룹 안 순서는 푸터·⌘K와 같은 정책 함수(resolveNavigationGroupsFor)가
-   * 정한다 — 그룹 순서는 여정 순 그대로, 그룹 안에서는 tier(primary →
-   * contextual → directory) 순이다. 렌더러가 자체 정렬을 갖지 않는다.
-   * 아래 PINNED_MENU_HREFS 제외는 tier 정책이 아니라 맨 위 고정 행동과의
-   * href 중복 제거이며, 제외되는 목적지도 고정 행동으로 그대로 닿는다.
-   */
-  const navigationGroups = resolveNavigationGroupsFor();
   /** 지도는 하나다. 현재 경로가 속한 여정 구간만 강조 표시한다. */
   const currentGroupId = siteNavigationGroupForPath(pathname)?.id ?? null;
-  const mobileTabs = mobileSiteTabsForPath(pathname);
+  const mobileTabs = [...mobileSiteTabsForPath(pathname), SITE_NAVIGATION_ITEMS.allMenu];
+  const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;
   /** The bottom tab bar is a mobile-only surface: never render it on desktop,
    * even if the CSS media query hiding it were lost. Tabs keep the canonical
    * destinations from the navigation model (no legacy /new or /more aliases). */
@@ -288,106 +278,16 @@ export function MobileHeaderNavigation({
             </div>
 
             <nav aria-label={bi("전체 서비스 메뉴", "All service navigation")} className="site-menu-navigation">
-              <div className="site-menu-actions">
-                <Link href="/create" aria-current={isActive("/create", true) ? "page" : undefined} className="site-menu-actions__create">
-                  <Palette size={20} aria-hidden="true" />
-                  <span><strong>{bi("작품 시작하기", "Start a work")}</strong><small>{bi("아이디어를 첫 장면으로", "Turn an idea into your first scene")}</small></span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </Link>
-                <Link href="/studio" aria-current={isActive("/studio", true) ? "page" : undefined} className="site-menu-actions__projects">
-                  <FolderOpen size={18} aria-hidden="true" />
-                  <span>{bi("내 프로젝트", "My projects")}</span>
-                </Link>
-              </div>
+              <SiteMenuDestinations locale={locale} currentGroupId={currentGroupId}
+                isActive={isActive} menuId={menuId} />
 
-              <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
-              <div className="grid items-start gap-2">
-                {navigationGroups.map((group) => (
-                  <details
-                    key={group.id}
-                    aria-labelledby={`${menuId}-${group.id}`}
-                    className="site-menu-group"
-                    open={group.id === currentGroupId}
-                    data-current-journey={group.id === currentGroupId ? "true" : undefined}
-                  >
-                    <summary className="site-menu-group__summary">
-                      <span>
-                        <span
-                          id={`${menuId}-${group.id}`}
-                          className="font-display text-sm font-bold text-fg"
-                        >
-                          {siteNavigationText(group.label, locale)}
-                          {group.id === currentGroupId && (
-                            <span className="site-menu-group__current">
-                              {bi("현재 여정", "Current journey")}
-                            </span>
-                          )}
-                        </span>
-                      </span>
-                      <ChevronDown size={18} aria-hidden="true" />
-                    </summary>
-                    <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                      {group.items.filter((item) => !PINNED_MENU_HREFS.has(item.href)).map((item) => {
-                        const active = isActive(item.href, item.exact);
-                        const Icon = item.icon;
-                        const label = siteNavigationText(item.label, locale);
-                        return (
-                          <li key={item.id}>
-                            <Link
-                              href={item.href}
-                              aria-label={label}
-                              aria-current={active ? "page" : undefined}
-                              className={cx(
-                                "group flex min-h-[4.5rem] items-center gap-3 rounded-xl border px-3 py-2.5 outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                                active
-                                  ? "border-accent/40 bg-accent-soft text-accent shadow-sm"
-                                  : "border-line/75 bg-card/70 text-fg-2 hover:border-line-strong hover:bg-raised/80 hover:text-fg"
-                              )}
-                            >
-                              <span
-                                className={cx(
-                                  "grid size-9 shrink-0 place-items-center rounded-xl border transition-colors",
-                                  active
-                                    ? "border-accent/35 bg-canvas/55"
-                                    : "border-line bg-canvas/45 group-hover:border-line-strong"
-                                )}
-                              >
-                                <Icon
-                                  size={17}
-                                  strokeWidth={1.8}
-                                  className={
-                                    active
-                                      ? "text-accent"
-                                      : "text-fg-3 group-hover:text-accent"
-                                  }
-                                />
-                              </span>
-                              <span className="min-w-0">
-                                <span className="block truncate text-sm font-semibold">
-                                  {label}
-                                </span>
-                                <span
-                                  aria-hidden="true"
-                                  className="mt-0.5 line-clamp-1 block text-[0.68rem] leading-4 text-fg-3"
-                                >
-                                  {siteNavigationText(item.description, locale)}
-                                </span>
-                              </span>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </details>
-                ))}
-              </div>
-
-              <Link href="/sitemap" aria-current={isActive("/sitemap", true) ? "page" : undefined} className="site-menu-directory">
+              <Link href="/sitemap/all" aria-current={isActive("/sitemap/all", true) ? "page" : undefined} className="site-menu-directory">
                 <LayoutGrid size={18} aria-hidden="true" />
                 <span>{bi("전체 기능", "All tools")}</span>
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
 
+              <SiteMenuUtilities onOpenMusic={openMusic} settingsActive={isActive("/settings")} />
               <div className="mt-4 grid gap-2 border-t border-line pt-4">
                 {SITE_UTILITY_NAVIGATION.filter((item) => item.id !== "settings").map((item) => {
                   const active = isActive(item.href, item.exact);
@@ -447,9 +347,9 @@ export function MobileHeaderNavigation({
             )}
           >
             {mobileTabs.map((item) => {
-              const active = currentPurposeHref === undefined
-                ? isPurposeActive(item.href, item.exact)
-                : currentPurposeHref === item.href;
+              const active = item.id === "all-menu"
+                ? pathname === "/sitemap" || pathname.startsWith("/sitemap/")
+                : resolvedPurposeHref === item.href;
               const Icon = item.icon;
               const label = siteNavigationText(item.label, locale);
               return (

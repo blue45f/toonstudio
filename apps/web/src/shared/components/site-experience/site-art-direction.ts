@@ -25,14 +25,14 @@ const DIRECTIONS = {
 export function siteArtDirection(pathname: string): SiteArtDirection | null {
   const path = trimTrailingSlashes(pathname).toLowerCase() || "/";
   if (!supportsSiteExperience(path) || path === "/" || path === "/create") return null;
-  if (/^\/(?:me|my|settings|login|register|auth|play|fortune|terms|privacy|copyright)(?:\/|$)/u.test(path)) return null;
+  if (/^\/(?:me|my|settings|login|register|auth|play|fortune|terms|privacy|copyright|sitemap)(?:\/|$)/u.test(path)) return null;
   if (/^\/market\/(?:publish|manage|checkout|library|wishlist)(?:\/|$)/u.test(path)
     || /^\/(?:create|showcase)\/(?:promo|work|series)(?:\/|$)/u.test(path)
     || /^\/create\/(?!challenges(?:\/|$))/u.test(path)) return null;
   if (/^\/(?:learn|help|guide)(?:\/|$)/u.test(path)) return DIRECTIONS.learn;
   if (/^\/(?:research|references|insights)(?:\/|$)/u.test(path)) return DIRECTIONS.research;
   if (/^\/market(?:\/|$)/u.test(path)) return DIRECTIONS.market;
-  if (path === "/make" || ["/about", "/support", "/contact", "/sitemap"].includes(path)) return DIRECTIONS.create;
+  if (path === "/make" || ["/about", "/support", "/contact"].includes(path)) return DIRECTIONS.create;
   if (/^\/(?:showcase|community|reviews|pencafe|opportunities)(?:\/|$)/u.test(path) || path === "/create/challenges") return DIRECTIONS.share;
   return nextExperienceDestinations(path).length > 0 ? DIRECTIONS.discover : null;
 }

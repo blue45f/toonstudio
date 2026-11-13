@@ -145,9 +145,10 @@
 .create-start-recent-action { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; color: var(--color-fg-2); font-size: .8125rem; font-weight: 600; }
 .create-start-recent-empty { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--color-fg-2); font-size: .8125rem; }
 .create-start-recent-empty a { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-weight: 600; }
-.create-start-section-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--color-line); }
-.create-start-section-nav button { border: 1px solid var(--color-line); border-radius: 12px; padding: 10px 12px; color: var(--color-fg-2); background: var(--color-panel); font-size: .8125rem; font-weight: 600; }
-.create-start-section-nav button[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent); }
+.create-start-section-nav { display: grid; gap: 8px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--color-line); }
+.create-start-section-nav a { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--color-line); border-radius: 12px; padding: 12px 16px; color: var(--color-fg-2); background: var(--color-panel); font-size: .8125rem; font-weight: 600; }
+.create-start-section-nav a:hover { background: var(--color-raised); color: var(--color-fg); }
+.create-start-section-nav svg { flex-shrink: 0; }
 
 /* 하위 기존 도구의 44px inline 최소값보다도 이 화면의 48px 계약을 우선한다. */
 .create-start-page :where(a, button, summary) { min-height: 48px !important; }
@@ -170,8 +171,7 @@
   .create-start-choice-action { min-width: 190px; }
   .create-start-secondary { gap: 14px; margin-top: 18px; }
   .create-start-secondary a { padding-inline: 18px; font-size: .9375rem; }
-  .create-start-section-nav { display: flex; flex-wrap: wrap; }
-  .create-start-section-nav button { flex: 1; min-width: 140px; }
+  .create-start-section-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
   .create-start-choice-grid { gap: 24px; }
@@ -195,5 +195,5 @@
 @media (forced-colors: active) {
   .create-start-choice-art { visibility: hidden; }
   .create-start-choice::after { display: none; }
-  .create-start-choice, .create-start-choice-action, .create-start-section-nav button { border-color: ButtonText; }
+  .create-start-choice, .create-start-choice-action, .create-start-section-nav a { border-color: ButtonText; }
 }

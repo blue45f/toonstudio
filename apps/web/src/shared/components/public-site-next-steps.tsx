@@ -7,6 +7,7 @@ import { atelierChapterForPath } from "./site-experience/site-atelier-content";
 import { WorkflowIllustration } from "./site-experience/WorkflowIllustration";
 import { workflowVisualForPath } from "./site-experience/workflow-route-art";
 import { publicSiteNextSteps } from "./public-site-pathways";
+import { SiteJourneyDisclosure } from "./SiteJourneyDisclosure";
 import { supportsPublicSiteOnwardJourney } from "./site-public-routes";
 
 import Link from "@/shared/navigation/router-link";
@@ -27,6 +28,7 @@ export function PublicSiteNextSteps({ pathname }: { pathname: string }) {
 
   const destinations = publicSiteNextSteps(pathname);
   return (
+    <SiteJourneyDisclosure key={pathname}>
     <section className="public-site-next" aria-labelledby={headingId} data-public-wayfinder="">
       <div className="public-site-next__heading">
         <div>
@@ -50,6 +52,7 @@ export function PublicSiteNextSteps({ pathname }: { pathname: string }) {
         ))}
       </div>
     </section>
+    </SiteJourneyDisclosure>
   );
 }
 

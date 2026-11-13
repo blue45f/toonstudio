@@ -16,7 +16,7 @@ import { useI18n } from "@/shared/lib/i18n";
 
 function LocationProbe() {
   const location = useLocation();
-  return <output data-testid="location">{`${location.pathname}${location.search}`}</output>;
+  return <output data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</output>;
 }
 
 function HistoryBack() {
@@ -35,11 +35,12 @@ function renderStartSheet(initialEntry: string, extra?: ReactNode) {
 }
 
 function openMoreStartMethods() {
-  fireEvent.click(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일"));
+  fireEvent.click(screen.getByRole("link", { name: "다른 시작 방법" }));
 }
 
 function openMoreTopics() {
-  fireEvent.click(screen.getByText("주제별 질문과 제작 도구 더 보기"));
+  fireEvent.click(screen.getByRole("link", { name: "제작 도구" }));
+  fireEvent.click(screen.getByRole("link", { name: "이야기 주제 고르기" }));
 }
 
 /** 두 작품을 만들고 연 시각을 고정해 최근 순서를 결정적으로 만든다. */
@@ -68,13 +69,12 @@ afterEach(() => {
 });
 
 describe("CreateStartPage (작품 시작 시트)", () => {
-  it("추가 방법을 펼치면 기존 시작 레인 5개와 이어가기를 모두 사용할 수 있다", () => {
+  it("다른 시작 화면에서 기존 레인 5개를 고르고 작품 시작으로 돌아갈 수 있다", () => {
     renderStartSheet("/create");
     openMoreStartMethods();
 
-    expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
-    // 추천 시작을 보여 주거나 보조 방법을 펼쳐도 생성은 명시 클릭 전까지 실행하지 않는다.
-    expect(screen.getByRole("button", { name: "캔버스 열기" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "다른 시작 방법" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "캔버스 열기" })).toBeNull();
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
     expect(screen.getByRole("link", { name: /템플릿으로 시작하기/ }).getAttribute("href")).toBe("/studio/templates");
     // 콘티 레인은 레인을 명시해 넘긴다(S2-7) — 양식 시작점 초기값은 storyboard, 생성 뒤 에디터에 착지한다.
@@ -86,6 +86,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("link", { name: /빈 캔버스로 시작하기/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
     // 가져오기 레인 — 가진 파일로 이어 시작하는 길도 관문의 레인 중 하나다.
     expect(screen.getByRole("link", { name: /가져와서 시작하기/ }).getAttribute("href")).toBe("/studio/import");
+    fireEvent.click(screen.getByRole("link", { name: "작품 시작으로 돌아가기" }));
     fireEvent.click(screen.getByTestId("create-start-section-continue"));
     expect(screen.getByRole("heading", { name: "이어서 작업하기" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /새 작품 만들기/ }).getAttribute("href")).toBe("/studio/new?lane=blank");
@@ -165,15 +166,16 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
   });
 
-  it("큰 이미지 두 선택을 먼저 보여 주고 제작 도구는 접어 둔다", () => {
+  it("기본 화면에는 두 선택과 자료 링크만 두고 고급 내용은 별도 화면으로 보낸다", () => {
     renderStartSheet("/create");
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(within(guide).getByRole("heading", { name: "이야기부터 시작" })).toBeTruthy();
     expect(within(guide).getByRole("heading", { name: "바로 그리기" })).toBeTruthy();
     expect(within(guide).getAllByRole("link")).toHaveLength(1);
     expect(within(guide).getAllByRole("button")).toHaveLength(1);
-    expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(false);
-    expect(screen.getByText("주제별 질문과 제작 도구 더 보기").closest("details")?.open).toBe(false);
+    expect(screen.queryByRole("region", { name: "다른 시작 방법 · 기획, 콘티, 템플릿, 파일" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "주제별 질문과 제작 도구" })).toBeNull();
+    expect(screen.queryByTestId("create-rea-story-pipeline")).toBeNull();
     expect(within(guide).getByRole("link", { name: "이야기 시작하기" }).getAttribute("href")).toBe("/create?intent=my-story");
     expect(within(guide).getByRole("button", { name: "캔버스 열기" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "템플릿 고르기" }).getAttribute("href")).toBe("/studio/templates");
@@ -202,53 +204,59 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     }
   });
 
-  it("GAP-R6-04: 시작 화면 구역 전환 토글이 48px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
-    renderStartSheet("/create");
-    const group = screen.getByRole("group", { name: "시작 화면 구역 보기 전환" });
-    expect(group.getAttribute("data-testid")).toBe("create-start-section-group");
-    expect(group.style.gap).toBe("8px");
-
-    const buttons = within(group).getAllByRole("button");
-    expect(buttons.length).toBe(4);
-    for (const button of buttons) {
-      expect(button.className).toContain("min-h-11");
-      expect(button.className).toContain("min-w-11");
-      expect(button.className).toContain("focus-visible:outline");
-      expect(button.className).toContain("scroll-my-24");
-      expect(button.className).toContain("break-words");
-      expect(button.className).toContain("[overflow-wrap:anywhere]");
-      expect(button.style.minHeight).toBe("48px");
-      expect(button.style.minWidth).toBe("48px");
+  it("시작 화면은 48px 목적지 링크 세 개로 구분하고 이동한 화면만 보여 준다", () => {
+    renderStartSheet("/create?from=home#start");
+    const navigation = screen.getByRole("navigation", { name: "다른 시작 화면" });
+    const links = within(navigation).getAllByRole("link");
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link.style.minHeight).toBe("48px");
+      expect(link.style.minWidth).toBe("48px");
+      expect(link.className).toContain("focus-visible:outline");
+      expect(link.className).toContain("scroll-my-24");
     }
-
-    const allBtn = screen.getByTestId("create-start-section-all");
-    const lanesBtn = screen.getByTestId("create-start-section-lanes");
-    const pipelineBtn = screen.getByTestId("create-start-section-pipeline");
-    const continueBtn = screen.getByTestId("create-start-section-continue");
-
-    expect(allBtn.getAttribute("aria-pressed")).toBe("true");
-    expect(allBtn.getAttribute("data-state")).toBe("active");
-    expect(lanesBtn.getAttribute("aria-pressed")).toBe("false");
-    expect(lanesBtn.getAttribute("data-state")).toBe("inactive");
-
-    allBtn.focus();
-    fireEvent.keyDown(allBtn, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(lanesBtn);
-    fireEvent.keyDown(lanesBtn, { key: "End" });
-    expect(document.activeElement).toBe(continueBtn);
-    fireEvent.keyDown(continueBtn, { key: "Home" });
-    expect(document.activeElement).toBe(allBtn);
-    fireEvent.keyDown(allBtn, { key: "ArrowLeft" });
-    expect(document.activeElement).toBe(continueBtn);
-
-    fireEvent.click(pipelineBtn);
-    expect(pipelineBtn.getAttribute("aria-pressed")).toBe("true");
-    expect(pipelineBtn.getAttribute("data-state")).toBe("active");
-    expect(allBtn.getAttribute("aria-pressed")).toBe("false");
-    expect(allBtn.getAttribute("data-state")).toBe("inactive");
-    expect(screen.getByTestId("location").textContent).toBe("/create?section=pipeline");
+    const pipeline = within(navigation).getByRole("link", { name: "제작 도구" });
+    expect(pipeline.getAttribute("href")).toBe("/create?from=home&section=pipeline#start");
+    fireEvent.click(pipeline);
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home&section=pipeline#start");
+    expect(screen.queryByRole("navigation", { name: "다른 시작 화면" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "다른 시작 방법 · 기획, 콘티, 템플릿, 파일" })).toBeNull();
+    expect(screen.getByRole("link", { name: "작품 시작으로 돌아가기" }).getAttribute("href")).toBe("/create?from=home#start");
     expect(screen.getByRole("link", { name: /회차 게시 설정 열기/ }).textContent)
       .toContain("게시용 파일 준비는 외부 게시 완료와 달라요");
+  });
+
+  it.each(["pipeline", "tools"])("%s 도구 화면은 장르·주제를 중복하지 않고 관련 화면으로 연결한다", (section) => {
+    renderStartSheet(`/create?from=home&section=${section}#notes`);
+    expect(screen.getByRole("heading", { level: 1, name: "제작 단계와 도구" })).toBeTruthy();
+    expect(screen.getByTestId("create-rea-story-pipeline")).toBeTruthy();
+    expect(screen.queryByTestId("create-start-genre-starters")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "내 이야기로 시작하기" })).toBeNull();
+    const related = screen.getByRole("navigation", { name: "관련 시작 화면" });
+    expect(within(related).getAllByRole("link")).toHaveLength(3);
+    expect(within(related).getByRole("link", { name: "이야기 주제 고르기" }).getAttribute("href"))
+      .toBe("/create?from=home&section=topics#notes");
+    expect(within(related).queryByRole("link", { name: "제작 단계와 도구" })).toBeNull();
+  });
+
+  it("주제와 장르를 별도 화면에서 고르고 query·hash·브라우저 Back을 보존한다", async () => {
+    renderStartSheet("/create?from=home&idea=idea#notes", <HistoryBack />);
+    openMoreTopics();
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home&idea=idea&section=topics#notes");
+    expect(screen.getByRole("list", { name: "이야기 주제 바로 고르기" })).toBeTruthy();
+    expect(screen.queryByTestId("create-rea-story-pipeline")).toBeNull();
+    expect(screen.queryByTestId("create-start-genre-starters")).toBeNull();
+    expect(screen.getByRole("link", { name: "자유로운 이야기" }).getAttribute("href"))
+      .toBe("/create?from=home&idea=idea&intent=my-story&topic=free-story#notes");
+    fireEvent.click(screen.getByRole("link", { name: "장르 프리셋 고르기" }));
+    expect(screen.getByTestId("create-start-genre-starters")).toBeTruthy();
+    expect(screen.queryByRole("list", { name: "이야기 주제 바로 고르기" })).toBeNull();
+    expect(screen.queryByTestId("create-rea-story-pipeline")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "테스트 이전 주소" }));
+    expect(await screen.findByRole("list", { name: "이야기 주제 바로 고르기" })).toBeTruthy();
+    expect(screen.getByTestId("location").textContent).toBe("/create?from=home&idea=idea&section=topics#notes");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "이야기 주제 고르기" }));
+    expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
   it("기본 화면은 실제 최근 작업 한 건을 먼저 보여 주고 전체 이어가기는 별도 화면에서 찾는다", () => {
@@ -302,9 +310,9 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(readStudioProjectLibrary(window.localStorage)).toEqual(original);
   });
 
-  it.each(["lanes", "pipeline", "continue"])("%s에서 추천 시작으로 돌아오면 목적 제목으로 초점을 복원한다", (section) => {
+  it.each(["lanes", "pipeline", "continue", "tools", "topics", "presets"])("%s에서 추천 시작으로 돌아오면 목적 제목으로 초점을 복원한다", (section) => {
     renderStartSheet(`/create?from=home&section=${section}`);
-    const back = screen.getByRole("button", { name: "추천 시작으로" });
+    const back = screen.getByRole("link", { name: "작품 시작으로 돌아가기" });
     back.focus();
     expect(document.activeElement).toBe(back);
 
@@ -313,25 +321,19 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
     expect(heading.getAttribute("tabindex")).toBe("-1");
     expect(document.activeElement).toBe(heading);
-    expect(screen.queryByRole("button", { name: "추천 시작으로" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "작품 시작으로 돌아가기" })).toBeNull();
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
   });
 
-  it("첫 진입과 일반 구역 전환에서는 제목으로 초점을 옮기지 않는다", () => {
+  it("첫 진입의 초점은 유지하고 페이지 이동과 복귀에서는 제목을 안내한다", () => {
     renderStartSheet("/create");
     const heading = screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" });
     expect(document.activeElement).not.toBe(heading);
-
-    const pipeline = screen.getByTestId("create-start-section-pipeline");
-    pipeline.focus();
-    fireEvent.click(pipeline);
-    expect(document.activeElement).toBe(pipeline);
-
-    const recommended = screen.getByTestId("create-start-section-all");
-    recommended.focus();
-    fireEvent.click(recommended);
+    fireEvent.click(screen.getByRole("link", { name: "제작 도구" }));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "제작 단계와 도구" }));
+    fireEvent.click(screen.getByRole("link", { name: "작품 시작으로 돌아가기" }));
     expect(screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" })).toBe(heading);
-    expect(document.activeElement).toBe(recommended);
+    expect(document.activeElement).toBe(heading);
   });
 
   it("구역 이동 뒤 브라우저 Back으로 추천 시작과 URL을 함께 복원한다", async () => {
@@ -342,7 +344,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     fireEvent.click(screen.getByRole("button", { name: "테스트 이전 주소" }));
     expect(await screen.findByTestId("create-start-persona-guide")).toBeTruthy();
     expect(screen.getByTestId("location").textContent).toBe("/create?from=home");
-    expect(screen.getByTestId("create-start-section-all").getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1, name: "어떻게 시작할까요?" }));
     expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(0);
   });
 
@@ -368,10 +370,9 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
     await import("../my-story/MyStoryStartFlow");
   }, 60_000);
 
-  it("주제를 펼치면 자유로운 이야기와 기존 주제 6종의 바로가기가 있다", () => {
+  it("주제 화면에서 자유로운 이야기와 기존 주제 6종의 바로가기를 고른다", () => {
     renderStartSheet("/create");
     openMoreTopics();
-    openMoreStartMethods();
 
     const card = screen.getByRole("heading", { name: "내 이야기로 시작하기" }).closest("section");
     expect(card).not.toBeNull();
@@ -390,7 +391,10 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
     ]);
     // 개인 정보 안심 문구: 이 기기에만 임시 저장.
     expect(within(card as HTMLElement).getByText(/이 기기에만 임시 저장돼요/)).toBeTruthy();
-    // 카드가 기존 다섯 레인을 대신하지 않는다.
+    expect(screen.queryByRole("link", { name: /이야기부터 시작하기/ })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "작품 시작으로 돌아가기" }));
+    openMoreStartMethods();
+    // 주제 화면과 분리된 기존 다섯 레인도 계속 선택할 수 있다.
     expect(screen.getByRole("link", { name: /이야기부터 시작하기/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: /가져와서 시작하기/ })).toBeTruthy();
   });
@@ -424,9 +428,11 @@ describe("CreateStartPage — 내 이야기 의도 카드", () => {
     expect(returnQuery.has("intent")).toBe(false);
   });
 
-  it("기존 구역 바로가기는 해당 도구를 펼친 상태로 연다", () => {
+  it("기존 구역 바로가기는 해당 내용만 있는 별도 화면을 연다", () => {
     renderStartSheet("/create?section=lanes");
-    expect(screen.getByText("다른 시작 방법 · 기획, 콘티, 템플릿, 파일").closest("details")?.open).toBe(true);
+    expect(screen.getByRole("region", { name: "다른 시작 방법 · 기획, 콘티, 템플릿, 파일" })).toBeTruthy();
+    expect(screen.queryByTestId("create-start-persona-guide")).toBeNull();
+    expect(screen.queryByTestId("create-rea-story-pipeline")).toBeNull();
     expect(screen.getByRole("link", { name: /콘티부터 시작하기/ })).toBeTruthy();
   });
 

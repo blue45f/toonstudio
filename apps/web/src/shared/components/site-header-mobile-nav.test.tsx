@@ -52,6 +52,7 @@ function renderStatefulMenu() {
 
 function rankingMenuLink() {
   const dialog = screen.getByRole("dialog");
+  fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "랭킹" } });
   const link = dialog.querySelector<HTMLAnchorElement>('a[href="/ranking"]');
   if (!link) throw new Error("전체 메뉴의 랭킹 링크가 없습니다.");
   const group = link.closest("details");
@@ -98,62 +99,53 @@ describe("모바일 전체 메뉴", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
-  it("현재 여정만 펼쳐 기본 노출을 줄이고 다른 여정은 직접 펼칠 수 있다", () => {
+  it("일곱 목적을 별도 페이지로 연결하고 전체 목록을 메뉴에 반복하지 않는다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog");
-    expect(dialog.querySelectorAll("details[open]")).toHaveLength(1);
-    expect(dialog.querySelector("details[open]")?.textContent).toContain("자료·성장");
-    const group = [...dialog.querySelectorAll("details")].find((entry) => entry.textContent?.includes("쉬어가기"));
-    expect(group?.open).toBe(false);
-    const summary = group?.querySelector("summary");
-    expect(summary).not.toBeNull();
-    if (summary) fireEvent.click(summary);
-    expect(group?.open).toBe(true);
-    expect(group?.querySelector('a[href="/play"]')).not.toBeNull();
+    expect(dialog.querySelectorAll("details")).toHaveLength(0);
+    expect([...dialog.querySelectorAll(".site-menu-task")].map((link) => link.getAttribute("href"))).toEqual([
+      "/sitemap/discover", "/sitemap/create", "/sitemap/grow", "/sitemap/publish",
+      "/sitemap/connect", "/sitemap/rest", "/sitemap/personal",
+    ]);
+    expect(dialog.querySelector('a[href="/play"]')).toBeNull();
   });
 
-  it("작품 시작하기와 내 프로젝트를 앞에 두고 전체 기능·계정까지 연결한다", () => {
+  it("작품 시작하기와 내 작업을 앞에 두고 상세 디렉터리·도움말로 연결한다", () => {
     render(menu());
-    const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });
-    const navigation = within(dialog).getByRole("navigation", { name: "전체 서비스 메뉴" });
-    expect(within(navigation).getByRole("link", { name: /작품 시작하기/u }).getAttribute("href")).toBe("/create");
-    expect(within(navigation).getByRole("link", { name: "내 프로젝트" }).getAttribute("href")).toBe("/studio");
-    expect(within(navigation).getByRole("link", { name: "전체 기능" }).getAttribute("href")).toBe("/sitemap");
-    for (const href of ["/market", "/learn", "/help", "/settings", "/notifications"]) {
-      expect(navigation.querySelector(`a[href="${href}"]`)).not.toBeNull();
-    }
-    expect(navigation.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
-    expect(navigation.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/market");
+    const navigation = within(screen.getByRole("dialog")).getByRole("navigation", { name: "전체 서비스 메뉴" });
+    expect(within(navigation).getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
+    expect(within(navigation).getByRole("link", { name: "내 작업" }).getAttribute("href")).toBe("/studio");
+    expect(within(navigation).getByRole("link", { name: "전체 기능" }).getAttribute("href")).toBe("/sitemap/all");
+    expect(navigation.querySelector('a[href="/help"]')).not.toBeNull();
   });
 
-  it.each(["/market", "/home", "/studio", "/my", "/notifications"])("%s에서 목적지를 중복하지 않고 모든 작업 경로를 보존한다", (pathname) => {
-    render(menu(true, vi.fn(), pathname));
-    const navigation = within(screen.getByRole("dialog")).getByRole("navigation", { name: "전체 서비스 메뉴" });
-    const hrefs = [...navigation.querySelectorAll("a[href]")].map((link) => link.getAttribute("href"));
-    expect(new Set(hrefs).size).toBe(hrefs.length);
-    expect(hrefs.slice(0, 2)).toEqual(["/create", "/studio"]);
+  it("모든 기존 목적지를 메뉴 이름 검색으로 직접 찾고 중복 결과를 만들지 않는다", () => {
+    render(menu());
+    const dialog = screen.getByRole("dialog");
     const destinations = [
-      ...siteNavigationGroupsForPath(pathname).flatMap((group) => group.items),
+      ...siteNavigationGroupsForPath("/market").flatMap((group) => group.items),
       ...SITE_UTILITY_NAVIGATION,
     ];
-    for (const item of destinations) expect(hrefs).toContain(item.href);
-    expect(hrefs).toContain("/sitemap");
-    expect(navigation.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    for (const item of destinations) {
+      fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: item.label.ko } });
+      const hrefs = [...dialog.querySelectorAll(".site-menu-results a")].map((link) => link.getAttribute("href"));
+      expect(hrefs, item.id).toContain(item.href);
+      expect(new Set(hrefs).size, item.id).toBe(hrefs.length);
+    }
   });
 
   it.each([
-    ["/market", "자료·성장"],
-    ["/team/people", "함께 보기"],
-    ["/studio/publish", "연재·내보내기"],
-  ])("%s에서는 현재 여정 구간 하나만 강조하고 지도는 그대로다", (pathname, groupLabel) => {
+    ["/market", "자료·성장", "/sitemap/grow"],
+    ["/team/people", "함께 보기", "/sitemap/connect"],
+    ["/studio/publish", "연재·내보내기", "/sitemap/publish"],
+  ])("%s에서 현재 목적 하나를 강조하고 해당 기능 페이지를 연다", (pathname, groupLabel, href) => {
     render(menu(true, vi.fn(), pathname));
     const dialog = screen.getByRole("dialog");
     const highlighted = dialog.querySelectorAll('[data-current-journey="true"]');
     expect(highlighted).toHaveLength(1);
     expect(highlighted[0]?.textContent).toContain(groupLabel);
-    expect(highlighted[0]?.textContent).toContain("현재 여정");
-    // 지도 자체는 컨텍스트마다 달라지지 않는다: 구간 수는 항상 같다(쉬어가기 포함 7구간).
-    expect(dialog.querySelectorAll(".site-menu-group")).toHaveLength(7);
+    expect(highlighted[0]?.getAttribute("href")).toBe(href);
+    expect(dialog.querySelectorAll(".site-menu-task")).toHaveLength(7);
   });
 
   it("키보드 포커스를 메뉴 안에 유지하고 닫힐 때 배경 조작을 복원한다", async () => {
@@ -200,7 +192,7 @@ describe("모바일 전체 메뉴", () => {
     const { unmount } = render(tabs(true));
     const navigation = screen.getByRole("navigation", { name: "nav.quickAccess" });
     const hrefs = within(navigation).getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(hrefs).toEqual(["/studio", "/discover", "/market", "/my", "/sitemap"]);
     for (const href of hrefs) {
       expect(href).not.toMatch(/^\/(new|more)(\/|$)/u);
     }
@@ -216,6 +208,7 @@ describe("모바일 전체 메뉴", () => {
     const dialog = screen.getByRole("dialog", { name: "nav.allMenu" });
     expect(dialog.parentElement?.className).toContain("z-[110]");
 
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "소재 찾기" } });
     const currentRouteLink = dialog.querySelector<HTMLAnchorElement>('a[href="/market"]');
     expect(currentRouteLink).not.toBeNull();
     expect(currentRouteLink?.getAttribute("aria-current")).toBe("page");
@@ -232,6 +225,18 @@ describe("모바일 전체 메뉴", () => {
 
 
 describe("모바일의 공통 네 목적 현재 위치", () => {
+  it("목적별 하위 메뉴에서도 엄지로 전체 메뉴에 돌아가고 현재 탭을 읽는다", () => {
+    render(<MemoryRouter initialEntries={["/sitemap/create"]}><MobileHeaderNavigation
+      menuOpen={false} menuId="section-menu" panelRef={createRef<HTMLDivElement>()}
+      closeMenu={() => {}} isActive={() => false} isPurposeActive={() => false}
+      currentPurposeHref={null} /></MemoryRouter>);
+    const nav = screen.getByRole("navigation", { name: "nav.quickAccess" });
+    expect(within(nav).getAllByRole("link")).toHaveLength(5);
+    const current = nav.querySelectorAll('[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute("href")).toBe("/sitemap");
+  });
+
   it.each(["/studio", "/discover", "/market", "/my"] as const)("정본 목적 %s를 현재 탭 하나로 표시한다", (href) => {
     render(<MemoryRouter initialEntries={["/production/projects"]}><MobileHeaderNavigation
       menuOpen={false} menuId="purpose-menu" panelRef={createRef<HTMLDivElement>()}

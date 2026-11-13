@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -11,6 +11,20 @@ import { useI18n } from "@/shared/lib/i18n";
 afterEach(() => { cleanup(); useI18n.getState().setLang("ko"); });
 
 describe("공통 브랜드 푸터의 이동 계약", () => {
+  it("긴 서비스 목록은 접어 두고 메뉴·도움말·정책은 바로 제공한다", () => {
+    const view = render(<MemoryRouter><SiteFooter /></MemoryRouter>);
+    const disclosure = view.container.querySelector("details");
+    expect(disclosure?.open).toBe(false);
+    const quick = screen.getByRole("navigation", { name: "메뉴와 도움말" });
+    expect(within(quick).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/sitemap", "/help"]);
+    expect(screen.getByRole("navigation", { name: "이용 정책" }).closest("details")).toBeNull();
+    const summary = disclosure?.querySelector("summary");
+    if (!summary) throw new Error("서비스 안내 펼치기가 없습니다.");
+    fireEvent.click(summary);
+    expect(disclosure?.open).toBe(true);
+    expect(within(screen.getByRole("navigation", { name: "자료·성장" })).getByRole("link", { name: "제작 기술" }).getAttribute("href")).toBe("/about/technology");
+  });
+
   it.each(["ko", "en"] as const)("%s에서도 기존 목적별 메뉴·계정·정책 목적지를 보존한다", (locale) => {
     useI18n.getState().setLang(locale);
     render(<MemoryRouter initialEntries={["/learn"]}><SiteFooter /></MemoryRouter>);

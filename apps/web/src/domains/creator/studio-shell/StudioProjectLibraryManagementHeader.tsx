@@ -34,7 +34,7 @@ export function StudioProjectLibraryManagementHeader({
     : null;
   const entryActions = (
     <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
-      <Link href={view === "active" ? STUDIO_START_GATEWAY_HREF : "/studio/new"}
+      <Link href={STUDIO_START_GATEWAY_HREF}
         data-studio-library-primary-action={recentProject ? undefined : "new"}
         className={buttonClass({ variant: recentProject ? "outline" : "solid", className: "min-h-12 min-w-0 gap-2 whitespace-normal rounded-xl px-4" })}>
         <Plus size={16} aria-hidden="true" />
@@ -166,7 +166,7 @@ export function StudioProjectLibraryManagementHeader({
               {bi("파일에서 열기", "Open from file")}
             </Link>
             <Link
-              href="/studio/new"
+              href={STUDIO_START_GATEWAY_HREF}
               className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-danger/30 px-3 text-xs font-bold text-danger hover:bg-danger-soft/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {bi("새 작업 시작", "Start new work")}
