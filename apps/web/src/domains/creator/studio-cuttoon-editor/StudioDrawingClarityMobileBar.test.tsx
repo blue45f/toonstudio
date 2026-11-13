@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultStudioAppSettings } from "../studio-app-settings";
@@ -42,7 +42,13 @@ function Surface({ value }: { value: MobileFixture }) {
   </div>;
 }
 function show(value = session()) { return render(<StudioDrawingClarityProvider session={value}><Surface value={value} /></StudioDrawingClarityProvider>); }
-function more() { const trigger = screen.getByLabelText("더보기 · 도구와 도움말"); fireEvent.click(trigger); return trigger; }
+function more(task: "document" | "drawing" | "output" | "workspace" = "document") {
+  const trigger = screen.getByLabelText("더보기 · 도구와 도움말"); fireEvent.click(trigger);
+  const labels = { document: "원고와 레이어", drawing: "그리기 도구", output: "내보내기와 협업", workspace: "화면과 도움말" };
+  const purposes = screen.getByRole("navigation", { name: "원고 도구 목적 고르기" });
+  fireEvent.click(within(purposes).getByRole("button", { name: new RegExp(labels[task]) }));
+  return trigger;
+}
 
 /** 네이티브 모달이 열린 동안 외부 초점을 차단하는 브라우저 계약을 재현한다. */
 function nativeModal() {
@@ -86,7 +92,7 @@ describe("웹 모바일 기본 상단", () => {
     vi.stubGlobal("matchMedia", vi.fn((media: string) => ({ matches: true, media, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const plan = resolveStudioMobileTouchPlan("canvas");
     render(<MobileFullEditNotice startCollapsed surfaceId="studio-editor-canvas" surfaceLabel={plan.label} mobileCapabilities={plan.canDo} mobileLimitations={plan.cannotDo} touchTier={plan.tier} />);
-    show(); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
+    show(); const trigger = more("workspace"); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
     expect(screen.queryByRole("button", { name: "페이지 보기" })).toBeNull();
     const guide = screen.getByRole("complementary", { name: "모바일 편집 안내" });
     for (const item of [...plan.canDo, ...plan.cannotDo]) expect(screen.getByText(item.ko).closest("[hidden]")).toBeNull();
@@ -107,7 +113,7 @@ describe("웹 모바일 기본 상단", () => {
     const value = session(); show({ ...value, location: { ...value.location, ...location } });
     const simple = screen.queryByRole("button", { name: "간단한 그리기" }); if (simple) fireEvent.click(simple);
     expect(document.querySelector('[data-studio-device-guide-entry="comic"]')).toBeTruthy();
-    const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
+    const trigger = more("workspace"); fireEvent.click(screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }));
     for (const item of [...plan.canDo, ...plan.cannotDo]) expect(screen.getByText(item.ko).closest("[hidden]")).toBeNull();
     fireEvent.keyDown(screen.getByRole("button", { name: "기기 안내 접기" }), { key: "Escape" });
     expect(document.activeElement).toBe(trigger);
@@ -130,32 +136,32 @@ describe("웹 모바일 기본 상단", () => {
   it("메뉴의 페이지·레이어·소재·출력은 기존 모바일 명령을 사용한다", () => {
     const value = session(); show(value);
     more(); fireEvent.click(screen.getByRole("button", { name: "페이지 보기" })); expect(value.setMobileSheet).toHaveBeenLastCalledWith("pages");
-    more(); fireEvent.click(screen.getByText("레이어와 기존 작업 배치")); fireEvent.click(screen.getByRole("button", { name: "레이어·속성 보기" })); expect(value.studioMobileEditingDockHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
+    more(); fireEvent.click(screen.getByRole("button", { name: "레이어·속성 보기" })); expect(value.studioMobileEditingDockHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
     more(); fireEvent.click(screen.getByRole("button", { name: "소재 찾기" })); expect(value.setMenu).toHaveBeenLastCalledWith("asset");
-    more(); fireEvent.click(screen.getByRole("button", { name: "원고 내보내기" })); expect(value.setExportMenuOpen).toHaveBeenCalledWith(true);
+    more("output"); fireEvent.click(screen.getByRole("button", { name: "원고 내보내기" })); expect(value.setExportMenuOpen).toHaveBeenCalledWith(true);
   });
   it("전체 도구는 기존 채널에 보이는 메뉴 트리거를 전달한다", () => {
     const { container } = show(), root = container.querySelector<HTMLElement>("[data-studio-editor]");
     if (!root) throw new Error("편집 영역 누락");
     const opened = vi.fn(), stop = subscribeStudioAllTools(root, opened);
-    try { const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "전체 도구" })); expect(opened).toHaveBeenCalledExactlyOnceWith(trigger); }
+    try { const trigger = more("drawing"); fireEvent.click(screen.getByRole("button", { name: "전체 도구" })); expect(opened).toHaveBeenCalledExactlyOnceWith(trigger); }
     finally { stop(); }
   });
   it("손가락 안내가 실제로 열리고 설정에 맞는 조작을 보여 준 뒤 초점을 복구한다", () => {
-    show(); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+    show(); const trigger = more("workspace"); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
     const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" });
     expect(dialog.textContent).toContain("두 손가락으로 캔버스를 이동·확대해요.");
     expect(dialog.textContent).not.toContain("두 손가락을 짧게 탭하면 실행 취소해요.");
     fireEvent.keyDown(dialog, { key: "Escape" }); expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
   });
   it("프로젝트·창 도구는 간결화 표시를 종료해 기존 영역을 보여 주며 다시 돌아올 수 있다", () => {
-    show(); more(); fireEvent.click(screen.getByText("레이어와 기존 작업 배치")); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 보기" }));
+    show(); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 보기" }));
     expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
     expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" })); expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
   });
   it("협업을 요청하면 기존 영역을 다시 표시하고 원본 팀 열기를 실행한다", () => {
-    const value = session(); show(value); more(); fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
+    const value = session(); show(value); more("output"); fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
     expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
     expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
     expect(value.setTeamPanelOpen).toHaveBeenCalledExactlyOnceWith(true);
@@ -168,7 +174,7 @@ describe("웹 모바일 기본 상단", () => {
   it.each(["Escape", "네이티브 취소", "닫기 버튼"])("안내 닫기(%s)는 네이티브 모달을 먼저 닫아 외부 초점을 한 번 복구한다", (method) => {
     const native = nativeModal();
     try {
-      show(); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      show(); const trigger = more("workspace"); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
       const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }), closed = vi.fn();
       dialog.addEventListener("close", closed); native.focus.mockClear();
       if (method === "Escape") fireEvent.keyDown(dialog, { key: "Escape" });
@@ -185,7 +191,7 @@ describe("웹 모바일 기본 상단", () => {
     destination.textContent = "다음 사용법 안내"; document.body.append(destination);
     try {
       const value = session(); vi.mocked(value.setTutorialHubOpen).mockImplementation((open) => { if (open === true) destination.focus(); });
-      show(value); const trigger = more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      show(value); const trigger = more("workspace"); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
       const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }); native.focus.mockClear(); fireEvent.click(screen.getByRole("button", { name: "사용법 따라 하기" }));
       expect(native.close.mock.contexts.filter(node => node === dialog)).toHaveLength(1); expect(value.setTutorialHubOpen).toHaveBeenCalledExactlyOnceWith(true);
       expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(destination);
@@ -196,7 +202,7 @@ describe("웹 모바일 기본 상단", () => {
   it("안내가 열린 채 상위 화면을 떠나면 네이티브 모달을 한 번 정리한다", () => {
     const native = nativeModal();
     try {
-      const value = session(), view = show(value); more(); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
+      const value = session(), view = show(value); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "그리기·손가락 안내" }));
       const dialog = screen.getByRole("dialog", { name: "그리기·손가락 안내" }), closed = vi.fn(); dialog.addEventListener("close", closed);
       view.unmount(); expect(native.close.mock.contexts.filter(node => node === dialog)).toHaveLength(1); expect(closed).toHaveBeenCalledTimes(1);
       expect(value.setTutorialHubOpen).not.toHaveBeenCalled();

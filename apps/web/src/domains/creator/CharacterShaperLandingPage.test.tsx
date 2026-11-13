@@ -383,8 +383,9 @@ describe("/shaper registration", () => {
     expect(footer).toContain("resolveNavigationGroupsFor()");
     expect(footer).toContain("navigationGroups.map");
     const mobileNavigation = readRepoFile("apps/web/src/shared/components/site-header-mobile-nav.tsx");
-    expect(mobileNavigation).toContain("resolveNavigationGroupsFor()");
-    expect(mobileNavigation).toContain("navigationGroups.map");
+    expect(mobileNavigation).toContain("<SiteMenuDestinations");
+    const mobileDestinations = readRepoFile("apps/web/src/shared/components/SiteMenuDestinations.tsx");
+    expect(mobileDestinations).toContain("resolveNavigationGroupsFor().map");
   });
 
   it("publishes the new app-shell keys in the built-in locales", () => {
