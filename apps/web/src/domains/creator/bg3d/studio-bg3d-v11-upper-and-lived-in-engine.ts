@@ -48,13 +48,23 @@ export class Bg3dV11PlacementError extends Error {
 }
 
 function validateRoom(room: Bg3dV11RoomDimensions): void {
+  const thickness = room.wallThickness ?? 0;
   if (
     ![room.width, room.depth, room.wallHeight].every(
       (v) => Number.isFinite(v) && v > 0,
-    )
+    ) ||
+    !Number.isFinite(thickness) ||
+    thickness < 0 ||
+    thickness >= room.width ||
+    thickness >= room.depth
   ) {
     throw new Bg3dV11PlacementError("invalid-input");
   }
+}
+
+function roomInteriorHalfSize(room: Bg3dV11RoomDimensions): [number, number] {
+  const thickness = room.wallThickness ?? 0;
+  return [(room.width - thickness) / 2, (room.depth - thickness) / 2];
 }
 
 function validateRoomFit(
@@ -62,12 +72,13 @@ function validateRoomFit(
   room: Bg3dV11RoomDimensions,
 ): void {
   const { min, max } = measureV11PrimitivesWorldBounds(primitives);
+  const [halfWidth, halfDepth] = roomInteriorHalfSize(room);
   const epsilon = 0.0001;
   if (
-    min[0] < -room.width / 2 - epsilon ||
-    max[0] > room.width / 2 + epsilon ||
-    min[2] < -room.depth / 2 - epsilon ||
-    max[2] > room.depth / 2 + epsilon ||
+    min[0] < -halfWidth - epsilon ||
+    max[0] > halfWidth + epsilon ||
+    min[2] < -halfDepth - epsilon ||
+    max[2] > halfDepth + epsilon ||
     min[1] < -epsilon ||
     max[1] > room.wallHeight + epsilon
   ) {
@@ -363,9 +374,10 @@ export function snapBg3dClusterToRoomAnchor(
   const centerZ = (bounds.min[2] + bounds.max[2]) * 0.5;
   const halfW = (bounds.max[0] - bounds.min[0]) * 0.5;
   const halfD = (bounds.max[2] - bounds.min[2]) * 0.5;
+  const [roomHalfWidth, roomHalfDepth] = roomInteriorHalfSize(room);
   if (
-    halfW * 2 + marginMeters * 2 > room.width ||
-    halfD * 2 + marginMeters * 2 > room.depth
+    halfW + marginMeters > roomHalfWidth ||
+    halfD + marginMeters > roomHalfDepth
   ) {
     throw new Bg3dV11PlacementError("room-too-small");
   }
@@ -375,19 +387,20 @@ export function snapBg3dClusterToRoomAnchor(
   switch (anchor) {
     case "north-wall":
       targetX = 0;
-      targetZ = -room.depth * 0.5 + halfD + marginMeters;
+      targetZ = -roomHalfDepth + halfD + marginMeters;
       break;
     case "nw-corner":
-      targetX = -room.width * 0.5 + halfW + marginMeters;
-      targetZ = -room.depth * 0.5 + halfD + marginMeters;
+      targetX = -roomHalfWidth + halfW + marginMeters;
+      targetZ = -roomHalfDepth + halfD + marginMeters;
       break;
     case "east-window":
-      targetX = room.width * 0.5 - halfW - marginMeters;
+      targetX = roomHalfWidth - halfW - marginMeters;
       targetZ = 0;
       break;
     case "alley-facade-upper":
+      // 자동 단면으로 벽을 숨겨도 설비는 복원 가능한 벽의 실내 면 안에 둔다.
       targetX = -room.width * 0.25;
-      targetZ = -room.depth * 0.5 + halfD + marginMeters;
+      targetZ = -roomHalfDepth + halfD + marginMeters;
       break;
     case "ceiling-center":
     default:
@@ -398,13 +411,13 @@ export function snapBg3dClusterToRoomAnchor(
 
   const dx =
     Math.max(
-      -room.width / 2 + halfW + marginMeters,
-      Math.min(room.width / 2 - halfW - marginMeters, targetX),
+      -roomHalfWidth + halfW + marginMeters,
+      Math.min(roomHalfWidth - halfW - marginMeters, targetX),
     ) - centerX;
   const dz =
     Math.max(
-      -room.depth / 2 + halfD + marginMeters,
-      Math.min(room.depth / 2 - halfD - marginMeters, targetZ),
+      -roomHalfDepth + halfD + marginMeters,
+      Math.min(roomHalfDepth - halfD - marginMeters, targetZ),
     ) - centerZ;
   const snappedPrimitives = primitives.map((prim) => ({
     ...prim,

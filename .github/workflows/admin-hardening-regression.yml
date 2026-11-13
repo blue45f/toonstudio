@@ -33,7 +33,8 @@ concurrency:
 jobs:
   admin-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # 전체 타입 검사 25분 29초와 같은 SHA의 빌드 6분 17초를 포함해 준비·실계정 검증까지 완주한다.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:16-alpine

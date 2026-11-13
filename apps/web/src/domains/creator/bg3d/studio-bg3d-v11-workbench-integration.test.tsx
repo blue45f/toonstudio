@@ -24,7 +24,9 @@ import { createStudioBg3dOrganizationController } from "./studio-bg3d-organizati
 import { buildStudioBg3dOrganizationView } from "./studio-bg3d-scene-organization";
 import { planStudioBg3dOrganizationMutation } from "./studio-bg3d-organization-mutation";
 import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
-import { STUDIO_BG3D_V11_UPPER_ARCHETYPES } from "./studio-bg3d-v11-upper-catalog";
+import { STUDIO_BG3D_V11_UPPER_ARCHETYPES, type Bg3dV11RoomDimensions } from "./studio-bg3d-v11-upper-catalog";
+import { measureV11PrimitivesWorldBounds } from "./studio-bg3d-v11-geometry";
+import { buildStudioBg3dRoomParts } from "./studio-bg3d-room-builder";
 import { findStudioBg3dEssentialAsset } from "./studio-bg3d-essential-pose-prop-catalog";
 
 type GeneratedPorts = Parameters<
@@ -32,7 +34,7 @@ type GeneratedPorts = Parameters<
 >[0];
 
 /** 실제 생성 묶음·조직 계획·history·문서 adapter를 연결하고 renderer 입출력만 대체한다. */
-function fixture(roomBuilderSpec = { width: 6.4, depth: 5.2, wallHeight: 2.85 }) {
+function fixture(roomBuilderSpec: Bg3dV11RoomDimensions = { width: 6.4, depth: 5.2, wallHeight: 2.85 }) {
   const existing: BgPrimitive = {
     id: "existing",
     kind: "box",
@@ -195,8 +197,10 @@ describe("V11 실제 작업대 삽입·표시·영속화 계약", () => {
     expect(f.history.historyIndexRef.current).toBe(historyIndex);
   });
 
-  it("6종 상부의 정본 카탈로그 참조와 기존 하부 참조를 저장·재열기 뒤에도 보존한다", () => {
-    const f = fixture();
+  it("두꺼운 벽 안에 배치한 하부·6종 상부의 위치와 정본 참조를 Undo/Redo·저장·재열기 뒤에도 보존한다", () => {
+    const room = { width: 6.4, depth: 5.2, wallHeight: 2.85, wallThickness: 0.3 };
+    const f = fixture(room);
+    const before = createStudioBg3dHistorySnapshot(f.read());
     render(
       <StudioBg3dAdvancedWorkbenchHub
         defaultTab="spatial-modeler"
@@ -206,6 +210,11 @@ describe("V11 실제 작업대 삽입·표시·영속화 계약", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "상·하부 세트 원클릭 배치" }),
     );
+    const after = createStudioBg3dHistorySnapshot(f.read());
+    f.restore("undo");
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(before);
+    f.restore("redo");
+    expect(createStudioBg3dHistorySnapshot(f.read())).toEqual(after);
     const lowerReferences = f.read().primitives
       .filter((p) => p.tags?.includes("BgCluster") && !p.tags.includes("BgV11_Upper"))
       .map(({ id, componentRef }) => ({ id, componentRef }));
@@ -223,6 +232,15 @@ describe("V11 실제 작업대 삽입·표시·영속화 계약", () => {
       );
     }
     const expectReferences = (primitives: readonly BgPrimitive[]) => {
+      const walls = buildStudioBg3dRoomParts({ ...room, openings: [], furniture: [] });
+      const bounds = measureV11PrimitivesWorldBounds(primitives.filter((part) => part.tags?.includes("BgCluster")));
+      for (const [wall, axis, sign] of [["west", 0, 1], ["east", 0, -1], ["north", 2, 1], ["south", 2, -1]] as const) {
+        const part = walls.find((item) => item.wall === wall);
+        if (!part) throw new Error(`${wall} 벽 파츠가 없습니다.`);
+        const innerFace = part.position[axis] + sign * part.scale[axis] / 2;
+        if (sign === 1) expect(bounds.min[axis]).toBeGreaterThanOrEqual(innerFace + 0.08 - 0.0001);
+        else expect(bounds.max[axis]).toBeLessThanOrEqual(innerFace - 0.08 + 0.0001);
+      }
       for (const meta of STUDIO_BG3D_V11_UPPER_ARCHETYPES) {
         const asset = findStudioBg3dEssentialAsset(`kitbash-v11-${meta.id}`);
         const upper = primitives.filter((p) => p.tags?.includes(`BgV11_${meta.shortCode}`));
@@ -251,6 +269,8 @@ describe("V11 실제 작업대 삽입·표시·영속화 계약", () => {
     expect(reopened.ok).toBe(true);
     expect(reopened.primitives).toHaveLength(f.read().primitives.length);
     expectReferences(reopened.primitives);
+    const transforms = (primitives: readonly BgPrimitive[]) => primitives.map(({ id, position, rotation, scale }) => ({ id, position, rotation, scale }));
+    expect(transforms(reopened.primitives)).toEqual(transforms(f.read().primitives));
   });
 
   it("production importer에서 삽입하고 전체 묶음 Undo/Redo·문서 재열기·태그 보존을 수행한다", () => {

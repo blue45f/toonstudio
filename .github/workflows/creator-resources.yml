@@ -82,7 +82,8 @@ jobs:
         run: NODE_PATH="$RUNNER_TEMP/creator-checker/node_modules" node scripts/verify-creator-workspace-browser.mjs
   integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 전체 타입 검사 21분 50초 뒤 빌드가 30분 상한에 취소된 실측을 반영하고 모든 검증을 유지한다.
+    timeout-minutes: 45
     env:
       HUSKY: '0'
       NODE_OPTIONS: --max-old-space-size=8192
