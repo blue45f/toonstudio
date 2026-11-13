@@ -1,9 +1,9 @@
 # 전페이지 실제 UI 적용 소비 지도 · 2026-11-13
 
-상태: **migration**. 정본 route 선언과 실제 소스 소비를 대조한다. 목표 시안, 현재 코드, 단위 테스트, 브라우저 검증, CI·병합·배포를 서로 다른 증거로 취급한다.
+상태: **migration — 2026-11-13 최종 후보 소스 확인, 최종 검증·PR·병합 대기**. 정본 route 선언과 실제 소스 소비를 대조한다. 목표 시안, 현재 코드, 단위 테스트, 브라우저 검증, CI·병합·배포를 서로 다른 증거로 취급한다.
 
-- 2차 기준 SHA: a4fccbcfb1450e0a1688a7bec2b5ade97c914344
-- 관찰 HEAD: a4fccbcfb1450e0a1688a7bec2b5ade97c914344와 작업 트리. 수집: 2026-11-13T08:24:20.874Z.
+- 최종 소스 확인 HEAD: `2b00e21199501eed2ae0787a4bb56cc21929448a`. 이 문서 수정 전 작업 트리는 clean이었다. 이 SHA를 후속 PR 병합·운영 배포 SHA로 간주하지 않는다.
+- 소비 체인 원본은 `3bd1cfea8c25c170279a6f9299f94438f940e610`에서 2026-11-13 17:42 KST에 수집한 `sitewide-ux-implementation-consumers-final.json`이다. 최종 후보의 후속 변경과 source를 대조했으며, URL·page 연결과 아래 구조 분류 수치는 유지된다. JSON 생성 입력은 이 문서 보완에서 재생성하지 않았다.
 - 정본 감사 URL **443개**, 연결된 page source **243개**, 해석 누락 **0개**. 같은 본문을 공유하는 별칭·파라미터 경로가 있다.
 - 목표 [전페이지 시안집](./sitewide-ux-atlas-20261113.html)은 459개 선택 항목이다. 신규 UI 459개를 독립 구현했다는 뜻이 아니다.
 
@@ -13,13 +13,14 @@
 
 | 판정 | URL 수 | 의미 |
 | --- | ---: | --- |
-| 기존 목적 분리 유지(소스) | 136 | 기존 단일 목적·탭·단계·접기 근거에 따라 불필요한 재작성 제외 |
-| 공유 UI 적용(소스) | 193 | 실제 JSX 소비 경로에 변경 있음 · 본문 전체 개편 주장 제외 |
+| 기존 목적 분리 유지(소스) | 135 | 기존 단일 목적·탭·단계·접기 근거에 따라 불필요한 재작성 제외 |
+| 공유 UI 적용(소스) | 194 | 실제 JSX 소비 경로에 변경 있음 · 본문 전체 개편 주장 제외 |
 | 권한·표면별 검증 분리 | 11 | 권한·데이터·편집 표면별 실제 실행은 별도 확인 |
 | 별칭 유지 | 44 | 기존 정본으로 이동하는 호환 진입 |
 | 본문 개편 적용(소스) | 59 | page 파일 자체 변경 |
+| 합계 | 443 | 상호 배타적인 URL별 구조 판정 · 독립 신규 UI 수나 기능 성공 수가 아님 |
 
-기존 구조 유지 판정은 source의 목적과 분기 근거다. 모바일 사용성 실험 통과·서버 권한 통과를 뜻하지 않는다. 모든 URL에 대해 선택 소스와 판정을 아래에 남겼다. 원본 체인·JSX 행·변경 소스는 로컬 .qa/sitewide-ux-wave2/implementation-consumers.json에 보존한다. 개인 데이터나 인증 비밀값은 수집하지 않았다.
+기존 구조 유지 판정은 source의 목적과 분기 근거다. 모바일 사용성 실험 통과·서버 권한 통과를 뜻하지 않는다. `권한·표면별 검증 분리` 11개 외의 직접 변경·공유 소비·기존 유지 경로에도 실계정·서버 API·GPU·저장·전송의 미검증 조건이 있다. 모든 URL에 대해 선택 소스와 판정을 아래에 남겼다. 원본 체인·JSX 행·변경 소스는 별도 검토집의 `data/sitewide-ux-implementation-consumers-final.json`에 보존한다. `.qa/sitewide-ux-wave2/implementation-consumers.json`은 수집 중간 기록이며 최종 수치의 권위로 사용하지 않는다. 개인 데이터나 인증 비밀값은 수집하지 않았다.
 
 ## 실제 개편과 검증
 
@@ -30,6 +31,25 @@
 - 독립 Admin은 별도 Vite에서 API 403을 명시적으로 반환한 오류 fixture의 실제 h1 준비 후 390px로 확인했다. 가로 넘침·pageerror 0, 권한 오류와 닫힌 다른 업무 메뉴를 확인했다. 인증된 정책·CI 보드 전체 상태는 이 관측으로 검증하지 않았다. 로컬 원시 로그는 .qa/sitewide-ux-wave2/task-browser.json이며 stable visualization 폴더에 같은 JSON을 보존했다.
 - Studio 일반 레일 → 전체 도구 목록, canvas/comic의 해당 workMode → 추가 작업, 3D 배경 → 목적 패널, 캐릭터 → 분류별 슬롯, 브러시 실험실 → URL 작업 화면은 각각 조건이 다른 소비 경로다. 시안집의 editor 51개라는 목표 분류를 실제 편집기 개수·검증 수로 사용하지 않는다.
 - ResourceLayout, ResourceSearchHeader, EngineeringPageFrame, LearnSectionShell, WorkspaceTaskFrame, ProductionProjectNav 등 공유 변경은 아래 실제 연결된 URL에서만 소스 적용으로 표시했다. 공통 헤더 변화만으로 본문까지 개편됐다고 쓰지 않는다.
+- 최종 후보에서 `/my`의 일반 빈 작업 행동은 `/create`의 **작품 시작하기**로 통일했다. `/settings/api-keys`, `/settings/integrations`, `/developers`는 작업형 제목 토큰과 `data-site-page-header-size="default"`를 소비한다. 기존 몰입형 편집기·문서 읽기·명시적 hero의 역할별 크기까지 일괄 덮어쓰지 않았다.
+
+## 캡처 날짜와 최종 후보의 관계
+
+별도 오프라인 검토집 `sitewide-ux-wave2-review/index.html`은 **50개 정본 주소에 연결된 실제 PNG 139장**과 443개 소스 판정을 함께 제공한다. 139장은 443개 주소를 모두 촬영한 수가 아니며, 같은 주소의 폭·목적·상태가 여러 장 들어 있다. 검색·선택 후 해당 주소·폭의 캡처가 없으면 **실제 캡처 없음**을 표시한다. 459개 항목의 목표 시안은 실제 구현 캡처와 구분한다.
+
+| 캡처 묶음 | PNG 수 | 2026-11-13 관찰 시점·조건 | 최종 `2b00e2119` 대비 해석 |
+| --- | ---: | --- | --- |
+| `mobile-audit-final` | 19 | 1차 개선 기록. 일반 화면 17장은 15:19 KST 기록, 전체 메뉴·푸터 2장은 별도 시각 필드 없음. API fixture 없음 | 1차 동선의 역사 자료. 후속 본문·번역·제목 변경을 반영한 최종 캡처가 아님 |
+| `wave2-root` | 24 | 17:16 KST, 8주소 × 390/834/1440px, API fixture 없음 | 2차 기본 작업의 관찰. API 키·연동·개발자 제목은 후속 통일 전 기록으로 표시 |
+| `studio-wave2` | 54 | 17:30 KST, 390/1440px. 게스트 200·다른 API 503 fixture, SwiftShader, 실제 생성한 로컬 원고 | 2차 편집 표면 기록. 후속 번역 수정 이전이며 물리 펜·모든 GPU·서버 저장·실계정 성공의 증거가 아님 |
+| `second-pass-reader-learning` | 28 | 17:30 KST, 390/1440px. fixture 없는 로컬 게스트 응답·오류·로그인 경계 포함 | 검색·판매·작성 진입 등의 기록. 실제 게시·정산·AI 대화·계정 편집 성공과 구분 |
+| 조직·협업·뉴스레터 UI fixture | 6 | 날짜는 2026-11-13, 원시 JSON에 캡처 시각 필드 없음. 3주소 × 390/1440px, 예시 계정/API, 쓰기 요청 0 | 실제 React 컴포넌트의 동선·초안 보존 검증. 서버 권한·초대·제안·메일 발송 성공이 아님 |
+| `wave2-tone-final` | 8 | 18:08 KST, 4주소 × 390/1440px, API fixture 없음. `0a3933289` 후속 미커밋 제목·시작 동선 수정 상태 | 최종 후보에 포함된 `/my` 일반 시작 경로와 연동 3화면의 제목 통일 확인. `2b00e2119` checkout을 다시 촬영한 것은 아님 |
+| 합계 | 139 | 폭·상태별 관찰 기록 | 실계정 전 기능 완주·동일 SHA 배포 증거가 아님 |
+
+Studio의 BG3D 3목적은 **정밀 편집 버튼으로 진입한 로컬 UI 상태**여서 URL만으로 재현되지 않는다. 캐릭터의 새 3분류 rail은 태블릿 소비이며 PC·모바일의 기존 6분류와 구분한다. Poser 캡처는 기존 전체화면 정문 유지 판정이고, 지원 브리프 캡처는 영상 안내까지 펼친 최종 hash 상태다. 저장 화면 진입·필기 패드 마우스 획 확인을 파일 영속저장·물리 펜 검증으로 올려 쓰지 않는다.
+
+검토집 메타데이터의 `0a` 후속 미커밋 표시는 **캡처 당시 상태**다. 이 문서의 최종 소스 HEAD `2b00e2119`와 구분하며, 후속 전체 로컬 게이트·원격 CI·PR·main 병합·배포 결과는 별도 완료 기록 전까지 대기다. 중단된 `00b` 기준 전수 실행도 최종 후보 검증으로 사용하지 않는다.
 
 ## 기존 구조를 유지한 주요 근거
 
@@ -141,7 +161,7 @@
 | /canvas | [app/routes/groups/LegacyCanvasRedirect.tsx](../../apps/web/src/app/routes/groups/LegacyCanvasRedirect.tsx) | 자체 화면 | redirect | root | 별칭·기존 정문 연결 | 소스 구조 확인 · 대표 화면 검증 별도 | 별칭 유지 — 별칭 전용 컴포넌트의 Navigate 확인 |
 | /challenges | <Navigate to="/showcase/challenges" replace /> | 자체 화면 | redirect | root | 별칭·기존 정문 연결 | 소스 구조 확인 · 대표 화면 검증 별도 | 별칭 유지 — <Navigate to="/showcase/challenges" replace /> |
 | /character-chat | [domains/character-chat/CharacterChatPage.tsx](../../apps/web/src/domains/character-chat/CharacterChatPage.tsx#L156) | Container, ActionableEmptyState, SiteDisclosure | result | root | 2차 page 직접 수정 | 소스 구조 확인 · 대표 화면 검증 별도 | 본문 개편 적용(소스) — 해당 page 소스의 목적 선택/본문 우선 변경이 존재; 테스트·브라우저 결과는 별도 증거 (156행 JSX) |
-| /character-chat/manage | [domains/character-chat/CharacterChatManagePage.tsx](../../apps/web/src/domains/character-chat/CharacterChatManagePage.tsx#L349) | ActionableEmptyState, Switch | result | root | 기존 소스 유지(2차 변경 없음) | 소스 구조 확인 · 실제 계정/데이터/표면 별도 | 기존 목적 분리 유지(소스) — 캐릭터 목록에서 의도 시 생성/수정 form을 열고 닫는 기존 흐름 (349행 JSX) |
+| /character-chat/manage | [domains/character-chat/CharacterChatManagePage.tsx](../../apps/web/src/domains/character-chat/CharacterChatManagePage.tsx#L349) | CharacterChatThread.tsx, ActionableEmptyState, Switch | result | root | 2차 소비 경로 수정 | 소스 구조 확인 · 실제 계정/데이터/표면 별도 | 공유 UI 적용(소스) — 캐릭터 목록에서 의도 시 생성/수정 form을 여는 주 작업은 유지하며, 조건부 테스트 대화가 변경된 CharacterChatThread를 소비. 공개·저장·실제 대화 실행은 별도 (349행 JSX) |
 | /collaborate | [domains/collaboration/CollaborationBoardPage.tsx](../../apps/web/src/domains/collaboration/CollaborationBoardPage.tsx#L115) | site-contextual-subnav.tsx, site-contextual-subnav.css | result | root | 2차 소비 경로 수정 | 소스 구조 확인 · 실제 계정/데이터/표면 별도 | 공유 UI 적용(소스) — 아래 소비 체인에 변경이 연결됨; 해당 분기·본문 전체 검증과 구분 (115행 JSX) |
 | /collaborate/gallery | [domains/collaboration/hiring/CreatorCareerGalleryPage.tsx](../../apps/web/src/domains/collaboration/hiring/CreatorCareerGalleryPage.tsx#L185) | Container, StaggerReveal, RevealOnScroll | result | root | 기존 소스 유지(2차 변경 없음) | 소스 구조 확인 · 대표 화면 검증 별도 | 기존 목적 분리 유지(소스) — 한 종류 목록·검색·항목 이동이 중심이고 새 작성·상세는 별도 목적지 (185행 JSX) |
 | /collaborate/moderation | [domains/collaboration/CollaborationModerationPage.tsx](../../apps/web/src/domains/collaboration/CollaborationModerationPage.tsx#L22) | Container, ActionableEmptyState | result | root | 기존 소스 유지(2차 변경 없음) | 소스 구조 확인 · 대표 화면 검증 별도 | 기존 목적 분리 유지(소스) — 신고 검토 한 작업의 인증/목록/처리 상태 분기; 실제 moderation 권한·실행은 별도 (22행 JSX) |
