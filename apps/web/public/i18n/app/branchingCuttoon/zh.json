@@ -229,6 +229,7 @@
   "branchingCuttoon.rea.audit.choiceReach": "Choice Reach Balance",
   "branchingCuttoon.rea.audit.memoryBudget": "Memory Flag Budget",
   "branchingCuttoon.rea.label": "Branching Cuttoon Graph Topology Workbench",
+  "branchingCuttoon.rea.advancedSettings": "Advanced branch validation",
   "branchingCuttoon.rea.eyebrow": "INTERACTIVE NARRATIVE GRAPH · INTEGRITY AUDIT",
   "branchingCuttoon.rea.description": "Validate diamond convergence, multi-ending trees, and zero dead-end / memory flag budgets.",
   "branchingCuttoon.rea.topologyLabel": "Topology Mode:",

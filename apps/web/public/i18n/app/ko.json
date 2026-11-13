@@ -1039,6 +1039,7 @@
   "branchingCuttoon.rea.audit.choiceReach": "선택지 도달 균형",
   "branchingCuttoon.rea.audit.memoryBudget": "기억 플래그 예산",
   "branchingCuttoon.rea.label": "분기형 컷툰 그래프 토폴로지 워크벤치",
+  "branchingCuttoon.rea.advancedSettings": "분기 검증 고급 설정",
   "branchingCuttoon.rea.eyebrow": "인터랙티브 서사 분기 그래프 · 무결성 감사",
   "branchingCuttoon.rea.description": "다이아몬드 수렴·다중 엔딩 토폴로지와 막다른 컷 0건·플래그 예산 규칙을 실시간으로 대조합니다.",
   "branchingCuttoon.rea.topologyLabel": "토폴로지 모드:",
