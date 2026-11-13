@@ -159,7 +159,8 @@ describe("Studio brush browser harness catalogue boundary", () => {
     expect(mobileBrushSettings).toContain('if (await clarity.isVisible()) {');
     expect(mobileBrushSettings).toContain('dock.getAttribute("data-studio-mobile-primary-layout", { timeout: timeoutMs }) !== "simple"');
     expect(mobileBrushSettings).toContain('await toggle.getAttribute("aria-expanded", { timeout: timeoutMs })');
-    expect(mobileBrushSettings).toContain("const deadline = Date.now() + 60_000;");
+    expect(mobileBrushSettings).toContain("dock: Locator, timeoutMs = 60_000): Promise<void>");
+    expect(mobileBrushSettings).toContain("const deadline = Date.now() + timeoutMs;");
     expect(mobileBrushSettings).toContain("const remaining = () => {");
     expect(mobileBrushSettings).toContain("const value = deadline - Date.now();");
     expect(mobileBrushSettings).toContain("if (value <= 0) throw new Error(");
