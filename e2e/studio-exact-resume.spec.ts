@@ -183,7 +183,8 @@ test("Local My work resumes the exact document context and keeps it after return
   });
   await expect(projectCard).toHaveCount(1);
   await expect(projectCard).toBeVisible();
-  // 현재 요약은 복원할 위치·확대·선택을 직접 알리며 접힌 관리 메뉴에 숨기지 않는다.
+  await expect(projectCard).toHaveAttribute("data-recent-primary", "true");
+  await expect(projectCard.getByText("최근 작업", { exact: true })).toBeVisible();
   await expect(projectCard.locator("details").getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toHaveCount(0);
   await expect(projectCard.getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toBeVisible();
 
@@ -232,7 +233,7 @@ test("Local My work resumes the exact document context and keeps it after return
 
   await page.goto("/studio", { waitUntil: "domcontentloaded" });
   await expect(projectCard).toHaveCount(1);
-  // 작업실로 돌아온 뒤에도 같은 문서와 정확한 복원 요청을 다시 제공해야 한다.
+  await expect(projectCard.getByText("최근 작업", { exact: true })).toBeVisible();
   await expect(continueLink).toHaveAttribute(
     "href",
     `/studio/p/${PROJECT_ID}/d/${DOCUMENT_ID}?focus=cut%3A2&language=ko-KR&resume=latest&version=draft-7&workspace=comic`,

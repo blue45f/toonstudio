@@ -31,10 +31,13 @@ test("lesson detail exposes an outcome, stage navigation, progress requirements 
   await expect(page.getByRole("heading", { name: "직접 만들어 보세요", exact: true })).toBeFocused();
   await expect(page.locator(`[id="${lesson.id}-practice"]`)).toBeVisible();
   const lab = await openLessonLab(page);
+  await expect(page).toHaveURL(/lesson-step=practice/u);
   await expect(page.locator(`[id="${lesson.id}-lab"]`)).toBeVisible();
   await expect(lab.getByRole("slider")).toHaveCount(2);
 
   const check = await selectLessonStep(page, "자가 확인");
+  await expect(page).toHaveURL(/lesson-step=check/u);
+  await expect(check.getByRole("heading", { name: "확인 퀴즈", exact: true })).toBeVisible();
   await expect(page.locator(`[id="${lesson.id}-quiz"]`)).toBeVisible();
   await expect(check.getByRole("checkbox")).toHaveCount(lesson.checks.length);
   for (const checkbox of await check.getByRole("checkbox").all()) await expect(checkbox).not.toBeChecked();
@@ -80,6 +83,7 @@ test("lesson requirements update immediately and completion remains explicitly g
   await expect(check.getByRole("button", { name: "학습 완료됨", exact: true })).toHaveCount(0);
 
   for (const checkbox of await checks.all()) await checkbox.check();
+  await expect(requirementProgress).toHaveAttribute("value", String(Math.round(lesson.checks.length / (lesson.checks.length + 1) * 100)));
   await expect(finish).toBeDisabled();
   await answer.check();
 

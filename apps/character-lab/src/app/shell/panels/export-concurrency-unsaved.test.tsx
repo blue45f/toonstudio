@@ -132,19 +132,16 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
 
     render(
       <MockLabProvider store={h.store} catalog={h.catalog} engineSession={h.engineSession} shell={{ packagePlans: h.packagePlans }}>
-        <ExportPanel session={h.session} deps={{ save: h.save, now: () => 1200 }} />
+        <ExportPanel session={h.session} deps={{ save: h.save, writeClipboard: async () => undefined, now: () => 1200 }} />
       </MockLabProvider>,
     );
 
-    // 1) 먼저 2500×2500으로 2×2 설정시트를 내보내 자동 축소 안내(notices)가 표시된 상태를 만든다
-    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "2500" } });
-    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "2500" } });
-    fireEvent.click(screen.getByTestId("export-quad-sheet-png"));
-    // 실제 4096px PNG 인코딩이 끝난 뒤 안내를 검증한다(기본 1초 대기는 느린 CI에서 완료 전 만료된다).
-    await waitFor(() => expect(screen.getByLabelText("레시피 불러오기 안내")).toBeTruthy(), { timeout: 30000 });
-    expect(h.savedFiles).toHaveLength(1);
+    // 1) 먼저 클립보드 복사로 안내(notices)와 영수증(receipt)이 표시된 상태를 만든다
+    fireEvent.click(screen.getByTestId("export-copy-recipe-clipboard"));
+    await waitFor(() => expect(screen.getByLabelText("레시피 불러오기 안내")).toBeTruthy());
+    expect(screen.getByTestId("export-receipt")).toBeTruthy();
 
-    // 2) 다음 2×2 캡처가 실패하면 이전 성공 영수증과 이전 축소 안내(notices)가 함께 지워지고 실패 알림 + 다시 시도 버튼이 나타난다
+    // 2) 다음 2×2 캡처가 실패하면 이전 성공 영수증과 이전 안내(notices)가 함께 지워지고 실패 알림 + 다시 시도 버튼이 나타난다
     shouldFailCapture = true;
     fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "800" } });
     fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "1200" } });
@@ -165,8 +162,8 @@ describe("ExportPanel — 연속 클릭 중복 차단 · 컷별 진행률 · 실
     await waitFor(() => expect(screen.getByTestId("export-receipt")).toBeTruthy(), { timeout: 30000 });
     expect(screen.queryByTestId("export-failure-alert")).toBeNull();
     expect(screen.queryByTestId("export-retry-last-action")).toBeNull();
-    expect(h.savedFiles).toHaveLength(2);
-    expect(h.savedFiles[1]?.fileName).toContain("1600x2400-quad-sheet.png");
+    expect(h.savedFiles).toHaveLength(1);
+    expect(h.savedFiles[0]?.fileName).toContain("1600x2400-quad-sheet.png");
   }, 60000);
 
   it("미로드 패키지 레시피 불러오기 실패 시 원본을 보존하고, 패키지 등록 후 파일 재선택 없이 '다시 시도'만으로 불러오기를 완료한다", async () => {

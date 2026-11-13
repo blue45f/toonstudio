@@ -234,7 +234,7 @@ async function handheld(browser, engine, size, persistence = "saved") {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert(overflow <= 1, `mobile horizontal overflow ${overflow}`);
     await expect(controls.getByRole("button")).toHaveCount(6);
-    for (const name of ["펜", "지우개", "브러시 색상", "실행취소", "다시실행", "작업 메뉴"]) {
+    for (const name of ["펜", "지우개", "브러시 색상", "되돌리기 · 실행취소", "다시 · 다시실행", "작업 메뉴"]) {
       const target = controls.getByRole("button", { name, exact: true });
       const box = await target.boundingBox();
       assert(box && box.width >= 43.5 && box.height >= 43.5 && box.x >= 0 && box.x + box.width <= size.width + 1, `${name}: ${JSON.stringify(box)}`);

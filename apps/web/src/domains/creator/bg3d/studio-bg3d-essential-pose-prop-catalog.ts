@@ -6,7 +6,9 @@
  * `apps/web/public/creator-essentials/*.glb` (16종),
  * `apps/web/public/assets/3d/refined-v8/*.glb` (11종),
  * `apps/web/public/assets/3d/kitbash-v9/*.glb` (6종),
- * `apps/web/public/assets/3d/*.glb` (68종)의 총 101종 CC0-1.0 1st-party GLB 모델을
+ * `apps/web/public/assets/3d/kitbash-v10/*.glb` (8종),
+ * `apps/web/public/studio-assets/kitbash-v11/*.glb` (6종),
+ * `apps/web/public/assets/3d/*.glb` (68종)의 총 115종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
 
@@ -16,6 +18,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "refined-v8-prop-3d"
   | "kitbash-v9-prop-3d"
   | "kitbash-v10-prop-3d"
+  | "kitbash-v11-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -57,6 +60,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "블렌더 배경 오브젝트 V10",
       labelEn: "Blender Background Objects V10",
       descriptionKo: "골목 2단 실외기·지하철 개찰구·듀얼모니터 데스크·분리수거함·교실 칠판사물함·한옥 장독대·병원 대기석·판타지 서가 8종",
+    },
+    {
+      id: "kitbash-v11-prop-3d",
+      labelKo: "블렌더 상부 배경 V11",
+      labelEn: "Blender Upper Background Objects V11",
+      descriptionKo: "천장 공조·레일 조명·1500mm 블라인드·돌출 간판·교실 방송 스피커와 프로젝터·한옥 처마 6종",
     },
     {
       id: "original-scene-prop-3d",
@@ -142,6 +151,15 @@ const RAW_KITBASH_V10_ROWS: readonly RawAssetRow[] = [
   ["hanok_jangdokdae_courtyard_v10", "한옥 장독대 석단·옹기 군락·석등·기와담장 (V10)", "Hanok Jangdokdae Courtyard & Lantern V10"],
   ["hospital_corridor_station_v10", "병원 복도 대기석·수액 폴대·호출 보드 (V10)", "Hospital Corridor Bench & IV Pole Set V10"],
   ["fantasy_alchemy_bookshelf_rack_v10", "판타지 마탑 아치 서가·포션·촛대 세트 (V10)", "Fantasy Gothic Bookshelf & Alchemy Rack V10"],
+];
+
+const RAW_KITBASH_V11_ROWS: readonly RawAssetRow[] = [
+  ["ceiling-hvac-cassette-duct", "4방향 시스템 에어컨·노출 스파이럴 덕트", "Ceiling HVAC Cassette & Spiral Duct"],
+  ["ceiling-track-spotlight-rig", "천장 트랙 레일·스팟 조명 세트", "Ceiling Track & Spotlights"],
+  ["window-venetian-blind-pelmet", "2400×1500 창문 커튼박스·블라인드", "2400×1500 Window Blind & Pelmet"],
+  ["alley-projecting-sign-wires", "골목 돌출 간판·애자·전선군", "Alley Projecting Sign & Wires"],
+  ["classroom-ceiling-speaker-projector", "교실 천장 빔프로젝터·방송 스피커·형광등", "Classroom Projector, Broadcast Speaker & Light"],
+  ["hanok-rafter-choma-lantern", "한옥 서까래 처마·추녀 사각 초롱등", "Hanok Rafters, Eaves & Lantern"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -333,6 +351,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         tags: Object.freeze(["background", "bg-object", "kitbash-v10", "배경오브젝트", "생활감소품", slug, normalizedSlug, labelKo, labelEn]),
       });
     }),
+    ...RAW_KITBASH_V11_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `kitbash-v11-${slug}`,
+        category: "kitbash-v11-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/kitbash-v11/${slug}.glb`,
+        previewUrl: `/studio-assets/kitbash-v11/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "upper", "kitbash-v11", "상부배경", "천장", slug, labelKo, labelEn]),
+      }),
+    ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [
       "background",
       "furniture",

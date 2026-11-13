@@ -11,6 +11,8 @@ const AdvancedWorkbenchHub = lazy(() => import("./StudioBg3dAdvancedWorkbenchHub
 export function StudioBg3dSpatialStoryboardLauncher({
   hidden = false,
   disabled = false,
+  organization,
+  roomDimensions,
   onInsertScenePrimitives,
   arraySelection,
   onExecuteSelectionArray,
@@ -72,6 +74,8 @@ export function StudioBg3dSpatialStoryboardLauncher({
             <AdvancedWorkbenchHub
               defaultTab="spatial-modeler"
               disabled={disabled}
+              organization={organization}
+              roomDimensions={roomDimensions}
               onInsertScenePrimitives={onInsertScenePrimitives}
               arraySelection={arraySelection}
               onExecuteSelectionArray={onExecuteSelectionArray}

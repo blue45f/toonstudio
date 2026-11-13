@@ -1,3 +1,5 @@
+import type { StudioBg3dOrganizationController } from "./studio-bg3d-organization-controller";
+import type { Bg3dV11RoomDimensions } from "./studio-bg3d-v11-upper-catalog";
 import {
   createStudioBg3dSelectionArrayFromHost,
   inspectStudioBg3dSelectionArrayHost,
@@ -18,6 +20,8 @@ import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
 import { buildStudioBg3dSurfaceMaterialOverride, findStudioBg3dSurfaceMaterial } from "./studio-bg3d-surface-material-catalog";
 
 type StudioBg3dSurfaceMaterialHost = StudioBg3dSelectionArrayHost & StudioBg3dSkpCameraRestoreHost & {
+  readonly outlinerController?: { readonly organization?: StudioBg3dOrganizationController };
+  readonly roomBuilderSpec?: Bg3dV11RoomDimensions;
   readonly captureInFlightRef?: { readonly current: boolean };
   readonly updateColor?: (id: string, color: string) => void;
   readonly applySurfacePreset?: (id: string, presetId: string | null) => void;
@@ -61,6 +65,8 @@ function canApplySurfaceMaterial(host: StudioBg3dSurfaceMaterialHost, target: Su
 }
 
 export interface StudioBg3dWorkbenchHostPorts extends StudioBg3dPrimitiveEditPorts, StudioBg3dSceneGlbExportPorts {
+  readonly organization?: StudioBg3dOrganizationController;
+  readonly roomDimensions?: Bg3dV11RoomDimensions;
   readonly selectedMaterialId?: string | null;
   readonly applyReady?: boolean;
   /** 최신 선택을 검사하고 기존 장면 명령을 수락했을 때만 true다. */
@@ -91,6 +97,8 @@ export function createStudioBg3dWorkbenchHostPorts(host: StudioBg3dSurfaceMateri
   };
   const selected = readSurfaceMaterialTarget(host);
   return {
+    organization: host.outlinerController?.organization,
+    roomDimensions: host.roomBuilderSpec,
     selectedMaterialId: selected?.entity.materialOverride?.surfaceMaterialId ?? null,
     applyReady: canApplySurfaceMaterial(host, selected),
     onApplySurfaceMaterial: (id) => {

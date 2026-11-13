@@ -28,7 +28,7 @@ describe("Studio discovery browser admission", () => {
     const acknowledgement = source.lastIndexOf(
       "await acknowledgeStudioBetaNoticeIfPresent(page);",
     );
-    const penClick = source.indexOf("await pen.first().click();");
+    const penClick = source.indexOf("await selectStudioCollaborationPen(page, 15_000);");
 
     expect(editorReady).toBeGreaterThan(-1);
     expect(acknowledgement).toBeGreaterThan(editorReady);

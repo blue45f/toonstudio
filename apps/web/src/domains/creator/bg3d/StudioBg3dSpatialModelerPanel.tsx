@@ -1,3 +1,4 @@
+import { StudioBg3dV11UpperRoomAssemblerPanel } from "./StudioBg3dV11UpperRoomAssemblerPanel";
 import { useT } from "@/shared/lib/i18n";
 import {
   Box,
@@ -136,6 +137,8 @@ export function StudioBg3dSpatialModelerPanel({
   onExecuteArray,
   onRestoreSkpScenes,
   onExportCadFormat,
+  organization,
+  roomDimensions,
   onInsertScenePrimitives,
   arraySelection,
   onExecuteSelectionArray,
@@ -373,6 +376,7 @@ export function StudioBg3dSpatialModelerPanel({
         selection={arraySelection}
         onExecuteSelectionArray={onExecuteSelectionArray}
       />
+      <StudioBg3dV11UpperRoomAssemblerPanel disabled={disabled} onInsertPrimitives={onInsertScenePrimitives} organization={organization} roomDimensions={roomDimensions} />
       <details className="rounded-xl border border-line p-2.5" data-testid="spatial-modeler-example-tools">
         <summary className="cursor-pointer font-semibold">{t("studio.bg3d.architecture.examples", "모델링 예제 · 계산 미리보기")}</summary>
         <p className="my-2 text-fg-2">{t("studio.bg3d.architecture.exampleScope", "아래 복원·배열·작도·태양광·CAD 도구는 내장 예제로 계산합니다. 현재 선택한 모델을 편집하거나 내보내지 않습니다. 지형·솔리드 결과는 배치 버튼으로 장면에 추가할 수 있습니다.")}</p>

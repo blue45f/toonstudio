@@ -12,8 +12,10 @@ describe("source hydration recovery ownership", () => {
     expect(start).toBeGreaterThan(-1);
     const gate = hydration.indexOf("if (!studioAuthReady) return;");
     expect(gate).toBeGreaterThan(-1);
-    expect(gate).toBeLessThan(hydration.indexOf("async function loadStudioWork"));
+    expect(gate).toBeLessThan(hydration.indexOf("void loadStudioDocumentSource"));
     expect(hydration).toContain("studioAuthReady,");
+    expect(hydration).toContain("authScopeKey: workAuthScopeKey");
+    expect(hydration).toContain("!alive || controller.signal.aborted || !source");
   });
 
   it("prepares optional schedule data before changing canvas state and rejects stale responses", () => {

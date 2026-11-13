@@ -13,8 +13,25 @@ import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from 
 const OUTPUT = process.env.TOONSPECTRUM_VERIFY_DIR ?? join(tmpdir(), "studio-source-hydration");
 const WORK_ID = "83000000-0000-4000-8000-000000000001";
 const TITLE = "Manuscript recovery fixture";
-const CASES = ["auth-pending", "transient-503", "manual-retry", "forbidden", "malformed", "optional-chunk"] as const;
+const CASES = ["auth-pending", "transient-503", "manual-retry", "forbidden", "malformed", "optional-chunk", "guest-public"] as const;
+const AUTH_PENDING_HOLD_MS = Number(process.env.TOONSPECTRUM_AUTH_PENDING_HOLD_MS ?? "400");
+assert.ok(Number.isSafeInteger(AUTH_PENDING_HOLD_MS) && AUTH_PENDING_HOLD_MS >= 400 && AUTH_PENDING_HOLD_MS <= 4_000,
+  "합성 인증 대기는 400~4000ms여야 합니다. 세션 요청의 5초 상한은 늘리지 않습니다.");
 type RecoveryCase = typeof CASES[number];
+interface RequestStack {
+  readonly callFrames: readonly { readonly functionName: string; readonly url: string; readonly lineNumber: number; readonly columnNumber: number }[];
+  readonly parent?: RequestStack;
+}
+function safeRequestStack(stack: RequestStack | undefined, depth = 0): unknown {
+  if (!stack || depth > 3) return null;
+  return {
+    frames: stack.callFrames.slice(0, 16).map((frame) => ({
+      functionName: frame.functionName, path: URL.canParse(frame.url) ? new URL(frame.url).pathname : "",
+      line: frame.lineNumber + 1, column: frame.columnNumber + 1,
+    })),
+    parent: safeRequestStack(stack.parent, depth + 1),
+  };
+}
 const delay = (ms: number) => new Promise<void>((resolve) => { setTimeout(resolve, ms); });
 
 function sourceFixture() {
@@ -41,9 +58,13 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
   let navigations = 0;
   let mutations = 0;
   let recover = false;
+  let authRouteStartedAt: number | null = null;
   let releaseAuth!: () => void;
   const authGate = new Promise<void>((resolve) => { releaseAuth = resolve; });
   const pageErrors: string[] = [];
+  const startedAt = Date.now();
+  const requestTrace: Record<string, unknown>[] = [];
+  const trace = (event: string, detail: Record<string, unknown> = {}) => requestTrace.push({ event, elapsedMs: Date.now() - startedAt, ...detail });
   page.on("pageerror", (error) => pageErrors.push(error.message));
   page.on("request", (request) => {
     if (request.isNavigationRequest() && request.frame() === page.mainFrame()) navigations += 1;
@@ -51,18 +72,43 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
       && ["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) mutations += 1;
   });
   try {
+    // 합성 fixture의 허용 경로만 기록한다. 쿠키·헤더·본문과 사용자 데이터는 수집하지 않는다.
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Debugger.enable");
+    await cdp.send("Debugger.setAsyncCallStackDepth", { maxDepth: 16 });
+    cdp.on("Network.requestWillBeSent", ({ request, initiator }: {
+      request: { url: string; method: string }; initiator: { type: string; stack?: RequestStack };
+    }) => {
+      const path = new URL(request.url).pathname;
+      if (path !== "/api/auth/session" && !path.startsWith(`/api/creator/works/${WORK_ID}`)) return;
+      trace("browser-request", { path, method: request.method, initiatorType: initiator.type, stack: safeRequestStack(initiator.stack) });
+    });
     await page.route("**/api/auth/session", async (route) => {
+      authRouteStartedAt ??= Date.now();
+      trace("auth-route-start");
       if (scenario === "auth-pending") await authGate;
-      await route.fulfill({ json: {
+      trace("auth-route-released");
+      await route.fulfill({ json: scenario === "guest-public" ? { authenticated: false, user: null } : {
         authenticated: true,
         user: { id: "source-owner", name: "Source owner", email: "source@example.test", image: null, role: "creator" },
       } });
     });
     await page.route(`**/api/creator/works/${WORK_ID}`, async (route) => {
+      trace("public-route");
       publicRequests += 1;
+      if (scenario === "guest-public") {
+        await route.fulfill({ json: {
+          ...sourceFixture().document, id: WORK_ID, status: "published", revision: 1, isOwner: false,
+          author: { id: "public-author", name: "Public author", avatar: "" },
+          likes: 0, comments: 0, views: 0, liked: false, createdAt: "2026-09-12T00:00:00.000Z",
+        } });
+        return;
+      }
       await route.fulfill({ status: 404, json: { message: "Private draft is not public" } });
     });
     await page.route(`**/api/creator/works/${WORK_ID}/team/document`, async (route) => {
+      trace("private-source-route");
       sourceRequests += 1;
       if ((scenario === "transient-503" && sourceRequests === 1)
         || (scenario === "manual-retry" && !recover)) {
@@ -87,6 +133,14 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
       await delay(400);
       assert.equal(publicRequests, 0, "unresolved authentication was treated as anonymous");
       assert.equal(sourceRequests, 0, "private source fetched before authentication settled");
+      trace("auth-pending-assertions-passed");
+      if (AUTH_PENDING_HOLD_MS > 400) {
+        assert.ok(authRouteStartedAt !== null);
+        await delay(Math.max(0, AUTH_PENDING_HOLD_MS - (Date.now() - authRouteStartedAt)));
+        trace("slow-auth-boundary", { minimumPendingMs: AUTH_PENDING_HOLD_MS });
+        assert.equal(publicRequests, 0, "unresolved authentication crossed the public UI deadline and probed a private draft");
+        assert.equal(sourceRequests, 0, "private source fetched before slow authentication settled");
+      }
       releaseAuth();
     }
     if (["manual-retry", "forbidden", "malformed"].includes(scenario)) {
@@ -111,24 +165,27 @@ async function verifyCase(browser: Browser, origin: string, scenario: RecoveryCa
       assert.equal(await page.getByText("원고를 열지 못했어요", { exact: true }).count(), 0);
       await page.keyboard.press("b");
       await page.keyboard.press("v");
+      trace("tool-shortcuts-complete");
       await delay(500);
-      assert.equal(sourceRequests, scenario === "manual-retry" ? 4 : scenario === "transient-503" ? 2 : 1);
+      if (scenario === "guest-public") assert.equal(sourceRequests, 0, "confirmed guest requested the private manuscript source");
+      else assert.equal(sourceRequests, scenario === "manual-retry" ? 4 : scenario === "transient-503" ? 2 : 1);
       assert.equal(await page.getByRole("heading", { name: TITLE, exact: true }).isVisible(), true);
     }
     if (scenario === "manual-retry") {
       assert.equal(await page.evaluate(() => (window as unknown as Record<string, unknown>).__sourceRetrySentinel), "same-document");
     }
     assert.equal(navigations, 1, "retry navigated or reloaded the document");
-    assert.equal(publicRequests, 0, "authenticated private draft probed the public API");
+    if (scenario === "guest-public") assert.equal(publicRequests, 1, "confirmed guest did not open the published manuscript");
+    else assert.equal(publicRequests, 0, "authenticated private draft probed the public API");
     assert.equal(plannerRequests, 0, "an empty optional schedule requested its unavailable chunk");
     assert.equal(mutations, 0, "source-only fixture mutated a manuscript");
     assert.deepEqual(pageErrors, [], "uncaught browser errors");
     await page.screenshot({ path: join(OUTPUT, `${scenario}-result.png`) });
-    return { scenario, sourceRequests, publicRequests, plannerRequests, navigations, mutations, passed: true };
+    return { scenario, sourceRequests, publicRequests, plannerRequests, navigations, mutations, requestTrace, passed: true };
   } catch (error) {
     await page.screenshot({ path: join(OUTPUT, `${scenario}-failed.png`) }).catch(() => undefined);
     writeFileSync(join(OUTPUT, `${scenario}-failed.json`), JSON.stringify({
-      scenario, sourceRequests, publicRequests, plannerRequests, navigations, mutations, pageErrors,
+      scenario, sourceRequests, publicRequests, plannerRequests, navigations, mutations, pageErrors, requestTrace,
       error: error instanceof Error ? error.stack : String(error),
     }, null, 2));
     throw error;
@@ -156,7 +213,7 @@ async function main(): Promise<void> {
     }
   } finally {
     writeFileSync(join(OUTPUT, "source-hydration-report.json"), JSON.stringify({
-      results, passed: results.length === CASES.length,
+      results, passed: results.length === CASES.length, authPendingHoldMs: AUTH_PENDING_HOLD_MS,
       scope: "Production Chromium UI with synthetic network fixtures; not live account/database validation.",
     }, null, 2));
     if (browser) await browser.close();

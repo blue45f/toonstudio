@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Box3, Vector3 } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+import v11Provenance from "../../../../public/studio-assets/kitbash-v11/provenance.json";
 
 import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
 import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
@@ -63,15 +68,16 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
-  it("registers all 109 CC0-1.0 GLB assets (8 pose + 8 essential + 11 refined-v8 + 6 kitbash-v9 + 8 kitbash-v10 + 33 scene + 35 hand/wear) and covers 100% of public/assets/3d/*.glb on disk", () => {
-    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(109);
-    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(7);
+  it("V11 상부 배경을 포함한 115종 CC0 GLB와 기존 assets/3d 정본을 빠짐없이 등록한다", () => {
+    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(115);
+    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(8);
 
     const poses = listStudioBg3dEssentialAssetsByCategory("pose-3d");
     const essentialProps = listStudioBg3dEssentialAssetsByCategory("essential-prop-3d");
     const refinedV8Props = listStudioBg3dEssentialAssetsByCategory("refined-v8-prop-3d");
     const kitbashV9Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v9-prop-3d");
     const kitbashV10Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v10-prop-3d");
+    const kitbashV11Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v11-prop-3d");
     const originalSceneProps = listStudioBg3dEssentialAssetsByCategory("original-scene-prop-3d");
     const originalHandWearProps = listStudioBg3dEssentialAssetsByCategory("original-hand-wear-prop-3d");
 
@@ -80,6 +86,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(refinedV8Props).toHaveLength(11);
     expect(kitbashV9Props).toHaveLength(6);
     expect(kitbashV10Props).toHaveLength(8);
+    expect(kitbashV11Props).toHaveLength(6);
     expect(originalSceneProps).toHaveLength(33);
     expect(originalHandWearProps).toHaveLength(35);
 
@@ -131,6 +138,46 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     );
   });
 
+  it("V11 카탈로그의 6개 GLB는 출처·라이선스 원장과 같은 경로·바이트·SHA를 갖는다", () => {
+    const entries = listStudioBg3dEssentialAssetsByCategory("kitbash-v11-prop-3d");
+    const root = path.join(WEB_PUBLIC_DIR, "studio-assets/kitbash-v11");
+    const files = fs.readdirSync(root).filter((name) => name.endsWith(".glb")).sort();
+    expect(entries.map((entry) => path.basename(entry.glbUrl)).sort()).toEqual(files);
+    expect(v11Provenance.files.map((record) => record.file).sort()).toEqual(files);
+    expect(v11Provenance.thumbnails.map((record) => record.file).sort()).toEqual(entries.map((entry) => `thumbnails/${path.basename(entry.glbUrl, ".glb")}.png`).sort());
+    expect(v11Provenance.license).toBe("CC0-1.0");
+    expect(v11Provenance.externalSources).toEqual([]);
+    const licenses = fs.readFileSync(path.join(root, "LICENSES.md"), "utf8");
+    for (const record of v11Provenance.files) {
+      const bytes = fs.readFileSync(path.join(root, record.file));
+      expect(bytes.byteLength).toBe(record.bytes);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
+      expect(licenses).toContain(record.file);
+    }
+    for (const record of v11Provenance.thumbnails) {
+      const bytes = fs.readFileSync(path.join(root, record.file));
+      expect(bytes.byteLength).toBe(record.bytes);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
+    }
+  });
+
+  it("실제 V11 GLB에 높이 1.5m 블라인드와 방송 스피커의 장착부·그릴·드라이버가 들어 있다", async () => {
+    const loader = new GLTFLoader();
+    const load = async (slug: string) => {
+      const bytes = fs.readFileSync(path.join(WEB_PUBLIC_DIR, `studio-assets/kitbash-v11/${slug}.glb`));
+      return (await loader.parseAsync(Uint8Array.from(bytes).buffer, "")).scene;
+    };
+    const blind = await load("window-venetian-blind-pelmet");
+    const bounds = new Box3().setFromObject(blind);
+    expect(bounds.getSize(new Vector3()).y).toBeCloseTo(1.5, 6);
+    expect(bounds.max.y).toBeCloseTo(0, 6);
+    expect(blind.getObjectByName("BlindBottomRail")).toBeDefined();
+    const classroom = await load("classroom-ceiling-speaker-projector");
+    for (const component of ["BroadcastSpeakerMount", "BroadcastSpeakerCabinet", "BroadcastSpeakerGrille", "BroadcastSpeakerDriver"]) {
+      expect(classroom.getObjectByName(component)).toBeDefined();
+    }
+  });
+
   it("fetches a verified GLB binary and wraps it in a model/gltf-binary File", async () => {
     const sample = findStudioBg3dEssentialAsset("pose-walking-3d")!;
     const glbDiskPath = path.join(WEB_PUBLIC_DIR, sample.glbUrl.replace(/^\//u, ""));
@@ -159,6 +206,8 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     const onFile = vi.fn();
     render(<StudioBg3dEssentialPosePropPanel onFile={onFile} />);
 
+    expect(screen.getByText(/V11 상부배경 6종/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /115종/u })).toBeTruthy();
     fireEvent.click(screen.getByTestId("bg3d-essential-pose-prop-toggle"));
     expect(screen.getByTestId("bg3d-essential-item-pose-neutral-3d")).toBeTruthy();
     expect(screen.getByTestId("bg3d-essential-item-prop-desk")).toBeTruthy();
@@ -171,6 +220,12 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
 
     fireEvent.click(screen.getByTestId("bg3d-essential-cat-kitbash-v10-prop-3d"));
     expect(screen.getByTestId("bg3d-essential-item-kitbash-v10-alley-ac-meter-pipe-wall-v10")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "블렌더 상부 배경 V11 (6)" }));
+    expect(screen.getByTestId("bg3d-essential-item-kitbash-v11-window-venetian-blind-pelmet")).toBeTruthy();
+    expect(screen.getAllByText("CC0-1.0 · V11 상부배경")).toHaveLength(6);
+    expect(screen.getByText("6종 표시")).toBeTruthy();
+    expect(screen.queryByTestId("bg3d-essential-item-kitbash-v10-alley-ac-meter-pipe-wall-v10")).toBeNull();
 
     fireEvent.click(screen.getByTestId("bg3d-essential-cat-original-scene-prop-3d"));
     expect(screen.queryByTestId("bg3d-essential-item-pose-neutral-3d")).toBeNull();

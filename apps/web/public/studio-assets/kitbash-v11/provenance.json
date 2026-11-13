@@ -1,0 +1,75 @@
+{
+  "schema": "toonstudio.procedural-upper-assets.v1",
+  "createdAt": "2026-11-13",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "scripts/blender/generate_kitbash_v11_upper_sets.py",
+  "tool": "Blender 5.2.0 LTS",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "alley-projecting-sign-wires.glb",
+      "bytes": 22848,
+      "sha256": "d282513d7a88e43e0f8672fcfc0f622bf62e0c7660114c0a87a5dca6b7b0dc26"
+    },
+    {
+      "file": "ceiling-hvac-cassette-duct.glb",
+      "bytes": 23000,
+      "sha256": "d9cdecd74efa5e8c0e2e81a2d44bb0fa65a44b39ed7c89446cdcfefe8e562b72"
+    },
+    {
+      "file": "ceiling-track-spotlight-rig.glb",
+      "bytes": 42228,
+      "sha256": "0ca608c1c66d708f9732f974640508824c1b3712a0171eae65aeaf825cb6e910"
+    },
+    {
+      "file": "classroom-ceiling-speaker-projector.glb",
+      "bytes": 51388,
+      "sha256": "34a21187d21a4446f9d5f74806136eefda7f6865e251e70386b7756c2197c8ba"
+    },
+    {
+      "file": "hanok-rafter-choma-lantern.glb",
+      "bytes": 33636,
+      "sha256": "15586d408126bc390e7465feb0a4ef80881a237916be32c6293a88ae16bc960e"
+    },
+    {
+      "file": "window-venetian-blind-pelmet.glb",
+      "bytes": 216516,
+      "sha256": "32a45ee786924f9151231e22d707519513099b12430db9065e7110979592799e"
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/alley-projecting-sign-wires.png",
+      "bytes": 78977,
+      "sha256": "3442996bfe97d75f0bb30f71ad1faa1ec3b41105cad4190e11c4ecd92933f95d"
+    },
+    {
+      "file": "thumbnails/ceiling-hvac-cassette-duct.png",
+      "bytes": 78978,
+      "sha256": "2dfca4584b4e4b9e7500e073bf09b4f063451bd6f59d1bb16e1d6deda9b6222a"
+    },
+    {
+      "file": "thumbnails/ceiling-track-spotlight-rig.png",
+      "bytes": 76283,
+      "sha256": "57b3d9205a88ce7c6a1821fa4059b7469bd286155c9b9ff466193e0c01972c20"
+    },
+    {
+      "file": "thumbnails/classroom-ceiling-speaker-projector.png",
+      "bytes": 125603,
+      "sha256": "0924f2d4ec4884393629955c1684816d41ba8ff866499bf6c48a448daffcc3d3"
+    },
+    {
+      "file": "thumbnails/hanok-rafter-choma-lantern.png",
+      "bytes": 82654,
+      "sha256": "233f77848a9ec303677d57755ef0332ecc74c17856203b8733924548857d21ff"
+    },
+    {
+      "file": "thumbnails/window-venetian-blind-pelmet.png",
+      "bytes": 160393,
+      "sha256": "f5c849d2eae817e1767cbf9dc86f42977c3579005335134b932adae863b59131"
+    }
+  ]
+}

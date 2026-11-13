@@ -4,14 +4,14 @@ function invariant(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-/** 전체 메뉴·목록·이미지 삽입을 검증하는 이 수집기에서만, 원본 픽셀을 재기 전에 실제 메뉴 배치를 연다. */
-export async function prepareFilterMenuWorkspace(page: Page): Promise<boolean> {
+/** 세부 도구가 필요한 검증에서 원본 픽셀을 재기 전에 실제 메뉴 배치를 연다. */
+export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000): Promise<boolean> {
   const clarity = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"]').first();
   if (!await clarity.isVisible()) return false;
-  const deadline = Date.now() + 10_000;
+  const deadline = Date.now() + timeoutMs;
   const remaining = () => {
     const value = deadline - Date.now();
-    if (value <= 0) throw new Error("필터 메뉴 작업 배치 진입 10000ms 예산을 초과했습니다.");
+    if (value <= 0) throw new Error(`메뉴 작업 배치 진입 ${timeoutMs}ms 예산을 초과했습니다.`);
     return value;
   };
   const originalUrl = page.url();

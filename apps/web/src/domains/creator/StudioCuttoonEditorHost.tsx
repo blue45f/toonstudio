@@ -1473,7 +1473,6 @@ import type { SceneTemplate } from "./studio-scene-templates";
 import { SFX_CATEGORIES, SFX_LIBRARY, createSfxTextConfig, type SfxPreset } from "./studio-sfx-presets";
 import { coverFitInFrame, estimateBubbleHeight } from "./studio-fit";
 import { clearStudioRasterEditSurfaces } from "./render/studio-raster-edit-surface-cache";
-import type { StudioSharedDocument } from "./studio-shared-document-client";
 import type { StudioStockPhoto } from "./studio-stock-image-client";
 import type { StudioTeamCommentMutationPlan } from "./studio-team-comment-mutation-plan";
 import type { StudioToolbarGroupId } from "./studio-toolbar-groups";
@@ -1502,6 +1501,7 @@ import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK } from "@/shared/lib/studio-work-asset-contract";
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
+import { loadStudioDocumentSource } from "./studio-cuttoon-editor/runtime/studio-document-source-session";
 import { loadStudioWriterRoomRuntime } from "./studio-cuttoon-editor/runtime/loadStudioWriterRoomRuntime";
 import {
   afterInspectorCommit,
@@ -14554,49 +14554,19 @@ const puppetWarpArmed =
     setLoadedWork(null);
     setError(linked3dCloudSaveRecoveryNoticeRef.current);
     setSharedDocumentNotice(null);
-    // A null session before cookie verification is NOT an anonymous reader. Keep the source
-    // locked until authentication settles instead of probing a private draft via public getWork.
+    // ready는 공개 UI 표시 시점이다. 문서 loader는 정본 세션 확인 결과를 별도로 기다린다.
+    // pending identity로 private workId를 public getWork에 전달하지 않는다.
     if (!studioAuthReady) return;
     let alive = true;
     const controller = new AbortController();
-    async function loadStudioWork(): Promise<{
-      work: {
-        title: string;
-        description: string;
-        tags: string[];
-        format: "cuttoon" | "upload";
-        doc: Record<string, unknown>;
-      };
-      remixAuthorName: string;
-      shared: StudioSharedDocument | null;
-      detail: WorkDetail | null;
-    }> {
-      if (workId && workAuthScopeKey) {
-        const { getStudioSharedDocument } = await import("./studio-shared-document-client");
-        const shared = await getStudioSharedDocument(workId, controller.signal);
-        return {
-          work: shared.document,
-          remixAuthorName: "",
-          shared,
-          // shared snapshot에 이미 cover/pages/doc/revision이 모두 있어 초기 full getWork 중복 요청은 없다.
-          detail: null,
-        };
-      }
-
-      // 리믹스와 비로그인 공개 작품 열람은 기존 public getWork 흐름을 그대로 유지한다.
-      const { getWork } = await import("@/platform/creator-client");
-      const publicWork = await getWork(resolvedTargetId, controller.signal);
-      return {
-        work: publicWork,
-        remixAuthorName: publicWork.author.name,
-        shared: null,
-        detail: !remixId ? publicWork : null,
-      };
-    }
-
-    void loadStudioWork()
-      .then(async ({ work: w, remixAuthorName, shared, detail }) => {
-        if (!alive) return;
+    void loadStudioDocumentSource({
+      workId, authScopeKey: workAuthScopeKey, signal: controller.signal, targetId: resolvedTargetId, remixId,
+      isCurrent: () => alive && !controller.signal.aborted,
+      unavailableMessage: translateNow("studio.hostStatus.workLoadFailed", "원고를 불러오지 못했습니다."),
+    })
+      .then(async (source) => {
+        if (!alive || controller.signal.aborted || !source) return;
+        const { work: w, remixAuthorName, shared, detail } = source;
         if (!isStudioCuttoonSourceFormat(w.format)) {
           setWorkHydrationFailed(true);
           setWorkHydrationUnsupportedFormat(true);

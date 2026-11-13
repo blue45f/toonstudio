@@ -158,12 +158,12 @@ test("market kind, explicit search and sorting reach the API with the chosen con
     await route.fulfill({ status: 200, json: { items: [], limit: 12, hasMore: false, nextCursor: null } });
   });
   await page.goto("/market/browse");
-  // 모바일 기본 종류 선택은 펼친 필터 안의 데스크톱 버튼과 별도로 직접 제공한다.
   const kind = page.getByRole("combobox", { name: "소재 종류 필터", exact: true });
   await kind.selectOption({ label: "브러시" });
   await expect(kind).toHaveValue("brush");
   await expect(page).toHaveURL(/kind=brush/u);
-  const field = page.getByRole("searchbox", { name: "어떤 소재가 필요한가요?", exact: true });
+  const field = page.getByRole("search", { name: "소재 검색", exact: true })
+    .getByRole("searchbox", { name: "어떤 소재가 필요한가요?", exact: true });
   await field.fill("잉크"); await field.press("Enter");
   await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe("잉크");
   await page.getByRole("combobox", { name: "정렬 기준" }).selectOption("newest");
