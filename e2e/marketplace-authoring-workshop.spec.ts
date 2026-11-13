@@ -12,6 +12,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 
 async function openPublish(page: Page): Promise<void> {
   await page.goto("/market/publish", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "초안 만들기 · 이어서 편집" }).click();
   await expect(page.getByTestId("marketplace-authoring-workshop")).toBeVisible({
     timeout: 90_000,
   });

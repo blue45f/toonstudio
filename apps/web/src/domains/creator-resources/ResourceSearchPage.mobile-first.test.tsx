@@ -57,8 +57,15 @@ describe("기관 자료 검색의 모바일 우선 동선", () => {
     const menu = disclosure("[data-resource-search-menu]");
     const before = screen.getByTestId("resource-location").textContent;
     fireEvent.click(menu.summary);
+    const reached = new Set<string>();
+    for (const group of RESOURCE_MENU_GROUPS) {
+      fireEvent.click(within(menu.element).getByRole("button", { name: group.title[0] }));
+      const hrefs = within(menu.element).getAllByRole("link").map(link => link.getAttribute("href"));
+      expect(hrefs).toEqual(["/research", ...resourceMenuGroupPages(group).map(page => page.path)]);
+      for (const href of hrefs) if (href) reached.add(href);
+    }
+    expect([...reached].sort()).toEqual(["/research", ...RESOURCE_MENU_GROUPS.flatMap(group => group.paths)].sort());
     const links = within(menu.element).getAllByRole("link");
-    expect(links.map(link => link.getAttribute("href"))).toEqual(RESOURCE_MENU_GROUPS.flatMap(group => resourceMenuGroupPages(group).map(page => page.path)));
     const last = links[links.length - 1]; if (!last) throw new Error("마지막 링크가 필요합니다.");
     last.focus(); fireEvent.keyDown(last, { key: "Escape" });
     expect(menu.element.open).toBe(false); expect(document.activeElement).toBe(menu.summary);

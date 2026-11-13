@@ -150,3 +150,19 @@ describe("PencafePage", () => {
     expect(screen.getByTestId("pencafe-rea-status").textContent).toContain("Goods Group Order");
   });
 });
+
+
+it("펜카페 피드는 공유·팬덤 도구 앞에 두고 기존 도구는 명시적으로 연다", () => {
+  renderPage("/community/pencafe");
+  const feed = screen.getByTestId("fan-cafe-panel");
+  const tools = screen.getByTestId("pencafe-rea-watchparty-bar");
+  const details = tools.closest("details");
+  expect(feed.closest("details")).toBeNull();
+  expect(feed.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("팬덤 보조 도구 누락");
+  fireEvent.click(summary);
+  expect(details?.open).toBe(true);
+  expect(screen.getByRole("link", { name: /새 작품 시작/u }).getAttribute("href")).toBe("/create");
+});

@@ -271,3 +271,13 @@ describe("캘린더 상세 방문 후 선택한 요일 복원", () => {
     expect(screen.getByTestId("calendar-location").textContent).toBe("/calendar?day=unknown&utm_source=reading");
   });
 });
+
+
+it("모바일 로딩은 선택한 하루만 보여 주고 데스크톱 7일 보드 구조를 보존한다", () => {
+  mockResource({ loading: true });
+  const { container } = renderPage("/calendar?day=mon");
+  const columns = Array.from(container.querySelectorAll<HTMLElement>("[data-calendar-loading-day]"));
+  expect(columns).toHaveLength(7);
+  expect(columns.filter((column) => !column.classList.contains("hidden")).map((column) => column.dataset.calendarLoadingDay)).toEqual(["월"]);
+  expect(columns.filter((column) => column.classList.contains("xl:block"))).toHaveLength(6);
+});

@@ -37,8 +37,9 @@ describe("NewsletterComposePage", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("link", { name: "발신자·템플릿" }));
     const bar = screen.getByTestId("newsletter-compose-rea-openrate-bar");
-    expect(bar.textContent).toContain("Substack · Ghost · Beehiiv · Stibee");
+    expect(bar.textContent).toContain("실제 발송 대상에 반영되지 않음");
 
     const tplDrop = screen.getByTestId("newsletter-rea-tpl-new-episode-drop");
     const tplSketch = screen.getByTestId("newsletter-rea-tpl-behind-the-scenes-sketch");
@@ -79,6 +80,22 @@ describe("NewsletterComposePage", () => {
     expect(status.textContent).toContain("30일 미열람 독자 재활성");
   });
 
+  it("작성 화면에서 입력한 초안을 미리보기·이력 왕복 후 같은 입력에 보존한다", () => {
+    useNewsletterStore.getState().setPenName("별작가", "author-1");
+    render(<MemoryRouter><NewsletterComposePage /></MemoryRouter>);
+    const subject = screen.getByLabelText("제목");
+    fireEvent.change(subject, { target: { value: "미저장 새 화 소식" } });
+    expect(screen.queryByRole("heading", { name: "메일 미리보기" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "미리보기" }));
+    expect(screen.getByRole("heading", { name: "메일 미리보기" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "새 뉴스레터 작성" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "발송 이력" }));
+    expect(screen.getByRole("heading", { name: "내 글과 발송 이력" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "작성" }));
+    expect(screen.getByLabelText("제목")).toBe(subject);
+    expect(subject).toHaveProperty("value", "미저장 새 화 소식");
+  });
+
   it("영어 로케일(en)에서 REA 워크벤치에 한글이 섞이지 않는다", () => {
     useI18n.setState({ lang: "en" });
     render(
@@ -87,6 +104,7 @@ describe("NewsletterComposePage", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("link", { name: "Sender & templates" }));
     const bar = screen.getByTestId("newsletter-compose-rea-openrate-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
 

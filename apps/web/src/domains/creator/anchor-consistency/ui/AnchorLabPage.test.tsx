@@ -33,6 +33,10 @@ describe("AnchorLabPage — REA 캐릭터 앵커 잠금 워크벤치", () => {
   it("벤치마크 배지와 기본 앵글·드리프트 가드·코사인 유사도 상태를 표시한다", () => {
     renderAnchorLab();
     const bar = screen.getByTestId("anchor-lab-rea-identity-lock-bar");
+    const advanced = bar.closest("details")!;
+    expect(advanced.open).toBe(false);
+    fireEvent.click(advanced.querySelector("summary")!);
+    expect(advanced.open).toBe(true);
     expect(bar.textContent).toContain("KomikoAI · Dashtoon · Scenario · Midjourney --cref");
 
     expect(screen.getByTestId("anchor-lab-rea-angle-front-side-back-4view").getAttribute("aria-pressed")).toBe("true");

@@ -25,6 +25,12 @@ describe("창작자 생태계 일러스트 패널", () => {
         <p role="alert">연결을 확인하세요.</p>
       </CreatorEcosystemLayout>
     </MemoryRouter>);
+    const input = screen.getByRole("textbox", { name: "내 메모" });
+    const menu = screen.getByText("다른 창작 활동으로 이동").closest("details");
+    expect(menu?.open).toBe(false);
+    if (!menu) throw new Error("다른 활동 메뉴가 없습니다.");
+    expect(input.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByText("다른 창작 활동으로 이동"));
     const nav = screen.getByRole("navigation", { name: "창작자 생태계 메뉴" });
     const selected = within(nav).getAllByRole("link").filter((link) => link.getAttribute("aria-current") === "page");
     expect(selected).toHaveLength(1);
@@ -39,6 +45,7 @@ describe("창작자 생태계 일러스트 패널", () => {
     render(<MemoryRouter initialEntries={["/ecosystem/education"]}>
       <CreatorEcosystemLayout title="창작자 도구" intro="안내"><LocationProbe /></CreatorEcosystemLayout>
     </MemoryRouter>);
+    fireEvent.click(screen.getByText("다른 창작 활동으로 이동"));
     const library = screen.getByRole("link", { name: /라이브러리.*소장·읽음·대여·도서관/ });
     library.focus();
     expect(document.activeElement).toBe(library);

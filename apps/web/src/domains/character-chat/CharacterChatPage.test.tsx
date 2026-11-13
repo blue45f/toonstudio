@@ -192,3 +192,21 @@ describe("CharacterChatPage", () => {
     expect(screen.getByTestId("character-chat-rea-status").textContent).toContain("Voice TTS Prosody");
   });
 });
+
+
+it("대화 입력을 설정 예시보다 먼저 보여 주고 예시 조작으로 AI 키 경계를 바꾸지 않는다", () => {
+  renderPage();
+  const message = screen.getByLabelText("캐릭터에게 보낼 메시지") as HTMLTextAreaElement;
+  const examples = screen.getByTestId("character-chat-rea-lorebook-bar");
+  const details = examples.closest("details");
+  expect(message.closest("details")).toBeNull();
+  expect(message.compareDocumentPosition(examples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("대화 설정 예시 누락");
+  fireEvent.click(summary);
+  expect(details?.open).toBe(true);
+  fireEvent.click(screen.getByTestId("char-chat-rea-fence-ep10-canon-lock"));
+  expect(message.disabled).toBe(true);
+  expect(engineState.generateReply).not.toHaveBeenCalled();
+});

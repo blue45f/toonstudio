@@ -11,7 +11,7 @@ import { AdminShell } from "./AdminShell";
 
 import { useI18n } from "@/shared/lib/i18n";
 
-vi.mock("../components/AdminHeaderStats", () => ({ AdminHeaderStats: () => null }));
+vi.mock("../components/AdminHeaderStats", () => ({ AdminHeaderStats: () => <p>전역 운영 지표</p> }));
 vi.mock("../components/AdminQuickPalette", () => ({ AdminQuickPalette: () => null }));
 
 const key = "toonstudio.admin.sidebar.collapsed.v1";
@@ -134,22 +134,33 @@ describe("관리자 모바일 탐색의 키보드와 복구", () => {
     expect(document.body.hasAttribute("data-scroll-locked")).toBe(false);
   });
 
-  it("도메인 그룹 아코디언 접기·펼치기와 Edge Gate 보호 상태 배지를 제공한다", () => {
+  it("현재 업무 그룹부터 보여 주고 다른 그룹은 직접 펼쳐 이동한다", () => {
     renderShell();
     expect(screen.getByTestId("admin-edge-gate-badge").textContent).toContain("Edge Gate 보호");
 
     const groupToggle = screen.getByRole("button", { name: copy.groups.monetization });
-    expect(groupToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("false");
     const listId = groupToggle.getAttribute("aria-controls") ?? "";
     const groupList = document.getElementById(listId);
-    expect(groupList?.hidden).toBe(false);
-
-    fireEvent.click(groupToggle);
-    expect(groupToggle.getAttribute("aria-expanded")).toBe("false");
     expect(groupList?.hidden).toBe(true);
 
     fireEvent.click(groupToggle);
     expect(groupToggle.getAttribute("aria-expanded")).toBe("true");
     expect(groupList?.hidden).toBe(false);
+
+    fireEvent.click(groupToggle);
+    expect(groupToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(groupList?.hidden).toBe(true);
+  });
+
+  it("직무 본문 뒤의 전체 현황을 펼칠 때만 전역 지표를 읽는다", async () => {
+    renderShell();
+    expect(screen.getByText("Admin content")).toBeTruthy();
+    expect(screen.queryByText("전역 운영 지표")).toBeNull();
+    const disclosure = document.querySelector<HTMLDetailsElement>("[data-admin-global-overview]");
+    if (!disclosure) throw new Error("전체 현황 입구가 없습니다.");
+    fireEvent.click(screen.getByText("전체 운영 현황"));
+    await waitFor(() => expect(screen.getByText("전역 운영 지표")).toBeTruthy());
+    expect(screen.getByText("Admin content").compareDocumentPosition(disclosure) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

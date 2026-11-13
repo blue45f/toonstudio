@@ -116,9 +116,12 @@ describe("organization home (server contract)", () => {
   it("renders the server organization with members, invites and notices", async () => {
     render(<App />);
     expect(await screen.findByText("희준 스튜디오")).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "구성원·초대" }));
     // 구성원 목록은 서버 상세 응답에서 온다 — 로컬 모델에는 없던 데이터다.
     expect(screen.getByText("동료 작가")).toBeTruthy();
     expect(screen.getByText(/new@example\.com/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "공지" }));
+    expect(screen.getByRole("heading", { name: "조직 공지" })).toBeTruthy();
     expect(screen.getByText("금주 휴재")).toBeTruthy();
     // 조직 상태는 더 이상 이 기기 localStorage에 저장되지 않는다.
     expect(window.localStorage.length).toBe(0);
@@ -153,7 +156,8 @@ describe("organization home (server contract)", () => {
     serverDetail = detail({ organization: summary({ role: "member", ownerUserId: "someone-else" }) });
     mocks.listOrgs.mockResolvedValue({ organizations: [serverDetail.organization] });
     render(<App />);
-    expect(await screen.findByText("동료 작가")).toBeTruthy();
+    await screen.findByText("동료 작가");
+    fireEvent.click(screen.getByRole("link", { name: "구성원·초대" }));
     expect(screen.queryByRole("button", { name: "프로필 편집" })).toBeNull();
     expect(screen.queryByRole("button", { name: "초대 만들기" })).toBeNull();
     expect(screen.queryByRole("button", { name: "공지 등록" })).toBeNull();
@@ -183,11 +187,27 @@ describe("organization home (server contract)", () => {
     });
     mocks.acceptOrg.mockResolvedValue({ organizationId: "org-9", revision: 1 });
     render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "초대 수락" }));
     fireEvent.change(await screen.findByLabelText("초대 토큰"), { target: { value: token } });
     fireEvent.click(screen.getByRole("button", { name: "초대 확인" }));
     expect(await screen.findByText("초대받은 스튜디오")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "초대 수락하고 합류" }));
     await waitFor(() => { expect(mocks.acceptOrg).toHaveBeenCalledWith(token); });
+  });
+
+  it("목적 화면 전환 후 미저장 초대 입력과 DOM을 유지한다", async () => {
+    render(<App />);
+    await screen.findByText("희준 스튜디오");
+    expect(screen.queryByRole("heading", { name: "조직 구성원" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "구성원·초대" }));
+    const email = screen.getByLabelText("이메일로 초대");
+    fireEvent.change(email, { target: { value: "draft@example.com" } });
+    fireEvent.click(screen.getByRole("link", { name: "공지" }));
+    expect(screen.queryByRole("button", { name: "초대 만들기" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "구성원·초대" }));
+    expect(screen.getByLabelText("이메일로 초대")).toBe(email);
+    expect(email).toHaveProperty("value", "draft@example.com");
+    expect(mocks.commandOrg).not.toHaveBeenCalled();
   });
 
   it("shows an error with retry when loading fails", async () => {
@@ -202,6 +222,7 @@ describe("organization home (server contract)", () => {
     serverDetail = detail({ linkedWorkspaceIds: ["team-a"] });
     mocks.listOrgs.mockResolvedValue({ organizations: [serverDetail.organization] });
     render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "프로필·백업" }));
     // 백업 카드가 서버 조직 홈에 실제로 붙어 있어야 한다 — 패널 파일만 있고
     // 마운트가 없던 상태(서버 계약 이관 때 소실)를 고정한다.
     expect(await screen.findByRole("heading", { name: "조직 백업·내보내기" })).toBeTruthy();
@@ -212,6 +233,7 @@ describe("organization home (server contract)", () => {
   it("states plainly that organization membership grants no manuscript access", async () => {
     render(<App />);
     expect(await screen.findByText(/조직에 소속돼도 원고 접근 권한은 생기지 않습니다/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "프로필·백업" }));
     expect(screen.getByRole("heading", { name: "서버 계약이 필요한 조직 기능" })).toBeTruthy();
   });
 });

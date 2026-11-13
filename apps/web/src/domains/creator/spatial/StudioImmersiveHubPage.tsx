@@ -23,7 +23,11 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+
+import { useLocation } from "react-router-dom";
+import { StudioImmersiveTaskNavigation } from "./StudioImmersiveTaskNavigation";
+import { STUDIO_IMMERSIVE_TASKS } from "./studio-immersive-tasks";
 
 import Link from "@/shared/navigation/router-link";
 import { XrWebtoonStudioHost } from "@/domains/creator/xr-webtoon/XrWebtoonStudioHost";
@@ -147,6 +151,12 @@ function ImmersiveHeroVisual() {
 }
 export function StudioImmersiveHubPage() {
   const bt = useBilingual("StudioImmersiveHubPage");
+  const location = useLocation();
+  const task = STUDIO_IMMERSIVE_TASKS.find(item => item.hash === location.hash);
+  const activeTask = task?.id ?? "overview";
+  const previousTask = useRef(activeTask);
+  useEffect(() => { if (previousTask.current === activeTask) return; previousTask.current = activeTask; const heading = document.getElementById(task?.heading ?? "immersive-hub-title"); if (heading) { heading.tabIndex = -1; heading.focus(); } }, [activeTask, task]);
+  const taskVisibility = (id: string) => activeTask === id ? undefined : { display: "none" };
   const locale = useI18n((state) => state.lang);
   const [capabilities, setCapabilities] = useState<StudioImmersiveCapabilitySnapshot | null>(null);
   const [inspectionError, setInspectionError] = useState(false);
@@ -182,7 +192,7 @@ export function StudioImmersiveHubPage() {
             <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-accent">
               <Sparkles size={14} aria-hidden /> ToonStudio immersive</p>
             <h1 id="immersive-hub-title" className="mt-3 max-w-3xl text-balance text-4xl font-black tracking-[-0.035em] text-fg sm:text-5xl">
-              {bt("웹툰을 그리고, 세우고, 공간에서 검수하세요", "Draw, stage and review webtoons in space")}
+              {bt("공간에서 읽고 만들기", "Read and create in space")}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-fg-2 sm:text-lg">
               {bt("2D 브러시 원고에서 캐릭터·포즈·3D 배경·모션을 거쳐 AR/VR 프리뷰까지 이어지는 제작 동선입니다. 몰입형 기능이 없는 기기에서도 모든 원고를 2D로 열 수 있습니다.", "Move from 2D brush artwork through characters, poses, 3D backgrounds and motion to AR/VR previews. Every page remains readable in 2D on devices without immersive support.")}
@@ -191,18 +201,19 @@ export function StudioImmersiveHubPage() {
               <Link href="/studio/new" className={buttonClass({ size: "lg", className: "gap-2" })}>
                 {bt("새 프로젝트 시작", "Start a project")}<ArrowRight size={17} aria-hidden />
               </Link>
-              <a href="#spatial-reader" className={buttonClass({ variant: "outline", size: "lg", className: "gap-2" })}>
+              <Link href={`${location.pathname}${location.search}#spatial-reader`} className={buttonClass({ variant: "outline", size: "lg", className: "gap-2" })}>
                 <Glasses size={17} aria-hidden />{bt("내 원고 공간에서 보기", "Preview my pages")}
-              </a>
+              </Link>
             </div>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-fg-3">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck size={15} aria-hidden />{bt("버튼을 누르기 전 권한 요청 없음", "No permission prompt on load")}</span>
               <span className="inline-flex items-center gap-1.5"><HardDrive size={15} aria-hidden />{bt("로컬 원고 서버 업로드 없음", "Local pages stay on device")}</span>
             </div>
           </div>
-          <ImmersiveHeroVisual />
+          <div className="hidden lg:block"><ImmersiveHeroVisual /></div>
         </section>
-        <section className="mt-12 rounded-[2rem] border border-line bg-panel/70 p-5 shadow-sm sm:p-7" aria-labelledby="immersive-capability-title">
+        <StudioImmersiveTaskNavigation active={activeTask} />
+        <section style={taskVisibility("device")} data-immersive-task="device" className="mt-12 rounded-[2rem] border border-line bg-panel/70 p-5 shadow-sm sm:p-7" aria-labelledby="immersive-capability-title">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Device preflight</p>
@@ -277,7 +288,7 @@ export function StudioImmersiveHubPage() {
             {bt(`WebGPU ${studioImmersiveSupportLabel(capabilities?.webgpu ?? unknown, locale)} · 저장소 API ${studioImmersiveSupportLabel(capabilities?.storageApi ?? unknown, locale)} · 터치 포인트 ${capabilities?.touchPoints ?? 0}. 지원 표시는 권한 승인이나 기기 안전 인증을 의미하지 않습니다.`, `WebGPU ${studioImmersiveSupportLabel(capabilities?.webgpu ?? unknown, locale)} · storage API ${studioImmersiveSupportLabel(capabilities?.storageApi ?? unknown, locale)} · touch points ${capabilities?.touchPoints ?? 0}. Capability status is not permission approval or device safety certification.`)}
           </p>
         </section>
-        <section className="mt-14" aria-labelledby="immersive-workflow-title">
+        <section style={taskVisibility("workflow")} data-immersive-task="workflow" className="mt-14" aria-labelledby="immersive-workflow-title">
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Production flow</p>
             <h2 id="immersive-workflow-title" className="mt-2 text-3xl font-black tracking-tight text-fg">
@@ -331,7 +342,7 @@ export function StudioImmersiveHubPage() {
             ))}
           </ol>
         </section>
-        <section className="mt-14" aria-labelledby="immersive-kit-title">
+        <section style={taskVisibility("kits")} data-immersive-task="kits" className="mt-14" aria-labelledby="immersive-kit-title">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Starter content</p>
@@ -380,7 +391,7 @@ export function StudioImmersiveHubPage() {
           </div>
         </section>
 
-        <section id="spatial-reader" className="mt-14 scroll-mt-24 rounded-[2rem] border border-accent/25 bg-[linear-gradient(135deg,var(--color-panel),oklch(0.68_0.16_285/0.08))] p-5 shadow-lg sm:p-8" aria-labelledby="spatial-reader-title">
+        <section style={taskVisibility("reader")} data-immersive-task="reader" id="spatial-reader" className="mt-14 scroll-mt-24 rounded-[2rem] border border-accent/25 bg-[linear-gradient(135deg,var(--color-panel),oklch(0.68_0.16_285/0.08))] p-5 shadow-lg sm:p-8" aria-labelledby="spatial-reader-title">
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Local spatial preview</p>
@@ -410,7 +421,7 @@ export function StudioImmersiveHubPage() {
           </div>
         </section>
 
-        <section id="xr-webtoon-studio" className="mt-14 scroll-mt-24" aria-labelledby="xr-webtoon-studio-title">
+        <section style={taskVisibility("xr")} data-immersive-task="xr" id="xr-webtoon-studio" className="mt-14 scroll-mt-24" aria-labelledby="xr-webtoon-studio-title">
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">XR webtoon studio</p>
             <h2 id="xr-webtoon-studio-title" className="mt-2 text-3xl font-black tracking-tight text-fg">
@@ -425,7 +436,7 @@ export function StudioImmersiveHubPage() {
           </div>
         </section>
 
-        <section className="mt-10 grid gap-4 lg:grid-cols-3" aria-label={bt("공간 제작 안전 원칙", "Spatial creation safety principles")}>
+        <section style={taskVisibility("device")} className="mt-10 grid gap-4 lg:grid-cols-3" aria-label={bt("공간 제작 안전 원칙", "Spatial creation safety principles")}>
           {[
             {
               icon: ShieldCheck,

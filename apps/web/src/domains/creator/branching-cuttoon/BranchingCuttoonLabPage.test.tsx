@@ -581,6 +581,10 @@ describe("분기형 컷툰 실험실 — 언어", () => {
   it("REA 서사 그래프 워크벤치에서 토폴로지·감사 규칙을 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
     renderPage();
     const bar = screen.getByTestId("branching-cuttoon-rea-graph-bar");
+    const advanced = bar.closest("details")!;
+    expect(advanced.open).toBe(false);
+    fireEvent.click(advanced.querySelector("summary")!);
+    expect(advanced.open).toBe(true);
     expect(bar.textContent).toContain("Twine · Inkle Ink · Episode · WEBTOON Interactive");
     expect(screen.getByTestId("branching-rea-topology-diamond-convergence").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("branching-rea-audit-deadend-zero-check").getAttribute("aria-pressed")).toBe("true");

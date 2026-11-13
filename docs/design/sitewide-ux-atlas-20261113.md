@@ -3,6 +3,7 @@
 - 상태: **target + current inventory** — 현행 정본 경로에서 만든 목표 디자인 자료. 구현·API·권한·운영 검증과 구분한다.
 - [검색 가능한 반응형 전체 시안집 열기](./sitewide-ux-atlas-20261113.html)
 - 연결 설계: [모바일 중심 설계](./mobile-first-ux-20261113.md), [전수 경로 검사](./sitewide-ux-route-audit-20261113.md).
+- 실제 적용 근거: [443개 URL의 소스 소비·구조 판정](./sitewide-ux-implementation-coverage-20261113.md), [REA 공개 UI 관찰 2차](./mobile-ux-rea-wave2-20261113.md). 시안 선택 항목과 실제 page·공유 UI·권한별 실행 검증을 구분한다.
 
 ## 1. 포함 범위
 

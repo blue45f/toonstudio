@@ -1,3 +1,5 @@
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 import { Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -59,6 +61,7 @@ export function PromotionEditorPage() {
 }
 function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
   const bt = useBilingual(SCOPE);
+  const { activeScreen } = useTaskScreen({ ids: ["write", "preview"] as const, defaultScreen: "write" });
   const [recovery] = useState(() => id ? null : readPromotionDraft(userId));
   const [draft, setDraft] = useState<Draft>(() => recovery?.status === "restored" ? recovery.value.draft : initialPromotionDraft());
   const [tags, setTags] = useState(() => recovery?.status === "restored" ? recovery.value.tags : "");
@@ -159,6 +162,7 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
         <h1>{id ? bt("작품 소개 수정", "Edit work introduction") : bt("내 작품 소개하기", "Introduce my work")}</h1>
         <p>{bt("첫 독자에게 작품의 매력과 만나러 갈 곳을 알려주세요.", "Tell your first readers what makes your work special and where to find it.")}</p>
       </header>
+      <TaskScreenNavigation label={bt("홍보 작성 화면", "Promotion authoring screen")} items={[{ id: "write", label: bt("작품 소개 작성", "Write introduction") }, { id: "preview", label: bt("게시 전 미리보기", "Preview before publishing") }]} activeScreen={activeScreen} defaultScreen="write" />
       {!id && (
         <aside className="pc-notice" aria-label={bt("홍보 초안 저장 안내", "Draft saving notice")}>
           {recovery?.status === "restored" && <p>{bt("이 탭에 임시 저장한 초안을 불러왔어요. 게시 권한은 공개 전에 다시 확인해 주세요.", "Restored your auto-saved draft from this tab. Re-check publishing rights before posting.")}</p>}
@@ -169,8 +173,8 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
       </div>
       {loading && <LoadingState variant="skeleton" label={bt("기존 내용을 불러오고 있어요.", "Loading the existing content…")} />}
       {!loading && (!id || version !== null) && (
-        <div className="pc-editor-layout">
-        <form className="pc-form" onSubmit={(event) => void submit(event)}>
+        <div className="pc-editor-task-layout">
+        <form hidden={activeScreen !== "write"} className="pc-form" onSubmit={(event) => void submit(event)}>
           <fieldset disabled={sending}>
             <legend className="sr-only">{bt("작품 소개 작성", "Write a work introduction")}</legend>
             <section aria-labelledby="pc-form-basics-title">
@@ -238,7 +242,7 @@ function PromotionEditor({ id, userId }: { id?: string; userId: string }) {
             </section>
           </fieldset>
         </form>
-        <aside className="pc-preview" aria-labelledby="pc-preview-title">
+        <aside hidden={activeScreen !== "preview"} className="pc-preview pc-preview-task" aria-labelledby="pc-preview-title">
           <h2 id="pc-preview-title">{bt("홍보 보드 미리보기", "Promotion board preview")}</h2>
           <p className="pc-caption">{bt("입력하는 내용이 홍보 보드에 게시될 카드에 바로 반영됩니다. 눌러도 이동하지 않는 미리보기 전용 표시예요.", "Your input appears right away on the card as it will be posted on the promotion board. This preview does not navigate when clicked.")}</p>
           {hasPreviewContent ? (

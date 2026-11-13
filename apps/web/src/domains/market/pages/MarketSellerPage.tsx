@@ -1,5 +1,9 @@
 import { ArrowUpRight, Calculator, PackageCheck, Store, Wand2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 
 import { MarketGroupBuyCard } from "../components/MarketGroupBuyCard";
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -59,6 +63,18 @@ export function MarketSellerPage() {
 
   const seller = useMarketSeller();
   const groupBuy = useMarketGroupBuy();
+  const location = useLocation();
+  const defaultScreen = location.hash === "#seller-group-buys" ? "group-buys" : location.hash === "#seller-revenue-simulator" ? "simulator" : location.hash === "#seller-tools" ? "manage" : "listings";
+  const { activeScreen } = useTaskScreen({ ids: ["listings", "group-buys", "manage", "simulator"] as const, defaultScreen });
+  function actionHref(href: string) {
+    const target = new URL(href, "https://toonstudio.invalid");
+    if (target.pathname !== "/market/seller" && !href.startsWith("#")) return href;
+    const screen = target.hash === "#seller-group-buys" ? "group-buys" : target.hash === "#seller-revenue-simulator" ? "simulator" : target.hash === "#seller-tools" ? "manage" : null;
+    if (!screen) return href;
+    const params = new URLSearchParams(location.search);
+    params.set("view", screen);
+    return `${location.pathname}?${params}${target.hash}`;
+  }
   const [revision, setRevision] = useState(0);
   const [simPriceKrw, setSimPriceKrw] = useState(15_000);
   const [simTier, setSimTier] = useState<CreatorTier>("standard-creator");
@@ -149,69 +165,18 @@ export function MarketSellerPage() {
 
   return (
     <Container size="wide" className="market-library-page py-7 sm:py-10">
-      <MarketNavHeader />
-      <MarketSectionArtBanner />
-      <MarketSellerCenterTabs active="center" />
-
-      <header className="mt-6 border-b border-line pb-6">
-        <p className="eyebrow text-accent">Creator center</p>
+      <header className="mb-4">
         <div className="mt-1 flex items-center gap-2">
           <Store className="size-5 text-accent" aria-hidden="true" />
           <h1 className="text-xl font-bold text-fg sm:text-2xl">
             {bt("판매자 센터", "Seller center")}
           </h1>
         </div>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
-          {bt(
-            "판매자 센터의 첫 탭입니다. 창작자가 이 브라우저에 직접 등록한 소재를 활동 포인트로 사고파는 판매대와 공동구매를 한곳에서 다룹니다. 서버에 게시하는 에셋은 ‘에셋 등록’과 ‘패키지 관리’ 탭에서 다룹니다. 현금 결제·출금은 없습니다.",
-            "This is the first tab of the seller center: a counter where creators list materials directly in this browser and trade them for activity points, plus group buys. Assets published to the server live in the Register asset and Package management tabs. No cash payments or withdrawals.",
-          )}
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Link
-            href="/market/publish"
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
-          >
-            <Wand2 className="size-3.5 text-accent" aria-hidden="true" />
-            {bt("7종 시각 매니페스트 빌더 열기", "Open 7-kind visual manifest builder")}
-          </Link>
-          <Link
-            href="/market/manage"
-            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
-          >
-            <PackageCheck className="size-3.5 text-accent" aria-hidden="true" />
-            {bt("서버 게시 패키지·버전 관리", "Manage server-published packages & versions")}
-          </Link>
-          {viewerId ? (
-            <Link
-              href={`/market/creator/${encodeURIComponent(viewerId)}`}
-              className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
-            >
-              {bt("내 배급자 스토어 보기", "View my publisher storefront")}
-              <ArrowUpRight className="size-3.5" aria-hidden="true" />
-            </Link>
-          ) : null}
-        </div>
+        <p className="mt-1 text-sm text-fg-2">{bt("활동 포인트로 소재를 거래합니다. 현금 결제·출금은 없습니다.", "Trade materials with activity points. There are no cash payments or withdrawals.")}</p>
       </header>
 
-      {nowCard ? (
-        <div className="mt-8">
-          <NowCard
-            eyebrow={bt("지금 할 일", "Do this now")}
-            title={nowCard.title}
-            reason={nowCard.reason}
-            progress={nowCard.progress}
-            tone={nowCard.tone}
-            dismissible={nowCard.dismissible}
-            action={(
-              <a href={nowCard.href} className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}>
-                {nowCard.actionLabel}
-              </a>
-            )}
-          />
-        </div>
-      ) : null}
-
+      <TaskScreenNavigation label={bt("판매자 작업 화면", "Seller task screen")} items={[{ id: "listings", label: bt("판매 리스팅", "Listings") }, { id: "group-buys", label: bt("공동구매", "Group buys") }, { id: "manage", label: bt("판매 관리", "Manage sales") }, { id: "simulator", label: bt("정산 시뮬레이터", "Payout simulator") }]} activeScreen={activeScreen} defaultScreen={defaultScreen} />
+      <div hidden={activeScreen !== "listings"}>
       <section aria-label={bt("판매자 리스팅", "Seller listings")} className="mt-8">
         <h2 className="text-lg font-bold text-fg">
           {bt("판매자 리스팅", "Seller listings")}{" "}
@@ -245,6 +210,26 @@ export function MarketSellerPage() {
         )}
       </section>
 
+      {nowCard ? (
+        <div className="mt-8">
+          <NowCard
+            eyebrow={bt("지금 할 일", "Do this now")}
+            title={nowCard.title}
+            reason={nowCard.reason}
+            progress={nowCard.progress}
+            tone={nowCard.tone}
+            dismissible={nowCard.dismissible}
+            action={(
+              <a href={actionHref(nowCard.href)} className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}>
+                {nowCard.actionLabel}
+              </a>
+            )}
+          />
+        </div>
+      ) : null}
+
+      </div>
+      <div hidden={activeScreen !== "group-buys"}>
       <section id="seller-group-buys" aria-label={bt("공동구매", "Group buys")} className="mt-10 scroll-mt-24">
         <h2 className="text-lg font-bold text-fg">
           {bt("공동구매", "Group buys")}{" "}
@@ -278,6 +263,8 @@ export function MarketSellerPage() {
         )}
       </section>
 
+      </div>
+      <div hidden={activeScreen !== "simulator"}>
       <section
         id="seller-revenue-simulator"
         aria-label={bt("유료 전환 시 창작자 정산 시뮬레이터", "Creator payout simulator for paid mode")}
@@ -421,6 +408,8 @@ export function MarketSellerPage() {
         </dl>
       </section>
 
+      </div>
+      <div hidden={activeScreen !== "manage"}>
       <section
         id="seller-tools"
         aria-label={bt("판매 관리", "Seller tools")}
@@ -454,6 +443,44 @@ export function MarketSellerPage() {
           </div>
         )}
       </section>
+      </div>
+      <SiteDisclosure title={bt("판매자 안내 · 마켓 이동", "Seller guide and market navigation")} className="mt-5">
+      <MarketNavHeader />
+      <MarketSectionArtBanner />
+      <MarketSellerCenterTabs active="center" />
+
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
+          {bt(
+            "판매자 센터의 첫 탭입니다. 창작자가 이 브라우저에 직접 등록한 소재를 활동 포인트로 사고파는 판매대와 공동구매를 한곳에서 다룹니다. 서버에 게시하는 에셋은 ‘에셋 등록’과 ‘패키지 관리’ 탭에서 다룹니다. 현금 결제·출금은 없습니다.",
+            "This is the first tab of the seller center: a counter where creators list materials directly in this browser and trade them for activity points, plus group buys. Assets published to the server live in the Register asset and Package management tabs. No cash payments or withdrawals.",
+          )}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href="/market/publish?section=publish#market-publish-preparation"
+            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+          >
+            <Wand2 className="size-3.5 text-accent" aria-hidden="true" />
+            {bt("7종 시각 매니페스트 빌더 열기", "Open 7-kind visual manifest builder")}
+          </Link>
+          <Link
+            href="/market/manage"
+            className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+          >
+            <PackageCheck className="size-3.5 text-accent" aria-hidden="true" />
+            {bt("서버 게시 패키지·버전 관리", "Manage server-published packages & versions")}
+          </Link>
+          {viewerId ? (
+            <Link
+              href={`/market/creator/${encodeURIComponent(viewerId)}`}
+              className={buttonClass({ variant: "outline", size: "sm", className: "gap-1.5" })}
+            >
+              {bt("내 배급자 스토어 보기", "View my publisher storefront")}
+              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          ) : null}
+        </div>
+      </SiteDisclosure>
     </Container>
   );
 }

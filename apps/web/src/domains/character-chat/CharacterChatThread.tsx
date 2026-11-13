@@ -305,7 +305,7 @@ export function CharacterChatThread({
                 setDraft(starter);
                 inputRef.current?.focus();
               }}
-              className="rounded-full border border-line bg-panel px-2.5 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+              className="min-h-11 min-w-11 rounded-full border border-line bg-panel px-2.5 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
             >
               {starter}
             </button>

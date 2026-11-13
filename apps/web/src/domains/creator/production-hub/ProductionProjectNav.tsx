@@ -203,11 +203,16 @@ export function ProductionProjectNav({
   return (
     <nav
       aria-label={bt("프로젝트 메뉴", "Project menu")}
-      className="creator-workflow-nav border-b border-line bg-panel lg:sticky lg:top-0 lg:h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r"
+      className="creator-workflow-nav border-b border-line bg-panel lg:sticky lg:top-0 lg:self-start lg:max-h-dvh lg:overflow-y-auto lg:border-b-0 lg:border-r"
     >
       <div className="p-2 lg:p-3">
         <SurfaceLink projectId={projectId} definition={overview} active={surface === overview.id} compact={false} />
       </div>
+      <details className="group/project-menu" data-production-task-menu>
+        <summary className={cn(SUMMARY_CLASS, "mx-2 mb-2 border border-line bg-card lg:mx-3")}>
+          {bt("화면 전환 · 제작 단계와 관리", "Switch screen · stages and management")}
+          <ChevronDown className="size-4 shrink-0 transition-transform group-open/project-menu:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+        </summary>
       <p className="hidden px-5 pt-1 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-fg-3 lg:block">
         {bt("제작 단계", "Stages")}
       </p>
@@ -254,6 +259,7 @@ export function ProductionProjectNav({
           ))}
         </NavGroup>
       </div>
+      </details>
     </nav>
   );
 }

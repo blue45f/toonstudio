@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import "./community-page-layout.css";
-import { Navigate, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { CommunityScopeDirectory } from "./components/community-scope-directory";
 import { CommunityActivityPreview } from "./components/community-activity-preview";
@@ -50,6 +50,7 @@ import { useT } from "@/shared/lib/i18n";
 const SCOPES = ["title", "author", "pencafe"] as const;
 
 const COPY = {
+  browseMenu: defineBilingualText("communityPage", "browseMenu", "커뮤니티 종류 · 참여하기", "Community spaces and participation"),
   sectionView: defineBilingualText("communityPage", "sectionView", "커뮤니티 구역 보기 전환", "Community sections"),
   allSections: defineBilingualText("communityPage", "allSections", "전체 보기", "All sections"),
   leagueSection: defineBilingualText("communityPage", "leagueSection", "승격 리그 · 활동", "Promotion league & activity"),
@@ -194,14 +195,14 @@ const COPY = {
   heroTitle: defineBilingualText(
     "communityPage",
     "heroTitle",
-    "혼자 그린 이야기, 함께 넓어지는 세계.",
-    "A story drawn alone, a world widened together.",
+    "커뮤니티",
+    "Community",
   ),
   heroSummary: defineBilingualText(
     "communityPage",
     "heroSummary",
-    "작품·작가·펜카페·회원 카페를 따라 대화를 찾고, 창작자 갤러리와 리뷰로 감상을 이어가세요.",
-    "Follow works, creators, pencafes and member cafés to find conversations, then keep going with the creator gallery and reviews.",
+    "관심 있는 작품과 창작자의 이야기를 나눠요.",
+    "Talk about the works and creators you love.",
   ),
   heroArtCaption: defineBilingualText(
     "communityPage",
@@ -379,7 +380,17 @@ export function CommunityPage() {
   useBilingualI18nRevision();
   const t = useT();
   useDocumentTitle(t(COPY.docTitle));
-  const [sectionView, setSectionView] = useState<"all" | "league" | "feed" | "promote">("all");
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const requestedView = searchParams.get("view");
+  const sectionView = requestedView === "all" || requestedView === "league" || requestedView === "promote" ? requestedView : "feed";
+  const setSectionView = (view: "all" | "league" | "feed" | "promote") => {
+    const next = new URLSearchParams(searchParams);
+    if (view === "feed") next.delete("view");
+    else next.set("view", view);
+    navigate({ pathname: location.pathname, search: next.toString(), hash: location.hash });
+  };
   const [activeReaTrack, setActiveReaTrack] = useState<"skeb-vgen-commission" | "tumblbug-fantia-tier" | "comiket-booth-cut" | "c2pa-nightshade-shield">("skeb-vgen-commission");
   const showLeague = sectionView === "all" || sectionView === "league";
   const showFeed = sectionView === "all" || sectionView === "feed";
@@ -390,27 +401,10 @@ export function CommunityPage() {
       <div>
         <header className="community-layout-header">
           <div>
-            <p className="text-xs font-bold text-accent">{t(COPY.heroEyebrow)}</p>
             <h1>{t(COPY.heroTitle)}</h1>
             <p className="text-sm text-fg-2">{t(COPY.heroSummary)}</p>
           </div>
-          <div className="community-layout-actions">
-            <Link href="/showcase" className={buttonClass({ size: "md", className: "min-h-11" })}>
-              {t(COPY.ctaGallery)}
-              <ArrowRight size={16} aria-hidden="true" />
-            </Link>
-            <Link href="/collaborate" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
-              <MessageCircle size={16} aria-hidden="true" />
-              {t(COPY.ctaCollab)}
-            </Link>
-            <Link href="/community/events" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
-              <CalendarDays size={16} aria-hidden="true" />
-              {t(COPY.ctaEvents)}
-            </Link>
-            <Link href="/studio/new" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
-              {t(COPY.directoriesCta)}<ArrowRight size={16} aria-hidden="true" />
-            </Link>
-          </div>
+
         </header>
       </div>
 
@@ -420,10 +414,10 @@ export function CommunityPage() {
         </p>
         <div role="group" aria-label={t(COPY.sectionView)} className="flex flex-wrap gap-1.5">
           {([
-            ["all", COPY.allSections],
-            ["league", COPY.leagueSection],
             ["feed", COPY.feedSection],
+            ["league", COPY.leagueSection],
             ["promote", COPY.promoteSection],
+            ["all", COPY.allSections],
           ] as const).map(([id, label]) => (
             <button
               key={id}
@@ -442,8 +436,24 @@ export function CommunityPage() {
         </div>
       </div>
 
-      {showFeed ? (
-        <>
+      <CommunityDisclosure title={t(COPY.browseMenu)}>
+          <div className="community-layout-actions">
+            <Link href="/showcase" className={buttonClass({ size: "md", className: "min-h-11" })}>
+              {t(COPY.ctaGallery)}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link href="/collaborate" className={buttonClass({ variant: "outline", size: "md", className: "min-h-11" })}>
+              <MessageCircle size={16} aria-hidden="true" />
+              {t(COPY.ctaCollab)}
+            </Link>
+            <Link href="/community/events" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
+              <CalendarDays size={16} aria-hidden="true" />
+              {t(COPY.ctaEvents)}
+            </Link>
+            <Link href="/studio/new" className={buttonClass({ variant: "ghost", size: "md", className: "min-h-11" })}>
+              {t(COPY.directoriesCta)}<ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
           <nav className="community-layout-directory" aria-labelledby="community-directory-heading">
             <h2 id="community-directory-heading" className="sr-only">{t(COPY.directoriesTitle)}</h2>
             {COMMUNITY_SCOPE_DIRECTORIES.map((entry) => {
@@ -457,6 +467,11 @@ export function CommunityPage() {
               );
             })}
           </nav>
+      </CommunityDisclosure>
+
+      {showFeed ? (
+        <>
+
 
           <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1" aria-label={t(COPY.unifiedFeedRegion)}>
             <FanCafePanel scope="all" targetLabel={t(COPY.unifiedFeedLabel)} compact hideSpaceGuide />

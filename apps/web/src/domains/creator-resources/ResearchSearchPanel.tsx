@@ -51,7 +51,9 @@ export function ResearchSearchPanel({
   session,
   onSessionChange,
   onSearch,
+  active = true,
 }: {
+  active?: boolean;
   session: ResearchDeskSession;
   onSessionChange: (updater: (current: ResearchDeskSession) => ResearchDeskSession) => void;
   onSearch: (mode: ResearchSearchMode, query: string) => void;
@@ -77,6 +79,7 @@ export function ResearchSearchPanel({
   }), [searchMode]);
 
   useEffect(() => {
+    if (!active) return;
     const focusSearch = (event: globalThis.KeyboardEvent) => {
       const target = event.target;
       const editable = target instanceof HTMLElement && (
@@ -91,7 +94,7 @@ export function ResearchSearchPanel({
     };
     document.addEventListener("keydown", focusSearch);
     return () => document.removeEventListener("keydown", focusSearch);
-  }, []);
+  }, [active]);
 
   const selectMode = (mode: ResearchSearchMode) => {
     setSearchError("");

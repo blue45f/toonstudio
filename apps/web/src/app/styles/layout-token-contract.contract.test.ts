@@ -397,8 +397,10 @@ describe("학습·설정·매뉴얼 행 레일 계약 (L4)", () => {
     expect(tsField(rowRailBlock, "breakpoint")).toBe("1024px");
   });
 
-  it("학습(LearnSectionShell) 레일은 216px·lg(1024px) 전환이다", () => {
-    expect(learnSectionShell).toContain(RAIL_COLUMNS);
+  it("학습은 양쪽 화면에서 단일 메뉴 진입점을 쓰고 본문 앞에 고정 레일을 만들지 않는다", () => {
+    expect(learnSectionShell).toContain('className="learn-section-menu"');
+    expect(learnSectionShell).toContain('<summary>');
+    expect(learnSectionShell).not.toContain(RAIL_COLUMNS);
     expect(learnSectionShell).not.toContain("15rem_minmax");
     expect(learnSectionShell).not.toContain("250px");
     // 레일은 ≥1024px(lg)에서만 그리드로 생긴다 — md 이하 전용 레일 열이 없다.
@@ -427,7 +429,7 @@ describe("학습·설정·매뉴얼 행 레일 계약 (L4)", () => {
     expect(studioManualCss).not.toMatch(/@media \(max-width: 900px\) \{\s*\.manual-sidebar/u);
   });
 
-  it("변형 패턴은 2종만이다: 학습·설정은 SectionNav 가로 스크롤 칩, 매뉴얼은 <details> 목차", () => {
+  it("설정 선택과 학습·매뉴얼의 명시 목차가 정본 항목을 유지한다", () => {
     // 패턴 1 — 가로 스크롤 칩: SectionNav가 <lg에서 overflow-x-auto 칩 줄, ≥lg에서 레일로 바뀐다.
     expect(sectionNav).toContain("overflow-x-auto");
     expect(sectionNav).toContain("lg:grid");
@@ -437,8 +439,8 @@ describe("학습·설정·매뉴얼 행 레일 계약 (L4)", () => {
     expect(studioManualPage).toContain('<details ref={contentsRef} className="manual-mobile-contents manual-no-print">');
     expect(studioManualCss).toContain(".manual-mobile-contents { display: none; }");
     expect(studioManualCss).toContain(".manual-mobile-contents { display: block;");
-    // 제3 패턴 금지: 학습·설정 셸이 자체 접기(details) 내비나 숨김 레일을 만들지 않는다.
-    expect(learnSectionShell).not.toContain("<details");
+    // 학습은 공용 항목을 단일 명시 메뉴에 담고 매뉴얼 전용 목차와 섞지 않는다.
+    expect(learnSectionShell).toContain("<details");
     expect(learnSectionShell).not.toContain("manual-mobile-contents");
   });
 });

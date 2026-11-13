@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { StudioBrushIntegratedWorkbench } from "./StudioBrushIntegratedWorkbench";
 import { createBrushStudioV6Program, type BrushStudioV6Program } from "./brush-studio-v6-engine";
 
@@ -16,7 +16,23 @@ beforeEach(() => { localStorage.clear(); load.mockReset(); });
 afterEach(cleanup);
 const view = (scope: string) => <MemoryRouter><StudioBrushIntegratedWorkbench scope={scope} /></MemoryRouter>;
 
+function TaskNavigation() {
+  const navigate = useNavigate(), location = useLocation();
+  return <><button onClick={() => navigate(`${location.pathname}${location.search}&brushTask=engine`)}>입력 작업</button><button onClick={() => navigate(-1)}>작업 뒤로</button></>;
+}
+
 describe("saved material editor routing", () => {
+  it("작업 페이지만 오가면 선택 레시피를 다시 적용하거나 편집기를 교체하지 않는다", () => {
+    render(<MemoryRouter initialEntries={["/studio/assets/brushes/new?applyRecipe=1&recipe=csp-real-gpen-aa"]}><TaskNavigation /><StudioBrushIntegratedWorkbench scope="new" /></MemoryRouter>);
+    const editor = screen.getByTestId("editor");
+    localStorage.setItem("toonstudio.brush-program-v6:new", "사용자가 조절한 초안");
+    fireEvent.click(screen.getByRole("button", { name: "입력 작업" }));
+    expect(screen.getByTestId("editor")).toBe(editor);
+    expect(localStorage.getItem("toonstudio.brush-program-v6:new")).toBe("사용자가 조절한 초안");
+    fireEvent.click(screen.getByRole("button", { name: "작업 뒤로" }));
+    expect(screen.getByTestId("editor")).toBe(editor);
+    expect(localStorage.getItem("toonstudio.brush-program-v6:new")).toBe("사용자가 조절한 초안");
+  });
   it("waits for the exact saved brush instead of mounting an autosaving default", async () => {
     let finish!: (value: { program: BrushStudioV6Program; persistent: boolean }) => void;
     load.mockReturnValue(new Promise((resolve) => { finish = resolve; }));

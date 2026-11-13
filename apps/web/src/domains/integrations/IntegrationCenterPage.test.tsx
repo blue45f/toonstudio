@@ -68,20 +68,26 @@ describe("연동 센터 빈 상태와 로딩", () => {
     expect(screen.getByText("드라이브 저장소")).toBeTruthy();
   });
 
-  it("공급자 목록이 고급 도구보다 먼저 오고, 고급 도구는 라벨로 격리된다", () => {
+  it("공급자 찾기와 실행 도구는 별도 주소로 열리고 검색 입력을 보존한다", () => {
     render(
       <MemoryRouter initialEntries={["/settings/integrations"]}>
         <IntegrationCenterPage />
       </MemoryRouter>,
     );
 
-    const provider = screen.getByText("드라이브 저장소");
-    const advanced = screen.getByText("고급 도구");
-    const workbench = screen.getByText("런타임 작업대 표식");
-    // 문서 순서: 공급자 카드 → 고급 도구 제목 → 작업대.
-    expect(provider.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(advanced.compareDocumentPosition(workbench) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/공급자 연결 확인만이라면 위 목록으로 충분합니다/)).toBeTruthy();
+    const input = screen.getByPlaceholderText("이름·기능·공급자 검색");
+    fireEvent.change(input, { target: { value: "드라이브" } });
+    expect(screen.getByRole("region", { name: "외부 연동 목록" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "연동 실행 상태" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "실행 상태" }));
+    expect(screen.getByRole("region", { name: "연동 실행 상태" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "외부 연동 목록" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "서비스 찾기" }));
+    expect(screen.getByPlaceholderText("이름·기능·공급자 검색")).toBe(input);
+    expect(input).toHaveProperty("value", "드라이브");
+    fireEvent.click(screen.getByRole("link", { name: "연결 안내" }));
+    expect(screen.getByRole("region", { name: "연동 상태 요약" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "안전한 연동 원칙" })).toBeTruthy();
   });
 
   it("연동 로딩은 정적 텍스트가 아니라 상태 역할과 동적 표시를 함께 제공한다", () => {

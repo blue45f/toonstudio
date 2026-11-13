@@ -15,7 +15,7 @@ vi.mock("@/shared/components/site-experience/site-experience-context", () => ({ 
 vi.mock("@/shared/voice", () => ({ VoiceGuideSettingsSection: () => <section aria-label="음성 안내 설정" /> }));
 vi.mock("@/shared/ambient", () => ({ AmbientSettingsSection: () => <section aria-label="앰비언트 설정" /> }));
 vi.mock("./ConnectedAccountsSettings", () => ({ ConnectedAccountsSettings: () => <div data-testid="connected-accounts" /> }));
-vi.mock("./AccountMergeSettings", () => ({ AccountMergeSettings: () => <div data-testid="account-merge" /> }));
+vi.mock("./AccountMergeSettings", () => ({ AccountMergeSettings: () => <div data-testid="account-merge"><input aria-label="계정 통합 초안" defaultValue="" /></div> }));
 vi.mock("./DeleteAccountSection", () => ({ DeleteAccountSection: () => <div data-testid="delete-account" /> }));
 vi.mock("./LibraryBackupImport", () => ({ LibraryBackupImport: () => <div data-testid="backup-import" /> }));
 
@@ -24,7 +24,7 @@ function LocationProbe() {
   return <output data-testid="location">{`${location.pathname}${location.search}${location.hash}`}</output>;
 }
 
-function renderSettings(entry = "/settings") {
+function renderSettings(entry = "/settings?view=display") {
   return render(<MemoryRouter initialEntries={[entry]}><SettingsPage /><LocationProbe /></MemoryRouter>);
 }
 
@@ -32,7 +32,42 @@ beforeEach(() => window.localStorage.clear());
 afterEach(cleanup);
 
 describe("설정 화면 탭", () => {
-  it("설정을 화면·지역·연령·데이터·계정 다섯 탭으로 나누고 처음에는 화면·음성만 보여 준다", () => {
+  it("설정 목록으로 왕복해도 방문한 계정 폼의 미저장 입력 DOM을 보존한다", () => {
+    renderSettings("/settings?view=account");
+    fireEvent.click(screen.getByRole("button", { name: /연동 계정·계정 병합/ }));
+    const draft = screen.getByLabelText("계정 통합 초안");
+    fireEvent.change(draft, { target: { value: "draft-code-placeholder" } });
+    fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
+    expect(screen.queryByRole("tablist")).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "계정", exact: true }));
+    expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
+    expect(draft).toHaveProperty("value", "draft-code-placeholder");
+  });
+  it("다른 영역에서 기본 화면·음성 탭을 골라도 목록으로 돌아가지 않는다", () => {
+    renderSettings("/settings?project=keep&view=region");
+    fireEvent.click(screen.getByRole("tab", { name: "화면·음성" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=display");
+    expect(screen.getByRole("tablist")).toBeTruthy();
+    expect(screen.getByTestId("appearance")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("설정 검색"), { target: { value: "음성" } });
+    fireEvent.click(screen.getByRole("button", { name: /음성 안내/ }));
+    expect(screen.getByTestId("location").textContent).toContain("view=display");
+    expect(screen.getByTestId("appearance")).toBeTruthy();
+  });
+  it("설정 첫 화면은 다섯 목적지이며 선택하면 해당 편집 화면으로 이동한다", () => {
+    renderSettings("/settings?project=keep");
+    const areas = screen.getByRole("navigation", { name: "바꾸려는 설정 선택" });
+    expect(within(areas).getAllByRole("link")).toHaveLength(5);
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.getByTestId("appearance").closest("[hidden]")).not.toBeNull();
+    fireEvent.click(within(areas).getByRole("link", { name: "내 데이터" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=data");
+    expect(screen.getByRole("heading", { name: "내 데이터" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep");
+    expect(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).toBeTruthy();
+  });
+  it("설정을 화면·지역·연령·데이터·계정 다섯 탭으로 나누고 선택한 주소에서는 화면·음성만 보여 준다", () => {
     renderSettings();
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(5);

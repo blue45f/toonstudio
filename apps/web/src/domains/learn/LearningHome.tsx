@@ -67,6 +67,8 @@ import { LEARN_CURRICULUM_ROADMAP_TRACKS } from "@/shared/navigation/webtoon-pla
 import "./learning-hub.css";
 import "./learning-home-classroom.css";
 
+const NEXT_TOOLS_LABEL = defineBilingualText("learnHome", "nextTools", "배운 것을 자료와 작업으로 잇기", "Continue with references and practice");
+
 const SINGLE_LESSON_NOTE = defineBilingualText("learnHome", "singleLesson", "오늘은 이 강좌 하나에 집중해 보세요.", "Focus on this one lesson today.");
 
 const lessonUrl = (id: string) => `/learn/lessons/${encodeURIComponent(id)}`;
@@ -645,6 +647,8 @@ export function LearningHome() {
 
       </details>
 
+      <details className="learn-classroom-roadmap">
+        <summary>{t(NEXT_TOOLS_LABEL)}</summary>
       <RevealOnScroll variant="fade">
       <section className="learn-next-steps" aria-labelledby="learn-next-steps-title">
         <div className="learn-section-heading">
@@ -666,6 +670,7 @@ export function LearningHome() {
         </SiteRail>
       </section>
       </RevealOnScroll>
+      </details>
 
       <footer className="learn-local-footer">
         <p>한국어 학습 콘텐츠 · 로그인 없이 이용 가능 · 학습 기록과 목표 설정은 현재 브라우저에만 저장됩니다.</p>

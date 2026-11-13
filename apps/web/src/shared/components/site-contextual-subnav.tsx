@@ -55,9 +55,6 @@ export function SiteContextualSubNav({
     const params = new URLSearchParams(item.href.split("?")[1]);
     return pathMatches && [...params].every(([key, value]) => search.get(key) === value);
   }).sort((left, right) => right.href.length - left.href.length)[0];
-  const primaryItems = group.items.slice(0, 4);
-  if (currentItem && !primaryItems.includes(currentItem)) primaryItems.splice(3, 1, currentItem);
-  const secondaryItems = group.items.filter((item) => !primaryItems.includes(item));
 
   const renderItem = (item: ContextualSubNavItem) => (
     <li key={item.id}>
@@ -81,22 +78,17 @@ export function SiteContextualSubNav({
       className={cn("site-contextual-subnav", className)}
       style={style}
     >
-      <div className="site-contextual-subnav__header">
-        <span>{title}</span>
-      </div>
-      <ul className="site-contextual-subnav__list">
-        {primaryItems.map(renderItem)}
-      </ul>
       <details key={`${pathname}${search.toString()}`} className="site-contextual-subnav__more">
         <summary>
-          {isKo ? "더 보기" : "More"}
+          <span>{title} {isKo ? "메뉴" : "menu"}</span>
+          {currentItem ? <span className="site-contextual-subnav__current">{isKo ? currentItem.koLabel : currentItem.enLabel}</span> : null}
           <ChevronDown size={14} aria-hidden="true" />
         </summary>
         <div className="site-contextual-subnav__additional">
           <p data-testid="site-ux-simplicity-pill" className="text-xs leading-5 text-fg-2">
             <span className="font-semibold">{simplicityBadge}</span>{" · "}{goalCopy}
           </p>
-          <ul className="site-contextual-subnav__list">{secondaryItems.map(renderItem)}</ul>
+          <ul className="site-contextual-subnav__list">{group.items.map(renderItem)}</ul>
         </div>
       </details>
     </nav>

@@ -41,6 +41,7 @@ import {
   type CreatorMarketplaceResourceRecord,
 } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
@@ -370,20 +371,13 @@ export function MarketOwnedResourcesPage() {
 
   return (
     <Container size="wide" className="py-7 sm:py-10">
-      <MarketNavHeader />
-      <MarketSectionArtBanner />
-      <MarketSellerCenterTabs active="packages" />
-
-      <header className="mt-6 flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="eyebrow text-accent">Creator center</p>
           <div className="mt-1 flex items-center gap-2">
             <UserCheck className="size-5 text-accent" aria-hidden="true" />
             <h1 className="text-xl font-bold text-fg sm:text-2xl">{t("판매자 센터", "Seller center")}</h1>
           </div>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
-            {t("판매자 센터의 패키지 관리 탭입니다. 서버가 보유한 패키지 head와 릴리스 상태만 표시합니다. 브라우저 임시 레코드로 공개 상태나 immutable 버전을 변경하지 않습니다.", "This is the package management tab of the seller center. Only the package heads and release states held by the server are shown. Browser temporary records cannot change listing status or immutable versions.")}
-          </p>
+
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {validStorefrontId ? (
@@ -395,19 +389,12 @@ export function MarketOwnedResourcesPage() {
               {t("내 배급자 스토어", "My storefront")}
             </Link>
           ) : null}
-          <Link href="/market/publish" className={buttonClass({ variant: "solid", size: "sm" })}>
+          <Link href="/market/publish?section=publish" className={buttonClass({ variant: "solid", size: "sm" })}>
             <PackagePlus className="size-4" aria-hidden="true" />
             {t("새 릴리스 게시", "Publish a new release")}
           </Link>
         </div>
       </header>
-
-      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3 text-sm text-fg-2">
-        {t("브라우저에서 직접 등록하는 포인트 판매·공동구매는 판매자 센터에서 함께 다룹니다.", "Point sales and group buys registered directly in the browser live together in the seller center.")}
-        <Link href="/market/seller" className={buttonClass({ variant: "outline", size: "sm" })}>
-          {t("판매자 센터 열기", "Open the seller center")}
-        </Link>
-      </p>
 
       {!ready ? (
         <div role="status" className="mt-8 rounded-2xl border border-line bg-card p-8 text-center">
@@ -566,7 +553,7 @@ export function MarketOwnedResourcesPage() {
                 {t("Studio에서 준비한 에셋을 서버에 게시하면 공개 상태와 버전을 이곳에서 관리할 수 있습니다. 첫 게시는 5분이면 충분해요.", "Publish an asset you prepared in Studio to the server and manage its listing status and versions here. Your first publish takes about 5 minutes.")}
               </p>
               <Link
-                href="/market/publish"
+                href="/market/publish?section=publish"
                 className={buttonClass({ variant: "solid", size: "md", className: "mt-5 min-h-11" })}
               >
                 {t("첫 에셋 게시하기", "Publish your first asset")}
@@ -748,6 +735,21 @@ export function MarketOwnedResourcesPage() {
           ) : null}
         </>
       )}
+      <SiteDisclosure title={t("판매자 안내 · 다른 마켓 작업", "Seller guide and other market tasks")} className="mt-5">
+        <MarketNavHeader />
+        <MarketSellerCenterTabs active="packages" />
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
+            {t("판매자 센터의 패키지 관리 탭입니다. 서버가 보유한 패키지 head와 릴리스 상태만 표시합니다. 브라우저 임시 레코드로 공개 상태나 immutable 버전을 변경하지 않습니다.", "This is the package management tab of the seller center. Only the package heads and release states held by the server are shown. Browser temporary records cannot change listing status or immutable versions.")}
+          </p>
+      <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-line bg-panel px-4 py-3 text-sm text-fg-2">
+        {t("브라우저에서 직접 등록하는 포인트 판매·공동구매는 판매자 센터에서 함께 다룹니다.", "Point sales and group buys registered directly in the browser live together in the seller center.")}
+        <Link href="/market/seller" className={buttonClass({ variant: "outline", size: "sm" })}>
+          {t("판매자 센터 열기", "Open the seller center")}
+        </Link>
+      </p>
+
+        <MarketSectionArtBanner />
+      </SiteDisclosure>
     </Container>
   );
 }

@@ -72,6 +72,19 @@ afterEach(() => {
 });
 
 describe("research command center", () => {
+  it("검색 방법을 왕복해도 미제출 검색 문장 DOM을 유지하고 숨긴 검색의 단축키는 작동하지 않는다", () => {
+    renderPage("/research");
+    const query = screen.getByRole("searchbox", { name: "시각 레퍼런스 검색" });
+    fireEvent.change(query, { target: { value: "미제출 문장" } });
+    openDeskTab("장면으로 찾기");
+    const sentence = screen.getByRole("searchbox", { name: /찾고 싶은 장면이나 소재를 문장으로/ });
+    sentence.focus();
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+    expect(document.activeElement).toBe(sentence);
+    openDeskTab("진행 현황");
+    expect(screen.getByRole("searchbox", { name: "시각 레퍼런스 검색" })).toBe(query);
+    expect(query).toHaveProperty("value", "미제출 문장");
+  });
   it.each(["#%E0%A4%A", "#missing-research-target", "#saved-board"])("%s 는 도구 밖이거나 잘못된 앵커이므로 안내를 열지 않는다", async (hash) => {
     const { container } = renderPage(`/research?view=board${hash}`);
     await waitFor(() => expect(screen.getByRole("tab", { name: /저장 보드/u }).getAttribute("aria-selected")).toBe("true"));
@@ -90,7 +103,7 @@ describe("research command center", () => {
     expect(alert.textContent).toContain("저장 보드를 읽을 수 없습니다");
     expect(alert.closest("details")).toBeNull();
     expect(localStorage.getItem(GUEST_WORKSPACE_KEY)).toBe("invalid-synthetic-backup");
-    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.getAllByRole("tab")).toHaveLength(5);
   });
 
   it.each(["research-categories", "research-recipes", "research-recipe-bg3d", "%72esearch%2Drecipes", "research%2Drecipe-bg3d"])("%s 앵커는 자료 도구만 열고 저장 보드 탭과 URL을 보존한다", async (anchor) => {
@@ -123,7 +136,7 @@ describe("research command center", () => {
     expect(guide.open).toBe(false);
     const tabs = screen.getByRole("tablist", { name: "리서치 데스크 작업 영역" });
     expect(tabs.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    expect(screen.getAllByRole("tab")).toHaveLength(5);
     openDeskTab("리서치 초점");
     const title = screen.getByLabelText<HTMLInputElement>("리서치 이름");
     fireEvent.change(title, { target: { value: "합성 리서치 초점" } });
@@ -308,13 +321,13 @@ describe("research command center", () => {
 
     // 탭은 ←/→·Home·End로 이동하며 선택과 초점이 함께 움직인다.
     fireEvent.keyDown(boardTab, { key: "Home" });
-    const overviewTab = screen.getByRole("tab", { name: "진행 현황" });
-    expect(overviewTab.getAttribute("aria-selected")).toBe("true");
-    expect(document.activeElement).toBe(overviewTab);
-    fireEvent.keyDown(overviewTab, { key: "ArrowLeft" });
+    const sceneTab = screen.getByRole("tab", { name: "장면으로 찾기" });
+    expect(sceneTab.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(sceneTab);
+    fireEvent.keyDown(sceneTab, { key: "ArrowLeft" });
     expect(screen.getByRole("tab", { name: /저장 보드/u }).getAttribute("aria-selected")).toBe("true");
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "ArrowRight" });
-    expect(screen.getByRole("tab", { name: "진행 현황" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "장면으로 찾기" }).getAttribute("aria-selected")).toBe("true");
 
     // 한 번 연 패널은 숨김 상태로 유지되어 입력값을 잃지 않는다.
     expect(screen.getByRole("heading", { name: "저장한 자료 찾기", hidden: true }).closest("[role=tabpanel]")?.hasAttribute("hidden")).toBe(true);

@@ -111,6 +111,14 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
     {storageError && <div role="alert" className="ci-quality-error"><strong>브라우저 저장을 확인하세요.</strong><p>{storageError}</p><p>기록을 자동 초기화하지 않습니다. JSON으로 복구하거나 백업할 수 있습니다.</p><div className="ci-quality-actions">{board && unsaved && <button type="button" disabled={storageConflict} onClick={() => persist(board)}>저장 다시 시도</button>}<button type="button" onClick={() => { if (unsaved) setConfirmReload(true); else reloadStoredBoard(); }}>저장된 기록 다시 읽기</button><button type="button" onClick={() => setModal({ kind: "json" })}>복구 JSON 관리</button></div>{confirmReload && <div><p>현재 화면의 미저장 변경을 버립니다. 먼저 JSON으로 백업하세요.</p><div className="ci-quality-actions"><button type="button" onClick={reloadStoredBoard}>미저장 변경을 버리고 최신 저장본 읽기</button><button type="button" onClick={() => setConfirmReload(false)}>다시 읽기 취소</button></div></div>}</div>}
     {notice && <p role="status" className="ci-quality-notice">{notice}</p>}
     {board && summary ? <>
+      <nav className="ci-quality-nav" aria-label="CI·QA 보드 화면">{pages.map(([key, label]) => <button type="button" key={key} aria-pressed={page === key} onClick={() => setPage(key)}>{label}{key === "failures" ? ` ${summary.byStatus.failed}` : key === "approvals" ? " 3" : ""}</button>)}</nav>
+      {page === "checks" && <CiQualityChecklist board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onAddGate={() => setModal({ kind: "gate" })} />}
+      {page === "failures" && <CiQualityFailures board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id, tab: "failure" })} />}
+      {page === "evidence" && <CiQualityEvidence board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onJson={() => setModal({ kind: "json" })} />}
+      {page === "qa" && <CiQualityQa board={board} onEdit={(result) => setModal({ kind: "qa", id: result?.id })} onApprovals={() => setPage("approvals")} />}
+      {page === "approvals" && <CiQualityApprovals board={board} onSave={saveApproval} />}
+      <details className="ci-quality-overview">
+        <summary>검증 전체 현황과 기준 커밋</summary>
       <section className="ci-quality-release" aria-label="기준 커밋과 검증 요약">
         <div><p className="ci-quality-eyebrow">RELEASE EVIDENCE</p><h2>완료 표시와 유효한 근거를<br className="ci-quality-desktop-break" /> 함께 확인합니다.</h2><p>현재 SHA·실행 시각·범위·로그를 대조하세요.<br />core·verify 녹색이나 부분 통계는 전체 suite 성공의 보증이 아닙니다.</p></div>
         <div className="ci-quality-commit"><span>기준 커밋 SHA</span><a href={board.commit.url || undefined} target="_blank" rel="noopener noreferrer"><code>{board.commit.sha.slice(0, 9)}</code></a><strong>{board.commit.message || "메시지 미등록"}</strong><small>커밋 {qualityDate(board.commit.committedAt)}</small><small>{board.commit.source === "remote-main" ? "원격 main 관측" : "수동 기준 기록"} · {qualityDate(board.commit.observedAt)}</small><p>core · {statusLabels[board.checks.find((check) => check.id === "ci-core")?.status ?? "unknown"]} / verify · {statusLabels[board.checks.find((check) => check.id === "ci-verify")?.status ?? "unknown"]}</p></div>
@@ -122,12 +130,7 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
         <div className="ci-quality-card ci-quality-metric"><span>근거 확인 필요</span><strong>{summary.tracked - summary.fresh}</strong><small>stale {summary.stale} · 미등록 {summary.missing} · 오류 {summary.invalid}</small></div>
       </div>
       <div className="ci-quality-freshness-summary"><span><strong>Evidence freshness</strong> · 유효 {summary.fresh}/{summary.tracked} · TTL {board.ttlHours}h</span><span>{summary.stale || summary.invalid ? `stale warning · ${summary.stale + summary.invalid}개 근거를 다시 확인하세요.` : "SHA 불일치·TTL 초과·미래 시각은 유효 근거로 집계하지 않습니다."}</span></div>
-      <nav className="ci-quality-nav" aria-label="CI·QA 보드 화면">{pages.map(([key, label]) => <button type="button" key={key} aria-pressed={page === key} onClick={() => setPage(key)}>{label}{key === "failures" ? ` ${summary.byStatus.failed}` : key === "approvals" ? " 3" : ""}</button>)}</nav>
-      {page === "checks" && <CiQualityChecklist board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onAddGate={() => setModal({ kind: "gate" })} />}
-      {page === "failures" && <CiQualityFailures board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id, tab: "failure" })} />}
-      {page === "evidence" && <CiQualityEvidence board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onJson={() => setModal({ kind: "json" })} />}
-      {page === "qa" && <CiQualityQa board={board} onEdit={(result) => setModal({ kind: "qa", id: result?.id })} onApprovals={() => setPage("approvals")} />}
-      {page === "approvals" && <CiQualityApprovals board={board} onSave={saveApproval} />}
+      </details>
     </> : <div className="ci-quality-card ci-quality-empty"><h2>기록을 복구한 뒤 보드를 사용할 수 있습니다.</h2><p>저장된 데이터의 읽기·검증 실패를 확인하세요. JSON 관리에서 올바른 백업을 검토 후 가져올 수 있습니다.</p></div>}
     <footer className="ci-quality-footer"><span>현재 관리자의 브라우저 저장 · 서버·다른 기기와 자동 공유하지 않습니다.</span><span>{unsaved ? "저장되지 않은 기록 있음 · JSON 백업 필요" : "JSON 내보내기로 백업·이동 가능"}</span></footer>
     {modal?.kind === "picker" && board && <QualityDialog title="검증 결과 기록" description="실제 결과를 기록할 검사를 선택하세요." onClose={() => setModal(null)}><div className="ci-quality-dialog-body ci-quality-picker">{board.checks.map((check) => <button type="button" key={check.id} onClick={() => setModal({ kind: "check", id: check.id })}>{check.name}<small>{statusLabels[check.status]}</small></button>)}</div></QualityDialog>}

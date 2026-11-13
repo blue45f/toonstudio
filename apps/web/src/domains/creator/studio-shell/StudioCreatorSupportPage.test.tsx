@@ -21,6 +21,7 @@ describe("support request local draft/export status", () => {
   it.each([false, true])("reports persistence truthfully when storage is blocked=%s", (blocked) => {
     if (blocked) vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("quota"); });
     render(<MemoryRouter><StudioCreatorSupportPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("link", { name: "지원 브리프 작성" }));
     fireEvent.change(screen.getByRole("textbox", { name: "도움이 필요한 내용" }), { target: { value: "Review my draft" } });
     fireEvent.click(screen.getByRole("button", { name: "요청 브리프 저장·내보내기" }));
     expect(URL.createObjectURL).toHaveBeenCalledOnce();
@@ -41,6 +42,7 @@ describe("support request local draft/export status", () => {
 describe("지원 브리프 입력과 접근성", () => {
   it("브리프 바로가기와 저장 범위, 입력 도움말을 제공한다", () => {
     render(<MemoryRouter><StudioCreatorSupportPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("link", { name: "지원 브리프 작성" }));
     expect(screen.getByRole("link", { name: "지원 브리프 작성" }).getAttribute("href")).toBe("#support-request");
     const summary = screen.getByRole("textbox", { name: "도움이 필요한 내용" });
     expect(summary.getAttribute("aria-describedby")).toBe("support-request-hint support-request-count");
@@ -54,6 +56,7 @@ describe("지원 브리프 입력과 접근성", () => {
 
   it.each(["category", "contact", "summary"])("%s 수정 후 과거 저장 완료 상태를 남기지 않는다", (field) => {
     render(<MemoryRouter><StudioCreatorSupportPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("link", { name: "지원 브리프 작성" }));
     fireEvent.change(screen.getByRole("textbox", { name: "도움이 필요한 내용" }), { target: { value: "초안" } });
     fireEvent.click(screen.getByRole("button", { name: "요청 브리프 저장·내보내기" }));
     expect(screen.getByRole("status").textContent).toContain("브라우저에 초안을 저장했습니다");
@@ -67,6 +70,7 @@ describe("지원 브리프 입력과 접근성", () => {
   it("저장 실패 뒤 편집하면 이전 경고를 지우고 다시 저장할 수 있다", () => {
     const storage = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => { throw new Error("quota"); });
     render(<MemoryRouter><StudioCreatorSupportPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("link", { name: "지원 브리프 작성" }));
     const summary = screen.getByRole("textbox", { name: "도움이 필요한 내용" });
     fireEvent.change(summary, { target: { value: "초안" } });
     fireEvent.click(screen.getByRole("button", { name: "요청 브리프 저장·내보내기" }));
