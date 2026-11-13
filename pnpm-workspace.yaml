@@ -137,7 +137,8 @@ overrides:
   # 들어가지 않지만, 저장소 정책상 pnpm audit 은 개발 의존성까지 예외 없이 통과해야 한다.
   # tmp(GHSA-ph9p-34f9-6g65, GHSA-52f5-9888-hmc6)와 basic-ftp(GHSA-c475-qrg2-pj4r)는 수정 릴리스로 올린다.
   'tmp@<0.2.6': 0.2.7
-  'basic-ftp@<6.2.1': 6.2.3
+  # 2026-11-13: @lhci/cli·puppeteer-core 개발 경로의 MLSD 파서 DoS(GHSA-5pm8-86m8-9m6r)를 수정한다.
+  'basic-ftp@<6.2.4': 6.2.4
   # sprintf-js(GHSA-hp3w-g68c-fv3c)는 수정 릴리스가 아직 없다. 유일한 소비자는 js-yaml 3 의 CLI 전용 argparse 1 이고
   # js-yaml 라이브러리 코드는 argparse 를 쓰지 않으므로, argparse 2(sprintf-js 비의존)로 수렴시켜 트리에서 제거한다.
   'argparse@<2': 2.0.1

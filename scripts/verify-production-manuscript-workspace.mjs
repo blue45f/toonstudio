@@ -155,6 +155,13 @@ async function installRoutes(page, label) {
     const request = route.request();
     const url = new URL(request.url());
     apiRequests.push({ label, method: request.method(), pathname: url.pathname });
+    // 상태 조회만 키 미설정으로 응답한다. 생성 요청은 예상 밖 요청으로 계속 거절한다.
+    if (request.method() === "GET" && url.pathname === "/api/studio-ai/openai-assist/status") {
+      return route.fulfill({ json: {
+        configured: false,
+        setupNoticeKo: "검수 fixture에는 서버 OpenAI 키가 없습니다. 기획·편집·내보내기는 계속 사용할 수 있습니다.",
+      } });
+    }
     if (url.pathname === "/api/studio-project-graph/works/sample-work/project"
       || url.pathname === "/api/studio-project-graph/projects/graph-project") {
       return route.fulfill({ json: project });
@@ -359,6 +366,14 @@ for (const fixture of [
 
     await page.getByRole("tab", { name: "AI 도우미" }).click();
     await expect(page.getByRole("heading", { name: "선택 영역 음영·광원 보조를 끝까지 안내합니다" })).toBeVisible();
+    await expect(page.getByTestId("openai-assist-status-badge")).toHaveText("서버 OpenAI 키 확인 필요");
+    await expect(page.getByTestId("openai-assist-key-notice")).toContainText("검수 fixture에는 서버 OpenAI 키가 없습니다.");
+    assert(apiRequests.some((request) => request.label === fixture.label
+      && request.method === "GET" && request.pathname === "/api/studio-ai/openai-assist/status"),
+    `${fixture.label}: OpenAI 키 상태 조회가 없습니다. 도우미 탭과 상태 조회 fixture를 확인하세요.`);
+    assert.equal(apiRequests.some((request) => request.label === fixture.label
+      && request.method !== "GET" && request.pathname.startsWith("/api/studio-ai/openai-assist")), false,
+    `${fixture.label}: 검수 중 AI 생성 요청이 발생했습니다. 상태 조회 fixture와 도우미 진입을 확인하세요.`);
     await assertNoPageOverflow(page, fixture.width, `${fixture.label}-focused-ai`);
 
     await page.getByRole("tab", { name: "팀·권한" }).click();

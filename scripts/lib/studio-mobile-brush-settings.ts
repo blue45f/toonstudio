@@ -4,11 +4,11 @@ import { clickStudioControlAfterReadiness } from "./studio-drawing-readiness";
 
 import type { Locator, Page } from "playwright";
 
-export async function openMobileBrushSettings(page: Page, dock: Locator): Promise<void> {
-  const deadline = Date.now() + 60_000;
+export async function openMobileBrushSettings(page: Page, dock: Locator, timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
   const remaining = () => {
     const value = deadline - Date.now();
-    if (value <= 0) throw new Error("모바일 브러시 설정 열기의 60000ms 예산을 초과했습니다.");
+    if (value <= 0) throw new Error(`모바일 브러시 설정 열기의 ${timeoutMs}ms 예산을 초과했습니다.`);
     return value;
   };
   const sheet = page.locator('[data-studio-sheet-id="draw"][data-studio-mobile-sheet="draw"][role="dialog"]:not([aria-hidden="true"]):not([inert])');

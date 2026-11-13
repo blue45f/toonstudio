@@ -22,4 +22,3 @@ export function CreatorArtBand({ creator }: { creator: { readonly name: string; 
     </span>
   );
 }
-

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { openMobileBrushSettings } from "./studio-mobile-brush-settings";
 
@@ -7,6 +7,7 @@ import type { Locator, Page } from "playwright";
 const readiness = vi.hoisted(() => ({ click: vi.fn() }));
 vi.mock("./studio-drawing-readiness", () => ({ clickStudioControlAfterReadiness: readiness.click }));
 beforeEach(() => { readiness.click.mockReset(); });
+afterEach(() => { vi.restoreAllMocks(); });
 
 function fixture(mode: "pen" | "eraser" | "shape" | "pixel", clarity = true) {
   const state = { mode, clarity, menu: false, sheet: false, opens: 0, lateClarity: false };
@@ -53,6 +54,18 @@ function fixture(mode: "pen" | "eraser" | "shape" | "pixel", clarity = true) {
 }
 
 describe("mobile brush settings through current controls", () => {
+  it("소크 호출은 명시한 예산을 공통 준비에 전달한다", async () => {
+    const f = fixture("pen");
+    await openMobileBrushSettings(f.page, f.dock, 1_500);
+    expect(readiness.click.mock.calls[0]?.[2]).toBeLessThanOrEqual(1_500);
+    expect(readiness.click.mock.calls[0]?.[2]).toBeGreaterThan(0);
+  });
+  it("짧은 호출 예산이 끝나면 기본 60초로 재시작하지 않는다", async () => {
+    const f = fixture("pen"); let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    readiness.click.mockImplementation(async () => { f.state.sheet = true; now = 1_501; });
+    await expect(openMobileBrushSettings(f.page, f.dock, 1_500)).rejects.toThrow("1500ms 예산");
+  });
   it.each(["pen", "eraser"] as const)("opens the Clarity %s settings without changing its active mode", async (mode) => {
     const f = fixture(mode);
     await openMobileBrushSettings(f.page, f.dock);

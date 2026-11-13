@@ -6,6 +6,9 @@ import { createStudioSoakCheckpoint } from "./lib/studio-five-hour-soak-checkpoi
 import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-runtime-noise.mjs";
 
 const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import.meta.url), "utf8");
+const desktopPen = readFileSync(new URL("./lib/studio-soak-desktop-pen.ts", import.meta.url), "utf8");
+const pointerRoute = readFileSync(new URL("./lib/studio-soak-pointer-route.ts", import.meta.url), "utf8");
+const layerCountUi = readFileSync(new URL("./lib/studio-soak-layer-count.ts", import.meta.url), "utf8");
 
 function sliceFunction(name: string, nextName: string): string {
   const start = source.indexOf(`async function ${name}`);
@@ -23,21 +26,21 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(close).toContain('[data-studio-mobile-sheet="draw"]');
     expect(close).toContain('page.keyboard.press("Escape")');
     expect(close).toContain('data-studio-brush-workbench-dock="true"');
+    expect(close).toContain('[role="dialog"][data-studio-brush-floating]:visible');
+    expect(close).toContain('floating.getByRole("button", { name: / 닫기$/u })');
     expect(close).toContain('if (docked) continue');
     expect(close).toContain('state: "hidden"');
     expect(close).toContain(".catch(() => false)");
   });
 
-  it("opens the mobile catalogue through the real draw-settings sheet", () => {
+  it("모바일 카탈로그는 공통 실제 설정 진입과 같은 잔여 예산을 사용한다", () => {
     const open = sliceFunction("openMobileBrushLibrary", "selectBrush");
-    expect(open).toContain('[data-studio-mobile-editing-dock="true"]');
-    expect(open).toContain('name: "브러시 설정 (굵기·색·프리셋)"');
-    expect(open).toContain('[data-studio-mobile-workspace-toggle="true"]');
-    expect(open).toContain('await workspace.click()');
+    expect(open).toContain('await openMobileBrushSettings(page, dock, remaining())');
     expect(open).toContain('page.locator("#studio-mobile-draw-settings")');
     expect(open).toContain(`sheet.locator('[data-studio-open-brush-library="true"]')`);
-    expect(open).toContain('[data-studio-brush-library="true"]');
-    expect(open).not.toContain(`dock.locator('[data-studio-open-brush-library="true"]')`);
+    expect(open).toContain('opener.click({ timeout: remaining() })');
+    expect(open).toContain('library.waitFor({ state: "visible", timeout: remaining() })');
+    expect(open).not.toContain('name: "브러시 설정 (굵기·색·프리셋)"');
   });
 
   it("keeps mobile and desktop brush selection on their actual surfaces", () => {
@@ -48,7 +51,9 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(select).toContain('dockedLibrary.getByRole("searchbox")');
     expect(select).toContain('data-studio-brush-selection-pending');
     expect(select).toContain('if (active && !pending) return true');
-    expect(select).toContain('page.keyboard.press("b")');
+    expect(select).toContain("await ensurePenReady(page)");
+    expect(select).toContain('dockedLibrary.waitFor({ state: "visible"');
+    expect(select).toContain('option.click({ timeout: 5_000 })');
     expect(select).toContain('[data-studio-brush-active-pill="true"]');
     expect(select).toContain("return closeBrushSurfaces(page)");
   });
@@ -57,11 +62,35 @@ describe("Studio five-hour soak browser state isolation", () => {
     const pen = sliceFunction("ensurePenReady", "drawEvidenceStroke");
     expect(pen).toContain('[data-studio-mobile-editing-dock="true"]');
     expect(pen).toContain('getByRole("button", { name: /^(?:펜|Pen)$/u })');
-    expect(pen).toContain('[data-studio-rail-tool-id="pen"]');
-    expect(pen).toContain('[data-studio-current-tool-id="pen"]');
-    expect(pen).toContain('getAttribute("aria-pressed")');
-    expect(pen).toContain("active.blur()");
-    expect(pen).toContain('page.keyboard.press("b")');
+    expect(desktopPen).toContain('[data-studio-rail-tool-id="pen"]');
+    expect(desktopPen).toContain('[data-studio-current-tool-id="pen"]');
+    expect(pen).toContain('getAttribute("aria-pressed", { timeout: remaining() })');
+    expect(desktopPen).toContain("active.blur()");
+    expect(desktopPen).toContain('page.keyboard.press("b")');
+  });
+
+  it("공통 PC 진입에 기존 30초 준비 예산의 남은 시간만 전달한다", () => {
+    const pen = sliceFunction("ensurePenReady", "acknowledgeStudioBetaNoticeIfPresent");
+    const ready = sliceFunction("waitForPenReady", "readStudioAvailableLayerCount");
+    expect(desktopPen).toContain('[data-studio-drawing-clarity="true"]');
+    expect(desktopPen).toContain("await activateDesktopPen(page, remaining())");
+    expect(pen).toContain("return ensureStudioSoakDesktopPen(page, timeoutMs)");
+    expect(ready).toContain("timeoutMs = 30_000");
+    expect(ready).toContain("const remaining = deadline - Date.now()");
+    expect(ready).toContain("await ensurePenReady(page, remaining) && Date.now() < deadline");
+    expect(ready).toContain("Math.min(250, deadline - Date.now())");
+    expect(desktopPen).not.toContain("activateDesktopPen(page)");
+  });
+
+  it("실제 PC 도크를 열고 브러시 선택 적용을 확인한 뒤 그리기를 시작한다", () => {
+    const select = sliceFunction("selectBrush", "ensurePenReady");
+    const desktop = select.slice(select.indexOf("if (!(await closeBrushSurfaces(page))) return false;"));
+    expect(desktop.indexOf("await pill.click")).toBeLessThan(desktop.indexOf("dockedLibrary.waitFor"));
+    expect(desktop.indexOf("dockedLibrary.waitFor")).toBeLessThan(desktop.indexOf('dockedLibrary.getByRole("searchbox")'));
+    expect(desktop).toContain('getAttribute("aria-pressed") === "true"');
+    expect(desktop).toContain('getAttribute("data-studio-brush-selection-pending") === "true"');
+    expect(desktop).toContain("if (active && !pending) return true");
+    expect(desktop).not.toContain("force: true");
   });
 
   it("never measures ink while a brush surface is covering the canvas", () => {
@@ -75,10 +104,13 @@ describe("Studio five-hour soak browser state isolation", () => {
 
   it("routes every raster probe through the shared pressure-aware input driver", () => {
     const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
-    expect(draw).toContain("createStudioPointerStrokePoints(box, cycle");
-    expect(draw).toContain("[data-studio-canvas-viewport]");
-    expect(draw).toContain("Math.max(stageBox.x, viewportBox.x)");
-    expect(draw).toContain("Math.min(stageBox.y + stageBox.height, viewportBox.y + viewportBox.height) - y");
+    expect(draw).toContain("prepareStudioSoakPointerRoute(page, cycle)");
+    expect(pointerRoute).toContain("createStudioPointerStrokePoints(box, cycle");
+    expect(pointerRoute).toContain("stage.evaluate(measureStudioSmartShapeCanvasSpace)");
+    expect(pointerRoute).toContain("hit instanceof HTMLCanvasElement && stage.contains(hit)");
+    expect(draw.indexOf("await assertStudioSoakPointerRoute(page, points)")).toBeGreaterThan(draw.indexOf("const before = await page.screenshot"));
+    expect(draw.indexOf("await assertStudioSoakPointerRoute(page, points)")).toBeLessThan(draw.indexOf("await dispatchStudioPointerStroke"));
+    expect(draw).not.toContain("visibleBox.width * 0.2");
     expect(draw).toContain("dispatchStudioPointerStroke({");
     expect(draw).toContain("mode: inputMode");
     expect(draw).toContain("cdp");
@@ -86,7 +118,7 @@ describe("Studio five-hour soak browser state isolation", () => {
   });
 
   it("uses layer commits to distinguish a covered stroke from missing ink", () => {
-    expect(source).toContain('[data-studio-layer-available-count]');
+    expect(layerCountUi).toContain('[data-studio-layer-available-count]');
     expect(source).toContain("layerCountBefore: evidence.layerCountBefore");
     expect(source).toContain("layerCountAfter: evidence.layerCountAfter");
     expect(source).toContain("const acceptedByLayer = evidence.layerCountBefore !== null");
@@ -270,25 +302,21 @@ describe("Studio five-hour soak local-preview runtime noise", () => {
 });
 
 describe("Studio five-hour soak layer navigator admission", () => {
-  it("mounts the layer navigator through the real inspector route when its count is unavailable", () => {
-    const ensure = sliceFunction("ensureStudioLayerNavigatorCount", "waitForStudioDocumentAdvance");
-    // 이미 읽히면 어떤 UI도 건드리지 않는다.
-    expect(ensure).toContain("const existing = await readStudioAvailableLayerCount(page);");
-    expect(ensure).toContain("if (existing !== null) return existing;");
-    // 모바일 사용자의 실제 경로: 독의 작업 패널을 열고 인스펙터의 레이어 탭을 고른다.
-    expect(ensure).toContain('[data-studio-mobile-editing-dock="true"]');
-    expect(ensure).toContain('[data-studio-mobile-workspace-toggle="true"]');
-    expect(ensure).toContain('getByRole("button", { name: "작업 패널", exact: true })');
-    expect(ensure).toContain('getAttribute("aria-expanded")');
-    expect(ensure).toContain('[data-studio-inspector-primary-tab="layers"]');
-    expect(ensure).toContain('getAttribute("aria-selected")');
-    expect(ensure).toContain("waitForStudioLayerCount(page");
-    // 최단 경로는 작업 메뉴의 "레이어 열기"다: 시트를 레이어 탭으로 직접 열고, 클릭 결과는
-    // 시트의 실제 상태 속성으로 검증해 로그한다(성공으로 가정하지 않는다).
-    expect(ensure).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
-    expect(ensure).toContain('[data-studio-sheet-id="props"]');
-    expect(ensure).toContain('getAttribute("data-studio-mobile-sheet")');
-    expect(ensure).toContain("props sheet open=");
+  it("레이어 관측은 실제 UI 수명과 같은 reader를 사용하고 모바일 시트를 되열지 않는다", () => {
+    expect(source).toContain("return readStudioSoakLayerCount(page, timeoutMs)");
+    expect(source).toContain("return waitForStudioSoakLayerCount(page, predicate, timeoutMs)");
+    expect(source).toContain("return withStudioSoakLayerNavigator(page, timeoutMs");
+    expect(layerCountUi).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
+    expect(layerCountUi).toContain('getByRole("button", { name: "작업 패널", exact: true })');
+    expect(layerCountUi).toContain('[data-studio-inspector-primary-tab="layers"]:visible');
+    expect(layerCountUi).toContain('counter.getAttribute("data-studio-layer-available-count", { timeout: remaining() })');
+    expect(layerCountUi).toContain('counter.count() === 0');
+    expect(layerCountUi).toContain('button[data-inspector-control-id="panel.chrome.close"]');
+    expect(layerCountUi).toContain('state: "hidden"');
+    expect(layerCountUi).toContain("finally");
+    expect(source).not.toContain("if (surviving === null)");
+    const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
+    expect(draw.indexOf("await readStudioAvailableLayerCount(page)")).toBeLessThan(draw.indexOf("await prepareStudioSoakPointerRoute(page, cycle)"));
   });
 
   it("gates preflight and history churn on the mounted navigator instead of the raw count", () => {

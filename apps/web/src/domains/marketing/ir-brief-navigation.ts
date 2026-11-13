@@ -20,4 +20,3 @@ export function resolveIrBriefSection(search: string, hash: string): string {
   if (IR_BRIEF_SECTIONS.some(section => section.id === requested)) return requested!;
   return IR_BRIEF_SECTIONS.find(section => hash === `#ir-${section.id}-title`)?.id ?? "overview";
 }
-
