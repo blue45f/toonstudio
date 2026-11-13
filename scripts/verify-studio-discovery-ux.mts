@@ -47,7 +47,10 @@ function App(){
 createRoot(document.getElementById("root")!).render(<App/>);
 `);
 const dev = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--config", WEB_VITE_CONFIG, "--host", "127.0.0.1", "--port", String(devPort), "--strictPort"], { cwd: REPO_ROOT, stdio: "ignore" });
-const preview = spawnVitePreview({ port: previewPort, runner: "node-vite-bin", logPath: join(output, "preview.log") });
+const preview = spawnVitePreview({
+  port: previewPort, runner: "node-vite-bin", logPath: join(output, "preview.log"),
+  outDir: process.env.TOONSPECTRUM_VERIFY_DIST?.trim() || undefined,
+});
 
 function watch(page: Page) {
   page.setDefaultTimeout(15_000);
