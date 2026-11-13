@@ -14,6 +14,13 @@ beforeEach(() => useI18n.getState().setLang("ko"));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 // 실제 CSS의 줄바꿈이 없는 jsdom에서는 공백만 정규화하고 이름의 전체 문자·순서·목적은 같게 검증한다.
 describe("common task frame", () => {
+  it("작업 홈 복귀가 실제 목적지 이름과 프로젝트 맥락을 함께 유지한다", () => {
+    render(<MemoryRouter initialEntries={["/studio/assets?project=alpha"]}>
+      <WorkspaceTaskFrame route={workspaceTaskRoute("/studio/assets")}><div>Assets</div></WorkspaceTaskFrame>
+    </MemoryRouter>);
+    expect(screen.getByRole("link", { name: "작업 홈으로" }).getAttribute("href")).toBe("/home?project=alpha");
+  });
+
   it.each([
     ["ko", false, "/home", "홈"],
     ["en", false, "/home", "home"],

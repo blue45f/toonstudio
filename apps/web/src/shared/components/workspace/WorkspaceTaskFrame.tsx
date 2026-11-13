@@ -105,7 +105,7 @@ export function WorkspaceTaskFrame({ route, owner = "local", children, campusMod
       {route && !campusMode && !focused ? <div className="workspace-task-purpose" key="purpose">
         <WorkflowIllustration kind={workflowVisualForPath(pathname)} className="workspace-task-illustration" decorative sizes="112px" />
         <p>{bt(route.hintKo, route.hintEn)}</p>
-        <Link href={homeHref}><ArrowLeft size={16} aria-hidden="true" />{bt("가상 스튜디오", "Virtual studio")}</Link>
+        <Link href={homeHref}><ArrowLeft size={16} aria-hidden="true" />{bt("작업 홈으로", "Back to workspace home")}</Link>
       </div> : null}
       <div key="workbench" className={!focused && campusMode === "scene" ? "campus-workbench" : "workspace-task-passthrough"}>
         {!focused && campusScene ? <aside key="scene" className="campus-scene-column">{campusScene}</aside> : null}

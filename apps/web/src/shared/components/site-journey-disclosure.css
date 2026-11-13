@@ -1,0 +1,7 @@
+.site-journey-disclosure { max-width: var(--site-content-max, 82.5rem); margin: 20px auto; padding-inline: var(--site-page-gutter, 1rem); }
+.site-journey-disclosure > summary { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 14px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-panel); color: var(--color-fg-2); font-size: 14px; list-style: none; cursor: pointer; }
+.site-journey-disclosure > summary::-webkit-details-marker { display: none; }
+.site-journey-disclosure > summary > span { flex: 1; }
+.site-journey-disclosure[open] > summary > svg:last-child { transform: rotate(180deg); }
+.site-journey-disclosure > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.site-journey-disclosure > :is(.public-site-next,.site-next-steps) { margin-block: 16px 0; }

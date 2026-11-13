@@ -7,6 +7,7 @@ import { SiteAtelierChapter } from "./SiteAtelierChapter";
 import { useSiteExperience } from "./site-experience-context";
 import { EXPERIENCE_DESTINATIONS, nextExperienceDestinations } from "./site-experience-model";
 import { resolveIllustratedCardMetaForPath } from "./site-art-card-meta";
+import { SiteJourneyDisclosure } from "../SiteJourneyDisclosure";
 import Link from "@/shared/navigation/router-link";
 import "./site-art-ui.css";
 
@@ -27,6 +28,7 @@ export function SiteNextSteps() {
   const destinations = nextExperienceDestinations(pathname);
   if (!settings || !destinations.length) return null;
   return (
+    <SiteJourneyDisclosure key={pathname}>
     <section className="site-next-steps" aria-labelledby={headingId} data-testid="site-next-steps">
       <SiteAtelierChapter pathname={pathname} locale={locale} />
       <div className="site-next-steps__heading">
@@ -62,5 +64,6 @@ export function SiteNextSteps() {
         <Link href="/studio"><PenTool size={17} aria-hidden="true" />{bi("전문 드로잉 작업실 열기", "Open the drawing studio")}<ArrowUpRight size={17} aria-hidden="true" /></Link>
       </div>
     </section>
+    </SiteJourneyDisclosure>
   );
 }

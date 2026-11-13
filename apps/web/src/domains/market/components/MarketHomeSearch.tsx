@@ -32,14 +32,14 @@ export function MarketHomeSearch({ className }: { readonly className?: string } 
             onChange={(event) => { setQuery(event.target.value); setInvalid(false); }}
             onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
             onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}
-            className="h-12 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-sm text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent" />
+            className="h-12 w-full rounded-xl border border-line bg-card pl-10 pr-3 text-base text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-sm" />
         </div>
         <button type="submit" className={buttonClass({ variant: "solid", size: "lg" })}>{bt("검색", "Search")}</button>
       </form>
       {invalid ? <p role="alert" id={errorId} className="mt-2 text-sm text-bad">{bt("검색어의 길이나 문자를 확인해 주세요.", "Please check the length and characters in your search.")}</p> : null}
       <nav aria-label={bt("소재 검색 시작점", "Material search ideas")} className="mt-2 flex flex-wrap gap-x-3">
         {["학교 배경", "펜선", "말풍선", "3D 소품"].map((term) => (
-          <Link key={term} href={`/market/browse?${new URLSearchParams({ q: term })}`}
+          <Link key={term} href={`/market/browse?${new URLSearchParams({ q: term })}`} style={{ minInlineSize: 44 }}
             className="inline-flex min-h-11 items-center rounded text-xs font-medium text-fg-2 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">{term} ↗</Link>
         ))}
       </nav>

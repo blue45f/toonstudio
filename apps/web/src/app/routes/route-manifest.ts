@@ -174,6 +174,8 @@ export const appRoutes: AppRouteMeta[] = [
   { path: "/copyright", label: "route.copyright", canonicalSurfaceId: "support", surfaceRole: "저작권 — 권리 안내 표면", tier: "directory", stage: "support" },
   { path: "/terms", label: "route.terms", canonicalSurfaceId: "support", surfaceRole: "이용약관 — 약관 문서 표면", tier: "directory", stage: "support" },
   { path: "/privacy", label: "route.privacy", canonicalSurfaceId: "support", surfaceRole: "개인정보처리방침 — 방침 문서 표면", tier: "directory", stage: "support" },
-  { path: "/sitemap", label: "route.sitemap", canonicalSurfaceId: "support", surfaceRole: "사이트맵 — 전체 목적지 목록 표면", tier: "directory", stage: "support" },
+  { path: "/sitemap", label: "route.sitemap", canonicalSurfaceId: "support", surfaceRole: "전체 메뉴 — 하려는 목적을 고르는 정본 입구", tier: "directory", stage: "support" },
+  { path: "/sitemap/all", label: "route.sitemap", canonicalSurfaceId: "support", surfaceRole: "전체 디렉터리 — 모든 기능과 상세 검색 조건을 확인하는 표면", tier: "directory", stage: "support" },
+  { path: "/sitemap/:section", label: "route.sitemap", canonicalSurfaceId: "support", surfaceRole: "목적별 메뉴 — 선택한 작업에 필요한 목적지만 표시하는 표면", tier: "directory", stage: "support" },
   { path: "/admin", label: "route.admin", canonicalSurfaceId: "admin", surfaceRole: "관리자 — 플랫폼 운영 콘솔 표면", tier: "primary", stage: "operate" },
 ];

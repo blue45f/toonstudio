@@ -448,6 +448,7 @@ describe("StudioProjectLibraryPage", () => {
     fireEvent.change(searchInput, { target: { value: "일치하지않는검색어" } });
 
     expect(await screen.findByRole("heading", { name: /검색 결과가 없습니다|No matching projects/u })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /새 작업 시작|Start new work/u }).getAttribute("href")).toBe("/create");
     expect(screen.getAllByRole("link", { name: /\.toonstudio 파일 열기|Open \.toonstudio file/u }).length).toBeGreaterThan(0);
 
     const clearButtons = screen.getAllByRole("button", { name: /검색어 지우기|Clear search/u });
@@ -466,7 +467,7 @@ describe("StudioProjectLibraryPage", () => {
 
     expect(await screen.findByText(/보관한 프로젝트가 없습니다|There are no archived projects/u)).toBeTruthy();
     expect(screen.getByRole("link", { name: /내 작업으로 돌아가기|Back to My work/u }).getAttribute("href")).toBe("/studio");
-    expect(screen.getByRole("link", { name: /새 작업 시작|Start new work/u }).getAttribute("href")).toBe("/studio/new");
+    expect(screen.getByRole("link", { name: /새 작업 시작|Start new work/u }).getAttribute("href")).toBe("/create");
     unmount();
 
     render(

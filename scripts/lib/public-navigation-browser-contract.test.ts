@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assertPublicTaskNavigationSnapshot } from "./public-navigation-browser-contract.mjs";
+import { assertPublicMobileNavigationSnapshot, assertPublicTaskNavigationSnapshot } from "./public-navigation-browser-contract.mjs";
 
 const origin = "https://www.toonstudio.cloud";
 const sample = () => ({
@@ -10,6 +10,29 @@ const sample = () => ({
     { href: "/team", label: "팀", current: null as string | null },
     { href: "/hub", label: "둘러보기", current: "page" as string | null },
   ], title: "소재 찾기", parentHref: "/hub", returnHref: "/home",
+});
+
+const mobileSample = (current: string | null = null) => ({
+  links: ["/studio", "/discover", "/market", "/my", "/sitemap"].map((href) => ({
+    href, current: href === current ? "page" : null,
+  })),
+});
+
+describe("모바일의 다섯 정본 목적지 계약", () => {
+  it.each([["/community", null], ["/market", "/market"], ["/research/assets", "/market"], ["/showcase", "/discover"], ["/sitemap/create", "/sitemap"]])(
+    "%s의 현재 목적지와 순서를 보존한다", (route, current) => {
+      expect(() => assertPublicMobileNavigationSnapshot(mobileSample(current), route, origin)).not.toThrow();
+    },
+  );
+  it.each(["old-four", "duplicate", "wrong-order", "external", "wrong-current"])("%s 회귀를 통과시키지 않는다", (kind) => {
+    const snapshot = mobileSample();
+    if (kind === "old-four") snapshot.links.pop();
+    if (kind === "duplicate") snapshot.links[4] = snapshot.links[0]!;
+    if (kind === "wrong-order") snapshot.links.reverse();
+    if (kind === "external") snapshot.links[0]!.href = "https://other.invalid/studio";
+    if (kind === "wrong-current") snapshot.links[0]!.current = "page";
+    expect(() => assertPublicMobileNavigationSnapshot(snapshot, "/community", origin)).toThrow();
+  });
 });
 
 describe("public task navigation remains an exact contract", () => {

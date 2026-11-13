@@ -28,6 +28,13 @@ describe("public creative chrome route boundaries", () => {
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(false);
   });
 
+  it.each(["/sitemap", "/sitemap/all", "/sitemap/create", "/sitemap/discover", "/sitemap/grow", "/sitemap/publish", "/sitemap/connect", "/sitemap/rest", "/sitemap/personal", "/SITEMAP/CREATE/"])(
+    "메뉴 선택 %s에서는 공개 셸을 유지하고 다음 단계 목록을 덧붙이지 않는다", (pathname) => {
+      expect(isPublicCreativeRoute(pathname)).toBe(true);
+      expect(supportsPublicSiteOnwardJourney(pathname)).toBe(false);
+    },
+  );
+
   it.each(["/create/challenges", "/create/work/example", "/create/legacy-work"])("공개 창작 결과와 챌린지 %s는 시작 입력 흐름으로 분류하지 않는다", (pathname) => {
     expect(isPublicCreativeRoute(pathname)).toBe(true);
     expect(supportsPublicSiteOnwardJourney(pathname)).toBe(true);
