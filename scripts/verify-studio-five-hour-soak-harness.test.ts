@@ -7,6 +7,7 @@ import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-
 
 const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import.meta.url), "utf8");
 const desktopPen = readFileSync(new URL("./lib/studio-soak-desktop-pen.ts", import.meta.url), "utf8");
+const pointerRoute = readFileSync(new URL("./lib/studio-soak-pointer-route.ts", import.meta.url), "utf8");
 
 function sliceFunction(name: string, nextName: string): string {
   const start = source.indexOf(`async function ${name}`);
@@ -104,10 +105,13 @@ describe("Studio five-hour soak browser state isolation", () => {
 
   it("routes every raster probe through the shared pressure-aware input driver", () => {
     const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
-    expect(draw).toContain("createStudioPointerStrokePoints(box, cycle");
-    expect(draw).toContain("[data-studio-canvas-viewport]");
-    expect(draw).toContain("Math.max(stageBox.x, viewportBox.x)");
-    expect(draw).toContain("Math.min(stageBox.y + stageBox.height, viewportBox.y + viewportBox.height) - y");
+    expect(draw).toContain("prepareStudioSoakPointerRoute(page, cycle)");
+    expect(pointerRoute).toContain("createStudioPointerStrokePoints(box, cycle");
+    expect(pointerRoute).toContain("stage.evaluate(measureStudioSmartShapeCanvasSpace)");
+    expect(pointerRoute).toContain("hit instanceof HTMLCanvasElement && stage.contains(hit)");
+    expect(draw.indexOf("await assertStudioSoakPointerRoute(page, points)")).toBeGreaterThan(draw.indexOf("const before = await page.screenshot"));
+    expect(draw.indexOf("await assertStudioSoakPointerRoute(page, points)")).toBeLessThan(draw.indexOf("await dispatchStudioPointerStroke"));
+    expect(draw).not.toContain("visibleBox.width * 0.2");
     expect(draw).toContain("dispatchStudioPointerStroke({");
     expect(draw).toContain("mode: inputMode");
     expect(draw).toContain("cdp");

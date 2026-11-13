@@ -32,12 +32,12 @@ import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-
 import { collectStudioInAppRuntimeErrors, installStudioInAppFirstRunState, installStudioInAppGuestBoundary, STUDIO_INAPP_PROFILES, type StudioInAppRuntimeError } from "./lib/studio-inapp-sweep-harness.mjs";
 import { evaluateStudioSoakHeapGrowth, STUDIO_SOAK_HEAP_MAX_SLOPE_BYTES_PER_HOUR } from "./lib/studio-memory-growth-policy.mjs";
 import {
-  createStudioPointerStrokePoints,
   dispatchStudioPointerStroke,
   parseStudioPointerInputMode,
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
+import { assertStudioSoakPointerRoute, prepareStudioSoakPointerRoute } from "./lib/studio-soak-pointer-route";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const MINUTES = Math.max(1, Number(process.env.TOONSPECTRUM_SOAK_MINUTES ?? "300") || 300);
@@ -731,42 +731,13 @@ async function drawEvidenceStroke(
   if (!(await closeBrushSurfaces(page))) {
     throw new Error("brush surfaces stayed open before drawing evidence");
   }
-  const stage = page.locator(".konvajs-content").first();
-  const viewport = page.locator('[data-studio-canvas-viewport]').first();
-  const [stageBox, viewportBox] = await Promise.all([
-    stage.boundingBox(),
-    viewport.boundingBox(),
-  ]);
-  if (!stageBox || !viewportBox) {
-    throw new Error("Studio drawing surface or visible viewport is unavailable.");
-  }
-  const x = Math.max(stageBox.x, viewportBox.x);
-  const y = Math.max(stageBox.y, viewportBox.y);
-  const visibleBox = {
-    x,
-    y,
-    width: Math.min(stageBox.x + stageBox.width, viewportBox.x + viewportBox.width) - x,
-    height: Math.min(stageBox.y + stageBox.height, viewportBox.y + viewportBox.height) - y,
-  };
-  // Floating canvas controls deliberately overlap the outer workspace. Long-soak input must stay
-  // on the central paper-safe lane so a toolbar hover/move can never masquerade as painted pixels.
-  const insetX = visibleBox.width * 0.2;
-  const insetY = visibleBox.height * 0.2;
-  const box = {
-    x: visibleBox.x + insetX,
-    y: visibleBox.y + insetY,
-    width: visibleBox.width - insetX * 2,
-    height: visibleBox.height - insetY * 2,
-  };
-  if (box.width < 120 || box.height < 120) {
-    throw new Error("Studio safe drawing surface is smaller than the pointer acceptance minimum.");
-  }
   await page.waitForTimeout(80);
+  const { box, points } = await prepareStudioSoakPointerRoute(page, cycle);
   const layerCountBefore = await readStudioAvailableLayerCount(page);
   const historyBefore = await readStudioHistoryDepth(page);
   const diagnosticsBefore = await readStudioHistoryDiagnostics(page);
   const before = await page.screenshot({ clip: box, animations: "disabled" });
-  const points = createStudioPointerStrokePoints(box, cycle, { steps: 28 });
+  await assertStudioSoakPointerRoute(page, points);
   const pointer = await dispatchStudioPointerStroke({
     page,
     cdp,
