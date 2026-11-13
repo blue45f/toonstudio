@@ -9,11 +9,16 @@ import { EngineeringPageFrame, EngineeringPageIntro } from "./EngineeringStoryUi
 afterEach(cleanup);
 
 function renderIntro(pageId: EngineeringPageId) {
-  return render(
+  const result = render(
     <MemoryRouter initialEntries={["/about/technology"]}>
       <EngineeringPageIntro pageId={pageId} eyebrow="EYEBROW" title="제목" description="설명" />
     </MemoryRouter>,
   );
+  const guide = result.container.querySelector<HTMLDetailsElement>("header details");
+  expect(guide?.open).toBe(false);
+  const summary = guide?.querySelector("summary");
+  if (summary) fireEvent.click(summary);
+  return result;
 }
 
 describe("EngineeringPageIntro 정체성 칩", () => {
@@ -84,12 +89,16 @@ describe("EngineeringPageFrame 이어보기 및 시안 P 좌측 고정·모바�
     if (previous) for (const text of ["이전 글", previous.label.ko]) expect(links[0]?.textContent, text).toContain(text);
     if (next) for (const text of ["다음 글", next.label.ko]) expect(links[1]?.textContent, text).toContain(text);
 
-    // 시안 P 좌측 고정 목차 및 모바일 접이식 목차가 12종 전체 문서를 노출하고 현재 문서를 표시한다.
-    const stickyToc = screen.getByTestId("engineering-atlas-sticky-toc");
-    expect(within(stickyToc).getAllByRole("link")).toHaveLength(ENGINEERING_PAGES.length);
-    const activeLink = stickyToc.querySelector('[aria-current="page"]');
-    expect(activeLink?.getAttribute("href")).toBe(ENGINEERING_PAGES[index]?.href);
-    expect(screen.getByTestId("engineering-atlas-mobile-toc").hasAttribute("open")).toBe(false);
+    const menu = document.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    expect(menu?.open).toBe(false);
+    const summary = menu?.querySelector("summary");
+    if (!summary || !menu) throw new Error("단일 문서 메뉴가 필요합니다.");
+    fireEvent.click(summary);
+    const indexNav = within(menu).getByRole("navigation", { name: /기술 문서 목차|Engineering document index/u });
+    expect(within(indexNav).getAllByRole("link")).toHaveLength(ENGINEERING_PAGES.length);
+    expect(indexNav.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe(ENGINEERING_PAGES[index]?.href);
+    expect(screen.queryByTestId("engineering-atlas-sticky-toc")).toBeNull();
+    expect(screen.queryByTestId("engineering-atlas-mobile-toc")).toBeNull();
   });
 
   it("읽기 순서는 큰 그림 두 해설로 시작해 라이선스로 끝난다", () => {
@@ -158,7 +167,7 @@ describe("도감 전용 간결한 문서 틀", () => {
     expect(summary.dispatchEvent(closedEscape)).toBe(true);
   });
 
-  it("도감 머리말의 제목·인쇄를 같은 행에 놓고 설명을 유지하며 다른 문서 안내는 줄이지 않는다", () => {
+  it("도감 머리말의 제목·인쇄를 같은 행에 놓고 설명을 유지하며 다른 문서는 안내를 다시 펼칠 수 있다", () => {
     const compact = render(<MemoryRouter><EngineeringPageIntro variant="catalog" eyebrow="TECH ATLAS" title="기술 도감" description="검색 안내" aside={<button>전체 인쇄</button>} /></MemoryRouter>);
     const heading = screen.getByRole("heading", { level: 1, name: "기술 도감" });
     const header = heading.closest("header");
@@ -169,6 +178,6 @@ describe("도감 전용 간결한 문서 틀", () => {
     compact.unmount();
     render(<MemoryRouter><EngineeringPageIntro variant="catalog" pageId="story" eyebrow="STORY" title="제목" description="설명" /></MemoryRouter>);
     expect(screen.getByText("이 페이지가 답하는 질문")).toBeTruthy();
-    expect(screen.getByRole("heading", { level: 1 }).closest("header")?.className).toContain("py-8");
+    expect(screen.getByRole("heading", { level: 1 }).closest("header")?.className).toContain("py-5");
   });
 });

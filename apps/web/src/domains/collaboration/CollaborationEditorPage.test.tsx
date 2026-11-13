@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CollaborationEditorPage } from "./CollaborationEditorPage";
@@ -15,6 +15,12 @@ vi.mock("@/platform/collaboration-client", () => ({
   collaborationClient: { get: vi.fn(), create: vi.fn(), update: vi.fn(), detail: vi.fn() },
 }));
 
+function EditorRouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="editor-route">{location.pathname}{location.search}{location.hash}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button><button type="button" onClick={() => navigate(1)}>테스트 앞으로</button></>;
+}
+
 function renderEditor(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -22,15 +28,23 @@ function renderEditor(path: string) {
         <Route path="/collaborate/new" element={<CollaborationEditorPage />} />
         <Route path="/collaborate/:id/edit" element={<CollaborationEditorPage />} />
       </Routes>
+      <EditorRouteProbe />
     </MemoryRouter>,
   );
 }
 
+function selectEditorScreen(value: "write" | "preview") {
+  const select = screen.getByRole("combobox", { name: "공고 작성 화면" }) as HTMLSelectElement;
+  if (select.value !== value) fireEvent.change(select, { target: { value } });
+}
+
 function previewRoot(): HTMLElement {
+  selectEditorScreen("preview");
   return screen.getByRole("complementary");
 }
 
 function titleInput(): HTMLInputElement {
+  selectEditorScreen("write");
   const input = screen.getByRole("textbox", { name: /공고 제목/u });
   if (!(input instanceof HTMLInputElement)) throw new Error("공고 제목 입력칸이 없습니다.");
   return input;
@@ -91,51 +105,52 @@ describe("공고 실시간 미리 보기", () => {
   it("제목·유형·역할 입력이 미리 보기 카드에 바로 반영된다", () => {
     useApp.setState({ userId: "user-1", sessionToken: "session-token" });
     renderEditor("/collaborate/new");
-    const preview = previewRoot();
 
     // 비어 있는 제목은 카드에서 자리 표시로 보인다.
-    expect(within(preview).getByRole("heading", { name: "공고 제목" })).toBeTruthy();
-    expect(within(preview).getByText("작업 의뢰")).toBeTruthy();
-    expect(within(preview).getByText("선화")).toBeTruthy();
+    expect(within(previewRoot()).getByRole("heading", { name: "공고 제목" })).toBeTruthy();
+    expect(within(previewRoot()).getByText("작업 의뢰")).toBeTruthy();
+    expect(within(previewRoot()).getByText("선화")).toBeTruthy();
 
     fireEvent.change(titleInput(), { target: { value: "주 2회 배경 보조 구합니다" } });
-    expect(within(preview).getByRole("heading", { name: "주 2회 배경 보조 구합니다" })).toBeTruthy();
+    expect(within(previewRoot()).getByRole("heading", { name: "주 2회 배경 보조 구합니다" })).toBeTruthy();
 
+    selectEditorScreen("write");
     fireEvent.change(screen.getByRole("combobox", { name: /작업 분야/u }), { target: { value: "background" } });
-    expect(within(preview).getByText("배경")).toBeTruthy();
-    expect(within(preview).queryByText("선화")).toBeNull();
+    expect(within(previewRoot()).getByText("배경")).toBeTruthy();
+    expect(within(previewRoot()).queryByText("선화")).toBeNull();
   });
 
   it("보수 금액·단위와 마감일·도구가 카드 표시로 반영된다", () => {
     useApp.setState({ userId: "user-1", sessionToken: "session-token" });
     const { container } = renderEditor("/collaborate/new");
-    const preview = previewRoot();
 
+    selectEditorScreen("write");
     fireEvent.change(screen.getByRole("spinbutton", { name: /최소 보수/u }), { target: { value: "50000" } });
-    expect(within(preview).getByText("50,000원부터 / 회차")).toBeTruthy();
+    expect(within(previewRoot()).getByText("50,000원부터 / 회차")).toBeTruthy();
 
-    expect(within(preview).getByText("상시 접수")).toBeTruthy();
+    expect(within(previewRoot()).getByText("상시 접수")).toBeTruthy();
     const deadline = container.querySelector('input[type="date"]');
     if (!(deadline instanceof HTMLInputElement)) throw new Error("모집 마감일 입력칸이 없습니다.");
+    selectEditorScreen("write");
     fireEvent.change(deadline, { target: { value: "2099-12-31" } });
-    expect(within(preview).getByText("2099-12-31")).toBeTruthy();
-    expect(within(preview).queryByText("상시 접수")).toBeNull();
+    expect(within(previewRoot()).getByText("2099-12-31")).toBeTruthy();
+    expect(within(previewRoot()).queryByText("상시 접수")).toBeNull();
 
+    selectEditorScreen("write");
     fireEvent.change(screen.getByRole("textbox", { name: /사용 도구/u }), { target: { value: "Clip Studio, , Blender" } });
-    expect(within(preview).getByText("Clip Studio")).toBeTruthy();
-    expect(within(preview).getByText("Blender")).toBeTruthy();
+    expect(within(previewRoot()).getByText("Clip Studio")).toBeTruthy();
+    expect(within(previewRoot()).getByText("Blender")).toBeTruthy();
   });
 
   it("미리 보기 카드의 제목 링크는 이동하지 않고 저장 버튼은 눌 수 없다", () => {
     useApp.setState({ userId: "user-1", sessionToken: "session-token" });
     renderEditor("/collaborate/new");
-    const preview = previewRoot();
 
-    const cardLink = within(preview).getByRole("link");
+    const cardLink = within(previewRoot()).getByRole("link");
     expect(cardLink.getAttribute("href")).toBe("/collaborate/preview");
     expect(fireEvent.click(cardLink)).toBe(false);
 
-    const saveButton = within(preview).getByRole("button", { name: /저장/u });
+    const saveButton = within(previewRoot()).getByRole("button", { name: /저장/u });
     if (!(saveButton instanceof HTMLButtonElement)) throw new Error("미리 보기 저장 버튼이 없습니다.");
     expect(saveButton.disabled).toBe(true);
   });
@@ -161,8 +176,30 @@ describe("공고 실시간 미리 보기", () => {
     const title = await screen.findByRole("textbox", { name: /공고 제목/u });
     if (!(title instanceof HTMLInputElement)) throw new Error("공고 제목 입력칸이 없습니다.");
     expect(title.value).toBe("마감한 선화 공고");
-    const preview = previewRoot();
-    expect(within(preview).getByText("마감")).toBeTruthy();
-    expect(within(preview).getByRole("link").getAttribute("href")).toBe("/collaborate/post-1");
+    expect(within(previewRoot()).getByText("마감")).toBeTruthy();
+    expect(within(previewRoot()).getByRole("link").getAttribute("href")).toBe("/collaborate/post-1");
   });
+});
+
+
+it("작성·미리보기 목적 URL과 Back/Forward가 같은 입력 DOM·필수 검증·기존 query/fragment를 유지한다", () => {
+  useApp.setState({ userId: "user-1", sessionToken: "session-token" });
+  const { container } = renderEditor("/collaborate/new?template=ink&x=1&x=2#draft");
+  const input = titleInput();
+  fireEvent.change(input, { target: { value: "임시 작성한 협업 제목" } });
+  const form = container.querySelector("form");
+  expect(input.required).toBe(true);
+  selectEditorScreen("preview");
+  expect(form?.hidden).toBe(true);
+  expect(screen.queryByRole("button", { name: "공고 공개 등록" })).toBeNull();
+  expect(screen.getByTestId("editor-route").textContent).toBe("/collaborate/new?template=ink&x=1&x=2&view=preview#draft");
+  expect(within(previewRoot()).getByRole("heading", { name: "임시 작성한 협업 제목" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+  expect(titleInput()).toBe(input);
+  expect(input.value).toBe("임시 작성한 협업 제목");
+  expect(form?.hidden).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "테스트 앞으로" }));
+  expect(form?.hidden).toBe(true);
+  expect(input.value).toBe("임시 작성한 협업 제목");
+  expect(collaborationClient.create).not.toHaveBeenCalled();
 });

@@ -2,13 +2,14 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-import { RESOURCE_BUTTON, RESOURCE_MENU_GROUPS, resourceMenuGroupPages } from "./navigation";
+import { RESOURCE_BUTTON } from "./navigation";
+import { ResearchNavigation } from "./ResearchNavigation";
 import { ProviderStatus } from "./ProviderStatus";
 import { OPEN_DATA_KEYLESS_PROVIDERS, RESOURCE_SEARCH_CONFIG, type ResourceSearchProvider } from "./resource-search-config";
 import { researchSourceArtSrc, researchSourceIdentity } from "./research-source-identity";
 import type { SourceStageCopy } from "./OpenDataSourceStage";
 
-import { translateCurrentStaticSourceText, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 /** 검색을 첫 행동으로 두고 제공처의 긴 설명·전체 메뉴는 같은 자리에서 다시 찾을 수 있게 한다. */
 export function ResourceSearchHeader({ provider, children, stage = false, stageCopy }: {
@@ -70,19 +71,7 @@ export function ResourceSearchHeader({ provider, children, stage = false, stageC
             </div>
           </div>
         </details>
-        <details data-resource-search-menu="">
-          <summary>{summary(bt("리서치 메뉴", "Research menu"))}</summary>
-          <nav aria-label={bt("창작 리서치 메뉴", "Research navigation")} className="resource-search-disclosure-body">
-            {RESOURCE_MENU_GROUPS.map((group) => <div key={group.id}>
-              <p className="mb-2 text-sm font-bold text-fg-2">{bt(...group.title)}</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {resourceMenuGroupPages(group).map((page) => <Link key={page.path} to={page.path}
-                  aria-current={pathname === page.path || pathname.startsWith(`${page.path}/`) ? "page" : undefined}
-                  className={RESOURCE_BUTTON}>{translateCurrentStaticSourceText("domains.creator.resources.ResourceLayout", "ko", page.title)}</Link>)}
-              </div>
-            </div>)}
-          </nav>
-        </details>
+        <ResearchNavigation key={pathname} pathname={pathname} />
       </div>
     </section>
   );

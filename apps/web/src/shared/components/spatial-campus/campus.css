@@ -127,3 +127,14 @@
 .campus-privacy-toggle[aria-pressed="true"]{border-color:var(--color-accent);background:var(--color-accent-soft);color:var(--color-accent)}
 @media (max-width: 767px){.campus-privacy-curtain{top:8px;min-height:min(220px,calc(100dvh - 96px));padding:18px 14px}.campus-privacy-curtain strong{font-size:16px}.campus-privacy-curtain p{font-size:12px}}
 @media(forced-colors:active){.campus-privacy-curtain,.campus-privacy-toggle{border:1px solid ButtonText}}
+
+/* 보기 방식과 다른 장소는 현재 작업을 가리지 않는 명시 메뉴에서 고른다. */
+.campus-controls { flex-wrap: wrap; overflow: visible; }
+.campus-view-options { min-width: 0; }
+.campus-view-options > summary { cursor: pointer; list-style: none; }
+.campus-view-options > summary::-webkit-details-marker { display: none; }
+.campus-view-options[open] { flex-basis: 100%; order: 3; }
+.campus-view-options-body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-block: 10px; }
+.campus-view-options-body > select { display: block; max-width: 100%; }
+.campus-view-options-body .campus-modes { margin-left: 0; }
+.campus-view-options > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }

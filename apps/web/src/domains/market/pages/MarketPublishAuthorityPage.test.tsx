@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketPublishAuthorityPage } from "./MarketPublishAuthorityPage";
@@ -18,7 +18,7 @@ vi.mock("@/platform/creator-marketplace-client", () => ({
   getCreatorMarketplaceResourceIdentity: mocks.identity,
   publishCreatorMarketplaceResource: mocks.publish,
 }));
-vi.mock("../components/MarketplaceAuthoringWorkshop", () => ({ MarketplaceAuthoringWorkshop: () => null }));
+vi.mock("../components/MarketplaceAuthoringWorkshop", () => ({ MarketplaceAuthoringWorkshop: () => <input aria-label="테스트 워크숍 초안" /> }));
 
 const FIRST_ID = "10000000-0000-4000-8000-000000000001";
 const SECOND_ID = "20000000-0000-4000-8000-000000000002";
@@ -36,7 +36,7 @@ function source(previousResourceId: string | null = FIRST_ID, license = "free") 
     release: { ...draft.release, mode: previousResourceId ? "update" : "new", previousResourceId: previousResourceId ?? undefined },
   }));
 }
-function view() { return <MemoryRouter><MarketPublishAuthorityPage /></MemoryRouter>; }
+function view() { return <MemoryRouter initialEntries={["/market/publish?section=publish"]}><MarketPublishAuthorityPage /></MemoryRouter>; }
 function enter(value: string) { fireEvent.change(screen.getByLabelText("공개 Manifest JSON"), { target: { value } }); }
 function submit() { return screen.getByRole("button", { name: "서버에 검수·게시" }) as HTMLButtonElement; }
 
@@ -238,4 +238,58 @@ describe("MarketPublishAuthorityPage authoring release identity", () => {
       useI18n.getState().setLang("ko");
     });
   });
+});
+
+
+function PublishRouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="publish-route">{location.pathname}{location.search}{location.hash}</output><output data-testid="publish-state">{JSON.stringify(location.state)}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button><button type="button" onClick={() => navigate(1)}>테스트 앞으로</button></>;
+}
+
+it("등록 정문은 두 목적을 먼저 고르고 워크숍·서버 게시를 동시에 노출하지 않는다", () => {
+  const { container } = render(<MemoryRouter initialEntries={["/market/publish"]}><MarketPublishAuthorityPage /></MemoryRouter>);
+  expect(screen.getByRole("heading", { level: 1, name: "에셋 등록" })).toBeTruthy();
+  expect(container.querySelector("#market-workshop-task")?.hasAttribute("hidden")).toBe(true);
+  expect(container.querySelector("#market-publish-task")?.hasAttribute("hidden")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "초안 만들기 · 이어서 편집" }));
+  expect(container.querySelector("#market-workshop-task")?.hasAttribute("hidden")).toBe(false);
+  expect(container.querySelector("#market-publish-task")?.hasAttribute("hidden")).toBe(true);
+  expect(screen.queryByRole("button", { name: "서버에 검수·게시" })).toBeNull();
+});
+
+it("목적 URL과 Back/Forward가 미저장 워크숍·manifest와 query·hash·state를 보존한다", () => {
+  render(<MemoryRouter initialEntries={[{ pathname: "/market/publish", search: "?section=publish&x=1&x=2", hash: "#draft", state: { source: "seller" } }]}><MarketPublishAuthorityPage /><PublishRouteProbe /></MemoryRouter>);
+  const manifest = screen.getByLabelText("공개 Manifest JSON") as HTMLTextAreaElement;
+  enter(source(null));
+  const original = manifest.value;
+  fireEvent.click(screen.getByRole("button", { name: "초안 만들기 · 이어서 편집" }));
+  const draft = screen.getByLabelText("테스트 워크숍 초안") as HTMLInputElement;
+  fireEvent.change(draft, { target: { value: "미저장 초안" } });
+  expect(screen.getByTestId("publish-route").textContent).toBe("/market/publish?section=workshop&x=1&x=2#draft");
+  expect(screen.getByTestId("publish-state").textContent).toBe('{"source":"seller"}');
+  fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+  expect(manifest.value).toBe(original);
+  expect(screen.getByRole("button", { name: "서버에 검수·게시" }).hasAttribute("disabled")).toBe(false);
+  expect(screen.getByTestId("publish-route").textContent).toBe("/market/publish?section=publish&x=1&x=2#draft");
+  fireEvent.click(screen.getByRole("button", { name: "테스트 앞으로" }));
+  expect(screen.getByLabelText("테스트 워크숍 초안")).toBe(draft);
+  expect(draft.value).toBe("미저장 초안");
+  expect(manifest.value).toBe(original);
+  expect(mocks.publish).not.toHaveBeenCalled();
+});
+
+it.each(["/market/publish?source=brush-studio&resume=resume-1", "/market/publish?resume=resume-1"])("기존 저작 handoff 주소 %s는 워크숍으로 이어진다", (entry) => {
+  const { container } = render(<MemoryRouter initialEntries={[entry]}><MarketPublishAuthorityPage /></MemoryRouter>);
+  expect(container.querySelector("#market-workshop-task")?.hasAttribute("hidden")).toBe(false);
+  expect(container.querySelector("#market-publish-task")?.hasAttribute("hidden")).toBe(true);
+});
+
+
+it("판매자 센터의 명세서 만들기 링크는 게시 준비 도구를 펼쳐 열고 게시 권한을 바꾸지 않는다", () => {
+  const { container } = render(<MemoryRouter initialEntries={["/market/publish?section=publish#market-publish-preparation"]}><MarketPublishAuthorityPage /></MemoryRouter>);
+  expect(container.querySelector<HTMLDetailsElement>("#market-publish-preparation")?.open).toBe(true);
+  expect(container.querySelector("#market-publish-task")?.hasAttribute("hidden")).toBe(false);
+  expect(submit().disabled).toBe(true);
+  expect(mocks.publish).not.toHaveBeenCalled();
 });

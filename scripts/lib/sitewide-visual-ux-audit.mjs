@@ -12,12 +12,15 @@ export function inspectAuditRouteReadiness(root = document) {
     if (rect.width <= 0 || rect.height <= 0) return false;
     for (let node = element; node; node = node.parentElement) {
       const style = view.getComputedStyle(node);
-      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (node.hasAttribute("hidden") || style.display === "none" || style.visibility === "hidden") return false;
+      if (node.tagName === "DETAILS" && !node.open
+        && !node.querySelector(":scope > summary")?.contains(element)) return false;
     }
     return true;
   };
   const stage = root.querySelector(".route-stage");
   const developmentErrorOverlay = [...root.querySelectorAll("vite-error-overlay")].some(visible);
+  const introOverlayVisible = [...root.querySelectorAll('[data-phase] img[src*="hero-main-intro.webp"], [data-comic-intro][role="dialog"]')].some(visible);
   const state = stage?.getAttribute("data-route-state") ?? "missing";
   const readinessSource = stage?.getAttribute("data-route-readiness-source") ?? "none";
   // 3D 전용 경로는 본문을 body 포털에 그린다. 다른 경로의 임의 팝업은 본문 증거로 쓰지 않는다.
@@ -46,6 +49,7 @@ export function inspectAuditRouteReadiness(root = document) {
     .filter((element) => visible(element) && !element.closest(ignored)).length;
   let outcome = "ready";
   if (developmentErrorOverlay) outcome = "error";
+  else if (introOverlayVisible) outcome = "pending";
   else if (!stage) outcome = "missing";
   else if (recoveryVisible || state === "stalled") outcome = "stalled";
   else if (loadingFallbacks) outcome = "fallback";
@@ -65,6 +69,7 @@ export function inspectAuditRouteReadiness(root = document) {
     gpuRecoveryVisible,
     outcome,
     developmentErrorOverlay,
+    introOverlayVisible,
     loadingFallbacks,
     pendingMarkers,
     blockedMarkers,

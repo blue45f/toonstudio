@@ -10,6 +10,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { MarketMultiKindManifestBuilder } from "../components/MarketMultiKindManifestBuilder";
 import { MarketNavHeader } from "../components/MarketNavHeader";
@@ -25,6 +26,7 @@ import { marketStudioResourceHref } from "../models/market-studio-handoff";
 
 import type { CreatorMarketplaceResourceIdentity, CreatorMarketplaceResourceRecord } from "@/shared/lib/creator-marketplace-resource-contract";
 
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { VisualStepGuide } from "@/shared/components/VisualStepGuide";
@@ -91,6 +93,19 @@ export function MarketPublishAuthorityPage() {
       "Continue editing Studio authoring drafts and publish only verifiable manifests as server public releases.",
     ),
   );
+
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const requestedSection = searchParams.get("section");
+  const section = requestedSection === "workshop" || requestedSection === "publish" ? requestedSection
+    : !requestedSection && (searchParams.get("source") === "brush-studio" || searchParams.get("source") === "studio" || searchParams.has("resume")) ? "workshop"
+      : !requestedSection && (location.hash === "#market-server-publish" || location.hash === "#market-publish-preparation") ? "publish" : "choose";
+  const selectSection = (next: "choose" | "workshop" | "publish") => {
+    const params = new URLSearchParams(searchParams);
+    params.set("section", next);
+    navigate({ pathname: location.pathname, search: params.toString(), hash: location.hash }, { state: location.state, preventScrollReset: true });
+  };
 
   const { data: session, ready, status } = useSession();
   const authenticated = ready && status === "authenticated";
@@ -282,23 +297,22 @@ export function MarketPublishAuthorityPage() {
 
   return (
     <Container size="wide" className="min-w-0 py-7 sm:py-10">
-      <MarketNavHeader />
-
-      <Link href="/market/seller" className="inline-flex min-h-11 items-center gap-1.5 text-xs text-fg-2 hover:text-fg">
-        <ArrowLeft className="size-3.5" aria-hidden="true" />
-        {t("판매자 센터로 돌아가기", "Back to seller center")}
-      </Link>
-
-      <MarketSellerCenterTabs active="register" />
-      <p className="mt-3 text-xs leading-relaxed text-fg-3">
-        {t("이 페이지는 판매자 센터의 등록 탭입니다. 제작 워크숍에서 초안을 다듬고, 아래 게시 단계(작성 → 계약 검증 → 명세서 생성 → 확정 → Studio 검증)를 거쳐 공개합니다.", "This page is the seller center's register tab. Refine your draft in the authoring workshop, then publish through the steps below (draft, contract check, manifest, lock in, verify in Studio).")}
-      </p>
-
+      <header className="mb-4">
+        <h1 className="text-2xl font-bold tracking-tight text-fg">{t("에셋 등록", "Register an asset")}</h1>
+        <p className="mt-1 text-sm text-fg-2">{t("초안을 만들거나, 준비한 파일을 서버에 게시하세요.", "Create a draft or publish a prepared file to the server.")}</p>
+      </header>
+      <div role="group" aria-label={t("등록 작업 선택", "Choose a registration task")} className={section === "choose" ? "mb-4 grid gap-3 sm:grid-cols-2" : "mb-4 flex flex-wrap gap-2"}>
+        {([ ["workshop", t("초안 만들기 · 이어서 편집", "Create or continue a draft")], ["publish", t("준비한 manifest 게시", "Publish a prepared manifest")] ] as const).map(([id, label]) => (
+          <button key={id} type="button" aria-pressed={section === id} aria-controls={id === "workshop" ? "market-workshop-task" : "market-publish-task"} onClick={() => selectSection(id)} className={buttonClass({ variant: section === id ? "solid" : "outline", className: section === "choose" ? "min-h-20 justify-start whitespace-normal p-4 text-start" : "min-h-11 whitespace-normal" })}>{label}</button>
+        ))}
+        {section !== "choose" ? <button type="button" onClick={() => selectSection("choose")} className={buttonClass({ variant: "ghost", className: "min-h-11" })}>{t("목적 다시 선택", "Choose another task")}</button> : null}
+      </div>
+      <div id="market-workshop-task" hidden={section !== "workshop"}>
       <section aria-labelledby="market-authoring-workshop-heading" className="mt-5">
         <div className="mb-3 rounded-xl border border-line bg-panel px-4 py-3">
-          <h1 id="market-authoring-workshop-heading" className="text-base font-bold text-fg">
+          <h2 id="market-authoring-workshop-heading" className="text-base font-bold text-fg">
             {t("제작 워크숍", "Authoring workshop")}
-          </h1>
+          </h2>
           <p className="mt-1 text-xs leading-relaxed text-fg-2">
             {t("Brush Studio와 Studio에서 전달한 저작 handoff를 여기서 이어서 편집합니다. 워크숍 초안과 소스 패키지는 공개 릴리스가 아니며, 아래 서버 게시 검증을 통과해야 공개됩니다.", "Continue editing the authoring handoff delivered from Brush Studio and Studio here. Workshop drafts and source packages are not public releases — they must pass the server publish verification below to go public.")}
           </p>
@@ -325,6 +339,197 @@ export function MarketPublishAuthorityPage() {
         <MarketplaceAuthoringWorkshop />
       </section>
 
+      </div>
+      <div id="market-publish-task" hidden={section !== "publish"}>
+      <section id="market-server-publish" aria-labelledby="market-server-publish-heading" className="mt-4">
+        {publishedRecord ? (
+          <div className="mx-auto max-w-2xl rounded-2xl border border-good/40 bg-card p-6 text-center shadow-xl sm:p-8">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-good/15 text-good">
+              <CheckCircle2 className="size-9" aria-hidden="true" />
+            </div>
+            <h2 id="market-server-publish-heading" className="mt-4 text-xl font-bold text-fg">
+              {t("서버 게시가 완료되었습니다", "Published to the server")}
+            </h2>
+            <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-fg-2">
+              {t("서버가 반환한 immutable 릴리스 ID로 공개 성공을 확정했습니다. 브라우저 초안과 패키지 생성 성공만으로는 공개 상태를 만들지 않습니다.", "Publication is confirmed by the immutable release ID returned by the server. Browser drafts and package creation alone do not make an asset public.")}
+            </p>
+
+            <dl className="mt-5 divide-y divide-line rounded-xl border border-line bg-panel px-4 text-left text-xs">
+              <MetaRow label={t("에셋", "Asset")} value={publishedRecord.name} />
+              <MetaRow label={t("릴리스", "Release")} value={`v${publishedRecord.resourceVersion} · ${publishedRecord.id}`} numeric />
+              <MetaRow
+                label={t("종류·사용권", "Kind · License")}
+                value={`${marketKindMeta(publishedRecord.kind).label} · ${marketLicenseMeta(publishedRecord.license).label}`}
+              />
+            </dl>
+
+            <div className="mt-6 grid gap-2 sm:grid-cols-2">
+              <Link href={`/market/resource/${publishedRecord.id}`} className={buttonClass({ variant: "solid", size: "md" })}>
+                {t("공개 상세 보기", "View public details")}
+              </Link>
+              <Link href={marketStudioResourceHref(publishedRecord.id)} className={buttonClass({ variant: "outline", size: "md" })}>
+                <Palette className="size-4" aria-hidden="true" />
+                {t("Studio에서 검증", "Verify in Studio")}
+              </Link>
+            </div>
+            <button type="button" onClick={startAnotherRelease} className={buttonClass({ variant: "ghost", size: "sm", className: "mt-3" })}>
+              {t("다른 릴리스 게시", "Publish another release")}
+            </button>
+          </div>
+        ) : (
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <form onSubmit={(event) => void handleSubmit(event)} className="min-w-0 rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="eyebrow text-accent">Server-authoritative publish</p>
+                  <h2 id="market-server-publish-heading" className="mt-1 text-2xl font-bold text-fg">
+                    {t("검증된 manifest 게시", "Publish a verified manifest")}
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
+                    {t("Studio 런타임 계약에 맞는 공개 manifest JSON을 불러옵니다. 계약 검증과 서버 게시가 모두 성공한 경우에만 공개 완료로 표시됩니다.", "Load a public manifest JSON that matches the Studio runtime contract. It is marked as published only when both contract verification and server publishing succeed.")}
+                  </p>
+                </div>
+                <Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "outline", size: "sm" })}>
+                  {t("Studio에서 패키지 만들기", "Build a package in Studio")}
+                </Link>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-line bg-panel p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <FileJson className="size-5 text-accent" aria-hidden="true" />
+                    <div>
+                      <p className="text-sm font-semibold text-fg">{sourceName ?? t("공개 manifest JSON 파일", "Public manifest JSON file")}</p>
+                      <p className="text-xs text-fg-3">{t("권장 확장자: .toonmarket.json · 최대 512KB", "Recommended extension: .toonmarket.json · max 512KB")}</p>
+                    </div>
+                  </div>
+                  <button
+                    ref={fileButtonRef}
+                    type="button"
+                    onClick={() => document.getElementById("market-authority-manifest-file")?.click()}
+                    className={buttonClass({ variant: "outline", size: "sm" })}
+                  >
+                    <Upload className="size-4" aria-hidden="true" />
+                    {t("파일 선택", "Choose file")}
+                  </button>
+                </div>
+                <input
+                  id="market-authority-manifest-file"
+                  type="file"
+                  accept=".json,.toonmarket,application/json"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    if (file) { selectSection("publish"); void loadManifestFile(file); }
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </div>
+
+              <label htmlFor="market-authority-manifest" className="mt-5 block text-sm font-semibold text-fg">
+                {t("공개 Manifest JSON", "Public manifest JSON")}
+              </label>
+              <textarea
+                id="market-authority-manifest"
+                rows={20}
+                value={manifestText}
+                spellCheck={false}
+                onChange={(event) => {
+                  beginSourceRequest();
+                  setManifestText(event.target.value);
+                  setSourceName(null);
+                  setPublishedRecord(null);
+                  setError(null);
+                }}
+                placeholder={t("Studio에서 내보낸 공개 manifest JSON을 붙여넣으세요.", "Paste the public manifest JSON exported from Studio.")}
+                className="mt-2 min-h-[28rem] w-full resize-y rounded-xl border border-line bg-canvas p-4 font-mono text-xs leading-relaxed text-fg outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+                aria-describedby="market-authority-validation"
+              />
+
+              <div
+                id="market-authority-validation"
+                role="status"
+                className={cn(
+                  "mt-3 rounded-lg border px-3 py-2.5 text-xs leading-relaxed",
+                  parsed.state === "valid"
+                    ? "border-good/40 bg-good/10 text-good"
+                    : parsed.state === "invalid"
+                      ? "border-warn/40 bg-warn/10 text-fg-2"
+                      : "border-line bg-panel text-fg-3",
+                )}
+              >
+                {parsed.message}
+              </div>
+
+              {parentError && updateTarget ? (
+                <div role="alert" className="mt-3 rounded-lg border border-warn/40 p-3 text-xs text-fg-2">
+                  <p>{parentError}</p>
+                  <button type="button" className={buttonClass({ variant: "ghost", size: "sm", className: "mt-2" })}
+                    onClick={() => setParentLookupAttempt((attempt) => attempt + 1)}>
+                    {t("업데이트 대상 다시 확인", "Re-check update target")}
+                  </button>
+                </div>
+              ) : null}
+
+              {error ? (
+                <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-sm text-fg">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
+                  <div>
+                    <p className="font-semibold">{t("게시되지 않았습니다", "Not published")}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-fg-2">{error}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {!ready ? (
+                <p role="status" className="mt-4 text-xs text-fg-3">{t("로그인 세션을 확인하고 있습니다.", "Checking your login session.")}</p>
+              ) : !authenticated ? (
+                <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm text-fg">
+                  <p className="font-semibold">{t("로그인이 필요합니다", "Login required")}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-fg-2">
+                    {t("입력한 JSON은 화면에 유지되지만 로그인 전에는 서버 공개 게시를 실행하지 않습니다.", "The JSON you entered stays on screen, but server publishing will not run until you log in.")}
+                  </p>
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={!authenticated || submitting || parsed.state !== "valid"}
+                className={buttonClass({ variant: "solid", size: "md", className: "mt-5 w-full disabled:cursor-not-allowed disabled:opacity-45" })}
+              >
+                {submitting ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ShieldCheck className="size-4" aria-hidden="true" />
+                )}
+                {submitting ? t("서버에서 검증·게시 중", "Verifying & publishing on server") : t("서버에 검수·게시", "Review & publish to server")}
+              </button>
+            </form>
+
+            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+              <section className="rounded-xl border border-line bg-card p-4">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
+                  <ShieldCheck className="size-4 text-good" aria-hidden="true" />
+                  {t("공개 성공 기준", "What counts as published")}
+                </h3>
+                <ol className="mt-3 space-y-2 text-xs leading-relaxed text-fg-2">
+                  <li>{t("1. 공개 manifest 계약 검증 통과", "1. Public manifest contract verification passes")}</li>
+                  <li>{t("2. entry·manifest 무결성 검증 통과", "2. Entry and manifest integrity verification passes")}</li>
+                  <li>{t("3. 로그인 제작자 권한 확인", "3. Logged-in creator permission confirmed")}</li>
+                  <li>{t("4. 서버가 immutable 릴리스 ID 반환", "4. Server returns an immutable release ID")}</li>
+                </ol>
+              </section>
+              <section className="rounded-xl border border-line bg-panel p-4">
+                <h3 className="text-sm font-bold text-fg">{t("초안과 공개 상태 분리", "Drafts are separate from published state")}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-fg-2">
+                  {t("워크숍 자동 저장, 소스 패키지 생성, 네트워크 실패는 공개 성공이 아닙니다. 실패한 요청은 성공 화면이나 공개 상세 링크를 만들지 않습니다.", "Workshop auto-save, source package creation, and network failures are not publication successes. Failed requests produce no success screen or public detail link.")}
+                </p>
+              </section>
+            </aside>
+          </div>
+        )}
+      </section>
+      <SiteDisclosure id="market-publish-preparation" defaultOpen={location.hash === "#market-publish-preparation"} title={t("게시 준비 도구 · 명세서 만들기", "Publish preparation and manifest builder")} className="mt-5">
       <section
         data-testid="market-publish-rea-preflight-bar"
         aria-label={t(
@@ -472,194 +677,22 @@ export function MarketPublishAuthorityPage() {
         }}
       />
 
-      <section id="market-server-publish" aria-labelledby="market-server-publish-heading" className="mt-8 border-t border-line pt-8">
-        {publishedRecord ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-good/40 bg-card p-6 text-center shadow-xl sm:p-8">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-good/15 text-good">
-              <CheckCircle2 className="size-9" aria-hidden="true" />
-            </div>
-            <h2 id="market-server-publish-heading" className="mt-4 text-xl font-bold text-fg">
-              {t("서버 게시가 완료되었습니다", "Published to the server")}
-            </h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-fg-2">
-              {t("서버가 반환한 immutable 릴리스 ID로 공개 성공을 확정했습니다. 브라우저 초안과 패키지 생성 성공만으로는 공개 상태를 만들지 않습니다.", "Publication is confirmed by the immutable release ID returned by the server. Browser drafts and package creation alone do not make an asset public.")}
-            </p>
+      </SiteDisclosure>
+      </div>
+      <SiteDisclosure title={t("판매자 안내 · 다른 마켓 작업", "Seller guide and other market tasks")} className="mt-5">
+      <MarketNavHeader />
 
-            <dl className="mt-5 divide-y divide-line rounded-xl border border-line bg-panel px-4 text-left text-xs">
-              <MetaRow label={t("에셋", "Asset")} value={publishedRecord.name} />
-              <MetaRow label={t("릴리스", "Release")} value={`v${publishedRecord.resourceVersion} · ${publishedRecord.id}`} numeric />
-              <MetaRow
-                label={t("종류·사용권", "Kind · License")}
-                value={`${marketKindMeta(publishedRecord.kind).label} · ${marketLicenseMeta(publishedRecord.license).label}`}
-              />
-            </dl>
+      <Link href="/market/seller" className="inline-flex min-h-11 items-center gap-1.5 text-xs text-fg-2 hover:text-fg">
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        {t("판매자 센터로 돌아가기", "Back to seller center")}
+      </Link>
 
-            <div className="mt-6 grid gap-2 sm:grid-cols-2">
-              <Link href={`/market/resource/${publishedRecord.id}`} className={buttonClass({ variant: "solid", size: "md" })}>
-                {t("공개 상세 보기", "View public details")}
-              </Link>
-              <Link href={marketStudioResourceHref(publishedRecord.id)} className={buttonClass({ variant: "outline", size: "md" })}>
-                <Palette className="size-4" aria-hidden="true" />
-                {t("Studio에서 검증", "Verify in Studio")}
-              </Link>
-            </div>
-            <button type="button" onClick={startAnotherRelease} className={buttonClass({ variant: "ghost", size: "sm", className: "mt-3" })}>
-              {t("다른 릴리스 게시", "Publish another release")}
-            </button>
-          </div>
-        ) : (
-          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <form onSubmit={(event) => void handleSubmit(event)} className="min-w-0 rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="eyebrow text-accent">Server-authoritative publish</p>
-                  <h2 id="market-server-publish-heading" className="mt-1 text-2xl font-bold text-fg">
-                    {t("검증된 manifest 게시", "Publish a verified manifest")}
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2">
-                    {t("Studio 런타임 계약에 맞는 공개 manifest JSON을 불러옵니다. 계약 검증과 서버 게시가 모두 성공한 경우에만 공개 완료로 표시됩니다.", "Load a public manifest JSON that matches the Studio runtime contract. It is marked as published only when both contract verification and server publishing succeed.")}
-                  </p>
-                </div>
-                <Link href="/studio?assetMarket=community&communityView=share" className={buttonClass({ variant: "outline", size: "sm" })}>
-                  {t("Studio에서 패키지 만들기", "Build a package in Studio")}
-                </Link>
-              </div>
+      <MarketSellerCenterTabs active="register" />
+      <p className="mt-3 text-xs leading-relaxed text-fg-3">
+        {t("이 페이지는 판매자 센터의 등록 탭입니다. 제작 워크숍에서 초안을 다듬고, 아래 게시 단계(작성 → 계약 검증 → 명세서 생성 → 확정 → Studio 검증)를 거쳐 공개합니다.", "This page is the seller center's register tab. Refine your draft in the authoring workshop, then publish through the steps below (draft, contract check, manifest, lock in, verify in Studio).")}
+      </p>
 
-              <div className="mt-6 rounded-xl border border-line bg-panel p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <FileJson className="size-5 text-accent" aria-hidden="true" />
-                    <div>
-                      <p className="text-sm font-semibold text-fg">{sourceName ?? t("공개 manifest JSON 파일", "Public manifest JSON file")}</p>
-                      <p className="text-xs text-fg-3">{t("권장 확장자: .toonmarket.json · 최대 512KB", "Recommended extension: .toonmarket.json · max 512KB")}</p>
-                    </div>
-                  </div>
-                  <button
-                    ref={fileButtonRef}
-                    type="button"
-                    onClick={() => document.getElementById("market-authority-manifest-file")?.click()}
-                    className={buttonClass({ variant: "outline", size: "sm" })}
-                  >
-                    <Upload className="size-4" aria-hidden="true" />
-                    {t("파일 선택", "Choose file")}
-                  </button>
-                </div>
-                <input
-                  id="market-authority-manifest-file"
-                  type="file"
-                  accept=".json,.toonmarket,application/json"
-                  className="sr-only"
-                  onChange={(event) => {
-                    const file = event.currentTarget.files?.[0];
-                    if (file) void loadManifestFile(file);
-                    event.currentTarget.value = "";
-                  }}
-                />
-              </div>
-
-              <label htmlFor="market-authority-manifest" className="mt-5 block text-sm font-semibold text-fg">
-                {t("공개 Manifest JSON", "Public manifest JSON")}
-              </label>
-              <textarea
-                id="market-authority-manifest"
-                rows={20}
-                value={manifestText}
-                spellCheck={false}
-                onChange={(event) => {
-                  beginSourceRequest();
-                  setManifestText(event.target.value);
-                  setSourceName(null);
-                  setPublishedRecord(null);
-                  setError(null);
-                }}
-                placeholder={t("Studio에서 내보낸 공개 manifest JSON을 붙여넣으세요.", "Paste the public manifest JSON exported from Studio.")}
-                className="mt-2 min-h-[28rem] w-full resize-y rounded-xl border border-line bg-canvas p-4 font-mono text-xs leading-relaxed text-fg outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
-                aria-describedby="market-authority-validation"
-              />
-
-              <div
-                id="market-authority-validation"
-                role="status"
-                className={cn(
-                  "mt-3 rounded-lg border px-3 py-2.5 text-xs leading-relaxed",
-                  parsed.state === "valid"
-                    ? "border-good/40 bg-good/10 text-good"
-                    : parsed.state === "invalid"
-                      ? "border-warn/40 bg-warn/10 text-fg-2"
-                      : "border-line bg-panel text-fg-3",
-                )}
-              >
-                {parsed.message}
-              </div>
-
-              {parentError && updateTarget ? (
-                <div role="alert" className="mt-3 rounded-lg border border-warn/40 p-3 text-xs text-fg-2">
-                  <p>{parentError}</p>
-                  <button type="button" className={buttonClass({ variant: "ghost", size: "sm", className: "mt-2" })}
-                    onClick={() => setParentLookupAttempt((attempt) => attempt + 1)}>
-                    {t("업데이트 대상 다시 확인", "Re-check update target")}
-                  </button>
-                </div>
-              ) : null}
-
-              {error ? (
-                <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-bad/40 bg-bad/10 p-3 text-sm text-fg">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden="true" />
-                  <div>
-                    <p className="font-semibold">{t("게시되지 않았습니다", "Not published")}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-fg-2">{error}</p>
-                  </div>
-                </div>
-              ) : null}
-
-              {!ready ? (
-                <p role="status" className="mt-4 text-xs text-fg-3">{t("로그인 세션을 확인하고 있습니다.", "Checking your login session.")}</p>
-              ) : !authenticated ? (
-                <div className="mt-4 rounded-xl border border-warn/40 bg-warn/10 p-3 text-sm text-fg">
-                  <p className="font-semibold">{t("로그인이 필요합니다", "Login required")}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-fg-2">
-                    {t("입력한 JSON은 화면에 유지되지만 로그인 전에는 서버 공개 게시를 실행하지 않습니다.", "The JSON you entered stays on screen, but server publishing will not run until you log in.")}
-                  </p>
-                </div>
-              ) : null}
-
-              <button
-                type="submit"
-                disabled={!authenticated || submitting || parsed.state !== "valid"}
-                className={buttonClass({ variant: "solid", size: "md", className: "mt-5 w-full disabled:cursor-not-allowed disabled:opacity-45" })}
-              >
-                {submitting ? (
-                  <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <ShieldCheck className="size-4" aria-hidden="true" />
-                )}
-                {submitting ? t("서버에서 검증·게시 중", "Verifying & publishing on server") : t("서버에 검수·게시", "Review & publish to server")}
-              </button>
-            </form>
-
-            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-              <section className="rounded-xl border border-line bg-card p-4">
-                <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
-                  <ShieldCheck className="size-4 text-good" aria-hidden="true" />
-                  {t("공개 성공 기준", "What counts as published")}
-                </h3>
-                <ol className="mt-3 space-y-2 text-xs leading-relaxed text-fg-2">
-                  <li>{t("1. 공개 manifest 계약 검증 통과", "1. Public manifest contract verification passes")}</li>
-                  <li>{t("2. entry·manifest 무결성 검증 통과", "2. Entry and manifest integrity verification passes")}</li>
-                  <li>{t("3. 로그인 제작자 권한 확인", "3. Logged-in creator permission confirmed")}</li>
-                  <li>{t("4. 서버가 immutable 릴리스 ID 반환", "4. Server returns an immutable release ID")}</li>
-                </ol>
-              </section>
-              <section className="rounded-xl border border-line bg-panel p-4">
-                <h3 className="text-sm font-bold text-fg">{t("초안과 공개 상태 분리", "Drafts are separate from published state")}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-fg-2">
-                  {t("워크숍 자동 저장, 소스 패키지 생성, 네트워크 실패는 공개 성공이 아닙니다. 실패한 요청은 성공 화면이나 공개 상세 링크를 만들지 않습니다.", "Workshop auto-save, source package creation, and network failures are not publication successes. Failed requests produce no success screen or public detail link.")}
-                </p>
-              </section>
-            </aside>
-          </div>
-        )}
-      </section>
+      </SiteDisclosure>
     </Container>
   );
 }

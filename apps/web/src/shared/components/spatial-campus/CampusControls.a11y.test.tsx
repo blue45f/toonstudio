@@ -25,6 +25,22 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("공간 지도 이름과 현재 공간", () => {
+  it("보기 설정을 접어 작업을 먼저 보여 주되 공개 화면 보호는 항상 노출한다", () => {
+    const value = { ...context(), binding: { ...context().binding, surface: "room" as const }, privacySensitive: true };
+    render(controls(value));
+    const summary = screen.getByText("보기 설정 · 업무", { selector: "summary" });
+    const menu = summary.closest("details");
+    expect(menu?.open).toBe(false);
+    const privacy = screen.getByRole("button", { name: "공개 화면 모드 켜기" });
+    expect(privacy.closest("details")).toBeNull();
+    fireEvent.click(privacy);
+    expect(value.setPrivacyMode).toHaveBeenCalledWith(true);
+    fireEvent.click(summary);
+    expect(menu?.open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "공간", exact: true }));
+    expect(value.setMode).toHaveBeenCalledWith("scene");
+    expect(screen.getByRole("link", { name: "작업으로 돌아가기" }).getAttribute("href")).toBe("/studio");
+  });
   it.each([
     ["ko", false, "안내·설정관", "안내·설정관 · 공간 지도 열기"],
     ["en", false, "Help & settings", "Help & settings · Open campus map"],

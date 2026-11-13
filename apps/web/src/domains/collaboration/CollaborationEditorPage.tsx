@@ -20,6 +20,9 @@ import { useDocumentTitle } from "@/shared/seo/use-document-title";
 import { getApiErrorMessage } from "@/platform/api";
 import { isNotFoundError } from "@/platform/api-error";
 import { collaborationClient } from "@/platform/collaboration-client";
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { NotFoundPage } from "@/shared/components/feedback/NotFoundPage";
 import { useApp } from "@/shared/lib/store";
@@ -177,6 +180,7 @@ function CollaborationLivePreview({ input, userId, postId, status, hidden, versi
 }
 function CollaborationEditorForm({ id, userId, initial, version, postStatus, postHidden, onReloadLatest }: { id?: string; userId: string; initial: CollaborationInput; version: number; postStatus: CollaborationStatus; postHidden: boolean; onReloadLatest: () => void }) {
   const bt = useBilingual(SCOPE);
+  const { activeScreen } = useTaskScreen({ ids: ["write", "preview"] as const, defaultScreen: "write" });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // 게시판의 "작성 예시로 시작" 링크(?template=)는 저장된 초안이 없을 때만 적용한다. 쓰던 초안을 몰래 덮지 않는다.
@@ -230,7 +234,11 @@ function CollaborationEditorForm({ id, userId, initial, version, postStatus, pos
     finally { submitting.current = false; setBusy(false); }
   }
   const noAmount = input.payType === "volunteer" || input.payType === "revenue_share";
-  return <form onSubmit={(event) => { event.preventDefault(); void submit(); }} className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+  return <>
+    <TaskScreenNavigation label={bt("공고 작성 화면", "Gig authoring screen")} items={[{ id: "write", label: bt("공고 작성", "Write post") }, { id: "preview", label: bt("게시 전 미리보기", "Preview before publishing") }]} activeScreen={activeScreen} defaultScreen="write" />
+    {error && <div ref={errorRef} tabIndex={-1} className="outline-none"><CollabNotice error>{error}</CollabNotice></div>}
+    {conflict && <CollaborationConflictPanel inputWarning busy={conflictBusy} onReload={() => { setConflictBusy(true); onReloadLatest(); }} onKeepEditing={() => setConflict(false)} />}
+    <form hidden={activeScreen !== "write"} onSubmit={(event) => { event.preventDefault(); void submit(); }} className="space-y-5">
     <div className="min-w-0 space-y-7">
     {!id && <section className="rounded-2xl border border-line bg-panel p-5"><h2 className="text-sm font-bold text-fg">{bt("빈칸이 막막하다면 작성 예시로 시작하세요", "Staring at a blank form? Start from an example")}</h2><p className="mt-2 text-xs leading-6 text-fg-3">{bt("예시 문구를 실제 작업 조건으로 바꿔 주세요. 버튼을 눌러도 공개 등록되지 않습니다.", "Adapt the example to your real terms. Pressing a button doesn't publish anything.")}</p>{start.templateSkipped && <p role="status" className="mt-3 rounded-xl border border-warn/35 bg-warn/10 px-3 py-2 text-xs leading-6 text-fg-2">{bt("이 기기에 쓰던 초안이 있어 초안을 먼저 열었어요. 예시로 바꾸려면 아래 버튼을 눌러 주세요.", "You had a draft on this device, so we opened it first. Pick an example below to replace it.")}</p>}<div className="mt-3 flex flex-wrap gap-2"><button type="button" className={collabButton} onClick={() => template("ink")}>{bt("선화 보조 의뢰", "Line-art help example")}</button><button type="button" className={collabButton} onClick={() => template("background")}>{bt("배경 작업 의뢰", "Background example")}</button><button type="button" className={collabButton} onClick={() => template("team")}>{bt("팀원 모집", "Team hiring example")}</button></div></section>}
     <fieldset disabled={busy} className="space-y-5 rounded-2xl border border-line bg-panel p-5 sm:p-7"><legend className="px-2 text-lg font-bold text-fg">{bt("01 · 어떤 동료를 찾나요?", "01 · Who are you looking for?")}</legend>
@@ -252,13 +260,12 @@ function CollaborationEditorForm({ id, userId, initial, version, postStatus, pos
       <CollabField label={bt("공개 포트폴리오 주소 (선택)", "Public portfolio URL (optional)")} hint={bt("갤러리 작품 또는 외부 포트폴리오의 http/https 주소", "http/https address of your gallery work or external portfolio")}><input className={collabInput} type="url" maxLength={500} value={input.details.portfolioUrl} onChange={(event) => detail("portfolioUrl", event.target.value)} placeholder="https://" /></CollabField>
       <label className="flex cursor-pointer items-start gap-3 text-sm leading-7 text-fg-2"><input className="mt-1.5 size-5 shrink-0" type="checkbox" required checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /><span>{bt("공개할 내용과 보수·권리 조건을 확인했습니다. 개인정보·타인의 미공개 자료를 게시하지 않으며, 실제 계약과 대금 지급은 당사자끼리 별도로 합의합니다.", "I've reviewed the content and pay/rights terms. I won't post personal data or others' unpublished materials; the actual contract and payment are agreed separately between the parties.")}</span></label>
     </fieldset>
-    {error && <div ref={errorRef} tabIndex={-1} className="outline-none"><CollabNotice error>{error}</CollabNotice></div>}
-    {conflict && <CollaborationConflictPanel inputWarning busy={conflictBusy} onReload={() => { setConflictBusy(true); onReloadLatest(); }} onKeepEditing={() => setConflict(false)} />}
-    </div>
-    <CollaborationLivePreview input={input} userId={userId} postId={id} status={postStatus} hidden={postHidden} version={version} />
-    <div className="lg:col-span-2">
-      <CollaborationCoauthorRevenueMirrorSuite />
     </div>
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-panel p-5 lg:col-span-2"><p role="status" className="inline-flex max-w-xl items-center gap-2 text-xs leading-6 text-fg-3"><Save size={15} className="shrink-0" aria-hidden="true" />{id ? bt("수정한 내용은 저장 버튼을 눌러야 반영돼요.", "You must press save for edits to apply.") : draftStatus || bt("초안 임시저장 준비 중", "Preparing draft autosave")}</p><button disabled={busy} type="submit" className={collabPrimary}><CheckCircle2 size={17} aria-hidden="true" />{busy ? bt("저장 중…", "Saving…") : id ? bt("수정 내용 저장", "Save changes") : bt("공고 공개 등록", "Publish post")}</button></div>
-  </form>;
+  </form>
+    <div hidden={activeScreen !== "preview"} className="max-w-2xl">
+    <CollaborationLivePreview input={input} userId={userId} postId={id} status={postStatus} hidden={postHidden} version={version} />
+    </div>
+    <SiteDisclosure title={bt("협업 수익 운영 예시", "Collaboration revenue examples")} className="mt-5"><CollaborationCoauthorRevenueMirrorSuite /></SiteDisclosure>
+  </>;
 }

@@ -192,3 +192,22 @@ describe("TimelapseGalleryPage (GAP-R4-05 Round 5 touch target & filter group ac
     expect(document.activeElement).toBe(heatmapBtn);
   });
 });
+
+
+it("공유 클립을 분석 예시보다 먼저 보여 주고 분석 조작을 명시 영역에 보존한다", () => {
+  render(<MemoryRouter initialEntries={["/community/timelapses"]}><TimelapseGalleryPage /></MemoryRouter>);
+  const clip = screen.getByTestId("timelapse-clip-clip-1");
+  const tools = screen.getByTestId("timelapse-rea-telemetry-bar");
+  const details = tools.closest("details");
+  expect(clip.closest("details")).toBeNull();
+  expect(clip.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("영상 분석 도구 누락");
+  fireEvent.click(summary);
+  fireEvent.click(screen.getByTestId("timelapse-rea-mode-layer-chronology"));
+  expect(screen.getByTestId("timelapse-rea-telemetry-status").textContent).toMatch(/5단계|5-stage/i);
+  fireEvent.click(summary);
+  fireEvent.click(summary);
+  expect(screen.getByTestId("timelapse-rea-mode-layer-chronology").getAttribute("aria-pressed")).toBe("true");
+});

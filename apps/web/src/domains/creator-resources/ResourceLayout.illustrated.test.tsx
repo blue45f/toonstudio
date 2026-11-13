@@ -14,12 +14,18 @@ import type { CreatorResource } from "@/shared/lib/creator-resources";
 afterEach(cleanup);
 
 function renderLayout(path: string) {
-  return render(<MemoryRouter initialEntries={[path]}>
+  const result = render(<MemoryRouter initialEntries={[path]}>
     <ResourceLayout title="작업 화면" intro="현재 작업을 이어갑니다.">
       <button type="button">내 작업</button>
       <LocalSaveNotice error="저장 공간 부족" writable={false} />
     </ResourceLayout>
   </MemoryRouter>);
+  const menu = result.container.querySelector<HTMLDetailsElement>("[data-research-task-menu]");
+  expect(menu?.open).toBe(false);
+  const summary = menu?.querySelector("summary");
+  if (!summary) throw new Error("리서치 메뉴 진입점이 필요합니다.");
+  fireEvent.click(summary);
+  return result;
 }
 
 describe("일러스트 리서치 표면", () => {
@@ -39,7 +45,7 @@ describe("일러스트 리서치 표면", () => {
     expect(container.querySelector(".resource-masthead-image")).toBeNull();
   });
 
-  it("리서치 목적지 20개를 제목 있는 5묶음으로 나누고 모바일 전체 메뉴에서도 묶어서 보여 준다", () => {
+  it("리서치 목적지를 다섯 묶음 중 선택한 목록 하나씩 보여 주고 모든 주소를 유지한다", () => {
     renderLayout("/research");
     for (const page of RESOURCE_PAGES.slice(1)) {
       expect(RESOURCE_MENU_GROUPS.filter((group) => group.paths.includes(page.path))).toHaveLength(1);
@@ -49,10 +55,15 @@ describe("일러스트 리서치 표면", () => {
     expect(within(groups).getAllByRole("button")).toHaveLength(5);
     // 데스크(현재 목적지 없음)에서는 첫 묶음이 열린다.
     expect(within(groups).getByRole("button", { name: /재료·3D/ }).getAttribute("aria-pressed")).toBe("true");
-    const mobile = screen.getByRole("navigation", { name: "모바일 창작 리서치 메뉴" });
-    expect(within(mobile).getAllByRole("group")).toHaveLength(5);
-    expect(within(mobile).getAllByRole("link")).toHaveLength(RESOURCE_PAGES.length - 1);
-    expect(within(within(mobile).getByRole("group", { name: "데이터·정책" })).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about/data", "/about/crawler"]);
+    const navigation = screen.getByRole("navigation", { name: "창작 리서치 메뉴" });
+    const reached = new Set<string>();
+    for (const group of RESOURCE_MENU_GROUPS) {
+      fireEvent.click(within(groups).getByRole("button", { name: group.title[0] }));
+      const links = within(navigation).getAllByRole("link").map((link) => link.getAttribute("href"));
+      expect(links).toEqual(["/research", ...group.paths]);
+      for (const href of links) if (href) reached.add(href);
+    }
+    expect([...reached].sort()).toEqual(RESOURCE_PAGES.map((page) => page.path).sort());
   });
 
   it("공통 Container 폭 계약을 따른다", () => {

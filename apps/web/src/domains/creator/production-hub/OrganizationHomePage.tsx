@@ -13,6 +13,8 @@ import { useApp } from "@/shared/lib/store";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { getApiErrorMessage } from "@/platform/api";
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 import { TeamAreaNavigation } from "@/shared/components/TeamAreaNavigation";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { listTeamWorkspaces } from "./team-workspace-api";
@@ -56,8 +58,8 @@ const INVITABLE_ROLES: readonly InvitableOrganizationRole[] = ["admin", "manager
 
 const fieldClass = "min-h-11 rounded-lg border border-line bg-canvas px-3 text-fg";
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="creator-workflow-panel rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
+function Card({ title, children, hidden = false }: { title: string; children: ReactNode; hidden?: boolean }) {
+  return <section hidden={hidden} className="creator-workflow-panel rounded-2xl border border-line bg-card p-5"><h2 className="mb-4 text-lg font-bold">{title}</h2>{children}</section>;
 }
 
 function kindValue(value: string): OrganizationKind {
@@ -71,6 +73,12 @@ export function OrganizationHomePage() {
 
 function OrganizationConsole({ userId }: { userId: string | null }) {
   const bt = useBilingual("OrganizationHomePage");
+  const { activeScreen } = useTaskScreen({ ids: ["teams", "members", "invite", "notices", "settings"] as const, defaultScreen: "teams" });
+  const screens = [
+    { id: "teams", label: bt("팀·현황", "Teams & overview") }, { id: "members", label: bt("구성원·초대", "Members & invitations") },
+    { id: "invite", label: bt("초대 수락", "Accept an invite") }, { id: "notices", label: bt("공지", "Notices") },
+    { id: "settings", label: bt("프로필·백업", "Profile & backup") },
+  ];
   const [organizations, setOrganizations] = useState<readonly OrganizationSummary[]>([]);
   const [detail, setDetail] = useState<OrganizationDetail | null>(null);
   const [workspaces, setWorkspaces] = useState<readonly TeamWorkspaceSummary[]>([]);
@@ -309,7 +317,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
         <TeamAreaNavigation />
         <header className="rounded-3xl border border-line bg-panel p-5 sm:p-6">
           <p className="eyebrow text-accent">ORGANIZATION · 회사·스튜디오</p>
-          <h1 className="mt-2 text-2xl font-black">{bt("조직 홈", "Organization home")}</h1>
+          <h1 className="mt-2 text-2xl font-black">{bt("조직", "Organization")} · {screens.find((screen) => screen.id === activeScreen)?.label}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
             {bt("회사·스튜디오 단위로 팀과 작품 현황을 모아 봅니다. 조직은 기존 팀(워크스페이스)을 연결해 묶을 뿐, 팀과 작품의 권한 계약은 그대로 유지됩니다.",
               "See your teams and projects rolled up at company or studio level. An organization only links existing teams (workspaces) — team and project permission contracts stay exactly as they are.")}
@@ -319,6 +327,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             <Link className="underline" to="/team">{bt("협업 홈", "Collaboration home")}</Link>
           </nav>
         </header>
+        <TaskScreenNavigation label={bt("조직 작업 선택", "Organization task")} items={screens} activeScreen={activeScreen} defaultScreen="teams" />
 
         {error && (
           <div role="alert" className="rounded-xl border border-bad p-4">
@@ -339,7 +348,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
           </section>
         ) : (
           <>
-            <p className="rounded-xl border border-line bg-raised p-4 text-sm leading-6 text-fg-2">
+            <p hidden={activeScreen !== "settings"} className="rounded-xl border border-line bg-raised p-4 text-sm leading-6 text-fg-2">
               {bt("조직 프로필·연결·구성원·공지는 서버에 저장되어 로그인한 모든 기기에서 같은 상태로 보입니다. 조직 역할은 서버가 강제합니다. 조직에 소속돼도 원고 접근 권한은 생기지 않습니다 — 작품 권한은 지금처럼 작품별로 부여합니다.",
                 "The organization profile, links, members, and notices live on the server, so they look the same on every signed-in device. Organization roles are enforced by the server. Belonging to an organization never grants manuscript access — project permissions are still granted per project, as today.")}
             </p>
@@ -361,13 +370,13 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             )}
 
             {!detail && organizations.length === 0 && legacy?.profile && (
-              <Card title={bt("이 기기의 조직 가져오기", "Import the organization on this device")}>
+              <Card hidden={activeScreen !== "settings"} title={bt("이 기기의 조직 가져오기", "Import the organization on this device")}>
                 <p className="text-sm leading-6 text-fg-2">{bt(`이 기기에만 저장된 조직 "${legacy.profile.name}"이(가) 있습니다. 서버로 가져오면 구성원 초대와 다기기 동기화가 열립니다.`, `An organization "${legacy.profile.name}" is stored only on this device. Import it to the server to unlock member invites and cross-device sync.`)}</p>
                 <button type="button" disabled={busy} className={`${buttonClass()} mt-4`} onClick={() => void importLegacy()}>{bt("서버로 가져오기", "Import to server")}</button>
               </Card>
             )}
 
-            <Card title={bt("조직 프로필", "Organization profile")}>
+            <Card hidden={Boolean(profile) && canRollup && activeScreen !== "settings"} title={bt("조직 프로필", "Organization profile")}>
               {profile && !editing ? (
                 <div>
                   <p className="text-xl font-black">{profile.name}</p>
@@ -384,7 +393,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             </Card>
 
             {profile && rollup && canRollup && (
-              <Card title={bt("조직 현황", "Organization rollup")}>
+              <Card hidden={activeScreen !== "teams"} title={bt("조직 현황", "Organization rollup")}>
                 <dl className="grid gap-3 sm:grid-cols-4">
                   <div><dt className="text-sm text-fg-2">{bt("연결한 팀", "Linked teams")}</dt><dd className="mt-1 text-xl font-black">{rollup.teams.length}</dd></div>
                   <div><dt className="text-sm text-fg-2">{bt("연결 작품", "Linked projects")}</dt><dd className="mt-1 text-xl font-black">{rollup.projectCount}</dd></div>
@@ -397,7 +406,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             )}
 
             {profile && detail && canRollup && (
-              <Card title={bt("조직 백업·내보내기", "Organization backup & export")}>
+              <Card hidden={activeScreen !== "settings"} title={bt("조직 백업·내보내기", "Organization backup & export")}>
                 {/* 조직 백업 왕복 (C5): 서버 조직 상세에서 로컬 백업 모델이 쓰는
                     모양(프로필·공지·연결 목록)을 조립해 패널에 넘긴다. 패널은
                     마운트 시 API를 부르지 않고 내려받기·검증 클릭 때만 동작한다. */}
@@ -413,7 +422,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             )}
 
             {detail && canRollup && (
-              <Card title={bt("팀 연결", "Link teams")}>
+              <Card hidden={activeScreen !== "teams"} title={bt("팀 연결", "Link teams")}>
                 {workspaces.length === 0 && !loading && (
                   <p className="text-sm leading-6 text-fg-2">{bt("아직 참여한 팀이 없습니다. 팀을 만들거나 초대를 수락하면 여기서 조직에 연결할 수 있습니다.", "No teams yet. Create a team or accept an invite, then link it to this organization here.")} <Link className="underline" to="/team/people">{bt("팀 관리로 이동", "Go to team management")}</Link></p>
                 )}
@@ -446,7 +455,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             )}
 
             {detail && myRole !== "guest" && (
-              <Card title={bt("조직 구성원", "Organization members")}>
+              <Card hidden={activeScreen !== "members"} title={bt("조직 구성원", "Organization members")}>
                 <ul className="space-y-3">
                   {detail.members.map((member) => (
                     <li key={member.userId} className="flex flex-wrap items-center gap-3 rounded-lg border border-line p-3">
@@ -533,7 +542,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               </Card>
             )}
 
-            <Card title={bt("초대 수락", "Accept an invite")}>
+            <Card hidden={activeScreen !== "invite"} title={bt("초대 수락", "Accept an invite")}>
               <form className="flex flex-col gap-3" onSubmit={submitPreview}>
                 <label className="flex flex-col gap-2 text-sm font-semibold">{bt("초대 토큰", "Invite token")}
                   <input maxLength={43} className={fieldClass} value={acceptToken} onChange={(event) => { setAcceptToken(event.target.value); setPreview(null); }} placeholder={bt("전달받은 토큰을 붙여 넣으세요", "Paste the token you received")} /></label>
@@ -550,7 +559,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               )}
             </Card>
 
-            <Card title={bt("조직 역할", "Organization roles")}>
+            <Card hidden={activeScreen !== "settings"} title={bt("조직 역할", "Organization roles")}>
               <ul className="space-y-3">
                 {ROLES.map((role) => (
                   <li key={role} className="flex flex-wrap items-center gap-2 rounded-lg border border-line p-3">
@@ -567,7 +576,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
             </Card>
 
             {profile && detail && canRollup && (
-              <Card title={bt("조직 공지", "Organization notices")}>
+              <Card hidden={activeScreen !== "notices"} title={bt("조직 공지", "Organization notices")}>
                 {canNotice && (
                   <form className="flex flex-col gap-3" onSubmit={submitNotice}>
                     <label className="flex flex-col gap-2 text-sm font-semibold">{bt("새 공지", "New notice")}
@@ -591,7 +600,7 @@ function OrganizationConsole({ userId }: { userId: string | null }) {
               </Card>
             )}
 
-            <Card title={bt("서버 계약이 필요한 조직 기능", "Organization features that need a server contract")}>
+            <Card hidden={activeScreen !== "settings"} title={bt("서버 계약이 필요한 조직 기능", "Organization features that need a server contract")}>
               <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-fg-2">
                 <li>{bt("조직 포인트 풀 — 포인트 원장이 개인 단위라 조직 지갑과 배분은 서버 원장이 필요합니다. 현금 결제·충전은 만들지 않습니다.", "Organization point pool — the point ledger is per-person today, so an organization wallet and distribution need a server ledger. No cash payments or top-ups will be added.")}</li>
                 <li>{bt("조직 공용 라이브러리 — 스튜디오 공용 에셋·폰트·템플릿은 라이브러리 스코프 계약이 필요합니다.", "Shared organization library — studio-wide assets, fonts, and templates need a library scope contract.")}</li>

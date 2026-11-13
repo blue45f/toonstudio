@@ -27,15 +27,6 @@ function CampusControlsView({ campus, compact }: { readonly campus: CampusContex
       aria-haspopup="dialog" aria-expanded={open} aria-label={compact ? openMapLabel : `${mapCaption} · ${openMapLabel}`}>
       <Map size={18} aria-hidden="true" /><span>{mapCaption}</span>
     </button>
-    {!compact && <><label className="sr-only" htmlFor={id}>{locale === "ko" ? "장소 바로 이동" : "Change place"}</label>
-      <select id={id} className="campus-control" value={campus.district.id} onChange={(event) => {
-        const destination = CAMPUS_DISTRICTS.find((item) => item.id === event.target.value);
-        if (destination) navigate(destination.href);
-      }}>{CAMPUS_DISTRICTS.map((item) => <option key={item.id} value={item.id}>{item.label[locale]}</option>)}</select></>}
-    {!compact && campus.binding.surface === "room" && <div className="campus-modes" role="group" aria-label={locale === "ko" ? "보기 방식" : "View mode"}>
-      {modes.map(([mode, ko, en]) => <button key={mode} type="button" aria-pressed={campus.mode === mode}
-        onClick={() => campus.setMode(mode)}>{locale === "ko" ? ko : en}</button>)}
-    </div>}
     {!compact && campus.binding.surface === "room" && campus.privacySensitive ? <button
       type="button"
       className="campus-control campus-privacy-toggle"
@@ -50,9 +41,23 @@ function CampusControlsView({ campus, compact }: { readonly campus: CampusContex
         ? campus.privacyMode ? "가림 해제" : "공개 화면"
         : campus.privacyMode ? "Reveal" : "Privacy"}</span>
     </button> : null}
+    {!compact ? <details className="campus-view-options">
+      <summary className="campus-control">{locale === "ko" ? "보기 설정" : "View settings"} · {modes.find(([mode]) => mode === campus.mode)?.[locale === "ko" ? 1 : 2]}</summary>
+      <div className="campus-view-options-body">
+    {!compact && <><label className="sr-only" htmlFor={id}>{locale === "ko" ? "장소 바로 이동" : "Change place"}</label>
+      <select id={id} className="campus-control" value={campus.district.id} onChange={(event) => {
+        const destination = CAMPUS_DISTRICTS.find((item) => item.id === event.target.value);
+        if (destination) navigate(destination.href);
+      }}>{CAMPUS_DISTRICTS.map((item) => <option key={item.id} value={item.id}>{item.label[locale]}</option>)}</select></>}
+    {!compact && campus.binding.surface === "room" && <div className="campus-modes" role="group" aria-label={locale === "ko" ? "보기 방식" : "View mode"}>
+      {modes.map(([mode, ko, en]) => <button key={mode} type="button" aria-pressed={campus.mode === mode}
+        onClick={() => campus.setMode(mode)}>{locale === "ko" ? ko : en}</button>)}
+    </div>}
     {!compact && campus.returnHref && <Link className="campus-control" to={campus.returnHref}>
       <ArrowLeft size={16} aria-hidden="true" />{locale === "ko" ? "작업으로 돌아가기" : "Return to work"}
     </Link>}
+      </div>
+    </details> : null}
     <WorkspaceContextPanel open={open} title={locale === "ko" ? "창작 세계의 공간 지도" : "Creative campus map"} onClose={close}>
       <p className="campus-map-description">{locale === "ko" ? "걷지 않아도 원하는 공간과 기능으로 바로 이동할 수 있어요." : "Open any place directly. Walking is optional."}</p>
       <nav className="campus-map" aria-label={locale === "ko" ? "모든 공간" : "All places"}>

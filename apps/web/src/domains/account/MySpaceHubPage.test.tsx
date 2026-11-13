@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MySpaceHubPage } from "./MySpaceHubPage";
@@ -66,10 +66,17 @@ vi.mock("@/shared/seo/use-document-title", () => ({
   useDocumentTitle: vi.fn(),
 }));
 
+function MySpaceRouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="my-space-route">{location.pathname}{location.search}{location.hash}</output><output data-testid="my-space-state">{JSON.stringify(location.state)}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button><button type="button" onClick={() => navigate(1)}>테스트 앞으로</button></>;
+}
+
 function renderPage(initialEntry = "/my") {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <MySpaceHubPage />
+      <MySpaceRouteProbe />
     </MemoryRouter>,
   );
 }
@@ -142,8 +149,9 @@ describe("MySpaceHubPage next-action center", () => {
       expect(button.className).not.toContain("h-8");
     }
 
+    fireEvent.click(screen.getByTestId("my-space-role-filter-all"));
     expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
-    // 정상 기본 상태에서는 상시 검색창·보조 건수 문구·오류 배너를 노출하지 않는다
+    // 명시적인 전체 보기에서는에서는 상시 검색창·보조 건수 문구·오류 배너를 노출하지 않는다
     expect(screen.queryByTestId("my-space-destination-search")).toBeNull();
     expect(screen.queryByTestId("my-space-filter-status")).toBeNull();
     expect(screen.queryByTestId("my-space-cover-fallback")).toBeNull();
@@ -315,3 +323,45 @@ describe("MySpaceHubPage next-action center", () => {
   });
 });
 
+
+
+it("기본 내 공간은 세 목적 선택부터 시작하고 해당 목적의 바로가기만 표시한다", () => {
+  renderPage();
+  expect(screen.queryByTestId("my-space-destination-results")).toBeNull();
+  expect(screen.queryByTestId("my-space-filter-empty")).toBeNull();
+  for (const id of ["reader", "creator", "account"]) {
+    expect(screen.getByTestId(`my-space-role-filter-${id}`).getAttribute("aria-pressed")).toBe("false");
+  }
+  fireEvent.click(screen.getByTestId("my-space-role-filter-reader"));
+  const results = screen.getByTestId("my-space-destination-results");
+  expect(within(results).getAllByRole("link")).toHaveLength(4);
+  expect(within(results).getByRole("link", { name: /내 서재/u }).getAttribute("href")).toBe("/library");
+  expect(within(results).queryByRole("link", { name: /프로젝트/u })).toBeNull();
+  fireEvent.click(screen.getByTestId("my-space-role-filter-all"));
+  expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(14);
+});
+
+it("role·q를 URL 단일 출처로 사용하고 중복 query·fragment·state와 Back/Forward를 보존한다", () => {
+  render(<MemoryRouter initialEntries={[{ pathname: "/my", search: "?role=reader&q=%EC%84%9C%EC%9E%AC&x=1&x=2", hash: "#records", state: { source: "continuity" } }]}><MySpaceHubPage /><MySpaceRouteProbe /></MemoryRouter>);
+  expect(screen.getByTestId("my-space-role-filter-reader").getAttribute("aria-pressed")).toBe("true");
+  fireEvent.click(screen.getByTestId("my-space-role-filter-account"));
+  const query = screen.getByTestId("my-space-destination-search");
+  fireEvent.change(query, { target: { value: "AI" } });
+  expect(screen.getByTestId("my-space-route").textContent).toBe("/my?role=account&q=AI&x=1&x=2#records");
+  expect(screen.getByTestId("my-space-state").textContent).toBe('{"source":"continuity"}');
+  expect(screen.getByRole("link", { name: /AI 연결 설정/u }).getAttribute("href")).toBe("/settings/ai");
+  fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+  expect(screen.getByTestId("my-space-role-filter-reader").getAttribute("aria-pressed")).toBe("true");
+  expect((screen.getByTestId("my-space-destination-search") as HTMLInputElement).value).toBe("서재");
+  expect(screen.getByTestId("my-space-route").textContent).toBe("/my?role=reader&q=%EC%84%9C%EC%9E%AC&x=1&x=2#records");
+  fireEvent.click(screen.getByRole("button", { name: "테스트 앞으로" }));
+  expect(screen.getByTestId("my-space-role-filter-account").getAttribute("aria-pressed")).toBe("true");
+  expect((screen.getByTestId("my-space-destination-search") as HTMLInputElement).value).toBe("AI");
+});
+
+it("역할을 고르지 않아도 검색은 전체 바로가기를 찾고 공유 주소에서 같은 결과를 연다", () => {
+  renderPage("/my?q=AI");
+  expect(screen.getByTestId("my-space-route").textContent).toBe("/my?q=AI");
+  expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(1);
+  expect(screen.getByRole("link", { name: /AI 연결 설정/u }).getAttribute("href")).toBe("/settings/ai");
+});

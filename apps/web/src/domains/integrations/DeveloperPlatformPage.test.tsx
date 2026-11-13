@@ -76,10 +76,13 @@ describe("DeveloperPlatformPage", () => {
       </MemoryRouter>,
     );
 
+    expect(screen.queryByRole("heading", { name: "시작하기" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "시작 안내" }));
     expect(screen.getByRole("heading", { name: "시작하기" })).toBeTruthy();
     expect(screen.getByText("GET /api/integrations/developer-manifest")).toBeTruthy();
     expect(screen.getByRole("link", { name: "기술 참고 자료" }).getAttribute("href")).toBe("/about/technology/references");
     expect(screen.getByRole("link", { name: "API 키 화면" }).getAttribute("href")).toBe("/settings/api-keys");
+    fireEvent.click(screen.getByRole("link", { name: "API 계약·다운로드" }));
     await screen.findByRole("button", { name: "다시 확인" });
   });
 
@@ -119,6 +122,7 @@ describe("DeveloperPlatformPage", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("link", { name: mocks.lang === "ko" ? "연결 미리보기" : "Connection preview" }));
     const bar = screen.getByTestId("developer-platform-rea-webhook-bar");
     expect(bar.textContent).toContain("선택 예시 · 실제 전송·권한 변경 없음");
     const detail = screen.getByText("선택한 연결의 기술 정보", { selector: "summary" }).closest("details");
@@ -161,6 +165,7 @@ describe("DeveloperPlatformPage", () => {
     expect(scopeExport.getAttribute("aria-pressed")).toBe("true");
     expect(status.textContent).toContain("CRDT 캔버스 스냅샷 봉인");
     expect(status.textContent).toContain("서명된 내보내기 웹훅");
+    fireEvent.click(screen.getByRole("link", { name: "API 계약·다운로드" }));
     await screen.findByText("웹훅 계약 JSON");
   });
 
@@ -174,6 +179,7 @@ describe("DeveloperPlatformPage", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("link", { name: mocks.lang === "ko" ? "연결 미리보기" : "Connection preview" }));
     const bar = screen.getByTestId("developer-platform-rea-webhook-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
 
@@ -182,6 +188,7 @@ describe("DeveloperPlatformPage", () => {
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("developer-platform-rea-status").textContent).toContain("CRDT Snapshot Sealed");
     expect(screen.getByTestId("developer-platform-rea-status").textContent).toContain("Signed Export Webhook");
+    fireEvent.click(screen.getByRole("link", { name: "API contract" }));
     await screen.findByText("Webhook contract JSON");
   });
 });

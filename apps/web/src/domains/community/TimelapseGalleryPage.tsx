@@ -13,6 +13,7 @@ import {
 } from "@/domains/creator/public/timelapse";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { useGuestSession } from "@/domains/auth/public/session/guest-session";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { Container } from "@/shared/components/section";
@@ -134,7 +135,7 @@ export function TimelapseGalleryPage() {
             <select
               value={sort}
               onChange={(e) => updateParam("sort", e.target.value)}
-              className="min-h-7 bg-transparent text-fg outline-none"
+              className="min-h-11 bg-transparent text-fg outline-none"
             >
               {TIMELAPSE_CLIP_SORT_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -178,6 +179,45 @@ export function TimelapseGalleryPage() {
         </div>
       </SitePageHeader>
 
+      <section aria-labelledby="timelapse-results-title" className="mt-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="timelapse-results-title" className="text-lg font-semibold text-fg">
+            {mineOnly ? b("내 클립", "My clips") : b("공유된 클립", "Shared clips")}
+          </h2>
+          <p className="text-sm text-fg-2" aria-live="polite">
+            {b(`총 ${shown.length}개`, `${shown.length} total`)}
+          </p>
+        </div>
+
+        {!hydrated && clips.length === 0 ? (
+          <p role="status" className="mt-6 text-sm text-fg-2">
+            {b("클립을 불러오는 중입니다…", "Loading clips…")}
+          </p>
+        ) : shown.length === 0 ? (
+          <ActionableEmptyState
+            icon={Clapperboard}
+            title={
+              mineOnly
+                ? b("아직 내 클립이 없어요", "No clips of yours yet")
+                : b("아직 공유된 클립이 없어요", "No shared clips yet")
+            }
+            description={b(
+              "스튜디오에서 타임랩스를 녹화하고 한 번의 클릭으로 공유해보세요.",
+              "Record a timelapse in the studio and share it with a single click.",
+            )}
+            primary={{ href: "/studio", label: b("스튜디오로 가기", "Go to studio") }}
+            className="mt-6"
+            art="library"
+          />
+        ) : (
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            {shown.map((clip) => (
+              <TimelapseClipCard key={clip.id} clip={clip} />
+            ))}
+          </div>
+        )}
+      </section>
+      <SiteDisclosure title={b("영상 분석 도구", "Clip inspection tools")} className="mt-5">
       <section
         aria-label={b("REA 타임랩스 필압 텔레메트리 및 인간 필치 증명 인스펙터", "REA Timelapse Stroke Telemetry & Human Provenance Inspector")}
         data-testid="timelapse-rea-telemetry-bar"
@@ -258,44 +298,7 @@ export function TimelapseGalleryPage() {
         </div>
       </section>
 
-      <section aria-labelledby="timelapse-results-title" className="mt-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="timelapse-results-title" className="text-lg font-semibold text-fg">
-            {mineOnly ? b("내 클립", "My clips") : b("공유된 클립", "Shared clips")}
-          </h2>
-          <p className="text-sm text-fg-2" aria-live="polite">
-            {b(`총 ${shown.length}개`, `${shown.length} total`)}
-          </p>
-        </div>
-
-        {!hydrated && clips.length === 0 ? (
-          <p role="status" className="mt-6 text-sm text-fg-2">
-            {b("클립을 불러오는 중입니다…", "Loading clips…")}
-          </p>
-        ) : shown.length === 0 ? (
-          <ActionableEmptyState
-            icon={Clapperboard}
-            title={
-              mineOnly
-                ? b("아직 내 클립이 없어요", "No clips of yours yet")
-                : b("아직 공유된 클립이 없어요", "No shared clips yet")
-            }
-            description={b(
-              "스튜디오에서 타임랩스를 녹화하고 한 번의 클릭으로 공유해보세요.",
-              "Record a timelapse in the studio and share it with a single click.",
-            )}
-            primary={{ href: "/studio", label: b("스튜디오로 가기", "Go to studio") }}
-            className="mt-6"
-            art="library"
-          />
-        ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {shown.map((clip) => (
-              <TimelapseClipCard key={clip.id} clip={clip} />
-            ))}
-          </div>
-        )}
-      </section>
+      </SiteDisclosure>
     </Container>
   );
 }

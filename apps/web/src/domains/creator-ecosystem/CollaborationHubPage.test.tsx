@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -88,6 +88,21 @@ describe("협업 허브 페이지", () => {
     expect(mocks.apiGet).toHaveBeenCalledWith("/creator-ecosystem/collaboration/me/inbox");
   });
 
+  it("제안 목적 화면에서 입력한 내용을 다른 화면 왕복 후 보존한다", async () => {
+    mocks.userId = "me";
+    renderPage();
+    const creator = await screen.findByRole("button", { name: /별작가/ });
+    fireEvent.click(creator);
+    const title = screen.getByPlaceholderText("제안 제목");
+    fireEvent.change(title, { target: { value: "미저장 협업 제안" } });
+    fireEvent.click(screen.getByRole("link", { name: "받은 제안" }));
+    expect(screen.getByRole("heading", { name: "받은 제안" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "보낸 제안" })).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "제안 작성" }));
+    expect(screen.getByPlaceholderText("제안 제목")).toBe(title);
+    expect(title).toHaveProperty("value", "미저장 협업 제안");
+  });
+
   it("작가 목록을 불러오지 못하면 오류를 알린다", async () => {
     mocks.apiGet.mockRejectedValue(new Error("network down"));
     renderPage();
@@ -98,7 +113,8 @@ describe("협업 허브 페이지", () => {
   it("작가 목록이 첫 화면에 오고 타일마다 아트 밴드가 붙는다", async () => {
     renderPage();
     const directoryHeading = await screen.findByRole("heading", { name: "협업 가능한 작가" });
-    const canvasHeading = screen.getByRole("heading", { name: "실시간 공동 캔버스" });
+    expect(screen.queryByRole("heading", { name: "실시간 공동 캔버스" })).toBeNull();
+    const canvasHeading = screen.getByRole("heading", { name: "실시간 공동 캔버스", hidden: true });
     // 디렉터리 섹션이 캔버스 섹션보다 문서 순서상 앞에 있다.
     expect(
       directoryHeading.compareDocumentPosition(canvasHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -106,5 +122,8 @@ describe("협업 허브 페이지", () => {
     const tile = screen.getByRole("button", { name: /별작가/ });
     // 아바타가 없는 작가는 이름 타이포 커버 밴드(장식 영역)를 단다.
     expect(tile.querySelector("[aria-hidden='true']")).toBeTruthy();
+    fireEvent.click(screen.getByRole("link", { name: "공동 캔버스" }));
+    expect(screen.getByRole("heading", { name: "실시간 공동 캔버스" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "협업 가능한 작가" })).toBeNull();
   });
 });

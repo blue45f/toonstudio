@@ -1,6 +1,8 @@
 import { communityStatusText } from "./community-status-i18n";
-import { BadgeCheck, CalendarDays, Megaphone, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { BadgeCheck, CalendarDays, Megaphone, ShieldCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 
 import { FanCafePanel } from "./components/fan-cafe-panel";
 import { CommunityEventsBoard } from "./components/community-events-board";
@@ -92,43 +94,31 @@ export function CommunityEventsPage() {
   return (
     <Container size="wide" className="relative py-6 sm:py-8 lg:py-10">
       <SiteContextualSubNav pathnameOverride="/community/events" className="mb-5" />
-      <header className="rounded-3xl border border-line bg-panel/70 p-6 sm:p-8 lg:grid lg:grid-cols-[minmax(0,1fr)_16rem] lg:gap-8">
-        <div>
-        <p className="eyebrow flex items-center gap-2 text-accent">
-          <Sparkles size={15} aria-hidden="true" />
-          COMMUNITY EVENTS
-        </p>
-        <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">이벤트 게시판</h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base">
-          웹툰·일러스트 전시, 공모전, 팬 행사, 창작 모임과 온라인 이벤트를 한곳에서 공유하세요.
-          기존 커뮤니티의 이미지 첨부·댓글·검색·신고 기능을 그대로 사용합니다.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Link
-            to="/events"
-            className="inline-flex min-h-11 items-center rounded-xl bg-accent px-4 text-sm font-bold text-on-accent hover:bg-accent-2"
-          >
-            공식 이벤트 보기
-          </Link>
-          <Link
-            to="/ecosystem/fandom"
-            className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
-          >
-            팬덤 · 코스프레 허브
-          </Link>
-        </div>
-        </div>
-        <img
-          src="/images/section-community.webp"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="mt-6 hidden h-full max-h-56 w-full rounded-2xl object-cover lg:mt-0 lg:block"
-        />
+      <header className="mb-4">
+        <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{t("이벤트 게시판", "Event board")}</h1>
+        <p className="mt-1 text-sm text-fg-2">{t("전시·공모전·팬 행사 소식을 나눠요.", "Share exhibitions, contests and fan events.")}</p>
       </header>
 
       <CommunityEventsBoard />
 
+      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1">
+        <FanCafePanel
+          scope="pencafe"
+          targetId="community-events"
+          targetLabel="이벤트 게시판"
+          initialKind="event"
+          emptyGuide={{
+            icon: CalendarDays,
+            title: communityStatusText("community.status.events.emptyTitle", "아직 올라온 이벤트 소식이 없어요"),
+            description:
+              "전시·공모전·팬 행사·창작 모임 소식을 가장 먼저 나눠보세요. 날짜·장소·신청 방법을 함께 적으면 참여가 쉬워집니다.",
+            primary: { href: "#fan-cafe-composer", label: "첫 이벤트 글 쓰기" },
+            secondary: { href: "/events", label: "공식 이벤트 보기" },
+          }}
+        />
+      </section>
+      <SiteDisclosure title={t("게시판 이용 안내 · 다른 행사 찾기", "Board guide and other events")} className="mt-5">
+        <Link to="/ecosystem/fandom" className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold">{t("팬덤 · 코스프레 허브", "Fandom and cosplay hub")}</Link>
       <section aria-label={t("공식 이벤트와 커뮤니티 게시판 비교", "Comparing official events and the community board")} className="mt-10">
         <h2 className="text-lg font-black tracking-tight">{t("둘의 차이 한눈에 보기", "The two channels at a glance")}</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -169,22 +159,7 @@ export function CommunityEventsPage() {
         ))}
       </section>
 
-      <section className="mt-6 rounded-3xl border border-line bg-panel/45 p-1">
-        <FanCafePanel
-          scope="pencafe"
-          targetId="community-events"
-          targetLabel="이벤트 게시판"
-          initialKind="event"
-          emptyGuide={{
-            icon: CalendarDays,
-            title: communityStatusText("community.status.events.emptyTitle", "아직 올라온 이벤트 소식이 없어요"),
-            description:
-              "전시·공모전·팬 행사·창작 모임 소식을 가장 먼저 나눠보세요. 날짜·장소·신청 방법을 함께 적으면 참여가 쉬워집니다.",
-            primary: { href: "#fan-cafe-composer", label: "첫 이벤트 글 쓰기" },
-            secondary: { href: "/events", label: "공식 이벤트 보기" },
-          }}
-        />
-      </section>
+      </SiteDisclosure>
     </Container>
   );
 }

@@ -2,6 +2,7 @@ import { BriefcaseBusiness, GraduationCap, LibraryBig, Sparkles } from "lucide-r
 import { NavLink } from "react-router-dom";
 
 import { cn } from "@/shared/lib/utils";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { ReactNode } from "react";
 
@@ -47,13 +48,20 @@ export function CreatorEcosystemLayout({
   intro: string;
   children: ReactNode;
 }) {
+  const bt = useBilingual("CreatorEcosystemLayout");
   return (
-    <div className="creator-ecosystem-illustrated mx-auto w-full max-w-7xl space-y-8 px-4 py-8 text-fg sm:px-6 sm:py-12">
-      <header className="ecosystem-masthead overflow-hidden rounded-3xl border border-line bg-panel p-6 sm:p-8">
+    <div className="creator-ecosystem-illustrated mx-auto w-full max-w-7xl space-y-5 px-4 py-5 text-fg sm:px-6 sm:py-8">
+      <header className="ecosystem-masthead overflow-hidden rounded-3xl border border-line bg-panel p-4 sm:p-6">
         <p className="eyebrow text-accent">TOONSTUDIO CREATOR ECOSYSTEM</p>
-        <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{title}</h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base">{intro}</p>
+        <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
+        <details className="mt-3">
+          <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold text-fg-2">{bt("화면 안내", "About this screen")}</summary>
+          <p className="max-w-3xl text-sm leading-7 text-fg-2">{intro}</p>
+        </details>
       </header>
+      {children}
+      <details className="rounded-2xl border border-line bg-panel p-4">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold">{bt("다른 창작 활동으로 이동", "Explore other creator activities")}</summary>
       <nav
         aria-label="창작자 생태계 메뉴"
         className="ecosystem-navigation grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
@@ -78,7 +86,7 @@ export function CreatorEcosystemLayout({
           </NavLink>
         ))}
       </nav>
-      {children}
+      </details>
     </div>
   );
 }

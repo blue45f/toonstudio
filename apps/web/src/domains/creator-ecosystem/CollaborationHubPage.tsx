@@ -5,7 +5,9 @@ import { Link } from "react-router-dom";
 
 import { CreatorEcosystemLayout } from "./CreatorEcosystemLayout";
 import { SectionArt } from "@/shared/components/section-art";
-import { TypographicCover } from "@/shared/components/typographic-cover";
+import { CreatorArtBand } from "./CollaborationCreatorArt";
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 
 import {
   COLLABORATION_TYPES,
@@ -135,27 +137,6 @@ const EMPTY_BUSINESS: BusinessProfile = {
   verificationStatus: "draft",
 };
 
-function CreatorArtBand({ creator }: { creator: CreatorDirectoryItem }) {
-  const [failed, setFailed] = useState(false);
-  // 디렉터리 API에는 작품 썸네일이 없어, 대표 아트는 아바타(없으면 이름 타이포 커버)로 대신한다.
-  return (
-    <span aria-hidden="true" className="-mx-4 -mt-4 mb-4 block h-28 overflow-hidden bg-raised">
-      {creator.avatar && !failed ? (
-        <img
-          src={creator.avatar}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <TypographicCover title={creator.name} seed={creator.userId} className="h-full w-full" />
-      )}
-    </span>
-  );
-}
 
 function money(value: number, negotiated: string): string {
   if (!value) return negotiated;
@@ -164,6 +145,13 @@ function money(value: number, negotiated: string): string {
 
 export function CollaborationHubPage() {
   const bt = useBilingual(SCOPE);
+  const { activeScreen, navigateScreen } = useTaskScreen({ ids: ["creators", "canvas", "proposal", "inbox", "sent", "settings", "business"] as const, defaultScreen: "creators" });
+  const screens = [
+    { id: "creators", label: bt("작가 찾기", "Find creators") }, { id: "canvas", label: bt("공동 캔버스", "Co-drawing canvas") },
+    { id: "proposal", label: bt("제안 작성", "Write a proposal") }, { id: "inbox", label: bt("받은 제안", "Received proposals") },
+    { id: "sent", label: bt("보낸 제안", "Sent proposals") }, { id: "settings", label: bt("수신 설정", "Proposal settings") },
+    { id: "business", label: bt("기업 인증", "Business verification") },
+  ];
   const userId = useApp((state) => state.userId);
   const [creators, setCreators] = useState<CreatorDirectoryItem[]>([]);
   const [preference, setPreference] = useState<Preference>(EMPTY_PREFERENCE);
@@ -341,12 +329,13 @@ export function CollaborationHubPage() {
 
   return (
     <CreatorEcosystemLayout
-      title={bt("작가 IP 협업 · 협찬", "Creator IP collaboration · sponsorship")}
+      title={bt("작가 IP 협업", "Creator IP collaboration") + " · " + screens.find((screen) => screen.id === activeScreen)?.label}
       intro={bt(
         "굿즈·영상·브랜드·출판·애니메이션·게임·판권 제안을 구조화합니다. 작가는 받을 제안 범위와 미인증 제안 허용 여부를 직접 정하고, 기업은 인증 상태와 예산·권리 범위를 명시해 제안합니다.",
         "Structured proposals for goods, video, brand, publishing, animation, game, and licensing deals. Creators set which proposal types and unverified senders they accept; businesses state verification, budget, and rights up front.",
       )}
     >
+      <TaskScreenNavigation label={bt("협업 작업 선택", "Collaboration task")} items={screens} activeScreen={activeScreen} defaultScreen="creators" />
       {!userId ? (
         <div className="rounded-2xl border border-line bg-panel p-5 text-sm leading-6 text-fg-2">
           {bt(
@@ -367,7 +356,7 @@ export function CollaborationHubPage() {
         </p>
       ) : null}
 
-      <section className="rounded-2xl border border-line bg-panel p-5">
+      <section hidden={activeScreen !== "creators"} className="rounded-2xl border border-line bg-panel p-5">
         <h2 className="text-xl font-black">{bt("협업 가능한 작가", "Open for collaboration")}</h2>
         <p className="mt-2 text-sm text-fg-2">{bt("작가가 직접 공개하고 제안 유형을 선택한 프로필만 표시합니다.", "Only profiles creators published themselves, with their chosen proposal types.")}</p>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -375,7 +364,7 @@ export function CollaborationHubPage() {
             <button
               key={creator.userId}
               type="button"
-              onClick={() => setSelectedCreatorId(creator.userId)}
+              onClick={() => { setSelectedCreatorId(creator.userId); if (userId) navigateScreen("proposal"); }}
               className={selectedCreatorId === creator.userId
                 ? "overflow-hidden rounded-2xl border border-accent bg-accent-soft p-4 text-left"
                 : "overflow-hidden rounded-2xl border border-line p-4 text-left hover:bg-raised"}
@@ -422,7 +411,7 @@ export function CollaborationHubPage() {
         ) : null}
       </section>
 
-      <section aria-labelledby="collab-canvas-title" className="rounded-2xl border border-line bg-panel p-5">
+      <section hidden={activeScreen !== "canvas"} aria-labelledby="collab-canvas-title" className="rounded-2xl border border-line bg-panel p-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-3">
             <Brush size={20} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
@@ -444,8 +433,8 @@ export function CollaborationHubPage() {
       </section>
 
       {userId ? (
-        <section id="collab-preference" className="grid gap-5 xl:grid-cols-2">
-          <article className="rounded-2xl border border-line bg-panel p-5">
+        <section id="collab-preference" hidden={activeScreen !== "settings" && activeScreen !== "business"}>
+          <article hidden={activeScreen !== "settings"} className="rounded-2xl border border-line bg-panel p-5">
             <div className="flex items-center gap-2">
               <Inbox size={20} className="text-accent" aria-hidden="true" />
               <h2 className="text-xl font-black">{bt("작가 제안 수신 설정", "Creator proposal settings")}</h2>
@@ -498,7 +487,7 @@ export function CollaborationHubPage() {
             </button>
           </article>
 
-          <article className="rounded-2xl border border-line bg-panel p-5">
+          <article hidden={activeScreen !== "business"} className="rounded-2xl border border-line bg-panel p-5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Building2 size={20} className="text-accent" aria-hidden="true" />
@@ -564,7 +553,7 @@ export function CollaborationHubPage() {
 
 
       {userId && selectedCreator ? (
-        <section className="rounded-2xl border border-line bg-panel p-5">
+        <section hidden={activeScreen !== "proposal"} className="rounded-2xl border border-line bg-panel p-5">
           <div className="flex items-center gap-2">
             <Send size={20} className="text-accent" aria-hidden="true" />
             <h2 className="text-xl font-black">{bt(`${selectedCreator.name}에게 구조화된 제안 보내기`, `Send a structured proposal to ${selectedCreator.name}`)}</h2>
@@ -653,8 +642,8 @@ export function CollaborationHubPage() {
       ) : null}
 
       {userId ? (
-        <section className="grid gap-5 xl:grid-cols-2">
-          <ProposalList
+        <section hidden={activeScreen !== "inbox" && activeScreen !== "sent"}>
+          <ProposalList hidden={activeScreen !== "inbox"}
             title={bt("받은 제안", "Received proposals")}
             emptyArt="inbox"
             items={inbox}
@@ -662,7 +651,7 @@ export function CollaborationHubPage() {
             mode="inbox"
             onStatus={changeProposalStatus}
           />
-          <ProposalList
+          <ProposalList hidden={activeScreen !== "sent"}
             title={bt("보낸 제안", "Sent proposals")}
             emptyArt="sent"
             items={sent}
@@ -677,6 +666,7 @@ export function CollaborationHubPage() {
 }
 
 function ProposalList({
+  hidden,
   title,
   emptyArt,
   items,
@@ -684,6 +674,7 @@ function ProposalList({
   mode,
   onStatus,
 }: {
+  hidden: boolean;
   title: string;
   emptyArt: "inbox" | "sent";
   items: Proposal[];
@@ -696,7 +687,7 @@ function ProposalList({
   const statusLabel = (status: CollaborationProposalStatus) => bt(PROPOSAL_STATUS_KO[status], PROPOSAL_STATUS_EN[status]);
   const verificationLabel = (status: BusinessVerificationStatus) => bt(VERIFICATION_KO[status], VERIFICATION_EN[status]);
   return (
-    <article className="rounded-2xl border border-line bg-panel p-5">
+    <article hidden={hidden} className="rounded-2xl border border-line bg-panel p-5">
       <h2 className="text-xl font-black">{title}</h2>
       <div className="mt-4 space-y-3">
         {items.map((item) => (

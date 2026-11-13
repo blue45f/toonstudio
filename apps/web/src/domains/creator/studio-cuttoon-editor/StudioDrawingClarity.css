@@ -100,3 +100,12 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 @media(max-width:639px){.studio-drawing-dialog{inset:0;transform:none;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}.studio-drawing-dialog-content{flex:1;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}.studio-drawing-clarity-header{gap:8px}.studio-drawing-clarity-title h1{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.studio-drawing-clarity-header *,.studio-drawing-clarity-rail *,.studio-drawing-clarity-more *,.studio-drawing-task-dialog *{transition:none!important;animation:none!important}}
 @media(forced-colors:active){.studio-drawing-clarity-button,.studio-drawing-clarity-rail button{border-color:ButtonText}.studio-drawing-clarity-button[aria-pressed=true]{outline:2px solid Highlight}}
+/* 캔버스를 가리지 않는 목적 선택 → 해당 도구 한 묶음의 두 단계 탐색. */
+.studio-drawing-task-purpose{display:flex;min-height:140px;flex-direction:column;align-items:flex-start;gap:12px;padding:20px;border:1px solid var(--color-line);border-radius:16px;background:var(--color-card);text-align:left}
+.studio-drawing-task-purpose:hover{background:var(--color-raised)}
+.studio-drawing-task-purpose>svg{color:var(--color-accent)}
+.studio-drawing-task-purpose>strong{font-size:16px;line-height:1.4}
+.studio-drawing-task-purpose>span{font-size:13px;line-height:1.5;color:var(--color-fg-2)}
+.studio-drawing-task-category-heading{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.studio-drawing-task-category-heading h3{font-size:18px;font-weight:700}
+.studio-drawing-task-category-heading p{margin-top:4px;font-size:13px;line-height:1.5;color:var(--color-fg-2)}

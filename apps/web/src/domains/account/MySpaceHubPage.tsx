@@ -23,7 +23,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
@@ -70,6 +70,8 @@ const COPY = {
     open: "열기",
     section: "내 공간 바로가기",
     filterLabel: "내 공간 역할별 보기",
+    chooseBody: "독자·창작·계정 중 필요한 목적을 고르면 해당 바로가기만 보여 드립니다.",
+    roleDescriptions: { reader: "서재 · 감상 기록 · 구독", creator: "프로젝트 · 작품 · 에셋 · 수익", account: "프로필 · 메시지 · 설정 · AI 연결" },
     searchLabel: "내 공간 바로가기 필터",
     searchPlaceholder: "바로가기 이름·설명 찾기",
     searchToggleShort: "검색",
@@ -141,6 +143,8 @@ const COPY = {
     open: "Open",
     section: "My Space destinations",
     filterLabel: "Filter My Space by role",
+    chooseBody: "Choose reading, creating or account tasks to see the destinations you need.",
+    roleDescriptions: { reader: "Library, reading history and subscriptions", creator: "Projects, works, assets and earnings", account: "Profile, messages, settings and AI connections" },
     searchLabel: "Filter My Space destinations",
     searchPlaceholder: "Find by destination name or description",
     searchToggleShort: "Search",
@@ -238,12 +242,12 @@ export function MySpaceHubPage() {
   const reads = useApp((state) => state.reads);
   const ratings = useApp((state) => state.ratings);
   const collections = useApp((state) => state.collections);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialRoleParam = searchParams.get("role")?.trim().toLowerCase() ?? "";
-  const initialQueryParam = searchParams.get("q")?.trim() ?? "";
-  const [roleFilter, setRoleFilter] = useState<string>(() => initialRoleParam || "all");
-  const [filterQuery, setFilterQuery] = useState<string>(initialQueryParam);
-  const [searchOpen, setSearchOpen] = useState<boolean>(() => Boolean(initialQueryParam));
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const roleFilter = searchParams.get("role")?.trim().toLowerCase() || "choose";
+  const filterQuery = searchParams.get("q") ?? "";
+  const [searchOpen, setSearchOpen] = useState<boolean>(() => Boolean(filterQuery));
   const [brokenCoverRecovered, setBrokenCoverRecovered] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const chipRefs = useRef<Record<MySpaceCategory, HTMLButtonElement | null>>({
@@ -290,7 +294,7 @@ export function MySpaceHubPage() {
   const visibleDestinations = copy.destinations
     .map((entry, index) => ({ entry, icon: ICONS[index] }))
     .filter(({ entry }) => {
-      const matchesRole = roleFilter === "all" || entry[3] === roleFilter;
+      const matchesRole = roleFilter === "all" || roleFilter === "choose" || entry[3] === roleFilter;
       if (!matchesRole) return false;
       if (!normalizedQuery) return true;
       return (
@@ -301,31 +305,32 @@ export function MySpaceHubPage() {
     });
 
   const activeFilterLabel = copy.filters.find(([id]) => id === roleFilter)?.[1] ?? copy.filters[0][1];
-  const isFilterActive = roleFilter !== "all" || normalizedQuery.length > 0;
-  const showDestinationSearch = searchOpen || normalizedQuery.length > 0 || visibleDestinations.length === 0;
+  const isFilterActive = (roleFilter !== "all" && roleFilter !== "choose") || normalizedQuery.length > 0;
+  const showDestinations = roleFilter !== "choose" || normalizedQuery.length > 0;
+  const showDestinationSearch = searchOpen || normalizedQuery.length > 0 || (showDestinations && visibleDestinations.length === 0);
+  const orderedFilters = showDestinations ? copy.filters : [...copy.filters.slice(1), copy.filters[0]];
+
+  function writeFilterParams(patch: Readonly<Record<string, string | null>>, replace = false) {
+    const nextParams = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) nextParams.set(key, value);
+      else nextParams.delete(key);
+    }
+    navigate({ pathname: location.pathname, search: nextParams.toString(), hash: location.hash }, {
+      replace, state: location.state, preventScrollReset: true,
+    });
+  }
 
   function selectRoleFilter(nextRole: MySpaceCategory, focusChip = false) {
-    setRoleFilter(nextRole);
-    if (searchParams.has("role")) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete("role");
-      setSearchParams(nextParams, { replace: true });
-    }
+    writeFilterParams({ role: nextRole });
     if (focusChip) {
       chipRefs.current[nextRole]?.focus();
     }
   }
 
   function resetAllFilters() {
-    setRoleFilter("all");
-    setFilterQuery("");
     setSearchOpen(false);
-    if (searchParams.has("role") || searchParams.has("q")) {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.delete("role");
-      nextParams.delete("q");
-      setSearchParams(nextParams, { replace: true });
-    }
+    writeFilterParams({ role: "all", q: null });
     chipRefs.current.all?.focus();
   }
 
@@ -491,14 +496,14 @@ export function MySpaceHubPage() {
                 </p>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className={showDestinations ? "flex flex-wrap items-center gap-1.5" : "w-full space-y-3"}>
               {showDestinationSearch ? (
                 <input
                   id="my-space-destination-search"
                   ref={searchInputRef}
                   type="search"
                   value={filterQuery}
-                  onChange={(event) => setFilterQuery(event.target.value)}
+                  onChange={(event) => writeFilterParams({ q: event.target.value }, true)}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") {
                       event.preventDefault();
@@ -514,9 +519,9 @@ export function MySpaceHubPage() {
               <div
                 role="group"
                 aria-label={copy.filterLabel}
-                className="flex flex-wrap gap-1.5"
+                className={showDestinations ? "flex flex-wrap gap-1.5" : "grid w-full gap-2 sm:grid-cols-3"}
               >
-                {copy.filters.map(([id, label]) => (
+                {orderedFilters.map(([id, label]) => (
                   <button
                     key={id}
                     ref={(node) => {
@@ -530,11 +535,13 @@ export function MySpaceHubPage() {
                     className={buttonClass({
                       variant: roleFilter === id ? undefined : "outline",
                       size: "sm",
-                      className:
-                        "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full whitespace-normal rounded-full px-3 py-1.5 text-center text-xs leading-snug",
+                      className: showDestinations || id === "all"
+                        ? "h-auto min-h-11 min-w-11 [min-block-size:2.75rem]! [min-inline-size:2.75rem]! max-w-full whitespace-normal rounded-full px-3 py-1.5 text-center text-xs leading-snug"
+                        : "h-auto min-h-11 min-w-11 [min-block-size:5rem]! flex-col items-start gap-1 whitespace-normal rounded-xl px-4 py-3 text-start text-sm",
                     })}
                   >
-                    {label}
+                    <span>{label}</span>
+                    {!showDestinations && id !== "all" ? <span className="text-xs font-normal text-fg-2">{copy.roleDescriptions[id]}</span> : null}
                   </button>
                 ))}
               </div>
@@ -546,13 +553,8 @@ export function MySpaceHubPage() {
                 aria-label={showDestinationSearch ? copy.searchToggleClose : copy.searchToggleOpen}
                 onClick={() => {
                   if (showDestinationSearch) {
-                    setFilterQuery("");
                     setSearchOpen(false);
-                    if (searchParams.has("q")) {
-                      const nextParams = new URLSearchParams(searchParams);
-                      nextParams.delete("q");
-                      setSearchParams(nextParams, { replace: true });
-                    }
+                    writeFilterParams({ q: null });
                   } else {
                     setSearchOpen(true);
                     queueMicrotask(() => searchInputRef.current?.focus());
@@ -570,8 +572,8 @@ export function MySpaceHubPage() {
               </button>
             </div>
           </div>
-          {visibleDestinations.length > 0 ? (
-            <div className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+          {!showDestinations ? <p className="mt-3 text-sm text-fg-2">{copy.chooseBody}</p> : visibleDestinations.length > 0 ? (
+            <div data-testid="my-space-destination-results" className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
               {visibleDestinations.map(({ entry: [title, body, href], icon }) => (
                 <SiteLinkCard key={href} href={href} icon={icon} title={title} description={body} cta={copy.open} />
               ))}

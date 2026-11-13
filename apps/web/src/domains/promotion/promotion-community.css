@@ -37,3 +37,8 @@
 .pc-hero-stage .pc-button{border-color:rgb(255 255 255/0.3);background:rgb(255 255 255/0.08)}
 .pc-hero-stage .pc-button:hover{border-color:var(--pc-accent)}
 .pc-hero-stage .pc-button.pc-primary{background:var(--unified-accent);border-color:var(--unified-accent);color:var(--unified-on-accent)}
+
+/* 작성·미리보기는 양 화면 크기에서 한 작업만 보이며 입력 DOM은 그대로 보존한다. */
+.pc-editor-task-layout { min-width: 0; }
+.pc-editor-task-layout .pc-preview-task { position: static; max-width: 40rem; }
+.pc-editor-task-layout > [hidden] { display: none; }

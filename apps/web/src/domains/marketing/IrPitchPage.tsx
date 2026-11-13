@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CirclePlay,
-  Clapperboard,
   Cpu,
   Download,
   FileText,
@@ -23,7 +22,6 @@ import {
   ASKS,
   BUSINESS_MODEL,
   CAPABILITIES,
-  CHAPTER_JUMPS,
   FLOW_STEPS,
   FOUNDER_CAREER,
   GTM_STEPS,
@@ -39,10 +37,12 @@ import {
 
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
-import { HeroBlock } from "@/shared/components/layout";
 import { Container } from "@/shared/components/section";
-import { IntroActions, IntroSectionHeading } from "@/domains/marketing/public/intro-primitives";
-import { INTRO_PAGE, INTRO_SECTION } from "@/domains/marketing/public/intro-tokens";
+import { IntroSectionHeading } from "@/domains/marketing/public/intro-primitives";
+import { INTRO_PAGE } from "@/domains/marketing/public/intro-tokens";
+
+import { IrBriefLayout, IrBriefSection } from "./IrBriefLayout";
+import { IrBriefOverview } from "./IrBriefOverview";
 
 const SCOPE = "domains.marketing.IrPitchPage";
 
@@ -336,69 +336,10 @@ export function IrPitchPage() {
 
   return (
     <Container size="wide" className={INTRO_PAGE}>
-      <HeroBlock
-        eyebrow="IR · TOONSTUDIO"
-        title={bi(
-          "웹툰의 기획부터 연재·운영까지, 흩어진 제작 도구와 협업 과정을 브라우저 하나로 연결합니다.",
-          "From planning through release and operations, ToonStudio connects the scattered tools and collaboration of webtoon production in one browser.",
-        )}
-        lede={bi(
-          "ToonStudio는 지금 toonstudio.cloud에서 베타로 공개돼 있는 웹툰 제작 OS예요. 정식 오픈을 앞두고 계속 고도화하고 있고, 이 페이지에 나오는 영상과 화면은 전부 실제 제품에서 가져왔습니다.",
-          "ToonStudio is a webtoon production OS currently in beta at toonstudio.cloud, being improved ahead of its full launch. Every film and screen on this page comes straight from the real product.",
-        )}
-        actions={(
-          <div className="grid gap-3">
-            <IntroActions
-              primary={{ href: "/product-tour", label: bi("8분 전체 제품 투어 보기", "Watch the full 8-minute tour"), icon: CirclePlay }}
-              secondary={{ href: "/about", label: bi("서비스 소개 보기", "About the service") }}
-            />
-            <button
-              type="button"
-              onClick={(event) => openPresentation(event.currentTarget)}
-              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-accent/50 bg-accent-soft/30 px-4 py-2.5 text-sm font-bold text-accent transition-colors hover:bg-accent-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Presentation size={16} aria-hidden="true" />
-              {bi("발표 모드로 열기 (풀스크린 · ←/→ · Space)", "Present full-screen (←/→ · Space)")}
-            </button>
-            <Link
-              href="/ir/present"
-              className="inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-line/70 bg-card/65 px-4 py-2.5 text-sm font-bold text-fg-2 transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Presentation size={16} aria-hidden="true" />
-              {bi("발표 플레이어 전체판 열기 (24씬 · 내레이션 포함)", "Open the full presentation player (24 scenes, narrated)")}
-            </Link>
-          </div>
-        )}
-        media={(
-          <figure className="grid gap-3">
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption -- IR cut film; the full product tour at /product-tour provides the captioned version of this footage. */}
-            <video
-              className="aspect-video w-full rounded-2xl border border-line/70 bg-panel object-cover"
-              src={IR_FILM_SRC}
-              poster={IR_FILM_POSTER}
-              controls
-              preload="none"
-              playsInline
-              aria-label={bi("ToonStudio IR 영상 (4분 48초)", "ToonStudio IR film (4 minutes 48 seconds)")}
-            />
-            <figcaption className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-fg-2">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
-                <Clapperboard size={15} className="text-accent" aria-hidden="true" />
-                {bi("IR 컷 4:48 — 제품 투어에서 실제 화면 챕터만 골라 붙였어요.", "IR cut, 4:48 — stitched from real-screen chapters of the product tour.")}
-              </span>
-              <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
-                {CHAPTER_JUMPS.map((chapter) => (
-                  <Link key={chapter.start} href={productTourChapterHref(chapter.start)} className="inline-flex min-h-8 items-center gap-1 font-semibold text-accent hover:text-accent-2">
-                    {bi(chapter.ko, chapter.en)}<ArrowRight size={13} aria-hidden="true" />
-                  </Link>
-                ))}
-              </span>
-            </figcaption>
-          </figure>
-        )}
-      />
+      <IrBriefLayout onPresent={openPresentation}>
+      <IrBriefOverview />
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-problem-title">
+      <IrBriefSection id="problem">
         <IntroSectionHeading
           id="ir-problem-title"
           eyebrow={eyebrow("PROBLEM")}
@@ -418,9 +359,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-landscape-title">
+      <IrBriefSection id="landscape">
         <IntroSectionHeading
           id="ir-landscape-title"
           eyebrow={eyebrow("LANDSCAPE")}
@@ -443,9 +384,9 @@ export function IrPitchPage() {
             "The closest competitor is CRECO, a collaboration platform hardened by beta testing with large studios — it is strong at managing versions, feedback and permissions for finished outputs. ToonStudio looks one step earlier: the drawing, 3D, storyboard and AI tools live inside, so the act of making is itself the management record.",
           )}
         </p>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-flow-title">
+      <IrBriefSection id="flow">
         <IntroSectionHeading
           id="ir-flow-title"
           eyebrow={eyebrow("SOLUTION")}
@@ -462,9 +403,9 @@ export function IrPitchPage() {
             </li>
           ))}
         </ol>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-difference-title">
+      <IrBriefSection id="difference">
         <IntroSectionHeading
           id="ir-difference-title"
           eyebrow={eyebrow("DIFFERENTIATION")}
@@ -498,9 +439,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-product-title">
+      <IrBriefSection id="product">
         <IntroSectionHeading
           id="ir-product-title"
           eyebrow={eyebrow("PRODUCT")}
@@ -536,9 +477,9 @@ export function IrPitchPage() {
             );
           })}
         </ul>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-market-title">
+      <IrBriefSection id="market">
         <IntroSectionHeading id="ir-market-title" eyebrow={eyebrow("MARKET")} title={bi("웹툰 시장, 이미 크고 더 빠르게 자라고 있어요.", "The webtoon market is already big — and growing faster.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           <div className="rounded-3xl border border-line/70 bg-card/65 p-6 sm:p-8">
@@ -559,9 +500,9 @@ export function IrPitchPage() {
         <p className="mt-2 text-xs leading-5 text-fg-3">
           {bi("출처: 문화체육관광부·한국콘텐츠진흥원 「2025 웹툰 산업 실태조사」 · 글로벌 시장 규모는 복수 시장조사 기관 추정치 · 클립스튜디오 수치는 셀시스 공식 발표(2025년 4월)", "Sources: MCST · KOCCA, 2025 Webtoon Industry Survey · global market size estimated by multiple research firms · Clip Studio figures from Celsys' official announcement (April 2025)")}
         </p>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-model-title">
+      <IrBriefSection id="model">
         <IntroSectionHeading id="ir-model-title" eyebrow={eyebrow("BUSINESS MODEL & VALIDATION")} title={bi("지망생 이상 전문 창작자에서 시작해 팀·교육·마켓으로 넓혀 갑니다.", "Starting with aspiring professionals, then teams, education and a marketplace.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
           <ul className="grid gap-3">
@@ -625,9 +566,9 @@ export function IrPitchPage() {
             {bi("멀리 보면 제작 도구를 넘어 웹툰 포털로 진화하는 그림을 그리고 있어요. 네이버·카카오·리디 같은 기존 사업자와의 업무협의를 추진해, 포털과 통합 랭킹, 자체 연재 플랫폼, 교육 정보와 커뮤니티를 한곳에 모으는 계획입니다. 다만 지금 단계의 집중은 제작과 협업 도구 자체에 있어요 — 제휴는 성사된 일이 아니라 추진 계획 단계입니다.", "Further out, we picture ToonStudio growing past a production tool into a webtoon portal: pursuing business talks with established players such as Naver, Kakao and Ridi to bring a portal, unified rankings, our own serialisation platform, education content and community together in one place. For now, though, the focus stays on the production and collaboration tool itself — partnerships are a plan to pursue, not a done deal.")}
           </p>
         </div>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-founder-title">
+      <IrBriefSection id="founder">
         <IntroSectionHeading id="ir-founder-title" eyebrow={eyebrow("ASPIRING FOUNDER & ASK")} title={bi("직접 만드는 예비 창업 도전자라, 검증이 빠릅니다.", "The aspiring founder builds it himself — so validation moves fast.")} />
         <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_1.2fr]">
           <div className="rounded-2xl border border-line/70 bg-card/65 p-5 sm:p-6">
@@ -665,9 +606,9 @@ export function IrPitchPage() {
             </p>
           </div>
         </div>
-      </section>
+      </IrBriefSection>
 
-      <section className={INTRO_SECTION} aria-labelledby="ir-downloads-title">
+      <IrBriefSection id="downloads">
         <IntroSectionHeading id="ir-downloads-title" eyebrow={eyebrow("DOWNLOADS")} title={bi("발표 자료는 파일로도 가져가실 수 있어요.", "Take the presentation files with you.")} />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <a href={IR_DECK_PPTX} download className="group rounded-2xl border border-line/70 bg-card/65 p-5 transition-colors hover:border-accent/50 sm:p-6">
@@ -706,7 +647,7 @@ export function IrPitchPage() {
             );
           })}
         </ul>
-      </section>
+      </IrBriefSection>
 
       {presenting
         ? createPortal(
@@ -743,6 +684,7 @@ export function IrPitchPage() {
             document.body,
           )
         : null}
+      </IrBriefLayout>
     </Container>
   );
 }

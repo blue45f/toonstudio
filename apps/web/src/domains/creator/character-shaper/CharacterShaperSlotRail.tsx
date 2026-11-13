@@ -25,9 +25,10 @@ import type { KeyboardEvent } from "react";
 import { cn } from "@/shared/lib/utils";
 
 export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, orientation }: CharacterShaperSlotRailProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null), pendingFocus = useRef(false);
   const metas = binding.catalog.slots;
   const groups = useMemo(() => groupCharacterSlotMetas(metas), [metas]);
+  const activeGroup = groups.find(group => group.metas.some(meta => meta.id === activeSlot)) ?? groups[0];
   const slotIds = useMemo(() => metas.map((meta) => meta.id), [metas]);
   const entriesBySlot = useMemo(() => {
     const entries = new Map<CharacterSlotKind, CharacterSlotEntry[]>();
@@ -42,11 +43,8 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
   useEffect(() => {
     containerRef.current?.querySelector<HTMLElement>(`[data-character-slot="${activeSlot}"]`)
       ?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: "instant" });
+    if (pendingFocus.current) { pendingFocus.current = false; containerRef.current?.querySelector<HTMLButtonElement>(`[data-character-slot="${activeSlot}"]`)?.focus(); }
   }, [activeSlot]);
-
-  const focusSlot = (slot: CharacterSlotKind) => {
-    containerRef.current?.querySelector<HTMLButtonElement>(`[data-character-slot="${slot}"]`)?.focus();
-  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -69,11 +67,17 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
     event.preventDefault();
     const slot = slotIds[next];
     if (!slot) return;
+    pendingFocus.current = true;
     onSelectSlot(slot);
-    focusSlot(slot);
   };
 
   return (
+    <div className={vertical ? "flex h-full w-[72px] shrink-0 flex-col border-r border-line bg-panel" : "flex min-w-0 flex-col border-b border-line bg-panel"}>
+      <label className="p-1.5"><span className="sr-only">캐릭터 편집 분류</span><select aria-label="캐릭터 편집 분류" value={activeGroup?.group ?? "identity"}
+        onChange={event => { const next = groups.find(group => group.group === event.currentTarget.value)?.metas[0]; if (next) { pendingFocus.current = true; onSelectSlot(next.id); } }}
+        className="min-h-12 w-full rounded-lg border border-line bg-card px-1 text-xs font-semibold text-fg focus-visible:outline-accent">
+        {groups.map(group => <option key={group.group} value={group.group}>{group.label}</option>)}
+      </select></label>
     <div
       ref={containerRef}
       role="toolbar"
@@ -88,7 +92,7 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
           : "w-full items-stretch gap-1 overflow-x-auto overscroll-x-contain border-b border-line px-2 py-1.5",
       )}
     >
-      {groups.map((group, groupIndex) => (
+      {groups.filter(group => group.group === activeGroup?.group).map((group, groupIndex) => (
         <div
           key={group.group}
           role="group"
@@ -173,6 +177,6 @@ export function CharacterShaperSlotRail({ binding, activeSlot, onSelectSlot, ori
           })}
         </div>
       ))}
-    </div>
+    </div></div>
   );
 }

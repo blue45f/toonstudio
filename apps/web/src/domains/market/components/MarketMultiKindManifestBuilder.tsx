@@ -467,7 +467,7 @@ export function MarketMultiKindManifestBuilder({
                           onClick={() =>
                             setSwatches((prev) => prev.filter((item) => item !== hex))
                           }
-                          className="text-fg-3 hover:text-bad"
+                          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md text-fg-3 hover:text-bad focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
                           <Trash2 className="size-3" aria-hidden="true" />
                         </button>

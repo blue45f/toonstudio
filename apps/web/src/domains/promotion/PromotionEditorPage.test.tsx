@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PromotionEditorPage } from "./PromotionEditorPage";
@@ -14,11 +14,24 @@ vi.mock("@/shared/lib/store", () => ({
 vi.mock("@/shared/seo/use-document-title", () => ({ useDocumentTitle: () => undefined }));
 vi.mock("@/platform/promotion-client", () => ({ promotionClient: mocks }));
 vi.mock("@/platform/api", () => ({ getApiErrorMessage: async () => "등록 실패: 입력 내용이 유지됩니다." }));
-function view() {
-  return render(<MemoryRouter initialEntries={["/community/promote/new"]}><Routes>
+function PromotionRouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="promotion-route">{location.pathname}{location.search}{location.hash}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button><button type="button" onClick={() => navigate(1)}>테스트 앞으로</button></>;
+}
+function selectPromotionScreen(value: "write" | "preview") {
+  const select = screen.getByRole("combobox", { name: "홍보 작성 화면" }) as HTMLSelectElement;
+  if (select.value !== value) fireEvent.change(select, { target: { value } });
+}
+function editField(label: string, value: string) {
+  selectPromotionScreen("write");
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
+function view(entry = "/community/promote/new") {
+  return render(<MemoryRouter initialEntries={[entry]}><Routes>
     <Route path="/community/promote/new" element={<PromotionEditorPage />} />
     <Route path="/community/promote/:id" element={<div>공개 결과</div>} />
-  </Routes></MemoryRouter>);
+  </Routes><PromotionRouteProbe /></MemoryRouter>);
 }
 const draft = () => ({ ...initialPromotionDraft(), title: "새 작품을 소개합니다", seriesTitle: "별의 여행", description: "첫 번째 웹툰의 이야기를 소개합니다. 새로운 세계의 모험을 함께해 주세요.", rightsConfirmed: true });
 beforeEach(() => { sessionStorage.clear(); mocks.state.userId = "artist"; vi.clearAllMocks(); });
@@ -29,7 +42,7 @@ describe("promotion authoring recovery", () => {
     view();
     expect((screen.getByLabelText("작품명") as HTMLInputElement).value).toBe("별의 여행");
     expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(false);
-    fireEvent.change(screen.getByLabelText("소개 제목"), { target: { value: "새로 작성한 소개 제목" } });
+    editField("소개 제목", "새로 작성한 소개 제목");
     fireEvent(window, new Event("pagehide"));
     await waitFor(() => expect(readPromotionDraft("artist")).toMatchObject({ status: "restored", value: { draft: { title: "새로 작성한 소개 제목" } } }));
   });
@@ -56,7 +69,7 @@ describe("promotion authoring recovery", () => {
   });
 });
 describe("promotion editor live preview", () => {
-  const preview = () => screen.getByRole("complementary", { name: "홍보 보드 미리보기" });
+  const preview = () => { selectPromotionScreen("preview"); return screen.getByRole("complementary", { name: "홍보 보드 미리보기" }); };
   it("shows guidance instead of an empty card shell before any input", () => {
     view();
     expect(within(preview()).getByText("아직 입력된 내용이 없어요.")).toBeTruthy();
@@ -64,17 +77,17 @@ describe("promotion editor live preview", () => {
   });
   it("mirrors typing into the board card preview right away", () => {
     view();
-    fireEvent.change(screen.getByLabelText("작품명"), { target: { value: "별의 여행" } });
-    fireEvent.change(screen.getByLabelText("소개 제목"), { target: { value: "새 작품을 소개합니다" } });
-    fireEvent.change(screen.getByLabelText("작품·작업 소개"), { target: { value: "첫 번째 웹툰의 이야기를 소개합니다. 새로운 세계의 모험을 함께해 주세요." } });
+    editField("작품명", "별의 여행");
+    editField("소개 제목", "새 작품을 소개합니다");
+    editField("작품·작업 소개", "첫 번째 웹툰의 이야기를 소개합니다. 새로운 세계의 모험을 함께해 주세요.");
     expect(within(preview()).getByRole("heading", { name: "새 작품을 소개합니다" })).toBeTruthy();
     expect(within(preview()).getByText(/첫 번째 웹툰의 이야기/u)).toBeTruthy();
     // 표지가 없을 때는 장르가 타이포그래피 커버 라벨로 자동 반영된다.
     expect(within(preview()).getByText("판타지")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("장르"), { target: { value: "로맨스" } });
+    editField("장르", "로맨스");
     expect(within(preview()).getByText("로맨스")).toBeTruthy();
     // 영상 주소를 넣으면 카드에 영상 배지가 붙는다.
-    fireEvent.change(screen.getByLabelText("홍보 영상 주소"), { target: { value: "https://youtu.be/ABCDEFGHIJK" } });
+    editField("홍보 영상 주소", "https://youtu.be/ABCDEFGHIJK");
     expect(within(preview()).getByText("영상")).toBeTruthy();
     // 미리보기 카드는 아직 게시되지 않은 글이라 링크를 걸지 않는다.
     expect(within(preview()).queryAllByRole("link")).toHaveLength(0);
@@ -87,4 +100,27 @@ describe("promotion editor live preview", () => {
     const image = within(preview()).getByRole("img", { name: "별의 여행 표지" }) as HTMLImageElement;
     expect(image.src).toBe(cover);
   });
+});
+
+
+it("홍보 미리보기는 제출 버튼과 필수 입력을 함께 숨기고 URL·Back으로 같은 초안을 복원한다", () => {
+  const { container } = view("/community/promote/new?x=1&x=2#draft");
+  const title = screen.getByLabelText("작품명") as HTMLInputElement;
+  editField("작품명", "미저장 작품명");
+  const form = container.querySelector("form");
+  selectPromotionScreen("preview");
+  expect(form?.hidden).toBe(true);
+  expect(screen.queryByRole("button", { name: "작품 소개 공개하기" })).toBeNull();
+  expect(screen.getByTestId("promotion-route").textContent).toBe("/community/promote/new?x=1&x=2&view=preview#draft");
+  expect(screen.getByRole("complementary", { name: "홍보 보드 미리보기" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+  expect(form?.hidden).toBe(false);
+  expect(screen.getByLabelText("작품명")).toBe(title);
+  expect(title.required).toBe(true);
+  expect(title.value).toBe("미저장 작품명");
+  expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "테스트 앞으로" }));
+  expect(form?.hidden).toBe(true);
+  expect(title.value).toBe("미저장 작품명");
+  expect(mocks.create).not.toHaveBeenCalled();
 });

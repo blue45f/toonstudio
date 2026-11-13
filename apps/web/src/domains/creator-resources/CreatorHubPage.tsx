@@ -1,4 +1,4 @@
-import { BookmarkCheck, ChevronDown, Compass, Gauge, NotebookPen } from "lucide-react";
+import { BookmarkCheck, ChevronDown, Compass, Gauge, NotebookPen, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChangeEvent, SyntheticEvent } from "react";
@@ -50,8 +50,8 @@ import { attributionMarkdown, deadlineLabel, parseWorkspace } from "@/shared/lib
 const SCOPE = "domains.creator.resources.CreatorHubPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
-type DeskTab = "overview" | "focus" | "notes" | "board";
-const DESK_TABS: readonly DeskTab[] = ["overview", "focus", "notes", "board"];
+type DeskTab = "overview" | "focus" | "notes" | "board" | "materials";
+const DESK_TABS: readonly DeskTab[] = ["overview", "focus", "notes", "board", "materials"];
 const TAB_PREFIX = "research-desk";
 
 /** 예전 섹션 앵커(공유 링크·다음 행동)를 해당 탭으로 연다. */
@@ -166,7 +166,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   useBilingualI18nRevision();
   const bt = useBilingual("CreatorHubPage");
   const navigate = useNavigate();
-  const { hash } = useLocation();
+  const { hash, search } = useLocation();
   const sourceToolsRef = useRef<HTMLDetailsElement>(null);
   // Router의 pushState는 네이티브 fragment 공개를 수행하지 않으므로 이 안내 안의 앵커만 연다.
   useEffect(() => {
@@ -206,7 +206,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
     writable: researchNotebookWritable,
     error: researchNotebookError,
   } = useResearchNotebook();
-  const { value: activeTab, select: selectTab, isMounted } = useSiteTabs({ ids: DESK_TABS, fallback: "overview", param: "view" });
+  const { value: activeTab, select: selectTab, isMounted } = useSiteTabs({ ids: DESK_TABS, fallback: new URLSearchParams(search).has("mq") ? "materials" : "overview", param: "view" });
   const [providerStatusOpen, setProviderStatusOpen] = useState(false);
   // 예전 공유 링크(#research-coverage)는 접힌 "자세히" 안의 근거 공백 지도를 가리키므로 펼친 채로 연다.
   const [checksOpen, setChecksOpen] = useState(() => hash === "#research-coverage");
@@ -272,6 +272,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
   };
 
   const deskTabs: readonly SiteSectionTab<DeskTab>[] = [
+    { id: "materials", icon: Search, label: bt("장면으로 찾기", "Find a scene") },
     { id: "overview", icon: Gauge, label: bt("진행 현황", "Progress") },
     { id: "focus", icon: Compass, label: bt("리서치 초점", "Focus") },
     { id: "notes", icon: NotebookPen, label: bt("판단 노트", "Notes"), badge: researchNotebook.entries.length || undefined },
@@ -283,10 +284,9 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
     intro={bt("장면에 필요한 레퍼런스·3D 재료·폰트·고증 자료를 출처와 함께 찾고, 저장한 근거를 제작으로 이어 가요.", "Find references, 3D materials, fonts and period sources for your scenes, then carry the evidence into production.")}
     width="wide"
     menu={false}
-    heroContent={<ResearchSearchPanel session={researchSession} onSessionChange={updateResearchSession} onSearch={launchSearch} />}
+    heroContent={<div hidden={activeTab === "materials"}><ResearchSearchPanel active={activeTab !== "materials"} session={researchSession} onSessionChange={updateResearchSession} onSearch={launchSearch} /></div>}
     heroAside={<div className="hidden lg:block"><ResearchSceneStudy /></div>}
   >
-    <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
     <LocalSaveNotice error={error} writable={writable} saving={saving} />
 
     <section id="research-workspace" className="scroll-mt-24 space-y-4" aria-labelledby="research-workspace-title">
@@ -324,6 +324,9 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
         </ol>
       </details>}
 
+      <SiteTabPanel idPrefix={TAB_PREFIX} id="materials" active={activeTab === "materials"} mounted={isMounted("materials")}>
+        <MaterialSentencePanel saved={workspace.saved} saveDisabled={!ready || !writable || saving} onToggleSaved={toggleSavedResource} refineSentence={refineMaterialSentence} />
+      </SiteTabPanel>
       <SiteTabPanel idPrefix={TAB_PREFIX} id="overview" active={activeTab === "overview"} mounted={isMounted("overview")} className="space-y-4">
         <ResearchNextActionCard action={nextAction} summary={summary} onAnchor={openAnchor} />
         {briefIsEmpty ? <p id="workspace-overview" className="scroll-mt-24 rounded-2xl border border-dashed border-line bg-panel/50 p-4 text-sm leading-6 text-fg-2 break-keep">

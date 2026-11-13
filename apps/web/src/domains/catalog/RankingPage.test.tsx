@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -35,10 +35,18 @@ describe("통합 랭킹 페이지", () => {
     expect(board.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("상단 액션에 44px 창작 시작 정본 브리지(/create)를 제공한다", () => {
+  it("보드 뒤의 보조 도구에서 44px 창작 시작 정본 브리지(/create)를 제공한다", () => {
     renderPage();
     const createBridge = screen.getByTestId("ranking-create-bridge");
+    const tools = createBridge.closest("details");
+    expect(tools?.open).toBe(false);
+    const summary = tools?.querySelector("summary");
+    if (!summary) throw new Error("카탈로그 보조 메뉴 누락");
+    fireEvent.click(summary);
+    expect(tools?.open).toBe(true);
     expect(createBridge.getAttribute("href")).toBe("/create");
+    fireEvent.click(summary);
+    expect(tools?.open).toBe(false);
     expect(createBridge.className).toContain("min-h-11");
   });
 

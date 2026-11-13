@@ -44,6 +44,10 @@ describe("CI·QA 관리자 보드", () => {
     expect(screen.getByText("유효한 완료 근거 0개")).toBeTruthy();
     expect(screen.getByText(/자동 CI 연결 없음/u)).toBeTruthy();
     expect(localStorage.getItem(getQualityStorageKey(user))).toBeNull();
+    const overview = screen.getByText("검증 전체 현황과 기준 커밋").closest("details");
+    expect(overview?.open).toBe(false);
+    if (!overview) throw new Error("전체 검증 현황 입구가 없습니다.");
+    expect(screen.getByRole("table").compareDocumentPosition(overview) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("인증 식별자 없이 기록을 읽거나 편집하지 않는다", () => {

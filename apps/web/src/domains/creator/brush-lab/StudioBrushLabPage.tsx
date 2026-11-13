@@ -11,8 +11,8 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 
 import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/navigation/router-link";
@@ -165,6 +165,12 @@ function focusToolbarButtonAt(currentButton: HTMLButtonElement, nextIndex: numbe
 export function StudioBrushLabPage() {
   const params = useParams<{ workId?: string; sourceWorkId?: string; brushId?: string }>();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const task = searchParams.get("brushTask") ?? (params.brushId ? "edit" : "presets");
+  const activeTask = ["presets", "edit", "engine", "texture"].includes(task) ? task : "presets";
+  const previousTask = useRef(activeTask), taskHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (previousTask.current !== activeTask) { previousTask.current = activeTask; taskHeading.current?.focus(); } }, [activeTask]);
+  const taskHref = (next: string) => { const query = new URLSearchParams(location.search); query.set("brushTask", next); return `${location.pathname}?${query.toString()}${location.hash}`; };
   const lang = useI18n((state) => state.lang);
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
@@ -251,23 +257,7 @@ export function StudioBrushLabPage() {
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1920px] px-4 py-5 sm:px-6 lg:px-8">
-      <header className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
-        <figure className="relative -mx-5 -mt-5 mb-6 sm:-mx-7 sm:-mt-7">
-          <img
-            src={heroArt.src}
-            srcSet={heroArt.srcSet}
-            sizes="(max-width: 1920px) 100vw, 1856px"
-            width={1680}
-            height={560}
-            alt={heroArt.alt}
-            fetchPriority="high"
-            decoding="async"
-            className="block aspect-[3/1] w-full object-cover motion-safe:animate-fade-up"
-          />
-          <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-2.5 py-1 text-[0.65rem] font-semibold text-white/90 backdrop-blur-sm">
-            브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다
-          </figcaption>
-        </figure>
+      <header className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-4xl">
             <p className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">
@@ -276,11 +266,8 @@ export function StudioBrushLabPage() {
             <h1 className="mt-2 text-pretty text-2xl font-black tracking-tight text-fg sm:text-4xl">
               {context.workspaceTitle}
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base">
-              {editingSavedBrush
-                ? "저장한 브러시를 실제 획으로 비교하면서 재료·입력·패턴·엔진 구성을 한곳에서 다듬습니다."
-                : "시작 브러시를 고른 뒤 실제 획으로 시험하고, 재료·입력·패턴을 필요한 깊이까지 조절합니다."}
-              {" "}기본 편집과 전문가 설정은 같은 브러시 정의와 저장 경로를 사용합니다.
+            <p className="mt-2 text-sm leading-6 text-fg-2">
+              {pickLang("작업을 고른 뒤 브러시를 시험하고 저장하세요.", "Choose a task, test your brush, then save it.")}
             </p>
             <p className="mt-3 inline-flex rounded-full border border-line bg-panel/60 px-3 py-1 text-xs font-bold text-fg-3">
               {context.contextLabel}
@@ -316,6 +303,9 @@ export function StudioBrushLabPage() {
           </div>
         ) : null}
 
+        <details className="mt-4"><summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">{pickLang("시작 방법과 전문가 설정 안내", "Getting started and advanced settings guide")}</summary>
+        <p className="mt-3 text-sm leading-7 text-fg-2">{editingSavedBrush ? "저장한 브러시를 실제 획으로 비교하면서 재료·입력·패턴·엔진 구성을 한곳에서 다듬습니다." : "시작 브러시를 고른 뒤 실제 획으로 시험하고, 재료·입력·패턴을 필요한 깊이까지 조절합니다."} 기본 편집과 전문가 설정은 같은 브러시 정의와 저장 경로를 사용합니다.</p>
+        <figure className="relative mt-4"><img src={heroArt.src} srcSet={heroArt.srcSet} sizes="(max-width: 1920px) 100vw, 1856px" width={1680} height={560} alt={heroArt.alt} loading="lazy" decoding="async" className="block aspect-[3/1] w-full object-cover" /><figcaption className="mt-1 text-xs text-fg-3">브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다</figcaption></figure>
         <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label="브러시 스튜디오 편집 깊이">
           <article className="rounded-2xl border border-line bg-panel/45 p-4">
             <span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-fg-3">QUICK</span>
@@ -400,10 +390,15 @@ export function StudioBrushLabPage() {
               </span>
             </div>
           </div>
-        </section>
+        </section></details>
       </header>
+      <nav aria-label={pickLang("브러시 작업 선택", "Choose a brush task")} className="my-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {([["presets", "브러시 고르기", "Choose a brush"], ["edit", "브러시 조절", "Adjust brush"], ["engine", "입력·엔진", "Input and engine"], ["texture", "질감·톤", "Texture and tone"]] as const).map(([id, ko, en]) => <Link key={id} href={taskHref(id)} aria-current={activeTask === id ? "page" : undefined}
+          className={`flex min-h-12 items-center justify-center rounded-xl border px-3 py-3 text-sm font-semibold ${activeTask === id ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg hover:bg-raised"} ${STUDIO_FOCUS_RING}`}>{pickLang(ko, en)}</Link>)}
+      </nav>
+      <h2 ref={taskHeading} tabIndex={-1} className="mb-4 text-lg font-bold text-fg">{pickLang(({ presets: "브러시 고르기", edit: "브러시 조절", engine: "입력·엔진", texture: "질감·톤" } as Record<string, string>)[activeTask], ({ presets: "Choose a brush", edit: "Adjust brush", engine: "Input and engine", texture: "Texture and tone" } as Record<string, string>)[activeTask])}</h2>
 
-      <section
+      <section hidden={activeTask !== "engine"}
         data-testid="brush-lab-rea-wetmix-wgsl-bar"
         aria-label={pickLang("브러시 랩 WGSL 습식 안료 및 스타일러스 커브 워크벤치", "Brush Lab WGSL Wet-Mix & Stylus Curve Workbench")}
         className="mt-3 mb-4 rounded-2xl border border-line bg-card p-4"
@@ -509,7 +504,7 @@ export function StudioBrushLabPage() {
         </p>
       </section>
 
-      <section
+      <section hidden={activeTask !== "presets"}
         data-testid="brush-lab-wave37-stroke-refinement-panel"
         aria-label={pickLang(
           "경쟁사 동급 곡률 보간 및 서브픽셀 R&D 검증 바",
@@ -659,10 +654,9 @@ export function StudioBrushLabPage() {
       </section>
 
       <div className="mt-5 space-y-5">
-        {!editingSavedBrush ? <StudioBrushProductCataloguePanel baseHref={context.baseHref} /> : null}
-        <StudioBrushIntegratedWorkbench scope={context.scope} />
-        {editingSavedBrush ? <StudioBrushProductCataloguePanel baseHref={context.baseHref} /> : null}
-        <section aria-label="질감·톤 실험실" className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
+        <div hidden={activeTask !== "presets"}><StudioBrushProductCataloguePanel baseHref={context.baseHref} /></div>
+        <div hidden={activeTask !== "edit"}><StudioBrushIntegratedWorkbench scope={context.scope} /></div>
+        <section hidden={activeTask !== "texture"} aria-label="질감·톤 실험실" className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
           <div className="max-w-4xl">
             <p className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">TEXTURE · TONE LAB</p>
             <h2 className="mt-2 text-xl font-black tracking-tight text-fg sm:text-2xl">

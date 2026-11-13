@@ -519,18 +519,9 @@ export function ProductionLandingPage() {
     });
   };
 
-  return (
-    <div data-creator-workflow="production-home" data-route-ready="production-home" className="min-h-dvh bg-canvas text-fg">
-      <CampusObjectSource objects={projects.slice(0, 8).flatMap((project) => {
-        const id = encodeURIComponent(project.projectId);
-        return [
-          { id: project.projectId, title: project.title, href: `/production/projects/${id}/overview`, kind: "project" as const, exposure: "private" as const },
-          { id: `${project.projectId}.review`, title: `${project.title} · 검수`, href: `/production/projects/${id}/review`, kind: "review" as const, exposure: "private" as const },
-          { id: `${project.projectId}.handoff`, title: `${project.title} · 인계`, href: `/production/projects/${id}/handoff`, kind: "handoff" as const, exposure: "private" as const },
-        ];
-      })} />
-      <div className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
-        <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-4 sm:p-8 lg:p-10">
+  const IntroHeading = userId ? "h2" : "h1";
+  const intro = (
+    <header className="creator-workflow-intro relative overflow-hidden rounded-3xl border border-accent/25 bg-panel p-4 sm:p-8 lg:p-10">
           {/* 배경은 생성형 AI로 만든 개념 영상이다. 장식이라 본문 흐름에서 빼고,
               움직임 최소화를 선호하면 숨긴다(다른 표면의 장식 영상 계약과 동일). */}
           <ProductionLandingBackdropMedia />
@@ -541,11 +532,11 @@ export function ProductionLandingPage() {
               <p className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-accent">
                 <span>ToonStudio</span><span aria-hidden="true">/</span><span>{directoryMode ? bt("제작 프로젝트", "Production projects") : bt("웹툰 제작 관리", "Webtoon production")}</span>
               </p>
-              <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-tight text-fg sm:text-5xl">
+              <IntroHeading className="mt-4 max-w-3xl text-3xl font-black leading-tight tracking-tight text-fg sm:text-5xl">
                 {directoryMode
                   ? bt("제작 프로젝트를 찾고 바로 운영하세요", "Find a production project and run it")
                   : bt("웹툰 제작을 한 흐름으로", "Webtoon production in one flow")}
-              </h1>
+              </IntroHeading>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-fg-2 sm:text-base">
                 {bt(
                   "공정을 정리하고, 원고에 피드백을 남기고, 검수하세요. 샘플로 먼저 둘러볼 수 있습니다.",
@@ -574,8 +565,23 @@ export function ProductionLandingPage() {
             </div>
           </div>
         </header>
+  );
+  return (
+    <div data-creator-workflow="production-home" data-route-ready="production-home" className="min-h-dvh bg-canvas text-fg">
+      <CampusObjectSource objects={projects.slice(0, 8).flatMap((project) => {
+        const id = encodeURIComponent(project.projectId);
+        return [
+          { id: project.projectId, title: project.title, href: `/production/projects/${id}/overview`, kind: "project" as const, exposure: "private" as const },
+          { id: `${project.projectId}.review`, title: `${project.title} · 검수`, href: `/production/projects/${id}/review`, kind: "review" as const, exposure: "private" as const },
+          { id: `${project.projectId}.handoff`, title: `${project.title} · 인계`, href: `/production/projects/${id}/handoff`, kind: "handoff" as const, exposure: "private" as const },
+        ];
+      })} />
+      <div className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8">
+
 
         {userId ? (
+          <>
+          <h1 className="text-2xl font-black text-fg sm:text-3xl">{bt("제작 프로젝트", "Production projects")}</h1>
           <PortfolioSection
             projects={projects}
             inboxItems={inboxItems}
@@ -587,6 +593,7 @@ export function ProductionLandingPage() {
             onOpenCollabItem={handleOpenCollabItem}
             onMarkAllCollabRead={handleMarkAllCollabRead}
           />
+          </>
         ) : directoryMode ? (
           <section className="creator-workflow-panel mt-8 rounded-2xl border border-line bg-card p-5" aria-labelledby="production-directory-title">
             <h2 id="production-directory-title" className="text-base font-black text-fg">{bt("제작 프로젝트를 한곳에서 관리하세요", "Manage production projects in one place")}</h2>
@@ -598,7 +605,14 @@ export function ProductionLandingPage() {
           </section>
         ) : null}
 
-        <FlowCards />
+        {userId ? <details className="group mt-6 rounded-2xl border border-line bg-panel">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-bold text-fg-2">{bt("샘플 체험과 제작 안내", "Sample and production guide")}<span aria-hidden="true">⌄</span></summary>
+          {intro}
+          <FlowCards />
+        </details> : <>
+          {intro}
+          <FlowCards />
+        </>}
         <ModuleGrid />
       </div>
     </div>

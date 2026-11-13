@@ -204,7 +204,7 @@ function OverviewContent({
         )}
       />
 
-      <section
+      <details className="rounded-2xl border border-line bg-card p-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{bt("전문 실행 트랙과 영수증 안내", "Advanced execution tracks and receipts")}</summary><section
         aria-label={bt("REA 로컬 실행기 파이프라인 및 재현 영수증 인스펙터", "REA Local Runner Pipeline & Reproducible Receipt Inspector")}
         data-testid="toolchain-rea-pipeline-receipt-bar"
         className="rounded-2xl border border-line bg-card/85 p-4"
@@ -257,7 +257,7 @@ function OverviewContent({
             </button>
           ))}
         </div>
-      </section>
+      </section></details>
 
       <ToolchainStartSteps projectId={projectId} connected={connection.connected} readyCount={readyCount} />
 

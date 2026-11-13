@@ -29,6 +29,7 @@ describe("Studio production toolchain pages", () => {
 
     expect(screen.getByRole("heading", { name: /그리기 이후의 제작/u })).toBeTruthy();
     expect(screen.getByTestId("toolchain-rea-pipeline-receipt-bar")).toBeTruthy();
+    fireEvent.click(screen.getByText("전문 실행 트랙과 영수증 안내"));
     fireEvent.click(screen.getByTestId("toolchain-rea-track-comfy-deterministic-seed"));
     expect(screen.getByTestId("toolchain-rea-pipeline-receipt-status").textContent).toContain("ComfyUI");
     expect(screen.getByRole("link", { name: /제작 작업 시작/u }).getAttribute("href"))
@@ -86,6 +87,7 @@ describe("Studio production toolchain pages", () => {
   it("GAP-R6-04: 파이프라인 트랙 및 상태 필터 토글이 44px 최소 타깃·명시적 포커스 링·선택 상태·방향키 이동 계약을 충족한다", () => {
     renderRoute(<StudioProductionToolchainPage />, "/studio/toolchain?projectId=project-a");
 
+    fireEvent.click(screen.getByText("전문 실행 트랙과 영수증 안내"));
     const trackGroup = screen.getByRole("group", { name: "로컬 실행기 파이프라인 트랙" });
     expect(trackGroup.getAttribute("data-testid")).toBe("toolchain-rea-track-group");
     expect(trackGroup.style.gap).toBe("8px");

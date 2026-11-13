@@ -1,8 +1,9 @@
 import { ArrowRight, Camera, CalendarDays, MapPin, Shield, Sparkles, UsersRound } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { CreatorEcosystemLayout } from "./CreatorEcosystemLayout";
 import { FanCafePanel } from "@/domains/community/public/fan-cafe-panel";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 const SCOPE = "domains.creator-ecosystem.FandomCosplayPage";
@@ -11,6 +12,7 @@ const GUIDE_ART = ["fandom-art-consent", "fandom-art-safety", "fandom-art-credit
 
 export function FandomCosplayPage() {
   const bt = useBilingual(SCOPE);
+  const { hash } = useLocation();
 
   const guide = [
     {
@@ -50,7 +52,55 @@ export function FandomCosplayPage() {
         "Uses the existing fan-art community's image, comment, search, and report features to connect cosplay and event info inside each fandom.",
       )}
     >
-      <section id="fandom-guide" aria-labelledby="fandom-guide-title">
+      <section id="fandom-feed" aria-labelledby="fandom-feed-title" className="rounded-2xl border border-line bg-panel p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles size={20} className="text-accent" aria-hidden="true" />
+              <h2 id="fandom-feed-title" className="text-xl font-black">
+                {bt("코스프레 피드", "Cosplay feed")}
+              </h2>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
+              {bt(
+                "처음부터 코스프레 유형으로 열립니다. 캐릭터명·작품명·의상 제작·사진가·행사명을 태그로 남기면 검색과 크레딧 관리가 쉬워집니다.",
+                "Opens on the cosplay type by default. Tagging character, work, costume maker, photographer, and event names makes search and credits easy.",
+              )}
+            </p>
+          </div>
+          <Link
+            to="/community"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
+          >
+            {bt("전체 팬 커뮤니티", "All fan communities")}
+          </Link>
+        </div>
+      </section>
+
+      <FanCafePanel
+        scope="pencafe"
+        targetId="creator-ecosystem-fandom"
+        targetLabel={bt("코스프레 · 팬덤", "Cosplay · fandom")}
+        initialKind="cosplay"
+        emptyGuide={{
+          icon: Camera,
+          title: bt("아직 올라온 코스프레가 없어요", "No cosplay posts yet"),
+          description: bt(
+            "첫 코스프레 사진을 올려 팬덤을 깨워 보세요. 촬영 동의와 크레딧 표시만 잊지 마세요.",
+            "Wake up the fandom with the first cosplay photo. Just remember consent and credits.",
+          ),
+          primary: {
+            href: "/community",
+            label: bt("팬 커뮤니티에서 글 쓰기", "Write in the fan community"),
+          },
+          secondary: {
+            href: "#fandom-guide",
+            label: bt("가이드 다시 보기", "Re-read the guide"),
+          },
+        }}
+      />
+      <SiteDisclosure id="fandom-guide" title={bt("참여 안내 · 촬영 동의 · 행사", "Participation, photo consent and events")} defaultOpen={hash === "#fandom-guide"} className="mt-5">
+      <section id="fandom-guide-content" aria-labelledby="fandom-guide-title">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="eyebrow text-accent">FANDOM GUIDE</p>
@@ -126,53 +176,7 @@ export function FandomCosplayPage() {
         </div>
       </section>
 
-      <section id="fandom-feed" aria-labelledby="fandom-feed-title" className="rounded-2xl border border-line bg-panel p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles size={20} className="text-accent" aria-hidden="true" />
-              <h2 id="fandom-feed-title" className="text-xl font-black">
-                {bt("코스프레 피드", "Cosplay feed")}
-              </h2>
-            </div>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
-              {bt(
-                "처음부터 코스프레 유형으로 열립니다. 캐릭터명·작품명·의상 제작·사진가·행사명을 태그로 남기면 검색과 크레딧 관리가 쉬워집니다.",
-                "Opens on the cosplay type by default. Tagging character, work, costume maker, photographer, and event names makes search and credits easy.",
-              )}
-            </p>
-          </div>
-          <Link
-            to="/community"
-            className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
-          >
-            {bt("전체 팬 커뮤니티", "All fan communities")}
-          </Link>
-        </div>
-      </section>
-
-      <FanCafePanel
-        scope="pencafe"
-        targetId="creator-ecosystem-fandom"
-        targetLabel={bt("코스프레 · 팬덤", "Cosplay · fandom")}
-        initialKind="cosplay"
-        emptyGuide={{
-          icon: Camera,
-          title: bt("아직 올라온 코스프레가 없어요", "No cosplay posts yet"),
-          description: bt(
-            "첫 코스프레 사진을 올려 팬덤을 깨워 보세요. 촬영 동의와 크레딧 표시만 잊지 마세요.",
-            "Wake up the fandom with the first cosplay photo. Just remember consent and credits.",
-          ),
-          primary: {
-            href: "/community",
-            label: bt("팬 커뮤니티에서 글 쓰기", "Write in the fan community"),
-          },
-          secondary: {
-            href: "#fandom-guide",
-            label: bt("가이드 다시 보기", "Re-read the guide"),
-          },
-        }}
-      />
+      </SiteDisclosure>
     </CreatorEcosystemLayout>
   );
 }

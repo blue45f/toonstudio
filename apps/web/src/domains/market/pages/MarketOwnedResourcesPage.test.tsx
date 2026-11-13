@@ -198,3 +198,19 @@ describe("MarketOwnedResourcesPage bulk processing", () => {
     );
   });
 });
+
+
+it("패키지 관리 조작은 셀러 안내보다 먼저 보여 주고 보조 안내는 명시적으로 연다", async () => {
+  mocks.list.mockResolvedValue(page(false));
+  render(view());
+  const unlist = await screen.findByRole("button", { name: "공개 목록에서 내리기" });
+  const summary = screen.getByText("판매자 안내 · 다른 마켓 작업", { selector: "summary strong" }).closest("summary");
+  if (!summary) throw new Error("판매자 보조 안내 누락");
+  expect(unlist.closest("details")).toBeNull();
+  expect(unlist.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(summary.closest("details")?.open).toBe(false);
+  fireEvent.click(summary);
+  expect(summary.closest("details")?.open).toBe(true);
+  expect(screen.getByRole("link", { name: "새 릴리스 게시" }).getAttribute("href")).toBe("/market/publish?section=publish");
+  expect(mocks.delist).not.toHaveBeenCalled();
+});

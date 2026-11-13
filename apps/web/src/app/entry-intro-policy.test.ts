@@ -10,14 +10,14 @@ describe("shouldShowEntryIntro", () => {
     }
   );
 
-  it("게시용 upload 모드는 인트로 흐름을 유지한다", () => {
-    expect(shouldShowEntryIntro("/studio", "?mode=upload")).toBe(true);
-    expect(shouldShowEntryIntro("/studio/publish")).toBe(true);
-    expect(shouldShowEntryIntro("/studio/work/work-1/publish")).toBe(true);
+  it("게시와 업로드도 현재 작업을 인트로로 가리지 않는다", () => {
+    expect(shouldShowEntryIntro("/studio", "?mode=upload")).toBe(false);
+    expect(shouldShowEntryIntro("/studio/publish")).toBe(false);
+    expect(shouldShowEntryIntro("/studio/work/work-1/publish")).toBe(false);
   });
 
-  it.each(["/", "/ranking", "/create/work-1"])(
-    "일반 앱 경로 %s에서는 인트로를 유지한다",
+  it.each(["/", "///"])(
+    "사이트 홈 %s에서만 브랜드 연출을 유지한다",
     (pathname) => {
       expect(shouldShowEntryIntro(pathname)).toBe(true);
     },
@@ -63,9 +63,9 @@ describe("입력·계정·운영 화면은 브랜드 연출보다 작업을 우�
   ])("%s의 입력·조회 화면을 전면 인트로로 가리지 않는다", (pathname) => {
     expect(shouldShowEntryIntro(pathname)).toBe(false);
   });
-  it.each(["/", "/about", "/membership", "/market", "/market/browse", "/settings-guide", "/my-story"])(
-    "%s의 공개 소개 연출은 작업 경로와 혼동하지 않는다", (pathname) => {
-      expect(shouldShowEntryIntro(pathname)).toBe(true);
+  it.each(["/about", "/membership", "/market", "/market/browse", "/settings-guide", "/my-story", "/ranking", "/create/work-1", "/research", "/learn", "/search", "/title/sample/read/1", "/community", "/ir"])(
+    "%s의 직접 진입은 내용을 브랜드 연출로 가리지 않는다", (pathname) => {
+      expect(shouldShowEntryIntro(pathname)).toBe(false);
     },
   );
 });

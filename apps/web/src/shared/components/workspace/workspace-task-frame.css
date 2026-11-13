@@ -9,6 +9,12 @@
 .workspace-task-breadcrumb span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650}
 .workspace-task-breadcrumb svg{flex:none;color:var(--color-fg-2)}
 .workspace-task-content{padding:16px 24px 88px;min-width:0}
+.workspace-task-guide{margin-bottom:12px;border-bottom:1px solid var(--color-line)}
+.workspace-task-guide>summary{display:flex;align-items:center;justify-content:space-between;min-height:44px;gap:12px;cursor:pointer;list-style:none;color:var(--color-fg-2);font-size:12px;font-weight:650}
+.workspace-task-guide>summary::-webkit-details-marker{display:none}
+.workspace-task-guide[open]>summary svg{transform:rotate(90deg)}
+.workspace-task-guide>summary:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
+.workspace-task-guide .workspace-task-purpose{border:0;padding-top:8px;margin-bottom:0}
 .workspace-task-purpose{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--color-line);padding-bottom:12px;margin-bottom:18px}
 .workspace-task-purpose p{margin:0;color:var(--color-fg-2);font-size:13px;line-height:1.7;max-width:65ch}
 .workspace-task-purpose a{display:inline-flex;align-items:center;gap:6px;min-height:44px;flex:none;font-size:13px;color:var(--color-accent)}

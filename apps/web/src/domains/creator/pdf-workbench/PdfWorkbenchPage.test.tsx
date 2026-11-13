@@ -20,6 +20,10 @@ describe("PdfWorkbenchPage — REA 단행본 인쇄 도련 & CMYK 프리플라�
   it("벤치마크 배지와 기본 재단 규격·잉크 프로파일 상태를 표시한다", () => {
     render(<PdfWorkbenchPage />);
     const bar = screen.getByTestId("pdf-workbench-rea-cmyk-bleed-bar");
+    const advanced = bar.closest("details")!;
+    expect(advanced.open).toBe(false);
+    fireEvent.click(advanced.querySelector("summary")!);
+    expect(advanced.open).toBe(true);
     expect(bar.textContent).toContain("Clip Studio EX Multi-Page · Affinity Publisher · Adobe InDesign Print Preflight");
 
     expect(screen.getByTestId("pdf-rea-trim-b5-manga-bleed3mm").getAttribute("aria-pressed")).toBe("true");

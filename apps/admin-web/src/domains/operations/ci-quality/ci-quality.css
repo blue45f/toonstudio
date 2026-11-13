@@ -6,6 +6,10 @@
   line-height: 1.65;
 }
 .ci-quality [hidden] { display: none !important; }
+.ci-quality-overview { margin-top: 24px; padding: 0 16px 12px; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--admin-panel); }
+.ci-quality-overview > summary { display: flex; min-height: 48px; align-items: center; cursor: pointer; color: var(--admin-muted); font-size: .875rem; font-weight: 650; }
+.ci-quality-overview > summary:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
+.ci-quality-overview:not([open]) { padding-bottom: 0; }
 .ci-quality :is(h1, h2, h3, p) { overflow-wrap: anywhere; }
 .ci-quality h1 { margin: 4px 0 8px; font-size: clamp(1.8rem, 4vw, 2.5rem); letter-spacing: -.045em; line-height: 1.25; }
 .ci-quality h2 { margin: 0 0 12px; font-size: 1.25rem; letter-spacing: -.03em; }

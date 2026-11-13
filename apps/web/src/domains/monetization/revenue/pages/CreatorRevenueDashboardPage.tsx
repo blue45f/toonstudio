@@ -17,6 +17,7 @@ import { cn } from "@/shared/lib/utils";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
@@ -289,8 +290,6 @@ export function CreatorRevenueDashboardPage() {
   if (!authenticated || !summary) {
     return (
       <Container className="py-10">
-        <CreatorMonetizationNav current="/creator/revenue" />
-        {reaPayoutBar}
         <div className="py-8 text-center">
           <ChartColumn className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
           <h1 className="mt-3 text-xl font-bold text-fg">{t("revenue.dashboard.title")}</h1>
@@ -300,12 +299,16 @@ export function CreatorRevenueDashboardPage() {
           <button
             type="button"
             onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-revenue", mode: "login" })}
-            className={cn(buttonClass({ variant: "solid" }), "mt-4 gap-1.5")}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4 min-h-11 gap-1.5")}
           >
             <LogIn className="h-4 w-4" aria-hidden />
             {t("revenue.dashboard.login")}
           </button>
         </div>
+        <SiteDisclosure title={pickLang("수익화 메뉴 · 정산 시뮬레이터", "Monetization menu and payout simulator")} className="mt-5">
+          <CreatorMonetizationNav current="/creator/revenue" />
+          {reaPayoutBar}
+        </SiteDisclosure>
       </Container>
     );
   }
@@ -321,8 +324,6 @@ export function CreatorRevenueDashboardPage() {
 
   return (
     <Container className="py-8">
-      <CreatorMonetizationNav current="/creator/revenue" />
-      {reaPayoutBar}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">
@@ -339,7 +340,7 @@ export function CreatorRevenueDashboardPage() {
               onClick={() => setPeriodKey(key)}
               aria-pressed={periodKey === key}
               className={cn(
-                "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+                "min-h-11 min-w-11 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
                 periodKey === key ? "bg-accent/15 text-accent" : "text-fg-3 hover:text-fg",
               )}
             >
@@ -502,6 +503,10 @@ export function CreatorRevenueDashboardPage() {
       </div>
 
       <PayoutDialog open={payoutOpen} netKrw={netKrw} onClose={() => setPayoutOpen(false)} />
+      <SiteDisclosure title={pickLang("수익화 메뉴 · 정산 시뮬레이터", "Monetization menu and payout simulator")} className="mt-5">
+          <CreatorMonetizationNav current="/creator/revenue" />
+          {reaPayoutBar}
+        </SiteDisclosure>
     </Container>
   );
 }
