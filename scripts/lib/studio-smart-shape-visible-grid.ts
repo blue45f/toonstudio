@@ -139,7 +139,12 @@ export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartS
         ?? (panel.closest("[data-studio-drawing-save-dialog]") && candidates.length === 1 ? candidates[0] : null);
       const summary = trigger?.querySelector("[data-studio-connection-notice-summary]");
       const rect = trigger?.getBoundingClientRect();
-      const style = trigger ? getComputedStyle(trigger) : null;
+      let visibleAncestry = Boolean(trigger);
+      for (let ancestor = trigger; ancestor; ancestor = ancestor.parentElement) {
+        const style = getComputedStyle(ancestor);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse"
+          || Number.parseFloat(style.opacity) <= 0 || ancestor.hasAttribute("hidden") || ancestor.hasAttribute("inert")) visibleAncestry = false;
+      }
       const hit = rect && rect.width > 0 && rect.height > 0
         ? document.elementFromPoint((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2) : null;
       return {
@@ -148,9 +153,7 @@ export function measureStudioSmartShapeCanvasSpace(stage: Element): StudioSmartS
           && trigger?.getAttribute("aria-describedby")?.split(/\s+/u).includes(summary.id)),
         expanded: trigger?.getAttribute("aria-expanded") ?? null,
         summary: trigger?.textContent?.trim() ?? null,
-        visible: Boolean(rect && rect.width > 0 && rect.height > 0 && style
-          && style.display !== "none" && style.visibility !== "hidden" && style.visibility !== "collapse"
-          && !trigger?.closest("[inert]") && hit && trigger?.contains(hit)),
+        visible: Boolean(rect && rect.width > 0 && rect.height > 0 && visibleAncestry && hit && trigger?.contains(hit)),
         rect: rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null,
       };
     }),

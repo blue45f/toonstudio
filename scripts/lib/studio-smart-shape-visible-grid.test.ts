@@ -234,6 +234,8 @@ describe("현재 연결 안내는 접힌 저장 상태 슬롯의 실제 표시�
     ["열린 상세", ({ trigger }) => trigger.setAttribute("aria-expanded", "true")],
     ["로컬 저장 권위 미확정", ({ panel }) => panel.setAttribute("data-studio-local-only", "false")],
     ["숨긴 버튼", ({ trigger }) => { trigger.style.display = "none"; }],
+    ["투명한 버튼", ({ trigger }) => { trigger.style.opacity = "0"; }],
+    ["투명한 조상", ({ center }) => { center.style.opacity = "0"; }],
     ["입력 비활성 조상", ({ center }) => center.setAttribute("inert", "")],
     ["다른 요소가 가림", ({ dom, button }) => { dom.window.document.elementFromPoint = vi.fn(() => button); }],
     ["viewport 밖", ({ trigger, dom }) => { trigger.getBoundingClientRect = () => new dom.window.DOMRect(-10, 180, 230, 44); }],
