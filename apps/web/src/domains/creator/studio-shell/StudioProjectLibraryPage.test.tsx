@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
@@ -529,6 +529,11 @@ describe("StudioProjectLibraryPage", () => {
           <StudioProjectLibraryPage />
         </MemoryRouter>,
       );
+
+      // 보조 화면의 실제 지연 청크를 준비한 뒤 빈 상태의 다음 행동을 검증한다.
+      await act(async () => {
+        await vi.dynamicImportSettled();
+      });
 
       expect((await screen.findAllByRole("link", { name: /새 작품 만들기|Create new work/u })).length).toBeGreaterThan(0);
       expect(screen.getAllByRole("link", { name: /파일 가져오기|\.toonstudio 파일 열기|Import files|Open \.toonstudio file/u }).length).toBeGreaterThan(0);
