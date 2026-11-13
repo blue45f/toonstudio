@@ -19,12 +19,13 @@ function CampusControlsView({ campus, compact }: { readonly campus: CampusContex
   const trigger = useRef<HTMLButtonElement>(null);
   if (!campus) return null;
   const close = () => { setOpen(false); trigger.current?.focus(); };
-  const mapCaption = compact ? (locale === "ko" ? "공간 지도" : "Campus") : campus.district.label[locale];
+  const districtLabel = campus.district.label[locale];
+  const mapCaption = locale === "ko" ? "공간 지도" : "Campus";
   const openMapLabel = locale === "ko" ? "공간 지도 열기" : "Open campus map";
   const modes: readonly [CampusMode, string, string][] = [["scene", "공간", "Space"], ["task", "업무", "Task"], ["focus", "집중", "Focus"]];
   return <div className="campus-controls" data-campus-controls={compact ? "compact" : "full"}>
     <button ref={trigger} type="button" className="campus-control" onClick={() => setOpen(true)}
-      aria-haspopup="dialog" aria-expanded={open} aria-label={compact ? openMapLabel : `${mapCaption} · ${openMapLabel}`}>
+      aria-haspopup="dialog" aria-expanded={open} title={districtLabel} aria-label={compact ? openMapLabel : `${districtLabel} · ${openMapLabel}`}>
       <Map size={18} aria-hidden="true" /><span>{mapCaption}</span>
     </button>
     {!compact && campus.binding.surface === "room" && campus.privacySensitive ? <button

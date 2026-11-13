@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketCompareShelf } from "./MarketCompareShelf";
 import { MarketCompareToggle } from "./MarketCompareToggle";
 import { MarketHomeSearch } from "./MarketHomeSearch";
+import { MarketHomePresets } from "./MarketHomePresets";
 import { MarketViewToggle } from "./MarketViewToggle";
 
 import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-marketplace-starter-catalog";
@@ -16,9 +17,37 @@ function LocationProbe() {
   return <output aria-label="테스트 경로">{location.pathname}{location.search}</output>;
 }
 beforeEach(() => { localStorage.clear(); useI18n.getState().setLang("ko"); });
-afterEach(() => { cleanup(); useI18n.getState().setLang("ko"); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); useI18n.getState().setLang("ko"); });
 
 describe("market experience controls", () => {
+  it("가려진 분류에 초점을 옮기면 분류 영역만 이동하고 선택과 창 위치는 보존한다", () => {
+    const onSelect = vi.fn();
+    render(<MemoryRouter><MarketHomePresets activeId="all" onSelect={onSelect} allButtonRef={null} /></MemoryRouter>);
+    const group = screen.getByRole("group", { name: "에셋 프리셋 선택" });
+    const buttons = within(group).getAllByRole("button");
+    expect(buttons).toHaveLength(6);
+    const first = buttons[0];
+    const last = buttons[5];
+    if (!first || !last) throw new Error("여섯 분류 버튼이 필요합니다.");
+    const scrollBy = vi.fn();
+    Object.defineProperty(group, "scrollBy", { configurable: true, value: scrollBy });
+    Object.defineProperty(group, "scrollWidth", { configurable: true, value: 420 });
+    Object.defineProperty(group, "clientWidth", { configurable: true, value: 300 });
+    vi.spyOn(group, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 300, 44));
+    vi.spyOn(last, "getBoundingClientRect").mockReturnValue(new DOMRect(280, 0, 80, 44));
+    vi.spyOn(first, "getBoundingClientRect").mockReturnValue(new DOMRect(-20, 0, 80, 44));
+    const scrollWindow = vi.spyOn(window, "scrollBy");
+    const initialWindowY = window.scrollY;
+    last.focus();
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: 64, behavior: "instant" });
+    first.focus();
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: -24, behavior: "instant" });
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(first.getAttribute("aria-pressed")).toBe("true");
+    expect(scrollWindow).not.toHaveBeenCalled();
+    expect(window.scrollY).toBe(initialWindowY);
+  });
+
   it("encodes a home search and keeps it inside the market", () => {
     render(<MemoryRouter initialEntries={["/market"]}><MarketHomeSearch /><LocationProbe /></MemoryRouter>);
     fireEvent.change(screen.getByRole("searchbox", { name: "찾고 싶은 소재" }), { target: { value: "  한옥 & 잉크  " } });

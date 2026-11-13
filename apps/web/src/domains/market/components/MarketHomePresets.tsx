@@ -45,7 +45,18 @@ export function MarketHomePresets({ activeId, onSelect, allButtonRef }: {
             <h2 className="text-sm font-bold text-fg sm:text-base">
               {t("소재 유형", "Material types")}
             </h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="group" aria-label={t("에셋 프리셋 선택", "Select asset preset")}>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="group" aria-label={t("에셋 프리셋 선택", "Select asset preset")}
+              onFocusCapture={(event) => {
+                const button = event.target;
+                const group = event.currentTarget;
+                if (!(button instanceof HTMLButtonElement) || button.parentElement !== group || group.scrollWidth <= group.clientWidth) return;
+                const bounds = group.getBoundingClientRect();
+                const target = button.getBoundingClientRect();
+                const delta = target.left < bounds.left + 4
+                  ? target.left - bounds.left - 4
+                  : target.right > bounds.right - 4 ? target.right - bounds.right + 4 : 0;
+                if (delta !== 0) group.scrollBy({ left: delta, behavior: "instant" });
+              }}>
               {MARKET_ECOSYSTEM_PRESETS.map((preset) => {
                 const selected = preset.id === activeId;
                 return (
@@ -79,7 +90,7 @@ export function MarketHomePresets({ activeId, onSelect, allButtonRef }: {
               <details className="w-full">
                 <summary className="flex min-h-11 [min-block-size:2.75rem]! cursor-pointer items-center gap-2 rounded-lg px-2 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-accent">
                   <HelpCircle size={16} aria-hidden="true" />
-                  {t("선택한 소재 안내", "About this material type")}
+                  {t("소재 안내 · 사용하기", "Material guide & use")}
                   <span aria-hidden="true">⌄</span>
                 </summary>
                 <div className="flex items-center gap-3 px-2 pb-3 pt-2">
@@ -104,7 +115,6 @@ export function MarketHomePresets({ activeId, onSelect, allButtonRef }: {
                   <p>{t(activePreset.description, PRESET_EN_COPY[activePreset.id].description)}</p>
                 </div>
                 </div>
-              </details>
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={activePreset.studioMountRoute}
@@ -120,6 +130,7 @@ export function MarketHomePresets({ activeId, onSelect, allButtonRef }: {
                   {t("전체 에셋 카탈로그", "Full asset catalog")}
                 </Link>
               </div>
+              </details>
             </div>
           ) : null}
         </section>

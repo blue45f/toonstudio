@@ -125,11 +125,13 @@ describe("SearchExplorer 빈 쿼리 추천", () => {
     expect(screen.queryByRole("button", { name: "사이다 검색" })).toBeNull();
   });
 
-  it("검색 실패 시 추천 패널에 에러와 재시도를 표시한다", () => {
+  it("검색 실패 시 추천은 짧게 안내하고 결과의 재시도 한 곳을 표시한다", () => {
     paginated.failed = true;
     renderExplorer();
     expect(screen.getByText("search.explorer.suggestions.error")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "search.explorer.retry" })).not.toBeNull();
+    expect(screen.getByRole("note").textContent).toContain("search.explorer.suggestions.error");
+    expect(screen.getByRole("button", { name: "common.retry.short" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "search.explorer.retry" })).toBeNull();
     expect(screen.queryByRole("button", { name: "회귀 검색" })).toBeNull();
   });
 });
@@ -166,6 +168,14 @@ describe("SearchEmptyQuerySuggestionsPanel 상태", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "search.explorer.retry" }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("결과 오류가 복구를 맡으면 추천 오류는 재시도를 중복하지 않는 짧은 note가 된다", () => {
+    render(<SearchEmptyQuerySuggestionsPanel t={t} state="error" errorPresentation="note"
+      suggestions={suggestions} onPickTerm={vi.fn()} onPickGenre={vi.fn()} onRetry={vi.fn()} />);
+    expect(screen.getByRole("note").textContent).toBe("search.explorer.suggestions.error");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("추천이 비면 빈 상태 문구를 보여준다", () => {

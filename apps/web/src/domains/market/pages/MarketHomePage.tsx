@@ -56,6 +56,7 @@ import {
   useMetaDescription,
   usePageSocialMeta,
 } from "@/shared/seo/use-document-title";
+import "./market-home-visual.css";
 
 const MOBILE_RECENT_LIMIT = 6;
 const POPULAR_TAG_LIMIT = 8;
@@ -69,6 +70,7 @@ export function MarketHomePage() {
     "웹툰 템플릿, 2D·3D 에셋, 브러시, 팔레트와 필터를 찾고 미리 본 뒤 ToonStudio 프로젝트에 바로 연결하세요.",
     "Find and preview webtoon templates, 2D/3D assets, brushes, palettes, and filters, then connect them straight to your ToonStudio project.",
   );
+  const [searchDraft, setSearchDraft] = useState("");
   const latest = useMarketResources({ limit: 12, sort: "newest" });
   const { isPaidMode } = useCommerceConfig();
   const hasLatestItems = latest.items.length > 0;
@@ -151,14 +153,15 @@ export function MarketHomePage() {
   }, [latest.items]);
 
   return (
-    <div>
+    <div className="market-home-front">
       <MarketHomeSectionNavigation section={section} />
       {section === "buy" ? <>
       <div data-market-band="buy">
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-6 sm:py-8 lg:py-10">
           <SitePageHeader
-            size="hero"
+            surface="plain"
+            className="market-home-masthead"
             icon={Store}
             eyebrow="MATERIAL MARKET"
             title={t("장면에 필요한 소재", "Materials for your scene")}
@@ -169,18 +172,18 @@ export function MarketHomePage() {
             aside={<MarketMaterialPreview />}
             asideClassName="market-home-masthead__aside hidden lg:block"
             actions={
-              <>
-                <Link href="/market/browse" className={buttonClass({ variant: "solid", size: "md", className: "min-h-11" })}>
+              <div className="market-home-meta">
+                <Link href="/market/browse" className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11" })}>
                   <Store className="h-4 w-4" aria-hidden="true" />
-                  {t("소재 찾기", "Find materials")}
+                  {t("전체 소재 보기", "Browse all materials")}
                 </Link>
                 <span className="inline-flex items-center rounded-full border border-good/30 bg-good/10 px-3 py-1.5 text-xs font-semibold text-good">
                   {isPaidMode ? t("현재 유료 운영 모드", "Currently in paid operation mode") : t("현재 무료 운영 모드", "Currently in free operation mode")}
                 </span>
-              </>
+              </div>
             }
           >
-            <MarketHomeSearch className="max-w-xl" />
+            <MarketHomeSearch className="max-w-xl" queryValue={searchDraft} onQueryChange={setSearchDraft} />
           </SitePageHeader>
         </Container>
       </section>

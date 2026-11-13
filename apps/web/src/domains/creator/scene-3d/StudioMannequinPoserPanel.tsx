@@ -1600,7 +1600,7 @@ export function StudioMannequinPoserPanel({
                     ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
                     : undefined
               }
-              className={buttonClass({ size: "icon", variant: "quiet", className: "pointer-coarse:size-11" })}
+              className={buttonClass({ size: "icon", variant: "quiet", className: "min-h-11 min-w-11 pointer-coarse:size-11" })}
               aria-label="3D 데생 인형 닫기"
             >
               <X size={16} aria-hidden />

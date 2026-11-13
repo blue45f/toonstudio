@@ -1,0 +1,40 @@
+/* 소재 정문에서 검색·종류·실제 목록의 순서를 먼저 읽는다. */
+.market-home-front { color: var(--color-fg); }
+.market-home-front .market-home-purpose { padding-block: 12px 0; }
+.market-home-purpose > div > nav { margin-block: 0 12px; }
+.market-home-front [data-market-band="buy"] > section { border: 0; background: transparent; }
+.market-home-front [data-market-band="buy"] > section > [data-page-container] { padding-block: 12px 8px; }
+[data-site-experience] .route-stage[data-theme-contract="unified"] .market-home-front [data-page-container] > .market-home-masthead { padding-block: 0; border: 0; margin-bottom: 0; background: transparent; }
+.market-home-front .market-home-masthead h1 { max-width: none; }
+.market-home-front .market-home-masthead__aside { max-width: 18rem; margin-left: auto; }
+.market-home-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.market-home-meta > span { font-size: 11px; }
+.market-home-front [data-market-band="buy"] > [data-page-container] { padding-top: 12px; }
+.market-home-front [data-testid="market-rea-ecosystem-presets"] { border: 0; border-radius: 0; padding: 0; margin-bottom: 0; background: transparent; box-shadow: none; }
+.market-home-front [data-testid="market-rea-ecosystem-presets"] > div:last-child { margin-top: 8px; padding-top: 0; border: 0; }
+.market-home-front [data-testid="market-rea-ecosystem-presets"] details { width: 100%; }
+.market-home-front [data-testid="market-rea-ecosystem-presets"] details > div:last-child { padding: 8px; }
+/* 재료 이미지와 실제 선택은 유지하고, 검색 위에서 반복하는 장문 소개만 줄인다. */
+@media (min-width: 1024px) {
+  .market-home-front .market-home-masthead__aside .market-material-image { height: 128px; }
+  .market-home-front .market-material-label { left: 8px; bottom: 8px; padding: 4px 6px; font-size: 9px; }
+  .market-home-front .market-material-preview figcaption { padding: 10px; }
+  .market-home-front .market-material-tabs { flex-wrap: nowrap; gap: 4px; }
+  .market-home-front .market-material-tabs > button { flex: 1; min-width: 0; gap: 4px; padding-inline: 6px; white-space: nowrap; font-size: 10px; }
+  .market-home-front .market-material-description { margin-top: 8px; }
+  .market-home-front .market-material-description h2 { font-size: 13px; line-height: 1.5; }
+  .market-home-front .market-material-description p { display: none; }
+  .market-home-front .market-material-bottom { margin-top: 6px; padding-top: 0; border-top: 0; }
+  .market-home-front .market-material-bottom > span { font-size: 10px; }
+}
+@media (max-width: 1023px) {
+  .market-home-front [data-testid="market-rea-ecosystem-presets"] [role="group"] { display: flex; max-width: 100%; gap: 6px; overflow-x: auto; overscroll-behavior-inline: contain; padding: 2px 4px 6px; scrollbar-width: thin; }
+  .market-home-front [data-testid="market-rea-ecosystem-presets"] [role="group"] > button { flex: 0 0 auto; white-space: nowrap; }
+}
+@media (max-width: 639px) {
+  .market-home-front .market-home-purpose label { gap: 5px; }
+  .market-home-front [data-market-band="buy"] .market-home-masthead > div { gap: 0; }
+  .market-home-front [data-testid="market-rea-ecosystem-presets"] details > summary { font-size: 12px; }
+  .market-home-front .market-home-meta { gap: 6px; }
+  .market-home-meta > a { padding-inline: 0; }
+}

@@ -337,9 +337,8 @@ export function MobileHeaderNavigation({
         <nav
           aria-label={t("nav.quickAccess")}
           data-site-product={navigationContext}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-accent/25 bg-panel/94 shadow-[0_-12px_35px_-28px_var(--color-fg)] backdrop-blur-2xl min-[1180px]:hidden"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-panel min-[1180px]:hidden"
         >
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div
             className={cx(
               "mx-auto grid max-w-md pb-[env(safe-area-inset-bottom)]",
@@ -360,7 +359,7 @@ export function MobileHeaderNavigation({
                   aria-current={active ? "page" : undefined}
                   className={cx(
                     "relative flex min-h-[3.75rem] flex-col items-center justify-center gap-1 py-2 text-xs font-semibold outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent active:bg-raised/55",
-                    active ? "text-accent" : "text-fg-3 hover:text-fg"
+                    active ? "text-accent" : "text-fg-2 hover:text-fg"
                   )}
                 >
                   <span className="relative grid size-8 place-items-center rounded-xl transition-colors">
@@ -370,14 +369,10 @@ export function MobileHeaderNavigation({
                           aria-hidden="true"
                           className="absolute -top-2 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-accent"
                         />
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-0 rounded-xl bg-accent-soft"
-                        />
                       </>
                     )}
                     <Icon
-                      size={19}
+                      size={22}
                       strokeWidth={active ? 2.35 : 1.85}
                       className="relative"
                     />

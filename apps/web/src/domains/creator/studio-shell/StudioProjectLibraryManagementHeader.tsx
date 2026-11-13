@@ -1,5 +1,5 @@
 import { formatI18nTemplate, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Archive, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { Archive, Laptop, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 
 import Link from "@/shared/navigation/router-link";
@@ -84,6 +84,7 @@ export function StudioProjectLibraryManagementHeader({
           <h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
+          <p className="studio-library-storage-note"><Laptop size={14} aria-hidden="true" />{bi("저장 위치는 작품별로 확인하세요", "Check the storage location for each work")}</p>
           {!recentProject ? <p className="mt-1 text-sm leading-5 text-fg-2">
             {view === "active" && !hasSearchQuery && !recentProject
               ? listedProjects.length > 0

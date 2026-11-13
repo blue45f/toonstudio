@@ -67,17 +67,17 @@ export function ReferenceCreatorDashboard() {
         </div>
         <figure className="rd-clarity-art" aria-label={bi("선화에서 완성작으로 이어지는 브랜드 예시 원고", "Brand artwork: from line art to a finished scene")}>
           <div className="rd-clarity-manuscript">
-            <img src="/brand/illustrated-20260928/canvas-noir-640.webp" srcSet="/brand/illustrated-20260928/canvas-noir-320.webp 320w, /brand/illustrated-20260928/canvas-noir-640.webp 640w" sizes="(max-width: 639px) 38vw, 24vw" alt={bi("빗속 인물의 흑백 원고 예시", "Example black-and-white manuscript of a character in the rain")} width={640} height={638} decoding="async" />
-            <img src="/brand/illustrated-20260928/hero-640.webp" srcSet="/brand/illustrated-20260928/hero-320.webp 320w, /brand/illustrated-20260928/hero-640.webp 640w" sizes="(max-width: 639px) 48vw, 30vw" alt={bi("보랏빛 도시를 배경으로 한 컬러 원고 예시", "Example color manuscript with a purple city backdrop")} width={640} height={637} decoding="async" fetchPriority="high" />
+            <img src="/brand/workflow-20260928/create-640.webp" srcSet="/brand/workflow-20260928/create-320.webp 320w, /brand/workflow-20260928/create-640.webp 640w, /brand/workflow-20260928/create-960.webp 960w" sizes="(max-width: 639px) 100vw, 52vw" alt={bi("선화에 색을 더하며 완성하는 웹툰 원고 예시", "Example webtoon manuscript progressing from line art to color")} width={960} height={600} decoding="async" fetchPriority="high" />
           </div>
-          <div className="rd-clarity-sketch"><img src="/brand/lobby-hq-20261003/storyboard-480.webp" alt={bi("세 장면으로 이어진 연필 콘티 예시", "Example pencil storyboard with three scenes")} width={480} height={485} decoding="async" /></div>
           <figcaption>{bi("ToonStudio 브랜드 아트", "ToonStudio brand artwork")}</figcaption>
         </figure>
       </section>
       <nav className="rd-clarity-journey" aria-label={bi("작품을 만드는 순서", "Steps to create your work")}>
-        <Link href="/create?intent=my-story"><span className="rd-clarity-journey-icon"><BookOpen size={24} aria-hidden="true" /></span><span><strong>{bi("이야기 준비", "Plan your story")}</strong><small>{bi("첫 생각을 첫 장면으로", "Turn an idea into a first scene")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
-        <Link href="/studio/new?lane=blank"><span className="rd-clarity-journey-icon"><PencilLine size={24} aria-hidden="true" /></span><span><strong>{bi("원고 그리기", "Draw your pages")}</strong><small>{bi("캔버스에서 자유롭게", "Create freely on the canvas")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
-        <Link href="/studio?view=exports"><span className="rd-clarity-journey-icon"><FileCheck size={24} aria-hidden="true" /></span><span><strong>{bi("작품 완성", "Finish your work")}</strong><small>{bi("확인하고 내보내기", "Review and export")}</small></span><ChevronRight size={18} aria-hidden="true" /></Link>
+        <ol>
+          <li><Link href="/create?intent=my-story"><span className="rd-clarity-journey-icon" aria-hidden="true"><BookOpen size={28} /></span><strong>{bi("이야기 준비", "Plan your story")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
+          <li><Link href="/studio/new?lane=blank"><span className="rd-clarity-journey-icon" aria-hidden="true"><PencilLine size={28} /></span><strong>{bi("원고 그리기", "Draw your pages")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
+          <li><Link href="/studio?view=exports"><span className="rd-clarity-journey-icon" aria-hidden="true"><FileCheck size={28} /></span><strong>{bi("작품 완성", "Finish your work")}</strong></Link></li>
+        </ol>
       </nav>
       <div ref={helpersRef} className="rd-clarity-helpers">
         <details className="rd-idea-help">

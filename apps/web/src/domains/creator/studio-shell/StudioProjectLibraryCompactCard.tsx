@@ -61,7 +61,7 @@ export function StudioProjectLibraryCompactCard(props: CardProps & { readonly se
         </div>
         <Link href={continueHref} onClick={onTouch} data-studio-card-continue="true" className="studio-library-row-continue"
           aria-label={bt("이어서 작업", "Continue")} aria-description={project.title}>
-          <ChevronRight size={20} aria-hidden="true" /><span className="sr-only">{project.title}</span>
+          <span aria-hidden="true">{bt("이어서 작업", "Continue")}</span><ChevronRight size={18} aria-hidden="true" /><span className="sr-only">{project.title}</span>
         </Link>
       </div>
       <div className="studio-library-project-row-actions">

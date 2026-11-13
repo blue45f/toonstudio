@@ -16,6 +16,7 @@ export interface SearchEmptyQuerySuggestionsPanelProps {
   onPickTerm: (term: string) => void;
   onPickGenre: (genre: string) => void;
   onRetry: () => void;
+  errorPresentation?: "standalone" | "note";
 }
 
 // 빈 쿼리 추천 패널 — 인기 검색어 칩(클릭 시 그 검색어로 실제 검색 실행) +
@@ -29,7 +30,14 @@ export function SearchEmptyQuerySuggestionsPanel({
   onPickTerm,
   onPickGenre,
   onRetry,
+  errorPresentation = "standalone",
 }: SearchEmptyQuerySuggestionsPanelProps) {
+  // 결과와 인기 검색어가 같은 요청에서 실패하면 복구는 결과 오류 한 곳에서 맡는다.
+  if (state === "error" && errorPresentation === "note") return (
+    <p role="note" data-search-suggestions="" className="mt-3 border-t border-line pt-3 text-xs text-fg-2">
+      {t("search.explorer.suggestions.error")}
+    </p>
+  );
   return (
     <div
       className="mt-3 border-t border-line pt-3"
