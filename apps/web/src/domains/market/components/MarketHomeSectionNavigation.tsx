@@ -36,14 +36,14 @@ export function MarketHomeSectionNavigation({ section }: { readonly section: Mar
         <Link href={hrefFor("buy")} className="mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
           <ArrowLeft size={16} aria-hidden="true" />{t("소재 찾기로", "Back to materials")}
         </Link>
-        <h1 tabIndex={-1} className="text-2xl font-bold tracking-tight text-fg outline-none focus-visible:outline-2 focus-visible:outline-accent">{t(...selected.title)}</h1>
+        <h1 tabIndex={-1} className="text-2xl font-bold tracking-tight text-fg outline-none focus-visible:outline-2 focus-visible:outline-accent">{t(selected.title[0], selected.title[1])}</h1>
         <p className="mt-2 text-sm leading-6 text-fg-2">{t("필요한 작업을 골라 한 화면씩 살펴보세요.", "Choose a task and explore one screen at a time.")}</p>
       </header> : null}
       <nav aria-label={t("마켓 작업 선택", "Choose a market task")} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {MARKET_HOME_SECTIONS.map((item) => <Link key={item.id} href={hrefFor(item.id)}
           aria-current={section === item.id ? "page" : undefined}
           className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2.5 text-center text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${section === item.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg"}`}>
-          {t(...item.label)}
+          {t(item.label[0], item.label[1])}
         </Link>)}
       </nav>
     </div>

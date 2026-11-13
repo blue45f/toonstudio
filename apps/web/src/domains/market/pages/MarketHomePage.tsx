@@ -82,7 +82,7 @@ export function MarketHomePage() {
   }, [recoveredAt, hasFatalLatestError, reloadLatest]);
 
   const sectionInfo = MARKET_HOME_SECTIONS.find((item) => item.id === section) ?? MARKET_HOME_SECTIONS[0];
-  useDocumentTitle(section === "buy" ? t("소재 마켓", "Material Market") : t(...sectionInfo.title));
+  useDocumentTitle(section === "buy" ? t("소재 마켓", "Material Market") : t(sectionInfo.title[0], sectionInfo.title[1]));
   useMetaDescription(marketHomeDescription);
   usePageSocialMeta({
     canonicalPath: "/market",
