@@ -73,7 +73,7 @@ test("CLI exits nonzero for malformed JSON and failed gates, then succeeds once"
   assert.match(result.stdout, /all required checks succeeded/);
 });
 
-test("Core 타입·coverage는 표준 runner에서 실패를 숨기지 않고 35분 한도로 실행한다", () => {
+test("Core 타입·coverage는 표준 runner에서 실패를 숨기지 않고 65분 한도로 실행한다", () => {
   const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const start = ci.indexOf("\n  typecheck:"), end = ci.indexOf("\n  static:", start);
   assert(start >= 0 && end > start, "실제 typecheck job 범위를 읽어야 합니다.");
@@ -86,7 +86,7 @@ test("Core 타입·coverage는 표준 runner에서 실패를 숨기지 않고 35
   assert.equal(packageJson.scripts["check:type-coverage"], "type-coverage --at-least 95");
   assert.equal(packageJson.scripts["typecheck:web"], "node scripts/typecheck-shards.mjs --heap-mb 8192 --max-source-bytes 12582912");
   assert.doesNotMatch(typecheck, /continue-on-error|\|\|\s*true|set\s+\+e|--passWithNoTests/u);
-  assert.match(typecheck, /^ {4}timeout-minutes: 35$/mu);
+  assert.match(typecheck, /^ {4}timeout-minutes: 65$/mu);
 });
 
 

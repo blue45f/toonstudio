@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement, createRef } from "react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioBg3dEditorModal } from "./StudioBg3dEditorModal";
@@ -64,9 +65,12 @@ function host(
   };
 }
 
+// 실제 정밀 작업실의 내부 링크가 사용하는 라우터를 모든 render/rerender에 유지한다.
+const renderModal = (ui: Parameters<typeof render>[0]) => render(ui, { wrapper: MemoryRouter });
+
 describe("BG3D modal compositor boundary", () => {
   it("uses a dense readable scrim rather than sampling the underlying full-screen GPU canvas", () => {
-    render(createElement(StudioBg3dEditorModal, { h: host() }));
+    renderModal(createElement(StudioBg3dEditorModal, { h: host() }));
     const dialog = screen.getByRole("dialog", { name: "장면 도우미" });
     expect(dialog.className).toContain("bg-[oklch(0.08_0.01_70/0.94)]");
     expect(dialog.className).not.toContain("backdrop-blur");
@@ -75,7 +79,7 @@ describe("BG3D modal compositor boundary", () => {
   });
 
   it("opens in simple mode and keeps the professional workspace one click away", () => {
-    render(createElement(StudioBg3dEditorModal, { h: host() }));
+    renderModal(createElement(StudioBg3dEditorModal, { h: host() }));
     const dialog = screen.getByRole("dialog", { name: "장면 도우미" });
     expect(dialog.getAttribute("data-studio-bg3d-experience")).toBe("simple");
     expect(dialog.getAttribute("data-studio-bg3d-workspace")).toBe("scene-assistant-v1");
@@ -90,7 +94,7 @@ describe("BG3D modal compositor boundary", () => {
 
   it("keeps the keyboard-focusable close action and its original dismissal handler", () => {
     const h = host();
-    render(createElement(StudioBg3dEditorModal, { h }));
+    renderModal(createElement(StudioBg3dEditorModal, { h }));
     const close = screen.getByRole("button", { name: /^닫기$/ });
     expect(close.getAttribute("data-bg3d-initial-focus")).toBe("true");
     fireEvent.click(close);
@@ -103,7 +107,7 @@ describe("BG3D modal compositor boundary", () => {
     vi.stubGlobal("visualViewport", viewport);
     vi.stubGlobal("innerHeight", 664);
     const h = host({ open: false });
-    const view = render(createElement(StudioBg3dEditorModal, { h }));
+    const view = renderModal(createElement(StudioBg3dEditorModal, { h }));
     view.rerender(createElement(StudioBg3dEditorModal, { h: { ...h, open: true } }));
     const dialog = screen.getByRole("dialog", { name: "장면 도우미" });
     screen.getByRole("textbox", { name: "장면 검색" }).focus();
@@ -124,7 +128,7 @@ describe("BG3D modal compositor boundary", () => {
 
   it("does not dismiss or expose scene editing while a capture owns the scene", () => {
     const h = host({ isCapturing: true });
-    render(createElement(StudioBg3dEditorModal, { h }));
+    renderModal(createElement(StudioBg3dEditorModal, { h }));
     const close = screen.getByRole("button", { name: /^닫기$/ }) as HTMLButtonElement;
     expect(close.disabled).toBe(true);
     fireEvent.click(close);
@@ -135,7 +139,7 @@ describe("BG3D modal compositor boundary", () => {
 
   it("retains a hidden inert XR owner without retaining an accessible dialog", () => {
     const h = host({ open: false, webXrRendererLifetimeRetained: true });
-    const view = render(createElement(StudioBg3dEditorModal, { h }));
+    const view = renderModal(createElement(StudioBg3dEditorModal, { h }));
     const root = view.container.firstElementChild;
     expect(root?.hasAttribute("hidden")).toBe(true);
     expect(root?.hasAttribute("inert")).toBe(true);

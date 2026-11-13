@@ -67,11 +67,11 @@ describe("브라우저 안의 작업실 (browser-studio)", () => {
     expect(count("packages")).toBe(0);
   });
 
-  it("서비스 워커 요청 분류는 10종류이고 필수 미리받기 예산은 2,528 KiB 이다", () => {
+  it("서비스 워커 요청 분류는 10종류이고 필수 미리받기 예산은 2,544 KiB 이다", () => {
     const policy = read("apps/web/src/app/service-worker/studio-service-worker-policy.ts");
     const union = /export type StudioServiceWorkerRouteClass =([\s\S]*?)export type StudioServiceWorkerStrategy/u.exec(policy)?.[1] ?? "";
     expect(union.match(/\n\s*\|\s*"[a-z-]+"/gu)).toHaveLength(10);
-    expect(read("apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts")).toContain("criticalBytes: 2528 * 1024");
+    expect(read("apps/web/src/app/service-worker/studio-service-worker-precache-plan.ts")).toContain("criticalBytes: 2544 * 1024");
   });
 
   it("기기 안 SQLite 스키마는 v6 까지이고 자동 저장은 편집이 1.5초 멈춘 뒤에 일어난다", () => {

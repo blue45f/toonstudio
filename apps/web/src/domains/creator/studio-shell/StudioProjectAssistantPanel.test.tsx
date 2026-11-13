@@ -109,6 +109,38 @@ describe("StudioProjectAssistantPanel", () => {
     expect(window.sessionStorage.length).toBe(0);
   });
 
+  it("sessionStorage getter가 거부돼도 도우미 입력과 초기화를 현재 화면에서 계속 사용한다", () => {
+    const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
+    const getter = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
+      throw new DOMException("session storage blocked", "SecurityError");
+    });
+    try {
+      const view = render(
+        <MemoryRouter initialEntries={["/studio/p/project-a/story"]}>
+          <StudioProjectAssistantPanel
+            projectId="project-a"
+            section="story"
+            locale="ko"
+            fetchImpl={fetchMock}
+          />
+        </MemoryRouter>,
+      );
+      const textarea = screen.getByLabelText("요청 내용") as HTMLTextAreaElement;
+      const initialPrompt = textarea.value;
+      fireEvent.change(textarea, { target: { value: "저장소가 막혀도 현재 화면에 남을 대사" } });
+      expect(textarea.value).toBe("저장소가 막혀도 현재 화면에 남을 대사");
+      expect(readStudioAssistantSessionState("project-a")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "기본 예시로 초기화" }));
+      expect(textarea.value).toBe(initialPrompt);
+      fireEvent.change(textarea, { target: { value: "다시 이어 쓰는 입력" } });
+      expect(textarea.value).toBe("다시 이어 쓰는 입력");
+      expect(getter).toHaveBeenCalled();
+      view.unmount();
+    } finally {
+      getter.mockRestore();
+    }
+  });
+
   it("프로젝트 전환(projectId 변경) 시 이전 작품 초안이 대상 작품의 세션 저장소를 덮어쓰지 않는다", () => {
     const fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("offline"));
     writeStudioAssistantSessionState(

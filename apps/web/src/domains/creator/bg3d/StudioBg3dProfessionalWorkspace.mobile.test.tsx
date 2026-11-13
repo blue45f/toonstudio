@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
 
@@ -28,8 +29,8 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.localStorage.clear(); });
 function Viewport({ h }: { readonly h: unknown }) { return <main data-host-present={Boolean(h)}>장면</main>; }
 function Workspace() {
-  return <StudioBg3dProfessionalWorkspace scopeKey="mobile-cut-layout" outliner={<span>계층</span>}
-    viewport={<Viewport h={{}} />} inspector={<aside>속성</aside>} />;
+  return <MemoryRouter><StudioBg3dProfessionalWorkspace scopeKey="mobile-cut-layout" outliner={<span>계층</span>}
+    viewport={<Viewport h={{}} />} inspector={<aside>속성</aside>} /></MemoryRouter>;
 }
 function resize(next: number): void { act(() => { width = next; queries.forEach((query) => query.changed()); }); }
 

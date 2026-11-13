@@ -264,10 +264,21 @@ export interface StudioAssistantSessionSnapshot {
   readonly lastResult: StudioOpenAiAssistSuccess | null;
 }
 
+/** 명시한 null/Storage를 우선하고, 기본 브라우저 저장소 getter 거부만 안전하게 처리한다. */
+function resolveStudioAssistantSessionStorage(override: Storage | null | undefined): Storage | null {
+  if (override !== undefined) return override;
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function readStudioAssistantSessionState(
   projectId: string,
-  storage: Storage | null = typeof window !== "undefined" ? window.sessionStorage : null,
+  storageOverride?: Storage | null,
 ): StudioAssistantSessionSnapshot | null {
+  const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId) return null;
   try {
     const raw = storage.getItem(`${SESSION_KEY_PREFIX}${projectId}`);
@@ -303,8 +314,9 @@ export function readStudioAssistantSessionState(
 export function writeStudioAssistantSessionState(
   projectId: string,
   snapshot: StudioAssistantSessionSnapshot,
-  storage: Storage | null = typeof window !== "undefined" ? window.sessionStorage : null,
+  storageOverride?: Storage | null,
 ): void {
+  const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId || !isValidOpenAiMode(snapshot.openAiMode)) return;
   const sanitizedResult = isValidStoredSuccess(snapshot.lastResult)
     ? snapshot.lastResult
@@ -329,8 +341,9 @@ export function writeStudioAssistantSessionState(
 
 export function clearStudioAssistantSessionState(
   projectId: string,
-  storage: Storage | null = typeof window !== "undefined" ? window.sessionStorage : null,
+  storageOverride?: Storage | null,
 ): void {
+  const storage = resolveStudioAssistantSessionStorage(storageOverride);
   if (!storage || !projectId) return;
   try {
     storage.removeItem(`${SESSION_KEY_PREFIX}${projectId}`);

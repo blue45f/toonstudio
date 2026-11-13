@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
 
 import { selectChangedUnitTestTargets } from "./run-changed-unit-tests.mjs";
+
+const { describe, it } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 describe("selectChangedUnitTestTargets", () => {
   it("수정된 소스 파일의 인접 단위 테스트와 스크립트 테스트를 정확히 매핑한다", () => {

@@ -2,12 +2,28 @@ import { errors, type Locator, type Page } from "playwright";
 
 type PrepareStudioDrawingTarget = (timeoutMs: number) => Promise<void>;
 
+interface StudioDrawingReadiness {
+  readonly welcomeDismissed: boolean;
+  /** 실제 닫기 증거와 구분한다. 현재 모바일 Clarity가 의도적으로 접은 안내다. */
+  readonly guidePresentation?: "clarity-mobile-collapsed";
+}
+
+async function hasClarityMobileCollapsedGuide(page: Page): Promise<boolean> {
+  const editor = page.locator('[data-studio-editor="true"][data-studio-drawing-clarity="true"][data-studio-drawing-clarity-mobile="true"]');
+  if (await editor.count() !== 1 || !(await editor.isVisible())) return false;
+  const collapsed = editor.locator('[data-studio-cinematic-canvas-welcome="collapsed"]');
+  if (await collapsed.count() !== 1 || await collapsed.isVisible()) return false;
+  return await editor.locator('[data-studio-drawing-clarity-mobile-header="true"]').isVisible()
+    && await editor.locator('[data-studio-mobile-primary-actions="true"]').isVisible();
+}
+
+
 interface DrawingReadinessOptions {
   /** 픽셀 증거에서만 접힌 안내의 그림자도 제외한다. 일반 조작 검증은 안내를 유지한다. */
   dismissCollapsedWelcome?: boolean;
   /** 픽셀 캡처에서는 포커스 복귀로 열린 도구 설명을 정상 Escape로 닫는다. */
   dismissToolHints?: boolean;
-  /** 빈 문서 진입/초기화에서는 지연 마운트될 안내의 실제 닫기까지 기다린다. */
+  /** 빈 문서 진입/초기화에서는 안내 실제 닫기 또는 현재 Clarity의 명시적 접힘 상태를 확인한다. */
   requireWelcome?: boolean;
   timeoutMs?: number;
 }
@@ -17,7 +33,7 @@ async function reachDrawingUi(
   { requireWelcome = false, timeoutMs = 60_000, dismissCollapsedWelcome = false, dismissToolHints = false }: DrawingReadinessOptions,
   target?: Locator,
   prepareTarget?: PrepareStudioDrawingTarget,
-): Promise<{ welcomeDismissed: boolean }> {
+): Promise<StudioDrawingReadiness> {
   const deadline = Date.now() + timeoutMs;
   const welcome = page.locator(dismissCollapsedWelcome
     ? '[data-studio-cinematic-canvas-welcome]'
@@ -62,8 +78,10 @@ async function reachDrawingUi(
         await page.keyboard.press("Escape");
         continue;
       }
+      const clarityMobileCollapsed = requireWelcome && !welcomeDismissed && !overlayVisible
+        && await hasClarityMobileCollapsedGuide(page);
       if (
-        !overlayVisible && (!requireWelcome || welcomeDismissed)
+        !overlayVisible && (!requireWelcome || welcomeDismissed || clarityMobileCollapsed)
         && await viewport.isVisible() && await stage.isVisible()
       ) {
         // 가시성 조회 사이에 마운트된 안내를 놓치지 않는다.
@@ -77,7 +95,9 @@ async function reachDrawingUi(
             if (clickRemaining <= 0) break;
             await target.click({ timeout: Math.min(1_000, clickRemaining) });
           }
-          if (Date.now() < deadline) return { welcomeDismissed };
+          if (Date.now() < deadline) return clarityMobileCollapsed
+            ? { welcomeDismissed, guidePresentation: "clarity-mobile-collapsed" }
+            : { welcomeDismissed };
         }
       }
     } catch (error) {
@@ -103,7 +123,7 @@ async function reachDrawingUi(
 export async function waitForStudioDrawingReady(
   page: Page,
   options: DrawingReadinessOptions = {},
-): Promise<{ welcomeDismissed: boolean }> {
+): Promise<StudioDrawingReadiness> {
   return reachDrawingUi(page, options);
 }
 

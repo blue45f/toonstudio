@@ -14,6 +14,8 @@ on:
       - 'scripts/verify-feedback-community-db.mts'
       - '*feedback*.ts'
       - '.github/workflows/feedback-community-validation.yml'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
       - 'scripts/ci-shared-typecheck.mjs'
       - 'scripts/ci-shared-typecheck.test.mjs'
@@ -34,6 +36,8 @@ on:
       - 'scripts/verify-feedback-community-db.mts'
       - '*feedback*.ts'
       - '.github/workflows/feedback-community-validation.yml'
+      - 'scripts/verify-typechecked-build-inputs.mjs'
+      - 'scripts/verify-typechecked-build-inputs.test.mjs'
       - 'scripts/ci-enospc-followup-policy.test.mjs'
       - 'scripts/ci-shared-typecheck.mjs'
       - 'scripts/ci-shared-typecheck.test.mjs'
@@ -206,7 +210,10 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee artifacts/feedback/typecheck.log
+        run: |
+          set -euo pipefail
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs record "$RUNNER_TEMP/typechecked-build-inputs.json"
+          node scripts/ci-shared-typecheck.mjs reuse-or-run 2>&1 | tee artifacts/feedback/typecheck.log
       - name: Shared input and response contract tests
         id: unit
         continue-on-error: true
@@ -232,7 +239,15 @@ jobs:
       - name: Build complete production application
         id: production
         continue-on-error: true
-        run: pnpm run build 2>&1 | tee artifacts/feedback/production-build.log
+        if: ${{ !cancelled() && steps.types.outcome == 'success' }}
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.types.outcome }}
+        run: |
+          set -euo pipefail
+          pnpm run prebuild
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"
+          pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log
+          node --max-old-space-size=8192 scripts/verify-typechecked-build-inputs.mjs verify "$RUNNER_TEMP/typechecked-build-inputs.json"
       - name: Collect optional lint fix suggestions without changing tested commit
         if: always() && steps.lint.outcome == 'failure'
         run: |

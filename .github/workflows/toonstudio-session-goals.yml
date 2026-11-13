@@ -28,7 +28,7 @@ jobs:
   focused-validation:
     name: focused validation
     runs-on: ubuntu-24.04
-    timeout-minutes: 24
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 40 || 24 }}
     env:
       CI: "true"
       HUSKY: "0"
@@ -49,6 +49,17 @@ jobs:
           sparse-checkout: |
             /*
             !/apps/web/public/assets/
+            /apps/web/public/assets/3d/*.glb
+            /apps/web/public/assets/3d/refined-v8/*.glb
+            /apps/web/public/assets/3d/refined-v8/thumbnails/
+            /apps/web/public/assets/3d/kitbash-v9/*.glb
+            /apps/web/public/assets/3d/kitbash-v9/thumbnails/
+            /apps/web/public/assets/3d/kitbash-v10/*.glb
+            /apps/web/public/assets/3d/kitbash-v10/thumbnails/
+            /apps/web/public/assets/3d/environments/authored-v1/*.glb
+            /apps/web/public/assets/3d/environments/authored-v1/thumbnails/
+            /apps/web/public/assets/3d/environments/refined-v6/passes/
+            /apps/web/public/assets/3d/hdri/*.hdr
             /apps/web/public/assets/3d/outfits/
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json

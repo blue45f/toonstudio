@@ -127,6 +127,26 @@ describe("database integration runner CI policy", () => {
     );
   });
 
+  it.each([
+    ["integration-runtime-connectors.yml", "validate", "Type-check Web"],
+    ["studio-editor-client-runtime.yml", "runtime", "Studio app typecheck"],
+  ])("%s는 전체 Web 검사 범위를 유지하는 정본 분할 진입점과 유한 시간 상한을 사용한다", (filename, jobName, stepName) => {
+    const job = readYaml(`.github/workflows/${filename}`).jobs[jobName];
+    const web = job.steps.find((step) => step.name === stepName);
+    expect(web?.run).toBe("pnpm run typecheck:web");
+    expect(web?.["continue-on-error"]).not.toBe(true);
+    expect(job["continue-on-error"]).not.toBe(true);
+    expect(job["runs-on"]).toBe("ubuntu-24.04");
+    expect(job["timeout-minutes"]).toBe(65);
+    expect(runCommands(job).join("\n")).not.toMatch(/pnpm\s+exec\s+tsc\s+-p\s+tsconfig\.json/u);
+    expect(readJson("package.json").scripts["typecheck:web"]).toBe(
+      "node scripts/typecheck-shards.mjs --heap-mb 8192 --max-source-bytes 12582912",
+    );
+    expect(runCommands(job)).toContain(filename === "integration-runtime-connectors.yml"
+      ? "pnpm --filter @webtoon-nest/api typecheck"
+      : "pnpm exec tsc -p packages/studio-command-registry/tsconfig.json");
+  });
+
   it("keeps `pnpm test` equal to the root suite plus the quiet perf-budget pass", () => {
     const packageManifest = readJson("package.json");
 

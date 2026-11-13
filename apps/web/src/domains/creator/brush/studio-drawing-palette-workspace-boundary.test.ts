@@ -6,7 +6,7 @@ import { readStudioInspectorAsideSurface } from "../read-studio-inspector-aside-
 import { readStudioCuttoonEditorSource } from "../studio-cuttoon-editor/read-studio-cuttoon-editor-source";
 
 const pageSource = readStudioCuttoonEditorSource();
-const workspacePersistenceSource = readFileSync(
+const persistenceSource = readFileSync(
   new URL("../studio-page-workspace-persistence.ts", import.meta.url),
   "utf8",
 );
@@ -131,13 +131,13 @@ describe("Studio drawing palette workspace integration boundary", () => {
       "workspace apply",
     );
     const ownerSync = sourceBetween(
-      workspacePersistenceSource,
+      persistenceSource,
       "function runStudioWorkspaceOwnerHydration(",
       "function replayStudioPendingExternalWorkspaceSync(",
       "workspace owner hydration",
     );
     const pendingReplay = sourceBetween(
-      workspacePersistenceSource,
+      persistenceSource,
       "function replayStudioPendingExternalWorkspaceSync(",
       "export function useStudioPageWorkspacePersistence(",
       "pending external workspace replay",
@@ -208,13 +208,13 @@ describe("Studio drawing palette workspace integration boundary", () => {
 
   it("keeps menu edits session-atomic until verified SQLite persistence completes", () => {
     const persist = sourceBetween(
-      workspacePersistenceSource,
+      persistenceSource,
       "function persistStudioWorkspaceStateWithContext(",
       "function runStudioWorkspaceOwnerHydration(",
       "direct workspace persistence",
     );
     const pendingReplay = sourceBetween(
-      workspacePersistenceSource,
+      persistenceSource,
       "function replayStudioPendingExternalWorkspaceSync(",
       "export function useStudioPageWorkspacePersistence(",
       "pending external workspace replay",

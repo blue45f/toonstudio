@@ -36,7 +36,7 @@ const mediaListeners = new Map<string, Set<(event: MediaQueryListEvent) => void>
 function installMobileMatchMedia(): void {
   mediaMatches.clear();
   mediaListeners.clear();
-  mediaMatches.set("(max-width: 767px)", true);
+  mediaMatches.set("(max-width: 1179px)", true);
   mediaMatches.set("(min-width: 1180px)", false);
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
@@ -69,6 +69,26 @@ function setMediaMatch(query: string, matches: boolean): void {
   for (const listener of mediaListeners.get(query) ?? []) listener(event);
 }
 
+function fullMenuTrigger(): HTMLElement {
+  // 음악 상태 배지는 앱 CSS에서 조건부 표시된다. jsdom에서도 메뉴 자체의 의미 이름을 유지한다.
+  const trigger = screen.getByRole("button", { name: /^전체 메뉴(?:\s*음악 켜짐)?$/u });
+  expect(trigger.getAttribute("aria-haspopup")).toBe("dialog");
+  return trigger;
+}
+
+function menuDestination(dialog: HTMLElement, href: string, name: string): HTMLElement {
+  const destination = dialog.querySelector<HTMLAnchorElement>(`a[href="${href}"]`);
+  if (!destination) throw new Error(`전체 메뉴 목적지가 없습니다: ${href}`);
+  const group = destination.closest("details");
+  if (group && !group.open) {
+    const summary = group.querySelector("summary");
+    if (!summary) throw new Error(`전체 메뉴 그룹 진입점이 없습니다: ${href}`);
+    fireEvent.click(summary);
+    expect(group.open).toBe(true);
+  }
+  return within(dialog).getByRole("link", { name });
+}
+
 beforeEach(() => {
   installMobileMatchMedia();
   useI18n.getState().setLang("ko");
@@ -84,28 +104,33 @@ describe("mobile site shell accessibility", () => {
     const { container } = render(
       <MemoryRouter>
         <SiteHeader />
+        <button type="button" data-testid="page-action">본문 작업</button>
       </MemoryRouter>
     );
+    const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
+    const pageAction = screen.getByTestId("page-action");
 
     const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]');
     expect(primaryNavigation?.querySelector('a[href="/about/technology"]')).toBeNull();
     expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
-    const trigger = screen.getByRole("button", { name: "전체 메뉴" });
+    const trigger = fullMenuTrigger();
     trigger.focus();
     fireEvent.click(trigger);
 
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
-    expect(within(dialog).getByRole("link", { name: "리서치 데스크" }).getAttribute("href")).toBe("/research");
-    expect(within(dialog).getByRole("link", { name: "소재 마켓" }).getAttribute("href")).toBe("/market");
-    const technologyEntry = within(dialog).getByRole("link", { name: "제작 기술" });
-    expect(technologyEntry.getAttribute("href")).toBe("/about/technology");
     const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
     await waitFor(() => expect(document.activeElement).toBe(close));
+    expect(menuDestination(dialog, "/research", "리서치 데스크").getAttribute("href")).toBe("/research");
+    expect(menuDestination(dialog, "/market", "소재 찾기").getAttribute("href")).toBe("/market");
+    const technologyEntry = menuDestination(dialog, "/about/technology", "제작 기술");
+    expect(technologyEntry.getAttribute("href")).toBe("/about/technology");
 
-    const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
-    expect(quickNavigation?.hasAttribute("inert")).toBe(true);
-    expect(quickNavigation?.getAttribute("aria-hidden")).toBe("true");
+    // 빠른 이동은 메뉴 동안 제거되고 실제 본문은 inert/aria-hidden과 초점 가드로 격리된다.
+    expect(quickNavigation.isConnected).toBe(false);
+    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
+    expect(pageAction.hasAttribute("inert")).toBe(true);
+    expect(pageAction.getAttribute("aria-hidden")).toBe("true");
 
     const dialogLinks = within(dialog).getAllByRole("link");
     const lastLink = dialogLinks.at(-1);
@@ -130,11 +155,14 @@ describe("mobile site shell accessibility", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
-    expect(quickNavigation?.hasAttribute("inert")).toBe(false);
-    expect(quickNavigation?.hasAttribute("aria-hidden")).toBe(false);
+    const restoredQuickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
+    expect(restoredQuickNavigation.hasAttribute("inert")).toBe(false);
+    expect(restoredQuickNavigation.hasAttribute("aria-hidden")).toBe(false);
+    expect(pageAction.hasAttribute("inert")).toBe(false);
+    expect(pageAction.hasAttribute("aria-hidden")).toBe(false);
   });
 
-  it("switches both desktop and mobile GNB to the reader context on discovery routes", () => {
+  it("keeps desktop destinations and the four mobile purposes on discovery routes", async () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
@@ -144,10 +172,18 @@ describe("mobile site shell accessibility", () => {
     const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]');
     expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
-    const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
-    expect(Array.from(quickNavigation?.querySelectorAll("a") ?? []).map((link) => link.getAttribute("href"))).toEqual(["/", "/studio", "/discover", "/community", "/sitemap"]);
-    expect(quickNavigation?.querySelector(":scope > .grid")?.className).toContain("grid-cols-5");
-    expect(within(quickNavigation as HTMLElement).getByRole("link", { name: "탐색" }).getAttribute("aria-current")).toBe("page");
+    const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
+    expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/discover", "/market", "/my"]);
+    expect(quickNavigation.querySelector(":scope > .grid")?.className).toContain("grid-cols-4");
+    expect(within(quickNavigation).getByRole("link", { name: "작품 찾기" }).getAttribute("aria-current")).toBe("page");
+    const trigger = fullMenuTrigger();
+    fireEvent.click(trigger);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    expect(menuDestination(dialog, "/sitemap", "전체 기능").getAttribute("href")).toBe("/sitemap");
+    expect(menuDestination(dialog, "/community", "커뮤니티").getAttribute("href")).toBe("/community");
+    expect(menuDestination(dialog, "/", "사이트 홈").getAttribute("href")).toBe("/");
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it("shows Korean on the closed search-first language picker", () => {
@@ -184,28 +220,37 @@ describe("mobile site shell accessibility", () => {
   });
 
 
-  it("releases the hidden dialog trap when the desktop navigation breakpoint takes over", async () => {
+  it("keeps the desktop full-menu reachable and releases its trap after an explicit close following resize", async () => {
     const { container } = render(
       <MemoryRouter>
         <SiteHeader />
       </MemoryRouter>
     );
-
-    const trigger = screen.getByRole("button", { name: "전체 메뉴" });
+    await screen.findByRole("navigation", { name: "빠른 이동" });
+    const trigger = fullMenuTrigger();
     fireEvent.click(trigger);
-    await screen.findByRole("dialog", { name: "전체 메뉴" });
-    const quickNavigation = container.querySelector<HTMLElement>('nav[aria-label="빠른 이동"]');
-    expect(quickNavigation?.hasAttribute("inert")).toBe(true);
+    const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
+    const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
+    await waitFor(() => expect(document.activeElement).toBe(close));
+    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
     expect(document.body.style.overflow).toBe("hidden");
 
-    act(() => setMediaMatch("(min-width: 1180px)", true));
-
+    act(() => {
+      setMediaMatch("(max-width: 1179px)", false);
+      setMediaMatch("(min-width: 1180px)", true);
+    });
+    // 전체 메뉴는 큰 화면에도 제공된다. 노출된 메뉴를 resize만으로 닫지 않는다.
+    expect(screen.getByRole("dialog", { name: "전체 메뉴" })).toBe(dialog);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.activeElement).toBe(close);
+    fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "전체 메뉴" })).toBeNull());
-    expect(quickNavigation?.hasAttribute("inert")).toBe(false);
-    expect(quickNavigation?.hasAttribute("aria-hidden")).toBe(false);
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+    expect(container.querySelector('nav[aria-label="빠른 이동"]')).toBeNull();
+    expect(container.querySelector("header")?.hasAttribute("inert")).toBe(false);
     expect(document.body.style.overflow).toBe("");
     expect(document.documentElement.style.overflow).toBe("");
-    expect(document.activeElement).not.toBe(trigger);
   });
 
   it("reserves the fixed quick-navigation height below the mobile footer", () => {
@@ -231,9 +276,9 @@ describe("mobile site shell accessibility", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "전체 메뉴" }));
+    fireEvent.click(fullMenuTrigger());
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
-    const currentLink = within(dialog).getByRole("link", { name: "소재 마켓" });
+    const currentLink = menuDestination(dialog, "/market", "소재 찾기");
     expect(currentLink.getAttribute("aria-current")).toBe("page");
 
     fireEvent.click(currentLink);
@@ -241,6 +286,8 @@ describe("mobile site shell accessibility", () => {
   });
 
   it("reopens a desktop primary nav submenu with ArrowDown after Escape and enforces 44px subnav touch targets", () => {
+    setMediaMatch("(max-width: 1179px)", false);
+    setMediaMatch("(min-width: 1180px)", true);
     const { container } = render(
       <MemoryRouter initialEntries={["/discover"]}>
         <SiteHeader />
@@ -249,7 +296,7 @@ describe("mobile site shell accessibility", () => {
     );
 
     const primaryNavigation = container.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]')!;
-    const exploreTrigger = within(primaryNavigation).getByRole("link", { name: "탐색" });
+    const exploreTrigger = within(primaryNavigation).getByRole("link", { name: "작품 찾기" });
     fireEvent.focus(exploreTrigger);
     expect(exploreTrigger.getAttribute("aria-expanded")).toBe("true");
 

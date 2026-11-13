@@ -152,12 +152,21 @@ describe("Studio brush browser harness catalogue boundary", () => {
     const mobileAudit = harness.slice(start, end);
     expect(mobileAudit.match(/await openMobileBrushSettings\(page, dock\)/gu)).toHaveLength(2);
     expect(mobileBrushSettings).toContain('import { clickStudioControlAfterReadiness } from "./studio-drawing-readiness";');
-    expect(mobileBrushSettings).toMatch(/await clickStudioControlAfterReadiness\(\s*page,\s*tools\.locator\('button\[aria-controls="studio-mobile-draw-settings"\]:not\(\[data-studio-primary-action\]\)'\),/u);
+    expect(mobileBrushSettings).toContain(':scope[data-studio-mobile-primary-layout="simple"] [data-studio-mobile-primary-actions="true"] button[aria-controls="studio-mobile-draw-settings"][aria-pressed="true"]');
+    expect(mobileBrushSettings).toContain('[data-studio-mobile-workspace-menu="true"] button[aria-controls="studio-mobile-draw-settings"]:not([data-studio-primary-action]):not([data-studio-mobile-tool])');
+    expect(mobileBrushSettings).toContain('].join(", ")).filter({ visible: true });');
+    expect(mobileBrushSettings).toMatch(/await clickStudioControlAfterReadiness\(\s*page,\s*control,\s*remaining\(\),/u);
+    expect(mobileBrushSettings).toContain('if (await clarity.isVisible()) {');
+    expect(mobileBrushSettings).toContain('dock.getAttribute("data-studio-mobile-primary-layout", { timeout: timeoutMs }) !== "simple"');
     expect(mobileBrushSettings).toContain('await toggle.getAttribute("aria-expanded", { timeout: timeoutMs })');
-    expect(mobileBrushSettings).toContain('if (expanded !== "true" && remaining > 0) await toggle.click({ timeout: remaining });');
     expect(mobileBrushSettings).toContain("const deadline = Date.now() + 60_000;");
-    expect(mobileBrushSettings).toContain("const remaining = deadline - Date.now();");
-    expect(mobileBrushSettings).toContain('await tools.waitFor({ state: "hidden", timeout: remaining });');
+    expect(mobileBrushSettings).toContain("const remaining = () => {");
+    expect(mobileBrushSettings).toContain("const value = deadline - Date.now();");
+    expect(mobileBrushSettings).toContain("if (value <= 0) throw new Error(");
+    expect(mobileBrushSettings).toContain("const preparationDeadline = Date.now() + timeoutMs;");
+    expect(mobileBrushSettings).toContain("const clickBudget = Math.min(preparationDeadline - Date.now(), remaining());");
+    expect(mobileBrushSettings).toContain('if (expanded !== "true" && clickBudget > 0) await toggle.click({ timeout: clickBudget });');
+    expect(mobileBrushSettings).toMatch(/await sheet\.waitFor\(\{ state: "visible", timeout: remaining\(\) \}\);\s*await tools\.waitFor\(\{ state: "hidden", timeout: remaining\(\) \}\);/u);
     expect(mobileBrushSettings).not.toMatch(/force:\s*true|\.evaluate\(|\.dispatchEvent\(/u);
   });
 

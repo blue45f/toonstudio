@@ -310,8 +310,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
   title: t("접근성 점검은 두 겹: 매 PR의 axe 스모크와 수동 전수 매트릭스", "Accessibility in two layers: an axe smoke on every PR and a manual sitewide matrix"),
   status: "live",
   tagline: t(
-    "코어 CI는 핵심 16개 시나리오를 axe로 검사하고, 전체 화면은 수동 매트릭스로 봅니다.",
-    "Core CI checks 16 key scenarios with axe, and the whole site is covered by a manual matrix.",
+    "코어 CI는 스모크 23개 중 15개를 axe로 검사하고, 전체 화면은 수동 매트릭스로 봅니다.",
+    "Core CI runs axe in 15 of its 23 smoke tests; the sitewide matrix is a separate manual check.",
   ),
   background: [
     t(
@@ -332,7 +332,7 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
     ),
   ],
   keyPoints: [
-    t("코어 CI: 핵심 16개 시나리오를 axe로 검사, serious 이상만 실패", "Core CI: 16 key scenarios checked with axe, only serious or worse fails"),
+    t("코어 CI: 스모크 23개 중 axe 15개는 serious 이상만 실패", "Core CI: 15 of 23 smoke tests run axe, failing only on serious or worse violations"),
     t("API는 일부러 503: 장애 배너가 떠도 접근성이 유지되는지 확인", "API returns 503 on purpose: checks access holds with the outage banner"),
     t("385개 화면 × 9테마 전수 감사는 수동, PR 게이트가 아님", "The 385-route by 9-theme audit is manual, not a PR gate"),
     t("자동 검사는 일부만: 키보드·스크린 리더 수동 점검 근거는 없음", "Automation covers only part; no record of manual keyboard or screen-reader checks"),
@@ -572,8 +572,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
       {
         question: t("모든 PR이 385개 화면을 검사하나요?", "Does every PR check all 385 screens?"),
         answer: t(
-          "아니요. 코어 PR 게이트는 16개 시나리오이고, 385개 화면 매트릭스는 수동이거나 그 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다.",
-          "No. The core PR gate runs 16 scenarios, and the 385-route matrix runs manually or automatically only on a PR that changes its workflow file.",
+          "아니요. 코어 PR 게이트는 23개 시나리오이고, 385개 화면 매트릭스는 수동이거나 그 워크플로 파일이 바뀐 PR에서만 자동으로 돕니다.",
+          "No. The core PR gate runs 23 scenarios, and the 385-route matrix runs manually or automatically only on a PR that changes its workflow file.",
         ),
       },
     ],
@@ -585,8 +585,8 @@ const AXE_A11Y_MATRIX: EngineeringAtlasEntry = {
   technologies: ["Playwright", "axe-core", "WCAG 2.2", "Vite", "GitHub Actions"],
   facts: [
     {
-      value: "16",
-      label: t("코어 접근성 스모크 테스트 수 (데스크톱 라우트 10 · 모바일 라우트 4 · 터치 시나리오 2)", "Core accessibility smoke tests (10 desktop routes, 4 mobile routes, 2 touch scenarios)"),
+      value: "23",
+      label: t("코어 접근성 스모크 테스트 수 (데스크톱 10 · 모바일 4 · 상호작용 3 · CSS 6, 그중 axe 15)", "Core accessibility smoke tests (10 desktop, 4 mobile, 3 interaction, 6 CSS; 15 run axe)"),
       source: "e2e/a11y-smoke.spec.ts",
     },
     {

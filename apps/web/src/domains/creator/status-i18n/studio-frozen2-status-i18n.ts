@@ -281,7 +281,7 @@ registerI18nLocaleEntries("ko", {
   "studio.frozenStatus2.pub.sharedScopeCheckFailed": "공동 문서 저장 범위를 확인하지 못했어요.",
   "studio.frozenStatus2.pub.permissionChanged": "공동 문서 편집 권한이 변경되었습니다.",
   "studio.frozenStatus2.pub.createClientCheckFailed": "새 작품 게시 클라이언트를 확인하지 못했어요.",
-  "studio.frozenStatus2.pub.draftSaved": "초안을 revision {revision}로 안전하게 저장했습니다.",
+  "studio.frozenStatus2.pub.draftSaved": "초안을 버전 #{revision}로 안전하게 저장했습니다.",
   "studio.frozenStatus2.pub.sharedPermissionOrVersion": "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요.",
   "studio.frozenStatus2.pub.saveFailed": "저장에 실패했어요.",
   "studio.frozenStatus2.pub.recoveryLoadFailed": "비공개 전환 기능을 불러오지 못했습니다. 다시 시도해 주세요.",

@@ -94,7 +94,14 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     const deploy = read("scripts/deploy-cloudflare-static.mjs");
     expect(deploy).toContain("[0-9a-f]{40}");
     expect(deploy).toContain("TOONSPECTRUM_APPROVED_MAIN_SHA");
-    expect(deploy.match(/executable:/gu)).toHaveLength(6);
+    // skipBuild의 두 갈래는 상호 배타적이다: 선언 7개 중 기본 6개, 빌드 생략 5개만 실행한다.
+    const buildBranches = /\.\.\.\(skipBuild\s*\?\s*\[([\s\S]*?)\]\s*:\s*\[([\s\S]*?)\]\),/u.exec(deploy);
+    expect(buildBranches, "배포의 빌드 생략/기본 분기").not.toBeNull();
+    const commandCount = (source: string): number => source.match(/executable:/gu)?.length ?? 0;
+    expect(commandCount(buildBranches?.[1] ?? "")).toBe(1);
+    expect(commandCount(buildBranches?.[2] ?? "")).toBe(2);
+    expect(commandCount(deploy) - commandCount(buildBranches?.[1] ?? "")).toBe(6);
+    expect(commandCount(deploy) - commandCount(buildBranches?.[2] ?? "")).toBe(5);
 
     expect(read("render.yaml").match(/autoDeployTrigger:\s*"off"/gu)).toHaveLength(2);
 
@@ -143,8 +150,14 @@ describe("아키텍처 해설 · 만들고 지키는 구조 구간", () => {
     const spec = read("e2e/a11y-smoke.spec.ts");
     expect(quotedItems(spec, /DESKTOP_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(10);
     expect(quotedItems(spec, /MOBILE_A11Y_ROUTES = \[([^\]]*)\]/u)).toHaveLength(4);
-    // 줄 머리의 test( 는 4곳: 데스크톱 반복 1 + 터치 시험 2 + 모바일 반복 1 → 시나리오 10 + 2 + 4 = 16 (구간 facts 의 스냅샷 값).
-    expect(spec.match(/^\s*test\(/gmu)).toHaveLength(4);
+    // 라우트 반복 2곳, 독립 상호작용 3곳, CSS 모드별 2곳: 10 + 4 + 3 + (3 × 2) = 23.
+    expect(spec.match(/^\s*test\(/gmu)).toHaveLength(7);
+    expect(quotedItems(spec, /for \(const mode of \[([^\]]*)\]/u)).toEqual(["desktop", "touch", "contrast"]);
+    expect(spec.split("for (const mode of")[1]?.match(/^\s*test\(/gmu)).toHaveLength(2);
+    expect(spec.match(/await assertNoBlockingViolations\(/gu)).toHaveLength(3);
+    const accessibilityFact = sectionOf("quality-gates").facts?.find((fact) => fact.source === "e2e/a11y-smoke.spec.ts");
+    expect(accessibilityFact?.value).toBe(String(10 + 4 + 3 + 3 * 2));
+    expect(accessibilityFact?.label.ko).toContain("그중 axe 15");
     const source = JSON.parse(read("config/architecture-source-ratchet.json")) as { lintStrictMaxWarnings: number };
     expect(source.lintStrictMaxWarnings).toBeGreaterThan(0);
     expect(read("package.json")).toContain(`--max-warnings=${source.lintStrictMaxWarnings}`);

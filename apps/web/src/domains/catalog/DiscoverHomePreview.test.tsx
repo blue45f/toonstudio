@@ -111,7 +111,8 @@ describe("홈 발견 미리보기", () => {
     expect(section).toBeTruthy();
     // 스포트라이트: 대표 작품이 작품 상세로 이어진다.
     expect(screen.getByRole("link", { name: /작품-spot/u }).getAttribute("href")).toBe("/title/spot");
-    expect(screen.getByText("오늘의 추천")).toBeTruthy();
+    expect(section.querySelectorAll("[data-discover-spotlight]")).toHaveLength(1);
+    expect(screen.getByText("오늘 만날 이야기")).toBeTruthy();
     // 요일 레일: 스냅샷 요일이 오늘(KST)과 같으면 "오늘 업데이트"로 부른다.
     expect(screen.getByRole("heading", { name: "오늘 업데이트되는 웹툰" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "작품-today" }).getAttribute("href")).toBe("/title/today");

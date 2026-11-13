@@ -203,7 +203,17 @@ describe("StudioAssetToolPopoverWorkspace", () => {
     render(<StudioAssetToolPopoverWorkspace toolBelt={toolBelt} />);
     const workspace = await screen.findByRole("region", { name: "통합 에셋 작업 공간" });
     expect(screen.getAllByRole("region", { name: "통합 에셋 작업 공간" })).toHaveLength(1);
-    expect(within(workspace).getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
+    const controls = within(workspace);
+    expect(controls.getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
+    expect(controls.getAllByRole("button", { name: "통합 탐색" })).toHaveLength(1);
+    expect(controls.getAllByRole("button", { name: "보관함 · 마켓" })).toHaveLength(1);
+    expect(controls.getByRole("button", { name: "통합 탐색" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(controls.getByRole("button", { name: "보관함 · 마켓" }));
+    expect(await controls.findByTestId("legacy-panel")).toBeTruthy();
+    expect(controls.getByRole("button", { name: "보관함 · 마켓" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(controls.getByRole("button", { name: "통합 탐색" }));
+    expect(controls.getByRole("searchbox", { name: "에셋 통합 검색" })).toBeTruthy();
+    expect(controls.getByRole("button", { name: "통합 탐색" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.queryByRole("button", { name: "에셋 탭" })).toBeNull();
   });
 

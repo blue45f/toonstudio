@@ -9,6 +9,7 @@ import { i18nDict } from "@/shared/lib/i18n";
 // (scripts/generate-i18n-builtins.mjs 의 LAZY_APP_BUILTIN_GROUPS 와 한 쌍이다). 분리 단계가
 // 늘어나면 이 목록에도 등록 모듈을 더해야 이 테스트가 그 키들을 계속 지켜 준다.
 import "@/domains/account/account-i18n";
+import "@/domains/admin/admin-i18n-loader";
 import "@/domains/catalog/guide-i18n";
 import "@/domains/creator/analytics/creator-analytics-i18n";
 import "@/domains/creator/production-hub/extreview-i18n";
@@ -79,8 +80,9 @@ describe("app and lazy route translation coverage", () => {
     const usedKeys = collectSourceI18nKeys();
     expect(usedKeys.size).toBeGreaterThan(200);
     const shellKeys = new Set([...Object.keys(i18nDict.ko), ...Object.keys(i18nDict.en)]);
-    const adminEn = readRouteDictionary("apps/web/public/i18n/admin/en.json");
-    const adminKo = readRouteDictionary("apps/web/public/i18n/admin/ko.json");
+    // 관리자 전용 loader가 동기 등록한 사전도 실제 라우트의 번역 공급원이다.
+    const adminEn = { ...readRouteDictionary("apps/web/public/i18n/admin/en.json"), ...i18nDict.en };
+    const adminKo = { ...readRouteDictionary("apps/web/public/i18n/admin/ko.json"), ...i18nDict.ko };
     const adminKeys = [...usedKeys].filter((key) => key.startsWith("admin."));
     const shellMissing = [...usedKeys]
       .filter((key) => !key.startsWith("admin.") && !shellKeys.has(key))

@@ -19,6 +19,10 @@ interface NodeModuleLoader {
 
 const nodeModuleLoader = Module as unknown as NodeModuleLoader;
 const originalNodeModuleLoad = nodeModuleLoader._load;
+const declaredPaperVersion = (JSON.parse(readFileSync(
+  new URL("../../../../../../package.json", import.meta.url),
+  "utf8",
+)) as { dependencies: { paper: string } }).dependencies.paper;
 
 // Paper's Node adapter opportunistically selects jsdom when it is installed.
 // Vector geometry needs no canvas, so exercise Paper's own canvas-free path.
@@ -155,11 +159,13 @@ describe("StudioPaperVectorRefinementProvider", () => {
     expect(first.receipt.replayFingerprint).toBe(
       second.receipt.replayFingerprint,
     );
+    expect(declaredPaperVersion).toMatch(/^\d+\.\d+\.\d+$/u);
+    expect(second.receipt.package).toEqual(first.receipt.package);
     expect(first.receipt).toMatchObject({
       command: "simplify",
       requestSequence: 1,
       engineEpoch: 4,
-      package: { name: "paper", version: "0.17.0" },
+      package: { name: "paper", version: declaredPaperVersion },
       execution: {
         stage: "settled",
         geometryBoundary: "studio-engine-vector-geometry-provider",

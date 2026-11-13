@@ -56,7 +56,8 @@ export const LAYOUT_DIMENSIONS = {
 
 /**
  * 반응형 전환 지점 (BLUEPRINT §5.1 (6)·§5.2 (6)) — 표준 5개와 max-width 동반값(표준−1).
- * 신규 코드는 이 값만 쓴다. 아직 소진되지 않은 전용 지점은 대조 테스트의 파일별 잔존
+ * 신규 본문은 이 값을 쓰고, 일반 셸 탐색만 layout-site-navigation의 LAYOUT_SITE_NAVIGATION 예외를 공유한다.
+ * 아직 소진되지 않은 전용 지점은 대조 테스트의 파일별 잔존
  * 목록에 고정돼 있고, 목록은 감소 방향으로만 갱신한다.
  */
 export const LAYOUT_BREAKPOINTS = {
@@ -71,6 +72,8 @@ export const LAYOUT_BREAKPOINTS = {
   maxXl: "1279px",
   max2xl: "1535px",
 } as const;
+
+export { LAYOUT_SITE_NAVIGATION } from "./layout-site-navigation";
 
 /**
  * 카탈로그·마켓 표지 그리드 표준 (BLUEPRINT §5.2 (5), §5.3 L3) — 탐색·마켓·서재 세 표면이

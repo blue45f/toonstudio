@@ -79,8 +79,15 @@ test("public and workspace navigation connects references, research, discovery a
   // 공개 페이지의 빠른 이동과 작업실의 주 메뉴는 같은 실제 목적지를 연결한다.
   const navigation = page.getByRole("navigation", { name: /^(?:빠른 이동|주 메뉴)$/u });
   await expect(navigation).toHaveCount(1);
-  await navigation.getByRole("link", { name: "전체 메뉴", exact: true }).click();
+  // 준비된 모바일 작업실 메뉴의 실제 drawer를 거쳐 전체 기능 디렉터리로 이동한다.
+  await navigation.getByRole("button", { name: "전체 메뉴", exact: true }).click();
+  const allMenu = page.getByRole("dialog", { name: "전체 메뉴", exact: true });
+  await expect(allMenu).toBeVisible();
+  const directory = allMenu.getByRole("link", { name: "전체 기능", exact: true });
+  await expect(directory).toHaveAttribute("href", "/sitemap");
+  await directory.click();
   await expect(page).toHaveURL(/\/sitemap$/u);
+  await expect(allMenu).toBeHidden();
   await page.getByRole("searchbox", { name: "메뉴·도구 바로 찾기", exact: true }).fill("/research");
   const research = page.getByRole("list", { name: "메뉴 검색 결과", exact: true }).locator('a[href="/research"]');
   await expect(research).toHaveCount(1);
@@ -89,16 +96,29 @@ test("public and workspace navigation connects references, research, discovery a
   await expect(page.getByRole("heading", { level: 1, name: "창작 리서치 데스크", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "리서치 통합 검색", exact: true })).toBeVisible();
 
-  await navigation.getByRole("link", { name: "탐색", exact: true }).click();
+  const discover = navigation.getByRole("link", { name: "작품 찾기", exact: true });
+  await expect(discover).toHaveAttribute("href", "/discover");
+  await discover.click();
   await expect(page).toHaveURL(/\/discover$/u);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
-  await navigation.getByRole("link", { name: "커뮤니티", exact: true }).click();
+  // 공개 모바일의 네 가지 목적지 밖에 있는 커뮤니티는 이름 있는 메뉴에서 다시 찾는다.
+  await page.getByRole("button", { name: /^전체 메뉴(?:\s|$)/u }).click();
+  await expect(allMenu).toBeVisible();
+  const connect = allMenu.locator("summary").filter({ hasText: /^함께 보기$/u });
+  await expect(connect).toHaveCount(1);
+  await connect.click();
+  const community = allMenu.getByRole("link", { name: "커뮤니티", exact: true });
+  await expect(community).toHaveAttribute("href", "/community");
+  await community.click();
   await expect(page).toHaveURL(/\/community$/u);
+  await expect(allMenu).toBeHidden();
   await expect(page.getByRole("heading", { level: 1, name: "혼자 그린 이야기, 함께 넓어지는 세계.", exact: true })).toBeVisible();
   await page.getByRole("main").getByRole("link", { name: "창작자 갤러리", exact: true }).click();
   await expect(page).toHaveURL(/\/showcase$/u);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
-  await navigation.getByRole("link", { name: "제작", exact: true }).click();
+  const myWork = navigation.getByRole("link", { name: "내 작업", exact: true });
+  await expect(myWork).toHaveAttribute("href", "/studio");
+  await myWork.click();
   await expect(page).toHaveURL(/\/studio$/u);
   await expect(page.getByRole("region", { name: "작품 관리", exact: true })).toBeVisible();
 });

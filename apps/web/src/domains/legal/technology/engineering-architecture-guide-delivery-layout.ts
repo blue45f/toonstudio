@@ -414,7 +414,7 @@ const BUILD_AND_SHIP: ArchitectureGuideSection = {
     },
     {
       value: "6",
-      label: t("정적 웹 배포 스크립트가 순서대로 돌리는 명령 수", "Commands the static deploy script runs in order"),
+      label: t("기본 빌드 포함 정적 웹 배포가 순서대로 돌리는 명령 수", "Commands run in order by the default static deploy, including its build"),
       source: "scripts/deploy-cloudflare-static.mjs",
     },
     {

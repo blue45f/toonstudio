@@ -15,32 +15,72 @@ const DESTINATIONS = ["/home", "/studio", "/team", "/hub"];
 // 여기서 보는 것은 배치와 초점이지 속도가 아니므로(속도는 CWV 게이트의 몫) 기다림 한도만 넉넉히 둔다.
 const LAYOUT_WAIT = Object.freeze({ timeout: 20_000 });
 
-/** 좁은 화면은 중복 여정 대신 실제 다섯 목적지와 전체 메뉴를 제공한다. */
+/** 좁은 화면은 네 작업 목적지와 별도 헤더의 전체 메뉴를 제공한다. */
 export async function assertPublicMobileNavigation(page, route) {
+  const currentUrl = page.url();
   const quick = page.getByRole("navigation", { name: "빠른 이동", exact: true });
   await expect(quick).toBeVisible(LAYOUT_WAIT);
   const links = quick.locator("a");
-  await expect(links).toHaveCount(5, LAYOUT_WAIT);
+  await expect(links).toHaveCount(4, LAYOUT_WAIT);
   assert.deepEqual(await links.evaluateAll((items) => items.map((item) => new URL(item.href).pathname)),
-    ["/", "/studio", "/discover", "/community", "/sitemap"]);
+    ["/studio", "/discover", "/market", "/my"]);
   for (const link of await links.all()) {
     await expect(link).toBeVisible(LAYOUT_WAIT);
     await expect.poll(async () => (await link.boundingBox())?.height ?? 0, LAYOUT_WAIT).toBeGreaterThanOrEqual(44);
   }
-  if (route === "/community") await expect(quick.locator('a[href="/community"]')).toHaveAttribute("aria-current", "page", LAYOUT_WAIT);
-  const trigger = page.getByRole("button", { name: "전체 메뉴", exact: true });
+  // 현재 suite 경로의 선택 표시는 기존 site-mobile-purpose 계약과 일치해야 한다.
+  const expectedCurrent = ["/research", "/research/assets", "/market", "/market/browse"].includes(route)
+    ? "/market" : ["/discover", "/showcase"].includes(route) ? "/discover" : null;
+  assert.deepEqual(await quick.locator('a[aria-current="page"]').evaluateAll((items) => items.map((item) => new URL(item.href).pathname)),
+    expectedCurrent ? [expectedCurrent] : [], "현재 작업 목적지만 선택하고 목적 밖 페이지에는 선택을 강제하지 않는다");
+  const trigger = page.locator('[data-site-chrome="header"] button[data-site-mobile-menu-trigger="true"][data-site-menu-entry="available"]');
+  await expect(trigger).toHaveCount(1, LAYOUT_WAIT);
+  await expect(trigger).toHaveAccessibleName(/전체 메뉴/u);
+  await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "전체 메뉴", exact: true });
+  await expect(dialog).toHaveCount(1, LAYOUT_WAIT);
   await expect(dialog).toBeVisible(LAYOUT_WAIT);
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  const menuId = await dialog.getAttribute("id");
+  assert(menuId, "전체 메뉴는 dialog ID를 제공한다");
+  await expect(trigger).toHaveAttribute("aria-controls", menuId);
   assert(await dialog.evaluate((element) => element.contains(document.activeElement)), "The full menu must receive focus");
   // 작품 시작 항목은 시작 시트(/create)를 가리킨다. /studio/new 는 시트에서 빈 작품을 골랐을 때 닿는 2단계 양식이다.
-  for (const href of ["/discover", "/learn", "/market", "/create", "/showcase"]) {
-    await expect(dialog.locator(`a[href="${href}"]`).first()).toBeVisible(LAYOUT_WAIT);
+  for (const href of ["/discover", "/learn", "/market", "/create", "/showcase", "/sitemap"]) {
+    const destination = dialog.locator(`a[href="${href}"]`);
+    await expect(destination).toHaveCount(1, LAYOUT_WAIT);
+    const group = destination.locator("xpath=ancestor::details[1]");
+    const grouped = await group.count() > 0;
+    const wasOpen = grouped && await group.evaluate((element) => element.open);
+    const summary = group.locator(":scope > summary");
+    if (grouped) {
+      await expect(summary).toHaveCount(1);
+      await expect(summary).toHaveAccessibleName(/\S/u);
+      if (!wasOpen) {
+        await summary.scrollIntoViewIfNeeded();
+        await summary.focus(); await summary.press("Enter");
+        await expect(group).toHaveAttribute("open");
+      }
+    }
+    await destination.scrollIntoViewIfNeeded();
+    await expect(destination).toBeVisible(LAYOUT_WAIT);
+    await destination.click({ trial: true });
+    await destination.focus(); await expect(destination).toBeFocused(LAYOUT_WAIT);
+    if (grouped && !wasOpen) {
+      await summary.focus(); await summary.press("Enter");
+      await expect(group).not.toHaveAttribute("open");
+      await expect(summary).toBeFocused(LAYOUT_WAIT);
+    }
   }
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0, LAYOUT_WAIT);
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(trigger).toBeFocused(LAYOUT_WAIT);
+  await expect(quick).toBeVisible(LAYOUT_WAIT);
   assert.equal(new URL(page.url()).pathname, route, "Menu inspection must preserve the current page");
+  assert.equal(page.url(), currentUrl, "전체 메뉴 검사는 query와 hash도 유지한다");
 }
 
 /** Validate the actual DOM snapshot, not a generic replacement container's presence. */

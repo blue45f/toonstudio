@@ -74,7 +74,9 @@ test("제작 통합은 실제 경로·Inspector·브라우저 검증을 유지�
 test("피드백은 기존 전체 build·PostgreSQL·브라우저 검사와 모든 성공 집계를 유지한다", () => {
   const job = parse(read("feedback-community-validation")).jobs["feedback-community"];
   assert.equal(job.services.postgres.image, "postgres:16");
-  assert(job.steps.some((step) => step.id === "production" && step.run === "pnpm run build 2>&1 | tee artifacts/feedback/production-build.log"));
+  assert(job.steps.some((step) => step.id === "production"
+    && step.run.includes("pnpm run build:bundle 2>&1 | tee artifacts/feedback/production-build.log")
+    && step.if.includes("steps.types.outcome == 'success'")));
   assert(job.steps.some((step) => step.id === "database" && step.run.includes("scripts/verify-feedback-community-db.mts")));
   assert(job.steps.some((step) => step.id === "browser" && step.run.includes("playwright test --config playwright.feedback.config.ts")));
   const gate = job.steps.find((step) => step.name === "Require every check to pass");

@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-
 import Color from "colorjs.io";
 import { describe, expect, it } from "vitest";
 
 import { THEME_PRESETS } from "@/shared/lib/theme-presets";
+import { readThemeCustomProperties, resolveThemeCustomProperty } from "../../../shared/lib/theme-css-test-kit";
 
 /**
  * AI 학습 허용 표기 UI 의 색 대비 계약. 모든 디자인 테마(`design-themes.css`)의 토큰 값으로 계산한다.
@@ -17,23 +16,17 @@ import { THEME_PRESETS } from "@/shared/lib/theme-presets";
  * 의미 토큰 색 글자(`text-cool`)는 라이트·세피아 테마의 칩 배경 위에서 AA(4.5:1)에 못 미쳐 글자색에서 뺐다.
  * 이 테스트는 토큰 값에 대한 계산이며 브라우저 화면 검증을 대신하지 않는다.
  */
-const css = readFileSync(new URL("../../../app/styles/design-themes.css", import.meta.url), "utf8");
 
 const SURFACES = ["canvas", "panel", "card", "raised"] as const;
 const TEXT = 4.5;
 const NON_TEXT = 3;
 
-function tokensOf(id: string): Record<string, string> {
-  const block = css.split(`[data-appearance-preview="${id}"] {`)[1]?.split("}")[0] ?? "";
-  return Object.fromEntries(
-    [...block.matchAll(/--color-([\w-]+):\s*([^;]+);/gu)].map((match) => [match[1], match[2]]),
-  );
+function tokensOf(id: string): ReadonlyMap<string, string> {
+  return readThemeCustomProperties(id);
 }
 
-function color(tokens: Record<string, string>, name: string): Color {
-  const value = tokens[name];
-  if (value === undefined) throw new Error(`테마 토큰 --color-${name} 이 없습니다.`);
-  return new Color(value);
+function color(tokens: ReadonlyMap<string, string>, name: string): Color {
+  return new Color(resolveThemeCustomProperty(tokens, `--color-${name}`));
 }
 
 function tint(base: Color, tone: Color, alpha: number): Color {

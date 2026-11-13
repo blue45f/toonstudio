@@ -51,12 +51,14 @@ describe("VRM durable creative product authority", () => {
 
   it("fences hydration, serializes mutations, and labels durable write failures as memory-only", () => {
     const poser = poserSource();
+    const persistence = source("./useStudioVrmPoserPoseLibrary.ts");
     const panel = source("./StudioVrmPoseMaterialPanel.tsx");
 
     expect(poser).toContain("vrmCreativeMutationTailRef");
     expect(poser).toContain("vrmCreativeMutationGenerationRef");
     expect(poser).toContain("vrmCreativeMountedRef");
-    expect(poser).toContain("현재 탭 메모리 임시 · 새로고침 시 사라짐");
+    expect(persistence).toMatch(/vrmCreativeDirtyAuthoritiesRef\.current\.size > 0[\s\S]*?setVrmCreativePersistenceStatus\("memory"\);[\s\S]*?일부 변경은 현재 탭에만 유지됩니다\. 새로고침하면 사라질 수 있어요\./u);
+    expect(persistence).toMatch(/\.catch\(\(caughtError: unknown\) => \{[\s\S]*?setVrmCreativePersistenceStatus\("memory"\);[\s\S]*?creatorStorageDetail\(creatorStorageText\("저장에 실패해 변경을 현재 탭에만 유지합니다\. 새로고침하면 사라집니다\./u);
     expect(poser).toContain("parseStudioVrmCustomPoseImport");
     expect(poser).not.toContain(".filter((p) => p && typeof p");
     expect(poser).not.toContain(".slice(0, STUDIO_VRM_FULL_STATE_MAX_NAME_LENGTH)");
@@ -64,6 +66,8 @@ describe("VRM durable creative product authority", () => {
     expect(panel).toContain("mutationGenerationRef");
     expect(panel).toContain("mountedRef");
     expect(panel).toContain("현재 탭 메모리 임시 · 새로고침 시 사라짐");
+    expect(panel).toContain('"studio.vrmPanelStatus.poseMaterial.saveFailedMemoryOnly"');
+    expect(panel).toMatch(/messageTone: "error",\s*authority: "memory"/u);
   });
 
   it("keeps clipboard, consent, and recents out of creative SQLite", () => {

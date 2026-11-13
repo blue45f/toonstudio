@@ -382,6 +382,9 @@ const REVIEW_TOOL_LOCAL_STATE =
   "Device-local working state of a review or QC tool (compare session, compare comments, playlist verdicts, vote sessions, an unsent external-review draft, or a per-episode QC summary); losing it cannot alter the canvas document, the manuscript pin document, or server approval records.";
 
 const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
+  // 2026-11-12: 함수/주입 포트로 감싸진 sessionStorage 두 곳만 아래 payload·기본 저장소 변이 계약과 함께 허용한다.
+  allow("apps/web/src/domains/creator/studio-shell/ActiveProjectContextBridge.tsx", "durable-storage-write", '"toonstudio:active-project-bridge:return:v1"', 1, "현재 history entry의 작품 선택·메뉴·초점 복귀용 탭 표식이며 원고·검색 query·저장 상태는 포함하지 않는다.", "ActiveProjectContextBridge.test.tsx가 native Back/SPA POP 복원과 소비 후 제거·저장 거부를 검증한다. 아래 계약은 sessionStorage 전용 getter와 정확한 다섯 필드 payload를 고정한다."),
+  allow("apps/web/src/domains/creator/studio-shell/guided-flow/studio-assistant-session-store.ts", "durable-storage-write", '`${SESSION_KEY_PREFIX}${projectId}`', 1, "프로젝트별 도우미 입력·모드·검증된 응답의 같은 탭 UI 초안이며 원고 또는 기획 데이터의 정본 저장소가 아니다.", "StudioProjectAssistantPanel.test.tsx가 빈 입력 제거·작품별 분리·취소 시 입력 보존을 검증한다. 아래 계약은 sessionStorage 기본값, 6000자 prompt, 검증 결과만 기록하는 정확한 호출을 고정한다."),
   // 2026-11-07: 문서 권위가 아닌 정리와 표시 설정을 실제 저장 payload·복원 테스트로 검토했다.
   allow("apps/web/src/domains/creator/studio-shell/StudioSaveFirstProjectLibraryPage.tsx", "local-storage-cleanup", "studioProjectDocumentStorageKey(project.id)", 1, CLEANUP_ONLY, "프로젝트 제거 성공 뒤 해당 project.id의 메타데이터 키만 removeItem 한다. 아래 변이 검증은 같은 소유자의 setItem·다른 키·추가 호출을 거부한다."),
   allow("apps/web/src/domains/creator/virtual-space/office2d/studio-virtual-space-stage-mode.ts", "local-storage-write", '"toonstudio:virtual-space-stage-mode:v1"', 1, UI_ONLY, "studio-virtual-space-stage-mode.test.ts가 2d/3d enum만 저장하고 잘못된 값과 저장 실패를 거부하며 URL 우선권과 기본값 복원을 검증한다."),
@@ -898,6 +901,43 @@ describe("Studio browser-KV authority boundary", () => {
     expect(() => exact(`${source}\nlocalStorage.setItem("studio-project", payload);`)).toThrow();
     const otherOwner = analyzeBrowserKvSource("apps/web/src/domains/creator/other-owner.tsx", source);
     expect(unauthorizedFindings(otherOwner, ALLOWANCES.filter((allowance) => allowance.file === file))).not.toEqual([]);
+  });
+
+  it.each([
+    {
+      owner: "studio-shell/ActiveProjectContextBridge.tsx",
+      key: '"toonstudio:active-project-bridge:return:v1"',
+      call: "contextStorage()?.setItem(RETURN_KEY,JSON.stringify({historyKey,pathname,routeProjectId:explicitProjectId,projectId:selectedProject.id,action}))",
+      required: ['returntypeofwindow==="undefined"?null:window.sessionStorage;', 'raw.length>2048', 'contextStorage()?.removeItem(RETURN_KEY)'],
+      payload: ["routeProjectId: explicitProjectId", "document: manuscript, routeProjectId: explicitProjectId"],
+    },
+    {
+      owner: "studio-shell/guided-flow/studio-assistant-session-store.ts",
+      key: '`${SESSION_KEY_PREFIX}${projectId}`',
+      call: "storage.setItem(`${SESSION_KEY_PREFIX}${projectId}`,JSON.stringify({prompt:snapshot.prompt.slice(0,6_000),openAiMode:snapshot.openAiMode,lastResult:sanitizedResult,}),)",
+      required: ['if(override!==undefined)returnoverride;', 'returntypeofwindow==="undefined"?null:window.sessionStorage;', 'conststorage=resolveStudioAssistantSessionStorage(storageOverride);', 'constSESSION_KEY_PREFIX="toonstudio:assistant-draft:v1:";', 'isValidStoredSuccess(snapshot.lastResult)', 'raw.length>64_000'],
+      payload: ["lastResult: sanitizedResult,", "lastResult: snapshot.lastResult,"],
+    },
+  ])("$owner의 세션 허용은 원고·영구 저장·검증하지 않은 payload로 확장될 수 없다", ({ owner, key, call, required, payload }) => {
+    const file = `apps/web/src/domains/creator/${owner}`;
+    const source = readFileSync(resolve(WORKSPACE_ROOT, file), "utf8");
+    const allowances = ALLOWANCES.filter((allowance) => allowance.file === file);
+    const exact = (text: string) => {
+      expect(text).not.toMatch(/\blocalStorage\b/u);
+      for (const contract of required) expect(compact(text)).toContain(contract);
+      const findings = analyzeBrowserKvSource(file, text);
+      expect(findings).toHaveLength(1);
+      expect(findings[0]).toMatchObject({ file, kind: "durable-storage-write", key, call });
+      expect(unauthorizedFindings(findings, allowances)).toEqual([]);
+    };
+    exact(source);
+    expect(() => exact(source.replaceAll("window.sessionStorage", "window.localStorage"))).toThrow();
+    expect(() => exact(source.replace(payload[0]!, payload[1]!))).toThrow();
+    expect(() => exact(`${source}\nlocalStorage.setItem("studio-project-document", payload);`)).toThrow();
+    const findings = analyzeBrowserKvSource(file, source);
+    expect(unauthorizedFindings([...findings, ...findings], allowances)).not.toEqual([]);
+    expect(unauthorizedFindings(findings.map((item) => ({ ...item, key: "other-key" })), allowances)).not.toEqual([]);
+    expect(unauthorizedFindings(analyzeBrowserKvSource(`${file}.other.ts`, source), allowances)).not.toEqual([]);
   });
 
   it("새 표시 설정과 정리 허용은 정확한 소유자·키·호출 수에만 적용한다", () => {

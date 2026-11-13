@@ -8,10 +8,18 @@ const layoutTokens = readFileSync(
   new URL("../../shared/components/layout/layout-tokens.ts", import.meta.url),
   "utf8",
 );
+const siteNavigationTokens = readFileSync(
+  new URL("../../shared/components/layout/layout-site-navigation.ts", import.meta.url),
+  "utf8",
+);
 const publicShell = readFileSync(
   new URL("../../shared/components/public-site-shell.css", import.meta.url),
   "utf8",
 );
+const siteHeader = readFileSync(new URL("../../shared/components/site-header.tsx", import.meta.url), "utf8");
+const mobileNavigation = readFileSync(new URL("../../shared/components/site-header-mobile-nav.tsx", import.meta.url), "utf8");
+const siteMenu = readFileSync(new URL("../../shared/components/site-menu.css", import.meta.url), "utf8");
+const mobileFirstShell = readFileSync(new URL("./mobile-first-shell.css", import.meta.url), "utf8");
 const referenceVisual = readFileSync(new URL("./reference-visual-system.css", import.meta.url), "utf8");
 const container = readFileSync(new URL("../../shared/components/container.tsx", import.meta.url), "utf8");
 const workspaceBase = readFileSync(
@@ -548,7 +556,7 @@ describe("에디터 예외 선언 계약 (L6)", () => {
 
 /**
  * 브레이크포인트 경계 계약 (BLUEPRINT §5.1 (6)·§5.2 (6)).
- * 표준 5개(640/768/1024/1280/1536)와 그 max-width 동반값(표준−1)만 허용한다.
+ * 본문 표준 5개(640/768/1024/1280/1536)와 동반값, 교차 검사하는 일반 셸 탐색 예외만 허용한다.
  * 아직 소진되지 않은 전용 지점은 파일별 잔존 목록으로 고정한다: 목록에 없는
  * 지점이 새로 들어오거나 같은 지점의 개수가 늘면 실패하고, 소진으로 개수가
  * 주는 것은 허용한다(목록은 감소 방향으로만 갱신한다). 너비가 아닌 미디어
@@ -583,11 +591,20 @@ function nonStandardWidthValues(css: string): number[] {
 
 describe("브레이크포인트 표준 경계 계약 (BP)", () => {
   const breakpointsBlock = tsBlock(layoutTokens, "export const LAYOUT_BREAKPOINTS");
+  const navigationBlock = tsBlock(siteNavigationTokens, "export const LAYOUT_SITE_NAVIGATION");
+  const desktopMin = tsField(navigationBlock, "desktopMin");
+  const mobileMax = tsField(navigationBlock, "mobileMax");
+  if (desktopMin === undefined) throw new Error("탐색 경계 정본에 desktopMin 필드가 없습니다.");
+  if (mobileMax === undefined) throw new Error("탐색 경계 정본에 mobileMax 필드가 없습니다.");
+  const navigationDesktop = Number.parseFloat(desktopMin);
+  const navigationMobile = Number.parseFloat(mobileMax);
   const scanned = {
     "sitewide-visual-ux.css": sitewide,
     "unified-theme-contract.css": unified,
     "reference-visual-system.css": referenceVisual,
     "public-site-shell.css": publicShell,
+    "site-menu.css": siteMenu,
+    "mobile-first-shell.css": mobileFirstShell,
     "globals.css": globalsCss,
     "workspace.css": workspaceBase,
     "workspace-redesign.css": workspaceRedesign,
@@ -607,6 +624,8 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     "unified-theme-contract.css": [],
     "reference-visual-system.css": [],
     "public-site-shell.css": [400, 1180, 1600, 1600],
+    "site-menu.css": [],
+    "mobile-first-shell.css": [],
     "globals.css": [],
     "workspace.css": [380],
     "workspace-redesign.css": [960, 1700],
@@ -618,6 +637,36 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     "market-library-experience.css": [700, 1150],
     "studio-route.css": [],
   };
+
+  // 일반 화면의 잔존 목록을 늘리는 대신, 같은 탐색 전환을 소비하는 정확한 선언만 별도로 고정한다.
+  const navigationExceptions: Partial<Record<keyof typeof scanned, readonly number[]>> = {
+    "sitewide-visual-ux.css": [navigationMobile],
+    "mobile-first-shell.css": [navigationMobile],
+    "public-site-shell.css": [navigationDesktop],
+    "site-menu.css": [navigationDesktop],
+  };
+
+  it("일반 셸의 주 메뉴·하단 탭·전체 메뉴·안전 여백이 명시된 한 경계에서 함께 전환한다", () => {
+    expect(navigationDesktop).toBe(1180);
+    expect(navigationMobile).toBe(navigationDesktop - 1);
+    expect(tsField(navigationBlock, "mobileQuery")).toBe(`(max-width: ${navigationMobile}px)`);
+    expect(siteHeader.split("window.matchMedia(LAYOUT_SITE_NAVIGATION.mobileQuery)")).toHaveLength(3);
+    expect(siteHeader).toContain('import { LAYOUT_SITE_NAVIGATION } from "./layout/layout-site-navigation"');
+    expect(layoutTokens).toContain('export { LAYOUT_SITE_NAVIGATION } from "./layout-site-navigation"');
+    expect(tsBlock(layoutTokens, "export const LAYOUT_SITE_NAVIGATION")).toBe("");
+    expect(publicShell).toContain(`@media (width >= ${navigationDesktop}px) {\n  .site-header__primary { display: flex; }`);
+    expect(publicShell).not.toMatch(/@media \(width >= 1024px\)\s*\{\s*\.site-header__primary/u);
+    expect(mobileNavigation).toContain(`min-[${navigationDesktop}px]:hidden`);
+    expect(mobileNavigation).toContain("isMobileViewport && !hideBottomTabs");
+    expect(siteHeader).toContain(`backdrop-blur-xl min-[${navigationDesktop}px]:hidden`);
+    expect(siteMenu).toContain(`@media (min-width: ${navigationDesktop}px)`);
+    for (const sheet of [sitewide, mobileFirstShell]) {
+      expect(sheet).toContain(`@media (max-width: ${navigationMobile}px)`);
+      expect(sheet).toContain(':root:has(nav[data-site-product]) { --site-float-base: calc(5.75rem + env(safe-area-inset-bottom)); }');
+    }
+    // 작은 작업 셸은 별도 768px 정책을 유지한다.
+    expect(workspaceV3).toContain("@media(max-width:767px)");
+  });
 
   it("토큰 파일의 표준 5개와 max-width 동반값이 고정된다", () => {
     expect(tsField(breakpointsBlock, "sm")).toBe("640px");
@@ -635,7 +684,7 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     for (const [name, css] of Object.entries(scanned)) {
       const residual = RESIDUAL_BREAKPOINTS[name as keyof typeof scanned];
       const counts = new Map<number, number>();
-      for (const value of residual) counts.set(value, (counts.get(value) ?? 0) + 1);
+      for (const value of [...residual, ...(navigationExceptions[name as keyof typeof scanned] ?? [])]) counts.set(value, (counts.get(value) ?? 0) + 1);
       for (const value of nonStandardWidthValues(css)) {
         const allowed = counts.get(value) ?? 0;
         expect(allowed, `${name}: 잔존 목록에 없는 전용 지점 ${value}px`).toBeGreaterThan(0);
@@ -663,11 +712,13 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     expect(mediaWidthValues(workspaceBase)).toContain(1023);
   });
 
-  it("헤더 1차 내비 전환은 전용 1180이 아니라 표준 1024에서 일어난다", () => {
-    expect(publicShell).toContain("@media (width >= 1024px)");
-    expect(publicShell).not.toContain("@media (width >= 1180px)");
-    // 검색 축소 구간의 상한 1180은 잔존 목록에 고정된 채로만 남는다.
-    expect(nonStandardWidthValues(publicShell)).toContain(1180);
+  it("일반 셸 예외의 선언 수를 고정하여 다른 화면의 임의 경계를 허용하지 않는다", () => {
+    // 상단 주 메뉴 시작과 기존 검색 확장 상한만 desktopMin을 쓴다.
+    expect(mediaWidthValues(publicShell).filter((value) => value === navigationDesktop)).toHaveLength(2);
+    for (const sheet of [sitewide, mobileFirstShell]) {
+      expect(mediaWidthValues(sheet).filter((value) => value === navigationMobile)).toHaveLength(1);
+    }
+    expect(mediaWidthValues(siteMenu).filter((value) => value === navigationDesktop)).toHaveLength(1);
   });
 
   it("매뉴얼 히어로 숨김은 레일 접기와 같은 1024 경계로 수렴했다", () => {
