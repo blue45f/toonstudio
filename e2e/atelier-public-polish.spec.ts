@@ -19,13 +19,18 @@ for (const width of [390, 1440]) {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("/community");
     const main = page.getByRole("main");
-    await expect(main.getByRole("heading", { level: 1, name: "혼자 그린 이야기, 함께 넓어지는 세계.", exact: true })).toBeVisible();
+    await expect(main.getByRole("heading", { level: 1, name: "커뮤니티", exact: true })).toBeVisible();
     await expect(main.getByRole("group", { name: "커뮤니티 구역 보기 전환", exact: true })).toBeVisible();
     await expect(page.getByTestId("site-atelier-chapter")).toHaveCount(1);
     await expect(page.getByTestId("atelier-workbench")).toHaveCount(1);
     await expect(page.getByTestId("atelier-workbench")).toHaveAttribute("data-scene", "motion");
     await expect(main.locator('[data-smart-ai-spotlight="nb-community-plaza"]')).toHaveCount(1);
+    const participation = main.getByText("커뮤니티 종류 · 참여하기", { exact: true });
+    await participation.focus();
+    await page.keyboard.press("Enter");
+    await expect(participation).toBeFocused();
     const gallery = main.getByRole("link", { name: "창작자 갤러리", exact: true });
+    await expect(gallery).toBeVisible();
     await expect(gallery).toHaveAttribute("href", "/showcase");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
     await gallery.click();
@@ -45,8 +50,9 @@ test("community section and guide controls remain keyboard-operable with reduced
   const feed = page.getByRole("region", { name: "통합 커뮤니티 피드", exact: true });
   const promotion = page.getByRole("heading", { name: "아마추어 작가의 첫 연재, 새로운 웹툰의 첫 독자", exact: true });
   await expect(modes.getByRole("button")).toHaveCount(4);
-  await expect(all).toHaveAttribute("aria-pressed", "true");
-  // 전체 보기에서는 피드를 먼저 보여 주고 보조 구역은 기본 접힘으로 유지한다.
+  await expect(modes.getByRole("button", { name: "대화방 · 통합 피드", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(all).toHaveAttribute("aria-pressed", "false");
+  // 기본 목적은 피드이며 전체 보기는 사용자가 별도로 선택한다.
   await expect(league).toBeHidden();
   await expect(feed).toBeVisible();
   await expect(promotion).toBeHidden();

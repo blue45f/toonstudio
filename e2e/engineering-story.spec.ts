@@ -77,8 +77,19 @@ test("engineering hub shows where to start and three reading routes before the l
   await start.getByRole("link").first().click();
   await expect(page).toHaveURL(/\/about\/technology\/architecture$/u);
   const guide = page.locator("dl").filter({ hasText: "이 페이지가 답하는 질문" });
+  const guideToggle = page.getByText("문서 안내와 예시 이미지", { exact: true });
+  await guideToggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(guideToggle).toBeFocused();
+  await expect(guide).toBeVisible();
   await expect(guide).toContainText("이런 분께");
-  await expect(guide.getByRole("link", { name: /라이브러리/u })).toHaveAttribute("href", "/about/technology/libraries");
+  const nextGuide = guide.getByRole("link", { name: /라이브러리/u });
+  await expect(nextGuide).toHaveAttribute("href", "/about/technology/libraries");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
+  await nextGuide.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/about\/technology\/libraries$/u);
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
 });
 

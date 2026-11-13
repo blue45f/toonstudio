@@ -114,7 +114,11 @@ test("public and workspace navigation connects references, research, discovery a
   await expect(communityLink).toHaveAttribute("href", "/community");
   await communityLink.click();
   await expect(page).toHaveURL(/\/community$/u);
-  await expect(page.getByRole("heading", { level: 1, name: "혼자 그린 이야기, 함께 넓어지는 세계.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "커뮤니티", exact: true })).toBeVisible();
+  const participation = page.getByRole("main").getByText("커뮤니티 종류 · 참여하기", { exact: true });
+  await participation.focus();
+  await page.keyboard.press("Enter");
+  await expect(participation).toBeFocused();
   await page.getByRole("main").getByRole("link", { name: "창작자 갤러리", exact: true }).click();
   await expect(page).toHaveURL(/\/showcase$/u);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();

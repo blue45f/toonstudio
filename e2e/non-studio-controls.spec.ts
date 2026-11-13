@@ -91,6 +91,9 @@ test("anonymous account gate opens and dismisses login without submitting creden
 
 test("settings preserve preferences and require explicit valid backup replacement", async ({ page }, testInfo) => {
   await page.goto("/settings");
+  const settingsAreas = page.getByRole("navigation", { name: "바꾸려는 설정 선택", exact: true });
+  await settingsAreas.getByRole("link", { name: "화면·음성", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe("display");
   const scale = page.getByRole("radiogroup", { name: "평점 표시 단위", exact: true });
   const hundred = scale.getByRole("radio", { name: "100점", exact: true });
   await hundred.click();
