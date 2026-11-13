@@ -21,6 +21,8 @@ describe("진입 인트로 판정의 경로 처리", () => {
     expect(shouldShowEntryIntro("/home////")).toBe(false);
     expect(shouldShowEntryIntro("/onboarding/character//")).toBe(false);
     expect(shouldShowEntryIntro("/admin/users/")).toBe(false);
-    expect(shouldShowEntryIntro("/about/")).toBe(true);
+    expect(shouldShowEntryIntro("/about/")).toBe(false);
+    expect(shouldShowEntryIntro("/")).toBe(true);
+    expect(shouldShowEntryIntro("////")).toBe(shouldShowEntryIntro("/"));
   });
 });
