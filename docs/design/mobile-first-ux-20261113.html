@@ -42,7 +42,7 @@
             <button class="row" data-purpose="내 기록 개인 서재 홈" data-action="내 기록 목적 페이지"><span class="symbol" aria-hidden="true">▱</span><span class="copy"><strong>내 기록</strong><small>작업 홈 · 서재 · 사이트 홈</small></span><span class="chevron" aria-hidden="true">›</span></button>
           </nav><p id="no-menu" class="notice" hidden>일치하는 메뉴가 없어요. 검색어를 바꿔보세요.</p>
         </div>
-        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="#"><i aria-hidden="true">⌂</i>홈</a><a href="#"><i aria-hidden="true">▱</i>내 작업</a><a href="#"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="#"><i aria-hidden="true">♧</i>커뮤니티</a><a href="#" class="current" aria-current="page"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
+        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="/studio" data-prototype-route="/studio"><i aria-hidden="true">▱</i>내 작업</a><a href="/discover" data-prototype-route="/discover"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="/market" data-prototype-route="/market"><i aria-hidden="true">▧</i>소재 찾기</a><a href="/my" data-prototype-route="/my"><i aria-hidden="true">♙</i>내 정보</a><a href="/sitemap" data-prototype-route="/sitemap" class="current" aria-current="page"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
       </div><p class="footnote">7개 목적만 선택. 검색은 기능 이름으로 바로 이동하는 지름길입니다.</p>
     </article>
     <article>
@@ -60,7 +60,7 @@
             <button class="row" data-action="제작 관리"><span class="symbol" aria-hidden="true">☷</span><span class="copy"><strong>제작 관리</strong><small>공정 · 원고 피드백 · 검수</small></span><span class="chevron" aria-hidden="true">›</span></button>
           </nav><p class="notice">목록의 명칭·개수·순서는 실제 구현에서 기존 메뉴 정본을 사용합니다.</p>
         </div>
-        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="#"><i aria-hidden="true">⌂</i>홈</a><a href="#"><i aria-hidden="true">▱</i>내 작업</a><a href="#"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="#"><i aria-hidden="true">♧</i>커뮤니티</a><a href="#" class="current" aria-current="page"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
+        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="/studio" data-prototype-route="/studio"><i aria-hidden="true">▱</i>내 작업</a><a href="/discover" data-prototype-route="/discover"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="/market" data-prototype-route="/market"><i aria-hidden="true">▧</i>소재 찾기</a><a href="/my" data-prototype-route="/my"><i aria-hidden="true">♙</i>내 정보</a><a href="/sitemap" data-prototype-route="/sitemap" class="current" aria-current="page"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
       </div><p class="footnote">별도 URL과 상위 메뉴 복귀. 한 번에 한 그룹만 읽습니다.</p>
     </article>
     <article>
@@ -74,7 +74,7 @@
           <div class="two"><button class="secondary" data-action="템플릿 페이지">템플릿 고르기 ›</button><button class="secondary" data-action="파일 가져오기 페이지">파일 가져오기 ›</button></div>
           <div class="saving"><span aria-hidden="true">▱</span><div><strong>작업하던 작품이 있나요?</strong>내 작업에서 이어갈 수 있어요.</div></div>
         </div>
-        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="#"><i aria-hidden="true">⌂</i>홈</a><a href="#" class="current" aria-current="page"><i aria-hidden="true">✎</i>작품 시작</a><a href="#"><i aria-hidden="true">▱</i>내 작업</a><a href="#"><i aria-hidden="true">?</i>도움말</a><a href="#"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
+        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="/studio" data-prototype-route="/studio" class="current" aria-current="page"><i aria-hidden="true">▱</i>내 작업</a><a href="/discover" data-prototype-route="/discover"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="/market" data-prototype-route="/market"><i aria-hidden="true">▧</i>소재 찾기</a><a href="/my" data-prototype-route="/my"><i aria-hidden="true">♙</i>내 정보</a><a href="/sitemap" data-prototype-route="/sitemap"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
       </div><p class="footnote">첨부 시작 시안의 두 선택을 유지하고, 전문 시작 방법은 별도 화면에서 고릅니다.</p>
     </article>
     <article>
@@ -90,7 +90,7 @@
           <p class="notice">실제 검색 결과가 아닙니다. 오류·빈 결과·다시 시도는 별도 상태로 표시합니다.</p>
         </div>
         <section class="filter-panel" id="filter-screen" aria-labelledby="filter-title" hidden><button type="button" class="back theme" id="close-filter">‹ 검색 결과로</button><h2 id="filter-title">검색 조건</h2><p class="notice">결과는 뒤에 두고, 지금은 조건 선택에만 집중합니다.</p><div class="filter-group"><strong>작품 유형</strong><div class="chips"><button class="chip" aria-pressed="true">전체</button><button class="chip" aria-pressed="false">웹툰</button><button class="chip" aria-pressed="false">웹소설</button></div></div><div class="filter-group"><strong>장르</strong><div class="chips"><button class="chip" aria-pressed="true">판타지</button><button class="chip" aria-pressed="false">로맨스</button><button class="chip" aria-pressed="false">액션</button><button class="chip" aria-pressed="false">드라마</button></div></div><p class="notice">실제 구현은 기존 필터·URL 상태를 재사용합니다. 이 시안 버튼은 서버 검색을 실행하지 않습니다.</p><button class="primary" id="apply-filter" style="width:100%">조건 적용하고 결과 보기</button></section>
-        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="#"><i aria-hidden="true">⌂</i>홈</a><a href="#"><i aria-hidden="true">▱</i>내 작업</a><a href="#" class="current" aria-current="page"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="#"><i aria-hidden="true">♧</i>커뮤니티</a><a href="#"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
+        <nav class="tabs" aria-label="시안 하단 메뉴"><a href="/studio" data-prototype-route="/studio"><i aria-hidden="true">▱</i>내 작업</a><a href="/discover" data-prototype-route="/discover" class="current" aria-current="page"><i aria-hidden="true">⌕</i>작품 찾기</a><a href="/market" data-prototype-route="/market"><i aria-hidden="true">▧</i>소재 찾기</a><a href="/my" data-prototype-route="/my"><i aria-hidden="true">♙</i>내 정보</a><a href="/sitemap" data-prototype-route="/sitemap"><i aria-hidden="true">▦</i>전체 메뉴</a></nav>
       </div><p class="footnote">필터 버튼을 눌러 분리된 조건 화면을 확인할 수 있습니다. 기존 필터 패널 구조를 재사용하는 예시입니다.</p>
     </article>
   </section>
@@ -107,6 +107,7 @@
   let toastTimer;
   const toast=document.getElementById('toast');
   document.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>{toast.textContent=button.dataset.action+'으로 이어지는 동선입니다. 실제 작업은 실행하지 않습니다.';toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,2600)}));
+  document.querySelectorAll('a[data-prototype-route]').forEach(link=>link.addEventListener('click',event=>{event.preventDefault();toast.textContent=link.dataset.prototypeRoute+'으로 이어지는 정본 동선입니다. 실제 페이지는 열지 않습니다.';toast.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.hidden=true,2600)}));
   document.querySelectorAll('a[href="#"]').forEach(link=>link.addEventListener('click',event=>event.preventDefault()));
   document.getElementById('menu-search').addEventListener('input',event=>{const query=event.target.value.trim().toLocaleLowerCase();let count=0;document.querySelectorAll('[data-purpose]').forEach(item=>{const match=item.dataset.purpose.toLocaleLowerCase().includes(query);item.hidden=!match;item.style.display=match?'':'none';if(match)count++});document.getElementById('no-menu').hidden=count>0});
   const results=document.getElementById('results-screen'),filters=document.getElementById('filter-screen'),open=document.getElementById('open-filter');

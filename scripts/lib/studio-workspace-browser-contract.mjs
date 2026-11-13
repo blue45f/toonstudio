@@ -31,7 +31,7 @@ export async function assertStudioWorkspaceHome(page) {
     const menuId = await menuPanel.getAttribute("id");
     assert(menuId, "Full menu must have a dialog ID");
     await expect(menuTrigger).toHaveAttribute("aria-controls", menuId);
-    await expect(menuPanel.locator('a[href="/sitemap"]')).toBeVisible();
+    await expect(menuPanel.locator('a[href="/sitemap/all"]')).toBeVisible();
     await expect.poll(() => menuPanel.evaluate((element) => element.contains(document.activeElement)),
       { message: "Full menu must receive focus" }).toBe(true);
     await page.keyboard.press("Escape");

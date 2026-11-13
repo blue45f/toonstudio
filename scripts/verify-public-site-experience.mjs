@@ -34,7 +34,11 @@ try {
     await check(`connected journey and history ${width}`, async () => {
       await page.goto(`${origin}/learn`, { waitUntil: 'domcontentloaded' });
       await expect(page.locator('main h1')).toHaveCount(1);
-      const next = page.locator('.public-site-next__card').first();
+      const journey = page.locator('.site-journey-disclosure').filter({ has: page.locator('.public-site-next') });
+      await expect(journey).not.toHaveAttribute('open');
+      await journey.locator(':scope > summary').click();
+      await expect(journey).toHaveAttribute('open', '');
+      const next = journey.locator('.public-site-next__card').first();
       await expect(next).toHaveAttribute('href', '/market/browse');
       await next.scrollIntoViewIfNeeded();
       await page.waitForTimeout(150);
