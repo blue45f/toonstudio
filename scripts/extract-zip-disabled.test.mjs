@@ -46,8 +46,8 @@ describe("개발 전용 전이 의존성 취약점 완화", () => {
     const overrides = workspace.overrides;
     expect(overrides["tmp@<0.2.6"]).toBe("0.2.7");
     expect(lock.overrides["tmp@<0.2.6"]).toBe("0.2.7");
-    expect(overrides["basic-ftp@<6.2.1"]).toBe("6.2.3");
-    expect(lock.overrides["basic-ftp@<6.2.1"]).toBe("6.2.3");
+    expect(overrides["basic-ftp@<6.2.4"]).toBe("6.2.4");
+    expect(lock.overrides["basic-ftp@<6.2.4"]).toBe("6.2.4");
     expect(overrides["argparse@<2"]).toBe("2.0.1");
     expect(lock.overrides["argparse@<2"]).toBe("2.0.1");
     expect(overrides["extract-zip@<=2.0.1"]).toBe("file:patches/extract-zip-disabled");
@@ -81,6 +81,6 @@ describe("개발 전용 전이 의존성 취약점 완화", () => {
     const tmpVersions = versionsOf("tmp");
     expect(tmpVersions.filter((version) => !atLeast(version, "0.2.6"))).toEqual([]);
     const ftpVersions = versionsOf("basic-ftp");
-    expect(ftpVersions.filter((version) => !atLeast(version, "6.2.1"))).toEqual([]);
+    expect(ftpVersions.filter((version) => !atLeast(version, "6.2.4"))).toEqual([]);
   });
 });
