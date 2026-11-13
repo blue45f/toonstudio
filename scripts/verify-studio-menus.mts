@@ -28,6 +28,7 @@ import {
 } from "../apps/web/src/domains/creator/studio-main-menu-presentation";
 
 import { studioOwnedPreviewSessionEndpoint } from "./lib/studio-collaboration-preview-session";
+import { pinStudioRailToolFromCatalog } from "./lib/studio-rail-tool-catalog-pin";
 import { findFreePort, spawnVitePreview, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 import { STUDIO_HEAVY_RENDER_SETTLE_TIMEOUT_MS, clickAndWaitForRenderer, selectCanvasResizeRow, waitForRendererQuiet } from "./lib/studio-verify-render-settle";
 
@@ -956,11 +957,7 @@ async function assertRailTools(page: Page): Promise<string[]> {
     const tool = rail.locator(`[data-studio-rail-tool-id="${id}"]`);
     try {
       if (!(await tool.isVisible().catch(() => false))) {
-        await page.getByRole("button", { name: "전체 도구", exact: true }).click();
-        const hiddenTools = page.getByRole("dialog", { name: "전체 도구", exact: true });
-        await hiddenTools.getByRole("button", { name: `${moreLabel} 고정`, exact: true }).click();
-        await hiddenTools.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-        await hiddenTools.waitFor({ state: "hidden", timeout: 5_000 });
+        await pinStudioRailToolFromCatalog(page, moreLabel);
         await tool.waitFor({ state: "visible", timeout: 5_000 });
       }
       const exposedLabel = await tool.getAttribute("aria-label");
