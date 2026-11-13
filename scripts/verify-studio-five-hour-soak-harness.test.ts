@@ -6,6 +6,7 @@ import { createStudioSoakCheckpoint } from "./lib/studio-five-hour-soak-checkpoi
 import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-runtime-noise.mjs";
 
 const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import.meta.url), "utf8");
+const desktopPen = readFileSync(new URL("./lib/studio-soak-desktop-pen.ts", import.meta.url), "utf8");
 
 function sliceFunction(name: string, nextName: string): string {
   const start = source.indexOf(`async function ${name}`);
@@ -23,6 +24,8 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(close).toContain('[data-studio-mobile-sheet="draw"]');
     expect(close).toContain('page.keyboard.press("Escape")');
     expect(close).toContain('data-studio-brush-workbench-dock="true"');
+    expect(close).toContain('[role="dialog"][data-studio-brush-floating]:visible');
+    expect(close).toContain('floating.getByRole("button", { name: / 닫기$/u })');
     expect(close).toContain('if (docked) continue');
     expect(close).toContain('state: "hidden"');
     expect(close).toContain(".catch(() => false)");
@@ -48,7 +51,9 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(select).toContain('dockedLibrary.getByRole("searchbox")');
     expect(select).toContain('data-studio-brush-selection-pending');
     expect(select).toContain('if (active && !pending) return true');
-    expect(select).toContain('page.keyboard.press("b")');
+    expect(select).toContain("await ensurePenReady(page)");
+    expect(select).toContain('dockedLibrary.waitFor({ state: "visible"');
+    expect(select).toContain('option.click({ timeout: 5_000 })');
     expect(select).toContain('[data-studio-brush-active-pill="true"]');
     expect(select).toContain("return closeBrushSurfaces(page)");
   });
@@ -57,11 +62,35 @@ describe("Studio five-hour soak browser state isolation", () => {
     const pen = sliceFunction("ensurePenReady", "drawEvidenceStroke");
     expect(pen).toContain('[data-studio-mobile-editing-dock="true"]');
     expect(pen).toContain('getByRole("button", { name: /^(?:펜|Pen)$/u })');
-    expect(pen).toContain('[data-studio-rail-tool-id="pen"]');
-    expect(pen).toContain('[data-studio-current-tool-id="pen"]');
+    expect(desktopPen).toContain('[data-studio-rail-tool-id="pen"]');
+    expect(desktopPen).toContain('[data-studio-current-tool-id="pen"]');
     expect(pen).toContain('getAttribute("aria-pressed")');
-    expect(pen).toContain("active.blur()");
-    expect(pen).toContain('page.keyboard.press("b")');
+    expect(desktopPen).toContain("active.blur()");
+    expect(desktopPen).toContain('page.keyboard.press("b")');
+  });
+
+  it("공통 PC 진입에 기존 30초 준비 예산의 남은 시간만 전달한다", () => {
+    const pen = sliceFunction("ensurePenReady", "acknowledgeStudioBetaNoticeIfPresent");
+    const ready = sliceFunction("waitForPenReady", "readStudioAvailableLayerCount");
+    expect(desktopPen).toContain('[data-studio-drawing-clarity="true"]');
+    expect(desktopPen).toContain("await activateDesktopPen(page, remaining())");
+    expect(pen).toContain("return ensureStudioSoakDesktopPen(page, timeoutMs)");
+    expect(ready).toContain("timeoutMs = 30_000");
+    expect(ready).toContain("const remaining = deadline - Date.now()");
+    expect(ready).toContain("await ensurePenReady(page, remaining) && Date.now() < deadline");
+    expect(ready).toContain("Math.min(250, deadline - Date.now())");
+    expect(desktopPen).not.toContain("activateDesktopPen(page)");
+  });
+
+  it("실제 PC 도크를 열고 브러시 선택 적용을 확인한 뒤 그리기를 시작한다", () => {
+    const select = sliceFunction("selectBrush", "ensurePenReady");
+    const desktop = select.slice(select.indexOf("if (!(await closeBrushSurfaces(page))) return false;"));
+    expect(desktop.indexOf("await pill.click")).toBeLessThan(desktop.indexOf("dockedLibrary.waitFor"));
+    expect(desktop.indexOf("dockedLibrary.waitFor")).toBeLessThan(desktop.indexOf('dockedLibrary.getByRole("searchbox")'));
+    expect(desktop).toContain('getAttribute("aria-pressed") === "true"');
+    expect(desktop).toContain('getAttribute("data-studio-brush-selection-pending") === "true"');
+    expect(desktop).toContain("if (active && !pending) return true");
+    expect(desktop).not.toContain("force: true");
   });
 
   it("never measures ink while a brush surface is covering the canvas", () => {
@@ -275,6 +304,8 @@ describe("Studio five-hour soak layer navigator admission", () => {
     // 이미 읽히면 어떤 UI도 건드리지 않는다.
     expect(ensure).toContain("const existing = await readStudioAvailableLayerCount(page);");
     expect(ensure).toContain("if (existing !== null) return existing;");
+    expect(ensure).toContain("await activateDesktopPen(page, timeoutMs)");
+    expect(ensure.indexOf("if (existing !== null) return existing;")).toBeLessThan(ensure.indexOf("await activateDesktopPen(page, timeoutMs)"));
     // 모바일 사용자의 실제 경로: 독의 작업 패널을 열고 인스펙터의 레이어 탭을 고른다.
     expect(ensure).toContain('[data-studio-mobile-editing-dock="true"]');
     expect(ensure).toContain('[data-studio-mobile-workspace-toggle="true"]');

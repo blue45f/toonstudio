@@ -26,6 +26,7 @@ import { chromium, type Browser, type CDPSession, type Locator, type Page } from
 
 import { STUDIO_ERASER_BRUSH_CATALOG_ITEMS, STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS, type StudioBrushCatalogItem } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
+import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import { createStudioSoakCheckpoint } from "./lib/studio-five-hour-soak-checkpoint.mjs";
 import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-runtime-noise.mjs";
 import { collectStudioInAppRuntimeErrors, installStudioInAppFirstRunState, installStudioInAppGuestBoundary, STUDIO_INAPP_PROFILES, type StudioInAppRuntimeError } from "./lib/studio-inapp-sweep-harness.mjs";
@@ -36,6 +37,7 @@ import {
   parseStudioPointerInputMode,
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
+import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const MINUTES = Math.max(1, Number(process.env.TOONSPECTRUM_SOAK_MINUTES ?? "300") || 300);
@@ -255,6 +257,12 @@ async function gcHeap(cdp: CDPSession | null, startedAt: number): Promise<HeapSa
 
 
 async function closeBrushSurfaces(page: Page): Promise<boolean> {
+  const floating = page.locator('[role="dialog"][data-studio-brush-floating]:visible');
+  if (await floating.isVisible().catch(() => false)) {
+    await floating.getByRole("button", { name: / 닫기$/u }).click({ timeout: 3_000 });
+    if (!(await floating.waitFor({ state: "hidden", timeout: 3_000 })
+      .then(() => true).catch(() => false))) return false;
+  }
   const surfaces = [
     page.locator('[data-studio-brush-catalog-session="true"]'),
     page.locator('[data-studio-brush-library="true"]').first(),
@@ -323,56 +331,32 @@ async function selectBrush(page: Page, item: StudioBrushCatalogItem): Promise<bo
   }
 
   if (!(await closeBrushSurfaces(page))) return false;
+  if (!(await ensurePenReady(page))) return false;
   const dockedLibrary = page.locator('[data-studio-brush-workbench-dock="true"] [data-studio-brush-library="true"]').first();
-  const dockedLibraryVisible = await dockedLibrary.isVisible({ timeout: 500 }).catch(() => false);
-  if (dockedLibraryVisible) {
-    await dockedLibrary.getByRole("searchbox").fill(item.name);
-    const option = dockedLibrary.getByRole("button", { name: `${item.name} 선택`, exact: true });
-    if (!(await option.waitFor({ state: "visible", timeout: 5_000 }).then(() => true).catch(() => false))) return false;
-    await option.scrollIntoViewIfNeeded();
-    await option.click({ force: true });
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      const active = await option.getAttribute("aria-pressed") === "true";
-      const pending = await dockedLibrary.getAttribute("data-studio-brush-selection-pending") === "true";
-      if (active && !pending) return true;
-      await page.waitForTimeout(50);
-    }
-    return false;
+  if (!(await dockedLibrary.isVisible({ timeout: 500 }).catch(() => false))) {
+    const toolbar = page.locator('[data-studio-draw-options="true"]');
+    const pill = toolbar.locator('[data-studio-brush-active-pill="true"]');
+    if (!(await pill.isVisible().catch(() => false))) return false;
+    await pill.click({ timeout: 5_000 });
+    if (!(await dockedLibrary.waitFor({ state: "visible", timeout: 5_000 })
+      .then(() => true).catch(() => false))) return false;
   }
-
-  await page.keyboard.press("b");
-  const toolbar = page.locator('[data-studio-draw-options="true"]');
-  if (!(await toolbar.waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false))) return false;
-  const pill = toolbar.locator('[data-studio-brush-active-pill="true"]');
-  if (!(await pill.isVisible().catch(() => false))) return false;
-  await pill.click();
-  const catalog = page.locator('[data-studio-brush-catalog-session="true"]');
-  if (!(await catalog.waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false))) return false;
-  await catalog.getByRole("tab", { name: "전체", exact: true }).click().catch(() => undefined);
-  await catalog.getByRole("searchbox").fill(item.name);
-  const option = catalog.getByRole("button", { name: `${item.name} 선택`, exact: true });
-  for (let batch = 0; batch < 24 && await option.count() === 0; batch += 1) {
-    const sentinel = catalog.locator('[data-studio-brush-progressive-sentinel="true"]');
-    if (await sentinel.count() === 0) break;
-    await catalog.locator('[data-studio-brush-catalog-scrollport="true"]').evaluate((element) => {
-      element.scrollTop = element.scrollHeight;
-    });
-    await page.waitForTimeout(100);
+  // 현재 PC 진입점은 먼저 도킹 라이브러리를 연다. 실제 선택과 비동기 적용을 모두 확인한다.
+  await dockedLibrary.getByRole("searchbox").fill(item.name);
+  const option = dockedLibrary.getByRole("button", { name: `${item.name} 선택`, exact: true });
+  if (!(await option.waitFor({ state: "visible", timeout: 5_000 }).then(() => true).catch(() => false))) return false;
+  await option.scrollIntoViewIfNeeded();
+  await option.click({ timeout: 5_000 });
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const active = await option.getAttribute("aria-pressed") === "true";
+    const pending = await dockedLibrary.getAttribute("data-studio-brush-selection-pending") === "true";
+    if (active && !pending) return true;
+    await page.waitForTimeout(50);
   }
-  if (await option.count() === 0) {
-    await closeBrushSurfaces(page);
-    return false;
-  }
-  await option.first().scrollIntoViewIfNeeded();
-  await option.first().click({ force: true });
-  return closeBrushSurfaces(page);
+  return false;
 }
 
-async function ensurePenReady(page: Page): Promise<boolean> {
+async function ensurePenReady(page: Page, timeoutMs = 4_000): Promise<boolean> {
   const mobileDock = page.locator('[data-studio-mobile-editing-dock="true"]');
   if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
     const pen = mobileDock.getByRole("button", { name: /^(?:펜|Pen)$/u });
@@ -382,34 +366,7 @@ async function ensurePenReady(page: Page): Promise<boolean> {
     return await pen.getAttribute("aria-pressed") === "true";
   }
 
-  // A docked brush-library search box can legitimately retain focus after selection. Keyboard
-  // shortcuts intentionally ignore typing surfaces, so using only "b" makes the soak diagnose
-  // focus ownership as a broken pen. Prefer the real rail control and keep the shortcut as a
-  // fallback for compact layouts where the rail item is not mounted.
-  const railPen = page.locator(
-    '[data-studio-rail-tool-id="pen"], [data-studio-current-tool-id="pen"]',
-  ).first();
-  if (await railPen.isVisible({ timeout: 500 }).catch(() => false)) {
-    if (await railPen.getAttribute("aria-pressed") !== "true") {
-      await railPen.click({ timeout: 5_000 }).catch(() => undefined);
-    }
-    await page.waitForTimeout(80);
-    if (await railPen.getAttribute("aria-pressed") !== "true") return false;
-    return page.locator('[data-studio-draw-options="true"]')
-      .waitFor({ state: "visible", timeout: 4_000 })
-      .then(() => true)
-      .catch(() => false);
-  }
-
-  await page.evaluate(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement) active.blur();
-  }).catch(() => undefined);
-  await page.keyboard.press("b");
-  return page.locator('[data-studio-draw-options="true"]')
-    .waitFor({ state: "visible", timeout: 4_000 })
-    .then(() => true)
-    .catch(() => false);
+  return ensureStudioSoakDesktopPen(page, timeoutMs);
 }
 
 async function acknowledgeStudioBetaNoticeIfPresent(page: Page): Promise<boolean> {
@@ -431,8 +388,10 @@ async function acknowledgeStudioBetaNoticeIfPresent(page: Page): Promise<boolean
 async function waitForPenReady(page: Page, timeoutMs = 30_000): Promise<boolean> {
   const deadline = Date.now() + Math.max(1_000, timeoutMs);
   do {
-    if (await ensurePenReady(page)) return true;
-    await page.waitForTimeout(250);
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    if (await ensurePenReady(page, remaining) && Date.now() < deadline) return true;
+    await page.waitForTimeout(Math.max(0, Math.min(250, deadline - Date.now())));
   } while (Date.now() < deadline);
   return false;
 }
@@ -558,6 +517,9 @@ async function ensureStudioLayerNavigatorCount(
       openedSheet = await propsSheetOpen();
       log(`layer navigator admission: props panel click -> props sheet open=${openedSheet}`);
     }
+  } else {
+    // 카운트를 읽을 수 없을 때만 실제 PC 메뉴와 인스펙터를 노출한다. 모바일 시트 경로는 유지한다.
+    await activateDesktopPen(page, timeoutMs);
   }
   if (!openedSheet) {
     const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
