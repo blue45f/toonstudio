@@ -2,6 +2,8 @@ import { KeyRound, RefreshCw, Search, SearchX, ShieldCheck } from "lucide-react"
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 import { useI18n } from "@/shared/lib/i18n";
 
 import {
@@ -26,6 +28,7 @@ type StatusFilter = IntegrationProviderStatusKind | typeof ALL;
 export function IntegrationCenterPage() {
   const lang = useI18n((state) => state.lang);
   const ko = lang.startsWith("ko");
+  const { activeScreen } = useTaskScreen({ ids: ["providers", "runtime", "content", "guide"], defaultScreen: "providers" });
   const { catalog, error, loading, refresh } = useIntegrationCatalog();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CategoryFilter>(ALL);
@@ -63,6 +66,13 @@ export function IntegrationCenterPage() {
         : "Review storage, work, communication, creation, publishing, trust and commerce providers in one place. Connected and executable states stay distinct."}
       art={{ kind: "collaborate", caption: ko ? "브랜드 콘셉트 아트 · 실제 화면이 아닙니다" : "Brand concept art · not a product screen" }}
     >
+      <TaskScreenNavigation label={ko ? "연동 작업 선택" : "Integration tasks"} activeScreen={activeScreen} defaultScreen="providers" items={[
+        { id: "providers", label: ko ? "서비스 찾기" : "Find a service" },
+        { id: "runtime", label: ko ? "실행 상태" : "Runtime" },
+        { id: "content", label: ko ? "콘텐츠 주소" : "Content addresses" },
+        { id: "guide", label: ko ? "연결 안내" : "Connection guide" },
+      ]} />
+      <div hidden={activeScreen !== "guide"}>
       <Link
         to="/settings/api-keys"
         className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft via-panel to-raised p-5 transition-colors hover:border-accent/60"
@@ -115,6 +125,8 @@ export function IntegrationCenterPage() {
           </div>
         </div>
       </section>
+      </div>
+      <div hidden={activeScreen !== "providers"}>
       <section className="mb-7 grid gap-3 rounded-2xl border border-line bg-card p-4 lg:grid-cols-[1fr_14rem_14rem_auto]">
         <label className="relative block">
           <span className="sr-only">{ko ? "연동 검색" : "Search integrations"}</span>
@@ -123,7 +135,7 @@ export function IntegrationCenterPage() {
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
             placeholder={ko ? "이름·기능·공급자 검색" : "Search name or capability"}
-            className="min-h-11 w-full rounded-xl border border-line bg-canvas pl-10 pr-3 text-sm text-fg"
+            className="min-h-11 w-full rounded-xl border border-line bg-canvas pl-10 pr-3 text-base text-fg"
           />
         </label>
         <select
@@ -190,18 +202,9 @@ export function IntegrationCenterPage() {
         </section>
       ) : null}
 
-      <div className="mt-12">
-        <h2 className="text-lg font-black text-fg">{ko ? "고급 도구" : "Advanced tools"}</h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-fg-2">
-          {ko
-            ? "연동 실행 상태를 직접 확인하거나 콘텐츠 주소를 다루는 도구입니다. 공급자 연결 확인만이라면 위 목록으로 충분합니다."
-            : "Tools for inspecting runtime state and working with content addresses. The provider list above is enough for everyday connection checks."}
-        </p>
-        <div className="mt-5">
-          <IntegrationRuntimeWorkbench />
-          <IpfsContentAddressPanel />
-        </div>
       </div>
+      <section hidden={activeScreen !== "runtime"} aria-label={ko ? "연동 실행 상태" : "Integration runtime"}><IntegrationRuntimeWorkbench /></section>
+      <section hidden={activeScreen !== "content"} aria-label={ko ? "콘텐츠 주소 도구" : "Content address tools"}><IpfsContentAddressPanel /></section>
     </IntegrationPage>
   );
 }

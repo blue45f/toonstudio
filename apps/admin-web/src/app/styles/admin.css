@@ -133,6 +133,8 @@ body {
 .policy-reason-templates__label { font-size: 0.85rem; color: var(--admin-muted); }
 .policy-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 8px; }
 .policy-shortcut-hint { font-size: 0.85rem; color: var(--admin-muted); }
+.admin-shell > details.policy-card > summary { min-height: 44px; align-content: center; cursor: pointer; font-weight: 650; }
+.admin-shell > details.policy-card > summary:focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
 .operation-policy kbd { padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-line); background: var(--admin-raised); font-size: 0.8em; }
 @media (prefers-contrast: more) {
   :root { --admin-line: oklch(0.72 0.04 265); --admin-muted: oklch(0.92 0.02 265); }

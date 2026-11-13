@@ -173,10 +173,17 @@ describe("NewsletterComposePage", () => {
 
     fireEvent.change(screen.getByPlaceholderText("예: 김밤하늘"), { target: { value: AUTHOR } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "뉴스레터 작업 선택" }), {
+      target: { value: "history" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /지울 초안/ }));
     vi.spyOn(window, "confirm").mockReturnValue(true);
     fireEvent.click(screen.getByRole("button", { name: "초안 삭제" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByText(/삭제하지 못했어요/)).toBeTruthy();
+    expect(useNewsletterStore.getState().issues).toContainEqual(expect.objectContaining({
+      id: draft?.id, title: "지울 초안", body: "본문", status: "draft", ownerId: "author-1",
+    }));
+    expect(screen.getByLabelText("제목")).toHaveProperty("value", "지울 초안");
   });
 });

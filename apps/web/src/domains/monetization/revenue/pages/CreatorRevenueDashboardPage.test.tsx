@@ -95,3 +95,20 @@ describe("CreatorRevenueDashboardPage", () => {
     expect(screen.getByTestId("revenue-dashboard-rea-status").textContent).toContain("Studio 70:30 Split");
   });
 });
+
+
+it("실제 수익 요약을 정산 시뮬레이터보다 먼저 보여 주고 예시를 명시적으로 연다", () => {
+  render(<MemoryRouter><CreatorRevenueDashboardPage /></MemoryRouter>);
+  const actual = screen.getByRole("region", { name: "수익 요약" });
+  const examples = screen.getByTestId("revenue-dashboard-rea-payout-bar");
+  const details = examples.closest("details");
+  expect(actual.closest("details")).toBeNull();
+  expect(actual.compareDocumentPosition(examples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("정산 시뮬레이터 누락");
+  fireEvent.click(summary);
+  fireEvent.click(screen.getByTestId("revenue-rea-tax-us-w8ben-treaty"));
+  expect(screen.getByRole("region", { name: "수익 요약" })).toBe(actual);
+  expect(examples.closest("details")?.open).toBe(true);
+});

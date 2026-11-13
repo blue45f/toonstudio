@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminApp } from "./AdminApp";
@@ -15,6 +15,13 @@ it("identifies the actual policy surface and links back to existing web manageme
   render(<AdminApp />);
   expect(screen.getByRole("heading", { name: "운영 모드와 라이선스" })).toBeTruthy();
   expect(screen.getByText(/다른 업무는 웹 관리자에서/)).toBeTruthy();
+  const otherWork = screen.getByText("다른 관리 업무로 이동").closest("details");
+  expect(otherWork?.open).toBe(false);
+  if (!otherWork) throw new Error("다른 관리 업무 입구가 없습니다.");
+  expect(screen.getByRole("heading", { name: "운영 모드와 라이선스" }).compareDocumentPosition(otherWork)
+    & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  fireEvent.click(screen.getByText("다른 관리 업무로 이동"));
+  expect(otherWork.open).toBe(true);
   expect(screen.getByRole("link", { name: "웹 관리자 · 운영 정책으로 돌아가기" }).getAttribute("href")).toBe("https://www.toonstudio.cloud/admin/platform/operations?view=policy");
   expect(screen.queryByText("Edge Gate 보호")).toBeNull();
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBe("page");

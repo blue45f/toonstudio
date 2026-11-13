@@ -31,7 +31,6 @@ import {
 
 const SCOPE = "domains.catalog.RankingPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
-const txEn = (source: string): string => translateCurrentStaticSourceText(SCOPE, "en", source);
 
 const STREAM_MODE_EN_COPY: Readonly<
   Record<RankingStreamModeId, { readonly label: string; readonly subtitle: string }>
@@ -107,26 +106,11 @@ export function RankingPage() {
   return (
     <PageEntrance variant="slide">
     <Container size="wide" className="ranking-page-layout py-6">
-      <SiteContextualSubNav pathnameOverride="/ranking" className="mb-5" />
-      <div className="relative mb-5 flex min-w-0 flex-wrap items-center justify-between gap-4 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
-        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90" />
-        <header className="min-w-0">
-          <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 text-xs font-extrabold tracking-wider text-accent"><Trophy size={14} aria-hidden="true" />{txEn("UNIFIED RANKING")}</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
-          <p className="mt-2 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
-        </header>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/create"
-            data-testid="ranking-create-bridge"
-            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
-          >
-            <PenLine size={14} aria-hidden="true" />
-            {bt("영감으로 작품 시작", "Start a story")}
-          </Link>
-          <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
-        </div>
-      </div>
+      <header className="mb-3 min-w-0">
+        <h1 className="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
+        <p className="mt-1 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
+      </header>
+      <SiteContextualSubNav pathnameOverride="/ranking" className="mb-3" />
 
       <section id="ranking-board" aria-labelledby="ranking-board-title">
         <h2 id="ranking-board-title" className="sr-only">{tx("랭킹 보드")}</h2>
@@ -262,6 +246,18 @@ export function RankingPage() {
         </div>
       </section>
 
+      </SiteDisclosure>
+      <SiteDisclosure className="ranking-page-support" title={bt("공유 · 창작으로 이어가기", "Share or start creating")} bodyClassName="flex flex-wrap items-center gap-2">
+
+          <Link
+            href="/create"
+            data-testid="ranking-create-bridge"
+            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
+          >
+            <PenLine size={14} aria-hidden="true" />
+            {bt("영감으로 작품 시작", "Start a story")}
+          </Link>
+          <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
       </SiteDisclosure>
       <nav className="ranking-page-next-actions" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
         {NEXT_STEPS.map((step) => (

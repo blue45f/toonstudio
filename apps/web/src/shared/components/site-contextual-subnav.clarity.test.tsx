@@ -12,15 +12,14 @@ vi.mock("@/shared/lib/i18n", () => ({
 afterEach(cleanup);
 
 describe("맥락 메뉴의 기본 정보량과 현재 위치", () => {
-  it("현재 메뉴를 기본 네 자리 안에 유지하고 다른 목적지도 펼쳐서 찾을 수 있다", () => {
+  it("현재 위치와 단일 메뉴로 시작하고 모든 목적지를 펼쳐서 찾을 수 있다", () => {
     const { container } = render(
       <MemoryRouter initialEntries={["/recommend"]}><SiteContextualSubNav /></MemoryRouter>,
     );
     const nav = screen.getByRole("navigation", { name: "작품 탐색 · 큐레이션" });
-    const primary = nav.querySelector(":scope > ul");
-    expect(primary?.querySelectorAll("a")).toHaveLength(4);
-    expect(primary?.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/recommend");
+    expect(nav.querySelector(":scope > ul")).toBeNull();
     expect(nav.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    expect(nav.querySelector('[aria-current="page"]')?.getAttribute("href")).toBe("/recommend");
     const disclosure = container.querySelector("details");
     expect(disclosure?.open).toBe(false);
     expect(disclosure?.querySelector('a[href="/calendar"]')).not.toBeNull();
@@ -28,6 +27,7 @@ describe("맥락 메뉴의 기본 정보량과 현재 위치", () => {
     expect(summary).not.toBeNull();
     if (summary) fireEvent.click(summary);
     expect(disclosure?.open).toBe(true);
+    expect(nav.querySelectorAll("a").length).toBeGreaterThan(4);
     if (summary) fireEvent.click(summary);
     expect(disclosure?.open).toBe(false);
   });

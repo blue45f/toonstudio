@@ -4,6 +4,7 @@ import {
   studioDocumentWorkspaceToLegacySurface,
   type StudioDocumentWorkspaceId,
 } from "./studio-document-workspace";
+import { studioBrushTaskLifecycleKey } from "./brush-lab/studio-brush-task-route";
 
 export const STUDIO_DCC_WORKBENCH_MODES = [
   "model",
@@ -224,6 +225,8 @@ export function studioVirtualSpaceLifecycleKey(location: StudioWorkspaceLocation
 
 export function studioRouteStageKey(locationLike: StudioWorkspaceLocationLike): string {
   const location = studioWorkspaceLocation(locationLike);
+  const brushTaskKey = studioBrushTaskLifecycleKey(location);
+  if (brushTaskKey !== null) return brushTaskKey;
   const virtualSpaceKey = studioVirtualSpaceLifecycleKey(location);
   if (virtualSpaceKey !== null) return virtualSpaceKey;
   const route = parseStudioWorkspaceRoute(location);
@@ -241,6 +244,9 @@ export function shouldPreserveStudioRouteLifecycle(
   previousLocationLike: StudioWorkspaceLocationLike,
   nextLocationLike: StudioWorkspaceLocationLike,
 ): boolean {
+  const previousBrush = studioBrushTaskLifecycleKey(studioWorkspaceLocation(previousLocationLike));
+  const nextBrush = studioBrushTaskLifecycleKey(studioWorkspaceLocation(nextLocationLike));
+  if (previousBrush !== null || nextBrush !== null) return previousBrush !== null && previousBrush === nextBrush;
   const previousRoute = parseStudioWorkspaceRoute(
     studioWorkspaceLocation(previousLocationLike),
   );

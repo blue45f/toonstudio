@@ -80,7 +80,7 @@ export function AnchorLabPage({ deps }: { readonly deps?: AnchorLabDeps } = {}) 
         <p className="max-w-3xl text-sm leading-relaxed text-fg-2 sm:text-base">{t("anchorLab.header.lead")}</p>
       </header>
 
-      <section
+      <details className="shrink-0 rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{pickLang("앵커 비교 고급 설정", "Advanced anchor comparison")}</summary><section
         data-testid="anchor-lab-rea-identity-lock-bar"
         aria-label={pickLang("캐릭터 일관성 앵커 잠금 워크벤치", "Character Identity Lock Workbench")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
@@ -153,7 +153,7 @@ export function AnchorLabPage({ deps }: { readonly deps?: AnchorLabDeps } = {}) 
             `Angle: ${activeAngle.en} (${anglePreset}) · Guard: ${activeDrift.en} (${driftGuard}) · Cosine similarity cos=${activeAngle.sim}`,
           )}
         </p>
-      </section>
+      </section></details>
 
       <AnchorLimitsNotice />
       <AnchorIdentityPanel builder={builder} />

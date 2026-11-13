@@ -91,7 +91,7 @@ describe("단일 창작 헤더", () => {
     expect(trigger.isConnected).toBe(true);
   });
 
-  it("모바일과 PC 사이 크기를 바꾸어도 열린 메뉴의 그룹·초점과 배경 잠금을 유지한다", async () => {
+  it("모바일과 PC 사이 크기를 바꾸어도 열린 메뉴의 검색·초점과 배경 잠금을 유지한다", async () => {
     let mobile = true;
     const listeners = new Set<() => void>();
     vi.stubGlobal("matchMedia", vi.fn((query: string) => ({
@@ -107,23 +107,28 @@ describe("단일 창작 헤더", () => {
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
     const close = within(dialog).getByRole("button", { name: "전체 메뉴 닫기" });
     await waitFor(() => expect(document.activeElement).toBe(close));
-    const group = dialog.querySelector("details");
-    if (!group) throw new Error("전체 메뉴 그룹 없음");
-    group.open = true;
-    const summary = group.querySelector("summary");
-    if (!summary) throw new Error("전체 메뉴 그룹 제목 없음");
-    summary.focus();
+    expect(within(dialog).getByRole("link", { name: /작품 찾기/u }).getAttribute("href"))
+      .toBe("/sitemap/discover");
+    const search = within(dialog).getByRole("searchbox");
+    fireEvent.change(search, { target: { value: "랭킹" } });
+    const destination = within(dialog).getByRole("link", { name: "랭킹" });
+    expect(destination.getAttribute("href")).toBe("/ranking");
+    destination.focus();
     for (const next of [false, true]) {
       act(() => { mobile = next; for (const listener of listeners) listener(); });
       expect(screen.getByRole("dialog", { name: "전체 메뉴" })).toBe(dialog);
-      expect(group.open).toBe(true);
-      expect(document.activeElement).toBe(summary);
+      expect(within(dialog).getByRole("searchbox")).toBe(search);
+      expect(within(dialog).getByDisplayValue("랭킹")).toBe(search);
+      expect(within(dialog).getByRole("link", { name: "랭킹" })).toBe(destination);
+      expect(document.activeElement).toBe(destination);
       expect(document.body.style.overflow).toBe("hidden");
+      expect(document.documentElement.style.overflow).toBe("hidden");
       expect(trigger.closest("[inert]")).not.toBeNull();
     }
-    fireEvent.keyDown(summary, { key: "Escape" });
+    fireEvent.keyDown(destination, { key: "Escape" });
     await waitFor(() => expect(document.activeElement).toBe(trigger));
     expect(document.body.style.overflow).toBe("");
+    expect(document.documentElement.style.overflow).toBe("");
   });
 
   it("홈은 중복 바로가기 줄을 렌더하지 않고 주요 목적지를 새 구조로 유지한다", () => {

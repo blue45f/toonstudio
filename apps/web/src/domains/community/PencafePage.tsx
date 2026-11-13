@@ -1,6 +1,8 @@
 import { Component, lazy, Suspense, useState, type ReactNode } from "react";
-import { ArrowRight, PenLine, Sparkles, UsersRound } from "lucide-react";
+import { ArrowRight, Sparkles, UsersRound } from "lucide-react";
 import { useParams } from "react-router-dom";
+
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 
 import { FanCafePanel } from "./components/fan-cafe-panel";
 import { Container } from "@/shared/components/section";
@@ -209,18 +211,23 @@ export function PencafePage() {
   return (
     <Container size="wide" className="relative py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/community/pencafe" className="mb-5" />
-      <header className="relative mb-6 flex flex-col gap-4 overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:mb-7 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-        <div>
-          <p className="eyebrow inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent">
-            <PenLine size={13} />
-            {t(COPY.eyebrow)}
-          </p>
-          <h1 className="mt-3 text-[clamp(1.6rem,7vw,1.875rem)] font-extrabold tracking-tight sm:text-4xl">{shareTitle}</h1>
-          <p className="lede mt-2 max-w-xl text-pretty text-sm leading-relaxed text-fg-2">
-            {t(COPY.lede)}
-          </p>
-        </div>
+      <header className="mb-4">
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{shareTitle}</h1>
+        <p className="mt-1 text-sm text-fg-2">{t(COPY.lede)}</p>
+      </header>
+
+      <section aria-label={t(COPY.feedRegion)}>
+        <PencafeFeedBoundary
+          key={feedRetryTick}
+          title={t(COPY.feedErrorTitle)}
+          message={t(COPY.feedErrorMessage)}
+          retryLabel={t(COPY.feedErrorRetry)}
+          onRetry={() => setFeedRetryTick((tick) => tick + 1)}
+        >
+          <FanCafePanel scope="pencafe" targetId={targetLabel} targetLabel={targetLabel} compact />
+        </PencafeFeedBoundary>
+      </section>
+      <SiteDisclosure title={pickLang("참여 · 공유 · 팬덤 도구", "Participate, share and fandom tools")} className="mt-5">
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/showcase"
@@ -255,7 +262,6 @@ export function PencafePage() {
             </Suspense>
           ) : null}
         </div>
-      </header>
 
       <img
         src="/images/section-community.webp"
@@ -347,17 +353,7 @@ export function PencafePage() {
         </p>
       </section>
 
-      <section aria-label={t(COPY.feedRegion)}>
-        <PencafeFeedBoundary
-          key={feedRetryTick}
-          title={t(COPY.feedErrorTitle)}
-          message={t(COPY.feedErrorMessage)}
-          retryLabel={t(COPY.feedErrorRetry)}
-          onRetry={() => setFeedRetryTick((tick) => tick + 1)}
-        >
-          <FanCafePanel scope="pencafe" targetId={targetLabel} targetLabel={targetLabel} compact />
-        </PencafeFeedBoundary>
-      </section>
+      </SiteDisclosure>
     </Container>
   );
 }

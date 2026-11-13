@@ -216,7 +216,8 @@ export function evaluateUiUxV2Contracts(root = DEFAULT_ROOT) {
     ["apps/web/src/domains/admin/shell/AdminShell.tsx", "Edge Gate"],
     ["apps/web/src/domains/catalog/TitleReaderImmersiveCreationBar.tsx", "reader-spatial-creation-bar"],
     ["apps/web/src/domains/integrations/PublishSurfaceCrossBridge.tsx", "publish-surface-cross-bridge"],
-    ["apps/web/src/domains/legal/technology/EngineeringStoryUi.tsx", "engineering-atlas-sticky-toc"],
+    // 문서별 본문을 먼저 보여 주는 단일 목차 진입점이 모든 문서에 남아야 한다.
+    ["apps/web/src/domains/legal/technology/EngineeringStoryUi.tsx", "data-engineering-catalog-menu"],
     ["apps/web/src/domains/creator/production-hub/ProductionPlanningGuide.tsx", "production-studio-workspace-link"],
     ["apps/web/src/domains/creator/analytics/CreatorAnalyticsPage.tsx", "creator-analytics-publish-bridge"],
     ["apps/web/src/domains/catalog/RankingPage.tsx", "ranking-create-bridge"],

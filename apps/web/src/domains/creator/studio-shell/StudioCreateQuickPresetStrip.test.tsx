@@ -47,13 +47,16 @@ afterEach(() => {
 });
 
 describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이터 · 단축키 가이드 · 출고 복원 흐름", () => {
-  it("시작 화면(/create)에 4가지 비주얼 장르 스타터 카드를 렌더링하고 올바른 생성 주소·로케일로 연결한다", () => {
+  it("시작 화면의 다른 시작 방법에서 장르 프리셋을 열면 4가지 스타터를 올바른 생성 주소·로케일로 연결한다", () => {
     const { rerender } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <CreateStartPage />
       </MemoryRouter>,
     );
 
+    expect(screen.queryByTestId("create-start-genre-starters")).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "다른 시작 방법" }));
+    fireEvent.click(screen.getByRole("link", { name: "장르 프리셋 고르기" }));
     const section = screen.getByTestId("create-start-genre-starters");
     expect(section).toBeTruthy();
 

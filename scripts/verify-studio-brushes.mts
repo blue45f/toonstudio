@@ -103,6 +103,7 @@ import {
   waitForStudioDrawingReady,
 } from "./lib/studio-drawing-readiness";
 import { verifyStudioServiceStatusAccess } from "./lib/studio-drawing-readiness-service-status";
+import { createStudioDurabilityViewportAudit, studioDurabilityDocumentRoi, type DeferredDurabilityResult } from "./lib/studio-durability-viewport";
 import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   isStaticPreviewReadinessResponse,
@@ -419,27 +420,6 @@ interface EmergencyAutosaveRecord {
     strokeIds?: unknown;
   };
   pagesList?: Array<{ id?: unknown; elements?: Array<{ id?: unknown }> }>;
-}
-
-interface DeferredDurabilityResult {
-  ok: boolean;
-  navigationIssuedInMs: number;
-  unloadGuardShown: boolean;
-  /** Phase 1, measured on a live page: which authority made the just-released stroke durable. */
-  receiptMarkerReason: string;
-  receiptSettledInMs: number;
-  receiptStrokeCount: number;
-  /** Phase 2, measured after teardown: which authority wrote the payload that actually survived. */
-  survivorMarkerReason: string;
-  survivorStrokeCount: number;
-  unloadPromptHeldMs: number;
-  payloadContainsEveryStroke: boolean;
-  recoveryBannerShown: boolean;
-  recoveredPixelsChanged: boolean;
-  recoveryMode: "automatic" | "manual";
-  recoveredStrokeVisibleSegments: number;
-  screenshot: string;
-  errorCount: number;
 }
 
 function log(message: string): void {
@@ -4788,17 +4768,16 @@ async function runDeferredDurabilityAudit(
   const page = await context.newPage();
   const errors = collectBrowserErrors(page, "deferred-durability", studioUrl);
   const screenshot = join(SCRATCH, "studio-brush-emergency-recovery.png");
+  const viewportAudit = createStudioDurabilityViewportAudit(page);
 
   try {
     await prepareStudioPage(page, studioUrl);
     await activateDesktopPen(page);
     await selectDesktopBrush(page, BRUSH_PRESETS[0]!);
-    const stage = page.locator(".konvajs-content").first();
-    const stageBox = await stage.boundingBox();
-    const viewport = page.viewportSize();
+    const initialViewport = await viewportAudit.measure();
+    const { stageBox, viewport } = initialViewport;
     invariant(stageBox && viewport, "could not measure canvas for deferred-stroke audit");
     await page.mouse.move(4, 4);
-    const baseline = await stage.screenshot({ animations: "disabled" });
     // This stage owns its own lanes, measured from the exposed paper rather than the brush-matrix
     // grid: that grid's row pitch shrinks with a focused brush subset, which pushed the gesture
     // below the viewport, where a silent no-op is indistinguishable from a lost durability receipt.
@@ -4817,9 +4796,13 @@ async function runDeferredDurabilityAudit(
       x: safeLeft - 12, y: navigationLane.y - 12,
       width: endX - safeLeft + 24, height: 70,
     };
-    const emptyNavigationLane = await page.screenshot({
-      animations: "disabled", clip: navigationEvidenceClip,
-    });
+    // 같은 문서 영역을 실제 Stage 변환으로 재투영한다. 복귀 후 보기를 바꿔 재게시하지 않는다.
+    const navigationRoi = studioDurabilityDocumentRoi(initialViewport, navigationEvidenceClip);
+    const inkRoi = studioDurabilityDocumentRoi(initialViewport, { ...navigationEvidenceClip,
+      y: receiptLane.y - 12, height: navigationLane.y - receiptLane.y + 70 });
+    const baseline = await viewportAudit.capture(inkRoi, "baseline");
+    const emptyNavigationLane = await viewportAudit.capture(navigationRoi, "empty-navigation");
+    invariant(baseline && emptyNavigationLane, "내구 복원 전 문서 ROI를 캡처하지 못했습니다.");
     // A gesture that never reaches Konva paints nothing, so it would fail this audit as a missing
     // emergency autosave. Prove both routes hit canvas first and fail with the real reason.
     const canvasReceivesStrokes = await page.evaluate(
@@ -4881,7 +4864,8 @@ async function runDeferredDurabilityAudit(
     await page.mouse.move(4, 4);
     // The canvas as it stands with ONLY the proven-durable stroke. Recovery must differ from this,
     // or it repainted stroke one and silently dropped the stroke that was actually at risk.
-    const afterReceiptStroke = await stage.screenshot({ animations: "disabled" });
+    const afterReceiptStroke = await viewportAudit.capture(inkRoi, "receipt");
+    invariant(afterReceiptStroke, "첫 획의 문서 ROI를 캡처하지 못했습니다.");
 
     // 2) Navigating away in the same beat as the release must lose nothing, AND the payload that
     // survives teardown must be the one pointerup wrote — a survivor written by pagehide would mean
@@ -5014,12 +4998,12 @@ async function runDeferredDurabilityAudit(
           throw new Error(`durability recovery was blocked or automatic restore failed: ${await recoveryText.textContent()}`);
         }
       } else {
-        const recoveredLane = await page.screenshot({
-          animations: "disabled", clip: navigationEvidenceClip,
-        });
+        const recoveredLane = await viewportAudit.capture(navigationRoi, "recovered-navigation", recoveryDeadline);
+        if (!recoveredLane) { await page.waitForTimeout(100); continue; }
         const coverage = await compareScreenshotCoverage(page, emptyNavigationLane, recoveredLane, 3, 12, {
           start: 12, end: navigationEvidenceClip.width - 12,
         });
+        if (performance.now() >= recoveryDeadline) break;
         recoveredStrokeVisibleSegments = coverage.segmentChangedPixels.filter((count) => count >= 4).length;
         recoveredStrokeChangedPixels = coverage.changedPixels;
         if (recoveredStrokeVisibleSegments === 3 && recoveredStrokeChangedPixels >= 24) break;
@@ -5031,7 +5015,8 @@ async function runDeferredDurabilityAudit(
       `recovery did not repaint the at-risk stroke across its route (${recoveredStrokeVisibleSegments}/3 segments, ${recoveredStrokeChangedPixels} pixels)`,
     );
     await recoveryText.waitFor({ state: "detached", timeout: 8_000 });
-    const restored = await restoredStage.screenshot({ animations: "disabled" });
+    const restored = await viewportAudit.capture(inkRoi, "restored");
+    invariant(restored, "복원된 문서 ROI를 캡처하지 못했습니다.");
     const recoveredPixelsChanged = !baseline.equals(restored);
     invariant(recoveredPixelsChanged, "restored emergency autosave did not repaint the deferred stroke");
     // Against the empty baseline, repainting stroke one alone would pass. Compare against the
@@ -5063,6 +5048,7 @@ async function runDeferredDurabilityAudit(
       recoveredPixelsChanged,
       recoveryMode,
       recoveredStrokeVisibleSegments,
+      viewportEvidence: viewportAudit.evidence,
       screenshot,
       errorCount: errors.messages.length + errors.failedResponses.length,
     };
@@ -5070,7 +5056,9 @@ async function runDeferredDurabilityAudit(
     await captureBrushStageFailure(page, "durability", error, errors);
     throw error;
   } finally {
-    await context.close();
+    try {
+      writeFileSync(join(SCRATCH, "studio-brush-durability-viewport.json"), JSON.stringify(viewportAudit.evidence, null, 2));
+    } finally { await context.close(); }
   }
 }
 

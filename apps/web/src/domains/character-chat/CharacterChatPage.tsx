@@ -14,6 +14,7 @@ import { useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { ActionableEmptyState } from "@/shared/components/ActionableEmptyState";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { USER_AI_SETTINGS_HREF } from "@/shared/ai/user-ai-types";
@@ -162,105 +163,7 @@ export function CharacterChatPage() {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/studio/assets/characters/new"
-            data-testid="character-chat-shaper-bridge"
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5" })}
-          >
-            <Box size={14} aria-hidden />
-            {t("3D 캐릭터 셰이퍼 열기", "Open 3D Character Shaper")}
-          </Link>
-          <Link
-            href="/character-chat/manage"
-            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
-          >
-            <MessageCircle size={14} aria-hidden />
-            {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}
-          </Link>
-        </div>
       </header>
-
-      <section
-        data-testid="character-chat-rea-lorebook-bar"
-        aria-label={pickLang("캐릭터 로어북·페르소나 제어 워크벤치", "Character lorebook and persona control workbench")}
-        className="mb-5 rounded-2xl border border-line bg-card p-4"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-accent">
-            {pickLang("REA 로어북 스포일러 펜스 · 페르소나 톤 제어", "REA Lorebook Spoiler Fence & Persona Tone Control")}
-          </span>
-          <span className="rounded-lg bg-panel/80 px-3 py-1.5 font-mono text-xs text-fg-3">
-            Character.AI · Zeta · Wrtn · SillyTavern Lorebook
-          </span>
-        </div>
-        <div
-          className="mt-3 flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label={pickLang("회차 스포일러 펜스", "Episode spoiler fence")}
-        >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("스포일러 펜스", "Spoiler Fence")}
-          </span>
-          {SPOILER_FENCE_OPTIONS.map((item) => {
-            const active = item.id === spoilerFence;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`char-chat-rea-fence-${item.id}`}
-                aria-pressed={active}
-                onClick={() => setSpoilerFence(item.id)}
-                className={
-                  active
-                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
-                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
-                }
-              >
-                {pickLang(item.ko, item.en)}
-              </button>
-            );
-          })}
-        </div>
-        <div
-          className="mt-2 flex flex-wrap items-center gap-2"
-          role="group"
-          aria-label={pickLang("페르소나 발화 톤", "Persona speech tone")}
-        >
-          <span className="text-xs font-semibold text-fg-2">
-            {pickLang("페르소나 톤", "Persona Tone")}
-          </span>
-          {PERSONA_TONE_OPTIONS.map((item) => {
-            const active = item.id === personaTone;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`char-chat-rea-tone-${item.id}`}
-                aria-pressed={active}
-                onClick={() => setPersonaTone(item.id)}
-                className={
-                  active
-                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
-                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
-                }
-              >
-                {pickLang(item.ko, item.en)}
-              </button>
-            );
-          })}
-        </div>
-        <p
-          data-testid="character-chat-rea-status"
-          aria-live="polite"
-          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg"
-        >
-          {pickLang(
-            `${activeFence.ko} + ${activeTone.ko} · ${activeFence.detailKo} (${activeTone.detailKo})`,
-            `${activeFence.en} + ${activeTone.en} · ${activeFence.detailEn} (${activeTone.detailEn})`,
-          )}
-        </p>
-      </section>
 
       {!ready ? (
         <section
@@ -322,7 +225,7 @@ export function CharacterChatPage() {
                 onChange={(event) => setCharacterQuery(event.target.value)}
                 placeholder={t("캐릭터·작품명 검색…", "Search character or title…")}
                 aria-label={t("대화할 캐릭터 검색", "Search characters")}
-                className="min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-fg-3"
+                className="min-h-11 min-w-0 flex-1 bg-transparent text-xs text-fg outline-none placeholder:text-fg-3"
               />
             </label>
             <ul className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
@@ -418,6 +321,107 @@ export function CharacterChatPage() {
           ) : null}
         </div>
       )}
+      <SiteDisclosure title={pickLang("대화 설정 예시 · 작가 도구", "Conversation examples and author tools")} className="mt-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/studio/assets/characters/new"
+            data-testid="character-chat-shaper-bridge"
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5" })}
+          >
+            <Box size={14} aria-hidden />
+            {t("3D 캐릭터 셰이퍼 열기", "Open 3D Character Shaper")}
+          </Link>
+          <Link
+            href="/character-chat/manage"
+            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
+          >
+            <MessageCircle size={14} aria-hidden />
+            {t("작가이신가요? 캐릭터 챗 열기", "Are you an author? Open a character chat")}
+          </Link>
+        </div>
+
+      <section
+        data-testid="character-chat-rea-lorebook-bar"
+        aria-label={pickLang("캐릭터 로어북·페르소나 제어 워크벤치", "Character lorebook and persona control workbench")}
+        className="mb-5 rounded-2xl border border-line bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-accent">
+            {pickLang("REA 로어북 스포일러 펜스 · 페르소나 톤 제어", "REA Lorebook Spoiler Fence & Persona Tone Control")}
+          </span>
+          <span className="rounded-lg bg-panel/80 px-3 py-1.5 font-mono text-xs text-fg-3">
+            Character.AI · Zeta · Wrtn · SillyTavern Lorebook
+          </span>
+        </div>
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("회차 스포일러 펜스", "Episode spoiler fence")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("스포일러 펜스", "Spoiler Fence")}
+          </span>
+          {SPOILER_FENCE_OPTIONS.map((item) => {
+            const active = item.id === spoilerFence;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`char-chat-rea-fence-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setSpoilerFence(item.id)}
+                className={
+                  active
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={pickLang("페르소나 발화 톤", "Persona speech tone")}
+        >
+          <span className="text-xs font-semibold text-fg-2">
+            {pickLang("페르소나 톤", "Persona Tone")}
+          </span>
+          {PERSONA_TONE_OPTIONS.map((item) => {
+            const active = item.id === personaTone;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`char-chat-rea-tone-${item.id}`}
+                aria-pressed={active}
+                onClick={() => setPersonaTone(item.id)}
+                className={
+                  active
+                    ? "inline-flex min-h-11 items-center rounded-xl border border-accent bg-accent-soft px-3.5 py-2 text-xs font-semibold text-accent transition-colors"
+                    : "inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45"
+                }
+              >
+                {pickLang(item.ko, item.en)}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          data-testid="character-chat-rea-status"
+          aria-live="polite"
+          className="mt-3 rounded-xl bg-panel/80 px-3 py-2 font-mono text-xs text-fg"
+        >
+          {pickLang(
+            `${activeFence.ko} + ${activeTone.ko} · ${activeFence.detailKo} (${activeTone.detailKo})`,
+            `${activeFence.en} + ${activeTone.en} · ${activeFence.detailEn} (${activeTone.detailEn})`,
+          )}
+        </p>
+      </section>
+
+      </SiteDisclosure>
     </Container>
   );
 }

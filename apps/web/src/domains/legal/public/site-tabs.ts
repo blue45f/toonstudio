@@ -28,10 +28,13 @@ export function useSiteTabs<T extends string>({
   ids,
   fallback,
   param,
+  serializeFallback = false,
 }: {
   readonly ids: readonly T[];
   readonly fallback: T;
   readonly param?: string;
+  /** 목록 화면과 기본 편집 탭을 주소로 구분해야 할 때 기본값도 명시한다. */
+  readonly serializeFallback?: boolean;
 }): SiteTabsState<T> {
   const [params, setParams] = useSearchParams();
   const [localValue, setLocalValue] = useState<T>(fallback);
@@ -49,11 +52,11 @@ export function useSiteTabs<T extends string>({
     }
     setParams((current) => {
       const updated = new URLSearchParams(current);
-      if (next === fallback) updated.delete(param);
+      if (next === fallback && !serializeFallback) updated.delete(param);
       else updated.set(param, next);
       return updated;
     }, { replace: true, preventScrollReset: true });
-  }, [fallback, param, setParams, value]);
+  }, [fallback, param, serializeFallback, setParams, value]);
 
   const isMounted = useCallback((id: T) => id === value || visited.has(id), [value, visited]);
 

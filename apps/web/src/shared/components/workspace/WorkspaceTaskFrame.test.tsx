@@ -18,6 +18,7 @@ describe("common task frame", () => {
     render(<MemoryRouter initialEntries={["/studio/assets?project=alpha"]}>
       <WorkspaceTaskFrame route={workspaceTaskRoute("/studio/assets")}><div>Assets</div></WorkspaceTaskFrame>
     </MemoryRouter>);
+    fireEvent.click(screen.getByText("작업 안내와 홈으로 돌아가기"));
     expect(screen.getByRole("link", { name: "작업 홈으로" }).getAttribute("href")).toBe("/home?project=alpha");
   });
 

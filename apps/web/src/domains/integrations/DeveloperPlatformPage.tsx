@@ -1,3 +1,5 @@
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 import { Braces, Code2, Download, KeyRound, Rocket, Webhook } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -89,7 +91,7 @@ function DeveloperStartGuide({ ko }: { ko: boolean }) {
       </div>
       <nav className="mt-4 flex flex-wrap gap-2" aria-label={ko ? "개발자 자료와 설정" : "Developer resources and settings"}>
         {START_LINKS.map((link) => (
-          <Link key={link.href} to={link.href} className="inline-flex min-h-10 items-center rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg hover:text-accent">
+          <Link key={link.href} to={link.href} className="inline-flex min-h-11 items-center rounded-xl border border-line bg-card px-3 text-sm font-semibold text-fg hover:text-accent">
             {ko ? link.ko : link.en}
           </Link>
         ))}
@@ -171,6 +173,7 @@ export function DeveloperPlatformPage() {
   const isKo = lang.startsWith("ko");
   const pickLang = (ko: string, en: string) => (isKo ? ko : en);
   const ko = isKo;
+  const { activeScreen } = useTaskScreen({ ids: ["contract", "start", "sandbox"], defaultScreen: "contract" });
   useDocumentTitle(ko ? "개발자 플랫폼 · ToonStudio" : "Developer platform · ToonStudio");
   const [manifest, setManifest] = useState<DeveloperManifestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -204,6 +207,12 @@ export function DeveloperPlatformPage() {
         ? "공개 카탈로그와 사용자 승인 프로젝트 기능을 REST API·서명 Webhook·MCP 도구로 확장하기 위한 권한 계약입니다. 원본 파일 접근은 별도 강한 권한으로 분리됩니다."
         : "A scoped contract for public catalog, user-authorized project APIs, signed webhooks and MCP tools. Raw project files require a separate strong grant."}
     >
+      <TaskScreenNavigation label={ko ? "개발자 작업 선택" : "Developer tasks"} activeScreen={activeScreen} defaultScreen="contract" items={[
+        { id: "contract", label: ko ? "API 계약·다운로드" : "API contract" },
+        { id: "start", label: ko ? "시작 안내" : "Getting started" },
+        { id: "sandbox", label: ko ? "연결 미리보기" : "Connection preview" },
+      ]} />
+      <div hidden={activeScreen !== "start"}>
       <figure className="relative mb-6 overflow-hidden rounded-[1.75rem] border border-line">
         <img
           src="/brand/hero-20261009/developers-hero.webp"
@@ -221,6 +230,8 @@ export function DeveloperPlatformPage() {
         </figcaption>
       </figure>
       <DeveloperStartGuide ko={ko} />
+      </div>
+      <div hidden={activeScreen !== "sandbox"}>
       <section
         data-testid="developer-platform-rea-webhook-bar"
         aria-label={pickLang("개발자 웹훅·플러그인 샌드박스 워크벤치", "Developer webhook and plugin sandbox workbench")}
@@ -230,7 +241,7 @@ export function DeveloperPlatformPage() {
           <span className="text-xs font-semibold text-accent">
             {pickLang("웹훅·플러그인 연결 미리보기", "Preview webhook and plugin connections")}
           </span>
-          <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
+          <span className="min-h-11 rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
             {pickLang("선택 예시 · 실제 전송·권한 변경 없음", "Selection preview · No requests or permission changes")}
           </span>
         </div>
@@ -253,8 +264,8 @@ export function DeveloperPlatformPage() {
                 onClick={() => setWebhookEvent(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "min-h-11 rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "min-h-11 rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -281,8 +292,8 @@ export function DeveloperPlatformPage() {
                 onClick={() => setSandboxScope(item.id)}
                 className={
                   active
-                    ? "rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "min-h-11 rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
+                    : "min-h-11 rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -304,6 +315,8 @@ export function DeveloperPlatformPage() {
         </p>
         </details>
       </section>
+      </div>
+      <div hidden={activeScreen !== "contract"}>
       {!manifest && !error ? <IntegrationLoading message={ko ? "개발자 계약을 불러오고 있습니다." : "Loading developer contract."} /> : null}
       {error ? <IntegrationError message={error} onRetry={retry} /> : null}
       {manifest ? (
@@ -313,7 +326,7 @@ export function DeveloperPlatformPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-fg-3">{manifest.schema}</p>
               <p className="mt-1 text-sm text-fg-2">{ko ? `${manifest.providers}개 공급자 계약이 동일한 안전 경계를 사용합니다.` : `${manifest.providers} providers share the same safety boundary.`}</p>
             </div>
-            <button type="button" onClick={() => downloadIntegrationJson("toonstudio-developer-manifest.json", manifest)} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold text-fg">
+            <button type="button" onClick={() => downloadIntegrationJson("toonstudio-developer-manifest.json", manifest)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold text-fg">
               <Download size={15} aria-hidden /> {ko ? "Manifest 다운로드" : "Download manifest"}
             </button>
           </div>
@@ -361,6 +374,7 @@ export function DeveloperPlatformPage() {
           </section>
         </>
       ) : null}
+      </div>
     </IntegrationPage>
   );
 }

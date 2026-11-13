@@ -1,6 +1,6 @@
 import { Settings, Star, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, SearchX, UserCog, ChevronRight, Sparkles, RefreshCw, Languages, MonitorSmartphone, Database } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
 import { SiteTabPanel } from "@/domains/legal/public/site-section-tabs";
@@ -10,6 +10,7 @@ import { useSiteTabAnchors, useSiteTabs } from "@/domains/legal/public/site-tabs
 import "./account-i18n";
 import { AccountMergeSettings } from "./AccountMergeSettings";
 import { ConnectedAccountsSettings } from "./ConnectedAccountsSettings";
+import { SettingsOverview } from "./SettingsOverview";
 import { SettingsAdvancedGroup } from "./SettingsAdvancedGroup";
 import {
   Choice,
@@ -82,6 +83,8 @@ function useStateOnceHydrated(hydrated: boolean, fn: () => void) {
 }
 
 export function SettingsPage() {
+  const location = useLocation();
+  const overview = !new URLSearchParams(location.search).has("view") && !location.hash;
   const hydrated = useHydrated();
   const experience = useSiteExperience();
   const lang = useI18n((s) => s.lang);
@@ -131,8 +134,18 @@ export function SettingsPage() {
   }, []);
   useEffect(() => () => window.clearTimeout(saveNoticeTimer.current), []);
 
-  const { value: activeTab, select: selectTab, isMounted } = useSiteTabs({ ids: SETTINGS_TABS, fallback: "display", param: "view" });
+  const { value: activeTab, select: selectTab, isMounted } = useSiteTabs({ ids: SETTINGS_TABS, fallback: "display", param: "view", serializeFallback: true });
   const { openAnchor } = useSiteTabAnchors(SETTINGS_HASH_TABS, activeTab, selectTab);
+
+  const previousOverview = useRef(overview);
+  useEffect(() => {
+    if (previousOverview.current === overview) return;
+    previousOverview.current = overview;
+    if (location.hash) return;
+    const heading = document.getElementById("settings-page-title");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: true });
+  }, [overview, location.hash]);
 
   // 고급 설정 펼침 상태 — 일상 설정만 기본 노출하고, 펼침 선택은 이 기기에 기억한다.
   // 고급 섹션 앵커로 직접 들어온 경우(딥링크)에는 해당 그룹이 열린 채로 시작한다.
@@ -356,7 +369,8 @@ export function SettingsPage() {
         icon={Settings}
         eyebrow={t("settings.eyebrow")}
         title={t("settings.title")}
-        description={t("settings.subtitle")}
+        titleId="settings-page-title"
+        description={overview ? bi("바꾸려는 항목을 고르세요.", "Choose what you want to change.") : t("settings.subtitle")}
         aside={
           <SectionArt
             image="studio-lobby"
@@ -366,6 +380,7 @@ export function SettingsPage() {
         asideClassName="hidden lg:block"
       />
 
+      {overview ? <SettingsOverview items={tabs} /> : null}
       <SettingsSearchAndRelatedPanel
         advancedOpen={advancedOpen}
         toggleAdvancedGroup={toggleAdvancedGroup}
@@ -373,7 +388,9 @@ export function SettingsPage() {
       />
       </div>
 
-      {/* 섹션 내비는 공용 SectionNav(표준 S-2) — 좁은 화면은 상단 탭 줄, 넓은 화면은 좌측 레일. */}
+      <div hidden={overview}>
+      <Link to={`${location.pathname}?${new URLSearchParams([...new URLSearchParams(location.search)].filter(([key]) => key !== "view"))}`} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-bold text-fg-2">{bi("설정 목록으로", "All settings")}</Link>
+      {/* 직접 주소·검색·앵커가 선택한 설정 영역만 연다. */}
       <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
       <SectionNav
         mode="tabs"
@@ -737,6 +754,7 @@ export function SettingsPage() {
       </div>
       </RevealOnScroll>
       </SiteTabPanel>
+      </div>
       </div>
       </div>
       <SavedToast visible={saveNotice} message={t("settings.filters.saved")} />

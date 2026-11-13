@@ -47,3 +47,17 @@ describe("tags page progressive directory", () => {
     expect(within(tagList).getAllByRole("link")).toHaveLength(10);
   });
 });
+
+
+it("태그 결과와 URL 필터는 본문에 두고 긴 탐색 안내를 명시 보조 영역에 둔다", () => {
+  render(<MemoryRouter initialEntries={["/tags?q=%ED%83%9C%EA%B7%B812&sort=name"]}><TagsPage /></MemoryRouter>);
+  const results = screen.getByRole("list", { name: "태그 목록" });
+  const summary = screen.getByText("태그 탐색 안내", { selector: "summary strong" }).closest("summary");
+  if (!summary) throw new Error("태그 탐색 안내 누락");
+  expect(results.closest("details")).toBeNull();
+  expect(results.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(summary.closest("details")?.open).toBe(false);
+  fireEvent.click(summary);
+  expect(summary.closest("details")?.open).toBe(true);
+  expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("태그12");
+});

@@ -549,7 +549,7 @@ export function SearchExplorer({
             )}
             <button
               type="button"
-              className={buttonClass({ size: "icon", variant: "quiet" })}
+              className={buttonClass({ size: "icon", variant: "quiet" })} style={{ minInlineSize: "2.75rem" }}
               onClick={() => setRetryKey((value) => value + 1)}
               aria-label={t("search.explorer.search.reload")}
             >

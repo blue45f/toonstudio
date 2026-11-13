@@ -170,7 +170,7 @@ export function MotionWebtoonPage(): JSX.Element {
           )}
         </p>
       )}
-      <section
+      <details className="shrink-0 rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{pickLang("스크롤·깊이 고급 설정", "Advanced scroll and depth settings")}</summary><section
         data-testid="motion-webtoon-rea-parallax-bar"
         data-own-control-size=""
         aria-label={pickLang("모션 웹툰 패럴랙스 및 스크롤 리그 워크벤치", "Motion Webtoon Parallax & Scroll Rig Workbench")}
@@ -252,7 +252,7 @@ export function MotionWebtoonPage(): JSX.Element {
             `Rig: ${activeRig.en} (${scrollRig}) · Pacing: ${activePacing.en} (${syncPacing})`,
           )}
         </p>
-      </section>
+      </section></details>
       <MotionWebtoonAnimeToonWizard
         onOpenDraft={(draft) => {
           setOpenedDraft(draft);

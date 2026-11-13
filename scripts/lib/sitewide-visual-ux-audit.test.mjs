@@ -24,6 +24,27 @@ function documentFor(html) {
   return dom.window.document;
 }
 
+test("실제 본문 뒤에 브랜드·만화 인트로가 남으면 ready로 세지 않는다", () => {
+  for (const intro of [
+    '<div aria-hidden="true" data-phase="show"><img src="/images/hero-main-intro.webp" alt=""></div>',
+    '<div data-comic-intro="short" role="dialog">인트로</div>',
+  ]) {
+    const root = documentFor(`<div class="route-stage" data-route-state="ready"><h1>학습 본문</h1></div>${intro}`);
+    assert.equal(inspectAuditRouteReadiness(root).outcome, "pending");
+    assert.equal(inspectAuditRouteReadiness(root).introOverlayVisible, true);
+    root.body.lastElementChild.remove();
+    assert.equal(inspectAuditRouteReadiness(root).outcome, "ready");
+    assert.equal(inspectAuditRouteReadiness(root).introOverlayVisible, false);
+  }
+});
+
+test("접힌 보조 도구의 DOM과 hidden 작업은 skeleton 본문의 준비 완료 근거가 아니다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready"><div class="skeleton"></div><details><summary>보조 도구</summary><button>공유</button><a href="/learn">학습</a></details><div hidden><h1>미리보기</h1><button>도구</button></div></div>');
+  const readiness = inspectAuditRouteReadiness(root);
+  assert.equal(readiness.contentElements, 0);
+  assert.equal(readiness.outcome, "skeleton");
+});
+
 function rectAt(left, width) {
   return { left, right: left + width, top: 100, bottom: 140, width, height: 40 };
 }

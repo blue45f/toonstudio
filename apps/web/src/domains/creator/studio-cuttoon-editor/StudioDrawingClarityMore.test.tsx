@@ -130,11 +130,12 @@ describe("목적 화면으로 여는 드로잉 더보기", () => {
     expect(source.getAttribute("aria-controls")).toBe(dialog.id);
     expect(nativeEvents).toEqual(["show"]);
     expect(getActiveServiceStatusSlot()?.element.closest("dialog")).toBe(dialog);
-    expect(dialog.querySelectorAll('[data-studio-clarity-action]')).toHaveLength(8);
-    const advanced = dialog.querySelector<HTMLDetailsElement>(".studio-drawing-task-advanced")!;
-    expect(advanced.open).toBe(false);
-    expect(advanced.querySelector('[data-studio-clarity-action="layers"]')).not.toBeNull();
-    expect(advanced.querySelector('[data-studio-clarity-action="windows"]')).not.toBeNull();
+    expect(dialog.querySelectorAll('[data-studio-clarity-action]')).toHaveLength(0);
+    expect(screen.getByRole("navigation", { name: "원고 도구 목적 고르기" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /원고와 레이어/ }));
+    expect(dialog.querySelectorAll('[data-studio-clarity-action]')).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "레이어" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "보기 설정" })).toBeNull();
   });
   it("내부 포인터는 닫기를 선행하지 않고 native를 닫은 뒤 원본 트리거로 실제 행동을 한 번 실행한다", () => {
     const next = document.createElement("button"); next.textContent = "다음 작업"; document.body.append(next);
@@ -146,6 +147,7 @@ describe("목적 화면으로 여는 드로잉 더보기", () => {
     });
     try {
       render(tasks(run)); source = trigger(); source.focus(); fireEvent.click(source);
+      fireEvent.click(screen.getByRole("button", { name: /원고와 레이어/ }));
       const action = screen.getByRole("button", { name: "소재 찾기" });
       fireEvent.pointerDown(action);
       expect(source.getAttribute("aria-expanded")).toBe("true");
@@ -162,6 +164,7 @@ describe("목적 화면으로 여는 드로잉 더보기", () => {
   });
   it("첫 Escape는 행동을 실행하지 않고 같은 더보기로 돌아가며 modal 자리를 정리한다", () => {
     const run = vi.fn(); render(tasks(run)); const source = trigger(); source.focus(); fireEvent.click(source);
+    fireEvent.click(screen.getByRole("button", { name: /화면과 도움말/ }));
     const action = screen.getByRole("button", { name: "이 기기에서 할 수 있는 작업" }); action.focus();
     fireEvent.keyDown(action, { key: "Escape" });
     expect(run).not.toHaveBeenCalled(); expect(document.activeElement).toBe(source);

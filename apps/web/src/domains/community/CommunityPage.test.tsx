@@ -34,12 +34,12 @@ function renderScope(initialEntry: string) {
 describe("CommunityPage", () => {
   it("renders the bilingual hero, promotion, and directory sections", () => {
     render(
-      <MemoryRouter initialEntries={["/community"]}>
+      <MemoryRouter initialEntries={["/community?view=all"]}>
         <CommunityPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "혼자 그린 이야기, 함께 넓어지는 세계." })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "커뮤니티" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "아마추어 작가의 첫 연재, 새로운 웹툰의 첫 독자" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "어떤 이야기부터 나눌까요?" })).toBeTruthy();
     // 디렉터리 카드 라벨/설명이 바이링구얼 키로 렌더링되고, 카드 전체가 해당 범주로 이동한다.

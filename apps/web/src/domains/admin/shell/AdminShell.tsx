@@ -23,6 +23,7 @@ import {
 } from "../router/admin-route-manifest";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
@@ -52,7 +53,7 @@ function AdminNavigation({
   const t = useT();
   const activeRoute = resolveAdminRoute(pathname);
   const [foldedGroups, setFoldedGroups] = useState<ReadonlySet<AdminNavigationGroupId>>(
-    () => new Set(),
+    () => new Set(ADMIN_NAVIGATION_GROUPS.map((group) => group.id)),
   );
 
   const toggleGroup = (groupId: AdminNavigationGroupId) => {
@@ -175,6 +176,8 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
   const lang = useI18n((state) => state.lang);
   const copy = getAdminShellCopy(lang);
   const t = useT();
+  const bt = useBilingual("AdminShell");
+  const [overviewOpen, setOverviewOpen] = useState(false);
   const route = resolveAdminRoute(pathname) ?? ADMIN_ROUTE_BY_ID.overview;
   const group = ADMIN_NAVIGATION_GROUPS.find((candidate) =>
     candidate.routeIds.includes(route.id),
@@ -366,10 +369,17 @@ export function AdminShell({ actor, userId, children }: AdminShellProps) {
         </header>
 
         <div className="mx-auto w-full max-w-[100rem] space-y-5 px-4 py-5 sm:px-6 lg:px-8">
-          <AdminHeaderStats userId={userId} />
           <section aria-label={t(route.labelKey)} className="min-w-0">
             {children}
           </section>
+          <details open={overviewOpen} onToggle={(event) => setOverviewOpen(event.currentTarget.open)}
+            className="rounded-2xl border border-line bg-panel/50" data-admin-global-overview="true">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              <span>{bt("전체 운영 현황", "Global operations overview")}</span>
+              <ChevronDown size={16} aria-hidden="true" />
+            </summary>
+            {overviewOpen ? <AdminHeaderStats userId={userId} /> : null}
+          </details>
         </div>
       </div>
     </div>

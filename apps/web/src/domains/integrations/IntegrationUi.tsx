@@ -2,6 +2,7 @@ import { ArrowUpRight, CheckCircle2, CircleAlert, Settings2 } from "lucide-react
 import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { Container } from "@/shared/components/section";
 import { LoadingState } from "@/shared/components/LoadingState";
 import type { WorkflowVisual } from "@/shared/components/site-experience/workflow-illustration";
@@ -36,25 +37,28 @@ export function IntegrationPage({
   art?: { kind: WorkflowVisual; caption: string };
 }) {
   const location = useLocation();
+  const bt = useBilingual("IntegrationPage");
   return (
-    <Container size={wide ? "wide" : "prose"} className="py-8 sm:py-14">
-      <header className="mb-7">
+    <Container size={wide ? "wide" : "prose"} className="py-4 sm:py-7">
+      <header className="mb-7" data-site-page-header-size="default">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="eyebrow text-accent">{eyebrow}</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-fg sm:text-5xl">{title}</h1>
+            <h1 className="mt-2 text-[length:var(--site-task-heading-size)] font-bold leading-[1.2] tracking-[-0.025em] text-fg">{title}</h1>
             <p className="mt-3 max-w-3xl text-pretty text-sm leading-7 text-fg-2 sm:text-base">
               {description}
             </p>
           </div>
           {art ? (
-            <div className="w-full max-w-sm shrink-0">
+            <div className="hidden w-full max-w-40 shrink-0 lg:block">
               <SitePageArt kind={art.kind} caption={art.caption} />
             </div>
           ) : null}
         </div>
       </header>
-      <nav className="mb-8 flex gap-2 overflow-x-auto pb-1" aria-label="외부 연동">
+      <details className="mb-4 rounded-xl border border-line bg-panel px-3">
+      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-fg-2">{bt("다른 연동 도구", "Other integration tools")}</summary>
+      <nav className="grid grid-cols-2 gap-2 pb-3 sm:flex sm:flex-wrap" aria-label={bt("외부 연동", "External integrations")}>
         {NAVIGATION.map(([href, label]) => {
           const active = location.pathname === href;
           return (
@@ -62,13 +66,14 @@ export function IntegrationPage({
               key={href}
               to={href}
               aria-current={active ? "page" : undefined}
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition ${active ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
+              className={`inline-flex min-h-11 items-center shrink-0 rounded-xl border px-4 py-2 text-sm font-semibold transition ${active ? "border-accent bg-accent text-on-accent" : "border-line bg-card text-fg-2 hover:text-fg"}`}
             >
               {label}
             </Link>
           );
         })}
       </nav>
+      </details>
       {children}
     </Container>
   );

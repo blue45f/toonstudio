@@ -20,7 +20,14 @@ function renderNav(
       <ProductionProjectNav projectId={props.projectId ?? "p-1"} surface={props.surface} currentStageId={props.currentStageId} />
     </MemoryRouter>,
   );
-  return screen.getByRole("navigation", { name: "프로젝트 메뉴" });
+  const nav = screen.getByRole("navigation", { name: "프로젝트 메뉴" });
+  const menu = nav.querySelector<HTMLDetailsElement>("[data-production-task-menu]");
+  expect(menu?.open).toBe(false);
+  const summary = menu?.querySelector("summary");
+  if (!summary) throw new Error("화면 전환 메뉴가 필요합니다.");
+  fireEvent.click(summary);
+  expect(menu?.open).toBe(true);
+  return nav;
 }
 
 function group(nav: HTMLElement, label: string): HTMLDetailsElement {
@@ -36,7 +43,7 @@ function openGroupLabels(nav: HTMLElement): string[] {
 describe("ProductionProjectNav (단계 그룹 내비)", () => {
   it("개요를 그룹 밖에 고정하고 일곱 단계 + 관리 그룹을 흐름 순서로 둔다", () => {
     const nav = renderNav({ surface: "overview" });
-    const groups = Array.from(nav.querySelectorAll("details")).map((element) => element.getAttribute("aria-label"));
+    const groups = Array.from(nav.querySelectorAll("details[aria-label]")).map((element) => element.getAttribute("aria-label"));
     expect(groups).toEqual([...ALL_GROUP_LABELS]);
     // 개요 링크는 어떤 그룹 안에도 들어 있지 않다.
     const overview = within(nav).getAllByRole("link")[0];

@@ -41,6 +41,7 @@ for (const profile of PROFILES) {
       await page.goto(new URL("/market/publish", baseURL ?? "http://127.0.0.1:5173").href, {
         waitUntil: "domcontentloaded",
       });
+      await page.getByRole("button", { name: "초안 만들기 · 이어서 편집" }).click();
       const workshop = page.getByTestId("marketplace-authoring-workshop");
       await expect(workshop, profile.id).toBeVisible({ timeout: 90_000 });
 

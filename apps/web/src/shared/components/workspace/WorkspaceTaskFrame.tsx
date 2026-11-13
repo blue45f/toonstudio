@@ -1,5 +1,3 @@
-import { WorkflowIllustration } from "../site-experience/WorkflowIllustration";
-import { workflowVisualForPath } from "../site-experience/workflow-route-art";
 import { ArrowLeft, ChevronRight, Search } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
@@ -102,11 +100,13 @@ export function WorkspaceTaskFrame({ route, owner = "local", children, campusMod
       aria-label={focused ? bt("작업 내용", "Task content") : undefined}
     >
       {!focused && campusControls ? <div className="campus-toolbar" key="campus-controls">{campusControls}</div> : null}
-      {route && !campusMode && !focused ? <div className="workspace-task-purpose" key="purpose">
-        <WorkflowIllustration kind={workflowVisualForPath(pathname)} className="workspace-task-illustration" decorative sizes="112px" />
-        <p>{bt(route.hintKo, route.hintEn)}</p>
-        <Link href={homeHref}><ArrowLeft size={16} aria-hidden="true" />{bt("작업 홈으로", "Back to workspace home")}</Link>
-      </div> : null}
+      {route && !campusMode && !focused ? <details className="workspace-task-guide" key="purpose">
+        <summary>{bt("작업 안내와 홈으로 돌아가기", "Task guide and return home")}<ChevronRight size={16} aria-hidden="true" /></summary>
+        <div className="workspace-task-purpose">
+          <p>{bt(route.hintKo, route.hintEn)}</p>
+          <Link href={homeHref}><ArrowLeft size={16} aria-hidden="true" />{bt("작업 홈으로", "Back to workspace home")}</Link>
+        </div>
+      </details> : null}
       <div key="workbench" className={!focused && campusMode === "scene" ? "campus-workbench" : "workspace-task-passthrough"}>
         {!focused && campusScene ? <aside key="scene" className="campus-scene-column">{campusScene}</aside> : null}
         <div key="route" className="workspace-task-route-content" data-slot="workspace-route-content">{children}</div>

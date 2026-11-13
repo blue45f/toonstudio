@@ -102,3 +102,19 @@ describe("MarketComparePage", () => {
     expect(screen.getByRole("button", { name: "비교표 복사됨" })).toBeTruthy();
   });
 });
+
+
+it("실제 비교표는 전문 시뮬레이터보다 먼저 보이고 기존 시트·스펙 조작은 명시 영역에 남는다", () => {
+  renderPage();
+  const table = screen.getByRole("table");
+  const tools = screen.getByTestId("market-compare-rea-spec-matrix-bar");
+  const details = tools.closest("details");
+  expect(table.closest("details")).toBeNull();
+  expect(table.compareDocumentPosition(tools) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("비교 전문 도구 누락");
+  fireEvent.click(summary);
+  expect(details?.open).toBe(true);
+  expect(tools.querySelectorAll("button").length).toBeGreaterThan(0);
+});

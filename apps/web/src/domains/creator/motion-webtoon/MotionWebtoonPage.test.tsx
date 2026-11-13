@@ -115,6 +115,10 @@ describe("MotionWebtoonPage", () => {
   it("REA 패럴랙스 워크벤치에서 스크롤 리그·동기화 페이싱을 전환하고 그룹 시맨틱·44px 터치 타깃·en 로케일 순수성을 유지한다", () => {
     render(<MotionWebtoonPage />);
     const bar = screen.getByTestId("motion-webtoon-rea-parallax-bar");
+    const advanced = bar.closest("details")!;
+    expect(advanced.open).toBe(false);
+    fireEvent.click(advanced.querySelector("summary")!);
+    expect(advanced.open).toBe(true);
     expect(bar.hasAttribute("data-own-control-size")).toBe(true);
     expect(bar.textContent).toContain("Rive · Spine 2D · Live2D Cubism · Naver Smartoon/Effectoon");
 

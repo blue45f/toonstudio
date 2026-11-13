@@ -10,6 +10,8 @@ import { ArrowRight } from "lucide-react";
 
 import type { getInsightsData } from "@/shared/lib/server/insights";
 
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { CountUp } from "@/shared/components/count-up";
 import { Container } from "@/shared/components/section";
 import { SectionArt } from "@/shared/components/section-art";
@@ -45,12 +47,11 @@ function PanelAction({ href, label }: { href: string; label: string }) {
 
 function InsightsPageHeading() {
   return (
-    <header className="mb-8 max-w-xl">
-      <p className="eyebrow text-accent">DATA · INSIGHTS</p>
-      <h1 className="mt-3 text-pretty text-3xl font-bold leading-[1.1] sm:text-4xl lg:text-[3rem]">
+    <header className="mb-4 max-w-xl">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
         이야기의 지형을 읽다
       </h1>
-      <p className="mt-4 text-pretty text-base leading-relaxed text-fg-2">
+      <p className="mt-1 text-sm leading-relaxed text-fg-2">
         수록작 전체를 가로질러 장르·플랫폼·평점·가격·어댑테이션을 집계했습니다.
       </p>
     </header>
@@ -58,6 +59,7 @@ function InsightsPageHeading() {
 }
 
 export function InsightsPage() {
+  const b = useBilingual("domains.catalog.InsightsPage");
   const { data, loading, error, reload } = useApiResource<InsightsData>(
     "/api/insights",
     catalogStatusText("catalog.status.insights.loadFailed", "인사이트 데이터를 불러오지 못했습니다.")
@@ -65,7 +67,7 @@ export function InsightsPage() {
 
   if (loading) {
     return (
-      <Container size="wide" className="py-16">
+      <Container size="wide" className="py-6">
         <InsightsPageHeading />
         <div className="skeleton h-40 rounded-2xl" />
       </Container>
@@ -74,9 +76,25 @@ export function InsightsPage() {
 
   if (error || !data) {
     return (
-      <Container size="wide" className="py-10">
+      <Container size="wide" className="py-6">
         <InsightsPageHeading />
         <ErrorState title={catalogStatusText("catalog.status.insights.loadFailed", "인사이트 데이터를 불러오지 못했습니다.")} message={error} onRetry={reload} />
+      </Container>
+    );
+  }
+
+  if (data.total === 0) {
+    return (
+      <Container size="wide" className="py-6">
+        <InsightsPageHeading />
+        <section className="rounded-xl border border-dashed border-line bg-panel p-4" aria-live="polite">
+          <h2 className="font-bold text-fg">{b("아직 집계할 작품이 없어요", "No works to summarize yet")}</h2>
+          <p className="mt-1 text-sm text-fg-2">{b("작품이 수록되면 장르·평점·플랫폼 통계를 확인할 수 있어요.", "Genre, rating and platform statistics will appear when works are available.")}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={reload} className="min-h-11 rounded-lg border border-line px-3 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-accent">{b("집계 다시 불러오기", "Reload statistics")}</button>
+            <Link href="/discover" className="inline-flex min-h-11 items-center rounded-lg bg-accent px-3 text-sm font-semibold text-on-accent focus-visible:outline-2 focus-visible:outline-accent">{b("작품 탐색", "Discover works")}</Link>
+          </div>
+        </section>
       </Container>
     );
   }
@@ -114,45 +132,13 @@ export function InsightsPage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden border-b border-line bg-ledger">
-        <div
-          className="pointer-events-none absolute -top-1/2 right-1/4 h-[44rem] w-[44rem] opacity-25 blur-3xl"
-          style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--color-accent) 30%, transparent), transparent 60%)" }}
-          aria-hidden
-        />
-        <Container size="wide" className="relative py-12 lg:py-16">
-          <SiteContextualSubNav pathnameOverride="/insights" className="mb-5" />
-          <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div>
-              <p className="eyebrow text-accent">DATA · INSIGHTS</p>
-              <h1 className="mt-3 text-pretty text-3xl font-bold leading-[1.1] sm:text-4xl lg:text-[3rem]">
-                이야기의 지형을 읽다
-              </h1>
-              <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-fg-2">
-                수록작 전체를 가로질러 장르·플랫폼·평점·가격·어댑테이션을 집계했습니다. 어느 플랫폼도
-                보여주지 않는, 독자를 위한 트렌드 대시보드.
-              </p>
-              <p className="mt-2 max-w-xl text-xs leading-relaxed text-fg-3">
-                장르 분포·평점·플랫폼은 수집 실데이터, 트렌드 점수·완독률·몰입 지수는 추정값(≈)입니다.
-              </p>
-            </div>
-            <SectionArt
-              image="explore"
-              className="hidden aspect-[16/10] w-full rounded-3xl border border-line object-cover lg:block"
-            />
-          </div>
-          {/* 시그니처 hero 스펙트럼 — reveal 채움 + 커서 스크럽으로 장르를 짚는다 */}
-          <div className="mt-7 max-w-xl">
-            <GenreSpectrum
-              genres={genreRows.map((row) => row.genre)}
-              height={10}
-              interactive
-              label={`수록작 장르 스펙트럼 (${genreRows.length}개 장르)`}
-            />
-            <p className="mt-2 text-xs text-fg-3">
-              바 위에 커서를 올리면 그 지점의 장르가 표시됩니다.
-            </p>
-          </div>
+      <section className="border-b border-line">
+        <Container size="wide" className="py-6">
+          <SiteContextualSubNav pathnameOverride="/insights" className="mb-3" />
+          <header>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">이야기의 지형을 읽다</h1>
+            <p className="mt-1 text-xs leading-relaxed text-fg-3">{b("장르·평점·플랫폼은 수집 실데이터, 트렌드·완독률·몰입 지수는 추정값(≈)입니다.", "Genres, ratings and platforms use collected data; trends, completion and immersion are estimates (≈).")}</p>
+          </header>
           <dl className="mt-7 flex flex-wrap items-center gap-x-8 gap-y-3">
             {[
               { value: total, label: "수록 작품" },
@@ -175,7 +161,7 @@ export function InsightsPage() {
         </Container>
       </section>
 
-      <Container size="wide" className="py-10 sm:py-14">
+      <Container size="wide" className="py-5 sm:py-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
           <Panel
             className="lg:col-span-3 lg:row-span-2"
@@ -408,6 +394,21 @@ export function InsightsPage() {
             />
           </Panel>
         </div>
+        <SiteDisclosure title={b("데이터 안내 · 장르 스펙트럼", "Data guide and genre spectrum")} className="mt-5">
+          <p className="text-sm leading-relaxed text-fg-2">{b("수록작 전체의 장르·플랫폼·평점·가격·어댑테이션을 집계한 독자용 대시보드입니다.", "A reader dashboard summarizing catalog genres, platforms, ratings, pricing and adaptations.")}</p>
+          <SectionArt image="explore" className="mt-4 hidden aspect-[16/10] max-w-sm rounded-xl border border-line object-cover lg:block" />
+          <div className="mt-7 max-w-xl">
+            <GenreSpectrum
+              genres={genreRows.map((row) => row.genre)}
+              height={10}
+              interactive
+              label={`수록작 장르 스펙트럼 (${genreRows.length}개 장르)`}
+            />
+            <p className="mt-2 text-xs text-fg-3">
+              바 위에 커서를 올리면 그 지점의 장르가 표시됩니다.
+            </p>
+          </div>
+        </SiteDisclosure>
       </Container>
     </div>
   );

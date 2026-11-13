@@ -17,6 +17,8 @@ import { Link } from "react-router-dom";
 import { getAuthSession } from "@/domains/auth/public/session/auth-session-state";
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { useAuthActorId } from "@/domains/auth/public/session/use-auth-actor-id";
+import { TaskScreenNavigation } from "@/shared/components/task-screen-navigation";
+import { useTaskScreen } from "@/shared/components/use-task-screen";
 import { Container } from "@/shared/components/section";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -117,6 +119,7 @@ function useNewsletterHydrated(): boolean {
 }
 
 export function NewsletterComposePage() {
+  const { activeScreen, navigateScreen } = useTaskScreen({ ids: ["compose", "preview", "history", "settings"] as const, defaultScreen: "compose" });
   const t = useBilingual("newsletter");
   const lang = useI18n((state) => state.lang);
   const isKo = lang.startsWith("ko");
@@ -205,6 +208,7 @@ export function NewsletterComposePage() {
   };
 
   const startNew = () => {
+    navigateScreen("compose");
     setEditingId(null);
     setTitle("");
     setBody("");
@@ -212,6 +216,7 @@ export function NewsletterComposePage() {
   };
 
   const loadIssue = (issue: NewsletterIssue) => {
+    navigateScreen(issue.status === "sent" ? "preview" : "compose");
     setEditingId(issue.id);
     setTitle(issue.title);
     setBody(issue.body);
@@ -349,17 +354,21 @@ export function NewsletterComposePage() {
         </nav>
       </header>
 
-      <section
+      <TaskScreenNavigation label={t("뉴스레터 작업 선택", "Newsletter task")} activeScreen={activeScreen} defaultScreen="compose" items={[
+        { id: "compose", label: t("작성", "Compose") }, { id: "preview", label: t("미리보기", "Preview") },
+        { id: "history", label: t("발송 이력", "Send history") }, { id: "settings", label: t("발신자·템플릿", "Sender & templates") },
+      ]} />
+      <section hidden={activeScreen !== "settings"}
         data-testid="newsletter-compose-rea-openrate-bar"
-        aria-label={pickLang("뉴스레터 오픈율·세그먼트 벤치마크 워크벤치", "Newsletter open-rate and segment benchmark workbench")}
+        aria-label={pickLang("템플릿·발송 대상 미리보기", "Template and audience preview")}
         className="mb-5 rounded-2xl border border-line bg-card p-4"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-semibold text-accent">
-            {pickLang("REA 캠페인 템플릿 · 독자 세그먼트 시뮬레이터", "REA Campaign Template & Reader Segment Simulator")}
+            {pickLang("캠페인 템플릿 · 독자 분류 미리보기", "Campaign template and audience preview")}
           </span>
           <span className="rounded-lg border border-line bg-panel px-3 py-1.5 font-mono text-xs text-fg-3">
-            Substack · Ghost · Beehiiv · Stibee
+            {t("미리보기 전용 · 실제 발송 대상에 반영되지 않음", "Preview only · does not change recipients")}
           </span>
         </div>
         <div
@@ -451,7 +460,7 @@ export function NewsletterComposePage() {
         </section>
       ) : (
         <div className="flex flex-col gap-8">
-          <section className="rounded-2xl border border-line bg-panel/50 p-6">
+          <section hidden={activeScreen !== "settings" && !(activeScreen === "compose" && !penName)} className="rounded-2xl border border-line bg-panel/50 p-6">
             <h2 className="text-base font-semibold text-fg">{t("작가 이름", "Author name")}</h2>
             <p className="mt-1 text-sm text-fg-2">
               {t(
@@ -494,7 +503,7 @@ export function NewsletterComposePage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-line bg-panel/50 p-6">
+          <section hidden={activeScreen !== "compose"} className="rounded-2xl border border-line bg-panel/50 p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-base font-semibold text-fg">
                 {editingSent
@@ -608,7 +617,7 @@ export function NewsletterComposePage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-line bg-panel/50 p-6">
+          <section hidden={activeScreen !== "preview"} className="rounded-2xl border border-line bg-panel/50 p-6">
             <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
               <Eye size={16} className="text-accent" /> {t("메일 미리보기", "Email preview")}
             </h2>
@@ -641,7 +650,7 @@ export function NewsletterComposePage() {
           </section>
 
           {penName && (
-            <section className="rounded-2xl border border-line bg-panel/50 p-6">
+            <section hidden={activeScreen !== "history"} className="rounded-2xl border border-line bg-panel/50 p-6">
               <h2 className="flex items-center gap-2 text-base font-semibold text-fg">
                 <History size={16} className="text-accent" /> {t("내 글과 발송 이력", "My newsletters and send history")}
               </h2>

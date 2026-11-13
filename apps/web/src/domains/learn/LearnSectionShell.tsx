@@ -18,12 +18,11 @@ import {
   Workflow,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { SectionNav, type SectionNavGroup } from "@/shared/components/section-nav";
 import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { useT } from "@/shared/lib/i18n";
-import { SectionArt } from "@/shared/components/section-art";
 
 import { LESSONS } from "./learning-content";
 import { useLearningProgress } from "./use-learning-progress";
@@ -95,6 +94,8 @@ const NAV_GROUPS: readonly LearnNavGroupSpec[] = [
   },
 ];
 
+const MENU_LABEL = defineBilingualText("learnPageNav", "menu", "학습 메뉴", "Learning menu");
+
 const NAV_ARIA_LABEL = defineBilingualText("learnPageNav", "ariaLabel", "배우기 영역", "Learn area");
 
 const STRIP_LABEL = defineBilingualText("learnProgressStrip", "label", "내 학습 진행", "My learning progress");
@@ -130,21 +131,6 @@ function LearningProgressStrip() {
   );
 }
 
-/**
- * 자체 아트 히어로가 없는 정보형 하위 화면(자료) 전용 셸 배너.
- * 레퍼런스 화면(제작 과정·진로·교육기관)은 LearningReferenceLayout이 아트 히어로를 갖고 있어
- * 얹지 않는다 — 배너 아트와 히어로 아트가 두 겹으로 쌓이면 첫 화면이 무거워진다.
- * 학습 홈·클래스·교실처럼 자체 비주얼을 가진 화면과, 손으로 직접 그리는 실습(트레이스)처럼
- * 작업 표면이 바로 시작돼야 하는 화면에도 얹지 않는다.
- */
-function LearningArtBanner() {
-  return (
-    <div className="learn-art-banner">
-      <SectionArt image="learn" className="learn-art-banner__image" />
-    </div>
-  );
-}
-
 /** 자체 히어로를 가진 레퍼런스 화면군 — 진행 스트립을 본문 아래로 내리는 대상이다. */
 const REFERENCE_PATHS: readonly string[] = ["/learn/process", "/learn/careers", "/learn/education"];
 
@@ -152,10 +138,8 @@ const REFERENCE_PATHS: readonly string[] = ["/learn/process", "/learn/careers", 
  * 학습 셸의 역할 분리 (표준 문서 nav-standard.md의 S-1·S-2):
  * - 전역 크롬(헤더·푸터·단일 지도)은 AppShell이 소유한다. /learn은 몰입 예외가 아니므로
  *   학습 화면은 항상 전역 셸 안에서 렌더링된다.
- * - 섹션 내비는 공용 SectionNav(링크 모드) 하나뿐이다. 넓은 화면에서는 좌측 레일,
- *   좁은 화면에서는 같은 DOM이 상단 칩 줄이 된다. 학습 전용 내비 바를 따로 만들지 않는다.
- * - 아트 배너와 진행 스트립은 내비가 아니라 콘텐츠 보조다(배너=자체 아트 히어로가 없는
- *   화면의 섹션 아트, 스트립=내 진행 정보). 본문 열 안에서만 놓인다.
+ * - 모든 화면은 본문 목적부터 시작한다. SectionNav와 보조 진행 정보는 명시적으로 여는
+ *   학습 메뉴 한 곳에 보존하며, PC도 같은 계층을 사용한다.
  *
  * 본문은 자식으로 받는다 — LearnPage가 경로별 화면을 골라 넣고, /learn 아래에 살지만
  * LearnPage 밖 라우트로 렌더링되는 화면(제작 레시피)도 라우트 레이어가 같은 셸로 감싼다.
@@ -166,17 +150,11 @@ export function LearnSectionShell({ children }: { readonly children: ReactNode }
   const { pathname, hash } = useLocation();
   const normalizedPath = trimTrailingSlashes(pathname) || "/";
 
-  const showArtBanner = normalizedPath === "/learn/resources";
   const isReferencePath = REFERENCE_PATHS.includes(normalizedPath);
   const showProgressStrip =
     normalizedPath === "/learn/resources" ||
     normalizedPath === "/learn/trace" ||
     isReferencePath;
-  // 레퍼런스 화면(제작 과정·진로·교육기관)은 자체 히어로가 첫 화면의 주인공이다.
-  // 진행 스트립을 히어로 위에 얹으면 안내 바·탭·배너와 겹쳐 첫 화면이 무거워지므로,
-  // 이 화면군에서는 스트립을 본문 아래로 내린다(기능·목적지는 그대로 유지).
-  const stripBelowContent = isReferencePath;
-
   // 현재 위치는 목적지당 하나만 표시한다. 학습 홈은 정확히 일치할 때만,
   // 학습 경로는 경로 상세(/learn/paths/*)와 홈의 앵커(#learning-paths)를 함께 본다.
   // 강좌 상세(/learn/lessons/*)는 목적지 경로와 접두사가 겹치지 않아 어느 항목도
@@ -199,17 +177,35 @@ export function LearnSectionShell({ children }: { readonly children: ReactNode }
     })),
   }));
 
+  const currentLabel = navGroups.flatMap((group) => group.items).find((item) => item.current)?.label;
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const details = menuRef.current;
+    if (!details) return;
+    const closeMenu = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      details.open = false;
+      details.querySelector("summary")?.focus();
+    };
+    details.addEventListener("keydown", closeMenu);
+    return () => details.removeEventListener("keydown", closeMenu);
+  }, [normalizedPath]);
+
   return (
-    <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-[var(--site-content-max,82.5rem)] lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6 lg:px-[var(--site-page-gutter,1.5rem)] lg:pt-6">
-      <div className="px-[var(--site-page-gutter,1.5rem)] pt-5 lg:p-0">
-        <SectionNav mode="links" label={t(NAV_ARIA_LABEL)} groups={navGroups} className="mb-6 lg:mb-0" />
-      </div>
-      <div className="min-w-0">
-        {showArtBanner ? <LearningArtBanner /> : null}
-        {showProgressStrip && !stripBelowContent ? <LearningProgressStrip /> : null}
-        {children}
-        {showProgressStrip && stripBelowContent ? <LearningProgressStrip /> : null}
-      </div>
+    <div className="learn-section-layout">
+      <details key={normalizedPath} className="learn-section-menu" ref={menuRef}>
+        <summary>
+          <span>{t(MENU_LABEL)}</span>
+          {currentLabel ? <span className="learn-section-menu__current">{currentLabel}</span> : null}
+          <span aria-hidden="true">⌄</span>
+        </summary>
+        <div className="learn-section-menu__body">
+          <SectionNav mode="links" label={t(NAV_ARIA_LABEL)} groups={navGroups} />
+          {showProgressStrip ? <LearningProgressStrip /> : null}
+        </div>
+      </details>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }

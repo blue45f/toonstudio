@@ -224,45 +224,6 @@ function AtlasTocGroups({ currentId }: { readonly currentId: EngineeringPageId }
   );
 }
 
-function EngineeringAtlasSideToc({ currentId }: { readonly currentId: EngineeringPageId }) {
-  useBilingualI18nRevision();
-  const current = findEngineeringPage(currentId);
-  return (
-    <>
-      <details
-        data-testid="engineering-atlas-mobile-toc"
-        className="group relative mt-3 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/8 via-panel/85 to-card xl:hidden"
-      >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2 text-xs font-bold text-fg [&::-webkit-details-marker]:hidden">
-          <span className="truncate">
-            {bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas")}
-            {current ? ` · ${bi(current.label.ko, current.label.en)}` : ""}
-          </span>
-          <ChevronDown size={15} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform group-open:rotate-180" />
-        </summary>
-        <nav
-          aria-label={bi("모바일 기술 아틀라스 목차", "Mobile engineering atlas index")}
-          className="border-t border-line/60 p-2.5"
-        >
-          <AtlasTocGroups currentId={currentId} />
-        </nav>
-      </details>
-
-      <aside
-        data-testid="engineering-atlas-sticky-toc"
-        aria-label={bi("기술 아틀라스 12종 목차", "12-Part Engineering Atlas index")}
-        className="hidden xl:sticky xl:top-24 xl:block xl:self-start xl:overflow-hidden xl:rounded-2xl xl:border xl:border-accent/25 xl:bg-gradient-to-b xl:from-accent/8 xl:via-panel/85 xl:to-card/90 xl:shadow-xs"
-      >
-        <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
-        <div className="p-3">
-          <AtlasTocGroups currentId={currentId} />
-        </div>
-      </aside>
-    </>
-  );
-}
-
 /** 도감 검색을 가리지 않도록 중복 문서 메뉴를 한 곳에 모으되 기존 링크와 선택 상태를 유지한다. */
 function EngineeringCatalogMenu({ currentId }: { readonly currentId: EngineeringPageId }) {
   useBilingualI18nRevision();
@@ -389,7 +350,7 @@ function EngineeringPageHeroArt({ page }: { readonly page: EngineeringPageEntry 
         width={960}
         height={600}
         alt={fallback ? bi("작업을 설명하는 브랜드 콘셉트 아트", "Brand concept art illustrating the task") : korean ? copy.ko : copy.en}
-        className="aspect-[16/10] w-full object-cover sm:aspect-[3/1]"
+        className="h-28 w-full object-cover sm:h-40"
         fetchPriority="high"
         decoding="async"
         onError={() => setStage(fallback ? "gone" : "fallback")}
@@ -437,8 +398,7 @@ export function EngineeringPageIntro({
     );
   }
   return (
-    <header className="flex flex-col gap-7 py-8 sm:py-12">
-      {page ? <EngineeringPageHeroArt page={page} /> : null}
+    <header className="flex flex-col gap-4 py-5 sm:py-7">
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -457,7 +417,11 @@ export function EngineeringPageIntro({
           {title}
         </h1>
         <p className="mt-5 max-w-3xl text-sm leading-7 text-fg-2 sm:text-base sm:leading-8">{description}</p>
-        {page ? <PageGuide page={page} /> : null}
+        {page ? <details className="mt-4 rounded-xl border border-line px-4">
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-bold text-fg-2">{bi("문서 안내와 예시 이미지", "Document guide and concept image")}</summary>
+          <PageGuide page={page} />
+          <div className="mt-4 mb-4"><EngineeringPageHeroArt page={page} /></div>
+        </details> : null}
         {page ? (
           <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-fg-3">
             <PageMeta page={page} />
@@ -554,34 +518,19 @@ export function EngineeringPageFrame({
   pager = true,
   variant = "document",
 }: {
-  /** 도감만 중복 메뉴를 접어 검색과 결과를 먼저 보여준다. 문서 기본 배치는 유지한다. */
+  /** 문서와 도감 모두 단일 목차 진입점을 사용하고 본문을 먼저 보여준다. */
   readonly variant?: "document" | "catalog";
   readonly pageId: EngineeringPageId;
   readonly children: ReactNode;
   readonly className?: string;
   readonly pager?: boolean;
 }) {
-  if (variant === "catalog") {
-    return (
-      <Container size="wide" className={cx("py-3 sm:py-5", className)}>
-        <EngineeringCatalogMenu currentId={pageId} />
-        <div className="min-w-0">
-          {children}
-          {pager ? <EngineeringPathPager current={pageId} /> : null}
-        </div>
-      </Container>
-    );
-  }
   return (
-    <Container size="wide" className={cx("py-6 sm:py-8 lg:py-10", className)}>
-      <AboutSectionNav variant="compact" />
-      <EngineeringTechNav className="mt-2" />
-      <div className="xl:mt-4 xl:grid xl:grid-cols-[14.5rem_minmax(0,1fr)] xl:items-start xl:gap-8">
-        <EngineeringAtlasSideToc currentId={pageId} />
-        <div className="min-w-0">
-          {children}
-          {pager ? <EngineeringPathPager current={pageId} /> : null}
-        </div>
+    <Container size="wide" className={cx(variant === "catalog" ? "py-3 sm:py-5" : "py-4 sm:py-6", className)}>
+      <EngineeringCatalogMenu currentId={pageId} />
+      <div className="min-w-0 max-w-5xl mx-auto">
+        {children}
+        {pager ? <EngineeringPathPager current={pageId} /> : null}
       </div>
     </Container>
   );

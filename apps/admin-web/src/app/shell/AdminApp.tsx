@@ -15,10 +15,13 @@ export function AdminApp() {
       <a href="/admin/platform/operations?view=policy" aria-current={isQuality ? undefined : "page"}>운영 모드·라이선스</a>
       <a href="/admin/platform/quality/" aria-current={isQuality ? "page" : undefined}>CI·QA 검증</a>
     </nav>
-    {!isQuality && <nav className="policy-card" aria-label="관리 화면 이동">
-      <p>이 화면에서는 운영 정책과 라이선스 근거를 관리합니다. 회원·신고·정산 등 다른 업무는 웹 관리자에서 이어가세요.</p>
-      <a href="https://www.toonstudio.cloud/admin/platform/operations?view=policy">웹 관리자 · 운영 정책으로 돌아가기</a>
-    </nav>}
     {isQuality ? <CiQualityAccess /> : <OperationPolicyPanel />}
+    {!isQuality && <details className="policy-card">
+      <summary>다른 관리 업무로 이동</summary>
+      <nav aria-label="관리 화면 이동">
+        <p>이 화면에서는 운영 정책과 라이선스 근거를 관리합니다. 회원·신고·정산 등 다른 업무는 웹 관리자에서 이어가세요.</p>
+        <a href="https://www.toonstudio.cloud/admin/platform/operations?view=policy">웹 관리자 · 운영 정책으로 돌아가기</a>
+      </nav>
+    </details>}
   </main>;
 }

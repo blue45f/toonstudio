@@ -77,7 +77,12 @@ function fullMenuTrigger(): HTMLElement {
 }
 
 function menuDestination(dialog: HTMLElement, href: string, name: string): HTMLElement {
-  const destination = dialog.querySelector<HTMLAnchorElement>(`a[href="${href}"]`);
+  let destination = dialog.querySelector<HTMLAnchorElement>(`a[href="${href}"]`);
+  if (!destination) {
+    const search = within(dialog).getByRole("searchbox");
+    fireEvent.change(search, { target: { value: href } });
+    destination = dialog.querySelector<HTMLAnchorElement>(`a[href="${href}"]`);
+  }
   if (!destination) throw new Error(`전체 메뉴 목적지가 없습니다: ${href}`);
   const group = destination.closest("details");
   if (group && !group.open) {
@@ -173,13 +178,13 @@ describe("mobile site shell accessibility", () => {
     expect(Array.from(primaryNavigation?.querySelectorAll("a[data-navigation-entry]") ?? []).map((link) => link.getAttribute("href"))).toEqual(PRIMARY_ENTRY_HREFS);
 
     const quickNavigation = await screen.findByRole("navigation", { name: "빠른 이동" });
-    expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/discover", "/market", "/my"]);
-    expect(quickNavigation.querySelector(":scope > .grid")?.className).toContain("grid-cols-4");
+    expect(Array.from(quickNavigation.querySelectorAll("a")).map((link) => link.getAttribute("href"))).toEqual(["/studio", "/discover", "/market", "/my", "/sitemap"]);
+    expect(quickNavigation.querySelector(":scope > .grid")?.className).toContain("grid-cols-5");
     expect(within(quickNavigation).getByRole("link", { name: "작품 찾기" }).getAttribute("aria-current")).toBe("page");
     const trigger = fullMenuTrigger();
     fireEvent.click(trigger);
     const dialog = await screen.findByRole("dialog", { name: "전체 메뉴" });
-    expect(menuDestination(dialog, "/sitemap", "전체 기능").getAttribute("href")).toBe("/sitemap");
+    expect(menuDestination(dialog, "/sitemap", "전체 메뉴").getAttribute("href")).toBe("/sitemap");
     expect(menuDestination(dialog, "/community", "커뮤니티").getAttribute("href")).toBe("/community");
     expect(menuDestination(dialog, "/", "사이트 홈").getAttribute("href")).toBe("/");
     fireEvent.keyDown(document, { key: "Escape" });

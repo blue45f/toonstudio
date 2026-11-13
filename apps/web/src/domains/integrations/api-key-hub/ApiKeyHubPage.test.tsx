@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -25,10 +25,12 @@ describe("ApiKeyHubPage 첫 화면 맥락", () => {
     globalThis.sessionStorage?.clear();
   });
 
-  it("고급 도구임을 밝히고 키별 용도 안내를 먼저 보여 준다", () => {
+  it("서비스 선택부터 시작하고 상세 용도와 전송 안내를 펼칠 수 있다", () => {
     renderPage();
 
     expect(screen.getByText("고급 도구")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Unsplash 사진 검색" })).toBeNull();
+    fireEvent.click(screen.getByText("키별 용도·보관·전송 안내", { selector: "summary" }));
     expect(screen.getByText("어떤 키가 무슨 기능을 켜나요?")).toBeTruthy();
     // 키가 없으면 해당 기능이 어떻게 되는지까지 안내한다.
     expect(screen.getByText(/키가 없으면 사진 검색이 비활성화됩니다/)).toBeTruthy();
@@ -48,14 +50,29 @@ describe("ApiKeyHubPage 첫 화면 맥락", () => {
 
     expect(screen.getByText("4개 중 1개 연결됨")).toBeTruthy();
     const chip = screen.getByRole("link", { name: /fal\.ai 키\s*연결됨/ });
-    expect(chip.getAttribute("href")).toBe("#api-key-fal");
+    expect(chip.getAttribute("href")).toBe("/settings/api-keys?service=api-key-fal#api-key-fal");
+  });
+
+  it("하나의 키만 편집하고 왕복해도 입력 DOM을 유지한다", () => {
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole("link", { name: /Unsplash 키.*미연결/ }));
+    const card = document.getElementById("api-key-unsplash");
+    const input = card?.querySelector("input");
+    if (!input) throw new Error("선택한 서비스의 키 입력이 필요합니다.");
+    fireEvent.change(input, { target: { value: "draft-placeholder-only" } });
+    fireEvent.click(screen.getByRole("link", { name: "다른 서비스 선택" }));
+    expect(container.querySelector('#api-key-unsplash')?.parentElement?.hidden).toBe(true);
+    fireEvent.click(screen.getByRole("link", { name: /Unsplash 키.*미연결/ }));
+    expect(document.getElementById("api-key-unsplash")?.querySelector("input")).toBe(input);
+    expect(input.value).toBe("draft-placeholder-only");
   });
 
   it("용도 안내의 이동 링크가 각 키 카드를 가리킨다", () => {
     renderPage();
 
+    fireEvent.click(screen.getByText("키별 용도·보관·전송 안내", { selector: "summary" }));
     const links = screen.getAllByRole("link", { name: "키 카드로 이동" });
-    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+    expect(links.map((link) => new URL(link.getAttribute("href") ?? "", "http://local.test").hash)).toEqual([
       "#api-key-ai",
       "#api-key-unsplash",
       "#api-key-resend",

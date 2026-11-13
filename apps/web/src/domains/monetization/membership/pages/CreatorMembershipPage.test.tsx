@@ -114,3 +114,20 @@ describe("CreatorMembershipPage", () => {
     expect(screen.getByTestId("creator-membership-rea-status").textContent).toContain("Anniversary Badge Drop");
   });
 });
+
+
+it("실제 멤버십 티어를 운영 예시보다 먼저 보여 주고 예시 변경은 티어 금액을 바꾸지 않는다", () => {
+  render(<CreatorMembershipPage />);
+  const tier = screen.getAllByText("후원 티어")[0];
+  const examples = screen.getByTestId("creator-membership-rea-churn-bar");
+  const details = examples.closest("details");
+  expect(tier.closest("details")).toBeNull();
+  expect(tier.compareDocumentPosition(examples) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(details?.open).toBe(false);
+  const summary = details?.querySelector("summary");
+  if (!summary) throw new Error("멤버십 운영 예시 누락");
+  fireEvent.click(summary);
+  fireEvent.click(screen.getByTestId("membership-rea-perk-psd-layer-vault"));
+  expect(TIERS[0].monthlyPriceKrw).toBe(4900);
+  expect(screen.getAllByText("후원 티어")[0]).toBe(tier);
+});

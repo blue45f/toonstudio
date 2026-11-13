@@ -7,7 +7,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketSellerPage } from "./MarketSellerPage";
@@ -88,10 +88,21 @@ function seedListing(pointPrice = 100) {
   return result.listing;
 }
 
-function mount() {
+function selectSellerScreen(value: string) {
+  const select = screen.getByRole("combobox", { name: "판매자 작업 화면" }) as HTMLSelectElement;
+  if (select.value !== value) fireEvent.change(select, { target: { value } });
+}
+function SellerRouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="seller-route">{location.pathname}{location.search}{location.hash}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button><button type="button" onClick={() => navigate(1)}>테스트 앞으로</button></>;
+}
+
+function mount(entry = "/market/seller") {
   return render(
-    <MemoryRouter initialEntries={["/market/seller"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <MarketSellerPage />
+      <SellerRouteProbe />
     </MemoryRouter>,
   );
 }
@@ -121,7 +132,9 @@ describe("MarketSellerPage", () => {
     expect(screen.getByRole("link", { name: "에셋 등록" }).getAttribute("href")).toBe("/market/publish");
     expect(screen.getByRole("link", { name: "패키지 관리" }).getAttribute("href")).toBe("/market/manage");
     expect(screen.getByText("아직 등록된 판매 리스팅이 없어요")).toBeTruthy();
+    selectSellerScreen("group-buys");
     expect(screen.getByText(/아직 공동구매가 없어요/)).toBeTruthy();
+    selectSellerScreen("manage");
     expect(screen.getByText("로그인하면 판매자로 등록할 수 있어요")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "로그인하기" }));
     expect(requestAuthModalOpen).toHaveBeenCalledWith(
@@ -132,6 +145,7 @@ describe("MarketSellerPage", () => {
   it("판매자가 단계형 마법사로 리스팅을 등록하면 목록과 내 리스팅에 바로 나타난다", () => {
     signIn(SELLER);
     mount();
+    selectSellerScreen("manage");
     // 1단계(기본 정보) → 2단계(설명·가격) → 3단계(확인·등록)
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "내 첫 브러시" } });
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
@@ -147,6 +161,7 @@ describe("MarketSellerPage", () => {
   it("제목 없이 다음을 누르면 첫 단계에 머물며 오류를 알리고 해당 칸으로 포커스를 옮긴다", () => {
     signIn(SELLER);
     mount();
+    selectSellerScreen("manage");
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(screen.getByRole("alert").textContent).toBe("제목을 입력하세요.");
     const title = screen.getByLabelText("제목");
@@ -159,6 +174,7 @@ describe("MarketSellerPage", () => {
   it("가격이 최소보다 낮으면 설명·가격 단계에서 막히고, 이전으로 돌아가도 입력은 유지된다", () => {
     signIn(SELLER);
     mount();
+    selectSellerScreen("manage");
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "유지될 제목" } });
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     fireEvent.change(screen.getByLabelText("포인트 가격"), { target: { value: "5" } });
@@ -177,6 +193,7 @@ describe("MarketSellerPage", () => {
   it("확인 단계는 입력한 값을 요약해 보여 주고, 폼 제출(Enter)은 다음 단계와 같게 동작한다", () => {
     signIn(SELLER);
     mount();
+    selectSellerScreen("manage");
     const form = screen.getByRole("form", { name: "새 리스팅 등록" });
     fireEvent.change(screen.getByLabelText("제목"), { target: { value: "요약될 브러시" } });
     fireEvent.submit(form);
@@ -220,6 +237,7 @@ describe("MarketSellerPage", () => {
     signIn(BUYER);
     fund(150);
     mount();
+    selectSellerScreen("group-buys");
     expect(screen.getAllByText("진행 중").length).toBeGreaterThanOrEqual(1);
     fireEvent.click(screen.getByRole("button", { name: "포인트 예약하고 참여" }));
     expect(screen.getByText(/참여했어요/)).toBeTruthy();
@@ -230,6 +248,7 @@ describe("MarketSellerPage", () => {
   it("창작자 예상 정산 시뮬레이터와 내 배급자 스토어 바로가기를 제공한다", () => {
     signIn(SELLER);
     mount();
+    selectSellerScreen("simulator");
 
     expect(screen.getByRole("link", { name: "내 배급자 스토어 보기" }).getAttribute("href"))
       .toBe(`/market/creator/${SELLER}`);
@@ -244,4 +263,29 @@ describe("MarketSellerPage", () => {
     fireEvent.change(screen.getByLabelText("시뮬레이션 판매가 (원)"), { target: { value: "30000" } });
     expect(screen.getByTestId("seller-sim-net-payout").textContent).toContain("원");
   });
+});
+
+
+it("판매자 목적 URL과 Back이 진행 중인 등록 폼·query·fragment를 보존한다", () => {
+  signIn(SELLER);
+  mount("/market/seller?x=1&x=2#seller-tools");
+  const input = screen.getByLabelText("제목") as HTMLInputElement;
+  fireEvent.change(input, { target: { value: "미저장 판매 소재" } });
+  selectSellerScreen("simulator");
+  expect(screen.getByTestId("seller-route").textContent).toBe("/market/seller?x=1&x=2&view=simulator#seller-tools");
+  expect(screen.queryByRole("form", { name: "새 리스팅 등록" })).toBeNull();
+  expect(getMarketSaleRecords()).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+  expect(screen.getByRole("form", { name: "새 리스팅 등록" })).toBeTruthy();
+  expect(screen.getByLabelText("제목")).toBe(input);
+  expect(input.value).toBe("미저장 판매 소재");
+  expect(screen.getByTestId("seller-route").textContent).toBe("/market/seller?x=1&x=2#seller-tools");
+});
+
+it.each([["#seller-group-buys", "group-buys"], ["#seller-revenue-simulator", "simulator"], ["#seller-tools", "manage"]])("기존 %s 앵커가 해당 작업을 열고 목록으로도 돌아갈 수 있다", (hash, value) => {
+  mount(`/market/seller${hash}`);
+  expect((screen.getByRole("combobox", { name: "판매자 작업 화면" }) as HTMLSelectElement).value).toBe(value);
+  selectSellerScreen("listings");
+  expect((screen.getByRole("combobox", { name: "판매자 작업 화면" }) as HTMLSelectElement).value).toBe("listings");
+  expect(screen.getByText("아직 등록된 판매 리스팅이 없어요")).toBeTruthy();
 });

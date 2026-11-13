@@ -24,7 +24,7 @@ configure({ asyncUtilTimeout: 4000 });
 
 const request = vi.fn<typeof fetch>();
 
-function renderPage(entry = "/research", props: CreatorHubPageProps = {}) {
+function renderPage(entry = "/research?view=materials", props: CreatorHubPageProps = {}) {
   return render(<MemoryRouter initialEntries={[entry]}><CreatorHubPage {...props} /></MemoryRouter>);
 }
 
@@ -53,13 +53,11 @@ afterEach(() => {
 });
 
 describe("리서치 데스크의 문장 허브", () => {
-  it("기존 검색 바로 아래 본문 맨 앞에 놓이고, 화면을 여는 것만으로는 어떤 제공처도 부르지 않는다", () => {
+  it("별도 장면 검색 화면에만 검색을 노출하며 화면을 여는 것만으로는 제공처를 부르지 않는다", () => {
     renderPage();
     const panel = screen.getByRole("heading", { name: "문장으로 소재 찾기", level: 2 }).closest("section")!;
     expect(panel).toBeTruthy();
-    // 기존 시각 레퍼런스 검색은 그대로 남아 있고, 문장 허브는 그 뒤 본문의 첫 구역이다.
-    const legacy = screen.getByRole("searchbox", { name: "시각 레퍼런스 검색" });
-    expect(legacy.compareDocumentPosition(panel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("searchbox", { name: "시각 레퍼런스 검색" })).toBeNull();
     const guide = screen.getByText("여기는 리서치 데스크").closest("section")!;
     expect(panel.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(request).not.toHaveBeenCalled();
@@ -98,6 +96,8 @@ describe("리서치 데스크의 문장 허브", () => {
     const board = screen.getByRole("heading", { name: "저장한 자료 찾기" }).closest("section")!;
     expect(within(board).getByRole("button", { name: "Brick wall 저장 해제" })).toBeTruthy();
 
+    fireEvent.click(screen.getByRole("tab", { name: "장면으로 찾기" }));
+    expect(sentenceBox().value).toBe("비 오는 골목 야경");
     fireEvent.click(screen.getAllByRole("button", { name: "Brick wall 장면 보드에 담기" })[0]!);
     await waitFor(() => expect(savedIds()).toEqual([]));
   });
@@ -108,7 +108,7 @@ describe("리서치 데스크의 문장 허브", () => {
     view.unmount();
 
     const refine = vi.fn(async () => "비 오는 골목 밤 풍경");
-    renderPage("/research", { refineMaterialSentence: refine });
+    renderPage("/research?view=materials", { refineMaterialSentence: refine });
     fireEvent.change(sentenceBox(), { target: { value: "비 와서 으스스한 동네 뒷길" } });
     expect(refine).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "AI로 다듬기" }));

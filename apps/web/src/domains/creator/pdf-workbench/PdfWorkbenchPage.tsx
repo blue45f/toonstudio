@@ -300,7 +300,7 @@ export function PdfWorkbenchPage() {
         </p>
       </header>
 
-      <section
+      <details className="shrink-0 rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{bt("인쇄·색상 고급 설정", "Advanced print and color settings")}</summary><section
         data-testid="pdf-workbench-rea-cmyk-bleed-bar"
         data-own-control-size=""
         aria-label={pickLang("PDF 워크벤치 인쇄 도련 및 CMYK 프로파일 점검", "PDF Workbench Print Bleed & CMYK Profile Preflight")}
@@ -382,7 +382,7 @@ export function PdfWorkbenchPage() {
             `Trim: ${activeTrim.en} (${trimSpec}) · Profile: ${activeInk.en} (${inkProfile})`,
           )}
         </p>
-      </section>
+      </section></details>
 
       {error ? (
         <p role="alert" className="rounded-2xl border border-bad/40 bg-bad-soft px-4 py-3 text-sm">

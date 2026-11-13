@@ -240,20 +240,13 @@ export function CalendarPage() {
 
   return (
     <Container size="wide" className="calendar-page-layout py-6">
-      <SiteContextualSubNav pathnameOverride="/calendar" className="mb-5" />
-      <div className="mb-5 min-w-0">
-        <header className="relative overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-6">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-          <p className="eyebrow inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent-soft px-3 py-1 text-accent"><CalendarDays size={14} aria-hidden="true" />{bt("연재 캘린더", "Release calendar")}</p>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
-          <p className="lede mt-2 max-w-2xl text-pretty text-sm leading-relaxed text-fg-2">
-            {bt("연재요일 정보가 있는 작품을 요일별로 찾아보세요. 오늘은", "Browse stories by their release day. Today is")}{" "}
-            <span className="font-semibold text-accent">{todayLabel}</span>{countsReady ? <>{bt(", 새 회차가 올라오는 작품이", ", with new episodes from")}{" "}
-            <span className="numeral font-bold text-fg">{todayCount.toLocaleString(locale)}</span>{bt("편입니다.", " stories.")}</> : <span>{loading ? bt(" · 연재 정보를 확인하고 있어요.", " · Checking release information.") : bt(" · 연재 편수를 확인할 수 없습니다.", " · Release counts are unavailable.")}</span>}
-          </p>
-          {countsReady && <p className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-line-strong/70 bg-card/85 px-3 py-1 text-xs font-medium text-fg-2"><span>{bt("전체 연재", "All series")}</span>{" "}<strong className="numeral text-fg">{totalScheduled.toLocaleString(locale)}</strong>{bt("편", " stories")}</p>}
-        </header>
-      </div>
+      <header className="mb-3 min-w-0">
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
+        <p className="mt-1 text-sm text-fg-2">
+          {bt("오늘은", "Today is")} <span className="font-semibold text-accent">{todayLabel}</span>{" · "}{loading ? bt("연재 정보를 확인하고 있어요.", "Checking release information.") : countsReady ? <>{todayCount.toLocaleString(locale)}{bt("편의 새 회차", " stories with new episodes")}</> : bt("연재 편수를 확인할 수 없습니다.", "Release counts are unavailable.")}
+        </p>
+      </header>
+      <SiteContextualSubNav pathnameOverride="/calendar" className="mb-3" />
       <CalendarFilters
         filters={filters}
         onChange={setFilters}
@@ -320,7 +313,7 @@ export function CalendarPage() {
       ) : loading ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
           {WEEK_DAYS.map((day) => (
-            <section key={day} className="rounded-2xl border border-line bg-panel/30 p-3">
+            <section key={day} data-calendar-loading-day={day} className={cn("rounded-2xl border border-line bg-panel/30 p-3", day === WEEK_DAYS[selDay] ? "block" : "hidden xl:block")}>
               <div className="mb-3 flex items-center justify-between">
                 <span className="font-display text-sm font-bold">{day}</span>
                 <span className="skeleton h-4 w-8" />

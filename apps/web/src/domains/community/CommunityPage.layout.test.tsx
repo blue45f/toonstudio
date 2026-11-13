@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommunityPage } from "./CommunityPage";
 
@@ -29,7 +29,12 @@ vi.mock("./components/community-activity-preview", () => ({CommunityActivityPrev
 vi.mock("@/shared/components/site-contextual-subnav", () => ({SiteContextualSubNav: () => <nav aria-label="문맥 안내" />}));
 vi.mock("@/shared/components/site-experience/SiteArtSurfaceSpotlight", () => ({SiteArtSurfaceSpotlight: () => <div data-testid="brand-art-boundary" />}));
 vi.mock("@/shared/seo/use-document-title", () => ({useDocumentTitle: () => undefined}));
-function page() { return render(<MemoryRouter><CommunityPage /></MemoryRouter>); }
+function ViewProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <><output data-testid="community-view-url">{location.pathname}{location.search}{location.hash}</output><button type="button" onClick={() => navigate(-1)}>테스트 뒤로</button></>;
+}
+function page(entry = "/community?view=all") { return render(<MemoryRouter initialEntries={[entry]}><CommunityPage /><ViewProbe /></MemoryRouter>); }
 function disclosure(label:string): HTMLDetailsElement {
   const summary = screen.getByText(label, {selector:"summary"});
   const details = summary.closest("details");
@@ -41,9 +46,11 @@ beforeEach(() => {i18n.locale = "ko";});
 afterEach(cleanup);
 
 describe("CommunityPage 대화 우선 배치", () => {
-  it("전체 보기를 유지하고 실제 피드 경계와 오류 영역을 접지 않는다", () => {
-    page();
-    expect(screen.getByRole("button",{name:"전체 보기"}).getAttribute("aria-pressed")).toBe("true");
+  it("기본 화면은 실제 피드 하나에 집중하고 오류·재시도 영역을 접지 않는다", () => {
+    page("/community");
+    expect(screen.getByRole("button",{name:"대화방 · 통합 피드"}).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByTestId("activity-boundary")).toBeNull();
+    expect(screen.queryByTestId("community-rea-interactive-workbench")).toBeNull();
     const feed = screen.getByTestId("fan-cafe-boundary");
     expect(feed.closest("details")).toBeNull();
     expect(feed.dataset).toMatchObject({scope:"all",compact:"true",hideGuide:"true"});
@@ -58,10 +65,12 @@ describe("CommunityPage 대화 우선 배치", () => {
       const details = disclosure(label); expect(details.open).toBe(false); expect(precedes(feed,details)).toBe(true);
     }
   });
-  it("시안의 네 범주 레일과 피드를 먼저 보여 주고 문맥 안내는 길잡이에 보존한다", () => {
+  it("네 범주와 참여 행동은 명시 보조 메뉴에 보존하고 문맥 안내는 길잡이에 보존한다", () => {
     page();
     const directory = screen.getByRole("navigation", { name: "어떤 이야기부터 나눌까요?" });
     expect(directory.className).toBe("community-layout-directory");
+    expect(directory.closest("details")).toBe(disclosure("커뮤니티 종류 · 참여하기"));
+    expect(disclosure("커뮤니티 종류 · 참여하기").open).toBe(false);
     expect(directory.querySelectorAll("a")).toHaveLength(4);
     expect(precedes(directory, screen.getByTestId("fan-cafe-boundary"))).toBe(true);
     expect(screen.getByRole("navigation", { name: "문맥 안내", hidden: true }).closest("details"))
@@ -83,6 +92,17 @@ describe("CommunityPage 대화 우선 배치", () => {
     fireEvent.click(screen.getByRole("button",{name:"전체 보기"}));
     expect(disclosure("승격 리그 · 활동").open).toBe(false);
     expect(disclosure("작품 홍보 · 예고편").open).toBe(false);
+  });
+  it("구역 URL을 공유·새로고침하고 기존 검색값·fragment·뒤로가기를 보존한다", () => {
+    page("/community?provenance=human-verified&view=league#conversation");
+    expect(screen.getByRole("button", { name: "승격 리그 · 활동" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "작품 홍보 · 예고편" }));
+    expect(screen.getByTestId("community-view-url").textContent).toBe("/community?provenance=human-verified&view=promote#conversation");
+    fireEvent.click(screen.getByRole("button", { name: "대화방 · 통합 피드" }));
+    expect(screen.getByTestId("community-view-url").textContent).toBe("/community?provenance=human-verified#conversation");
+    fireEvent.click(screen.getByRole("button", { name: "테스트 뒤로" }));
+    expect(screen.getByRole("button", { name: "작품 홍보 · 예고편" }).getAttribute("aria-pressed")).toBe("true");
+    expect(disclosure("작품 홍보 · 예고편").open).toBe(true);
   });
   it("네이티브 summary 클릭과 Escape 닫기·초점 복귀를 지원한다", () => {
     page(); const details = disclosure("커뮤니티 빠른 길잡이");
@@ -113,7 +133,7 @@ describe("CommunityPage 대화 우선 배치", () => {
     expect(screen.getByRole("group",{name:"Community sections"})).toBeTruthy();
     expect(screen.getByRole("button",{name:"All sections"}).getAttribute("aria-pressed")).toBe("true");
     expect(disclosure("Community quick guide").open).toBe(false);
-    expect(screen.getByRole("heading",{name:"A story drawn alone, a world widened together."})).toBeTruthy();
+    expect(screen.getByRole("heading",{name:"Community"})).toBeTruthy();
     expect(screen.getByTestId("community-quick-guide").textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("community-promotion-league-strip").textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("community-rea-creator-showcase-bar").textContent).not.toMatch(/[가-힣]/u);

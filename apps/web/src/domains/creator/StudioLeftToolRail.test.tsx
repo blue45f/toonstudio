@@ -919,6 +919,7 @@ describe("StudioLeftToolRail", () => {
     expect(dialog.className).toContain("fixed");
     expect(dialog.querySelector(".overflow-y-auto")).not.toBeNull();
 
+    fireEvent.click(screen.getByRole("button", { name: /선택·변형·이동.*3개 도구/u }));
     fireEvent.click(screen.getByRole("button", { name: "화면 이동 사용" }));
 
     expect(props.stableHandlers.commitAppSettings).not.toHaveBeenCalled();
@@ -943,6 +944,7 @@ describe("StudioLeftToolRail", () => {
 
     expect(screen.getByText("선택·변형·이동")).toBeTruthy();
     expect(screen.getByText(`고정 ${studioDrawingVisibleTools(appSettings.toolbar.visibleIds).length} · 전체 35`)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /선택·변형·이동.*3개 도구/u }));
     fireEvent.click(screen.getByRole("button", { name: "화면 이동 고정" }));
 
     expect(props.stableHandlers.commitAppSettings).toHaveBeenCalledWith({
@@ -1161,6 +1163,7 @@ it.each([1, 27, 35])("retains exactly %i configured pins and still permits unpin
     .map((item) => item.getAttribute("data-studio-rail-tool-id"));
   expect(pinned).toEqual(appSettings.toolbar.visibleIds);
   expect(pinned).toHaveLength(count);
+  fireEvent.click(screen.getByRole("button", { name: /채색·보정.*7개 도구/u }));
   fireEvent.click(screen.getByRole("button", { name: "색 가져오기 사용" }));
   expect(props.setEyedropperActive).toHaveBeenCalled();
   expect(props.stableHandlers.commitAppSettings).not.toHaveBeenCalled();
@@ -1170,6 +1173,7 @@ it("shows disabled tools and reasons in the catalog without mutating the documen
   stubAnimationFrame();
   const props = createProps({ railMoreOpen: true, activeSurfaceReviewLocked: true });
   render(<StudioLeftToolRail {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: /그리기.*3개 도구/u }));
   const pen = screen.getByRole("button", { name: "펜 사용" });
   expect(pen.getAttribute("aria-disabled")).toBe("true");
   expect(pen.getAttribute("aria-describedby")).toBeTruthy();

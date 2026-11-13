@@ -96,21 +96,13 @@ describe("pickSpotlightWork", () => {
 });
 
 describe("ShowcasePage", () => {
-  it("모바일 메뉴는 현재 위치를 알리는 단일 접힘이며 공개 행동은 참여 안내에서 한 번 제공한다", () => {
+  it.each([false, true])("모바일·PC(%s)는 공유 페이지 메뉴를 하나만 소비하고 공개 행동을 참여 안내에 보존한다", (desktop) => {
+    vi.stubGlobal("matchMedia", () => ({ matches: desktop, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
     const { container } = renderShowcase();
-    const menu = screen.getByRole("group", { name: "탐색·커뮤니티 메뉴" });
-    expect((menu as HTMLDetailsElement).open).toBe(false);
-    expect(within(menu).getByText("창작 갤러리", { selector: "span" })).toBeTruthy();
     expect(container.querySelectorAll("[data-contextual-subnav]")).toHaveLength(1);
-    expect(menu.querySelector('[aria-current="page"]')?.textContent).toBe("창작 갤러리");
+    expect(container.querySelector('[data-contextual-subnav] [aria-current="page"]')?.textContent).toBe("창작 갤러리");
     expect(container.querySelectorAll('a[href="/studio/publish"]')).toHaveLength(1);
-  });
-
-  it("데스크톱에서는 같은 메뉴 DOM이 처음부터 열려 있다", () => {
-    vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    const { container } = renderShowcase();
-    expect((screen.getByRole("group", { name: "탐색·커뮤니티 메뉴" }) as HTMLDetailsElement).open).toBe(true);
-    expect(container.querySelectorAll("[data-contextual-subnav]")).toHaveLength(1);
+    expect(container.querySelector('a[href="/studio/publish"]')?.closest("details")?.open).toBe(false);
   });
 
   it("머리말은 작품 탐색을 먼저 안내하고 창작 바로가기는 접힌 참여 영역에서 찾는다", () => {
@@ -121,8 +113,11 @@ describe("ShowcasePage", () => {
     expect(within(shortcuts).getByRole("link", { name: "승인본 전시" }).getAttribute("href")).toBe("/showcase/reviews");
   });
 
-  it("검색과 보기 조건 뒤의 짧은 추천은 실제 작품·작가·태그로 이어진다", async () => {
+  it("목록 뒤에서 추천을 명시적으로 열면 실제 작품·작가·태그로 이어진다", async () => {
     renderShowcase();
+    const spotlightSummary = screen.getByText("추천 작품 한 편 보기", { selector: "summary" });
+    expect(spotlightSummary.closest("details")?.open).toBe(false);
+    fireEvent.click(spotlightSummary);
     const heroTitle = await screen.findByRole("heading", { level: 2, name: "주인공 작품" });
     const article = heroTitle.closest("article");
     expect(article).not.toBeNull();

@@ -3,8 +3,8 @@ import { serializeBrushStudioV6Authoring } from "./brush-studio-v6-authoring-doc
 import { downloadBrushStudioSource } from "./brush-studio-source-download";
 import type { BrushStudioV6Program } from "./brush-studio-v6-engine";
 import { LoaderCircle } from "lucide-react";
-import { useLayoutEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigationType } from "react-router-dom";
 import { translateNow, useT } from "@/shared/lib/i18n";
 
 import "../studio-brush-canvas-status-i18n";
@@ -22,6 +22,17 @@ const BRUSH_V6_PROGRAM_EVENT = "toonspectrum:brush-v6-program";
 export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: string }) {
   const t = useT();
   const location = useLocation();
+  const navigation = useNavigationType();
+  const params = new URLSearchParams(location.search);
+  params.delete("brushTask");
+  const requestSearch = params.toString();
+  const request = useRef({ sourceKey: location.key, sourceSearch: location.search, requestSearch, key: location.key });
+  if (request.current.sourceKey !== location.key) {
+    const taskOnly = request.current.sourceSearch !== location.search && request.current.requestSearch === requestSearch
+      && (navigation === "POP" || new URLSearchParams(location.search).has("brushTask"));
+    request.current = { sourceKey: location.key, sourceSearch: location.search, requestSearch, key: taskOnly ? request.current.key : location.key };
+  }
+  const requestKey = request.current.key;
   const [ready, setReady] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [snapshot, setSnapshot] = useState<unknown>(null);
@@ -39,7 +50,7 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
     };
     window.addEventListener(BRUSH_V6_PROGRAM_EVENT, capture);
 
-    const requested = resolveBrushStudioRequestedRecipe(location.search);
+    const requested = resolveBrushStudioRequestedRecipe(requestSearch);
     const storageKey = brushStudioV6StorageKey(scope);
     if (requested) {
       try {
@@ -89,7 +100,7 @@ export function StudioBrushIntegratedWorkbench({ scope }: { readonly scope: stri
     }
     setReady(true);
     return () => { cancelled = true; window.removeEventListener(BRUSH_V6_PROGRAM_EVENT, capture); };
-  }, [location.key, location.search, scope]);
+  }, [requestKey, requestSearch, scope]);
 
   if (!ready) {
     return (

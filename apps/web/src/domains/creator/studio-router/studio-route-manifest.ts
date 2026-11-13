@@ -16,6 +16,7 @@ import {
 } from "../studio-workspace-route";
 
 import type { StudioLift3dSubject } from "../lift3d/studio-lift3d-contract";
+import { studioBrushTaskLifecycleKey } from "../brush-lab/studio-brush-task-route";
 
 const STUDIO_LIFT3D_SUBJECTS = [
   "character",
@@ -274,7 +275,7 @@ function invalidResolution(
   return Object.freeze({
     errorCode,
     kind: "invalid",
-    lifecycleKey: studioVirtualSpaceLifecycleKey({ pathname, search: params }) ?? href(pathname, params),
+    lifecycleKey: studioBrushTaskLifecycleKey({ pathname, search: params }) ?? studioVirtualSpaceLifecycleKey({ pathname, search: params }) ?? href(pathname, params),
     ownsDocumentTitle: false,
   });
 }

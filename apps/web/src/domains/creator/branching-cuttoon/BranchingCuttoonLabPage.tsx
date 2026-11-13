@@ -191,7 +191,7 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
           <BranchingNotice tone="info" className="mt-4 max-w-3xl">{t("branchingCuttoon.page.limitsNote")}</BranchingNotice>
         </header>
 
-        <section
+        <details className="rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{t("branchingCuttoon.rea.advancedSettings")}</summary>        <section
           data-testid="branching-cuttoon-rea-graph-bar"
           aria-label={t("branchingCuttoon.rea.label")}
           className="mt-3 mb-5 rounded-2xl border border-line bg-card p-4"
@@ -264,7 +264,7 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
               count: graph.nodes.length,
             })}
           </p>
-        </section>
+        </section></details>
 
         <div className="mt-6 grid gap-3">
           {draftUnreadable ? <BranchingNotice tone="warn">{t("branchingCuttoon.storage.draftUnreadable")}</BranchingNotice> : null}

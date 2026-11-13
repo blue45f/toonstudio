@@ -9,6 +9,7 @@ import { StudioBg3dSceneDirectorPanel } from "./StudioBg3dSceneDirectorPanel";
 
 import type { StudioBg3dSceneGoal } from "./StudioBg3dSceneDirectorPanel";
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
+import { StudioBg3dTaskNavigation } from "./StudioBg3dTaskNavigation";
 import { StudioBg3dEditorSidebarExtras } from "./StudioBg3dEditorSidebarExtras";
 import { StudioBg3dGlbTexturePaintMount } from "./StudioBg3dGlbTexturePaintMount";
 import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
@@ -373,7 +374,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
   const offered3dCommands = listOfferedStudio3dCommands();
   return (
           <aside className="flex min-h-0 min-w-0 w-full flex-col border-t border-line bg-panel lg:border-l lg:border-t-0" data-offered-3d-commands={offered3dCommands.map((command) => command.id).join(" ")}>
-            {simpleMode ? (
+            {simpleMode ? <details className="shrink-0 border-b border-line"><summary className="min-h-12 cursor-pointer px-3 py-3 text-xs font-semibold text-fg-2">3D 작업 시작 안내</summary>
               <StudioBg3dSceneDirectorPanel
                 activeGoal={activeSceneGoal}
                 disabled={isCapturing || isRestoringScene || physicsInteractionLocked || immersiveSceneActive}
@@ -383,7 +384,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 onSelectGoal={selectSceneGoal}
                 onOpenPro={onOpenPro}
               />
-            ) : null}
+            </details> : null}
             {!simpleMode || h.marketplaceModelId ? (
               <StudioMarketplaceModelImportMount
                 modelId={h.marketplaceModelId ?? null}
@@ -392,53 +393,8 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
                 onImport={h.importMarketplaceModelFiles}
               />
             ) : null}
-            <div
-              role="tablist"
-              aria-label="컨트롤 카테고리"
-              inert={physicsInteractionLocked || immersiveSceneActive}
-              className="grid shrink-0 grid-cols-6 gap-1 border-b border-line bg-panel/95 px-2 py-2 backdrop-blur sm:px-3"
-            >
-              {panelTabs.map((tab: any) => {
-                const TabIcon = tab.icon;
-                const isActive = activePanelTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    id={`bg3d-tab-${tab.id}`}
-                    type="button"
-                    role="tab"
-                    aria-label={tab.label}
-                    aria-selected={isActive}
-                    aria-controls="bg3d-panel-body"
-                    tabIndex={isActive ? 0 : -1}
-                    title={tab.hint}
-                    onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
-                      const idx = BG_PANEL_TABS.findIndex((t: any) => t.id === activePanelTab);
-                      let next: number;
-                      if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % BG_PANEL_TABS.length;
-                      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + BG_PANEL_TABS.length) % BG_PANEL_TABS.length;
-                      else if (e.key === "Home") next = 0;
-                      else if (e.key === "End") next = BG_PANEL_TABS.length - 1;
-                      else return;
-                      e.preventDefault();
-                      const nextTab = BG_PANEL_TABS[next];
-                      handlePanelTabChange(nextTab.id);
-                      document.getElementById(`bg3d-tab-${nextTab.id}`)?.focus();
-                    }}
-                    className={cx(
-                      "group flex flex-col items-center gap-1 whitespace-nowrap rounded-xl border px-1 py-1.5 text-[0.66rem] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                      isActive
-                        ? "border-accent/55 bg-accent-soft text-accent shadow-[inset_0_-2px_0_0_var(--color-accent,oklch(0.72_0.16_45))]"
-                        : "border-transparent text-fg-3 hover:bg-raised hover:text-fg"
-                    )}
-                    onClick={() => handlePanelTabChange(tab.id)}
-                  >
-                    <TabIcon size={17} aria-hidden className={isActive ? "" : "opacity-80 group-hover:opacity-100"} />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+            <StudioBg3dTaskNavigation tabs={panelTabs} active={activePanelTab} onSelect={handlePanelTabChange}
+              blocked={physicsInteractionLocked || immersiveSceneActive} />
 
             <div
               ref={panelScrollRef}

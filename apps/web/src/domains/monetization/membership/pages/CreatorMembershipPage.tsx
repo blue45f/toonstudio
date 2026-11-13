@@ -16,6 +16,7 @@ import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { Container } from "@/shared/components/section";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
 
@@ -231,8 +232,6 @@ export function CreatorMembershipPage() {
   if (!authenticated) {
     return (
       <Container className="py-10">
-        <CreatorMonetizationNav current="/creator/membership" />
-        {reaChurnBar}
         <div className="py-8 text-center">
           <Crown className="mx-auto h-10 w-10 text-fg-3/50" aria-hidden />
           <h1 className="mt-3 text-xl font-bold text-fg">{t("membership.creatorPage.title")}</h1>
@@ -242,19 +241,21 @@ export function CreatorMembershipPage() {
           <button
             type="button"
             onClick={() => requestAuthModalOpen({ reason: "protected-action", source: "creator-membership", mode: "login" })}
-            className={cn(buttonClass({ variant: "solid" }), "mt-4")}
+            className={cn(buttonClass({ variant: "solid" }), "mt-4 min-h-11")}
           >
             {t("membership.creatorPage.login")}
           </button>
         </div>
+        <SiteDisclosure title={pickLang("수익화 메뉴 · 멤버십 운영 예시", "Monetization menu and membership examples")} className="mt-5">
+          <CreatorMonetizationNav current="/creator/membership" />
+          {reaChurnBar}
+        </SiteDisclosure>
       </Container>
     );
   }
 
   return (
     <Container className="py-8">
-      <CreatorMonetizationNav current="/creator/membership" />
-      {reaChurnBar}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-fg">
@@ -400,6 +401,10 @@ export function CreatorMembershipPage() {
           )}
         </section>
       )}
+      <SiteDisclosure title={pickLang("수익화 메뉴 · 멤버십 운영 예시", "Monetization menu and membership examples")} className="mt-5">
+          <CreatorMonetizationNav current="/creator/membership" />
+          {reaChurnBar}
+        </SiteDisclosure>
     </Container>
   );
 }

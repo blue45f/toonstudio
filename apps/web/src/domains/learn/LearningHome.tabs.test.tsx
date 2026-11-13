@@ -31,6 +31,10 @@ describe("학습 홈 탭 구성", () => {
     fireEvent.click(screen.getByRole("button", { name: "학습 설정 바꾸기" }));
     expect(plan.open).toBe(true);
 
+    const nextDisclosure = screen.getByText("배운 것을 자료와 작업으로 잇기", { selector: "summary" }).closest("details");
+    expect(nextDisclosure?.open).toBe(false);
+    fireEvent.click(screen.getByText("배운 것을 자료와 작업으로 잇기", { selector: "summary" }));
+    expect(nextDisclosure?.open).toBe(true);
     const nextSteps = screen.getByRole("list", { name: "학습 다음 단계" });
     const hrefs = within(nextSteps).getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(hrefs[0]).toBe("/research");

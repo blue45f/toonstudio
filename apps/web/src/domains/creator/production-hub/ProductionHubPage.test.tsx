@@ -164,6 +164,12 @@ describe("webtoon production collaboration UI", () => {
     );
     await screen.findByRole("heading", { name: "전체 진행률" });
     const nav = screen.getByRole("navigation", { name: "프로젝트 메뉴" });
+    const menu = nav.querySelector<HTMLDetailsElement>("[data-production-task-menu]");
+    expect(menu?.open).toBe(false);
+    const summary = menu?.querySelector("summary");
+    if (!summary) throw new Error("화면 전환 메뉴가 필요합니다.");
+    fireEvent.click(summary);
+    expect(menu?.open).toBe(true);
     // 내비 그룹은 회차 단계 7개 + 관리다. 개요는 그룹 밖 최상단 고정 링크다.
     for (const groupLabel of ["기획", "콘티", "작화", "식자·연출", "검수", "게시", "운영", "관리"]) {
       expect(within(nav).getByRole("group", { name: groupLabel })).toBeTruthy();
@@ -192,7 +198,7 @@ describe("webtoon production collaboration UI", () => {
     expect(within(nav).getByRole("link", { name: /원고 확인하기/u })).toBeTruthy();
     expect(within(nav).getByRole("link", { name: /게시 명령 센터 열기/u })).toBeTruthy();
     // 시작 상태에서는 그룹 하나(현재 단계 그룹)만 펼쳐진다. 관리는 아래에 접혀 있다.
-    const groups = Array.from(nav.querySelectorAll("details"));
+    const groups = Array.from(nav.querySelectorAll("details[aria-label]"));
     expect(groups).toHaveLength(8);
     expect(groups.filter((group) => (group as HTMLDetailsElement).open)).toHaveLength(1);
     const overviewLink = within(nav).getAllByRole("link")[0];

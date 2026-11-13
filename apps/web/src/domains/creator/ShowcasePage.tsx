@@ -15,7 +15,6 @@ import { ShowcaseSocialHubBar } from "./publishing/ShowcaseSocialHubBar";
 import { Container } from "@/shared/components/section";
 import { CreativeJourneyLinks } from "@/shared/components/public-creative";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -71,7 +70,6 @@ function ShowcaseSearchForm({ searchText, searchable, onFind }: {
 
 export function ShowcasePage() {
   const bt = useBilingual("ShowcasePage");
-  const isDesktop = useMediaQuery("(min-width: 640px)");
   const [searchParams, setSearchParams] = useSearchParams();
   const view = parseGalleryView(searchParams);
   const searchText = (searchParams.get("q") ?? "").trim().slice(0, 200);
@@ -86,26 +84,27 @@ export function ShowcasePage() {
 
   return (
     <Container size="wide" className="py-6 sm:py-10">
-      <details open={isDesktop} className="group/showcase-navigation mb-4 rounded-xl border border-line bg-panel sm:rounded-none sm:border-0 sm:bg-transparent" aria-label={bt("탐색·커뮤니티 메뉴", "Explore and community menu")}>
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-xl px-3 text-xs font-semibold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent sm:hidden [&::-webkit-details-marker]:hidden">
-          <span>{bt("탐색·커뮤니티 메뉴", "Explore and community menu")}</span>
-          <span className="ml-auto rounded-md bg-accent-soft px-2 py-1 text-accent">{bt("창작 갤러리", "Creator gallery")}</span>
-          <ChevronDown className="size-4 shrink-0 transition-transform group-open/showcase-navigation:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-        </summary>
-        <SiteContextualSubNav pathnameOverride="/showcase" />
-      </details>
+      <SiteContextualSubNav pathnameOverride="/showcase" className="mb-3" />
       <ShowcaseHeader />
 
       <section aria-labelledby="showcase-browse-title" className="mt-5">
         <ShowcaseSearchForm searchText={searchText} searchable={searchable} onFind={(q) => patchView({ q })} />
         <GalleryToolbar view={view} onPatch={patchView} compactFilters />
-        {view.tab === "works" && !searchText ? <ShowcaseSpotlight /> : null}
         <div className="mb-3">
           <h2 id="showcase-browse-title" className="text-xl font-bold tracking-tight text-fg sm:text-2xl">
             {bt("전체 작품 둘러보기", "Browse all works")}
           </h2>
         </div>
         <GalleryTabPanel view={view} onResetFilters={clearAllFilters} searchText={searchText} onClearSearch={() => patchView({ q: null })} featuredCollapsed />
+        {view.tab === "works" && !searchText ? (
+          <details className="group/showcase-spotlight mt-4 rounded-xl border border-line bg-panel">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 text-sm font-semibold text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+              {bt("추천 작품 한 편 보기", "See a spotlight work")}
+              <ChevronDown size={16} aria-hidden className="transition-transform group-open/showcase-spotlight:rotate-180 motion-reduce:transition-none" />
+            </summary>
+            <div className="p-3"><ShowcaseSpotlight /></div>
+          </details>
+        ) : null}
       </section>
 
       <details className="group/showcase-participation mt-8 rounded-2xl border border-line bg-panel" aria-label={bt("내 작품 소개·협업 참여", "Share your work and collaborate")}>

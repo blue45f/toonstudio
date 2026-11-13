@@ -1,6 +1,6 @@
 import { catalogStatusText } from "./catalog-status-i18n";
 import { useLocalCatalogFallback } from "./local-catalog-fallback";
-import { Hash, Search, SlidersHorizontal, X } from "lucide-react";
+import { Hash, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -11,7 +11,9 @@ import {
   type TagDirectorySort,
 } from "./tag-directory";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
+import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { SectionArt } from "@/shared/components/section-art";
 import { Container } from "@/shared/components/section";
@@ -27,6 +29,7 @@ const INITIAL_VISIBLE = 120;
 const VISIBLE_STEP = 120;
 
 export function TagsPage() {
+  const b = useBilingual("domains.catalog.TagsPage");
   const apiState = useApiResource<TagsResponse>(
     "/api/tags",
     catalogStatusText("catalog.status.tags.loadFailed", "태그를 불러오지 못했습니다."),
@@ -58,57 +61,13 @@ export function TagsPage() {
   return (
     <Container size="wide" className="py-8 sm:py-11 lg:py-14">
       <SiteContextualSubNav pathnameOverride="/tags" className="mb-5" />
-      <header className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="max-w-3xl">
-          <p className="eyebrow flex items-center gap-1.5 text-accent">
-            <Hash size={14} aria-hidden="true" /> TAG SPECTRUM
-          </p>
-          <h1 className="mt-2 text-pretty font-display text-[clamp(2.25rem,7vw,4.75rem)] font-bold leading-[1] tracking-[-0.055em] text-fg">
-            태그로 작품 찾기
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-fg-2 sm:text-base">
-            작품의 분위기와 소재를 검색하고, 인기순 또는 이름순으로 좁혀 보세요.
-            태그는 한 번에 120개씩 표시해 모바일에서도 빠르게 탐색할 수 있습니다.
-          </p>
-        </div>
-        {sectionArtFailed ? (
-          <div
-            aria-hidden="true"
-            data-testid="catalog-section-art-fallback"
-            className="hidden aspect-[16/10] w-full place-items-center rounded-3xl border border-line bg-panel/70 px-4 text-center text-xs font-bold tracking-wider text-fg-3 lg:grid"
-          >
-            TAG SPECTRUM
-          </div>
-        ) : (
-          <div
-            ref={(node) => {
-              const img = node?.querySelector("img");
-              if (img && img.complete && img.naturalWidth === 0) {
-                setSectionArtFailed(true);
-              }
-            }}
-            onErrorCapture={() => setSectionArtFailed(true)}
-            className="hidden lg:block"
-          >
-            <SectionArt
-              image="explore"
-              className="aspect-[16/10] w-full rounded-3xl border border-line object-cover"
-            />
-          </div>
-        )}
+      <header className="mb-3">
+        <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">태그로 작품 찾기</h1>
       </header>
 
-      <section className="mt-7 rounded-3xl border border-line bg-panel/60 p-4 sm:p-5" aria-labelledby="tag-filter-title">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-card text-accent">
-            <SlidersHorizontal size={18} aria-hidden="true" />
-          </span>
-          <div>
-            <h2 id="tag-filter-title" className="font-display text-lg font-bold text-fg">태그 검색과 정렬</h2>
-            <p className="mt-1 text-xs leading-6 text-fg-3">검색과 정렬 조건은 주소에 남아 같은 결과를 다시 열거나 공유할 수 있습니다.</p>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+      <section className="mb-3" aria-labelledby="tag-filter-title">
+        <h2 id="tag-filter-title" className="sr-only">태그 검색과 정렬</h2>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <label className="block">
             <span className="sr-only">태그 검색</span>
             <span className="flex min-h-12 items-center gap-3 rounded-xl border border-line-strong bg-card px-3 text-fg-3 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
@@ -119,7 +78,7 @@ export function TagsPage() {
                 maxLength={80}
                 onChange={(event) => updateParam("q", event.target.value, "")}
                 placeholder="예: 힐링, 회귀, 학원물"
-                className="min-w-0 flex-1 bg-transparent text-base text-fg outline-none"
+                className="min-h-11 min-w-0 flex-1 bg-transparent text-base text-fg outline-none"
               />
               {query ? (
                 <button
@@ -244,6 +203,34 @@ export function TagsPage() {
           </button>
         </div>
       ) : null}
+      <SiteDisclosure title={b("태그 탐색 안내", "Tag browsing guide")} className="mt-5">
+        <p className="mb-4 text-sm leading-relaxed text-fg-2">{b("작품의 분위기와 소재를 검색하고, 인기순 또는 이름순으로 좁혀 보세요. 검색·정렬 조건은 주소에 남아 다시 열거나 공유할 수 있으며 태그는 한 번에 120개씩 표시합니다.", "Find themes and moods, then sort by popularity or name. Search and sort stay in the URL for sharing; 120 tags appear at a time.")}</p>
+        {sectionArtFailed ? (
+          <div
+            aria-hidden="true"
+            data-testid="catalog-section-art-fallback"
+            className="hidden aspect-[16/10] w-full place-items-center rounded-3xl border border-line bg-panel/70 px-4 text-center text-xs font-bold tracking-wider text-fg-3 lg:grid"
+          >
+            TAG SPECTRUM
+          </div>
+        ) : (
+          <div
+            ref={(node) => {
+              const img = node?.querySelector("img");
+              if (img && img.complete && img.naturalWidth === 0) {
+                setSectionArtFailed(true);
+              }
+            }}
+            onErrorCapture={() => setSectionArtFailed(true)}
+            className="hidden lg:block"
+          >
+            <SectionArt
+              image="explore"
+              className="aspect-[16/10] w-full rounded-3xl border border-line object-cover"
+            />
+          </div>
+        )}
+      </SiteDisclosure>
     </Container>
   );
 }
