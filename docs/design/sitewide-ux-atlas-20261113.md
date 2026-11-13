@@ -239,7 +239,7 @@
 | /learn/lessons/lettering | 말풍선과 대사로 읽는 길 만들기 | 학습 | 학습 시작하기 |
 | /learn/lessons/outsourcing-communication | 외주·어시스턴트와 범위와 일정을 합의하기 | 학습 | 학습 시작하기 |
 | /learn/lessons/publish-check | 완성 원고를 게시용 파일로 검수하기 | 학습 | 학습 시작하기 |
-| /learn/lessons/reader-data-reading | 독자 지표를 읽고 다음 회차에 반영하기 | 학습 | 공식 감상 경로 확인 |
+| /learn/lessons/reader-data-reading | 독자 지표를 읽고 다음 회차에 반영하기 | 학습 | 학습 시작하기 |
 | /learn/lessons/review-approval-flow | 검수·승인 흐름과 결정 기록 남기기 | 학습 | 학습 시작하기 |
 | /learn/lessons/scroll-rhythm | 컷과 여백으로 스크롤의 호흡 만들기 | 학습 | 학습 시작하기 |
 | /learn/lessons/season-arc-design | 시즌 아크로 여러 회차를 하나의 큰 질문으로 묶기 | 학습 | 학습 시작하기 |
