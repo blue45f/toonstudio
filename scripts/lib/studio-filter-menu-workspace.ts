@@ -22,10 +22,9 @@ export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000)
   await more.click({ timeout: remaining() });
   const tools = page.getByRole("dialog", { name: "원고 도구", exact: true });
   await tools.waitFor({ state: "visible", timeout: remaining() });
-  const advanced = tools.locator("details.studio-drawing-task-advanced");
-  const summary = advanced.locator(":scope > summary");
-  invariant((await summary.innerText({ timeout: remaining() })).trim() === "레이어와 기존 작업 배치", "메뉴 도구의 접힌 목적 이름이 다릅니다");
-  if (!await advanced.evaluate(element => (element as HTMLDetailsElement).open)) await summary.click({ timeout: remaining() });
+  const workspace = tools.locator('[data-drawing-task-category="workspace"]');
+  invariant(await workspace.count() === 1, "필터 검증의 화면과 도움말 목적은 하나여야 합니다");
+  await workspace.click({ timeout: remaining() });
   await tools.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click({ timeout: remaining() });
   await tools.waitFor({ state: "hidden", timeout: remaining() });
   await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });

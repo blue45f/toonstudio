@@ -156,10 +156,9 @@ try {
     assert(await more.evaluate(element => element === document.activeElement), "더보기 Escape 후 원래 트리거 초점 복귀");
     await more.click();
     await tools.waitFor({ state: "visible" });
-    const advanced = tools.locator("details.studio-drawing-task-advanced");
-    const advancedSummary = advanced.locator(":scope > summary");
-    assert.equal((await advancedSummary.innerText()).trim(), "레이어와 기존 작업 배치");
-    if (!await advanced.evaluate(element => (element as HTMLDetailsElement).open)) await advancedSummary.click();
+    const documentTask = tools.locator('[data-drawing-task-category="document"]');
+    assert.equal(await documentTask.count(), 1, "원고와 레이어 목적은 하나여야 합니다");
+    await documentTask.click();
     await tools.getByRole("button", { name: "레이어·속성 보기", exact: true }).click();
     await tools.waitFor({ state: "hidden" });
     const inspectorPane = page.locator("#studio-drawing-clarity-panel-layers");
