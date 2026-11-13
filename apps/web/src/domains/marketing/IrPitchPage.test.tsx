@@ -25,7 +25,7 @@ describe("투자 소개 목적별 페이지", () => {
     expect(container.querySelectorAll("[data-ir-brief-section]")).toHaveLength(1);
     expect(document.activeElement).toBe(document.getElementById("ir-problem-title"));
     expect(screen.getByRole("navigation", { name: "현재 주제의 세부 목차" }).querySelectorAll("a")).toHaveLength(5);
-    fireEvent.click(within(screen.getByRole("navigation", { name: "현재 주제의 세부 목차" })).getByRole("link", { name: "경쟁 지형", exact: true }));
+    fireEvent.click(within(screen.getByRole("navigation", { name: "현재 주제의 세부 목차" })).getByRole("link", { name: "경쟁 지형" }));
     expect(container.querySelector('[data-ir-brief-section="landscape"]')).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "검증용 뒤로" }));
     expect(container.querySelector('[data-ir-brief-section="problem"]')).not.toBeNull();

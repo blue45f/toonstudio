@@ -39,7 +39,7 @@ describe("설정 화면 탭", () => {
     fireEvent.change(draft, { target: { value: "draft-code-placeholder" } });
     fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
     expect(screen.queryByRole("tablist")).toBeNull();
-    fireEvent.click(screen.getByRole("link", { name: "계정", exact: true }));
+    fireEvent.click(screen.getByRole("link", { name: "계정" }));
     expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
     expect(draft).toHaveProperty("value", "draft-code-placeholder");
   });

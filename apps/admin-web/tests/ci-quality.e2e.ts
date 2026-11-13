@@ -78,6 +78,8 @@ test("완료와 stale SHA를 구분하고 필터·칸반·게이트 추가를 �
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: getQualityStorageKey("quality-admin-a"), value: JSON.stringify(seed) });
   await page.goto(boardPath);
   await expect(page.getByText("stale · SHA 불일치", { exact: true })).toBeVisible();
+  await expect(page.getByText("유효한 완료 근거 0개", { exact: true })).toBeHidden();
+  await page.locator("summary").filter({ hasText: /^검증 전체 현황과 기준 커밋$/u }).click();
   await expect(page.getByText("유효한 완료 근거 0개", { exact: true })).toBeVisible();
   await page.getByLabel("검사 검색", { exact: true }).fill("Vitest");
   await expect(page.locator(".ci-quality-table tbody tr")).toHaveCount(1);
