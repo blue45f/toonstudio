@@ -283,11 +283,11 @@ async function closeBrushSurfaces(page: Page): Promise<boolean> {
   return true;
 }
 
-async function openMobileBrushLibrary(page: Page): Promise<Locator | null> {
-  const deadline = Date.now() + 10_000;
+async function openMobileBrushLibrary(page: Page, timeoutMs = 10_000): Promise<Locator | null> {
+  const deadline = Date.now() + timeoutMs;
   const remaining = () => {
     const value = deadline - Date.now();
-    if (value <= 0) throw new Error("모바일 소크 브러시 열기의 10000ms 예산을 초과했습니다.");
+    if (value <= 0) throw new Error(`모바일 소크 브러시 열기의 ${timeoutMs}ms 예산을 초과했습니다.`);
     return value;
   };
   if (!(await closeBrushSurfaces(page))) return null;
@@ -319,11 +319,21 @@ async function selectBrush(page: Page, item: StudioBrushCatalogItem): Promise<bo
     await option.scrollIntoViewIfNeeded();
     await option.click({ timeout: 5_000 });
     const deadline = Date.now() + 5_000;
+    const remaining = () => {
+      const value = deadline - Date.now();
+      if (value <= 0) throw new Error("모바일 소크 브러시 활성 확인의 5000ms 예산을 초과했습니다.");
+      return value;
+    };
+    // 모바일은 선택을 적용한 뒤 목록을 닫는다. 다시 열어 동일 ID의 실제 활성 상태를 읽는다.
+    await library.waitFor({ state: "hidden", timeout: remaining() });
+    const verification = await openMobileBrushLibrary(page, remaining());
+    if (!verification) return false;
+    await verification.getByRole("searchbox").fill(item.name, { timeout: remaining() });
+    const selected = verification.locator(`button[data-studio-brush-select=${JSON.stringify(item.id)}]`);
     while (Date.now() < deadline) {
-      const remaining = () => Math.max(1, deadline - Date.now());
-      const active = await option.getAttribute("aria-pressed", { timeout: remaining() }) === "true";
-      const pending = await library.getAttribute("data-studio-brush-selection-pending", { timeout: remaining() }) === "true";
-      if (active && !pending) return closeBrushSurfaces(page);
+      const active = await selected.getAttribute("aria-pressed", { timeout: remaining() }) === "true";
+      const pending = await verification.getAttribute("data-studio-brush-selection-pending", { timeout: remaining() }) === "true";
+      if (active && !pending && Date.now() < deadline) return closeBrushSurfaces(page);
       await page.waitForTimeout(Math.min(50, remaining()));
     }
     return false;
