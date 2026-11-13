@@ -26,17 +26,18 @@ import { chromium, type Browser, type CDPSession, type Locator, type Page } from
 
 import { STUDIO_ERASER_BRUSH_CATALOG_ITEMS, STUDIO_LISTED_ALL_BRUSH_CATALOG_ITEMS, type StudioBrushCatalogItem } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
-import { activateDesktopPen } from "./lib/studio-desktop-brush-activation";
 import { createStudioSoakCheckpoint } from "./lib/studio-five-hour-soak-checkpoint.mjs";
 import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-runtime-noise.mjs";
 import { collectStudioInAppRuntimeErrors, installStudioInAppFirstRunState, installStudioInAppGuestBoundary, STUDIO_INAPP_PROFILES, type StudioInAppRuntimeError } from "./lib/studio-inapp-sweep-harness.mjs";
 import { evaluateStudioSoakHeapGrowth, STUDIO_SOAK_HEAP_MAX_SLOPE_BYTES_PER_HOUR } from "./lib/studio-memory-growth-policy.mjs";
+import { openMobileBrushSettings } from "./lib/studio-mobile-brush-settings";
 import {
   dispatchStudioPointerStroke,
   parseStudioPointerInputMode,
   resolveStudioPointerInputMode,
 } from "./lib/studio-pointer-input-driver.mjs";
 import { ensureStudioSoakDesktopPen } from "./lib/studio-soak-desktop-pen";
+import { readStudioSoakLayerCount, waitForStudioSoakLayerCount, withStudioSoakLayerNavigator } from "./lib/studio-soak-layer-count";
 import { assertStudioSoakPointerRoute, prepareStudioSoakPointerRoute } from "./lib/studio-soak-pointer-route";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -283,31 +284,21 @@ async function closeBrushSurfaces(page: Page): Promise<boolean> {
 }
 
 async function openMobileBrushLibrary(page: Page): Promise<Locator | null> {
+  const deadline = Date.now() + 10_000;
+  const remaining = () => {
+    const value = deadline - Date.now();
+    if (value <= 0) throw new Error("모바일 소크 브러시 열기의 10000ms 예산을 초과했습니다.");
+    return value;
+  };
   if (!(await closeBrushSurfaces(page))) return null;
   const dock = page.locator('[data-studio-mobile-editing-dock="true"]');
-  const settings = dock.getByRole("button", {
-    name: "브러시 설정 (굵기·색·프리셋)",
-    exact: true,
-  });
-  if (!(await settings.isVisible().catch(() => false))) {
-    const workspace = dock.locator('[data-studio-mobile-workspace-toggle="true"]');
-    if (!(await workspace.isVisible().catch(() => false))) return null;
-    if (await workspace.getAttribute("aria-expanded") !== "true") await workspace.click();
-  }
-  if (!(await settings.isVisible().catch(() => false))) return null;
-  if (await settings.getAttribute("aria-expanded") !== "true") {
-    await settings.click({ timeout: 5_000 }).catch(() => undefined);
-  }
+  await openMobileBrushSettings(page, dock, remaining());
   const sheet = page.locator("#studio-mobile-draw-settings");
   const opener = sheet.locator('[data-studio-open-brush-library="true"]');
-  if (!(await opener.waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false))) return null;
-  await opener.click({ timeout: 5_000 }).catch(() => undefined);
+  await opener.waitFor({ state: "visible", timeout: remaining() });
+  await opener.click({ timeout: remaining() });
   const library = page.locator('[data-studio-brush-library="true"]').first();
-  if (!(await library.waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false))) return null;
+  await library.waitFor({ state: "visible", timeout: remaining() });
   return library;
 }
 
@@ -326,8 +317,16 @@ async function selectBrush(page: Page, item: StudioBrushCatalogItem): Promise<bo
       return false;
     }
     await option.scrollIntoViewIfNeeded();
-    await option.click({ force: true });
-    return closeBrushSurfaces(page);
+    await option.click({ timeout: 5_000 });
+    const deadline = Date.now() + 5_000;
+    while (Date.now() < deadline) {
+      const remaining = () => Math.max(1, deadline - Date.now());
+      const active = await option.getAttribute("aria-pressed", { timeout: remaining() }) === "true";
+      const pending = await library.getAttribute("data-studio-brush-selection-pending", { timeout: remaining() }) === "true";
+      if (active && !pending) return closeBrushSurfaces(page);
+      await page.waitForTimeout(Math.min(50, remaining()));
+    }
+    return false;
   }
 
   if (!(await closeBrushSurfaces(page))) return false;
@@ -359,11 +358,17 @@ async function selectBrush(page: Page, item: StudioBrushCatalogItem): Promise<bo
 async function ensurePenReady(page: Page, timeoutMs = 4_000): Promise<boolean> {
   const mobileDock = page.locator('[data-studio-mobile-editing-dock="true"]');
   if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
+    const deadline = Date.now() + timeoutMs;
+    const remaining = () => {
+      const value = deadline - Date.now();
+      if (value <= 0) throw new Error("모바일 소크의 펜 준비 예산을 초과했습니다.");
+      return value;
+    };
     const pen = mobileDock.getByRole("button", { name: /^(?:펜|Pen)$/u });
     if (!(await pen.isVisible().catch(() => false))) return false;
-    if (await pen.getAttribute("aria-pressed") !== "true") await pen.click();
-    await page.waitForTimeout(80);
-    return await pen.getAttribute("aria-pressed") === "true";
+    if (await pen.getAttribute("aria-pressed", { timeout: remaining() }) !== "true") await pen.click({ timeout: remaining() });
+    await page.waitForTimeout(Math.min(80, remaining()));
+    return await pen.getAttribute("aria-pressed", { timeout: remaining() }) === "true" && Date.now() < deadline;
   }
 
   return ensureStudioSoakDesktopPen(page, timeoutMs);
@@ -396,23 +401,18 @@ async function waitForPenReady(page: Page, timeoutMs = 30_000): Promise<boolean>
   return false;
 }
 
-async function readStudioAvailableLayerCount(page: Page): Promise<number | null> {
-  const raw = await page.locator('[data-studio-layer-available-count]').first()
-    .getAttribute("data-studio-layer-available-count")
-    .catch(() => null);
-  if (raw === null) return null;
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : null;
+async function readStudioAvailableLayerCount(page: Page, timeoutMs = 8_000): Promise<number | null> {
+  return readStudioSoakLayerCount(page, timeoutMs);
 }
 
-async function readStudioHistoryDepth(page: Page): Promise<{
+async function readStudioHistoryDepth(page: Page, timeoutMs = 1_000): Promise<{
   entryCount: number | null;
   undoDepth: number | null;
 }> {
   const editor = page.locator('[data-studio-history-entry-count]').first();
   const [entryRaw, undoRaw] = await Promise.all([
-    editor.getAttribute("data-studio-history-entry-count").catch(() => null),
-    editor.getAttribute("data-studio-history-undo-depth").catch(() => null),
+    editor.getAttribute("data-studio-history-entry-count", { timeout: timeoutMs }).catch(() => null),
+    editor.getAttribute("data-studio-history-undo-depth", { timeout: timeoutMs }).catch(() => null),
   ]);
   const entryCount = entryRaw === null ? null : Number(entryRaw);
   const undoDepth = undoRaw === null ? null : Number(undoRaw);
@@ -427,13 +427,7 @@ async function waitForStudioLayerCount(
   predicate: (count: number) => boolean,
   timeoutMs = 5_000,
 ): Promise<number | null> {
-  const deadline = Date.now() + timeoutMs;
-  do {
-    const count = await readStudioAvailableLayerCount(page);
-    if (count !== null && predicate(count)) return count;
-    await page.waitForTimeout(50);
-  } while (Date.now() < deadline);
-  return readStudioAvailableLayerCount(page);
+  return waitForStudioSoakLayerCount(page, predicate, timeoutMs);
 }
 
 /** 에디터 셸이 노출하는 히스토리 유지 진단(퇴출 누계·계량 유지 바이트·마지막 엔트리 바이트·append 총수·복구 보관 획 수). */
@@ -470,103 +464,9 @@ async function readStudioVisibleCommitError(page: Page): Promise<string | null> 
   return normalized.length > 0 ? normalized.slice(0, 300) : null;
 }
 
-/**
- * 레이어 내비게이터는 인스펙터의 기본 탭이 "레이어"일 때만 마운트된다. 데스크톱 넓은 패널은
- * 분할 표시로 상시 마운트되지만, 모바일 시트와 좁은 패널은 기본 탭이 "속성"이라 소크가
- * 카운트를 읽지 못해 시작조차 못 했다(run 38174573887 모바일 3잡). 제품 동작을 바꾸지 않고
- * 실제 사용자의 경로 — 모바일 독의 "작업 패널"을 열고 "레이어" 탭을 선택 — 로 마운트한 뒤
- * 다시 읽는다. 마운트는 기본 탭 상태가 유지되는 한 시트를 닫아도 남는다.
- */
-async function ensureStudioLayerNavigatorCount(
-  page: Page,
-  timeoutMs = 8_000,
-): Promise<number | null> {
-  const existing = await readStudioAvailableLayerCount(page);
-  if (existing !== null) return existing;
-
-  const mobileDock = page.locator('[data-studio-mobile-editing-dock="true"]');
-  const propsSheet = page.locator('[data-studio-sheet-id="props"]');
-  const propsSheetOpen = async (): Promise<boolean> =>
-    (await propsSheet.getAttribute("data-studio-mobile-sheet").catch(() => null)) === "true";
-  let openedSheet = false;
-  if (await mobileDock.isVisible({ timeout: 250 }).catch(() => false)) {
-    const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
-    const layersButton = mobileDock.getByRole("button", { name: "레이어 열기", exact: true });
-    if (!(await layersButton.isVisible().catch(() => false))
-      && !(await panelButton.isVisible().catch(() => false))) {
-      // 레이어·작업 패널 버튼은 워크스페이스 그리드 안에 있어, 접힌 독에서는 토글을 먼저
-      // 펼쳐야 보인다(브러시 라이브러리를 여는 경로와 같은 전제).
-      const workspace = mobileDock.locator('[data-studio-mobile-workspace-toggle="true"]');
-      if (await workspace.isVisible().catch(() => false)
-        && await workspace.getAttribute("aria-expanded") !== "true") {
-        await workspace.click({ timeout: 5_000 }).catch(() => undefined);
-        log("layer navigator admission: expanded the mobile workspace dock");
-      }
-    }
-    // 모바일 사용자의 최단 경로: 작업 메뉴의 "레이어 열기"는 인스펙터 시트를 레이어 탭으로
-    // 직접 연다. "작업 패널" 경로는 그리기 도구 활성 시 속성 탭으로 열려 탭 전환이 한 번 더
-    // 필요하고, 오프라인 배너의 버튼 영역과 겹쳐 클릭이 가로막히는 사례가 실측됐다.
-    if (await layersButton.isVisible().catch(() => false)) {
-      await layersButton.click({ timeout: 5_000 }).catch(() => undefined);
-      openedSheet = await propsSheetOpen();
-      log(`layer navigator admission: layers entry click -> props sheet open=${openedSheet}`);
-    }
-    if (!openedSheet && await panelButton.isVisible().catch(() => false)
-      && await panelButton.getAttribute("aria-expanded") !== "true") {
-      await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
-      openedSheet = await propsSheetOpen();
-      log(`layer navigator admission: props panel click -> props sheet open=${openedSheet}`);
-    }
-  } else {
-    // 카운트를 읽을 수 없을 때만 실제 PC 메뉴와 인스펙터를 노출한다. 모바일 시트 경로는 유지한다.
-    await activateDesktopPen(page, timeoutMs);
-  }
-  if (!openedSheet) {
-    const layersTab = page.locator('[data-studio-inspector-primary-tab="layers"]');
-    if (await layersTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      if (await layersTab.getAttribute("aria-selected") !== "true") {
-        await layersTab.click({ timeout: 5_000 }).catch(() => undefined);
-        log("layer navigator admission: selected the inspector layers tab");
-      }
-    } else {
-      log("layer navigator admission: layers tab was not visible");
-    }
-  }
-  const count = await waitForStudioLayerCount(page, (value) => value >= 0, timeoutMs);
-  log(`layer navigator admission: count=${count ?? "unavailable"}`);
-  if (count !== null && openedSheet) {
-    // 그리기 영역을 시트가 덮지 않도록 되닫는다. 기본 탭이 "레이어"로 남아 내비게이터의
-    // 마운트와 카운트 속성은 닫은 뒤에도 유지되는지 실측으로 확인한다.
-    const waitSheetClosed = async (): Promise<boolean> => {
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        if (!(await propsSheetOpen())) return true;
-        await page.waitForTimeout(250);
-      }
-      return false;
-    };
-    await page.keyboard.press("Escape").catch(() => undefined);
-    let closed = await waitSheetClosed();
-    if (!closed) {
-      const panelButton = mobileDock.getByRole("button", { name: "작업 패널", exact: true });
-      if (await panelButton.getAttribute("aria-expanded").catch(() => null) === "true") {
-        await panelButton.click({ timeout: 5_000 }).catch(() => undefined);
-        closed = await waitSheetClosed();
-      }
-    }
-    const surviving = await readStudioAvailableLayerCount(page);
-    log(`layer navigator admission: sheet closed=${closed} count after close=${surviving ?? "unavailable"}`);
-    if (surviving === null) {
-      // 닫으면 내비게이터가 내려가는 레이아웃이면 다시 열어 둔 채로 진행한다(다음 사이클의
-      // ensure 호출이 이미 읽히는 카운트로 즉시 반환한다).
-      const layersButton = mobileDock.getByRole("button", { name: "레이어 열기", exact: true });
-      if (await layersButton.isVisible().catch(() => false)) {
-        await layersButton.click({ timeout: 5_000 }).catch(() => undefined);
-      }
-      return await readStudioAvailableLayerCount(page);
-    }
-    return surviving;
-  }
-  return count;
+/** count DOM의 마운트 수명에 의존하지 않고 실제 레이어 UI에서 baseline을 읽는다. */
+async function ensureStudioLayerNavigatorCount(page: Page, timeoutMs = 8_000): Promise<number | null> {
+  return readStudioSoakLayerCount(page, timeoutMs);
 }
 
 async function waitForStudioDocumentAdvance(
@@ -582,34 +482,29 @@ async function waitForStudioDocumentAdvance(
   historyUndoDepth: number | null;
   accepted: boolean;
 }> {
-  const deadline = Date.now() + timeoutMs;
-  do {
-    const layerCountAfter = await readStudioAvailableLayerCount(page);
-    const history = await readStudioHistoryDepth(page);
-    const acceptedByLayer = input.layerCountBefore !== null
-      && layerCountAfter !== null
-      && layerCountAfter > input.layerCountBefore;
-    const acceptedByHistory = input.historyUndoDepthBefore !== null
-      && history.undoDepth !== null
-      && history.undoDepth > input.historyUndoDepthBefore;
-    if (acceptedByLayer || acceptedByHistory) {
-      return {
-        layerCountAfter,
-        historyEntryCount: history.entryCount,
-        historyUndoDepth: history.undoDepth,
-        accepted: true,
-      };
-    }
-    await page.waitForTimeout(75);
-  } while (Date.now() < deadline);
-  const layerCountAfter = await readStudioAvailableLayerCount(page);
-  const history = await readStudioHistoryDepth(page);
-  return {
-    layerCountAfter,
-    historyEntryCount: history.entryCount,
-    historyUndoDepth: history.undoDepth,
-    accepted: false,
-  };
+  return withStudioSoakLayerNavigator(page, timeoutMs, async (readLayerCount, deadline) => {
+    let layerCountAfter = await readLayerCount();
+    let history = await readStudioHistoryDepth(page, Math.max(1, deadline - Date.now()));
+    do {
+      const acceptedByLayer = input.layerCountBefore !== null
+        && layerCountAfter !== null
+        && layerCountAfter > input.layerCountBefore;
+      const acceptedByHistory = input.historyUndoDepthBefore !== null
+        && history.undoDepth !== null
+        && history.undoDepth > input.historyUndoDepthBefore;
+      if ((acceptedByLayer || acceptedByHistory) && Date.now() < deadline) {
+        return { layerCountAfter, historyEntryCount: history.entryCount, historyUndoDepth: history.undoDepth, accepted: true };
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await page.waitForTimeout(Math.min(75, remaining));
+      if (Date.now() >= deadline) break;
+      layerCountAfter = await readLayerCount();
+      history = await readStudioHistoryDepth(page, Math.max(1, deadline - Date.now()));
+    } while (Date.now() < deadline);
+    // 기한 안의 마지막 실측은 실패 진단에만 남긴다. 과거 count로 성공을 대신하지 않는다.
+    return { layerCountAfter, historyEntryCount: history.entryCount, historyUndoDepth: history.undoDepth, accepted: false };
+  });
 }
 
 async function clickStudioHistoryAction(
@@ -731,11 +626,11 @@ async function drawEvidenceStroke(
   if (!(await closeBrushSurfaces(page))) {
     throw new Error("brush surfaces stayed open before drawing evidence");
   }
-  await page.waitForTimeout(80);
-  const { box, points } = await prepareStudioSoakPointerRoute(page, cycle);
   const layerCountBefore = await readStudioAvailableLayerCount(page);
   const historyBefore = await readStudioHistoryDepth(page);
   const diagnosticsBefore = await readStudioHistoryDiagnostics(page);
+  await page.waitForTimeout(80);
+  const { box, points } = await prepareStudioSoakPointerRoute(page, cycle);
   const before = await page.screenshot({ clip: box, animations: "disabled" });
   await assertStudioSoakPointerRoute(page, points);
   const pointer = await dispatchStudioPointerStroke({

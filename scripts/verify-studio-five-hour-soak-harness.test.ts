@@ -8,6 +8,7 @@ import { isExpectedLocalPreviewRuntimeNoise } from "./lib/studio-five-hour-soak-
 const source = readFileSync(new URL("./verify-studio-five-hour-soak.mts", import.meta.url), "utf8");
 const desktopPen = readFileSync(new URL("./lib/studio-soak-desktop-pen.ts", import.meta.url), "utf8");
 const pointerRoute = readFileSync(new URL("./lib/studio-soak-pointer-route.ts", import.meta.url), "utf8");
+const layerCountUi = readFileSync(new URL("./lib/studio-soak-layer-count.ts", import.meta.url), "utf8");
 
 function sliceFunction(name: string, nextName: string): string {
   const start = source.indexOf(`async function ${name}`);
@@ -32,16 +33,14 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(close).toContain(".catch(() => false)");
   });
 
-  it("opens the mobile catalogue through the real draw-settings sheet", () => {
+  it("모바일 카탈로그는 공통 실제 설정 진입과 같은 잔여 예산을 사용한다", () => {
     const open = sliceFunction("openMobileBrushLibrary", "selectBrush");
-    expect(open).toContain('[data-studio-mobile-editing-dock="true"]');
-    expect(open).toContain('name: "브러시 설정 (굵기·색·프리셋)"');
-    expect(open).toContain('[data-studio-mobile-workspace-toggle="true"]');
-    expect(open).toContain('await workspace.click()');
+    expect(open).toContain('await openMobileBrushSettings(page, dock, remaining())');
     expect(open).toContain('page.locator("#studio-mobile-draw-settings")');
     expect(open).toContain(`sheet.locator('[data-studio-open-brush-library="true"]')`);
-    expect(open).toContain('[data-studio-brush-library="true"]');
-    expect(open).not.toContain(`dock.locator('[data-studio-open-brush-library="true"]')`);
+    expect(open).toContain('opener.click({ timeout: remaining() })');
+    expect(open).toContain('library.waitFor({ state: "visible", timeout: remaining() })');
+    expect(open).not.toContain('name: "브러시 설정 (굵기·색·프리셋)"');
   });
 
   it("keeps mobile and desktop brush selection on their actual surfaces", () => {
@@ -65,7 +64,7 @@ describe("Studio five-hour soak browser state isolation", () => {
     expect(pen).toContain('getByRole("button", { name: /^(?:펜|Pen)$/u })');
     expect(desktopPen).toContain('[data-studio-rail-tool-id="pen"]');
     expect(desktopPen).toContain('[data-studio-current-tool-id="pen"]');
-    expect(pen).toContain('getAttribute("aria-pressed")');
+    expect(pen).toContain('getAttribute("aria-pressed", { timeout: remaining() })');
     expect(desktopPen).toContain("active.blur()");
     expect(desktopPen).toContain('page.keyboard.press("b")');
   });
@@ -119,7 +118,7 @@ describe("Studio five-hour soak browser state isolation", () => {
   });
 
   it("uses layer commits to distinguish a covered stroke from missing ink", () => {
-    expect(source).toContain('[data-studio-layer-available-count]');
+    expect(layerCountUi).toContain('[data-studio-layer-available-count]');
     expect(source).toContain("layerCountBefore: evidence.layerCountBefore");
     expect(source).toContain("layerCountAfter: evidence.layerCountAfter");
     expect(source).toContain("const acceptedByLayer = evidence.layerCountBefore !== null");
@@ -303,27 +302,21 @@ describe("Studio five-hour soak local-preview runtime noise", () => {
 });
 
 describe("Studio five-hour soak layer navigator admission", () => {
-  it("mounts the layer navigator through the real inspector route when its count is unavailable", () => {
-    const ensure = sliceFunction("ensureStudioLayerNavigatorCount", "waitForStudioDocumentAdvance");
-    // 이미 읽히면 어떤 UI도 건드리지 않는다.
-    expect(ensure).toContain("const existing = await readStudioAvailableLayerCount(page);");
-    expect(ensure).toContain("if (existing !== null) return existing;");
-    expect(ensure).toContain("await activateDesktopPen(page, timeoutMs)");
-    expect(ensure.indexOf("if (existing !== null) return existing;")).toBeLessThan(ensure.indexOf("await activateDesktopPen(page, timeoutMs)"));
-    // 모바일 사용자의 실제 경로: 독의 작업 패널을 열고 인스펙터의 레이어 탭을 고른다.
-    expect(ensure).toContain('[data-studio-mobile-editing-dock="true"]');
-    expect(ensure).toContain('[data-studio-mobile-workspace-toggle="true"]');
-    expect(ensure).toContain('getByRole("button", { name: "작업 패널", exact: true })');
-    expect(ensure).toContain('getAttribute("aria-expanded")');
-    expect(ensure).toContain('[data-studio-inspector-primary-tab="layers"]');
-    expect(ensure).toContain('getAttribute("aria-selected")');
-    expect(ensure).toContain("waitForStudioLayerCount(page");
-    // 최단 경로는 작업 메뉴의 "레이어 열기"다: 시트를 레이어 탭으로 직접 열고, 클릭 결과는
-    // 시트의 실제 상태 속성으로 검증해 로그한다(성공으로 가정하지 않는다).
-    expect(ensure).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
-    expect(ensure).toContain('[data-studio-sheet-id="props"]');
-    expect(ensure).toContain('getAttribute("data-studio-mobile-sheet")');
-    expect(ensure).toContain("props sheet open=");
+  it("레이어 관측은 실제 UI 수명과 같은 reader를 사용하고 모바일 시트를 되열지 않는다", () => {
+    expect(source).toContain("return readStudioSoakLayerCount(page, timeoutMs)");
+    expect(source).toContain("return waitForStudioSoakLayerCount(page, predicate, timeoutMs)");
+    expect(source).toContain("return withStudioSoakLayerNavigator(page, timeoutMs");
+    expect(layerCountUi).toContain('getByRole("button", { name: "레이어 열기", exact: true })');
+    expect(layerCountUi).toContain('getByRole("button", { name: "작업 패널", exact: true })');
+    expect(layerCountUi).toContain('[data-studio-inspector-primary-tab="layers"]:visible');
+    expect(layerCountUi).toContain('counter.getAttribute("data-studio-layer-available-count", { timeout: remaining() })');
+    expect(layerCountUi).toContain('counter.count() === 0');
+    expect(layerCountUi).toContain('button[data-inspector-control-id="panel.chrome.close"]');
+    expect(layerCountUi).toContain('state: "hidden"');
+    expect(layerCountUi).toContain("finally");
+    expect(source).not.toContain("if (surviving === null)");
+    const draw = sliceFunction("drawEvidenceStroke", "spawnPreview");
+    expect(draw.indexOf("await readStudioAvailableLayerCount(page)")).toBeLessThan(draw.indexOf("await prepareStudioSoakPointerRoute(page, cycle)"));
   });
 
   it("gates preflight and history churn on the mounted navigator instead of the raw count", () => {
