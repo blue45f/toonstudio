@@ -45,7 +45,7 @@ function timeoutMinutes(name, event, ref, shard) {
   return clauses.every((clause) => values.get(clause)) ? Number(enabled) : Number(fallback);
 }
 
-test("타입 작업 예산 8조합은 전체 분할 검사의 65분을 유지한다", () => {
+test("타입 작업 예산 8조합은 전체 타입 검사의 65분 상한을 유지한다", () => {
   let count = 0;
   for (const event of ["workflow_dispatch", "pull_request", "push", "merge_group"]) {
     for (const ref of ["refs/heads/main", "refs/heads/codex/test"]) {

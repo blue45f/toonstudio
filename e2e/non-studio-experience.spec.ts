@@ -95,7 +95,9 @@ test("public and workspace navigation connects references, research, discovery a
   await expect(page.getByRole("heading", { level: 1, name: "창작 리서치 데스크", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "리서치 통합 검색", exact: true })).toBeVisible();
 
-  await navigation.getByRole("link", { name: "작품 찾기", exact: true }).click();
+  const discover = navigation.getByRole("link", { name: "작품 찾기", exact: true });
+  await expect(discover).toHaveAttribute("href", "/discover");
+  await discover.click();
   await expect(page).toHaveURL(/\/discover$/u);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
   await page.getByRole("button", { name: "전체 메뉴", exact: true }).click();
@@ -109,6 +111,7 @@ test("public and workspace navigation connects references, research, discovery a
   if (await communityGroup.getAttribute("open") === null) await communitySummary.click();
   await expect(communityGroup).toHaveAttribute("open", "");
   await expect(communityLink).toHaveAccessibleName("커뮤니티");
+  await expect(communityLink).toHaveAttribute("href", "/community");
   await communityLink.click();
   await expect(communityMenu).toHaveCount(0);
   await expect(page).toHaveURL(/\/community$/u);
@@ -116,7 +119,9 @@ test("public and workspace navigation connects references, research, discovery a
   await page.getByRole("main").getByRole("link", { name: "창작자 갤러리", exact: true }).click();
   await expect(page).toHaveURL(/\/showcase$/u);
   await expect(page.getByRole("main").getByRole("heading", { level: 1 }).first()).toBeVisible();
-  await navigation.getByRole("link", { name: "내 작업", exact: true }).click();
+  const myWork = navigation.getByRole("link", { name: "내 작업", exact: true });
+  await expect(myWork).toHaveAttribute("href", "/studio");
+  await myWork.click();
   await expect(page).toHaveURL(/\/studio$/u);
   await expect(page.getByRole("region", { name: "작품 관리", exact: true })).toBeVisible();
 });

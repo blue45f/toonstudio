@@ -185,6 +185,7 @@ test("Local My work resumes the exact document context and keeps it after return
   await expect(projectCard).toBeVisible();
   await expect(projectCard).toHaveAttribute("data-recent-primary", "true");
   await expect(projectCard.getByText("최근 작업", { exact: true })).toBeVisible();
+  await expect(projectCard.locator("details").getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toHaveCount(0);
   await expect(projectCard.getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toBeVisible();
 
   const continueLink = projectCard.getByRole("link", { name: "이어서 작업", exact: true });
@@ -233,7 +234,11 @@ test("Local My work resumes the exact document context and keeps it after return
   await page.goto("/studio", { waitUntil: "domcontentloaded" });
   await expect(projectCard).toHaveCount(1);
   await expect(projectCard.getByText("최근 작업", { exact: true })).toBeVisible();
-  await expect(projectCard.getByText(/최근 페이지 · 확대 160%/u)).toBeVisible();
+  await expect(continueLink).toHaveAttribute(
+    "href",
+    `/studio/p/${PROJECT_ID}/d/${DOCUMENT_ID}?focus=cut%3A2&language=ko-KR&resume=latest&version=draft-7&workspace=comic`,
+  );
+  await expect(projectCard.getByText("최근 페이지 · 확대 160% · 선택 1개", { exact: true })).toBeVisible();
   await capturePageEvidence(page, testInfo, "studio-exact-resume-library-mobile");
   expect(pageErrors).toEqual([]);
 });

@@ -28,7 +28,8 @@ jobs:
   focused-validation:
     name: focused validation
     runs-on: ubuntu-24.04
-    timeout-minutes: 24
+    # PR의 대규모 related 검사는 24분 제한에 도달한 실행 근거에 따라 40분으로 제한한다.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 40 || 24 }}
     env:
       CI: "true"
       HUSKY: "0"
@@ -60,6 +61,7 @@ jobs:
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/authored-v1/*.glb' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/authored-v1/thumbnails/*.png' || '' }}
             ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/environments/refined-v6/passes/**/*.png' || '' }}
+            ${{ github.event_name == 'pull_request' && '/apps/web/public/assets/3d/hdri/*.hdr' || '' }}
             /apps/web/public/assets/3d/outfits/
             /apps/web/public/assets/3d/environments/refined-v6/manifest.json
             /apps/web/public/assets/3d/environments/refined-v6/render-passes-report.json

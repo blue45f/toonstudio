@@ -4,7 +4,7 @@ import { EMPTY_LESSON } from "../apps/web/src/domains/learn/learning-model";
 import { learningProgressStorageKey } from "../apps/web/src/domains/learn/learning-storage";
 
 import { expect, test, installBetaEventDismissal } from "./fixtures/non-studio-test";
-import { openLessonExample, openLessonNotes } from "./helpers/learn-lesson-navigation";
+import { openLessonLab, openLessonNotes } from "./helpers/learning-lesson-steps";
 
 import type { Page } from "@playwright/test";
 
@@ -100,7 +100,7 @@ test("mobile comparisons show one readable diagram and keyboard controls switch 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/learn/lessons/color-layers");
-  const lab = await openLessonExample(page);
+  const lab = await openLessonLab(page);
   const svg = lab.locator(".learn-diagram");
   await expect(svg).toHaveAttribute("data-view", "comparison");
   await lab.getByRole("button", { name: "기준만", exact: true }).focus();
@@ -110,18 +110,23 @@ test("mobile comparisons show one readable diagram and keyboard controls switch 
   await expect(svg).toHaveAttribute("viewBox", "320 0 320 360");
   expect(await lab.locator(".learn-diagram-scroll").evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await test.info().attach("mobile-clipping-comparison", { body: await page.locator(".learn-lab").screenshot(), contentType: "image/png" });
+  await test.info().attach("mobile-clipping-comparison", { body: await lab.screenshot(), contentType: "image/png" });
 });
 
 test("shared lab state restores paused and clipboard denial provides a privacy-safe manual link", async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => { throw new DOMException("blocked", "NotAllowedError"); } } }));
   await page.goto("/learn/lessons/color-layers?labValue=72&labFrame=200&labView=reference&notes=private&token=secret");
-  const lab = await openLessonExample(page);
+  const practice = page.getByRole("region", { name: "직접 만들어 보세요", exact: true });
+  const step = page.getByRole("navigation", { name: "수업 단계", exact: true }).getByRole("button", { name: "한 과제", exact: true });
+  // 공유 주소 자체가 조작 단계를 열어야 한다. helper로 수동 이동해서 잘못된 진입을 가리지 않는다.
+  await expect(step).toHaveAttribute("aria-current", "step");
+  const lab = practice.locator(".learn-lab");
+  await expect(lab).toBeVisible();
   await expect(lab.getByRole("slider").first()).toHaveValue("72");
   await expect(lab.getByRole("slider").nth(1)).toHaveValue("200");
   await expect(lab.getByRole("button", { name: "설명 재생", exact: true })).toBeVisible();
   await lab.getByRole("button", { name: "이 예제 설정 공유", exact: true }).click();
-  const input = page.getByLabel("직접 복사할 예제 링크", { exact: true });
+  const input = lab.getByLabel("직접 복사할 예제 링크", { exact: true });
   await expect(input).toBeVisible();
   const link = await input.inputValue();
   expect(link).toContain("labValue=72");
@@ -129,10 +134,12 @@ test("shared lab state restores paused and clipboard denial provides a privacy-s
   expect(link).not.toContain("private");
   expect(link).not.toContain("secret");
   await page.goto(link);
-  const reopenedLab = await openLessonExample(page);
-  await expect(reopenedLab.getByRole("slider").first()).toHaveValue("72");
-  await expect(reopenedLab.locator(".learn-diagram")).toHaveAttribute("data-view", "reference");
-  await expect(page.getByRole("button", { name: "설명 재생", exact: true })).toBeVisible();
+  await expect(step).toHaveAttribute("aria-current", "step");
+  await expect(lab).toBeVisible();
+  await expect(lab.getByRole("slider").first()).toHaveValue("72");
+  await expect(lab.getByRole("slider").nth(1)).toHaveValue("200");
+  await expect(lab.locator(".learn-diagram")).toHaveAttribute("data-view", "reference");
+  await expect(lab.getByRole("button", { name: "설명 재생", exact: true })).toBeVisible();
 });
 
 test("failed writes survive real other-tab edits and SPA navigation to record management", async ({ page, context }) => {
@@ -143,7 +150,6 @@ test("failed writes survive real other-tab edits and SPA navigation to record ma
   try {
     await other.addInitScript(() => sessionStorage.setItem("toonstudio-compat-dismissed", "true"));
     await other.goto(new URL("/learn/lessons/story-board", page.url()).href);
-    await openLessonNotes(other);
     await page.evaluate((guestKey) => {
       const original = Storage.prototype.setItem;
       Storage.prototype.setItem = function (key: string, value: string) {
@@ -152,7 +158,7 @@ test("failed writes survive real other-tab edits and SPA navigation to record ma
       };
     }, GUEST_STORAGE_KEY);
     await page.getByLabel("나의 실습 메모", { exact: true }).fill("반드시 보존할 미저장 메모");
-    await other.getByLabel("나의 실습 메모", { exact: true }).fill("다른 탭 메모");
+    await (await openLessonNotes(other)).fill("다른 탭 메모");
     await expect(page.locator(".learn-page > [role=status]")).toContainText("다른 탭");
     await expect(page.getByLabel("나의 실습 메모", { exact: true })).toHaveValue("반드시 보존할 미저장 메모");
     await openLearningRecords(page);
