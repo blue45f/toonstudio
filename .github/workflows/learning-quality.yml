@@ -22,7 +22,8 @@ concurrency:
 jobs:
   learning-quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 2026-11-13 실행은 실패 없이 39/53과업을 마친 뒤 30분 제한에 도달했다. 전체 과업을 유지하는 유한 예산이다.
+    timeout-minutes: 45
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       VITE_CATALOG_SOURCE: static
