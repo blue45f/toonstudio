@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -23,7 +23,13 @@ describe("EngineeringPlaybookPage", () => {
     renderPlaybook();
 
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
-    const techNav = screen.getByRole("navigation", { name: /기술 문서 메뉴|Engineering documents/u });
+    const menu = document.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+    const summary = menu?.querySelector("summary");
+    if (!menu || !summary) throw new Error("기술 문서 메뉴 진입점이 없습니다.");
+    expect(menu.open).toBe(false);
+    fireEvent.click(summary);
+    expect(menu.open).toBe(true);
+    const techNav = within(menu).getByRole("navigation", { name: /기술 문서 목차|Engineering document index/u });
     expect(within(techNav).getByRole("link", { name: /플레이북|Playbook/u }).getAttribute("aria-current")).toBe("page");
     expect(screen.getByRole("heading", { level: 2, name: /핵심 요약|Key summary/u })).toBeTruthy();
 

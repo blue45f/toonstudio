@@ -107,7 +107,7 @@ const COPY = {
     allProjects: "모든 프로젝트",
     emptyTitle: "아직 이어갈 Studio 작업이 없습니다",
     emptyBody: "새 작품을 만들거나 기존 파일을 가져오세요. 먼저 살펴보고 싶다면 실제 제작 흐름과 분리된 샘플 프로젝트를 열 수 있습니다.",
-    createAction: "새 작품 만들기",
+    createAction: "작품 시작하기",
     importAction: "기존 파일 가져오기",
     sampleAction: "10분 샘플로 보기",
     quickTitle: "바로 확인할 것",
@@ -180,7 +180,7 @@ const COPY = {
     allProjects: "All projects",
     emptyTitle: "There is no Studio work to continue yet",
     emptyBody: "Create a new work or bring in an existing file. You can also open the isolated sample project to inspect the complete production flow first.",
-    createAction: "Create a new work",
+    createAction: "Start a work",
     importAction: "Import an existing file",
     sampleAction: "Explore the 10-minute sample",
     quickTitle: "Check next",
@@ -474,7 +474,7 @@ export function MySpaceHubPage() {
               icon={Layers}
               title={copy.emptyTitle}
               description={copy.emptyBody}
-              primary={{ href: "/studio/new", label: copy.createAction }}
+              primary={{ href: "/create", label: copy.createAction }}
               secondary={{ href: "/studio/import", label: copy.importAction }}
               sample={{ href: "/production/projects/sample-project/overview", label: copy.sampleAction }}
               className="p-3 sm:p-5 [&_h2]:text-sm sm:[&_h2]:text-lg [&_p]:mt-1 [&_p]:text-xs [&_p]:leading-4 [&>div]:gap-2 [&>div>span]:hidden sm:[&>div>span]:grid [&>div>div>div]:mt-2"

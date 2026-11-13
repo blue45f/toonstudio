@@ -40,11 +40,11 @@ export function IntegrationPage({
   const bt = useBilingual("IntegrationPage");
   return (
     <Container size={wide ? "wide" : "prose"} className="py-4 sm:py-7">
-      <header className="mb-7">
+      <header className="mb-7" data-site-page-header-size="default">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="eyebrow text-accent">{eyebrow}</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h1>
+            <h1 className="mt-2 text-[length:var(--site-task-heading-size)] font-bold leading-[1.2] tracking-[-0.025em] text-fg">{title}</h1>
             <p className="mt-3 max-w-3xl text-pretty text-sm leading-7 text-fg-2 sm:text-base">
               {description}
             </p>

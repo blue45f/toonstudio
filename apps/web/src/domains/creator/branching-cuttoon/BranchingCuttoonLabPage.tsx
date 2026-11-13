@@ -2,7 +2,6 @@
 // 문구는 useBranchingT()(useT 를 감싼 훅)가 돌려주는 해소 함수 t 로 만든다. 같은 언어에서는 t 가 그대로라서 React Compiler 가 t 호출
 // 결과를 캐시하면, 나중에 도착하는 런타임 번역이 열려 있는 화면에 반영되지 않는다. 그래서 이 화면의 컴포넌트 파일은 메모이제이션에서 뺀다.
 
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import {
   createBranchingGraph,
   validateBranchingCuttoon,
@@ -82,7 +81,6 @@ function isPristine(graph: BranchingCuttoonGraph): boolean {
  */
 export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProps): ReactElement {
   const t = useBranchingT();
-  const bt = useBilingual("BranchingCuttoonLabPage");
   const [topologyMode, setTopologyMode] = useState<(typeof TOPOLOGY_MODES)[number]["id"]>("diamond-convergence");
   const [auditRule, setAuditRule] = useState<(typeof AUDIT_RULES)[number]["id"]>("deadend-zero-check");
   const activeTopology = TOPOLOGY_MODES.find((item) => item.id === topologyMode) ?? TOPOLOGY_MODES[0];
@@ -193,7 +191,7 @@ export function BranchingCuttoonLabPage({ storage }: BranchingCuttoonLabPageProp
           <BranchingNotice tone="info" className="mt-4 max-w-3xl">{t("branchingCuttoon.page.limitsNote")}</BranchingNotice>
         </header>
 
-        <details className="rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{bt("분기 검증 고급 설정", "Advanced branch validation")}</summary>        <section
+        <details className="rounded-2xl border border-line bg-card px-4"><summary className="min-h-12 cursor-pointer py-3 text-sm font-semibold text-fg">{t("branchingCuttoon.rea.advancedSettings")}</summary>        <section
           data-testid="branching-cuttoon-rea-graph-bar"
           aria-label={t("branchingCuttoon.rea.label")}
           className="mt-3 mb-5 rounded-2xl border border-line bg-card p-4"

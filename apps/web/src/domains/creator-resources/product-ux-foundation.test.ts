@@ -14,6 +14,7 @@ const ACCOUNT_ROUTES = "apps/web/src/app/routes/groups/account.routes.tsx";
 const SITE_NAVIGATION = "apps/web/src/shared/components/site-navigation.ts";
 const SITE_HEADER = "apps/web/src/shared/components/site-header.tsx";
 const MOBILE_NAV = "apps/web/src/shared/components/site-header-mobile-nav.tsx";
+const MENU_DESTINATIONS = "apps/web/src/shared/components/SiteMenuDestinations.tsx";
 const COMMAND_PALETTE = "apps/web/src/shared/components/command-palette-data.ts";
 const LEGAL_ROUTES = "apps/web/src/app/routes/groups/legal.routes.tsx";
 const MARKET_NAV = "apps/web/src/domains/market/components/MarketNavHeader.tsx";
@@ -80,11 +81,19 @@ describe("purpose-first product UX foundation", () => {
   it("keeps purpose-level active state separate from exact drawer destinations", () => {
     const header = readFileSync(SITE_HEADER, "utf8");
     const mobile = readFileSync(MOBILE_NAV, "utf8");
+    const destinations = readFileSync(MENU_DESTINATIONS, "utf8");
     expect(header).toContain("function purposeActive(");
     expect(header).toContain("function useDestinationActive()");
     expect(header).toContain("isPurposeActive={isPurposeActive}");
     expect(mobile).toContain("isPurposeActive: (href: string, exact?: boolean) => boolean;");
-    expect(mobile).toMatch(/const active = currentPurposeHref === undefined\s*\? isPurposeActive\(item\.href, item\.exact\)\s*: currentPurposeHref === item\.href/u);
+    expect(mobile).toContain('from "./site-mobile-purpose"');
+    expect(mobile).toContain("const resolvedPurposeHref = currentPurposeHref === undefined ? siteMobilePurposeHref(pathname) : currentPurposeHref;");
+    expect(mobile).toMatch(/const active = item\.id === "all-menu"\s*\? pathname === "\/sitemap" \|\| pathname\.startsWith\("\/sitemap\/"\)\s*: resolvedPurposeHref === item\.href/u);
+    // 검색한 실제 목적지와 고정 시작 주소는 넓은 목적 상태를 재사용하지 않는다.
+    expect(mobile).toContain("<SiteMenuDestinations");
+    expect(mobile).toContain("isActive={isActive}");
+    expect(destinations).toContain('aria-current={isActive(item.href, item.exact) ? "page" : undefined}');
+    expect(destinations).toContain('aria-current={isActive(item.href, true) ? "page" : undefined}');
     expect(mobile).toContain("const active = isActive(item.href, item.exact);");
   });
 

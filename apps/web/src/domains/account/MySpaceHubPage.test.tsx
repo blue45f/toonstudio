@@ -97,7 +97,7 @@ describe("MySpaceHubPage next-action center", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "아직 이어갈 Studio 작업이 없습니다" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "새 작품 만들기" }).getAttribute("href")).toBe("/studio/new");
+    expect(screen.getByRole("link", { name: "작품 시작하기" }).getAttribute("href")).toBe("/create");
     expect(screen.getByRole("link", { name: "기존 파일 가져오기" }).getAttribute("href")).toBe("/studio/import");
     expect(screen.getByRole("link", { name: "10분 샘플로 보기" }).getAttribute("href")).toBe("/production/projects/sample-project/overview");
     expect(screen.queryByText("읽기 상태")).toBeNull();

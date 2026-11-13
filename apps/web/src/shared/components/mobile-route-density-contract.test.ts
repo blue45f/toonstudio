@@ -27,11 +27,17 @@ describe("mobile route density contract", () => {
 
   it("keeps research and market destinations reachable without offscreen controls", () => {
     const resources = source("../../domains/creator-resources/ResourceLayout.tsx");
+    const researchNavigation = source("../../domains/creator-resources/ResearchNavigation.tsx");
     const marketHeader = source("../../domains/market/components/MarketNavHeader.tsx");
     const marketBrowse = source("../../domains/market/pages/MarketBrowsePage.tsx");
 
-    expect(resources).toContain('className="resource-menu-mobile"');
-    expect(resources).toContain("리서치·학습 전체 메뉴");
+    expect(resources).toContain("<ResearchNavigation");
+    expect(researchNavigation).toContain("data-research-task-menu");
+    expect(researchNavigation).toContain('aria-label={bt("창작 리서치 메뉴", "Creative research menu")}');
+    expect(researchNavigation).toContain("RESOURCE_MENU_GROUPS.map");
+    expect(researchNavigation).toContain("resourceMenuGroupPages(group).map");
+    expect(researchNavigation).toContain("grid grid-cols-2");
+    expect(researchNavigation).toContain("min-h-11");
     expect(marketHeader).toContain("조건 맞춤");
     expect(marketHeader).toContain("후보 비교");
     // 마켓 화면이 한·영 문구로 옮겨 가도 라이선스 필터는 이름 붙은 조작부로 남는다.
@@ -43,6 +49,8 @@ describe("mobile route density contract", () => {
     const beta = source("../../domains/creator/StudioBetaNoticeGate.tsx");
     const shell = source("./public-site-shell.css");
     const mobileNavigation = source("./site-header-mobile-nav.tsx");
+    const menuDestinations = source("./SiteMenuDestinations.tsx");
+    const menuStyles = source("./site-menu.css");
     const scene = source("./route-purpose-scene.css");
     const workspace = source("./workspace/workspace-visual-v3.css");
 
@@ -65,9 +73,16 @@ describe("mobile route density contract", () => {
     const trigger = header.match(/data-site-mobile-menu-trigger="true"[\s\S]*?className="([^"]*)"/u)?.[1] ?? "";
     expect(trigger).not.toBe("");
     expect(trigger).not.toMatch(/(?:^|\s)(?:hidden|\S+:hidden)(?:\s|$)/u);
-    expect(mobileNavigation).toContain("const navigationGroups = resolveNavigationGroupsFor()");
-    expect(mobileNavigation).toContain("navigationGroups.map((group)");
-    expect(mobileNavigation).toContain('<Link href="/sitemap"');
+    // 전체 목록은 별도 목적 페이지와 정본 이름 검색으로 연결한다. 메뉴 안에 전부 쌓지 않는다.
+    expect(mobileNavigation).toContain("<SiteMenuDestinations");
+    expect(menuDestinations).toContain("resolveNavigationGroupsFor().map((group)");
+    expect(menuDestinations).toContain('href={`/sitemap/${group.id}`}');
+    expect(menuDestinations).toContain("const results = searchSiteMenu(query)");
+    expect(menuDestinations).toContain('type="search"');
+    expect(mobileNavigation).toContain("SITE_NAVIGATION_ITEMS.allMenu");
+    expect(SITE_NAVIGATION_ITEMS.allMenu.href).toBe("/sitemap");
+    expect(menuStyles).toMatch(/\.site-menu-task,\.site-menu-results a\s*\{[^}]*min-height:\s*60px/u);
+    expect(menuStyles).toMatch(/\.site-menu-search__field button\s*\{[^}]*min-height:\s*44px/u);
     expect(mobileNavigation).toContain("<SiteMenuUtilities");
     const reachable = new Set([
       ...resolveNavigationGroupsFor().flatMap((group) => group.items),

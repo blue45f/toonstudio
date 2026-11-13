@@ -166,7 +166,7 @@ export const OPS_SLIDES = [
     ),
     facts: [
       { value: "5,100+", label: t("웹 테스트 파일(Vitest, git 추적 기준)", "Web test files (Vitest, tracked by git)") },
-      { value: "66", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
+      { value: "68", label: t("E2E 스펙(Playwright)", "E2E specs (Playwright)") },
       { value: "102", label: t("GitHub Actions 워크플로 파일", "GitHub Actions workflow files") },
       { value: "0", label: t("앱 간 직접 import(래칫)", "Cross-app imports (ratchet)") },
     ],
@@ -177,8 +177,8 @@ export const OPS_SLIDES = [
     ],
     stack: ["Vitest", "Testing Library", "Playwright", "@axe-core/playwright", "GitHub Actions"],
     notes: t(
-      "건강검진표처럼 오늘 센 값만 읽습니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 66개, 워크플로 102개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(0)과 도메인 간 깊은 import(0)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 0입니다.\n접근성은 코어 스모크가 모션 감소 설정에서 axe·터치·초점 복귀를 검사합니다. 강제 색상은 수동 매트릭스이며 키보드 탐색 전수 검증은 아닙니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
-      "Read it like a health-check sheet: only values counted today. Web test files exceed 5,100, with 66 E2E specs and 102 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (0) and cross-domain deep imports (0) are caps, so CI fails if they grow; measured deep imports are 0.\nAccessibility: the core smoke uses reduced motion and checks axe, touch and focus return. Forced colors remain in the manual matrix; this is not exhaustive keyboard navigation coverage. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
+      "2026-11-13 Git 추적 파일을 센 값입니다. 웹 테스트 파일 5,100개 이상, E2E 스펙 68개, 워크플로 102개입니다.\n래칫: 앱 간 import는 0, 레거시 shared→domain(0)과 도메인 간 깊은 import(0)는 상한이라 늘면 CI가 실패하며, 깊은 import 실측은 0입니다.\n접근성은 코어 스모크가 모션 감소 설정에서 axe·터치·초점 복귀를 검사합니다. 강제 색상은 수동 매트릭스이며 키보드 탐색 전수 검증은 아닙니다. 근거는 architecture-boundary-ratchet.json입니다. 다음은 성능입니다. 질문이 나오면 ‘Architecture boundary ratchet’ 카드를 엽니다.",
+      "These are Git-tracked file counts as of 2026-11-13. Web test files exceed 5,100, with 68 E2E specs and 102 workflows.\nRatchet: cross-app imports stay at 0, and legacy shared→domain (0) and cross-domain deep imports (0) are caps, so CI fails if they grow; measured deep imports are 0.\nAccessibility: the core smoke uses reduced motion and checks axe, touch and focus return. Forced colors remain in the manual matrix; this is not exhaustive keyboard navigation coverage. The basis is architecture-boundary-ratchet.json. Next, performance. If asked, open the ‘Architecture boundary ratchet’ card.",
     ),
     chapterId: "quality",
     evidence: [

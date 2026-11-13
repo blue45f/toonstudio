@@ -46,7 +46,13 @@ function expectTocTargetsExist(toc: HTMLElement): number {
 }
 
 function expectCurrentTechPage(label: RegExp): void {
-  const techNav = screen.getByRole("navigation", { name: /기술 문서 메뉴|Engineering documents/u });
+  const menu = document.querySelector<HTMLDetailsElement>("[data-engineering-catalog-menu]");
+  const summary = menu?.querySelector("summary");
+  if (!menu || !summary) throw new Error("기술 문서 메뉴 진입점이 없습니다.");
+  expect(menu.open).toBe(false);
+  fireEvent.click(summary);
+  expect(menu.open).toBe(true);
+  const techNav = within(menu).getByRole("navigation", { name: /기술 문서 목차|Engineering document index/u });
   expect(within(techNav).getByRole("link", { name: label }).getAttribute("aria-current")).toBe("page");
   const aboutNav = screen.getByRole("navigation", { name: /ToonStudio 소개 메뉴|ToonStudio introduction/u });
   expect(within(aboutNav).getByRole("link", { name: /기술과 신뢰|Technology & trust/u }).getAttribute("aria-current")).toBe("location");

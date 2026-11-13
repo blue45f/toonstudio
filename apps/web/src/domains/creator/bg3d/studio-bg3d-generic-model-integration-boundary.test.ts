@@ -5,6 +5,10 @@ import { describe, expect, it } from "vitest";
 import { readStudioBg3dEditorSource } from "./read-studio-bg3d-editor-source";
 
 const source = readStudioBg3dEditorSource();
+const taskNavigationSource = readFileSync(
+  new URL("./StudioBg3dTaskNavigation.tsx", import.meta.url),
+  "utf8",
+);
 const runtimeHintsSource = readFileSync(
   new URL("../studio-generic-3d-runtime-hints.ts", import.meta.url),
   "utf8",
@@ -47,12 +51,16 @@ function expectInOrder(haystack: string, needles: readonly string[]): void {
 describe("Studio BG3D generic model mode integration boundary", () => {
   it("owns an explicit generic 3D tab without coupling it to a VRM runtime", () => {
     expect(source).toContain('{ id: "models", label: "에셋"');
-    expect(source).toContain("aria-label={tab.label}");
+    // 탭의 정본 메타데이터와 명령은 호스트가 소유하고, 목적 메뉴가 접근성 라벨을 그린다.
+    expect(source).toContain("<StudioBg3dTaskNavigation tabs={panelTabs} active={activePanelTab} onSelect={handlePanelTabChange}");
+    expect(taskNavigationSource).toContain('tabs: ["templates", "shapes", "models"]');
+    expect(taskNavigationSource).toContain("aria-label={tab.label}");
     expect(source).toContain("<StudioGeneric3dModelModePanel");
     expect(source).toContain("VRM 별도");
     expect(source).toContain("VRM 아바타의 humanoid·표정·이용 조건과 섞지 않고");
     expect(source).not.toContain('from "../vrm/StudioVrmPoser"');
     expect(source).not.toContain('from "./studio-vrm');
+    expect(taskNavigationSource).not.toMatch(/from\s+["'][^"']*vrm/iu);
   });
 
   it("records the original GLB, glTF, or OBJ/MTL boundary only after canonical admission", () => {

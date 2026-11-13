@@ -178,14 +178,14 @@ export function ApiKeyHubPage() {
         ← {ko ? "연동 센터" : "Integration center"}
       </Link>
 
-      <header className="mb-7 mt-3">
+      <header className="mb-7 mt-3" data-site-page-header-size="default">
 
         <div className="max-w-3xl">
             <p className="eyebrow flex items-center gap-1.5 text-accent">
               <KeyRound size={14} aria-hidden /> API KEY HUB
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2.5">
-              <h1 className="text-3xl font-black tracking-tight text-fg sm:text-4xl">
+              <h1 className="text-[length:var(--site-task-heading-size)] font-bold leading-[1.2] tracking-[-0.025em] text-fg">
                 {ko ? "API 키 허브" : "API key hub"}
               </h1>
               <span className="inline-flex min-h-7 items-center rounded-full border border-line bg-panel px-2.5 text-xs font-bold text-fg-2">
