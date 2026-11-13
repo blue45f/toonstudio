@@ -369,10 +369,11 @@ for (const fixture of [
     await expect(page.getByTestId("openai-assist-status-badge")).toHaveText("서버 OpenAI 키 확인 필요");
     await expect(page.getByTestId("openai-assist-key-notice")).toContainText("검수 fixture에는 서버 OpenAI 키가 없습니다.");
     assert(apiRequests.some((request) => request.label === fixture.label
-      && request.method === "GET" && request.pathname === "/api/studio-ai/openai-assist/status"));
+      && request.method === "GET" && request.pathname === "/api/studio-ai/openai-assist/status"),
+    `${fixture.label}: OpenAI 키 상태 조회가 없습니다. 도우미 탭과 상태 조회 fixture를 확인하세요.`);
     assert.equal(apiRequests.some((request) => request.label === fixture.label
       && request.method !== "GET" && request.pathname.startsWith("/api/studio-ai/openai-assist")), false,
-    `${fixture.label} must not execute an AI generation request`);
+    `${fixture.label}: 검수 중 AI 생성 요청이 발생했습니다. 상태 조회 fixture와 도우미 진입을 확인하세요.`);
     await assertNoPageOverflow(page, fixture.width, `${fixture.label}-focused-ai`);
 
     await page.getByRole("tab", { name: "팀·권한" }).click();
