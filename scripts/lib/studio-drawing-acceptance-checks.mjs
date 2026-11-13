@@ -15,6 +15,34 @@ export async function auditDrawingControls(page) {
   }
   await dialog.getByRole("button", { name: "색상 선택 취소", exact: true }).click();
   await page.getByRole("button", { name: "설정 열기", exact: true }).click();
+  const toolbarEditor = page.locator('[data-studio-settings-editor="toolbar"][role="dialog"]');
+  const readyDeadline = Date.now() + 45_000;
+  const remaining = () => {
+    const timeout = readyDeadline - Date.now();
+    if (timeout <= 0) throw new Error("도구막대 설정창의 표시 준비가 45초를 초과했습니다.");
+    return timeout;
+  };
+  await expect(toolbarEditor).toBeVisible({ timeout: remaining() });
+  // 완전히 표시된 설정창을 측정하며, 대비 검사 대상과 기준은 그대로 유지한다.
+  const entryState = await toolbarEditor.evaluateHandle((element) => ({
+    element,
+    animations: element.getAnimations().filter((animation) => animation.animationName === "dialog-materialize" && animation.effect?.target === element),
+  }), undefined, { timeout: remaining() });
+  try {
+    await page.waitForFunction((state) => {
+      const element = state.element;
+      if (!element.isConnected || !element.matches('[data-studio-settings-editor="toolbar"][role="dialog"]')) return false;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      const current = element.getAnimations().filter((animation) => animation.animationName === "dialog-materialize" && animation.effect?.target === element);
+      for (const animation of current) if (!state.animations.includes(animation)) state.animations.push(animation);
+      if (style.animationName.split(",").map((name) => name.trim()).includes("dialog-materialize") && state.animations.length === 0) return false;
+      return box.width > 0 && box.height > 0 && style.display !== "none" && style.visibility === "visible" && Number(style.opacity) === 1
+        && state.animations.every((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime) && animation.playState === "finished" && !animation.pending);
+    }, entryState, { timeout: remaining() });
+  } finally {
+    await entryState.dispose();
+  }
   const result = await new AxeBuilder({ page }).include('[data-studio-toolbar-configurator]').analyze();
   results.push({ surface: "toolbar-configurator", severe: result.violations.filter((item) => ["serious", "critical"].includes(item.impact)).map(({ id, nodes }) => ({ id, targets: nodes.map((node) => node.target) })) });
   await page.getByRole("button", { name: "취소", exact: true }).click();
