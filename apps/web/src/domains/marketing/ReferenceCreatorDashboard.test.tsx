@@ -173,7 +173,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     fireEvent.click(within(hero).getByRole("link", { name: "작품 시작하기" }));
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/create");
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
     expect(completeAi).not.toHaveBeenCalled();
   });
 
@@ -452,18 +452,15 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
   });
 
-  it("Luna와 아이디어 입력은 이름 있는 메뉴에서 펼치고 작품 시작은 바로 제공한다", async () => {
+  it("Luna와 아이디어 입력 및 더 알아보기 핵심 작업실을 접힘 없이 기본 노출하고 작품 시작을 바로 제공한다", async () => {
     await dashboard();
     const hero = document.querySelector('[data-home-band="hero"]');
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     expect(hero?.contains(luna)).toBe(true);
     const details = luna.closest("details");
-    expect(details?.open).toBe(false);
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
-    expect(screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." }).querySelector("a")?.closest("details")).toBeNull();
-    openLunaHelp();
-    openIdeaHelp();
     expect(details?.open).toBe(true);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
+    expect(screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." }).querySelector("a")?.closest("details")).toBeNull();
     // 중간 섹션으로 따로 서 있지 않다.
     expect(document.querySelector(".rd-luna-section")).toBeNull();
     const forms = document.querySelectorAll("form.rd-idea");
@@ -474,19 +471,19 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(form?.contains(screen.getByRole("button", { name: "시작하기" }))).toBe(true);
   });
 
-  it("홈은 상태별 히어로·예시/다른 시작·작품 발견·더 알아보기 4밴드 순서이고 더 알아보기는 기본 접힘이다", async () => {
+  it("홈은 상태별 히어로·예시/다른 시작·작품 발견·더 알아보기 4밴드 순서이고 더 알아보기는 기본 펼침이다", async () => {
     await dashboard();
     const root = document.querySelector("[data-reference-dashboard]");
     const bands = [...(root?.querySelectorAll("[data-home-band]") ?? [])].map((element) => element.getAttribute("data-home-band"));
     expect(bands).toEqual(["hero", "continue", "discover", "more"]);
     const more = document.querySelector<HTMLDetailsElement>("details.rd-more");
-    expect(more?.open).toBe(false);
-    // 시작 카드·핵심 작업실·에디터 미리보기·챕터 링크는 접힌 밴드 아래로 내려가 있다.
+    expect(more?.open).toBe(true);
+    // 시작 카드·핵심 작업실·에디터 미리보기·챕터 링크는 더 알아보기 밴드 안에서 즉시 노출된다.
     expect(more?.querySelector(".rd-quick")).not.toBeNull();
     expect(more?.querySelector(".rd-core-studios")).not.toBeNull();
     expect(more?.querySelector(".rd-editor")).not.toBeNull();
     expect(more?.querySelector(".rd-chapters")).not.toBeNull();
-    // 예시 작품 선반은 접힌 밴드 밖, 발견 미리보기보다 위에 있다.
+    // 예시 작품 선반은 더 알아보기 밴드 밖, 발견 미리보기보다 위에 있다.
     expect(more?.querySelector(".rd-examples")).toBeNull();
     expect(more?.querySelector(".rd-discover")).toBeNull();
   });

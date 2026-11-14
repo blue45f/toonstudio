@@ -16,9 +16,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { MarketCategoryTiles } from "../components/MarketCategoryTiles";
+import { MarketGrandAtelierShowcase } from "../components/MarketGrandAtelierShowcase";
 import { MarketHomePresets } from "../components/MarketHomePresets";
 import { MarketHomeSectionNavigation } from "../components/MarketHomeSectionNavigation";
-import { MARKET_HOME_SECTIONS, marketHomeSectionFromSearch } from "../components/market-home-section";
+import { MARKET_HOME_SECTIONS, marketHomeSectionFromSearch, type MarketHomeSection } from "../components/market-home-section";
 import { MarketHomeSearch } from "../components/MarketHomeSearch";
 import { MarketNavHeader } from "../components/MarketNavHeader";
 import { MarketMaterialPreview } from "../components/MarketMaterialPreview";
@@ -61,7 +62,7 @@ import "./market-home-visual.css";
 const MOBILE_RECENT_LIMIT = 6;
 const POPULAR_TAG_LIMIT = 8;
 
-type MarketQuickFilterId = "all" | "free-cc0" | "commercial" | "brush" | "space-3d";
+type MarketQuickFilterId = "all" | "free-cc0" | "commercial" | "no-ai" | "team-ready" | "brush" | "space-3d";
 
 const MARKET_QUICK_FILTERS: readonly {
   readonly id: MarketQuickFilterId;
@@ -71,15 +72,20 @@ const MARKET_QUICK_FILTERS: readonly {
   { id: "all", ko: "전체", en: "All" },
   { id: "free-cc0", ko: "무료·CC0", en: "Free · CC0" },
   { id: "commercial", ko: "상업용 즉시 가능", en: "Commercial ready" },
+  { id: "no-ai", ko: "No-AI 직접 제작 검증", en: "No-AI verified" },
+  { id: "team-ready", ko: "팀 공동 작업 공유 가능", en: "Team share ready" },
   { id: "brush", ko: "펜·브러시", en: "Pens & Brushes" },
   { id: "space-3d", ko: "3D 배경·포즈", en: "3D Spaces & Poses" },
 ];
 
-/** 마켓 목적별 화면은 URL로 나누고 실제 소재·미리보기 상태는 유지한다. */
+/** 기본 /market 진입에서는 통합 큐레이션 허브를 한눈에 펼치고, 명시적 ?section= 주소에서는 해당 구역에 집중한다. */
 export function MarketHomePage() {
   const t = useBilingual("MarketHomePage");
   const { search } = useLocation();
   const section = marketHomeSectionFromSearch(search);
+  const explicitSectionParam = new URLSearchParams(search).get("section")?.trim().toLowerCase() ?? "";
+  const isUnifiedHub = section === "buy" && explicitSectionParam !== "buy";
+  const showBand = (band: MarketHomeSection) => isUnifiedHub || section === band;
   const marketHomeDescription = t(
     "웹툰 템플릿, 2D·3D 에셋, 브러시, 팔레트와 필터를 찾고 미리 본 뒤 ToonStudio 프로젝트에 바로 연결하세요.",
     "Find and preview webtoon templates, 2D/3D assets, brushes, palettes, and filters, then connect them straight to your ToonStudio project.",
@@ -155,6 +161,12 @@ export function MarketHomePage() {
       if (quickFilterId === "commercial") {
         return item.license !== "cc-by-nc-4.0";
       }
+      if (quickFilterId === "no-ai") {
+        return item.containsAi === false;
+      }
+      if (quickFilterId === "team-ready") {
+        return item.license === "cc0-1.0" || item.license === "cc-by-4.0";
+      }
       if (quickFilterId === "brush") {
         return item.kind === "brush";
       }
@@ -193,7 +205,7 @@ export function MarketHomePage() {
   return (
     <div className="market-home-front">
       <MarketHomeSectionNavigation section={section} />
-      {section === "buy" ? <>
+      {showBand("buy") ? <>
       <div data-market-band="buy">
       <section className="border-b border-line bg-ledger">
         <Container size="wide" className="py-6 sm:py-8 lg:py-10">
@@ -234,6 +246,8 @@ export function MarketHomePage() {
           </SitePageHeader>
         </Container>
       </section>
+
+      <MarketGrandAtelierShowcase />
 
       <Container size="wide" className="pt-6 sm:pt-8">
         <MarketHomePresets activeId={activePresetId} onSelect={setActivePresetId} allButtonRef={allPresetRef} />
@@ -367,7 +381,7 @@ export function MarketHomePage() {
       </div>
       </> : null}
 
-      {section === "explore" ? <div data-market-band="explore">
+      {showBand("explore") ? <div data-market-band="explore">
       <Container size="wide">
         <MarketCategoryTiles />
         <MarketNavHeader />
@@ -519,7 +533,7 @@ export function MarketHomePage() {
         </Container>
       </section>
 
-      {materials3D.length > 0 ? (
+      {!isUnifiedHub && materials3D.length > 0 ? (
         <Container size="wide" className="py-10 sm:py-12">
           <div className="flex items-baseline justify-between gap-3">
             <div>
@@ -671,7 +685,7 @@ export function MarketHomePage() {
 
       </div> : null}
 
-      {section === "sell" ? <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
+      {showBand("sell") ? <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
         <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-2xl">
             <p className="eyebrow text-accent">FOR SELLERS</p>
@@ -701,7 +715,7 @@ export function MarketHomePage() {
         </Container>
       </section> : null}
 
-      {section === "guide" ? <div data-market-band="guide">
+      {showBand("guide") ? <div data-market-band="guide">
       <Container size="wide" className="pb-14">
         <SiteDisclosure
           className="mb-10"

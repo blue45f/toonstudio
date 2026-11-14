@@ -201,9 +201,9 @@
   .site-header__primary { display: flex; }
 }
 
-/* 주 메뉴가 펼쳐지는 1180~1599px에서는 검색을 아이콘으로 접어 메뉴와 계정 조작 공간을 지킨다. */
-@media (768px <= width < 1180px), (width >= 1600px) {
-  .site-header__search { width: clamp(9rem, 13vw, 11rem); padding-inline: 10px; }
+/* 주 메뉴가 펼쳐지는 1180~1359px에서는 검색을 아이콘으로 접고, 1360px 이상 데스크톱에서는 검색 문구와 ⌘K 배지를 상시 노출한다. */
+@media (768px <= width < 1180px), (width >= 1360px) {
+  .site-header__search { width: clamp(10.5rem, 14vw, 13.75rem); padding-inline: 11px; }
   .site-header__search-label { display: inline; }
 }
 
@@ -212,8 +212,7 @@
   .site-header__search-label { display: none; }
 }
 
-@media (width >= 1600px) {
-  .site-header__search { width: 12rem; }
+@media (width >= 1360px) {
   .site-header__search-shortcut { display: inline-flex; }
 }
 

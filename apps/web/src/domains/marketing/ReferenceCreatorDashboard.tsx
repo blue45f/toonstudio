@@ -58,8 +58,12 @@ export function ReferenceCreatorDashboard() {
       <HomeNowCard>
       <section className="rd-clarity-hero" aria-labelledby="creator-hero-title">
         <div className="rd-clarity-copy">
+          <p className="rd-clarity-eyebrow">
+            <Sparkles size={13} aria-hidden="true" />
+            <span>{bi("GRAND ATELIER V4 · 초보자 1클릭 시작 + 전문 창작·협업 통합", "GRAND ATELIER V4 · 1-CLICK START + FULL STUDIO & COLLAB")}</span>
+          </p>
           <h1 id="creator-hero-title">{bi("상상한 장면을,", "Imagine a scene.")}<br /><span>{bi("나의 작품으로.", "Make it your story.")}</span></h1>
-          <p>{bi("이야기를 쓰고, 그리고, 이어가세요.", "Write, draw, and keep your story going.")}</p>
+          <p>{bi("이야기를 쓰고, 그리고, 팀과 함께 완성하세요. 접혀 있던 아이디어 시작창·루나 가이드·핵심 작업실을 한 화면에서 바로 엽니다.", "Write, draw, and finish your story with your team. Start from an idea, Luna guidance, or core studios right on one screen.")}</p>
           <div className="rd-clarity-actions">
             <Link className="rd-clarity-start" href="/create">{bi("작품 시작하기", "Start a work")}<ArrowRight size={20} aria-hidden="true" /></Link>
             <Link className="rd-clarity-browse" href="/discover">{bi("둘러보기", "Explore")}<ChevronRight size={18} aria-hidden="true" /></Link>
@@ -80,7 +84,7 @@ export function ReferenceCreatorDashboard() {
         </ol>
       </nav>
       <div ref={helpersRef} className="rd-clarity-helpers">
-        <details className="rd-idea-help">
+        <details className="rd-idea-help" open>
           <summary className="rd-optional-summary"><PencilLine size={16} aria-hidden="true" /><span>{bi("아이디어 쓰기 · 작품 찾기", "Write an idea · Find a story")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
           <form className="rd-idea" onSubmit={submitInput}>
             <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
@@ -105,8 +109,15 @@ export function ReferenceCreatorDashboard() {
             />
             <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
+          <div className="rd-v4-preset-chips" role="group" aria-label={bi("웹툰 빠른 규격 및 작업실 프리셋", "Quick webtoon format & studio presets")}>
+            <Link href="/studio/new?lane=blank" className="rd-v4-preset-chip">{bi("세로 웹툰 (800×무한)", "Vertical Webtoon (800×∞)")}</Link>
+            <Link href="/studio/new?lane=storyboard&start=storyboard" className="rd-v4-preset-chip">{bi("인스타툰 4컷 (1080²)", "4-Panel Comic (1080²)")}</Link>
+            <Link href="/studio/assets/characters/new" className="rd-v4-preset-chip">{bi("3D 캐릭터 셰이퍼", "3D Character Shaper")}</Link>
+            <Link href="/studio/bg3d" className="rd-v4-preset-chip">{bi("3D 배경 · LT 선화", "3D Scene · Line Art")}</Link>
+            <Link href="/production" className="rd-v4-preset-chip">{bi("팀 공동 작업 · 검수", "Team Collab & Review")}</Link>
+          </div>
         </details>
-        <details className="rd-luna-help">
+        <details className="rd-luna-help" open>
           <summary className="rd-optional-summary"><Sparkles size={16} aria-hidden="true" /><span>{bi("시작이 막막한가요?", "Need help getting started?")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
           <HomeLunaPanel />
         </details>
@@ -198,7 +209,7 @@ export function ReferenceCreatorDashboard() {
     <RevealOnScroll variant="fade" className="rd-discover" data-home-band="discover">
       <DiscoverHomePreview />
     </RevealOnScroll>
-    <details className="rd-more" data-home-band="more">
+    <details className="rd-more" data-home-band="more" open>
       <summary className="rd-more-summary">
         <span>{bi("더 알아보기", "Learn more")}</span>
         <small>{bi("시작 카드·핵심 작업실·에디터 미리보기·서비스 소개", "Start cards, core studios, editor preview and introduction")}</small>

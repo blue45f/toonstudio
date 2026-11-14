@@ -84,7 +84,7 @@ function useStateOnceHydrated(hydrated: boolean, fn: () => void) {
 
 export function SettingsPage() {
   const location = useLocation();
-  const overview = !new URLSearchParams(location.search).has("view") && !location.hash;
+  const overview = new URLSearchParams(location.search).get("view") === "overview" && !location.hash;
   const hydrated = useHydrated();
   const experience = useSiteExperience();
   const lang = useI18n((s) => s.lang);
@@ -389,7 +389,7 @@ export function SettingsPage() {
       </div>
 
       <div hidden={overview}>
-      <Link to={`${location.pathname}?${new URLSearchParams([...new URLSearchParams(location.search)].filter(([key]) => key !== "view"))}`} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-bold text-fg-2">{bi("설정 목록으로", "All settings")}</Link>
+      <Link to={`${location.pathname}?${(() => { const next = new URLSearchParams(location.search); next.set("view", "overview"); return next.toString(); })()}`} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-bold text-fg-2">{bi("설정 목록으로", "All settings")}</Link>
       {/* 직접 주소·검색·앵커가 선택한 설정 영역만 연다. */}
       <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
       <SectionNav

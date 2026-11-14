@@ -99,7 +99,7 @@ describe("모바일 전체 메뉴", () => {
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
-  it("일곱 목적을 별도 페이지로 연결하고 전체 목록을 메뉴에 반복하지 않는다", () => {
+  it("일곱 목적 헤더와 2열 세부 기능 바로가기를 접힘 없이 1클릭으로 연결한다", () => {
     render(menu());
     const dialog = screen.getByRole("dialog");
     expect(dialog.querySelectorAll("details")).toHaveLength(0);
@@ -107,7 +107,9 @@ describe("모바일 전체 메뉴", () => {
       "/sitemap/discover", "/sitemap/create", "/sitemap/grow", "/sitemap/publish",
       "/sitemap/connect", "/sitemap/rest", "/sitemap/personal",
     ]);
-    expect(dialog.querySelector('a[href="/play"]')).toBeNull();
+    expect(dialog.querySelector('a[href="/production"]')).not.toBeNull();
+    expect(dialog.querySelector('a[href="/studio/bg3d"]')).not.toBeNull();
+    expect(dialog.querySelector('a[href="/play"]')).not.toBeNull();
   });
 
   it("작품 시작하기와 내 작업을 앞에 두고 상세 디렉터리·도움말로 연결한다", () => {

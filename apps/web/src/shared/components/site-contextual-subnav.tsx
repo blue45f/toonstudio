@@ -19,7 +19,7 @@ import { resolveSiteArtCardMetaForSubNavGroup } from "./site-experience/site-art
 import "./site-contextual-subnav.css";
 import "./site-experience/site-art-ui.css";
 
-const MAX_PRIMARY_RIBBON_ITEMS = 6;
+const MAX_PRIMARY_RIBBON_ITEMS = 16;
 
 const SUBNAV_GROUP_EMBLEMS: Readonly<Record<ContextualHubGroupId, string>> = {
   "promo-cuts-hub": "/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp",

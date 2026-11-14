@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -28,7 +28,8 @@ describe("목적별 메뉴 검색", () => {
     expect(document.querySelector(".site-menu-tasks")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: locale === "ko" ? "메뉴 검색 지우기" : "Clear menu search" }));
     expect(document.activeElement).toBe(input);
-    expect(within(screen.getByText(locale === "ko" ? "목적별로 찾기" : "Browse by task").parentElement as HTMLElement).getAllByRole("link")).toHaveLength(9);
+    expect(document.querySelectorAll(".site-menu-task")).toHaveLength(7);
+    expect(document.querySelectorAll(".site-menu-task__sublink").length).toBeGreaterThan(20);
     fireEvent.change(input, { target: { value: "전혀없는메뉴" } });
     expect(screen.getByRole("status").textContent).toContain("0");
     fireEvent.click(screen.getByRole("button", { name: locale === "ko" ? "목적별 메뉴 보기" : "Browse tasks" }));

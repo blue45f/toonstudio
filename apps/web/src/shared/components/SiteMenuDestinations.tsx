@@ -185,16 +185,46 @@ export function SiteMenuDestinations({ locale, currentGroupId, isActive, menuId 
               </Link>;
             })}
           </div>
-          <p className="site-menu-task-label">{bt("목적별로 찾기", "Browse by task")}</p>
+          <p className="site-menu-task-label">{bt("목적별로 찾기 · 세부 기능 1클릭 바로가기", "Browse by task · 1-click sub-features")}</p>
           <ul className="site-menu-tasks">
-            {resolveNavigationGroupsFor().map((group) => <li key={group.id}>
-              <Link href={`/sitemap/${group.id}`} className="site-menu-task"
-                data-current-journey={group.id === currentGroupId ? "true" : undefined}>
-                <SitePurposeGraphic group={group} />
-                <span className="site-menu-task__copy"><strong>{siteNavigationText(group.label, locale)}</strong><small>{siteNavigationText(group.description, locale)}</small></span>
-                <span className="site-menu-task__count">{group.id === currentGroupId ? bt("현재", "Current") : group.items.length}</span><ChevronRight size={18} aria-hidden="true" />
-              </Link>
-            </li>)}
+            {resolveNavigationGroupsFor().map((group) => {
+              const directItems = group.items.filter(
+                (item) => item.href !== "/create" && item.href !== "/studio",
+              );
+              return (
+                <li key={group.id} className="site-menu-task-card">
+                  <Link href={`/sitemap/${group.id}`} className="site-menu-task"
+                    data-current-journey={group.id === currentGroupId ? "true" : undefined}>
+                    <SitePurposeGraphic group={group} />
+                    <span className="site-menu-task__copy"><strong>{siteNavigationText(group.label, locale)}</strong><small>{siteNavigationText(group.description, locale)}</small></span>
+                    <span className="site-menu-task__count">{group.id === currentGroupId ? bt("현재", "Current") : group.items.length}</span><ChevronRight size={18} aria-hidden="true" />
+                  </Link>
+                  {directItems.length > 0 ? (
+                    <ul className="site-menu-task__subgrid" aria-label={`${siteNavigationText(group.label, locale)} ${bt("바로가기", "shortcuts")}`}>
+                      {directItems.map((subItem) => {
+                        const SubIcon = subItem.icon;
+                        const subLabel =
+                          subItem.id === "explore"
+                            ? bt("작품 탐색 홈", "Discover hub")
+                            : siteNavigationText(subItem.label, locale);
+                        return (
+                          <li key={subItem.id}>
+                            <Link
+                              href={subItem.href}
+                              aria-current={isActive(subItem.href, subItem.exact) ? "page" : undefined}
+                              className="site-menu-task__sublink"
+                            >
+                              <SubIcon size={14} aria-hidden="true" />
+                              <span>{subLabel}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </>}
