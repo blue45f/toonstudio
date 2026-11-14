@@ -181,22 +181,7 @@ export function StudioDrawingQuickErgonomicsBar({
           aria-pressed={clarity?.panel === "pages"}
           onClick={(event) => clarity?.open("pages", event.currentTarget)}
         >
-          <span>{bt("콘티·컷", "Storyboard")}</span>
-        </button>
-        <button
-          type="button"
-          className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
-          aria-pressed={s.bg3dOpen}
-          onClick={() => s.setBg3dOpen((open) => !open)}
-        >
-          <img
-            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
-            alt=""
-            width={18}
-            height={18}
-            aria-hidden="true"
-          />
-          <span>{bt("3D 배경", "3D stage")}</span>
+          <span>{bt("① 콘티·컷", "1. Storyboard")}</span>
         </button>
         <button
           type="button"
@@ -205,7 +190,7 @@ export function StudioDrawingQuickErgonomicsBar({
           aria-pressed={s.tool === "draw" && s.drawMode !== "eraser"}
           onClick={() => s.activatePrimaryCanvasTool("draw", "pen")}
         >
-          <span>{bt("작화", "Ink")}</span>
+          <span>{bt("② 선화·펜터치", "2. Line & Ink")}</span>
         </button>
         <button
           type="button"
@@ -220,7 +205,22 @@ export function StudioDrawingQuickErgonomicsBar({
             height={18}
             aria-hidden="true"
           />
-          <span>{bt("브러시·채색", "Brushes")}</span>
+          <span>{bt("③ 채색·톤", "3. Color & Tone")}</span>
+        </button>
+        <button
+          type="button"
+          className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
+          aria-pressed={s.bg3dOpen}
+          onClick={() => s.setBg3dOpen((open) => !open)}
+        >
+          <img
+            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
+            alt=""
+            width={18}
+            height={18}
+            aria-hidden="true"
+          />
+          <span>{bt("④ 3D 배경", "4. 3D Stage")}</span>
         </button>
         <button
           type="button"
@@ -228,7 +228,7 @@ export function StudioDrawingQuickErgonomicsBar({
           aria-pressed={s.exportMenuOpen}
           onClick={() => s.setExportMenuOpen(true)}
         >
-          <span>{bt("출고", "Publish")}</span>
+          <span>{bt("⑤ 마감·출고", "5. Publish")}</span>
         </button>
       </div>
 
@@ -318,17 +318,30 @@ export function StudioDrawingQuickErgonomicsBar({
         </button>
       </div>
 
-      <button
-        type="button"
-        className="studio-drawing-ergonomics-chip"
-        disabled={blocked}
-        aria-pressed={s.stabilizer > 0}
-        onClick={() => s.setStabilizer((current) => cycleStudioStabilizerStrength(current))}
-        title={bt("클릭할 때마다 손떨림 보정 강도(꺼짐 → 약함 → 표준 → 강함)를 순환합니다", "Cycle stroke stabilizer strength")}
-      >
-        <Sparkles size={15} aria-hidden />
-        <span>{formatStabilizerLabel(s.stabilizer, bt)}</span>
-      </button>
+      <div className="studio-drawing-stabilizer-group" role="group" aria-label={bt("손떨림 보정 강도 조절", "Stroke stabilizer control")}>
+        <button
+          type="button"
+          className="studio-drawing-ergonomics-chip"
+          disabled={blocked}
+          aria-pressed={s.stabilizer > 0}
+          onClick={() => s.setStabilizer((current) => cycleStudioStabilizerStrength(current))}
+          title={bt("클릭할 때마다 손떨림 보정 강도(꺼짐 → 약함 → 표준 → 강함)를 순환합니다", "Cycle stroke stabilizer strength")}
+        >
+          <Sparkles size={15} aria-hidden />
+          <span>{formatStabilizerLabel(s.stabilizer, bt)}</span>
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={3}
+          step={1}
+          disabled={blocked}
+          aria-label={bt("손떨림 보정 슬라이더", "Stabilizer strength slider")}
+          value={Math.max(0, Math.min(3, Math.round(Number.isFinite(s.stabilizer) ? s.stabilizer : 0)))}
+          onChange={(event) => s.setStabilizer(Number(event.currentTarget.value))}
+          className="studio-drawing-stabilizer-slider"
+        />
+      </div>
 
       {s.studioOptionsBarsHandlers?.toggleSizeLock ? (
         <button

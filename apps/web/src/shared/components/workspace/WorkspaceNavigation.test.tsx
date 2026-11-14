@@ -25,15 +25,17 @@ function renderAt(pathname: string) {
 }
 
 describe("WorkspaceNavigation 좌측 메뉴", () => {
-  it("일반 화면에서는 제작 바로가기를 접고 필요한 경우 직접 펼친다", () => {
+  it("일반 화면에서도 제작 바로가기를 기본 펼치고 필요한 경우 직접 접을 수 있다", () => {
     const view = renderAt("/home");
     const group = view.container.querySelector("details");
-    expect(group?.open).toBe(false);
+    expect(group?.open).toBe(true);
+    expect(group?.querySelectorAll("a")).toHaveLength(6);
     const summary = group?.querySelector("summary");
     if (!summary) throw new Error("제작 바로가기 펼치기가 없습니다.");
     fireEvent.click(summary);
+    expect(group?.open).toBe(false);
+    fireEvent.click(summary);
     expect(group?.open).toBe(true);
-    expect(group?.querySelectorAll("a")).toHaveLength(6);
   });
 
   it("제작 하위 작업에서는 현재 도구를 포함한 그룹을 자동으로 펼친다", () => {

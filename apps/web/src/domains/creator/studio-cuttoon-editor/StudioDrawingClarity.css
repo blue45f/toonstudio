@@ -155,3 +155,21 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
   #studio-app-shell[data-studio-drawing-clarity=true] :is(.studio-drawing-clarity-header,[data-studio-mobile-editing-dock=true],[data-studio-inspector-primary]){background:Canvas!important;color:CanvasText!important}
   #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-primary-actions] :is(button[aria-pressed=true],button[aria-expanded=true],details[open]>summary){border-color:Highlight!important;background:Canvas!important;color:CanvasText!important;outline:2px solid Highlight;outline-offset:-2px}
 }
+
+/* Grand Atelier V4 드로잉 상단 메뉴바 · 옴니박스 · 손떨림 슬라이더 · 웹툰 좌측 레일 */
+.studio-drawing-classic-menubar{display:none;align-items:center;gap:2px;padding:3px;border:1px solid color-mix(in oklch,var(--color-line-strong) 72%,transparent);border-radius:12px;background:color-mix(in oklch,var(--color-card) 78%,transparent)}
+@media(min-width:1260px){.studio-drawing-classic-menubar{display:inline-flex}}
+.studio-drawing-classic-menu-item{min-height:36px;padding:4px 9px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.studio-drawing-classic-menu-item:hover{background:color-mix(in oklch,var(--color-raised) 88%,var(--color-accent-soft));color:var(--color-fg)}
+.studio-drawing-omnibox{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:6px 12px;border:1px solid color-mix(in oklch,var(--color-accent) 34%,var(--color-line-strong));border-radius:999px;background:color-mix(in oklch,var(--color-card) 90%,var(--color-panel));color:var(--color-fg);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:border-color .16s ease,background-color .16s ease}
+.studio-drawing-omnibox:hover{border-color:var(--color-accent);background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft))}
+.studio-drawing-omnibox>kbd{padding:2px 6px;border:1px solid var(--color-line);border-radius:6px;background:var(--color-panel);color:var(--color-fg-2);font-size:11px;font-weight:700}
+.studio-drawing-clarity-compact-btn{min-height:44px;min-width:44px;padding:6px 10px;font-size:12px;white-space:nowrap}
+.studio-drawing-clarity-share{min-height:44px;padding:6px 13px;border-color:color-mix(in oklch,var(--color-accent) 68%,var(--color-line-strong));background:linear-gradient(135deg,color-mix(in oklch,var(--color-accent) 88%,var(--color-accent-2)),var(--color-accent));color:var(--color-on-accent);font-size:12px;font-weight:750;white-space:nowrap;box-shadow:0 8px 20px -10px color-mix(in oklch,var(--color-accent) 55%,transparent)}
+.studio-drawing-stabilizer-group{display:inline-flex;align-items:center;gap:6px;padding-right:8px;border:1px solid color-mix(in oklch,var(--color-line-strong) 76%,transparent);border-radius:999px;background:color-mix(in oklch,var(--color-card) 84%,transparent)}
+.studio-drawing-stabilizer-group>.studio-drawing-ergonomics-chip{border:0;background:transparent}
+.studio-drawing-stabilizer-slider{width:64px;accent-color:var(--color-accent);cursor:pointer}
+.studio-drawing-clarity-rail{overflow-y:auto;scrollbar-width:thin}
+.studio-drawing-clarity-tools>.studio-drawing-clarity-button{position:relative;min-height:50px;gap:3px;padding:5px 3px;font-size:11px}
+.studio-drawing-rail-kbd{position:absolute;top:4px;right:4px;padding:0 4px;border-radius:4px;background:color-mix(in oklch,var(--color-panel) 84%,transparent);color:var(--color-fg-3);font-size:9px;font-weight:700;line-height:14px}
+.studio-drawing-clarity-all-tools-btn{border-color:color-mix(in oklch,var(--color-accent) 36%,var(--color-line-strong));background:color-mix(in oklch,var(--color-accent-soft) 60%,var(--color-card))}

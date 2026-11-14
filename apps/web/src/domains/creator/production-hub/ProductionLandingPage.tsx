@@ -33,6 +33,7 @@ import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
+import { ProductionGrandAtelierCollabHub } from "./ProductionGrandAtelierCollabHub";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
@@ -208,7 +209,7 @@ function ModuleGrid() {
   }, []);
   return (
     <section className="mt-6" aria-label={bt("제작 관리 도구", "Production management tools")}>
-      <details ref={detailsRef} aria-labelledby="production-tools-title" className="group/tools rounded-2xl border border-line bg-card p-3 sm:p-4">
+      <details ref={detailsRef} open aria-labelledby="production-tools-title" className="group/tools rounded-2xl border border-line bg-card p-3 sm:p-4">
         <summary id="production-tools-title" className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 text-sm font-bold text-fg outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
           {bt("제작 도구 더 보기", "More production tools")}
           <ChevronDown className="size-4 shrink-0 transition-transform group-open/tools:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
@@ -570,7 +571,7 @@ export function ProductionLandingPage() {
           </section>
         ) : null}
 
-        {userId ? <details className="group mt-6 rounded-2xl border border-line bg-panel">
+        {userId ? <details open className="group mt-6 rounded-2xl border border-line bg-panel">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-bold text-fg-2">{bt("샘플 체험과 제작 안내", "Sample and production guide")}<span aria-hidden="true">⌄</span></summary>
           {intro}
           <FlowCards />
@@ -578,6 +579,7 @@ export function ProductionLandingPage() {
           {intro}
           <FlowCards />
         </>}
+        <ProductionGrandAtelierCollabHub />
         <ModuleGrid />
       </div>
     </div>

@@ -115,26 +115,23 @@
 @media(prefers-reduced-motion:reduce){.workspace-shell *,.workspace-focused-shell *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.campus-room-media>img{transform:none!important}}
 @media(forced-colors:active){.workspace-shell,.workspace-focused-shell{background:Canvas;color:CanvasText}.workspace-shell::before,.workspace-shell::after,.workspace-focused-shell::before,.workspace-focused-shell::after,.campus-room-aurora,.campus-room-media::after{display:none}.workspace-nav-visual,.campus-room,.campus-room-destinations a,.campus-toolbar{border:1px solid CanvasText;background:Canvas}.workspace-nav-visual-art{display:none}}
 
-/* 탐색은 명확한 선 아이콘으로, 삽화는 실제 작업과 소개 화면에서 사용한다. */
-/* 삽화와 보조 아이콘을 겹치지 않고, 같은 선 아이콘 하나로 목적지를 구별한다. */
-.workspace-nav-visual-art,.workspace-nav-visual>img,.workspace-nav-visual::after{display:none}
+/* Grand Atelier V4 — 3D 프리미엄 컬러 아이콘 우선 표시 및 이미지 로드 실패 시 선 아이콘 자동 폴백 */
+.workspace-nav-visual-art,.workspace-nav-visual::after{display:none}
+.workspace-nav-visual>img{display:block;width:34px;height:34px;border-radius:10px;object-fit:cover;box-shadow:0 6px 14px rgba(0,0,0,.32);transition:transform .2s ease}
+.workspace-nav-visual:has(>img)>.workspace-nav-line-icon{display:none!important}
 .workspace-nav-visual>.workspace-nav-line-icon{display:block!important;position:static!important;z-index:auto!important;width:22px!important;height:22px!important;padding:0;border:0;border-radius:0;background:transparent;opacity:1;filter:none!important}
 .workspace-sidebar .workspace-nav a:hover{transform:none}
+.workspace-sidebar .workspace-nav a:hover .workspace-nav-visual>img{transform:scale(1.06)}
 .workspace-sidebar .workspace-nav a[aria-current="page"] .workspace-nav-visual{color:var(--color-accent);background:transparent}
-@media(forced-colors:active){.workspace-nav-visual>img{display:none!important}}
-.workspace-nav-shortcuts .workspace-nav-visual{display:none}
-.workspace-nav-shortcuts .workspace-nav-row-icon{display:block;width:22px;height:22px;flex:none}
+@media(forced-colors:active){.workspace-nav-visual>img{display:none!important}.workspace-nav-visual:has(>img)>.workspace-nav-line-icon{display:block!important}}
 
-/* ── 좌측 메뉴 행 형태 (넓은 화면) ───────────────────────────────
- * 시안(s1/hub)의 좌측 메뉴는 큰 아트 타일이 아니라 아이콘+글자의 가로 행 목록이다.
- * 넓은 화면에서는 타일 열을 행 목록으로 펴고 제작 바로가기 묶음을 이어 붙인다.
- * 중간·좁은 화면은 기존 타일 열과 하단 탭 바를 그대로 쓴다. */
+/* ── 좌측 메뉴 행 형태 (넓은 화면 · 3D 컬러 아이콘 + 텍스트 행 + 제작 바로가기 상시 노출) ── */
 .workspace-nav-row-icon{display:none}
 .workspace-nav-shortcuts{display:none}
 .workspace-shortcut-group{display:none}
 @media (min-width:1280px){
   .workspace-shortcut-group{display:block;margin-top:10px;border-top:1px solid var(--color-line)}
-  .workspace-shortcut-group>summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 10px;list-style:none;cursor:pointer;border-radius:10px;color:var(--color-fg-2);font-size:13px}
+  .workspace-shortcut-group>summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 10px;list-style:none;cursor:pointer;border-radius:10px;color:var(--color-fg-2);font-size:13px;font-weight:700}
   .workspace-shortcut-group>summary::-webkit-details-marker{display:none}
   .workspace-shortcut-group>summary>span{flex:1}
   .workspace-shortcut-group[open]>summary>svg:last-child{transform:rotate(180deg)}
@@ -143,16 +140,22 @@
   .workspace-shortcut-group .workspace-nav-shortcuts{margin-top:0;padding-top:0;border-top:0}
   .workspace-shell{grid-template-columns:var(--layout-rail-row) minmax(0,1fr)}
   .workspace-sidebar{padding:16px 10px;overflow-y:auto}
-  .workspace-sidebar .workspace-nav{gap:2px}
-  .workspace-sidebar .workspace-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;border-radius:10px;font-size:14px;transform:none}
+  .workspace-sidebar .workspace-nav{gap:3px}
+  .workspace-sidebar .workspace-nav :is(a,button){flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;border-radius:10px;font-size:14px;transform:none}
   .workspace-sidebar .workspace-nav a:hover{transform:none}
-  .workspace-nav-visual{display:none}
-  .workspace-nav-row-icon{display:block;flex:none;color:var(--color-fg-3)}
+  .workspace-nav-visual{display:grid;width:28px;height:28px;flex:none;border-radius:8px}
+  .workspace-nav-visual>img{width:28px;height:28px;border-radius:8px}
+  .workspace-sidebar .workspace-nav :is(a,button):has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
+  .workspace-sidebar .workspace-nav :is(a,button):not(:has(>.workspace-nav-visual>img)) .workspace-nav-visual{display:none}
+  .workspace-sidebar .workspace-nav :is(a,button):not(:has(>.workspace-nav-visual>img)) .workspace-nav-row-icon{display:block;flex:none;color:var(--color-fg-3)}
   .workspace-sidebar .workspace-nav a:hover .workspace-nav-row-icon{color:var(--color-accent)}
   .workspace-sidebar .workspace-nav a[aria-current="page"]{border-color:transparent;background:var(--color-accent-soft);color:var(--color-accent);box-shadow:none}
   .workspace-sidebar .workspace-nav a[aria-current="page"] .workspace-nav-row-icon{color:var(--color-accent)}
-  .workspace-nav-shortcuts{display:flex;flex-direction:column;gap:2px;margin-top:10px;padding-top:10px;border-top:1px solid var(--color-line)}
+  .workspace-nav-shortcuts{display:flex;flex-direction:column;gap:3px;margin-top:10px;padding-top:10px;border-top:1px solid var(--color-line)}
   .workspace-nav-shortcuts a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--color-fg-2);font-size:14px;text-decoration:none}
+  .workspace-nav-shortcuts a:has(>.workspace-nav-visual>img) .workspace-nav-row-icon{display:none}
+  .workspace-nav-shortcuts a:not(:has(>.workspace-nav-visual>img)) .workspace-nav-visual{display:none}
+  .workspace-nav-shortcuts a:not(:has(>.workspace-nav-visual>img)) .workspace-nav-row-icon{display:block;width:20px;height:20px;flex:none;color:var(--color-fg-3)}
   .workspace-nav-shortcuts a:hover{background:var(--color-raised);color:var(--color-fg)}
   .workspace-nav-shortcuts a:hover .workspace-nav-row-icon{color:var(--color-accent)}
   .workspace-nav-shortcuts a[aria-current="page"]{background:var(--color-accent-soft);color:var(--color-accent);font-weight:700}
@@ -160,14 +163,8 @@
   .workspace-support-nav a{flex-direction:row;justify-content:flex-start;min-height:44px;gap:10px;padding:0 10px;font-size:13px}
 }
 
-/* 넓은 행 목록도 같은 선 아이콘을 사용하며 이미지 로드 상태와 무관하게 표시한다. */
-@media (min-width:1280px){
-  .workspace-nav-visual{display:none}
-  .workspace-sidebar .workspace-nav .workspace-nav-row-icon{display:block}
-  .workspace-sidebar .workspace-nav-shortcuts .workspace-nav-row-icon{display:block}
-}
 @media (min-width:1280px) and (forced-colors:active){
   .workspace-nav-visual{display:none}
-  .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
-  .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block}
+  .workspace-sidebar .workspace-nav a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block!important}
+  .workspace-sidebar .workspace-nav-shortcuts a:has(>.workspace-nav-visual) .workspace-nav-row-icon{display:block!important}
 }
