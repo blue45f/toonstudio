@@ -6,7 +6,12 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
+  defaultStudioAppSettings,
   formatStudioShortcutChord,
+  loadStudioAppSettings,
+  saveStudioAppSettings,
+  studioAppSettingsStorage,
+  type StudioAppSettingsStorage,
   type StudioShortcutActionId,
 } from "./studio-app-settings";
 import {
@@ -15,6 +20,116 @@ import {
 } from "./studio-search-text";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
+
+const STUDIO_SHORTCUT_PRESET_STORAGE_KEY = "toonstudio-studio-shortcut-preset:v1";
+
+export type StudioShortcutPresetId =
+  | "toonstudio-default"
+  | "clip-studio"
+  | "photoshop"
+  | "procreate-web";
+
+export interface StudioShortcutPresetSpec {
+  readonly id: StudioShortcutPresetId;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly overrides: Readonly<Partial<Record<StudioShortcutActionId, string>>>;
+}
+
+const STUDIO_SHORTCUT_PRESET_SPECS: readonly StudioShortcutPresetSpec[] = [
+  {
+    id: "toonstudio-default",
+    labelKo: "ToonStudio 기본",
+    labelEn: "ToonStudio Default",
+    overrides: {},
+  },
+  {
+    id: "clip-studio",
+    labelKo: "클립스튜디오 호환",
+    labelEn: "Clip Studio Compatible",
+    overrides: {
+      "tool-pen": "P",
+      "tool-pixel": "B",
+      "flip-canvas": "H",
+      "toggle-transparent-color": "C",
+      "tool-crop": "Shift+C",
+    },
+  },
+  {
+    id: "photoshop",
+    labelKo: "포토샵 호환",
+    labelEn: "Photoshop Compatible",
+    overrides: {
+      "tool-pen": "B",
+      "tool-eraser": "E",
+      redo: "Mod+Shift+Z",
+      "flip-canvas": "Shift+H",
+      "quick-hud": "Shift+Space",
+    },
+  },
+  {
+    id: "procreate-web",
+    labelKo: "프로크리에이트·웹 호환",
+    labelEn: "Procreate & Web Compatible",
+    overrides: {
+      "tool-pen": "B",
+      "tool-eraser": "E",
+      "quick-hud": "Space",
+      "flip-canvas": "H",
+      "fit-view": "Mod+0",
+    },
+  },
+] as const;
+
+function readStoredStudioShortcutPreset(
+  storage: StudioAppSettingsStorage | null | undefined = studioAppSettingsStorage(),
+): StudioShortcutPresetId {
+  if (!storage) return "toonstudio-default";
+  try {
+    const raw = storage.getItem(STUDIO_SHORTCUT_PRESET_STORAGE_KEY);
+    const match = STUDIO_SHORTCUT_PRESET_SPECS.find((spec) => spec.id === raw);
+    return match ? match.id : "toonstudio-default";
+  } catch {
+    return "toonstudio-default";
+  }
+}
+
+function writeStoredStudioShortcutPreset(
+  presetId: StudioShortcutPresetId,
+  storage: StudioAppSettingsStorage | null | undefined = studioAppSettingsStorage(),
+): Record<StudioShortcutActionId, string> {
+  const spec =
+    STUDIO_SHORTCUT_PRESET_SPECS.find((item) => item.id === presetId) ??
+    STUDIO_SHORTCUT_PRESET_SPECS[0]!;
+  const nextShortcuts: Record<StudioShortcutActionId, string> = {
+    ...defaultStudioAppSettings().shortcuts,
+    ...spec.overrides,
+  };
+  if (storage) {
+    try {
+      storage.setItem(STUDIO_SHORTCUT_PRESET_STORAGE_KEY, spec.id);
+    } catch {
+      // 저장소 용량·권한 제한 환경에서도 메모리 전환은 계속 허용한다.
+    }
+    const current = loadStudioAppSettings(storage);
+    saveStudioAppSettings(storage, {
+      ...current,
+      shortcuts: nextShortcuts,
+    });
+  }
+  try {
+    if (typeof CustomEvent === "function") {
+      globalThis.dispatchEvent?.(
+        new CustomEvent("toonspectrum:studio-shortcut-preset-change", {
+          detail: { presetId: spec.id, shortcuts: nextShortcuts },
+        }),
+      );
+    }
+  } catch {
+    // SSR·최소 테스트 환경에서는 이벤트 전파를 생략한다.
+  }
+  return nextShortcuts;
+}
 
 
 interface ShortcutRow {
@@ -321,10 +436,32 @@ export function StudioShortcutsHelp({
   const closeFromEffect = useEffectEvent(onClose);
   const t = useT();
   const language = useI18n((state) => state.lang);
-  const copy = language.toLocaleLowerCase().startsWith("ko")
+  const isKo = language.toLocaleLowerCase().startsWith("ko");
+  const copy = isKo
     ? SHORTCUT_HELP_COPY.ko
     : SHORTCUT_HELP_COPY.en;
   const [searchQuery, setSearchQuery] = useState("");
+  const [activePreset, setActivePreset] = useState<StudioShortcutPresetId>(() =>
+    readStoredStudioShortcutPreset(),
+  );
+  const activePresetSpec =
+    STUDIO_SHORTCUT_PRESET_SPECS.find((spec) => spec.id === activePreset) ??
+    STUDIO_SHORTCUT_PRESET_SPECS[0]!;
+  const effectiveShortcuts =
+    shortcuts !== undefined
+      ? shortcuts
+      : activePreset === "toonstudio-default"
+        ? undefined
+        : {
+            ...defaultStudioAppSettings().shortcuts,
+            ...activePresetSpec.overrides,
+          };
+
+  const selectShortcutPreset = (presetId: StudioShortcutPresetId) => {
+    writeStoredStudioShortcutPreset(presetId);
+    setActivePreset(presetId);
+  };
+
   const searching = tokenizeStudioSearchQuery(searchQuery).length > 0;
   // 매칭 규칙은 통합 Command Search 와 같은 `studio-search-text` 를 쓴다.
   // 감사 §2.8 이 "네 검색창이 서로 다르게 판단한다"를 결함으로 셌다.
@@ -334,7 +471,7 @@ export function StudioShortcutsHelp({
       studioSearchTextMatches(searchQuery, [
         t(group.titleKey),
         t(row.labelKey),
-        row.keysKey ? t(row.keysKey) : displayKeysForRow(row, shortcuts),
+        row.keysKey ? t(row.keysKey) : displayKeysForRow(row, effectiveShortcuts),
         ...(row.searchAliases ?? []),
       ]),
     ),
@@ -442,7 +579,7 @@ export function StudioShortcutsHelp({
             type="button"
             onClick={onClose}
             aria-label={t("common.close")}
-            className="grid size-11 place-items-center rounded-xl border border-line text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:size-9"
+            className="grid size-11 min-h-11 min-w-11 place-items-center rounded-xl border border-line text-fg-2 hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           >
             <X size={14} aria-hidden />
           </button>
@@ -464,7 +601,7 @@ export function StudioShortcutsHelp({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="grid size-8 shrink-0 touch-manipulation place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:size-11"
+                className="grid size-11 min-h-11 min-w-11 shrink-0 touch-manipulation place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg pointer-coarse:size-11"
                 aria-label={copy.clearSearch}
               >
                 <X className="size-3.5" aria-hidden />
@@ -512,6 +649,35 @@ export function StudioShortcutsHelp({
                   <p className="mt-0.5 text-[0.64rem] leading-relaxed text-fg-3">
                     {copy.migrationBody}
                   </p>
+                  <div
+                    role="group"
+                    aria-label={
+                      isKo
+                        ? "경쟁사 단축키 프리셋 1클릭 전환"
+                        : "1-click competitor shortcut preset switcher"
+                    }
+                    className="mt-2 flex flex-wrap gap-1.5"
+                  >
+                    {STUDIO_SHORTCUT_PRESET_SPECS.map((spec) => {
+                      const active = activePreset === spec.id;
+                      return (
+                        <button
+                          key={spec.id}
+                          type="button"
+                          data-testid={`studio-shortcut-preset-${spec.id}`}
+                          aria-pressed={active}
+                          onClick={() => selectShortcutPreset(spec.id)}
+                          className={`inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                            active
+                              ? "border-accent bg-accent-soft text-accent"
+                              : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"
+                          }`}
+                        >
+                          {isKo ? spec.labelKo : spec.labelEn}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </section>
 
@@ -563,7 +729,7 @@ export function StudioShortcutsHelp({
                     <kbd className="shrink-0 rounded-md border border-line bg-card px-1.5 py-0.5 font-mono text-[0.66rem] text-fg-3">
                       {r.keysKey && !r.actionId && !r.actionIds
                         ? t(r.keysKey)
-                        : displayKeysForRow(r, shortcuts)}
+                        : displayKeysForRow(r, effectiveShortcuts)}
                     </kbd>
                   </li>
                 ))}
@@ -578,7 +744,7 @@ export function StudioShortcutsHelp({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="mt-3 min-h-9 touch-manipulation rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised pointer-coarse:min-h-11"
+                className="mt-3 min-h-11 touch-manipulation rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised pointer-coarse:min-h-11"
               >
                 {copy.showAll}
               </button>

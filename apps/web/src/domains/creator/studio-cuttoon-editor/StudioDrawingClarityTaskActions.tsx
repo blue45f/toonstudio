@@ -5,10 +5,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import type { StudioDrawingClarityAction } from "./StudioDrawingClarityMore";
 
 const TASKS = [
-  { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets"], icon: BookOpen },
-  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 전체 도구", detailEn: "Pen settings and all tools", ids: ["brush", "all"], icon: Brush },
-  { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], icon: Send },
-  { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], icon: MonitorCog },
+  { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets"], icon: BookOpen, emblem: "/brand/luminous-atelier-20261114/icon-studio-layers-color.webp" },
+  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 전체 도구", detailEn: "Pen settings and all tools", ids: ["brush", "all"], icon: Brush, emblem: "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" },
+  { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], icon: Send, emblem: "/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp" },
+  { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], icon: MonitorCog, emblem: "/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp" },
 ] as const;
 
 /** 목적을 고른 뒤 해당 명령만 보여 준다. 실행은 기존 명령과 native 화면 종료에 맡긴다. */
@@ -37,7 +37,7 @@ export function StudioDrawingClarityTaskActions({ actions, run }: {
         className="studio-drawing-task-action" onClick={() => run(action)}><span>{action.label}</span><ArrowUpRight size={18} aria-hidden /></button>)}</div>
     </> : <nav aria-label={bt("원고 도구 목적 고르기", "Choose a draft task")} className="studio-drawing-task-grid">
       {groups.map(task => { const Icon = task.icon; return <button key={task.id} type="button" className="studio-drawing-task-purpose"
-        data-drawing-task-category={task.id} onClick={() => setTaskId(task.id)}><Icon size={24} aria-hidden /><strong>{bt(task.ko, task.en)}</strong><span>{bt(task.detailKo, task.detailEn)}</span></button>; })}
+        data-drawing-task-category={task.id} onClick={() => setTaskId(task.id)}><span className="studio-drawing-task-purpose__visual" aria-hidden="true"><img src={task.emblem} alt="" width={40} height={40} /><Icon size={18} aria-hidden /></span><strong>{bt(task.ko, task.en)}</strong><span>{bt(task.detailKo, task.detailEn)}</span></button>; })}
     </nav>}
   </div>;
 }

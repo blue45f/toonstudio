@@ -53,7 +53,7 @@ export const StudioCanvasControls = memo(function StudioCanvasControls({
   return (
     <div
       className={cn(
-        "absolute bottom-3 left-3 z-30 hidden items-center gap-0.5 rounded-full border border-line bg-panel/95 p-0.5 shadow-lg backdrop-blur",
+        "absolute bottom-3 left-3 z-30 hidden items-center gap-1 rounded-full border border-line-strong/80 bg-panel/90 p-1 shadow-xl backdrop-blur-xl",
         canvasOnlyMode && "lg:flex"
       )}
     >
@@ -78,12 +78,12 @@ export const StudioCanvasControls = memo(function StudioCanvasControls({
           }}
           aria-disabled={viewTransformSuppressed || zoomLocked || zoomOutAtLimit ? true : undefined}
           className={cn(
-            "grid size-7 place-items-center rounded-full text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+            "grid size-11 min-h-11 min-w-11 place-items-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
             (viewTransformSuppressed || zoomLocked || zoomOutAtLimit) && "cursor-not-allowed opacity-40"
           )}
           aria-label={t("studio.shortcuts.row.view.zoomOut")}
         >
-          <Minus className="size-3.5" aria-hidden />
+          <Minus className="size-4" aria-hidden />
         </button>
       </StudioToolHintTarget>
       <StudioToolHintTarget
@@ -98,7 +98,7 @@ export const StudioCanvasControls = memo(function StudioCanvasControls({
           }}
           aria-disabled={viewTransformSuppressed || zoomLocked ? true : undefined}
           className={cn(
-            "min-h-7 min-w-[3.25rem] rounded-full px-1 text-center text-xs font-semibold tabular-nums text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+            "inline-flex min-h-11 min-w-[3.5rem] items-center justify-center rounded-full px-2.5 text-center text-xs font-semibold tabular-nums text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
             (viewTransformSuppressed || zoomLocked) && "cursor-not-allowed opacity-40"
           )}
           aria-label={localizeText(t, "실제 픽셀 100% 보기", "studio.canvas.actualPixelAria")}
@@ -120,12 +120,12 @@ export const StudioCanvasControls = memo(function StudioCanvasControls({
           }}
           aria-disabled={viewTransformSuppressed || zoomLocked || zoomInAtLimit ? true : undefined}
           className={cn(
-            "grid size-7 place-items-center rounded-full text-fg-2 transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+            "grid size-11 min-h-11 min-w-11 place-items-center rounded-full text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
             (viewTransformSuppressed || zoomLocked || zoomInAtLimit) && "cursor-not-allowed opacity-40"
           )}
           aria-label={t("studio.shortcuts.row.view.zoomIn")}
         >
-          <Plus className="size-3.5" aria-hidden />
+          <Plus className="size-4" aria-hidden />
         </button>
       </StudioToolHintTarget>
     </div>

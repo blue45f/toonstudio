@@ -7,6 +7,7 @@ import { BRUSH_STUDIO_V6_SHOWCASE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-
 import { BRUSH_STUDIO_V7_MATERIAL_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-material-v7";
 import { BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-material-v7-advanced";
 import { BRUSH_STUDIO_V8_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-v8";
+import { BRUSH_STUDIO_V9_WEBTOON_MASTER_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-v9-webtoon-master";
 import { BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS } from "./brush-studio-v6-recipe-catalog-texture";
 import { defineBrushStudioV6RecipeSeed } from "./brush-studio-v6-recipe-types";
 
@@ -18,6 +19,7 @@ export const BRUSH_STUDIO_V6_RECIPE_SEEDS = Object.freeze([
   ...BRUSH_STUDIO_V7_MATERIAL_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V7_ADVANCED_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V8_RECIPE_SEEDS,
+  ...BRUSH_STUDIO_V9_WEBTOON_MASTER_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_TEXTURE_RECIPE_SEEDS,
   ...BRUSH_STUDIO_V6_MIXBOX_RECIPE_SEEDS,
   // 절차 계열은 모델별 도포 재료가 달라 전용 시드 파일(recipe-catalog-procedural)이 레시피를 만든다.

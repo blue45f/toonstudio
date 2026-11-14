@@ -171,7 +171,7 @@ export function ShowcasePage() {
               <h2 id="showcase-publish-cta" className="text-base font-bold text-fg">{bt("내 작품도 이곳에 소개해 보세요", "Feature your own work here")}</h2>
               <p className="mt-1 text-sm leading-6 text-fg-2">{bt("발행할 때 공개 범위를 ‘전체 공개’로 고르면 갤러리에 올라가요.", "Choose “Public” when you publish and your work appears here.")}</p>
             </div>
-            <Link href="/studio/publish" className={buttonClass({ size: "md", variant: "solid", className: "gap-1.5" })}>
+            <Link href="/studio/publish" className={buttonClass({ size: "lg", variant: "solid", className: "min-h-11 h-11 gap-1.5 px-4 text-sm" })}>
               <Send size={15} aria-hidden />
               {bt("발행하러 가기", "Go to publishing")}
             </Link>

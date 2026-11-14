@@ -24,6 +24,9 @@
 .studio-manual input,
 .studio-manual select { font: inherit; color: inherit; }
 .studio-manual button { min-inline-size: 44px; }
+#main-content .studio-manual a[href],
+#main-content .studio-manual button,
+#main-content .studio-manual summary { min-block-size: 44px; min-inline-size: 44px; }
 .studio-manual button,
 .studio-manual summary,
 .studio-manual select { cursor: pointer; }
@@ -76,7 +79,7 @@
   display: flex; align-items: center; gap: 6px; margin: 0 0 6px 10px;
   font-size: 11px; font-weight: 800; letter-spacing: 0.06em; color: var(--color-fg-3);
 }
-.manual-contents a { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 10px; border-radius: 10px; font-size: 13px; line-height: 1.5; color: var(--color-fg-2); }
+.manual-contents a { display: flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 6px 10px; border-radius: 10px; font-size: 13px; line-height: 1.5; color: var(--color-fg-2); }
 .manual-contents a:hover { background: var(--manual-soft); color: var(--color-fg); }
 .manual-contents a[aria-current="page"] { background: var(--manual-soft); color: var(--color-fg); font-weight: 800; box-shadow: inset 3px 0 var(--manual-accent); }
 .manual-contents-home { font-weight: 700; }
@@ -89,7 +92,7 @@
 .manual-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--manual-accent); }
 .manual-summary { max-width: 46rem; margin: 10px 0 0; font-size: 16px; line-height: 1.8; color: var(--color-fg-2); }
 .manual-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 12px; color: var(--color-fg-3); }
-.manual-breadcrumb a { text-decoration: underline; text-underline-offset: 3px; }
+.manual-breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 6px; text-decoration: underline; text-underline-offset: 3px; }
 .manual-section-heading { max-width: 46rem; margin-bottom: 18px; }
 .manual-section-heading h2 { margin: 6px 0 4px; font-size: clamp(20px, 2.2vw, 26px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.35; }
 .manual-section-heading p { margin: 0; font-size: 14px; color: var(--color-fg-2); }
@@ -169,7 +172,7 @@
 .manual-category-body h3 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
 .manual-category-body p { margin: 2px 0 10px; font-size: 12px; color: var(--color-fg-3); }
 .manual-category-body ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.manual-category-body a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; padding: 6px 8px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--color-fg-2); }
+.manual-category-body a { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; min-width: 44px; padding: 6px 8px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--color-fg-2); }
 .manual-category-body a:hover { background: var(--manual-soft); color: var(--color-fg); }
 
 /* 검색 결과 */
@@ -212,7 +215,7 @@
 .manual-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 100%; }
 .manual-copy-status { max-width: 270px; font-size: 11px; color: var(--color-fg-2); }
 .manual-copy-status:empty { display: none; }
-.manual-copy input { width: 260px; max-width: 100%; min-height: 36px; padding: 6px; border: 1px solid var(--manual-line); border-radius: 8px; background: transparent; }
+.manual-copy input { width: 260px; max-width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--manual-line); border-radius: 8px; background: transparent; }
 
 /* 예시 일러스트 자리 */
 .manual-figure { margin: 0 0 28px; overflow: hidden; max-width: 46rem; border: 1px solid var(--manual-line); border-radius: 22px; background: var(--color-raised); }
@@ -224,7 +227,7 @@
 .manual-toc { padding: 14px 16px; border: 1px solid var(--manual-line); border-radius: 18px; background: var(--manual-surface); }
 .manual-toc-title { margin: 0 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: var(--color-fg-3); }
 .manual-toc ol { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
-.manual-toc a { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 4px 8px; border-radius: 10px; font-size: 13px; color: var(--color-fg-2); }
+.manual-toc a { display: flex; align-items: center; gap: 10px; min-height: 44px; min-width: 44px; padding: 6px 8px; border-radius: 10px; font-size: 13px; color: var(--color-fg-2); }
 .manual-toc a:hover { background: var(--manual-soft); color: var(--color-fg); }
 .manual-toc a span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--color-raised); font-size: 11px; font-weight: 800; }
 .manual-article-body { min-width: 0; max-width: 46rem; }
@@ -261,7 +264,7 @@
 .manual-related { padding-top: 24px; border-top: 1px solid var(--manual-line); }
 .manual-related h2 { margin: 0; font-size: 16px; font-weight: 800; }
 .manual-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.manual-tags a { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--manual-line); border-radius: 999px; background: var(--manual-surface); font-size: 13px; font-weight: 600; }
+.manual-tags a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 0 14px; border: 1px solid var(--manual-line); border-radius: 999px; background: var(--manual-surface); font-size: 13px; font-weight: 600; }
 .manual-tags a:hover { border-color: var(--manual-accent); background: var(--manual-soft); }
 .manual-pagination { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
 .manual-pagination a { display: grid; gap: 4px; min-height: 76px; padding: 16px 18px; border: 1px solid var(--manual-line); border-radius: 16px; background: var(--manual-surface); }
@@ -272,7 +275,7 @@
 .manual-pagination > div:last-child span { justify-content: flex-end; }
 .manual-footer { margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--manual-line); font-size: 12px; line-height: 1.8; }
 .manual-footer p { margin: 10px 0; color: var(--color-fg-3); }
-.manual-footer a { font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+.manual-footer a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 6px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
 
 /* 화면에서 찾기 — 작업 공간의 영역 배치를 단순화한 도식(실제 캡처가 아님). 번호는 단계 옆 위치 태그와 같다. */
 .manual-screen { margin: 0 0 32px; overflow: hidden; border: 1px solid var(--manual-line); border-radius: 22px; background: var(--manual-surface); }

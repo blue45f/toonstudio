@@ -247,7 +247,7 @@ export function StudioExampleProjectBanner({ compact = false }: { readonly compa
               <label className="grid min-h-12 cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5">
                 <input
                   type="checkbox"
-                  className="row-span-2 mt-1 shrink-0"
+                  className="row-span-2 size-11 shrink-0 accent-accent"
                   checked={done}
                   onChange={() => {
                     try {
