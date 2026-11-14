@@ -68,6 +68,7 @@ import type {
 } from "./studio-bg3d-scene-document";
 
 import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
+import type { StudioBg3dGlbUnitAxisReport } from "./studio-bg3d-glb-unit-axis-diagnostics";
 
 /** Imported model metadata the placement preview ghost renders before the instance exists. */
 export interface StudioBg3dPlacementPreviewAsset {
@@ -78,6 +79,8 @@ export interface StudioBg3dPlacementPreviewAsset {
   /** 최종 배율을 반영한 모델 원점 기준 바닥 중심. 회전 후 포인터 접지점에서 뺀다. */
   readonly localInsertionPoint: readonly [number, number, number];
   readonly instanceScale?: readonly [number, number, number];
+  /** GLB 단위(mm/cm/초소형)·위쪽 축(Z-up/매몰) 사전 진단 리포트. */
+  readonly glbDiagnostics?: StudioBg3dGlbUnitAxisReport;
 }
 
 /** Keeps persisted exposure/tone-mapping authoritative after R3F creates or reuses WebGLRenderer. */

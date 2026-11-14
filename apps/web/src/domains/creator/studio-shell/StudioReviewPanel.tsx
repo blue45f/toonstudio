@@ -17,11 +17,18 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   addStudioReviewThread,
+  formatCutPinTargetId,
+  permissionsForStudioReviewRole,
   recordStudioReviewDecision,
+  reopenStudioReviewThread,
   resolveStudioReviewThread,
   startStudioRevision,
   studioReviewReadiness,
   submitStudioReview,
+  SYNTHETIC_STUDIO_REVIEW_CUTS,
+  SYNTHETIC_STUDIO_REVIEW_PERSONAS,
+  type StudioReviewCollaboratorRole,
+  type StudioReviewPinCoordinate,
   type StudioReviewSession,
   type StudioReviewStatus,
   type StudioReviewThread,
@@ -30,6 +37,8 @@ import {
 import {
   archiveStudioReviewSession,
   readStudioReviewHistory,
+  restoreStudioReviewHistoryVersion,
+  saveStudioReviewCheckpoint,
   type StudioReviewHistoryDocument,
 } from "../studio-review-history-store";
 
@@ -37,6 +46,10 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 
 import { cn } from "@/shared/lib/utils";
 
+import {
+  StudioReviewHistoryRestoreSection,
+  StudioReviewRoleAndPinBoard,
+} from "./StudioReviewCutPinAndHistorySection";
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
 
 
@@ -83,32 +96,49 @@ function ReviewStat({
 function ReviewThreadCard({
   thread,
   locale: _locale,
+  highlighted,
   canResolve,
+  onFocusPin,
   onResolve,
+  onReopen,
 }: {
   readonly thread: StudioReviewThread;
   readonly locale: "ko" | "en";
+  readonly highlighted: boolean;
   readonly canResolve: boolean;
+  readonly onFocusPin: () => void;
   readonly onResolve: () => void;
+  readonly onReopen: () => void;
 }) {
   const bt = useBilingualLocalizer("studioReview.thread");
   return (
     <article
+      data-testid={`review-thread-card-${thread.id}`}
       className={cn(
-        "rounded-xl border p-3",
+        "rounded-xl border p-3 transition-colors",
         thread.status === "resolved"
           ? "border-success/25 bg-success-soft/10"
           : thread.kind === "change-request"
             ? "border-danger/30 bg-danger-soft/10"
             : "border-line bg-card",
+        highlighted && "ring-2 ring-accent",
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[0.62rem] font-black uppercase tracking-wide text-accent">
             {thread.kind}
           </span>
-          <b className="ml-2 text-xs text-fg">{thread.targetId}</b>
+          <b className="ml-1 text-xs text-fg">{thread.targetId}</b>
+          {thread.pinCoordinate ? (
+            <button
+              type="button"
+              onClick={onFocusPin}
+              className="rounded-full border border-line bg-panel px-2 py-0.5 text-[0.62rem] font-semibold text-fg-3 hover:border-accent/45 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {`${thread.pinCoordinate.cutId} (${Math.round(thread.pinCoordinate.xPercent)}%, ${Math.round(thread.pinCoordinate.yPercent)}%)`}
+            </button>
+          ) : null}
         </div>
         <span className="text-[0.65rem] font-bold text-fg-3">
           {thread.status === "resolved"
@@ -120,11 +150,28 @@ function ReviewThreadCard({
       {thread.status === "open" && canResolve ? (
         <button
           type="button"
-          onClick={onResolve}
+          data-testid={`review-resolve-btn-${thread.id}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onResolve();
+          }}
           className={buttonClass({ variant: "quiet", size: "sm", className: "mt-2 gap-1.5" })}
         >
           <CheckCircle2 size={14} aria-hidden="true" />
           {bt("해결 완료", "Resolve")}
+        </button>
+      ) : thread.status === "resolved" && canResolve ? (
+        <button
+          type="button"
+          data-testid={`review-reopen-btn-${thread.id}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onReopen();
+          }}
+          className={buttonClass({ variant: "quiet", size: "sm", className: "mt-2 gap-1.5" })}
+        >
+          <RefreshCcw size={14} aria-hidden="true" />
+          {bt("다시 열기", "Reopen")}
         </button>
       ) : null}
     </article>
@@ -142,13 +189,36 @@ export function StudioReviewPanel({
   const bt = useBilingual("StudioReviewPanel");
   const workspace = useStudioProjectWorkspace(projectId, locale);
   const session = workspace.state?.reviewSession ?? null;
+  const [activeRole, setActiveRole] = useState<StudioReviewCollaboratorRole>("editor");
+  const [selectedCutId, setSelectedCutId] = useState<string>(SYNTHETIC_STUDIO_REVIEW_CUTS[0]!.cutId);
+  const [pinCoordinate, setPinCoordinate] = useState<StudioReviewPinCoordinate>({
+    cutId: SYNTHETIC_STUDIO_REVIEW_CUTS[0]!.cutId,
+    xPercent: 50,
+    yPercent: 50,
+  });
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "resolved">("all");
+  const [highlightedThreadId, setHighlightedThreadId] = useState<string | null>(null);
   const [kind, setKind] = useState<StudioReviewThreadKind>("comment");
-  const [targetId, setTargetId] = useState("document");
+  const [targetId, setTargetId] = useState(() =>
+    formatCutPinTargetId({ cutId: SYNTHETIC_STUDIO_REVIEW_CUTS[0]!.cutId, xPercent: 50, yPercent: 50 }),
+  );
   const [body, setBody] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
   const [history, setHistory] = useState<StudioReviewHistoryDocument | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const permissions = useMemo(
+    () => permissionsForStudioReviewRole(activeRole),
+    [activeRole],
+  );
+  const activePersona = useMemo(
+    () =>
+      SYNTHETIC_STUDIO_REVIEW_PERSONAS.find((persona) => persona.role === activeRole)
+      ?? SYNTHETIC_STUDIO_REVIEW_PERSONAS[0]!,
+    [activeRole],
+  );
+  const activeActorId = activePersona.actorId || CURRENT_REVIEWER_ID;
 
   useEffect(() => {
     try {
@@ -161,10 +231,11 @@ export function StudioReviewPanel({
   const readiness = useMemo(() => session ? studioReviewReadiness(session) : null, [session]);
   const openThreads = session?.threads.filter((thread) => thread.status === "open").length ?? 0;
   const currentReviewerApproved = session?.decisions.some(
-    (decision) => decision.reviewerId === CURRENT_REVIEWER_ID && decision.decision === "approved",
+    (decision) => decision.reviewerId === activeActorId && decision.decision === "approved",
   ) ?? false;
   const canCurrentReviewerApprove = Boolean(
-    session
+    permissions.canDecide
+      && session
       && session.status !== "draft"
       && session.status !== "approved"
       && session.status !== "superseded"
@@ -172,9 +243,15 @@ export function StudioReviewPanel({
       && !currentReviewerApproved,
   );
   const missingOtherApprovalCount = readiness?.missingApprovalReviewerIds.filter(
-    (reviewerId) => reviewerId !== CURRENT_REVIEWER_ID,
+    (reviewerId) => reviewerId !== activeActorId,
   ).length ?? 0;
   const immutable = session?.status === "approved" || session?.status === "superseded";
+  const visibleThreads = useMemo(() => {
+    const list = session?.threads ?? [];
+    if (statusFilter === "open") return list.filter((thread) => thread.status === "open");
+    if (statusFilter === "resolved") return list.filter((thread) => thread.status === "resolved");
+    return list;
+  }, [session?.threads, statusFilter]);
 
   const persist = (next: StudioReviewSession, success: string): boolean => {
     const result = workspace.update((current) => ({ ...current, reviewSession: next }));
@@ -188,11 +265,11 @@ export function StudioReviewPanel({
   };
 
   const submit = () => {
-    if (!session) return;
+    if (!session || !permissions.canDecide) return;
     try {
-      const requiredReviewerIds = session.requiredReviewerIds.includes(CURRENT_REVIEWER_ID)
+      const requiredReviewerIds = session.requiredReviewerIds.includes(activeActorId)
         ? session.requiredReviewerIds
-        : [...session.requiredReviewerIds, CURRENT_REVIEWER_ID];
+        : [...session.requiredReviewerIds, activeActorId];
       persist(
         submitStudioReview({ ...session, requiredReviewerIds }, new Date().toISOString()),
         bt("검토를 시작했습니다.", "Review started."),
@@ -203,28 +280,35 @@ export function StudioReviewPanel({
   };
 
   const addThread = () => {
+    if (!permissions.canComment) {
+      setError(bt("열람 전용 역할은 댓글을 작성할 수 없습니다.", "View-only roles cannot add comments."));
+      return;
+    }
     if (!session || !body.trim() || !targetId.trim()) {
       setError(bt("대상과 내용을 입력해 주세요.", "Enter a target and message."));
       return;
     }
     const at = new Date().toISOString();
     try {
+      const threadId = createId("thread");
       const next = addStudioReviewThread(session, {
-        id: createId("thread"),
+        id: threadId,
         kind,
         targetId: targetId.trim(),
         status: "open",
         messages: [{
           id: createId("message"),
-          authorId: CURRENT_REVIEWER_ID,
+          authorId: activeActorId,
           body: body.trim(),
           createdAt: at,
         }],
         resolvedBy: null,
         resolvedAt: null,
+        pinCoordinate,
       }, at);
       if (persist(next, bt("검토 내용을 추가했습니다.", "Review note added."))) {
         setBody("");
+        setHighlightedThreadId(threadId);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Review note could not be added.");
@@ -232,10 +316,10 @@ export function StudioReviewPanel({
   };
 
   const resolve = (threadId: string) => {
-    if (!session) return;
+    if (!session || !permissions.canResolve) return;
     try {
       persist(
-        resolveStudioReviewThread(session, threadId, CURRENT_REVIEWER_ID, new Date().toISOString()),
+        resolveStudioReviewThread(session, threadId, activeActorId, new Date().toISOString()),
         bt("수정 내용을 해결했습니다.", "Review item resolved."),
       );
     } catch (cause) {
@@ -243,15 +327,27 @@ export function StudioReviewPanel({
     }
   };
 
+  const reopen = (threadId: string) => {
+    if (!session || !permissions.canResolve) return;
+    try {
+      persist(
+        reopenStudioReviewThread(session, threadId, activeActorId, new Date().toISOString()),
+        bt("항목을 다시 열림 상태로 되돌렸습니다.", "Review item reopened."),
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Review item could not be reopened.");
+    }
+  };
+
   const decide = (decision: "approved" | "changes-requested") => {
-    if (!session) return;
+    if (!session || !permissions.canDecide) return;
     if (decision === "approved" && !canCurrentReviewerApprove) {
       setError(bt("열린 수정 요청을 해결하거나 이미 기록된 승인을 확인해 주세요.", "Resolve open change requests or review the existing approval first."));
       return;
     }
     try {
       const next = recordStudioReviewDecision(session, {
-        reviewerId: CURRENT_REVIEWER_ID,
+        reviewerId: activeActorId,
         decision,
         note: decisionNote.trim(),
         decidedAt: new Date().toISOString(),
@@ -267,11 +363,11 @@ export function StudioReviewPanel({
   };
 
   const startRevision = () => {
-    if (!session || session.status !== "approved") return;
+    if (!session || session.status !== "approved" || !permissions.canEditManuscript) return;
     try {
       const transition = startStudioRevision(session, {
         nextVersionId: `${session.versionId}-revision-${Date.now()}`,
-        actorId: CURRENT_REVIEWER_ID,
+        actorId: activeActorId,
         createdAt: new Date().toISOString(),
       });
       const archived = archiveStudioReviewSession(window.localStorage, projectId, transition.previous);
@@ -280,6 +376,44 @@ export function StudioReviewPanel({
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "A new revision could not be created.");
+    }
+  };
+
+  const saveCheckpoint = () => {
+    if (!session || !permissions.canSaveCheckpoint) return;
+    try {
+      const now = new Date().toISOString();
+      const archived = saveStudioReviewCheckpoint(
+        window.localStorage,
+        projectId,
+        session,
+        `ckpt-${(history?.sessions.length ?? 0) + 1}`,
+        now,
+      );
+      setHistory(archived);
+      setMessage(bt("현재 검수·원고 스냅샷을 이력 보관함에 저장했습니다.", "Saved current review snapshot to history."));
+      setError(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Checkpoint could not be saved.");
+    }
+  };
+
+  const restoreHistoryVersion = (targetVersionId: string) => {
+    if (!session || !permissions.canRestoreHistory) return;
+    try {
+      const now = new Date().toISOString();
+      const outcome = restoreStudioReviewHistoryVersion(
+        window.localStorage,
+        projectId,
+        session,
+        targetVersionId,
+        now,
+      );
+      if (persist(outcome.restored, bt(`${targetVersionId} 시점으로 이력을 복구했습니다.`, `Restored history snapshot ${targetVersionId}.`))) {
+        setHistory(outcome.history);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "History snapshot could not be restored.");
     }
   };
 
@@ -341,7 +475,12 @@ export function StudioReviewPanel({
 
       <div className="mt-5 flex flex-wrap gap-2">
         {session.status === "draft" ? (
-          <button type="button" onClick={submit} className={buttonClass({ className: "gap-1.5" })}>
+          <button
+            type="button"
+            disabled={!permissions.canDecide}
+            onClick={submit}
+            className={buttonClass({ className: "gap-1.5" })}
+          >
             <Send size={15} aria-hidden="true" />
             {bt("검토 시작", "Start review")}
           </button>
@@ -361,6 +500,7 @@ export function StudioReviewPanel({
             ) : null}
             <button
               type="button"
+              disabled={!permissions.canDecide}
               onClick={() => decide("changes-requested")}
               className={buttonClass({ variant: "outline", className: "gap-1.5" })}
             >
@@ -369,12 +509,46 @@ export function StudioReviewPanel({
           </>
         ) : null}
         {session.status === "approved" ? (
-          <button type="button" onClick={startRevision} className={buttonClass({ className: "gap-1.5" })}>
+          <button
+            type="button"
+            disabled={!permissions.canEditManuscript}
+            onClick={startRevision}
+            className={buttonClass({ className: "gap-1.5" })}
+          >
             <RefreshCcw size={15} aria-hidden="true" />
             {bt("새 초안에서 수정", "Edit in a new draft")}
           </button>
         ) : null}
       </div>
+
+      <StudioReviewRoleAndPinBoard
+        activeRole={activeRole}
+        permissions={permissions}
+        selectedCutId={selectedCutId}
+        pinCoordinate={pinCoordinate}
+        threads={session.threads}
+        highlightedThreadId={highlightedThreadId}
+        immutable={immutable}
+        onSelectRole={setActiveRole}
+        onSelectCut={(nextCutId) => {
+          setSelectedCutId(nextCutId);
+          const nextPin = { cutId: nextCutId, xPercent: pinCoordinate.xPercent, yPercent: pinCoordinate.yPercent };
+          setPinCoordinate(nextPin);
+          setTargetId(formatCutPinTargetId(nextPin));
+        }}
+        onPickCoordinate={(nextPin) => {
+          setSelectedCutId(nextPin.cutId);
+          setPinCoordinate(nextPin);
+          setTargetId(formatCutPinTargetId(nextPin));
+        }}
+        onSelectThreadPin={(thread) => {
+          setHighlightedThreadId(thread.id);
+          if (thread.pinCoordinate) {
+            setSelectedCutId(thread.pinCoordinate.cutId);
+            setPinCoordinate(thread.pinCoordinate);
+          }
+        }}
+      />
 
       {(readiness?.openChangeRequestCount ?? 0) > 0 ? (
         <div className="mt-4 rounded-xl border border-warning/35 bg-warning-soft/15 p-3 text-xs leading-5 text-warning">
@@ -394,7 +568,7 @@ export function StudioReviewPanel({
           </h3>
           <select
             value={kind}
-            disabled={immutable}
+            disabled={immutable || !permissions.canComment}
             onChange={(event) => setKind(event.target.value as StudioReviewThreadKind)}
             className="mt-3 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
           >
@@ -404,7 +578,7 @@ export function StudioReviewPanel({
           </select>
           <input
             value={targetId}
-            disabled={immutable}
+            disabled={immutable || !permissions.canComment}
             onChange={(event) => setTargetId(event.target.value)}
             aria-label={bt("검토 대상", "Review target")}
             className="mt-2 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm text-fg"
@@ -412,7 +586,7 @@ export function StudioReviewPanel({
           />
           <textarea
             value={body}
-            disabled={immutable}
+            disabled={immutable || !permissions.canComment}
             onChange={(event) => setBody(event.target.value)}
             aria-label={bt("검토 내용", "Review message")}
             rows={4}
@@ -420,7 +594,8 @@ export function StudioReviewPanel({
           />
           <button
             type="button"
-            disabled={immutable}
+            data-testid="review-add-thread-btn"
+            disabled={immutable || !permissions.canComment}
             onClick={addThread}
             className={buttonClass({ size: "sm", className: "mt-2 w-full gap-1.5" })}
           >
@@ -430,6 +605,7 @@ export function StudioReviewPanel({
           {!immutable && session.status !== "draft" ? (
             <textarea
               value={decisionNote}
+              disabled={!permissions.canDecide}
               onChange={(event) => setDecisionNote(event.target.value)}
               aria-label={bt("승인 메모", "Decision note")}
               rows={2}
@@ -440,27 +616,68 @@ export function StudioReviewPanel({
         </div>
 
         <div className="rounded-2xl border border-line bg-panel/55 p-4">
-          <h3 className="text-sm font-black text-fg">
-            {bt("댓글·수정 요청", "Comments and change requests")}
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-black text-fg">
+              {bt("댓글·수정 요청", "Comments and change requests")}
+            </h3>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("해결 상태 필터", "Resolution status filter")}>
+              {([
+                { id: "all", ko: "전체", en: "All" },
+                { id: "open", ko: "열림", en: "Open" },
+                { id: "resolved", ko: "해결됨", en: "Resolved" },
+              ] as const).map((filterOpt) => (
+                <button
+                  key={filterOpt.id}
+                  type="button"
+                  data-testid={`review-filter-${filterOpt.id}`}
+                  aria-pressed={statusFilter === filterOpt.id}
+                  onClick={() => setStatusFilter(filterOpt.id)}
+                  className={cn(
+                    "min-h-8 rounded-full border px-2.5 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    statusFilter === filterOpt.id
+                      ? "border-accent bg-accent text-on-accent"
+                      : "border-line bg-card text-fg-2 hover:bg-panel hover:text-fg",
+                  )}
+                >
+                  {bt(filterOpt.ko, filterOpt.en)}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="mt-3 space-y-3">
-            {session.threads.length === 0 ? (
+            {visibleThreads.length === 0 ? (
               <p className="rounded-xl border border-dashed border-line p-5 text-center text-xs text-fg-3">
-                {bt("아직 검토 내용이 없습니다.", "No review items yet.")}
+                {bt("조건에 맞는 검토 내용이 없습니다.", "No matching review items.")}
               </p>
             ) : null}
-            {session.threads.map((thread) => (
+            {visibleThreads.map((thread) => (
               <ReviewThreadCard
                 key={thread.id}
                 thread={thread}
                 locale={locale}
-                canResolve={!immutable}
+                highlighted={highlightedThreadId === thread.id}
+                canResolve={!immutable && permissions.canResolve}
+                onFocusPin={() => {
+                  setHighlightedThreadId(thread.id);
+                  if (thread.pinCoordinate) {
+                    setSelectedCutId(thread.pinCoordinate.cutId);
+                    setPinCoordinate(thread.pinCoordinate);
+                  }
+                }}
                 onResolve={() => resolve(thread.id)}
+                onReopen={() => reopen(thread.id)}
               />
             ))}
           </div>
         </div>
       </div>
+
+      <StudioReviewHistoryRestoreSection
+        history={history}
+        permissions={permissions}
+        onSaveCheckpoint={saveCheckpoint}
+        onRestoreVersion={restoreHistoryVersion}
+      />
     </section>
   );
 }

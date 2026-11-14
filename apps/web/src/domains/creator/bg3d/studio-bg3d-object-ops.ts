@@ -13,7 +13,8 @@ export interface StudioBg3dWorldBounds {
   readonly max: Bg3dVec3;
 }
 
-export type StudioBg3dSnapAxis = "xyz" | "xz" | "none";
+export type StudioBg3dAxisLock = "xyz" | "xz" | "x" | "y" | "z";
+export type StudioBg3dSnapAxis = "xyz" | "xz" | "x" | "y" | "z" | "none";
 
 export interface StudioBg3dSnapSettings {
   /** When false, numeric/gizmo commits pass through unchanged. */
@@ -24,6 +25,8 @@ export interface StudioBg3dSnapSettings {
   readonly rotateStepDegrees: number;
   /** Which axes receive translate snap. */
   readonly translateAxes: StudioBg3dSnapAxis;
+  /** Optional gizmo & numeric axis constraint (independent of grid snap toggle). */
+  readonly axisLock?: StudioBg3dAxisLock;
 }
 
 export interface StudioBg3dObjectFlags {
@@ -60,7 +63,39 @@ export function snapVec3(value: Bg3dVec3, step: number, axes: StudioBg3dSnapAxis
   const z = isFiniteNumber(value[2]) ? value[2] : 0;
   if (axes === "none" || !isFiniteNumber(step) || step <= 0) return [x, y, z];
   if (axes === "xz") return [snapScalar(x, step), y, snapScalar(z, step)];
+  if (axes === "x") return [snapScalar(x, step), y, z];
+  if (axes === "y") return [x, snapScalar(y, step), z];
+  if (axes === "z") return [x, y, snapScalar(z, step)];
   return [snapScalar(x, step), snapScalar(y, step), snapScalar(z, step)];
+}
+
+export function resolveStudioBg3dGizmoAxes(
+  settings: Pick<StudioBg3dSnapSettings, "axisLock"> | null | undefined,
+): { readonly showX: boolean; readonly showY: boolean; readonly showZ: boolean } {
+  const lock = settings?.axisLock ?? "xyz";
+  if (lock === "x") return { showX: true, showY: false, showZ: false };
+  if (lock === "y") return { showX: false, showY: true, showZ: false };
+  if (lock === "z") return { showX: false, showY: false, showZ: true };
+  if (lock === "xz") return { showX: true, showY: false, showZ: true };
+  return { showX: true, showY: true, showZ: true };
+}
+
+export function constrainPositionToAxisLock(
+  previous: Bg3dVec3,
+  next: Bg3dVec3,
+  axisLock: StudioBg3dAxisLock | undefined,
+): Bg3dMutableVec3 {
+  const px = isFiniteNumber(previous[0]) ? previous[0] : 0;
+  const py = isFiniteNumber(previous[1]) ? previous[1] : 0;
+  const pz = isFiniteNumber(previous[2]) ? previous[2] : 0;
+  const nx = isFiniteNumber(next[0]) ? next[0] : px;
+  const ny = isFiniteNumber(next[1]) ? next[1] : py;
+  const nz = isFiniteNumber(next[2]) ? next[2] : pz;
+  if (!axisLock || axisLock === "xyz") return [nx, ny, nz];
+  if (axisLock === "xz") return [nx, py, nz];
+  if (axisLock === "x") return [nx, py, pz];
+  if (axisLock === "y") return [px, ny, pz];
+  return [px, py, nz];
 }
 
 /** Snap Euler XYZ radians to a degree grid. */
@@ -105,9 +140,19 @@ export function normalizeStudioBg3dSnapSettings(raw: unknown): StudioBg3dSnapSet
   const translateAxes =
     candidate.translateAxes === "xyz" ||
     candidate.translateAxes === "xz" ||
+    candidate.translateAxes === "x" ||
+    candidate.translateAxes === "y" ||
+    candidate.translateAxes === "z" ||
     candidate.translateAxes === "none"
       ? candidate.translateAxes
       : DEFAULT_STUDIO_BG3D_SNAP_SETTINGS.translateAxes;
+  const axisLock =
+    candidate.axisLock === "xz" ||
+    candidate.axisLock === "x" ||
+    candidate.axisLock === "y" ||
+    candidate.axisLock === "z"
+      ? candidate.axisLock
+      : undefined;
   const translateStep = isFiniteNumber(candidate.translateStep)
     ? Math.min(10, Math.max(0.001, candidate.translateStep))
     : DEFAULT_STUDIO_BG3D_SNAP_SETTINGS.translateStep;
@@ -119,6 +164,7 @@ export function normalizeStudioBg3dSnapSettings(raw: unknown): StudioBg3dSnapSet
     translateStep,
     rotateStepDegrees,
     translateAxes,
+    ...(axisLock ? { axisLock } : {}),
   };
 }
 
@@ -373,8 +419,22 @@ export function filterStudioBg3dLayerItems(
 }
 
 export function studioBg3dSnapSettingsSummary(settings: StudioBg3dSnapSettings): string {
-  if (!settings.enabled) return "스냅 끔";
+  const lockSuffix =
+    settings.axisLock && settings.axisLock !== "xyz"
+      ? ` · ${settings.axisLock.toUpperCase()}축 고정`
+      : "";
+  if (!settings.enabled) return `스냅 끔${lockSuffix}`;
   const axes =
-    settings.translateAxes === "xz" ? "XZ" : settings.translateAxes === "none" ? "회전만" : "XYZ";
-  return `이동 ${settings.translateStep} · 회전 ${settings.rotateStepDegrees}° · ${axes}`;
+    settings.translateAxes === "xz"
+      ? "XZ"
+      : settings.translateAxes === "x"
+        ? "X"
+        : settings.translateAxes === "y"
+          ? "Y"
+          : settings.translateAxes === "z"
+            ? "Z"
+            : settings.translateAxes === "none"
+              ? "회전만"
+              : "XYZ";
+  return `이동 ${settings.translateStep} · 회전 ${settings.rotateStepDegrees}° · ${axes}${lockSuffix}`;
 }

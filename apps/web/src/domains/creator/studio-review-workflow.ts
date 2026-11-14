@@ -10,6 +10,132 @@ export type StudioReviewStatus = (typeof STUDIO_REVIEW_STATUSES)[number];
 export type StudioReviewThreadKind = "comment" | "change-request" | "paint-over";
 export type StudioReviewThreadStatus = "open" | "resolved";
 export type StudioReviewDecision = "approved" | "changes-requested";
+export type StudioReviewCollaboratorRole = "editor" | "reviewer" | "viewer";
+
+export interface StudioReviewPinCoordinate {
+  readonly cutId: string;
+  readonly xPercent: number;
+  readonly yPercent: number;
+}
+
+export interface SyntheticReviewCutPreset {
+  readonly cutId: string;
+  readonly labelKo: string;
+  readonly labelEn: string;
+  readonly stageNoteKo: string;
+  readonly stageNoteEn: string;
+}
+
+/** 실제 고객 원고를 쓰지 않는 합성 데모 컷 목록. */
+export const SYNTHETIC_STUDIO_REVIEW_CUTS: readonly SyntheticReviewCutPreset[] = Object.freeze([
+  Object.freeze({
+    cutId: "cut-01",
+    labelKo: "컷 01 · 오프닝 전경",
+    labelEn: "Cut 01 · Opening Wide",
+    stageNoteKo: "도시 야경 도입부 · 타이틀 여백 확인",
+    stageNoteEn: "City night intro · title safe-margin check",
+  }),
+  Object.freeze({
+    cutId: "cut-02",
+    labelKo: "컷 02 · 대사 클로즈업",
+    labelEn: "Cut 02 · Dialogue Close-up",
+    stageNoteKo: "주인공 시선 방향 · 말풍선 꼬리 위치",
+    stageNoteEn: "Protagonist gaze & speech-balloon tail",
+  }),
+  Object.freeze({
+    cutId: "cut-03",
+    labelKo: "컷 03 · 액션 하이라이트",
+    labelEn: "Cut 03 · Action Highlight",
+    stageNoteKo: "속도선 밀도 · 명암 대비 검수",
+    stageNoteEn: "Speedline density & shadow contrast",
+  }),
+  Object.freeze({
+    cutId: "cut-04",
+    labelKo: "컷 04 · 엔딩 여운",
+    labelEn: "Cut 04 · Cliffhanger Ending",
+    stageNoteKo: "스크롤 간격 · 하단 예고 문구 배치",
+    stageNoteEn: "Scroll pacing & bottom teaser placement",
+  }),
+]);
+
+export function formatCutPinTargetId(pin: StudioReviewPinCoordinate): string {
+  return `${pin.cutId} @ (${Math.round(pin.xPercent)}%, ${Math.round(pin.yPercent)}%)`;
+}
+
+export interface StudioReviewRolePermissions {
+  readonly role: StudioReviewCollaboratorRole;
+  readonly canComment: boolean;
+  readonly canResolve: boolean;
+  readonly canDecide: boolean;
+  readonly canSaveCheckpoint: boolean;
+  readonly canRestoreHistory: boolean;
+  readonly canEditManuscript: boolean;
+}
+
+export interface SyntheticStudioReviewPersona {
+  readonly actorId: string;
+  readonly role: StudioReviewCollaboratorRole;
+  readonly labelKo: string;
+  readonly labelEn: string;
+}
+
+/** 실제 고객 데이터를 일절 사용하지 않는 합성 데모 협업 역할 프리셋. */
+export const SYNTHETIC_STUDIO_REVIEW_PERSONAS: readonly SyntheticStudioReviewPersona[] = Object.freeze([
+  Object.freeze({
+    actorId: "project-owner",
+    role: "editor",
+    labelKo: "데모 메인작가 (편집·이력 복구)",
+    labelEn: "Demo Lead Artist (Edit & Restore)",
+  }),
+  Object.freeze({
+    actorId: "demo-reviewer-pd",
+    role: "reviewer",
+    labelKo: "데모 PD검수자 (댓글·승인 전용)",
+    labelEn: "Demo PD Reviewer (Review Only)",
+  }),
+  Object.freeze({
+    actorId: "demo-viewer-guest",
+    role: "viewer",
+    labelKo: "데모 열람참여자 (보기 전용)",
+    labelEn: "Demo Guest Viewer (Read Only)",
+  }),
+]);
+
+export function permissionsForStudioReviewRole(
+  role: StudioReviewCollaboratorRole,
+): StudioReviewRolePermissions {
+  if (role === "editor") {
+    return Object.freeze({
+      role,
+      canComment: true,
+      canResolve: true,
+      canDecide: true,
+      canSaveCheckpoint: true,
+      canRestoreHistory: true,
+      canEditManuscript: true,
+    });
+  }
+  if (role === "reviewer") {
+    return Object.freeze({
+      role,
+      canComment: true,
+      canResolve: true,
+      canDecide: true,
+      canSaveCheckpoint: false,
+      canRestoreHistory: false,
+      canEditManuscript: false,
+    });
+  }
+  return Object.freeze({
+    role: "viewer",
+    canComment: false,
+    canResolve: false,
+    canDecide: false,
+    canSaveCheckpoint: false,
+    canRestoreHistory: false,
+    canEditManuscript: false,
+  });
+}
 
 export interface StudioReviewMessage {
   readonly id: string;
@@ -26,6 +152,7 @@ export interface StudioReviewThread {
   readonly messages: readonly StudioReviewMessage[];
   readonly resolvedBy: string | null;
   readonly resolvedAt: string | null;
+  readonly pinCoordinate?: StudioReviewPinCoordinate | null;
 }
 
 export interface StudioReviewerDecision {
@@ -181,6 +308,35 @@ export function resolveStudioReviewThread(
   });
   if (!matched) throw new Error("Review thread was not found.");
   return immutableSession({ ...session, threads, updatedAt: timestamp });
+}
+
+export function reopenStudioReviewThread(
+  session: StudioReviewSession,
+  threadId: string,
+  actorId: string,
+  reopenedAt: string,
+): StudioReviewSession {
+  assertMutable(session);
+  const id = requireText(threadId, "Thread id");
+  requireText(actorId, "Actor id");
+  const timestamp = requireTimestamp(reopenedAt);
+  let matchedKind: StudioReviewThreadKind | null = null;
+  const threads = session.threads.map((thread) => {
+    if (thread.id !== id) return thread;
+    matchedKind = thread.kind;
+    return Object.freeze({
+      ...thread,
+      status: "open" as const,
+      resolvedBy: null,
+      resolvedAt: null,
+    });
+  });
+  if (!matchedKind) throw new Error("Review thread was not found.");
+  const nextStatus: StudioReviewStatus =
+    matchedKind === "change-request" && session.status !== "draft"
+      ? "changes-requested"
+      : session.status;
+  return immutableSession({ ...session, status: nextStatus, threads, updatedAt: timestamp });
 }
 
 export function studioReviewReadiness(

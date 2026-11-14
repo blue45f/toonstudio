@@ -87,3 +87,61 @@ export function archiveStudioReviewSession(
   storage.setItem(keyFor(projectId), JSON.stringify(next));
   return next;
 }
+
+/** Save a non-destructive checkpoint snapshot of the current review session into history. */
+export function saveStudioReviewCheckpoint(
+  storage: StudioReviewHistoryStorage,
+  projectId: string,
+  session: StudioReviewSession,
+  checkpointIdSuffix: string,
+  savedAt: string,
+): StudioReviewHistoryDocument {
+  const cleanSuffix = checkpointIdSuffix.trim().replace(/[^a-zA-Z0-9_-]/gu, "-").slice(0, 36) || "ckpt";
+  const snapshot: StudioReviewSession = Object.freeze({
+    ...session,
+    versionId: `${session.versionId}-${cleanSuffix}`,
+    basedOnVersionId: session.versionId,
+    updatedAt: savedAt,
+  });
+  return archiveStudioReviewSession(storage, projectId, snapshot);
+}
+
+/** Restore a previously archived or checkpointed review session while backing up the current state. */
+export function restoreStudioReviewHistoryVersion(
+  storage: StudioReviewHistoryStorage,
+  projectId: string,
+  currentSession: StudioReviewSession,
+  targetVersionId: string,
+  restoredAt: string,
+): { readonly history: StudioReviewHistoryDocument; readonly restored: StudioReviewSession } {
+  const currentHistory = readStudioReviewHistory(storage, projectId);
+  const target = currentHistory.sessions.find((item) => item.versionId === targetVersionId);
+  if (!target) {
+    throw new Error("Target review version was not found in history.");
+  }
+  const historyAfterBackup = saveStudioReviewCheckpoint(
+    storage,
+    projectId,
+    currentSession,
+    `backup-${Date.parse(restoredAt) || Date.now()}`,
+    restoredAt,
+  );
+  const hasOpenChangeRequest = target.threads.some(
+    (thread) => thread.kind === "change-request" && thread.status === "open",
+  );
+  const restoredStatus =
+    target.status === "approved" || target.status === "superseded"
+      ? (hasOpenChangeRequest ? "changes-requested" : "in-review")
+      : target.status;
+  const restored: StudioReviewSession = Object.freeze({
+    ...target,
+    basedOnVersionId: target.versionId,
+    status: restoredStatus,
+    approvedAt: null,
+    updatedAt: restoredAt,
+  });
+  return Object.freeze({
+    history: historyAfterBackup,
+    restored,
+  });
+}

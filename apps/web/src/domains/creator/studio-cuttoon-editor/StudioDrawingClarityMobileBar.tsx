@@ -8,6 +8,7 @@ import { requestStudioMobileDeviceGuide } from "../studio-shell/mobile-device-gu
 import { requestStudioShellFloatingLayoutManagerOpen } from "../studio-shell/studio-shell-floating-layout-events";
 import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
+import { requestStudioCommandSearch } from "../studio-help-center-channel";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
@@ -51,6 +52,7 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
         { id: "assets", label: bt("소재 찾기", "Find assets"), run: () => { s.setMobileSheet(null); preloadStudioAssetToolPopoverBody(); s.setMenu("asset"); } },
         { id: "export", label: bt("원고 내보내기", "Export draft"), run: () => { s.setMobileSheet(null); s.setExportMenuOpen(true); } },
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { s.setMobileSheet(null); requestStudioAllTools(trigger); } },
+        { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: () => { s.setMobileSheet(null); requestStudioCommandSearch({ scope: "all" }); } },
         { id: "team", label: bt("함께 작업", "Work together"), run: () => { clarity.showSavedLayout(); s.setTeamPanelOpen(true); } },
         { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
         { id: "help", label: bt("그리기·손가락 안내", "Drawing and touch guide"), run: () => setHelpOpen(true) },

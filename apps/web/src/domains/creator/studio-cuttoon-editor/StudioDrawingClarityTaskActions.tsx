@@ -6,7 +6,7 @@ import type { StudioDrawingClarityAction } from "./StudioDrawingClarityMore";
 
 const TASKS = [
   { id: "document", ko: "원고와 레이어", en: "Draft and layers", detailKo: "페이지 · 레이어 · 소재", detailEn: "Pages, layers and assets", ids: ["pages", "layers", "assets"], icon: BookOpen, emblem: "/brand/luminous-atelier-20261114/icon-studio-layers-color.webp" },
-  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 전체 도구", detailEn: "Pen settings and all tools", ids: ["brush", "all"], icon: Brush, emblem: "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" },
+  { id: "drawing", ko: "그리기 도구", en: "Drawing tools", detailKo: "펜 설정 · 전체 도구 · 검색", detailEn: "Pen settings, all tools and search", ids: ["brush", "all", "search"], icon: Brush, emblem: "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" },
   { id: "output", ko: "내보내기와 협업", en: "Export and collaboration", detailKo: "파일 출력 · 함께 작업", detailEn: "Output files and work together", ids: ["export", "team"], icon: Send, emblem: "/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp" },
   { id: "workspace", ko: "화면과 도움말", en: "Display and help", detailKo: "작업 배치 · 사용 방법 · 문제 해결", detailEn: "Workspace, guides and recovery", ids: ["windows", "view", "help", "device", "status"], icon: MonitorCog, emblem: "/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp" },
 ] as const;

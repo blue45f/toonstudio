@@ -31,6 +31,7 @@ export function readStudioBg3dEditorSource(): string {
     "./studio-bg3d-editor-physics-host.ts",
     "./studio-bg3d-editor-misc-host.ts",
     "./StudioBg3dEditorSceneGraph.tsx",
+    "./StudioBg3dPlacementAndAxisHud.tsx",
     "./StudioBg3dEditorViewport.tsx",
     "./StudioBg3dEditorSidebar.tsx",
     "./StudioBg3dEditorSidebarExtras.tsx",

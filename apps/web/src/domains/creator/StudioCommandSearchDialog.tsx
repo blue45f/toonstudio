@@ -19,6 +19,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 import { createPortal } from "react-dom";
 
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
+import { StudioCommandSearchBeginnerGuide } from "./planning/StudioCommandSearchBeginnerGuide";
 import {
   getStudioCommandExecutionBindings,
   subscribeStudioCommandExecutionBindings,
@@ -581,11 +582,19 @@ export function StudioCommandSearchDialog({
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
           {query.trim().length === 0 ? (
-            <p className="px-2 py-6 text-center text-xs leading-relaxed text-fg-3">
-              쓰던 프로그램의 이름 그대로 찾아보세요.
-              <br />
-              다른 앱에서 쓰던 용어를 우리 기능으로 이어 줍니다.
-            </p>
+            <>
+              <p className="px-2 py-3 text-center text-xs leading-relaxed text-fg-3">
+                쓰던 프로그램의 이름 그대로 찾아보세요.
+                <br />
+                다른 앱에서 쓰던 용어를 우리 기능으로 이어 줍니다.
+              </p>
+              <StudioCommandSearchBeginnerGuide
+                onPickQuery={(next) => {
+                  setQuery(next);
+                  inputRef.current?.focus();
+                }}
+              />
+            </>
           ) : outcome.sections.length === 0 ? (
             <div className="px-2 py-6 text-center text-xs text-fg-3">
               <p>

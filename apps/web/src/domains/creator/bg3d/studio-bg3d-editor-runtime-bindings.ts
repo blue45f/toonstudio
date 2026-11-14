@@ -349,6 +349,7 @@ export {
 } from "./studio-bg3d-mood-rigs";
 export {
   applyStudioBg3dSnapToTransform,
+  constrainPositionToAxisLock,
   DEFAULT_STUDIO_BG3D_SNAP_SETTINGS,
   filterStudioBg3dLayerItems,
   groundModelTransform,
@@ -357,9 +358,11 @@ export {
   isBgObjectTransformBlocked,
   isBgObjectVisible,
   normalizeStudioBg3dSnapSettings,
+  resolveStudioBg3dGizmoAxes,
   STUDIO_BG3D_ROTATE_STEP_OPTIONS_DEG,
   STUDIO_BG3D_TRANSLATE_STEP_OPTIONS,
   studioBg3dSnapSettingsSummary,
+  type StudioBg3dAxisLock,
   type StudioBg3dLayerListItem,
   type StudioBg3dSnapSettings,
 } from "./studio-bg3d-object-ops";

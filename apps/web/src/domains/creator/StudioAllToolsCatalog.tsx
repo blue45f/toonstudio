@@ -8,6 +8,17 @@ import { matchesStudioRailToolQuery } from "./studio-rail-tool-search";
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+const QUICK_TOOL_ALIASES = [
+  { query: "손떨림 보정", ko: "손떨림 보정", en: "Stabilizer" },
+  { query: "틈 닫기", ko: "틈 닫기", en: "Close gap" },
+  { query: "원근 자", ko: "원근 자", en: "Perspective" },
+  { query: "칸 나누기", ko: "칸 나누기", en: "Cut split" },
+  { query: "말풍선", ko: "말풍선", en: "Bubble" },
+  { query: "캐릭터 셰이퍼", ko: "캐릭터 셰이퍼", en: "Shaper" },
+  { query: "3D 배치", ko: "3D 배치", en: "3D place" },
+  { query: "컷 댓글", ko: "컷 댓글", en: "Review pin" },
+] as const;
+
 export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onPin, onUsed }: {
   definitions: Record<StudioRailToolId, StudioRailToolButtonProps>;
   pinned: readonly StudioRailToolId[];
@@ -27,10 +38,19 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
   return <div className="space-y-2">
     <label className="relative block"><Search size={16} aria-hidden className="absolute left-3 top-3.5 text-fg-2" />
       <input type="search" aria-label="전체 도구 검색" value={query}
-        placeholder="이름 · 스포이드 · 3D · 단축키" onChange={(event) => onQuery(event.currentTarget.value.slice(0, 80))}
+        placeholder={bt("이름 · 손떨림 보정 · 틈 닫기 · 원근 자 · 단축키", "Name · stabilizer · close gap · perspective · shortcut")} onChange={(event) => onQuery(event.currentTarget.value.slice(0, 80))}
         className="min-h-11 w-full rounded-lg border border-line bg-card pl-9 pr-3 text-sm text-fg focus-visible:outline-accent" />
     </label>
-    {!searching && !selectedGroup ? <nav aria-label={bt("도구 분류 고르기", "Choose a tool category")} className="grid gap-2 sm:grid-cols-2">
+    {!searching && !selectedGroup ? <>
+      <div data-studio-all-tools-alias-chips="true" className="flex flex-wrap gap-1" aria-label={bt("자주 찾는 별칭", "Popular aliases")}>
+        {QUICK_TOOL_ALIASES.map((chip) => (
+          <button key={chip.query} type="button" data-studio-tool-alias-chip={chip.query} onClick={() => onQuery(chip.query)}
+            className="min-h-7 rounded-full border border-line bg-card px-2.5 text-[0.68rem] font-medium text-fg-2 hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            {bt(chip.ko, chip.en)}
+          </button>
+        ))}
+      </div>
+      <nav aria-label={bt("도구 분류 고르기", "Choose a tool category")} className="grid gap-2 sm:grid-cols-2">
       {STUDIO_CHROME_RAIL_TOOL_GROUPS.map(group => {
         const Icon = definitions[group.toolIds[0]].icon;
         return <button key={group.id} type="button" data-studio-tool-category={group.id}
@@ -39,7 +59,8 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
           <Icon size={20} aria-hidden /><span className="min-w-0 flex-1"><strong className="block">{groupLabel(group.id, group.labelKo)}</strong><small className="text-fg-2">{bt(`${group.toolIds.length}개 도구`, `${group.toolIds.length} tools`)}</small></span><ChevronRight size={16} aria-hidden />
         </button>;
       })}
-    </nav> : <>
+    </nav>
+    </> : <>
       <header className="flex items-center gap-2 border-b border-line pb-2">
         <button type="button" className="grid size-11 shrink-0 place-items-center rounded-lg hover:bg-raised" aria-label={bt("도구 분류로 돌아가기", "Back to tool categories")}
           onClick={() => { const previous = groupId; onQuery(""); setGroupId(null); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-studio-tool-category="${previous ?? "draw"}"]`)?.focus()); }}><ArrowLeft size={18} aria-hidden /></button>

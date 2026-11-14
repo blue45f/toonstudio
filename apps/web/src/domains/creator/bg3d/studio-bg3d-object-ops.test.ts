@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyStudioBg3dSnapToTransform,
   centerAndGroundWorldBoundsPosition,
+  constrainPositionToAxisLock,
   filterStudioBg3dLayerItems,
   groundModelTransform,
   groundPrimitiveTransform,
@@ -13,6 +14,7 @@ import {
   localHalfExtentsForPrimitiveKind,
   normalizeStudioBg3dObjectFlags,
   normalizeStudioBg3dSnapSettings,
+  resolveStudioBg3dGizmoAxes,
   rotateVectorEulerXyz,
   snapEulerRadians,
   snapScalar,
@@ -22,11 +24,29 @@ import {
 } from "./studio-bg3d-object-ops";
 
 describe("studio-bg3d-object-ops", () => {
-  it("snaps scalars and vectors to step grids", () => {
+  it("snaps scalars and vectors to step grids and constrains single/planar axis locks", () => {
     expect(snapScalar(0.24, 0.25)).toBeCloseTo(0.25);
     expect(snapScalar(0.12, 0)).toBe(0.12);
     expect(snapVec3([0.24, 0.51, -0.49], 0.25)).toEqual([0.25, 0.5, -0.5]);
     expect(snapVec3([0.24, 0.51, -0.49], 0.25, "xz")).toEqual([0.25, 0.51, -0.5]);
+    expect(snapVec3([0.24, 0.51, -0.49], 0.25, "x")).toEqual([0.25, 0.51, -0.49]);
+    expect(snapVec3([0.24, 0.51, -0.49], 0.25, "y")).toEqual([0.24, 0.5, -0.49]);
+    expect(snapVec3([0.24, 0.51, -0.49], 0.25, "z")).toEqual([0.24, 0.51, -0.5]);
+
+    expect(resolveStudioBg3dGizmoAxes({ axisLock: "xz" })).toEqual({
+      showX: true,
+      showY: false,
+      showZ: true,
+    });
+    expect(resolveStudioBg3dGizmoAxes({ axisLock: "y" })).toEqual({
+      showX: false,
+      showY: true,
+      showZ: false,
+    });
+    expect(constrainPositionToAxisLock([1, 2, 3], [9, 8, 7], "xz")).toEqual([9, 2, 7]);
+    expect(constrainPositionToAxisLock([1, 2, 3], [9, 8, 7], "x")).toEqual([9, 2, 3]);
+    expect(constrainPositionToAxisLock([1, 2, 3], [9, 8, 7], "y")).toEqual([1, 8, 3]);
+    expect(constrainPositionToAxisLock([1, 2, 3], [9, 8, 7], "z")).toEqual([1, 2, 7]);
   });
 
   it("snaps euler rotations by degree steps", () => {
