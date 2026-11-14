@@ -22,21 +22,34 @@ export function useSpaceConnectionStatus(preparing: boolean): SpaceConnectionSta
   const live = useStudioLiveCollaboration();
   const connectivity = useSyncExternalStore(subscribeStudioConnectivity, getStudioConnectivitySnapshot, getStudioConnectivityServerSnapshot);
   const direct = Boolean(live.room?.direct && live.availability === "ready");
-  const tone: SpaceConnectionTone = connectivity.localOnly ? "warn" : direct ? "good" : live.availability === "error" ? "bad" : "warn";
+  const localShared = live.mode === "local" && connectivity.mode !== "offline";
+  const tone: SpaceConnectionTone = connectivity.mode === "offline"
+    ? "bad"
+    : direct
+      ? "good"
+      : connectivity.localOnly && !localShared
+        ? "warn"
+        : live.availability === "error"
+          ? "bad"
+          : "warn";
   const label = connectivity.mode === "offline"
     ? bt("오프라인 · 로컬 작업", "Offline · local work")
-    : connectivity.mode === "server-unavailable"
-      ? bt("서버 연결 없음 · 로컬 작업", "Server unavailable · local work")
-      : connectivity.mode === "reconnecting"
-        ? bt("온라인 복구 중", "Reconnecting")
-        : preparing
-          ? bt("실시간 연결 준비 중", "Preparing live connection")
-          : direct
-            ? bt("P2P 연결됨", "P2P connected")
-            : live.availability === "ready"
-              ? bt("접속 정보 연결됨", "Presence connected")
-              : live.availability === "error"
-                ? bt("연결 확인 필요", "Connection needs attention")
-                : bt("연결 중", "Connecting");
+    : localShared && live.availability === "connecting"
+      ? bt("공동 공간 재연결 중", "Reconnecting shared space")
+      : localShared && direct
+        ? bt("로컬 공동 공간 연결됨", "Local shared space connected")
+        : connectivity.mode === "server-unavailable"
+          ? bt("서버 연결 없음 · 로컬 작업", "Server unavailable · local work")
+          : connectivity.mode === "reconnecting"
+            ? bt("온라인 복구 중", "Reconnecting")
+            : preparing
+              ? bt("실시간 연결 준비 중", "Preparing live connection")
+              : direct
+                ? bt("P2P 연결됨", "P2P connected")
+                : live.availability === "ready"
+                  ? bt("접속 정보 연결됨", "Presence connected")
+                  : live.availability === "error"
+                    ? bt("연결 확인 필요", "Connection needs attention")
+                    : bt("연결 중", "Connecting");
   return { tone, label };
 }

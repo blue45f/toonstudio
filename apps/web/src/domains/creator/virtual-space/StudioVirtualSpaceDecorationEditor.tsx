@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { removeStudioVirtualDecoration, STUDIO_VIRTUAL_DECOR_FRAME, type StudioVirtualDecorationState, type StudioVirtualDecorPlacement, type StudioVirtualDecorType } from "./studio-virtual-space-customization";
 import { addStudioVirtualDecorationSafely, editStudioVirtualDecoration, studioVirtualDecorBounds, studioVirtualDecorationStateForWorld, type StudioDecorationLayoutResult } from "./studio-virtual-space-decoration-layout";
@@ -10,6 +10,7 @@ import { studioWorldLayoutPointer } from "./studio-world-layout-edit";
 import { DEFAULT_STUDIO_VIRTUAL_ART_STYLE, type StudioVirtualArtStyleKey } from "./studio-virtual-space-art-style";
 import { studioExperienceFrameGeometry } from "./studio-virtual-space-experience-art";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
+import { publishStudioSpaceSelectedObjectTarget } from "./studio-virtual-space-camera-recovery";
 
 const LABELS: Readonly<Record<StudioVirtualDecorType, readonly [string, string]>> = {
   tree: ["나무", "Tree"], "flower-bed": ["화단", "Flower bed"], bench: ["벤치", "Bench"], lamp: ["조명", "Lamp"],
@@ -26,6 +27,20 @@ const TILE_EFFECT_ICONS: Readonly<Record<StudioTileEffectKind, string>> = {
 /** 빌드 모드에서 고를 수 있는 장식 종류 (내 가구는 별도 창에서). */
 const BUILDABLE_DECOR_TYPES = (Object.keys(LABELS) as StudioVirtualDecorType[]).filter((type) => type !== "custom");
 
+export type StudioDecorationManipMode = "select" | "move" | "rotate" | "scale";
+
+const MANIP_MODE_ITEMS: readonly {
+  readonly id: StudioDecorationManipMode;
+  readonly keyHint: string;
+  readonly ko: string;
+  readonly en: string;
+}[] = [
+  { id: "select", keyHint: "V", ko: "선택", en: "Select" },
+  { id: "move", keyHint: "G", ko: "이동", en: "Move" },
+  { id: "rotate", keyHint: "R", ko: "회전", en: "Rotate" },
+  { id: "scale", keyHint: "S", ko: "크기", en: "Scale" },
+];
+
 export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoint, onChange, artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE, tileEffects = [], tileSize = { width: 16, height: 16 } }: {
   readonly artStyle?: StudioVirtualArtStyleKey;
   readonly world: StudioVirtualSpaceWorldManifest;
@@ -38,14 +53,58 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
 }) {
   const bt = useBilingual("StudioVirtualSpaceDecorationEditor"), id = useId();
   const [selection, setSelection] = useState<{ worldId: string; id: string } | null>(null);
+  const [manipMode, setManipMode] = useState<StudioDecorationManipMode>("move");
   const [buildType, setBuildType] = useState<StudioVirtualDecorType | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const fieldsetRef = useRef<HTMLFieldSetElement | null>(null);
   const [drag, setDrag] = useState<{ id: string; pointerId: number; x: number; y: number; originX: number; originY: number } | null>(null);
   const state = studioVirtualDecorationStateForWorld(decorations, world);
   const selected = selection?.worldId === world.id ? state.placements.find((item) => item.id === selection.id) : undefined;
   const choose = (itemId: string) => setSelection({ worldId: world.id, id: itemId });
+  const clearSelectionAndBuild = () => {
+    setSelection(null);
+    setBuildType(null);
+    setDrag(null);
+    setManipMode("select");
+  };
+  useEffect(() => {
+    if (!selected) {
+      publishStudioSpaceSelectedObjectTarget(null);
+      return undefined;
+    }
+    publishStudioSpaceSelectedObjectTarget({
+      id: selected.id,
+      labelKo: LABELS[selected.type][0],
+      labelEn: LABELS[selected.type][1],
+      x: selected.x,
+      y: selected.y,
+    });
+    return () => {
+      publishStudioSpaceSelectedObjectTarget(null);
+    };
+  }, [selected]);
+  useEffect(() => {
+    if (!selected && !buildType && !drag) return undefined;
+    const onWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      clearSelectionAndBuild();
+    };
+    window.addEventListener("keydown", onWindowKeyDown, true);
+    return () => window.removeEventListener("keydown", onWindowKeyDown, true);
+  }, [buildType, drag, selected]);
   const move = (dx: number, dy: number) => {
     if (selected) onChange(editStudioVirtualDecoration(state, selected.id, { x: selected.x + dx, y: selected.y + dy }, world, selfPoint));
+  };
+  const rotateBy = (deltaDeg: 90 | 270) => {
+    if (!selected) return;
+    onChange(editStudioVirtualDecoration(state, selected.id, { rotation: ((selected.rotation + deltaDeg) % 360) as 0 | 90 | 180 | 270 }, world, selfPoint));
+  };
+  const adjustScale = (delta: number) => {
+    if (!selected) return;
+    const nextScale = Math.min(1.35, Math.max(0.65, Math.round((selected.scale + delta) * 100) / 100));
+    onChange(editStudioVirtualDecoration(state, selected.id, { scale: nextScale }, world, selfPoint));
   };
   const worldPoint = (clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -74,9 +133,61 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
     setDrag(null);
     if (moved) onChange(editStudioVirtualDecoration(state, item.id, { x: drag.x, y: drag.y }, world, selfPoint));
   };
-  return <fieldset className="studio-decoration-editor">
+  useEffect(() => {
+    const el = fieldsetRef.current;
+    if (!el) return undefined;
+    const onFieldsetKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest("select, input, textarea")) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const lower = event.key.toLowerCase();
+      if (lower === "v") setManipMode("select");
+      else if (lower === "g") setManipMode("move");
+      else if (lower === "r") setManipMode("rotate");
+      else if (lower === "s") setManipMode("scale");
+    };
+    el.addEventListener("keydown", onFieldsetKeyDown);
+    return () => el.removeEventListener("keydown", onFieldsetKeyDown);
+  }, []);
+  const activeModeMeta = MANIP_MODE_ITEMS.find((item) => item.id === manipMode) ?? MANIP_MODE_ITEMS[0];
+  return <fieldset ref={fieldsetRef} className="studio-decoration-editor" data-decor-manip-mode={manipMode}>
     <legend>{bt("가구 배치 편집", "Edit furniture layout")}</legend>
     <p id={`${id}-help`}>{bt("가구를 고른 뒤 지도의 빈 바닥을 누르거나 이동 버튼을 사용하세요. 화살표 키로 16px, Shift와 함께 1px씩 조정합니다.", "Select furniture, then tap an empty floor, drag it, or use the movement buttons. Arrow keys move 16 pixels; hold Shift for 1 pixel.")}</p>
+    <div className="studio-decoration-editor__modes flex flex-wrap items-center justify-between gap-2" role="toolbar" aria-label={bt("오브젝트 조작 모드", "Object manipulation mode")}>
+      <div className="flex flex-wrap gap-1">
+        {MANIP_MODE_ITEMS.map((modeItem) => (
+          <button
+            key={modeItem.id}
+            type="button"
+            aria-pressed={manipMode === modeItem.id && !buildType}
+            data-manip-mode-btn={modeItem.id}
+            onClick={() => {
+              setBuildType(null);
+              setManipMode(modeItem.id);
+            }}
+          >
+            {bt(`${modeItem.ko} (${modeItem.keyHint})`, `${modeItem.en} (${modeItem.keyHint})`)}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs" role="status" data-decor-mode-status="true">
+        <span>
+          {buildType
+            ? bt(`현재 모드: 배치 (${LABELS[buildType][0]})`, `Mode: Place (${LABELS[buildType][1]})`)
+            : selected
+              ? bt(
+                  `현재 모드: ${activeModeMeta.ko} · 선택됨: ${LABELS[selected.type][0]} (Esc 해제)`,
+                  `Mode: ${activeModeMeta.en} · Selected: ${LABELS[selected.type][1]} (Esc to clear)`,
+                )
+              : bt(`현재 모드: ${activeModeMeta.ko} · 오브젝트를 선택하세요`, `Mode: ${activeModeMeta.en} · Select an object`)}
+        </span>
+        {selected || buildType ? (
+          <button type="button" data-decor-clear-selection="true" onClick={clearSelectionAndBuild}>
+            {bt("선택 해제 (Esc)", "Deselect (Esc)")}
+          </button>
+        ) : null}
+      </div>
+    </div>
     <div className="studio-decoration-editor__build" role="group" aria-label={bt("카탈로그에서 골라 배치", "Pick from catalog to place")}>
       <label htmlFor={`${id}-build-type`}>{bt("배치할 가구", "Furniture to place")}</label>
       <select id={`${id}-build-type`} value={buildType ?? ""}
@@ -100,12 +211,26 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
           onChange(addStudioVirtualDecorationSafely(state, buildType, snapped, world));
           return;
         }
-        if (!selected) return;
+        if (manipMode === "select") {
+          setSelection(null);
+          return;
+        }
+        if (!selected || manipMode !== "move") return;
         onChange(editStudioVirtualDecoration(state, selected.id, snapped, world, selfPoint));
       }}
       onKeyDown={(event) => {
-        if (event.key === "Escape") { setSelection(null); setBuildType(null); return; }
+        if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); clearSelectionAndBuild(); return; }
         if (!selected || event.altKey || event.metaKey || event.ctrlKey) return;
+        if (manipMode === "rotate" && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+          event.preventDefault(); event.stopPropagation();
+          rotateBy(event.key === "ArrowRight" ? 90 : 270);
+          return;
+        }
+        if (manipMode === "scale" && (event.key === "+" || event.key === "=" || event.key === "-" || event.key === "ArrowUp" || event.key === "ArrowDown")) {
+          event.preventDefault(); event.stopPropagation();
+          adjustScale(event.key === "-" || event.key === "ArrowDown" ? -0.1 : 0.1);
+          return;
+        }
         const movements: Readonly<Record<string, readonly [number, number]>> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
         const delta = movements[event.key];
         if (!delta) return;

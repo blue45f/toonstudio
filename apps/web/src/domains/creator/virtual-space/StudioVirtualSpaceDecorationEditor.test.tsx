@@ -193,4 +193,40 @@ describe("빌드 모드 카탈로그", () => {
     expect(screen.getByText("🔦")).not.toBeNull();
     expect(screen.getByText("🟢")).not.toBeNull();
   });
+
+  it("선택·이동·회전·크기 조작 모드를 표시하고 포커스 위치와 무관하게 Esc로 선택을 해제한다", () => {
+    const decorations = {
+      ...preset,
+      placements: [
+        ...preset.placements,
+        { id: "added-desk", type: "drawing-desk" as const, x: 549, y: 570, rotation: 0 as const, scale: 1 },
+      ],
+    };
+    const onChange = vi.fn();
+    render(<StudioVirtualSpaceDecorationEditor world={world} decorations={decorations} selfPoint={selfPoint} onChange={onChange} />);
+
+    const toolbar = screen.getByRole("toolbar", { name: "오브젝트 조작 모드" });
+    expect(toolbar).not.toBeNull();
+    const rotateModeBtn = screen.getByRole("button", { name: "회전 (R)" });
+    const scaleModeBtn = screen.getByRole("button", { name: "크기 (S)" });
+
+    fireEvent.click(screen.getByRole("button", { name: /드로잉 데스크 선택/ }));
+    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "편집할 가구" }).value).toBe("added-desk");
+    expect(screen.getByText(/선택됨: 드로잉 데스크/)).not.toBeNull();
+
+    fireEvent.click(rotateModeBtn);
+    expect(rotateModeBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/현재 모드: 회전/)).not.toBeNull();
+
+    fireEvent.click(scaleModeBtn);
+    expect(scaleModeBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/현재 모드: 크기/)).not.toBeNull();
+
+    // 포커스가 select나 버튼에 있어도 window Esc로 오브젝트 선택이 즉시 해제된다.
+    const select = screen.getByRole<HTMLSelectElement>("combobox", { name: "편집할 가구" });
+    select.focus();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(select.value).toBe("");
+    expect(screen.getByText(/현재 모드: 선택 · 오브젝트를 선택하세요/)).not.toBeNull();
+  });
 });

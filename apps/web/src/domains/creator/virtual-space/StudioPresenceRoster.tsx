@@ -7,6 +7,7 @@ import {
   type StudioPresenceExposure,
 } from "./studio-presence-exposure-policy";
 import { userStatusBadge } from "./studio-virtual-space-user-status";
+import type { StudioParticipantConnectionState } from "./use-studio-virtual-peer-connection-tracker";
 
 /**
  * 프레즌스 명단 — 세션 한정·집중 존중 표시.
@@ -25,6 +26,7 @@ export function StudioPresenceRoster({
   exposures,
   displayNames,
   selfSessionId,
+  connectionStates,
   onStartSession,
 }: {
   /** 함께 보기 세션이 열려 있는가. 닫혀 있으면 신호를 그리지 않는다. */
@@ -33,6 +35,8 @@ export function StudioPresenceRoster({
   readonly exposures: readonly StudioPresenceExposure[];
   readonly displayNames: ReadonlyMap<string, string>;
   readonly selfSessionId: string;
+  /** 참여자별 실시간 연결 상태(연결됨·재연결 중·연결 끊김). */
+  readonly connectionStates?: ReadonlyMap<string, StudioParticipantConnectionState>;
   /** 세션 시작 동선. 없으면 시작 버튼을 그리지 않는다. */
   readonly onStartSession?: () => void;
 }) {
@@ -109,6 +113,18 @@ export function StudioPresenceRoster({
               {exposure.note ? (
                 <small className="studio-vspace-presence-roster__note">
                   {bt(exposure.note.ko, exposure.note.en)}
+                </small>
+              ) : null}
+              {connectionStates?.get(exposure.sessionId) ? (
+                <small
+                  className="studio-vspace-presence-roster__conn"
+                  data-connection-state={connectionStates.get(exposure.sessionId)}
+                >
+                  {connectionStates.get(exposure.sessionId) === "connected"
+                    ? bt("연결됨", "Connected")
+                    : connectionStates.get(exposure.sessionId) === "reconnecting"
+                      ? bt("재연결 중", "Reconnecting")
+                      : bt("연결 끊김", "Disconnected")}
                 </small>
               ) : null}
             </li>

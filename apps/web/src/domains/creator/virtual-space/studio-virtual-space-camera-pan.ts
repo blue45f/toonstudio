@@ -11,6 +11,13 @@
  * 저장소(HUD·입력이 쓴다)와 런타임(매 프레임 오프셋을 계산한다)을 나눠, React는 저장소만 구독한다.
  */
 import { bindStudioUserZoomGestures, type StudioUserZoomStore } from "./studio-virtual-space-user-zoom";
+import {
+  EMPTY_CAMERA_RECOVERY_SNAPSHOT,
+  isStudioCameraOutOfSight,
+  type StudioCameraFocusTarget,
+  type StudioCameraRecoverySnapshot,
+  type StudioCameraViewHistoryEntry,
+} from "./studio-virtual-space-camera-recovery";
 
 /** 시점이 이만큼(월드 px) 이상 떨어져야 '시점을 옮겼다'고 보고 안내 칩을 띄운다. */
 export const STUDIO_CAMERA_PANNED_THRESHOLD_PX = 32;
@@ -44,11 +51,20 @@ export class StudioCameraPanStore {
   private dragX = 0;
   private dragY = 0;
   private recenterRequested = false;
+  private snapRecenterRequested = false;
+  private pendingFocusTargetPoint: { readonly x: number; readonly y: number } | null = null;
+  private pendingRestoreEntry: StudioCameraViewHistoryEntry | null = null;
+  private pendingPreResetZoom: number | null = null;
+  private historyStack: StudioCameraViewHistoryEntry[] = [];
+  private zoomAdapter: { get(): number; set(level: number): void; apply(action: "reset"): void } | null = null;
+  private onHomeResetCallback: (() => void) | null = null;
   private looking = false;
   private lookX = 0;
   private lookY = 0;
   private state: StudioCameraPanSnapshot = Object.freeze({ available: true, panned: false });
+  private recoveryState: StudioCameraRecoverySnapshot = EMPTY_CAMERA_RECOVERY_SNAPSHOT;
   private readonly listeners = new Set<() => void>();
+  private readonly recoveryListeners = new Set<() => void>();
 
   /** 화면에서 끈 거리(CSS px, 오른쪽·아래가 +). 새로 끌면 돌아오기 요청은 취소한다. */
   drag(dxCss: number, dyCss: number): void {
@@ -56,6 +72,7 @@ export class StudioCameraPanStore {
     this.dragX += dxCss;
     this.dragY += dyCss;
     this.recenterRequested = false;
+    this.snapRecenterRequested = false;
   }
 
   /**
@@ -66,7 +83,10 @@ export class StudioCameraPanStore {
     this.looking = held;
     this.lookX = held ? axisSign(x) : 0;
     this.lookY = held ? axisSign(y) : 0;
-    if (this.lookX !== 0 || this.lookY !== 0) this.recenterRequested = false;
+    if (this.lookX !== 0 || this.lookY !== 0) {
+      this.recenterRequested = false;
+      this.snapRecenterRequested = false;
+    }
   }
 
   /** Space를 누른 채 둘러보는 중인가. 이 동안 캔버스는 방향키를 아바타 걷기에 쓰지 않는다. */
@@ -84,6 +104,127 @@ export class StudioCameraPanStore {
     this.dragX = 0;
     this.dragY = 0;
     this.recenterRequested = true;
+  }
+
+  /** 시야 이탈 시 감속 애니메이션 없이 아바타 중심으로 즉시 스냅 복구한다. */
+  recoverOutOfSightNow(): void {
+    this.dragX = 0;
+    this.dragY = 0;
+    this.recenterRequested = false;
+    this.snapRecenterRequested = true;
+  }
+
+  /** 홈 뷰 복구: 시점 오프셋을 즉시 아바타 원점으로 되돌리고 배율(100%)과 3D 회전각을 초기화한다. */
+  homeView(): void {
+    this.dragX = 0;
+    this.dragY = 0;
+    this.recenterRequested = false;
+    this.snapRecenterRequested = true;
+    this.pendingPreResetZoom = this.zoomAdapter ? this.zoomAdapter.get() : null;
+    this.zoomAdapter?.apply("reset");
+    this.onHomeResetCallback?.();
+  }
+
+  /** 선택된 물체(가구·작업대 등)로 카메라 시점을 초점 이동한다. */
+  focusSelectedTarget(): boolean {
+    const target = this.recoveryState.focusTarget;
+    if (!target) return false;
+    this.dragX = 0;
+    this.dragY = 0;
+    this.recenterRequested = false;
+    this.snapRecenterRequested = false;
+    this.pendingFocusTargetPoint = { x: target.x, y: target.y };
+    return true;
+  }
+
+  /** 직전 시점(오프셋 및 배율)으로 되돌린다. */
+  restorePreviousView(): boolean {
+    const entry = this.historyStack.pop();
+    if (!entry) {
+      this.updateRecovery({ canUndoView: false });
+      return false;
+    }
+    this.dragX = 0;
+    this.dragY = 0;
+    this.recenterRequested = false;
+    this.snapRecenterRequested = false;
+    this.pendingRestoreEntry = entry;
+    if (entry.zoomLevel !== null) {
+      this.zoomAdapter?.set(entry.zoomLevel);
+    }
+    this.updateRecovery({ canUndoView: this.historyStack.length > 0 });
+    return true;
+  }
+
+  attachZoomStore(zoom: { get(): number; set(level: number): void; apply(action: "reset"): void } | null): void {
+    this.zoomAdapter = zoom;
+  }
+
+  attachHomeResetCallback(callback: (() => void) | null): void {
+    this.onHomeResetCallback = callback;
+  }
+
+  setFocusTarget(target: StudioCameraFocusTarget | null): void {
+    const prev = this.recoveryState.focusTarget;
+    if (
+      prev?.id === target?.id &&
+      prev?.x === target?.x &&
+      prev?.y === target?.y &&
+      prev?.labelKo === target?.labelKo
+    ) {
+      return;
+    }
+    this.updateRecovery({ focusTarget: target });
+  }
+
+  recordHistoryOffset(offsetX: number, offsetY: number): void {
+    if (!finite(offsetX) || !finite(offsetY)) return;
+    const zoomLevel = this.pendingPreResetZoom ?? (this.zoomAdapter ? this.zoomAdapter.get() : null);
+    this.pendingPreResetZoom = null;
+    const last = this.historyStack.at(-1);
+    if (
+      last &&
+      Math.hypot(last.offsetX - offsetX, last.offsetY - offsetY) < 8 &&
+      last.zoomLevel === zoomLevel
+    ) {
+      return;
+    }
+    this.historyStack.push({ offsetX, offsetY, zoomLevel });
+    if (this.historyStack.length > 12) this.historyStack.shift();
+    this.updateRecovery({ canUndoView: true });
+  }
+
+  consumeSnapRecenter(): boolean {
+    const requested = this.snapRecenterRequested;
+    this.snapRecenterRequested = false;
+    return requested;
+  }
+
+  consumeFocusTargetPoint(): { readonly x: number; readonly y: number } | null {
+    const target = this.pendingFocusTargetPoint;
+    this.pendingFocusTargetPoint = null;
+    return target;
+  }
+
+  consumeRestoreEntry(): StudioCameraViewHistoryEntry | null {
+    const entry = this.pendingRestoreEntry;
+    this.pendingRestoreEntry = null;
+    return entry;
+  }
+
+  setOutOfSight(outOfSight: boolean): void {
+    this.updateRecovery({ outOfSight });
+  }
+
+  getRecoverySnapshot(): StudioCameraRecoverySnapshot {
+    return this.recoveryState;
+  }
+
+  subscribeRecovery(listener: () => void): () => void {
+    this.recoveryListeners.add(listener);
+    return () => {
+      this.recoveryListeners.delete(listener);
+    };
   }
 
   /** 런타임 전용. 쌓인 끌기를 꺼내 비운다. 없으면 null. */
@@ -125,6 +266,39 @@ export class StudioCameraPanStore {
     this.state = Object.freeze(next);
     for (const listener of this.listeners) listener();
   }
+
+  private updateRecovery(patch: Partial<StudioCameraRecoverySnapshot>): void {
+    const next: StudioCameraRecoverySnapshot = { ...this.recoveryState, ...patch };
+    if (
+      next.outOfSight === this.recoveryState.outOfSight &&
+      next.canUndoView === this.recoveryState.canUndoView &&
+      next.focusTarget === this.recoveryState.focusTarget
+    ) {
+      return;
+    }
+    this.recoveryState = Object.freeze(next);
+    for (const listener of this.recoveryListeners) listener();
+  }
+}
+
+let activeMountedCameraPanStore: StudioCameraPanStore | null = null;
+const mountedCameraPanListeners = new Set<() => void>();
+
+export function setActiveMountedCameraPanStore(store: StudioCameraPanStore | null): void {
+  if (activeMountedCameraPanStore === store) return;
+  activeMountedCameraPanStore = store;
+  for (const listener of mountedCameraPanListeners) listener();
+}
+
+export function getActiveMountedCameraPanStore(): StudioCameraPanStore | null {
+  return activeMountedCameraPanStore;
+}
+
+export function subscribeActiveMountedCameraPanStore(listener: () => void): () => void {
+  mountedCameraPanListeners.add(listener);
+  return () => {
+    mountedCameraPanListeners.delete(listener);
+  };
 }
 
 export interface StudioCameraPanFrame {
@@ -206,6 +380,9 @@ export class StudioCameraPanRuntime {
     const drag = this.store.consumeDrag();
     const look = this.store.lookDirection();
     const recenter = this.store.consumeRecenter();
+    const snapRecenter = this.store.consumeSnapRecenter();
+    const focusPoint = this.store.consumeFocusTargetPoint();
+    const restoreEntry = this.store.consumeRestoreEntry();
     const startedMoving = frame.moving && !this.wasMoving;
     this.wasMoving = frame.moving;
     const { base } = frame;
@@ -213,7 +390,28 @@ export class StudioCameraPanRuntime {
       return this.reset();
     }
     let direct = false;
-    if ((drag || look) && !frame.directed) {
+    if (restoreEntry && !frame.directed) {
+      this.x = restoreEntry.offsetX;
+      this.y = restoreEntry.offsetY;
+      this.returning = false;
+      direct = true;
+    } else if (focusPoint && !frame.directed) {
+      this.store.recordHistoryOffset(this.x, this.y);
+      const anchorX = anchorOf(base.x, frame.view.width, frame.world.width);
+      const anchorY = anchorOf(base.y, frame.view.height, frame.world.height);
+      this.x = focusPoint.x - anchorX;
+      this.y = focusPoint.y - anchorY;
+      this.returning = false;
+      direct = true;
+    } else if (snapRecenter) {
+      if (Math.hypot(this.x, this.y) >= STUDIO_CAMERA_PANNED_THRESHOLD_PX) {
+        this.store.recordHistoryOffset(this.x, this.y);
+      }
+      this.x = 0;
+      this.y = 0;
+      this.returning = false;
+      direct = true;
+    } else if ((drag || look) && !frame.directed) {
       if (this.x === 0 && this.y === 0 && finite(frame.center.x) && finite(frame.center.y)) {
         this.x = frame.center.x - anchorOf(base.x, frame.view.width, frame.world.width);
         this.y = frame.center.y - anchorOf(base.y, frame.view.height, frame.world.height);
@@ -232,7 +430,12 @@ export class StudioCameraPanRuntime {
       this.returning = false;
       direct = true;
     }
-    if (recenter || frame.directed || (startedMoving && (this.x !== 0 || this.y !== 0))) this.returning = true;
+    if (recenter || frame.directed || (startedMoving && (this.x !== 0 || this.y !== 0))) {
+      if (recenter && Math.hypot(this.x, this.y) >= STUDIO_CAMERA_PANNED_THRESHOLD_PX) {
+        this.store.recordHistoryOffset(this.x, this.y);
+      }
+      this.returning = true;
+    }
     if (this.returning) {
       // 돌아오는 걸음은 마지막 걸음(0에 닿는 프레임)까지 목표에 바로 맞춘다. 옮긴 게 없으면 연출 구간 내내 직접 이끌 이유가 없다.
       if (this.x !== 0 || this.y !== 0) direct = true;
@@ -254,7 +457,9 @@ export class StudioCameraPanRuntime {
     const vertical = clampAxis(base.y, this.y, frame.view.height, frame.world.height);
     this.x = horizontal.offset;
     this.y = vertical.offset;
-    this.store.setPanned(Math.hypot(this.x, this.y) >= STUDIO_CAMERA_PANNED_THRESHOLD_PX);
+    const panned = Math.hypot(this.x, this.y) >= STUDIO_CAMERA_PANNED_THRESHOLD_PX;
+    this.store.setPanned(panned);
+    this.store.setOutOfSight(panned && isStudioCameraOutOfSight({ x: horizontal.shift, y: vertical.shift }, frame.view));
     return { x: horizontal.shift, y: vertical.shift, direct };
   }
 
@@ -263,6 +468,7 @@ export class StudioCameraPanRuntime {
     this.y = 0;
     this.returning = false;
     this.store.setPanned(false);
+    this.store.setOutOfSight(false);
     return NO_PAN;
   }
 }

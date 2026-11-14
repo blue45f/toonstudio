@@ -8,6 +8,7 @@ import {
   type TeammateListNavKey,
 } from "./studio-virtual-space-teammates";
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
+import type { StudioParticipantConnectionState } from "./use-studio-virtual-peer-connection-tracker";
 
 export interface StudioSpaceUserSnapshot {
   readonly id: string;
@@ -17,6 +18,8 @@ export interface StudioSpaceUserSnapshot {
   readonly activity: StudioVirtualSpaceActivity;
   /** 명시적 사용자 상태. 있으면 활동 배지를 덮어쓴다. */
   readonly userStatus?: StudioUserStatus | null;
+  /** 공동 공간 실시간 연결 상태(연결됨·재연결 중·연결 끊김). */
+  readonly connectionState?: StudioParticipantConnectionState;
 }
 
 export interface StudioUserListZoneLabel {
@@ -33,6 +36,7 @@ export interface StudioUserListEntry {
   readonly zoneLabelEn: string;
   readonly activity: StudioVirtualSpaceActivity;
   readonly userStatus: StudioUserStatus | null;
+  readonly connectionState: StudioParticipantConnectionState | null;
   readonly isSelf: boolean;
 }
 
@@ -57,6 +61,7 @@ export function buildUserListEntries(
       zoneLabelEn: label?.labelEn ?? "",
       activity: user.activity,
       userStatus: user.userStatus ?? null,
+      connectionState: user.connectionState ?? null,
       isSelf: user.id === selfId,
     } satisfies StudioUserListEntry);
   });
@@ -144,6 +149,9 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
   const itemRefs = useRef<Array<HTMLElement | null>>([]);
   const collaborativeCount = allEntries.filter(isCollaborativeEntry).length;
   const deepWorkCount = allEntries.filter(isDeepWorkEntry).length;
+  const reconnectingCount = allEntries.filter((entry) => entry.connectionState === "reconnecting").length;
+  const disconnectedCount = allEntries.filter((entry) => entry.connectionState === "disconnected").length;
+  const activeWorkingCount = allEntries.filter((entry) => entry.connectionState !== "disconnected").length;
   const entries = allEntries.filter((entry) => {
     if (zoneFilter && entry.zoneId !== zoneFilter) return false;
     if (statusFilter === "collaborative") return isCollaborativeEntry(entry);
@@ -179,15 +187,24 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
     : activity === "reviewing" ? bt("검토 중", "Reviewing")
     : bt("자리 비움", "Away");
 
+  const connectionLabel = (state: StudioParticipantConnectionState): string =>
+    state === "connected" ? bt("연결됨", "Connected")
+    : state === "reconnecting" ? bt("재연결 중", "Reconnecting")
+    : bt("연결 끊김", "Disconnected");
+
   const itemAriaLabel = (entry: StudioUserListEntry): string => {
     const badge = teammateStatusBadge(entry.activity, entry.userStatus);
     const zoneKo = entry.zoneLabelKo || bt("구역 밖", "Outside zones");
     const zoneEn = entry.zoneLabelEn || "Outside zones";
+    const connKo = entry.connectionState ? `, ${connectionLabel(entry.connectionState)}` : "";
+    const connEn = entry.connectionState
+      ? `, ${entry.connectionState === "connected" ? "Connected" : entry.connectionState === "reconnecting" ? "Reconnecting" : "Disconnected"}`
+      : "";
     const selfSuffixKo = entry.isSelf ? bt(", 나", ", you") : "";
     const selfSuffixEn = entry.isSelf ? ", you" : "";
     return bt(
-      `${entry.name}, ${badge.labelKo}, ${zoneKo}${selfSuffixKo}`,
-      `${entry.name}, ${badge.labelEn}, ${zoneEn}${selfSuffixEn}`,
+      `${entry.name}, ${badge.labelKo}, ${zoneKo}${connKo}${selfSuffixKo}`,
+      `${entry.name}, ${badge.labelEn}, ${zoneEn}${connEn}${selfSuffixEn}`,
     );
   };
 
@@ -203,8 +220,8 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
           <div className="mt-1 flex flex-wrap items-center justify-between gap-1.5">
             <p className="text-xs text-fg-2" role="status" data-collaborative-count={collaborativeCount}>
               {bt(
-                `총 ${allEntries.length}명 작업 중 · 협업 가능 ${collaborativeCount}명`,
-                `${allEntries.length} people working · ${collaborativeCount} open to collaborate`,
+                `총 ${activeWorkingCount}명 작업 중 · 협업 가능 ${collaborativeCount}명${reconnectingCount > 0 ? ` · 재연결 중 ${reconnectingCount}명` : ""}${disconnectedCount > 0 ? ` · 연결 끊김 ${disconnectedCount}명` : ""}`,
+                `${activeWorkingCount} people working · ${collaborativeCount} open to collaborate${reconnectingCount > 0 ? ` · ${reconnectingCount} reconnecting` : ""}${disconnectedCount > 0 ? ` · ${disconnectedCount} disconnected` : ""}`,
               )}
             </p>
             <div
@@ -296,6 +313,20 @@ export function StudioVirtualSpaceUserList({ users, zones, selfId, onActivate }:
                   <span className="shrink-0 rounded-full border border-line px-1.5 py-0.5 text-[11px]">
                     {entry.userStatus ? bt(badge.labelKo, badge.labelEn) : activityLabel(entry.activity)}
                   </span>
+                  {entry.connectionState ? (
+                    <span
+                      data-connection-state={entry.connectionState}
+                      className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-semibold ${
+                        entry.connectionState === "connected"
+                          ? "border-good/40 bg-good/10 text-good"
+                          : entry.connectionState === "reconnecting"
+                            ? "border-warn/40 bg-warn/10 text-warn"
+                            : "border-bad/40 bg-bad/10 text-bad"
+                      }`}
+                    >
+                      {connectionLabel(entry.connectionState)}
+                    </span>
+                  ) : null}
                   {onActivate && !entry.isSelf ? <button type="button" tabIndex={-1}
                     className="studio-vspace-user-list__select shrink-0 rounded-lg border border-line px-2 text-[11px] font-bold"
                     aria-label={bt(`${entry.name} 선택`, `Select ${entry.name}`)}

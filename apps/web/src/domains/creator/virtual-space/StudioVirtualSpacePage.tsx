@@ -60,6 +60,7 @@ import { VirtualThreeThemeProvider } from "./three/ui/VirtualThreeThemeProvider"
 import { VirtualThreeThemePanel } from "./three/ui/VirtualThreeThemePanel";
 import type { StudioSpaceSocialAction, StudioSpaceSocialRequest } from "./StudioVirtualSpaceSocialPanel";
 import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
+import { useStudioVirtualPeerConnectionTracker } from "./use-studio-virtual-peer-connection-tracker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioWorldAuthoringEntry } from "./StudioWorldAuthoringEntry";
@@ -656,7 +657,8 @@ export function VirtualSpaceExperience({
   useEffect(() => {
     const room = live.room;
     if (!worldReady) return undefined;
-    if (authoringMode || !sharedWorldAllowed || !connectivity.serverAvailable || !room?.direct || live.availability !== "ready") {
+    const directAllowed = connectivity.serverAvailable || (live.mode === "local" && connectivity.mode !== "offline");
+    if (authoringMode || !sharedWorldAllowed || !directAllowed || !room?.direct || live.availability !== "ready") {
       controllerRef.current?.close();
       controllerRef.current = null;
       setSnapshot((current) => ({ ...current, peers: [], nearbyPeers: [], selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerFixtures: [], direct: false }));
@@ -679,8 +681,8 @@ export function VirtualSpaceExperience({
       controller.close();
       if (controllerRef.current === controller) controllerRef.current = null;
     };
-  }, [authoringMode, characterCustomization, clearLocalReactionTimer, connectivity.serverAvailable, fallbackIdentity,
-    live.availability, live.room, worldReady, activeWorldScope, sharedWorldAllowed]);
+  }, [authoringMode, characterCustomization, clearLocalReactionTimer, connectivity.mode, connectivity.serverAvailable, fallbackIdentity,
+    live.availability, live.mode, live.room, worldReady, activeWorldScope, sharedWorldAllowed]);
 
   useEffect(() => {
     const appearance = studioCharacterAppearanceForAvatarIndex(avatarIndex, fallbackIdentity, characterCustomization);
@@ -1569,11 +1571,8 @@ export function VirtualSpaceExperience({
   });
 
   const selfListId = live.room?.participant.sessionId ?? fallbackIdentity;
-  const userListUsers = [
-    { id: selfListId, name: localName, zoneId: snapshot.self.zoneId, activity: snapshot.self.activity, userStatus: snapshot.self.userStatus ?? null },
-    ...snapshot.peers.map((peer) => ({ id: peer.participant.sessionId, name: peer.participant.displayName, zoneId: peer.state.zoneId,
-      activity: peer.state.activity, userStatus: peer.state.userStatus ?? null })),
-  ];
+  const userListUsers = useStudioVirtualPeerConnectionTracker({ selfId: selfListId, selfName: localName, self: snapshot.self,
+    peers: snapshot.peers, liveAvailability: live.availability, connectivityMode: connectivity.mode, directReady: snapshot.direct });
   const userListZones = worldManifest.rooms.map((room) => {
     const meta = studioVirtualCampusZoneMeta(room.id);
     return { id: room.id, labelKo: meta?.labelKo ?? room.labelKo, labelEn: meta?.labelEn ?? room.labelEn };
@@ -1603,7 +1602,7 @@ export function VirtualSpaceExperience({
           "개인 스튜디오에는 나만 있어요. 동네를 오가는 NPC는 도우미이며 접속 인원에 포함되지 않아요.",
           "Only you are in your personal studio. NPC residents are helpers and never counted as online people.",
         )}</p> : <>
-          <p className="space-panel-count" aria-live="polite">{connectivity.serverAvailable
+          <p className="space-panel-count" aria-live="polite">{(connectivity.serverAvailable || snapshot.direct)
             ? bt(`접속 중 ${snapshot.peers.length + 1}명 · NPC 제외`, `${snapshot.peers.length + 1} online · NPCs excluded`)
             : bt("서버 연결 없음 · 로컬 작업", "Server unavailable · local work")}</p>
           {/* 누가 어디서 무엇을 하는지: 상태 배지·구역·방향키 탐색. Enter로 고르면 아래에서 바로 인사·요청한다. */}
