@@ -295,4 +295,22 @@ describe("DiscoverHubPage", () => {
     });
     expect(onChangeSort).toHaveBeenLastCalledWith("newest");
   });
+
+  it("최근 본 작품 이어보기 바와 추천 선반 더보기 점진적 노출을 지원한다", async () => {
+    mockResource({ data: snapshot(currentKstWeekDay()) });
+    renderPage();
+
+    const quickReturnBar = screen.getByTestId("discover-quick-return-bar");
+    expect(within(quickReturnBar).getByText("최근 본 작품 이어보기")).toBeTruthy();
+    expect(
+      within(quickReturnBar).getByRole("link", { name: "추천 에피소드 바로가기" }).getAttribute("href"),
+    ).toBe("/ranking");
+
+    const moreToggle = await screen.findByTestId("discover-shelves-more-toggle");
+    expect(moreToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("heading", { name: "최근 공개된 작품" })).toBeNull();
+    fireEvent.click(moreToggle);
+    expect(moreToggle.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("heading", { name: "최근 공개된 작품" })).toBeTruthy();
+  });
 });

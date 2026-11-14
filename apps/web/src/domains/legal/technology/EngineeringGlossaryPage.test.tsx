@@ -129,7 +129,9 @@ describe("EngineeringGlossaryPage", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1, name: /기술 용어집|Technology glossary/u })).toBeTruthy();
-    // 전체 용어 카드 수
+    // 초기 화면은 DOM 예산을 위해 24개까지 점진 노출하며 전체 펼치기로 전체 용어를 확인한다.
+    expect(document.querySelectorAll('article[id^="glossary-"]')).toHaveLength(24);
+    fireEvent.click(screen.getByRole("button", { name: /전체 펼치기|Expand all/u }));
     expect(document.querySelectorAll('article[id^="glossary-"]')).toHaveLength(ENGINEERING_GLOSSARY.length);
 
     // 검색: WASM
@@ -194,6 +196,8 @@ describe("EngineeringGlossaryPage", () => {
         <EngineeringGlossaryPage />
       </MemoryRouter>,
     );
+    const expandAllButton = screen.queryByRole("button", { name: "전체 펼치기" });
+    if (expandAllButton) fireEvent.click(expandAllButton);
 
     // 도감 데이터는 렌더 뒤에 동적으로 불러온다 → 처음에는 줄이 없고, 불러온 뒤 칩이 생긴다.
     await waitFor(() => expect(document.querySelector(`#glossary-${first.term.id} a[data-atlas-id="${resolvedId}"]`)).toBeTruthy());

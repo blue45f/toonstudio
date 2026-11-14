@@ -166,7 +166,7 @@ export function CollaborationBoardPage() {
               data-testid={`collaborate-rea-vcs-${item.id}`}
               aria-pressed={binaryLockMode === item.id}
               onClick={() => setBinaryLockMode(item.id)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+              className={`inline-flex min-h-11 min-w-11 items-center rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
                 binaryLockMode === item.id
                   ? "bg-accent text-on-accent"
                   : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
@@ -189,7 +189,7 @@ export function CollaborationBoardPage() {
               data-testid={`collaborate-rea-proofing-${item.id}`}
               aria-pressed={proofingMode === item.id}
               onClick={() => setProofingMode(item.id)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+              className={`inline-flex min-h-11 min-w-11 items-center rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
                 proofingMode === item.id
                   ? "bg-accent text-on-accent"
                   : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
@@ -230,7 +230,7 @@ export function CollaborationBoardPage() {
               aria-pressed={selected}
               data-collab-role-chip={chip.role}
               onClick={() => change("role", selected && chip.role !== "all" ? "all" : chip.role)}
-              className={`inline-flex min-h-9 items-center rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
                 selected
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-line bg-canvas text-fg-2 hover:border-accent/50 hover:text-fg"

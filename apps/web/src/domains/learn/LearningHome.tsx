@@ -336,7 +336,18 @@ export function LearningHome() {
       {store.warning && <p className="learn-caution" role="status">{store.warning}</p>}
 
       <header className="learn-classroom-heading">
-        <h1>{recommendedPath.title}</h1>
+        <div className="flex items-center gap-3">
+          <img
+            src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp"
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            decoding="async"
+            className="size-10 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
+          />
+          <h1>{recommendedPath.title}</h1>
+        </div>
         <p className="learn-small">로그인 없이 시작 · 기록은 이 브라우저에 저장</p>
       </header>
 

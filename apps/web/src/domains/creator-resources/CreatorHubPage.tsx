@@ -381,7 +381,7 @@ export function CreatorHubPage({ refineMaterialSentence }: CreatorHubPageProps =
               <p className="text-xs leading-5 text-fg-2">{tx("지원공고는 7일, 도서·미술 메타데이터는 제공처별 90~180일을 기준으로 재확인을 권장합니다. 이는 원문 변경 가능성을 알리는 작업 기준입니다.")}</p>
             </section>
             <details className="rounded-xl border border-line bg-canvas p-4" onToggle={(event: SyntheticEvent<HTMLDetailsElement>) => setProviderStatusOpen(event.currentTarget.open)}>
-              <summary className="cursor-pointer font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("데이터 제공처 연결 상태와 한계 확인")}</summary>
+              <summary className="flex min-h-11 cursor-pointer items-center font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{tx("데이터 제공처 연결 상태와 한계 확인")}</summary>
               <p className="mt-2 text-sm leading-6 text-fg-2">{tx("검색 전에 인증키 설정 여부를 확인할 수 있습니다. 실제 연결 성공·이용권한·잔여 쿼터는 각 검색 결과와 원문에서 판단해야 합니다.")}</p>
               {providerStatusOpen && <div className="mt-4"><ProviderStatus /></div>}
             </details>

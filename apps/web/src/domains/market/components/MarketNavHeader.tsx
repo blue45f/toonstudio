@@ -185,7 +185,7 @@ export function MarketNavHeader({ className }: MarketNavHeaderProps) {
               {/* 진입 시점에는 항상 닫아 둔다 — 현재 도구 페이지에서도 강제로 펼치지 않는다. */}
               <summary
                 className={cn(
-                  buttonClass({ variant: "ghost", size: "sm" }),
+                  buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 min-w-11" }),
                   "cursor-pointer list-none gap-1.5 [&::-webkit-details-marker]:hidden",
                 )}
               >

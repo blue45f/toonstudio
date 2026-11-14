@@ -85,3 +85,5 @@
 .learn-section-menu__body { padding-block: 0.75rem; }
 .learn-section-menu summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 .learn-section-menu__body .learn-progress-strip { padding-inline: 0; }
+#main-content .learn-section-menu a,
+.learn-section-menu a { min-block-size: 44px; min-inline-size: 44px; min-height: 44px; min-width: 44px; }

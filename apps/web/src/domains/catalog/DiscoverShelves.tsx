@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { ErrorState } from "@/shared/components/feedback/error-state";
 import { Rail, Section } from "@/shared/components/section";
 import { TitleCard } from "@/shared/components/title-card";
@@ -9,6 +11,8 @@ import { discoverShelfCopies } from "./discover-shelf-copy";
 
 const SKELETON_SHELF_COUNT = 2;
 const SKELETON_CARD_COUNT = 6;
+const INITIAL_VISIBLE_SHELVES = 3;
+const INITIAL_CARDS_PER_SHELF = 4;
 
 export function DiscoverShelfSkeleton({ label }: { readonly label: string }) {
   return (
@@ -41,6 +45,7 @@ export interface DiscoverShelvesProps {
  */
 export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverShelvesProps) {
   const bt = useBilingual("DiscoverShelves");
+  const [expandedShelves, setExpandedShelves] = useState(false);
 
   if (!snapshot) {
     if (error) {
@@ -102,11 +107,18 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
   }
 
   const copies = discoverShelfCopies(bt, snapshot);
+  const visibleShelves = expandedShelves ? shelves : shelves.slice(0, INITIAL_VISIBLE_SHELVES);
+  const hasHiddenShelfContent =
+    shelves.length > INITIAL_VISIBLE_SHELVES ||
+    shelves.some((shelf) => shelf.titles.length > INITIAL_CARDS_PER_SHELF);
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10" data-discover-shelves="">
-      {shelves.map((shelf) => {
+      {visibleShelves.map((shelf) => {
         const copy = copies[shelf.id];
+        const visibleTitles = expandedShelves
+          ? shelf.titles
+          : shelf.titles.slice(0, INITIAL_CARDS_PER_SHELF);
         return (
           <Section
             key={shelf.id}
@@ -116,13 +128,28 @@ export function DiscoverShelves({ snapshot, loading, error, onRetry }: DiscoverS
             action={{ label: copy.action, href: shelf.href }}
           >
             <Rail ariaLabel={copy.title}>
-              {shelf.titles.map((item) => (
+              {visibleTitles.map((item) => (
                 <TitleCard key={item.id} title={item} size="sm" className="w-[150px] shrink-0 sm:w-[172px]" />
               ))}
             </Rail>
           </Section>
         );
       })}
+      {hasHiddenShelfContent ? (
+        <div className="flex justify-center pt-1">
+          <button
+            type="button"
+            aria-expanded={expandedShelves}
+            data-testid="discover-shelves-more-toggle"
+            onClick={() => setExpandedShelves((prev) => !prev)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-accent/40 bg-card/90 px-5 py-2 text-xs font-bold text-fg shadow-sm backdrop-blur-md transition-colors hover:border-accent hover:bg-accent-soft/60 hover:text-accent"
+          >
+            {expandedShelves
+              ? bt("추천 선반 접기", "Show fewer shelves")
+              : bt("추천 선반 더보기", "More recommended shelves")}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

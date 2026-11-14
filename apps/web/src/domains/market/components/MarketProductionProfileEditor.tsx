@@ -30,7 +30,7 @@ interface MarketProductionProfileEditorProps {
 }
 
 const CONTROL_CLASS =
-  "mt-1.5 h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none transition-colors duration-150 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:h-11";
+  "mt-1.5 min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg outline-none transition-colors duration-150 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70";
 
 export function MarketProductionProfileEditor({
   profile,
@@ -68,7 +68,7 @@ export function MarketProductionProfileEditor({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
         >
           <RotateCcw className="size-3.5" aria-hidden="true" />
           기본값
@@ -82,7 +82,7 @@ export function MarketProductionProfileEditor({
             type="button"
             title={preset.description}
             onClick={() => onChange(preset.patch)}
-            className="inline-flex min-h-9 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-accent/60 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:min-h-11"
+            className="inline-flex min-h-11 min-w-11 items-center rounded-full border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:border-accent/60 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {preset.label}
           </button>
@@ -206,7 +206,7 @@ export function MarketProductionProfileEditor({
           checked={profile.attributionSupported}
           onChange={(event) => onChange({ attributionSupported: event.target.checked })}
           aria-describedby={attributionHelpId}
-          className="mt-0.5 size-4 accent-accent"
+          className="mt-0.5 size-11 shrink-0 accent-accent"
         />
         <div>
           <label

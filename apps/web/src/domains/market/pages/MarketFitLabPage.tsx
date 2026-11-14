@@ -295,14 +295,14 @@ export function MarketFitLabPage() {
                 onChange={(event) => setSearch(event.target.value)}
                 maxLength={CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS}
                 placeholder={t("이름·태그·배급자·렌더러·전달 방식 검색", "Search by name, tag, publisher, renderer, or delivery method")}
-                className="h-10 w-full appearance-none rounded-xl border border-line bg-card pl-9 pr-10 text-sm text-fg outline-none transition-colors duration-150 placeholder:text-fg-3 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:h-11 [&::-webkit-search-cancel-button]:hidden"
+                className="min-h-11 w-full appearance-none rounded-xl border border-line bg-card pl-9 pr-11 text-sm text-fg outline-none transition-colors duration-150 placeholder:text-fg-3 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-search-cancel-button]:hidden"
               />
               {search ? (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
                   aria-label={t("검색어 지우기", "Clear search")}
-                  className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-fg-3 transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 pointer-coarse:size-11"
+                  className="absolute right-0.5 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-fg-3 transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>

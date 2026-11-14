@@ -1,21 +1,61 @@
-/* 현재 목적지와 메뉴 진입점 하나를 보여 주고, 화면을 바꿀 때만 목적지를 펼친다. */
+/* 상시 노출 수평 발광 필 리본으로 인접 화면을 1클릭에 연결하고, 초과 목적지와 가이드는 서랍으로 정리한다. */
 .site-contextual-subnav {
   --subnav-accent: var(--color-accent);
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--color-line);
+  gap: 6px 10px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in oklch, var(--subnav-accent) 26%, var(--color-line));
+  border-radius: 16px;
   color: var(--color-fg-2);
-  background: transparent;
+  background:
+    radial-gradient(90% 140% at 0% 0%, color-mix(in oklch, var(--subnav-accent) 12%, transparent), transparent 62%),
+    color-mix(in oklch, var(--color-panel) 84%, var(--color-card));
+  backdrop-filter: blur(16px) saturate(1.18);
+  -webkit-backdrop-filter: blur(16px) saturate(1.18);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 8%, transparent),
+    0 10px 24px -18px oklch(0 0 0 / 0.48);
 }
 
-.site-contextual-subnav__header {
+.site-contextual-subnav__ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   width: 100%;
   min-width: 0;
+  gap: 6px 8px;
+}
+
+.site-contextual-subnav__hub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid color-mix(in oklch, var(--subnav-accent) 30%, var(--color-line));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-card) 88%, transparent);
+  color: var(--color-fg);
   font-size: 0.75rem;
-  font-weight: 650;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.site-contextual-subnav__emblem {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.site-contextual-subnav__hub-title {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .site-contextual-subnav__list {
@@ -23,7 +63,7 @@
   flex: 1;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -33,28 +73,49 @@
 .site-contextual-subnav__more > summary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   min-height: var(--site-control-size, 44px);
-  padding: 6px 10px;
-  border-radius: var(--site-control-radius);
+  min-width: 2.75rem;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: var(--color-fg-2);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 650;
   text-decoration: none;
   word-break: keep-all;
+  transition: color 170ms cubic-bezier(0.16, 1, 0.3, 1), background-color 170ms cubic-bezier(0.16, 1, 0.3, 1), border-color 170ms cubic-bezier(0.16, 1, 0.3, 1), transform 170ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 170ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .site-contextual-subnav__link:hover,
 .site-contextual-subnav__more > summary:hover {
   color: var(--color-fg);
-  background: var(--color-raised);
+  border-color: color-mix(in oklch, var(--subnav-accent) 34%, var(--color-line-strong));
+  background: color-mix(in oklch, var(--color-raised) 88%, transparent);
+  transform: translateY(-1px);
 }
 
 .site-contextual-subnav__link[aria-current="page"] {
-  color: var(--color-accent);
-  background: transparent;
+  color: var(--color-fg);
+  border-color: color-mix(in oklch, var(--subnav-accent) 62%, var(--color-accent));
+  background: color-mix(in oklch, var(--subnav-accent) 18%, var(--color-accent-soft));
   font-weight: 750;
-  box-shadow: inset 0 -2px var(--color-accent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 14%, transparent),
+    0 6px 16px -8px color-mix(in oklch, var(--subnav-accent) 55%, transparent);
+}
+
+.site-contextual-subnav__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  background: color-mix(in oklch, var(--subnav-accent) 20%, transparent);
+  color: var(--color-accent);
 }
 
 .site-contextual-subnav__link:focus-visible,
@@ -63,23 +124,30 @@
   outline-offset: 2px;
 }
 
+.site-contextual-subnav__more {
+  margin-left: auto;
+  min-width: 0;
+}
+
 .site-contextual-subnav__more > summary {
   cursor: pointer;
   list-style: none;
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
+  border-color: color-mix(in oklch, var(--color-line-strong) 55%, var(--color-line));
+  background: color-mix(in oklch, var(--color-card) 80%, transparent);
 }
-
-.site-contextual-subnav__more { width: 100%; min-width: 0; }
-.site-contextual-subnav__current { margin-left: auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 750; color: var(--color-accent); }
 
 .site-contextual-subnav__more > summary::-webkit-details-marker {
   display: none;
 }
 
 .site-contextual-subnav__more[open] {
+  flex-basis: 100%;
   width: 100%;
+}
+
+.site-contextual-subnav__more[open] > summary {
+  margin-left: auto;
+  width: fit-content;
 }
 
 .site-contextual-subnav__more[open] > summary > svg {
@@ -87,26 +155,34 @@
 }
 
 .site-contextual-subnav__additional {
-  padding: 12px 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
   border-top: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--color-card) 85%, transparent);
 }
 
 .site-contextual-subnav__additional > p {
-  margin: 0 0 8px;
+  margin: 0;
+}
+
+.site-contextual-subnav__list--overflow {
+  margin-top: 8px;
 }
 
 @media (max-width: 639px) {
   .site-contextual-subnav {
-    padding: 4px 0;
+    padding: 6px 8px;
     gap: 4px;
+    border-radius: 14px;
   }
 
-  .site-contextual-subnav > .site-contextual-subnav__list {
-    flex-basis: calc(100% - 5rem);
+  .site-contextual-subnav__hub-chip {
+    display: none;
   }
 
   .site-contextual-subnav__link {
-    padding-inline: 8px;
+    padding-inline: 10px;
     font-size: 0.75rem;
   }
 }
@@ -121,9 +197,19 @@
   .site-contextual-subnav {
     border-color: CanvasText;
     background: Canvas;
+    backdrop-filter: none;
+    box-shadow: none;
   }
 
   .site-contextual-subnav__link[aria-current="page"] {
     outline: 2px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-contextual-subnav__link,
+  .site-contextual-subnav__more > summary {
+    transition: none;
+    transform: none;
   }
 }

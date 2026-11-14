@@ -45,10 +45,12 @@ function sourceCostStyle(label: string): string {
   return "border-line bg-raised text-fg-2";
 }
 
+const INITIAL_VISIBLE = 24;
+
 export function SourcesPage() {
   useBilingualI18nRevision();
   useDocumentTitle(tx("자료 출처"));
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   // /about/data는 소개 영역에서 들어오는 데이터 투명성 안내가 본체다 — 같은 목록이라도
   // 리서치 데스크(/insights/resources)와 달리 권리 판정 분포와 검토 기준을 첫 화면에 세운다.
   const isAboutData = pathname.replace(/\/$/u, "") === "/about/data";
@@ -57,6 +59,7 @@ export function SourcesPage() {
   const [keylessOnly, setKeylessOnly] = useState(false);
   const [liveOnly, setLiveOnly] = useState(false);
   const [directImportOnly, setDirectImportOnly] = useState(false);
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE);
   const normalized = query.toLocaleLowerCase().trim();
   const rows = RESOURCE_SOURCES.filter((source) =>
     (!freeOnly || isFreeResourceSource(source))
@@ -67,6 +70,9 @@ export function SourcesPage() {
       .toLocaleLowerCase()
       .includes(normalized),
   );
+  const autoExpand = Boolean(normalized) || freeOnly || keylessOnly || liveOnly || directImportOnly || Boolean(hash);
+  const visibleRows = autoExpand ? rows : rows.slice(0, visibleLimit);
+  const remainingRows = Math.max(0, rows.length - visibleRows.length);
   const resetFilters = () => {
     setQuery("");
     setFreeOnly(false);
@@ -156,10 +162,10 @@ export function SourcesPage() {
     </section>
     <label htmlFor="resource-source-filter" className="block font-semibold">{tx("제공처·분야·비용·상업 준비 상태 필터")}<input id="resource-source-filter" type="search" className={`${RESOURCE_INPUT} mt-2`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={tx("예: 무료, 글로벌 판본, 계약 후 이용, 3D")} /></label>
     <div className="flex flex-wrap gap-x-6 gap-y-2">
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{tx("무료 제공처만 보기")}</label>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={keylessOnly} onChange={(event) => setKeylessOnly(event.target.checked)} />{tx("가입·키 없는 제공처만 보기")}</label>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={liveOnly} onChange={(event) => setLiveOnly(event.target.checked)} />{tx("실제 검색 연결만 보기")}</label>
-      <label className="flex min-h-11 items-center gap-3"><input type="checkbox" checked={directImportOnly} onChange={(event) => setDirectImportOnly(event.target.checked)} />{tx("Studio 직접 가져오기 후보만 보기")}</label>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3"><input type="checkbox" className="size-11 shrink-0 cursor-pointer accent-accent" checked={freeOnly} onChange={(event) => setFreeOnly(event.target.checked)} />{tx("무료 제공처만 보기")}</label>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3"><input type="checkbox" className="size-11 shrink-0 cursor-pointer accent-accent" checked={keylessOnly} onChange={(event) => setKeylessOnly(event.target.checked)} />{tx("가입·키 없는 제공처만 보기")}</label>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3"><input type="checkbox" className="size-11 shrink-0 cursor-pointer accent-accent" checked={liveOnly} onChange={(event) => setLiveOnly(event.target.checked)} />{tx("실제 검색 연결만 보기")}</label>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3"><input type="checkbox" className="size-11 shrink-0 cursor-pointer accent-accent" checked={directImportOnly} onChange={(event) => setDirectImportOnly(event.target.checked)} />{tx("Studio 직접 가져오기 후보만 보기")}</label>
     </div>
     <p className="text-sm leading-7 text-fg-2">{tx("무료 표시는 API 이용료 기준입니다. 계정·키·승인, 호스팅·전송량, 개별 자료의 저작권·상업 이용 조건은 별도이며, 신청 예정·검토 제공처는 아직 연결된 상태가 아닙니다.")}</p>
     <p role="status" className="text-sm text-fg-2">{formatI18nTemplate(tx("{v0}개 제공처"), { v0: rows.length })}</p>
@@ -169,7 +175,7 @@ export function SourcesPage() {
       description={tx("검색어를 줄이거나 필터 선택을 해제하면 더 많은 제공처를 확인할 수 있습니다.")}
       action={<button type="button" className={RESOURCE_BUTTON} onClick={resetFilters}>{tx("검색·필터 초기화")}</button>}
     />}
-    <div className="grid gap-4 md:grid-cols-2">{rows.map((source) => {
+    <div className="grid gap-4 md:grid-cols-2">{visibleRows.map((source) => {
       // 정체성은 이름 추정이 아니라 기능 경로(productRoute) 바인딩으로만 확정한다.
       const identity = researchSourceIdentityForRoute(source.productRoute);
       return <article key={source.name} className={`flex flex-col gap-3 rounded-2xl border border-line bg-panel p-5${identity ? ` research-source research-source--${identity.provider}` : ""}`}>
@@ -193,6 +199,14 @@ export function SourcesPage() {
       <div className="flex flex-wrap gap-2">{source.productRoute && <Link className={`${RESOURCE_BUTTON} bg-accent-soft`} to={source.productRoute}>{tx("기능 열기")}</Link>}<a className={RESOURCE_BUTTON} href={source.url} target="_blank" rel="noopener noreferrer">{tx("공식 안내 확인 ↗")}</a></div>
       </article>;
     })}</div>
+    {remainingRows > 0 && <div className="flex flex-wrap items-center justify-center gap-3">
+      <button type="button" className={`${RESOURCE_BUTTON} min-h-11 min-w-11 bg-accent-soft font-bold text-accent`} onClick={() => setVisibleLimit((prev) => prev + INITIAL_VISIBLE)}>
+        {formatI18nTemplate(tx("항목 더보기 (남은 {v0}개)"), { v0: remainingRows })}
+      </button>
+      <button type="button" className={`${RESOURCE_BUTTON} min-h-11 min-w-11`} onClick={() => setVisibleLimit(rows.length)}>
+        {tx("전체 펼치기")}
+      </button>
+    </div>}
 
     <section className="space-y-4 rounded-2xl border border-line bg-panel p-6" aria-labelledby="live-open-api-searches">
       <div><p className="text-xs font-semibold text-accent">{txEn("LIVE · KEYLESS OPEN API")}</p><h2 id="live-open-api-searches" className="mt-2 text-xl font-bold">{tx("가입 없이 바로 쓰는 새 레퍼런스 검색")}</h2></div>

@@ -94,7 +94,7 @@ export function CollaborationCrewDivisionPlanner({
               step={5}
               value={targetCuts}
               onChange={(e) => setTargetCuts(Number(e.target.value) || 70)}
-              className="w-24 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-sm font-bold text-fg"
+              className="min-h-11 w-24 rounded-lg border border-line bg-panel px-2.5 py-2 text-sm font-bold text-fg"
             />
             <span className="text-xs font-semibold text-fg-3">{bt("컷", "cuts")}</span>
           </div>
@@ -110,7 +110,7 @@ export function CollaborationCrewDivisionPlanner({
               step={4}
               value={weeklyDeadlineHours}
               onChange={(e) => setWeeklyDeadlineHours(Number(e.target.value) || 96)}
-              className="w-24 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-sm font-bold text-fg"
+              className="min-h-11 w-24 rounded-lg border border-line bg-panel px-2.5 py-2 text-sm font-bold text-fg"
             />
             <span className="text-xs font-semibold text-fg-3">{bt("시간", "hours")}</span>
           </div>
@@ -213,7 +213,7 @@ export function CollaborationCrewDivisionPlanner({
                       type="button"
                       onClick={() => handleToggleTrackMode(row.spec.key)}
                       className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                        "inline-flex min-h-11 min-w-11 items-center whitespace-nowrap rounded-full border px-3 py-2 text-xs font-semibold transition-colors",
                         isOutsourced
                           ? "border-accent bg-accent/15 text-accent"
                           : "border-line bg-panel text-fg-2 hover:border-accent/50",
@@ -242,7 +242,7 @@ export function CollaborationCrewDivisionPlanner({
                       <button
                         type="button"
                         onClick={() => onSelectRoleFilter(row.spec.boardRoleFilter)}
-                        className="inline-flex items-center gap-1 font-semibold text-accent underline-offset-4 hover:underline"
+                        className="inline-flex min-h-11 min-w-11 items-center gap-1 whitespace-nowrap px-2 font-semibold text-accent underline-offset-4 hover:underline"
                       >
                         <UsersRound size={13} aria-hidden="true" />
                         {bt("이 공정 파트너 공고 보기", "Filter gigs for this track")}

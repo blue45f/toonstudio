@@ -33,6 +33,7 @@ import { TitleCard } from "@/shared/components/title-card";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { useApp, useHydrated } from "@/shared/lib/store";
 import { GENRES } from "@/shared/lib/taxonomy";
 import Link from "@/shared/navigation/router-link";
 import {
@@ -47,6 +48,7 @@ import { cn } from "@/shared/lib/utils";
 import { DiscoverSpotlight } from "./DiscoverSpotlight";
 import {
   DISCOVER_HOME_SNAPSHOT_URL,
+  orderTitlesByIds,
   pickDiscoverSpotlight,
   snapshotDateLabel,
   type DiscoverHomeSnapshot,
@@ -268,8 +270,36 @@ export function DiscoverHubPage() {
     DISCOVER_HOME_SNAPSHOT_URL,
     bt("추천 작품을 불러오지 못했습니다.", "Couldn't load story picks."),
   );
+  const hydrated = useHydrated();
+  const recentlyViewedIds = useApp((state) => state.recentlyViewed);
   // 대표 작품이 없는 상태에는 가짜 표지나 빈 카드를 만들지 않는다.
   const showSpotlight = home.loading || (home.data != null && pickDiscoverSpotlight(home.data) != null);
+  const quickReturnModel = useMemo(() => {
+    const snap = home.data;
+    const pool = snap
+      ? [
+          ...(snap.spotlight ? [snap.spotlight] : []),
+          ...(snap.featured ?? []),
+          ...(snap.todayReleases ?? []),
+          ...(snap.topRated ?? []),
+          ...(snap.waitFree ?? []),
+          ...(snap.newest ?? []),
+        ]
+      : [];
+    const seen = new Set<string>();
+    const dedupedPool = pool.filter((entry) => {
+      if (seen.has(entry.id)) return false;
+      seen.add(entry.id);
+      return true;
+    });
+    const recentIds = hydrated ? recentlyViewedIds.slice(0, 4) : [];
+    const matchedRecent = recentIds.length > 0 ? orderTitlesByIds(recentIds, dedupedPool) : [];
+    return {
+      hasHistory: recentIds.length > 0,
+      recentTitles: matchedRecent,
+      featuredPicks: dedupedPool.slice(0, 3),
+    };
+  }, [home.data, hydrated, recentlyViewedIds]);
   const localMatches = useMemo(
     () => (query.trim().length > 0 ? collectDiscoverLocalMatches(home.data, query, 6) : null),
     [home.data, query],
@@ -305,6 +335,19 @@ export function DiscoverHubPage() {
       <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
         <div className="discover-hub-intro">
       <header className="discover-hub-header" aria-labelledby="discover-title">
+        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-accent/35 bg-card/80 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
+          <img
+            src="/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp"
+            alt=""
+            aria-hidden="true"
+            width={20}
+            height={20}
+            loading="eager"
+            decoding="async"
+            className="size-5 rounded-md object-cover"
+          />
+          <span>{bt("작품 탐색 아틀리에", "Story Discovery Atelier")}</span>
+        </div>
         <h1 id="discover-title" className="discover-hub-title font-bold tracking-tight text-fg">
           {bt("다음 이야기를 찾아요", "Find your next story")}
         </h1>
@@ -368,6 +411,74 @@ export function DiscoverHubPage() {
 
       <section aria-labelledby="discover-shelves-title" className="discover-hub-shelves min-w-0">
         <h2 id="discover-shelves-title" className="sr-only">{bt("작품 둘러보기", "Browse stories")}</h2>
+        <section
+          aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
+          data-testid="discover-quick-return-bar"
+          className="relative mb-5 flex flex-wrap items-center justify-between gap-2.5 overflow-hidden rounded-2xl border border-accent/30 bg-card/90 px-3.5 py-2.5 shadow-sm backdrop-blur-md"
+        >
+          <img
+            src="/brand/luminous-atelier-20261114/scene-market-discover-aurora.webp"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            className="pointer-events-none absolute inset-0 size-full object-cover opacity-15"
+          />
+          <div className="relative z-10 flex items-center gap-2 text-xs font-extrabold text-fg">
+            <img
+              src="/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp"
+              alt=""
+              aria-hidden="true"
+              width={22}
+              height={22}
+              loading="lazy"
+              decoding="async"
+              className="size-5 shrink-0 rounded-md object-cover"
+            />
+            <span>{bt("최근 본 작품 이어보기", "Continue reading")}</span>
+          </div>
+          <div className="relative z-10 flex flex-wrap items-center gap-1.5">
+            {quickReturnModel.hasHistory ? (
+              <>
+                {quickReturnModel.recentTitles.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/title/${item.slug}`}
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft/75 px-3.5 text-xs font-bold text-fg transition-colors hover:border-accent hover:text-accent"
+                  >
+                    <span>{`${item.title} ${bt("이어보기", "Resume")}`}</span>
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                ))}
+                <Link
+                  href="/library"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-full border border-line bg-panel/85 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                >
+                  {bt("최근 열람 서재", "Recent history")}
+                </Link>
+              </>
+            ) : (
+              <>
+                {quickReturnModel.featuredPicks.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/title/${item.slug}`}
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-line bg-panel/85 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                  >
+                    <span>{`${item.title} ${bt("첫 화부터", "Start Ep. 1")}`}</span>
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                ))}
+                <Link
+                  href="/ranking"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-full border border-accent/35 bg-accent-soft/60 px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+                >
+                  {bt("추천 에피소드 바로가기", "Jump to featured episodes")}
+                </Link>
+              </>
+            )}
+          </div>
+        </section>
         {localMatches && (localMatches.titles.length > 0 || localMatches.genres.length > 0 || localMatches.tags.length > 0) ? (
           <div
             data-testid="discover-local-matches"

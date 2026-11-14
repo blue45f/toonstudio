@@ -47,7 +47,7 @@ export function ResearchCategoryTiles({ summary }: { summary: ResearchWorkspaceS
           <span className={cn("rounded-full border px-2 py-0.5 text-xs font-semibold", USAGE_TONE.reference)}>{bt(...RESEARCH_USAGE_LABELS.reference)}</span>{" "}
           {bt(...RESEARCH_USAGE_HINTS.reference)}. {bt("저장하면 출처·조건이 함께 남아요.", "Saving keeps the source and terms.")}
           {" "}
-          <Link to="/about/data" className="inline-flex min-h-11 items-center font-semibold text-accent underline-offset-4 hover:underline sm:min-h-0">{bt("이용 조건 기준", "How terms work")}</Link>
+          <Link to="/about/data" className="inline-flex min-h-11 min-w-11 items-center font-semibold text-accent underline-offset-4 hover:underline">{bt("이용 조건 기준", "How terms work")}</Link>
         </span>
       </p>
     </header>

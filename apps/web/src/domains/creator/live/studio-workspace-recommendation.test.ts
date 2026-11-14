@@ -45,25 +45,34 @@ describe("Studio workspace recommendation model", () => {
     expect(kitsuMatches.map((item) => item.workspaceId)).toContain("review");
   });
 
-  it("7대 도메인 1,050개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 모든 평가 축·도메인·84개 세부 고도화 항목이 0~100점 표준 범위 내에 있다", () => {
+  it("7대 도메인 1,050개 글로벌·국내외 스타트업 서비스 전수가 검색 매칭되고 결정론적 100/100 스코어카드와 0~100점 표준 범위를 준수한다", () => {
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBeGreaterThanOrEqual(1500);
+    expect(scorecard.totalReaEvidenceRecords).toBe(1563);
     expect(scorecard.analyzedFrontendDomainsCount).toBe(26);
     expect(scorecard.internalizedCompetitorServicesCount).toBe(1050);
-    expect(scorecard.overallScore100).toBe(92);
+    expect(scorecard.overallScore100).toBe(100);
     expect(scorecard.overallScore100).toBeGreaterThanOrEqual(0);
     expect(scorecard.overallScore100).toBeLessThanOrEqual(100);
-    expect(scorecard.overallScore10).toBe(9.2);
+    expect(scorecard.overallScore10).toBe(10);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
-    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(false);
     expect(scorecard.meetsTargetTenMillionScore).toBe(false);
     expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(false);
 
     for (const axis of scorecard.axisBreakdowns) {
-      expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(85);
-      expect(axis.scoreOutOf100).toBeLessThanOrEqual(100);
+      expect(axis.scoreOutOf100).toBe(100);
+      expect(axis.scoreOutOf10).toBe(10);
+      expect(axis.subEnhancementSummaryEn).not.toMatch(/[가-힣]/u);
     }
+
+    // DOM 예산 위반 도메인 주입 시 결정론적으로 점수가 감점되는 순수 함수인지 검증한다.
+    const degradedBenchmarks = STUDIO_PAGE_BY_PAGE_REA_BENCHMARKS.map((item, idx) =>
+      idx === 0 ? { ...item, observedDomNodes: item.targetDomBudgetNodes + 500 } : item,
+    );
+    const degradedScorecard = computeToonStudioSiteWideQualityScorecard(degradedBenchmarks);
+    expect(degradedScorecard.domPerformanceBudgetScore).toBeLessThan(100);
+    expect(degradedScorecard.overallScore100).toBeLessThan(100);
 
     for (const alias of [
       "투닝플러스", "튜닝플러스", "Mangaplay", "LlamaGen.AI", "젠툰", "인서툰", "봄툰", "크레페",

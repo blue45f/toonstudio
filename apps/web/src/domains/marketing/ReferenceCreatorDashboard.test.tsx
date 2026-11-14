@@ -315,19 +315,14 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
-  it("추가 도구는 기본 접힘이며 펼치면 44px 동선 4개를 정본 경로로 연결한다", async () => {
+  it("핵심 4대 런치패드를 첫 화면에서 즉시 노출하며 44px 동선 4개를 정본 경로로 연결한다", async () => {
     await dashboard();
     const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
-    const details = launchpad.closest("details");
-    expect(details?.open).toBe(false);
+    expect(launchpad.closest("details")).toBeNull();
     expect(launchpad.textContent).not.toMatch(/1초|1S|WEBGPU|WEBXR|Rights BOM/u);
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).closest("details")).toBeNull();
     expect(screen.getByRole("region", { name: "예시 작품" }).closest("details")).toBeNull();
-    const summary = screen.getByText("다른 시작 방법 보기").closest("summary");
-    if (!summary) throw new Error("추가 도구를 여는 summary가 필요합니다.");
-    fireEvent.click(summary);
-    expect(details?.open).toBe(true);
     const links = within(launchpad).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/studio/new?lane=blank",
@@ -338,8 +333,6 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     for (const link of links) {
       expect(link.className).toContain("min-h-11");
     }
-    fireEvent.click(summary);
-    expect(details?.open).toBe(false);
   });
 
   it("예시 컷을 고르면 로컬 미리보기만 바뀌고 편집기로 이동하거나 검색을 실행하지 않는다", async () => {
@@ -379,8 +372,10 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
         expect(coreArt.has(src), src).toBe(true);
       } else if (src.startsWith("/assets/studio/scene-assistant/")) {
         expect(img.closest(".rd-mini-workspace--background")).not.toBeNull();
-      } else if (src === "/brand/workflow-20260928/create-640.webp") {
+      } else if (src === "/brand/luminous-atelier-20261114/scene-hero-living-atelier.webp") {
         expect(img.closest(".rd-clarity-art")).not.toBeNull();
+      } else if (src.startsWith("/brand/luminous-atelier-20261114/icon-")) {
+        expect(img.closest(".rd-clarity-journey, .rd-v2-bento")).not.toBeNull();
       } else {
         expect(src).toMatch(/^\/brand\/illustrated-20260928\/(?:(hero|canvas-noir|luna|character-pink|character-blue|background-city|project-romance|project-crimson|blank-canvas|storyboard|materials|background-classroom)-(320|640)\.webp|(hero|luna)\.webp)$/u);
       }

@@ -349,3 +349,39 @@ it("짧은 유형 이름 뒤에 상세 안내를 접어 두되 장착과 카탈�
   expect(within(section).getByRole("link", { name: "브러시 관리자로 장착" }).getAttribute("href")).toBe("/studio/brushes");
   expect(within(section).getByRole("link", { name: "전체 에셋 카탈로그" }).getAttribute("href")).toBe("/market/browse");
 });
+
+it("Luminous Atelier 엠블럼과 44px 빠른 라이선스·소재 필터 칩을 제공한다", () => {
+  useResources.mockReturnValue(
+    marketPage({
+      items: [
+        { ...cachedRecord, id: "cc0-bg", kind: "3d-asset", license: "cc0-1.0" },
+        { ...cachedRecord, id: "nc-brush", kind: "brush", license: "cc-by-nc-4.0" },
+      ],
+    }),
+  );
+  const { container } = render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+
+  const emblem = container.querySelector('img[src="/brand/luminous-atelier-20261114/icon-nav-asset-market.webp"]');
+  expect(emblem).toBeTruthy();
+
+  const quickGroup = screen.getByRole("group", { name: "빠른 라이선스·소재 필터" });
+  const chips = within(quickGroup).getAllByRole("button");
+  expect(chips.map((chip) => chip.textContent)).toEqual([
+    "전체",
+    "무료·CC0",
+    "상업용 즉시 가능",
+    "펜·브러시",
+    "3D 배경·포즈",
+  ]);
+  for (const chip of chips) {
+    expect(chip.className).toContain("min-h-11");
+  }
+
+  fireEvent.click(within(quickGroup).getByRole("button", { name: "상업용 즉시 가능" }));
+  expect(screen.getByTestId("resource-cc0-bg")).toBeTruthy();
+  expect(screen.queryByTestId("resource-nc-brush")).toBeNull();
+
+  fireEvent.click(within(quickGroup).getByRole("button", { name: "펜·브러시" }));
+  expect(screen.queryByTestId("resource-cc0-bg")).toBeNull();
+  expect(screen.getByTestId("resource-nc-brush")).toBeTruthy();
+});

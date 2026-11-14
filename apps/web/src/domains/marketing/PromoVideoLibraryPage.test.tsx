@@ -16,6 +16,8 @@ afterEach(() => {
 describe("PromoVideoLibraryPage — 20종 REA 3-Mode 뷰 스위처·필터·허브 서브탭·6단계 파이프라인", () => {
   it("204개 원본과 쇼츠 49개를 유지하며 명시적 재생 전에는 미디어를 선로딩하지 않는다", () => {
     const { container } = render(<MemoryRouter initialEntries={["/promo-library"]}><PromoVideoLibraryPage /></MemoryRouter>);
+    expect(container.querySelectorAll("video")).toHaveLength(24);
+    fireEvent.click(screen.getByRole("button", { name: "전체 펼치기" }));
     const videos = Array.from(container.querySelectorAll("video"));
     expect(videos).toHaveLength(204);
     expect(container.querySelectorAll("#promo-category-shorts [data-promo-video]")).toHaveLength(49);
@@ -101,6 +103,8 @@ describe("홍보 영상 찾기·복귀와 필터 경계", () => {
     const video = first?.querySelector("video");
     if (!title || !video) throw new Error("첫 영상 제목 또는 미리보기 누락");
     expect(title.compareDocumentPosition(video) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll('a[download][href$=".mp4"]')).toHaveLength(24);
+    fireEvent.click(screen.getByRole("button", { name: "전체 펼치기" }));
     expect(container.querySelectorAll('a[download][href$=".mp4"]')).toHaveLength(204);
   });
 
@@ -154,6 +158,8 @@ describe("홍보 영상 찾기·복귀와 필터 경계", () => {
     fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
     expect(search().value).toBe("");
     expect(currentAddress().search).toBe("?from=kept");
+    expect(container.querySelectorAll('[data-promo-video]')).toHaveLength(24);
+    fireEvent.click(screen.getByRole("button", { name: "전체 펼치기" }));
     expect(container.querySelectorAll('[data-promo-video]')).toHaveLength(204);
     expect(container.querySelectorAll('#promo-category-shorts [data-promo-video]')).toHaveLength(49);
   });
@@ -179,7 +185,7 @@ describe("홍보 영상 찾기·복귀와 필터 경계", () => {
     expect(container.querySelector('.promo-library')?.getAttribute("data-view-mode")).toBe("list");
     fireEvent.click(screen.getByRole("button", { name: "주소 뒤로" }));
     await waitFor(() => expect(search().value).toBe(""));
-    expect(container.querySelectorAll('[data-promo-video]')).toHaveLength(204);
+    expect(container.querySelectorAll('[data-promo-video]')).toHaveLength(24);
     fireEvent.click(screen.getByRole("button", { name: "주소 앞으로" }));
     await waitFor(() => expect(search().value).toBe("그리고, 색까지"));
     fireEvent.click(screen.getByRole("button", { name: "다른 화면" }));
