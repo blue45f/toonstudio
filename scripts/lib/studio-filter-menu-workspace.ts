@@ -19,10 +19,15 @@ export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000)
   const originalDensity = await shell.getAttribute("data-studio-ui-density", { timeout: remaining() });
   const more = page.locator('summary[data-studio-clarity-more-trigger="true"]:visible');
   invariant(await more.count() === 1, "필터 검증의 실제 더보기 진입점은 하나여야 합니다");
-  await more.click({ timeout: remaining() });
   const tools = page.getByRole("dialog", { name: "원고 도구", exact: true });
+  if (!await tools.isVisible()) await more.click({ timeout: remaining() });
   await tools.waitFor({ state: "visible", timeout: remaining() });
   const workspace = tools.locator('[data-drawing-task-category="workspace"]');
+  if (await workspace.count() === 0) {
+    const back = tools.getByRole("button", { name: "원고 도구 분류로 돌아가기", exact: true });
+    invariant(await back.count() === 1, "필터 검증의 화면과 도움말 목적은 하나여야 합니다: 분류로 돌아가기 버튼을 확인하세요");
+    await back.click({ timeout: remaining() });
+  }
   invariant(await workspace.count() === 1, "필터 검증의 화면과 도움말 목적은 하나여야 합니다");
   await workspace.click({ timeout: remaining() });
   await tools.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click({ timeout: remaining() });
