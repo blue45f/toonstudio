@@ -21,6 +21,7 @@ export {
 } from "./appearance-presets";
 export * from "./art-style-packs";
 export * from "./look-sets";
+export * from "./shaper-quick-sculpt-presets";
 export {
   WEBTOON_UNIVERSE_SHAPER_IDS,
   WEBTOON_UNIVERSE_SHAPER_PRESETS,

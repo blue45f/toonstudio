@@ -1,33 +1,47 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  FACE_PARAM_KEYS,
   characterRecipeSchema,
   createDefaultRecipe,
   createKitDefaultRecipe,
+  hairColorSchema,
+  lookSchema,
+  proportionSchema,
 } from "../contracts";
 
 import {
+  SHAPER_FACE_SCULPT_PRESETS,
+  SHAPER_HAIR_OMBRE_PRESETS,
+  SHAPER_HEAD_RATIO_PRESETS,
+  SHAPER_TOON_SHADER_PRESETS,
   WEBTOON_UNIVERSE_SHAPER_IDS,
   WEBTOON_UNIVERSE_SHAPER_PRESETS,
   applyShaperFineSlidersToRecipe,
   blendWebtoonUniverseRecipes,
+  buildShaperToonShadingProfile,
   composeWebtoonUniverseRecipe,
   resolveCharacterLabVarco3dPreviewSettings,
   webtoonUniverseShaperPreset,
 } from "./webtoon-universe-shaper";
 
 describe("presets/webtoon-universe-shaper", () => {
-  it("8대 웹툰 세계관 셰이퍼 프리셋이 절차(procedural) 및 키트(kit) 기본 레시피 위에서 모두 유효한 v3 레시피를 합성한다", () => {
-    expect(WEBTOON_UNIVERSE_SHAPER_PRESETS).toHaveLength(8);
-    expect(WEBTOON_UNIVERSE_SHAPER_IDS).toHaveLength(8);
+  it("16대 웹툰 세계관 셰이퍼 프리셋이 절차(procedural) 및 키트(kit) 기본 레시피 위에서 모두 유효한 v3 레시피를 합성한다", () => {
+    expect(WEBTOON_UNIVERSE_SHAPER_PRESETS).toHaveLength(16);
+    expect(WEBTOON_UNIVERSE_SHAPER_IDS).toHaveLength(16);
 
     const procBase = createDefaultRecipe();
     const kitBase = createKitDefaultRecipe();
+    const uniqueSignatures = new Set<string>();
 
     for (const id of WEBTOON_UNIVERSE_SHAPER_IDS) {
       const preset = webtoonUniverseShaperPreset(id);
       expect(preset.id).toBe(id);
       expect(preset.varcoBinding.glbArtifactName).toMatch(/\.glb$/u);
+
+      const sig = `${preset.artStyleId}:${JSON.stringify(preset.slots)}`;
+      expect(uniqueSignatures.has(sig)).toBe(false);
+      uniqueSignatures.add(sig);
 
       const procComposed = composeWebtoonUniverseRecipe(id, procBase);
       expect(procComposed.ok).toBe(true);
@@ -35,6 +49,9 @@ describe("presets/webtoon-universe-shaper", () => {
         expect(characterRecipeSchema.safeParse(procComposed.recipe).success).toBe(true);
         expect(procComposed.recipe.shading.mode).toBe("toon");
         expect(procComposed.recipe.style.packId).toBe(preset.artStyleId);
+        if (preset.proportionOverride) {
+          expect(procComposed.recipe.style.proportion?.headsTall).toBe(preset.proportionOverride.headsTall);
+        }
         // style.neutralFacs에 기본 표정을 담고 recipe.expression은 비워 두어 FACS 가중치가 2배로 중복 합산되지 않도록 보장한다
         expect(procComposed.recipe.expression).toEqual({});
         expect(procComposed.recipe.style.neutralFacs).toEqual(preset.expression);
@@ -52,6 +69,22 @@ describe("presets/webtoon-universe-shaper", () => {
         expect(kitComposed.recipe.expression).toEqual({});
         expect(kitComposed.recipe.style.neutralFacs).toEqual(preset.expression);
       }
+    }
+  });
+
+  it("신규 8종 플래그십 웹툰 캐릭터 아키타입(북부대공·남주·아이돌·마탑주·암살자·세자·스포츠·흑막황후) 비례와 슬렌딩이 정상 동작한다", () => {
+    const base = createDefaultRecipe();
+    const duke = composeWebtoonUniverseRecipe("northern-grand-duke", base);
+    expect(duke.ok).toBe(true);
+    if (duke.ok) {
+      expect(duke.recipe.style.proportion?.headsTall).toBe(8.5);
+      expect(duke.recipe.slots.hair).toBe("hair/wolf-layered");
+    }
+
+    const blended = blendWebtoonUniverseRecipes("romance-fantasy-noble", "cyberpunk-runner", 0.5, base);
+    expect(blended.ok).toBe(true);
+    if (blended.ok) {
+      expect(characterRecipeSchema.safeParse(blended.recipe).success).toBe(true);
     }
   });
 
@@ -93,11 +126,43 @@ describe("presets/webtoon-universe-shaper", () => {
     expect(fineAdjusted.recipe.shading.look.rim.strength).toBe(1.4);
   });
 
+  it("원클릭 등신비·안면 조형·헤어 옴브레·웹툰 셀셰이딩 프리셋이 계약 스키마를 100% 통과한다", () => {
+    expect(SHAPER_HEAD_RATIO_PRESETS).toHaveLength(5);
+    for (const preset of SHAPER_HEAD_RATIO_PRESETS) {
+      expect(proportionSchema.safeParse(preset.proportion).success).toBe(true);
+    }
+
+    expect(SHAPER_FACE_SCULPT_PRESETS).toHaveLength(6);
+    for (const preset of SHAPER_FACE_SCULPT_PRESETS) {
+      for (const key of FACE_PARAM_KEYS) {
+        expect(typeof preset.face[key]).toBe("number");
+        expect(preset.face[key]).toBeGreaterThanOrEqual(-1);
+        expect(preset.face[key]).toBeLessThanOrEqual(1);
+      }
+    }
+
+    expect(SHAPER_HAIR_OMBRE_PRESETS).toHaveLength(5);
+    for (const preset of SHAPER_HAIR_OMBRE_PRESETS) {
+      expect(hairColorSchema.safeParse(preset.hairColor).success).toBe(true);
+    }
+
+    expect(SHAPER_TOON_SHADER_PRESETS).toHaveLength(4);
+    const baseShading = createDefaultRecipe().shading;
+    for (const preset of SHAPER_TOON_SHADER_PRESETS) {
+      const next = buildShaperToonShadingProfile(baseShading, preset);
+      expect(next.mode).toBe("toon");
+      expect(lookSchema.safeParse(next.look).success).toBe(true);
+    }
+  });
+
   it("세계관별 VARCO 3D 프리뷰·인스펙터(HDRI 환경·360도 조명 회전·PBR 채널·오버레이) 기본값을 계산한다", () => {
     const murimPreview = resolveCharacterLabVarco3dPreviewSettings("murim-swordsman");
     expect(murimPreview.environmentId).toBe("venice_sunset");
     expect(murimPreview.lightingRotationDeg).toBe(60);
     expect(murimPreview.pivotToBottom).toBe(true);
+
+    const dukePreview = resolveCharacterLabVarco3dPreviewSettings("northern-grand-duke");
+    expect(dukePreview.environmentId).toBe("studio_small");
 
     const overridden = resolveCharacterLabVarco3dPreviewSettings("cyberpunk-runner", {
       lightingRotationDeg: -30,
@@ -109,5 +174,3 @@ describe("presets/webtoon-universe-shaper", () => {
     expect(overridden.isWireframeOn).toBe(true);
   });
 });
-
-

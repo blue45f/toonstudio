@@ -1,5 +1,5 @@
 /**
- * SHAPER Studio UI/UX 디자인 시스템 & 모던 웹 가이드라인(browser-ui-theming, slider, color, premium-ui-design) 스타일시트.
+ * SHAPER Studio UI/UX 디자인 시스템 & Luminous Atelier 글래스모피즘 스타일시트.
  *
  * REA 역공학 근거 (Assembly-CSharp.dll):
  * - UIImageView::SetImage (0x060002eb): 캔버스/썸네일 배경 OKLCH 다크 뉴트럴 (0.18 0 0)
@@ -12,19 +12,20 @@
 
 :root {
   --shaper-canvas: oklch(0.18 0 0);
-  --shaper-panel: oklch(0.22 0.012 264);
-  --shaper-panel-2: oklch(0.28 0.016 264);
-  --shaper-surface-elevated: oklch(0.32 0 0);
+  --shaper-panel: oklch(0.22 0.014 264);
+  --shaper-panel-2: oklch(0.28 0.018 264);
+  --shaper-surface-elevated: oklch(0.32 0.012 264);
   --shaper-fg: oklch(0.985 0 0);
-  --shaper-muted: oklch(0.76 0 0);
+  --shaper-muted: oklch(0.76 0.01 264);
   --shaper-disabled: oklch(0.55 0 0);
-  --shaper-line: oklch(0.38 0.022 264);
+  --shaper-line: oklch(0.38 0.024 264);
   --shaper-highlight: oklch(0.88 0.18 98);
+  --shaper-atelier-cyan: oklch(0.82 0.13 212);
   --shaper-scrim: color-mix(in oklab, oklch(0.18 0 0) 50%, transparent);
   --studio-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* SHAPER Studio 다크 테마 토글 시 루트 토큰 오버라이드 */
+/* SHAPER Studio 다크 테마(기본 활성) 루트 토큰 오버라이드 */
 :root[data-studio-theme="shaper"] {
   --lab-canvas: var(--shaper-canvas);
   --lab-panel: var(--shaper-panel);
@@ -32,15 +33,76 @@
   --lab-fg: var(--shaper-fg);
   --lab-muted: var(--shaper-muted);
   --lab-line: var(--shaper-line);
-  --lab-accent: oklch(0.79 0.17 86);
+  --lab-accent: oklch(0.81 0.16 88);
+}
+
+:root[data-studio-theme="shaper"] .cl-topbar {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--shaper-panel-2) 92%, oklch(0.35 0.04 250)),
+    color-mix(in oklab, var(--shaper-panel) 96%, black)
+  );
+  border-bottom: 1px solid color-mix(in oklab, var(--shaper-line) 78%, white 14%);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.55);
 }
 
 :root[data-studio-theme="shaper"] .cl-button--primary,
 :root[data-studio-theme="shaper"] .cl-button[aria-pressed="true"] {
-  background: color-mix(in oklab, var(--shaper-highlight) 85%, black);
+  background: color-mix(in oklab, var(--shaper-highlight) 86%, black);
   border-color: var(--shaper-highlight);
   color: oklch(0.18 0 0);
   font-weight: 600;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--shaper-highlight) 35%, transparent);
+}
+
+/* ---------- 터치 타깃 최소 44px 보장 (WCAG 2.5.5 / Shaper Atelier UX) ---------- */
+.cl-button,
+.cl-shaper-chip,
+.cl-param-reset,
+.cl-inspector-tab,
+.cl-param-actions > button {
+  min-height: 2.75rem;
+}
+
+/* ---------- Luminous Shaper Atelier 쇼케이스 배너 & 블렌더 카드 ---------- */
+.cl-shaper-showcase-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--lab-line) 72%, var(--shaper-atelier-cyan) 28%);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--lab-panel-2) 88%, oklch(0.32 0.06 250)),
+    color-mix(in oklab, var(--lab-panel) 94%, black)
+  );
+  overflow: hidden;
+}
+
+.cl-shaper-showcase-thumb {
+  width: 76px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid color-mix(in oklab, var(--lab-line) 65%, white 20%);
+}
+
+.cl-shaper-quick-sculpt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cl-shaper-blender-card {
+  border-radius: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in oklab, var(--lab-accent) 42%, var(--lab-line));
+  background: color-mix(in oklab, var(--lab-panel-2) 86%, transparent);
 }
 
 /* ---------- Browser UI Theming (modern-web-guidance: browser-ui-theming) ---------- */

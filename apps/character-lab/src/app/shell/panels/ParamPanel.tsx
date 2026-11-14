@@ -25,6 +25,7 @@ import { WEBTOON_UNIVERSE_SHAPER_PRESETS, composeWebtoonUniverseRecipe, resolveC
 import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
 import { ParamCustomizeSections } from "./param-customize-sections";
+import { ShaperQuickSculptSections } from "./shaper-quick-sculpt-sections";
 
 import type { BodyParamKey, CharacterRecipe, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
@@ -395,6 +396,25 @@ export function ParamPanel() {
         ))}
       </div>
 
+      <div className="cl-shaper-showcase-header">
+        <img
+          src="/scene-character-lab-shaper-showcase.webp"
+          alt=""
+          aria-hidden="true"
+          className="cl-shaper-showcase-thumb"
+          loading="lazy"
+          decoding="async"
+        />
+        <div>
+          <h3 className="cl-param-subtitle" style={{ margin: 0 }}>
+            3D SHAPER 스튜디오 패리티 스위트 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length} 아키타입)
+          </h3>
+          <p className="cl-param-hint" style={{ margin: "2px 0 0" }}>
+            웹툰 아키타입·등신비·안면 15축 조형·투톤 옴브레·셀셰이딩·실시간 모프 블렌더를 원클릭으로 제어합니다.
+          </p>
+        </div>
+      </div>
+
       <div
         className="cl-param-group"
         role="group"
@@ -437,6 +457,8 @@ export function ParamPanel() {
           선택 세계관 소품 바인딩: {activeUniversePreset.varcoBinding.labelKo} ({activeUniversePreset.varcoBinding.glbArtifactName} · 본 앵커 {activeUniversePreset.varcoBinding.anchor}) · HDRI {activeVarcoPreview.environmentId} ({activeVarcoPreview.lightingRotationDeg}°)
         </p>
       </div>
+
+      <ShaperQuickSculptSections />
 
       <div className="cl-param-actions">
         <button type="button" onClick={() => resetGroup("body")} disabled={activeBody.length === 0}>

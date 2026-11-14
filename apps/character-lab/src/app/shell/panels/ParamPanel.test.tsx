@@ -296,18 +296,62 @@ describe("ParamPanel — 요약·사유", () => {
     expect(screen.queryByText(/신체 근육|체지방|의상 감쇠/u)).toBeNull();
   });
 
-  it("VARCO 3D 웹툰 세계관 셰이퍼 프리셋(8종) 클릭 시 recipe/load를 디스패치하고 소품 바인딩과 HDRI 프리뷰를 갱신한다", () => {
+  it("VARCO 3D 웹툰 세계관 셰이퍼 프리셋(16종) 클릭 시 recipe/load를 디스패치하고 소품 바인딩과 HDRI 프리뷰를 갱신한다", () => {
     const dispatched = setup();
     const group = screen.getByTestId("param-varco3d-universe-presets");
-    expect(within(group).getAllByRole("button")).toHaveLength(8);
-    fireEvent.click(screen.getByTestId("param-varco3d-preset-romance-fantasy-noble"));
+    expect(within(group).getAllByRole("button")).toHaveLength(16);
+    fireEvent.click(screen.getByTestId("param-varco3d-preset-northern-grand-duke"));
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]?.type).toBe("recipe/load");
     if (dispatched[0]?.type === "recipe/load") {
-      expect(dispatched[0].recipe.style.packId).toBe("jp-shoujo-soft");
-      expect(dispatched[0].recipe.slots.hair).toBe("hair/romance-long");
+      expect(dispatched[0].recipe.style.proportion?.headsTall).toBe(8.5);
+      expect(dispatched[0].recipe.slots.hair).toBe("hair/wolf-layered");
     }
-    expect(screen.getByTestId("param-varco3d-binding-summary").textContent).toContain("shaper-rofan-tiara.glb");
+    expect(screen.getByTestId("param-varco3d-binding-summary").textContent).toContain("shaper-northern-duke-cape-brooch.glb");
+  });
+
+  it("원클릭 등신비·안면 조형(15축)·헤어 옴브레·셀셰이딩 프리셋이 각각 Undo 1단계로 병합되고 2-캐릭터 모프 블렌더가 작동한다", () => {
+    const store = createLabStore({
+      catalog: createPresetCatalog([]),
+      now: steadyClock(),
+      initial: { capabilities: ALL_AVAILABLE_CAPABILITIES },
+    });
+    render(
+      <MockLabProvider store={store}>
+        <ParamPanel />
+      </MockLabProvider>,
+    );
+
+    // 1. 등신비 원클릭 프리셋 → 1 Undo 단계
+    fireEvent.click(screen.getByTestId("shaper-head-ratio-grand-duke-85"));
+    expect(store.getState().recipe.style.proportion?.headsTall).toBe(8.5);
+    expect(store.getState().recipe.body.height).toBe(0.58);
+    expect(store.getState().history.depth).toBe(1);
+
+    // 2. 안면 조형 15축 스컬프팅 → 2번째 Undo 단계 (15축 전체가 1단계로 병합)
+    fireEvent.click(screen.getByTestId("shaper-face-sculpt-cold-vline"));
+    expect(store.getState().recipe.face.jawWidth).toBe(-0.38);
+    expect(store.getState().recipe.face.eyeTilt).toBe(0.42);
+    expect(store.getState().history.depth).toBe(2);
+
+    // 3. 헤어 투톤 옴브레 & 엔젤링 → 3번째 Undo 단계
+    fireEvent.click(screen.getByTestId("shaper-hair-ombre-idol-secret-twotone"));
+    expect(store.getState().recipe.hairColor.tipMix).toBe(0.55);
+    expect(store.getState().recipe.colors["hair-tip"]).toBe("#a8d0e6");
+    expect(store.getState().recipe.shading.look.specular.hairBand).toBe("ring");
+    expect(store.getState().history.depth).toBe(3);
+
+    // 4. 웹툰 셀셰이딩 · 외곽선 프리셋 → 4번째 Undo 단계
+    fireEvent.click(screen.getByTestId("shaper-toon-shader-action-hard-cel3"));
+    expect(store.getState().recipe.shading.mode).toBe("toon");
+    expect(store.getState().recipe.shading.toon.rampSteps).toBe(3);
+    expect(store.getState().recipe.shading.look.line.widthMm).toBe(5.8);
+    expect(store.getState().history.depth).toBe(4);
+
+    // 5. 2-캐릭터 아키타입 모프 블렌더 실시간 75% 반영
+    fireEvent.click(screen.getByTestId("shaper-blend-step-75"));
+    expect((screen.getByTestId("shaper-blend-percent-input") as HTMLInputElement).value).toBe("75");
+    expect(store.getState().history.depth).toBe(5);
   });
 
   it("숫자 입력에 범위 밖 초안('2')이 남아 있을 때 체형 초기화나 Undo가 발생하면 초안과 aria-invalid가 즉시 해소된다", () => {

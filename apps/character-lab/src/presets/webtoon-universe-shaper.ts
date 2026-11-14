@@ -1,7 +1,7 @@
 /**
  * 웹툰 세계관 3D 셰이퍼(Shaper) 프리셋 & 연속 슬라이더·보간 커스터마이저 (`apps/character-lab/src/presets/webtoon-universe-shaper.ts`).
  *
- * - 8대 웹툰 세계관 캐릭터 아키타입을 캐릭터 랩 v3 레시피(`CharacterRecipe`) 계약 위에 통합한다.
+ * - 16대 한국 웹툰 캐릭터 아키타입을 캐릭터 랩 v3 레시피(`CharacterRecipe`) 계약 위에 통합한다.
  * - 화풍 팩(`ArtStylePack`) + 코디 세트(`LookSet`) + 15개 슬롯 어휘 프리셋 + 얼굴 15축·체형 9축·파츠 형태 값·헤어 색 흐름·VARCO 3D 소품 바인딩을 하나로 묶는다.
  * - `applyShaperFineSlidersToRecipe`와 `blendWebtoonUniverseRecipes`로 3D 세이퍼 수준의 연속 슬라이더 조작과 실시간 블렌딩을 제공한다.
  */
@@ -39,6 +39,8 @@ import type {
   StyleFigure,
 } from "../contracts";
 
+export * from "./shaper-quick-sculpt-presets";
+
 export const WEBTOON_UNIVERSE_SHAPER_IDS = [
   "school-romance",
   "romance-fantasy-noble",
@@ -48,6 +50,14 @@ export const WEBTOON_UNIVERSE_SHAPER_IDS = [
   "cyberpunk-runner",
   "medical-drama-surgeon",
   "sd-daily-mascot",
+  "northern-grand-duke",
+  "school-male-lead",
+  "kpop-idol-center",
+  "archmage-tower-master",
+  "shadow-assassin-hunter",
+  "joseon-crown-prince",
+  "sports-high-ace",
+  "villainess-empress",
 ] as const;
 
 export type WebtoonUniverseShaperId = (typeof WEBTOON_UNIVERSE_SHAPER_IDS)[number];
@@ -66,6 +76,7 @@ export interface WebtoonUniverseShaperPreset {
   readonly descriptionKo: string;
   readonly artStyleId: ArtStyleId;
   readonly figure: StyleFigure;
+  readonly proportionOverride?: Proportion;
   readonly lookSetId: string;
   readonly slots: Partial<RecipeSlots>;
   readonly face: Readonly<Partial<Record<FaceParamKey, number>>>;
@@ -262,6 +273,190 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
     baseColors: { skin: "#ffe8da", iris: "#a0663c", hair: "#ff9fb8", brow: "#a0663c", "hair-tip": "#ffe8da" },
     varcoBinding: { varcoAssetId: "cafe-espresso-bar", labelKo: "VARCO 카페 디저트 트레이 소품", anchor: "hand-r", glbArtifactName: "cafe-espresso-bar.glb" },
   },
+  {
+    id: "northern-grand-duke",
+    labelKo: "로판 북부대공 냉미남",
+    genreKo: "로맨스 판타지",
+    descriptionKo: "8.5등신 장신 비율과 흑발 시스루 울프컷, 날카로운 V라인과 적안 삼백안의 북부대공",
+    artStyleId: "kr-webtoon-romance",
+    figure: "masculine",
+    proportionOverride: { headsTall: 8.5, legRatio: 0.54, armRatio: 0.46, shoulderHeads: 2.35, headWidthRatio: 0.71, handScale: 1.04 },
+    lookSetId: "fantasy-knight",
+    slots: {
+      "face-shape": "face-shape/v-line", eyes: "eyes/narrow", irises: "irises/round-small",
+      nose: "nose/high-bridge", mouth: "mouth/thin", ears: "ears/standard",
+      hair: "hair/wolf-layered", body: "body/tall", expression: "expression/neutral",
+      pose: "pose/arms-crossed", "hand-pose": "hand-pose/relaxed",
+    },
+    face: { faceShape: -0.5, jawWidth: -0.35, chinLength: 0.14, cheekVolume: -0.25, eyeSize: -0.22, eyeTilt: 0.38, noseHeight: 0.46, noseDepth: 0.32, lipFullness: -0.15 },
+    body: { height: 0.62, shoulderWidth: 0.52, chestDepth: 0.32, waist: -0.2, legLength: 0.48, neckLength: 0.22 },
+    partParams: { hair: { length: 0.15, volume: 0.35 }, outer: { fit: 0.2 } },
+    hairColor: { gradient: [0.55, 1], tipMix: 0.25, accent: "inner" },
+    expression: { browDown: 0.22, eyeSquint: 0.12 },
+    baseColors: { skin: "#f7e8e0", iris: "#b91c1c", hair: "#0f1117", brow: "#0f1117", "hair-tip": "#1e293b", "hair-accent": "#334155", outer: "#11131a", "outer-trim": "#d4af37" },
+    varcoBinding: { varcoAssetId: "shaper-northern-duke-cape-brooch", labelKo: "VARCO 북부대공 루비 망토 브로치", anchor: "neck", glbArtifactName: "shaper-northern-duke-cape-brooch.glb" },
+  },
+  {
+    id: "school-male-lead",
+    labelKo: "학원 청춘 남주인공",
+    genreKo: "학원·청춘 로맨스",
+    descriptionKo: "8등신 모델형 비례와 다정한 강아지상 눈매, 단정한 교복 블레이저 코디의 남주인공",
+    artStyleId: "kr-webtoon-romance",
+    figure: "masculine",
+    proportionOverride: { headsTall: 8, legRatio: 0.52, armRatio: 0.45, shoulderHeads: 2.08, headWidthRatio: 0.74, handScale: 1 },
+    lookSetId: "school-blazer-slacks",
+    slots: {
+      "face-shape": "face-shape/oval", eyes: "eyes/droopy", irises: "irises/soft-gradient",
+      nose: "nose/straight", mouth: "mouth/smile-corner", ears: "ears/standard",
+      hair: "hair/short-layered", body: "body/tall", expression: "expression/smile",
+      pose: "pose/idle", "hand-pose": "hand-pose/open",
+    },
+    face: { faceShape: -0.18, jawWidth: -0.12, cheekVolume: 0.08, eyeSize: 0.24, eyeTilt: -0.22, noseHeight: 0.28, lipFullness: 0.12 },
+    body: { height: 0.42, shoulderWidth: 0.32, chestDepth: 0.18, waist: -0.15, legLength: 0.38, neckLength: 0.18 },
+    partParams: { hair: { bangs: 0.25, volume: 0.28 } },
+    hairColor: { gradient: [0.6, 1], tipMix: 0.18, accent: "none" },
+    expression: { mouthSmile: 0.24, browInnerUp: 0.08 },
+    baseColors: { skin: "#f9e3d2", iris: "#5c4033", hair: "#2c221e", brow: "#2c221e", "hair-tip": "#5a4236" },
+    varcoBinding: { varcoAssetId: "shaper-school-headphones", labelKo: "VARCO 학원 남주 무선 헤드셋", anchor: "neck", glbArtifactName: "shaper-school-headphones.glb" },
+  },
+  {
+    id: "kpop-idol-center",
+    labelKo: "K-POP 아이돌 센터",
+    genreKo: "연예계·아이돌",
+    descriptionKo: "7.8등신 무대 비례와 투톤 시크릿 옴브레 트윈테일, 별빛 하이라이트 홍채의 아이돌 센터",
+    artStyleId: "jp-shoujo-soft",
+    figure: "feminine",
+    proportionOverride: { headsTall: 7.8, legRatio: 0.53, armRatio: 0.44, shoulderHeads: 1.72, headWidthRatio: 0.74, handScale: 0.96 },
+    lookSetId: "school-sailor-navy",
+    slots: {
+      "face-shape": "face-shape/heart", eyes: "eyes/wide", irises: "irises/star-highlight",
+      nose: "nose/button", mouth: "mouth/smile-corner", ears: "ears/small",
+      hair: "hair/twin-tail", body: "body/slim", expression: "expression/wink",
+      pose: "pose/peace", "hand-pose": "hand-pose/peace",
+    },
+    face: { faceShape: -0.24, jawWidth: -0.32, cheekVolume: 0.18, eyeSize: 0.62, eyeTilt: 0.2, noseHeight: 0.16, lipFullness: 0.28 },
+    body: { height: 0.22, waist: -0.32, legLength: 0.4, neckLength: 0.2 },
+    partParams: { hair: { length: 0.78, volume: 0.65, curl: 0.45 }, bottom: { flare: 0.4 } },
+    hairColor: { gradient: [0.46, 1], tipMix: 0.62, accent: "inner" },
+    expression: { mouthSmile: 0.32, eyeWide: 0.12 },
+    baseColors: { skin: "#fff1ea", iris: "#a855f7", hair: "#fdf2f8", brow: "#d8b4c8", "hair-tip": "#93c5fd", "hair-accent": "#f472b6" },
+    varcoBinding: { varcoAssetId: "shaper-idol-handmic", labelKo: "VARCO 아이돌 센터 크리스탈 핸드마이크", anchor: "hand-r", glbArtifactName: "shaper-idol-handmic.glb" },
+  },
+  {
+    id: "archmage-tower-master",
+    labelKo: "마탑주 대마법사",
+    genreKo: "판타지·회귀물",
+    descriptionKo: "8등신 신비형 비례와 은발 보랏빛 그라데이션 장발, 금빛 별빛 홍채와 성좌 로브",
+    artStyleId: "jp-anime-cel",
+    figure: "masculine",
+    proportionOverride: { headsTall: 8, legRatio: 0.52, armRatio: 0.45, shoulderHeads: 2.02, headWidthRatio: 0.74, handScale: 1 },
+    lookSetId: "fantasy-mage-robe",
+    slots: {
+      "face-shape": "face-shape/long", eyes: "eyes/almond", irises: "irises/star-highlight",
+      nose: "nose/high-bridge", mouth: "mouth/smile-corner", ears: "ears/pointed",
+      hair: "hair/romance-long", body: "body/slim", expression: "expression/smile",
+      pose: "pose/point", "hand-pose": "hand-pose/open",
+    },
+    face: { faceShape: -0.32, jawWidth: -0.24, chinLength: 0.08, eyeSize: 0.28, eyeTilt: 0.14, noseHeight: 0.36, earAngle: 0.28 },
+    body: { height: 0.4, shoulderWidth: 0.18, waist: -0.2, legLength: 0.36, neckLength: 0.22 },
+    partParams: { hair: { length: 0.82, volume: 0.42 } },
+    hairColor: { gradient: [0.44, 1], tipMix: 0.58, accent: "inner" },
+    expression: { mouthSmile: 0.16, browOuterUp: 0.12 },
+    baseColors: { skin: "#fcf4ef", iris: "#f59e0b", hair: "#e2e8f0", brow: "#94a3b8", "hair-tip": "#818cf8", "hair-accent": "#c084fc" },
+    varcoBinding: { varcoAssetId: "shaper-archmage-grimoire", labelKo: "VARCO 마탑주 성좌 마도서", anchor: "hand-l", glbArtifactName: "shaper-archmage-grimoire.glb" },
+  },
+  {
+    id: "shadow-assassin-hunter",
+    labelKo: "S급 그림자 암살자",
+    genreKo: "헌터·판타지 액션",
+    descriptionKo: "8.2등신 슬림 근육형 비례와 비대칭 숏단발, 날렵한 고양이 눈매의 그림자 암살자",
+    artStyleId: "kr-webtoon-action",
+    figure: "feminine",
+    proportionOverride: { headsTall: 8.2, legRatio: 0.54, armRatio: 0.45, shoulderHeads: 1.9, headWidthRatio: 0.72, handScale: 0.98 },
+    lookSetId: "casual-street-layered",
+    slots: {
+      "face-shape": "face-shape/v-line", eyes: "eyes/upturned", irises: "irises/cat",
+      nose: "nose/high-bridge", mouth: "mouth/thin", ears: "ears/standard",
+      hair: "hair/soft-bob", body: "body/athletic", expression: "expression/neutral",
+      pose: "pose/run", "hand-pose": "hand-pose/fist",
+    },
+    face: { faceShape: -0.42, jawWidth: -0.3, eyeSize: 0.18, eyeTilt: 0.52, noseHeight: 0.34, noseDepth: 0.24, lipFullness: -0.05 },
+    body: { height: 0.38, shoulderWidth: 0.16, waist: -0.28, hip: 0.15, legLength: 0.44 },
+    partParams: { hair: { length: -0.25, bangs: 0.35, volume: 0.18 } },
+    hairColor: { gradient: [0.48, 1], tipMix: 0.5, accent: "streak" },
+    expression: { browDown: 0.18, eyeSquint: 0.15 },
+    baseColors: { skin: "#f1dcd0", iris: "#10b981", hair: "#111827", brow: "#111827", "hair-tip": "#4f46e5", "hair-accent": "#2dd4bf" },
+    varcoBinding: { varcoAssetId: "shaper-shadow-twin-dagger", labelKo: "VARCO 그림자 마석 단검", anchor: "hand-r", glbArtifactName: "shaper-shadow-twin-dagger.glb" },
+  },
+  {
+    id: "joseon-crown-prince",
+    labelKo: "조선 왕실 세자",
+    genreKo: "궁중·전통 사극",
+    descriptionKo: "7.8등신 단아한 한복 비례와 흑단 하이포니테일, 기품 있는 눈매의 왕실 세자",
+    artStyleId: "ink-wash",
+    figure: "masculine",
+    proportionOverride: { headsTall: 7.8, legRatio: 0.5, armRatio: 0.44, shoulderHeads: 2.02, headWidthRatio: 0.75, handScale: 1 },
+    lookSetId: "traditional-jeogori",
+    slots: {
+      "face-shape": "face-shape/oval", eyes: "eyes/almond", irises: "irises/soft-gradient",
+      nose: "nose/straight", mouth: "mouth/small", ears: "ears/standard",
+      hair: "hair/action-pony", body: "body/standard", expression: "expression/smile",
+      pose: "pose/idle", "hand-pose": "hand-pose/relaxed",
+    },
+    face: { faceShape: -0.22, jawWidth: -0.08, eyeSize: 0.05, eyeTilt: 0.16, noseHeight: 0.34, noseDepth: 0.2, lipFullness: 0.08 },
+    body: { height: 0.34, shoulderWidth: 0.25, chestDepth: 0.15, legLength: 0.28, neckLength: 0.18 },
+    partParams: { hair: { length: 0.55, volume: 0.22 } },
+    hairColor: { gradient: [0.65, 1], tipMix: 0, accent: "none" },
+    expression: { mouthSmile: 0.12 },
+    baseColors: { skin: "#f5e4d4", iris: "#29201b", hair: "#141316", brow: "#141316", top: "#1e3a5f", "top-trim": "#d4af37", bottom: "#f3e9d8" },
+    varcoBinding: { varcoAssetId: "shaper-joseon-folding-fan", labelKo: "VARCO 왕실 백접선 부채", anchor: "hand-r", glbArtifactName: "shaper-joseon-folding-fan.glb" },
+  },
+  {
+    id: "sports-high-ace",
+    labelKo: "열혈 스포츠 에이스",
+    genreKo: "스포츠·청춘 드라마",
+    descriptionKo: "8등신 탄탄한 피지컬과 생동감 있는 미소, 애슬레틱 트레이닝 핏의 고교 에이스",
+    artStyleId: "jp-shounen-ink",
+    figure: "masculine",
+    proportionOverride: { headsTall: 8, legRatio: 0.53, armRatio: 0.46, shoulderHeads: 2.22, headWidthRatio: 0.74, handScale: 1.04 },
+    lookSetId: "sport-track",
+    slots: {
+      "face-shape": "face-shape/square", eyes: "eyes/wide", irises: "irises/round-large",
+      nose: "nose/straight", mouth: "mouth/wide", ears: "ears/standard",
+      hair: "hair/short-layered", body: "body/athletic", expression: "expression/laugh",
+      pose: "pose/wave", "hand-pose": "hand-pose/thumbs-up",
+    },
+    face: { faceShape: -0.08, jawWidth: 0.14, eyeSize: 0.34, eyeTilt: 0.22, noseHeight: 0.24, mouthWidth: 0.24 },
+    body: { height: 0.46, shoulderWidth: 0.44, chestDepth: 0.34, waist: -0.18, legLength: 0.38 },
+    partParams: { hair: { length: -0.3, volume: 0.32 } },
+    hairColor: { gradient: [0.55, 1], tipMix: 0.3, accent: "streak" },
+    expression: { mouthSmile: 0.42, jawOpen: 0.15 },
+    baseColors: { skin: "#e8be9e", iris: "#d97706", hair: "#ea580c", brow: "#9a3412", "hair-tip": "#fbbf24", "hair-accent": "#fef08a" },
+    varcoBinding: { varcoAssetId: "shaper-sports-ace-band", labelKo: "VARCO 에이스 캡틴 스포츠 테이핑", anchor: "wrist-l", glbArtifactName: "shaper-sports-ace-band.glb" },
+  },
+  {
+    id: "villainess-empress",
+    labelKo: "로판 흑막 황후",
+    genreKo: "로맨스 판타지",
+    descriptionKo: "8등신 글래머 실루엣과 히메컷, 루비 적안과 도도한 냉소 표정의 흑막 황후",
+    artStyleId: "kr-webtoon-romance",
+    figure: "feminine",
+    proportionOverride: { headsTall: 8, legRatio: 0.53, armRatio: 0.44, shoulderHeads: 1.82, headWidthRatio: 0.73, handScale: 0.98 },
+    lookSetId: "work-office-skirt",
+    slots: {
+      "face-shape": "face-shape/v-line", eyes: "eyes/upturned", irises: "irises/cat",
+      nose: "nose/high-bridge", mouth: "mouth/full", ears: "ears/standard",
+      hair: "hair/hime-cut", body: "body/curvy", expression: "expression/pout",
+      pose: "pose/hands-on-hips", "hand-pose": "hand-pose/point",
+    },
+    face: { faceShape: -0.38, jawWidth: -0.34, chinLength: -0.06, eyeSize: 0.42, eyeTilt: 0.48, noseHeight: 0.32, noseDepth: 0.24, lipFullness: 0.36 },
+    body: { height: 0.32, shoulderWidth: 0.08, chestDepth: 0.28, waist: -0.35, hip: 0.32, legLength: 0.4, neckLength: 0.24 },
+    partParams: { hair: { length: 0.72, bangs: 0.4, volume: 0.48 } },
+    hairColor: { gradient: [0.45, 1], tipMix: 0.52, accent: "inner" },
+    expression: { mouthSmile: 0.18, browOuterUp: 0.22, eyeSquint: 0.14 },
+    baseColors: { skin: "#fff3ee", iris: "#dc2626", hair: "#18121e", brow: "#18121e", "hair-tip": "#7f1d1d", "hair-accent": "#be123c", outer: "#450a0a", bottom: "#2a0808", accessory: "#fbbf24" },
+    varcoBinding: { varcoAssetId: "shaper-empress-ruby-goblet", labelKo: "VARCO 황후 루비 성배 & 레이스 부채", anchor: "hand-l", glbArtifactName: "shaper-empress-ruby-goblet.glb" },
+  },
 ]);
 
 const PRESET_MAP: ReadonlyMap<WebtoonUniverseShaperId, WebtoonUniverseShaperPreset> = new Map(
@@ -324,6 +519,10 @@ export function composeWebtoonUniverseRecipe(
     ...preset.baseColors,
   };
 
+  const targetProportion: Proportion = preset.proportionOverride
+    ? structuredClone(preset.proportionOverride)
+    : structuredClone(stylePack.proportion[preset.figure]);
+
   const candidate: CharacterRecipe = {
     ...baseRecipe,
     slots: { ...baseRecipe.slots, ...preset.slots, ...(lookPayload.slots ?? {}) },
@@ -338,7 +537,7 @@ export function composeWebtoonUniverseRecipe(
     style: {
       packId: stylePack.id,
       packRevision: ART_STYLE_PACK_REVISION,
-      proportion: structuredClone(stylePack.proportion[preset.figure]),
+      proportion: targetProportion,
       neutralFacs: { ...preset.expression },
     },
     shading: {
@@ -559,8 +758,15 @@ const UNIVERSE_DEFAULT_ENVIRONMENT: Readonly<
   "cyberpunk-runner": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 285 }),
   "medical-drama-surgeon": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 25 }),
   "sd-daily-mascot": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 15 }),
+  "northern-grand-duke": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 310 }),
+  "school-male-lead": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 40 }),
+  "kpop-idol-center": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 20 }),
+  "archmage-tower-master": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 50 }),
+  "shadow-assassin-hunter": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 325 }),
+  "joseon-crown-prince": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 55 }),
+  "sports-high-ace": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 30 }),
+  "villainess-empress": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 335 }),
 });
-
 
 /**
  * 세계관 셰이퍼 프리셋에 최적화된 VARCO 3D 프리뷰·인스펙터 초기 설정을 반환합니다.
@@ -586,4 +792,3 @@ export function resolveCharacterLabVarco3dPreviewSettings(
     pivotToBottom: overrides?.pivotToBottom ?? true,
   });
 }
-

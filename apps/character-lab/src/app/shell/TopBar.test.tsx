@@ -11,7 +11,10 @@ import { detectQualityPreset, TopBar } from "./TopBar";
 import { createUiStateStore } from "./ui-state";
 import { createViewportRegistry } from "./viewport-registry";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  delete document.documentElement.dataset.studioTheme;
+});
 
 describe("app/shell/TopBar", () => {
   it("엔진 버튼은 등록된 캔버스로 명시 선택하고, 캔버스가 없으면 failure 이벤트를 낸다", () => {
@@ -136,12 +139,17 @@ describe("app/shell/TopBar", () => {
     expect(ui.getState().inspectorTab).toBe("export");
 
     const themeBtn = screen.getByTestId("topbar-studio-theme-toggle");
-    expect(themeBtn.getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(themeBtn);
     expect(themeBtn.getAttribute("aria-pressed")).toBe("true");
     expect(document.documentElement.dataset.studioTheme).toBe("shaper");
     fireEvent.click(themeBtn);
+    expect(themeBtn.getAttribute("aria-pressed")).toBe("false");
     expect(document.documentElement.dataset.studioTheme).toBe("nebula");
+    fireEvent.click(themeBtn);
+    expect(themeBtn.getAttribute("aria-pressed")).toBe("true");
+    expect(document.documentElement.dataset.studioTheme).toBe("shaper");
+
+    fireEvent.click(screen.getByTestId("topbar-toon-preset-romance-soft-sdf"));
+    expect(store.dispatched.at(-1)?.type).toBe("shading/set");
   });
 
   it("detectQualityPreset는 shadows/postfx/ibl만 비교한다", () => {
