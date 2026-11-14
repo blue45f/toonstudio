@@ -5,7 +5,7 @@
     {
       "id": "ts-bg3d-webtoon_neighborhood_bus_stop-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -21,15 +21,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 42252,
-        "nodes": 19,
-        "meshes": 18,
-        "triangles": 336,
-        "materials": 8,
+        "bytes": 133232,
+        "nodes": 5,
+        "meshes": 4,
+        "triangles": 888,
+        "materials": 4,
         "textures": 0
       },
-      "byteSize": 42252,
-      "sha256": "sha256:1421a61983acec40b98456d7ab48d67b0e09b2e2b631f4cc3b2f4ce3ee86d766",
+      "byteSize": 133232,
+      "sha256": "sha256:1334b92017f16df27a7398f868c2c0910cd511e5b3fd50e203cf8a89ef0ed2ec",
       "bounds": [
         5.44,
         2.67,
@@ -81,7 +81,7 @@
     {
       "id": "ts-bg3d-webtoon_school_gate_module-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -96,15 +96,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 53000,
-        "nodes": 32,
-        "meshes": 31,
-        "triangles": 372,
-        "materials": 5,
+        "bytes": 200608,
+        "nodes": 4,
+        "meshes": 3,
+        "triangles": 1364,
+        "materials": 3,
         "textures": 0
       },
-      "byteSize": 53000,
-      "sha256": "sha256:528d22127430186984086db3398e16f8912672428dc38be836528ad3a9f2ec36",
+      "byteSize": 200608,
+      "sha256": "sha256:84d14b01666b77b5e6e87ea2ebdc8b82c37e6f2e095415b8d39069878f39d7e3",
       "bounds": [
         10.8,
         3.425,
@@ -156,7 +156,7 @@
     {
       "id": "ts-bg3d-webtoon_rooftop_stairwell_entry-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -172,15 +172,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 46716,
-        "nodes": 24,
-        "meshes": 23,
-        "triangles": 356,
-        "materials": 7,
+        "bytes": 160276,
+        "nodes": 5,
+        "meshes": 4,
+        "triangles": 1076,
+        "materials": 4,
         "textures": 0
       },
-      "byteSize": 46716,
-      "sha256": "sha256:3b90d42a509c7987720940458441d283e158f04d152b9b5143ea7e8e6aabf9eb",
+      "byteSize": 160276,
+      "sha256": "sha256:b566f6a3f733c5e040caf17cfd555fd6cb51f362ac660beddcf6139ad6973877",
       "bounds": [
         5.6,
         3.25,
@@ -232,7 +232,7 @@
     {
       "id": "ts-bg3d-webtoon_alley_food_cart-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -249,19 +249,19 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 97584,
-        "nodes": 26,
-        "meshes": 25,
-        "triangles": 940,
-        "materials": 8,
+        "bytes": 236260,
+        "nodes": 4,
+        "meshes": 3,
+        "triangles": 1612,
+        "materials": 3,
         "textures": 0
       },
-      "byteSize": 97584,
-      "sha256": "sha256:85f11bb1a6ea2ff23c4ff7f82d682887e448928cc7871652f6143637e0e99fe6",
+      "byteSize": 236260,
+      "sha256": "sha256:d140448414b238c84655a5a65ad92aae77184e95862a5e0df4c0a10de7f02161",
       "bounds": [
         3.31,
         3.26,
-        2.335
+        2.34
       ],
       "camera": {
         "position": [
@@ -309,7 +309,7 @@
     {
       "id": "ts-bg3d-webtoon_one_room_furniture_cluster-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -326,15 +326,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 60920,
-        "nodes": 30,
-        "meshes": 29,
-        "triangles": 468,
-        "materials": 11,
+        "bytes": 201808,
+        "nodes": 4,
+        "meshes": 3,
+        "triangles": 1372,
+        "materials": 3,
         "textures": 0
       },
-      "byteSize": 60920,
-      "sha256": "sha256:8876610aae97e343fb2925ec8bd2c11576a33ac23bae02060e708ba412d8f60c",
+      "byteSize": 201808,
+      "sha256": "sha256:36ab73ad91ec87cf66b30ec41a668c88c82c3f40a7a818c922b97014094ef6b2",
       "bounds": [
         3.6,
         2.05,
@@ -387,7 +387,7 @@
     {
       "id": "ts-bg3d-webtoon_apartment_lobby_module-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -403,15 +403,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 42444,
-        "nodes": 21,
-        "meshes": 20,
-        "triangles": 320,
-        "materials": 9,
+        "bytes": 141328,
+        "nodes": 5,
+        "meshes": 4,
+        "triangles": 944,
+        "materials": 4,
         "textures": 0
       },
-      "byteSize": 42444,
-      "sha256": "sha256:23f576ed9e87c05dfefed72300433a9064bf8697d28b92105a79b04a44913b2f",
+      "byteSize": 141328,
+      "sha256": "sha256:49a5abc2a1bc78d6fe676f656d54b00ca9efaf94eaf50646a9bb50564b2f2f86",
       "bounds": [
         4.625,
         3.35,
@@ -463,7 +463,7 @@
     {
       "id": "ts-bg3d-webtoon_hanok_courtyard_gate-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -479,19 +479,19 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 51068,
-        "nodes": 23,
-        "meshes": 22,
-        "triangles": 412,
-        "materials": 7,
+        "bytes": 146480,
+        "nodes": 4,
+        "meshes": 3,
+        "triangles": 988,
+        "materials": 3,
         "textures": 0
       },
-      "byteSize": 51068,
-      "sha256": "sha256:091fa75e49964d719384441cb9ddb324092345d05f90c6da242f8abec822b90b",
+      "byteSize": 146480,
+      "sha256": "sha256:e7ff4f6d3d0c220681d4628519ac7cdd7f0c93a4b43bd10a303393d96aae516c",
       "bounds": [
         7.3,
         3.68,
-        1.795
+        1.8
       ],
       "camera": {
         "position": [
@@ -539,7 +539,7 @@
     {
       "id": "ts-bg3d-webtoon_convenience_store_fixture_cluster-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -555,15 +555,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 79228,
-        "nodes": 43,
-        "meshes": 42,
-        "triangles": 584,
-        "materials": 10,
+        "bytes": 280772,
+        "nodes": 5,
+        "meshes": 4,
+        "triangles": 1912,
+        "materials": 4,
         "textures": 0
       },
-      "byteSize": 79228,
-      "sha256": "sha256:784902b7f0b110b5fa8e565677c1ab4d672975376b48772a04e37c7de63091e4",
+      "byteSize": 280772,
+      "sha256": "sha256:79d402955eb6a9e78b0c733ed4be942d2da457465d95a650d81892bfaa8a2472",
       "bounds": [
         4.3,
         1.95,
@@ -615,7 +615,7 @@
     {
       "id": "ts-bg3d-webtoon_neighborhood_police_box-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -631,15 +631,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 35848,
-        "nodes": 15,
-        "meshes": 14,
-        "triangles": 288,
-        "materials": 10,
+        "bytes": 107908,
+        "nodes": 5,
+        "meshes": 4,
+        "triangles": 712,
+        "materials": 4,
         "textures": 0
       },
-      "byteSize": 35848,
-      "sha256": "sha256:c81b0f86549895dfd688530d20cb464602ea16009339d75b201b2e2f8cc77eb8",
+      "byteSize": 107908,
+      "sha256": "sha256:1a588f82a25450a6d923dbb6762fe0ddc438b6e79eb26f3e7e15edd7ccb08c29",
       "bounds": [
         5.2,
         3.4,
@@ -691,7 +691,7 @@
     {
       "id": "ts-bg3d-webtoon_riverside_park_pavilion-mcp-v1",
       "generator": "scripts/generate_self_authored_environment_pack_v1.py",
-      "generatorVersion": "1.0.0-python",
+      "generatorVersion": "1.1.0-python",
       "license": "CC0-1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
       "originalProceduralGeometry": true,
@@ -708,15 +708,15 @@
       "allAnglesArtisticallyApproved": false,
       "visualReviewLevel": "single-perspective-software-render",
       "metrics": {
-        "bytes": 56560,
-        "nodes": 20,
-        "meshes": 19,
-        "triangles": 504,
-        "materials": 6,
+        "bytes": 151624,
+        "nodes": 4,
+        "meshes": 3,
+        "triangles": 1024,
+        "materials": 3,
         "textures": 0
       },
-      "byteSize": 56560,
-      "sha256": "sha256:ae185c7031e815e2181f67f651bcbb10143c5a2653bc855237397b2007db4c27",
+      "byteSize": 151624,
+      "sha256": "sha256:4e353dc21b6ca6c9eecb94b10c446848ded44875a6a4dcb576ba289e3b109cb0",
       "bounds": [
         5.99,
         3.83,

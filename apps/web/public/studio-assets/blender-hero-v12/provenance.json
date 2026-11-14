@@ -1,0 +1,55 @@
+{
+  "schema": "toonstudio.blender-hero-assets.v12",
+  "createdAt": "2026-11-14",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.2.0 LTS Live MCP (blend-ai + glbforge desktop-hero 100/100)",
+  "tool": "Blender 5.2.0 LTS",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "fantasy-runic-sword-altar-v12.glb",
+      "bytes": 85644,
+      "sha256": "d06ff9c487eb1a0498bc23c1eb8bfe7482989212c6480dddf494384ae0138d23"
+    },
+    {
+      "file": "hunter-gate-holo-terminal-v12.glb",
+      "bytes": 73352,
+      "sha256": "75dd3d31aee44d80ca537118e99662dc91ebb2505d7aa1e64566fbcaa96a42b9"
+    },
+    {
+      "file": "modern-cafe-espresso-bar-v12.glb",
+      "bytes": 82508,
+      "sha256": "1df2d91501a2d3528fa33d0170d2f5d829b7ac6b38b98a1977d3d0354da3fb69"
+    },
+    {
+      "file": "webtoon-shaper-anime-bust-v12.glb",
+      "bytes": 329188,
+      "sha256": "ca858da3218aa447809ffeeff9163f92445f7df97cfa3122568ffa74d38b36ec"
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/fantasy-runic-sword-altar-v12.png",
+      "bytes": 49166,
+      "sha256": "abb606953750b9ee1aab50d92f779926df858f2d9fa13077b9cb5099e2e61da7"
+    },
+    {
+      "file": "thumbnails/hunter-gate-holo-terminal-v12.png",
+      "bytes": 49088,
+      "sha256": "8b8aaeafef098ca6695ec380c2ec74897398dc1a2d017edca588390a972a728b"
+    },
+    {
+      "file": "thumbnails/modern-cafe-espresso-bar-v12.png",
+      "bytes": 25094,
+      "sha256": "c210b985c6230f54e2fdd69e68077ef837e2a4df8bbe49533b34e17fc6131cbd"
+    },
+    {
+      "file": "thumbnails/webtoon-shaper-anime-bust-v12.png",
+      "bytes": 59051,
+      "sha256": "d13f130b0eb7aa3059fccf0f6ffa6fb0487a007517aed01f417c3bc0807e51a8"
+    }
+  ]
+}

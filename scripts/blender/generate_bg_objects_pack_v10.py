@@ -672,6 +672,27 @@ def render_preview(thumb_path: Path, low: Vector, high: Vector, res_x: int = 256
         bpy.data.objects.remove(stage_obj, do_unlink=True)
 
 
+def merge_v10_meshes_by_material() -> None:
+    by_mat: dict[str, list[bpy.types.Object]] = {}
+    for obj in list(bpy.context.scene.objects):
+        if obj.type != "MESH":
+            continue
+        set_active(obj)
+        for mod in list(obj.modifiers):
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+        mat_key = obj.data.materials[0].name if obj.data.materials else "Default"
+        by_mat.setdefault(mat_key, []).append(obj)
+    for mat_key, group in by_mat.items():
+        if len(group) > 1:
+            bpy.ops.object.select_all(action="DESELECT")
+            for item in group:
+                item.select_set(True)
+            bpy.context.view_layer.objects.active = group[0]
+            bpy.ops.object.join()
+        merged = bpy.context.active_object if len(group) > 1 else group[0]
+        merged.name = f"GEO_Batch_{mat_key}"
+
+
 def run_v10_generation() -> dict[str, dict[str, object]]:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     THUMB_DIR.mkdir(parents=True, exist_ok=True)
@@ -683,6 +704,7 @@ def run_v10_generation() -> dict[str, dict[str, object]]:
             clear_v10_only()
             builder()
             low, high = ground_scene_meshes()
+            merge_v10_meshes_by_material()
             dims = high - low
 
             root = bpy.data.objects.new(f"TS_{slug}", None)
@@ -712,7 +734,8 @@ def run_v10_generation() -> dict[str, dict[str, object]]:
             )
             receipt = verify_glb(glb_path)
             thumb_path = THUMB_DIR / f"{slug}.png"
-            render_preview(thumb_path, low, high, 256, 256)
+            if not thumb_path.exists():
+                render_preview(thumb_path, low, high, 256, 256)
             summary[slug] = {
                 "labelKo": label_ko,
                 "dimensionsM": [round(dims.x, 3), round(dims.y, 3), round(dims.z, 3)],

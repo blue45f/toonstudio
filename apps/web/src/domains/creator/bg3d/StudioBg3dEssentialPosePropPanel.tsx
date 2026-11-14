@@ -34,6 +34,8 @@ function categoryShortLabel(category: StudioBg3dEssentialAssetCategory): string 
       return "V10 배경소품";
     case "kitbash-v11-prop-3d":
       return "V11 상부배경";
+    case "blender-hero-v12-prop-3d":
+      return "V12 히어로";
     case "original-scene-prop-3d":
       return "배경·가구";
     case "original-hand-wear-prop-3d":
@@ -88,7 +90,7 @@ export function StudioBg3dEssentialPosePropPanel({
             3D 인체 포즈 마네킹 · 필수 건축/히어로/오리지널 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
           </h4>
           <p className="mt-0.5 text-[0.62rem] text-fg-3">
-            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · 오리지널 68종 (CC0 1.0)
+            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · V12 히어로 4종 · 오리지널 68종 (CC0 1.0)
           </p>
         </div>
         <button
@@ -97,7 +99,7 @@ export function StudioBg3dEssentialPosePropPanel({
           aria-expanded={expanded}
           data-testid="bg3d-essential-pose-prop-toggle"
           onClick={() => setExpanded((prev) => !prev)}
-          className="shrink-0 rounded-lg border border-line bg-panel px-2.5 py-1 text-[0.64rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:opacity-45"
+          className="min-h-11 shrink-0 rounded-lg border border-line bg-panel px-3 py-2 text-[0.66rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:opacity-45"
         >
           {expanded ? "카탈로그 접기" : `포즈·소품 ${STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종 열기`}
         </button>
@@ -106,7 +108,7 @@ export function StudioBg3dEssentialPosePropPanel({
       {expanded ? (
         <div className="mt-2.5 space-y-2.5 border-t border-line/70 pt-2.5">
           {/* Category Filter Chips */}
-          <div className="flex flex-wrap gap-1" role="group" aria-label="포즈·소품 분류 필터">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="포즈·소품 분류 필터">
             <button
               type="button"
               disabled={disabled || busyId !== null}
@@ -114,7 +116,7 @@ export function StudioBg3dEssentialPosePropPanel({
               data-testid="bg3d-essential-cat-all"
               onClick={() => setCategory(null)}
               className={cx(
-                "rounded-full border px-2.5 py-0.5 text-[0.62rem] font-semibold transition-colors",
+                "min-h-11 rounded-full border px-3 py-1.5 text-[0.64rem] font-semibold transition-colors",
                 category === null
                   ? "border-accent/60 bg-accent-soft text-accent"
                   : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-fg",
@@ -134,7 +136,7 @@ export function StudioBg3dEssentialPosePropPanel({
                   title={cat.descriptionKo}
                   onClick={() => setCategory(cat.id)}
                   className={cx(
-                    "rounded-full border px-2.5 py-0.5 text-[0.62rem] font-semibold transition-colors",
+                    "min-h-11 rounded-full border px-3 py-1.5 text-[0.64rem] font-semibold transition-colors",
                     category === cat.id
                       ? "border-accent/60 bg-accent-soft text-accent"
                       : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-fg",
@@ -153,9 +155,9 @@ export function StudioBg3dEssentialPosePropPanel({
               disabled={disabled || busyId !== null}
               aria-label="포즈·소품 이름 검색"
               data-testid="bg3d-essential-search-input"
-              placeholder="칠판, 책상, 소파, 휠체어, 포장마차, 카타나, 카메라..."
+              placeholder="셰이퍼, 에스프레소, 칠판, 책상, 소파, 포장마차, 카타나..."
               onChange={(event) => setQuery(event.target.value)}
-              className="w-full rounded-lg border border-line bg-panel px-2.5 py-1 text-[0.64rem] text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+              className="min-h-11 w-full rounded-lg border border-line bg-panel px-3 py-2 text-xs text-fg placeholder:text-fg-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
             />
             <span className="shrink-0 text-[0.58rem] text-fg-3">
               {visibleAssets.length}종 표시
@@ -230,7 +232,7 @@ export function StudioBg3dEssentialPosePropPanel({
                       disabled={disabled || busyId !== null}
                       data-testid={`bg3d-essential-import-${entry.id}`}
                       onClick={() => void handleImport(entry)}
-                      className="flex-1 rounded border border-accent/50 bg-accent-soft px-2 py-1 text-[0.6rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
+                      className="min-h-11 flex-1 rounded border border-accent/50 bg-accent-soft px-2 py-1.5 text-[0.62rem] font-bold text-accent transition-colors hover:bg-accent/20 disabled:opacity-45"
                     >
                       {isBusy ? "전달 중..." : "3D 장면에 가져오기"}
                     </button>
@@ -241,7 +243,7 @@ export function StudioBg3dEssentialPosePropPanel({
                         data-testid={`bg3d-essential-upgrade-v8-${entry.id}`}
                         title={`${refinedCounterpart.labelKo} 고품질 히어로 모델로 가져오기`}
                         onClick={() => void handleImport(refinedCounterpart)}
-                        className="rounded border border-accent/40 bg-card px-1.5 py-1 text-[0.58rem] font-semibold text-accent hover:bg-accent-soft disabled:opacity-45"
+                        className="min-h-11 min-w-11 rounded border border-accent/40 bg-card px-2 py-1.5 text-[0.58rem] font-semibold text-accent hover:bg-accent-soft disabled:opacity-45"
                       >
                         V8 고품질본
                       </button>
@@ -256,7 +258,7 @@ export function StudioBg3dEssentialPosePropPanel({
                             prev?.id === entry.id ? null : entry,
                           )
                         }
-                        className="rounded border border-line bg-card px-1.5 py-1 text-[0.58rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+                        className="min-h-11 min-w-11 rounded border border-line bg-card px-2 py-1.5 text-[0.58rem] font-semibold text-fg-2 hover:bg-raised hover:text-fg"
                       >
                         3면도
                       </button>

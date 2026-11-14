@@ -101,18 +101,41 @@ def build_ceiling_track_spotlight_rig() -> None:
     export_glb("ceiling-track-spotlight-rig.glb")
 
 
+def _apply_bevel_and_join(objects: list[bpy.types.Object], merged_name: str) -> bpy.types.Object:
+    for obj in objects:
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        if "Bevel" in obj.modifiers:
+            bpy.ops.object.modifier_apply(modifier="Bevel")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    if len(objects) > 1:
+        bpy.ops.object.join()
+    merged = bpy.context.active_object
+    merged.name = merged_name
+    return merged
+
+
 def build_window_venetian_blind_pelmet() -> None:
     reset_scene()
     m_frame = make_pbr_material("PelmetFrame", (0.32, 0.36, 0.42, 1.0), 0.48, 0.25)
     m_slat = make_pbr_material("BlindSlat", (0.9, 0.91, 0.93, 1.0), 0.55, 0.08)
-    add_beveled_box("PelmetBox", (2.44, 0.18, 0.14), (0.0, 0.0, -0.07), m_frame)
-    # 창 상부 원점에서 하단 레일까지 실제 1.5 m를 채운다.
+    pelmet = add_beveled_box("PelmetBox", (2.44, 0.18, 0.14), (0.0, 0.0, -0.07), m_frame)
+    # 창 상부 원점에서 하단 레일까지 실제 1.5 m를 채운다. 24개 슬랫과 프레임 테이프를 재질별로 병합해 드로우콜 예산(<=8)을 지킨다.
     slat_count = 24
+    slats: list[bpy.types.Object] = []
     for i in range(slat_count):
         z_pos = -0.19 - i * (1.44 - 0.19) / (slat_count - 1)
-        add_beveled_box(f"Slat_{i}", (2.32, 0.035, 0.012), (0.0, 0.02, z_pos), m_slat, 0.002)
-    for side in (-1, 1):
+        slats.append(add_beveled_box(f"Slat_{i}", (2.32, 0.035, 0.012), (0.0, 0.02, z_pos), m_slat, 0.002))
+    tapes = [
         add_beveled_box(f"BlindLadderTape_{side}", (0.012, 0.008, 1.32), (side * 0.72, 0.045, -0.8), m_frame, 0.001)
+        for side in (-1, 1)
+    ]
+    _apply_bevel_and_join([pelmet, *tapes], "PelmetBox")
+    _apply_bevel_and_join(slats, "BlindSlatArray")
     add_beveled_box("BlindBottomRail", (2.32, 0.055, 0.03), (0.0, 0.02, -1.485), m_frame, 0.004)
     export_glb("window-venetian-blind-pelmet.glb")
 

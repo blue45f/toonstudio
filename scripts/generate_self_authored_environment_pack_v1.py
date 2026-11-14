@@ -33,7 +33,7 @@ from pathlib import Path
 import numpy as np
 
 GENERATOR = "scripts/generate_self_authored_environment_pack_v1.py"
-GENERATOR_VERSION = "1.0.0-python"
+GENERATOR_VERSION = "1.1.0-python"
 PACK_VERSION = "authored-v1"
 CC0_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
 
@@ -374,72 +374,161 @@ def _faces_to_tris(faces):
     return tris
 
 
+def _chamfered_box_mesh(sx: float, sy: float, sz: float):
+    """Watertight 24-vertex, 44-triangle chamfered solid preserving exact outer bounds."""
+    hx, hy, hz = sx / 2.0, sy / 2.0, sz / 2.0
+    b = min(min(sx, sy, sz) * 0.11, 0.016)
+    if b < 1e-4:
+        v = [(-hx, -hy, -hz), (hx, -hy, -hz), (hx, hy, -hz), (-hx, hy, -hz),
+             (-hx, -hy, hz), (hx, -hy, hz), (hx, hy, hz), (-hx, hy, hz)]
+        faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+                 (3, 7, 6, 2), (0, 4, 7, 3), (1, 2, 6, 5)]
+        verts = np.array(v, dtype=np.float64)
+        tris_idx = _faces_to_tris(faces)
+        pos, nor = [], []
+        for tri in tris_idx:
+            pts = verts[list(tri)]
+            n = np.cross(pts[1] - pts[0], pts[2] - pts[0])
+            ln = np.linalg.norm(n)
+            n = n / ln if ln > 0 else np.array([0.0, 1.0, 0.0])
+            for pnt in pts:
+                pos.append(pnt)
+                nor.append(n)
+        return np.array(pos, dtype=np.float64), np.array(nor, dtype=np.float64)
+
+    ix, iy, iz = hx - b, hy - b, hz - b
+
+    def px(u, v, w): return np.array([u * hx, v * iy, w * iz], dtype=np.float64)
+    def py(u, v, w): return np.array([u * ix, v * hy, w * iz], dtype=np.float64)
+    def pz(u, v, w): return np.array([u * ix, v * iy, w * hz], dtype=np.float64)
+
+    pos, nor = [], []
+
+    def emit_tri(a, b_pt, c, hint_dir):
+        n = np.cross(b_pt - a, c - a)
+        ln = np.linalg.norm(n)
+        n = n / ln if ln > 0 else hint_dir / max(np.linalg.norm(hint_dir), 1e-9)
+        if float(np.dot(n, hint_dir)) < 0.0:
+            b_pt, c = c, b_pt
+            n = -n
+        pos.extend((a, b_pt, c))
+        nor.extend((n, n, n))
+
+    def emit_quad(p0, p1, p2, p3, hint_dir):
+        emit_tri(p0, p1, p2, hint_dir)
+        emit_tri(p0, p2, p3, hint_dir)
+
+    # 6 main faces
+    for sgn in (-1.0, 1.0):
+        emit_quad(px(sgn, -1, -1), px(sgn, 1, -1), px(sgn, 1, 1), px(sgn, -1, 1), np.array([sgn, 0.0, 0.0]))
+        emit_quad(py(-1, sgn, -1), py(1, sgn, -1), py(1, sgn, 1), py(-1, sgn, 1), np.array([0.0, sgn, 0.0]))
+        emit_quad(pz(-1, -1, sgn), pz(1, -1, sgn), pz(1, 1, sgn), pz(-1, 1, sgn), np.array([0.0, 0.0, sgn]))
+
+    # 12 edge chamfers (4 parallel to X, 4 parallel to Y, 4 parallel to Z)
+    for s1 in (-1.0, 1.0):
+        for s2 in (-1.0, 1.0):
+            emit_quad(py(-1, s1, s2), py(1, s1, s2), pz(1, s1, s2), pz(-1, s1, s2), np.array([0.0, s1, s2]))
+            emit_quad(px(s1, -1, s2), px(s1, 1, s2), pz(s1, 1, s2), pz(s1, -1, s2), np.array([s1, 0.0, s2]))
+            emit_quad(px(s1, s2, -1), px(s1, s2, 1), py(s1, s2, 1), py(s1, s2, -1), np.array([s1, s2, 0.0]))
+
+    # 8 corner triangles
+    for u in (-1.0, 1.0):
+        for v in (-1.0, 1.0):
+            for w in (-1.0, 1.0):
+                emit_tri(px(u, v, w), py(u, v, w), pz(u, v, w), np.array([u, v, w]))
+
+    return np.array(pos, dtype=np.float64), np.array(nor, dtype=np.float64)
+
+
 def part_triangles(part):
     """Return (positions float32 [n,3], normals [n,3]) non-indexed triangles."""
     shape = part["shape"]
     cx, cy, cz = part["c"]
     if shape == "box":
         sx, sy, sz = part["s"]
-        x0, x1, y0, y1, z0, z1 = -sx / 2, sx / 2, -sy / 2, sy / 2, -sz / 2, sz / 2
-        v = [(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0),
-             (x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)]
-        faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
-                 (3, 7, 6, 2), (0, 4, 7, 3), (1, 2, 6, 5)]
-        verts = np.array(v, dtype=np.float64)
-        tris_idx = _faces_to_tris(faces)
+        positions, normals = _chamfered_box_mesh(sx, sy, sz)
+        deg = part.get("rot_y", 0.0)
+        if deg:
+            positions = _rot_y(positions, deg)
+            normals = _rot_y(normals, deg)
     elif shape == "cyl":
         r, h = part["s"]
-        seg = part.get("seg", 14)
-        ring_b, ring_t = [], []
-        for i in range(seg):
-            a = 2 * math.pi * i / seg
-            ring_b.append((r * math.cos(a), -h / 2, r * math.sin(a)))
-            ring_t.append((r * math.cos(a), h / 2, r * math.sin(a)))
-        verts = np.array(ring_b + ring_t, dtype=np.float64)
-        faces = []
+        seg = max(int(part.get("seg", 24)), 20)
+        angles = [2 * math.pi * i / seg for i in range(seg)]
+        pos_list, nor_list = [], []
+        # Smooth-shaded radial side quads + flat end caps
         for i in range(seg):
             j = (i + 1) % seg
-            faces.append((i, j, seg + j, seg + i))
-        faces.append(tuple(range(seg)))                      # bottom (-Y)
-        faces.append(tuple(range(2 * seg - 1, seg - 1, -1)))  # top (+Y)
-        tris_idx = _faces_to_tris(faces)
+            ci, si = math.cos(angles[i]), math.sin(angles[i])
+            cj, sj = math.cos(angles[j]), math.sin(angles[j])
+            bi = np.array([r * ci, -h / 2, r * si], dtype=np.float64)
+            bj = np.array([r * cj, -h / 2, r * sj], dtype=np.float64)
+            tj = np.array([r * cj, h / 2, r * sj], dtype=np.float64)
+            ti = np.array([r * ci, h / 2, r * si], dtype=np.float64)
+            ni = np.array([ci, 0.0, si], dtype=np.float64)
+            nj = np.array([cj, 0.0, sj], dtype=np.float64)
+            pos_list.extend((bi, bj, tj, bi, tj, ti))
+            nor_list.extend((ni, nj, nj, ni, nj, ni))
+        ring_b = [np.array([r * math.cos(a), -h / 2, r * math.sin(a)], dtype=np.float64) for a in angles]
+        ring_t = [np.array([r * math.cos(a), h / 2, r * math.sin(a)], dtype=np.float64) for a in angles]
+        nb = np.array([0.0, -1.0, 0.0], dtype=np.float64)
+        nt = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        for i in range(1, seg - 1):
+            pos_list.extend((ring_b[0], ring_b[i], ring_b[i + 1]))
+            nor_list.extend((nb, nb, nb))
+            pos_list.extend((ring_t[0], ring_t[i + 1], ring_t[i]))
+            nor_list.extend((nt, nt, nt))
+        positions = np.array(pos_list, dtype=np.float64)
+        normals = np.array(nor_list, dtype=np.float64)
         if part.get("rot"):
             a = math.radians(part["rot"])
             rot = np.array([[1, 0, 0], [0, math.cos(a), -math.sin(a)],
-                            [0, math.sin(a), math.cos(a)]])
-            verts = verts @ rot.T
+                            [0, math.sin(a), math.cos(a)]], dtype=np.float64)
+            positions = positions @ rot.T
+            normals = normals @ rot.T
     elif shape == "gable":
         sx, sy, sz = part["s"]
         x0, x1, y0, y1, z0, z1 = -sx / 2, sx / 2, -sy / 2, sy / 2, -sz / 2, sz / 2
-        # 0..3 base corners, 4..5 ridge ends
         v = [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1),
              (x0, y1, 0.0), (x1, y1, 0.0)]
-        faces = [(0, 1, 5, 4), (2, 5, 4, 3), (0, 1, 2, 3),
+        faces = [(0, 4, 5, 1), (2, 5, 4, 3), (0, 1, 2, 3),
                  (0, 3, 4), (1, 5, 2)]
         verts = np.array(v, dtype=np.float64)
         tris_idx = _faces_to_tris(faces)
+        pos, nor = [], []
+        for tri in tris_idx:
+            pts = verts[list(tri)]
+            n = np.cross(pts[1] - pts[0], pts[2] - pts[0])
+            ln = np.linalg.norm(n)
+            n = n / ln if ln > 0 else np.array([0.0, 1.0, 0.0])
+            for pnt in pts:
+                pos.append(pnt)
+                nor.append(n)
+        positions = np.array(pos, dtype=np.float64)
+        normals = np.array(nor, dtype=np.float64)
     else:
         raise ValueError(shape)
-    pos = []
-    for tri in tris_idx:
-        pts = verts[list(tri)]
-        n = np.cross(pts[1] - pts[0], pts[2] - pts[0])
-        ln = np.linalg.norm(n)
-        n = n / ln if ln > 0 else np.array([0.0, 1.0, 0.0])
-        for pnt in pts:
-            pos.append((pnt, n))
-    positions = np.array([p[0] for p in pos], dtype=np.float64)
-    normals = np.array([p[1] for p in pos], dtype=np.float64)
-    positions = _rot_y(positions, part.get("rot_y", 0.0) if shape == "box" else 0.0)
-    if shape == "box" and part.get("rot"):
-        pass  # box rotation handled via rot_y key only; scenes use axis-aligned boxes
-    positions += np.array([cx, cy, cz])
-    # rotate normals the same way (identity for current scenes)
+    positions += np.array([cx, cy, cz], dtype=np.float64)
     return positions.astype(np.float32), normals.astype(np.float32)
 
 
 def hex_rgb(h):
     return tuple(int(h[i:i + 2], 16) / 255.0 for i in (1, 3, 5))
+
+
+def _srgb_to_linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _finish_bucket_for_color(color: str):
+    """Map palette hex to one of <= 4 physically distinct PBR finish buckets."""
+    if color == GLASS:
+        return ("AuthoredGlass", 0.08, 0.14)
+    if color in (STEEL, STEEL_LIGHT, CHARCOAL):
+        return ("AuthoredBrushedMetal", 0.68, 0.34)
+    if color in (WOOD, WOOD_DARK, FABRIC, ACCENT_RED, ACCENT_BLUE, ACCENT_YELLOW, ACCENT_GREEN):
+        return ("AuthoredSatinTrim", 0.04, 0.62)
+    return ("AuthoredMatteMasonry", 0.0, 0.88)
 
 
 def build_glb(asset, parts):
@@ -457,8 +546,37 @@ def build_glb(asset, parts):
         offset += len(data) + pad
         return len(buffer_views) - 1
 
+    # Batch geometry by PBR finish bucket (<= 4 draw calls per environment) while storing exact
+    # linear-RGB vertex colors (COLOR_0) so every semantic architectural element keeps its color.
+    buckets = {}
+    total_tris = 0
     for part in parts:
         pos, nor = part_triangles(part)
+        total_tris += len(pos) // 3
+        color = part["color"]
+        sr, sg, sb = hex_rgb(color)
+        lin_rgb = np.array([_srgb_to_linear(sr), _srgb_to_linear(sg), _srgb_to_linear(sb)], dtype=np.float32)
+        col = np.broadcast_to(lin_rgb, pos.shape).copy()
+        bucket_key = _finish_bucket_for_color(color)
+        entry = buckets.setdefault(bucket_key, {"pos": [], "nor": [], "col": []})
+        entry["pos"].append(pos)
+        entry["nor"].append(nor)
+        entry["col"].append(col)
+
+    for (mat_name, metallic, roughness), geom in buckets.items():
+        pos = np.concatenate(geom["pos"], axis=0).astype(np.float32)
+        nor = np.concatenate(geom["nor"], axis=0).astype(np.float32)
+        col = np.concatenate(geom["col"], axis=0).astype(np.float32)
+        # Real-world metric triplanar UVs (0.5 repeats/m) so 2K PBR overrides tile cleanly
+        abs_n = np.abs(nor)
+        dom = np.argmax(abs_n, axis=1)
+        uv = np.zeros((len(pos), 2), dtype=np.float32)
+        mx = dom == 0
+        my = dom == 1
+        mz = dom == 2
+        uv[mx, 0], uv[mx, 1] = pos[mx, 2] * 0.5, pos[mx, 1] * 0.5
+        uv[my, 0], uv[my, 1] = pos[my, 0] * 0.5, pos[my, 2] * 0.5
+        uv[mz, 0], uv[mz, 1] = pos[mz, 0] * 0.5, pos[mz, 1] * 0.5
         idx = np.arange(len(pos), dtype=np.uint32)
         pv = add_view(pos.tobytes(), 34962)
         accessors.append({"bufferView": pv, "componentType": 5126, "count": len(pos),
@@ -467,24 +585,32 @@ def build_glb(asset, parts):
         nv = add_view(nor.tobytes(), 34962)
         accessors.append({"bufferView": nv, "componentType": 5126, "count": len(nor),
                           "type": "VEC3"})
+        uv_view = add_view(uv.tobytes(), 34962)
+        accessors.append({"bufferView": uv_view, "componentType": 5126, "count": len(uv),
+                          "type": "VEC2"})
+        cv = add_view(col.tobytes(), 34962)
+        accessors.append({"bufferView": cv, "componentType": 5126, "count": len(col),
+                          "type": "VEC3"})
         iv = add_view(idx.tobytes(), 34963)
         accessors.append({"bufferView": iv, "componentType": 5125, "count": len(idx),
                           "type": "SCALAR"})
-        color = part["color"]
-        if color not in mat_index:
-            mat_index[color] = len(materials)
-            r, g, b = hex_rgb(color)
-            materials.append({"name": f"authored-{color[1:]}",
+        if mat_name not in mat_index:
+            mat_index[mat_name] = len(materials)
+            materials.append({"name": mat_name,
                               "pbrMetallicRoughness": {
-                                  "baseColorFactor": [r, g, b, 1.0],
-                                  "metallicFactor": 0.0, "roughnessFactor": 0.9},
-                              "doubleSided": True})
-        base = len(accessors) - 3
-        meshes.append({"name": part["name"],
-                       "primitives": [{"attributes": {"POSITION": base, "NORMAL": base + 1},
-                                       "indices": base + 2,
-                                       "material": mat_index[color]}]})
-        nodes.append({"name": part["name"], "mesh": len(meshes) - 1})
+                                  "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+                                  "metallicFactor": metallic,
+                                  "roughnessFactor": roughness},
+                              "doubleSided": False})
+        base = len(accessors) - 5
+        meshes.append({"name": f"{asset['slug']}_{mat_name}",
+                       "primitives": [{"attributes": {"POSITION": base,
+                                                      "NORMAL": base + 1,
+                                                      "TEXCOORD_0": base + 2,
+                                                      "COLOR_0": base + 3},
+                                       "indices": base + 4,
+                                       "material": mat_index[mat_name]}]})
+        nodes.append({"name": f"{asset['slug']}_{mat_name}", "mesh": len(meshes) - 1})
     root = {"name": f"TS_ENV_{asset['slug']}_Root",
             "children": list(range(len(nodes))),
             "extras": {"asset_id": asset["id"], "asset_type": "studio-bg3d-environment",
@@ -505,7 +631,7 @@ def build_glb(asset, parts):
     out = [struct.pack("<III", 0x46546C67, 2, total),
            struct.pack("<II", len(json_bytes), 0x4E4F534A), json_bytes,
            struct.pack("<II", len(bin_bytes), 0x004E4942), bin_bytes]
-    return b"".join(out), len(nodes), len(meshes), sum(len(part_triangles(p)[0]) // 3 for p in parts), len(materials)
+    return b"".join(out), len(nodes), len(meshes), total_tris, len(materials)
 
 
 # ---------------------------------------------------------------- thumbnail
