@@ -40,6 +40,9 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%}
 .studio-drawing-ergonomics-chip:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 42%,var(--color-line-strong));color:var(--color-fg);transform:translateY(-1px)}
 .studio-drawing-ergonomics-chip[aria-pressed=true]{border-color:color-mix(in oklch,var(--color-accent) 62%,white 10%);background:color-mix(in oklch,var(--color-accent-soft) 88%,var(--color-panel));color:var(--color-fg)}
 .studio-drawing-ergonomics-chip:disabled{opacity:.45;cursor:default}
+.studio-drawing-ergonomics-dot{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid rgb(255 255 255 / .24);flex-shrink:0}
+.studio-drawing-ergonomics-color{width:38px;height:38px;min-width:38px;padding:3px;border:1px solid color-mix(in oklch,var(--color-line-strong) 78%,transparent);border-radius:12px;background:color-mix(in oklch,var(--color-card) 84%,transparent);cursor:pointer}
+.studio-drawing-ergonomics-color:disabled{opacity:.45;cursor:default}
 .studio-drawing-clarity-context-actions,.studio-drawing-clarity-history{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .studio-drawing-clarity-history button{min-width:48px;min-height:48px;padding:4px 10px}
 .studio-drawing-clarity-mobile-context{padding-inline:8px}

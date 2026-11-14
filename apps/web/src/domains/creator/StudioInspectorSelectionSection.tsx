@@ -1,8 +1,14 @@
 import { Suspense, useMemo } from "react";
 
+import {
+  planCutOutsideDrawRestrictionPatches,
+  planWebtoonCutQuickAlign,
+  summarizeCutContainedClipState,
+} from "./canvas/studio-frame-cut-production";
 import { hasCustomBubbleShape } from "./lettering/studio-bubble-custom-shape";
 import { normalizeExtraTails } from "./lettering/studio-bubble-path";
 import { localizeStudioRasterToolAvailability } from "./render/studio-raster-tool-reason-localization";
+import { CANVAS_W } from "./studio-assets";
 import { collectStudioDocumentColors } from "./studio-document-colors";
 import { containingPanel } from "./studio-element-geometry";
 import { elementLabel } from "./studio-element-label";
@@ -599,28 +605,65 @@ export function StudioInspectorSelectionSection({
                 || selected.type === "speedLines"
                 || selected.type === "frame") ? (
                 <StudioInspectorSection sectionId="element.effect-lines" loadingLabel={tPanelLoading("studio.canvas.panelLoading.effectLines", "집중선·속도선을 여는 중...")}>
-                <StudioInspectorFocusSpeedFrameControls
-                  selected={selected}
-                  panelGutter={panelGutter}
-                  panelSplitActive={panelSplitActive}
-                  panelSplitHint={panelSplitHint}
-                  panelSplitRatio={panelSplitRatio}
-                  onPatch={(patch) => patchEl(selected.id, patch)}
-                  onPanelSplitRatioChange={setPanelSplitRatio}
-                  onSplitFrame={splitFrameSelected}
-                  onTogglePanelSplit={() => {
-                    setPanelSplitHint(null);
-                    executeStudioInspectorArmedToggle(panelSplitActive, {
-                      disarm: disarmAllPixelTools,
-                      setActive: setPanelSplitActive,
-                    });
-                  }}
-                  onPanelGutterChange={(value) => {
-                    if (collaborationDocumentLocked) return;
-                    setPanelGutter(value);
-                    setSharedDocumentNotice(null);
-                  }}
-                />
+                {(() => {
+                  const frameClipSummary =
+                    selected.type === "frame"
+                      ? summarizeCutContainedClipState(selected, elements)
+                      : null;
+                  return (
+                    <StudioInspectorFocusSpeedFrameControls
+                      selected={selected}
+                      panelGutter={panelGutter}
+                      panelSplitActive={panelSplitActive}
+                      panelSplitHint={panelSplitHint}
+                      panelSplitRatio={panelSplitRatio}
+                      onPatch={(patch) => patchEl(selected.id, patch)}
+                      onPanelSplitRatioChange={setPanelSplitRatio}
+                      onSplitFrame={splitFrameSelected}
+                      onTogglePanelSplit={() => {
+                        setPanelSplitHint(null);
+                        executeStudioInspectorArmedToggle(panelSplitActive, {
+                          disarm: disarmAllPixelTools,
+                          setActive: setPanelSplitActive,
+                        });
+                      }}
+                      onPanelGutterChange={(value) => {
+                        if (collaborationDocumentLocked) return;
+                        setPanelGutter(value);
+                        setSharedDocumentNotice(null);
+                      }}
+                      containedChildCount={frameClipSummary?.totalInside ?? 0}
+                      cutOutsideDrawRestricted={frameClipSummary?.allRestrictedInsideCut ?? true}
+                      onChangeCutOutsideDrawRestriction={
+                        selected.type === "frame"
+                          ? (restrict) => {
+                              if (collaborationDocumentLocked) return;
+                              for (const item of planCutOutsideDrawRestrictionPatches(
+                                selected,
+                                elements,
+                                restrict,
+                              )) {
+                                patchEl(item.id, item.patch);
+                              }
+                            }
+                          : undefined
+                      }
+                      onQuickAlignCut={
+                        selected.type === "frame"
+                          ? (mode) => {
+                              if (collaborationDocumentLocked) return;
+                              patchEl(
+                                selected.id,
+                                planWebtoonCutQuickAlign(selected, mode, CANVAS_W, panelGutter) as Partial<El>,
+                              );
+                            }
+                          : undefined
+                      }
+                      canUndoCutAction={Boolean(model.canUndoDocument)}
+                      onUndoCutAction={model.undoDocument}
+                    />
+                  );
+                })()}
                 </StudioInspectorSection>
               ) : null}
 

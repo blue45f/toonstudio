@@ -57,6 +57,11 @@ import {
   stopChildProcess,
   waitForServer,
 } from "./lib/studio-verify-preview-harness.mjs";
+import {
+  computeExpectedDiscreteGesturePoints,
+  inspectGpuAdapter as inspectGpuAdapterHelper,
+  type GpuAdapterEvidence,
+} from "./lib/verify-studio-long-stroke-helpers.mts";
 
 const BRUSH_NAME_ENV = process.env.TOONSPECTRUM_LONG_STROKE_BRUSH?.trim() || null;
 const BRUSH_ID_ENV = process.env.TOONSPECTRUM_LONG_STROKE_BRUSH_ID?.trim() || null;
@@ -104,7 +109,7 @@ const HEAP_GROWTH_MAX_BYTES = 64 * 1024 * 1024; // 해제 후 힙 증가 상한
 const COMMIT_READ_TIMEOUT_MS = 8_000; // 커밋 획이 SQLite 자동저장에 나타날 때까지 폴링 상한
 /** 개발 서버에서 API(:4001)가 없을 때 나는 선택적 루프백 실패 — 게이트 결함이 아니다. */
 const EXPECTED_DEV_NOISE =
-  /\/api\/(?:auth\/session|studio-ai\/status|kmas\/merge-on-access|analytics\/traffic\/)|socket\.io/u;
+  /\/api\/(?:health\/capabilities|auth\/session|studio-ai\/status|kmas\/merge-on-access|analytics\/traffic\/)|socket\.io/u;
 /**
  * `vite preview` serves the production build, where the `/src/**` module specifiers below do not
  * exist. The probe already degrades to its env/fallback path when those imports fail; their 404s
@@ -152,16 +157,6 @@ interface SurfaceEvidence {
   readonly gpuSurfaceKinds: readonly string[];
   readonly refusedStrokeNotices: number;
 }
-interface GpuAdapterEvidence {
-  readonly available: boolean;
-  readonly adapterClass: "hardware" | "software" | "unknown" | "unavailable";
-  readonly isFallbackAdapter: boolean | null;
-  readonly adapterFingerprint: string | null;
-  readonly vendor: string;
-  readonly architecture: string;
-  readonly device: string;
-  readonly description: string;
-}
 type GateGlobals = typeof globalThis & {
   __longStrokeGate?: { moves: number; coalesced: number; rejections: number };
   __longStrokeFrames?: number[];
@@ -171,75 +166,8 @@ type GateGlobals = typeof globalThis & {
   gc?: () => void;
 };
 
-async function inspectGpuAdapter(page: Page): Promise<GpuAdapterEvidence> {
-  const unavailable: GpuAdapterEvidence = Object.freeze({
-    available: false,
-    adapterClass: "unavailable",
-    isFallbackAdapter: null,
-    adapterFingerprint: null,
-    vendor: "",
-    architecture: "",
-    device: "",
-    description: "",
-  });
-  if (!WEBGPU) return unavailable;
-  return page.evaluate(async () => {
-    type AdapterInfoLike = Readonly<{
-      vendor?: unknown;
-      architecture?: unknown;
-      device?: unknown;
-      description?: unknown;
-    }>;
-    type AdapterLike = Readonly<{
-      info?: AdapterInfoLike;
-      isFallbackAdapter?: unknown;
-    }>;
-    type NavigatorWithGpu = Navigator & Readonly<{
-      gpu?: Readonly<{
-        requestAdapter(options?: Readonly<{ powerPreference?: "high-performance" }>):
-          Promise<AdapterLike | null>;
-      }>;
-    }>;
-    const gpu = (navigator as NavigatorWithGpu).gpu;
-    if (!gpu) return null;
-    const adapter = await gpu.requestAdapter({
-      powerPreference: "high-performance",
-    }) as AdapterLike | null;
-    if (!adapter) return null;
-    const info = adapter.info ?? {};
-    const text = (value: unknown): string =>
-      typeof value === "string" ? value.trim() : "";
-    const vendor = text(info.vendor);
-    const architecture = text(info.architecture);
-    const device = text(info.device);
-    const description = text(info.description);
-    const fallbackValue = adapter.isFallbackAdapter;
-    const isFallbackAdapter = typeof fallbackValue === "boolean"
-      ? fallbackValue
-      : null;
-    const adapterFingerprint = [vendor, architecture, device, description]
-      .filter((value) => value.length > 0)
-      .join(":") || null;
-    const identity = adapterFingerprint?.toLowerCase() ?? "";
-    const software = /swiftshader|llvmpipe|lavapipe|software|warp|basic render/u
-      .test(identity);
-    const adapterClass = isFallbackAdapter === true || software
-      ? "software" as const
-      : adapterFingerprint
-        ? "hardware" as const
-        : "unknown" as const;
-    return {
-      available: true,
-      adapterClass,
-      isFallbackAdapter,
-      adapterFingerprint,
-      vendor,
-      architecture,
-      device,
-      description,
-    };
-  }).then((result) => result ?? unavailable).catch(() => unavailable);
-}
+const inspectGpuAdapter = (page: Page): Promise<GpuAdapterEvidence> =>
+  inspectGpuAdapterHelper(page, WEBGPU);
 
 function log(message: string): void {
   console.log(`[verify-studio-long-stroke] ${message}`);
@@ -307,6 +235,15 @@ async function prepareEvidenceFixture(page: Page): Promise<Readonly<{
   });
   await page.keyboard.press("Escape").catch(() => undefined);
 
+  const zoomReset = page.getByRole("button", { name: /100% 실제 크기로 맞추기/u }).first();
+  if (await zoomReset.isVisible().catch(() => false)) {
+    const pressed = await zoomReset.getAttribute("aria-pressed").catch(() => null);
+    if (pressed === "false") {
+      await zoomReset.click().catch(() => undefined);
+      await page.waitForTimeout(120);
+    }
+  }
+
   const pressedTransparent = page.locator(
     '[data-studio-transparent-color-well="true"][aria-pressed="true"]',
   );
@@ -315,23 +252,37 @@ async function prepareEvidenceFixture(page: Page): Promise<Readonly<{
     if (await toggle.isVisible().catch(() => false)) await toggle.click();
   }
 
-  const colorInput = await firstVisible(
-    page.locator('input[type="color"][aria-label^="주 색 선택"]'),
-  );
-  await colorInput.fill(EVIDENCE_STROKE_COLOR);
-  await page.waitForFunction(
-    ({ color, selector }) => {
-      const visibleInputs = Array.from(
-        document.querySelectorAll<HTMLInputElement>(selector),
-      ).filter((input) => input.getBoundingClientRect().width > 0);
-      return visibleInputs.some((input) => input.value.toLowerCase() === color);
-    },
-    {
-      color: EVIDENCE_STROKE_COLOR,
-      selector: 'input[type="color"][aria-label^="주 색 선택"]',
-    },
-    { timeout: 5_000 },
-  );
+  const visibleColorInputs = page.locator('input[type="color"][aria-label^="주 색 선택"]');
+  let hasNativeColorInput = false;
+  for (let index = 0; index < await visibleColorInputs.count(); index += 1) {
+    if (await visibleColorInputs.nth(index).isVisible().catch(() => false)) {
+      hasNativeColorInput = true;
+      break;
+    }
+  }
+  if (hasNativeColorInput) {
+    const colorInput = await firstVisible(visibleColorInputs);
+    await colorInput.fill(EVIDENCE_STROKE_COLOR);
+    await page.waitForFunction(
+      ({ color, selector }) => {
+        const visibleInputs = Array.from(
+          document.querySelectorAll<HTMLInputElement>(selector),
+        ).filter((input) => input.getBoundingClientRect().width > 0);
+        return visibleInputs.some((input) => input.value.toLowerCase() === color);
+      },
+      {
+        color: EVIDENCE_STROKE_COLOR,
+        selector: 'input[type="color"][aria-label^="주 색 선택"]',
+      },
+      { timeout: 5_000 },
+    );
+  } else {
+    const trigger = await firstVisible(page.getByRole("button", { name: "주 색", exact: true }));
+    await trigger.click();
+    const hexInput = await firstVisible(page.getByRole("textbox", { name: "헥스 색상 코드" }));
+    await hexInput.fill(EVIDENCE_STROKE_COLOR);
+    await (await firstVisible(page.getByRole("button", { name: "색상 적용" }))).click();
+  }
   const state = await page.evaluate(({ chromeSelector, color }) => {
     const chromeVisible = Array.from(document.querySelectorAll(chromeSelector)).some((node) => {
       const style = getComputedStyle(node);
@@ -345,7 +296,9 @@ async function prepareEvidenceFixture(page: Page): Promise<Readonly<{
     const visibleColorMatches = Array.from(document.querySelectorAll<HTMLInputElement>(
       'input[type="color"][aria-label^="주 색 선택"]',
     )).some((input) => input.getBoundingClientRect().width > 0
-      && input.value.toLowerCase() === color);
+      && input.value.toLowerCase() === color)
+      || document.querySelector('[data-studio-dual-color-well="true"]')
+        ?.getAttribute("data-studio-primary-color")?.toLowerCase() === color;
     return { chromeVisible, transparentColorEnabled, visibleColorMatches };
   }, { chromeSelector: EVIDENCE_CHROME_SELECTOR, color: EVIDENCE_STROKE_COLOR });
   invariant(!state.chromeVisible, "transient tooltip/HUD chrome remained in raster evidence");
@@ -415,11 +368,15 @@ async function activateBrushOperation(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (attempt === 0) await page.keyboard.press(operation === "erase" ? "e" : "b");
     else {
+      const label = operation === "erase" ? "지우개" : "펜";
       const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
-      await toolbar.getByRole("button", {
-        name: operation === "erase" ? "지우개" : "펜",
-        exact: true,
-      }).click({ timeout: 3_000 }).catch(() => undefined);
+      const inToolbar = toolbar.getByRole("button", { name: label, exact: true });
+      if (await inToolbar.count() > 0) {
+        await inToolbar.first().click({ timeout: 3_000 }).catch(() => undefined);
+      } else {
+        await page.getByRole("button", { name: label, exact: true }).first()
+          .click({ timeout: 3_000 }).catch(() => undefined);
+      }
     }
     const deadline = Date.now() + 5_000;
     while (Date.now() < deadline) {
@@ -713,6 +670,15 @@ function gesturePolylineLength(box: Box, batches = GESTURE_BATCHES): number {
   return total;
 }
 
+const expectedDiscreteGesturePoints = (
+  box: Box,
+  samples: number,
+  cssToDocument: number,
+  sampleSpacing: number,
+  batches = GESTURE_BATCHES,
+): number =>
+  computeExpectedDiscreteGesturePoints(box, samples, cssToDocument, sampleSpacing, batches, gesturePoint);
+
 function pathBounds(box: Box, t0: number, t1: number, pad: number): Box {
   const samples = SCREEN_FILL_PATH ? 201 : 51;
   const points = Array.from({ length: samples }, (_, index) =>
@@ -896,7 +862,9 @@ async function heapUsed(
 
 /** 상단 명령 바 실행취소("Undo", 툴벨트 "실행취소" 폴백)가 disabled 될 때까지 클릭. 반환 = 클릭 수. */
 async function undoAll(page: Page): Promise<number> {
-  const undo = page.getByRole("button", { name: /^(?:Undo|실행취소)$/u }).filter({ hasNot: page.locator("[disabled]") });
+  const undo = page.getByRole("button", {
+    name: /^(?:Undo|실행\s*취소|되돌리기(?:\s*·\s*실행취소)?)$/u,
+  }).filter({ hasNot: page.locator("[disabled]") });
   let clicks = 0;
   for (; clicks < 8; clicks += 1) {
     const enabled = await undo.first().isEnabled({ timeout: 1_000 }).catch(() => false);
@@ -920,10 +888,10 @@ async function main(): Promise<void> {
         const child = spawnVitePreview({ port, runner: "node-vite-bin", logPath: join(OUT_DIR, "preview.log") });
         const origin = `http://127.0.0.1:${port}/`;
         await waitForServer(origin, { maxAttempts: 100, pollIntervalMs: 100, requestInit: { redirect: "manual" } });
-        return { child, studioUrl: `${origin}studio` };
+        return { child, studioUrl: `${origin}studio/canvas` };
       })()
     : null;
-  const studioUrl = preview?.studioUrl ?? process.env.STUDIO_URL ?? "http://localhost:5173/studio";
+  const studioUrl = preview?.studioUrl ?? process.env.STUDIO_URL ?? "http://localhost:5173/studio/canvas";
   let browser: Browser | null = null;
   const report: Record<string, unknown> = {
     kind: "toonstudio-studio-long-stroke-gate-v1",
@@ -970,6 +938,9 @@ async function main(): Promise<void> {
     await page.addInitScript("globalThis.__name ??= (target) => target;");
     await installGateGlobals(page);
     await page.goto(studioUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    if (/\/studio\/?$/u.test(new URL(page.url()).pathname)) {
+      await page.goto(new URL("/studio/canvas", page.url()).href, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    }
     const gpuAdapter = await inspectGpuAdapter(page);
     report.gpuAdapter = gpuAdapter;
     log(`gpu adapter: ${gpuAdapter.adapterClass} · ${gpuAdapter.adapterFingerprint ?? "unidentified"}`);
@@ -1052,7 +1023,7 @@ async function main(): Promise<void> {
     const gestureLengthDocument = gestureLengthCss * cssToDocument;
     const committedPathLength = committed ? pathLength(committed.points) : null;
     const expectedPoints = committed && committed.sampleSpacing && committed.sampleSpacing > 0
-      ? Math.min(dispatched, Math.floor(gestureLengthDocument / committed.sampleSpacing) + 1)
+      ? expectedDiscreteGesturePoints(box, PARITY_SAMPLES, cssToDocument, committed.sampleSpacing)
       : dispatched;
     report.parity = {
       dispatchedMoves: dispatched, observedPointerMoves: parityCounters.moves,

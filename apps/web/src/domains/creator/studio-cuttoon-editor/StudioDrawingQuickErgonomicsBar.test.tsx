@@ -285,4 +285,43 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
     fireEvent.click(zoomBtn);
     expect(setZoom).toHaveBeenCalledWith(1);
   });
+
+  it("간단한 그리기 모드에서도 그리기 옵션 계약(draw-options·활성 브러시 알약·주 색 선택)을 노출해 첫 획 준비와 카탈로그 전환을 지원한다", () => {
+    const toggleCatalog = vi.fn();
+    const setColor = vi.fn();
+    const activatePrimaryCanvasTool = vi.fn();
+    const session = createErgonomicsSession({
+      tool: "select" as StudioDrawingErgonomicsSession["tool"],
+      drawMode: "pen",
+      activeCatalogBrush: { id: "gpen", name: "G펜" },
+      brushOpacity: 0.85,
+      color: "#1e293b",
+      setColor,
+      activatePrimaryCanvasTool,
+      studioBrushCatalogHandlers: { toggle: toggleCatalog },
+    });
+
+    const { rerender } = render(<StudioDrawingQuickErgonomicsBar session={session} />);
+    const toolbar = screen.getByRole("toolbar", { name: /그리기 옵션/ });
+    expect(toolbar.getAttribute("data-studio-draw-options")).toBe("true");
+    expect(toolbar.getAttribute("data-studio-active-draw-mode")).toBe("inactive");
+
+    const brushPill = screen.getByRole("button", { name: /현재 도구 G펜, 8px, 불투명도 85%, 브러시 선택 열기/ });
+    expect(brushPill.getAttribute("data-studio-brush-active-pill")).toBe("true");
+    fireEvent.click(brushPill);
+    expect(activatePrimaryCanvasTool).toHaveBeenCalledWith("draw", "pen");
+    expect(toggleCatalog).toHaveBeenCalledWith("desktop-dock", brushPill);
+
+    const colorPicker = screen.getByLabelText("주 색 선택") as HTMLInputElement;
+    expect(colorPicker.value).toBe("#1e293b");
+    fireEvent.change(colorPicker, { target: { value: "#e11d48" } });
+    expect(setColor).toHaveBeenCalledWith("#e11d48");
+
+    rerender(
+      <StudioDrawingQuickErgonomicsBar
+        session={{ ...session, tool: "draw", drawMode: "eraser" }}
+      />,
+    );
+    expect(toolbar.getAttribute("data-studio-active-draw-mode")).toBe("eraser");
+  });
 });

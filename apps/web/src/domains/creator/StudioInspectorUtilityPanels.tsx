@@ -1,10 +1,13 @@
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import {
+  Bookmark,
   ChevronDown,
   ChevronUp,
+  CopyPlus,
   LayoutGrid,
   MousePointer2,
   Pipette,
+  RotateCcw,
 } from "lucide-react";
 import { Suspense, useId, useLayoutEffect, useState, type RefObject } from "react";
 
@@ -64,7 +67,12 @@ export function StudioInspectorCurrentBrushSummary({
   strokeWidth,
   tipAngle,
   tipRoundness,
+  isFavorite = false,
+  activeUserBrushName = null,
   onOpenBrushCatalog,
+  onToggleFavorite,
+  onCloneCurrentPreset,
+  onRestorePresetDefaults,
 }: {
   brushId: string;
   brushName: string;
@@ -75,8 +83,14 @@ export function StudioInspectorCurrentBrushSummary({
   strokeWidth: number;
   tipAngle: number;
   tipRoundness: number;
+  isFavorite?: boolean;
+  activeUserBrushName?: string | null;
   onOpenBrushCatalog?: (trigger: HTMLButtonElement) => void;
+  onToggleFavorite?: () => void;
+  onCloneCurrentPreset?: () => void;
+  onRestorePresetDefaults?: () => void;
 }) {
+  const effectiveLabel = activeUserBrushName ?? brushName;
   return (
     <section
       aria-label="현재 기본 프리셋 요약"
@@ -85,7 +99,7 @@ export function StudioInspectorCurrentBrushSummary({
     >
       <StudioActiveBrushSummary
         brushId={brushId}
-        brushName={brushName}
+        brushName={effectiveLabel}
         color={color}
         opacity={opacity}
         stabilizer={stabilizer}
@@ -93,8 +107,54 @@ export function StudioInspectorCurrentBrushSummary({
         strokeWidth={strokeWidth}
         tipAngle={tipAngle}
         tipRoundness={tipRoundness}
-        label="현재 기본 프리셋"
+        label={activeUserBrushName ? "현재 사용자 프리셋" : "현재 기본 프리셋"}
+        trailing={onToggleFavorite ? (
+          <button
+            type="button"
+            onClick={onToggleFavorite}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? `${effectiveLabel} 즐겨찾기 해제` : `${effectiveLabel} 즐겨찾기`}
+            className={cn(
+              "grid size-9 shrink-0 place-items-center rounded-lg border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
+              isFavorite
+                ? "border-accent/55 bg-accent-soft text-accent"
+                : "border-line/75 text-fg-3 hover:bg-raised hover:text-fg",
+            )}
+          >
+            <Bookmark size={14} fill={isFavorite ? "currentColor" : "none"} aria-hidden />
+          </button>
+        ) : undefined}
       />
+      {(onCloneCurrentPreset || onRestorePresetDefaults) ? (
+        <div
+          role="group"
+          aria-label="브러시 프리셋 빠른 관리"
+          className="grid grid-cols-2 gap-1.5 px-0.5"
+        >
+          {onCloneCurrentPreset ? (
+            <button
+              type="button"
+              data-studio-preset-clone-action="true"
+              onClick={onCloneCurrentPreset}
+              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.62rem] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <CopyPlus size={12} aria-hidden />
+              사용자 복제
+            </button>
+          ) : null}
+          {onRestorePresetDefaults ? (
+            <button
+              type="button"
+              data-studio-preset-restore-action="true"
+              onClick={onRestorePresetDefaults}
+              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg border border-line bg-card px-2 text-[0.62rem] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <RotateCcw size={12} aria-hidden />
+              원본 복원
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-2 px-1">
         <p className="min-w-0 text-[0.62rem] leading-relaxed text-fg-3">
           하단 빠른 바와 같은 브러시 목록을 사용합니다. 선화·번짐·에어 모두 크기·농도·색 조작은 같습니다.
@@ -176,8 +236,8 @@ export function StudioInspectorDrawColorControls({
             className={cn(
               "px-1.5 py-0.2 rounded text-[9px] font-medium transition-colors border whitespace-nowrap",
               activeCspPalette === "intermediate"
-                ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                : "text-fg-4 hover:text-fg-2 border-line/40 hover:bg-raised",
+                ? "bg-cool/20 text-cool border-cool/40"
+                : "text-fg-3 hover:text-fg-2 border-line/40 hover:bg-raised",
             )}
             title="클립스튜디오 4코너 중간색 그리드 팔레트 열기"
           >
@@ -191,8 +251,8 @@ export function StudioInspectorDrawColorControls({
             className={cn(
               "px-1.5 py-0.2 rounded text-[9px] font-medium transition-colors border whitespace-nowrap",
               activeCspPalette === "approximate"
-                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                : "text-fg-4 hover:text-fg-2 border-line/40 hover:bg-raised",
+                ? "bg-good/20 text-good border-good/40"
+                : "text-fg-3 hover:text-fg-2 border-line/40 hover:bg-raised",
             )}
             title="클립스튜디오 근사색 팔레트 열기"
           >
@@ -207,8 +267,8 @@ export function StudioInspectorDrawColorControls({
             className={cn(
               "px-1.5 py-0.2 rounded text-[9px] font-medium transition-colors border whitespace-nowrap",
               activeCspPalette === "history"
-                ? "bg-violet-500/20 text-violet-300 border-violet-500/40"
-                : "text-fg-4 hover:text-fg-2 border-line/40 hover:bg-raised",
+                ? "bg-accent-soft text-accent border-accent/40"
+                : "text-fg-3 hover:text-fg-2 border-line/40 hover:bg-raised",
             )}
             title="클립스튜디오 컬러 히스토리 팔레트 열기"
           >

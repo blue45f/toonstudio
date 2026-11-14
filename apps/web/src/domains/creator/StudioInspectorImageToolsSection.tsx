@@ -450,9 +450,8 @@ export function StudioInspectorSelectedImageTools({
                             );
                           }
                         }}
-                        onResetSettings={() =>
-                          updateAdvancedFillSettings({ ...DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS })
-                        }
+                        onResetSettings={() => updateAdvancedFillSettings({ ...DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS })}
+                        canUndoFill={Boolean(model.canUndoDocument)} onUndoFill={model.undoDocument}
                       />
                       {rasterAvailability("paint-bucket").entry.mode !== "direct-raster" ? (
                         <StudioRasterToolRecoveryPanel

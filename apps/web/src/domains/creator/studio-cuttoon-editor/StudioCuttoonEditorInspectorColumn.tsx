@@ -554,7 +554,7 @@ export function StudioCuttoonEditorInspectorColumn(s: StudioCuttoonEditorViewSes
           effScale={effScale}
           elementById={elementById}
           elements={elements}
-          eyedropperActive={eyedropperActive}
+          eyedropperActive={eyedropperActive} eraseToIntersection={eraseToIntersection} setEraseToIntersection={setEraseToIntersection} canUndoDocument={(hi > 0 || studioHistorySidecarUndoAvailable) && !collaborationDocumentLocked} undoDocument={studioMobileEditingDockHandlers.undo}
           filterClipboard={filterClipboard}
           gridSize={gridSize}
           groups={groups}

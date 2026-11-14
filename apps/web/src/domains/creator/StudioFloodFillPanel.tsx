@@ -11,9 +11,11 @@ import {
   SlidersHorizontal,
   Target,
   TriangleAlert,
+  Undo2,
 } from "lucide-react";
 import { useId } from "react";
 
+import { computeStudioFloodFillBleedPreview } from "./brush/studio-flood-fill-bleed-preview";
 import {
   STUDIO_ADVANCED_FILL_LIMITS,
   STUDIO_ADVANCED_FILL_REFERENCE_SCOPE_DESCRIPTIONS,
@@ -52,6 +54,8 @@ export interface StudioFloodFillPanelProps {
   onSettingsChange: (settings: StudioAdvancedFillSettings) => void;
   onToggleSelectedReference: () => void;
   onResetSettings: () => void;
+  canUndoFill?: boolean;
+  onUndoFill?: () => void;
 }
 
 const DIAGNOSTIC_STATUS_LABELS: Readonly<Record<AdvancedFillDiagnostics["status"], string>> = {
@@ -153,6 +157,8 @@ export function StudioFloodFillPanel({
   onSettingsChange,
   onToggleSelectedReference,
   onResetSettings,
+  canUndoFill = false,
+  onUndoFill,
 }: StudioFloodFillPanelProps) {
   const titleId = useId();
   const toolHelpId = useId();
@@ -186,6 +192,7 @@ export function StudioFloodFillPanel({
 
   const primaryDescriptionIds = [toolHelpId];
   if (targetUnsupportedReason) primaryDescriptionIds.push(unsupportedId);
+  const bleedPreview = computeStudioFloodFillBleedPreview(settings);
 
   return (
     <section
@@ -477,6 +484,89 @@ export function StudioFloodFillPanel({
             </div>
           </div>
         </fieldset>
+
+        <div
+          data-studio-fill-bleed-preview="true"
+          className="flex min-w-0 items-center gap-3 rounded-lg border border-line/75 bg-card/85 px-3 py-2"
+        >
+          <svg
+            viewBox="0 0 64 64"
+            width={52}
+            height={52}
+            aria-hidden="true"
+            className="shrink-0 rounded-md border border-line/60 bg-panel"
+          >
+            <circle
+              cx={32}
+              cy={32}
+              r={bleedPreview.bleedRingRadiusSvg}
+              fill={fillColor}
+              fillOpacity={0.34}
+              stroke={fillColor}
+              strokeWidth={1.5}
+              strokeDasharray="3 2"
+            />
+            <path
+              d="M 45.5 14.5 A 22 22 0 1 0 51.2 21.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            />
+            {bleedPreview.gapSealed ? (
+              <line
+                x1={45.5}
+                y1={14.5}
+                x2={51.2}
+                y2={21.5}
+                stroke="var(--color-cool, #38bdf8)"
+                strokeWidth={bleedPreview.gapBridgeStrokeWidthSvg}
+                strokeLinecap="round"
+              />
+            ) : null}
+          </svg>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-xs font-semibold text-fg">번짐 범위 미리보기</span>
+              <span
+                className={cx(
+                  "shrink-0 rounded-full px-1.5 py-0.5 text-[0.62rem] font-semibold",
+                  bleedPreview.riskLevel === "wide"
+                    ? "bg-warn/15 text-warn"
+                    : bleedPreview.riskLevel === "moderate"
+                      ? "bg-accent-soft text-accent"
+                      : "bg-good/15 text-good",
+                )}
+              >
+                {bleedPreview.riskLevel === "wide"
+                  ? "넓은 번짐 주의"
+                  : bleedPreview.riskLevel === "moderate"
+                    ? "중간 번짐"
+                    : "안정 범위"}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3">
+              {bleedPreview.summaryText}
+            </p>
+          </div>
+        </div>
+
+        {onUndoFill ? (
+          <button
+            type="button"
+            data-studio-fill-undo="true"
+            onClick={onUndoFill}
+            disabled={busy || !canUndoFill}
+            className={cx(
+              "inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors",
+              "hover:border-line-strong hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-50",
+              controlFocusClass,
+            )}
+          >
+            <Undo2 size={14} aria-hidden="true" />
+            <span>채우기 실행 취소</span>
+          </button>
+        ) : null}
 
         <details className="group/fill-advanced min-w-0 border-b border-line/70">
           <summary

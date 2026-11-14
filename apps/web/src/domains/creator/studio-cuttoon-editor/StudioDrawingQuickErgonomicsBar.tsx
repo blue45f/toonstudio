@@ -1,6 +1,7 @@
-import { Columns2, Compass, FlipHorizontal2, Lock, Minus, Plus, Sparkles, Unlock } from "lucide-react";
+import { Columns2, Compass, FlipHorizontal2, LayoutGrid, Lock, Magnet, Minus, Plus, Sparkles, Unlock } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { normalizeHexColor } from "../studio-color-utils";
 import { cycleStudioStabilizerStrength } from "../studio-pro-draw-prefs";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
@@ -37,11 +38,33 @@ export type StudioDrawingErgonomicsSession = Pick<
   | "exportMenuOpen"
   | "setExportMenuOpen"
 > & {
+  readonly brush?: string;
+  readonly activeCatalogBrush?: {
+    readonly id: string;
+    readonly name: string;
+  };
+  readonly brushOpacity?: number;
+  readonly brushCatalogSession?: {
+    readonly placement: string;
+  } | null;
+  readonly color?: string;
+  readonly setColor?: (hex: string) => void;
   readonly canvasFlipH?: boolean;
   readonly symmetryType?: string;
   readonly changeStudioSymmetryType?: (next: StudioDrawingErgonomicsSymmetryType) => void;
+  readonly perspectiveRulerActive?: boolean;
+  readonly setPerspectiveRulerActive?: (
+    action: boolean | ((current: boolean) => boolean),
+  ) => void;
+  readonly vanishingPoints?: readonly { readonly id: string; readonly x: number; readonly y: number }[];
   readonly toggleCanvasFlipX?: () => void;
   readonly proDrawPrefs?: { readonly sizeLocked?: boolean };
+  readonly studioBrushCatalogHandlers?: {
+    readonly toggle?: (
+      placement: "desktop-dock" | "mobile-sheet",
+      trigger: HTMLButtonElement,
+    ) => void;
+  };
   readonly studioOptionsBarsHandlers?: {
     readonly toggleSizeLock?: () => void;
     readonly flipCanvasHorizontal?: () => void;
@@ -105,6 +128,26 @@ export function StudioDrawingQuickErgonomicsBar({
   const sizeLocked = Boolean(s.proDrawPrefs?.sizeLocked);
   const zoomPercent = Math.max(1, Math.round((Number.isFinite(s.effScale) ? s.effScale : 1) * 100));
   const zoomDisabled = Boolean(s.zoomLocked || s.viewTransformSuppressed);
+  const activeDrawMode =
+    s.tool !== "draw"
+      ? "inactive"
+      : s.drawMode === "eraser"
+        ? "eraser"
+        : s.drawMode === "shape"
+          ? "shape"
+          : s.drawMode === "pixel"
+            ? "pixel"
+            : "pen";
+  const roundedWidth = Math.max(1, Math.round(Number.isFinite(s.strokeWidth) ? s.strokeWidth : 4));
+  const opacityPercent = Math.max(
+    1,
+    Math.min(100, Math.round((Number.isFinite(s.brushOpacity) ? (s.brushOpacity ?? 1) : 1) * 100)),
+  );
+  const activeBrushName =
+    s.activeCatalogBrush?.name?.trim() ||
+    (activeDrawMode === "eraser" ? bt("지우개", "Eraser") : bt("G펜", "G-Pen"));
+  const brushCatalogOpen = s.brushCatalogSession?.placement === "desktop-dock";
+  const normalizedColor = normalizeHexColor(s.color ?? "#111111") ?? "#111111";
 
   const resetZoomToActualPixel = () => {
     if (zoomDisabled) return;
@@ -119,8 +162,13 @@ export function StudioDrawingQuickErgonomicsBar({
     <div
       className="studio-drawing-ergonomics-bar"
       role="toolbar"
-      aria-label={bt("빠른 작업 동선과 브러시 보조", "Quick workflow and brush ergonomics")}
+      aria-label={bt(
+        "그리기 옵션 · 빠른 작업 동선과 브러시 보조",
+        "Drawing options · Quick workflow and brush ergonomics",
+      )}
       data-studio-quick-ergonomics="true"
+      data-studio-draw-options="true"
+      data-studio-active-draw-mode={activeDrawMode}
     >
       <div
         className="studio-drawing-stage-pills"
@@ -183,6 +231,56 @@ export function StudioDrawingQuickErgonomicsBar({
           <span>{bt("출고", "Publish")}</span>
         </button>
       </div>
+
+      <button
+        type="button"
+        className="studio-drawing-ergonomics-chip"
+        disabled={blocked}
+        aria-expanded={brushCatalogOpen}
+        aria-haspopup="dialog"
+        aria-label={
+          activeDrawMode === "eraser"
+            ? `${bt("현재 도구", "Current tool")} ${activeBrushName}, ${roundedWidth}px, ${bt("지우기 강도", "Erase opacity")} ${opacityPercent}%, ${bt("지우개 선택 열기", "Open eraser picker")}`
+            : `${bt("현재 도구", "Current tool")} ${activeBrushName}, ${roundedWidth}px, ${bt("불투명도", "Opacity")} ${opacityPercent}%, ${bt("브러시 선택 열기", "Open brush picker")}`
+        }
+        data-studio-brush-active-pill="true"
+        data-studio-active-tool-summary={activeDrawMode === "eraser" ? "eraser" : "pen"}
+        data-studio-core-draw-control="brush"
+        onClick={(event) => {
+          if (s.tool !== "draw") {
+            s.activatePrimaryCanvasTool("draw", "pen");
+          }
+          if (s.studioBrushCatalogHandlers?.toggle) {
+            s.studioBrushCatalogHandlers.toggle("desktop-dock", event.currentTarget);
+            return;
+          }
+          clarity?.open("brush", event.currentTarget);
+        }}
+        title={bt("클릭해 브러시·지우개 프리셋 선택 창 열기", "Open brush and eraser preset catalog")}
+      >
+        <span
+          aria-hidden="true"
+          className="studio-drawing-ergonomics-dot"
+          style={{
+            backgroundColor: activeDrawMode === "eraser" ? "oklch(0.65 0.02 70)" : normalizedColor,
+            opacity: opacityPercent / 100,
+          }}
+        />
+        <span>{activeBrushName}</span>
+        <LayoutGrid size={13} aria-hidden />
+      </button>
+
+      {s.setColor ? (
+        <input
+          type="color"
+          className="studio-drawing-ergonomics-color"
+          aria-label={bt("주 색 선택", "Select primary color")}
+          title={bt("주 색 빠르게 바꾸기", "Quickly change primary stroke color")}
+          disabled={blocked}
+          value={normalizedColor}
+          onChange={(event) => s.setColor?.(event.currentTarget.value)}
+        />
+      ) : null}
 
       <div
         className="studio-drawing-stepper"
@@ -281,6 +379,28 @@ export function StudioDrawingQuickErgonomicsBar({
         <Columns2 size={15} aria-hidden />
         <span>{bt("대칭", "Symmetry")}</span>
       </button>
+
+      {s.setPerspectiveRulerActive ? (
+        <button
+          type="button"
+          className="studio-drawing-ergonomics-chip"
+          disabled={blocked}
+          aria-pressed={Boolean(s.perspectiveRulerActive)}
+          data-studio-perspective-snap-quick-toggle="true"
+          onClick={() => s.setPerspectiveRulerActive?.((active) => !active)}
+          title={bt(
+            "원근 자 스냅 켜기/끄기 · 소실점 방사선에 펜·직선을 자동 정렬합니다",
+            "Toggle perspective ruler snap",
+          )}
+        >
+          <Magnet size={15} aria-hidden />
+          <span>
+            {s.perspectiveRulerActive
+              ? `${bt("원근 스냅", "Perspective snap")} ${(s.vanishingPoints?.length ?? 0) > 0 ? `${s.vanishingPoints?.length}점` : bt("켜짐", "On")}`
+              : bt("원근 스냅 꺼짐", "Perspective snap off")}
+          </span>
+        </button>
+      ) : null}
 
       <button
         type="button"
