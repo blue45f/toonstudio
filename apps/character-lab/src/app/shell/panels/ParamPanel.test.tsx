@@ -472,5 +472,53 @@ describe("ParamPanel — 색 팔레트", () => {
       channel: "top",
     });
   });
+
+  it("웹툰 세계관 프리셋 적용 시 T포즈 멈춤 없이 카탈로그 본·손 포즈와 남/여 키트 베이스를 즉시 해석하고 Shaper 동일 포즈 비교 모드를 전환한다", async () => {
+    const { APPEARANCE_PRESETS } = await import("../../../presets");
+    const { PERFORMANCE_PRESETS } = await import("../../../animation/presets");
+    const { createKitDefaultRecipe } = await import("../../../contracts");
+    const fullCatalog = createPresetCatalog([...APPEARANCE_PRESETS, ...PERFORMANCE_PRESETS]);
+    const dispatched: LabCommand[] = [];
+
+    render(
+      <MockLabProvider
+        catalog={fullCatalog}
+        initialState={{
+          capabilities: ALL_AVAILABLE_CAPABILITIES,
+          recipe: createKitDefaultRecipe("female"),
+        }}
+        dispatchSpy={(command) => dispatched.push(command)}
+      >
+        <ParamPanel />
+      </MockLabProvider>,
+    );
+
+    expect(screen.getByTestId("param-shaper-parity-summary").textContent).toContain("Shaper 비교 지표: 실루엣");
+
+    fireEvent.click(screen.getByTestId("param-varco3d-preset-school-romance"));
+    const loadSchool = dispatched.at(-1);
+    expect(loadSchool?.type).toBe("recipe/load");
+    if (loadSchool?.type === "recipe/load") {
+      expect(Object.keys(loadSchool.recipe.pose).length).toBeGreaterThan(0);
+      expect(Object.keys(loadSchool.recipe.handPose.left).length).toBeGreaterThan(0);
+      expect(loadSchool.recipe.source).toMatchObject({ kind: "kit", baseId: "female" });
+      expect(loadSchool.recipe.face.jawWidth).toBeLessThan(-0.35);
+      expect(loadSchool.recipe.face.eyeSize).toBeGreaterThan(0.5);
+    }
+
+    fireEvent.click(screen.getByTestId("param-varco3d-preset-northern-grand-duke"));
+    const loadDuke = dispatched.at(-1);
+    expect(loadDuke?.type).toBe("recipe/load");
+    if (loadDuke?.type === "recipe/load") {
+      expect(loadDuke.recipe.source).toMatchObject({ kind: "kit", baseId: "male" });
+      expect(Object.keys(loadDuke.recipe.pose).length).toBeGreaterThan(0);
+    }
+
+    fireEvent.click(screen.getByTestId("param-compare-pose-shaper-idle"));
+    expect(dispatched.slice(-2)).toEqual([
+      { type: "slot/apply", slot: "pose", presetId: "pose/idle" },
+      { type: "slot/apply", slot: "hand-pose", presetId: "hand-pose/relaxed" },
+    ]);
+  });
 });
 

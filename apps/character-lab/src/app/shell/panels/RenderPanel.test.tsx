@@ -546,6 +546,41 @@ describe("베타 기능 토글", () => {
     fireEvent.click(getByTestId("character-lab-apply-verify-ai-patch-btn"));
     expect(lastProfile(dispatched).toon?.outlinePressure).toBe(true);
   });
+
+  it("피부·의상 표면 소재 프리셋과 툰 셰이딩·그림자 프리셋 적용 및 기본값 복원이 실제 레시피에 반영된다", () => {
+    const store = createLabStore({
+      catalog: createPresetCatalog(vocabularyCatalogEntries()),
+      initial: { recipe: createDefaultRecipe() },
+    });
+    render(
+      <MockLabProvider store={store}>
+        <RenderPanel pollIntervalMs={0} />
+      </MockLabProvider>,
+    );
+
+    expect(screen.getByTestId("render-material-lighting-suite")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("render-surface-preset-porcelain-silk-rofan"));
+    expect(store.getState().recipe.surfaces.skin?.material).toBe("skin-sss");
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-silk");
+    expect(store.getState().recipe.surfaces.accessory?.material).toBe("metal");
+    expect(screen.getByTestId("render-surface-preset-porcelain-silk-rofan").getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(screen.getByTestId("render-lighting-preset-sunset-rim-pcss"));
+    const afterSunset = store.getState().recipe.shading;
+    expect(afterSunset.mode).toBe("toon");
+    expect(afterSunset.toon.rampSteps).toBe(3);
+    expect(afterSunset.toon.rim).toBe(true);
+    expect(afterSunset.toon.outlinePressure).toBe(true);
+    expect(afterSunset.shadows).toEqual({ enabled: true, cascades: 3, pcf: true, contactHardening: true });
+    expect(afterSunset.look.rim.color).toEqual([1, 0.7, 0.42]);
+    expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("cloth-silk");
+    expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("CSM 3단 · PCF+PCSS");
+
+    fireEvent.click(screen.getByTestId("render-reset-material-lighting-btn"));
+    expect(store.getState().recipe.surfaces.top).toBeUndefined();
+    expect(store.getState().recipe.shading.mode).toBe(DEFAULT_SHADING.mode);
+    expect(store.getState().recipe.shading.shadows).toEqual(DEFAULT_SHADING.shadows);
+  });
 });
 
 

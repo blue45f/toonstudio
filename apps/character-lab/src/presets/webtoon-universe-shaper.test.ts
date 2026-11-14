@@ -22,6 +22,7 @@ import {
   buildShaperToonShadingProfile,
   composeWebtoonUniverseRecipe,
   resolveCharacterLabVarco3dPreviewSettings,
+  summarizeWebtoonShaperParityMetrics,
   webtoonUniverseShaperPreset,
 } from "./webtoon-universe-shaper";
 
@@ -66,8 +67,13 @@ describe("presets/webtoon-universe-shaper", () => {
       if (kitComposed.ok) {
         expect(characterRecipeSchema.safeParse(kitComposed.recipe).success).toBe(true);
         expect(kitComposed.recipe.source.kind).toBe("kit");
+        if (kitComposed.recipe.source.kind === "kit") {
+          expect(kitComposed.recipe.source.baseId).toBe(preset.figure === "masculine" ? "male" : "female");
+        }
         expect(kitComposed.recipe.expression).toEqual({});
         expect(kitComposed.recipe.style.neutralFacs).toEqual(preset.expression);
+        const parity = summarizeWebtoonShaperParityMetrics(kitComposed.recipe);
+        expect(parity.summaryKo).toContain("실루엣");
       }
     }
   });

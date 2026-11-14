@@ -33,6 +33,7 @@ export {
   type CharacterLabVarco3dEnvironmentId,
   type CharacterLabVarco3dMapChannel,
   type CharacterLabVarco3dPreviewSettings,
+  type ComposeWebtoonUniverseOptions,
   type ComposeWebtoonUniverseRecipeResult,
   type ShaperFineSliderPatch,
   type Varco3dLabAccessoryBinding,

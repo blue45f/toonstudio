@@ -25,7 +25,7 @@ import {
   blendWebtoonUniverseRecipes,
   buildShaperToonShadingProfile,
 } from "../../../presets";
-import { useDispatch, useLabState } from "../lab-store-context";
+import { useCatalog, useDispatch, useLabState } from "../lab-store-context";
 
 import type {
   ShaperFaceSculptPreset,
@@ -55,6 +55,7 @@ function pctToSlider(pct: number): number {
 
 export function ShaperQuickSculptSections() {
   const { recipe } = useLabState();
+  const catalog = useCatalog();
   const dispatch = useDispatch();
 
   const [presetA, setPresetA] = useState<WebtoonUniverseShaperId>("romance-fantasy-noble");
@@ -152,7 +153,7 @@ export function ShaperQuickSculptSections() {
 
   const commitBlend = (fromId: WebtoonUniverseShaperId, toId: WebtoonUniverseShaperId, sliderVal: number): void => {
     const alpha = sliderToAlpha(sliderVal);
-    const blended = blendWebtoonUniverseRecipes(fromId, toId, alpha, recipe);
+    const blended = blendWebtoonUniverseRecipes(fromId, toId, alpha, recipe, undefined, { catalog });
     if (blended.ok) {
       dispatch({ type: "recipe/load", recipe: blended.recipe });
     }

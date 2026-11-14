@@ -8,13 +8,82 @@ import { mergeLook } from "../contracts";
 
 import type {
   BodyParamKey,
+  CharacterRecipe,
   FaceParamKey,
   HairColor,
   Look,
   LookPatch,
+  PresetId,
   Proportion,
   ShadingProfile,
 } from "../contracts";
+
+export const WEBTOON_UNIVERSE_SHAPER_IDS = [
+  "school-romance",
+  "romance-fantasy-noble",
+  "murim-swordsman",
+  "modern-noir-specialist",
+  "hunter-awakener",
+  "cyberpunk-runner",
+  "medical-drama-surgeon",
+  "sd-daily-mascot",
+  "northern-grand-duke",
+  "school-male-lead",
+  "kpop-idol-center",
+  "archmage-tower-master",
+  "shadow-assassin-hunter",
+  "joseon-crown-prince",
+  "sports-high-ace",
+  "villainess-empress",
+] as const;
+
+export type WebtoonUniverseShaperId = (typeof WEBTOON_UNIVERSE_SHAPER_IDS)[number];
+
+export type WebtoonShaperComparePoseMode = "preset" | "shaper-idle" | "a-pose";
+
+export interface WebtoonShaperComparePoseOption {
+  readonly mode: WebtoonShaperComparePoseMode;
+  readonly labelKo: string;
+  readonly poseSlotId: PresetId | null;
+  readonly handPoseSlotId: PresetId | null;
+}
+
+export const WEBTOON_SHAPER_COMPARE_POSE_OPTIONS: readonly WebtoonShaperComparePoseOption[] = [
+  { mode: "preset", labelKo: "캐릭터 고유 연출 포즈", poseSlotId: null, handPoseSlotId: null },
+  { mode: "shaper-idle", labelKo: "Shaper 동일 서기 비교", poseSlotId: "pose/idle", handPoseSlotId: "hand-pose/relaxed" },
+  { mode: "a-pose", labelKo: "Shaper 동일 A포즈 비교", poseSlotId: "pose/a-pose", handPoseSlotId: "hand-pose/relaxed" },
+] as const;
+
+export interface WebtoonShaperParitySummary {
+  readonly headsTall: number;
+  readonly shoulderHeads: number;
+  readonly legRatioPct: number;
+  readonly jawWidth: number;
+  readonly eyeSize: number;
+  readonly noseWidth: number;
+  readonly summaryKo: string;
+}
+
+/** 3D Labs ↔ 3D Shaper 동일 포즈 비교용 실루엣·등신비·안면 지표 요약 */
+export function summarizeWebtoonShaperParityMetrics(recipe: CharacterRecipe): WebtoonShaperParitySummary {
+  const prop = recipe.style.proportion;
+  const headsTall = prop ? Number(prop.headsTall.toFixed(1)) : 7.5;
+  const shoulderHeads = prop ? Number(prop.shoulderHeads.toFixed(2)) : 1.85;
+  const legRatioPct = prop ? Math.round(prop.legRatio * 100) : 50;
+  const jawWidth = Number((recipe.face.jawWidth ?? 0).toFixed(2));
+  const eyeSize = Number((recipe.face.eyeSize ?? 0).toFixed(2));
+  const noseWidth = Number((recipe.face.noseWidth ?? 0).toFixed(2));
+  const fmt = (v: number): string => `${v > 0 ? "+" : ""}${v.toFixed(2)}`;
+  return {
+    headsTall,
+    shoulderHeads,
+    legRatioPct,
+    jawWidth,
+    eyeSize,
+    noseWidth,
+    summaryKo: `실루엣 ${headsTall.toFixed(1)}등신 · 어깨 ${shoulderHeads.toFixed(2)}두 · 하체비 ${legRatioPct}% · 안면 턱선 ${fmt(jawWidth)} / 눈매 ${fmt(eyeSize)} / 코폭 ${fmt(noseWidth)}`,
+  };
+}
 
 function deepFreeze<T>(value: T): T {
   if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
@@ -508,4 +577,77 @@ export function buildShaperToonShadingProfile(
     },
     look: mergeLook(current.look, preset.lookPatch),
   };
+}
+
+/** 캐릭터 랩용 VARCO 3D 4종 HDRI 환경 프리셋 ID. */
+export type CharacterLabVarco3dEnvironmentId =
+  | "lebombo"
+  | "venice_sunset"
+  | "studio_small"
+  | "daylight";
+
+/** 캐릭터 랩용 VARCO 3D PBR 맵 채널 인스펙터 모드. */
+export type CharacterLabVarco3dMapChannel =
+  | "baseColor"
+  | "normal"
+  | "roughness"
+  | "metallic"
+  | "occlusion";
+
+export interface CharacterLabVarco3dPreviewSettings {
+  readonly presetId: WebtoonUniverseShaperId;
+  readonly environmentId: CharacterLabVarco3dEnvironmentId;
+  readonly lightingRotationDeg: number;
+  readonly isTextureOn: boolean;
+  readonly isNormalMapOn: boolean;
+  readonly isPbrOn: boolean;
+  readonly isWireframeOn: boolean;
+  readonly isUvSeamOn: boolean;
+  readonly isBoneOn: boolean;
+  readonly mapPreviewMode: CharacterLabVarco3dMapChannel | null;
+  readonly pivotToBottom: boolean;
+}
+
+const UNIVERSE_DEFAULT_ENVIRONMENT: Readonly<
+  Record<WebtoonUniverseShaperId, { readonly environmentId: CharacterLabVarco3dEnvironmentId; readonly lightingRotationDeg: number }>
+> = Object.freeze({
+  "school-romance": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 35 }),
+  "romance-fantasy-noble": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 45 }),
+  "murim-swordsman": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 60 }),
+  "modern-noir-specialist": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 300 }),
+  "hunter-awakener": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 315 }),
+  "cyberpunk-runner": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 285 }),
+  "medical-drama-surgeon": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 25 }),
+  "sd-daily-mascot": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 15 }),
+  "northern-grand-duke": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 310 }),
+  "school-male-lead": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 40 }),
+  "kpop-idol-center": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 20 }),
+  "archmage-tower-master": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 50 }),
+  "shadow-assassin-hunter": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 325 }),
+  "joseon-crown-prince": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 55 }),
+  "sports-high-ace": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 30 }),
+  "villainess-empress": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 335 }),
+});
+
+/** 세계관 셰이퍼 프리셋에 최적화된 VARCO 3D 프리뷰·인스펙터 초기 설정을 반환합니다. */
+export function resolveCharacterLabVarco3dPreviewSettings(
+  id: WebtoonUniverseShaperId,
+  overrides?: Partial<Omit<CharacterLabVarco3dPreviewSettings, "presetId">>,
+): CharacterLabVarco3dPreviewSettings {
+  const defaults = UNIVERSE_DEFAULT_ENVIRONMENT[id];
+  const rawDeg = overrides?.lightingRotationDeg ?? defaults.lightingRotationDeg;
+  const normalizedDeg = ((Math.round(rawDeg) % 360) + 360) % 360;
+  return Object.freeze({
+    presetId: id,
+    environmentId: overrides?.environmentId ?? defaults.environmentId,
+    lightingRotationDeg: normalizedDeg,
+    isTextureOn: overrides?.isTextureOn ?? true,
+    isNormalMapOn: overrides?.isNormalMapOn ?? true,
+    isPbrOn: overrides?.isPbrOn ?? true,
+    isWireframeOn: overrides?.isWireframeOn ?? false,
+    isUvSeamOn: overrides?.isUvSeamOn ?? false,
+    isBoneOn: overrides?.isBoneOn ?? false,
+    mapPreviewMode: overrides?.mapPreviewMode ?? null,
+    pivotToBottom: overrides?.pivotToBottom ?? true,
+  });
 }

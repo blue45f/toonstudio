@@ -21,6 +21,11 @@ import {
 
 import { ART_STYLE_PACK_REVISION, artStylePack } from "./art-style-packs";
 import { composeLookSetLook, lookSetById } from "./look-sets";
+import {
+  WEBTOON_SHAPER_COMPARE_POSE_OPTIONS,
+  type WebtoonShaperComparePoseMode,
+  type WebtoonUniverseShaperId,
+} from "./shaper-quick-sculpt-presets";
 
 import type {
   AccessoryAnchor,
@@ -31,36 +36,19 @@ import type {
   ExpressionWeights,
   FaceParamKey,
   HairColor,
+  HandPosePair,
   LabFailure,
   PartParams,
   PartShapeValues,
+  Pose,
+  PresetCatalog,
   Proportion,
   RecipeSlots,
+  RecipeSource,
   StyleFigure,
 } from "../contracts";
 
 export * from "./shaper-quick-sculpt-presets";
-
-export const WEBTOON_UNIVERSE_SHAPER_IDS = [
-  "school-romance",
-  "romance-fantasy-noble",
-  "murim-swordsman",
-  "modern-noir-specialist",
-  "hunter-awakener",
-  "cyberpunk-runner",
-  "medical-drama-surgeon",
-  "sd-daily-mascot",
-  "northern-grand-duke",
-  "school-male-lead",
-  "kpop-idol-center",
-  "archmage-tower-master",
-  "shadow-assassin-hunter",
-  "joseon-crown-prince",
-  "sports-high-ace",
-  "villainess-empress",
-] as const;
-
-export type WebtoonUniverseShaperId = (typeof WEBTOON_UNIVERSE_SHAPER_IDS)[number];
 
 export interface Varco3dLabAccessoryBinding {
   readonly varcoAssetId: string;
@@ -111,8 +99,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/soft-bob", body: "body/slim", expression: "expression/smile",
       pose: "pose/hands-on-hips", "hand-pose": "hand-pose/peace",
     },
-    face: { faceShape: -0.2, jawWidth: -0.25, cheekVolume: 0.15, eyeSize: 0.35, eyeTilt: 0.12, noseHeight: 0.1, lipFullness: 0.2 },
-    body: { height: 0.1, waist: -0.25, legLength: 0.25, neckLength: 0.15 },
+    face: { faceShape: -0.34, jawWidth: -0.46, chinLength: -0.16, cheekVolume: 0.16, eyeSize: 0.62, eyeSpacing: 0.06, eyeTilt: 0.12, noseHeight: 0.14, noseWidth: -0.36, mouthWidth: -0.26, lipFullness: 0.22 },
+    body: { height: 0.14, headSize: -0.18, shoulderWidth: -0.26, waist: -0.36, legLength: 0.38, neckLength: 0.22 },
     partParams: { hair: { length: -0.2, volume: 0.25, curl: 0.15 }, bottom: { flare: 0.3 } },
     hairColor: { gradient: [0.55, 1], tipMix: 0.2, accent: "none" },
     expression: { mouthSmile: 0.2 },
@@ -133,8 +121,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/romance-long", body: "body/slim", expression: "expression/smile",
       pose: "pose/idle", "hand-pose": "hand-pose/relaxed",
     },
-    face: { jawWidth: -0.35, chinLength: -0.1, eyeSize: 0.65, eyeTilt: 0.18, noseHeight: 0.25, lipFullness: 0.3 },
-    body: { height: 0.25, waist: -0.3, legLength: 0.35, neckLength: 0.25 },
+    face: { faceShape: -0.4, jawWidth: -0.5, chinLength: -0.14, eyeSize: 0.74, eyeSpacing: 0.08, eyeTilt: 0.18, noseHeight: 0.24, noseWidth: -0.38, mouthWidth: -0.28, lipFullness: 0.3 },
+    body: { height: 0.25, headSize: -0.2, shoulderWidth: -0.28, waist: -0.38, legLength: 0.42, neckLength: 0.25 },
     partParams: { hair: { length: 0.85, volume: 0.6, curl: 0.55 } },
     hairColor: { gradient: [0.45, 1], tipMix: 0.55, accent: "inner" },
     expression: { mouthSmile: 0.15 },
@@ -155,8 +143,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/action-pony", body: "body/athletic", expression: "expression/neutral",
       pose: "pose/point", "hand-pose": "hand-pose/fist",
     },
-    face: { jawWidth: 0.15, eyeSize: -0.25, eyeTilt: 0.5, noseHeight: 0.4, noseDepth: 0.25, lipFullness: -0.2 },
-    body: { height: 0.45, shoulderWidth: 0.4, chestDepth: 0.3, waist: -0.15, legLength: 0.3 },
+    face: { faceShape: -0.36, jawWidth: -0.2, eyeSize: -0.14, eyeTilt: 0.48, noseHeight: 0.4, noseWidth: -0.2, noseDepth: 0.25, mouthWidth: -0.1, lipFullness: -0.15 },
+    body: { height: 0.45, headSize: -0.26, shoulderWidth: 0.42, chestDepth: 0.3, waist: -0.22, legLength: 0.38, neckLength: 0.18 },
     partParams: { hair: { length: 0.65, volume: 0.35 } },
     hairColor: { gradient: [0.6, 1], tipMix: 0, accent: "none" },
     expression: { browDown: 0.2 },
@@ -177,8 +165,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/short-layered", body: "body/tall", expression: "expression/neutral",
       pose: "pose/arms-crossed", "hand-pose": "hand-pose/relaxed",
     },
-    face: { jawWidth: 0.25, chinLength: 0.15, cheekVolume: -0.2, eyeSize: -0.2, eyeTilt: 0.35, noseHeight: 0.45 },
-    body: { height: 0.6, shoulderWidth: 0.35, chestDepth: 0.25, legLength: 0.4, neckLength: 0.15 },
+    face: { faceShape: -0.32, jawWidth: -0.16, chinLength: 0.12, cheekVolume: -0.22, eyeSize: -0.12, eyeTilt: 0.35, noseHeight: 0.45, noseWidth: -0.18 },
+    body: { height: 0.6, headSize: -0.3, shoulderWidth: 0.4, chestDepth: 0.26, waist: -0.22, legLength: 0.45, neckLength: 0.2 },
     partParams: { hair: { length: -0.35, volume: 0.15 } },
     hairColor: { gradient: [0.6, 1], tipMix: 0, accent: "none" },
     expression: {},
@@ -199,8 +187,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/wolf-layered", body: "body/athletic", expression: "expression/angry",
       pose: "pose/run", "hand-pose": "hand-pose/fist",
     },
-    face: { jawWidth: 0.1, eyeSize: -0.1, eyeTilt: 0.48, noseHeight: 0.35, earAngle: 0.3 },
-    body: { height: 0.55, shoulderWidth: 0.5, chestDepth: 0.35, waist: -0.2, legLength: 0.35 },
+    face: { faceShape: -0.4, jawWidth: -0.24, eyeSize: 0.04, eyeTilt: 0.46, noseHeight: 0.36, noseWidth: -0.2, earAngle: 0.3 },
+    body: { height: 0.55, headSize: -0.28, shoulderWidth: 0.5, chestDepth: 0.35, waist: -0.25, legLength: 0.44, neckLength: 0.2 },
     partParams: { hair: { length: 0.25, volume: 0.45 } },
     hairColor: { gradient: [0.5, 1], tipMix: 0.45, accent: "streak" },
     expression: { browDown: 0.25 },
@@ -221,8 +209,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/hime-cut", body: "body/slim", expression: "expression/wink",
       pose: "pose/peace", "hand-pose": "hand-pose/rock",
     },
-    face: { jawWidth: -0.3, eyeSize: 0.45, eyeTilt: 0.35, lipFullness: 0.15 },
-    body: { height: 0.15, waist: -0.2, legLength: 0.3 },
+    face: { faceShape: -0.34, jawWidth: -0.44, chinLength: -0.14, eyeSize: 0.62, eyeSpacing: 0.08, eyeTilt: 0.35, noseWidth: -0.32, mouthWidth: -0.22, lipFullness: 0.18 },
+    body: { height: 0.16, headSize: -0.18, shoulderWidth: -0.24, waist: -0.32, legLength: 0.38, neckLength: 0.2 },
     partParams: { hair: { length: 0.4, volume: 0.5 } },
     hairColor: { gradient: [0.4, 1], tipMix: 0.75, accent: "streak" },
     expression: { mouthSmile: 0.25 },
@@ -243,8 +231,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/romance-long", body: "body/standard", expression: "expression/neutral",
       pose: "pose/idle", "hand-pose": "hand-pose/open",
     },
-    face: { jawWidth: -0.15, eyeSize: 0.2, eyeTilt: 0.05, noseHeight: 0.3 },
-    body: { height: 0.2, waist: -0.15, legLength: 0.25 },
+    face: { faceShape: -0.28, jawWidth: -0.36, chinLength: -0.08, eyeSize: 0.38, eyeTilt: 0.08, noseHeight: 0.3, noseWidth: -0.26, mouthWidth: -0.18 },
+    body: { height: 0.22, headSize: -0.18, shoulderWidth: -0.2, waist: -0.26, legLength: 0.34, neckLength: 0.2 },
     partParams: { hair: { length: 0.55, volume: 0.2 } },
     hairColor: { gradient: [0.6, 1], tipMix: 0, accent: "none" },
     expression: { mouthSmile: 0.08 },
@@ -288,8 +276,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/wolf-layered", body: "body/tall", expression: "expression/neutral",
       pose: "pose/arms-crossed", "hand-pose": "hand-pose/relaxed",
     },
-    face: { faceShape: -0.5, jawWidth: -0.35, chinLength: 0.14, cheekVolume: -0.25, eyeSize: -0.22, eyeTilt: 0.38, noseHeight: 0.46, noseDepth: 0.32, lipFullness: -0.15 },
-    body: { height: 0.62, shoulderWidth: 0.52, chestDepth: 0.32, waist: -0.2, legLength: 0.48, neckLength: 0.22 },
+    face: { faceShape: -0.52, jawWidth: -0.38, chinLength: 0.12, cheekVolume: -0.26, eyeSize: -0.16, eyeTilt: 0.38, noseHeight: 0.46, noseWidth: -0.2, noseDepth: 0.32, lipFullness: -0.15 },
+    body: { height: 0.62, headSize: -0.32, shoulderWidth: 0.52, chestDepth: 0.32, waist: -0.24, legLength: 0.48, neckLength: 0.22 },
     partParams: { hair: { length: 0.15, volume: 0.35 }, outer: { fit: 0.2 } },
     hairColor: { gradient: [0.55, 1], tipMix: 0.25, accent: "inner" },
     expression: { browDown: 0.22, eyeSquint: 0.12 },
@@ -311,8 +299,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/short-layered", body: "body/tall", expression: "expression/smile",
       pose: "pose/idle", "hand-pose": "hand-pose/open",
     },
-    face: { faceShape: -0.18, jawWidth: -0.12, cheekVolume: 0.08, eyeSize: 0.24, eyeTilt: -0.22, noseHeight: 0.28, lipFullness: 0.12 },
-    body: { height: 0.42, shoulderWidth: 0.32, chestDepth: 0.18, waist: -0.15, legLength: 0.38, neckLength: 0.18 },
+    face: { faceShape: -0.28, jawWidth: -0.26, cheekVolume: 0.06, eyeSize: 0.28, eyeTilt: -0.22, noseHeight: 0.3, noseWidth: -0.2, mouthWidth: -0.1, lipFullness: 0.12 },
+    body: { height: 0.44, headSize: -0.26, shoulderWidth: 0.36, chestDepth: 0.2, waist: -0.2, legLength: 0.4, neckLength: 0.2 },
     partParams: { hair: { bangs: 0.25, volume: 0.28 } },
     hairColor: { gradient: [0.6, 1], tipMix: 0.18, accent: "none" },
     expression: { mouthSmile: 0.24, browInnerUp: 0.08 },
@@ -334,8 +322,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/twin-tail", body: "body/slim", expression: "expression/wink",
       pose: "pose/peace", "hand-pose": "hand-pose/peace",
     },
-    face: { faceShape: -0.24, jawWidth: -0.32, cheekVolume: 0.18, eyeSize: 0.62, eyeTilt: 0.2, noseHeight: 0.16, lipFullness: 0.28 },
-    body: { height: 0.22, waist: -0.32, legLength: 0.4, neckLength: 0.2 },
+    face: { faceShape: -0.36, jawWidth: -0.48, chinLength: -0.16, cheekVolume: 0.18, eyeSize: 0.72, eyeSpacing: 0.08, eyeTilt: 0.2, noseHeight: 0.18, noseWidth: -0.38, mouthWidth: -0.28, lipFullness: 0.28 },
+    body: { height: 0.22, headSize: -0.18, shoulderWidth: -0.28, waist: -0.38, legLength: 0.42, neckLength: 0.22 },
     partParams: { hair: { length: 0.78, volume: 0.65, curl: 0.45 }, bottom: { flare: 0.4 } },
     hairColor: { gradient: [0.46, 1], tipMix: 0.62, accent: "inner" },
     expression: { mouthSmile: 0.32, eyeWide: 0.12 },
@@ -357,8 +345,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/romance-long", body: "body/slim", expression: "expression/smile",
       pose: "pose/point", "hand-pose": "hand-pose/open",
     },
-    face: { faceShape: -0.32, jawWidth: -0.24, chinLength: 0.08, eyeSize: 0.28, eyeTilt: 0.14, noseHeight: 0.36, earAngle: 0.28 },
-    body: { height: 0.4, shoulderWidth: 0.18, waist: -0.2, legLength: 0.36, neckLength: 0.22 },
+    face: { faceShape: -0.36, jawWidth: -0.32, chinLength: 0.06, eyeSize: 0.32, eyeTilt: 0.14, noseHeight: 0.36, noseWidth: -0.22, earAngle: 0.28 },
+    body: { height: 0.4, headSize: -0.24, shoulderWidth: 0.24, waist: -0.24, legLength: 0.38, neckLength: 0.22 },
     partParams: { hair: { length: 0.82, volume: 0.42 } },
     hairColor: { gradient: [0.44, 1], tipMix: 0.58, accent: "inner" },
     expression: { mouthSmile: 0.16, browOuterUp: 0.12 },
@@ -380,8 +368,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/soft-bob", body: "body/athletic", expression: "expression/neutral",
       pose: "pose/run", "hand-pose": "hand-pose/fist",
     },
-    face: { faceShape: -0.42, jawWidth: -0.3, eyeSize: 0.18, eyeTilt: 0.52, noseHeight: 0.34, noseDepth: 0.24, lipFullness: -0.05 },
-    body: { height: 0.38, shoulderWidth: 0.16, waist: -0.28, hip: 0.15, legLength: 0.44 },
+    face: { faceShape: -0.44, jawWidth: -0.42, chinLength: -0.1, eyeSize: 0.36, eyeTilt: 0.5, noseHeight: 0.34, noseWidth: -0.28, noseDepth: 0.24, mouthWidth: -0.18, lipFullness: -0.05 },
+    body: { height: 0.38, headSize: -0.22, shoulderWidth: -0.14, waist: -0.34, hip: 0.16, legLength: 0.44, neckLength: 0.2 },
     partParams: { hair: { length: -0.25, bangs: 0.35, volume: 0.18 } },
     hairColor: { gradient: [0.48, 1], tipMix: 0.5, accent: "streak" },
     expression: { browDown: 0.18, eyeSquint: 0.15 },
@@ -403,8 +391,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/action-pony", body: "body/standard", expression: "expression/smile",
       pose: "pose/idle", "hand-pose": "hand-pose/relaxed",
     },
-    face: { faceShape: -0.22, jawWidth: -0.08, eyeSize: 0.05, eyeTilt: 0.16, noseHeight: 0.34, noseDepth: 0.2, lipFullness: 0.08 },
-    body: { height: 0.34, shoulderWidth: 0.25, chestDepth: 0.15, legLength: 0.28, neckLength: 0.18 },
+    face: { faceShape: -0.28, jawWidth: -0.22, eyeSize: 0.14, eyeTilt: 0.16, noseHeight: 0.34, noseWidth: -0.18, noseDepth: 0.2, mouthWidth: -0.1, lipFullness: 0.08 },
+    body: { height: 0.36, headSize: -0.22, shoulderWidth: 0.28, chestDepth: 0.16, waist: -0.18, legLength: 0.34, neckLength: 0.18 },
     partParams: { hair: { length: 0.55, volume: 0.22 } },
     hairColor: { gradient: [0.65, 1], tipMix: 0, accent: "none" },
     expression: { mouthSmile: 0.12 },
@@ -426,8 +414,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/short-layered", body: "body/athletic", expression: "expression/laugh",
       pose: "pose/wave", "hand-pose": "hand-pose/thumbs-up",
     },
-    face: { faceShape: -0.08, jawWidth: 0.14, eyeSize: 0.34, eyeTilt: 0.22, noseHeight: 0.24, mouthWidth: 0.24 },
-    body: { height: 0.46, shoulderWidth: 0.44, chestDepth: 0.34, waist: -0.18, legLength: 0.38 },
+    face: { faceShape: -0.18, jawWidth: -0.08, eyeSize: 0.36, eyeTilt: 0.22, noseHeight: 0.24, noseWidth: -0.14, mouthWidth: 0.18 },
+    body: { height: 0.46, headSize: -0.26, shoulderWidth: 0.44, chestDepth: 0.34, waist: -0.2, legLength: 0.4, neckLength: 0.16 },
     partParams: { hair: { length: -0.3, volume: 0.32 } },
     hairColor: { gradient: [0.55, 1], tipMix: 0.3, accent: "streak" },
     expression: { mouthSmile: 0.42, jawOpen: 0.15 },
@@ -449,8 +437,8 @@ export const WEBTOON_UNIVERSE_SHAPER_PRESETS: readonly WebtoonUniverseShaperPres
       hair: "hair/hime-cut", body: "body/curvy", expression: "expression/pout",
       pose: "pose/hands-on-hips", "hand-pose": "hand-pose/point",
     },
-    face: { faceShape: -0.38, jawWidth: -0.34, chinLength: -0.06, eyeSize: 0.42, eyeTilt: 0.48, noseHeight: 0.32, noseDepth: 0.24, lipFullness: 0.36 },
-    body: { height: 0.32, shoulderWidth: 0.08, chestDepth: 0.28, waist: -0.35, hip: 0.32, legLength: 0.4, neckLength: 0.24 },
+    face: { faceShape: -0.44, jawWidth: -0.46, chinLength: -0.1, eyeSize: 0.54, eyeSpacing: 0.06, eyeTilt: 0.48, noseHeight: 0.34, noseWidth: -0.32, noseDepth: 0.24, mouthWidth: -0.2, lipFullness: 0.36 },
+    body: { height: 0.32, headSize: -0.2, shoulderWidth: -0.18, chestDepth: 0.28, waist: -0.4, hip: 0.32, legLength: 0.42, neckLength: 0.24 },
     partParams: { hair: { length: 0.72, bangs: 0.4, volume: 0.48 } },
     hairColor: { gradient: [0.45, 1], tipMix: 0.52, accent: "inner" },
     expression: { mouthSmile: 0.18, browOuterUp: 0.22, eyeSquint: 0.14 },
@@ -485,6 +473,11 @@ function cleanPartParams(raw: PartParams): PartParams {
   return result;
 }
 
+export interface ComposeWebtoonUniverseOptions {
+  readonly catalog?: PresetCatalog;
+  readonly poseMode?: WebtoonShaperComparePoseMode;
+}
+
 export type ComposeWebtoonUniverseRecipeResult =
   | { readonly ok: true; readonly recipe: CharacterRecipe; readonly preset: WebtoonUniverseShaperPreset }
   | { readonly ok: false; readonly failure: LabFailure };
@@ -493,6 +486,7 @@ export function composeWebtoonUniverseRecipe(
   presetId: WebtoonUniverseShaperId,
   baseRecipe: CharacterRecipe,
   now?: number,
+  options?: ComposeWebtoonUniverseOptions,
 ): ComposeWebtoonUniverseRecipeResult {
   const preset = webtoonUniverseShaperPreset(presetId);
   const stylePack = artStylePack(preset.artStyleId);
@@ -509,12 +503,18 @@ export function composeWebtoonUniverseRecipe(
     };
   }
 
-  const composedLook = composeLookSetLook(lookSet, baseRecipe, now);
+  const nextSource: RecipeSource =
+    baseRecipe.source.kind === "kit"
+      ? { ...baseRecipe.source, baseId: preset.figure === "masculine" ? "male" : "female" }
+      : baseRecipe.source;
+  const sourceAlignedBase: CharacterRecipe = nextSource === baseRecipe.source ? baseRecipe : { ...baseRecipe, source: nextSource };
+
+  const composedLook = composeLookSetLook(lookSet, sourceAlignedBase, now);
   if (!composedLook.ok) return composedLook;
 
   const lookPayload = composedLook.look.payload;
   const mergedColors: ChannelColors = {
-    ...baseRecipe.colors,
+    ...sourceAlignedBase.colors,
     ...(lookPayload.colors ?? {}),
     ...preset.baseColors,
   };
@@ -523,16 +523,43 @@ export function composeWebtoonUniverseRecipe(
     ? structuredClone(preset.proportionOverride)
     : structuredClone(stylePack.proportion[preset.figure]);
 
+  const poseOption = WEBTOON_SHAPER_COMPARE_POSE_OPTIONS.find((item) => item.mode === (options?.poseMode ?? "preset"));
+  const mergedSlots: RecipeSlots = {
+    ...sourceAlignedBase.slots,
+    ...preset.slots,
+    ...(lookPayload.slots ?? {}),
+    ...(poseOption?.poseSlotId ? { pose: poseOption.poseSlotId } : {}),
+    ...(poseOption?.handPoseSlotId ? { "hand-pose": poseOption.handPoseSlotId } : {}),
+  };
+
+  let resolvedPose: Pose = sourceAlignedBase.pose;
+  let resolvedHandPose: HandPosePair = sourceAlignedBase.handPose;
+  if (options?.catalog) {
+    const poseEntry = mergedSlots.pose ? options.catalog.get(mergedSlots.pose) : undefined;
+    if (poseEntry?.patch.pose) {
+      resolvedPose = structuredClone(poseEntry.patch.pose);
+    }
+    const handEntry = mergedSlots["hand-pose"] ? options.catalog.get(mergedSlots["hand-pose"]) : undefined;
+    if (handEntry?.patch.handPose) {
+      resolvedHandPose = {
+        left: structuredClone(handEntry.patch.handPose.left),
+        right: structuredClone(handEntry.patch.handPose.right),
+      };
+    }
+  }
+
   const candidate: CharacterRecipe = {
-    ...baseRecipe,
-    slots: { ...baseRecipe.slots, ...preset.slots, ...(lookPayload.slots ?? {}) },
+    ...sourceAlignedBase,
+    slots: mergedSlots,
+    pose: resolvedPose,
+    handPose: resolvedHandPose,
     face: normalizeParamValues(preset.face),
     body: normalizeParamValues(preset.body),
     colors: mergedColors,
     expression: {},
-    wardrobe: lookPayload.wardrobe ? structuredClone(lookPayload.wardrobe) : structuredClone(baseRecipe.wardrobe),
+    wardrobe: lookPayload.wardrobe ? structuredClone(lookPayload.wardrobe) : structuredClone(sourceAlignedBase.wardrobe),
     partParams: cleanPartParams(preset.partParams),
-    surfaces: lookPayload.surfaces ? structuredClone(lookPayload.surfaces) : structuredClone(baseRecipe.surfaces),
+    surfaces: lookPayload.surfaces ? structuredClone(lookPayload.surfaces) : structuredClone(sourceAlignedBase.surfaces),
     hairColor: structuredClone(preset.hairColor),
     style: {
       packId: stylePack.id,
@@ -541,10 +568,10 @@ export function composeWebtoonUniverseRecipe(
       neutralFacs: { ...preset.expression },
     },
     shading: {
-      ...baseRecipe.shading,
+      ...sourceAlignedBase.shading,
       mode: "toon",
       toon: {
-        ...baseRecipe.shading.toon,
+        ...sourceAlignedBase.shading.toon,
         rampSteps: stylePack.toon.rampSteps,
         rim: stylePack.toon.rim,
         outline: stylePack.toon.outline,
@@ -653,11 +680,12 @@ export function blendWebtoonUniverseRecipes(
   t: number,
   baseRecipe: CharacterRecipe,
   now?: number,
+  options?: ComposeWebtoonUniverseOptions,
 ): ComposeWebtoonUniverseRecipeResult {
   const alpha = Number.isNaN(t) ? 0.5 : Math.max(0, Math.min(1, t));
-  const fromRes = composeWebtoonUniverseRecipe(fromId, baseRecipe, now);
+  const fromRes = composeWebtoonUniverseRecipe(fromId, baseRecipe, now, options);
   if (!fromRes.ok) return fromRes;
-  const toRes = composeWebtoonUniverseRecipe(toId, baseRecipe, now);
+  const toRes = composeWebtoonUniverseRecipe(toId, baseRecipe, now, options);
   if (!toRes.ok) return toRes;
 
   const a = fromRes.recipe;
@@ -716,79 +744,4 @@ export function blendWebtoonUniverseRecipes(
   );
   if (!fineResult.ok) return fineResult;
   return { ok: true, recipe: fineResult.recipe, preset: dominantPreset };
-}
-
-/** 캐릭터 랩용 VARCO 3D 4종 HDRI 환경 프리셋 ID. */
-export type CharacterLabVarco3dEnvironmentId =
-  | "lebombo"
-  | "venice_sunset"
-  | "studio_small"
-  | "daylight";
-
-/** 캐릭터 랩용 VARCO 3D PBR 맵 채널 인스펙터 모드. */
-export type CharacterLabVarco3dMapChannel =
-  | "baseColor"
-  | "normal"
-  | "roughness"
-  | "metallic"
-  | "occlusion";
-
-export interface CharacterLabVarco3dPreviewSettings {
-  readonly presetId: WebtoonUniverseShaperId;
-  readonly environmentId: CharacterLabVarco3dEnvironmentId;
-  readonly lightingRotationDeg: number;
-  readonly isTextureOn: boolean;
-  readonly isNormalMapOn: boolean;
-  readonly isPbrOn: boolean;
-  readonly isWireframeOn: boolean;
-  readonly isUvSeamOn: boolean;
-  readonly isBoneOn: boolean;
-  readonly mapPreviewMode: CharacterLabVarco3dMapChannel | null;
-  readonly pivotToBottom: boolean;
-}
-
-const UNIVERSE_DEFAULT_ENVIRONMENT: Readonly<
-  Record<WebtoonUniverseShaperId, { readonly environmentId: CharacterLabVarco3dEnvironmentId; readonly lightingRotationDeg: number }>
-> = Object.freeze({
-  "school-romance": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 35 }),
-  "romance-fantasy-noble": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 45 }),
-  "murim-swordsman": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 60 }),
-  "modern-noir-specialist": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 300 }),
-  "hunter-awakener": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 315 }),
-  "cyberpunk-runner": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 285 }),
-  "medical-drama-surgeon": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 25 }),
-  "sd-daily-mascot": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 15 }),
-  "northern-grand-duke": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 310 }),
-  "school-male-lead": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 40 }),
-  "kpop-idol-center": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 20 }),
-  "archmage-tower-master": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 50 }),
-  "shadow-assassin-hunter": Object.freeze({ environmentId: "studio_small", lightingRotationDeg: 325 }),
-  "joseon-crown-prince": Object.freeze({ environmentId: "venice_sunset", lightingRotationDeg: 55 }),
-  "sports-high-ace": Object.freeze({ environmentId: "daylight", lightingRotationDeg: 30 }),
-  "villainess-empress": Object.freeze({ environmentId: "lebombo", lightingRotationDeg: 335 }),
-});
-
-/**
- * 세계관 셰이퍼 프리셋에 최적화된 VARCO 3D 프리뷰·인스펙터 초기 설정을 반환합니다.
- */
-export function resolveCharacterLabVarco3dPreviewSettings(
-  id: WebtoonUniverseShaperId,
-  overrides?: Partial<Omit<CharacterLabVarco3dPreviewSettings, "presetId">>,
-): CharacterLabVarco3dPreviewSettings {
-  const defaults = UNIVERSE_DEFAULT_ENVIRONMENT[id];
-  const rawDeg = overrides?.lightingRotationDeg ?? defaults.lightingRotationDeg;
-  const normalizedDeg = ((Math.round(rawDeg) % 360) + 360) % 360;
-  return Object.freeze({
-    presetId: id,
-    environmentId: overrides?.environmentId ?? defaults.environmentId,
-    lightingRotationDeg: normalizedDeg,
-    isTextureOn: overrides?.isTextureOn ?? true,
-    isNormalMapOn: overrides?.isNormalMapOn ?? true,
-    isPbrOn: overrides?.isPbrOn ?? true,
-    isWireframeOn: overrides?.isWireframeOn ?? false,
-    isUvSeamOn: overrides?.isUvSeamOn ?? false,
-    isBoneOn: overrides?.isBoneOn ?? false,
-    mapPreviewMode: overrides?.mapPreviewMode ?? null,
-    pivotToBottom: overrides?.pivotToBottom ?? true,
-  });
 }
