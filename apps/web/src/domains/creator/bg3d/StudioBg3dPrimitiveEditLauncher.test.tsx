@@ -124,9 +124,12 @@ describe("원본 도형 면 편집 launcher의 lazy 진입", () => {
 
   it("실제 면 편집 반영이 성공하면 dialog를 닫고 callback의 목록 갱신 안내를 유지한다", async () => {
     const f = fixture(), messageKo = "원본은 반영했지만 모델 목록을 갱신하지 못했습니다. 보관함을 다시 열어 확인하세요.";
-    f.apply.mockResolvedValueOnce({ ok: true, messageKo });
+    let clock = 1_000;
+    const nowSpy = vi.spyOn(performance, "now").mockImplementation(() => { clock += 6; return clock; });
+    f.apply.mockImplementationOnce(() => new Promise((resolve) => { setTimeout(() => resolve({ ok: true, messageKo }), 0); }));
     const view = render(<StudioBg3dPrimitiveEditLauncher {...f.props} />); fireEvent.click(beginButton());
     await screen.findByRole("dialog", { name: "선택한 상자 면 편집" });
+    expect(document.body.style.overflow).toBe("hidden");
     fireEvent.click(screen.getByRole("button", { name: "실제 원본 면 2 선택" }));
     fireEvent.click(screen.getByRole("button", { name: /^면 모델링 · 밀기\/당기기/u }));
     fireEvent.change(screen.getByRole("textbox", { name: "거리 (m)" }), { target: { value: "0.25" } });
@@ -134,6 +137,8 @@ describe("원본 도형 면 편집 launcher의 lazy 진입", () => {
     const apply: HTMLButtonElement = screen.getByRole("button", { name: "배경 원본에 반영" });
     await waitFor(() => expect(apply.disabled).toBe(false)); fireEvent.click(apply);
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    nowSpy.mockRestore();
+    expect(document.body.style.overflow).toBe("");
     expect(f.apply).toHaveBeenCalledOnce();
     const [context, workspace] = f.apply.mock.calls[0];
     expect(context).toBe(f.context);

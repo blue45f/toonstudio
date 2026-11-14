@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Redo2, Undo2, X } from "lucide-react";
 import { useT } from "@/shared/lib/i18n";
@@ -40,7 +40,7 @@ export function StudioBg3dPrimitiveFaceEditor({ context, onClose, onApply }: Stu
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const close = useEffectEvent(() => { if (!busyRef.current) onClose(); });
-  useEffect(() => {
+  useLayoutEffect(() => {
     mounted.current = true;
     const element = dialog.current;
     const body = element?.ownerDocument.body;
