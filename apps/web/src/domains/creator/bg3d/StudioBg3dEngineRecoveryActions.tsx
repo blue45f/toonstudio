@@ -11,9 +11,13 @@ import type { StudioBg3dEnginePreference } from "./studio-bg3d-engine-selection"
 export function StudioBg3dEngineRecoveryActions({
   preference,
   onPreferenceChange,
+  onReopenLowQuality,
+  onReturnTo2d,
 }: {
   readonly preference: StudioBg3dEnginePreference;
   readonly onPreferenceChange: (preference: StudioBg3dEnginePreference) => void;
+  readonly onReopenLowQuality?: () => void;
+  readonly onReturnTo2d?: () => void;
 }) {
   const recommended: StudioBg3dEnginePreference | null = preference === "webgpu" ? "webgl2" : null;
   const ordered = recommended
@@ -45,6 +49,32 @@ export function StudioBg3dEngineRecoveryActions({
           </button>
         );
       })}
+      {onReopenLowQuality ? (
+        <button
+          type="button"
+          data-testid="bg3d-engine-reopen-low-quality"
+          className={studioBg3dClassNames(
+            STUDIO_BG3D_CONTROL_BUTTON,
+            "min-h-11 min-w-11 border-line bg-panel px-4 text-fg hover:border-accent/60 hover:bg-raised",
+          )}
+          onClick={onReopenLowQuality}
+        >
+          품질 낮춰 다시 열기
+        </button>
+      ) : null}
+      {onReturnTo2d ? (
+        <button
+          type="button"
+          data-testid="bg3d-engine-return-2d"
+          className={studioBg3dClassNames(
+            STUDIO_BG3D_CONTROL_BUTTON,
+            "min-h-11 min-w-11 border-line bg-panel px-4 text-fg hover:border-accent/60 hover:bg-raised",
+          )}
+          onClick={onReturnTo2d}
+        >
+          2D 원고로 복귀
+        </button>
+      ) : null}
     </div>
   );
 }

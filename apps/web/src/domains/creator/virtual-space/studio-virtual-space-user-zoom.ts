@@ -340,16 +340,30 @@ export function bindStudioUserZoomPinch(
     if (!touches.delete((event as PointerEvent).pointerId)) return;
     sync();
   };
+  const resetTouches = () => {
+    if (touches.size === 0 && !pinch) return;
+    touches.clear();
+    pinch = null;
+  };
+  const onVisibilityChange = () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") resetTouches();
+  };
 
   target.addEventListener("pointerdown", onDown);
   target.addEventListener("pointermove", onMove);
   target.addEventListener("pointerup", onEnd);
   target.addEventListener("pointercancel", onEnd);
+  target.addEventListener("lostpointercapture", onEnd);
+  if (typeof window !== "undefined") window.addEventListener("blur", resetTouches);
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibilityChange);
   return () => {
     target.removeEventListener("pointerdown", onDown);
     target.removeEventListener("pointermove", onMove);
     target.removeEventListener("pointerup", onEnd);
     target.removeEventListener("pointercancel", onEnd);
+    target.removeEventListener("lostpointercapture", onEnd);
+    if (typeof window !== "undefined") window.removeEventListener("blur", resetTouches);
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibilityChange);
     touches.clear();
     pinch = null;
   };

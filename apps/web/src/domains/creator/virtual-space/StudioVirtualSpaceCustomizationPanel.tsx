@@ -38,6 +38,8 @@ import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtP
 import { StudioVirtualSpaceIllustratedLobbyShowcase } from "./StudioVirtualSpaceIllustratedStageHud";
 import { STUDIO_VIRTUAL_CHARACTER_PRESETS } from "./studio-virtual-space-customization";
 import type { StudioSpaceEmoteId } from "./studio-virtual-space-emote-catalog";
+import { StudioVirtualSpaceSceneSnapshotSection } from "./StudioVirtualSpaceSceneSnapshotSection";
+import type { StudioVirtualSceneSnapshotBinding } from "./studio-virtual-space-scene-snapshot";
 import "./studio-virtual-space-decoration-editor.css";
 
 const ACCESSORY_LABELS = {
@@ -130,6 +132,7 @@ const DECOR_LABELS = {
 export function StudioVirtualSpaceCustomizationPanel({
   nickname, character, decorations, selfPoint, onNickname, onCharacter, onDecorations, onSelectDistrict, world, artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   spaceTheme, onSpaceThemeChange, tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests, directPlacement, onTriggerEmote,
+  sceneSnapshotBinding, fallbackHour,
 }: {
   readonly artStyle?: StudioVirtualArtStyleKey;
   readonly spaceTheme?: StudioSpaceThemeKey;
@@ -153,6 +156,9 @@ export function StudioVirtualSpaceCustomizationPanel({
   readonly directPlacement?: StudioBuildPlacementPanelBinding;
   /** 오피스 웰니스·댄스 모션을 즉시 실행하는 콜백. */
   readonly onTriggerEmote?: (emoteId: StudioSpaceEmoteId) => void;
+  /** 재배치 전 카메라·조명·가구 통합 스냅샷 바인딩. */
+  readonly sceneSnapshotBinding?: StudioVirtualSceneSnapshotBinding;
+  readonly fallbackHour?: number;
 }) {
   const bt = useBilingual("StudioVirtualSpaceCustomizationPanel");
   const [nicknameDraft, setNicknameDraft] = useState(nickname);
@@ -163,8 +169,17 @@ export function StudioVirtualSpaceCustomizationPanel({
   const [notice, setNotice] = useState("");
   const [history, setHistory] = useState<{ past: StudioVirtualDecorationState[]; future: StudioVirtualDecorationState[] }>({ past: [], future: [] });
   const accepted = useRef(decorations);
+  const pendingSnapshotBeforeRef = useRef<StudioVirtualDecorationState | null>(null);
   useEffect(() => {
-    if (accepted.current !== decorations) setHistory({ past: [], future: [] });
+    if (accepted.current !== decorations) {
+      if (pendingSnapshotBeforeRef.current) {
+        const before = pendingSnapshotBeforeRef.current;
+        pendingSnapshotBeforeRef.current = null;
+        setHistory((current) => ({ past: [...current.past.slice(-23), before], future: [] }));
+      } else {
+        setHistory({ past: [], future: [] });
+      }
+    }
     accepted.current = decorations;
   }, [decorations]);
   useEffect(() => { setHistory({ past: [], future: [] }); setNotice(""); }, [world]);
@@ -182,6 +197,21 @@ export function StudioVirtualSpaceCustomizationPanel({
     accepted.current = next;
     onDecorations(next);
     setNotice(bt("배치를 적용했어요. 실행 취소로 되돌릴 수 있어요.", "Layout applied. You can undo this change."));
+  };
+  const applyPresentationMeta = (
+    patch: Partial<Pick<StudioVirtualDecorationState, "districtKey" | "presentationMode">>,
+  ) => {
+    const next: StudioVirtualDecorationState = {
+      ...decorations,
+      ...patch,
+      revision: decorations.revision + 1,
+    };
+    accepted.current = next;
+    setHistory((current) => ({
+      past: current.past.map((entry) => ({ ...entry, ...patch })),
+      future: current.future.map((entry) => ({ ...entry, ...patch })),
+    }));
+    onDecorations(next);
   };
   const restore = (direction: "undo" | "redo") => {
     const stack = direction === "undo" ? history.past : history.future, previous = stack.at(-1);
@@ -332,7 +362,7 @@ export function StudioVirtualSpaceCustomizationPanel({
           const presentation = studioTownDistrictPresentation(district);
           return <button key={district} type="button" aria-pressed={decorations.districtKey === district}
             onClick={() => {
-              onDecorations({ ...decorations, districtKey: district, revision: decorations.revision + 1 });
+              applyPresentationMeta({ districtKey: district });
               onSelectDistrict?.(district);
             }}>
             <span className="studio-vspace-customization-district-preview" aria-hidden style={{
@@ -351,7 +381,7 @@ export function StudioVirtualSpaceCustomizationPanel({
       <div className="studio-vspace-customization-options">
         {(["minimal", "decorated", "festival"] as const).map((mode) => <button key={mode} type="button"
           aria-pressed={decorations.presentationMode === mode}
-          onClick={() => onDecorations({ ...decorations, presentationMode: mode, revision: decorations.revision + 1 })}>
+          onClick={() => applyPresentationMeta({ presentationMode: mode })}>
           {bt(PRESENTATION_LABELS[mode][0], PRESENTATION_LABELS[mode][1])}
         </button>)}
       </div>
@@ -367,11 +397,23 @@ export function StudioVirtualSpaceCustomizationPanel({
         </button>)}
       </div>
     </fieldset>
+    {sceneSnapshotBinding ? (
+      <StudioVirtualSpaceSceneSnapshotSection
+        binding={{
+          ...sceneSnapshotBinding,
+          onRestore: (id) => {
+            pendingSnapshotBeforeRef.current = decorations;
+            sceneSnapshotBinding.onRestore(id);
+          },
+        }}
+        {...(fallbackHour !== undefined ? { fallbackHour } : {})}
+      />
+    ) : null}
     <StudioVirtualSpaceCustomFurniturePicker
       decorations={decorations}
       selfPoint={selfPoint}
       {...(world ? { world } : {})}
-      onDecorations={onDecorations}
+      onDecorations={(next) => commit({ ok: true, state: next })}
     />
     <fieldset>
       <legend>{bt("내 주변에 배치", "Place near me")}</legend>

@@ -395,20 +395,18 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                       }));
                     }
                   }}
+                  key={h.vrmCanvasRecoveryGeneration ?? 0}
                   camera={{ fov: activeCamera.fov, position: new THREE.Vector3(...activeCamera.position), near: 0.1, far: 20 }}
                   className="h-full w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
-                  dpr={broadcastPreviewActive ? broadcastCanvasDpr : viewportBudget.dpr}
+                  dpr={broadcastPreviewActive ? broadcastCanvasDpr : h.vrmLowQualityMode ? Math.min(1, viewportBudget.dpr) : viewportBudget.dpr}
                   frameloop={viewportBudget.visible || captureActive ? vrmFrameLoop : "never"}
-                  gl={{ alpha: true, antialias: gpuTier !== "low", powerPreference: "high-performance" }}
+                  gl={{ alpha: true, antialias: !h.vrmLowQualityMode && gpuTier !== "low", powerPreference: h.vrmLowQualityMode ? "low-power" : "high-performance" }}
                   onCreated={({ gl }) => {
-                    gl.outputColorSpace = THREE.SRGBColorSpace;
-                    gl.toneMapping = THREE.ACESFilmicToneMapping;
-                    gl.toneMappingExposure = 1.0;
-                    gl.setClearColor(0x000000, 0);
-                    gl.setClearAlpha(0);
+                    gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.0;
+                    gl.setClearColor(0x000000, 0); gl.setClearAlpha(0);
                   }}
                 >
-                  <CaptureBridge onCaptureUpdate={onCaptureUpdate} />
+                  <CaptureBridge onCaptureUpdate={onCaptureUpdate} onContextLostChange={h.setVrmContextLost} />
                   {broadcastPreviewReceipt ? (
                     <StudioVrmBroadcastPreviewBridge
                       receipt={broadcastPreviewReceipt}

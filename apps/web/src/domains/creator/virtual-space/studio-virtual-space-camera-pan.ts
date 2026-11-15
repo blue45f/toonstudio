@@ -50,6 +50,8 @@ export interface StudioCameraPanSnapshot {
 export class StudioCameraPanStore {
   private dragX = 0;
   private dragY = 0;
+  private liveOffsetX = 0;
+  private liveOffsetY = 0;
   private recenterRequested = false;
   private snapRecenterRequested = false;
   private pendingFocusTargetPoint: { readonly x: number; readonly y: number } | null = null;
@@ -154,6 +156,32 @@ export class StudioCameraPanStore {
     }
     this.updateRecovery({ canUndoView: this.historyStack.length > 0 });
     return true;
+  }
+
+  /** 현재 런타임 카메라 오프셋(월드 px)을 조회한다. */
+  getLiveOffset(): { readonly x: number; readonly y: number } {
+    return { x: this.liveOffsetX, y: this.liveOffsetY };
+  }
+
+  /** 런타임이 매 프레임 계산한 현재 오프셋을 기록한다. */
+  reportLiveOffset(offsetX: number, offsetY: number): void {
+    this.liveOffsetX = finite(offsetX) ? offsetX : 0;
+    this.liveOffsetY = finite(offsetY) ? offsetY : 0;
+  }
+
+  /** 씬 설정 스냅샷의 카메라 오프셋·배율을 원자적으로 복원한다. */
+  applySnapshotView(offsetX: number, offsetY: number, zoomLevel: number): void {
+    const safeX = finite(offsetX) ? offsetX : 0;
+    const safeY = finite(offsetY) ? offsetY : 0;
+    const safeZoom = finite(zoomLevel) ? zoomLevel : 1;
+    this.dragX = 0;
+    this.dragY = 0;
+    this.recenterRequested = false;
+    this.snapRecenterRequested = false;
+    this.liveOffsetX = safeX;
+    this.liveOffsetY = safeY;
+    this.pendingRestoreEntry = { offsetX: safeX, offsetY: safeY, zoomLevel: safeZoom };
+    this.zoomAdapter?.set(safeZoom);
   }
 
   attachZoomStore(zoom: { get(): number; set(level: number): void; apply(action: "reset"): void } | null): void {
@@ -382,15 +410,15 @@ export class StudioCameraPanRuntime {
     const recenter = this.store.consumeRecenter();
     const snapRecenter = this.store.consumeSnapRecenter();
     const focusPoint = this.store.consumeFocusTargetPoint();
-    const restoreEntry = this.store.consumeRestoreEntry();
     const startedMoving = frame.moving && !this.wasMoving;
     this.wasMoving = frame.moving;
     const { base } = frame;
     if (!frame.available || frame.snap || !finite(base.x) || !finite(base.y) || !(frame.cssToWorld > 0)) {
       return this.reset();
     }
+    const restoreEntry = frame.directed ? null : this.store.consumeRestoreEntry();
     let direct = false;
-    if (restoreEntry && !frame.directed) {
+    if (restoreEntry) {
       this.x = restoreEntry.offsetX;
       this.y = restoreEntry.offsetY;
       this.returning = false;
@@ -457,6 +485,7 @@ export class StudioCameraPanRuntime {
     const vertical = clampAxis(base.y, this.y, frame.view.height, frame.world.height);
     this.x = horizontal.offset;
     this.y = vertical.offset;
+    this.store.reportLiveOffset(this.x, this.y);
     const panned = Math.hypot(this.x, this.y) >= STUDIO_CAMERA_PANNED_THRESHOLD_PX;
     this.store.setPanned(panned);
     this.store.setOutOfSight(panned && isStudioCameraOutOfSight({ x: horizontal.shift, y: vertical.shift }, frame.view));
@@ -467,6 +496,7 @@ export class StudioCameraPanRuntime {
     this.x = 0;
     this.y = 0;
     this.returning = false;
+    this.store.reportLiveOffset(0, 0);
     this.store.setPanned(false);
     this.store.setOutOfSight(false);
     return NO_PAN;
@@ -489,7 +519,7 @@ export function bindStudioCameraPan(
   keys: KeyTarget = globalThis,
 ): () => void {
   let spaceHeld = false;
-  let drag: { readonly pointerId: number; x: number; y: number } | null = null;
+  let drag: { readonly pointerId: number; x: number; y: number; readonly requireButtons: boolean } | null = null;
 
   const syncReady = () => {
     if (spaceHeld && canPan()) target.setAttribute("data-camera-pan-ready", "true");
@@ -516,18 +546,25 @@ export function bindStudioCameraPan(
     syncReady();
     endDrag();
   };
+  const onVisibilityChange = () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") onBlur();
+  };
   const onDown = (event: Event) => {
     const pointer = event as PointerEvent;
     if (pointer.pointerType === "touch" || drag || !canPan()) return;
     if (!(pointer.button === 1 || pointer.button === 2 || (pointer.button === 0 && spaceHeld))) return;
     pointer.preventDefault();
-    drag = { pointerId: pointer.pointerId, x: pointer.clientX, y: pointer.clientY };
+    drag = { pointerId: pointer.pointerId, x: pointer.clientX, y: pointer.clientY, requireButtons: pointer.buttons > 0 };
     try { target.setPointerCapture?.(pointer.pointerId); } catch { /* 캡처가 막혀도 끌기는 된다 */ }
     target.setAttribute("data-camera-panning", "true");
   };
   const onMove = (event: Event) => {
     const pointer = event as PointerEvent;
     if (!drag || pointer.pointerId !== drag.pointerId) return;
+    if (drag.requireButtons && pointer.buttons === 0) {
+      endDrag();
+      return;
+    }
     store.drag(pointer.clientX - drag.x, pointer.clientY - drag.y);
     drag.x = pointer.clientX;
     drag.y = pointer.clientY;
@@ -543,19 +580,23 @@ export function bindStudioCameraPan(
   keys.addEventListener("keydown", onKeyDown);
   keys.addEventListener("keyup", onKeyUp);
   keys.addEventListener("blur", onBlur);
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibilityChange);
   target.addEventListener("pointerdown", onDown);
   target.addEventListener("pointermove", onMove);
   target.addEventListener("pointerup", onUp);
   target.addEventListener("pointercancel", onUp);
+  target.addEventListener("lostpointercapture", onUp);
   target.addEventListener("contextmenu", onContextMenu);
   return () => {
     keys.removeEventListener("keydown", onKeyDown);
     keys.removeEventListener("keyup", onKeyUp);
     keys.removeEventListener("blur", onBlur);
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibilityChange);
     target.removeEventListener("pointerdown", onDown);
     target.removeEventListener("pointermove", onMove);
     target.removeEventListener("pointerup", onUp);
     target.removeEventListener("pointercancel", onUp);
+    target.removeEventListener("lostpointercapture", onUp);
     target.removeEventListener("contextmenu", onContextMenu);
     spaceHeld = false;
     endDrag();
@@ -630,13 +671,18 @@ export function bindStudioCameraLook(
     if (held.delete(code)) publish();
   };
 
+  const onVisibilityChange = () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") release();
+  };
   keys.addEventListener("keydown", onKeyDown);
   keys.addEventListener("keyup", onKeyUp);
   keys.addEventListener("blur", release);
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibilityChange);
   return () => {
     keys.removeEventListener("keydown", onKeyDown);
     keys.removeEventListener("keyup", onKeyUp);
     keys.removeEventListener("blur", release);
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisibilityChange);
     release();
   };
 }

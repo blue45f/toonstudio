@@ -1,5 +1,9 @@
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
 import type { BgPrimitive } from "../studio-background-3d-primitives";
+import {
+  allocateStudioBg3dNextInstanceName,
+  collectStudioBg3dOccupiedInstanceNames,
+} from "./studio-bg3d-instance-naming";
 import type { StudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 import type { StudioBg3dOutlinerItem } from "./studio-bg3d-scene-outliner-controller";
 
@@ -211,10 +215,26 @@ function planDuplicate(
   item: StudioBg3dOutlinerItem,
   dependencies: StudioBg3dOutlinerMutationDependencies,
 ): StudioBg3dOutlinerMutationPlan {
+  const occupiedNames = collectStudioBg3dOccupiedInstanceNames({
+    primitives: snapshot.primitives,
+    customModels: snapshot.customModels,
+  });
+  if (item.label.trim()) occupiedNames.add(item.label.trim());
+
   if (item.kind === "primitive") {
     const source = primitiveFor(snapshot, item);
     if (!source) return failure("entity-not-found");
-    const clone = dependencies.duplicatePrimitive(source);
+    const rawClone = dependencies.duplicatePrimitive(source);
+    const clone: BgPrimitive =
+      !rawClone.name || rawClone.name === source.name
+        ? {
+            ...rawClone,
+            name: allocateStudioBg3dNextInstanceName({
+              baseName: source.name || item.label,
+              occupiedNames,
+            }),
+          }
+        : rawClone;
     return successfulMutation(
       {
         primitives: [...snapshot.primitives, clone],
@@ -228,7 +248,17 @@ function planDuplicate(
 
   const source = modelFor(snapshot, item);
   if (!source) return failure("entity-not-found");
-  const clone = dependencies.duplicateModel(source);
+  const rawClone = dependencies.duplicateModel(source);
+  const clone: BgCustomModelInstance =
+    !rawClone.name || rawClone.name === source.name
+      ? {
+          ...rawClone,
+          name: allocateStudioBg3dNextInstanceName({
+            baseName: source.name || item.label,
+            occupiedNames,
+          }),
+        }
+      : rawClone;
   return successfulMutation(
     {
       primitives: [...snapshot.primitives],

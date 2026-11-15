@@ -12,6 +12,8 @@ import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import { StudioBg3dTaskNavigation } from "./StudioBg3dTaskNavigation";
 import { StudioBg3dEditorSidebarExtras } from "./StudioBg3dEditorSidebarExtras";
 import { StudioBg3dGlbTexturePaintMount } from "./StudioBg3dGlbTexturePaintMount";
+import { StudioBg3dMissingTexturePanel } from "./StudioBg3dMissingTexturePanel";
+import { StudioBg3dWebglRecoveryNotice } from "./StudioBg3dWebglRecoveryNotice";
 import { listOfferedStudio3dCommands } from "./studio-bg3d-grade-plates";
 import { StudioPanelLoading } from "../StudioLazySurfaceFallback";
 import { useT } from "@/shared/lib/i18n";
@@ -404,6 +406,14 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               inert={physicsInteractionLocked}
               className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-4 sm:px-5"
             >
+              {open ? (
+                <StudioBg3dWebglRecoveryNotice
+                  lowQualityActive={Boolean(h.resourceRecovery?.lowQualityActive)}
+                  onReopenLowQuality={h.resourceRecovery?.reopenLowQuality}
+                  onReturnTo2d={h.resourceRecovery?.returnTo2d}
+                />
+              ) : null}
+              {open ? <StudioBg3dMissingTexturePanel ports={h.missingTextures} /> : null}
               {open ? (
                 <StudioBg3dShapesPanel
                   hidden={hideOnTab("shapes")}

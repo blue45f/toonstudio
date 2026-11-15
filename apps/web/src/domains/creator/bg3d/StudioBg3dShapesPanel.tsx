@@ -455,7 +455,7 @@ export function StudioBg3dShapesPanel({
                   {selectedPrimitive ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-bold text-fg">선택한 도형</h3>
+                        <h3 data-bg3d-selected-inspector-id={selectedPrimitive.id} className="truncate text-sm font-bold text-fg">선택한 도형{layerListItems.find((i) => i.id === selectedPrimitive.id) ? ` · ${layerListItems.find((i) => i.id === selectedPrimitive.id)!.label}` : ""}</h3>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -661,7 +661,7 @@ export function StudioBg3dShapesPanel({
                   ) : selectedCustomModel ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-bold text-fg">선택한 모델</h3>
+                        <h3 data-bg3d-selected-inspector-id={selectedCustomModel.id} className="truncate text-sm font-bold text-fg">선택한 모델{layerListItems.find((i) => i.id === selectedCustomModel.id) ? ` · ${layerListItems.find((i) => i.id === selectedCustomModel.id)!.label}` : ""}</h3>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"

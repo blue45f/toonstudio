@@ -131,5 +131,45 @@ describe("Virtual Studio safe customization", () => {
       expect(readStudioVirtualCharacterCustomization()).toEqual(preset.customization);
     }
   });
+
+  it("커스텀 가구(type=custom)의 assetId를 저장·편집·복제 시 보존하고 원본은 변경하지 않는다", async () => {
+    const { duplicateStudioVirtualDecoration } = await import("./studio-virtual-space-decoration-tools");
+    const { addStudioVirtualDecorationSafely, editStudioVirtualDecoration } = await import("./studio-virtual-space-decoration-layout");
+    const { studioVirtualPlaceWorldManifest } = await import("./studio-virtual-space-place-world");
+    const world = studioVirtualPlaceWorldManifest("creator-cafe");
+    const base = {
+      ...studioVirtualDecorationPreset("minimal"),
+      layoutWidth: world.width,
+      layoutHeight: world.height,
+    };
+    const safePlaced = addStudioVirtualDecorationSafely(base, "custom", { x: 480, y: 540 }, world, "custom-chair-01");
+    expect(safePlaced.ok).toBe(true);
+    if (!safePlaced.ok) return;
+    const placed = safePlaced.state;
+    expect(placed.placements[0]?.assetId).toBe("custom-chair-01");
+    expect(writeStudioVirtualDecorationState(placed, "custom-furniture-room")).toBe(true);
+    expect(readStudioVirtualDecorationState("custom-furniture-room").placements[0]?.assetId).toBe("custom-chair-01");
+
+    const duplicated = duplicateStudioVirtualDecoration(placed, placed.placements[0]!.id, world, { x: 480, y: 540 });
+    expect(duplicated.ok).toBe(true);
+    if (!duplicated.ok) return;
+    expect(duplicated.state.placements).toHaveLength(2);
+    expect(duplicated.state.placements[1]?.assetId).toBe("custom-chair-01");
+
+    const editedClone = editStudioVirtualDecoration(
+      duplicated.state,
+      duplicated.state.placements[1]!.id,
+      { rotation: 90, scale: 1.2 },
+      world,
+      { x: 480, y: 540 },
+    );
+    expect(editedClone.ok).toBe(true);
+    if (!editedClone.ok) return;
+    expect(editedClone.state.placements[0]?.rotation).toBe(0);
+    expect(editedClone.state.placements[0]?.scale).toBe(1);
+    expect(editedClone.state.placements[1]?.rotation).toBe(90);
+    expect(editedClone.state.placements[1]?.scale).toBe(1.2);
+    expect(editedClone.state.placements[1]?.assetId).toBe("custom-chair-01");
+  });
 });
 

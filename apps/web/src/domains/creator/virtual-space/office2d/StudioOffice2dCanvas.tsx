@@ -332,7 +332,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     bridge.setFocusHandler(() => canvas.focus({ preventScroll: true }));
     const scene = office2dSceneFor(manifest);
     const heldMoveCodes = new Set<string>();
-    let pointerStart: { id: number; pointerType: string; startX: number; startY: number; lastX: number; lastY: number; dragged: boolean } | null = null;
+    let pointerStart: { id: number; pointerType: string; startX: number; startY: number; lastX: number; lastY: number; dragged: boolean; requireButtons: boolean } | null = null;
     const haltMovementForTextInput = () => {
       heldMoveCodes.clear();
       pointerStart = null;
@@ -371,6 +371,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     };
     const handleBlur = () => {
       heldMoveCodes.clear();
+      pointerStart = null;
       runtime.releaseKeys();
     };
     const unbindTextInputStop = bindStudioSpaceTextEntryMovementStop(haltMovementForTextInput);
@@ -400,12 +401,13 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
         lastX: event.clientX,
         lastY: event.clientY,
         dragged: false,
+        requireButtons: event.buttons > 0,
       };
       canvas.focus({ preventScroll: true });
     };
     const handlePointerMove = (event: PointerEvent) => {
       if (!pointerStart || event.pointerId !== pointerStart.id) return;
-      if (isStudioSpaceJoystickActive(bridge.getJoystick())) {
+      if ((pointerStart.requireButtons && event.buttons === 0) || isStudioSpaceJoystickActive(bridge.getJoystick())) {
         pointerStart = null;
         return;
       }
@@ -453,6 +455,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
+    canvas.addEventListener("lostpointercapture", handlePointerCancel);
 
     const actorAssets = office2dActorAssetPlan(office2dCharacterForAvatarSkin(latest.current.snapshot.self.avatarIndex, selfIdentity));
     const urls = [
@@ -499,6 +502,8 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
     // 탭이 숨겨지면 렌더·물리를 멈추고(SoWork pause 정책), 다시 보이면 이어서 돈다. 키는 숨김 순간 모두 놓는다.
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") {
+        heldMoveCodes.clear();
+        pointerStart = null;
         runtime.releaseKeys();
         stopLoop();
       } else if (ready) {
@@ -578,6 +583,7 @@ export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("pointercancel", handlePointerCancel);
+      canvas.removeEventListener("lostpointercapture", handlePointerCancel);
       window.removeEventListener("keydown", handleHomeShortcut);
       unbindSelectedObjectTarget();
       bridge.cameraPan.attachZoomStore(null);

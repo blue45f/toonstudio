@@ -47,6 +47,7 @@ import type {
 import type { StudioBg3dPhysicsPhase, isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import type { StudioBg3dModelAttachment } from "./studio-bg3d-scene-document-types";
 import type { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
+import type { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
 import type { StudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
 
 /** 벽을 찾을 때 광선을 쏘는 높이의 상한(바닥 위, 미터). 모델 키의 절반과 이 값 중 작은 쪽을 쓴다. */
@@ -71,6 +72,7 @@ export interface StudioBg3dRecipeRunDeps {
   readonly maxAttachments: number;
   /** 배치 계획이 쓰는 기존 계산(studio-bg3d-placement-recipe, studio-bg3d-object-ops). */
   readonly placementMath: StudioBg3dAssetPlacementMath;
+  readonly nameNewCustomModel?: typeof nameNewStudioBg3dCustomModel;
 }
 
 /** 편집기가 들고 있는 상태 중 이 호스트가 읽는 것만 적는다. 모듈 의존은 호스트 백에 두지 않는다. */
@@ -263,9 +265,16 @@ export async function placeStudioBg3dModelWithRecipe(
         root.updateWorldMatrix(true, true);
         const bounds = readStudioBg3dObjectWorldBounds(root);
         if (!bounds) throw new RecipePlacementUnavailableError("model-bounds-unavailable");
-        return { localBounds: { min: bounds.min, max: bounds.max } satisfies StudioBg3dPlacementBounds };
+        const recordName =
+          typeof (record as { readonly name?: unknown }).name === "string"
+            ? (record as { readonly name: string }).name
+            : undefined;
+        return {
+          localBounds: { min: bounds.min, max: bounds.max } satisfies StudioBg3dPlacementBounds,
+          modelLabel: recordName,
+        };
       },
-      ({ localBounds }) => {
+      ({ localBounds, modelLabel }) => {
         assertRuntimeCurrent();
         // 장면 변경은 직렬로 실행되므로 이 시점의 라이브 장면이 곧 반영 대상이다.
         const runtime = h.physicsRuntimeSourceRef.current;
@@ -319,12 +328,15 @@ export async function placeStudioBg3dModelWithRecipe(
           return;
         }
 
-        const next: BgCustomModelInstance = {
+        const baseNext: BgCustomModelInstance = {
           ...seed,
           position: [plan.position[0], plan.position[1], plan.position[2]],
           rotation: [plan.rotation[0], plan.rotation[1], plan.rotation[2]],
           scale: [plan.scale[0], plan.scale[1], plan.scale[2]],
         };
+        const next = deps.nameNewCustomModel
+          ? deps.nameNewCustomModel(baseNext, modelLabel ?? attachment.name, runtime)
+          : baseNext;
         const nextCustomModels = [...runtime.customModels, next];
         const before = deps.createHistorySnapshot({
           primitives: runtime.primitives,

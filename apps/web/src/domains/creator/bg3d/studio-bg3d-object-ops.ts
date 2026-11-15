@@ -438,3 +438,5 @@ export function studioBg3dSnapSettingsSummary(settings: StudioBg3dSnapSettings):
               : "XYZ";
   return `이동 ${settings.translateStep} · 회전 ${settings.rotateStepDegrees}° · ${axes}${lockSuffix}`;
 }
+
+export { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";

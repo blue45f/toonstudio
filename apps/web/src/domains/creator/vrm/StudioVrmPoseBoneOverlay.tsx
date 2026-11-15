@@ -88,17 +88,22 @@ export function VrmPoseBoneMarker({
       finishDrag(lastDragPointRef.current, "cancel");
     };
     const cancelOnWindowBlur = () => finishDrag(lastDragPointRef.current, "cancel");
+    const cancelOnVisibilityChange = () => {
+      if (document.visibilityState === "hidden") finishDrag(lastDragPointRef.current, "cancel");
+    };
 
     // Bubble-stage window handlers run after the normal R3F pointerup path. If R3F already
     // finished the drag, finishDrag's guard makes these fallbacks harmless.
     window.addEventListener("pointerup", finishMatchingPointer);
     window.addEventListener("pointercancel", cancelMatchingPointer);
     window.addEventListener("blur", cancelOnWindowBlur);
+    document.addEventListener("visibilitychange", cancelOnVisibilityChange);
     gl.domElement.addEventListener("lostpointercapture", cancelMatchingPointer);
     return () => {
       window.removeEventListener("pointerup", finishMatchingPointer);
       window.removeEventListener("pointercancel", cancelMatchingPointer);
       window.removeEventListener("blur", cancelOnWindowBlur);
+      document.removeEventListener("visibilitychange", cancelOnVisibilityChange);
       gl.domElement.removeEventListener("lostpointercapture", cancelMatchingPointer);
       finishDrag(lastDragPointRef.current, "cancel");
       if (finishDragRef.current === finishDrag) {

@@ -521,7 +521,11 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
       position={prim.position}
       rotation={prim.rotation}
       scale={prim.scale}
-      userData={{ studioBg3dEntityId: prim.id, studioBg3dEntityKind: "primitive" }}
+      userData={{
+        studioBg3dEntityId: prim.id,
+        studioBg3dEntityKind: "primitive",
+        studioBg3dSelected: selected,
+      }}
       visible={visible}
       {...(visible ? {
         onClick: (e: ThreeEvent<MouseEvent>) => {
@@ -559,8 +563,17 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
         )}
       </mesh>
       {showEdges ? (
-        <lineSegments ref={registerStudioBg3dCaptureExcludedObject} geometry={edges}>
-          <lineBasicMaterial color="#000000" />
+        <lineSegments
+          ref={registerStudioBg3dCaptureExcludedObject}
+          raycast={() => null}
+          geometry={edges}
+          renderOrder={selected && !lineArt ? 18 : 0}
+          userData={{ studioBg3dSelectionHighlightFor: selected && !lineArt ? prim.id : undefined }}
+        >
+          <lineBasicMaterial
+            color={selected && !lineArt ? 0x38bdf8 : 0x000000}
+            depthTest={!selected || lineArt}
+          />
         </lineSegments>
       ) : null}
       {children}

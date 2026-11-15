@@ -147,6 +147,7 @@ describe("planStudioBg3dOutlinerMutation", () => {
       "model-1",
       "model-copy",
     ]);
+    expect(result.snapshot.customModels[1]?.name).toBe("배경 모델 2");
     expect([...result.selection.ids]).toEqual(["model-copy"]);
   });
 

@@ -374,6 +374,8 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
               <div
                 ref={viewportHostRef}
                 data-testid="studio-bg3d-viewport"
+                data-studio-bg3d-viewport-selected-ids={[...selectedIds].join(",")}
+                data-studio-bg3d-viewport-highlighted-ids={[...selectedIds].filter((id: string) => primitiveById.has(id) || customModelById.has(id)).join(",")}
                 inert={immersiveSceneActive || undefined}
                 className="relative aspect-video h-full max-h-full min-h-0 w-auto overflow-hidden rounded-xl border border-line/80 bg-white shadow-[inset_0_0_0_1px_oklch(1_0_0/0.04)] lg:min-h-[360px]"
               >
@@ -412,10 +414,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       자동으로 다른 엔진을 실행하지 않습니다. 보기 탭의 3D 렌더 엔진에서
                       WebGPU 또는 WebGL2를 직접 선택해 주세요.
                     </p>
-                    <StudioBg3dEngineRecoveryActions
-                      preference={engineRuntime.preference}
-                      onPreferenceChange={engineRuntime.setPreference}
-                    />
+                    <StudioBg3dEngineRecoveryActions preference={engineRuntime.preference} onPreferenceChange={engineRuntime.setPreference} onReopenLowQuality={h.resourceRecovery?.reopenLowQuality} onReturnTo2d={h.resourceRecovery?.returnTo2d} />
                   </div>
                 ) : (
                   <Canvas

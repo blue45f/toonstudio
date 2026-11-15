@@ -665,6 +665,7 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
   // 편집이 멈추면(디바운스) scene snapshots unify edits but exclude transient Orbit views.
   useEffect(() => {
     if (isRestoringScene || isBatchRenderingShots) return;
+    if (isTransforming) return;
     const timer = setTimeout(() => {
       // Range gestures own an explicit before/after camera transaction. Let that transaction
       // publish one exact history entry instead of rebasing its pre-gesture camera away here.
@@ -700,5 +701,5 @@ export function useStudioBg3dEditorRestoreEffects(h: Record<string, any>) {
       setCanRedo(receipt.canRedo);
     }, 400);
     return () => clearTimeout(timer);
-  }, [customModels, isBatchRenderingShots, isRestoringScene, primitives, sceneBaseDocument]);
+  }, [customModels, isBatchRenderingShots, isRestoringScene, isTransforming, primitives, sceneBaseDocument]);
 }

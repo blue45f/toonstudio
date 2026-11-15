@@ -3,6 +3,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 export interface StudioVirtualSpaceBootRecoveryCardProps {
   readonly failureReason?: string | null;
   readonly onRetry: () => void;
+  readonly onReopenLowQuality?: () => void;
+  readonly onReturnTo2d?: () => void;
   readonly workspaceHref?: string;
 }
 
@@ -13,6 +15,8 @@ export interface StudioVirtualSpaceBootRecoveryCardProps {
 export function StudioVirtualSpaceBootRecoveryCard({
   failureReason,
   onRetry,
+  onReopenLowQuality,
+  onReturnTo2d,
   workspaceHref = "/studio",
 }: StudioVirtualSpaceBootRecoveryCardProps) {
   const bt = useBilingual("StudioVirtualSpaceBootRecoveryCard");
@@ -50,6 +54,26 @@ export function StudioVirtualSpaceBootRecoveryCard({
           >
             {bt("다시 시도", "Retry")}
           </button>
+          {onReopenLowQuality ? (
+            <button
+              type="button"
+              onClick={onReopenLowQuality}
+              data-testid="vspace-boot-reopen-low-quality"
+              className="rounded-xl border border-accent/45 bg-accent/15 px-3.5 py-1.5 text-xs font-bold text-fg hover:bg-accent/25"
+            >
+              {bt("품질 낮춰 다시 열기", "Reopen in low quality")}
+            </button>
+          ) : null}
+          {onReturnTo2d ? (
+            <button
+              type="button"
+              onClick={onReturnTo2d}
+              data-testid="vspace-boot-return-2d"
+              className="rounded-xl border border-current/25 px-3.5 py-1.5 text-xs font-semibold hover:bg-raised/40"
+            >
+              {bt("2D로 복귀", "Return to 2D")}
+            </button>
+          ) : null}
           <a
             href={workspaceHref}
             data-vspace-return-workspace="true"

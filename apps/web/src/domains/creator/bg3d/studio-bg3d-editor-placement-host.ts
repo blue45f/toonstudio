@@ -5,9 +5,8 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { Bg3dTemplateLibraryEntry, Bg3dVerifiedStoredRecord, BgCustomModelInstance, BgPrimitive, ModelRootCacheEntry, StudioBg3dModalSession, StudioBg3dPlacementPointerTarget, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dSceneDocument, StudioGeneric3dSourceFormat } from "./studio-bg3d-editor-runtime-bindings";
-import {
-  orderStudioBg3dHierarchySelectionRootsFirst,
-} from "./studio-bg3d-template-instance";
+import { orderStudioBg3dHierarchySelectionRootsFirst } from "./studio-bg3d-template-instance";
+import { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 import { loadStudioBg3dMetricAttachment, scaleStudioBg3dMetricPlacementAsset, studioBg3dModelMetricPolicyMessage } from "./studio-bg3d-model-metric-placement";
 import { copyStudioBg3dMetricInstanceScale, StudioBg3dModelMetricPolicyError } from "./studio-bg3d-model-metric-policy";
@@ -491,11 +490,11 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
       return;
     }
     const rotation = new THREE.Euler().setFromQuaternion(orientation, "XYZ");
-    const next: BgCustomModelInstance = {
+    const next: BgCustomModelInstance = nameNewStudioBg3dCustomModel({
       ...createBgCustomModelInstance(asset.modelId, runtime.customModels.length, instanceScale),
       position: position.toArray() as [number, number, number],
       rotation: [rotation.x, rotation.y, rotation.z],
-    };
+    }, asset.name, runtime, h.stableFallbackLabelByEntityId);
     const nextCustomModels = [...runtime.customModels, next];
     commitImmediateHistoryTransition(runtime.primitives, nextCustomModels, runtime.document);
     replaceCanonicalDocumentState({ customModels: nextCustomModels });
@@ -770,11 +769,9 @@ export function attachStudioBg3dEditorPlacementHost(h: Record<string, any>) {
             attachmentByStorageModelId: bindings.attachments,
           });
           if (captureInFlightRef.current) throw new Error("template-capture-in-flight");
-          if (next.includesMeasurements) {
-            h.commitImmediateHistoryTransition(next.primitives, next.customModels, next.document, next.before, {
-              commandId: "studio.bg3d.measurements.apply-template", label: "측정 안내선과 템플릿 적용", source: "menu",
-            });
-          }
+          h.commitImmediateHistoryTransition(next.primitives, next.customModels, next.includesMeasurements ? next.document : current.document, next.before, next.includesMeasurements
+            ? { commandId: "studio.bg3d.measurements.apply-template", label: "측정 안내선과 템플릿 적용", source: "menu" }
+            : { commandId: "studio.bg3d.template.apply-user", label: "사용자 템플릿 배치", source: "menu" });
 
           attachmentByStorageModelIdRef.current.clear();
           storageModelIdByAttachmentIdRef.current.clear();

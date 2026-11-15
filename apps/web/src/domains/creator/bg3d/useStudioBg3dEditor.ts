@@ -9,6 +9,8 @@ import { useStudioBg3dInplaceTools } from "./useStudioBg3dInplaceTools";
 import { useStudioBg3dModelMaterialLease } from "./useStudioBg3dModelMaterialLease";
 import { useStudioBg3dInferenceHost } from "./useStudioBg3dInferenceHost";
 import { useStudioBg3dGlbTexturePaintHost } from "./useStudioBg3dGlbTexturePaintHost";
+import { useStudioBg3dMissingTextureHost } from "./studio-bg3d-missing-texture-host";
+import { useStudioBg3dResourceRecoveryHost } from "./studio-bg3d-resource-recovery-host";
 import { useStudioBg3dPrimitivePaintHost } from "./useStudioBg3dPrimitivePaintHost";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { useStudioBg3dEditorState } from "./useStudioBg3dEditorState";
@@ -134,6 +136,28 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
   });
   h.primitiveTexturePaint = primitiveTexturePaint;
   h.handlePrimitiveTexturePaintPointer = primitiveTexturePaint.handlePrimitiveTexturePaintPointer;
+  h.missingTextures = useStudioBg3dMissingTextureHost({
+    modalAssetSessionRef: h.modalAssetSessionRef,
+    isModalAssetSessionCurrent: h.isModalAssetSessionCurrent,
+    customModels: h.customModels,
+    selectedIds: h.selectedIds,
+    stableEntityLabels: new Map(
+      (h.layerListItems ?? []).map((item: { id: string; label: string }) => [item.id, item.label]),
+    ),
+    modelRootCacheRef: h.modelRootCacheRef,
+    materialBackend,
+    busy:
+      h.isCapturing ||
+      h.isRestoringScene ||
+      h.isUploadingModel ||
+      h.physicsInteractionLocked ||
+      h.isBatchRenderingShots,
+    ensureModelRootCached: h.ensureModelRootCached,
+    setSelectedIds: h.setSelectedIds,
+    setSelectedSharedCharacterElementId: h.setSelectedSharedCharacterElementId,
+    setRefTick: h.setRefTick,
+  });
+  h.resourceRecovery = useStudioBg3dResourceRecoveryHost(h);
   bindStudioBg3dEditorSceneGraph(h);
 
   const outlinerMutationDependencies = {

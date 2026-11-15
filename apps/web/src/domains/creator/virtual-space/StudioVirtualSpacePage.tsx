@@ -242,6 +242,7 @@ import { useSpaceProximityMedia, useSpaceProximityScope } from "./hud/use-space-
 import { useSpaceWorkProject } from "./hud/use-space-work-project";
 import { useSpaceRolePreset } from "./use-space-role-preset";
 import { useStudioSpaceLighting } from "./use-studio-space-lighting";
+import { useStudioVirtualSceneSnapshotBinding } from "./studio-virtual-space-scene-snapshot";
 import { useStudioSpaceChat } from "./use-studio-space-chat";
 import { useStudioVirtualSpacePeerFixtures } from "./use-studio-virtual-space-peer-fixtures";
 import { useStudioTileEffectWiring } from "./use-studio-tile-effect-wiring";
@@ -251,30 +252,12 @@ import { useStudioSpaceReaction } from "./use-studio-space-reaction";
 import { StudioVirtualSpaceLightingPanel } from "./StudioVirtualSpaceLightingPanel";
 import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import {
-  StudioWorkspaceInbox,
-  StudioPrivateRoomPanel,
-  StudioVirtualSpaceCustomizationPanel,
-  StudioVirtualSpaceExperiencePanel,
-  StudioWorldPublicationPanel,
-  StudioVirtualSpaceNpcPanel,
-  StudioVirtualSpaceTeamHub,
-  StudioVirtualSpaceTodayBoard,
-  StudioVirtualSpaceRtcPanel,
-  StudioVirtualSpaceP2pBoard,
-  StudioVirtualSpaceLiveAnnotationPanel,
-  StudioVirtualSpaceTownProgramPanel,
-  StudioVirtualSpaceRoomCatalog,
-  StudioVirtualSpaceSeatsPanel,
-  StudioVirtualSpaceSocialPanel,
-  StudioVirtualSpaceConversationPanel,
-  StudioVirtualSpaceReviewPicker,
-  StudioVirtualSpacePlaceGallery,
-  StudioVirtualSpaceRecordingBoothPanel,
-  StudioVirtualSpaceSpaceBookingPanel,
-  StudioVirtualSpaceGalleryViewer,
-  StudioVirtualSpaceEnvironmentPanel,
-  WorkSessionWorkspace,
-  StudioP2pHuddleLauncher,
+  StudioWorkspaceInbox, StudioPrivateRoomPanel, StudioVirtualSpaceCustomizationPanel, StudioVirtualSpaceExperiencePanel,
+  StudioWorldPublicationPanel, StudioVirtualSpaceNpcPanel, StudioVirtualSpaceTeamHub, StudioVirtualSpaceTodayBoard,
+  StudioVirtualSpaceRtcPanel, StudioVirtualSpaceP2pBoard, StudioVirtualSpaceLiveAnnotationPanel, StudioVirtualSpaceTownProgramPanel,
+  StudioVirtualSpaceRoomCatalog, StudioVirtualSpaceSeatsPanel, StudioVirtualSpaceSocialPanel, StudioVirtualSpaceConversationPanel,
+  StudioVirtualSpaceReviewPicker, StudioVirtualSpacePlaceGallery, StudioVirtualSpaceRecordingBoothPanel, StudioVirtualSpaceSpaceBookingPanel,
+  StudioVirtualSpaceGalleryViewer, StudioVirtualSpaceEnvironmentPanel, WorkSessionWorkspace, StudioP2pHuddleLauncher,
 } from "./hud/space-lazy-panels";
 import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
@@ -802,7 +785,7 @@ export function VirtualSpaceExperience({
     lightFixtures, lightHourOverride, setLightHourOverride, lightAmbient, lightHour,
     toggleLightFixture, changeLightDimmer, applyLightPreset, dayNightEnabled,
     lightAutoMode, setLightAutoMode, cycleTimeOfDay, dayNightSpeedMs,
-    toggleDayNight, scrubDayNight, changeDayNightSpeed,
+    toggleDayNight, scrubDayNight, changeDayNightSpeed, applyLightingSnapshot,
   } = useStudioSpaceLighting(engineBridge);
 
 
@@ -1216,6 +1199,20 @@ export function VirtualSpaceExperience({
     try { localStorage.setItem("toonspectrum:virtual-atmosphere:v1", next); } catch { /* Session preference still applies. */ }
     if (next === "focus") { engineBridge.clearMovement(); finishSharedActivity(); }
   };
+  const sceneSnapshotBinding = useStudioVirtualSceneSnapshotBinding({
+    scopeKey: decorationScope, userZoom: engineBridge.userZoom, cameraPan: engineBridge.cameraPan,
+    lighting: { dayNightEnabled, dayNightSpeedMs, lightHourOverride, lightAutoMode, cycleTimeOfDay, fixtures: lightFixtures },
+    fallbackHour: lightHour, environment: environmentPreference, spaceTheme, atmosphere, decorations, placedFixtureRequests,
+    world: worldManifest, selfPoint: snapshot.self,
+    onApplyRestore: (plan) => {
+      engineBridge.userZoom.set(plan.camera.zoomLevel);
+      engineBridge.cameraPan.applySnapshotView(plan.camera.panOffsetX, plan.camera.panOffsetY, plan.camera.zoomLevel);
+      applyLightingSnapshot(plan.lighting); selectEnvironmentPreference(plan.environment);
+      selectSpaceTheme(plan.spaceTheme); changeAtmosphere(plan.atmosphere);
+      selectDecorations(plan.decorations); selectPlacedFixtureRequests(plan.placedFixtureRequests);
+      if (plan.relocatedSelfPoint) engineBridge.requestTeleport(plan.relocatedSelfPoint);
+    },
+  });
   const cancelSlotApproach = slots.cancel;
   const cancelFollowing = useCallback(() => {
     cancelOfficeApproach();
@@ -1835,7 +1832,7 @@ export function VirtualSpaceExperience({
       focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
     { id: "customization", visible: stageKind !== "three" && panel === "build", node: <StudioVirtualSpacePanelGate active={stageKind !== "three" && panel === "build"} preserveAfterOpen>
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldManifest} nickname={nickname}
-        character={characterCustomization} decorations={decorations} selfPoint={snapshot.self}
+        character={characterCustomization} decorations={decorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lightHour}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
         placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
         onNickname={onNicknameChange} onCharacter={selectCharacterCustomization} onDecorations={selectDecorations} onTriggerEmote={sendReaction}
@@ -1894,7 +1891,7 @@ export function VirtualSpaceExperience({
           manifest: worldManifest, snapshot: chatSnapshot, bridge: engineBridge, selfDisplayName: nickname,
           onRuntimeMetrics: setRuntimeMetrics, onNpcInteract: handleEngineNpcInteract, onLocalState: handleEngineLocalState,
           onInteract: handleEngineInteract, onNearbyInteractionChange: handleNearbyInteractionChange, onPortal: handleEnginePortal,
-          onZoneChange: setZone, onNearbyNpcsChange: setNearbyNpcs, onEngineStatusChange: setEngineStatus,
+          onZoneChange: setZone, onNearbyNpcsChange: setNearbyNpcs, onEngineStatusChange: setEngineStatus, onReturnTo2d: () => { setEngineMode("2d"); writeStudioVirtualPreferredEngineMode("2d"); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, "2d") }, { replace: true }); },
         }} twoD={{
           worldAssetUrls: publishedWorld?.assetUrls, selfIdentity: fallbackIdentity, seatedActors, waveActorIds,
           guideTourRequest, onGuideTourChange: updateGuideTour, debugWorld: authoringMode,

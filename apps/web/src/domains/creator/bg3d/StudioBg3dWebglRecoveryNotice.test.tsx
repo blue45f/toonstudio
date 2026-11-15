@@ -29,4 +29,35 @@ describe("StudioBg3dWebglRecoveryNotice", () => {
     expect(screen.queryByRole("alert")).toBeNull();
     controller.dispose();
   });
+
+  it("컨텍스트 손실(lost) 시 품질 낮춰 다시 열기와 2D 원고로 복귀 액션을 제공한다", () => {
+    const onReopenLowQuality = vi.fn();
+    const onReturnTo2d = vi.fn();
+    render(
+      <StudioBg3dWebglRecoveryNotice
+        onReopenLowQuality={onReopenLowQuality}
+        onReturnTo2d={onReturnTo2d}
+      />,
+    );
+    const canvas = document.createElement("canvas");
+    const controller = installStudioBg3dWebglContextRecovery(canvas, {
+      invalidate: vi.fn(),
+      resetRenderer: vi.fn(),
+      scheduleFrame: () => 1,
+      cancelFrame: vi.fn(),
+      onStateChange: (snapshot) => window.dispatchEvent(new CustomEvent(STUDIO_BG3D_WEBGL_RECOVERY_EVENT, {
+        detail: { owner: canvas, snapshot, retry: () => controller.retry() },
+      })),
+    });
+
+    act(() => { canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true })); });
+    expect(screen.getByTestId("bg3d-webgl-recovery-notice").textContent).toContain("보존");
+
+    fireEvent.click(screen.getByTestId("bg3d-return-2d"));
+    expect(onReturnTo2d).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByTestId("bg3d-reopen-low-quality"));
+    expect(onReopenLowQuality).toHaveBeenCalledTimes(1);
+    controller.dispose();
+  });
 });

@@ -189,6 +189,7 @@ export interface StudioVirtualDecorationState {
 const CHARACTER_STORAGE_KEY = "toonspectrum:virtual-space-character-customization:v1";
 const DECOR_STORAGE_KEY = "toonspectrum:virtual-space-decoration:v1";
 const TOKEN = /^[a-z0-9][a-z0-9_-]{0,63}$/u;
+const ASSET_TOKEN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/u;
 const MAX_DECORATIONS = 36;
 const WORLD_WIDTH = 1280;
 const WORLD_HEIGHT = 960;
@@ -223,9 +224,11 @@ function parsePlacement(value: unknown, width: number, height: number): StudioVi
     || candidate.y < 0 || candidate.y > height
     || typeof candidate.rotation !== "number" || ![0, 90, 180, 270].includes(candidate.rotation)
     || typeof candidate.scale !== "number" || !Number.isFinite(candidate.scale) || candidate.scale < .65 || candidate.scale > 1.35) return null;
+  if (candidate.assetId !== undefined && (candidate.type !== "custom" || typeof candidate.assetId !== "string" || !ASSET_TOKEN.test(candidate.assetId))) return null;
   return Object.freeze({
     id: candidate.id,
     type: candidate.type,
+    ...(candidate.type === "custom" && typeof candidate.assetId === "string" ? { assetId: candidate.assetId } : {}),
     x: Math.round(candidate.x),
     y: Math.round(candidate.y),
     rotation: candidate.rotation as 0 | 90 | 180 | 270,
@@ -361,13 +364,15 @@ export function addStudioVirtualDecoration(
   current: StudioVirtualDecorationState,
   type: StudioVirtualDecorType,
   point: StudioVirtualSpacePoint,
+  assetId?: string,
 ): StudioVirtualDecorationState {
   if (current.placements.length >= MAX_DECORATIONS || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return current;
+  if (assetId !== undefined && (type !== "custom" || !ASSET_TOKEN.test(assetId))) return current;
   const offset = current.placements.length % 6;
   let suffix = current.placements.length;
   const prefix = `decor-${Date.now().toString(36)}`;
   while (current.placements.some((item) => item.id === `${prefix}-${suffix}`)) suffix += 1;
-  const candidate = placement(
+  const base = placement(
     `${prefix}-${suffix}`,
     type,
     Math.max(24, Math.min((current.layoutWidth ?? WORLD_WIDTH) - 24, Math.round(point.x + 38 + offset * 7))),
@@ -375,6 +380,9 @@ export function addStudioVirtualDecoration(
     0,
     1,
   );
+  const candidate: StudioVirtualDecorPlacement = assetId !== undefined
+    ? Object.freeze({ ...base, assetId })
+    : base;
   return Object.freeze({
     ...current,
     placements: Object.freeze([...current.placements, candidate]),
