@@ -57,11 +57,11 @@ function GalleryUnavailable({ title, detail, onRetry }: { title: string; detail:
       onRetry={onRetry}
       actions={
         <>
-          <Link href="/studio" className={buttonClass({ size: "md", variant: "outline", className: "gap-1.5" })}>
+          <Link href="/studio" className={buttonClass({ size: "md", variant: "outline", className: "min-h-11 gap-1.5" })}>
             <PenLine size={15} aria-hidden />
             {bt("웹툰 그리기", "Draw a webtoon")}
           </Link>
-          <Link href={SHOWCASE_CHALLENGES_PATH} className={buttonClass({ size: "md", variant: "outline", className: "gap-1.5" })}>
+          <Link href={SHOWCASE_CHALLENGES_PATH} className={buttonClass({ size: "md", variant: "outline", className: "min-h-11 gap-1.5" })}>
             <Trophy size={15} aria-hidden />
             {bt("창작 챌린지 보기", "See challenges")}
           </Link>

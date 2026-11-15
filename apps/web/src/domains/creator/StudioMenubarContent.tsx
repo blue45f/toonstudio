@@ -1011,7 +1011,7 @@ export interface StudioMenubarContentProps {
   setHybridDccOpen: Dispatch<SetStateAction<boolean>>;
   setSceneSnapshotOpen: Dispatch<SetStateAction<boolean>>;
   setExportFormat: Dispatch<SetStateAction<ExportFormat>>;
-  setExportMenuOpen: Dispatch<SetStateAction<boolean>>;
+  setExportMenuOpen: Dispatch<SetStateAction<boolean>>; setStudioStatusNotice?: Dispatch<SetStateAction<string | null>>;
   setExportPresetId: Dispatch<SetStateAction<string | null>>;
   setExportScale: Dispatch<SetStateAction<number>>;
   setExportTransparent: Dispatch<SetStateAction<boolean>>;
@@ -1094,7 +1094,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
   setHybridDccOpen,
   setSceneSnapshotOpen,
   setExportFormat,
-  setExportMenuOpen,
+  setExportMenuOpen, setStudioStatusNotice,
   setExportPresetId,
   setExportScale,
   setExportTransparent,
@@ -1847,7 +1847,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                       watermark={watermark}
                       isExporting={isExporting}
                       exportTitle={title}
-                      pageCount={pageCount}
+                      pageCount={pageCount} activePageIndex={Math.max(0, pageLabels.indexOf(activePageLabel))}
                       pageLabels={pageLabels}
                       dialoguePages={dialoguePages}
                       sourceWorkId={workId}
@@ -1865,7 +1865,7 @@ export const StudioMenubarContent = memo(function StudioMenubarContent({
                       setExportTransparent={setExportTransparent}
                       setExportPresetId={setExportPresetId}
                       setWatermark={setWatermark}
-                      onCopyToClipboard={handleCopyToClipboard} onDownloadCurrentPage={handleDownload}
+                      onCopyToClipboard={handleCopyToClipboard} onDownloadCurrentPage={handleDownload} onRequestCloseAndReturn={() => setExportMenuOpen(false)} onWorkspaceAbortNotice={setStudioStatusNotice ? (msg) => setStudioStatusNotice(msg) : undefined}
                     />
                   </Suspense>,
                   document.body

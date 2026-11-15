@@ -1,16 +1,18 @@
 interface StudioThreePointerGesture {
   readonly id: number;
   readonly button: 0 | 2;
+  readonly pointerType: string;
   readonly x: number;
   readonly y: number;
   lastX: number;
   dragged: boolean;
 }
 
-/** 카메라 회전과 바닥 클릭을 한 포인터의 수명 안에서만 처리하고 취소 뒤 이동 요청을 만들지 않는다. */
+/** 카메라 회전과 바닥 클릭을 한 포인터의 수명 안에서만 처리하고 취소·이동 조이스틱 활성 시 회전과 충돌하지 않게 보호한다. */
 export function bindStudioThreePointerInput(surface: HTMLCanvasElement, callbacks: {
   readonly onOrbitDelta: (radians: number) => void;
   readonly onTap: (point: Pick<PointerEvent, "clientX" | "clientY">) => void;
+  readonly canOrbit?: () => boolean;
 }): { readonly dispose: () => void } {
   let gesture: StudioThreePointerGesture | null = null;
   const reset = () => {
@@ -22,16 +24,30 @@ export function bindStudioThreePointerInput(surface: HTMLCanvasElement, callback
   };
   const down = (event: PointerEvent) => {
     if (gesture || (event.button !== 0 && event.button !== 2)) return;
-    gesture = { id: event.pointerId, button: event.button, x: event.clientX, y: event.clientY, lastX: event.clientX, dragged: false };
+    gesture = {
+      id: event.pointerId,
+      button: event.button,
+      pointerType: event.pointerType || "mouse",
+      x: event.clientX,
+      y: event.clientY,
+      lastX: event.clientX,
+      dragged: false,
+    };
     try { surface.setPointerCapture?.(event.pointerId); } catch { /* 캡처 불가 환경도 buttons·취소 경계로 보호한다. */ }
   };
   const move = (event: PointerEvent) => {
     if (!gesture || gesture.id !== event.pointerId) return;
-    const heldButton = gesture.button === 2 ? 2 : 1;
-    if ((event.buttons & heldButton) === 0) { reset(); return; }
-    if (gesture.button === 2) callbacks.onOrbitDelta(-(event.clientX - gesture.lastX) * 0.007);
+    if (gesture.pointerType !== "touch") {
+      const heldButton = gesture.button === 2 ? 2 : 1;
+      if ((event.buttons & heldButton) === 0) { reset(); return; }
+    }
+    const movedTotal = Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y);
+    if (movedTotal > 8) gesture.dragged = true;
+    const orbitAllowed = callbacks.canOrbit ? callbacks.canOrbit() : true;
+    if (orbitAllowed && (gesture.button === 2 || (gesture.pointerType === "touch" && gesture.dragged))) {
+      callbacks.onOrbitDelta(-(event.clientX - gesture.lastX) * 0.007);
+    }
     gesture.lastX = event.clientX;
-    if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 8) gesture.dragged = true;
   };
   const up = (event: PointerEvent) => {
     if (!gesture || gesture.id !== event.pointerId || gesture.button !== event.button) return;

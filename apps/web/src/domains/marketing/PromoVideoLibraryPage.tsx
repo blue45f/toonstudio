@@ -226,6 +226,8 @@ function PromoVideoCard({ item }: { readonly item: PromoVideoItem }) {
   );
 }
 
+const INITIAL_PROMO_VISIBLE = 24;
+
 export function PromoVideoLibraryPage() {
   const bi = useBilingualLocalizer("domains.marketing.PromoVideoLibraryPage");
   const language = useI18n((state) => state.lang);
@@ -239,6 +241,7 @@ export function PromoVideoLibraryPage() {
   routeRef.current = location;
   const mounted = useRef(true);
   const [filter, setFilter] = useState<PromoMediaFilterState>(() => readPromoFilter(location.search));
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_PROMO_VISIBLE);
   const filterRef = useRef(filter);
   const authoredSearch = useRef<string | null>(null);
   const composing = useRef(false);
@@ -308,6 +311,23 @@ export function PromoVideoLibraryPage() {
 
   const categoryResults = PROMO_VIDEO_CATEGORIES.map((category) => ({ category, items: promoVideosByCategory(category.id).filter((item) => matchesPromoMediaFilter(item, filter)) }));
   const resultCount = categoryResults.reduce((count, result) => count + result.items.length, 0);
+  const autoExpandPromo = hasActiveFilter || Boolean(location.hash);
+  const initialWindowBudget = autoExpandPromo ? Number.POSITIVE_INFINITY : visibleLimit;
+  const windowedCategoryResults = categoryResults.reduce<{
+    readonly budget: number;
+    readonly list: readonly { category: (typeof categoryResults)[number]["category"]; items: readonly PromoVideoItem[] }[];
+  }>(
+    (acc, { category, items }) => {
+      const slice = acc.budget <= 0 ? ([] as readonly PromoVideoItem[]) : items.slice(0, acc.budget);
+      return {
+        budget: acc.budget - slice.length,
+        list: [...acc.list, { category, items: slice }],
+      };
+    },
+    { budget: initialWindowBudget, list: [] },
+  ).list;
+  const renderedPromoCount = windowedCategoryResults.reduce((sum, entry) => sum + entry.items.length, 0);
+  const remainingPromoCount = Math.max(0, resultCount - renderedPromoCount);
 
   const aspectOptions: readonly { id: MediaAspectFilter; label: string }[] = [
     { id: "all", label: copy.aspectAll },
@@ -409,7 +429,7 @@ export function PromoVideoLibraryPage() {
             <ul className="promo-library__rea-grid">
               {CREATOR_STUDIO_PIPELINE_STEPS.map((step) => (
                 <li key={step.id} className="promo-library__rea-item">
-                  <Link href={step.toonstudioHref}>
+                  <Link href={step.toonstudioHref} className="inline-flex min-h-11 min-w-11 items-center">
                     <strong>{isKo ? step.koTitle : step.enTitle}</strong>
                   </Link>
                   <span>{isKo ? step.koSummary : step.enSummary}</span>
@@ -445,8 +465,9 @@ export function PromoVideoLibraryPage() {
       </header>
       {resultCount === 0 ? <section className="mk-shell promo-library__empty" aria-labelledby="promo-library-empty-title"><h2 id="promo-library-empty-title" className="mk-h2">{copy.emptyTitle}</h2><p className="mk-body">{copy.emptyBody}</p><button type="button" className="mk-button mk-button--primary" onClick={() => patchFilter(DEFAULT_PROMO_MEDIA_FILTER_STATE)}>{copy.resetFilter}</button></section> : null}
 
-      {categoryResults.map(({ category, items }) => {
+      {windowedCategoryResults.map(({ category, items }) => {
         const categoryCopy = bi(category.ko, category.en);
+        const fullCategoryCount = categoryResults.find((entry) => entry.category.id === category.id)?.items.length ?? items.length;
         if (items.length === 0) return null;
         return (
           <section
@@ -458,7 +479,7 @@ export function PromoVideoLibraryPage() {
           >
             <div className="promo-library__section-head">
               <h2 id={`promo-category-${category.id}-title`} className="mk-h2">{categoryCopy.title}</h2>
-              <span className="promo-library__count">{items.length}{copy.clipsUnit}</span>
+              <span className="promo-library__count">{fullCategoryCount}{copy.clipsUnit}</span>
             </div>
             <ul className={`promo-library__grid${category.id === "shorts" ? " promo-library__grid--portrait" : ""}`}>
               {items.map((item) => (
@@ -468,6 +489,25 @@ export function PromoVideoLibraryPage() {
           </section>
         );
       })}
+
+      {remainingPromoCount > 0 ? (
+        <div className="mk-shell mt-4 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            className="mk-button mk-button--primary min-h-11 min-w-11"
+            onClick={() => setVisibleLimit((prev) => prev + INITIAL_PROMO_VISIBLE)}
+          >
+            {bi(`항목 더보기 (남은 ${remainingPromoCount}개)`, `Show more (${remainingPromoCount} left)`)}
+          </button>
+          <button
+            type="button"
+            className="mk-button min-h-11 min-w-11"
+            onClick={() => setVisibleLimit(PROMO_VIDEO_ITEMS.length)}
+          >
+            {bi("전체 펼치기", "Expand all")}
+          </button>
+        </div>
+      ) : null}
 
       <div className="mk-shell promo-library__footer">
         <section className="mk-closing promo-library__closing" aria-labelledby="promo-library-closing-title">

@@ -597,3 +597,107 @@ describe("PosePanel 스켈레톤 경계 안전성", () => {
     }
   });
 });
+
+describe("PosePanel P2-17 손·발·시선 개별 조정 및 관절 제한·반전·복원", () => {
+  it("손 개별 슬라이더(굽힘·손목)는 관절 제한 안에서 left-hand 스코프를 갱신하고 손 좌우 반전·복원은 상완을 보존한다", () => {
+    const recipe = createDefaultRecipe();
+    const preservedUpperArm = qFromAxisAngle([0, 0, 1], degToRad(-35));
+    recipe.pose = { leftUpperArm: preservedUpperArm };
+    recipe.handPose = { left: { leftIndexProximal: qFromAxisAngle([0, 0, -1], degToRad(60)) }, right: {} };
+    const dispatched = setup({ recipe });
+
+    fireEvent.click(screen.getByLabelText("세부 왼손"));
+    fireEvent.change(screen.getByTestId("pose-fine-hand-curl-slider"), { target: { value: "80" } });
+    fireEvent.change(screen.getByTestId("pose-fine-wrist-flex-slider"), { target: { value: "45" } });
+
+    const wristCmd = dispatched.at(-1);
+    expect(wristCmd?.type).toBe("pose/set");
+    if (wristCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(wristCmd.scope).toBe("left-hand");
+    expect(wristCmd.pose.leftHand).toBeDefined();
+    expect(wristCmd.pose.leftIndexIntermediate).toBeDefined();
+    expect(poseLimitViolations(wristCmd.pose, skeleton)).toEqual([]);
+
+    fireEvent.click(screen.getByTestId("pose-hand-mirror-btn"));
+    const mirrorCmd = dispatched.at(-1);
+    if (mirrorCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(mirrorCmd.scope).toBe("arms-hands");
+    expect(mirrorCmd.pose.leftUpperArm).toEqual(preservedUpperArm);
+    expect(mirrorCmd.pose.rightIndexProximal).toBeDefined();
+
+    fireEvent.click(screen.getByTestId("pose-hand-reset-btn"));
+    const resetCmd = dispatched.at(-1);
+    expect(resetCmd).toEqual({ type: "pose/set", pose: {}, scope: "left-hand", labelKo: "왼손 자세 복원" });
+  });
+
+  it("발 개별 슬라이더(발목 굽힘·기울기·발끝)는 관절 제한을 지키며 대퇴·무릎을 보존한 채 좌우 반전·복원한다", () => {
+    const recipe = createDefaultRecipe();
+    const preservedKnee = qFromAxisAngle([1, 0, 0], degToRad(40));
+    recipe.pose = {
+      leftLowerLeg: preservedKnee,
+      leftFoot: qFromAxisAngle([1, 0, 0], degToRad(-30)),
+      leftToes: qFromAxisAngle([1, 0, 0], degToRad(20)),
+    };
+    const dispatched = setup({ recipe });
+
+    fireEvent.click(screen.getByLabelText("세부 왼발"));
+    fireEvent.change(screen.getByTestId("pose-fine-ankle-pitch-slider"), { target: { value: "35" } });
+    fireEvent.change(screen.getByTestId("pose-fine-toe-lift-slider"), { target: { value: "25" } });
+
+    const footCmd = dispatched.at(-1);
+    if (footCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(footCmd.scope).toBe("lower");
+    expect(footCmd.pose.leftLowerLeg).toEqual(preservedKnee);
+    expect(footCmd.pose.leftFoot).toBeDefined();
+    expect(footCmd.pose.leftToes).toBeDefined();
+    expect(poseLimitViolations(footCmd.pose, skeleton)).toEqual([]);
+
+    fireEvent.click(screen.getByTestId("pose-foot-mirror-btn"));
+    const mirrorCmd = dispatched.at(-1);
+    if (mirrorCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(mirrorCmd.scope).toBe("lower");
+    expect(mirrorCmd.pose.leftLowerLeg).toEqual(preservedKnee);
+    expect(mirrorCmd.pose.rightFoot).toBeDefined();
+    expect(mirrorCmd.pose.rightToes).toBeDefined();
+    expect(mirrorCmd.pose.leftFoot).toBeUndefined();
+
+    fireEvent.click(screen.getByTestId("pose-foot-reset-btn"));
+    const resetCmd = dispatched.at(-1);
+    if (resetCmd?.type !== "pose/set") throw new Error("pose/set 기대");
+    expect(resetCmd.pose.leftLowerLeg).toEqual(preservedKnee);
+    expect(resetCmd.pose.leftFoot).toBeUndefined();
+    expect(resetCmd.pose.leftToes).toBeUndefined();
+  });
+
+  it("시선 개별 조정(공동 주시·개별 안구·카메라 응시)은 ±25° 범위로 기록되고 시선 좌우 반전과 정면 복원을 지원한다", () => {
+    const recipe = createDefaultRecipe();
+    recipe.eyeGaze = { mode: "manual", symmetry: false, left: { yawDeg: 18, pitchDeg: -6 }, right: { yawDeg: 10, pitchDeg: 4 } };
+    const dispatched = setup({ recipe });
+
+    expect((screen.getByTestId("pose-gaze-mode-independent") as HTMLButtonElement).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.change(screen.getByTestId("pose-gaze-left-yaw-slider"), { target: { value: "22" } });
+    expect(dispatched.at(-1)).toEqual({
+      type: "eye-gaze/set",
+      gaze: { mode: "manual", symmetry: false, left: { yawDeg: 22, pitchDeg: -6 }, right: { yawDeg: 10, pitchDeg: 4 } },
+      coalesceKey: "pose:gaze:left:yawDeg",
+    });
+
+    fireEvent.click(screen.getByTestId("pose-gaze-mirror-btn"));
+    expect(dispatched.at(-1)).toEqual({
+      type: "eye-gaze/set",
+      gaze: { mode: "manual", symmetry: false, left: { yawDeg: -10, pitchDeg: 4 }, right: { yawDeg: -18, pitchDeg: -6 } },
+    });
+
+    fireEvent.click(screen.getByTestId("pose-gaze-mode-camera"));
+    expect(dispatched.at(-1)).toEqual({
+      type: "eye-gaze/set",
+      gaze: { mode: "camera", symmetry: false, left: { yawDeg: 18, pitchDeg: -6 }, right: { yawDeg: 10, pitchDeg: 4 } },
+    });
+
+    fireEvent.click(screen.getByTestId("pose-gaze-reset-btn"));
+    expect(dispatched.at(-1)).toEqual({
+      type: "eye-gaze/set",
+      gaze: { mode: "manual", symmetry: true, left: { yawDeg: 0, pitchDeg: 0 }, right: { yawDeg: 0, pitchDeg: 0 } },
+    });
+  });
+});

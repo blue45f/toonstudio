@@ -74,6 +74,18 @@ export function useStudioSharedDocumentRevalidation({
         const fresh = await getStudioSharedDocumentMeta(workId, controller.signal);
         if (!requestIsCurrent()) return;
         const revisionChanged = fresh.revision !== sharedDocument.revision;
+        let roleNotice: string | null = null;
+        if (sharedDocument.role !== fresh.role || sharedDocument.access !== fresh.access) {
+          const { describeSharedCanvasRevalidationNotice } = await import(
+            "../../production-hub/production-role-transition-model"
+          );
+          if (!requestIsCurrent()) return;
+          roleNotice = describeSharedCanvasRevalidationNotice(
+            { role: sharedDocument.role, access: sharedDocument.access },
+            { role: fresh.role, access: fresh.access },
+            studioTeamCanComment,
+          );
+        }
         if (fresh.access !== "edit") lockMutationsEvent();
         setSharedDocumentScope((current) =>
           current
@@ -94,15 +106,13 @@ export function useStudioSharedDocumentRevalidation({
               }
             : current,
         );
-        if (fresh.access !== "edit") {
+        if (roleNotice) {
           reportErrorEvent(
-            fresh.role === "commenter"
-              ? studioTeamCanComment
-                ? "검토 전용 권한으로 변경되었습니다. 원고 편집은 잠기지만 댓글 핀과 답글로 피드백을 계속 남길 수 있어요."
-                : "검토 전용 권한으로 변경되었습니다. 원고와 댓글 작성은 읽기 전용이며 기존 피드백만 확인할 수 있어요."
-              : "팀 편집 권한이 회수되었습니다. 로컬 변경은 JSON·이미지로 내보낼 수 있지만 서버에는 저장할 수 없어요.",
+            fresh.access === "edit" && revisionChanged
+              ? `${roleNotice} 다른 팀원이 새 revision을 저장했으니 로컬 원고를 내보낸 뒤 공동 문서를 다시 열어 병합해 주세요.`
+              : roleNotice,
           );
-        } else if (revisionChanged) {
+        } else if (fresh.access === "edit" && revisionChanged) {
           reportErrorEvent(
             "다른 팀원이 새 revision을 저장했습니다. 로컬 원고를 내보낸 뒤 공동 문서를 다시 열어 병합해 주세요.",
           );

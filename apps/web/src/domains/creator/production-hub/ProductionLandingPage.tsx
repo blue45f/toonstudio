@@ -33,6 +33,10 @@ import { formatProductionDay } from "./production-format";
 import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-workflow";
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
+import { ProductionGrandAtelierCollabHub } from "./ProductionGrandAtelierCollabHub";
+import { ProductionMyReviewTriageSection } from "./ProductionMyReviewTriageSection";
+import { openProductionDemoSession } from "./production-demo-adapter";
+import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
@@ -208,7 +212,7 @@ function ModuleGrid() {
   }, []);
   return (
     <section className="mt-6" aria-label={bt("제작 관리 도구", "Production management tools")}>
-      <details ref={detailsRef} aria-labelledby="production-tools-title" className="group/tools rounded-2xl border border-line bg-card p-3 sm:p-4">
+      <details ref={detailsRef} open aria-labelledby="production-tools-title" className="group/tools rounded-2xl border border-line bg-card p-3 sm:p-4">
         <summary id="production-tools-title" className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 text-sm font-bold text-fg outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
           {bt("제작 도구 더 보기", "More production tools")}
           <ChevronDown className="size-4 shrink-0 transition-transform group-open/tools:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
@@ -391,6 +395,8 @@ export function ProductionLandingPage() {
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [collabItems, setCollabItems] = useState<readonly CollabInboxItem[]>([]);
   const [collabLoading, setCollabLoading] = useState(false);
+  const [loadedAggregates, setLoadedAggregates] = useState<readonly ProductionProjectAggregate[]>([]);
+  const [demoAggregate] = useState(() => openProductionDemoSession());
   /** 프로젝트 목록 API 오류 시 "다시 불러오기" 버튼용 재시도 트리거. */
   const [projectsReloadToken, setProjectsReloadToken] = useState(0);
 
@@ -431,6 +437,7 @@ export function ProductionLandingPage() {
   useEffect(() => {
     if (!userId) {
       setCollabItems([]);
+      setLoadedAggregates([]);
       setCollabLoading(false);
       return;
     }
@@ -441,6 +448,7 @@ export function ProductionLandingPage() {
     let active = true;
     setCollabLoading(true);
     const readIds = loadCollabInboxReadIds();
+    const fetchedAggregates: ProductionProjectAggregate[] = [];
     const events = [
       ...collabEventsFromPersonalInboxItems(inboxItems, {
         projectUpdatedAtById: new Map(projects.map((project) => [project.projectId, project.updatedAt])),
@@ -450,6 +458,13 @@ export function ProductionLandingPage() {
     void Promise.allSettled(
       projects.flatMap((project) => [
         getProductionProjectCollabRecord(project.projectId).then((record) => {
+          if (
+            "episodes" in record.aggregate &&
+            Array.isArray((record.aggregate as Partial<ProductionProjectAggregate>).episodes) &&
+            Array.isArray((record.aggregate as Partial<ProductionProjectAggregate>).assignments)
+          ) {
+            fetchedAggregates.push(record.aggregate as unknown as ProductionProjectAggregate);
+          }
           const projected = collabEventsFromProjectAggregate(record.aggregate, userId);
           events.push(...projected.events);
           projected.serverReadIds.forEach((id) => readIds.add(id));
@@ -465,6 +480,7 @@ export function ProductionLandingPage() {
       ]),
     ).then(() => {
       if (!active) return;
+      setLoadedAggregates(fetchedAggregates);
       setCollabItems(projectCollabInbox(events, readIds));
       setCollabLoading(false);
     });
@@ -570,7 +586,7 @@ export function ProductionLandingPage() {
           </section>
         ) : null}
 
-        {userId ? <details className="group mt-6 rounded-2xl border border-line bg-panel">
+        {userId ? <details open className="group mt-6 rounded-2xl border border-line bg-panel">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-bold text-fg-2">{bt("샘플 체험과 제작 안내", "Sample and production guide")}<span aria-hidden="true">⌄</span></summary>
           {intro}
           <FlowCards />
@@ -578,6 +594,24 @@ export function ProductionLandingPage() {
           {intro}
           <FlowCards />
         </>}
+        <ProductionMyReviewTriageSection
+          aggregates={loadedAggregates.length > 0 ? loadedAggregates : [demoAggregate]}
+          roleLens="art"
+          viewerAssignmentIds={
+            userId && loadedAggregates.length > 0
+              ? loadedAggregates.flatMap((aggregate) =>
+                  aggregate.assignments
+                    .filter((assignment) =>
+                      aggregate.parties.some((party) => party.id === assignment.partyId && party.accountUserId === userId),
+                    )
+                    .map((assignment) => assignment.id),
+                )
+              : undefined
+          }
+          showProjectTitle
+          className="mt-6"
+        />
+        <ProductionGrandAtelierCollabHub />
         <ModuleGrid />
       </div>
     </div>

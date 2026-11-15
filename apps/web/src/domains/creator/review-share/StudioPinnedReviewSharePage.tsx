@@ -1,6 +1,6 @@
 import { AlertTriangle, ChevronLeft, ChevronRight, LoaderCircle, MessageSquareText, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   pinnedShareAccessSchema,
   type PinnedShareAccess,
@@ -13,6 +13,7 @@ import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+import { normalizeReviewCommentText } from "../production-hub/production-comment-retry-guard";
 import { StudioReviewImageViewport } from "../virtual-space/StudioReviewImageViewport";
 import {
   loadPinnedReviewSharePage,
@@ -38,6 +39,31 @@ function accessFromLocation(shareId: string | undefined, token: string): PinnedS
   if (!candidate) return null;
   const parsed = pinnedShareAccessSchema.safeParse(candidate);
   return parsed.success ? parsed.data : null;
+}
+
+function resolveRequestedShareOrdinal(
+  search: string,
+  pages: PinnedShareView["pages"],
+): { readonly explicit: boolean; readonly ordinal: number | null; readonly mismatch: boolean } {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  if (params.getAll("ordinal").length > 1 || params.getAll("page").length > 1) {
+    return { explicit: true, ordinal: null, mismatch: true };
+  }
+  if (params.has("ordinal")) {
+    const raw = params.get("ordinal")?.trim() ?? "";
+    const parsed = /^\d+$/u.test(raw) ? Number(raw) : Number.NaN;
+    const matched = Number.isInteger(parsed) ? pages.find((page) => page.ordinal === parsed) ?? null : null;
+    return { explicit: true, ordinal: matched?.ordinal ?? null, mismatch: matched === null };
+  }
+  if (params.has("page")) {
+    const raw = params.get("page")?.trim() ?? "";
+    const parsed = /^\d+$/u.test(raw) ? Number(raw) : Number.NaN;
+    const matched = Number.isInteger(parsed) && parsed >= 1
+      ? pages.find((page) => page.ordinal + 1 === parsed) ?? null
+      : null;
+    return { explicit: true, ordinal: matched?.ordinal ?? null, mismatch: matched === null };
+  }
+  return { explicit: false, ordinal: pages[0]?.ordinal ?? null, mismatch: false };
 }
 
 /** 검수 링크를 열 수 없을 때: 이유를 추측할 수 있게 알려 주고, 막다른 화면 대신 다음 행동을 제시한다. */
@@ -73,12 +99,16 @@ function PinnedReviewUnavailable({ message, canRetry, onRetry }: {
 export function StudioPinnedReviewSharePage() {
   const bt = useBilingual("StudioPinnedReviewSharePage");
   const { shareId } = useParams<{ shareId?: string }>();
-  const { hash } = useLocation();
+  const { hash, pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const searchRef = useRef(search);
+  searchRef.current = search;
   const token = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash).get("token") ?? "";
   const access = useMemo(() => accessFromLocation(shareId, token), [shareId, token]);
   const accessKey = JSON.stringify(access);
   const [view, setView] = useState<PinnedShareView | null>(null);
   const [selectedOrdinal, setSelectedOrdinal] = useState<number | null>(null);
+  const [pageMismatch, setPageMismatch] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageReloadTick, setImageReloadTick] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -93,7 +123,9 @@ export function StudioPinnedReviewSharePage() {
   const imageAuthority = useRef<object | null>(null);
   const resumeImageAfterVerification = useRef(false);
   const imageRequest = useRef<AbortController | null>(null);
+  const submittingRef = useRef(false);
   const feedbackAttempt = useRef<{ fingerprint: string; id: string } | null>(null);
+  const [feedbackRetryAvailable, setFeedbackRetryAvailable] = useState(false);
 
   const refresh = useCallback(async (retainPage = false) => {
     const own = generation.current;
@@ -109,8 +141,10 @@ export function StudioPinnedReviewSharePage() {
       if (own !== generation.current || request !== authorityRequest.current) return;
       setView(next);
       imageAuthority.current = own;
+      const requested = resolveRequestedShareOrdinal(searchRef.current, next.pages);
+      setPageMismatch(!retainPage && requested.mismatch);
       setSelectedOrdinal((current) => retainPage && current !== null && next.pages.some((page) => page.ordinal === current)
-        ? current : next.pages[0]?.ordinal ?? null);
+        ? current : requested.ordinal);
       if (resumeImageAfterVerification.current) {
         resumeImageAfterVerification.current = false;
         setImageReloadTick((current) => current + 1);
@@ -190,17 +224,43 @@ export function StudioPinnedReviewSharePage() {
   const currentIndex = view?.pages.findIndex((page) => page.ordinal === selectedOrdinal) ?? -1;
   const currentPage = currentIndex >= 0 ? view?.pages[currentIndex] ?? null : null;
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!access || !view || view.role !== "commenter" || selectedOrdinal === null || !reviewerName.trim() || !body.trim() || submitting) return;
+  const selectShareOrdinal = (nextOrdinal: number) => {
+    setPageMismatch(false);
+    setSelectedOrdinal(nextOrdinal);
+    const nextParams = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+    nextParams.delete("ordinal");
+    nextParams.set("page", String(nextOrdinal + 1));
+    navigate({ pathname, search: `?${nextParams.toString()}`, hash }, { replace: true });
+  };
+
+  const submitFeedback = async () => {
+    if (!access || !view || view.role !== "commenter" || selectedOrdinal === null || !reviewerName.trim() || !body.trim() || submitting || submittingRef.current) return;
     const own = generation.current;
     const normalizedName = reviewerName.trim();
     const normalizedBody = body.trim();
-    const fingerprint = JSON.stringify({ pageOrdinal: selectedOrdinal, reviewerName: normalizedName, body: normalizedBody });
+    const fingerprint = JSON.stringify({ pageOrdinal: selectedOrdinal, reviewerName: normalizedName, body: normalizeReviewCommentText(normalizedBody) });
     if (feedbackAttempt.current?.fingerprint !== fingerprint) {
       feedbackAttempt.current = { fingerprint, id: crypto.randomUUID() };
     }
     const feedbackId = feedbackAttempt.current.id;
+
+    const alreadyRecorded = view.feedback.some(
+      (item) =>
+        item.id === feedbackId
+        || (item.pageOrdinal === selectedOrdinal
+          && item.reviewerName === normalizedName
+          && normalizeReviewCommentText(item.body) === normalizeReviewCommentText(normalizedBody)),
+    );
+    if (alreadyRecorded) {
+      feedbackAttempt.current = null;
+      setFeedbackRetryAvailable(false);
+      setError(null);
+      setBody("");
+      setNotice("선택한 고정 페이지에 같은 의견이 이미 한 번 기록되어 중복 생성하지 않았습니다.");
+      return;
+    }
+
+    submittingRef.current = true;
     setSubmitting(true); setError(null); setNotice(null);
     try {
       await submitPinnedReviewShareFeedback(access, {
@@ -211,16 +271,24 @@ export function StudioPinnedReviewSharePage() {
       });
       if (own !== generation.current) return;
       feedbackAttempt.current = null;
+      setFeedbackRetryAvailable(false);
       setBody(""); setNotice("선택한 고정 페이지에 의견을 기록했습니다.");
       await refresh(true);
     } catch (cause) {
       const message = await getApiErrorMessage(cause, creatorSub2StatusText("studio.creatorSub2.status.reviewShare.feedbackConfirmFailed", "의견 저장 결과를 확인하지 못했습니다."));
       if (own === generation.current) {
+        setFeedbackRetryAvailable(true);
         setError(`${message}${creatorSub2StatusText("studio.creatorSub2.status.reviewShare.feedbackRetrySuffix", " 같은 내용으로 다시 시도하면 중복 의견을 만들지 않습니다.")}`);
       }
     } finally {
+      submittingRef.current = false;
       if (own === generation.current) setSubmitting(false);
     }
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    await submitFeedback();
   };
 
   if (loading && !view) {
@@ -270,11 +338,19 @@ export function StudioPinnedReviewSharePage() {
           </div>
           <div className="flex gap-2">
             <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={currentIndex <= 0}
-              onClick={() => setSelectedOrdinal(view.pages[currentIndex - 1]!.ordinal)} aria-label="이전 페이지"><ChevronLeft className="size-4" aria-hidden="true" />이전</button>
+              onClick={() => selectShareOrdinal(view.pages[currentIndex - 1]!.ordinal)} aria-label="이전 페이지"><ChevronLeft className="size-4" aria-hidden="true" />이전</button>
             <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={currentIndex < 0 || currentIndex >= view.pages.length - 1}
-              onClick={() => setSelectedOrdinal(view.pages[currentIndex + 1]!.ordinal)} aria-label="다음 페이지">다음<ChevronRight className="size-4" aria-hidden="true" /></button>
+              onClick={() => selectShareOrdinal(view.pages[currentIndex + 1]!.ordinal)} aria-label="다음 페이지">다음<ChevronRight className="size-4" aria-hidden="true" /></button>
           </div>
         </div>
+        {pageMismatch ? (
+          <p role="alert" data-pinned-share-page-mismatch="true" className="mt-3 rounded-xl border border-bad/35 bg-bad/10 px-3 py-2 text-xs font-semibold text-fg">
+            {bt(
+              "검수 링크의 페이지 번호가 이 고정 공유본에 없어 첫 페이지로 조용히 바꾸지 않았습니다. 아래 번호에서 확인할 페이지를 선택하세요.",
+              "The page requested in the link is not in this pinned share; did not silently substitute page 1. Choose a page below.",
+            )}
+          </p>
+        ) : null}
         <div className="relative mt-4 min-h-[18rem] rounded-2xl border border-line bg-panel p-2 sm:min-h-[32rem]">
           {imageLoading ? <p className="flex items-center gap-2 text-sm" role="status"><LoaderCircle className="size-4 animate-spin" aria-hidden="true" />{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageChecking", "이미지 확인 중…")}</p> : null}
           {currentPage ? <StudioReviewImageViewport key={`${view.revisionFingerprint}:${currentPage.ordinal}:${currentPage.sha256}`}
@@ -305,7 +381,7 @@ export function StudioPinnedReviewSharePage() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2" aria-label="페이지 선택">
           {view.pages.map((page) => <button key={page.ordinal} type="button" className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm", page.ordinal === selectedOrdinal ? "border-accent bg-accent-soft text-accent" : "border-line")}
-            aria-current={page.ordinal === selectedOrdinal ? "page" : undefined} onClick={() => setSelectedOrdinal(page.ordinal)}>{page.ordinal + 1}</button>)}
+            aria-current={page.ordinal === selectedOrdinal ? "page" : undefined} onClick={() => selectShareOrdinal(page.ordinal)}>{page.ordinal + 1}</button>)}
         </div>
         {view.rightsStatement ? <details className="mt-4 rounded-xl border border-line p-3 text-sm"><summary className="cursor-pointer font-semibold">공유 권리 확인</summary><p className="mt-2 whitespace-pre-wrap text-fg-2">{view.rightsStatement}</p></details> : null}
         <details className="mt-3 text-xs text-fg-3"><summary className="cursor-pointer">고정 버전 식별 정보</summary><code className="mt-2 block break-all">{view.revisionFingerprint}</code></details>
@@ -332,7 +408,22 @@ export function StudioPinnedReviewSharePage() {
         </section>
 
         {notice ? <p className="rounded-xl border border-good/35 bg-good/10 p-3 text-sm" role="status">{notice}</p> : null}
-        {error ? <p className="rounded-xl border border-bad/35 bg-bad/10 p-3 text-sm" role="alert">{error}</p> : null}
+        {error ? (
+          <div className="rounded-xl border border-bad/35 bg-bad/10 p-3 text-sm" role="alert">
+            <p>{error}</p>
+            {feedbackRetryAvailable && !submitting && reviewerName.trim() && body.trim() ? (
+              <button
+                type="button"
+                data-testid="pinned-review-retry-feedback-btn"
+                onClick={() => void submitFeedback()}
+                className={buttonClass({ variant: "outline", size: "sm", className: "mt-2.5 min-h-9 w-full gap-1.5 text-xs" })}
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                {bt("같은 의견 다시 보내기", "Retry sending same feedback")}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </aside>
     </div>
   </div>

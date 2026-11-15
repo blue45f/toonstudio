@@ -520,6 +520,8 @@ export function AccessibleTooltipLayer(): ReactElement | null {
         scheduleOpen(source, true);
       } else if (isInsideTarget(activeTarget, event.target)) {
         focusedTarget = activeTarget;
+      } else if (activeTarget && hoveredTarget !== activeTarget) {
+        close(true);
       }
     }
 

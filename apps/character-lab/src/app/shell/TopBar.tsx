@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ENGINE_BACKENDS, ENGINE_BACKEND_LABELS_KO, QUALITY_PRESETS, QUALITY_PRESET_LABELS_KO, applyQualityPreset, failVisible } from "../../contracts";
+import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../presets";
 import { stableStringify } from "../../shared/stable-json";
 
 import { describeEngineStatus } from "./engine-status-text";
@@ -56,7 +57,7 @@ export function TopBar() {
   const [helpOpen, setHelpOpen] = useState(false);
   const helpToggleRef = useRef<HTMLButtonElement | null>(null);
   const [studioTheme, setStudioTheme] = useState<"nebula" | "shaper">(() =>
-    typeof document !== "undefined" && document.documentElement.dataset.studioTheme === "shaper" ? "shaper" : "nebula",
+    typeof document !== "undefined" && document.documentElement.dataset.studioTheme === "nebula" ? "nebula" : "shaper",
   );
 
   useEffect(() => {
@@ -219,6 +220,33 @@ export function TopBar() {
             {preset.label}
           </button>
         ))}
+      </div>
+      <div className="cl-topbar-group" role="group" aria-label="웹툰 셀·외곽선 퀵 프리셋" data-testid="topbar-toon-shader-presets">
+        {SHAPER_TOON_SHADER_PRESETS.map((preset) => {
+          const targetWidth = preset.lookPatch.line?.widthMm;
+          const active =
+            shading.mode === "toon" &&
+            shading.toon.rampSteps === preset.toon.rampSteps &&
+            shading.toon.rim === preset.toon.rim &&
+            (targetWidth === undefined || Math.abs(shading.look.line.widthMm - targetWidth) <= 0.05);
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              className="cl-button cl-button-small"
+              aria-pressed={active}
+              data-testid={`topbar-toon-preset-${preset.id}`}
+              onClick={() =>
+                dispatch({
+                  type: "shading/set",
+                  profile: buildShaperToonShadingProfile(shading, preset),
+                })
+              }
+            >
+              {preset.shortLabelKo}
+            </button>
+          );
+        })}
       </div>
       <nav className="cl-topbar-group" aria-label="가이드 창작 5단계 동선" data-testid="topbar-workflow-stepper">
         {CHARACTER_LAB_WORKFLOW_STAGES.map((stage) => {

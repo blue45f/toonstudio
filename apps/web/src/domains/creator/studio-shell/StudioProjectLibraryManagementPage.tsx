@@ -39,7 +39,7 @@ function StudioLibraryPersonalizeDetails() {
             "Role-based quick actions, default workspace and notification levels now live under Settings → My role · workspace.",
           )}
         </p>
-        <Link href="/settings/role?tab=workspace" className={buttonClass({ variant: "outline", className: "shrink-0" })}>
+        <Link href="/settings/role?tab=workspace" className={buttonClass({ variant: "outline", className: "min-h-11 h-11 shrink-0" })}>
           {bt("내 직군 · 작업환경에서 바꾸기", "Change in My role · workspace")}
         </Link>
       </div>

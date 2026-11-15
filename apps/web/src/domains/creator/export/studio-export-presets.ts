@@ -25,9 +25,8 @@ import {
   planStudioEpisodeFileByteCap,
   studioEpisodeByteBudgetMessage,
 } from "./studio-episode-byte-budget";
-import { MAX_CANVAS_DIM, canvasToBlob, downloadBlob, exportMimeType, exportQuality } from "./studio-export";
+import { MAX_CANVAS_DIM } from "./studio-export";
 import {
-  renderStudioPresetTiledRegion,
   studioPresetCanvasTileSource,
   type StudioPresetTiledRasterSource,
 } from "./studio-preset-tiled-raster";
@@ -44,8 +43,16 @@ import {
   type StudioVipsRaster,
 } from "./studio-vips-export";
 import { formatNumber } from "@toonstudio/core/format";
+import { validateCustomStripSlices } from "./studio-strip-slice-validation";
+import {
+  executePresetSlicesLoop,
+  PresetSliceExportCancelledError,
+  PresetSlicePartialExportError,
+} from "./studio-export-preset-resume";
 
 export {
+  PresetSliceExportCancelledError,
+  PresetSlicePartialExportError,
   planStudioEpisodeByteBudget,
   planStudioEpisodeFileByteCap,
   studioEpisodeByteBudgetMessage,
@@ -422,6 +429,13 @@ export interface PresetSliceExportOptions {
   title: string;
   /** 있으면 슬라이스마다 서명 — 파일 단위 귀속이 유지되고 절단면에서 잘리지 않는다. */
   watermark?: WatermarkSettings;
+  customSlices?: readonly StripSlice[];
+  /** 이전 시도에서 이미 저장 완료된 슬라이스 인덱스(재시도 시 건너뛰어 중복 다운로드를 막는다). */
+  skipSliceIndices?: ReadonlySet<number>;
+  /** 각 슬라이스가 실제 저장된 직후 호출되는 진행 콜백. */
+  onSliceSaved?: (sliceIndex: number) => void;
+  /** 내보내기 취소 신호. */
+  signal?: AbortSignal;
   onProgress?: (done: number, total: number) => void;
   /**
    * 다운로드 사이 **최소 간격**(ms) — 연속 다운로드 차단 회피. 기본 250, 테스트에선 0.
@@ -701,108 +715,33 @@ export function drawWatermarkOnSlice(canvas: HTMLCanvasElement, settings: Waterm
 }
 
 /**
- * 다운로드 사이 최소 간격(ms).
- *
- * 왜 0 이 아닌가 — 브라우저에는 "저장이 끝났다"는 신호가 페이지 쪽에 없다.
- * a[download] + object URL 조합은 이벤트를 돌려주지 않고, downloadBlob 은 click 직후
- * revokeObjectURL 까지 한다. 그래서 완료 신호를 기다리는 코드로 바꿀 수가 없고,
- * 짧은 간격 안에 click 을 연달아 때리면 WebKit 계열에서 뒤 파일이 조용히 사라진다.
- * 남길 수 있는 건 "간격 보장"뿐이므로 값은 유지하되, 아래 루프가 이 간격을
- * **마감시각**으로 다뤄 다음 슬라이스의 합성·인코딩 시간이 간격에 함께 계산되게 했다.
- * 인코딩이 이 값보다 오래 걸리는 큰 페이지에서는 추가 정지가 0 이 된다.
- */
-const DEFAULT_SLICE_DOWNLOAD_INTERVAL_MS = 250;
-
-function defaultMonotonicNow(): number {
-  return typeof performance !== "undefined" && typeof performance.now === "function"
-    ? performance.now()
-    : Date.now();
-}
-
-function defaultSleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
  * 규격 슬라이스 내보내기 실행 — 캡처된 페이지들을 규격 폭으로 리샘플해 이어 붙인 뒤
  * 규격 높이 단위 이미지 여러 장으로 순차 다운로드한다. 플랫폼 업로드용이라 배경은
  * 흰색 불투명(네이버 등 JPG 전용 + 뷰어 배경 일치). 저장한 파일 수·용량 초과 수를
  * 담은 결과를 돌려주며, 페이지가 없거나 캔버스 생성이 막히면 한글 메시지로 throw.
  */
 export async function exportPresetSlices(options: PresetSliceExportOptions): Promise<PresetExportResult> {
-  const { pages, preset, title, watermark, onProgress } = options;
-  const plan = planPresetSliceExport(
-    pages.map((canvas) => ({ width: canvas.width, height: canvas.height })),
-    preset,
-    options.format
-  );
-  if (!plan || plan.slices.length === 0) throw new Error("내보낼 페이지가 없어요.");
+  const { pages, preset } = options;
+  const basePlan = planPresetSliceExport(pages.map((canvas) => ({ width: canvas.width, height: canvas.height })), preset, options.format);
+  if (!basePlan || basePlan.slices.length === 0) throw new Error("내보낼 페이지가 없어요.");
+  const plan = options.customSlices ? { ...basePlan, slices: validateCustomStripSlices(basePlan.totalHeight, options.customSlices) } : basePlan;
+  if (options.signal?.aborted) {
+    throw new PresetSliceExportCancelledError({
+      completedSliceIndices: [...(options.skipSliceIndices ?? [])],
+      totalSliceCount: plan.slices.length,
+    });
+  }
   // 인코어 표면 예산(8192 edge/면적)을 넘는 페이지만 자체 Lanczos3로 선축소 —
   // 예산 안 문서는 아무 것도 바뀌지 않고(원본 참조·원본 레이아웃) 기존 바이트 그대로다.
   const prepared = await prepareVipsRoutedPresetPages(pages, plan, options);
-  const createCanvas = options.createCanvas ?? createSliceCanvas;
-  const download = options.download ?? downloadBlob;
-  const delayMs = options.delayMs ?? DEFAULT_SLICE_DOWNLOAD_INTERVAL_MS;
-  const now = options.now ?? defaultMonotonicNow;
-  const sleep = options.sleep ?? defaultSleep;
-  const mime = exportMimeType(plan.format);
-  const quality = exportQuality(plan.format);
-  let oversized = 0;
-  // 다음 다운로드를 시작해도 되는 가장 이른 시각. 다운로드 뒤에 고정으로 쉬는 대신
-  // 마감시각을 잡아 두면, 다음 슬라이스의 합성·인코딩에 흘러간 시간이 그대로 간격에
-  // 차감된다 — 다운로드 사이 최소 간격(delayMs)은 그대로 지켜지고 누적 정지만 사라진다.
-  let nextDownloadAt = Number.NEGATIVE_INFINITY;
-  for (const slice of plan.slices) {
-    const canvas = createCanvas(plan.targetWidth, slice.height);
-    try {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("슬라이스 캔버스를 만들지 못했어요. 다시 시도해주세요.");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, plan.targetWidth, slice.height);
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    for (const op of planSliceDrawOps(slice, prepared.layouts)) {
-      const page = prepared.drawPages[op.pageIndex];
-      const tiled = prepared.tiledPages.get(op.pageIndex);
-      const layout = prepared.layouts[op.pageIndex];
-      if (tiled && layout) {
-        const outputY = Math.max(0, slice.y - layout.y);
-        await renderStudioPresetTiledRegion(tiled, plan.targetWidth, layout.height, {
-          x: 0, y: outputY, width: plan.targetWidth, height: op.destHeight,
-        }, (tile, rgba) => {
-          const surface = (options.createResampledPage ?? defaultCreateResampledPresetPage)({
-            width: tile.width, height: tile.height,
-            rgba: new Uint8Array(rgba.buffer, rgba.byteOffset, rgba.byteLength),
-          });
-          if (!surface) throw new Error("리샘플한 타일을 합성 표면으로 만들지 못했어요.");
-          try { ctx.drawImage(surface, 0, 0, tile.width, tile.height, tile.x, op.destY + tile.y - outputY, tile.width, tile.height); }
-          finally { surface.width = 1; surface.height = 1; }
-        });
-      } else if (page && !("kind" in page)) {
-        ctx.drawImage(page, 0, op.srcY, page.width, op.srcHeight, 0, op.destY, plan.targetWidth, op.destHeight);
-      }
-    }
-    if (watermark) drawWatermarkOnSlice(canvas, watermark);
-    const blob = await canvasToBlob(canvas, mime, quality);
-    if (preset.maxFileBytes !== undefined && blob.size > preset.maxFileBytes) oversized += 1;
-    // 아직 간격이 안 찼을 때만, 모자란 만큼만 쉰다(첫 장은 항상 즉시 저장).
-    const waitMs = nextDownloadAt - now();
-    if (waitMs > 0) await sleep(waitMs);
-    download(blob, presetSliceFileName(title, preset.id, plan.format, { index: slice.index, total: plan.slices.length }));
-    nextDownloadAt = now() + delayMs;
-    onProgress?.(slice.index + 1, plan.slices.length);
-    } finally {
-      // 기본 표면은 이 실행이 소유한다. 주입한 표면의 수명은 호출자가 관리한다.
-      if (!options.createCanvas) { canvas.width = 1; canvas.height = 1; }
-    }
+  if (options.signal?.aborted) {
+    throw new PresetSliceExportCancelledError({
+      completedSliceIndices: [...(options.skipSliceIndices ?? [])],
+      totalSliceCount: plan.slices.length,
+    });
   }
-  return {
-    files: plan.slices.length,
-    oversized,
-    format: plan.format,
-    targetWidth: plan.targetWidth,
-    // pristine 계약: 라우팅이 없으면 결과 shape 도 기존 그대로(키 부재).
-    ...(prepared.vipsRoutedPages > 0 ? { vipsRoutedPages: prepared.vipsRoutedPages } : {}),
-    ...(prepared.tiledPages.size > 0 ? { tiledPages: prepared.tiledPages.size } : {}),
-  };
+  return executePresetSlicesLoop(plan, prepared, {
+    ...options,
+    createCanvas: options.createCanvas ?? createSliceCanvas,
+  });
 }

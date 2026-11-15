@@ -25,6 +25,7 @@ import { resolveStudioOpfsRecoveryJournalErrorFromCause } from "./status-i18n/st
 import {
   clearStudioReliabilityChannel,
   enterStudioSafeMode,
+  getStudioReliabilityStatusSnapshot,
   reportStudioReliabilitySignal,
   resolveStudioSafeModeReason,
 } from "./studio-reliability-status-store";
@@ -72,16 +73,68 @@ function causeMessage(cause: unknown): string {
   return "알 수 없는 오류";
 }
 
-/** 쿼터 압박 판정 — 이름 우선, 코드/메시지는 보조. */
-export function isStudioStorageQuotaPressure(cause: unknown): boolean {
+const QUOTA_REASON_CODES = new Set([
+  "QUOTA_EXCEEDED",
+  "quotaExceeded",
+  "QuotaExceededError",
+  "NS_ERROR_FILE_NO_DEVICE_SPACE",
+  "SQLITE_FULL",
+]);
+
+function hasQuotaText(text: string): boolean {
+  return (
+    text.includes("quota")
+    || text.includes("Quota")
+    || text.includes("저장 공간")
+    || text.includes("SQLITE_FULL")
+    || text.includes("database or disk is full")
+  );
+}
+
+/** 쿼터 압박 판정 — 이름·원격 워커 이름·코드·원인 체인·메시지를 재귀 탐색한다. */
+export function isStudioStorageQuotaPressure(cause: unknown, depth = 0): boolean {
+  if (depth > 8 || cause === null || cause === undefined) return false;
   if (QUOTA_ERROR_NAMES.has(causeName(cause))) return true;
-  if (typeof cause === "object" && cause !== null && "code" in cause) {
-    const code = (cause as { code?: unknown }).code;
-    // DOMException.QUOTA_EXCEEDED_ERR(22) / Firefox 의 NS_ERROR_DOM_QUOTA_REACHED(1014).
-    if (code === 22 || code === 1014 || code === "QUOTA_EXCEEDED") return true;
+  if (typeof cause === "object") {
+    const record = cause as {
+      remoteName?: unknown;
+      code?: unknown;
+      reason?: unknown;
+      params?: { reason?: unknown } | null;
+      errors?: unknown;
+      cause?: unknown;
+    };
+    if (typeof record.remoteName === "string" && QUOTA_ERROR_NAMES.has(record.remoteName)) {
+      return true;
+    }
+    // DOMException.QUOTA_EXCEEDED_ERR(22) / Firefox NS_ERROR_DOM_QUOTA_REACHED(1014) / SQLITE_FULL(13).
+    if (
+      record.code === 22
+      || record.code === 1014
+      || (typeof record.code === "string" && QUOTA_REASON_CODES.has(record.code))
+    ) {
+      return true;
+    }
+    if (typeof record.reason === "string" && QUOTA_REASON_CODES.has(record.reason)) {
+      return true;
+    }
+    if (
+      typeof record.params === "object"
+      && record.params !== null
+      && typeof record.params.reason === "string"
+      && QUOTA_REASON_CODES.has(record.params.reason)
+    ) {
+      return true;
+    }
+    if (Array.isArray(record.errors) && record.errors.some((item) => isStudioStorageQuotaPressure(item, depth + 1))) {
+      return true;
+    }
+    if (record.cause !== undefined && record.cause !== cause && isStudioStorageQuotaPressure(record.cause, depth + 1)) {
+      return true;
+    }
   }
-  const message = causeMessage(cause);
-  return message.includes("quota") || message.includes("Quota") || message.includes("저장 공간");
+  if (cause instanceof Error && hasQuotaText(cause.message)) return true;
+  return hasQuotaText(causeMessage(cause));
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,6 +299,13 @@ export function noteStudioSaveSucceeded(
 ): void {
   void authority;
   clearStudioReliabilityChannel("save");
+  const snapshot = getStudioReliabilityStatusSnapshot();
+  if (snapshot.safeMode.reasons.includes("storage-pressure")) {
+    resolveStudioSafeModeReason("storage-pressure");
+  }
+  if (snapshot.storage?.level === "failed") {
+    clearStudioReliabilityChannel("storage");
+  }
 }
 
 /**
@@ -303,7 +363,18 @@ export async function reclaimStudioStorage(): Promise<void> {
     });
     return;
   }
+  let acquiredWriter = false;
   try {
+    if (
+      typeof runtime.status === "function"
+      && typeof runtime.acquireWriter === "function"
+      && runtime.status().writer === null
+    ) {
+      await runtime.acquireWriter({
+        ownerId: `quota-reclaim-${now()}-${Math.random().toString(36).slice(2, 10)}`,
+      });
+      acquiredWriter = true;
+    }
     const result = await runtime.cleanupQuota();
     if (result.freedBytes > 0) {
       reportStudioReliabilitySignal({
@@ -324,6 +395,16 @@ export async function reclaimStudioStorage(): Promise<void> {
       at: now(),
     });
   } catch (cause: unknown) {
+    if (isStudioStorageQuotaPressure(cause)) {
+      reportStudioReliabilitySignal({
+        channel: "storage",
+        level: "failed",
+        title: "저장 공간이 가득 차 복구 기록을 정리하지 못했습니다",
+        detail: "지금 로컬 백업을 내려받은 뒤 브라우저 저장소 공간을 확보해 주세요.",
+        at: now(),
+      });
+      return;
+    }
     reportStudioReliabilitySignal({
       channel: "storage",
       level: "failed",
@@ -331,6 +412,10 @@ export async function reclaimStudioStorage(): Promise<void> {
       detail: causeMessage(cause),
       at: now(),
     });
+  } finally {
+    if (acquiredWriter && typeof runtime.releaseWriter === "function") {
+      await runtime.releaseWriter().catch(() => undefined);
+    }
   }
 }
 

@@ -912,14 +912,27 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
   invariant(!shellState.hasErrorOverlay, "Vite error overlay is visible");
 }
 
+async function switchDesktopDrawTool(page: Page, mode: "pen" | "eraser"): Promise<void> {
+  // 시작 안내 닫힘 직후 메뉴바("파일")에 초점이 남아 단축키 경계가 B/E를 삼킬 수 있으므로
+  // 보이는 왼쪽 도구 레일 버튼을 우선 클릭하고, 레일이 숨겨진 경우에만 단축키로 전환한다.
+  const railButton = page.locator(`button[data-studio-rail-tool-id="${mode}"]:visible`).first();
+  if (await railButton.count() > 0) await railButton.click();
+  else await page.keyboard.press(mode === "eraser" ? "e" : "b");
+}
+
+async function waitForDesktopDrawMode(page: Page, mode: "pen" | "eraser"): Promise<void> {
+  await page.waitForFunction(
+    (expectedMode) => document.querySelector('[data-studio-draw-options="true"]')
+      ?.getAttribute("data-studio-active-draw-mode") === expectedMode,
+    mode,
+  );
+}
+
 async function activateDesktopEraser(page: Page): Promise<void> {
-  await page.keyboard.press("e");
+  await switchDesktopDrawTool(page, "eraser");
   const toolbar = page.locator('[data-studio-draw-options="true"]');
   await toolbar.waitFor({ state: "visible", timeout: 8_000 });
-  await page.waitForFunction(() =>
-    document.querySelector('[data-studio-draw-options="true"]')
-      ?.getAttribute("data-studio-active-draw-mode") === "eraser"
-  );
+  await waitForDesktopDrawMode(page, "eraser");
   await toolbar.locator('[data-studio-brush-active-pill="true"]').waitFor({
     state: "visible",
   });
@@ -930,11 +943,8 @@ async function ensureDesktopBrushCatalogTrigger(page: Page): Promise<Locator> {
   await toolbar.waitFor({ state: "visible", timeout: 8_000 });
   let pill = toolbar.locator('[data-studio-brush-active-pill="true"]');
   if (await pill.count() === 0) {
-    await page.keyboard.press("b");
-    await page.waitForFunction(() =>
-      document.querySelector('[data-studio-draw-options="true"]')
-        ?.getAttribute("data-studio-active-draw-mode") === "pen"
-    );
+    await switchDesktopDrawTool(page, "pen");
+    await waitForDesktopDrawMode(page, "pen");
     pill = toolbar.locator('[data-studio-brush-active-pill="true"]');
     await pill.waitFor({ state: "visible" });
   }
@@ -1138,11 +1148,8 @@ async function selectDesktopBrush(
   if (operation === "erase") {
     await activateDesktopEraser(page);
   } else {
-    await page.keyboard.press("b");
-    await page.waitForFunction(() =>
-      document.querySelector('[data-studio-draw-options="true"]')
-        ?.getAttribute("data-studio-active-draw-mode") === "pen"
-    );
+    await switchDesktopDrawTool(page, "pen");
+    await waitForDesktopDrawMode(page, "pen");
   }
   const catalog = await openDesktopCatalog(page);
   await catalog.getByRole("tab", { name: "전체", exact: true }).click();
@@ -1912,8 +1919,8 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       const lowDensityEraser = operation === "erase"
         && isStudioBrushEraserAliasId(expectedSelection.runtimeBrushId);
       await selectDesktopBrush(page, preset, expectedSelection);
-      // 빈 문서로 되돌아오면 접힌 시작 안내도 다시 나타난다. 그림자는 잉크 기준이 아니다.
-      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
+      // 빈 문서로 되돌아오면 접힌 시작 안내도 다시 나타난다. 그림자·포커스 복귀 도구 설명은 잉크 기준이 아니다.
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
       await page.mouse.move(4, 4);
       // 도구 전환·진단 복구 뒤에는 안내 배너와 작업 영역의 현재 좌표로 다시 측정한다.
       const stageBox = await stage.boundingBox();
@@ -2059,6 +2066,9 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       let before: Buffer;
       if (eraseBaseline) {
         await selectDesktopBrush(page, preset, expectedSelection);
+        // 카탈로그 다이얼로그 닫힘 직후 포커스 복귀로 열린 도구 설명이 지우개 기준 스냅샷에 섞이지 않게 한다.
+        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
+        await page.mouse.move(4, 4);
         // Selecting a destructive preset may synchronously flush the retained paint backdrop.
         // Capture the comparison baseline after that boundary instead of reusing the earlier
         // frame, which can still contain the same paint once in committed ink and once in the
@@ -2482,7 +2492,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       // the evidence region anchored to the same local canvas coordinates rather than reusing the
       // old absolute page coordinates, otherwise UI chrome movement is counted as residual ink.
       const undoClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
-      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
       let undone = await page.screenshot({ animations: "disabled", clip: undoClip });
       for (let settleAttempt = 0; settleAttempt < 12; settleAttempt += 1) {
         await page.waitForTimeout(60);
@@ -2556,7 +2566,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
       await page.keyboard.press("Meta+z");
       await page.waitForTimeout(40);
       const cleanupClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
-      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
+      await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
       const cleaned = await page.screenshot({ animations: "disabled", clip: cleanupClip });
       const cleanupDiff = await compareScreenshotPixelsWithinReferenceDelta(page, before, cleaned, after, 20);
       const cleanupCrossSurfaceAntialiasOnly = operation === "erase"
@@ -2584,7 +2594,7 @@ async function runDesktopBrushMatrix(browser: Browser, studioUrl: string): Promi
         await page.keyboard.press("Meta+z");
         await page.waitForTimeout(80);
         const fullyCleanedClip = await reanchorEvidenceClip(page.locator(".konvajs-content").first(), stageBox, usedClip, viewport);
-        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true });
+        await waitForStudioDrawingReady(page, { dismissCollapsedWelcome: true, dismissToolHints: true });
         const fullyCleaned = await page.screenshot({ animations: "disabled", clip: fullyCleanedClip });
         const fullCleanupDiff = await compareScreenshotPixels(
           page,

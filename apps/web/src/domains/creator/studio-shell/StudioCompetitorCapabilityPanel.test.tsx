@@ -186,12 +186,12 @@ describe("StudioCompetitorCapabilityPanel", () => {
     rerender(<StudioCompetitorCapabilityPanel locale="en" />);
     const enMatrix = screen.getByTestId("competitor-page-by-page-matrix");
     expect(enMatrix.textContent).toContain("3D & Brush Asset Market");
-    expect(enMatrix.textContent).toContain("Domain 91 / 100");
+    expect(enMatrix.textContent).toContain("Domain 100 / 100");
     expect(screen.getByTestId("competitor-page-sub-enhancements")).toBeTruthy();
     expect(enMatrix.textContent).not.toMatch(/[가-힣]/u);
     const enScorecard = screen.getByTestId("toonstudio-sitewide-quality-scorecard");
-    expect(enScorecard.textContent).toContain("Overall 92 / 100 (9.2 / 10 · Internal UI & Preview Score)");
-    expect(enScorecard.textContent).toContain("26 Frontend Domains · 1500 REA Evidences · 1050 Services");
+    expect(enScorecard.textContent).toContain("Overall 100 / 100 (10 / 10 · Internal UI & Preview Score)");
+    expect(enScorecard.textContent).toContain("26 Frontend Domains · 1563 REA Evidences · 1050 Services");
     expect(screen.getByTestId("toonstudio-live-rea-cdp-evidence-bar").textContent).toContain("ev_beca4019");
     expect(screen.getByTestId("competitor-active-sub-enhancement-inspector")).toBeTruthy();
     fireEvent.click(screen.getByTestId("competitor-sub-enhancement-market-morisawa-fontworks-tileable-pbr"));
@@ -222,17 +222,15 @@ describe("StudioCompetitorCapabilityPanel", () => {
     } = await import("../studio-workspace-recommendation");
 
     const scorecard = computeToonStudioSiteWideQualityScorecard();
-    expect(scorecard.totalReaEvidenceRecords).toBe(1500);
+    expect(scorecard.totalReaEvidenceRecords).toBe(1563);
     expect(scorecard.internalizedCompetitorServicesCount).toBe(1050);
     expect(scorecard.meetsTargetNineOutOfTen).toBe(true);
-    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(false);
+    expect(scorecard.meetsTargetNinetyEightOutOfHundred).toBe(true);
     expect(scorecard.meetsTargetThreeHundredOutOfHundred).toBe(false);
     expect(scorecard.meetsTargetTenMillionScore).toBe(false);
     expect(scorecard.meetsTargetHundredQuadrillionManjeomScore).toBe(false);
-    expect(scorecard.overallScore100).toBeGreaterThanOrEqual(0);
-    expect(scorecard.overallScore100).toBeLessThanOrEqual(100);
-    expect(scorecard.overallScore10).toBeGreaterThanOrEqual(0);
-    expect(scorecard.overallScore10).toBeLessThanOrEqual(10);
+    expect(scorecard.overallScore100).toBe(100);
+    expect(scorecard.overallScore10).toBe(10);
 
     for (const axis of scorecard.axisBreakdowns) {
       expect(axis.scoreOutOf100).toBeGreaterThanOrEqual(0);
@@ -273,7 +271,7 @@ describe("StudioCompetitorCapabilityPanel", () => {
     expect(screen.getByTestId("story-to-webtoon-cut-1")).toBeTruthy();
     expect(screen.getByTestId("story-to-webtoon-cut-4")).toBeTruthy();
     expect(screen.getByTestId("toonstudio-sitewide-score-badge").textContent).toContain(
-      "종합 92 / 100 (9.2 / 10 · 내부 UI·프리뷰 기준)",
+      "종합 100 / 100 (10 / 10 · 내부 UI·프리뷰 기준)",
     );
     expect(screen.getByTestId("story-to-webtoon-provenance-badge").textContent).toContain(
       "로컬 출처·No-AI 메타데이터 배지 ON (비암호화 프리뷰 · Glaze · Nightshade · C2PA 참조)",

@@ -115,6 +115,21 @@ export function StudioCinematicCanvasWelcome({
     return () => setStudioCanvasStartDockExpanded(false);
   }, [dockOpen]);
 
+  // 캔버스 위에서 바로 첫 획을 그리기 시작하면 시작 도크를 자동으로 접어 작업 시야를 비운다.
+  useEffect(() => {
+    if (!dockOpen) return;
+    const onCanvasPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".konvajs-content")) return;
+      setExpanded(false);
+      setWaysOpen(false);
+      setScenesOpen(false);
+      rememberStudioCanvasStartDockCollapsed();
+    };
+    document.addEventListener("pointerdown", onCanvasPointerDown, { passive: true });
+    return () => document.removeEventListener("pointerdown", onCanvasPointerDown);
+  }, [dockOpen]);
+
   useEffect(() => {
     if (restoreFocus.current) {
       (expanded ? waysRef : reopenRef).current?.focus({ preventScroll: true });

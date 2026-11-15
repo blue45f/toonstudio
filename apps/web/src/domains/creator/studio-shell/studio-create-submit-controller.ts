@@ -53,5 +53,6 @@ export function createStudioCreateSubmitController(actions: StudioCreateSubmitAc
     keyDown,
     compositionStart: () => { composing = true; },
     compositionEnd: () => { composing = false; },
+    resetSubmitted: () => { submitted = false; },
   };
 }

@@ -49,8 +49,9 @@ describe("StudioMultiObjectPanel integration", () => {
     expect(snapped?.position[1]).toBe(0);
   });
 
-  it("filters 270 bundled 3D props across all 8 categories (incl. 141 Poly Haven 2K PBR + 45 Kenney Blockout) and loads mannequin, Poly Haven, and Kenney presets", () => {
-    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(270);
+  it("filters 274 bundled 3D props across all 8 categories (incl. 4 Blender Hero V12 + 141 Poly Haven 2K PBR + 45 Kenney Blockout) and loads mannequin, Poly Haven, and Kenney presets", () => {
+    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(274);
+    expect(listStudio3DPropCatalogByCategory("blender-hero-v12")).toHaveLength(4);
     expect(listStudio3DPropCatalogByCategory("refined-v8")).toHaveLength(11);
     expect(listStudio3DPropCatalogByCategory("polyhaven-pbr")).toHaveLength(141);
     expect(listStudio3DPropCatalogByCategory("kenney-blockout")).toHaveLength(45);
@@ -60,7 +61,7 @@ describe("StudioMultiObjectPanel integration", () => {
       expect(items.every((entry) => entry.category === category)).toBe(true);
     }
     expect(listStudio3DPropCatalogByCategory("nature")).toHaveLength(19);
-    expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(8);
+    expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(9);
     expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(32);
 
     const manager = new StudioMultiObjectLayoutManager();

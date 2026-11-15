@@ -81,6 +81,7 @@ export interface StudioRasterExportOrchestrationInput {
     "./studio-skia-document-export"
   )["captureStudioSkiaDocumentForExport"];
   readonly currentPageId: string;
+  readonly selectedId?: string | null;
   readonly masterEditMode: boolean;
   readonly exportTransparent: boolean;
   readonly exportFormat: ExportFormat;
@@ -137,6 +138,7 @@ export function createStudioRasterExportOrchestration({
   getDocumentGeneration,
   captureSkiaDocumentForExport,
   currentPageId,
+  selectedId,
   masterEditMode,
   exportTransparent,
   exportFormat,
@@ -156,6 +158,11 @@ export function createStudioRasterExportOrchestration({
   setError,
   setCurrentPageId,
 }: StudioRasterExportOrchestrationInput): StudioRasterExportOrchestration {
+  const restoreSelectedIdIfNeeded = (previousSelectedId: string | null | undefined) => {
+    if (previousSelectedId !== undefined && previousSelectedId !== null) {
+      setSelectedId(previousSelectedId);
+    }
+  };
   async function capturePage(page: PageState) {
     const master = getMasterElements?.() ?? masterElements;
     if (hasVisibleLegacyMixboxStrokes([...(page.hideMaster ? [] : master), ...page.elements], page.groups ?? [])) throw new BrushStudioV6LegacyPigmentMigrationRequiredError();
@@ -205,10 +212,25 @@ export function createStudioRasterExportOrchestration({
         // The existing document renderer remains the exact compatibility authority.
       }
 
-      const backgroundNode = transparent ? captured.stage.findOne(".bg") : null;
-      if (backgroundNode) {
-        backgroundNode.hide();
-        captured.stage.batchDraw();
+      const hiddenBackgroundNodes: Array<{ hide: () => void; show: () => void }> = [];
+      if (transparent) {
+        for (const selector of [".bg", ".paper-grain"] as const) {
+          const node = captured.stage.findOne(selector) as
+            | { hide: () => void; show: () => void; visible?: () => boolean }
+            | null
+            | undefined;
+          if (
+            node &&
+            !hiddenBackgroundNodes.includes(node) &&
+            (typeof node.visible !== "function" || node.visible())
+          ) {
+            node.hide();
+            hiddenBackgroundNodes.push(node);
+          }
+        }
+        if (hiddenBackgroundNodes.length > 0) {
+          captured.stage.batchDraw();
+        }
       }
       try {
         if (import.meta.env.DEV) diagnostics?.mark("compatibility-capture-start");
@@ -223,8 +245,8 @@ export function createStudioRasterExportOrchestration({
         }
         return { canvas, page: captured.page };
       } finally {
-        if (backgroundNode) {
-          backgroundNode.show();
+        if (hiddenBackgroundNodes.length > 0) {
+          for (const node of hiddenBackgroundNodes) node.show();
           captured.stage.batchDraw();
         }
       }
@@ -264,6 +286,7 @@ export function createStudioRasterExportOrchestration({
     const watermarkForExport = await ensureWatermarkLoaded();
     if (import.meta.env.DEV) diagnostics?.mark("watermark-ready");
     setExportMenuOpen(false);
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     const originalMasterEditMode = masterEditMode;
     setMasterEditMode(false);
@@ -310,6 +333,7 @@ export function createStudioRasterExportOrchestration({
       setError(error instanceof Error ? error.message : "이미지 내보내기에 실패했어요.");
     } finally {
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
   }
@@ -321,6 +345,7 @@ export function createStudioRasterExportOrchestration({
       throw new Error("공유 문서를 불러온 뒤 내보낼 수 있습니다.");
     }
     const watermarkForExport = await ensureWatermarkLoaded();
+    const originalSelectedId = selectedId;
     const originalMasterEditMode = masterEditMode;
     setSelectedId(null);
     setMasterEditMode(false);
@@ -355,6 +380,7 @@ export function createStudioRasterExportOrchestration({
       return encoded.encoded;
     } finally {
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
   }
@@ -363,6 +389,7 @@ export function createStudioRasterExportOrchestration({
     if (!ensureSharedDocumentAvailableForExport()) return;
     const watermarkForExport = await ensureWatermarkLoaded();
     setExportMenuOpen(false);
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     const originalMasterEditMode = masterEditMode;
     setMasterEditMode(false);
@@ -378,6 +405,7 @@ export function createStudioRasterExportOrchestration({
       setError(error instanceof Error ? error.message : "클립보드 복사에 실패했어요.");
     } finally {
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
   }
@@ -429,6 +457,7 @@ export function createStudioRasterExportOrchestration({
       }
     }
 
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     const originalPageId = currentPageId;
     const originalMasterEditMode = masterEditMode;
@@ -437,12 +466,13 @@ export function createStudioRasterExportOrchestration({
     setIsExporting(true);
     const pageCanvases: HTMLCanvasElement[] = [];
     let phase: "capture" | "encode" | "bundle" = "capture";
+    const transparent = exportTransparent && exportFormat !== "jpg";
 
     try {
       try {
         for (const page of pages) {
           setCurrentPageId(page.id);
-          const { canvas } = await captureBakedPageAtScale(page, scale);
+          const { canvas } = await captureBakedPageAtScale(page, scale, transparent);
           pageCanvases.push(canvas);
         }
       } finally {
@@ -478,8 +508,10 @@ export function createStudioRasterExportOrchestration({
         if (!context) {
           throw new Error("스트립 합성 표면을 만들지 못해 내보내기를 중단했어요.");
         }
-        context.fillStyle = "#ffffff";
-        context.fillRect(0, 0, width, totalHeight);
+        if (!transparent) {
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, width, totalHeight);
+        }
         let currentY = 0;
         for (const pageIndex of chunk) {
           const pageCanvas = pageCanvases[pageIndex]!;
@@ -538,6 +570,7 @@ export function createStudioRasterExportOrchestration({
     } finally {
       setCurrentPageId(originalPageId);
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
       for (const canvas of pageCanvases) {
         canvas.width = 1;
@@ -550,6 +583,7 @@ export function createStudioRasterExportOrchestration({
     indices: number[]
   ): Promise<HTMLCanvasElement[]> {
     if (!ensureSharedDocumentAvailableForExport()) return [];
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     const originalPageId = currentPageId;
     const originalMasterEditMode = masterEditMode;
@@ -571,6 +605,7 @@ export function createStudioRasterExportOrchestration({
     } finally {
       setCurrentPageId(originalPageId);
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
     return captured;
@@ -589,6 +624,7 @@ export function createStudioRasterExportOrchestration({
         return page;
       });
     if (selected.length === 0) throw new Error("내보낼 페이지가 없어요.");
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     setMasterEditMode(false);
     preserveStudioViewBeforeCapture();
@@ -601,6 +637,9 @@ export function createStudioRasterExportOrchestration({
       let currentCapture: Awaited<ReturnType<typeof capturePage>> | null = null;
       const sources: PresetExportPage[] = [];
       for (const page of selected) {
+        if (options.signal?.aborted) {
+          throw new DOMException("규격 분할 내보내기를 취소했어요.", "AbortError");
+        }
         const width = Math.round(CANVAS_W * exportScale);
         const height = Math.round(page.canvasH * exportScale);
         if (width <= 16_384 && height <= 16_384
@@ -614,6 +653,9 @@ export function createStudioRasterExportOrchestration({
         const source: StudioPresetTiledRasterSource = {
           kind: "studio-preset-tiled-raster", width, height,
           readRegion: async (region) => {
+            if (options.signal?.aborted) {
+              throw new DOMException("규격 분할 내보내기를 취소했어요.", "AbortError");
+            }
             if (currentCapture?.page.id !== page.id) {
               setCurrentPageId(page.id);
               currentCapture = await capturePage(page);
@@ -649,6 +691,7 @@ export function createStudioRasterExportOrchestration({
       for (const canvas of owned) { canvas.width = 1; canvas.height = 1; }
       setCurrentPageId(currentPageId);
       setMasterEditMode(masterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
   }
@@ -660,6 +703,7 @@ export function createStudioRasterExportOrchestration({
       return handleCapturePagesForIndices(pages.map((_, index) => index));
     }
     if (!ensureSharedDocumentAvailableForExport()) return [];
+    const originalSelectedId = selectedId;
     setSelectedId(null);
     const originalPageId = currentPageId;
     const originalMasterEditMode = masterEditMode;
@@ -674,6 +718,7 @@ export function createStudioRasterExportOrchestration({
     } finally {
       setCurrentPageId(originalPageId);
       setMasterEditMode(originalMasterEditMode);
+      restoreSelectedIdIfNeeded(originalSelectedId);
       setIsExporting(false);
     }
     return captured;

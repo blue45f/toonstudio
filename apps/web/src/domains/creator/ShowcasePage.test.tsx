@@ -100,7 +100,7 @@ describe("ShowcasePage", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: desktop, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
     const { container } = renderShowcase();
     expect(container.querySelectorAll("[data-contextual-subnav]")).toHaveLength(1);
-    expect(container.querySelector('[data-contextual-subnav] [aria-current="page"]')?.textContent).toBe("창작 갤러리");
+    expect(container.querySelector('[data-contextual-subnav] [aria-current="page"] > span:not([aria-hidden="true"])')?.textContent).toBe("창작 갤러리");
     expect(container.querySelectorAll('a[href="/studio/publish"]')).toHaveLength(1);
     expect(container.querySelector('a[href="/studio/publish"]')?.closest("details")?.open).toBe(false);
   });

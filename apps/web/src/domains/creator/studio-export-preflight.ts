@@ -34,6 +34,16 @@ export interface StudioExportTargetProfile {
   readonly preserveEditableStructure: boolean;
 }
 
+export interface StudioExportFindingLocation {
+  readonly pageNumber: number;
+  readonly pageId: string;
+  readonly pageLabel: string;
+  readonly cutNumber: number | null;
+  readonly cutId: string | null;
+  readonly elementId: string | null;
+  readonly label: string;
+}
+
 export interface StudioExportDocumentSnapshot {
   readonly documentId: string;
   readonly format: string;
@@ -56,6 +66,7 @@ export interface StudioExportDocumentSnapshot {
   readonly editableStructurePreserved: boolean;
   readonly localizationBlockingIssues: number;
   readonly unresolvedComments: number;
+  readonly findingLocations?: Readonly<Record<string, readonly StudioExportFindingLocation[]>>;
 }
 
 export interface StudioExportPreflightFinding {
@@ -66,6 +77,7 @@ export interface StudioExportPreflightFinding {
   readonly suggestedActionKo: string;
   readonly suggestedActionEn: string;
   readonly affectedIds: readonly string[];
+  readonly locations?: readonly StudioExportFindingLocation[];
 }
 
 export interface StudioExportPreflightResult {
@@ -239,6 +251,7 @@ function finding(
   suggestedActionKo: string,
   suggestedActionEn: string,
   affectedIds: readonly string[] = [],
+  locations?: readonly StudioExportFindingLocation[],
 ): StudioExportPreflightFinding {
   return Object.freeze({
     code,
@@ -248,6 +261,9 @@ function finding(
     suggestedActionKo,
     suggestedActionEn,
     affectedIds: Object.freeze([...affectedIds]),
+    ...(locations && locations.length > 0
+      ? { locations: Object.freeze(locations.map((loc) => Object.freeze({ ...loc }))) }
+      : {}),
   });
 }
 
@@ -401,6 +417,8 @@ export function runStudioExportPreflight(
       `Some text is smaller than the recommended ${minimumTextPx}px.`,
       "휴대폰·출력 미리보기에서 가독성을 확인하세요.",
       "Review readability in device or print preview.",
+      [],
+      document.findingLocations?.["text-size"],
     ));
   }
 
@@ -413,6 +431,7 @@ export function runStudioExportPreflight(
       "글꼴을 활성화하거나 안전한 대체 글꼴을 선택하세요.",
       "Activate the fonts or choose safe replacements.",
       document.missingFontIds,
+      document.findingLocations?.["missing-fonts"],
     ));
   }
   if (document.missingAssetIds.length > 0) {
@@ -424,6 +443,7 @@ export function runStudioExportPreflight(
       "원본을 다시 연결하거나 프로젝트에 포함하세요.",
       "Relink or embed the original assets.",
       document.missingAssetIds,
+      document.findingLocations?.["missing-assets"],
     ));
   }
   if (targetProfile.requireRightsClearance && document.rightsBlockedAssetIds.length > 0) {
@@ -435,6 +455,7 @@ export function runStudioExportPreflight(
       "에셋을 교체하거나 필요한 라이선스를 확보하세요.",
       "Replace the assets or obtain the required license.",
       document.rightsBlockedAssetIds,
+      document.findingLocations?.["rights-blocked"],
     ));
   }
   if (targetProfile.requireRightsClearance && document.rightsWarningAssetIds.length > 0) {
@@ -446,6 +467,7 @@ export function runStudioExportPreflight(
       "출처 표시·좌석·용도 조건을 확인하세요.",
       "Review attribution, seats and usage conditions.",
       document.rightsWarningAssetIds,
+      document.findingLocations?.["rights-warning"],
     ));
   }
   if (

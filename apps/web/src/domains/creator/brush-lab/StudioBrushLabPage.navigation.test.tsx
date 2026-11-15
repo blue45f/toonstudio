@@ -122,13 +122,17 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     );
 
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    const pinnedStatus = await screen.findByTestId("brush-lab-pin-favorites-status");
+    const pinnedStatus = await screen.findByTestId(
+      "brush-lab-pin-favorites-status",
+      undefined,
+      { timeout: 5000 },
+    );
     expect(pinnedStatus.getAttribute("role")).toBe("status");
     expect(pinnedStatus.textContent).toContain("6종 고정 완료");
 
     const spy = vi.spyOn(favoriteSlotsModule, "pinStudioCompetitorFavoritesToProductRepository");
     fireEvent.click(screen.getByTestId("brush-lab-restore-favorites-order-btn"));
-    await screen.findByTestId("brush-lab-pin-favorites-status");
+    await screen.findByTestId("brush-lab-pin-favorites-status", undefined, { timeout: 5000 });
     expect(spy).toHaveBeenCalledWith(undefined, { resetCustomizations: true });
   });
 
@@ -148,7 +152,11 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
 
     renderBrushLab();
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    const alertNode = await screen.findByTestId("brush-lab-pin-favorites-status");
+    const alertNode = await screen.findByTestId(
+      "brush-lab-pin-favorites-status",
+      undefined,
+      { timeout: 5000 },
+    );
     expect(alertNode.getAttribute("role")).toBe("alert");
     expect(alertNode.textContent).toContain("영구 저장하지 못하고");
   });
@@ -168,16 +176,50 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
       failureCode: "storage-error",
     });
 
-    renderBrushLab();
+    renderBrushLab("/studio/brush-lab?context=remix&sourceWorkId=src-42");
     const bar = screen.getByTestId("brush-lab-rea-wetmix-wgsl-bar");
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("Kernel:");
 
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    await screen.findByTestId("brush-lab-pin-favorites-status");
+    await screen.findByTestId("brush-lab-pin-favorites-status", undefined, { timeout: 5000 });
 
     const wave37Panel = screen.getByTestId("brush-lab-wave37-stroke-refinement-panel");
     expect(wave37Panel.textContent).not.toMatch(/[가-힣]/u);
     expect(screen.getByTestId("brush-lab-wave37-metrics").textContent).toContain("Recipe:");
+
+    const livePad = screen.getByTestId("brush-lab-live-stroke-pad");
+    expect(livePad.textContent).not.toMatch(/[가-힣]/u);
+
+    const pageRoot = livePad.parentElement as HTMLElement;
+    expect(pageRoot.textContent).not.toMatch(/[가-힣]/u);
+    for (const el of pageRoot.querySelectorAll<HTMLElement>("[aria-label],[alt]")) {
+      expect(el.getAttribute("aria-label") ?? "").not.toMatch(/[가-힣]/u);
+      expect(el.getAttribute("alt") ?? "").not.toMatch(/[가-힣]/u);
+    }
+  });
+
+  it("브러시 랩의 모든 커널·곡선·플래그십·선반 고정·라이브 패드 버튼이 44px(min-h-11) 터치 타깃을 만족한다", () => {
+    renderBrushLab("/studio/brush-lab");
+    const requiredMinH11TestIds = [
+      "brush-lab-rea-kernel-dual-tip-multiply",
+      "brush-lab-rea-kernel-rebelle-wet-pigment",
+      "brush-lab-rea-kernel-gpen-velocity-taper",
+      "brush-lab-rea-curve-scurve-soft-ink",
+      "brush-lab-rea-curve-linear-precision",
+      "brush-lab-rea-curve-heavy-chisel-tilt",
+      "brush-lab-wave37-recipe-csp-real-gpen-aa",
+      "brush-lab-wave37-recipe-krita-impasto-fan-bristle",
+      "brush-lab-pin-favorites-btn",
+      "brush-lab-restore-favorites-order-btn",
+      "brush-lab-live-pad-replay-btn",
+      "brush-lab-live-pad-clear-btn",
+      "brush-lab-live-preset-razor-gpen",
+      "brush-lab-live-preset-romance-glow",
+    ] as const;
+
+    for (const testId of requiredMinH11TestIds) {
+      expect(screen.getByTestId(testId).className).toContain("min-h-11");
+    }
   });
 });

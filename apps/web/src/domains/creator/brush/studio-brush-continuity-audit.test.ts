@@ -4,6 +4,7 @@ import { BRUSH_PRESETS } from "../studio-brush";
 
 import {
   auditStudioBrushCatalogueContinuity,
+  studioBrushCatalogIdIsIntentionallyDiscontinuous,
   type StudioBrushContinuityAuditCandidate,
 } from "./studio-brush-continuity-audit";
 import { planNormalizedStudioDynamicBrushDabs } from "./studio-brush-dynamics";
@@ -252,6 +253,20 @@ describe("studio brush continuity audit", () => {
       expect(
         CATALOGUE_RESULTS.find((result) => result.catalogId === id)?.intentionalDiscontinuity,
         `${id}: sparse intent lost`
+      ).toBe(true);
+    }
+
+    for (const id of [
+      "spray",
+      "splatter",
+      "glitter",
+      "star-dust",
+      "sparkle-star",
+      "ink-particle",
+    ]) {
+      expect(
+        studioBrushCatalogIdIsIntentionallyDiscontinuous(id),
+        `${id}: browser discrete-gesture classifier must agree with particle-scatter promise`
       ).toBe(true);
     }
 

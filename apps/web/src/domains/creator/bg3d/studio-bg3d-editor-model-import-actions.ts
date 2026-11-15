@@ -9,6 +9,7 @@ import {
 } from "../studio-generic-3d-workflow-metadata";
 
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
+import { nameNewStudioBg3dCustomModel } from "./studio-bg3d-instance-naming";
 import {
   StudioBg3dStaleModalOperationError,
   studioBg3dModalOperationCoordinator,
@@ -444,10 +445,14 @@ export function createStudioBg3dModelImportActions(
             // 취소를 무시한 decoder가 늦게 끝나도 소유 캐시 정리 전에 장면으로 전달하지 않는다.
             lease.throwIfRevoked();
             assertImportCurrent();
-            stagedPlacements.push(linkStudioBg3dSkpPlacement(
+            const placedRaw = linkStudioBg3dSkpPlacement(
               createBgCustomModelInstance(record.id, liveModels.length + index, resolveStudioBg3dMetricPlacementScale(sourceFormat === "skp" ? attachment : {}, cached)),
               plannedSkpSourcePaths[index] == null ? null : { contentHash: record.contentHash, name: record.name },
-            ));
+            );
+            stagedPlacements.push(nameNewStudioBg3dCustomModel(placedRaw, record.name, {
+              primitives: liveScene.primitives,
+              customModels: [...liveModels, ...stagedPlacements],
+            }));
             stagedAttachments.set(record.id, attachment);
             if (!countedHashes.has(record.contentHash)) {
               countedHashes.add(record.contentHash);

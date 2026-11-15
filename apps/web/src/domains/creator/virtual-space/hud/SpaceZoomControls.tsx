@@ -1,8 +1,13 @@
-import { Minus, Plus } from "lucide-react";
-import type { MouseEvent } from "react";
+import { Home, Minus, Plus } from "lucide-react";
+import { useSyncExternalStore, type MouseEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
+import {
+  getActiveMountedCameraPanStore,
+  subscribeActiveMountedCameraPanStore,
+  type StudioCameraPanStore,
+} from "../studio-virtual-space-camera-pan";
 import {
   STUDIO_USER_ZOOM_MAX,
   STUDIO_USER_ZOOM_QUICK_PRESETS,
@@ -18,8 +23,22 @@ import { useSpaceUserZoom } from "./use-space-user-zoom";
  * 마우스·터치로 눌렀을 때만 onPointerUse(키보드 초점을 월드로 돌려 바로 WASD로 걷게 한다)를 부르고,
  * 키보드(Enter·Space)로 활성화하면 초점을 그대로 둬 Tab 순서가 끊기지 않는다.
  */
-export function SpaceZoomControls({ store, onPointerUse }: { readonly store: StudioUserZoomStore; readonly onPointerUse?: () => void }) {
+export function SpaceZoomControls({
+  store,
+  cameraPan: cameraPanProp,
+  onPointerUse,
+}: {
+  readonly store: StudioUserZoomStore;
+  readonly cameraPan?: StudioCameraPanStore | null;
+  readonly onPointerUse?: () => void;
+}) {
   const bt = useBilingual("SpaceZoomControls");
+  const mountedCameraPan = useSyncExternalStore(
+    subscribeActiveMountedCameraPanStore,
+    getActiveMountedCameraPanStore,
+    () => null,
+  );
+  const activeCameraPan = cameraPanProp === undefined ? mountedCameraPan : cameraPanProp;
   const { level, min, available } = useSpaceUserZoom(store);
   if (!available) return null;
   const percent = `${Math.round(level * 100)}%`;
@@ -52,6 +71,23 @@ export function SpaceZoomControls({ store, onPointerUse }: { readonly store: Stu
           aria-label={bt(`배율 ${presetPercent}%로 바로 이동`, `Jump to ${presetPercent}% zoom`)}
           onClick={selectPreset(preset)}>{presetPercent}%</button>;
       })}
+      {activeCameraPan ? (
+        <button
+          type="button"
+          className="space-zoom__preset"
+          data-camera-home-view="true"
+          aria-keyshortcuts="Home"
+          title={bt("홈 뷰로 카메라 복구 (Home)", "Reset camera to Home view (Home)")}
+          aria-label={bt("홈 뷰", "Home view")}
+          onClick={(event) => {
+            activeCameraPan.homeView();
+            if (event.detail > 0) onPointerUse?.();
+          }}
+        >
+          <Home size={13} aria-hidden />
+          <span>{bt("홈 뷰", "Home")}</span>
+        </button>
+      ) : null}
     </div>
   </div>;
 }

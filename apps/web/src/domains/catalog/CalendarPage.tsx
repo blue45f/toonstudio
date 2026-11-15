@@ -261,7 +261,7 @@ export function CalendarPage() {
               onClick={exportIcs}
               disabled={loading || !!error || exportable.size === 0}
               title={bt("현재 필터 기준 연재 일정을 캘린더 앱용 .ics 파일로 저장 (주간 반복 일정)", "Save the release schedule for the current filters as an .ics file for calendar apps (weekly repeating schedule)")}
-              className={buttonClass({ size: "sm", variant: "quiet", className: "gap-1.5" })}
+              className={buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 min-w-11 gap-1.5" })}
             >
               <CalendarPlus size={14} aria-hidden="true" />
               {bt("내보내기 (.ics)", "Export (.ics)")}

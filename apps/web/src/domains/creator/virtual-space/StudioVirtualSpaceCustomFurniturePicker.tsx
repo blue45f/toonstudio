@@ -82,21 +82,14 @@ export function StudioVirtualSpaceCustomFurniturePicker({
       // 월드 안에서는 안전 배치가 실패할 수 있고 reason 을 준다. 월드 밖에서는
       // 충돌 규칙이 없으므로 항상 그냥 추가된다.
       const result: StudioDecorationLayoutResult = world
-        ? addStudioVirtualDecorationSafely(decorations, "custom", selfPoint, world)
-        : { ok: true, state: addStudioVirtualDecoration(decorations, "custom", selfPoint) };
+        ? addStudioVirtualDecorationSafely(decorations, "custom", selfPoint, world, item.id)
+        : { ok: true, state: addStudioVirtualDecoration(decorations, "custom", selfPoint, item.id) };
       if (!result.ok) {
         const placeReason = PLACE_REASON[result.reason] ?? PLACE_REASON.invalid;
         setNotice(creatorSub2StatusText(placeReason.key, placeReason.ko));
         return;
       }
-      const placement = {
-        ...result.state.placements[result.state.placements.length - 1]!,
-        assetId: item.id,
-      };
-      onDecorations({
-        ...result.state,
-        placements: [...result.state.placements.slice(0, -1), placement],
-      });
+      onDecorations(result.state);
       setNotice(bt(`${spaceKoParticle(item.name, "을")} 내 주변에 놓았어요.`, `Placed ${item.name} near you.`));
     },
     [bt, decorations, onDecorations, selfPoint, world],

@@ -11,9 +11,8 @@ import { synchronizeStudioMToonMaterialOverride, updateStudioMToonInstanceMateri
 import { computeStudioBg3dAutoFitScale, STUDIO_BG3D_AUTO_FIT_TARGET_SIZE } from "./bg3d/studio-bg3d-model-scale-contract";
 
 import type { StudioBg3dGlbValidationSuccess } from "./bg3d/studio-bg3d-glb-validation";
-import type {
-  StudioBg3dKtx2Renderer,
-} from "./bg3d/studio-bg3d-ktx2-renderer-runtime";
+import { attachStudioBg3dGlbMissingTextureMetadata, type MinimalGltfParserLike } from "./bg3d/studio-bg3d-glb-missing-textures";
+import type { StudioBg3dKtx2Renderer } from "./bg3d/studio-bg3d-ktx2-renderer-runtime";
 import type {
   StudioBg3dAnimationPlayback,
   StudioBg3dConstraintLayer,
@@ -100,25 +99,14 @@ export function createBgCustomModelInstance(
   };
 }
 
-export function duplicateBgCustomModelInstance(instance: BgCustomModelInstance): BgCustomModelInstance {
+function cloneBgCustomModelInstanceEntry(inst: BgCustomModelInstance): BgCustomModelInstance {
   return {
-    ...instance,
-    id: uid(),
-    position: [instance.position[0] + 0.4, instance.position[1], instance.position[2] + 0.4],
-    // 복제본은 편집 가능·표시 상태로 둔다(잠긴 원본을 복제해 곧바로 못 움직이는 함정 방지).
-    locked: false,
-    visible: instance.visible !== false,
-  };
-}
-
-// undo/redo 스냅샷용 깊은 복제 — clonePrimitives와 동일한 이유로 필드별 스프레드를 쓴다
-// (배열/문자열/숫자만 갖는 평평한 구조라 JSON 왕복보다 저렴).
-export function cloneBgCustomModelInstances(instances: BgCustomModelInstance[]): BgCustomModelInstance[] {
-  return instances.map((inst) => ({
     ...inst,
     position: [...inst.position] as [number, number, number],
     rotation: [...inst.rotation] as [number, number, number],
     scale: [...inst.scale] as [number, number, number],
+    ...(inst.tags ? { tags: [...inst.tags] } : {}),
+    ...(inst.componentRef ? { componentRef: { ...inst.componentRef } } : {}),
     name: inst.name,
     visible: inst.visible,
     locked: inst.locked,
@@ -140,27 +128,35 @@ export function cloneBgCustomModelInstances(instances: BgCustomModelInstance[]):
     animation: inst.animation ? { ...inst.animation } : undefined,
     pose: inst.pose ? {
       ...inst.pose,
-      joints: inst.pose.joints.map((joint) => ({
-        jointKey: joint.jointKey,
-        rotationOffset: [...joint.rotationOffset],
-      })),
+      joints: inst.pose.joints.map((joint) => ({ jointKey: joint.jointKey, rotationOffset: [...joint.rotationOffset] })),
     } : undefined,
-    morph: inst.morph ? {
-      ...inst.morph,
-      targets: inst.morph.targets.map((target) => ({ ...target })),
-    } : undefined,
+    morph: inst.morph ? { ...inst.morph, targets: inst.morph.targets.map((target) => ({ ...target })) } : undefined,
     constraints: inst.constraints ? {
       ...inst.constraints,
       aims: (Array.isArray(inst.constraints.aims) ? inst.constraints.aims : [])
         .map((aim) => ({ ...aim, target: [...aim.target] })),
       twoBoneIks: (Array.isArray(inst.constraints.twoBoneIks) ? inst.constraints.twoBoneIks : [])
-        .map((ik) => ({
-          ...ik,
-          target: [...ik.target],
-          poleTarget: [...ik.poleTarget],
-        })),
+        .map((ik) => ({ ...ik, target: [...ik.target], poleTarget: [...ik.poleTarget] })),
     } : undefined,
-  }));
+  };
+}
+
+export function duplicateBgCustomModelInstance(instance: BgCustomModelInstance): BgCustomModelInstance {
+  const cloned = cloneBgCustomModelInstanceEntry(instance);
+  return {
+    ...cloned,
+    id: uid(),
+    position: [instance.position[0] + 0.4, instance.position[1], instance.position[2] + 0.4],
+    // 일반 복제는 독립 사본으로 끊고, 잠긴 원본을 복제해도 바로 편집 가능하게 둔다.
+    linkedSourceId: undefined,
+    locked: false,
+    visible: instance.visible !== false,
+  };
+}
+
+// undo/redo 스냅샷용 깊은 복제 — clonePrimitives와 동일한 이유로 필드별 스프레드를 쓴다.
+export function cloneBgCustomModelInstances(instances: BgCustomModelInstance[]): BgCustomModelInstance[] {
+  return instances.map(cloneBgCustomModelInstanceEntry);
 }
 
 /**
@@ -1215,10 +1211,8 @@ export async function loadVerifiedStudioBg3dGlbWithThree(
     return measured;
   }
   const budgetFailure = checkStudioBg3dThreeBudgets(measured.metrics, budgets);
-  if (budgetFailure) {
-    disposeStudioBg3dThreeResources(ownedRoots);
-    return budgetFailure;
-  }
+  if (budgetFailure) { disposeStudioBg3dThreeResources(ownedRoots); return budgetFailure; }
+  attachStudioBg3dGlbMissingTextureMetadata(parsed.scene, (parsed as { parser?: MinimalGltfParserLike }).parser);
 
   // 소유권 경계는 성공 Promise가 사용자 코드에 전달되기 전에 고정한다. 이후 root에서 파서 메시를
   // 떼어 내거나 앱 소유 helper를 붙여도 dispose()는 이 snapshot 외 자원을 재탐색하지 않는다.

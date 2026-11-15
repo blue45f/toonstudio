@@ -388,6 +388,59 @@ export function rebaseProductionDemoTimeline(
 }
 
 let demoSession: ProductionProjectAggregate | null = null;
+const DEMO_SYNC_CHANNEL = "toonstudio-production-demo-sync-v1";
+const localDemoListeners = new Set<(aggregate: ProductionProjectAggregate) => void>();
+
+function notifyDemoSessionUpdated(next: ProductionProjectAggregate): void {
+  for (const listener of localDemoListeners) listener(next);
+  try {
+    if (typeof BroadcastChannel !== "undefined") {
+      const channel = new BroadcastChannel(DEMO_SYNC_CHANNEL);
+      channel.postMessage({ type: "demo-sync", aggregate: next });
+      channel.close();
+    }
+  } catch {
+    // 교차 탭 채널 미지원 환경에서도 현재 탭 세션은 그대로 유지된다.
+  }
+}
+
+export function peekProductionDemoSession(): ProductionProjectAggregate | null {
+  return demoSession;
+}
+
+export function subscribeProductionDemoSession(
+  onUpdate: (aggregate: ProductionProjectAggregate) => void,
+): () => void {
+  localDemoListeners.add(onUpdate);
+  let channel: BroadcastChannel | null = null;
+  try {
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel(DEMO_SYNC_CHANNEL);
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        const payload = event.data;
+        if (!payload || typeof payload !== "object" || !("type" in payload)) return;
+        if (payload.type === "demo-request" && demoSession) {
+          channel?.postMessage({ type: "demo-sync", aggregate: demoSession });
+          return;
+        }
+        if (payload.type === "demo-sync" && "aggregate" in payload && payload.aggregate && typeof payload.aggregate === "object") {
+          const incoming = payload.aggregate as ProductionProjectAggregate;
+          if (!demoSession || (incoming.projectId === demoSession.projectId && incoming.revision > demoSession.revision)) {
+            demoSession = incoming;
+            for (const listener of localDemoListeners) listener(incoming);
+          }
+        }
+      };
+      channel.postMessage({ type: "demo-request" });
+    }
+  } catch {
+    channel = null;
+  }
+  return () => {
+    localDemoListeners.delete(onUpdate);
+    channel?.close();
+  };
+}
 
 /** 샘플 프로젝트의 현재 상태. 처음 열면 오늘 날짜에 맞춘 새 샘플을 만든다. */
 export function openProductionDemoSession(now: Date = new Date()): ProductionProjectAggregate {
@@ -403,10 +456,20 @@ export function resetProductionDemoSession(): void {
 export const productionDemoAdapter = {
   create: () => openProductionDemoSession(),
   reduce: (current: ProductionProjectAggregate, command: ProductionClientCommand, translate?: ProductionDemoTranslate): ProductionProjectAggregate => {
-    const next = evaluateProductionDemoRiskState(reduceProductionDemoCommand(current, command, translate));
-    const issues = validateProductionWorkflowMutation(current, next);
+    const authoritative =
+      demoSession && demoSession.projectId === current.projectId && demoSession.revision > current.revision
+        ? demoSession
+        : current;
+    const next = evaluateProductionDemoRiskState(reduceProductionDemoCommand(authoritative, command, translate));
+    const issues = validateProductionWorkflowMutation(authoritative, next);
     if (issues.length) throw new Error(issues.join("\n"));
-    demoSession = next;
+    if (demoSession && demoSession.projectId === next.projectId) {
+      demoSession = next;
+      notifyDemoSessionUpdated(next);
+    } else if (demoSession === null && current.projectId === "sample-project") {
+      demoSession = next;
+      notifyDemoSessionUpdated(next);
+    }
     return next;
   },
 };

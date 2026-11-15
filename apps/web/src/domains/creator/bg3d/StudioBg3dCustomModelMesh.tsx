@@ -7,7 +7,7 @@
  */
 
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import {
@@ -21,6 +21,7 @@ import {
   isStudioBg3dAnimationOnceComplete,
   resolveStudioBg3dAnimationTime,
 } from "./studio-bg3d-animation-time";
+import { registerStudioBg3dCaptureExcludedObject } from "./studio-bg3d-capture-exclusion";
 import { projectStudioBg3dLodDiameterCssPx } from "./studio-bg3d-lod-selection";
 import { createStudioBg3dPrimitiveEditLineArtAdapter } from "./studio-bg3d-primitive-edit-material-runtime";
 import { isBgObjectVisible } from "./studio-bg3d-object-ops";
@@ -29,6 +30,10 @@ import {
   applyStudioBg3dGlbTexturePaint,
   collectStudioBg3dGlbTexturePaintTargets,
 } from "./studio-bg3d-glb-texture-paint-three";
+import {
+  applyStudioBg3dMissingTextureOverridesToClone,
+  type StudioBg3dInstanceMissingTextureState,
+} from "./studio-bg3d-glb-missing-textures";
 import type { StudioBg3dRigPoseBakeSnapshot } from "./studio-bg3d-rig-pose-bake";
 import type { StudioBg3dAnimationPlayback } from "./studio-bg3d-scene-document";
 import type { StudioBg3dPaintPointerPhase } from "./StudioBg3dSceneNodes";
@@ -59,6 +64,7 @@ interface BgCustomModelMeshProps {
     ids: readonly string[],
     status: "pending" | "ready" | "failed",
   ) => void;
+  missingTextureState?: StudioBg3dInstanceMissingTextureState;
   children?: React.ReactNode;
 }
 
@@ -75,7 +81,37 @@ function studioBg3dMatricesDiffer(
   );
 }
 
-export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, lineArt, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, children }: BgCustomModelMeshProps) {
+function createLocalSelectionBoxEdges(root: THREE.Object3D): {
+  readonly geometry: THREE.EdgesGeometry;
+  readonly center: readonly [number, number, number];
+} | null {
+  root.updateWorldMatrix(true, true);
+  const inverseRoot = root.matrixWorld.clone().invert();
+  const localBox = new THREE.Box3();
+  const meshBox = new THREE.Box3();
+  const matrixToRoot = new THREE.Matrix4();
+  root.traverse((node) => {
+    if (!(node instanceof THREE.Mesh) || !(node.geometry instanceof THREE.BufferGeometry)) return;
+    if (!node.geometry.boundingBox) node.geometry.computeBoundingBox();
+    if (!node.geometry.boundingBox || node.geometry.boundingBox.isEmpty()) return;
+    matrixToRoot.multiplyMatrices(inverseRoot, node.matrixWorld);
+    meshBox.copy(node.geometry.boundingBox).applyMatrix4(matrixToRoot);
+    localBox.union(meshBox);
+  });
+  if (localBox.isEmpty()) return null;
+  const size = localBox.getSize(new THREE.Vector3());
+  const center = localBox.getCenter(new THREE.Vector3());
+  const boxGeo = new THREE.BoxGeometry(
+    Math.max(0.04, size.x),
+    Math.max(0.04, size.y),
+    Math.max(0.04, size.z),
+  );
+  const edges = new THREE.EdgesGeometry(boxGeo);
+  boxGeo.dispose();
+  return { geometry: edges, center: [center.x, center.y, center.z] };
+}
+
+export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, capturing, lineArt, targetFps, lodBias, onSelect, onSurfacePick, onSurfacePreview, onPaintPointer, registerRef, registerAnimationTime, registerRigBake, onAnimationComplete, onCloneStatus, missingTextureState, children }: BgCustomModelMeshProps) {
   // Geometry/textures stay cache-owned, while each render instance owns cloned materials so its
   // adjustments cannot leak into sibling placements or the verified source cache.
   const [editableClone, setEditableClone] = useState<StudioBg3dEditableThreeClone | null>(null);
@@ -152,7 +188,10 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
   }, [editableClone]);
   useEffect(() => {
     editableClone?.applyMaterialOverride(instance.materialOverride);
-  }, [editableClone, instance.materialOverride]);
+    if (editableClone) {
+      applyStudioBg3dMissingTextureOverridesToClone(editableClone.root, missingTextureState);
+    }
+  }, [editableClone, instance.materialOverride, missingTextureState]);
   // 표면 직접 그리기 2단계: 문서의 GLB 텍스처 페인트(획 벡터)를 편집 클론 재질에 합성 텍스처로
   // 올린다. 재질 오버라이드 effect가 원본 재질을 다시 복사하면 map이 원본으로 돌아가므로,
   // 선언 순서상 그 뒤에 두고 오버라이드 변경에도 다시 적용한다. 정리 시 원본 map으로 복원된다.
@@ -169,7 +208,7 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
       return;
     }
     return () => application.dispose();
-  }, [editableClone, instance.materialOverride, instance.modelTexturePaint]);
+  }, [editableClone, instance.materialOverride, instance.modelTexturePaint, missingTextureState]);
   useEffect(() => {
     animationRunRef.current?.mixer.stopAllAction();
     animationRunRef.current = null;
@@ -389,6 +428,12 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
     return () => registerRef(instance.id, null);
   }, [instance.id, registerRef]);
 
+  const selectionOutline = useMemo(
+    () => (editableClone ? createLocalSelectionBoxEdges(editableClone.root) : null),
+    [editableClone],
+  );
+  useEffect(() => () => selectionOutline?.geometry.dispose(), [selectionOutline]);
+
   const visible = isBgObjectVisible(instance);
   const handlePaintPointer = onPaintPointer
     ? (phase: StudioBg3dPaintPointerPhase) => (event: ThreeEvent<PointerEvent>) => {
@@ -403,7 +448,11 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
       position={instance.position}
       rotation={instance.rotation}
       scale={instance.scale}
-      userData={{ studioBg3dEntityId: instance.id, studioBg3dEntityKind: "model" }}
+      userData={{
+        studioBg3dEntityId: instance.id,
+        studioBg3dEntityKind: "model",
+        studioBg3dSelected: selected,
+      }}
       visible={visible}
       {...(visible ? {
         onClick: (e: ThreeEvent<MouseEvent>) => {
@@ -419,6 +468,18 @@ export function BgCustomModelMesh({ instance, cachedRoot, animations, selected, 
       } : {})}
     >
       {editableClone ? <primitive object={editableClone.root} /> : null}
+      {selected && !capturing && !lineArt && selectionOutline ? (
+        <lineSegments
+          ref={registerStudioBg3dCaptureExcludedObject}
+          raycast={() => null}
+          position={selectionOutline.center}
+          geometry={selectionOutline.geometry}
+          renderOrder={18}
+          userData={{ studioBg3dSelectionHighlightFor: instance.id }}
+        >
+          <lineBasicMaterial color={0x38bdf8} depthTest={false} transparent opacity={0.92} />
+        </lineSegments>
+      ) : null}
       {children}
     </group>
   );

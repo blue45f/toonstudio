@@ -24,10 +24,9 @@ vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
 }));
 
 /**
- * 헤더 1차 메뉴 목적지 (S1-2): 상시 노출은 제작·탐색·커뮤니티·배우기·마켓 5개뿐이다.
- * 가상 스튜디오는 제작 드롭다운 자식으로 강등됐고, 협업은 협업 구역에서만 끼워 넣는 맥락형 항목이다.
+ * 헤더 1차 메뉴 목적지 (Grand Atelier V4): 상시 노출은 제작·협업·탐색·커뮤니티·배우기·마켓 6개 핵심 축이다.
  */
-const PRIMARY_ENTRY_HREFS = ["/studio", "/discover", "/community", "/learn", "/market"];
+const PRIMARY_ENTRY_HREFS = ["/studio", "/production", "/discover", "/community", "/learn", "/market"];
 
 const mediaMatches = new Map<string, boolean>();
 const mediaListeners = new Map<string, Set<(event: MediaQueryListEvent) => void>>();
@@ -91,7 +90,11 @@ function menuDestination(dialog: HTMLElement, href: string, name: string): HTMLE
     fireEvent.click(summary);
     expect(group.open).toBe(true);
   }
-  return within(dialog).getByRole("link", { name });
+  const matched = within(dialog)
+    .getAllByRole("link", { name })
+    .find((link) => link.getAttribute("href") === href);
+  if (!matched) throw new Error(`전체 메뉴 링크 역할이 없습니다: ${name} (${href})`);
+  return matched;
 }
 
 beforeEach(() => {

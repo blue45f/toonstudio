@@ -14,6 +14,7 @@ import { useStudioVrmPoserRuntimeD } from "./useStudioVrmPoserRuntimeD";
 import { useStudioVrmPoserRuntimeE } from "./useStudioVrmPoserRuntimeE";
 import { useStudioVrmPoserShare } from "./useStudioVrmPoserShare";
 import { useStudioVrmPoserState } from "./useStudioVrmPoserState";
+import { useStudioVrmContextRecovery } from "./useStudioVrmContextRecovery";
 
 import type { StudioVrmPoserHost } from "./StudioVrmPoserHost";
 import type { StudioVrmPoserProps } from "./StudioVrmPoserTypes";
@@ -39,5 +40,5 @@ export function useStudioVrmPoserController(props: StudioVrmPoserProps): StudioV
   useStudioVrmPoserInstall(h);
   useStudioVrmPoserPoseEdit(h);
   useStudioVrmPoserRuntimeE(h);
-  return h;
+  return useStudioVrmContextRecovery(h);
 }

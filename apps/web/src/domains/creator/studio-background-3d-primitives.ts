@@ -48,6 +48,23 @@ export function duplicatePrimitive(prim: BgPrimitive): BgPrimitive {
     ...prim,
     id: uid(),
     position: [prim.position[0] + 0.4, prim.position[1], prim.position[2] + 0.4],
+    rotation: [...prim.rotation] as [number, number, number],
+    scale: [...prim.scale] as [number, number, number],
+    ...(prim.materialOverride ? { materialOverride: { ...prim.materialOverride } } : {}),
+    ...(prim.tags ? { tags: [...prim.tags] } : {}),
+    ...(prim.componentRef ? { componentRef: { ...prim.componentRef } } : {}),
+    ...(prim.surface
+      ? {
+          surface: {
+            ...prim.surface,
+            ...(prim.surface.colors ? { colors: [...prim.surface.colors] } : {}),
+            ...(prim.surface.overlay ? { overlay: { ...prim.surface.overlay } } : {}),
+            ...(prim.surface.text ? { text: { ...prim.surface.text } } : {}),
+          },
+        }
+      : {}),
+    // 일반 복제는 연결 복제 원본에서 파생하더라도 독립 사본으로 끊는다(연결 복제 명령은 호출부에서 명시적으로 재연결).
+    linkedSourceId: undefined,
     // 복제본은 편집 가능·표시 상태로 둔다(잠긴 원본을 복제해 곧바로 못 움직이는 함정 방지).
     locked: false,
     visible: prim.visible !== false,

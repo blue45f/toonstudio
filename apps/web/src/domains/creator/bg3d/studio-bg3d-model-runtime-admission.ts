@@ -19,6 +19,10 @@ import {
 import type { StudioBg3dResolvedDeviceQuality } from "./studio-bg3d-device-quality";
 import { isStudioBg3dEnvironmentAssetId } from "./studio-bg3d-environment-catalog";
 import {
+  diagnoseStudioBg3dGlbUnitAndAxis,
+  type StudioBg3dGlbUnitAxisReport,
+} from "./studio-bg3d-glb-unit-axis-diagnostics";
+import {
   combineStudioBg3dAbortSignals,
   StudioBg3dStaleModalOperationError,
   studioBg3dGlobalAssetLoadGate,
@@ -65,6 +69,7 @@ export type StudioBg3dModelRootCacheEntry = Pick<
   readonly morphTargets: readonly StudioBg3dThreeMorphDescriptor[];
   readonly semanticMaterials: StudioBg3dSemanticMaterialClassificationResult;
   readonly genericHints: StudioGeneric3dManifestHints;
+  readonly glbDiagnostics?: StudioBg3dGlbUnitAxisReport;
 };
 
 /**
@@ -286,9 +291,10 @@ async function admitAndCacheStudioBg3dModelInternal(
           renderer: args.renderer,
           qualityBudget: args.quality.textureScale,
         });
+        const rawSize = measureBg3dObjectSize(loaded.root);
         const normalizationScale = resolveStudioBg3dModelNormalizationScale(
           args.record.id,
-          measureBg3dObjectSize(loaded.root),
+          rawSize,
         );
         loaded.root.scale.setScalar(normalizationScale);
         if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent()) {
@@ -297,6 +303,7 @@ async function admitAndCacheStudioBg3dModelInternal(
           throw new StudioBg3dStaleModalOperationError();
         }
         const joints = collectStudioBg3dThreeJoints(loaded.root);
+        const genericHints = inspectStudioGeneric3dRuntimeHints(loaded.root, joints);
         const entry: StudioBg3dModelRootCacheEntry = {
           root: loaded.root,
           animations: loaded.animations,
@@ -310,7 +317,13 @@ async function admitAndCacheStudioBg3dModelInternal(
           joints,
           morphTargets: collectStudioBg3dThreeMorphTargets(loaded.root),
           semanticMaterials: classifyStudioBg3dThreeSemanticMaterials(loaded.root),
-          genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints),
+          genericHints,
+          glbDiagnostics: diagnoseStudioBg3dGlbUnitAndAxis({
+            rawSize,
+            rawMinY: 0,
+            nodeNames: genericHints.nodeNames,
+            isBundledEnvironment: isStudioBg3dEnvironmentAssetId(args.record.id),
+          }),
         };
         if (!lease.isCurrent() || !args.isActive() || !isPolicyCurrent()) {
           entry.dispose();

@@ -125,6 +125,10 @@ const INTENTIONALLY_DISCONTINUOUS_PREVIEWS = new Set([
 const INTENTIONALLY_DISCONTINUOUS_CATALOG_IDS = new Set([
   "spray",
   "splatter",
+  "glitter",
+  "star-dust",
+  "sparkle-star",
+  "ink-particle",
   // Engine-lane scatter / burst variants intentionally deposit sparse carriers
   // (same product promise as base spray/splatter particle media).
   "spray--equal-area",

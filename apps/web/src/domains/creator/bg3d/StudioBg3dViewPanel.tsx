@@ -13,9 +13,10 @@ import { StudioBg3dSpatialStoryboardLauncher } from "./StudioBg3dSpatialStoryboa
 import { useT } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import "../studio-bg3d-panel-status-i18n";
-import { StudioBg3dWebglRecoveryNotice } from "./StudioBg3dWebglRecoveryNotice";
+import { StudioBg3dSceneSnapshotPanel } from "./StudioBg3dSceneSnapshotPanel";
 import { StudioBg3dViewPanel as StudioBg3dViewPanelContent } from "./StudioBg3dViewPanelContent";
 
+import type { StudioBg3dSceneSnapshotPorts } from "./studio-bg3d-scene-snapshot-ports";
 import type { StudioBg3dShotBatchPass } from "./studio-bg3d-shot-batch-pass-catalog";
 import type { StudioBg3dViewPanelProps } from "./StudioBg3dViewPanelContent";
 
@@ -50,6 +51,7 @@ function normalizeSelectedPasses(
 export type StudioBg3dViewPanelBridgeProps = StudioBg3dViewPanelProps & {
   readonly onSetSixPassLt?: StudioBg3dProSuiteRuntimeValue["onSetSixPassLt"];
   readonly sixPassLtUnavailableReason?: string | null;
+  readonly sceneSnapshotPorts?: StudioBg3dSceneSnapshotPorts;
 };
 
 export function StudioBg3dViewPanel(props: StudioBg3dViewPanelBridgeProps) {
@@ -171,7 +173,12 @@ export function StudioBg3dViewPanel(props: StudioBg3dViewPanelBridgeProps) {
 
   return (
     <StudioBg3dProSuiteRuntimeContext.Provider value={runtime}>
-      <StudioBg3dWebglRecoveryNotice hidden={props.hidden} />
+      {props.sceneSnapshotPorts ? (
+        <StudioBg3dSceneSnapshotPanel
+          ports={props.sceneSnapshotPorts}
+          hidden={props.hidden || context.viewEditorSection !== "camera"}
+        />
+      ) : null}
       <StudioBg3dViewPanelContent {...props} />
       <StudioBg3dSpatialStoryboardLauncher
         hidden={props.hidden}

@@ -13,27 +13,72 @@ function studioRoot(): HTMLElement | null {
     ?? document.querySelector<HTMLElement>('[data-studio-editor="true"]');
 }
 
+const LANDMARK_FALLBACK_SELECTORS: Readonly<Record<StudioWorkspaceLandmarkId, readonly string[]>> = {
+  "studio-menubar": ['[data-studio-drawing-clarity-header="true"]'],
+  "studio-tool-belt": [
+    ".studio-drawing-clarity-context-row",
+    '[data-studio-draw-options="true"]',
+    "#studio-mobile-draw-settings",
+  ],
+  "studio-tool-rail": [
+    ".studio-drawing-clarity-rail",
+    '[data-studio-mobile-editing-dock="true"]',
+  ],
+  "studio-canvas-workspace": ["[data-studio-canvas-viewport]"],
+  "studio-inspector": [".studio-drawing-clarity-pane:not([hidden])"],
+  "studio-status-bar": [
+    '[data-studio-status-bar="true"]',
+    '[data-studio-save-status-bar="true"]',
+  ],
+};
+
 function isVisibleLandmark(node: HTMLElement | null): node is HTMLElement {
   if (!node || node.hidden || node.getAttribute("aria-hidden") === "true") return false;
   if (node.closest("[inert]")) return false;
-  const style = globalThis.getComputedStyle?.(node);
-  return style?.display !== "none" && style?.visibility !== "hidden";
+  let current: HTMLElement | null = node;
+  while (current) {
+    if (current.hidden || current.getAttribute("aria-hidden") === "true") return false;
+    const style = globalThis.getComputedStyle?.(current);
+    if (style?.display === "none" || style?.visibility === "hidden") return false;
+    current = current.parentElement;
+  }
+  return true;
+}
+
+function resolveLandmarkElement(id: StudioWorkspaceLandmarkId): HTMLElement | null {
+  const byId = document.getElementById(id);
+  if (isVisibleLandmark(byId)) return byId;
+  for (const selector of LANDMARK_FALLBACK_SELECTORS[id]) {
+    const candidates = document.querySelectorAll<HTMLElement>(selector);
+    for (const candidate of candidates) {
+      if (isVisibleLandmark(candidate)) return candidate;
+    }
+  }
+  return null;
 }
 
 function availableLandmarks(): readonly StudioWorkspaceLandmarkId[] {
   return STUDIO_WORKSPACE_LANDMARKS.flatMap(({ id }) =>
-    isVisibleLandmark(document.getElementById(id)) ? [id] : [],
+    resolveLandmarkElement(id) ? [id] : [],
   );
+}
+
+function deepestLandmarkForElement(target: HTMLElement): StudioWorkspaceLandmarkId | null {
+  let best: { id: StudioWorkspaceLandmarkId; node: HTMLElement } | null = null;
+  for (const { id } of STUDIO_WORKSPACE_LANDMARKS) {
+    const landmark = resolveLandmarkElement(id);
+    if (!landmark || (landmark !== target && !landmark.contains(target))) continue;
+    if (!best || best.node.contains(landmark)) {
+      best = { id, node: landmark };
+    }
+  }
+  return best?.id ?? null;
 }
 
 function landmarkForActiveElement(): StudioWorkspaceLandmarkId | null {
   const active = document.activeElement;
   if (!(active instanceof HTMLElement)) return null;
-  for (const { id } of STUDIO_WORKSPACE_LANDMARKS) {
-    const landmark = document.getElementById(id);
-    if (landmark && (landmark === active || landmark.contains(active))) return id;
-  }
-  return null;
+  return deepestLandmarkForElement(active);
 }
 
 function visibleModalOwnsFocus(): boolean {
@@ -63,8 +108,15 @@ export function StudioWorkspaceNavigator() {
   const [announcement, setAnnouncement] = useState("");
 
   const focusLandmark = useCallback((id: StudioWorkspaceLandmarkId): boolean => {
-    const target = document.getElementById(id);
-    if (!isVisibleLandmark(target)) return false;
+    const target = resolveLandmarkElement(id);
+    if (!target) return false;
+    if (
+      target.tabIndex < 0 &&
+      !target.hasAttribute("tabindex") &&
+      !target.matches("button,input,select,textarea,a,summary")
+    ) {
+      target.setAttribute("tabindex", "-1");
+    }
     target.focus({ preventScroll: true });
     target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
     const label = studioWorkspaceLandmarkLabel(id);
@@ -88,12 +140,12 @@ export function StudioWorkspaceNavigator() {
     const trackZone = (event: FocusEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      for (const { id } of STUDIO_WORKSPACE_LANDMARKS) {
-        const landmark = document.getElementById(id);
-        if (landmark && (landmark === target || landmark.contains(target))) {
-          root.dataset.studioActiveZone = id;
-          return;
-        }
+      if (root.dataset.studioInputModality === "keyboard" && root.contains(target)) {
+        target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+      }
+      const matchedId = deepestLandmarkForElement(target);
+      if (matchedId) {
+        root.dataset.studioActiveZone = matchedId;
       }
     };
     const cycleZones = (event: KeyboardEvent) => {

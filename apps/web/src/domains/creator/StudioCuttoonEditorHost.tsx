@@ -220,9 +220,8 @@ import { useStudioHistoryDurability } from "./studio-cuttoon-editor/runtime/useS
 import { useStudioHistoryRetention } from "./studio-cuttoon-editor/runtime/useStudioHistoryRetention";
 import { useStudioRejectedStrokeRecords } from "./use-studio-reliability-status";
 import { useStudioPageHistorySnapshots } from "./studio-cuttoon-editor/runtime/useStudioPageHistorySnapshots";
-import {
-  useStudioUnifiedHistoryJournal,
-} from "./studio-cuttoon-editor/runtime/useStudioUnifiedHistoryJournal";
+import { useStudioUnifiedHistoryJournal } from "./studio-cuttoon-editor/runtime/useStudioUnifiedHistoryJournal";
+import { useStudioDocumentScopedInitialToolSync } from "./studio-cuttoon-editor/studio-document-tool-isolation";
 import { useStudioPreferencesRuntime } from "./studio-cuttoon-editor/runtime/useStudioPreferencesRuntime";
 import { useStudioEpisodeStage } from "./studio-cuttoon-editor/runtime/useStudioEpisodeStage";
 import {
@@ -972,6 +971,7 @@ import {
 } from "./studio-page-workspace-persistence";
 import { studioExactResumeRequested, studioExactResumeSourceReady, studioExactResumeSummary } from "./studio-exact-resume-context";
 import { useStudioExactResumeContext } from "./useStudioExactResumeContext";
+import { useStudioPerSurfaceSelectionContinuity } from "./studio-cuttoon-editor/useStudioPerSurfaceSelectionContinuity";
 import {
   DEFAULT_STUDIO_PAPER_SURFACE,
   normalizeStudioPaperSurfaceSettings,
@@ -1318,6 +1318,7 @@ import {
 import { resolveStudioWorkspaceCanvasDockInsets } from "./studio-workspace-canvas-dock";
 import { readStudioWorkspaceDeviceSignalsFromGlobals } from "./studio-workspace-device-signals";
 import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-presentation-layout";
+import { useStudioViewportPanelBounds, useStudioViewportPanelMemory } from "./studio-cuttoon-editor/runtime/useStudioViewportPanelMemory";
 import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
   studio2dSurfaceNavigationHref,
@@ -1503,6 +1504,7 @@ import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import { getAuthUserId, useSession } from "@/domains/auth/public/session/auth-session-store";
 import { loadStudioDocumentSource } from "./studio-cuttoon-editor/runtime/studio-document-source-session";
 import { loadStudioWriterRoomRuntime } from "./studio-cuttoon-editor/runtime/loadStudioWriterRoomRuntime";
+import { composeStudioEmergencyPendingFingerprint, createStudioAutosaveMonotonicGate, createStudioAutosaveSupersededError, isStudioAutosaveSupersededFailure } from "./studio-cuttoon-editor/runtime/studio-autosave-monotonic-gate";
 import {
   afterInspectorCommit,
   compareStudioCommentThreadActivity,
@@ -1823,6 +1825,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     }
   }
   const [saveSyncStore] = useState(() => createStudioSaveSyncSignalStore());
+  const autosaveMonotonicGateRef = useRef(createStudioAutosaveMonotonicGate());
   const {
     advanceStudioRevisionProjectGeneration,
     authorizedWorkAssetScopeId,
@@ -2174,6 +2177,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     store: saveSyncStore,
     autosaveKey,
     leadership: autosaveDocumentLeadership,
+    activePageId: activePage.id,
+    activePageLabel: pageDisplayName(activePage, activePageIndex),
   });
   // 신규 캔버스(작업ID/리믹스 없음)에서는 페이지 리뷰 잠금이 편집 차단에 개입하지 않도록 스코프를 분리한다.
   const reviewBoundPage = workId !== null || remixId !== null;
@@ -3648,16 +3653,17 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     };
   }, [isMobile, mobileSheet]);
   // 데스크톱: 캔버스와 도구 패널 너비를 드래그(또는 키보드)로 조절하는 스플리터.
+  const viewportPanelBounds = useStudioViewportPanelBounds();
   const leftResize = useResizable({
     initial: initialWorkspaceDeviceLayout.desktop.leftPanelWidth,
     min: STUDIO_WORKSPACE_LEFT_PANEL_WIDTH.minimum,
-    max: STUDIO_WORKSPACE_LEFT_PANEL_WIDTH.maximum,
+    max: viewportPanelBounds.maxLeftPanelWidth,
     edge: "right",
   });
   const rightResize = useResizable({
     initial: initialWorkspaceDeviceLayout.desktop.rightPanelWidth,
     min: STUDIO_WORKSPACE_RIGHT_PANEL_WIDTH.minimum,
-    max: STUDIO_WORKSPACE_RIGHT_PANEL_WIDTH.maximum,
+    max: viewportPanelBounds.maxRightPanelWidth,
     edge: "left",
   });
   const leftResizeSetWidthRef = useRef(leftResize.setWidth);
@@ -3820,43 +3826,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   // 데스크톱 도크가 접힌 채 굳는다. 기기별 조정은 기기 슬롯에, 저자 기하는 desktop에 남긴다.
   // 이 덕분에 liveLayout은 항상 저자형(authored-form)이고, 자동 저장·dirty 비교·메뉴 저장이 모두
   // 같은 형태를 주고받는다.
-  const liveWorkspaceLayout = useMemo(
-    () =>
-      captureStudioWorkspaceDeviceLayout(
-        workspaceState.liveLayout,
-        normalizeStudioWorkspaceLayout(
-          {
-            inspector: inspectorLayout,
-            desktop: {
-              leftPanelOpen,
-              rightPanelOpen,
-              leftPanelWidth: leftResize.width,
-              rightPanelWidth: rightResize.width,
-            },
-            drawingPalettes: drawingPaletteLayout,
-            quickActions: quickActionsPreferences,
-          },
-          workspaceState.liveLayout
-        ),
-        workspaceDeviceKind
-      ),
-    [
-      workspaceDeviceKind,
-      inspectorLayout,
-      leftPanelOpen,
-      rightPanelOpen,
-      leftResize.width,
-      rightResize.width,
-      drawingPaletteLayout,
-      quickActionsPreferences,
-      workspaceState.liveLayout,
-    ]
-  );
-  const workspacePersistenceRef = useRef(workspacePersistence);
-  const liveWorkspaceLayoutRef = useRef(liveWorkspaceLayout);
-  workspacePersistenceRef.current = workspacePersistence;
-  liveWorkspaceLayoutRef.current = liveWorkspaceLayout;
-
   function changeDrawingPaletteDragging(next: boolean) {
     drawingPaletteDraggingRef.current = next;
     setDrawingPaletteDragging(next);
@@ -3868,6 +3837,37 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setDrawingPaletteDragging(false);
     setDrawingPaletteCancelEpoch((current) => current + 1);
   }
+
+  const viewportPanelMemory = useStudioViewportPanelMemory({
+    viewportWidth: viewportPanelBounds.viewportWidth, ownerScope: currentWorkspaceOwnerScope,
+    initialDesktop: initialWorkspaceDeviceLayout.desktop, initialDrawingPalettes: workspaceState.liveLayout.drawingPalettes,
+    leftPanelOpen, rightPanelOpen, leftPanelWidth: leftResize.width, rightPanelWidth: rightResize.width,
+    leftDragging: leftResize.dragging, rightDragging: rightResize.dragging, drawingPaletteDragging, drawingPaletteLayout,
+    setLeftPanelOpenWithOverride, setRightPanelOpenWithOverride, leftResizeSetWidthRef, rightResizeSetWidthRef,
+    setDrawingPaletteLayout, cancelDrawingPaletteDrag,
+  });
+
+  const liveWorkspaceLayout = useMemo(
+    () =>
+      captureStudioWorkspaceDeviceLayout(
+        workspaceState.liveLayout,
+        normalizeStudioWorkspaceLayout(
+          {
+            inspector: inspectorLayout,
+            desktop: viewportPanelMemory.authoredDesktop,
+            drawingPalettes: viewportPanelMemory.authoredDrawingPalettes,
+            quickActions: quickActionsPreferences,
+          },
+          workspaceState.liveLayout
+        ),
+        workspaceDeviceKind
+      ),
+    [workspaceDeviceKind, inspectorLayout, viewportPanelMemory.authoredDesktop, viewportPanelMemory.authoredDrawingPalettes, quickActionsPreferences, workspaceState.liveLayout]
+  );
+  const workspacePersistenceRef = useRef(workspacePersistence);
+  const liveWorkspaceLayoutRef = useRef(liveWorkspaceLayout);
+  workspacePersistenceRef.current = workspacePersistence;
+  liveWorkspaceLayoutRef.current = liveWorkspaceLayout;
 
   function applyStudioWorkspaceLayout(
     layout: StudioWorkspaceLayout,
@@ -3899,6 +3899,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       resolveStudioWorkspaceControlSide(workspacePersistenceRef.current.state, layout, deviceKind)
     );
     setDrawingPaletteLayout(presented.drawingPalettes);
+    viewportPanelMemory.onWorkspaceLayoutApplied(presented, source);
     setQuickActionsPreferences(presented.quickActions);
     setMobileSheet(null);
     setQuickActionsOpen(false);
@@ -3908,31 +3909,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     globalThis.requestAnimationFrame?.(() => propsSheetRef.current?.scrollTo({ top: 0 }));
   }
   const { persistStudioWorkspaceState } = useStudioPageWorkspacePersistence({
-    taskWorkspaceId,
-    applyStudioWorkspaceLayout,
-    currentWorkspaceOwnerScope,
-    drawingPaletteDragging,
-    drawingPaletteDraggingRef,
-    leftResize,
-    liveWorkspaceLayout,
-    liveWorkspaceLayoutRef,
-    pendingExternalWorkspaceSync,
-    pendingExternalWorkspaceSyncRef,
-    rightResize,
-    setPendingExternalWorkspaceSync,
-    setWorkspaceMenuEpoch,
-    setWorkspacePersistence,
-    setStudioDrawingClarityBaseline,
-    setWorkspaceSyncNotice,
-    setWorkspaceSyncRetryEpoch,
-    studioAuthUserId,
-    workspaceDirtyRevisionRef,
-    workspaceHydrationGenerationRef,
-    workspacePersistenceRef,
-    workspaceRuntimeRef,
-    workspaceSyncBaseStateRef,
-    workspaceSyncRetryEpoch,
-    workspaceSyncSequenceRef,
+    taskWorkspaceId, applyStudioWorkspaceLayout, currentWorkspaceOwnerScope,
+    drawingPaletteDragging, drawingPaletteDraggingRef, leftResize, liveWorkspaceLayout, liveWorkspaceLayoutRef,
+    pendingExternalWorkspaceSync, pendingExternalWorkspaceSyncRef, rightResize, setPendingExternalWorkspaceSync,
+    setWorkspaceMenuEpoch, setWorkspacePersistence, setStudioDrawingClarityBaseline, setWorkspaceSyncNotice,
+    setWorkspaceSyncRetryEpoch, studioAuthUserId, workspaceDirtyRevisionRef, workspaceHydrationGenerationRef,
+    workspacePersistenceRef, workspaceRuntimeRef, workspaceSyncBaseStateRef, workspaceSyncRetryEpoch, workspaceSyncSequenceRef,
   });
   const { restoreDrawingWorkbench, undoDrawingWorkbenchRestore } = createStudioDrawingWorkbenchRestoreActions({
     currentWorkspaceOwnerScope, workspacePersistenceRef, liveWorkspaceLayoutRef,
@@ -3953,13 +3935,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       normalizeStudioWorkspaceLayout(
         {
           inspector: inspectorLayout,
-          desktop: {
-            leftPanelOpen,
-            rightPanelOpen,
-            leftPanelWidth: leftResize.width,
-            rightPanelWidth: rightResize.width,
-          },
-          drawingPalettes: drawingPaletteLayout,
+          desktop: viewportPanelMemory.authoredDesktop,
+          drawingPalettes: viewportPanelMemory.authoredDrawingPalettes,
           quickActions: quickActionsPreferences,
         },
         workspacePersistence.state.liveLayout,
@@ -3973,22 +3950,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       updateStudioWorkspaceLiveLayout(workspacePersistence.state, nextLayout),
     );
   }, [
-    currentWorkspaceOwnerScope,
-    drawingPaletteDragging,
-    drawingPaletteLayout,
-    inspectorLayout,
-    leftPanelOpen,
-    leftResize.dragging,
-    leftResize.width,
-    pendingExternalWorkspaceSync,
-    quickActionsPreferences,
-    rightPanelOpen,
-    rightResize.dragging,
-    rightResize.width,
-    studioAuthUserId,
-    workspaceDeviceKind,
-    workspacePersistence.ownerScope,
-    workspacePersistence.state,
+    currentWorkspaceOwnerScope, drawingPaletteDragging, viewportPanelMemory.authoredDrawingPalettes,
+    inspectorLayout, viewportPanelMemory.authoredDesktop, leftResize.dragging,
+    pendingExternalWorkspaceSync, quickActionsPreferences, rightResize.dragging,
+    studioAuthUserId, workspaceDeviceKind, workspacePersistence.ownerScope, workspacePersistence.state,
   ]);
   // 재사용 클립 보관함 — 선택 요소(그룹)를 저장해 다른 컷·회차에서 다시 꺼내 쓴다.
   const [clips, setClips] = useState<StudioClip[]>([]);
@@ -4055,10 +4020,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [autosaveChecked, setAutosaveChecked] = useState(false);
   const [autosaveCheckedDocumentKey, setAutosaveCheckedDocumentKey] = useState<string | null>(null);
   const [autosaveCheckFailed, setAutosaveCheckFailed] = useState(false);
-  const [autosaveRetryNonce, setAutosaveRetryNonce] = useState(0);
-  const projectBackupSnapshot = {
-    documentKey: autosaveKey, workHydrated, autosaveChecked, autosaveCheckedDocumentKey, autosaveCheckFailed, hasAutosave,
-  };
+  const [autosaveRetryNonce, setAutosaveRetryNonce] = useState(0), lastAutosaveRetryNonceRef = useRef(0);
+  const projectBackupSnapshot = { documentKey: autosaveKey, workHydrated, autosaveChecked, autosaveCheckedDocumentKey, autosaveCheckFailed, hasAutosave };
   const projectBackupUnavailableReason = studioProjectBackupUnavailableReason(projectBackupSnapshot);
   // B covers standalone local drafts only; shared/scoped writers retain their existing policy.
   const initialRecoveryLocalDraft = Boolean(studioRoute.draftId) && !workId && !remixId
@@ -4126,6 +4089,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const studioLifecycleDurableGenerationRef = useRef(0);
   const studioLifecycleDurablePendingFingerprintRef = useRef("");
   const studioLifecycleBaselineScopeRef = useRef<string | null>(null);
+  const syncPendingStrokeSignal = () => saveSyncStore.notePendingFingerprint(studioPendingStrokeFingerprint(pendingStrokeCommitsRef.current));
 
   // hydration 전에는 기억된 도구도 문서 내용도 모른다 — 시작값은 `select`, 부팅 뒤
   // `useStudioInitialPrimaryTool` 이 한 번만 갈아탄다(ref 는 사용자가 먼저 고른 경우의 방어).
@@ -4203,46 +4167,23 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       setMarqueeIds((current) => current.length === 0 ? current : []);
     }
   }, [selectedId]);
-  // 작업면이 바뀌거나 요소가 제거되면 현재 작업면에 실제로 존재하는 ID만 남긴다. 댓글·대사·
-  // 연속성 탐색처럼 페이지를 전환하면서 새 작업면의 요소를 의도적으로 선택하는 흐름은 보존한다.
-  useEffect(() => {
-    const activeIds = new Set(activeElementsRef.current.map((element) => element.id));
-    const pendingBatch = pendingStrokeCommitsRef.current;
-    const pendingIds =
-      pendingBatch?.pageId === activePage.id
-        ? new Set(pendingBatch.strokes.map((stroke) => stroke.id))
-        : null;
-    // 두 선택 권위를 각각 거른 뒤 정본 모양으로 되돌린다. `pagesHi` 가 deps 라 이 이펙트는
-    // 페이지 전환뿐 아니라 모든 커밋에서 돈다 — 그래서 `currentCanvasSelectionIds()` 하나로
-    // 합쳐 걸러서는 안 된다. 그 헬퍼는 marquee 가 비어 있지 않으면 selectedId 를 무시하므로,
-    // 삽입 흐름(텍스트·말풍선·스티커·이미지: commit 후 setSelectedId 만 호출)이 같은 커밋에서
-    // 세운 새 선택을 낡은 marquee 가 덮어써 새 요소가 선택되지 않는다.
-    //
-    // 살아남은 selectedId 가 이긴다 — 예전 쌍(개별 필터 + 배타 이펙트)이 만들던 결과와 같다.
-    // 그러면서도 원래 고치려던 사각지대는 유지된다: 두 획 마퀴에서 한쪽이 사라지면 selectedId
-    // 는 애초에 null 이라 marquee 하나가 `selectionShapeForIds` 를 타고 단일 선택으로 접힌다.
-    // 길이 1 을 그대로 두면 다중 선택 프록시 조건(`> 1`)에도 단일 선화 자유 변형 조건(marquee
-    // 비어 있음)에도 걸리지 않아 핸들이 통째로 사라진다.
-    const survives = (id: string) => activeIds.has(id) || pendingIds?.has(id) === true;
-    const survivingSelectedId =
-      selectedIdRef.current && survives(selectedIdRef.current) ? selectedIdRef.current : null;
-    const survivingMarqueeIds = marqueeIdsRef.current.filter(survives);
-    const nextShape = selectionShapeForIds(
-      survivingSelectedId ? [survivingSelectedId] : survivingMarqueeIds,
-    );
-    if (
-      nextShape.selectedId !== selectedIdRef.current
-      || nextShape.marqueeIds.length !== marqueeIdsRef.current.length
-    ) {
-      selectedIdRef.current = nextShape.selectedId;
-      marqueeIdsRef.current = nextShape.marqueeIds;
-      setSelectedId(nextShape.selectedId);
-      setMarqueeIds(nextShape.marqueeIds);
-    }
-    // 작업면 전환 시 그룹 진입 상태는 항상 리셋 — 다른 페이지의 그룹 내부에 갇혀 있으면 안 된다.
-    activeGroupIdRef.current = null;
-    setActiveGroupId(null);
-  }, [activePage.id, masterEditMode, pagesHi]);
+  // 작업면이 바뀌거나 요소가 제거되면 유효한 ID만 남기되, 다른 컷을 다녀온 뒤 같은 컷으로 복귀하면 직전 활성 레이어를 복원한다.
+  useStudioPerSurfaceSelectionContinuity({
+    documentScopeKey: autosaveKey,
+    activePageId: activePage.id,
+    masterEditMode,
+    pagesHi,
+    selectedId,
+    marqueeIds,
+    activeElementsRef,
+    pendingStrokeCommitsRef,
+    selectedIdRef,
+    marqueeIdsRef,
+    activeGroupIdRef,
+    setSelectedId,
+    setMarqueeIds,
+    setActiveGroupId,
+  });
   // Transformer pointer capture 중에 레이어 패널·단축키·원격 동기화가 선택 스코프를 바꾸면
   // transformEnd의 오래된 snapshot을 적용하지 않는다. proxy도 같은 변경으로 unmount/disable되지만
   // Page에서 lease를 먼저 닫아 브라우저 이벤트 순서와 무관하게 안전 경계를 보장한다.
@@ -7290,10 +7231,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const scope = JSON.stringify([studioAuthUserId, workId, remixId]);
     if (studioLifecycleBaselineScopeRef.current === scope) return;
     studioLifecycleBaselineScopeRef.current = scope;
+    autosaveMonotonicGateRef.current.reset(autosaveKey);
     studioLifecycleDurableGenerationRef.current = studioRevisionProjectGenerationRef.current;
     saveSyncStore.noteBaseline(studioRevisionProjectGenerationRef.current);
     studioLifecycleDurablePendingFingerprintRef.current = "";
   }, [
+    autosaveKey,
     remixId,
     saveSyncStore,
     studioAuthUserId,
@@ -7421,6 +7364,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         `[as-probe] arm gen=${scheduledGeneration} durable=${studioLifecycleDurableGenerationRef.current} fpSame=${scheduledPendingFingerprint === studioLifecycleDurablePendingFingerprintRef.current}`,
       );
     }
+    const isImmediateRetry = autosaveRetryNonce !== lastAutosaveRetryNonceRef.current && canPublishSnapshot();
+    lastAutosaveRetryNonceRef.current = autosaveRetryNonce;
     const timer = setTimeout(() => {
       if (!canPublishSnapshot()) {
         // Capture fresh ref-backed history instead of assigning a newer timestamp to old ink.
@@ -7432,6 +7377,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       if (
         scheduledGeneration <= studioLifecycleDurableGenerationRef.current
         && scheduledPendingFingerprint === studioLifecycleDurablePendingFingerprintRef.current
+        && (!isImmediateRetry || saveSyncStore.getSignals().lastFailureAtMs === null)
       ) {
         if (
           typeof globalThis !== "undefined"
@@ -7514,14 +7460,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         });
         return;
       }
+      const snapshotSeq = autosaveMonotonicGateRef.current.issueSnapshotSeq(autosaveKey);
+      const savedIdx = Math.max(0, pages.findIndex((p) => p.id === currentPageId)), savedPage = pages[savedIdx] ?? pages[0]!;
+      const savedPageId = savedPage.id, savedPageLabel = pageDisplayName(savedPage, savedIdx);
       const payload: StudioAutosavePayload = {
-        ...buildCurrentStudioProjectFileSnapshot(
-          durablePages,
-          new Date().toISOString()
-        ),
-        ...(workId && sharedDocument
-          ? { sourceWorkId: workId, sourceRevision: sharedDocument.revision }
-          : {}),
+        ...buildCurrentStudioProjectFileSnapshot(durablePages, new Date().toISOString()),
+        ...(workId && sharedDocument ? { sourceWorkId: workId, sourceRevision: sharedDocument.revision } : {}),
       };
       const sessionPromise = autosaveOpfsSessionRef.current;
       const sqlitePromise = autosaveSqliteStoreRef.current;
@@ -7553,12 +7497,9 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
             && autosaveOpfsSessionRef.current !== sessionPromise
           ) return;
           if (!canPublishSnapshot()) return;
-          studioLifecycleDurableGenerationRef.current = Math.max(
-            studioLifecycleDurableGenerationRef.current,
-            scheduledGeneration
-          );
-          studioLifecycleDurablePendingFingerprintRef.current =
-            scheduledPendingFingerprint;
+          if (!autosaveMonotonicGateRef.current.admitDurableReceipt(autosaveKey, snapshotSeq)) return;
+          studioLifecycleDurableGenerationRef.current = Math.max(studioLifecycleDurableGenerationRef.current, scheduledGeneration);
+          studioLifecycleDurablePendingFingerprintRef.current = scheduledPendingFingerprint;
           noteStudioSaveSucceeded(receipt.authority);
           saveSyncStore.noteDurableReceipt({
             savedAtMs: Date.parse(receipt.savedAt) || Date.now(),
@@ -7566,6 +7507,10 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
             sequence: receipt.sequence,
             revision: receipt.revision,
             generation: scheduledGeneration,
+            snapshotSeq,
+            pendingFingerprint: scheduledPendingFingerprint,
+            savedPageId,
+            savedPageLabel,
           });
           // 대표 썸네일은 내구 저장 성공 뒤에만 갱신한다 — 실패해도 저장을 흔들지 않게 비동기로 흘려보낸다.
           void import("./studio-project-thumbnail").then(({ syncStudioProjectThumbnailAfterSave }) => syncStudioProjectThumbnailAfterSave({
@@ -7585,7 +7530,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
           saveSyncStore.noteFailure(Date.now());
           console.error("Auto-save failed:", cause);
         });
-  }, 1500);
+  }, isImmediateRetry ? 0 : 1500);
   return () => {
     clearTimeout(timer);
     busyRetry.dispose();
@@ -10163,6 +10108,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         }, DEFERRED_STROKE_COMMIT_RETRY_MS),
       };
     }
+    syncPendingStrokeSignal();
 
     const prune = pruneStudioGpuPendingAuthority(
       pendingGpuDrawAuthoritiesRef.current,
@@ -11486,6 +11432,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // guard. An unreceipted selected WebGPU operation cannot be extracted into a commit payload.
     if (pendingBatchAwaitsSelectedGpuFinalReceipt(batch)) return null;
     pendingStrokeCommitsRef.current = null;
+    syncPendingStrokeSignal();
     if (batch.timer) globalThis.clearTimeout(batch.timer);
     abortDeferredStrokePostprocess(batch.strokes.map((stroke) => stroke.id));
     return {
@@ -11501,6 +11448,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       retryDelayMs: DEFERRED_STROKE_COMMIT_RETRY_MS,
       maxRetries: DEFERRED_STROKE_COMMIT_MAX_RETRIES,
     });
+    syncPendingStrokeSignal();
   }
 
   /**
@@ -11539,6 +11487,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       ?? { pageId: activePage.id, strokes: [] as DrawEl[], timer: null, retryCount: 0 };
     pendingStrokeCommitsRef.current = batch;
     batch.strokes.push(finished);
+    syncPendingStrokeSignal();
     // Pointer-down admission and cancelled/rejected gestures must leave Redo intact. This
     // completed, accepted stroke is the first point that actually starts a new edit branch.
     invalidatePendingRetainedRedo();
@@ -15881,19 +15830,21 @@ const puppetWarpArmed =
     void openAssetMarketDeepLink();
   }, [uiBooleanPreferencesReady, workHydrated, autosaveChecked]);
 
-  // 빈 문서는 그리기로 열린다(감사 §2.1). 데스크톱만 펜 속성을 띄운다(모바일 시트 자동 열기 금지).
+  // 빈 문서는 그리기로 열린다(감사 §2.1). 기존 문서는 문서별 마지막 도구를 복원하고 새 문서는 이전 프로젝트 도구를 누출하지 않는다.
+  const initialToolDecision = useStudioDocumentScopedInitialToolSync({
+    projectId: studioRoute.projectId, documentId: studioRoute.documentId, focus: params.get("focus"),
+    autosaveChecked, hasAutosave, hasElements: elements.length > 0, workHydrated,
+    rememberedPrimaryTool, requestedPrimaryTool: readStudioLaunchPrimaryTool(location.search),
+    primaryToolActivatedRef, setTool, setDrawMode,
+  });
   useStudioInitialPrimaryTool({
-    autosaveChecked,
-    hasExistingContent: hasAutosave || elements.length > 0,
-    primaryToolActivatedRef,
-    rememberedPrimaryTool,
-    requestedPrimaryTool: readStudioLaunchPrimaryTool(location.search),
+    autosaveChecked, hasExistingContent: initialToolDecision.hasExistingContent, primaryToolActivatedRef,
+    rememberedPrimaryTool: initialToolDecision.rememberedPrimaryTool, requestedPrimaryTool: initialToolDecision.requestedPrimaryTool,
     startDrawing: () => {
-      activatePrimaryCanvasToolRef.current("draw");
+      activatePrimaryCanvasToolRef.current("draw", "pen");
       if (!isMobile && uiDensityMode !== "focus") openInspectorRoute({ primary: "properties" }, null);
     },
-    uiBooleanPreferencesReady,
-    workHydrated,
+    uiBooleanPreferencesReady, workHydrated,
   });
 
   // 내 로컬 에셋을 커뮤니티에 공유(로그인 필요)
@@ -17787,6 +17738,7 @@ const puppetWarpArmed =
             mainLayerRef.current?.batchDraw();
           }
           markStudioDocumentChanged();
+          syncPendingStrokeSignal();
           setAutosaveRetryNonce((current) => current + 1);
           setHasPendingOverlayCommit(false);
           setHasUndonePendingOverlay(true);
@@ -17910,6 +17862,7 @@ const puppetWarpArmed =
           mainLayerRef.current?.batchDraw();
           setHasUndonePendingOverlay(false);
           setHasPendingOverlayCommit(true);
+          syncPendingStrokeSignal();
           setUnloadGuardArmed(true);
         },
         showOverlay: (ids) => liveRetainedMediaOverlayRendererRef.current.showSettledPixels(ids),
@@ -25774,7 +25727,7 @@ function clearSelectionForEdit() {
     captureReadyStageForPage,
     preserveStudioViewBeforeCapture,
     setExportMenuOpen,
-    setSelectedId,
+    setSelectedId, selectedId,
     setMasterEditMode,
     setIsExporting,
     setError,
@@ -26087,22 +26040,13 @@ function clearSelectionForEdit() {
       )
       ? effectiveMasterStrokeCandidate
       : null;
-    const pagePendingFingerprint = durableEffectivePendingBatch?.strokes.length
-      ? `${durableEffectivePendingBatch.pageId}:${durableEffectivePendingBatch.strokes.map((stroke) => stroke.id).join(",")}`
-      : "";
-    const activePendingFingerprint = recoveredActiveStrokeEligible
-      ? studioActiveStrokeRecoveryFingerprint(recoveredActiveStrokeEligible)
-      : "";
-    const masterPendingFingerprint = effectiveMasterStroke
-      ? `master:${effectiveMasterStroke.id}`
-      : "";
-    const pendingFingerprint = [
-      pagePendingFingerprint,
-      masterPendingFingerprint,
-      activePendingFingerprint,
-    ]
-      .filter(Boolean)
-      .join("|");
+    const pendingFingerprint = composeStudioEmergencyPendingFingerprint({
+      durablePendingBatch: durableEffectivePendingBatch,
+      masterStrokeId: effectiveMasterStroke?.id ?? null,
+      activePendingFingerprint: recoveredActiveStrokeEligible
+        ? studioActiveStrokeRecoveryFingerprint(recoveredActiveStrokeEligible)
+        : "",
+    });
     const hasDirtyPendingState =
       pendingFingerprint !== studioLifecycleDurablePendingFingerprintRef.current;
     const hasDirtyStableState =
@@ -26158,6 +26102,8 @@ function clearSelectionForEdit() {
             : { kind: "local" },
       });
       if (emergency.ok) {
+        const snapshotSeq = autosaveMonotonicGateRef.current.issueSnapshotSeq(autosaveKey);
+        const savedPageId = activePage.id, savedPageLabel = pageDisplayName(activePage, activePageIndex);
         const emergencyGeneration = studioRevisionProjectGenerationRef.current;
         const durableWrites: Promise<"opfs-journal" | "sqlite-fallback">[] = [];
         const sessionPromise = autosaveOpfsSessionRef.current;
@@ -26165,6 +26111,7 @@ function clearSelectionForEdit() {
           durableWrites.push(sessionPromise.then(async (session) => {
             if (!session) throw new Error("OPFS autosave authority is unavailable");
             if (!initialWriteAllowed()) throw new Error("Initial recovery write was not admitted");
+            if (!autosaveMonotonicGateRef.current.admitOpfsDispatch(autosaveKey, snapshotSeq)) throw createStudioAutosaveSupersededError();
             const receipt = await session.write(emergency.payload);
             return receipt.authority;
           }));
@@ -26172,34 +26119,23 @@ function clearSelectionForEdit() {
         const sqlitePromise = autosaveSqliteStoreRef.current;
         if (sqlitePromise) {
           durableWrites.push(sqlitePromise.then(async (acquiredSqlite) => {
-            // persist 경로를 우회하는 옆문 ②. follower 탭의 pagehide 저장이 더 늦은 savedAt 으로
-            // 선행 탭 문서를 덮는 유일한 실제 포크 경로였다.
-            //
-            // 가드는 마운트 때 잡아둔 것을 쓴다(동적 import 금지 — 그 한 홉이 pointerup 쓰기를
-            // unload 뒤로 밀어낸다). 아직 못 잡았다면 세션도 안 열렸다는 뜻이라 임차권이 없고,
-            // 임차권이 없으면 follower 일 수 없으므로 가드와 같은 판정(통과)이다.
+            // persist 경로를 우회하는 옆문 ②. follower 탭의 pagehide 저장이 더 늦은 savedAt 으로 선행 탭 문서를 덮는 포크 방지.
             const applyLeadership = autosaveLeadershipGuardRef.current;
-            const sqlite = applyLeadership
-              ? applyLeadership(acquiredSqlite, autosaveDocumentLeaseRef.current)
-              : acquiredSqlite;
+            const sqlite = applyLeadership ? applyLeadership(acquiredSqlite, autosaveDocumentLeaseRef.current) : acquiredSqlite;
             if (!sqlite) throw new Error("SQLite autosave authority is unavailable");
             if (!initialWriteAllowed()) throw new Error("Initial recovery write was not admitted");
+            if (!autosaveMonotonicGateRef.current.admitSqliteDispatch(autosaveKey, snapshotSeq)) throw createStudioAutosaveSupersededError();
             await sqlite.write(autosaveKey, emergency.payload, { mode: "emergency" });
             return "sqlite-fallback" as const;
           }));
         }
         const durabilityAttempt = durableWrites.length > 0
           ? Promise.any(durableWrites)
-          : Promise.reject(
-              new Error("OPFS journal and SQLite autosave authorities are unavailable")
-            );
+          : Promise.reject(new Error("OPFS journal and SQLite autosave authorities are unavailable"));
         void durabilityAttempt
           .then((authority) => {
-            if (!initialWriteAllowed()) return;
-            studioLifecycleDurableGenerationRef.current = Math.max(
-              studioLifecycleDurableGenerationRef.current,
-              emergencyGeneration
-            );
+            if (!initialWriteAllowed() || !autosaveMonotonicGateRef.current.admitDurableReceipt(autosaveKey, snapshotSeq)) return;
+            studioLifecycleDurableGenerationRef.current = Math.max(studioLifecycleDurableGenerationRef.current, emergencyGeneration);
             studioLifecycleDurablePendingFingerprintRef.current = pendingFingerprint;
             noteStudioSaveSucceeded(authority);
             saveSyncStore.noteDurableReceipt({
@@ -26208,9 +26144,17 @@ function clearSelectionForEdit() {
               sequence: null,
               revision: null,
               generation: emergencyGeneration,
+              snapshotSeq,
+              pendingFingerprint,
+              savedPageId,
+              savedPageLabel,
             });
           })
           .catch((cause: unknown) => {
+            if (isStudioAutosaveSupersededFailure(cause)) return;
+            if (studioAutosaveDocumentBusy(cause) && autosaveDocumentLeaseRef.current?.role === "leader" && editorMountedRef.current) {
+              setAutosaveRetryNonce((current) => current + 1);
+            }
             if (studioAutosaveDocumentBusy(cause)) return;
             // The exact payload remains in the current tab's memory. Do not advance either durable
             // frontier until an OPFS/SQLite receipt exists, and make the loss of durability visible.

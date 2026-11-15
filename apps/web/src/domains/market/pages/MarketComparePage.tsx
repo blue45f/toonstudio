@@ -194,7 +194,7 @@ export function MarketComparePage() {
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "gap-1.5 text-fg-2",
+                className: "min-h-11 min-w-11 gap-1.5 text-fg-2",
               })}
             >
               <FlaskConical className="size-3.5 text-accent" aria-hidden="true" />
@@ -206,7 +206,7 @@ export function MarketComparePage() {
               className={buttonClass({
                 variant: "outline",
                 size: "sm",
-                className: "gap-1.5 text-fg-2",
+                className: "min-h-11 min-w-11 gap-1.5 text-fg-2",
               })}
             >
               <Trash2 className="size-3.5" aria-hidden="true" />
@@ -230,7 +230,7 @@ export function MarketComparePage() {
             className={buttonClass({
               variant: "solid",
               size: "md",
-              className: "mt-4 gap-1.5",
+              className: "mt-4 min-h-11 min-w-11 gap-1.5",
             })}
           >
             {t("에셋 탐색", "Explore assets")}
@@ -280,7 +280,7 @@ export function MarketComparePage() {
                       className={buttonClass({
                         variant: "outline",
                         size: "sm",
-                        className: "flex-1 gap-1",
+                        className: "min-h-11 min-w-11 flex-1 gap-1",
                       })}
                     >
                       {t("상세", "Details")}
@@ -291,7 +291,7 @@ export function MarketComparePage() {
                       className={buttonClass({
                         variant: "solid",
                         size: "sm",
-                        className: "flex-1 gap-1",
+                        className: "min-h-11 min-w-11 flex-1 gap-1",
                       })}
                     >
                       <Palette className="size-3" aria-hidden="true" />
@@ -368,7 +368,7 @@ export function MarketComparePage() {
                     className={buttonClass({
                       variant: "outline",
                       size: "sm",
-                      className: "min-h-8 gap-1 text-xs",
+                      className: "min-h-11 min-w-11 gap-1 text-xs",
                     })}
                   >
                     <Plus className="size-3" aria-hidden="true" />
@@ -394,7 +394,7 @@ export function MarketComparePage() {
                   className={buttonClass({
                     variant: onlyDiffs ? "solid" : "outline",
                     size: "sm",
-                    className: "min-h-9 text-xs",
+                    className: "min-h-11 min-w-11 text-xs",
                   })}
                 >
                   {onlyDiffs
@@ -407,7 +407,7 @@ export function MarketComparePage() {
                   className={buttonClass({
                     variant: "outline",
                     size: "sm",
-                    className: "min-h-9 gap-1.5 text-xs",
+                    className: "min-h-11 min-w-11 gap-1.5 text-xs",
                   })}
                 >
                   {copiedMarkdown ? (
@@ -534,7 +534,7 @@ export function MarketComparePage() {
                 aria-pressed={specAxis === axis.id}
                 data-testid={`market-compare-rea-axis-${axis.id}`}
                 onClick={() => setSpecAxis(axis.id)}
-                className={specAxis === axis.id ? "rounded-lg border border-accent bg-accent/15 px-2.5 py-1 font-bold text-accent" : "rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2"}
+                className={specAxis === axis.id ? "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-accent bg-accent/15 px-3 py-2 font-bold text-accent" : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-line bg-panel px-3 py-2 text-fg-2"}
               >
                 {t(axis.ko, axis.en)}
               </button>
@@ -552,7 +552,7 @@ export function MarketComparePage() {
                 aria-pressed={seatScale === scale.id}
                 data-testid={`market-compare-rea-seat-${scale.id}`}
                 onClick={() => setSeatScale(scale.id)}
-                className={seatScale === scale.id ? "rounded-md border border-accent bg-accent px-2 py-0.5 text-[11px] font-bold text-on-accent" : "rounded-md border border-line bg-panel px-2 py-0.5 text-[11px] text-fg-3"}
+                className={seatScale === scale.id ? "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-accent bg-accent px-3 py-2 text-[11px] font-bold text-on-accent" : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-line bg-panel px-3 py-2 text-[11px] text-fg-3"}
               >
                 {t(scale.ko, scale.en)}
               </button>

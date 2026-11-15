@@ -10,6 +10,7 @@ import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActions";
 import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
+import { StudioBg3dPlacementPreviewBar } from "./StudioBg3dPlacementAndAxisHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
 import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
@@ -373,6 +374,8 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
               <div
                 ref={viewportHostRef}
                 data-testid="studio-bg3d-viewport"
+                data-studio-bg3d-viewport-selected-ids={[...selectedIds].join(",")}
+                data-studio-bg3d-viewport-highlighted-ids={[...selectedIds].filter((id: string) => primitiveById.has(id) || customModelById.has(id)).join(",")}
                 inert={immersiveSceneActive || undefined}
                 className="relative aspect-video h-full max-h-full min-h-0 w-auto overflow-hidden rounded-xl border border-line/80 bg-white shadow-[inset_0_0_0_1px_oklch(1_0_0/0.04)] lg:min-h-[360px]"
               >
@@ -411,10 +414,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       자동으로 다른 엔진을 실행하지 않습니다. 보기 탭의 3D 렌더 엔진에서
                       WebGPU 또는 WebGL2를 직접 선택해 주세요.
                     </p>
-                    <StudioBg3dEngineRecoveryActions
-                      preference={engineRuntime.preference}
-                      onPreferenceChange={engineRuntime.setPreference}
-                    />
+                    <StudioBg3dEngineRecoveryActions preference={engineRuntime.preference} onPreferenceChange={engineRuntime.setPreference} onReopenLowQuality={h.resourceRecovery?.reopenLowQuality} onReturnTo2d={h.resourceRecovery?.returnTo2d} />
                   </div>
                 ) : (
                   <Canvas
@@ -579,49 +579,15 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                 ) : null}
 
                 {placementSession.phase === "preview" && placementPreviewAsset ? (
-                  <div
-                    data-bg3d-viewport-control="true"
-                    role="status"
-                    aria-live="polite"
-                    className="absolute inset-x-2 bottom-2 z-20 mx-auto flex max-w-xl items-center gap-2 rounded-xl border border-accent/45 bg-panel/95 p-2 shadow-lg backdrop-blur sm:bottom-2.5 sm:px-3"
-                  >
-                    <Crosshair className="hidden shrink-0 text-accent sm:block" size={17} aria-hidden />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-fg">
-                        {placementPreviewAsset.name} 배치
-                      </p>
-                      <p className="truncate text-[0.66rem] font-medium text-fg-3">
-                        {placementSession.placement.targetKind === "surface" ? "표면" : "바닥"} · 클릭 확정 · Shift 축 고정 · [ ] 15° 회전
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label="3D 배치 왼쪽으로 15도 회전"
-                      title="왼쪽 15° ([)"
-                      className={VIEWPORT_BTN}
-                      onClick={() => rotateCustomModelPlacement("counter-clockwise")}
-                    >
-                      <RotateCcw size={16} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="3D 배치 오른쪽으로 15도 회전"
-                      title="오른쪽 15° (])"
-                      className={VIEWPORT_BTN}
-                      onClick={() => rotateCustomModelPlacement("clockwise")}
-                    >
-                      <RotateCw size={16} aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="3D 모델 배치 취소"
-                      title="배치 취소 (Esc)"
-                      className={cx(VIEWPORT_BTN, "text-bad hover:text-bad")}
-                      onClick={() => cancelCustomModelPlacement("3D 모델 배치를 취소했습니다.")}
-                    >
-                      <X size={16} aria-hidden />
-                    </button>
-                  </div>
+                  <StudioBg3dPlacementPreviewBar
+                    assetName={placementPreviewAsset.name}
+                    targetKind={placementSession.placement.targetKind}
+                    glbDiagnostics={placementPreviewAsset.glbDiagnostics}
+                    viewportButtonClassName={VIEWPORT_BTN}
+                    onRotateCounterClockwise={() => rotateCustomModelPlacement("counter-clockwise")}
+                    onRotateClockwise={() => rotateCustomModelPlacement("clockwise")}
+                    onCancel={() => cancelCustomModelPlacement("3D 모델 배치를 취소했습니다.")}
+                  />
                 ) : null}
 
                 <div

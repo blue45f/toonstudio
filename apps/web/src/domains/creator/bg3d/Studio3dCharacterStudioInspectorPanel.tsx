@@ -184,8 +184,16 @@ export function Studio3dCharacterStudioInspectorPanel({
       data-testid="tooning-3d-studio-inspector-panel"
       className="flex flex-col gap-2.5 rounded-xl border border-line bg-card/70 p-2.5 text-[0.68rem] text-fg"
     >
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
-        <span className="inline-flex items-center gap-1.5 font-bold text-fg">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-2 font-bold text-fg">
+          <img
+            src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
+            alt=""
+            aria-hidden="true"
+            className="size-7 shrink-0 rounded-lg border border-line object-cover shadow-xs"
+            loading="lazy"
+            decoding="async"
+          />
           <Move3d className="h-3.5 w-3.5 text-accent" aria-hidden />
           <span>투닝 3D 스튜디오 (TD) 정밀 인스펙터 & 3D 에셋 스토어</span>
         </span>
@@ -193,9 +201,9 @@ export function Studio3dCharacterStudioInspectorPanel({
           type="button"
           disabled={disabled}
           onClick={handleSaveBookmark}
-          className="inline-flex items-center gap-1 rounded border border-accent/40 bg-accent-soft px-2 py-0.5 text-[0.62rem] font-bold text-accent hover:bg-raised"
+          className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-accent/40 bg-accent-soft px-3 py-1.5 text-[0.65rem] font-bold text-accent hover:bg-raised"
         >
-          <Bookmark className="h-3 w-3" aria-hidden />
+          <Bookmark className="h-3.5 w-3.5" aria-hidden />
           북마크 저장 ({bookmarks.length})
         </button>
       </div>
@@ -204,7 +212,7 @@ export function Studio3dCharacterStudioInspectorPanel({
       <div
         role="tablist"
         aria-label="투닝 3D 스튜디오 세부 탭"
-        className="grid grid-cols-3 gap-1 sm:grid-cols-6"
+        className="grid grid-cols-3 gap-1.5 sm:grid-cols-6"
       >
         {(
           [
@@ -226,13 +234,13 @@ export function Studio3dCharacterStudioInspectorPanel({
               aria-selected={active}
               disabled={disabled}
               onClick={() => setInspectorTab(tab.id)}
-              className={`flex items-center justify-center gap-1 rounded-md border px-1.5 py-1 text-[0.62rem] font-bold transition-all ${
+              className={`flex min-h-11 items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[0.65rem] font-bold transition-all ${
                 active
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-line bg-card text-fg-3 hover:text-fg"
               }`}
             >
-              <Icon className="h-3 w-3 shrink-0" aria-hidden />
+              <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>{tab.label}</span>
             </button>
           );
@@ -242,15 +250,15 @@ export function Studio3dCharacterStudioInspectorPanel({
       {/* 1. 21 Bone Transform Sliders (-100 to +100) */}
       {inspectorTab === "body21" && (
         <div className="flex flex-col gap-2" data-testid="td-body-21-bones-tab">
-          <div className="flex flex-wrap items-center justify-between gap-1">
-            <div className="flex flex-wrap gap-1" role="group" aria-label="신체 부위 그룹">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="신체 부위 그룹">
               {(["머리·목", "상체", "팔·손", "하체·발"] as const).map((grp) => (
                 <button
                   key={grp}
                   type="button"
                   aria-pressed={boneGroup === grp}
                   onClick={() => setBoneGroup(grp)}
-                  className={`rounded border px-2 py-0.5 text-[0.6rem] font-bold ${
+                  className={`inline-flex min-h-11 items-center rounded-lg border px-2.5 py-1 text-[0.65rem] font-bold ${
                     boneGroup === grp
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-card text-fg-2"
@@ -263,7 +271,7 @@ export function Studio3dCharacterStudioInspectorPanel({
             <button
               type="button"
               onClick={() => setBodyBones(createDefaultTdBodyBoneValues())}
-              className="rounded border border-line bg-card px-2 py-0.5 text-[0.6rem] text-fg-3 hover:bg-raised"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-2.5 py-1 text-[0.65rem] text-fg-3 hover:bg-raised"
             >
               21종 본 초기화 (0)
             </button>
@@ -412,7 +420,7 @@ export function Studio3dCharacterStudioInspectorPanel({
               9방향 3×3 아일릿 시선 그리드 (좌안: {expressionState.leftEyeGaze} / 우안:{" "}
               {expressionState.rightEyeGaze})
             </span>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-3 gap-1.5">
               {TD_GAZE_GRID_3X3.map((cell) => {
                 const isSelected = expressionState.leftEyeGaze === cell.direction;
                 return (
@@ -423,7 +431,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                     onClick={() =>
                       setExpressionState((prev) => setTdEyeGazeDirection(prev, "left", cell.direction))
                     }
-                    className={`rounded border py-1 text-[0.6rem] font-semibold ${
+                    className={`inline-flex min-h-11 items-center justify-center rounded-lg border py-1 text-[0.65rem] font-semibold ${
                       isSelected
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line bg-raised text-fg-2"
@@ -448,7 +456,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                 aria-label="3D 카메라 샷 사이즈"
                 value={shotSize}
                 onChange={(e) => setShotSize(e.target.value as TdShotSizePreset)}
-                className="rounded border border-line bg-field px-1.5 py-1 text-[0.62rem]"
+                className="min-h-11 rounded-lg border border-line bg-field px-2 py-1 text-[0.65rem]"
               >
                 {TD_SHOT_SIZE_SPECS.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -463,7 +471,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                 aria-label="3D 카메라 앵글"
                 value={cameraAngle}
                 onChange={(e) => setCameraAngle(e.target.value as TdCameraAnglePreset)}
-                className="rounded border border-line bg-field px-1.5 py-1 text-[0.62rem]"
+                className="min-h-11 rounded-lg border border-line bg-field px-2 py-1 text-[0.65rem]"
               >
                 {TD_CAMERA_ANGLE_SPECS.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -478,7 +486,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                 aria-label="3D 카메라 방위"
                 value={cameraPosition}
                 onChange={(e) => setCameraPosition(e.target.value as TdCameraPositionPreset)}
-                className="rounded border border-line bg-field px-1.5 py-1 text-[0.62rem]"
+                className="min-h-11 rounded-lg border border-line bg-field px-2 py-1 text-[0.65rem]"
               >
                 {TD_CAMERA_POSITION_SPECS.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -493,7 +501,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                 aria-label="3D 카메라 렌즈 화각"
                 value={cameraLens}
                 onChange={(e) => setCameraLens(e.target.value as TdCameraLensPreset)}
-                className="rounded border border-line bg-field px-1.5 py-1 text-[0.62rem]"
+                className="min-h-11 rounded-lg border border-line bg-field px-2 py-1 text-[0.65rem]"
               >
                 {TD_CAMERA_LENS_SPECS.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -513,7 +521,7 @@ export function Studio3dCharacterStudioInspectorPanel({
               type="button"
               aria-pressed={isCameraLocked}
               onClick={() => setIsCameraLocked((prev) => !prev)}
-              className={`rounded border px-2 py-0.5 font-sans font-bold ${
+              className={`inline-flex min-h-11 items-center rounded-lg border px-2.5 py-1 font-sans font-bold ${
                 isCameraLocked
                   ? "border-accent bg-accent text-bg"
                   : "border-line bg-raised text-fg-2"
@@ -523,7 +531,7 @@ export function Studio3dCharacterStudioInspectorPanel({
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[0.6rem] font-semibold text-fg-3">10종 기본 3D 도형:</span>
             {TD_ELEMENT_PRIMITIVES.map((prim) => (
               <button
@@ -531,7 +539,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                 type="button"
                 aria-pressed={selectedPrimitive === prim}
                 onClick={() => setSelectedPrimitive(prim)}
-                className={`rounded border px-1.5 py-0.5 text-[0.58rem] font-semibold ${
+                className={`inline-flex min-h-11 items-center rounded-lg border px-2.5 py-1 text-[0.62rem] font-semibold ${
                   selectedPrimitive === prim
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line bg-card text-fg-3"
@@ -569,7 +577,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                         ),
                       )
                     }
-                    className="rounded border border-line bg-raised px-1.5 py-0.5 text-[0.58rem] text-fg-2"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-raised px-2 py-1 text-[0.62rem] text-fg-2"
                   >
                     {slot.presetId}
                   </button>
@@ -581,7 +589,7 @@ export function Studio3dCharacterStudioInspectorPanel({
             <button
               type="button"
               onClick={handleApplyStyleToAllSceneCuts}
-              className="rounded-md border border-accent bg-accent-soft px-2.5 py-1 text-[0.62rem] font-bold text-accent hover:bg-raised"
+              className="inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent-soft px-3 py-1.5 text-[0.65rem] font-bold text-accent hover:bg-raised"
             >
               씬 내 모든 컷에 의상·헤어 일괄 동기화 (applyCharacterStyleToScene)
             </button>
@@ -624,7 +632,7 @@ export function Studio3dCharacterStudioInspectorPanel({
                   webcamTrackingActive: !prev.webcamTrackingActive,
                 }))
               }
-              className={`rounded border px-2 py-0.5 font-bold ${
+              className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1 font-bold ${
                 actionState.webcamTrackingActive
                   ? "border-accent bg-accent text-bg"
                   : "border-line bg-raised text-fg-2"
@@ -639,15 +647,15 @@ export function Studio3dCharacterStudioInspectorPanel({
       {/* 6. 3D Asset Store (3dasset.tooning.io) & Scene Template Slot Mapping */}
       {inspectorTab === "assetStore" && (
         <div className="flex flex-col gap-2" data-testid="td-3d-asset-store-tab">
-          <div className="flex flex-wrap items-center justify-between gap-1">
-            <div className="flex flex-wrap gap-1" role="group" aria-label="3D 에셋 스토어 카테고리">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="3D 에셋 스토어 카테고리">
               {(["씬", "공간", "요소", "포즈", "기타"] as const).map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   aria-pressed={assetCategory === cat}
                   onClick={() => setAssetCategory(cat)}
-                  className={`rounded border px-2 py-0.5 text-[0.6rem] font-bold ${
+                  className={`inline-flex min-h-11 items-center rounded-lg border px-2.5 py-1 text-[0.65rem] font-bold ${
                     assetCategory === cat
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line bg-card text-fg-2"
@@ -661,7 +669,7 @@ export function Studio3dCharacterStudioInspectorPanel({
               aria-label="씬 템플릿 적용 범위"
               value={templateScope}
               onChange={(e) => setTemplateScope(e.target.value as TdSceneTemplateApplyScope)}
-              className="rounded border border-line bg-field px-1.5 py-0.5 text-[0.6rem]"
+              className="min-h-11 rounded-lg border border-line bg-field px-2 py-1 text-[0.65rem]"
             >
               <option value="Both">배경 + 캐릭터 포즈 동시 적용 (Both)</option>
               <option value="Background">배경·조명만 적용 (Background)</option>
@@ -703,9 +711,9 @@ export function Studio3dCharacterStudioInspectorPanel({
                       slotMap: { slot1: "char-main" },
                     });
                   }}
-                  className="inline-flex items-center gap-1 rounded border border-accent bg-accent-soft px-2 py-0.5 text-[0.6rem] font-bold text-accent"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-accent bg-accent-soft px-3 py-1 text-[0.65rem] font-bold text-accent"
                 >
-                  <Sparkles className="h-3 w-3" aria-hidden />씬 적용
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />씬 적용
                 </button>
               </div>
             ))}

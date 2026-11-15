@@ -19,6 +19,7 @@ import {
   resolveStudioBg3dEnvironmentSettings,
 } from "./studio-bg3d-hdri-environment";
 import { resolveStudioBg3dOrthographicPlanes } from "./studio-bg3d-orthographic-frustum";
+import { hasStudioBg3dEntityTransformChanged } from "./studio-bg3d-multi-transform";
 import { StudioBg3dAttachedTransformControls } from "./StudioBg3dAttachedTransformControls";
 
 export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
@@ -325,6 +326,7 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
         registerRigBake={registerModelRigBake}
         onAnimationComplete={finishModelAnimation}
         onCloneStatus={updateModelCloneStatuses}
+        missingTextureState={h.missingTextures?.overridesByInstanceId?.get?.(instance.id)}
       >
         {children}
       </BgCustomModelMesh>
@@ -459,45 +461,103 @@ export function bindStudioBg3dEditorSceneGraph(h: Record<string, any>) {
       effectivelyVisibleLayerIds.has(firstSelectedId) &&
       primitiveObjectsRef.current.get(firstSelectedId) ? (
         <group ref={registerStudioBg3dCaptureExcludedObject}>
-          <StudioBg3dAttachedTransformControls
-            object={primitiveObjectsRef.current.get(firstSelectedId)}
-            mode={transformMode}
-            space={transformSpace}
-            onMouseDown={() => {
-              setIsTransforming(true);
-              if (!firstSelectedId) return;
-              const firstObj = primitiveObjectsRef.current.get(firstSelectedId);
-              if (firstObj) {
-                firstObj.updateWorldMatrix(true, false);
-                dragInitialFirstTransformRef.current = {
-                  worldMatrix: firstObj.matrixWorld.clone(),
-                };
-                // 이동 모드: 끝점·중간점·중심·상자 면 스냅 세션을 연다 (Alt = 스냅 끄기).
-                if (transformMode === "translate") h.inferenceDrag?.begin(firstObj);
-              }
-              dragInitialSelectedTransformsRef.current.clear();
-              for (const id of selectedIds) {
-                const obj = primitiveObjectsRef.current.get(id);
-                if (obj) {
-                  obj.updateWorldMatrix(true, false);
-                  dragInitialSelectedTransformsRef.current.set(id, {
-                    worldMatrix: obj.matrixWorld.clone(),
-                  });
-                }
-              }
-            }}
-            onMouseUp={() => {
-              setIsTransforming(false);
-              const dragEnd = h.inferenceDrag?.end();
-              // 기하 스냅으로 맞춘 위치를 눈금 증분 스냅이 다시 흩트리지 않게 한다.
-              if (!snapSettings.enabled || dragEnd?.lastSnapped) return;
-              applyMultiSelectDelta(true);
-            }}
-            onObjectChange={(event: any) => {
-              if (transformMode === "translate") h.inferenceDrag?.update(event?.target?.axis ?? null);
-              applyMultiSelectDelta(false);
-            }}
-          />
+          {(() => {
+            const gizmoAxes = R.resolveStudioBg3dGizmoAxes(snapSettings);
+            const translationSnap =
+              snapSettings.enabled && snapSettings.translateAxes !== "none" && snapSettings.translateStep > 0
+                ? snapSettings.translateStep
+                : null;
+            const rotationSnap =
+              snapSettings.enabled && snapSettings.rotateStepDegrees > 0
+                ? (snapSettings.rotateStepDegrees * Math.PI) / 180
+                : null;
+            return (
+              <StudioBg3dAttachedTransformControls
+                object={primitiveObjectsRef.current.get(firstSelectedId)}
+                mode={transformMode}
+                space={transformSpace}
+                showX={gizmoAxes.showX}
+                showY={gizmoAxes.showY}
+                showZ={gizmoAxes.showZ}
+                translationSnap={translationSnap}
+                rotationSnap={rotationSnap}
+                onMouseDown={() => {
+                  setIsTransforming(true);
+                  if (!h.gizmoDragBeforeHistoryRef) {
+                    h.gizmoDragBeforeHistoryRef = { current: null };
+                  }
+                  h.gizmoDragBeforeHistoryRef.current = createStudioBg3dHistorySnapshot(
+                    h.physicsRuntimeSourceRef.current,
+                  );
+                  if (!firstSelectedId) return;
+                  const firstObj = primitiveObjectsRef.current.get(firstSelectedId);
+                  if (firstObj) {
+                    firstObj.updateWorldMatrix(true, false);
+                    dragInitialFirstTransformRef.current = {
+                      worldMatrix: firstObj.matrixWorld.clone(),
+                    };
+                    // 이동 모드: 끝점·중간점·중심·상자 면 스냅 세션을 연다 (Alt = 스냅 끄기).
+                    if (transformMode === "translate") h.inferenceDrag?.begin(firstObj);
+                  }
+                  dragInitialSelectedTransformsRef.current.clear();
+                  for (const id of selectedIds) {
+                    const obj = primitiveObjectsRef.current.get(id);
+                    if (obj) {
+                      obj.updateWorldMatrix(true, false);
+                      dragInitialSelectedTransformsRef.current.set(id, {
+                        worldMatrix: obj.matrixWorld.clone(),
+                      });
+                    }
+                  }
+                }}
+                onMouseUp={() => {
+                  setIsTransforming(false);
+                  const dragEnd = h.inferenceDrag?.end();
+                  // 기하 스냅으로 맞춘 위치를 눈금 증분 스냅이 다시 흩트리지 않게 한다.
+                  if (snapSettings.enabled && !dragEnd?.lastSnapped) {
+                    applyMultiSelectDelta(true);
+                  }
+                  const before = h.gizmoDragBeforeHistoryRef?.current ?? null;
+                  if (h.gizmoDragBeforeHistoryRef) {
+                    h.gizmoDragBeforeHistoryRef.current = null;
+                  }
+                  if (before) {
+                    const live = h.physicsRuntimeSourceRef.current;
+                    if (hasStudioBg3dEntityTransformChanged(before, live)) {
+                      h.commitImmediateHistoryTransition?.(
+                        live.primitives,
+                        live.customModels,
+                        live.document,
+                        before,
+                        {
+                          commandId: "studio.bg3d.gizmo.transform",
+                          label: "오브젝트 변형",
+                          source: "canvas",
+                        },
+                      );
+                    }
+                  }
+                  dragInitialFirstTransformRef.current = null;
+                  dragInitialSelectedTransformsRef.current.clear();
+                }}
+                onBeforeDragCancel={() => {
+                  h.inferenceDrag?.end();
+                }}
+                onDragCancel={() => {
+                  setIsTransforming(false);
+                  if (h.gizmoDragBeforeHistoryRef) {
+                    h.gizmoDragBeforeHistoryRef.current = null;
+                  }
+                  dragInitialFirstTransformRef.current = null;
+                  dragInitialSelectedTransformsRef.current.clear();
+                }}
+                onObjectChange={(event: any) => {
+                  if (transformMode === "translate") h.inferenceDrag?.update(event?.target?.axis ?? null);
+                  applyMultiSelectDelta(false);
+                }}
+              />
+            );
+          })()}
         </group>
       ) : null}
     </Fragment>

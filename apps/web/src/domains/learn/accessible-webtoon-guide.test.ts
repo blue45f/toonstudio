@@ -241,7 +241,10 @@ describe("사실 근거 대조", () => {
     expect(profileBlock("social")).toContain("requireAltText: true");
     expect(profileBlock("ebook")).toContain("requireReadingOrder: true");
     expect(profileBlock("ebook")).toContain("requireAltText: true");
-    const panel = read("apps/web/src/domains/creator/studio-shell/StudioExportPanel.tsx");
+    const panel = [
+      read("apps/web/src/domains/creator/studio-shell/StudioExportPanel.tsx"),
+      read("apps/web/src/domains/creator/studio-shell/StudioExportAdvancedDetails.tsx"),
+    ].join("\n");
     expect(panel).toContain("대체 텍스트 범위");
     expect(panel).toContain("읽기 순서 완료");
     expect(panel).toContain("가장 작은 글자");

@@ -21,6 +21,7 @@ export {
 } from "./appearance-presets";
 export * from "./art-style-packs";
 export * from "./look-sets";
+export * from "./shaper-quick-sculpt-presets";
 export {
   WEBTOON_UNIVERSE_SHAPER_IDS,
   WEBTOON_UNIVERSE_SHAPER_PRESETS,
@@ -32,6 +33,7 @@ export {
   type CharacterLabVarco3dEnvironmentId,
   type CharacterLabVarco3dMapChannel,
   type CharacterLabVarco3dPreviewSettings,
+  type ComposeWebtoonUniverseOptions,
   type ComposeWebtoonUniverseRecipeResult,
   type ShaperFineSliderPatch,
   type Varco3dLabAccessoryBinding,

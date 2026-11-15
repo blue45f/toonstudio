@@ -51,6 +51,10 @@ import { verifyStudioSpaceEntryCode, verifyStudioSpatialInvite } from "./studio-
 import { StudioVirtualSpaceEntryLobby } from "./StudioVirtualSpaceEntryLobby";
 import type { StudioEntryCodeEntryResult } from "./StudioVirtualSpaceEntryCodePanel";
 import { VirtualSpaceExperience } from "./StudioVirtualSpacePage";
+import {
+  createStudioVirtualDemoPreviewTransportFactory,
+  isStudioVirtualDemoPreviewProject,
+} from "./studio-virtual-space-local-preview-transport";
 import { useStudioWorldPublication } from "./world-publication/use-studio-world-publication";
 import { readStudioVirtualStageMode, resolveStudioVirtualStageKind } from "./office2d/studio-virtual-space-stage-mode";
 
@@ -199,10 +203,19 @@ export function StudioVirtualSpacePage({ projectIdOverride, homeHeader, personal
   }, [accountNickname, bt, entryNickname]);
   const publication = useStudioWorldPublication(decodedProjectId, userId, !entryOpen && !personal && session.ready && Boolean(userId)
     && validProjectId(decodedProjectId) && !/^(?:virtual-demo|draft|local)(?:$|[:_-])/u.test(decodedProjectId));
-  const transportFactory = useStudioLiveTransportAuth({
+  const baseTransportFactory = useStudioLiveTransportAuth({
     authReady: !entryOpen && session.ready && !personal,
     userId: personal ? null : userId,
   });
+  const isDemoPreview = !personal && isStudioVirtualDemoPreviewProject(decodedProjectId);
+  const transportFactory = useMemo(
+    () => (
+      !entryOpen && session.ready && isDemoPreview
+        ? createStudioVirtualDemoPreviewTransportFactory(baseTransportFactory)
+        : baseTransportFactory
+    ),
+    [baseTransportFactory, entryOpen, isDemoPreview, session.ready],
+  );
   const publicNickname = normalizeStudioVirtualSpaceNickname(entryNickname)
     ?? accountNickname
     ?? bt("게스트 크리에이터", "Guest creator");

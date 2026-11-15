@@ -11,6 +11,7 @@ import "./learning.css";
 import "./learning-lesson.css";
 import "./learning-practice.css";
 
+const INITIAL_VISIBLE = 24;
 const lessonUrl = (id: string) => `/learn/lessons/${encodeURIComponent(id)}`;
 const termUrl = (id: string) => `/learn/glossary?term=${encodeURIComponent(id)}`;
 
@@ -51,7 +52,18 @@ function Curriculum({ store }: { store: LearningStore }) {
     <>
       <header className="learn-hero">
         <div>
-          <p className="learn-eyebrow">TOONSTUDIO LEARNING LAB</p>
+          <div className="flex items-center gap-3">
+            <img
+              src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp"
+              alt=""
+              aria-hidden="true"
+              width={40}
+              height={40}
+              decoding="async"
+              className="size-10 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
+            />
+            <p className="learn-eyebrow !mb-0">TOONSTUDIO LEARNING LAB</p>
+          </div>
           <h1>읽고, 움직여 보고.<br />나만의 한 컷으로.</h1>
           <p className="learn-intro">이야기의 첫 문장부터 완성 원고까지.<br />눈으로 이해하고 직접 실험하는 웹툰 제작 수업입니다.</p>
           <div className="learn-actions">
@@ -135,6 +147,8 @@ function LessonDetail({ store }: { store: LearningStore }) {
 
 function Glossary({ store }: { store: LearningStore }) {
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE);
   const query = (params.get("q") ?? "").slice(0, 200);
   const categories = [...new Set(TERMS.map((term) => term.category))];
   const category = categories.includes(params.get("category") ?? "") ? params.get("category") : "all";
@@ -147,6 +161,14 @@ function Glossary({ store }: { store: LearningStore }) {
   ) && (
     !bookmarksOnly || store.progress.bookmarks.includes(term.id)
   ) && matchesSearch(query, [term.name, term.english, term.definition, ...term.aliases]));
+  const autoExpand =
+    Boolean(query.trim()) ||
+    category !== "all" ||
+    Boolean(selected) ||
+    bookmarksOnly ||
+    Boolean(location.hash);
+  const windowedVisible = autoExpand ? visible : visible.slice(0, visibleLimit);
+  const remainingTerms = Math.max(0, visible.length - windowedVisible.length);
 
   function setFilter(key: string, value: string, replace = false) {
     const updated = new URLSearchParams(params);
@@ -159,7 +181,18 @@ function Glossary({ store }: { store: LearningStore }) {
   return (
     <>
       <header className="learn-lesson-header">
-        <p className="learn-eyebrow">WEBTOON GLOSSARY</p>
+        <div className="flex items-center gap-3">
+          <img
+            src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp"
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            decoding="async"
+            className="size-10 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
+          />
+          <p className="learn-eyebrow !mb-0">WEBTOON GLOSSARY</p>
+        </div>
         <h1>알면 더 잘 보이는<br />웹툰의 언어.</h1>
         <p className="learn-intro">뜻만 외우지 마세요. 쓰이는 장면과 헷갈리는 개념까지 함께 익혀 보세요.</p>
       </header>
@@ -173,32 +206,52 @@ function Glossary({ store }: { store: LearningStore }) {
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
-        <button type="button" aria-pressed={bookmarksOnly} onClick={() => setFilter("saved", bookmarksOnly ? "" : "1")}>저장한 용어 {store.progress.bookmarks.length}</button>
+        <button type="button" className="min-h-11 min-w-11" aria-pressed={bookmarksOnly} onClick={() => setFilter("saved", bookmarksOnly ? "" : "1")}>저장한 용어 {store.progress.bookmarks.length}</button>
       </div>
       <p className="learn-small" role="status">{visible.length}개 용어 · 한국어·영문·다른 이름으로 검색할 수 있습니다.</p>
       {selected && <p><Link className="learn-back" to="/learn/glossary">← 전체 용어 보기</Link></p>}
       {visible.length ? (
-        <div className="learn-term-grid">
-          {visible.map((term) => (
-            <article className="learn-term-card" key={term.id}>
-              <div className="learn-card-top">
-                <span className="learn-tag">{term.category}</span>
-                <button type="button" aria-label={`${term.name} 저장`} aria-pressed={store.progress.bookmarks.includes(term.id)} onClick={() => store.toggleBookmark(term.id)}>
-                  {store.progress.bookmarks.includes(term.id) ? "저장됨 ★" : "저장 ☆"}
-                </button>
-              </div>
-              <h2><Link to={termUrl(term.id)}>{term.name}</Link></h2>
-              <p className="learn-english">{term.english}{term.aliases.length ? ` · ${term.aliases.join(" / ")}` : ""}</p>
-              <p>{term.definition}</p>
-              <details open={selected === term.id}>
-                <summary>예시와 주의점 읽기</summary>
-                <h3>이렇게 사용해요</h3><p>{term.example}</p>
-                <h3>헷갈리지 마세요</h3><p>{term.caution}</p>
-              </details>
-              <Link className="learn-next" to={lessonUrl(term.lesson)}>관련 강좌에서 실험하기 →</Link>
-            </article>
-          ))}
-        </div>
+        <>
+          <div className="learn-term-grid">
+            {windowedVisible.map((term) => (
+              <article className="learn-term-card" key={term.id}>
+                <div className="learn-card-top">
+                  <span className="learn-tag">{term.category}</span>
+                  <button type="button" className="min-h-11 min-w-11" aria-label={`${term.name} 저장`} aria-pressed={store.progress.bookmarks.includes(term.id)} onClick={() => store.toggleBookmark(term.id)}>
+                    {store.progress.bookmarks.includes(term.id) ? "저장됨 ★" : "저장 ☆"}
+                  </button>
+                </div>
+                <h2><Link to={termUrl(term.id)}>{term.name}</Link></h2>
+                <p className="learn-english">{term.english}{term.aliases.length ? ` · ${term.aliases.join(" / ")}` : ""}</p>
+                <p>{term.definition}</p>
+                <details open={selected === term.id}>
+                  <summary>예시와 주의점 읽기</summary>
+                  <h3>이렇게 사용해요</h3><p>{term.example}</p>
+                  <h3>헷갈리지 마세요</h3><p>{term.caution}</p>
+                </details>
+                <Link className="learn-next" to={lessonUrl(term.lesson)}>관련 강좌에서 실험하기 →</Link>
+              </article>
+            ))}
+          </div>
+          {remainingTerms > 0 ? (
+            <div className="learn-actions">
+              <button
+                type="button"
+                className="min-h-11 min-w-11"
+                onClick={() => setVisibleLimit((prev) => prev + INITIAL_VISIBLE)}
+              >
+                항목 더보기 (남은 {remainingTerms}개)
+              </button>
+              <button
+                type="button"
+                className="min-h-11 min-w-11"
+                onClick={() => setVisibleLimit(visible.length)}
+              >
+                전체 펼치기
+              </button>
+            </div>
+          ) : null}
+        </>
       ) : (
         <div className="learn-empty">
           <h2>{selected ? learnStatusText("learn.status.content.termNotFound", "해당 용어를 찾을 수 없습니다.") : learnStatusText("learn.status.content.termEmpty", "조건에 맞는 용어가 없습니다.")}</h2>

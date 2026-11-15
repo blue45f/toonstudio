@@ -558,7 +558,7 @@ describe("세미나 발표 원본: 슬라이드의 수치는 소스와 같다", 
     const host = read("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx");
     const at = host.indexOf("persistStudioAutosaveWithOpfsPrimary({");
     expect(at).toBeGreaterThan(0);
-    expect(host.slice(at, at + 6000)).toMatch(/\}, 1500\);/u);
+    expect(host.slice(at, at + 6000)).toMatch(/\},\s*(?:isImmediateRetry\s*\?\s*0\s*:\s*)?1500\);/u);
     expect(findAtlasEntry("autosave-crash-recovery-journal")?.tagline.ko).toContain("1.5초");
     expect(koTextOf(slideOf("talk-local-first"))).toContain("1.5초");
     expect(koTextOf(slideOf("talk-local-first"))).toContain("백업이 아님");

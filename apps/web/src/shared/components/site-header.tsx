@@ -263,21 +263,25 @@ const HEADER_EXTRA_ENTRY_TEXT: {
   },
 };
 
+const HEADER_CHILD_PREMIUM_ICONS: Readonly<Partial<Record<string, string>>> = {
+  studio: "/brand/toonstudio-premium-icons/projects.webp",
+  make: "/brand/toonstudio-premium-icons/create.webp",
+  comic: "/brand/toonstudio-premium-icons/canvas.webp",
+  shaper: "/brand/toonstudio-premium-icons/character.webp",
+  bg3d: "/brand/toonstudio-premium-icons/background.webp",
+  "virtual-studio": "/brand/toonstudio-premium-icons/space.webp",
+  production: "/brand/toonstudio-premium-icons/team.webp",
+  "header-team-people": "/brand/toonstudio-premium-icons/team.webp",
+  collaborate: "/brand/toonstudio-premium-icons/community.webp",
+};
+
 /**
- * 헤더 1차 메뉴 (구성 계획) — S1-2 재편: 상시 노출은 이 5개가 전부다.
- * 순서는 기존의 앞부분을 유지한다: 제작을 앞에 두고 발견·교류·학습·재료가
- * 뒤따른다. 드롭다운은 하위 목적지가 실제로 구분되는 곳(제작·탐색·배우기)에만
- * 둔다. 운세 같은 가벼운 즐길 거리는 전체 메뉴와 푸터에서 계속 찾을 수 있다
- * (쉬어가기 그룹).
- * 가상 스튜디오는 이 목록에 없다: 제작 하위 도구라 제작 드롭다운으로 강등했다
- * (아래 studio 항목의 children). 협업도 상시 목록에 없다: 맥락형 항목으로 분리해
- * HEADER_CONTEXTUAL_NAVIGATION에 두고, 협업 구역일 때만 끼워 넣는다.
+ * 헤더 1차 메뉴 (Grand Atelier V4):
+ * 제작(내 작업)·협업·탐색(작품 찾기)·커뮤니티·배우기·마켓(소재 찾기) 6대 핵심 축을
+ * 상시 노출해 홈·스튜디오·탐색 어디서든 협업·팀·검수 동선에 1클릭으로 진입할 수 있게 한다.
  */
 const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   {
-    // 만들기(create) 그룹의 대표 항목이 곧 1차 메뉴다. 드롭다운은 그룹 항목 중
-    // "지금 그리는 일"과 그 하위 도구를 추린다 — 가상 스튜디오(S1-2에서 강등)도
-    // 여기에 들어간다. 작품 재료·제작 관리는 스튜디오 셸과 협업 메뉴가 맡는다.
     id: "studio",
     href: NAV_ITEMS.studio.href,
     label: NAV_ITEMS.studio.label,
@@ -292,7 +296,17 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
     ]),
   },
   {
-    // 작품 찾기(discover) 그룹을 탐색 항목이 대표한다.
+    id: "collaborate",
+    href: NAV_ITEMS.production.href,
+    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
+    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
+    children: [
+      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
+      HEADER_EXTRA_CHILDREN.teamPeople,
+      childFromNavItem(NAV_ITEMS.collaborate),
+    ],
+  },
+  {
     id: "explore",
     href: NAV_ITEMS.explore.href,
     label: NAV_ITEMS.explore.label,
@@ -309,8 +323,6 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
     description: NAV_ITEMS.community.description,
   },
   {
-    // 배우기는 자료·성장(grow) 그룹의 학습 축을 대표한다. 같은 그룹의 리서치는
-    // 드롭다운에, 소재 마켓은 자체 1차 메뉴로, 기회·트렌드·제작 기술은 전체 메뉴가 맡는다.
     id: "learn",
     href: NAV_ITEMS.learn.href,
     label: NAV_ITEMS.learn.label,
@@ -329,31 +341,7 @@ const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
   },
 ];
 
-/**
- * 맥락형(contextual) 최상위 항목 — 협업 (S1-2).
- * 협업은 팀·프로젝트가 없는 사용자에게는 무의미한 자리라 상시 노출하지 않는다.
- * 헤더가 팀·프로젝트 보유 여부를 직접 알 수 있는 신호는 아직 없으므로, 게이팅은
- * 현재 경로가 협업 구역(/production·/team·/collaborate)일 때로 한정한다
- * (headerSectionForPath가 "collaborate"를 반환할 때). 신호가 없으면 강등이
- * 기본값이라는 S1-1 정책(모르는 값은 false)과 같은 방향이다.
- * 강등이지 삭제가 아니다: 협업 구역이 아닐 때도 제작 관리·구인·의뢰·팀 항목은
- * 전체 메뉴의 단일 지도(만들기·함께 보기 그룹)와 ⌘K에 그대로 남아 있다.
- */
-const HEADER_CONTEXTUAL_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
-  {
-    id: "collaborate",
-    href: NAV_ITEMS.production.href,
-    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
-    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
-    children: [
-      // 제작 관리는 지도에서 exact(정확히 /production) 항목이지만, 헤더 자식으로서는
-      // 하위 프로젝트 경로에서도 현재 위치로 표시해야 해서 exact를 풀어 쓴다.
-      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
-      HEADER_EXTRA_CHILDREN.teamPeople,
-      childFromNavItem(NAV_ITEMS.collaborate),
-    ],
-  },
-];
+const HEADER_CONTEXTUAL_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [];
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -410,14 +398,9 @@ const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> =
  * 노출은 5개를 넘지 않고, 맥락형까지 합쳐도 한 번에 6개를 넘지 않는다.
  */
 function headerNavigationForSection(
-  currentSection: HeaderSectionId | null,
+  _currentSection: HeaderSectionId | null,
 ): readonly HeaderPrimaryNavigationItem[] {
-  if (currentSection !== "collaborate") return HEADER_PRIMARY_NAVIGATION;
-  return [
-    ...HEADER_PRIMARY_NAVIGATION.slice(0, 1),
-    ...HEADER_CONTEXTUAL_NAVIGATION,
-    ...HEADER_PRIMARY_NAVIGATION.slice(1),
-  ];
+  return HEADER_PRIMARY_NAVIGATION;
 }
 
 /**
@@ -632,6 +615,7 @@ function HeaderPrimaryNavigationEntry({
           {item.children.map((child) => {
             const childActive = activeChild?.id === child.id;
             const ChildIcon = child.icon;
+            const premiumIconSrc = HEADER_CHILD_PREMIUM_ICONS[child.id];
             return (
               <li key={child.id}>
                 <Link
@@ -644,11 +628,24 @@ function HeaderPrimaryNavigationEntry({
                       : "text-fg-2 hover:bg-raised hover:text-fg"
                   )}
                 >
-                  <ChildIcon
-                    size={16}
-                    aria-hidden="true"
-                    className="shrink-0"
-                  />
+                  {premiumIconSrc ? (
+                    <img
+                      src={premiumIconSrc}
+                      alt=""
+                      aria-hidden="true"
+                      width={24}
+                      height={24}
+                      loading="lazy"
+                      decoding="async"
+                      className="size-6 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <ChildIcon
+                      size={16}
+                      aria-hidden="true"
+                      className="shrink-0"
+                    />
+                  )}
                   <span className="min-w-0">
                     <span className="block font-semibold">
                       {siteNavigationText(child.label, locale)}
@@ -780,7 +777,7 @@ export function SiteHeader({
             >
               <span className="flex min-w-0 items-center gap-2">
                 <Search size={16} className="shrink-0 transition-colors group-hover:text-accent" />
-                <span className="site-header__search-label truncate text-sm">{t("nav.search")}</span>
+                <span className="site-header__search-label truncate text-sm">{bi("기능·브러시·작품 검색", t("nav.search"))}</span>
               </span>
               <kbd aria-hidden="true" className="site-header__search-shortcut items-center gap-0.5 rounded-full border border-line bg-panel px-1.5 py-0.5 font-display text-[0.62rem] text-fg-3">⌘K</kbd>
             </button>

@@ -19,8 +19,8 @@ function ThreeThemeStage({ logical }: Pick<StudioVirtualSpaceStageSurfaceProps, 
     selfDisplayName={logical.selfDisplayName} onRuntimeMetrics={logical.onRuntimeMetrics} onNpcInteract={logical.onNpcInteract}
     onLocalState={logical.onLocalState} onInteract={logical.onInteract} onNearbyInteractionChange={logical.onNearbyInteractionChange}
     onPortal={logical.onPortal} onZoneChange={logical.onZoneChange} onNearbyNpcsChange={logical.onNearbyNpcsChange}
-    onEngineStatusChange={logical.onEngineStatusChange} theme={theme.theme} themeRequestRevision={theme.requestRevision}
-    onThemePreviewChange={theme.onThemePreviewChange} />;
+    onEngineStatusChange={logical.onEngineStatusChange} {...(logical.onReturnTo2d ? { onReturnTo2d: logical.onReturnTo2d } : {})}
+    theme={theme.theme} themeRequestRevision={theme.requestRevision} onThemePreviewChange={theme.onThemePreviewChange} />;
 }
 
 /** 각 renderer에 명시적인 논리 입력과 해당 renderer의 표현 설정만 전달한다. */

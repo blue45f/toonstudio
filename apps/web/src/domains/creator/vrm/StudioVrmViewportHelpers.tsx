@@ -273,10 +273,12 @@ export function StudioVrmViewportReadyFrame({
 
 export function CaptureBridge({
   onCaptureUpdate,
+  onContextLostChange,
 }: {
   onCaptureUpdate: (state: CaptureState, cleanupGl?: THREE.WebGLRenderer | null) => void;
+  onContextLostChange?: (lost: boolean) => void;
 }) {
-  const { camera, gl, scene } = useThree();
+  const { camera, gl, invalidate, scene } = useThree();
 
   useEffect(() => {
     onCaptureUpdate({ camera, gl, scene });
@@ -284,6 +286,26 @@ export function CaptureBridge({
       onCaptureUpdate({ camera: null, gl: null, scene: null }, gl);
     };
   }, [camera, gl, scene, onCaptureUpdate]);
+
+  useEffect(() => {
+    const canvas = gl?.domElement;
+    if (!canvas?.addEventListener || !onContextLostChange) return undefined;
+    const handleLost = (event: Event) => {
+      event.preventDefault();
+      onContextLostChange(true);
+    };
+    const handleRestored = () => {
+      gl.resetState?.();
+      onContextLostChange(false);
+      invalidate();
+    };
+    canvas.addEventListener("webglcontextlost", handleLost);
+    canvas.addEventListener("webglcontextrestored", handleRestored);
+    return () => {
+      canvas.removeEventListener("webglcontextlost", handleLost);
+      canvas.removeEventListener("webglcontextrestored", handleRestored);
+    };
+  }, [gl, invalidate, onContextLostChange]);
 
   return null;
 }

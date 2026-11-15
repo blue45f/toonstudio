@@ -166,16 +166,26 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
   });
 
-  it("기본 화면에는 두 선택과 자료 링크만 두고 고급 내용은 별도 화면으로 보낸다", () => {
+  it("기본 화면에는 Grand Atelier V4 1클릭 규격 프리셋·인라인 세부 규격·두 선택·제작 파이프라인·장르 스타터를 한 화면에 통합 노출한다", () => {
     renderStartSheet("/create");
+    const atelierPresets = screen.getByTestId("create-grand-atelier-presets");
+    expect(within(atelierPresets).getByRole("link", { name: "1클릭 바로 그리기" }).getAttribute("href"))
+      .toContain("/studio/new?lane=blank&preset=webtoon-standard");
+    expect(within(atelierPresets).getByRole("link", { name: "4컷 캔버스 열기" }).getAttribute("href"))
+      .toContain("/studio/new?lane=blank&preset=instatoon-square");
+
+    const specBuilder = screen.getByTestId("create-inline-spec-builder");
+    fireEvent.change(within(specBuilder).getByLabelText("캔버스 가로 폭 픽셀"), { target: { value: "1080" } });
+    expect(within(specBuilder).getByTestId("create-inline-spec-submit").getAttribute("href"))
+      .toBe("/studio/new?lane=blank&width=1080&height=12800&dpi=300&collab=team");
+
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(within(guide).getByRole("heading", { name: "이야기부터 시작" })).toBeTruthy();
     expect(within(guide).getByRole("heading", { name: "바로 그리기" })).toBeTruthy();
     expect(within(guide).getAllByRole("link")).toHaveLength(1);
     expect(within(guide).getAllByRole("button")).toHaveLength(1);
-    expect(screen.queryByRole("region", { name: "다른 시작 방법 · 기획, 콘티, 템플릿, 파일" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "주제별 질문과 제작 도구" })).toBeNull();
-    expect(screen.queryByTestId("create-rea-story-pipeline")).toBeNull();
+    expect(screen.getByTestId("create-rea-story-pipeline")).toBeTruthy();
+    expect(screen.getByTestId("create-start-genre-starters")).toBeTruthy();
     expect(within(guide).getByRole("link", { name: "이야기 시작하기" }).getAttribute("href")).toBe("/create?intent=my-story");
     expect(within(guide).getByRole("button", { name: "캔버스 열기" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "템플릿 고르기" }).getAttribute("href")).toBe("/studio/templates");
@@ -186,6 +196,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
   it("영어 로케일에서 두 시작 선택과 별도 제작 도구 화면에 한글이 누수되지 않는다", () => {
     useI18n.setState({ lang: "en" });
     renderStartSheet("/create");
+    expect(screen.getByTestId("create-grand-atelier-v4").textContent).not.toMatch(/[가-힣]/u);
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(guide.textContent).not.toMatch(/[가-힣]/u);
     fireEvent.click(screen.getByTestId("create-start-section-pipeline"));

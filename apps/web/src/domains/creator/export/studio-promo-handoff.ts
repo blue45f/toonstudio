@@ -120,6 +120,37 @@ export function createStudioPromoCutImageRenderer(options: StudioPromoCutRendere
 
 // ── 컷 묶음 ─────────────────────────────────────────────────────────────────
 
+export type CachedPromoDocumentCut = Omit<PromoDocumentCut, "order">;
+
+/**
+ * 컷 묶음 생성 중 앞선 컷들이 이미 인코딩에 성공한 뒤 후속 컷에서 실패했을 때,
+ * 완료된 컷 데이터를 보존해 재시도 시 성공분을 다시 인코딩하지 않고 실패·미완료 컷만 이어서 처리한다.
+ */
+export class StudioPromoCutPartialFailureError extends Error {
+  readonly completedCuts: ReadonlyMap<string, CachedPromoDocumentCut>;
+  readonly failedCutId: string;
+  readonly failedFrameIndex: number;
+  readonly totalFrameCount: number;
+  override readonly cause?: unknown;
+
+  constructor(input: {
+    message: string;
+    completedCuts: ReadonlyMap<string, CachedPromoDocumentCut>;
+    failedCutId: string;
+    failedFrameIndex: number;
+    totalFrameCount: number;
+    cause?: unknown;
+  }) {
+    super(input.message);
+    this.name = "StudioPromoCutPartialFailureError";
+    this.completedCuts = new Map(input.completedCuts);
+    this.failedCutId = input.failedCutId;
+    this.failedFrameIndex = input.failedFrameIndex;
+    this.totalFrameCount = input.totalFrameCount;
+    this.cause = input.cause;
+  }
+}
+
 export interface StudioPromoCutCaptureInput {
   /** 문서에서 0부터 센 페이지 순번. */
   readonly pageIndex: number;
@@ -133,6 +164,8 @@ export interface StudioPromoCutBundleInput {
   readonly title: string;
   readonly documentId: string | null;
   readonly render: StudioPromoCutImageRenderer;
+  /** 이전 시도에서 이미 인코딩에 성공한 컷 캐시(키: `${pageId}:${frameId}`). */
+  readonly completedCuts?: ReadonlyMap<string, CachedPromoDocumentCut>;
   readonly signal?: AbortSignal;
   readonly onProgress?: (completed: number, total: number) => void;
 }
@@ -167,25 +200,60 @@ export async function buildStudioPromoCutBundle(input: StudioPromoCutBundleInput
     throw new Error(`컷이 ${listing.frames.length}개예요. 한 묶음은 ${PROMO_DOCUMENT_CUTS_MAX}컷까지 담을 수 있어요. 페이지 범위를 줄여 주세요.`);
   }
   const canvases = new Map(input.captures.map((capture) => [capture.pageIndex, capture.canvas] as const));
+  const completedMap = new Map<string, CachedPromoDocumentCut>(input.completedCuts ?? []);
+  const seenIds = new Set<string>();
   const cuts: PromoDocumentCut[] = [];
   let skippedFrameCount = 0;
   for (const [index, frame] of listing.frames.entries()) {
     if (signal?.aborted) throw abortError();
+    const cutId = `${frame.pageId}:${frame.frameId}`;
+    if (seenIds.has(cutId)) {
+      input.onProgress?.(index + 1, listing.frames.length);
+      continue;
+    }
+    const cached = completedMap.get(cutId);
+    if (cached) {
+      seenIds.add(cutId);
+      cuts.push({ ...cached, order: cuts.length });
+      input.onProgress?.(index + 1, listing.frames.length);
+      continue;
+    }
     const canvas = canvases.get(frame.pageIndex);
     const crop = canvas ? planStudioPromoCutCrop(frame, canvas, input.canvasWidth) : null;
     if (!canvas || !crop) {
       skippedFrameCount += 1;
     } else {
-      const image = await input.render(canvas, crop);
-      cuts.push({
-        id: `${frame.pageId}:${frame.frameId}`,
+      let image: string;
+      try {
+        image = await input.render(canvas, crop);
+      } catch (reason) {
+        if (signal?.aborted || (reason instanceof DOMException && reason.name === "AbortError")) {
+          throw abortError();
+        }
+        if (completedMap.size > 0) {
+          const baseMessage = reason instanceof Error ? reason.message : "컷 이미지를 만들지 못했어요.";
+          throw new StudioPromoCutPartialFailureError({
+            message: baseMessage,
+            completedCuts: completedMap,
+            failedCutId: cutId,
+            failedFrameIndex: index,
+            totalFrameCount: listing.frames.length,
+            cause: reason,
+          });
+        }
+        throw reason;
+      }
+      const entry: CachedPromoDocumentCut = {
+        id: cutId,
         pageId: frame.pageId,
         pageIndex: frame.pageIndex,
         frameId: frame.frameId,
-        order: cuts.length,
         image,
         dialogues: frame.dialogues.map((dialogue) => ({ id: dialogue.id, text: dialogue.text })),
-      });
+      };
+      completedMap.set(cutId, entry);
+      seenIds.add(cutId);
+      cuts.push({ ...entry, order: cuts.length });
     }
     input.onProgress?.(index + 1, listing.frames.length);
     if (index < listing.frames.length - 1) await nextTask();

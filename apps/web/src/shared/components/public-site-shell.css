@@ -6,9 +6,14 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid color-mix(in oklch, var(--color-line-strong) 42%, var(--color-line));
-  background: var(--color-panel);
-  transition: border-color 180ms ease-out, box-shadow 180ms ease-out, background-color 180ms ease-out;
+  border-bottom: 1px solid color-mix(in oklch, var(--color-accent) 22%, var(--color-line-strong));
+  background: color-mix(in oklch, var(--color-panel) 84%, transparent);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 8%, transparent),
+    0 10px 28px -18px oklch(0 0 0 / 0.55);
+  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .site-header::before {
@@ -16,14 +21,17 @@
   inset: 0 0 auto;
   height: 2px;
   content: "";
-  background: var(--color-accent);
-  opacity: 0.65;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-2, var(--color-accent)), var(--color-accent));
+  opacity: 0.85;
   pointer-events: none;
 }
 
 .site-header[data-scrolled] {
-  border-bottom-color: var(--color-line-strong);
-  background: var(--color-panel);
+  border-bottom-color: color-mix(in oklch, var(--color-accent) 34%, var(--color-line-strong));
+  background: color-mix(in oklch, var(--color-panel) 93%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 10%, transparent),
+    0 14px 34px -16px oklch(0 0 0 / 0.65);
 }
 
 .site-header__inner {
@@ -82,14 +90,16 @@
 }
 .site-header__primary-link:hover {
   color: var(--color-fg);
-  border-color: color-mix(in oklch, var(--color-line-strong) 45%, transparent);
-  background: color-mix(in oklch, var(--color-raised) 82%, transparent);
+  border-color: color-mix(in oklch, var(--color-accent) 35%, var(--color-line-strong));
+  background: color-mix(in oklch, var(--color-raised) 86%, var(--color-accent-soft));
 }
 .site-header__primary-link:is([aria-current="page"], [aria-current="true"]) {
   color: var(--color-accent);
-  border-color: transparent;
-  background: transparent;
-  box-shadow: inset 0 -2px var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-accent) 42%, transparent);
+  background: color-mix(in oklch, var(--color-accent-soft) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 10%, transparent),
+    inset 0 -2px var(--color-accent);
 }
 .site-header__utilities { display: flex; align-items: center; flex-shrink: 0; gap: 6px; margin-left: auto; }
 .site-header__notifications { display: contents; }
@@ -98,12 +108,17 @@
 .site-header__search { width: 44px; padding-inline: 0; border-radius: var(--site-control-radius); }
 .site-header__create {
   border-radius: var(--site-control-radius);
-  border-color: transparent;
-  background: var(--color-accent);
+  border-color: color-mix(in oklch, var(--color-fg) 18%, transparent);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2, var(--color-accent)));
   color: var(--color-on-accent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--color-fg) 22%, transparent),
+    0 8px 20px -8px color-mix(in oklch, var(--color-accent) 60%, transparent);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1), filter 160ms ease-out;
 }
 .site-header__create:hover {
-  background: var(--color-accent-2);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
 }
 :root[data-design-theme="contrast"] .site-header::before { display: none; }
 :root[data-design-theme="contrast"] .site-header__create {
@@ -186,9 +201,9 @@
   .site-header__primary { display: flex; }
 }
 
-/* 주 메뉴가 펼쳐지는 1180~1599px에서는 검색을 아이콘으로 접어 메뉴와 계정 조작 공간을 지킨다. */
-@media (768px <= width < 1180px), (width >= 1600px) {
-  .site-header__search { width: clamp(9rem, 13vw, 11rem); padding-inline: 10px; }
+/* 주 메뉴가 펼쳐지는 1180~1359px에서는 검색을 아이콘으로 접고, 1360px 이상 데스크톱에서는 검색 문구와 ⌘K 배지를 상시 노출한다. */
+@media (768px <= width < 1180px), (width >= 1360px) {
+  .site-header__search { width: clamp(10.5rem, 14vw, 13.75rem); padding-inline: 11px; }
   .site-header__search-label { display: inline; }
 }
 
@@ -197,8 +212,7 @@
   .site-header__search-label { display: none; }
 }
 
-@media (width >= 1600px) {
-  .site-header__search { width: 12rem; }
+@media (width >= 1360px) {
   .site-header__search-shortcut { display: inline-flex; }
 }
 
@@ -228,7 +242,22 @@
   .site-menu-actions__create > svg:last-child { display: none; }
 }
 
+@media (forced-colors: active) {
+  .site-header {
+    background: Canvas;
+    border-bottom-color: CanvasText;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  .site-header__create {
+    background: Highlight;
+    color: HighlightText;
+    box-shadow: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-header,
-  .site-header__primary-link { transition: none; }
+  .site-header__primary-link,
+  .site-header__create { transition: none; transform: none; }
 }

@@ -179,29 +179,65 @@ async function archiveCurrentEnvelope(
 export function createStudioAutosaveSqliteStore(
   database: Pick<StudioLocalDatabase, "kvGet" | "kvSet">,
 ): StudioAutosaveSqlitePort {
-  type Mutation = Readonly<{ completion: Promise<void> }>;
-  type MutationGroup = { latest: Mutation; pending: number };
+  type CommittedPrimary = Readonly<{ seq: number; envelope: string }>;
+  type Mutation = Readonly<{ completion: Promise<void>; seq: number }>;
+  type MutationGroup = {
+    latest: Mutation;
+    pending: number;
+    nextSeq: number;
+    latestCommitted: CommittedPrimary | null;
+  };
   const mutations = new Map<string, MutationGroup>();
   const unsupportedKeys = new Map<string, StudioAutosaveUnsupportedVersionError>();
 
-  function mutate(key: string, execute: (isCurrent: () => boolean) => Promise<void>): Promise<void> {
+  function mutate(
+    key: string,
+    execute: (
+      isCurrent: () => boolean,
+      commitPrimary: (envelope: string) => Promise<void>,
+    ) => Promise<void>,
+  ): Promise<void> {
     let resolveCompletion!: () => void;
     let rejectCompletion!: (cause: unknown) => void;
     const completion = new Promise<void>((resolve, reject) => {
       resolveCompletion = resolve;
       rejectCompletion = reject;
     });
-    const mutation: Mutation = { completion };
-    const group = mutations.get(key) ?? { latest: mutation, pending: 0 };
+    const existingGroup = mutations.get(key);
+    const seq = (existingGroup?.nextSeq ?? 0) + 1;
+    const mutation: Mutation = { completion, seq };
+    const group: MutationGroup = existingGroup ?? {
+      latest: mutation,
+      pending: 0,
+      nextSeq: seq,
+      latestCommitted: null,
+    };
     group.latest = mutation;
+    group.nextSeq = seq;
     group.pending += 1;
     mutations.set(key, group);
+
+    async function commitPrimary(primaryEnvelope: string): Promise<void> {
+      await database.kvSet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key, primaryEnvelope);
+      if (!group.latestCommitted || seq >= group.latestCommitted.seq) {
+        group.latestCommitted = { seq, envelope: primaryEnvelope };
+        return;
+      }
+      // 병행 중인 더 최신 컷/tombstone 저장이 먼저 커밋된 뒤 과거 비동기 쓰기가 뒤늦게 완료된 경우,
+      // 방금 덮어쓴 주 슬롯을 최신 확정 envelope 로 즉시 복구해 과거 컷 역전을 막는다.
+      let repairedSeq = seq;
+      while (group.latestCommitted && group.latestCommitted.seq > repairedSeq) {
+        const newer = group.latestCommitted;
+        repairedSeq = newer.seq;
+        await database.kvSet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key, newer.envelope);
+      }
+    }
 
     async function finish() {
       let outcome: { failed: false } | { failed: true; cause: unknown } = { failed: false };
       try {
         // Start immediately: an emergency primary must not queue behind an older recovery RPC.
-        await execute(() => group.latest === mutation);
+        await execute(() => group.latest === mutation, commitPrimary);
       } catch (cause) {
         outcome = { failed: true, cause };
       }
@@ -264,14 +300,14 @@ export function createStudioAutosaveSqliteStore(
       // newest snapshot. Emergency writes submit the primary without that round trip, retaining
       // the existing recovery generation until a normal write rotates it. Success still requires
       // the primary commit below; dispatch alone is not a durability receipt.
-      return mutate(key, async (isCurrent) => {
+      return mutate(key, async (isCurrent, commitPrimary) => {
         if (unsupportedKeys.has(key)) throw unsupportedKeys.get(key);
         if (options?.mode !== "emergency") {
           try { await archiveCurrentEnvelope(database, key, isCurrent); }
           catch (cause) { if (cause instanceof StudioAutosaveUnsupportedVersionError) unsupportedKeys.set(key, cause); throw cause; }
         }
         if (!isCurrent()) return;
-        await database.kvSet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key, envelope);
+        await commitPrimary(envelope);
       });
     },
 
@@ -280,7 +316,7 @@ export function createStudioAutosaveSqliteStore(
       // Commit the recovery tombstone first. If it cannot be made durable, the operation fails
       // while the primary snapshot remains intact; acknowledging success would allow that older
       // recovery generation to resurrect after a later primary-row failure.
-      return mutate(key, async (isCurrent) => {
+      return mutate(key, async (isCurrent, commitPrimary) => {
         if (unsupportedKeys.has(key)) throw unsupportedKeys.get(key);
         const existing = await Promise.all([key, studioAutosaveSqliteLastKnownGoodKey(key)].map((candidate) => database.kvGet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, candidate)));
         for (const raw of existing) assertStudioAutosaveReaderSupported(raw);
@@ -291,7 +327,7 @@ export function createStudioAutosaveSqliteStore(
           tombstone,
         );
         if (!isCurrent()) return;
-        await database.kvSet(STUDIO_AUTOSAVE_SQLITE_NAMESPACE, key, tombstone);
+        await commitPrimary(tombstone);
       });
     },
   });

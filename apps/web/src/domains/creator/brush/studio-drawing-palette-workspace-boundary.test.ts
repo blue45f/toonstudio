@@ -77,6 +77,12 @@ describe("Studio drawing palette workspace integration boundary", () => {
       "const [drawingPaletteDragging, setDrawingPaletteDragging]",
       "page palette initialization",
     );
+    const viewportPanelMemory = sourceBetween(
+      pageSource,
+      "const viewportPanelMemory = useStudioViewportPanelMemory(",
+      "const liveWorkspaceLayout = useMemo",
+      "page viewport panel memory",
+    );
     const liveLayout = sourceBetween(
       pageSource,
       "const liveWorkspaceLayout = useMemo",
@@ -104,8 +110,16 @@ describe("Studio drawing palette workspace integration boundary", () => {
     expect(pageInitialization).toContain(
       "() => workspaceState.liveLayout.drawingPalettes",
     );
-    expect(liveLayout).toContain("drawingPalettes: drawingPaletteLayout");
-    expect(liveLayout).toContain("drawingPaletteLayout,");
+    // 뷰포트별 기억 훅이 큰 화면의 저자 팔레트 배치를 보존해 liveLayout·자동 저장에 전달한다.
+    expect(viewportPanelMemory).toContain(
+      "initialDrawingPalettes: workspaceState.liveLayout.drawingPalettes",
+    );
+    expect(viewportPanelMemory).toContain("drawingPaletteLayout,");
+    expect(viewportPanelMemory).toContain("setDrawingPaletteLayout,");
+    expect(liveLayout).toContain(
+      "drawingPalettes: viewportPanelMemory.authoredDrawingPalettes",
+    );
+    expect(liveLayout).toContain("viewportPanelMemory.authoredDrawingPalettes,");
   });
 
   it("persists settled palette sizes through the SQLite workspace runtime", () => {
@@ -201,7 +215,10 @@ describe("Studio drawing palette workspace integration boundary", () => {
       "if (leftResize.dragging || rightResize.dragging || drawingPaletteDragging) return",
     );
     expect(autosave).toContain("if (pendingExternalWorkspaceSync) return");
-    expect(autosave).toContain("drawingPalettes: drawingPaletteLayout");
+    expect(autosave).toContain(
+      "drawingPalettes: viewportPanelMemory.authoredDrawingPalettes",
+    );
+    expect(autosave).toContain("viewportPanelMemory.authoredDrawingPalettes,");
     expect(autosave).toContain("persistStudioWorkspaceStateFromEffect(");
     expect(autosave).not.toContain("localStorage");
   });

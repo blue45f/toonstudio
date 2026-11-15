@@ -11,6 +11,7 @@ import { LazyStudioLeftToolRail, LazyStudioPageListPane } from "../studio-page-m
 import { StudioWorkspaceArrangementToolbar } from "../StudioWorkspaceArrangementToolbar";
 import { StudioWorkspaceRegion } from "../StudioWorkspaceRegion";
 import { useStudioInspectorDockSide } from "../studio-inspector-dock";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { cn } from "@/shared/lib/utils";
 import { StudioCuttoonEditorCanvasColumn } from "./StudioCuttoonEditorCanvasColumn";
 import { StudioCuttoonEditorInspectorColumn } from "./StudioCuttoonEditorInspectorColumn";
@@ -19,16 +20,20 @@ import { editorShellStatusText } from "../status-i18n/studio-editor-shell-status
 import { StudioCuttoonEditorSessionDialogs } from "./StudioCuttoonEditorSessionDialogs";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
-import { StudioDrawingClarityPaneHeading, StudioDrawingClarityRail } from "./StudioDrawingClarityBar";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 import "./studio-cinematic-canvas-v4.css";
 
+const LazyStudioDrawingClarityPaneHeading = lazyRetry(() => import("./StudioDrawingClarityBar").then((module) => ({ default: module.StudioDrawingClarityPaneHeading })), "StudioDrawingClarityPaneHeading");
+const LazyStudioDrawingClarityRail = lazyRetry(() => import("./StudioDrawingClarityBar").then((module) => ({ default: module.StudioDrawingClarityRail })), "StudioDrawingClarityRail");
 const LazyStudioBrushWorkbenchDock = lazy(() => import("../brush/StudioBrushWorkbenchDock").then((module) => ({ default: module.StudioBrushWorkbenchDock })));
 
 const TOOL_RAIL_LAYOUT = { version: 2, xRatio: 0.02, yRatio: 0.1, width: 96, height: 720, dock: "free", positionLocked: false, sizeLocked: false } as const;
 
 export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity(), compact = clarity?.active === true && !s.isMobile;
+  const compactViewport = useMediaQuery("(max-width: 1279px)");
+  const [compactBrushPanelWidth, setCompactBrushPanelWidth] = useState(224);
   const setClarityPanelOpen = (panel: "layers" | "pages", next: import("react").SetStateAction<boolean>) => {
     if (!clarity) return;
     const shouldOpen = typeof next === "function" ? next(clarity.panel === panel) : next;
@@ -223,7 +228,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
         )}
         <div id={compact ? "studio-drawing-clarity-panel-pages" : undefined} hidden={compact && clarity.panel !== "pages"}
           className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--pages" : "contents"}>
-          {compact && clarity.panel === "pages" ? <StudioDrawingClarityPaneHeading panel="pages" /> : null}
+          {compact && clarity.panel === "pages" ? <Suspense fallback={null}><LazyStudioDrawingClarityPaneHeading panel="pages" /></Suspense> : null}
         {/* 왼쪽: 페이지 목록 — 접히면 아이콘 엣지 레일.
             Work-mode gate: this pane is the "page-strip" + "left-panel" chrome.
             When the composed gate (uiChromeExposure, density × work mode)
@@ -343,14 +348,16 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
 
         <div id={compact ? "studio-drawing-clarity-panel-brush" : undefined} hidden={compact && clarity.panel !== "brush"}
           className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--brush" : "contents"}>
-          {compact && clarity.panel === "brush" ? <StudioDrawingClarityPaneHeading panel="brush" /> : null}
+          {compact && clarity.panel === "brush" ? <Suspense fallback={null}><LazyStudioDrawingClarityPaneHeading panel="brush" /></Suspense> : null}
         {!isMobile && !canvasOnlyMode && !mobileImmersive && !presentationPanelsHidden
           && (compact ? clarity.panel === "brush" : s.studioOptionsBarsDrawModel.libraryDockOpen) ? (
           <Suspense fallback={<div role="status" className="hidden w-64 shrink-0 border-r border-line bg-panel p-3 text-sm text-fg-2 lg:block xl:w-[17rem]">{editorShellStatusText("studio.editorShellStatus.workspace.brushLibraryOpening", "브러시 라이브러리를 여는 중…")}</div>}>
             <LazyStudioBrushWorkbenchDock
-              key={`${s.studioOptionsBarsDrawModel.workspaceOwnerScope}:${drawMode === "eraser" ? "erase" : "paint"}`}
-              width={s.appSettings.general.brushPanelWidth ?? 240}
-              onWidthChange={(width) => s.studioLeftToolRailHandlers.commitAppSettings({ ...s.appSettings, general: { ...s.appSettings.general, brushPanelWidth: width } })}
+              key={`${s.studioOptionsBarsDrawModel.workspaceOwnerScope}:${drawMode === "eraser" ? "erase" : "paint"}:${compactViewport ? "compact" : "large"}`}
+              width={compactViewport ? Math.max(200, Math.min(280, compactBrushPanelWidth)) : (s.appSettings.general.brushPanelWidth ?? 240)}
+              onWidthChange={(width) => compactViewport
+                ? setCompactBrushPanelWidth(Math.max(200, Math.min(280, width)))
+                : s.studioLeftToolRailHandlers.commitAppSettings({ ...s.appSettings, general: { ...s.appSettings.general, brushPanelWidth: width } })}
               sizeLocked={s.proDrawPrefs.sizeLocked} opacityLocked={s.proDrawPrefs.opacityLocked}
               onToggleSizeLock={s.studioOptionsBarsHandlers.toggleSizeLock}
               onToggleOpacityLock={s.studioOptionsBarsHandlers.toggleOpacityLock}
@@ -390,8 +397,8 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           <StudioCuttoonEditorCanvasColumn {...s} />
           <div id={compact ? "studio-drawing-clarity-panel-layers" : undefined} hidden={compact && clarity.panel !== "layers"}
             className={compact ? "studio-drawing-clarity-pane studio-drawing-clarity-pane--inspector" : "contents"}>
-            {compact && clarity.panel === "layers" ? <StudioDrawingClarityPaneHeading panel="layers" /> : null}
-            <div className={compact ? "flex min-h-0 flex-1" : "contents"}>
+            {compact && clarity.panel === "layers" ? <Suspense fallback={null}><LazyStudioDrawingClarityPaneHeading panel="layers" /></Suspense> : null}
+            <div className={compact ? "flex min-h-0 min-w-0 max-w-full flex-1 overflow-hidden" : "contents"}>
           {/* Work-mode gate: the inspector column is the "right-panel" chrome.
               Same composed-gate pattern as the page pane and tool rail: a
               folded verdict mounts a slim strip whose expand button reuses
@@ -424,7 +431,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             </div>
           </div>
         </div>
-        <StudioDrawingClarityRail session={s} />
+        {compact ? <Suspense fallback={null}><LazyStudioDrawingClarityRail session={s} /></Suspense> : null}
         <StudioCuttoonEditorPanels {...s} />
         <StudioCuttoonEditorSessionDialogs {...s} />
         <StudioWorkspaceArrangementToolbar disabled={compact || isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden} />

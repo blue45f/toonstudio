@@ -34,4 +34,5 @@ export interface StudioVirtualSpaceThreeStageProps {
   readonly onZoneChange?: (zone: StudioVirtualSpaceZoneChange) => void;
   readonly onNearbyNpcsChange?: (npcs: readonly StudioVirtualSpaceNearbyNpc[]) => void;
   readonly onEngineStatusChange?: (status: StudioVirtualSpaceEngineStatus) => void;
+  readonly onReturnTo2d?: () => void;
 }

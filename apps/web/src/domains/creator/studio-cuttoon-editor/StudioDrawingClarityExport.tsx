@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -6,6 +6,7 @@ import { CANVAS_W } from "../studio-assets";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 
 const ExportPanel = lazy(() => import("../export/StudioExportMenuPanel").then((module) => ({ default: module.StudioExportMenuPanel })));
+const PromoHandoffSection = lazy(() => import("../export/StudioPromoHandoffSection").then((module) => ({ default: module.StudioPromoHandoffSection })));
 
 /** 기존 출력 패널에 기존 원고 캡처·내보내기 명령을 그대로 전달한다. */
 export function StudioDrawingClarityExport({ session: s, triggerRef }: {
@@ -14,6 +15,7 @@ export function StudioDrawingClarityExport({ session: s, triggerRef }: {
 }) {
   const bt = useBilingual("studio.drawingClarity"), handlers = s.studioMenubarContentHandlers;
   const { setExportMenuOpen } = s;
+  const [promoBusy, setPromoBusy] = useState(false);
   useEffect(() => {
     const restore = () => (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
     const close = () => { setExportMenuOpen(false); restore(); };
@@ -38,8 +40,8 @@ export function StudioDrawingClarityExport({ session: s, triggerRef }: {
   return createPortal(<div role="dialog" aria-modal="false" aria-label={bt("출력 설정", "Export settings")}><Suspense fallback={<div role="status" className="fixed right-3 top-20 z-[100] rounded-xl border border-line bg-panel p-4 text-sm text-fg">{bt("출력 설정을 여는 중…", "Opening export settings…")}</div>}>
     <ExportPanel canvasWidth={CANVAS_W} canvasHeight={s.canvasH} exportScale={s.exportScale}
       exportFormat={s.exportFormat} exportTransparent={s.exportTransparent} exportPresetId={s.exportPresetId}
-      watermark={s.watermark} isExporting={s.isExporting} exportTitle={s.title}
-      pageCount={s.studioMenubarPageLabels.length} pageLabels={s.studioMenubarPageLabels} dialoguePages={s.pages} sourceWorkId={s.workId}
+      watermark={s.watermark} isExporting={s.isExporting || promoBusy} exportTitle={s.title}
+      pageCount={s.studioMenubarPageLabels.length} activePageIndex={s.activePageIndex} pageLabels={s.studioMenubarPageLabels} dialoguePages={s.pages} sourceWorkId={s.workId}
       capturePagesForPreset={handlers.handleCapturePagesForPreset} capturePagesForIndices={handlers.handleCapturePagesForIndices}
       exportPresetSlicesFromDocument={handlers.handleExportPresetSlices} exportCurrentPageToInkMl={handlers.exportCurrentPageToInkMl}
       exportCurrentPageToWillV1={handlers.exportCurrentPageToWillV1} exportCurrentPageToSvg={handlers.exportCurrentPageToSvg}
@@ -48,8 +50,26 @@ export function StudioDrawingClarityExport({ session: s, triggerRef }: {
       setExportScale={s.setExportScale} setExportFormat={s.setExportFormat} setExportTransparent={s.setExportTransparent}
       setExportPresetId={s.setExportPresetId} setWatermark={handlers.setWatermark}
       onCopyToClipboard={handlers.handleCopyToClipboard} onDownloadCurrentPage={handlers.handleDownload}
+      externalCancellableBusy={promoBusy} onWorkspaceAbortNotice={s.setStudioStatusNotice}
+      onRequestCloseAndReturn={() => {
+        setExportMenuOpen(false); (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
+      }}
       renderPrimaryExport={() => <button type="button" className="studio-drawing-clarity-button w-full" onClick={() => {
         setExportMenuOpen(false); (triggerRef.current ?? document.querySelector<HTMLElement>("[data-studio-clarity-export-trigger]"))?.focus({ preventScroll: true });
-      }}>{bt("출력 설정 닫기", "Close export settings")}</button>} />
+      }}>{bt("출력 설정 닫기", "Close export settings")}</button>}
+      renderAdditionalExports={(context) => (
+        <Suspense fallback={null}>
+          <PromoHandoffSection
+            context={context}
+            pages={s.pages}
+            canvasWidth={CANVAS_W}
+            exportScale={s.exportScale}
+            exportTitle={s.title}
+            watermark={s.watermark}
+            sourceWorkId={s.workId}
+            onBusyChange={setPromoBusy}
+          />
+        </Suspense>
+      )} />
   </Suspense></div>, document.body);
 }

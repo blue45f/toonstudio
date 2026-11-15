@@ -21,18 +21,14 @@ import {
 import { createPortal } from "react-dom";
 
 import {
-  formatStudioShortcutChord,
-  listStudioShortcutConflicts,
-  normalizeStudioShortcutChordKey,
-  studioShortcutActionLabel,
   STUDIO_APP_SETTINGS_TABS,
   STUDIO_PIXEL_GRID_SIZE_OPTIONS,
-  STUDIO_SHORTCUT_ACTIONS,
   studioAppSettingsTabLabel,
   type StudioAppSettings,
   type StudioAppSettingsTab,
   type StudioShortcutActionId,
 } from "./studio-app-settings";
+import { StudioShortcutSettingsTabContent } from "./shortcuts/StudioShortcutContextAndConflictSection";
 import { runStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioResetApplicationSettingsRequest } from "./studio-destructive-command-catalog";
 import { StudioToggleChip } from "./studio-panel-ui";
@@ -52,7 +48,7 @@ import { StudioPressureCurveGraph } from "./StudioPressureCurveGraph";
 import { activateStudioModalSheet } from "./useStudioModalSheet";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useT } from "@/shared/lib/i18n";
+import { useI18n, useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
 
 export type StudioAppSettingsPanelProps = {
@@ -121,6 +117,7 @@ export function StudioAppSettingsPanel({
   onRetryPersistence,
 }: StudioAppSettingsPanelProps): ReactElement | null {
   const t = useT();
+  const lang = useI18n((state) => state.lang);
   const titleId = useId();
   const [tab, setTab] = useState<StudioAppSettingsTab>(initialTab);
   const [recordingAction, setRecordingAction] = useState<StudioShortcutActionId | null>(null);
@@ -163,6 +160,7 @@ export function StudioAppSettingsPanel({
       let key = "";
       if (e.code === "BracketLeft") key = "[";
       else if (e.code === "BracketRight") key = "]";
+      else if (e.code === "Space" || e.key === " ") key = "Space";
       else if (e.code === "Tab") key = "Tab";
       else if (e.key === "?") key = "?";
       else if (e.key.length === 1) key = e.key.toUpperCase();
@@ -195,12 +193,8 @@ export function StudioAppSettingsPanel({
 
   if (!open || typeof document === "undefined") return null;
 
+  const isKo = lang.toLocaleLowerCase().startsWith("ko");
   const patch = (partial: Partial<StudioAppSettings>) => onChange({ ...settings, ...partial });
-  const shortcutConflicts = listStudioShortcutConflicts(settings.shortcuts);
-  const shortcutConflictCount = shortcutConflicts.size;
-  const actionLabelById = new Map(
-    STUDIO_SHORTCUT_ACTIONS.map((a) => [a.id, studioShortcutActionLabel(a.id, t)])
-  );
 
   const body = (
     <div
@@ -360,83 +354,13 @@ export function StudioAppSettingsPanel({
             ) : null}
 
             {tab === "shortcuts" ? (
-              <>
-                <SectionLabel>{t("studio.settings.section.shortcuts")}</SectionLabel>
-                <p className="text-[0.68rem] leading-relaxed text-fg-3">
-                  {t("studio.settings.shortcuts.recordingHint")}
-                </p>
-                {shortcutConflictCount > 0 ? (
-                  <p
-                    role="status"
-                    className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[0.68rem] leading-relaxed text-amber-900 dark:text-amber-100"
-                  >
-                    {t("studio.settings.shortcuts.conflictHeader")
-                      .replace("{count}", String(shortcutConflictCount))
-                      .replace("{marker}", t("studio.settings.shortcuts.conflict"))}
-                  </p>
-                ) : null}
-                <ul className="divide-y divide-line/60 rounded-xl border border-line">
-                  {STUDIO_SHORTCUT_ACTIONS.map((action) => {
-                    const chord = settings.shortcuts[action.id] ?? "";
-                    const recording = recordingAction === action.id;
-                    const chordKey = chord ? normalizeStudioShortcutChordKey(chord) : null;
-                    const conflictPeers = chordKey ? shortcutConflicts.get(chordKey) : undefined;
-                    const hasConflict = !!conflictPeers && conflictPeers.length > 1;
-                    const peerLabels = hasConflict
-                      ? conflictPeers
-                          .filter((id) => id !== action.id)
-                          .map((id) => actionLabelById.get(id) ?? id)
-                          .join(", ")
-                      : "";
-                    return (
-                      <li key={action.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                        <span className="min-w-0 text-xs text-fg">
-                          <span className="block">{action.label}</span>
-                          {hasConflict ? (
-                            <span
-                              className="mt-0.5 block text-[0.62rem] font-medium text-amber-700 dark:text-amber-200"
-                              title={peerLabels
-                                ? t("studio.settings.shortcuts.conflictPeers").replace("{peers}", peerLabels)
-                                : t("studio.settings.shortcuts.noConflictHint")}
-                            >
-                              {t("studio.settings.shortcuts.conflict")} {peerLabels ? `· ${peerLabels}` : ""}
-                            </span>
-                          ) : null}
-                        </span>
-                        <button
-                          type="button"
-                          className={cn(
-                            buttonClass({ size: "sm", variant: recording ? "outline" : "quiet" }),
-                            "min-h-11 min-w-[5.5rem] font-mono text-[0.7rem] sm:min-h-8 pointer-coarse:min-h-11",
-                            recording && "ring-2 ring-accent/40",
-                            hasConflict && !recording && "ring-1 ring-amber-500/50"
-                          )}
-                          onClick={() => setRecordingAction(recording ? null : action.id)}
-                        >
-                          {recording ? t("studio.settings.shortcuts.recordingState") : formatStudioShortcutChord(chord)}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <button
-                  type="button"
-                  className={cn(
-                    buttonClass({ size: "sm", variant: "quiet" }),
-                    "min-h-11 sm:min-h-8 pointer-coarse:min-h-11"
-                  )}
-                  onClick={() =>
-                    patch({
-                      shortcuts: Object.fromEntries(
-                        STUDIO_SHORTCUT_ACTIONS.map((a) => [a.id, a.defaultKeys])
-                      ) as StudioAppSettings["shortcuts"],
-                    })
-                  }
-                >
-                  <RotateCcw className="size-3.5" aria-hidden />
-                  {t("studio.settings.shortcuts.reset")}
-                </button>
-              </>
+              <StudioShortcutSettingsTabContent
+                settings={settings}
+                isKo={isKo}
+                recordingAction={recordingAction}
+                setRecordingAction={setRecordingAction}
+                onPatchShortcuts={(shortcuts) => patch({ shortcuts })}
+              />
             ) : null}
 
             {tab === "mouse" ? (

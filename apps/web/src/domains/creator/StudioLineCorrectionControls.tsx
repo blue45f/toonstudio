@@ -1,10 +1,15 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 
 import {
   describeStudioStabilizerLatency,
   STUDIO_STABILIZER_MODES,
   type StudioStabilizerMode,
 } from "./brush/studio-stroke-stabilizer";
+import {
+  findMatchingStudioStabilizerStrengthPreset,
+  simulateStudioFastFlickPreview,
+  STUDIO_STABILIZER_STRENGTH_PRESETS,
+} from "./brush/studio-stroke-stabilizer-fast-flick";
 import {
   findActiveStudioStabilizerPreset,
   isStudioStabilizerPresetId,
@@ -26,25 +31,6 @@ export interface StudioLineCorrectionControlsProps {
   onPreserveCornersChange: (value: boolean) => void;
   density?: "compact" | "touch";
   className?: string;
-}
-
-type CorrectionPreset = Readonly<{
-  id: "off" | "light" | "normal" | "strong";
-  label: string;
-  stabilizer: number;
-  postCorrection: number;
-}>;
-
-const CORRECTION_PRESETS: readonly CorrectionPreset[] = [
-  { id: "off", label: "끔", stabilizer: 0, postCorrection: 0 },
-  { id: "light", label: "약하게", stabilizer: 2, postCorrection: 0 },
-  { id: "normal", label: "보통", stabilizer: 4, postCorrection: 1 },
-  { id: "strong", label: "강하게", stabilizer: Math.min(8, STABILIZER_MAX), postCorrection: 2 },
-];
-
-function activeCorrectionPreset(stabilizer: number, postCorrection: number): CorrectionPreset["id"] | null {
-  return CORRECTION_PRESETS.find((preset) =>
-    preset.stabilizer === stabilizer && preset.postCorrection === postCorrection)?.id ?? null;
 }
 
 export function StudioLineCorrectionControls({
@@ -71,8 +57,54 @@ export function StudioLineCorrectionControls({
     : latency.kind === "guided" || (latency.estimatedMs !== null && latency.estimatedMs >= 75)
       ? "border-warn/35 bg-warn/10 text-warn"
       : "border-cool/30 bg-cool/10 text-cool";
-  const activePreset = activeCorrectionPreset(stabilizer, postCorrection);
+  const activePreset = findMatchingStudioStabilizerStrengthPreset(mode, stabilizer, postCorrection);
   const activeStabilizerPreset = findActiveStudioStabilizerPreset(mode, stabilizer);
+  const flickPreview = useMemo(
+    () => simulateStudioFastFlickPreview(selectedMode.id, stabilizer),
+    [selectedMode.id, stabilizer],
+  );
+  const rawSvgPath = flickPreview.rawPoints
+    .map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const fullCommittedPoints = [
+    ...flickPreview.stabilizedPoints,
+    ...flickPreview.catchupSamples.map((sample): readonly [number, number] => [sample.x, sample.y]),
+  ];
+  const committedSvgPath = fullCommittedPoints
+    .map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+  const rawEndpoint = flickPreview.rawPoints.at(-1) ?? [150, 18];
+
+  const strengthPresetGroup = (
+    <div
+      className={cx("grid grid-cols-5 gap-1", touch && "gap-1.5")}
+      role="group"
+      aria-label="선 보정 강도 프리셋"
+    >
+      {STUDIO_STABILIZER_STRENGTH_PRESETS.map((preset) => (
+        <button
+          key={preset.id}
+          type="button"
+          aria-pressed={activePreset === preset.id}
+          data-studio-stabilizer-strength-preset={preset.id}
+          onClick={() => {
+            onModeChange(preset.mode);
+            onStabilizerChange(preset.stabilizer);
+            onPostCorrectionChange(preset.postCorrection);
+          }}
+          className={cx(
+            "rounded-lg border px-1 font-semibold transition-colors",
+            touch ? "min-h-11 text-[0.68rem]" : "min-h-7 text-[0.62rem]",
+            activePreset === preset.id
+              ? "border-accent bg-accent-soft text-accent"
+              : "border-line bg-card text-fg-2 hover:border-accent/45 hover:bg-raised"
+          )}
+        >
+          {touch ? preset.label : preset.shortLabel}
+        </button>
+      ))}
+    </div>
+  );
 
   const detailedControls = (
     <div className={cx("space-y-2.5", touch && "pt-2")}>
@@ -224,28 +256,7 @@ export function StudioLineCorrectionControls({
       {touch ? (
         <>
           <p className="text-[0.65rem] leading-relaxed text-fg-3">흔들림을 얼마나 부드럽게 다듬을지 먼저 고르세요.</p>
-          <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="선 보정 강도">
-            {CORRECTION_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                aria-pressed={activePreset === preset.id}
-                onClick={() => {
-                  onModeChange("standard");
-                  onStabilizerChange(preset.stabilizer);
-                  onPostCorrectionChange(preset.postCorrection);
-                }}
-                className={cx(
-                  "min-h-11 rounded-lg border px-1 text-[0.7rem] font-semibold transition-colors",
-                  activePreset === preset.id
-                    ? "border-accent bg-accent-soft text-accent"
-                    : "border-line bg-card text-fg-2 hover:border-accent/45 hover:bg-raised"
-                )}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
+          {strengthPresetGroup}
           <details className="rounded-lg border border-line bg-card/35 px-2.5">
             <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-fg-2">
               세부 선 보정 설정
@@ -253,7 +264,53 @@ export function StudioLineCorrectionControls({
             {detailedControls}
           </details>
         </>
-      ) : detailedControls}
+      ) : (
+        <>
+          {strengthPresetGroup}
+          {detailedControls}
+        </>
+      )}
+
+      <div
+        data-studio-stabilizer-flick-preview="true"
+        aria-label="빠른 손동작 끝점·필압 보존 미리보기"
+        className="rounded-lg border border-line/65 bg-card/55 px-2.5 py-2"
+      >
+        <div className="flex items-center justify-between gap-2 text-[0.6rem]">
+          <span className="font-semibold text-fg-2">빠른 손동작 끝점·필압 보존</span>
+          <span className="tabular-nums text-good">
+            끝점 오차 {flickPreview.endpointErrorPx.toFixed(1)}px · 끝 필압 {Math.round(flickPreview.preservedEndPressure * 100)}%
+          </span>
+        </div>
+        <svg
+          viewBox="0 0 160 44"
+          className="mt-1.5 h-10 w-full overflow-visible rounded bg-raised/55"
+          aria-hidden="true"
+        >
+          <path
+            d={rawSvgPath}
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity={0.28}
+            strokeDasharray="2.5 2.5"
+            strokeWidth={1.25}
+          />
+          <path
+            d={committedSvgPath}
+            fill="none"
+            stroke="var(--accent, #2dd4bf)"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+          />
+          <circle
+            cx={rawEndpoint[0]}
+            cy={rawEndpoint[1]}
+            r={2.8}
+            fill="var(--accent, #2dd4bf)"
+          />
+        </svg>
+      </div>
     </section>
   );
 }

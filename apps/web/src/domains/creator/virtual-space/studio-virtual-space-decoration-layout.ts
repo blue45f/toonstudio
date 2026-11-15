@@ -124,10 +124,10 @@ function nearbyPlacement(world: World, state: StudioVirtualDecorationState, item
 }
 
 export function addStudioVirtualDecorationSafely(current: StudioVirtualDecorationState, type: StudioVirtualDecorType,
-  point: StudioVirtualSpacePoint, world: World): StudioDecorationLayoutResult {
+  point: StudioVirtualSpacePoint, world: World, assetId?: string): StudioDecorationLayoutResult {
   const state = studioVirtualDecorationStateForWorld(current, world);
   if (state.placements.length >= 36) return { ok: false, reason: "limit" };
-  const added = addStudioVirtualDecoration(state, type, point);
+  const added = addStudioVirtualDecoration(state, type, point, assetId);
   const last = added.placements.at(-1);
   if (added === state || !last) return { ok: false, reason: "invalid" };
   const candidate = nearbyPlacement(world, state, last, point);
@@ -144,6 +144,139 @@ export function editStudioVirtualDecoration(current: StudioVirtualDecorationStat
   if (!parseStudioVirtualDecorationState(next)) return { ok: false, reason: "invalid" };
   const reason = placementProblem(world, state, item, self);
   return reason ? { ok: false, reason } : { ok: true, state: next };
+}
+
+/**
+ * 다중 선택된 가구 묶음의 패치를 원자적으로 검증·적용한다.
+ * 선택된 항목끼리 이동 전 자신의 이전 좌표와 충돌 판정하지 않도록 비선택 항목부터 순차 조립해 검사하며,
+ * 한 항목이라도 경계·충돌·동선 규칙을 위반하면 전체 묶음 변경을 거부한다.
+ */
+export function editStudioVirtualDecorationGroup(
+  current: StudioVirtualDecorationState,
+  patches: ReadonlyMap<string, Partial<Pick<StudioVirtualDecorPlacement, "x" | "y" | "rotation" | "scale">>>,
+  world: World,
+  self?: StudioVirtualSpacePoint,
+): StudioDecorationLayoutResult {
+  if (patches.size === 0) return { ok: false, reason: "invalid" };
+  const state = studioVirtualDecorationStateForWorld(current, world);
+  const patchedById = new Map<string, StudioVirtualDecorPlacement>();
+  for (const [id, patch] of patches) {
+    const existing = state.placements.find((item) => item.id === id);
+    if (!existing) return { ok: false, reason: "invalid" };
+    patchedById.set(id, { ...existing, ...patch });
+  }
+  const nextPlacements = state.placements.map((entry) => patchedById.get(entry.id) ?? entry);
+  const next: StudioVirtualDecorationState = {
+    ...state,
+    revision: state.revision + 1,
+    placements: nextPlacements,
+  };
+  if (!parseStudioVirtualDecorationState(next)) return { ok: false, reason: "invalid" };
+  const unselected = state.placements.filter((entry) => !patchedById.has(entry.id));
+  const acceptedPatched: StudioVirtualDecorPlacement[] = [];
+  for (const entry of state.placements) {
+    const candidate = patchedById.get(entry.id);
+    if (!candidate) continue;
+    const stepState: StudioVirtualDecorationState = {
+      ...state,
+      placements: [...unselected, ...acceptedPatched],
+    };
+    const reason = placementProblem(world, stepState, candidate, self);
+    if (reason) return { ok: false, reason };
+    acceptedPatched.push(candidate);
+  }
+  return { ok: true, state: next };
+}
+
+/**
+ * 상대 간격과 회전을 그대로 보존한 채 복제 묶음을 통째로 안전 오프셋에 배치한다.
+ * 개별 항목별로 따로 `nearbyPlacement`를 찾지 않으므로 묶음 내부의 상대 좌표·회전이 절대 틀어지지 않는다.
+ */
+export function duplicateStudioVirtualDecorationBatchSafely(
+  current: StudioVirtualDecorationState,
+  sourceIds: readonly string[],
+  world: World,
+  self?: StudioVirtualSpacePoint,
+): { readonly result: StudioDecorationLayoutResult; readonly clonedIds: readonly string[] } {
+  const uniqueIds = Array.from(new Set(sourceIds));
+  if (uniqueIds.length === 0) {
+    return { result: { ok: false, reason: "invalid" }, clonedIds: [] };
+  }
+  const state = studioVirtualDecorationStateForWorld(current, world);
+  if (state.placements.length + uniqueIds.length > 36) {
+    return { result: { ok: false, reason: "limit" }, clonedIds: [] };
+  }
+  const sources = uniqueIds
+    .map((id) => state.placements.find((entry) => entry.id === id))
+    .filter((entry): entry is StudioVirtualDecorPlacement => entry !== undefined);
+  if (sources.length !== uniqueIds.length) {
+    return { result: { ok: false, reason: "invalid" }, clonedIds: [] };
+  }
+
+  let sequence = state.placements.length;
+  const prefix = `decor-${Date.now().toString(36)}`;
+  const allocatedIds: string[] = [];
+  for (let i = 0; i < sources.length; i += 1) {
+    while (
+      state.placements.some((entry) => entry.id === `${prefix}-${sequence}`) ||
+      allocatedIds.includes(`${prefix}-${sequence}`)
+    ) {
+      sequence += 1;
+    }
+    allocatedIds.push(`${prefix}-${sequence++}`);
+  }
+
+  const candidateOffsets: StudioVirtualSpacePoint[] = [{ x: 32, y: 32 }];
+  for (let ring = 1; ring <= 10; ring += 1) {
+    const dist = ring * 32;
+    for (let step = 0; step < 16; step += 1) {
+      const angle = (step / 16) * Math.PI * 2;
+      const ox = Math.round((Math.cos(angle) * dist) / 16) * 16;
+      const oy = Math.round((Math.sin(angle) * dist) / 16) * 16;
+      if (!candidateOffsets.some((existing) => existing.x === ox && existing.y === oy)) {
+        candidateOffsets.push({ x: ox, y: oy });
+      }
+    }
+  }
+
+  let lastReason: Extract<StudioDecorationLayoutResult, { ok: false }>["reason"] = "access";
+  for (const offset of candidateOffsets) {
+    const clones: StudioVirtualDecorPlacement[] = sources.map((source, idx) => ({
+      ...source,
+      id: allocatedIds[idx]!,
+      x: Math.round(source.x + offset.x),
+      y: Math.round(source.y + offset.y),
+    }));
+    const candidateState: StudioVirtualDecorationState = {
+      ...state,
+      revision: state.revision + 1,
+      placements: [...state.placements, ...clones],
+    };
+    if (!parseStudioVirtualDecorationState(candidateState)) {
+      lastReason = "invalid";
+      continue;
+    }
+    let failedReason: Extract<StudioDecorationLayoutResult, { ok: false }>["reason"] | null = null;
+    const acceptedClones: StudioVirtualDecorPlacement[] = [];
+    for (const clone of clones) {
+      const stepState: StudioVirtualDecorationState = {
+        ...state,
+        placements: [...state.placements, ...acceptedClones],
+      };
+      const problem = placementProblem(world, stepState, clone, self);
+      if (problem) {
+        failedReason = problem;
+        break;
+      }
+      acceptedClones.push(clone);
+    }
+    if (!failedReason) {
+      return { result: { ok: true, state: candidateState }, clonedIds: allocatedIds };
+    }
+    lastReason = failedReason;
+  }
+
+  return { result: { ok: false, reason: lastReason }, clonedIds: [] };
 }
 
 export function studioVirtualDecorationPresetForWorld(key: StudioVirtualDecorPresetKey, world: World,

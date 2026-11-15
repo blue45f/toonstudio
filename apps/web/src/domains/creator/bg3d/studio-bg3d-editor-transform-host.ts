@@ -10,6 +10,12 @@ import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-pro
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import { readStudioBg3dSelectionBounds } from "./studio-bg3d-camera-selection";
 import { hasStudioBg3dSelectedAncestor } from "./studio-bg3d-template-instance";
+import {
+  calculateStudioBg3dMultiSelectFollowerTransform,
+  composeStudioBg3dDriverWorldMatrix,
+  planStudioBg3dGroundSelection,
+  resolveStudioBg3dModeAwareDriverTransform,
+} from "./studio-bg3d-multi-transform";
 import { frozenStatus6Text } from "../status-i18n/studio-frozen6-status-i18n";
 
 export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
@@ -230,7 +236,7 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
     physicsAnimationFrameRef, physicsGenerationRef, physicsPlaybackStartedAtRef,
     physicsPlaybackOffsetRef, physicsLastUiUpdateRef, physicsLastFrameTimestampRef,
     latestPhysicsSamplesRef, physicsSessionRef, physicsWorkerSessionRef,
-    physicsRuntimeSourceRef, physicsStartButtonRef, physicsTransportActionRef,
+    physicsRuntimeSourceRef, replaceCanonicalDocumentState, physicsStartButtonRef, physicsTransportActionRef,
     shouldTransferPhysicsFocusRef, isModalAssetSessionCurrent,
     getModelThumbnailCaptureController, acquireModelThumbnailGpuLease,
     startModelThumbnailCaptureBatch, invalidateModalAssetSession, cancelSurfaceSnap,
@@ -325,6 +331,20 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
     const initialFirst = dragInitialFirstTransformRef.current;
     if (!firstObj || !initialFirst) return;
     firstObj.updateWorldMatrix(true, false);
+    firstObj.parent?.updateWorldMatrix(true, false);
+    const driverLocal = resolveStudioBg3dModeAwareDriverTransform(
+      {
+        position: [firstObj.position.x, firstObj.position.y, firstObj.position.z],
+        rotation: [firstObj.rotation.x, firstObj.rotation.y, firstObj.rotation.z],
+        scale: [firstObj.scale.x, firstObj.scale.y, firstObj.scale.z],
+      },
+      transformMode,
+      snap,
+      snapSettings,
+    );
+    const effectiveDriverWorldMatrix = snap && snapSettings.enabled
+      ? composeStudioBg3dDriverWorldMatrix(driverLocal, firstObj.parent?.matrixWorld ?? null)
+      : firstObj.matrixWorld;
     const hasSelectedTransformDriverAncestor = (item: BgPrimitive | BgCustomModelInstance) =>
       hasStudioBg3dSelectedAncestor(
         item,
@@ -334,66 +354,40 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
       );
 
     const patchTransform = (item: BgPrimitive | BgCustomModelInstance, isFirst: boolean) => {
-      const initial = dragInitialSelectedTransformsRef.current.get(item.id);
       if (isFirst) {
-        const next = {
-          ...item,
-          position: [firstObj.position.x, firstObj.position.y, firstObj.position.z] as [number, number, number],
-          rotation: [firstObj.rotation.x, firstObj.rotation.y, firstObj.rotation.z] as [number, number, number],
-          scale: [firstObj.scale.x, firstObj.scale.y, firstObj.scale.z] as [number, number, number],
-        };
-        if (snap && (next.position || next.rotation)) {
-          const snapped = applyStudioBg3dSnapToTransform(next as { position: [number, number, number]; rotation: [number, number, number] }, snapSettings);
-          next.position = snapped.position as [number, number, number];
-          next.rotation = snapped.rotation as [number, number, number];
-        }
-        return next;
+        return { ...item, ...driverLocal };
       }
-      
-      if (!initial) return item;
+      const initial = dragInitialSelectedTransformsRef.current.get(item.id);
       const object = primitiveObjectsRef.current.get(item.id);
-      if (!object) return item;
+      if (!initial || !object) return item;
       object.parent?.updateWorldMatrix(true, false);
-      const parentWorld = object.parent?.matrixWorld;
-      const targetLocal = calculateStudioBg3dThreeWorldDeltaTransform({
+      const targetLocal = calculateStudioBg3dMultiSelectFollowerTransform({
         initialDriverWorldMatrix: initialFirst.worldMatrix,
-        currentDriverWorldMatrix: firstObj.matrixWorld,
+        effectiveDriverWorldMatrix,
         initialTargetWorldMatrix: initial.worldMatrix,
-        targetParentWorldMatrix: parentWorld,
+        targetParentWorldMatrix: object.parent?.matrixWorld,
       });
-      if (!targetLocal) return item;
-      const next = {
-        ...item,
-        ...targetLocal,
-      };
-      if (snap) {
-        const snapped = applyStudioBg3dSnapToTransform({
-          position: next.position,
-          rotation: next.rotation,
-        }, snapSettings);
-        next.position = snapped.position as [number, number, number];
-        next.rotation = snapped.rotation as [number, number, number];
-      }
-      return next;
+      return targetLocal ? { ...item, ...targetLocal } : item;
     };
 
-    setPrimitives((prev: BgPrimitive[]) => prev.map((p: BgPrimitive) => {
+    const live = physicsRuntimeSourceRef.current;
+    const nextPrimitives = live.primitives.map((p: BgPrimitive) => {
       if (
         !selectedIds.has(p.id) ||
         isBgObjectTransformBlocked(p) ||
         p.id !== firstSelectedId && hasSelectedTransformDriverAncestor(p)
       ) return p;
       return patchTransform(p, p.id === firstSelectedId) as BgPrimitive;
-    }));
-
-    setCustomModels((prev: BgCustomModelInstance[]) => prev.map((m: BgCustomModelInstance) => {
+    });
+    const nextCustomModels = live.customModels.map((m: BgCustomModelInstance) => {
       if (
         !selectedIds.has(m.id) ||
         isBgObjectTransformBlocked(m) ||
         m.id !== firstSelectedId && hasSelectedTransformDriverAncestor(m)
       ) return m;
       return patchTransform(m, m.id === firstSelectedId) as BgCustomModelInstance;
-    }));
+    });
+    replaceCanonicalDocumentState({ primitives: nextPrimitives, customModels: nextCustomModels });
   };
   h.applyMultiSelectDelta = applyMultiSelectDelta;
   const updateTransform = (
@@ -688,52 +682,31 @@ export function attachStudioBg3dEditorTransformHost(h: Record<string, any>) {
   }
   h.renameBgObject = renameBgObject;
   function groundSelectedEntity() {
+    if (!isStudioBg3dSceneEditReady(h as Parameters<typeof isStudioBg3dSceneEditReady>[0])) return;
     if (selectedIds.size === 0) return;
-    for (const id of selectedIds) {
-      const object = primitiveObjectsRef.current.get(id);
-      if (object) {
-        object.updateWorldMatrix(true, true);
-        const bounds = new THREE.Box3().setFromObject(object);
-        if (!bounds.isEmpty() && Number.isFinite(bounds.min.y)) {
-          const nextWorldPosition = object.getWorldPosition(new THREE.Vector3());
-          nextWorldPosition.y -= bounds.min.y;
-          object.parent?.updateWorldMatrix(true, false);
-          const nextLocalPosition = object.parent
-            ? object.parent.worldToLocal(nextWorldPosition)
-            : nextWorldPosition;
-          const position: [number, number, number] = [
-            nextLocalPosition.x,
-            nextLocalPosition.y,
-            nextLocalPosition.z,
-          ];
-          const primitive = primitives.find((candidate: BgPrimitive) => candidate.id === id);
-          if (primitive && !isBgObjectTransformBlocked(primitive)) {
-            updateTransform(id, { position }, { snap: false });
-            continue;
-          }
-          const model = customModels.find((candidate: BgCustomModelInstance) => candidate.id === id);
-          if (model && !isBgObjectTransformBlocked(model)) {
-            updateCustomModelTransform(id, { position }, { snap: false });
-            continue;
-          }
-        }
-      }
-      const prim = primitives.find((p: BgPrimitive) => p.id === id);
-      if (prim) {
-        if (isBgObjectTransformBlocked(prim)) continue;
-        if (prim.parentId) continue;
-        const position = groundPrimitiveTransform(prim.kind, prim.position, prim.rotation, prim.scale);
-        updateTransform(prim.id, { position });
-        continue;
-      }
-      const model = customModels.find((m: BgCustomModelInstance) => m.id === id);
-      if (!model || isBgObjectTransformBlocked(model)) continue;
-      if (model.parentId) continue;
-      const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend)?.root;
-      const size = root ? measureBg3dObjectSize(root) : ([2, 2, 2] as [number, number, number]);
-      const position = groundModelTransform(size, model.position, model.rotation, model.scale);
-      updateCustomModelTransform(model.id, { position });
-    }
+    const live = physicsRuntimeSourceRef.current;
+    const plan = planStudioBg3dGroundSelection({
+      selectedIds,
+      primitives: live.primitives,
+      customModels: live.customModels,
+      readSceneObject: (id: string) => primitiveObjectsRef.current.get(id),
+      readModelSize: (modelId: string) => {
+        const root = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.root;
+        return root ? measureBg3dObjectSize(root) : ([2, 2, 2] as [number, number, number]);
+      },
+    });
+    if (!plan.changed) return;
+    h.commitImmediateHistoryTransition?.(
+      plan.primitives,
+      plan.customModels,
+      live.document,
+      createStudioBg3dHistorySnapshot(live),
+      { commandId: "studio.bg3d.transform.ground", label: "바닥에 접지", source: "inspector" },
+    );
+    replaceCanonicalDocumentState({
+      primitives: plan.primitives,
+      customModels: plan.customModels,
+    });
   }
   h.groundSelectedEntity = groundSelectedEntity;
   function placeSelectedModelRecipe() {

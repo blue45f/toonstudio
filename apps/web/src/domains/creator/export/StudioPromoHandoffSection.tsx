@@ -16,6 +16,7 @@ import {
 } from "./studio-promo-translations";
 
 import type { DialogueReviewPageLike } from "../lettering/studio-dialogue-review";
+import type { PromoDocumentCut } from "../promo/promo-document-cuts";
 import type { WatermarkSettings } from "../studio-watermark";
 import type { StudioExportMenuPackageContext } from "./StudioExportMenuPanel";
 
@@ -27,6 +28,11 @@ interface Status {
   tone: "info" | "good" | "warn";
   text: string;
   percent?: number;
+}
+interface PartialPromoCutResumeState {
+  readonly sessionKey: string;
+  readonly completedCuts: ReadonlyMap<string, Omit<PromoDocumentCut, "order">>;
+  readonly totalCount: number;
 }
 
 export interface StudioPromoHandoffSectionProps {
@@ -72,6 +78,7 @@ export function StudioPromoHandoffSection({
 }: StudioPromoHandoffSectionProps) {
   const [busy, setBusy] = useState<Action | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
+  const [partialCuts, setPartialCuts] = useState<PartialPromoCutResumeState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const busyChangeRef = useRef(onBusyChange);
@@ -90,12 +97,41 @@ export function StudioPromoHandoffSection({
       busyChangeRef.current(false);
     };
   }, []);
+  useEffect(() => {
+    const sig = context.cancelSignal;
+    if (!sig) return;
+    const onAbort = () => {
+      const controller = abortRef.current;
+      if (!controller || controller.signal.aborted) return;
+      controller.abort();
+    };
+    if (sig.aborted) {
+      onAbort();
+      return;
+    }
+    sig.addEventListener("abort", onAbort, { once: true });
+    return () => sig.removeEventListener("abort", onAbort);
+  }, [context.cancelSignal]);
 
   // 부모가 렌더마다 새 배열을 넘기므로, 값이 같은 동안은 같은 배열을 쓰도록 문자열 키에서 다시 만든다.
   const indicesKey = context.pageIndices.join(",");
   const pageIndices = useMemo(() => (indicesKey ? indicesKey.split(",").map(Number) : []), [indicesKey]);
   const cuts = useMemo(() => (pages ? listStudioPromoCuts(pages, pageIndices) : null), [pages, pageIndices]);
   const translations = useMemo(() => (pages ? listStudioPromoTranslations(pages, pageIndices) : null), [pages, pageIndices]);
+  const sessionKey = useMemo(() => {
+    if (!cuts) return "";
+    const wm = watermark.enabled
+      ? `${watermark.text}|${watermark.position}|${watermark.opacity}|${watermark.size}`
+      : "off";
+    const framesSig = cuts.frames
+      .map(
+        (frame) =>
+          `${frame.pageId}:${frame.frameId}@${frame.x},${frame.y},${frame.width},${frame.height}#${frame.dialogues.map((d) => `${d.id}:${d.text}`).join("~")}`,
+      )
+      .join(";");
+    return `${canvasWidth}|${exportScale}|${wm}|${framesSig}`;
+  }, [cuts, canvasWidth, exportScale, watermark]);
+  const activePartial = partialCuts && partialCuts.sessionKey === sessionKey ? partialCuts : null;
 
   const tooManyCuts = cuts ? exceedsStudioPromoCutLimit(cuts) : false;
   const tooManyTranslations = translations ? exceedsStudioPromoTranslationLimit(translations) : false;
@@ -114,31 +150,36 @@ export function StudioPromoHandoffSection({
   const exportCuts = async () => {
     if (!cuts || !cutsReady || locked) return;
     const rangeLabel = context.rangeLabel;
+    const resumeMap = activePartial?.completedCuts;
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy("cuts");
     setStatus({ action: "cuts", rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.capturing", { range: rangeLabel }, "페이지를 캡처하는 중이에요. ({range})"), percent: 0 });
     let owned: HTMLCanvasElement[] = [];
+    let handoffMod: typeof import("./studio-promo-handoff") | null = null;
     try {
       const captured = await context.capturePages();
       owned = captured.pages;
       if (controller.signal.aborted) throw new DOMException("취소", "AbortError");
       if (captured.pages.length !== captured.indices.length) throw new Error(subStatusText("studio.subStatus.handoff.captureFailed", "페이지 캡처가 끝까지 되지 않았어요. 다시 시도해 주세요."));
-      const handoff = await import("./studio-promo-handoff");
-      const result = await handoff.buildStudioPromoCutBundle({
+      handoffMod = await import("./studio-promo-handoff");
+      const result = await handoffMod.buildStudioPromoCutBundle({
         listing: cuts,
         captures: captured.indices.map((pageIndex, index) => ({ pageIndex, canvas: captured.pages[index] })),
         canvasWidth,
         title: exportTitle,
         documentId: sourceWorkId ?? null,
-        render: handoff.createStudioPromoCutImageRenderer({ watermark }),
+        render: handoffMod.createStudioPromoCutImageRenderer({ watermark }),
+        ...(resumeMap ? { completedCuts: resumeMap } : {}),
         signal: controller.signal,
         onProgress: (done, total) => {
           if (!mountedRef.current) return;
           setStatus({ action: "cuts", rangeLabel, tone: "info", text: subStatusText("studio.subStatus.handoff.makingCuts", { done, total }, "컷 이미지를 만드는 중이에요. {done}/{total}"), percent: Math.round((done / total) * 100) });
         },
       });
+      if (controller.signal.aborted || !mountedRef.current) throw new DOMException("취소", "AbortError");
       downloadBlob(new Blob([result.json], { type: "application/json" }), result.fileName);
+      if (mountedRef.current) setPartialCuts(null);
       finish({
         action: "cuts",
         rangeLabel,
@@ -149,14 +190,36 @@ export function StudioPromoHandoffSection({
           : subStatusText("studio.subStatus.handoff.cutsSaved", { count: result.bundle.cuts.length }, "컷 {count}개를 저장했어요. 홍보 영상 편집기의 「Studio 문서에서 컷 가져오기」에서 불러오세요."),
       });
     } catch (error) {
-      finish({
-        action: "cuts",
-        rangeLabel,
-        tone: "warn",
-        text: isAbort(error)
-          ? subStatusText("studio.subStatus.handoff.cutsCancelled", "컷 묶음 만들기를 취소했어요. 다시 시도할 수 있어요.")
-          : error instanceof Error ? error.message : subStatusText("studio.subStatus.handoff.cutsFailed", "컷 묶음을 만들지 못했어요. 다시 시도해 주세요."),
-      });
+      if (handoffMod && error instanceof handoffMod.StudioPromoCutPartialFailureError) {
+        if (mountedRef.current) {
+          setPartialCuts({
+            sessionKey,
+            completedCuts: error.completedCuts,
+            totalCount: error.totalFrameCount,
+          });
+        }
+        const saved = error.completedCuts.size;
+        const remaining = Math.max(1, error.totalFrameCount - saved);
+        finish({
+          action: "cuts",
+          rangeLabel,
+          tone: "warn",
+          text: subStatusText(
+            "studio.subStatus.handoff.cutsPartialResume",
+            { saved, remaining, reason: error.message },
+            "성공한 컷 {saved}개는 유지했어요. 다시 시도하면 실패·미완료 {remaining}개만 이어서 만들어 중복 없이 저장해요. ({reason})",
+          ),
+        });
+      } else {
+        finish({
+          action: "cuts",
+          rangeLabel,
+          tone: "warn",
+          text: isAbort(error)
+            ? subStatusText("studio.subStatus.handoff.cutsCancelled", "컷 묶음 만들기를 취소했어요. 다시 시도할 수 있어요.")
+            : error instanceof Error ? error.message : subStatusText("studio.subStatus.handoff.cutsFailed", "컷 묶음을 만들지 못했어요. 다시 시도해 주세요."),
+        });
+      }
     } finally {
       // 캡처한 큰 캔버스는 이 파일이 만든 뒤 아무도 쓰지 않는다. 바로 놓는다.
       owned.forEach(releaseCanvas);
@@ -171,6 +234,7 @@ export function StudioPromoHandoffSection({
     try {
       const handoff = await import("./studio-promo-handoff");
       const result = handoff.buildStudioPromoTranslationFile({ listing: translations, documentId: sourceWorkId ?? null, title: exportTitle, exportedAt: new Date() });
+      if (context.cancelSignal?.aborted || !mountedRef.current) throw new DOMException("취소", "AbortError");
       downloadBlob(new Blob([result.json], { type: "application/json" }), result.fileName);
       finish({
         action: "translations",
@@ -270,12 +334,23 @@ export function StudioPromoHandoffSection({
             <div className="mt-2 flex gap-1.5">
               <button
                 type="button"
+                data-testid={retryCuts && activePartial ? "studio-promo-cuts-resume-retry" : undefined}
                 className={ACTION_BUTTON}
                 disabled={locked || !cutsReady}
                 onClick={() => void exportCuts()}
               >
                 {retryCuts ? <RotateCcw size={14} aria-hidden /> : <Download size={14} aria-hidden />}
-                {busy === "cuts" ? subStatusText("studio.subStatus.handoff.cutsBusy", "컷 묶음 만드는 중") : retryCuts ? subStatusText("studio.subStatus.handoff.cutsRetry", "컷 묶음 다시 시도") : "홍보 쇼츠용 컷 묶음 저장"}
+                {busy === "cuts"
+                  ? subStatusText("studio.subStatus.handoff.cutsBusy", "컷 묶음 만드는 중")
+                  : retryCuts && activePartial
+                    ? subStatusText(
+                        "studio.subStatus.handoff.cutsRetryRemaining",
+                        { remaining: Math.max(1, activePartial.totalCount - activePartial.completedCuts.size) },
+                        "컷 묶음 다시 시도 · 실패 {remaining}개만 이어서",
+                      )
+                    : retryCuts
+                      ? subStatusText("studio.subStatus.handoff.cutsRetry", "컷 묶음 다시 시도")
+                      : "홍보 쇼츠용 컷 묶음 저장"}
               </button>
               {busy === "cuts" ? (
                 <button

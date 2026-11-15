@@ -1384,7 +1384,7 @@ export class StudioDocumentMigratorRegistry {
           severity: "error",
           code: "UNKNOWN_FUTURE_VERSION",
           message:
-            "이 Studio 문서는 현재 빌드보다 새로운 format version으로 저장되었습니다.",
+            `이 Studio 문서는 현재 빌드(지원 v${definition.currentVersion})보다 새로운 format version(v${source.format.version})으로 저장되었습니다.`,
           recoverable: true,
           recovery: "upgrade-client",
           formatId: source.format.id,

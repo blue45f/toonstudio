@@ -5,12 +5,12 @@ import {
   episodeScope,
   projectScope,
   type ProductionProjectAggregate,
-  type ProductionStudioRevisionLink,
   type RevisionRef,
   type ScopeRef,
 } from "@toonstudio/core/production";
 
 import { createDemoRisk, PRODUCTION_DEMO_BASE_AT } from "./production-demo-risk";
+import { buildDemoSubmissionsAndRevisionLinks } from "./production-demo-submissions";
 
 const AT = PRODUCTION_DEMO_BASE_AT;
 /** 샘플 시나리오의 "오늘". 화면에서는 실제 오늘 날짜로 옮겨 보여 준다(`rebaseProductionDemoTimeline`). */
@@ -696,69 +696,12 @@ export function createProductionDemoProject(): ProductionProjectAggregate {
     },
   ];
 
-  const submissions = [
-    {
-      id: "submission-thumbnail-12-r2",
-      projectId: PROJECT_ID,
-      deliverableId: "deliverable-thumbnail-12",
-      revisionRef: visualRevision,
-      submittedByAssignmentId: "assignment-art",
-      submittedAt: "2026-09-15T03:30:00.000Z",
-      status: "in-review" as const,
-      inputRevisionRefs: [storyRevision],
-      evidenceRefs: ["thumbnail-diff-r1-r2"],
-    },
-    {
-      id: "submission-background-sample-r1",
-      projectId: PROJECT_ID,
-      deliverableId: "deliverable-background-sample-12",
-      revisionRef: {
-        id: "background-sample-r1",
-        lineage: "visual" as const,
-        revision: 1,
-        digest: "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-        createdAt: "2026-09-18T02:00:00.000Z",
-      },
-      submittedByAssignmentId: "assignment-background-vendor",
-      submittedAt: "2026-09-18T02:05:00.000Z",
-      status: "approved" as const,
-      inputRevisionRefs: [storyRevision, visualRevision],
-      evidenceRefs: ["approval-background-sample-r1"],
-    },
-  ];
-
-  const studioRevisionLinks: readonly ProductionStudioRevisionLink[] = [
-    {
-      id: "studio-link-thumbnail-12-r2",
-      projectId: PROJECT_ID,
-      workId: WORK_ID,
-      episodeId: "episode-12",
-      studioDocumentRef: "document-episode-12-thumbnail",
-      documentRole: "thumbnail",
-      studioRevisionRef: visualRevision,
-      deliverableId: "deliverable-thumbnail-12",
-      submissionId: "submission-thumbnail-12-r2",
-      linkedByAssignmentId: "assignment-art",
-      status: "submitted",
-      linkedAt: "2026-09-15T03:35:00.000Z",
-      approvedAt: null,
-    },
-    {
-      id: "studio-link-background-sample-12-r1",
-      projectId: PROJECT_ID,
-      workId: WORK_ID,
-      episodeId: "episode-12",
-      studioDocumentRef: "document-episode-12-background-sample",
-      documentRole: "background",
-      studioRevisionRef: submissions[1]!.revisionRef,
-      deliverableId: "deliverable-background-sample-12",
-      submissionId: "submission-background-sample-r1",
-      linkedByAssignmentId: "assignment-background-vendor",
-      status: "approved",
-      linkedAt: "2026-09-18T02:10:00.000Z",
-      approvedAt: "2026-09-18T02:10:00.000Z",
-    },
-  ];
+  const { submissions, studioRevisionLinks } = buildDemoSubmissionsAndRevisionLinks({
+    projectId: PROJECT_ID,
+    workId: WORK_ID,
+    storyRevision,
+    visualRevision,
+  });
 
   const proposal = {
     id: "proposal-background-vendor-r1",

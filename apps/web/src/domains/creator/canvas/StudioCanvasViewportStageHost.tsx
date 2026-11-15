@@ -727,8 +727,8 @@ export function StudioCanvasViewportStageHost({
                 canvasHeight={canvasH}
                 effScale={effScale}
                 gridSize={gridSize}
-                showGrid={showGrid}
-                showWebtoonGuides={showWebtoonGuides}
+                showGrid={!isExporting && showGrid}
+                showWebtoonGuides={!isExporting && showWebtoonGuides}
                 webtoonGuides={webtoonGuides}
               />
               {renderDrawingPracticeGuide("below-artwork")}

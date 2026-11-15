@@ -206,4 +206,149 @@ describe("useStudioExactResumeContext", () => {
       });
     }, { timeout: 2_000 });
   });
+
+  it("preserves active layer selection on bare reload of the same document and page when focus is unset", async () => {
+    writeStudioExactResumeContext(window.localStorage, {
+      projectId: "project-1",
+      documentId: "document-1",
+      workspace: "comic",
+      pageId: "page-1",
+      selectedElementIds: ["panel-1"],
+      zoom: 1.4,
+      scrollLeft: 0,
+      scrollTop: 0,
+      tool: "draw",
+      drawMode: "pen",
+    });
+
+    function BareReloadHarness() {
+      const [selectedId, setSelectedId] = useState<string | null>(null);
+      const [marqueeIds, setMarqueeIds] = useState<string[]>([]);
+      const viewportRef = useRef<HTMLDivElement>(null);
+      useStudioExactResumeContext({
+        projectId: "project-1",
+        documentId: "document-1",
+        workspace: "comic",
+        focus: null,
+        language: "ko-KR",
+        sourceVersion: null,
+        resumeRequested: false,
+        hydrated: true,
+        pages: PAGES,
+        currentPageId: "page-1",
+        setCurrentPageId: () => true,
+        selectedId,
+        marqueeIds,
+        setSelectedId,
+        setMarqueeIds,
+        zoom: 1,
+        setZoom: () => undefined,
+        scrollLeft: 0,
+        scrollTop: 0,
+        viewportRef,
+        updateViewport: () => undefined,
+        tool: "draw",
+        setTool: () => undefined,
+        drawMode: "pen",
+        setDrawMode: () => undefined,
+      });
+      return <output data-testid="bare-state">{JSON.stringify({ selectedId, marqueeIds })}</output>;
+    }
+
+    render(<BareReloadHarness />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("bare-state").textContent).toBe(
+        JSON.stringify({ selectedId: "panel-1", marqueeIds: [] }),
+      );
+    });
+  });
+
+  it("restores page, tool, drawMode, and selection when returning to an existing document without ?resume=latest and flushes pending state on unmount", async () => {
+    writeStudioExactResumeContext(window.localStorage, {
+      projectId: "project-1",
+      documentId: "document-1",
+      workspace: "comic",
+      pageId: "page-2",
+      selectedElementIds: ["bubble-2"],
+      zoom: 1.5,
+      scrollLeft: 0,
+      scrollTop: 0,
+      tool: "draw",
+      drawMode: "eraser",
+    });
+
+    function DirectReturnHarness({ initialMode = "pen" as DrawMode }: { readonly initialMode?: DrawMode }) {
+      const [currentPageId, setCurrentPageIdState] = useState("page-1");
+      const [selectedId, setSelectedId] = useState<string | null>(null);
+      const [marqueeIds, setMarqueeIds] = useState<string[]>([]);
+      const [tool, setTool] = useState<Tool>("select");
+      const [drawMode, setDrawMode] = useState<DrawMode>(initialMode);
+      const viewportRef = useRef<HTMLDivElement>(null);
+      useStudioExactResumeContext({
+        projectId: "project-1",
+        documentId: "document-1",
+        workspace: "comic",
+        focus: null,
+        language: "ko-KR",
+        sourceVersion: null,
+        resumeRequested: false,
+        hydrated: true,
+        pages: PAGES,
+        currentPageId,
+        setCurrentPageId: (next) => {
+          setCurrentPageIdState(next);
+          return true;
+        },
+        selectedId,
+        marqueeIds,
+        setSelectedId,
+        setMarqueeIds,
+        zoom: 1,
+        setZoom: () => undefined,
+        scrollLeft: 0,
+        scrollTop: 0,
+        viewportRef,
+        updateViewport: () => undefined,
+        tool,
+        setTool,
+        drawMode,
+        setDrawMode,
+      });
+      return (
+        <div>
+          <button type="button" onClick={() => setDrawMode("lasso-fill")}>switch-lasso</button>
+          <output data-testid="direct-return-state">
+            {JSON.stringify({ currentPageId, selectedId, tool, drawMode })}
+          </output>
+        </div>
+      );
+    }
+
+    const view = render(<DirectReturnHarness />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-return-state").textContent).toBe(
+        JSON.stringify({
+          currentPageId: "page-2",
+          selectedId: "bubble-2",
+          tool: "draw",
+          drawMode: "eraser",
+        }),
+      );
+    });
+
+    // Change tool right before unmount (< 450ms debounce) and verify synchronous flush
+    await act(async () => {
+      screen.getByText("switch-lasso").click();
+    });
+    view.unmount();
+
+    expect(readStudioExactResumeContext(window.localStorage, "project-1", "document-1")).toMatchObject({
+      pageId: "page-2",
+      selectedElementIds: ["bubble-2"],
+      tool: "draw",
+      drawMode: "lasso-fill",
+    });
+  });
 });

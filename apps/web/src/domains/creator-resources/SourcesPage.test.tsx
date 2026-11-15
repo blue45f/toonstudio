@@ -33,6 +33,9 @@ describe("resource source cost visibility", () => {
 
   it("binds source identity by product route, not by name", () => {
     const { container } = renderPage();
+    expect(container.querySelectorAll("article")).toHaveLength(38); // 초기 24개 제공처 + 하단 API 활용 기능 지도 14개
+    fireEvent.click(screen.getByRole("button", { name: "전체 펼치기" }));
+    expect(container.querySelectorAll("article")).toHaveLength(RESOURCE_SOURCES.length + 14);
     // 기능 경로 바인딩이 있는 17개 행만 소스 정체성(스코프·마크)을 단다.
     expect(container.querySelectorAll("article.research-source")).toHaveLength(17);
     // 경로를 가진 행은 그 경로의 제공처로 확정된다 — 이름이 비슷한

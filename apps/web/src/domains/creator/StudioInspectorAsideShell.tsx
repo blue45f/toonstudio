@@ -257,7 +257,7 @@ export function StudioInspectorAsideShell({
                 }
               : desktopDetached
                 ? { width: "100%", minWidth: 0 }
-                : { width: rightResize.width, minWidth: STUDIO_WORKSPACE_RIGHT_PANEL_WIDTH.minimum }
+                : { width: rightResize.width, minWidth: STUDIO_WORKSPACE_RIGHT_PANEL_WIDTH.minimum, maxWidth: "100%" }
           }
         >
           <StudioCommandSearchHost

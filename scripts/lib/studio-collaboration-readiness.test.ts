@@ -130,11 +130,11 @@ describe("협업 검증기 시작 안내 readiness", () => {
 });
 
 
-function penUi({ clarity = true, mobile = false, selected = false, clickError, remainsUnselected = false, toolbarMode = "pen", connected = true, mobileToolbarName = "드로잉 도구" }: {
-  clarity?: boolean; mobile?: boolean; selected?: boolean; clickError?: Error; remainsUnselected?: boolean; toolbarMode?: string; connected?: boolean; mobileToolbarName?: string;
+function penUi({ clarity = true, mobile = false, desktopVisibleAfter = 0, selected = false, clickError, remainsUnselected = false, toolbarMode = "pen", connected = true, mobileToolbarName = "드로잉 도구" }: {
+  clarity?: boolean; mobile?: boolean; desktopVisibleAfter?: number; selected?: boolean; clickError?: Error; remainsUnselected?: boolean; toolbarMode?: string; connected?: boolean; mobileToolbarName?: string;
 } = {}) {
   const calls: string[] = [];
-  const state = { selected };
+  const state = { selected, desktopChecks: 0 };
   const buttonElement = { isConnected: connected, getAttribute: (name: string) => name === "aria-pressed" ? String(state.selected) : null };
   const toolbarElement = { isConnected: connected, getAttribute: (name: string) => name === "data-studio-active-draw-mode" ? toolbarMode : null };
   const pen = {
@@ -149,7 +149,15 @@ function penUi({ clarity = true, mobile = false, selected = false, clickError, r
       if (!remainsUnselected) state.selected = true;
     }),
   };
-  const desktopPen = { ...pen, isVisible: async () => !mobile };
+  const mobileDockPen = { ...pen, isVisible: async () => mobile };
+  const desktopPen = {
+    ...pen,
+    isVisible: async () => {
+      if (mobile) return false;
+      state.desktopChecks += 1;
+      return state.desktopChecks > desktopVisibleAfter;
+    },
+  };
   const drawOptions = {
     first() { return this; },
     elementHandle: async () => toolbarElement,
@@ -166,7 +174,7 @@ function penUi({ clarity = true, mobile = false, selected = false, clickError, r
     },
   };
   const unscopedToolbar = vi.fn((_role: string, { name }: { name: RegExp }) => ({
-    getByRole: () => mobile && name.test(mobileToolbarName) ? pen : desktopPen,
+    getByRole: () => mobile && name.test(mobileToolbarName) ? mobileDockPen : desktopPen,
   }));
   const shell = {
     first() { return this; },
@@ -175,7 +183,7 @@ function penUi({ clarity = true, mobile = false, selected = false, clickError, r
     locator: (selector: string) => {
       if (selector === ".studio-drawing-clarity-rail") return desktopRail;
       expect(selector).toContain('[data-studio-primary-action="draw"]:visible');
-      return pen;
+      return mobileDockPen;
     },
   };
   const page = {
@@ -186,6 +194,7 @@ function penUi({ clarity = true, mobile = false, selected = false, clickError, r
       expect(selector).not.toContain('[data-studio-rail-tool-id="draw"]');
       return pen;
     },
+    waitForTimeout: vi.fn(async (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))),
     waitForFunction: vi.fn(async (predicate: (node: typeof buttonElement) => boolean, node: typeof buttonElement, options: { timeout: number }) => {
       expect(options.timeout).toBeGreaterThan(0); expect(options.timeout).toBeLessThanOrEqual(10_000);
       if (!predicate(node)) throw new errors.TimeoutError("실제 펜 선택 상태를 확인하지 못했습니다.");
@@ -193,7 +202,7 @@ function penUi({ clarity = true, mobile = false, selected = false, clickError, r
     }),
     url: () => "http://127.0.0.1:4173/studio/canvas",
   } as unknown as Page;
-  return { page, state, calls, pen, drawOptions, unscopedToolbar };
+  return { page, state, calls, pen, desktopPen, mobileDockPen, drawOptions, unscopedToolbar };
 }
 
 describe("협업 검증기의 실제 화면별 펜 선택", () => {
@@ -254,5 +263,13 @@ describe("협업 검증기의 실제 화면별 펜 선택", () => {
   it("분리된 예전 버튼의 선택 표시를 현재 UI 성공으로 사용하지 않는다", async () => {
     const f = penUi({ selected: true, connected: false });
     await expect(selectStudioCollaborationPen(f.page)).rejects.toThrow("실제 펜 선택 상태");
+  });
+
+  it("지연 마운트 중인 PC 레일을 기다리고 없는 모바일 도크로 오판하지 않는다", async () => {
+    const f = penUi({ desktopVisibleAfter: 2 });
+    await selectStudioCollaborationPen(f.page, 1_000);
+    expect(f.calls).toEqual(["pen-visible", "pen-click", "pen-selected"]);
+    expect(f.pen.click).toHaveBeenCalledOnce();
+    expect(f.state.desktopChecks).toBe(3);
   });
 });

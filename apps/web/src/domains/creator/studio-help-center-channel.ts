@@ -72,6 +72,7 @@ export type { StudioCommandSearchScope } from "./studio-command-search-scope";
 
 export interface StudioCommandSearchRequest {
   readonly scope?: StudioCommandSearchScope;
+  readonly query?: string;
 }
 
 const helpCenterChannel = createChannel<StudioHelpCenterRequest>();

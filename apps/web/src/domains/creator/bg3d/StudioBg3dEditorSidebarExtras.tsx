@@ -10,7 +10,7 @@ import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
 import { createStudioBg3dWorkbenchHostPorts } from "./studio-bg3d-workbench-host-ports";
 import { createStudioBg3dPrimitiveEditHostPorts } from "./studio-bg3d-primitive-edit-host";
-import { createStudioBg3dSceneGlbHostPorts } from "./studio-bg3d-scene-glb-host";
+import { createStudioBg3dSceneGlbHostPorts } from "./studio-bg3d-scene-glb-host"; import { useStudioBg3dSceneSnapshotPorts } from "./studio-bg3d-scene-snapshot-host";
 
 export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> }) {
   const {
@@ -325,6 +325,7 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
     ltUserPresetLibraryStatus, physicsGravityPreset, setPhysicsGravityPreset,
     LazyStudioBg3dAssetLibraryPanel, babylonDiagnosticState, engineRuntime, engineFrameTimeMs, genericModelClassifications, genericModelControlMode, layerListItems, measurementDocument, measurementDraft, measurementInference, measurementLockedLengthMeters, modelLibraryStatus, setMeasurementDocument, webXrController, webXrSessionState, webXrSupport,
   } = { ...R, ...h } as typeof R & Record<string, any>;
+  const sceneSnapshotPorts = useStudioBg3dSceneSnapshotPorts(h as unknown as import("./studio-bg3d-scene-snapshot-host").StudioBg3dSceneSnapshotHostBag);
   /* eslint-disable react-hooks/preserve-manual-memoization -- This extracted editor intentionally reads
    * the per-render mutable host bag. The memo dependency list is the explicit invalidation contract. */
   const professionalReadinessInput = useMemo(() => {
@@ -505,11 +506,8 @@ export function StudioBg3dEditorSidebarExtras({ h }: { h: Record<string, any> })
                 onSetCaptureAspectRatio={updateLtExportAspectRatio} onSetSixPassLt={h.updateSixPassLt} sixPassLtUnavailableReason={h.sixPassLtUnavailableReason}
                 onOpenPrecisionModeler={handleOpenPrecisionModeler}
                 {...createStudioBg3dWorkbenchHostPorts(h)}
-                {...createStudioBg3dPrimitiveEditHostPorts(h)} {...createStudioBg3dSceneGlbHostPorts(h)}
-                aiReferenceBusy={isCapturing}
-                aiReferenceDisabled={
-                  insertBlocked || (primitives.length === 0 && customModels.length === 0)
-                }
+                {...createStudioBg3dPrimitiveEditHostPorts(h)} {...createStudioBg3dSceneGlbHostPorts(h)} sceneSnapshotPorts={sceneSnapshotPorts}
+                aiReferenceBusy={isCapturing} aiReferenceDisabled={insertBlocked || (primitives.length === 0 && customModels.length === 0)}
                 {...(onUseAsAiMethodReference
                   ? { onUseCurrentFrameAsAiReference: () => void handleUseAsAiMethodReference() }
                   : {})}

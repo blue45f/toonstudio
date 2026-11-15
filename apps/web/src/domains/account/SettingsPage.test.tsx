@@ -33,8 +33,8 @@ beforeEach(() => window.localStorage.clear());
 afterEach(cleanup);
 
 describe("설정 화면 탭", () => {
-  it("목록에서 처음 연 계정 초안도 목록 왕복과 Back·Forward 중 같은 입력 DOM을 유지한다", () => {
-    renderSettings("/settings?project=keep");
+  it("목록(?view=overview)에서 처음 연 계정 초안도 목록 왕복과 Back·Forward 중 같은 입력 DOM을 유지한다", () => {
+    renderSettings("/settings?project=keep&view=overview");
     fireEvent.click(within(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).getByRole("link", { name: "계정" }));
     fireEvent.click(screen.getByRole("button", { name: /연동 계정·계정 병합/ }));
     const draft = screen.getByLabelText("계정 통합 초안");
@@ -47,7 +47,7 @@ describe("설정 화면 탭", () => {
     expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
     expect(draft.closest("[hidden]")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "검증용 앞으로" }));
-    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep");
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=overview");
     expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
     fireEvent.click(within(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).getByRole("link", { name: "계정" }));
     expect(screen.getByLabelText("계정 통합 초안")).toBe(draft);
@@ -75,8 +75,12 @@ describe("설정 화면 탭", () => {
     expect(screen.getByTestId("location").textContent).toContain("view=display");
     expect(screen.getByTestId("appearance")).toBeTruthy();
   });
-  it("설정 첫 화면은 다섯 목적지이며 선택하면 해당 편집 화면으로 이동한다", () => {
+  it("설정 첫 화면(/settings)은 overview 관문 없이 다섯 탭과 설정 컨트롤을 즉시 표시하고 '설정 목록으로'에서 다섯 목적지 목록을 연다", () => {
     renderSettings("/settings?project=keep");
+    expect(screen.getByRole("tablist")).toBeTruthy();
+    expect(screen.getByTestId("appearance").closest("[hidden]")).toBeNull();
+    fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
+    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=overview");
     const areas = screen.getByRole("navigation", { name: "바꾸려는 설정 선택" });
     expect(within(areas).getAllByRole("link")).toHaveLength(5);
     expect(screen.queryByRole("tablist")).toBeNull();
@@ -84,9 +88,6 @@ describe("설정 화면 탭", () => {
     fireEvent.click(within(areas).getByRole("link", { name: "내 데이터" }));
     expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep&view=data");
     expect(screen.getByRole("heading", { name: "내 데이터" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("link", { name: "설정 목록으로" }));
-    expect(screen.getByTestId("location").textContent).toBe("/settings?project=keep");
-    expect(screen.getByRole("navigation", { name: "바꾸려는 설정 선택" })).toBeTruthy();
   });
   it("설정을 화면·지역·연령·데이터·계정 다섯 탭으로 나누고 선택한 주소에서는 화면·음성만 보여 준다", () => {
     renderSettings();

@@ -222,6 +222,7 @@ export function StudioInspectorRulersSection({
           points={vanishingPoints}
           eyeLevelY={perspectiveEyeLevelY}
           lockHorizon={perspectiveLockHorizon}
+          canvasWidth={CANVAS_W}
           canvasHeight={canvasH}
           disabled={drawingAssistControlsDisabled}
           disabledReason={drawingAssistDisabledReason ?? undefined}

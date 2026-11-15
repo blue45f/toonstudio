@@ -142,7 +142,7 @@ details[open] > .rd-optional-summary > svg:last-child { transform: rotate(180deg
 .rd-examples { margin-top: var(--layout-home-section-gap); min-width: 0; }
 .rd-examples-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
 .reference-dashboard .rd-examples-heading h2 { font-size: 16px; font-weight: 800; line-height: 1.4; letter-spacing: -.015em; }
-.rd-examples-heading > a { display: flex; align-items: center; gap: 5px; padding-inline: 10px; border: 1px solid transparent; border-radius: 999px; color: var(--rd-cyan); font-size: 13px; font-weight: 700; transition: border-color 160ms ease, background-color 160ms ease; }
+.rd-examples-heading > a { display: flex; align-items: center; gap: 5px; min-height: 46px; min-width: 46px; padding-inline: 10px; border: 1px solid transparent; border-radius: 999px; color: var(--rd-cyan); font-size: 13px; font-weight: 700; transition: border-color 160ms ease, background-color 160ms ease; }
 .rd-examples-heading > a:hover { border-color: color-mix(in srgb, var(--rd-accent) 45%, var(--rd-border)); background: var(--rd-accent-soft); color: var(--rd-fg); }
 .rd-example-shelf { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) .76fr; gap: 10px; }
 .rd-example-cover { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--rd-border); border-radius: 14px; background: var(--rd-panel); box-shadow: inset 0 1px color-mix(in srgb, var(--rd-fg) 6%, transparent); transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), transform 180ms cubic-bezier(0.16, 1, 0.3, 1); }
@@ -362,6 +362,24 @@ details[open] > .rd-optional-summary > svg:last-child { transform: rotate(180deg
 .rd-v2-card-top { display: flex; align-items: center; gap: 7px; }
 .rd-v2-index { color: var(--rd-accent); font-family: var(--font-display), sans-serif; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .rd-v2-spec { padding: 2px 7px; border: 1px solid color-mix(in srgb, var(--rd-border) 80%, transparent); border-radius: 6px; background: var(--rd-panel); color: var(--rd-muted); font-family: var(--font-display), monospace; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; }
+.rd-v2-emblem {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--rd-accent) 44%, var(--rd-border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--rd-accent) 12%, var(--rd-surface));
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--rd-accent) 55%, transparent);
+}
+.creator-home .reference-dashboard .rd-v2-emblem > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .rd-v2-glyph { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 30px; height: 22px; padding: 3px; border: 1px solid color-mix(in srgb, var(--rd-accent) 35%, var(--rd-border)); border-radius: 6px; background: color-mix(in srgb, var(--rd-accent) 10%, var(--rd-surface)); }
 .rd-v2-glyph > i { display: block; border-radius: 2px; background: color-mix(in srgb, var(--rd-accent) 72%, var(--rd-cyan)); }
 .rd-v2-glyph--scroll { flex-direction: column; }

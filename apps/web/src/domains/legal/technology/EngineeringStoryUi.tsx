@@ -316,7 +316,7 @@ function PageGuide({ page }: { readonly page: EngineeringPageEntry }) {
       <dd className="leading-6 text-fg-2">
         <Link
           href={next ? next.href : "/about/technology"}
-          className="inline-flex items-center gap-1.5 font-black text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex min-h-11 min-w-11 items-center gap-1.5 font-black text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {next ? bi(next.label.ko, next.label.en) : bi("기술 허브로 돌아가 다른 길 고르기", "Back to the hub to pick another route")}
           <ArrowRight size={14} aria-hidden="true" />

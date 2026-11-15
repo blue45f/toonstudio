@@ -8,7 +8,8 @@
  * `apps/web/public/assets/3d/kitbash-v9/*.glb` (6종),
  * `apps/web/public/assets/3d/kitbash-v10/*.glb` (8종),
  * `apps/web/public/studio-assets/kitbash-v11/*.glb` (6종),
- * `apps/web/public/assets/3d/*.glb` (68종)의 총 115종 CC0-1.0 1st-party GLB 모델을
+ * `apps/web/public/studio-assets/blender-hero-v12/*.glb` (4종),
+ * `apps/web/public/assets/3d/*.glb` (68종)의 총 119종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
 
@@ -19,6 +20,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "kitbash-v9-prop-3d"
   | "kitbash-v10-prop-3d"
   | "kitbash-v11-prop-3d"
+  | "blender-hero-v12-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -66,6 +68,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "블렌더 상부 배경 V11",
       labelEn: "Blender Upper Background Objects V11",
       descriptionKo: "천장 공조·레일 조명·1500mm 블라인드·돌출 간판·교실 방송 스피커와 프로젝터·한옥 처마 6종",
+    },
+    {
+      id: "blender-hero-v12-prop-3d",
+      labelKo: "블렌더 플래그십 히어로 V12",
+      labelEn: "Blender Flagship Hero Props V12",
+      descriptionKo: "3D 셰이퍼 웹툰 두상 흉상·판타지 각성 룬 대검 제단·모던 에스프레소 카페 바·헌터 홀로 게이트 터미널 4종",
     },
     {
       id: "original-scene-prop-3d",
@@ -160,6 +168,13 @@ const RAW_KITBASH_V11_ROWS: readonly RawAssetRow[] = [
   ["alley-projecting-sign-wires", "골목 돌출 간판·애자·전선군", "Alley Projecting Sign & Wires"],
   ["classroom-ceiling-speaker-projector", "교실 천장 빔프로젝터·방송 스피커·형광등", "Classroom Projector, Broadcast Speaker & Light"],
   ["hanok-rafter-choma-lantern", "한옥 서까래 처마·추녀 사각 초롱등", "Hanok Rafters, Eaves & Lantern"],
+];
+
+const RAW_BLENDER_HERO_V12_ROWS: readonly RawAssetRow[] = [
+  ["webtoon-shaper-anime-bust-v12", "3D 셰이퍼 웹툰 주인공 두상·흉상 (V12)", "Webtoon Shaper Anime Hero Bust V12"],
+  ["fantasy-runic-sword-altar-v12", "로판·판타지 각성 룬 대검 제단 (V12)", "Fantasy Runic Greatsword Altar V12"],
+  ["modern-cafe-espresso-bar-v12", "모던 에스프레소 카페 바·쇼케이스 (V12)", "Modern Cafe Espresso Bar & Showcase V12"],
+  ["hunter-gate-holo-terminal-v12", "헌터 각성 포털 링·홀로 터미널 (V12)", "Hunter Gate Portal & Holo Terminal V12"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -363,6 +378,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${slug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "upper", "kitbash-v11", "상부배경", "천장", slug, labelKo, labelEn]),
+      }),
+    ),
+    ...RAW_BLENDER_HERO_V12_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `blender-hero-v12-${slug}`,
+        category: "blender-hero-v12-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/blender-hero-v12/${slug}.glb`,
+        previewUrl: `/studio-assets/blender-hero-v12/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "character", "hero", "blender-v12", "셰이퍼", "히어로모델", "카페", "판타지", "헌터", slug, labelKo, labelEn]),
       }),
     ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

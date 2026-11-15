@@ -37,6 +37,8 @@ export interface StudioSaveStatusChromeMountProps {
    * 센터의 복구 지점 버튼은 숨고 바의 다시 시도 버튼도 숨는다.
    */
   readonly onRequestSaveFlush?: () => void;
+  /** 로컬 저장 실패 시 현재 메모리 작업을 즉시 파일로 내려받는 콜백. */
+  readonly onDownloadLocalBackup?: () => void;
   /** 첫 저장 → 게시 제안 동선. 없으면 제안을 렌더하지 않는다. */
   readonly publishSuggestion?: StudioFirstPublishSuggestionMount;
 }
@@ -44,9 +46,10 @@ export interface StudioSaveStatusChromeMountProps {
 export function StudioSaveStatusChromeMount({
   store,
   onRequestSaveFlush,
+  onDownloadLocalBackup,
   publishSuggestion,
 }: StudioSaveStatusChromeMountProps) {
-  const { status, journalSnapshot, leadership } = useStudioSaveSyncView(store);
+  const { status, journalSnapshot, leadership, cutMatch } = useStudioSaveSyncView(store);
   const signals = useStudioSaveSyncSignals(store);
   const connectivity = useStudioConnectivity();
   const slot = useStudioChromePortalTarget("studio-document-chrome-slot");
@@ -79,9 +82,11 @@ export function StudioSaveStatusChromeMount({
       <StudioSaveSyncStatusCenter
         journal={journalSnapshot}
         statusOverride={status}
+        cutMatch={cutMatch}
         onForceCheckpoint={onRequestSaveFlush}
         connectivity={connectivity}
         onRetrySave={onRequestSaveFlush}
+        onDownloadLocalBackup={onDownloadLocalBackup}
         onRecheckConnection={requestStudioConnectivityRecheck}
         presentation={presentation}
         readOnlyTab={leadership === "follower"}

@@ -60,6 +60,7 @@ import { VirtualThreeThemeProvider } from "./three/ui/VirtualThreeThemeProvider"
 import { VirtualThreeThemePanel } from "./three/ui/VirtualThreeThemePanel";
 import type { StudioSpaceSocialAction, StudioSpaceSocialRequest } from "./StudioVirtualSpaceSocialPanel";
 import { StudioVirtualSpaceUserList } from "./StudioVirtualSpaceUserList";
+import { useStudioVirtualPeerConnectionTracker } from "./use-studio-virtual-peer-connection-tracker";
 import { StudioVirtualExperienceArtPreview } from "./StudioVirtualExperienceArtPreview";
 import { StudioVirtualThemeCharacterPicker } from "./StudioVirtualThemeCharacterPicker";
 import { StudioWorldAuthoringEntry } from "./StudioWorldAuthoringEntry";
@@ -241,6 +242,7 @@ import { useSpaceProximityMedia, useSpaceProximityScope } from "./hud/use-space-
 import { useSpaceWorkProject } from "./hud/use-space-work-project";
 import { useSpaceRolePreset } from "./use-space-role-preset";
 import { useStudioSpaceLighting } from "./use-studio-space-lighting";
+import { useStudioVirtualSceneSnapshotBinding } from "./studio-virtual-space-scene-snapshot";
 import { useStudioSpaceChat } from "./use-studio-space-chat";
 import { useStudioVirtualSpacePeerFixtures } from "./use-studio-virtual-space-peer-fixtures";
 import { useStudioTileEffectWiring } from "./use-studio-tile-effect-wiring";
@@ -250,30 +252,12 @@ import { useStudioSpaceReaction } from "./use-studio-space-reaction";
 import { StudioVirtualSpaceLightingPanel } from "./StudioVirtualSpaceLightingPanel";
 import type { StudioSpacePose } from "./studio-virtual-space-pose-controller";
 import {
-  StudioWorkspaceInbox,
-  StudioPrivateRoomPanel,
-  StudioVirtualSpaceCustomizationPanel,
-  StudioVirtualSpaceExperiencePanel,
-  StudioWorldPublicationPanel,
-  StudioVirtualSpaceNpcPanel,
-  StudioVirtualSpaceTeamHub,
-  StudioVirtualSpaceTodayBoard,
-  StudioVirtualSpaceRtcPanel,
-  StudioVirtualSpaceP2pBoard,
-  StudioVirtualSpaceLiveAnnotationPanel,
-  StudioVirtualSpaceTownProgramPanel,
-  StudioVirtualSpaceRoomCatalog,
-  StudioVirtualSpaceSeatsPanel,
-  StudioVirtualSpaceSocialPanel,
-  StudioVirtualSpaceConversationPanel,
-  StudioVirtualSpaceReviewPicker,
-  StudioVirtualSpacePlaceGallery,
-  StudioVirtualSpaceRecordingBoothPanel,
-  StudioVirtualSpaceSpaceBookingPanel,
-  StudioVirtualSpaceGalleryViewer,
-  StudioVirtualSpaceEnvironmentPanel,
-  WorkSessionWorkspace,
-  StudioP2pHuddleLauncher,
+  StudioWorkspaceInbox, StudioPrivateRoomPanel, StudioVirtualSpaceCustomizationPanel, StudioVirtualSpaceExperiencePanel,
+  StudioWorldPublicationPanel, StudioVirtualSpaceNpcPanel, StudioVirtualSpaceTeamHub, StudioVirtualSpaceTodayBoard,
+  StudioVirtualSpaceRtcPanel, StudioVirtualSpaceP2pBoard, StudioVirtualSpaceLiveAnnotationPanel, StudioVirtualSpaceTownProgramPanel,
+  StudioVirtualSpaceRoomCatalog, StudioVirtualSpaceSeatsPanel, StudioVirtualSpaceSocialPanel, StudioVirtualSpaceConversationPanel,
+  StudioVirtualSpaceReviewPicker, StudioVirtualSpacePlaceGallery, StudioVirtualSpaceRecordingBoothPanel, StudioVirtualSpaceSpaceBookingPanel,
+  StudioVirtualSpaceGalleryViewer, StudioVirtualSpaceEnvironmentPanel, WorkSessionWorkspace, StudioP2pHuddleLauncher,
 } from "./hud/space-lazy-panels";
 import "./studio-virtual-space.css";
 import "./studio-workspace-live.css";
@@ -656,7 +640,8 @@ export function VirtualSpaceExperience({
   useEffect(() => {
     const room = live.room;
     if (!worldReady) return undefined;
-    if (authoringMode || !sharedWorldAllowed || !connectivity.serverAvailable || !room?.direct || live.availability !== "ready") {
+    const directAllowed = connectivity.serverAvailable || (live.mode === "local" && connectivity.mode !== "offline");
+    if (authoringMode || !sharedWorldAllowed || !directAllowed || !room?.direct || live.availability !== "ready") {
       controllerRef.current?.close();
       controllerRef.current = null;
       setSnapshot((current) => ({ ...current, peers: [], nearbyPeers: [], selfReaction: null, peerReactions: [], chatMessages: [], chatBubbles: [], selfChatBubble: null, peerTyping: [], peerFixtures: [], direct: false }));
@@ -679,8 +664,8 @@ export function VirtualSpaceExperience({
       controller.close();
       if (controllerRef.current === controller) controllerRef.current = null;
     };
-  }, [authoringMode, characterCustomization, clearLocalReactionTimer, connectivity.serverAvailable, fallbackIdentity,
-    live.availability, live.room, worldReady, activeWorldScope, sharedWorldAllowed]);
+  }, [authoringMode, characterCustomization, clearLocalReactionTimer, connectivity.mode, connectivity.serverAvailable, fallbackIdentity,
+    live.availability, live.mode, live.room, worldReady, activeWorldScope, sharedWorldAllowed]);
 
   useEffect(() => {
     const appearance = studioCharacterAppearanceForAvatarIndex(avatarIndex, fallbackIdentity, characterCustomization);
@@ -800,7 +785,7 @@ export function VirtualSpaceExperience({
     lightFixtures, lightHourOverride, setLightHourOverride, lightAmbient, lightHour,
     toggleLightFixture, changeLightDimmer, applyLightPreset, dayNightEnabled,
     lightAutoMode, setLightAutoMode, cycleTimeOfDay, dayNightSpeedMs,
-    toggleDayNight, scrubDayNight, changeDayNightSpeed,
+    toggleDayNight, scrubDayNight, changeDayNightSpeed, applyLightingSnapshot,
   } = useStudioSpaceLighting(engineBridge);
 
 
@@ -1214,6 +1199,20 @@ export function VirtualSpaceExperience({
     try { localStorage.setItem("toonspectrum:virtual-atmosphere:v1", next); } catch { /* Session preference still applies. */ }
     if (next === "focus") { engineBridge.clearMovement(); finishSharedActivity(); }
   };
+  const sceneSnapshotBinding = useStudioVirtualSceneSnapshotBinding({
+    scopeKey: decorationScope, userZoom: engineBridge.userZoom, cameraPan: engineBridge.cameraPan,
+    lighting: { dayNightEnabled, dayNightSpeedMs, lightHourOverride, lightAutoMode, cycleTimeOfDay, fixtures: lightFixtures },
+    fallbackHour: lightHour, environment: environmentPreference, spaceTheme, atmosphere, decorations, placedFixtureRequests,
+    world: worldManifest, selfPoint: snapshot.self,
+    onApplyRestore: (plan) => {
+      engineBridge.userZoom.set(plan.camera.zoomLevel);
+      engineBridge.cameraPan.applySnapshotView(plan.camera.panOffsetX, plan.camera.panOffsetY, plan.camera.zoomLevel);
+      applyLightingSnapshot(plan.lighting); selectEnvironmentPreference(plan.environment);
+      selectSpaceTheme(plan.spaceTheme); changeAtmosphere(plan.atmosphere);
+      selectDecorations(plan.decorations); selectPlacedFixtureRequests(plan.placedFixtureRequests);
+      if (plan.relocatedSelfPoint) engineBridge.requestTeleport(plan.relocatedSelfPoint);
+    },
+  });
   const cancelSlotApproach = slots.cancel;
   const cancelFollowing = useCallback(() => {
     cancelOfficeApproach();
@@ -1569,11 +1568,8 @@ export function VirtualSpaceExperience({
   });
 
   const selfListId = live.room?.participant.sessionId ?? fallbackIdentity;
-  const userListUsers = [
-    { id: selfListId, name: localName, zoneId: snapshot.self.zoneId, activity: snapshot.self.activity, userStatus: snapshot.self.userStatus ?? null },
-    ...snapshot.peers.map((peer) => ({ id: peer.participant.sessionId, name: peer.participant.displayName, zoneId: peer.state.zoneId,
-      activity: peer.state.activity, userStatus: peer.state.userStatus ?? null })),
-  ];
+  const userListUsers = useStudioVirtualPeerConnectionTracker({ selfId: selfListId, selfName: localName, self: snapshot.self,
+    peers: snapshot.peers, liveAvailability: live.availability, connectivityMode: connectivity.mode, directReady: snapshot.direct });
   const userListZones = worldManifest.rooms.map((room) => {
     const meta = studioVirtualCampusZoneMeta(room.id);
     return { id: room.id, labelKo: meta?.labelKo ?? room.labelKo, labelEn: meta?.labelEn ?? room.labelEn };
@@ -1603,7 +1599,7 @@ export function VirtualSpaceExperience({
           "개인 스튜디오에는 나만 있어요. 동네를 오가는 NPC는 도우미이며 접속 인원에 포함되지 않아요.",
           "Only you are in your personal studio. NPC residents are helpers and never counted as online people.",
         )}</p> : <>
-          <p className="space-panel-count" aria-live="polite">{connectivity.serverAvailable
+          <p className="space-panel-count" aria-live="polite">{(connectivity.serverAvailable || snapshot.direct)
             ? bt(`접속 중 ${snapshot.peers.length + 1}명 · NPC 제외`, `${snapshot.peers.length + 1} online · NPCs excluded`)
             : bt("서버 연결 없음 · 로컬 작업", "Server unavailable · local work")}</p>
           {/* 누가 어디서 무엇을 하는지: 상태 배지·구역·방향키 탐색. Enter로 고르면 아래에서 바로 인사·요청한다. */}
@@ -1836,7 +1832,7 @@ export function VirtualSpaceExperience({
       focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
     { id: "customization", visible: stageKind !== "three" && panel === "build", node: <StudioVirtualSpacePanelGate active={stageKind !== "three" && panel === "build"} preserveAfterOpen>
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldManifest} nickname={nickname}
-        character={characterCustomization} decorations={decorations} selfPoint={snapshot.self}
+        character={characterCustomization} decorations={decorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lightHour}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
         placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
         onNickname={onNicknameChange} onCharacter={selectCharacterCustomization} onDecorations={selectDecorations} onTriggerEmote={sendReaction}
@@ -1895,7 +1891,7 @@ export function VirtualSpaceExperience({
           manifest: worldManifest, snapshot: chatSnapshot, bridge: engineBridge, selfDisplayName: nickname,
           onRuntimeMetrics: setRuntimeMetrics, onNpcInteract: handleEngineNpcInteract, onLocalState: handleEngineLocalState,
           onInteract: handleEngineInteract, onNearbyInteractionChange: handleNearbyInteractionChange, onPortal: handleEnginePortal,
-          onZoneChange: setZone, onNearbyNpcsChange: setNearbyNpcs, onEngineStatusChange: setEngineStatus,
+          onZoneChange: setZone, onNearbyNpcsChange: setNearbyNpcs, onEngineStatusChange: setEngineStatus, onReturnTo2d: () => { setEngineMode("2d"); writeStudioVirtualPreferredEngineMode("2d"); navigate({ pathname: location.pathname, search: applyStudioVirtualStageSearch(location.search, "2d") }, { replace: true }); },
         }} twoD={{
           worldAssetUrls: publishedWorld?.assetUrls, selfIdentity: fallbackIdentity, seatedActors, waveActorIds,
           guideTourRequest, onGuideTourChange: updateGuideTour, debugWorld: authoringMode,

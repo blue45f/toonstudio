@@ -1,5 +1,6 @@
 import { BookMarked, BookOpen, Lightbulb, Search, Wrench } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
   ENGINEERING_GLOSSARY,
@@ -58,12 +59,16 @@ function useAtlasCardNames(): ReadonlyMap<string, string> | null {
   return names;
 }
 
+const INITIAL_VISIBLE = 24;
+
 export function EngineeringGlossaryPage() {
   useBilingualI18nRevision();
   useDocumentTitle(bi("기술 용어집 · ToonStudio", "Technology glossary · ToonStudio"));
 
+  const location = useLocation();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | GlossaryCategoryId>("all");
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE);
   const atlasNames = useAtlasCardNames();
 
   const terms = useMemo(() => {
@@ -77,6 +82,10 @@ export function EngineeringGlossaryPage() {
         .includes(normalized);
     });
   }, [query, category]);
+
+  const autoExpand = Boolean(query.trim()) || category !== "all" || Boolean(location.hash);
+  const visibleTerms = autoExpand ? terms : terms.slice(0, visibleLimit);
+  const remainingTerms = Math.max(0, terms.length - visibleTerms.length);
 
   const filterButton = (active: boolean) => cx(
     "min-h-11 rounded-full border px-4 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
@@ -167,8 +176,9 @@ export function EngineeringGlossaryPage() {
             </button>
           </ActionableEmptyState>
         ) : (
+          <>
           <div className="grid gap-4 lg:grid-cols-2">
-            {terms.map((term) => {
+            {visibleTerms.map((term) => {
               const termCategory = CATEGORY_BY_ID.get(term.category);
               const links = LINKS_BY_TERM.get(term.id) ?? [];
               // 도감에 실제로 있는 카드만 칩으로 만든다(없는 id 는 조용히 생략 — 테스트가 전부 풀리는지 확인).
@@ -243,6 +253,25 @@ export function EngineeringGlossaryPage() {
               );
             })}
           </div>
+          {remainingTerms > 0 ? (
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setVisibleLimit((prev) => prev + INITIAL_VISIBLE)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-accent/45 bg-accent-soft px-5 py-2.5 text-sm font-bold text-accent transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                {formatI18nTemplate(String(bi("항목 더보기 (남은 {value0}개)", "Show more ({value0} left)")), { value0: remainingTerms })}
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibleLimit(terms.length)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                {bi("전체 펼치기", "Expand all")}
+              </button>
+            </div>
+          ) : null}
+          </>
         )}
       </section>
 

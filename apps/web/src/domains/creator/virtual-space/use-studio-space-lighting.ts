@@ -31,6 +31,11 @@ export interface StudioSpaceLightingPreference {
   readonly lightAutoMode: boolean;
 }
 
+export interface StudioSpaceLightingSnapshot extends StudioSpaceLightingPreference {
+  readonly cycleTimeOfDay: number;
+  readonly fixtures: readonly StudioLightFixture[];
+}
+
 export const DEFAULT_STUDIO_SPACE_LIGHTING_PREFERENCE: StudioSpaceLightingPreference = Object.freeze({
   dayNightEnabled: false,
   dayNightSpeedMs: STUDIO_DAY_NIGHT_CYCLE_MS,
@@ -221,6 +226,40 @@ export function useStudioSpaceLighting(engineBridge: StudioVirtualSpaceEngineBri
 
   const cycleTimeOfDay = studioDayNightTimeOfDay(dayNightNowMs, dayNightStartRef.current, dayNightSpeedMs);
 
+  const applyLightingSnapshot = useCallback((snapshot: StudioSpaceLightingSnapshot) => {
+    const safeSpeed = Number.isFinite(snapshot.dayNightSpeedMs) && snapshot.dayNightSpeedMs > 0
+      ? snapshot.dayNightSpeedMs
+      : STUDIO_DAY_NIGHT_CYCLE_MS;
+    const clampedCycle = Number.isFinite(snapshot.cycleTimeOfDay)
+      ? Math.max(0, Math.min(1, snapshot.cycleTimeOfDay))
+      : 0;
+    const now = Date.now();
+    dayNightSpeedRef.current = safeSpeed;
+    setDayNightSpeedMs(safeSpeed);
+    setLightHourOverride(snapshot.lightHourOverride);
+    setLightAutoMode(snapshot.lightAutoMode);
+    lastAutoLightingPhaseRef.current = snapshot.dayNightEnabled && snapshot.lightAutoMode
+      ? studioDayNightLightingPhaseAt(clampedCycle)
+      : null;
+    if (snapshot.dayNightEnabled) {
+      dayNightStartRef.current = now - clampedCycle * safeSpeed;
+      setDayNightNowMs(now);
+      setDayNightEnabled(true);
+      engineBridge.setDayNightCycle({
+        enabled: true,
+        startMs: dayNightStartRef.current,
+        now,
+        cycleMs: safeSpeed,
+      });
+    } else {
+      dayNightStartRef.current = 0;
+      setDayNightNowMs(0);
+      setDayNightEnabled(false);
+      engineBridge.setDayNightCycle({ enabled: false, startMs: 0, now: 0 });
+    }
+    setLightFixtures(snapshot.fixtures.map((fixture) => Object.freeze({ ...fixture })));
+  }, [engineBridge]);
+
   return {
     lightFixtures,
     lightHourOverride,
@@ -238,5 +277,6 @@ export function useStudioSpaceLighting(engineBridge: StudioVirtualSpaceEngineBri
     toggleDayNight,
     scrubDayNight,
     changeDayNightSpeed,
+    applyLightingSnapshot,
   };
 }

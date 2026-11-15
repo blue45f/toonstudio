@@ -28,38 +28,48 @@ import {
   STUDIO_BRUSH_LABELS,
   STUDIO_BRUSH_LIBRARY_ROUTE,
   resolveStudioBrushEditorContext,
+  type StudioBrushEditorContext,
 } from "../brush/studio-brush-product-model";
 import { StudioTextureToneLab } from "../drawing/StudioTextureToneLab";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
 import { StudioBrushIntegratedWorkbench } from "./StudioBrushIntegratedWorkbench";
+import { StudioBrushLabLiveStrokePad } from "./StudioBrushLabLiveStrokePad";
 import { StudioBrushProductCataloguePanel } from "./StudioBrushProductCataloguePanel";
 
 const STEPS = [
   {
-    icon: Sparkles,
-    number: "1",
-    title: "시작 브러시 선택",
+    icon: Sparkles, number: "1",
+    title: "시작 브러시 선택", enTitle: "Pick a Starting Brush",
     description: "실제 결과와 손맛이 구분되는 제품 브러시나 목적별 레시피에서 시작합니다.",
+    enDescription: "Start from a studio-grade brush or purpose-built recipe with distinct stroke feel.",
   },
   {
-    icon: Brush,
-    number: "2",
-    title: "실제 입력으로 시험",
+    icon: Brush, number: "2",
+    title: "실제 입력으로 시험", enTitle: "Test with Live Input",
     description: "현재 펜의 필압·기울기·속도로 직접 그리며 결과를 확인합니다.",
+    enDescription: "Draw directly with stylus pressure, tilt, and velocity to verify response.",
   },
   {
-    icon: SlidersHorizontal,
-    number: "3",
-    title: "결과부터 조절",
+    icon: SlidersHorizontal, number: "3",
+    title: "결과부터 조절", enTitle: "Tune Material & Edge",
     description: "기본 편집은 재료와 질감에 집중하고 엔진·물리는 필요할 때만 엽니다.",
+    enDescription: "Focus on material, taper, and grain first; open engine physics only when needed.",
   },
   {
-    icon: CheckCircle2,
-    number: "4",
-    title: "저장하고 원고에 적용",
+    icon: CheckCircle2, number: "4",
+    title: "저장하고 원고에 적용", enTitle: "Save & Paint on Canvas",
     description: "완성한 브러시를 라이브러리에 저장하고 원래 원고에서 바로 사용합니다.",
+    enDescription: "Save to your brush library and return directly to your active manuscript.",
   },
 ] as const;
+
+function resolveContextEn(ctx: StudioBrushEditorContext): { title: string; badge: string; ret: string } {
+  if (ctx.kind === "remix") return { title: "Create Remix Brush", badge: "Remix Workspace", ret: "Back to Remix" };
+  if (ctx.kind === "work") return { title: "Create Manuscript Brush", badge: "Active Manuscript", ret: "Back to Manuscript" };
+  if (ctx.kind === "document") return { title: "Create Episode Brush", badge: "Episode Document", ret: "Back to Document" };
+  if (ctx.mode === "edit") return { title: "Edit Saved Brush", badge: "Saved Brush Editor", ret: "Back to Library" };
+  return { title: "Create Studio Brush", badge: "Brush Studio Library", ret: "Back to Studio" };
+}
 
 const KERNEL_MODES = [
   { id: "dual-tip-multiply", ko: "듀얼 팁 Multiply 합성", en: "Dual-Tip Multiply Kernel" },
@@ -236,6 +246,7 @@ export function StudioBrushLabPage() {
   }
 
   const context = resolveStudioBrushEditorContext(params, location.search);
+  const contextEn = resolveContextEn(context);
   useEffect(() => {
     registerStudioBrushGrainSourcesV1();
   }, []);
@@ -245,86 +256,111 @@ export function StudioBrushLabPage() {
     ? {
         src: "/brand/hero-20261009/remix-brush-hero.webp",
         srcSet: "/brand/hero-20261009/remix-brush-hero-960.webp 960w, /brand/hero-20261009/remix-brush-hero.webp 1680w",
-        alt: "하나의 원고 캔버스에서 주황과 청록 두 갈래로 갈라지는 리믹스 변형 캔버스와 붓",
+        alt: pickLang(
+          "하나의 원고 캔버스에서 주황과 청록 두 갈래로 갈라지는 리믹스 변형 캔버스와 붓",
+          "Remix canvas branching into warm orange and teal creative streams with ink brushes",
+        ),
       }
     : {
         src: "/brand/hero-20261009/brush-lab-hero.webp",
         srcSet: "/brand/hero-20261009/brush-lab-hero-960.webp 960w, /brand/hero-20261009/brush-lab-hero.webp 1680w",
-        alt: "붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손",
+        alt: pickLang(
+          "붓과 잉크, 수채 도구와 펜 태블릿이 놓인 작가 책상에서 만화 원고를 그리는 손",
+          "Artist desk with ink nibs, watercolor wash tools, and pen display illustrating a webtoon page",
+        ),
       };
 
   const pinNeedsAttention = pinError || pinResult?.status === "memory-only";
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1920px] px-4 py-5 sm:px-6 lg:px-8">
-      <header className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-4 shadow-sm sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <header className="relative overflow-hidden rounded-[1.75rem] border border-accent/25 bg-card/70 p-4 shadow-sm backdrop-blur-xl sm:p-5">
+        <img
+          src="/brand/luminous-atelier-20261114/scene-brush-lab-master-atelier.webp"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[420px] object-cover opacity-20 mix-blend-luminosity lg:block"
+        />
+        <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-4xl">
-            <p className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">
-              <Brush size={14} aria-hidden /> BRUSH STUDIO
+            <p className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent-soft/45 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">
+              <img
+                src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp"
+                alt=""
+                width={20}
+                height={20}
+                aria-hidden="true"
+                className="size-5 shrink-0 rounded-md object-cover"
+              />
+              BRUSH STUDIO · LUMINOUS ATELIER
             </p>
             <h1 className="mt-2 text-pretty text-2xl font-black tracking-tight text-fg sm:text-4xl">
-              {context.workspaceTitle}
+              {isKo ? <>{context.workspaceTitle}</> : contextEn.title}
             </h1>
             <p className="mt-2 text-sm leading-6 text-fg-2">
               {pickLang("작업을 고른 뒤 브러시를 시험하고 저장하세요.", "Choose a task, test your brush, then save it.")}
             </p>
-            <p className="mt-3 inline-flex rounded-full border border-line bg-panel/60 px-3 py-1 text-xs font-bold text-fg-3">
-              {context.contextLabel}
+            <p className="mt-3 inline-flex rounded-full border border-line bg-panel/75 px-3 py-1 text-xs font-bold text-fg-3 backdrop-blur-md">
+              {isKo ? <>{context.contextLabel}</> : contextEn.badge}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href={STUDIO_BRUSH_LIBRARY_ROUTE}
-              className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-4 py-2 text-sm font-bold text-fg transition-colors hover:border-line-strong hover:bg-raised ${STUDIO_FOCUS_RING}`}
+              className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card/90 px-4 py-2 text-sm font-bold text-fg backdrop-blur-md transition-colors hover:border-line-strong hover:bg-raised ${STUDIO_FOCUS_RING}`}
             >
               <Library size={15} aria-hidden />
-              {STUDIO_BRUSH_LABELS.choose}
+              {pickLang(STUDIO_BRUSH_LABELS.choose, "Choose Brush")}
             </Link>
             <Link
               href={context.returnHref}
-              className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-4 py-2 text-sm font-bold text-fg transition-colors hover:border-line-strong hover:bg-raised ${STUDIO_FOCUS_RING}`}
+              className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card/90 px-4 py-2 text-sm font-bold text-fg backdrop-blur-md transition-colors hover:border-line-strong hover:bg-raised ${STUDIO_FOCUS_RING}`}
             >
               <ArrowLeft size={15} aria-hidden />
-              {context.returnLabel}
+              {isKo ? context.returnLabel : contextEn.ret}
             </Link>
           </div>
         </div>
 
         {isRemixContext ? (
-          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
+          <div className="relative z-10 mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border border-accent/35 bg-accent/10 px-4 py-3" role="status">
             <span className="inline-flex items-center gap-1.5 text-xs font-black text-accent">
               <GitFork size={14} aria-hidden />
-              리믹스 작업 중
+              {pickLang("리믹스 작업 중", "Remix in progress")}
             </span>
             <p className="text-xs leading-5 text-fg-2">
-              이 작업 공간은 원본 작품에서 갈라져 나온 리믹스 전용입니다. 여기서 만든 브러시는 리믹스 원고에만 적용되고, 원본 작품은 바뀌지 않아요.
+              {pickLang(
+                "이 작업 공간은 원본 작품에서 갈라져 나온 리믹스 전용입니다. 여기서 만든 브러시는 리믹스 원고에만 적용되고, 원본 작품은 바뀌지 않아요.",
+                "This workspace belongs to a forked remix. Brushes saved here apply only to your remix draft without altering the original work.",
+              )}
             </p>
           </div>
         ) : null}
 
-        <details className="mt-4"><summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">{pickLang("시작 방법과 전문가 설정 안내", "Getting started and advanced settings guide")}</summary>
-        <p className="mt-3 text-sm leading-7 text-fg-2">{editingSavedBrush ? "저장한 브러시를 실제 획으로 비교하면서 재료·입력·패턴·엔진 구성을 한곳에서 다듬습니다." : "시작 브러시를 고른 뒤 실제 획으로 시험하고, 재료·입력·패턴을 필요한 깊이까지 조절합니다."} 기본 편집과 전문가 설정은 같은 브러시 정의와 저장 경로를 사용합니다.</p>
-        <figure className="relative mt-4"><img src={heroArt.src} srcSet={heroArt.srcSet} sizes="(max-width: 1920px) 100vw, 1856px" width={1680} height={560} alt={heroArt.alt} loading="lazy" decoding="async" className="block aspect-[3/1] w-full object-cover" /><figcaption className="mt-1 text-xs text-fg-3">브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다</figcaption></figure>
-        <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label="브러시 스튜디오 편집 깊이">
+        <details className="relative z-10 mt-4"><summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">{pickLang("시작 방법과 전문가 설정 안내", "Getting started and advanced settings guide")}</summary>
+        <p className="mt-3 text-sm leading-7 text-fg-2">{editingSavedBrush ? pickLang("저장한 브러시를 실제 획으로 비교하면서 재료·입력·패턴·엔진 구성을 한곳에서 다듬습니다.", "Refine your saved brush with live stroke comparison across material, stylus input, pattern, and engine nodes.") : pickLang("시작 브러시를 고른 뒤 실제 획으로 시험하고, 재료·입력·패턴을 필요한 깊이까지 조절합니다.", "Select a starting brush, test live strokes, and tune material, input, and pattern to the depth you need.")} {pickLang("기본 편집과 전문가 설정은 같은 브러시 정의와 저장 경로를 사용합니다.", "Quick and expert modes share the exact same brush definition and persistence pipeline.")}</p>
+        <figure className="relative mt-4"><img src={heroArt.src} srcSet={heroArt.srcSet} sizes="(max-width: 1920px) 100vw, 1856px" width={1680} height={560} alt={heroArt.alt} loading="lazy" decoding="async" className="block aspect-[3/1] w-full rounded-2xl object-cover" /><figcaption className="mt-1 text-xs text-fg-3">{pickLang("브랜드 콘셉트 아트 · 실제 편집 화면이 아닙니다", "Atelier concept illustration · not an editor screenshot")}</figcaption></figure>
+        <section className="mt-6 grid gap-2 md:grid-cols-2" aria-label={pickLang("브러시 스튜디오 편집 깊이", "Brush Studio editing depth")}>
           <article className="rounded-2xl border border-line bg-panel/45 p-4">
             <span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-fg-3">QUICK</span>
-            <h2 className="mt-1 text-sm font-black text-fg">{STUDIO_BRUSH_LABELS.editCurrent}</h2>
+            <h2 className="mt-1 text-sm font-black text-fg">{pickLang(STUDIO_BRUSH_LABELS.editCurrent, "Quick Canvas Brush Edit")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">
-              캔버스 안에서 크기·필압·펜촉·질감을 빠르게 조절합니다. 현재 작업을 끊지 않는 간편 모드입니다.
+              {pickLang("캔버스 안에서 크기·필압·펜촉·질감을 빠르게 조절합니다. 현재 작업을 끊지 않는 간편 모드입니다.", "Adjust size, pressure, nib, and grain right inside the canvas without interrupting drawing.")}
             </p>
           </article>
           <article aria-current="page" className="rounded-2xl border border-accent/45 bg-accent/10 p-4">
             <span className="text-[0.62rem] font-black uppercase tracking-[0.14em] text-accent">FULL · CURRENT</span>
-            <h2 className="mt-1 text-sm font-black text-fg">{STUDIO_BRUSH_LABELS.product} · {STUDIO_BRUSH_LABELS.fullEditor}</h2>
+            <h2 className="mt-1 text-sm font-black text-fg">{pickLang(`${STUDIO_BRUSH_LABELS.product} · ${STUDIO_BRUSH_LABELS.fullEditor}`, "Brush Studio · Full Editor")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">
-              시작점 선택, 실제 입력 시험, A/B 비교, 재료·물리·패턴·엔진 구성과 저장을 한 화면에서 진행합니다.
+              {pickLang("시작점 선택, 실제 입력 시험, A/B 비교, 재료·물리·패턴·엔진 구성과 저장을 한 화면에서 진행합니다.", "Choose recipes, test live stylus strokes, run A/B comparisons, and configure material physics in one studio.")}
             </p>
           </article>
         </section>
 
-        <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4" aria-label="브러시 전체 편집 단계">
-          {STEPS.map(({ icon: Icon, number, title, description }) => (
+        <ol className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4" aria-label={pickLang("브러시 전체 편집 단계", "Brush Studio workflow steps")}>
+          {STEPS.map(({ icon: Icon, number, title, enTitle, description, enDescription }) => (
             <li key={number} className="rounded-2xl border border-line bg-panel/55 p-3.5">
               <div className="flex items-center gap-2">
                 <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
@@ -332,8 +368,8 @@ export function StudioBrushLabPage() {
                 </span>
                 <span className="text-[0.62rem] font-black text-accent">STEP {number}</span>
               </div>
-              <strong className="mt-3 block text-sm text-fg">{title}</strong>
-              <span className="mt-1 block text-xs leading-5 text-fg-3">{description}</span>
+              <strong className="mt-3 block text-sm text-fg">{pickLang(title, enTitle)}</strong>
+              <span className="mt-1 block text-xs leading-5 text-fg-3">{pickLang(description, enDescription)}</span>
             </li>
           ))}
         </ol>
@@ -341,52 +377,62 @@ export function StudioBrushLabPage() {
         <details className="mt-4 rounded-2xl border border-line bg-panel/35 p-3.5">
           <summary className={`flex min-h-11 cursor-pointer items-center gap-2 text-xs font-bold text-fg-2 ${STUDIO_FOCUS_RING}`}>
             <Gauge size={15} className="text-accent" aria-hidden />
-            전문가 설정은 필요할 때만 표시됩니다
+            {pickLang("전문가 설정은 필요할 때만 표시됩니다", "Expert engine settings appear only on demand")}
           </summary>
           <div className="mt-3 border-t border-line pt-3">
             <p className="text-xs leading-6 text-fg-3">
-              기본 편집에서는 레시피·비교·재료·입력·패턴에 집중합니다. 전문가 설정을 켜면
-              엔진 조합, 물리 패스, 공급자 호환성과 실행 비용을 추가로 확인할 수 있습니다.
+              {pickLang(
+                "기본 편집에서는 레시피·비교·재료·입력·패턴에 집중합니다. 전문가 설정을 켜면 엔진 조합, 물리 패스, 공급자 호환성과 실행 비용을 추가로 확인할 수 있습니다.",
+                "Default editing focuses on recipes, A/B comparison, material, stylus input, and patterns. Enable expert mode to inspect engine passes, physics nodes, and runtime cost.",
+              )}
             </p>
             <div className="mt-3 flex flex-wrap gap-1.5 text-[0.65rem] font-semibold text-fg-3">
-              {["필압·기울기", "종이·재질", "수채·유화", "듀얼 팁·입자", "패턴·문양", "엔진 조합", "가져오기·내보내기"].map((label) => (
-                <span key={label} className="rounded-full border border-line bg-card px-2.5 py-1">{label}</span>
+              {([
+                ["필압·기울기", "Pressure & Tilt"],
+                ["종이·재질", "Paper & Grain"],
+                ["수채·유화", "Watercolor & Oil"],
+                ["듀얼 팁·입자", "Dual Tip & Particles"],
+                ["패턴·문양", "Patterns"],
+                ["엔진 조합", "Engine Graph"],
+                ["가져오기·내보내기", "Import & Export"],
+              ] as const).map(([koLabel, enLabel]) => (
+                <span key={koLabel} className="rounded-full border border-line bg-card px-2.5 py-1">{pickLang(koLabel, enLabel)}</span>
               ))}
             </div>
           </div>
         </details>
 
         <section
-          aria-label="타사 툴 브러시 1:1 매칭 가이드"
+          aria-label={pickLang("타사 툴 브러시 1:1 매칭 가이드", "Competitor Brush 1:1 Matching Guide")}
           data-testid="brush-lab-competitor-matching"
           className="mt-4 rounded-2xl border border-accent/25 bg-accent/5 p-3.5"
         >
           <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-accent">
-            COMPETITOR 1:1 MATCHING GUIDE · 익숙한 타사 브러시 그대로 시작하기
+            {pickLang("COMPETITOR 1:1 MATCHING GUIDE · 익숙한 타사 브러시 그대로 시작하기", "COMPETITOR 1:1 MATCHING GUIDE · START WITH FAMILIAR STUDIO BRUSHES")}
           </p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
-              <strong className="block text-xs font-bold text-fg">클립스튜디오 리얼 G펜·마루펜</strong>
+              <strong className="block text-xs font-bold text-fg">{pickLang("클립스튜디오 리얼 G펜·마루펜", "Clip Studio Real G-Pen & Maru")}</strong>
               <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
-                → 리얼 G펜 · 서브픽셀 칼선 (구심 Catmull 곡률 보간 + 서브픽셀 SDF AA)
+                {pickLang("→ 리얼 G펜 · 서브픽셀 칼선 (구심 Catmull 곡률 보간 + 서브픽셀 SDF AA)", "-> Real G-Pen · Subpixel AA (Centripetal Catmull + Subpixel SDF AA)")}
               </span>
             </div>
             <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
-              <strong className="block text-xs font-bold text-fg">프로크리에이트 6B 연필·시럽 잉크</strong>
+              <strong className="block text-xs font-bold text-fg">{pickLang("프로크리에이트 6B 연필·시럽 잉크", "Procreate 6B Pencil & Syrup Ink")}</strong>
               <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
-                → 6B 틸트 그래파이트 (저고도 기울기 측면 셰이딩 + 판화지 요철 침착)
+                {pickLang("→ 6B 틸트 그래파이트 (저고도 기울기 측면 셰이딩 + 판화지 요철 침착)", "-> 6B Tilt Graphite (Low-angle tilt shading + printmaking tooth)")}
               </span>
             </div>
             <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
-              <strong className="block text-xs font-bold text-fg">사이툴(SAI) 연필·수채 블렌더</strong>
+              <strong className="block text-xs font-bold text-fg">{pickLang("사이툴(SAI) 연필·수채 블렌더", "Paint Tool SAI Pencil & Water Blender")}</strong>
               <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
-                → 샤프·수채 혼색 브러시 (S-1~S-7 견인줄 평활화 + K/S 감산 혼색)
+                {pickLang("→ 샤프·수채 혼색 브러시 (S-1~S-7 견인줄 평활화 + K/S 감산 혼색)", "-> Sharp & Water Mix Brush (Pulled-string stabilizer + K/S pigment mix)")}
               </span>
             </div>
             <div className="rounded-xl border border-line bg-card/85 px-3 py-2">
-              <strong className="block text-xs font-bold text-fg">리벨 7·크리타 습식 수채·유화</strong>
+              <strong className="block text-xs font-bold text-fg">{pickLang("리벨 7·크리타 습식 수채·유화", "Rebelle 7 & Krita Wet Media")}</strong>
               <span className="mt-0.5 block text-[0.68rem] leading-4 text-fg-3">
-                → 모세관 꽃양배추 수채 / 원심 강모 임파스토 믹서 (커피링·부채꼴 강모)
+                {pickLang("→ 모세관 꽃양배추 수채 / 원심 강모 임파스토 믹서 (커피링·부채꼴 강모)", "-> Capillary Cauliflower Wash & Centrifugal Impasto Bristle")}
               </span>
             </div>
           </div>
@@ -444,10 +490,10 @@ export function StudioBrushLabPage() {
                   selectKernelMode(next.id);
                   focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
                 }}
-                className={`${
+                className={`inline-flex min-h-11 items-center ${
                   kernelMode === item.id
-                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent"
+                    : "rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2"
                 } ${STUDIO_FOCUS_RING}`}
               >
                 {pickLang(item.ko, item.en)}
@@ -480,10 +526,10 @@ export function StudioBrushLabPage() {
                   selectStylusCurve(next.id);
                   focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
                 }}
-                className={`${
+                className={`inline-flex min-h-11 items-center ${
                   stylusCurve === item.id
-                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                    : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                    ? "rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent"
+                    : "rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2"
                 } ${STUDIO_FOCUS_RING}`}
               >
                 {pickLang(item.ko, item.en)}
@@ -575,10 +621,10 @@ export function StudioBrushLabPage() {
                 setWave37RecipeId(next.id);
                 focusToolbarButtonAt(event.currentTarget, nav.nextIndex);
               }}
-              className={`${
+              className={`inline-flex min-h-11 items-center ${
                 wave37RecipeId === recipe.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent"
+                  : "rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2"
               } ${STUDIO_FOCUS_RING}`}
             >
               {pickLang(`${idx + 1}. ${recipe.ko}`, `${idx + 1}. ${recipe.en}`)}
@@ -595,7 +641,7 @@ export function StudioBrushLabPage() {
               onClick={() => {
                 void runPinFavorites(false);
               }}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-bold text-accent hover:bg-accent/20 disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-bold text-accent hover:bg-accent/20 disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
             >
               {pickLang(
                 `원고 캔버스 빠른 선반에 플래그십 ${STUDIO_COMPETITOR_FAVORITE_SLOT_SPECS.length}종 고정 배치`,
@@ -609,7 +655,7 @@ export function StudioBrushLabPage() {
               onClick={() => {
                 void runPinFavorites(true);
               }}
-              className={`inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2 hover:border-line-strong hover:bg-raised disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2 hover:border-line-strong hover:bg-raised disabled:opacity-60 ${STUDIO_FOCUS_RING}`}
             >
               <RotateCcw size={13} aria-hidden />
               {pickLang("기본값·1~6 순서 복원", "Restore Default 1-6 Order")}
@@ -653,18 +699,26 @@ export function StudioBrushLabPage() {
         </p>
       </section>
 
+      <StudioBrushLabLiveStrokePad lang={lang} />
+
       <div className="mt-5 space-y-5">
         <div hidden={activeTask !== "presets"}><StudioBrushProductCataloguePanel baseHref={context.baseHref} /></div>
         <div hidden={activeTask !== "edit"}><StudioBrushIntegratedWorkbench scope={context.scope} /></div>
-        <section hidden={activeTask !== "texture"} aria-label="질감·톤 실험실" className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7">
+        <section
+          hidden={activeTask !== "texture"}
+          aria-label={pickLang("질감·톤 실험실", "Texture & Tone Lab")}
+          className="overflow-hidden rounded-[1.75rem] border border-line bg-card/55 p-5 shadow-sm sm:p-7"
+        >
           <div className="max-w-4xl">
             <p className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-accent">TEXTURE · TONE LAB</p>
             <h2 className="mt-2 text-xl font-black tracking-tight text-fg sm:text-2xl">
-              질감·톤 실험실
+              {pickLang("질감·톤 실험실", "Texture & Tone Lab")}
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-fg-2">
-              브러시에 종이결을 입히고, 만화 톤을 붙이고, 색감을 한 번에 바꾸는 실험실입니다.
-              이중 브러시·스크린톤·그라데이션 맵을 실시간 캔버스 프리뷰로 시험해 보세요.
+              {pickLang(
+                "브러시에 종이결을 입히고, 만화 톤을 붙이고, 색감을 한 번에 바꾸는 실험실입니다. 이중 브러시·스크린톤·그라데이션 맵을 실시간 캔버스 프리뷰로 시험해 보세요.",
+                "Layer paper grain onto brushes, apply manga screentones, and remap color palettes in one place. Test dual brushes, screentones, and gradient maps live.",
+              )}
             </p>
           </div>
           <div className="mt-5">

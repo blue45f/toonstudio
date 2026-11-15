@@ -33,6 +33,7 @@ import {
   ICON_BUTTON,
 } from "./StudioVrmPoserTypes";
 import { StudioVrmPoserViewport } from "./StudioVrmPoserViewport";
+import { StudioVrmWebglRecoveryBanner } from "./StudioVrmWebglRecoveryBanner";
 import {
   studioVrmProportionsRequireRuntime,
 } from "./StudioVrmViewportUtils";
@@ -153,6 +154,7 @@ export function StudioVrmPoserDialog({ h }: { h: StudioVrmPoserHost }) {
             <X size={17} aria-hidden />
           </button>
         </header>
+        <StudioVrmWebglRecoveryBanner h={h} />
 
         {!broadcastPreviewActive && notice ? (
           <div

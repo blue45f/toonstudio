@@ -325,9 +325,10 @@ describe("MySpaceHubPage next-action center", () => {
 
 
 
-it("기본 내 공간은 세 목적 선택부터 시작하고 해당 목적의 바로가기만 표시한다", () => {
+it("기본 내 공간(/my)은 choose 게이트 없이 즉시 전체 바로가기 14개를 노출하고 역할 필터 선택 시 해당 목적만 좁혀 보여 준다", () => {
   renderPage();
-  expect(screen.queryByTestId("my-space-destination-results")).toBeNull();
+  expect(screen.getByTestId("my-space-role-filter-all").getAttribute("aria-pressed")).toBe("true");
+  expect(within(screen.getByTestId("my-space-destination-results")).getAllByRole("link")).toHaveLength(14);
   expect(screen.queryByTestId("my-space-filter-empty")).toBeNull();
   for (const id of ["reader", "creator", "account"]) {
     expect(screen.getByTestId(`my-space-role-filter-${id}`).getAttribute("aria-pressed")).toBe("false");

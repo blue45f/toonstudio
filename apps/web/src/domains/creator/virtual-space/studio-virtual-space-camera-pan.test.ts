@@ -446,4 +446,31 @@ describe("시점 제스처 묶음(줌 + 두 손가락 끌기 + 마우스 둘러�
     canvas.dispatchEvent(new PointerEvent("pointermove", { pointerId: 9, pointerType: "mouse", clientX: 25, clientY: 10, bubbles: true }));
     expect(pan.drag).toHaveBeenCalledWith(15, 0);
   });
+
+  it("탭이 비활성화(visibilitychange hidden)되거나 포인터 캡처를 잃으면 패닝·핀치가 고착되지 않고 즉시 종료된다", () => {
+    const { canvas, zoom, pan, touch } = gestureSetup();
+    canvas.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 11, pointerType: "mouse", button: 2, buttons: 2, clientX: 20, clientY: 20, bubbles: true, cancelable: true }));
+    expect(canvas.getAttribute("data-camera-panning")).toBe("true");
+
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(canvas.hasAttribute("data-camera-panning")).toBe(false);
+
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    canvas.dispatchEvent(new PointerEvent("pointermove", { pointerId: 11, pointerType: "mouse", buttons: 0, clientX: 80, clientY: 80, bubbles: true }));
+    expect(pan.drag).not.toHaveBeenCalled();
+
+    // 두 손가락 핀치 중 탭이 숨겨지면 잔류 터치가 남아 다음 한 손가락 터치가 핀치로 오인되지 않는다.
+    touch("pointerdown", 21, 0);
+    touch("pointerdown", 22, 100);
+    Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    touch("pointerdown", 23, 200);
+    touch("pointermove", 23, 260);
+    expect(zoom.get()).toBe(1);
+    expect(pan.drag).not.toHaveBeenCalled();
+  });
 });

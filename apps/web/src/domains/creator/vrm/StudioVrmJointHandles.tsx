@@ -700,17 +700,17 @@ function RotationHandle({
       if (!session || event.pointerId !== session.pointerId) return;
       finishDrag(event.pointerId, event.type === "pointercancel");
     };
-    const finishOnWindowBlur = () => {
-      const session = dragRef.current;
-      if (session) finishDrag(session.pointerId, true);
-    };
+    const finishOnWindowBlur = () => { const s = dragRef.current; if (s) finishDrag(s.pointerId, true); };
+    const finishOnVisibility = () => { if (document.visibilityState === "hidden") finishOnWindowBlur(); };
     window.addEventListener("pointerup", finishMatchingPointer);
     window.addEventListener("pointercancel", finishMatchingPointer);
     window.addEventListener("blur", finishOnWindowBlur);
+    document.addEventListener("visibilitychange", finishOnVisibility);
     dragWindowCleanupRef.current = () => {
       window.removeEventListener("pointerup", finishMatchingPointer);
       window.removeEventListener("pointercancel", finishMatchingPointer);
       window.removeEventListener("blur", finishOnWindowBlur);
+      document.removeEventListener("visibilitychange", finishOnVisibility);
     };
   };
 
@@ -1205,17 +1205,17 @@ function Handle({
       if (!session || event.pointerId !== session.pointerId) return;
       finishDrag(event.pointerId, event.type === "pointercancel");
     };
-    const finishOnWindowBlur = () => {
-      const session = dragRef.current;
-      if (session) finishDrag(session.pointerId, true);
-    };
+    const finishOnWindowBlur = () => { const s = dragRef.current; if (s) finishDrag(s.pointerId, true); };
+    const finishOnVisibility = () => { if (document.visibilityState === "hidden") finishOnWindowBlur(); };
     window.addEventListener("pointerup", finishMatchingPointer);
     window.addEventListener("pointercancel", finishMatchingPointer);
     window.addEventListener("blur", finishOnWindowBlur);
+    document.addEventListener("visibilitychange", finishOnVisibility);
     dragWindowCleanupRef.current = () => {
       window.removeEventListener("pointerup", finishMatchingPointer);
       window.removeEventListener("pointercancel", finishMatchingPointer);
       window.removeEventListener("blur", finishOnWindowBlur);
+      document.removeEventListener("visibilitychange", finishOnVisibility);
     };
   };
 

@@ -222,4 +222,72 @@ describe("studio storage recovery runtime — no silent save failure", () => {
     expect(runtime.installPageHideFlush).toHaveBeenCalledTimes(1);
     expect(runtime.installPageHideFlush.mock.calls[0]?.[0]).toBe(target);
   });
+
+  it("recognizes wrapped StudioAutosaveDurabilityError and SQLite worker quota errors", async () => {
+    const { StudioAutosaveDurabilityError } = await import("../studio-autosave-opfs-error");
+    const opfsQuota = new DOMException(
+      "FileSystemWritableFileStream::write() failed",
+      "QuotaExceededError",
+    );
+    const workerQuota = Object.assign(
+      new Error("sqlite3 result code 13: database or disk is full"),
+      {
+        name: "StudioLocalDatabaseWorkerRemoteError",
+        remoteName: "QuotaExceededError",
+        code: 22,
+      },
+    );
+    const wrapped = new StudioAutosaveDurabilityError(
+      new AggregateError([opfsQuota, workerQuota], "All promises were rejected"),
+    );
+
+    expect(isStudioStorageQuotaPressure(opfsQuota)).toBe(true);
+    expect(isStudioStorageQuotaPressure(workerQuota)).toBe(true);
+    expect(isStudioStorageQuotaPressure(wrapped)).toBe(true);
+
+    install(createFakeRuntime(async () => ({ removedPaths: [], freedBytes: 0 })));
+    await reportStudioAutosaveFailure(wrapped);
+
+    const snapshot = getStudioReliabilityStatusSnapshot();
+    expect(snapshot.save?.title).toBe("저장 공간이 부족해 임시저장에 실패했습니다");
+    expect(snapshot.safeMode.reasons).toContain("storage-pressure");
+  });
+
+  it("acquires and releases writer lease on reclaim and clears storage-pressure once save succeeds", async () => {
+    let writerHeld = false;
+    const acquireWriter = vi.fn(async () => {
+      writerHeld = true;
+      return { ownerId: "reclaim", epoch: 1, acquiredAt: 1, expiresAt: 100 };
+    });
+    const releaseWriter = vi.fn(async () => {
+      writerHeld = false;
+    });
+    const runtime = {
+      status: () => ({ writer: writerHeld ? { ownerId: "reclaim" } : null }),
+      acquireWriter,
+      releaseWriter,
+      cleanupQuota: vi.fn(async () => {
+        if (!writerHeld) throw new Error("WRITER_REQUIRED");
+        return { removedPaths: [], freedBytes: 0 };
+      }),
+      installPageHideFlush: vi.fn(() => () => undefined),
+    };
+    configureStudioStorageRecovery({
+      createRuntime: async () => runtime as unknown as StudioOpfsRecoveryRuntime,
+      pageHideTarget: null,
+      now: () => 50,
+    });
+
+    await reportStudioAutosaveFailure(quotaError());
+    expect(acquireWriter).toHaveBeenCalledTimes(1);
+    expect(releaseWriter).toHaveBeenCalledTimes(1);
+    expect(getStudioReliabilityStatusSnapshot().safeMode.reasons).toContain("storage-pressure");
+    expect(getStudioReliabilityStatusSnapshot().storage?.level).toBe("failed");
+
+    noteStudioSaveSucceeded("opfs-journal");
+    const afterSuccess = getStudioReliabilityStatusSnapshot();
+    expect(afterSuccess.save).toBeNull();
+    expect(afterSuccess.storage).toBeNull();
+    expect(afterSuccess.safeMode.active).toBe(false);
+  });
 });

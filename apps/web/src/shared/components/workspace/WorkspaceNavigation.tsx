@@ -120,6 +120,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
   const { pathname, search } = useLocation();
   const navigationContext = context ?? workspaceNavigationContext(pathname, search);
   const shortcutActive = workspaceShortcutActiveId(pathname);
+  const [shortcutsExpanded, setShortcutsExpanded] = useState(true);
   const autoSelected = activeId ?? workspaceNavigationActiveId(pathname);
   // 바로가기가 현재 위치를 더 구체적으로 가리키면, 주 메뉴의 넓은 표시는 물려
   // 사이드바 안에서 현재 위치가 두 곳에 켜지지 않게 한다(명시 activeId가 오면 그 판정을 우선).
@@ -173,8 +174,12 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
           );
         })}
       </nav>
-      <details className="workspace-shortcut-group" open={shortcutActive !== null}>
-      <summary><Palette size={18} aria-hidden="true" /><span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+      <details className="workspace-shortcut-group" open={shortcutsExpanded || shortcutActive !== null}>
+      <summary onClick={(event) => {
+        if (shortcutActive !== null) return;
+        event.preventDefault();
+        setShortcutsExpanded((prev) => !prev);
+      }}><Palette size={18} aria-hidden="true" /><span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span><ChevronDown size={16} aria-hidden="true" /></summary>
       <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
         {WORKSPACE_SHORTCUTS.map((item) => {
           const Icon = item.icon;

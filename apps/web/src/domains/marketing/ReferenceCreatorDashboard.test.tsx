@@ -173,7 +173,7 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     fireEvent.click(within(hero).getByRole("link", { name: "작품 시작하기" }));
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/create");
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
     expect(completeAi).not.toHaveBeenCalled();
   });
 
@@ -315,19 +315,14 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     }
   });
 
-  it("추가 도구는 기본 접힘이며 펼치면 44px 동선 4개를 정본 경로로 연결한다", async () => {
+  it("핵심 4대 런치패드를 첫 화면에서 즉시 노출하며 44px 동선 4개를 정본 경로로 연결한다", async () => {
     await dashboard();
     const launchpad = screen.getByTestId("home-v2-spectrum-launchpad");
-    const details = launchpad.closest("details");
-    expect(details?.open).toBe(false);
+    expect(launchpad.closest("details")).toBeNull();
     expect(launchpad.textContent).not.toMatch(/1초|1S|WEBGPU|WEBXR|Rights BOM/u);
     const hero = screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." });
     expect(within(hero).getByRole("link", { name: "작품 시작하기" }).closest("details")).toBeNull();
     expect(screen.getByRole("region", { name: "예시 작품" }).closest("details")).toBeNull();
-    const summary = screen.getByText("다른 시작 방법 보기").closest("summary");
-    if (!summary) throw new Error("추가 도구를 여는 summary가 필요합니다.");
-    fireEvent.click(summary);
-    expect(details?.open).toBe(true);
     const links = within(launchpad).getAllByRole("link");
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/studio/new?lane=blank",
@@ -338,8 +333,6 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     for (const link of links) {
       expect(link.className).toContain("min-h-11");
     }
-    fireEvent.click(summary);
-    expect(details?.open).toBe(false);
   });
 
   it("예시 컷을 고르면 로컬 미리보기만 바뀌고 편집기로 이동하거나 검색을 실행하지 않는다", async () => {
@@ -379,8 +372,10 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
         expect(coreArt.has(src), src).toBe(true);
       } else if (src.startsWith("/assets/studio/scene-assistant/")) {
         expect(img.closest(".rd-mini-workspace--background")).not.toBeNull();
-      } else if (src === "/brand/workflow-20260928/create-640.webp") {
+      } else if (src === "/brand/luminous-atelier-20261114/scene-hero-living-atelier.webp") {
         expect(img.closest(".rd-clarity-art")).not.toBeNull();
+      } else if (src.startsWith("/brand/luminous-atelier-20261114/icon-")) {
+        expect(img.closest(".rd-clarity-journey, .rd-v2-bento")).not.toBeNull();
       } else {
         expect(src).toMatch(/^\/brand\/illustrated-20260928\/(?:(hero|canvas-noir|luna|character-pink|character-blue|background-city|project-romance|project-crimson|blank-canvas|storyboard|materials|background-classroom)-(320|640)\.webp|(hero|luna)\.webp)$/u);
       }
@@ -457,18 +452,15 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(screen.getByLabelText("현재 URL").textContent).toBe("/search");
   });
 
-  it("Luna와 아이디어 입력은 이름 있는 메뉴에서 펼치고 작품 시작은 바로 제공한다", async () => {
+  it("Luna와 아이디어 입력 및 더 알아보기 핵심 작업실을 접힘 없이 기본 노출하고 작품 시작을 바로 제공한다", async () => {
     await dashboard();
     const hero = document.querySelector('[data-home-band="hero"]');
     const luna = screen.getByRole("complementary", { name: "Luna 창작 안내" });
     expect(hero?.contains(luna)).toBe(true);
     const details = luna.closest("details");
-    expect(details?.open).toBe(false);
-    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(false);
-    expect(screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." }).querySelector("a")?.closest("details")).toBeNull();
-    openLunaHelp();
-    openIdeaHelp();
     expect(details?.open).toBe(true);
+    expect(document.querySelector<HTMLDetailsElement>(".rd-idea-help")?.open).toBe(true);
+    expect(screen.getByRole("region", { name: "상상한 장면을,나의 작품으로." }).querySelector("a")?.closest("details")).toBeNull();
     // 중간 섹션으로 따로 서 있지 않다.
     expect(document.querySelector(".rd-luna-section")).toBeNull();
     const forms = document.querySelectorAll("form.rd-idea");
@@ -479,19 +471,19 @@ describe("참조 디자인 크리에이터 홈의 실제 동선", () => {
     expect(form?.contains(screen.getByRole("button", { name: "시작하기" }))).toBe(true);
   });
 
-  it("홈은 상태별 히어로·예시/다른 시작·작품 발견·더 알아보기 4밴드 순서이고 더 알아보기는 기본 접힘이다", async () => {
+  it("홈은 상태별 히어로·예시/다른 시작·작품 발견·더 알아보기 4밴드 순서이고 더 알아보기는 기본 펼침이다", async () => {
     await dashboard();
     const root = document.querySelector("[data-reference-dashboard]");
     const bands = [...(root?.querySelectorAll("[data-home-band]") ?? [])].map((element) => element.getAttribute("data-home-band"));
     expect(bands).toEqual(["hero", "continue", "discover", "more"]);
     const more = document.querySelector<HTMLDetailsElement>("details.rd-more");
-    expect(more?.open).toBe(false);
-    // 시작 카드·핵심 작업실·에디터 미리보기·챕터 링크는 접힌 밴드 아래로 내려가 있다.
+    expect(more?.open).toBe(true);
+    // 시작 카드·핵심 작업실·에디터 미리보기·챕터 링크는 더 알아보기 밴드 안에서 즉시 노출된다.
     expect(more?.querySelector(".rd-quick")).not.toBeNull();
     expect(more?.querySelector(".rd-core-studios")).not.toBeNull();
     expect(more?.querySelector(".rd-editor")).not.toBeNull();
     expect(more?.querySelector(".rd-chapters")).not.toBeNull();
-    // 예시 작품 선반은 접힌 밴드 밖, 발견 미리보기보다 위에 있다.
+    // 예시 작품 선반은 더 알아보기 밴드 밖, 발견 미리보기보다 위에 있다.
     expect(more?.querySelector(".rd-examples")).toBeNull();
     expect(more?.querySelector(".rd-discover")).toBeNull();
   });

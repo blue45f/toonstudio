@@ -77,7 +77,7 @@ describe("브라우저 안의 작업실 (browser-studio)", () => {
   it("기기 안 SQLite 스키마는 v6 까지이고 자동 저장은 편집이 1.5초 멈춘 뒤에 일어난다", () => {
     const versions = [...read("apps/web/src/domains/creator/studio-local-database.ts").matchAll(/toVersion:\s*(\d+),/gu)].map((match) => Number(match[1]));
     expect(Math.max(...versions)).toBe(6);
-    expect(read("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx")).toMatch(/\},\s*1500\);/u);
+    expect(read("apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx")).toMatch(/\},\s*(?:isImmediateRetry\s*\?\s*0\s*:\s*)?1500\);/u);
   });
 });
 

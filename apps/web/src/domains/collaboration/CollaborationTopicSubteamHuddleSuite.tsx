@@ -240,7 +240,7 @@ export function CollaborationTopicSubteamHuddleSuite() {
             {topics.map((topic) => (
               <label
                 key={topic.id}
-                className="inline-flex cursor-pointer items-center gap-1.5 text-fg-2"
+                className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-fg-2"
               >
                 <input
                   type="radio"
@@ -248,6 +248,7 @@ export function CollaborationTopicSubteamHuddleSuite() {
                   value={topic.id}
                   checked={selectedTopicId === topic.id}
                   onChange={() => setSelectedTopicId(topic.id)}
+                  className="size-11 shrink-0 cursor-pointer accent-accent"
                 />
                 <span>{bt(topic.topicTitleKo, topic.topicTitleEn)}</span>
               </label>

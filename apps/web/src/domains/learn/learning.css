@@ -45,7 +45,7 @@
 .learn-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}
 .learn-number{font-size:30px;line-height:1;color:var(--learn-muted);font-variant-numeric:tabular-nums;font-weight:400}
 .learn-tag{display:inline-block;font-size:12px;line-height:1.5;font-weight:650;border:1px solid var(--learn-line);border-radius:5px;padding:5px 8px;color:var(--learn-muted)}
-.learn-card h3{font-size:21px}.learn-card h3 a{text-decoration:none}.learn-card h3 a:hover{text-decoration:underline}
+.learn-card h3{font-size:21px}.learn-card h3 a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;text-decoration:none}.learn-card h3 a:hover{text-decoration:underline}
 .learn-card p{font-size:15px;color:var(--learn-muted);line-height:1.8}
 .learn-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid var(--learn-line)}
 .learn-card-bottom span{font-size:12px;color:var(--learn-muted)}.learn-card-bottom a{font-size:14px;font-weight:700;display:inline-flex;align-items:center;min-height:44px}
@@ -56,8 +56,8 @@
 .learn-lesson-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:44px}.learn-lesson-body{min-width:0}
 .learn-prose{margin:0 0 38px;max-width:790px}.learn-prose p{font-size:17px;line-height:1.95;color:var(--learn-muted)}
 .learn-side-card{padding:20px;border:1px solid var(--learn-line);border-radius:10px;margin-bottom:22px;background:var(--learn-bg)}
-.learn-side-card h2{font-size:17px}.learn-side-card a{display:block;font-size:14px;line-height:1.8;margin:12px 0;padding:5px 0;text-decoration:underline}
-.learn-term-links a{display:flex;justify-content:space-between;margin:2px 0;min-height:44px;align-items:center}
+.learn-side-card h2{font-size:17px}.learn-side-card a{display:flex;align-items:center;min-height:44px;min-width:44px;font-size:14px;line-height:1.8;margin:4px 0;padding:5px 0;text-decoration:underline}
+.learn-term-links a{display:flex;justify-content:space-between;margin:2px 0;min-height:44px;min-width:44px;align-items:center}
 .learn-lab{padding:22px;border:1px solid var(--learn-line);border-radius:14px;margin:36px 0;background:var(--learn-bg);min-width:0}
 .learn-diagram-scroll{overflow-x:auto;max-width:100%;margin-bottom:22px;border-radius:12px;overscroll-behavior-x:contain}
 .learn-diagram{display:block;width:100%;min-width:540px;height:auto;font-family:inherit}
@@ -71,14 +71,15 @@
 .learn-practice,.learn-quiz,.learn-notes{margin:38px 0}.learn-practice>p,.learn-quiz p{color:var(--learn-muted)}
 .learn-practice fieldset,.learn-quiz fieldset{border:0;padding:0;margin:24px 0 0;min-width:0}
 .learn-page legend{font-weight:700;font-size:17px;margin:0 0 16px;padding:0}
-.learn-check{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border:1px solid var(--learn-line);border-radius:8px;margin:10px 0;cursor:pointer;background:var(--learn-bg);font-size:15px}
-.learn-check input{flex-shrink:0;width:19px;height:19px;margin:4px 0 0;accent-color:var(--learn-accent)}
+.learn-check{display:flex;gap:12px;align-items:center;min-height:48px;padding:10px 16px;border:1px solid var(--learn-line);border-radius:8px;margin:10px 0;cursor:pointer;background:var(--learn-bg);font-size:15px}
+.learn-check input{flex-shrink:0;width:44px;height:44px;margin:0;accent-color:var(--learn-accent);cursor:pointer}
 .learn-caution{padding:20px 22px;border:1px solid var(--learn-line);border-left:4px solid var(--color-warn);border-radius:8px;margin:24px 0}.learn-caution h3{font-size:17px;margin-bottom:8px}.learn-caution p{font-size:15px;margin:0}
 .learn-finish{padding:24px 0;border-top:1px solid var(--learn-line)}.learn-finish p{margin:12px 0}
-.learn-next{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;margin-top:12px;text-decoration:underline}
-.learn-term-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.learn-term-card h2{font-size:25px;margin-bottom:4px}.learn-term-card>p{font-size:15px}.learn-term-card .learn-english{font-size:13px;color:var(--learn-muted);margin-bottom:18px}.learn-term-card button{font-size:12px}
+.learn-next{display:inline-flex;align-items:center;min-height:44px;min-width:44px;font-size:14px;font-weight:700;margin-top:12px;text-decoration:underline}
+.learn-term-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.learn-term-card h2{font-size:25px;margin-bottom:4px}.learn-term-card h2 a{display:inline-flex;align-items:center;min-height:44px;min-width:44px}.learn-term-card>p{font-size:15px}.learn-term-card .learn-english{font-size:13px;color:var(--learn-muted);margin-bottom:18px}.learn-term-card button{font-size:12px;min-width:44px}
 .learn-term-card details{margin-top:12px;padding-top:12px;border-top:1px solid var(--learn-line)}
-.learn-term-card summary{cursor:pointer;min-height:44px;font-weight:650;font-size:14px;padding:7px 0}.learn-term-card details h3{font-size:15px;margin:14px 0 6px}.learn-term-card details p{font-size:14px;color:var(--learn-muted)}
+.learn-term-card summary{cursor:pointer;min-height:44px;min-width:44px;font-weight:650;font-size:14px;padding:7px 0}.learn-term-card details h3{font-size:15px;margin:14px 0 6px}.learn-term-card details p{font-size:14px;color:var(--learn-muted)}
+#main-content .learn-page button,#main-content .learn-page select,#main-content .learn-page summary,#main-content .learn-page a[href]{min-block-size:44px;min-inline-size:44px}
 .learn-empty{text-align:center;padding:60px 24px;margin:30px 0;border:1px dashed var(--learn-line);border-radius:12px}
 .learn-local-footer{border-top:1px solid var(--learn-line);margin-top:60px;padding-top:26px;color:var(--learn-muted);font-size:12px}.learn-local-footer button{font-size:12px}.learn-local-footer .learn-actions{border:1px solid var(--learn-line);padding:16px;border-radius:8px}
 @media(max-width:1000px){.learn-hero{gap:28px}.learn-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.learn-lesson-layout{grid-template-columns:minmax(0,1fr);gap:16px}.learn-lesson-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.learn-banner{align-items:flex-start;flex-direction:column}}

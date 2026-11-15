@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { readStudioWebtoonOnboardingProfile } from "@/shared/lib/webtoon-production-onboarding";
 import { readStudioProjectDocuments } from "../studio-project-document-store";
@@ -458,6 +458,96 @@ describe("StudioProjectCreatePage", () => {
       expect(screen.getByLabelText("location").textContent).toMatch(
         /^\/studio\/p\/[^/]+\/story$/u,
       );
+    });
+  });
+
+  it("preserves initial user inputs on browser Back and reuses the created project on retry without duplicating dummy works", async () => {
+    function LandedView() {
+      const navigate = useNavigate();
+      return (
+        <div>
+          <button type="button" onClick={() => navigate(-1)}>뒤로 돌아가기</button>
+          <button type="button" onClick={() => navigate("/studio/new?lane=blank")}>새로 만들기 진입</button>
+        </div>
+      );
+    }
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/studio/new?lane=blank&width=760&height=9600&collab=team"]}>
+        <Routes>
+          <Route path="/studio/new" element={<StudioProjectCreatePage />} />
+          <Route path="*" element={<LandedView />} />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    const titleInput = createControl("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
+    const advancedDetails = container.querySelector<HTMLDetailsElement>("[data-studio-create-advanced]");
+    if (!advancedDetails) throw new Error("고급 설정 구역이 없습니다.");
+    advancedDetails.open = true;
+    const widthEl = container.querySelector<HTMLInputElement>("#studio-mode-canvas-width")!;
+    const heightEl = container.querySelector<HTMLInputElement>("#studio-mode-canvas-height")!;
+    expect(widthEl.value).toBe("760");
+    expect(heightEl.value).toBe("9600");
+
+    fireEvent.change(titleInput, { target: { value: "초기 입력 보존 테스트" } });
+    fireEvent.change(widthEl, { target: { value: "920" } });
+    fireEvent.change(heightEl, { target: { value: "11200" } });
+
+    const submitBtn = createControl("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    });
+    fireEvent.click(submitBtn);
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(/^\/studio\/p\//u);
+    });
+
+    const firstLibrary = readStudioProjectLibrary(window.localStorage);
+    expect(firstLibrary.projects).toHaveLength(1);
+    const firstProject = firstLibrary.projects[0]!;
+    expect(firstProject.title).toBe("초기 입력 보존 테스트");
+    expect(firstProject.definition?.collaboration).toBe("team");
+    const firstDoc = readStudioProjectDocuments(window.localStorage, firstProject.id).documents[0]!;
+    expect(firstDoc).toMatchObject({ width: 920, height: 11200 });
+
+    // 브라우저 뒤로 가기 실행
+    fireEvent.click(screen.getByRole("button", { name: "뒤로 돌아가기" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toContain("/studio/new");
+    });
+
+    const restoredTitle = createControl("textbox", { name: /프로젝트 이름|Project name/u }) as HTMLInputElement;
+    expect(restoredTitle.value).toBe("초기 입력 보존 테스트");
+    const restoredWidth = container.querySelector<HTMLInputElement>("#studio-mode-canvas-width")!;
+    const restoredHeight = container.querySelector<HTMLInputElement>("#studio-mode-canvas-height")!;
+    expect(restoredWidth.value).toBe("920");
+    expect(restoredHeight.value).toBe("11200");
+
+    // 뒤로 가기 후 재시도 시 중복 더미 작품을 만들지 않고 기존 작품을 재사용
+    fireEvent.click(createControl("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toMatch(/^\/studio\/p\//u);
+    });
+    const afterRetryLibrary = readStudioProjectLibrary(window.localStorage);
+    expect(afterRetryLibrary.projects).toHaveLength(1);
+    expect(afterRetryLibrary.projects[0]?.id).toBe(firstProject.id);
+    expect(readStudioProjectDocuments(window.localStorage, firstProject.id).documents).toHaveLength(1);
+
+    // 별도 새 진입(새 히스토리 엔트리)에서는 정상적으로 두 번째 새 작품을 생성
+    fireEvent.click(screen.getByRole("button", { name: "새로 만들기 진입" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("location").textContent).toBe("/studio/new?lane=blank");
+    });
+    fireEvent.click(createControl("button", {
+      name: /세로 연재 웹툰 시작|Start Vertical serial webtoon/u,
+    }));
+    await waitFor(() => {
+      expect(readStudioProjectLibrary(window.localStorage).projects).toHaveLength(2);
     });
   });
 });

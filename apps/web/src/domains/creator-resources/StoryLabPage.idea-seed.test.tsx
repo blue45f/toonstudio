@@ -387,11 +387,12 @@ describe("다른 제작 도구의 반응형 접기", () => {
     if (!details) throw new Error("제작 도구 접기 누락");
     await act(async () => { fireEvent.click(summary); await new Promise(resolve => setTimeout(resolve, 0)); });
     const more = details.querySelector<HTMLDetailsElement>("details.site-contextual-subnav__more");
-    const moreSummary = more?.querySelector("summary");
-    const link = more?.querySelector("a");
-    if (!more || !moreSummary || !link) throw new Error("더 보기 누락");
+    const moreSummary = more?.querySelector<HTMLElement>("summary");
+    if (!more || !moreSummary) throw new Error("더 보기 누락");
     await act(async () => { fireEvent.click(moreSummary); await new Promise(resolve => setTimeout(resolve, 0)); });
-    link.focus(); fireEvent.keyDown(link, { key: "Escape" });
+    expect(more.open).toBe(true);
+    const nestedTarget = more.querySelector<HTMLElement>("a") ?? moreSummary;
+    nestedTarget.focus(); fireEvent.keyDown(nestedTarget, { key: "Escape" });
     expect(more.open).toBe(false); expect(details.open).toBe(true); expect(document.activeElement).toBe(moreSummary);
     fireEvent.keyDown(moreSummary, { key: "Escape" });
     expect(details.open).toBe(false); expect(document.activeElement).toBe(summary);

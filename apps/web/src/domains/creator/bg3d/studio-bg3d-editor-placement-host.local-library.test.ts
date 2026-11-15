@@ -182,6 +182,7 @@ function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) 
     (next) => { Object.assign(current, next); },
   );
   const setError = vi.fn<(message: string | null) => void>();
+  const commitImmediateHistoryTransition = vi.fn();
   const instantiate = vi.fn(instantiateBg3dTemplateDocument);
   const match = vi.fn(attachmentMatchesRecord);
   const admit = vi.fn(admitAndCacheStudioBg3dModel);
@@ -193,6 +194,7 @@ function templateHost(value: Awaited<ReturnType<typeof storedTemplateFixture>>) 
     isRestoringScene: false,
     isUploadingModel: false,
     captureInFlightRef: { current: false },
+    commitImmediateHistoryTransition,
     physicsPhaseRef: { current: "idle" },
     isStudioBg3dPhysicsTransientPhase,
     modalAssetSessionRef: value.geometry.session,

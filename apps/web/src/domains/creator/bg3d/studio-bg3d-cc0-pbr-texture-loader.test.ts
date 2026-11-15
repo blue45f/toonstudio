@@ -8,6 +8,7 @@ import {
   clearStudioBg3dCc0PbrTextureCache,
   getStudioBg3dCc0PbrTextureCacheStats,
   getStudioBg3dCc0PbrTextureReadyRevision,
+  getStudioBg3dFailedCc0PbrTextureUrls,
   loadStudioBg3dCc0PbrTextureSet,
   resolveStudioBg3dPrimitiveCc0PbrSpread,
   setStudioBg3dCc0PbrTextureFactoryForTest,
@@ -347,5 +348,34 @@ describe("PBR 이미지 완료와 demand frame 구독", () => {
     channel(loads).complete(); clearStudioBg3dCc0PbrTextureCache();
     await Promise.resolve();
     expect(calls).toBe(0); expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before);
+  });
+
+  it("개별 PBR 채널 로드 실패(onError) 시 대기 중 version 0 계약을 유지하다가 실패한 채널에만 대체 미리보기를 적용한다", async () => {
+    const callbacks: Array<{ url: string; texture: THREE.Texture; onLoad?: (t: THREE.Texture) => void; onError?: () => void }> = [];
+    setStudioBg3dCc0PbrTextureFactoryForTest((url, onLoad, onError) => {
+      const texture = new THREE.Texture();
+      texture.name = url;
+      callbacks.push({ url, texture, onLoad, onError });
+      return texture;
+    });
+
+    const set = loadStudioBg3dCc0PbrTextureSet("polyhaven-wood-floor");
+    if (!set) throw new Error("실제 카탈로그 텍스처 세트가 필요합니다.");
+    expect(set.baseColorMap.image).toBeNull();
+    expect(set.baseColorMap.version).toBe(0);
+
+    const before = getStudioBg3dCc0PbrTextureReadyRevision();
+    callbacks[0]?.onError?.();
+    if (callbacks[1]?.texture) {
+      callbacks[1].texture.image = { width: 512, height: 512, complete: true };
+    }
+    callbacks[1]?.onLoad?.(callbacks[1]!.texture);
+    await Promise.resolve();
+
+    expect(getStudioBg3dCc0PbrTextureReadyRevision()).toBe(before + 2);
+    expect(set.baseColorMap.userData.studioBg3dTextureLoadFailed).toBe(true);
+    expect(set.baseColorMap.image).toBeTruthy();
+    expect(getStudioBg3dFailedCc0PbrTextureUrls()).toEqual([callbacks[0]!.url]);
+    expect(set.roughnessMap?.userData?.studioBg3dTextureLoadFailed).toBeUndefined();
   });
 });

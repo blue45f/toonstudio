@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, BookOpen, Boxes, ChevronDown, ChevronRight, Compass, FileCheck, FolderKanban, Glasses, PencilLine, Plus, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Boxes, ChevronDown, ChevronRight, Compass, FolderKanban, Glasses, PencilLine, Plus, Search, Sparkles } from "lucide-react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -58,8 +58,12 @@ export function ReferenceCreatorDashboard() {
       <HomeNowCard>
       <section className="rd-clarity-hero" aria-labelledby="creator-hero-title">
         <div className="rd-clarity-copy">
+          <p className="rd-clarity-eyebrow">
+            <Sparkles size={13} aria-hidden="true" />
+            <span>{bi("GRAND ATELIER V4 · 초보자 1클릭 시작 + 전문 창작·협업 통합", "GRAND ATELIER V4 · 1-CLICK START + FULL STUDIO & COLLAB")}</span>
+          </p>
           <h1 id="creator-hero-title">{bi("상상한 장면을,", "Imagine a scene.")}<br /><span>{bi("나의 작품으로.", "Make it your story.")}</span></h1>
-          <p>{bi("이야기를 쓰고, 그리고, 이어가세요.", "Write, draw, and keep your story going.")}</p>
+          <p>{bi("이야기를 쓰고, 그리고, 팀과 함께 완성하세요. 접혀 있던 아이디어 시작창·루나 가이드·핵심 작업실을 한 화면에서 바로 엽니다.", "Write, draw, and finish your story with your team. Start from an idea, Luna guidance, or core studios right on one screen.")}</p>
           <div className="rd-clarity-actions">
             <Link className="rd-clarity-start" href="/create">{bi("작품 시작하기", "Start a work")}<ArrowRight size={20} aria-hidden="true" /></Link>
             <Link className="rd-clarity-browse" href="/discover">{bi("둘러보기", "Explore")}<ChevronRight size={18} aria-hidden="true" /></Link>
@@ -67,20 +71,20 @@ export function ReferenceCreatorDashboard() {
         </div>
         <figure className="rd-clarity-art" aria-label={bi("선화에서 완성작으로 이어지는 브랜드 예시 원고", "Brand artwork: from line art to a finished scene")}>
           <div className="rd-clarity-manuscript">
-            <img src="/brand/workflow-20260928/create-640.webp" srcSet="/brand/workflow-20260928/create-320.webp 320w, /brand/workflow-20260928/create-640.webp 640w, /brand/workflow-20260928/create-960.webp 960w" sizes="(max-width: 639px) 100vw, 52vw" alt={bi("선화에 색을 더하며 완성하는 웹툰 원고 예시", "Example webtoon manuscript progressing from line art to color")} width={960} height={600} decoding="async" fetchPriority="high" />
+            <img src="/brand/luminous-atelier-20261114/scene-hero-living-atelier.webp" sizes="(max-width: 639px) 100vw, 52vw" alt={bi("선화에 색을 더하며 완성하는 웹툰 원고 예시", "Example webtoon manuscript progressing from line art to color")} width={960} height={600} decoding="async" fetchPriority="high" />
           </div>
           <figcaption>{bi("ToonStudio 브랜드 아트", "ToonStudio brand artwork")}</figcaption>
         </figure>
       </section>
       <nav className="rd-clarity-journey" aria-label={bi("작품을 만드는 순서", "Steps to create your work")}>
         <ol>
-          <li><Link href="/create?intent=my-story"><span className="rd-clarity-journey-icon" aria-hidden="true"><BookOpen size={28} /></span><strong>{bi("이야기 준비", "Plan your story")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
-          <li><Link href="/studio/new?lane=blank"><span className="rd-clarity-journey-icon" aria-hidden="true"><PencilLine size={28} /></span><strong>{bi("원고 그리기", "Draw your pages")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
-          <li><Link href="/studio?view=exports"><span className="rd-clarity-journey-icon" aria-hidden="true"><FileCheck size={28} /></span><strong>{bi("작품 완성", "Finish your work")}</strong></Link></li>
+          <li><Link href="/create?intent=my-story"><span className="rd-clarity-journey-icon" aria-hidden="true"><img src="/brand/luminous-atelier-20261114/icon-nav-learn-collab.webp" alt="" width={46} height={46} decoding="async" /></span><strong>{bi("이야기 준비", "Plan your story")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
+          <li><Link href="/studio/new?lane=blank"><span className="rd-clarity-journey-icon" aria-hidden="true"><img src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" alt="" width={46} height={46} decoding="async" /></span><strong>{bi("원고 그리기", "Draw your pages")}</strong></Link><span className="rd-clarity-journey-connector" aria-hidden="true"><ArrowRight size={16} /></span></li>
+          <li><Link href="/studio?view=exports"><span className="rd-clarity-journey-icon" aria-hidden="true"><img src="/brand/luminous-atelier-20261114/icon-studio-layers-color.webp" alt="" width={46} height={46} decoding="async" /></span><strong>{bi("작품 완성", "Finish your work")}</strong></Link></li>
         </ol>
       </nav>
       <div ref={helpersRef} className="rd-clarity-helpers">
-        <details className="rd-idea-help">
+        <details className="rd-idea-help" open>
           <summary className="rd-optional-summary"><PencilLine size={16} aria-hidden="true" /><span>{bi("아이디어 쓰기 · 작품 찾기", "Write an idea · Find a story")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
           <form className="rd-idea" onSubmit={submitInput}>
             <div className="rd-idea-modes" role="group" aria-label={bi("입력 모드", "Input mode")}>
@@ -105,8 +109,15 @@ export function ReferenceCreatorDashboard() {
             />
             <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
+          <div className="rd-v4-preset-chips" role="group" aria-label={bi("웹툰 빠른 규격 및 작업실 프리셋", "Quick webtoon format & studio presets")}>
+            <Link href="/studio/new?lane=blank" className="rd-v4-preset-chip">{bi("세로 웹툰 (800×무한)", "Vertical Webtoon (800×∞)")}</Link>
+            <Link href="/studio/new?lane=storyboard&start=storyboard" className="rd-v4-preset-chip">{bi("인스타툰 4컷 (1080²)", "4-Panel Comic (1080²)")}</Link>
+            <Link href="/studio/assets/characters/new" className="rd-v4-preset-chip">{bi("3D 캐릭터 셰이퍼", "3D Character Shaper")}</Link>
+            <Link href="/studio/bg3d" className="rd-v4-preset-chip">{bi("3D 배경 · LT 선화", "3D Scene · Line Art")}</Link>
+            <Link href="/production" className="rd-v4-preset-chip">{bi("팀 공동 작업 · 검수", "Team Collab & Review")}</Link>
+          </div>
         </details>
-        <details className="rd-luna-help">
+        <details className="rd-luna-help" open>
           <summary className="rd-optional-summary"><Sparkles size={16} aria-hidden="true" /><span>{bi("시작이 막막한가요?", "Need help getting started?")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
           <HomeLunaPanel />
         </details>
@@ -114,11 +125,6 @@ export function ReferenceCreatorDashboard() {
       </HomeNowCard>
     </div>
     <div data-home-band="continue">
-      <details className="rd-launchpad-help">
-        <summary className="rd-optional-summary">
-          <span>{bi("다른 시작 방법 보기", "More ways to start")}</span>
-          <ChevronDown size={16} aria-hidden="true" />
-        </summary>
       <nav
         data-testid="home-v2-spectrum-launchpad"
         aria-label={bi("도구와 감상 방식", "Tools and viewing options")}
@@ -136,7 +142,9 @@ export function ReferenceCreatorDashboard() {
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">01</span>
               <span className="rd-v2-spec">{bi("빈 원고", "Blank canvas")}</span>
-              <span className="rd-v2-glyph rd-v2-glyph--scroll" aria-hidden="true"><i /><i /><i /></span>
+              <span className="rd-v2-emblem" aria-hidden="true">
+                <img src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" alt="" width={34} height={34} loading="lazy" decoding="async" />
+              </span>
             </div>
             <div className="rd-v2-card-body">
               <strong><PencilLine size={15} aria-hidden="true" />{bi("바로 그리기", "Start drawing")}</strong>
@@ -149,7 +157,9 @@ export function ReferenceCreatorDashboard() {
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">02</span>
               <span className="rd-v2-spec">{bi("배경·포즈", "Scenes and poses")}</span>
-              <span className="rd-v2-glyph rd-v2-glyph--cube" aria-hidden="true"><i /><i /></span>
+              <span className="rd-v2-emblem" aria-hidden="true">
+                <img src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp" alt="" width={34} height={34} loading="lazy" decoding="async" />
+              </span>
             </div>
             <div className="rd-v2-card-body">
               <strong><Boxes size={15} aria-hidden="true" />{bi("3D 배경 만들기", "Build a 3D scene")}</strong>
@@ -162,7 +172,9 @@ export function ReferenceCreatorDashboard() {
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">03</span>
               <span className="rd-v2-spec">{bi("장르·연재처", "Genres and platforms")}</span>
-              <span className="rd-v2-glyph rd-v2-glyph--bars" aria-hidden="true"><i /><i /><i /><i /></span>
+              <span className="rd-v2-emblem" aria-hidden="true">
+                <img src="/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp" alt="" width={34} height={34} loading="lazy" decoding="async" />
+              </span>
             </div>
             <div className="rd-v2-card-body">
               <strong><Compass size={15} aria-hidden="true" />{bi("읽을 작품 찾기", "Find a story to read")}</strong>
@@ -175,7 +187,9 @@ export function ReferenceCreatorDashboard() {
             <div className="rd-v2-card-top">
               <span className="rd-v2-index" aria-hidden="true">04</span>
               <span className="rd-v2-spec">{bi("새로운 감상", "A different view")}</span>
-              <span className="rd-v2-glyph rd-v2-glyph--dome" aria-hidden="true"><i /><i /></span>
+              <span className="rd-v2-emblem" aria-hidden="true">
+                <img src="/brand/luminous-atelier-20261114/icon-studio-layers-color.webp" alt="" width={34} height={34} loading="lazy" decoding="async" />
+              </span>
             </div>
             <div className="rd-v2-card-body">
               <strong><Glasses size={15} aria-hidden="true" />{bi("공간 뷰어 체험", "Try the spatial viewer")}</strong>
@@ -185,10 +199,9 @@ export function ReferenceCreatorDashboard() {
           </Link>
         </div>
       </nav>
-      </details>
       <RevealOnScroll>
       <section className="rd-examples" aria-labelledby="rd-examples-title">
-        <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
+        <div className="rd-examples-heading"><h2 id="rd-examples-title">{bi("예시 작품", "Example works")}</h2><Link href="/studio" className="inline-flex min-h-11 min-w-11 items-center gap-1.5"><FolderKanban size={13} aria-hidden="true" />{bi("내 프로젝트", "My projects")}<ChevronRight size={13} aria-hidden="true" /></Link></div>
         <div className="rd-example-shelf">{HOME_EXAMPLES.map((example) => <div className="rd-example-cover" key={example.image}><img src={homeArt(example.image, 320)} alt="" width={180} height={120} decoding="async" /><span>{bi(example.ko, example.en)}<small>{bi(example.metaKo, example.metaEn)}</small></span></div>)}<Link className="rd-new-project" href="/create"><Plus size={22} aria-hidden="true" /><span>{bi("작품 시작하기", "Start a work")}</span></Link></div>
       </section>
       </RevealOnScroll>
@@ -196,7 +209,7 @@ export function ReferenceCreatorDashboard() {
     <RevealOnScroll variant="fade" className="rd-discover" data-home-band="discover">
       <DiscoverHomePreview />
     </RevealOnScroll>
-    <details className="rd-more" data-home-band="more">
+    <details className="rd-more" data-home-band="more" open>
       <summary className="rd-more-summary">
         <span>{bi("더 알아보기", "Learn more")}</span>
         <small>{bi("시작 카드·핵심 작업실·에디터 미리보기·서비스 소개", "Start cards, core studios, editor preview and introduction")}</small>

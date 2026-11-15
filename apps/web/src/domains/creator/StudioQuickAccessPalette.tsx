@@ -1,22 +1,6 @@
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Command,
-  LayoutGrid,
-  List,
-  Plus,
-  RotateCcw,
-  Search,
-  Settings2,
-  X,
-} from "lucide-react";
-import {
-  useRef,
-  useState,
-  type ChangeEvent,
-  type KeyboardEvent,
-} from "react";
+import { Check, ChevronDown, ChevronUp, Command, LayoutGrid, List, Plus, RotateCcw, Search, Settings2, X } from "lucide-react";
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
 import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
 import {
@@ -164,6 +148,7 @@ export function StudioQuickAccessPalette({
   const activeSet = current.sets.find(({ id }) => id === current.activeSetId)
     ?? current.sets[0]!;
   const [customizing, setCustomizing] = useState(false);
+  const imeGuard = usePaletteImeGuard(customizing);
   const [query, setQuery] = useState("");
   const [rovingCommandId, setRovingCommandId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -231,6 +216,7 @@ export function StudioQuickAccessPalette({
       setAnnouncement("현재 사용할 수 없는 명령입니다.");
       return;
     }
+    if (!imeGuard.claimExecution({ closesSurface: false })) return;
     onExecute(plan.commandId, plan.setId);
   }
 
@@ -394,7 +380,7 @@ export function StudioQuickAccessPalette({
         className,
       )}
       onKeyDownCapture={(event) => {
-        if (event.key !== "Escape" || !customizing) return;
+        if (event.key !== "Escape" || !customizing || imeGuard.shouldIgnoreKeyDown(event)) return;
         event.preventDefault();
         event.stopPropagation();
         leaveCustomization();

@@ -21,6 +21,7 @@ import {
   Settings,
   Store,
   UserRound,
+  Users,
 } from "lucide-react";
 import { useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -113,6 +114,7 @@ const COPY = {
     quickTitle: "바로 확인할 것",
     quickActions: [
       ["알림", "협업 요청과 프로젝트 변경을 확인", "/notifications"],
+      ["팀 초대 · 협업 검수", "공동 작업 룸 초대 · 역할 권한 · 수정 이력 확인", "/production"],
       ["학습", "막힌 제작 단계의 실습을 이어가기", "/learn"],
       ["내 에셋", "설치·저장한 작업 재료 정리", "/market/library"],
     ],
@@ -186,6 +188,7 @@ const COPY = {
     quickTitle: "Check next",
     quickActions: [
       ["Notifications", "Review collaboration requests and project changes", "/notifications"],
+      ["Team & Review Hub", "Check co-work invites, role permissions and revision history", "/production"],
       ["Learning", "Continue a hands-on lesson for a blocked production step", "/learn"],
       ["My assets", "Organize installed and saved production materials", "/market/library"],
     ],
@@ -209,7 +212,7 @@ const COPY = {
 } as const;
 
 const ICONS = [Layers, Images, Library, Store, BookOpen, UserRound, Mail, Settings, KeyRound, Coins, ChartColumn, Crown, Mail, Film] as const;
-const QUICK_ICONS = [BellRing, BookOpen, Store] as const;
+const QUICK_ICONS = [BellRing, Users, BookOpen, Store] as const;
 
 function visitTimeLabel(value: number, locale: "ko" | "en"): string {
   if (!Number.isFinite(value) || value <= 0) {
@@ -245,7 +248,7 @@ export function MySpaceHubPage() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const roleFilter = searchParams.get("role")?.trim().toLowerCase() || "choose";
+  const roleFilter = searchParams.get("role")?.trim().toLowerCase() || "all";
   const filterQuery = searchParams.get("q") ?? "";
   const [searchOpen, setSearchOpen] = useState<boolean>(() => Boolean(filterQuery));
   const [brokenCoverRecovered, setBrokenCoverRecovered] = useState(false);
@@ -621,7 +624,7 @@ export function MySpaceHubPage() {
 
         <div className="mt-4 rounded-2xl border border-line bg-panel/45 p-3.5 sm:p-4">
           <h2 className="text-sm font-bold text-fg">{copy.quickTitle}</h2>
-          <div className="mt-2.5 grid gap-2 sm:grid-cols-3">
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {copy.quickActions.map(([title, body, href], index) => (
               <SiteLinkCard key={href} layout="compact" href={href} icon={QUICK_ICONS[index]} title={title} description={body} />
             ))}

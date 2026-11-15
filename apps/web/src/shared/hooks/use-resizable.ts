@@ -74,10 +74,15 @@ export function useResizable(options: ResizableOptions): Resizable {
   });
   const [dragging, setDragging] = useState(false);
   const mountedRef = useRef(true);
+  const minRef = useRef(min);
+  const maxRef = useRef(max);
+  minRef.current = min;
+  maxRef.current = max;
   const activeDragCleanupRef = useRef<(() => void) | null>(null);
   const lastTapRef = useRef<ResizeTap | null>(null);
+  const boundedWidth = clampTo(width, min, max);
 
-  const setWidth = (w: number) => setWidthState(clampTo(w, min, max));
+  const setWidth = (w: number) => setWidthState(clampTo(w, minRef.current, maxRef.current));
 
   useEffect(() => {
     if (storageKey && typeof localStorage !== "undefined") {
@@ -124,7 +129,7 @@ export function useResizable(options: ResizableOptions): Resizable {
     const pointerId = e.pointerId;
     const startX = e.clientX;
     const startY = finiteCoordinate(e.clientY);
-    const startWidth = width;
+    const startWidth = boundedWidth;
     let latestClientX = startX;
     let latestClientY = startY;
     let frame: number | null = null;
@@ -249,10 +254,10 @@ export function useResizable(options: ResizableOptions): Resizable {
     }
   };
 
-  const roundedWidth = Math.round(width);
+  const roundedWidth = Math.round(boundedWidth);
   const roundedDefaultWidth = Math.round(defaultWidth);
   return {
-    width,
+    width: boundedWidth,
     dragging,
     setWidth,
     handleProps: {

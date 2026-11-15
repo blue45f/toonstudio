@@ -44,6 +44,7 @@ import {
 import type { StudioToolHintBubbleProps } from "./components/StudioToolHintBubble";
 import {
   isStudioToolHintRectVisible,
+  planStudioToolHintPosition,
   readStudioToolHintViewport,
   type StudioToolHintSide,
 } from "./studio-tool-hint-position";
@@ -460,10 +461,6 @@ type DescribedChildProps = Pick<
   title?: string;
 };
 
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(Math.max(value, minimum), Math.max(minimum, maximum));
-}
-
 function removeAriaDescription(target: HTMLElement, descriptionId: string) {
   const descriptions = (target.getAttribute("aria-describedby") ?? "")
     .split(/\s+/u)
@@ -478,39 +475,22 @@ function compactFallbackStyle(
   hasUnavailableReason: boolean
 ): CSSProperties {
   const viewport = readStudioToolHintViewport();
-  const viewportWidth = viewport.width;
-  const viewportHeight = viewport.height;
-  const fallbackWidth = Math.min(
-    FALLBACK_WIDTH,
-    Math.max(1, viewportWidth - VIEWPORT_PADDING * 2)
-  );
+  const fallbackWidth = Math.min(FALLBACK_WIDTH, Math.max(1, viewport.width - VIEWPORT_PADDING * 2));
   const fallbackHeight = hasUnavailableReason ? 124 : FALLBACK_HEIGHT;
-  const side =
-    preferredSide ??
-    (anchor.bottom > viewport.top + viewportHeight * 0.72 ? "top" : "right");
-  let left = anchor.right + FALLBACK_GAP;
-  let top = anchor.top + anchor.height / 2 - fallbackHeight / 2;
-  if (side === "left") left = anchor.left - FALLBACK_GAP - fallbackWidth;
-  if (side === "bottom" || side === "top") {
-    left = anchor.left + anchor.width / 2 - fallbackWidth / 2;
-    top =
-      side === "bottom"
-        ? anchor.bottom + FALLBACK_GAP
-        : anchor.top - FALLBACK_GAP - fallbackHeight;
-  }
-  return {
-    left: clamp(
-      left,
-      viewport.left + VIEWPORT_PADDING,
-      viewport.right - fallbackWidth - VIEWPORT_PADDING
-    ),
-    top: clamp(
-      top,
-      viewport.top + VIEWPORT_PADDING,
-      viewport.bottom - fallbackHeight - VIEWPORT_PADDING
-    ),
-    width: fallbackWidth,
-  };
+  const resolvedSide = preferredSide ?? (anchor.bottom > viewport.top + viewport.height * 0.72 ? "top" : "right");
+  const pos = planStudioToolHintPosition({
+    anchor,
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
+    viewportLeft: viewport.left,
+    viewportTop: viewport.top,
+    popupWidth: fallbackWidth,
+    popupHeight: fallbackHeight,
+    preferredSide: resolvedSide,
+    gap: FALLBACK_GAP,
+    viewportPadding: VIEWPORT_PADDING,
+  });
+  return { left: pos.left, top: pos.top, width: fallbackWidth };
 }
 
 function StudioToolHintCompactFallback({
@@ -519,6 +499,7 @@ function StudioToolHintCompactFallback({
   anchor,
   unavailableReason,
   preferredSide,
+  pointerEventsNone = false,
   reducedMotion = false,
   onMouseEnter,
   onMouseLeave,
@@ -529,6 +510,7 @@ function StudioToolHintCompactFallback({
   | "anchor"
   | "unavailableReason"
   | "preferredSide"
+  | "pointerEventsNone"
   | "onMouseEnter"
   | "onMouseLeave"
 > & { reducedMotion?: boolean }): ReactElement {
@@ -544,6 +526,7 @@ function StudioToolHintCompactFallback({
       className="studio-tool-hint-compact"
       style={{
         ...compactFallbackStyle(anchor as DOMRect, preferredSide, Boolean(unavailableReason)),
+        pointerEvents: pointerEventsNone ? "none" : undefined,
         animation: reducedMotion ? "none" : undefined,
       }}
       onMouseEnter={onMouseEnter}
@@ -1036,6 +1019,15 @@ export function StudioToolHintTarget({
   function handleBlur(event: React.FocusEvent<HTMLSpanElement>) {
     if (event.target === describedFocusTarget.current) clearFocusedDescription(event.target);
     pointerDismissed.current = false;
+    if (activeRevealIntent.current === "focus" && !wrapRef.current?.contains(event.relatedTarget as Node | null)) {
+      if (coordinator.getActiveHintId() === tipId) hideRenderedTooltipImmediately();
+      coordinator.release(tipId);
+      interaction.clearReveal(tipId);
+      activeRevealIntent.current = null;
+      setExpanded(false);
+      setRichPreviewEnabledForReveal(false);
+      return;
+    }
     scheduleHide();
   }
 
@@ -1216,6 +1208,7 @@ export function StudioToolHintTarget({
                   anchor={anchor}
                   unavailableReason={unavailableReason}
                   preferredSide={preferredSide}
+                  pointerEventsNone={interaction.getRevealIntent(tipId) === "focus"}
                   reducedMotion={preferences.reduceMotion}
                   onMouseEnter={keepOpenFromBubble}
                   onMouseLeave={leaveBubble}
@@ -1231,6 +1224,7 @@ export function StudioToolHintTarget({
                 reducedMotion={preferences.reduceMotion}
                 unavailableReason={unavailableReason}
                 preferredSide={preferredSide}
+                pointerEventsNone={interaction.getRevealIntent(tipId) === "focus"}
                 onMouseEnter={keepOpenFromBubble}
                 onMouseLeave={leaveBubble}
               />

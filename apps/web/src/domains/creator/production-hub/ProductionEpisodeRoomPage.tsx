@@ -43,6 +43,7 @@ import {
   type ProductionManuscriptProcess,
 } from "./production-manuscript-model";
 import { productionDemoAdapter } from "./production-demo-adapter";
+import { resolveEpisodeActiveReviewRoundId } from "./production-episode-room-model";
 import {
   clarificationCategoryLabel,
   clarificationStatusLabel,
@@ -304,7 +305,7 @@ export function ProductionEpisodeRoomPage() {
     if (!policy) return;
     const decision: ReviewDecision = {
       id: `decision-${globalThis.crypto.randomUUID()}`,
-      reviewRoundId: aggregate.reviewDecisions.find((entry) => policy.lanes.some((candidate) => candidate.lane === entry.lane))?.reviewRoundId ?? `${episode.episodeId}-round-1`,
+      reviewRoundId: resolveEpisodeActiveReviewRoundId(aggregate, episode.episodeId),
       lane,
       assignmentId,
       value: "approve",

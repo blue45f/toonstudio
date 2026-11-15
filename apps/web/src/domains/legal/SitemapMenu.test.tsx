@@ -42,7 +42,7 @@ describe("모바일 목적별 메뉴", () => {
     },
   );
 
-  it("첫 화면은 두 고정 행동과 일곱 목적만 제공하고 전체 목록은 별도 화면에 둔다", () => {
+  it("첫 화면은 두 고정 행동·실시간 초성/동의어 검색·0클릭 전 기능 도메인 그리드·일곱 목적 메뉴를 함께 제공한다", () => {
     renderMenu();
     expect(screen.getByRole("heading", { level: 1, name: "무엇을 하고 싶으세요?" })).toBeTruthy();
     const start = screen.getByRole("navigation", { name: "바로 시작" });
@@ -50,8 +50,15 @@ describe("모바일 목적별 메뉴", () => {
     const sections = screen.getByRole("navigation", { name: "목적별 메뉴" });
     expect(within(sections).getAllByRole("link").map((link) => link.getAttribute("href")))
       .toEqual(SITE_NAVIGATION_GROUPS.map((group) => `/sitemap/${group.id}`));
-    expect(document.querySelector('a[href="/studio/bg3d"]')).toBeNull();
+    expect(document.querySelector('a[href="/studio/bg3d"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/production"]')).not.toBeNull();
     expect(screen.getByRole("link", { name: "전체 기능 목록 보기" }).getAttribute("href")).toBe("/sitemap/all");
+
+    const inlineSearch = screen.getByTestId("sitemap-inline-search");
+    fireEvent.change(inlineSearch, { target: { value: "ㅁㅍㅅ" } });
+    expect(within(screen.getByTestId("sitemap-zero-click-directory")).getByRole("link", { name: /WGSL 마스터 브러시 랩/ })).toBeTruthy();
+    fireEvent.keyDown(inlineSearch, { key: "Escape" });
+    expect((inlineSearch as HTMLInputElement).value).toBe("");
   });
 
   it("목적을 고르면 해당 목적지만 보여주고 전체 메뉴로 돌아올 수 있다", () => {

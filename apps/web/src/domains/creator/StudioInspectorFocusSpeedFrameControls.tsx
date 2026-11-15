@@ -1,6 +1,10 @@
 import { Suspense } from "react";
 
 import {
+  STUDIO_CUT_GUTTER_PRESETS_PX,
+  type StudioWebtoonCutAlignMode,
+} from "./canvas/studio-frame-cut-production";
+import {
   StudioContinuityMetadataEditor,
   StudioPanelSplitPanel,
 } from "./studio-page-lazy-ui";
@@ -34,6 +38,12 @@ export interface StudioInspectorFocusSpeedFrameControlsProps {
   onPatch: (patch: Partial<El>) => void;
   onSplitFrame: (orientation: "horizontal" | "vertical") => void;
   onTogglePanelSplit: () => void;
+  containedChildCount?: number;
+  cutOutsideDrawRestricted?: boolean;
+  onChangeCutOutsideDrawRestriction?: (restrict: boolean) => void;
+  onQuickAlignCut?: (mode: StudioWebtoonCutAlignMode) => void;
+  canUndoCutAction?: boolean;
+  onUndoCutAction?: () => void;
 }
 
 export function StudioInspectorFocusSpeedFrameControls({
@@ -47,6 +57,12 @@ export function StudioInspectorFocusSpeedFrameControls({
   onPatch,
   onSplitFrame,
   onTogglePanelSplit,
+  containedChildCount = 0,
+  cutOutsideDrawRestricted = true,
+  onChangeCutOutsideDrawRestriction,
+  onQuickAlignCut,
+  canUndoCutAction = false,
+  onUndoCutAction,
 }: StudioInspectorFocusSpeedFrameControlsProps) {
   const t = useT();
   return (
@@ -392,7 +408,54 @@ export function StudioInspectorFocusSpeedFrameControls({
             )}
           </div>
           <div className="border-t border-line/40" />
-          <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">패널 컷 분할</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">패널 컷 분할</p>
+            {onUndoCutAction ? (
+              <button
+                type="button"
+                data-studio-cut-undo="true"
+                disabled={!canUndoCutAction}
+                onClick={onUndoCutAction}
+                className="rounded border border-line bg-card px-2 py-0.5 text-[0.65rem] font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                컷 실행 취소
+              </button>
+            ) : null}
+          </div>
+          <label className="block">
+            <span className="flex items-center justify-between text-xs text-fg-2 mb-1">
+              <span>컷 여백 (Gutter)</span>
+              <span className="numeral text-fg-3">{panelGutter}px</span>
+            </span>
+            <input
+              type="range"
+              aria-label="컷 여백"
+              min={0}
+              max={120}
+              step={2}
+              className="w-full accent-accent cursor-pointer"
+              value={panelGutter}
+              onChange={(e) => onPanelGutterChange(Number(e.target.value))}
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="컷 여백 빠른 프리셋">
+            {STUDIO_CUT_GUTTER_PRESETS_PX.map((px) => (
+              <button
+                key={px}
+                type="button"
+                aria-pressed={panelGutter === px}
+                onClick={() => onPanelGutterChange(px)}
+                className={cn(
+                  "rounded border px-2 py-0.5 text-[0.64rem] font-semibold transition-colors",
+                  panelGutter === px
+                    ? "border-accent bg-accent/12 text-accent"
+                    : "border-line bg-card text-fg-3 hover:text-fg",
+                )}
+              >
+                {px}px
+              </button>
+            ))}
+          </div>
           <label className="block">
             <span className="flex items-center justify-between text-xs text-fg-2 mb-1.5">
               <span>분할 비율</span>
@@ -425,6 +488,50 @@ export function StudioInspectorFocusSpeedFrameControls({
               가로로 분할
             </button>
           </div>
+
+          {onQuickAlignCut ? (
+            <div className="space-y-1.5 rounded-lg border border-line/70 bg-card/45 p-2">
+              <p className="text-[0.66rem] font-semibold text-fg-3">컷 정렬 (페이지 여백 기준)</p>
+              <div className="grid grid-cols-4 gap-1">
+                {([
+                  { id: "left", label: "좌측" },
+                  { id: "center", label: "중앙" },
+                  { id: "right", label: "우측" },
+                  { id: "full-width", label: "전폭" },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onQuickAlignCut(item.id)}
+                    className="rounded border border-line bg-panel py-1 text-[0.65rem] font-semibold text-fg-2 transition-colors hover:border-accent/40 hover:text-fg"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {onChangeCutOutsideDrawRestriction ? (
+            <label
+              data-studio-cut-outside-clip="true"
+              className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-line/75 bg-card/55 px-2.5 py-2 text-xs text-fg-2"
+            >
+              <span className="min-w-0">
+                <span className="block font-semibold text-fg">컷 밖 그리기 제한</span>
+                <span className="mt-0.5 block text-[0.65rem] text-fg-3">
+                  컷 내부 요소 {containedChildCount}개를 프레임 경계 안쪽으로 마스킹합니다
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={cutOutsideDrawRestricted}
+                aria-label="컷 밖 그리기 제한"
+                onChange={(e) => onChangeCutOutsideDrawRestriction(e.currentTarget.checked)}
+                className="size-4 shrink-0 cursor-pointer accent-accent"
+              />
+            </label>
+          ) : null}
 
           <Suspense fallback={<StudioPanelLoading label={t("studio.canvas.panelLoading.panelSplitTool", "컷 분할 도구를 여는 중...")} />}>
             <StudioPanelSplitPanel

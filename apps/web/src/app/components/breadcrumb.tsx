@@ -52,7 +52,7 @@ export function AppBreadcrumb({ items, ariaLabel }: AppBreadcrumbProps) {
               ) : (
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-8 max-w-56 items-center truncate rounded-md px-1.5 text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="inline-flex min-h-11 min-w-11 max-w-56 items-center justify-center truncate rounded-md px-2 text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   {label}
                 </Link>

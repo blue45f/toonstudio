@@ -4,21 +4,9 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
-import {
-  Lock,
-  MessageCircle,
-  UsersRound,
-  Undo2,
-  X,
-} from "lucide-react";
+import { Lock, MessageCircle, UsersRound, Undo2, X } from "lucide-react";
 import { Suspense } from "react";
-import {
-  STUDIO_ICON_SIZE,
-  STUDIO_ICON_STROKE,
-  StudioAppMenubar,
-  StudioToolBelt,
-  studioChromeIconClass,
-} from "../studio-chrome-ui";
+import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, StudioAppMenubar, StudioToolBelt, studioChromeIconClass } from "../studio-chrome-ui";
 import { StudioBrushCatalogPortal, StudioPublishContextBanner } from "../studio-page-lazy-ui";
 import { StudioWorkModeBar } from "../StudioWorkModeBar";
 import { studioUiDensityAllows } from "../studio-ui-density";
@@ -33,9 +21,12 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
-import { StudioDrawingClarityBar, StudioDrawingClarityEntry } from "./StudioDrawingClarityBar";
+import { StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
+import { StudioProjectOpenRecoveryActions } from "./StudioProjectOpenRecoveryActions";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
+const LazyStudioDrawingClarityBar = lazyRetry(() => import("./StudioDrawingClarityBar").then((module) => ({ default: module.StudioDrawingClarityBar })), "StudioDrawingClarityBar");
+const LazyStudioExportPreflightReturnBanner = lazyRetry(() => import("./StudioExportPreflightReturnBanner").then((module) => ({ default: module.StudioExportPreflightReturnBanner })), "StudioExportPreflightReturnBanner");
 
 export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
@@ -349,17 +340,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
     visibleLeftPanelOpen,
     visibleRightPanelOpen,
   } = s;
-  const {
-    retryButtonRef: marketplaceCloudSyncRetryButtonRef,
-    statusRef: marketplaceCloudSyncStatusRef,
-    focusRestoreRef: marketplaceCloudSyncFocusRestoreRef,
-  } = useStudioMarketplaceCloudSyncFocus({
-    densityShowsStatusRail,
-    error,
-    retry: studioMarketplaceCloudSyncRetry,
-    retryPending: studioMarketplaceCloudSyncRetryPending,
-    statusNotice: studioStatusNotice,
-  });
+  const { retryButtonRef: marketplaceCloudSyncRetryButtonRef, statusRef: marketplaceCloudSyncStatusRef, focusRestoreRef: marketplaceCloudSyncFocusRestoreRef } =
+    useStudioMarketplaceCloudSyncFocus({ densityShowsStatusRail, error, retry: studioMarketplaceCloudSyncRetry, retryPending: studioMarketplaceCloudSyncRetryPending, statusNotice: studioStatusNotice });
   const desktopOptionsBars = !isMobile && !canvasOnlyMode ? (
     <Suspense fallback={<div aria-hidden="true" className="min-h-16 shrink-0 border-b border-line bg-panel" />}>
       <StudioOptionsBars
@@ -371,7 +353,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   ) : null;
   return (
     <>
-      {clarity?.active ? <StudioDrawingClarityBar session={s} /> : <StudioAppMenubar
+      {clarity?.active ? <Suspense fallback={null}><LazyStudioDrawingClarityBar session={s} /></Suspense> : <StudioAppMenubar
         aria-label="문서 메뉴"
         subRow={isMobile ? <div className="studio-drawing-clarity-entry-mobile"><StudioDrawingClarityEntry /></div> : mobileImmersive ? undefined : desktopOptionsBars}
         className={cn(
@@ -444,7 +426,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           setHybridDccOpen={setHybridDccOpen}
           setSceneSnapshotOpen={setSceneSnapshotOpen}
           setExportFormat={setExportFormat}
-          setExportMenuOpen={setExportMenuOpen}
+          setExportMenuOpen={setExportMenuOpen} setStudioStatusNotice={setStudioStatusNotice}
           setExportPresetId={setExportPresetId}
           setExportScale={setExportScale}
           setExportTransparent={setExportTransparent}
@@ -547,6 +529,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           onDismissSuggestion={dismissWorkModeSuggestion}
         />
       ) : null}
+      {typeof window !== "undefined" && /(?:[?&])(?:export|focus|returnToExport)/iu.test(window.location.search) ? <Suspense fallback={null}><LazyStudioExportPreflightReturnBanner session={s} /></Suspense> : null}
 
       <div
         data-studio-global-status-rail
@@ -555,8 +538,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           : "empty:hidden")}
       >
         {densityShowsStatusRail && error ? (
-          <div role="alert" className="my-1 flex items-start justify-between gap-2 rounded-lg border border-bad/40 bg-bad/10 px-2.5 py-1.5 text-xs text-bad">
-            <span className="min-w-0 break-words">{error}</span>
+          <div role="alert" className="my-1 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-bad/40 bg-bad/10 px-2.5 py-1.5 text-xs text-bad">
+            <span className="min-w-0 flex-1 break-words">{error}</span>
             <button
               type="button"
               data-studio-status-error-dismiss
@@ -566,6 +549,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
             >
               <X size={STUDIO_ICON_SIZE.subtab} strokeWidth={2.5} aria-hidden="true" />
             </button>
+            <StudioProjectOpenRecoveryActions errorMessage={error} projectArchiveBusy={projectArchiveBusy} projectArchiveStatus={projectArchiveStatus} projectArchiveImportInputRef={projectArchiveImportInputRef} projectImportInputRef={projectImportInputRef} />
           </div>
         ) : null}
         {densityShowsStatusRail && studioStatusNotice ? (

@@ -1,4 +1,3 @@
-import { StudioNativeBrushDocumentInspectorMount } from "./brush/StudioNativeBrushDocumentInspectorMount";
 import { PaintBucket } from "lucide-react";
 import { Suspense } from "react";
 
@@ -11,11 +10,7 @@ import {
   studioSubToolPaletteCategoryById,
   studioSubToolPalettePresetById,
 } from "./brush/studio-sub-tool-palette-data";
-import { StudioLineWidthAdjustmentPanel } from "./brush/StudioLineWidthAdjustmentPanel";
-import {
-  adjustDrawStrokeWidth,
-  calculateAdjustedStrokeWidth,
-} from "./brush/studio-line-width-adjust";
+import { StudioNativeBrushDocumentInspectorMount } from "./brush/StudioNativeBrushDocumentInspectorMount";
 import { StudioSubToolPalette } from "./brush/StudioSubToolPalette";
 import { CANVAS_W } from "./studio-assets";
 import {
@@ -42,13 +37,27 @@ import {
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioLineCorrectionControls } from "./StudioLineCorrectionControls";
 import { StudioProceduralArtisticBrushInspectorSection } from "./StudioProceduralArtisticBrushInspectorSection";
+import { useStudioProDrawPrefs } from "./useStudioProDrawPrefs";
 
 import type { DrawShapeKind } from "./studio-editor-tool-model";
 import type { DrawEl, El } from "./studio-element-model";
 import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
 
-import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { cn } from "@/shared/lib/utils";
+
+const StudioLineWidthAdjustmentPanel = lazyRetry(
+  () => import("./brush/StudioLineWidthAdjustmentPanel"),
+  "StudioLineWidthAdjustmentPanel",
+);
+const StudioBrushTextureSpacingComparisonCard = lazyRetry(
+  () =>
+    import("./brush/StudioBrushTextureSpacingComparisonCard").then((mod) => ({
+      default: mod.StudioBrushTextureSpacingComparisonCard,
+    })),
+  "StudioBrushTextureSpacingComparisonCard",
+);
 
 export function StudioInspectorDrawingSection({
   model,
@@ -56,6 +65,7 @@ export function StudioInspectorDrawingSection({
   model: StudioInspectorAsideModel;
 }) {
   const t = useT();
+  const { proDrawPrefs, toggleProDrawFavorite } = useStudioProDrawPrefs();
   const {
     recentColors,
     ensureRecentColorsLoaded,
@@ -271,7 +281,47 @@ export function StudioInspectorDrawingSection({
                   strokeWidth={strokeWidth}
                   tipAngle={tipAngle}
                   tipRoundness={tipRoundness}
+                  isFavorite={proDrawPrefs.favoriteBrushIds.includes(activeInspectorBrushId)}
+                  activeUserBrushName={
+                    activeSavedBrushId
+                      ? savedBrushes.find((item) => item.id === activeSavedBrushId)?.name ?? null
+                      : null
+                  }
                   onOpenBrushCatalog={openBrushCatalog}
+                  onToggleFavorite={() =>
+                    toggleProDrawFavorite(activeInspectorBrushId, announceDrawingShortcut)}
+                  onCloneCurrentPreset={() => {
+                    void import("./brush/studio-brush-quick-preset-actions").then(
+                      async ({ cloneCurrentStudioBrushPreset }) => {
+                        const result = await cloneCurrentStudioBrushPreset({
+                          baseName: activeInspectorBrushName,
+                          currentSnapshot: currentBrushSnapshot,
+                          existingBrushes: savedBrushes,
+                          ...(openBrushLibraryRepository
+                            ? { repositoryFactory: openBrushLibraryRepository }
+                            : {}),
+                        });
+                        setSavedBrushes(result.nextBrushes);
+                        applySavedBrush(result.cloned);
+                        announceDrawingShortcut(`"${result.cloned.name}" 사용자 프리셋으로 복제됨`);
+                      },
+                    );
+                  }}
+                  onRestorePresetDefaults={() => {
+                    const baseline = activeSavedBrushId
+                      ? savedBrushes.find((item) => item.id === activeSavedBrushId) ?? null
+                      : null;
+                    void import("./brush/studio-brush-quick-preset-actions").then(
+                      async ({ restoreCurrentStudioBrushDefaults }) => {
+                        const result = await restoreCurrentStudioBrushDefaults({
+                          currentSnapshot: currentBrushSnapshot,
+                          savedBrushBaseline: baseline,
+                          onRestoreDefaults: applyBrushDefaultRestoreTransaction,
+                        });
+                        announceDrawingShortcut(result.summary);
+                      },
+                    );
+                  }}
                 />
               ) : null}
 
@@ -431,6 +481,20 @@ export function StudioInspectorDrawingSection({
                   ))
                   : null}
 
+                {drawMode !== "pixel" ? (
+                  <Suspense fallback={null}>
+                    <StudioBrushTextureSpacingComparisonCard
+                      brushId={brush}
+                      strokeWidth={strokeWidth}
+                      color={color}
+                      spacingRatio={brushDynamics.spacingRatio}
+                      grainAmount={brushDynamics.grain?.amount ?? 0.32}
+                      onSpacingRatioChange={(nextRatio) =>
+                        setBrushDynamics({ ...brushDynamics, spacingRatio: nextRatio })}
+                    />
+                  </Suspense>
+                ) : null}
+
                 {drawMode === "pen" && (
                   <Suspense fallback={null}>
                     <StudioQuickShapePanel
@@ -470,17 +534,61 @@ export function StudioInspectorDrawingSection({
                         preserveCorners={preserveCorners}
                         onPreserveCornersChange={setPreserveCorners}
                       />
-                      <StudioLineWidthAdjustmentPanel
-                        currentWidth={strokeWidth}
-                        disabled={drawingAssistControlsDisabled}
-                        onApply={(options) => {
-                          const nextWidth = calculateAdjustedStrokeWidth(strokeWidth, options);
-                          setStrokeWidth(nextWidth);
-                          if (selected?.type === "draw") {
-                            model.patchEl(selected.id, adjustDrawStrokeWidth(selected as DrawEl, options) as Partial<El>);
+                      <Suspense fallback={null}>
+                        <StudioLineWidthAdjustmentPanel
+                          currentWidth={strokeWidth}
+                          selectedVectorStrokeWidth={
+                            selected?.type === "draw" ? selected.strokeWidth : null
                           }
-                        }}
-                      />
+                          hasSelectedVectorStroke={selected?.type === "draw"}
+                          canRestoreOriginalWidth={selected?.type === "draw"}
+                          onRestoreOriginalWidth={
+                            selected?.type === "draw"
+                              ? () => {
+                                  void import("./brush/studio-line-width-adjust").then(
+                                    ({ restoreVectorStrokeWidthBaseline }) => {
+                                      const restored = restoreVectorStrokeWidthBaseline(
+                                        selected.id,
+                                      );
+                                      if (restored) {
+                                        model.patchEl(selected.id, restored as Partial<El>);
+                                      }
+                                    },
+                                  );
+                                }
+                              : undefined
+                          }
+                          eraseToIntersectionActive={Boolean(model.eraseToIntersection)}
+                          onToggleEraseToIntersection={
+                            model.setEraseToIntersection
+                              ? () => {
+                                  const next = !model.eraseToIntersection;
+                                  if (next) activateCanvasTool("draw", "eraser");
+                                  model.setEraseToIntersection?.(next);
+                                }
+                              : undefined
+                          }
+                          disabled={drawingAssistControlsDisabled}
+                          onApply={(options) => {
+                            void import("./brush/studio-line-width-adjust").then(
+                              ({ adjustDrawStrokeWidth, calculateAdjustedStrokeWidth }) => {
+                                if (selected?.type === "draw") {
+                                  model.patchEl(
+                                    selected.id,
+                                    adjustDrawStrokeWidth(selected as DrawEl, options) as Partial<El>,
+                                  );
+                                } else {
+                                  const nextWidth = calculateAdjustedStrokeWidth(
+                                    strokeWidth,
+                                    options,
+                                  );
+                                  setStrokeWidth(nextWidth);
+                                }
+                              },
+                            );
+                          }}
+                        />
+                      </Suspense>
                     </div>
                   </StudioInspectorSection>
                 ) : null}

@@ -13,6 +13,7 @@ import { POSE_SCOPE_LABELS_KO } from "../../../contracts";
 import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
+import { PoseFineLimbGazeControls } from "./pose-fine-limb-gaze-controls";
 import {
   CoordInputs,
   HAND_SIDES,
@@ -452,6 +453,16 @@ export function PosePanel() {
           })}
         </div>
       </fieldset>
+
+      <PoseFineLimbGazeControls
+        ids={ids}
+        recipe={recipe}
+        activeSkeleton={activeSkeleton}
+        poseBlocked={poseBlocked}
+        handBlocked={handBlocked}
+        guardCorruptedRig={guardCorruptedRig}
+        dispatch={dispatch}
+      />
 
       <fieldset className="cl-pose-ik">
         <legend>IK 목표</legend>

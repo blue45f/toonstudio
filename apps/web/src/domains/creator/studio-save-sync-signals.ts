@@ -37,6 +37,23 @@ export interface StudioSaveSyncReceiptRecord {
   readonly revision: number | null;
   /** 이 receipt 가 내구화한 편집 세대. */
   readonly generation: number;
+  /** 단조 스냅샷 순번 — 늦게 도착한 이전 컷 영수증이 최신 영수증을 역전 덮어쓰지 못하게 한다. */
+  readonly snapshotSeq?: number;
+  /** 이 receipt 가 내구화한 지연 획 배치 지문(없으면 ""). */
+  readonly pendingFingerprint?: string;
+  /** 저장 스냅샷 시점의 활성 컷(페이지) 식별자·표시 이름. */
+  readonly savedPageId?: string;
+  readonly savedPageLabel?: string;
+}
+
+export interface StudioSaveSyncCutMatch {
+  readonly state: "matched" | "saving" | "unmatched";
+  readonly activePageId: string | null;
+  readonly activePageLabel: string | null;
+  readonly matchedPageId: string | null;
+  readonly matchedPageLabel: string | null;
+  readonly receiptSavedPageId: string | null;
+  readonly receiptSavedPageLabel: string | null;
 }
 
 export interface StudioSaveSyncSignals {
@@ -45,6 +62,13 @@ export interface StudioSaveSyncSignals {
   readonly editGeneration: number;
   /** receipt 로 확인된 최신 내구 세대. */
   readonly durableGeneration: number;
+  /** 아직 React 히스토리 커밋 전인 지연 획 배치 지문. */
+  readonly pendingFingerprint: string;
+  /** receipt 로 내구 확인된 최신 지연 획 배치 지문. */
+  readonly durablePendingFingerprint: string;
+  /** 현재 편집 중인 활성 컷(페이지) 식별자·표시 이름. */
+  readonly activePageId: string;
+  readonly activePageLabel: string;
   readonly lastReceipt: StudioSaveSyncReceiptRecord | null;
   /** 마지막 내구 실패 시각(ms). 이후 receipt 가 오면 사실상 무효화된다. */
   readonly lastFailureAtMs: number | null;
@@ -59,6 +83,10 @@ export const EMPTY_STUDIO_SAVE_SYNC_SIGNALS: StudioSaveSyncSignals = Object.free
   documentId: "",
   editGeneration: 0,
   durableGeneration: 0,
+  pendingFingerprint: "",
+  durablePendingFingerprint: "",
+  activePageId: "",
+  activePageLabel: "",
   lastReceipt: null,
   lastFailureAtMs: null,
   durability: "unknown",
@@ -79,6 +107,10 @@ export interface StudioSaveSyncSignalStore {
   reset(documentId: string): void;
   /** 편집 세대 전진 (markStudioDocumentChanged 성공 직후). */
   noteEditGeneration(generation: number): void;
+  /** 지연 획 배치 지문 갱신 — pointerup 직후 거짓 "저장됨" 표시를 즉시 차단한다. */
+  notePendingFingerprint(fingerprint: string): void;
+  /** 현재 활성 컷(페이지) 식별자·이름 동기화. */
+  noteActivePage(pageId: string, pageLabel: string): void;
   /**
    * 하이드레이션 베이스라인 동기화 — 호스트가 내구 세대를 편집 세대에 맞추는
    * 바로 그 지점에서만 호출한다. receipt 를 만들지 않으므로 lastReceipt 와
@@ -123,28 +155,68 @@ export function createStudioSaveSyncSignalStore(): StudioSaveSyncSignalStore {
       if (generation <= signals.editGeneration) return;
       update({ editGeneration: generation });
     },
+    notePendingFingerprint(fingerprint) {
+      if (fingerprint === signals.pendingFingerprint) return;
+      update({ pendingFingerprint: fingerprint });
+    },
+    noteActivePage(pageId, pageLabel) {
+      if (pageId === signals.activePageId && pageLabel === signals.activePageLabel) return;
+      update({ activePageId: pageId, activePageLabel: pageLabel });
+    },
     noteDurableReceipt(receipt) {
+      if (signals.lastReceipt !== null) {
+        if (
+          receipt.snapshotSeq !== undefined
+          && signals.lastReceipt.snapshotSeq !== undefined
+          && receipt.snapshotSeq < signals.lastReceipt.snapshotSeq
+        ) {
+          return;
+        }
+        if (receipt.generation < signals.lastReceipt.generation) {
+          return;
+        }
+      }
+      const nextDurablePendingFingerprint =
+        receipt.pendingFingerprint !== undefined
+          ? receipt.pendingFingerprint
+          : signals.durablePendingFingerprint;
       update({
         lastReceipt: receipt,
+        lastFailureAtMs: null,
         durableGeneration: Math.max(signals.durableGeneration, receipt.generation),
         // receipt.generation 은 실제로 내구화된 편집 세대 그 자체이므로,
         // 게이트를 거치지 않은 전진(CRDT 조정 등)도 여기서 편집 세대에 반영된다.
         editGeneration: Math.max(signals.editGeneration, receipt.generation),
+        durablePendingFingerprint: nextDurablePendingFingerprint,
       });
     },
     noteBaseline(generation) {
-      if (generation <= signals.durableGeneration && generation <= signals.editGeneration) return;
+      if (
+        generation <= signals.durableGeneration
+        && generation <= signals.editGeneration
+        && signals.durablePendingFingerprint === signals.pendingFingerprint
+      ) return;
       update({
         editGeneration: Math.max(signals.editGeneration, generation),
         durableGeneration: Math.max(signals.durableGeneration, generation),
+        durablePendingFingerprint: signals.pendingFingerprint,
       });
     },
     noteDurableGeneration(generation) {
-      if (generation <= signals.durableGeneration) return;
-      update({ durableGeneration: generation });
+      if (generation <= signals.durableGeneration && signals.durablePendingFingerprint === "") {
+        return;
+      }
+      update({
+        durableGeneration: Math.max(signals.durableGeneration, generation),
+        durablePendingFingerprint: "",
+      });
     },
     noteFailure(atMs) {
-      update({ lastFailureAtMs: atMs });
+      const effectiveAtMs =
+        signals.lastReceipt !== null
+          ? Math.max(atMs, signals.lastReceipt.savedAtMs + 1)
+          : atMs;
+      update({ lastFailureAtMs: effectiveAtMs });
     },
     noteDurability(durability) {
       if (durability !== signals.durability) update({ durability });
@@ -174,7 +246,10 @@ export function createStudioSaveSyncSignalStore(): StudioSaveSyncSignalStore {
 export function resolveSaveSyncStatusFromSignals(
   signals: StudioSaveSyncSignals,
 ): StudioSaveSyncStatus {
-  const pending = Math.max(0, signals.editGeneration - signals.durableGeneration);
+  const generationDelta = Math.max(0, signals.editGeneration - signals.durableGeneration);
+  const hasDirtyPendingStrokes =
+    signals.pendingFingerprint !== signals.durablePendingFingerprint;
+  const pending = generationDelta + (hasDirtyPendingStrokes ? 1 : 0);
   const receipt = signals.lastReceipt;
   const failed =
     signals.lastFailureAtMs !== null &&
@@ -211,6 +286,44 @@ export function resolveSaveSyncStatusFromSignals(
     lastCheckpointAt,
     cloudSyncStatus,
     summaryText,
+  });
+}
+
+export function resolveSaveSyncCutMatch(
+  signals: StudioSaveSyncSignals,
+  status: StudioSaveSyncStatus,
+): StudioSaveSyncCutMatch {
+  const activePageId = signals.activePageId || null;
+  const activePageLabel = signals.activePageLabel || null;
+  const receiptSavedPageId = signals.lastReceipt?.savedPageId ?? null;
+  const receiptSavedPageLabel = signals.lastReceipt?.savedPageLabel ?? null;
+
+  if (
+    signals.leadership !== "follower"
+    && status.localDurable
+    && signals.lastReceipt !== null
+    && status.pendingOperationsCount === 0
+    && activePageId !== null
+  ) {
+    return Object.freeze({
+      state: "matched",
+      activePageId,
+      activePageLabel,
+      matchedPageId: activePageId,
+      matchedPageLabel: activePageLabel,
+      receiptSavedPageId,
+      receiptSavedPageLabel,
+    });
+  }
+
+  return Object.freeze({
+    state: status.localDurable && status.pendingOperationsCount > 0 ? "saving" : "unmatched",
+    activePageId,
+    activePageLabel,
+    matchedPageId: null,
+    matchedPageLabel: null,
+    receiptSavedPageId,
+    receiptSavedPageLabel,
   });
 }
 

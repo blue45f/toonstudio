@@ -2,6 +2,7 @@ import type { StudioProjectDefinition } from "./studio-project-definition";
 import {
   createStudioProjectDocument,
   ensureInitialStudioProjectDocument,
+  reconcileInitialStudioProjectDocumentOnCreateRetry,
   studioProjectDocumentHref,
   type StudioDocumentKind,
   type StudioDocumentWorkspace,
@@ -12,6 +13,7 @@ import {
   createStudioProject,
   markStudioProjectOpened,
   permanentlyDeleteStudioProject,
+  reconcileStudioProjectOnCreateRetry,
   trashStudioProject,
   type StudioProjectKind,
   type StudioProjectLibraryEntry,
@@ -119,4 +121,66 @@ export function createStudioProjectWithInitialDocument(
     rollbackProject(storage, project.id, target);
     throw error;
   }
+}
+
+/**
+ * 동일 히스토리 세션에서 뒤로 가기 후 재시도할 때 기존 생성 작품을 제자리 갱신·재사용하고,
+ * 첫 생성이거나 이전 작품이 삭제된 경우에만 새 작품을 만든다.
+ */
+export function reuseOrCreateStudioProjectWithInitialDocument(
+  storage: StudioProjectCreationStorage,
+  existingReceipt: { readonly projectId: string; readonly documentId: string } | null,
+  input: CreateStudioProjectWithDocumentInput,
+  target?: StudioProjectCreationTarget,
+): StudioProjectCreationResult {
+  if (existingReceipt) {
+    const now = input.createdAt ?? new Date().toISOString();
+    const reconciledProject = reconcileStudioProjectOnCreateRetry(storage, existingReceipt.projectId, {
+      title: input.title,
+      kind: input.kind,
+      templateId: input.templateId,
+      description: input.description,
+      primaryLocale: input.primaryLocale,
+      definition: input.definition,
+    }, { at: now, target });
+    if (reconciledProject) {
+      const reconciledDocument = input.document?.kind
+        ? reconcileInitialStudioProjectDocumentOnCreateRetry(
+          storage,
+          reconciledProject.id,
+          existingReceipt.documentId,
+          {
+            title: input.document.title ?? `${reconciledProject.title} 작업 문서`,
+            kind: input.document.kind,
+            defaultWorkspace: input.document.defaultWorkspace,
+            width: input.document.width,
+            height: input.document.height,
+            pageCount: input.document.pageCount,
+          },
+          { at: now, target },
+        )
+        : ensureInitialStudioProjectDocument(storage, {
+          projectId: reconciledProject.id,
+          projectTitle: reconciledProject.title,
+          projectKind: reconciledProject.kind,
+          templateId: input.templateId,
+          createdAt: now,
+          target,
+        });
+      if (reconciledDocument) {
+        const openedProject = markStudioProjectOpened(
+          storage,
+          reconciledProject.id,
+          reconciledDocument.id,
+          { at: now, target },
+        );
+        return Object.freeze({
+          project: openedProject,
+          document: reconciledDocument,
+          href: studioProjectDocumentHref(reconciledDocument),
+        });
+      }
+    }
+  }
+  return createStudioProjectWithInitialDocument(storage, input, target);
 }

@@ -1,3 +1,4 @@
+import { Link2, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -8,6 +9,7 @@ import { requestStudioMobileDeviceGuide } from "../studio-shell/mobile-device-gu
 import { requestStudioShellFloatingLayoutManagerOpen } from "../studio-shell/studio-shell-floating-layout-events";
 import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 import { installStudioCommandExecutionBindings } from "../studio-command-execution-registry";
+import { requestStudioCommandSearch } from "../studio-help-center-channel";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
@@ -23,8 +25,14 @@ export type StudioDrawingClarityMobileSession = StudioDrawingClaritySaveSession 
   | "setExportMenuOpen" | "setTeamPanelOpen" | "setTutorialHubOpen" | "appSettings" | "saveSyncStore">
   & { readonly studioMobileEditingDockHandlers: Pick<StudioCuttoonEditorViewSession["studioMobileEditingDockHandlers"], "openInspectorRoute"> };
 
-/** 하단 도구·모바일 시트는 그대로 두고 문서와 실제 저장 상태만 먼저 표시한다. */
-export function StudioDrawingClarityMobileBar({ session: s }: { readonly session: StudioDrawingClarityMobileSession }) {
+/** 하단 도구·모바일 시트는 그대로 두고 문서와 실제 저장 상태·빠른 검색·공유를 표시한다. */
+export function StudioDrawingClarityMobileBar({
+  session: s,
+  onOpenShare,
+}: {
+  readonly session: StudioDrawingClarityMobileSession;
+  readonly onOpenShare?: (trigger: HTMLButtonElement) => void;
+}) {
   const clarity = useStudioDrawingClarity(), bt = useBilingual("studio.drawingClarity");
   const moreRef = useRef<HTMLElement>(null);
   const route = parseStudioWorkspaceRoute(s.location), guideSurface = route.valid ? route.surface : null;
@@ -51,6 +59,7 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
         { id: "assets", label: bt("소재 찾기", "Find assets"), run: () => { s.setMobileSheet(null); preloadStudioAssetToolPopoverBody(); s.setMenu("asset"); } },
         { id: "export", label: bt("원고 내보내기", "Export draft"), run: () => { s.setMobileSheet(null); s.setExportMenuOpen(true); } },
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { s.setMobileSheet(null); requestStudioAllTools(trigger); } },
+        { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: () => { s.setMobileSheet(null); requestStudioCommandSearch({ scope: "all" }); } },
         { id: "team", label: bt("함께 작업", "Work together"), run: () => { clarity.showSavedLayout(); s.setTeamPanelOpen(true); } },
         { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
         { id: "help", label: bt("그리기·손가락 안내", "Drawing and touch guide"), run: () => setHelpOpen(true) },
@@ -59,7 +68,25 @@ export function StudioDrawingClarityMobileBar({ session: s }: { readonly session
         { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
     </header>
-    <div className="studio-drawing-clarity-context-row studio-drawing-clarity-mobile-context"><button type="button" className="studio-drawing-page-position" title={s.studioMenubarActivePageLabel} onClick={() => s.setMobileSheet("pages")}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history" role="toolbar" aria-label={bt("편집 기록", "Edit history")} /></div>
+    <div className="studio-drawing-clarity-context-row studio-drawing-clarity-mobile-context">
+      <button type="button" className="studio-drawing-page-position" title={s.studioMenubarActivePageLabel} onClick={() => s.setMobileSheet("pages")}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button>
+      <div className="studio-drawing-clarity-context-actions">
+        <button type="button" data-studio-mobile-find-tools="true" className="studio-drawing-ergonomics-chip" onClick={() => { s.setMobileSheet(null); requestStudioCommandSearch({ scope: "all" }); }}>
+          <Search size={15} aria-hidden /><span>{bt("검색", "Search")}</span>
+        </button>
+        <button type="button" data-studio-mobile-share-invite="true" className="studio-drawing-ergonomics-chip" onClick={(event) => {
+          if (onOpenShare) {
+            onOpenShare(event.currentTarget);
+            return;
+          }
+          clarity.showSavedLayout();
+          s.setTeamPanelOpen(true);
+        }}>
+          <Link2 size={15} aria-hidden /><span>{bt("공유·초대", "Share")}</span>
+        </button>
+        <div id="studio-drawing-clarity-history-slot" className="studio-drawing-clarity-history" role="toolbar" aria-label={bt("편집 기록", "Edit history")} />
+      </div>
+    </div>
     {helpOpen ? <StudioDrawingClarityMobileHelp touch={s.appSettings.touch} onClose={closeHelp} onTutorial={() => { setHelpOpen(false); s.setTutorialHubOpen(true); }} /> : null}
   </>;
 }

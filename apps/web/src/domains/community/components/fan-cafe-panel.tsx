@@ -592,7 +592,7 @@ export function FanCafePanel({
               type="checkbox"
               checked={autoRefreshEnabled}
               onChange={(event) => setAutoRefreshEnabled(event.target.checked)}
-              className="size-4"
+              className="size-11 shrink-0 accent-accent"
             />
             <span className="text-fg-2">{translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "실시간 새로고침(30초)")}</span>
           </label>
@@ -606,7 +606,7 @@ export function FanCafePanel({
         </div>
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex h-11 min-w-0 flex-1 basis-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 text-xs transition-colors focus-within:border-accent/50 sm:basis-56">
+        <div className="inline-flex min-h-12 min-w-0 flex-1 basis-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 text-xs transition-colors focus-within:border-accent/50 sm:basis-56">
           <Search size={14} className="shrink-0 text-fg-3" />
           <input
             value={searchText}
@@ -614,7 +614,7 @@ export function FanCafePanel({
             maxLength={80}
             aria-label={translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "팬카페 글 검색 (제목·본문 키워드)")}
             placeholder={translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "제목·본문 키워드 검색")}
-            className="h-full w-full min-w-0 border-none bg-transparent text-sm outline-none placeholder:text-fg-3"
+            className="min-h-11 w-full min-w-0 border-none bg-transparent text-sm outline-none placeholder:text-fg-3"
           />
         </div>
         <button

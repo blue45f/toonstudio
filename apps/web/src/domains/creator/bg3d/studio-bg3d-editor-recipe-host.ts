@@ -27,7 +27,7 @@ import {
   StudioBg3dStaleModalOperationError,
   studioBg3dModalOperationCoordinator,
 } from "./studio-bg3d-modal-operation-coordinator";
-import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
+import { nameNewStudioBg3dCustomModel, rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
 import { STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS } from "./studio-bg3d-scene-document-types";
@@ -59,6 +59,7 @@ const RECIPE_RUN_DEPS: StudioBg3dRecipeRunDeps = {
   assertAttachmentAdmission: assertStudioBg3dModelAttachmentAdmission,
   maxAttachments: STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS,
   placementMath: { planBase: planStudioBg3dModelPlacementRecipe, rotateVector: rotateVectorEulerXyz },
+  nameNewCustomModel: nameNewStudioBg3dCustomModel,
 };
 
 let placementInFlight = false;

@@ -13,6 +13,7 @@ import {
   resolveStudioBg3dSurfaceMaterialFromOverride,
   type StudioBg3dSurfaceMaterialEntry,
 } from "./studio-bg3d-surface-material-catalog";
+import { getStudioBg3dMissingTextureFallbackPreview } from "./studio-bg3d-glb-missing-textures";
 
 import type { StudioBg3dMaterialOverride } from "./studio-bg3d-scene-document";
 
@@ -40,10 +41,12 @@ export interface StudioBg3dCc0PbrMaterialSpread {
 export type StudioBg3dTextureFactory = (
   url: string,
   onLoad?: (texture: THREE.Texture) => void,
+  onError?: (error?: unknown) => void,
 ) => THREE.Texture;
 
 const textureByUrlCache = new Map<string, THREE.Texture>();
 const textureSetByMaterialIdCache = new Map<string, StudioBg3dCc0PbrTextureSet>();
+const failedTextureUrls = new Set<string>();
 const textureReadyListeners = new Set<() => void>();
 let textureCacheGeneration = 0;
 let textureReadyRevision = 0;
@@ -53,6 +56,10 @@ export function getStudioBg3dCc0PbrTextureReadyRevision(): number {
   return textureReadyRevision;
 }
 
+export function getStudioBg3dFailedCc0PbrTextureUrls(): readonly string[] {
+  return [...failedTextureUrls];
+}
+
 export function subscribeStudioBg3dCc0PbrTextureReady(listener: () => void): () => void {
   textureReadyListeners.add(listener);
   return () => { textureReadyListeners.delete(listener); };
@@ -60,7 +67,11 @@ export function subscribeStudioBg3dCc0PbrTextureReady(listener: () => void): () 
 
 let sharedThreeTextureLoader: THREE.TextureLoader | null = null;
 
-function defaultTextureFactory(url: string, onLoad?: (texture: THREE.Texture) => void): THREE.Texture {
+function defaultTextureFactory(
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void,
+  onError?: (error?: unknown) => void,
+): THREE.Texture {
   if (typeof Image === "undefined") {
     const fallback = new THREE.Texture();
     fallback.name = url;
@@ -70,8 +81,9 @@ function defaultTextureFactory(url: string, onLoad?: (texture: THREE.Texture) =>
     sharedThreeTextureLoader = new THREE.TextureLoader();
   }
   try {
-    return sharedThreeTextureLoader.load(url, onLoad);
-  } catch {
+    return sharedThreeTextureLoader.load(url, onLoad, undefined, onError);
+  } catch (err) {
+    onError?.(err);
     const fallback = new THREE.Texture();
     fallback.name = url;
     return fallback;
@@ -101,17 +113,42 @@ function loadCachedChannelTexture(
   let disposed = false;
   let completionQueued = false;
   const onDispose = () => { disposed = true; };
-  const texture = activeTextureFactory(url, (loadedTexture) => {
-    if (completionQueued) return;
-    completionQueued = true;
-    // 동기 factory도 캐시와 채널 설정이 끝난 뒤 알린다. 렌더 중 외부 store 갱신도 피한다.
-    queueMicrotask(() => {
-      if (disposed || generation !== textureCacheGeneration || textureByUrlCache.get(cacheKey) !== loadedTexture) return;
-      loadedTexture.removeEventListener("dispose", onDispose);
-      textureReadyRevision += 1;
-      for (const listener of [...textureReadyListeners]) listener();
-    });
-  });
+  const texture = activeTextureFactory(
+    url,
+    (loadedTexture) => {
+      if (completionQueued) return;
+      completionQueued = true;
+      failedTextureUrls.delete(url);
+      // 동기 factory도 캐시와 채널 설정이 끝난 뒤 알린다. 렌더 중 외부 store 갱신도 피한다.
+      queueMicrotask(() => {
+        if (disposed || generation !== textureCacheGeneration || textureByUrlCache.get(cacheKey) !== loadedTexture) return;
+        loadedTexture.removeEventListener("dispose", onDispose);
+        textureReadyRevision += 1;
+        for (const listener of [...textureReadyListeners]) listener();
+      });
+    },
+    () => {
+      if (completionQueued) return;
+      completionQueued = true;
+      queueMicrotask(() => {
+        const target = textureByUrlCache.get(cacheKey);
+        if (disposed || generation !== textureCacheGeneration || !target) return;
+        const fallbackSlot = colorSpace === THREE.SRGBColorSpace
+          ? "baseColor"
+          : /normal/iu.test(url)
+            ? "normal"
+            : "metallicRoughness";
+        const fallback = getStudioBg3dMissingTextureFallbackPreview(fallbackSlot);
+        target.image = fallback.image;
+        target.userData = { ...target.userData, studioBg3dTextureLoadFailed: true };
+        target.needsUpdate = true;
+        failedTextureUrls.add(url);
+        target.removeEventListener("dispose", onDispose);
+        textureReadyRevision += 1;
+        for (const listener of [...textureReadyListeners]) listener();
+      });
+    },
+  );
   texture.addEventListener("dispose", onDispose);
   texture.colorSpace = colorSpace;
   texture.wrapS = THREE.RepeatWrapping;
@@ -310,4 +347,5 @@ export function clearStudioBg3dCc0PbrTextureCache(): void {
   }
   textureByUrlCache.clear();
   textureSetByMaterialIdCache.clear();
+  failedTextureUrls.clear();
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, waitFor } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import { StrictMode, type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -73,6 +73,28 @@ describe("StudioImportHandoffHost", () => {
     const view = render(<StudioImportHandoffHost {...props()} />);
 
     await waitFor(() => expect(view.getByRole("alert").textContent).toContain("다시 선택"));
+    expect(view.getByRole("link", { name: "파일 다시 선택" }).getAttribute("href")).toBe("/studio/import");
+    expect(window.location.search).toBe("");
+  });
+
+  it("preserves single-use .toonproject.zip handoffs across StrictMode double-mount and invokes onProjectArchive", async () => {
+    const archiveFile = new File(["PK"], "scene.toonproject.zip", {
+      type: "application/vnd.toonstudio.project+zip",
+    });
+    const handoff = registerStudioImportHandoff(archiveFile, "json");
+    window.history.replaceState(null, "", `/studio/canvas?importHandoff=${handoff.token}`);
+    const onProjectArchive = vi.fn();
+    const input = props({ onProjectArchive });
+
+    render(
+      <StrictMode>
+        <StudioImportHandoffHost {...input} />
+      </StrictMode>,
+    );
+
+    await waitFor(() => expect(onProjectArchive).toHaveBeenCalledTimes(1));
+    expect(input.onProjectJson).not.toHaveBeenCalled();
+    expect(onProjectArchive.mock.calls[0]![0].currentTarget.files?.[0]).toBe(archiveFile);
     expect(window.location.search).toBe("");
   });
 });

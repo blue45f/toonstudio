@@ -596,4 +596,57 @@ describe("Studio SQLite autosave store", () => {
     );
     await expect(store.read("timestamp-mismatch")).rejects.toThrow(/시각/u);
   });
+
+  it("repairs the primary row when an older cut emergency write resolves after a newer cut emergency write", async () => {
+    const key = "project-multi-cut-out-of-order-emergency";
+    const cut2Gate = Promise.withResolvers<void>();
+    const cut2Dispatched = Promise.withResolvers<void>();
+    let armedCut2Delay = true;
+    const store = createStudioAutosaveSqliteStore({
+      kvGet: (namespace, candidateKey) => database.kvGet(namespace, candidateKey),
+      async kvSet(namespace, candidateKey, value) {
+        if (armedCut2Delay && candidateKey === key && value.includes("cut-2-stroke")) {
+          armedCut2Delay = false;
+          cut2Dispatched.resolve();
+          await cut2Gate.promise;
+        }
+        await database.kvSet(namespace, candidateKey, value);
+      },
+    });
+
+    const cut2Payload: StudioAutosavePayload = {
+      version: 2,
+      savedAt: "2026-08-09T05:00:00.000Z",
+      pagesList: [
+        { id: "page-2", canvasH: 2_000, elements: [{ id: "cut-2-stroke", type: "draw" }] },
+      ],
+      currentPageId: "page-2",
+    };
+    const cut3Payload: StudioAutosavePayload = {
+      version: 2,
+      savedAt: "2026-08-09T05:00:01.000Z",
+      pagesList: [
+        { id: "page-2", canvasH: 2_000, elements: [{ id: "cut-2-stroke", type: "draw" }] },
+        { id: "page-3", canvasH: 2_000, elements: [{ id: "cut-3-stroke", type: "draw" }] },
+      ],
+      currentPageId: "page-3",
+    };
+
+    const slowCut2Write = store.write(key, cut2Payload, { mode: "emergency" });
+    await cut2Dispatched.promise;
+
+    // Cut 3's fast emergency write commits while Cut 2's older emergency write is still in flight.
+    await store.write(key, cut3Payload, { mode: "emergency" });
+    expect(await store.read(key)).toMatchObject({ state: "snapshot", payload: cut3Payload });
+
+    // Now Cut 2's delayed kvSet finishes late — it must not leave Cut 2 overwriting Cut 3.
+    cut2Gate.resolve();
+    await slowCut2Write;
+
+    expect(await store.read(key)).toMatchObject({
+      state: "snapshot",
+      savedAt: cut3Payload.savedAt,
+      payload: cut3Payload,
+    });
+  });
 });

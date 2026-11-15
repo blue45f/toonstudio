@@ -295,6 +295,10 @@ export interface StudioInspectorAsideProps {
   elementById: Map<string, El>;
   elements: El[];
   eyedropperActive: boolean;
+  eraseToIntersection?: boolean;
+  setEraseToIntersection?: (next: boolean) => void;
+  canUndoDocument?: boolean;
+  undoDocument?: () => void;
   filterClipboard: Partial<ImageFilterFields> | null;
   gridSize: number;
   groups: LayerGroup[];

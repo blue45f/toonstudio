@@ -506,17 +506,17 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/studio-pose-material-library.ts", "durable-storage-write", '"toonstudio-studio-pose-material-library-v1"', 1, INJECTED_COMPATIBILITY, INJECTED_PROOF),
   allow("apps/web/src/domains/creator/studio-translation-memory.ts", "durable-storage-write", "key", 1, INJECTED_COMPATIBILITY, INJECTED_PROOF),
 
-  // Reviewed browser-KV additions accumulated after the original authority baseline. Every entry
-  // remains file/key/kind/count exact; this section must shrink as synchronous compatibility stores
-  // move behind the SQLite/OPFS repositories.
+  // Reviewed browser-KV UI-only additions (file/key/kind/count exact; non-creative preferences only).
   allow("apps/web/src/domains/creator/StudioFileControlCenter.tsx", "local-storage-write", '"toonstudio-studio-file-control-center:recent-files:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/StudioFileControlCenter.tsx", "local-storage-cleanup", '"toonstudio-studio-file-control-center:recent-files:v1"', 1, CLEANUP_ONLY, CLEANUP_PROOF),
   allow("apps/web/src/domains/creator/StudioHelpHubDialog.tsx", "local-storage-write", "key", 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/StudioShortcutsHelp.tsx", "durable-storage-write", '"toonstudio-studio-shortcut-preset:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/StudioProjectCenterSearch.tsx", "local-storage-write", "key", 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/StudioUnifiedAssetSmartLibrary.tsx", "local-storage-write", "STUDIO_UNIFIED_ASSET_LIBRARY_STORAGE_KEY", 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/bg3d/studio-bg3d-professional-workspace-layout.ts", "durable-storage-write", "studioBg3dProfessionalWorkspaceStorageKey(scopeKey)", 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/brush/studio-pen-button-policy-store.ts", "durable-storage-write", '"toonstudio:pen-button-policy:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/brush/studio-stylus-pressure-profile-store.ts", "durable-storage-write", '"toonstudio:stylus-pressure-profile:v1"', 1, UI_ONLY, UI_PROOF),
+  allow("apps/web/src/domains/creator/brush/studio-stylus-tilt-mouse-policy.ts", "durable-storage-write", '"toonstudio:stylus-tilt-mouse-policy:v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/lettering/studio-bubble-library.ts", "durable-storage-write", '"toonstudio.studio.bubble-library.v1"', 1, UI_ONLY, UI_PROOF),
   allow("apps/web/src/domains/creator/production-hub/ProductionVisualPlanningWorkspace.tsx", "local-storage-write", '`production-planning-view:${aggregate.projectId}:${showEpisodeRail?"project":"episode"}`', 1, UI_ONLY, UI_PROOF),
   // 제작 보드의 카드 직접 정렬은 이 기기에만 남는 보기 설정이다(작업 상태·승인과 무관, 저장이 막히면 탭 안에서만 유지).

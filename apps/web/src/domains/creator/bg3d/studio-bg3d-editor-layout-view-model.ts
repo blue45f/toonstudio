@@ -8,6 +8,8 @@ import type { BgCustomModelInstance, BgPrimitive, StudioBg3dLayerListItem, Studi
 import { shouldRenderStudioBg3dPrimitiveEditLineArtIndividually } from "./studio-bg3d-primitive-edit-material-runtime";
 import { resolveStudioBg3dFocusSelection } from "./studio-bg3d-camera-selection";
 import { isStudioBg3dTagHidden, projectStudioBg3dTagVisibility, readStudioBg3dHiddenTagSet } from "./studio-bg3d-hierarchy";
+import { resolveStudioBg3dStableEntityLabels } from "./studio-bg3d-instance-naming";
+import { hasStudioBg3dMissingTextures } from "./studio-bg3d-glb-missing-textures";
 
 export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
   const {
@@ -290,25 +292,30 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
     : BG3D_VIEWPORT_HINTS.surfaceSnap;
   // 숨긴 태그는 오브젝트 visible 과 따로 렌더에서만 빠진다(저장되는 visible 값은 그대로).
   const hiddenTagSet = readStudioBg3dHiddenTagSet(sceneBaseDocument);
+  if (!(h.stableFallbackLabelByEntityId instanceof Map)) {
+    h.stableFallbackLabelByEntityId = new Map<string, string>();
+  }
+  const stableEntityLabels = resolveStudioBg3dStableEntityLabels({
+    primitives,
+    customModels,
+    modelLibrary,
+    fallbackCache: h.stableFallbackLabelByEntityId as Map<string, string>,
+  });
   const layerListItems: StudioBg3dLayerListItem[] = [
-    ...primitives.map((prim: BgPrimitive, index: number) => {
-      const kindCountBefore = primitives.slice(0, index).filter((p: BgPrimitive) => p.kind === prim.kind).length;
-      return {
-        id: prim.id,
-        label: prim.name || `${PRIMITIVE_DEFS[prim.kind].label} ${kindCountBefore + 1}`,
-        kind: "primitive" as const,
-        visible: isBgObjectVisible(prim),
-        locked: isBgObjectLocked(prim),
-        parentId: prim.parentId,
-        tags: prim.tags,
-      };
-    }),
-    ...customModels.map((inst: BgCustomModelInstance, index: number) => {
-      const kindCountBefore = customModels.slice(0, index).filter((m: BgCustomModelInstance) => m.modelId === inst.modelId).length;
+    ...primitives.map((prim: BgPrimitive) => ({
+      id: prim.id,
+      label: prim.name || stableEntityLabels.get(prim.id) || PRIMITIVE_DEFS[prim.kind].label,
+      kind: "primitive" as const,
+      visible: isBgObjectVisible(prim),
+      locked: isBgObjectLocked(prim),
+      parentId: prim.parentId,
+      tags: prim.tags,
+    })),
+    ...customModels.map((inst: BgCustomModelInstance) => {
       const modelName = modelLibrary.find((entry: any) => entry.id === inst.modelId)?.name ?? "3D 모델";
       return {
         id: inst.id,
-        label: inst.name || `${modelName} ${kindCountBefore + 1}`,
+        label: inst.name || stableEntityLabels.get(inst.id) || modelName,
         kind: "model" as const,
         visible: isBgObjectVisible(inst),
         locked: isBgObjectLocked(inst),
@@ -534,6 +541,7 @@ export function bindStudioBg3dEditorLayoutViewModel(h: Record<string, any>) {
     const cacheEntry = R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, model.modelId, h.engineRuntime?.plan?.backend);
     if (
       !cacheEntry || unbatchableModelIds.has(model.modelId) || !isBgObjectVisible(model) ||
+      hasStudioBg3dMissingTextures(cacheEntry.root) ||
       shouldRenderStudioBg3dPrimitiveEditLineArtIndividually(cacheEntry.root, lineArtPreview) ||
       selectedIds.has(model.id) || (sceneHierarchy.parentById.get(model.id) ?? null) !== null ||
       (sceneHierarchy.childrenByParent.get(model.id)?.length ?? 0) > 0 ||

@@ -173,5 +173,66 @@ describe("StudioVirtualSpaceCustomizationPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /아이돌 군무/u }));
     expect(onTriggerEmote).toHaveBeenCalledWith("kpop-dance");
   });
+
+  it("다중 가구를 한 번에 이동·회전한 뒤 배경 밀도를 바꿔도 실행 취소·다시 실행 이력이 보존되고 1작업 1이력 단위로 복원된다", () => {
+    const world = { ...studioVirtualPlaceWorldManifest("skyport", true), colliders: [], props: [], portals: [], npcs: [], interactions: [], interactionSlots: [] };
+    const ax = Math.round(((world.width * 400) / 960) / 16) * 16;
+    const ay = Math.round(((world.height * 320) / 640) / 16) * 16;
+    const selfPt = {
+      x: Math.round((world.width * 80) / 960),
+      y: Math.round((world.height * 100) / 640),
+    };
+    function Harness() {
+      const [decorations, setDecorations] = useState<StudioVirtualDecorationState>({
+        ...studioVirtualDecorationPreset("minimal"),
+        layoutWidth: world.width,
+        layoutHeight: world.height,
+        placements: [
+          { id: "bench-a", type: "bench", x: ax, y: ay, rotation: 0, scale: 1 },
+          { id: "lamp-b", type: "lamp", x: ax + 80, y: ay + 32, rotation: 90, scale: 1 },
+        ],
+      });
+      return (
+        <StudioVirtualSpaceCustomizationPanel
+          nickname="작가 이름"
+          character={DEFAULT_STUDIO_VIRTUAL_CHARACTER_CUSTOMIZATION}
+          decorations={decorations}
+          selfPoint={selfPt}
+          world={world}
+          onNickname={vi.fn()}
+          onCharacter={vi.fn()}
+          onDecorations={setDecorations}
+        />
+      );
+    }
+    render(<Harness />);
+
+    fireEvent.click(screen.getByRole("button", { name: "1번 벤치 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "2번 조명 선택" }), { shiftKey: true });
+    fireEvent.click(screen.getByRole("button", { name: "가구 오른쪽" }));
+    fireEvent.click(screen.getByRole("button", { name: "가구 90도 회전" }));
+
+    // 배경 밀도나 배경 장소를 변경해도 기존 배치 취소/재실행 스택이 날아가지 않는다.
+    fireEvent.click(screen.getByRole("button", { name: "데코레이션" }));
+    const undoBtn = screen.getByRole("button", { name: "배치 실행 취소" });
+    const redoBtn = screen.getByRole("button", { name: "배치 다시 실행" });
+    expect(undoBtn.hasAttribute("disabled")).toBe(false);
+
+    // 1회 실행 취소: 90° 묶음 회전만 되돌아가고 이동 후 좌표 (ax + 16, ay · 0°)로 복귀
+    fireEvent.click(undoBtn);
+    expect(screen.getByText(new RegExp(`기준\\(벤치\\) X ${ax + 16} / Y ${ay} · 0°`))).toBeTruthy();
+
+    // 2회 실행 취소: 묶음 이동도 되돌아가 초기 좌표 (ax, ay · 0°)로 복귀하고, 더 이상 취소할 이력이 없다
+    fireEvent.click(undoBtn);
+    expect(screen.getByText(new RegExp(`기준\\(벤치\\) X ${ax} / Y ${ay} · 0°`))).toBeTruthy();
+    expect(undoBtn.hasAttribute("disabled")).toBe(true);
+
+    // 다시 실행 2회: 이동 -> 회전 순서로 1단계씩 정확히 복원
+    fireEvent.click(redoBtn);
+    expect(screen.getByText(new RegExp(`기준\\(벤치\\) X ${ax + 16} / Y ${ay} · 0°`))).toBeTruthy();
+    fireEvent.click(redoBtn);
+    expect(screen.getByText(new RegExp(`기준\\(벤치\\) X ${ax + 16} / Y ${ay} · 90°`))).toBeTruthy();
+    expect(redoBtn.hasAttribute("disabled")).toBe(true);
+  });
 });
 

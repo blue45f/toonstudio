@@ -7,9 +7,12 @@ import {
 } from "./studio-bg3d-editor-ui";
 import { type StudioBg3dPushPullAxis, type StudioBg3dPushPullFace } from "./studio-bg3d-push-pull";
 import { StudioBg3dCc0SurfaceMaterialPicker } from "./StudioBg3dCc0SurfaceMaterialPicker";
+import { StudioBg3dSnapAndAxisQuickCard } from "./StudioBg3dPlacementAndAxisHud";
 import { StudioBg3dProceduralStarterPanel } from "./StudioBg3dProceduralStarterPanel";
 import { StudioBg3dPushPullSection } from "./StudioBg3dShapesPanelPushPull";
 import { StudioBg3dTextExtruderPanel } from "./StudioBg3dTextExtruderPanel";
+import { standUpZUpRotation, type StudioBg3dGlbUnitAxisReport } from "./studio-bg3d-glb-unit-axis-diagnostics";
+import { constrainPositionToAxisLock } from "./studio-bg3d-object-ops";
 
 import type { BgCompositeCategory } from "../studio-background-3d-composites";
 import type {
@@ -103,6 +106,7 @@ interface StudioBg3dShapesPanelContext {
   readonly applySurfacePreset: (id: string, presetId: string | null) => void;
   readonly surfacePresets: readonly import("./studio-bg3d-surface-presets").StudioBg3dSurfacePreset[];
   readonly selectedCustomModel: BgCustomModelInstance | null;
+  readonly selectedModelCacheEntry?: { readonly glbDiagnostics?: StudioBg3dGlbUnitAxisReport } | null;
   readonly toggleCustomModelFlag: (id: string, flag: "visible" | "locked") => void;
   readonly canPlaceSelectedModelRecipe: boolean;
   readonly placeSelectedModelRecipe: () => void;
@@ -200,11 +204,6 @@ export function StudioBg3dShapesPanel({
     proceduralStarterDisabledReason,
     snapSettings,
     setSnapSettings,
-    normalizeStudioBg3dSnapSettings,
-    Magnet,
-    studioBg3dSnapSettingsSummary,
-    STUDIO_BG3D_TRANSLATE_STEP_OPTIONS,
-    STUDIO_BG3D_ROTATE_STEP_OPTIONS_DEG,
     selectedPrimitive,
     isBgObjectVisible,
     togglePrimitiveFlag,
@@ -432,112 +431,31 @@ export function StudioBg3dShapesPanel({
                 </div>
 
                 <div className="mt-5 border-t border-line pt-4">
-                  <div className="mb-4 rounded-xl border border-line/80 bg-card/70 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold text-fg">변형 스냅</p>
-                      <button
-                        type="button"
-                        aria-pressed={snapSettings.enabled}
-                        className={cx(
-                          "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-[0.68rem] font-semibold transition-colors",
-                          snapSettings.enabled
-                            ? "border-accent/55 bg-accent text-on-accent"
-                            : "border-line bg-panel text-fg-2 hover:bg-accent-soft hover:text-accent"
-                        )}
-                        onClick={() =>
-                          setSnapSettings((prev) =>
-                            normalizeStudioBg3dSnapSettings({ ...prev, enabled: !prev.enabled })
-                          )
-                        }
-                      >
-                        <Magnet size={13} aria-hidden />
-                        {snapSettings.enabled ? "켜짐" : "꺼짐"}
-                      </button>
-                    </div>
-                    <p className="mt-1 text-[0.65rem] leading-relaxed text-fg-3">
-                      {studioBg3dSnapSettingsSummary(snapSettings)} · 기즈모·수치 입력 모두 적용
-                    </p>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <label className="text-[0.65rem] font-semibold text-fg-3">
-                        이동 간격
-                        <select
-                          className="mt-1 min-h-9 w-full rounded-lg border border-line bg-panel px-2 text-xs font-semibold text-fg"
-                          value={snapSettings.translateStep}
-                          disabled={!snapSettings.enabled}
-                          onChange={(e) =>
-                            setSnapSettings((prev) =>
-                              normalizeStudioBg3dSnapSettings({
-                                ...prev,
-                                translateStep: Number(e.target.value),
-                              })
-                            )
+                  <StudioBg3dSnapAndAxisQuickCard
+                    snapSettings={snapSettings}
+                    setSnapSettings={setSnapSettings}
+                    hasSelection={Boolean(selectedPrimitive || selectedCustomModel)}
+                    selectedIsLocked={selectedIsLocked}
+                    onGroundSelected={groundSelectedEntity}
+                    selectedGlbDiagnostics={
+                      selectedCustomModel ? (context.selectedModelCacheEntry?.glbDiagnostics ?? null) : null
+                    }
+                    onStandUpAndGroundSelectedModel={
+                      selectedCustomModel
+                        ? () => {
+                            updateCustomModelTransform(selectedCustomModel.id, {
+                              rotation: standUpZUpRotation(selectedCustomModel.rotation),
+                            });
+                            groundSelectedEntity();
                           }
-                        >
-                          {STUDIO_BG3D_TRANSLATE_STEP_OPTIONS.map((step) => (
-                            <option key={step} value={step}>
-                              {step}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="text-[0.65rem] font-semibold text-fg-3">
-                        회전 간격
-                        <select
-                          className="mt-1 min-h-9 w-full rounded-lg border border-line bg-panel px-2 text-xs font-semibold text-fg"
-                          value={snapSettings.rotateStepDegrees}
-                          disabled={!snapSettings.enabled}
-                          onChange={(e) =>
-                            setSnapSettings((prev) =>
-                              normalizeStudioBg3dSnapSettings({
-                                ...prev,
-                                rotateStepDegrees: Number(e.target.value),
-                              })
-                            )
-                          }
-                        >
-                          {STUDIO_BG3D_ROTATE_STEP_OPTIONS_DEG.map((step) => (
-                            <option key={step} value={step}>
-                              {step}°
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {(
-                        [
-                          { id: "xyz" as const, label: "XYZ" },
-                          { id: "xz" as const, label: "XZ(바닥)" },
-                          { id: "none" as const, label: "회전만" },
-                        ] as const
-                      ).map((axis) => (
-                        <button
-                          key={axis.id}
-                          type="button"
-                          disabled={!snapSettings.enabled}
-                          aria-pressed={snapSettings.translateAxes === axis.id}
-                          className={cx(
-                            "min-h-8 rounded-lg border px-2 text-[0.65rem] font-semibold transition-colors disabled:opacity-45",
-                            snapSettings.translateAxes === axis.id
-                              ? "border-accent/55 bg-accent-soft text-accent"
-                              : "border-line bg-panel text-fg-2 hover:bg-raised"
-                          )}
-                          onClick={() =>
-                            setSnapSettings((prev) =>
-                              normalizeStudioBg3dSnapSettings({ ...prev, translateAxes: axis.id })
-                            )
-                          }
-                        >
-                          {axis.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                        : null
+                    }
+                  />
 
                   {selectedPrimitive ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-bold text-fg">선택한 도형</h3>
+                        <h3 data-bg3d-selected-inspector-id={selectedPrimitive.id} className="truncate text-sm font-bold text-fg">선택한 도형{layerListItems.find((i) => i.id === selectedPrimitive.id) ? ` · ${layerListItems.find((i) => i.id === selectedPrimitive.id)!.label}` : ""}</h3>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -663,7 +581,9 @@ export function StudioBg3dShapesPanel({
                         onCommit={(i, v) => {
                           const next: [number, number, number] = [...selectedPrimitive.position];
                           next[i] = v;
-                          updateTransform(selectedPrimitive.id, { position: next });
+                          updateTransform(selectedPrimitive.id, {
+                            position: constrainPositionToAxisLock(selectedPrimitive.position, next, snapSettings.axisLock),
+                          });
                         }}
                       />
                       <Vec3Field
@@ -741,7 +661,7 @@ export function StudioBg3dShapesPanel({
                   ) : selectedCustomModel ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-bold text-fg">선택한 모델</h3>
+                        <h3 data-bg3d-selected-inspector-id={selectedCustomModel.id} className="truncate text-sm font-bold text-fg">선택한 모델{layerListItems.find((i) => i.id === selectedCustomModel.id) ? ` · ${layerListItems.find((i) => i.id === selectedCustomModel.id)!.label}` : ""}</h3>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -870,7 +790,9 @@ export function StudioBg3dShapesPanel({
                         onCommit={(i, v) => {
                           const next: [number, number, number] = [...selectedCustomModel.position];
                           next[i] = v;
-                          updateCustomModelTransform(selectedCustomModel.id, { position: next });
+                          updateCustomModelTransform(selectedCustomModel.id, {
+                            position: constrainPositionToAxisLock(selectedCustomModel.position, next, snapSettings.axisLock),
+                          });
                         }}
                       />
                       <Vec3Field

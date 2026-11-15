@@ -314,7 +314,19 @@ export const StudioCanvasModalsBody = memo(function StudioCanvasModalsBody({
 
       {shortcutsOpen ? (
         <Suspense fallback={null}>
-          <StudioShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} shortcuts={appSettings.shortcuts} />
+          <StudioShortcutsHelp
+            open={shortcutsOpen}
+            onClose={() => setShortcutsOpen(false)}
+            shortcuts={appSettings.shortcuts}
+            onApplyShortcuts={(nextShortcuts) =>
+              commitAppSettings({ ...appSettings, shortcuts: nextShortcuts })
+            }
+            onOpenShortcutSettings={() => {
+              setShortcutsOpen(false);
+              setAppSettingsInitialTab("shortcuts");
+              setAppSettingsOpen(true);
+            }}
+          />
         </Suspense>
       ) : null}
       {appSettingsOpen ? (

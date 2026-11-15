@@ -2,7 +2,19 @@ import { useEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-import { bindStudioCameraGestures } from "../studio-virtual-space-camera-pan";
+import {
+  bindStudioCameraGestures,
+  setActiveMountedCameraPanStore,
+} from "../studio-virtual-space-camera-pan";
+import {
+  getStudioSpaceSelectedObjectTarget,
+  subscribeStudioSpaceSelectedObjectTarget,
+} from "../studio-virtual-space-camera-recovery";
+import {
+  bindStudioSpaceTextEntryMovementStop,
+  isStudioSpaceJoystickActive,
+  isStudioSpaceTextEntryTarget,
+} from "../studio-virtual-space-input-guard";
 import type { StudioVirtualSpaceZoneChange } from "../studio-virtual-space-engine-events";
 import { studioWorldRoomAt } from "../studio-virtual-space-world-manifest";
 import {
@@ -17,6 +29,7 @@ import {
   subscribeIllustrated2dVfxBurst,
   subscribeIllustratedWorkstationModal,
 } from "../studio-virtual-space-illustrated-2d-runtime";
+import { StudioVirtualSpaceBootRecoveryCard } from "../StudioVirtualSpaceBootRecoveryCard";
 import { StudioVirtualSpaceWorkstationLiveModal } from "../StudioVirtualSpaceWorkstationLiveModal";
 import { office2dCharacterForAvatarSkin } from "./office2d-avatar-role";
 import { createOffice2dAvatarProfileSource } from "./office2d-avatar-appearance";
@@ -49,9 +62,15 @@ import { StudioOffice2dPipelineRail } from "./StudioOffice2dPipelineRail";
 import "./studio-office2d.css";
 
 const ASSET_TIMEOUT_MS = 6_000;
+export const STUDIO_OFFICE2D_BOOT_DEADLINE_MS = 12_000;
 /** 창이 초점을 잃었지만 보이는 동안(옆 모니터에 띄워 둔 경우)의 프레임 간격. SoWork의 unfocused 12~15fps 정책을 따른다. */
 const BLURRED_FRAME_MS = 1000 / 15;
 const PREVENT_DEFAULT_CODES: ReadonlySet<string> = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"]);
+
+export interface StudioOffice2dCanvasProps extends StudioVirtualSpacePhaserCanvasProps {
+  /** 테스트·느린 네트워크 진단용 입장 타임아웃(ms). 기본값은 12초다. */
+  readonly bootDeadlineMs?: number;
+}
 
 function documentLanguage(): "ko" | "en" {
   return typeof document !== "undefined" && document.documentElement.lang?.toLowerCase().startsWith("en") ? "en" : "ko";
@@ -67,8 +86,8 @@ function prefersReducedMotion(): boolean {
  * Phaser·3D 스테이지와 같은 props 계약(StudioVirtualSpacePhaserCanvasProps)을 지키므로 페이지의 프레즌스·좌석·NPC 대화·HUD가 그대로 동작한다.
  * 그리기와 물리는 Office2dRuntime이 맡고, 이 컴포넌트는 캔버스 크기·입력·애니메이션 루프·자산 로딩만 연결한다.
  */
-export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps) {
-  const { manifest, bridge, selfIdentity = "local" } = props;
+export function StudioOffice2dCanvas(props: StudioOffice2dCanvasProps) {
+  const { manifest, bridge, selfIdentity = "local", bootDeadlineMs = STUDIO_OFFICE2D_BOOT_DEADLINE_MS } = props;
   const bt = useBilingual("StudioOffice2dCanvas");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,6 +97,8 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
   const avatarProfileSourceRef = useRef<ReturnType<typeof createOffice2dAvatarProfileSource> | null>(null);
   const decorAssetsRef = useRef<Office2dDecorAssetLoader | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [failureReason, setFailureReason] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [schematicMode, setSchematicMode] = useState(false);
   const [claimedSeatId, setClaimedSeatId] = useState<string>(() => readOffice2dClaimedSeatId());
@@ -170,7 +191,13 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       setStatus(next);
       latest.current.onEngineStatusChange?.(next);
     };
+    setFailureReason(null);
     if (!context) {
+      setFailureReason(
+        documentLanguage() === "en"
+          ? "This browser could not initialize a 2D canvas rendering context."
+          : "이 브라우저에서 2D 캔버스 그래픽 컨텍스트를 열지 못했습니다.",
+      );
       emitStatus("error");
       return undefined;
     }
@@ -199,7 +226,22 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       return {
         onLocalState: current.onLocalState,
         onInteract: current.onInteract,
-        onNearbyInteractionChange: current.onNearbyInteractionChange,
+        onNearbyInteractionChange: (interaction) => {
+          current.onNearbyInteractionChange?.(interaction);
+          if (!getStudioSpaceSelectedObjectTarget()) {
+            bridge.cameraPan.setFocusTarget(
+              interaction
+                ? {
+                    id: interaction.id,
+                    labelKo: interaction.labelKo,
+                    labelEn: interaction.labelEn,
+                    x: interaction.point.x,
+                    y: interaction.point.y,
+                  }
+                : null,
+            );
+          }
+        },
         onPeerSelect: current.onPeerSelect,
         onCancelFollow: current.onCancelFollow,
         onPortal: current.onPortal,
@@ -272,11 +314,41 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     observer?.observe(container);
     window.addEventListener("resize", resize);
 
+    bridge.cameraPan.attachZoomStore(bridge.userZoom);
+    setActiveMountedCameraPanStore(bridge.cameraPan);
+    bridge.cameraPan.setFocusTarget(getStudioSpaceSelectedObjectTarget());
+    const unbindSelectedObjectTarget = subscribeStudioSpaceSelectedObjectTarget((target) => {
+      bridge.cameraPan.setFocusTarget(target);
+    });
+    const handleHomeShortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isStudioSpaceTextEntryTarget(event.target) || isStudioSpaceTextEntryTarget(document.activeElement)) return;
+      if (!studioWorldMayTakeFocus(document.activeElement, container)) return;
+      if (event.key === "Home") {
+        event.preventDefault();
+        bridge.cameraPan.homeView();
+      }
+    };
+    window.addEventListener("keydown", handleHomeShortcut);
     bridge.setFocusHandler(() => canvas.focus({ preventScroll: true }));
     const scene = office2dSceneFor(manifest);
+    const heldMoveCodes = new Set<string>();
+    let pointerStart: { id: number; pointerType: string; startX: number; startY: number; lastX: number; lastY: number; dragged: boolean; requireButtons: boolean } | null = null;
+    const haltMovementForTextInput = () => {
+      heldMoveCodes.clear();
+      pointerStart = null;
+      runtime.releaseKeys();
+      if (isStudioSpaceJoystickActive(bridge.getJoystick())) {
+        bridge.setJoystick({ x: 0, y: 0 });
+      }
+      bridge.clearMovement();
+    };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       const active = document.activeElement;
+      if (isStudioSpaceTextEntryTarget(event.target) || isStudioSpaceTextEntryTarget(active)) {
+        haltMovementForTextInput();
+        return;
+      }
       const reclaim = studioWorldShouldReclaimFocus({
         active,
         root: document,
@@ -290,45 +362,61 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
       if (!WORLD_KEY_CODES.has(event.code)) return;
       if (PREVENT_DEFAULT_CODES.has(event.code)) event.preventDefault();
+      heldMoveCodes.add(event.code);
       if (!event.repeat) runtime.keyDown(event.code);
     };
-    const handleKeyUp = (event: KeyboardEvent) => runtime.keyUp(event.code);
-    const handleBlur = () => runtime.releaseKeys();
+    const handleKeyUp = (event: KeyboardEvent) => {
+      heldMoveCodes.delete(event.code);
+      runtime.keyUp(event.code);
+    };
+    const handleBlur = () => {
+      heldMoveCodes.clear();
+      pointerStart = null;
+      runtime.releaseKeys();
+    };
+    const unbindTextInputStop = bindStudioSpaceTextEntryMovementStop(haltMovementForTextInput);
     const unbindDeskShortcut = bindOffice2dDeskShortcut(canvas, () => (latest.current.onDeskShortcut ?? myDeskActionRef.current)());
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
 
-    let pointerStart: { id: number; startX: number; startY: number; lastX: number; lastY: number; dragged: boolean } | null = null;
+    const canPanCamera = () => !isStudioSpaceJoystickActive(bridge.getJoystick()) && heldMoveCodes.size === 0;
     const unbindCameraGestures = bindStudioCameraGestures(canvas, {
       zoom: bridge.userZoom,
       pan: bridge.cameraPan,
-      canZoom: () => true,
-      canPan: () => true,
+      canZoom: () => !isStudioSpaceJoystickActive(bridge.getJoystick()),
+      canPan: canPanCamera,
       focused: () => studioWorldMayTakeFocus(document.activeElement, container),
       onPinchStart: () => {
         pointerStart = null;
       },
     });
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || bridge.cameraPan.isLooking()) return;
+      if (event.button !== 0 || bridge.cameraPan.isLooking() || isStudioSpaceJoystickActive(bridge.getJoystick())) return;
       pointerStart = {
         id: event.pointerId,
+        pointerType: event.pointerType || "mouse",
         startX: event.clientX,
         startY: event.clientY,
         lastX: event.clientX,
         lastY: event.clientY,
         dragged: false,
+        requireButtons: event.buttons > 0,
       };
       canvas.focus({ preventScroll: true });
     };
     const handlePointerMove = (event: PointerEvent) => {
       if (!pointerStart || event.pointerId !== pointerStart.id) return;
+      if ((pointerStart.requireButtons && event.buttons === 0) || isStudioSpaceJoystickActive(bridge.getJoystick())) {
+        pointerStart = null;
+        return;
+      }
       const totalMoved = Math.hypot(event.clientX - pointerStart.startX, event.clientY - pointerStart.startY);
       if (!pointerStart.dragged && totalMoved > 8) {
         pointerStart.dragged = true;
       }
-      if (pointerStart.dragged) {
+      // 터치 한 손가락 끌기는 두 손가락 핀치·패닝 및 터치 조이스틱과 충돌하지 않도록 마우스·펜에서만 시점을 끈다.
+      if (pointerStart.dragged && pointerStart.pointerType !== "touch" && canPanCamera()) {
         bridge.cameraPan.drag(event.clientX - pointerStart.lastX, event.clientY - pointerStart.lastY);
         pointerStart.lastX = event.clientX;
         pointerStart.lastY = event.clientY;
@@ -367,6 +455,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerup", handlePointerUp);
     canvas.addEventListener("pointercancel", handlePointerCancel);
+    canvas.addEventListener("lostpointercapture", handlePointerCancel);
 
     const actorAssets = office2dActorAssetPlan(office2dCharacterForAvatarSkin(latest.current.snapshot.self.avatarIndex, selfIdentity));
     const urls = [
@@ -393,6 +482,9 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       last = time;
       const nextRatio = windowFocused ? governor.sample(elapsedMs) : null;
       if (nextRatio !== null) resize();
+      if (isStudioSpaceTextEntryTarget(document.activeElement) && (heldMoveCodes.size > 0 || isStudioSpaceJoystickActive(bridge.getJoystick()))) {
+        haltMovementForTextInput();
+      }
       runtime.frame(elapsedMs / 1000);
       runtime.draw(context, pixelRatio);
     };
@@ -410,6 +502,8 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     // 탭이 숨겨지면 렌더·물리를 멈추고(SoWork pause 정책), 다시 보이면 이어서 돈다. 키는 숨김 순간 모두 놓는다.
     const handleVisibility = () => {
       if (document.visibilityState === "hidden") {
+        heldMoveCodes.clear();
+        pointerStart = null;
         runtime.releaseKeys();
         stopLoop();
       } else if (ready) {
@@ -425,20 +519,47 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
     refreshFloorRef.current = refreshFloor;
     const decorAssets = createOffice2dDecorAssetLoader(store, ASSET_TIMEOUT_MS, refreshFloor);
     decorAssetsRef.current = decorAssets;
+    const bootDeadlineId = window.setTimeout(() => {
+      if (disposed || ready) return;
+      disposed = true;
+      decorAssets.dispose();
+      stopLoop();
+      setFailureReason(
+        documentLanguage() === "en"
+          ? "Studio assets took too long to respond and loading was stopped to prevent an infinite wait."
+          : "스튜디오 리소스 응답 시간이 초과되어 무한 대기를 막고 입장을 중단했어요.",
+      );
+      emitStatus("error");
+    }, Math.max(250, bootDeadlineMs));
     void Promise.all([
       store.loadAll(urls, ASSET_TIMEOUT_MS, refreshFloor),
       decorAssets.load(latest.current.decorations, latest.current.placedFixtures),
     ]).then(() => {
+      window.clearTimeout(bootDeadlineId);
       if (disposed) return;
       runtime.start();
       ready = true;
       emitStatus("ready");
       startLoop();
       void store.loadAll(deferredUrls, ASSET_TIMEOUT_MS * 2, refreshFloor);
+    }).catch((error: unknown) => {
+      window.clearTimeout(bootDeadlineId);
+      if (disposed) return;
+      disposed = true;
+      decorAssets.dispose();
+      stopLoop();
+      const detail = error instanceof Error && error.message.trim() ? error.message.trim() : null;
+      setFailureReason(
+        detail ?? (documentLanguage() === "en"
+          ? "Failed to load studio scene assets."
+          : "스튜디오 공간 리소스를 불러오지 못했어요."),
+      );
+      emitStatus("error");
     });
 
     return () => {
       disposed = true;
+      window.clearTimeout(bootDeadlineId);
       decorAssets.dispose();
       if (decorAssetsRef.current === decorAssets) decorAssetsRef.current = null;
       if (storeRef.current === store) storeRef.current = null;
@@ -453,6 +574,7 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       observer?.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", handleKeyDown);
+      unbindTextInputStop();
       unbindDeskShortcut();
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
@@ -461,9 +583,14 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerup", handlePointerUp);
       canvas.removeEventListener("pointercancel", handlePointerCancel);
+      canvas.removeEventListener("lostpointercapture", handlePointerCancel);
+      window.removeEventListener("keydown", handleHomeShortcut);
+      unbindSelectedObjectTarget();
+      bridge.cameraPan.attachZoomStore(null);
+      if (bridge.cameraPan) setActiveMountedCameraPanStore(null);
       bridge.setFocusHandler(null);
     };
-  }, [bridge, manifest, selfIdentity]);
+  }, [bootDeadlineMs, bridge, manifest, retryCount, selfIdentity]);
 
   // 꾸미기만 바뀌면 월드·입력·캐릭터 상태를 재생성하지 않고 새로 필요한 이미지만 이어 받는다.
   useEffect(() => {
@@ -507,7 +634,10 @@ export function StudioOffice2dCanvas(props: StudioVirtualSpacePhaserCanvasProps)
         <p className="studio-office2d__loading" role="status">{bt("스튜디오를 준비하는 중…", "Preparing the studio…")}</p>
       ) : null}
       {status === "error" ? (
-        <p className="studio-office2d__loading" role="alert">{bt("이 브라우저에서 2D 화면을 그릴 수 없어요. 새로고침하거나 다른 브라우저를 써 주세요.", "This browser cannot draw the 2D view. Reload or try another browser.")}</p>
+        <StudioVirtualSpaceBootRecoveryCard
+          failureReason={failureReason}
+          onRetry={() => setRetryCount((count) => count + 1)}
+        />
       ) : null}
       {hq && status === "ready" ? (
         <StudioOffice2dPipelineRail

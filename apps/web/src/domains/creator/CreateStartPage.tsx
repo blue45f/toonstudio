@@ -27,6 +27,7 @@ import { useApp } from "@/shared/lib/store";
 import Link from "@/shared/navigation/router-link";
 import { STORY_TO_WEBTOON_PIPELINE_MODES } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { CreateStartGenreStarterSection } from "./studio-shell/CreateStartGenreStarterSection";
+import { CreateStartGrandAtelierSection } from "./studio-shell/CreateStartGrandAtelierSection";
 import { CreateStartContinueSection } from "./studio-shell/guided-flow/CreateStartContinueSection";
 import { StudioQuickStart } from "./studio-shell/StudioQuickStart";
 
@@ -203,7 +204,9 @@ export function CreateStartPage() {
 
       {activeSection === "all" ? (
         <>
-          <section className="create-start-choice-grid" data-testid="create-start-persona-guide"
+          <CreateStartGrandAtelierSection storyHref={storyHref} />
+
+          <section className="create-start-choice-grid mt-6" data-testid="create-start-persona-guide"
             aria-label={bt("작품을 시작하는 두 가지 방법", "Two ways to start a work")}>
             <article className="create-start-choice">
               <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/storyboard-768.webp"
@@ -256,7 +259,7 @@ export function CreateStartPage() {
         ))}
       </nav> : null}
 
-      {activeSection === "pipeline" || activeSection === "tools" ? (
+      {activeSection === "all" || activeSection === "pipeline" || activeSection === "tools" ? (
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
         data-testid="create-rea-story-pipeline"
@@ -309,7 +312,7 @@ export function CreateStartPage() {
 
       ) : null}
 
-      {activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
+      {activeSection === "all" || activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
 
       {activeSection === "topics" ? (
       <section

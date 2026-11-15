@@ -5,20 +5,13 @@
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { BgCustomModelInstance, BgPrimitive, BgPrimitiveKind, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dProceduralInsertionPlan, StudioBg3dRoomSpec, StudioBg3dSceneDocument, StudioBg3dSceneRemovalSuccess } from "./studio-bg3d-editor-runtime-bindings";
-import {
-  commitGradeRoutedHistoryTransition,
-  ensureStudio3dGradeHistory,
-  stepUnifiedStudio3dHistory,
-} from "./studio-bg3d-grade-history-bridge";
+import { commitGradeRoutedHistoryTransition, ensureStudio3dGradeHistory, stepUnifiedStudio3dHistory } from "./studio-bg3d-grade-history-bridge";
 import { applyStudio3dCommand } from "./studio-bg3d-grade-plates";
 import { captureStudio3dPlatesFromAdapter } from "./studio-bg3d-grade-plates-production";
+import { assignUniqueNamesToDuplicatedBatch, nameNewStudioBg3dPrimitive } from "./studio-bg3d-instance-naming";
 import { isStudioBg3dSceneEditReady } from "./studio-bg3d-scene-edit-readiness";
 import { resolveLinkedCloneRootId } from "./studio-bg3d-linked-clones";
-import {
-  commitStudioBg3dHistoryTransition,
-  resetStudioBg3dCommandHistory,
-  stepStudioBg3dCommandHistory,
-} from "./studio-bg3d-history-command-adapter";
+import { commitStudioBg3dHistoryTransition, resetStudioBg3dCommandHistory, stepStudioBg3dCommandHistory } from "./studio-bg3d-history-command-adapter";
 import {
   allocateStudioBg3dTemplateInstanceNodeIds,
   collectStudioBg3dTemplateInstances,
@@ -368,6 +361,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
       readonly source?: "canvas" | "inspector" | "keyboard" | "menu" | "palette" | "system";
     } = {},
   ): void {
+    if (!historyRef && !historyCommandTimelineRef) return;
     const liveView = viewportApiRef.current?.readView() ?? sceneBaseDocument.camera;
     const rawBefore = beforeOverride ?? createStudioBg3dHistorySnapshot({
       primitives,
@@ -396,8 +390,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
       label: options.label,
       source: options.source,
     });
-    setCanUndo(receipt.canUndo);
-    setCanRedo(receipt.canRedo);
+    setCanUndo?.(receipt.canUndo);
+    setCanRedo?.(receipt.canRedo);
   }
   h.commitImmediateHistoryTransition = commitImmediateHistoryTransition;
   const applyCommandHistoryStep = (direction: "undo" | "redo"): void => {
@@ -448,7 +442,11 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
   const addPrimitive = (kind: BgPrimitiveKind) => {
     if (!canAdmitSceneNodes(1)) return;
     const live = physicsRuntimeSourceRef.current;
-    const next = createPrimitive(kind, live.primitives.length);
+    const next = nameNewStudioBg3dPrimitive(
+      createPrimitive(kind, live.primitives.length),
+      live,
+      h.stableFallbackLabelByEntityId,
+    );
     const nextPrimitives = [...live.primitives, next];
     const position = next.position ?? [0, 0, 0];
     const grade = ensureStudio3dGradeHistory(gradeHistoryRef.current, live.document ?? sceneBaseDocument);
@@ -496,18 +494,20 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     commitHistory: commitImmediateHistoryTransition,
   });
   h.addGeneratedParts = addGeneratedParts;
+  const runGeneratedBatchWithHistory = <T,>(label: string, run: () => T): T => {
+    const before = (historyRef || historyCommandTimelineRef) ? createStudioBg3dHistorySnapshot?.(physicsRuntimeSourceRef.current) : undefined;
+    const parts = run();
+    if (parts && before) commitImmediateHistoryTransition(physicsRuntimeSourceRef.current.primitives, physicsRuntimeSourceRef.current.customModels, physicsRuntimeSourceRef.current.document, before, { commandId: "studio.bg3d.workbench.insert", label, source: "menu" });
+    return parts;
+  };
   // "숨긴 벽 되돌리기": 자동 단면이 숨긴 조각(id 목록)만 한 번의 상태 교체로 다시 보이게 한다.
   h.showSceneParts = (ids: readonly string[]) => replaceCanonicalDocumentState({ primitives: physicsRuntimeSourceRef.current.primitives.map((p: BgPrimitive) => (ids.includes(p.id) && p.visible === false ? { ...p, visible: true } : p)) });
   h.addComposite = (presetId: string) => {
     const preset = COMPOSITE_PRESETS.find((p: any) => p.id === presetId);
-    if (preset) addGeneratedParts((count: number) => instantiateCompositePreset(preset, count));
+    if (preset) runGeneratedBatchWithHistory(preset.label ?? "복합 도형 배치", () => addGeneratedParts((count: number) => instantiateCompositePreset(preset, count)));
   };
-  const addProceduralStarterAsset = (
-    assetId: string,
-  ): StudioBg3dProceduralInsertionPlan => {
-    if (proceduralStarterDisabledReason) {
-      return { ok: false, reason: "invalid-budget" };
-    }
+  const addProceduralStarterAsset = (assetId: string): StudioBg3dProceduralInsertionPlan => {
+    if (proceduralStarterDisabledReason) return { ok: false, reason: "invalid-budget" };
     const live = physicsRuntimeSourceRef.current;
     const currentUsage = calculateStudioBg3dProceduralSceneUsage(
       live.primitives,
@@ -515,7 +515,6 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
       (modelId: string) => R.readStudioBg3dModelCacheEntry(modelRootCacheRef.current, modelId, h.engineRuntime?.plan?.backend)?.metrics ?? null,
     );
     if (!currentUsage) return { ok: false, reason: "invalid-budget" };
-
     const asset = getStudioBg3dProceduralStarterAsset(assetId);
     const policy = deriveStudioBg3dGlbValidationPolicy(live.document, deviceQuality);
     const limits = policy.budgets[policy.profile].complexity;
@@ -530,17 +529,12 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
       ],
       currentUsage,
       limits,
-      origin: asset
-        ? [
-            column * (asset.bounds.width + 0.75),
-            0,
-            -row * (asset.bounds.depth + 0.75),
-          ]
-        : [0, 0, 0],
+      origin: asset ? [column * (asset.bounds.width + 0.75), 0, -row * (asset.bounds.depth + 0.75)] : [0, 0, 0],
     });
     if (!plan.ok) return plan;
-
+    const before = createStudioBg3dHistorySnapshot(live);
     const nextPrimitives = [...live.primitives, ...plan.primitives];
+    commitImmediateHistoryTransition(nextPrimitives, live.customModels, live.document, before, { commandId: "studio.bg3d.procedural.insert", label: asset?.label ?? "스타터 자산 배치", source: "menu" });
     replaceCanonicalDocumentState({ primitives: nextPrimitives });
     setSelectedIds(new Set([plan.primitives[0].id]));
     return plan;
@@ -567,10 +561,7 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
       setError(frozenStatus6Text("studio.frozenStatus6.sceneOps.bundleIdFailed", "템플릿을 한 묶음으로 추적할 안전한 식별자를 만들지 못해 장면을 변경하지 않았습니다."));
       return false;
     }
-    const parts = rawParts.map((part: BgPrimitive, index: number) => ({
-      ...part,
-      id: allocation.nodeIds[index],
-    }));
+    const parts = rawParts.map((part: BgPrimitive, index: number) => ({ ...part, id: allocation.nodeIds[index] }));
     const nextPrimitives = [...live.primitives, ...parts];
     replaceCanonicalDocumentState({ primitives: nextPrimitives });
     setSelectedIds(new Set(allocation.nodeIds));
@@ -578,8 +569,8 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     return true;
   };
   h.addSceneTemplate = addSceneTemplate;
-  const addRoomBuild = ({ autoCutaway = false } = {}) => addGeneratedParts((count: number, view: StudioBg3dCameraSettings) =>
-    R.planStudioBg3dRoomBuild(roomBuilderSpec, count, undefined, { autoCutawayCamera: autoCutaway ? view : null }).primitives);
+  const addRoomBuild = ({ autoCutaway = false } = {}) => runGeneratedBatchWithHistory("방 빌더 배치", () => addGeneratedParts((count: number, view: StudioBg3dCameraSettings) =>
+    R.planStudioBg3dRoomBuild(roomBuilderSpec, count, undefined, { autoCutawayCamera: autoCutaway ? view : null }).primitives));
   h.addRoomBuild = addRoomBuild;
   const applyRoomBuilderPreset = (presetId: string) => {
     const preset = getStudioBg3dRoomPreset(presetId);
@@ -754,18 +745,26 @@ export function attachStudioBg3dEditorSceneOpsHost(h: Record<string, any>) {
     }
 
     if (!canAdmitSceneNodes(primitivePairs.length + modelPairs.length)) return;
+    const namedPairs = assignUniqueNamesToDuplicatedBatch({
+      primitives: live.primitives, customModels: live.customModels, modelLibrary,
+      fallbackLabelsByEntityId: h.stableFallbackLabelByEntityId, primitivePairs, modelPairs,
+    });
     const cloneIdBySourceId = new Map<string, string>([
-      ...primitivePairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
-      ...modelPairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
+      ...namedPairs.primitivePairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
+      ...namedPairs.modelPairs.map(({ source, clone }): [string, string] => [source.id, clone.id]),
     ]);
     const preserveSelectedHierarchy = <T extends BgPrimitive | BgCustomModelInstance>({ source, clone }: { source: T; clone: T }): T => ({
-      ...clone,
-      ...resolveStudioBg3dDuplicateHierarchyPatch({ source, clone, cloneIdBySourceId }),
+      ...clone, ...resolveStudioBg3dDuplicateHierarchyPatch({ source, clone, cloneIdBySourceId }),
     });
-    const newPrimitives: BgPrimitive[] = primitivePairs.map(preserveSelectedHierarchy);
-    const newModels: BgCustomModelInstance[] = modelPairs.map(preserveSelectedHierarchy);
+    const newPrimitives: BgPrimitive[] = namedPairs.primitivePairs.map(preserveSelectedHierarchy);
+    const newModels: BgCustomModelInstance[] = namedPairs.modelPairs.map(preserveSelectedHierarchy);
     const nextPrimitives = [...live.primitives, ...newPrimitives];
     const nextCustomModels = [...live.customModels, ...newModels];
+    commitImmediateHistoryTransition(nextPrimitives, nextCustomModels, live.document, createStudioBg3dHistorySnapshot(live), {
+      commandId: linked ? "studio.bg3d.duplicate.linked" : "studio.bg3d.duplicate",
+      label: linked ? "연결 복제" : "오브젝트 복제",
+      source: "inspector",
+    });
     replaceCanonicalDocumentState({
       ...(newPrimitives.length > 0 ? { primitives: nextPrimitives } : {}),
       ...(newModels.length > 0 ? { customModels: nextCustomModels } : {}),

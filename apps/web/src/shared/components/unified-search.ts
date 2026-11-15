@@ -61,6 +61,22 @@ export interface UnifiedSearchResult {
   readonly totalCount: number;
 }
 
+/**
+ * 비캔버스 문서(기획·서재·제작 관리 등)에서 스튜디오 원고 전용 편집 기능을 검색했을 때
+ * 단순 ‘없음’ 대신 이유·필요한 모드·접근 가능한 대안을 안내하기 위한 요약 모델.
+ */
+export interface UnavailableStudioFeatureMatch {
+  readonly id: string;
+  readonly label: string;
+  readonly location: string;
+  readonly reason: string;
+  readonly requiredMode: string;
+  readonly primaryHref: string;
+  readonly primaryActionLabel: string;
+  readonly secondaryHref: string;
+  readonly secondaryActionLabel: string;
+}
+
 export function emptyUnifiedSection(kind: UnifiedSearchSectionKind): UnifiedSearchSection {
   return { kind, items: [], total: 0 };
 }

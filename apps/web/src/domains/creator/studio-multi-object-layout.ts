@@ -53,12 +53,14 @@ export interface Studio3DPropCatalogEntry {
   readonly category: Studio3DPropCatalogCategory;
   readonly modelUrl:
     | `/assets/3d/${string}.glb`
+    | `/studio-assets/blender-hero-v12/${string}.glb`
     | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
     | `/assets/studio/cc0-20260906/assets/kenney-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
     | `/creator-essentials/pose-${string}.glb`;
   readonly thumbnailUrl?:
     | `/assets/3d/refined-v8/thumbnails/${string}.png`
+    | `/studio-assets/blender-hero-v12/thumbnails/${string}.png`
     | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
     | `/assets/studio/cc0-20260906/previews/kenney-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
@@ -104,6 +106,14 @@ export const STUDIO_REFINED_V8_PROP_CATALOG: readonly Studio3DPropCatalogEntry[]
   { id: "v8_ice_cream_cone", name: "아이스크림 콘 (v8)", category: "food", modelUrl: "/assets/3d/refined-v8/ice_cream_cone.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/ice_cream_cone.png", defaultPosition: [-0.25, 0.75, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v8_fox_mask", name: "여우 가면 (v8)", category: "fantasy", modelUrl: "/assets/3d/refined-v8/fox_mask.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/fox_mask.png", defaultPosition: [0, 1.2, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v8_robot_pet", name: "SF 로봇 반려견 (v8)", category: "scifi", modelUrl: "/assets/3d/refined-v8/robot_pet.glb", thumbnailUrl: "/assets/3d/refined-v8/thumbnails/robot_pet.png", defaultPosition: [0, 0, 0.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** Blender 5.2 Live MCP 플래그십 히어로(blender-hero-v12) 4종 및 512×512 스튜디오 썸네일 카탈로그. */
+export const STUDIO_BLENDER_HERO_V12_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  { id: "v12_shaper_anime_bust", name: "3D 셰이퍼 웹툰 주인공 흉상 (V12)", category: "mannequin", modelUrl: "/studio-assets/blender-hero-v12/webtoon-shaper-anime-bust-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/webtoon-shaper-anime-bust-v12.png", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v12_fantasy_runic_sword_altar", name: "로판·판타지 각성 룬 대검 제단 (V12)", category: "fantasy", modelUrl: "/studio-assets/blender-hero-v12/fantasy-runic-sword-altar-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/fantasy-runic-sword-altar-v12.png", defaultPosition: [0, 0, -1.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v12_modern_cafe_espresso_bar", name: "모던 에스프레소 카페 바·쇼케이스 (V12)", category: "furniture", modelUrl: "/studio-assets/blender-hero-v12/modern-cafe-espresso-bar-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/modern-cafe-espresso-bar-v12.png", defaultPosition: [0, 0, -1.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v12_hunter_gate_holo_terminal", name: "헌터 각성 포털 링·홀로 터미널 (V12)", category: "scifi", modelUrl: "/studio-assets/blender-hero-v12/hunter-gate-holo-terminal-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/hunter-gate-holo-terminal-v12.png", defaultPosition: [0, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
 /** Poly Haven CC0 2K PBR 고해상도 실사 소품·가구·건축·자연물 카탈로그 (141종 전수 + 전용 썸네일). */
@@ -305,8 +315,9 @@ export const STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG: readonly Studio3DPropCatalogEn
   { id: "kn_watercraft_boat_fan", name: "늪지대 에어보트 (Kenney)", category: "scifi", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-fan.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-fan.png", defaultPosition: [1.2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (270종). */
+/** 퍼블릭 번들(`/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (274종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  ...STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
   ...STUDIO_REFINED_V8_PROP_CATALOG,
   ...STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
   ...STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
@@ -573,9 +584,10 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
+  if (category === "blender-hero-v12") return STUDIO_BLENDER_HERO_V12_PROP_CATALOG;
   if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
   if (category === "polyhaven-pbr") return STUDIO_POLYHAVEN_PBR_PROP_CATALOG;
   if (category === "kenney-blockout") return STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG;

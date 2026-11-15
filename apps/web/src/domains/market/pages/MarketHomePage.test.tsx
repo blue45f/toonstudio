@@ -56,7 +56,7 @@ afterEach(() => {
 });
 
 describe("MarketHomePage", () => {
-  it("첫 화면은 검색·유형·실제 소재 목록에 집중하고 상세 탐색은 별도 화면으로 연결한다", () => {
+  it("첫 화면(/market)은 Grand Atelier V4 통합 큐레이션 허브로 검색·유형·쇼케이스·공정 가이드·사용권 안내를 한 화면에 펼치고 ?section= 직접 이동도 유지한다", () => {
     useResources.mockReturnValue(marketPage());
     render(<MemoryRouter initialEntries={["/market"]}><MarketHomePage /></MemoryRouter>);
 
@@ -70,8 +70,10 @@ describe("MarketHomePage", () => {
     expect(heading.compareDocumentPosition(types) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(types.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(browse.getAttribute("href")).toBe("/market/browse");
-    expect(screen.queryByRole("navigation", { name: "소재 카테고리" })).toBeNull();
-    expect(screen.queryByRole("navigation", { name: "마켓 주요 내비게이션" })).toBeNull();
+    expect(screen.getByTestId("market-atelier-ribbon")).toBeTruthy();
+    expect(screen.getByTestId("market-grand-atelier-showcase")).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "소재 카테고리" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "마켓 주요 내비게이션" })).toBeTruthy();
     expect(within(navigation).getByRole("link", { name: "소재 둘러보기" }).getAttribute("href")).toBe("/market?section=explore");
   });
 
@@ -212,9 +214,9 @@ it("작업군은 모바일에서 옆으로 넘기는 한 줄로 묶이고 제작
 });
 
 
-it.each(["buy", "explore", "sell", "guide"] as const)("%s 목적 화면은 해당 기능만 렌더하고 나머지는 URL로 연결한다", (section) => {
+it.each(["buy", "explore", "sell", "guide"] as const)("명시적 ?section=%s 목적 화면은 해당 구역만 집중 렌더하고 기본 /market은 4대 밴드를 통합 렌더한다", (section) => {
   useResources.mockReturnValue(marketPage());
-  const route = section === "buy" ? "/market" : `/market?section=${section}`;
+  const route = `/market?section=${section}`;
   const { container } = render(<MemoryRouter initialEntries={[route]}><MarketHomePage /></MemoryRouter>);
   expect([...container.querySelectorAll("[data-market-band]")].map((element) => element.getAttribute("data-market-band")))
     .toEqual([section]);
@@ -348,4 +350,42 @@ it("짧은 유형 이름 뒤에 상세 안내를 접어 두되 장착과 카탈�
   expect(details?.textContent).toContain("펜선, 수채, 이펙트 브러시");
   expect(within(section).getByRole("link", { name: "브러시 관리자로 장착" }).getAttribute("href")).toBe("/studio/brushes");
   expect(within(section).getByRole("link", { name: "전체 에셋 카탈로그" }).getAttribute("href")).toBe("/market/browse");
+});
+
+it("Luminous Atelier 엠블럼과 44px 빠른 라이선스·소재 필터 칩을 제공한다", () => {
+  useResources.mockReturnValue(
+    marketPage({
+      items: [
+        { ...cachedRecord, id: "cc0-bg", kind: "3d-asset", license: "cc0-1.0" },
+        { ...cachedRecord, id: "nc-brush", kind: "brush", license: "cc-by-nc-4.0" },
+      ],
+    }),
+  );
+  const { container } = render(<MemoryRouter><MarketHomePage /></MemoryRouter>);
+
+  const emblem = container.querySelector('img[src="/brand/luminous-atelier-20261114/icon-nav-asset-market.webp"]');
+  expect(emblem).toBeTruthy();
+
+  const quickGroup = screen.getByRole("group", { name: "빠른 라이선스·소재 필터" });
+  const chips = within(quickGroup).getAllByRole("button");
+  expect(chips.map((chip) => chip.textContent)).toEqual([
+    "전체",
+    "무료·CC0",
+    "상업용 즉시 가능",
+    "No-AI 직접 제작 검증",
+    "팀 공동 작업 공유 가능",
+    "펜·브러시",
+    "3D 배경·포즈",
+  ]);
+  for (const chip of chips) {
+    expect(chip.className).toContain("min-h-11");
+  }
+
+  fireEvent.click(within(quickGroup).getByRole("button", { name: "상업용 즉시 가능" }));
+  expect(screen.getByTestId("resource-cc0-bg")).toBeTruthy();
+  expect(screen.queryByTestId("resource-nc-brush")).toBeNull();
+
+  fireEvent.click(within(quickGroup).getByRole("button", { name: "펜·브러시" }));
+  expect(screen.queryByTestId("resource-cc0-bg")).toBeNull();
+  expect(screen.getByTestId("resource-nc-brush")).toBeTruthy();
 });

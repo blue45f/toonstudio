@@ -334,3 +334,35 @@ export function studioProjectById(
 ): StudioProjectLibraryEntry | null {
   return state.projects.find((project) => project.id === projectId) ?? null;
 }
+
+/**
+ * 생성 화면에서 뒤로 가기 후 재시도할 때 중복 더미 작품을 만들지 않고
+ * 동일 세션에서 생성된 활성 작품의 메타데이터만 제자리에서 갱신한다.
+ */
+export function reconcileStudioProjectOnCreateRetry(
+  storage: StudioProjectLibraryStorage,
+  projectId: string,
+  input: Omit<CreateStudioProjectInput, "id" | "createdAt">,
+  options: { readonly at?: string; readonly target?: StudioProjectLibraryEventTarget } = {},
+): StudioProjectLibraryEntry | null {
+  if (!validProjectId(projectId)) return null;
+  if (!PROJECT_KIND_SET.has(input.kind)) throw new Error("A supported project kind is required.");
+  const title = normalizedTitle(input.title);
+  const existing = readStudioProjectLibrary(storage).projects.find(
+    (project) => project.id === projectId && project.status === "active",
+  );
+  if (!existing) return null;
+  return updateProject(storage, projectId, (project, now) => ({
+    ...project,
+    title,
+    kind: input.kind,
+    templateId: input.templateId?.trim() || null,
+    description: input.description !== undefined
+      ? normalizedDescription(input.description)
+      : project.description,
+    primaryLocale: normalizedLocale(input.primaryLocale ?? project.primaryLocale),
+    definition: projectDefinitionForRead(input.definition, input.kind, input.templateId),
+    updatedAt: now,
+    lastOpenedAt: now,
+  }), options);
+}

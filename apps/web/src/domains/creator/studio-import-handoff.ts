@@ -4,12 +4,13 @@ import type { StudioImportFormat } from "./studio-import-compatibility";
 
 export const STUDIO_IMPORT_HANDOFF_QUERY_KEY = "importHandoff";
 export const STUDIO_IMPORT_HANDOFF_ACCEPT =
-  ".toonstudio,.json,.psd,.ora,.cbz,.abr,.myb,.kpp,image/*,.tif,.tiff,application/vnd.toonstudio.project+zip";
+  ".toonstudio,.toonproject.zip,.zip,.json,.psd,.ora,.cbz,.abr,.myb,.kpp,image/*,.tif,.tiff,application/vnd.toonstudio.project+zip";
 
 export type StudioImportHandoffTarget =
   | "brush-pack"
   | "image"
   | "interchange"
+  | "project-archive"
   | "project-json"
   | "psd";
 
@@ -28,6 +29,17 @@ function pruneExpired(now: number): void {
   for (const [token, handoff] of handoffs) {
     if (handoff.expiresAt <= now) handoffs.delete(token);
   }
+}
+
+export function isStudioProjectArchiveHandoffFile(
+  file: Pick<File, "name" | "type">,
+): boolean {
+  const lowerName = file.name.trim().toLowerCase();
+  if (lowerName.endsWith(".toonproject.zip") || lowerName.endsWith(".zip")) {
+    return true;
+  }
+  const mime = file.type.trim().toLowerCase();
+  return mime === "application/vnd.toonstudio.project+zip" || mime === "application/zip";
 }
 
 export function studioImportHandoffTargetForFormat(
@@ -61,8 +73,12 @@ export function registerStudioImportHandoff(
   if (!(file instanceof File) || file.size <= 0 || !file.name.trim()) {
     throw new Error("A non-empty browser File is required for Studio import handoff.");
   }
-  const target = studioImportHandoffTargetForFormat(format);
-  if (!target) throw new Error(`Studio import has no operational handoff for ${format}.`);
+  const baseTarget = studioImportHandoffTargetForFormat(format);
+  if (!baseTarget) throw new Error(`Studio import has no operational handoff for ${format}.`);
+  const target: StudioImportHandoffTarget =
+    baseTarget === "project-json" && isStudioProjectArchiveHandoffFile(file)
+      ? "project-archive"
+      : baseTarget;
   pruneExpired(now);
   const token = createSecureRandomUuid(
     "이 브라우저에서는 안전한 Studio 가져오기 전달 ID를 만들 수 없습니다.",

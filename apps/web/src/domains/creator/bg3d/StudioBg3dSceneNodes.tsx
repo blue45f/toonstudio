@@ -68,6 +68,7 @@ import type {
 } from "./studio-bg3d-scene-document";
 
 import { BgCustomModelMesh, type StudioBg3dRigBakeReader } from "./StudioBg3dCustomModelMesh";
+import type { StudioBg3dGlbUnitAxisReport } from "./studio-bg3d-glb-unit-axis-diagnostics";
 
 /** Imported model metadata the placement preview ghost renders before the instance exists. */
 export interface StudioBg3dPlacementPreviewAsset {
@@ -78,6 +79,8 @@ export interface StudioBg3dPlacementPreviewAsset {
   /** 최종 배율을 반영한 모델 원점 기준 바닥 중심. 회전 후 포인터 접지점에서 뺀다. */
   readonly localInsertionPoint: readonly [number, number, number];
   readonly instanceScale?: readonly [number, number, number];
+  /** GLB 단위(mm/cm/초소형)·위쪽 축(Z-up/매몰) 사전 진단 리포트. */
+  readonly glbDiagnostics?: StudioBg3dGlbUnitAxisReport;
 }
 
 /** Keeps persisted exposure/tone-mapping authoritative after R3F creates or reuses WebGLRenderer. */
@@ -518,7 +521,11 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
       position={prim.position}
       rotation={prim.rotation}
       scale={prim.scale}
-      userData={{ studioBg3dEntityId: prim.id, studioBg3dEntityKind: "primitive" }}
+      userData={{
+        studioBg3dEntityId: prim.id,
+        studioBg3dEntityKind: "primitive",
+        studioBg3dSelected: selected,
+      }}
       visible={visible}
       {...(visible ? {
         onClick: (e: ThreeEvent<MouseEvent>) => {
@@ -556,8 +563,17 @@ export function BgPrimitiveMesh({ prim, geometryPool, lineArt, showEdges, select
         )}
       </mesh>
       {showEdges ? (
-        <lineSegments ref={registerStudioBg3dCaptureExcludedObject} geometry={edges}>
-          <lineBasicMaterial color="#000000" />
+        <lineSegments
+          ref={registerStudioBg3dCaptureExcludedObject}
+          raycast={() => null}
+          geometry={edges}
+          renderOrder={selected && !lineArt ? 18 : 0}
+          userData={{ studioBg3dSelectionHighlightFor: selected && !lineArt ? prim.id : undefined }}
+        >
+          <lineBasicMaterial
+            color={selected && !lineArt ? 0x38bdf8 : 0x000000}
+            depthTest={!selected || lineArt}
+          />
         </lineSegments>
       ) : null}
       {children}

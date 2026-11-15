@@ -36,6 +36,10 @@ import {
   normalizeStudioRememberedPrimaryTool,
   type StudioRememberedPrimaryTool,
 } from "./studio-initial-primary-tool";
+import {
+  normalizeStudioViewportPanelMemoryState,
+  type StudioViewportPanelMemoryState,
+} from "./studio-cuttoon-editor/runtime/studio-viewport-panel-layout";
 
 import type { StudioAsyncKeyValueStore } from "./studio-local-database";
 import type { StudioServerAiProviderPreference } from "./studio-server-ai-client";
@@ -65,6 +69,7 @@ const PAGE_PREVIEW_SIZE_KEY = "page-preview-size";
 const PRIMARY_TOOL_KEY = "primary-tool";
 const RECENT_COLORS_KEY = "recent-colors";
 const SERVER_AI_PROVIDER_KEY = "server-ai-provider";
+const VIEWPORT_PANEL_MEMORY_KEY = "viewport-panel-memory";
 
 export const STUDIO_UI_BOOLEAN_PREFERENCE_KEYS = [
   "ai-notice-acknowledged",
@@ -110,6 +115,8 @@ export interface StudioUiPreferencesRepository {
   saveRecentColors(colors: readonly string[], ownerScope?: string): Promise<void>;
   loadServerAiProvider(): Promise<StudioServerAiProviderPreference>;
   saveServerAiProvider(provider: StudioServerAiProviderPreference): Promise<void>;
+  loadViewportPanelMemory(ownerScope?: string): Promise<StudioViewportPanelMemoryState>;
+  saveViewportPanelMemory(state: StudioViewportPanelMemoryState, ownerScope?: string): Promise<void>;
 }
 
 function parseJson(raw: string | null): unknown {
@@ -270,6 +277,14 @@ export function createStudioUiPreferencesRepository(
     },
     saveServerAiProvider(provider: StudioServerAiProviderPreference) {
       return enqueue(SERVER_AI_PROVIDER_KEY, normalizeServerAiProvider(provider));
+    },
+    async loadViewportPanelMemory(ownerScope?: string) {
+      const key = `${VIEWPORT_PANEL_MEMORY_KEY}:${encodeURIComponent(ownerScope || "guest")}`;
+      return normalizeStudioViewportPanelMemoryState(parseJson(await store.get(key)));
+    },
+    saveViewportPanelMemory(state: StudioViewportPanelMemoryState, ownerScope?: string) {
+      const key = `${VIEWPORT_PANEL_MEMORY_KEY}:${encodeURIComponent(ownerScope || "guest")}`;
+      return enqueue(key, JSON.stringify(normalizeStudioViewportPanelMemoryState(state)));
     },
   });
 }

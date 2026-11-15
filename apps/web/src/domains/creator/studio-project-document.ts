@@ -372,7 +372,7 @@ export async function parseStudioProjectDocument(
           severity: "error",
           code: "UNKNOWN_FUTURE_VERSION",
           message:
-            "이 Studio 프로젝트는 현재 빌드보다 새로운 project version으로 저장되었습니다.",
+            `이 Studio 프로젝트는 현재 빌드(지원 v${STUDIO_PROJECT_DOCUMENT_CURRENT_VERSION})보다 새로운 project version(v${futureVersion})으로 저장되어 열 수 없습니다.`,
           recoverable: true,
           recovery: "upgrade-client",
           formatId: STUDIO_PROJECT_DOCUMENT_FORMAT_ID,

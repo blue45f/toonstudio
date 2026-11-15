@@ -416,15 +416,15 @@ export function VrmActor({
       cancelTexturePaint();
       cancelTexturePaintSurface("device-failure");
     };
+    const cancelOnVisibility = () => {
+      if (document.visibilityState === "hidden") cancelOnWindowBlur();
+    };
     window.addEventListener("pointermove", cancelPendingTapOnMove, { passive: true });
     window.addEventListener("pointerup", finishMatchingPointer, { passive: true });
     window.addEventListener("pointercancel", cancelMatchingPointer, { passive: true });
     window.addEventListener("blur", cancelOnWindowBlur);
-    gl.domElement.addEventListener(
-      "pointerdown",
-      cancelPendingTapOnAdditionalPointer,
-      true,
-    );
+    document.addEventListener("visibilitychange", cancelOnVisibility);
+    gl.domElement.addEventListener("pointerdown", cancelPendingTapOnAdditionalPointer, true);
     gl.domElement.addEventListener("lostpointercapture", cancelLostPointerCapture);
     gl.domElement.addEventListener("pointerleave", cancelPointerLeave);
     gl.domElement.addEventListener("webglcontextlost", cancelOnGraphicsDeviceFailure);
@@ -433,11 +433,8 @@ export function VrmActor({
       window.removeEventListener("pointerup", finishMatchingPointer);
       window.removeEventListener("pointercancel", cancelMatchingPointer);
       window.removeEventListener("blur", cancelOnWindowBlur);
-      gl.domElement.removeEventListener(
-        "pointerdown",
-        cancelPendingTapOnAdditionalPointer,
-        true,
-      );
+      document.removeEventListener("visibilitychange", cancelOnVisibility);
+      gl.domElement.removeEventListener("pointerdown", cancelPendingTapOnAdditionalPointer, true);
       gl.domElement.removeEventListener("lostpointercapture", cancelLostPointerCapture);
       gl.domElement.removeEventListener("pointerleave", cancelPointerLeave);
       gl.domElement.removeEventListener("webglcontextlost", cancelOnGraphicsDeviceFailure);

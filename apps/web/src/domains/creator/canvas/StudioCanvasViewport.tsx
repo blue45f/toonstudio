@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useId } from "react";
 
 import { CANVAS_W } from "../studio-assets";
 import { studioUiDensityAllows } from "../studio-ui-density";
@@ -221,6 +221,33 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
   ]
     .filter(Boolean)
     .join(" ");
+  const canvasLiveSummaryId = useId();
+  const activeToolReadable = commentPinArmed
+    ? "핀 댓글 배치"
+    : advancedFillActive
+      ? "채우기"
+      : tool === "select"
+        ? "선택 도구"
+        : tool === "hand"
+          ? "손 이동 도구"
+          : drawMode === "eraser"
+            ? `지우개(${activeCatalogBrushName || "지우개"})`
+            : drawMode === "shape"
+              ? "도형 그리기"
+              : drawMode === "pixel"
+                ? "픽셀 펜"
+                : `펜(${activeCatalogBrushName || "매끈한 펜"})`;
+  const roundedCanvasWidth = Math.max(1, Math.round(Number.isFinite(strokeWidth) ? strokeWidth : 4));
+  const roundedCanvasOpacity = Math.max(
+    1,
+    Math.min(100, Math.round((Number.isFinite(brushOpacity) ? brushOpacity : 1) * 100)),
+  );
+  const roundedCanvasStabilizer = Math.max(0, Math.round(Number.isFinite(stabilizer) ? stabilizer : 0));
+  const activeOptionsReadable =
+    tool === "draw"
+      ? `, 두께 ${roundedCanvasWidth}px, 불투명도 ${roundedCanvasOpacity}%, 손떨림 보정 ${roundedCanvasStabilizer}단계`
+      : "";
+  const canvasLiveSummary = `현재 컷 ${activePageIndex + 1} / ${Math.max(1, pages.length)}, 활성 도구 ${activeToolReadable}${activeOptionsReadable}, 배율 ${Math.max(1, Math.round((Number.isFinite(effScale) ? effScale : 1) * 100))}%`;
 
   return (
     <div
@@ -339,6 +366,7 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
         tabIndex={0}
         role="group"
         aria-keyshortcuts={handAriaShortcuts}
+        aria-describedby={canvasLiveSummaryId}
         aria-label={localizeText(
           t,
           "작업 캔버스 — 휠로 세로 이동, Shift+휠로 가로 이동, H·스페이스·휠 버튼 드래그 또는 방향키로 자유 이동",
@@ -358,12 +386,19 @@ export const StudioCanvasViewport = memo(function StudioCanvasViewport({
           canvasOnlyMode && "min-h-0 flex-1 max-h-none",
           mobileImmersive
             ? "min-h-0 flex-1 max-h-none rounded-xl"
-            : "max-h-[calc(100dvh-11rem)] min-h-[12rem] lg:max-h-none",
+            : "max-h-[calc(100dvh-11rem)] min-h-0 lg:max-h-none",
           viewportCursorClassName,
           "data-[studio-hand-pan-armed=true]:select-none data-[studio-hand-pan-armed=true]:cursor-grab data-[studio-hand-pan-active=true]:!cursor-grabbing",
           (isSpacePressed || tool === "hand") && "select-none"
         )}
       >
+        <span
+          id={canvasLiveSummaryId}
+          className="sr-only"
+          data-studio-canvas-a11y-summary="true"
+        >
+          {canvasLiveSummary}
+        </span>
         {renderStudioCanvasStickyBanners({
           activePage,
           canvasFlipH,

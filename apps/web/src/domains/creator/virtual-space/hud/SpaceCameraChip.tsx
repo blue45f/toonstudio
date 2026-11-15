@@ -1,25 +1,97 @@
-import { LocateFixed } from "lucide-react";
-import type { MouseEvent } from "react";
+import { Crosshair, History, LocateFixed, RotateCcw } from "lucide-react";
+import { useCallback, useSyncExternalStore, type MouseEvent } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type { StudioCameraPanStore } from "../studio-virtual-space-camera-pan";
+import { EMPTY_CAMERA_RECOVERY_SNAPSHOT } from "../studio-virtual-space-camera-recovery";
 import { useSpaceCameraPan } from "./use-space-camera-pan";
 
 /**
- * 시점 안내 칩. 카메라를 끌어서 아바타에서 떼어 놓은 동안에만 보이고, 누르거나 L 키를 누르면 내 위치로 돌아온다.
- * 마우스·터치로 누르면 키보드 초점을 월드로 돌려 바로 걸을 수 있게 하고(onPointerUse), 키보드로 활성화하면 초점을 그대로 둔다.
+ * 시점 안내·카메라 복구 칩 묶음.
+ * - 카메라를 끌어서 옮긴 동안: 내 위치로 돌아오기(L)
+ * - 시야 밖 이탈 시: 시야 이탈 즉시 복구(감속 없이 즉시 스냅)
+ * - 선택 물체 존재 시: 선택 물체에 초점
+ * - 시점 이동 기록 존재 시: 이전 시점 복원
  */
 export function SpaceCameraChip({ store, onPointerUse }: { readonly store: StudioCameraPanStore; readonly onPointerUse?: () => void }) {
   const bt = useBilingual("SpaceCameraChip");
   const { available, panned } = useSpaceCameraPan(store);
-  if (!available || !panned) return null;
-  const recenter = (event: MouseEvent<HTMLButtonElement>) => {
-    store.recenter();
+  const subscribeRecovery = useCallback((listener: () => void) => store.subscribeRecovery(listener), [store]);
+  const getRecovery = useCallback(() => store.getRecoverySnapshot(), [store]);
+  const recovery = useSyncExternalStore(subscribeRecovery, getRecovery, () => EMPTY_CAMERA_RECOVERY_SNAPSHOT);
+
+  if (!available || (!panned && !recovery.outOfSight && !recovery.canUndoView && !recovery.focusTarget)) {
+    return null;
+  }
+
+  const withPointerReturn = (action: () => void) => (event: MouseEvent<HTMLButtonElement>) => {
+    action();
     if (event.detail > 0) onPointerUse?.();
   };
-  return <button type="button" className="space-status-chip" data-space-interactive="true" data-camera-chip="true"
-    aria-keyshortcuts="L" title={bt("내 위치로 돌아오기 (L)", "Back to my avatar (L)")} onClick={recenter}>
-    <LocateFixed size={14} aria-hidden />{bt("시점을 옮겼어요 · 내 위치로 (L)", "Looking around · back to me (L)")}
-  </button>;
+
+  return (
+    <>
+      {recovery.outOfSight ? (
+        <button
+          type="button"
+          className="space-status-chip space-status-chip--warn"
+          data-space-interactive="true"
+          data-camera-instant-recover="true"
+          title={bt("아바타가 화면 밖으로 벗어났어요 · 즉시 시야 복구", "Avatar left the viewport · Recover camera immediately")}
+          onClick={withPointerReturn(() => store.recoverOutOfSightNow())}
+        >
+          <RotateCcw size={14} aria-hidden />
+          {bt("시야 이탈 즉시 복구", "Recover view now")}
+        </button>
+      ) : null}
+      {panned ? (
+        <button
+          type="button"
+          className="space-status-chip"
+          data-space-interactive="true"
+          data-camera-chip="true"
+          aria-keyshortcuts="L"
+          title={bt("내 위치로 돌아오기 (L)", "Back to my avatar (L)")}
+          onClick={withPointerReturn(() => store.recenter())}
+        >
+          <LocateFixed size={14} aria-hidden />
+          {bt("시점을 옮겼어요 · 내 위치로 (L)", "Looking around · back to me (L)")}
+        </button>
+      ) : null}
+      {recovery.focusTarget ? (
+        <button
+          type="button"
+          className="space-status-chip"
+          data-space-interactive="true"
+          data-camera-focus-object="true"
+          title={bt(
+            `선택 물체(${recovery.focusTarget.labelKo})에 카메라 초점 맞추기`,
+            `Focus camera on ${recovery.focusTarget.labelEn}`,
+          )}
+          onClick={withPointerReturn(() => {
+            store.focusSelectedTarget();
+          })}
+        >
+          <Crosshair size={14} aria-hidden />
+          {bt(`선택 물체에 초점 · ${recovery.focusTarget.labelKo}`, `Focus · ${recovery.focusTarget.labelEn}`)}
+        </button>
+      ) : null}
+      {recovery.canUndoView ? (
+        <button
+          type="button"
+          className="space-status-chip"
+          data-space-interactive="true"
+          data-camera-prev-view="true"
+          title={bt("방금 전 카메라 시점으로 되돌리기", "Return to previous camera view")}
+          onClick={withPointerReturn(() => {
+            store.restorePreviousView();
+          })}
+        >
+          <History size={14} aria-hidden />
+          {bt("이전 시점", "Previous view")}
+        </button>
+      ) : null}
+    </>
+  );
 }

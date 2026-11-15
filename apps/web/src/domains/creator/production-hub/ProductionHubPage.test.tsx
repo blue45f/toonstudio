@@ -57,28 +57,26 @@ describe("webtoon production collaboration UI", () => {
     expect(screen.queryByText("100%")).toBeNull();
   });
 
-  it("keeps management and version comparison discoverable without competing with the three tasks", async () => {
+  it("keeps management and version comparison immediately open on entry and collapsible with Escape", async () => {
     await renderProduction(<MemoryRouter><ProductionLandingPage /></MemoryRouter>);
     const tools = screen.getByRole("group", { name: "제작 도구 더 보기" }) as HTMLDetailsElement;
     const summary = within(tools).getByText("제작 도구 더 보기");
-    expect(tools.open).toBe(false);
-    // jsdom의 role 조회는 닫힌 details의 자식도 찾으므로 실제 접힘 계약과 소유 위치를 확인한다.
+    expect(tools.open).toBe(true);
     const people = within(tools).getByRole("link", { name: /사람·권한/u });
     expect(people.closest("details")).toBe(tools);
-
-    fireEvent.click(summary);
-    expect(tools.open).toBe(true);
     expect(people.getAttribute("href")).toBe("/team/people");
     expect(within(tools).getByRole("link", { name: /버전 비교/u }).getAttribute("href"))
       .toBe("/production/projects/sample-project/episodes/episode-12?roomView=compare");
     expect(within(tools).getByRole("link", { name: /구인·의뢰/u }).getAttribute("href"))
       .toBe("/collaborate");
+    expect(screen.getByTestId("grand-atelier-collab-hub")).toBeTruthy();
 
     people.focus();
     fireEvent.keyDown(people, { key: "Escape" });
     expect(tools.open).toBe(false);
     expect(document.activeElement).toBe(summary);
     fireEvent.click(summary);
+    expect(tools.open).toBe(true);
     expect(within(tools).getAllByRole("link").map((link) => link.getAttribute("href")))
       .toEqual(expect.arrayContaining([
         "/production/projects/sample-project/overview",
@@ -105,7 +103,7 @@ describe("webtoon production collaboration UI", () => {
         "/production/projects/sample-project/review",
       ]);
       expect(screen.getByText("A sample without sign-in. Changes last in this tab and reset on reload.")).toBeTruthy();
-      expect((screen.getByRole("group", { name: "More production tools" }) as HTMLDetailsElement).open).toBe(false);
+      expect((screen.getByRole("group", { name: "More production tools" }) as HTMLDetailsElement).open).toBe(true);
     } finally {
       act(() => useI18n.setState({ lang: previousLanguage }));
     }

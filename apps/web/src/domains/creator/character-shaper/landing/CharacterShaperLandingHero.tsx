@@ -80,7 +80,17 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
         className="studio-character-guide__intro relative grid gap-6 py-8 sm:py-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center lg:gap-12 lg:py-16"
       >
         <div className="max-w-2xl">
-          <p className="eyebrow text-accent">CHARACTER SHAPER</p>
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-accent/25 bg-card/85 px-3 py-1.5 shadow-xs backdrop-blur-sm">
+            <img
+              src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
+              alt=""
+              aria-hidden="true"
+              className="size-6 rounded-md border border-line object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <p className="eyebrow text-accent">CHARACTER SHAPER</p>
+          </div>
           <h1 className="mt-3 text-balance [word-break:keep-all] text-[clamp(1.9rem,5vw,3rem)] font-bold leading-[1.12] tracking-tight text-fg">
             {bt("프리셋으로 시작하는 3D 웹툰 캐릭터", "3D webtoon characters that start from presets")}
           </h1>
@@ -144,7 +154,11 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
             className="studio-character-guide__stage-strip"
           >
             {STAGE_STEPS.map((step) => (
-              <a key={step.ko} href="#how-to" className="studio-character-guide__stage-step">
+              <a
+                key={step.ko}
+                href="#how-to"
+                className="studio-character-guide__stage-step inline-flex min-h-11 items-center justify-center"
+              >
                 {bt(step.ko, step.en)}
               </a>
             ))}

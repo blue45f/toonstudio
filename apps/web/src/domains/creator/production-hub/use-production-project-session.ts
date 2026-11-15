@@ -7,8 +7,13 @@ import { clearProductionCommandRecoveriesForActor, clearProductionCommandRecover
 import { useT } from "@/shared/lib/i18n";
 import { defineBilingualText } from "@/shared/lib/i18n-bilingual-copy";
 import { ProductionCommandRevisionChangedError, type ProductionCommandExecutionOptions } from "./production-command-execution";
+import {
+  describeProductionAccessTransition,
+  hasProductionAccessChanged,
+  type RoleTransitionSummary,
+} from "./production-role-transition-model";
 
-import type { ProductionDemoTranslate } from "./production-demo-adapter";
+import { subscribeProductionDemoSession, type ProductionDemoTranslate } from "./production-demo-adapter";
 
 export type ProductionSaveState = "idle" | "saving" | "saved" | "error";
 const subscribeToSession = (notify: () => void) => { listeners.add(notify); return () => { listeners.delete(notify); }; };
@@ -50,6 +55,7 @@ interface Snapshot {
   readonly error: string | null;
   readonly notice: string | null;
   readonly saveState: ProductionSaveState;
+  readonly roleTransition: RoleTransitionSummary | null;
 }
 interface DemoAdapter {
   readonly create: () => ProductionProjectAggregate;
@@ -65,7 +71,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
   const authReady = isDemo || options.authReady !== false;
   const authRevision = useSyncExternalStore(subscribeToSession, getAuthSessionRevision, getAuthSessionRevision);
   const scope = JSON.stringify([projectId, actorId, authRevision, authReady]);
-  const empty: Snapshot = { scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle" };
+  const empty: Snapshot = { scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle", roleTransition: null };
   const [snapshot, setSnapshot] = useState<Snapshot>(empty);
   const state = snapshot.scope === scope ? snapshot : empty;
   const authority = useRef<ProductionProjectRecord | null>(null);
@@ -97,16 +103,27 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     if (isDemo) {
       const record = { aggregate: inputs.current.demo.create(), access: DEMO_ACCESS };
       authority.current = record;
-      setSnapshot({ scope, record, loading: false, refreshing: false, error: null, notice: null, saveState: "idle" });
-      return () => { generation.current += 1; authority.current = null; };
+      setSnapshot({ scope, record, loading: false, refreshing: false, error: null, notice: null, saveState: "idle", roleTransition: null });
+      const unsubscribeDemo = subscribeProductionDemoSession((incoming) => {
+        if (!current()) return;
+        if (authority.current && incoming.revision <= authority.current.aggregate.revision) return;
+        const nextRecord = { aggregate: incoming, access: DEMO_ACCESS };
+        authority.current = nextRecord;
+        setSnapshot((value) => (value.scope === scope ? { ...value, record: nextRecord, loading: false } : value));
+      });
+      return () => {
+        unsubscribeDemo();
+        generation.current += 1;
+        authority.current = null;
+      };
     }
     // 캐시된 계정 ID만으로 조회하지 않고 공개 세션의 초기 확인을 기다린다.
     if (!authReady) {
-      setSnapshot({ scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle" });
+      setSnapshot({ scope, record: null, loading: true, refreshing: false, error: null, notice: null, saveState: "idle", roleTransition: null });
       return () => { generation.current += 1; reads.current += 1; authority.current = null; };
     }
     setSnapshot({ scope, record: null, loading: Boolean(actorId), refreshing: false,
-      error: actorId ? null : "로그인 후 제작 프로젝트를 열어 주세요.", notice: null, saveState: "idle" });
+      error: actorId ? null : "로그인 후 제작 프로젝트를 열어 주세요.", notice: null, saveState: "idle", roleTransition: null });
     if (!actorId || !projectId) return () => { generation.current += 1; };
     const clearRecovery = () => { unconfirmedWrite.current = null; recoveryStored.current = false; clearProductionCommandRecovery(actorId, projectId); };
     const refresh = async (explicit = false) => {
@@ -146,20 +163,36 @@ export function useProductionProjectSession(projectId: string | undefined, actor
         if (record.aggregate.projectId !== projectId || !record.access.view) { authority.current = null; throw new Error("프로젝트 접근 정보를 확인하지 못했습니다."); }
         const confirmedRevision = unconfirmedWrite.current?.confirmedRevision;
         if (confirmedRevision != null && record.aggregate.revision < confirmedRevision) throw new Error(translate(staleRecoveryReadKey));
+        const previousAccess = authority.current?.access ?? null;
         if (authority.current && record.aggregate.revision < authority.current.aggregate.revision) return;
+        const accessTransition =
+          previousAccess && hasProductionAccessChanged(previousAccess, record.access)
+            ? describeProductionAccessTransition(previousAccess, record.access)
+            : null;
+        const transitionNotice = accessTransition
+          ? `참여 권한이 '${accessTransition.previousRoleKo}'에서 '${accessTransition.currentRoleKo}'(으)로 변경되었습니다. ${accessTransition.nextActionsKo}`
+          : null;
         authority.current = record;
         // 자동 갱신은 현재 상태만 읽는다. 역할 원문의 재전송은 명시적인 저장 상태 확인에 한정한다.
         if ((checkRestoredAccess || holdRoleRecovery) && recovery && recovery.confirmedRevision === null) {
           const notice = checkRestoredAccess ? translate(restoredSaveKey) : translate(unconfirmedSaveKey);
           checkRestoredAccess = false;
           setSnapshot((value) => ({ ...value, scope, record, loading: false, refreshing: false, error: null,
+            roleTransition: accessTransition ?? value.roleTransition,
             saveState: "error", notice: `${notice}${recoveryStored.current ? "" : ` ${translate(recoveryStorageFailedKey)}`}` }));
           return;
         }
         clearRecovery();
         setSnapshot((value) => ({ ...value, scope, record, loading: false, refreshing: false, error: null,
+          roleTransition: accessTransition ?? value.roleTransition,
           saveState: value.saveState === "error" ? "idle" : value.saveState,
-          notice: recovered ? translate(recoveredSaveKey) : value.saveState === "error" ? translate("productionHub.session.recoveredNotice", "최신 상태를 불러왔습니다. 저장 실패했던 입력은 확인 후 다시 저장해 주세요.") : value.notice }));
+          notice: recovered
+            ? translate(recoveredSaveKey)
+            : transitionNotice
+              ? transitionNotice
+              : value.saveState === "error"
+                ? translate("productionHub.session.recoveredNotice", "최신 상태를 불러왔습니다. 저장 실패했던 입력은 확인 후 다시 저장해 주세요.")
+                : value.notice }));
       } catch (cause) {
         const message = await getApiErrorMessage(cause, translate("productionHub.session.loadLatestFailed", "최신 프로젝트를 불러오지 못했습니다. 다시 시도해 주세요."));
         if (!current() || sequence !== reads.current) return;
@@ -263,21 +296,42 @@ export function useProductionProjectSession(projectId: string | undefined, actor
           unconfirmedWrite.current = null; recoveryStored.current = false;
           clearProductionCommandRecovery(actorId, projectId);
         }
+        let detectedTransition: RoleTransitionSummary | null = null;
         if (!isDemo && httpStatus(cause) === 409) {
           try {
             const latest = await getProductionProject(record.aggregate.projectId);
             if (!current()) throw new Error(staleMessage, { cause });
             if (latest.aggregate.projectId !== projectId || !latest.access.view) { authority.current = null; throw new Error("프로젝트 접근 정보가 변경되었습니다.", { cause }); }
+            if (hasProductionAccessChanged(record.access, latest.access)) {
+              detectedTransition = describeProductionAccessTransition(record.access, latest.access);
+            }
             authority.current = latest;
             failure += " 최신 상태를 불러왔습니다. 편집 내용을 확인한 뒤 다시 저장하세요.";
           } catch (refreshError) {
             if ([401, 403, 404].includes(httpStatus(refreshError) ?? 0)) authority.current = null;
             failure += ` ${t("productionHub.session.refreshFailed", "최신 상태를 불러오지 못했습니다. 새로고침이 필요합니다.")}`;
           }
+        } else if (!isDemo && httpStatus(cause) === 403) {
+          try {
+            const latest = await getProductionProject(record.aggregate.projectId);
+            if (!current()) throw new Error(staleMessage, { cause });
+            if (latest.aggregate.projectId !== projectId || !latest.access.view) {
+              authority.current = null;
+            } else {
+              authority.current = latest;
+              if (hasProductionAccessChanged(record.access, latest.access)) {
+                detectedTransition = describeProductionAccessTransition(record.access, latest.access);
+                failure += ` 참여 권한이 '${detectedTransition.previousRoleKo}'에서 '${detectedTransition.currentRoleKo}'(으)로 변경되었습니다. ${detectedTransition.nextActionsKo}`;
+              }
+            }
+          } catch {
+            authority.current = null;
+          }
         }
         if (!current()) { if (strict) throw new Error(staleMessage, { cause }); return; }
-        if ([401, 403, 404].includes(httpStatus(cause) ?? 0)) authority.current = null;
+        if ([401, 404].includes(httpStatus(cause) ?? 0) || (isDemo && httpStatus(cause) === 403)) authority.current = null;
         setSnapshot((value) => ({ ...value, record: authority.current, saveState: "error", notice: failure,
+          roleTransition: detectedTransition ?? value.roleTransition,
           error: authority.current ? null : failure }));
         if (strict) throw new Error(failure, { cause });
       } finally { if (current()) pendingWrites.current = Math.max(0, pendingWrites.current - 1); }
@@ -289,8 +343,13 @@ export function useProductionProjectSession(projectId: string | undefined, actor
   const execute = useCallback((command: ProductionClientCommand, message: string) => queueCommand(command, message, false), [queueCommand]);
   const executeStrict = useCallback((command: ProductionClientCommand, message: string, options?: ProductionCommandExecutionOptions) => queueCommand(command, message, true, options), [queueCommand]);
   const refresh = useCallback(() => refreshRef.current(), []);
+  const dismissRoleTransition = useCallback(
+    () => setSnapshot((value) => (value.scope === scope ? { ...value, roleTransition: null } : value)),
+    [scope],
+  );
   return { aggregate: state.record?.aggregate ?? null, access: state.record?.access ?? NO_ACCESS,
     loading: state.loading, error: state.error, saveState: state.saveState, notice: state.notice,
+    roleTransition: state.roleTransition, dismissRoleTransition,
     refreshing: state.refreshing, refresh, execute, executeStrict, isDemo,
     hasUnconfirmedCommand: !isDemo && state.scope === scope && unconfirmedWrite.current !== null };
 }

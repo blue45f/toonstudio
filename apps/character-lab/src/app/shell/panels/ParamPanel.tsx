@@ -21,14 +21,21 @@ import { memo, useCallback, useEffect, useId, useRef, useState, useSyncExternalS
 import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
-import { WEBTOON_UNIVERSE_SHAPER_PRESETS, composeWebtoonUniverseRecipe, resolveCharacterLabVarco3dPreviewSettings } from "../../../presets";
-import { useDispatch, useKitPlans, useLabState } from "../lab-store-context";
+import {
+  WEBTOON_SHAPER_COMPARE_POSE_OPTIONS,
+  WEBTOON_UNIVERSE_SHAPER_PRESETS,
+  composeWebtoonUniverseRecipe,
+  resolveCharacterLabVarco3dPreviewSettings,
+  summarizeWebtoonShaperParityMetrics,
+} from "../../../presets";
+import { useCatalog, useDispatch, useKitPlans, useLabState } from "../lab-store-context";
 
 import { ParamCustomizeSections } from "./param-customize-sections";
+import { ShaperQuickSculptSections } from "./shaper-quick-sculpt-sections";
 
 import type { BodyParamKey, CharacterRecipe, FaceParamKey, ParamKey, RecipeColorKey, SlotKind } from "../../../contracts";
 import type { PaletteEntry } from "../../../domains/humanoid/palette";
-import type { WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
+import type { WebtoonShaperComparePoseMode, WebtoonUniverseShaperId, WebtoonUniverseShaperPreset } from "../../../presets";
 
 export type ParamGroup = "body" | "face";
 
@@ -87,9 +94,10 @@ export const QUICK_PROPORTION_PRESETS: readonly QuickProportionPreset[] = [
 
 const PROPORTION_PRESET_KEYS = ["height", "headSize", "legLength", "shoulderWidth"] as const;
 
-export function isWebtoonUniversePresetActive(preset: WebtoonUniverseShaperPreset, recipe: CharacterRecipe): boolean {
+export function isWebtoonUniversePresetActive(preset: WebtoonUniverseShaperPreset, recipe: CharacterRecipe, ignorePoseSlots = false): boolean {
   if (recipe.style.packId !== preset.artStyleId) return false;
   for (const [slot, presetId] of Object.entries(preset.slots)) {
+    if (ignorePoseSlots && (slot === "pose" || slot === "hand-pose")) continue;
     if (presetId !== undefined && recipe.slots[slot as SlotKind] !== presetId) return false;
   }
   return true;
@@ -276,8 +284,10 @@ function useKitBaseHeight(): number | null {
 
 export function ParamPanel() {
   const { recipe, capabilities } = useLabState();
+  const catalog = useCatalog();
   const dispatch = useDispatch();
   const [selectedUniverseId, setSelectedUniverseId] = useState<WebtoonUniverseShaperId>("school-romance");
+  const [comparePoseMode, setComparePoseMode] = useState<WebtoonShaperComparePoseMode>("preset");
   const [resetEpoch, setResetEpoch] = useState(0);
 
   const setParam = useCallback(
@@ -308,20 +318,37 @@ export function ParamPanel() {
     [dispatch],
   );
 
-  const applyWebtoonUniversePreset = (presetId: WebtoonUniverseShaperId): void => {
+  const applyWebtoonUniversePreset = (presetId: WebtoonUniverseShaperId, modeOverride?: WebtoonShaperComparePoseMode): void => {
+    const targetMode = modeOverride ?? comparePoseMode;
     setSelectedUniverseId(presetId);
-    const composed = composeWebtoonUniverseRecipe(presetId, recipe);
+    const composed = composeWebtoonUniverseRecipe(presetId, recipe, undefined, { catalog, poseMode: targetMode });
     if (composed.ok) {
       dispatch({ type: "recipe/load", recipe: composed.recipe });
     }
   };
 
-  const matchedUniversePreset = WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => isWebtoonUniversePresetActive(item, recipe));
+  const applyComparePoseMode = (nextMode: WebtoonShaperComparePoseMode): void => {
+    setComparePoseMode(nextMode);
+    const option = WEBTOON_SHAPER_COMPARE_POSE_OPTIONS.find((item) => item.mode === nextMode);
+    if (!option) return;
+    if (option.poseSlotId && option.handPoseSlotId) {
+      dispatch({ type: "slot/apply", slot: "pose", presetId: option.poseSlotId });
+      dispatch({ type: "slot/apply", slot: "hand-pose", presetId: option.handPoseSlotId });
+      return;
+    }
+    const presetPose = activeUniversePreset.slots.pose;
+    const presetHandPose = activeUniversePreset.slots["hand-pose"];
+    if (presetPose) dispatch({ type: "slot/apply", slot: "pose", presetId: presetPose });
+    if (presetHandPose) dispatch({ type: "slot/apply", slot: "hand-pose", presetId: presetHandPose });
+  };
+
+  const matchedUniversePreset = WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => isWebtoonUniversePresetActive(item, recipe, comparePoseMode !== "preset"));
   const activeUniversePreset =
     matchedUniversePreset ??
     WEBTOON_UNIVERSE_SHAPER_PRESETS.find((item) => item.id === selectedUniverseId) ??
     WEBTOON_UNIVERSE_SHAPER_PRESETS[0]!;
   const activeVarcoPreview = resolveCharacterLabVarco3dPreviewSettings(activeUniversePreset.id);
+  const parityMetrics = summarizeWebtoonShaperParityMetrics(recipe);
 
   const bodyValue = (key: BodyParamKey): number => recipe.body[key] ?? 0;
   const faceValue = (key: FaceParamKey): number => recipe.face[key] ?? 0;
@@ -395,6 +422,51 @@ export function ParamPanel() {
         ))}
       </div>
 
+      <div className="cl-shaper-showcase-header">
+        <img
+          src="/scene-character-lab-shaper-showcase.webp"
+          alt=""
+          aria-hidden="true"
+          className="cl-shaper-showcase-thumb"
+          loading="lazy"
+          decoding="async"
+        />
+        <div>
+          <h3 className="cl-param-subtitle" style={{ margin: 0 }}>
+            3D SHAPER 스튜디오 패리티 스위트 ({WEBTOON_UNIVERSE_SHAPER_PRESETS.length} 아키타입)
+          </h3>
+          <p className="cl-param-hint" style={{ margin: "2px 0 0" }}>
+            웹툰 아키타입·등신비·안면 15축 조형·투톤 옴브레·셀셰이딩·실시간 모프 블렌더를 원클릭으로 제어합니다.
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="cl-param-group"
+        role="group"
+        aria-label="3D Shaper 동일 포즈 실루엣·비율·얼굴 비교"
+        data-testid="param-shaper-compare-pose-modes"
+      >
+        <h3 className="cl-param-subtitle">3D Shaper 동일 포즈 비교 모드 (실루엣·등신비·안면)</h3>
+        <div className="cl-param-presets">
+          {WEBTOON_SHAPER_COMPARE_POSE_OPTIONS.map((option) => (
+            <button
+              key={option.mode}
+              type="button"
+              className="cl-button cl-button-small"
+              aria-pressed={comparePoseMode === option.mode}
+              data-testid={`param-compare-pose-${option.mode}`}
+              onClick={() => applyComparePoseMode(option.mode)}
+            >
+              {option.labelKo}
+            </button>
+          ))}
+        </div>
+        <p className="cl-param-hint" data-testid="param-shaper-parity-summary">
+          Shaper 비교 지표: {parityMetrics.summaryKo}
+        </p>
+      </div>
+
       <div
         className="cl-param-group"
         role="group"
@@ -425,7 +497,7 @@ export function ParamPanel() {
               key={preset.id}
               type="button"
               className="cl-button cl-button-small"
-              aria-pressed={isWebtoonUniversePresetActive(preset, recipe)}
+              aria-pressed={isWebtoonUniversePresetActive(preset, recipe, comparePoseMode !== "preset")}
               data-testid={`param-varco3d-preset-${preset.id}`}
               onClick={() => applyWebtoonUniversePreset(preset.id)}
             >
@@ -437,6 +509,8 @@ export function ParamPanel() {
           선택 세계관 소품 바인딩: {activeUniversePreset.varcoBinding.labelKo} ({activeUniversePreset.varcoBinding.glbArtifactName} · 본 앵커 {activeUniversePreset.varcoBinding.anchor}) · HDRI {activeVarcoPreview.environmentId} ({activeVarcoPreview.lightingRotationDeg}°)
         </p>
       </div>
+
+      <ShaperQuickSculptSections />
 
       <div className="cl-param-actions">
         <button type="button" onClick={() => resetGroup("body")} disabled={activeBody.length === 0}>

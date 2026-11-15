@@ -412,7 +412,7 @@ export function StudioDesignPlatformWorkbench({
                 aria-label="목표 변환 규격"
                 value={targetFormatId}
                 onChange={(e) => setTargetFormatId(e.target.value as DesignPlatformFormatId)}
-                className="mt-1 min-h-10 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+                className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
               >
                 {DESIGN_PLATFORM_FORMAT_PRESETS.map((spec) => (
                   <option key={spec.id} value={spec.id}>
@@ -488,7 +488,7 @@ export function StudioDesignPlatformWorkbench({
                   step={16}
                   value={pageCount}
                   onChange={(e) => setPageCount(Number(e.target.value) || 192)}
-                  className="mt-1 min-h-10 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+                  className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
                 />
               </label>
 
@@ -498,7 +498,7 @@ export function StudioDesignPlatformWorkbench({
                   aria-label="내지 용지 평량"
                   value={paperStock}
                   onChange={(e) => setPaperStock(e.target.value as TankobonPaperStock)}
-                  className="mt-1 min-h-10 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+                  className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
                 >
                   <option value="white-offset-100g">백상지·모조지 100g (0.122mm/장)</option>
                   <option value="snow-art-120g">스노우지 120g (0.115mm/장)</option>
@@ -531,7 +531,7 @@ export function StudioDesignPlatformWorkbench({
                   step={800}
                   value={scrollTotalHeightPx}
                   onChange={(e) => setScrollTotalHeightPx(Number(e.target.value) || 4800)}
-                  className="mt-1 min-h-9 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
+                  className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-2.5 text-xs text-fg"
                 />
               </label>
               <div className="mt-2 flex flex-wrap gap-1.5">
