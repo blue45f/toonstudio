@@ -1,8 +1,10 @@
-import { useId, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { useId, useRef, useState } from "react";
 
 import type { ClarificationThread } from "@toonstudio/core/production";
 
 import type { ProductionClientCommand } from "./production-api";
+import { normalizeReviewCommentText } from "./production-comment-retry-guard";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -35,11 +37,21 @@ export function ProductionClarificationAnswer({
   const hintId = useId();
   const [answer, setAnswer] = useState(isDemo ? SAMPLE_CLARIFICATION_ANSWER : "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const attemptRef = useRef<{ readonly fingerprint: string; readonly updatedAt: string } | null>(null);
   const trimmed = answer.trim();
 
   const submit = async () => {
-    if (!canAnswer || !trimmed || saving) return;
+    if (!canAnswer || !trimmed || saving || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
+    setError(null);
+    const fingerprint = `${thread.id}:${normalizeReviewCommentText(trimmed)}`;
+    if (attemptRef.current?.fingerprint !== fingerprint) {
+      attemptRef.current = { fingerprint, updatedAt: new Date().toISOString() };
+    }
+    const updatedAt = attemptRef.current.updatedAt;
     try {
       await execute({
         type: "upsert-clarification",
@@ -48,10 +60,18 @@ export function ProductionClarificationAnswer({
           status: "decision-recorded",
           answer: trimmed,
           decisionRecordId: `decision-${thread.id}`,
-          updatedAt: new Date().toISOString(),
+          updatedAt,
         },
       }, bt("질문 답변과 결정을 기록했습니다.", "Recorded the answer and decision."));
+      attemptRef.current = null;
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : bt("답변을 저장하지 못했습니다. 작성한 내용은 그대로 유지되었습니다.", "Could not save answer. Your input was preserved."),
+      );
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -84,6 +104,21 @@ export function ProductionClarificationAnswer({
       >
         {saving ? bt("기록 중…", "Recording…") : bt("결정 기록", "Record decision")}
       </button>
+      {error ? (
+        <div role="alert" className="rounded-xl border border-bad/35 bg-bad/10 p-2.5 text-xs text-fg">
+          <p>{error}</p>
+          <button
+            type="button"
+            data-testid="clarification-answer-retry-btn"
+            disabled={!canAnswer || !trimmed || saving}
+            onClick={() => void submit()}
+            className={buttonClass({ variant: "outline", size: "sm", className: "mt-2 min-h-8 w-full gap-1 text-xs" })}
+          >
+            <RefreshCw className="size-3.5" aria-hidden="true" />
+            {bt("같은 답변 다시 기록", "Retry recording same answer")}
+          </button>
+        </div>
+      ) : null}
       <p id={hintId} className="text-[0.6875rem] leading-4 text-fg-3">
         {canAnswer
           ? bt("기록한 결정은 인계와 검수의 근거로 남습니다.", "The decision is kept as evidence for handoff and review.")

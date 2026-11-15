@@ -1,24 +1,6 @@
-import {
-  Check,
-  Columns2,
-  Copy,
-  ExternalLink,
-  Eye,
-  History,
-  Layers,
-  Link2,
-  Lock,
-  MapPin,
-  MessageSquarePlus,
-  RotateCcw,
-  Save,
-  ShieldCheck,
-  Sparkles,
-  UserPlus,
-  Users,
-} from "lucide-react";
-import { useMemo, useRef, useState, type MouseEvent } from "react";
-import { Link } from "react-router-dom";
+import { Columns2, ExternalLink, Eye, MapPin, MessageSquarePlus, Sparkles, Users } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -26,17 +8,21 @@ import { cn } from "@/shared/lib/utils";
 
 import {
   archiveStudioReviewSession,
+  findLatestActiveStudioReviewSession,
+  readStudioReviewHistory,
+  reconcileConcurrentStudioReviewMutation,
   restoreStudioReviewHistoryVersion,
   saveStudioReviewCheckpoint,
+  subscribeStudioReviewHistorySync,
   type StudioReviewHistoryDocument,
 } from "../studio-review-history-store";
 import {
-  addStudioReviewThread,
   formatCutPinTargetId,
   permissionsForStudioReviewRole,
   recordStudioReviewDecision,
   reopenStudioReviewThread,
   resolveStudioReviewThread,
+  resubmitStudioRevision,
   startStudioRevision,
   submitStudioReview,
   SYNTHETIC_STUDIO_REVIEW_CUTS,
@@ -44,17 +30,29 @@ import {
   type StudioReviewSession,
 } from "../studio-review-workflow";
 import {
+  planIdempotentStudioThreadSubmission,
+  type CommentRetryAttempt,
+} from "./production-comment-retry-guard";
+import {
   buildInitialCollabState,
   COLLAB_HUB_PROJECT_ID,
   CUT_OCCUPANCY_CARDS,
   resolveSafeStorage,
-  REVISION_NOTES,
   WEBTOON_JOB_PRESETS,
   type WebtoonJobPresetId,
 } from "./production-grand-atelier-collab-model";
+import { ProductionCollabHubInviteCard, ProductionCollabHubStageAndResubmitBar, type CollabHubStaleMutationNotice } from "./ProductionCollabHubResubmitBar";
+import { ProductionCollabHubRbacCard, ProductionCollabHubTimelineSection } from "./ProductionCollabHubTimelineSection";
+import { ProductionCollabHubDeepLinkBanner } from "./ProductionReviewDeepLinkBanners";
+import { buildCollabHubReviewLinkPath, buildProductionReviewDeepLinkPath, resolveCollabHubDeepLinkState } from "./production-review-deep-link-model";
+import { describeCollabHubPresetTransition, type PreservedDraftEntry, type RoleTransitionSummary } from "./production-role-transition-model";
+
+const HUB_CUT_IDS = SYNTHETIC_STUDIO_REVIEW_CUTS.slice(0, 3).map((cut) => cut.cutId);
 
 export function ProductionGrandAtelierCollabHub() {
   const bt = useBilingual("ProductionGrandAtelierCollabHub");
+  const location = useLocation();
+  const navigate = useNavigate();
   const storage = useMemo(() => resolveSafeStorage(), []);
   const initial = useMemo(() => buildInitialCollabState(storage), [storage]);
   const seqRef = useRef(1);
@@ -62,13 +60,31 @@ export function ProductionGrandAtelierCollabHub() {
   const [jobPresetId, setJobPresetId] = useState<WebtoonJobPresetId>("lead-author");
   const [session, setSession] = useState<StudioReviewSession>(initial.session);
   const [history, setHistory] = useState<StudioReviewHistoryDocument>(initial.history);
-  const [selectedCutId, setSelectedCutId] = useState<string>("cut-01");
+  const deepLink = resolveCollabHubDeepLinkState({
+    search: location.search,
+    validCutIds: HUB_CUT_IDS,
+    defaultCutId: "cut-01",
+    headSession: session,
+    history,
+  });
+  const [selectedCutId, setSelectedCutId] = useState<string>(() => deepLink.selectedCutId ?? "cut-01");
   const [followingMember, setFollowingMember] = useState<string | null>(null);
   const [pinCoord, setPinCoord] = useState<StudioReviewPinCoordinate>({ cutId: "cut-01", xPercent: 48, yPercent: 44 });
   const [commentBody, setCommentBody] = useState("");
+  const [resubmitNote, setResubmitNote] = useState("");
+  const [roleTransition, setRoleTransition] = useState<RoleTransitionSummary | null>(null);
+  const handleSelectJobPreset = (nextPresetId: WebtoonJobPresetId) => {
+    if (nextPresetId !== jobPresetId) {
+      const summary = describeCollabHubPresetTransition(jobPresetId, nextPresetId);
+      setRoleTransition(summary);
+      setStatusNotice(bt(`직무 역할이 '${summary.previousRoleKo}' → '${summary.currentRoleKo}'(으)로 전환되었습니다. ${summary.nextActionsKo}`, `Role switched: ${summary.previousRoleEn} → ${summary.currentRoleEn}. ${summary.nextActionsEn}`));
+    }
+    setJobPresetId(nextPresetId);
+  };
   const [compareMode, setCompareMode] = useState<"split" | "onion">("split");
   const [inviteHandle, setInviteHandle] = useState("");
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [reviewCopied, setReviewCopied] = useState(false);
   const [invitedMembers, setInvitedMembers] = useState<
     readonly { readonly id: string; readonly handle: string; readonly roleKo: string; readonly roleEn: string }[]
   >([
@@ -77,21 +93,94 @@ export function ProductionGrandAtelierCollabHub() {
     { id: "m-3", handle: "@hyunwoo.pd", roleKo: "편집자 · 담당 PD", roleEn: "Editor / PD" },
   ]);
   const [statusNotice, setStatusNotice] = useState<string>("");
+  const [pinError, setPinError] = useState<string | null>(null);
+  const pinAttemptRef = useRef<CommentRetryAttempt | null>(null);
+  const [staleMutationNotice, setStaleMutationNotice] = useState<CollabHubStaleMutationNotice | null>(null);
+
+  useEffect(() => {
+    return subscribeStudioReviewHistorySync(COLLAB_HUB_PROJECT_ID, () => {
+      setHistory(readStudioReviewHistory(storage, COLLAB_HUB_PROJECT_ID));
+    });
+  }, [storage]);
+
+  useEffect(() => {
+    if (deepLink.selectedCutId) setSelectedCutId(deepLink.selectedCutId);
+  }, [deepLink.selectedCutId, location.search]);
 
   const activePreset = WEBTOON_JOB_PRESETS.find((item) => item.id === jobPresetId) ?? WEBTOON_JOB_PRESETS[0]!;
   const basePermissions = permissionsForStudioReviewRole(activePreset.reviewRole);
-  const permissions =
+  const rolePermissions =
     jobPresetId === "line-color-assist"
       ? { ...basePermissions, canDecide: false, canRestoreHistory: false }
       : basePermissions;
+  const viewedSession = deepLink.viewedSession;
+  const isHistoricalView = deepLink.isHistoricalRevision;
+  const permissions = isHistoricalView || deepLink.cutIssue || deepLink.revisionIssue
+    ? { ...rolePermissions, canComment: false, canResolve: false, canDecide: false }
+    : rolePermissions;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "https://toonstudio.local";
   const unifiedInviteUrl = `${origin}/team/people/join?project=sample-project&episode=12`;
+  const externalPdReviewHref = buildProductionReviewDeepLinkPath({
+    projectId: "sample-project",
+    episodeId: deepLink.episodeId === "episode-13" ? "episode-13" : "episode-12",
+    cutId: deepLink.episodeId === "episode-13" ? "cut-13-001" : selectedCutId === "cut-01" ? "cut-12-001" : "cut-12-002",
+    submissionId: isHistoricalView ? "submission-thumbnail-12-r1" : "submission-thumbnail-12-r2",
+    revisionId: isHistoricalView ? "thumbnail-episode-12-r1" : "thumbnail-episode-12-r2",
+  });
 
-  const activeCutThreads = session.threads.filter(
+  const activeCutThreads = viewedSession.threads.filter(
     (thread) => thread.pinCoordinate?.cutId === selectedCutId || thread.targetId.startsWith(selectedCutId),
   );
   const archivedSessions = [...history.sessions].reverse();
+  const latestActiveSession = findLatestActiveStudioReviewSession(history, session.documentId);
+  const effectiveLatestVersionId = latestActiveSession?.versionId ?? session.versionId;
+  const concurrentNewerVersionId =
+    !isHistoricalView && latestActiveSession && latestActiveSession.versionId !== viewedSession.versionId
+      ? latestActiveSession.versionId
+      : null;
+
+  const syncHubReviewUrl = (nextCutId: string, nextRevisionId: string) => {
+    const nextPath = buildCollabHubReviewLinkPath({
+      episodeId: deepLink.episodeId,
+      cutId: nextCutId,
+      revisionId: nextRevisionId,
+      pathname: location.pathname,
+    });
+    const qIdx = nextPath.indexOf("?");
+    navigate({ pathname: location.pathname, search: qIdx >= 0 ? nextPath.slice(qIdx) : "" }, { replace: true });
+  };
+
+  const handleSelectHubCut = (nextCutId: string) => {
+    setSelectedCutId(nextCutId);
+    if (location.search.includes("cut=") || location.search.includes("revision=") || location.search.includes("episode=")) {
+      syncHubReviewUrl(nextCutId, viewedSession.versionId);
+    }
+  };
+
+  const handleCopyHubReviewLink = async () => {
+    const relPath = buildCollabHubReviewLinkPath({
+      episodeId: deepLink.episodeId,
+      cutId: selectedCutId,
+      revisionId: viewedSession.versionId,
+      pathname: location.pathname,
+    });
+    syncHubReviewUrl(selectedCutId, viewedSession.versionId);
+    try {
+      await navigator.clipboard?.writeText(`${origin}${relPath}`);
+    } catch {
+      // 클립보드 권한이 제한된 환경에서도 URL 쿼리 동기화로 고정 링크를 보존한다.
+    }
+    setReviewCopied(true);
+    setStatusNotice(bt(`고정 검수 링크(${deepLink.episodeId} · ${selectedCutId} · ${viewedSession.versionId})를 복사했습니다.`, `Copied review link (${deepLink.episodeId} · ${selectedCutId} · ${viewedSession.versionId}).`));
+  };
+
+  const mismatchMessage = deepLink.cutIssue || deepLink.revisionIssue
+    ? bt(
+        "검수 링크의 컷 또는 리비전 식별자가 현재 원고 이력과 일치하지 않아 다른 대상으로 조용히 대체하지 않았습니다.",
+        "Cut or revision in the review link did not match this manuscript's history; did not silently substitute another target.",
+      )
+    : null;
 
   const copyUnifiedInvite = async () => {
     try {
@@ -139,35 +228,43 @@ export function ProductionGrandAtelierCollabHub() {
   const handleAddPinComment = () => {
     const trimmed = commentBody.trim();
     if (!trimmed || !permissions.canComment) return;
-    seqRef.current += 1;
-    const seq = seqRef.current;
     const nowIso = new Date().toISOString();
     const mutable = ensureMutable(session, nowIso);
     const targetCoord: StudioReviewPinCoordinate = { ...pinCoord, cutId: selectedCutId };
-    const next = addStudioReviewThread(
-      mutable,
-      {
-        id: `pin-${seq}`,
-        kind: "change-request",
-        targetId: formatCutPinTargetId(targetCoord),
-        status: "open",
-        pinCoordinate: targetCoord,
-        resolvedBy: null,
-        resolvedAt: null,
-        messages: [
-          {
-            id: `msg-${seq}`,
-            authorId: activePreset.actorId,
-            body: trimmed,
-            createdAt: nowIso,
-          },
-        ],
-      },
+    const targetId = formatCutPinTargetId(targetCoord);
+    const planned = planIdempotentStudioThreadSubmission({
+      session: mutable,
+      previousAttempt: pinAttemptRef.current,
+      createId: (prefix) => { seqRef.current += 1; return `${prefix}-${seqRef.current}`; },
+      entityPrefix: "pin",
+      secondaryPrefix: "msg",
+      kind: "change-request",
+      targetId,
+      authorId: activePreset.actorId,
+      body: trimmed,
+      pinCoordinate: targetCoord,
       nowIso,
-    );
-    setSession(next);
-    setCommentBody("");
-    setStatusNotice(bt(`${formatCutPinTargetId(targetCoord)} 위치에 검수 핀 댓글을 남겼습니다.`, `Added pin comment at ${formatCutPinTargetId(targetCoord)}.`));
+    });
+    pinAttemptRef.current = planned.attempt;
+    try {
+      const archived = archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, planned.nextSession);
+      setSession(planned.nextSession);
+      setHistory(archived);
+      pinAttemptRef.current = null;
+      setPinError(null);
+      setCommentBody("");
+      setStatusNotice(
+        planned.alreadyExisted
+          ? bt(`${targetId}에 같은 핀 댓글이 이미 한 번 기록되어 중복 생성하지 않았습니다.`, `Same pin comment already exists once at ${targetId}; skipped duplicate.`)
+          : bt(`${targetId} 위치에 검수 핀 댓글을 남겼습니다.`, `Added pin comment at ${targetId}.`),
+      );
+    } catch (cause) {
+      setPinError(
+        cause instanceof Error
+          ? `${cause.message} — 작성한 핀 댓글과 좌표를 그대로 유지했습니다.`
+          : bt("핀 댓글을 저장하지 못했습니다. 작성한 내용과 좌표를 유지했습니다.", "Could not save pin comment. Your text and coordinates were preserved."),
+      );
+    }
   };
 
   const handleToggleResolve = (threadId: string, currentlyResolved: boolean) => {
@@ -195,8 +292,24 @@ export function ProductionGrandAtelierCollabHub() {
       note: "컷별 검수 및 채색 대비 확인 완료",
       decidedAt: nowIso,
     });
-    setSession(approved);
-    setHistory(archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, approved));
+    const reconciled = reconcileConcurrentStudioReviewMutation(storage, COLLAB_HUB_PROJECT_ID, approved);
+    setSession(reconciled.latestHead);
+    setHistory(reconciled.history);
+    if (reconciled.outcome === "stale-superseded") {
+      setStaleMutationNotice({
+        staleVersionId: approved.versionId,
+        latestVersionId: reconciled.latestHead.versionId,
+        actionKind: "approved",
+      });
+      setStatusNotice(
+        bt(
+          `구버전(${approved.versionId}) 승인으로만 기록했습니다. 최신본(${reconciled.latestHead.versionId}) 승인이나 최신 상태는 덮어쓰지 않았습니다.`,
+          `Recorded as older revision (${approved.versionId}) approval; latest (${reconciled.latestHead.versionId}) state was preserved.`,
+        ),
+      );
+      return;
+    }
+    setStaleMutationNotice(null);
     setStatusNotice(bt("12화 원고 검수를 최종 승인 완료 상태로 전환했습니다.", "Marked Episode 12 review as approved."));
   };
 
@@ -210,7 +323,24 @@ export function ProductionGrandAtelierCollabHub() {
       note: "핀 위치 보완 후 재검수 요청",
       decidedAt: nowIso,
     });
-    setSession(updated);
+    const reconciled = reconcileConcurrentStudioReviewMutation(storage, COLLAB_HUB_PROJECT_ID, updated);
+    setSession(reconciled.latestHead);
+    setHistory(reconciled.history);
+    if (reconciled.outcome === "stale-superseded") {
+      setStaleMutationNotice({
+        staleVersionId: updated.versionId,
+        latestVersionId: reconciled.latestHead.versionId,
+        actionKind: "changes-requested",
+      });
+      setStatusNotice(
+        bt(
+          `구버전(${updated.versionId}) 수정 요청 응답으로 처리하여 최신본(${reconciled.latestHead.versionId}) 상태를 덮지 않았습니다.`,
+          `Handled on older revision (${updated.versionId}); preserved latest (${reconciled.latestHead.versionId}).`,
+        ),
+      );
+      return;
+    }
+    setStaleMutationNotice(null);
     setStatusNotice(bt("수정 중(보완 요청) 단계로 전환했습니다.", "Switched stage to revision in progress."));
   };
 
@@ -240,7 +370,39 @@ export function ProductionGrandAtelierCollabHub() {
     );
     setSession(result.restored);
     setHistory(result.history);
+    if (isHistoricalView) syncHubReviewUrl(selectedCutId, result.restored.versionId);
     setStatusNotice(bt(`${versionId} 시점으로 안전 복원했습니다 (직전 상태 자동 백업 완료).`, `Safely restored ${versionId} (previous state backed up).`));
+  };
+
+  const handleResubmitHubRevision = (input: {
+    readonly changedCutIds: readonly string[];
+    readonly resolveThreadIds: readonly string[];
+    readonly note: string;
+  }) => {
+    if (!permissions.canEditManuscript) return;
+    const nowIso = new Date().toISOString();
+    const nextVersionId = `v${15 + history.sessions.length}-resubmit`;
+    const transition = resubmitStudioRevision(session, {
+      nextVersionId,
+      actorId: activePreset.actorId,
+      changedCutIds: input.changedCutIds,
+      resolveThreadIds: input.resolveThreadIds,
+      note: input.note,
+      resubmittedAt: nowIso,
+    });
+    archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, transition.previous);
+    const nextHistory = archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, transition.next);
+    setSession(transition.next);
+    setHistory(nextHistory);
+    if (location.search.includes("revision=") || location.search.includes("cut=") || location.search.includes("episode=")) {
+      syncHubReviewUrl(selectedCutId, transition.next.versionId);
+    }
+    setStatusNotice(
+      bt(
+        `${nextVersionId} 새 리비전을 재제출했습니다. 기존 승인 없이 0/${transition.next.requiredReviewerIds.length || 1}부터 재검수합니다.`,
+        `Resubmitted ${nextVersionId}. Approvals reset to 0/${transition.next.requiredReviewerIds.length || 1}.`,
+      ),
+    );
   };
 
   return (
@@ -281,12 +443,24 @@ export function ProductionGrandAtelierCollabHub() {
             <Sparkles size={14} aria-hidden="true" />
             {bt("공동 드로잉 열기", "Open shared canvas")}
           </Link>
-          <Link to="/production/pinned-review" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 gap-1.5 text-xs" })}>
+          <Link to={externalPdReviewHref} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 gap-1.5 text-xs" })}>
             <ExternalLink size={14} aria-hidden="true" />
             {bt("외부 PD 전용 검수창", "External PD review")}
           </Link>
         </div>
       </div>
+
+      <ProductionCollabHubDeepLinkBanner
+        episodeId={deepLink.episodeId}
+        selectedCutId={selectedCutId}
+        viewedRevisionId={viewedSession.versionId}
+        latestRevisionId={session.versionId}
+        isHistorical={isHistoricalView}
+        mismatchMessage={mismatchMessage}
+        reviewCopied={reviewCopied}
+        onCopyReviewLink={() => void handleCopyHubReviewLink()}
+        onSwitchToLatest={() => syncHubReviewUrl(selectedCutId, session.versionId)}
+      />
 
       {statusNotice ? (
         <p role="status" className="mt-3 rounded-xl border border-accent/35 bg-accent-soft/60 px-3.5 py-2 text-xs font-bold text-fg">
@@ -296,124 +470,23 @@ export function ProductionGrandAtelierCollabHub() {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-12">
         {/* ① 통합 초대 */}
-        <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-5" data-testid="collab-pillar-1-invite">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black text-fg">
-              <Link2 size={16} className="text-accent" aria-hidden="true" />
-              {bt("① 통합 초대 (팀 + 원고 동시 연결)", "1. Unified Invite (Team + Manuscript)")}
-            </h3>
-            <Link to="/team/people" className="text-xs font-bold text-accent hover:underline">
-              {bt("팀원 관리 ↗", "Manage team ↗")}
-            </Link>
-          </div>
-          <p className="mt-1 text-xs text-fg-2">
-            {bt("팀 합류와 현재 회차 원고 접근 권한을 링크 하나로 동시에 부여합니다.", "Connect team membership and current episode access with a single link.")}
-          </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              readOnly
-              aria-label={bt("팀과 원고 통합 초대 링크", "Unified team and manuscript invite URL")}
-              value={unifiedInviteUrl}
-              className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg-2"
-            />
-            <button
-              type="button"
-              data-testid="collab-hub-copy-invite"
-              onClick={() => void copyUnifiedInvite()}
-              className={buttonClass({ size: "sm", className: "min-h-10 shrink-0 gap-1.5 text-xs" })}
-            >
-              {inviteCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
-              {inviteCopied ? bt("링크 복사됨", "Copied") : bt("1클릭 링크 복사", "Copy invite link")}
-            </button>
-          </div>
-          <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              value={inviteHandle}
-              onChange={(event) => setInviteHandle(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  handleSendInvite();
-                }
-              }}
-              aria-label={bt("초대할 협업자 이메일 또는 아이디", "Collaborator email or handle")}
-              placeholder={bt("@아이디 또는 이메일로 직무 지정 초대", "Invite by @handle or email")}
-              className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg placeholder:text-fg-3"
-            />
-            <button
-              type="button"
-              data-testid="collab-hub-send-invite"
-              onClick={handleSendInvite}
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 shrink-0 gap-1.5 text-xs" })}
-            >
-              <UserPlus size={14} aria-hidden="true" />
-              {bt("초대 발송", "Invite")}
-            </button>
-          </div>
-          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={bt("참여 중인 협업 멤버", "Active collaborators")}>
-            {invitedMembers.map((member) => (
-              <li key={member.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-1 text-[0.68rem] text-fg-2">
-                <strong className="font-bold text-fg">{member.handle}</strong>
-                <span>· {bt(member.roleKo, member.roleEn)}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
+        <ProductionCollabHubInviteCard
+          unifiedInviteUrl={unifiedInviteUrl}
+          inviteCopied={inviteCopied}
+          inviteHandle={inviteHandle}
+          invitedMembers={invitedMembers}
+          onCopyInvite={() => void copyUnifiedInvite()}
+          onChangeHandle={setInviteHandle}
+          onSendInvite={handleSendInvite}
+        />
 
         {/* ② 웹툰 4대 직무별 권한 & 레이어 보호 */}
-        <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-7" data-testid="collab-pillar-2-rbac">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black text-fg">
-              <ShieldCheck size={16} className="text-accent" aria-hidden="true" />
-              {bt("② 웹툰 4대 직무별 권한 & 레이어 보호 (RBAC)", "2. Webtoon 4-Role RBAC & Layer Protection")}
-            </h3>
-            <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 text-[0.68rem] font-bold text-fg-2">
-              <Lock size={12} className="text-accent" aria-hidden="true" />
-              {bt(activePreset.layerGuardKo, activePreset.layerGuardEn)}
-            </span>
-          </div>
-          <div
-            className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4"
-            role="radiogroup"
-            aria-label={bt("웹툰 직무 역할 프리셋", "Webtoon role presets")}
-          >
-            {WEBTOON_JOB_PRESETS.map((preset) => {
-              const selected = preset.id === jobPresetId;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  role="radio"
-                  data-testid={`collab-role-${preset.id}`}
-                  aria-checked={selected}
-                  onClick={() => setJobPresetId(preset.id)}
-                  className={cn(
-                    "flex min-h-20 flex-col items-start justify-between rounded-xl border p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent",
-                    selected
-                      ? "border-accent bg-accent-soft text-fg"
-                      : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
-                  )}
-                >
-                  <strong className="text-xs font-black text-fg">{bt(preset.titleKo, preset.titleEn)}</strong>
-                  <span className="mt-1 text-[0.68rem] leading-4 text-fg-2">{bt(preset.summaryKo, preset.summaryEn)}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-[0.7rem]">
-            <span className="inline-flex items-center gap-1 rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2">
-              <Layers size={12} className="text-accent" aria-hidden="true" />
-              {bt("말풍선·식자 레이어: 총괄 작가 외 잠금", "Speech & lettering: locked except Lead")}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-lg border border-line bg-panel px-2.5 py-1 text-fg-2">
-              {permissions.canRestoreHistory
-                ? bt("이력 복원: 허용됨", "History restore: allowed")
-                : bt("이력 복원: 보호 잠금됨", "History restore: locked")}
-            </span>
-          </div>
-        </article>
+        <ProductionCollabHubRbacCard
+          activePreset={activePreset}
+          jobPresetId={jobPresetId}
+          canRestoreHistory={permissions.canRestoreHistory}
+          onSelectPreset={handleSelectJobPreset}
+        />
 
         {/* ③ 실시간 공동 작업 & 컷 점유 */}
         <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-12" data-testid="collab-pillar-3-presence">
@@ -461,7 +534,7 @@ export function ProductionGrandAtelierCollabHub() {
                       type="button"
                       data-testid={`collab-follow-${card.cutId}`}
                       onClick={() => {
-                        setSelectedCutId(card.cutId);
+                        handleSelectHubCut(card.cutId);
                         setFollowingMember(bt(card.memberKo, card.memberEn));
                       }}
                       className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9 px-2.5 text-xs" })}
@@ -510,41 +583,32 @@ export function ProductionGrandAtelierCollabHub() {
             </div>
           </div>
 
-          {/* 3단계 검수 승인 배지 & 액션 */}
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2">
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-              <span className={cn("rounded-full px-2.5 py-0.5", session.status === "in-review" ? "bg-warning-soft/30 text-warning" : "text-fg-3")}>
-                {bt("① 검수 요청", "1. In Review")}
-              </span>
-              <span aria-hidden="true" className="text-fg-3">→</span>
-              <span className={cn("rounded-full px-2.5 py-0.5", session.status === "changes-requested" ? "bg-accent-soft text-accent" : "text-fg-3")}>
-                {bt("② 수정 중", "2. Revising")}
-              </span>
-              <span aria-hidden="true" className="text-fg-3">→</span>
-              <span className={cn("rounded-full px-2.5 py-0.5", session.status === "approved" ? "bg-success-soft/30 text-success" : "text-fg-3")}>
-                {bt("③ 승인 완료", "3. Approved")}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={!permissions.canDecide}
-                onClick={handleRequestRevisionStage}
-                className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}
-              >
-                {bt("수정 요청", "Request changes")}
-              </button>
-              <button
-                type="button"
-                data-testid="collab-hub-approve-btn"
-                disabled={!permissions.canDecide}
-                onClick={handleApproveStage}
-                className={buttonClass({ size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}
-              >
-                {bt("검수 최종 승인", "Approve")}
-              </button>
-            </div>
-          </div>
+          {/* 3단계 검수 승인 배지 & 재제출 */}
+          <ProductionCollabHubStageAndResubmitBar
+            viewedSession={viewedSession}
+            selectedCutId={selectedCutId}
+            isHistoricalView={isHistoricalView}
+            canDecide={permissions.canDecide}
+            canEditManuscript={permissions.canEditManuscript}
+            resubmitNote={resubmitNote}
+            onChangeResubmitNote={setResubmitNote}
+            roleTransition={roleTransition}
+            preservedDraftEntries={(
+              [
+                { label: "선택 좌표 핀 피드백", value: commentBody, locked: !permissions.canComment },
+                { label: "협업 허브 재제출 메모", value: resubmitNote, locked: !permissions.canEditManuscript },
+              ] satisfies readonly PreservedDraftEntry[]
+            ).filter((entry) => entry.value.trim().length > 0)}
+            onDismissRoleTransition={() => setRoleTransition(null)}
+            concurrentNewerVersionId={concurrentNewerVersionId}
+            staleMutationNotice={staleMutationNotice}
+            onSwitchToConcurrentLatest={() => { if (latestActiveSession) { setSession(latestActiveSession); setStaleMutationNotice(null); } }}
+            onDismissStaleNotice={() => setStaleMutationNotice(null)}
+            onRequestRevisionStage={handleRequestRevisionStage}
+            onApproveStage={handleApproveStage}
+            onSelectCut={handleSelectHubCut}
+            onResubmitRevision={handleResubmitHubRevision}
+          />
 
           {/* 컷 선택 탭 */}
           <div className="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label={bt("검수 대상 컷 선택", "Select cut to review")}>
@@ -554,7 +618,7 @@ export function ProductionGrandAtelierCollabHub() {
                 type="button"
                 role="tab"
                 aria-selected={selectedCutId === cut.cutId}
-                onClick={() => setSelectedCutId(cut.cutId)}
+                onClick={() => handleSelectHubCut(cut.cutId)}
                 className={cn(
                   "min-h-8 rounded-lg border px-2.5 text-xs font-bold",
                   selectedCutId === cut.cutId
@@ -650,7 +714,7 @@ export function ProductionGrandAtelierCollabHub() {
               value={commentBody}
               onChange={(event) => setCommentBody(event.currentTarget.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
+                if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) {
                   event.preventDefault();
                   handleAddPinComment();
                 }
@@ -674,6 +738,14 @@ export function ProductionGrandAtelierCollabHub() {
               {bt("핀 댓글 등록", "Add pin")}
             </button>
           </div>
+          {pinError ? (
+            <div role="alert" data-testid="collab-hub-pin-error" className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-bad/35 bg-bad/10 px-3 py-2 text-xs text-fg">
+              <span>{pinError}</span>
+              <button type="button" data-testid="collab-hub-retry-pin-btn" onClick={handleAddPinComment} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}>
+                {bt("같은 핀 댓글 다시 보내기", "Retry sending same pin")}
+              </button>
+            </div>
+          ) : null}
 
           <ul className="mt-2.5 space-y-1.5" aria-label={bt("컷 핀 댓글 목록", "Pinned comments on selected cut")}>
             {activeCutThreads.map((thread, idx) => (
@@ -695,65 +767,17 @@ export function ProductionGrandAtelierCollabHub() {
         </article>
 
         {/* ⑤ 수정 이력 타임라인 */}
-        <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-5" data-testid="collab-pillar-5-history">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black text-fg">
-              <History size={16} className="text-accent" aria-hidden="true" />
-              {bt("⑤ 수정 이력 타임라인 (안전 복원)", "5. Revision Timeline & Safe Restore")}
-            </h3>
-            <button
-              type="button"
-              data-testid="collab-hub-save-snapshot"
-              disabled={!permissions.canSaveCheckpoint}
-              onClick={handleSaveCheckpoint}
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 gap-1 px-2.5 text-[0.7rem]" })}
-            >
-              <Save size={13} aria-hidden="true" />
-              {bt("스냅샷 보관", "Save snapshot")}
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-fg-2">
-            {bt(
-              "작성자·메모·시각을 확인하고 복원 시 현재 상태를 먼저 자동 백업하여 유실을 방지합니다.",
-              "Inspect author, note, and timestamp. Restoring automatically backs up the current version first.",
-            )}
-          </p>
-          <ol className="mt-3 space-y-2" aria-label={bt("원고 수정 이력 목록", "Revision history list")}>
-            {archivedSessions.slice(0, 5).map((item) => {
-              const meta = REVISION_NOTES[item.versionId];
-              return (
-                <li key={item.versionId} className="rounded-xl border border-line bg-panel p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <strong className="text-xs font-black text-fg">{item.versionId}</strong>
-                    <span className="text-[0.65rem] text-fg-3">{item.updatedAt.slice(0, 16).replace("T", " ")}</span>
-                  </div>
-                  <p className="mt-1 text-xs font-semibold text-fg-2">
-                    {meta ? `${meta.authorKo} — ${bt(meta.memoKo, meta.memoEn)}` : bt(`보관된 핀 스레드 ${item.threads.length}건 스냅샷`, `Saved snapshot (${item.threads.length} pin threads)`)}
-                  </p>
-                  <div className="mt-2 flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setCompareMode("onion")}
-                      className="rounded-lg border border-line bg-card px-2 py-1 text-[0.68rem] font-semibold text-fg-2 hover:text-fg"
-                    >
-                      {bt("어니언스킨 비교", "Compare")}
-                    </button>
-                    <button
-                      type="button"
-                      data-testid={`collab-hub-restore-${item.versionId}`}
-                      disabled={!permissions.canRestoreHistory}
-                      onClick={() => handleRestoreRevision(item.versionId)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-accent/40 bg-accent-soft px-2.5 py-1 text-[0.68rem] font-bold text-fg hover:bg-raised disabled:opacity-45"
-                    >
-                      <RotateCcw size={12} aria-hidden="true" />
-                      {bt("안전 복원", "Safe restore")}
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </article>
+        <ProductionCollabHubTimelineSection
+          archivedSessions={archivedSessions}
+          latestRevisionId={effectiveLatestVersionId}
+          viewedRevisionId={viewedSession.versionId}
+          canSaveCheckpoint={permissions.canSaveCheckpoint}
+          canRestoreHistory={permissions.canRestoreHistory}
+          onSaveCheckpoint={handleSaveCheckpoint}
+          onPinViewRevision={(versionId) => syncHubReviewUrl(selectedCutId, versionId)}
+          onCompareOnion={() => setCompareMode("onion")}
+          onRestoreRevision={handleRestoreRevision}
+        />
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ import {
   evaluateReviewApproval,
   type ProductionProjectAggregate,
   type ProductionRoleType,
+  type ReviewDecision,
   type ReviewLane,
 } from "@toonstudio/core/production";
 
@@ -271,13 +272,119 @@ export interface EpisodeApprovalGate {
   readonly blockingLaneCount: number;
 }
 
+/** 회차 내 명시적 재제출(resubmit-prev:)이 일어난 최신 현재 제출본을 찾는다. */
+function findLatestResubmittedSubmissionInEpisode(aggregate: ProductionProjectAggregate, episodeId: string) {
+  const submissionById = new Map(
+    aggregate.submissions.map((entry, index) => [entry.id, { entry, index }] as const),
+  );
+  let latest: (typeof aggregate.submissions)[number] | null = null;
+  let latestMs = -Infinity;
+  for (const deliverable of aggregate.deliverables) {
+    const inEpisode = deliverable.scope.id === episodeId
+      || deliverable.scope.ancestors.some((ancestor) => ancestor.id === episodeId);
+    if (!inEpisode || !deliverable.currentSubmissionId) continue;
+    const found = submissionById.get(deliverable.currentSubmissionId);
+    if (!found || found.entry.status === "superseded") continue;
+    const currentSub = found.entry;
+    if (!currentSub.evidenceRefs.some((ref) => ref.startsWith("resubmit-prev:"))) continue;
+    const submittedMs = Date.parse(currentSub.submittedAt);
+    const rank = Number.isFinite(submittedMs) ? submittedMs : found.index;
+    if (!latest || rank >= latestMs) {
+      latest = currentSub;
+      latestMs = rank;
+    }
+  }
+  return latest;
+}
+
+/** 회차 룸에서 새 레인 승인을 기록할 때 사용할 현재 활성 검수 라운드 ID. */
+export function resolveEpisodeActiveReviewRoundId(aggregate: ProductionProjectAggregate, episodeId: string): string {
+  const latestResubmitted = findLatestResubmittedSubmissionInEpisode(aggregate, episodeId);
+  if (latestResubmitted) return latestResubmitted.id;
+  const policy = aggregate.reviewPolicies.find((entry) => entry.scope.id === episodeId) ?? null;
+  if (policy) {
+    const existing = aggregate.reviewDecisions.find((entry) => policy.lanes.some((candidate) => candidate.lane === entry.lane));
+    if (existing) return existing.reviewRoundId;
+  }
+  return `${episodeId}-round-1`;
+}
+
+export interface DecisionRevisionContext {
+  readonly isSuperseded: boolean;
+  readonly revisionNumber: number | null;
+  readonly currentRevisionNumber: number | null;
+}
+
+/** 결정 기록(Decision Log)에서 구버전 제출본 결정과 현재 최신본 결정을 구분한다. */
+export function describeDecisionRevisionContext(
+  aggregate: ProductionProjectAggregate,
+  decision: ReviewDecision,
+): DecisionRevisionContext {
+  const submissionById = new Map(aggregate.submissions.map((entry) => [entry.id, entry]));
+  const matchedSub = submissionById.get(decision.reviewRoundId);
+  if (matchedSub) {
+    const deliverable = aggregate.deliverables.find((entry) => entry.id === matchedSub.deliverableId);
+    const currentSub = deliverable?.currentSubmissionId ? submissionById.get(deliverable.currentSubmissionId) ?? null : null;
+    const isCurrent = matchedSub.status !== "superseded" && deliverable?.currentSubmissionId === matchedSub.id;
+    return {
+      isSuperseded: !isCurrent,
+      revisionNumber: matchedSub.revisionRef.revision,
+      currentRevisionNumber: currentSub?.revisionRef.revision ?? null,
+    };
+  }
+  for (const scope of decision.evidenceScopeRefs) {
+    const epId = scope.kind === "episode" ? scope.id : scope.ancestors.find((a) => a.kind === "episode")?.id ?? null;
+    if (!epId) continue;
+    const latestResubmitted = findLatestResubmittedSubmissionInEpisode(aggregate, epId);
+    if (!latestResubmitted) continue;
+    const createdMs = Date.parse(decision.createdAt);
+    const resubmittedMs = Date.parse(latestResubmitted.submittedAt);
+    if (
+      decision.reviewRoundId === "thumbnail-round-1"
+      || decision.reviewRoundId === `${epId}-round-1`
+      || (Number.isFinite(createdMs) && Number.isFinite(resubmittedMs) && createdMs < resubmittedMs)
+    ) {
+      return {
+        isSuperseded: true,
+        revisionNumber: 1,
+        currentRevisionNumber: latestResubmitted.revisionRef.revision,
+      };
+    }
+  }
+  return { isSuperseded: false, revisionNumber: null, currentRevisionNumber: null };
+}
+
 /** 이 회차 검수 정책의 역할별 승인 상태. 정책이 없으면 빈 게이트를 돌려준다. */
 export function deriveEpisodeApprovalGate(aggregate: ProductionProjectAggregate, episodeId: string): EpisodeApprovalGate {
   const policy = aggregate.reviewPolicies.find((entry) => entry.scope.id === episodeId) ?? null;
   if (!policy) return { policyId: null, lanes: [], approved: false, blockingLaneCount: 0 };
   const laneIds = new Set(policy.lanes.map((lane) => lane.lane));
-  const decisions = aggregate.reviewDecisions.filter((decision) => laneIds.has(decision.lane)
-    && decision.evidenceScopeRefs.some((scope) => scope.id === episodeId || scope.ancestors.some((ancestor) => ancestor.id === episodeId)));
+  const deliverableById = new Map(aggregate.deliverables.map((entry) => [entry.id, entry]));
+  const submissionById = new Map(aggregate.submissions.map((entry) => [entry.id, entry]));
+  const latestResubmitted = findLatestResubmittedSubmissionInEpisode(aggregate, episodeId);
+  const latestResubmittedAtMs = latestResubmitted ? Date.parse(latestResubmitted.submittedAt) : -Infinity;
+  const decisions = aggregate.reviewDecisions.filter((decision) => {
+    if (!laneIds.has(decision.lane)) return false;
+    const inEpisode = decision.evidenceScopeRefs.some(
+      (scope) => scope.id === episodeId || scope.ancestors.some((ancestor) => ancestor.id === episodeId),
+    );
+    if (!inEpisode) return false;
+    const matchedSub = submissionById.get(decision.reviewRoundId);
+    if (matchedSub) {
+      const deliverable = deliverableById.get(matchedSub.deliverableId);
+      return matchedSub.status !== "superseded" && deliverable?.currentSubmissionId === matchedSub.id;
+    }
+    if (latestResubmitted) {
+      if (decision.reviewRoundId === "thumbnail-round-1" || decision.reviewRoundId === `${episodeId}-round-1`) {
+        return false;
+      }
+      const createdMs = Date.parse(decision.createdAt);
+      if (Number.isFinite(latestResubmittedAtMs) && Number.isFinite(createdMs) && createdMs < latestResubmittedAtMs) {
+        return false;
+      }
+    }
+    return true;
+  });
   const evaluation = evaluateReviewApproval(policy, decisions);
   const lanes = evaluation.laneResults.map((result) => ({
     lane: result.lane,

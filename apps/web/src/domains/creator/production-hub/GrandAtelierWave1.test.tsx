@@ -169,6 +169,8 @@ describe("Grand Atelier V4 Wave 1 — 3번 드로잉 & 4번 협업 통합 검증
     // 총괄 작가 복귀 후 안전 복원(자동 백업 동반) 검증
     fireEvent.click(screen.getByTestId("collab-role-lead-author"));
     fireEvent.click(screen.getByTestId("collab-hub-restore-v12-lineart-pass"));
-    expect(screen.getByRole("status").textContent).toContain("v12-lineart-pass 시점으로 안전 복원했습니다");
+    expect(
+      screen.getAllByRole("status").map((el) => el.textContent ?? "").join(" "),
+    ).toContain("v12-lineart-pass 시점으로 안전 복원했습니다");
   });
 });

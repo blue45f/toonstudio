@@ -162,6 +162,18 @@ export interface StudioReviewerDecision {
   readonly decidedAt: string;
 }
 
+export interface StudioReviewResubmissionMeta {
+  readonly previousVersionId: string;
+  readonly previousApprovedReviewerIds: readonly string[];
+  readonly changedCutIds: readonly string[];
+  readonly resolvedThreadIds: readonly string[];
+  readonly openThreadIds: readonly string[];
+  readonly nextReviewerIds: readonly string[];
+  readonly note: string;
+  readonly resubmittedBy: string;
+  readonly resubmittedAt: string;
+}
+
 export interface StudioReviewSession {
   readonly documentId: string;
   readonly versionId: string;
@@ -173,6 +185,7 @@ export interface StudioReviewSession {
   readonly submittedAt: string | null;
   readonly approvedAt: string | null;
   readonly updatedAt: string;
+  readonly resubmissionMeta?: StudioReviewResubmissionMeta | null;
 }
 
 export interface StudioReviewReadiness {
@@ -427,5 +440,82 @@ export function startStudioRevision(
     requiredReviewerIds: approved.requiredReviewerIds,
     createdAt,
   });
+  return Object.freeze({ previous, next });
+}
+
+export function resubmitStudioRevision(
+  current: StudioReviewSession,
+  input: {
+    readonly nextVersionId: string;
+    readonly actorId: string;
+    readonly changedCutIds: readonly string[];
+    readonly resolveThreadIds?: readonly string[];
+    readonly note?: string;
+    readonly resubmittedAt: string;
+  },
+): StudioReviewRevisionTransition {
+  const hasChangeRequestHistory =
+    current.status === "changes-requested"
+    || (current.status === "in-review" && current.threads.some((thread) => thread.kind === "change-request"));
+  if (!hasChangeRequestHistory) {
+    throw new Error("Only a version with change requests can be resubmitted as a revised version.");
+  }
+  const actorId = requireText(input.actorId, "Actor id");
+  const nextVersionId = requireText(input.nextVersionId, "Next version id");
+  const resubmittedAt = requireTimestamp(input.resubmittedAt);
+  const changedCutIds = [...new Set(input.changedCutIds.map((id) => id.trim()).filter(Boolean))];
+  if (changedCutIds.length === 0) {
+    throw new Error("At least one changed cut id is required when resubmitting.");
+  }
+
+  const resolveSet = new Set((input.resolveThreadIds ?? []).map((id) => id.trim()).filter(Boolean));
+  const carriedThreads: StudioReviewThread[] = current.threads.map((thread) => {
+    if (resolveSet.has(thread.id) && thread.status === "open") {
+      return Object.freeze({
+        ...thread,
+        status: "resolved" as const,
+        resolvedBy: actorId,
+        resolvedAt: resubmittedAt,
+      });
+    }
+    return thread;
+  });
+
+  const previousApprovedReviewerIds = current.decisions
+    .filter((decision) => decision.decision === "approved")
+    .map((decision) => decision.reviewerId);
+
+  const previous = immutableSession({
+    ...current,
+    status: "superseded",
+    updatedAt: resubmittedAt,
+  });
+
+  const resubmissionMeta: StudioReviewResubmissionMeta = Object.freeze({
+    previousVersionId: current.versionId,
+    previousApprovedReviewerIds: Object.freeze(previousApprovedReviewerIds),
+    changedCutIds: Object.freeze(changedCutIds),
+    resolvedThreadIds: Object.freeze(carriedThreads.filter((t) => t.status === "resolved").map((t) => t.id)),
+    openThreadIds: Object.freeze(carriedThreads.filter((t) => t.status === "open").map((t) => t.id)),
+    nextReviewerIds: Object.freeze([...current.requiredReviewerIds]),
+    note: (input.note ?? "").trim(),
+    resubmittedBy: actorId,
+    resubmittedAt,
+  });
+
+  const next = immutableSession({
+    documentId: current.documentId,
+    versionId: nextVersionId,
+    basedOnVersionId: current.versionId,
+    status: "in-review",
+    requiredReviewerIds: current.requiredReviewerIds,
+    threads: carriedThreads,
+    decisions: [],
+    submittedAt: resubmittedAt,
+    approvedAt: null,
+    updatedAt: resubmittedAt,
+    resubmissionMeta,
+  });
+
   return Object.freeze({ previous, next });
 }

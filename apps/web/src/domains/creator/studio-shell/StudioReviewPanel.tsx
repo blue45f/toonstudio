@@ -13,15 +13,24 @@ import {
   Send,
   ShieldCheck,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  addStudioReviewThread,
+  planIdempotentStudioThreadSubmission,
+  type CommentRetryAttempt,
+} from "../production-hub/production-comment-retry-guard";
+import {
+  describeStudioReviewRoleTransition,
+  type PreservedDraftEntry,
+  type RoleTransitionSummary,
+} from "../production-hub/production-role-transition-model";
+import {
   formatCutPinTargetId,
   permissionsForStudioReviewRole,
   recordStudioReviewDecision,
   reopenStudioReviewThread,
   resolveStudioReviewThread,
+  resubmitStudioRevision,
   startStudioRevision,
   studioReviewReadiness,
   submitStudioReview,
@@ -37,6 +46,7 @@ import {
 import {
   archiveStudioReviewSession,
   readStudioReviewHistory,
+  reconcileConcurrentStudioReviewMutation,
   restoreStudioReviewHistoryVersion,
   saveStudioReviewCheckpoint,
   type StudioReviewHistoryDocument,
@@ -50,6 +60,7 @@ import {
   StudioReviewHistoryRestoreSection,
   StudioReviewRoleAndPinBoard,
 } from "./StudioReviewCutPinAndHistorySection";
+import { StudioReviewResubmitSection } from "./StudioReviewResubmitSection";
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
 
 
@@ -204,9 +215,19 @@ export function StudioReviewPanel({
   );
   const [body, setBody] = useState("");
   const [decisionNote, setDecisionNote] = useState("");
+  const [resubmitNote, setResubmitNote] = useState("");
+  const [roleTransition, setRoleTransition] = useState<RoleTransitionSummary | null>(null);
+  const handleSelectRole = (nextRole: StudioReviewCollaboratorRole) => {
+    if (nextRole !== activeRole) {
+      setRoleTransition(describeStudioReviewRoleTransition(activeRole, nextRole));
+    }
+    setActiveRole(nextRole);
+  };
   const [history, setHistory] = useState<StudioReviewHistoryDocument | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const threadAttemptRef = useRef<CommentRetryAttempt | null>(null);
+  const [threadRetryAvailable, setThreadRetryAvailable] = useState(false);
 
   const permissions = useMemo(
     () => permissionsForStudioReviewRole(activeRole),
@@ -290,27 +311,33 @@ export function StudioReviewPanel({
     }
     const at = new Date().toISOString();
     try {
-      const threadId = createId("thread");
-      const next = addStudioReviewThread(session, {
-        id: threadId,
+      const planned = planIdempotentStudioThreadSubmission({
+        session,
+        previousAttempt: threadAttemptRef.current,
+        createId,
+        entityPrefix: "thread",
+        secondaryPrefix: "message",
         kind,
         targetId: targetId.trim(),
-        status: "open",
-        messages: [{
-          id: createId("message"),
-          authorId: activeActorId,
-          body: body.trim(),
-          createdAt: at,
-        }],
-        resolvedBy: null,
-        resolvedAt: null,
+        authorId: activeActorId,
+        body: body.trim(),
         pinCoordinate,
-      }, at);
-      if (persist(next, bt("검토 내용을 추가했습니다.", "Review note added."))) {
+        nowIso: at,
+      });
+      threadAttemptRef.current = planned.attempt;
+      const successMessage = planned.alreadyExisted
+        ? bt("같은 검토 내용이 이미 한 번 기록되어 중복 생성하지 않았습니다.", "The same review note is already recorded once; skipped duplicate.")
+        : bt("검토 내용을 추가했습니다.", "Review note added.");
+      if (persist(planned.nextSession, successMessage)) {
+        threadAttemptRef.current = null;
+        setThreadRetryAvailable(false);
         setBody("");
-        setHighlightedThreadId(threadId);
+        setHighlightedThreadId(planned.threadId);
+      } else {
+        setThreadRetryAvailable(true);
       }
     } catch (cause) {
+      setThreadRetryAvailable(true);
       setError(cause instanceof Error ? cause.message : "Review note could not be added.");
     }
   };
@@ -352,6 +379,20 @@ export function StudioReviewPanel({
         note: decisionNote.trim(),
         decidedAt: new Date().toISOString(),
       });
+      const reconciled = reconcileConcurrentStudioReviewMutation(window.localStorage, projectId, next);
+      setHistory(reconciled.history);
+      if (reconciled.outcome === "stale-superseded") {
+        setDecisionNote("");
+        setMessage(null);
+        setError(
+          bt(
+            `구버전(${session.versionId})에 대한 ${decision === "approved" ? "승인" : "수정 요청"}으로 이력에만 보관되었으며, 최신 리비전(${reconciled.latestHead.versionId})의 승인 상태는 변경하지 않았습니다.`,
+            `Recorded as an older-revision (${session.versionId}) decision only; latest revision (${reconciled.latestHead.versionId}) was not modified.`,
+          ),
+        );
+        workspace.update((current) => ({ ...current, reviewSession: reconciled.latestHead }));
+        return;
+      }
       if (persist(next, decision === "approved"
         ? (bt("내 승인을 기록했습니다.", "Your approval was recorded."))
         : (bt("수정을 요청했습니다.", "Changes requested.")))) {
@@ -370,12 +411,35 @@ export function StudioReviewPanel({
         actorId: activeActorId,
         createdAt: new Date().toISOString(),
       });
-      const archived = archiveStudioReviewSession(window.localStorage, projectId, transition.previous);
+      archiveStudioReviewSession(window.localStorage, projectId, transition.previous);
+      const archived = archiveStudioReviewSession(window.localStorage, projectId, transition.next);
       if (persist(transition.next, bt("승인본은 보관하고 새 초안을 시작했습니다.", "The approved version was archived and a new draft was created."))) {
         setHistory(archived);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "A new revision could not be created.");
+    }
+  };
+
+  const resubmitRevision = (input: { readonly changedCutIds: readonly string[]; readonly note: string }) => {
+    if (!session || !permissions.canEditManuscript) return;
+    try {
+      const baseVersion = session.versionId.replace(/-r\d+$/u, "");
+      const nextNum = (history?.sessions.length ?? 1) + 1;
+      const transition = resubmitStudioRevision(session, {
+        nextVersionId: `${baseVersion}-r${nextNum}`,
+        actorId: activeActorId,
+        changedCutIds: input.changedCutIds,
+        note: input.note,
+        resubmittedAt: new Date().toISOString(),
+      });
+      archiveStudioReviewSession(window.localStorage, projectId, transition.previous);
+      const archived = archiveStudioReviewSession(window.localStorage, projectId, transition.next);
+      if (persist(transition.next, bt("수정본을 새 리비전으로 재제출했습니다. 기존 승인 없이 0부터 재검수합니다.", "Resubmitted as a new revision. Approvals reset to 0."))) {
+        setHistory(archived);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "A new revision could not be resubmitted.");
     }
   };
 
@@ -521,6 +585,21 @@ export function StudioReviewPanel({
         ) : null}
       </div>
 
+      <StudioReviewResubmitSection
+        session={session}
+        selectedCutId={selectedCutId}
+        canEditManuscript={permissions.canEditManuscript}
+        noteValue={resubmitNote}
+        onNoteChange={setResubmitNote}
+        onSelectCut={(nextCutId) => {
+          setSelectedCutId(nextCutId);
+          const nextPin = { cutId: nextCutId, xPercent: pinCoordinate.xPercent, yPercent: pinCoordinate.yPercent };
+          setPinCoordinate(nextPin);
+          setTargetId(formatCutPinTargetId(nextPin));
+        }}
+        onResubmit={resubmitRevision}
+      />
+
       <StudioReviewRoleAndPinBoard
         activeRole={activeRole}
         permissions={permissions}
@@ -529,7 +608,16 @@ export function StudioReviewPanel({
         threads={session.threads}
         highlightedThreadId={highlightedThreadId}
         immutable={immutable}
-        onSelectRole={setActiveRole}
+        roleTransition={roleTransition}
+        preservedDraftEntries={(
+          [
+            { label: "검토 내용", value: body, locked: immutable || !permissions.canComment },
+            { label: "승인 메모", value: decisionNote, locked: !permissions.canDecide },
+            { label: "스튜디오 재제출 메모", value: resubmitNote, locked: !permissions.canEditManuscript },
+          ] satisfies readonly PreservedDraftEntry[]
+        ).filter((entry) => entry.value.trim().length > 0)}
+        onDismissRoleTransition={() => setRoleTransition(null)}
+        onSelectRole={handleSelectRole}
         onSelectCut={(nextCutId) => {
           setSelectedCutId(nextCutId);
           const nextPin = { cutId: nextCutId, xPercent: pinCoordinate.xPercent, yPercent: pinCoordinate.yPercent };
@@ -602,6 +690,18 @@ export function StudioReviewPanel({
             <MessageSquarePlus size={14} aria-hidden="true" />
             {bt("추가", "Add")}
           </button>
+          {threadRetryAvailable && body.trim() ? (
+            <button
+              type="button"
+              data-testid="review-retry-thread-btn"
+              disabled={immutable || !permissions.canComment}
+              onClick={addThread}
+              className={buttonClass({ variant: "outline", size: "sm", className: "mt-2 w-full gap-1.5 text-xs" })}
+            >
+              <RefreshCcw size={13} aria-hidden="true" />
+              {bt("같은 검토 내용 다시 보내기", "Retry sending same review note")}
+            </button>
+          ) : null}
           {!immutable && session.status !== "draft" ? (
             <textarea
               value={decisionNote}

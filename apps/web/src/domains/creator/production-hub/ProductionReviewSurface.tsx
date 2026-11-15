@@ -1,13 +1,18 @@
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { ArrowRight, ClipboardCheck, Columns2, MessageSquareMore } from "lucide-react";
-import { Suspense, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { ProductionReviewRequestForm } from "./ProductionReviewRequestForm";
 import { ProductionReviewWorkspace } from "./ProductionReviewWorkspace";
+import {
+  buildProductionReviewDeepLinkSearch,
+  parseProductionReviewDeepLinkParams,
+  type BuildProductionReviewDeepLinkInput,
+} from "./production-review-deep-link-model";
 import { buildCompareReviewPath } from "./review-request-model";
 import type { ProductionClientCommand } from "./production-api";
-import { deriveEpisodeApprovalGate } from "./production-episode-room-model";
+import { deriveEpisodeApprovalGate, describeDecisionRevisionContext } from "./production-episode-room-model";
 import {
   productionAssignmentName,
   reviewDecisionLabel,
@@ -23,6 +28,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { ProductionReviewPolicyEditor } from "./ProductionReviewPolicyEditor";
+import { ProductionMyReviewTriageSection } from "./ProductionMyReviewTriageSection";
+import type { RoleTransitionSummary } from "./production-role-transition-model";
 
 const ConsensusPreview = lazyRetry(() => import("./ProductionCreativeReviewConsensusSuite").then((module) => ({ default: module.ProductionCreativeReviewConsensusSuite })), "ProductionReviewConsensusPreview");
 const WalkthroughPreview = lazyRetry(() => import("./ProductionAsyncWalkthroughButlerSuite").then((module) => ({ default: module.ProductionAsyncWalkthroughButlerSuite })), "ProductionReviewWalkthroughPreview");
@@ -40,6 +47,8 @@ export function ProductionReviewSurface({
   refresh,
   isDemo = false,
   roleLens,
+  roleTransition = null,
+  onDismissRoleTransition,
 }: {
   readonly aggregate: ProductionProjectAggregate;
   readonly execute: (command: ProductionClientCommand, message: string) => Promise<void>;
@@ -49,20 +58,35 @@ export function ProductionReviewSurface({
   readonly refresh?: () => Promise<void>;
   readonly isDemo?: boolean;
   readonly roleLens: CreatorRoleLens;
+  readonly roleTransition?: RoleTransitionSummary | null;
+  readonly onDismissRoleTransition?: () => void;
 }) {
   const bt = useBilingual("ProductionReviewSurface");
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const viewerUserId = useApp((state) => state.userId);
-  const taskValues = params.getAll("task");
-  const episodeValues = params.getAll("episode");
-  const targetTaskId = params.has("task") ? taskValues.length === 1 ? taskValues[0] ?? "" : "" : undefined;
-  const preferredEpisodeId = params.has("episode") ? episodeValues.length === 1 ? episodeValues[0] ?? "" : "" : undefined;
+  const deepLinkParams = useMemo(() => parseProductionReviewDeepLinkParams(params), [params]);
+  const targetTaskId = deepLinkParams.task;
+  const preferredEpisodeId = deepLinkParams.episode;
+  const hasDeepLinkCoordinates =
+    targetTaskId !== undefined
+    || preferredEpisodeId !== undefined
+    || deepLinkParams.cut !== undefined
+    || deepLinkParams.submission !== undefined
+    || deepLinkParams.revision !== undefined;
+  const handleSyncDeepLink = useCallback(
+    (next: Omit<BuildProductionReviewDeepLinkInput, "projectId">) => {
+      setParams((previous) => buildProductionReviewDeepLinkSearch(next, previous), { replace: true });
+    },
+    [setParams],
+  );
   const viewerAssignmentIds = aggregate.projectId === "sample-project" ? undefined : aggregate.assignments
     .filter((assignment) => viewerUserId && aggregate.parties.some((party) => party.id === assignment.partyId && party.accountUserId === viewerUserId))
     .map((assignment) => assignment.id);
   const workspace = <ProductionReviewWorkspace aggregate={aggregate} execute={execute} canEdit={canReview ?? canEdit} roleLens={roleLens}
-    targetTaskId={targetTaskId} preferredEpisodeId={preferredEpisodeId} viewerAssignmentIds={viewerAssignmentIds} viewerUserId={aggregate.projectId === "sample-project" ? undefined : viewerUserId} />;
+    roleTransition={roleTransition} onDismissRoleTransition={onDismissRoleTransition}
+    targetTaskId={targetTaskId} preferredEpisodeId={preferredEpisodeId} deepLinkParams={deepLinkParams} onSyncDeepLink={handleSyncDeepLink}
+    viewerAssignmentIds={viewerAssignmentIds} viewerUserId={aggregate.projectId === "sample-project" ? undefined : viewerUserId} />;
   const [now] = useState(() => Date.now());
   const queue = aggregate.episodes
     .map((episode) => {
@@ -79,7 +103,12 @@ export function ProductionReviewSurface({
 
   return (
     <div className="space-y-4">
-      {targetTaskId !== undefined ? workspace : null}
+      <ProductionMyReviewTriageSection
+        aggregates={[aggregate]}
+        roleLens={roleLens}
+        viewerAssignmentIds={viewerAssignmentIds}
+      />
+      {hasDeepLinkCoordinates ? workspace : null}
       <ProductionReviewPolicyEditor aggregate={aggregate} canManage={canManage} execute={execute} refresh={refresh} />
       <ProductionReviewRequestForm aggregate={aggregate} execute={execute} canEdit={canEdit} refresh={refresh} />
 
@@ -150,7 +179,7 @@ export function ProductionReviewSurface({
         )}
       </ProductionSectionCard>
 
-      {targetTaskId === undefined ? workspace : null}
+      {!hasDeepLinkCoordinates ? workspace : null}
 
 
       <ProductionSectionCard
@@ -161,13 +190,36 @@ export function ProductionReviewSurface({
           <ul className="space-y-2">
             {decisions.map((decision) => {
               const name = productionAssignmentName(aggregate, decision.assignmentId);
+              const revCtx = describeDecisionRevisionContext(aggregate, decision);
               return (
-                <li key={decision.id} className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-panel p-3 text-xs">
+                <li
+                  key={decision.id}
+                  data-decision-superseded={revCtx.isSuperseded ? "true" : "false"}
+                  className="flex flex-wrap items-start gap-3 rounded-xl border border-line bg-panel p-3 text-xs"
+                >
                   <ProductionAvatar name={name} />
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-1.5">
                       <span className="font-bold text-fg">{name}</span>
-                      <ProductionPill tone={reviewDecisionTone(decision.value)}>{reviewLaneLabel(decision.lane, bt)} · {reviewDecisionLabel(decision.value, bt)}</ProductionPill>
+                      <ProductionPill tone={revCtx.isSuperseded ? "neutral" : reviewDecisionTone(decision.value)}>
+                        {revCtx.isSuperseded
+                          ? decision.value === "approve"
+                            ? bt(`${reviewLaneLabel(decision.lane, bt)} · 구버전(${revCtx.revisionNumber ?? "이전"}차) 승인`, `${reviewLaneLabel(decision.lane, bt)} · Older rev. ${revCtx.revisionNumber ?? "prev"} approval`)
+                            : bt(`${reviewLaneLabel(decision.lane, bt)} · 구버전(${revCtx.revisionNumber ?? "이전"}차) ${reviewDecisionLabel(decision.value, bt)}`, `${reviewLaneLabel(decision.lane, bt)} · Older rev. ${revCtx.revisionNumber ?? "prev"} ${reviewDecisionLabel(decision.value, bt)}`)
+                          : `${reviewLaneLabel(decision.lane, bt)} · ${reviewDecisionLabel(decision.value, bt)}`}
+                      </ProductionPill>
+                      {revCtx.isSuperseded ? (
+                        <ProductionPill tone="warning">
+                          {bt(
+                            `최신 ${revCtx.currentRevisionNumber ? `${revCtx.currentRevisionNumber}차 ` : ""}승인 아님`,
+                            `Not latest${revCtx.currentRevisionNumber ? ` rev. ${revCtx.currentRevisionNumber}` : ""} approval`,
+                          )}
+                        </ProductionPill>
+                      ) : revCtx.revisionNumber != null ? (
+                        <ProductionPill tone="neutral">
+                          {bt(`현재 ${revCtx.revisionNumber}차`, `Current rev. ${revCtx.revisionNumber}`)}
+                        </ProductionPill>
+                      ) : null}
                       <span className="text-fg-3">{formatProductionRelative(decision.createdAt, now, bt)}</span>
                     </p>
                     {decision.conditions.length ? (

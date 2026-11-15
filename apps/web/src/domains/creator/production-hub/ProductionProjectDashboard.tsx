@@ -34,6 +34,7 @@ import {
 import { productionEpisodeRoomPath, productionSurfacePath } from "./production-project-surfaces";
 import { formatProductionDday, formatProductionRelative, productionDaysUntil } from "./production-format";
 import { ProductionAvatar, ProductionPill } from "./production-ui";
+import { ProductionMyReviewTriageSection } from "./ProductionMyReviewTriageSection";
 import { BOARD_STATUS_LABELS } from "./production-workboard-model";
 
 import { NowCard } from "@/shared/components/layout/NowCard";
@@ -250,6 +251,13 @@ export function ProductionProjectDashboard({
           />
         </div>
       </section>
+
+      <ProductionMyReviewTriageSection
+        aggregates={[aggregate]}
+        roleLens={roleLens}
+        viewerAssignmentIds={viewerAssignmentIds.length > 0 ? viewerAssignmentIds : undefined}
+        className="xl:col-span-12"
+      />
 
       <DashboardCard
         title={bt("마감 임박 회차", "Upcoming episodes")}

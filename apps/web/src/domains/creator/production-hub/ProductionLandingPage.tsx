@@ -34,6 +34,9 @@ import { canonicalProductionProcessKey } from "@toonstudio/contracts/production-
 import { ProductionLandingOverview } from "./ProductionLandingOverview";
 import { ProductionCreateProjectEntry } from "./ProductionCreateProjectEntry";
 import { ProductionGrandAtelierCollabHub } from "./ProductionGrandAtelierCollabHub";
+import { ProductionMyReviewTriageSection } from "./ProductionMyReviewTriageSection";
+import { openProductionDemoSession } from "./production-demo-adapter";
+import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { PRODUCTION_PROCESS_LABELS } from "./production-labels";
 import { reviewInboxItemHref } from "./review-request-model";
@@ -392,6 +395,8 @@ export function ProductionLandingPage() {
   const [projectsError, setProjectsError] = useState<string | null>(null);
   const [collabItems, setCollabItems] = useState<readonly CollabInboxItem[]>([]);
   const [collabLoading, setCollabLoading] = useState(false);
+  const [loadedAggregates, setLoadedAggregates] = useState<readonly ProductionProjectAggregate[]>([]);
+  const [demoAggregate] = useState(() => openProductionDemoSession());
   /** 프로젝트 목록 API 오류 시 "다시 불러오기" 버튼용 재시도 트리거. */
   const [projectsReloadToken, setProjectsReloadToken] = useState(0);
 
@@ -432,6 +437,7 @@ export function ProductionLandingPage() {
   useEffect(() => {
     if (!userId) {
       setCollabItems([]);
+      setLoadedAggregates([]);
       setCollabLoading(false);
       return;
     }
@@ -442,6 +448,7 @@ export function ProductionLandingPage() {
     let active = true;
     setCollabLoading(true);
     const readIds = loadCollabInboxReadIds();
+    const fetchedAggregates: ProductionProjectAggregate[] = [];
     const events = [
       ...collabEventsFromPersonalInboxItems(inboxItems, {
         projectUpdatedAtById: new Map(projects.map((project) => [project.projectId, project.updatedAt])),
@@ -451,6 +458,13 @@ export function ProductionLandingPage() {
     void Promise.allSettled(
       projects.flatMap((project) => [
         getProductionProjectCollabRecord(project.projectId).then((record) => {
+          if (
+            "episodes" in record.aggregate &&
+            Array.isArray((record.aggregate as Partial<ProductionProjectAggregate>).episodes) &&
+            Array.isArray((record.aggregate as Partial<ProductionProjectAggregate>).assignments)
+          ) {
+            fetchedAggregates.push(record.aggregate as unknown as ProductionProjectAggregate);
+          }
           const projected = collabEventsFromProjectAggregate(record.aggregate, userId);
           events.push(...projected.events);
           projected.serverReadIds.forEach((id) => readIds.add(id));
@@ -466,6 +480,7 @@ export function ProductionLandingPage() {
       ]),
     ).then(() => {
       if (!active) return;
+      setLoadedAggregates(fetchedAggregates);
       setCollabItems(projectCollabInbox(events, readIds));
       setCollabLoading(false);
     });
@@ -579,6 +594,23 @@ export function ProductionLandingPage() {
           {intro}
           <FlowCards />
         </>}
+        <ProductionMyReviewTriageSection
+          aggregates={loadedAggregates.length > 0 ? loadedAggregates : [demoAggregate]}
+          roleLens="art"
+          viewerAssignmentIds={
+            userId && loadedAggregates.length > 0
+              ? loadedAggregates.flatMap((aggregate) =>
+                  aggregate.assignments
+                    .filter((assignment) =>
+                      aggregate.parties.some((party) => party.id === assignment.partyId && party.accountUserId === userId),
+                    )
+                    .map((assignment) => assignment.id),
+                )
+              : undefined
+          }
+          showProjectTitle
+          className="mt-6"
+        />
         <ProductionGrandAtelierCollabHub />
         <ModuleGrid />
       </div>

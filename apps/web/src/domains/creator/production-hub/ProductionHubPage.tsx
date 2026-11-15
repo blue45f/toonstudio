@@ -8,11 +8,13 @@ import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 import { ProductionProjectHeader } from "./ProductionProjectHeader";
 import { ProductionProjectNav } from "./ProductionProjectNav";
 import { ProductionPlanningGuide } from "./ProductionPlanningGuide";
+import { ProductionRoleTransitionBanner } from "./ProductionReviewDeepLinkBanners";
 import { ProductionSampleJourneyGuide } from "./ProductionSampleJourneyGuide";
 import { ProductionSessionStatus } from "./ProductionSessionStatus";
 import { ProductionSurfaceHeader } from "./ProductionSurfaceHeader";
 import { productionDemoAdapter } from "./production-demo-adapter";
 import type { ProductionProjectSurface } from "./production-project-surfaces";
+import type { RoleTransitionSummary } from "./production-role-transition-model";
 import { usePreferredRoleLens } from "./use-preferred-role-lens";
 import { useProductionProjectSession } from "./use-production-project-session";
 
@@ -56,7 +58,16 @@ function viewerAssignmentIdsFor(aggregate: ProductionProjectAggregate, userId: s
   return aggregate.assignments.filter((assignment) => partyIds.has(assignment.partyId)).map((assignment) => assignment.id);
 }
 
-function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface: ProductionProjectSurface }) {
+function SurfaceContent({
+  surface,
+  roleTransition,
+  onDismissRoleTransition,
+  ...props
+}: SurfaceProps & {
+  readonly surface: ProductionProjectSurface;
+  readonly roleTransition?: RoleTransitionSummary | null;
+  readonly onDismissRoleTransition?: () => void;
+}) {
   const { aggregate, access, execute, executeStrict, roleLens, isDemo } = props;
   switch (surface) {
     case "overview": return <OverviewSurface {...props} />;
@@ -67,7 +78,7 @@ function SurfaceContent({ surface, ...props }: SurfaceProps & { readonly surface
     case "schedule": return <ProductionScheduleWorkspace aggregate={aggregate} execute={execute} canEdit={access.edit} />;
     case "control": return <ProductionOperationsControlWorkspace aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canManage={access.manage} />;
     case "handoff": return <ProductionHandoffSurface aggregate={aggregate} roleLens={roleLens} execute={executeStrict} canEdit={access.edit} isDemo={isDemo} />;
-    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canReview={access.comment || access.edit} canManage={access.manage} refresh={props.refresh} roleLens={roleLens} isDemo={isDemo} />;
+    case "review": return <ProductionReviewSurface aggregate={aggregate} execute={executeStrict} canEdit={access.edit} canReview={access.comment || access.edit} canManage={access.manage} refresh={props.refresh} roleLens={roleLens} isDemo={isDemo} roleTransition={roleTransition} onDismissRoleTransition={onDismissRoleTransition} />;
     case "activity": return <ProductionActivityWorkspace aggregate={aggregate} viewerUserId={props.viewerUserId} viewerAssignmentIds={props.viewerAssignmentIds} versionActivityEnabled={!isDemo} />;
     case "procurement": return <ProductionProcurementSurface aggregate={aggregate} />;
     case "rights": return <ProductionRightsSurface aggregate={aggregate} />;
@@ -133,6 +144,13 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
         <ProductionProjectNav projectId={aggregate.projectId} surface={surface} />
         <div className="min-w-0 p-4 sm:p-6">
           {!project.isDemo ? <ProductionSessionStatus revision={aggregate.revision} refreshing={project.refreshing} saving={project.saveState === "saving"} onRefresh={project.refresh} /> : null}
+          {surface !== "review" && project.roleTransition ? (
+            <ProductionRoleTransitionBanner
+              transition={project.roleTransition}
+              onDismiss={project.dismissRoleTransition}
+              className="mb-4"
+            />
+          ) : null}
           {project.notice ? (
             <div className={cn("mb-4 rounded-xl border px-3 py-2 text-xs", project.saveState === "error" ? "border-bad/30 bg-bad/10 text-fg" : "border-good/30 bg-good/10 text-fg")} role="status">
               {project.notice}
@@ -151,6 +169,8 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
             aggregate={aggregate}
             access={project.access}
             roleLens={roleLens}
+            roleTransition={project.roleTransition}
+            onDismissRoleTransition={project.dismissRoleTransition}
             execute={project.execute}
             executeStrict={project.executeStrict}
             refresh={project.refresh}

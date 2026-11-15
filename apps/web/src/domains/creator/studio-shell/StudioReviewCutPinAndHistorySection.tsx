@@ -6,6 +6,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import type { StudioReviewHistoryDocument } from "../studio-review-history-store";
+import { ProductionRoleTransitionBanner } from "../production-hub/ProductionReviewDeepLinkBanners";
+import type { PreservedDraftEntry, RoleTransitionSummary } from "../production-hub/production-role-transition-model";
 import {
   formatCutPinTargetId,
   SYNTHETIC_STUDIO_REVIEW_CUTS,
@@ -24,6 +26,9 @@ export function StudioReviewRoleAndPinBoard({
   threads,
   highlightedThreadId,
   immutable,
+  roleTransition = null,
+  preservedDraftEntries = [],
+  onDismissRoleTransition,
   onSelectRole,
   onSelectCut,
   onPickCoordinate,
@@ -36,6 +41,9 @@ export function StudioReviewRoleAndPinBoard({
   readonly threads: readonly StudioReviewThread[];
   readonly highlightedThreadId: string | null;
   readonly immutable: boolean;
+  readonly roleTransition?: RoleTransitionSummary | null;
+  readonly preservedDraftEntries?: readonly PreservedDraftEntry[];
+  readonly onDismissRoleTransition?: () => void;
   readonly onSelectRole: (role: StudioReviewCollaboratorRole) => void;
   readonly onSelectCut: (cutId: string) => void;
   readonly onPickCoordinate: (next: StudioReviewPinCoordinate) => void;
@@ -116,6 +124,17 @@ export function StudioReviewRoleAndPinBoard({
               : bt("열람 전용 — 보기만 가능 (편집·댓글·승인 잠김)", "Viewer mode — read-only (edits, comments & decisions locked)")}
         </span>
       </div>
+
+      {roleTransition ? (
+        <ProductionRoleTransitionBanner
+          transition={roleTransition}
+          preservedEntries={preservedDraftEntries}
+          onDismiss={onDismissRoleTransition}
+          testId="studio-review-role-transition-banner"
+          copyTestId="studio-review-copy-preserved-draft"
+          className="mt-0"
+        />
+      ) : null}
 
       <div className="rounded-2xl border border-line bg-panel/55 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

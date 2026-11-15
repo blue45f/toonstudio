@@ -1,5 +1,6 @@
 import {
   archiveStudioReviewSession,
+  findLatestActiveStudioReviewSession,
   readStudioReviewHistory,
   type StudioReviewHistoryDocument,
   type StudioReviewHistoryStorage,
@@ -113,7 +114,7 @@ export const CUT_OCCUPANCY_CARDS: readonly CutOccupancyCard[] = [
     memberEn: "Hyunwoo PD",
     activityKo: "액션 컷 핀 피드백 확인 중",
     activityEn: "Checking action cut pins",
-    episodeHref: "/production/projects/sample-project/review",
+    episodeHref: "/production/projects/sample-project/review?episode=episode-12&cut=cut-12-002&submission=submission-background-sample-r1&revision=background-sample-r1",
   },
 ];
 
@@ -240,5 +241,6 @@ export function buildInitialCollabState(storage: StudioReviewHistoryStorage): {
     archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, v13);
     history = archiveStudioReviewSession(storage, COLLAB_HUB_PROJECT_ID, base);
   }
-  return { session: base, history };
+  const latestActive = findLatestActiveStudioReviewSession(history, base.documentId);
+  return { session: latestActive ?? base, history };
 }
