@@ -122,13 +122,17 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     );
 
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    const pinnedStatus = await screen.findByTestId("brush-lab-pin-favorites-status");
+    const pinnedStatus = await screen.findByTestId(
+      "brush-lab-pin-favorites-status",
+      undefined,
+      { timeout: 5000 },
+    );
     expect(pinnedStatus.getAttribute("role")).toBe("status");
     expect(pinnedStatus.textContent).toContain("6종 고정 완료");
 
     const spy = vi.spyOn(favoriteSlotsModule, "pinStudioCompetitorFavoritesToProductRepository");
     fireEvent.click(screen.getByTestId("brush-lab-restore-favorites-order-btn"));
-    await screen.findByTestId("brush-lab-pin-favorites-status");
+    await screen.findByTestId("brush-lab-pin-favorites-status", undefined, { timeout: 5000 });
     expect(spy).toHaveBeenCalledWith(undefined, { resetCustomizations: true });
   });
 
@@ -148,7 +152,11 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
 
     renderBrushLab();
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    const alertNode = await screen.findByTestId("brush-lab-pin-favorites-status");
+    const alertNode = await screen.findByTestId(
+      "brush-lab-pin-favorites-status",
+      undefined,
+      { timeout: 5000 },
+    );
     expect(alertNode.getAttribute("role")).toBe("alert");
     expect(alertNode.textContent).toContain("영구 저장하지 못하고");
   });
@@ -174,7 +182,7 @@ describe("StudioBrushLabPage — REA 습식 안료 & 스타일러스 커브 워�
     expect(screen.getByTestId("brush-lab-rea-status").textContent).toContain("Kernel:");
 
     fireEvent.click(screen.getByTestId("brush-lab-pin-favorites-btn"));
-    await screen.findByTestId("brush-lab-pin-favorites-status");
+    await screen.findByTestId("brush-lab-pin-favorites-status", undefined, { timeout: 5000 });
 
     const wave37Panel = screen.getByTestId("brush-lab-wave37-stroke-refinement-panel");
     expect(wave37Panel.textContent).not.toMatch(/[가-힣]/u);

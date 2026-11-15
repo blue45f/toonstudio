@@ -621,7 +621,7 @@ describe("Studio VRM texture-paint production integration boundary", () => {
       "pending.pointerId !== event.pointerId",
     );
     expect(pointerLifecycle).toContain(
-      '"pointerdown",\n      cancelPendingTapOnAdditionalPointer,\n      true',
+      'gl.domElement.addEventListener("pointerdown", cancelPendingTapOnAdditionalPointer, true)',
     );
     expect(pointerLifecycle).toContain(
       'window.addEventListener("pointercancel", cancelMatchingPointer, { passive: true })',

@@ -128,7 +128,9 @@ describe("Host의 B 전용 연결 및 C/D 비변경 계약", () => {
     expect(normal).toContain("&& initialWriteAllowed()");
     expect(emergency).toContain("if (!initialWriteAllowed()) return;");
     expect(emergency).toContain('if (!initialWriteAllowed()) throw new Error("Initial recovery write was not admitted");');
-    expect(emergency).toContain(".then((authority) => {\n            if (!initialWriteAllowed()) return;");
+    expect(emergency).toContain(
+      ".then((authority) => {\n            if (!initialWriteAllowed() || !autosaveMonotonicGateRef.current.admitDurableReceipt(autosaveKey, snapshotSeq)) return;",
+    );
   });
   it("기존 accepted completion/queue/checkpoint 경로와 sidecar 실험을 변경하지 않는다", () => {
     const queue = host.slice(host.indexOf("function queueDeferredStrokeCommit("), host.indexOf("function invalidatePendingRetainedRedo("));

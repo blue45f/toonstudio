@@ -112,7 +112,8 @@ describe("Studio BG3D generic model mode integration boundary", () => {
       "loadVerifiedStudioBg3dGlbWithThree",
       "assertStudioBg3dModelPlacementAdmission({",
       "const joints = collectStudioBg3dThreeJoints(loaded.root)",
-      "genericHints: inspectStudioGeneric3dRuntimeHints(loaded.root, joints)",
+      "const genericHints = inspectStudioGeneric3dRuntimeHints(loaded.root, joints)",
+      "genericHints,",
       "args.cache.set(cacheKey, entry)",
     ]);
   });

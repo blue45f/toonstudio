@@ -127,8 +127,8 @@ try {
       await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
       const dashboard = page.locator('[data-reference-dashboard="true"]');
       await expect(dashboard).toBeVisible({ timeout: 30000 });
-      // 기본 모드(이야기 만들기)는 입력한 문장을 들고 질문형 창작 흐름으로 간다.
-      await expect(dashboard.locator('details.rd-idea-help')).not.toHaveAttribute('open');
+      // 기본 모드(이야기 만들기)는 V4 기본 펼침 입력에서 문장을 들고 질문형 창작 흐름으로 간다.
+      await expect(dashboard.locator('details.rd-idea-help')).toHaveAttribute('open');
       const idea = await openPublicHomeIdeaInput(dashboard);
       await idea.fill('비 오는 날의 첫사랑');
       await idea.press('Enter');

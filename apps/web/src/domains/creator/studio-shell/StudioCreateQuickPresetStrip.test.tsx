@@ -54,8 +54,9 @@ describe("초보자 1초 장르 스타터 · 모바일 안전영역 시뮬레이
       </MemoryRouter>,
     );
 
-    expect(screen.queryByTestId("create-start-genre-starters")).toBeNull();
+    expect(screen.getByTestId("create-start-genre-starters")).toBeTruthy();
     fireEvent.click(screen.getByRole("link", { name: "다른 시작 방법" }));
+    expect(screen.queryByTestId("create-start-genre-starters")).toBeNull();
     fireEvent.click(screen.getByRole("link", { name: "장르 프리셋 고르기" }));
     const section = screen.getByTestId("create-start-genre-starters");
     expect(section).toBeTruthy();

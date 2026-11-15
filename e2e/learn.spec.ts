@@ -19,6 +19,12 @@ async function showEveryLesson(page: Page) {
   while (await more.count()) await more.click();
 }
 
+async function showEveryGlossaryTerm(page: Page) {
+  await page.locator(".learn-term-card").first().waitFor();
+  const expandAll = page.getByRole("button", { name: "전체 펼치기", exact: true });
+  if (await expandAll.count()) await expandAll.click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("toonstudio-compat-dismissed", "true"));
   await page.route("**/api/auth/session**", async (route) => {
@@ -37,6 +43,7 @@ test("curriculum, glossary and invalid addresses render", async ({ page }) => {
   await showEveryLesson(page);
   await expect(page.locator(".learn-card")).toHaveCount(LESSONS.length);
   await page.goto("/learn/glossary");
+  await showEveryGlossaryTerm(page);
   await expect(page.locator(".learn-term-card")).toHaveCount(TERMS.length);
   await page.goto("/learn/lessons/does-not-exist");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("학습 페이지를 찾을 수 없습니다.");

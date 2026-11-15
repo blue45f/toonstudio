@@ -63,9 +63,16 @@ export async function selectStudioCollaborationPen(page: Page, timeoutMs = 10_00
   if (await clarity.isVisible()) {
     const desktopPen = clarity.locator(".studio-drawing-clarity-rail").getByRole("toolbar", { name: /^(그리기 도구|Drawing tools)$/u })
       .getByRole("button", { name: /^(펜|Pen)$/u }).first();
-    const desktop = await desktopPen.isVisible();
-    const pen = desktop ? desktopPen
-      : clarity.locator('[data-studio-mobile-editing-dock="true"] [data-studio-primary-action="draw"]:visible').first();
+    const mobilePen = clarity.locator('[data-studio-mobile-editing-dock="true"] [data-studio-primary-action="draw"]:visible').first();
+    let desktop = await desktopPen.isVisible();
+    let mobileVisible = !desktop && await mobilePen.isVisible();
+    // LazyStudioDrawingClarityRail(<Suspense fallback={null}>)이 늦게 마운트될 때 PC 화면을 모바일 도크로 오판하지 않는다.
+    while (!desktop && !mobileVisible && Date.now() < deadline) {
+      await page.waitForTimeout(Math.min(50, Math.max(1, deadline - Date.now())));
+      desktop = await desktopPen.isVisible();
+      if (!desktop) mobileVisible = await mobilePen.isVisible();
+    }
+    const pen = desktop ? desktopPen : mobilePen;
     await pen.waitFor({ state: "visible", timeout: remaining() });
     // PC의 선택 표시는 다른 그리기 모드도 포함한다. 모바일만 이미 선택됐을 때 시트를 다시 열지 않는다.
     if (desktop || await pen.getAttribute("aria-pressed", { timeout: remaining() }) !== "true") await pen.click({ timeout: remaining() });

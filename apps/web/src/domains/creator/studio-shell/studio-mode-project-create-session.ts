@@ -57,6 +57,18 @@ function getMemoryNavigatorId(navigator: object): string {
   return next;
 }
 
+function nextEntryTokenSuffix(): string {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.randomUUID) return cryptoApi.randomUUID();
+  if (cryptoApi?.getRandomValues) {
+    const bytes = new Uint8Array(8);
+    cryptoApi.getRandomValues(bytes);
+    return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+  }
+  memoryNavigatorSeq += 1;
+  return `seq-${memoryNavigatorSeq}`;
+}
+
 function resolveBrowserEntryToken(locationKey: string): string {
   if (locationKey && locationKey !== "default") return locationKey;
   if (typeof window === "undefined") return "ssr";
@@ -68,7 +80,7 @@ function resolveBrowserEntryToken(locationKey: string): string {
     if (typeof stateRecord.toonCreateEntryId === "string" && stateRecord.toonCreateEntryId.length > 0) {
       return stateRecord.toonCreateEntryId;
     }
-    const generated = `entry-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const generated = `entry-${Date.now().toString(36)}-${nextEntryTokenSuffix()}`;
     if (typeof window.history.replaceState === "function") {
       window.history.replaceState({ ...stateRecord, toonCreateEntryId: generated }, "");
     }

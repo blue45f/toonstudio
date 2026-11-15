@@ -321,7 +321,7 @@ export function StudioDrawingQuickErgonomicsBar({
           onClick={() => s.setStrokeWidth((current) => stepBrushWidth(current, 1))}
           aria-label={bt("브러시 크기 키우기", "Increase brush size")}
           aria-describedby={widthReadoutId}
-          title={bt("브러시 크기 키우기 · [", "Increase brush size · ]").replace("[", "]")}
+          title={bt("브러시 크기 키우기 · ]", "Increase brush size · ]")}
         >
           <Plus size={15} aria-hidden />
         </button>

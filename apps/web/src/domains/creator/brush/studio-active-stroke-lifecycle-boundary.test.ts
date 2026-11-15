@@ -64,7 +64,8 @@ describe("active stroke lifecycle integration boundary", () => {
     expect(planner).toContain("pending: !recoveringMaster && existing");
     expect(recovery).toContain("lifecycleMasterStrokeRecoveryRef.current = recovery.pending.strokes.at(-1) ?? null");
     expect(source).toContain("master: durableMaster");
-    expect(source).toContain("masterPendingFingerprint");
+    expect(source).toContain("composeStudioEmergencyPendingFingerprint({");
+    expect(source).toContain("masterStrokeId: effectiveMasterStroke?.id ?? null");
   });
 
   it("projects a live page or master prefix into pagehide storage without mutating the live session", () => {

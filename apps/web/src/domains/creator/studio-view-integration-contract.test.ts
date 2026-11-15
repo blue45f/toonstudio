@@ -95,7 +95,7 @@ describe("StudioPage view integration contract", () => {
 
   it("keeps the legacy canvas zoom cluster out of the full editor dock", () => {
     expect(canvasControlsSource).toContain(
-      '"absolute bottom-3 left-3 z-30 hidden items-center gap-0.5 rounded-full',
+      '"absolute bottom-3 left-3 z-30 hidden items-center gap-1 rounded-full',
     );
     expect(canvasControlsSource).toContain('canvasOnlyMode && "lg:flex"');
     expect(viewportSource).not.toContain('"absolute bottom-3 left-3 z-30 hidden lg:flex');

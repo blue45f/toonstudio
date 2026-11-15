@@ -290,7 +290,7 @@ describe("작업공간+프로젝트 레이아웃 계약 (L2)", () => {
 
   it("레일 전환은 1280px로 표준화되고 행 레일은 216px 토큰이다 (구 1181px 지점 부재)", () => {
     expect(workspaceV3).not.toContain("1181px");
-    expect(workspaceV3.match(/@media \(min-width:1280px\)/gu)).toHaveLength(3);
+    expect(workspaceV3.match(/@media \(min-width:1280px\)/gu)).toHaveLength(2);
     expect(workspaceV3).toContain(".workspace-shell{grid-template-columns:var(--layout-rail-row) minmax(0,1fr)}");
     expect(workspaceV3).not.toContain("grid-template-columns:216px");
   });
@@ -625,7 +625,7 @@ describe("브레이크포인트 표준 경계 계약 (BP)", () => {
     "sitewide-visual-ux.css": [390],
     "unified-theme-contract.css": [],
     "reference-visual-system.css": [],
-    "public-site-shell.css": [400, 1180, 1600, 1600],
+    "public-site-shell.css": [400, 1180, 1360, 1360],
     "site-menu.css": [],
     "mobile-first-shell.css": [],
     "globals.css": [],

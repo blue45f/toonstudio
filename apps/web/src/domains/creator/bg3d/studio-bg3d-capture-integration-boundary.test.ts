@@ -158,9 +158,10 @@ describe("Studio 3D asynchronous capture integration boundary", () => {
 
     expect(history).toContain("document: sceneBaseDocument");
     expect(history).toContain(
-      "[customModels, isBatchRenderingShots, isRestoringScene, primitives, sceneBaseDocument]"
+      "[customModels, isBatchRenderingShots, isRestoringScene, isTransforming, primitives, sceneBaseDocument]"
     );
     expect(history).toContain("if (isRestoringScene || isBatchRenderingShots) return;");
+    expect(history).toContain("if (isTransforming) return;");
     // Undo and redo now share one atomic canonical-state owner, not independent setters.
     expect(history).toContain('const doUndo = () => applyCommandHistoryStep("undo")');
     expect(history).toContain('const doRedo = () => applyCommandHistoryStep("redo")');
