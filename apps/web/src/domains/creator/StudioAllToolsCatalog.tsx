@@ -2,6 +2,11 @@ import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { ArrowLeft, Pin, PinOff, Search } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { STUDIO_RAIL_TOOL_CATALOG, studioRailToolLabel, type StudioRailToolId } from "./studio-app-settings";
+import {
+  StudioAllToolsCrossSurfaceGuidance,
+  StudioAllToolsDisabledItemGuidance,
+} from "./planning/StudioAllToolsUnavailableGuidance";
+import { useAllToolsCrossSurfaceMatches } from "./planning/studio-command-search-unavailability";
 import { STUDIO_CHROME_RAIL_TOOL_GROUPS } from "./studio-chrome-ia-map";
 import type { StudioRailToolButtonProps } from "./studio-chrome-ui";
 import { matchesStudioRailToolQuery } from "./studio-rail-tool-search";
@@ -36,6 +41,8 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
   const rootId = useId();
   const matches = (id: StudioRailToolId) => matchesStudioRailToolQuery(id, query, t);
   const visibleGroups = STUDIO_CHROME_RAIL_TOOL_GROUPS.filter(group => searching || groupId === null || group.id === groupId);
+  const crossSurfaceMatches = useAllToolsCrossSurfaceMatches(query);
+  const hasRailMatch = STUDIO_RAIL_TOOL_CATALOG.some(({ id }) => matches(id));
 
   return <div className="space-y-2" data-studio-all-tools-direct="true">
     <label className="relative block"><Search size={16} aria-hidden className="absolute left-3 top-3.5 text-fg-2" />
@@ -90,28 +97,32 @@ export function StudioAllToolsCatalog({ definitions, pinned, query, onQuery, onP
           const label = studioRailToolLabel(id, t);
           const isPinned = pinned.includes(id);
           const shortcut = STUDIO_RAIL_TOOL_CATALOG.find((item) => item.id === id)?.defaultShortcut;
-          return <div key={id} className="flex items-start gap-1 rounded-lg hover:bg-raised">
-            <button type="button" aria-label={`${label} 사용`} aria-disabled={definition.disabled || undefined}
-              data-studio-catalog-tool-id={id} data-studio-hidden-tool-id={!isPinned ? id : undefined}
-              aria-describedby={definition.disabled ? `${rootId}-${id}-reason` : undefined}
-              onClick={(event) => { if (definition.disabled) return; definition.onClick?.(event); onUsed(); }}
-              onFocus={definition.onFocus} onPointerEnter={definition.onPointerEnter}
-              className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-lg px-2 py-2.5 text-left text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent">
-              <Icon size={18} aria-hidden className="mt-0.5 shrink-0" />
-              <span className="min-w-0 flex-1"><span className="block">{label}</span>
-                {definition.disabled ? <span id={`${rootId}-${id}-reason`} className="mt-1 block text-xs leading-relaxed text-fg-2">{definition.unavailableReason ?? "선택 항목과 편집 권한을 확인하세요."}</span> : null}
-              </span>
-              {shortcut ? <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 text-xs text-fg-2">{shortcut}</kbd> : null}
-            </button>
-            <button type="button" aria-label={`${label} ${isPinned ? "고정 해제" : "고정"}`} aria-pressed={isPinned}
-              disabled={isPinned && pinned.length <= 1} onClick={() => onPin(id, !isPinned)}
-              className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
-              {isPinned ? <PinOff size={17} aria-hidden /> : <Pin size={17} aria-hidden />}
-            </button>
+          return <div key={id} className="rounded-lg hover:bg-raised">
+            <div className="flex items-start gap-1">
+              <button type="button" aria-label={`${label} 사용`} aria-disabled={definition.disabled || undefined}
+                data-studio-catalog-tool-id={id} data-studio-hidden-tool-id={!isPinned ? id : undefined}
+                aria-describedby={definition.disabled ? `${rootId}-${id}-reason` : undefined}
+                onClick={(event) => { if (definition.disabled) return; definition.onClick?.(event); onUsed(); }}
+                onFocus={definition.onFocus} onPointerEnter={definition.onPointerEnter}
+                className="flex min-h-11 min-w-0 flex-1 items-start gap-2 rounded-lg px-2 py-2.5 text-left text-sm text-fg focus-visible:ring-2 focus-visible:ring-accent">
+                <Icon size={18} aria-hidden className="mt-0.5 shrink-0" />
+                <span className="min-w-0 flex-1"><span className="block">{label}</span>
+                  {definition.disabled ? <span id={`${rootId}-${id}-reason`} className="mt-1 block text-xs leading-relaxed text-fg-2">{definition.unavailableReason ?? "선택 항목과 편집 권한을 확인하세요."}</span> : null}
+                </span>
+                {shortcut ? <kbd className="rounded border border-line bg-panel px-1.5 py-0.5 text-xs text-fg-2">{shortcut}</kbd> : null}
+              </button>
+              <button type="button" aria-label={`${label} ${isPinned ? "고정 해제" : "고정"}`} aria-pressed={isPinned}
+                disabled={isPinned && pinned.length <= 1} onClick={() => onPin(id, !isPinned)}
+                className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-2 hover:bg-card focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
+                {isPinned ? <PinOff size={17} aria-hidden /> : <Pin size={17} aria-hidden />}
+              </button>
+            </div>
+            {definition.disabled ? <StudioAllToolsDisabledItemGuidance toolLabel={label} unavailableReason={definition.unavailableReason} onUsed={onUsed} /> : null}
           </div>;
         })}
       </section>;
     })}
-    {!STUDIO_RAIL_TOOL_CATALOG.some(({ id }) => matches(id)) ? <p role="status" className="py-4 text-sm text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.allToolsCatalog.searchEmpty", "일치하는 도구가 없습니다. 이름이나 단축키를 바꿔 검색하세요.")}</p> : null}
+    {!hasRailMatch && crossSurfaceMatches.length > 0 ? <StudioAllToolsCrossSurfaceGuidance query={query} onUsed={onUsed} /> : null}
+    {!hasRailMatch && crossSurfaceMatches.length === 0 ? <p role="status" className="py-4 text-sm text-fg-2">{r3c07StatusText("studio.panelStatus.r3c07.allToolsCatalog.searchEmpty", "일치하는 도구가 없습니다. 이름이나 단축키를 바꿔 검색하세요.")}</p> : null}
   </div>;
 }

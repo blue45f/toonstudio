@@ -19,6 +19,7 @@ import {
   CloudOff,
   Copy,
   Database,
+  Download,
   HardDrive,
   RefreshCw,
   RotateCcw,
@@ -45,6 +46,7 @@ import {
 import { useStudioCopyFeedback } from "./use-studio-copy-feedback";
 
 import type { StudioConnectivitySnapshot } from "./offline/studio-connectivity";
+import type { StudioSaveSyncCutMatch } from "./studio-save-sync-signals";
 
 const bi = (ko: string, en: string): string =>
   translateBilingualValueForActiveLocale("StudioSaveSyncStatusCenter", ko, en);
@@ -64,6 +66,8 @@ export interface StudioSaveSyncStatusCenterProps {
    * 저널 모델로 실물 상태를 재계산하면 이중 상태가 된다.
    */
   readonly statusOverride?: StudioSaveSyncStatus;
+  /** 현재 활성 컷(페이지)과 완료된 내구 영수증의 정합성 정보. */
+  readonly cutMatch?: StudioSaveSyncCutMatch | null;
   /**
    * 연결 모듈의 스냅샷. 있으면 서버 장애·재확인 중 상태를 필·서버 섹션에
    * 반영한다 (studio-save-recovery-ux 모델). 없으면 기존 저장 상태만 쓴다.
@@ -71,6 +75,8 @@ export interface StudioSaveSyncStatusCenterProps {
   readonly connectivity?: StudioConnectivitySnapshot | null;
   /** 로컬 내구 실패 시 저장을 다시 시도하는 콜백. 없으면 재시도 버튼을 숨긴다. */
   readonly onRetrySave?: () => void;
+  /** 로컬 내구 실패 시 현재 메모리 작업을 즉시 파일로 내려받는 콜백. */
+  readonly onDownloadLocalBackup?: () => void;
   /** 연결 문제 시 즉시 재검사를 실행하는 콜백. 없으면 재확인 버튼을 숨긴다. */
   readonly onRecheckConnection?: () => void;
 }
@@ -100,8 +106,10 @@ export function StudioSaveSyncStatusCenter({
   isOpfsActive = true,
   onForceCheckpoint,
   statusOverride,
+  cutMatch = null,
   connectivity = null,
   onRetrySave,
+  onDownloadLocalBackup,
   onRecheckConnection,
 }: StudioSaveSyncStatusCenterProps) {
   useBilingualI18nRevision();
@@ -223,7 +231,8 @@ export function StudioSaveSyncStatusCenter({
     : drawingState === "failed" ? bi("저장 확인 필요", "Check the save")
       : drawingState === "pending" ? bi("이 기기에 저장 중", "Saving on this device")
         : drawingState === "saved" ? bi("이 기기", "This device") : bi("아직 저장 전", "Not saved yet");
-  const drawingName = `${drawingLabel}${drawingState === "saved" ? ` · ${recordedTime}` : ""}`;
+  const matchedCutLabel = drawingState === "saved" && cutMatch?.state === "matched" ? cutMatch.matchedPageLabel : null;
+  const drawingName = `${drawingLabel}${drawingState === "saved" ? ` · ${recordedTime}${matchedCutLabel ? ` · ${matchedCutLabel}` : ""}` : ""}`;
   const SummaryIcon = drawing ? drawingState === "failed" ? TriangleAlert : drawingState === "pending" ? Clock : drawingState === "saved" ? CheckCircle2 : CloudOff : StatusIcon;
   const deviceInfo = (
             <section className="rounded-lg bg-panel/60 p-2.5">
@@ -240,8 +249,17 @@ export function StudioSaveSyncStatusCenter({
                           ? bi("최근 작업이 이 기기에 저장됐어요.", "Your recent work is saved on this device.")
                           : bi("아직 이 기기에 저장된 기록이 없어요.", "No save has been recorded on this device yet.")}
                   </p>
+                  {status.localDurable && cutMatch?.state === "matched" && cutMatch.matchedPageLabel ? (
+                    <p data-studio-save-cut-match="matched" className="mt-1 text-xs font-medium text-success">
+                      {cutMatch.matchedPageLabel} · {bi("현재 컷까지 저장 완료", "Saved through current cut")}
+                    </p>
+                  ) : status.localDurable && cutMatch?.state === "saving" && cutMatch.activePageLabel ? (
+                    <p data-studio-save-cut-match="saving" className="mt-1 text-xs text-fg-3">
+                      {cutMatch.activePageLabel} · {bi("편집 내용 저장 중", "Saving cut changes")}
+                    </p>
+                  ) : null}
                   {drawing && recorded ? <p className="mt-2 text-xs text-fg-3">{bi("마지막 기기 저장", "Last saved on this device")} · <time dateTime={recorded.toISOString()}>{recordedTime}</time></p> : null}
-                  {status.pendingOperationsCount > 0 ? (
+                  {status.localDurable && status.pendingOperationsCount > 0 ? (
                     <progress
                       aria-label={bi("이 기기 저장 대기열 진행률", "Local save queue progress")}
                       className="mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-accent"
@@ -316,6 +334,17 @@ export function StudioSaveSyncStatusCenter({
               >
                 <RotateCcw className="size-3.5" aria-hidden />
                 <span>{r4CreatorStatusText("r4cat1.creator.saveSync.retryNow", "지금 다시 시도")}</span>
+              </button>
+            ) : null}
+            {!status.localDurable && onDownloadLocalBackup ? (
+              <button
+                type="button"
+                data-studio-download-local-backup="true"
+                onClick={onDownloadLocalBackup}
+                className="flex min-h-9 items-center gap-1.5 rounded-lg border border-accent/45 bg-accent-soft/20 px-2.5 text-[0.72rem] font-semibold text-accent hover:bg-accent-soft/35 pointer-coarse:min-h-11"
+              >
+                <Download className="size-3.5" aria-hidden />
+                <span>{bi("로컬 백업 내려받기", "Download local backup")}</span>
               </button>
             ) : null}
             {view.canRecheckConnection && onRecheckConnection ? (
@@ -404,6 +433,8 @@ export function StudioSaveSyncStatusCenter({
         aria-label={`저장 상태 열기: ${drawing ? drawingName : saveLabel}`}
         data-studio-drawing-save-summary={drawing ? "true" : undefined}
         data-studio-local-save-state={drawing ? drawingState : undefined}
+        data-studio-save-matched-page-id={cutMatch?.matchedPageId ?? undefined}
+        data-studio-save-matched-page-label={cutMatch?.matchedPageLabel ?? undefined}
         aria-describedby={noticeSummaryId}
         className={drawing ? "studio-drawing-save-summary" : "flex min-h-8 items-center gap-1.5 rounded-full border border-line bg-card/90 px-2.5 py-1 text-[0.75rem] font-medium tabular-nums text-fg shadow-sm backdrop-blur transition-colors hover:bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:min-h-11"}
       >
@@ -412,7 +443,7 @@ export function StudioSaveSyncStatusCenter({
           aria-hidden
         />
         <span className="min-w-0 text-left">
-          {drawing ? <span data-studio-clarity-receipt="true">{drawingLabel}{drawingState === "saved" && recorded ? <> · <time dateTime={recorded.toISOString()}>{recordedTime}</time></> : null}</span> : <span>{saveLabel}</span>}
+          {drawing ? <span data-studio-clarity-receipt="true">{drawingLabel}{drawingState === "saved" && recorded ? <> · <time dateTime={recorded.toISOString()}>{recordedTime}</time>{matchedCutLabel ? <span data-studio-clarity-cut-match="true"> · {matchedCutLabel}</span> : null}</> : null}</span> : <span>{saveLabel}</span>}
           <span ref={setNoticeSummary} id={noticeSummaryId} className="flex flex-wrap items-center gap-x-2" data-studio-connection-notice-summary="true" data-studio-drawing-save-summary={drawing ? "true" : undefined} />
         </span>
       </button>

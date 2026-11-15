@@ -27,8 +27,8 @@ export function fmtDabOpacity(n: number): string {
 }
 
 /** XML 텍스트/속성 이스케이프 — & < > " ' 전부 치환(속성·본문 공용). */
-export function escapeXml(value: string): string {
-  return value
+export function escapeXml(value: string | null | undefined): string {
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")

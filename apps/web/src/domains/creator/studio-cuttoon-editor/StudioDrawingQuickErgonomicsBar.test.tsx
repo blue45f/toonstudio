@@ -84,7 +84,7 @@ function createErgonomicsSession(
 }
 
 describe("StudioDrawingQuickErgonomicsBar", () => {
-  it("웹툰 제작 5단계 바로가기(콘티·컷, 3D 배경, 작화, 브러시·채색, 출고)가 각각의 세션·패널 핸들러를 호출한다", () => {
+  it("웹툰 제작 5단계 바로가기(① 콘티·컷 ~ ⑤ 마감·출고)가 각각의 세션·패널 핸들러를 호출한다", () => {
     const clarity = createClarityMock({ panel: "pages" });
     const session = createErgonomicsSession();
 
@@ -94,25 +94,25 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
       </DrawingClarityContext.Provider>,
     );
 
-    const storyboardBtn = screen.getByRole("button", { name: "콘티·컷" });
+    const storyboardBtn = screen.getByRole("button", { name: "① 콘티·컷" });
     expect(storyboardBtn.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(storyboardBtn);
     expect(clarity.open).toHaveBeenCalledWith("pages", storyboardBtn);
 
-    const stage3dBtn = screen.getByRole("button", { name: "3D 배경" });
+    const stage3dBtn = screen.getByRole("button", { name: "④ 3D 배경" });
     fireEvent.click(stage3dBtn);
     expect(session.setBg3dOpen).toHaveBeenCalledTimes(1);
 
-    const inkBtn = screen.getByRole("button", { name: "작화" });
+    const inkBtn = screen.getByRole("button", { name: "② 선화·펜터치" });
     expect(inkBtn.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(inkBtn);
     expect(session.activatePrimaryCanvasTool).toHaveBeenCalledWith("draw", "pen");
 
-    const brushesBtn = screen.getByRole("button", { name: "브러시·채색" });
+    const brushesBtn = screen.getByRole("button", { name: "③ 채색·톤" });
     fireEvent.click(brushesBtn);
     expect(clarity.open).toHaveBeenCalledWith("brush", brushesBtn);
 
-    const publishBtn = screen.getByRole("button", { name: "출고" });
+    const publishBtn = screen.getByRole("button", { name: "⑤ 마감·출고" });
     fireEvent.click(publishBtn);
     expect(session.setExportMenuOpen).toHaveBeenCalledWith(true);
   });

@@ -22,7 +22,10 @@ import { useT } from "@/shared/lib/i18n";
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
 import { cn } from "@/shared/lib/utils";
+import { ProductionUnavailableFeatureSection } from "./ProductionUnavailableFeatureSection";
+import { useProductionUnavailableStudioMatches } from "./useProductionUnavailableStudioMatches";
 
 interface CommandItem {
   readonly id: string;
@@ -71,6 +74,8 @@ export function ProductionCommandPalette({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const imeGuard = usePaletteImeGuard(open);
+  const unavailableStudioMatches = useProductionUnavailableStudioMatches(open ? query : "");
 
   const items = useMemo<readonly CommandItem[]>(() => {
     const base = `/production/projects/${encodeURIComponent(aggregate.projectId)}`;
@@ -116,11 +121,13 @@ export function ProductionCommandPalette({
         setOpen((value) => !value);
         return;
       }
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape" && !imeGuard.shouldIgnoreKeyDown(event) && !event.defaultPrevented) {
+        setOpen(false);
+      }
     };
     globalThis.addEventListener("keydown", handler);
     return () => globalThis.removeEventListener("keydown", handler);
-  }, []);
+  }, [imeGuard]);
 
   useEffect(() => {
     if (!open) return;
@@ -134,7 +141,7 @@ export function ProductionCommandPalette({
   }, [activeIndex, filtered.length]);
 
   const choose = (item: CommandItem | undefined) => {
-    if (!item) return;
+    if (!item || !imeGuard.claimExecution()) return;
     setOpen(false);
     void navigate(item.href);
   };
@@ -177,6 +184,10 @@ export function ProductionCommandPalette({
                   setActiveIndex(0);
                 }}
                 onKeyDown={(event) => {
+                  if (imeGuard.shouldIgnoreKeyDown(event)) {
+                    if (event.key === "Enter" || event.key === "Escape") event.preventDefault();
+                    return;
+                  }
                   if (event.key === "ArrowDown") {
                     event.preventDefault();
                     setActiveIndex((index) => Math.min(filtered.length - 1, index + 1));
@@ -225,8 +236,17 @@ export function ProductionCommandPalette({
                   </div>
                 );
               })}
-              {filtered.length === 0 ? <div className="p-8 text-center"><Settings className="mx-auto size-7 text-fg-3" aria-hidden="true" /><p className="mt-2 text-sm font-bold text-fg">{t("productionHub.status.commandEmptySearch", "검색 결과가 없어요")}</p><p className="mt-1 text-xs text-fg-2">화면 이름, 회차 ID 또는 작업명을 입력하세요.</p></div> : null}
+              {filtered.length === 0 && unavailableStudioMatches.length === 0 ? <div className="p-8 text-center"><Settings className="mx-auto size-7 text-fg-3" aria-hidden="true" /><p className="mt-2 text-sm font-bold text-fg">{t("productionHub.status.commandEmptySearch", "검색 결과가 없어요")}</p><p className="mt-1 text-xs text-fg-2">화면 이름, 회차 ID 또는 작업명을 입력하세요.</p></div> : null}
             </div>
+            <ProductionUnavailableFeatureSection
+              matches={unavailableStudioMatches}
+              aggregate={aggregate}
+              onNavigateHref={(href) => {
+                if (!imeGuard.claimExecution()) return;
+                setOpen(false);
+                void navigate(href);
+              }}
+            />
             <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-panel px-4 py-2 text-[0.625rem] text-fg-3"><span>↑↓ 이동 · Enter 열기 · Esc 닫기</span><span>{aggregate.title}</span></footer>
           </section>
         </div>

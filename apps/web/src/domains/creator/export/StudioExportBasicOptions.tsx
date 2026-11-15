@@ -6,32 +6,25 @@ import { EXPORT_FORMATS, EXPORT_SCALES, canCopyImageToClipboard, exportFormatLab
 import { exportMenuText } from "./studio-export-menu-i18n";
 import { StudioExportOutputSummary } from "./StudioExportOutputSummary";
 import { StudioExportAppearanceOptions } from "./StudioExportAppearanceOptions";
+import { StudioExportCompositePreview } from "./StudioExportCompositePreview";
+import type { StudioExportPreviewPageLike } from "./studio-export-composite-preview";
 import type { StudioExportMenuPanelProps } from "./StudioExportMenuPanel";
 
 type StudioExportBasicOptionsProps = Pick<StudioExportMenuPanelProps,
   "canvasWidth" | "canvasHeight" | "exportScale" | "exportFormat" | "exportTransparent" |
   "watermark" | "isExporting" | "setExportScale" | "setExportFormat" | "setExportTransparent" |
   "setExportPresetId" | "setWatermark" | "onCopyToClipboard" | "onDownloadCurrentPage"
-> & { busy: boolean; children?: ReactNode };
+> & { busy: boolean; activePage?: StudioExportPreviewPageLike | null; children?: ReactNode };
 
 export function StudioExportBasicOptions({
   canvasWidth, canvasHeight, exportScale, exportFormat, exportTransparent, watermark,
-  isExporting, busy, setExportScale, setExportFormat, setExportTransparent,
+  isExporting, busy, activePage, setExportScale, setExportFormat, setExportTransparent,
   setExportPresetId, setWatermark, onCopyToClipboard, onDownloadCurrentPage, children,
 }: StudioExportBasicOptionsProps) {
-  const instanceId = useId();
-  const summaryId = `${instanceId}-output`;
-  const formatHelpId = `${instanceId}-format-help`;
-  const busyHelpId = `${instanceId}-busy-help`;
-  const transparencyHelpId = `${instanceId}-transparency-help`;
-  const signatureHelpId = `${instanceId}-signature-help`;
-  const appearanceRef = useRef<HTMLDetailsElement>(null);
-  const transparencyRef = useRef<HTMLInputElement>(null);
-  const signatureToggleRef = useRef<HTMLInputElement>(null);
-  const signatureInputRef = useRef<HTMLInputElement>(null);
-  const opacityRef = useRef<HTMLInputElement>(null);
-  const summaryRef = useRef<HTMLElement>(null);
-  const downloadRef = useRef<HTMLButtonElement>(null);
+  const instanceId = useId(), summaryId = `${instanceId}-output`, formatHelpId = `${instanceId}-format-help`;
+  const busyHelpId = `${instanceId}-busy-help`, transparencyHelpId = `${instanceId}-transparency-help`, signatureHelpId = `${instanceId}-signature-help`;
+  const appearanceRef = useRef<HTMLDetailsElement>(null), transparencyRef = useRef<HTMLInputElement>(null), signatureToggleRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null), opacityRef = useRef<HTMLInputElement>(null), summaryRef = useRef<HTMLElement>(null), downloadRef = useRef<HTMLButtonElement>(null);
   const locked = busy || isExporting;
   const formatHelp = exportMenuText(exportFormat === "png" ? "pngHelp" : exportFormat === "jpg" ? "jpgHelp" : "webpHelp");
 
@@ -83,6 +76,7 @@ export function StudioExportBasicOptions({
           ))}
         </div>
       </fieldset>
+      {activePage ? <StudioExportCompositePreview previewId={`${instanceId}-preview`} page={activePage} canvasWidth={canvasWidth} canvasHeight={canvasHeight} exportFormat={exportFormat} exportTransparent={exportTransparent} watermark={watermark} /> : null}
       <StudioExportOutputSummary format={exportFormat} width={Math.round(canvasWidth * exportScale)} height={Math.round(canvasHeight * exportScale)}
         transparent={exportTransparent} watermark={watermark} busy={locked} summaryId={summaryId} summaryRef={summaryRef} onEditAppearance={editAppearance} />
       {onDownloadCurrentPage ? (

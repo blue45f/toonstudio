@@ -14,7 +14,7 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%}
 .studio-drawing-clarity-button:hover:not(:disabled),.studio-drawing-clarity-rail button:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 44%,var(--color-line-strong));transform:translateY(-1px);box-shadow:inset 0 1px 0 rgb(255 255 255 / .12),0 8px 18px -12px rgb(8 12 28 / .5)}
 .studio-drawing-clarity-button[aria-pressed=true]{border-color:color-mix(in oklch,var(--color-accent) 68%,white 12%);background:linear-gradient(145deg,color-mix(in oklch,var(--color-accent-soft) 92%,var(--color-panel)),color-mix(in oklch,var(--color-accent) 20%,var(--color-raised)));box-shadow:inset 0 1px 0 rgb(255 255 255 / .16),0 10px 22px -12px color-mix(in oklch,var(--color-accent) 56%,transparent)}
 .studio-drawing-clarity-button:disabled{opacity:.45;cursor:default}
-.studio-drawing-clarity-header button:focus-visible,.studio-drawing-clarity-rail button:focus-visible,.studio-drawing-clarity-context-row button:focus-visible,.studio-drawing-clarity-more summary:focus-visible,.studio-drawing-task-dialog :focus-visible{outline:2px solid var(--color-accent);outline-offset:3px}
+.studio-drawing-clarity-header :is(button,input,select):focus-visible,.studio-drawing-clarity-rail :is(button,input,select):focus-visible,.studio-drawing-clarity-context-row :is(button,input,select):focus-visible,.studio-drawing-clarity-more summary:focus-visible,.studio-drawing-task-dialog :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
 .studio-drawing-clarity-swatch{display:block;inline-size:20px;block-size:20px;border:1.5px solid color-mix(in oklch,var(--color-fg) 26%,var(--color-line-strong));border-radius:7px;box-shadow:0 0 0 2px rgb(255 255 255 / .08)}
 .studio-drawing-clarity-save{min-width:86px;background:linear-gradient(135deg,var(--color-accent),color-mix(in oklch,var(--color-accent) 76%,#38bdf8));border-color:color-mix(in oklch,var(--color-accent) 85%,white 15%);color:var(--color-on-accent);font-weight:700;white-space:nowrap;box-shadow:inset 0 1px 0 rgb(255 255 255 / .24),0 10px 24px -10px color-mix(in oklch,var(--color-accent) 62%,transparent)}
 .studio-drawing-clarity-save:hover:not(:disabled){background:linear-gradient(135deg,color-mix(in oklch,var(--color-accent) 88%,white 12%),color-mix(in oklch,var(--color-accent) 72%,#38bdf8));transform:translateY(-1px)}
@@ -93,14 +93,15 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%}
 .studio-drawing-clarity-pane[hidden]{display:none}
 .studio-drawing-clarity-pane--brush,.studio-drawing-clarity-pane--pages{order:3}
 .studio-drawing-clarity-pane--brush [data-studio-brush-workbench-dock=true]{position:static!important;min-height:0;flex:1;border:0}
-.studio-drawing-clarity-pane--inspector{min-width:0;max-width:min(360px,38vw)}
+.studio-drawing-clarity-pane--inspector{min-width:0;max-width:min(360px,38vw);overflow:hidden}
+.studio-drawing-clarity-pane--inspector #studio-inspector{min-width:0!important;max-width:calc(min(360px,38vw) - 12px)!important}
 .studio-drawing-clarity-pane--inspector>div:not(.studio-drawing-clarity-pane-heading){min-height:0}
 body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-brush-hud=true]{display:none!important}
 body:has([data-studio-editor=true][data-studio-drawing-clarity=true]) [data-studio-shell-floating-target=document-tools]:has(>button[aria-expanded=false]){display:none}
 [data-studio-drawing-clarity=true] :is([data-studio-document-window-hub-bar=true],[data-studio-cinematic-canvas-welcome=collapsed],[data-studio-creative-starter=true][data-studio-quickstart-collapsed=true],[data-studio-workflow-guide]){display:none}
 [data-studio-drawing-clarity=true] [data-studio-status-bar=true]>:nth-child(n+3){display:none}
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-page-sequence-strip=true]{display:none}
-[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-canvas-viewport=true]{--studio-page-strip-offset:0px!important;--studio-draw-options-height:0px!important}
+[data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-canvas-viewport]{--studio-page-strip-offset:0px!important;--studio-draw-options-height:0px!important}
 [data-studio-drawing-clarity=true]:not([data-studio-drawing-clarity-panel=pages]) [data-studio-status-bar=true]{bottom:12px!important;max-width:calc(100% - 24px)}
 .studio-drawing-clarity-entry-mobile{padding:4px 8px;border-top:1px solid var(--color-line)}
 .studio-drawing-clarity-entry-mobile:empty{display:none}
@@ -173,3 +174,4 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 .studio-drawing-clarity-tools>.studio-drawing-clarity-button{position:relative;min-height:50px;gap:3px;padding:5px 3px;font-size:11px}
 .studio-drawing-rail-kbd{position:absolute;top:4px;right:4px;padding:0 4px;border-radius:4px;background:color-mix(in oklch,var(--color-panel) 84%,transparent);color:var(--color-fg-3);font-size:9px;font-weight:700;line-height:14px}
 .studio-drawing-clarity-all-tools-btn{border-color:color-mix(in oklch,var(--color-accent) 36%,var(--color-line-strong));background:color-mix(in oklch,var(--color-accent-soft) 60%,var(--color-card))}
+@media(max-height:540px){.studio-drawing-clarity-header{min-height:52px;padding:4px 10px;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}.studio-drawing-clarity-context-row{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:48px;padding:3px 8px}.studio-drawing-page-position,.studio-drawing-ergonomics-bar,.studio-drawing-stage-pills,.studio-drawing-clarity-context-actions,.studio-drawing-clarity-context-actions button{flex-wrap:nowrap;flex-shrink:0;white-space:nowrap}.studio-drawing-clarity-rail{padding:8px 6px;gap:8px}}

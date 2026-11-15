@@ -22,6 +22,7 @@ import type {
 } from "../studio-project-definition";
 import {
   STUDIO_AUXILIARY_WORKSPACE_OPTIONS,
+  STUDIO_PROJECT_COLLABORATION_OPTIONS,
   STUDIO_PROJECT_FORMAT_PROFILES,
   STUDIO_PROJECT_START_POINT_OPTIONS,
   studioProjectFormatFromLegacy,
@@ -97,9 +98,35 @@ export function requestedFormat(
   format: string | null,
   kind: string | null,
   templateId: string | null,
+  preset?: string | null,
 ): StudioProjectFormat {
   const explicit = STUDIO_PROJECT_FORMAT_PROFILES.find((profile) => profile.id === format)?.id;
-  return explicit ?? studioProjectFormatFromLegacy(kind, templateId) ?? "vertical-webtoon";
+  if (explicit) return explicit;
+  if (preset === "instatoon-square") return "cuttoon";
+  return studioProjectFormatFromLegacy(kind, templateId) ?? "vertical-webtoon";
+}
+
+export function requestedCollaboration(
+  collabParam: string | null,
+  onboardingTeam: WebtoonTeamModelId | undefined,
+): StudioProjectCollaboration {
+  const explicit = STUDIO_PROJECT_COLLABORATION_OPTIONS.find((option) => option.id === collabParam)?.id;
+  return explicit ?? projectCollaborationFromOnboarding(onboardingTeam);
+}
+
+export function requestedSizeOverride(
+  widthParam: string | null,
+  heightParam: string | null,
+  fallbackWidth: number,
+  fallbackHeight: number,
+): { width: string; height: string } | null {
+  const parsedWidth = widthParam !== null ? parseCanvasDimension(widthParam) : null;
+  const parsedHeight = heightParam !== null ? parseCanvasDimension(heightParam) : null;
+  if (parsedWidth === null && parsedHeight === null) return null;
+  return {
+    width: String(parsedWidth ?? fallbackWidth),
+    height: String(parsedHeight ?? fallbackHeight),
+  };
 }
 
 export function requestedAuxiliary(

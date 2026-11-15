@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   BUBBLE_AUTO_SHRINK_MIN_FONT_DEFAULT,
@@ -124,8 +125,10 @@ export default function StudioTextEditOverlay({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const initialSelectionElementIdRef = useRef<string | null>(null);
   const committedRef = useRef(false);
+  const cancelledRef = useRef(false);
   const [value, setValue] = useState(el?.text ?? "");
   const [visual, setVisual] = useState<OverlayVisual | null>(null);
+  const [viewportHost, setViewportHost] = useState<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     if (!el) return;
@@ -137,6 +140,7 @@ export default function StudioTextEditOverlay({
     // 다시 원본으로 덮으면 이후 Esc가 편집 전 상태로 돌아가지 못한다.
     if (!originalRef.current) {
       committedRef.current = false;
+      cancelledRef.current = false;
       originalRef.current = {
         text: textNode.text(),
         fontSize: textNode.fontSize(),
@@ -153,9 +157,11 @@ export default function StudioTextEditOverlay({
   }, [el, elementId, nodeRefsRef, effScale]);
 
   useLayoutEffect(() => {
-    if (!visual || initialSelectionElementIdRef.current === elementId) return;
+    if (!visual) return;
     const textarea = textareaRef.current;
     if (!textarea) return;
+    setViewportHost(textarea.closest<HTMLElement>("[data-studio-canvas-viewport]"));
+    if (initialSelectionElementIdRef.current === elementId) return;
     initialSelectionElementIdRef.current = elementId;
     textarea.focus({ preventScroll: true });
     textarea.select();
@@ -255,8 +261,15 @@ export default function StudioTextEditOverlay({
   }
 
   function commit(): void {
+    if (committedRef.current || cancelledRef.current) return;
     committedRef.current = true;
     onCommit(value);
+  }
+
+  function cancel(): void {
+    if (committedRef.current || cancelledRef.current) return;
+    cancelledRef.current = true;
+    onCancel();
   }
 
   // Stage-local -> document-CSS. `stageOriginOffset*` is 0 unless the viewport clip is armed.
@@ -264,52 +277,93 @@ export default function StudioTextEditOverlay({
   const e = stageLocalE + stageOriginOffsetX;
   const f = stageLocalF + stageOriginOffsetY;
 
+  const shortcutGuideBar = (
+    <div
+      role="region"
+      aria-label="텍스트 편집 단축키 및 완료 안내"
+      data-studio-text-edit-shortcut-guide="true"
+      data-studio-shortcut-boundary="true"
+      className="pointer-events-auto absolute left-1/2 top-2.5 z-40 flex max-w-[min(96vw,44rem)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl border border-accent/35 bg-panel/95 px-3 py-1.5 text-xs shadow-lg backdrop-blur-sm"
+    >
+      <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[0.65rem] font-bold text-accent">
+        {el.type === "bubble" ? "말풍선 편집 중" : "글자 편집 중"}
+      </span>
+      <span className="text-[0.68rem] text-fg-2">
+        단일 키(<kbd className="font-mono font-semibold text-fg">B·V·Space</kbd> 등)는 글자로 입력 ·{" "}
+        <kbd className="font-mono font-semibold text-fg">Enter</kbd> 줄바꿈
+      </span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          data-testid="studio-text-edit-cancel"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={cancel}
+          className={`${buttonClass({ size: "sm", variant: "quiet" })} min-h-11 sm:min-h-8 pointer-coarse:min-h-11`}
+        >
+          취소 (Esc)
+        </button>
+        <button
+          type="button"
+          data-testid="studio-text-edit-commit"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={commit}
+          className={`${buttonClass({ size: "sm", variant: "solid" })} min-h-11 sm:min-h-8 pointer-coarse:min-h-11`}
+        >
+          편집 완료 (⌘Enter)
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <textarea
-      ref={textareaRef}
-      // eslint-disable-next-line jsx-a11y/no-autofocus -- 더블클릭/더블탭으로만 열리는 인라인 편집 서페이스이며, 열릴 때 바로 타이핑 가능해야 하는 것이 올바른 동작이다
-      autoFocus
-      aria-label={el.type === "bubble" ? "말풍선 대사 편집" : "캔버스 글자 편집"}
-      aria-keyshortcuts="Control+Enter Meta+Enter Escape"
-      spellCheck
-      value={value}
-      onChange={(event) => {
-        const next = event.target.value;
-        setValue(next);
-        applyLiveValue(next);
-      }}
-      onKeyDown={(event) => {
-        // Safari/WebKit은 한글 IME 확정 keydown에서 isComposing=false와 legacy 229를 함께
-        // 보낼 수 있다. 이 순간 편집면을 커밋·언마운트하면 마지막 음절이 유실된다.
-        if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
-        if (event.key === "Escape") {
-          event.preventDefault();
-          onCancel();
-        } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-          event.preventDefault();
-          commit();
-        }
-      }}
-      onBlur={commit}
-      className="absolute left-0 top-0 resize-none overflow-hidden border-0 bg-transparent p-0 outline-none"
-      style={{
-        width: visual.width,
-        height: visual.height,
-        transform: `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`,
-        transformOrigin: "0 0",
-        color: "transparent",
-        caretColor: visual.fill,
-        fontFamily: visual.fontFamily,
-        fontWeight: visual.fontStyle.includes("bold") ? 700 : 400,
-        fontStyle: visual.fontStyle.includes("italic") ? "italic" : "normal",
-        fontSize: visual.fontSize,
-        lineHeight: visual.lineHeight,
-        letterSpacing: visual.letterSpacing,
-        textAlign: visual.align as "left" | "center" | "right",
-        whiteSpace: "pre-wrap",
-        zIndex: 30,
-      }}
-    />
+    <>
+      <textarea
+        ref={textareaRef}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- 더블클릭/더블탭으로만 열리는 인라인 편집 서페이스이며, 열릴 때 바로 타이핑 가능해야 하는 것이 올바른 동작이다
+        autoFocus
+        aria-label={el.type === "bubble" ? "말풍선 대사 편집" : "캔버스 글자 편집"}
+        aria-keyshortcuts="Control+Enter Meta+Enter Escape"
+        spellCheck
+        value={value}
+        onChange={(event) => {
+          const next = event.target.value;
+          setValue(next);
+          applyLiveValue(next);
+        }}
+        onKeyDown={(event) => {
+          // Safari/WebKit은 한글 IME 확정 keydown에서 isComposing=false와 legacy 229를 함께
+          // 보낼 수 있다. 이 순간 편집면을 커밋·언마운트하면 마지막 음절이 유실된다.
+          if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            cancel();
+          } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+            event.preventDefault();
+            commit();
+          }
+        }}
+        onBlur={commit}
+        className="absolute left-0 top-0 resize-none overflow-hidden border-0 bg-transparent p-0 outline-none"
+        style={{
+          width: visual.width,
+          height: visual.height,
+          transform: `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`,
+          transformOrigin: "0 0",
+          color: "transparent",
+          caretColor: visual.fill,
+          fontFamily: visual.fontFamily,
+          fontWeight: visual.fontStyle.includes("bold") ? 700 : 400,
+          fontStyle: visual.fontStyle.includes("italic") ? "italic" : "normal",
+          fontSize: visual.fontSize,
+          lineHeight: visual.lineHeight,
+          letterSpacing: visual.letterSpacing,
+          textAlign: visual.align as "left" | "center" | "right",
+          whiteSpace: "pre-wrap",
+          zIndex: 30,
+        }}
+      />
+      {viewportHost ? createPortal(shortcutGuideBar, viewportHost) : shortcutGuideBar}
+    </>
   );
 }
 
@@ -345,7 +399,10 @@ export function StudioTextEditFallbackModal({
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 p-6">
       <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
-        <p className="mb-2 text-sm font-medium text-fg">텍스트 편집</p>
+        <p className="mb-1 text-sm font-medium text-fg">텍스트 편집</p>
+        <p className="mb-2 text-[0.68rem] text-fg-3">
+          단일 키(B·V·Space 등)는 글자로 입력 · Enter 줄바꿈 · 완료 ⌘Enter · 취소 Esc
+        </p>
         <textarea
           // eslint-disable-next-line jsx-a11y/no-autofocus -- 더블클릭/더블탭으로만 열리는 모달이며, 열릴 때 입력란에 포커스를 주는 것이 올바른 모달 a11y 패턴
           autoFocus

@@ -253,6 +253,8 @@ export interface PdfPagesRenderOptions {
    * 있으면 작품 제목(title)과 지은이로 글자 표지 한 장을 맨 앞에 붙인다(결과 쪽수에 포함).
    */
   book?: BookPrintRequest;
+  /** 내보내기 취소 신호 — 취소된 이후에는 추가 페이지 인코드와 파일 다운로드를 실행하지 않는다. */
+  signal?: AbortSignal;
   onProgress?: (done: number, total: number) => void;
   /**
    * 선택적 페이지별 전처리. 긴 원고의 주석 레일처럼 큰 임시 캔버스를 전 페이지 분량 쌓지 않고
@@ -335,7 +337,14 @@ async function renderBookCoverPage(args: {
  * PDF를 조립한다. 유효한(양수 크기) 페이지가 없거나 캔버스 생성이 막히면 한글 메시지로
  * throw. 이 함수는 URL 생성이나 다운로드를 절대 실행하지 않는다.
  */
+function throwIfPdfExportAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new DOMException("PDF 내보내기를 취소했어요.", "AbortError");
+  }
+}
+
 export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<PdfRenderResult> {
+  throwIfPdfExportAborted(options.signal);
   const valid = options.pages
     .map((page, sourceIndex) => ({ page, sourceIndex }))
     .filter(({ page }) => page.width > 0 && page.height > 0);
@@ -351,6 +360,7 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
   const printPages: PrintPdfPage[] = [];
   const bookPages: BookPdfPage[] = [];
   for (let index = 0; index < valid.length; index++) {
+    throwIfPdfExportAborted(options.signal);
     const { page: sourcePage, sourceIndex } = valid[index];
     let page = sourcePage;
     let flat: HTMLCanvasElement | null = null;
@@ -414,8 +424,10 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
         }
       }
     }
+    throwIfPdfExportAborted(options.signal);
     options.onProgress?.(index + 1, valid.length);
   }
+  throwIfPdfExportAborted(options.signal);
   let pdfBytes: Uint8Array;
   let bookWarnings: readonly BookPrintWarning[] | undefined;
   let coverPages = 0;
@@ -480,6 +492,7 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
  */
 export async function exportPagesToPdf(options: PdfPagesExportOptions): Promise<PdfExportResult> {
   const rendered = await renderPagesToPdf(options);
+  throwIfPdfExportAborted(options.signal);
   const download = options.download ?? downloadBlob;
   download(rendered.blob, rendered.fileName);
   return {

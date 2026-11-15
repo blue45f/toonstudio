@@ -39,7 +39,7 @@ const StudioCommandSearchDialog = lazy(() =>
 
 export type StudioCommandSearchHostProps = Omit<
   StudioCommandSearchDialogProps,
-  "open" | "onClose" | "initialScope"
+  "open" | "onClose" | "initialScope" | "initialQuery"
 > & {
   /** 트리거 버튼을 숨기고 전역 단축키만 남긴다(모바일 등). */
   hideTrigger?: boolean;
@@ -83,10 +83,12 @@ export function StudioCommandSearchHost({
   // 어느 진입점이 열었는지에 따라 첫 범위가 다르다 — 인스펙터의 찾기는 '현재 패널',
   // F1·⌘K·메뉴·모바일 도크는 '전체'. 다이얼로그 안에서는 언제든 칩으로 바꿀 수 있다.
   const [scope, setScope] = useState<StudioCommandSearchScope>("all");
+  const [initialQuery, setInitialQuery] = useState("");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const close = useCallback((reason: StudioCommandSearchCloseReason = "dismiss") => {
     setOpen(false);
+    setInitialQuery("");
     const restoreTarget = restoreFocusRef.current;
     restoreFocusRef.current = null;
     if (reason === "action" || !restoreTarget) return;
@@ -100,7 +102,7 @@ export function StudioCommandSearchHost({
       restore();
     }
   }, []);
-  const openSearch = useCallback((nextScope: StudioCommandSearchScope = "all") => {
+  const openSearch = useCallback((nextScope: StudioCommandSearchScope = "all", nextQuery = "") => {
     if (!open && typeof document !== "undefined") {
       const activeElement = document.activeElement;
       restoreFocusRef.current =
@@ -110,6 +112,7 @@ export function StudioCommandSearchHost({
     }
     onRequestOpen?.();
     setScope(nextScope);
+    setInitialQuery(nextQuery);
     setOpen(true);
   }, [onRequestOpen, open]);
 
@@ -130,7 +133,7 @@ export function StudioCommandSearchHost({
   // 사용한다. 둘 다 같은 `openSearch`로 수렴해 색인·범위·포커스 복귀 계약이 갈라지지 않는다.
   useEffect(() => {
     const openRequest = (request: StudioCommandSearchRequest) => {
-      openSearch(request.scope ?? "all");
+      openSearch(request.scope ?? "all", request.query ?? "");
     };
     const unsubscribeStudio = subscribeStudioCommandSearchRequests(openRequest);
     const unsubscribeAppShell = subscribeStudioCommandSearchFromAppShell(openRequest);
@@ -144,7 +147,7 @@ export function StudioCommandSearchHost({
 
   useEffect(() => {
     if (!pendingRequest) return;
-    openSearch(pendingRequest.scope ?? "all");
+    openSearch(pendingRequest.scope ?? "all", pendingRequest.query ?? "");
     onRequestHandled?.();
   }, [pendingRequest, onRequestHandled, openSearch]);
 
@@ -203,6 +206,7 @@ export function StudioCommandSearchHost({
             {...dialogProps}
             open
             initialScope={scope}
+            initialQuery={initialQuery}
             onClose={close}
           />
         </Suspense>

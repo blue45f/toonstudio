@@ -6,6 +6,7 @@ import {
   readStudioExactResumeContext,
   writeStudioExactResumeContext,
   type StudioExactResumeContextV1,
+  type WriteStudioExactResumeContextInput,
 } from "./studio-exact-resume-context";
 
 import type { StudioDocumentWorkspaceId } from "./studio-document-workspace";
@@ -72,14 +73,36 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
   } = input;
   const restoreIdentity = `${projectId ?? ""}\u0000${documentId ?? ""}`;
   const restoredRef = useRef(false);
+  const attemptedPageSwitchRef = useRef<string | null>(null);
   const restoreFrameRef = useRef<number | null>(null);
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestPersistPayloadRef = useRef<WriteStudioExactResumeContextInput | null>(null);
+  const hasPendingPersistFlushRef = useRef(false);
+
+  const flushPendingPersist = () => {
+    if (!hasPendingPersistFlushRef.current || !latestPersistPayloadRef.current) return;
+    const payload = latestPersistPayloadRef.current;
+    hasPendingPersistFlushRef.current = false;
+    latestPersistPayloadRef.current = null;
+    const storage = browserStorage();
+    if (!storage) return;
+    try {
+      writeStudioExactResumeContext(storage, payload, window);
+    } catch {
+      // Resume state is convenience metadata and must never interrupt navigation or teardown.
+    }
+  };
 
   useLayoutEffect(() => {
     restoredRef.current = false;
+    attemptedPageSwitchRef.current = null;
     if (restoreFrameRef.current !== null) cancelAnimationFrame(restoreFrameRef.current);
     restoreFrameRef.current = null;
   }, [restoreIdentity, resumeRequested]);
+
+  useEffect(() => () => {
+    flushPendingPersist();
+  }, [restoreIdentity]);
 
   useLayoutEffect(() => {
     if (
@@ -162,6 +185,76 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
     workspace,
   ]);
 
+  useLayoutEffect(() => {
+    if (
+      restoredRef.current
+      || resumeRequested
+      || !hydrated
+      || !projectId
+      || !documentId
+      || !workspace
+    ) return;
+    if (focus) {
+      restoredRef.current = true;
+      return;
+    }
+    const storage = browserStorage();
+    const context = storage
+      ? readStudioExactResumeContext(storage, projectId, documentId)
+      : null;
+    if (!context) {
+      restoredRef.current = true;
+      return;
+    }
+    const targetPage = context.pageId
+      ? pages.find((page) => page.id === context.pageId)
+      : null;
+    if (context.pageId && !targetPage) {
+      restoredRef.current = true;
+      return;
+    }
+    if (
+      targetPage
+      && currentPageId !== targetPage.id
+      && attemptedPageSwitchRef.current !== targetPage.id
+    ) {
+      attemptedPageSwitchRef.current = targetPage.id;
+      if (setCurrentPageId(targetPage.id)) return;
+    }
+    restoredRef.current = true;
+    setTool(context.tool);
+    setDrawMode(context.drawMode);
+    if (selectedId !== null || marqueeIds.length > 0) return;
+    const activePage = pages.find((page) => page.id === currentPageId) ?? pages[0];
+    if (!activePage || (context.pageId !== null && context.pageId !== activePage.id)) return;
+    const availableIds = new Set(activePage.elements.map((element) => element.id));
+    const restoredSelection = context.selectedElementIds.filter((id) => availableIds.has(id));
+    if (restoredSelection.length === 0) return;
+    if (restoredSelection.length > 1) {
+      setSelectedId(null);
+      setMarqueeIds([...restoredSelection]);
+    } else {
+      setMarqueeIds([]);
+      setSelectedId(restoredSelection[0] ?? null);
+    }
+  }, [
+    currentPageId,
+    documentId,
+    focus,
+    hydrated,
+    marqueeIds.length,
+    pages,
+    projectId,
+    resumeRequested,
+    selectedId,
+    setCurrentPageId,
+    setDrawMode,
+    setMarqueeIds,
+    setSelectedId,
+    setTool,
+    workspace,
+  ]);
+
   useEffect(() => {
     if (!hydrated || !projectId || !documentId) return;
     const storage = browserStorage();
@@ -179,33 +272,29 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
       || !projectId
       || !documentId
       || !workspace
-      || (resumeRequested && !restoredRef.current)
+      || !restoredRef.current
     ) return;
+    const viewport = viewportRef.current;
+    latestPersistPayloadRef.current = {
+      projectId,
+      documentId,
+      workspace,
+      pageId: currentPageId || null,
+      selectedElementIds: selectedIds(selectedId, marqueeIds),
+      zoom,
+      scrollLeft: viewport?.scrollLeft ?? scrollLeft,
+      scrollTop: viewport?.scrollTop ?? scrollTop,
+      tool,
+      drawMode,
+      focus,
+      language,
+      sourceVersion,
+    };
+    hasPendingPersistFlushRef.current = true;
     if (persistTimerRef.current !== null) clearTimeout(persistTimerRef.current);
     persistTimerRef.current = setTimeout(() => {
       persistTimerRef.current = null;
-      const storage = browserStorage();
-      if (!storage) return;
-      const viewport = viewportRef.current;
-      try {
-        writeStudioExactResumeContext(storage, {
-          projectId: projectId!,
-          documentId: documentId!,
-          workspace: workspace!,
-          pageId: currentPageId || null,
-          selectedElementIds: selectedIds(selectedId, marqueeIds),
-          zoom: zoom,
-          scrollLeft: viewport?.scrollLeft ?? scrollLeft,
-          scrollTop: viewport?.scrollTop ?? scrollTop,
-          tool: tool,
-          drawMode: drawMode,
-          focus: focus,
-          language: language,
-          sourceVersion: sourceVersion,
-        }, window);
-      } catch {
-        // Resume state is convenience metadata and must never interrupt editing or autosave.
-      }
+      flushPendingPersist();
     }, 450);
     return () => {
       if (persistTimerRef.current !== null) clearTimeout(persistTimerRef.current);
@@ -234,5 +323,6 @@ export function useStudioExactResumeContext(input: UseStudioExactResumeContextIn
   useEffect(() => () => {
     if (restoreFrameRef.current !== null) cancelAnimationFrame(restoreFrameRef.current);
     if (persistTimerRef.current !== null) clearTimeout(persistTimerRef.current);
+    flushPendingPersist();
   }, []);
 }

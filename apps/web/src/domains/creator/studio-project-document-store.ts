@@ -424,3 +424,43 @@ export function studioProjectDocumentHref(
   const query = new URLSearchParams({ workspace });
   return `/studio/p/${encodeURIComponent(document.projectId)}/d/${encodeURIComponent(document.id)}?${query.toString()}`;
 }
+
+/**
+ * 생성 화면에서 뒤로 가기 후 재시도할 때 추가 문서를 만들지 않고
+ * 동일 세션에서 생성된 초기 문서의 규격·제목·작업공간 설정을 갱신한다.
+ */
+export function reconcileInitialStudioProjectDocumentOnCreateRetry(
+  storage: StudioProjectDocumentStorage,
+  projectId: string,
+  documentId: string,
+  input: Omit<CreateStudioProjectDocumentInput, "id" | "createdAt">,
+  options: { readonly at?: string; readonly target?: StudioProjectDocumentEventTarget } = {},
+): StudioProjectDocumentEntry | null {
+  if (!validIdentity(projectId) || !validIdentity(documentId)) return null;
+  if (!DOCUMENT_KIND_SET.has(input.kind)) throw new Error("A supported document kind is required.");
+  const existing = readStudioProjectDocuments(storage, projectId).documents.find(
+    (document) => document.id === documentId && document.status === "active",
+  );
+  if (!existing) return null;
+  const title = normalizedTitle(input.title);
+  const allowedWorkspaces = KIND_WORKSPACES[input.kind];
+  const defaultWorkspace = input.defaultWorkspace ?? allowedWorkspaces[0];
+  if (!defaultWorkspace || !allowedWorkspaces.includes(defaultWorkspace)) {
+    throw new Error("The selected workspace is not available for this document kind.");
+  }
+  const width = positiveDimension(input.width);
+  const height = positiveDimension(input.height);
+  const pageCount = positivePageCount(input.pageCount);
+  return updateDocument(storage, projectId, documentId, (document, now) => ({
+    ...document,
+    title,
+    kind: input.kind,
+    defaultWorkspace,
+    allowedWorkspaces,
+    width,
+    height,
+    pageCount,
+    updatedAt: now,
+    lastOpenedAt: now,
+  }), options);
+}

@@ -18,6 +18,16 @@ import {
   studioSearchTextMatches,
   tokenizeStudioSearchQuery,
 } from "./studio-search-text";
+import {
+  STUDIO_SHORTCUT_CONTEXT_RULES,
+  autoResolveStudioShortcutConflicts,
+  resolveStudioShortcutRowConflictStatus,
+} from "./shortcuts/studio-shortcut-conflict-guide";
+import {
+  StudioShortcutConflictBanner,
+  StudioShortcutContextComparisonSection,
+} from "./shortcuts/StudioShortcutContextAndConflictSection";
+import { SHORTCUT_HELP_COPY } from "./shortcuts/studio-shortcuts-help-copy";
 
 import { useI18n, useT } from "@/shared/lib/i18n";
 
@@ -283,103 +293,6 @@ const GROUPS: ShortcutGroup[] = [
   },
 ];
 
-const SHORTCUT_HELP_COPY = {
-  ko: {
-    subtitle: "기능 이름이나 키를 검색하고, 익숙한 기본 조작부터 바로 확인하세요.",
-    searchLabel: "단축키와 조작 검색",
-    searchPlaceholder: "예: 채우기, 스머지, 확대, ⌘Z",
-    clearSearch: "검색어 지우기",
-    top8Title: "입문자 필수 단축키 Top 8 치트시트",
-    top8Shortcuts: [
-      { key: "B", label: "브러시", detail: "선화·스케치" },
-      { key: "E", label: "지우개", detail: "선 정리" },
-      { key: "V", label: "선택/이동", detail: "컷·오브젝트" },
-      { key: "T", label: "대사/말풍선", detail: "식자 입력" },
-      { key: "Space", label: "캔버스 이동", detail: "드래그 팬" },
-      { key: "Alt", label: "스포이트", detail: "색상 추출" },
-      { key: "[ / ]", label: "브러시 크기", detail: "굵기 조절" },
-      { key: "Ctrl+Shift+M", label: "입문/프로 화면 전환", detail: "도구 밀도" },
-    ],
-    migrationTitle: "클립스튜디오·프로크리에이트·포토샵 사용자 이주 팁",
-    migrationBody:
-      "익숙한 타사 용어(QuickShape, 클리핑 마스크, 손떨림 보정, 액션, 벡터 지우개, 올가미 채우기)도 ⌘K 통합 명령 검색과 이 창에서 그대로 찾을 수 있어요.",
-    familiarTitle: "먼저 알아두면 편한 기본 조작",
-    allShortcuts: "전체 단축키",
-    result: (count: number) => `검색 결과 ${count}개`,
-    toggleHint: "? 키로 열고 닫기",
-    emptyTitle: "찾는 조작이 없습니다",
-    emptyBody: "도구 이름, 동작, 단축키 중 하나로 다시 검색해 보세요.",
-    showAll: "전체 단축키 보기",
-    operations: [
-      {
-        id: "select",
-        title: "선택하고 움직이기",
-        body: "선택 도구에서 객체를 클릭해 고르고 드래그해 이동해요. 여러 개는 Shift를 누른 채 클릭합니다.",
-        keys: "V · Shift",
-      },
-      {
-        id: "view",
-        title: "화면만 이동·확대하기",
-        body: "Space를 누른 채 드래그해 자유롭게 이동하고, Shift+휠로 좌우 이동, ⌘+휠로 포인터 중심 확대를 할 수 있어요.",
-        keys: "Space · ⇧+Wheel · ⌘+Wheel",
-      },
-      {
-        id: "recover",
-        title: "취소하고 되돌리기",
-        body: "진행 중인 동작은 Esc로 취소하고, 반영된 작업은 ⌘Z로 한 단계씩 되돌려요.",
-        keys: "Esc · ⌘Z",
-      },
-    ],
-  },
-  en: {
-    subtitle: "Search by feature or key, then start with familiar editor controls.",
-    searchLabel: "Search shortcuts and controls",
-    searchPlaceholder: "Try fill, smudge, zoom, or ⌘Z",
-    clearSearch: "Clear search",
-    top8Title: "Beginner Essential Top 8 Shortcuts Cheat Sheet",
-    top8Shortcuts: [
-      { key: "B", label: "Brush", detail: "Line & sketch" },
-      { key: "E", label: "Eraser", detail: "Clean lines" },
-      { key: "V", label: "Select / Move", detail: "Cuts & objects" },
-      { key: "T", label: "Dialogue / Balloon", detail: "Lettering" },
-      { key: "Space", label: "Pan Canvas", detail: "Hold & drag" },
-      { key: "Alt", label: "Eyedropper", detail: "Pick color" },
-      { key: "[ / ]", label: "Brush Size", detail: "Adjust width" },
-      { key: "Ctrl+Shift+M", label: "Simple / Pro UI Toggle", detail: "UI density" },
-    ],
-    migrationTitle: "Clip Studio, Procreate & Photoshop Migration Tip",
-    migrationBody:
-      "Familiar terms (QuickShape, Clipping Mask, Stabilization, Actions, Vector Eraser, Lasso Fill) work seamlessly via ⌘K Command Search and this help dialog.",
-    familiarTitle: "Familiar controls to learn first",
-    allShortcuts: "All shortcuts",
-    result: (count: number) => `${count} search result${count === 1 ? "" : "s"}`,
-    toggleHint: "Press ? to open or close",
-    emptyTitle: "No matching control",
-    emptyBody: "Search again by tool name, action, or shortcut.",
-    showAll: "Show all shortcuts",
-    operations: [
-      {
-        id: "select",
-        title: "Select and move",
-        body: "Choose the Select tool, click an object, and drag to move it. Shift-click adds more objects.",
-        keys: "V · Shift",
-      },
-      {
-        id: "view",
-        title: "Pan and zoom the view",
-        body: "Hold Space and drag to pan freely, use Shift+wheel for horizontal movement, and ⌘+wheel to zoom around the pointer.",
-        keys: "Space · ⇧+Wheel · ⌘+Wheel",
-      },
-      {
-        id: "recover",
-        title: "Cancel and undo",
-        body: "Press Esc to cancel an action in progress, or ⌘Z to undo a committed change.",
-        keys: "Esc · ⌘Z",
-      },
-    ],
-  },
-} as const;
-
 const FAMILIAR_OPERATION_ICONS = {
   select: MousePointer2,
   view: Hand,
@@ -423,11 +336,15 @@ export function StudioShortcutsHelp({
   open,
   onClose,
   shortcuts,
+  onApplyShortcuts,
+  onOpenShortcutSettings,
 }: {
   open: boolean;
   onClose: () => void;
   /** Optional app-settings shortcut map; remapped chords are shown via formatStudioShortcutChord. */
   shortcuts?: Partial<Record<StudioShortcutActionId, string>> | Record<string, string>;
+  onApplyShortcuts?: (nextShortcuts: Record<StudioShortcutActionId, string>) => void;
+  onOpenShortcutSettings?: () => void;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -437,32 +354,52 @@ export function StudioShortcutsHelp({
   const t = useT();
   const language = useI18n((state) => state.lang);
   const isKo = language.toLocaleLowerCase().startsWith("ko");
-  const copy = isKo
-    ? SHORTCUT_HELP_COPY.ko
-    : SHORTCUT_HELP_COPY.en;
+  const copy = isKo ? SHORTCUT_HELP_COPY.ko : SHORTCUT_HELP_COPY.en;
   const [searchQuery, setSearchQuery] = useState("");
-  const [activePreset, setActivePreset] = useState<StudioShortcutPresetId>(() =>
-    readStoredStudioShortcutPreset(),
-  );
+  const [activePreset, setActivePreset] = useState<StudioShortcutPresetId>(() => readStoredStudioShortcutPreset());
+  const [localShortcutsOverride, setLocalShortcutsOverride] =
+    useState<Record<StudioShortcutActionId, string> | null>(null);
   const activePresetSpec =
-    STUDIO_SHORTCUT_PRESET_SPECS.find((spec) => spec.id === activePreset) ??
-    STUDIO_SHORTCUT_PRESET_SPECS[0]!;
+    STUDIO_SHORTCUT_PRESET_SPECS.find((spec) => spec.id === activePreset) ?? STUDIO_SHORTCUT_PRESET_SPECS[0]!;
   const effectiveShortcuts =
     shortcuts !== undefined
-      ? shortcuts
-      : activePreset === "toonstudio-default"
+      ? (onApplyShortcuts ? shortcuts : (localShortcutsOverride ?? shortcuts))
+      : localShortcutsOverride ?? (activePreset === "toonstudio-default"
         ? undefined
-        : {
-            ...defaultStudioAppSettings().shortcuts,
-            ...activePresetSpec.overrides,
-          };
+        : { ...defaultStudioAppSettings().shortcuts, ...activePresetSpec.overrides });
+
+  const applyResolvedShortcuts = (nextShortcuts: Record<StudioShortcutActionId, string>) => {
+    const storage = studioAppSettingsStorage();
+    if (storage) {
+      const current = loadStudioAppSettings(storage);
+      saveStudioAppSettings(storage, { ...current, shortcuts: nextShortcuts });
+    }
+    setLocalShortcutsOverride(nextShortcuts);
+    onApplyShortcuts?.(nextShortcuts);
+  };
 
   const selectShortcutPreset = (presetId: StudioShortcutPresetId) => {
-    writeStoredStudioShortcutPreset(presetId);
+    const nextShortcuts = writeStoredStudioShortcutPreset(presetId);
     setActivePreset(presetId);
+    setLocalShortcutsOverride(nextShortcuts);
+    onApplyShortcuts?.(nextShortcuts);
   };
 
   const searching = tokenizeStudioSearchQuery(searchQuery).length > 0;
+  const matchingContextRuleCount = STUDIO_SHORTCUT_CONTEXT_RULES.filter((rule) =>
+    !searching
+      ? true
+      : studioSearchTextMatches(searchQuery, [
+          rule.keysLabelKo,
+          rule.canvasBehaviorKo,
+          rule.canvasBehaviorEn,
+          rule.textEditBehaviorKo,
+          rule.textEditBehaviorEn,
+          rule.visibleAlternativeKo,
+          rule.visibleAlternativeEn,
+          ...rule.searchAliases,
+        ]),
+  ).length;
   // 매칭 규칙은 통합 Command Search 와 같은 `studio-search-text` 를 쓴다.
   // 감사 §2.8 이 "네 검색창이 서로 다르게 판단한다"를 결함으로 셌다.
   const visibleGroups = GROUPS.map((group) => ({
@@ -610,6 +547,18 @@ export function StudioShortcutsHelp({
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <StudioShortcutConflictBanner
+            shortcuts={effectiveShortcuts ?? defaultStudioAppSettings().shortcuts}
+            isKo={isKo}
+            onAutoResolve={() => {
+              const base: Record<StudioShortcutActionId, string> = {
+                ...defaultStudioAppSettings().shortcuts,
+                ...(effectiveShortcuts as Partial<Record<StudioShortcutActionId, string>> | undefined),
+              };
+              applyResolvedShortcuts(autoResolveStudioShortcutConflicts(base));
+            }}
+            onOpenShortcutSettings={onOpenShortcutSettings}
+          />
           {!searching ? (
             <>
               <section
@@ -705,13 +654,16 @@ export function StudioShortcutsHelp({
                   })}
                 </div>
               </section>
+              <StudioShortcutContextComparisonSection isKo={isKo} />
             </>
-          ) : null}
+          ) : (
+            <StudioShortcutContextComparisonSection isKo={isKo} searchQuery={searchQuery} compact />
+          )}
 
           <section aria-labelledby="studio-shortcut-list-title" className={searching ? "" : "mt-4"}>
             <div className="mb-2 flex items-center justify-between gap-3">
               <h3 id="studio-shortcut-list-title" className="text-[0.68rem] font-semibold text-fg-2">
-                {searching ? copy.result(visibleShortcutCount) : copy.allShortcuts}
+                {searching ? copy.result(visibleShortcutCount + matchingContextRuleCount) : copy.allShortcuts}
               </h3>
               <span className="text-[0.62rem] text-fg-3">{copy.toggleHint}</span>
             </div>
@@ -723,21 +675,31 @@ export function StudioShortcutsHelp({
                 {t(g.titleKey)}
               </p>
               <ul className="space-y-1">
-                {g.rows.map((r) => (
-                  <li key={`${r.labelKey}:${r.keysKey ?? r.keys}`} className="flex items-center justify-between gap-3 text-xs text-fg-2">
-                    <span>{t(r.labelKey)}</span>
-                    <kbd className="shrink-0 rounded-md border border-line bg-card px-1.5 py-0.5 font-mono text-[0.66rem] text-fg-3">
-                      {r.keysKey && !r.actionId && !r.actionIds
-                        ? t(r.keysKey)
-                        : displayKeysForRow(r, effectiveShortcuts)}
-                    </kbd>
-                  </li>
-                ))}
+                {g.rows.map((r) => {
+                  const rowConflict = r.actionId
+                    ? resolveStudioShortcutRowConflictStatus(effectiveShortcuts, r.actionId)
+                    : null;
+                  return (
+                    <li key={`${r.labelKey}:${r.keysKey ?? r.keys}`} className="flex items-center justify-between gap-3 text-xs text-fg-2">
+                      <span className="min-w-0">
+                        <span>{t(r.labelKey)}</span>
+                        {rowConflict ? (
+                          <span className="ml-1.5 inline-block rounded bg-warn/20 px-1 py-0.5 text-[0.58rem] font-semibold text-fg">
+                            {rowConflict.role === "winner" ? (isKo ? "우선 실행" : "Runs") : (isKo ? "가려짐" : "Shadowed")}
+                          </span>
+                        ) : null}
+                      </span>
+                      <kbd className={`shrink-0 rounded-md border px-1.5 py-0.5 font-mono text-[0.66rem] ${rowConflict ? "border-warn/50 bg-warn/10 text-fg" : "border-line bg-card text-fg-3"}`}>
+                        {r.keysKey && !r.actionId && !r.actionIds ? t(r.keysKey) : displayKeysForRow(r, effectiveShortcuts)}
+                      </kbd>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
             </div>
-          ) : (
+          ) : matchingContextRuleCount === 0 ? (
             <div className="rounded-xl border border-dashed border-line bg-card/40 px-4 py-8 text-center">
               <p className="text-sm font-semibold text-fg">{copy.emptyTitle}</p>
               <p className="mt-1 text-xs leading-relaxed text-fg-3">{copy.emptyBody}</p>
@@ -749,7 +711,7 @@ export function StudioShortcutsHelp({
                 {copy.showAll}
               </button>
             </div>
-          )}
+          ) : null}
           </section>
           <p className="mt-4 border-t border-line/50 pt-3 text-[0.62rem] leading-relaxed text-fg-3">
             {t("studio.shortcuts.notice")}

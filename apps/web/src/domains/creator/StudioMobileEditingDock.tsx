@@ -1089,7 +1089,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                     value={strokeWidth}
                     onChange={(e) => setStrokeWidth(Number(e.target.value))}
                     className="h-11 w-full accent-accent"
-                    aria-label="브러시 굵기 슬라이더"
+                    aria-label="브러시 굵기 슬라이더" aria-valuetext={`${strokeWidth}px`}
                   />
                   <label className="sr-only" htmlFor="mobile-brush-width">브러시 굵기 숫자</label>
                   <input
@@ -1129,7 +1129,7 @@ export const StudioMobileEditingDock = memo(function StudioMobileEditingDock({
                       value={Math.round(brushOpacity * 100)}
                       onChange={(e) => setBrushOpacity(Number(e.target.value) / 100)}
                       className="h-11 w-full accent-accent"
-                      aria-label={drawMode === "eraser" ? "지우기 강도 슬라이더" : "브러시 불투명도 슬라이더"}
+                      aria-label={drawMode === "eraser" ? "지우기 강도 슬라이더" : "브러시 불투명도 슬라이더"} aria-valuetext={`${Math.round(brushOpacity * 100)}%`}
                     />
                     <label className="sr-only" htmlFor="mobile-brush-opacity">
                       {drawMode === "eraser" ? "지우기 강도 숫자" : "브러시 불투명도 숫자"}

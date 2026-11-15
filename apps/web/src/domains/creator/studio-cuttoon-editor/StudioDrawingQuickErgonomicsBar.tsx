@@ -1,4 +1,5 @@
 import { Columns2, Compass, FlipHorizontal2, LayoutGrid, Lock, Magnet, Minus, Plus, Sparkles, Unlock } from "lucide-react";
+import { useId } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { normalizeHexColor } from "../studio-color-utils";
@@ -148,6 +149,11 @@ export function StudioDrawingQuickErgonomicsBar({
     (activeDrawMode === "eraser" ? bt("지우개", "Eraser") : bt("G펜", "G-Pen"));
   const brushCatalogOpen = s.brushCatalogSession?.placement === "desktop-dock";
   const normalizedColor = normalizeHexColor(s.color ?? "#111111") ?? "#111111";
+  const widthReadoutId = useId();
+  const optionsLiveSummaryId = useId();
+  const stabilizerSafe = Math.max(0, Math.min(3, Math.round(Number.isFinite(s.stabilizer) ? s.stabilizer : 0)));
+  const stabilizerLabel = formatStabilizerLabel(s.stabilizer, bt);
+  const optionsLiveSummary = `${bt("현재 도구", "Current tool")} ${activeBrushName}, ${bt("두께", "Size")} ${roundedWidth}px, ${bt("불투명도", "Opacity")} ${opacityPercent}%, ${stabilizerLabel}, ${bt("배율", "Zoom")} ${zoomPercent}%`;
 
   const resetZoomToActualPixel = () => {
     if (zoomDisabled) return;
@@ -293,18 +299,20 @@ export function StudioDrawingQuickErgonomicsBar({
           disabled={blocked || s.strokeWidth <= 1}
           onClick={() => s.setStrokeWidth((current) => stepBrushWidth(current, -1))}
           aria-label={bt("브러시 크기 줄이기", "Decrease brush size")}
+          aria-describedby={widthReadoutId}
           title={bt("브러시 크기 줄이기 · [", "Decrease brush size · [")}
         >
           <Minus size={15} aria-hidden />
         </button>
         <button
+          id={widthReadoutId}
           type="button"
           className="studio-drawing-stepper-readout"
           onClick={(event) => clarity?.open("brush", event.currentTarget)}
-          aria-label={`${bt("현재 브러시 두께", "Current brush size")} ${Math.max(1, Math.round(s.strokeWidth))}px`}
+          aria-label={`${bt("현재 브러시 두께", "Current brush size")} ${roundedWidth}px`}
           title={bt("클릭해 펜·브러시 세부 설정 열기", "Open detailed brush settings")}
         >
-          <span>{Math.max(1, Math.round(s.strokeWidth))}px</span>
+          <span>{roundedWidth}px</span>
         </button>
         <button
           type="button"
@@ -312,7 +320,8 @@ export function StudioDrawingQuickErgonomicsBar({
           disabled={blocked || s.strokeWidth >= 200}
           onClick={() => s.setStrokeWidth((current) => stepBrushWidth(current, 1))}
           aria-label={bt("브러시 크기 키우기", "Increase brush size")}
-          title={bt("브러시 크기 키우기 · ]", "Increase brush size · ]")}
+          aria-describedby={widthReadoutId}
+          title={bt("브러시 크기 키우기 · [", "Increase brush size · ]").replace("[", "]")}
         >
           <Plus size={15} aria-hidden />
         </button>
@@ -328,7 +337,7 @@ export function StudioDrawingQuickErgonomicsBar({
           title={bt("클릭할 때마다 손떨림 보정 강도(꺼짐 → 약함 → 표준 → 강함)를 순환합니다", "Cycle stroke stabilizer strength")}
         >
           <Sparkles size={15} aria-hidden />
-          <span>{formatStabilizerLabel(s.stabilizer, bt)}</span>
+          <span>{stabilizerLabel}</span>
         </button>
         <input
           type="range"
@@ -337,7 +346,8 @@ export function StudioDrawingQuickErgonomicsBar({
           step={1}
           disabled={blocked}
           aria-label={bt("손떨림 보정 슬라이더", "Stabilizer strength slider")}
-          value={Math.max(0, Math.min(3, Math.round(Number.isFinite(s.stabilizer) ? s.stabilizer : 0)))}
+          aria-valuetext={stabilizerLabel}
+          value={stabilizerSafe}
           onChange={(event) => s.setStabilizer(Number(event.currentTarget.value))}
           className="studio-drawing-stabilizer-slider"
         />
@@ -454,6 +464,15 @@ export function StudioDrawingQuickErgonomicsBar({
       >
         <span>{zoomPercent}%</span>
       </button>
+      <span
+        id={optionsLiveSummaryId}
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        data-studio-options-live-summary="true"
+      >
+        {optionsLiveSummary}
+      </span>
     </div>
   );
 }

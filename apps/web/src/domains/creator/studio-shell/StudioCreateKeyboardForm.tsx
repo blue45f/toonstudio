@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEventHandler, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEventHandler, type ReactNode } from "react";
 
 import {
   createStudioCreateSubmitController,
@@ -23,6 +23,9 @@ export function StudioCreateKeyboardForm(props: StudioCreateKeyboardFormProps) {
     fixName: () => latest.current.onFixName(),
     fixSize: () => latest.current.onFixSize(),
   }));
+  useEffect(() => {
+    if (!props.creating) controller.resetSubmitted();
+  }, [controller, props.creating]);
 
   return (
     <form noValidate aria-label={props.label} data-studio-create-form="true"

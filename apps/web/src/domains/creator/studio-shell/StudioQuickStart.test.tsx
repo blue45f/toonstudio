@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { StrictMode } from "react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStudioProject, readStudioProjectLibrary } from "../studio-project-library-store";
@@ -118,4 +118,34 @@ it("그리기 이미지 카드의 저장 실패는 기존 작업과 시작 위�
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByLabelText("location").textContent).toContain("workspace=draw&startTool=draw");
   expect(new URL(screen.getByLabelText("location").textContent!, "http://local.test").searchParams.has("uiMode")).toBe(false);
+});
+
+it("빠른 시작 후 뒤로 가기로 돌아와 다시 눌러도 더미 작품을 중복 생성하지 않는다", () => {
+  function EditorBackStub() {
+    const navigate = useNavigate();
+    return <button type="button" onClick={() => navigate(-1)}>뒤로</button>;
+  }
+  render(
+    <StrictMode>
+      <MemoryRouter initialEntries={["/create"]}>
+        <Routes>
+          <Route path="/create" element={<StudioQuickStart locale="ko" presentation="drawing-card" />} />
+          <Route path="*" element={<EditorBackStub />} />
+        </Routes>
+        <LocationProbe />
+      </MemoryRouter>
+    </StrictMode>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "캔버스 열기" }));
+  const firstProjects = readStudioProjectLibrary(window.localStorage).projects;
+  expect(firstProjects).toHaveLength(1);
+  const firstId = firstProjects[0]!.id;
+
+  fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
+  expect(screen.getByLabelText("location").textContent).toBe("/create");
+
+  fireEvent.click(screen.getByRole("button", { name: "캔버스 열기" }));
+  const afterRetryProjects = readStudioProjectLibrary(window.localStorage).projects;
+  expect(afterRetryProjects).toHaveLength(1);
+  expect(afterRetryProjects[0]!.id).toBe(firstId);
 });

@@ -8,8 +8,10 @@
 import { useMemo, useSyncExternalStore } from "react";
 
 import {
+  resolveSaveSyncCutMatch,
   resolveSaveSyncStatusFromSignals,
   saveSyncJournalSnapshotFromSignals,
+  type StudioSaveSyncCutMatch,
   type StudioSaveSyncSignalStore,
   type StudioSaveSyncSignals,
 } from "./studio-save-sync-signals";
@@ -34,14 +36,16 @@ export function useStudioSaveSyncView(store: StudioSaveSyncSignalStore): {
   readonly status: StudioSaveSyncStatus;
   readonly journalSnapshot: StudioOperationJournalState;
   readonly leadership: StudioSaveSyncSignals["leadership"];
+  readonly cutMatch: StudioSaveSyncCutMatch;
 } {
   const signals = useStudioSaveSyncSignals(store);
-  return useMemo(
-    () => ({
-      status: resolveSaveSyncStatusFromSignals(signals),
+  return useMemo(() => {
+    const status = resolveSaveSyncStatusFromSignals(signals);
+    return {
+      status,
       journalSnapshot: saveSyncJournalSnapshotFromSignals(signals),
       leadership: signals.leadership,
-    }),
-    [signals],
-  );
+      cutMatch: resolveSaveSyncCutMatch(signals, status),
+    };
+  }, [signals]);
 }

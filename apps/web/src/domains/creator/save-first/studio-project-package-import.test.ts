@@ -313,5 +313,43 @@ describe("ToonStudio project package import", () => {
     expect(readStudioProjectLibrary(store).projects).toEqual(beforeProjects);
     expect(readStudioProjectDocuments(store, "import-aborted-project").documents).toEqual([]);
   });
+
+  it("distinguishes incompatible future snapshot versions from corruption while keeping existing projects untouched", async () => {
+    const store = storage();
+    await importStudioProjectPackage(packageFile(), {
+      storage: store,
+      authUserId: "artist-1",
+      createProjectId: () => "existing-project",
+      createDocumentId: () => "existing-doc",
+    });
+    const beforeProjects = readStudioProjectLibrary(store).projects;
+
+    const futureSnapshotPkg = buildStudioProjectPackage({
+      project: sourceProject,
+      documents: [sourceDocument],
+      profile: createDefaultStudioSaveProfile(sourceProject.id, { now: sourceProject.createdAt }),
+      exportedAt: "2026-09-16T01:00:00.000Z",
+      additionalEntries: buildStudioProjectWorkspacePackageEntries([sourceDocument], [{
+        documentId: sourceDocument.id,
+        key: "future-autosave",
+        authority: "memory-current",
+        savedAt: sourceSnapshot.savedAt,
+        payload: { ...sourceSnapshot, version: 99 } as unknown as StudioAutosavePayload,
+      }]),
+    });
+    const futureFile = new File([futureSnapshotPkg.blob], futureSnapshotPkg.fileName, {
+      type: futureSnapshotPkg.blob.type,
+    });
+
+    await expect(
+      importStudioProjectPackage(futureFile, {
+        storage: store,
+        authUserId: "artist-1",
+        createProjectId: () => "future-project",
+        createDocumentId: () => "future-doc",
+      }),
+    ).rejects.toThrow(/지원하지 않는 상위 버전.*v99/u);
+    expect(readStudioProjectLibrary(store).projects).toEqual(beforeProjects);
+  });
 });
 

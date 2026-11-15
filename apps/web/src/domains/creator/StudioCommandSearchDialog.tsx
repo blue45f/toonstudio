@@ -18,14 +18,27 @@ import { Ban, ChevronRight, HelpCircle, Play, Search, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
+
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
 import { StudioCommandSearchBeginnerGuide } from "./planning/StudioCommandSearchBeginnerGuide";
+import {
+  StudioCommandSearchOptionUnavailableMeta,
+  StudioCommandSearchUnavailableCallout,
+} from "./planning/StudioCommandSearchUnavailableGuidance";
+import {
+  executeStudioSearchAlternative,
+  resolveStudioSearchEntryUnavailability,
+  studioDiscoverableSearchIndex,
+  type StudioSearchAlternativeIntent,
+  type StudioSearchUnavailabilityGuidance,
+} from "./planning/studio-command-search-unavailability";
 import {
   getStudioCommandExecutionBindings,
   subscribeStudioCommandExecutionBindings,
   type StudioCommandExecutionBinding,
 } from "./studio-command-execution-registry";
-import { buildStudioSearchIndex, searchStudio } from "./studio-command-search";
+import { searchStudio } from "./studio-command-search";
 import {
   STUDIO_COMMAND_SEARCH_SCOPE_KINDS,
   STUDIO_COMMAND_SEARCH_SCOPE_LABELS,
@@ -72,6 +85,8 @@ export interface StudioCommandSearchDialogProps {
    * 화면당 검색 표면은 하나이고(감사 §5.5) 진입점은 범위만 고른다.
    */
   initialScope?: StudioCommandSearchScope;
+  /** 다른 부분 검색 표면(예: 전체 도구)에서 검색어를 유지한 채 넘겨줄 때 사용. */
+  initialQuery?: string;
 }
 
 export type { StudioCommandSearchScope } from "./studio-command-search-scope";
@@ -138,13 +153,27 @@ function studioCommandSearchAction(
   available: StudioCommandSearchHandlerAvailability,
   inspectorContext: StudioInspectorActionContext | undefined,
   commandBindings: ReadonlyMap<string, StudioCommandExecutionBinding>,
+  unavailability: StudioSearchUnavailabilityGuidance | null,
 ): StudioCommandSearchAction {
+  if (unavailability) {
+    if (unavailability.badge === "선택 필요") {
+      return {
+        ...SELECTION_REQUIRED_ACTION,
+        hint: unavailability.footerHint,
+      };
+    }
+    if (unavailability.badge === "사용 불가") {
+      return {
+        kind: "none",
+        badge: panelStatusText("studio.panelStatus.commandSearch.unavailableBadge", "사용 불가"),
+        hint: unavailability.footerHint || panelStatusText("studio.panelStatus.commandSearch.unavailableHint", "현재 상태에서는 이 명령을 사용할 수 없습니다"),
+      };
+    }
+    return noAction();
+  }
   const target = entry.target;
   switch (target.type) {
     case "inspector":
-      if (entry.requiresSelection && inspectorContext?.hasSelection === false) {
-        return SELECTION_REQUIRED_ACTION;
-      }
       return available.inspector
         ? { kind: "inspector", badge: "이동", hint: "인스펙터로 이동" }
         : noAction();
@@ -158,23 +187,14 @@ function studioCommandSearchAction(
         : noAction();
     case "command": {
       const binding = commandBindings.get(target.commandId);
-      if (binding) {
-        return binding.disabled
-          ? {
-            kind: "none",
-            badge: panelStatusText("studio.panelStatus.commandSearch.unavailableBadge", "사용 불가"),
-            hint: binding.unavailableReason ?? panelStatusText("studio.panelStatus.commandSearch.unavailableHint", "현재 상태에서는 이 명령을 사용할 수 없습니다"),
-          }
-          : { kind: "execute", badge: "실행", hint: "명령 실행" };
+      if (binding && !binding.disabled) {
+        return { kind: "execute", badge: "실행", hint: "명령 실행" };
       }
-      // Unreviewed and consequential commands stay help-only until their menu row explicitly
-      // opts in. Search never infers safety from a missing `danger` flag.
       return available.help
         ? { kind: "help", badge: "도움말", hint: "도움말 열기" }
         : noAction();
     }
     default:
-      // `panel`(자동 액션)처럼 아직 소비자가 없는 타깃. 열리는 척하지 않는다.
       return noAction();
   }
 }
@@ -218,26 +238,25 @@ export function StudioCommandSearchDialog({
   onOpenHelp,
   inspectorContext,
   initialScope = "all",
+  initialQuery = "",
 }: StudioCommandSearchDialogProps) {
   const titleId = useId();
   const inputId = useId();
   const listboxId = useId();
   const scopeGroupId = useId();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [scope, setScope] = useState<StudioCommandSearchScope>(initialScope);
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const imeGuard = usePaletteImeGuard(open);
   const commandExecutionBindings = useSyncExternalStore(
     subscribeStudioCommandExecutionBindings,
     getStudioCommandExecutionBindings,
     getStudioCommandExecutionBindings,
   );
 
-  const searchIndex = useMemo(
-    () => buildStudioSearchIndex(inspectorContext),
-    [inspectorContext],
-  );
+  const searchIndex = useMemo(() => studioDiscoverableSearchIndex(), []);
   const scopeKinds = STUDIO_COMMAND_SEARCH_SCOPE_KINDS[scope];
   const outcome: StudioSearchOutcome = useMemo(
     () => searchStudio(query, scopeKinds ? { kinds: scopeKinds } : {}, searchIndex),
@@ -278,6 +297,7 @@ export function StudioCommandSearchDialog({
         index: number;
         optionId: string;
         action: StudioCommandSearchAction;
+        unavailability: StudioSearchUnavailabilityGuidance | null;
       }[];
     }[] = [];
     let consumed = 0;
@@ -285,17 +305,28 @@ export function StudioCommandSearchDialog({
       const base = consumed;
       groups.push({
         section,
-        rows: section.results.map((result, offset) => ({
-          result,
-          index: base + offset,
-          optionId: `${listboxId}-option-${base + offset}`,
-          action: studioCommandSearchAction(
+        rows: section.results.map((result, offset) => {
+          const unavailability = resolveStudioSearchEntryUnavailability(
             result.entry,
             available,
             inspectorContext,
             commandExecutionBindings,
-          ),
-        })),
+            { allowNavigationHrefFallback: typeof window !== "undefined" },
+          );
+          return {
+            result,
+            index: base + offset,
+            optionId: `${listboxId}-option-${base + offset}`,
+            unavailability,
+            action: studioCommandSearchAction(
+              result.entry,
+              available,
+              inspectorContext,
+              commandExecutionBindings,
+              unavailability,
+            ),
+          };
+        }),
       });
       consumed = base + section.results.length;
     }
@@ -304,6 +335,10 @@ export function StudioCommandSearchDialog({
 
   const flat = useMemo(() => grouped.flatMap((group) => group.rows), [grouped]);
   const activeRow = flat[activeIndex];
+  const calloutGuidance = useMemo(
+    () => activeRow?.unavailability ?? flat.find((row) => row.unavailability !== null)?.unavailability ?? null,
+    [activeRow, flat],
+  );
 
   useEffect(() => {
     setActiveIndex(0);
@@ -311,11 +346,11 @@ export function StudioCommandSearchDialog({
 
   useEffect(() => {
     if (!open) return;
-    setQuery("");
+    setQuery(initialQuery);
     setScope(initialScope);
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(raf);
-  }, [initialScope, open]);
+  }, [initialQuery, initialScope, open]);
 
   // 활성 행을 시야에 유지한다. 포커스는 combobox 에 남으므로 브라우저가 자동으로
   // 스크롤해 주지 않는다 — activedescendant 패턴에서는 우리가 해야 한다.
@@ -325,18 +360,41 @@ export function StudioCommandSearchDialog({
     node?.scrollIntoView?.({ block: "nearest" });
   }, [activeRow, open]);
 
+  const runAlternative = useCallback(
+    (intent: StudioSearchAlternativeIntent) => {
+      if (!imeGuard.claimExecution()) return;
+      executeStudioSearchAlternative(intent, {
+        commandBindings: commandExecutionBindings,
+        onCloseAction: () => onClose("action"),
+        onNavigateInspector,
+        onExpandPalette,
+        onOpenHelp,
+        onOpenTutorial,
+      });
+    },
+    [commandExecutionBindings, imeGuard, onClose, onExpandPalette, onNavigateInspector, onOpenHelp, onOpenTutorial],
+  );
+
   const activate = useCallback(
     (result: StudioSearchResult) => {
       const target = result.entry.target;
+      const unavailability = resolveStudioSearchEntryUnavailability(
+        result.entry,
+        available,
+        inspectorContext,
+        commandExecutionBindings,
+        { allowNavigationHrefFallback: typeof window !== "undefined" },
+      );
       const action = studioCommandSearchAction(
         result.entry,
         available,
         inspectorContext,
         commandExecutionBindings,
+        unavailability,
       );
       switch (action.kind) {
         case "inspector": {
-          if (target.type !== "inspector") return;
+          if (target.type !== "inspector" || !imeGuard.claimExecution()) return;
           // 행이 광고한 목적지를 통째로 넘긴다. 서브탭(`image`/`document`)을
           // 빼면 탭만 맞고 화면은 직전 서브탭에 남는다.
           const route: StudioInspectorRoute = {
@@ -350,13 +408,13 @@ export function StudioCommandSearchDialog({
           return;
         }
         case "tutorial": {
-          if (target.type !== "tutorial") return;
+          if (target.type !== "tutorial" || !imeGuard.claimExecution()) return;
           onOpenTutorial?.(target.tutorialId);
           onClose("action");
           return;
         }
         case "palette": {
-          if (target.type !== "palette") return;
+          if (target.type !== "palette" || !imeGuard.claimExecution()) return;
           onExpandPalette?.(target.paletteId);
           onClose("action");
           return;
@@ -364,13 +422,13 @@ export function StudioCommandSearchDialog({
         case "execute": {
           if (target.type !== "command") return;
           const binding = commandExecutionBindings.get(target.commandId);
-          if (!binding || binding.disabled) return;
+          if (!binding || binding.disabled || !imeGuard.claimExecution()) return;
           binding.execute();
           onClose("action");
           return;
         }
         case "help": {
-          if (target.type !== "command") return;
+          if (target.type !== "command" || !imeGuard.claimExecution()) return;
           // 도움말 표면도 모달이다. 검색을 열어 둔 채 겹치면 Esc 가 어느 쪽을
           // 닫는지 알 수 없으므로 검색은 닫고 넘긴다.
           onOpenHelp?.(result.entry.helpNodeId, target.commandId);
@@ -383,21 +441,15 @@ export function StudioCommandSearchDialog({
           return;
       }
     },
-    [
-      available,
-      commandExecutionBindings,
-      inspectorContext,
-      onClose,
-      onExpandPalette,
-      onNavigateInspector,
-      onOpenHelp,
-      onOpenTutorial,
-    ],
+    [available, commandExecutionBindings, imeGuard, inspectorContext, onClose, onExpandPalette, onNavigateInspector, onOpenHelp, onOpenTutorial],
   );
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (event.isComposing) return;
+      if (imeGuard.shouldIgnoreKeyDown(event)) {
+        if (event.key === "Enter" || event.key === "Escape") event.preventDefault();
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
@@ -413,8 +465,16 @@ export function StudioCommandSearchDialog({
         return;
       }
       if (event.key === "Enter") {
+        if (event.altKey && calloutGuidance?.alternatives[0]) {
+          event.preventDefault();
+          runAlternative(calloutGuidance.alternatives[0]);
+          return;
+        }
         const row = flat[activeIndex];
-        if (row) {
+        if (row && document.activeElement === inputRef.current) {
+          event.preventDefault();
+          activate(row.result);
+        } else if (row && !document.activeElement?.closest("button")) {
           event.preventDefault();
           activate(row.result);
         }
@@ -442,7 +502,7 @@ export function StudioCommandSearchDialog({
         first.focus();
       }
     },
-    [activate, activeIndex, flat, onClose],
+    [activate, activeIndex, calloutGuidance, flat, imeGuard, onClose, runAlternative],
   );
 
   // 키 처리는 JSX prop 대신 노드 리스너로 건다. `role="dialog"` 컨테이너는
@@ -453,7 +513,7 @@ export function StudioCommandSearchDialog({
     // F1이 인스펙터를 연 직후에는 검색 입력보다 패널 제목이 먼저 초점을 받을 수 있다.
     // 그 전이 동안에도 맨 위 검색의 첫 Escape를 받고, 별도 대화상자의 키는 남겨 둔다.
     const dismissBeforeFocus = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.isComposing || event.defaultPrevented) return;
+      if (event.key !== "Escape" || imeGuard.shouldIgnoreKeyDown(event) || event.defaultPrevented) return;
       const target = event.target;
       if (target instanceof Node && node.contains(target)) return;
       if (target instanceof Element && target.closest('[role="dialog"], dialog[open]')) return;
@@ -467,7 +527,7 @@ export function StudioCommandSearchDialog({
       node.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keydown", dismissBeforeFocus, true);
     };
-  }, [open, onClose, onKeyDown]);
+  }, [imeGuard, open, onClose, onKeyDown]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -652,7 +712,7 @@ export function StudioCommandSearchDialog({
                       되도록 중간 래퍼를 presentation 으로 지운다.
                     */}
                     <ul role="presentation" className="space-y-0.5">
-                      {rows.map(({ result, index, optionId, action }) => {
+                      {rows.map(({ result, index, optionId, action, unavailability }) => {
                         const note = matchNote(result);
                         const inert = action.kind === "none";
                         const ActionIcon = ACTION_ICON[action.kind];
@@ -671,7 +731,7 @@ export function StudioCommandSearchDialog({
                               onClick={() => activate(result)}
                               className={`flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition-colors data-[active=true]:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                                 inert
-                                  ? "cursor-not-allowed opacity-55"
+                                  ? "cursor-not-allowed opacity-70"
                                   : "hover:bg-raised"
                               }`}
                             >
@@ -683,6 +743,11 @@ export function StudioCommandSearchDialog({
                                   {result.entry.location}
                                   {note ? ` · ${note}` : ""}
                                 </span>
+                                {unavailability ? (
+                                  <StudioCommandSearchOptionUnavailableMeta
+                                    guidance={unavailability}
+                                  />
+                                ) : null}
                               </span>
                               <span className="flex shrink-0 items-center gap-1.5">
                                 {result.entry.shortcut ? (
@@ -690,11 +755,6 @@ export function StudioCommandSearchDialog({
                                     {result.entry.shortcut}
                                   </kbd>
                                 ) : null}
-                                {/*
-                                  행마다 "Enter 를 누르면 무엇이 되는지"를 글자로
-                                  적는다. 명령 행은 "도움말"이라고 적히므로
-                                  실행되는 척하지 않는다.
-                                */}
                                 <span className="rounded-full border border-line px-1.5 py-px text-[0.6rem] text-fg-3">
                                   {action.badge}
                                 </span>
@@ -714,6 +774,12 @@ export function StudioCommandSearchDialog({
                 );
             })}
           </div>
+          {hasResults && calloutGuidance ? (
+            <StudioCommandSearchUnavailableCallout
+              guidance={calloutGuidance}
+              onRunAlternative={runAlternative}
+            />
+          ) : null}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-1.5 text-[0.62rem] text-fg-3">

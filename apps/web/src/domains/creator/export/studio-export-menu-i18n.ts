@@ -60,6 +60,10 @@ const ko = {
   positionTopRight: "오른쪽 위",
   positionTopLeft: "왼쪽 위",
   positionCenter: "가운데",
+  cancelledZero: "내보내기를 취소했어요. 저장된 파일이 없으며 편집 중인 원고는 수정되지 않았어요.",
+  cancelledPartial: "내보내기 취소됨 · 미완성 산출물 ({saved}/{total}장만 저장됨 — 완성본 아님). 편집 중인 원고는 수정되지 않았으며, 아래 이어서 저장으로 나머지 {remaining}장만 받을 수 있어요.",
+  workspaceAbortZero: "진행 중이던 내보내기를 취소하고 작업공간으로 돌아왔어요. 저장된 파일은 없으며 편집 중인 원고는 수정되지 않았어요.",
+  workspaceAbortPartial: "내보내기 취소됨 · 미완성 산출물 ({saved}/{total}장만 저장됨 — 완성본 아님). 후속 다운로드를 즉시 멈췄으며 편집 중인 원고는 수정되지 않았어요.",
 } as const;
 
 const en: Record<keyof typeof ko, string> = {
@@ -121,6 +125,10 @@ const en: Record<keyof typeof ko, string> = {
   positionTopRight: "Top right",
   positionTopLeft: "Top left",
   positionCenter: "Center",
+  cancelledZero: "Cancelled the export. No files were saved, and your manuscript in progress was not modified.",
+  cancelledPartial: "Export cancelled · Incomplete output ({saved}/{total} slices saved — not a complete export). Your manuscript was not modified; use Resume below to save only the remaining {remaining} slices.",
+  workspaceAbortZero: "Cancelled the in-flight export and returned to the workspace. No files were saved, and your manuscript was not modified.",
+  workspaceAbortPartial: "Export cancelled · Incomplete output ({saved}/{total} slices saved — not a complete export). Stopped remaining downloads immediately; your manuscript was not modified.",
 };
 
 for (const [locale, messages] of [["ko", ko], ["en", en]] as const) {

@@ -195,6 +195,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { re
             <StudioSaveStatusChromeMount
               store={s.saveSyncStore}
               onRequestSaveFlush={s.requestSaveFlush}
+              onDownloadLocalBackup={() => { void s.studioMenubarContentHandlers.handleExportProject(); }}
               publishSuggestion={s.workMode === "finish" ? {
                 // 1회성 기억의 단위는 문서(오토세이브 키)다 — 문서가 바뀌면 새 첫 게시 흐름으로 본다.
                 scope: s.saveIntentScope?.documentKey ?? s.effectiveWorkId ?? s.workId ?? "new-work",

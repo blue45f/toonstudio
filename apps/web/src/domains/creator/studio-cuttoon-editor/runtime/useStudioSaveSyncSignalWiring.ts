@@ -19,18 +19,27 @@ export interface UseStudioSaveSyncSignalWiringOptions {
   readonly autosaveKey: string;
   /** useStudioAutosaveDocumentRuntime 의 리더십 (구조적 부분집합만 요구). */
   readonly leadership: { readonly role: "leader" | "follower" } | null;
+  /** 현재 활성 컷(페이지) 식별자·표시 이름 — 완료 상태와 컷 정합성을 맞추는 데 쓴다. */
+  readonly activePageId?: string;
+  readonly activePageLabel?: string;
 }
 
 export function useStudioSaveSyncSignalWiring({
   store,
   autosaveKey,
   leadership,
+  activePageId = "",
+  activePageLabel = "",
 }: UseStudioSaveSyncSignalWiringOptions): void {
   // 리셋은 이 훅(호스트 앞부분)에서 선언해, 같은 커밋에서 뒤에 선언되는
   // 하이드레이션 베이스라인 effect 가 리셋 뒤에 베이스라인을 다시 얹게 한다.
   useEffect(() => {
     store.reset(autosaveKey);
   }, [autosaveKey, store]);
+
+  useEffect(() => {
+    store.noteActivePage(activePageId, activePageLabel);
+  }, [activePageId, activePageLabel, autosaveKey, store]);
 
   useEffect(() => {
     const next: StudioSaveSyncLeadership = leadership?.role ?? "unknown";

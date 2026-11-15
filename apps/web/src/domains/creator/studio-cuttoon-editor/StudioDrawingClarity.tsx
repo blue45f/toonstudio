@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
+
 import { studioDrawingClarityEligible } from "./StudioDrawingClarityPolicy";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { defaultStudioAppSettings } from "../studio-app-settings";
@@ -42,7 +44,12 @@ export function StudioDrawingClarityProvider({ session: s, presentation = "integ
   readonly children: ReactNode;
 }) {
   const [choice, setChoice] = useState<{ owner: string; workspace: string; simple: boolean } | null>(null);
-  const [opened, setOpened] = useState<{ owner: string; workspace: string; panel: StudioDrawingClarityPanel } | null>(null);
+  const compactViewport = useMediaQuery("(max-width: 1279px)");
+  const viewportBucket = compactViewport ? "compact" : "large";
+  const [openedByBucket, setOpenedByBucket] = useState<{
+    compact: { owner: string; workspace: string; panel: StudioDrawingClarityPanel } | null;
+    large: { owner: string; workspace: string; panel: StudioDrawingClarityPanel } | null;
+  }>({ compact: null, large: null });
   const owner = s.currentWorkspaceOwnerScope;
   const triggerRef = useRef<HTMLElement | null>(null);
   const route = parseStudioWorkspaceRoute(s.location);
@@ -60,26 +67,34 @@ export function StudioDrawingClarityProvider({ session: s, presentation = "integ
       baseline: s.studioDrawingClarityBaseline, ownerScope: owner, densityMode: s.uiDensityMode,
       workMode: s.workMode, search: s.location.search, toolbarConfigured: personalToolbar,
     })));
+  const opened = openedByBucket[viewportBucket];
   const panel = active && opened?.owner === owner && opened.workspace === workspace ? opened.panel : null;
   const close = useCallback(() => {
-    setOpened(null);
+    setOpenedByBucket((previous) => (previous[viewportBucket] === null ? previous : { ...previous, [viewportBucket]: null }));
     const trigger = triggerRef.current;
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
-  }, []);
+  }, [viewportBucket]);
   const open = useCallback((next: StudioDrawingClarityPanel, trigger: HTMLElement) => {
     triggerRef.current = trigger;
-    setOpened((previous) => previous?.owner === owner && previous.workspace === workspace && previous.panel === next ? null : { owner, workspace, panel: next });
-  }, [owner, workspace]);
+    setOpenedByBucket((previous) => {
+      const current = previous[viewportBucket];
+      const nextEntry = current?.owner === owner && current.workspace === workspace && current.panel === next
+        ? null
+        : { owner, workspace, panel: next };
+      return { ...previous, [viewportBucket]: nextEntry };
+    });
+  }, [owner, viewportBucket, workspace]);
   const reveal = useCallback((next: StudioDrawingClarityPanel, trigger: HTMLElement) => {
-    triggerRef.current = trigger; setOpened({ owner, workspace, panel: next });
-  }, [owner, workspace]);
+    triggerRef.current = trigger;
+    setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: next } }));
+  }, [owner, viewportBucket, workspace]);
   const setDensity = s.studioMenubarContentHandlers.setStudioUiDensity;
   const chooseSimple = useCallback(() => {
     setDensity?.("simple"); setChoice({ owner, workspace, simple: true });
     globalThis.requestAnimationFrame?.(() => document.getElementById("studio-canvas-workspace")?.focus({ preventScroll: true }));
   }, [owner, workspace, setDensity]);
   const showSavedLayout = useCallback(() => {
-    setOpened(null); setChoice({ owner, workspace, simple: false });
+    setOpenedByBucket({ compact: null, large: null }); setChoice({ owner, workspace, simple: false });
     globalThis.requestAnimationFrame?.(() => { if (!hasVisibleDialog()) document.querySelector<HTMLElement>("[data-studio-clarity-entry]")?.focus({ preventScroll: true }); });
   }, [owner, workspace]);
 

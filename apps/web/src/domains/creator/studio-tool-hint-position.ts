@@ -151,7 +151,9 @@ export function planStudioToolHintPosition({
     preferredSide === "right" || preferredSide === "left"
       ? [preferredSide, preferredSide === "right" ? "left" : "right", "bottom", "top"]
       : [preferredSide, preferredSide === "bottom" ? "top" : "bottom", "right", "left"];
-  const fittingSide = preferredAxisOrder.find((side) => room[side] >= required[side]);
+  const fittingSide =
+    preferredAxisOrder.find((side) => room[side] >= required[side]) ??
+    preferredAxisOrder.find((side) => room[side] >= renderedRequired[side]);
   let side =
     fittingSide ??
     preferredAxisOrder.reduce((best, candidate) => (room[candidate] > room[best] ? candidate : best));

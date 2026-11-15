@@ -1,4 +1,4 @@
-import { Download, History, Link2, MessageCircle, Pencil, Search, X } from "lucide-react";
+import { Download, History, Link2, MessageCircle, Search, X } from "lucide-react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -13,10 +13,8 @@ import { requestStudioAllTools } from "../studio-toolbar-channel";
 import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { StudioDrawingClaritySaveButton } from "./StudioDrawingClaritySaveButton";
 import { StudioDrawingClarityMobileBar } from "./StudioDrawingClarityMobileBar";
-import { StudioDrawingClarityExport } from "./StudioDrawingClarityExport";
 import { StudioDrawingClarityCoreTools, StudioDrawingClarityHistory } from "./StudioDrawingClarityCoreTools";
 import { StudioDrawingClarityMore } from "./StudioDrawingClarityMore";
-import { StudioDrawingQuickErgonomicsBar } from "./StudioDrawingQuickErgonomicsBar";
 import { requestStudioDrawingReliability } from "./studio-drawing-assistance-channel";
 import { requestStudioShellFloatingLayoutManagerOpen } from "../studio-shell/studio-shell-floating-layout-events";
 import { useStudioDrawingClarity, type StudioDrawingClarityPanel } from "./StudioDrawingClarityContext";
@@ -24,18 +22,21 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 
 import "./StudioDrawingClarity.css";
 
+const LazyStudioDrawingClarityExport = lazyRetry(
+  () => import("./StudioDrawingClarityExport").then((module) => ({ default: module.StudioDrawingClarityExport })),
+  "StudioDrawingClarityExport",
+);
+const LazyStudioDrawingQuickErgonomicsBar = lazyRetry(
+  () => import("./StudioDrawingQuickErgonomicsBar").then((module) => ({ default: module.StudioDrawingQuickErgonomicsBar })),
+  "StudioDrawingQuickErgonomicsBar",
+);
+
 const LazyStudioShareAndInviteDialog = lazyRetry(
   () => import("./StudioShareAndInviteDialog"),
   "StudioShareAndInviteDialog",
 );
 
-export function StudioDrawingClarityEntry() {
-  const clarity = useStudioDrawingClarity(), bt = useBilingual("studio.drawingClarity");
-  if (!clarity?.available || clarity.active) return null;
-  return <button type="button" data-studio-clarity-entry="true" className="studio-drawing-clarity-button shrink-0" onClick={clarity.chooseSimple}>
-    <Pencil size={18} aria-hidden />{bt("간단한 그리기", "Simple drawing")}
-  </button>;
-}
+export { StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
 
 /** 메뉴와 같은 명령 바인딩과 저장 책임을 쓰는 기본 드로잉 화면이다. */
 export function StudioDrawingClarityBar({ session: s }: { readonly session: StudioCuttoonEditorViewSession }) {
@@ -59,7 +60,7 @@ export function StudioDrawingClarityBar({ session: s }: { readonly session: Stud
     {s.isMobile
       ? <StudioDrawingClarityMobileBar session={s} onOpenShare={openShare} />
       : <StudioDrawingClarityDesktopBar session={s} onOpenShare={openShare} onOpenComments={openComments} />}
-    {s.exportMenuOpen ? <StudioDrawingClarityExport session={s} triggerRef={outputRef} /> : null}
+    {s.exportMenuOpen ? <Suspense fallback={null}><LazyStudioDrawingClarityExport session={s} triggerRef={outputRef} /></Suspense> : null}
     {shareOpen ? (
       <Suspense fallback={null}>
         <LazyStudioShareAndInviteDialog
@@ -152,7 +153,7 @@ function StudioDrawingClarityDesktopBar({
         { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
     </header>
-    <div className="studio-drawing-clarity-context-row"><button type="button" className="studio-drawing-page-position" onClick={(event) => clarity.open("pages", event.currentTarget)}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><StudioDrawingQuickErgonomicsBar session={s} /><div className="studio-drawing-clarity-context-actions"><StudioDrawingClarityHistory session={s} /><button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}><Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span></button></div></div>
+    <div tabIndex={-1} className="studio-drawing-clarity-context-row"><button type="button" className="studio-drawing-page-position" onClick={(event) => clarity.open("pages", event.currentTarget)}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><Suspense fallback={null}><LazyStudioDrawingQuickErgonomicsBar session={s} /></Suspense><div className="studio-drawing-clarity-context-actions"><StudioDrawingClarityHistory session={s} /><button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}><Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span></button></div></div>
     {notice ? <p role="status" className="px-3 py-1 text-xs text-fg-2">{notice}</p> : null}
   </>;
 }
@@ -170,10 +171,10 @@ export function StudioDrawingClarityRail({ session: s }: { readonly session: Stu
     clarity.open("layers", trigger);
     s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" });
   };
-  return <nav className="studio-drawing-clarity-rail" aria-label={bt("기본 그리기", "Basic drawing")}>
+  return <nav tabIndex={-1} className="studio-drawing-clarity-rail" aria-label={bt("기본 그리기", "Basic drawing")}>
     <span className="studio-drawing-rail-brand" aria-hidden><img src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" alt="" width={34} height={34} /></span>
     <StudioDrawingClarityCoreTools
-      session={s}
+      session={{ ...s, clarityPanel: clarity.panel }}
       onOpenLayers={openLayers}
       v4Actions={{
         onSelectTool: () => s.activatePrimaryCanvasTool?.("select"),

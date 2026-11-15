@@ -3,13 +3,21 @@ import {
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowRight, PanelsTopLeft, PencilLine, Plus, Zap } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { buildStudioModeLaunchHref, resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
-import { createStudioProjectWithInitialDocument } from "../studio-project-creation";
+import {
+  createStudioProjectWithInitialDocument,
+  reuseOrCreateStudioProjectWithInitialDocument,
+} from "../studio-project-creation";
+import {
+  readStudioQuickStartReceipt,
+  useStudioHistoryEntrySessionKey,
+  writeStudioQuickStartReceipt,
+} from "./studio-mode-project-create-session";
 
 const QUICK_STARTS = [
   {
@@ -50,10 +58,21 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
       en,
     );
   const navigate = useNavigate();
+  const sessionKey = useStudioHistoryEntrySessionKey();
   const errorId = useId();
   const starting = useRef(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (busyId === null || typeof window === "undefined") return;
+    const handlePopState = () => {
+      starting.current = false;
+      setBusyId(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [busyId]);
 
   function start(item: QuickStart) {
     if (starting.current) return;
@@ -62,7 +81,8 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
     setError(null);
     try {
       const plan = resolveStudioModeCreationPlan(item.kind, item.templateId);
-      const result = createStudioProjectWithInitialDocument(window.localStorage, {
+      const existingReceipt = readStudioQuickStartReceipt(sessionKey, item.id);
+      const payload = {
         title: copy(item.titleKo, item.titleEn),
         kind: item.kind,
         templateId: item.templateId,
@@ -74,7 +94,14 @@ export function StudioQuickStart({ locale, presentation = "section" }: {
           height: plan.document.height,
           pageCount: plan.document.pageCount,
         },
-      }, window);
+      };
+      const result = existingReceipt
+        ? reuseOrCreateStudioProjectWithInitialDocument(window.localStorage, existingReceipt, payload, window)
+        : createStudioProjectWithInitialDocument(window.localStorage, payload, window);
+      writeStudioQuickStartReceipt(sessionKey, item.id, {
+        projectId: result.project.id,
+        documentId: result.document.id,
+      });
       navigate(buildStudioModeLaunchHref(result, plan), { replace: false });
     } catch {
       starting.current = false;

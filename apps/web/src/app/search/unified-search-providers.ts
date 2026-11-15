@@ -163,4 +163,5 @@ export function searchUnifiedLocal(query: string): UnifiedSearchResult {
   ]);
 }
 
+export { searchUnavailableStudioFeaturesForDocument } from "@/domains/creator/planning/studio-command-search-unavailability";
 export { mergeUnifiedAssetSections, searchUnifiedAssets } from "@/shared/components/unified-search-assets";

@@ -151,8 +151,19 @@ export function useStudioMutationAuthorityRuntime({
     return true;
   }, [reportError, tryMarkStudioDocumentChangedQuietly]);
 
+  const latestLockedRef = useRef(collaborationDocumentLocked);
+  latestLockedRef.current = collaborationDocumentLocked;
+
   useLayoutEffect(() => {
     editorMountedRef.current = true;
+    const mountedCurrent = collaborationAccessRef.current;
+    if (mountedCurrent.locked !== latestLockedRef.current) {
+      collaborationAccessRef.current = {
+        ...mountedCurrent,
+        locked: latestLockedRef.current,
+        accessGeneration: mountedCurrent.accessGeneration + 1,
+      };
+    }
     return () => {
       editorMountedRef.current = false;
       documentSaveInFlightRef.current = false;

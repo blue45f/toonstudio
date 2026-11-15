@@ -161,7 +161,7 @@ export function StudioCanvasViewportDocumentLayer({
                   reconcileStudioInkwashWashWithDocument(inkwashDocumentElements);
                 }, [inkwashDocumentElements]);
                 const virtualFillPreviewTarget =
-                  !timelapseCapturing &&
+                  !timelapseCapturing && !isExporting &&
                   advancedFillPreview?.virtualTarget &&
                   advancedFillPreview.historyIndex === pagesHi
                     ? advancedFillPreview.virtualTarget
@@ -308,7 +308,7 @@ export function StudioCanvasViewportDocumentLayer({
                   return wrapRenderInteraction(clippedNode);
                 };
                 if (el.type === "image") {
-                  const isAnimTarget = frameAnimOpen && el.id === frameAnimTargetId && el.frames && el.frames.length > 1;
+                  const isAnimTarget = !isExporting && frameAnimOpen && el.id === frameAnimTargetId && el.frames && el.frames.length > 1;
                   const onion = isAnimTarget
                     ? onionSkinLayers(el.frames!, clampFrameIndex(el.frames!, frameIndexOf(el.frames!, el.activeFrameId ?? null)), onionSkin)
                     : [];
@@ -318,7 +318,7 @@ export function StudioCanvasViewportDocumentLayer({
                   // 트랙 추가가 애초에 막힘), 여기서도 방어적으로 한 번 더 가드한다.
                   const timelineOverride = isAnimTarget ? undefined : timelineComposite?.get(el.id);
                   const advancedFillPreviewSrc =
-                    !timelapseCapturing &&
+                    !timelapseCapturing && !isExporting &&
                     advancedFillPreview?.targetId === el.id &&
                     advancedFillPreview.historyIndex === pagesHi
                       ? advancedFillPreview.resultSrc

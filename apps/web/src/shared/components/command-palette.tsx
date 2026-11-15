@@ -24,7 +24,8 @@ import {
 } from "./command-palette-data";
 import { CommandPalettePreview } from "./command-palette-preview";
 import { matchesCommandSearch } from "./command-palette-search";
-import type { UnifiedSearchSection } from "./unified-search";
+import { CommandPaletteUnavailableStudioSection } from "./command-palette-unavailable-section";
+import type { UnavailableStudioFeatureMatch, UnifiedSearchSection } from "./unified-search";
 import { LoadingState } from "./LoadingState";
 import { MiniPoster } from "./rank-row";
 import { RatingInline } from "./ui/stars";
@@ -39,6 +40,7 @@ import type { Title } from "@/shared/lib/types";
 import { statsAreEstimated } from "@/shared/lib/estimate";
 import { genreTextColor } from "@/shared/lib/genre-color";
 import { useI18n, useT } from "@/shared/lib/i18n";
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
 import { useApp } from "@/shared/lib/store";
 import { TYPE_LABEL } from "@/shared/lib/taxonomy";
 import { toast } from "@/shared/lib/toast-store";
@@ -75,6 +77,7 @@ export function CommandPalette({
   const debouncedQ = useDebouncedValue(q, 140);
   const [results, setResults] = useState<Title[]>([]);
   const [localSections, setLocalSections] = useState<readonly UnifiedSearchSection[]>([]);
+  const [unavailableStudioItems, setUnavailableStudioItems] = useState<readonly UnavailableStudioFeatureMatch[]>([]);
   const [fuzzyExtras, setFuzzyExtras] = useState<FuzzyPaletteExtras>(EMPTY_FUZZY_EXTRAS);
   const [recentTitles, setRecentTitles] = useState<Title[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -94,6 +97,7 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const imeGuard = usePaletteImeGuard(open);
 
   const trimmedQ = q.trim();
   const debouncedTrimmedQ = debouncedQ.trim();
@@ -194,22 +198,35 @@ export function CommandPalette({
   // 검색어가 있을 때만 동적 import로 읽는다. 작품은 위 서버 검색, 페이지는 아래
   // filteredPages가 이미 맡고 있어 여기서는 세 유형만 채운다.
   useEffect(() => {
-    if (!open || !debouncedTrimmedQ || activeMode !== "all") {
+    if (
+      !open
+      || !debouncedTrimmedQ
+      || (activeMode !== "all" && activeMode !== "commands" && activeMode !== "studio")
+    ) {
       setLocalSections([]);
+      setUnavailableStudioItems([]);
       return;
     }
     const queryToSearch = debouncedTrimmedQ.replace(/^[>@/#?]/, "").trim();
     if (!queryToSearch) {
       setLocalSections([]);
+      setUnavailableStudioItems([]);
       return;
     }
     let alive = true;
+    const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
     void import("./unified-search-providers")
       .then((providers) => {
-        if (alive) setLocalSections(providers.searchUnifiedLocal(queryToSearch).sections);
+        if (!alive) return;
+        setLocalSections(activeMode === "all" ? providers.searchUnifiedLocal(queryToSearch).sections : []);
+        setUnavailableStudioItems(
+          providers.searchUnavailableStudioFeaturesForDocument(queryToSearch, pathname),
+        );
       })
       .catch(() => {
-        if (alive) setLocalSections([]);
+        if (!alive) return;
+        setLocalSections([]);
+        setUnavailableStudioItems([]);
       });
     return () => {
       alive = false;
@@ -316,6 +333,7 @@ export function CommandPalette({
   const createContext = (): CommandContext => ({
     router,
     closePalette: () => {
+      imeGuard.markSurfaceClosing();
       playSfx("close");
       onOpenChange(false);
     },
@@ -325,6 +343,7 @@ export function CommandPalette({
   });
 
   const go = (href: string, searchRecordQuery?: string) => {
+    if (!imeGuard.claimExecution()) return;
     if (searchRecordQuery?.trim()) {
       addRecentSearch(searchRecordQuery.trim());
     }
@@ -335,7 +354,7 @@ export function CommandPalette({
 
   const executeCommand = (cmdId: string) => {
     const command = PALETTE_COMMANDS.find((c) => c.id === cmdId);
-    if (!command) return;
+    if (!command || !imeGuard.claimExecution({ closesSurface: false })) return;
     command.action(createContext());
   };
 
@@ -352,6 +371,7 @@ export function CommandPalette({
 
     const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
     if (currentPath.startsWith("/studio")) {
+      if (!imeGuard.claimExecution()) return;
       // Dispatch key event to Studio canvas
       window.dispatchEvent(
         new KeyboardEvent("keydown", {
@@ -376,6 +396,10 @@ export function CommandPalette({
 
   // Tab keeps its native focus-navigation contract. Arrow keys move within the category tablist.
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (imeGuard.shouldIgnoreKeyDown(e)) {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Backspace" && !q && mode !== "all") {
       setMode("all");
     }
@@ -423,6 +447,13 @@ export function CommandPalette({
   const visibleCommands = fuzzySettled ? [...filteredCommands, ...fuzzyExtras.commands] : filteredCommands;
   const visibleStudioTools = fuzzySettled ? [...filteredStudioTools, ...fuzzyExtras.tools] : filteredStudioTools;
   const visiblePages = fuzzySettled ? [...filteredPages, ...fuzzyExtras.pages] : filteredPages;
+  const directTitlesSet = new Set([
+    ...visibleCommands.map((item) => item.title),
+    ...visibleStudioTools.map((item) => item.name),
+  ]);
+  const visibleUnavailableStudioItems = fuzzySettled
+    ? unavailableStudioItems.filter((item) => !directTitlesSet.has(item.label))
+    : [];
 
   // Determine currently selected item for the Live Inspector preview
   let selectedItem: PaletteSelectedItem = null;
@@ -503,7 +534,7 @@ export function CommandPalette({
         }
       }}
       onEscapeKeyDown={(event) => {
-        if (event.isComposing || event.keyCode === 229) event.preventDefault();
+        if (imeGuard.isComposingNow() || imeGuard.shouldIgnoreKeyDown(event)) event.preventDefault();
       }}
       className="fixed inset-0 z-[100] flex items-start justify-center px-3 pt-3 pb-3 sm:px-4 sm:pt-[10dvh]"
     >
@@ -627,6 +658,7 @@ export function CommandPalette({
               results.length === 0 &&
               visibleCommands.length === 0 &&
               visibleStudioTools.length === 0 &&
+              visibleUnavailableStudioItems.length === 0 &&
               visiblePages.length === 0 && (
                 <div className="px-4 py-12 text-center text-sm text-fg-3">
                   <p>{t("common.notFoundWithQuery").replace("{query}", `'${effectiveQuery}'`)}</p>
@@ -805,6 +837,12 @@ export function CommandPalette({
                 })}
               </Command.Group>
             )}
+
+            <CommandPaletteUnavailableStudioSection
+              items={visibleUnavailableStudioItems}
+              query={effectiveQuery}
+              onNavigate={go}
+            />
 
             {/* Studio Tools Section */}
             {visibleStudioTools.length > 0 && (

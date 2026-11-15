@@ -170,10 +170,41 @@ function jsonValue(bytes: Uint8Array, path: string): unknown {
   }
 }
 
+const SUPPORTED_SNAPSHOT_MAX_VERSION = 6;
+
+function detectFutureSnapshotVersion(raw: string): number | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const outer = parsed as Record<string, unknown>;
+    const outerVersion = typeof outer.version === "number" && Number.isFinite(outer.version)
+      ? outer.version
+      : null;
+    if (outerVersion !== null && outerVersion > SUPPORTED_SNAPSHOT_MAX_VERSION) {
+      return outerVersion;
+    }
+    if (outer.payload && typeof outer.payload === "object" && !Array.isArray(outer.payload)) {
+      const innerVersion = (outer.payload as Record<string, unknown>).version;
+      if (typeof innerVersion === "number" && Number.isFinite(innerVersion) && innerVersion > SUPPORTED_SNAPSHOT_MAX_VERSION) {
+        return innerVersion;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function parseManifest(value: unknown): PackageManifest {
   const input = record(value);
-  if (input.format !== "toonstudio-project" || input.formatVersion !== 1) {
-    throw new Error("지원하지 않는 ToonStudio 프로젝트 패키지 버전입니다.");
+  if (input.format !== "toonstudio-project") {
+    throw new Error("지원하지 않는 ToonStudio 프로젝트 패키지 형식입니다.");
+  }
+  if (input.formatVersion !== 1) {
+    const versionSuffix = typeof input.formatVersion === "number" && Number.isFinite(input.formatVersion)
+      ? ` (파일 v${input.formatVersion}, 현재 지원 v1)`
+      : "";
+    throw new Error(`지원하지 않는 ToonStudio 프로젝트 패키지 버전입니다${versionSuffix}.`);
   }
   if (!Array.isArray(input.entryNames) || input.entryNames.some((entry) => typeof entry !== "string")) {
     throw new Error("ToonStudio 프로젝트 패키지 manifest의 파일 목록이 올바르지 않습니다.");
@@ -187,8 +218,14 @@ function parseManifest(value: unknown): PackageManifest {
 
 function parseWorkspaceIndex(value: unknown): WorkspaceIndex {
   const input = record(value);
-  if (input.format !== "toonstudio-project-workspace" || input.formatVersion !== 1) {
+  if (input.format !== "toonstudio-project-workspace") {
     throw new Error("지원하지 않는 ToonStudio 원고 저장 형식입니다.");
+  }
+  if (input.formatVersion !== 1) {
+    const versionSuffix = typeof input.formatVersion === "number" && Number.isFinite(input.formatVersion)
+      ? ` (파일 v${input.formatVersion}, 현재 지원 v1)`
+      : "";
+    throw new Error(`지원하지 않는 ToonStudio 원고 저장 형식 버전입니다${versionSuffix}.`);
   }
   if (!Array.isArray(input.documents)) {
     throw new Error("ToonStudio 원고 index에 문서 목록이 없습니다.");
@@ -310,8 +347,17 @@ async function parseStudioProjectPackage(
       throw new Error(`ToonStudio 프로젝트 패키지에 원고 스냅샷이 없습니다: ${path}`);
     }
     const bytes = await archive.readEntry(path, { signal });
-    const snapshot = parseStudioAutosave(decoder.decode(bytes));
-    if (!snapshot) throw new Error(`ToonStudio 원고 스냅샷이 손상되었습니다: ${path}`);
+    const rawSnapshot = decoder.decode(bytes);
+    const snapshot = parseStudioAutosave(rawSnapshot);
+    if (!snapshot) {
+      const futureVersion = detectFutureSnapshotVersion(rawSnapshot);
+      if (futureVersion !== null) {
+        throw new Error(
+          `지원하지 않는 상위 버전의 ToonStudio 원고 스냅샷입니다 (파일 v${futureVersion}, 현재 지원 최대 v${SUPPORTED_SNAPSHOT_MAX_VERSION}): ${path}`,
+        );
+      }
+      throw new Error(`ToonStudio 원고 스냅샷이 손상되었습니다: ${path}`);
+    }
     if (hasStudioBg3dSixPassAutosaveMarkers(snapshot)) {
       throw new Error("6패스 묶음의 본문을 포함하지 않는 .toonstudio 파일은 가져올 수 없습니다. 원본 원고에서 .toonproject.zip으로 내보낸 파일을 사용해 주세요.");
     }

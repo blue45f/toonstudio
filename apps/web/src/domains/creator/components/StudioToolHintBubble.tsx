@@ -46,6 +46,7 @@ export interface StudioToolHintBubbleProps {
   readonly reducedMotion?: boolean;
   readonly unavailableReason?: string;
   readonly preferredSide?: StudioToolHintSide;
+  readonly pointerEventsNone?: boolean;
   readonly className?: string;
   readonly onMouseEnter?: MouseEventHandler<HTMLDivElement>;
   readonly onMouseLeave?: MouseEventHandler<HTMLDivElement>;
@@ -156,6 +157,7 @@ export function StudioToolHintBubble({
   reducedMotion = false,
   unavailableReason,
   preferredSide,
+  pointerEventsNone = false,
   className,
   onMouseEnter,
   onMouseLeave,
@@ -255,7 +257,8 @@ export function StudioToolHintBubble({
       data-side={position.side}
       id={id ?? defaultHintId(hint)}
       className={cn(
-        "pointer-events-auto fixed z-[200] max-h-[calc(100vh-1.25rem)] overflow-visible rounded-lg border border-line/80",
+        pointerEventsNone ? "pointer-events-none" : "pointer-events-auto",
+        "fixed z-[200] max-h-[calc(100vh-1.25rem)] overflow-visible rounded-lg border border-line/80",
         "bg-panel/98 text-left shadow-[0_20px_56px_oklch(0.06_0.01_70/0.66)] backdrop-blur-xl",
         reducedMotion
           ? "transition-none"

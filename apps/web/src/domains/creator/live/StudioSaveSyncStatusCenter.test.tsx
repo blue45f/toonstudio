@@ -482,4 +482,128 @@ describe("drawing save purpose screen", () => {
     expect(action.compareDocumentPosition(getActiveEditorStatusSlot()!.element) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     fireEvent.click(action); expect(retry).toHaveBeenCalledTimes(1);
   });
+
+  it("matches completed and saving states to the active cut in drawing presentation", () => {
+    const { rerender } = render(
+      <StudioSaveSyncStatusCenter
+        presentation="drawing"
+        journal={createEmptyOperationJournal("drawing")}
+        statusOverride={{ ...status, pendingOperationsCount: 1, cloudSyncStatus: "pending" }}
+        cutMatch={{
+          state: "saving",
+          activePageId: "cut-2",
+          activePageLabel: "2페이지",
+          matchedPageId: null,
+          matchedPageLabel: null,
+          receiptSavedPageId: "cut-1",
+          receiptSavedPageLabel: "1페이지",
+        }}
+      />,
+    );
+    const savingDialog = drawingDialog();
+    const savingTrigger = screen.getByRole("button", { name: "저장 상태 열기: 이 기기에 저장 중" });
+    expect(savingTrigger.getAttribute("data-studio-local-save-state")).toBe("pending");
+    expect(savingTrigger.getAttribute("data-studio-save-matched-page-id")).toBeNull();
+    fireEvent.click(savingTrigger);
+    expect(savingDialog.querySelector('[data-studio-save-cut-match="saving"]')?.textContent).toContain("2페이지");
+
+    rerender(
+      <StudioSaveSyncStatusCenter
+        presentation="drawing"
+        journal={createEmptyOperationJournal("drawing")}
+        statusOverride={status}
+        cutMatch={{
+          state: "matched",
+          activePageId: "cut-2",
+          activePageLabel: "2페이지",
+          matchedPageId: "cut-2",
+          matchedPageLabel: "2페이지",
+          receiptSavedPageId: "cut-2",
+          receiptSavedPageLabel: "2페이지",
+        }}
+      />,
+    );
+    const matchedTrigger = screen.getByRole("button", { name: /^저장 상태 열기: 이 기기 ·/u });
+    expect(matchedTrigger.getAttribute("data-studio-local-save-state")).toBe("saved");
+    expect(matchedTrigger.getAttribute("data-studio-save-matched-page-id")).toBe("cut-2");
+    expect(matchedTrigger.getAttribute("data-studio-save-matched-page-label")).toBe("2페이지");
+    expect(matchedTrigger.querySelector('[data-studio-clarity-cut-match="true"]')?.textContent).toContain("2페이지");
+    expect(savingDialog.querySelector('[data-studio-save-cut-match="matched"]')?.textContent).toContain("2페이지");
+  });
+
+  it("offers direct local backup download and suppresses saving badge during quota failure", async () => {
+    const { createStudioSaveSyncSignalStore, resolveSaveSyncCutMatch, resolveSaveSyncStatusFromSignals } =
+      await import("../studio-save-sync-signals");
+    const signalStore = createStudioSaveSyncSignalStore();
+    signalStore.reset("doc-quota");
+    signalStore.noteActivePage("cut-1", "EP01 원고");
+    signalStore.noteDurableReceipt({
+      savedAtMs: 1_000,
+      authority: "opfs-journal",
+      sequence: 1,
+      revision: 1,
+      generation: 1,
+      savedPageId: "cut-1",
+      savedPageLabel: "EP01 원고",
+    });
+    // Same-millisecond quota failure must never stay falsely "saved".
+    signalStore.noteEditGeneration(2);
+    signalStore.noteFailure(1_000);
+    const failedStatus = resolveSaveSyncStatusFromSignals(signalStore.getSignals());
+    const failedCutMatch = resolveSaveSyncCutMatch(signalStore.getSignals(), failedStatus);
+    expect(failedStatus.localDurable).toBe(false);
+    expect(failedCutMatch.state).toBe("unmatched");
+
+    const onRetrySave = vi.fn();
+    const onDownloadLocalBackup = vi.fn();
+    const { rerender } = render(
+      <StudioSaveSyncStatusCenter
+        presentation="drawing"
+        journal={createEmptyOperationJournal("doc-quota")}
+        statusOverride={failedStatus}
+        cutMatch={failedCutMatch}
+        onRetrySave={onRetrySave}
+        onDownloadLocalBackup={onDownloadLocalBackup}
+      />,
+    );
+    const dialog = drawingDialog();
+    const trigger = screen.getByRole("button", { name: "저장 상태 열기: 저장 확인 필요" });
+    expect(trigger.getAttribute("data-studio-local-save-state")).toBe("failed");
+    fireEvent.click(trigger);
+
+    expect(dialog.querySelector('[data-studio-save-cut-match="saving"]')).toBeNull();
+    const backupBtn = screen.getByRole("button", { name: "로컬 백업 내려받기" });
+    expect(backupBtn.getAttribute("data-studio-download-local-backup")).toBe("true");
+    expect(
+      backupBtn.compareDocumentPosition(getActiveEditorStatusSlot()!.element)
+        & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    fireEvent.click(backupBtn);
+    expect(onDownloadLocalBackup).toHaveBeenCalledTimes(1);
+
+    // Retry succeeds even if payload.savedAtMs was captured before failure recorded its timestamp.
+    signalStore.noteDurableReceipt({
+      savedAtMs: 1_000,
+      authority: "opfs-journal",
+      sequence: 2,
+      revision: 2,
+      generation: 2,
+      savedPageId: "cut-1",
+      savedPageLabel: "EP01 원고",
+    });
+    const recoveredStatus = resolveSaveSyncStatusFromSignals(signalStore.getSignals());
+    expect(recoveredStatus.localDurable).toBe(true);
+    expect(recoveredStatus.pendingOperationsCount).toBe(0);
+    rerender(
+      <StudioSaveSyncStatusCenter
+        presentation="drawing"
+        journal={createEmptyOperationJournal("doc-quota")}
+        statusOverride={recoveredStatus}
+        cutMatch={resolveSaveSyncCutMatch(signalStore.getSignals(), recoveredStatus)}
+        onRetrySave={onRetrySave}
+        onDownloadLocalBackup={onDownloadLocalBackup}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "로컬 백업 내려받기" })).toBeNull();
+  });
 });

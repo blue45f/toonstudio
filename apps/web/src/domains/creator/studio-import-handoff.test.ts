@@ -17,7 +17,20 @@ beforeEach(clearStudioImportHandoffsForTests);
 describe("Studio import handoff", () => {
   it("allows the portable ToonStudio project package at the import front door", () => {
     expect(STUDIO_IMPORT_HANDOFF_ACCEPT).toContain(".toonstudio");
+    expect(STUDIO_IMPORT_HANDOFF_ACCEPT).toContain(".toonproject.zip");
     expect(STUDIO_IMPORT_HANDOFF_ACCEPT).toContain("application/vnd.toonstudio.project+zip");
+  });
+
+  it("routes self-contained .toonproject.zip files to project-archive while keeping raw .json on project-json", () => {
+    const archive = new File(["PK"], "episode.toonproject.zip", {
+      type: "application/vnd.toonstudio.project+zip",
+    });
+    const rawJson = new File(["{\"pages\":[]}"], "episode.json", {
+      type: "application/json",
+    });
+
+    expect(registerStudioImportHandoff(archive, "json", 1_000).target).toBe("project-archive");
+    expect(registerStudioImportHandoff(rawJson, "json", 1_000).target).toBe("project-json");
   });
 
   it("maps only formats already owned by the established editor import handlers", () => {

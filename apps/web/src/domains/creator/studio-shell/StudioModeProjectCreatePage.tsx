@@ -2,7 +2,7 @@ import {
   Lightbulb,
   Upload,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import Link from "@/shared/navigation/router-link";
@@ -48,7 +48,10 @@ import {
   type StudioCreateLane,
 } from "../studio-create-lane";
 import { buildStudioModeLaunchHref, resolveStudioModeCreationPlan } from "../studio-mode-creation-plan";
-import { createStudioProjectWithInitialDocument } from "../studio-project-creation";
+import {
+  createStudioProjectWithInitialDocument,
+  reuseOrCreateStudioProjectWithInitialDocument,
+} from "../studio-project-creation";
 import { STUDIO_PROJECT_CREATE_TEMPLATES } from "../save-first/studio-project-create-options";
 import { ensureStudioSaveProfile } from "../save-first/studio-save-profile";
 import {
@@ -62,15 +65,22 @@ import {
   normalizedRequestedTemplate,
   onboardingStartPointFromProject,
   parseCanvasDimension,
-  projectCollaborationFromOnboarding,
   projectPurposeFromOnboarding,
   projectStartPointFromOnboarding,
   requestedAuxiliary,
+  requestedCollaboration,
   requestedFormat,
+  requestedSizeOverride,
   requestedStartPoint,
   standaloneDocumentTitle,
   type AuxiliaryKind,
 } from "./studio-mode-project-create-helpers";
+import {
+  readStudioCreateSessionDraft,
+  useStudioHistoryEntrySessionKey,
+  writeStudioCreateSessionDraft,
+  type StudioCreatedWorkReceipt,
+} from "./studio-mode-project-create-session";
 import { StudioCanvasSafeZoneSimulator } from "./guided-flow/StudioCanvasSafeZoneSimulator";
 import { findGuidedGenreStarter } from "./guided-flow/studio-guided-flow-catalog";
 import { StudioCreateProductionPlanSection } from "./guided-flow/StudioCreateProductionPlanSection";
@@ -91,11 +101,14 @@ export function StudioModeProjectCreatePage() {
   const bt = useBilingual("StudioModeProjectCreatePage");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const sessionKey = useStudioHistoryEntrySessionKey();
+  const savedDraft = useMemo(() => readStudioCreateSessionDraft(sessionKey), [sessionKey]);
   const locale = useI18n((state) => state.lang) === "ko" ? "ko" : "en";
-  const initialPreset = findGuidedGenreStarter(searchParams.get("preset"));
+  const rawPresetParam = searchParams.get("preset");
+  const initialPreset = findGuidedGenreStarter(rawPresetParam);
   const requestedTemplateId = searchParams.get("template") ?? initialPreset?.templateId ?? null;
   const requestedSelection = webtoonOnboardingSelectionFromSearchParams(searchParams);
-  const initialFormatId = requestedFormat(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId);
+  const initialFormatId = requestedFormat(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId, rawPresetParam);
   const initialFormat = studioProjectFormatProfile(initialFormatId);
   const initialAuxiliary = requestedAuxiliary(searchParams.get("format"), searchParams.get("kind"), requestedTemplateId);
   const normalizedTemplateId = normalizedRequestedTemplate(initialFormatId, requestedTemplateId);
@@ -103,49 +116,117 @@ export function StudioModeProjectCreatePage() {
   const initialAuxiliaryTemplate = initialAuxiliary
     ? STUDIO_PROJECT_CREATE_TEMPLATES[initialAuxiliary.id].find((candidate) => candidate.id === requestedTemplateId)?.id ?? initialAuxiliary.templateId
     : null;
+  const initialSelectedTemplateId = initialAuxiliaryTemplate ?? initialMainTemplate.id;
+  const initialModePlan = resolveStudioModeCreationPlan(initialAuxiliary?.id ?? initialFormat.projectKind, initialSelectedTemplateId);
 
-  const [formatId, setFormatId] = useState<StudioProjectFormat>(initialFormatId);
-  const [auxiliaryKind, setAuxiliaryKind] = useState<AuxiliaryKind | null>(initialAuxiliary?.id ?? null);
-  const [templateId, setTemplateId] = useState(initialAuxiliaryTemplate ?? initialMainTemplate.id);
+  const [formatId, setFormatId] = useState<StudioProjectFormat>(() => savedDraft?.formatId ?? initialFormatId);
+  const [auxiliaryKind, setAuxiliaryKind] = useState<AuxiliaryKind | null>(
+    () => savedDraft ? savedDraft.auxiliaryKind : (initialAuxiliary?.id ?? null),
+  );
+  const [templateId, setTemplateId] = useState(() => savedDraft?.templateId ?? initialSelectedTemplateId);
   const requestedTitle = normalizeStudioProjectTitleDraft(searchParams.get("title"));
-  const [title, setTitle] = useState(() => requestedTitle ?? (initialAuxiliary ? bt(initialAuxiliary.defaultTitleKo, initialAuxiliary.defaultTitleEn) : bt(initialFormat.defaultTitleKo, initialFormat.defaultTitleEn)));
-  const [titleEdited, setTitleEdited] = useState(requestedTitle !== null);
+  const [title, setTitle] = useState(() => savedDraft?.title ?? requestedTitle ?? (initialAuxiliary ? bt(initialAuxiliary.defaultTitleKo, initialAuxiliary.defaultTitleEn) : bt(initialFormat.defaultTitleKo, initialFormat.defaultTitleEn)));
+  const [titleEdited, setTitleEdited] = useState(() => savedDraft?.titleEdited ?? (requestedTitle !== null));
   const requestedStart = requestedStartPoint(searchParams.get("start"));
   const entryLane = resolveStudioCreateLane(searchParams);
   const explicitEntryLane = studioCreateExplicitLane(searchParams);
-  const [lane, setLane] = useState<StudioCreateLane | null>(entryLane);
+  const [lane, setLane] = useState<StudioCreateLane | null>(() => savedDraft ? savedDraft.lane : entryLane);
   // 작품 홈에서 직접 적어 온 한 줄 아이디어만 표시하고, 장르 프리셋의 샘플 가제는 제외한다.
   const importedIdea = !initialPreset && requestedStart === "idea" ? requestedTitle : null;
   const [startPoint, setStartPoint] = useState<StudioProjectStartPoint>(
-    requestedStart
+    () => savedDraft?.startPoint
+      ?? requestedStart
       ?? (entryLane ? studioCreateLaneSpec(entryLane).startPoint : null)
       ?? projectStartPointFromOnboarding(requestedSelection?.startingPoint),
   );
   const [purpose, setPurpose] = useState<StudioProjectPurpose>(
-    projectPurposeFromOnboarding(requestedSelection?.goal),
+    () => savedDraft?.purpose ?? projectPurposeFromOnboarding(requestedSelection?.goal),
   );
   const [collaboration, setCollaboration] = useState<StudioProjectCollaboration>(
-    projectCollaborationFromOnboarding(requestedSelection?.teamModel),
+    () => savedDraft?.collaboration ?? requestedCollaboration(searchParams.get("collab"), requestedSelection?.teamModel),
   );
   // 관문이 명시한 레인은 착지를 레인이 결정하므로, 제작 계획을 자동으로 켜서 착지를 가로채지 않는다.
   // 사용자가 토글로 직접 켜면 그때부터 제작 계획 착지를 따른다. 온보딩 흐름(?onboarding=production)은
   // 레인을 명시하지 않으므로 기존 자동 활성화를 유지한다.
   const [onboardingEnabled, setOnboardingEnabled] = useState(
-    Boolean(requestedSelection)
-      && (explicitEntryLane === null || searchParams.get("onboarding") === "production"),
+    () => savedDraft?.onboardingEnabled ?? (
+      Boolean(requestedSelection)
+        && (explicitEntryLane === null || searchParams.get("onboarding") === "production")
+    ),
   );
   const [selection, setSelection] = useState<WebtoonOnboardingSelection>(
-    requestedSelection ?? DEFAULT_WEBTOON_ONBOARDING_SELECTION,
+    () => savedDraft?.selection ?? requestedSelection ?? DEFAULT_WEBTOON_ONBOARDING_SELECTION,
   );
   // 템플릿이 정한 초기 크기를 숫자로 덮어쓴 값. null이면 템플릿 크기를 그대로 쓴다.
-  const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(null);
+  const [sizeOverride, setSizeOverride] = useState<{ width: string; height: string } | null>(
+    () => savedDraft
+      ? savedDraft.sizeOverride
+      : requestedSizeOverride(
+        searchParams.get("width"),
+        searchParams.get("height"),
+        initialModePlan.document.width,
+        initialModePlan.document.height,
+      ),
+  );
   const [activeQuickPresetId, setActiveQuickPresetId] = useState<string | null>(
-    () => initialPreset?.quickPresetId ?? null,
+    () => savedDraft ? savedDraft.activeQuickPresetId : (initialPreset?.quickPresetId ?? null),
   );
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const advancedSettingsRef = useRef<HTMLDetailsElement>(null);
-  const stepFlow = useStudioCreateStepFlow(initialPreset || explicitEntryLane || requestedTemplateId ? 2 : 1);
+  const creatingInFlightRef = useRef(false);
+  const createdReceiptRef = useRef<StudioCreatedWorkReceipt | null>(savedDraft?.createdReceipt ?? null);
+  const stepFlow = useStudioCreateStepFlow(
+    savedDraft?.step
+      ?? (initialPreset || explicitEntryLane || requestedTemplateId || searchParams.has("width") || searchParams.has("height") ? 2 : 1),
+  );
+
+  // 생성 직후 지연 라우트(Suspense) 로딩 중에 뒤로 가기로 복귀한 경우 잠금을 해제해 재시도를 허용한다.
+  useEffect(() => {
+    if (!creating || typeof window === "undefined") return;
+    const handlePopState = () => {
+      creatingInFlightRef.current = false;
+      setCreating(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [creating]);
+
+  useEffect(() => {
+    writeStudioCreateSessionDraft(sessionKey, {
+      formatId,
+      auxiliaryKind,
+      templateId,
+      title,
+      titleEdited,
+      lane,
+      startPoint,
+      purpose,
+      collaboration,
+      onboardingEnabled,
+      selection,
+      sizeOverride,
+      activeQuickPresetId,
+      step: stepFlow.step,
+      createdReceipt: createdReceiptRef.current,
+    });
+  }, [
+    activeQuickPresetId,
+    auxiliaryKind,
+    collaboration,
+    formatId,
+    lane,
+    onboardingEnabled,
+    purpose,
+    selection,
+    sessionKey,
+    sizeOverride,
+    startPoint,
+    stepFlow.step,
+    templateId,
+    title,
+    titleEdited,
+  ]);
 
   const format = studioProjectFormatProfile(formatId);
   const auxiliary = STUDIO_AUXILIARY_WORKSPACE_OPTIONS.find((option) => option.id === auxiliaryKind) ?? null;
@@ -246,7 +327,8 @@ export function StudioModeProjectCreatePage() {
 
   function create(): boolean {
     const normalizedTitle = title.trim();
-    if (creating || !normalizedTitle || !sizeReady) return false;
+    if (creatingInFlightRef.current || creating || !normalizedTitle || !sizeReady) return false;
+    creatingInFlightRef.current = true;
     setCreating(true);
     setError(null);
     try {
@@ -258,7 +340,7 @@ export function StudioModeProjectCreatePage() {
           effectiveStartPoint,
           collaboration,
         );
-      const result = createStudioProjectWithInitialDocument(window.localStorage, {
+      const creationInput = {
         title: normalizedTitle,
         kind: activeKind,
         templateId: selectedTemplateId,
@@ -274,7 +356,33 @@ export function StudioModeProjectCreatePage() {
           height: documentHeight,
           pageCount: selectedPageCount,
         },
-      }, window);
+      };
+      const existingReceipt = createdReceiptRef.current;
+      const result = existingReceipt
+        ? reuseOrCreateStudioProjectWithInitialDocument(window.localStorage, existingReceipt, creationInput, window)
+        : createStudioProjectWithInitialDocument(window.localStorage, creationInput, window);
+      const nextReceipt: StudioCreatedWorkReceipt = {
+        projectId: result.project.id,
+        documentId: result.document.id,
+      };
+      createdReceiptRef.current = nextReceipt;
+      writeStudioCreateSessionDraft(sessionKey, {
+        formatId,
+        auxiliaryKind,
+        templateId,
+        title,
+        titleEdited,
+        lane,
+        startPoint,
+        purpose,
+        collaboration,
+        onboardingEnabled,
+        selection,
+        sizeOverride,
+        activeQuickPresetId,
+        step: stepFlow.step,
+        createdReceipt: nextReceipt,
+      });
       ensureStudioSaveProfile(window.localStorage, result.project.id, {
         provider: "browser",
         autoSave: true,
@@ -287,34 +395,33 @@ export function StudioModeProjectCreatePage() {
           window.localStorage,
           createStudioWebtoonOnboardingProfile(result.project.id, selection, result.project.createdAt),
         );
-        navigate(webtoonOnboardingProjectHref(result.project.id, selection), { replace: true });
+        navigate(webtoonOnboardingProjectHref(result.project.id, selection));
         return true;
       }
       if (!auxiliary && effectiveStartPoint === "files") {
-        navigate(`/studio/import?projectId=${encodeURIComponent(result.project.id)}&format=${format.id}`, {
-          replace: true,
-        });
+        navigate(`/studio/import?projectId=${encodeURIComponent(result.project.id)}&format=${format.id}`);
         return true;
       }
       // 레인 착지 (S2-7): 콘티·빈 캔버스·템플릿 레인은 재료 기본값(idea)이 아니라
       // 에디터로 착지한다. 이야기 레인과 레인 없는 진입은 아래 기존 착지(기획)를 따른다.
       if (!auxiliary && studioCreateLanding(lane) === "editor") {
         const launchHref = buildStudioModeLaunchHref(result, modePlan);
-        navigate(hrefWithFormat(launchHref, format.id), { replace: true });
+        navigate(hrefWithFormat(launchHref, format.id));
         return true;
       }
       if (!auxiliary && effectiveStartPoint === "idea") {
-        navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story`, { replace: true });
+        navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story`);
         return true;
       }
       if (!auxiliary && effectiveStartPoint === "script") {
-        navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story?view=script`, { replace: true });
+        navigate(`/studio/p/${encodeURIComponent(result.project.id)}/story?view=script`);
         return true;
       }
       const launchHref = buildStudioModeLaunchHref(result, modePlan);
-      navigate(auxiliary ? launchHref : hrefWithFormat(launchHref, format.id), { replace: true });
+      navigate(auxiliary ? launchHref : hrefWithFormat(launchHref, format.id));
       return true;
     } catch (cause) {
+      creatingInFlightRef.current = false;
       setCreating(false);
       setError(cause instanceof Error
         ? cause.message

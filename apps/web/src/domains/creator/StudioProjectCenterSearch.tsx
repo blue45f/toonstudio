@@ -1,23 +1,7 @@
-import {
-  Clock3,
-  CornerDownLeft,
-  Search,
-  Star,
-  X,
-} from "lucide-react";
-import {
-  Suspense,
-  lazy,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactElement,
-} from "react";
+import { Clock3, CornerDownLeft, Search, Star, X } from "lucide-react";
+import { Suspense, lazy, useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactElement } from "react";
 import { createPortal } from "react-dom";
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
 
 import {
   createStudioProjectCenterActionKey,
@@ -27,6 +11,7 @@ import {
   rankStudioProjectCenterActions,
   type StudioProjectCenterSearchRecord,
 } from "./studio-project-center-search-model";
+import { StudioProjectCenterDisabledGuidance } from "./planning/StudioProjectCenterDisabledGuidance";
 import { StudioSurfaceState } from "./StudioSurfaceState";
 import { frozenStatus5Text } from "./status-i18n/studio-frozen5-status-i18n";
 
@@ -492,6 +477,8 @@ export function StudioProjectCenterSearch(): ReactElement {
     };
   }, [rebuildIndex, rememberRecent]);
 
+  const imeGuard = usePaletteImeGuard(true);
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const panel = rootRef.current?.closest<HTMLElement>(
@@ -509,7 +496,7 @@ export function StudioProjectCenterSearch(): ReactElement {
         inputRef.current?.focus({ preventScroll: true });
         return;
       }
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || imeGuard.shouldIgnoreKeyDown(event)) return;
       if (normalizeStudioProjectCenterText(query)) {
         event.preventDefault();
         event.stopPropagation();
@@ -524,7 +511,7 @@ export function StudioProjectCenterSearch(): ReactElement {
     };
     document.addEventListener("keydown", onKeyDown, true);
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [query, scope]);
+  }, [imeGuard, query, scope]);
 
   const normalizedQuery = normalizeStudioProjectCenterText(query);
   const queryActive = normalizedQuery.length > 0;
@@ -626,6 +613,7 @@ export function StudioProjectCenterSearch(): ReactElement {
       setAnnouncement(reason || frozenStatus5Text("studio.frozenStatus5.search.actionUnavailable", { label: action.label }, "{label}은 현재 프로젝트 상태에서 사용할 수 없습니다."));
       return;
     }
+    if (!imeGuard.claimExecution({ closesSurface: false })) return;
     setAnnouncement(frozenStatus5Text("studio.frozenStatus5.search.actionExecuted", { label: action.label }, "{label} 실행"));
     rememberRecent(action.key);
     delegatedActionTargetRef.current = action.target;
@@ -634,7 +622,7 @@ export function StudioProjectCenterSearch(): ReactElement {
     } finally {
       delegatedActionTargetRef.current = null;
     }
-  }, [rememberRecent]);
+  }, [imeGuard, rememberRecent]);
 
   const toggleFavorite = useCallback((action: IndexedProjectAction) => {
     const current = favoriteKeysRef.current;
@@ -659,7 +647,10 @@ export function StudioProjectCenterSearch(): ReactElement {
   const onSearchKeyDown = useCallback((
     event: ReactKeyboardEvent<HTMLInputElement>,
   ) => {
-    if (event.nativeEvent.isComposing) return;
+    if (imeGuard.shouldIgnoreKeyDown(event)) {
+      if (event.key === "Enter" || event.key === "Escape") event.preventDefault();
+      return;
+    }
     if (visibleResults.length === 0) {
       if (event.key === "ArrowDown" && !queryActive && scope === "all") {
         const firstAvailable = actions.find((action) => !action.disabled);
@@ -709,15 +700,7 @@ export function StudioProjectCenterSearch(): ReactElement {
         break;
       }
     }
-  }, [
-    actions,
-    activeIndex,
-    invokeAction,
-    queryActive,
-    scope,
-    toggleFavorite,
-    visibleResults,
-  ]);
+  }, [actions, activeIndex, imeGuard, invokeAction, queryActive, scope, toggleFavorite, visibleResults]);
 
   const scopeStatus = queryActive
     ? `${rankedActions.length}/${actions.length}개`
@@ -981,9 +964,7 @@ export function StudioProjectCenterSearch(): ReactElement {
                       data-active={active ? "true" : "false"}
                       className={cn(
                         "grid grid-cols-[minmax(0,1fr)_2.5rem] items-stretch rounded-lg border transition-colors",
-                        active
-                          ? "border-accent/35 bg-accent/10"
-                          : "border-transparent hover:bg-raised",
+                        active ? "border-accent/35 bg-accent/10" : "border-transparent hover:bg-raised",
                       )}
                       onMouseEnter={() => setActiveIndex(index)}
                     >
@@ -997,16 +978,10 @@ export function StudioProjectCenterSearch(): ReactElement {
                         className="min-w-0 px-3 py-2.5 text-left disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                       >
                         <span className="flex items-center justify-between gap-2">
-                          <span className="truncate text-[0.72rem] font-black text-fg">
-                            {action.label}
-                          </span>
-                          <span className="shrink-0 rounded-full border border-line bg-card px-1.5 py-0.5 text-[0.54rem] font-bold text-fg-3">
-                            {action.sectionLabel}
-                          </span>
+                          <span className="truncate text-[0.72rem] font-black text-fg">{action.label}</span>
+                          <span className="shrink-0 rounded-full border border-line bg-card px-1.5 py-0.5 text-[0.54rem] font-bold text-fg-3">{action.sectionLabel}</span>
                         </span>
-                        <span className="mt-1 line-clamp-2 block text-[0.61rem] leading-relaxed text-fg-3">
-                          {action.description}
-                        </span>
+                        <span className="mt-1 line-clamp-2 block text-[0.61rem] leading-relaxed text-fg-3">{action.description}</span>
                       </button>
                       <button
                         type="button"
@@ -1017,12 +992,17 @@ export function StudioProjectCenterSearch(): ReactElement {
                         onClick={() => toggleFavorite(action)}
                         className="grid place-items-center rounded-r-lg text-fg-3 hover:bg-card hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                       >
-                        <Star
-                          size={15}
-                          aria-hidden
-                          className={favorite ? "fill-current text-accent" : undefined}
-                        />
+                        <Star size={15} aria-hidden className={favorite ? "fill-current text-accent" : undefined} />
                       </button>
+                      {action.disabled ? (
+                        <StudioProjectCenterDisabledGuidance
+                          sectionLabel={action.sectionLabel}
+                          description={action.description}
+                          hasFileControl={Boolean(fileControlHost)}
+                          onOpenSection={() => { setQuery(""); setScope(action.sectionId); }}
+                          onOpenFileControl={() => { setQuery(""); setScope("file-control"); }}
+                        />
+                      ) : null}
                     </div>
                   );
                 })}
