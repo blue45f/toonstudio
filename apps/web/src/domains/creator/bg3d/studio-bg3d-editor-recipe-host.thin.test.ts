@@ -13,7 +13,7 @@ import {
   StudioBg3dStaleModalOperationError,
   studioBg3dModalOperationCoordinator,
 } from "./studio-bg3d-modal-operation-coordinator";
-import { rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
+import { nameNewStudioBg3dCustomModel, rotateVectorEulerXyz } from "./studio-bg3d-object-ops";
 import { isStudioBg3dPhysicsTransientPhase } from "./studio-bg3d-physics-ui";
 import { planStudioBg3dModelPlacementRecipe } from "./studio-bg3d-placement-recipe";
 import { STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS } from "./studio-bg3d-scene-document-types";
@@ -65,6 +65,7 @@ describe("attachStudioBg3dEditorRecipeHost — 가벼운 접합부", () => {
       "isSceneEditReady",
       "maxAttachments",
       "modalCoordinator",
+      "nameNewCustomModel",
       "placementMath",
     ]);
     expect(deps.isSceneEditReady).toBe(isStudioBg3dSceneEditReady);
@@ -76,6 +77,7 @@ describe("attachStudioBg3dEditorRecipeHost — 가벼운 접합부", () => {
     expect(deps.assertAttachmentAdmission).toBe(assertStudioBg3dModelAttachmentAdmission);
     expect(deps.maxAttachments).toBe(STUDIO_BG3D_SCENE_DOCUMENT_MAX_ATTACHMENTS);
     expect(deps.placementMath).toEqual({ planBase: planStudioBg3dModelPlacementRecipe, rotateVector: rotateVectorEulerXyz });
+    expect(deps.nameNewCustomModel).toBe(nameNewStudioBg3dCustomModel);
   });
 
   it("배치가 끝나기 전에 또 누르면 두 번 놓지 않고 한 줄만 안내한다, 끝나면 다시 누를 수 있다", async () => {
