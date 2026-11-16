@@ -14,6 +14,9 @@ describe("backend capability worker canary", () => {
       "application/vnd.toonstudio.backend-capability+json; charset=utf-8; version=1",
     )).toBe(true);
     expect(isGatewayResponseContentType(
+      "application/vnd.toonstudio.backend-capability+json; version=1; charset=utf-8",
+    )).toBe(true);
+    expect(isGatewayResponseContentType(
       "application/vnd.toonstudio.backend-capability+json; charset=utf-8",
     )).toBe(false);
   });

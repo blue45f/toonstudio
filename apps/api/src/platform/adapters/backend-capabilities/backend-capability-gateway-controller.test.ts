@@ -291,7 +291,7 @@ describe("BackendCapabilityGatewayController", () => {
     });
     expect(result.status).toBe(200);
     expect(result.headers.get("content-type")).toBe(
-      "application/vnd.toonstudio.backend-capability+json; charset=utf-8; version=1",
+      "application/vnd.toonstudio.backend-capability+json; version=1; charset=utf-8",
     );
     expect(result.headers.get("cache-control")).toBe(
       "private, no-store, max-age=0",
