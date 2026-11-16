@@ -8,9 +8,6 @@ import { describe, expect, it } from "vitest";
 /**
  * 셸 크롬 아키텍처 래칫 — 전역 크롬의 소유 단일화를 동결한다 (표준 S-1·S-4).
  *
- * 표준 문서: `~/workspace/goals/toonstudio-site-modernization/hidden_files/shell-nav-2026-10-02/nav-standard.md`
- * 감사: `~/workspace/goals/toonstudio-site-modernization/hidden_files/shell-consistency-audit-2026-10-07.md` §6 U-7
- *
  * 규칙:
  * - 전역 헤더(`site-header`)와 푸터(`site-footer`)는 `app/App.tsx`만 import한다.
  *   AppShell은 헤더·푸터를 props로 받을 뿐 직접 만들지 않는다.

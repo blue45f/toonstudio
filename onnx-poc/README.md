@@ -1,7 +1,6 @@
 # ONNX Runtime Web PoC — U-2-Netp 전경 분리 (2026-10-03)
 
-검토 트랙의 실측 PoC. 결론과 적용 내역은
-`~/workspace/goals/toonstudio-site-modernization/hidden_files/onnx-review-2026-10-03/findings.md` 참조.
+검토 트랙의 실측 PoC 기록이다. 프로덕션 적용 경로는 `apps/web/src/domains/creator/studio-onnx-u2netp.ts`에 통합되었다.
 
 ## 파일
 
@@ -9,7 +8,7 @@
   직접 실행하는 독립 스크립트. 전처리(320×320 직접 리사이즈, 채널 최대값
   정규화 후 ImageNet mean/std, NCHW)와 후처리(융합 출력 "1959" min-max
   정규화)를 rembg 파이프라인과 동일하게 구현했다.
-- `u2netp.onnx` — U-2-Netp 가중치 (4,574,861 bytes).
+- 모델 가중치(`apps/web/src/domains/creator/assets/u2netp.onnx`, 정본 공유) — U-2-Netp 가중치 (4,574,861 bytes).
   - sha256: `309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8`
   - rembg 공식 릴리스 자산 및 Hugging Face `BritishWerewolf/U-2-Netp`의
     `model.onnx` LFS 해시와 일치함을 2026-10-03 확인.

@@ -245,6 +245,7 @@ forbidPaths(
 forbidPaths(
   [
     ".github/qa",
+    "hidden_files",
     "qa-results",
     "scripts/qa/runs",
     "docs/merge-preservation",

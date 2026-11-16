@@ -105,7 +105,6 @@ export default defineConfig(
       // 하나의 어휘만 알아 프로젝트 커스텀 클래스를 전부 미정의로 판정하고,
       // 0.2.0 에는 클래스 무시 설정이 없다). 플러그인이 무시 설정이나 어휘 확장을
       // 제공하면 재검토한다. 죽은 클래스 검출은 그때까지 계약 테스트가 맡는다.
-      // 근거: hidden_files/shadcn-lint-pilot-2026-10-06/findings.md
       'shadcn/no-unknown-classes': 'off',
       'shadcn/no-restyle': 'off',
       'shadcn/no-arbitrary-values': 'off',
@@ -293,16 +292,6 @@ export default defineConfig(
     rules: {
       'no-useless-escape': 'off',
     },
-  },
-
-  // 마켓 이행 스크립트는 정확한 TS/TSX 소스 조각을 template literal 안에 보존한다.
-  // 이스케이프를 제거하면 생성되는 소스 계약이 바뀌므로 두 파일에만 규칙을 제한적으로 끈다.
-  {
-    files: [
-      'scripts/marketplace/fix-authoring-contracts.mjs',
-      'scripts/marketplace/integrate-source-package-builder.mjs',
-    ],
-    rules: { 'no-useless-escape': 'off' },
   },
 
   // 테스트 — Vitest globals; fast-refresh 제약 완화 + any 허용.

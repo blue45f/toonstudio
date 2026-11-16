@@ -200,7 +200,7 @@ CSP의 브러시 크기 상한(2,000 px)과 PRO/EX 캔버스 상한은 비공식
 | kalmanjs 1.1.0 | MIT | 설치본 | ok | reject(이점 없음) → 미반영 |
 | 1eurofilter 1.3.0 | package.json BSD-3-Clause, LICENSE 파일 없음 | 설치본(파일 부재 확인) | review(2절 casiez/OneEuroFilter 루트 LICENSE 부재와 같은 사유) | 미도입(수식 자체 구현) → 미반영(Sumi 1€는 기존 자체 구현) |
 | perfect-freehand 1.2.3 | MIT | 설치본(저장소가 이미 의존) | ok | reject(표본마다 호출 시 O(n²), 수식만 차용) → 미반영 |
-| spectral.js 3.0.0 | MIT | 설치본(전이·바이너리·설치 훅 0). 스펙트럼 데이터가 Burns LHTSS 변형 유래라는 README 서술은 데이터 출처 법무 확인 메모 | ok(데이터 출처 메모 1건) | adopt-lane(오프라인·bench 골든 전용) → **반영(파생 데이터)**: `engine/pigment/km-tables.ts`(생성기 `scripts/gen-km-tables.mjs`, `--check` 바이트 동일)와 `km-mix.test.ts` 골든. 런타임 미사용, 원장은 license-policy 6절 |
+| spectral.js 3.0.0 | MIT | 설치본(전이·바이너리·설치 훅 0). 스펙트럼 데이터가 Burns LHTSS 변형 유래라는 README 서술은 데이터 출처 법무 확인 메모 | ok(데이터 출처 메모 1건) | adopt-lane(오프라인·bench 골든 전용) → **반영(파생 데이터)**: `engine/pigment/km-tables.ts`(생성기 `apps/brush-lab/scripts/gen-km-tables.mjs`, `--check` 바이트 동일)와 `km-mix.test.ts` 골든. 런타임 미사용, 원장은 license-policy 6절 |
 | culori 4.0.2 | MIT(+ okhsl 하위 LICENSE MIT, Bjorn Ottosson) | 설치본 | ok | reject(자체 OKLab과 동일, 이득 없음) → 미반영 |
 | google/ink-stroke-modeler(저장소 wasm) | Apache-2.0 (abseil-cpp 20250512.0 Apache-2.0) | 복사된 LICENSE 두 건의 sha256을 pinned commit의 GitHub raw와 대조(원격). Emscripten·libc++abi는 wasm 문자열로 존재만 확인 | review(NOTICE의 wasm sha256 불일치, Emscripten/libc++abi 인벤토리 미기재) | defer(고지 정정 후 재평가) → 미반영(`packages/**` 담당 정정 대기) |
 

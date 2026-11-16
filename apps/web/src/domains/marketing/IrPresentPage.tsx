@@ -15,8 +15,8 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  * 씬 구성·문안·내레이션·배경음은 아티팩트 검증 완료본 그대로이며, 제품 화면 이미지는
  * 제품 투어가 이미 쓰는 /brand/product-tour/ 자산을 재사용한다(중복 업로드 없음).
  * 내레이션 오디오(n01–n24)는 아티팩트 제작 때 생성한 AI 음성 파일로,
- * /brand/ir-present/audio/ 아래에 둔다. 배경음(bgm.m4a)은 제품 투어 배경음과 같은 곡을
- * 복사해 쓴다(원본: /brand/product-tour/toonstudio-product-tour-bgm.m4a).
+ * /brand/ir-present/audio/ 아래에 둔다. 배경음은 제품 투어 배경음 원본
+ * (/brand/product-tour/toonstudio-product-tour-bgm.m4a)을 직접 공유한다.
  *
  * 조작은 아티팩트와 같다: ←/→ 이동, Space 자동 발표 재생·정지, F 전체화면, M 소리, B 배경음,
  * C 목차, 터치 스와이프. 자동재생 정책 때문에 소리는 첫 상호작용 뒤에 시작한다.
@@ -32,6 +32,7 @@ import { SCENE_NODES_B } from "./ir-present-scenes-b";
  */
 
 const AUDIO_DIR = "/brand/ir-present/audio";
+const SHARED_PRODUCT_TOUR_BGM_SRC = "/brand/product-tour/toonstudio-product-tour-bgm.m4a";
 const BGM_BASE_VOLUME = 0.14;
 const BGM_DUCK_VOLUME = 0.045;
 const BGM_PREF_KEY = "ir-present-bgm-on";
@@ -510,7 +511,7 @@ export function IrPresentPage() {
           }}
         />
         {/* eslint-disable-next-line jsx-a11y/media-has-caption -- Background music only; there is no speech to caption. */}
-        <audio ref={bgmRef} src={`${AUDIO_DIR}/bgm.m4a`} loop preload="auto" />
+        <audio ref={bgmRef} src={SHARED_PRODUCT_TOUR_BGM_SRC} loop preload="auto" />
       </div>
     </div>
   );

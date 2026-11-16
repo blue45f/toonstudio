@@ -55,7 +55,9 @@ function cpuMs(fn) {
   });
 }
 
-const modelBytes = readFileSync(new URL("./u2netp.onnx", import.meta.url));
+const modelBytes = readFileSync(
+  new URL("../apps/web/src/domains/creator/assets/u2netp.onnx", import.meta.url),
+);
 console.log(`model bytes: ${modelBytes.byteLength}`);
 
 const session = await ort.InferenceSession.create(modelBytes, {
