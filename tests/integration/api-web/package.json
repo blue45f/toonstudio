@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@nestjs/common": "^11.2.9",
+    "@nestjs/common": "^12.5.0",
     "@toonstudio/core": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "image-js": "^1.7.1",
