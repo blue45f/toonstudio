@@ -23,6 +23,8 @@
  */
 
 import {
+  STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE,
+  STUDIO_LIVING_INK_DISPLAY_GRANULATION_SEDIMENT_GAIN as STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN,
   STUDIO_LIVING_INK_FLUID_DEFAULTS,
   STUDIO_LIVING_INK_GRANULATION_MULTIPLIER_BOUNDS,
   STUDIO_LIVING_INK_MAXIMUM_OPTICAL_DENSITY,
@@ -39,16 +41,7 @@ import type { StudioLivingInkDisplayMode } from "./studio-living-ink-gpu-protoco
 
 export const STUDIO_LIVING_INK_WGSL_SHADER_REVISION = "wgsl-field-v5-bounded-optical-density" as const;
 
-/**
- * WebGPU display-resolve sediment response.
- *
- * The shared 2.15 optical-density response is the physical model's starting point. The WGSL path
- * then crosses an rgba32float storage buffer, explicit RGBA8 quantisation and a straight-alpha
- * page composite, which attenuates the measured high-frequency sediment contrast relative to the
- * WebGL2 half-float framebuffer resolve. A 2.35 response restores the same visible deposition
- * contrast after that transfer without changing the noise spectrum, density gate or verifier.
- */
-export const STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN = 2.35 as const;
+export { STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN };
 
 /** Field uniform slot count (f32/u32 words). The GPU buffer is `4 × this` bytes. */
 export const STUDIO_LIVING_INK_WGSL_UNIFORM_WORDS = 40 as const;
@@ -1213,11 +1206,17 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
   var mobileOpticalDensity = mobileContribution.xyz * u.densityStrength;
   let granulationGate = smoothstep(0.005, 0.24, centerDensity)
     * (1.0 - smoothstep(0.38, 1.15, centerDensity) * 0.74);
+  // GLSL과 동일하게 희석 안료의 침전 응답을 복원한다. 밀도가 높아지면 기본 응답으로 돌아간다.
+  let diluteSedimentBoost = 1.0 + (1.0 - smoothstep(
+    ${wgslFloat(STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE.fullStrengthDensity)},
+    ${wgslFloat(STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE.fadeOutDensity)},
+    centerDensity,
+  )) * ${wgslFloat(STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE.additionalGain)};
   let sediment = (grain - 0.5) * 2.0 + (tooth - 0.5) * 0.7;
   let granulationMultiplier = clamp(
     1.0
       + sediment * u.granulationAmount
-        * ${wgslFloat(STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN)} * granulationGate,
+        * ${wgslFloat(STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN)} * granulationGate * diluteSedimentBoost,
     ${wgslFloat(STUDIO_LIVING_INK_GRANULATION_MULTIPLIER_BOUNDS.minimum)},
     ${wgslFloat(STUDIO_LIVING_INK_GRANULATION_MULTIPLIER_BOUNDS.maximum)},
   );
