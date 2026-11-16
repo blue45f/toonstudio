@@ -605,6 +605,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "harfrust"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "741c9cd8fb2f39c393366b9cf13e8c31ad6adbbd9d817f0a18fe47cff36a3cca"
+dependencies = [
+ "bitflags",
+ "bytemuck",
+ "read-fonts 0.47.0",
+ "smallvec",
+ "yoke",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1310,7 +1323,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b74c0d373e462e504ad4436710a39f099e18e848e1ee711f70cd2dcd5a69b290"
 dependencies = [
  "fontique",
- "harfrust",
+ "harfrust 0.12.0",
  "hashbrown 0.17.1",
  "icu_locale_core",
  "icu_normalizer",
@@ -1503,6 +1516,20 @@ name = "read-fonts"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bdaa4fffe9ff3ca2c353fa9729792805b9b3e324695ff5a081f860612e81b330"
+dependencies = [
+ "bytemuck",
+ "foldhash",
+ "font-types",
+ "once_cell",
+ "smallvec",
+ "yoke",
+]
+
+[[package]]
+name = "read-fonts"
+version = "0.47.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a39d2f8f681030a7bcbbcf3e8568775ac2393afd51401a2e2133ee89e3953897"
 dependencies = [
  "bytemuck",
  "foldhash",
@@ -1788,7 +1815,7 @@ dependencies = [
 name = "studio-engine-vello"
 version = "0.1.0"
 dependencies = [
- "harfrust",
+ "harfrust 0.16.0",
  "js-sys",
  "naga",
  "parley",
@@ -1798,7 +1825,7 @@ dependencies = [
  "serde_json",
  "skrifa 0.44.0",
  "velato",
- "vello 0.12.0",
+ "vello",
  "vello_cpu",
  "vello_hybrid",
  "vello_svg",
@@ -2009,7 +2036,7 @@ dependencies = [
  "data-url",
  "flate2",
  "fontdb",
- "harfrust",
+ "harfrust 0.12.0",
  "imagesize",
  "kurbo",
  "log",
@@ -2042,23 +2069,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
- "vello 0.11.0",
-]
-
-[[package]]
-name = "vello"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "913abde56cab6131b62c0cc69b1a93b671d3c34b3097beb3714fd1dc93be8115"
-dependencies = [
- "bytemuck",
- "log",
- "peniko",
- "png",
- "skrifa 0.44.0",
- "static_assertions",
- "thiserror",
- "vello_encoding 0.11.0",
+ "vello",
 ]
 
 [[package]]
@@ -2075,7 +2086,7 @@ dependencies = [
  "skrifa 0.49.0",
  "static_assertions",
  "thiserror",
- "vello_encoding 0.12.0",
+ "vello_encoding",
  "vello_shaders",
  "wgpu",
 ]
@@ -2126,19 +2137,6 @@ dependencies = [
 
 [[package]]
 name = "vello_encoding"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1fb9548d2b46b0f79137b5b1d208ecbd76d432f74e7a2ba838615d117f11532"
-dependencies = [
- "bytemuck",
- "guillotiere",
- "peniko",
- "skrifa 0.44.0",
- "smallvec",
-]
-
-[[package]]
-name = "vello_encoding"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eca1013292b6e92b218ccf93b90b940dda36c87d1aba6b8f6e7d5f7839c45268"
@@ -2173,7 +2171,7 @@ dependencies = [
  "log",
  "naga",
  "thiserror",
- "vello_encoding 0.12.0",
+ "vello_encoding",
 ]
 
 [[package]]
@@ -2196,7 +2194,7 @@ dependencies = [
  "peniko",
  "thiserror",
  "usvg",
- "vello 0.11.0",
+ "vello",
 ]
 
 [[package]]

@@ -29,7 +29,7 @@
 
 use std::collections::BTreeSet;
 
-use harfrust::{Direction, Feature, Language, ShapeOptions, ShaperData, UnicodeBuffer};
+use harfrust::{Buffer, Direction, Feature, Font, Language, ShapeOptions, ShaperFont, shape};
 use skrifa::raw::TableProvider;
 use skrifa::{FontRef, MetadataProvider, Tag};
 use wasm_bindgen::prelude::*;
@@ -115,29 +115,27 @@ fn shape_top_to_bottom_glyph_ids(
     font_bytes: &[u8],
     font_size: f32,
 ) -> Result<Vec<u32>, RenderError> {
-    let font_ref = harfrust::FontRef::from_index(font_bytes, 0)
-        .map_err(|error| RenderError::InvalidScene(format!("harfrust font parse: {error}")))?;
-    let shaper_data = ShaperData::new(&font_ref);
-    let shaper = shaper_data.shaper(&font_ref).build();
-    let mut buffer = UnicodeBuffer::new();
+    let font = Font::new(font_bytes.to_vec(), 0)
+        .ok_or_else(|| RenderError::InvalidScene("harfrust font parse: invalid font".into()))?;
+    let shaper = ShaperFont::new(&font).with_scale((font_size * 64.0).round() as i32);
+    let mut buffer = Buffer::new();
     buffer.push_str(text);
     buffer.guess_segment_properties();
     buffer.set_direction(Direction::TopToBottom);
-    if let Some(language) = Language::new("ja") {
-        buffer.set_language(language);
-    }
+    buffer.set_language(Language::new("ja"));
     let features = [
         Feature::new(harfrust::Tag::new(b"vert"), 1, ..),
         Feature::new(harfrust::Tag::new(b"vrt2"), 1, ..),
     ];
-    let glyphs = shaper.shape(
-        buffer,
+    shape(
+        &shaper,
+        &mut buffer,
         ShapeOptions::new()
             .features(&features)
-            .point_size(Some(font_size))
-            .scale(Some((font_size * 64.0).round() as i32)),
-    );
-    Ok(glyphs
+            .point_size(Some(font_size)),
+    )
+    .map_err(|error| RenderError::InvalidScene(format!("harfrust shape: {error}")))?;
+    Ok(buffer
         .glyph_infos()
         .iter()
         .map(|info| info.glyph_id)

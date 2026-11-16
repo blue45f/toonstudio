@@ -140,7 +140,7 @@ pub fn shape_text(
             let coords: Vec<NormalizedCoord> = run
                 .normalized_coords()
                 .iter()
-                .map(|bits| NormalizedCoord::from_bits(*bits))
+                .map(|coord| NormalizedCoord::from_bits(coord.to_bits()))
                 .collect();
             for glyph in glyph_run.positioned_glyphs() {
                 let mut pen = PathIrPen {
