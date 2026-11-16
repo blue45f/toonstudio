@@ -20,6 +20,7 @@ import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
 import { StaggerReveal } from "@/shared/components/stagger-reveal";
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -35,6 +36,12 @@ import { StudioQuickStart } from "./studio-shell/StudioQuickStart";
 const MyStoryStartFlow = lazyRetry(
   () => import("./my-story/MyStoryStartFlow").then((module) => ({ default: module.MyStoryStartFlow })),
   "MyStoryStartFlow",
+);
+
+/** AI 자동 콘티·대사 메이커도 지연 청크로 분리해 스튜디오 프리캐시 예산을 보호한다. */
+const AiQuickBlueprintComposer = lazyRetry(
+  () => import("./ai-quick-blueprint/AiQuickBlueprintComposer").then((module) => ({ default: module.AiQuickBlueprintComposer })),
+  "AiQuickBlueprintComposer",
 );
 
 /** 갤러리 보기 조건 키 — 하나라도 있으면 갤러리 주소로 본다. */
@@ -76,7 +83,7 @@ function RecentWorkThumbnail({ project }: { readonly project: StudioProjectLibra
 }
 
 const CHOICE_CARD_CLASS =
-  "fx-lift group flex h-full scroll-my-24 flex-col rounded-2xl border border-line bg-panel/45 p-5 transition-all hover:border-accent/55 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-6";
+  "fx-lift group flex h-full scroll-my-24 flex-col rounded-2xl border border-line bg-panel/45 p-5 transition-[transform,border-color,background-color,box-shadow] duration-200 hover:border-accent/55 hover:bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:p-6";
 const CHOICE_ICON_CLASS =
   "flex size-11 items-center justify-center rounded-xl bg-accent/15 text-accent";
 
@@ -115,6 +122,7 @@ export function CreateStartPage() {
   const [searchParams] = useSearchParams();
   const { hash } = useLocation();
   const language = useI18n((state) => state.lang);
+  const isMobileViewport = useMediaQuery("(max-width: 767px)");
   const locale = studioProjectLibraryLocale(language);
   const { projects: recentProjects, error: recentError, reload: reloadRecentProjects } = useRecentStudioProjects(locale);
   const requestedSection = searchParams.get("section");
@@ -204,9 +212,7 @@ export function CreateStartPage() {
 
       {activeSection === "all" ? (
         <>
-          <CreateStartGrandAtelierSection storyHref={storyHref} />
-
-          <section className="create-start-choice-grid mt-6" data-testid="create-start-persona-guide"
+          <section className="create-start-choice-grid" data-testid="create-start-persona-guide"
             aria-label={bt("작품을 시작하는 두 가지 방법", "Two ways to start a work")}>
             <article className="create-start-choice">
               <img className="create-start-choice-art" src="/brand/lobby-hq-20261003/storyboard-768.webp"
@@ -223,6 +229,14 @@ export function CreateStartPage() {
             </article>
             <StudioQuickStart locale={locale} presentation="drawing-card" />
           </section>
+
+          <Suspense fallback={null}>
+            <AiQuickBlueprintComposer initialIdea={searchParams.get("idea") ?? ""} />
+          </Suspense>
+
+          <div className="mt-6">
+            <CreateStartGrandAtelierSection storyHref={storyHref} compactOnMobile={isMobileViewport} />
+          </div>
 
           <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
             <Link href="/studio/templates">{bt("템플릿 고르기", "Choose a template")}<ArrowRight size={18} aria-hidden /></Link>
@@ -259,7 +273,7 @@ export function CreateStartPage() {
         ))}
       </nav> : null}
 
-      {activeSection === "all" || activeSection === "pipeline" || activeSection === "tools" ? (
+      {(activeSection === "all" && !isMobileViewport) || activeSection === "pipeline" || activeSection === "tools" ? (
       <section
         aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
         data-testid="create-rea-story-pipeline"
@@ -312,7 +326,7 @@ export function CreateStartPage() {
 
       ) : null}
 
-      {activeSection === "all" || activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
+      {(activeSection === "all" && !isMobileViewport) || activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
 
       {activeSection === "topics" ? (
       <section

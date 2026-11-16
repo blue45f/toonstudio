@@ -1,0 +1,125 @@
+/* Starlight Atelier 물리 모션·택타일 상호작용 정본.
+ * GPU 합성 속성(scale, translate, opacity)만 전이하며 레이아웃 속성(top/left/height)과 transition-all을 금지한다.
+ * 첫 프레임 명암비 무결성(Axe WCAG AA)을 위해 <details> 본문 초기 불투명도는 1을 유지한다.
+ */
+:root {
+  --motion-fast: 140ms;
+  --motion-base: 200ms;
+  --motion-gentle: 280ms;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring-gentle: linear(0, 0.43 13%, 0.79 29%, 0.96 47%, 1.012 66%, 1 100%);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --motion-fast: 110ms;
+    --motion-base: 160ms;
+    --motion-gentle: 220ms;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-press {
+    transition:
+      scale var(--motion-fast) var(--ease-spring-gentle),
+      background-color var(--motion-fast) var(--ease-out-expo),
+      border-color var(--motion-fast) var(--ease-out-expo),
+      color var(--motion-fast) var(--ease-out-expo);
+  }
+
+  .fx-press:active:not(:disabled):not([aria-disabled="true"]),
+  #main-content button:not(:disabled):not([aria-disabled="true"]):not([role="switch"]):not([role="slider"]):active {
+    scale: 0.98;
+  }
+
+  .fx-lift {
+    transition:
+      translate var(--motion-base) var(--ease-spring-gentle),
+      scale var(--motion-fast) var(--ease-spring-gentle),
+      border-color var(--motion-base) var(--ease-out-expo),
+      background-color var(--motion-base) var(--ease-out-expo),
+      box-shadow var(--motion-base) var(--ease-out-expo);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .fx-lift:hover:not(:disabled):not([aria-disabled="true"]) {
+      translate: 0 -2px;
+    }
+  }
+
+  details > summary > svg:last-child {
+    transition: transform var(--motion-fast) var(--ease-out-expo);
+  }
+
+  details[open] > :not(summary) {
+    transition: translate var(--motion-base) var(--ease-out-expo);
+    translate: 0 0;
+  }
+
+  @starting-style {
+    details[open] > :not(summary) {
+      translate: 0 3px;
+    }
+  }
+
+  dialog[open],
+  [popover]:is(:popover-open, .\:popover-open) {
+    opacity: 1;
+    scale: 1;
+    transition:
+      opacity var(--motion-base) var(--ease-out-expo),
+      scale var(--motion-base) var(--ease-spring-gentle),
+      display var(--motion-base) allow-discrete,
+      overlay var(--motion-base) allow-discrete;
+  }
+
+  @starting-style {
+    dialog[open],
+    [popover]:is(:popover-open, .\:popover-open) {
+      opacity: 0;
+      scale: 0.97;
+    }
+  }
+
+  dialog::backdrop,
+  [popover]::backdrop {
+    opacity: 1;
+    transition:
+      opacity var(--motion-base) var(--ease-out-expo),
+      display var(--motion-base) allow-discrete,
+      overlay var(--motion-base) allow-discrete;
+  }
+
+  @starting-style {
+    dialog[open]::backdrop,
+    [popover]:is(:popover-open, .\:popover-open)::backdrop {
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-press,
+  .fx-lift,
+  details > summary > svg:last-child,
+  details[open] > :not(summary),
+  dialog,
+  dialog::backdrop,
+  [popover],
+  [popover]::backdrop {
+    transition: none !important;
+    scale: none !important;
+    translate: none !important;
+  }
+}
+
+:root[data-design-theme="contrast"] :is(.fx-press, .fx-lift, dialog, [popover]) {
+  scale: none !important;
+  translate: none !important;
+}
