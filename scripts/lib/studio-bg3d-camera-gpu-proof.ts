@@ -63,7 +63,7 @@ export async function runStudioBg3dCameraGpuProof(page: Page, rootUrl: string, u
     const Camera = (await import(threeExports.PerspectiveCamera.moduleUrl))[threeExports.PerspectiveCamera.exportName] as typeof import("three").PerspectiveCamera;
     const Scene = (await import(threeExports.Scene.moduleUrl))[threeExports.Scene.exportName] as typeof import("three").Scene;
     const renderer = new Renderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
-    if (renderer.isWebGLRenderer !== true) throw new Error("프로덕션 Three 렌더러 브랜드가 일치하지 않습니다.");
+    if (!("isWebGLRenderer" in renderer) || renderer.isWebGLRenderer !== true) throw new Error("프로덕션 Three 렌더러 브랜드가 일치하지 않습니다.");
     renderer.outputColorSpace = "srgb";
     renderer.toneMapping = 0;
     renderer.setClearColor(0, 0);

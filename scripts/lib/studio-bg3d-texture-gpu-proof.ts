@@ -64,7 +64,7 @@ export async function runStudioBg3dTextureGpuProof(page: Page, rootUrl: string, 
     renderer.toneMapping = 0;
     renderer.setClearColor(0, 0);
     const camera = new Camera(45, 1, 0.01, 2000);
-    if (renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true) {
+    if (!("isWebGLRenderer" in renderer) || renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true) {
       throw new Error("프로덕션 Three 렌더러/카메라 브랜드가 일치하지 않습니다.");
     }
     camera.position.set(0, 0, 4);

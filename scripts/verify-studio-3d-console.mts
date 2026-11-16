@@ -2109,7 +2109,7 @@ async function runMagicLayerProductionAlignmentProof(
   const threeExports = await page.evaluate(resolveStudioProductionThreeExports, {
     moduleUrls: readStudioProductionThreeModuleUrls(assetUrl(findProductionAssetFile(THREE_MODULE_FILE_PATTERN, "Three production module"))),
     scenePrimitives: true,
-  });
+  } satisfies Parameters<typeof resolveStudioProductionThreeExports>[0]);
   assertCondition(threeExports.scenePrimitives, "프로덕션 Three 장면 생성자를 찾지 못했습니다.");
   const productionConstructors = { ...threeExports, ...threeExports.scenePrimitives };
   console.log(`[verify-studio-3d-console] Magic production Three exports ${JSON.stringify(productionConstructors)}`);
@@ -2640,7 +2640,7 @@ async function runMagicLayerProductionAlignmentProof(
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: node.color });
         const mesh = new Mesh(geometry, material);
-        if (renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true || scene.isScene !== true
+        if (!("isWebGLRenderer" in renderer) || renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true || scene.isScene !== true
           || geometry.type !== "BoxGeometry" || material.isMeshBasicMaterial !== true || mesh.isMesh !== true) {
           throw new Error("프로덕션 Three 장면 생성자 브랜드가 일치하지 않습니다.");
         }
