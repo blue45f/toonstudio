@@ -18,6 +18,54 @@ const lostOwner: StudioEngineWebGpuPresentationSurfaceStats = {
 };
 
 describe("presentation 실제 device loss 관찰", () => {
+  it("destroy 계측은 실제 receiver·인수·반환값을 원래 함수에 한 번씩 전달한다", () => {
+    const diagnostics = createPresentationDeviceDiagnostics(Promise.resolve({ reason: "destroyed", message: "observed" }));
+    const calls: { receiver: unknown; args: unknown[] }[] = [];
+    const result = { nativeResult: true };
+    const device = {
+      destroy(this: unknown, ...args: unknown[]): unknown {
+        calls.push({ receiver: this, args });
+        return result;
+      },
+    };
+    diagnostics.instrumentDestroy(device);
+    diagnostics.observe("before-present", readyOwner);
+    const argument = { preserved: true };
+    const alternateReceiver = { other: true };
+
+    expect(device.destroy(argument, 7)).toBe(result);
+    expect(Reflect.apply(device.destroy, alternateReceiver, [argument])).toBe(result);
+    expect(Reflect.apply(device.destroy, undefined, [])).toBe(result);
+    expect(calls).toHaveLength(3);
+    expect(calls[0]?.receiver).toBe(device);
+    expect(calls[0]?.args).toEqual([argument, 7]);
+    expect(calls[0]?.args[0]).toBe(argument);
+    expect(calls[1]?.receiver).toBe(alternateReceiver);
+    expect(calls[1]?.args[0]).toBe(argument);
+    expect(calls[2]?.receiver).toBeUndefined();
+    expect(calls[2]?.args).toEqual([]);
+    expect(diagnostics.snapshot().destroyCalls).toEqual([0, 1, 2].map(() => ({
+      phase: "before-present", intentionalDestroyRequested: false, stack: expect.stringContaining("GPUDevice.destroy called"),
+    })));
+  });
+
+  it("destroy 원래 예외를 삼키거나 바꾸지 않고 호출 직전 단계만 기록한다", () => {
+    const diagnostics = createPresentationDeviceDiagnostics(Promise.resolve({ reason: "destroyed", message: "observed" }));
+    const failure = new TypeError("native destroy receiver failure");
+    let calls = 0;
+    const device = { destroy(): never { calls += 1; throw failure; } };
+    diagnostics.instrumentDestroy(device);
+    diagnostics.observe("after-readback", readyOwner);
+    let thrown: unknown;
+    try { device.destroy(); } catch (error) { thrown = error; }
+
+    expect(thrown).toBe(failure);
+    expect(calls).toBe(1);
+    expect(diagnostics.snapshot().destroyCalls).toEqual([{
+      phase: "after-readback", intentionalDestroyRequested: false, stack: expect.any(String),
+    }]);
+  });
+
   it("lost promise와 두 생산 callback의 원인·발생 단계를 독립적으로 보존한다", async () => {
     const info: GPUDeviceLostInfo = { reason: "unknown", message: "GPU process reset during presentation" };
     const lost = Promise.resolve(info);
@@ -66,8 +114,14 @@ describe("presentation 실제 device loss 관찰", () => {
 
   it("마지막 명시적 destroy에 따른 loss를 초기 실패와 구별한다", async () => {
     const diagnostics = createPresentationDeviceDiagnostics(Promise.resolve({ reason: "destroyed", message: "explicit destroy" }));
+    const device = { destroy() { return undefined; } };
+    diagnostics.instrumentDestroy(device);
     diagnostics.markIntentionalDestroy({ ...readyOwner, status: "disposed" });
+    device.destroy();
     await diagnostics.whenLossObserved;
+    expect(diagnostics.snapshot().destroyCalls).toEqual([{
+      phase: "intentional-destroy", intentionalDestroyRequested: true, stack: expect.any(String),
+    }]);
     expect(diagnostics.snapshot().losses).toEqual([{
       observer: "device.lost", phase: "intentional-destroy", intentionalDestroyRequested: true,
       reason: "destroyed", message: "explicit destroy",

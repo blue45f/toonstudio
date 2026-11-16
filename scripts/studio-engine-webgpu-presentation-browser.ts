@@ -474,6 +474,10 @@ async function run(): Promise<BrowserPresentationResult> {
     };
   }
 
+  const lostPromise = device.lost;
+  const lifecycle = createPresentationDeviceDiagnostics(lostPromise);
+  lifecycleDiagnostics = lifecycle;
+  lifecycle.instrumentDestroy(device);
   const canvas = new OffscreenCanvas(1, 1);
   const context = canvas.getContext("webgpu");
   if (!context) {
@@ -491,9 +495,6 @@ async function run(): Promise<BrowserPresentationResult> {
     uncapturedErrors.push(event.error.message);
   });
   device.pushErrorScope("validation");
-  const lostPromise = device.lost;
-  const lifecycle = createPresentationDeviceDiagnostics(lostPromise);
-  lifecycleDiagnostics = lifecycle;
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
   invariant(
     canvasFormat === "bgra8unorm" || canvasFormat === "rgba8unorm",

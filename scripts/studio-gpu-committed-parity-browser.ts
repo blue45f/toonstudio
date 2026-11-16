@@ -26,6 +26,25 @@ const HEIGHT = 96;
 const RECEIPT_TIMEOUT_MS = 10_000;
 const REQUEST_ID_PREFIX = "committed-parity";
 
+interface ParityDiagnostics {
+  phase: string;
+  caseId: string | null;
+  requestId: string | null;
+  backendAvailableAfterInitialize: boolean | null;
+  backendAvailableBeforeDispose: boolean | null;
+  frameInvalidations: number;
+  receivedFrames: number;
+  lastReceipt: StudioGpuFrameReceipt | null;
+  deviceLosses: { phase: string; requestId: string | null; reason: GPUDeviceLostReason; message: string }[];
+}
+
+// 정리(dispose)가 상태를 바꾸기 전에 실제 실행 경계와 마지막 프레임을 보존한다.
+const diagnostics: ParityDiagnostics = {
+  phase: "creating-engine", caseId: null, requestId: null,
+  backendAvailableAfterInitialize: null, backendAvailableBeforeDispose: null,
+  frameInvalidations: 0, receivedFrames: 0, lastReceipt: null, deviceLosses: [],
+};
+
 interface RawPixelDiff {
   readonly changedPixels: number;
   readonly totalPixels: number;
@@ -171,7 +190,7 @@ interface ParityCaseResult {
   readonly diffPng: string;
 }
 
-type ParityResult =
+type ParityResult = { readonly diagnostics: ParityDiagnostics } & (
   | {
       readonly status: "ok";
       readonly backend: string;
@@ -182,7 +201,8 @@ type ParityResult =
   | {
       readonly status: "error";
       readonly message: string;
-    };
+    }
+);
 
 declare global {
   interface Window {
@@ -293,6 +313,9 @@ async function runCase(
   index: number
 ): Promise<ParityCaseResult> {
   const { element } = parityCase;
+  diagnostics.caseId = parityCase.id;
+  diagnostics.requestId = null;
+  diagnostics.phase = "canvas-oracle";
 
   // --- Canvas2D/Konva oracle -------------------------------------------------------------
   const causalPlan = planStudioCausalInk({
@@ -321,6 +344,7 @@ async function runCase(
   const canvasPixels = new Uint8ClampedArray(context.getImageData(0, 0, WIDTH, HEIGHT).data);
 
   // --- Committed handoff + geometry preflight ---------------------------------------------
+  diagnostics.phase = "handoff-preflight";
   const handoff = createStudioWebGpuCommittedHandoff({ elements: [element] });
   if (handoff.status !== "ready") throw new Error(`[${parityCase.id}] Handoff was ${handoff.status}`);
   if (handoff.elementIds.length !== 1 || handoff.strokes.length !== 1) {
@@ -342,11 +366,15 @@ async function runCase(
 
   // --- Real WebGPU render + capture --------------------------------------------------------
   const requestId = `${REQUEST_ID_PREFIX}:${parityCase.id}:${index}`;
+  diagnostics.requestId = requestId;
+  diagnostics.phase = "render-requested";
   const receiptPromise = waitForReceipt(pendingReceipts, requestId);
 
   engine.render(handoff.strokes, requestId);
+  diagnostics.phase = "waiting-receipt";
   const receipt = await receiptPromise;
 
+  diagnostics.phase = "receipt-validation";
   if (receipt.backend !== "webgpu" || !receipt.complete) {
     throw new Error(`[${parityCase.id}] WebGPU did not produce a complete authoritative receipt`);
   }
@@ -356,9 +384,11 @@ async function runCase(
     );
   }
 
+  diagnostics.phase = "capturing-frame";
   const capture = await engine.captureFrame({ receipt, area: { kind: "viewport" } });
   if (capture.status !== "captured") throw new Error(`[${parityCase.id}] GPU capture rejected: ${capture.reason}`);
 
+  diagnostics.phase = "comparing-pixels";
   const gpuPixels = new Uint8ClampedArray(capture.pixels);
 
   return {
@@ -405,7 +435,16 @@ async function run(): Promise<ParityResult> {
     selectedBackend: "webgpu",
     retainReadbackSnapshot: true,
     autoRecover: false,
+    onDeviceLost: (info) => {
+      diagnostics.deviceLosses.push({
+        phase: diagnostics.phase, requestId: diagnostics.requestId,
+        reason: info.reason, message: info.message,
+      });
+    },
+    onFrameInvalid: () => { diagnostics.frameInvalidations += 1; },
     onFrameReady: (receipt) => {
+      diagnostics.receivedFrames += 1;
+      diagnostics.lastReceipt = { ...receipt };
       pendingReceipts.get(receipt.requestId)?.(receipt);
     },
   });
@@ -424,8 +463,14 @@ async function run(): Promise<ParityResult> {
       flipX: false,
     });
 
+    diagnostics.phase = "initializing-engine";
     const backend = await engine.initialize();
+    diagnostics.phase = "initialize-returned";
+    diagnostics.backendAvailableAfterInitialize = engine.isBackendAvailable();
     if (backend !== "webgpu") throw new Error(`Expected WebGPU, received ${backend}`);
+    if (!diagnostics.backendAvailableAfterInitialize) {
+      throw new Error("WebGPU 초기화 후 선택한 backend를 사용할 수 없습니다. browser-diagnostics.json을 확인하세요.");
+    }
 
     const cases: ParityCaseResult[] = [];
     for (const [index, parityCase] of PARITY_CASES.entries()) {
@@ -434,8 +479,10 @@ async function run(): Promise<ParityResult> {
       cases.push(await runCase(engine, pendingReceipts, parityCase, index));
     }
 
-    return { status: "ok", backend, width: WIDTH, height: HEIGHT, cases };
+    diagnostics.phase = "complete";
+    return { status: "ok", backend, width: WIDTH, height: HEIGHT, cases, diagnostics };
   } finally {
+    diagnostics.backendAvailableBeforeDispose = engine.isBackendAvailable();
     engine.dispose();
   }
 }
@@ -448,5 +495,6 @@ run()
     window.__studioGpuCommittedParityResult = {
       status: "error",
       message: error instanceof Error ? error.message : String(error),
+      diagnostics,
     };
   });

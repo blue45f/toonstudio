@@ -269,7 +269,10 @@ describe("Studio lazy panel stack boundary", () => {
       "<Suspense fallback={lease.logicalOpen ? <Bg3DRetainedLoadingOverlay /> : null}>",
     );
     expect(`${stack}\n${retainedBg3dHost}`.match(/aria-live="polite"/g)).toHaveLength(7);
-    expect(`${stack}\n${retainedBg3dHost}`.match(/<Loader2\b/g)).toHaveLength(7);
+    expect(stack.match(/<Loader2\b/g)).toHaveLength(6);
+    // BG3D는 단계별 준비 안내와 장면 아이콘으로 로딩을 표시한다.
+    expect(retainedBg3dHost).toContain('aria-live="polite" aria-busy="true"');
+    expect(retainedBg3dHost.match(/<Boxes\b/g)).toHaveLength(1);
   });
 
   it("guards optional surfaces with their existing open or mounted flags", () => {

@@ -44,6 +44,14 @@ const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(
 // timeout (see RECEIPT_TIMEOUT_MS in studio-gpu-committed-parity-browser.ts). This outer timeout
 // must safely exceed every case's worst-case budget plus Vite/Playwright startup, not just one.
 const RESULT_TIMEOUT_MS = 45_000;
+// SwiftShader의 Vulkan 캔버스 표시 경로를 명시하고 실제 실행 설정을 증거에 남긴다.
+const BROWSER_LAUNCH = {
+  headless: true,
+  args: [
+    "--no-sandbox", "--enable-unsafe-webgpu", "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader", "--use-vulkan=swiftshader", "--enable-features=Vulkan",
+  ],
+};
 const REVIEWED_CAPTURE_WIDTH = 128;
 const REVIEWED_CAPTURE_HEIGHT = 96;
 const REVIEWED_TOTAL_PIXELS = REVIEWED_CAPTURE_WIDTH * REVIEWED_CAPTURE_HEIGHT;
@@ -168,41 +176,50 @@ async function main(): Promise<void> {
 
   let browser: Browser | null = null;
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: ["--no-sandbox", "--enable-unsafe-webgpu", "--use-angle=swiftshader"],
-    });
+    browser = await chromium.launch(BROWSER_LAUNCH);
     const context = await browser.newContext();
     const page = await context.newPage();
 
     const consoleErrors: string[] = [];
     const pageErrors: string[] = [];
+    const requestFailures: { url: string; method: string; error: string | null }[] = [];
     page.on("console", (message) => {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     page.on("pageerror", (error) => pageErrors.push(error.message));
+    page.on("requestfailed", (request) => requestFailures.push({
+      url: request.url(), method: request.method(), error: request.failure()?.errorText ?? null,
+    }));
 
-    await page.goto(`${origin}${HARNESS_PATH.slice(1)}`, { waitUntil: "load" });
-
+    let result: ParityResult | null = null;
+    let orchestrationError: string | null = null;
     try {
+      await page.goto(`${origin}${HARNESS_PATH.slice(1)}`, { waitUntil: "load" });
       await page.waitForFunction(
         () => (window as unknown as { __studioGpuCommittedParityResult?: unknown })
           .__studioGpuCommittedParityResult !== undefined,
         undefined,
         { timeout: RESULT_TIMEOUT_MS }
       );
+      result = await page.evaluate(() => (
+        window as unknown as { __studioGpuCommittedParityResult?: unknown }
+      ).__studioGpuCommittedParityResult) as ParityResult;
     } catch (error) {
-      writeFileSync(join(SCRATCH, "browser-diagnostics.json"), JSON.stringify({
-        harnessEntry: HARNESS_ENTRY, url: page.url(), consoleErrors, pageErrors,
-      }, null, 2));
+      orchestrationError = error instanceof Error ? error.message : String(error);
       throw error;
+    } finally {
+      // 상태 오류도 assertion 전에 기록해야 receipt 대기와 초기화·모듈 실패를 구별할 수 있다.
+      writeFileSync(join(SCRATCH, "browser-result.json"), JSON.stringify(result, null, 2));
+      writeFileSync(join(SCRATCH, "browser-diagnostics.json"), JSON.stringify({
+        harnessEntry: HARNESS_ENTRY, url: page.url(), result, orchestrationError,
+        launch: BROWSER_LAUNCH, browserVersion: browser.version(),
+        consoleErrors, pageErrors, requestFailures,
+      }, null, 2));
     }
-    const result = await page.evaluate(() => (
-      window as unknown as { __studioGpuCommittedParityResult?: unknown }
-    ).__studioGpuCommittedParityResult) as ParityResult;
 
     await context.close();
 
+    invariant(result !== null, "브라우저의 parity 결과가 없습니다. browser-diagnostics.json을 확인하세요.");
     invariant(result.status === "ok", `harness reported an error: ${
       result.status === "error" ? result.message : "unknown"
     }`);

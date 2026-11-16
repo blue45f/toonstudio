@@ -43,6 +43,11 @@ interface PhaseObservation {
   readonly phase: PresentationPhase;
   readonly owner: StudioEngineWebGpuPresentationSurfaceStats;
 }
+interface DestroyCallObservation {
+  readonly phase: PresentationPhase;
+  readonly intentionalDestroyRequested: boolean;
+  readonly stack: string | null;
+}
 
 /** 관찰 callback은 동기 기록만 하며 원래 lost promise와 GPU 소유권을 바꾸지 않는다. */
 export function createPresentationDeviceDiagnostics(lostPromise: Promise<GPUDeviceLostInfo>) {
@@ -50,6 +55,7 @@ export function createPresentationDeviceDiagnostics(lostPromise: Promise<GPUDevi
   let intentionalDestroyRequested = false;
   const losses: DeviceLossObservation[] = [];
   const observations: PhaseObservation[] = [];
+  const destroyCalls: DestroyCallObservation[] = [];
   const promiseErrors: { phase: PresentationPhase; message: string }[] = [];
   const recordLoss = (observer: LossObserver, info: GPUDeviceLostInfo): void => {
     losses.push({ observer, phase, intentionalDestroyRequested, reason: info.reason, message: info.message });
@@ -65,6 +71,14 @@ export function createPresentationDeviceDiagnostics(lostPromise: Promise<GPUDevi
   return {
     observe,
     whenLossObserved,
+    instrumentDestroy(device: { destroy(...args: unknown[]): unknown }): void {
+      const originalDestroy = device.destroy;
+      // 같은 GPU 객체의 호출만 관찰하고 원래 receiver·인수·반환·예외를 전달한다.
+      device.destroy = function (this: unknown, ...args: unknown[]): unknown {
+        destroyCalls.push({ phase, intentionalDestroyRequested, stack: new Error("GPUDevice.destroy called").stack ?? null });
+        return Reflect.apply(originalDestroy, this, args);
+      };
+    },
     onOwnerDeviceLost: (info: GPUDeviceLostInfo): void => recordLoss("presentation-owner", info),
     onProducerDeviceLost: (info: GPUDeviceLostInfo): void => recordLoss("textured-runtime", info),
     markIntentionalDestroy(owner: StudioEngineWebGpuPresentationSurfaceStats): void {
@@ -76,6 +90,7 @@ export function createPresentationDeviceDiagnostics(lostPromise: Promise<GPUDevi
         phase, intentionalDestroyRequested,
         observations: observations.map(entry => ({ ...entry, owner: { ...entry.owner } })),
         losses: losses.map(entry => ({ ...entry })),
+        destroyCalls: destroyCalls.map(entry => ({ ...entry })),
         promiseErrors: promiseErrors.map(entry => ({ ...entry })),
       };
     },

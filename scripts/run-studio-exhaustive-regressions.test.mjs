@@ -17,7 +17,9 @@ const covers = file => paths.some(pattern => new RegExp(`^${pattern.split("*").m
 
 function temporary(t) {
   const directory = mkdtempSync(join(tmpdir(), "studio-regressions-test-"));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const cleanup = () => rmSync(directory, { recursive: true, force: true });
+  if (typeof t.after === "function") t.after(cleanup);
+  else t.onTestFinished(cleanup);
   return directory;
 }
 
