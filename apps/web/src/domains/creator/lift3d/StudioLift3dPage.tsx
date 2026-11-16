@@ -26,6 +26,11 @@ import {
   paintStudioLift3dDepthPreview,
   paintStudioLift3dMaskPreview,
 } from "./studio-lift3d-preview-raster";
+import {
+  STUDIO_LIFT3D_SAMPLE_PRESETS,
+  buildStudioLift3dSampleDecodedFile,
+  type StudioLift3dSamplePreset,
+} from "./studio-lift3d-sample-presets";
 
 import type {
   StudioLift3dLibraryRights,
@@ -172,6 +177,19 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
       if (!superseded()) setBusy(false);
     }
   }, []);
+
+  const onPickSample = useCallback(
+    (sample: StudioLift3dSamplePreset) => {
+      sourceRevisionRef.current += 1;
+      setDecodeError(null);
+      setLiftError(null);
+      setLibraryNotice(null);
+      selectSubject(sample.subject);
+      setDecoded(buildStudioLift3dSampleDecodedFile(sample.id));
+      setTab("model");
+    },
+    [selectSubject],
+  );
 
   // 설정이 바뀔 때마다 변환을 다시 돌린다. 한 프레임 미뤄 두면 슬라이더를 끄는 동안의
   // 중간 값들이 자연스럽게 합쳐지고, 무거운 계산이 입력 반응을 막지 않는다.
@@ -350,6 +368,8 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/studio/3d/dcc/model" className={SECONDARY_BUTTON_CLASS}>정밀 3D 모델러</Link>
+            <Link href="/studio/bg3d" className={SECONDARY_BUTTON_CLASS}>3D 배경 편집기</Link>
             <Link href="/studio/character-convert" className={SECONDARY_BUTTON_CLASS}>캐릭터 AI 2D ↔ 3D</Link>
             <button
               type="button"
@@ -385,6 +405,24 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                 PNG · JPEG · WebP. 캐릭터·소품은 <strong className="font-semibold text-fg-2">배경을 지운 PNG</strong>
                 일 때 실루엣이 가장 정확합니다.
               </p>
+              <div className="mt-3 space-y-1.5 border-t border-line/60 pt-3">
+                <p className="text-xs font-semibold text-fg-2">파일 없이 내장 샘플로 바로 체험하기</p>
+                <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="내장 샘플 원화">
+                  {STUDIO_LIFT3D_SAMPLE_PRESETS.map((sample) => (
+                    <button
+                      key={sample.id}
+                      type="button"
+                      disabled={busy || librarySaving}
+                      data-testid={`lift3d-sample-${sample.subject}`}
+                      title={sample.hintKo}
+                      onClick={() => onPickSample(sample)}
+                      className="min-h-11 rounded-lg border border-line bg-panel px-2 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45"
+                    >
+                      {sample.labelKo}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {decoded !== null ? (
                 <p className="mt-2 font-mono text-xs text-fg-3">
                   {decoded.fileName} · {decoded.naturalWidth}×{decoded.naturalHeight}px
@@ -477,22 +515,22 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                   />
                 )}
                 {preset.geometryMode === "relief" ? (
-                  <label className="flex items-center gap-2 text-xs font-semibold text-fg-2">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-xs font-semibold text-fg-2">
                     <input
                       type="checkbox"
                       checked={invertRelief}
                       onChange={(event) => setInvertRelief(event.target.checked)}
-                      className="size-4 accent-accent"
+                      className="size-5 accent-accent"
                     />
                     어두운 면을 앞으로 (역광 배경)
                   </label>
                 ) : null}
-                <label className="flex items-center gap-2 text-xs font-semibold text-fg-2">
+                <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-xs font-semibold text-fg-2">
                   <input
                     type="checkbox"
                     checked={unlit}
                     onChange={(event) => setUnlit(event.target.checked)}
-                    className="size-4 accent-accent"
+                    className="size-5 accent-accent"
                   />
                   조명 없이 원화 그대로 (unlit)
                 </label>
@@ -533,7 +571,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                 퍼블릭 도메인으로 올린 모델도 "확인 필요" 로 뜨고 같은 파일을 업로드 패널에서
                 다시 넣을 때 rights-conflict 까지 난다.
               */}
-              <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg-2">
+              <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2.5 text-xs font-semibold text-fg-2">
                 <input
                   type="checkbox"
                   checked={rightsDeclaration.commercialUse}
@@ -542,7 +580,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
                     setCommercialUse(event.target.checked);
                     setLibraryNotice(null);
                   }}
-                  className="size-4 accent-accent disabled:opacity-40"
+                  className="size-5 accent-accent disabled:opacity-40"
                 />
                 상업적 이용 가능
                 {libraryRights === "unknown" ? (

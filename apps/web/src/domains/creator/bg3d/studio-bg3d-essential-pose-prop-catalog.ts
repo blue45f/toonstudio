@@ -21,6 +21,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "kitbash-v10-prop-3d"
   | "kitbash-v11-prop-3d"
   | "blender-hero-v12-prop-3d"
+  | "blender-modeler-kit-v13-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -74,6 +75,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "블렌더 플래그십 히어로 V12",
       labelEn: "Blender Flagship Hero Props V12",
       descriptionKo: "3D 셰이퍼 웹툰 두상 흉상·판타지 각성 룬 대검 제단·모던 에스프레소 카페 바·헌터 홀로 게이트 터미널 4종",
+    },
+    {
+      id: "blender-modeler-kit-v13-prop-3d",
+      labelKo: "블렌더 모델러 스타터 V13",
+      labelEn: "Blender Modeler Starter Kit V13",
+      descriptionKo: "웹툰 조형 두상 베이스·모듈러 석조 아치 창문·나선 계단 코어·거리 벤치 및 가로등 세트 4종",
     },
     {
       id: "original-scene-prop-3d",
@@ -175,6 +182,13 @@ const RAW_BLENDER_HERO_V12_ROWS: readonly RawAssetRow[] = [
   ["fantasy-runic-sword-altar-v12", "로판·판타지 각성 룬 대검 제단 (V12)", "Fantasy Runic Greatsword Altar V12"],
   ["modern-cafe-espresso-bar-v12", "모던 에스프레소 카페 바·쇼케이스 (V12)", "Modern Cafe Espresso Bar & Showcase V12"],
   ["hunter-gate-holo-terminal-v12", "헌터 각성 포털 링·홀로 터미널 (V12)", "Hunter Gate Portal & Holo Terminal V12"],
+];
+
+const RAW_BLENDER_MODELER_KIT_V13_ROWS: readonly RawAssetRow[] = [
+  ["webtoon-sculpt-head-basemesh-v13", "웹툰 캐릭터 두상·목 조형 베이스메시 (V13)", "Webtoon Sculpt Head & Neck Basemesh V13"],
+  ["webtoon-modular-arch-window-v13", "유럽풍 석조 아치 창문 벽 모듈 (V13)", "Modular Stone Arch Window Wall V13"],
+  ["webtoon-spiral-stair-core-v13", "탑·복층 원형 나선 계단 코어 (V13)", "Spiral Stair Core Module V13"],
+  ["webtoon-street-bench-lamp-v13", "학원물 거리 원목 벤치·가로등 세트 (V13)", "Street Wooden Bench & Lamp Set V13"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -392,6 +406,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${slug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "character", "hero", "blender-v12", "셰이퍼", "히어로모델", "카페", "판타지", "헌터", slug, labelKo, labelEn]),
+      }),
+    ),
+    ...RAW_BLENDER_MODELER_KIT_V13_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `blender-modeler-kit-v13-${slug}`,
+        category: "blender-modeler-kit-v13-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/blender-modeler-kit-v13/${slug}.glb`,
+        previewUrl: `/studio-assets/blender-modeler-kit-v13/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "character", "modeler-kit", "blender-v13", "모델러", "조형", "아치", "나선계단", "벤치", slug, labelKo, labelEn]),
       }),
     ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

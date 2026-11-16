@@ -10,6 +10,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import v11Provenance from "../../../../public/studio-assets/kitbash-v11/provenance.json";
 import v12Provenance from "../../../../public/studio-assets/blender-hero-v12/provenance.json";
+import v13Provenance from "../../../../public/studio-assets/blender-modeler-kit-v13/provenance.json";
 
 import { StudioBg3dAuthoredEnvironmentCyclesPanel } from "./StudioBg3dAuthoredEnvironmentCyclesPanel";
 import { StudioBg3dEssentialPosePropPanel } from "./StudioBg3dEssentialPosePropPanel";
@@ -69,9 +70,9 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(onAdd).toHaveBeenCalledTimes(2);
   });
 
-  it("V11 상부 배경과 V12 플래그십 히어로를 포함한 119종 CC0 GLB와 기존 assets/3d 정본을 빠짐없이 등록한다", () => {
-    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(119);
-    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(9);
+  it("V11 상부 배경·V12 플래그십 히어로·V13 모델러 키트를 포함한 123종 CC0 GLB와 기존 assets/3d 정본을 빠짐없이 등록한다", () => {
+    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(123);
+    expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(10);
 
     const poses = listStudioBg3dEssentialAssetsByCategory("pose-3d");
     const essentialProps = listStudioBg3dEssentialAssetsByCategory("essential-prop-3d");
@@ -80,6 +81,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     const kitbashV10Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v10-prop-3d");
     const kitbashV11Props = listStudioBg3dEssentialAssetsByCategory("kitbash-v11-prop-3d");
     const blenderHeroV12Props = listStudioBg3dEssentialAssetsByCategory("blender-hero-v12-prop-3d");
+    const blenderModelerV13Props = listStudioBg3dEssentialAssetsByCategory("blender-modeler-kit-v13-prop-3d");
     const originalSceneProps = listStudioBg3dEssentialAssetsByCategory("original-scene-prop-3d");
     const originalHandWearProps = listStudioBg3dEssentialAssetsByCategory("original-hand-wear-prop-3d");
 
@@ -90,6 +92,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(kitbashV10Props).toHaveLength(8);
     expect(kitbashV11Props).toHaveLength(6);
     expect(blenderHeroV12Props).toHaveLength(4);
+    expect(blenderModelerV13Props).toHaveLength(4);
     expect(originalSceneProps).toHaveLength(33);
     expect(originalHandWearProps).toHaveLength(35);
 
@@ -195,6 +198,36 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(bustBounds.getSize(new Vector3()).y).toBeGreaterThan(0.35);
   });
 
+  it("V13 모델러 스타터 카탈로그의 4개 GLB는 출처·라이선스 원장과 같은 경로·바이트·SHA를 갖는다", async () => {
+    const entries = listStudioBg3dEssentialAssetsByCategory("blender-modeler-kit-v13-prop-3d");
+    expect(entries).toHaveLength(4);
+    const root = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-modeler-kit-v13");
+    const files = fs.readdirSync(root).filter((name) => name.endsWith(".glb")).sort();
+    expect(entries.map((entry) => path.basename(entry.glbUrl)).sort()).toEqual(files);
+    expect(v13Provenance.files.map((record) => record.file).sort()).toEqual(files);
+    expect(v13Provenance.thumbnails.map((record) => record.file).sort()).toEqual(
+      entries.map((entry) => `thumbnails/${path.basename(entry.glbUrl, ".glb")}.png`).sort(),
+    );
+    expect(v13Provenance.license).toBe("CC0-1.0");
+    expect(v13Provenance.externalSources).toEqual([]);
+    const licenses = fs.readFileSync(path.join(root, "LICENSES.md"), "utf8");
+    for (const record of v13Provenance.files) {
+      const bytes = fs.readFileSync(path.join(root, record.file));
+      expect(bytes.byteLength).toBe(record.bytes);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
+      expect(licenses).toContain(record.file);
+    }
+    for (const record of v13Provenance.thumbnails) {
+      const bytes = fs.readFileSync(path.join(root, record.file));
+      expect(bytes.byteLength).toBe(record.bytes);
+      expect(createHash("sha256").update(bytes).digest("hex")).toBe(record.sha256);
+    }
+    const loader = new GLTFLoader();
+    const archBytes = fs.readFileSync(path.join(root, "webtoon-modular-arch-window-v13.glb"));
+    const archScene = (await loader.parseAsync(Uint8Array.from(archBytes).buffer, "")).scene;
+    expect(new Box3().setFromObject(archScene).getSize(new Vector3()).y).toBeGreaterThan(1.5);
+  });
+
   it("실제 V11 GLB에 높이 1.5m 블라인드와 방송 스피커의 장착부·그릴·드라이버가 들어 있다", async () => {
     const loader = new GLTFLoader();
     const load = async (slug: string) => {
@@ -240,8 +273,8 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     const onFile = vi.fn();
     render(<StudioBg3dEssentialPosePropPanel onFile={onFile} />);
 
-    expect(screen.getByText(/V11 상부배경 6종 · V12 히어로 4종/u)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /119종/u })).toBeTruthy();
+    expect(screen.getByText(/V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 4종/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /123종/u })).toBeTruthy();
     fireEvent.click(screen.getByTestId("bg3d-essential-pose-prop-toggle"));
     expect(screen.getByTestId("bg3d-essential-item-pose-neutral-3d")).toBeTruthy();
     expect(screen.getByTestId("bg3d-essential-item-prop-desk")).toBeTruthy();

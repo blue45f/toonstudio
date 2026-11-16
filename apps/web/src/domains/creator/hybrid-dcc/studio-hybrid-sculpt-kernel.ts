@@ -32,12 +32,19 @@ export type StudioSculptBrushKind =
   | "scrape"
   | "snakeHook";
 
+export interface StudioSculptSymmetry {
+  readonly x?: boolean;
+  readonly y?: boolean;
+  readonly z?: boolean;
+}
+
 export interface StudioSculptStroke {
   readonly kind: StudioSculptBrushKind;
   readonly center: StudioMeshVec3;
   readonly radius: number;
   readonly strength: number;
   readonly direction?: StudioMeshVec3;
+  readonly symmetry?: StudioSculptSymmetry;
 }
 
 export type StudioSculptResult =
@@ -162,68 +169,89 @@ export function applyStudioSculptStroke(
   const dl = Math.hypot(dir.x, dir.y, dir.z) || 1;
   let smoothNeighborhood: ReturnType<typeof smoothAdjacency> | undefined;
 
-  for (let i = 0; i < n; i += 1) {
-    const m = mask ? (mask[i] ?? 1) : 1;
-    if (m <= 0) continue;
-    const x = positions[i * 3]!;
-    const y = positions[i * 3 + 1]!;
-    const z = positions[i * 3 + 2]!;
-    const dist = Math.hypot(x - cx, y - cy, z - cz);
-    const w = falloff(dist, stroke.radius) * stroke.strength * m;
-    if (w === 0) continue;
-    if (stroke.kind === "grab" || stroke.kind === "snakeHook") {
-      positions[i * 3] = x + (dir.x / dl) * w;
-      positions[i * 3 + 1] = y + (dir.y / dl) * w;
-      positions[i * 3 + 2] = z + (dir.z / dl) * w;
-    } else if (usesVertexNormals) {
-      const normalX = vertexNormals?.[i * 3];
-      const normalY = vertexNormals?.[i * 3 + 1];
-      const normalZ = vertexNormals?.[i * 3 + 2];
-      if (normalX === undefined || normalY === undefined || normalZ === undefined) {
-        return { ok: false, detail: "조형 정점 법선의 원본 대응을 확인할 수 없습니다." };
-      }
-      const amount = stroke.kind === "clay" ? w * 0.5 : stroke.kind === "crease" ? -w * 0.5 : w;
-      positions[i * 3] = x + normalX * amount;
-      positions[i * 3 + 1] = y + normalY * amount;
-      positions[i * 3 + 2] = z + normalZ * amount;
-    } else if (stroke.kind === "flatten" || stroke.kind === "scrape") {
-      // 가중 평균 평면 투영. scrape 는 방향 쪽으로 튀어나온 정점만 닦아내린다.
-      // 평면 법선은 브러시 direction 을 따른다(닫힌 메시의 평균 법선은 0 으로 퇴화한다).
-      const px = dir.x / dl;
-      const py = dir.y / dl;
-      const pz = dir.z / dl;
-      const signed = (x - cx) * px + (y - cy) * py + (z - cz) * pz;
-      const above = signed > 0;
-      if (stroke.kind === "flatten" || above) {
-        const step = stroke.kind === "scrape" ? Math.max(0, signed) * w : signed * w;
-        positions[i * 3] = x - px * step;
-        positions[i * 3 + 1] = y - py * step;
-        positions[i * 3 + 2] = z - pz * step;
-      }
-    } else if (stroke.kind === "smooth") {
-      // 첫 실제 smooth 영향에서만 구성한다. 좌표는 이전과 같이 현재 in-place 배열에서 읽는다.
-      smoothNeighborhood ??= smoothAdjacency(soup.indices, n);
-      let ax = 0;
-      let ay = 0;
-      let az = 0;
-      let count = 0;
-      const start = smoothNeighborhood.offsets[i] ?? 0;
-      const end = smoothNeighborhood.offsets[i + 1] ?? start;
-      for (let adjacent = start; adjacent < end; adjacent += 1) {
-        const j = smoothNeighborhood.neighbors[adjacent];
-        if (j === undefined) throw new Error("Smooth 원본 이웃 정점이 누락됐습니다.");
-        ax += positions[j * 3]!;
-        ay += positions[j * 3 + 1]!;
-        az += positions[j * 3 + 2]!;
-        count += 1;
-      }
-      if (count > 0) {
-        ax /= count;
-        ay /= count;
-        az /= count;
-        positions[i * 3] = x + (ax - x) * w;
-        positions[i * 3 + 1] = y + (ay - y) * w;
-        positions[i * 3 + 2] = z + (az - z) * w;
+  let mirrorSigns: Array<readonly [1 | -1, 1 | -1, 1 | -1]> = [[1, 1, 1]];
+  if (stroke.symmetry?.x && Math.abs(cx) > 1e-6) {
+    mirrorSigns = mirrorSigns.flatMap(([sx, sy, sz]) => [[sx, sy, sz], [-sx as 1 | -1, sy, sz]]);
+  }
+  if (stroke.symmetry?.y && Math.abs(cy) > 1e-6) {
+    mirrorSigns = mirrorSigns.flatMap(([sx, sy, sz]) => [[sx, sy, sz], [sx, -sy as 1 | -1, sz]]);
+  }
+  if (stroke.symmetry?.z && Math.abs(cz) > 1e-6) {
+    mirrorSigns = mirrorSigns.flatMap(([sx, sy, sz]) => [[sx, sy, sz], [sx, sy, -sz as 1 | -1]]);
+  }
+  const sourcePositions = mirrorSigns.length > 1 ? soup.positions : positions;
+
+  for (const [signX, signY, signZ] of mirrorSigns) {
+    const dabCx = cx * signX;
+    const dabCy = cy * signY;
+    const dabCz = cz * signZ;
+    const dabDirX = (dir.x * signX) / dl;
+    const dabDirY = (dir.y * signY) / dl;
+    const dabDirZ = (dir.z * signZ) / dl;
+
+    for (let i = 0; i < n; i += 1) {
+      const m = mask ? (mask[i] ?? 1) : 1;
+      if (m <= 0) continue;
+      const sx = sourcePositions[i * 3]!;
+      const sy = sourcePositions[i * 3 + 1]!;
+      const sz = sourcePositions[i * 3 + 2]!;
+      const dist = Math.hypot(sx - dabCx, sy - dabCy, sz - dabCz);
+      const w = falloff(dist, stroke.radius) * stroke.strength * m;
+      if (w === 0) continue;
+      const x = positions[i * 3]!;
+      const y = positions[i * 3 + 1]!;
+      const z = positions[i * 3 + 2]!;
+      if (stroke.kind === "grab" || stroke.kind === "snakeHook") {
+        positions[i * 3] = x + dabDirX * w;
+        positions[i * 3 + 1] = y + dabDirY * w;
+        positions[i * 3 + 2] = z + dabDirZ * w;
+      } else if (usesVertexNormals) {
+        const normalX = vertexNormals?.[i * 3];
+        const normalY = vertexNormals?.[i * 3 + 1];
+        const normalZ = vertexNormals?.[i * 3 + 2];
+        if (normalX === undefined || normalY === undefined || normalZ === undefined) {
+          return { ok: false, detail: "조형 정점 법선의 원본 대응을 확인할 수 없습니다." };
+        }
+        const amount = stroke.kind === "clay" ? w * 0.5 : stroke.kind === "crease" ? -w * 0.5 : w;
+        positions[i * 3] = x + normalX * amount;
+        positions[i * 3 + 1] = y + normalY * amount;
+        positions[i * 3 + 2] = z + normalZ * amount;
+      } else if (stroke.kind === "flatten" || stroke.kind === "scrape") {
+        // 가중 평균 평면 투영. scrape 는 방향 쪽으로 튀어나온 정점만 닦아내린다.
+        // 평면 법선은 브러시 direction 을 따른다(닫힌 메시의 평균 법선은 0 으로 퇴화한다).
+        const signed = (sx - dabCx) * dabDirX + (sy - dabCy) * dabDirY + (sz - dabCz) * dabDirZ;
+        const above = signed > 0;
+        if (stroke.kind === "flatten" || above) {
+          const step = stroke.kind === "scrape" ? Math.max(0, signed) * w : signed * w;
+          positions[i * 3] = x - dabDirX * step;
+          positions[i * 3 + 1] = y - dabDirY * step;
+          positions[i * 3 + 2] = z - dabDirZ * step;
+        }
+      } else if (stroke.kind === "smooth") {
+        // 첫 실제 smooth 영향에서만 구성한다. 단일 브러시는 이전과 같이 in-place 좌표를 읽는다.
+        smoothNeighborhood ??= smoothAdjacency(soup.indices, n);
+        let ax = 0;
+        let ay = 0;
+        let az = 0;
+        let count = 0;
+        const start = smoothNeighborhood.offsets[i] ?? 0;
+        const end = smoothNeighborhood.offsets[i + 1] ?? start;
+        for (let adjacent = start; adjacent < end; adjacent += 1) {
+          const j = smoothNeighborhood.neighbors[adjacent];
+          if (j === undefined) throw new Error("Smooth 원본 이웃 정점이 누락됐습니다.");
+          ax += sourcePositions[j * 3]!;
+          ay += sourcePositions[j * 3 + 1]!;
+          az += sourcePositions[j * 3 + 2]!;
+          count += 1;
+        }
+        if (count > 0) {
+          ax /= count;
+          ay /= count;
+          az /= count;
+          positions[i * 3] = x + (ax - sx) * w;
+          positions[i * 3 + 1] = y + (ay - sy) * w;
+          positions[i * 3 + 2] = z + (az - sz) * w;
+        }
       }
     }
   }

@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Boxes } from "lucide-react";
 import {
   cloneElement,
   Suspense,
@@ -44,7 +44,7 @@ function Bg3DRetainedLoadingOverlay() {
       <section className="relative w-[min(31rem,calc(100vw-1.5rem))] overflow-hidden rounded-3xl border border-accent/30 bg-panel/95 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
         <span aria-hidden="true" className="absolute -right-16 -top-20 size-56 rounded-full border border-accent/20" />
         <div className="relative flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-accent/25 bg-accent-soft text-accent"><Loader2 className="animate-spin motion-reduce:animate-none" size={19} aria-hidden /></span>
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-accent/25 bg-accent-soft text-accent"><Boxes size={19} aria-hidden /></span>
           <div className="min-w-0">
             <p className="text-[0.64rem] font-black uppercase tracking-[0.15em] text-accent">3D SCENE STARTUP</p>
             <h2 className="mt-1 text-base font-black text-fg sm:text-lg">{t("studio.bg3dPanelStatus.retainedOwnerHost.openingHelper", "장면 도우미를 여는 중")}</h2>

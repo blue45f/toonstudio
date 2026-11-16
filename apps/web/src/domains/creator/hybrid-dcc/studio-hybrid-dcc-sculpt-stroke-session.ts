@@ -100,10 +100,14 @@ function frozenBrush(brush: StudioSculptStrokeBrush): StudioSculptStrokeBrush {
     || !Number.isFinite(brush.strength) || (brush.direction !== undefined && !finitePoint(brush.direction))) {
     throw new Error("조형 브러시 종류·양의 반경·유한한 강도와 방향을 확인하세요.");
   }
+  const hasSymmetry = Boolean(brush.symmetry?.x || brush.symmetry?.y || brush.symmetry?.z);
   return Object.freeze({ kind: brush.kind, radius: brush.radius, strength: brush.strength,
     ...(brush.direction === undefined ? {} : { direction: Object.freeze({
       x: brush.direction.x, y: brush.direction.y, z: brush.direction.z,
     }) }),
+    ...(hasSymmetry ? { symmetry: Object.freeze({
+      x: Boolean(brush.symmetry?.x), y: Boolean(brush.symmetry?.y), z: Boolean(brush.symmetry?.z),
+    }) } : {}),
   });
 }
 

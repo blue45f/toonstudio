@@ -26,14 +26,16 @@ import { useStudioHybridDccUvEditor, type StudioHybridDccUvEditorHost } from "./
 import { StudioHybridDccToonEditor } from "./materials/StudioHybridDccToonEditor";
 import { useStudioHybridDccToonEditor } from "./materials/useStudioHybridDccToonEditor";
 
+import type { StudioDccWorkbenchMode } from "../studio-workspace-route";
+
 // eslint-disable-next-line react-refresh/only-export-components -- preserve the public viewport projection/test contracts
 export * from "./StudioHybridDccViewportCore";
 const OBJECT_SELECTION = createStudioHybridDccComponentSelection();
 
 export function StudioHybridDccViewport({
-  onRunWorkspaceEdit, onRunWorkspaceUvAtlas, materialMode = false, workspaceDocumentId,
+  onRunWorkspaceEdit, onRunWorkspaceUvAtlas, materialMode = false, workbenchMode, workspaceDocumentId,
   ...props
-}: StudioHybridDccViewportProps & StudioHybridDccUvEditorHost) {
+}: StudioHybridDccViewportProps & StudioHybridDccUvEditorHost & { readonly workbenchMode?: StudioDccWorkbenchMode }) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const healSectionRef = useRef<HTMLElement>(null);
   const bt = useBilingual("StudioHybridDccToonEditor");
@@ -123,16 +125,16 @@ export function StudioHybridDccViewport({
     return () => view?.removeEventListener("keydown", cancelPickingFromKey, true);
   }, []);
   const sculptAvailable = !materialMode && !faceModeling.engaged && !componentTransform.previewing && !healing.engaged;
-  return (
-    <div ref={scopeRef} className="min-w-0" data-studio-hybrid-dcc-selection-shell="true">
-      <StudioHybridDccViewportCore {...projectionProps} editingDisabled={projectionProps.editingDisabled || chord.pending || chord.applying || healing.engaged}
-        boundaryEndpointMarkers={mode !== null && !chord.preview ? chord.endpoints : undefined}
-        onBoundaryEndpointPick={mode !== null ? (pick) => {
-          if (chordUnavailable || props.editingDisabled || chord.pending || chord.applying || pick.assetId !== source?.assetId) return false;
-          return chord.pickEndpoint(pick.hit, mode, pick.projection);
-        } : undefined} uvChecker={uvMode} toonPreview={toonEditor.preview}
-        sculptGesture={sculptAvailable ? props.sculptGesture : undefined} sculptPreview={sculptAvailable ? props.sculptPreview : undefined} />
-      {!materialMode ? <><StudioHybridDccMeshSelectionTools {...(geometryActive ? { ...toolsProps, editingDisabled: true } : toolsProps)} scopeRef={scopeRef} />
+  const activePolygonOp = geometryActive || faceModeling.engaged || componentTransform.dirty || componentTransform.previewing;
+  const hasActiveObject = Boolean(props.workspace.activeAssetId);
+  const showPolygonTools = !materialMode && (workbenchMode === undefined || hasActiveObject || activePolygonOp);
+  const collapsePolygonTools = workbenchMode !== undefined
+    && workbenchMode !== "model"
+    && workbenchMode !== "cad"
+    && !activePolygonOp;
+  const polygonToolDeck = showPolygonTools ? (
+    <>
+      <StudioHybridDccMeshSelectionTools {...(geometryActive ? { ...toolsProps, editingDisabled: true } : toolsProps)} scopeRef={scopeRef} />
       {!geometryActive ? <StudioHybridDccComponentTransformTools model={componentTransform} /> : null}
       <StudioHybridDccPrecisionTools {...(geometryActive ? { ...toolsProps, editingDisabled: true } : toolsProps)} />
       <StudioHybridDccBoundaryChordTools model={chord} mode={mode} onModeChange={startPicking}
@@ -142,7 +144,29 @@ export function StudioHybridDccViewport({
       <StudioHybridDccCoplanarEdgeDissolveTools model={{ ...healing, cancel: stopHealing }} unavailable={healingUnavailable}
         busy={Boolean(props.editingDisabled)} sectionRef={healSectionRef} />
       {!geometryActive ? <StudioHybridDccFaceModelingTools model={faceTools} /> : null}
-      <StudioHybridDccTransformUtilities {...(geometryActive ? { ...toolsProps, editingDisabled: true } : toolsProps)} /></> : null}
+      <StudioHybridDccTransformUtilities {...(geometryActive ? { ...toolsProps, editingDisabled: true } : toolsProps)} />
+    </>
+  ) : null;
+  return (
+    <div ref={scopeRef} className="min-w-0" data-studio-hybrid-dcc-selection-shell="true">
+      <StudioHybridDccViewportCore {...projectionProps} editingDisabled={projectionProps.editingDisabled || chord.pending || chord.applying || healing.engaged}
+        boundaryEndpointMarkers={mode !== null && !chord.preview ? chord.endpoints : undefined}
+        onBoundaryEndpointPick={mode !== null ? (pick) => {
+          if (chordUnavailable || props.editingDisabled || chord.pending || chord.applying || pick.assetId !== source?.assetId) return false;
+          return chord.pickEndpoint(pick.hit, mode, pick.projection);
+        } : undefined} uvChecker={uvMode} toonPreview={toonEditor.preview}
+        sculptGesture={sculptAvailable ? props.sculptGesture : undefined} sculptPreview={sculptAvailable ? props.sculptPreview : undefined} />
+      {polygonToolDeck ? (
+        collapsePolygonTools ? (
+          <details className="mt-3 rounded-xl border border-line bg-panel" data-studio-hybrid-dcc-polygon-drawer="true">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-fg-2 [&::-webkit-details-marker]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+              <span>{bt("정밀 점·선·면 편집 보조 도구 열기", "Open precision vertex/edge/face tools")}</span>
+              <span className="text-[0.6875rem] font-normal text-fg-3">{bt("모델·설계 모드 외 보조 패널", "Auxiliary polygon tools")}</span>
+            </summary>
+            <div className="border-t border-line p-2.5">{polygonToolDeck}</div>
+          </details>
+        ) : polygonToolDeck
+      ) : null}
       {materialMode ? <div role="group" aria-label={bt("재질 작업 선택", "Material tool")} className="mt-3 flex flex-wrap gap-2">
         {(["uv", "toon"] as const).map((tool) => <button key={tool} type="button" aria-pressed={materialTool === tool} disabled={props.editingDisabled} onClick={() => setMaterialTool(tool)}
           className={`min-h-11 rounded-lg border px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 ${materialTool === tool ? "border-accent/60 bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:bg-raised"}`}>{tool === "uv" ? bt("UV 편집", "UV editing") : bt("툰 재질", "Toon material")}</button>)}

@@ -1240,7 +1240,7 @@ export function StudioHybridDccViewport({
                   disabled={editingDisabled || Boolean(onBoundaryEndpointPick)}
                   onClick={() => { if (!onBoundaryEndpointPick && selectionAllowed()) onSelectAsset(asset.assetId); }}
                   className={classes(
-                    "min-h-11 max-w-40 shrink-0 rounded-lg border px-2.5 text-left transition-colors motion-reduce:transition-none sm:pointer-fine:min-h-9",
+                    "min-h-11 max-w-40 shrink-0 rounded-lg border px-2.5 text-left transition-colors motion-reduce:transition-none",
                     "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                     selected
                       ? "border-accent/55 bg-accent-soft text-accent"

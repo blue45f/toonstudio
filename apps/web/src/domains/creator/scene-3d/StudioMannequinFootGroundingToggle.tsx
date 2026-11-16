@@ -39,7 +39,7 @@ export function StudioMannequinFootGroundingToggle({
             : "자동 접지가 꺼져 있습니다. 포즈가 바뀌어도 발 관통을 자동으로 보정하지 않습니다."
         }
         className={cn(
-          "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[0.72rem] font-semibold transition-colors pointer-coarse:min-h-11 pointer-coarse:px-3",
+          "inline-flex min-h-11 items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[0.72rem] font-semibold transition-colors pointer-coarse:min-h-11 pointer-coarse:px-3",
           STUDIO_FOCUS_RING,
           enabled
             ? "border-accent/60 bg-accent-soft/40 text-fg"

@@ -1,0 +1,55 @@
+{
+  "schema": "toonstudio.blender-modeler-kit-assets.v13",
+  "createdAt": "2026-11-16",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.2.0 LTS (blend-ai MCP + generate_modeler_kit_v13.py + glbforge desktop-hero & mobile-hero 100/100)",
+  "tool": "Blender 5.2.0 LTS",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "webtoon-modular-arch-window-v13.glb",
+      "bytes": 74572,
+      "sha256": "1f0441bc1d69a16166ccc91810256c3bc18e83b6d42e7fedf44b89b712323210"
+    },
+    {
+      "file": "webtoon-sculpt-head-basemesh-v13.glb",
+      "bytes": 57548,
+      "sha256": "9e9f8491ee11f11ebbdd1a7f0c2515bdda2464f197189cc6774f0e7947d4540e"
+    },
+    {
+      "file": "webtoon-spiral-stair-core-v13.glb",
+      "bytes": 86000,
+      "sha256": "d52ee0d8143ad9d5a6dc3d576038612e00c272ffcc2e5f1e06ef79708a9223a4"
+    },
+    {
+      "file": "webtoon-street-bench-lamp-v13.glb",
+      "bytes": 58316,
+      "sha256": "1472b7b57f9c3f9998894aabe954dbeff5982439215e9a1929157516a6d209d3"
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-modular-arch-window-v13.png",
+      "bytes": 17587,
+      "sha256": "ff1f909411720b94add925c0637e0dccde9935749646d6ceb2c6c2ec59181216"
+    },
+    {
+      "file": "thumbnails/webtoon-sculpt-head-basemesh-v13.png",
+      "bytes": 66604,
+      "sha256": "443ad863d3b94201aac70a35673cf946931ca713112932bfe506dec3d4619230"
+    },
+    {
+      "file": "thumbnails/webtoon-spiral-stair-core-v13.png",
+      "bytes": 43622,
+      "sha256": "f178a10abd54a91da1c3d4775ab5b607544063bf669f390f6539d503503a2ac7"
+    },
+    {
+      "file": "thumbnails/webtoon-street-bench-lamp-v13.png",
+      "bytes": 27001,
+      "sha256": "496c6353d2528422a817d7044b16871e61aa588837ede3f62d5da1155c8a83e2"
+    }
+  ]
+}

@@ -142,6 +142,13 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <a
+              href="/studio/3d/dcc/model"
+              data-testid="bg3d-open-hybrid-dcc-link"
+              className="hidden min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent md:inline-flex"
+            >
+              정밀 모델러 (DCC)
+            </a>
             <div
               className="flex items-center rounded-lg border border-line bg-card p-0.5"
               role="group"
@@ -154,7 +161,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               <button
                 type="button"
                 aria-pressed={experienceMode === "simple"}
-                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-2.5 sm:text-[0.65rem]"
+                className="min-h-11 rounded-md px-2.5 text-xs font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-3"
                 onClick={() => setExperienceMode("simple")}
               >
                 <Sparkles size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />
@@ -164,7 +171,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               <button
                 type="button"
                 aria-pressed={experienceMode === "pro"}
-                className="min-h-8 rounded-md px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-2.5 sm:text-[0.65rem]"
+                className="min-h-11 rounded-md px-2.5 text-xs font-bold text-fg-2 hover:text-fg aria-pressed:bg-accent-soft aria-pressed:text-fg sm:px-3"
                 onClick={() => setExperienceMode("pro")}
               >
                 <SlidersHorizontal size={12} className="mr-1 hidden min-[360px]:inline" aria-hidden />

@@ -1,10 +1,15 @@
-import { Brush, Cpu, FileSpreadsheet, Film, Music, Sparkles } from "lucide-react";
+import { Box, Brush, Building2, Cpu, FileSpreadsheet, Film, Layers, Music, PersonStanding, Sparkles, UserRoundPlus } from "lucide-react";
 
 import { studioRoutePath } from "@/domains/creator/studio-route-registry";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
 const SUITE_ITEMS = [
+  { id: "dcc-modeler", href: "/studio/3d/dcc/model", icon: Box, ko: "정밀 3D 모델러", en: "Precision 3D Modeler" },
+  { id: "bg3d-stage", href: "/studio/bg3d", icon: Building2, ko: "3D 배경 편집기", en: "3D Background Stage" },
+  { id: "character-shaper", href: studioRoutePath("asset-character-new"), icon: UserRoundPlus, ko: "3D 캐릭터 셰이퍼", en: "3D Character Shaper" },
+  { id: "poser-studio", href: studioRoutePath("poser"), icon: PersonStanding, ko: "3D 포즈 스튜디오", en: "3D Pose Studio" },
+  { id: "lift-3d", href: "/studio/lift3d", icon: Layers, ko: "2D → 3D 리프트", en: "2D → 3D Lift" },
   { id: "brush-lab", href: studioRoutePath("asset-brush-new"), icon: Brush, ko: "브러시 스튜디오 V6", en: "Brush Studio V6" },
   { id: "audio-bgm", href: studioRoutePath("asset-audio"), icon: Music, ko: "장면 BGM · 오디오", en: "Scene BGM & Audio" },
   { id: "motion-webtoon", href: studioRoutePath("motion-webtoon"), icon: Film, ko: "모션 웹툰 타임라인", en: "Motion Webtoon" },

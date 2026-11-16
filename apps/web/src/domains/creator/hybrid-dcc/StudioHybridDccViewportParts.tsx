@@ -94,7 +94,7 @@ export function SegmentedButton({
       disabled={disabled}
       onClick={onClick}
       className={classes(
-        "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[0.7rem] font-semibold transition-colors motion-reduce:transition-none sm:pointer-fine:min-h-9",
+        "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 text-[0.7rem] font-semibold transition-colors motion-reduce:transition-none",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         "disabled:cursor-not-allowed disabled:opacity-40",
         active

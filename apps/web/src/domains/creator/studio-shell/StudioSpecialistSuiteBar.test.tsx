@@ -17,6 +17,16 @@ describe("StudioSpecialistSuiteBar", () => {
     );
 
     const nav = screen.getByTestId("studio-specialist-suite-bar");
+    expect(within(nav).getByRole("link", { name: /정밀 3D 모델러/u }).getAttribute("href"))
+      .toBe("/studio/3d/dcc/model?project=project-12");
+    expect(within(nav).getByRole("link", { name: /3D 배경 편집기/u }).getAttribute("href"))
+      .toBe("/studio/bg3d?project=project-12");
+    expect(within(nav).getByRole("link", { name: /3D 캐릭터 셰이퍼/u }).getAttribute("href"))
+      .toBe("/studio/assets/characters/new?project=project-12");
+    expect(within(nav).getByRole("link", { name: /3D 포즈 스튜디오/u }).getAttribute("href"))
+      .toBe("/studio/poser?project=project-12");
+    expect(within(nav).getByRole("link", { name: /2D → 3D 리프트/u }).getAttribute("href"))
+      .toBe("/studio/lift3d?project=project-12");
     expect(within(nav).getByRole("link", { name: /브러시 스튜디오 V6/u }).getAttribute("href"))
       .toBe("/studio/assets/brushes/new?project=project-12");
     expect(within(nav).getByRole("link", { name: /장면 BGM · 오디오/u }).getAttribute("href"))

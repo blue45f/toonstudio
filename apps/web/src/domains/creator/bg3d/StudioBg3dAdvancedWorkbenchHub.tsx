@@ -206,6 +206,8 @@ export function StudioBg3dAdvancedWorkbenchHub({
   const bt = useBilingual("StudioBg3dAdvancedWorkbenchHub");
   const proSuiteRuntime = useStudioBg3dProSuiteRuntime();
   const [activeTab, setActiveTab] = useState<StudioBg3dWorkbenchTabId>(defaultTab);
+  const [groupFilter, setGroupFilter] = useState<string>("전체");
+  const [tabQuery, setTabQuery] = useState("");
   const [lastActionSummary, setLastActionSummary] = useState<string>(() => bt("도구를 선택하세요", "Choose a tool"));
   const [insertedPrimitiveCount, setInsertedPrimitiveCount] = useState(0);
   const [cuts, setCuts] = useState<readonly StoryboardCut[]>(INITIAL_CUTS);
@@ -353,13 +355,73 @@ export function StudioBg3dAdvancedWorkbenchHub({
         </div>
       </header>
 
-      {/* 14 Specialist Tool Tabs */}
+      {/* Quick Modeler Bar + Category Filter & Search */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line/70 bg-card/60 p-2">
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="스페셜리스트 도구 분류 필터">
+          {(["전체", "캐릭터·DCC", "웹툰 연출", "셰이더·재질", "환경·VFX", "세트·XR"] as const).map((group) => (
+            <button
+              key={group}
+              type="button"
+              disabled={disabled}
+              aria-pressed={groupFilter === group}
+              onClick={() => setGroupFilter(group)}
+              className={`min-h-11 rounded-full border px-2.5 text-[0.66rem] font-semibold transition-colors ${
+                groupFilter === group
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line bg-panel text-fg-3 hover:bg-raised hover:text-fg"
+              }`}
+            >
+              {group}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <input
+            type="search"
+            value={tabQuery}
+            disabled={disabled}
+            aria-label="스페셜리스트 도구 검색"
+            placeholder="공간 모델러, 클로너, 스크린톤..."
+            onChange={(event) => setTabQuery(event.target.value)}
+            className="min-h-11 w-44 rounded-lg border border-line bg-panel px-2.5 text-xs text-fg placeholder:text-fg-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          />
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              setGroupFilter("전체");
+              setTabQuery("");
+              setActiveTab("spatial-modeler");
+            }}
+            className="min-h-11 rounded-lg border border-accent/55 bg-accent-soft px-2.5 text-xs font-bold text-accent hover:bg-accent/20"
+          >
+            공간 모델러 바로가기
+          </button>
+          <a
+            href="/studio/3d/dcc/model"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg"
+          >
+            정밀 3D 모델러
+          </a>
+        </div>
+      </div>
+
+      {/* Specialist Tool Tabs */}
       <div
         role="tablist"
         aria-label="3D 스페셜리스트 도구 탭"
         className="grid grid-cols-2 gap-1 sm:grid-cols-4"
       >
-        {STUDIO_BG3D_WORKBENCH_TABS.map((tab) => {
+        {STUDIO_BG3D_WORKBENCH_TABS.filter((tab) => {
+          const groupMatched = groupFilter === "전체" || tab.groupKo === groupFilter;
+          const normalized = tabQuery.trim().toLocaleLowerCase("ko-KR");
+          const queryMatched =
+            !normalized
+            || tab.labelKo.toLocaleLowerCase("ko-KR").includes(normalized)
+            || tab.groupKo.toLocaleLowerCase("ko-KR").includes(normalized)
+            || tab.id.includes(normalized);
+          return groupMatched && queryMatched;
+        }).map((tab) => {
           const selected = activeTab === tab.id;
           return (
             <button
@@ -370,7 +432,7 @@ export function StudioBg3dAdvancedWorkbenchHub({
               disabled={disabled}
               data-testid={`bg3d-workbench-tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-start rounded-lg border px-2 py-1.5 text-left transition-colors ${
+              className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
                 selected
                   ? "border-accent bg-accent/15 font-bold text-accent shadow-xs"
                   : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg"

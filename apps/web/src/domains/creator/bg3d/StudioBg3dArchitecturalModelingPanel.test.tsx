@@ -130,4 +130,14 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert.mock.calls[0]?.[0]).toHaveLength(22);
   });
+
+  it("웹툰 건축 빠른 프리셋을 누르면 요소 종류·치수·분할 수가 즉시 채워지고 배치된다", () => {
+    const insert = vi.fn((_primitives: readonly BgPrimitive[], _label: string) => true);
+    render(<StudioBg3dArchitecturalModelingPanel onInsertScenePrimitives={insert} />);
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-preset-tower-spiral"));
+    expect(screen.getByTestId("spatial-modeler-arch-kind-staircase-spiral").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(insert.mock.calls[0]?.[0]?.length).toBeGreaterThanOrEqual(14);
+  });
 });

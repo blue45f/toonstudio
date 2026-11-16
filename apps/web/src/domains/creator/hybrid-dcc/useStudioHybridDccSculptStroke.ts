@@ -17,7 +17,7 @@ import { useStudioHybridDccWorkspaceLease } from "./useStudioHybridDccWorkspaceL
 
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 import type { StudioMeshVec3 } from "../studio-editable-half-edge-mesh";
-import type { StudioSculptBrushKind } from "./studio-hybrid-sculpt-kernel";
+import type { StudioSculptBrushKind, StudioSculptSymmetry } from "./studio-hybrid-sculpt-kernel";
 
 interface SculptOperation {
   readonly token: StudioSculptGestureToken;
@@ -49,6 +49,12 @@ function parseSculptRadius(text: string): number | null {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function parseSculptStrength(text: string): number | null {
+  if (text.trim() === "") return null;
+  const value = Number(text);
+  return Number.isFinite(value) && value > 0 && value <= 2 ? value : null;
+}
+
 /** 입력 sample은 모두 계산하고 표시 발행만 frame 단위로 합친다. 문서는 정상 종료 때 한 번 확정한다. */
 export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStrokeHost) {
   const bt = useBilingual("StudioHybridDccSculptTools");
@@ -56,6 +62,9 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
   const [carve, setCarve] = useState(false);
   const [radiusText, setRadiusTextValue] = useState("0.45");
   const radiusState = useRef({ value: 0.45, valid: true });
+  const [strengthText, setStrengthTextValue] = useState("0.2");
+  const strengthState = useRef({ value: 0.2, valid: true });
+  const [symmetry, setSymmetry] = useState<Required<StudioSculptSymmetry>>({ x: false, y: false, z: false });
   const [phase, setPhase] = useState<"idle" | "drawing" | "committing">("idle");
   const [preview, setPreview] = useState<StudioSculptGeometryPreview | null>(null);
   const [notice, setNotice] = useState("");
@@ -67,7 +76,7 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
   const latestLocalize = useRef(bt);
   latestLocalize.current = bt;
   const captureLease = useStudioHybridDccWorkspaceLease(host.workspace, host.workspaceDocumentId, host.enabled);
-  const brushScope = `${kind}:${carve}`;
+  const brushScope = `${kind}:${carve}:${symmetry.x}:${symmetry.y}:${symmetry.z}`;
 
   const clearOperation = (operation: SculptOperation, message = "", failure = "") => {
     if (active.current !== operation) return;
@@ -97,6 +106,26 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
       if (operation) clearOperation(operation, cancelledMessage());
     }
     setRadiusTextValue(text);
+  };
+
+  const setStrengthText = (text: string) => {
+    if (!live.current) return;
+    const parsed = parseSculptStrength(text);
+    const previous = strengthState.current;
+    const next = { value: parsed ?? previous.value, valid: parsed !== null };
+    strengthState.current = next;
+    if (next.value !== previous.value || next.valid !== previous.valid) {
+      const operation = active.current;
+      if (operation) clearOperation(operation, cancelledMessage());
+    }
+    setStrengthTextValue(text);
+  };
+
+  const toggleSymmetry = (axis: "x" | "y" | "z") => {
+    if (!live.current) return;
+    const operation = active.current;
+    if (operation) clearOperation(operation, cancelledMessage());
+    setSymmetry((current) => ({ ...current, [axis]: !current[axis] }));
   };
 
   useLayoutEffect(() => {
@@ -144,15 +173,18 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
     if (!live.current || !host.enabled || latestHost.current.externalBusy || active.current
       || host.workspace.activeAssetId !== assetId || !Number.isSafeInteger(pointerId) || pointerId < 0) return null;
     const radius = radiusState.current;
-    if (!radius.valid) return null;
+    const strength = strengthState.current;
+    if (!radius.valid || !strength.valid) return null;
     const controller = new AbortController();
     const lease = captureLease(controller);
     if (!lease()) return null;
     const token = createStudioSculptGestureToken();
     try {
+      const hasSymmetry = symmetry.x || symmetry.y || symmetry.z;
       const session = createStudioHybridDccSculptStrokeSession(host.workspace, {
-        kind, radius: radius.value, strength: carve ? -0.2 : 0.2,
+        kind, radius: radius.value, strength: carve ? -strength.value : strength.value,
         ...(kind === "grab" || kind === "snakeHook" ? { direction: { x: 0, y: 0.15, z: 0 } } : {}),
+        ...(hasSymmetry ? { symmetry } : {}),
       });
       const onAbort = () => {
         const operation = active.current;
@@ -238,6 +270,10 @@ export function useStudioHybridDccSculptStroke(host: StudioHybridDccSculptStroke
     radius: radiusState.current.value, radiusText, setRadiusText,
     radiusError: parseSculptRadius(radiusText) === null
       ? bt("반경은 0보다 큰 유한한 숫자로 입력하세요.", "Enter a finite radius greater than zero.") : "",
+    strength: strengthState.current.value, strengthText, setStrengthText,
+    strengthError: parseSculptStrength(strengthText) === null
+      ? bt("강도는 0 초과 2 이하의 숫자로 입력하세요.", "Enter a strength greater than 0 and up to 2.") : "",
+    symmetry, toggleSymmetry,
     engaged: phase !== "idle",
     cancel: () => { const operation = active.current; if (operation) cancel(operation.token); },
   };

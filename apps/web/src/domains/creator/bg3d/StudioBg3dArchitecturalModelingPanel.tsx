@@ -30,6 +30,22 @@ const COMPONENT_OPTIONS: readonly { readonly id: SketchUpArchitecturalComponentK
   { id: "street-bus-shelter", labelKo: "버스정류장 쉘터" },
 ];
 
+const QUICK_WEBTOON_ARCH_PRESETS: readonly {
+  readonly id: string;
+  readonly labelKo: string;
+  readonly kind: SketchUpArchitecturalComponentKind;
+  readonly width: string;
+  readonly height: string;
+  readonly depth: string;
+  readonly count: number;
+}[] = [
+  { id: "school-stair", labelKo: "학교 복도 계단", kind: "staircase-l-landing", width: "3.4", height: "3.3", depth: "4.6", count: 12 },
+  { id: "tower-spiral", labelKo: "마탑 나선계단", kind: "staircase-spiral", width: "3.2", height: "4.2", depth: "3.2", count: 14 },
+  { id: "hanok-roof", labelKo: "한옥 팔작 대문", kind: "roof-hanok", width: "6.4", height: "2.4", depth: "4.2", count: 8 },
+  { id: "academy-arcade", labelKo: "아카데미 회랑", kind: "street-colonnade", width: "9.6", height: "4.0", depth: "3.0", count: 6 },
+  { id: "grand-arch", labelKo: "유럽풍 아치 정문", kind: "door-arch", width: "3.0", height: "3.6", depth: "0.8", count: 8 },
+];
+
 type InputKey = "width" | "height" | "depth" | "x" | "y" | "z";
 
 const INPUT_FIELDS: readonly {
@@ -117,6 +133,29 @@ export function StudioBg3dArchitecturalModelingPanel({
       </h3>
       <p className="text-xs text-fg-2">{t("studio.bg3d.architecture.description", "계단·지붕·창호·회랑을 만들고 장면에 배치하세요. 배치한 요소는 3D 편집기에서 선택하고 이동할 수 있습니다.")}</p>
       <p className="text-xs text-fg-2">{t("studio.bg3d.architecture.dimensionScope", "치수는 기본 부품과 배치 간격의 기준입니다. 처마·회전 계단을 포함한 전체 외곽 크기는 입력값과 다를 수 있습니다.")}</p>
+      <div className="flex flex-wrap gap-1.5 rounded-lg border border-line/70 bg-panel/60 p-2" role="group" aria-label="웹툰 건축 빠른 프리셋">
+        {QUICK_WEBTOON_ARCH_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            disabled={disabled}
+            data-testid={`spatial-modeler-arch-preset-${preset.id}`}
+            onClick={() => {
+              setKind(preset.kind);
+              setCount(preset.count);
+              setInputs((prev) => ({
+                ...prev,
+                width: preset.width,
+                height: preset.height,
+                depth: preset.depth,
+              }));
+            }}
+            className="min-h-11 rounded-full border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45"
+          >
+            {preset.labelKo}
+          </button>
+        ))}
+      </div>
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3" role="group" aria-label={t("studio.bg3d.architecture.kindLabel", "건축 요소 종류")}>
         {COMPONENT_OPTIONS.map((option) => (
           <button key={option.id} type="button" disabled={disabled} aria-pressed={kind === option.id}
@@ -144,7 +183,7 @@ export function StudioBg3dArchitecturalModelingPanel({
         <input id={`${inputId}-count`} type="range" min="3" max="24" step="1" disabled={disabled || !usesCount}
           aria-describedby={!usesCount ? `${inputId}-count-unused` : undefined}
           aria-label={t("studio.bg3d.architecture.countLabel", "건축 컴포넌트 분할 수")} value={count}
-          onChange={(event) => setCount(Number(event.target.value))} className="w-full accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" />
+          onChange={(event) => setCount(Number(event.target.value))} className="min-h-11 w-full accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" />
       </label>
       {!usesCount ? <p id={`${inputId}-count-unused`} className="text-xs text-fg-2">{t("studio.bg3d.architecture.countUnused", "분할 수는 계단 단수와 열주 회랑 경간에만 사용합니다. 선택한 건축 요소에는 적용하지 않습니다.")}</p> : null}
       {validationError ? <p id={`${inputId}-error`} role="alert" className="text-xs text-danger">{validationError}</p> : null}

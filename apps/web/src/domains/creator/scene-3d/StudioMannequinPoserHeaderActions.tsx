@@ -33,7 +33,7 @@ export interface StudioMannequinPoserHeaderActionsProps {
   readonly onOpenPhotoPose: () => void;
 }
 
-const DESKTOP_BUTTON_CLASS = buttonClass({ size: "sm", variant: "quiet", className: "gap-1 text-[0.7rem]" });
+const DESKTOP_BUTTON_CLASS = buttonClass({ size: "sm", variant: "quiet", className: "min-h-11 gap-1 text-[0.7rem]" });
 const MENU_ITEM_CLASS =
   "flex min-h-11 w-full cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 text-sm text-fg-2 outline-none transition-colors data-[highlighted]:bg-raised data-[highlighted]:text-fg";
 
