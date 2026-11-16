@@ -2,10 +2,14 @@ import {
   STUDIO_OFFLINE_MAX_RESOURCES,
   STUDIO_OFFLINE_PREPARE_MESSAGE,
   STUDIO_OFFLINE_STATUS_MESSAGE,
+  isStudioOfflinePreparationBusyReply,
+  isStudioOfflinePreparationReport,
   normalizeStudioOfflineAssetUrl,
   type StudioOfflinePreparationReport,
   type StudioOfflineReadinessReport,
 } from "@/shared/lib/studio-offline-protocol";
+
+export { isStudioOfflinePreparationReport };
 
 export interface StudioOfflineDeviceState {
   readonly online: boolean;
@@ -131,17 +135,23 @@ export function requestStudioPersistentStorage(): Promise<boolean | null> {
   return bounded<boolean | null>(async () => navigator.storage?.persist?.() ?? null, null);
 }
 
-export function isStudioOfflinePreparationReport(value: unknown): value is StudioOfflinePreparationReport {
-  if (!value || typeof value !== "object") return false;
-  const report = value as Partial<StudioOfflinePreparationReport>;
-  return report.schema === 1 && typeof report.buildId === "string"
-    && typeof report.checked === "number" && Number.isInteger(report.checked) && report.checked > 0
-    && typeof report.cached === "number" && Number.isInteger(report.cached) && report.cached >= 0
-    && report.cached <= report.checked && typeof report.downloadedBytes === "number"
-    && Number.isFinite(report.downloadedBytes) && report.downloadedBytes >= 0
-    && Array.isArray(report.missing) && report.missing.every((item) => typeof item === "string")
-    && typeof report.complete === "boolean"
-    && (!report.complete || (report.cached === report.checked && report.missing.length === 0));
+function sendOfflinePreparationMessage(
+  worker: ServiceWorker,
+  resources: readonly string[],
+): Promise<unknown> {
+  return new Promise<unknown>((resolve, reject) => {
+    const channel = new MessageChannel();
+    const cleanup = (): void => { clearTimeout(timer); channel.port1.close(); channel.port2.close(); };
+    const timer = setTimeout(() => { cleanup(); reject(new Error("준비 확인 시간이 초과됐습니다. 저장 공간과 연결을 확인하고 다시 시도해 주세요.")); }, 45_000);
+    channel.port1.onmessage = (event: MessageEvent<unknown>) => { cleanup(); resolve(event.data); };
+    channel.port1.onmessageerror = () => { cleanup(); reject(new Error("오프라인 준비 응답을 읽지 못했습니다.")); };
+    try { worker.postMessage({ type: STUDIO_OFFLINE_PREPARE_MESSAGE, urls: resources }, [channel.port2]); }
+    catch (cause) { cleanup(); reject(cause); }
+  });
+}
+
+function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => { setTimeout(resolve, ms); });
 }
 
 function loadedResourceSnapshot(): string[] {
@@ -163,15 +173,13 @@ export async function prepareLoadedStudioOfflineResources(): Promise<StudioOffli
   const resources = loadedResourceSnapshot();
   if (resources.length === 0) throw new Error("편집기가 열리고 기본 도구를 사용한 뒤 다시 준비해 주세요.");
   if (resources.length > STUDIO_OFFLINE_MAX_RESOURCES) throw new Error("열린 리소스가 준비 한도를 넘었습니다. 프로젝트를 백업한 뒤 기본 드로잉 화면에서 다시 준비해 주세요.");
-  const result = await new Promise<unknown>((resolve, reject) => {
-    const channel = new MessageChannel();
-    const cleanup = (): void => { clearTimeout(timer); channel.port1.close(); channel.port2.close(); };
-    const timer = setTimeout(() => { cleanup(); reject(new Error("준비 확인 시간이 초과됐습니다. 저장 공간과 연결을 확인하고 다시 시도해 주세요.")); }, 45_000);
-    channel.port1.onmessage = (event: MessageEvent<unknown>) => { cleanup(); resolve(event.data); };
-    channel.port1.onmessageerror = () => { cleanup(); reject(new Error("오프라인 준비 응답을 읽지 못했습니다.")); };
-    try { worker.postMessage({ type: STUDIO_OFFLINE_PREPARE_MESSAGE, urls: resources }, [channel.port2]); }
-    catch (cause) { cleanup(); reject(cause); }
-  });
+  let result: unknown = await sendOfflinePreparationMessage(worker, resources);
+  // 구버전 서비스워커가 다른 탭·이전 새로고침의 준비 작업 중 busy를 반환하면 잠시 대기 후 재확인한다.
+  for (let attempt = 0; attempt < 3 && isStudioOfflinePreparationBusyReply(result); attempt += 1) {
+    await delayMs(1_200);
+    if (studioOfflineController() !== worker) break;
+    result = await sendOfflinePreparationMessage(worker, resources);
+  }
   if (studioOfflineController() !== worker) throw new Error("앱 버전이 바뀌었습니다. 현재 버전에서 오프라인 준비를 다시 확인해 주세요.");
   if (!isStudioOfflinePreparationReport(result)) throw new Error("오프라인 준비를 확인하지 못했습니다. 다른 준비 작업이 끝나거나 앱 업데이트를 적용한 뒤 다시 시도해 주세요.");
   const after = loadedResourceSnapshot();
