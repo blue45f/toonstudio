@@ -264,4 +264,44 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
       "arrange",
     );
   });
+
+  it("distinguishes engine error from active restoration so blocked hosts do not spin infinitely", () => {
+    const onPreferenceChange = vi.fn();
+    const onReturnTo2d = vi.fn();
+    const host = createHost({
+      isRestoringScene: true,
+      readinessState: {
+        phase: "error",
+        stage: "engine-unavailable",
+        selectedEngine: "webgl2",
+        activeEngine: null,
+        badgeLabelKo: "WebGL2 사용 불가",
+        badgeLabelEn: "WebGL2 unavailable",
+        detailKo: "이 기기나 브라우저에서 WebGL2를 사용할 수 없습니다.",
+        detailEn: "WebGL2 is unavailable on this device.",
+      },
+      engineRuntime: {
+        preference: "webgl2",
+        setPreference: onPreferenceChange,
+      },
+      resourceRecovery: {
+        lowQualityActive: false,
+        reopenLowQuality: vi.fn(),
+        returnTo2d: onReturnTo2d,
+      },
+    });
+    render(<StudioBg3dSceneAssistantWorkspace h={host} onOpenProfessional={vi.fn()} />);
+
+    const assistant = screen.getByTestId("studio-bg3d-scene-assistant");
+    expect(assistant.getAttribute("data-assistant-readiness")).toBe("error");
+    expect(assistant.getAttribute("data-assistant-restoring")).toBeNull();
+    expect(screen.getByTestId("studio-bg3d-assistant-error").textContent)
+      .toContain("WebGL2 사용 불가");
+
+    fireEvent.click(screen.getByTestId("studio-bg3d-assistant-recovery-webgl2"));
+    expect(onPreferenceChange).toHaveBeenCalledWith("webgl2");
+
+    fireEvent.click(screen.getByTestId("studio-bg3d-assistant-recovery-return-2d"));
+    expect(onReturnTo2d).toHaveBeenCalledOnce();
+  });
 });

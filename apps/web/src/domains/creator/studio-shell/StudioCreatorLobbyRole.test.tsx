@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
+import * as roleWorkspaceClient from "@/platform/creator-role-workspace-client";
 import { normalizeCreatorRoleWorkspacePreference } from "@/shared/lib/creator-role-workspace-contract";
 import { resetCreatorRoleWorkspaceStore } from "@/shared/lib/creator-role-workspace-store";
 
@@ -90,5 +91,15 @@ describe("StudioCreatorLobby role preset (R-1)", () => {
     expect(within(region).getByText(/글작가 추천|Writer pick/u)).toBeTruthy();
     const featured = region.querySelector("[data-role-featured='true']");
     expect(featured?.getAttribute("href")).toBe("/story-lab");
+  });
+
+  it("does not request /creator/role-workspaces/global for unauthenticated guests", () => {
+    const spy = vi.spyOn(roleWorkspaceClient, "getCreatorRoleWorkspace");
+    try {
+      renderHome();
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

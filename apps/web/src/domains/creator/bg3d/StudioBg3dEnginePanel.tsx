@@ -27,6 +27,8 @@ export interface StudioBg3dEnginePanelProps {
   readonly preference: StudioBg3dEnginePreference;
   readonly inApp: StudioBg3dInAppBrowserProfile;
   readonly probing: boolean;
+  /** False while the selected engine plan is admitted but its renderer/scene is still initializing. */
+  readonly rendererReady?: boolean;
   readonly deviceLostMessage: string | null;
   /** Smoothed viewport frame time, or null while it would be misleading. */
   readonly frameTimeMs: number | null;
@@ -56,6 +58,7 @@ export function StudioBg3dEnginePanel({
   preference,
   inApp,
   probing,
+  rendererReady = true,
   deviceLostMessage,
   frameTimeMs,
   onPreferenceChange,
@@ -67,14 +70,17 @@ export function StudioBg3dEnginePanel({
   const activeLabel = BACKEND_LABELS[plan.backend];
   // Without a number the engine choice is unfalsifiable to the artist: both options just say
   // "3D". One smoothed frame time makes switching a decision they can check.
-  const frameTimeLabel = plan.status === "available" && frameTimeMs !== null && frameTimeMs > 0
+  const frameTimeLabel = plan.status === "available" && rendererReady && frameTimeMs !== null && frameTimeMs > 0
     ? `${frameTimeMs.toFixed(1)}ms · 약 ${Math.round(1_000 / frameTimeMs)}fps`
     : null;
   const isNextGen = plan.backend === "webgpu";
+  const selectionUnavailable = !probing && plan.status !== "available";
+  const initializingRenderer = !probing && plan.status === "available" && !rendererReady;
   const statusText = probing
     ? "이 기기에서 쓸 수 있는 3D 엔진을 확인하고 있습니다."
-    : (deviceLostMessage ?? plan.notice);
-  const selectionUnavailable = !probing && plan.status !== "available";
+    : initializingRenderer
+      ? `${activeLabel} 렌더러와 장면을 초기화하고 있습니다.`
+      : (deviceLostMessage ?? plan.notice);
   const activeStatusLabel = probing
     ? t("studio.bg3dPanelStatus.engine.checking", "확인 중")
     : `${activeLabel} ${
@@ -82,7 +88,9 @@ export function StudioBg3dEnginePanel({
         ? "실행 실패"
         : plan.status === "unavailable"
           ? "사용 불가"
-          : "사용 중"
+          : initializingRenderer
+            ? "초기화 중"
+            : "사용 중"
     }`;
   const statusTone = deviceLostMessage || selectionUnavailable
     ? "border-danger/45 bg-danger/10 text-danger"

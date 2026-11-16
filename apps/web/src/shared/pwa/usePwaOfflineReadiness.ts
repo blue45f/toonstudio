@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   STUDIO_OFFLINE_PREPARE_MESSAGE,
   STUDIO_OFFLINE_STATUS_MESSAGE,
+  isStudioOfflinePreparationReport,
+  type StudioOfflinePreparationReport,
   type StudioOfflineReadinessReport,
 } from "@/shared/lib/studio-offline-protocol";
 import { STUDIO_SERVICE_WORKER_CACHE_PREFIX } from "@/app/service-worker/studio-service-worker-policy";
@@ -123,22 +125,25 @@ export function usePwaOfflineReadiness() {
   const prepare = useCallback(async (): Promise<boolean> => {
     if (!isStudioRoutePathname(window.location.pathname)) return false;
     setSnapshot((previous) => ({ ...previous, readiness: "preparing" }));
-    // URL 목록은 SW가 빌드 매니페스트 기준으로 자동 구성한다.
-    const result = await messageActiveWorker<{ ok?: boolean }>(
+    // URL 목록은 SW가 빌드 매니페스트 기준으로 자동 구성하며 정본 응답은 StudioOfflinePreparationReport다.
+    const result = await messageActiveWorker<StudioOfflinePreparationReport | { ok?: boolean }>(
       STUDIO_OFFLINE_PREPARE_MESSAGE,
       { urls: [] as string[] },
     );
-    const ok = result?.ok === true;
+    const complete = isStudioOfflinePreparationReport(result)
+      ? result.complete
+      : Boolean(result && "ok" in result && result.ok === true);
+    const partial = isStudioOfflinePreparationReport(result) && !result.complete && result.cached > 0;
     if (mountedRef.current) {
       // 준비가 끝난 뒤에는 캐시 수를 다시 세야 배지 숫자가 준비 전 값으로 남지 않는다.
-      const cached = ok ? await countOwnedCacheEntries() : null;
+      const cached = complete || partial ? await countOwnedCacheEntries() : null;
       setSnapshot((previous) => ({
         ...previous,
-        readiness: ok ? "ready" : "failed",
-        ...(ok ? { cachedResources: cached } : {}),
+        readiness: complete ? "ready" : partial ? "partial" : "failed",
+        ...(complete || partial ? { cachedResources: cached } : {}),
       }));
     }
-    return ok;
+    return complete;
   }, []);
 
   useEffect(() => {

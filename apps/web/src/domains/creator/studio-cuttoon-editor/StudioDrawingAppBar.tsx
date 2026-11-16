@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Brush,
   CheckCircle2,
@@ -29,6 +29,7 @@ import { buttonClass } from "@/shared/components/ui/button-utils";
 import { ToonStudioWordmark } from "@/shared/components/toonstudio-brand";
 import { ToonStudioMark } from "@/shared/components/toonstudio-mark";
 import { cn } from "@/shared/lib/utils";
+import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { translateCurrentStaticSourceText } from "@/shared/lib/i18n-bilingual-copy";
 import {
   evaluateStudioCspBenchmarkScorecard,
@@ -38,6 +39,11 @@ import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigat
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+
+const LazyStudioDrawingClarityExport = lazyRetry(
+  () => import("./StudioDrawingClarityExport").then((module) => ({ default: module.StudioDrawingClarityExport })),
+  "StudioDrawingClarityExport",
+);
 
 const QUICK_STROKE_WIDTHS = [2, 5, 12, 28, 64] as const;
 const QUICK_OPACITIES = [1, 0.75, 0.5, 0.25] as const;
@@ -99,6 +105,7 @@ function nextInCycle<T extends number>(list: readonly T[], current: number): T {
 export function StudioDrawingAppBar({ session }: { readonly session: StudioCuttoonEditorViewSession }) {
   const s = session;
   const headerRef = useRef<HTMLElement>(null);
+  const exportToggleRef = useRef<HTMLButtonElement>(null);
   const advancedToggleRef = useRef<HTMLButtonElement>(null);
   const mobileStripToggleRef = useRef<HTMLButtonElement>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -232,6 +239,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   };
 
   return (
+    <>
     <header
       ref={headerRef}
       data-studio-drawing-app-bar="true"
@@ -453,6 +461,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <Layers3 size={17} aria-hidden="true" />
           </button>
           <button
+            ref={exportToggleRef}
             type="button"
             data-testid="drawing-appbar-export-toggle"
             className={buttonClass({ variant: s.exportMenuOpen ? "solid" : "outline", size: "sm", className: "min-h-11 gap-1 px-2.5 text-xs font-bold" })}
@@ -711,5 +720,11 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
         </div>
       </div>
     </header>
+    {s.exportMenuOpen ? (
+      <Suspense fallback={null}>
+        <LazyStudioDrawingClarityExport session={s} triggerRef={exportToggleRef} />
+      </Suspense>
+    ) : null}
+    </>
   );
 }

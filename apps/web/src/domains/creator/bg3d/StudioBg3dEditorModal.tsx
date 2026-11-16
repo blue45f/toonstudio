@@ -17,7 +17,10 @@ import type { StudioWebXrSessionState } from "../studio-webxr-session";
 import { StudioBg3dEditorSidebar } from "./StudioBg3dEditorSidebar";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
+import { StudioBg3dReadinessBadge } from "./StudioBg3dReadinessBadge";
 import { StudioBg3dSceneAssistantWorkspace } from "./StudioBg3dSceneAssistantWorkspace";
+import type { StudioBg3dReadinessSnapshot } from "./studio-bg3d-readiness-state";
+import type { StudioBg3dResourceRecoveryPorts } from "./studio-bg3d-resource-recovery-host";
 
 import type { StudioBg3dSceneAssistantHost } from "./StudioBg3dSceneAssistantWorkspace";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
@@ -49,6 +52,8 @@ export interface StudioBg3dEditorModalHost {
   readonly requestUserClose: () => void;
   readonly outlinerController: StudioBg3dSceneOutlinerController;
   readonly sharedStageSessionScopeKey?: string;
+  readonly readinessState?: StudioBg3dReadinessSnapshot;
+  readonly resourceRecovery?: StudioBg3dResourceRecoveryPorts;
   readonly [key: string]: unknown;
 }
 
@@ -121,7 +126,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
       }}
     >
       <div className="mx-auto flex h-full max-h-full max-w-[1800px] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
-        <header data-bg3d-workspace-header="true" className="flex shrink-0 items-start justify-between gap-2 border-b border-line px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+        <header data-bg3d-workspace-header="true" className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 sm:flex-nowrap sm:items-start sm:gap-3 sm:px-5 sm:py-3">
           <div className="min-w-0">
             <p className="eyebrow flex items-center gap-1.5 text-accent">
               <Sparkles size={14} aria-hidden />
@@ -133,7 +138,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             </p>
             <h2
               id="studio-bg3d-dialog-title"
-              className="mt-1 truncate text-base font-bold tracking-tight text-fg sm:text-xl"
+              className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
             >
               {title}
             </h2>
@@ -141,7 +146,16 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               {description}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap sm:gap-2">
+            {h.readinessState ? (
+              <StudioBg3dReadinessBadge
+                readiness={h.readinessState}
+                lowQualityActive={Boolean(h.resourceRecovery?.lowQualityActive)}
+                exposeLegacyActiveBackendTestId={experienceMode === "simple"}
+                disableReturnTo2d={isCapturing || deletingModelId !== null}
+                onReturnTo2d={h.resourceRecovery?.returnTo2d ?? requestUserClose}
+              />
+            ) : null}
             <a
               href="/studio/3d/dcc/model"
               data-testid="bg3d-open-hybrid-dcc-link"

@@ -2,7 +2,16 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
 
-import { studioDrawingClarityEligible } from "./StudioDrawingClarityPolicy";
+import {
+  isUntouchedStudioDrawingLayout,
+  loadStudioDrawingClarityChoice,
+  loadStudioDrawingClarityKnownOwnerState,
+  saveStudioDrawingClarityChoice,
+  saveStudioDrawingClarityKnownOwnerState,
+  studioDrawingClarityEligible,
+  type StudioDrawingClarityBaseline,
+  type StudioDrawingClarityStorage,
+} from "./StudioDrawingClarityPolicy";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { defaultStudioAppSettings } from "../studio-app-settings";
 import { projectStudioTaskAppSettings } from "../studio-task-tools";
@@ -37,10 +46,16 @@ function isNativeStudioShell(): boolean {
   }
 }
 
-/** 원고·저장 설정을 복제하지 않는 세션 한정 화면 선택과 도구함 상태다. */
-export function StudioDrawingClarityProvider({ session: s, presentation = "integrated", children }: {
+/** 원고·저장 설정을 복제하지 않는 화면 선택과 도구함 상태다. choiceStorage 주입 시 새로고침·다중 탭에서도 동일 디자인을 유지한다. */
+export function StudioDrawingClarityProvider({
+  session: s,
+  presentation = "integrated",
+  choiceStorage = null,
+  children,
+}: {
   readonly session: StudioDrawingClaritySession;
   readonly presentation?: "integrated" | "app";
+  readonly choiceStorage?: StudioDrawingClarityStorage | null;
   readonly children: ReactNode;
 }) {
   const [choice, setChoice] = useState<{ owner: string; workspace: string; simple: boolean } | null>(null);
@@ -61,12 +76,34 @@ export function StudioDrawingClarityProvider({ session: s, presentation = "integ
     || (toolbar.activeProfileId ?? null) !== null || toolbar.visibleIds.length !== expectedToolbar.visibleIds.length
     || toolbar.visibleIds.some((id, index) => id !== expectedToolbar.visibleIds[index]);
   const workspace = s.workspaceState.activeWorkspaceId;
-  const selected = choice?.owner === owner && choice.workspace === workspace ? choice.simple : undefined;
+  const persistedSelected = loadStudioDrawingClarityChoice(choiceStorage, owner, workspace);
+  const selected = choice?.owner === owner && choice.workspace === workspace
+    ? choice.simple
+    : persistedSelected;
+  const knownOwnerKind = loadStudioDrawingClarityKnownOwnerState(choiceStorage, owner);
+  const optimisticBaseline: StudioDrawingClarityBaseline | null =
+    choiceStorage && s.studioDrawingClarityBaseline === null && knownOwnerKind !== "saved"
+      ? { ownerScope: owner, source: "default", state: s.workspaceState }
+      : null;
+  const effectiveBaseline = s.studioDrawingClarityBaseline ?? optimisticBaseline;
   const active = available && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile) && s.uiDensityMode === "simple"
-    && (selected ?? (s.workspaceState.activeWorkspaceId === s.studioDrawingClarityBaseline?.state.activeWorkspaceId && studioDrawingClarityEligible({
-      baseline: s.studioDrawingClarityBaseline, ownerScope: owner, densityMode: s.uiDensityMode,
+    && (selected ?? (s.workspaceState.activeWorkspaceId === effectiveBaseline?.state.activeWorkspaceId && studioDrawingClarityEligible({
+      baseline: effectiveBaseline, ownerScope: owner, densityMode: s.uiDensityMode,
       workMode: s.workMode, search: s.location.search, toolbarConfigured: personalToolbar,
     })));
+  useEffect(() => {
+    const confirmed = s.studioDrawingClarityBaseline;
+    if (!choiceStorage || !confirmed || confirmed.ownerScope !== owner) return;
+    const isDefaultUntouched =
+      confirmed.source === "default"
+      && confirmed.state.customWorkspaces.length === 0
+      && isUntouchedStudioDrawingLayout(confirmed.state);
+    saveStudioDrawingClarityKnownOwnerState(
+      choiceStorage,
+      owner,
+      isDefaultUntouched ? "default" : "saved",
+    );
+  }, [choiceStorage, owner, s.studioDrawingClarityBaseline]);
   const opened = openedByBucket[viewportBucket];
   const panel = active && opened?.owner === owner && opened.workspace === workspace ? opened.panel : null;
   const close = useCallback(() => {
@@ -90,13 +127,17 @@ export function StudioDrawingClarityProvider({ session: s, presentation = "integ
   }, [owner, viewportBucket, workspace]);
   const setDensity = s.studioMenubarContentHandlers.setStudioUiDensity;
   const chooseSimple = useCallback(() => {
-    setDensity?.("simple"); setChoice({ owner, workspace, simple: true });
+    setDensity?.("simple");
+    setChoice({ owner, workspace, simple: true });
+    saveStudioDrawingClarityChoice(choiceStorage, owner, workspace, true);
     globalThis.requestAnimationFrame?.(() => document.getElementById("studio-canvas-workspace")?.focus({ preventScroll: true }));
-  }, [owner, workspace, setDensity]);
+  }, [choiceStorage, owner, workspace, setDensity]);
   const showSavedLayout = useCallback(() => {
-    setOpenedByBucket({ compact: null, large: null }); setChoice({ owner, workspace, simple: false });
+    setOpenedByBucket({ compact: null, large: null });
+    setChoice({ owner, workspace, simple: false });
+    saveStudioDrawingClarityChoice(choiceStorage, owner, workspace, false);
     globalThis.requestAnimationFrame?.(() => { if (!hasVisibleDialog()) document.querySelector<HTMLElement>("[data-studio-clarity-entry]")?.focus({ preventScroll: true }); });
-  }, [owner, workspace]);
+  }, [choiceStorage, owner, workspace]);
 
   useEffect(() => {
     if (!panel) return;
@@ -117,6 +158,6 @@ export function StudioDrawingClarityProvider({ session: s, presentation = "integ
     return () => { observer?.disconnect(); document.removeEventListener("keydown", escape); };
   }, [panel, close]);
 
-  return <DrawingClarityContext.Provider value={{ active, available, panel, open, reveal, close, chooseSimple, showSavedLayout }}>{children}</DrawingClarityContext.Provider>;
+  return <DrawingClarityContext.Provider value={{ active, available, presentation, panel, open, reveal, close, chooseSimple, showSavedLayout }}>{children}</DrawingClarityContext.Provider>;
 }
 

@@ -9,6 +9,7 @@ import {
 
 import type { BgViewportApi } from "./studio-bg3d-camera-application";
 import type { StudioBg3dDeviceSignals } from "./studio-bg3d-device-quality";
+import type { StudioBg3dEnginePreference } from "./studio-bg3d-engine-selection";
 import type { StudioBg3dSceneDocument } from "./studio-bg3d-scene-document";
 
 export interface StudioBg3dResourceRecoveryPorts {
@@ -24,8 +25,9 @@ export interface StudioBg3dResourceRecoveryHostInput {
   readonly setAdaptiveDprScale?: (next: number) => void;
   readonly setSceneBaseDocument?: Dispatch<SetStateAction<StudioBg3dSceneDocument>>;
   readonly engineRuntime?: {
+    readonly preference?: StudioBg3dEnginePreference;
     readonly plan?: { readonly status?: string };
-    readonly setPreference?: (preference: "webgl2") => void;
+    readonly setPreference?: (preference: StudioBg3dEnginePreference) => void;
   };
   readonly setWebXrCanvasGeneration?: Dispatch<SetStateAction<number>>;
   readonly placementSessionRef?: { readonly current: { readonly phase?: string } | null };
@@ -96,8 +98,8 @@ export function useStudioBg3dResourceRecoveryHost(
         shadows: false,
       },
     }));
-    if (engineRuntime?.plan?.status !== "available") {
-      engineRuntime?.setPreference?.("webgl2");
+    if (engineRuntime?.plan?.status !== "available" && engineRuntime?.preference) {
+      engineRuntime.setPreference?.(engineRuntime.preference);
     }
     setLowQualityActive(true);
     setWebXrCanvasGeneration?.((generation: number) => generation + 1);

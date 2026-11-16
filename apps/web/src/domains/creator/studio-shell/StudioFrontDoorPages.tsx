@@ -238,7 +238,7 @@ function PageHeader({
               <span key={crumb.label} className="flex min-w-0 items-center gap-2">
                 {index > 0 ? <span aria-hidden="true">/</span> : null}
                 {crumb.href && !last ? (
-                  <Link href={crumb.href} className="shrink-0 font-semibold hover:text-accent">
+                  <Link href={crumb.href} className="inline-flex min-h-11 min-w-11 shrink-0 items-center rounded-lg px-2 font-semibold transition-colors hover:bg-raised/60 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                     {crumb.label}
                   </Link>
                 ) : (

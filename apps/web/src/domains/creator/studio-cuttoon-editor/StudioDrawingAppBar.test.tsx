@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioDrawingAppBar } from "./StudioDrawingAppBar";
+import { STUDIO_DRAWING_PRESENTATION_SESSION_KEY, useStudioDrawingPresentation } from "../studio-drawing-presentation";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { bindStudioScopedWriteAuthority } from "../studio-collab/studio-scoped-write-authority";
 import { createStudioScopedWriteFixture } from "../studio-collab/studio-scoped-write.test-fixture";
@@ -17,6 +18,7 @@ import type { PageState } from "../studio-page-state";
 
 afterEach(() => {
   cleanup();
+  window.sessionStorage.removeItem(STUDIO_DRAWING_PRESENTATION_SESSION_KEY);
 });
 
 function createMockSession(
@@ -356,5 +358,43 @@ describe("StudioDrawingAppBar", () => {
       </MemoryRouter>,
     );
     expect(strip.hidden).toBe(true);
+  });
+
+  it("일반 탭에서 drawingShell=app 진입 후 프로젝트 문서는 유지하되 /studio/canvas 단독 진입은 오염시키지 않고 PWA는 유지한다", () => {
+    function NavProbe() {
+      const presentation = useStudioDrawingPresentation();
+      const navigate = useNavigate();
+      return (
+        <div>
+          <output data-testid="presentation-mode">{presentation}</output>
+          <button type="button" onClick={() => navigate("/studio/p/proj-1/d/doc-1")}>프로젝트 문서</button>
+          <button type="button" onClick={() => navigate("/studio/canvas")}>단독 빈 캔버스</button>
+        </div>
+      );
+    }
+
+    const tabView = render(
+      <MemoryRouter initialEntries={["/studio?drawingShell=app"]}>
+        <NavProbe />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("presentation-mode").textContent).toBe("app");
+
+    fireEvent.click(screen.getByRole("button", { name: "프로젝트 문서" }));
+    expect(screen.getByTestId("presentation-mode").textContent).toBe("app");
+
+    fireEvent.click(screen.getByRole("button", { name: "단독 빈 캔버스" }));
+    expect(screen.getByTestId("presentation-mode").textContent).toBe("integrated");
+    tabView.unmount();
+
+    const pwaView = render(
+      <MemoryRouter initialEntries={["/studio?drawingShell=app&source=pwa"]}>
+        <NavProbe />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("presentation-mode").textContent).toBe("app");
+    fireEvent.click(screen.getByRole("button", { name: "단독 빈 캔버스" }));
+    expect(screen.getByTestId("presentation-mode").textContent).toBe("app");
+    pwaView.unmount();
   });
 });

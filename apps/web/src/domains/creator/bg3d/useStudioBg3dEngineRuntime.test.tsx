@@ -319,4 +319,49 @@ describe("useStudioBg3dEngineRuntime", () => {
     act(() => result.current.setPreference("webgl2"));
     expect(result.current.plan).toMatchObject({ backend: "webgl2", status: "available" });
   });
+
+  it("marks explicit WebGL2 unavailable or failed on no-GPU hosts and retries cleanly when requested", async () => {
+    let webgl2Available = false;
+    const probeWebgl2 = vi.fn(() => ({
+      supported: webgl2Available,
+      reason: webgl2Available ? ("available" as const) : ("context-unavailable" as const),
+    }));
+    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options({
+      probe: async () => UNSUPPORTED_PROBE,
+      probeWebgl2,
+    })));
+
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    expect(result.current.plan).toMatchObject({ backend: "webgpu", status: "unavailable" });
+
+    act(() => result.current.setPreference("webgl2"));
+    expect(result.current.preference).toBe("webgl2");
+    expect(result.current.plan).toMatchObject({
+      backend: "webgl2",
+      status: "unavailable",
+      reason: "webgl2-unavailable",
+    });
+    expect(result.current.canvasKey).toBe("webgl2#0");
+
+    webgl2Available = true;
+    act(() => result.current.setPreference("webgl2"));
+    expect(result.current.plan).toMatchObject({
+      backend: "webgl2",
+      status: "available",
+      reason: "user-webgl2-override",
+    });
+    expect(result.current.canvasKey).toBe("webgl2#1");
+
+    act(() => result.current.reportRendererFailure("webgl2", "Error creating WebGL context"));
+    expect(result.current.plan).toMatchObject({
+      backend: "webgl2",
+      status: "failed",
+      reason: "webgl2-runtime-failed",
+    });
+    expect(result.current.deviceLostMessage).toContain("2D 원고로 복귀");
+
+    act(() => result.current.setPreference("webgl2"));
+    expect(result.current.plan).toMatchObject({ backend: "webgl2", status: "available" });
+    expect(result.current.canvasKey).toBe("webgl2#2");
+  });
 });

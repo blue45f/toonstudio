@@ -116,4 +116,22 @@ describe("creator role workspace store", () => {
 
     expect(getCreatorRoleWorkspaceStoreState("work:work-1").snapshot).toEqual(latest);
   });
+
+  it("reads a persisted local snapshot synchronously without triggering a server request", () => {
+    localStorage.setItem(
+      "toonspectrum:creator-role-workspace:v1:global",
+      JSON.stringify({
+        projectKey: "global",
+        revision: 4,
+        document: normalizeCreatorRoleWorkspacePreference({ activeRole: "story" }),
+        updatedAt: "2026-10-03T00:00:00.000Z",
+      }),
+    );
+
+    const state = getCreatorRoleWorkspaceStoreState("global");
+    expect(state.status).toBe("idle");
+    expect(state.snapshot.source).toBe("local");
+    expect(state.snapshot.document.activeRole).toBe("story");
+    expect(doubles.get).not.toHaveBeenCalled();
+  });
 });

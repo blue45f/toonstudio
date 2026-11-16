@@ -431,7 +431,11 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
             </div>
           </div>
         </div>
-        {compact ? <Suspense fallback={null}><LazyStudioDrawingClarityRail session={s} /></Suspense> : null}
+        {compact ? (
+          <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="hidden w-14 shrink-0 border-r border-line bg-panel md:block" />}>
+            <LazyStudioDrawingClarityRail session={s} />
+          </Suspense>
+        ) : null}
         <StudioCuttoonEditorPanels {...s} />
         <StudioCuttoonEditorSessionDialogs {...s} />
         <StudioWorkspaceArrangementToolbar disabled={compact || isMobile || canvasOnlyMode || mobileImmersive || presentationPanelsHidden} />

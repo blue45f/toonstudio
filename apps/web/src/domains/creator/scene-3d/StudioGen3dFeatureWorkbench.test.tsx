@@ -122,5 +122,7 @@ describe("StudioGen3dFeatureWorkbench", () => {
     expect(screen.getByTestId("tripo3d-customizer-recipe-readout").textContent).toContain(
       "/models/tripo3d-mcp/custom_user_knight.glb",
     );
+    expect(screen.getByTestId("tripo-motion-slash-leap").className).toContain("min-h-8");
+    expect(screen.getByTestId("tripo-motion-slash-leap").className).toContain("pointer-coarse:min-h-11");
   });
 });

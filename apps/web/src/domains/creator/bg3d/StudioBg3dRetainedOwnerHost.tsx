@@ -1,4 +1,4 @@
-import { Boxes } from "lucide-react";
+import { ArrowLeft, Boxes } from "lucide-react";
 import {
   cloneElement,
   Suspense,
@@ -9,7 +9,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { useInRouterContext, useLocation, useNavigate } from "react-router-dom";
 
+import {
+  setStudioBg3dRoutedStartupYielded,
+  studioBg3dRoutedStartupGateSource,
+} from "../studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry";
 import {
   releaseStudioBg3dRetainedOwnerLease,
   reportStudioBg3dRetainedOwnerCleanup,
@@ -22,7 +27,18 @@ import "../studio-bg3d-panel-status-i18n";
 
 export const BG3D_RETAINED_OWNER_STALE_RELEASE_MS = 250;
 
-function Bg3DRetainedLoadingOverlay() {
+function isBg3dRoutedPathname(pathname: string): boolean {
+  return pathname === "/studio/bg3d" || /^\/studio\/p\/[^/]+\/bg3d$/u.test(pathname);
+}
+
+function resolveBg3dCanvasFallbackHref(pathname: string, search: string): string {
+  const targetPath = /^\/studio\/p\/[^/]+\/bg3d$/u.test(pathname)
+    ? pathname.replace(/\/bg3d$/u, "/canvas")
+    : "/studio/canvas";
+  return `${targetPath}${search}`;
+}
+
+function Bg3DRetainedLoadingOverlay({ onReturnTo2d }: { readonly onReturnTo2d?: () => void }) {
   const t = useT();
   const [stage, setStage] = useState(0);
   useEffect(() => {
@@ -35,7 +51,13 @@ function Bg3DRetainedLoadingOverlay() {
   }, []);
   const stages = ["작업공간 준비", "3D 엔진 연결", "에셋 목록 준비"] as const;
   return (
-    <div aria-live="polite" aria-busy="true" className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-[oklch(0.08_0.01_70/0.84)] p-3 text-fg backdrop-blur-md sm:p-5">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      data-testid="studio-bg3d-startup-gate"
+      className="fixed inset-0 z-[75] grid place-items-center overflow-hidden bg-[oklch(0.08_0.01_70/0.96)] p-3 text-fg backdrop-blur-md sm:p-5"
+    >
       <div aria-hidden="true" className="absolute inset-4 grid grid-cols-[minmax(10rem,0.26fr)_minmax(0,1fr)_minmax(12rem,0.3fr)] gap-2 opacity-35 sm:inset-8 sm:gap-3">
         <div className="rounded-2xl border border-line bg-panel/70 p-3"><div className="h-7 rounded-lg bg-raised" /><div className="mt-3 h-12 rounded-xl bg-card" /><div className="mt-2 h-12 rounded-xl bg-card" /><div className="mt-2 h-12 rounded-xl bg-card" /></div>
         <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-panel to-raised"><div className="absolute inset-x-0 bottom-0 h-2/3 bg-[linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] bg-[size:42px_42px] [transform:perspective(480px)_rotateX(62deg)_scale(1.45)]" /></div>
@@ -60,8 +82,48 @@ function Bg3DRetainedLoadingOverlay() {
           ))}
         </ol>
         {stage >= 2 ? <p className="relative mt-4 rounded-xl border border-warning/25 bg-warning-soft px-3 py-2 text-[0.68rem] leading-5 text-fg-2">첫 실행은 브라우저와 그래픽 장치에 따라 조금 더 걸릴 수 있습니다. 화면이 열리면 장면 프리셋을 바로 선택할 수 있습니다.</p> : null}
+        {onReturnTo2d ? (
+          <div className="relative mt-4 flex justify-end">
+            <button
+              type="button"
+              data-testid="studio-bg3d-startup-return-2d"
+              onClick={onReturnTo2d}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+            >
+              <ArrowLeft size={14} aria-hidden />
+              <span>2D 원고로 복귀</span>
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
+  );
+}
+
+function RouterBg3dColdStartupGate({ active }: { readonly active: boolean }) {
+  const { pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const gate = useSyncExternalStore(
+    studioBg3dRoutedStartupGateSource.subscribe,
+    studioBg3dRoutedStartupGateSource.getSnapshot,
+    studioBg3dRoutedStartupGateSource.getSnapshot,
+  );
+  useEffect(() => {
+    if (!isBg3dRoutedPathname(pathname) && gate.yielded) {
+      setStudioBg3dRoutedStartupYielded(false);
+    }
+  }, [gate.yielded, pathname]);
+
+  if (!active || !isBg3dRoutedPathname(pathname) || gate.yielded) {
+    return null;
+  }
+  return (
+    <Bg3DRetainedLoadingOverlay
+      onReturnTo2d={() => {
+        setStudioBg3dRoutedStartupYielded(true);
+        navigate(resolveBg3dCanvasFallbackHref(pathname, search), { replace: true });
+      }}
+    />
   );
 }
 
@@ -161,7 +223,11 @@ export function StudioBg3dRetainedOwnerHost() {
     return clearStaleReleaseTimer;
   }, [lease, clearStaleReleaseTimer]);
 
-  if (!lease.element) return null;
+  const inRouter = useInRouterContext();
+
+  if (!lease.element) {
+    return inRouter ? <RouterBg3dColdStartupGate active /> : null;
+  }
   return (
     <Suspense fallback={lease.logicalOpen ? <Bg3DRetainedLoadingOverlay /> : null}>
       <HostedBg3dRetainedElement

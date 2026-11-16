@@ -66,7 +66,7 @@ const AI_STAGE_CARDS: readonly AiStageAssistantCard[] = [
       en: "Detects dialogue-heavy zones and suggests scroll whitespace and balloon reading order before climax cuts.",
     },
     image: "/assets/site-experience/site-art-v1/cards/nb-workflow-bridge-640.webp",
-    href: "/studio?lane=blank",
+    href: "/studio/new?lane=blank",
     cta: { ko: "콘티 캔버스 열기", en: "Open Storyboard Canvas" },
   },
   {

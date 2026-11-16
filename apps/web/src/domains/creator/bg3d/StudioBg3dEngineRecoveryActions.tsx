@@ -13,16 +13,19 @@ export function StudioBg3dEngineRecoveryActions({
   onPreferenceChange,
   onReopenLowQuality,
   onReturnTo2d,
+  testIdPrefix = "studio-bg3d-recovery",
 }: {
   readonly preference: StudioBg3dEnginePreference;
   readonly onPreferenceChange: (preference: StudioBg3dEnginePreference) => void;
   readonly onReopenLowQuality?: () => void;
   readonly onReturnTo2d?: () => void;
+  readonly testIdPrefix?: string;
 }) {
   const recommended: StudioBg3dEnginePreference | null = preference === "webgpu" ? "webgl2" : null;
   const ordered = recommended
     ? [recommended, ...STUDIO_BG3D_ENGINE_PREFERENCES.filter((engine) => engine !== recommended)]
-    : STUDIO_BG3D_ENGINE_PREFERENCES;
+    : [preference, ...STUDIO_BG3D_ENGINE_PREFERENCES.filter((engine) => engine !== preference)];
+  const defaultPrefix = testIdPrefix === "studio-bg3d-recovery";
   return (
     <div role="group" aria-label="사용할 3D 엔진 직접 선택" className="mt-3 flex max-w-full flex-wrap justify-center gap-2">
       {ordered.map((engine) => {
@@ -32,7 +35,7 @@ export function StudioBg3dEngineRecoveryActions({
           <button
             key={engine}
             type="button"
-            data-testid={`studio-bg3d-recovery-${engine}`}
+            data-testid={`${testIdPrefix}-${engine}`}
             data-studio-bg3d-recovery-recommended={continueWithWebgl ? "true" : undefined}
             className={studioBg3dClassNames(
               STUDIO_BG3D_CONTROL_BUTTON,
@@ -52,7 +55,7 @@ export function StudioBg3dEngineRecoveryActions({
       {onReopenLowQuality ? (
         <button
           type="button"
-          data-testid="bg3d-engine-reopen-low-quality"
+          data-testid={defaultPrefix ? "bg3d-engine-reopen-low-quality" : `${testIdPrefix}-low-quality`}
           className={studioBg3dClassNames(
             STUDIO_BG3D_CONTROL_BUTTON,
             "min-h-11 min-w-11 border-line bg-panel px-4 text-fg hover:border-accent/60 hover:bg-raised",
@@ -65,7 +68,7 @@ export function StudioBg3dEngineRecoveryActions({
       {onReturnTo2d ? (
         <button
           type="button"
-          data-testid="bg3d-engine-return-2d"
+          data-testid={defaultPrefix ? "bg3d-engine-return-2d" : `${testIdPrefix}-return-2d`}
           className={studioBg3dClassNames(
             STUDIO_BG3D_CONTROL_BUTTON,
             "min-h-11 min-w-11 border-line bg-panel px-4 text-fg hover:border-accent/60 hover:bg-raised",

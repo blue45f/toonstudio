@@ -105,5 +105,7 @@ describe("Studio front door UX contract", () => {
     expect(source).not.toContain("export function StudioNewPage");
     expect(source).toContain("export function StudioImportPage");
     expect(source).toContain("export function StudioAssetsPage");
+    // WCAG 2.5.8 / 터치 타깃: 브레드크럼 링크가 16px로 축소되지 않고 44×44px 히트 영역을 보장한다.
+    expect(source).toContain("min-h-11 min-w-11");
   });
 });

@@ -484,4 +484,44 @@ describe("prepared full editor and rescue coexistence", () => {
     const { response } = await harness.dispatch("fetch", navigationEvent("/studio/canvas"));
     expect(await response?.text()).toBe("prepared editor");
   });
+  it("serializes overlapping prepare-offline requests without returning offline-preparation-busy", async () => {
+    let releaseFirstFetch = (): void => undefined;
+    const firstFetchGate = new Promise<void>((resolve) => {
+      releaseFirstFetch = resolve;
+    });
+    let gated = false;
+    harness.setNetwork(async (url) => {
+      if (!gated && url.endsWith("/assets/a.js")) {
+        gated = true;
+        await firstFetchGate;
+      }
+      if (url.endsWith("/studio") || url === `${ORIGIN}/`) return shell("prepared editor", url.endsWith("/studio"));
+      if (url.endsWith(".json")) {
+        return new Response("{}", { headers: { "content-type": "application/json" } });
+      }
+      return assetResponse(url);
+    });
+    await loadWorker();
+
+    const firstReplies: unknown[] = [];
+    const secondReplies: unknown[] = [];
+    const first = harness.dispatch("message", {
+      source: { url: `${ORIGIN}/studio/canvas` },
+      data: { type: "toonstudio-sw:prepare-offline", urls: ["/assets/a.js"] },
+      ports: [{ postMessage: (value: unknown) => firstReplies.push(value) }],
+    });
+    const second = harness.dispatch("message", {
+      source: { url: `${ORIGIN}/studio/canvas` },
+      data: { type: "toonstudio-sw:prepare-offline", urls: ["/assets/b.js"] },
+      ports: [{ postMessage: (value: unknown) => secondReplies.push(value) }],
+    });
+    await Promise.resolve();
+    releaseFirstFetch();
+    await Promise.all([first, second]);
+
+    expect(firstReplies).toHaveLength(1);
+    expect(secondReplies).toHaveLength(1);
+    expect(firstReplies[0]).toMatchObject({ schema: 1, buildId: BUILD_ID, complete: true });
+    expect(secondReplies[0]).toMatchObject({ schema: 1, buildId: BUILD_ID, complete: true });
+  });
 });

@@ -56,10 +56,11 @@ function stateFor(
 ): CreatorRoleWorkspaceStoreState {
   const existing = states.get(projectKey);
   if (existing) return existing;
+  const local = readLocalSnapshot(projectKey);
   const next: CreatorRoleWorkspaceStoreState = {
     projectKey,
     status: "idle",
-    snapshot: defaultSnapshot(projectKey, profile),
+    snapshot: local ?? defaultSnapshot(projectKey, profile),
     error: null,
   };
   states.set(projectKey, next);
