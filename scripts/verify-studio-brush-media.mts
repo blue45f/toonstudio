@@ -22,6 +22,7 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
+import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { prepareStudioBrushDrawingUi } from "./lib/studio-brush-drawing-ui";
 import {
   isStaticPreviewReadinessResponse,
@@ -225,12 +226,7 @@ async function selectBrush(
   brush: Pick<StudioBrushCatalogItem, "id" | "name">,
 ): Promise<void> {
   const toolbar = page.getByRole("toolbar", { name: /그리기 옵션/u });
-  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
-  if (!await dock.isVisible()) {
-    await toolbar.getByRole("button", { name: /브러시 선택 열기$/u }).click();
-  }
-  await dock.waitFor({ state: "visible" });
-  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  await openStudioBrushCatalogThroughUi(page, toolbar.getByRole("button", { name: /브러시 선택 열기$/u }));
   const catalog = page.getByRole("dialog", { name: "브러시 전체 라이브러리" });
   await catalog.waitFor({ state: "visible" });
   await catalog.getByRole("searchbox", { name: "전체 브러시 검색" }).fill(brush.name);

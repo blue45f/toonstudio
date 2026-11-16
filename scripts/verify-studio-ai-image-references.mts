@@ -20,6 +20,8 @@ import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosa
 
 import { collectStudioInAppRuntimeErrors, installStudioInAppFirstRunState, launchStudioInAppBrowser } from "./lib/studio-inapp-sweep-harness.mjs";
 import { isStaticPreviewReadinessResponse } from "./lib/studio-preview-readiness";
+import { openStudioMainMenu } from "./lib/studio-shell-interactions";
+import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import { findFreePort, spawnVitePreview, stopChildProcess, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -208,8 +210,7 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
       }
     }
     async function menu(group: string, id: string): Promise<void> {
-      await activePage.locator(`[data-studio-main-menu-trigger="${group}"]`).click();
-      const panel = activePage.locator('[data-studio-main-menu-panel="true"]');
+      const panel = await openStudioMainMenu(activePage, group);
       const item = panel.locator(`[data-studio-menu-item-id="${id}"]`);
       if (!await item.isVisible()) await panel.getByRole("menuitem", { name: /^고급 도구 펼치기/u }).click();
       await item.click();
@@ -289,7 +290,7 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
     }
 
     if (scenario !== "empty") await check("prepare-existing-ink", async () => {
-      await activePage.locator('[data-studio-rail-tool-id="pen"]').click();
+      await clickStudioToolThroughUi(activePage, "pen");
       await draw(.25);
       await saved(document => elements(document).some(element => element.type === "draw"));
       // Establish an existing committed stroke before exercising retained pointerup Undo.
@@ -349,7 +350,7 @@ async function runScenario(browser: Browser, origin: string, scenario: Scenario)
         await activePage.keyboard.press("Escape");
         await activePage.mouse.move(1, 1);
         await activePage.locator('[data-studio-tool-hint="true"]:visible').waitFor({ state: "hidden" });
-        await activePage.locator('[data-studio-rail-tool-id="pen"]').click();
+        await clickStudioToolThroughUi(activePage, "pen");
         const previousIds = new Set(elements(await read()).map(element => element.id));
         const pointerup = await draw(.42 + (strokeCycle++ % 3) * .05);
         const receipt = await saved(document => document?.pendingStrokeDurability?.reason === "pointerup"

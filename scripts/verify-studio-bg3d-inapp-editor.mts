@@ -27,6 +27,8 @@ import { join } from "node:path";
 
 import { chromium, type Browser, type CDPSession, type Locator, type Page } from "playwright";
 
+import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
+import { visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   spawnVitePreview,
@@ -208,7 +210,7 @@ async function verifyFramingProfile(
       throw new Error(`Framing fixture canvas has not painted (${initialCanvas.distinctColors} colours)`);
     }
     const dialog = page.getByTestId("studio-bg3d-dialog");
-    await dialog.getByRole("tab", { name: /^(?:도형|소품)$/u }).click();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
     await dialog.getByRole("button", { name: "상자 추가", exact: true }).first().click();
     for (const [axis, value] of [["X", "0.8"], ["Y", "6"], ["Z", "0.4"]]) {
       const field = dialog.getByRole("spinbutton", { name: `크기 ${axis}`, exact: true }).first();
@@ -637,25 +639,16 @@ async function verifyNativeTouchScroll(
 
 /** Opens the editor's 보기 tab and reads the engine card the artist would actually see. */
 async function readEnginePanel(page: Page): Promise<ProfileResult["engine"]> {
-  // `bg3d-tab-view` is the sidebar tablist's own id, so this follows the shipped control rather
-  // than a label that translation could move out from under the verifier.
-  const viewTab = page.locator("#bg3d-tab-view").first();
-  const reachable = await viewTab
-    .waitFor({ state: "visible", timeout: 15_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!reachable) return { badge: null, status: null, smallestTouchTargetPx: null };
-  await viewTab.click();
-
-  const badge = page.locator('[data-testid="studio-bg3d-engine-active-backend"]').first();
-  await badge.waitFor({ state: "visible", timeout: 10_000 }).catch(() => undefined);
-  const status = page.locator('[data-testid="studio-bg3d-engine-status"]').first();
+  const dialog = page.getByTestId("studio-bg3d-dialog");
+  await openStudioBg3dEnginePanel(dialog, 15_000);
+  const badge = await visibleStudioControl(dialog.getByTestId("studio-bg3d-engine-active-backend"), "3D 활성 엔진", 10_000);
+  const status = dialog.getByTestId("studio-bg3d-engine-status");
 
   let smallest: number | null = null;
   for (const option of ["webgpu", "webgl2"]) {
-    const button = page.locator(`[data-testid="studio-bg3d-engine-preference-${option}"]`).first();
-    await button.scrollIntoViewIfNeeded({ timeout: 5_000 }).catch(() => undefined);
-    const box = await button.boundingBox().catch(() => null);
+    const button = await visibleStudioControl(dialog.getByTestId(`studio-bg3d-engine-preference-${option}`), `3D 엔진 ${option}`, 5_000);
+    await button.scrollIntoViewIfNeeded({ timeout: 5_000 });
+    const box = await button.boundingBox();
     if (!box) continue;
     const shortest = Math.min(box.width, box.height);
     smallest = smallest === null ? shortest : Math.min(smallest, shortest);
@@ -677,18 +670,22 @@ async function readEnginePanel(page: Page): Promise<ProfileResult["engine"]> {
  * not a fallback the product no longer performs. The sidebar returns to whichever tab was active.
  */
 async function selectWebGl2Engine(page: Page): Promise<void> {
-  const previousTabId = await page
-    .locator('[id^="bg3d-tab-"][role="tab"][aria-selected="true"]')
-    .first()
-    .getAttribute("id")
-    .catch(() => null);
-  const viewTab = page.locator("#bg3d-tab-view").first();
-  await viewTab.waitFor({ state: "visible", timeout: 30_000 });
-  await viewTab.click();
-
+  const dialog = page.getByTestId("studio-bg3d-dialog");
+  const previousTab = await visibleStudioControl(
+    dialog.locator('[id^="bg3d-tab-"][role="tab"][aria-selected="true"]'), "3D 기존 작업 탭", 30_000,
+  );
+  const previousTabId = await previousTab.getAttribute("id");
+  const previousViewSection = dialog.locator('[id^="bg3d-view-tab-"][aria-selected="true"]').filter({ visible: true });
+  const previousViewSectionId = await previousViewSection.count() > 0
+    ? await (await visibleStudioControl(previousViewSection, "3D 기존 보기 설정")).getAttribute("id")
+    : null;
+  const recovery = dialog.getByTestId("studio-bg3d-recovery-webgl2").filter({ visible: true });
+  if (await recovery.count() > 0) {
+    await (await visibleStudioControl(recovery, "WebGL2로 계속")).click();
+  }
+  await openStudioBg3dEnginePanel(dialog, 30_000);
   const webgl2Selector = '[data-testid="studio-bg3d-engine-preference-webgl2"]';
-  const webgl2 = page.locator(webgl2Selector).first();
-  await webgl2.waitFor({ state: "visible", timeout: 15_000 });
+  const webgl2 = await visibleStudioControl(dialog.locator(webgl2Selector), "WebGL2 엔진 선택", 15_000);
   if ((await webgl2.getAttribute("aria-pressed")) !== "true") {
     // Both preference buttons stay disabled while the capability probe is still running.
     await page.waitForFunction((selector) => {
@@ -705,7 +702,10 @@ async function selectWebGl2Engine(page: Page): Promise<void> {
   ), null, { timeout: 60_000 });
 
   if (previousTabId && previousTabId !== "bg3d-tab-view") {
-    await page.locator(`#${previousTabId}`).first().click().catch(() => undefined);
+    await selectStudioBg3dTaskTab(dialog, previousTabId.replace(/^bg3d-tab-/u, ""));
+  } else if (previousViewSectionId && previousViewSectionId !== "bg3d-view-tab-camera") {
+    await dialog.locator(`#${previousViewSectionId}`).click();
+    await dialog.locator(`#${previousViewSectionId}[aria-selected="true"]`).waitFor({ state: "visible" });
   }
 }
 

@@ -29,6 +29,19 @@ const SCRATCH =
 const HARNESS_PATH = "/__studio_engine_webgpu_presentation__";
 const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-presentation-browser.ts";
 const RESULT_TIMEOUT_MS = 120_000;
+// headless shell은 유지하고 canvas/shared-image용 SwiftShader Vulkan 구성을 명시한다.
+// 재현 근거: https://issues.chromium.org/issues/575926500
+const BROWSER_LAUNCH_OPTIONS = {
+  headless: true,
+  args: [
+    "--no-sandbox",
+    "--enable-unsafe-webgpu",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--use-vulkan=swiftshader",
+    "--enable-features=Vulkan",
+  ],
+};
 const CSP =
   "default-src 'none'; "
   + "script-src 'self'; "
@@ -270,18 +283,12 @@ async function main() { // NOSONAR javascript:S3776
 
   let browser = null;
   try {
-    browser = await chromium.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--enable-unsafe-webgpu",
-        "--use-angle=swiftshader",
-      ],
-    });
+    browser = await chromium.launch(BROWSER_LAUNCH_OPTIONS);
     const context = await browser.newContext();
     const page = await context.newPage();
     const diagnostics = {
       browserVersion: browser.version(),
+      browserLaunch: { ...BROWSER_LAUNCH_OPTIONS, channel: null },
       contentSecurityPolicy: CSP,
       consoleErrors: [],
       consoleWarnings: [],
@@ -342,6 +349,7 @@ async function main() { // NOSONAR javascript:S3776
       status: failures.length === 0 ? "ok" : "failed",
       backend: result.backend,
       browserVersion: diagnostics.browserVersion,
+      browserLaunch: diagnostics.browserLaunch,
       adapterInfo: result.adapterInfo,
       canvasFormat: result.canvasFormat,
       initialSurface: {

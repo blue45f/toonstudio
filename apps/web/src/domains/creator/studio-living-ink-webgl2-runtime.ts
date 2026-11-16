@@ -1,5 +1,7 @@
 import {
   canonicalStudioLivingInkDisplayRgba8,
+  STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE as STUDIO_LIVING_INK_WEBGL2_DILUTE_SEDIMENT_RESPONSE,
+  STUDIO_LIVING_INK_DISPLAY_GRANULATION_SEDIMENT_GAIN as STUDIO_LIVING_INK_WEBGL2_DISPLAY_GRANULATION_SEDIMENT_GAIN,
   STUDIO_LIVING_INK_EXECUTION_ENGINE_VERSION,
   STUDIO_LIVING_INK_EXECUTION_LIMITS,
   STUDIO_LIVING_INK_EXECUTION_PROTOCOL_VERSION,
@@ -89,12 +91,7 @@ type Programs = Readonly<{
   display: Program;
 }>;
 
-export const STUDIO_LIVING_INK_WEBGL2_DISPLAY_GRANULATION_SEDIMENT_GAIN = 2.35;
-export const STUDIO_LIVING_INK_WEBGL2_DILUTE_SEDIMENT_RESPONSE = Object.freeze({
-  additionalGain: 4.6,
-  fullStrengthDensity: 0.035,
-  fadeOutDensity: 0.2,
-} as const);
+export { STUDIO_LIVING_INK_WEBGL2_DILUTE_SEDIMENT_RESPONSE, STUDIO_LIVING_INK_WEBGL2_DISPLAY_GRANULATION_SEDIMENT_GAIN };
 
 /** CPU-readable form of the GLSL dilute-wash response, used to pin its physical density envelope. */
 export function studioLivingInkWebGlDiluteSedimentBoost(centerDensity: number): number {
@@ -337,16 +334,21 @@ void main(){
   vec2 velocity = texture(velocityTexture, uv).xy;
   vec2 origin = clamp(uv - velocity * dt * 0.6, vec2(0.0), vec2(1.0));
   float center = texture(wetTexture, origin).r;
-  // Slowly varying paper fibres make capillary spread elongated but continuous. Sampling a fibre
-  // axis plus its perpendicular avoids grid diamonds and exposes real paper-direction response.
+  // 섬유 방향과 수직 방향을 함께 표본화하여 모세관 번짐의 격자 편향을 막는다.
   vec2 fieldSize = 1.0 / fineTexel;
   vec2 fibreCell = floor(uv * fieldSize / 28.0);
   float fibreNoise = fract(sin(dot(fibreCell + seed, vec2(41.73, 97.11))) * 43758.5453);
   float fibreAngle = (fibreNoise - 0.5) * 1.4 + 0.34;
   vec2 fibre = vec2(cos(fibreAngle), sin(fibreAngle));
   vec2 perpendicular = vec2(-fibre.y, fibre.x);
-  vec2 parallelReach = fibre * fineTexel * (1.0 + creep * (3.0 + 3.0 * fiberAnisotropy));
-  vec2 perpendicularReach = perpendicular * fineTexel * (1.0 + creep * 1.6);
+  float rawParallelReach = 1.0 + creep * (3.0 + 3.0 * fiberAnisotropy);
+  float rawPerpendicularReach = 1.0 + creep * 1.6;
+  // WGSL과 같이 모세관 면적을 보존하면서 섬유 한 축의 과도한 신장을 제한한다.
+  float geometricReach = sqrt(rawParallelReach * rawPerpendicularReach);
+  float fibreRatio = min(rawParallelReach / rawPerpendicularReach, 1.0 + fiberAnisotropy * 1.2);
+  float axisScale = sqrt(fibreRatio);
+  vec2 parallelReach = fibre * fineTexel * geometricReach * axisScale;
+  vec2 perpendicularReach = perpendicular * fineTexel * geometricReach / axisScale;
   vec2 farParallelReach = parallelReach * 1.4;
   vec2 farPerpendicularReach = perpendicularReach * 1.25;
   float parallelWeight = 0.5 + fiberAnisotropy * 0.22;
@@ -729,9 +731,7 @@ void main(){
   vec3 mobileOpticalDensity = mobileContribution.rgb * densityStrength;
   float granulationGate = smoothstep(0.005, 0.24, centerDensity)
     * (1.0 - smoothstep(0.38, 1.15, centerDensity) * 0.74);
-  // Dilute radial washes expose pigment/fibre separation that concentrated ink optically masks.
-  // Boost sediment while pigment is sparse, then return exactly to the shared baseline before a
-  // dark continuous stroke reaches its centre density so paper tooth cannot cut periodic gaps.
+  // 희석 안료만 침전 대비를 보강하고, 진한 선의 밀도에 도달하기 전에 기본 응답으로 복귀한다.
   float diluteSedimentBoost = 1.0 + (
     1.0 - smoothstep(
       ${STUDIO_LIVING_INK_WEBGL2_DILUTE_SEDIMENT_RESPONSE.fullStrengthDensity.toFixed(3)},

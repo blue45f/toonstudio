@@ -375,6 +375,36 @@ describe("Studio native-raster browser gate policy", () => {
     expect(studioNativeRasterScenarioViolations(passingEvidence())).toEqual([]);
   });
 
+  it("준비 실패로 실행하지 못한 Undo를 실제 Undo 회귀와 구분하고 게이트 실패를 유지한다", () => {
+    const evidence = passingEvidence("selection-rect");
+    evidence.status = "failed";
+    evidence.failurePhase = "setup";
+    evidence.failure = "주 색 입력을 찾지 못했습니다";
+    evidence.undo.attempted = false;
+    evidence.undo.restored = false;
+    evidence.undo.retainedEditableRasterWhenExpected = false;
+    evidence.undo.selectionStateCleared = null;
+    evidence.undo.durableSnapshotRetained = null;
+    const issues = studioNativeRasterScenarioViolations(evidence);
+    expect(issues).toContain("selection-rect: one-step Undo was not executed (blocked during setup)");
+    expect(issues.some(issue => issue.includes("scenario did not complete"))).toBe(true);
+    expect(issues.some(issue => issue.includes("Undo contract failed"))).toBe(false);
+    expect(issues.some(issue => issue.includes("selection Undo did not clear"))).toBe(false);
+  });
+
+  it("완료 표시만 있고 Undo 증거가 없으면 여전히 실패하며 실행 후 복원 결함도 차단한다", () => {
+    const evidence = passingEvidence();
+    evidence.undo.attempted = false;
+    expect(studioNativeRasterScenarioViolations(evidence)).toContain(
+      `${evidence.id}: one-step Undo was not executed`,
+    );
+    evidence.undo.attempted = true;
+    evidence.undo.restored = false;
+    expect(studioNativeRasterScenarioViolations(evidence)).toContain(
+      `${evidence.id}: one-step Undo contract failed`,
+    );
+  });
+
   it("rejects imported fixtures, first-gesture loss and Undo that removes the editable copy", () => {
     const evidence = passingEvidence();
     evidence.fixture.usedExternalImageFixture = true;
@@ -619,15 +649,17 @@ describe("Studio native-raster browser gate policy", () => {
     expect(source).toContain("exposePixelSelectionUi");
     expect(source).toContain('[data-studio-inspector-primary-tab="properties"]:visible');
     expect(source).toContain("/^선택·보정$/u");
-    expect(source).toContain('await canvasTrigger.press("ArrowDown")');
-    expect(source).toContain('await filterTrigger.press("ArrowDown")');
+    const shellSource = readFileSync(new URL("./lib/studio-shell-interactions.ts", import.meta.url), "utf8");
+    expect(source).toContain('await openStudioMainMenu(page, "view")');
+    expect(source).toContain('await openStudioMainMenu(page, "filter")');
+    expect(shellSource).toContain('await trigger.press("ArrowDown")');
     expect(source.indexOf("const warmPath = await documentPointsToScreen(page, warmDocumentPath)"))
       .toBeGreaterThan(source.indexOf("const coldSnapshot = coldSettle.snapshot"));
     const retouchGesture = source.slice(source.indexOf("async function performRetouchGesture("),
       source.indexOf("async function performHealGesture("));
     expect(retouchGesture.indexOf("const path = await documentPointsToScreen(page, documentPath)"))
       .toBeGreaterThan(retouchGesture.indexOf("await button.click()"));
-    expect(source).toContain('[data-studio-main-menu-panel="true"] [role="menu"]');
+    expect(shellSource).toContain('[data-studio-main-menu-panel="true"] [role="menu"]');
     expect(source).not.toContain('[role="menu"][data-studio-main-menu-panel="true"]');
     expect(source).not.toContain(`await nav.locator('[data-studio-main-menu-trigger="filter"]').click()`);
     expect(source).toContain("durableDocumentFingerprint");
@@ -668,7 +700,7 @@ describe("Studio native-raster browser gate policy", () => {
     expect(source).toContain("TOONSPECTRUM_NATIVE_RASTER_CANVAS_HEIGHT");
     expect(source).toContain("setCanvasHeightThroughShippedUi");
     // 캔버스 그룹은 '보기' 메뉴 아래 한 구획으로 표시된다(2026-09-05 IA 정리).
-    expect(source).toContain('[data-studio-main-menu-trigger="view"]');
+    expect(source).toContain('openStudioMainMenu(page, "view")');
     expect(source).toContain('name: "캔버스 크기 · 문서 설정…"');
     expect(source).toContain("Open background editor · resize tool");
     expect(source).toContain('[data-studio-background-panel="true"]');

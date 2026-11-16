@@ -41,6 +41,7 @@ import {
 import { preview, type PreviewServer } from "vite";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
+import { runStudioClarityAction, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -219,14 +220,13 @@ async function gotoStudio(page: Page, baseUrl: string): Promise<void> {
       body: JSON.stringify({ authenticated: false, user: null }),
     });
   });
-  await page.goto(`${baseUrl}/studio`, {
+  await page.goto(`${baseUrl}/studio/canvas`, {
     waitUntil: "domcontentloaded",
     timeout: 30_000,
   });
   await page
-    .locator('[data-studio-main-menu="true"]')
-    .waitFor({ state: "visible", timeout: 30_000 })
-    .catch(() => undefined);
+    .locator('[data-studio-app-menubar="true"]').filter({ visible: true })
+    .waitFor({ state: "visible", timeout: 30_000 });
   await dismissHydratedQuickStart(page);
 }
 
@@ -703,6 +703,7 @@ async function walkDesktop(
   try {
     await gotoStudio(page, baseUrl);
     const panel = page.locator(PANEL);
+    if (!await panel.isVisible()) await runStudioClarityAction(page, "layers");
     await panel.waitFor({ state: "visible", timeout: 20_000 });
 
     report.desktop.panel = await measure(panel);
@@ -1785,112 +1786,25 @@ async function walkMobile(
 
   try {
     await gotoStudio(page, baseUrl);
-    await page
-      .locator('nav[aria-label="스튜디오 모바일 도구막대"]')
-      .waitFor({ state: "visible", timeout: 20_000 });
-
-    // 인스펙터 런처('패널')는 접힌 2행에 있다. 1행의 '도구' disclosure 는 가로
-    // 드로잉 스크롤 밖에 고정되어, 360px 첫 화면에서도 스와이프 없이 보여야 한다.
-    const workspaceToggle = page.locator('[data-studio-mobile-workspace-toggle="true"]');
-    const toggleInitiallyVisible = await workspaceToggle.evaluate((element) => {
-      const bounds = element.getBoundingClientRect();
-      const dockBounds = element
-        .closest<HTMLElement>('[data-studio-mobile-editing-dock="true"]')
-        ?.getBoundingClientRect();
-      const hit = document.elementFromPoint(
-        bounds.left + bounds.width / 2,
-        bounds.top + bounds.height / 2,
-      );
-      return Boolean(
-        dockBounds
-        && !element.closest('[data-studio-mobile-dock-scroll]')
-        && bounds.width >= 44
-        && bounds.height >= 44
-        && bounds.left >= dockBounds.left - 0.5
-        && bounds.right <= dockBounds.right + 0.5
-        && bounds.left >= -0.5
-        && bounds.right <= window.innerWidth + 0.5
-        && (hit === element || element.contains(hit))
-      );
-    });
-    const toggleExpandedBefore = await readAttribute(workspaceToggle, "aria-expanded");
-    const toggleClicked = await clickControl(workspaceToggle);
-    const toggleExpandedAfter = toggleClicked
-      ? await readAttribute(workspaceToggle, "aria-expanded")
-      : null;
-    record(rows, {
-      control: "모바일 작업공간 도구 펼치기 (인스펙터 진입 선행 단계)",
-      state: "360px",
-      path: "하단 도크 1행의 고정 ∧ '도구' 토글 (1 스텝)",
-      verdict:
-        toggleInitiallyVisible && toggleExpandedAfter === "true"
-          ? "reachable"
-          : "blocked",
-      effect:
-        `초기 고정·히트 가능=${toggleInitiallyVisible}; `
-        + `aria-expanded ${toggleExpandedBefore} → ${toggleExpandedAfter}; `
-        + "2행(댓글·페이지·필터·새 작업·패널·색각·줌)이 나타난다",
-      defect:
-        !toggleInitiallyVisible
-          ? "도구 토글이 첫 화면에 고정되지 않았거나 실제 히트테스트를 통과하지 못한다"
-          : !toggleClicked
-            ? "'도구' 토글을 클릭할 수 없다"
-            : toggleExpandedAfter !== "true"
-              ? "작업공간 토글이 2행을 펼치지 못한다"
-              : undefined,
-    });
-
-    const launcher = page.locator(
-      'nav[aria-label="스튜디오 모바일 도구막대"] button[aria-label="작업 패널"]',
-    );
+    const launcher = await visibleStudioControl(page.locator('[data-studio-clarity-more-trigger="true"]'), "모바일 더보기");
     const launcherInitiallyVisible = await launcher.evaluate((element) => {
       const bounds = element.getBoundingClientRect();
-      const scrollBounds = element
-        .closest<HTMLElement>('[data-studio-mobile-dock-scroll="secondary"]')
-        ?.getBoundingClientRect();
-      const hit = document.elementFromPoint(
-        bounds.left + bounds.width / 2,
-        bounds.top + bounds.height / 2,
-      );
-      return Boolean(
-        scrollBounds
-        && bounds.width >= 44
-        && bounds.height >= 44
-        && bounds.left >= scrollBounds.left - 0.5
-        && bounds.right <= scrollBounds.right + 0.5
-        && (hit === element || element.contains(hit))
-      );
+      const hit = document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+      return bounds.width >= 44 && bounds.height >= 44
+        && bounds.left >= -0.5 && bounds.right <= window.innerWidth + 0.5
+        && (hit === element || element.contains(hit));
     });
-    if (!launcherInitiallyVisible) {
-      record(rows, {
-        control: "모바일 작업 패널 열기",
-        state: "360px · 도구 행 펼침",
-        path: "하단 도구막대 '도구' → '패널' (2 스텝)",
-        verdict: "blocked",
-        effect: "패널 런처가 2행의 초기 가시 영역에 없거나 실제 히트테스트를 통과하지 못함",
-      });
-      return;
-    }
-    const launcherClicked = await clickControl(launcher);
-
+    await runStudioClarityAction(page, "layers");
     const sheet = page.locator(PANEL);
-    const opened =
-      launcherClicked
-      && (await sheet
-        .waitFor({ state: "visible", timeout: 10_000 })
-        .then(() => true)
-        .catch(() => false));
+    const opened = await sheet.waitFor({ state: "visible", timeout: 10_000 }).then(() => true).catch(() => false);
     record(rows, {
       control: "모바일 작업 패널 열기",
-      state: "360px",
-      path: "하단 도구막대 '도구' → '패널' (2 스텝)",
-      verdict: opened ? "reachable" : "blocked",
-      effect: `런처 초기 가시·히트 가능=${launcherInitiallyVisible}, 클릭됨=${launcherClicked}; role=dialog 시트가 올라옴=${opened}`,
-      defect: opened
-        ? undefined
-        : launcherClicked
-          ? "360px 에서 인스펙터에 도달할 수 없다"
-          : "'작업 패널' 런처를 클릭할 수 없다",
+      state: "360px · 기본 그리기",
+      path: "더보기 → 원고와 레이어 → 레이어·속성 보기 (3 스텝)",
+      verdict: launcherInitiallyVisible && opened ? "reachable" : "blocked",
+      effect: `더보기 초기 가시·히트 가능=${launcherInitiallyVisible}; 인스펙터 시트 표시=${opened}`,
+      defect: !launcherInitiallyVisible ? "더보기 진입이 화면 밖이거나 44px 히트 영역을 확보하지 못함"
+        : !opened ? "레이어·속성 명령 뒤 인스펙터가 열리지 않음" : undefined,
     });
     if (!opened) return;
 

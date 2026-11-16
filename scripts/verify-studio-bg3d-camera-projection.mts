@@ -28,6 +28,7 @@ try {
     return new URL(`assets/${files[0]}`, origin).href;
   };
   const urls = source ? {
+    source: true,
     three: new URL("tools/browser-harnesses/studio-bg3d-camera-proof-deps.ts", origin).href,
     gltfLoader: new URL("tools/browser-harnesses/studio-bg3d-camera-proof-deps.ts", origin).href,
     babylon: new URL("src/domains/creator/bg3d/studio-bg3d-babylon-specialist-entry.ts", origin).href,

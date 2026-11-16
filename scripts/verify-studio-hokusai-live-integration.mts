@@ -35,6 +35,7 @@ import {
   type Page,
 } from "playwright";
 
+import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { collectBrowserDiagnostics, mergeDiagnostics, type BrowserDiagnostics } from "./lib/studio-hokusai-preview-diagnostics";
 import {
@@ -858,10 +859,7 @@ async function selectBrush(
   brush: Readonly<{ brushId: string; brushName: string }>,
 ): Promise<void> {
   const toolbar = page.locator('[data-studio-draw-options="true"]');
-  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
-  if (!await dock.isVisible()) await toolbar.locator('[data-studio-brush-active-pill="true"]').click();
-  await dock.waitFor({ state: "visible" });
-  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  await openStudioBrushCatalogThroughUi(page, toolbar.locator('[data-studio-brush-active-pill="true"]'));
   const catalogue = page.locator('[role="dialog"][data-studio-brush-floating]')
     .locator('[data-studio-brush-catalog-session="true"]');
   await catalogue.waitFor({ state: "visible" });

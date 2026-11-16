@@ -29,6 +29,7 @@ import {
   type Page,
 } from "playwright";
 
+import { clickStudioToolThroughUi, studioVisibleTool } from "./lib/studio-tool-interactions";
 import {
   findFreePort,
   spawnVitePreview,
@@ -1069,20 +1070,7 @@ async function installCanvasMutationAudit(page: Page): Promise<void> {
 }
 
 async function clickRailTool(page: Page, toolId: "pen" | "select"): Promise<void> {
-  const selector = `[data-studio-rail-tool-id="${toolId}"]`;
-  await page.locator(selector).waitFor({ state: "visible", timeout: 15_000 });
-  await page.evaluate((targetSelector) => {
-    const button = document.querySelector<HTMLButtonElement>(targetSelector);
-    if (!button) throw new Error(`Missing Studio rail tool ${targetSelector}`);
-    if (button.disabled) throw new Error(`Studio rail tool is disabled ${targetSelector}`);
-    button.click();
-  }, selector);
-  await page.waitForFunction(
-    (targetSelector) =>
-      document.querySelector(targetSelector)?.getAttribute("aria-pressed") === "true",
-    selector,
-    { timeout: 15_000 },
-  );
+  await clickStudioToolThroughUi(page, toolId);
   await page.evaluate(() => new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   }));
@@ -1098,8 +1086,7 @@ async function exerciseToolTransitions(page: Page): Promise<ToolTransitionEviden
         label: `${cycle}:${toolId}`,
         toolId,
         selected:
-          await page
-            .locator(`[data-studio-rail-tool-id="${toolId}"]`)
+          await studioVisibleTool(page, toolId)
             .getAttribute("aria-pressed") === "true",
         snapshot: snapshotCanvasSurfaceInventory(inventory),
       });

@@ -31,13 +31,9 @@
  *   STUDIO_URL                               기본 http://localhost:5173/studio
  *   TOONSPECTRUM_LONG_STROKE_BRUSH           브러시 이름(기본: 카탈로그 첫 paint 브러시; preview 에선 활성 펜)
  *   TOONSPECTRUM_LONG_STROKE_DPR             deviceScaleFactor(기본 1)
- *   TOONSPECTRUM_LONG_STROKE_WEBGPU=1        --enable-unsafe-webgpu 를 켠다(기본 꺼짐 = Konva/CPU 경로). 헤드리스
- *                                            SwiftShader WebGPU 는 텍스처 생성이 실패해 선택 provider 가 획을 확정하지
- *                                            못한다(2026-09-02 실측: ink-committed FAIL, 커밋 점 0, gpuValidationWarnings
- *                                            15~33). 그 획은 이제 문서에서 지워지지 않고 복구 레코드로 남아 상태 레일의
- *                                            '획 복구'로 되살릴 수 있지만(studio-rejected-stroke-recovery.ts), 자동으로는
- *                                            커밋되지 않으므로(ADR 0018) 이 게이트의 ink-committed 는 여전히 실패한다.
- *                                            게이트가 CI 러너에서 GPU 드라이버 상태를 재는 도구가 되지 않도록 기본은 끈다.
+ *   TOONSPECTRUM_LONG_STROKE_WEBGPU=1        WebGPU 사용(기본 Konva/CPU). SwiftShader 텍스처 생성 실패 시
+ *                                            복구 레코드는 남지만 자동 커밋하지 않으며 ink-committed도 실패한다(ADR 0018).
+ *                                            GPU 드라이버 검증은 별도 gate가 맡는다.
  *   TOONSPECTRUM_LONG_STROKE_LONG_TASK_MAX   50ms 초과 longtask 허용 개수(기본 6 — 상수 주석 참고)
  *   TOONSPECTRUM_LONG_STROKE_SPAWN_PREVIEW=1 vite preview 를 직접 띄운다(pnpm build 선행)
  *   TOONSPECTRUM_VERIFY_DIR                  산출물 루트(기본 os tmpdir) → <dir>/studio-long-stroke/report.json
@@ -51,6 +47,7 @@ import { chromium, type Browser, type CDPSession, type Locator, type Page } from
 
 import { STUDIO_CANVAS_WIDTH } from "../apps/web/src/domains/creator/canvas/studio-canvas-constants";
 
+import { installStudioOfflinePreviewFixture } from "./lib/studio-offline-preview-fixture.mjs";
 import {
   findFreePort,
   spawnVitePreview,
@@ -109,14 +106,10 @@ const HEAP_GROWTH_MAX_BYTES = 64 * 1024 * 1024; // 해제 후 힙 증가 상한
 const COMMIT_READ_TIMEOUT_MS = 8_000; // 커밋 획이 SQLite 자동저장에 나타날 때까지 폴링 상한
 /** 개발 서버에서 API(:4001)가 없을 때 나는 선택적 루프백 실패 — 게이트 결함이 아니다. */
 const EXPECTED_DEV_NOISE =
-  /\/api\/(?:health\/capabilities|auth\/session|studio-ai\/status|kmas\/merge-on-access|analytics\/traffic\/)|socket\.io/u;
-/**
- * `vite preview` serves the production build, where the `/src/**` module specifiers below do not
- * exist. The probe already degrades to its env/fallback path when those imports fail; their 404s
- * are the expected shape of that degradation, not a page defect. A dev-server run keeps counting
- * them, because there the same 404 means the module really is missing.
- */
-const PREVIEW_DEV_MODULE_NOISE = /\/src\/domains\/creator\/(?:brush\/studio-brush-catalog|studio-autosave(?:-sqlite-store)?)\.ts/u;
+  /\/api\/(?:studio-ai\/status|kmas\/merge-on-access|analytics\/traffic\/)|socket\.io/u;
+// 직접 띄운 production preview의 개발 모듈 404만 fallback 진단이다. API 오류·다른 상태는 실패한다.
+const PREVIEW_DEV_MODULE_NOISE =
+  /^Failed to load resource: the server responded with a status of 404 \(Not Found\) @ http:\/\/[^/]+\/src\/domains\/creator\/(?:brush\/studio-brush-catalog|studio-autosave(?:-sqlite-store)?)\.ts$/u;
 /** WebGPU 검증 경고(console.warning) — 실패 원인 진단용으로 센다. */
 const GPU_VALIDATION_WARNING = /is invalid due to a previous error|WebGPU|GPUDevice/u;
 /** 개발 서버가 /src 로 서빙하는 모듈 — 페이지 안에서 import 해 stale-dist 없이 카탈로그·자동저장을 읽는다. */
@@ -880,6 +873,7 @@ async function main(): Promise<void> {
   const assertions: Assertion[] = [];
   const check = (id: string, ok: boolean, detail: string): void => { assertions.push({ id, ok, detail }); };
   const consoleErrors: string[] = [];
+  const rawConsoleErrors: string[] = [];
   const pageErrors: string[] = [];
   let gpuValidationWarnings = 0;
   const preview = SPAWN_PREVIEW
@@ -896,6 +890,7 @@ async function main(): Promise<void> {
   const report: Record<string, unknown> = {
     kind: "toonstudio-studio-long-stroke-gate-v1",
     generatedAt: new Date().toISOString(),
+    rawConsoleErrors,
     studioUrl, viewport: VIEWPORT, deviceScaleFactor: DEVICE_SCALE_FACTOR, webgpuFlag: WEBGPU,
     brushId: BRUSH_ID_ENV, brushOperation: BRUSH_OPERATION_ENV,
     pathMode: SCREEN_FILL_PATH ? "screen-fill-serpentine" : "diagonal",
@@ -920,6 +915,8 @@ async function main(): Promise<void> {
       ],
     });
     const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: DEVICE_SCALE_FACTOR });
+    const offlineApi = await installStudioOfflinePreviewFixture(context, preview ? new URL(studioUrl).origin : "");
+    report.apiFixture = offlineApi;
     const page = await context.newPage();
     page.setDefaultTimeout(20_000);
     const cdp = await context.newCDPSession(page).catch(() => null);
@@ -929,8 +926,10 @@ async function main(): Promise<void> {
       if (message.type() === "warning" && GPU_VALIDATION_WARNING.test(message.text())) gpuValidationWarnings += 1;
       const text = message.type() === "error" ? `${message.text()} @ ${message.location().url}` : null;
       if (!text) return;
+      rawConsoleErrors.push(text);
+      if (offlineApi.isExpectedConsole(message.text(), message.location().url)) return;
       const expected = EXPECTED_DEV_NOISE.test(text)
-        || (SPAWN_PREVIEW && PREVIEW_DEV_MODULE_NOISE.test(text));
+        || (preview && message.location().url.startsWith(`${new URL(studioUrl).origin}/`) && PREVIEW_DEV_MODULE_NOISE.test(text));
       if (!expected) consoleErrors.push(text.slice(0, 300));
     });
     // tsx(esbuild keepNames)가 직렬화된 page.evaluate 함수에 남기는 __name 헬퍼 — 브라우저에는 없다
@@ -1143,9 +1142,10 @@ async function main(): Promise<void> {
         + ` undo clicks ${undoneB}, ${heapAfterRelease.source})`);
     }
     const rejections = (await readCounters(page)).rejections;
-    report.browserErrors = { console: consoleErrors, page: pageErrors, unhandledRejections: rejections, gpuValidationWarnings };
-    check("browser-errors", consoleErrors.length === 0 && pageErrors.length === 0 && rejections === 0,
-      `console=${consoleErrors.length} pageerror=${pageErrors.length} unhandledrejection=${rejections}${gpuNote}`);
+    const apiErrors = offlineApi.unexpectedResponses;
+    report.browserErrors = { console: consoleErrors, page: pageErrors, api: apiErrors, unhandledRejections: rejections, gpuValidationWarnings };
+    check("browser-errors", consoleErrors.length === 0 && pageErrors.length === 0 && rejections === 0 && apiErrors.length === 0,
+      `console=${consoleErrors.length} pageerror=${pageErrors.length} api=${apiErrors.length} unhandledrejection=${rejections}${gpuNote}`);
     await context.close();
   } catch (error) {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);

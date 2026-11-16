@@ -1,6 +1,8 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
+import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
+import { showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -294,7 +296,7 @@ async function foldBg3dCutPanel(page: Page): Promise<void> {
 /** 전용 headed browser lane에서 실제 native/SwiftShader WebGPU renderer를 고정한다. */
 async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
   const backend = page.locator('[data-testid="studio-bg3d-engine-active-backend"]').first();
-  await page.getByRole("tab", { name: "보기", exact: true }).click();
+  await openStudioBg3dEnginePanel(page.locator(BG3D_DIALOG));
   const webgpuPreference = page
     .locator('[data-testid="studio-bg3d-engine-preference-webgpu"]')
     .first();
@@ -342,7 +344,7 @@ async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
   // A mounted canvas is what the rotation drag needs; the badge alone has been proven to lie.
   await expect(page.locator(`${BG3D_VIEWPORT} canvas`).first()).toBeVisible({ timeout: 120_000 });
   await foldBg3dCutPanel(page);
-  await page.getByRole("tab", { name: "도형", exact: true }).click();
+  await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "shapes");
   await page.waitForTimeout(1_000);
   return "running";
 }
@@ -357,7 +359,7 @@ async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
  */
 async function ensureBg3dWebGl2(page: Page): Promise<void> {
   const backend = page.locator('[data-testid="studio-bg3d-engine-active-backend"]').first();
-  await page.getByRole("tab", { name: "보기", exact: true }).click();
+  await openStudioBg3dEnginePanel(page.locator(BG3D_DIALOG));
   const webgl2Preference = page
     .locator('[data-testid="studio-bg3d-engine-preference-webgl2"]')
     .first();
@@ -371,7 +373,7 @@ async function ensureBg3dWebGl2(page: Page): Promise<void> {
   await expect(backend).toHaveText(/WebGL2 사용 중/, { timeout: 120_000 });
   await expect(page.locator('[data-testid="studio-bg3d-engine-unavailable"]')).toHaveCount(0);
   await foldBg3dCutPanel(page);
-  await page.getByRole("tab", { name: "도형", exact: true }).click();
+  await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "shapes");
   await page.waitForTimeout(1_000);
 }
 
@@ -545,17 +547,13 @@ function collectFatalErrors(page: Page): string[] {
   return fatal;
 }
 
-/**
- * 레일 하단 설정 묶음(`data-studio-tool-rail-settings`)의 '전체 도구' 버튼.
- *
- * 이 묶음에는 '전체 도구'(대화상자를 여는 버튼)와 '도구막대 구성'(앱 설정의 도구막대 탭을 여는
- * 버튼) 두 개가 있다. 예전 하네스는 묶음의 버튼이 하나뿐이라고 가정하고 role 만으로 집었는데,
- * 지금은 그 질의가 둘로 풀려 strict mode 위반이 난다. 열려는 쪽은 언제나 '전체 도구'다.
- */
+/** 기본 그리기 셸과 상세 레일 중 실제 표시된 전체 도구 버튼을 조작한다. */
 function railAllToolsTrigger(page: Page): Locator {
   return page
     .locator('[data-studio-tool-rail-settings="true"]')
-    .getByRole("button", { name: "전체 도구", exact: true });
+    .getByRole("button", { name: "전체 도구", exact: true })
+    .or(page.locator('[data-studio-rail-all-tools="true"]'))
+    .filter({ visible: true });
 }
 
 async function openStudio(page: Page): Promise<void> {
@@ -570,7 +568,7 @@ async function openStudio3dRailTool(
   page: Page,
   toolId: "bg3d" | "vrm3d" | "mannequin3d" | "hybrid-dcc",
 ): Promise<void> {
-  const tool = page.locator(`[data-studio-rail-tool-id="${toolId}"]`).first();
+  const tool = page.locator(`[data-studio-rail-tool-id="${toolId}"]`).filter({ visible: true });
   if (!await tool.isVisible()) {
     // 3D 도구는 기본 레일(선택·펜·지우개 …)에 고정되어 있지 않다. 사용자 경로는 '전체 도구'
     // 대화상자를 열어 그 도구를 레일에 고정한 뒤 레일의 런처를 누르는 것이다 — 예전 '숨긴 도구'
@@ -588,6 +586,8 @@ async function openStudio3dRailTool(
     // 닫으면 키보드 포커스가 '전체 도구' 버튼으로 돌아오되 코치(툴 힌트)는 다시 뜨지 않는다.
     // 여기서 코치를 일부러 닫지 않는다: 새 런처를 코치가 가리면 그것이 회귀다.
     await expect(allTools).toBeFocused();
+    // 고정한 전문 도구 레일은 사용자가 선택하는 프로젝트·창 배치에 표시된다.
+    if (!await tool.isVisible()) await showStudioProjectWindowTools(page);
   } else {
     await page.mouse.move(0, 0);
     await page.keyboard.press("Escape");
@@ -921,13 +921,13 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await expect(page.getByRole("button", { name: "3D 배경 업데이트" })).toBeVisible();
     // 선택은 프로필에 저장되므로 보통 이미 WebGL2다; 아니면 여기서 다시 고른다.
     await ensureBg3dWebGl2(page);
-    await page.getByRole("tab", { name: "레이어" }).click();
+    await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "layers");
     await expect(page.getByRole("button", { name: "상자 1", exact: true })).toBeVisible();
     const restoredViewport = await frameStats(page, BG3D_VIEWPORT);
 
     // 실제 장면 변경도 update source에 반영되는지 확인한다. 기존 장면을 그대로 다시 저장하면
     // no-op update나 stale source도 ID/count assertion만으로는 통과할 수 있다.
-    await page.getByRole("tab", { name: "도형", exact: true }).click();
+    await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "shapes");
     await page.locator('[aria-label="구 추가"]').first().click();
     const overlappedSphereViewport = await waitForFrameChange(
       page,
@@ -949,7 +949,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
       "재편집 장면의 구 위치 이동",
       30_000,
     );
-    await page.getByRole("tab", { name: "레이어" }).click();
+    await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "layers");
     await expect(page.getByRole("button", { name: "구 1", exact: true })).toBeVisible();
 
     // 업데이트는 선택한 레이어를 교체해야 하며 새 레이어를 하나 더 만들면 안 된다.
@@ -1020,11 +1020,11 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await expect(page.getByRole("button", { name: "3D 배경 업데이트" })).toBeVisible();
     // 선택은 프로필에 저장되므로 보통 이미 WebGL2다; 아니면 여기서 다시 고른다.
     await ensureBg3dWebGl2(page);
-    await page.getByRole("tab", { name: "레이어" }).click();
+    await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "layers");
     await expect(page.getByRole("button", { name: "상자 1", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "구 1", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "구 1", exact: true }).click();
-    await page.getByRole("tab", { name: "도형", exact: true }).click();
+    await selectStudioBg3dTaskTab(page.locator(BG3D_DIALOG), "shapes");
     await expect(page.getByRole("spinbutton", { name: "위치 X" }).first()).toHaveValue("2.5");
     await page.getByRole("button", { name: "3D 배경 편집기 닫기" }).click();
     // 이 스위트의 다른 닫힘 단언과 같은 예산을 준다. 닫기 버튼은 캡처 중 비활성이고, 느린

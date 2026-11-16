@@ -14,9 +14,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
-import { createServer as createViteServer } from "vite";
+import { createServer as createViteServer, normalizePath } from "vite";
 
 import { WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 
@@ -25,7 +26,10 @@ const SCRATCH =
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? mkdtempSync(join(tmpdir(), "toonstudio-dynamic-dual-tip-"));
 const HARNESS_PATH = "/__studio_dynamic_dual_tip_webgpu__";
-const HARNESS_ENTRY = "/scripts/studio-dynamic-dual-tip-webgpu-browser.ts";
+/* 브라우저 진입점은 Vite 앱 루트 밖의 저장소 scripts 디렉터리에 있다. */
+const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(
+  new URL("./studio-dynamic-dual-tip-webgpu-browser.ts", import.meta.url),
+))}`;
 const RESULT_TIMEOUT_MS = 120_000;
 const FAMILY_IDS = [
   "intersect",
@@ -335,11 +339,16 @@ async function main() { // NOSONAR javascript:S3776
     });
     diagnostics.contentSecurityPolicy =
       (await navigation?.headerValue("content-security-policy")) ?? "";
-    await page.waitForFunction(
-      () => window.__studioDynamicDualTipWebGpuResult !== undefined,
-      undefined,
-      { timeout: RESULT_TIMEOUT_MS },
-    );
+    try {
+      await page.waitForFunction(
+        () => window.__studioDynamicDualTipWebGpuResult !== undefined,
+        undefined,
+        { timeout: RESULT_TIMEOUT_MS },
+      );
+    } catch (error) {
+      writeJson("browser-diagnostics.json", { harnessEntry: HARNESS_ENTRY, url: page.url(), ...diagnostics });
+      throw error;
+    }
     const result = await page.evaluate(
       () => window.__studioDynamicDualTipWebGpuResult,
     );

@@ -1,0 +1,123 @@
+name: Studio exhaustive regressions
+
+# 전체 exhaustive의 PR/merge fanout은 만들지 않고, 수정한 진입점과 독립 GPU 계약만 확인한다.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+    paths:
+      - .github/workflows/studio-exhaustive-regressions.yml
+      - scripts/run-studio-exhaustive-regressions.mjs
+      - scripts/run-studio-exhaustive-regressions.test.mjs
+      - playwright.studio-qa-helpers.config.ts
+      - e2e/studio-qa-interactions.spec.mts
+      - e2e/studio-qa-shell-interactions.spec.mts
+      - scripts/lib/studio-shell-interactions.ts
+      - scripts/lib/studio-primary-color-interactions.ts
+      - scripts/lib/studio-brush-catalog-interactions.ts
+      - scripts/lib/studio-tool-interactions.ts
+      - scripts/lib/studio-bg3d-ui-interactions.ts
+      - scripts/lib/studio-offline-preview-fixture.*
+      - scripts/lib/studio-engine-presentation-browser-diagnostics.ts
+      - scripts/lib/repo-paths.mjs
+      - scripts/qa/verify-studio-cross-browser-matrix.mjs
+      - scripts/verify-studio-launch.mts
+      - scripts/verify-studio-lifecycle.mts
+      - scripts/verify-studio-companion.mts
+      - scripts/verify-studio-inspector-walkthrough.mts
+      - scripts/verify-studio-icons.mts
+      - scripts/verify-studio-inapp-feature-sweep.mts
+      - scripts/verify-studio-mobile-top.mts
+      - scripts/verify-studio-canvas-chrome.mts
+      - scripts/verify-studio-inapp-browser.mts
+      - scripts/verify-studio-service-worker.mts
+      - scripts/verify-studio-native-raster-tools.mts
+      - scripts/verify-studio-canvas-surfaces.mts
+      - scripts/verify-studio-ai-image-references.mts
+      - scripts/verify-studio-brush-latency.mts
+      - scripts/verify-studio-brush-media.mts
+      - scripts/verify-studio-long-stroke.mts
+      - scripts/verify-studio-gpu-committed-parity.mts
+      - scripts/studio-gpu-committed-parity-browser.ts
+      - scripts/verify-studio-engine-webgpu-filter-parity.mjs
+      - scripts/studio-engine-webgpu-filter-parity-browser.ts
+      - scripts/verify-studio-canvaskit-quality-worker.mjs
+      - scripts/studio-canvaskit-quality-worker-browser.ts
+      - scripts/verify-studio-dynamic-dual-tip-webgpu.mjs
+      - scripts/studio-dynamic-dual-tip-webgpu-browser.ts
+      - scripts/verify-studio-dynamic-dual-tip-webgpu-v2.mjs
+      - scripts/studio-dynamic-dual-tip-webgpu-v2-browser.ts
+      - scripts/verify-studio-engine-webgpu-textured-brush.mjs
+      - scripts/studio-engine-webgpu-textured-brush-browser.ts
+      - scripts/verify-studio-engine-webgpu-tile-provider.mjs
+      - scripts/studio-engine-webgpu-tile-provider-browser.ts
+      - scripts/verify-studio-engine-tile-storage-opfs-v2.mjs
+      - scripts/studio-engine-tile-storage-opfs-v2-browser.ts
+      - scripts/verify-studio-engine-webgpu-presentation.mjs
+      - scripts/studio-engine-webgpu-presentation-browser.ts
+      - scripts/verify-studio-living-ink-execution.mjs
+      - scripts/studio-living-ink-execution-browser.ts
+      - apps/web/src/domains/creator/studio-living-ink-*
+      - apps/web/src/domains/creator/studio-living-ink.worker.ts
+      - apps/web/src/domains/creator/scene3d/studio-living-ink-wgsl-shaders.test.ts
+      - apps/web/src/domains/creator/render/studio-engine-webgpu-presentation-*
+      - apps/web/src/domains/creator/render/studio-engine-webgpu-textured-brush-runtime.ts
+      - apps/web/src/domains/creator/render/studio-engine-webgpu-textured-brush-plan.ts
+      - apps/web/vite.config.ts
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    name: Studio helper and GPU regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "1"
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Reserve the final minute for failure evidence
+        run: |
+          node <<'NODE'
+          const { appendFileSync } = require("node:fs");
+          const { join } = require("node:path");
+          appendFileSync(process.env.GITHUB_ENV,
+            `STUDIO_QA_DEADLINE_MS=${Date.now() + 14 * 60_000}\n`
+            + `TOONSPECTRUM_FOCUSED_VERIFY_DIR=${join(process.env.RUNNER_TEMP, "studio-exhaustive-regressions")}\n`);
+          NODE
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/assets/
+            !/apps/web/public/vrm/
+            !/artifacts/
+            !/docs/
+            !/tests/benchmarks/results/
+      - name: Initialize every expected result before setup
+        run: node scripts/run-studio-exhaustive-regressions.mjs --init
+      - name: Verify runner, gate count and cost contracts without dependencies
+        run: |
+          node --test scripts/run-studio-exhaustive-regressions.test.mjs
+          node scripts/run-studio-exhaustive-regressions.mjs --check
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install only Chromium and its Linux dependencies
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run every original targeted gate and retain all exit statuses
+        run: node scripts/run-studio-exhaustive-regressions.mjs --run
+      - name: Publish structured results and failure diagnostics
+        if: always()
+        run: node scripts/run-studio-exhaustive-regressions.mjs --publish

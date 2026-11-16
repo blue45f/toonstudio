@@ -39,6 +39,7 @@ import {
 import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { runStudioBg3dTextureGpuProof } from "./lib/studio-bg3d-texture-gpu-proof";
 import { isStaticPreviewReadinessUnavailable as isStudio3dStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
+import { readStudioProductionThreeModuleUrls, resolveStudioProductionThreeExports } from "./lib/studio-production-three-exports.mjs";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICK_START_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -2105,6 +2106,13 @@ async function runMagicLayerProductionAlignmentProof(
   // `tsx` preserves local helper names with esbuild's `__name` shim, while Playwright serializes
   // only this callback. Install the same verifier-only no-op used by the other browser harnesses.
   await page.evaluate("globalThis.__name ??= (target) => target");
+  const threeExports = await page.evaluate(resolveStudioProductionThreeExports, {
+    moduleUrls: readStudioProductionThreeModuleUrls(assetUrl(findProductionAssetFile(THREE_MODULE_FILE_PATTERN, "Three production module"))),
+    scenePrimitives: true,
+  } satisfies Parameters<typeof resolveStudioProductionThreeExports>[0]);
+  assertCondition(threeExports.scenePrimitives, "프로덕션 Three 장면 생성자를 찾지 못했습니다.");
+  const productionConstructors = { ...threeExports, ...threeExports.scenePrimitives };
+  console.log(`[verify-studio-3d-console] Magic production Three exports ${JSON.stringify(productionConstructors)}`);
   const result = await page.evaluate(async ({
     babylonEntryUrl,
     expectedStableId,
@@ -2113,14 +2121,10 @@ async function runMagicLayerProductionAlignmentProof(
     productionProofEntryUrl,
     scenarios,
     threeCaptureUrl,
-    threeModuleUrl,
+    productionConstructors,
     viewport,
     webGpuDiagnosticPrefix,
   }) => {
-    type ThreeConstructor = new (...args: never[]) => {
-      readonly type?: unknown;
-      dispose?: () => void;
-    };
     type AlignmentStats = {
       readonly bbox: {
         readonly maxX: number;
@@ -2289,7 +2293,6 @@ async function runMagicLayerProductionAlignmentProof(
       return entries.join(" <- ").slice(0, 4_096);
     }
 
-    const threeModule = await import(threeModuleUrl) as Record<string, unknown>;
     const threeCaptureModule = await import(threeCaptureUrl) as Pick<
       typeof import("../apps/web/src/domains/creator/bg3d/studio-bg3d-three-webgl-capture"),
       "createStudioBg3dThreeWebglCaptureAdapter"
@@ -2311,69 +2314,12 @@ async function runMagicLayerProductionAlignmentProof(
       throw new Error("Magic alignment production entries are malformed");
     }
 
-    function functionSource(value: unknown): string {
-      return typeof value === "function"
-        ? Function.prototype.toString.call(value)
-        : "";
-    }
-    const rendererCandidate = Object.values(threeModule).find((value) =>
-      functionSource(value).includes("this.isWebGLRenderer")
-    );
-    if (typeof rendererCandidate !== "function") {
-      throw new Error("could not identify the production Three WebGLRenderer");
-    }
-    function findThreeConstructor(
-      type: string,
-      sourceIdentity: string,
-    ): ThreeConstructor {
-      for (const value of Object.values(threeModule)) {
-        const source = functionSource(value);
-        if (
-          typeof value !== "function" ||
-          source.includes("this.isWebGLRenderer") ||
-          !source.includes(sourceIdentity)
-        ) {
-          continue;
-        }
-        let instance: InstanceType<ThreeConstructor> | null = null;
-        try {
-          instance = Reflect.construct(value, []) as InstanceType<ThreeConstructor>;
-          if (instance.type === type) {
-            instance.dispose?.();
-            return value as ThreeConstructor;
-          }
-        } catch {
-          // Most Three exports are functions rather than zero-argument constructors.
-        }
-        instance?.dispose?.();
-      }
-      throw new Error(`could not identify the production Three ${type} constructor`);
-    }
-
-    const WebGLRenderer = rendererCandidate as typeof import("three").WebGLRenderer;
-    const Scene = findThreeConstructor(
-      "Scene",
-      "this.isScene",
-    ) as typeof import("three").Scene;
-    const PerspectiveCamera =
-      findThreeConstructor(
-        "PerspectiveCamera",
-        "this.isPerspectiveCamera",
-      ) as typeof import("three").PerspectiveCamera;
-    const BoxGeometry =
-      findThreeConstructor(
-        "BoxGeometry",
-        "BoxGeometry",
-      ) as typeof import("three").BoxGeometry;
-    const MeshBasicMaterial =
-      findThreeConstructor(
-        "MeshBasicMaterial",
-        "this.isMeshBasicMaterial",
-      ) as typeof import("three").MeshBasicMaterial;
-    const Mesh = findThreeConstructor(
-      "Mesh",
-      "this.isMesh",
-    ) as typeof import("three").Mesh;
+    const WebGLRenderer = (await import(productionConstructors.WebGLRenderer.moduleUrl))[productionConstructors.WebGLRenderer.exportName] as typeof import("three").WebGLRenderer;
+    const Scene = (await import(productionConstructors.Scene.moduleUrl))[productionConstructors.Scene.exportName] as typeof import("three").Scene;
+    const PerspectiveCamera = (await import(productionConstructors.PerspectiveCamera.moduleUrl))[productionConstructors.PerspectiveCamera.exportName] as typeof import("three").PerspectiveCamera;
+    const BoxGeometry = (await import(productionConstructors.BoxGeometry.moduleUrl))[productionConstructors.BoxGeometry.exportName] as typeof import("three").BoxGeometry;
+    const MeshBasicMaterial = (await import(productionConstructors.MeshBasicMaterial.moduleUrl))[productionConstructors.MeshBasicMaterial.exportName] as typeof import("three").MeshBasicMaterial;
+    const Mesh = (await import(productionConstructors.Mesh.moduleUrl))[productionConstructors.Mesh.exportName] as typeof import("three").Mesh;
 
     function statsForMask(
       mask: Uint8Array,
@@ -2694,6 +2640,10 @@ async function runMagicLayerProductionAlignmentProof(
         const geometry = new BoxGeometry(1, 1, 1);
         const material = new MeshBasicMaterial({ color: node.color });
         const mesh = new Mesh(geometry, material);
+        if (!("isWebGLRenderer" in renderer) || renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true || scene.isScene !== true
+          || geometry.type !== "BoxGeometry" || material.isMeshBasicMaterial !== true || mesh.isMesh !== true) {
+          throw new Error("프로덕션 Three 장면 생성자 브랜드가 일치하지 않습니다.");
+        }
         mesh.position.set(...node.transform.position);
         mesh.rotation.set(...node.transform.rotation);
         mesh.scale.set(...node.transform.scale);
@@ -3147,10 +3097,7 @@ async function runMagicLayerProductionAlignmentProof(
       THREE_WEBGL_CAPTURE_FILE_PATTERN,
       "Three WebGL capture entry",
     )),
-    threeModuleUrl: assetUrl(findProductionAssetFile(
-      THREE_MODULE_FILE_PATTERN,
-      "Three production module",
-    )),
+    productionConstructors,
     viewport: MAGIC_ALIGNMENT_VIEWPORT,
     webGpuDiagnosticPrefix: STUDIO_3D_WEBGPU_DIAGNOSTIC_PREFIX,
   });

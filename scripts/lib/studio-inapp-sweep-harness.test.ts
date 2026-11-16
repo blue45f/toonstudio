@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  auditStudioInAppClosedDetails,
   createStudioInAppPreviewApiDiagnostics,
   dismissStudioInAppFirstRunSurfaces,
   installStudioInAppFirstRunState,
@@ -144,6 +145,61 @@ function brushLibrary(onClick?: (brush: BrushState, brushes: BrushState[]) => vo
 }
 
 afterEach(() => { vi.unstubAllGlobals(); });
+
+describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 보존", () => {
+  function fixture(ignore?: "open" | "close") {
+    const entries = [
+      { id: "first", open: false, hasSelect: true, visible: true },
+      { id: "second", open: false, hasSelect: true, visible: true },
+      { id: "already-open", open: true, hasSelect: true, visible: true },
+      { id: "hidden", open: false, hasSelect: true, visible: false },
+      { id: "no-select", open: false, hasSelect: false, visible: true },
+    ];
+    const clicked: string[] = [];
+    const details = (resolve: () => typeof entries): Locator => ({
+      count: async () => resolve().length,
+      nth: (index: number) => details(() => resolve().slice(index, index + 1)),
+      getAttribute: async () => resolve()[0].open ? "" : null,
+      locator: (selector: string) => {
+        if (selector === "select") return { count: async () => Number(resolve()[0].hasSelect) } as Locator;
+        if (selector !== ":scope > summary") throw new Error(`unexpected selector: ${selector}`);
+        return {
+          isVisible: async () => resolve()[0].visible,
+          click: async () => {
+            const entry = resolve()[0];
+            clicked.push(entry.id);
+            if (ignore === (entry.open ? "close" : "open")) return;
+            entry.open = !entry.open;
+          },
+        } as Locator;
+      },
+    }) as unknown as Locator;
+    // 실제 Playwright처럼 재평가한다. :not([open])에 의존하면 클릭 뒤 다른 대상을 가리킨다.
+    const page = { locator: (selector: string) => details(() => selector.includes(":not([open])")
+      ? entries.filter(entry => !entry.open && entry.hasSelect) : entries) } as unknown as Page;
+    return { page, entries, clicked };
+  }
+
+  it("각각 열린 상태로 감사하고 같은 summary를 두 번 눌러 모두 원래 상태로 복구한다", async () => {
+    const { page, entries, clicked } = fixture();
+    const observed: string[][] = [];
+    const count = await auditStudioInAppClosedDetails(page, async () => { observed.push(entries.filter(entry => entry.open).map(entry => entry.id)); });
+    expect(count).toBe(2);
+    expect(clicked).toEqual(["first", "first", "second", "second"]);
+    expect(observed).toEqual([["first", "already-open"], ["second", "already-open"]]);
+    expect(entries.map(entry => entry.open)).toEqual([false, false, true, false, false]);
+  });
+  it("검사 실패를 전파하며 열린 details부터 닫는다", async () => {
+    const { page, entries, clicked } = fixture();
+    await expect(auditStudioInAppClosedDetails(page, async () => { throw new Error("offscreen control"); })).rejects.toThrow("offscreen control");
+    expect(clicked).toEqual(["first", "first"]);
+    expect(entries[0].open).toBe(false);
+  });
+  it.each(["open", "close"] as const)("summary의 %s 동작이 실패하면 통과하지 않는다", async (ignore) => {
+    const { page } = fixture(ignore);
+    await expect(auditStudioInAppClosedDetails(page, async () => undefined)).rejects.toThrow(/열리지|복구되지/u);
+  });
+});
 
 describe("in-app first-run dismissal", () => {
   it("checks readiness before either surface and adds no waits when both are absent", async () => {

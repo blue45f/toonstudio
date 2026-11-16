@@ -1,29 +1,10 @@
 /**
- * scripts/verify-studio-mobile-top.mts
- * Mobile TOP-chrome probe for /studio/canvas — everything rendered above the canvas.
- *
- * At widths 320/360/390/430 (portrait, touch, iPhone-like UA), for both the
- * immersive (default) and windowed mobile shells, measures:
- * - (a) horizontal overflow contributors (element rects exceeding the viewport
- *   outside any horizontal scroll row) + document scrollWidth overflow
- * - (b) bounding-box overlap between distinct interactive top-chrome controls —
- *   including the canvas-sticky live-presence dock, which shares the immersive
- *   shell's top band with the floating menubar pill from a different
- *   positioning context
- * - (c) menubar clipping (overflow-hidden lane scrollWidth > clientWidth),
- *   hit-test clipped buttons, top-bar height blowup across widths
- *   (h@320 must be ≤ 1.6 × h@430) and canvas-below-the-fold regressions
- * - (d) tap target sizes ≥ 44px for top-bar controls (menubar hard, belt rows
- *   height-hard / width-warn)
- * - (e) safe-area handling — immersive shell must declare
- *   env(safe-area-inset-top) padding on the app shell
- * - (f) menus opened from the top chrome (workspace dialog, tool-belt group
- *   popover) staying inside the viewport
- * Convenience pass: horizontal scroll affordance on scrollable rows,
- * focus-ring clearance at lane edges, aria-labels on icon-only buttons.
- *
- * Run via: pnpm verify:studio-mobile-top  (expects production build in dist/)
- * Logs [verify-mobile-top] per width; exits 1 on hard failures.
+ * /studio/canvas의 모바일 상단·도크를 320/360/390/430px, 몰입형·윈도우형으로 검사한다.
+ * 문서 가로 넘침, 서로 다른 컨트롤의 겹침·클리핑, 44px 터치 영역, 안전 영역,
+ * 화면 아래로 밀린 캔버스와 너비별 상단 높이(320px ≤ 430px의 1.6배)를 확인한다.
+ * 기본 셸의 더보기와 상세 배치의 작업 도구를 실제로 열고 뷰포트·캔버스 좌표를 유지하는지 잰다.
+ * 가로 스크롤 안내·포커스 테두리·접근성 이름도 기록한다. 실패는 non-zero로 종료한다.
+ * 실행: pnpm verify:studio-mobile-top (프로덕션 dist 필요), 증거: TOONSPECTRUM_VERIFY_DIR.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import { appendFileSync, mkdirSync } from "node:fs";
@@ -782,7 +763,7 @@ async function runMode(
     .locator(`[data-studio-editor="true"][data-studio-mobile-immersive="${mode === "immersive"}"]`)
     .waitFor({ state: "attached", timeout: 5000 });
   // Let the lazy menubar content + belt suspense settle before measuring.
-  await page.locator('[data-studio-menubar-actions="true"]').waitFor({ state: "attached", timeout: 8000 });
+  await page.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({ state: "visible", timeout: 8000 });
   await dismissHydratedQuickStart(page);
   await page.waitForTimeout(400);
 
@@ -797,9 +778,10 @@ async function runMode(
     dockHeight: null,
     smallTargets: [],
   };
-  const workspaceToggle = page.locator(
-    '[data-studio-mobile-workspace-toggle="true"]',
-  ).first();
+  const clarityMore = page.locator('[data-studio-clarity-more-trigger="true"]').filter({ visible: true });
+  const usingClarity = await clarityMore.count() > 0;
+  const workspaceToggle = usingClarity ? clarityMore : page.locator('[data-studio-mobile-workspace-toggle="true"]').filter({ visible: true });
+  const menus: MenuProbeResult[] = [];
   let workspaceToggleInitiallyVisible = false;
   if (await workspaceToggle.count() > 0) {
     workspaceToggleInitiallyVisible = await workspaceToggle.evaluate((element) => {
@@ -824,11 +806,9 @@ async function runMode(
       );
     });
     await workspaceToggle.click();
-    await page
-      .locator(
-        '[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="true"]',
-      )
-      .waitFor({ state: "attached", timeout: 4000 });
+    const expandedSelector = usingClarity ? '[data-studio-drawing-task-browser="true"]'
+      : '[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="true"]';
+    await page.locator(expandedSelector).waitFor({ state: "visible", timeout: 4000 });
     const expandedMetrics = await measureTopChrome(page, mode);
     expandedDock.opened = true;
     expandedDock.canvasViewportHeight = expandedMetrics.canvasViewportHeight;
@@ -837,20 +817,33 @@ async function runMode(
       expandedMetrics.canvasViewportPaddingBottom;
     expandedDock.dockHeight = expandedMetrics.dockHeight;
     expandedDock.smallTargets = expandedMetrics.dockSmallTargets;
-    await workspaceToggle.click();
-    await page
-      .locator(
-        '[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="false"]',
-      )
-      .waitFor({ state: "attached", timeout: 4000 });
+    if (usingClarity) {
+      const surface = page.locator('[data-studio-drawing-task-browser="true"]');
+      const bounds = await surface.boundingBox();
+      const viewport = page.viewportSize();
+      const smallActions = await surface.locator('button').evaluateAll((buttons) => buttons.flatMap((button) => {
+        const rect = button.getBoundingClientRect();
+        return rect.width >= 2 && rect.height >= 2 && (rect.width < 44 || rect.height < 44)
+          ? [{ label: button.textContent?.trim() ?? "", detail: `${rect.width}×${rect.height}` }] : [];
+      }));
+      expandedDock.smallTargets.push(...smallActions);
+      await page.keyboard.press("Escape");
+      const closed = await surface.waitFor({ state: "hidden", timeout: 4000 }).then(() => true).catch(() => false);
+      menus.push({ id: "clarity-more", opened: true, closed,
+        withinViewport: Boolean(bounds && viewport && bounds.x >= -0.5 && bounds.y >= -0.5
+          && bounds.x + bounds.width <= viewport.width + 0.5 && bounds.y + bounds.height <= viewport.height + 0.5),
+        docOverflowX: expandedMetrics.docOverflowX });
+    } else {
+      await workspaceToggle.click();
+      await page.locator('[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="false"]').waitFor({ state: "attached", timeout: 4000 });
+    }
   }
 
-  const menus: MenuProbeResult[] = [];
   if (mode === "windowed") {
     // Workspace menu gate lives in the scrollable primary lane; reveal then activate.
     // Close via a page-context click: the sheet keeps a long-running subtree
     // animation that never satisfies Playwright's stability gate.
-    const workspaceTrigger = page.locator('button[aria-haspopup="dialog"][aria-label^="작업공간:"]');
+    const workspaceTrigger = page.locator('button[aria-haspopup="dialog"][aria-label^="작업공간:"]').filter({ visible: true });
     if (await workspaceTrigger.count() > 0) {
       menus.push(await probeMenuWithinViewport(
         page,
@@ -879,8 +872,7 @@ async function runMode(
     // the touch-hold hint coach can intercept a synthetic hover+click.
     const assetTrigger = page
       .locator('[data-studio-tool-belt="true"] button[aria-haspopup="menu"]')
-      .filter({ hasText: "템플릿·에셋" })
-      .first();
+      .filter({ hasText: "템플릿·에셋", visible: true });
     if (await assetTrigger.count() > 0) {
       menus.push(await probeMenuWithinViewport(
         page,
@@ -903,7 +895,7 @@ async function runMode(
   const warnings: string[] = [];
 
   if (!workspaceToggleInitiallyVisible) {
-    hardFailures.push("workspace tools toggle is not initially visible and pinned outside the drawing scroller");
+    hardFailures.push("workspace tools entry is not initially visible and pinned outside the drawing scroller");
   }
   if (!metrics.menubarVisible) hardFailures.push("menubar not visible");
   if (metrics.docOverflowX > 0) {
@@ -980,7 +972,7 @@ async function runMode(
     hardFailures.push(`small dock target: ${issue.label} ${issue.detail}`);
   }
   if (!expandedDock.opened) {
-    hardFailures.push("expanded mobile workspace dock did not open");
+    hardFailures.push("mobile workspace tools did not open");
   } else {
     if (
       expandedDock.canvasViewportHeight === null ||

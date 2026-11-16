@@ -25,6 +25,13 @@ export const STUDIO_LIVING_INK_GRANULATION_MULTIPLIER_BOUNDS = Object.freeze({
   maximum: 8,
 } as const);
 export const STUDIO_LIVING_INK_MAXIMUM_OPTICAL_DENSITY = 32 as const;
+/** 두 GPU 백엔드의 희석 안료 응답을 같은 물리 계수로 유지한다. */
+export const STUDIO_LIVING_INK_DISPLAY_GRANULATION_SEDIMENT_GAIN = 2.35 as const;
+export const STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE = Object.freeze({
+  additionalGain: 4.6,
+  fullStrengthDensity: 0.035,
+  fadeOutDensity: 0.2,
+} as const);
 
 /**
  * Numeric contract of the wet-media fluid, shared by the WGSL kernels (through uniforms), the GLSL

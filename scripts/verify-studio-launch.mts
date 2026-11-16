@@ -1,18 +1,9 @@
 /**
- * scripts/verify-studio-launch.mts
- * Committed, reproducible harness for Verification plan step 2.
- * - Spawns `vite preview`
- * - Two successive desktop headless runs plus one mobile drawing run via Playwright API
- * - Dismisses the first-run quick-start overlay after SQLite preference hydration
- * - Asserts Konva/canvas surface present with target webtoon dims
- * - Verifies the workspace manager stays intent-gated and preserves dialog focus
- * - Performs a driven interaction using shipped UI (click "예시로 시작" or "추가")
- * - Logs stageInfo JSON + consoleErrors count
- * - Writes screenshots to {SCRATCH}
- * - Exits 1 on any failure
- *
- * Run via: tsx scripts/verify-studio-launch.mts
- * Output is captured by caller to {SCRATCH}/studio-launch-*.log
+ * Studio 실제 UI 진입 검증: 데스크톱 2회와 모바일 그리기·상세 작업 도크를 검사한다.
+ * SQLite 설정 복구 후 첫 사용 안내를 닫고 Konva·원고 크기·작업공간 지연 로딩·초점·페이지 추가를 확인한다.
+ * 프로젝트·창 기능은 기본 더보기에서 사용자가 선택할 수 있는 작업 배치로 진입한다.
+ * 실패는 non-zero로 종료하며 stageInfo·consoleErrors·PNG를 SCRATCH에 남긴다.
+ * 실행: pnpm exec tsx scripts/verify-studio-launch.mts (프로덕션 dist 필요)
  */
 import { type ChildProcess } from "node:child_process";
 import { appendFileSync } from "node:fs";
@@ -26,6 +17,7 @@ import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { STUDIO_BRUSH_LABELS } from "../apps/web/src/domains/creator/brush/studio-brush-product-model";
 
 import { clickStudioControlAfterReadiness, waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import { isStudioStaticPreviewReadinessUnavailable } from "./lib/studio-verify-preview-errors.mjs";
 import {
   cleanScratchDir,
@@ -306,6 +298,8 @@ async function verifyWorkspaceMenuGate(
   page: Page,
   run: number,
 ): Promise<WorkspaceMenuGateContractResult> {
+  // 작업공간 관리자는 사용자가 요청한 프로젝트·창 배치에서 검증한다.
+  await showStudioProjectWindowTools(page);
   const gate = page.locator('[data-testid="studio-workspace-menu-gate"]');
   const heavyMenu = page.locator('[data-testid="studio-workspace-menu"]');
   const dialog = page.locator('[data-testid="studio-workspace-dialog"]');
@@ -696,6 +690,7 @@ async function runOne(browser: Browser, run: number, url: string): Promise<RunRe
 }
 
 async function openMobileWorkspaceMenu(page: Page, dock: Locator): Promise<void> {
+  await showStudioProjectWindowTools(page);
   const toggle = dock.locator('[data-studio-mobile-workspace-toggle="true"]');
   if (await toggle.getAttribute("aria-expanded") !== "true") {
     await clickStudioControlAfterReadiness(page, toggle);
@@ -1337,6 +1332,9 @@ async function runMobileDockLayout(
   );
   await dismissHydratedQuickStart(page);
   await waitForStudioDrawingReady(page);
+  // 이 케이스는 상세 작업 도크의 고정 배치 계약을 검사한다. 기본 모바일 더보기는
+  // mobile-top의 동일 크기·넘침·캔버스 좌표 기준으로 따로 검증한다.
+  await showStudioProjectWindowTools(page);
   const primary = dock.locator('[data-studio-mobile-primary-actions="true"]');
   const secondaryToolbar = dock.getByRole("toolbar", { name: "작업 공간", exact: true });
   const workspaceToolsToggle = dock.locator('[data-studio-mobile-workspace-toggle="true"]');

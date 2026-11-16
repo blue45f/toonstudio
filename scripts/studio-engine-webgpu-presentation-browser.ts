@@ -1,8 +1,4 @@
-/**
- * Real-browser integration probe for the shared RGBA16F presentation owner and the strict
- * `presentationOnly` textured-brush runtime. This file is loaded by Vite in Chromium; it never
- * substitutes fake GPU objects when WebGPU is unavailable.
- */
+/** 실제 Chromium의 공유 RGBA16F owner와 presentationOnly runtime을 같은 GPU에서 검증한다. */
 
 import {
   createStudioEngineWebGpuPresentationSurface,
@@ -18,6 +14,12 @@ import {
 } from "../apps/web/src/domains/creator/render/studio-engine-webgpu-textured-brush-runtime";
 import { sha256HexPortable } from "../apps/web/src/domains/creator/studio-sha256";
 
+import {
+  adapterInfo, createPresentationDeviceDiagnostics, initialPresentationFailureEvidence,
+  type BrowserCapabilities,
+  type PresentationDeviceReport,
+} from "./lib/studio-engine-presentation-browser-diagnostics";
+
 const INITIAL_DEVICE_EPOCH = 1;
 const MAP_READ = 0x0001;
 const BUFFER_COPY_DST = 0x0008;
@@ -25,13 +27,7 @@ const BUFFER_COPY_SRC = 0x0004;
 const ROW_ALIGNMENT = 256;
 const RGBA16_BYTES_PER_PIXEL = 8;
 const DEVICE_LOSS_TIMEOUT_MS = 5_000;
-
-interface BrowserCapabilities {
-  readonly webgpu: boolean;
-  readonly offscreenCanvas: boolean;
-  readonly webgpuCanvasContext: boolean;
-  readonly userAgent: string;
-}
+let lifecycleDiagnostics: ReturnType<typeof createPresentationDeviceDiagnostics> | null = null;
 
 interface PixelBounds {
   readonly left: number;
@@ -138,6 +134,7 @@ type BrowserPresentationResult =
       diagnostics: {
         uncapturedErrors: readonly string[];
         validationError: string | null;
+        deviceLifecycle: PresentationDeviceReport;
       };
     }>
   | Readonly<{
@@ -156,6 +153,7 @@ type BrowserPresentationResult =
       message: string;
       stack: string | null;
       capabilities: BrowserCapabilities;
+      deviceLifecycle: PresentationDeviceReport | null;
     }>;
 
 declare global {
@@ -433,20 +431,6 @@ function frameRequest(
   };
 }
 
-function adapterInfo(adapter: GPUAdapter) {
-  const info = adapter.info;
-  return {
-    vendor: String(info?.vendor ?? ""),
-    architecture: String(info?.architecture ?? ""),
-    device: String(info?.device ?? ""),
-    description: String(info?.description ?? ""),
-    isFallbackAdapter:
-      typeof adapter.isFallbackAdapter === "boolean"
-        ? adapter.isFallbackAdapter
-        : null,
-  };
-}
-
 async function run(): Promise<BrowserPresentationResult> {
   const browserCapabilities = capabilities();
   if (!browserCapabilities.webgpu) {
@@ -490,6 +474,10 @@ async function run(): Promise<BrowserPresentationResult> {
     };
   }
 
+  const lostPromise = device.lost;
+  const lifecycle = createPresentationDeviceDiagnostics(lostPromise);
+  lifecycleDiagnostics = lifecycle;
+  lifecycle.instrumentDestroy(device);
   const canvas = new OffscreenCanvas(1, 1);
   const context = canvas.getContext("webgpu");
   if (!context) {
@@ -507,8 +495,6 @@ async function run(): Promise<BrowserPresentationResult> {
     uncapturedErrors.push(event.error.message);
   });
   device.pushErrorScope("validation");
-  const lostPromise = device.lost;
-
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
   invariant(
     canvasFormat === "bgra8unorm" || canvasFormat === "rgba8unorm",
@@ -521,6 +507,7 @@ async function run(): Promise<BrowserPresentationResult> {
     canvasFormat,
     initialDeviceEpoch: INITIAL_DEVICE_EPOCH,
     ownsDevice: false,
+    onDeviceLost: lifecycle.onOwnerDeviceLost,
   });
   invariant(
     presentationResult.status === "ready",
@@ -532,6 +519,7 @@ async function run(): Promise<BrowserPresentationResult> {
     presentationOnly: true,
     initialDeviceEpoch: INITIAL_DEVICE_EPOCH,
     ownsDevice: false,
+    onDeviceLost: lifecycle.onProducerDeviceLost,
   });
   invariant(
     runtimeResult.status === "ready",
@@ -581,19 +569,28 @@ async function run(): Promise<BrowserPresentationResult> {
     firstRender.receipt.renderTarget === "presentation",
     "textured runtime did not render into the shared presentation target",
   );
+  lifecycle.observe("before-readback", presentation.stats());
   const firstLinearSurface = await readLinearSurface(device, firstFrameResult.frame);
+  lifecycle.observe("after-readback", presentation.stats());
   invariant(
     firstLinearSurface.nonZeroAlphaPixels > 0 && firstLinearSurface.maxAlpha > 0.5,
     "shared RGBA16F surface did not contain the deterministic textured dab",
   );
+  lifecycle.observe("before-present", presentation.stats());
   const firstPresentation = await presentation.presentFrame(
     firstFrameResult.frame,
     firstRender.receipt,
   );
+  lifecycle.observe("after-present", presentation.stats());
   invariant(
     firstPresentation.status === "presented",
-    `initial present failed: ${firstPresentation.status}`,
+    `initial present failed: ${initialPresentationFailureEvidence({
+      result: firstPresentation, adapter, device, canvasFormat, configuration: firstConfiguration,
+      frame: firstFrameResult.frame, producerReceipt: firstRender.receipt,
+      presentation, uncapturedErrors, lifecycle,
+    })}`,
   );
+  lifecycle.observe("followup-contracts", presentation.stats());
   const firstCanvas = await readPresentedCanvas(canvas);
   if (firstCanvas.available) {
     invariant(
@@ -768,6 +765,7 @@ async function run(): Promise<BrowserPresentationResult> {
   const externallyOwnedDeviceUsable = true;
 
   const validationError = await device.popErrorScope();
+  lifecycle.markIntentionalDestroy(presentation.stats());
   device.destroy();
   const lost = await Promise.race([
     lostPromise,
@@ -862,6 +860,7 @@ async function run(): Promise<BrowserPresentationResult> {
     diagnostics: {
       uncapturedErrors,
       validationError: validationError?.message ?? null,
+      deviceLifecycle: lifecycle.snapshot(),
     },
   };
 }
@@ -876,6 +875,7 @@ void run().then(
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack ?? null : null,
       capabilities: capabilities(),
+      deviceLifecycle: lifecycleDiagnostics?.snapshot() ?? null,
     };
   },
 );

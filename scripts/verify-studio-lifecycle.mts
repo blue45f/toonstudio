@@ -1,19 +1,9 @@
 /**
- * Focused production-preview gate for Studio's artist-critical document lifecycle:
- *
- * pointer stroke -> committed pixels -> Undo -> Redo -> local autosave -> reload/recovery
- * -> deterministic PNG export.
- *
- * The harness only drives shipped UI and stable public selectors. It intentionally verifies local
- * autosave recovery rather than authenticated server persistence; API/database coverage belongs to
- * the integration suite. Run after `pnpm build`:
- *
- *   pnpm exec tsx scripts/verify-studio-lifecycle.mts
- *
- * Reuse an already-running production preview:
- *
- *   TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:4173 \
- *     pnpm exec tsx scripts/verify-studio-lifecycle.mts
+ * Studio 문서 수명주기: 실제 pointer 획 → 확정 픽셀 → Undo → Redo → 로컬 저장
+ * → reload/복구 → 현재 출고 패널의 동일 PNG를 검사한다. API·DB 저장은 별도 통합검사다.
+ * 실행: pnpm exec tsx scripts/verify-studio-lifecycle.mts (프로덕션 dist 필요)
+ * 기존 preview 재사용: TOONSPECTRUM_VERIFY_ORIGIN=http://127.0.0.1:4173
+ * 픽셀·파일 무결성·복구 기준은 studio-lifecycle-verifier-policy를 따른다.
  */
 import { type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -29,6 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
+
 
 import {
   chromium,
@@ -46,6 +37,7 @@ import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { planStudioLifecyclePhysicalCapture } from "./lib/studio-lifecycle-capture-policy.mjs";
 import { captureStableLifecycleArtwork, comparePngPixels } from "./lib/studio-lifecycle-capture.mjs";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
+import { openStudioExportPanel, visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   enabledStudioHistoryControl,
 } from "./lib/studio-verify-history-controls.mjs";
@@ -449,14 +441,16 @@ async function captureDownload(
   page: Page,
   destination: string,
 ): Promise<{ bytes: Buffer; download: Download; scale: number }> {
-  const button = page.locator('button[aria-label$="· 현재 페이지"]:visible').first();
-  await button.waitFor({ state: "visible" });
+  const panel = await openStudioExportPanel(page);
+  const basic = panel.locator('[data-studio-export-basic="true"]');
+  const png = await visibleStudioControl(basic.getByRole("button", { name: "PNG", exact: true }), "PNG 출력 형식");
+  invariant(await png.getAttribute("aria-pressed") === "true", "lifecycle verifier requires the selected PNG export format");
+  const scaleButton = await visibleStudioControl(basic.getByRole("button", { name: /^\d+(?:\.\d+)?×$/u, pressed: true }), "선택한 출력 배율");
+  const scaleLabel = (await scaleButton.textContent())?.trim() ?? "";
+  const scale = Number(scaleLabel.replace(/×$/u, ""));
+  invariant(Number.isFinite(scale) && scale > 0, `could not read export scale from: ${scaleLabel}`);
+  const button = await visibleStudioControl(basic.getByRole("button", { name: "현재 페이지 PNG 다운로드", exact: true }), "현재 페이지 PNG 다운로드");
   invariant(await button.isEnabled(), "current-page download button is disabled");
-  const label = (await button.textContent()) ?? "";
-  invariant(label.includes("PNG"), `lifecycle verifier requires PNG export, found: ${label.trim()}`);
-  const scaleMatch = label.match(/(\d+(?:\.\d+)?)×/u);
-  const scale = scaleMatch ? Number(scaleMatch[1]) : 2;
-  invariant(Number.isFinite(scale) && scale > 0, `could not read export scale from: ${label.trim()}`);
 
   const downloadPromise = page.waitForEvent("download", { timeout: 20_000 });
   await button.click();

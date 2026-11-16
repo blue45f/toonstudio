@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   canonicalStudioLivingInkDisplayRgba8,
+  STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE,
+  STUDIO_LIVING_INK_DISPLAY_GRANULATION_SEDIMENT_GAIN,
   STUDIO_LIVING_INK_GRANULATION_MULTIPLIER_BOUNDS,
   STUDIO_LIVING_INK_MAXIMUM_OPTICAL_DENSITY,
 } from "./studio-living-ink-execution-protocol";
@@ -15,6 +17,10 @@ import {
   studioLivingInkWebGlGranulationMultiplier,
   studioLivingInkWebGlReadbackToTopDownRgba8,
 } from "./studio-living-ink-webgl2-runtime";
+import {
+  STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN,
+  studioLivingInkWgslSourceForPass,
+} from "./studio-living-ink-wgsl-shaders";
 
 class TestImageData {
   readonly colorSpace = "srgb";
@@ -258,5 +264,27 @@ describe("Living Ink WebGL2 RGBA8 presentation authority", () => {
     expect(source).toContain("vec3 opticalDensity = clamp(");
     expect(source).toContain("STUDIO_LIVING_INK_MAXIMUM_OPTICAL_DENSITY.toFixed(1)");
     expect(source).not.toContain("granulationAmount * 2.15");
+  });
+
+  it("모세관 면적을 보존하며 WGSL과 같은 섬유 축 비율을 적용한다", () => {
+    const source = readFileSync(new URL("./studio-living-ink-webgl2-runtime.ts", import.meta.url), "utf8");
+    const wet = source.slice(source.indexOf("const WET_FRAGMENT"), source.indexOf("const PIGMENT_FRAGMENT"));
+    expect(wet).toContain("sqrt(rawParallelReach * rawPerpendicularReach)");
+    expect(wet).toContain("min(rawParallelReach / rawPerpendicularReach, 1.0 + fiberAnisotropy * 1.2)");
+    expect(wet).toContain("geometricReach * axisScale");
+    expect(wet).toContain("geometricReach / axisScale");
+  });
+
+  it("희석 안료에 GLSL과 같은 침전 밀도 구간을 적용한다", () => {
+    const resolve = studioLivingInkWgslSourceForPass("display");
+    const response = STUDIO_LIVING_INK_DILUTE_SEDIMENT_RESPONSE;
+    expect(STUDIO_LIVING_INK_WGSL_GRANULATION_RESPONSE_GAIN)
+      .toBe(STUDIO_LIVING_INK_DISPLAY_GRANULATION_SEDIMENT_GAIN);
+    expect(resolve).toContain(`let diluteSedimentBoost = 1.0 + (1.0 - smoothstep(
+    ${response.fullStrengthDensity},
+    ${response.fadeOutDensity},
+    centerDensity,
+  )) * ${response.additionalGain};`);
+    expect(resolve).toContain("* granulationGate * diluteSedimentBoost");
   });
 });

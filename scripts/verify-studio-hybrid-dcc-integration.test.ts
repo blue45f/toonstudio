@@ -501,10 +501,10 @@ describe("Studio Hybrid DCC production-preview integration evidence", () => {
       new URL("./verify-studio-hybrid-dcc-integration.mts", import.meta.url),
       "utf8",
     );
-    const viewTabIndex = source.indexOf('const viewTab = bg3dDialog.getByRole("tab"');
+    const enginePanelIndex = source.indexOf("await openStudioBg3dEnginePanel(bg3dDialog);");
     const selectionIndex = source.indexOf(
       'getByTestId("studio-bg3d-engine-preference-webgl2")',
-      viewTabIndex,
+      enginePanelIndex,
     );
     const activeIndex = source.indexOf(
       '[data-testid="studio-bg3d-engine-active-backend"]',
@@ -514,20 +514,29 @@ describe("Studio Hybrid DCC production-preview integration evidence", () => {
       'getByTestId("studio-bg3d-viewport").locator("canvas")',
       activeIndex,
     );
-    const layersIndex = source.indexOf("const layersTab =", canvasIndex);
+    const layersIndex = source.indexOf('await selectStudioBg3dTaskTab(bg3dDialog, "layers");', canvasIndex);
     const identityIndex = source.indexOf(
       'getByRole("button", { name: assetId, exact: true })',
       layersIndex,
     );
 
-    expect(viewTabIndex).toBeGreaterThan(-1);
-    expect(selectionIndex).toBeGreaterThan(viewTabIndex);
+    expect(enginePanelIndex).toBeGreaterThan(-1);
+    expect(selectionIndex).toBeGreaterThan(enginePanelIndex);
     expect(source).toContain("await webgl2.click();");
     expect(source).not.toContain("if (await webgl2");
     expect(activeIndex).toBeGreaterThan(selectionIndex);
     expect(canvasIndex).toBeGreaterThan(activeIndex);
     expect(layersIndex).toBeGreaterThan(canvasIndex);
     expect(identityIndex).toBeGreaterThan(layersIndex);
+
+    // 보기·레이어는 서로 다른 작업 그룹에 있으므로 helper도 실제 그룹 버튼을 거쳐야 한다.
+    const helper = readFileSync(new URL("./lib/studio-bg3d-ui-interactions.ts", import.meta.url), "utf8");
+    expect(helper).toContain("view: /^(구도·작화|Frame and render)$/u");
+    expect(helper).toContain("layers: /^(장면 레이어|Scene layers)$/u");
+    expect(helper).toContain('dialog.getByRole("group", { name: /^(3D 작업 선택|Choose a 3D task)$/u })');
+    expect(helper).toContain('visibleStudioControl(group.getByRole("button", { name: groupName })');
+    expect(helper).toContain('await selectStudioBg3dTaskTab(dialog, "view", timeoutMs);');
+    expect(helper).toContain('dialog.locator("#bg3d-view-tab-camera")');
   });
 
   it("anchors a durable receipt and OPFS signature before Redo, then requires a matching generation", () => {

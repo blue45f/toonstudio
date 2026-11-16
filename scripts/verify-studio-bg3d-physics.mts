@@ -25,6 +25,8 @@ import { join } from "node:path";
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
+import { openStudioAllTools, openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
+import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const ARTIFACT_DIR = process.env.TOONSPECTRUM_BG3D_PHYSICS_VERIFY_DIR ??
@@ -214,47 +216,21 @@ async function waitForElementAnimations(locator: Locator): Promise<void> {
   });
 }
 
-async function dismissQuickStartIfPresent(page: Page): Promise<void> {
-  const backdrop = page.locator('[data-studio-quickstart-backdrop="true"]');
-  try {
-    await backdrop.waitFor({ state: "visible", timeout: 2_000 });
-  } catch {
-    return;
-  }
-  const dismiss = page.locator('[data-studio-quickstart-dismiss="true"]');
-  await dismiss.click();
-  await backdrop.waitFor({ state: "hidden", timeout: 5_000 });
-}
-
-/** 모바일 첫 화면의 풀 편집 안내와 빈 캔버스 시작 도크를 사용자처럼 닫는다. 시작 패널은 도크가 펼쳐진 동안 물러난다. */
-async function dismissFirstRunSurfaces(page: Page): Promise<void> {
-  const notice = page.locator('[data-testid="mobile-full-edit-notice"]');
-  const dock = page.locator('[data-studio-cinematic-canvas-welcome="true"]');
-  await dock.waitFor({ state: "visible", timeout: 20_000 });
-  if (await notice.isVisible()) await notice.getByRole("button", { name: "이해했어요", exact: true }).click();
-  await dock.getByRole("button", { name: "시작 안내 닫기", exact: true }).click();
-  await dock.waitFor({ state: "hidden", timeout: 5_000 });
-}
-
-/** Composite menubar title that absorbed the 3D group (studio-main-menu-presentation.ts). */
-const STUDIO_INSERT_MENU_TITLE = "삽입";
-
-async function openDesktopBackground3d(page: Page): Promise<Locator> {
-  const mainMenu = page.locator('[data-studio-main-menu="true"]');
-  await mainMenu.waitFor({ state: "visible", timeout: 20_000 });
-  await dismissQuickStartIfPresent(page);
-  await mainMenu.getByRole("menuitem", { name: STUDIO_INSERT_MENU_TITLE, exact: true }).click();
-  const insertMenu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
-  await insertMenu.waitFor({ state: "visible", timeout: 5_000 });
-  // 점진 공개: 3D 도구는 '고급 도구 펼치기 (N개)' 행 뒤에 접혀 있다. 표시 문구는 '장면 도우미'(예전 '3D 배경')다.
-  const fold = insertMenu.locator('[data-studio-menu-item-id="advanced-sections-fold:insert"]');
-  if (await fold.getAttribute("aria-expanded") !== "true") await fold.click();
-  await insertMenu.locator('[data-studio-menu-item-id="bg3d"]').click();
+/** 첫 실행 안내는 표시된 경우에만 실제 닫고 현재 전체 도구 카탈로그를 연다. */
+async function openBackground3dThroughTools(page: Page): Promise<Locator> {
+  await waitForStudioDrawingReady(page, { timeoutMs: 20_000 });
+  const catalog = await openStudioAllTools(page);
+  await catalog.getByRole("searchbox", { name: "전체 도구 검색", exact: true }).fill("bg3d");
+  await catalog.locator('button[data-studio-catalog-tool-id="bg3d"]').click();
+  await catalog.waitFor({ state: "hidden", timeout: 5_000 });
   return waitForBackground3dDialog(page);
 }
 
+async function openDesktopBackground3d(page: Page): Promise<Locator> {
+  return openBackground3dThroughTools(page);
+}
+
 async function openMobileBackground3d(page: Page): Promise<Locator> {
-  await dismissQuickStartIfPresent(page);
   const editor = page.locator('[data-studio-editor="true"]');
   await poll(
     "default mobile immersive editor",
@@ -262,52 +238,7 @@ async function openMobileBackground3d(page: Page): Promise<Locator> {
     (value) => value === "true",
     5_000,
   );
-  const dock = page.locator('nav[aria-label="스튜디오 모바일 도구막대"]');
-  await dock.waitFor({ state: "visible", timeout: 20_000 });
-  await dismissFirstRunSurfaces(page);
-  const workspaceToggle = dock.locator('[data-studio-mobile-workspace-toggle="true"]');
-  const workspaceExpanded = await workspaceToggle.getAttribute("aria-expanded");
-  if (workspaceExpanded === "false") {
-    await workspaceToggle.click();
-    await poll(
-      "mobile workspace tools expanded",
-      () => workspaceToggle.getAttribute("aria-expanded"),
-      (value) => value === "true",
-      5_000,
-      75,
-    );
-  }
-  const workspaceToolbar = dock.getByRole("toolbar", { name: "작업 공간" });
-  const newWorkButton = workspaceToolbar.getByRole("button", {
-    name: "빠른 시작 · 새 작업 열기",
-    exact: true,
-  });
-  await poll(
-    "mobile workspace new-work tool visible",
-    async () => {
-      return (await newWorkButton.isVisible()) && (await newWorkButton.isEnabled());
-    },
-    Boolean,
-    5_000,
-    50,
-  );
-  await newWorkButton.click();
-  const starter = page.locator('[data-studio-creative-starter="true"]');
-  await starter.waitFor({ state: "visible", timeout: 5_000 });
-  // 시작 패널은 접힌 '사용법' 알약으로 뜬다 — 펼쳐야 '다른 작업 바로 열기'에 닿는다.
-  const starterToggle = starter.locator('button[aria-controls="studio-quickstart-content"]');
-  if (await starterToggle.getAttribute("aria-expanded") !== "true") await starterToggle.click();
-  const moreTools = starter.locator('[data-studio-quickstart-more="true"]');
-  await moreTools.locator("summary").click();
-  const backgroundCard = starter.locator('[data-studio-quick-tool="background-3d"]');
-  await backgroundCard.waitFor({ state: "visible", timeout: 5_000 });
-  assertCondition(
-    (await backgroundCard.innerText()).includes("장면 도우미"), // 예전 '3D로 장면 잡기'
-    "mobile quick-start 3D scene card lost its visible action label",
-  );
-  await backgroundCard.scrollIntoViewIfNeeded();
-  await backgroundCard.click();
-  return waitForBackground3dDialog(page);
+  return openBackground3dThroughTools(page);
 }
 
 async function waitForBackground3dDialog(page: Page): Promise<Locator> {
@@ -335,7 +266,7 @@ async function selectPhysicsRenderer(dialog: Locator): Promise<void> {
   // ADR-0018 keeps an unavailable WebGPU selection visible without mounting another engine.
   // This headless physics lane must make the same explicit WebGL2 choice as an artist before
   // preparing scene objects; otherwise a successful Worker result has no objects to project onto.
-  await dialog.getByRole("tab", { name: /^(?:보기|구도)$/u }).click();
+  await openStudioBg3dEnginePanel(dialog);
   const webgl2 = dialog.getByTestId("studio-bg3d-engine-preference-webgl2");
   await webgl2.waitFor({ state: "visible", timeout: 15_000 });
   await waitForEnabled(webgl2, "explicit WebGL2 selection enabled");
@@ -364,7 +295,7 @@ async function selectPhysicsRenderer(dialog: Locator): Promise<void> {
 }
 
 async function setupPlaneAndBox(page: Page, dialog: Locator): Promise<Locator> {
-  await dialog.getByRole("tab", { name: /^(?:도형|소품)$/u }).click();
+  await selectStudioBg3dTaskTab(dialog, "shapes");
   await dialog.getByRole("button", { name: "평면 추가", exact: true }).click();
   await dialog.getByRole("button", { name: "상자 추가", exact: true }).click();
   const positionY = dialog.getByRole("spinbutton", { name: "위치 Y", exact: true });
@@ -382,7 +313,7 @@ async function setupPlaneAndBox(page: Page, dialog: Locator): Promise<Locator> {
 }
 
 async function openPhysicsPanel(dialog: Locator): Promise<Locator> {
-  await dialog.getByRole("tab", { name: /^(?:보기|구도)$/u }).click();
+  await selectStudioBg3dTaskTab(dialog, "view");
   const physicsTab = dialog.getByRole("tab", { name: "물리 배치", exact: true });
   await physicsTab.waitFor({ state: "visible", timeout: 5_000 });
   await physicsTab.click();
@@ -460,12 +391,12 @@ async function selectBoxForTransformRead(dialog: Locator): Promise<void> {
   // Runtime hydration may replace object instances during bake/history restoration. Re-select by
   // the user-visible layer identity before inspecting the transform instead of assuming that a
   // transient selection survives undo/redo.
-  await dialog.getByRole("tab", { name: /^(?:레이어|장면)$/u }).click();
+  await selectStudioBg3dTaskTab(dialog, "layers");
   const boxLayer = dialog.getByRole("button", { name: "상자 1", exact: true });
   await boxLayer.waitFor({ state: "attached", timeout: 5_000 });
   await boxLayer.scrollIntoViewIfNeeded();
   await boxLayer.click();
-  await dialog.getByRole("tab", { name: /^(?:도형|소품)$/u }).click();
+  await selectStudioBg3dTaskTab(dialog, "shapes");
 }
 
 async function pauseRunningPreview(dialog: Locator, status: Locator): Promise<PhysicsStatus> {
@@ -529,7 +460,7 @@ async function runDesktop(browser: Browser, url: string): Promise<string[]> {
     await dialog.getByTestId("bg3d-physics-reset").click();
     const reset = await waitForPhysicsState(status, "idle");
     assertCondition(reset.previewY === null && reset.sampleCount === 0, "reset retained transient samples");
-    await dialog.getByRole("tab", { name: /^(?:도형|소품)$/u }).click();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
     assertCondition(Math.abs(await readPositionY(dialog) - 3) <= 0.001, "reset changed persistent Y");
     screenshots.push(await screenshot(page, "desktop-reset.png"));
 
@@ -544,7 +475,7 @@ async function runDesktop(browser: Browser, url: string): Promise<string[]> {
     await dialog.getByTestId("bg3d-physics-bake").click();
     await waitForPhysicsState(status, "idle");
 
-    await dialog.getByRole("tab", { name: /^(?:도형|소품)$/u }).click();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
     const bakedY = await readPositionY(dialog);
     assertCondition(bakedY < 3, `bake did not update persistent Y (${bakedY})`);
     assertCondition(

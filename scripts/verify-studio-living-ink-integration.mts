@@ -36,6 +36,7 @@ import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosa
 import { STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED } from "../apps/web/src/domains/creator/studio-living-ink-brush-admission";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
+import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
@@ -1280,14 +1281,7 @@ async function activatePenAndWatercolor(
       : '[data-studio-brush-active-pill="true"]',
   );
   await catalogTrigger.waitFor({ state: "visible" });
-  if (mobileDockVisible) {
-    await catalogTrigger.click();
-  } else {
-    const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
-    if (!await dock.isVisible()) await catalogTrigger.click();
-    await dock.waitFor({ state: "visible" });
-    await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
-  }
+  await openStudioBrushCatalogThroughUi(page, catalogTrigger);
   const catalogue = mobileDockVisible
     ? page.locator('[data-studio-brush-catalog-session="true"]')
     : page.locator('[role="dialog"][data-studio-brush-floating]')

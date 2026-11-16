@@ -15,6 +15,7 @@ import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
 
 import { isOptionalStudioPreviewApiError } from "../lib/studio-verify-preview-errors.mts";
+import { installStudioOfflinePreviewFixture } from "../lib/studio-offline-preview-fixture.mjs";
 
 const OUTPUT_DIR = resolve(process.env.TOONSPECTRUM_VERIFY_DIR ?? "artifacts/studio-cross-browser");
 const LOCALE = process.env.TOONSPECTRUM_VERIFY_LOCALE ?? "ko-KR";
@@ -74,7 +75,8 @@ export const PROFILES = Object.freeze([
 ]);
 
 export const ROUTES = Object.freeze([
-  { id: "editor", path: "/studio" },
+  { id: "home", path: "/studio" },
+  { id: "editor", path: "/studio/canvas" },
   { id: "comic", path: "/studio/comic" },
   { id: "animation", path: "/studio/animation" },
   { id: "brushes", path: "/studio/brushes" },
@@ -150,13 +152,18 @@ export async function installGuestBoundary(page) {
 export async function auditPage(page) {
   return page.evaluate((minimumTap) => { // NOSONAR javascript:S3776
     const viewportWidth = window.innerWidth;
-    const selectors = "button, a[href], [role='button'], input:not([type='hidden']), select, textarea";
+    const selectors = "button, a[href], summary, [role='button'], input:not([type='hidden']), select, textarea";
     const candidates = Array.from(document.querySelectorAll(selectors));
 
     function isVisible(element) {
       if (element.closest("[hidden], [inert], [aria-hidden='true']")) return false;
       const style = getComputedStyle(element);
       if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+      for (let details = element.closest("details:not([open])"); details; details = details.parentElement?.closest("details:not([open])")) {
+        if (!details.querySelector(":scope > summary")?.contains(element)) return false;
+      }
+      // 비포커스 sr-only 링크는 페인트되지 않는다. 키보드 노출·이동은 아래에서 별도 검증한다.
+      if (/^rect\(0px,?\s*0px,?\s*0px,?\s*0px\)$/u.test(style.clip) || style.clipPath === "inset(50%)") return false;
       const rect = element.getBoundingClientRect();
       return rect.width >= 2 && rect.height >= 2;
     }
@@ -221,6 +228,31 @@ export async function auditPage(page) {
   }, MIN_TAP);
 }
 
+export async function auditSkipLinks(page) {
+  const failures = [];
+  const links = page.locator('a[data-studio-skip-link="true"][href^="#"]');
+  for (let index = 0; index < await links.count(); index += 1) {
+    const link = links.nth(index);
+    if (await link.evaluate((node) => Boolean(node.closest('[hidden], [inert], [aria-hidden="true"]')))) continue;
+    const href = await link.getAttribute("href");
+    await link.focus();
+    const shown = await link.evaluate((node) => {
+      const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
+      return document.activeElement === node && rect.width >= 2 && rect.height >= 2
+        && rect.left >= -0.5 && rect.right <= innerWidth + 0.5 && rect.top >= -0.5 && rect.bottom <= innerHeight + 0.5
+        && style.clip === "auto" && style.clipPath === "none";
+    });
+    if (!shown) failures.push(`skip link is not visible on keyboard focus: ${href}`);
+    await link.press("Enter");
+    const moved = await page.evaluate((targetId) => {
+      const target = document.getElementById(targetId);
+      return Boolean(target && (target === document.activeElement || target.contains(document.activeElement)));
+    }, decodeURIComponent((href ?? "").slice(1)));
+    if (!moved) failures.push(`skip link did not focus its target: ${href}`);
+  }
+  return failures;
+}
+
 async function main() { // NOSONAR javascript:S3776
   await mkdir(OUTPUT_DIR, { recursive: true });
   const externalBaseUrl = process.env.TOONSPECTRUM_VERIFY_BASE_URL;
@@ -260,16 +292,25 @@ async function main() { // NOSONAR javascript:S3776
             colorScheme: COLOR_SCHEME,
             reducedMotion: REDUCED_MOTION,
           });
+          const previewFixture = await installStudioOfflinePreviewFixture(context, externalBaseUrl ? "" : baseUrl);
           try {
             for (const route of selected(ROUTES, "TOONSPECTRUM_VERIFY_ROUTES")) {
               const page = await context.newPage();
               const scope = `${engine.id}/${profile.id}/${route.id}`;
+              const fixtureResponseStart = previewFixture.responses.length;
+              const fixtureUnexpectedStart = previewFixture.unexpectedResponses.length;
+              const fixtureEvidence = () => ({ mode: previewFixture.mode, responses: previewFixture.responses.slice(fixtureResponseStart),
+                unexpectedResponses: previewFixture.unexpectedResponses.slice(fixtureUnexpectedStart) });
               const consoleErrors = [];
               const pageErrors = [];
               const failedResponses = [];
               const consoleDetails = [];
+              const pendingRequests = new Map();
+              page.on("request", (request) => pendingRequests.set(request.url(), request.resourceType()));
+              page.on("requestfinished", (request) => pendingRequests.delete(request.url()));
+              page.on("requestfailed", (request) => pendingRequests.delete(request.url()));
               page.on("response", (response) => {
-                if (response.status() >= 400) failedResponses.push({ url: response.url(), status: response.status() });
+                if (response.status() >= 400) failedResponses.push({ url: response.url(), method: response.request().method(), status: response.status() });
               });
               page.on("pageerror", (error) => pageErrors.push(error.message));
               page.on("console", (message) => {
@@ -277,8 +318,9 @@ async function main() { // NOSONAR javascript:S3776
                 const text = message.text();
                 const location = message.location();
                 const optionalPreviewApi = isOptionalStudioPreviewApiError(`${text} ${location.url}`, baseUrl);
-                consoleDetails.push({ text, location, optionalPreviewApi });
-                if (!optionalPreviewApi && !IGNORED_CONSOLE.some((ignored) => text.includes(ignored))) consoleErrors.push(text);
+                const expectedFixtureResponse = previewFixture.isExpectedConsole(text, location.url);
+                consoleDetails.push({ text, location, optionalPreviewApi, expectedFixtureResponse });
+                if (!expectedFixtureResponse && !optionalPreviewApi && !IGNORED_CONSOLE.some((ignored) => text.includes(ignored))) consoleErrors.push(text);
               });
               await installGuestBoundary(page);
               try {
@@ -286,9 +328,9 @@ async function main() { // NOSONAR javascript:S3776
                 await page.locator("body").waitFor({ state: "visible", timeout: 20_000 });
                 const readySelector = route.id === "lift3d"
                   ? "#studio-lift3d-title"
-                  : route.id === "publish" ? "input" : '[data-studio-app-menubar="true"]';
-                await page.locator(readySelector).first().waitFor({ state: "visible", timeout: 60_000 });
-                if (!["lift3d", "publish"].includes(route.id)) {
+                  : route.id === "publish" ? "input" : route.id === "home" ? "h1" : '[data-studio-app-menubar="true"]';
+                await page.locator(readySelector).filter({ visible: true }).first().waitFor({ state: "visible", timeout: 60_000 });
+                if (!["home", "lift3d", "publish"].includes(route.id)) {
                   await page.locator('[data-studio-command-bar-settings-trigger="true"]').waitFor({ state: "attached", timeout: 60_000 });
                 }
                 await page.waitForTimeout(route.path.startsWith("/studio") ? 2_500 : 1_000);
@@ -299,17 +341,20 @@ async function main() { // NOSONAR javascript:S3776
                   ).map((animation) => animation.finished));
                 });
                 const metrics = await auditPage(page);
-                const failures = [];
+                const failures = await auditSkipLinks(page);
                 if (metrics.documentOverflowX > 1) failures.push(`document horizontal overflow ${metrics.documentOverflowX}px`);
                 for (const item of metrics.offscreen) failures.push(`offscreen control: ${item}`);
                 for (const item of pageErrors.slice(0, 5)) failures.push(`page error: ${item}`);
                 for (const item of consoleErrors.slice(0, 5)) failures.push(`console error: ${item}`);
+                for (const item of previewFixture.unexpectedResponses.slice(fixtureUnexpectedStart)) {
+                  failures.push(`unexpected API response: ${item.method} ${item.status} ${item.url}`);
+                }
 
                 if (process.env.TOONSPECTRUM_VERIFY_STRICT_A11Y === "1") {
                   failures.push(...metrics.smallTargets.map((item) => `small tap target: ${item}`));
                   failures.push(...metrics.unnamed.map((item) => `unnamed control: ${item}`));
                 }
-                results.push({ scope, metrics, pageErrors, consoleErrors, consoleDetails, failedResponses, failures });
+                results.push({ scope, metrics, previewFixture: fixtureEvidence(), pageErrors, consoleErrors, consoleDetails, failedResponses, failures });
                 for (const failure of failures) {
                   hardFailures += 1;
                   log(`${scope} FAIL: ${failure}`);
@@ -331,7 +376,11 @@ async function main() { // NOSONAR javascript:S3776
                 log(`${scope}: overflowX=${metrics.documentOverflowX} offscreen=${metrics.offscreen.length} small=${metrics.smallTargets.length} unnamed=${metrics.unnamed.length} errors=${pageErrors.length + consoleErrors.length} ok=${failures.length === 0}`);
               } catch (error) {
                 hardFailures += 1;
-                results.push({ scope, navigationError: error?.message ?? String(error) });
+                results.push({ scope, navigationError: error?.message ?? String(error), previewFixture: fixtureEvidence(), url: page.url(),
+                  pageErrors, consoleErrors, consoleDetails, failedResponses, pendingRequests: [...pendingRequests],
+                  readiness: await page.evaluate(() => ({ readyState: document.readyState, rootText: document.getElementById("root")?.textContent?.slice(0, 1500),
+                    editorCount: document.querySelectorAll('[data-studio-editor="true"]').length,
+                    menubarCount: document.querySelectorAll('[data-studio-app-menubar="true"]').length })).catch(() => null) });
                 log(`${scope} FAIL: navigation or audit error: ${error?.message ?? error}`);
               } finally {
                 await page.close().catch(() => undefined);

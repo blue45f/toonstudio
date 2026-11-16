@@ -17,8 +17,9 @@
  * Exit: 0 all gates passed · 1 failure.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
+import { tmpdir } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
 
 import { chromium, type Browser, type Page } from "playwright";
@@ -34,6 +35,7 @@ const RESPONSE_HEADER_POLICY = resolve(
   "config/http-response-headers.json",
 );
 const RESET_QUERY = "__toonspectrumSwReset";
+const EVIDENCE_DIR = process.env.TOONSPECTRUM_VERIFY_DIR ?? join(tmpdir(), "toonstudio-service-worker");
 
 interface StaticHeaderRule {
   readonly source: string;
@@ -208,9 +210,18 @@ async function main(): Promise<void> {
 
   const notes: string[] = [];
   const failures: string[] = [];
+  let phase = "setup";
+  const report: Record<string, unknown> = {};
+  mkdirSync(EVIDENCE_DIR, { recursive: true });
+  const checkpoint = (): void => {
+    Object.assign(report, { phase, notes, failures, ok: false });
+    writeFileSync(join(EVIDENCE_DIR, "service-worker-report.json"), `${JSON.stringify(report, null, 2)}\n`);
+  };
+  const enterPhase = (next: string): void => { phase = next; checkpoint(); };
   const check = (label: string, ok: boolean, detail = ""): void => {
     notes.push(`${ok ? "PASS" : "FAIL"} ${label}${detail ? ` — ${detail}` : ""}`);
     if (!ok) failures.push(label);
+    checkpoint();
   };
 
   const realSw = readFileSync(join(DIST, "sw.js"), "utf8");
@@ -225,16 +236,31 @@ async function main(): Promise<void> {
   const server = startStaticServer(port, () => (serveNextSw ? nextSw : null), () => navigationFailure);
 
   let browser: Browser | null = null;
-  const report: Record<string, unknown> = { origin };
+  let diagnosticPage: Page | null = null;
+  const pageErrors: string[] = [];
+  const pendingRequests = new Map<string, { url: string; resourceType: string; startedAt: number }>();
+  const navigationEvents: { url: string; at: number }[] = [];
+  report.origin = origin;
 
   try {
     browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
     const context = await browser.newContext();
     const page = await context.newPage();
-    const pageErrors: string[] = [];
+    diagnosticPage = page;
     page.on("pageerror", (error) => pageErrors.push(String(error)));
+    page.on("request", (request) => pendingRequests.set(`${request.method()} ${request.url()}`, {
+      url: request.url(), resourceType: request.resourceType(), startedAt: Date.now(),
+    }));
+    page.on("requestfinished", (request) => pendingRequests.delete(`${request.method()} ${request.url()}`));
+    page.on("requestfailed", (request) => pendingRequests.delete(`${request.method()} ${request.url()}`));
+    page.on("framenavigated", (frame) => {
+      if (frame !== page.mainFrame()) return;
+      navigationEvents.push({ url: frame.url(), at: Date.now() });
+      if (navigationEvents.length > 100) navigationEvents.shift();
+    });
 
     // ---- 1. Cold load -----------------------------------------------------
+    enterPhase("1-cold-load");
     await page.goto(`${origin}/studio`, { waitUntil: "load", timeout: 120_000 });
     const cold = await measureLoad(page);
     report.cold = cold;
@@ -249,6 +275,7 @@ async function main(): Promise<void> {
     );
 
     // ---- 2. Registration + control ---------------------------------------
+    enterPhase("2-registration-control");
     await waitForController(page);
     const controlled = await page.evaluate(
       () => navigator.serviceWorker.controller?.scriptURL ?? null,
@@ -260,6 +287,7 @@ async function main(): Promise<void> {
     );
 
     // ---- 3. Precache populated -------------------------------------------
+    enterPhase("3-precache");
     const state = await inspectWorker(page);
     report.workerState = state;
     const entries = (state?.entries ?? {}) as Record<string, number>;
@@ -270,6 +298,7 @@ async function main(): Promise<void> {
     );
 
     // ---- 4. Warm load -----------------------------------------------------
+    enterPhase("4-warm-load");
     await page.reload({ waitUntil: "load", timeout: 120_000 });
     await waitForController(page);
     const warm = await measureLoad(page);
@@ -322,6 +351,7 @@ async function main(): Promise<void> {
     check("complete editor pack is prepared before checking full Studio offline boot", prepared);
 
     // ---- 5. Offline -------------------------------------------------------
+    enterPhase("5-offline");
     await context.setOffline(true);
     await page.reload({ waitUntil: "load", timeout: 120_000 });
     const offlineIsolated = await page.evaluate(() => globalThis.crossOriginIsolated);
@@ -364,6 +394,7 @@ async function main(): Promise<void> {
     // Real origin failures (not page.route mocks): navigation preload must pass
     // through the shipped worker, preserving both isolation and permission failures.
     for (const failure of [500, 503, "timeout", 403, 404] as const) {
+      enterPhase(`5-origin-${failure}`);
       navigationFailure = failure;
       const started = Date.now();
       const response = await page.reload({ waitUntil: "load", timeout: 20_000 });
@@ -383,6 +414,7 @@ async function main(): Promise<void> {
     }
 
     // ---- 6. Update flow: a new worker must park, not take over ------------
+    enterPhase("6-update");
     serveNextSw = true;
     const controllerBefore = await page.evaluate(
       () => navigator.serviceWorker.controller?.scriptURL ?? null,
@@ -443,6 +475,7 @@ async function main(): Promise<void> {
     check("explicit apply hands control to the new worker", applied);
 
     // ---- 7. Kill switch ---------------------------------------------------
+    enterPhase("7-reset");
     serveNextSw = false;
     await page.goto(`${origin}/studio?${RESET_QUERY}=1`, {
       waitUntil: "load",
@@ -470,15 +503,43 @@ async function main(): Promise<void> {
 
     report.pageErrors = pageErrors;
     check("no uncaught page errors", pageErrors.length === 0, pageErrors.slice(0, 3).join(" | "));
+    phase = "complete";
+  } catch (error) {
+    report.fatalError = error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : String(error);
+    failures.push(`${phase}: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   } finally {
+    report.pageErrors = pageErrors;
+    report.navigationEvents = navigationEvents;
+    report.pendingRequests = [...pendingRequests.values()].slice(0, 100);
+    if (diagnosticPage && !diagnosticPage.isClosed()) {
+      report.lastUrl = diagnosticPage.url();
+      report.workerAtExit = await Promise.race([
+        diagnosticPage.evaluate(async () => ({
+          href: location.href,
+          readyState: document.readyState,
+          controller: navigator.serviceWorker.controller?.scriptURL ?? null,
+          registrations: (await navigator.serviceWorker.getRegistrations()).map((registration) => ({
+            scope: registration.scope,
+            active: registration.active?.state ?? null,
+            waiting: registration.waiting?.state ?? null,
+            installing: registration.installing?.state ?? null,
+          })),
+          cacheKeys: await caches.keys(),
+        })).catch((error: unknown) => ({ diagnosticError: String(error) })),
+        new Promise<{ diagnosticError: string }>((done) => {
+          const timer = setTimeout(() => done({ diagnosticError: "종료 상태 조회 3초 제한 초과" }), 3_000);
+          timer.unref();
+        }),
+      ]);
+    }
+    Object.assign(report, { phase, notes, failures, ok: phase === "complete" && failures.length === 0 });
+    writeFileSync(join(EVIDENCE_DIR, "service-worker-report.json"), `${JSON.stringify(report, null, 2)}\n`);
+    console.log(JSON.stringify(report, null, 2));
     await browser?.close().catch(() => undefined);
     await new Promise<void>((done) => server.close(() => done()));
   }
 
-  report.notes = notes;
-  report.ok = failures.length === 0;
-  report.failures = failures;
-  console.log(JSON.stringify(report, null, 2));
   if (failures.length > 0) process.exit(1);
 }
 
