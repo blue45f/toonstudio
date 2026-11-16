@@ -24,6 +24,7 @@ import {
   type StudioBrushCatalogItem,
 } from "../apps/web/src/domains/creator/brush/studio-brush-catalog";
 
+import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import {
@@ -245,12 +246,9 @@ async function selectBrush(
       ?.getAttribute("data-studio-active-draw-mode") === expectedMode,
     nextMode,
   );
-  const dock = page.locator('[data-studio-brush-workbench-dock="true"]');
-  if (!await dock.isVisible()) await toolbar.getByRole("button", {
+  await openStudioBrushCatalogThroughUi(page, toolbar.getByRole("button", {
     name: brush.operation === "erase" ? /지우개 선택 열기$/u : /브러시 선택 열기$/u,
-  }).click();
-  await dock.waitFor({ state: "visible" });
-  await dock.getByRole("button", { name: "확장 보기", exact: true }).click();
+  }));
   const floating = page.locator('[role="dialog"][data-studio-brush-floating]');
   await floating.waitFor({ state: "visible" });
   const catalog = page.getByRole("dialog", {

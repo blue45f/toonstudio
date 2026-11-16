@@ -216,6 +216,8 @@ export interface StudioNativeRasterScenarioEvidence {
   browserErrors: readonly string[];
   failedResponses: readonly string[];
   failure?: string;
+  /** 처음 실패한 단계를 보존하여 미실행 Undo를 실행 후 회귀와 구분한다. */
+  failurePhase?: "setup" | "operation" | "undo" | "verification";
 }
 
 /**
@@ -578,15 +580,13 @@ export function studioNativeRasterScenarioViolations(
   if (!meaningfulPixelChange(evidence.operationDiff)) {
     issues.push(`${evidence.id}: before/after evidence has no meaningful pixel change`);
   }
-  if (
-    !evidence.undo.attempted
-    || !evidence.undo.restored
-    || !evidence.undo.retainedEditableRasterWhenExpected
-  ) {
+  if (!evidence.undo.attempted) {
+    issues.push(`${evidence.id}: one-step Undo was not executed${evidence.failurePhase ? ` (blocked during ${evidence.failurePhase})` : ""}`);
+  } else if (!evidence.undo.restored || !evidence.undo.retainedEditableRasterWhenExpected) {
     issues.push(`${evidence.id}: one-step Undo contract failed`);
   }
   if (
-    evidence.id.startsWith("selection-")
+    evidence.undo.attempted && evidence.id.startsWith("selection-")
     && (
       evidence.undo.selectionStateCleared !== true
       || evidence.undo.durableSnapshotRetained !== true
@@ -597,7 +597,7 @@ export function studioNativeRasterScenarioViolations(
     );
   }
   if (
-    evidence.id === "pixel-transform"
+    evidence.undo.attempted && evidence.id === "pixel-transform"
     && (
       evidence.undo.durableImageRestored !== true
       || evidence.undo.exactRestoredImagePresented !== true

@@ -1,5 +1,8 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 
+import { openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
+import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
+import { showStudioProjectWindowTools, visibleStudioControl } from "../scripts/lib/studio-shell-interactions";
 import {
   BG3D_FRAME_ALIGNMENT_OFFSETS_PX,
   BG3D_FRAME_CROP_INSET,
@@ -167,10 +170,11 @@ async function stableFrame(page: Page, info: TestInfo, label: string) {
 }
 
 async function openReadyWebGpu(page: Page, info: TestInfo, label: string): Promise<void> {
-  await page.locator('[data-studio-rail-tool-id="bg3d"]').first().click();
+  await (await visibleStudioControl(page.locator('[data-studio-rail-tool-id="bg3d"]'), "3D 배경 레일")).click();
   await expect(page.locator(DIALOG)).toBeVisible({ timeout: READINESS_TIMEOUT_MS });
+  await openStudioBg3dProfessionalMode(page.locator(DIALOG), READINESS_TIMEOUT_MS);
   await expect(page.locator(VIEWPORT)).toBeVisible({ timeout: READINESS_TIMEOUT_MS });
-  await page.getByRole("tab", { name: "보기", exact: true }).click();
+  await openStudioBg3dEnginePanel(page.locator(DIALOG));
   const preference = page.getByTestId("studio-bg3d-engine-preference-webgpu").first();
   const backend = page.getByTestId("studio-bg3d-engine-active-backend").first();
   await expect(preference).toBeVisible();
@@ -204,7 +208,7 @@ async function openReadyWebGpu(page: Page, info: TestInfo, label: string): Promi
       contentType: "application/json",
     });
   }
-  await page.getByRole("tab", { name: "도형", exact: true }).click();
+  await selectStudioBg3dTaskTab(page.locator(DIALOG), "shapes");
   await page.locator('[aria-label="상자 추가"]').first().click();
   await expect(page.getByRole("spinbutton", { name: "회전 Y", exact: true }).first())
     .toBeVisible({ timeout: READINESS_TIMEOUT_MS });
@@ -269,18 +273,20 @@ test("WebGPU 기즈모 연속 회전은 이전 실루엣을 누적하지 않는�
     expires: new Date(Date.now() + 86_400_000).toISOString(),
   });
   await page.setViewportSize({ width: 1_440, height: 1_000 });
-  await page.goto("/studio", { waitUntil: "domcontentloaded" });
-  // New workspaces keep professional launchers in the real hidden-tools menu.
-  // Expose BG3D through that user action before exercising the unchanged renderer oracle.
-  const toolbarSettings = page.locator('[data-studio-tool-rail-settings="true"]').getByRole("button");
+  await page.goto("/studio/canvas", { waitUntil: "domcontentloaded" });
+  await expect(page.locator('[data-studio-editor="true"]')).toBeVisible({ timeout: READINESS_TIMEOUT_MS });
+  const toolbarSettings = page.locator('[data-studio-rail-all-tools="true"]')
+    .or(page.locator('[data-studio-tool-rail-settings="true"]').getByRole("button", { name: "전체 도구", exact: true }))
+    .filter({ visible: true });
   await expect(toolbarSettings).toBeVisible({ timeout: READINESS_TIMEOUT_MS });
   await toolbarSettings.click();
-  const hiddenTools = page.getByRole("dialog", { name: "숨긴 도구", exact: true });
-  await expect(hiddenTools).toBeVisible();
-  await hiddenTools.getByRole("button", { name: /^(?:3D 배경|3D Background)$/iu }).click();
-  await expect(hiddenTools).toBeHidden();
-  await expect(page.locator('[data-studio-rail-tool-id="bg3d"]').first())
-    .toBeVisible({ timeout: READINESS_TIMEOUT_MS });
+  const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
+  await expect(catalog).toBeVisible();
+  await pinStudioRailToolInCatalog(catalog, "bg3d");
+  await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
+  await expect(catalog).toBeHidden();
+  await showStudioProjectWindowTools(page);
+  await visibleStudioControl(page.locator('[data-studio-rail-tool-id="bg3d"]'), "3D 배경 레일", READINESS_TIMEOUT_MS);
   try {
     await openReadyWebGpu(page, testInfo, "continuous");
     // Renderer readiness precedes the asynchronous camera/control presentation. Settle the

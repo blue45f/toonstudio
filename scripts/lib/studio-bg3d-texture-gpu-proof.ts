@@ -7,6 +7,7 @@ import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT, normalizeStudioBg3dSceneDocument,
 
 import { createStudioBg3dTextureFixture } from "./studio-bg3d-texture-fixture";
 import { resolveStudioProductionGltfLoaderExport } from "./studio-production-gltf-loader.mjs";
+import { readStudioProductionThreeModuleUrls, resolveStudioProductionThreeExports } from "./studio-production-three-exports.mjs";
 
 import type { Page } from "playwright";
 
@@ -15,6 +16,7 @@ export async function runStudioBg3dTextureGpuProof(page: Page, rootUrl: string, 
   readonly three: string;
   readonly gltfLoader: string;
   readonly babylon: string;
+  readonly source?: boolean;
 }) {
   const cases = [
     { label: "nearest-clamp", minFilter: 9728, magFilter: 9728, wrapS: 33071, wrapT: 33071 },
@@ -46,26 +48,25 @@ export async function runStudioBg3dTextureGpuProof(page: Page, rootUrl: string, 
   await page.goto(rootUrl, { waitUntil: "domcontentloaded" });
   await page.evaluate("globalThis.__name ??= (target) => target");
   const loaderExport = await page.evaluate(resolveStudioProductionGltfLoaderExport, urls.gltfLoader);
-  const result = await page.evaluate(async ({ cases, urls, profiles, loaderExport }) => {
-    const three = await import(urls.three) as Record<string, unknown>;
+  const threeExports = await page.evaluate(resolveStudioProductionThreeExports,
+    urls.source ? [urls.three] : readStudioProductionThreeModuleUrls(urls.three));
+  console.log(`[verify-studio-3d-console] production Three exports ${JSON.stringify(threeExports)}`);
+  const result = await page.evaluate(async ({ cases, urls, profiles, loaderExport, threeExports }) => {
     const loaderModule = await import(urls.gltfLoader) as Record<string, typeof import("three/examples/jsm/loaders/GLTFLoader.js").GLTFLoader>;
     const ProductionGLTFLoader = loaderModule[loaderExport]!;
     const specialist = await import(urls.babylon) as typeof import("../../apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-specialist-entry");
-    const find = (identity: string) => {
-      const candidate = Object.values(three).find((value) => typeof value === "function"
-        && Function.prototype.toString.call(value).includes(identity));
-      if (typeof candidate !== "function") throw new Error(`Missing production Three ${identity}`);
-      return candidate;
-    };
-    const Renderer = find("this.isWebGLRenderer") as typeof import("three").WebGLRenderer;
-    const Camera = find("this.isPerspectiveCamera") as typeof import("three").PerspectiveCamera;
-    const Scene = find("this.isScene") as typeof import("three").Scene;
+    const Renderer = (await import(threeExports.WebGLRenderer.moduleUrl))[threeExports.WebGLRenderer.exportName] as typeof import("three").WebGLRenderer;
+    const Camera = (await import(threeExports.PerspectiveCamera.moduleUrl))[threeExports.PerspectiveCamera.exportName] as typeof import("three").PerspectiveCamera;
+    const Scene = (await import(threeExports.Scene.moduleUrl))[threeExports.Scene.exportName] as typeof import("three").Scene;
     const renderer = new Renderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
     renderer.setSize(64, 64, false);
     renderer.outputColorSpace = "srgb";
     renderer.toneMapping = 0;
     renderer.setClearColor(0, 0);
     const camera = new Camera(45, 1, 0.01, 2000);
+    if (renderer.isWebGLRenderer !== true || camera.isPerspectiveCamera !== true) {
+      throw new Error("프로덕션 Three 렌더러/카메라 브랜드가 일치하지 않습니다.");
+    }
     camera.position.set(0, 0, 4);
     camera.lookAt(0, 0, 0);
     const reports = [];
@@ -182,7 +183,7 @@ export async function runStudioBg3dTextureGpuProof(page: Page, rootUrl: string, 
       }
     } finally { renderer.dispose(); renderer.forceContextLoss(); }
     return reports;
-  }, { cases, urls, loaderExport, profiles: { version: STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION, beauty: STUDIO_BG3D_BEAUTY_RGBA8_PROFILE,
+  }, { cases, urls, loaderExport, threeExports, profiles: { version: STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION, beauty: STUDIO_BG3D_BEAUTY_RGBA8_PROFILE,
     depth: STUDIO_BG3D_DEPTH_FLOAT32_PROFILE, id: STUDIO_BG3D_STABLE_ID_PROFILE } });
   console.log(`[verify-studio-3d-console] embedded PNG texture PASS ${JSON.stringify(result)}`);
   return result;

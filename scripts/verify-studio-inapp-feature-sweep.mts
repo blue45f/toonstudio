@@ -25,6 +25,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+
 import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosave";
 
 import {
@@ -40,6 +41,7 @@ import {
   type StudioInAppStep,
   type StudioInAppStepOutcome,
 } from "./lib/studio-inapp-sweep-harness.mjs";
+import { showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
   findFreePort,
@@ -171,6 +173,8 @@ async function openBrushLibrary(page: Page): Promise<Locator> {
 
 /** 작업 메뉴(2행)를 펼친다. 이미 펼쳐져 있으면 그대로 둔다. */
 async function expandWorkRow(page: Page): Promise<boolean> {
+  // 상세 작업 도크에 있는 기능은 사용자가 선택할 수 있는 프로젝트·창 배치로 진입한다.
+  await showStudioProjectWindowTools(page);
   const expanded = page.locator(
     '[data-studio-mobile-editing-dock="true"][data-studio-mobile-dock-expanded="true"]',
   );
@@ -188,22 +192,10 @@ async function clickLocator(
   locator: Locator,
   what: string,
 ): Promise<"ok" | { skipped: string }> {
-  const count = await locator.count();
-  if (count === 0) throw new Error(`${what}: required action is not present`);
-  // 같은 셀렉터가 여러 셸(몰입형/윈도우드, 데스크톱 잔재)에 걸쳐 존재하고 그중 하나만 보인다.
-  // 현재 화면에서 노출된 인스턴스를 찾아 누르되, 모두 숨겨져 있으면 실패한다.
-  for (let index = 0; index < Math.min(count, 6); index += 1) {
-    const candidate = locator.nth(index);
-    if (!(await candidate.isVisible().catch(() => false))) continue;
-    try {
-      await clickInView(candidate, 5_000);
-    } catch (error) {
-      throw new Error(what + ": " + (error instanceof Error ? error.message : String(error)), { cause: error });
-    }
-    await settle(page);
-    return "ok";
-  }
-  throw new Error(`${what}: required action is present but not visible on this profile`);
+  const control = await visibleStudioControl(locator, what);
+  await clickInView(control, 5_000);
+  await settle(page);
+  return "ok";
 }
 
 /** 작업 메뉴가 닫혀 있어도 먼저 열고, 클릭한 도구의 선택 상태까지 확인한다. */
@@ -289,8 +281,8 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
     id: "undo-redo-dock",
     label: "도크 되돌리기·다시실행",
     run: async (page) => {
-      const undo = dock(page).locator('button[data-studio-primary-action="undo"]');
-      const redo = dock(page).locator('button[data-studio-primary-action="redo"]');
+      const undo = page.locator('button[data-studio-primary-action="undo"]');
+      const redo = page.locator('button[data-studio-primary-action="redo"]');
       const undone = await clickLocator(page, undo, "undo");
       if (undone !== "ok") return undone;
       return clickLocator(page, redo, "redo");

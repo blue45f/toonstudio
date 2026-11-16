@@ -23,9 +23,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { chromium, type Browser } from "playwright";
-import { createServer as createViteServer } from "vite";
+import { createServer as createViteServer, normalizePath } from "vite";
 
 import { WEB_ROOT, WEB_VITE_CONFIG } from "./lib/repo-paths.mjs";
 import { findFreePort } from "./lib/studio-verify-preview-harness.mjs";
@@ -35,6 +36,10 @@ const SCRATCH =
   ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? join(tmpdir(), "toonstudio-studio-gpu-committed-parity");
 const HARNESS_PATH = "/__studio_gpu_committed_parity__";
+// 브라우저 진입점은 Vite 앱 루트 밖의 저장소 scripts 디렉터리에 있다.
+const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(
+  new URL("./studio-gpu-committed-parity-browser.ts", import.meta.url),
+))}`;
 // The browser entry runs its PARITY_CASES sequentially, each with its own ~10s per-case receipt
 // timeout (see RECEIPT_TIMEOUT_MS in studio-gpu-committed-parity-browser.ts). This outer timeout
 // must safely exceed every case's worst-case budget plus Vite/Playwright startup, not just one.
@@ -153,7 +158,7 @@ async function main(): Promise<void> {
     res.setHeader("Content-Type", "text/html");
     res.end(
       "<!doctype html><meta charset=\"utf-8\">"
-      + "<script type=\"module\" src=\"/scripts/studio-gpu-committed-parity-browser.ts\"></script>"
+      + `<script type="module" src="${HARNESS_ENTRY}"></script>`
     );
   });
 
@@ -177,12 +182,19 @@ async function main(): Promise<void> {
 
     await page.goto(`${origin}${HARNESS_PATH.slice(1)}`, { waitUntil: "load" });
 
-    await page.waitForFunction(
-      () => (window as unknown as { __studioGpuCommittedParityResult?: unknown })
-        .__studioGpuCommittedParityResult !== undefined,
-      undefined,
-      { timeout: RESULT_TIMEOUT_MS }
-    );
+    try {
+      await page.waitForFunction(
+        () => (window as unknown as { __studioGpuCommittedParityResult?: unknown })
+          .__studioGpuCommittedParityResult !== undefined,
+        undefined,
+        { timeout: RESULT_TIMEOUT_MS }
+      );
+    } catch (error) {
+      writeFileSync(join(SCRATCH, "browser-diagnostics.json"), JSON.stringify({
+        harnessEntry: HARNESS_ENTRY, url: page.url(), consoleErrors, pageErrors,
+      }, null, 2));
+      throw error;
+    }
     const result = await page.evaluate(() => (
       window as unknown as { __studioGpuCommittedParityResult?: unknown }
     ).__studioGpuCommittedParityResult) as ParityResult;

@@ -11,6 +11,8 @@ import {
 } from "../../apps/web/src/domains/creator/bg3d/studio-bg3d-scene-document";
 
 import { createStudioBg3dTextureFixture } from "./studio-bg3d-texture-fixture";
+import { resolveStudioProductionGltfLoaderExport } from "./studio-production-gltf-loader.mjs";
+import { readStudioProductionThreeModuleUrls, resolveStudioProductionThreeExports } from "./studio-production-three-exports.mjs";
 
 import type { Page } from "playwright";
 
@@ -19,6 +21,7 @@ export async function runStudioBg3dCameraGpuProof(page: Page, rootUrl: string, u
   readonly three: string;
   readonly gltfLoader: string;
   readonly babylon: string;
+  readonly source?: boolean;
 }) {
   const texture = createStudioBg3dTextureFixture();
   const hash = `sha256:${createHash("sha256").update(texture.bytes).digest("hex")}`;
@@ -48,20 +51,19 @@ export async function runStudioBg3dCameraGpuProof(page: Page, rootUrl: string, u
   });
   await page.goto(rootUrl, { waitUntil: "domcontentloaded" });
   await page.evaluate("globalThis.__name ??= (target) => target");
-  const reports = await page.evaluate(async ({ cases, urls, bytes: rawBytes, hash, profiles }) => {
-    const three = await import(urls.three) as Record<string, unknown>;
-    const { GLTFLoader } = await import(urls.gltfLoader) as typeof import("three/examples/jsm/loaders/GLTFLoader.js");
+  const loaderExport = await page.evaluate(resolveStudioProductionGltfLoaderExport, urls.gltfLoader);
+  const threeExports = await page.evaluate(resolveStudioProductionThreeExports,
+    urls.source ? [urls.three] : readStudioProductionThreeModuleUrls(urls.three));
+  console.log(`[verify-studio-bg3d-camera] production Three exports ${JSON.stringify(threeExports)}`);
+  const reports = await page.evaluate(async ({ cases, urls, bytes: rawBytes, hash, profiles, loaderExport, threeExports }) => {
+    const loaderModule = await import(urls.gltfLoader) as Record<string, typeof import("three/examples/jsm/loaders/GLTFLoader.js").GLTFLoader>;
+    const GLTFLoader = loaderModule[loaderExport]!;
     const specialist = await import(urls.babylon) as typeof import("../../apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-specialist-entry");
-    const find = (identity: string) => {
-      const candidate = Object.values(three).find((value) => typeof value === "function"
-        && Function.prototype.toString.call(value).includes(identity));
-      if (typeof candidate !== "function") throw new Error(`Missing production Three ${identity}`);
-      return candidate;
-    };
-    const Renderer = find("this.isWebGLRenderer") as typeof import("three").WebGLRenderer;
-    const Camera = find("this.isPerspectiveCamera") as typeof import("three").PerspectiveCamera;
-    const Scene = find("this.isScene") as typeof import("three").Scene;
+    const Renderer = (await import(threeExports.WebGLRenderer.moduleUrl))[threeExports.WebGLRenderer.exportName] as typeof import("three").WebGLRenderer;
+    const Camera = (await import(threeExports.PerspectiveCamera.moduleUrl))[threeExports.PerspectiveCamera.exportName] as typeof import("three").PerspectiveCamera;
+    const Scene = (await import(threeExports.Scene.moduleUrl))[threeExports.Scene.exportName] as typeof import("three").Scene;
     const renderer = new Renderer({ alpha: true, antialias: false, preserveDrawingBuffer: true });
+    if (renderer.isWebGLRenderer !== true) throw new Error("프로덕션 Three 렌더러 브랜드가 일치하지 않습니다.");
     renderer.outputColorSpace = "srgb";
     renderer.toneMapping = 0;
     renderer.setClearColor(0, 0);
@@ -83,6 +85,7 @@ export async function runStudioBg3dCameraGpuProof(page: Page, rootUrl: string, u
         gltf.scene.rotation.set(...fixture.transform.rotation);
         const camera = new Camera(fixture.camera.fovDegrees, fixture.width / fixture.height,
           fixture.camera.nearClip, fixture.far);
+        if (camera.isPerspectiveCamera !== true) throw new Error("프로덕션 Three 카메라 브랜드가 일치하지 않습니다.");
         camera.position.set(...fixture.camera.position);
         camera.zoom = fixture.camera.zoom ?? 1;
         camera.lookAt(...fixture.camera.target);
@@ -189,7 +192,7 @@ export async function runStudioBg3dCameraGpuProof(page: Page, rootUrl: string, u
       }
     } finally { renderer.dispose(); renderer.forceContextLoss(); }
     return { webglRenderer, adapterInfo, results };
-  }, { cases, urls, bytes: Array.from(texture.bytes), hash,
+  }, { cases, urls, bytes: Array.from(texture.bytes), hash, loaderExport, threeExports,
     profiles: { version: STUDIO_BG3D_ARTIFACT_CAPTURE_VERSION, beauty: STUDIO_BG3D_BEAUTY_RGBA8_PROFILE,
       depth: STUDIO_BG3D_DEPTH_FLOAT32_PROFILE, normal: STUDIO_BG3D_NORMAL_PROFILE, id: STUDIO_BG3D_STABLE_ID_PROFILE } });
   console.log(`[verify-studio-bg3d-camera] projection PASS ${JSON.stringify(reports)}`);

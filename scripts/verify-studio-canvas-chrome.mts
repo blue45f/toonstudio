@@ -30,6 +30,7 @@ import { join } from "node:path";
 
 import { chromium, type Browser, type Page } from "playwright";
 
+import { runStudioClarityAction, visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   spawnVitePreview,
@@ -70,6 +71,30 @@ interface CanvasChromeMetrics {
   readonly reliabilityIdleRowPresent: boolean;
   readonly reliabilityChipPresent: boolean;
   readonly noticeStripFlowHeight: number;
+}
+
+async function verifyReliabilityAccess(page: Page): Promise<boolean> {
+  const viewport = page.locator('[data-studio-canvas-viewport="true"]');
+  const before = await viewport.boundingBox();
+  const chip = page.locator('[data-studio-reliability-chip]').filter({ visible: true });
+  if (await chip.count() > 0) await (await visibleStudioControl(chip, "저장·화면 상태")).click();
+  else await runStudioClarityAction(page, "status");
+  const dialog = await visibleStudioControl(page.getByRole("dialog", { name: "저장·화면 문제 해결", exact: true }), "저장·화면 문제 해결");
+  for (const channel of ["save", "gpu", "storage"]) {
+    await dialog.locator(`[data-studio-reliability-detail-channel="${channel}"]`).waitFor({ state: "visible" });
+  }
+  await page.keyboard.press("Escape");
+  await dialog.waitFor({ state: "hidden" });
+  const after = await viewport.boundingBox();
+  invariant(before !== null && after !== null
+    && Math.abs(before.x - after.x) <= 1 && Math.abs(before.y - after.y) <= 1
+    && Math.abs(before.width - after.width) <= 1 && Math.abs(before.height - after.height) <= 1,
+  "저장·화면 문제 해결을 여닫으며 캔버스 좌표가 바뀌었습니다");
+  const focusRestored = await page.evaluate(() => document.activeElement?.matches(
+    '[data-studio-clarity-more-trigger="true"], [data-studio-reliability-chip]',
+  ) ?? false);
+  invariant(focusRestored, "저장·화면 문제 해결을 닫은 뒤 진입 버튼으로 초점이 돌아오지 않았습니다");
+  return true;
 }
 
 function measure(page: Page): Promise<CanvasChromeMetrics> {
@@ -136,7 +161,7 @@ async function main(): Promise<void> {
     });
     browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 
-    const results: { viewport: string; metrics: CanvasChromeMetrics }[] = [];
+    const results: { viewport: string; metrics: CanvasChromeMetrics; reliabilityReachable: boolean }[] = [];
     for (const testCase of VIEWPORTS) {
       const context = await browser.newContext({
         viewport: { width: testCase.width, height: testCase.height },
@@ -195,14 +220,15 @@ async function main(): Promise<void> {
       await page.waitForTimeout(2_500);
 
       const metrics = await measure(page);
-      results.push({ viewport: testCase.name, metrics });
+      const reliabilityReachable = await verifyReliabilityAccess(page);
+      results.push({ viewport: testCase.name, metrics, reliabilityReachable });
       await page.screenshot({
         path: join(SCRATCH, `studio-canvas-chrome-${testCase.name}.png`),
       });
       await context.close();
     }
 
-    for (const { viewport, metrics } of results) {
+    for (const { viewport, metrics, reliabilityReachable } of results) {
       invariant(
         metrics.viewportHeight > 0 && metrics.columnHeight > 0,
         `${viewport}: could not measure the canvas column`,
@@ -216,8 +242,8 @@ async function main(): Promise<void> {
         `${viewport}: the reliability rail is back in the canvas flow — a failure arriving mid-stroke would move the stage origin`,
       );
       invariant(
-        metrics.reliabilityChipPresent,
-        `${viewport}: the on-demand reliability chip is missing — save/GPU/storage state became unreachable`,
+        reliabilityReachable,
+        `${viewport}: save/GPU/storage diagnostics cannot be reached through the visible status control`,
       );
     }
 

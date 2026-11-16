@@ -22,6 +22,7 @@ import {
 import { preview, type PreviewServer } from "vite";
 
 import { createCompanionPreviewApiDiagnostics } from "./lib/studio-companion-preview-diagnostics";
+import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -188,13 +189,7 @@ async function waitForNavigatorPreview(page: Page): Promise<boolean> {
 }
 
 async function openWindowMenu(page: Page): Promise<ReturnType<Page["locator"]>> {
-  const menuBar = page.locator('[data-studio-main-menu="true"]');
-  await menuBar.waitFor({ state: "visible", timeout: 20_000 });
-  await page.keyboard.press("Escape").catch(() => undefined);
-  await menuBar.getByRole("menuitem", { name: "보기", exact: true }).click();
-  const menu = page.locator('[role="menu"][aria-label="보기"]');
-  await menu.waitFor({ state: "visible", timeout: 5_000 });
-  return menu;
+  return openStudioMainMenu(page, "view");
 }
 
 async function openWorkspaceCompanion(
@@ -313,7 +308,7 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
-    await primary.locator('[data-studio-main-menu="true"]').waitFor({
+    await primary.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({
       state: "visible",
       timeout: 30_000,
     });

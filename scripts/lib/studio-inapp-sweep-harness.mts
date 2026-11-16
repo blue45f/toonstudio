@@ -306,6 +306,33 @@ export async function installStudioInAppGuestBoundary(page: Page): Promise<void>
   });
 }
 
+/** 닫힘 상태는 대상의 identity가 아니다. 같은 details를 열고 검사한 뒤 실제로 닫는다. */
+export async function auditStudioInAppClosedDetails(
+  page: Page,
+  inspectExpanded: () => Promise<void>,
+): Promise<number> {
+  const allDetails = page.locator("details");
+  const count = await allDetails.count();
+  let inspected = 0;
+  for (let index = 0; index < count; index += 1) {
+    const details = allDetails.nth(index);
+    if (await details.getAttribute("open") !== null || await details.locator("select").count() === 0) continue;
+    const summary = details.locator(":scope > summary");
+    if (!await summary.isVisible()) continue;
+    await summary.click();
+    if (await details.getAttribute("open") === null) throw new Error("닫힌 details가 summary 클릭으로 열리지 않았습니다.");
+    const inspection = await inspectExpanded().then(
+      () => ({ ok: true as const }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
+    await summary.click();
+    if (await details.getAttribute("open") !== null) throw new Error("details 검사 뒤 같은 summary를 눌러도 닫힌 상태로 복구되지 않았습니다.");
+    if (!inspection.ok) throw inspection.error;
+    inspected += 1;
+  }
+  return inspected;
+}
+
 /** Fall back to the visible UI when a WebView rejects the preloaded storage state. */
 export async function dismissStudioInAppFirstRunSurfaces(page: Page): Promise<void> {
   const dock = page.locator('[data-studio-mobile-editing-dock="true"]');

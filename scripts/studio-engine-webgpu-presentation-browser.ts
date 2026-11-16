@@ -18,6 +18,8 @@ import {
 } from "../apps/web/src/domains/creator/render/studio-engine-webgpu-textured-brush-runtime";
 import { sha256HexPortable } from "../apps/web/src/domains/creator/studio-sha256";
 
+import { adapterInfo } from "./lib/studio-engine-presentation-browser-diagnostics";
+
 const INITIAL_DEVICE_EPOCH = 1;
 const MAP_READ = 0x0001;
 const BUFFER_COPY_DST = 0x0008;
@@ -25,7 +27,6 @@ const BUFFER_COPY_SRC = 0x0004;
 const ROW_ALIGNMENT = 256;
 const RGBA16_BYTES_PER_PIXEL = 8;
 const DEVICE_LOSS_TIMEOUT_MS = 5_000;
-
 interface BrowserCapabilities {
   readonly webgpu: boolean;
   readonly offscreenCanvas: boolean;
@@ -433,20 +434,6 @@ function frameRequest(
   };
 }
 
-function adapterInfo(adapter: GPUAdapter) {
-  const info = adapter.info;
-  return {
-    vendor: String(info?.vendor ?? ""),
-    architecture: String(info?.architecture ?? ""),
-    device: String(info?.device ?? ""),
-    description: String(info?.description ?? ""),
-    isFallbackAdapter:
-      typeof adapter.isFallbackAdapter === "boolean"
-        ? adapter.isFallbackAdapter
-        : null,
-  };
-}
-
 async function run(): Promise<BrowserPresentationResult> {
   const browserCapabilities = capabilities();
   if (!browserCapabilities.webgpu) {
@@ -592,7 +579,20 @@ async function run(): Promise<BrowserPresentationResult> {
   );
   invariant(
     firstPresentation.status === "presented",
-    `initial present failed: ${firstPresentation.status}`,
+    `initial present failed: ${JSON.stringify({
+      result: firstPresentation,
+      adapter: adapterInfo(adapter),
+      configuration: firstConfiguration,
+      frame: {
+        ...frameRequest(1, firstLayout, sourceFrameFingerprint),
+        workSurfaceEpoch: firstFrameResult.frame.workSurface.workSurfaceEpoch,
+        contentAtAcquire: firstFrameResult.frame.contentAtAcquire,
+      },
+      producerReceipt: firstRender.receipt,
+      owner: presentation.stats(),
+      visibility: presentation.visibility(),
+      uncapturedErrors,
+    })}`,
   );
   const firstCanvas = await readPresentedCanvas(canvas);
   if (firstCanvas.available) {

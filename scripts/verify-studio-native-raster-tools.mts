@@ -44,6 +44,8 @@ import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
 import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
+import { openStudioMainMenu, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
+import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -492,15 +494,7 @@ async function installCleanStudioState(page: Page): Promise<void> {
 }
 
 async function setCanvasHeightThroughShippedUi(page: Page, height: number): Promise<void> {
-  const mainMenu = page.locator('[data-studio-main-menu="true"]');
-  // 캔버스 그룹은 2026-09-05 IA 정리로 '보기' 메뉴 안의 한 구획으로 표시된다
-  // (studio-main-menu-presentation.ts). 항목 id·라벨은 그대로라 아래 menuitem 선택은 유지된다.
-  const canvasTrigger = mainMenu.locator('[data-studio-main-menu-trigger="view"]');
-  await canvasTrigger.waitFor({ state: "visible", timeout: 16_000 });
-  await canvasTrigger.focus();
-  await canvasTrigger.press("ArrowDown");
-  const menu = page.locator('[data-studio-main-menu-panel="true"] [role="menu"]');
-  await menu.waitFor({ state: "visible", timeout: 8_000 });
+  const menu = await openStudioMainMenu(page, "view");
   await menu.getByRole("menuitem", {
     name: "캔버스 크기 · 문서 설정…",
     exact: true,
@@ -571,16 +565,18 @@ async function visibleLocator(locator: Locator): Promise<Locator> {
 
 // 번역·간소 도구막대에 의존하지 않고 출시된 전체 도구 카탈로그에서 필요한 도구만 고정한다.
 async function toolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
+  // 정밀 픽셀 도구는 현재 UI의 프로젝트·창 도구 진입으로 저장 배치를 연 뒤 조작한다.
+  // 간단한 채우기 버튼은 설정 패널만 여는 별도 동작이므로 같은 id로 혼동하지 않는다.
+  await showStudioProjectWindowTools(page);
   const rail = page.locator('[data-studio-tool-rail="true"]');
   const locator = rail.locator(`button[data-studio-rail-tool-id="${id}"]`);
-  if (await locator.first().isVisible()) return visibleLocator(locator);
+  if (await locator.filter({ visible: true }).count() > 0) return visibleStudioControl(locator, `정밀 도구 ${id}`);
   await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
   const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
   await catalog.waitFor({ state: "visible", timeout: 16_000 });
   await pinStudioRailToolInCatalog(catalog, id, 16_000);
   await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-  await locator.first().waitFor({ state: "visible", timeout: 16_000 });
-  return visibleLocator(locator);
+  return visibleStudioControl(locator, `정밀 도구 ${id}`);
 }
 
 async function waitForToolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
@@ -2110,20 +2106,13 @@ async function openFilterDialog(
   page: Page,
   onMenuOpened?: () => Promise<void>,
 ): Promise<Locator> {
-  const nav = page.locator('[data-studio-main-menu="true"]');
-  await nav.waitFor({ state: "visible" });
   // Escape is also Studio's intentional pixel-selection clear shortcut. Only use it when a
   // previously opened application menu actually needs dismissal; sending it unconditionally here
   // would erase the selection whose inside/outside filter contract this scenario is proving.
   if (await page.locator('[data-studio-main-menu-panel="true"]:visible [role="menu"]').count() > 0) {
     await page.keyboard.press("Escape");
   }
-  // 동일 포인터 이동으로 hover-open된 메뉴를 두 번째 클릭으로 닫지 않도록 정식 키보드 경로를 쓴다.
-  const filterTrigger = nav.locator('[data-studio-main-menu-trigger="filter"]');
-  await filterTrigger.focus();
-  await filterTrigger.press("ArrowDown");
-  const menu = page.locator('[data-studio-main-menu-panel="true"] [role="menu"]');
-  await menu.waitFor({ state: "visible" });
+  const menu = await openStudioMainMenu(page, "filter");
   await onMenuOpened?.();
   await menu.getByRole("menuitem", {
     name: /(?:명도 \/ 대비|Brightness \/ Contrast)/u,
@@ -2958,12 +2947,7 @@ async function runRasterPreparationCancellationScenario(
     if (action === "escape") {
       await page.keyboard.press("Escape");
     } else {
-      const select = page.locator('[data-studio-rail-tool-id="select"]');
-      await select.click();
-      await page.waitForFunction(() =>
-        document.querySelector('[data-studio-rail-tool-id="select"]')
-          ?.getAttribute("aria-pressed") === "true"
-      );
+      await clickStudioToolThroughUi(page, "select");
     }
 
     // Exercise the exact stale-pointer boundary after cancellation. A leaked preparation owner
@@ -3072,6 +3056,7 @@ async function runScenario(
   let afterSnapshot: DocumentSnapshot | null = null;
   let undoneSnapshot: DocumentSnapshot | null = null;
   let warmUndoBaselineSnapshot: DocumentSnapshot | null = null;
+  let phase: NonNullable<StudioNativeRasterScenarioEvidence["failurePhase"]> = "setup";
 
   try {
     log(`${definition.id}: preparing isolated native-pointer fixture`);
@@ -3092,6 +3077,7 @@ async function runScenario(
     let selectionGestureDiff: StudioNativeRasterPixelDiff | null = null;
     let activation = { inactiveBefore: false, activeAfter: false };
 
+    phase = "operation";
     switch (definition.id) {
       case "paint-bucket": {
         const result = await performPaintBucket(page);
@@ -3230,6 +3216,7 @@ async function runScenario(
       `${definition.id}: operation produced no meaningful ROI pixel change (${JSON.stringify(operationDiff)})`,
     );
 
+    phase = "undo";
     evidence.undo.attempted = true;
     const selectionOnlyUndo = definition.id.startsWith("selection-");
     let selectionUndoStateCleared = false;
@@ -3375,6 +3362,7 @@ async function runScenario(
         && (selectionOnlyUndo || historyChanged || definition.id === "paint-bucket");
     }
 
+    phase = "verification";
     evidence.browserErrors = [...errors.messages];
     evidence.failedResponses = [...errors.failedResponses];
     invariant(errors.messages.length === 0, `unexpected browser errors: ${errors.messages.join(" | ")}`);
@@ -3410,6 +3398,7 @@ async function runScenario(
   } catch (error) {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
     evidence.failure = message;
+    evidence.failurePhase = phase;
     evidence.browserErrors = [...errors.messages];
     evidence.failedResponses = [...errors.failedResponses];
     log(`${definition.id}: FAIL ${message}`);
@@ -3615,8 +3604,10 @@ async function main(): Promise<void> {
       scenarios: scenarios.map(({ evidence, durationMs }) => ({
         id: evidence.id,
         status: evidence.status,
+        failurePhase: evidence.failurePhase ?? null,
         changedPixels: evidence.operationDiff?.changedPixels ?? null,
-        undoRestored: evidence.undo.restored,
+        undoAttempted: evidence.undo.attempted,
+        undoRestored: evidence.undo.attempted ? evidence.undo.restored : null,
         firstGestureReplayed: evidence.firstGesture.replayed,
         browserErrors: evidence.browserErrors.length,
         performance: evidence.performance

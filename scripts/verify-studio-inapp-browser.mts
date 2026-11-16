@@ -26,7 +26,7 @@ import { join } from "node:path";
 
 import { chromium, type Browser, type Page, type Request } from "playwright";
 
-import { createStudioInAppPreviewApiDiagnostics } from "./lib/studio-inapp-sweep-harness.mjs";
+import { auditStudioInAppClosedDetails, createStudioInAppPreviewApiDiagnostics } from "./lib/studio-inapp-sweep-harness.mjs";
 import {
   cleanScratchDir,
   findFreePort,
@@ -180,6 +180,8 @@ interface RouteResult {
   readonly ok: boolean;
   readonly shot: string;
   readonly warnings: readonly string[];
+  readonly openedDetailsAudited: number;
+  readonly returnDestination: string | null;
 }
 
 function log(message: string): void {
@@ -221,6 +223,11 @@ const AUDIT_SCRIPT = `(() => {
     if (el.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
     var style = getComputedStyle(el);
     if (style.display === 'none' || style.visibility === 'hidden') return false;
+    for (var details = el.closest('details:not([open])'); details; details = details.parentElement && details.parentElement.closest('details:not([open])')) {
+      var summary = details.querySelector(':scope > summary');
+      if (!summary || !summary.contains(el)) return false;
+    }
+    if (style.clip === 'rect(0px, 0px, 0px, 0px)' || style.clipPath === 'inset(50%)') return false;
     var rect = el.getBoundingClientRect();
     return rect.width >= 2 && rect.height >= 2;
   }
@@ -235,7 +242,7 @@ const AUDIT_SCRIPT = `(() => {
     }
     return null;
   }
-  var SELECTOR = "button, a[href], input:not([type='hidden']), select, textarea, [role='button']";
+  var SELECTOR = "button, a[href], summary, input:not([type='hidden']), select, textarea, [role='button']";
   var elements = document.querySelectorAll(SELECTOR);
   var smallTargets = [], overflowContributors = [], unnamedControls = [], deadPopupControls = [];
   var exitAffordances = [], interactiveCount = 0;
@@ -289,6 +296,7 @@ const AUDIT_SCRIPT = `(() => {
     if (href && href.charAt(0) === '/') exitAffordances.push(describe(el) + ' -> ' + href);
     if (el.hasAttribute('data-studio-mobile-app-mode')) exitAffordances.push(describe(el));
     if (el.hasAttribute('data-studio-route-exit')) exitAffordances.push(describe(el));
+    if (el.hasAttribute('data-studio-editor-return')) exitAffordances.push(describe(el));
   }
   return {
     deadPopupControls: deadPopupControls.slice(0, 10),
@@ -401,6 +409,12 @@ async function runRoute(
   const shot = join(SCRATCH, `studio-inapp-${profile.id}-${route.id}.png`);
   await page.screenshot({ path: shot });
 
+  const openedDetailsAudited = await auditStudioInAppClosedDetails(page, async () => {
+    const expanded = await page.evaluate(AUDIT_SCRIPT) as RouteMetrics;
+    if (expanded.docOverflowX > 0) hardFailures.push(`opened details overflows horizontally by ${expanded.docOverflowX}px`);
+    for (const issue of expanded.overflowContributors) hardFailures.push(`opened details offscreen control: ${issue.label} ${issue.detail}`);
+  });
+
   if (metrics.docOverflowX > 0) {
     hardFailures.push(`document overflows horizontally by ${metrics.docOverflowX}px`);
   }
@@ -415,15 +429,25 @@ async function runRoute(
       "no in-page exit — an in-app browser has no address bar or back chrome",
     );
   }
-  if (consoleErrors.length > 0) {
-    hardFailures.push(`console errors: ${consoleErrors.length}`);
-  }
   for (const issue of metrics.smallTargets) {
     warnings.push(`small tap target: ${issue.label} ${issue.detail}`);
   }
   for (const issue of metrics.unnamedControls) {
     warnings.push(`unnamed control: ${issue.label} ${issue.detail}`);
   }
+
+  let returnDestination: string | null = null;
+  const editorReturn = page.locator('[data-studio-editor-return]').filter({ visible: true });
+  if (await editorReturn.count() > 0) {
+    if (await editorReturn.count() !== 1) hardFailures.push("editor return has multiple visible controls");
+    else {
+      await editorReturn.click();
+      const returned = await page.waitForURL((url) => url.pathname === "/studio", { timeout: 10_000 }).then(() => true).catch(() => false);
+      returnDestination = new URL(page.url()).pathname;
+      if (!returned) hardFailures.push(`clean editor return did not reach the workspace home: ${returnDestination}`);
+    }
+  }
+  if (consoleErrors.length > 0) hardFailures.push(`console errors: ${consoleErrors.length}`);
 
   warnings.push(...previewApis.unavailable.map((message) => `static preview API unavailable: ${message}`));
   const ok = hardFailures.length === 0;
@@ -442,7 +466,7 @@ async function runRoute(
   }
 
   await context.close();
-  return { hardFailures, metrics, ok, profile: profile.id, route: route.id, shot, warnings };
+  return { hardFailures, metrics, ok, profile: profile.id, route: route.id, shot, warnings, openedDetailsAudited, returnDestination };
 }
 
 async function main(): Promise<void> {

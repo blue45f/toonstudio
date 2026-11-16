@@ -9,6 +9,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 
 import { chromium, type Page } from "playwright";
 
+import { showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -177,11 +178,13 @@ async function main() {
       }
     }
 
-    await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: 20000 });
+    await page.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({ state: "visible", timeout: 20000 });
+    // 메뉴 쉐브론과 전체 레일 아이콘은 실제 프로젝트·창 배치에서 검사한다.
+    await showStudioProjectWindowTools(page);
     await page.locator('[data-studio-tool-rail="true"]').waitFor({ state: "visible", timeout: 10000 });
 
     // Activate pen so draw options bar mounts with icons
-    await page.getByRole("button", { name: "펜 (B)" }).click({ timeout: 4000 });
+    await (await visibleStudioControl(page.locator('[data-studio-rail-tool-id="pen"]'), "펜 도구")).click({ timeout: 4000 });
     await page.locator('[data-studio-draw-options="true"]').waitFor({ state: "visible", timeout: 8000 });
     await page.waitForTimeout(300);
 

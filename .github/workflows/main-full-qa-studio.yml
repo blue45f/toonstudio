@@ -237,7 +237,6 @@ jobs:
         env:
           QA_LANE: ${{ matrix.lane }}
           QA_COMMANDS: ${{ matrix.commands }}
-          TOONSPECTRUM_VERIFY_DIR: artifacts/main-full-qa/${{ matrix.lane }}/evidence
         run: |
           set -euo pipefail
           output_dir="artifacts/main-full-qa/${QA_LANE}"
@@ -249,10 +248,16 @@ jobs:
             local gate="$1"
             local command="$2"
             local log="$output_dir/${gate}.log"
+            local evidence_dir="$output_dir/evidence/$gate"
+            mkdir -p "$evidence_dir"
             echo "::group::${gate}"
             echo "[qa] command=${command}"
             set +e
-            timeout --signal=TERM --kill-after=30s "${QA_COMMAND_TIMEOUT_MINUTES}m" \
+            TOONSPECTRUM_VERIFY_DIR="$evidence_dir" \
+              TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR="$evidence_dir" \
+              TOONSPECTRUM_LIVING_INK_VERIFY_DIR="$evidence_dir" \
+              TOONSPECTRUM_LIVING_INK_PROBE_RESULTS_PATH="$evidence_dir/living-ink-probe.json" \
+              timeout --signal=TERM --kill-after=30s "${QA_COMMAND_TIMEOUT_MINUTES}m" \
               bash -lc "$command" 2>&1 | tee "$log"
             local status=${PIPESTATUS[0]}
             set -e

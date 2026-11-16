@@ -33,6 +33,7 @@ import {
   type Page,
 } from "playwright";
 
+import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   stopChildProcess,
@@ -1254,8 +1255,7 @@ async function openHybridDcc(page: Page): Promise<Locator> {
       detail?.trim() || "Route-owned Hybrid DCC panel never passed recovery after reload",
     );
   }
-  // 로드 직후 몇 초는 하이드레이션 중이라 메뉴 열기·진입 클릭이 무시되고, 이어서 권한·원고 확인이 끝나기 전에는 진입이
-  // '잠시 뒤 다시 시도해 주세요' 알림만 남긴다. 사용자가 하듯 다시 누르고, 끝내 안 열리면 어느 경계에서 막혔는지 가른다.
+  await showStudioProjectWindowTools(page);
   const trigger = page.getByRole("button", { name: "프로젝트 센터", exact: true });
   const projectMenu = page.locator('[data-studio-project-actions-menu="true"]');
   const entry = projectMenu.locator('[data-studio-hybrid-dcc-open="true"]');
