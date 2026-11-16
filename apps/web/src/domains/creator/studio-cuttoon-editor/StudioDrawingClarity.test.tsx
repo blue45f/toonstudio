@@ -11,6 +11,15 @@ import { studioDocumentHref } from "../studio-document-workspace";
 import { applyStudioTaskWorkspace } from "../studio-task-workspace";
 import { projectStudioTaskAppSettings } from "../studio-task-tools";
 import { StudioDrawingClarityProvider, type StudioDrawingClaritySession } from "./StudioDrawingClarity";
+import type { StudioDrawingClarityStorage } from "./StudioDrawingClarityPolicy";
+
+function memoryStorage(): StudioDrawingClarityStorage {
+  const map = new Map<string, string>();
+  return {
+    getItem: (key) => map.get(key) ?? null,
+    setItem: (key, value) => { map.set(key, value); },
+  };
+}
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -235,6 +244,92 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("기존");
     expect(saved.workspaceState).toBe(value.workspaceState);
     expect(saved.appSettings).toBe(value.appSettings);
+  });
+
+  it("브라우저 저장소가 연결되면 첫 콜드 로드(baseline null)·다중 탭 OPFS 경합·새로고침에서도 디자인이 번갈아 바뀌지 않는다", () => {
+    const storage = memoryStorage();
+    const base = session();
+    // 1. 첫 콜드 마운트 (SQLite/OPFS 워커 복원 전 baseline === null): 첫 프레임부터 '간단' 유지
+    const coldView = render(
+      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+
+    // 2. 복원 완료(source: default) 후에도 깜빡임 없이 '간단' 유지
+    coldView.rerender(
+      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    coldView.unmount();
+
+    // 3. 두 번째 탭에서 OPFS 잠금 경합으로 baseline이 null에 머물러도 '간단' 유지
+    const secondTab = render(
+      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    secondTab.unmount();
+
+    // 4. 사용자가 명시적으로 '내 배치'를 고르면 새로고침 뒤에도 '기존' 유지, 다시 '간단한 그리기'를 고르면 새로고침 뒤에도 '간단' 유지
+    const savedSession: StudioDrawingClaritySession = {
+      ...base,
+      studioDrawingClarityBaseline: { ...base.studioDrawingClarityBaseline!, source: "current" },
+    };
+    const toggleView = render(
+      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 배치" }));
+    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    toggleView.unmount();
+
+    const reloadedCustom = render(
+      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    reloadedCustom.unmount();
+
+    const reloadedSimple = render(
+      <StudioDrawingClarityProvider session={savedSession} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    reloadedSimple.unmount();
+  });
+
+  it("커스텀 작업공간을 저장한 소유자는 다음 콜드 마운트에서도 첫 프레임부터 기존 배치를 유지한다", () => {
+    const storage = memoryStorage();
+    const base = session();
+    const customized: StudioDrawingClaritySession = {
+      ...base,
+      studioDrawingClarityBaseline: { ownerScope: "guest", source: "current", state: base.workspaceState },
+    };
+    const first = render(
+      <StudioDrawingClarityProvider session={customized} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    first.unmount();
+
+    const nextColdLoad = render(
+      <StudioDrawingClarityProvider session={{ ...base, studioDrawingClarityBaseline: null }} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    nextColdLoad.unmount();
   });
 });
 

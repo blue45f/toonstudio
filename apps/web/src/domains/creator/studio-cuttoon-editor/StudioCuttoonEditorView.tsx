@@ -39,9 +39,19 @@ const StudioLegacyPigmentStrokeMigration = lazy(() => import("../brush/StudioLeg
 
 export type { StudioCuttoonEditorViewSession };
 
+function resolveBrowserClarityStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
   const drawingPresentation = useStudioDrawingPresentation();
-  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation}><StudioCuttoonEditorViewContent {...s} drawingPresentation={drawingPresentation} /></StudioDrawingClarityProvider>;
+  const choiceStorage = resolveBrowserClarityStorage();
+  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation} choiceStorage={choiceStorage}><StudioCuttoonEditorViewContent {...s} drawingPresentation={drawingPresentation} /></StudioDrawingClarityProvider>;
 }
 
 function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { readonly drawingPresentation: "integrated" | "app" }) {

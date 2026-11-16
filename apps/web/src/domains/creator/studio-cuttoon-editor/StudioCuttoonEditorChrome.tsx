@@ -342,34 +342,25 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   } = s;
   const { retryButtonRef: marketplaceCloudSyncRetryButtonRef, statusRef: marketplaceCloudSyncStatusRef, focusRestoreRef: marketplaceCloudSyncFocusRestoreRef } =
     useStudioMarketplaceCloudSyncFocus({ densityShowsStatusRail, error, retry: studioMarketplaceCloudSyncRetry, retryPending: studioMarketplaceCloudSyncRetryPending, statusNotice: studioStatusNotice });
-  const desktopOptionsBars = !isMobile && !canvasOnlyMode ? (
+  const drawingAppHeaderActive = clarity?.presentation === "app" && !canvasOnlyMode && !mobileImmersive;
+  const desktopOptionsBars = !isMobile && !canvasOnlyMode && !drawingAppHeaderActive ? (
     <Suspense fallback={<div aria-hidden="true" className="min-h-16 shrink-0 border-b border-line bg-panel" />}>
-      <StudioOptionsBars
-        draw={studioOptionsBarsDrawModel}
-        selection={studioOptionsBarsSelectionModel}
-        stableHandlers={studioOptionsBarsHandlers}
-      />
+      <StudioOptionsBars draw={studioOptionsBarsDrawModel} selection={studioOptionsBarsSelectionModel} stableHandlers={studioOptionsBarsHandlers} />
     </Suspense>
   ) : null;
   return (
     <>
-      {clarity?.active ? <Suspense fallback={null}><LazyStudioDrawingClarityBar session={s} /></Suspense> : <StudioAppMenubar
+      {clarity?.active ? (
+        <Suspense fallback={<div aria-hidden="true" data-studio-clarity-loading="true" className={cn("shrink-0 border-b border-line bg-panel", isMobile ? "min-h-[6.25rem]" : "min-h-[5.5rem]")} />}>
+          <LazyStudioDrawingClarityBar session={s} />
+        </Suspense>
+      ) : drawingAppHeaderActive ? null : <StudioAppMenubar
         aria-label="문서 메뉴"
         subRow={isMobile ? <div className="studio-drawing-clarity-entry-mobile"><StudioDrawingClarityEntry /></div> : mobileImmersive ? undefined : desktopOptionsBars}
-        className={cn(
-          canvasOnlyMode && "hidden",
-          mobileImmersive &&
-            "h-auto min-h-11 border-0 bg-transparent shadow-none"
-        )}
+        className={cn(canvasOnlyMode && "hidden", mobileImmersive && "h-auto min-h-11 border-0 bg-transparent shadow-none")}
       >
         {!isMobile ? <StudioDrawingClarityEntry /> : null}<Suspense
-          fallback={(
-            <div
-              aria-hidden
-              data-studio-menubar-loading="true"
-              className="h-9 min-w-0 flex-1 animate-pulse rounded-lg bg-raised/45 motion-reduce:animate-none"
-            />
-          )}
+          fallback={<div aria-hidden data-studio-menubar-loading="true" className="h-9 min-w-0 flex-1 animate-pulse rounded-lg bg-raised/45 motion-reduce:animate-none" />}
         >
           <LazyStudioMenubarContent
             activePageLabel={studioMenubarActivePageLabel}
@@ -520,8 +511,8 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
         </StudioToolHintTarget>
       </StudioAppMenubar>}
 
-      {/* 단계 안내는 밀도 정책을 따르며, 집중 화면에서는 도구와 캔버스를 먼저 보여 준다. */}
-      {!clarity?.active && !canvasOnlyMode && !mobileImmersive && studioUiDensityAllows(uiDensityMode, "workflow-guide") && workMode && setWorkMode ? (
+      {/* 단계 안내는 밀도 정책을 따르며, 집중/단일 드로잉 앱 화면에서는 도구와 캔버스를 먼저 보여 준다. */}
+      {!clarity?.active && !drawingAppHeaderActive && !canvasOnlyMode && !mobileImmersive && studioUiDensityAllows(uiDensityMode, "workflow-guide") && workMode && setWorkMode ? (
         <StudioWorkModeBar
           mode={workMode}
           onModeChange={setWorkMode}

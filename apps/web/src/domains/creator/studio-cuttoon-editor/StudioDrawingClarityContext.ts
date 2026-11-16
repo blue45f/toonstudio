@@ -4,6 +4,7 @@ export type StudioDrawingClarityPanel = "layers" | "brush" | "pages";
 export interface DrawingClarityState {
   readonly active: boolean;
   readonly available: boolean;
+  readonly presentation?: "integrated" | "app";
   readonly panel: StudioDrawingClarityPanel | null;
   readonly open: (panel: StudioDrawingClarityPanel, trigger: HTMLElement) => void;
   readonly reveal: (panel: StudioDrawingClarityPanel, trigger: HTMLElement) => void;

@@ -3926,34 +3926,26 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   );
   // 프리셋은 보존하고 liveLayout만 저장한다. 패널 폭은 pointerup 최종값만 기록한다.
   useEffect(() => {
-    const ownerScope = currentWorkspaceOwnerScope;
-    if (workspacePersistence.ownerScope !== ownerScope) return;
-    if (leftResize.dragging || rightResize.dragging || drawingPaletteDragging) return;
-    if (pendingExternalWorkspaceSync) return;
+    const ownerScope = currentWorkspaceOwnerScope, runtime = workspaceRuntimeRef.current;
+    if (workspacePersistence.ownerScope !== ownerScope || runtime?.ownerScope !== ownerScope) return;
+    if (studioDrawingClarityBaseline === null && workspacePersistence.failure === null && runtime.authority() !== "memory-only") return;
+    if (studioRootRef.current?.dataset.studioDrawingClarity === "true") return;
+    if (leftResize.dragging || rightResize.dragging || drawingPaletteDragging || pendingExternalWorkspaceSync) return;
     const nextLayout = captureStudioWorkspaceDeviceLayout(
       workspacePersistence.state.liveLayout,
       normalizeStudioWorkspaceLayout(
-        {
-          inspector: inspectorLayout,
-          desktop: viewportPanelMemory.authoredDesktop,
-          drawingPalettes: viewportPanelMemory.authoredDrawingPalettes,
-          quickActions: quickActionsPreferences,
-        },
+        { inspector: inspectorLayout, desktop: viewportPanelMemory.authoredDesktop, drawingPalettes: viewportPanelMemory.authoredDrawingPalettes, quickActions: quickActionsPreferences },
         workspacePersistence.state.liveLayout,
       ),
       workspaceDeviceKind,
     );
-    if (areStudioWorkspaceLayoutsEqual(workspacePersistence.state.liveLayout, nextLayout)) {
-      return;
-    }
-    persistStudioWorkspaceStateFromEffect(
-      updateStudioWorkspaceLiveLayout(workspacePersistence.state, nextLayout),
-    );
+    if (areStudioWorkspaceLayoutsEqual(workspacePersistence.state.liveLayout, nextLayout)) return;
+    persistStudioWorkspaceStateFromEffect(updateStudioWorkspaceLiveLayout(workspacePersistence.state, nextLayout));
   }, [
     currentWorkspaceOwnerScope, drawingPaletteDragging, viewportPanelMemory.authoredDrawingPalettes,
     inspectorLayout, viewportPanelMemory.authoredDesktop, leftResize.dragging,
     pendingExternalWorkspaceSync, quickActionsPreferences, rightResize.dragging,
-    studioAuthUserId, workspaceDeviceKind, workspacePersistence.ownerScope, workspacePersistence.state,
+    studioAuthUserId, studioDrawingClarityBaseline, workspaceDeviceKind, workspacePersistence.failure, workspacePersistence.ownerScope, workspacePersistence.state,
   ]);
   // 재사용 클립 보관함 — 선택 요소(그룹)를 저장해 다른 컷·회차에서 다시 꺼내 쓴다.
   const [clips, setClips] = useState<StudioClip[]>([]);
