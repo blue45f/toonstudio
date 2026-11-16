@@ -33,6 +33,7 @@ import {
   type Page,
 } from "playwright";
 
+import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
 import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
@@ -1720,9 +1721,7 @@ async function runVerticalSlice(
   // This shipped integration scenario deliberately exercises one preselected backend. The
   // headless browser does not expose a WebGPU adapter, so choose WebGL2 before the scene starts
   // instead of waiting for a WebGPU failure and conditionally substituting another engine.
-  const viewTab = bg3dDialog.getByRole("tab", { name: "보기", exact: true });
-  await visibleOrBlock(viewTab, "bg3d-engine-tab", "BG3D engine controls are not visible");
-  await viewTab.click();
+  await openStudioBg3dEnginePanel(bg3dDialog);
   const webgl2 = bg3dDialog.getByTestId("studio-bg3d-engine-preference-webgl2");
   await visibleOrBlock(
     webgl2,
@@ -1754,9 +1753,7 @@ async function runVerticalSlice(
     "bg3d-render-canvas",
     "The explicitly selected WebGL2 canvas is not visible",
   );
-  const layersTab = bg3dDialog.getByRole("tab", { name: /^레이어(?:\s+\d+\/\d+)?$/u });
-  await visibleOrBlock(layersTab, "bg3d-layer-tab", "BG3D layer identity UI is not visible");
-  await layersTab.click();
+  await selectStudioBg3dTaskTab(bg3dDialog, "layers");
   const bg3dIdentity = bg3dDialog.getByRole("button", { name: assetId, exact: true });
   if (!await bg3dIdentity.waitFor({ state: "visible", timeout: 30_000 })
     .then(() => true)
