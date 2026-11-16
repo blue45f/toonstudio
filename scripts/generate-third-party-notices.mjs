@@ -55,29 +55,29 @@ const VELLO_ARTIFACT_POLICIES = Object.freeze([
   Object.freeze({
     id: "pkg",
     features: Object.freeze([]),
-    expectedExternalPackageCount: 86,
+    expectedExternalPackageCount: 90,
     requiredPackages: Object.freeze([
       "vello_cpu@0.3.0",
       "vello_common@0.3.0",
-      "parley@0.12.0",
-      "harfrust@0.12.0",
+      "parley@0.13.0",
+      "harfrust@0.16.0",
       "skrifa@0.44.0",
     ]),
   }),
   Object.freeze({
     id: "pkg-gpu",
     features: Object.freeze(["hybrid", "lottie", "svg"]),
-    expectedExternalPackageCount: 142,
+    expectedExternalPackageCount: 147,
     requiredPackages: Object.freeze([
-      "vello@0.11.0",
+      "vello@0.12.0",
       "vello_hybrid@0.2.0",
       "vello_cpu@0.3.0",
       "velato@0.12.0",
       "vello_svg@0.11.0",
       "usvg@0.48.1",
       "wgpu@30.0.1",
-      "parley@0.12.0",
-      "harfrust@0.12.0",
+      "parley@0.13.0",
+      "harfrust@0.16.0",
       "skrifa@0.44.0",
     ]),
   }),
@@ -1111,7 +1111,7 @@ export function refreshVelloThirdPartyNotices() { // NOSONAR javascript:S3776
     parseCargoLockPackages(lockText).map((entry) => [packageKey(entry), entry]),
   );
   const packageKeys = [...new Set(artifacts.flatMap(({ packages }) => packages))].sort();
-  const velloMetadata = metadataByKey.get("vello@0.11.0");
+  const velloMetadata = metadataByKey.get("vello@0.12.0");
   const canonicalDualLicenseFiles = findRootLicenseFiles(dirname(velloMetadata.manifest_path));
   if (canonicalDualLicenseFiles.length < 2) {
     throw new Error("Vello canonical MIT/Apache license files are unavailable.");
