@@ -10,7 +10,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const REPOSITORY_ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const EXPECTED_HELPER_TESTS = 19;
-export const MAX_PUBLISHED_JSON_BYTES = 512 * 1024;
+export const MAX_LOG_JSON_BYTES = 4 * 1024 * 1024;
+export const MAX_STEP_SUMMARY_BYTES = 512 * 1024;
 export const SOURCE_GATE_IDS = Object.freeze([
   "gpu-committed-parity", "engine-webgpu-filter-parity", "canvaskit-quality-worker",
   "dynamic-dual-tip-webgpu", "dynamic-dual-tip-webgpu-v2", "engine-webgpu-textured-brush",
@@ -205,8 +206,45 @@ function evidenceFiles(directory) {
   return files;
 }
 
-/** PNG/trace는 로컬에 남기고 결과 JSON은 잘라내지 않는다. 출력 한도를 넘으면 명시적으로 실패한다. */
-export function publishRun({ directory, output = process.stdout, summaryPath, maxJsonBytes = MAX_PUBLISHED_JSON_BYTES }) {
+function buildStepSummary(state, documents, maxBytes) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1_024) throw new Error("step summary 예산은 1024 bytes 이상이어야 합니다.");
+  const complete = state.publication.logComplete;
+  let text = `## Studio focused regressions: ${state.status}\n\n${EXPECTED_HELPER_TESTS} DOM cases + 8 source harnesses + presentation + LivingInk. PNG/trace remain only on the runner; no artifact/cache upload.\n\n`
+    + (complete ? "원본 JSON 전체는 Actions 로그의 파일별 그룹에 보존했습니다. 이 요약은 별도의 표시 예산에 맞춰 선별합니다.\n\n"
+      : "원본 JSON 전체 보존에 실패했습니다. 실패 원인과 보존 가능한 진단은 Actions 로그를 확인하세요.\n\n");
+  // 끝의 선택 개수 안내 공간을 남기며, JSON은 잘라내지 않고 완전한 문서 단위로 선택한다.
+  const footerReserve = 256;
+  const append = (block, fallback = "") => {
+    if (Buffer.byteLength(text + block) + footerReserve <= maxBytes) { text += block; return true; }
+    if (fallback && Buffer.byteLength(text + fallback) + footerReserve <= maxBytes) text += fallback;
+    return false;
+  };
+  const table = state.gates.map(gate => `| ${gate.id} | ${gate.status} | ${gate.exitCode ?? "—"} | ${gate.durationMs ?? "—"} |`).join("\n");
+  append(`| Gate | Status | Exit | ms |\n|---|---|---:|---:|\n${table}\n\n`, "게이트 전체 표는 Actions 로그의 Studio regression results에 있습니다.\n\n");
+  const failures = { gates: state.gates.filter(gate => gate.status !== "passed"), publication: state.publication.failures };
+  append(`### 실패 원인\n\n\`\`\`json\n${JSON.stringify(failures, null, 2)}\n\`\`\`\n\n`, "실패 원인 전체는 Actions 로그에 보존했습니다.\n\n");
+  append(`### 증거 manifest\n\n\`\`\`json\n${JSON.stringify(state.publication.manifest, null, 2)}\n\`\`\`\n\n`,
+    `증거 manifest ${state.publication.manifest.length}개 항목 전체는 Actions 로그에 있습니다.\n\n`);
+  const priority = document => {
+    const rank = ["failure.json", "gate-result.json", "browser-diagnostics.json", "summary.json"].indexOf(basename(document.path));
+    const failedGate = state.gates.some(gate => gate.status !== "passed" && document.path.startsWith(`evidence/${gate.id}/`));
+    return (rank < 0 ? 10 : rank) + (failedGate ? 0 : 20);
+  };
+  const includedFiles = [];
+  const seen = new Set();
+  for (const document of [...documents].sort((a, b) => priority(a) - priority(b) || a.path.localeCompare(b.path, "en"))) {
+    if (seen.has(document.path)) continue;
+    seen.add(document.path);
+    if (append(`### ${document.path}\n\n\`\`\`json\n${document.raw}\n\`\`\`\n\n`)) includedFiles.push(document.path);
+  }
+  const omittedCount = documents.length - includedFiles.length;
+  text += `요약 JSON: ${includedFiles.length}/${documents.length}개. 요약에서 생략한 ${omittedCount}개 문서는 위 Actions 로그 보존 상태를 따릅니다.\n`;
+  return { text, includedFiles, omittedCount, bytes: Buffer.byteLength(text), limitBytes: maxBytes };
+}
+
+/** 로그의 원본 보존 예산과 요약 표시 예산은 별개다. 요약 선별만으로 품질 판정을 바꾸지 않는다. */
+export function publishRun({ directory, output = process.stdout, summaryPath,
+  maxLogJsonBytes = MAX_LOG_JSON_BYTES, maxSummaryBytes = MAX_STEP_SUMMARY_BYTES }) {
   const statePath = join(directory, "summary.json");
   const state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf8")) : initializeRun(directory, Date.now());
   for (const record of state.gates) {
@@ -222,10 +260,19 @@ export function publishRun({ directory, output = process.stdout, summaryPath, ma
   const jsonFiles = files.filter(file => file.path.endsWith(".json"));
   const jsonBytes = jsonFiles.reduce((sum, file) => sum + file.bytes, 0);
   const publicationFailures = [];
+  const present = new Set(manifest.map(file => file.path));
+  const expected = new Set([
+    ...(state.publication?.expectedJsonFiles ?? []),
+    ...(state.publication?.manifest ?? []).filter(file => file.path.endsWith(".json")).map(file => file.path),
+    ...jsonFiles.map(file => relative(directory, file.path)),
+    ...state.gates.filter(gate => ["passed", "failed"].includes(gate.status) && gate.exitCode !== null)
+      .map(gate => `evidence/${gate.id}/gate-result.json`),
+  ]);
+  for (const file of expected) if (!present.has(file)) publicationFailures.push(`${file}: 원본 JSON 증거가 누락되었습니다.`);
   let selected = jsonFiles;
-  if (jsonBytes > maxJsonBytes) {
-    publicationFailures.push(`JSON 증거 ${jsonBytes} bytes가 출력 상한 ${maxJsonBytes} bytes를 넘었습니다. 원본은 runner 전용 디렉터리에 남기며 누락된 증거를 성공으로 처리하지 않습니다.`);
-    let remaining = maxJsonBytes;
+  if (jsonBytes > maxLogJsonBytes) {
+    publicationFailures.push(`원본 JSON ${jsonBytes} bytes가 Actions 로그 보존 상한 ${maxLogJsonBytes} bytes를 넘었습니다. 원본은 runner 전용 디렉터리에 남기며 누락된 증거를 성공으로 처리하지 않습니다.`);
+    let remaining = maxLogJsonBytes;
     selected = jsonFiles.filter(file => {
       if (!/^(?:failure|browser-diagnostics|gate-result)\.json$/u.test(basename(file.path)) || file.bytes > remaining) return false;
       remaining -= file.bytes;
@@ -236,22 +283,22 @@ export function publishRun({ directory, output = process.stdout, summaryPath, ma
   for (const file of selected) {
     try {
       const raw = readFileSync(file.path, "utf8");
-      JSON.parse(raw);
       documents.push({ path: relative(directory, file.path), raw });
+      JSON.parse(raw);
     } catch (error) {
       publicationFailures.push(`${relative(directory, file.path)}: JSON 증거를 읽지 못했습니다: ${error.message}`);
     }
   }
-  state.publication = { jsonBytes, limitBytes: maxJsonBytes, failures: publicationFailures, manifest };
+  state.publication = { jsonBytes, limitBytes: maxLogJsonBytes, logComplete: publicationFailures.length === 0,
+    failures: publicationFailures, manifest, expectedJsonFiles: [...expected].sort() };
   state.status = state.gates.every(gate => gate.status === "passed") && publicationFailures.length === 0 ? "passed" : "failed";
+  const summary = buildStepSummary(state, documents, maxSummaryBytes);
+  state.publication.summary = { bytes: summary.bytes, limitBytes: summary.limitBytes,
+    includedFiles: summary.includedFiles, omittedCount: summary.omittedCount };
   saveState(directory, state);
   output.write(`::group::Studio regression results\n${JSON.stringify(state, null, 2)}\n::endgroup::\n`);
   for (const document of documents) output.write(`::group::${document.path}\n${document.raw}\n::endgroup::\n`);
-  if (summaryPath) {
-    const table = state.gates.map(gate => `| ${gate.id} | ${gate.status} | ${gate.exitCode ?? "—"} | ${gate.durationMs ?? "—"} |`).join("\n");
-    const evidence = documents.map(document => `### ${document.path}\n\n\`\`\`json\n${document.raw}\n\`\`\`\n`).join("\n");
-    appendFileSync(summaryPath, `## Studio focused regressions: ${state.status}\n\n${EXPECTED_HELPER_TESTS} DOM cases + 8 source harnesses + presentation + LivingInk. PNG/trace remain only on the runner; no artifact/cache upload.\n\n| Gate | Status | Exit | ms |\n|---|---|---:|---:|\n${table}\n\n\`\`\`json\n${JSON.stringify(state, null, 2)}\n\`\`\`\n\n${evidence}`);
-  }
+  if (summaryPath) appendFileSync(summaryPath, summary.text);
   return state;
 }
 

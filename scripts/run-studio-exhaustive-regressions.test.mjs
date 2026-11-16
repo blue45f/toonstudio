@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
-  EXPECTED_HELPER_TESTS, REGRESSION_GATES, REPOSITORY_ROOT, SOURCE_GATE_IDS,
+  EXPECTED_HELPER_TESTS, MAX_LOG_JSON_BYTES, MAX_STEP_SUMMARY_BYTES,
+  REGRESSION_GATES, REPOSITORY_ROOT, SOURCE_GATE_IDS,
   initializeRun, publishRun, runRegressionPlan, validateHelperReport, validateLivingInkReport,
 } from "./run-studio-exhaustive-regressions.mjs";
 
@@ -23,6 +24,17 @@ function temporary(t) {
 function capture() {
   let text = "";
   return { output: { write: chunk => { text += String(chunk); } }, text: () => text };
+}
+
+function completedPublicationFixture(t, id = "large") {
+  const directory = temporary(t);
+  const state = initializeRun(directory, Date.now(), [{ id, kind: "runtime" }]);
+  Object.assign(state.gates[0], { status: "passed", exitCode: 0 });
+  writeFileSync(join(directory, "summary.json"), JSON.stringify(state));
+  const evidence = join(directory, "evidence", id);
+  mkdirSync(evidence, { recursive: true });
+  writeFileSync(join(evidence, "gate-result.json"), JSON.stringify(state.gates[0]));
+  return { directory, evidence, state };
 }
 
 function helperReport(count = EXPECTED_HELPER_TESTS) {
@@ -271,23 +283,116 @@ test("설정 중 실패·불완전한 실행은 최종 요약에서도 미실행
 });
 
 test("JSON 출력 상한 초과는 manifest와 작은 실패 진단을 보존하며 원본을 자르지 않는다", t => {
-  const directory = temporary(t);
-  const state = initializeRun(directory, Date.now(), [{ id: "large", kind: "runtime" }]);
-  state.gates[0].status = "passed";
-  state.gates[0].exitCode = 0;
-  writeFileSync(join(directory, "summary.json"), JSON.stringify(state));
-  const evidence = join(directory, "evidence", "large");
-  mkdirSync(evidence, { recursive: true });
+  const { directory, evidence } = completedPublicationFixture(t);
   const original = JSON.stringify({ result: "x".repeat(2_000) });
   writeFileSync(join(evidence, "browser-result.json"), original);
   writeFileSync(join(evidence, "browser-diagnostics.json"), JSON.stringify({ failure: "original diagnostic" }));
   const captured = capture();
-  const published = publishRun({ directory, output: captured.output, maxJsonBytes: 200 });
+  const published = publishRun({ directory, output: captured.output, maxLogJsonBytes: 200 });
   assert.equal(published.status, "failed");
   assert.equal(published.publication.failures.length, 1);
-  assert.equal(published.publication.manifest.length, 2);
+  assert.equal(published.publication.manifest.length, 3);
   assert.match(captured.text(), /original diagnostic/u);
   assert.equal(readFileSync(join(evidence, "browser-result.json"), "utf8"), original);
+});
+
+test("실제 1,438,617-byte 증거는 로그에 원본 전체를 한 번씩 보존하고 요약만 512KiB로 선별한다", t => {
+  assert.equal(MAX_LOG_JSON_BYTES, 4 * 1024 * 1024);
+  assert.equal(MAX_STEP_SUMMARY_BYTES, 512 * 1024);
+  const { directory, evidence } = completedPublicationFixture(t);
+  const diagnostic = JSON.stringify({ errors: [], measured: "원본 진단" });
+  writeFileSync(join(evidence, "browser-diagnostics.json"), diagnostic);
+  const existingBytes = Buffer.byteLength(readFileSync(join(evidence, "gate-result.json"), "utf8")) + Buffer.byteLength(diagnostic);
+  const emptySize = Buffer.byteLength(JSON.stringify({ result: "" }));
+  const first = JSON.stringify({ result: "a".repeat(800_000 - emptySize) });
+  const second = JSON.stringify({ result: "b".repeat(1_438_617 - existingBytes - Buffer.byteLength(first) - emptySize) });
+  writeFileSync(join(evidence, "browser-result.json"), first);
+  writeFileSync(join(evidence, "observations.json"), second);
+  const captured = capture();
+  const summaryPath = join(directory, "step-summary.md");
+  const published = publishRun({ directory, output: captured.output, summaryPath });
+  assert.equal(published.status, "passed");
+  assert.deepEqual(published.publication.failures, []);
+  assert.equal(published.publication.jsonBytes, 1_438_617);
+  assert.equal(published.publication.logComplete, true);
+  assert.ok(captured.text().includes(first));
+  assert.ok(captured.text().includes(second));
+  const groups = [...captured.text().matchAll(/^::group::(evidence\/[^\n]+)$/gmu)].map(match => match[1]);
+  assert.equal(groups.length, 4);
+  assert.equal(new Set(groups).size, groups.length);
+  const summary = readFileSync(summaryPath, "utf8");
+  assert.ok(Buffer.byteLength(summary) <= MAX_STEP_SUMMARY_BYTES);
+  assert.equal(published.publication.summary.bytes, Buffer.byteLength(summary));
+  assert.equal(published.publication.summary.omittedCount, 2);
+  assert.match(summary, /원본 JSON 전체는 Actions 로그의 파일별 그룹에 보존했습니다/u);
+  assert.match(summary, /### 증거 manifest/u);
+  assert.match(summary, /### evidence\/large\/gate-result\.json/u);
+  assert.equal(summary.includes(first), false);
+  assert.equal(summary.includes(second), false);
+  const headings = [...summary.matchAll(/^### (evidence\/[^\n]+)$/gmu)].map(match => match[1]);
+  assert.equal(new Set(headings).size, headings.length);
+  assert.equal(readFileSync(join(evidence, "browser-result.json"), "utf8"), first);
+  assert.equal(readFileSync(join(evidence, "observations.json"), "utf8"), second);
+});
+
+test("요약 선별은 실제 gate 실패를 성공으로 바꾸지 않고 실패 원인을 남긴다", t => {
+  const { directory, evidence, state } = completedPublicationFixture(t);
+  Object.assign(state.gates[0], { status: "failed", exitCode: 1, reason: "원래 GPU 품질 실패" });
+  writeFileSync(join(directory, "summary.json"), JSON.stringify(state));
+  writeFileSync(join(evidence, "gate-result.json"), JSON.stringify(state.gates[0]));
+  writeFileSync(join(evidence, "browser-result.json"), JSON.stringify({ result: "x".repeat(700_000) }));
+  const summaryPath = join(directory, "step-summary.md");
+  const published = publishRun({ directory, output: capture().output, summaryPath });
+  assert.equal(published.status, "failed");
+  assert.deepEqual(published.publication.failures, []);
+  assert.equal(published.publication.logComplete, true);
+  assert.match(readFileSync(summaryPath, "utf8"), /원래 GPU 품질 실패/u);
+});
+
+test("원본 JSON이 실제 4MiB를 넘으면 로그 완전성을 실패시키고 작은 진단만 보존한다", t => {
+  const { directory, evidence } = completedPublicationFixture(t);
+  const original = JSON.stringify({ result: "x".repeat(MAX_LOG_JSON_BYTES) });
+  writeFileSync(join(evidence, "browser-result.json"), original);
+  writeFileSync(join(evidence, "browser-diagnostics.json"), JSON.stringify({ error: "작은 원본 진단" }));
+  const captured = capture();
+  const summaryPath = join(directory, "step-summary.md");
+  const published = publishRun({ directory, output: captured.output, summaryPath });
+  assert.equal(published.status, "failed");
+  assert.equal(published.publication.logComplete, false);
+  assert.equal(published.publication.failures.length, 1);
+  assert.match(published.publication.failures[0], /4194304 bytes/u);
+  assert.match(captured.text(), /작은 원본 진단/u);
+  assert.equal(captured.text().includes(original), false);
+  assert.equal(readFileSync(join(evidence, "browser-result.json"), "utf8"), original);
+  assert.ok(Buffer.byteLength(readFileSync(summaryPath, "utf8")) <= MAX_STEP_SUMMARY_BYTES);
+});
+
+test("원본 JSON 누락·파손은 gate exit 0과 무관하게 publication 실패로 남는다", t => {
+  const missing = completedPublicationFixture(t, "missing");
+  rmSync(join(missing.evidence, "gate-result.json"));
+  const missingResult = publishRun({ directory: missing.directory, output: capture().output });
+  assert.equal(missingResult.status, "failed");
+  assert.match(missingResult.publication.failures[0], /원본 JSON 증거가 누락/u);
+  const corrupt = completedPublicationFixture(t, "corrupt");
+  writeFileSync(join(corrupt.evidence, "browser-result.json"), "{broken-json");
+  const captured = capture();
+  const corruptResult = publishRun({ directory: corrupt.directory, output: captured.output });
+  assert.equal(corruptResult.status, "failed");
+  assert.equal(corruptResult.publication.logComplete, false);
+  assert.match(corruptResult.publication.failures[0], /JSON 증거를 읽지 못했습니다/u);
+  assert.match(captured.text(), /\{broken-json/u);
+});
+
+test("이전 manifest에 있었던 원본을 삭제해도 반복 발행으로 누락 실패를 지우지 않는다", t => {
+  const { directory, evidence } = completedPublicationFixture(t);
+  writeFileSync(join(evidence, "browser-result.json"), JSON.stringify({ result: "preserved" }));
+  assert.equal(publishRun({ directory, output: capture().output }).status, "passed");
+  rmSync(join(evidence, "browser-result.json"));
+  for (let repeat = 0; repeat < 2; repeat += 1) {
+    const published = publishRun({ directory, output: capture().output });
+    assert.equal(published.status, "failed");
+    assert.match(published.publication.failures[0], /browser-result\.json: 원본 JSON 증거가 누락/u);
+  }
 });
 
 test("check 모드는 호출 위치와 설치 dependency에 의존하지 않고 쓰기 없이 계획을 확인한다", t => {
