@@ -318,6 +318,14 @@
       "default": null,
       "unit": "operator"
     },
+    "ONPOD_DEPLOY_TOKEN": {
+      "purpose": "GitHub Actions 클라우드 배포용 onpod 앱 범위 제한 키(toonstudio-api 전용)",
+      "type": "string",
+      "visibility": "server-secret",
+      "required": "optional",
+      "default": null,
+      "unit": "operator"
+    },
     "GH_TOKEN": {
       "purpose": "컨테이너 릴리스 GitHub 인증",
       "type": "string",
@@ -411,6 +419,7 @@
       "purpose": "기존 remote env 보존 이미지 교체의 인증 이름만 검사",
       "providerAuth": [
         [
+          "ONPOD_DEPLOY_TOKEN",
           "ONPOD_TOKEN"
         ]
       ]

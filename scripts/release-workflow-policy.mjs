@@ -171,6 +171,12 @@ function providerCommand(words) {
   if (basename(script ?? "") === "provision-cloudflare-free-data-plane.mjs" && args.includes("--apply")) {
     return "Cloudflare";
   }
+  if (basename(script ?? "") === "cloud-deploy-cloudflare.mjs" && !dryRun(args)) {
+    return "Cloudflare";
+  }
+  if (basename(script ?? "") === "cloud-deploy-onpod.mjs" && !dryRun(args)) {
+    return "Onpod";
+  }
   if (renderRequest(name, args)) return "Render";
   return null;
 }
@@ -234,6 +240,97 @@ function publishers(source, context, seen = new Set()) {
   return found;
 }
 
+export const CANONICAL_CLOUD_DEPLOY_WORKFLOW = ".github/workflows/cloud-production-deploy.yml";
+
+function stepPublishers(step, workflow, job, root) {
+  const context = {
+    root,
+    directory: resolve(
+      root,
+      step["working-directory"]
+        ?? job.defaults?.run?.["working-directory"]
+        ?? workflow.defaults?.run?.["working-directory"]
+        ?? ".",
+    ),
+    environment: { ...workflow.env, ...job.env, ...step.env },
+  };
+  const found = publishers(typeof step.run === "string" ? step.run : "", context);
+  const action = (step.uses ?? "").split("@")[0].toLowerCase();
+  if (action === "cloudflare/wrangler-action") {
+    for (const command of (step.with?.command ?? "deploy").split("\n")) {
+      for (const provider of publishers(`wrangler ${command}`, context)) found.add(provider);
+    }
+  } else if (action === "cloudflare/pages-action") found.add("Cloudflare");
+  else if (/(?:^|\/)vercel-action$/u.test(action)) found.add("Vercel");
+  else if (/(?:^|\/)(?:deploy-to-render|render-deploy|render-deploy-action)$/u.test(action)) found.add("Render");
+  return found;
+}
+
+function validateCanonicalCloudDeployWorkflow(workflow, path, root) {
+  const issues = [];
+  const triggers = workflow?.on ?? workflow?.[true];
+  const triggerKeys = typeof triggers === "string"
+    ? [triggers]
+    : Array.isArray(triggers)
+      ? triggers
+      : triggers && typeof triggers === "object"
+        ? Object.keys(triggers)
+        : [];
+  if (triggerKeys.length !== 1 || triggerKeys[0] !== "workflow_dispatch") {
+    issues.push(`${path}: canonical cloud deploy workflow must trigger exclusively on workflow_dispatch`);
+  }
+
+  const inputs = triggers && typeof triggers === "object" ? triggers.workflow_dispatch?.inputs ?? {} : {};
+  for (const flag of ["deploy_web", "deploy_apex_redirect", "deploy_api_onpod", "sync_api_env_onpod"]) {
+    if (inputs[flag]?.type !== "boolean" || inputs[flag]?.default !== false) {
+      issues.push(`${path}: input '${flag}' must be boolean with default false`);
+    }
+  }
+  if (inputs.onpod_confirm?.type !== "choice" || inputs.onpod_confirm?.default !== "NONE") {
+    issues.push(`${path}: input 'onpod_confirm' must be choice with default 'NONE'`);
+  }
+  if (!workflow?.jobs?.["verify-release-gate"]) {
+    issues.push(`${path}: missing mandatory 'verify-release-gate' job`);
+  }
+
+  for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
+    const jobEnvName = typeof job?.environment === "string" ? job.environment : job?.environment?.name;
+    const needsList = Array.isArray(job?.needs) ? job.needs : job?.needs ? [job.needs] : [];
+    const jobHasExternalSecret = Object.values(job?.env ?? {}).some((val) =>
+      [...String(val).matchAll(/\bsecrets\.([A-Za-z0-9_]+)/gu)].some((m) => m[1] !== "GITHUB_TOKEN"),
+    );
+
+    for (const [index, step] of (job?.steps ?? []).entries()) {
+      const runText = typeof step?.run === "string" ? step.run : "";
+      if (/\bonpod\s+(?:app\s+(?:deploy|rollback|rm|delete)|db\b|exec\b)/u.test(runText) || /--attach-db|--replace-env/u.test(runText)) {
+        issues.push(`${path} jobs.${jobName}.steps[${index}]: destructive or unsafe onpod command is forbidden`);
+      }
+
+      const found = stepPublishers(step, workflow, job, root);
+      for (const provider of found) {
+        if (provider === "Vercel" || provider === "Render") {
+          issues.push(`${path} jobs.${jobName}.steps[${index}]: CI production publisher is forbidden (${provider})`);
+          continue;
+        }
+        if (jobEnvName !== "production-deploy") {
+          issues.push(`${path} jobs.${jobName}.steps[${index}]: publisher (${provider}) requires environment 'production-deploy'`);
+        }
+        if (!needsList.includes("verify-release-gate")) {
+          issues.push(`${path} jobs.${jobName}.steps[${index}]: publisher (${provider}) must depend on 'verify-release-gate'`);
+        }
+        if (jobHasExternalSecret) {
+          issues.push(`${path} jobs.${jobName}.steps[${index}]: publisher job must scope secrets to step.env only`);
+        }
+        const combinedIf = `${job?.if ?? ""} ${step?.if ?? ""}`;
+        if (!/\binputs\.(?:deploy_web|deploy_apex_redirect|deploy_api_onpod|sync_api_env_onpod)\b/u.test(combinedIf)) {
+          issues.push(`${path} jobs.${jobName}.steps[${index}]: publisher (${provider}) requires explicit manual input guard`);
+        }
+      }
+    }
+  }
+  return issues;
+}
+
 export function validateReleaseWorkflows(root) {
   const issues = [];
   const directory = resolve(root, ".github/workflows");
@@ -242,23 +339,14 @@ export function validateReleaseWorkflows(root) {
     const path = `.github/workflows/${file}`;
     try {
       const workflow = parse(readFileSync(resolve(directory, file), "utf8"));
-      // No trigger, approval variable, environment, or manual dispatch exempts a CI publisher.
+      if (path === CANONICAL_CLOUD_DEPLOY_WORKFLOW) {
+        issues.push(...validateCanonicalCloudDeployWorkflow(workflow, path, root));
+        continue;
+      }
+      // Outside the single gated canonical manual cloud deploy workflow, CI publishers are forbidden.
       for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
         for (const [index, step] of (job.steps ?? []).entries()) {
-          const context = {
-            root,
-            directory: resolve(root, step["working-directory"] ?? job.defaults?.run?.["working-directory"] ?? workflow.defaults?.run?.["working-directory"] ?? "."),
-            environment: { ...workflow.env, ...job.env, ...step.env },
-          };
-          const found = publishers(typeof step.run === "string" ? step.run : "", context);
-          const action = (step.uses ?? "").split("@")[0].toLowerCase();
-          if (action === "cloudflare/wrangler-action") {
-            for (const command of (step.with?.command ?? "deploy").split("\n")) {
-              for (const provider of publishers(`wrangler ${command}`, context)) found.add(provider);
-            }
-          } else if (action === "cloudflare/pages-action") found.add("Cloudflare");
-          else if (/(?:^|\/)vercel-action$/u.test(action)) found.add("Vercel");
-          else if (/(?:^|\/)(?:deploy-to-render|render-deploy|render-deploy-action)$/u.test(action)) found.add("Render");
+          const found = stepPublishers(step, workflow, job, root);
           for (const provider of found) issues.push(`${path} jobs.${jobName}.steps[${index}]: CI production publisher is forbidden (${provider})`);
         }
       }

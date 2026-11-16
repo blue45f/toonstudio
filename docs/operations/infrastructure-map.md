@@ -86,7 +86,8 @@
 
 | 키 이름 | 의미 | 바꾸면 생기는 일 |
 | --- | --- | --- |
-| `ONPOD_TOKEN` | onpod 전권 사용자 토큰(`op_u_`). `~/.onpod/config.json`에도 있다 | 폐기하면 CLI·MCP 로그인이 끊긴다. 위임·CI용은 `onpod key add --scope <resource:action> --expires-days <n>`로 범위·만료 키를 따로 만든다 |
+| `ONPOD_TOKEN` | onpod 전권 사용자 토큰(`op_u_`). `~/.onpod/config.json`에도 있다 | 폐기하면 CLI·MCP 로그인이 끊긴다. GitHub Actions에는 업로드하지 않는다 |
+| `ONPOD_DEPLOY_TOKEN` | GitHub Actions `production-deploy` 전용 앱 범위 제한 키(`opk_`, `toonstudio-api` 단일 대상·90일 만료, 2026-11-16 발급·지문 `b1481287`) [직접: 2026-11-16] | `pnpm run deploy:auth -- --provision-onpod-key`가 발급해 `.env.infrastructure.local`에 저장한다. DB·타 앱 권한이 없다(`onpod db ls` 거부 확인) |
 | `ONPOD_DB_SLUG` | `toonstudio-db` | — |
 | `ONPOD_DATABASE_URL` | 내부 호스트 DSN, `sslmode=no-verify` | **`--attach-db` 배포와 `rotate-password`마다 비밀번호가 바뀐다.** 6.4절로 동기화한다 |
 | `ONPOD_DATABASE_URL_PUBLIC` | 같은 DB의 공개 호스트 DSN, `sslmode=require`(psql용) | 위와 같다 |
@@ -308,7 +309,8 @@ openssl x509 -in onpod-managed-postgres-server-cert.pem -noout -fingerprint -sha
 | Supabase `toonspectrum-collaboration` 정리 | 데이터 삭제라 소유자가 대시보드에서 직접 삭제(또는 일시정지) | 대기 |
 | Neon `toonspectrum-production` | 소유자가 Neon 사용을 중단하며 2026-10-22에 삭제. 복구하지 않는다 | **완료** |
 | 비소유 런타임 역할(선택지 A) | onpod 지원 문의(`support@onpod.ai`). 공식 운영 전 강화 과제 | 대기 |
-| onpod 전권 토큰 → 범위·만료 키 | 소유자 결정(`onpod key add`). 계정의 키는 전권·무기한 1개다 | 대기 |
+| onpod 전권 토큰 → 범위·만료 키 | GitHub Actions 클라우드 배포용 `toonstudio-api` 단일 앱 범위·90일 만료 키(`ONPOD_DEPLOY_TOKEN`, 지문 `b1481287`) 분리 발급·검증 완료(`onpod db ls` 차단 확인). 로컬 CLI 전권 키(`ONPOD_TOKEN`)는 로컬 전용으로 유지 | **완료**(2026-11-16, CI 위임 키 분리) |
+| 클라우드 무(無)-로컬-env 배포용 Cloudflare 토큰 | GitHub `production-deploy` Environment에 `CLOUDFLARE_API_TOKEN`(Workers Scripts:Edit + Workers R2 Storage:Edit) 1회 등록(`pnpm run deploy:auth -- --set-cloudflare-token --sync-github`) | 대기(로컬은 Wrangler OAuth 사용 중, 부모 셸 옛 토큰은 401 확인) |
 | 무료 티어 메모리 부족 시 유료 승급 | 비용 승인 | 조건부 |
 | `AGENTS.md` 8절·`deploy/STANDING_APPROVAL.json`에 onpod 단위 반영, `config/free-infrastructure-policy.json` 등록 | 소유자(보호 파일). 이번에는 사실 서술만 고쳤고 상시 승인 범위는 넓히지 않았다 | 대기 |
 | 0093 마이그레이션의 비한정 CREATE(7.2절) 수정 | 소유자 승인된 새 forward 마이그레이션 또는 파일 수정. [음성 메모 백업·복원 복구 절차](studio-review-voice-note-backup-repair.md) 참조 | 대기 |
@@ -321,3 +323,4 @@ openssl x509 -in onpod-managed-postgres-server-cert.pem -noout -fingerprint -sha
 - 2026-10-23 05:14 KST 컷오버: 소유자 일괄 승인(03:55 KST) 뒤 Render 환경변수 백업(04:01), onpod에 설정 병합(04:06), 검증용 자원 정리(04:09: Render 정적 사이트 19개, onpod `ts-web-proto`·정지 팟 2개), main 적색 수리 PR #2426, API 이미지 `4df6d1692` 릴리스와 `toonstudio-api` 교체(준비성 200), Worker `CORE_ORIGIN_SECRET` 교체와 `8d9e24ee` 릴리스(`CORE_API_ORIGIN=https://toonstudio-api.onpod.ai`), 스모크 후 Render `toonspectrum-core-api` 삭제(05:22). API 이미지(`4df6d1692`)와 웹·Worker(`38847c624`)의 SHA가 다른 것은 이미지를 만든 뒤 main에 PR 두 개(#2427 웹 인증, #2425 CI 보안)가 더 병합됐기 때문이다. 두 SHA 사이와 녹색이던 `937d71b16` 이후로 `apps/api` 변경은 없다(`git diff --stat` 비어 있음). Worker 배포 SHA `38847c624`는 core·verify 녹색을 확인했다.
 - 2026-10-23 컷오버 뒤 점검(05:15~): 공개 경로 live·ready 200, 능력 11개 모두 `available`, `edgeOriginAuth=enforced`(원점 직접 호출 403), OAuth 시작 4종(Google·GitHub·Kakao·Naver) 302와 www 콜백, DB 읽기·익명 쓰기(page-view 202)·표지 프록시 200, `/studio`의 `crossOriginIsolated=true`, 제품 투어 실재생 게이트(G5-1·G5-2) 전체 통과. 서버 오류 로그 0건, OOM 0건. Apple 로그인은 Render 때와 같이 자격 증명이 없어 꺼져 있다.
 - 2026-10-23 05:18 KST: 소유자 요청으로 `blue45f@gmail.com`(새 DB의 첫 계정)을 첫 관리자로 지정했다(`user.role=admin`, `admin_audit_logs`에 `USER_ROLE_CHANGE` 기록). 이메일 기반 관리자 부여는 코드에서 제거됐고 DB 역할만 권한을 정한다.
+- 2026-11-16: 로컬 `.env`가 없는 클라우드 환경에서도 수동 승인 배포가 가능하도록 GitHub Actions `production-deploy` Environment(main 브랜치 전용)와 수동 전용 `.github/workflows/cloud-production-deploy.yml`, 동기화·실행 도구(`scripts/setup-deploy-auth.mjs`, `scripts/dispatch-cloud-deploy.mjs`)를 구성했다. `onpod key add --app toonstudio-api --expires-days 90`으로 앱 전용 키(`ONPOD_DEPLOY_TOKEN`, 지문 `b1481287`)를 발급해 로컬 `.env.infrastructure.local`(0600)에 저장하고, 비비밀 Variables 8개(`CLOUDFLARE_ACCOUNT_ID`, `CORE_API_ORIGIN`, `ONPOD_APP_NAME`, 공개 `VITE_*` 5종)와 검증된 Secrets 7개(`ONPOD_DEPLOY_TOKEN`, `ONPOD_API_ENV_JSON` 104개 키·`DATABASE_URL` 제외, `VITE_KAKAO_JAVASCRIPT_KEY`, `CORE_ORIGIN_SECRET`, `NEIS_API_KEY`, `REALTIME_TICKET_SECRET`, `ANALYTICS_RPC_TOKEN`)를 `production-deploy` Environment에 주입했다 [직접: 2026-11-16]. 부모 셸(`~/.zshenv`)의 구 `CLOUDFLARE_API_TOKEN`은 HTTP 401 만료를 확인해 업로드에서 제외했으며, 정적 웹·R2 클라우드 배포만 신규 `CLOUDFLARE_API_TOKEN` 1회 등록을 남겨 두었다.

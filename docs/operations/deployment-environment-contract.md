@@ -1,7 +1,7 @@
 # 로컬·클라우드 배포 환경 계약
 
-상태: **current** — 저장소의 설정 참조와 오프라인 점검 절차(2026-11-05).
-공급자 현재 사실의 근거는 [인프라 지도](infrastructure-map.md)의 **2026-10-29 직접 확인 기록**이다.
+상태: **current** — 저장소의 설정 참조, 오프라인 점검 및 GitHub `production-deploy` Environment 주입 계약(2026-11-16).
+공급자 현재 사실의 근거는 [인프라 지도](infrastructure-map.md)의 **2026-10-29 및 2026-11-16 직접 확인 기록**이다.
 이 작업에서 운영 API·DB·provider console에 접속하지 않았으며 인증·비밀 유효성을 확인하지 않았다.
 
 ## 어디를 수정하는가
@@ -103,8 +103,8 @@ provider별 세부 권한의 실제 지원 여부·정확한 resource ID는 소�
 | 오프라인 설정 검토 | 선택한 runtime 단위 변수만 사용자 소유 session secret 입력 → 격리 cloud session env | provider 토큰 불필요, 해당 세션만 | 값별 사용 목적·세션·폐기 시점 |
 | API 실행 설정 | `DATABASE_URL`, `AUTH_SESSION_SECRET`, `AUTH_STATE_SECRET`, edge·realtime·analytics 비밀 → onpod `toonstudio-api` runtime secret store | runtime 서비스만, 지속 보관 | 대상 앱·환경·각 이름·기존 값 유지/변경·회전 영향 |
 | Worker 실행 설정 | `CORE_ORIGIN_SECRET` → `toonspectrum-web`; `REALTIME_TICKET_SECRET`/`REALTIME_CONTROL_SECRET` → realtime; `ANALYTICS_RPC_TOKEN` → analytics Worker secret store | 해당 Worker만, 지속 보관 | 비밀 짝·목적지·기존 세션/티켓 영향 |
-| 향후 Cloudflare 배포 | 사용자 소유 CI environment/session의 `CLOUDFLARE_API_TOKEN`, account 식별 설정 | 현재 코드가 지원하는 API 토큰; Worker 배포와 R2 REST 권한은 별도 검토; 작업 종료 만료 | 리소스·scope·만료·지속 여부; 이 작업에는 불필요 |
-| 향후 onpod 이미지 작업 | 사용자 소유 제한 키를 격리 배포 session의 `ONPOD_TOKEN`으로 주입 | 가능하면 앱 조회·이미지 교체만, 단기 만료 | 정확한 앱·동작·기간; 전권 사용자 토큰 사용 금지 |
+| 향후 Cloudflare 배포 | 사용자 소유 GitHub `production-deploy` Environment의 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | Workers Scripts:Edit + Workers R2 Storage:Edit 최소권한 API 토큰(`pnpm run deploy:auth -- --set-cloudflare-token --sync-github`) | 리소스·scope·만료 확인; 로컬 Wrangler OAuth는 추출·복사하지 않음 |
+| 클라우드 onpod 이미지·환경 동기화 | GitHub `production-deploy` Environment의 `ONPOD_DEPLOY_TOKEN`(`toonstudio-api` 전용·90일 만료), `ONPOD_API_ENV_JSON`(`DATABASE_URL` 제외) | `pnpm run deploy:auth -- --provision-onpod-key` + `pnpm run deploy:auth:sync`로 2026-11-16 등록 완료 | 실행 시 `onpod_confirm=CONFIRM-ONPOD-TOONSTUDIO-API` 명시 승인 필수; 전권 `ONPOD_TOKEN` 업로드 금지 |
 | 향후 generic DB DDL | `PRODUCTION_DATABASE_DIRECT_URL`, `PRODUCTION_RUNTIME_DATABASE_ROLE` → 사용자 소유 GitHub `production-database` Environment | 승인 reviewer, 직접 연결·분리 역할, 필요 기간만; onpod 미지원 | 새 target 검증·TLS·역할·IP·추가형 migration·롤백 |
 
 세션 한정 접근은 격리 작업 종료와 함께 제거한다. 지속 자동화는 사용자 소유 environment의 reviewer·접근자·만료/회수 절차를
