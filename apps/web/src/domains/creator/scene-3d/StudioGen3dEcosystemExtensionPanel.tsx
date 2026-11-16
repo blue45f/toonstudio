@@ -214,7 +214,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`tripo-ws-${ws.id}`}
                 aria-pressed={workspaceId === ws.id}
                 onClick={() => setWorkspaceId(ws.id)}
-                className={`rounded border px-1.5 py-0.5 text-[0.64rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.64rem] pointer-coarse:min-h-11 ${
                   workspaceId === ws.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -267,7 +267,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                     motionLabelKo: m.labelKo,
                   });
                 }}
-                className={`rounded border px-1.5 py-0.5 text-[0.63rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.63rem] pointer-coarse:min-h-11 ${
                   selectedMotionId === m.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -296,7 +296,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`glbforge-profile-${prof.id}`}
                 aria-pressed={glbProfileId === prof.id}
                 onClick={() => setGlbProfileId(prof.id)}
-                className={`rounded border px-1.5 py-0.5 text-[0.63rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.63rem] pointer-coarse:min-h-11 ${
                   glbProfileId === prof.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -343,7 +343,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`glbforge-extrude-${ep.id}`}
                 aria-pressed={extrudePresetId === ep.id}
                 onClick={() => setExtrudePresetId(ep.id)}
-                className={`rounded border px-1.5 py-0.5 text-[0.63rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.63rem] pointer-coarse:min-h-11 ${
                   extrudePresetId === ep.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -401,7 +401,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`meshy-product-${prod.id}`}
                 aria-pressed={meshyProductId === prod.id}
                 onClick={() => setMeshyProductId(prod.id)}
-                className={`rounded border px-1.5 py-0.5 text-[0.63rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.63rem] pointer-coarse:min-h-11 ${
                   meshyProductId === prod.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -419,7 +419,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`meshy-slicer-${sl}`}
                 aria-pressed={meshySlicer === sl}
                 onClick={() => setMeshySlicer(sl)}
-                className={`rounded border px-1.5 py-0.5 text-[0.62rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.62rem] pointer-coarse:min-h-11 ${
                   meshySlicer === sl
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-panel text-fg-2"
@@ -485,7 +485,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                 data-testid={`tripo3d-mcp-domain-${tab.id}`}
                 aria-pressed={mcpDomainFilter === tab.id}
                 onClick={() => setMcpDomainFilter(tab.id)}
-                className={`rounded border px-2 py-0.5 text-[0.62rem] ${
+                className={`inline-flex min-h-8 items-center rounded border px-2.5 py-1 text-[0.62rem] pointer-coarse:min-h-11 ${
                   mcpDomainFilter === tab.id
                     ? "border-accent bg-accent-soft font-semibold text-fg"
                     : "border-line bg-card text-fg-2"
@@ -599,7 +599,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                     data-testid={`tripo3d-part-toggle-${part.id}`}
                     aria-pressed={enabled}
                     onClick={() => togglePart(part.id)}
-                    className={`rounded border px-1.5 py-0.5 text-[0.62rem] transition-colors ${
+                    className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.62rem] transition-colors pointer-coarse:min-h-11 ${
                       enabled
                         ? "border-accent bg-accent-soft font-semibold text-fg"
                         : "border-line bg-panel text-fg-3 line-through opacity-75"
@@ -641,7 +641,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                     setToonRampSteps(pal.defaultToonRampSteps);
                     setOutlineWidthMm(pal.defaultOutlineWidthMm);
                   }}
-                  className={`rounded border px-1.5 py-0.5 text-[0.61rem] ${
+                  className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.61rem] pointer-coarse:min-h-11 ${
                     paletteId === pal.id
                       ? "border-accent bg-accent-soft font-semibold text-fg"
                       : "border-line bg-panel text-fg-2"
@@ -661,7 +661,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                     data-testid={`tripo3d-toon-ramp-${steps}`}
                     aria-pressed={toonRampSteps === steps}
                     onClick={() => setToonRampSteps(steps)}
-                    className={`rounded border px-2 py-0.5 text-[0.61rem] ${
+                    className={`inline-flex min-h-8 items-center rounded border px-2.5 py-1 text-[0.61rem] pointer-coarse:min-h-11 ${
                       toonRampSteps === steps
                         ? "border-accent bg-accent-soft font-semibold text-fg"
                         : "border-line bg-panel text-fg-2"
@@ -730,7 +730,7 @@ export function StudioGen3dEcosystemExtensionPanel({
                       motionLabelKo: hp.labelKo,
                     });
                   }}
-                  className={`rounded border px-1.5 py-0.5 text-[0.61rem] ${
+                  className={`inline-flex min-h-8 items-center rounded border px-2 py-1 text-[0.61rem] pointer-coarse:min-h-11 ${
                     handPoseVariantId === hp.id
                       ? "border-accent bg-accent-soft font-semibold text-fg"
                       : "border-line bg-panel text-fg-2"
@@ -753,7 +753,7 @@ export function StudioGen3dEcosystemExtensionPanel({
               href={activeMcpModel.url}
               download={activeMcpModel.fileName}
               data-testid="tripo3d-mcp-direct-glb-download"
-              className="rounded border border-accent/60 bg-accent-soft/40 px-2 py-0.5 text-[0.6rem] font-semibold text-accent hover:bg-accent-soft"
+              className="inline-flex min-h-8 items-center rounded border border-accent/60 bg-accent-soft/40 px-2.5 py-1 text-[0.6rem] font-semibold text-accent hover:bg-accent-soft pointer-coarse:min-h-11"
             >
               .glb 원본/최적화 파일 다운로드 ({activeMcpModel.fileName})
             </a>
