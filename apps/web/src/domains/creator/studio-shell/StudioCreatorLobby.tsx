@@ -10,6 +10,7 @@ import {
 import { useId, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import { runSameDocumentViewTransition } from "@/shared/navigation/webtoon-platform-router-ux-model";
 import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
@@ -251,8 +252,13 @@ function LobbyArtImage({
 
 function StudioLobbyQuickStart() {
   // 직군 프리셋(R-1): 전역 워크스페이스 문서의 활성 직군으로 순서·강조만 바꾼다.
-  // 문서가 없거나 불러오지 못하면 activeRole이 없어 현행 순서 그대로 폴백한다.
-  const workspace = useCreatorRoleWorkspace(GLOBAL_CREATOR_ROLE_WORKSPACE_KEY);
+  // 비로그인 게스트는 서버 403 호출 없이 로컬 스냅샷/기본 순서를 그대로 사용한다.
+  const { status } = useSession();
+  const workspace = useCreatorRoleWorkspace(
+    GLOBAL_CREATOR_ROLE_WORKSPACE_KEY,
+    undefined,
+    status === "authenticated",
+  );
   const activeRole = workspace.snapshot.document.activeRole;
   const ordering = useMemo(
     () => orderStudioLobbyActionsForRole(LOBBY_ACTIONS, activeRole),
