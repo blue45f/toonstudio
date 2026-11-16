@@ -201,6 +201,36 @@ test("기존 required core와 nightly exhaustive의 실행 범위를 바꾸지 �
   assert.match(nightly, /cancel-in-progress: false/u);
 });
 
+test("job env에 runner context를 쓰지 않고 실제 초기화 단계가 RUNNER_TEMP를 후속 단계에 전달한다", t => {
+  // GitHub의 jobs.<job_id>.env context에는 runner/steps/job/env가 허용되지 않는다.
+  const jobEnv = workflow.match(/^ {4}env:\n((?: {6}[^\n]*\n)+)/mu)?.[1];
+  assert.ok(jobEnv, "검토 대상 job env 블록이 없습니다.");
+  assert.doesNotMatch(jobEnv, /\$\{\{\s*(?:runner|steps|job|env)\b/u);
+  assert.doesNotMatch(jobEnv, /TOONSPECTRUM_FOCUSED_VERIFY_DIR/u);
+  const initialization = workflow.match(/name: Reserve the final minute for failure evidence\n {8}run: \|\n([\s\S]*?)(?=\n {6}- uses:)/u)?.[1];
+  assert.ok(initialization, "실제 workflow의 runner 초기화 단계를 찾지 못했습니다.");
+  const directory = temporary(t);
+  const environmentFile = join(directory, "github-env");
+  const runnerTemp = join(directory, "runner temp");
+  writeFileSync(environmentFile, "EXISTING_VALUE=preserved\n");
+  const before = Date.now();
+  const result = spawnSync("bash", ["-e", "-o", "pipefail", "-c", initialization.replace(/^ {10}/gmu, "")], {
+    cwd: directory, encoding: "utf8",
+    env: { ...process.env, RUNNER_TEMP: runnerTemp, GITHUB_ENV: environmentFile },
+    timeout: 5_000,
+  });
+  const after = Date.now();
+  assert.equal(result.status, 0, result.stderr);
+  const values = Object.fromEntries(readFileSync(environmentFile, "utf8").trimEnd().split("\n").map(line => {
+    const equals = line.indexOf("=");
+    return [line.slice(0, equals), line.slice(equals + 1)];
+  }));
+  assert.equal(values.EXISTING_VALUE, "preserved");
+  assert.equal(values.TOONSPECTRUM_FOCUSED_VERIFY_DIR, join(runnerTemp, "studio-exhaustive-regressions"));
+  const deadline = Number(values.STUDIO_QA_DEADLINE_MS);
+  assert.ok(deadline >= before + 14 * 60_000 && deadline <= after + 14 * 60_000);
+});
+
 test("실제 exit 2 이후에도 다음 독립 명령을 실행하고 JSON/원본 로그/최종 실패를 보존한다", async t => {
   const directory = temporary(t);
   const probe = join(directory, "probe.mjs");

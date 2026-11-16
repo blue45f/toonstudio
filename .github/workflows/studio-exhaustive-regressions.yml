@@ -81,10 +81,16 @@ jobs:
     env:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=8192
-      TOONSPECTRUM_FOCUSED_VERIFY_DIR: ${{ runner.temp }}/studio-exhaustive-regressions
     steps:
       - name: Reserve the final minute for failure evidence
-        run: node -e 'require("node:fs").appendFileSync(process.env.GITHUB_ENV, `STUDIO_QA_DEADLINE_MS=${Date.now() + 14 * 60_000}\n`)'
+        run: |
+          node <<'NODE'
+          const { appendFileSync } = require("node:fs");
+          const { join } = require("node:path");
+          appendFileSync(process.env.GITHUB_ENV,
+            `STUDIO_QA_DEADLINE_MS=${Date.now() + 14 * 60_000}\n`
+            + `TOONSPECTRUM_FOCUSED_VERIFY_DIR=${join(process.env.RUNNER_TEMP, "studio-exhaustive-regressions")}\n`);
+          NODE
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
