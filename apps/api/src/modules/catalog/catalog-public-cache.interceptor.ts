@@ -31,10 +31,13 @@ export function catalogPublicCacheSeconds(environment: CacheEnvironment): number
 @Injectable()
 export class CatalogPublicCacheInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler) {
+    if (typeof context.getType === "function" && context.getType() !== "http") return next.handle();
     const http = context.switchToHttp();
-    const req = http.getRequest<Request>();
+    const req = http.getRequest<Request | undefined>();
     const res = http.getResponse<Response>();
-    if (!PUBLIC_CATALOG_PATHS.has(req.path.replace(/\/+$/, "").toLowerCase())) return next.handle();
+    if (typeof req?.path !== "string" || !PUBLIC_CATALOG_PATHS.has(req.path.replace(/\/+$/, "").toLowerCase())) {
+      return next.handle();
+    }
 
     // Preserve existing Origin/Accept-Encoding variation. Credentialed requests
     // must not reuse an anonymous response or populate a shared cache variant.

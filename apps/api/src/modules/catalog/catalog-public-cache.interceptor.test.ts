@@ -82,4 +82,20 @@ afterEach(() => vi.unstubAllEnvs());
     expect(catalogPublicCacheSeconds({ KMAS_PRV_KEY: "configured" })).toBe(0);
     expect(catalogPublicCacheSeconds({ KMAS_PRV_KEY: "configured", KMAS_MERGE_ON_ACCESS: "0" })).toBe(30);
   });
+  it("passes non-HTTP contexts such as WebSocket gateways straight through without touching req.path", async () => {
+    const wsContext = {
+      getType: () => "ws",
+      switchToHttp: () => ({ getRequest: () => ({}), getResponse: () => ({}) }),
+    } as unknown as ExecutionContext;
+    await expect(
+      lastValueFrom(new CatalogPublicCacheInterceptor().intercept(wsContext, { handle: () => of({ synced: true }) })),
+    ).resolves.toEqual({ synced: true });
+
+    const missingPathContext = {
+      switchToHttp: () => ({ getRequest: () => ({}), getResponse: () => ({}) }),
+    } as unknown as ExecutionContext;
+    await expect(
+      lastValueFrom(new CatalogPublicCacheInterceptor().intercept(missingPathContext, { handle: () => of({ ok: true }) })),
+    ).resolves.toEqual({ ok: true });
+  });
 });
