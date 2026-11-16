@@ -64,6 +64,7 @@ export interface StudioBg3dSceneAssistantHost extends StudioBg3dAssistantReadine
   readonly genericModelClassifications?: ReadonlyMap<string, string>;
   readonly transformMode?: "translate" | "rotate" | "scale";
   readonly lineArtPreview?: boolean;
+  readonly ltToneSettings?: { readonly mode?: string; readonly type?: string };
   readonly placementActive?: boolean;
   readonly placementSession?: { readonly phase?: string };
   readonly isCapturing?: boolean;
@@ -630,9 +631,9 @@ export function StudioBg3dSceneAssistantWorkspace({
     hydratedRef.current = true;
     if (hasScene) setStep("arrange");
     if (h.lineArtPreview) {
-      setOutputStyle(h.ltToneSettings?.enabled ? "tone" : "line");
+      setOutputStyle(h.ltToneSettings?.mode === "none" ? "line" : "tone");
     }
-  }, [h.lineArtPreview, h.ltToneSettings?.enabled, hasScene, modalOpen, readinessPhase, restoringScene]);
+  }, [h.lineArtPreview, h.ltToneSettings?.mode, hasScene, modalOpen, readinessPhase, restoringScene]);
   const assistantAssets = ((h.modelLibrary ?? []) as readonly AssistantAsset[])
     .filter((entry) => classifyAssistantAsset(entry, h.genericModelClassifications) === goal)
     .slice(0, 8);
