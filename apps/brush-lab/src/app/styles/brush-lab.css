@@ -15,10 +15,9 @@
   --lab-fail: oklch(0.74 0.16 20);
   --lab-warn: oklch(0.86 0.13 84);
   --lab-paper: oklch(1 0 0);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   color: var(--lab-fg);
   background: var(--lab-canvas);
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
@@ -29,8 +28,10 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--lab-canvas);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 code,
@@ -40,7 +41,7 @@ code,
 }
 
 .lab-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
@@ -81,20 +82,25 @@ code,
   color: var(--lab-muted);
 }
 
-/* 탭 */
+/* 탭 — 한 줄 가로 스크롤을 유지하고 forced-colors에서도 살아남는 하단 강조 보더를 쓴다. */
 .lab-tabs {
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
   border-bottom: 1px solid var(--lab-line);
 }
 
 .lab-tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
   min-height: 44px;
   min-width: 44px;
   padding: 10px 18px;
   border: 1px solid transparent;
-  border-bottom: none;
+  border-bottom: 3px solid transparent;
   border-radius: 10px 10px 0 0;
   background: transparent;
   color: var(--lab-muted);
@@ -107,6 +113,8 @@ code,
   color: var(--lab-fg);
   background: var(--lab-panel);
   border-color: var(--lab-line);
+  border-bottom-color: var(--lab-accent);
+  font-weight: 700;
 }
 
 .lab-tabpanel {
@@ -127,7 +135,8 @@ code,
   border-radius: 12px;
   background: var(--lab-panel);
   min-width: 0;
-  overflow-wrap: anywhere;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .lab-panel h2,
@@ -252,10 +261,14 @@ code,
 }
 
 .lab-check input {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   accent-color: var(--lab-accent);
+}
+
+.lab-shell :where(input[type="number"], output, td) {
+  font-variant-numeric: tabular-nums;
 }
 
 .lab-form-grid {
@@ -1463,5 +1476,41 @@ dd {
   .lab-compare-empty-state {
     padding: 10px;
     gap: 8px;
+  }
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-shell *,
+  .lab-shell *::before,
+  .lab-shell *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .lab-panel,
+  .lab-banner,
+  .lab-badge,
+  .lab-button {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .lab-tab[aria-selected="true"] {
+    background: Canvas;
+    color: Highlight;
+    border-color: CanvasText;
+    border-bottom: 3px solid Highlight;
   }
 }

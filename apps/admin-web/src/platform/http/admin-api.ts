@@ -49,6 +49,12 @@ export async function requestAdminJson<T>(path: string, options: AdminRequestOpt
       : "설정을 처리하지 못했습니다. 관리자 로그인과 연결을 확인해주세요.";
     throw new AdminApiError(response.status, message);
   }
+  if (!payload || typeof payload !== "object") {
+    throw new AdminApiError(
+      502,
+      "관리자 API 응답 형식이 올바르지 않습니다. API 서버 연결과 관리자 인증 상태를 확인해주세요.",
+    );
+  }
   return payload as T;
 }
 
