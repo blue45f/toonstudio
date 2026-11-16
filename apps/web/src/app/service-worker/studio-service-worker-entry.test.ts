@@ -485,7 +485,7 @@ describe("prepared full editor and rescue coexistence", () => {
     expect(await response?.text()).toBe("prepared editor");
   });
   it("serializes overlapping prepare-offline requests without returning offline-preparation-busy", async () => {
-    let releaseFirstFetch: (() => void) | null = null;
+    let releaseFirstFetch = (): void => undefined;
     const firstFetchGate = new Promise<void>((resolve) => {
       releaseFirstFetch = resolve;
     });
@@ -516,7 +516,7 @@ describe("prepared full editor and rescue coexistence", () => {
       ports: [{ postMessage: (value: unknown) => secondReplies.push(value) }],
     });
     await Promise.resolve();
-    releaseFirstFetch?.();
+    releaseFirstFetch();
     await Promise.all([first, second]);
 
     expect(firstReplies).toHaveLength(1);
