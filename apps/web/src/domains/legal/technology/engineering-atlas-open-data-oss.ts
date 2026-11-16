@@ -12,21 +12,21 @@ export const OPEN_DATA_OSS_CARDS: readonly EngineeringAtlasEntry[] = [
     id: "oss-pnpm-patches-no-unsafe-eval",
     category: "open-data",
     name: "pnpm patch",
-    title: t("고쳐서 쓰는 오픈소스: pnpm 패치 7개와 unsafe-eval 없는 실행", "Open source we patch: seven pnpm patches and running without unsafe-eval"),
+    title: t("고쳐서 쓰는 오픈소스: pnpm 패치 9개와 unsafe-eval 없는 실행", "Open source we patch: nine pnpm patches and running without unsafe-eval"),
     status: "live",
-    tagline: t("패치 7개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않고도 동작하게 합니다.", "Three of seven patches tackle new Function so libraries run without relaxing the CSP."),
+    tagline: t("패치 9개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않고도 동작하게 합니다.", "Three of nine patches tackle new Function so libraries run without relaxing the CSP."),
     background: [
       t(
-        "오픈소스는 가져다 쓰는 것이 기본이지만, 우리 사정에 맞지 않는 곳이 생기면 둘 중 하나를 고릅니다. 원본 프로젝트가 고쳐 주기를 기다리거나, 우리 쪽에서 작게 고쳐 쓰는 것입니다. pnpm 패치는 설치된 패키지의 특정 버전 위에 작은 수정 파일(diff)을 얹는 방법이라, 원본을 통째로 복사하는 포크보다 변경 범위가 작고 눈에 잘 띕니다. 지금 패치 7개를 쓰고, 소스를 통째로 저장소에 두고 고친 포크는 wgpu-toon 과 braces 둘입니다.",
-        "Open source is normally used as it comes, but when something does not fit, there are two choices: wait for the original project to fix it, or patch it a little ourselves. A pnpm patch lays a small diff over one exact version of an installed package, so the change is smaller and easier to see than a fork that copies the whole source. Seven patches are in use today, plus two forks that keep the whole source in the repository: wgpu-toon and braces.",
+        "오픈소스는 가져다 쓰는 것이 기본이지만, 우리 사정에 맞지 않는 곳이 생기면 둘 중 하나를 고릅니다. 원본 프로젝트가 고쳐 주기를 기다리거나, 우리 쪽에서 작게 고쳐 쓰는 것입니다. pnpm 패치는 설치된 패키지의 특정 버전 위에 작은 수정 파일(diff)을 얹는 방법이라, 원본을 통째로 복사하는 포크보다 변경 범위가 작고 눈에 잘 띕니다. 지금 패치 9개를 쓰고, 소스를 통째로 저장소에 두고 고친 포크는 wgpu-toon 과 braces 둘입니다.",
+        "Open source is normally used as it comes, but when something does not fit, there are two choices: wait for the original project to fix it, or patch it a little ourselves. A pnpm patch lays a small diff over one exact version of an installed package, so the change is smaller and easier to see than a fork that copies the whole source. Nine patches are in use today, plus two forks that keep the whole source in the repository: wgpu-toon and braces.",
       ),
       t(
         "가장 중요한 이유는 보안 설정입니다. 운영 CSP 의 script-src 는 'wasm-unsafe-eval' 만 열고 'unsafe-eval' 은 열지 않습니다. 그런데 일부 라이브러리는 문자열로 코드를 만드는 new Function 을 씁니다. 세 패치가 이를 다루는 방식은 둘입니다. manifold-3d 와 ktx2-encoder 는 패치한 파일의 new Function 2곳을 정적 코드로 바꿔 0곳이 됐고(설치본 검색으로 확인), @gltf-transform/functions 는 호출을 없앤 것이 아니라 Function() 을 쓰는 이미지 커널(ndarray 계열)을 처음 필요할 때만 불러오게 미뤘습니다. CSP 를 풀지 않고 라이브러리를 고친 것입니다.",
         "The main reason is a security setting. The production CSP script-src opens only 'wasm-unsafe-eval' and not 'unsafe-eval', yet some libraries use new Function, which builds code from strings. Three patches address this in two ways. In manifold-3d and ktx2-encoder the two new Function sites in the patched files became static code and now number zero (checked by searching the installed copies); @gltf-transform/functions does not remove a call but loads its Function-using image kernels (the ndarray family) only when first needed. The libraries were fixed instead of loosening the CSP.",
       ),
       t(
-        "나머지 네 패치는 이유가 다릅니다. React Three Fiber 는 폐기된 THREE.Clock 경고를 피하고, p5.brush 는 소프트웨어 WebGL 에서 같은 seed 도 픽셀이 달라지던 셰이더 미분을 유한 차분으로 바꾸고, ag-psd 는 브라우저에 없는 Node util 호출을 없애며, minimatch 는 brace-expansion 5 에 맞춘 호환 어댑터입니다. braces 는 패치가 아니라 저장소 포크입니다. 수정 릴리스가 나오지 않은 취약점 때문에, 3.0.3 에 미배포 수정과 중첩 깊이 100 상한을 더한 사본(patches/braces)으로 취약 범위를 대체했습니다. 관리 원칙은 정확한 버전에만 묶고, 업그레이드 때마다 다시 검토하고, 검증 장치를 두는 것입니다.",
-        "The other four patches have different reasons. React Three Fiber avoids the deprecated THREE.Clock warning; p5.brush swaps shader derivatives that gave different pixels for the same seed on software WebGL for finite differences; ag-psd drops a Node util call that browsers lack; and minimatch is a compatibility adapter for brace-expansion 5. braces is a repository fork, not a patch: because the vulnerability has no upstream fix, the vulnerable range is replaced by a copy of 3.0.3 plus unreleased upstream fixes and a nesting-depth cap of 100 (patches/braces). The management rules are to pin to an exact version, to review at every upgrade and to keep a verification mechanism.",
+        "나머지 여섯 패치는 이유가 다릅니다. React Three Fiber 는 폐기된 THREE.Clock 경고를 피하고, @pixiv/three-vrm 계열 두 패키지는 three 0.187 의 TSL normalView 심볼 변경에 맞추며, p5.brush 는 소프트웨어 WebGL 에서 같은 seed 도 픽셀이 달라지던 셰이더 미분을 유한 차분으로 바꾸고, ag-psd 는 브라우저에 없는 Node util 호출을 없애며, openskp 는 면 병합 출력을 보존합니다. minimatch 는 저장소 보안 백포트이고 braces 는 패치가 아니라 저장소 포크입니다. 수정 릴리스가 나오지 않은 취약점 때문에, 3.0.3 에 미배포 수정과 중첩 깊이 100 상한을 더한 사본(patches/braces)으로 취약 범위를 대체했습니다. 관리 원칙은 정확한 버전에만 묶고, 업그레이드 때마다 다시 검토하고, 검증 장치를 두는 것입니다.",
+        "The other six patches have different reasons. React Three Fiber avoids the deprecated THREE.Clock warning; two @pixiv/three-vrm packages align MToon TSL nodes with the normalView rename in three 0.187; p5.brush swaps shader derivatives that gave different pixels for the same seed on software WebGL for finite differences; ag-psd drops a Node util call that browsers lack; and openskp preserves face-merge outputs. minimatch uses repository security backports, and braces is a repository fork, not a patch: because the vulnerability has no upstream fix, the vulnerable range is replaced by a copy of 3.0.3 plus unreleased upstream fixes and a nesting-depth cap of 100 (patches/braces). The management rules are to pin to an exact version, to review at every upgrade and to keep a verification mechanism.",
       ),
       t(
         "한계도 말해야 합니다. 상류에 반영된 근거(PR·이슈)를 저장소에서 찾지 못했고, 패치는 정확한 버전에 묶여 있어 라이브러리를 올릴 때마다 다시 써야 합니다. 또 CSP 호환은 라이브러리 전체가 아니라 검증한 작업 9개 기준이며, 선택적 이미지 API 전부가 호환된 것은 아닙니다. braces 포크는 레지스트리 패키지가 아니라 pnpm audit 대상에서 빠지므로 이후 권고는 직접 확인해야 합니다.",
@@ -34,7 +34,7 @@ export const OPEN_DATA_OSS_CARDS: readonly EngineeringAtlasEntry[] = [
       ),
     ],
     keyPoints: [
-      t("패치 7개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않는다", "Three of seven patches address new Function, no CSP relaxation"),
+      t("패치 9개 중 3개는 new Function 문제를 풀어 CSP 를 풀지 않는다", "Three of nine patches address new Function, no CSP relaxation"),
       t("정확한 버전에 묶고, 업그레이드 때마다 다시 검토한다", "Pinned to exact versions and reviewed at every upgrade"),
       t("문자열 코드 생성을 금지한 Node 와 실제 CSP 로 확인한다", "Verified in Node with code generation off and under the real CSP"),
     ],
@@ -150,8 +150,8 @@ if (output.trim() !== "8") throw new Error("patch is broken: " + output); //~ �
     chapterIds: ["open-source", "infrastructure"],
     talk: {
       pitch: t(
-        "오픈소스는 가져다 쓰는 것만이 아니라 필요하면 작게 고쳐 씁니다. pnpm 패치 7개를 쓰고, 그중 3개는 라이브러리 안의 new Function 을 걷어 내거나(2개) 필요할 때까지 미뤄서(1개) 운영 보안 정책(CSP)을 풀지 않고도 3D 불리언과 압축이 돌아가게 했습니다. 통째로 복사해 고친 포크는 wgpu-toon 과 braces 둘입니다. 패치마다 정확한 버전에 묶고 검증 장치를 둡니다.",
-        "We do not only consume open source; we patch it a little when needed. Seven pnpm patches are in use, and three of them either remove new Function from libraries (two) or postpone loading it until needed (one), so 3D booleans and compression run without relaxing the production security policy (CSP). The two forks that copy the whole source are wgpu-toon and braces. Each patch is tied to an exact version and backed by a verification mechanism.",
+        "오픈소스는 가져다 쓰는 것만이 아니라 필요하면 작게 고쳐 씁니다. pnpm 패치 9개를 쓰고, 그중 3개는 라이브러리 안의 new Function 을 걷어 내거나(2개) 필요할 때까지 미뤄서(1개) 운영 보안 정책(CSP)을 풀지 않고도 3D 불리언과 압축이 돌아가게 했습니다. 통째로 복사해 고친 포크는 wgpu-toon 과 braces 둘입니다. 패치마다 정확한 버전에 묶고 검증 장치를 둡니다.",
+        "We do not only consume open source; we patch it a little when needed. Nine pnpm patches are in use, and three of them either remove new Function from libraries (two) or postpone loading it until needed (one), so 3D booleans and compression run without relaxing the production security policy (CSP). The two forks that copy the whole source are wgpu-toon and braces. Each patch is tied to an exact version and backed by a verification mechanism.",
       ),
       analogy: t(
         "가전제품을 통째로 새로 사는 대신 맞지 않는 플러그에 어댑터를 하나 끼워 쓰는 것과 같습니다. 어댑터 규격이 바뀌면(라이브러리 업그레이드) 다시 맞춰야 합니다.",
