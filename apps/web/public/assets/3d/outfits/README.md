@@ -27,4 +27,4 @@ inverse-bind matrix, surface receipt, 결정적 cleanup과 계약 미충족 시 
 그 전까지 이 파일을 runtime-ready wearable로 노출하지 않는다.
 
 실행 회귀 검사는
-`apps/web/src/domains/creator/studio-vrm-outfit-static-asset-audit.test.ts`가 소유한다.
+`apps/web/src/domains/creator/vrm/studio-vrm-outfit-static-asset-audit.test.ts`가 소유한다.

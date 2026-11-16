@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
@@ -109,6 +109,7 @@ for (const relativePath of tracked) {
   const extension = path.extname(relativePath).toLowerCase();
   if (!EXTENSIONS.has(extension)) continue;
   const absolutePath = path.join(ROOT, relativePath);
+  if (!existsSync(absolutePath)) continue;
   const buffer = readFileSync(absolutePath);
   const hash = createHash("sha256").update(buffer).digest("hex");
   const expectedKind = extension === ".jpeg" ? "jpg" : extension.slice(1);
