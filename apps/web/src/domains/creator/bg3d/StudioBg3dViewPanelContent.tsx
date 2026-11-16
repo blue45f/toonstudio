@@ -1660,7 +1660,7 @@ export function StudioBg3dViewPanel({
                   plan={enginePlan}
                   preference={enginePreference}
                   inApp={engineInAppBrowser}
-                  probing={engineProbing}
+                  probing={engineProbing} rendererReady={!isRestoringScene}
                   deviceLostMessage={engineDeviceLostMessage}
                   frameTimeMs={engineFrameTimeMs}
                   onPreferenceChange={onEnginePreferenceChange}

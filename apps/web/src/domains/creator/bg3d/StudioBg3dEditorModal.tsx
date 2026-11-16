@@ -17,7 +17,10 @@ import type { StudioWebXrSessionState } from "../studio-webxr-session";
 import { StudioBg3dEditorSidebar } from "./StudioBg3dEditorSidebar";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
 import { StudioBg3dProfessionalWorkspace } from "./StudioBg3dProfessionalWorkspace";
+import { StudioBg3dReadinessBadge } from "./StudioBg3dReadinessBadge";
 import { StudioBg3dSceneAssistantWorkspace } from "./StudioBg3dSceneAssistantWorkspace";
+import type { StudioBg3dReadinessSnapshot } from "./studio-bg3d-readiness-state";
+import type { StudioBg3dResourceRecoveryPorts } from "./studio-bg3d-resource-recovery-host";
 
 import type { StudioBg3dSceneAssistantHost } from "./StudioBg3dSceneAssistantWorkspace";
 import { StudioBg3dSceneOutliner } from "./StudioBg3dSceneOutliner";
@@ -49,6 +52,8 @@ export interface StudioBg3dEditorModalHost {
   readonly requestUserClose: () => void;
   readonly outlinerController: StudioBg3dSceneOutlinerController;
   readonly sharedStageSessionScopeKey?: string;
+  readonly readinessState?: StudioBg3dReadinessSnapshot;
+  readonly resourceRecovery?: StudioBg3dResourceRecoveryPorts;
   readonly [key: string]: unknown;
 }
 
@@ -142,6 +147,15 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {h.readinessState ? (
+              <StudioBg3dReadinessBadge
+                readiness={h.readinessState}
+                lowQualityActive={Boolean(h.resourceRecovery?.lowQualityActive)}
+                exposeLegacyActiveBackendTestId={experienceMode === "simple"}
+                disableReturnTo2d={isCapturing || deletingModelId !== null}
+                onReturnTo2d={h.resourceRecovery?.returnTo2d ?? requestUserClose}
+              />
+            ) : null}
             <a
               href="/studio/3d/dcc/model"
               data-testid="bg3d-open-hybrid-dcc-link"

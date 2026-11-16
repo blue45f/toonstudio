@@ -13,6 +13,7 @@ import {
   type StudioLocalToolImportAuthority,
 } from "../toolchain/studio-local-tool-import-authority";
 
+import { setStudioBg3dRoutedStartupYielded } from "../studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry";
 import {
   detachStudioBg3dRetainedOwnerRoute,
   publishStudioBg3dRetainedOwnerLease,
@@ -110,7 +111,14 @@ export function StudioBg3dRetainedOwnerRouteBridge({
     if (generation !== 0) detachStudioBg3dRetainedOwnerRoute(generation);
   }, []);
 
+  const wasOpenRef = useRef(open);
   useLayoutEffect(() => {
+    if (wasOpenRef.current && !open) {
+      setStudioBg3dRoutedStartupYielded(true);
+    } else if (!wasOpenRef.current && open) {
+      setStudioBg3dRoutedStartupYielded(false);
+    }
+    wasOpenRef.current = open;
     updateStudioBg3dRetainedOwnerLease(generationRef.current, {
       element: retainedElement,
       logicalOpen: open,

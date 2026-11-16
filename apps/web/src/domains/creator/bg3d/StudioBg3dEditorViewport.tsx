@@ -6,6 +6,7 @@
 import { TriangleAlert } from "lucide-react";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { CaptureBridge } from "./StudioBg3dCaptureBridge";
+import { StudioBg3dCanvasErrorBoundary } from "./StudioBg3dCanvasErrorBoundary";
 import { StudioBg3dCompositionOverlay } from "./StudioBg3dCompositionOverlay";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { StudioBg3dEngineRecoveryActions } from "./StudioBg3dEngineRecoveryActions";
@@ -13,6 +14,7 @@ import { StudioBg3dInferenceHud } from "./StudioBg3dInferenceHud";
 import { StudioBg3dPlacementPreviewBar } from "./StudioBg3dPlacementAndAxisHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
 import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
+import { StudioBg3dViewportReadinessOverlay } from "./StudioBg3dViewportReadinessOverlay";
 import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
@@ -160,100 +162,53 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
     LT_EXPORT_HEIGHTS, LT_TONE_MODE_LABELS, LT_TONE_PATTERN_LABELS, LT_TONE_TYPE_LABELS,
     SEMANTIC_MATERIAL_CONFIDENCE_LABELS, SEMANTIC_MATERIAL_SLOT_LABELS,
     STUDIO_BG3D_LT_INSERT_WORKER_TIMEOUT_MS,
-    TRANSFORM_MODES, VIEW_EDITOR_SECTIONS, VIEWPORT_BTN, StudioBg3dActionFooter,
-    StudioBg3dDirectionalShadowLight, StudioBg3dImmersivePanel, StudioBg3dLtPanel,
-    StudioBg3dMeasurementPanel, StudioBg3dMeasurementViewport, StudioBg3dPhysicsPanel,
-    StudioBg3dPhysicsTransport, StudioBg3dPlacementPointerController,
-    StudioBg3dRoomBuilderPanel, StudioBg3dSceneFog, BgAdaptiveDprController,
-    BgCustomModelInstanceBatch, BgCustomModelMesh, BgGroundHelper, BgPlacementPreview,
-    BgPrimitiveMesh, BgScaleGuide, BgSectionPlaneController, BgViewportController,
-    SkyClearColorController, StudioBg3dThreeRenderSettingsController, StudioBg3dScenePanorama,
-    StudioBg3dSceneTemplatePanel, StudioBg3dShapesPanel, StudioBg3dSharedCharacterSceneContent,
-    StudioBg3dSharedCharacterStatusOverlay, StudioBg3dSharedStagePanel, StudioBg3dViewPanel,
-    StudioBg3dImmersiveRenderBridge, StudioBg3dWebXrSessionBridge, StudioBg3dCaptureAdapter,
-    StudioBg3dCaptureRequest, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress,
-    StudioBg3dModelThumbnailCaptureController, StudioBg3dModelThumbnailThreeCaptureHandle,
-    StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dShotBatchPass,
-    StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession,
-    StudioBg3dShotBatchRecoveryStore, StudioBackground3DInsertResult, StudioToolHintSpec,
-    StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState,
-    StudioWebXrSupportSnapshot, open, initialDataUrl, initialScene, seedSceneTemplateId,
-    seedPrimitiveKind, onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution,
-    sharedStageSessionScopeKey, sharedCharactersLinkedToOtherBackgroundCount, operation,
-    recoveryScope, validateRecoveryAccess, onWebXrCleanupPendingChange, onClose, onInsert,
-    onUseAsAiMethodReference, documentCanvasSize, primitiveGeometryPool, adaptiveDprScale,
-    engineRuntime, applyStudioBg3dThreeRenderSettings, setEngineFrameTimeMs,
-    setAdaptiveDprScale, sharedCharacterCaptureAuthorityDraft,
-    sharedCharacterCaptureAuthorityPayloadKey, readSharedCharacterCaptureAuthorityDraft,
-    sharedCharacterCaptureAuthorityPayloadKeyRef, sharedCharacterCaptureAuthorityRevisionRef,
-    sharedCharacterCaptureStatusFenceRef, updateSharedCharacterStatusWithCaptureFence,
-    acquireSharedCharacterCaptureAuthority, verifySharedCharacterCaptureAuthority, primitives,
-    setPrimitives, selectedIds, setSelectedIds, transformMode, setTransformMode, lineArtPreview,
-    setLineArtPreview, magicLayerEnabled, setMagicLayerEnabled, isTransforming,
-    setIsTransforming, isQuadView, setIsQuadView, webXrBridgeGeneration,
-    setWebXrBridgeGeneration, webXrCanvasGeneration, setWebXrCanvasGeneration,
-    webXrSessionStateRef, webXrControllerRef, webXrRestoreCameraRef, webXrCleanupPromiseRef,
-    webXrRendererRecreationPendingRef, webXrCloseRequestedRef, webXrOpenRef, webXrMountedRef,
-    viewTopRef, viewFrontRef, viewRightRef, viewPerspRef, isCapturing, setIsCapturing, error,
-    setError, activePanelTab, setActivePanelTab, modelsPanelActivated, setModelsPanelActivated,
-    viewEditorSection, setViewEditorSection, babylonDiagnosticAbortRef,
-    babylonDiagnosticGenerationRef, physicsPhase, setPhysicsPhase, physicsDurationSeconds,
-    setPhysicsDurationSeconds, physicsGroundEnabled, setPhysicsGroundEnabled, physicsProgress,
-    setPhysicsProgress, physicsCurrentSeconds, setPhysicsCurrentSeconds, physicsError,
-    setPhysicsError, physicsPreviewRevision, setPhysicsPreviewRevision, ltEditorSection,
-    setLtEditorSection, ltPresetPanelActivated, setLtPresetPanelActivated,
-    ltUserPresetRepository, ltUserPresetHydrationGenerationRef,
-    ltUserPresetMutationGenerationRef, ltUserPresetPayload, setLtUserPresetPayload,
-    ltUserPresetNotice, setLtUserPresetNotice, ltPreferredPresetId, setLtPreferredPresetId,
-    ltManagedUserPresetId, setLtManagedUserPresetId, ltDeleteConfirmId, setLtDeleteConfirmId,
-    ltUserPresetName, setLtUserPresetName, ltUserPresetDescription, setLtUserPresetDescription,
-    viewportHinted, setViewportHinted, canUndo, setCanUndo, canRedo, setCanRedo, shotNameDraft,
-    setShotNameDraft, shotBatchExcludedIds, setShotBatchExcludedIds, shotBatchPasses,
-    setShotBatchPasses, shotBatchIncludeLayeredPsd, setShotBatchIncludeLayeredPsd,
-    shotBatchIncludeContactSheet, setShotBatchIncludeContactSheet, shotBatchExportHeight,
-    setShotBatchExportHeight, shotBatchProgress, setShotBatchProgress, shotBatchRecoverySummary,
-    setShotBatchRecoverySummary, isBatchRenderingShots, compositeCategory, setCompositeCategory,
-    sceneTemplateCategory, setSceneTemplateCategory, roomBuilderSpec, setRoomBuilderSpec,
-    sunRigConfig, setSunRigConfig, sectionPlane, setSectionPlane, scaleGuideVisible,
-    setScaleGuideVisible, measurementActive, setMeasurementActive, measurementStatus,
-    setMeasurementStatus, measurementActiveRef, snapSettings, setSnapSettings, surfaceSnapArmed,
-    setSurfaceSnapArmed, surfaceSnapAlignNormal, setSurfaceSnapAlignNormal, surfaceSnapStatus,
-    setSurfaceSnapStatus, layerQuery, setLayerQuery, customModels, setCustomModels,
-    modelLibrary, setModelLibrary, placementSession, setPlacementSession, placementSessionRef,
-    placementTokenSequenceRef, modelRenderer, setModelRenderer, modelRendererRef,
-    isUploadingModel, setIsUploadingModel, modelImportProgress, setModelImportProgress,
-    modelImportAbortRef, modelThumbnailCaptureAbortRef, modelThumbnailCaptureEpochRef,
-    modelThumbnailGpuLeaseRef, modelAnimationTimeReadersRef, modelRigBakeReadersRef,
-    ikEndJointSelection, setIkEndJointSelection, morphTargetSelection, setMorphTargetSelection,
-    deletingModelId, setDeletingModelId, isRestoringScene, setIsRestoringScene,
-    sceneRestoreAbortRef, templateLibrary, setTemplateLibrary, templateLibraryStatus,
-    setTemplateLibraryStatus, isSavingTemplate, setIsSavingTemplate, applyingTemplateId,
-    setApplyingTemplateId, generateId, handleSaveSceneAsTemplate, handleDeleteTemplate,
-    failedCloneIds, setFailedCloneIds, readyCloneIds, setReadyCloneIds, unbatchableModelIds,
-    setUnbatchableModelIds, sceneBaseDocument, setSceneBaseDocument, savedShots,
-    shotBatchSelectedIds, selectedShotBatchPasses, deviceSignals, setDeviceSignals, skyPresetId,
-    insertBackgroundIntent, transparentInsert, captureRef, modalDialogRef, modalRootRef,
-    viewportApiRef, pendingInitialCameraRef, cameraLensGestureBeforeViewRef,
-    cameraLensGestureLatestViewRef, cameraLensGestureTimerRef, viewportHostRef, viewportBoxSize,
-    setViewportBoxSize, primitiveObjectsRef, surfaceSnapArmedRef,
-    dragInitialSelectedTransformsRef, dragInitialFirstTransformRef, panelScrollRef,
-    modelRootCacheRef, modelLoadPendingRef, attachmentByStorageModelIdRef,
-    storageModelIdByAttachmentIdRef, componentActiveRef, modalAssetSessionRef,
-    captureInFlightRef, invalidateModelThumbnailCaptures, ltInsertAbortRef,
-    aiMethodReferenceAbortRef, ltInsertSceneEpochRef, ltMagicSelectionEpochRef,
-    ltMagicCaptureGenerationRef, ltInsertRestoreLineArtPreviewRef, destructiveMutationGuardRef,
-    shotBatchAbortRef, shotBatchRecoveryRef, shotBatchRecoveryScopeRef,
-    shotBatchRecoveryStoreRef, shotBatchAuthorizationEpochRef, physicsPhaseRef, physicsAbortRef,
-    physicsAnimationFrameRef, physicsGenerationRef, physicsPlaybackStartedAtRef,
-    physicsPlaybackOffsetRef, physicsLastUiUpdateRef, physicsLastFrameTimestampRef,
-    latestPhysicsSamplesRef, physicsSessionRef, physicsWorkerSessionRef,
-    physicsRuntimeSourceRef, physicsStartButtonRef, physicsTransportActionRef,
-    shouldTransferPhysicsFocusRef, isModalAssetSessionCurrent,
-    getModelThumbnailCaptureController, acquireModelThumbnailGpuLease,
-    startModelThumbnailCaptureBatch, invalidateModalAssetSession, cancelSurfaceSnap,
-    handleViewportReady, resetWebXrPresentationUi, finishWebXrControllerCleanup,
-    disposeCurrentWebXrControllerGeneration, disposeWebXrControllerForOpenChange,
-    handleWebXrControllerReady, handleWebXrSessionStateChange, historyRef, historyIndexRef,
+    TRANSFORM_MODES, VIEW_EDITOR_SECTIONS, VIEWPORT_BTN, StudioBg3dActionFooter, StudioBg3dDirectionalShadowLight, StudioBg3dImmersivePanel, StudioBg3dLtPanel,
+    StudioBg3dMeasurementPanel, StudioBg3dMeasurementViewport, StudioBg3dPhysicsPanel, StudioBg3dPhysicsTransport, StudioBg3dPlacementPointerController,
+    StudioBg3dRoomBuilderPanel, StudioBg3dSceneFog, BgAdaptiveDprController, BgCustomModelInstanceBatch, BgCustomModelMesh, BgGroundHelper, BgPlacementPreview,
+    BgPrimitiveMesh, BgScaleGuide, BgSectionPlaneController, BgViewportController, SkyClearColorController, StudioBg3dThreeRenderSettingsController, StudioBg3dScenePanorama,
+    StudioBg3dSceneTemplatePanel, StudioBg3dShapesPanel, StudioBg3dSharedCharacterSceneContent, StudioBg3dSharedCharacterStatusOverlay, StudioBg3dSharedStagePanel, StudioBg3dViewPanel,
+    StudioBg3dImmersiveRenderBridge, StudioBg3dWebXrSessionBridge, StudioBg3dCaptureAdapter, StudioBg3dCaptureRequest, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress,
+    StudioBg3dModelThumbnailCaptureController, StudioBg3dModelThumbnailThreeCaptureHandle, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dShotBatchPass,
+    StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBackground3DInsertResult, StudioToolHintSpec,
+    StudioWebXrMode, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, open, initialDataUrl, initialScene, seedSceneTemplateId,
+    seedPrimitiveKind, onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution, sharedStageSessionScopeKey, sharedCharactersLinkedToOtherBackgroundCount, operation,
+    recoveryScope, validateRecoveryAccess, onWebXrCleanupPendingChange, onClose, onInsert, onUseAsAiMethodReference, documentCanvasSize, primitiveGeometryPool, adaptiveDprScale,
+    engineRuntime, applyStudioBg3dThreeRenderSettings, setEngineFrameTimeMs, setAdaptiveDprScale, sharedCharacterCaptureAuthorityDraft,
+    sharedCharacterCaptureAuthorityPayloadKey, readSharedCharacterCaptureAuthorityDraft, sharedCharacterCaptureAuthorityPayloadKeyRef, sharedCharacterCaptureAuthorityRevisionRef,
+    sharedCharacterCaptureStatusFenceRef, updateSharedCharacterStatusWithCaptureFence, acquireSharedCharacterCaptureAuthority, verifySharedCharacterCaptureAuthority, primitives,
+    setPrimitives, selectedIds, setSelectedIds, transformMode, setTransformMode, lineArtPreview, setLineArtPreview, magicLayerEnabled, setMagicLayerEnabled, isTransforming,
+    setIsTransforming, isQuadView, setIsQuadView, webXrBridgeGeneration, setWebXrBridgeGeneration, webXrCanvasGeneration, setWebXrCanvasGeneration,
+    webXrSessionStateRef, webXrControllerRef, webXrRestoreCameraRef, webXrCleanupPromiseRef, webXrRendererRecreationPendingRef, webXrCloseRequestedRef, webXrOpenRef, webXrMountedRef,
+    viewTopRef, viewFrontRef, viewRightRef, viewPerspRef, isCapturing, setIsCapturing, error, setError, activePanelTab, setActivePanelTab, modelsPanelActivated, setModelsPanelActivated,
+    viewEditorSection, setViewEditorSection, babylonDiagnosticAbortRef, babylonDiagnosticGenerationRef, physicsPhase, setPhysicsPhase, physicsDurationSeconds,
+    setPhysicsDurationSeconds, physicsGroundEnabled, setPhysicsGroundEnabled, physicsProgress, setPhysicsProgress, physicsCurrentSeconds, setPhysicsCurrentSeconds, physicsError,
+    setPhysicsError, physicsPreviewRevision, setPhysicsPreviewRevision, ltEditorSection, setLtEditorSection, ltPresetPanelActivated, setLtPresetPanelActivated,
+    ltUserPresetRepository, ltUserPresetHydrationGenerationRef, ltUserPresetMutationGenerationRef, ltUserPresetPayload, setLtUserPresetPayload,
+    ltUserPresetNotice, setLtUserPresetNotice, ltPreferredPresetId, setLtPreferredPresetId, ltManagedUserPresetId, setLtManagedUserPresetId, ltDeleteConfirmId, setLtDeleteConfirmId,
+    ltUserPresetName, setLtUserPresetName, ltUserPresetDescription, setLtUserPresetDescription, viewportHinted, setViewportHinted, canUndo, setCanUndo, canRedo, setCanRedo, shotNameDraft,
+    setShotNameDraft, shotBatchExcludedIds, setShotBatchExcludedIds, shotBatchPasses, setShotBatchPasses, shotBatchIncludeLayeredPsd, setShotBatchIncludeLayeredPsd,
+    shotBatchIncludeContactSheet, setShotBatchIncludeContactSheet, shotBatchExportHeight, setShotBatchExportHeight, shotBatchProgress, setShotBatchProgress, shotBatchRecoverySummary,
+    setShotBatchRecoverySummary, isBatchRenderingShots, compositeCategory, setCompositeCategory, sceneTemplateCategory, setSceneTemplateCategory, roomBuilderSpec, setRoomBuilderSpec,
+    sunRigConfig, setSunRigConfig, sectionPlane, setSectionPlane, scaleGuideVisible, setScaleGuideVisible, measurementActive, setMeasurementActive, measurementStatus,
+    setMeasurementStatus, measurementActiveRef, snapSettings, setSnapSettings, surfaceSnapArmed, setSurfaceSnapArmed, surfaceSnapAlignNormal, setSurfaceSnapAlignNormal, surfaceSnapStatus,
+    setSurfaceSnapStatus, layerQuery, setLayerQuery, customModels, setCustomModels, modelLibrary, setModelLibrary, placementSession, setPlacementSession, placementSessionRef,
+    placementTokenSequenceRef, modelRenderer, setModelRenderer, modelRendererRef, isUploadingModel, setIsUploadingModel, modelImportProgress, setModelImportProgress,
+    modelImportAbortRef, modelThumbnailCaptureAbortRef, modelThumbnailCaptureEpochRef, modelThumbnailGpuLeaseRef, modelAnimationTimeReadersRef, modelRigBakeReadersRef,
+    ikEndJointSelection, setIkEndJointSelection, morphTargetSelection, setMorphTargetSelection, deletingModelId, setDeletingModelId, isRestoringScene, setIsRestoringScene,
+    sceneRestoreAbortRef, templateLibrary, setTemplateLibrary, templateLibraryStatus, setTemplateLibraryStatus, isSavingTemplate, setIsSavingTemplate, applyingTemplateId,
+    setApplyingTemplateId, generateId, handleSaveSceneAsTemplate, handleDeleteTemplate, failedCloneIds, setFailedCloneIds, readyCloneIds, setReadyCloneIds, unbatchableModelIds,
+    setUnbatchableModelIds, sceneBaseDocument, setSceneBaseDocument, savedShots, shotBatchSelectedIds, selectedShotBatchPasses, deviceSignals, setDeviceSignals, skyPresetId,
+    insertBackgroundIntent, transparentInsert, captureRef, modalDialogRef, modalRootRef, viewportApiRef, pendingInitialCameraRef, cameraLensGestureBeforeViewRef,
+    cameraLensGestureLatestViewRef, cameraLensGestureTimerRef, viewportHostRef, viewportBoxSize, setViewportBoxSize, primitiveObjectsRef, surfaceSnapArmedRef,
+    dragInitialSelectedTransformsRef, dragInitialFirstTransformRef, panelScrollRef, modelRootCacheRef, modelLoadPendingRef, attachmentByStorageModelIdRef,
+    storageModelIdByAttachmentIdRef, componentActiveRef, modalAssetSessionRef, captureInFlightRef, invalidateModelThumbnailCaptures, ltInsertAbortRef,
+    aiMethodReferenceAbortRef, ltInsertSceneEpochRef, ltMagicSelectionEpochRef, ltMagicCaptureGenerationRef, ltInsertRestoreLineArtPreviewRef, destructiveMutationGuardRef,
+    shotBatchAbortRef, shotBatchRecoveryRef, shotBatchRecoveryScopeRef, shotBatchRecoveryStoreRef, shotBatchAuthorizationEpochRef, physicsPhaseRef, physicsAbortRef,
+    physicsAnimationFrameRef, physicsGenerationRef, physicsPlaybackStartedAtRef, physicsPlaybackOffsetRef, physicsLastUiUpdateRef, physicsLastFrameTimestampRef,
+    latestPhysicsSamplesRef, physicsSessionRef, physicsWorkerSessionRef, physicsRuntimeSourceRef, physicsStartButtonRef, physicsTransportActionRef,
+    shouldTransferPhysicsFocusRef, isModalAssetSessionCurrent, getModelThumbnailCaptureController, acquireModelThumbnailGpuLease,
+    startModelThumbnailCaptureBatch, invalidateModalAssetSession, cancelSurfaceSnap, handleViewportReady, resetWebXrPresentationUi, finishWebXrControllerCleanup,
+    disposeCurrentWebXrControllerGeneration, disposeWebXrControllerForOpenChange, handleWebXrControllerReady, handleWebXrSessionStateChange, historyRef, historyIndexRef,
     deviceQuality, hasCloneFailure, hasPendingClone, hasPendingSharedCharacter,
     hasUnavailableSharedCharacter, physicsInteractionLocked, insertBlocked,
     magicLayerSelectedPrimitive, magicLayerLensShift, magicLayerUnavailableReason,
@@ -414,9 +369,14 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       자동으로 다른 엔진을 실행하지 않습니다. 보기 탭의 3D 렌더 엔진에서
                       WebGPU 또는 WebGL2를 직접 선택해 주세요.
                     </p>
-                    <StudioBg3dEngineRecoveryActions preference={engineRuntime.preference} onPreferenceChange={engineRuntime.setPreference} onReopenLowQuality={h.resourceRecovery?.reopenLowQuality} onReturnTo2d={h.resourceRecovery?.returnTo2d} />
+                    <StudioBg3dEngineRecoveryActions preference={engineRuntime.preference} onPreferenceChange={engineRuntime.setPreference} onReopenLowQuality={h.resourceRecovery?.reopenLowQuality} onReturnTo2d={h.resourceRecovery?.returnTo2d ?? requestUserClose} />
                   </div>
                 ) : (
+                  <StudioBg3dCanvasErrorBoundary
+                    resetKey={`${webXrCanvasGeneration}:${engineRuntime.canvasKey}`}
+                    backend={engineRuntime.plan.backend}
+                    onRendererError={engineRuntime.reportRendererFailure}
+                  >
                   <Canvas
                   key={`${webXrCanvasGeneration}:${engineRuntime.canvasKey}`}
                   events={createStudioBg3dPointerEvents}
@@ -533,7 +493,17 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                     ) : null}
                   </View>
                   </Canvas>
+                  </StudioBg3dCanvasErrorBoundary>
                 )}
+                <StudioBg3dViewportReadinessOverlay
+                  open={open}
+                  engineRuntime={engineRuntime}
+                  modelRenderer={modelRenderer}
+                  onClearModelRenderer={() => { modelRendererRef.current = null; setModelRenderer(null); }}
+                  isRestoringScene={isRestoringScene}
+                  viewportHostRef={viewportHostRef}
+                  onReturnTo2d={h.resourceRecovery?.returnTo2d ?? requestUserClose}
+                />
 
                 {/* Capture-derived, pointer-transparent safe frame and crop mask. */}
                 {!immersiveSceneActive

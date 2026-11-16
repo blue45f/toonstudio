@@ -221,4 +221,23 @@ describe("StudioBg3dEnginePanel", () => {
     );
     expect(screen.queryByTestId("studio-bg3d-engine-frame-time")).toBeNull();
   });
+
+  it("shows initializing rather than active while the admitted renderer has not finished starting", () => {
+    render(
+      <StudioBg3dEnginePanel
+        plan={planFor({ preference: "webgl2" })}
+        preference="webgl2"
+        inApp={DESKTOP}
+        probing={false}
+        rendererReady={false}
+        deviceLostMessage={null}
+        frameTimeMs={12.5}
+        onPreferenceChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByTestId("studio-bg3d-engine-active-backend").textContent)
+      .toContain("WebGL2 초기화 중");
+    expect(screen.queryByTestId("studio-bg3d-engine-frame-time")).toBeNull();
+  });
 });

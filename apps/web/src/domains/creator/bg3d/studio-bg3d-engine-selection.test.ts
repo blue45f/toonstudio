@@ -141,6 +141,33 @@ describe("Studio BG3D explicit engine selection", () => {
     expect(plan.diagnostics).toContain("webgpu-probe-unsupported");
   });
 
+  it("marks explicit WebGL2 unavailable or failed without switching back to WebGPU", () => {
+    expect(selectStudioBg3dEngine({
+      ...BASE,
+      preference: "webgl2",
+      probe: UNSUPPORTED_PROBE,
+      webgl2Supported: false,
+    })).toMatchObject({
+      backend: "webgl2",
+      runtimeId: "three-webgl",
+      status: "unavailable",
+      reason: "webgl2-unavailable",
+    });
+
+    expect(selectStudioBg3dEngine({
+      ...BASE,
+      preference: "webgl2",
+      probe: UNSUPPORTED_PROBE,
+      webgl2Supported: true,
+      webgl2RuntimeFailed: true,
+    })).toMatchObject({
+      backend: "webgl2",
+      runtimeId: "three-webgl",
+      status: "failed",
+      reason: "webgl2-runtime-failed",
+    });
+  });
+
   it("fails malformed input closed on WebGPU rather than mounting WebGL2", () => {
     expect(selectStudioBg3dEngine(undefined as unknown as StudioBg3dEngineSelectionRequest))
       .toMatchObject({

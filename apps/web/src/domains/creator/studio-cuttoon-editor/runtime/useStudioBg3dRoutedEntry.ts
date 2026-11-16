@@ -1,5 +1,28 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 
+export interface StudioBg3dRoutedStartupGateSnapshot {
+  readonly yielded: boolean;
+}
+
+let startupGateSnapshot: StudioBg3dRoutedStartupGateSnapshot = Object.freeze({
+  yielded: false,
+});
+const startupGateListeners = new Set<() => void>();
+
+export function setStudioBg3dRoutedStartupYielded(yielded: boolean): void {
+  if (startupGateSnapshot.yielded === yielded) return;
+  startupGateSnapshot = Object.freeze({ yielded });
+  for (const listener of startupGateListeners) listener();
+}
+
+export const studioBg3dRoutedStartupGateSource = Object.freeze({
+  getSnapshot: () => startupGateSnapshot,
+  subscribe(listener: () => void) {
+    startupGateListeners.add(listener);
+    return () => startupGateListeners.delete(listener);
+  },
+});
+
 interface UseStudioBg3dRoutedEntryOptions {
   readonly routedSurface: string;
   readonly workHydrated: boolean;
@@ -30,18 +53,25 @@ export function useStudioBg3dRoutedEntry({
   const openEntryEvent = useEffectEvent(openEntry);
   const sourceReady = workHydrated && !sourceHydrationPending
     && (remoteSource || (autosaveChecked && !hasAutosave));
+  const waitingForAutosaveDecision = workHydrated && !sourceHydrationPending
+    && !remoteSource && autosaveChecked && hasAutosave;
 
   useEffect(() => {
     if (routedSurface !== "bg3d") {
       enteredRef.current = false;
+      setStudioBg3dRoutedStartupYielded(false);
       return;
     }
     if (enteredRef.current) return;
     const warmEntry = wasOpenEvent();
-    if (!warmEntry && !sourceReady) return;
+    if (!warmEntry && !sourceReady) {
+      setStudioBg3dRoutedStartupYielded(waitingForAutosaveDecision);
+      return;
+    }
     enteredRef.current = true;
+    setStudioBg3dRoutedStartupYielded(false);
     if (!warmEntry) resetColdSourceEvent();
     // 콜백 identity나 준비 상태가 다시 바뀌어도 같은 route의 열림을 재실행하지 않는다.
     openEntryEvent();
-  }, [routedSurface, sourceReady]);
+  }, [routedSurface, sourceReady, waitingForAutosaveDecision]);
 }

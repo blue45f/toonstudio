@@ -23,12 +23,17 @@ import {
   latchStudioBg3dWebglOnlyFeatures,
   normalizeStudioBg3dEnginePreference,
   resolveStudioBg3dEngineRuntime,
+  type StudioBg3dEngineBackend,
   type StudioBg3dEnginePreference,
   type StudioBg3dEngineSelectionPlan,
   type StudioBg3dEngineWebglOnlyFeatures,
 } from "./studio-bg3d-engine-selection";
 import { classifyStudioBg3dInAppBrowser } from "./studio-bg3d-inapp-browser";
 import { probeStudioBg3dWebGpuCapability } from "./studio-bg3d-webgpu-capability";
+import {
+  probeStudioBg3dWebGl2Capability,
+  type StudioBg3dWebGl2ProbeResult,
+} from "./studio-bg3d-webgl2-capability";
 
 import type { StudioBg3dDeviceProfile } from "./studio-bg3d-device-quality";
 import type { StudioBg3dInAppBrowserProfile } from "./studio-bg3d-inapp-browser";
@@ -63,6 +68,7 @@ export interface StudioBg3dEngineRuntimeState {
   readonly preference: StudioBg3dEnginePreference;
   readonly inApp: StudioBg3dInAppBrowserProfile;
   readonly probe: StudioBg3dWebGpuProbeResult;
+  readonly webgl2Probe: StudioBg3dWebGl2ProbeResult;
   /**
    * Put this in the R3F `Canvas` key. It changes when the backend changes and when the artist
    * explicitly retries a failed WebGPU selection.
@@ -72,6 +78,7 @@ export interface StudioBg3dEngineRuntimeState {
   readonly glFactory: StudioBg3dRendererFactory | null;
   readonly deviceLostMessage: string | null;
   setPreference(next: StudioBg3dEnginePreference): void;
+  reportRendererFailure(backend: StudioBg3dEngineBackend, cause?: string): void;
 }
 
 export interface UseStudioBg3dEngineRuntimeOptions {
@@ -88,6 +95,7 @@ export interface UseStudioBg3dEngineRuntimeOptions {
   readonly observedWebglOnlyFeatures?: Partial<StudioBg3dEngineWebglOnlyFeatures>;
   /** Test seam; production reads the browser. */
   readonly probe?: typeof probeStudioBg3dWebGpuCapability;
+  readonly probeWebgl2?: typeof probeStudioBg3dWebGl2Capability;
   readonly loadPreference?: () => Promise<StudioBg3dEnginePreference>;
   /** Test seam and host override for the preference-storage response deadline. */
   readonly preferenceLoadTimeoutMs?: number;
@@ -101,6 +109,11 @@ const PENDING_PROBE: StudioBg3dWebGpuProbeResult = Object.freeze({
   computeSupported: false,
   timestampQuerySupported: false,
   limits: Object.freeze({}),
+});
+
+const UNPROBED_WEBGL2: StudioBg3dWebGl2ProbeResult = Object.freeze({
+  supported: true,
+  reason: "unprobed",
 });
 
 async function loadPersistedPreference(): Promise<StudioBg3dEnginePreference> {
@@ -155,6 +168,7 @@ export function useStudioBg3dEngineRuntime(
     deviceMemoryGb,
     observedWebglOnlyFeatures,
     probe: probeCapability = probeStudioBg3dWebGpuCapability,
+    probeWebgl2 = probeStudioBg3dWebGl2Capability,
     loadPreference = loadPersistedPreference,
     preferenceLoadTimeoutMs = STUDIO_BG3D_ENGINE_PREFERENCE_LOAD_TIMEOUT_MS,
     savePreference = persistPreference,
@@ -166,8 +180,11 @@ export function useStudioBg3dEngineRuntime(
 
   const [preference, setPreferenceState] = useState<StudioBg3dEnginePreference>("webgpu");
   const [probe, setProbe] = useState<StudioBg3dWebGpuProbeResult>(PENDING_PROBE);
+  const [webgl2Probe, setWebgl2Probe] = useState<StudioBg3dWebGl2ProbeResult>(UNPROBED_WEBGL2);
   const [phase, setPhase] = useState<StudioBg3dEngineRuntimePhase>("probing");
   const [webgpuRuntimeFailed, setWebgpuRuntimeFailed] = useState(false);
+  const [webgl2RuntimeFailed, setWebgl2RuntimeFailed] = useState(false);
+  const [webgpuRetryCount, setWebgpuRetryCount] = useState(0);
   const [deviceLostMessage, setDeviceLostMessage] = useState<string | null>(null);
   const [recoveryGeneration, setRecoveryGeneration] = useState(0);
   const [webglOnlyFeatures, setWebglOnlyFeatures] = useState<StudioBg3dEngineWebglOnlyFeatures>(
@@ -225,7 +242,9 @@ export function useStudioBg3dEngineRuntime(
     if (reopened) {
       setPhase("probing");
       setWebgpuRuntimeFailed(false);
+      setWebgl2RuntimeFailed(false);
       setDeviceLostMessage(null);
+      setWebgl2Probe(probeWebgl2());
     }
 
     let cancelled = false;
@@ -266,7 +285,10 @@ export function useStudioBg3dEngineRuntime(
       preferenceRestored = true;
       // WebGL2 is an independent explicit engine. It does not wait for a WebGPU adapter probe that
       // is irrelevant to its renderer; the probe may finish later for diagnostics and future choice.
-      if (preferenceRef.current === "webgl2") setPhase("ready");
+      if (preferenceRef.current === "webgl2") {
+        setWebgl2Probe(probeWebgl2());
+        setPhase("ready");
+      }
 
       const probed = await probePromise;
       if (cancelled) return;
@@ -279,7 +301,7 @@ export function useStudioBg3dEngineRuntime(
       cancelled = true;
       controller.abort();
     };
-  }, [boundedPreferenceLoadTimeoutMs, enabled, loadPreference, probeCapability]);
+  }, [boundedPreferenceLoadTimeoutMs, enabled, loadPreference, probeCapability, probeWebgl2, webgpuRetryCount]);
 
   const plan = useMemo(
     () => resolveStudioBg3dEngineRuntime({
@@ -293,6 +315,8 @@ export function useStudioBg3dEngineRuntime(
       saveData,
       deviceMemoryGb,
       webgpuRuntimeFailed,
+      webgl2Supported: webgl2Probe.supported,
+      webgl2RuntimeFailed,
       webglOnlyFeatures: effectiveWebglOnlyFeatures,
     }),
     [
@@ -303,6 +327,8 @@ export function useStudioBg3dEngineRuntime(
       saveData,
       deviceMemoryGb,
       webgpuRuntimeFailed,
+      webgl2Probe.supported,
+      webgl2RuntimeFailed,
       effectiveWebglOnlyFeatures,
     ],
   );
@@ -311,17 +337,36 @@ export function useStudioBg3dEngineRuntime(
     preferenceRevisionRef.current += 1;
     const normalized = normalizeStudioBg3dEnginePreference(next);
     const retriesFailedWebGpu = normalized === "webgpu" && normalized === preference
-      && webgpuRuntimeFailed;
+      && (webgpuRuntimeFailed || !probe.supported);
+    const retriesFailedWebGl2 = normalized === "webgl2" && normalized === preference
+      && (webgl2RuntimeFailed || !webgl2Probe.supported);
     setPreferenceState(normalized);
     preferenceRef.current = normalized;
-    if (enabled && normalized === "webgl2") setPhase("ready");
+    if (enabled && normalized === "webgl2") {
+      setWebgl2Probe(probeWebgl2());
+      setPhase("ready");
+    }
+    if (enabled && normalized === "webgpu" && normalized === preference && !probe.supported) {
+      setPhase("probing");
+      setWebgpuRetryCount((count) => count + 1);
+    }
     setDeviceLostMessage(null);
     setWebgpuRuntimeFailed(false);
-    if (retriesFailedWebGpu) {
+    setWebgl2RuntimeFailed(false);
+    if (retriesFailedWebGpu || retriesFailedWebGl2) {
       setRecoveryGeneration((generation) => generation + 1);
     }
     void savePreference(normalized).catch(() => undefined);
-  }, [enabled, preference, savePreference, webgpuRuntimeFailed]);
+  }, [
+    enabled,
+    preference,
+    probe.supported,
+    probeWebgl2,
+    savePreference,
+    webgl2Probe.supported,
+    webgl2RuntimeFailed,
+    webgpuRuntimeFailed,
+  ]);
 
   const handleWebGpuFailure = useCallback((cause: string) => {
     const detail = cause.trim().replace(/[.\s]+$/u, "");
@@ -331,6 +376,23 @@ export function useStudioBg3dEngineRuntime(
       + "WebGPU 실행을 중단했습니다. 다시 선택하거나 WebGL2를 직접 선택해 주세요.",
     );
   }, []);
+
+  const handleWebGl2Failure = useCallback((cause: string) => {
+    const detail = cause.trim().replace(/[.\s]+$/u, "");
+    setWebgl2RuntimeFailed(true);
+    setDeviceLostMessage(
+      `${detail || "WebGL2 렌더러를 시작하지 못했습니다"}. `
+      + "WebGL2 실행을 중단했습니다. 다시 시도하거나 2D 원고로 복귀해 주세요.",
+    );
+  }, []);
+
+  const reportRendererFailure = useCallback((backend: StudioBg3dEngineBackend, cause = "") => {
+    if (backend === "webgpu") {
+      handleWebGpuFailure(cause);
+      return;
+    }
+    handleWebGl2Failure(cause);
+  }, [handleWebGl2Failure, handleWebGpuFailure]);
 
   useEffect(() => {
     if (deviceLostMessage === null) return;
@@ -369,9 +431,11 @@ export function useStudioBg3dEngineRuntime(
     preference,
     inApp,
     probe,
+    webgl2Probe,
     canvasKey: `${plan.backend}#${recoveryGeneration}`,
     glFactory,
     deviceLostMessage,
     setPreference,
+    reportRendererFailure,
   };
 }

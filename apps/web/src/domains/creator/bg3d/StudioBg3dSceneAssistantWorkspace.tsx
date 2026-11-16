@@ -3,7 +3,7 @@
 // shared viewport even when the bag identity itself stays stable.
 
 import {
-  ArrowLeft, ArrowRight, Box, Camera, Check, ChevronDown, ChevronUp, CircleUserRound,
+  ArrowLeft, ArrowRight, Box, Camera, Check, CircleUserRound,
   Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
   Save, Scaling, ScanLine, SlidersHorizontal, Sparkles, Trash2, Upload,
 } from "lucide-react";
@@ -12,7 +12,19 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { StudioScene3dBg3dCutPanel } from "../scene3d/StudioScene3dBg3dCutPanel";
+import {
+  StudioBg3dAssistantHostReadinessBanner,
+  type StudioBg3dAssistantReadinessHostLike,
+} from "./StudioBg3dAssistantReadinessBanner";
 import { StudioBg3dEditorViewport } from "./StudioBg3dEditorViewport";
+import {
+  AssetCard,
+  AssistantStepper,
+  GoalPicker,
+  ScenePresetCard,
+  SheetHandle,
+  type StudioBg3dAssistantAssetItem as AssistantAsset,
+} from "./StudioBg3dSceneAssistantChrome";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import {
   STUDIO_BG3D_ASSISTANT_CAMERA_PRESETS,
@@ -37,17 +49,10 @@ import "./studio-bg3d-scene-assistant.css";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
-type AssistantAsset = {
-  readonly id: string;
-  readonly name: string;
-  readonly thumbnail: string | null;
-  readonly canUse: boolean;
-};
-
 type AssistantSceneNode = { readonly id: string; readonly modelId?: string };
 type AssistantBooleanSetter = (next: boolean | ((current: boolean) => boolean)) => void;
 
-export interface StudioBg3dSceneAssistantHost {
+export interface StudioBg3dSceneAssistantHost extends StudioBg3dAssistantReadinessHostLike {
   readonly open: boolean;
   readonly operation?: "insert" | "update";
   readonly primitives?: readonly AssistantSceneNode[];
@@ -100,17 +105,6 @@ interface StudioBg3dSceneAssistantWorkspaceProps {
   readonly onOpenProfessional: () => void;
 }
 
-const GOALS: readonly {
-  readonly id: StudioBg3dAssistantGoal;
-  readonly title: string;
-  readonly description: string;
-  readonly icon: typeof Layers3;
-}[] = Object.freeze([
-  { id: "background", title: "배경·구도", description: "완성된 장소를 고르고 카메라만 맞춰요", icon: Layers3 },
-  { id: "character", title: "인물·포즈", description: "프로젝트 캐릭터와 포즈 참고를 배치해요", icon: CircleUserRound },
-  { id: "props", title: "소품", description: "가구와 물건을 현재 장면에 바로 놓아요", icon: Cuboid },
-]);
-
 const TRANSFORM_ACTIONS = Object.freeze([
   { id: "translate", label: "위치 옮기기", icon: Move3d },
   { id: "rotate", label: "방향 바꾸기", icon: Rotate3d },
@@ -145,6 +139,9 @@ function readAssistantHostSnapshot(h: StudioBg3dSceneAssistantHost): string {
     h.groundSelectionDisabledReason ?? "",
     h.focusSelectionDisabledReason ?? "",
     h.error ?? h.sixPassLtInsertUnavailableReason ?? "",
+    h.readinessState?.phase ?? "",
+    h.readinessState?.stage ?? "",
+    h.readinessState?.selectedEngine ?? "",
   ].join("|");
 }
 
@@ -183,149 +180,6 @@ function stepActionLabel(step: StudioBg3dAssistantStep): string {
   if (step === "arrange") return "다음: 구도 잡기";
   if (step === "frame") return "다음: 작화 스타일";
   return "현재 컷에 적용";
-}
-
-function SheetHandle({
-  state,
-  onChange,
-}: {
-  readonly state: StudioBg3dAssistantSheetState;
-  readonly onChange: (state: StudioBg3dAssistantSheetState) => void;
-}) {
-  const next = state === "peek" ? "half" : state === "half" ? "full" : "peek";
-  return (
-    <button
-      type="button"
-      className="scene-assistant__sheet-handle"
-      aria-label={state === "full" ? "도구 패널 접기" : "도구 패널 펼치기"}
-      onClick={() => onChange(next)}
-    >
-      <span aria-hidden />
-      {state === "full" ? <ChevronDown size={16} aria-hidden /> : <ChevronUp size={16} aria-hidden />}
-    </button>
-  );
-}
-function AssistantStepper({
-  step,
-  onStepChange,
-}: {
-  readonly step: StudioBg3dAssistantStep;
-  readonly onStepChange: (step: StudioBg3dAssistantStep) => void;
-}) {
-  const activeIndex = studioBg3dAssistantStepIndex(step);
-  return (
-    <nav className="scene-assistant__steps" aria-label="장면 제작 단계">
-      {STUDIO_BG3D_ASSISTANT_STEPS.map((item, index) => {
-        const current = item.id === step;
-        const complete = index < activeIndex;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            aria-label={`${item.number}. ${item.label}`}
-            aria-current={current ? "step" : undefined}
-            className="scene-assistant__step"
-            data-current={current || undefined}
-            data-complete={complete || undefined}
-            onClick={() => onStepChange(item.id)}
-          >
-            <span className="scene-assistant__step-number">
-              {complete ? <Check size={13} aria-hidden /> : item.number}
-            </span>
-            <span className="scene-assistant__step-copy">
-              <span>{item.shortLabel}</span>
-              <small>{item.label}</small>
-            </span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
-function GoalPicker({
-  goal,
-  onChange,
-}: {
-  readonly goal: StudioBg3dAssistantGoal;
-  readonly onChange: (goal: StudioBg3dAssistantGoal) => void;
-}) {
-  return (
-    <div className="scene-assistant__goal-grid" role="group" aria-label="만들 장면 종류">
-      {GOALS.map((item) => {
-        const Icon = item.icon;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className="scene-assistant__goal"
-            aria-pressed={goal === item.id}
-            onClick={() => onChange(item.id)}
-          >
-            <span className="scene-assistant__goal-icon"><Icon size={18} aria-hidden /></span>
-            <span><strong>{item.title}</strong><small>{item.description}</small></span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-function ScenePresetCard({
-  preset,
-  selected,
-  disabled,
-  onSelect,
-}: {
-  readonly preset: StudioBg3dAssistantScenePreset;
-  readonly selected: boolean;
-  readonly disabled: boolean;
-  readonly onSelect: (preset: StudioBg3dAssistantScenePreset) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="scene-assistant__scene-card"
-      aria-pressed={selected}
-      disabled={disabled}
-      onClick={() => onSelect(preset)}
-    >
-      <img src={preset.image} alt="" loading="lazy" decoding="async" />
-      <span className="scene-assistant__scene-card-shade" aria-hidden />
-      <span className="scene-assistant__scene-card-copy">
-        <span className="scene-assistant__badge">{preset.badge}</span>
-        <strong>{preset.title}</strong>
-        <small>{preset.description}</small>
-      </span>
-      {selected ? <span className="scene-assistant__scene-check"><Check size={14} aria-hidden /></span> : null}
-    </button>
-  );
-}
-
-function AssetCard({
-  asset,
-  disabled,
-  onAdd,
-}: {
-  readonly asset: AssistantAsset;
-  readonly disabled: boolean;
-  readonly onAdd: (asset: AssistantAsset) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className="scene-assistant__asset-card"
-      disabled={disabled || !asset.canUse}
-      onClick={() => onAdd(asset)}
-    >
-      <span className="scene-assistant__asset-thumb">
-        {asset.thumbnail
-          ? <img src={asset.thumbnail} alt="" loading="lazy" decoding="async" />
-          : <Box size={28} aria-hidden />}
-      </span>
-      <span><strong>{asset.name}</strong><small>장면에 놓고 위치를 정해요</small></span>
-      <ImagePlus size={16} aria-hidden />
-    </button>
-  );
 }
 function ChooseStep({
   goal,
@@ -712,17 +566,20 @@ export function StudioBg3dSceneAssistantWorkspace({
     + (h.sharedCharacterCaptureElementIds?.length ?? 0);
   const hasScene = objectCount > 0;
   const modalOpen = h.open;
-  const restoringScene = Boolean(h.isRestoringScene);
+  const readinessPhase = h.readinessState?.phase ?? (h.isRestoringScene ? "initializing" : "ready");
+  const restoringScene = Boolean(h.isRestoringScene) && readinessPhase !== "error";
   const selectedCount = h.selectedIds?.size ?? 0;
   const placementActive = h.placementSession?.phase === "preview" || Boolean(h.placementActive);
-  const busy = Boolean(
+  const activeTaskBusy = Boolean(
     h.isCapturing
-    || h.isRestoringScene
+    || restoringScene
+    || readinessPhase === "initializing"
     || h.isUploadingModel
     || h.isBatchRenderingShots
     || h.applyingTemplateId
     || h.deletingModelId,
   );
+  const busy = activeTaskBusy || readinessPhase === "error";
   const insertDisabled = !hasScene
     || busy
     || Boolean(h.insertBlocked)
@@ -921,9 +778,10 @@ export function StudioBg3dSceneAssistantWorkspace({
       data-sheet-state={sheetState}
       data-step={step}
       data-assistant-busy={busy || undefined}
+      data-assistant-readiness={readinessPhase}
       data-assistant-has-scene={hasScene || undefined}
       data-assistant-primary-disabled={primaryDisabled || undefined}
-      data-assistant-restoring={h.isRestoringScene || undefined}
+      data-assistant-restoring={restoringScene || undefined}
       data-assistant-uploading={h.isUploadingModel || undefined}
       data-assistant-applying-template={h.applyingTemplateId || undefined}
       data-assistant-deleting={h.deletingModelId || undefined}
@@ -955,7 +813,11 @@ export function StudioBg3dSceneAssistantWorkspace({
         </div>
 
         <AssistantStepper step={step} onStepChange={changeStep} />
-        <div className="scene-assistant__panel-scroll"><StudioScene3dBg3dCutPanel host={h} />{stepContent}</div>
+        <div className="scene-assistant__panel-scroll">
+          <StudioBg3dAssistantHostReadinessBanner host={h} hasDraftScene={hasScene} />
+          <StudioScene3dBg3dCutPanel host={h} preferredExpanded={false} />
+          {stepContent}
+        </div>
         {h.librarySaveNotice ? (
           <div className="scene-assistant__notice scene-assistant__notice--success" role="status">
             {h.librarySaveNotice}
@@ -985,9 +847,9 @@ export function StudioBg3dSceneAssistantWorkspace({
             disabled={primaryDisabled}
             onClick={advance}
           >
-            {busy ? <Loader2 className="animate-spin motion-reduce:animate-none" size={17} aria-hidden /> : step === "finish" ? <ImagePlus size={17} aria-hidden /> : null}
+            {activeTaskBusy ? <Loader2 className="animate-spin motion-reduce:animate-none" size={17} aria-hidden /> : step === "finish" ? <ImagePlus size={17} aria-hidden /> : null}
             <span>{primaryLabel}</span>
-            {!busy && step !== "finish" ? <ArrowRight size={16} aria-hidden /> : null}
+            {!activeTaskBusy && step !== "finish" ? <ArrowRight size={16} aria-hidden /> : null}
           </button>
         </footer>
       </aside>

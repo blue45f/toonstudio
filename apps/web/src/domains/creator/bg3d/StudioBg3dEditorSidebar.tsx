@@ -636,7 +636,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
             <StudioBg3dActionFooter
               sceneRecoveryError={sceneRecoveryError}
               hasCloneFailure={hasCloneFailure}
-              isRestoringScene={isRestoringScene}
+              isRestoringScene={isRestoringScene && h.engineRuntime?.plan?.status === "available"}
               hasPendingClone={hasPendingClone}
               hasPendingSharedCharacter={hasPendingSharedCharacter}
               hasFilledOutput={hasFilledOutput}

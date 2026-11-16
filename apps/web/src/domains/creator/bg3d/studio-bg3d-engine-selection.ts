@@ -24,6 +24,8 @@ export type StudioBg3dEngineStatus = "available" | "unavailable" | "failed";
 export type StudioBg3dEngineSelectionReason =
   | "user-webgpu-override"
   | "user-webgl2-override"
+  | "webgl2-unavailable"
+  | "webgl2-runtime-failed"
   | "webgpu-runtime-unavailable"
   | "webgpu-runtime-failed"
   | "webgpu-probe-unsupported"
@@ -78,6 +80,10 @@ export interface StudioBg3dEngineSelectionRequest {
   readonly deviceMemoryGb?: number;
   /** True after initialization or device loss fails the current explicit WebGPU selection. */
   readonly webgpuRuntimeFailed?: boolean;
+  /** Explicit WebGL2 capability probe; defaults to true when unprobed. */
+  readonly webgl2Supported?: boolean;
+  /** True after WebGL2 renderer creation or context restoration fails. */
+  readonly webgl2RuntimeFailed?: boolean;
   readonly webglOnlyFeatures?: StudioBg3dEngineWebglOnlyFeatures;
 }
 
@@ -104,6 +110,10 @@ export const STUDIO_BG3D_ENGINE_SELECTION_NOTICES:
   Readonly<Record<StudioBg3dEngineSelectionReason, string>> = Object.freeze({
   "user-webgpu-override": "직접 선택한 WebGPU 엔진으로 실행 중입니다.",
   "user-webgl2-override": "직접 선택한 WebGL2 엔진으로 실행 중입니다.",
+  "webgl2-unavailable":
+    "이 기기나 브라우저에서 WebGL2를 사용할 수 없습니다. 그래픽 가속을 확인하거나 2D 원고로 복귀해 주세요.",
+  "webgl2-runtime-failed":
+    "WebGL2 엔진을 시작하지 못했습니다. 다시 시도하거나 2D 원고로 복귀해 주세요.",
   "webgpu-runtime-unavailable":
     "이 빌드에서는 WebGPU를 사용할 수 없습니다. WebGL2를 쓰려면 직접 선택해 주세요.",
   "webgpu-runtime-failed":
@@ -228,6 +238,20 @@ export function selectStudioBg3dEngine(
   const advisories = collectAdvisories(request);
 
   if (preference === "webgl2") {
+    if (request.webgl2RuntimeFailed === true) {
+      return plan("webgl2", "webgl2-runtime-failed", "failed", [
+        "webgl2-runtime-failed",
+        ...hardBlocks,
+        ...advisories,
+      ]);
+    }
+    if (request.webgl2Supported === false) {
+      return plan("webgl2", "webgl2-unavailable", "unavailable", [
+        "webgl2-unavailable",
+        ...hardBlocks,
+        ...advisories,
+      ]);
+    }
     return plan("webgl2", "user-webgl2-override", "available", [
       ...hardBlocks,
       ...advisories,

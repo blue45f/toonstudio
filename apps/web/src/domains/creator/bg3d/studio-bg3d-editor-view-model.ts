@@ -4,6 +4,8 @@
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
 import * as R from "./studio-bg3d-editor-runtime-bindings";
+import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
+import { deriveStudioBg3dReadinessState } from "./studio-bg3d-readiness-state";
 import type { BgCustomModelInstance, BgPrimitive, StudioBg3dCaptureBackgroundSnapshot, StudioBg3dDeviceSignals } from "./studio-bg3d-editor-runtime-bindings";
 
 export function bindStudioBg3dEditorViewModel(h: Record<string, any>) {
@@ -294,6 +296,16 @@ export function bindStudioBg3dEditorViewModel(h: Record<string, any>) {
       vrmCharacters: sharedCharacters.length > 0,
     },
   });
+  const readinessState = deriveStudioBg3dReadinessState({
+    enginePhase: engineRuntime.phase,
+    planStatus: engineRuntime.plan.status,
+    selectedBackend: engineRuntime.plan.backend,
+    canvasFactoryPending: isStudioBg3dCanvasFactoryPending(engineRuntime),
+    hasModelRenderer: modelRenderer != null,
+    isRestoringScene,
+    deviceLostMessage: engineRuntime.deviceLostMessage,
+    planNotice: engineRuntime.plan.notice,
+  });
   const hasCloneFailure = customModels.some((model: BgCustomModelInstance) => failedCloneIds.has(model.id));
   const hasPendingClone = customModels.some(
     (model: BgCustomModelInstance) => !readyCloneIds.has(model.id) && !failedCloneIds.has(model.id)
@@ -393,6 +405,7 @@ export function bindStudioBg3dEditorViewModel(h: Record<string, any>) {
     transparentInsert,
     deviceQuality,
     engineRuntime,
+    readinessState,
     hasCloneFailure,
     hasPendingClone,
     hasPendingSharedCharacter,
