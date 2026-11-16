@@ -21,7 +21,7 @@
 ## 변하지 않는 기본 원칙
 
 PR 생성·병합·브랜치 정리는 배포 승인이 아니다. 사용자가 배포를 명시적으로 승인해야 한다. 2026-10-13 저장소 소유자 결정으로 `deploy/cloudflare-static/STANDING_APPROVAL.json`이 유효하면 정적 웹에 한해 env 명시 승인 없이 HEAD를 승인 SHA로 간주하며, 파일 삭제·파손 시 명시 승인 방식으로 fail-closed 복귀한다. onpod 단위는 상시 승인 범위 밖이다.
-자동 Git 빌드, 운영 배포, Preview, Deploy Hook, push/cron/workflow_run 배포를 활성화하지 않는다.
+자동 Git 빌드, 운영 배포, Preview, Deploy Hook, push/cron/workflow_run 배포를 활성화하지 않는다(로컬 `.env`가 없는 클라우드 환경을 위한 수동 `workflow_dispatch` 전용 `cloud-production-deploy.yml`도 동일한 40자리 SHA·필수 CI·중복 차단·onpod 명시 승인 게이트를 강제한다).
 각 workload는 하나의 쓰기 권위만 가지며 공급자 장애를 이유로 다른 DB나 API에 자동 이중 쓰기하지 않는다.
 유료 플랜, 유료 failover, 상위 빌드 머신으로 자동 승격하지 않는다.
 

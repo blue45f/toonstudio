@@ -17,6 +17,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
  * GITHUB_TOKEN 은 잡 권한(permissions)으로 따로 제한하므로 이 정책의 대상이 아니다.
  */
 const SCOPED_SECRET_WORKFLOWS = [
+  ".github/workflows/cloud-production-deploy.yml",
   ".github/workflows/studio-hyper3d-live-acceptance-v2.yml",
   ".github/workflows/studio-soak-10h.yml",
 ];

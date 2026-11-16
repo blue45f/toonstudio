@@ -102,6 +102,32 @@ pnpm run deploy:web
 - `--skip-build`로 사전 빌드 산출물을 재사용할 때는 `dist/.vite/build-meta.json`의 `gitSha`가 현재 `HEAD`와 정확히 일치해야 합니다(구버전 `dist/` 배포 차단).
 - 로컬 배포 원장(`.git/toonstudio-deploy-ledger/cloudflare-static/<sha>.json`)에 동일 SHA 완료 기록이 없어야 하며, 배포 시 Worker 변수 `RELEASE_SHA`에 승인된 40자리 SHA를 함께 바인딩합니다.
 
+### 2.1 로컬 `.env`가 없는 클라우드 환경에서의 배포 (GitHub Actions 연동, 2026-11-16)
+
+Codex Cloud, GitHub Codespaces, 원격 컨테이너, 모바일/웹 브라우저처럼 `.env.infrastructure.local`과 macOS Keychain Wrangler 로그인이 없는 클라우드 환경에서도 동일하게 배포할 수 있도록, 로컬 설정을 GitHub Actions `production-deploy` Environment(`main` 브랜치 전용)에 주입해 재사용합니다. 자동 배포(`push`·`pull_request`·`schedule`·`workflow_run`)는 계속 금지되며, 수동 `workflow_dispatch` 전용 정본 워크플로([`cloud-production-deploy.yml`](.github/workflows/cloud-production-deploy.yml))만 허용됩니다.
+
+```bash
+# [로컬 PC 1회 준비] 앱 전용 onpod 키 발급 + 로컬 env 설정들을 GitHub `production-deploy` Environment에 주입 (비밀값 미출력)
+pnpm run deploy:auth -- --provision-onpod-key
+pnpm run deploy:auth:sync
+
+# Cloudflare 정적 웹·R2 클라우드 배포용 API 토큰 최초 1회 등록 (표준 입력으로 전달)
+pnpm run deploy:auth -- --set-cloudflare-token --sync-github
+
+# [로컬 env가 없는 아무 클라우드 환경에서 실행]
+pnpm run deploy:cloud -- --status                           # origin/main SHA, 필수 CI(core·verify), 시크릿 준비 상태 조회
+pnpm run deploy:cloud -- --dry-run                          # 운영 미변경 클라우드 빌드·드라이런 실행
+pnpm run deploy:cloud -- --web --watch                      # Cloudflare 정적 웹 + R2 배포 (상시 승인 범위)
+pnpm run deploy:cloud -- --api-image --watch                # Core API 불변 GHCR 이미지 발행 (상시 승인 범위)
+pnpm run deploy:cloud -- --api-onpod --confirm-onpod        # 서울 onpod(toonstudio-api) 이미지 교체 (명시 승인 필요)
+pnpm run deploy:cloud -- --sync-api-env --confirm-onpod     # ONPOD_API_ENV_JSON을 onpod에 반영 (DATABASE_URL 보존)
+```
+
+보안·비용 경계:
+- 전권 `ONPOD_TOKEN`, `ONPOD_DATABASE_URL*`, 퇴역 공급자 키, 개발용 `VITE_*` 비밀은 GitHub에 업로드하지 않으며 `toonstudio-api` 단일 앱 범위·90일 만료 키(`ONPOD_DEPLOY_TOKEN`)와 `DATABASE_URL`을 제외한 검증된 `ONPOD_API_ENV_JSON`만 `gh secret set`(표준 입력 파이프)으로 등록합니다.
+- 모든 시크릿은 잡 전체 `env`나 `pnpm install` 단계에 노출하지 않고 실제 사용하는 단계(`step.env`)에만 전달합니다(`scripts/workflow-secret-scope.test.mjs`).
+- 3.5 GB 규모의 `dist/` 전체를 GitHub 아티팩트 스토리지에 올리지 않고 단일 잡 안에서 빌드·검증·배포를 마쳐 아티팩트 과금 위험을 차단하며, 원격 활성 Worker `RELEASE_SHA` 및 onpod 실행 이미지 태그를 대조해 동일 SHA 중복 배포를 자동 차단합니다.
+
 ### 상시 승인 모드 (2026-10-13 저장소 소유자 결정)
 
 매 릴리스 명시적 승인 없이 배포할 수 있다. `deploy/cloudflare-static/STANDING_APPROVAL.json`의

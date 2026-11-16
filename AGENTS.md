@@ -100,8 +100,9 @@ Cursor, Gemini, OpenCode용 어댑터는 이 문서를 다시 복제하지 않�
 - Vercel 런타임·설정·배포 워크플로는 퇴역 상태이며 다시 추가하지 않는다.
 - 승인한 40자리 main SHA 하나만 변경된 Cloudflare/onpod 배포 단위에 반영한다. 오프라인 preflight(`offline-contract-only`), 계획 프리뷰 아티팩트, 엣지 `/api/health/live` 200 응답만으로 운영 배포 완료를 보고하지 않는다.
 - PR CI, core/verify, 테스트·보안·브랜치 보호는 유지하며 비용을 이유로 우회하지 않는다.
-- 정적 웹은 검증된 `dist/`를 Cloudflare Static Assets에 수동 배포하고, Core API는 `api-container-release`로 만든 GHCR 이미지를 별도 승인 후 onpod `toonstudio-api`에 이미지 지정 교체(`onpod app update --image`)로만 반영한다(`--attach-db` 및 `onpod app rollback` 금지, 인프라 지도 6.6절). Render는 2026-10-23 퇴역했다.
-- 원격 자동 source build, dashboard 자동 재배포, `[deploy]` 예외, 동일 SHA 중복 배포·자동 재시도는 금지한다.
+- 정적 웹은 검증된 `dist/`를 Cloudflare Static Assets에 수동 배포(`pnpm run deploy:web` 또는 로컬 `.env`가 없는 클라우드 환경에서는 `production-deploy` Environment가 연결된 수동 `workflow_dispatch` 전용 `.github/workflows/cloud-production-deploy.yml` / `pnpm run deploy:cloud -- --web`)하고, Core API는 `api-container-release`(또는 `cloud-production-deploy.yml`의 `build_api_image`)로 만든 GHCR 이미지를 별도 승인 후 onpod `toonstudio-api`에 이미지 지정 교체(`onpod app update --image` 또는 `pnpm run deploy:cloud -- --api-onpod --confirm-onpod`)로만 반영한다(`--attach-db` 및 `onpod app rollback` 금지, 인프라 지도 6.6절). Render는 2026-10-23 퇴역했다.
+- 로컬 `.env.infrastructure.local`의 배포 필수 설정을 GitHub Actions `production-deploy` Environment(main 브랜치 전용)로 주입할 때는 `pnpm run deploy:auth:sync`를 사용하며, 전권 `ONPOD_TOKEN`·`ONPOD_DATABASE_URL*`·퇴역 공급자 키는 업로드하지 않고 `toonstudio-api` 전용 최소권한 키(`ONPOD_DEPLOY_TOKEN`)와 `DATABASE_URL`을 제외한 검증된 맵(`ONPOD_API_ENV_JSON`)만 단계별(step-scoped) 시크릿으로 주입한다.
+- 원격 자동 source build, dashboard 자동 재배포, `push`/`pull_request`/`schedule`/`workflow_run` 자동 배포, `[deploy]` 예외, 동일 SHA 중복 배포·자동 재시도는 금지한다.
 - Turbo/유료 동시 빌드/유료 러너/플랜 변경/자동 배포 재활성화는 별도 승인이 필요하다.
 - 운영 도메인·데이터·환경변수는 단순 병합이나 배포의 일부로 임의 변경하지 않는다. DB migration은 추가형(새 테이블·인덱스·제약)만 `production-database-migrations.yml`의 `apply` 모드로 적용하고, 삭제·이름 변경·제약 강화는 expand/contract 로 나눠 별도 승인을 받는다.
 - 실패하면 분석 후 중단하고 기존 정상 배포로의 롤백을 우선 검토한다.
