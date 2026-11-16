@@ -35,7 +35,7 @@ export const velloGpuBrowserProviderDescriptor: ProviderDescriptor =
     id: "vello-gpu-browser",
     kind: "vector-renderer",
     displayName: "Vello GPU (browser WebGPU)",
-    version: "vello 0.11.0 / wgpu 30.0.1 / velato 0.12.0 / crate 0.1.0",
+    version: "vello 0.12.0 / wgpu 30.0.1 / velato 0.12.0 / crate 0.1.0",
     license: "MIT / Apache-2.0",
     attribution: "Linebender Vello project",
     // The engine stays experimental for whole-canvas authority. The product
@@ -73,7 +73,7 @@ export const velloGpuBrowserProviderDescriptor: ProviderDescriptor =
     determinism: "tolerance",
     memoryEstimateMb: 64,
     knownIssues: [
-      "upstream vello repository declares alpha status; adapter pins vello 0.11.0 + wgpu 30.0.1",
+      "upstream vello repository declares alpha status; adapter pins vello 0.12.0 + wgpu 30.0.1",
       "browser WebGPU availability varies by OS/driver; probeWebGpu() is the runtime gate",
     ],
   });
@@ -88,7 +88,7 @@ export const velloSvgNativeProviderDescriptor: ProviderDescriptor =
     kind: "format",
     displayName: "Vello SVG native (strict subset)",
     version:
-      "vello_svg 0.11.0 / usvg 0.48.1.0 / vello 0.11.0 / vello_cpu 0.3.0",
+      "vello_svg 0.11.0 / usvg 0.48.1.0 / vello 0.12.0 / vello_cpu 0.3.0",
     license: "MIT / Apache-2.0",
     attribution: "Linebender vello_svg and usvg projects",
     maturity: "conditional",

@@ -121,8 +121,8 @@ pub fn shape_text(
     )));
     builder.push_default(StyleProperty::FontSize(font_size));
     let mut layout: Layout<[u8; 4]> = builder.build(text);
+    layout.set_alignment(Alignment::Start, AlignmentOptions::default());
     layout.break_all_lines(Some(max_width));
-    layout.align(Alignment::Start, AlignmentOptions::default());
 
     let mut glyphs = Vec::new();
     let mut line_count = 0usize;
@@ -140,7 +140,7 @@ pub fn shape_text(
             let coords: Vec<NormalizedCoord> = run
                 .normalized_coords()
                 .iter()
-                .map(|bits| NormalizedCoord::from_bits(*bits))
+                .map(|coord| NormalizedCoord::from_bits(coord.to_bits()))
                 .collect();
             for glyph in glyph_run.positioned_glyphs() {
                 let mut pen = PathIrPen {

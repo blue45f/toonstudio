@@ -55,11 +55,13 @@ interface RemoteSpaceState {
   receivedAt: number;
 }
 
+export type StudioP2pSpaceTimerHandle = ReturnType<typeof setInterval> | number;
+
 export interface StudioP2pSpaceDependencies {
   now?: () => number;
   id?: () => string;
-  setInterval?: (callback: () => void, delay: number) => ReturnType<typeof setInterval>;
-  clearInterval?: (timer: ReturnType<typeof setInterval>) => void;
+  setInterval?: (callback: () => void, delay: number) => StudioP2pSpaceTimerHandle;
+  clearInterval?: (timer: StudioP2pSpaceTimerHandle) => void;
 }
 
 function clamp(value: number): number {
@@ -112,7 +114,7 @@ export class StudioP2pSpaceController {
   private readonly epoch: string;
   private selfState: StudioP2pSpaceState;
   private unsubscribe: (() => void) | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: StudioP2pSpaceTimerHandle | null = null;
   private lastBroadcastAt = -Infinity;
   private closed = false;
 

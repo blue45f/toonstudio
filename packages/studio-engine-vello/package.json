@@ -28,6 +28,6 @@
     "@toonstudio/studio-project-model": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^24.13.2"
+    "@types/node": "^26.6.6"
   }
 }

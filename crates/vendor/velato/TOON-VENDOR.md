@@ -12,10 +12,10 @@ type. Wired in via `[patch.crates-io]` in
 `crates/studio-engine-vello/Cargo.toml`.
 
 EDITS (everything else is upstream bytes, unmodified):
-- `Cargo.toml`: `[dependencies.vello] version = "0.10.0"` -> `"0.11.0"`,
+- `Cargo.toml`: `[dependencies.vello] version = "0.10.0"` -> `"0.12.0"`,
   and the same bump in `[dev-dependencies.vello]` for in-tree work.
 - No source edits: velato's `vello::Scene` surface (push_layer /
   push_clip_layer / pop_layer / fill / stroke) is signature-identical
-  between vello 0.10 and 0.11, verified by compilation.
+  between vello 0.10 and 0.12, verified by compilation.
 
-REMOVE WHEN: upstream velato releases a version on vello 0.11+.
+REMOVE WHEN: upstream velato releases a version on vello 0.12+.

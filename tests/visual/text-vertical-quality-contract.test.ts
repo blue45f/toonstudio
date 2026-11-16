@@ -13,8 +13,8 @@ const SKIA_PNG = join(ROOT, "tests/corpus/text/golden/vertical-quality-engine-sk
 
 const EXPECTED_HASHES = {
   product: "24040c0bfeedcf61736694393628d0abea528d6865b1c7a96ddd4ea41b64d2fa",
-  vello: "e55646d6bf5467b7d63bdd633bde1137d4a55ae86c1bfec6839eb4d8816a6f59",
-  skia: "e03e781da67d1ee0548c4779751e6c2c5516e3deef2fd8471cfdd4a4709c96eb",
+  vello: "c559d870bbb05d5f7e327c0da3b98779a9aa7f6ed969a9ad30bbfda0ec252d3f",
+  skia: "f52d12c2d99c66570efda302d2477a706841940c4d0270912191b876e9eec55b",
   appleGothic: "def69dc2b5e12746049a5dcb189f95341ec460589f47587938567313af3020b1",
   arialUnicode: "876af2cd4854644e7f3e7feb2f688997fdb3343c6df6693611209c9dfb47ccec",
 } as const;
@@ -81,7 +81,7 @@ const verticalFeatureEvidenceSchema = z.object({
   manualPresentationFormSubstitutionClaimed: z.literal(false),
   harfBuzzReference: z.object({
     executable: z.literal("/opt/homebrew/bin/hb-shape"),
-    version: z.literal("hb-shape (HarfBuzz) 14.2.1"),
+    version: z.literal("hb-shape (HarfBuzz) 14.6.0"),
     fontPath: z.literal("/System/Library/Fonts/Supplemental/Arial Unicode.ttf"),
     fontBytesCopied: z.literal(false),
     text: z.literal("「」、。！？"),
@@ -140,7 +140,7 @@ const resultSchema = z.object({
   }),
   product: z.object({
     execution: z.string().includes("product layout/ruby functions"),
-    chromium: z.string().includes("HeadlessChrome/140.0.7339.186"),
+    chromium: z.string().includes("HeadlessChrome/158.0.8127.18"),
     workload: z.object({
       warmupRounds: z.literal(40),
       sampleCount: z.literal(240),
@@ -206,18 +206,18 @@ const resultSchema = z.object({
       warnings: z.array(z.string()).length(0),
       fuzzy: z.object({ delta: z.literal(48), mismatchPct: z.literal(0.002403), gatePct: z.literal(0.6) }),
       vello: z.object({
-        inkPixels: z.literal(4476),
-        bounds: z.object({ minX: z.literal(8), minY: z.literal(2), maxX: z.literal(177), maxY: z.literal(174) }),
+        inkPixels: z.literal(4456),
+        bounds: z.object({ minX: z.literal(7), minY: z.literal(2), maxX: z.literal(177), maxY: z.literal(174) }),
         pngSha256: z.literal(EXPECTED_HASHES.vello),
         byteExactRepeat: z.literal(true),
       }),
       canvaskit: z.object({
-        inkPixels: z.literal(4354),
-        bounds: z.object({ minX: z.literal(8), minY: z.literal(2), maxX: z.literal(177), maxY: z.literal(174) }),
+        inkPixels: z.literal(4335),
+        bounds: z.object({ minX: z.literal(7), minY: z.literal(2), maxX: z.literal(177), maxY: z.literal(174) }),
         pngSha256: z.literal(EXPECTED_HASHES.skia),
         byteExactRepeat: z.literal(true),
       }),
-      inkCoverageDifferencePct: z.literal(2.725648),
+      inkCoverageDifferencePct: z.literal(2.71544),
       separation: z.string().includes("vertical ruby remains product-geometry"),
     }),
     gates: allTrueGatesSchema,

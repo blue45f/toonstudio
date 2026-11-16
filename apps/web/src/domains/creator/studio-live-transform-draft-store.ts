@@ -77,11 +77,13 @@ export interface StudioLiveTransformDraftStore {
   readonly releaseScope: (scope: string) => boolean;
 }
 
+export type StudioLiveTransformTimeoutHandle = ReturnType<typeof setTimeout> | number;
+
 export interface CreateStudioLiveTransformDraftStoreOptions {
   /** Safety valve for an interrupted/unmounted authoritative render. */
   readonly handoffTimeoutMs?: number;
-  readonly scheduleTimeout?: (callback: () => void, delayMs: number) => ReturnType<typeof setTimeout>;
-  readonly cancelTimeout?: (handle: ReturnType<typeof setTimeout>) => void;
+  readonly scheduleTimeout?: (callback: () => void, delayMs: number) => StudioLiveTransformTimeoutHandle;
+  readonly cancelTimeout?: (handle: StudioLiveTransformTimeoutHandle) => void;
 }
 
 const DEFAULT_HANDOFF_TIMEOUT_MS = 3_000;
@@ -113,15 +115,17 @@ export function createStudioLiveTransformDraftStore(
   options: CreateStudioLiveTransformDraftStoreOptions = {},
 ): StudioLiveTransformDraftStore {
   const listeners = new Set<() => void>();
-  const scheduleTimeout = options.scheduleTimeout ?? globalThis.setTimeout.bind(globalThis);
-  const cancelTimeout = options.cancelTimeout ?? globalThis.clearTimeout.bind(globalThis);
+  const scheduleTimeout: NonNullable<CreateStudioLiveTransformDraftStoreOptions["scheduleTimeout"]> =
+    options.scheduleTimeout ?? ((callback, delayMs) => globalThis.setTimeout(callback, delayMs));
+  const cancelTimeout: NonNullable<CreateStudioLiveTransformDraftStoreOptions["cancelTimeout"]> =
+    options.cancelTimeout ?? ((handle) => { globalThis.clearTimeout(handle); });
   const handoffTimeoutMs = options.handoffTimeoutMs ?? DEFAULT_HANDOFF_TIMEOUT_MS;
   let snapshot: StudioLiveTransformDraftSnapshot | null = null;
   let revision = 0;
   let expectedReceipt: string | null = null;
   let releaseSource: (() => void) | null = null;
   let releaseSourceInProgress = false;
-  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  let timeoutHandle: StudioLiveTransformTimeoutHandle | null = null;
   let nextGeneration = 0;
   let ownerGeneration: number | null = null;
   let ownerScope: string | null = null;
@@ -292,7 +296,7 @@ export function createStudioLiveTransformDraftStore(
           expectedReceipt = terminalReceipt;
           releaseSource = onRelease;
           snapshot = { ...active, phase: "handoff", revision: ++revision };
-          let scheduled: ReturnType<typeof setTimeout>;
+          let scheduled: StudioLiveTransformTimeoutHandle;
           try {
             scheduled = scheduleTimeout(releaseClaim, handoffTimeoutMs);
           } catch {

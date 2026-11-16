@@ -13,9 +13,9 @@ returns `vello_svg::vello::Scene`), so the two must be the same
 `crates/studio-engine-vello/Cargo.toml`.
 
 EDITS (everything else is upstream bytes, unmodified):
-- `Cargo.toml`: `[dependencies.vello] version = "0.10.0"` -> `"0.11.0"`.
+- `Cargo.toml`: `[dependencies.vello] version = "0.10.0"` -> `"0.12.0"`.
 - No source edits: the `RenderSink for vello::Scene` surface is
-  signature-identical between vello 0.10 and 0.11, verified by
+  signature-identical between vello 0.10 and 0.12, verified by
   compilation.
 
-REMOVE WHEN: upstream vello_svg releases a version on vello 0.11+.
+REMOVE WHEN: upstream vello_svg releases a version on vello 0.12+.

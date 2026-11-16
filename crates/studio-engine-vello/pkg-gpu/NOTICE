@@ -3,7 +3,7 @@ ToonStudio studio-engine-vello third-party NOTICE
 Artifact: pkg-gpu
 Target: wasm32-unknown-unknown
 Cargo features: hybrid,lottie,svg
-Locked external crates: 142
+Locked external crates: 147
 
 This NOTICE accompanies the checked-in JavaScript/WASM artifact. Exact license
 texts are in THIRD_PARTY_LICENSES.txt and the machine-checked provenance is in
@@ -35,9 +35,9 @@ copied into the bundle and hash-locked.
 | flate2@1.1.9 | MIT OR Apache-2.0 | https://github.com/rust-lang/flate2-rs |
 | float-cmp@0.9.0 | MIT | https://github.com/mikedilger/float-cmp |
 | foldhash@0.2.0 | Zlib | https://github.com/orlp/foldhash |
-| font-types@0.12.2 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
+| font-types@0.12.7 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | fontdb@0.24.0 | MIT | https://github.com/RazrFalcon/fontdb |
-| fontique@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| fontique@0.13.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
 | futures-core@0.3.33 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
 | futures-intrusive@0.5.0 | MIT OR Apache-2.0 | https://github.com/Matthias247/futures-intrusive |
 | futures-task@0.3.33 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs |
@@ -45,18 +45,20 @@ copied into the bundle and hash-locked.
 | glifo@0.4.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | guillotiere@0.7.0 | MIT/Apache-2.0 | https://github.com/nical/guillotiere |
 | harfrust@0.12.0 | MIT | https://github.com/harfbuzz/harfrust |
+| harfrust@0.15.0 | MIT | https://github.com/harfbuzz/harfrust |
+| harfrust@0.16.0 | MIT | https://github.com/harfbuzz/harfrust |
 | hashbrown@0.17.1 | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown |
-| icu_collections@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_collections@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | icu_locale_core@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_locale_fallback@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_locale_fallback_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_normalizer@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_normalizer_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_properties@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_properties_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_locale_fallback@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_locale_fallback_data@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_normalizer@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_normalizer_data@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_properties@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_properties_data@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | icu_provider@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_segmenter@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
-| icu_segmenter_data@2.4.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_segmenter@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
+| icu_segmenter_data@2.3.0 | Unicode-3.0 | https://github.com/unicode-org/icu4x |
 | imagesize@0.15.0 | MIT | https://github.com/Roughsketch/imagesize |
 | indexmap@2.14.0 | Apache-2.0 OR MIT | https://github.com/indexmap-rs/indexmap |
 | itoa@1.0.18 | MIT OR Apache-2.0 | https://github.com/dtolnay/itoa |
@@ -76,10 +78,10 @@ copied into the bundle and hash-locked.
 | parking_lot@0.12.5 | MIT OR Apache-2.0 | https://github.com/Amanieu/parking_lot |
 | parking_lot_core@0.9.12 | MIT OR Apache-2.0 | https://github.com/Amanieu/parking_lot |
 | parlance@0.1.1 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
-| parley@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
-| parley_data@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
-| parley_emoji@0.12.0 | MIT | https://github.com/linebender/parley |
-| parley_engine@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley@0.13.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley_data@0.13.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
+| parley_emoji@0.13.0 | MIT | https://github.com/linebender/parley |
+| parley_engine@0.13.0 | Apache-2.0 OR MIT | https://github.com/linebender/parley |
 | peniko@0.6.1 | Apache-2.0 OR MIT | https://github.com/linebender/peniko |
 | pico-args@0.5.0 | MIT | https://github.com/RazrFalcon/pico-args |
 | pin-project-lite@0.2.17 | Apache-2.0 OR MIT | https://github.com/taiki-e/pin-project-lite |
@@ -91,6 +93,8 @@ copied into the bundle and hash-locked.
 | quote@1.0.47 | MIT OR Apache-2.0 | https://github.com/dtolnay/quote |
 | raw-window-handle@0.6.2 | MIT OR Apache-2.0 OR Zlib | https://github.com/rust-windowing/raw-window-handle |
 | read-fonts@0.41.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
+| read-fonts@0.46.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
+| read-fonts@0.47.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | roxmltree@0.21.2 | MIT OR Apache-2.0 | https://github.com/RazrFalcon/roxmltree |
 | rustc-hash@1.1.0 | Apache-2.0/MIT | https://github.com/rust-lang-nursery/rustc-hash |
 | scopeguard@1.2.0 | MIT OR Apache-2.0 | https://github.com/bluss/scopeguard |
@@ -103,6 +107,7 @@ copied into the bundle and hash-locked.
 | simplecss@0.2.2 | Apache-2.0 OR MIT | https://github.com/linebender/simplecss |
 | siphasher@1.0.3 | MIT/Apache-2.0 | https://github.com/jedisct1/rust-siphash |
 | skrifa@0.44.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
+| skrifa@0.49.0 | MIT OR Apache-2.0 | https://github.com/googlefonts/fontations |
 | slab@0.4.12 | MIT | https://github.com/tokio-rs/slab |
 | slotmap@1.1.1 | Zlib | https://github.com/orlp/slotmap |
 | smallvec@1.16.5 | MIT OR Apache-2.0 | https://github.com/servo/rust-smallvec |
@@ -128,13 +133,13 @@ copied into the bundle and hash-locked.
 | usvg@0.48.1 | Apache-2.0 OR MIT | https://github.com/linebender/resvg |
 | utf8_iter@1.0.4 | Apache-2.0 OR MIT | https://github.com/hsivonen/utf8_iter |
 | velato@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/velato |
-| vello@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| vello@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_common@0.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_common@0.3.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_cpu@0.3.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
-| vello_encoding@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| vello_encoding@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_hybrid@0.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
-| vello_shaders@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
+| vello_shaders@0.12.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_sparse_shaders@0.2.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello |
 | vello_svg@0.11.0 | Apache-2.0 OR MIT | https://github.com/linebender/vello_svg |
 | wasm-bindgen-futures@0.4.79 | MIT OR Apache-2.0 | https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures |
