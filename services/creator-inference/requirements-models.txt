@@ -9,7 +9,7 @@ diffusers==0.38.0
 # 이 파일은 GPU 자격 검증을 마친 lock 이 아니다. 5.x 로 만든 새 runtime image 는 gpu-smoke.py 로
 # 세 엔진의 실제 추론을 검증한 뒤에만 승인한다. CPU 에서는 TripoSR upstream main 의 이미지 토크나이저와
 # diffusers SDXL ControlNet·Wan I2V 호출 모양이 5.x 에서 도는 것까지 확인했다(2026-10-23).
-transformers>=5.10.1,<6
+transformers>=5.22.2,<6
 # Security floor: GHSA-4j2p-28q2-5m79 (sharded checkpoint weight_map 경로 순회, 1.14.0 까지 영향).
 accelerate>=1.15.0,<2
 # Diffusers 0.38 requires safetensors 0.8; keep stable releases only.
