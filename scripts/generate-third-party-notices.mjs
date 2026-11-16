@@ -242,10 +242,14 @@ const OCCT_NPM_INTEGRITY =
 const OCCT_WASM_SHA256 =
   "6cc2f3fa1611d32ad7563f7092aa1bf58741124302630cef7d21561ecd7b7284";
 
-const REVIEWED_REMOTION_PACKAGE_VERSIONS = Object.freeze(["4.0.536", "4.0.541"]);
+const REVIEWED_REMOTION_PACKAGE_VERSIONS = Object.freeze(["4.0.536", "4.0.541", "4.0.543"]);
 const REMOTION_LICENSE_EXPRESSION = "Remotion License";
 const REMOTION_LICENSE_SHA256 =
-  "9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9";
+  "709033ef7160fe12db38f1d457d20094ce425aaab6ee28caaaa8014372ff869e";
+const REVIEWED_REMOTION_LICENSE_SHA256S = new Set([
+  "9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9",
+  REMOTION_LICENSE_SHA256,
+]);
 
 const REVIEWED_LICENSE_EXPRESSIONS = new Set([
   "0BSD",
@@ -343,6 +347,10 @@ const REVIEWED_LICENSE_FILE_DIGESTS = new Map([
     "422fa324bf754acb2f48918039858f39bc31cc1a710b492906889f9363d6b09e",
     "MIT",
   ],
+  [
+    "9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9",
+    REMOTION_LICENSE_EXPRESSION,
+  ],
   [REMOTION_LICENSE_SHA256, REMOTION_LICENSE_EXPRESSION],
 ]);
 
@@ -362,7 +370,7 @@ const HYBRID_PROVIDER_DEPENDENCIES = Object.freeze({
   rbush: "4.0.1",
   rhino3dm: "8.35.0",
   "three-mesh-bvh": "0.9.18",
-  "web-ifc": "0.0.78",
+  "web-ifc": "0.0.79",
   xatlasjs: "0.2.0",
 });
 
@@ -1764,7 +1772,7 @@ function validateRemotionReleaseBoundary(inventory) {
       const digest = sha256(
         normalizeNoticeText(readFileSync(reviewedLicense, "utf8")),
       );
-      if (digest !== REMOTION_LICENSE_SHA256) {
+      if (!REVIEWED_REMOTION_LICENSE_SHA256S.has(digest)) {
         throw new Error(
           `Remotion license text changed: ${name} — ${digest}`,
         );

@@ -80,7 +80,7 @@ deploying legal entity is eligible or holds the required Company License.
 
 The release audit pins both package names and versions, requires the known
 metadata shape, and verifies the exact Remotion License text SHA-256
-`9830440ed5c55fbbbc0afcf58f292dc1c1522e9e691264a78733f1e11b2841b9`.
+`709033ef7160fe12db38f1d457d20094ce425aaab6ee28caaaa8014372ff869e`.
 Any package, version, metadata, or license-text change fails the production
 notice build for fresh review.
 
