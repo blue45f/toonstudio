@@ -60,10 +60,10 @@ export function ReferenceCreatorDashboard() {
         <div className="rd-clarity-copy">
           <p className="rd-clarity-eyebrow">
             <Sparkles size={13} aria-hidden="true" />
-            <span>{bi("GRAND ATELIER V4 · 초보자 1클릭 시작 + 전문 창작·협업 통합", "GRAND ATELIER V4 · 1-CLICK START + FULL STUDIO & COLLAB")}</span>
+            <span>{bi("1클릭 빠른 시작 · 웹툰 창작과 팀 협업 한곳에", "1-CLICK QUICK START · FULL STUDIO & TEAM COLLAB")}</span>
           </p>
           <h1 id="creator-hero-title">{bi("상상한 장면을,", "Imagine a scene.")}<br /><span>{bi("나의 작품으로.", "Make it your story.")}</span></h1>
-          <p>{bi("이야기를 쓰고, 그리고, 팀과 함께 완성하세요. 접혀 있던 아이디어 시작창·루나 가이드·핵심 작업실을 한 화면에서 바로 엽니다.", "Write, draw, and finish your story with your team. Start from an idea, Luna guidance, or core studios right on one screen.")}</p>
+          <p>{bi("이야기를 쓰고, 그리고, 팀과 함께 완성하세요. 아이디어 한 줄로 시작하거나 원하는 작업실을 바로 열 수 있어요.", "Write, draw, and finish your story with your team. Start from a single idea or open your workspace right away.")}</p>
           <div className="rd-clarity-actions">
             <Link className="rd-clarity-start" href="/create">{bi("작품 시작하기", "Start a work")}<ArrowRight size={20} aria-hidden="true" /></Link>
             <Link className="rd-clarity-browse" href="/discover">{bi("둘러보기", "Explore")}<ChevronRight size={18} aria-hidden="true" /></Link>

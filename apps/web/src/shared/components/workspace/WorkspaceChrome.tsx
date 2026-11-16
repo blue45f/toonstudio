@@ -1,9 +1,12 @@
 import { HelpCircle, Settings, UserRound } from "lucide-react";
 import { Suspense, useContext, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { WorkspaceAccountContext } from "./workspace-account-context";
 import Link from "@/shared/navigation/router-link";
+import { useMediaQuery } from "@/shared/hooks/use-media-query";
 import { useI18n } from "@/shared/lib/i18n";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
+import { canonicalSitePath } from "@/shared/lib/site-route-authority";
 import { WorkspaceNavigation } from "./WorkspaceNavigation";
 import { CampusControls } from "../spatial-campus/CampusControls";
 import { ToonStudioMark } from "../toonstudio-mark";
@@ -45,15 +48,25 @@ export function WorkspaceSidebar({ activeId, context, children }: {
   readonly children?: ReactNode;
 }) {
   const korean = useI18n((state) => state.lang.startsWith("ko"));
+  const { pathname } = useLocation();
+  const mobile = useMediaQuery("(max-width: 767px)");
+  const path = canonicalSitePath(pathname);
+  const helpCurrent = path === "/help" || path.startsWith("/help/");
+  const settingsCurrent = path === "/settings" || path.startsWith("/settings/");
+  // 데스크톱·태블릿 좌측 레일은 하단에 도움말·설정 직접 진입을 함께 보여주므로 해당 경로에서는
+  // 보조 내비만 현재 위치로 강조하고 주 메뉴의 전체 메뉴 중복 강조는 해제한다(모바일 하단 5탭은 그대로 유지).
+  const resolvedActiveId = !mobile && activeId === undefined && (helpCurrent || settingsCurrent)
+    ? ""
+    : activeId;
   return <aside className="workspace-sidebar" data-slot="workspace-sidebar">
     <p className="workspace-sidebar-caption" aria-hidden="true">WORKSPACE</p>
-    <Suspense fallback={<WorkspaceNavigation activeId={activeId} context={context} />}>
-      <WorkspaceMenuNavigation activeId={activeId} context={context} />
+    <Suspense fallback={<WorkspaceNavigation activeId={resolvedActiveId} context={context} />}>
+      <WorkspaceMenuNavigation activeId={resolvedActiveId} context={context} />
     </Suspense>
     {children}
     <nav className="workspace-support-nav" aria-label={korean ? "도움과 환경 설정" : "Help and preferences"}>
-      <Link href="/help"><HelpCircle size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, korean ? "ko" : "en")}</span></Link>
-      <Link href="/settings"><Settings size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.settings.label, korean ? "ko" : "en")}</span></Link>
+      <Link href="/help" aria-current={helpCurrent ? "page" : undefined}><HelpCircle size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, korean ? "ko" : "en")}</span></Link>
+      <Link href="/settings" aria-current={settingsCurrent ? "page" : undefined}><Settings size={18} aria-hidden="true" /><span>{siteNavigationText(SITE_NAVIGATION_ITEMS.settings.label, korean ? "ko" : "en")}</span></Link>
     </nav>
   </aside>;
 }

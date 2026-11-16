@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, LoaderCircle, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
@@ -221,7 +221,10 @@ function ServiceWarmupNotice({ immersive }: { readonly immersive: boolean }) {
       data-service-status-placement={immersive ? "floating" : "page-inline"}
       className={immersive ? WARMUP_CHIP_CLASS : "flex min-w-0 items-center justify-center gap-2 border-b border-line bg-panel px-3 py-1 text-xs text-fg-2"}
     >
-      <LoaderCircle className="size-4 shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
+      <span
+        aria-hidden="true"
+        className="size-2.5 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.4s_ease-in-out_infinite]"
+      />
       <span className="min-w-0 break-keep">
         <strong className="font-bold text-fg">{bt("온라인 기능을 연결하는 중이에요.", "Connecting online features.")}</strong>{" "}
         <span className="sr-only">{bt("탐색과 로컬 작업은 지금 바로 할 수 있어요.", "You can browse and work locally right now.")}</span>
@@ -246,7 +249,6 @@ interface ServiceStatusNoticeProps {
 function ServiceStatusSlotNotice({ slot, ...notice }: ServiceStatusNoticeProps & { readonly slot: ServiceStatusSlot }) {
   const bt = useBilingual(COPY_SCOPE);
   if (slot.kind === "modal") return createPortal(<ServiceStatusSlotChip {...notice} />, slot.element);
-  const Icon = notice.tone === "warming" ? LoaderCircle : notice.tone === "recovered" ? CheckCircle2 : AlertTriangle;
   const label = notice.tone === "warming"
     ? bt("온라인 연결 확인 중", "Checking online connection")
     : notice.tone === "recovered"
@@ -257,8 +259,14 @@ function ServiceStatusSlotNotice({ slot, ...notice }: ServiceStatusNoticeProps &
     {!compactWarmup && createPortal(
       <span role="status" aria-live="polite" aria-atomic="true" title={notice.title}
         data-service-status-placement="editor-summary" data-service-degraded-banner={notice.tone}
-        className="inline-flex min-w-0 items-center gap-1 text-xs text-fg-2">
-        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        className="inline-flex min-w-0 items-center gap-1.5 text-xs text-fg-2">
+        {notice.tone === "warming" ? (
+          <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.4s_ease-in-out_infinite]" />
+        ) : notice.tone === "recovered" ? (
+          <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+        ) : (
+          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+        )}
         <span>{label}</span>
         <span className="sr-only">{notice.title}</span>
       </span>, slot.summary,
@@ -310,7 +318,7 @@ function ServiceStatusSlotChip({
       {tone === "recovered" ? (
         <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
       ) : tone === "warming" ? (
-        <LoaderCircle className="size-3.5 shrink-0 animate-spin text-accent motion-reduce:animate-none" aria-hidden="true" />
+        <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent motion-safe:[animation:pulse-soft_2.4s_ease-in-out_infinite]" />
       ) : (
         <AlertTriangle className="size-3.5 shrink-0 text-warn" aria-hidden="true" />
       )}

@@ -12,8 +12,8 @@ export type PageIntroVariant =
   | "promote"
   | "default";
 
-/** 인트로 재생 시간(ms). 베일 페이드아웃 200ms 포함. */
-export const PAGE_INTRO_DURATION_MS = 950;
+/** 인트로 재생 시간(ms). 베일 페이드아웃 200ms 포함해 첫 클릭을 가로막지 않도록 짧게 끝낸다. */
+export const PAGE_INTRO_DURATION_MS = 420;
 
 const SESSION_KEY_PREFIX = "ts-page-intro:v1:";
 

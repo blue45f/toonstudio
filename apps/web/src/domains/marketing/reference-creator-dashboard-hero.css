@@ -145,13 +145,80 @@
   background: var(--rd-accent-soft);
   color: var(--rd-accent);
 }
-.reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border-color: var(--rd-border); background: var(--rd-panel); color: var(--rd-muted); }
-.reference-dashboard .rd-idea-help .rd-idea { margin-top: 10px; border-radius: 16px; box-shadow: none; }
+.reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border-color: var(--rd-border); background: var(--rd-panel); color: var(--rd-fg); }
+/* 포스터 밖 일반 테마 표면(.rd-clarity-helpers)에 놓인 입력 바와 루나 카드는 어두운 삽화용 고정 스크림 대신
+   현재 테마 토큰(--rd-card, --rd-panel, --rd-fg, --rd-muted)을 따라 주간·종이·별빛 테마 모두 조화롭게 읽히게 한다. */
+.reference-dashboard .rd-idea-help .rd-idea {
+  margin-top: 10px;
+  border-color: color-mix(in oklch, var(--rd-accent) 42%, var(--rd-border));
+  border-radius: 16px;
+  background: var(--rd-card);
+  color: var(--rd-fg);
+  box-shadow: inset 0 1px 0 color-mix(in oklch, var(--rd-fg) 6%, transparent);
+}
+.reference-dashboard .rd-idea-help .rd-idea-modes {
+  border-color: var(--rd-border);
+  background: var(--rd-panel);
+}
+.reference-dashboard .rd-idea-help .rd-idea-modes > button {
+  color: var(--rd-muted);
+}
+.reference-dashboard .rd-idea-help .rd-idea-modes > button[aria-pressed="true"] {
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--rd-accent) 38%, transparent);
+}
+.reference-dashboard .rd-idea-help .rd-idea-modes > button:not([aria-pressed="true"]):hover {
+  color: var(--rd-fg);
+}
 .reference-dashboard .rd-idea-help .rd-idea-modes > button,
 .reference-dashboard .rd-idea-help .rd-idea-submit,
 .reference-dashboard .rd-clarity-helpers .rd-luna-form > button { min-height: 48px; min-width: 48px; }
-:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input { min-height: 48px; font-size: 16px; }
-.reference-dashboard .rd-clarity-helpers .rd-luna-form input { min-height: 48px; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input {
+  min-height: 48px;
+  color: var(--rd-fg) !important;
+  font-size: 16px;
+}
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input::placeholder {
+  color: var(--rd-muted) !important;
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-help { color: var(--rd-fg); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-card {
+  border-color: color-mix(in oklch, var(--rd-accent) 32%, var(--rd-border));
+  background: linear-gradient(160deg, color-mix(in oklch, var(--rd-accent) 8%, var(--rd-card)), var(--rd-card));
+  box-shadow: inset 0 1px 0 color-mix(in oklch, var(--rd-fg) 6%, transparent);
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-head > strong { color: var(--rd-fg); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-head > small { color: var(--rd-muted); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-msg { color: var(--rd-fg); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-msg--luna {
+  border-color: var(--rd-border);
+  background: var(--rd-panel);
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-msg--user {
+  background: var(--rd-accent-soft);
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-action { color: var(--rd-accent); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-chips a {
+  border-color: var(--rd-border);
+  background: var(--rd-panel);
+  color: var(--rd-fg);
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-chips a:hover {
+  border-color: var(--rd-accent);
+  background: var(--rd-accent-soft);
+}
+.reference-dashboard .rd-clarity-helpers .rd-luna-form {
+  border-color: var(--rd-border);
+  background: var(--rd-panel);
+}
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input {
+  min-height: 48px;
+  color: var(--rd-fg) !important;
+}
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input::placeholder {
+  color: var(--rd-muted) !important;
+}
 @media (hover: hover) {
   .rd-clarity-actions > a, .rd-clarity-journey li > a { transition: background-color 160ms ease, border-color 160ms ease; }
   .reference-dashboard .rd-clarity-actions > a:hover { border-color: var(--rd-accent); }

@@ -92,7 +92,12 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg,var(--color-canvas) 3%,color-mix(in oklch,var(--color-canvas) 94%,transparent) 24%,color-mix(in oklch,var(--color-canvas) 48%,transparent) 64%,color-mix(in oklch,var(--color-canvas) 8%,transparent));
+  background: linear-gradient(90deg,var(--color-canvas) 8%,color-mix(in oklch,var(--color-canvas) 95%,transparent) 34%,color-mix(in oklch,var(--color-canvas) 68%,transparent) 68%,color-mix(in oklch,var(--color-canvas) 14%,transparent));
+}
+@media (max-width: 639px) {
+  .discover-spotlight-scrim {
+    background: linear-gradient(90deg,var(--color-canvas) 16%,color-mix(in oklch,var(--color-canvas) 94%,transparent) 52%,color-mix(in oklch,var(--color-canvas) 76%,transparent) 82%,color-mix(in oklch,var(--color-canvas) 36%,transparent));
+  }
 }
 .discover-spotlight-copy {
   position: relative;

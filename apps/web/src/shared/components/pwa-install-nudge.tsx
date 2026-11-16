@@ -67,7 +67,7 @@ export function PwaInstallNudge() {
   };
 
   return (
-    <aside
+    <div
       role="status"
       aria-label={title}
       aria-describedby="pwa-install-nudge-description"
@@ -109,6 +109,6 @@ export function PwaInstallNudge() {
       >
         <X size={17} aria-hidden="true" />
       </button>
-    </aside>
+    </div>
   );
 }

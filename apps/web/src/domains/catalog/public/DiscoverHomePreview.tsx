@@ -68,9 +68,9 @@ export function DiscoverHomePreview() {
           href={DISCOVER_HUB_HREF}
           data-section-action=""
           className={buttonClass({ size: "sm", variant: "quiet", className: "group gap-1" })}
-          // 링크 접근명에 구간 제목을 포함해 "전체 보기"만으로는 도착지를 알 수 없는 문제를 막는다(공유 Section과 같은 규칙).
           aria-label={`${previewTitle} ${viewAllLabel}`}
         >
+          <span className="sr-only">{previewTitle} </span>
           {viewAllLabel}
           <ArrowRight size={14} aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5" />
         </Link>

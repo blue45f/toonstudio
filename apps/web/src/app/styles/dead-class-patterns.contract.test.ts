@@ -27,9 +27,30 @@ const COLOR_ALIASES: Readonly<Record<string, string>> = {
   danger: "--color-bad",
   success: "--color-good",
   bg: "--color-canvas",
+  "bg-2": "--color-panel",
+  "panel-2": "--color-raised",
+  "surface-2": "--color-raised",
+  field: "--color-panel",
+  "fg-1": "--color-fg",
+  "fg-4": "--color-fg-3",
+  ink: "--color-fg",
+  "accent-hover": "--color-accent-2",
+  "accent-contrast": "--color-on-accent",
+  "accent-foreground": "--color-on-accent",
+  info: "--color-cool",
+  "bad-light": "--color-bad-soft",
+  "warning-strong": "--color-warn",
+  primary: "--color-accent",
+  "primary-foreground": "--color-on-accent",
+  background: "--color-canvas",
+  foreground: "--color-fg",
+  muted: "--color-raised",
+  "muted-foreground": "--color-fg-2",
+  border: "--color-line",
+  destructive: "--color-bad",
 };
 /** 별칭과 함께 선언돼야 하는 soft 파생 토큰(기반 토큰의 /0.14 — accent-soft·warning-soft와 같은 방식). */
-const SOFT_TOKENS: readonly string[] = ["danger-soft", "success-soft", "good-soft", "bad-soft"];
+const SOFT_TOKENS: readonly string[] = ["danger-soft", "success-soft", "good-soft", "bad-soft", "info-soft"];
 /** 교체에 쓴 프로젝트 애니메이션 유틸과 그 근거 키프레임. */
 const ANIMATION_UTILS: Readonly<Record<string, string>> = {
   "fade-in": "fade-in",

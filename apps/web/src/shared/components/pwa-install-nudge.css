@@ -10,6 +10,7 @@
   padding: 0.875rem; border: 1px solid var(--color-line-strong); border-radius: 1rem;
   background: color-mix(in oklch, var(--color-panel) 96%, transparent); color: var(--color-fg);
   box-shadow: 0 1.25rem 3.5rem -1.75rem color-mix(in oklch, var(--color-fg) 42%, transparent);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px); animation: pwa-install-nudge-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .pwa-install-nudge__body { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: 0.75rem; min-width: 0; padding-right: 2.65rem; }

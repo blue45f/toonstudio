@@ -579,7 +579,7 @@ export function FanCafePanel({
       </div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs">
         <p className="text-fg-3">
-          {translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "마지막 동기화: ")}{lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "로딩 전")}
+          {translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "마지막 동기화: ")}{lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "동기화 대기")}
         </p>
         {postPulse > 0 ? (
           <span className="inline-flex items-center gap-1 rounded-md border border-accent/35 bg-accent-soft px-2 py-1 text-xs text-accent">
@@ -587,12 +587,12 @@ export function FanCafePanel({
             {translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "새 글 ")}{postPulse}{translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "개 반영")}</span>
         ) : null}
         <div className="flex items-center gap-2">
-          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-line bg-canvas/40 px-2.5 py-1.5">
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-line bg-canvas/40 px-3 py-1.5">
             <input
               type="checkbox"
               checked={autoRefreshEnabled}
               onChange={(event) => setAutoRefreshEnabled(event.target.checked)}
-              className="size-11 shrink-0 accent-accent"
+              className="size-4 shrink-0 rounded accent-accent"
             />
             <span className="text-fg-2">{translateCurrentStaticSourceText("domains.community.components.fan.cafe.panel", "ko", "실시간 새로고침(30초)")}</span>
           </label>

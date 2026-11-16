@@ -59,11 +59,12 @@ export function Section({
             href={action.href}
             data-section-action=""
             className={buttonClass({ size: "sm", variant: "quiet", className: "group gap-1" })}
-            // 링크 접근명에 섹션 제목을 포함해 "전체 보기" 같은 모호한 링크텍스트 문제 방지(문자열 제목 한정).
+            // 링크 접근명과 본문 텍스트(.sr-only 포함) 양쪽에 섹션 제목을 포함해 스크린리더와 검색 크롤러 모두 목적지를 알 수 있게 한다.
             aria-label={typeof title === "string" ? `${title} ${action.label}` : `${action.label} 바로가기`}
           >
+            {typeof title === "string" ? <span className="sr-only">{title} </span> : null}
             {action.label}
-            <ArrowRight size={14} className="transition-transform duration-150 group-hover:translate-x-0.5" />
+            <ArrowRight size={14} aria-hidden="true" className="transition-transform duration-150 group-hover:translate-x-0.5" />
           </Link>
         )}
       </header>

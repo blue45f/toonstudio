@@ -16,8 +16,8 @@ const ATELIER_RIBBON_ITEMS = [
     id: "wgsl-brush",
     href: "/studio/assets/brushes/new",
     iconSrc: "/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp",
-    ko: "WGSL 브러시 · 톤",
-    en: "WGSL Brushes & Tones",
+    ko: "펜·브러시 · 톤",
+    en: "Pens, Brushes & Tones",
   },
   {
     id: "bg3d-stage",
@@ -47,14 +47,14 @@ const BUILTIN_ATELIER_PACKS = [
     id: "master-gpen-pack",
     href: "/studio/brushes",
     artSrc: "/brand/luminous-atelier-20261114/scene-brush-lab-master-atelier.webp",
-    badgeKo: "WGSL 브러시 · 무료 기본",
-    badgeEn: "WGSL Brush · Built-in Free",
+    badgeKo: "필압 브러시 · 무료 기본",
+    badgeEn: "Pressure Brush · Built-in Free",
     licenseKo: "상업 연재 가능 · No-AI",
     licenseEn: "Commercial OK · No-AI",
     titleKo: "마스터 G펜 · 필압 칼선 24종 팩",
     titleEn: "Master G-Pen & Razor Ink 24-Pack",
-    bodyKo: "WGSL 듀얼 텍스처 · 손떨림 보정 프리셋 내장",
-    bodyEn: "WGSL dual-texture ink pens with stabilization presets",
+    bodyKo: "이중 질감 필압 · 손떨림 보정 프리셋 내장",
+    bodyEn: "Dual-texture ink pens with stabilization presets",
     ctaKo: "브러시 보관함 장착",
     ctaEn: "Equip in Brushes",
   },
@@ -160,12 +160,12 @@ export function MarketGrandAtelierShowcase() {
           <div>
             <p className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-accent">
               <Sparkles size={13} aria-hidden="true" />
-              {t("GRAND ATELIER CURATION · 즉시 투입 패키지", "GRAND ATELIER CURATION · READY TO EQUIP")}
+              {t("스튜디오 기본 패키지 · 바로 쓰는 추천 소재", "STUDIO CURATION · READY TO EQUIP")}
             </p>
             <h2 className="mt-1 text-base font-bold text-fg sm:text-lg">
               {t(
                 "웹툰의 한 컷을 완성하는 브러시 · 3D 배경 · 캐릭터 셰이퍼 대표 소재",
-                "Signature WGSL brushes, 3D stages, and Character Shaper packs ready for your panel",
+                "Signature pressure brushes, 3D stages, and Character Shaper packs ready for your panel",
               )}
             </h2>
           </div>

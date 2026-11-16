@@ -15,14 +15,14 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  /* 페이지는 그대로 보이고, 모티프 뒤에만 살짝 광원이 번진다 */
+  /* 페이지는 그대로 보이고 첫 클릭도 본문으로 통과시키되, 모티프 뒤에만 살짝 광원이 번진다 */
+  pointer-events: none;
   background: radial-gradient(
-    260px 200px at 50% 44%,
-    color-mix(in srgb, var(--color-canvas) 62%, transparent),
+    220px 170px at 50% 42%,
+    color-mix(in srgb, var(--color-canvas) 54%, transparent),
     transparent 72%
   );
-  cursor: pointer;
-  animation: page-intro-veil-in 200ms ease-out both;
+  animation: page-intro-veil-in 160ms ease-out both;
 }
 
 .page-intro__veil.is-leaving,
