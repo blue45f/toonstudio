@@ -23,7 +23,7 @@ describe("Studio CanvasKit real module Worker/WASM browser boundary", () => {
     expect(browserEntry).not.toContain("FakeWorker");
     expect(browserEntry).not.toContain("mockProvider");
     expect(verifier).toContain(
-      'const HARNESS_ENTRY = "/scripts/studio-canvaskit-quality-worker-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-canvaskit-quality-worker-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
   });

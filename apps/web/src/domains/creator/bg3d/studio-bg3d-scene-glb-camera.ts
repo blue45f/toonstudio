@@ -151,9 +151,9 @@ function cameraNode(json: Record<string, unknown>, expected: StudioBg3dSceneGlbC
 }
 
 /**
- * 설치 Three 0.186.1 exporter의 processCamera는 ortho magnification을 두 배로 쓰고 zoom을 읽지 않는다.
- * glTF §3.10.3.4의 xmag/ymag는 반폭/반높이다. 독립 camera는 zoom을 미리 투영에 반영하고,
- * 여기서는 식별된 main 카메라의 해당 수치만 보정한다. 자신의 임시 marker만 제거한다.
+ * 설치 Three 0.187.0 exporter의 processCamera는 glTF §3.10.3.4 반폭/반높이(xmag/ymag)를 기록하지만 zoom은 읽지 않는다.
+ * 독립 camera는 zoom을 미리 투영에 반영하고, 여기서는 식별된 main 카메라의 해당 수치를 대조·확정한 뒤
+ * 자신의 임시 marker만 제거한다.
  * https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#orthographic-projection
  */
 export function finalizeStudioBg3dSceneGlbCamera(glb: Uint8Array, prepared: StudioBg3dSceneGlbCameraPreparation,
@@ -168,8 +168,7 @@ export function finalizeStudioBg3dSceneGlbCamera(glb: Uint8Array, prepared: Stud
     const core = expected.expectedGltfCamera;
     if (core.type === "orthographic") {
       const actual = definition.orthographic;
-      if (!record(actual) || definition.perspective !== undefined || !sameFields(actual, { znear: core.orthographic.znear, zfar: core.orthographic.zfar })
-        || !sameFields(actual, { xmag: core.orthographic.xmag, ymag: core.orthographic.ymag }, 2)) fail("camera-mismatch");
+      if (!record(actual) || definition.perspective !== undefined || !sameFields(actual, core.orthographic)) fail("camera-mismatch");
       definition.orthographic = { ...actual, ...core.orthographic };
     } else {
       if (!record(definition.perspective) || definition.orthographic !== undefined || !sameFields(definition.perspective, core.perspective)) fail("camera-mismatch");

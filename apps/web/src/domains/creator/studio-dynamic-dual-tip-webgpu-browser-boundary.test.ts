@@ -24,7 +24,7 @@ describe("dynamic dual-tip actual Chromium WebGPU boundary", () => {
     expect(browserEntry).not.toContain("fakeGpu");
     expect(browserEntry).not.toContain("mockDevice");
     expect(verifier).toContain(
-      'const HARNESS_ENTRY = "/scripts/studio-dynamic-dual-tip-webgpu-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-dynamic-dual-tip-webgpu-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
   });

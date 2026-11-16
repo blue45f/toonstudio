@@ -24,8 +24,7 @@ interface Generator {
   fromEquirectangular(texture: Texture): RenderTarget;
   dispose(): void;
 }
-interface LegacyAllocator { _allocateTargets(): unknown }
-interface CommonAllocator { _allocateTarget(depthBuffer: boolean): unknown }
+interface TargetAllocator { _allocateTarget(): unknown }
 interface RendererStateAccess<TTarget, TMapping> {
   getRenderTarget(): TTarget;
   setRenderTarget(target: TTarget, cubeFace?: number, mipLevel?: number): void;
@@ -35,11 +34,8 @@ interface RendererStateAccess<TTarget, TMapping> {
   toneMapping: TMapping;
 }
 
-function legacyAllocator(value: object): value is LegacyAllocator {
-  return "_allocateTargets" in value && typeof value._allocateTargets === "function" && value._allocateTargets.length === 0;
-}
-function commonAllocator(value: object): value is CommonAllocator {
-  return "_allocateTarget" in value && typeof value._allocateTarget === "function" && value._allocateTarget.length === 1;
+function targetAllocator(value: object): value is TargetAllocator {
+  return "_allocateTarget" in value && typeof value._allocateTarget === "function" && value._allocateTarget.length === 0;
 }
 function failures(errors: readonly unknown[], message: string): void {
   if (errors.length === 1) throw errors[0];
@@ -47,24 +43,19 @@ function failures(errors: readonly unknown[], message: string): void {
 }
 
 /**
- * 고정된 Three r186의 개인 generator에서 output 반환만 관찰한다. 원래 allocator의
+ * 고정된 Three r187의 개인 generator에서 output 반환만 관찰한다. 원래 allocator의
  * 내부 초기화는 생략하지 않는다. allocator가 반환하기 전 OOM으로 잃은 자원은 관찰할 수 없다.
  */
-function observeOutput(generator: Generator, kind: "legacy" | "common", outputs: Set<RenderTarget>): () => void {
-  if (REVISION !== "186") throw new StudioBg3dHdriPmremError("unsupported-three-revision");
+function observeOutput(generator: Generator, outputs: Set<RenderTarget>): () => void {
+  if (REVISION !== "187") throw new StudioBg3dHdriPmremError("unsupported-three-revision");
   if (!Object.isExtensible(generator)) throw new StudioBg3dHdriPmremError("allocator-unavailable");
   const record = (value: unknown): RenderTarget => {
     if (!(value instanceof RenderTarget)) throw new StudioBg3dHdriPmremError("allocator-unavailable");
     outputs.add(value); return value;
   };
-  if (kind === "legacy" && legacyAllocator(generator)) {
-    const allocate = generator._allocateTargets;
-    generator._allocateTargets = () => record(allocate.call(generator));
-    return () => { generator._allocateTargets = allocate; };
-  }
-  if (kind === "common" && commonAllocator(generator)) {
+  if (targetAllocator(generator)) {
     const allocate = generator._allocateTarget;
-    generator._allocateTarget = (depthBuffer: boolean) => record(allocate.call(generator, depthBuffer));
+    generator._allocateTarget = () => record(allocate.call(generator));
     return () => { generator._allocateTarget = allocate; };
   }
   throw new StudioBg3dHdriPmremError("allocator-unavailable");
@@ -158,7 +149,7 @@ export async function createStudioBg3dHdriPmrem(renderer: StudioBg3dHdriRenderer
         throw new StudioBg3dHdriPmremError("backend-unavailable");
       }
       generator = new runtime.PMREMGenerator(renderer);
-      stopObserving = observeOutput(generator, "common", outputs);
+      stopObserving = observeOutput(generator, outputs);
       await generator.compileEquirectangularShader();
       active(options);
       if (renderer.backend !== backend) throw new StudioBg3dHdriPmremError("backend-unavailable");
@@ -171,7 +162,7 @@ export async function createStudioBg3dHdriPmrem(renderer: StudioBg3dHdriRenderer
       active(options);
     } else if (webgl(renderer)) {
       generator = new PMREMGenerator(renderer);
-      stopObserving = observeOutput(generator, "legacy", outputs);
+      stopObserving = observeOutput(generator, outputs);
       webglContext(renderer);
       await generator.compileEquirectangularShader();
       active(options);

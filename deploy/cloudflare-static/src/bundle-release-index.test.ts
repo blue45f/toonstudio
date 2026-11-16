@@ -18,7 +18,7 @@ import {
   type R2ObjectBodyBinding,
 } from "./index";
 
-const INDEX_SHA = "a5e46f6cfbe92a53ab8aedae578a5160e7c5fe9dc9fa87d4e96b16e6fa7b9994";
+const INDEX_SHA = "b90b58fd4c87e9fddb2e39a7f1cbeb75ce93f0bc19f4f1cc053ac696e55e377c";
 const INDEX_PATH = `${CLOUDFLARE_BUNDLE_V2_RELEASE_INDEX_PATH_PREFIX}${INDEX_SHA}.json`;
 const INDEX_KEY = INDEX_PATH.slice(1);
 const INDEX_URL = `https://www.toonstudio.cloud${INDEX_PATH}`;

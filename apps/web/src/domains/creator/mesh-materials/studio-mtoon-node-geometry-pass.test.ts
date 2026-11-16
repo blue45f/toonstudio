@@ -29,6 +29,7 @@ function fixture() {
 }
 function build(pass: Material, geometry: BoxGeometry, useMrt: boolean, useClipping: boolean) {
   const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") });
+  Reflect.set(renderer, "_bindings", undefined);
   // GPU 초기화 대신 이 CPU profile의 두 capability만 명시한다.
   renderer.hasFeature = (name) => { if (!["float32-filterable", "clip-distances"].includes(name)) throw new Error(`예상하지 않은 feature: ${name}`); return false; };
   const target = new RenderTarget(4, 4, { count: useMrt ? 2 : 1 });

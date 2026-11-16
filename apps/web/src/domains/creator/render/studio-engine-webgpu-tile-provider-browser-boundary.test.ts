@@ -22,7 +22,7 @@ describe("StudioEngineWebGpuTileProviderV1 real Chromium boundary", () => {
     expect(browserEntry).not.toContain("FakeGpu");
     expect(browserEntry).not.toContain("mockDevice");
     expect(verifier).toContain(
-      'const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-tile-provider-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-engine-webgpu-tile-provider-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
   });
