@@ -5,8 +5,10 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { createStudioHybridDccComponentSelection } from "./studio-hybrid-dcc-component-selection";
 import { downloadStudioHybridDccFile, readStudioHybridDccWorkfile, studioHybridDccDownloadName } from "./studio-hybrid-dcc-file-io";
+import { exportStudioHybridDccMeshGlb } from "./studio-hybrid-dcc-glb-export";
 import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
 import { workspaceExportActiveMesh, type StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
+import { resolveStudioHybridDccExportToonMaterials } from "./materials/studio-hybrid-dcc-toon-export";
 
 import type { StudioHybridDccRunResult } from "./studio-hybrid-dcc-tool-catalog";
 
@@ -92,11 +94,46 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
       setError(""); setNotice(bt("선택한 원본 메시의 로컬 좌표를 OBJ로 저장합니다. 작업 전체는 .toon3d로 보관하세요.", "The selected source mesh is saved as OBJ in local coordinates. Use .toon3d to keep the workspace."));
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("OBJ 파일을 저장하지 못했습니다.", "Could not save the OBJ file.")); }
   };
+  const saveGlb = () => {
+    if (busy || reading || opening) return;
+    const current = currentLease();
+    try {
+      const assetId = workspace.activeAssetId;
+      const record = assetId ? workspace.session.state.geometry.records[assetId] : undefined;
+      if (!assetId || !record) throw new Error(bt("내보낼 원본 메시가 없습니다.", "There is no source mesh to export."));
+      if (record.modifierStack.modifiers.length > 0) {
+        throw new Error(bt("비파괴 변형이 적용되어 있습니다. 먼저 변형을 원본 메시로 확정한 뒤 GLB로 저장하세요.", "Non-destructive modifiers are active. Apply the modifier stack before exporting GLB."));
+      }
+      const actualSlots = new Set(record.mesh.faces.map(({ materialSlot }) => materialSlot));
+      const toonMaterials = resolveStudioHybridDccExportToonMaterials(workspace.session.state.materials, assetId, actualSlots);
+      const exported = exportStudioHybridDccMeshGlb({
+        assetId, mesh: record.mesh, sourceRevision: record.revision, sourceHash: record.meshHash,
+        ...(toonMaterials ? { toonMaterials } : {}),
+      });
+      if (!exported.ok) {
+        throw new Error(exported.report.errors[0]?.detail ?? bt("GLB 파일을 생성하지 못했습니다.", "Could not generate the GLB file."));
+      }
+      if (!current()) return;
+      downloadStudioHybridDccFile(exported.bytes, exported.mimeType, studioHybridDccDownloadName(assetId, "glb"));
+      setError(""); setNotice(bt("선택한 메시를 표준 GLB 2.0 바이너리로 저장했습니다.", "Saved the selected mesh as a standard GLB 2.0 binary."));
+    } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("GLB 파일을 저장하지 못했습니다.", "Could not save the GLB file.")); }
+  };
+  const saveStl = () => {
+    if (busy || reading || opening) return;
+    const current = currentLease();
+    try {
+      const result = workspaceExportActiveMesh(workspace, "stl").lastExport;
+      if (!result) throw new Error(bt("내보낼 원본 메시가 없습니다.", "There is no source mesh to export."));
+      if (!current()) return;
+      downloadStudioHybridDccFile(result.text, "model/stl;charset=utf-8", studioHybridDccDownloadName(workspace.activeAssetId ?? targetId, "stl"));
+      setError(""); setNotice(bt("선택한 메시를 3D 프린팅·CAD 호환 STL로 저장했습니다.", "Saved the selected mesh as CAD/3D-printing STL."));
+    } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("STL 파일을 저장하지 못했습니다.", "Could not save the STL file.")); }
+  };
   return {
     reading, opening, pending, error, notice,
     disabled: busy || reading || opening,
     canSaveObj: Boolean(workspace.activeAssetId),
-    save, saveObj, cancel,
+    save, saveObj, saveGlb, saveStl, cancel,
     open: async (file: File) => {
       if (busy || opening) return;
       readController.current?.abort();

@@ -133,7 +133,7 @@ export function StudioHybridDccDialog({
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               aria-label={bt("캔버스로 돌아가기", "Back to canvas")}
             >
               <ArrowLeft size={17} aria-hidden="true" />
@@ -141,7 +141,27 @@ export function StudioHybridDccDialog({
             </button>
           ) : null}
           <StudioHybridDccHeading titleId="studio-hybrid-dcc-title" />
-          {workspacePresentation ? null : (
+          {workspacePresentation ? (
+            <nav
+              aria-label={bt("3D 제작 허브 바로가기", "3D creation suite shortcuts")}
+              className="ml-auto hidden items-center gap-1 md:flex"
+            >
+              {([
+                ["/studio/bg3d", bt("3D 배경", "3D Background")],
+                ["/studio/poser", bt("3D 포즈", "3D Poser")],
+                ["/studio/lift3d", bt("Lift3D", "Lift3D")],
+                ["/studio/assets/characters/new", bt("캐릭터 셰이퍼", "Character Shaper")],
+              ] as const).map(([href, label]) => (
+                <a
+                  key={href}
+                  href={href}
+                  className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+          ) : (
             <button
               ref={closeButtonRef}
               type="button"

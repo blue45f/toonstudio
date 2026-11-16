@@ -31,6 +31,10 @@ function setup(overrides: Partial<StudioHybridDccSculptStrokeModel> = {}, busy =
     carve: false, setCarve: vi.fn<StudioHybridDccSculptStrokeModel["setCarve"]>(),
     radius: 0.45, radiusText: "0.45", radiusError: "",
     setRadiusText: vi.fn<StudioHybridDccSculptStrokeModel["setRadiusText"]>(),
+    strength: 0.2, strengthText: "0.2", strengthError: "",
+    setStrengthText: vi.fn<StudioHybridDccSculptStrokeModel["setStrengthText"]>(),
+    symmetry: { x: false, y: false, z: false },
+    toggleSymmetry: vi.fn<StudioHybridDccSculptStrokeModel["toggleSymmetry"]>(),
     phase: "idle", preview: null, notice: "", error: "", engaged: false, cancel: vi.fn(),
     controller: {
       begin: vi.fn(() => null), isCurrent: vi.fn(() => false),
@@ -214,5 +218,28 @@ describe("반경 입력과 실제 조형 작업대의 DOM 통합", () => {
     expect(workspaceEvidence(tools.current().workspace)).toEqual(before);
     expect(radiusField().disabled).toBe(false);
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("X 대칭을 켜면 반대쪽(+X/-X) 꼭짓점도 단일 되돌리기 단위로 대칭 변위시킨다", async () => {
+    const tools = mountWorkspaceTools();
+    fireEvent.click(screen.getByRole("radio", { name: "잡아당기기" }));
+    fireEvent.click(screen.getByRole("button", { name: "X 대칭" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "브러시 강도" }), { target: { value: "0.4" } });
+    await act(async () => {
+      const controller = tools.current().model.controller;
+      const token = controller.begin({ assetId: "cube", pointerId: 9, localPoint: { x: 0.5, y: 0.5, z: 0.5 } });
+      if (!token) throw new Error("대칭 조형 시작 실패");
+      controller.end(token);
+      await Promise.resolve();
+    });
+    const edited = workspaceMesh(tools.current().workspace);
+    const plusCorner = edited.vertices.find((v) => v.position.x > 0.4 && v.position.y > 0.6 && v.position.z > 0.4);
+    const minusCorner = edited.vertices.find((v) => v.position.x < -0.4 && v.position.y > 0.6 && v.position.z > 0.4);
+    expect(plusCorner).toBeDefined();
+    expect(minusCorner).toBeDefined();
+    expect(plusCorner!.position.x).toBeCloseTo(-minusCorner!.position.x, 5);
+    expect(plusCorner!.position.y).toBeCloseTo(minusCorner!.position.y, 5);
+    expect(plusCorner!.position.z).toBeCloseTo(minusCorner!.position.z, 5);
+    expect(tools.current().workspace.session.undoStack).toHaveLength(tools.source.session.undoStack.length + 1);
   });
 });

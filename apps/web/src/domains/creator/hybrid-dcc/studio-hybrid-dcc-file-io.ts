@@ -30,7 +30,10 @@ export function readStudioHybridDccWorkfile(file: File, signal: AbortSignal): Pr
 }
 
 /** 사용자 파일명과 문서 ID는 다운로드 경로로 실행하지 않고 안전한 파일 이름으로만 쓴다. */
-export function studioHybridDccDownloadName(documentId: string, extension: "toon3d" | "obj"): string {
+export function studioHybridDccDownloadName(
+  documentId: string,
+  extension: "toon3d" | "obj" | "glb" | "stl",
+): string {
   const name = documentId.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80) || "workspace";
   return `toonstudio-${name}.${extension}`;
 }

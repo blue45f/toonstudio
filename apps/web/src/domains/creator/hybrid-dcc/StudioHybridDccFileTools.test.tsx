@@ -95,6 +95,18 @@ describe("native .toon3d 파일 저장과 열기", () => {
     expect(obj.filename).toMatch(/\.obj$/u);
     const text = new TextDecoder().decode(await readBlob(obj.blob));
     expect(text).toMatch(/^v /mu); expect(text).toMatch(/^f /mu);
+    fireEvent.click(screen.getByRole("button", { name: "GLB 저장" }));
+    expect(downloads).toHaveLength(3);
+    const glb = downloads[2]; if (!glb) throw new Error("GLB 다운로드가 없습니다.");
+    expect(glb.filename).toMatch(/\.glb$/u);
+    const glbBytes = await readBlob(glb.blob);
+    expect(new TextDecoder().decode(glbBytes.subarray(0, 4))).toBe("glTF");
+    fireEvent.click(screen.getByRole("button", { name: "STL 저장" }));
+    expect(downloads).toHaveLength(4);
+    const stl = downloads[3]; if (!stl) throw new Error("STL 다운로드가 없습니다.");
+    expect(stl.filename).toMatch(/\.stl$/u);
+    const stlText = new TextDecoder().decode(await readBlob(stl.blob));
+    expect(stlText).toContain("solid");
   });
 
   it("컷 모드 추천 도구와 전문가 목록의 기존 내보내기 버튼도 실제 다운로드를 쓴다", async () => {

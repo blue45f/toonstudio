@@ -40,9 +40,13 @@ import {
   workspaceRedo,
   workspaceSelectAsset,
   workspaceSetAssetVisibility,
+  workspaceSubdivideActive,
   workspaceUndo,
   type StudioHybridDccWorkspace,
 } from "./studio-hybrid-dcc-workspace";
+import { workspaceAddStarterPrimitive } from "./studio-hybrid-dcc-primitives";
+import { StudioHybridDccPrimitiveBar } from "./StudioHybridDccPrimitiveBar";
+import { StudioHybridDccSelectionMetrics } from "./StudioHybridDccSelectionMetrics";
 import {
   StudioHybridDccModifierInspector,
   type StudioHybridDccModifierStackView,
@@ -329,99 +333,30 @@ export function StudioHybridDccPanel({
     : null;
   const modifierStackView: StudioHybridDccModifierStackView = {
     modifiers: activeRecord
-      ? activeRecord.modifierStack.modifiers.map((modifier): StudioHybridDccModifierView => {
-          switch (modifier.kind) {
+      ? activeRecord.modifierStack.modifiers.map((m): StudioHybridDccModifierView => {
+          switch (m.kind) {
             case "mirror":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                axis: modifier.axis,
-                merge: modifier.merge,
-                mergeThreshold: modifier.mergeThreshold,
-                bisect: modifier.bisect,
-                clip: modifier.clip,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, axis: m.axis, merge: m.merge, mergeThreshold: m.mergeThreshold, bisect: m.bisect, clip: m.clip };
             case "array":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                count: modifier.count,
-                offset: modifier.offset,
-                mode: modifier.mode,
-                radialAngleRad: modifier.radialAngleRad,
-                realizeInstances: modifier.realizeInstances,
-                useConstantOffset: modifier.useConstantOffset,
-                useRelativeOffset: modifier.useRelativeOffset,
-                relativeOffset: modifier.relativeOffset,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, count: m.count, offset: m.offset, mode: m.mode, radialAngleRad: m.radialAngleRad, realizeInstances: m.realizeInstances, useConstantOffset: m.useConstantOffset, useRelativeOffset: m.useRelativeOffset, relativeOffset: m.relativeOffset };
             case "boolean":
               return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                operation: modifier.operation,
-                operandId: modifier.operandAssetId ?? null,
-                operandOptions: authorityRecords
-                  .filter(({ assetId }) => assetId !== activeRecord.assetId)
-                  .map(({ assetId }, index) => ({
-                    id: assetId,
-                    label: `${friendlyHybridDccAssetName(bt, assetId, index)} · ${assetId}`,
-                  })),
+                id: m.id, kind: m.kind, enabled: m.enabled, operation: m.operation, operandId: m.operandAssetId ?? null,
+                operandOptions: authorityRecords.filter(({ assetId }) => assetId !== activeRecord.assetId)
+                  .map(({ assetId }, index) => ({ id: assetId, label: `${friendlyHybridDccAssetName(bt, assetId, index)} · ${assetId}` })),
               };
             case "solidify":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                thickness: modifier.thickness,
-                evenThickness: modifier.evenThickness,
-                rim: modifier.rim,
-                offset: modifier.offset,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, thickness: m.thickness, evenThickness: m.evenThickness, rim: m.rim, offset: m.offset };
             case "bevel":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                amount: modifier.amount,
-                segments: modifier.segments,
-                angleLimitRad: modifier.angleLimitRad,
-                weightInfluence: modifier.weightInfluence,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, amount: m.amount, segments: m.segments, angleLimitRad: m.angleLimitRad, weightInfluence: m.weightInfluence };
             case "subdivision":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                levels: modifier.levels,
-                smooth: modifier.smooth,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, levels: m.levels, smooth: m.smooth };
             case "weld":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                quantum: modifier.quantum,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, quantum: m.quantum };
             case "decimate":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                ratio: modifier.ratio,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, ratio: m.ratio };
             case "simple-deform":
-              return {
-                id: modifier.id,
-                kind: modifier.kind,
-                enabled: modifier.enabled,
-                mode: modifier.mode,
-                axis: modifier.axis,
-                angleRad: modifier.angleRad,
-                factor: modifier.factor,
-              };
+              return { id: m.id, kind: m.kind, enabled: m.enabled, mode: m.mode, axis: m.axis, angleRad: m.angleRad, factor: m.factor };
           }
         })
       : [],
@@ -646,14 +581,14 @@ export function StudioHybridDccPanel({
   return (
     <section
       ref={sculptScopeRef}
-      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 px-3 pb-3 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-4 sm:pt-3"
+      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 px-3 pb-6 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-8 sm:pt-3"
       data-studio-hybrid-dcc-panel="true"
       data-workbench-mode={workbenchMode}
       aria-label={bt("정밀 3D 모델링 작업 공간", "Precision 3D modeling workspace")}
     >
-      <div className="flex flex-wrap items-center gap-2" data-studio-hybrid-dcc-topbar="true">
+      <div className="flex flex-col gap-2" data-studio-hybrid-dcc-topbar="true">
         <StudioHybridDccModeTabs mode={workbenchMode} onChange={changeWorkbenchMode} />
-        <div className="flex flex-wrap items-center gap-1.5 max-sm:w-full">
+        <div className="flex flex-wrap items-center gap-1.5">
           <StudioHybridDccFileTools model={fileTools} modelFileRef={fileRef} onModelFile={(file) => { void modelImport.open(file); }} />
           <StudioHybridDccNativeImportStatus model={modelImport} />
           {persistenceStatus && persistenceCopy ? (
@@ -748,7 +683,7 @@ export function StudioHybridDccPanel({
       >
         <div className={cn("order-1 min-w-0 lg:col-start-1 xl:row-start-1", introVisible ? "xl:col-start-1" : "xl:col-start-2")}>
           <StudioHybridDccViewport
-            materialMode={workbenchMode === "material"} workspaceDocumentId={workspaceDocumentId}
+            materialMode={workbenchMode === "material"} workbenchMode={workbenchMode} workspaceDocumentId={workspaceDocumentId}
             stage={introVisible}
             onEmptyStart={startFromIntro}
             workspace={ws}
@@ -777,6 +712,17 @@ export function StudioHybridDccPanel({
         </div>
 
         <div className={cn("order-2 min-w-0 space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1", introVisible ? "xl:col-start-2" : "xl:col-start-3")}>
+          {workbenchMode !== "material" && workbenchMode !== "shot" ? (
+            <StudioHybridDccPrimitiveBar
+              busy={busy}
+              onAddPrimitive={(kind, label) => {
+                void run(label, () => workspaceAddStarterPrimitive(ws, kind));
+              }}
+              onImportFile={(file) => {
+                void modelImport.open(file);
+              }}
+            />
+          ) : null}
           <section
             className="rounded-2xl border border-line bg-panel p-3"
             aria-labelledby="studio-dcc-quick-tools-title"
@@ -788,7 +734,19 @@ export function StudioHybridDccPanel({
             <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
               {bt(modeGuide.description[0], modeGuide.description[1])}
             </p>
-            {workbenchMode === "sculpt" ? <StudioHybridDccSculptTools model={sculpt} busy={busy} /> : null}
+            {workbenchMode === "sculpt" ? (
+              <StudioHybridDccSculptTools
+                model={sculpt}
+                busy={busy}
+                hasActiveAsset={hasActiveAsset}
+                onAddSculptSphere={() => {
+                  void run(bt("조형 구체 추가", "Add sculpt sphere"), () => workspaceAddStarterPrimitive(ws, "sculpt-sphere"));
+                }}
+                onSubdivideActive={() => {
+                  void run(bt("1단계 세분화", "Subdivide +1"), () => workspaceSubdivideActive(ws, 1));
+                }}
+              />
+            ) : null}
             <StudioHybridDccToolTiles
               mode={workbenchMode}
               tools={quickTools}
@@ -844,19 +802,11 @@ export function StudioHybridDccPanel({
                       )}
                   </p>
                 </div>
-                <dl className="grid grid-cols-2 gap-1.5 text-xs">
-                  {([
-                    [bt("꼭짓점", "Vertices"), activeRecord.mesh.vertices.length],
-                    [bt("면", "Faces"), activeRecord.mesh.faces.length],
-                    [bt("방향 모서리", "Half-edges"), activeRecord.mesh.halfEdges.length],
-                    [bt("편집 버전", "Revision"), activeRecord.revision],
-                  ] as const).map(([term, value]) => (
-                    <div key={term} className="rounded-lg bg-raised p-2">
-                      <dt className="text-[0.6875rem] text-fg-3">{term}</dt>
-                      <dd className="mt-0.5 font-semibold tabular-nums text-fg">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <StudioHybridDccSelectionMetrics
+                  mesh={activeRecord.mesh}
+                  revision={activeRecord.revision}
+                  transform={activeTransform}
+                />
                 {activeTransform && componentSelection.mode === "object" ? (
                   <fieldset
                     key={`${activeRecord.assetId}:${ws.session.state.stateHash}`}

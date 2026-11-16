@@ -84,7 +84,7 @@ export function StudioHybridDccRouteGate({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-fg-2 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-label={bt("캔버스로 돌아가기", "Back to canvas")}
           >
             <ArrowLeft size={17} aria-hidden="true" />
