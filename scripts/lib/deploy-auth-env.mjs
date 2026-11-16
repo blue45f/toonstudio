@@ -40,8 +40,8 @@ const EXPECTED_ONPOD_PROFILE = Object.freeze({
   TRAFFIC_ANALYTICS_STORE: "d1",
 });
 
-/** 32바이트 이상이어야 하는 핵심 HMAC/출처/RPC 시크릿. */
-const REQUIRED_SECRET32_API_KEYS = Object.freeze([
+/** 32바이트 이상이어야 하는 핵심 런타임 환경변수 항목명 목록(실제 비밀값이 아닌 공개 식별자 목록). */
+const REQUIRED_32BYTE_ENV_VAR_NAMES = Object.freeze([
   "AUTH_SESSION_SECRET",
   "AUTH_STATE_SECRET",
   "CLOUDFLARE_EDGE_ORIGIN_SECRET",
@@ -245,9 +245,9 @@ export function validateOnpodApiEnvMap(apiEnvMap) {
       errors.push(`onpod-current 프로필 설정 불일치: ${key} (기대값: ${expected})`);
     }
   }
-  for (const secretKey of REQUIRED_SECRET32_API_KEYS) {
-    if (!isValidSecret32(apiEnvMap[secretKey])) {
-      errors.push(`필수 32바이트 시크릿 누락 또는 형식 불충족: ${secretKey}`);
+  for (const envVarName of REQUIRED_32BYTE_ENV_VAR_NAMES) {
+    if (!isValidSecret32(apiEnvMap[envVarName])) {
+      errors.push(`필수 32바이트 시크릿 누락 또는 형식 불충족: ${envVarName}`);
     }
   }
   if (

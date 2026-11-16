@@ -475,10 +475,10 @@ export async function printDeployAuthStatus({
   }
 
   for (const warning of plan.warnings) {
-    log(`  ℹ️ ${warning}`);
+    log(`  ℹ️ ${redactSensitiveText(warning)}`);
   }
-  for (const error of plan.errors) {
-    log(`  ❌ ${error}`);
+  for (const issueMessage of plan.errors) {
+    log(`  ❌ ${redactSensitiveText(issueMessage)}`);
   }
 }
 
