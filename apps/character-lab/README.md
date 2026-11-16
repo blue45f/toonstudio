@@ -154,7 +154,7 @@ morph는 계약 이름(`param:<키>:±`, `facs:<유닛>`)을 그대로 쓰므로
 
 - **뷰어** `apps/character-lab/scripts/kit-preview.mjs` — Blender GLB를 앱의 실제 렌더러(`BabylonCharacterEngine`)로 렌더해 PNG·접촉 시트·JSON 요약을 만든다(장당 1~4초, 소프트웨어 WebGL2).
   베이스에 키트 이름 메시(`TS_Body`·`TS_Head`)가 있으면 **키트 소스 경로**(`loadSource({ kind: "kit" })`)로, 아니면 기존 병합 경로로 올린다. 사용법·옵션·종료 코드는 [`docs/kit-preview.md`](docs/kit-preview.md)를 본다(세부는 거기에만 둔다).
-- **Blender 제작 도구**: `tools/blender/character_kit/`(사용법은 그 안의 `README.md`)와 진입점 `scripts/blender/build_character_kit.py`가 저장소에 있고, 이 도구로 만든 키트 에셋이 `public/assets/characters/toonstudio-kit-v1/`에 안착했다(§9.5).
+- **Blender 제작 도구**: `tools/blender/character_kit/`(사용법은 그 안의 `README.md`)와 파이프라인 스크립트 `scripts/blender/toonstudio_character_pipeline.py`가 저장소에 있고, 이 도구로 만든 키트 에셋이 `public/assets/characters/toonstudio-kit-v1/`에 안착했다(§9.5).
 
 ### 9.4 현재 상태와 프로브
 
