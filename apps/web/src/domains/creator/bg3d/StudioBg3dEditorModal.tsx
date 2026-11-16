@@ -126,7 +126,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
       }}
     >
       <div className="mx-auto flex h-full max-h-full max-w-[1800px] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_24px_80px_oklch(0.05_0.01_70/0.55)]">
-        <header data-bg3d-workspace-header="true" className="flex shrink-0 items-start justify-between gap-2 border-b border-line px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
+        <header data-bg3d-workspace-header="true" className="flex flex-wrap shrink-0 items-center justify-between gap-2 border-b border-line px-3 py-2 sm:flex-nowrap sm:items-start sm:gap-3 sm:px-5 sm:py-3">
           <div className="min-w-0">
             <p className="eyebrow flex items-center gap-1.5 text-accent">
               <Sparkles size={14} aria-hidden />
@@ -138,7 +138,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
             </p>
             <h2
               id="studio-bg3d-dialog-title"
-              className="mt-1 truncate text-base font-bold tracking-tight text-fg sm:text-xl"
+              className="mt-0.5 truncate text-base font-bold tracking-tight text-fg sm:mt-1 sm:text-xl"
             >
               {title}
             </h2>
@@ -146,7 +146,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               {description}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:shrink-0 sm:flex-nowrap sm:gap-2">
             {h.readinessState ? (
               <StudioBg3dReadinessBadge
                 readiness={h.readinessState}

@@ -87,11 +87,12 @@ export function StudioBg3dReadinessBadge({
           onClick={onReturnTo2d}
           className={studioBg3dClassNames(
             STUDIO_BG3D_CONTROL_BUTTON,
-            "hidden min-h-11 border-line bg-card px-3 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg sm:inline-flex",
+            "min-h-11 min-w-11 border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:bg-raised hover:text-fg sm:px-3",
           )}
         >
           <ArrowLeft size={14} aria-hidden />
-          <span>{bt("2D 원고로 복귀", "Return to 2D")}</span>
+          <span className="sm:hidden">{bt("2D 복귀", "2D")}</span>
+          <span className="hidden sm:inline">{bt("2D 원고로 복귀", "Return to 2D")}</span>
         </button>
       ) : null}
     </div>
