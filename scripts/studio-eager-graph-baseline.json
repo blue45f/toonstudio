@@ -424,7 +424,7 @@
     },
     "apps/web/src/domains/creator/offline-branch": {
       "modules": 3,
-      "bytes": 12947
+      "bytes": 12927
     },
     "apps/web/src/domains/creator/page": {
       "modules": 4,
@@ -472,7 +472,7 @@
     },
     "apps/web/src/domains/creator/status-i18n": {
       "modules": 25,
-      "bytes": 528434
+      "bytes": 528424
     },
     "apps/web/src/domains/creator/studio-3d-ui": {
       "modules": 1,
@@ -552,7 +552,7 @@
     },
     "apps/web/src/shared/components": {
       "modules": 50,
-      "bytes": 213297
+      "bytes": 212871
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
@@ -2026,7 +2026,6 @@
     "apps/web/src/shared/components/route-silhouette.tsx": 1,
     "apps/web/src/shared/components/site-experience/SiteConnectionNotice.tsx": 1,
     "apps/web/src/shared/components/site-experience/SiteExperienceFrame.tsx": 1,
-    "apps/web/src/shared/components/site-experience/WorkflowIllustration.tsx": 1,
     "apps/web/src/shared/components/site-experience/site-experience-context.ts": 1,
     "apps/web/src/shared/components/site-experience/site-experience-policy.ts": 1,
     "apps/web/src/shared/components/site-experience/site-illustrated-art.ts": 1,

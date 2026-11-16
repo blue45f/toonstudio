@@ -21,9 +21,7 @@ v1의 핵심 목표는 다음과 같다.
   - 공급 경로별 권리·격리·재배포 정책
 - `apps/web/src/domains/creator/studio-3d-asset-refinery.ts`
   - Refinery 상태 전이, 불변 이력, 최종 공개 게이트
-- `apps/web/src/domains/creator/studio-3d-asset-governance.ts`
-  - 위 계약의 공개 진입점
-- `apps/web/src/domains/creator/studio-3d-asset-governance.test.ts`
+- `apps/web/src/domains/creator/scene3d/studio-3d-asset-governance.test.ts`
   - 정상 공개와 실패 폐쇄 회귀 테스트
 
 ## 품질 Passport
@@ -138,14 +136,14 @@ received
 ## 사용 예시
 
 ```ts
+import { buildStudio3dAssetQualityPassport } from "./studio-3d-asset-quality";
+import { evaluateStudio3dAssetSupply } from "./studio-3d-asset-supply";
 import {
-  buildStudio3dAssetQualityPassport,
   createStudio3dAssetRefineryReceipt,
   evaluateStudio3dAssetRelease,
-  evaluateStudio3dAssetSupply,
   publishStudio3dAsset,
   transitionStudio3dAssetRefinery,
-} from "./studio-3d-asset-governance";
+} from "./studio-3d-asset-refinery";
 ```
 
 1. Blender·GLB 분석 결과와 아트 검수 점수로 품질 Passport를 만든다.

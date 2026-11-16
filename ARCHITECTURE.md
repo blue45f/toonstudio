@@ -1,7 +1,7 @@
 # ToonStudio 아키텍처
 
 - 상태: **현재 구조 + 진행 중인 마이그레이션**
-- 최종 갱신: **2026-10-30**
+- 최종 갱신: **2026-11-16**
 - 적용 범위: 저장소 구조, 애플리케이션 경계, 공유 패키지, 테스트·도구·문서 소유권
 
 ## 1. 권위 순서
@@ -260,7 +260,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 
 ## 9. 현재 마이그레이션 부채
 
-수치는 2026-10-26에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`·`scripts/source-file-size-baseline.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`·`node scripts/check-source-file-size.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
+수치는 2026-11-16에 `config/architecture-source-ratchet.json`·`config/architecture-boundary-ratchet.json`·`scripts/source-file-size-baseline.json`의 상한을 읽고 `node scripts/validate-source-layout.mjs`·`node scripts/validate-app-boundaries.mjs`·`node scripts/check-source-file-size.mjs`로 다시 확인한 값이며 설정 파일이 최종 권위다. 미스테이징 이동과 신규 소스도 현재 작업트리에서 검사한다.
 
 | 항목 | 현재 상한 |
 | --- | ---: |
@@ -268,7 +268,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | Web `shared -> domains` | 0 |
 | 소스 파일 `// @ts-nocheck` | 0 |
 | Web cross-domain deep import | 0 |
-| Creator domain 최상위 직접 파일 | 2,506 |
+| Creator domain 최상위 직접 파일 | 2,499 |
 | Web에 남은 Admin 파일 | 57 |
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
@@ -289,7 +289,7 @@ Web의 역할·검수·제출 화면과 API의 정책 검증·원자적 제출�
 `types.ts`는 범위 모델까지 분해한 뒤 1,558줄에서 1,471줄로 줄었고 공개 re-export를 유지한다.
 새 모듈은 React·NestJS·DB·네트워크 구현을 소유하지 않는다. 이 수치는 여유 파일을 더하지 않은
 통합 후보의 구조 계약이며, 실제 source-layout·경계 검사와 최종 병합 결과는 별도로 검증한다.
-Creator 직하 상한은 2,506으로 유지하고 신규 제한 편집·대본 모듈은 기존 capability 폴더에 둔다.
+Creator 직하 상한은 2,499로 잠그며 신규 제한 편집·대본 모듈은 기존 capability 폴더에 둔다.
 
 Studio의 동기 wire 검증은 `@toonstudio/core/production/scope`의 기존 범위 상수·타입·검증
 함수만 사용한다. 원고 변환과 객체 식별자는 contracts의 `studio-crdt-authoring/page-reconcile`·

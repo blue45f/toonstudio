@@ -99,11 +99,20 @@ function countTypecheckedFiles(project) {
   const configPath = join(REPO_ROOT, project);
   if (!existsSync(configPath)) return null;
   let stdout;
+  const existingNodeOptions = process.env.NODE_OPTIONS ?? "";
+  const nodeOptions = existingNodeOptions.includes("--max-old-space-size=")
+    ? existingNodeOptions
+    : `${existingNodeOptions} --max-old-space-size=8192`.trim();
   try {
     stdout = execFileSync(
       "pnpm",
       ["exec", "tsc", "-p", project, "--listFilesOnly", "--noCheck", "--incremental", "false", "--pretty", "false"],
-      { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 },
+      {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+        maxBuffer: 256 * 1024 * 1024,
+        env: { ...process.env, NODE_OPTIONS: nodeOptions },
+      },
     );
   } catch (error) {
     // `--listFilesOnly` still prints the file list when the project has type errors, so a non-zero

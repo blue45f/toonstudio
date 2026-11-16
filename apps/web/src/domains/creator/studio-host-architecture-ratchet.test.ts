@@ -37,7 +37,7 @@ const SESSION_FILES = {
   ),
 } as const;
 
-const HOST_MAX_LINES = 29466;
+const HOST_MAX_LINES = 29365;
 const LIVE_SURFACE_START_MAX_LINES = 561;
 const LIVE_SURFACE_START_FILE = path.join(
   CREATOR_DIR,
