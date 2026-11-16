@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useI18n } from "@/shared/lib/i18n";
 
@@ -18,6 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   window.localStorage.clear();
 });
 
@@ -74,6 +75,7 @@ describe("StudioExportPanel", () => {
     // 더미 38,400px 높이를 권장 규격으로 오표기하지 않고 플랫폼 권장 폭·분할 상한만 안내한다.
     expect(summary.textContent).not.toContain("38400");
     expect(summary.textContent).toContain("플랫폼 권장 폭 800px");
+    expect(screen.getByTestId("studio-export-reset-recommended").className).toContain("min-h-11");
 
     // 웹툰 플랫폼(800px 고정 폭) 점검 시 실제 원고 폭 차이를 잡아낸다.
     fireEvent.click(screen.getByRole("button", { name: "현재 상태 검사" }));
@@ -164,5 +166,64 @@ describe("StudioExportPanel", () => {
     expect(href).toContain("exportScale=1.111");
     expect(href).toContain("exportPreset=webtoon-canvas");
     expect(href).toContain("exportPages=1%2C3");
+  });
+
+  it("내보내기 목적을 전환해도 대상별 사용자 수정 초안을 보존하고 그룹 역할을 제공한다", () => {
+    render(
+      <MemoryRouter>
+        <StudioExportPanel projectId="proj-export-drafts" locale="ko" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("group", { name: "내보내기 목적" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "최종 출력 이동" })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("가로 폭"), { target: { value: "960" } });
+    expect(screen.getByTestId("studio-export-preset-summary").textContent).toContain("960 ×");
+
+    const socialButton = screen.getByRole("button", { name: "SNS" });
+    expect(socialButton.className).toContain("min-h-11");
+    fireEvent.click(socialButton);
+    expect(screen.getByTestId("studio-export-preset-summary").textContent).not.toContain("960 ×");
+
+    fireEvent.change(screen.getByLabelText("형식"), { target: { value: "webp" } });
+    fireEvent.click(screen.getByRole("button", { name: "웹툰 플랫폼" }));
+    expect(screen.getByTestId("studio-export-preset-summary").textContent).toContain("960 ×");
+
+    fireEvent.click(screen.getByRole("button", { name: "SNS" }));
+    expect((screen.getByLabelText("형식") as HTMLSelectElement).value).toBe("webp");
+  });
+
+  it("저장 오류 시 다시 시도 복구 버튼을 제공하고 같은 동작의 연속 더블 클릭을 한 번만 처리한다", () => {
+    render(
+      <MemoryRouter>
+        <StudioExportPanel projectId="proj-export-retry" locale="ko" />
+      </MemoryRouter>,
+    );
+
+    const failSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("storage quota exceeded");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "현재 상태 검사" }));
+    expect(screen.getByRole("group", { name: "사전검사 오류 복구" })).toBeTruthy();
+    expect(screen.getByRole("alert")).toBeTruthy();
+
+    const retryButton = screen.getByRole("button", { name: "다시 시도" });
+    expect(retryButton.className).toContain("min-h-11");
+
+    failSpy.mockRestore();
+    fireEvent.click(retryButton);
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    const saveSpy = vi.spyOn(Storage.prototype, "setItem");
+    const runButton = screen.getByRole("button", { name: "현재 상태 검사" });
+    fireEvent.click(runButton);
+    fireEvent.click(runButton);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText("가로 폭"), { target: { value: "900" } });
+    fireEvent.click(runButton);
+    expect(saveSpy).toHaveBeenCalledTimes(2);
   });
 });

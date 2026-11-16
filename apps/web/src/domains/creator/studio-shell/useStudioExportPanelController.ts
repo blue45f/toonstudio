@@ -35,6 +35,45 @@ import {
 import { aggregateSelectedScopePreflightFacts } from "./studio-manuscript-preflight-targets";
 import { useStudioProjectWorkspace } from "./useStudioProjectWorkspace";
 
+interface TargetDraftState {
+  readonly draft: StudioExportDraftInput;
+  readonly userEditedWidth: boolean;
+  readonly userEditedHeight: boolean;
+  readonly userEditedTextSize: boolean;
+  readonly customEstimateOverride: boolean;
+}
+
+function createTargetDraftState(
+  projectId: string,
+  targetId: StudioExportTargetId,
+  manuscript: StudioManuscriptExportFacts | null,
+  selectionMode: "all" | "custom",
+  selectionExpression: string,
+): TargetDraftState {
+  const basis = computeManuscriptBasis(manuscript, selectionMode, selectionExpression);
+  const recommended = recommendedStudioExportDraft(projectId, targetId, basis);
+  return {
+    draft:
+      manuscript && basis
+        ? {
+            ...recommended,
+            documentId: manuscript.documentId,
+            width: basis.sourceWidth,
+            height: basis.sourceHeight,
+            estimatedFileSizeBytes: estimateStudioExportBytes({
+              width: basis.sourceWidth,
+              height: basis.sourceHeight,
+              format: recommended.format,
+            }),
+          }
+        : recommended,
+    userEditedWidth: false,
+    userEditedHeight: false,
+    userEditedTextSize: false,
+    customEstimateOverride: false,
+  };
+}
+
 export function useStudioExportPanelController(projectId: string, locale: "ko" | "en") {
   const bt = useBilingual("StudioExportPanel");
   const location = useLocation();
@@ -64,15 +103,12 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
   const [selectionExpression, setSelectionExpression] = useState<string>(
     () => urlState?.selectionExpression ?? "",
   );
-  const [userEditedWidth, setUserEditedWidth] = useState<boolean>(
-    () => urlState?.width !== null && urlState?.width !== undefined,
-  );
-  const [userEditedHeight, setUserEditedHeight] = useState(false);
-  const [userEditedTextSize, setUserEditedTextSize] = useState(false);
-  const [customEstimateOverride, setCustomEstimateOverride] = useState(false);
   const [selectionDirtySinceCheck, setSelectionDirtySinceCheck] = useState(false);
 
-  const [draft, setDraft] = useState<StudioExportDraftInput>(() => {
+  // 대상별로 조정한 초안과 편집 플래그를 보존해 목적을 오가도 입력값이 사라지지 않게 한다.
+  const [targetStates, setTargetStates] = useState<
+    Partial<Record<StudioExportTargetId, TargetDraftState>>
+  >(() => {
     const initialTarget = urlState?.target ?? "webtoon-platform";
     const initialMode =
       urlState?.selectionMode ?? (urlState?.selectionExpression ? "custom" : "all");
@@ -88,17 +124,39 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     const scale = basis ? clampStudioExportScale(nextWidth / basis.sourceWidth) : 1;
     const nextHeight = basis ? Math.max(1, Math.round(basis.sourceHeight * scale)) : base.height;
     return {
-      ...base,
-      format: nextFormat,
-      width: nextWidth,
-      height: nextHeight,
-      estimatedFileSizeBytes: estimateStudioExportBytes({
-        width: nextWidth,
-        height: nextHeight,
-        format: nextFormat,
-      }),
+      [initialTarget]: {
+        draft: {
+          ...base,
+          format: nextFormat,
+          width: nextWidth,
+          height: nextHeight,
+          estimatedFileSizeBytes: estimateStudioExportBytes({
+            width: nextWidth,
+            height: nextHeight,
+            format: nextFormat,
+          }),
+        },
+        userEditedWidth: urlState?.width !== null && urlState?.width !== undefined,
+        userEditedHeight: false,
+        userEditedTextSize: false,
+        customEstimateOverride: false,
+      },
     };
   });
+
+  const activeState = useMemo(
+    () =>
+      targetStates[target] ??
+      createTargetDraftState(projectId, target, manuscript, selectionMode, selectionExpression),
+    [manuscript, projectId, selectionExpression, selectionMode, target, targetStates],
+  );
+  const {
+    draft,
+    userEditedWidth,
+    userEditedHeight,
+    userEditedTextSize,
+    customEstimateOverride,
+  } = activeState;
 
   const [result, setResult] = useState<StudioExportPreflightResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -106,6 +164,17 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
 
   const appliedSearchRef = useRef<string>(location.search);
   const autoRecheckedKeyRef = useRef<string | null>(null);
+  const lastActionRef = useRef<string | null>(null);
+
+  // 같은 동작의 연속(더블) 클릭을 한 번만 처리한다.
+  const runGuarded = useCallback((key: string, fn: () => void) => {
+    if (lastActionRef.current === key) return;
+    lastActionRef.current = key;
+    queueMicrotask(() => {
+      if (lastActionRef.current === key) lastActionRef.current = null;
+    });
+    fn();
+  }, []);
 
   useEffect(() => {
     if (appliedSearchRef.current === location.search) return;
@@ -118,35 +187,42 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     if (urlState.target) setTarget(urlState.target);
     setSelectionMode(nextMode);
     setSelectionExpression(nextExpr);
-    if (urlState.width !== null) {
-      setUserEditedWidth(true);
-    }
     const targetProfile = STUDIO_EXPORT_TARGET_PROFILES[nextTarget];
     const basis = computeManuscriptBasis(manuscript, nextMode, nextExpr);
-    setDraft((current) => {
+    setTargetStates((prev) => {
+      const current =
+        prev[nextTarget] ??
+        createTargetDraftState(projectId, nextTarget, manuscript, nextMode, nextExpr);
       const nextFormat =
         urlState.format && targetProfile.allowedFormats.includes(urlState.format)
           ? urlState.format
-          : current.format;
-      const nextWidth = urlState.width ?? current.width;
+          : current.draft.format;
+      const nextWidth = urlState.width ?? current.draft.width;
       const scale = basis ? clampStudioExportScale(nextWidth / basis.sourceWidth) : 1;
       const nextHeight = basis
         ? Math.max(1, Math.round(basis.sourceHeight * scale))
-        : current.height;
+        : current.draft.height;
       return {
-        ...current,
-        target: nextTarget,
-        format: nextFormat,
-        width: nextWidth,
-        height: nextHeight,
-        estimatedFileSizeBytes: estimateStudioExportBytes({
-          width: nextWidth,
-          height: nextHeight,
-          format: nextFormat,
-        }),
+        ...prev,
+        [nextTarget]: {
+          ...current,
+          userEditedWidth: urlState.width !== null ? true : current.userEditedWidth,
+          draft: {
+            ...current.draft,
+            target: nextTarget,
+            format: nextFormat,
+            width: nextWidth,
+            height: nextHeight,
+            estimatedFileSizeBytes: estimateStudioExportBytes({
+              width: nextWidth,
+              height: nextHeight,
+              format: nextFormat,
+            }),
+          },
+        },
       };
     });
-  }, [location.search, manuscript, selectionExpression, selectionMode, target, urlState]);
+  }, [location.search, manuscript, projectId, selectionExpression, selectionMode, target, urlState]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -157,28 +233,39 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
         if (loaded) {
           setPersistedManuscript(loaded);
           if (loaded.sourceAuthority === "manuscript-snapshot") {
-            setDraft((current) => {
-              const basis = computeManuscriptBasis(loaded, selectionMode, selectionExpression);
-              if (!basis) return current;
-              const nextWidth = userEditedWidth ? current.width : basis.sourceWidth;
-              const scale = clampStudioExportScale(nextWidth / basis.sourceWidth);
-              const nextHeight = userEditedHeight
-                ? current.height
-                : Math.max(1, Math.round(basis.sourceHeight * scale));
-              return {
-                ...current,
-                documentId: loaded.documentId,
-                width: nextWidth,
-                height: nextHeight,
-                estimatedFileSizeBytes: customEstimateOverride
-                  ? current.estimatedFileSizeBytes
-                  : estimateStudioExportBytes({
+            const basis = computeManuscriptBasis(loaded, selectionMode, selectionExpression);
+            if (basis) {
+              setTargetStates((prev) => {
+                const next: Partial<Record<StudioExportTargetId, TargetDraftState>> = {};
+                for (const [key, state] of Object.entries(prev) as [
+                  StudioExportTargetId,
+                  TargetDraftState,
+                ][]) {
+                  const nextWidth = state.userEditedWidth ? state.draft.width : basis.sourceWidth;
+                  const scale = clampStudioExportScale(nextWidth / basis.sourceWidth);
+                  const nextHeight = state.userEditedHeight
+                    ? state.draft.height
+                    : Math.max(1, Math.round(basis.sourceHeight * scale));
+                  next[key] = {
+                    ...state,
+                    draft: {
+                      ...state.draft,
+                      documentId: loaded.documentId,
                       width: nextWidth,
                       height: nextHeight,
-                      format: current.format,
-                    }),
-              };
-            });
+                      estimatedFileSizeBytes: state.customEstimateOverride
+                        ? state.draft.estimatedFileSizeBytes
+                        : estimateStudioExportBytes({
+                            width: nextWidth,
+                            height: nextHeight,
+                            format: state.draft.format,
+                          }),
+                    },
+                  };
+                }
+                return next;
+              });
+            }
           }
         }
         setPersistedLoadedKey(loadKey);
@@ -187,16 +274,7 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     return () => {
       cancelled = true;
     };
-  }, [
-    customEstimateOverride,
-    loadKey,
-    locale,
-    projectId,
-    selectionExpression,
-    selectionMode,
-    userEditedHeight,
-    userEditedWidth,
-  ]);
+  }, [loadKey, locale, projectId, selectionExpression, selectionMode]);
 
   const manuscriptBasis = useMemo(
     () => computeManuscriptBasis(manuscript, selectionMode, selectionExpression),
@@ -319,26 +397,36 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
   const syncDraftHeightForSelection = (nextMode: "all" | "custom", nextExpression: string) => {
     const nextBasis = computeManuscriptBasis(manuscript, nextMode, nextExpression);
     if (!nextBasis) return;
-    setDraft((current) => {
-      const scale = clampStudioExportScale(current.width / nextBasis.sourceWidth);
+    setTargetStates((prev) => {
+      const current =
+        prev[target] ??
+        createTargetDraftState(projectId, target, manuscript, nextMode, nextExpression);
+      const scale = clampStudioExportScale(current.draft.width / nextBasis.sourceWidth);
       const nextWidth = Math.max(1, Math.round(nextBasis.sourceWidth * scale));
       const nextHeight = Math.max(1, Math.round(nextBasis.sourceHeight * scale));
       return {
-        ...current,
-        width: nextWidth,
-        height: nextHeight,
-        estimatedFileSizeBytes: customEstimateOverride
-          ? current.estimatedFileSizeBytes
-          : estimateStudioExportBytes({
-              width: nextWidth,
-              height: nextHeight,
-              format: current.format,
-            }),
+        ...prev,
+        [target]: {
+          ...current,
+          draft: {
+            ...current.draft,
+            width: nextWidth,
+            height: nextHeight,
+            estimatedFileSizeBytes: current.customEstimateOverride
+              ? current.draft.estimatedFileSizeBytes
+              : estimateStudioExportBytes({
+                  width: nextWidth,
+                  height: nextHeight,
+                  format: current.draft.format,
+                }),
+          },
+        },
       };
     });
   };
 
   const handleChangeSelectionMode = (nextMode: "all" | "custom") => {
+    lastActionRef.current = null;
     const nextExpression =
       nextMode === "custom" && !selectionExpression.trim()
         ? manuscript && manuscript.pages.length > 1
@@ -354,6 +442,7 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
   };
 
   const handleChangeSelectionExpression = (nextExpression: string) => {
+    lastActionRef.current = null;
     setSelectionExpression(nextExpression);
     syncDraftHeightForSelection("custom", nextExpression);
     setSelectionDirtySinceCheck(true);
@@ -362,87 +451,115 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
   };
 
   const selectTarget = (nextTarget: StudioExportTargetId) => {
-    setTarget(nextTarget);
-    setUserEditedWidth(false);
-    setUserEditedHeight(false);
-    setUserEditedTextSize(false);
-    setCustomEstimateOverride(false);
-    setSelectionDirtySinceCheck(false);
-    const nextBasis = computeManuscriptBasis(manuscript, selectionMode, selectionExpression);
-    const nextRecommended = recommendedStudioExportDraft(projectId, nextTarget, nextBasis);
-    setDraft(
-      manuscript && nextBasis
-        ? {
-            ...nextRecommended,
-            documentId: manuscript.documentId,
-            width: nextBasis.sourceWidth,
-            height: nextBasis.sourceHeight,
-            estimatedFileSizeBytes: estimateStudioExportBytes({
-              width: nextBasis.sourceWidth,
-              height: nextBasis.sourceHeight,
-              format: nextRecommended.format,
-            }),
-          }
-        : nextRecommended,
-    );
-    setResult(null);
-    setMessage(null);
-    setError(null);
+    runGuarded(`target:${nextTarget}`, () => {
+      setTarget(nextTarget);
+      setTargetStates((prev) =>
+        prev[nextTarget]
+          ? prev
+          : {
+              ...prev,
+              [nextTarget]: createTargetDraftState(
+                projectId,
+                nextTarget,
+                manuscript,
+                selectionMode,
+                selectionExpression,
+              ),
+            },
+      );
+      setSelectionDirtySinceCheck(false);
+      setResult(null);
+      setMessage(null);
+      setError(null);
+    });
   };
 
   const resetToRecommendedSpec = () => {
-    const next = recommendedStudioExportDraft(projectId, target, manuscriptBasis);
-    setUserEditedWidth(true);
-    setUserEditedHeight(false);
-    setCustomEstimateOverride(false);
-    setDraft(manuscript ? { ...next, documentId: manuscript.documentId } : next);
-    setResult(null);
-    setMessage(
-      bt(
-        "선택한 올릴 곳의 권장 해상도·형식으로 되돌렸어요.",
-        "Restored the recommended resolution and format for this destination.",
-      ),
-    );
-    setError(null);
+    runGuarded("reset-draft", () => {
+      const next = recommendedStudioExportDraft(projectId, target, manuscriptBasis);
+      setTargetStates((prev) => {
+        const current =
+          prev[target] ??
+          createTargetDraftState(projectId, target, manuscript, selectionMode, selectionExpression);
+        return {
+          ...prev,
+          [target]: {
+            ...current,
+            userEditedWidth: true,
+            userEditedHeight: false,
+            customEstimateOverride: false,
+            draft: manuscript ? { ...next, documentId: manuscript.documentId } : next,
+          },
+        };
+      });
+      setResult(null);
+      setMessage(
+        bt(
+          "선택한 올릴 곳의 권장 해상도·형식으로 되돌렸어요.",
+          "Restored the recommended resolution and format for this destination.",
+        ),
+      );
+      setError(null);
+    });
   };
 
   const patch = <K extends keyof StudioExportDraftInput>(
     key: K,
     value: StudioExportDraftInput[K],
   ) => {
-    if (key === "width") setUserEditedWidth(true);
-    if (key === "height") setUserEditedHeight(true);
-    if (key === "minimumTextPx") setUserEditedTextSize(true);
-    if (key === "estimatedFileSizeBytes") setCustomEstimateOverride(true);
-    setDraft((current) => {
-      const nextWidth = key === "width" && typeof value === "number" ? value : current.width;
-      let nextHeight = key === "height" && typeof value === "number" ? value : current.height;
+    lastActionRef.current = null;
+    setTargetStates((prev) => {
+      const current =
+        prev[target] ??
+        createTargetDraftState(projectId, target, manuscript, selectionMode, selectionExpression);
+      const nextCustomEstimate =
+        key === "estimatedFileSizeBytes" ? true : current.customEstimateOverride;
+      const nextWidth = key === "width" && typeof value === "number" ? value : current.draft.width;
+      let nextHeight =
+        key === "height" && typeof value === "number" ? value : current.draft.height;
       if (key === "width" && typeof value === "number" && manuscriptBasis) {
         const scale = clampStudioExportScale(value / manuscriptBasis.sourceWidth);
         nextHeight = Math.max(1, Math.round(manuscriptBasis.sourceHeight * scale));
       }
-      const nextFormat = key === "format" && typeof value === "string" ? value : current.format;
+      const nextFormat =
+        key === "format" && typeof value === "string" ? value : current.draft.format;
       const shouldAutoEstimate =
         key !== "estimatedFileSizeBytes" &&
-        !customEstimateOverride &&
+        !nextCustomEstimate &&
         (key === "width" || key === "height" || key === "format");
       return {
-        ...current,
-        [key]: value,
-        ...(key === "width" ? { height: nextHeight } : {}),
-        ...(shouldAutoEstimate
-          ? {
-              estimatedFileSizeBytes: estimateStudioExportBytes({
-                width: nextWidth,
-                height: nextHeight,
-                format: nextFormat,
-              }),
-            }
-          : {}),
+        ...prev,
+        [target]: {
+          userEditedWidth: key === "width" ? true : current.userEditedWidth,
+          userEditedHeight: key === "height" ? true : current.userEditedHeight,
+          userEditedTextSize: key === "minimumTextPx" ? true : current.userEditedTextSize,
+          customEstimateOverride: nextCustomEstimate,
+          draft: {
+            ...current.draft,
+            [key]: value,
+            ...(key === "width" ? { height: nextHeight } : {}),
+            ...(shouldAutoEstimate
+              ? {
+                  estimatedFileSizeBytes: estimateStudioExportBytes({
+                    width: nextWidth,
+                    height: nextHeight,
+                    format: nextFormat,
+                  }),
+                }
+              : {}),
+          },
+        },
       };
     });
     setResult(null);
     setMessage(null);
+  };
+
+  const retryFromError = () => {
+    runGuarded("retry-error", () => {
+      setError(null);
+      workspace.reload();
+    });
   };
 
   const executePreflight = useCallback(
@@ -561,9 +678,11 @@ export function useStudioExportPanelController(projectId: string, locale: "ko" |
     selectTarget,
     resetToRecommendedSpec,
     patch,
+    retryFromError,
     handleChangeSelectionMode,
     handleChangeSelectionExpression,
     syncReturnStateInHistory,
-    runPreflight: () => executePreflight({ fromAutoRecheck: false }),
+    runPreflight: () =>
+      runGuarded("run-preflight", () => executePreflight({ fromAutoRecheck: false })),
   };
 }

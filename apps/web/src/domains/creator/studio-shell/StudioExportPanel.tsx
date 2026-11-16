@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   FileCheck2,
   Globe2,
+  RefreshCw,
   RotateCcw,
   ShieldAlert,
 } from "lucide-react";
@@ -56,6 +57,7 @@ export function StudioExportPanel({
     selectTarget,
     resetToRecommendedSpec,
     patch,
+    retryFromError,
     handleChangeSelectionMode,
     handleChangeSelectionExpression,
     syncReturnStateInHistory,
@@ -81,26 +83,26 @@ export function StudioExportPanel({
 
   return (
     <section
-      className="rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6"
+      className="min-w-0 rounded-3xl border border-line bg-card p-4 shadow-sm sm:p-6"
       aria-labelledby="project-export-title"
       data-testid="studio-export-panel"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.16em] text-accent">
             <FileCheck2 size={14} aria-hidden="true" />{" "}
             {bt("3단계 · 저장·내보내기 점검", "STEP 3 · EXPORT CHECK")}
           </p>
           <h2
             id="project-export-title"
-            className="mt-2 text-2xl font-black tracking-tight text-fg"
+            className="mt-2 break-words text-2xl font-black tracking-tight text-fg"
           >
             {bt(
               "올릴 곳을 고르면 알맞은 규격을 자동으로 맞춰 드려요",
               "Pick where to publish and get matching specs automatically",
             )}
           </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
+          <p className="mt-2 max-w-3xl break-words text-sm leading-6 text-fg-2">
             {bt(
               "연재 플랫폼이나 SNS·인쇄 용도를 선택하면 현재 원고 크기와 권장 규격을 비교해 드립니다. 내 기기에 이미지·PDF로 저장하거나 커뮤니티 공개 게시로 이어 가세요.",
               "Select a webtoon platform, social feed, or print target to compare your manuscript dimensions with recommended specs, then export locally or publish to the community.",
@@ -121,29 +123,46 @@ export function StudioExportPanel({
             </li>
           </ol>
         </div>
-        <span className="inline-flex min-h-9 items-center rounded-full border border-line bg-panel px-3 text-xs font-bold text-fg-2">
+        <span className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-line bg-panel px-3 text-xs font-bold text-fg-2">
           {bt(`규격 기준 ${profile.policyVersion}`, `Policy ${profile.policyVersion}`)}
         </span>
       </div>
 
       {workspaceError || error ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-xl border border-danger/35 bg-danger-soft/20 px-3 py-2 text-xs font-semibold text-danger"
+        <div
+          role="group"
+          aria-label={bt("사전검사 오류 복구", "Preflight error recovery")}
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-danger/35 bg-danger-soft/20 px-3 py-2 text-xs font-semibold text-danger"
         >
-          {error ?? workspaceError}
-        </p>
+          <p role="alert" className="min-w-0 break-words">
+            {error ?? workspaceError}
+          </p>
+          <button
+            type="button"
+            onClick={retryFromError}
+            className={buttonClass({
+              variant: "outline",
+              size: "sm",
+              className:
+                "min-h-11 min-w-0 gap-1.5 break-words focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+            })}
+          >
+            <RefreshCw size={14} aria-hidden="true" />
+            {bt("다시 시도", "Try again")}
+          </button>
+        </div>
       ) : null}
       {message ? (
         <p
           role="status"
-          className="mt-4 rounded-xl border border-success/30 bg-success-soft/20 px-3 py-2 text-xs font-semibold text-success"
+          className="mt-4 break-words rounded-xl border border-success/30 bg-success-soft/20 px-3 py-2 text-xs font-semibold text-success"
         >
           {message}
         </p>
       ) : null}
 
       <div
+        role="group"
         className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
         aria-label={bt("내보내기 목적", "Export destinations")}
       >
@@ -157,8 +176,8 @@ export function StudioExportPanel({
               aria-pressed={active}
               onClick={() => selectTarget(candidate)}
               className={cn(
-                "group min-w-0 overflow-hidden rounded-xl border text-left text-xs font-bold transition-all",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transform-none",
+                "group min-h-11 min-w-0 overflow-hidden rounded-xl border text-left text-xs font-bold transition-all",
+                "focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none",
                 active
                   ? "border-accent bg-accent-soft/50 shadow-sm"
                   : "border-line bg-panel text-fg-2 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-raised hover:text-fg",
@@ -192,13 +211,13 @@ export function StudioExportPanel({
       </div>
 
       <div className="mt-5 grid gap-3 rounded-2xl border border-line bg-panel/45 p-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] md:items-end">
-        <label className="text-xs font-bold text-fg-2">
+        <label className="min-w-0 text-xs font-bold text-fg-2">
           {bt("파일 형식", "File format")}
           <select
             aria-label={bt("형식", "Format")}
             value={draft.format}
             onChange={(event) => patch("format", event.target.value)}
-            className="mt-1 min-h-11 w-full rounded-xl border border-line bg-card px-3 text-sm font-bold text-fg"
+            className="mt-1 min-h-11 w-full min-w-0 rounded-xl border border-line bg-card px-3 text-sm font-bold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
           >
             {profile.allowedFormats.map((format) => (
               <option key={format} value={format}>
@@ -209,10 +228,10 @@ export function StudioExportPanel({
         </label>
         <div
           data-testid="studio-export-preset-summary"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/80 bg-card px-3.5 py-2.5 text-xs text-fg-2"
+          className="flex min-w-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-line/80 bg-card px-3.5 py-2.5 text-xs text-fg-2"
         >
-          <div>
-            <strong className="font-bold text-fg">
+          <div className="min-w-0">
+            <strong className="break-words font-bold text-fg">
               {bt(profile.labelKo, profile.labelEn)}{` `}
               {hasCustomSpec
                 ? isAtActualManuscriptSize
@@ -220,7 +239,7 @@ export function StudioExportPanel({
                   : bt("직접 조정한 규격", "custom spec")
                 : bt("권장 규격", "recommended spec")}
             </strong>
-            <p className="mt-0.5 text-fg-3">
+            <p className="mt-0.5 break-words text-fg-3">
               {`${draft.width} × ${draft.height} px · ${draft.colorSpace.toUpperCase()}${draft.dpi ? ` · ${draft.dpi} DPI` : ""} · ${bt(`추정 약 ${estimatedMb} MB`, `Est. ~${estimatedMb} MB`)}`}
               {hasCustomSpec ? ` (${platformRecommendedShortLabel})` : ""}
             </p>
@@ -230,7 +249,7 @@ export function StudioExportPanel({
               type="button"
               data-testid="studio-export-reset-recommended"
               onClick={resetToRecommendedSpec}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent/45 bg-accent-soft/45 px-3 py-1 text-[0.68rem] font-bold text-accent transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent-soft/45 px-3 py-1 text-[0.68rem] font-bold text-accent transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
             >
               <RotateCcw size={12} aria-hidden="true" />
               {bt("권장값으로 복원", "Restore recommended")}
@@ -259,16 +278,19 @@ export function StudioExportPanel({
         onPatch={patch}
       />
 
-      <div className={cn("mt-5 rounded-2xl border p-4", resultTone(displayedResult))}>
+      <div className={cn("mt-5 min-w-0 rounded-2xl border p-4", resultTone(displayedResult))}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+          <div className="min-w-0">
+            <h3 className="flex items-center gap-2 break-words text-sm font-black text-fg">
               {displayedResult?.status === "pass" ? (
-                <CheckCircle2 size={17} className="text-success" aria-hidden="true" />
+                <CheckCircle2 size={17} className="shrink-0 text-success" aria-hidden="true" />
               ) : (
                 <ShieldAlert
                   size={17}
-                  className={displayedResult?.status === "blocked" ? "text-danger" : "text-warning"}
+                  className={cn(
+                    "shrink-0",
+                    displayedResult?.status === "blocked" ? "text-danger" : "text-warning",
+                  )}
                   aria-hidden="true"
                 />
               )}
@@ -277,7 +299,7 @@ export function StudioExportPanel({
                 : bt("내보내기 전에 한 번 점검해 보세요", "Run preflight for these settings")}
             </h3>
             {displayedResult ? (
-              <p className="mt-1 text-xs text-fg-3">
+              <p className="mt-1 break-words text-xs text-fg-3">
                 {bt(
                   `꼭 고칠 항목 ${displayedResult.blockingCount}건 · 참고 항목 ${displayedResult.warningCount}건`,
                   `${displayedResult.blockingCount} blocking · ${displayedResult.warningCount} warnings`,
@@ -288,7 +310,10 @@ export function StudioExportPanel({
           <button
             type="button"
             onClick={runPreflight}
-            className={buttonClass({ className: "min-h-11 gap-2" })}
+            className={buttonClass({
+              className:
+                "min-h-11 min-w-0 gap-2 break-words focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
+            })}
           >
             <FileCheck2 size={16} aria-hidden="true" />
             {bt("현재 상태 검사", "Run preflight")}
@@ -305,8 +330,12 @@ export function StudioExportPanel({
         ) : null}
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs leading-5 text-fg-3">
+      <div
+        role="group"
+        aria-label={bt("최종 출력 이동", "Final export navigation")}
+        className="mt-5 flex flex-wrap items-center justify-between gap-3"
+      >
+        <p className="min-w-0 break-words text-xs leading-5 text-fg-3">
           {manuscript
             ? bt(
                 "편집기 내보내기에서는 선택한 형식·해상도·페이지 순서를 그대로 이어받아 내 기기에 PNG·PDF·분할 이미지를 저장할 수 있어요.",
@@ -323,7 +352,8 @@ export function StudioExportPanel({
             data-testid="studio-export-return-workspace-link"
             className={buttonClass({
               variant: "quiet",
-              className: "min-h-11 gap-1.5 border border-line",
+              className:
+                "min-h-11 min-w-0 gap-1.5 break-words border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
             })}
           >
             <ArrowLeft size={15} aria-hidden="true" />
@@ -335,7 +365,8 @@ export function StudioExportPanel({
               data-testid="studio-export-community-publish"
               className={buttonClass({
                 variant: "outline",
-                className: "min-h-11 gap-1.5",
+                className:
+                  "min-h-11 min-w-0 gap-1.5 break-words focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
               })}
             >
               <Globe2 size={15} aria-hidden="true" />
@@ -348,7 +379,8 @@ export function StudioExportPanel({
               data-testid="studio-export-finalize-link"
               className={buttonClass({
                 variant: displayedResult?.status === "blocked" ? "outline" : "solid",
-                className: "min-h-11 gap-2",
+                className:
+                  "min-h-11 min-w-0 gap-2 break-words focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none",
               })}
             >
               {bt("편집기에서 최종 출력", "Finalize in editor")}
@@ -361,7 +393,7 @@ export function StudioExportPanel({
               data-testid="studio-export-finalize-link"
               className={buttonClass({
                 variant: "outline",
-                className: "min-h-11 gap-2 opacity-50",
+                className: "min-h-11 min-w-0 gap-2 break-words opacity-50",
               })}
             >
               {bt("페이지 범위 수정 후 최종 출력", "Fix page range to export")}
