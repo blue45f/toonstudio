@@ -2487,7 +2487,7 @@ dd {
   max-width: 100%;
   max-height: 156px;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 .cl-viewport-group {
@@ -2672,39 +2672,19 @@ dd {
   gap: 8px;
 }
 
-/* ---------- 태블릿·모바일 터치 조작성(Character Labs 전용, 최소 44px 터치 타깃) */
-@media (pointer: coarse), (max-width: 768px) {
-  .cl-button,
-  .cl-preset-chip,
-  .cl-inspector-tab,
-  .cl-slot-tab,
-  .cl-viewport-button,
-  .cl-viewport-select,
-  .cl-pose-card,
-  .cl-pose-actions button,
-  .cl-pose-panel select,
-  .cl-pose-radio,
-  .cl-pose-rig-switch,
-  .cl-pose-diagnostics-summary,
-  .cl-package-panel button,
-  .cl-package-diagnostics-summary,
-  .cl-package-gaps summary,
-  .cl-package-unmapped summary,
-  .cl-export-actions button,
-  .cl-export-psd button,
-  .cl-export-psd label,
-  .cl-export-panel select,
-  .cl-export-nav-btn {
-    min-width: 44px;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .cl-param-swatch {
-    min-width: 44px;
-    min-height: 44px;
-  }
+/* ---------- 데스크톱·태블릿·모바일 공통 조작성(Character Labs 전용, 최소 44px 타깃) */
+.cl-button, .cl-preset-chip, .cl-inspector-tab, .cl-slot-tab, .cl-viewport-button, .cl-viewport-select,
+.cl-pose-card, .cl-pose-actions button, .cl-pose-panel select, .cl-pose-radio, .cl-pose-rig-switch,
+.cl-pose-diagnostics-summary, .cl-package-panel button, .cl-package-diagnostics-summary,
+.cl-package-gaps summary, .cl-package-unmapped summary, .cl-export-actions button, .cl-export-psd button,
+.cl-export-psd label, .cl-export-panel select, .cl-export-nav-btn, .cl-render-panel button,
+.cl-render-panel select, .cl-param-swatch, .cl-paint-row input[type="color"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+.cl-paint-row input[type="range"], .cl-expression-row input[type="range"], .cl-param-row input[type="range"],
+.cl-render-row input[type="range"], .cl-physics-row input[type="range"], .cl-vision-panel input[type="range"] {
+  min-height: 44px;
 }
 
 /* ---------- RenderPanel: 셰이딩·그림자·후처리·IBL·툰 옵션과 엔진 기능 표 */

@@ -1572,9 +1572,9 @@ export function StudioMannequinPoserPanel({
               )}
             >
               {captureNotice ?? (persistenceStatus === "loading"
-                ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoading", "SQLite 불러오는 중")
+                ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteLoading", "포즈 상태 불러오는 중")
                 : persistenceStatus === "saving"
-                  ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteSaving", "SQLite 저장 중")
+                  ? frozenStatus2Text("studio.frozenStatus2.mannequin.sqliteSaving", "포즈 상태 저장 중")
                   : persistenceStatus === "memory-only"
                     ? frozenStatus2Text("studio.frozenStatus2.mannequin.memoryOnlyTab", "현재 탭 메모리 임시")
                     : "")}
@@ -1595,7 +1595,7 @@ export function StudioMannequinPoserPanel({
               disabled={persistenceStatus === "idle" || persistenceStatus === "loading" || persistenceStatus === "saving"}
               title={
                 persistenceStatus === "loading" || persistenceStatus === "idle"
-                  ? "SQLite 상태를 불러온 뒤 닫을 수 있습니다."
+                  ? "포즈 상태를 불러온 뒤 닫을 수 있습니다."
                   : persistenceStatus === "memory-only"
                     ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
                     : undefined
@@ -1643,7 +1643,7 @@ export function StudioMannequinPoserPanel({
                   type="button"
                   onClick={() => setTab(entry.id)}
                   aria-pressed={tab === entry.id}
-                  className={cn(studioSegmentChipClass(tab === entry.id), "min-h-9 min-w-0 justify-center gap-1 whitespace-nowrap rounded-xl px-2 pointer-coarse:min-h-11")}
+                  className={cn(studioSegmentChipClass(tab === entry.id), "min-h-11 min-w-0 justify-center gap-1 whitespace-nowrap rounded-xl px-2")}
                 >
                   {entry.icon}
                   {entry.label}
@@ -1658,7 +1658,7 @@ export function StudioMannequinPoserPanel({
                 disabled={!poseHistoryDescription.canUndo}
                 title={poseHistoryDescription.canUndo ? `이전 포즈로 되돌리기 (${poseHistoryDescription.undoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.undoUnavailable", "되돌릴 변경이 없습니다")}
                 aria-label={`되돌리기${poseHistoryDescription.canUndo ? ` (${poseHistoryDescription.undoCount}개 가능)` : ""}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11"
               >
                 <Undo2 size={13} aria-hidden /> 되돌리기
               </button>
@@ -1668,7 +1668,7 @@ export function StudioMannequinPoserPanel({
                 disabled={!poseHistoryDescription.canRedo}
                 title={poseHistoryDescription.canRedo ? `다시 실행하기 (${poseHistoryDescription.redoCount}개)` : frozenStatus2Text("studio.frozenStatus2.mannequin.redoUnavailable", "다시 실행할 변경이 없습니다")}
                 aria-label={`다시실행${poseHistoryDescription.canRedo ? ` (${poseHistoryDescription.redoCount}개 가능)` : ""}`}
-                className="inline-flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11 pointer-coarse:px-3"
+                className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-[0.7rem] font-semibold text-fg-2 transition-colors hover:border-accent/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:min-h-11"
               >
                 <Redo2 size={13} aria-hidden /> 다시실행
               </button>

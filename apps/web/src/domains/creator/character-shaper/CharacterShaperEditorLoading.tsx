@@ -4,7 +4,7 @@
  * 실제 편집기와 같은 세 영역(캐릭터 목록 · 3D 뷰포트 · 편집 탭)을 같은 자리에 그려 두어,
  * 준비가 끝나면 화면이 튀지 않고 내용만 채워진다. 무거운 모듈을 가져오지 않는 가벼운 컴포넌트다.
  */
-import { LoaderCircle } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { createPortal } from "react-dom";
 
 import "../studio-3d-ui/studio-3d-reference-workspace.css";
@@ -41,7 +41,7 @@ export function CharacterShaperEditorLoading() {
           </div>
           <div className="character-editor-loading__stage">
             <div className="character-editor-loading__card">
-              <LoaderCircle size={26} aria-hidden className="animate-spin text-accent motion-reduce:animate-none" />
+              <Sparkles size={26} aria-hidden className="text-accent" />
               <p className="character-editor-loading__title">{bt("캐릭터 편집기를 여는 중", "Opening the character editor")}</p>
               <p className="character-editor-loading__hint">
                 {bt(

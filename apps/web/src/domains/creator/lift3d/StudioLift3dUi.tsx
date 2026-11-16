@@ -89,7 +89,7 @@ export function SliderField({
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-accent disabled:opacity-40"
+        className="min-h-11 w-full accent-accent disabled:opacity-40"
       />
     </div>
   );

@@ -100,14 +100,14 @@ export function StudioPoserPage(): ReactElement {
             data-testid="studio-poser-varco3d-workbench-toggle"
             aria-expanded={workbenchOpen}
             onClick={() => setWorkbenchOpen((prev) => !prev)}
-            className="inline-flex items-center gap-2 rounded-xl border border-line/80 bg-card/90 px-3.5 py-1.5 text-xs font-semibold text-fg shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28),0px_14px_28px_-6px_rgba(0,0,0,0.24)] backdrop-blur-[20px] transition-colors hover:border-[#338FFF]"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line/80 bg-card/90 px-3.5 py-2 text-xs font-semibold text-fg shadow-[0px_2px_4px_-1px_rgba(0,0,0,0.28),0px_14px_28px_-6px_rgba(0,0,0,0.24)] backdrop-blur-[20px] transition-colors hover:border-accent"
           >
             <span>
               {workbenchOpen
                 ? "VARCO 3D 워크벤치 닫기"
                 : "VARCO 3D 워크벤치 & 세계관 셰이퍼"}
             </span>
-            <span className="rounded-[4px] bg-[rgba(84,231,250,0.1)] px-[6px] py-[3px] text-[9px] font-semibold leading-none text-[#54e7fa]">
+            <span className="rounded-[4px] bg-accent-soft px-[6px] py-[3px] text-[10px] font-semibold leading-none text-accent">
               140 ASSETS · 66 RIGGED
             </span>
           </button>
@@ -148,8 +148,8 @@ export function StudioPoserPage(): ReactElement {
               onClick={() => setCameraLens(item.id)}
               className={
                 cameraLens === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent"
+                  : "min-h-11 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2"
               }
             >
               {pickLang(item.ko, item.en)}
@@ -169,8 +169,8 @@ export function StudioPoserPage(): ReactElement {
               onClick={() => setJointSolver(item.id)}
               className={
                 jointSolver === item.id
-                  ? "rounded-xl border border-accent bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent"
-                  : "rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-semibold text-fg-2"
+                  ? "min-h-11 rounded-xl border border-accent bg-accent-soft px-3 py-2 text-xs font-semibold text-accent"
+                  : "min-h-11 rounded-xl border border-line bg-panel px-3 py-2 text-xs font-semibold text-fg-2"
               }
             >
               {pickLang(item.ko, item.en)}

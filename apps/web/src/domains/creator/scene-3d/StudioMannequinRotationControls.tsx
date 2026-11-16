@@ -27,7 +27,7 @@ export function StudioMannequinRotationControls({ disabled, onRotate }: {
       {DIRECTIONS.map(([key, label, symbol]) => (
         <button key={key} type="button" disabled={disabled} aria-label={`선택 관절 ${label} 회전`}
           title="방향키: 회전 · Shift: 미세 회전 · Alt+좌우: 비틀기"
-          className="h-9 w-9 rounded border border-line focus-visible:outline focus-visible:outline-2 disabled:opacity-40"
+          className="min-h-11 min-w-11 rounded border border-line focus-visible:outline focus-visible:outline-2 disabled:opacity-40"
           onKeyDown={handleKeyDown}
           onClick={(event) => { if (!disabled) onRotate({ key, shiftKey: event.shiftKey, altKey: event.altKey, repeat: false }); }}>
           {symbol}
