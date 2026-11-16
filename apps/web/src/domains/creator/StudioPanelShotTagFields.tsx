@@ -38,8 +38,8 @@ export interface StudioPanelShotTagFieldsProps {
  * 전용 기능이었다 — `pointer-coarse` 는 이 저장소가 이미 쓰는 터치 승격 규칙이다.
  */
 const SIZE_CLASS: Record<NonNullable<StudioPanelShotTagFieldsProps["size"]>, string> = {
-  compact: "h-5 px-1 text-[9px] pointer-coarse:h-11 pointer-coarse:px-1.5 pointer-coarse:text-[11px]",
-  default: "h-8 px-2 text-xs pointer-coarse:h-11",
+  compact: "min-h-10 min-w-10 px-1.5 text-[10px] pointer-coarse:h-11 pointer-coarse:px-1.5 pointer-coarse:text-[11px]",
+  default: "min-h-10 min-w-10 px-2 text-xs pointer-coarse:h-11",
 };
 
 const SELECT_BASE_CLASS =

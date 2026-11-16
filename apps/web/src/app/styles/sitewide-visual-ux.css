@@ -536,6 +536,11 @@ body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engage
     bottom: calc(max(1rem, var(--service-status-overlay-clearance, 0px)) + 4rem);
     margin-inline: 0;
   }
+  /* 좌측 작업공간 사이드바(.workspace-sidebar)가 있는 화면에서는 고정형 OST 알약과 홍보 카드가
+     하단 도움말·⚙ 설정 링크를 덮지 않도록 레일 폭 뒤쪽으로 비켜 놓는다. */
+  :root:has(.workspace-sidebar) :is([data-site-ost="mounted"]:has([data-site-ost-pill]), [data-beta-open-prompt="engaged"]) {
+    left: calc(var(--layout-rail-icon) + 1rem);
+  }
   [data-studio-beta-notice-host="true"] {
     justify-content: flex-start;
   }
@@ -543,6 +548,12 @@ body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engage
      좁은 태블릿(768px)에서는 폭을 줄인다. 넓은 화면에서는 기존 31rem 그대로다. */
   [data-studio-beta-notice="true"] {
     width: min(31rem, calc(100vw - 19rem));
+  }
+}
+
+@media (min-width: 1280px) {
+  :root:has(.workspace-sidebar) :is([data-site-ost="mounted"]:has([data-site-ost-pill]), [data-beta-open-prompt="engaged"]) {
+    left: calc(var(--layout-rail-row) + 1rem);
   }
 }
 

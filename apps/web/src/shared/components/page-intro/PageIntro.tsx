@@ -119,10 +119,13 @@ function PageIntroView({ variant, pathname, children }: {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") finish();
     };
+    const onPointerDown = () => finish();
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
     return () => {
       window.clearTimeout(autoTimer);
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
     };
   }, [phase, finish]);
 

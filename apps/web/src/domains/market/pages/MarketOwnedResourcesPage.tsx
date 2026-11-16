@@ -281,8 +281,8 @@ export function MarketOwnedResourcesPage() {
       else await deleteCreatorMarketplaceResource(record.id);
       if (generationRef.current !== generation) return;
       await loadFirstPage(relisting
-        ? t(`“${record.name}”을(를) 공개 목록에 다시 올렸습니다.`, `“${record.name}” is listed publicly again.`)
-        : t(`“${record.name}”을(를) 공개 목록에서 내렸습니다. 기존 릴리스 이력은 유지됩니다.`, `“${record.name}” was removed from the public list. Existing release history is kept.`));
+        ? t(`“${record.name}” 소재를 공개 목록에 다시 올렸습니다.`, `“${record.name}” is listed publicly again.`)
+        : t(`“${record.name}” 소재를 공개 목록에서 내렸습니다. 기존 릴리스 이력은 유지됩니다.`, `“${record.name}” was removed from the public list. Existing release history is kept.`));
     } catch (caught) {
       if (generationRef.current !== generation) return;
       setError(marketAuthorityErrorMessage(

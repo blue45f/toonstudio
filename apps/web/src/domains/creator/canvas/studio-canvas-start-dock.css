@@ -320,7 +320,7 @@ body:has([data-studio-cinematic-canvas-welcome="true"]) [data-studio-shell-float
 }
 
 @keyframes studio-canvas-start-in {
-  from { opacity: 0; transform: translate(-50%, -6px); }
+  from { opacity: 0.92; transform: translate(-50%, -6px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 

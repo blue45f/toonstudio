@@ -23,16 +23,24 @@ export function inspectAuditRouteReadiness(root = document) {
   const introOverlayVisible = [...root.querySelectorAll('[data-phase] img[src*="hero-main-intro.webp"], [data-comic-intro][role="dialog"]')].some(visible);
   const state = stage?.getAttribute("data-route-state") ?? "missing";
   const readinessSource = stage?.getAttribute("data-route-readiness-source") ?? "none";
-  // 3D 전용 경로는 본문을 body 포털에 그린다. 다른 경로의 임의 팝업은 본문 증거로 쓰지 않는다.
-  const bg3dRoute = /^\/studio\/(?:work\/[^/]+\/)?bg3d\/?$/u.test(view.location.pathname);
-  const bg3dPortal = bg3dRoute ? root.querySelector('[data-testid="studio-bg3d-dialog"]') : null;
-  const ownedPortal = stage && visible(bg3dPortal) && bg3dPortal.getAttribute("aria-hidden") !== "true"
-    && !stage.contains(bg3dPortal) ? bg3dPortal : null;
+  // 3D 전용 경로(bg3d 및 3d/dcc/*)는 본문을 body 포털에 그린다. 다른 경로의 임의 팝업은 본문 증거로 쓰지 않는다.
+  const bg3dRoute = /^\/studio\/(?:(?:work|remix)\/[^/]+\/)?bg3d\/?$/u.test(view.location.pathname);
+  const dccRoute = /^\/studio\/(?:(?:work|remix)\/[^/]+\/)?3d(?:\/dcc(?:\/[^/]+)?)?\/?$/u.test(view.location.pathname);
+  const portalCandidate = bg3dRoute
+    ? root.querySelector('[data-testid="studio-bg3d-dialog"]')
+    : dccRoute
+      ? root.querySelector('[data-studio-hybrid-dcc-dialog="true"], [data-testid="studio-bg3d-dialog"]')
+      : null;
+  const ownedPortal = stage && visible(portalCandidate) && portalCandidate.getAttribute("aria-hidden") !== "true"
+    && !stage.contains(portalCandidate) ? portalCandidate : null;
+  const ownedPortalName = ownedPortal
+    ? (bg3dRoute ? "studio-bg3d" : "studio-hybrid-dcc")
+    : null;
   const scopes = stage ? [stage, ...(ownedPortal ? [ownedPortal] : [])] : [];
   const elements = (selector) => [...new Set(scopes.flatMap((scope) => [...scope.querySelectorAll(selector)]))];
   const count = (selector) => elements(selector).filter(visible).length;
-  const gpuRecoveryVisible = bg3dRoute && count(
-    '[data-testid="studio-bg3d-recovery-webgl2"], [data-testid="studio-bg3d-recovery-webgpu"]',
+  const gpuRecoveryVisible = (bg3dRoute || dccRoute) && count(
+    '[data-testid="studio-bg3d-recovery-webgl2"], [data-testid="studio-bg3d-recovery-webgpu"], [data-studio-3d-recovery]',
   ) > 0;
   const adminAccess = stage?.querySelector("[data-admin-access-state]");
   const adminAccessState = visible(adminAccess) ? adminAccess.getAttribute("data-admin-access-state") : null;
@@ -65,7 +73,7 @@ export function inspectAuditRouteReadiness(root = document) {
     readinessSource,
     adminAccessState,
     authGateVisible,
-    ownedPortal: ownedPortal ? "studio-bg3d" : null,
+    ownedPortal: ownedPortalName,
     gpuRecoveryVisible,
     outcome,
     developmentErrorOverlay,

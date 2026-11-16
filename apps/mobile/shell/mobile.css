@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
   --canvas: oklch(0.145 0.014 265);
   --panel: oklch(0.185 0.016 265);
   --card: oklch(0.22 0.018 265);
@@ -40,6 +40,7 @@ main {
   border-radius: 26px;
   background: oklch(0.185 0.016 265 / 0.92);
   box-shadow: 0 24px 72px oklch(0 0 0 / 0.36);
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   text-align: center;
 }

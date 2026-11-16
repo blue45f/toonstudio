@@ -1006,7 +1006,7 @@ export function StudioHybridDccPanel({
 
       <StudioHybridDccExpertTools groups={expertToolGroups} busy={busy} hasActiveAsset={hasActiveAsset} />
 
-      <footer className="sticky bottom-0 z-10 min-w-0 rounded-xl border border-line bg-panel/95 px-3 py-2 shadow-lg backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] [overflow-wrap:anywhere]">
+      <footer className="sticky bottom-0 z-10 min-w-0 rounded-xl border border-line bg-panel px-3 py-2 shadow-lg [overflow-wrap:anywhere]">
         <p className="min-w-0 break-words text-xs text-fg [overflow-wrap:anywhere]" data-studio-hybrid-dcc-log="true" aria-live="polite">
           {busy ? bt("작업 처리 중… ", "Working… ") : ""}{log}
         </p>

@@ -381,3 +381,12 @@ test("본문 내부의 3D 화면에서도 늦게 나타난 그래픽 복구 안�
   assert.equal(result.outcome, "degraded");
   assert.equal(result.gpuRecoveryVisible, true);
 });
+
+test("정밀 3D 모델러(/studio/3d/dcc/*)의 body 포털도 소유 본문으로 판정한다", () => {
+  const root = documentFor('<div class="route-stage" data-route-state="ready" aria-hidden="true"></div><div data-studio-hybrid-dcc-dialog="true" role="dialog"><h2>정밀 3D 모델링</h2><button>메시 추가</button></div>');
+  root.defaultView.history.replaceState({}, "", "/studio/3d/dcc/model");
+  const result = inspectAuditRouteReadiness(root);
+  assert.equal(result.ownedPortal, "studio-hybrid-dcc");
+  assert.equal(result.outcome, "ready");
+  assert.equal(result.contentElements, 2);
+});

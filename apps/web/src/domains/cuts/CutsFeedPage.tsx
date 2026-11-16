@@ -411,13 +411,14 @@ export function CutsFeedPage() {
 
   return (
     <div className="cuts-feed" ref={containerRef} aria-label={t("컷츠 피드", "Cuts feed")}>
+      <div aria-hidden="true" className="h-0 snap-start" />
       <header className="cuts-feed__header">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="cuts-feed__title">{t("컷츠", "Cuts")}</h1>
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 max-sm:flex-nowrap">
+          <h1 className="cuts-feed__title shrink-0">{t("컷츠", "Cuts")}</h1>
           <div
             role="group"
             aria-label={t("피드 필터", "Feed filter")}
-            className="flex flex-wrap items-center gap-1.5"
+            className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {(
               [
@@ -432,10 +433,10 @@ export function CutsFeedPage() {
                 type="button"
                 aria-pressed={feedCategory === chip.id}
                 onClick={() => setFeedCategory(chip.id)}
-                className={`inline-flex min-h-11 items-center rounded-full px-3.5 text-xs font-bold transition-colors ${
+                className={`inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-xs font-bold transition-colors ${
                   feedCategory === chip.id
                     ? "bg-white text-black"
-                    : "bg-white/15 text-white/85 hover:bg-white/25"
+                    : "border border-white/20 bg-[#121626]/90 text-white hover:bg-[#1c2238]"
                 }`}
               >
                 {chip.label}
@@ -460,17 +461,17 @@ export function CutsFeedPage() {
           </Link>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl snap-end px-4 pt-3">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-4 pt-2">
         <SiteContextualSubNav pathnameOverride="/cuts" />
         <section
           data-testid="cuts-rea-interactive-motion-dub-bar"
           aria-label={t("무빙툰 모션·더빙·립싱크 구성 미리보기", "Moving-Toon Motion, Dubbing & Lip-Sync Configuration Preview")}
-          className="relative mt-2 overflow-hidden rounded-2xl border border-white/20 bg-black/65 px-4 py-3 text-xs text-white/90 shadow-sm backdrop-blur-md"
+          className="relative mt-2 overflow-hidden rounded-2xl border border-white/20 bg-[#0b0d18]/95 px-4 py-3 text-xs text-white shadow-sm backdrop-blur-md"
         >
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 엔진 선택", "Motion Engine Selection")}>
-              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-warn">{t("모션 엔진:", "Motion Engine:")}</span>
+              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/12 px-2 py-0.5 font-extrabold text-[#ffd479]">{t("모션 엔진:", "Motion Engine:")}</span>
               {([
                 { id: "rive-statemachine", ko: "Rive 60fps 상태머신·Spine 2.5D", en: "Rive 60fps State Machine & Spine 2.5D" },
                 { id: "kling-pikaframes", ko: "Kling 1.6 모션브러시·Pikaframes", en: "Kling 1.6 Motion Brush & Pikaframes" },
@@ -483,7 +484,7 @@ export function CutsFeedPage() {
                   aria-pressed={motionEngine === item.id}
                   onClick={() => setMotionEngine(item.id)}
                   className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                    motionEngine === item.id ? "bg-white text-black" : "bg-white/15 text-white/85 hover:bg-white/25"
+                    motionEngine === item.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
                   }`}
                 >
                   {t(item.ko, item.en)}
@@ -491,7 +492,7 @@ export function CutsFeedPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("더빙 및 음향 마스터링", "Dubbing & Audio Mastering")}>
-              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/10 px-2 py-0.5 font-extrabold text-cool">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
+              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/12 px-2 py-0.5 font-extrabold text-[#84d8ff]">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
               {([
                 { id: "rask-heygen-130lang", ko: "Rask·HeyGen 130개국어 보이스클로닝", en: "Rask/HeyGen 130-Lang Voice Clone" },
                 { id: "audio2face-rhubarb", ko: "Audio2Face·Rhubarb 6음소 립싱크", en: "Audio2Face/Rhubarb 6-Viseme Lip-Sync" },
@@ -504,7 +505,7 @@ export function CutsFeedPage() {
                   aria-pressed={dubbingMode === item.id}
                   onClick={() => setDubbingMode(item.id)}
                   className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                    dubbingMode === item.id ? "bg-white text-black" : "bg-white/15 text-white/85 hover:bg-white/25"
+                    dubbingMode === item.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
                   }`}
                 >
                   {t(item.ko, item.en)}
@@ -512,7 +513,7 @@ export function CutsFeedPage() {
               ))}
             </div>
           </div>
-          <p data-testid="cuts-rea-active-engine-summary" className="mt-1.5 text-[11px] text-white/75">
+          <p data-testid="cuts-rea-active-engine-summary" className="mt-1.5 text-[11px] text-white/85">
             {t(
               `[구성 미리보기] ${motionEngine === "rive-statemachine" ? "Rive 스크롤/탭 상태머신 + Spine/Live2D 60fps WebGL2 패럴랙스" : motionEngine === "kling-pikaframes" ? "Kling 1.6 모션브러시 궤적 + Pikaframes/Runway Act-One 표정 전이" : "ToonCrafter·CACANi·TVPaint 원화 간 벡터 동화(Inbetween) 자동 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "Rask AI·Papercup·HeyGen 130개국어 화자 음색 보존 더빙 + OpusClip/Submagic 키네틱 자막" : dubbingMode === "audio2face-rhubarb" ? "NVIDIA Audio2Face + Rhubarb 6음소(A~F) 60fps 입모양 동기화" : "Krisp·Adobe Podcast 노이즈 제거 + -14 LUFS 음압 정규화 & 대사 발화 시 BGM -12dB 감쇠"} · 영상·음성 생성 실행 전 구성 예시입니다.`,
               `[Configuration Preview] ${motionEngine} + ${dubbingMode} · A configuration example before video or audio generation.`,

@@ -196,7 +196,19 @@
   .create-start-choice::after { background: linear-gradient(180deg, transparent 5%, color-mix(in srgb, var(--color-card) 25%, transparent) 32%, var(--color-card) 85%); }
   .create-start-choice-copy { padding: 22px; }
   .create-start-choice h2 { font-size: 1.6875rem; }
-  .create-start-choice-description { max-width: none; font-size: .875rem; }
+  .create-start-choice-description {
+    position: static;
+    width: auto;
+    height: auto;
+    max-width: none;
+    margin: 6px 0 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    color: var(--color-fg-2);
+    font-size: .875rem;
+    line-height: 1.55;
+  }
   .create-start-choice-action { min-width: 190px; }
   .create-start-secondary { gap: 14px; margin-top: 18px; }
   .create-start-secondary a { padding-inline: 18px; font-size: .9375rem; }

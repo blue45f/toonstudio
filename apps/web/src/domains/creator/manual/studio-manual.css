@@ -24,7 +24,7 @@
 .studio-manual input,
 .studio-manual select { font: inherit; color: inherit; }
 .studio-manual button { min-inline-size: 44px; }
-#main-content .studio-manual a[href],
+#main-content .studio-manual a[href]:not(.manual-skip),
 #main-content .studio-manual button,
 #main-content .studio-manual summary { min-block-size: 44px; min-inline-size: 44px; }
 .studio-manual button,

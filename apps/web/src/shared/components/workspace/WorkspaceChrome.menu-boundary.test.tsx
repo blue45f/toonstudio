@@ -57,4 +57,18 @@ describe("Workspace 메뉴 구현 지연 경계", () => {
     expect(screen.queryByTestId("loaded-workspace-menu")).toBeNull();
     expect(document.querySelector('[data-site-mobile-utilities="available"]')).toBeNull();
   });
+
+  it("데스크톱 /settings 경로에서는 하단 설정 링크만 aria-current=page로 강조하고 주 메뉴 전체 메뉴는 비운다", async () => {
+    const { WorkspaceSidebar } = await import("./WorkspaceChrome");
+    render(
+      <MemoryRouter initialEntries={["/settings"]}>
+        <WorkspaceSidebar />
+      </MemoryRouter>,
+    );
+    const supportNav = screen.getByRole("navigation", { name: "도움과 환경 설정" });
+    expect(within(supportNav).getByRole("link", { name: "설정" }).getAttribute("aria-current")).toBe("page");
+    expect(within(supportNav).getByRole("link", { name: "도움말" }).getAttribute("aria-current")).toBeNull();
+    const primaryNav = screen.getByRole("navigation", { name: "주 메뉴" });
+    expect(within(primaryNav).getByRole("link", { name: "전체 메뉴" }).getAttribute("aria-current")).toBeNull();
+  });
 });

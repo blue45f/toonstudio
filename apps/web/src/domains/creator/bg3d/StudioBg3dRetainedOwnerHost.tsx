@@ -53,9 +53,9 @@ function Bg3DRetainedLoadingOverlay() {
         </div>
         <ol className="relative mt-5 grid gap-2 sm:grid-cols-3">
           {stages.map((label, index) => (
-            <li key={label} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${index <= stage ? "border-accent/35 bg-accent-soft text-accent" : "border-line bg-card text-fg-3"}`}>
+            <li key={label} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${index <= stage ? "border-accent/35 bg-accent-soft text-accent" : "border-line bg-card text-fg-2"}`}>
               <span className="mr-1.5 font-black">{index + 1}</span>{label}
-              <span className="mt-1 block text-[0.62rem] font-medium opacity-75">{index < stage ? "준비됨" : index === stage ? t("studio.bg3dPanelStatus.retainedOwnerHost.preparingStage", "준비 중") : "대기"}</span>
+              <span className={`mt-1 block text-[0.6875rem] font-semibold ${index <= stage ? "text-fg-2" : "text-fg-3"}`}>{index < stage ? "준비됨" : index === stage ? t("studio.bg3dPanelStatus.retainedOwnerHost.preparingStage", "준비 중") : "대기"}</span>
             </li>
           ))}
         </ol>

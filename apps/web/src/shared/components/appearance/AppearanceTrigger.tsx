@@ -61,7 +61,7 @@ export function AppearanceTrigger({ scope = "site", className = "", showLabel = 
     <button
       ref={buttonRef}
       type="button"
-      className={`appearance-trigger ${className}`}
+      className={`appearance-trigger min-w-11 ${className}`.trim()}
       aria-label={label}
       title={label}
       aria-haspopup="dialog"

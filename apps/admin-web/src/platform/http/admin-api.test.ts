@@ -72,4 +72,29 @@ describe("admin-api platform transport", () => {
       requestAdminJson("/api/admin/paid", { body: { enabled: false } }),
     ).rejects.toMatchObject({ name: "AdminApiError", status: 403, message: "권한이 없습니다." });
   });
+
+  it("fails closed with AdminApiError when a 200 response returns HTML fallback or null JSON", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response("<!doctype html><html><body>SPA</body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response("null", {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+    await expect(requestAdminJson("/api/admin/operation-policy")).rejects.toMatchObject({
+      name: "AdminApiError",
+      status: 502,
+    });
+    await expect(requestAdminJson("/api/admin/operation-policy")).rejects.toMatchObject({
+      name: "AdminApiError",
+      status: 502,
+    });
+  });
 });
