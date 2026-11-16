@@ -31,7 +31,7 @@ describe("Studio engine OPFS v2 real Chromium boundary", () => {
     expect(browserEntry).toContain("new Worker(WORKER_URL");
     expect(browserEntry).toContain('type: "module"');
     expect(verifier).toContain(
-      'const HARNESS_ENTRY =\n  "/scripts/studio-engine-tile-storage-opfs-v2-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-engine-tile-storage-opfs-v2-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
   });

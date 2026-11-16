@@ -21,7 +21,7 @@ import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSe
 import { useStudioMarketplaceCloudSyncFocus } from "./studio-marketplace-cloud-sync-focus";
 import { frozenStatus5Text } from "../status-i18n/studio-frozen5-status-i18n";
 import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
-import { StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
+import { StudioDrawingClarityBarFallback, StudioDrawingClarityEntry } from "./StudioDrawingClarityEntry";
 import { StudioProjectOpenRecoveryActions } from "./StudioProjectOpenRecoveryActions";
 
 const StudioOptionsBars = lazyRetry(() => import("../StudioOptionsBars").then((module) => ({ default: module.StudioOptionsBars })), "StudioOptionsBars");
@@ -353,7 +353,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
   ) : null;
   return (
     <>
-      {clarity?.active ? <Suspense fallback={null}><LazyStudioDrawingClarityBar session={s} /></Suspense> : <StudioAppMenubar
+      {clarity?.active ? <Suspense fallback={<StudioDrawingClarityBarFallback title={title} />}><LazyStudioDrawingClarityBar session={s} /></Suspense> : <StudioAppMenubar
         aria-label="문서 메뉴"
         subRow={isMobile ? <div className="studio-drawing-clarity-entry-mobile"><StudioDrawingClarityEntry /></div> : mobileImmersive ? undefined : desktopOptionsBars}
         className={cn(

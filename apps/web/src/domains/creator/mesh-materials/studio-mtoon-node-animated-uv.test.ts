@@ -69,6 +69,7 @@ function textureFixture() {
 function builderFor(material: StudioMToonNodeMaterial, geometry: BoxGeometry) {
   // 생성·TSL 코드 작성만 수행하며 GPU init/render/compute는 호출하지 않는다.
   const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") });
+  Reflect.set(renderer, "_bindings", undefined);
   // Texture WGSL 생성은 이 한 capability만 질의한다. GPU 없이 기본 비필터 F32 profile을 명시한다.
   renderer.hasFeature = (name) => { if (name !== "float32-filterable") throw new Error(`예상하지 않은 CPU profile 질의: ${name}`); return false; };
   const builder = new WGSLNodeBuilder(new Mesh(geometry, material), renderer);

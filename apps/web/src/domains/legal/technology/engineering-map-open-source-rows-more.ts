@@ -222,14 +222,14 @@ const PATCH_FORK_OWN_ROWS: readonly EngineeringMapRow[] = [
     asOf: AS_OF,
     cells: {
       role: t(
-        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 7개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 62개 — 보안 권고 대응·도구 버전 통일·저장소 보안 대체본 지정). 설치할 때 pnpm이 자동으로 적용한다.",
-        "Records of installed libraries edited at exact versions (7 patches) and rules that force sub-dependency versions (62 overrides for security advisories, tool-version alignment and repository security replacements). pnpm applies both automatically at install time.",
+        "설치된 라이브러리를 정확한 버전에 묶어 고쳐 쓴 기록(패치 9개)과, 하위 의존성의 버전을 강제로 정한 규칙(override 62개 — 보안 권고 대응·도구 버전 통일·저장소 보안 대체본 지정). 설치할 때 pnpm이 자동으로 적용한다.",
+        "Records of installed libraries edited at exact versions (9 patches) and rules that force sub-dependency versions (62 overrides for security advisories, tool-version alignment and repository security replacements). pnpm applies both automatically at install time.",
       ),
       license: t("원본 라이선스를 따름", "Follows each original"),
       mode: t("설치 단계(pnpm)", "Install step (pnpm)"),
       note: t(
-        "패치 7개: 운영 CSP 호환 3(manifold-3d·ktx2-encoder는 new Function 제거, glTF Transform은 지연 로드), 브라우저 호환 1(ag-psd), R3F 1, 결정성 1(p5.brush), 면 병합 출력 보존 1(openskp). minimatch는 저장소 보안 백포트로, braces는 깊이 100 가드 포크로 대체. 상류 PR은 못 찾았다.",
-        "The 7 patches: production-CSP compatibility 3 (manifold-3d and ktx2-encoder drop new Function, glTF Transform defers loading), browser compatibility 1 (ag-psd), R3F 1, determinism 1 (p5.brush) and face-merge output preservation 1 (openskp). Repository security backports replace minimatch; a depth-100 guard fork replaces braces. No upstream PR found.",
+        "패치 9개: 운영 CSP 호환 3(manifold-3d·ktx2-encoder new Function 제거, glTF Transform 지연 로드), ag-psd 1, R3F 1, three r187 TSL 2, p5.brush 1, openskp 1. minimatch는 보안 백포트, braces는 깊이 100 포크로 대체. 상류 PR 없음.",
+        "9 patches: CSP 3 (manifold-3d/ktx2-encoder drop new Function, glTF Transform defers load), ag-psd 1, R3F 1, three r187 TSL 2, p5.brush 1, openskp 1. Backports replace minimatch; depth-100 fork replaces braces.",
       ),
     },
     evidence: [

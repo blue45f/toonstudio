@@ -85,12 +85,12 @@ describe("현재 장면 GLB의 실제 카메라 투영·배치", () => {
     expect(prepared.camera.zoom).toBe(1);
   });
 
-  it.each([false, true])("명시 H8/zoom2: stock ortho 배율 오류를 재현하고 TRS=%s 최종 projection을 보정한다", async (trs) => {
+  it.each([false, true])("명시 H8/zoom2: zoom 선반영 직교 배율을 검증하고 TRS=%s 최종 projection을 보존한다", async (trs) => {
     const input = { camera: view({ projection: "orthographic", orthographicHeight: 8, zoom: 2 }), aspectRatio: 16 / 9 };
     const prepared = prepare(input), original = reference(input), bytes = await exported(prepared, trs);
     expectProjectionAndPose(prepared.camera, original);
     const raw = await loaded(bytes); if (!(raw instanceof OrthographicCamera)) throw Error("직교 필요");
-    expect(raw.top - raw.bottom).toBe(8); // 설치 exporter는 실제 높이 4를 두 배로 내보낸다.
+    expect(raw.top - raw.bottom).toBe(4); // Three 0.187.0 exporter는 zoom 선반영 반높이(ymag=2, 전체 높이 4)를 그대로 내보낸다.
     const result = finalizeStudioBg3dSceneGlbCamera(bytes, prepared);
     if (!result.ok) throw Error(result.messageKo);
     const camera = await loaded(result.value); if (!(camera instanceof OrthographicCamera)) throw Error("직교 필요");

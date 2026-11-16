@@ -24,7 +24,7 @@ describe("textured-brush real Chromium WebGPU boundary", () => {
     expect(browserEntry).not.toContain("FakeGpu");
     expect(browserEntry).not.toContain("mockDevice");
     expect(verifier).toContain(
-      'const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-textured-brush-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-engine-webgpu-textured-brush-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
   });

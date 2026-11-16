@@ -1,9 +1,30 @@
+import { createRequire } from "node:module";
+
 import babel from "@rolldown/plugin-babel";
 import { reactCompilerPreset } from "@vitejs/plugin-react";
 
 import type { Plugin, ResolvedConfig } from "vite";
 
 type WebReactCompilerPlugin = Awaited<ReturnType<typeof babel>> & Pick<Plugin, "configResolved">;
+
+const pluginReactRequire = createRequire(
+  createRequire(import.meta.url).resolve("@vitejs/plugin-react"),
+);
+const reactCompilerBabelPluginPath = pluginReactRequire.resolve("babel-plugin-react-compiler");
+
+function createTsxSafeReactCompilerPreset() {
+  const base = reactCompilerPreset();
+  const baseOptions = Array.isArray(base.preset) && base.preset[1] && typeof base.preset[1] === "object"
+    ? (base.preset[1] as Record<string, unknown>)
+    : {};
+  const safeBabelPreset = (_api: unknown, options: Record<string, unknown> = {}) => ({
+    plugins: [[reactCompilerBabelPluginPath, { ...baseOptions, ...options }]],
+  });
+  return {
+    ...base,
+    preset: [safeBabelPreset, baseOptions] as unknown as typeof base.preset,
+  };
+}
 
 /** 사용자 제외 규칙은 Babel 기본값을 덮어쓰므로 의존성과 가상 런타임 제외도 함께 보존한다. */
 export const WEB_REACT_COMPILER_EXCLUDE = [
@@ -23,7 +44,7 @@ function optimizedDependencyExclude(cacheDir: string): RegExp {
 /** 실제 resolved cacheDir를 Babel의 선행 필터와 환경별 옵션에 함께 반영한다. */
 export async function createWebReactCompilerPlugin() {
   const exclude = [...WEB_REACT_COMPILER_EXCLUDE];
-  const plugin: WebReactCompilerPlugin = await babel({ presets: [reactCompilerPreset()], exclude });
+  const plugin: WebReactCompilerPlugin = await babel({ presets: [createTsxSafeReactCompilerPreset()], exclude });
   const original = plugin.configResolved;
   const originalHandler = typeof original === "function" ? original : original?.handler;
   const wrapped = function (

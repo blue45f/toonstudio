@@ -24,7 +24,7 @@ describe("Studio Engine real WebGPU filter parity browser boundary", () => {
     expect(browserEntry).toContain("applyStudioCanonicalFilterRecipeCpu");
     expect(browserEntry).toContain("new StudioEngineWebGpuFilterRuntime");
     expect(verifier).toContain(
-      'const HARNESS_ENTRY = "/scripts/studio-engine-webgpu-filter-parity-browser.ts";',
+      'const HARNESS_ENTRY = `/@fs/${normalizePath(fileURLToPath(\n  new URL("./studio-engine-webgpu-filter-parity-browser.ts", import.meta.url),\n))}`;',
     );
     expect(verifier).toContain('appType: "custom"');
     expect(browserEntry).not.toContain("StudioPage");

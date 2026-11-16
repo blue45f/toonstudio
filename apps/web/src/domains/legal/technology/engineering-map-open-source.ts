@@ -13,8 +13,8 @@ export const ENGINEERING_MAP_OPEN_SOURCE: EngineeringMap = {
     en: "The direct-dependency snapshot measured on 2026-10-07 contained 117 packages; this list now retains 115 after removing external Mixbox and wasm-vips on 2026-11-05. This is an updated historical snapshot, not a fresh census of all current direct dependencies. This table groups the ones with the biggest roles and shows what each does, its license (terms of use), how it is wired in and what we changed. Small parts such as QR codes or the mobile shell are in the full library notices the build generates.",
   },
   takeaway: {
-    ko: "오픈소스를 쓰기만 하지 않고 지연 로드·Worker로 격리하고, 버전과 해시로 고정하고, 필요한 곳은 패치 7개와 포크 2개(wgpu-toon·braces)로 고쳐 쓰며, 아직 확인하지 못한 라이선스 지점은 숨기지 않고 표시합니다.",
-    en: "We do not just consume open source: we isolate it with lazy loading and Workers, pin it by version and hash, adapt it with 7 patches and two forks (wgpu-toon and braces) where needed, and mark license points we have not verified instead of hiding them.",
+    ko: "오픈소스를 쓰기만 하지 않고 지연 로드·Worker로 격리하고, 버전과 해시로 고정하고, 필요한 곳은 패치 9개와 포크 2개(wgpu-toon·braces)로 고쳐 쓰며, 아직 확인하지 못한 라이선스 지점은 숨기지 않고 표시합니다.",
+    en: "We do not just consume open source: we isolate it with lazy loading and Workers, pin it by version and hash, adapt it with 9 patches and two forks (wgpu-toon and braces) where needed, and mark license points we have not verified instead of hiding them.",
   },
   columns: [
     { id: "role", label: { ko: "무엇을 하나 · 쓰인 곳", en: "What it does · where it is used" } },

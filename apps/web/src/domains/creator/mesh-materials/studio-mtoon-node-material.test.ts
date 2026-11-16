@@ -70,6 +70,7 @@ describe("guarded MToon WebGPU TSL", () => {
     const material = new StudioMToonNodeMaterial(), geometry = new BoxGeometry();
     material.shadingToonyFactor = 1;
     const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") });
+    Reflect.set(renderer, "_bindings", undefined);
     renderer.hasFeature = (feature) => { if (feature !== "float32-filterable") throw new Error(`예상하지 않은 CPU feature: ${feature}`); return false; };
     try {
       const builder = new WGSLNodeBuilder(new Mesh(geometry, material), renderer);
@@ -78,10 +79,11 @@ describe("guarded MToon WebGPU TSL", () => {
       if (!("build" in builder) || typeof builder.build !== "function") throw new Error("실제 material builder가 없습니다.");
       builder.build(); const fragment: unknown = Reflect.get(builder, "fragmentShader");
       if (typeof fragment !== "string") throw new Error("실제 fragment WGSL이 없습니다.");
-      for (const accumulator of ["directDiffuse", "directSpecular"]) {
-        const updates = [...fragment.matchAll(new RegExp(`\\b(\\w+)\\s*=\\s*\\(\\s*${accumulator}\\s*\\+[^;]+\\);`, "gu"))];
+      for (const [accumulator, indirect] of [["directDiffuse", "indirectDiffuse"], ["directSpecular", "indirectSpecular"]] as const) {
+        const updates = [...fragment.matchAll(new RegExp(`\\b(\\w+)\\s*=\\s*\\(\\s*${accumulator}\\s*\\+([^;]+)\\);`, "gu"))];
         expect(updates.length).toBeGreaterThan(0);
-        expect(updates.some(([, value]) => value && fragment.includes(`${accumulator} = ${value};`))).toBe(true);
+        expect(updates.some(([, target, rhs]) => Boolean(target && rhs && !rhs.includes(indirect)
+          && (target === accumulator || fragment.includes(`${accumulator} = ${target};`))))).toBe(true);
       }
     } finally { material.dispose(); geometry.dispose(); }
   });
@@ -122,6 +124,7 @@ describe("guarded MToon WebGPU TSL", () => {
     material.shadingToonyFactor = 1; material.outlineWidthMode = "screenCoordinates";
     material.outlineWidthFactor = .003; material.isOutline = true;
     const renderer = new WebGPURenderer({ canvas: document.createElement("canvas") }), geometry = new BoxGeometry();
+    Reflect.set(renderer, "_bindings", undefined);
     const clone = material.clone(); clone.shadingToonyFactor = .75;
     try { for (const target of [material, clone]) {
       const builder = new WGSLNodeBuilder(new Mesh(geometry, target), renderer);

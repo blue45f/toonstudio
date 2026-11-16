@@ -213,7 +213,7 @@ describe("라이브러리 해설 영역 5~8 · 숫자 주장", () => {
 
   it("고정된 Remotion 4 라이선스의 무료 상업 사용과 인원 미검증을 구별한다", () => {
     const manifest = JSON.parse(read("node_modules/remotion/package.json")) as { version: string };
-    expect(manifest.version).toBe("4.0.541");
+    expect(manifest.version).toBe("4.0.543");
     const license = read("node_modules/remotion/LICENSE.md");
     expect(license).toContain("- an individual");
     expect(license).toContain("- a for-profit organization with up to 3 employees");

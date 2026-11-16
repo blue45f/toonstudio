@@ -21,28 +21,37 @@ const ports = vi.hoisted(() => {
   legacyConvert: vi.fn<(texture: Texture) => RenderTarget>(),
   nativeCreated: vi.fn<() => void>(), nativeCompile: vi.fn<() => Promise<void>>(), nativeDispose: vi.fn<() => void>(),
   nativeConvert: vi.fn<(texture: Texture) => RenderTarget>(),
-  legacyAllocate: vi.fn<() => RenderTarget>(), nativeAllocate: vi.fn<(depthBuffer: boolean) => RenderTarget>(),
+  legacyAllocate: vi.fn<() => RenderTarget>(), nativeAllocate: vi.fn<() => RenderTarget>(),
+  realWebglAllocatorLength: -1, realWebgpuAllocatorLength: -1,
   init: vi.fn<() => Promise<void>>(), queue: vi.fn<() => Promise<void>>(),
   initialized: false, fallback: false, contextLost: false, missingAllocator: false, skipAllocation: false,
 }; });
-vi.mock("three", async (importOriginal) => ({
-  ...await importOriginal<typeof import("three")>(),
-  WebGLRenderer: class extends ports.RendererState {
-    readonly isWebGLRenderer = true; readonly xr = { enabled: true };
-    getContext() { return { isContextLost: () => ports.contextLost }; }
-  },
-  PMREMGenerator: class {
-    constructor() {
-      ports.legacyCreated();
-      if (ports.missingAllocator) Object.defineProperty(this, "_allocateTargets", { value: undefined });
-    }
-    _allocateTargets() { return ports.legacyAllocate(); }
-    compileEquirectangularShader() { ports.legacyCompile(); }
-    fromEquirectangular(texture: Texture) { if (!ports.skipAllocation) this._allocateTargets(); return ports.legacyConvert(texture); }
-    dispose() { ports.legacyDispose(); }
-  },
-}));
-vi.mock("three/webgpu", () => {
+vi.mock("three", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("three")>();
+  const webglAllocate = Reflect.get(actual.PMREMGenerator.prototype, "_allocateTarget");
+  ports.realWebglAllocatorLength = typeof webglAllocate === "function" ? webglAllocate.length : -1;
+  return {
+    ...actual,
+    WebGLRenderer: class extends ports.RendererState {
+      readonly isWebGLRenderer = true; readonly xr = { enabled: true };
+      getContext() { return { isContextLost: () => ports.contextLost }; }
+    },
+    PMREMGenerator: class {
+      constructor() {
+        ports.legacyCreated();
+        if (ports.missingAllocator) Object.defineProperty(this, "_allocateTarget", { value: undefined });
+      }
+      _allocateTarget() { return ports.legacyAllocate(); }
+      compileEquirectangularShader() { ports.legacyCompile(); }
+      fromEquirectangular(texture: Texture) { if (!ports.skipAllocation) this._allocateTarget(); return ports.legacyConvert(texture); }
+      dispose() { ports.legacyDispose(); }
+    },
+  };
+});
+vi.mock("three/webgpu", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("three/webgpu")>();
+  const webgpuAllocate = Reflect.get(actual.PMREMGenerator.prototype, "_allocateTarget");
+  ports.realWebgpuAllocatorLength = typeof webgpuAllocate === "function" ? webgpuAllocate.length : -1;
   class Backend { readonly device = { queue: { onSubmittedWorkDone: () => ports.queue() } }; }
   return {
     WebGPUBackend: Backend,
@@ -58,9 +67,9 @@ vi.mock("three/webgpu", () => {
         ports.nativeCreated();
         if (ports.missingAllocator) Object.defineProperty(this, "_allocateTarget", { value: undefined });
       }
-      _allocateTarget(depthBuffer: boolean) { return ports.nativeAllocate(depthBuffer); }
+      _allocateTarget() { return ports.nativeAllocate(); }
       compileEquirectangularShader() { return ports.nativeCompile(); }
-      fromEquirectangular(texture: Texture) { if (!ports.skipAllocation) this._allocateTarget(false); return ports.nativeConvert(texture); }
+      fromEquirectangular(texture: Texture) { if (!ports.skipAllocation) this._allocateTarget(); return ports.nativeConvert(texture); }
       dispose() { ports.nativeDispose(); }
     },
   };
@@ -94,6 +103,8 @@ function fixture() {
 
 describe("실제 backend별 HDRI PMREM 준비·submission 수명", () => {
   it("WebGL은 legacy 경로만 쓰고 입력과 target의 소유권을 반환한다", async () => {
+    expect(ports.realWebglAllocatorLength).toBe(0);
+    expect(ports.realWebgpuAllocatorLength).toBe(0);
     const f = fixture(), version = f.texture.version, data = f.texture.image.data;
     if (!(data instanceof Uint8Array)) throw new Error("회귀용 원본 RGBA8 데이터가 필요합니다.");
     const bytes = Array.from(data);
