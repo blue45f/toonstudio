@@ -119,7 +119,7 @@ describe("ai-quick-blueprint-engine", () => {
       undefined,
       vi.fn().mockResolvedValue({
         ok: false,
-        code: "sign_in_required",
+        code: "login_required",
         error: "로그인이 필요합니다",
       }),
     );
@@ -149,7 +149,7 @@ describe("ai-quick-blueprint-engine", () => {
     expect(rawDoc).toContain(blueprint.title);
 
     const suite = readStudioProjectFeatureSuite(window.localStorage, result.projectId);
-    expect(suite.storyBeats).toHaveLength(6);
+    expect(suite?.storyBeats).toHaveLength(6);
   });
 
   it("인터뷰 맥락 추천과 워크시트 생성이 빈 입력에도 안전하게 동작한다", () => {

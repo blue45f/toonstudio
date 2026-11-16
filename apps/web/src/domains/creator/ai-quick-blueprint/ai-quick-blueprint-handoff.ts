@@ -87,7 +87,7 @@ export async function polishBlueprintWithCloudAi(
     );
     if (!response.ok) {
       const authHint =
-        response.code === "sign_in_required"
+        response.code === "login_required"
           ? pickText(
               blueprint.locale,
               "로그인하면 클라우드 AI 문장 윤문도 무료로 함께 쓸 수 있어요. 지금 설계된 스마트 콘티로도 바로 스튜디오를 열 수 있습니다!",

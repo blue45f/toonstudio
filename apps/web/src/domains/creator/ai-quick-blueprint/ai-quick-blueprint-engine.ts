@@ -8,7 +8,7 @@
  * 3) 파일 크기 상한(<=800줄) 준수를 위해 컷 생성(`ai-quick-blueprint-cuts.ts`)과 전달·윤문(`ai-quick-blueprint-handoff.ts`)을 분리한다.
  */
 
-import type { StoryContent } from "@/shared/lib/creator-resources";
+import type { StoryField } from "@/shared/lib/creator-resources";
 
 import type { StudioProjectFormat } from "../studio-project-definition";
 import type { StudioStoryBeatKind } from "../studio-storyboard-planner";
@@ -64,6 +64,8 @@ export interface AiBlueprintCut {
   readonly remixRevision: number;
 }
 
+export type AiStoryWorksheet = Readonly<Record<StoryField, string>>;
+
 export interface AiQuickBlueprint {
   readonly locale: AiBlueprintLocale;
   readonly idea: string;
@@ -76,7 +78,7 @@ export interface AiQuickBlueprint {
   readonly logline: string;
   readonly characters: readonly AiBlueprintCharacter[];
   readonly cuts: readonly AiBlueprintCut[];
-  readonly storyWorksheet: StoryContent;
+  readonly storyWorksheet: AiStoryWorksheet;
 }
 
 export const AI_IDEA_SPARK_PRESETS: readonly AiIdeaSparkPreset[] = Object.freeze([
@@ -330,7 +332,7 @@ export function buildStoryLabWorksheetFromIdea(
   rawIdea: string,
   toneId: AiBlueprintToneId = "romance",
   locale: AiBlueprintLocale = "ko",
-): StoryContent {
+): AiStoryWorksheet {
   const idea = normalizeIdea(rawIdea, locale);
   const topic = deriveShortCoreTopic(idea, locale);
   const titles = buildTitles(topic, toneId, locale);
