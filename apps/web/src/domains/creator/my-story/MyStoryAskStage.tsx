@@ -1,9 +1,12 @@
-import { ArrowLeft, ArrowRight, Check, FastForward, ListChecks, SkipForward } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FastForward, ListChecks, SkipForward, Sparkles, Wand2 } from "lucide-react";
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { useI18n } from "@/shared/lib/i18n";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
+
+import { buildContextualInterviewAnswer } from "../ai-quick-blueprint/ai-quick-blueprint-engine";
 
 import {
   myStoryAnswerFor,
@@ -47,6 +50,8 @@ export function MyStoryAskStage({
   onBackToPick,
 }: MyStoryAskStageProps) {
   const bt = useBilingual("MyStoryAskStage");
+  const lang = useI18n((state) => state.lang);
+  const locale = lang.startsWith("ko") ? "ko" : "en";
   const baseId = useId();
   const titleId = `${baseId}-title`;
   const exampleId = `${baseId}-example`;
@@ -114,12 +119,12 @@ export function MyStoryAskStage({
       </div>
 
       <nav aria-label={bt("질문 목록", "Question list")}>
-        <ol className="flex flex-wrap gap-1.5">
+        <ol className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {template.questions.map((item, index) => {
             const done = cleanMyStoryAnswer(myStoryAnswerFor(session, item.slot)) !== "";
             const current = index === session.step;
             return (
-              <li key={item.slot}>
+              <li key={item.slot} className="shrink-0">
                 <button
                   type="button"
                   onClick={() => onGoto(index)}
@@ -161,6 +166,38 @@ export function MyStoryAskStage({
           aria-describedby={[exampleId, countId, hintId, sensitiveKinds.length > 0 ? sensitiveId : null].filter(Boolean).join(" ")}
           className="min-h-32 w-full resize-y rounded-xl border border-line bg-panel px-3 py-2.5 text-base leading-7 text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
         />
+        <div
+          role="group"
+          aria-label={bt("빠른 답변 채우기 도우미", "Quick answer fill helpers")}
+          className="flex flex-wrap items-center gap-2 pt-0.5"
+        >
+          <button
+            type="button"
+            onClick={() => onAnswer(locale === "ko" ? question.exampleKo : question.exampleEn)}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-panel/70 px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+          >
+            <Sparkles size={13} aria-hidden="true" className="text-accent" />
+            {bt("예시 문장 바로 넣기", "Insert example")}
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              onAnswer(
+                buildContextualInterviewAnswer({
+                  slot: question.slot,
+                  seedIdea: myStoryAnswerFor(session, "event"),
+                  fallbackExampleKo: question.exampleKo,
+                  fallbackExampleEn: question.exampleEn,
+                  locale,
+                }),
+              )
+            }
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft/50 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+          >
+            <Wand2 size={13} aria-hidden="true" />
+            {bt("내 이야기 흐름에 맞춰 자동 추천", "Smart contextual suggestion")}
+          </button>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-fg-3">
           <p id={hintId}>
             {bt(

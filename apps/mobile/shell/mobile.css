@@ -169,10 +169,26 @@ button:focus-visible, a.button:focus-visible {
   100% { background-position: -100% 0; }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .primary,
+  .secondary {
+    transition: scale 120ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease;
+  }
+  .primary:active,
+  .secondary:active {
+    scale: 0.98;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton-card,
   .skeleton-bar {
     animation: none;
+  }
+  .primary,
+  .secondary {
+    transition: none;
+    scale: none;
   }
 }
 

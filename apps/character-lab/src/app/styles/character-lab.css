@@ -2961,9 +2961,39 @@ dd {
   }
 }
 
+@media (max-width: 767px) {
+  .cl-inspector-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .cl-inspector-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .cl-inspector-tab {
+    flex: 0 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cl-button:not(:disabled),
+  .cl-inspector-tab:not(:disabled),
+  .cl-slot-cell:not(:disabled) {
+    transition: scale 130ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms ease, border-color 150ms ease;
+  }
+  .cl-button:not(:disabled):active,
+  .cl-inspector-tab:not(:disabled):active,
+  .cl-slot-cell:not(:disabled):active {
+    scale: 0.98;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
     animation: none !important;
+    scale: none !important;
   }
 }

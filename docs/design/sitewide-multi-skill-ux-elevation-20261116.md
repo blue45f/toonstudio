@@ -97,3 +97,36 @@
 | `10px` 미만 미세 글자 (`tiny-text`) / 투명 텍스트 (`invisible-text`) | `33건` / `2건` | **0건** / **0건** |
 | Chrome DevTools Lighthouse 데스크톱 (`/` 공개 홈) | Accessibility `100`, SEO **`83`**, PWA `role="status"` 경고 | Accessibility **`100`**, SEO **`100`**, 접근성 트리 결함 **0건** |
 | 독립 서브앱 (`admin-web`, `character-lab`, `brush-lab`) `24×24px` 미만 타깃 / 가로 넘침(`overflowX`) | `character-lab` **43개** 미달, `brush-lab` 체크박스 미달, `admin-web` null 참조 오류 | 3개 앱 모두 **`under24Count: 0`**, **`overflowX: 0`**, 런타임 오류 **0건** |
+
+
+---
+
+## 5. 2026-11-17 2차 고도화 — REA 경쟁 서비스 역공학 내재화 · AI 자동 콘티 메이커 · 모바일 저밀도 및 물리 모션 시스템
+
+### 5.1 REA MCP 실브라우저 역공학 증거 및 1자 내재화 매핑 (`current`)
+- **정본 증거 원장**: `docs/evidence/rea-ai-composer-mobile-motion-benchmark-20261117.json`
+- **분석 대상 6개 서비스 (`http://127.0.0.1:9223` CDP 실측)**:
+  - **Gamma (`ev_0ba822ed...`, `ev_e4c89588...`)**: 1줄 프롬프트 → 카드 단위 아웃라인 즉시 생성 후 카드별 수정 및 1클릭 본문 전개 패턴 내재화.
+  - **LlamaGen.ai (`ev_4fa7a1c4...`)**: 판형(4컷·세로 웹툰·무빙툰) 사전 선택 + 캐릭터 일관성 페어 카드 + 컷별 카메라 샷/대사/효과음 동시 설계 내재화.
+  - **Tooning (`ev_2374e600...`)**: 초보자를 위한 초저밀도 한국형 첫 화면(전문 픽셀 규격·보조 도구는 접이식 공개로 분리) 내재화.
+  - **Katalist (`ev_d8a3e588...`)**: 전체 재생성 없이 개별 컷만 1탭으로 톤 리믹스(`자연스럽게` / `극적으로` / `유머 한 스푼`) + 모바일 가로 스냅 슬라이드 레일 내재화.
+  - **Linear (`ev_b086fecb...`)**: 기능 수 요약 배지가 달린 점진적 공개(`<details>`) + 스프링 감속 이징 및 즉각적인 택타일 눌림(`scale: 0.98`) 내재화.
+  - **네이버 웹툰 (`ev_51fcc0db...`)**: 모바일 단일 행 가로 스냅 칩·탭 레일과 컴팩트 2열 그리드로 한 페이지 과밀 방지.
+
+### 5.2 AI가 쉽게 짜주는 스토리→웹툰 자동 블루프린트 (`current`)
+- **`apps/web/src/domains/creator/ai-quick-blueprint/`**:
+  - `ai-quick-blueprint-engine.ts`: 대기 시간 0초의 한/영 완전 분리 스마트 블루프린트 엔진(`buildAiQuickBlueprint`, `cycleBlueprintTitle`, `remixBlueprintCut`, `appendBlueprintCut`) + 무료 우선 클라우드 AI 윤문(`polishBlueprintWithCloudAi`) + 원자적 롤백을 갖춘 실제 스튜디오 프로젝트 생성(`openAiQuickBlueprintInStudio`) + 8항목 스토리 워크시트 변환(`buildStoryLabWorksheetFromIdea`).
+  - `AiQuickBlueprintComposer.tsx`: `/create`에서 지연 청크(`lazyRetry`)로 로드되어 스튜디오 프리캐시 예산을 침범하지 않으며, 6종 인기 소재 원탭 스파크 칩·판형 3종·분위기 4종·컷별 인라인 대사 편집·원탭 스튜디오 및 스토리 연구실 전달을 제공한다.
+  - **연계 진입점 확장**:
+    - `/` (`ReferenceCreatorDashboard.tsx`): 아이디어 빠른 프리셋 레일에 `AI 자동 콘티·대사` 바로가기 연결.
+    - `/create?intent=my-story` (`MyStoryAskStage.tsx`): 질문별 `예시 문장 바로 넣기` 및 `내 이야기 흐름에 맞춰 자동 추천` 원탭 도우미 추가.
+    - `/story-lab` (`StoryLabPage.tsx`): 작성된 칸을 덮어쓰지 않고 빈 칸만 채우는 `한 줄 아이디어로 빈 항목 자동 초안 채우기` 접이식 도우미 추가.
+
+### 5.3 모바일 저밀도 반응형 구조 및 Atelier 물리 모션 정본 (`current`)
+- **모바일 한 페이지 복잡도 절감 (`<768px`)**:
+  - `/create`: 첫 화면 최상단에 핵심 두 선택(`이야기부터 시작` / `바로 그리기`)과 컴팩트 AI 메이커를 배치하고, 4종 규격 프리셋 카드는 가로 스냅 캐러셀(`scroll-snap-type: x proximity`)로 전환. 6종 전문 아틀리에 레인과 인라인 픽셀 규격 빌더는 모바일에서 접이식(`<details>`)으로 정리하고, 4단계 파이프라인·장르 프리셋 중복 노출을 모바일 `all` 뷰에서 걷어내 목적지 네비게이션으로 일원화.
+  - `/`: 모바일 진입 시 보조 루나 패널(`.rd-luna-help`)과 하단 심화 소개(`details.rd-more`)를 기본 접힘으로 시작해 세로 스크롤 길이를 대폭 단축하고, 런치패드 벤토(`repeat(auto-fit, minmax(142px, 1fr))`)와 프리셋 칩 가로 스냅 레일을 적용.
+  - `/discover` 및 서브앱(`character-lab`): 탐색 보조 목적지 타일 `2열` 컴팩트 그리드(`min-[360px]:grid-cols-2`) 및 인스펙터 탭 가로 스크롤 레일 적용.
+- **GPU 합성 전용 물리 모션 (`apps/web/src/app/styles/atelier-motion.css` + 서브앱 4종 동기화)**:
+  - 모바일 적응형 모션 시간 토큰(`110ms` / `160ms` / `220ms`) 및 `linear()` 스프링 이징(`--ease-spring-gentle`) 도입.
+  - 독립 변환 속성(`scale`, `translate`, `opacity`) 기반 버튼·칩 택타일 눌림(`scale: 0.98`), Top-Layer `<dialog>` / `[popover]` 진입·퇴장(`@starting-style` + `allow-discrete` + `overlay`), `prefers-reduced-motion: reduce` 및 `contrast` 테마 즉시 전환 안전장치 완비.

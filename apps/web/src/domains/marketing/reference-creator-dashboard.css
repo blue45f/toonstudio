@@ -402,7 +402,7 @@ details[open] > .rd-optional-summary > svg:last-child { transform: rotate(180deg
 .rd-v2-cta { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; color: var(--rd-cyan); font-size: 12.5px; font-weight: 750; }
 .rd-v2-card--primary .rd-v2-cta { color: var(--rd-accent); }
 @media (max-width: 1279px) { .rd-v2-bento-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 639px) { .rd-v2-bento-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; } .rd-v2-bento-head { padding: 10px 12px 8px; } }
+@media (max-width: 639px) { .rd-v2-bento-grid { grid-template-columns: repeat(auto-fit, minmax(142px, 1fr)); gap: 8px; padding: 10px; } .rd-v2-card { padding: 11px; gap: 8px; } .rd-v2-bento-head { padding: 10px 12px 8px; } }
 @media (prefers-reduced-motion: reduce) { .rd-v2-card:hover { transform: none; } }
 @media (prefers-contrast: more), (forced-colors: active) {
   .rd-v2-bento, .rd-v2-card, .rd-v2-trust-pill, .rd-v2-spec, .rd-v2-glyph { border: 2px solid currentColor; background: Canvas; color: CanvasText; box-shadow: none; }
