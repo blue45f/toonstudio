@@ -1,5 +1,12 @@
+import { Sparkles } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
+import {
+  AI_IDEA_SPARK_PRESETS,
+  buildStoryLabWorksheetFromIdea,
+} from "@/domains/creator/public/ai-quick-blueprint";
+import { useI18n } from "@/shared/lib/i18n";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
 import { LocalSaveNotice, ResourceLayout } from "./ResourceLayout";
@@ -87,6 +94,10 @@ export function StoryLabPage() {
   const [inputError, setInputError] = useState<{ readonly field: StoryField; readonly message: string } | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [pipelineExpanded, setPipelineExpanded] = useState(false);
+  const [aiHelperOpen, setAiHelperOpen] = useState(false);
+  const [quickIdea, setQuickIdea] = useState("");
+  const currentLang = useI18n((state) => state.lang);
+  const blueprintLocale = currentLang.startsWith("ko") ? "ko" : "en";
   const pipelineSummary = useRef<HTMLElement | null>(null);
   const pipelineBody = useRef<HTMLDivElement | null>(null);
   const pipelineOwnedFocus = useRef(false);
@@ -265,6 +276,77 @@ export function StoryLabPage() {
       <div ref={pipelineBody} id="story-related-tools" role="region" aria-label={bt("다른 제작 도구", "Other creation tools")} tabIndex={-1} onFocusCapture={() => { pipelineOwnedFocus.current = true; }} onBlurCapture={(event) => { if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) pipelineOwnedFocus.current = false; }} className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
         <SiteContextualSubNav pathnameOverride="/story-lab" />
       </div>
+    </details>
+    <details
+      open={aiHelperOpen}
+      onToggle={(event) => {
+        if (event.target === event.currentTarget) {
+          setAiHelperOpen(event.currentTarget.open);
+        }
+      }}
+      className="rounded-xl border border-accent/35 bg-accent-soft/30 px-3.5 py-1"
+    >
+      <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 py-2.5 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles size={15} aria-hidden="true" className="shrink-0 text-accent" />
+          <span>{bt("한 줄 아이디어로 빈 항목 자동 초안 채우기", "Auto-fill empty worksheet fields from a 1-line idea")}</span>
+        </span>
+        <span className="text-xs font-semibold text-accent">{bt("작성한 칸은 보존", "Keeps written fields")}</span>
+      </summary>
+      {aiHelperOpen ? (
+      <div className="space-y-2.5 pb-3 pt-1">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={quickIdea}
+            maxLength={200}
+            onChange={(event) => setQuickIdea(event.target.value)}
+            aria-label={bt("초안 자동 채우기용 한 줄 아이디어", "One-line idea for worksheet auto-fill")}
+            placeholder={bt("예: 은퇴한 헌터가 던전 입구에 에스프레소 바를 열었다", "e.g. A retired hunter opened an espresso bar at a dungeon gate")}
+            className={`${RESOURCE_INPUT} min-w-0 flex-1`}
+          />
+          <button
+            type="button"
+            disabled={!ready || !draftReady || saving || corruptDraft}
+            onClick={() => {
+              const generated = buildStoryLabWorksheetFromIdea(quickIdea || story.title || "", "romance", blueprintLocale);
+              let next = draft;
+              let filled = 0;
+              for (const field of STORY_FIELDS) {
+                if (story[field]?.trim()) continue;
+                next = editStoryDraft(next, workspace.story, field, generated[field]);
+                filled += 1;
+              }
+              if (next && filled > 0) {
+                remember(next);
+                setNotice(
+                  bt(
+                    `비어 있던 ${filled}개 기획 항목에 초안을 채웠어요. 직접 다듬은 뒤 저장해 보세요.`,
+                    `Filled ${filled} empty planning fields with a starter draft. Refine and save when ready.`,
+                  ),
+                );
+              }
+            }}
+            className={cn(RESOURCE_BUTTON, "shrink-0 border-accent bg-accent text-on-accent hover:bg-accent-2")}
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            {bt("빈 항목 자동 채우기", "Fill empty fields")}
+          </button>
+        </div>
+        <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+          {AI_IDEA_SPARK_PRESETS.slice(0, 4).map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => setQuickIdea(blueprintLocale === "ko" ? preset.ideaKo : preset.ideaEn)}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+            >
+              {bt(preset.chipKo, preset.chipEn)}
+            </button>
+          ))}
+        </div>
+      </div>
+      ) : null}
     </details>
     <nav aria-label={bt("기획 입력 단계", "Story planning steps")} className="grid grid-cols-3 gap-2">
       {STORY_STEPS.map((step, index) => <button key={step.id} type="button" aria-current={stepIndex === index ? "step" : undefined} aria-controls={`story-step-${step.id}`} onClick={() => openStep(index)} className={cn(RESOURCE_BUTTON, "min-w-0 flex-col px-1 text-xs motion-reduce:transition-none sm:px-2 sm:text-sm", stepIndex === index ? "border-accent bg-accent-soft text-accent" : "bg-canvas text-fg-2")}>

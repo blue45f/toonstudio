@@ -22,6 +22,7 @@ import "./styles/mobile-first-shell.css";
 import "./styles/unified-theme-contract.css";
 import "./styles/product-journey-readability.css";
 import "./styles/reference-visual-system.css";
+import "./styles/atelier-motion.css";
 
 // 401 문구의 게스트·세션 구분은 도메인 인증 상태를 읽는다. 플랫폼 오류 모듈은 도메인을 import하지 않으므로
 // 앱 진입점에서 판정 함수를 등록한다.

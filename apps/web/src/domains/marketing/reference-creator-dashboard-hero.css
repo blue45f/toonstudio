@@ -145,6 +145,30 @@
   background: var(--rd-accent-soft);
   color: var(--rd-accent);
 }
+.rd-v4-preset-chip--ai {
+  gap: 5px;
+  border-color: color-mix(in oklch, var(--rd-accent) 48%, var(--rd-border));
+  background: var(--rd-accent-soft);
+  color: var(--rd-accent);
+  font-weight: 800;
+}
+@media (max-width: 767px) {
+  .rd-v4-preset-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .rd-v4-preset-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .rd-v4-preset-chip {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
 .reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border-color: var(--rd-border); background: var(--rd-panel); color: var(--rd-fg); }
 /* 포스터 밖 일반 테마 표면(.rd-clarity-helpers)에 놓인 입력 바와 루나 카드는 어두운 삽화용 고정 스크림 대신
    현재 테마 토큰(--rd-card, --rd-panel, --rd-fg, --rd-muted)을 따라 주간·종이·별빛 테마 모두 조화롭게 읽히게 한다. */

@@ -1,11 +1,12 @@
-import { ArrowRight, CheckCircle2, Sparkles, Users } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, CheckCircle2, ChevronDown, Sparkles, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
 
 interface CreateStartGrandAtelierSectionProps {
   readonly storyHref: string;
+  readonly compactOnMobile?: boolean;
 }
 
 const BEGINNER_JOURNEY_STEPS = [
@@ -74,12 +75,18 @@ const PRO_STUDIO_LANES = [
 
 export function CreateStartGrandAtelierSection({
   storyHref,
+  compactOnMobile = false,
 }: CreateStartGrandAtelierSectionProps) {
   const bt = useBilingual("CreateStartPage");
   const [customWidth, setCustomWidth] = useState(800);
   const [customHeight, setCustomHeight] = useState(12800);
   const [customDpi, setCustomDpi] = useState<300 | 350>(300);
   const [teamCollab, setTeamCollab] = useState(true);
+  const [proToolsOpen, setProToolsOpen] = useState(() => !compactOnMobile);
+
+  useEffect(() => {
+    setProToolsOpen(!compactOnMobile);
+  }, [compactOnMobile]);
 
   const safeWidth = Math.min(8000, Math.max(320, Number.isFinite(customWidth) ? customWidth : 800));
   const safeHeight = Math.min(40000, Math.max(320, Number.isFinite(customHeight) ? customHeight : 12800));
@@ -184,11 +191,11 @@ export function CreateStartGrandAtelierSection({
           </ol>
         </div>
 
-        <div className="mt-4 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="-mx-1 mt-4 flex gap-3.5 overflow-x-auto px-1 pb-2 [scroll-snap-type:x_proximity] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
           {presetCards.map((card) => (
             <article
               key={card.id}
-              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-line bg-canvas/90 transition-colors hover:border-accent/60"
+              className="group flex w-[82vw] max-w-[20.5rem] shrink-0 [scroll-snap-align:start] flex-col justify-between overflow-hidden rounded-2xl border border-line bg-canvas/90 transition-colors hover:border-accent/60 sm:w-auto sm:max-w-none"
             >
               <div>
                 <div className="relative aspect-[16/10] w-full overflow-hidden border-b border-line/70 bg-panel">
@@ -230,9 +237,28 @@ export function CreateStartGrandAtelierSection({
         </div>
       </section>
 
+      <details
+        open={proToolsOpen}
+        onToggle={(event) => {
+          if (event.target === event.currentTarget) {
+            setProToolsOpen(event.currentTarget.open);
+          }
+        }}
+        className="group/pro rounded-2xl border border-line bg-panel/45 p-3 md:border-0 md:bg-transparent md:p-0"
+      >
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2 py-2 text-sm font-bold text-fg [&::-webkit-details-marker]:hidden md:hidden">
+          <span className="inline-flex items-center gap-2 [word-break:keep-all]">
+            <Sparkles size={15} aria-hidden="true" className="shrink-0 text-accent" />
+            <span>{bt("전문 제작 도구 6종 · 세부 픽셀 규격 설정", "Pro Studio Tools (6) & Custom Pixel Size")}</span>
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-accent">
+            <span>{bt("6종", "6 tools")}</span>
+            <ChevronDown size={16} aria-hidden="true" className="transition-transform duration-200 group-open/pro:rotate-180 motion-reduce:transition-none" />
+          </span>
+        </summary>
       <section
         aria-label={bt("전문 제작 도구 및 세부 규격 빠른 지정", "Pro studio tools and inline canvas setup")}
-        className="grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,1fr)]"
+        className="mt-3 grid gap-4 md:mt-0 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,1fr)]"
       >
         <div className="rounded-2xl border border-line bg-panel/65 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -374,6 +400,7 @@ export function CreateStartGrandAtelierSection({
           </Link>
         </div>
       </section>
+      </details>
     </div>
   );
 }

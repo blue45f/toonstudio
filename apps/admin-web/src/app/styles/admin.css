@@ -141,6 +141,10 @@ body {
 .operation-policy kbd { padding: 2px 6px; border-radius: 4px; border: 1px solid var(--admin-line); background: var(--admin-raised); font-size: 0.8em; }
 dialog:modal { overscroll-behavior: contain; }
 dialog::backdrop { overflow: hidden; overscroll-behavior: contain; }
+@media (prefers-reduced-motion: no-preference) {
+  .admin-shell button:not(:disabled) { transition: scale 130ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms ease, border-color 150ms ease; }
+  .admin-shell button:not(:disabled):active { scale: 0.98; }
+}
 @media (prefers-reduced-motion: reduce) {
   .admin-shell *, .admin-shell *::before, .admin-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

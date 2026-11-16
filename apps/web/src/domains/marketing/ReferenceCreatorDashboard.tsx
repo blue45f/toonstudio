@@ -29,6 +29,22 @@ export function ReferenceCreatorDashboard() {
   const navigate = useNavigate();
   const [idea, setIdea] = useState("");
   const [inputMode, setInputMode] = useState<"create" | "search">("create");
+  const [lunaOpen, setLunaOpen] = useState(
+    () =>
+      !(
+        typeof window !== "undefined" &&
+        typeof globalThis.matchMedia === "function" &&
+        globalThis.matchMedia("(max-width: 767px)").matches
+      ),
+  );
+  const [moreOpen, setMoreOpen] = useState(
+    () =>
+      !(
+        typeof window !== "undefined" &&
+        typeof globalThis.matchMedia === "function" &&
+        globalThis.matchMedia("(max-width: 767px)").matches
+      ),
+  );
   const helpersRef = useRef<HTMLDivElement>(null);
   const searching = inputMode === "search";
   const submitInput = (event: FormEvent) => {
@@ -110,6 +126,7 @@ export function ReferenceCreatorDashboard() {
             <button type="submit" className="rd-idea-submit">{searching ? bi("검색", "Search") : bi("시작하기", "Start")}<ArrowRight size={16} aria-hidden="true" /></button>
           </form>
           <div className="rd-v4-preset-chips" role="group" aria-label={bi("웹툰 빠른 규격 및 작업실 프리셋", "Quick webtoon format & studio presets")}>
+            <Link href="/create#ai-composer" className="rd-v4-preset-chip rd-v4-preset-chip--ai"><Sparkles size={13} aria-hidden="true" /><span>{bi("AI 자동 콘티·대사", "AI Storyboard")}</span></Link>
             <Link href="/studio/new?lane=blank" className="rd-v4-preset-chip">{bi("세로 웹툰 (800×무한)", "Vertical Webtoon (800×∞)")}</Link>
             <Link href="/studio/new?lane=storyboard&start=storyboard" className="rd-v4-preset-chip">{bi("인스타툰 4컷 (1080²)", "4-Panel Comic (1080²)")}</Link>
             <Link href="/studio/assets/characters/new" className="rd-v4-preset-chip">{bi("3D 캐릭터 셰이퍼", "3D Character Shaper")}</Link>
@@ -117,7 +134,15 @@ export function ReferenceCreatorDashboard() {
             <Link href="/production" className="rd-v4-preset-chip">{bi("팀 공동 작업 · 검수", "Team Collab & Review")}</Link>
           </div>
         </details>
-        <details className="rd-luna-help" open>
+        <details
+          className="rd-luna-help"
+          open={lunaOpen}
+          onToggle={(event) => {
+            if (event.target === event.currentTarget) {
+              setLunaOpen(event.currentTarget.open);
+            }
+          }}
+        >
           <summary className="rd-optional-summary"><Sparkles size={16} aria-hidden="true" /><span>{bi("시작이 막막한가요?", "Need help getting started?")}</span><ChevronDown size={16} aria-hidden="true" /></summary>
           <HomeLunaPanel />
         </details>
@@ -209,7 +234,16 @@ export function ReferenceCreatorDashboard() {
     <RevealOnScroll variant="fade" className="rd-discover" data-home-band="discover">
       <DiscoverHomePreview />
     </RevealOnScroll>
-    <details className="rd-more" data-home-band="more" open>
+    <details
+      className="rd-more"
+      data-home-band="more"
+      open={moreOpen}
+      onToggle={(event) => {
+        if (event.target === event.currentTarget) {
+          setMoreOpen(event.currentTarget.open);
+        }
+      }}
+    >
       <summary className="rd-more-summary">
         <span>{bi("더 알아보기", "Learn more")}</span>
         <small>{bi("시작 카드·핵심 작업실·에디터 미리보기·서비스 소개", "Start cards, core studios, editor preview and introduction")}</small>

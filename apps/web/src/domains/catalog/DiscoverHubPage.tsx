@@ -667,7 +667,7 @@ export function DiscoverHubPage() {
             ))}
           </ul>
         </nav>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 sm:gap-3 lg:grid-cols-3">
             {DESTINATIONS.filter((destination) => !["/explore", "/ranking", "/calendar"].includes(destination.href)).map((destination) => (
               <SiteLinkCard key={destination.href} layout="tile" href={destination.href} icon={destination.icon}
                 title={bt(...destination.title)} description={bt(...destination.body)}
