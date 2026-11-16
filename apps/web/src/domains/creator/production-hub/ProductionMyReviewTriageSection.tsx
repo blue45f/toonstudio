@@ -236,7 +236,7 @@ export function ProductionMyReviewTriageSection({
             aria-pressed={filters.assignee === "me"}
             onClick={() => updateFilters({ assignee: filters.assignee === "me" ? "all" : "me" })}
             className={cn(
-              "inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-accent",
+              "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-accent",
               filters.assignee === "me"
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line bg-card text-fg-2 hover:border-accent/40",
@@ -246,14 +246,14 @@ export function ProductionMyReviewTriageSection({
             {bt(`내 담당만 (${queue.myCount})`, `Mine only (${queue.myCount})`)}
           </button>
 
-          <label className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2">
+          <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs font-semibold text-fg-2">
             <span>{bt("담당자", "Assignee")}</span>
             <select
               aria-label={bt("검수 담당자 필터", "Review assignee filter")}
               data-triage-assignee-select="true"
               value={filters.assignee}
               onChange={(event) => updateFilters({ assignee: event.target.value })}
-              className="max-w-52 bg-transparent font-bold text-fg outline-none"
+              className="min-h-11 min-w-28 max-w-52 bg-transparent font-bold text-fg outline-none"
             >
               <option value="all">{bt("전체 담당자", "All assignees")}</option>
               <option value="me">{bt(`내 담당만 (${queue.myCount})`, `Assigned to me (${queue.myCount})`)}</option>

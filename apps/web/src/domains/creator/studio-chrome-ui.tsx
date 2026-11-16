@@ -523,7 +523,7 @@ export function StudioEdgeRailButton({
       aria-label={`${label} 펼치기`}
       data-studio-edge-rail={side}
       className={cn(
-        "group hidden w-8 shrink-0 flex-col items-center gap-2.5 border-line bg-panel py-4 text-fg-3",
+        "group hidden w-10 min-w-10 shrink-0 flex-col items-center gap-2.5 border-line bg-panel py-4 text-fg-3",
         "transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-raised hover:text-fg",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent",
         side === "left" && "border-r",

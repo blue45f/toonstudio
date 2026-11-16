@@ -745,7 +745,7 @@ function MenuDropdown({
             // Keep the full familiar core + specialist vocabulary reachable at laptop widths.
             // The chevron is decorative (aria-haspopup owns the affordance), so compact it
             // before allowing labels to collide inside the compressible menubar lane.
-            "inline-flex h-8 items-center gap-1 rounded-lg px-1.5 text-[0.75rem] font-semibold tracking-tight xl:px-2 2xl:px-2.5 2xl:text-[0.78rem] pointer-coarse:h-11 pointer-coarse:px-2",
+            "inline-flex h-8 min-w-10 items-center justify-center gap-1 rounded-lg px-1.5 text-[0.75rem] font-semibold tracking-tight xl:px-2 2xl:px-2.5 2xl:text-[0.78rem] pointer-coarse:h-11 pointer-coarse:min-w-11 pointer-coarse:px-2",
             STUDIO_EASE,
             STUDIO_FOCUS_RING,
             open

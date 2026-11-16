@@ -70,11 +70,11 @@ export function StudioPoseFirstRunGuide({
         onClick={handleClose}
         aria-label={bt("가이드 닫기", "Close guide")}
         title={bt("가이드 닫기", "Close guide")}
-        className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-md text-fg-3 transition-colors hover:bg-raised hover:text-fg pointer-coarse:right-0.5 pointer-coarse:top-0.5 pointer-coarse:size-11"
+        className="absolute right-1 top-1 grid size-10 place-items-center rounded-md text-fg-3 transition-colors hover:bg-raised hover:text-fg pointer-coarse:right-0.5 pointer-coarse:top-0.5 pointer-coarse:size-11"
       >
         <X size={13} aria-hidden />
       </button>
-      <p className="flex items-center gap-1.5 pr-7 text-[0.72rem] font-bold text-fg pointer-coarse:pr-11">
+      <p className="flex items-center gap-1.5 pr-10 text-[0.72rem] font-bold text-fg pointer-coarse:pr-11">
         <Icon size={14} className="shrink-0 text-accent" aria-hidden />
         {title}
       </p>

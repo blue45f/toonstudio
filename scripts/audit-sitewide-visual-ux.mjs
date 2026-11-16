@@ -405,14 +405,21 @@ for (const [viewportName, viewport] of viewports) {
                 }));
               const clippedText = textElements
                 .filter(visible)
-                .map((element) => ({ element, style: getComputedStyle(element) }))
-                .filter(({ element, style }) => {
+                .map((element) => ({ element, style: getComputedStyle(element), rect: element.getBoundingClientRect() }))
+                .filter(({ element, style, rect }) => {
                   const clippedX = /^(?:hidden|clip)$/u.test(style.overflowX)
                     && element.scrollWidth > element.clientWidth + 2;
                   const clippedY = /^(?:hidden|clip)$/u.test(style.overflowY)
                     && element.scrollHeight > element.clientHeight + 2;
+                  const visuallyHidden = rect.width <= 1.5 && rect.height <= 1.5
+                    && (style.clipPath.includes("inset(50%)") || style.clip.includes("rect(0"));
+                  const offscreenSkipLink = element.tagName === "A"
+                    && element.getAttribute("href")?.startsWith("#")
+                    && (rect.bottom <= 0 || rect.right <= 0);
                   const intentional = style.textOverflow === "ellipsis"
-                    || (style.webkitLineClamp && style.webkitLineClamp !== "none");
+                    || (style.webkitLineClamp && style.webkitLineClamp !== "none")
+                    || visuallyHidden
+                    || offscreenSkipLink;
                   return (clippedX || clippedY) && !intentional;
                 })
                 .slice(0, 20)

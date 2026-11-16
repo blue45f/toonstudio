@@ -125,7 +125,7 @@ export function StudioManualPage() {
 
   return (
     <div className="studio-manual" data-testid="studio-manual">
-      <a className="manual-skip" href="#manual-content">{bt("매뉴얼 본문으로 건너뛰기", "Skip to manual content")}</a>
+      <a className="manual-skip" data-studio-skip-link="true" href="#manual-content">{bt("매뉴얼 본문으로 건너뛰기", "Skip to manual content")}</a>
       <header className="manual-header manual-no-print">
         <Link className="manual-brand" to={MANUAL_BASE_PATH} onClick={navigateDocument}>
           <span className="manual-brand-icon" aria-hidden="true"><BookOpen size={18} /></span>
