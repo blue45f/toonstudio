@@ -42,31 +42,37 @@ export function StudioHybridDccSelectionMetrics({
           [bt("방향 모서리", "Half-edges"), summary.halfEdgeCount],
           [bt("편집 버전", "Revision"), revision],
         ] as const).map(([term, value]) => (
-          <div key={term} className="rounded-lg bg-raised p-2">
-            <dt className="text-[0.6875rem] text-fg-3">{term}</dt>
-            <dd className="mt-0.5 font-semibold tabular-nums text-fg">{value}</dd>
+          <div key={term} className="rounded-lg border border-line/65 bg-card/85 p-2">
+            <dt className="text-[0.6875rem] text-fg-3 [word-break:keep-all]">{term}</dt>
+            <dd className="mt-0.5 font-semibold tabular-nums text-fg">{value.toLocaleString("ko-KR")}</dd>
           </div>
         ))}
       </dl>
       <div className="rounded-lg border border-line bg-canvas/55 px-2.5 py-2 text-xs">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[0.6875rem] font-semibold text-fg-3">
+          <span className="text-[0.6875rem] font-semibold text-fg-3 [word-break:keep-all]">
             {bt("외형 치수 (가로 × 높이 × 깊이)", "Dimensions (W × H × D)")}
           </span>
-          <span className="font-mono text-[0.6875rem] text-fg-3">
+          <span className="rounded bg-raised px-1.5 py-0.5 font-mono text-[0.65rem] tabular-nums text-fg-2">
             {summary.triangleEstimate.toLocaleString("ko-KR")} tris
           </span>
         </div>
-        <p className="mt-0.5 font-mono text-xs font-semibold tabular-nums text-fg">
+        <p className="mt-1 font-mono text-xs font-semibold tabular-nums text-fg">
           {formatMeters(width)} × {formatMeters(height)} × {formatMeters(depth)}
         </p>
         <p
           className={cn(
-            "mt-1 text-[0.6875rem] font-medium",
-            summary.isWatertight ? "text-good" : "text-warn",
+            "mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold [word-break:keep-all]",
+            summary.isWatertight
+              ? "border-good/35 bg-good/10 text-good"
+              : "border-warn/35 bg-warn/10 text-warn",
           )}
           data-studio-hybrid-dcc-manifold-status={summary.isWatertight ? "watertight" : "open-boundary"}
         >
+          <span
+            aria-hidden="true"
+            className={cn("size-1.5 rounded-full", summary.isWatertight ? "bg-good" : "bg-warn")}
+          />
           {summary.isWatertight
             ? bt("닫힌 매니폴드 · 불리언·GLB·STL 안전", "Watertight manifold · Safe for CSG, GLB & STL")
             : formatI18nTemplate(

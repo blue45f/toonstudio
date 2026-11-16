@@ -1,28 +1,52 @@
+import { Boxes, ChevronDown, Layers, PackageOpen, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import {
+  STUDIO_HYBRID_DCC_MODELING_RECIPES,
+  type StudioHybridDccModelingRecipeId,
+} from "./studio-hybrid-dcc-modifier-workspace";
+import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccStarterPrimitiveKind,
+  type StudioHybridDccStarterPrimitiveSpec,
 } from "./studio-hybrid-dcc-primitives";
 
 const FOCUS_RING =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
+const TILE_PRESS =
+  "transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
+
+const PRIMARY_STARTER_KINDS = new Set<StudioHybridDccStarterPrimitiveKind>([
+  "cube",
+  "bevel-box",
+  "sculpt-sphere",
+  "cylinder",
+]);
+
 export interface StudioHybridDccPrimitiveBarProps {
   readonly busy: boolean;
+  readonly hasActiveAsset?: boolean;
   readonly onAddPrimitive: (kind: StudioHybridDccStarterPrimitiveKind, label: string) => void;
+  readonly onApplyRecipe?: (recipeId: StudioHybridDccModelingRecipeId, label: string) => void;
   readonly onImportFile: (file: File) => void;
 }
 
-/** 8종 기본 도형 생성 팔레트 및 Blender 5.2 CC0 검증 스타터 키트 즉시 불러오기 막대. */
+/**
+ * 단순하고 직관적인 4종 핵심 시작 도형을 첫 화면에 두고,
+ * 건축·유기체 정밀 도형(+8종), 비파괴 프로 마감 레시피(4종), Blender 5.2 플래그십 스타터(8종)는
+ * 점진적 공개(Progressive Disclosure) 서랍으로 분리해 초보자 직관성과 전문가 깊이를 동시에 유지한다.
+ */
 export function StudioHybridDccPrimitiveBar({
   busy,
+  hasActiveAsset = false,
   onAddPrimitive,
+  onApplyRecipe,
   onImportFile,
 }: StudioHybridDccPrimitiveBarProps) {
   const bt = useBilingual("StudioHybridDccPrimitiveBar");
@@ -58,61 +82,144 @@ export function StudioHybridDccPrimitiveBar({
   };
 
   const disabled = busy || fetchingId !== null;
+  const primarySpecs = STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.filter((s) =>
+    PRIMARY_STARTER_KINDS.has(s.kind),
+  );
+  const extendedSpecs = STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.filter(
+    (s) => !PRIMARY_STARTER_KINDS.has(s.kind),
+  );
+
+  const renderPrimitiveButton = (spec: StudioHybridDccStarterPrimitiveSpec) => {
+    const label = bt(spec.label[0], spec.label[1]);
+    return (
+      <button
+        key={spec.kind}
+        type="button"
+        disabled={disabled}
+        data-studio-hybrid-dcc-primitive={spec.kind}
+        onClick={() => onAddPrimitive(spec.kind, `${label} 추가`)}
+        className={cn(
+          "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-2.5 py-1.5 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+          TILE_PRESS,
+          FOCUS_RING,
+        )}
+      >
+        <span className="max-w-full truncate text-xs font-semibold text-fg">{label}</span>
+        <span className="max-w-full truncate text-[0.65rem] text-fg-3">{bt(spec.hint[0], spec.hint[1])}</span>
+      </button>
+    );
+  };
 
   return (
     <section
-      aria-label={bt("빠른 도형·스타터 에셋 추가", "Quick primitives and starter assets")}
+      aria-label={bt("빠른 도형·마감 레시피·스타터 에셋", "Quick primitives, finish recipes & starter assets")}
       data-studio-hybrid-dcc-primitive-bar="true"
       className="rounded-2xl border border-line bg-panel p-2.5"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 pb-2">
-        <span className="text-xs font-semibold text-fg-2">
-          {bt("기본 도형 8종 즉시 추가", "Add starter primitives")}
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2 [word-break:keep-all]">
+          <Boxes size={14} aria-hidden="true" className="shrink-0 text-accent" />
+          {bt("빠른 도형 시작", "Quick shapes")}
         </span>
-        <span className="text-[0.6875rem] text-fg-3">
-          {bt("클릭 즉시 매니폴드 원본 생성 · Ctrl+Z 복원", "1-click manifold mesh · Undo supported")}
+        <span className="rounded-full bg-raised px-2 py-0.5 text-[0.65rem] font-medium text-fg-3">
+          {bt("수밀 솔리드 · Ctrl+Z 복원", "Watertight · Undoable")}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-        {STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.map((spec) => {
-          const label = bt(spec.label[0], spec.label[1]);
-          return (
-            <button
-              key={spec.kind}
-              type="button"
-              disabled={disabled}
-              data-studio-hybrid-dcc-primitive={spec.kind}
-              onClick={() => onAddPrimitive(spec.kind, `${label} 추가`)}
-              className={cn(
-                "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-2.5 py-1.5 text-left transition-colors hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45",
-                FOCUS_RING,
-              )}
-            >
-              <span className="truncate text-xs font-semibold text-fg">{label}</span>
-              <span className="truncate text-[0.65rem] text-fg-3">{bt(spec.hint[0], spec.hint[1])}</span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="grid grid-cols-2 gap-1.5">{primarySpecs.map(renderPrimitiveButton)}</div>
 
       <details className="group mt-2 rounded-xl border border-line/70 bg-canvas/35">
         <summary
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span>
-            {bt(
-              "웹툰 모듈러 스타터 키트 (CC0 · 4종 GLB)",
-              "Webtoon modular starter kit (CC0 · 4 GLBs)",
-            )}
+          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+            <Layers size={14} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-accent" />
+            <span className="truncate">{bt("건축·유기체 정밀 도형 (+8종)", "Architectural & organic (+8)")}</span>
           </span>
-          <span className="text-[0.6875rem] font-normal text-fg-3 group-open:text-accent">
-            {bt("펼쳐서 불러오기", "Browse & import")}
-          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+          />
         </summary>
-        <div className="grid grid-cols-1 gap-2 border-t border-line/60 p-2 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-1.5 border-t border-line/60 p-2">
+          {extendedSpecs.map(renderPrimitiveButton)}
+        </div>
+      </details>
+
+      {onApplyRecipe ? (
+        <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+          <summary
+            className={cn(
+              "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+              FOCUS_RING,
+            )}
+          >
+            <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+              <Sparkles size={14} aria-hidden="true" className="shrink-0 text-accent" />
+              <span className="truncate">{bt("프로 비파괴 마감 레시피 (4종)", "Pro finishes (4)")}</span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 text-[0.65rem] font-normal text-fg-3 group-open:text-accent">
+              {hasActiveAsset ? bt("원클릭", "Ready") : bt("선택 필요", "Select")}
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+              />
+            </span>
+          </summary>
+          <div className="grid grid-cols-2 gap-1.5 border-t border-line/60 p-2">
+            {STUDIO_HYBRID_DCC_MODELING_RECIPES.map((recipe) => {
+              const label = bt(recipe.label[0], recipe.label[1]);
+              return (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  disabled={disabled || !hasActiveAsset}
+                  data-studio-hybrid-dcc-recipe={recipe.id}
+                  onClick={() => onApplyRecipe(recipe.id, `${label} 레시피 적용`)}
+                  className={cn(
+                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-2.5 py-1.5 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+                    TILE_PRESS,
+                    FOCUS_RING,
+                  )}
+                >
+                  <span className="max-w-full truncate text-xs font-semibold text-fg">{label}</span>
+                  <span className="max-w-full truncate text-[0.65rem] text-fg-3">
+                    {bt(recipe.hint[0], recipe.hint[1])}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      ) : null}
+
+      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+        <summary
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+            <PackageOpen size={14} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-accent" />
+            <span className="truncate">
+              {bt(
+                "플래그십 스타터 모델 (CC0 · 8종)",
+                "Flagship starter models (CC0 · 8)",
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V13_KIT.map((item) => {
             const loading = fetchingId === item.id;
             return (
@@ -125,7 +232,8 @@ export function StudioHybridDccPrimitiveBar({
                   void loadBlenderKitAsset(item);
                 }}
                 className={cn(
-                  "flex min-h-11 items-center gap-2.5 rounded-lg border border-line bg-card p-2 text-left transition-colors hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45",
+                  "flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-line bg-card p-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+                  TILE_PRESS,
                   FOCUS_RING,
                 )}
               >
@@ -135,7 +243,7 @@ export function StudioHybridDccPrimitiveBar({
                   loading="lazy"
                   width={40}
                   height={40}
-                  className="size-10 shrink-0 rounded-md border border-line/60 bg-canvas object-cover"
+                  className="size-10 shrink-0 rounded-md bg-canvas object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-semibold text-fg">
@@ -143,7 +251,7 @@ export function StudioHybridDccPrimitiveBar({
                       ? bt("불러오는 중…", "Loading…")
                       : bt(item.label[0], item.label[1])}
                   </span>
-                  <span className="block truncate text-[0.65rem] text-fg-3">
+                  <span className="block truncate text-[0.65rem] tabular-nums text-fg-3">
                     {bt(item.hint[0], item.hint[1])} · {item.triangles.toLocaleString("ko-KR")} tris
                   </span>
                 </span>
@@ -153,7 +261,7 @@ export function StudioHybridDccPrimitiveBar({
         </div>
       </details>
       {fetchError ? (
-        <p role="alert" className="mt-1.5 text-xs text-bad">
+        <p role="alert" className="mt-1.5 text-xs text-bad [word-break:keep-all]">
           {fetchError}
         </p>
       ) : null}

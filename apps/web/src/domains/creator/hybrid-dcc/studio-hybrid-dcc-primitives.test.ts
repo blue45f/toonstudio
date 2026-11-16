@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createStudioUnitCubeMesh,
   hashStudioEditableMesh,
   validateStudioEditableMeshSerializableAuthority,
 } from "../studio-editable-half-edge-mesh";
 
 import { exportStudioHybridDccMeshGlb } from "./studio-hybrid-dcc-glb-export";
+import {
+  STUDIO_HYBRID_DCC_MODELING_RECIPES,
+  workspaceApplyActiveModelingRecipe,
+} from "./studio-hybrid-dcc-modifier-workspace";
 import {
   computeStudioHybridDccMeshQualitySummary,
   createStudioHybridDccStarterPrimitiveMesh,
@@ -13,11 +18,16 @@ import {
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
+import { applyStudioSculptStroke } from "./studio-hybrid-sculpt-kernel";
 import { createStudioHybridDccWorkspace, workspaceUndo } from "./studio-hybrid-dcc-workspace";
 
-describe("studio-hybrid-dcc-primitives", () => {
+describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
+  it("12종 기본·고급 도형이 모두 등록되어 있다", () => {
+    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(12);
+  });
+
   it.each(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.map(({ kind }) => kind))(
-    "기본 도형 %s 메시가 직렬화 권위·표면 계획·GLB 2.0 내보내기를 모두 통과한다",
+    "도형 %s 메시가 직렬화 권위·표면 계획·GLB 2.0 내보내기를 모두 통과한다",
     (kind) => {
       const mesh = createStudioHybridDccStarterPrimitiveMesh(kind);
       const authority = validateStudioEditableMeshSerializableAuthority(mesh);
@@ -49,28 +59,66 @@ describe("studio-hybrid-dcc-primitives", () => {
     },
   );
 
-  it("작업대에 여러 기본 도형을 연속 추가하고 단일 되돌리기로 복원한다", () => {
+  it("작업대에 여러 도형을 연속 추가하고 단일 되돌리기로 복원한다", () => {
     let ws = createStudioHybridDccWorkspace("primitives-doc");
-    ws = workspaceAddStarterPrimitive(ws, "sculpt-sphere");
-    expect(ws.activeAssetId).toBe("asset-sculpt-sphere");
-    ws = workspaceAddStarterPrimitive(ws, "arch");
-    expect(ws.activeAssetId).toBe("asset-arch");
+    ws = workspaceAddStarterPrimitive(ws, "bevel-box");
+    expect(ws.activeAssetId).toBe("asset-bevel-box");
+    ws = workspaceAddStarterPrimitive(ws, "column");
+    expect(ws.activeAssetId).toBe("asset-column");
     expect(Object.keys(ws.session.state.geometry.records)).toEqual([
-      "asset-sculpt-sphere",
-      "asset-arch",
+      "asset-bevel-box",
+      "asset-column",
     ]);
-    expect(ws.session.state.objectTransforms["asset-arch"]?.position[0]).toBeGreaterThan(0);
+    expect(ws.session.state.objectTransforms["asset-column"]?.position[0]).toBeGreaterThan(0);
 
     const undone = workspaceUndo(ws);
-    expect(Object.keys(undone.session.state.geometry.records)).toEqual(["asset-sculpt-sphere"]);
+    expect(Object.keys(undone.session.state.geometry.records)).toEqual(["asset-bevel-box"]);
   });
 
-  it("Blender 5.2 CC0 V13 스타터 키트 4종 메타데이터가 정규 경로를 가리킨다", () => {
-    expect(STUDIO_HYBRID_DCC_BLENDER_V13_KIT).toHaveLength(4);
+  it.each(STUDIO_HYBRID_DCC_MODELING_RECIPES.map(({ id }) => id))(
+    "프로 비파괴 마감 레시피 %s가 미리보기 캐시를 생성하고 단일 되돌리기로 복원된다",
+    async (recipeId) => {
+      let ws = createStudioHybridDccWorkspace(`recipe-${recipeId}`);
+      ws = workspaceAddStarterPrimitive(ws, "cube");
+      const beforeUndoDepth = ws.session.undoStack.length;
+
+      const applied = await workspaceApplyActiveModelingRecipe(ws, recipeId);
+      const record = applied.session.state.geometry.records["asset-cube"];
+      expect(record?.modifierStack.modifiers.length).toBeGreaterThan(0);
+      expect(record?.renderCache).toBeTruthy();
+      expect(applied.session.undoStack.length).toBe(beforeUndoDepth + 1);
+
+      const undone = workspaceUndo(applied);
+      expect(undone.session.state.geometry.records["asset-cube"]?.modifierStack.modifiers).toHaveLength(0);
+    },
+  );
+
+  it("비대칭 삼각분할된 큐브에서도 X 대칭 inflate 조형이 완벽한 좌우 거울 대칭 좌표를 만든다", () => {
+    const cube = createStudioUnitCubeMesh();
+    const res = applyStudioSculptStroke(cube, {
+      kind: "inflate",
+      center: { x: 0.5, y: 0.5, z: 0.5 },
+      radius: 0.35,
+      strength: 0.12,
+      symmetry: { x: true },
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    const posSide = res.mesh.vertices.find((v) => v.position.x > 0.5 && v.position.y > 0.5 && v.position.z > 0.5);
+    const negSide = res.mesh.vertices.find((v) => v.position.x < -0.5 && v.position.y > 0.5 && v.position.z > 0.5);
+    expect(posSide).toBeDefined();
+    expect(negSide).toBeDefined();
+    expect(Math.abs(posSide!.position.x + negSide!.position.x)).toBeLessThan(1e-5);
+    expect(Math.abs(posSide!.position.y - negSide!.position.y)).toBeLessThan(1e-5);
+    expect(Math.abs(posSide!.position.z - negSide!.position.z)).toBeLessThan(1e-5);
+  });
+
+  it("Blender 5.2 CC0 V13 플래그십 스타터 키트 8종 메타데이터가 정규 경로를 가리킨다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V13_KIT).toHaveLength(8);
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V13_KIT) {
       expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-modeler-kit-v13\/.+\.glb$/u);
       expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-modeler-kit-v13\/thumbnails\/.+\.png$/u);
-      expect(item.triangles).toBeGreaterThan(0);
+      expect(item.triangles).toBeGreaterThanOrEqual(2500);
     }
   });
 });

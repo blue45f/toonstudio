@@ -20,6 +20,7 @@ import {
 } from "./studio-hybrid-dcc-component-selection";
 import {
   workspaceAddActiveModifier,
+  workspaceApplyActiveModelingRecipe,
   workspaceApplyActiveModifierStack,
   workspaceMoveActiveModifier,
   workspacePatchActiveModifier,
@@ -581,7 +582,7 @@ export function StudioHybridDccPanel({
   return (
     <section
       ref={sculptScopeRef}
-      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-canvas/35 px-3 pb-6 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-8 sm:pt-3"
+      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain bg-canvas/35 px-3 pb-6 pt-2 text-sm [&>*]:shrink-0 sm:px-4 sm:pb-8 sm:pt-3"
       data-studio-hybrid-dcc-panel="true"
       data-workbench-mode={workbenchMode}
       aria-label={bt("정밀 3D 모델링 작업 공간", "Precision 3D modeling workspace")}
@@ -715,12 +716,10 @@ export function StudioHybridDccPanel({
           {workbenchMode !== "material" && workbenchMode !== "shot" ? (
             <StudioHybridDccPrimitiveBar
               busy={busy}
-              onAddPrimitive={(kind, label) => {
-                void run(label, () => workspaceAddStarterPrimitive(ws, kind));
-              }}
-              onImportFile={(file) => {
-                void modelImport.open(file);
-              }}
+              hasActiveAsset={hasActiveAsset}
+              onAddPrimitive={(kind, label) => { void run(label, () => workspaceAddStarterPrimitive(ws, kind)); }}
+              onApplyRecipe={(id, label) => runModifier(label, () => workspaceApplyActiveModelingRecipe(ws, id))}
+              onImportFile={(file) => { void modelImport.open(file); }}
             />
           ) : null}
           <section
@@ -901,7 +900,7 @@ export function StudioHybridDccPanel({
             <h3 className="text-xs font-semibold text-fg-2">{bt("장면 오브젝트", "Scene objects")}</h3>
             <span className="text-[0.6875rem] tabular-nums text-fg-3">{authorityRecords.length}</span>
           </div>
-          <div className={cn("space-y-1 xl:overflow-y-auto", introVisible ? "xl:max-h-44" : "xl:max-h-[31rem]")}>
+          <div className={cn("space-y-1 overscroll-contain xl:overflow-y-auto", introVisible ? "xl:max-h-44" : "xl:max-h-[31rem]")}>
             {authorityRecords.length > 0 ? authorityRecords.map((record, recordIndex) => {
               const selected = record.assetId === ws.activeAssetId;
               const sharedObject = ws.bridge.set.objects.find(({ id }) => id === record.assetId);
@@ -1007,7 +1006,7 @@ export function StudioHybridDccPanel({
 
       <StudioHybridDccExpertTools groups={expertToolGroups} busy={busy} hasActiveAsset={hasActiveAsset} />
 
-      <footer className="sticky bottom-0 z-10 min-w-0 rounded-xl border border-line bg-panel/95 px-3 py-2 shadow-lg backdrop-blur [overflow-wrap:anywhere]">
+      <footer className="sticky bottom-0 z-10 min-w-0 rounded-xl border border-line bg-panel/95 px-3 py-2 shadow-lg backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] [overflow-wrap:anywhere]">
         <p className="min-w-0 break-words text-xs text-fg [overflow-wrap:anywhere]" data-studio-hybrid-dcc-log="true" aria-live="polite">
           {busy ? bt("작업 처리 중… ", "Working… ") : ""}{log}
         </p>

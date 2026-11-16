@@ -185,10 +185,14 @@ const RAW_BLENDER_HERO_V12_ROWS: readonly RawAssetRow[] = [
 ];
 
 const RAW_BLENDER_MODELER_KIT_V13_ROWS: readonly RawAssetRow[] = [
-  ["webtoon-sculpt-head-basemesh-v13", "웹툰 캐릭터 두상·목 조형 베이스메시 (V13)", "Webtoon Sculpt Head & Neck Basemesh V13"],
-  ["webtoon-modular-arch-window-v13", "유럽풍 석조 아치 창문 벽 모듈 (V13)", "Modular Stone Arch Window Wall V13"],
-  ["webtoon-spiral-stair-core-v13", "탑·복층 원형 나선 계단 코어 (V13)", "Spiral Stair Core Module V13"],
-  ["webtoon-street-bench-lamp-v13", "학원물 거리 원목 벤치·가로등 세트 (V13)", "Street Wooden Bench & Lamp Set V13"],
+  ["webtoon-sculpt-head-basemesh-v13", "웹툰 캐릭터 두상·흉상 조형 베이스메시 (V13)", "Webtoon Sculpt Head & Bust Basemesh V13"],
+  ["webtoon-modular-arch-window-v13", "아카데미·로판 고딕 아치 석조 창호 모듈 (V13)", "Modular Gothic Stone Arch Window V13"],
+  ["webtoon-spiral-stair-core-v13", "모듈러 나선형 계단·황동 난간 코어 (V13)", "Spiral Stair & Brass Handrail Core V13"],
+  ["webtoon-street-bench-lamp-v13", "유럽풍 거리 원목 벤치·빅토리안 가로등 세트 (V13)", "Street Teak Bench & Victorian Lamp V13"],
+  ["webtoon-ornate-clocktower-gear-core-v13", "오르골·시계탑 정밀 기어 아스트롤라베 코어 (V13)", "Ornate Clocktower Gear & Astrolabe Core V13"],
+  ["webtoon-hanok-paljak-pavilion-bay-v13", "전통 한옥 배흘림기둥·처마 정자 모듈 (V13)", "Traditional Hanok Paljak Pavilion Bay V13"],
+  ["webtoon-creator-ergonomic-chair-desk-v13", "웹툰 작가 모션데스크·인체공학 체어 세트 (V13)", "Creator Motion Desk & Ergonomic Chair V13"],
+  ["webtoon-fantasy-potion-apothecary-cabinet-v13", "판타지 연금술 포션 진열장·약재함 (V13)", "Fantasy Potion Apothecary Cabinet V13"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));

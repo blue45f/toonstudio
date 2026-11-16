@@ -150,7 +150,7 @@ export function StudioBg3dArchitecturalModelingPanel({
                 depth: preset.depth,
               }));
             }}
-            className="min-h-11 rounded-full border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45"
+            className="min-h-11 rounded-full border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 hover:border-accent/50 hover:bg-raised hover:text-fg enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45 [word-break:keep-all]"
           >
             {preset.labelKo}
           </button>
@@ -160,7 +160,7 @@ export function StudioBg3dArchitecturalModelingPanel({
         {COMPONENT_OPTIONS.map((option) => (
           <button key={option.id} type="button" disabled={disabled} aria-pressed={kind === option.id}
             data-testid={`spatial-modeler-arch-kind-${option.id}`} onClick={() => setKind(option.id)}
-            className={`min-h-11 rounded-lg border px-2 py-1.5 text-left text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${kind === option.id ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-panel text-fg-2"}`}>
+            className={`min-h-11 rounded-lg border px-2 py-1.5 text-left text-xs transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent [word-break:keep-all] ${kind === option.id ? "border-accent bg-accent/15 font-bold text-accent" : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg"}`}>
             {t(`studio.bg3d.architecture.kind.${option.id}`, option.labelKo)}
           </button>
         ))}

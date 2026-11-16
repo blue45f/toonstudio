@@ -30,7 +30,7 @@ export function StudioHybridDccModeTabs({ mode, onChange }: StudioHybridDccModeT
       className="min-w-0 max-w-full flex-1"
       data-studio-hybrid-dcc-mode-tabs="true"
     >
-      <div className="flex snap-x gap-1 overflow-x-auto rounded-xl border border-line bg-panel p-1 [scrollbar-width:thin]">
+      <div className="flex snap-x gap-1 overflow-x-auto overscroll-contain rounded-xl border border-line bg-panel p-1 [scrollbar-width:thin]">
         {WORKBENCH_MODES.map((spec) => {
           const Icon = spec.icon;
           const active = spec.id === mode;
@@ -42,7 +42,7 @@ export function StudioHybridDccModeTabs({ mode, onChange }: StudioHybridDccModeT
               data-studio-hybrid-dcc-mode={spec.id}
               onClick={() => onChange(spec.id)}
               className={cn(
-                "flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-colors motion-reduce:transition-none",
+                "flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-[background-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
                 active
                   ? "bg-accent text-on-accent shadow-sm"
                   : "text-fg-2 hover:bg-raised hover:text-fg",
@@ -101,10 +101,10 @@ function ToolTile({
       onClick={tool.onClick}
       data-studio-hybrid-dcc-tool={tool.technical}
       className={cn(
-        "flex min-h-[4.75rem] min-w-0 flex-col items-start gap-1 rounded-xl border p-2.5 text-left transition-colors motion-reduce:transition-none",
+        "flex min-h-[4.75rem] min-w-0 flex-col items-start gap-1 rounded-xl border p-2.5 text-left transition-[background-color,border-color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
         "disabled:cursor-not-allowed disabled:opacity-55",
         tool.primary
-          ? "border-accent/55 bg-accent-soft hover:bg-accent/15"
+          ? "border-accent/55 bg-accent-soft shadow-sm hover:bg-accent/15"
           : "border-line bg-card hover:border-accent/40 hover:bg-raised",
         FOCUS_RING,
       )}

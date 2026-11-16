@@ -10,7 +10,7 @@ import type { StudioHybridDccSculptStrokeModel } from "./useStudioHybridDccSculp
 const BRUSHES = ["grab", "smooth", "inflate", "clay", "crease", "flatten", "scrape", "snakeHook"] as const;
 const RADIUS_PRESETS = ["0.2", "0.45", "0.8"] as const;
 const STRENGTH_PRESETS = ["0.1", "0.2", "0.45"] as const;
-const BUTTON = "min-h-11 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40";
+const BUTTON = "min-h-11 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 [word-break:keep-all]";
 
 export interface StudioHybridDccSculptToolsProps {
   readonly model: StudioHybridDccSculptStrokeModel;
@@ -141,7 +141,7 @@ export function StudioHybridDccSculptTools({
     </div>
     <div role="group" aria-label={bt("대칭 조형 축", "Mirror symmetry axes")}
       className="flex flex-wrap items-center gap-1.5 rounded-xl border border-line/70 bg-canvas/35 p-2">
-      <span className="px-1 text-xs font-semibold text-fg-2">
+      <span className="px-1 text-xs font-semibold text-fg-2 [word-break:keep-all]">
         {bt("미러 대칭", "Mirror symmetry")}
       </span>
       {(["x", "y", "z"] as const).map((axis) => {
@@ -167,6 +167,9 @@ export function StudioHybridDccSculptTools({
           </button>
         );
       })}
+      <span className="ml-auto rounded-full bg-raised px-2 py-0.5 font-mono text-[0.65rem] text-fg-3">
+        {(["x", "y", "z"] as const).filter((axis) => model.symmetry[axis]).map((axis) => axis.toUpperCase()).join("·") || bt("꺼짐", "Off")}
+      </span>
     </div>
     <p className="text-xs text-fg-2">{bt("원본 메시에서 조형합니다. 드래그 한 번을 되돌리기 한 번으로 복원하며 Esc로 취소합니다.", "Sculpt the source mesh. One undo restores a drag; Esc cancels it.")}</p>
     {model.engaged ? <button type="button" onClick={model.cancel} className={cn(BUTTON, "border-line bg-card text-fg-2 hover:bg-raised")}>
