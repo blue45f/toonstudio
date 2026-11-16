@@ -19,15 +19,15 @@ export const PREVIEW_TAB_LABELS: Readonly<Record<StudioLift3dPreviewTab, string>
 
 export const PRIMARY_BUTTON_CLASS =
   "inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-5 text-sm " +
-  "font-semibold text-on-accent transition-colors hover:bg-accent/90 disabled:cursor-not-allowed " +
+  "font-semibold text-on-accent shadow-sm transition-[background-color,transform] duration-150 hover:bg-accent/90 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none disabled:cursor-not-allowed " +
   "disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-accent";
+  "focus-visible:outline-accent [word-break:keep-all]";
 export const SECONDARY_BUTTON_CLASS =
-  "inline-flex min-h-11 items-center justify-center rounded-lg border border-line px-4 text-sm " +
-  "font-semibold text-fg-2 transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed " +
+  "inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-card/65 px-4 text-sm " +
+  "font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 hover:border-accent/40 hover:bg-raised hover:text-fg enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none disabled:cursor-not-allowed " +
   "disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-accent";
-export const FIELD_LABEL_CLASS = "flex items-center justify-between text-xs font-semibold text-fg-2";
+  "focus-visible:outline-accent [word-break:keep-all]";
+export const FIELD_LABEL_CLASS = "flex items-center justify-between text-xs font-semibold text-fg-2 tabular-nums [word-break:keep-all]";
 
 /**
  * 배경 3D 편집기의 업로드 패널과 같은 문구.

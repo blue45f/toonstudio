@@ -147,6 +147,20 @@
 - **설계**:
   - `apps/character-lab/AGENTS.md` 경계 규칙을 엄수하면서 `character-lab.css` 내 인터랙티브 요소(`summary`, `select`, `input[type="number"]`, `input[type="range"]`, `.cl-button-small`)의 최소 높이를 `44px`로 정렬하고, 모바일 뷰포트 상단 도구바에 가로 스크롤(`overflow-x: auto`)을 허용해 클리핑을 해소한다.
 
+### WS8. 점진적 공개(Progressive Disclosure) 기반 고품질 12종 도형·프로 마감 레시피·플래그십 V13 8종 확장 및 CodeQL 전건 패치
+
+- **핵심 UX 원칙 (`단순하면서 사용하기 쉽고 직관적이지만 전문성은 유지`)**:
+  - 첫 화면에는 가장 자주 쓰는 **4종 핵심 수밀 도형(`큐브`, `챔퍼 박스`, `조형 구체`, `원기둥`)**만 간결한 `2×2` 격자로 노출해 시선 분산을 막고 핵심 편집 도구(`돌출`, `베벨`, `루프 컷`, `브러시`)를 상단에 유지한다.
+  - 전문 모델링 기능은 1클릭 `<details>` 점진적 공개 서랍 3단으로 체계화한다:
+    1. **건축·유기체 정밀 도형 (+8종)**: `캡슐`, `플루티드 기둥`(주초·12골 배흘림·주두 일체형), `아치 블록`, `직선 계단`(무 T-정점 순수 쿼드 5단 계단), `UV 구체`, `원뿔`, `토러스`, `분할 평면` — 총 12종 매니폴드 도형 완비.
+    2. **프로 비파괴 마감 레시피 (4종)**: 선택 오브젝트에 단일 Undo 단계로 적용되는 `하드서피스 챔퍼`(`weld + bevel`), `유기체 섭디비전`(`subdivision lv.2`), `X 대칭 모델링`(`mirror X + bisect + clip`), `원형 배열 ×6`(`radial array ×6`).
+    3. **플래그십 스타터 모델 (CC0 · 8종 GLB)**: 서브서프 두상·흉상, 고딕 로제트 아치 창호, 12단 나선 계단, 빅토리안 가로등·벤치에 더해 **오르골·시계탑 인볼류트 기어 코어**, **전통 한옥 배흘림기둥·처마 정자**, **웹툰 작가 모션데스크·인체공학 체어**, **판타지 연금술 포션 진열장·약재함**까지 총 8종(`2,876~8,620` tris, `glbforge` `desktop-hero@1` & `mobile-hero@1` 전원 `100/100`)으로 고도화하고 `3D 배경` 필수 카탈로그를 총 `127`종으로 확장한다.
+  - **비대칭 삼각분할 메시 대칭 조형 보정**: `studio-hybrid-sculpt-kernel.ts`에서 `inflate`/`clay`/`crease` 대칭 조형 시 주축 측 대응 정점 법선을 거울 반사해 사각면 대각선 분할 방향 차이에 따른 미세 비대칭을 제거한다.
+  - **GitHub Code Scanning(CodeQL) 열린 경고 4건 전수 해소**:
+    - `#228` (`js/clear-text-logging`): `scripts/lib/deploy-auth-env.mjs`의 환경변수 이름 상수 식별자 오탐 원인 제거 및 `scripts/setup-deploy-auth.mjs` 출력 메시지 민감정보 마스킹(`redactSensitiveText`) 강제.
+    - `#223`, `#224` (`js/xss-through-dom`): `docs/design/sitewide-ux-atlas-20261113.html`의 `innerHTML`/`insertAdjacentHTML` 구간을 순수 DOM 노드(`createElement` + `textContent`, `new Option`)로 교체.
+    - `#222` (`js/xss-through-dom`): `docs/design/sitewide-clarity-20261111/comparison/index.html` 내 미이스케이프 템플릿 보간값을 `esc(...)`로 전수 이스케이프하고 검증 해시 원장을 갱신.
+
 ---
 
 ## 4. 검증 및 병합 게이트 계획

@@ -10,46 +10,86 @@
   "externalSources": [],
   "files": [
     {
+      "file": "webtoon-creator-ergonomic-chair-desk-v13.glb",
+      "bytes": 115056,
+      "sha256": "5fac729377fca4089a01dd4d83277377b1aae16851667f2992f8a043c25c8756"
+    },
+    {
+      "file": "webtoon-fantasy-potion-apothecary-cabinet-v13.glb",
+      "bytes": 174300,
+      "sha256": "50fdb54f9b9faa7c556ba77e00e962f11764fda8a3b6dccc2b28f14edb3ee1bf"
+    },
+    {
+      "file": "webtoon-hanok-paljak-pavilion-bay-v13.glb",
+      "bytes": 277752,
+      "sha256": "06774d727ce701e28e660d66a99809e6959f1a9e8c3941a34df37d3a3ae552a4"
+    },
+    {
       "file": "webtoon-modular-arch-window-v13.glb",
-      "bytes": 74572,
-      "sha256": "1f0441bc1d69a16166ccc91810256c3bc18e83b6d42e7fedf44b89b712323210"
+      "bytes": 170412,
+      "sha256": "658ec3d49e93436f657a41a52564a8b93aa16c4407f214af35d82cc88ecfb094"
+    },
+    {
+      "file": "webtoon-ornate-clocktower-gear-core-v13.glb",
+      "bytes": 256616,
+      "sha256": "054e67dcb850490fd2434bee87781fff37b95943af4c0d7d19da73d4b98e36b7"
     },
     {
       "file": "webtoon-sculpt-head-basemesh-v13.glb",
-      "bytes": 57548,
-      "sha256": "9e9f8491ee11f11ebbdd1a7f0c2515bdda2464f197189cc6774f0e7947d4540e"
+      "bytes": 206384,
+      "sha256": "4f8df5224037fc1c0d316dfa62ee26ac7eb667182378becce59c2fa2258d5807"
     },
     {
       "file": "webtoon-spiral-stair-core-v13.glb",
-      "bytes": 86000,
-      "sha256": "d52ee0d8143ad9d5a6dc3d576038612e00c272ffcc2e5f1e06ef79708a9223a4"
+      "bytes": 316984,
+      "sha256": "338bee8ae1a7370bd86d083184b1bb6f9d0b661850ca15d4c982aa1df31b8b06"
     },
     {
       "file": "webtoon-street-bench-lamp-v13.glb",
-      "bytes": 58316,
-      "sha256": "1472b7b57f9c3f9998894aabe954dbeff5982439215e9a1929157516a6d209d3"
+      "bytes": 177092,
+      "sha256": "4d20554d4666353c5ebc03c32e4dc8cd3ba79cd75ccb958d729d6eb9426b2870"
     }
   ],
   "thumbnails": [
     {
+      "file": "thumbnails/webtoon-creator-ergonomic-chair-desk-v13.png",
+      "bytes": 38342,
+      "sha256": "92c668e1dbc88dc57336fee73ddcdf380dbb18c4e8edfdec34b43fc98c268af8"
+    },
+    {
+      "file": "thumbnails/webtoon-fantasy-potion-apothecary-cabinet-v13.png",
+      "bytes": 39642,
+      "sha256": "97628c9ddcf8bac87a0669e6cef826da02feb1d095412623a8177251f86e00a8"
+    },
+    {
+      "file": "thumbnails/webtoon-hanok-paljak-pavilion-bay-v13.png",
+      "bytes": 63576,
+      "sha256": "0d040100c6261cffc2eb7db782301851925bd1462375adf8d20865a3a7f47da2"
+    },
+    {
       "file": "thumbnails/webtoon-modular-arch-window-v13.png",
-      "bytes": 17587,
-      "sha256": "ff1f909411720b94add925c0637e0dccde9935749646d6ceb2c6c2ec59181216"
+      "bytes": 55104,
+      "sha256": "0c3d15dc76be57713ce4775e1fe52080d81678e538455e49987d9bbef9abc923"
+    },
+    {
+      "file": "thumbnails/webtoon-ornate-clocktower-gear-core-v13.png",
+      "bytes": 86484,
+      "sha256": "f5018de197e0f3027307374f67bbc0e5842d6fb81f4368e68e8ce2026d691c1f"
     },
     {
       "file": "thumbnails/webtoon-sculpt-head-basemesh-v13.png",
-      "bytes": 66604,
-      "sha256": "443ad863d3b94201aac70a35673cf946931ca713112932bfe506dec3d4619230"
+      "bytes": 65010,
+      "sha256": "921d4e3829d8f40ff239245e7d58681ba658e7c119cc0ede07bb8119f29a9374"
     },
     {
       "file": "thumbnails/webtoon-spiral-stair-core-v13.png",
-      "bytes": 43622,
-      "sha256": "f178a10abd54a91da1c3d4775ab5b607544063bf669f390f6539d503503a2ac7"
+      "bytes": 47968,
+      "sha256": "749329627864326e0a5a1ba6e481f180ef326f5a0b342b9b1a7ad3182fe343d5"
     },
     {
       "file": "thumbnails/webtoon-street-bench-lamp-v13.png",
-      "bytes": 27001,
-      "sha256": "496c6353d2528422a817d7044b16871e61aa588837ede3f62d5da1155c8a83e2"
+      "bytes": 35493,
+      "sha256": "c07d0aa93ef59a2abbf163a8c07fee594241099b38b5660469ac2627c664c09d"
     }
   ]
 }

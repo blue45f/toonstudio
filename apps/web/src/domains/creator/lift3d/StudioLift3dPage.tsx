@@ -353,7 +353,7 @@ export function StudioLift3dPage({ initialSubject = null }: StudioLift3dPageProp
   return (
     <section
       aria-labelledby="studio-lift3d-title"
-      className="min-h-dvh bg-bg px-4 py-8 text-fg sm:px-6 lg:px-8"
+      className="min-h-dvh bg-canvas px-4 py-8 text-fg sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-wrap items-end justify-between gap-4">

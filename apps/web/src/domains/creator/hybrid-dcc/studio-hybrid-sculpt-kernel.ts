@@ -180,6 +180,14 @@ export function applyStudioSculptStroke(
     mirrorSigns = mirrorSigns.flatMap(([sx, sy, sz]) => [[sx, sy, sz], [sx, sy, -sz as 1 | -1]]);
   }
   const sourcePositions = mirrorSigns.length > 1 ? soup.positions : positions;
+  let primarySpatialMap: Map<string, number> | undefined;
+  if (usesVertexNormals && mirrorSigns.length > 1) {
+    primarySpatialMap = new Map<string, number>();
+    for (let k = 0; k < n; k += 1) {
+      const qk = `${Math.round(sourcePositions[k * 3]! * 10_000)}|${Math.round(sourcePositions[k * 3 + 1]! * 10_000)}|${Math.round(sourcePositions[k * 3 + 2]! * 10_000)}`;
+      if (!primarySpatialMap.has(qk)) primarySpatialMap.set(qk, k);
+    }
+  }
 
   for (const [signX, signY, signZ] of mirrorSigns) {
     const dabCx = cx * signX;
@@ -188,6 +196,7 @@ export function applyStudioSculptStroke(
     const dabDirX = (dir.x * signX) / dl;
     const dabDirY = (dir.y * signY) / dl;
     const dabDirZ = (dir.z * signZ) / dl;
+    const isMirroredDab = signX !== 1 || signY !== 1 || signZ !== 1;
 
     for (let i = 0; i < n; i += 1) {
       const m = mask ? (mask[i] ?? 1) : 1;
@@ -206,9 +215,18 @@ export function applyStudioSculptStroke(
         positions[i * 3 + 1] = y + dabDirY * w;
         positions[i * 3 + 2] = z + dabDirZ * w;
       } else if (usesVertexNormals) {
-        const normalX = vertexNormals?.[i * 3];
-        const normalY = vertexNormals?.[i * 3 + 1];
-        const normalZ = vertexNormals?.[i * 3 + 2];
+        let normalX = vertexNormals?.[i * 3];
+        let normalY = vertexNormals?.[i * 3 + 1];
+        let normalZ = vertexNormals?.[i * 3 + 2];
+        if (isMirroredDab && primarySpatialMap && vertexNormals) {
+          const pk = `${Math.round(sx * signX * 10_000)}|${Math.round(sy * signY * 10_000)}|${Math.round(sz * signZ * 10_000)}`;
+          const srcIdx = primarySpatialMap.get(pk);
+          if (srcIdx !== undefined) {
+            normalX = vertexNormals[srcIdx * 3]! * signX;
+            normalY = vertexNormals[srcIdx * 3 + 1]! * signY;
+            normalZ = vertexNormals[srcIdx * 3 + 2]! * signZ;
+          }
+        }
         if (normalX === undefined || normalY === undefined || normalZ === undefined) {
           return { ok: false, detail: "조형 정점 법선의 원본 대응을 확인할 수 없습니다." };
         }

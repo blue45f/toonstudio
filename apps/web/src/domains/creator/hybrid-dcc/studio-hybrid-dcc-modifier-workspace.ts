@@ -647,3 +647,119 @@ export function workspaceRedoWithModifierPreviews(
 ): Promise<StudioHybridDccWorkspace> {
   return workspaceRefreshModifierPreviews(workspaceRedo(workspace));
 }
+
+export type StudioHybridDccModelingRecipeId =
+  | "hard-surface-chamfer"
+  | "organic-subsurf"
+  | "mirror-x-symmetry"
+  | "radial-array-6";
+
+export interface StudioHybridDccModelingRecipeSpec {
+  readonly id: StudioHybridDccModelingRecipeId;
+  readonly label: readonly [ko: string, en: string];
+  readonly hint: readonly [ko: string, en: string];
+}
+
+export const STUDIO_HYBRID_DCC_MODELING_RECIPES: readonly StudioHybridDccModelingRecipeSpec[] =
+  Object.freeze([
+    {
+      id: "hard-surface-chamfer",
+      label: ["하드서피스 챔퍼", "Hard chamfer"],
+      hint: ["병합 + 모서리 베벨 마감", "Weld + sharp edge bevel"],
+    },
+    {
+      id: "organic-subsurf",
+      label: ["유기체 섭디비전", "Organic subsurf"],
+      hint: ["2단계 부드러운 곡면 분할", "Level-2 smooth subdivision"],
+    },
+    {
+      id: "mirror-x-symmetry",
+      label: ["X 대칭 모델링", "X symmetry"],
+      hint: ["좌우 자동 이등분·병합 대칭", "X mirror + bisect + clip"],
+    },
+    {
+      id: "radial-array-6",
+      label: ["원형 배열 ×6", "Radial ×6"],
+      hint: ["기둥·톱니·장식 6각 원형 배치", "6-fold circular array"],
+    },
+  ]);
+
+/** 선택된 오브젝트에 검증된 비파괴 고품질 모델링 마감 레시피를 단일 Undo 단계로 적용한다. */
+export async function workspaceApplyActiveModelingRecipe(
+  workspace: StudioHybridDccWorkspace,
+  recipeId: StudioHybridDccModelingRecipeId,
+): Promise<StudioHybridDccWorkspace> {
+  const record = activeRecord(workspace);
+  let workingStack = record.modifierStack;
+  const appendNext = (mod: StudioMeshModifier): StudioMeshModifier => {
+    workingStack = { ...workingStack, modifiers: [...workingStack.modifiers, mod] };
+    return mod;
+  };
+  const added: StudioMeshModifier[] = [];
+  switch (recipeId) {
+    case "hard-surface-chamfer": {
+      const weldId = nextModifierId(workingStack, "weld");
+      added.push(appendNext({ kind: "weld", id: weldId, enabled: true, quantum: 0.0001 }));
+      const bevelId = nextModifierId(workingStack, "bevel");
+      added.push(
+        appendNext({
+          kind: "bevel",
+          id: bevelId,
+          enabled: true,
+          amount: 0.045,
+          segments: 1,
+          angleLimitRad: Math.PI / 3,
+          weightInfluence: 0,
+        }),
+      );
+      break;
+    }
+    case "organic-subsurf": {
+      const subId = nextModifierId(workingStack, "subdivision");
+      added.push(
+        appendNext({
+          kind: "subdivision",
+          id: subId,
+          enabled: true,
+          levels: 2,
+          smooth: true,
+        }),
+      );
+      break;
+    }
+    case "mirror-x-symmetry": {
+      const mirrorId = nextModifierId(workingStack, "mirror");
+      added.push(
+        appendNext({
+          kind: "mirror",
+          id: mirrorId,
+          enabled: true,
+          axis: "x",
+          merge: true,
+          mergeThreshold: 0.001,
+          bisect: true,
+          clip: true,
+        }),
+      );
+      break;
+    }
+    case "radial-array-6": {
+      const arrayId = nextModifierId(workingStack, "array");
+      added.push(
+        appendNext({
+          kind: "array",
+          id: arrayId,
+          enabled: true,
+          count: 6,
+          offset: { x: 0.9, y: 0, z: 0 },
+          mode: "radial",
+          radialAngleRad: Math.PI * 2,
+          realizeInstances: true,
+          useConstantOffset: true,
+        }),
+      );
+      break;
+    }
+  }
+  return commitPreviewStack(workspace, [...record.modifierStack.modifiers, ...added]);
+}
