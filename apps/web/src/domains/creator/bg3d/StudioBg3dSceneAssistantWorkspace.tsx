@@ -626,10 +626,13 @@ export function StudioBg3dSceneAssistantWorkspace({
       setSheetState("half");
       return;
     }
-    if (restoringScene || hydratedRef.current) return;
+    if (restoringScene || readinessPhase !== "ready" || hydratedRef.current) return;
     hydratedRef.current = true;
     if (hasScene) setStep("arrange");
-  }, [hasScene, modalOpen, restoringScene]);
+    if (h.lineArtPreview) {
+      setOutputStyle(h.ltToneSettings?.enabled ? "tone" : "line");
+    }
+  }, [h.lineArtPreview, h.ltToneSettings?.enabled, hasScene, modalOpen, readinessPhase, restoringScene]);
   const assistantAssets = ((h.modelLibrary ?? []) as readonly AssistantAsset[])
     .filter((entry) => classifyAssistantAsset(entry, h.genericModelClassifications) === goal)
     .slice(0, 8);

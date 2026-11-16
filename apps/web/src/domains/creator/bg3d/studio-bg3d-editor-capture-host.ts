@@ -6,6 +6,7 @@
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import { createStudioBg3dCaptureDocumentEnvironmentFingerprint } from "./studio-bg3d-capture-document-environment";
 import { assertStudioBg3dCaptureEnvironmentCurrent } from "./studio-bg3d-capture-environment-receipt";
+import { persistStudioBg3dUnappliedDraftFromHost } from "./studio-bg3d-draft-session";
 import type { CaptureState, StudioBg3dCaptureAdapter, StudioBg3dSceneDocument } from "./studio-bg3d-editor-runtime-bindings";
 import { translateBilingualPair } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -371,6 +372,7 @@ export function attachStudioBg3dEditorCaptureHost(h: Record<string, any>) {
     }
     if (measurementActiveRef.current) cancelMeasurement();
     cancelSurfaceSnap();
+    persistStudioBg3dUnappliedDraftFromHost(h);
     webXrCloseRequestedRef.current = true;
     disposeCurrentWebXrControllerGeneration();
     invalidateModalAssetSession();

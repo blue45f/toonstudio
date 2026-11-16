@@ -10,6 +10,7 @@ import type { StudioBackground3DInsertResult, StudioBg3dLtRenderSettings, Studio
 import { bakeStudioBg3dTagVisibilityIntoDocument } from "./studio-bg3d-hierarchy";
 import { resolveStudioBg3dInsertQualityPlan } from "./studio-bg3d-insert-quality-policy";
 import { studioBg3dLineNeedsDepth } from "./studio-bg3d-line-output-rules";
+import { clearStudioBg3dUnappliedDraft } from "./studio-bg3d-draft-session";
 
 export function attachStudioBg3dEditorInsertHost(h: Record<string, any>) {
   const {
@@ -716,6 +717,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         setLineArtPreview(previousLineArtPreview);
         setIsCapturing(false);
       }
+      clearStudioBg3dUnappliedDraft(sharedStageSessionScopeKey);
       invalidateModalAssetSession();
       onClose();
     } catch (insertFailure) {

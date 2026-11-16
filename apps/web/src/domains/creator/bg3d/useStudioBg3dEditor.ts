@@ -34,6 +34,7 @@ import {
 } from "./studio-bg3d-organization-mutation";
 import { buildStudioBg3dOrganizationView } from "./studio-bg3d-scene-organization";
 import { collectStudioBg3dSkpSources } from "./studio-bg3d-skp-sidecar";
+import { resolveStudioBg3dPropsWithUnappliedDraft } from "./studio-bg3d-draft-session";
 
 import type { StudioBg3dOutlinerMutationAction } from "./studio-bg3d-outliner-mutation";
 
@@ -45,7 +46,39 @@ export function useStudioBg3dEditor(props: Record<string, any>) {
     duplicatePrimitive,
     planStudioBg3dSceneEntityRemoval,
   } = R;
-  const h = useStudioBg3dEditorState(props);
+  const draftSessionLatchRef = R.useRef<{
+    openKey: string | null;
+    resolution: ReturnType<typeof resolveStudioBg3dPropsWithUnappliedDraft>;
+  }>({ openKey: null, resolution: resolveStudioBg3dPropsWithUnappliedDraft(props) });
+  const currentDraftOpenKey = props.open
+    ? `${String(props.sharedStageSessionScopeKey ?? "")}:${String(props.operation ?? "insert")}`
+    : null;
+  if (draftSessionLatchRef.current.openKey !== currentDraftOpenKey) {
+    draftSessionLatchRef.current = {
+      openKey: currentDraftOpenKey,
+      resolution: props.open
+        ? resolveStudioBg3dPropsWithUnappliedDraft(props)
+        : { effectiveProps: props, unappliedDraftEligible: false, restoredDraft: null },
+    };
+  }
+  const { unappliedDraftEligible, restoredDraft } = draftSessionLatchRef.current.resolution;
+  const effectiveEditorProps = props.open && restoredDraft
+    ? { ...props, initialScene: restoredDraft.document }
+    : props;
+  const h = useStudioBg3dEditorState(effectiveEditorProps);
+  h.unappliedDraftEligible = unappliedDraftEligible;
+  const appliedDraftPreviewKeyRef = R.useRef<string | null>(null);
+  R.useEffect(() => {
+    if (!props.open) {
+      appliedDraftPreviewKeyRef.current = null;
+      return;
+    }
+    if (appliedDraftPreviewKeyRef.current === currentDraftOpenKey) return;
+    appliedDraftPreviewKeyRef.current = currentDraftOpenKey;
+    if (restoredDraft?.lineArtPreview) {
+      h.setLineArtPreview(true);
+    }
+  }, [currentDraftOpenKey, h, props.open, restoredDraft]);
   h.sixPassLtUnavailableReason = studioBg3dSixPassUnavailableReason(props.sixPassLtUnavailableReason, Boolean(h.captureRef.current?.adapter?.sixPassProfile));
   h.sixPassLtInsertUnavailableReason = h.sceneBaseDocument.output.sixPassLt ? h.sixPassLtUnavailableReason : null;
   bindStudioBg3dEditorViewModel(h);
