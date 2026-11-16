@@ -13,7 +13,7 @@ function fixture() {
   const scene = new THREE.Scene();
   const requests: { readonly url: string; readonly task: ReturnType<typeof deferred<THREE.Texture>> }[] = [];
   const newOutput = () => {
-    const target = new THREE.WebGLRenderTarget(32, 16, { depthBuffer: false });
+    const target = new THREE.WebGLCubeRenderTarget(32, { depthBuffer: false });
     return { target, targetDispose: vi.spyOn(target, "dispose"), dispose: vi.fn(), compile: vi.fn() };
   };
   const generators: ReturnType<typeof newOutput>[] = [];
@@ -131,7 +131,7 @@ describe("HDRI RenderTarget 소유권과 공유 준비", () => {
   });
 
   it("PMREM output 생성 도중 dispose돼도 새 target과 임시 자원을 각각 한 번 해제한다", async () => {
-    const f = fixture(), target = new THREE.WebGLRenderTarget(32, 16), outputDispose = vi.spyOn(target, "dispose"), temporaryDispose = vi.fn();
+    const f = fixture(), target = new THREE.WebGLCubeRenderTarget(32), outputDispose = vi.spyOn(target, "dispose"), temporaryDispose = vi.fn();
     f.createGenerator.mockImplementationOnce(() => ({
       compileEquirectangularShader: vi.fn(),
       fromEquirectangular: vi.fn(() => { f.controller.dispose(); return target; }), dispose: temporaryDispose,
@@ -143,7 +143,7 @@ describe("HDRI RenderTarget 소유권과 공유 준비", () => {
   });
 
   it("PMREM 임시 해제가 실패하면 생성한 output도 버리고 준비 실패를 호출자에게 전달한다", async () => {
-    const f = fixture(), target = new THREE.WebGLRenderTarget(32, 16), outputDispose = vi.spyOn(target, "dispose");
+    const f = fixture(), target = new THREE.WebGLCubeRenderTarget(32), outputDispose = vi.spyOn(target, "dispose");
     const temporaryDispose = vi.fn(() => { throw new Error("temporary dispose failed"); });
     f.createGenerator.mockImplementationOnce(() => ({ compileEquirectangularShader: vi.fn(), fromEquirectangular: vi.fn(() => target), dispose: temporaryDispose }));
     const task = f.controller.preparePreset("day"), rejected = expect(task).rejects.toThrow("temporary dispose failed");
