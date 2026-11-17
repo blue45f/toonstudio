@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_3D_PROP_CATEGORY_LABELS,
   STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
+  STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG,
   STUDIO_ROOM_LAYOUT_PRESETS,
   StudioMultiObjectLayoutManager,
   findStudio3DPropCatalogEntry,
@@ -54,10 +55,12 @@ describe("StudioMultiObjectPanel integration", () => {
     expect(snapped?.position[1]).toBe(0);
   });
 
-  it("filters 280 bundled 3D props across all 8 categories (incl. 6 Blender Precision BG V14 + 4 Blender Hero V12 + 141 Poly Haven 2K PBR + 45 Kenney Blockout) and loads mannequin, Poly Haven, and Kenney presets", () => {
-    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(280);
+  it("filters 284 bundled 3D props across all 8 categories (incl. 6 Blender Precision BG V14 + 4 Blender Artisan V15 + 4 Blender Hero V12 + 141 Poly Haven 2K PBR + 45 Kenney Blockout) and loads mannequin, Poly Haven, and Kenney presets", () => {
+    expect(listStudio3DPropCatalogByCategory("all")).toHaveLength(284);
     expect(listStudio3DPropCatalogByCategory("blender-precision-bg-v14")).toHaveLength(6);
     expect(STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG).toHaveLength(6);
+    expect(listStudio3DPropCatalogByCategory("blender-artisan-v15")).toHaveLength(4);
+    expect(STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG).toHaveLength(4);
     expect(listStudio3DPropCatalogByCategory("blender-hero-v12")).toHaveLength(4);
     expect(listStudio3DPropCatalogByCategory("refined-v8")).toHaveLength(11);
     expect(listStudio3DPropCatalogByCategory("polyhaven-pbr")).toHaveLength(141);
@@ -68,8 +71,8 @@ describe("StudioMultiObjectPanel integration", () => {
       expect(items.every((entry) => entry.category === category)).toBe(true);
     }
     expect(listStudio3DPropCatalogByCategory("nature")).toHaveLength(19);
-    expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(9);
-    expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(38);
+    expect(listStudio3DPropCatalogByCategory("mannequin")).toHaveLength(10);
+    expect(listStudio3DPropCatalogByCategory("architecture")).toHaveLength(39);
 
     const v14Manager = new StudioMultiObjectLayoutManager();
     for (const v14Entry of STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG) {
@@ -80,6 +83,16 @@ describe("StudioMultiObjectPanel integration", () => {
       expect(spawned?.modelUrl).toBe(v14Entry.modelUrl);
     }
     expect(v14Manager.getAllObjects()).toHaveLength(6);
+
+    const v15Manager = new StudioMultiObjectLayoutManager();
+    for (const v15Entry of STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG) {
+      expect(findStudio3DPropCatalogEntry(v15Entry.id)).toBe(v15Entry);
+      expect(statSync(join(process.cwd(), "apps/web/public", v15Entry.modelUrl)).isFile()).toBe(true);
+      expect(statSync(join(process.cwd(), "apps/web/public", v15Entry.thumbnailUrl!)).isFile()).toBe(true);
+      const spawned = v15Manager.addCatalogProp(v15Entry.id);
+      expect(spawned?.modelUrl).toBe(v15Entry.modelUrl);
+    }
+    expect(v15Manager.getAllObjects()).toHaveLength(4);
 
     const manager = new StudioMultiObjectLayoutManager();
     const staged = manager.loadPreset("action_pose_staging");

@@ -20,6 +20,7 @@ import {
   createStudioHybridDccStarterPrimitiveMesh,
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -153,6 +154,34 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
         totalTris += summary.triangleEstimate;
       }
       expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.2 아티잔 아틀리에 V15(4종)가 실제 디스크 GLB·썸네일과 일치하며 하프에지 수밀 메시로 임포트된다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT).toHaveLength(4);
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT) {
+      expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-artisan-v15\/.+\.glb$/u);
+      expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-artisan-v15\/thumbnails\/.+\.png$/u);
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      expect(imported.value.assets.length).toBeGreaterThan(0);
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBeGreaterThan(0);
+      expect(Math.abs(totalTris - item.triangles), item.id).toBeLessThan(item.triangles * 0.5);
     }
   });
 });

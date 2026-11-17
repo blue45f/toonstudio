@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
   STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
+  STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG,
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
   STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
   STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
@@ -112,12 +113,13 @@ describe("StudioMultiObjectLayoutManager", () => {
     }
   });
 
-  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (280 items incl. 6 Blender Precision BG V14 + 4 Blender Hero V12 + 141 Poly Haven 2K PBR + 45 Kenney Blockout) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (15 presets) with real public GLBs and thumbnails", () => {
+  it("backs all STUDIO_BUNDLED_SCENE_PROP_CATALOG (284 items incl. 6 Blender Precision BG V14 + 4 Blender Artisan V15 + 4 Blender Hero V12 + 141 Poly Haven 2K PBR + 45 Kenney Blockout) and STUDIO_SCENE_PROP_LAYOUT_PRESETS (15 presets) with real public GLBs and thumbnails", () => {
     expect(STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG).toHaveLength(6);
+    expect(STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG).toHaveLength(4);
     expect(STUDIO_BLENDER_HERO_V12_PROP_CATALOG).toHaveLength(4);
     expect(STUDIO_POLYHAVEN_PBR_PROP_CATALOG).toHaveLength(141);
     expect(STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG).toHaveLength(45);
-    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(280);
+    expect(STUDIO_BUNDLED_SCENE_PROP_CATALOG).toHaveLength(284);
     expect(STUDIO_SCENE_PROP_LAYOUT_PRESETS).toHaveLength(15);
 
     let thumbnailCount = 0;
@@ -132,7 +134,7 @@ describe("StudioMultiObjectLayoutManager", () => {
         expect(thumbStat.size, entry.thumbnailUrl).toBeGreaterThan(256);
       }
     }
-    expect(thumbnailCount).toBe(223);
+    expect(thumbnailCount).toBe(227);
 
     const manager = new StudioMultiObjectLayoutManager();
     for (const preset of STUDIO_SCENE_PROP_LAYOUT_PRESETS) {

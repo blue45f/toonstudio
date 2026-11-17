@@ -55,6 +55,7 @@ export interface Studio3DPropCatalogEntry {
     | `/assets/3d/${string}.glb`
     | `/studio-assets/blender-hero-v12/${string}.glb`
     | `/studio-assets/blender-precision-bg-v14/${string}.glb`
+    | `/studio-assets/blender-artisan-v15/${string}.glb`
     | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
     | `/assets/studio/cc0-20260906/assets/kenney-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
@@ -63,6 +64,7 @@ export interface Studio3DPropCatalogEntry {
     | `/assets/3d/refined-v8/thumbnails/${string}.png`
     | `/studio-assets/blender-hero-v12/thumbnails/${string}.png`
     | `/studio-assets/blender-precision-bg-v14/thumbnails/${string}.png`
+    | `/studio-assets/blender-artisan-v15/thumbnails/${string}.png`
     | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
     | `/assets/studio/cc0-20260906/previews/kenney-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
@@ -126,6 +128,14 @@ export const STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG: readonly Studio3DProp
   { id: "v14_modern_officetel_studio_loft_bay", name: "현대 오피스텔·원룸 복층 창가 코너 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/modern-officetel-studio-loft-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/modern-officetel-studio-loft-bay-v14.png", defaultPosition: [0, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v14_subway_platform_screen_door_bay", name: "도시 지하철 승강장 스크린도어·안전선 정밀 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/subway-platform-screen-door-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/subway-platform-screen-door-bay-v14.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v14_rooftop_sunset_parapet_stairhouse", name: "학교·빌딩 옥상 계단실·난간 펜스 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/rooftop-sunset-parapet-stairhouse-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/rooftop-sunset-parapet-stairhouse-v14.png", defaultPosition: [0, 0, -2.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** Blender 5.2 아티잔 아틀리에(blender-artisan-v15) 4종 및 512×512 스튜디오 썸네일 카탈로그. */
+export const STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  { id: "v15_stylized_protagonist_bust", name: "웹툰 스타일라이즈 주인공 두상·흉상 (V15)", category: "mannequin", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-stylized-protagonist-bust-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-stylized-protagonist-bust-v15.png", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v15_celestial_ink_astrolabe", name: "천상 먹빛 아스트롤라베 회전대 (V15)", category: "fantasy", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-celestial-ink-astrolabe-turntable-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png", defaultPosition: [0, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v15_royal_conservatory_dome_gazebo", name: "로열 온실 돔 가제보 정자 (V15)", category: "architecture", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-royal-conservatory-dome-gazebo-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-royal-conservatory-dome-gazebo-v15.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v15_artisan_drafting_easel_lamp", name: "아티잔 제도 이젤·관절 작업등 세트 (V15)", category: "furniture", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-artisan-drafting-easel-lamp-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png", defaultPosition: [0, 0, -0.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
 /** Poly Haven CC0 2K PBR 고해상도 실사 소품·가구·건축·자연물 카탈로그 (141종 전수 + 전용 썸네일). */
@@ -327,9 +337,10 @@ export const STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG: readonly Studio3DPropCatalogEn
   { id: "kn_watercraft_boat_fan", name: "늪지대 에어보트 (Kenney)", category: "scifi", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-fan.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-fan.png", defaultPosition: [1.2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/studio-assets/blender-precision-bg-v14/*.glb`, `/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (280종). */
+/** 퍼블릭 번들(`/studio-assets/blender-precision-bg-v14/*.glb`, `/studio-assets/blender-artisan-v15/*.glb`, `/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (284종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
   ...STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
+  ...STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG,
   ...STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
   ...STUDIO_REFINED_V8_PROP_CATALOG,
   ...STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
@@ -597,10 +608,11 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "blender-precision-bg-v14" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "blender-precision-bg-v14" | "blender-artisan-v15" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
   if (category === "blender-precision-bg-v14") return STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG;
+  if (category === "blender-artisan-v15") return STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG;
   if (category === "blender-hero-v12") return STUDIO_BLENDER_HERO_V12_PROP_CATALOG;
   if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
   if (category === "polyhaven-pbr") return STUDIO_POLYHAVEN_PBR_PROP_CATALOG;

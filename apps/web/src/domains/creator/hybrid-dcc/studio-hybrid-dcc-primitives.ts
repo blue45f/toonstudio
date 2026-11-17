@@ -17,6 +17,7 @@ import {
   buildOctagonalPillarMesh,
   buildWindowWallModuleMesh,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
   type StudioHybridDccPrecisionBgKitItem,
 } from "./studio-hybrid-dcc-architectural-primitives";
 import { createStudioHybridDccIdentityTransform } from "./studio-hybrid-dcc-object-transform";
@@ -26,7 +27,7 @@ import {
   type StudioHybridDccWorkspace,
 } from "./studio-hybrid-dcc-workspace";
 
-export { STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT, type StudioHybridDccPrecisionBgKitItem };
+export { STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT, STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT, type StudioHybridDccPrecisionBgKitItem };
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"

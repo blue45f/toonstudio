@@ -11,7 +11,8 @@
  * `apps/web/public/studio-assets/blender-hero-v12/*.glb` (4종),
  * `apps/web/public/studio-assets/blender-modeler-kit-v13/*.glb` (8종),
  * `apps/web/public/studio-assets/blender-precision-bg-v14/*.glb` (6종),
- * `apps/web/public/assets/3d/*.glb` (68종)의 총 133종 CC0-1.0 1st-party GLB 모델을
+ * `apps/web/public/studio-assets/blender-artisan-v15/*.glb` (4종),
+ * `apps/web/public/assets/3d/*.glb` (68종)의 총 137종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
 
@@ -25,6 +26,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "blender-hero-v12-prop-3d"
   | "blender-modeler-kit-v13-prop-3d"
   | "blender-precision-bg-v14-prop-3d"
+  | "blender-artisan-v15-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -90,6 +92,12 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       labelKo: "블렌더 정밀 배경 베이 V14",
       labelEn: "Blender Precision Background Bays V14",
       descriptionKo: "베이커리 카페 파사드·고등학교 창측 복도·로판 볼트 열주 회랑·오피스텔 복층 코너·지하철 승강장 스크린도어·옥상 계단실 난간 6종",
+    },
+    {
+      id: "blender-artisan-v15-prop-3d",
+      labelKo: "블렌더 아티잔 아틀리에 V15",
+      labelEn: "Blender Artisan Atelier V15",
+      descriptionKo: "스타일라이즈 주인공 흉상·천상 먹빛 아스트롤라베 턴테이블·로열 온실 돔 가제보·아티잔 제도 이젤 램프 4종",
     },
     {
       id: "original-scene-prop-3d",
@@ -211,6 +219,13 @@ const RAW_BLENDER_PRECISION_BG_V14_ROWS: readonly RawAssetRow[] = [
   ["modern-officetel-studio-loft-bay-v14", "현대 오피스텔·원룸 복층 창가 코너 베이 (V14)", "Modern Officetel Studio Corner Bay V14"],
   ["subway-platform-screen-door-bay-v14", "도시 지하철 승강장 스크린도어·안전선 정밀 베이 (V14)", "Subway Platform Screen-Door Bay V14"],
   ["rooftop-sunset-parapet-stairhouse-v14", "학교·빌딩 옥상 계단실·난간 펜스 베이 (V14)", "Rooftop Stairhouse & Parapet Fence Bay V14"],
+];
+
+const RAW_BLENDER_ARTISAN_V15_ROWS: readonly RawAssetRow[] = [
+  ["webtoon-stylized-protagonist-bust-v15", "웹툰 스타일라이즈 주인공 두상·흉상 (V15)", "Webtoon Stylized Protagonist Bust V15"],
+  ["webtoon-celestial-ink-astrolabe-turntable-v15", "천상 먹빛 아스트롤라베 회전대 (V15)", "Celestial Ink Astrolabe Turntable V15"],
+  ["webtoon-royal-conservatory-dome-gazebo-v15", "로열 온실 돔 가제보 정자 (V15)", "Royal Conservatory Dome Gazebo V15"],
+  ["webtoon-artisan-drafting-easel-lamp-v15", "아티잔 제도 이젤·관절 작업등 세트 (V15)", "Artisan Drafting Easel & Task Lamp V15"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -456,6 +471,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${slug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "architecture", "precision-bay", "blender-v14", "정밀배경", "베이", "카페", "교실", "로판", "오피스텔", "지하철", "옥상", slug, labelKo, labelEn]),
+      }),
+    ),
+    ...RAW_BLENDER_ARTISAN_V15_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `blender-artisan-v15-${slug}`,
+        category: "blender-artisan-v15-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/blender-artisan-v15/${slug}.glb`,
+        previewUrl: `/studio-assets/blender-artisan-v15/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["character", "fantasy", "architecture", "artisan-atelier", "blender-v15", "아티잔", "아틀리에", "흉상", "아스트롤라베", "온실", "이젤", slug, labelKo, labelEn]),
       }),
     ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

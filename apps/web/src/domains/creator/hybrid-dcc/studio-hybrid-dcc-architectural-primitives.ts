@@ -79,6 +79,47 @@ export const STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT: readonly StudioHybridDccPreci
     },
   ]);
 
+/** Blender 5.2 아티잔 아틀리에 V15(4종, CC0-1.0) — 두상 조형·아스트롤라베 소품·온실 가제보·제도 이젤. */
+export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-stylized-protagonist-bust-v15",
+      fileName: "webtoon-stylized-protagonist-bust-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-stylized-protagonist-bust-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-stylized-protagonist-bust-v15.png",
+      label: ["스타일라이즈 주인공 흉상", "Stylized protagonist bust"],
+      hint: ["웹툰 두상 조형 기준·눈동자·헤어 매스", "Webtoon bust with iris and hair masses"],
+      triangles: 16772,
+    },
+    {
+      id: "webtoon-celestial-ink-astrolabe-turntable-v15",
+      fileName: "webtoon-celestial-ink-astrolabe-turntable-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-celestial-ink-astrolabe-turntable-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png",
+      label: ["천상 먹빛 아스트롤라베", "Celestial ink astrolabe"],
+      hint: ["황동 링·먹빛 원판·회전대", "Brass rings, ink dial & turntable"],
+      triangles: 9856,
+    },
+    {
+      id: "webtoon-royal-conservatory-dome-gazebo-v15",
+      fileName: "webtoon-royal-conservatory-dome-gazebo-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-royal-conservatory-dome-gazebo-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-royal-conservatory-dome-gazebo-v15.png",
+      label: ["로열 온실 돔 가제보", "Royal conservatory gazebo"],
+      hint: ["유리 돔·청동 프레임·석조 기단", "Glass dome, bronze frame & limestone base"],
+      triangles: 12528,
+    },
+    {
+      id: "webtoon-artisan-drafting-easel-lamp-v15",
+      fileName: "webtoon-artisan-drafting-easel-lamp-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-artisan-drafting-easel-lamp-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png",
+      label: ["아티잔 제도 이젤·작업등", "Artisan drafting easel & lamp"],
+      hint: ["원목 이젤·관절 황동 램프·도면", "Oak easel, articulated brass lamp & sheet"],
+      triangles: 2456,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

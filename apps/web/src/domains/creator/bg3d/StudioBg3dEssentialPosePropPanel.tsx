@@ -94,7 +94,7 @@ export function StudioBg3dEssentialPosePropPanel({
             3D 인체 포즈 마네킹 · 필수 건축/히어로/오리지널 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
           </h4>
           <p className="mt-0.5 text-[0.62rem] text-fg-3">
-            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · 오리지널 68종 (CC0 1.0)
+            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · V15 아티잔 4종 · 오리지널 68종 (CC0 1.0)
           </p>
         </div>
         <button

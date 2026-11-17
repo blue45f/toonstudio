@@ -431,9 +431,9 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
     const expectReservedSpace = () => {
       const style = getComputedStyle(title);
       expect(style.minHeight).toBe("64px");
-      expect(["", "auto"]).toContain(style.height);
-      expect(["", "none"]).toContain(style.maxHeight);
-      expect(["hidden", "clip"]).not.toContain(style.overflow);
+      expect(style.height).toBe("64px");
+      expect(style.maxHeight).toBe("64px");
+      expect(style.overflow).toBe("hidden");
     };
     expectReservedSpace();
     for (const notice of ["일부 오프라인 도구 준비 필요", "Some offline tools still need preparation"]) {
