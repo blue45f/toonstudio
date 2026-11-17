@@ -1,5 +1,6 @@
-import { Check, Loader2, TriangleAlert } from "lucide-react";
+import { Check, ImagePlus, Loader2, TriangleAlert } from "lucide-react";
 
+import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
@@ -102,6 +103,53 @@ export function StudioPublishingPersistenceDockStatus({
     >
       <StatusLeadingGlyph status={status} />
       <span>{label}</span>
+    </span>
+  );
+}
+
+export function StudioPublishingHandoffDismissButton({
+  onDismiss,
+}: {
+  readonly onDismiss: () => void;
+}) {
+  const bt = useBilingual("StudioPublishingPersistenceStatus");
+  return (
+    <button
+      type="button"
+      data-testid="studio-publish-dismiss-handoff-error"
+      onClick={onDismiss}
+      className={buttonClass({
+        size: "sm",
+        variant: "solid",
+        className: "min-h-11 gap-1.5",
+      })}
+    >
+      <ImagePlus size={14} aria-hidden />
+      {bt("인계 안내 닫고 직접 올리기", "Dismiss notice and upload directly")}
+    </button>
+  );
+}
+
+export function StudioPublishingHandoffLocalBadge({
+  loggedIn,
+}: {
+  readonly loggedIn: boolean;
+}) {
+  const bt = useBilingual("StudioPublishingPersistenceStatus");
+  return (
+    <span
+      data-testid="studio-publish-handoff-local-badge"
+      data-handoff-auth={loggedIn ? "authenticated" : "guest"}
+      className={cn(
+        "inline-flex min-h-7 items-center rounded-full border px-2.5 py-1 text-[0.68rem] font-semibold [word-break:keep-all]",
+        loggedIn
+          ? "border-accent/35 bg-accent/10 text-accent"
+          : "border-warn/40 bg-warn/10 text-warn",
+      )}
+    >
+      {loggedIn
+        ? bt("로컬 인계본 · 서버 저장 전", "Local handoff · Not saved to server yet")
+        : bt("로컬 인계본 · 로그인 후 서버 저장 가능", "Local handoff · Sign in to save to server")}
     </span>
   );
 }

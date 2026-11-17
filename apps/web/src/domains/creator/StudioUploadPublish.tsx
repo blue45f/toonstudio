@@ -1,14 +1,5 @@
 import {
-  ArrowLeft,
-  ArrowDown,
-  ArrowUp,
-  ImagePlus,
-  Loader2,
-  PenLine,
-  RefreshCw,
-  Send,
-  Trash2,
-  Upload,
+  ArrowDown, ArrowLeft, ArrowUp, ImagePlus, Loader2, PenLine, RefreshCw, Send, Trash2, Upload,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -16,56 +7,43 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { buildStudioHref } from "./creator-studio-links";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import { creatorWorkHref } from "./publishing/showcase-links";
+import {
+  StudioPublishingPersistenceDockStatus, StudioPublishingPersistenceSummaryStatus,
+} from "./publishing/StudioPublishingPersistenceStatus";
+import {
+  deriveStudioPublishingPersistenceStatus,
+  type StudioPublishingConfirmedSaveReceipt,
+  type StudioPublishingFailedSaveAttempt,
+} from "./publishing/studio-publishing-persistence-status";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";
 import { downscaleDataUrl, downscaleImageFile } from "./studio-image-utils";
 import {
-  getStudioSharedDocument,
-  getStudioSharedDocumentMeta,
-  isStudioSharedDocumentAccessError,
-  isStudioSharedDocumentRevisionConflictError,
-  updateStudioSharedDocument,
-  type StudioSharedDocumentMeta,
+  getStudioSharedDocument, getStudioSharedDocumentMeta, isStudioSharedDocumentAccessError,
+  isStudioSharedDocumentRevisionConflictError, updateStudioSharedDocument, type StudioSharedDocumentMeta,
 } from "./studio-shared-document-client";
 import {
-  assertStudioUploadSourceBatch,
-  inspectStudioUploadSourceImage,
-  selectStudioUploadDecodedPixelLimit,
+  assertStudioUploadSourceBatch, inspectStudioUploadSourceImage, selectStudioUploadDecodedPixelLimit,
 } from "./studio-upload-image-safety";
 import {
-  STUDIO_UPLOAD_ACTION_DOCK_CLASS,
-  STUDIO_UPLOAD_CONTAINER_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROLS_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROL_CLASS,
-  STUDIO_UPLOAD_PAGE_LIST_CLASS,
-  STUDIO_UPLOAD_PAGE_ROW_CLASS,
+  STUDIO_UPLOAD_ACTION_DOCK_CLASS, STUDIO_UPLOAD_CONTAINER_CLASS, STUDIO_UPLOAD_PAGE_CONTROLS_CLASS,
+  STUDIO_UPLOAD_PAGE_CONTROL_CLASS, STUDIO_UPLOAD_PAGE_LIST_CLASS, STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
 import { MAX_PAGES, uid, type UploadPage } from "./publish/studio-upload-page-model";
 import { applyPublishAutoFitToPages } from "./publish/publish-auto-fit";
 import { findPublishSpecPreset } from "./publish/spec-validator";
 import {
-  advanceStudioUploadSharedMetaAfterSave,
-  assertStudioUploadJsonPayloadSize,
-  assertStudioUploadPublishScope,
-  assertStudioUploadSharedMetaUnchanged,
-  canEditStudioUploadSharedDocument,
-  canPublishStudioUploadSharedDocument,
-  captureStudioUploadPublishScope,
-  isStudioUploadHydrationScopeCurrent,
-  isStudioUploadPublishScopeCurrent,
-  isStudioUploadPublishScopeInvalidatedError,
-  isStudioUploadSharedAccessChangedError,
-  isStudioUploadWorkspaceLocked,
-  resolveStudioUploadActionLocks,
-  resolveStudioUploadSharedCrdtSaveFence,
-  resolveStudioUploadUpdateRevision,
-  runStudioUploadPublishStages,
-  shouldResetStudioUploadDraft,
-  validateStudioUploadHydratedSharedDocument,
-  validateStudioUploadSavedWork,
-  type StudioUploadCurrentScope,
-  type StudioUploadHydrationStatus,
-  type StudioUploadPublishScope,
+  advanceStudioUploadSharedMetaAfterSave, assertStudioUploadJsonPayloadSize,
+  assertStudioUploadPublishScope, assertStudioUploadSharedMetaUnchanged,
+  canEditStudioUploadSharedDocument, canPublishStudioUploadSharedDocument,
+  captureStudioUploadPublishScope, isStudioUploadHydrationScopeCurrent,
+  isStudioUploadPublishScopeCurrent, isStudioUploadPublishScopeInvalidatedError,
+  isStudioUploadSharedAccessChangedError, isStudioUploadWorkspaceLocked,
+  resolveStudioUploadActionLocks, resolveStudioUploadSharedCrdtSaveFence,
+  resolveStudioUploadUpdateRevision, runStudioUploadPublishStages,
+  shouldResetStudioUploadDraft, validateStudioUploadHydratedSharedDocument,
+  validateStudioUploadSavedWork, type StudioUploadCurrentScope,
+  type StudioUploadHydrationStatus, type StudioUploadPublishScope,
 } from "./studio-upload-publish-safety";
 import { resolveStudioUploadWorkId } from "./studio-upload-route";
 import { StudioPublishContextBanner, type PublishContext } from "./StudioPublishContextBanner";
@@ -76,10 +54,7 @@ import { cn } from "@/shared/lib/utils";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import Link from "@/shared/navigation/router-link";
 import { useDocumentTitle } from "@/shared/seo/use-document-title";
-import {
-  getChallenge,
-  getSeries,
-} from "@/platform/creator-client";
+import { getChallenge, getSeries } from "@/platform/creator-client";
 
 export interface StudioUploadPublishProps {
   /** Canonical route identity. Undefined keeps the legacy query-only entry compatible. */
@@ -107,6 +82,8 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [confirmedSaveReceipt, setConfirmedSaveReceipt] = useState<StudioPublishingConfirmedSaveReceipt | null>(null);
+  const [failedSaveAttempt, setFailedSaveAttempt] = useState<StudioPublishingFailedSaveAttempt | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [publishContext, setPublishContext] = useState<PublishContext>({});
   const [hydrationStatus, setHydrationStatus] = useState<StudioUploadHydrationStatus>(
@@ -143,6 +120,16 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
   });
   const { sharedCanEdit, sharedCanPublish, mutationLocked, publishLocked } =
     resolveStudioUploadActionLocks({ workId, workspaceLocked, meta: sharedMeta });
+  const persistenceStatus = deriveStudioPublishingPersistenceStatus({
+    authUserId, workId, pageCount: pages.length, title, description, tagsText,
+    hasHandoffContext: false, dirty, saving, recoveryBusy: false, hydrating, loadingFiles,
+    handoffLoading: false, hydrationStatus, hydrationScopeCurrent, hasHydratedScope: hydratedScope !== null,
+    handoffError: null, workRevision, confirmedSaveReceipt, failedSaveAttempt,
+  });
+  const recordSaveFailure = (message: string, scope?: StudioUploadPublishScope) => {
+    setError(message);
+    setFailedSaveAttempt({ authUserId: scope?.authUserId ?? authUserId, workId: scope?.workId ?? workId, message });
+  };
 
   useLayoutEffect(() => {
     mountedRef.current = true;
@@ -177,6 +164,8 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
       setError(null);
       setSuccessMessage(null);
       setDirty(false);
+      setConfirmedSaveReceipt(null);
+      setFailedSaveAttempt(null);
       setHydrationError(null);
       setWorkRevision(undefined);
       setHydratedScope(null);
@@ -184,6 +173,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
       setHydrationStatus(workId ? "loading" : "ready");
     } else if (adoptingGuestDraft) {
       setError(null);
+      setFailedSaveAttempt(null);
     }
   }, [authUserId, workId]);
 
@@ -441,6 +431,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
       if (!isFileScopeCurrent()) return;
       setPages((current) => [...current, ...next]);
       setDirty(true);
+      setFailedSaveAttempt(null);
       if (!title.trim() && next[0]) {
         const base = next[0].name.replace(/\.[^.]+$/, "").trim();
         if (base) setTitle(base.slice(0, 80));
@@ -457,6 +448,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
   function movePage(id: string, direction: -1 | 1) {
     if (mutationLocked) return;
     setSuccessMessage(null);
+    setFailedSaveAttempt(null);
     setDirty(true);
     setPages((current) => {
       const index = current.findIndex((page) => page.id === id);
@@ -473,6 +465,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
   function removePage(id: string) {
     if (mutationLocked) return;
     setSuccessMessage(null);
+    setFailedSaveAttempt(null);
     setDirty(true);
     setPages((current) => current.filter((page) => page.id !== id));
   }
@@ -483,38 +476,33 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
     try {
       publishScope = captureStudioUploadPublishScope(authUserId, workId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "로그인 후 게시할 수 있어요.");
+      recordSaveFailure(cause instanceof Error ? cause.message : "로그인 후 게시할 수 있어요.");
       return;
     }
     let baseRevision: number | undefined;
     try {
-      baseRevision = resolveStudioUploadUpdateRevision(
-        publishScope,
-        hydratedScope,
-        hydrationStatus,
-        workRevision
-      );
+      baseRevision = resolveStudioUploadUpdateRevision(publishScope, hydratedScope, hydrationStatus, workRevision);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.reloadWork", "기존 작품을 다시 불러와 주세요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.reloadWork", "기존 작품을 다시 불러와 주세요."), publishScope);
       return;
     }
     const sharedMetaSnapshot = sharedMeta;
     if (publishScope.workId) {
       if (!sharedMetaSnapshot || !canEditStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.upload.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.upload.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."), publishScope);
         return;
       }
       if (status === "published" && !canPublishStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.upload.ownerOnlyStatus", "작품 게시 상태는 소유자만 변경할 수 있습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.upload.ownerOnlyStatus", "작품 게시 상태는 소유자만 변경할 수 있습니다."), publishScope);
         return;
       }
     }
     if (!title.trim()) {
-      setError(frozenStatus2Text("studio.frozenStatus2.upload.titleRequired", "제목을 입력해주세요."));
+      recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.upload.titleRequired", "제목을 입력해주세요."), publishScope);
       return;
     }
     if (pages.length === 0) {
-      setError(frozenStatus2Text("studio.frozenStatus2.upload.imagesRequired", "이미지를 1장 이상 추가해주세요."));
+      recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.upload.imagesRequired", "이미지를 1장 이상 추가해주세요."), publishScope);
       return;
     }
     // 게시 규격 자동 맞춤 — 긴 이미지는 자체 규격 높이로 분할하고 넓은 이미지는
@@ -522,23 +510,16 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
     // 실패하면 원본을 조용히 올리지 않고 중단해 사용자에게 알린다.
     let fittedPages: UploadPage[];
     try {
-      fittedPages = await applyPublishAutoFitToPages(
-        pages,
-        findPublishSpecPreset("toonstudio")
-      );
+      fittedPages = await applyPublishAutoFitToPages(pages, findPublishSpecPreset("toonstudio"));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.autoFitFailed", "이미지 규격을 맞추지 못했어요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.autoFitFailed", "이미지 규격을 맞추지 못했어요."), publishScope);
       return;
     }
     const pageSnapshot = fittedPages.map((page) => ({ ...page }));
     const titleSnapshot = title.trim();
     const descriptionSnapshot = description.trim();
     const tagsSnapshot = tagsText;
-    const tags = tagsSnapshot
-      .split(/[,\s]+/)
-      .map((tag) => tag.trim().replace(/^#/, ""))
-      .filter(Boolean)
-      .slice(0, 8);
+    const tags = tagsSnapshot.split(/[,\s]+/).map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean).slice(0, 8);
     const publishSeriesId = seriesId;
     const publishChallengeId = challengeId;
     const publishTitleId = titleId;
@@ -548,6 +529,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
     publishAbortRef.current = controller;
     setSaving(true);
     setError(null);
+    setFailedSaveAttempt(null);
     setSuccessMessage(null);
     try {
       const pageImages = pageSnapshot.map((page) => page.src);
@@ -663,6 +645,14 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         controller.signal
       );
       if (saved.revision !== undefined) setWorkRevision(saved.revision);
+      setDirty(false);
+      setFailedSaveAttempt(null);
+      setConfirmedSaveReceipt({
+        authUserId: publishScope.authUserId,
+        savedWorkId: saved.workId,
+        sourceWorkId: publishScope.workId,
+        revision: saved.revision ?? sharedMetaSnapshot?.revision ?? null,
+      });
       if (publishScope.workId && sharedMetaSnapshot && saved.updatedAt) {
         const nextMeta = advanceStudioUploadSharedMetaAfterSave(sharedMetaSnapshot, {
           workId: saved.workId,
@@ -670,7 +660,6 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           updatedAt: saved.updatedAt,
         });
         setSharedMeta(nextMeta);
-        setDirty(false);
         if (sharedMetaSnapshot.role === "owner" && status === "published") {
           navigate(creatorWorkHref(saved.workId));
         } else {
@@ -702,7 +691,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.sharedPermissionOrVersion", "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."));
           setError(null);
         } else {
-          setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.publishFailed", "게시에 실패했어요."));
+          recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.upload.publishFailed", "게시에 실패했어요."), publishScope);
         }
       }
     } finally {
@@ -738,12 +727,13 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
         {!workId && (
           <Link
             href={buildStudioHref({ seriesId, challengeId, titleId })}
-            className={buttonClass({ size: "sm", variant: "outline", className: "ml-auto min-h-11 gap-1.5" })}
+            className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
           >
             <PenLine size={14} />
             컷툰 스튜디오로 전환
           </Link>
         )}
+        <StudioPublishingPersistenceSummaryStatus status={persistenceStatus} />
       </div>
 
       <header className="mb-5 rounded-2xl border border-line bg-panel/45 p-5 surface-hl sm:p-6">
@@ -980,6 +970,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
                 onChange={(event) => {
                   setTitle(event.target.value);
                   setDirty(true);
+                  setFailedSaveAttempt(null);
                   setSuccessMessage(null);
                 }}
                 placeholder="작품 제목"
@@ -994,6 +985,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
                 onChange={(event) => {
                   setDescription(event.target.value);
                   setDirty(true);
+                  setFailedSaveAttempt(null);
                   setSuccessMessage(null);
                 }}
                 rows={4}
@@ -1009,6 +1001,7 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
                 onChange={(event) => {
                   setTagsText(event.target.value);
                   setDirty(true);
+                  setFailedSaveAttempt(null);
                   setSuccessMessage(null);
                 }}
                 placeholder="로맨스, 일상 (쉼표로 구분)"
@@ -1018,34 +1011,25 @@ export function StudioUploadPublish({ workId: routeWorkId }: StudioUploadPublish
           </div>
 
           <div className={STUDIO_UPLOAD_ACTION_DOCK_CLASS}>
+            <div className="px-1 text-xs text-fg-3">
+              <StudioPublishingPersistenceDockStatus status={persistenceStatus} />
+            </div>
             <button
               type="button"
               onClick={() => handlePublish("draft")}
-              disabled={mutationLocked}
-              className={buttonClass({
-                size: "md",
-                variant: "outline",
-                className: "min-h-11 w-full",
-              })}
+              disabled={!loggedIn || mutationLocked || saving || pages.length === 0 || !title.trim()}
+              className={buttonClass({ size: "md", variant: "outline", className: "min-h-11 w-full" })}
             >
               {workId && sharedMeta?.role !== "owner" ? "공동 변경사항 저장" : workId ? "초안으로 저장" : "임시저장"}
             </button>
             <button
               type="button"
               onClick={() => handlePublish("published")}
-              disabled={publishLocked}
+              disabled={!loggedIn || publishLocked || saving || pages.length === 0 || !title.trim()}
               title={workId && !sharedCanPublish ? "게시 상태는 작품 소유자만 변경할 수 있습니다." : undefined}
-              className={buttonClass({
-                size: "md",
-                variant: "solid",
-                className: "min-h-11 w-full gap-1.5",
-              })}
+              className={buttonClass({ size: "md", variant: "solid", className: "min-h-11 w-full gap-1.5" })}
             >
-              {saving ? (
-                <Loader2 size={15} className="animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Send size={15} />
-              )}
+              {saving ? <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> : <Send size={15} />}
               {workId && !sharedCanPublish ? "소유자만 게시 가능" : workId ? "수정사항 게시" : "게시하기"}
             </button>
           </div>
