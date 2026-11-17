@@ -75,3 +75,26 @@ export async function openStudioExportPanel(page: Page): Promise<Locator> {
   }
   return visibleStudioControl(panel, "Studio 출력 설정");
 }
+
+/** 닫힌 인스펙터는 사용자 명령으로 열고, 분할 레이어와 기존 탭 배치를 모두 확인한다. */
+export async function openStudioLayerNavigator(page: Page, timeoutMs = 10_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  const remaining = () => {
+    const milliseconds = deadline - Date.now();
+    if (milliseconds <= 0) throw new Error(`레이어 탐색기 준비 기한 ${timeoutMs}ms를 넘었습니다.`);
+    return milliseconds;
+  };
+  const splitPane = page.locator('[data-studio-inspector-layers-split="true"]').filter({ visible: true });
+  const layers = page.getByTestId("studio-inspector-navigator")
+    .locator('[data-studio-inspector-primary-tab="layers"]').filter({ visible: true });
+  if (await splitPane.count() === 0 && await layers.count() === 0) await runStudioClarityAction(page, "layers");
+  await splitPane.or(layers).first().waitFor({ state: "visible", timeout: remaining() });
+  if (await splitPane.count() > 0) {
+    await visibleStudioControl(splitPane, "Studio 분할 레이어", remaining());
+    return;
+  }
+  const tab = await visibleStudioControl(layers, "Studio 레이어 탭", remaining());
+  if (await tab.getAttribute("aria-selected", { timeout: remaining() }) !== "true") await tab.click({ timeout: remaining() });
+  await visibleStudioControl(page.getByTestId("studio-inspector-navigator")
+    .locator('[data-studio-inspector-primary-tab="layers"][aria-selected="true"]'), "Studio 선택된 레이어 탭", remaining());
+}

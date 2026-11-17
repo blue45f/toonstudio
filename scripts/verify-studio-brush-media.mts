@@ -24,6 +24,7 @@ import {
 
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { prepareStudioBrushDrawingUi } from "./lib/studio-brush-drawing-ui";
+import { createStudioBrushMediaGeometryDiagnostics } from "./lib/studio-brush-media-geometry-diagnostics";
 import {
   isStaticPreviewReadinessResponse,
   isStaticPreviewReadinessUnavailable,
@@ -236,7 +237,6 @@ async function selectBrush(
   });
   await option.waitFor({ state: "visible" });
   await option.click();
-  // Desktop selection retains the floating library for repeated choices. Close its UI explicitly.
   await catalog.getByRole("button", { name: / 닫기$/u }).click();
   await catalog.waitFor({ state: "detached" });
   await toolbar.getByRole("button", {
@@ -896,9 +896,10 @@ async function runBrushMedium(
   });
   const page = await context.newPage();
   const browserErrors = collectBrowserErrors(page, policy.id, studioUrl);
-
+  const geometry = createStudioBrushMediaGeometryDiagnostics(page, policy.id, SCRATCH);
   try {
     await prepareStudioPage(page, studioUrl);
+    await geometry.install();
     await selectBrush(page, brush);
     const stage = page.locator(".konvajs-content").first();
     const stageBox = await stage.boundingBox();
@@ -906,8 +907,8 @@ async function runBrushMedium(
     invariant(stageBox && viewport, `${policy.id}: could not measure Studio canvas`);
     const route = createBrushRoute(stageBox, viewport, brush.defaultWidth);
     await assertRouteHitsCanvas(page, route.points);
+    await geometry.arm(route.points);
     const baseline = await screenshot(page, route.clip);
-
     let live: Buffer | null = null;
     await drawCurve(page, route.points, async () => {
       live = await screenshot(page, route.clip);
@@ -916,7 +917,7 @@ async function runBrushMedium(
     const released = await screenshot(page, route.clip);
     await page.waitForTimeout(SETTLE_MS);
     const settled = await screenshot(page, route.clip);
-
+    await geometry.stop();
     await waitForHistoryButton(page, "실행취소");
     await page.keyboard.press("Meta+z");
     await page.waitForTimeout(100);
@@ -925,14 +926,12 @@ async function runBrushMedium(
     await page.keyboard.press("Meta+Shift+z");
     await page.waitForTimeout(SETTLE_MS);
     const redo = await screenshot(page, route.clip);
-
     await drawCurve(page, route.points);
     await page.waitForTimeout(SETTLE_MS);
     const pass2 = await screenshot(page, route.clip);
     await drawCurve(page, route.points);
     await page.waitForTimeout(SETTLE_MS);
     const pass3 = await screenshot(page, route.clip);
-
     const [
       liveMetrics,
       settledMetrics,
@@ -955,7 +954,6 @@ async function runBrushMedium(
       analyzeAccumulation(page, baseline, pass2, pass3),
     ]);
     const pixelQuality = analyzeArtifactPixelQuality(baseline, settled, route);
-
     const metrics: StudioBrushMediaCaseMetrics = {
       id: policy.id,
       live: liveMetrics,
@@ -1027,6 +1025,7 @@ async function runBrushMedium(
       browserErrors,
     };
   } finally {
+    await geometry.save();
     await context.close();
   }
 }

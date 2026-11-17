@@ -38,6 +38,7 @@ import {
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { collectBrowserDiagnostics, mergeDiagnostics, type BrowserDiagnostics } from "./lib/studio-hokusai-preview-diagnostics";
+import { openStudioLayerNavigator as openLayerNavigator, visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   stopChildProcess,
@@ -878,21 +879,6 @@ async function selectBrush(
   ), { expectedName: brush.brushName });
 }
 
-async function openLayerNavigator(page: Page): Promise<void> {
-  const deadline = Date.now() + 10_000;
-  const remaining = () => {
-    const milliseconds = deadline - Date.now();
-    invariant(milliseconds > 0, "레이어 탐색기 준비 기한 10000ms를 넘었습니다.");
-    return milliseconds;
-  };
-  const splitPane = page.locator('[data-studio-inspector-layers-split="true"]');
-  const layers = page.getByTestId("studio-inspector-navigator").locator('[data-studio-inspector-primary-tab="layers"]');
-  // 재열기 중 split pane가 늦게 붙으면 제거된 중복 탭만 기다리지 않는다.
-  await splitPane.or(layers).filter({ visible: true }).first().waitFor({ state: "visible", timeout: remaining() });
-  if (await splitPane.isVisible()) return;
-  if (await layers.getAttribute("aria-selected", { timeout: remaining() }) !== "true") await layers.click({ timeout: remaining() });
-}
-
 async function waitForLayerCount(page: Page, expected: number): Promise<number> {
   await page.waitForFunction((count) => (
     document.querySelectorAll('[data-studio-layer-row="true"]').length === count
@@ -1192,15 +1178,9 @@ async function runExplicitInspectorScenario(
     // Leave draw-mode tool settings before selecting the authored stroke so
     // the shipped properties inspector renders the selected freehand path
     // controls (including the explicit Hokusai conversion section).
-    const selectTool = page.locator('[data-studio-rail-tool-id="select"]').first();
+    const selectTool = await visibleStudioControl(page.locator('[data-studio-rail-tool-id="select"]'), "Hokusai 선택 도구");
     await selectTool.click();
-    await page.waitForFunction(() => (
-      document.querySelector('[data-studio-rail-tool-id="select"]')
-        ?.getAttribute("aria-pressed") === "true"
-    ));
-    await page.locator(
-      '[data-studio-rail-tool-id="select"][aria-pressed="true"]',
-    ).first().waitFor({ state: "attached", timeout: 8_000 });
+    await visibleStudioControl(page.locator('[data-studio-rail-tool-id="select"][aria-pressed="true"]'), "Hokusai 활성 선택 도구", 8_000);
     const layerRow = page.locator('[data-studio-layer-row="true"]').first();
     // Clicking the row's geometric centre can land on an inline opacity or
     // visibility control, which intentionally stops row selection. The
@@ -1222,11 +1202,11 @@ async function runExplicitInspectorScenario(
       const selectionContext = document.querySelector<HTMLElement>(
         '[data-testid="studio-inspector-context-selection"]',
       );
-      const activeSelectionTool = document.querySelector<HTMLElement>(
+      const activeSelectionTools = Array.from(document.querySelectorAll<HTMLElement>(
         '[data-studio-rail-tool-id="select"][aria-pressed="true"]',
-      );
+      )).filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden");
       return {
-        activeSelectionTool: activeSelectionTool !== null,
+        activeSelectionTool: activeSelectionTools.length === 1,
         selectionContextPresent: selectionContext !== null,
         selectionContextHidden: selectionContext?.hidden ?? null,
         selectedLayerStates: Array.from(

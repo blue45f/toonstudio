@@ -212,9 +212,8 @@ describe("Studio drawing palette workspace integration boundary", () => {
     expect(pendingReplay).not.toContain("saveStudioWorkspaceState");
 
     expect(autosave).toContain(
-      "if (leftResize.dragging || rightResize.dragging || drawingPaletteDragging) return",
+      "if (leftResize.dragging || rightResize.dragging || drawingPaletteDragging || pendingExternalWorkspaceSync) return",
     );
-    expect(autosave).toContain("if (pendingExternalWorkspaceSync) return");
     expect(autosave).toContain(
       "drawingPalettes: viewportPanelMemory.authoredDrawingPalettes",
     );

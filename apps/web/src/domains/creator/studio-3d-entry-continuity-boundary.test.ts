@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const host = readFileSync(
@@ -67,7 +68,19 @@ describe("Studio 3D entry continuity boundary", () => {
     expect(source).toContain("setMannequinPoserOpen(false)");
     expect(source).toContain("setBg3dOpen(true)");
     expect(routedBg3dEntry).toContain('routedSurface !== "bg3d"');
-    expect(routedBg3dEntry).toContain("if (!warmEntry && !sourceReady) return;");
+    const syntax = ts.createSourceFile("useStudioBg3dRoutedEntry.ts", routedBg3dEntry, ts.ScriptTarget.Latest, true);
+    const coldGuards: ts.IfStatement[] = [];
+    const visit = (node: ts.Node): void => {
+      if (ts.isIfStatement(node) && node.expression.getText(syntax) === "!warmEntry && !sourceReady") coldGuards.push(node);
+      ts.forEachChild(node, visit);
+    };
+    visit(syntax);
+    expect(coldGuards).toHaveLength(1);
+    const coldGuard = coldGuards[0];
+    if (!coldGuard || !ts.isBlock(coldGuard.thenStatement)) throw new Error("준비 전 BG3D 진입을 차단하는 block이 없습니다.");
+    const finalStatement = coldGuard.thenStatement.statements.at(-1);
+    expect(finalStatement && ts.isReturnStatement(finalStatement)).toBe(true);
+    expect(coldGuard.end).toBeLessThan(routedBg3dEntry.indexOf("enteredRef.current = true;"));
     expect(routedBg3dEntry).toContain("if (!warmEntry) resetColdSourceEvent();");
     expect(routedBg3dEntry).toContain("openEntryEvent();");
     expect(peers).toContain("setBg3dOpen(false)");

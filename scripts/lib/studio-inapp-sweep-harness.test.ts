@@ -1,3 +1,4 @@
+import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -147,7 +148,7 @@ function brushLibrary(onClick?: (brush: BrushState, brushes: BrushState[]) => vo
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 보존", () => {
-  function fixture(ignore?: "open" | "close") {
+  function fixture(ignore?: "open" | "close", inaccessibleAncestor?: readonly [string, string]) {
     const entries = [
       { id: "first", open: false, hasSelect: true, visible: true },
       { id: "second", open: false, hasSelect: true, visible: true },
@@ -155,6 +156,11 @@ describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 �
       { id: "hidden", open: false, hasSelect: true, visible: false },
       { id: "no-select", open: false, hasSelect: false, visible: true },
     ];
+    const summaries = new Map(entries.map(entry => [entry.id,
+      JSDOM.fragment("<section><details><summary>설정</summary></details></section>").querySelector("summary")!,
+    ]));
+    const firstAncestor = summaries.get("first")!.parentElement!.parentElement!;
+    if (inaccessibleAncestor) firstAncestor.setAttribute(...inaccessibleAncestor);
     const clicked: string[] = [];
     const details = (resolve: () => typeof entries): Locator => ({
       count: async () => resolve().length,
@@ -165,8 +171,10 @@ describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 �
         if (selector !== ":scope > summary") throw new Error(`unexpected selector: ${selector}`);
         return {
           isVisible: async () => resolve()[0].visible,
+          evaluate: async <T>(evaluate: (element: HTMLElement) => T): Promise<T> => evaluate(summaries.get(resolve()[0].id)!),
           click: async () => {
             const entry = resolve()[0];
+            if (summaries.get(entry.id)!.closest("[inert]")) throw new Error("element is inert");
             clicked.push(entry.id);
             if (ignore === (entry.open ? "close" : "open")) return;
             entry.open = !entry.open;
@@ -177,7 +185,7 @@ describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 �
     // 실제 Playwright처럼 재평가한다. :not([open])에 의존하면 클릭 뒤 다른 대상을 가리킨다.
     const page = { locator: (selector: string) => details(() => selector.includes(":not([open])")
       ? entries.filter(entry => !entry.open && entry.hasSelect) : entries) } as unknown as Page;
-    return { page, entries, clicked };
+    return { page, entries, clicked, firstAncestor };
   }
 
   it("각각 열린 상태로 감사하고 같은 summary를 두 번 눌러 모두 원래 상태로 복구한다", async () => {
@@ -194,6 +202,25 @@ describe("인앱 details 검사에서 동일한 대상과 원래 닫힘 상태 �
     await expect(auditStudioInAppClosedDetails(page, async () => { throw new Error("offscreen control"); })).rejects.toThrow("offscreen control");
     expect(clicked).toEqual(["first", "first"]);
     expect(entries[0].open).toBe(false);
+  });
+  it.each([["inert", ""], ["hidden", ""], ["aria-hidden", "true"]] as const)(
+    "%s 조상이 있는 닫힌 시트는 제외하고 활성 details는 열고 감사하고 닫는다", async (attribute, value) => {
+      const { page, entries, clicked } = fixture(undefined, [attribute, value]);
+      const inspected = vi.fn(async () => undefined);
+      expect(await auditStudioInAppClosedDetails(page, inspected)).toBe(1);
+      expect(inspected).toHaveBeenCalledTimes(1);
+      expect(clicked).toEqual(["second", "second"]);
+      expect(entries.map(entry => entry.open)).toEqual([false, false, true, false, false]);
+    },
+  );
+  it("시트가 활성화되면 이전 inert 자손도 다시 열고 감사하며 aria-hidden=false는 제외하지 않는다", async () => {
+    const { page, clicked, firstAncestor } = fixture(undefined, ["inert", ""]);
+    expect(await auditStudioInAppClosedDetails(page, async () => undefined)).toBe(1);
+    firstAncestor.removeAttribute("inert");
+    firstAncestor.setAttribute("aria-hidden", "false");
+    clicked.length = 0;
+    expect(await auditStudioInAppClosedDetails(page, async () => undefined)).toBe(2);
+    expect(clicked).toEqual(["first", "first", "second", "second"]);
   });
   it.each(["open", "close"] as const)("summary의 %s 동작이 실패하면 통과하지 않는다", async (ignore) => {
     const { page } = fixture(ignore);

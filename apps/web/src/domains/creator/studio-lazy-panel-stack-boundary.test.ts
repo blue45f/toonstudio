@@ -7,6 +7,7 @@ interface ModuleEdges {
   readonly allImports: readonly string[];
   readonly dynamicImports: readonly string[];
   readonly source: string;
+  readonly syntax: ts.SourceFile;
   readonly valueImports: readonly string[];
 }
 
@@ -55,7 +56,7 @@ function moduleEdges(relativePath: string): ModuleEdges {
   }
 
   visit(file);
-  return { allImports, dynamicImports, source, valueImports };
+  return { allImports, dynamicImports, source, syntax: file, valueImports };
 }
 
 const STACK_OPTIONAL_MODULES = [
@@ -248,7 +249,8 @@ describe("Studio lazy panel stack boundary", () => {
 
   it("keeps all seven modal loading overlays colocated with their Suspense owners", () => {
     const stack = moduleEdges("./StudioThreeDPreviewPanelStack.tsx").source;
-    const retainedBg3dHost = moduleEdges("./bg3d/StudioBg3dRetainedOwnerHost.tsx").source;
+    const retained = moduleEdges("./bg3d/StudioBg3dRetainedOwnerHost.tsx");
+    const retainedBg3dHost = retained.source;
     const contracts = [
       ["PoserLoadingOverlay", "포저를 여는 중"],
       ["MannequinLoadingOverlay", "3D 데생 인형을 여는 중"],
@@ -263,7 +265,15 @@ describe("Studio lazy panel stack boundary", () => {
       expect(stack).toContain(label);
       expect(stack).toContain(`<Suspense fallback={<${name} />}>`);
     }
-    expect(retainedBg3dHost).toContain("function Bg3DRetainedLoadingOverlay()");
+    const overlay = retained.syntax.statements.find((node): node is ts.FunctionDeclaration =>
+      ts.isFunctionDeclaration(node) && node.name?.text === "Bg3DRetainedLoadingOverlay");
+    const returned = overlay?.body?.statements.find(ts.isReturnStatement)?.expression;
+    const root = returned && ts.isParenthesizedExpression(returned) ? returned.expression : returned;
+    if (!root || !ts.isJsxElement(root)) throw new Error("BG3D loading overlay의 실제 JSX 반환이 없습니다.");
+    const attributes = Object.fromEntries(root.openingElement.attributes.properties
+      .filter(ts.isJsxAttribute)
+      .map(attribute => [attribute.name.getText(retained.syntax),
+        attribute.initializer && ts.isStringLiteral(attribute.initializer) ? attribute.initializer.text : null]));
     expect(retainedBg3dHost).toContain("장면 도우미를 여는 중");
     expect(retainedBg3dHost).toContain(
       "<Suspense fallback={lease.logicalOpen ? <Bg3DRetainedLoadingOverlay /> : null}>",
@@ -271,7 +281,7 @@ describe("Studio lazy panel stack boundary", () => {
     expect(`${stack}\n${retainedBg3dHost}`.match(/aria-live="polite"/g)).toHaveLength(7);
     expect(stack.match(/<Loader2\b/g)).toHaveLength(6);
     // BG3D는 단계별 준비 안내와 장면 아이콘으로 로딩을 표시한다.
-    expect(retainedBg3dHost).toContain('aria-live="polite" aria-busy="true"');
+    expect(attributes).toMatchObject({ role: "status", "aria-live": "polite", "aria-busy": "true" });
     expect(retainedBg3dHost.match(/<Boxes\b/g)).toHaveLength(1);
   });
 

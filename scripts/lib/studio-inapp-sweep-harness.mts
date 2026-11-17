@@ -318,7 +318,9 @@ export async function auditStudioInAppClosedDetails(
     const details = allDetails.nth(index);
     if (await details.getAttribute("open") !== null || await details.locator("select").count() === 0) continue;
     const summary = details.locator(":scope > summary");
-    if (!await summary.isVisible()) continue;
+    // 레이아웃 상자가 남아 있어도 닫힌 모바일 시트의 비활성 자손은 사용자 조작 대상이 아니다.
+    if (!await summary.isVisible()
+      || await summary.evaluate(element => Boolean(element.closest('[hidden], [inert], [aria-hidden="true"]')))) continue;
     await summary.click();
     if (await details.getAttribute("open") === null) throw new Error("닫힌 details가 summary 클릭으로 열리지 않았습니다.");
     const inspection = await inspectExpanded().then(

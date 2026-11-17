@@ -643,7 +643,7 @@ const ALLOWANCES: readonly BrowserKvAllowance[] = Object.freeze([
   allow("apps/web/src/domains/creator/planning/studio-fact-concordance.ts", "local-storage-write", "factConcordanceStorageKey(projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "studio-fact-concordance.test.ts round-trips the side data and drops broken records on read; only check verdicts and the fix and lore-revision trails (before/after text of the corrected segment or lore field, keyed by episode, segment, or entry) are stored here, the lore entries and the manuscript live in their own stores, and a write failure is swallowed so the concordance index is not blocked."),
   allow("apps/web/src/domains/creator/lettering/studio-dialogue-spellcheck-qc.ts", "durable-storage-write", "dialogueSpellcheckQcStorageKey(record.projectId,record.episodeId)", 1, REVIEW_TOOL_LOCAL_STATE, "studio-dialogue-spellcheck-qc.test.ts covers save, load, per-episode isolation, rejection of forged records, and a throwing storage reading as no record; the record is a per-episode count summary plus a timestamp, a key/content mismatch reads as no record, and a storage exception returns false."),
   allow("apps/web/src/domains/creator/my-story/my-story-handoff.ts", "durable-storage-write", "storyDevelopmentStorageKey(projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "my-story-handoff.test.ts reads the written StudioStoryDevelopmentDocument back through storyDevelopmentStorageKey and covers rolling back the half-created project when the write fails; the key and document shape are those of the already reviewed StudioStoryDevelopmentPanel write, so no new storage format is introduced."),
-
+  allow("apps/web/src/domains/creator/ai-quick-blueprint/ai-quick-blueprint-handoff.ts", "durable-storage-write", "storyDevelopmentStorageKey(projectId)", 1, PLANNING_LOCAL_WORKING_COPY, "ai-quick-blueprint-engine.test.ts가 같은 projectId 키의 version 1 대본을 실제 재읽고, 다른 작품의 문서·비트를 보존하며 대본 쓰기 거부 시 새 프로젝트 rollback과 기존 원문 보존을 검증한다. 기존 my-story 및 대본 패널과 같은 로컬 기획 작업 사본이며 원고 정본·권한·서버 동기화 저장소를 추가하지 않는다."),
   // 검수 도구의 이 기기 한정 작업 상태. 비교 댓글(ProductionEpisodeReviewRoom 주석)과 팀 투표(TeamVotePanel 주석)는
   // 서버 저장이 아직 없는 로컬 전용이라 후속 이관 대상이다 — 승인 기록과 원고 핀 문서는 별개다.
   allow("apps/web/src/domains/creator/production-hub/production-review-local-state.ts", "durable-storage-write", "key", 1, REVIEW_TOOL_LOCAL_STATE, "production-review-local-state.test.ts와 .react.test.tsx가 실제 로그인 UID·프로젝트·작품·회차별 비교 이미지/댓글 분리, 계정 전환의 메모리 초기화, 잘못된 봉투 거절과 소유자 없는 기존 원문 보존을 검사한다. 기존 세션·댓글 직렬화는 이 로컬 작업 사본 봉투 안에 유지한다."),
@@ -940,8 +940,9 @@ describe("Studio browser-KV authority boundary", () => {
     expect(unauthorizedFindings(analyzeBrowserKvSource(`${file}.other.ts`, source), allowances)).not.toEqual([]);
   });
 
-  it("새 표시 설정과 정리 허용은 정확한 소유자·키·호출 수에만 적용한다", () => {
+  it("검토한 로컬 작업 사본·표시 설정·정리 허용은 정확한 소유자·키·호출 수에만 적용한다", () => {
     const reviewedFiles = [
+      "ai-quick-blueprint/ai-quick-blueprint-handoff.ts",
       "studio-shell/StudioSaveFirstProjectLibraryPage.tsx",
       "virtual-space/office2d/studio-virtual-space-stage-mode.ts",
       "virtual-space/studio-virtual-space-entry-preference.ts",
@@ -967,7 +968,6 @@ describe("Studio browser-KV authority boundary", () => {
       }
     }
   });
-
   it("keeps every allowance narrow, justified, and reviewable", () => {
     const ids = new Set<string>();
     for (const allowance of ALLOWANCES) {

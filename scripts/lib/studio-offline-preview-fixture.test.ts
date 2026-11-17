@@ -1,8 +1,10 @@
+import { createServer } from "node:http";
+
 import { describe, expect, it, vi } from "vitest";
 
 import { HealthCapabilitiesResponseSchema } from "../../apps/api/src/modules/health/health.dto";
 
-import { installStudioOfflinePreviewFixture, studioOfflinePreviewCapabilities } from "./studio-offline-preview-fixture.mjs";
+import { createStudioOfflinePreviewServerFixture, installStudioOfflinePreviewFixture, studioOfflinePreviewCapabilities } from "./studio-offline-preview-fixture.mjs";
 
 import type { BrowserContext, Request, Response, Route } from "playwright";
 
@@ -10,7 +12,7 @@ const ORIGIN = "http://127.0.0.1:4173";
 const TICKET = `${ORIGIN}/api/studio-realtime/tickets`;
 const HTTP_DENIED = "Failed to load resource: the server responded with a status of 401 (Unauthorized)";
 
-async function fixture(origin = ORIGIN) {
+async function fixture(origin = ORIGIN, serverFixture: ReturnType<typeof createStudioOfflinePreviewServerFixture> | null = null) {
   const registrations: { match: (url: URL) => boolean; handle: (route: Route) => Promise<unknown> }[] = [];
   const observers: ((response: Response) => void)[] = [];
   const context = {
@@ -23,9 +25,9 @@ async function fixture(origin = ORIGIN) {
       observers.push(observer);
     }),
   };
-  const installed = await installStudioOfflinePreviewFixture(context, origin);
-  const emitResponse = (request: Request, status: number) => {
-    const response = { request: () => request, url: () => request.url(), status: () => status } as Response;
+  const installed = await installStudioOfflinePreviewFixture(context, origin, serverFixture);
+  const emitResponse = (request: Request, status: number, headers: Record<string, string> = {}) => {
+    const response = { request: () => request, url: () => request.url(), status: () => status, headers: () => headers } as Response;
     for (const observer of observers) observer(response);
   };
   const invoke = async (url: string, method: string) => {
@@ -39,6 +41,28 @@ async function fixture(origin = ORIGIN) {
     return { request, fulfill, fallback };
   };
   return { ...installed, context, registrations, emitResponse, invoke };
+}
+
+async function withHttpFixture(run: (origin: string, owner: ReturnType<typeof createStudioOfflinePreviewServerFixture>) => Promise<void>) {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("loopback fixture 포트를 확인하지 못했습니다.");
+  const origin = `http://127.0.0.1:${address.port}`;
+  const owner = createStudioOfflinePreviewServerFixture(origin);
+  server.on("request", (request, response) => owner.middleware(request, response, () => {
+    response.statusCode = 502;
+    response.end("unmocked upstream");
+  }));
+  try {
+    await run(origin, owner);
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 }
 
 describe("소유한 offline preview API 경계", () => {
@@ -150,5 +174,102 @@ describe("소유한 offline preview API 경계", () => {
     installed.emitResponse({ url: () => url, method: () => "GET" } as Request, 502);
     expect(installed.unexpectedResponses).toEqual([{ url, method: "GET", status: 502, expectedStatus: undefined }]);
     expect(installed.responses).toEqual([]);
+  });
+
+  it("browser route 없이 실제 HTTP로 같은 세 계약을 제공하고 발급한 응답만 승인한다", async () => {
+    await withHttpFixture(async (origin, owner) => {
+      const installed = await fixture(origin, owner);
+      const cases = [
+        ["/api/health/capabilities", "GET", 200],
+        ["/api/auth/session", "GET", 200],
+        ["/api/studio-realtime/tickets", "POST", 401],
+      ] as const;
+      const receiptIds = new Set<string>();
+      for (const [path, method, status] of cases) {
+        const url = `${origin}${path}`;
+        const response = await fetch(url, { method });
+        expect(response.status).toBe(status);
+        expect(response.headers.get("cache-control")).toBe("no-store");
+        expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
+        const receiptId = response.headers.get("x-toonstudio-offline-preview-receipt");
+        expect(receiptId).toMatch(/^[0-9a-f-]{36}$/u);
+        receiptIds.add(String(receiptId));
+        const body: unknown = await response.json();
+        if (path.endsWith("capabilities")) expect(HealthCapabilitiesResponseSchema.safeParse(body).success).toBe(true);
+        else if (path.endsWith("session")) expect(body).toEqual({ authenticated: false, user: null });
+        else expect(body).toEqual({ statusCode: 401, message: "Unauthorized" });
+        const request = { url: () => url, method: () => method } as Request;
+        installed.emitResponse(request, status, Object.fromEntries(response.headers));
+        expect(installed.responses.at(-1)).toEqual({ url, method, status, transport: "http", receiptId });
+      }
+      expect(receiptIds.size).toBe(3);
+      expect(installed.unexpectedResponses).toEqual([]);
+      expect(installed.isExpectedConsole(HTTP_DENIED, `${origin}/api/studio-realtime/tickets`)).toBe(true);
+    });
+  });
+
+  it("HTTP fixture도 query·다른 method·다른 경로를 기존 upstream으로 넘긴다", async () => {
+    await withHttpFixture(async (origin) => {
+      for (const [path, method] of [
+        ["/api/health/capabilities?real=1", "GET"],
+        ["/api/health/capabilities", "POST"],
+        ["/api/studio-realtime/tickets", "GET"],
+        ["/api/studio-realtime/tickets/", "POST"],
+        ["/api/creator/works/save", "POST"],
+      ]) {
+        const response = await fetch(`${origin}${path}`, { method });
+        expect(response.status).toBe(502);
+        expect(response.headers.has("x-toonstudio-offline-preview-receipt")).toBe(false);
+        expect(await response.text()).toBe("unmocked upstream");
+      }
+    });
+    for (const origin of ["", "https://toonstudio.cloud", "http://example.com", `${ORIGIN}/studio`]) {
+      expect(() => createStudioOfflinePreviewServerFixture(origin)).toThrow("직접 시작한 loopback");
+    }
+    const owner = createStudioOfflinePreviewServerFixture(ORIGIN);
+    await expect(fixture("", owner)).rejects.toThrow("origin이 다릅니다");
+    await expect(fixture("http://127.0.0.1:4174", owner)).rejects.toThrow("origin이 다릅니다");
+  });
+
+  it("HTTP receipt 누락·위조·origin/method/status/헤더 불일치를 숨기지 않는다", async () => {
+    await withHttpFixture(async (origin, owner) => {
+      const installed = await fixture(origin, owner);
+      const url = `${origin}/api/studio-realtime/tickets`;
+      const response = await fetch(url, { method: "POST" });
+      await response.text();
+      const headers = Object.fromEntries(response.headers);
+      const invalid = [
+        { url, method: "POST", status: 401, headers: {} },
+        { url, method: "POST", status: 401, headers: { ...headers, "x-toonstudio-offline-preview-receipt": "forged" } },
+        { url: `${url}?real=1`, method: "POST", status: 401, headers },
+        { url: "https://toonstudio.cloud/api/studio-realtime/tickets", method: "POST", status: 401, headers },
+        { url, method: "GET", status: 401, headers },
+        { url, method: "POST", status: 502, headers },
+        { url, method: "POST", status: 401, headers: { ...headers, "cache-control": "max-age=60" } },
+        { url, method: "POST", status: 401, headers: { ...headers, "content-type": "text/plain" } },
+      ];
+      for (const item of invalid) {
+        installed.emitResponse({ url: () => item.url, method: () => item.method } as Request, item.status, item.headers);
+      }
+      expect(installed.unexpectedResponses).toHaveLength(invalid.length);
+      expect(installed.responses).toEqual([]);
+      expect(installed.isExpectedConsole(HTTP_DENIED, url)).toBe(false);
+    });
+  });
+
+  it("같은 HTTP receipt를 다른 Request identity에 재사용하지 않는다", async () => {
+    await withHttpFixture(async (origin, owner) => {
+      const installed = await fixture(origin, owner);
+      const url = `${origin}/api/studio-realtime/tickets`;
+      const response = await fetch(url, { method: "POST" });
+      await response.text();
+      const headers = Object.fromEntries(response.headers);
+      const first = { url: () => url, method: () => "POST" } as Request;
+      installed.emitResponse(first, 401, headers);
+      expect(installed.isExpectedConsole(HTTP_DENIED, url)).toBe(true);
+      installed.emitResponse({ url: () => url, method: () => "POST" } as Request, 401, headers);
+      expect(installed.unexpectedResponses).toEqual([{ url, method: "POST", status: 401, expectedStatus: undefined }]);
+      expect(installed.isExpectedConsole(HTTP_DENIED, url)).toBe(false);
+    });
   });
 });

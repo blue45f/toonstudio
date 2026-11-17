@@ -17,15 +17,20 @@
  * 아니다(도크의 드로잉 도구 행이 그 계약으로 설계돼 있다).
  *
  * Run via: pnpm verify:studio-inapp-browser  (expects a production build in dist/)
+ * 명시적 부분 검사: TOONSPECTRUM_INAPP_VERIFY_PROFILES / TOONSPECTRUM_INAPP_VERIFY_ROUTES (쉼표 구분 ID).
+ * 필터를 생략하면 기존 전체 38개를 실행하며 JSON에 선택 범위·미실행·fatal을 보존한다.
  * Logs [verify-inapp] per route; exits 1 on hard failures.
  */
 import { type ChildProcess } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { chromium, type Browser, type Page, type Request } from "playwright";
 
+import { buildStudioInAppReport, createStudioInAppCatalog, selectStudioInAppCases, studioInAppResultLine,
+  type StudioInAppCase, type StudioInAppFatalFailure, type StudioInAppSelection } from "./lib/studio-inapp-selection-report.mjs";
 import { auditStudioInAppClosedDetails, createStudioInAppPreviewApiDiagnostics } from "./lib/studio-inapp-sweep-harness.mjs";
 import {
   cleanScratchDir,
@@ -50,7 +55,7 @@ interface InAppProfile {
   readonly width: number;
 }
 
-const PROFILES: readonly InAppProfile[] = Object.freeze([
+export const PROFILES: readonly InAppProfile[] = Object.freeze([
   {
     id: "kakaotalk-android-360",
     height: 592,
@@ -107,7 +112,7 @@ const VALID_COMPANION_SESSION = "studio-inapp-verify-session-0001";
  * Studio 가 소유한 라우트 전부. 편집기 서피스는 같은 셸을 공유하지만 각기 다른 지연 청크를
  * 마운트하므로 하나로 묶지 않는다 — 넘침과 타깃 크기는 마운트된 패널이 정한다.
  */
-const ROUTES: readonly RouteProbe[] = Object.freeze([
+export const ROUTES: readonly RouteProbe[] = Object.freeze([
   { id: "home", path: "/studio", readySelector: "h1" },
   { id: "immersive", path: "/studio/immersive", readySelector: '[data-studio-immersive-hub="true"]' },
   { id: "editor", path: "/studio/canvas", readySelector: '[data-studio-mobile-editing-dock="true"]' },
@@ -472,29 +477,39 @@ async function runRoute(
 async function main(): Promise<void> {
   cleanScratchDir({
     directory: SCRATCH,
-    extensions: [".png", ".log"],
+    extensions: [".png", ".log", ".json"],
     filePrefix: "studio-inapp",
     ignoreListingErrors: true,
   });
-  const port = await findFreePort({
-    unavailableMessage: "could not allocate an in-app-browser preview port",
-  });
-  const baseUrl = `http://127.0.0.1:${port}`;
-  const server: ChildProcess = spawnVitePreview({
-    port,
-    runner: "node-vite-bin",
-    logPath: join(SCRATCH, "studio-inapp-preview.log"),
-  });
-
+  const catalog = createStudioInAppCatalog(PROFILES, ROUTES);
+  const selectionEnv = { TOONSPECTRUM_INAPP_VERIFY_PROFILES: process.env.TOONSPECTRUM_INAPP_VERIFY_PROFILES,
+    TOONSPECTRUM_INAPP_VERIFY_ROUTES: process.env.TOONSPECTRUM_INAPP_VERIFY_ROUTES };
+  const results: RouteResult[] = [];
+  let selection: StudioInAppSelection | null = null;
+  let activeCase: StudioInAppCase | null = null;
+  let fatalFailure: StudioInAppFatalFailure | null = null;
+  let phase = "selection";
+  const checkpoint = () => {
+    const report = buildStudioInAppReport({ catalog, selection, env: selectionEnv, results, phase, activeCase, fatalFailure });
+    writeFileSync(join(SCRATCH, "studio-inapp-browser-report.json"), `${JSON.stringify(report, null, 2)}\n`);
+    return report;
+  };
+  let server: ChildProcess | null = null;
   let browser: Browser | null = null;
   try {
+    checkpoint();
+    selection = selectStudioInAppCases(catalog, selectionEnv);
+    const selectedIds = new Set(selection.planned.map(item => `${item.profile}/${item.route}`));
+    phase = "preview"; checkpoint();
+    const port = await findFreePort({ unavailableMessage: "could not allocate an in-app-browser preview port" });
+    const baseUrl = `http://127.0.0.1:${port}`;
+    server = spawnVitePreview({ port, runner: "node-vite-bin", logPath: join(SCRATCH, "studio-inapp-preview.log") });
     await waitForServer(`${baseUrl}/studio`, {
       notReadyMessage: "preview server did not become ready",
       timeoutMs: 30_000,
     });
+    phase = "browser"; checkpoint();
     browser = await chromium.launch({ args: ["--no-sandbox"], headless: true });
-
-    const results: RouteResult[] = [];
     let skipped = 0;
     for (const profile of PROFILES) {
       for (const route of ROUTES) {
@@ -502,30 +517,37 @@ async function main(): Promise<void> {
           skipped += 1;
           continue;
         }
+        if (!selectedIds.has(`${profile.id}/${route.id}`)) continue;
+        activeCase = { profile: profile.id, route: route.id };
+        phase = "case"; checkpoint();
         results.push(await runRoute(browser, baseUrl, profile, route));
+        activeCase = null; checkpoint();
       }
     }
     // 조용한 축소는 "전부 훑었다"로 읽힌다. 건너뛴 수를 남긴다.
     if (skipped > 0) log(`skipped ${skipped} profile-scoped route runs`);
 
+    phase = "finalize"; checkpoint();
     await browser.close();
     browser = null;
 
-    const failed = results.filter((result) => !result.ok);
+    phase = "complete";
+    const report = checkpoint();
     log(`screenshots in ${SCRATCH}`);
-    if (failed.length > 0) {
-      log(`RESULT: FAIL (${failed.length}/${results.length} runs)`);
-      process.exitCode = 1;
-    } else {
-      log(`RESULT: OK (${results.length} runs green)`);
-    }
+    log(studioInAppResultLine(report));
+    if (!report.ok) process.exitCode = 1;
+  } catch (error) {
+    fatalFailure = { phase, case: activeCase, name: error instanceof Error ? error.name : "ThrownValue",
+      message: error instanceof Error ? error.message : String(error), ...(error instanceof Error && error.stack ? { stack: error.stack } : {}) };
+    checkpoint();
+    throw error;
   } finally {
     if (browser) await browser.close().catch(() => undefined);
-    await stopChildProcess(server).catch(() => undefined);
+    if (server) await stopChildProcess(server).catch(() => undefined);
   }
 }
 
-main().catch((error: unknown) => {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch((error: unknown) => {
   log(`FATAL: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 });
