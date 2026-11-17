@@ -636,7 +636,7 @@ export function StudioInspectorAsideShell({
             }
             className="rounded-xl border border-line bg-panel/40 p-3"
           >
-            <p className="mb-2 text-xs font-semibold text-fg-3 uppercase tracking-wider">미니맵 / 네비게이터</p>
+            <p className="mb-2 text-xs font-semibold text-fg-3">미니맵 / 네비게이터</p>
             <div className="flex justify-center bg-canvas/30 rounded-xl p-2 border border-line/50">
               <div
                 role="button"
