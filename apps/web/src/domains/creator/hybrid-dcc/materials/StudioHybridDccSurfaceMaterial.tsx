@@ -4,6 +4,10 @@ import * as THREE from "three";
 
 import { StudioHybridDccUvCheckerMaterial } from "../StudioHybridDccUvCheckerMaterial";
 
+import {
+  resolveStudioHybridDccPhysicalProps,
+  type StudioHybridDccPbrPresetId,
+} from "./studio-hybrid-dcc-pbr-presets";
 import type { StudioHybridDccToonBindings } from "./studio-hybrid-dcc-toon-projection";
 import type { StudioHybridDccToonMaterial } from "./studio-hybrid-dcc-toon-material";
 
@@ -14,8 +18,15 @@ interface SurfaceResources {
   readonly hasOutline: boolean;
   dispose(): void;
 }
-async function createResources(slots: readonly number[], bindings: StudioHybridDccToonBindings, color: string): Promise<SurfaceResources> {
+async function createResources(
+  slots: readonly number[],
+  bindings: StudioHybridDccToonBindings,
+  color: string,
+  pbrPresetId: StudioHybridDccPbrPresetId,
+  selected: boolean,
+): Promise<SurfaceResources> {
   const { createStudioHybridDccToonMaterialRuntime } = await import("./studio-hybrid-dcc-toon-material-runtime");
+  const pbr = resolveStudioHybridDccPhysicalProps(pbrPresetId, color, selected);
   const body: THREE.Material[] = [], outline: THREE.Material[] = [], disposers: Array<() => void> = [];
   let hasOutline = false;
   try {
@@ -27,7 +38,18 @@ async function createResources(slots: readonly number[], bindings: StudioHybridD
         if (toon.outline) { outline.push(toon.outline); hasOutline = true; }
         else { const hidden = new THREE.MeshBasicMaterial({ visible: false }); outline.push(hidden); disposers.push(() => hidden.dispose()); }
       } else {
-        const fallback = new THREE.MeshPhysicalMaterial({ color, roughness: 0.62, metalness: 0.08, clearcoat: 0.12, clearcoatRoughness: 0.78, side: THREE.DoubleSide });
+        const fallback = new THREE.MeshPhysicalMaterial({
+          color: pbr.color,
+          roughness: pbr.roughness,
+          metalness: pbr.metalness,
+          clearcoat: pbr.clearcoat,
+          clearcoatRoughness: pbr.clearcoatRoughness,
+          sheen: pbr.sheen,
+          sheenRoughness: pbr.sheenRoughness,
+          sheenColor: new THREE.Color(pbr.sheenColor),
+          ior: pbr.ior,
+          side: THREE.DoubleSide,
+        });
         const hidden = new THREE.MeshBasicMaterial({ visible: false });
         body.push(fallback); outline.push(hidden); disposers.push(() => fallback.dispose(), () => hidden.dispose());
       }
@@ -39,23 +61,46 @@ async function createResources(slots: readonly number[], bindings: StudioHybridD
 const NO_RAYCAST = () => {};
 function captureSurfaceRequest(json: string) {
   // 이 컴포넌트가 직접 생성한 JSON만 복원해 effect의 key와 실제 입력을 같은 불변 스냅샷으로 묶는다.
-  const [color, entries] = JSON.parse(json) as [string, Array<[number, StudioHybridDccToonMaterial | null]>];
-  return { color, slots: entries.map(([slot]) => slot), bindings: Object.fromEntries(entries.filter((entry): entry is [number, StudioHybridDccToonMaterial] => entry[1] !== null).map(([slot, material]) => [String(slot), material] as const)) };
+  const [color, pbrPresetId, selected, entries] = JSON.parse(json) as [
+    string,
+    StudioHybridDccPbrPresetId,
+    boolean,
+    Array<[number, StudioHybridDccToonMaterial | null]>,
+  ];
+  return {
+    color,
+    pbrPresetId,
+    selected,
+    slots: entries.map(([slot]) => slot),
+    bindings: Object.fromEntries(entries.filter((entry): entry is [number, StudioHybridDccToonMaterial] => entry[1] !== null).map(([slot, material]) => [String(slot), material] as const)),
+  };
 }
 
-export function StudioHybridDccSurfaceMaterial({ geometry, slots = [0], bindings = {}, color, wireColor, showMaterial, uvChecker, hasUv }: {
+export function StudioHybridDccSurfaceMaterial({
+  geometry,
+  slots = [0],
+  bindings = {},
+  color,
+  wireColor,
+  showMaterial,
+  uvChecker,
+  hasUv,
+  pbrPresetId = "studio-clay",
+  selected = false,
+}: {
   readonly geometry: THREE.BufferGeometry; readonly slots?: readonly number[]; readonly bindings?: StudioHybridDccToonBindings;
   readonly color: string; readonly wireColor: string; readonly showMaterial: boolean; readonly uvChecker: boolean; readonly hasUv: boolean;
+  readonly pbrPresetId?: StudioHybridDccPbrPresetId; readonly selected?: boolean;
 }) {
   const active = showMaterial && !(uvChecker && hasUv) && slots.some((slot) => Object.hasOwn(bindings, String(slot)));
-  const json = JSON.stringify([color, slots.map((slot) => [slot, bindings[String(slot)] ?? null])]);
+  const json = JSON.stringify([color, pbrPresetId, selected, slots.map((slot) => [slot, bindings[String(slot)] ?? null])]);
   const request = useMemo(() => captureSurfaceRequest(json), [json]);
   const key = `${active}:${json}`;
   const [state, setState] = useState<{ key: string; resources?: SurfaceResources; error?: string } | null>(null);
   useEffect(() => {
     if (!active) return;
     let disposed = false; let owned: SurfaceResources | undefined;
-    void createResources(request.slots, request.bindings, request.color).then((resources) => {
+    void createResources(request.slots, request.bindings, request.color, request.pbrPresetId, request.selected).then((resources) => {
       if (disposed) resources.dispose();
       else { owned = resources; setState({ key, resources }); }
     }).catch((cause: unknown) => {
@@ -65,9 +110,25 @@ export function StudioHybridDccSurfaceMaterial({ geometry, slots = [0], bindings
   }, [active, key, request]);
   if (active && state?.key === key && state.error) throw new Error(state.error);
   const resources = active && state?.key === key && !state.resources?.disposed ? state.resources : undefined;
-  if (!showMaterial) return <meshStandardMaterial color={wireColor} roughness={0.72} metalness={0.02} wireframe />;
+  if (!showMaterial) return <meshStandardMaterial color={wireColor} roughness={0.72} metalness={0} wireframe />;
   if (uvChecker && hasUv) return <StudioHybridDccUvCheckerMaterial />;
-  if (!resources) return <meshPhysicalMaterial color={color} roughness={0.62} metalness={0.08} clearcoat={0.12} clearcoatRoughness={0.78} side={THREE.DoubleSide} />;
+  if (!resources) {
+    const pbr = resolveStudioHybridDccPhysicalProps(pbrPresetId, color, selected);
+    return (
+      <meshPhysicalMaterial
+        color={pbr.color}
+        roughness={pbr.roughness}
+        metalness={pbr.metalness}
+        clearcoat={pbr.clearcoat}
+        clearcoatRoughness={pbr.clearcoatRoughness}
+        sheen={pbr.sheen}
+        sheenRoughness={pbr.sheenRoughness}
+        sheenColor={pbr.sheenColor}
+        ior={pbr.ior}
+        side={THREE.DoubleSide}
+      />
+    );
+  }
   return <>
     {resources.body.map((material, index) => <primitive key={material.uuid} object={material} attach={`material-${index}`} dispose={null} />)}
     {resources.hasOutline ? <mesh geometry={geometry} material={resources.outline.slice()} renderOrder={1} raycast={NO_RAYCAST} dispose={null} /> : null}

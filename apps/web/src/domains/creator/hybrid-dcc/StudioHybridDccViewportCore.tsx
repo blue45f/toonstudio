@@ -50,6 +50,7 @@ import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewport
 import { useStudioHybridDccViewportPreferences } from "./useStudioHybridDccViewportPreferences";
 import { DEFAULT_STUDIO_HYBRID_DCC_VIEWPORT_DESCRIPTION } from "./studio-hybrid-dcc-viewport-description";
 import { StudioHybridDccSurfaceMaterial } from "./materials/StudioHybridDccSurfaceMaterial";
+import type { StudioHybridDccPbrPresetId } from "./materials/studio-hybrid-dcc-pbr-presets";
 import type { StudioHybridDccToonMaterialPreview } from "./materials/studio-hybrid-dcc-toon-projection";
 import { deriveStudioHybridDccViewportSnapshot, type StudioHybridDccViewportAssetSnapshot } from "./studio-hybrid-dcc-viewport-snapshot";
 import { useStudioHybridDccSculptPointer } from "./useStudioHybridDccSculptPointer";
@@ -361,6 +362,7 @@ function StudioHybridDccAssetMesh({
   onNotice,
   sculptStroke,
   sculptGesture,
+  pbrPresetId = "studio-clay",
 }: {
   readonly asset: StudioHybridDccViewportAssetSnapshot;
   readonly onCommitTransform?: (
@@ -393,6 +395,7 @@ function StudioHybridDccAssetMesh({
   /** 활성화되면 포인터 드래그가 오브젝트 로컬 좌표로 조형 스트로크를 보낸다. */
   readonly sculptStroke?: (localPoint: { x: number; y: number; z: number }) => void;
   readonly sculptGesture?: StudioSculptGestureController;
+  readonly pbrPresetId?: StudioHybridDccPbrPresetId;
 }) {
   const [resource, setResource] = useState<StudioHybridDccGeometryResource | null>(null);
   const objectRef = useRef<THREE.Group>(null);
@@ -431,7 +434,7 @@ function StudioHybridDccAssetMesh({
       >
         <StudioHybridDccSurfaceMaterial geometry={resource.geometry} slots={resource.materialSlots} bindings={asset.toonMaterials}
           color={asset.materialColor ?? viewportPaletteCssColor(selected ? VIEWPORT_COLORS.materialSelected : VIEWPORT_COLORS.material)}
-          wireColor={viewportPaletteCssColor(selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire)} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} />
+          wireColor={viewportPaletteCssColor(selected ? VIEWPORT_COLORS.wireSelected : VIEWPORT_COLORS.wire)} showMaterial={showMaterial} uvChecker={uvChecker} hasUv={Boolean(cornerUvs)} pbrPresetId={asset.materialColor ? "studio-clay" : pbrPresetId} selected={selected} />
       </mesh>
       {showWireOverlay ? (
         <mesh geometry={resource.geometry} renderOrder={3}>
@@ -624,6 +627,7 @@ export function StudioHybridDccViewport({
   const [isolatedAssetId, setIsolatedAssetId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [interactionNotice, setInteractionNotice] = useState("");
+  const [pbrPresetId, setPbrPresetId] = useState<StudioHybridDccPbrPresetId>("studio-clay");
   const draggingRef = useRef(false);
   const selectionGateRef = useRef<ReturnType<typeof createStudioHybridDccSelectionGate<ReturnType<typeof setTimeout>>> | null>(null);
   const [orbitGate] = useState(() => createStudioHybridDccBoundaryOrbitGate(() => selectionGateRef.current?.suppress()));
@@ -947,6 +951,7 @@ export function StudioHybridDccViewport({
                 preferences={preferences}
                 onDraggingChange={changeDragging}
                 onNotice={setInteractionNotice}
+                pbrPresetId={pbrPresetId}
                 sculptGesture={asset.assetId === selectedAssetId ? sculptGesture : undefined}
                 sculptStroke={onSculptStroke && asset.assetId === selectedAssetId
                   ? (localPoint) => onSculptStroke(asset.assetId, localPoint)
@@ -1305,6 +1310,8 @@ export function StudioHybridDccViewport({
       dragging={dragging}
       onToggleIsolation={toggleIsolation}
       notice={interactionNotice}
+      pbrPresetId={pbrPresetId}
+      onPbrPresetChange={setPbrPresetId}
     />
     </>
   );

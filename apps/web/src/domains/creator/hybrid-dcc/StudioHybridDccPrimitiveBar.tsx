@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown, Layers, PackageOpen, Sparkles } from "lucide-react";
+import { Building2, Boxes, ChevronDown, Layers, PackageOpen, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -10,8 +10,10 @@ import {
 } from "./studio-hybrid-dcc-modifier-workspace";
 import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
+  type StudioHybridDccPrecisionBgKitItem,
   type StudioHybridDccStarterPrimitiveKind,
   type StudioHybridDccStarterPrimitiveSpec,
 } from "./studio-hybrid-dcc-primitives";
@@ -39,8 +41,8 @@ export interface StudioHybridDccPrimitiveBarProps {
 
 /**
  * 단순하고 직관적인 4종 핵심 시작 도형을 첫 화면에 두고,
- * 건축·유기체 정밀 도형(+8종), 비파괴 프로 마감 레시피(4종), Blender 5.2 플래그십 스타터(8종)는
- * 점진적 공개(Progressive Disclosure) 서랍으로 분리해 초보자 직관성과 전문가 깊이를 동시에 유지한다.
+ * 건축·유기체 정밀 도형(+12종), 비파괴 프로 마감 레시피(4종), Blender 5.2 정밀 배경 베이 V14(6종) 및
+ * 플래그십 스타터 V13(8종)은 점진적 공개(Progressive Disclosure) 서랍으로 분리한다.
  */
 export function StudioHybridDccPrimitiveBar({
   busy,
@@ -53,7 +55,9 @@ export function StudioHybridDccPrimitiveBar({
   const [fetchingId, setFetchingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState("");
 
-  const loadBlenderKitAsset = async (item: StudioHybridDccBlenderKitItem) => {
+  const loadBlenderKitAsset = async (
+    item: StudioHybridDccBlenderKitItem | StudioHybridDccPrecisionBgKitItem,
+  ) => {
     if (busy || fetchingId) return;
     setFetchingId(item.id);
     setFetchError("");
@@ -110,6 +114,45 @@ export function StudioHybridDccPrimitiveBar({
     );
   };
 
+  const renderKitItemButton = (
+    item: StudioHybridDccBlenderKitItem | StudioHybridDccPrecisionBgKitItem,
+  ) => {
+    const loading = fetchingId === item.id;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        disabled={disabled}
+        data-studio-hybrid-dcc-kit-item={item.id}
+        onClick={() => {
+          void loadBlenderKitAsset(item);
+        }}
+        className={cn(
+          "flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-line bg-card p-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+          TILE_PRESS,
+          FOCUS_RING,
+        )}
+      >
+        <img
+          src={item.previewUrl}
+          alt=""
+          loading="lazy"
+          width={40}
+          height={40}
+          className="size-10 shrink-0 rounded-md bg-canvas object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-semibold text-fg">
+            {loading ? bt("불러오는 중…", "Loading…") : bt(item.label[0], item.label[1])}
+          </span>
+          <span className="block truncate text-[0.65rem] tabular-nums text-fg-3">
+            {bt(item.hint[0], item.hint[1])} · {item.triangles.toLocaleString("ko-KR")} tris
+          </span>
+        </span>
+      </button>
+    );
+  };
+
   return (
     <section
       aria-label={bt("빠른 도형·마감 레시피·스타터 에셋", "Quick primitives, finish recipes & starter assets")}
@@ -136,7 +179,12 @@ export function StudioHybridDccPrimitiveBar({
         >
           <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
             <Layers size={14} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-accent" />
-            <span className="truncate">{bt("건축·유기체 정밀 도형 (+8종)", "Architectural & organic (+8)")}</span>
+            <span className="truncate">
+              {bt(
+                `건축·유기체 정밀 도형 (+${extendedSpecs.length}종)`,
+                `Architectural & organic (+${extendedSpecs.length})`,
+              )}
+            </span>
           </span>
           <ChevronDown
             size={14}
@@ -199,6 +247,34 @@ export function StudioHybridDccPrimitiveBar({
 
       <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
         <summary
+          data-testid="studio-hybrid-dcc-v14-bg-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+            <Building2 size={14} aria-hidden="true" className="shrink-0 text-accent" />
+            <span className="truncate">
+              {bt(
+                `정밀 웹툰 배경 베이 V14 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.length}종)`,
+                `Precision webtoon BG bays V14 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
+
+      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+        <summary
           className={cn(
             "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
@@ -220,48 +296,12 @@ export function StudioHybridDccPrimitiveBar({
           />
         </summary>
         <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
-          {STUDIO_HYBRID_DCC_BLENDER_V13_KIT.map((item) => {
-            const loading = fetchingId === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                disabled={disabled}
-                data-studio-hybrid-dcc-kit-item={item.id}
-                onClick={() => {
-                  void loadBlenderKitAsset(item);
-                }}
-                className={cn(
-                  "flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-line bg-card p-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
-                  TILE_PRESS,
-                  FOCUS_RING,
-                )}
-              >
-                <img
-                  src={item.previewUrl}
-                  alt=""
-                  loading="lazy"
-                  width={40}
-                  height={40}
-                  className="size-10 shrink-0 rounded-md bg-canvas object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-semibold text-fg">
-                    {loading
-                      ? bt("불러오는 중…", "Loading…")
-                      : bt(item.label[0], item.label[1])}
-                  </span>
-                  <span className="block truncate text-[0.65rem] tabular-nums text-fg-3">
-                    {bt(item.hint[0], item.hint[1])} · {item.triangles.toLocaleString("ko-KR")} tris
-                  </span>
-                </span>
-              </button>
-            );
-          })}
+          {STUDIO_HYBRID_DCC_BLENDER_V13_KIT.map(renderKitItemButton)}
         </div>
       </details>
+
       {fetchError ? (
-        <p role="alert" className="mt-1.5 text-xs text-bad [word-break:keep-all]">
+        <p role="alert" className="mt-1.5 px-1 text-xs text-bad">
           {fetchError}
         </p>
       ) : null}

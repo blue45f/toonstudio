@@ -1,5 +1,13 @@
+import { ChevronDown, Sparkles } from "lucide-react";
 import { useId, useState } from "react";
 
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+
+import {
+  getStudioHybridDccPbrPreset,
+  STUDIO_HYBRID_DCC_PBR_PRESETS,
+  type StudioHybridDccPbrPresetId,
+} from "./materials/studio-hybrid-dcc-pbr-presets";
 import {
   STUDIO_HYBRID_DCC_SNAP_LIMITS,
   type StudioHybridDccViewportPreferences,
@@ -13,14 +21,19 @@ interface Props {
   readonly dragging: boolean;
   readonly onToggleIsolation: () => void;
   readonly notice: string;
+  readonly pbrPresetId?: StudioHybridDccPbrPresetId;
+  readonly onPbrPresetChange?: (presetId: StudioHybridDccPbrPresetId) => void;
 }
 const CONTROL = "min-h-11 min-w-0 rounded-lg border border-line bg-card px-2.5 text-xs text-fg-2 tabular-nums transition-[background-color,border-color,color,transform] duration-150 hover:bg-raised hover:text-fg enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none aria-[pressed=true]:border-accent/55 aria-[pressed=true]:bg-accent-soft aria-[pressed=true]:font-semibold aria-[pressed=true]:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 [word-break:keep-all]";
 
 export function StudioHybridDccViewportInteractionBar({
   preferences, onChange, isolatedAssetId, hasSelection, dragging, onToggleIsolation, notice,
+  pbrPresetId = "studio-clay", onPbrPresetChange,
 }: Props) {
   const id = useId();
+  const bt = useBilingual("StudioHybridDccViewportInteractionBar");
   const [inputError, setInputError] = useState("");
+  const activePbrPreset = getStudioHybridDccPbrPreset(pbrPresetId);
   return (
     <section aria-label="뷰포트 스냅과 표시 설정" className="mt-2 space-y-2 rounded-xl border border-line bg-panel p-2.5">
       <div className="flex flex-wrap items-center gap-2">
@@ -40,6 +53,38 @@ export function StudioHybridDccViewportInteractionBar({
         ))}
         <span className="text-[11px] text-fg-3">/ 격리 · F 선택 맞춤 · Esc 드래그 취소</span>
       </div>
+      {onPbrPresetChange ? (
+        <details className="group rounded-xl border border-line/70 bg-canvas/35" data-testid="studio-hybrid-dcc-pbr-look-disclosure">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+              <Sparkles size={13} aria-hidden="true" className="shrink-0 text-accent" />
+              <span className="truncate">{bt("스튜디오 표면 질감", "Studio surface look")}</span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-fg-3">
+              <span className="rounded-full bg-raised px-2 py-0.5 text-fg-2">
+                {bt(activePbrPreset.label[0], activePbrPreset.label[1])}
+              </span>
+              <ChevronDown size={13} aria-hidden="true" className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
+            </span>
+          </summary>
+          <div className="grid grid-cols-2 gap-1.5 border-t border-line/60 p-2 sm:grid-cols-3" role="group" aria-label={bt("스튜디오 표면 질감 프리셋", "Studio surface presets")}>
+            {STUDIO_HYBRID_DCC_PBR_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={preset.id === pbrPresetId}
+                disabled={dragging}
+                data-studio-hybrid-dcc-pbr-preset={preset.id}
+                onClick={() => onPbrPresetChange(preset.id)}
+                className={`${CONTROL} flex flex-col items-start justify-center py-1.5 text-left`}
+              >
+                <span className="max-w-full truncate font-semibold text-fg">{bt(preset.label[0], preset.label[1])}</span>
+                <span className="max-w-full truncate text-[10px] font-normal text-fg-3">{bt(preset.hint[0], preset.hint[1])}</span>
+              </button>
+            ))}
+          </div>
+        </details>
+      ) : null}
       <fieldset disabled={!preferences.snapping || dragging} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <legend className="sr-only">드래그 스냅 간격</legend>
         {([

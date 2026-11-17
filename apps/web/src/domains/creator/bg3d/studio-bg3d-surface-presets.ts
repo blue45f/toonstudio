@@ -74,6 +74,36 @@ export const STUDIO_BG3D_SURFACE_PRESETS: readonly StudioBg3dSurfacePreset[] = O
     description: "부드럽게 반사되는 도자기 표면",
     patch: { roughness: 0.3, metalness: 0, ...NEUTRAL_PATCH_BASE },
   },
+  {
+    id: "warm-oak",
+    label: "새틴 원목",
+    description: "은은한 바니시 결이 살아 있는 따뜻한 원목 마루·가구 표면",
+    patch: { roughness: 0.36, metalness: 0, ...NEUTRAL_PATCH_BASE },
+  },
+  {
+    id: "exposed-concrete",
+    label: "노출 콘크리트·석재",
+    description: "차분하게 확산 반사되는 타설 콘크리트·화강석 표면",
+    patch: { roughness: 0.78, metalness: 0, ...NEUTRAL_PATCH_BASE },
+  },
+  {
+    id: "brushed-brass",
+    label: "브러시드 황동",
+    description: "헤어라인 결이 맺히는 황동 난간·장식 금구 표면",
+    patch: { roughness: 0.24, metalness: 1, ...NEUTRAL_PATCH_BASE },
+  },
+  {
+    id: "anodized-steel",
+    label: "아노다이징 스틸",
+    description: "단단한 반사광을 지닌 창호 멀리언·스테인리스 프레임 표면",
+    patch: { roughness: 0.28, metalness: 1, ...NEUTRAL_PATCH_BASE },
+  },
+  {
+    id: "matte-plaster",
+    label: "매트 회벽·도장",
+    description: "눈부심 없이 부드럽게 퍼지는 실내 회벽·수성 도장 벽면",
+    patch: { roughness: 0.88, metalness: 0, ...NEUTRAL_PATCH_BASE },
+  },
 ]);
 
 const SURFACE_PRESET_IDS = new Set(STUDIO_BG3D_SURFACE_PRESETS.map((preset) => preset.id));

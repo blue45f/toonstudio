@@ -10,6 +10,9 @@ import type * as THREE from "three";
 
 export type LightingTone = StudioVrmLightingTone;
 
+const HEMI_SKY_COLOR = "#fff8ef";
+const STAGE_WALL_COLOR = "#2b2b32";
+
 export function VrmLighting({
   tone,
   lighting,
@@ -47,13 +50,11 @@ export function VrmLighting({
   return (
     <>
       <ambientLight intensity={ambI} color={base.amb[1] as string} />
-      {formStudy ? (
-        <hemisphereLight
-          intensity={0.24 * iMul}
-          color="#fff8ec"
-          groundColor="#596473"
-        />
-      ) : null}
+      <hemisphereLight
+        intensity={(formStudy ? 0.26 : 0.16) * iMul}
+        color={HEMI_SKY_COLOR}
+        groundColor={tone === "night" ? "#1e2436" : "#566070"}
+      />
       <directionalLight intensity={d1I} position={dirPos as [number,number,number]} color={c1} />
       <directionalLight intensity={d2I} position={[-3.2, 2.6, 2.1]} color={c2} />
       <directionalLight intensity={d3I} position={[-1.6, 3.4, -3.2]} color={base.d3[1] as string} />
@@ -63,19 +64,35 @@ export function VrmLighting({
         {(env === "floor" || env === "room" || env === "outdoor") && (
           <mesh position={[0, -0.01, 0]} rotation={[-Math.PI/2, 0, 0]} receiveShadow>
             <planeGeometry args={[8, 8]} />
-            <meshLambertMaterial color={env === "outdoor" ? "#3a5f3a" : "#3a3a3f"} />
+            <meshStandardMaterial
+              color={env === "outdoor" ? "#3a5f3a" : "#3a3a3f"}
+              roughness={0.86}
+              metalness={0}
+            />
           </mesh>
         )}
         {(env === "wall" || env === "room") && (
           <>
-            <mesh position={[0, 2.5, -2.8]}><planeGeometry args={[6, 5]} /><meshLambertMaterial color="#2b2b32" /></mesh>
-            <mesh position={[0, 2.5, 2.8]} rotation={[0, Math.PI, 0]}><planeGeometry args={[6, 5]} /><meshLambertMaterial color="#2b2b32" /></mesh>
+            <mesh position={[0, 2.5, -2.8]} receiveShadow>
+              <planeGeometry args={[6, 5]} />
+              <meshStandardMaterial color={STAGE_WALL_COLOR} roughness={0.86} metalness={0} />
+            </mesh>
+            <mesh position={[0, 2.5, 2.8]} rotation={[0, Math.PI, 0]} receiveShadow>
+              <planeGeometry args={[6, 5]} />
+              <meshStandardMaterial color={STAGE_WALL_COLOR} roughness={0.86} metalness={0} />
+            </mesh>
           </>
         )}
         {env === "room" && (
           <>
-            <mesh position={[-3.2, 2.5, 0]} rotation={[0, Math.PI/2, 0]}><planeGeometry args={[6, 5]} /><meshLambertMaterial color="#2b2b32" /></mesh>
-            <mesh position={[3.2, 2.5, 0]} rotation={[0, -Math.PI/2, 0]}><planeGeometry args={[6, 5]} /><meshLambertMaterial color="#2b2b32" /></mesh>
+            <mesh position={[-3.2, 2.5, 0]} rotation={[0, Math.PI/2, 0]} receiveShadow>
+              <planeGeometry args={[6, 5]} />
+              <meshStandardMaterial color={STAGE_WALL_COLOR} roughness={0.86} metalness={0} />
+            </mesh>
+            <mesh position={[3.2, 2.5, 0]} rotation={[0, -Math.PI/2, 0]} receiveShadow>
+              <planeGeometry args={[6, 5]} />
+              <meshStandardMaterial color={STAGE_WALL_COLOR} roughness={0.86} metalness={0} />
+            </mesh>
           </>
         )}
       </group>

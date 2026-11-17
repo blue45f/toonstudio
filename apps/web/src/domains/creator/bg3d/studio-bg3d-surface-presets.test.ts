@@ -13,14 +13,35 @@ import {
 } from "./studio-bg3d-surface-presets";
 
 describe("STUDIO_BG3D_SURFACE_PRESETS", () => {
-  it("프리셋 id는 유일하고 한글 라벨·설명을 가진다", () => {
-    expect(STUDIO_BG3D_SURFACE_PRESETS.length).toBeGreaterThanOrEqual(8);
+  it("프리셋 id는 유일하고 기존 8종과 건축 PBR 5종(총 13종)을 한글 라벨·설명으로 제공한다", () => {
+    expect(STUDIO_BG3D_SURFACE_PRESETS).toHaveLength(13);
     expect(new Set(STUDIO_BG3D_SURFACE_PRESETS.map((preset) => preset.id)).size).toBe(
       STUDIO_BG3D_SURFACE_PRESETS.length,
     );
     for (const preset of STUDIO_BG3D_SURFACE_PRESETS) {
       expect(preset.label.length).toBeGreaterThan(0);
       expect(preset.description.length).toBeGreaterThan(0);
+    }
+    const expectedArchPresets = [
+      { id: "warm-oak", label: "새틴 원목", roughness: 0.36, metalness: 0 },
+      { id: "exposed-concrete", label: "노출 콘크리트·석재", roughness: 0.78, metalness: 0 },
+      { id: "brushed-brass", label: "브러시드 황동", roughness: 0.24, metalness: 1 },
+      { id: "anodized-steel", label: "아노다이징 스틸", roughness: 0.28, metalness: 1 },
+      { id: "matte-plaster", label: "매트 회벽·도장", roughness: 0.88, metalness: 0 },
+    ] as const;
+    for (const expected of expectedArchPresets) {
+      expect(isStudioBg3dSurfacePresetId(expected.id)).toBe(true);
+      const preset = STUDIO_BG3D_SURFACE_PRESETS.find((item) => item.id === expected.id);
+      expect(preset?.label).toBe(expected.label);
+      expect(preset?.patch.roughness).toBe(expected.roughness);
+      expect(preset?.patch.metalness).toBe(expected.metalness);
+      expect([0, 1]).toContain(preset?.patch.metalness);
+      const override = buildStudioBg3dSurfacePresetOverride(expected.id);
+      expect(override).toMatchObject({
+        ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
+        roughness: expected.roughness,
+        metalness: expected.metalness,
+      });
     }
   });
 
@@ -63,7 +84,7 @@ describe("프리미티브 표면 기본값 복원", () => {
     } finally { material.dispose(); }
   });
 
-  it.each(["chrome", "glass", "neon"])("%s 적용·Undo·재적용·해제에서 숫자와 boolean 소품을 생략하지 않는다", (id) => {
+  it.each(["chrome", "glass", "neon", "warm-oak", "exposed-concrete", "brushed-brass", "anodized-steel", "matte-plaster"])("%s 적용·Undo·재적용·해제에서 숫자와 boolean 소품을 생략하지 않는다", (id) => {
     const override = buildStudioBg3dSurfacePresetOverride(id);
     if (!override) throw new Error("검증할 실제 프리셋이 필요합니다.");
     const material = new THREE.MeshStandardMaterial();

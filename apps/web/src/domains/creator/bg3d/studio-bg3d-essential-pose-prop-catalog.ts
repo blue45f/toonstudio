@@ -9,7 +9,9 @@
  * `apps/web/public/assets/3d/kitbash-v10/*.glb` (8종),
  * `apps/web/public/studio-assets/kitbash-v11/*.glb` (6종),
  * `apps/web/public/studio-assets/blender-hero-v12/*.glb` (4종),
- * `apps/web/public/assets/3d/*.glb` (68종)의 총 119종 CC0-1.0 1st-party GLB 모델을
+ * `apps/web/public/studio-assets/blender-modeler-kit-v13/*.glb` (8종),
+ * `apps/web/public/studio-assets/blender-precision-bg-v14/*.glb` (6종),
+ * `apps/web/public/assets/3d/*.glb` (68종)의 총 133종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
 
@@ -22,6 +24,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "kitbash-v11-prop-3d"
   | "blender-hero-v12-prop-3d"
   | "blender-modeler-kit-v13-prop-3d"
+  | "blender-precision-bg-v14-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -80,7 +83,13 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       id: "blender-modeler-kit-v13-prop-3d",
       labelKo: "블렌더 모델러 스타터 V13",
       labelEn: "Blender Modeler Starter Kit V13",
-      descriptionKo: "웹툰 조형 두상 베이스·모듈러 석조 아치 창문·나선 계단 코어·거리 벤치 및 가로등 세트 4종",
+      descriptionKo: "웹툰 조형 두상 베이스·모듈러 석조 아치 창문·나선 계단 코어·거리 벤치 및 가로등 세트 8종",
+    },
+    {
+      id: "blender-precision-bg-v14-prop-3d",
+      labelKo: "블렌더 정밀 배경 베이 V14",
+      labelEn: "Blender Precision Background Bays V14",
+      descriptionKo: "베이커리 카페 파사드·고등학교 창측 복도·로판 볼트 열주 회랑·오피스텔 복층 코너·지하철 승강장 스크린도어·옥상 계단실 난간 6종",
     },
     {
       id: "original-scene-prop-3d",
@@ -193,6 +202,15 @@ const RAW_BLENDER_MODELER_KIT_V13_ROWS: readonly RawAssetRow[] = [
   ["webtoon-hanok-paljak-pavilion-bay-v13", "전통 한옥 배흘림기둥·처마 정자 모듈 (V13)", "Traditional Hanok Paljak Pavilion Bay V13"],
   ["webtoon-creator-ergonomic-chair-desk-v13", "웹툰 작가 모션데스크·인체공학 체어 세트 (V13)", "Creator Motion Desk & Ergonomic Chair V13"],
   ["webtoon-fantasy-potion-apothecary-cabinet-v13", "판타지 연금술 포션 진열장·약재함 (V13)", "Fantasy Potion Apothecary Cabinet V13"],
+];
+
+const RAW_BLENDER_PRECISION_BG_V14_ROWS: readonly RawAssetRow[] = [
+  ["modern-corner-bakery-cafe-bay-v14", "모던 코너 베이커리·카페 통창 파사드 베이 (V14)", "Modern Corner Bakery & Cafe Facade Bay V14"],
+  ["korean-highschool-window-corridor-bay-v14", "한국 고등학교 교실·복도 창측 정밀 베이 (V14)", "Korean High-School Classroom & Corridor Bay V14"],
+  ["rofan-grand-vault-colonnade-bay-v14", "로판 황궁 리브 볼트·코린트 열주 회랑 베이 (V14)", "Imperial Rib-Vault Colonnade Bay V14"],
+  ["modern-officetel-studio-loft-bay-v14", "현대 오피스텔·원룸 복층 창가 코너 베이 (V14)", "Modern Officetel Studio Corner Bay V14"],
+  ["subway-platform-screen-door-bay-v14", "도시 지하철 승강장 스크린도어·안전선 정밀 베이 (V14)", "Subway Platform Screen-Door Bay V14"],
+  ["rooftop-sunset-parapet-stairhouse-v14", "학교·빌딩 옥상 계단실·난간 펜스 베이 (V14)", "Rooftop Stairhouse & Parapet Fence Bay V14"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -424,6 +442,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${slug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["background", "character", "modeler-kit", "blender-v13", "모델러", "조형", "아치", "나선계단", "벤치", slug, labelKo, labelEn]),
+      }),
+    ),
+    ...RAW_BLENDER_PRECISION_BG_V14_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `blender-precision-bg-v14-${slug}`,
+        category: "blender-precision-bg-v14-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/blender-precision-bg-v14/${slug}.glb`,
+        previewUrl: `/studio-assets/blender-precision-bg-v14/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["background", "architecture", "precision-bay", "blender-v14", "정밀배경", "베이", "카페", "교실", "로판", "오피스텔", "지하철", "옥상", slug, labelKo, labelEn]),
       }),
     ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

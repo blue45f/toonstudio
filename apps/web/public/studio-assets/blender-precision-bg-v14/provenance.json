@@ -1,0 +1,75 @@
+{
+  "schema": "toonstudio.blender-precision-bg-assets.v14",
+  "createdAt": "2026-11-17",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.2.0 LTS (generate_precision_bg_v14.py + glbforge desktop-hero@1 & mobile-hero@1 100/100)",
+  "tool": "Blender 5.2.0 LTS",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "korean-highschool-window-corridor-bay-v14.glb",
+      "bytes": 292248,
+      "sha256": "1e5b361fce7ed28346742ca811e28e838c0493a06ff1fdf05f0f6b7135d3c6b0"
+    },
+    {
+      "file": "modern-corner-bakery-cafe-bay-v14.glb",
+      "bytes": 260396,
+      "sha256": "3f193b63626c5772e82b37aaf0dba0b9d425afba3ef767b40a482f46cf913ab2"
+    },
+    {
+      "file": "modern-officetel-studio-loft-bay-v14.glb",
+      "bytes": 171852,
+      "sha256": "590f04cf785bb67f38f0c809d03bc984300f4fb13f426d7c2ac17d195eceeea8"
+    },
+    {
+      "file": "rofan-grand-vault-colonnade-bay-v14.glb",
+      "bytes": 438084,
+      "sha256": "f4bc2ee5ac15ee470a95770ea8e3d6d85eb95915c97c58c5c8dfb488a5fc2f79"
+    },
+    {
+      "file": "rooftop-sunset-parapet-stairhouse-v14.glb",
+      "bytes": 142396,
+      "sha256": "d3863eaf5fd60e340a6ead14a32e16ad5aa172840bc99fc45b7a7df75d14eea8"
+    },
+    {
+      "file": "subway-platform-screen-door-bay-v14.glb",
+      "bytes": 217864,
+      "sha256": "4ecd8a96f97e7721acbc78ad1d94c0e8395825f311429d9ee5401f5818d19ffa"
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/korean-highschool-window-corridor-bay-v14.png",
+      "bytes": 321451,
+      "sha256": "92ca44f5991d8ec7a492a39b781f4e32bd9303dac2f95c79967ea45fb951eaa5"
+    },
+    {
+      "file": "thumbnails/modern-corner-bakery-cafe-bay-v14.png",
+      "bytes": 319520,
+      "sha256": "6c882642abec6d564bdc46e31c6c08cefd8bd98c8ee1ee36c12cbe7284c3a098"
+    },
+    {
+      "file": "thumbnails/modern-officetel-studio-loft-bay-v14.png",
+      "bytes": 341101,
+      "sha256": "61dd79433f57286043805a396171b2fc873861ca19c143ec541e04e8af1bd88e"
+    },
+    {
+      "file": "thumbnails/rofan-grand-vault-colonnade-bay-v14.png",
+      "bytes": 322874,
+      "sha256": "a509f3f77464ae797ecdff2f88b95ba8994bab20eb579849861d6804517ee1cd"
+    },
+    {
+      "file": "thumbnails/rooftop-sunset-parapet-stairhouse-v14.png",
+      "bytes": 301832,
+      "sha256": "416e15432cb65b1fbf8b03b1b6e233072a5227c1793c543805240b7b0e31e41f"
+    },
+    {
+      "file": "thumbnails/subway-platform-screen-door-bay-v14.png",
+      "bytes": 315507,
+      "sha256": "2a89a5f6c4f1362c1afa7d5783085a17b39254d48908b48069b1726736c88e24"
+    }
+  ]
+}
