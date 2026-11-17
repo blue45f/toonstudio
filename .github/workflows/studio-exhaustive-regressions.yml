@@ -28,6 +28,7 @@ on:
       - scripts/verify-studio-companion.mts
       - scripts/verify-studio-inspector-walkthrough.mts
       - scripts/verify-studio-icons.mts
+      - scripts/verify-studio-groups.mts
       - scripts/verify-studio-inapp-feature-sweep.mts
       - scripts/verify-studio-mobile-top.mts
       - scripts/verify-studio-canvas-chrome.mts

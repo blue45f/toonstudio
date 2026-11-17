@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  ROOT, SOURCE_MODES, SUITES, diskCleanupPlan, execute, initialize, parseInputs, planFor, publish, runCases,
+  ROOT, SOURCE_MODES, SUITES, diskCleanupPlan, ensureDiskCapacity, execute, initialize, parseInputs, planFor, publish, runCases,
   validateBuild, validateChangedPaths, validateDiskSpace, validateFreshSource, validateMetadata, validateReport,
 } from "./run-studio-exhaustive-followup.mjs";
 
@@ -155,19 +155,60 @@ test("SDK 계획은 hosted Ubuntu24의 고정 두 경로만 허용하고 실제 
   for (const bytes of [20 * 1024 ** 3 - 1, -1, NaN, Infinity, "21474836480"]) assert.throws(() => validateDiskSpace(bytes));
 });
 
+test("이미20GiB 이상이면 SDK 삭제를 호출하지 않고 실제 부족할 때만 정리한다", () => {
+  const plan = { workspace: "/home/runner/work/project/project",
+    targets: ["/usr/local/lib/android/sdk", "/usr/share/dotnet/sdk"], minimumFreeBytes: 20 * 1024 ** 3 };
+  for (const beforeBytes of [plan.minimumFreeBytes, 91_555_139_584]) {
+    let calls = 0;
+    const records = [];
+    const receipt = ensureDiskCapacity(plan, { available: () => beforeBytes, cleanup: () => { calls += 1; },
+      record: value => records.push(structuredClone(value)) });
+    assert.equal(calls, 0); assert.equal(receipt.cleanup, "not-required");
+    assert.equal(receipt.beforeBytes, beforeBytes); assert.equal(receipt.afterBytes, beforeBytes);
+    assert.deepEqual(records, [receipt]);
+  }
+  for (const afterBytes of [plan.minimumFreeBytes, plan.minimumFreeBytes - 1]) {
+    const readings = [plan.minimumFreeBytes - 1, afterBytes];
+    const calls = [];
+    const records = [];
+    const run = () => ensureDiskCapacity(plan, { available: () => readings.shift(), cleanup: targets => calls.push([...targets]),
+      record: value => records.push(structuredClone(value)) });
+    if (afterBytes >= plan.minimumFreeBytes) assert.equal(run().cleanup, "completed");
+    else assert.throws(run, /20 GiB/u);
+    assert.deepEqual(calls, [plan.targets]); assert.equal(readings.length, 0);
+    assert.equal(records[0].cleanup, "required"); assert.equal(records[1].afterBytes, afterBytes);
+  }
+  let unexpectedCalls = 0;
+  for (const beforeBytes of [NaN, -1, Infinity]) assert.throws(() => ensureDiskCapacity(plan, {
+    available: () => beforeBytes, cleanup: () => { unexpectedCalls += 1; }, record: () => {},
+  }), /확인하지 못했습니다/u);
+  assert.equal(unexpectedCalls, 0);
+  const records = [];
+  assert.throws(() => ensureDiskCapacity(plan, { available: () => 0, cleanup: () => { throw new Error("cleanup timeout"); },
+    record: value => records.push(structuredClone(value)) }), /cleanup timeout/u);
+  assert.equal(records.at(-1).cleanup, "failed");
+});
+
 test("실제build-meta·manifest·SW 일치와 진입파일 존재를 요구한다", t => {
   const directory = temporary(t);
   mkdirSync(join(directory, ".vite")); mkdirSync(join(directory, "assets"));
   writeFileSync(join(directory, ".vite/build-meta.json"), JSON.stringify(build));
   writeFileSync(join(directory, ".vite/manifest.json"), JSON.stringify({ "index.html": { file: "assets/app.js" } }));
   writeFileSync(join(directory, "index.html"), "<html></html>"); writeFileSync(join(directory, "assets/app.js"), "export {};");
-  writeFileSync(join(directory, "sw.js"), `const manifest={buildId:"${build.buildId}"};`);
-  assert.equal(validateBuild(directory, sha).buildId, build.buildId);
-  writeFileSync(join(directory, "sw.js"), `const manifest={"buildId":"${build.buildId}"};`);
+  for (const quote of ["'", '"', "`"]) {
+    for (const key of ["buildId", '"buildId"']) {
+      writeFileSync(join(directory, "sw.js"), `const manifest={${key}:${quote}${build.buildId}${quote}};`);
+      assert.equal(validateBuild(directory, sha).buildId, build.buildId);
+    }
+  }
+  // 현재 Vite/Oxc가 실제 SW entry를 번들링한 정적 manifest 형식을 보존한다.
+  writeFileSync(join(directory, "sw.js"), 'var H=self,U={buildId:`' + build.buildId + '`,shellUrls:[`/index.html`],criticalUrls:[`/index.html`],warmUrls:[],offlineUrls:[]};');
   assert.equal(validateBuild(directory, sha).buildId, build.buildId);
   assert.throws(() => validateBuild(directory, "d".repeat(40)));
-  writeFileSync(join(directory, "sw.js"), 'const manifest={buildId:"ffffffffffff"};');
-  assert.throws(() => validateBuild(directory, sha), /sw.js/u);
+  for (const literal of ['"ffffffffffff"', '`ffffffffffff`', '"' + build.buildId + "'", '`' + build.buildId + '"', '`' + build.buildId + '${suffix}`', '`${"' + build.buildId + '"}`', '`' + build.buildId + '`+suffix']) {
+    writeFileSync(join(directory, "sw.js"), `const manifest={buildId:${literal}};`);
+    assert.throws(() => validateBuild(directory, sha), /sw.js/u);
+  }
   rmSync(join(directory, "sw.js")); assert.throws(() => validateBuild(directory, sha), /파일/u);
 });
 
