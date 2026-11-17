@@ -25,6 +25,9 @@ const native = scenario => Object.freeze({
   args: ["exec", "tsx", "scripts/verify-studio-native-raster-tools.mts", `--scenario=${scenario}`],
   report: "studio-native-raster-tools-report.json", scenario, env: {},
 });
+const pencil = Object.freeze({ id: "media-pencil-grain", kind: "media", command: "pnpm", minutes: 4,
+  args: ["exec", "tsx", "scripts/verify-studio-brush-media.mts"], report: "studio-brush-media-report.json",
+  medium: "pencil-grain", env: { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" } });
 export const SUITES = Object.freeze({
   followup: Object.freeze([
     Object.freeze({ id: "service-worker", kind: "sw", command: "pnpm", minutes: 6,
@@ -34,9 +37,7 @@ export const SUITES = Object.freeze({
   "native-representatives": Object.freeze([native("paint-bucket"), native("selection-rect"), native("filter-inside")]),
   residual: Object.freeze([
     matrix("webkit", "kakaotalk-android-360"), native("dodge-burn"),
-    Object.freeze({ id: "media-pencil-grain", kind: "media", command: "pnpm", minutes: 4,
-      args: ["exec", "tsx", "scripts/verify-studio-brush-media.mts"], report: "studio-brush-media-report.json",
-      medium: "pencil-grain", env: { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" } }),
+    pencil,
     Object.freeze({ id: "hokusai-live-integration", kind: "hokusai", command: "pnpm", minutes: 6,
       args: ["exec", "tsx", "scripts/verify-studio-hokusai-live-integration.mts"], report: "studio-hokusai-live-integration.json", env: {} }),
     Object.freeze({ id: "inapp-kakaotalk-android-360-editor", kind: "inapp", command: "pnpm", minutes: 4,
@@ -44,6 +45,7 @@ export const SUITES = Object.freeze({
       profile: "kakaotalk-android-360", route: "editor",
       env: { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" } }),
   ]),
+  "pencil-only": Object.freeze([pencil]),
 });
 const json = path => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -54,7 +56,7 @@ const empty = value => Array.isArray(value) && value.length === 0;
 const save = (directory, state) => writeJson(join(directory, "summary.json"), state);
 
 export function planFor(suite) {
-  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives 또는 residual이어야 합니다.");
+  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives, residual 또는 pencil-only이어야 합니다.");
   return SUITES[suite];
 }
 

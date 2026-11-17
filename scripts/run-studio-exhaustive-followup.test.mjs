@@ -66,7 +66,7 @@ function readyState(t, suite = "followup", deadline = Date.now() + 10_000) {
 test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 새 저장 비용은 만들지 않는다", () => {
   assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 2);
   assert.match(workflow, /default: regressions/u);
-  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual'\)/u);
+  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual' \|\| inputs\.suite == 'pencil-only'\)/u);
   assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ inputs\.source_mode == 'fresh-source' && 40 \|\| 20 \}\}/u);
   assert.match(followupJob, /STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' \? 39 : 19/u);
   assert.match(followupJob, /Date\.now\(\) \+ minutes \* 60_000/u);
@@ -95,7 +95,7 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
 });
 
 test("고정된 후속4·native3·남은5case만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
-  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual"]);
+  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual", "pencil-only"]);
   assert.deepEqual(planFor("followup").map(item => item.id), ["service-worker", "webkit-kakaotalk-android-360-animation", "chromium-tablet-768-animation", "native-paint-bucket"]);
   assert.deepEqual(planFor("native-representatives").map(item => item.scenario), ["paint-bucket", "selection-rect", "filter-inside"]);
   assert.deepEqual(SUITES.followup[0].args, ["exec", "tsx", "scripts/verify-studio-service-worker.mts"]);
@@ -103,6 +103,8 @@ test("고정된 후속4·native3·남은5case만 선택하며 임의 명령·전
     "media-pencil-grain", "hokusai-live-integration", "inapp-kakaotalk-android-360-editor"]);
   assert.deepEqual(planFor("residual").map(item => item.minutes), [3, 5, 4, 6, 4]);
   assert.deepEqual(SUITES.residual[2].env, { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" });
+  assert.deepEqual(planFor("pencil-only"), [SUITES.residual[2]]);
+  assert.deepEqual(browsersFor("pencil-only"), ["chromium"]);
   assert.deepEqual(SUITES.residual[4].env, { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" });
   assert.deepEqual(browsersFor("followup"), ["chromium", "webkit"]);
   assert.deepEqual(browsersFor("residual"), ["chromium", "webkit"]);

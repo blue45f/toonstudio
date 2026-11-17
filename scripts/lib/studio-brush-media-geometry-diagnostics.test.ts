@@ -15,8 +15,14 @@ import type { Page } from "playwright";
 
 vi.mock("./studio-verify-durable-autosave.mjs", () => ({ readDurableStudioAutosaveDocument: vi.fn() }));
 
+interface ObservedChrome {
+  key: string; tag: string; className: string; rect: { y: number; height: number } | null;
+  states: Record<string, string>; childElementCount: number;
+  style: { display: string; lineHeight: string; fontSize: string; paddingTop: string; paddingBottom: string; whiteSpace: string } | null;
+}
 type Probe = NonNullable<(Window & { __studioBrushMediaGeometry?: {
-  evidence: { frames: Array<{ label: string; stage: { y: number } | null; transform: number[] | null }>;
+  evidence: { frames: Array<{ label: string; stage: { y: number } | null; transform: number[] | null;
+      chrome: ObservedChrome[]; chromeTruncated: boolean }>;
     pointers: Array<{ x: number; y: number; trusted: boolean }>; route: Array<{ x: number; y: number }>;
     truncated: boolean; stopped: boolean; frameReads: number };
   arm(points: Array<{ x: number; y: number }>): void; stop(): void;
@@ -53,6 +59,7 @@ function fixture() {
 afterEach(() => {
   currentProbe()?.stop();
   delete (window as Window & { __studioBrushMediaGeometry?: Probe }).__studioBrushMediaGeometry;
+  document.documentElement.removeAttribute("data-service-capability-state");
   Reflect.deleteProperty(window, "Konva"); vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.clearAllMocks();
 });
 
@@ -74,6 +81,67 @@ describe("첫 획 좌표의 수동 관측", () => {
     expect(probe.evidence.frames.every(frame => frame.transform?.join() === "2,0,0,2,10,20")).toBe(true);
     const count = probe.evidence.pointers.length; f.event("pointerdown", 250, 300); f.event("pointerup", 500, 350);
     expect(probe.evidence.pointers).toHaveLength(count);
+  });
+
+  it("상단 상태 UI만 변해도 새 frame에 높이·줄 수 단서를 기록하고 문구·사용자 속성은 제외한다", () => {
+    const f = fixture(), workspace = document.getElementById("studio-workspace")!;
+    const shell = document.createElement("main");
+    shell.setAttribute("data-studio-app-shell", "true"); shell.setAttribute("data-studio-drawing-clarity", "true");
+    shell.innerHTML = '<header id="studio-menubar" class="studio-drawing-clarity-header" data-state="open"><div class="studio-drawing-clarity-title"><h1 title="private-title">private-title</h1><div data-studio-document-chrome-slot><div data-studio-save-status-chrome-mount><div data-studio-save-sync-status-center><button data-studio-drawing-save-summary="true" data-studio-local-save-state="saved" data-studio-save-matched-page-id="private-id" data-studio-save-matched-page-label="private-label" aria-label="private-label" style="display:inline-flex;line-height:12px;font-size:12px;padding-top:4px;padding-bottom:4px;white-space:normal"><span>private-save-text<span data-studio-connection-notice-summary></span></span></button></div></div></div></div></header>';
+    document.body.insertBefore(shell, workspace); shell.append(workspace);
+    const upstream = document.createElement("aside"); upstream.className = "upstream-notice";
+    upstream.setAttribute("data-state", "private-state"); upstream.textContent = "private-upstream-text";
+    document.body.insertBefore(upstream, shell);
+    const header = document.getElementById("studio-menubar")!, button = shell.querySelector("button")!;
+    const notice = shell.querySelector<HTMLElement>("[data-studio-connection-notice-summary]")!;
+    let headerHeight = 48, summaryHeight = 32, noticeHeight = 0;
+    vi.spyOn(header, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 0, 1000, headerHeight));
+    vi.spyOn(button, "getBoundingClientRect").mockImplementation(() => new DOMRect(20, 8, 200, summaryHeight));
+    vi.spyOn(notice, "getBoundingClientRect").mockImplementation(() => new DOMRect(20, 28, 200, noticeHeight));
+    document.documentElement.setAttribute("data-service-capability-state", "unknown");
+    const originalDom = document.body.innerHTML;
+    installStudioBrushMediaGeometryProbe(); const probe = currentProbe();
+    probe.arm([{ x: 250, y: 300 }]); f.event("pointerdown", 250, 300);
+    expect(document.body.innerHTML).toBe(originalDom);
+    const baselineCount = probe.evidence.frames.length; f.frame();
+    expect(probe.evidence.frames).toHaveLength(baselineCount);
+    headerHeight = 60; summaryHeight = 44; noticeHeight = 12;
+    button.setAttribute("data-studio-local-save-state", "pending");
+    notice.innerHTML = '<span data-service-status-placement="editor-summary" data-service-degraded-banner="degraded">private-notice-text</span>';
+    document.documentElement.setAttribute("data-service-capability-state", "degraded");
+    const changedDom = document.body.innerHTML; f.frame();
+    expect(probe.evidence.frames).toHaveLength(baselineCount + 1);
+    const changed = probe.evidence.frames.at(-1)!;
+    expect(changed.stage?.y).toBe(100);
+    expect(changed.chrome.find(node => node.key === "menubar:0")).toMatchObject({ tag: "header", rect: { height: 60 }, states: { "data-state": "open" } });
+    expect(changed.chrome.find(node => node.key === "save-summary:0")).toMatchObject({ rect: { height: 44 }, states: { "data-studio-local-save-state": "pending" },
+      style: { display: "inline-flex", lineHeight: "12px", fontSize: "12px", paddingTop: "4px", paddingBottom: "4px", whiteSpace: "normal" } });
+    expect(changed.chrome.find(node => node.key === "notice-summary:0")).toMatchObject({ rect: { height: 12 }, childElementCount: 1 });
+    expect(changed.chrome.find(node => node.key === "document:0")?.states).toEqual({ "data-service-capability-state": "degraded" });
+    expect(changed.chrome.find(node => node.key === "workspace-preceding:1:0")).toMatchObject({ tag: "aside", className: "upstream-notice", states: {} });
+    f.moveStage(112); f.frame(); probe.stop();
+    expect(probe.evidence.frames.at(-1)?.stage?.y).toBe(112);
+    expect(document.body.innerHTML).toBe(changedDom);
+    expect(JSON.stringify(probe.evidence)).not.toMatch(/private-|matched-page|aria-label/);
+  });
+
+  it("크기가 같아도 알림 자식 추가를 기록하고 조상·형제가 많아도 chrome 관측을 제한한다", () => {
+    const f = fixture(), workspace = document.getElementById("studio-workspace")!;
+    const notice = document.createElement("span"); notice.setAttribute("data-studio-connection-notice-summary", "true");
+    document.body.insertBefore(notice, workspace);
+    let branch: Element = workspace;
+    for (let depth = 0; depth < 8; depth += 1) {
+      const wrapper = document.createElement("div"); branch.before(wrapper);
+      for (let index = 0; index < 20; index += 1) wrapper.append(document.createElement("aside"));
+      wrapper.append(branch); branch = wrapper;
+    }
+    installStudioBrushMediaGeometryProbe(); const probe = currentProbe();
+    probe.arm([{ x: 250, y: 300 }]); f.event("pointerdown", 250, 300);
+    const count = probe.evidence.frames.length; notice.append(document.createElement("span")); f.frame();
+    expect(probe.evidence.frames).toHaveLength(count + 1);
+    expect(probe.evidence.frames.at(-1)?.chrome.find(node => node.key === "notice-summary:0")?.childElementCount).toBe(1);
+    expect(probe.evidence.frames.every(frame => frame.chrome.length <= 40 && frame.chromeTruncated)).toBe(true);
+    expect(probe.evidence.truncated).toBe(true);
   });
 
   it("입력이 과도해도 관측은 상한에 멈추고 truncation을 숨기지 않는다", () => {

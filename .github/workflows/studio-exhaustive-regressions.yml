@@ -82,6 +82,7 @@ on:
           - followup
           - native-representatives
           - residual
+          - pencil-only
       source_mode:
         description: 기존 산출물 재사용(20분) 또는 현재 SHA production 빌드(40분)
         type: choice
@@ -161,7 +162,7 @@ jobs:
 
   followup:
     name: 선택한 production Studio 후속 검사
-    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual')
+    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual' || inputs.suite == 'pencil-only')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.source_mode == 'fresh-source' && 40 || 20 }}
     permissions:
