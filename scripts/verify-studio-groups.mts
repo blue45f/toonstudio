@@ -34,6 +34,7 @@ import { STUDIO_DRAFT_CANVAS_PATHNAME } from "../apps/web/src/domains/creator/st
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { setStudioPrimaryColorThroughUi } from "./lib/studio-primary-color-interactions";
 import { closeStudioGroupQaContext, createStudioGroupQaContext } from "./lib/studio-qa-diagnostics.mjs";
+import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import {
   readDurableStudioAutosaveDocument,
   readDurableStudioAutosaveError,
@@ -339,10 +340,6 @@ async function installCleanStudioState(page: Page): Promise<void> {
       try {
         window.localStorage.setItem(quickstartKey, "1");
         window.localStorage.setItem(mobileHintKey, "1");
-        window.localStorage.setItem(
-          "toonstudio-studio-ui-density:v1",
-          JSON.stringify({ mode: "full" }),
-        );
         if (window.sessionStorage.getItem(cleanSessionKey) !== "1") {
           for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
             const key = window.localStorage.key(index);
@@ -406,6 +403,7 @@ async function prepareStudioPage(page: Page, studioUrl: string): Promise<void> {
   });
   await waitForStudioDrawingReady(page, { requireWelcome: true });
   await dismissTransientChrome(page);
+  await showStudioProjectWindowTools(page);
   const shellState = await page.evaluate(() => ({
     bodyTextLength: document.body.innerText.trim().length,
     hasErrorOverlay: Boolean(

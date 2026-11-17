@@ -87,6 +87,39 @@ server에만 두고 `VITE_` 변수를 사용하지 않는다.
   거절(402·429·Cloudflare 403/5035 등)에서만 다음 후보로 넘어가고, 전환 시 출처를
   결과의 `failover`에 남긴다. 네트워크 오류·5xx·형식이 깨진 성공은 재전송하지 않는다.
 
+### Cloudflare 모델 종료 대응 (2026-11-17 확인)
+
+[Cloudflare의 2026-11-20 종료 공지](https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/)에
+등재된 24개 모델은 현재 공유 무료 풀의 허용 목록에 없다. 텍스트 기본값
+`@cf/google/gemma-4-26b-a4b-it`, 허용 대안 `@cf/zai-org/glm-4.7-flash`, 위 이미지·임베딩
+기본값을 유지한다. 테스트에 있는 종료 모델 ID는 거절을 검증하는 입력이며 운영 사용 증거가 아니다.
+
+- `studio-ai-provider.test.ts`는 종료 대상 24개 ID의 텍스트 후보 제외와
+  `404 / model_not_found`, `410 / 5028`의 확정 거절 분류를 검증한다. 모델 종료는 무료 쿼터 소진이
+  아니므로 분류 결과상 다른 제공자에 재전송할 대상이 아니다. 최종 안내 메일은 404를, 공식 변경 공지는
+  410을 안내해 두 형태를 모두 유지한다.
+- `studio-ai-capabilities.test.ts`는 종료 이미지·임베딩 모델 override와 잘못된 텍스트 모델
+  override의 차단을 검증한다. 현재 이미지·임베딩 설정은 텍스트 provider에서 계정·토큰을
+  가져오므로 `STUDIO_AI_FREE_CLOUDFLARE_MODEL`이 허용 목록 밖이면 두 능력도 비활성화된다.
+- `studio-ai-cloudflare-media.test.ts`는 기존 요청·응답 계약과 FLUX 프롬프트 경계를 검증한다.
+  [공식 입력 스키마](https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/schema-input.json)의
+  상한에 맞춰 최종 프롬프트 2,048 Unicode 코드 포인트까지 그대로 보내고 초과 입력은 외부 호출 전에 거절한다.
+  자동으로 잘라 이미지 의도를 바꾸지 않는다. 모델·steps 기본값·seed 전송 방식은 유지한다.
+  seed는 공식 모델 예제와 스키마·Pi AI 설명이 서로 달라 실제 지원·재현성은 미확인이다.
+- 위 세 테스트 파일은 `scripts/ci-required-vitest-targets.txt`에 등록되어 필수 core 회귀의
+  product shard에 포함된다. 테스트는 제공자 응답을 주입하며 실제 추론을 호출하지 않는다.
+
+**운영 확인과 무료 경계:** 이 소스 및 테스트만으로 현재 배포 SHA, 주입된 모델 override,
+Workers Free 플랜, 남은 할당량이나 다른 서비스·개인 BYOK 연결의 호출 모델을 확정하지 않는다.
+`STUDIO_AI_FREE_CLOUDFLARE_CONFIRMED`는 운영 승인 플래그이고 실시간 과금 조회가 아니다.
+무료 10,000 Neurons는 계정 전체의 일일 공유량이며 KST 09:00에 초기화된다.
+`estimatedNeurons`도 추정치이므로 Paid 플랜의 초과 과금을 차단하는 보장은 아니다.
+
+운영 접근 시 배포 SHA와 위 네 모델의 실제 사용 여부, 세 `STUDIO_AI_FREE_CLOUDFLARE_*MODEL`
+override, 무료 플랜·계정 전체 잔여량을 읽기로 먼저 확인한다. 로그는 모델 ID·상태 코드만
+확인하고 토큰·프롬프트·응답을 노출하지 않는다. 무료 상태가 확인되지 않으면 실제 추론,
+모델 교체, 환경변수 변경과 배포를 실행하지 않는다. 안전한 기본값에는 교체나 재색인이 필요 없다.
+
 ## 무료 티어 데이터 약관 배지
 
 제공자별 무료 티어의 데이터 사용 차이를 상태 응답의 제공자 항목에 배지로 싣는다

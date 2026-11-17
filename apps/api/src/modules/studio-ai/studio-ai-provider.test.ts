@@ -167,8 +167,32 @@ describe("Studio AI provider resolution", () => {
   });
 
   it.each([
-    "@cf/qwen/qwen3-30b-a3b-fp8",
+    // 2026-11-20 종료 전체 목록: https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/
+    "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
     "@cf/nvidia/nemotron-3-120b-a12b",
+    "@cf/deepseek-ai/deepseek-v4-pro-0813",
+    "@cf/deepseek-ai/deepseek-v4-flash-0731",
+    "@cf/qwen/qwq-32b",
+    "@cf/qwen/qwen3-30b-a3b-fp8",
+    "@cf/moonshotai/kimi-k2.6",
+    "@cf/moonshotai/kimi-k2.7-code",
+    "@cf/zai-org/glm-5.2",
+    "@cf/zai-org/glm-5.3-flash",
+    "@cf/meta-llama/llama-2-7b-chat-hf-lora",
+    "@cf/google/gemma-2b-it-lora",
+    "@cf/google/gemma-7b-it-lora",
+    "@cf/meta/llama-3.1-8b-instruct-fp8",
+    "@cf/meta/llama-3.2-1b-instruct",
+    "@cf/meta/llama-3.2-3b-instruct",
+    "@cf/myshell-ai/melotts",
+    "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+    "@cf/runwayml/stable-diffusion-v1-5-inpainting",
+    "@cf/bytedance/stable-diffusion-xl-lightning",
+    "@cf/lykon/dreamshaper-8-lcm",
+    "@cf/openai/whisper-tiny-en",
+    "@cf/llava-hf/llava-1.5-7b-hf",
+    "@cf/google/embeddinggemma-300m",
+    // 공지의 유료 대체 모델도 운영자 확인만으로 무료 풀에 열리지 않는다.
     "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
     "@cf/zai-org/glm-5.3",
   ])("폐기·유료 모델 %s를 지정하면 Cloudflare를 무료 후보에서 제외한다", (model) => {
@@ -183,10 +207,13 @@ describe("Studio AI provider resolution", () => {
       .map(({ id }) => id)).toEqual(["mistral"]);
   });
 
-  it("Cloudflare 모델 폐기 오류에서 다른 공급자로 재전송하지 않는다", () => {
-    expect(classifyStudioAiProviderFailure("cloudflare", 410, {
-      errors: [{ code: 5028 }],
-    })).toMatchObject({ kind: "request_rejected", billingFailoverEligible: false });
+  it.each([
+    { status: 404, payload: { error: { code: "model_not_found" } } },
+    { status: 410, payload: { errors: [{ code: 5028 }] } },
+  ])("Cloudflare 모델 폐기 $status 오류는 결제·무료 할당량 전환으로 처리하지 않는다", ({ status, payload }) => {
+    const failure = classifyStudioAiProviderFailure("cloudflare", status, payload);
+    expect(failure).toMatchObject({ kind: "request_rejected", billingFailoverEligible: false });
+    expect(failure.failoverReason).toBeUndefined();
   });
 
   it("사용자가 지정한 무료 공급자 순서를 운영 기본값보다 우선한다", () => {

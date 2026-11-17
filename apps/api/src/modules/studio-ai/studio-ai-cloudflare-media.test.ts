@@ -71,6 +71,35 @@ describe("Cloudflare FLUX 이미지 생성 어댑터", () => {
     expect(result.estimatedNeurons).toBe(58);
   });
 
+  it.each(["가", "😀"])("%s 2,048개 프롬프트를 자르거나 바꾸지 않고 전송한다", async (character) => {
+    const prompt = character.repeat(2_048);
+    const fetchFn = vi.fn<StudioAiMediaFetch>(async () =>
+      jsonResponse({ result: { image: "AA==" }, success: true }));
+
+    await generateImageWithCloudflare(cloudflareConfig("image-generation"), { prompt }, fetchFn);
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(fetchFn.mock.calls[0]?.[1].body))).toEqual({ prompt });
+  });
+
+  it.each([
+    ["가", 2_049],
+    ["가", 4_000],
+    ["😀", 2_049],
+  ] as const)("%s %i개 프롬프트는 외부 호출 전에 거절한다", async (character, length) => {
+    const fetchFn = vi.fn<StudioAiMediaFetch>();
+
+    await expect(generateImageWithCloudflare(
+      cloudflareConfig("image-generation"),
+      { prompt: character.repeat(length) },
+      fetchFn,
+    )).rejects.toMatchObject({
+      name: "StudioAiCapabilityInputError",
+      message: "이미지 생성 지시는 1~2,048자로 입력해야 해요.",
+    });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
   it("스텝 범위 밖 입력은 호출 전에 거절하고 봉투 실패는 재전송 없이 확정 거절한다", async () => {
     const fetchFn = vi.fn<StudioAiMediaFetch>();
     await expect(generateImageWithCloudflare(cloudflareConfig("image-generation"), {

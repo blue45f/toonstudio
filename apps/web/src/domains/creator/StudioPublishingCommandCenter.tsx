@@ -10,37 +10,24 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { buildStudioHref } from "./creator-studio-links";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
-  confirmStudioDestructiveAction,
-  recordStudioDestructiveOutcome,
+  confirmStudioDestructiveAction, recordStudioDestructiveOutcome,
 } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";
 import { downscaleImageFile } from "./studio-image-utils";
 import {
-  getStudioSharedDocument,
-  getStudioSharedDocumentMeta,
-  isStudioSharedDocumentAccessError,
-  isStudioSharedDocumentRevisionConflictError,
-  updateStudioSharedDocument,
-  type StudioSharedDocumentMeta,
+  getStudioSharedDocument, getStudioSharedDocumentMeta, isStudioSharedDocumentAccessError,
+  isStudioSharedDocumentRevisionConflictError, updateStudioSharedDocument, type StudioSharedDocumentMeta,
 } from "./studio-shared-document-client";
 import {
-  assertStudioUploadSourceBatch,
-  inspectStudioUploadSourceImage,
-  selectStudioUploadDecodedPixelLimit,
+  assertStudioUploadSourceBatch, inspectStudioUploadSourceImage, selectStudioUploadDecodedPixelLimit,
 } from "./studio-upload-image-safety";
 import {
-  formatStudioUploadBytes,
-  studioDataUrlByteLength,
-  summarizeStudioUploadConversion,
+  formatStudioUploadBytes, studioDataUrlByteLength, summarizeStudioUploadConversion,
   type StudioUploadImageSourceMetadata,
 } from "./studio-upload-conversion";
 import {
-  STUDIO_UPLOAD_ACTION_DOCK_CLASS,
-  STUDIO_UPLOAD_CONTAINER_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROL_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROLS_CLASS,
-  STUDIO_UPLOAD_PAGE_LIST_CLASS,
-  STUDIO_UPLOAD_PAGE_ROW_CLASS,
+  STUDIO_UPLOAD_ACTION_DOCK_CLASS, STUDIO_UPLOAD_CONTAINER_CLASS, STUDIO_UPLOAD_PAGE_CONTROL_CLASS,
+  STUDIO_UPLOAD_PAGE_CONTROLS_CLASS, STUDIO_UPLOAD_PAGE_LIST_CLASS, STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
 import {
   advanceStudioUploadSharedMetaAfterSave, assertStudioUploadJsonPayloadSize,
@@ -88,6 +75,8 @@ import {
 } from "./studio-publish-result";
 import type { PublishVerdictInput } from "./studio-publish-verdict";
 import {
+  StudioPublishingHandoffDismissButton,
+  StudioPublishingHandoffLocalBadge,
   StudioPublishingPersistenceDockStatus,
   StudioPublishingPersistenceSummaryStatus,
 } from "./publishing/StudioPublishingPersistenceStatus";
@@ -231,7 +220,7 @@ export function StudioPublishingCommandCenter({
   workId: routeWorkId,
 }: StudioPublishingCommandCenterProps = {}) {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const { data: session } = useSession();
   const publisherIdentity = resolveStudioPublisherIdentity(session?.user);
   const authUserId = publisherIdentity.id;
@@ -827,6 +816,19 @@ export function StudioPublishingCommandCenter({
     };
   }, [linkedChallengeId, linkedSeriesId]);
 
+  function clearHandoffQueryParam() {
+    handoffGenerationRef.current += 1;
+    setHandoffLoading(false);
+    setHandoffError(null);
+    setHandoffContext(null);
+    setParams((current) => {
+      if (!current.has("handoff")) return current;
+      const next = new URLSearchParams(current);
+      next.delete("handoff");
+      return next;
+    }, { replace: true });
+  }
+
   function markChanged() {
     setDirty(true);
     setFailedSaveAttempt(null);
@@ -907,6 +909,7 @@ export function StudioPublishingCommandCenter({
         setCoverFocalX(0.5);
         setCoverFocalY(0.5);
       }
+      if (handoffId && !handoffContext) clearHandoffQueryParam();
       markChanged();
       if (!title.trim() && next[0]) {
         const base = next[0].name.replace(/\.[^.]+$/u, "").trim();
@@ -1299,6 +1302,7 @@ export function StudioPublishingCommandCenter({
           navigate(resultHref);
           return;
         }
+        if (handoffId) clearHandoffQueryParam();
         const revision = saved.revision ?? sharedMetaSnapshot.revision;
         setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
       } else {
@@ -1582,32 +1586,32 @@ export function StudioPublishingCommandCenter({
         >
           <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffHeadingFailed", "게시 원고를 불러오지 못했어요")}</p>
           <p className="mt-1 text-sm leading-relaxed text-fg-2">{handoffError}</p>
-          <Link
-            href="/studio"
-            className={buttonClass({
-              size: "sm",
-              variant: "outline",
-              className: "mt-3 min-h-11 gap-1.5",
-            })}
-          >
-            <PenLine size={14} aria-hidden /> 편집기로 돌아가기
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link
+              href="/studio"
+              className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
+            >
+              <PenLine size={14} aria-hidden /> 편집기로 돌아가기
+            </Link>
+            <StudioPublishingHandoffDismissButton onDismiss={clearHandoffQueryParam} />
+          </div>
         </div>
       ) : null}
       {handoffContext && !handoffLoading ? (
         <div
           data-studio-publish-handoff-loaded="true"
-          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-good/40 bg-good/8 px-3 py-3"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-accent/35 bg-accent/8 px-3 py-3"
           role="status"
           aria-live="polite"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-good/15 text-good">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
             <Send size={16} aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
             <strong className="block text-sm text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceived", { count: handoffContext.pageCount }, "편집기 원고 {count}페이지를 받았습니다")}</strong>
             <span className="mt-0.5 block text-xs leading-relaxed text-fg-2">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceivedDetail", "제목과 페이지 순서를 유지했습니다. 서버 저장이 완료되면 로컬 인계본을 자동 정리하며, 저장하지 않아도 24시간 뒤 만료됩니다.")}</span>
           </span>
+          <StudioPublishingHandoffLocalBadge loggedIn={loggedIn} />
           {handoffContext.sourceWorkId ? (
             <span className="max-w-full truncate rounded-full border border-line bg-card/70 px-2.5 py-1 font-mono text-[0.65rem] text-fg-3">
               {handoffContext.sourceWorkId}
