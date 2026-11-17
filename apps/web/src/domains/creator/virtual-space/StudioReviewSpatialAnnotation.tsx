@@ -30,9 +30,12 @@ export function StudioReviewAnnotationLocation({ anchor, mapping }: { readonly a
     : bt("기존 의견 위치 · 페이지 연결 미확인", "Legacy note location · page mapping unverified")}</span>;
   const frameIndex = mapping?.page.frames.findIndex((frame) => frame.id === anchor.source?.frameId) ?? -1;
   const elementIndex = mapping?.page.elements.findIndex((element) => element.id === anchor.source?.elementId) ?? -1;
-  const kind = anchor.kind === "panel" ? frameIndex >= 0 ? bt(`컷 ${frameIndex + 1}`, `Cut ${frameIndex + 1}`) : bt("선택한 컷", "Selected cut")
+  const cutLabel = frameIndex >= 0 ? bt(`컷 ${frameIndex + 1}`, `Cut ${frameIndex + 1}`) : anchor.source.frameId ? bt("선택한 컷", "Selected cut") : null;
+  const kind = anchor.kind === "panel" ? (cutLabel ?? bt("선택한 컷", "Selected cut"))
     : anchor.kind === "object" ? elementIndex >= 0 ? bt(`요소 ${elementIndex + 1}`, `Object ${elementIndex + 1}`) : bt("선택한 요소", "Selected object")
-    : anchor.kind === "coordinate" ? bt("지정 위치", "Point") : anchor.kind === "region" ? bt("지정 영역", "Region") : bt("페이지", "Page");
+    : anchor.kind === "coordinate" ? (cutLabel ? `${cutLabel} · ${bt("지정 위치", "Point")}` : bt("지정 위치", "Point"))
+    : anchor.kind === "region" ? (cutLabel ? `${cutLabel} · ${bt("지정 영역", "Region")}` : bt("지정 영역", "Region"))
+    : bt("페이지", "Page");
   return <span>{bt(`${anchor.source.pageOrdinal + 1}페이지`, `Page ${anchor.source.pageOrdinal + 1}`)} · {kind}
     {anchor.x !== undefined && anchor.y !== undefined ? ` (${Math.round(anchor.x)}, ${Math.round(anchor.y)} px)` : ""}</span>;
 }

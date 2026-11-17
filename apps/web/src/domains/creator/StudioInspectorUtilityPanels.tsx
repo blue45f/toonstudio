@@ -31,6 +31,7 @@ import type { StudioInspectorInteractionGate } from "./studio-inspector-interact
 import type { PageGrade } from "./studio-page-grade";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
+import { usePaletteImeGuard } from "@/shared/lib/palette-ime-guard";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 
@@ -589,6 +590,13 @@ export function StudioInspectorPublishPanel({
   const tagsInvalid = tagsOverCount || tagsOverLength;
   const continueLabel =
     pendingSaveIntent === "published" ? "게시 계속" : "초안 저장 계속";
+  const imeGuard = usePaletteImeGuard(active);
+  const guardImeInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (imeGuard.shouldIgnoreKeyDown(event) && (event.key === "Enter" || event.key === "Escape")) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
 
   useLayoutEffect(() => {
     if (!active || !autoFocusTitle) return;
@@ -606,7 +614,8 @@ export function StudioInspectorPublishPanel({
       onSubmit={(event) => {
         event.preventDefault();
         if (
-          pendingSaveIntent === null
+          imeGuard.isComposingNow()
+          || pendingSaveIntent === null
           || readOnly
           || saving
           || titleInvalid
@@ -631,6 +640,7 @@ export function StudioInspectorPublishPanel({
         ref={titleInputRef}
         value={title}
         onChange={(event) => onTitleChange(event.target.value)}
+        onKeyDown={guardImeInputKeyDown}
         aria-describedby={titleHelpId}
         aria-invalid={titleInvalid || undefined}
         aria-required="true"
@@ -694,6 +704,7 @@ export function StudioInspectorPublishPanel({
           id={tagsId}
           value={tags}
           onChange={(event) => onTagsChange(event.target.value)}
+          onKeyDown={guardImeInputKeyDown}
           aria-describedby={tagsHelpId}
           aria-invalid={tagsInvalid || undefined}
           placeholder="로맨스, 일상"

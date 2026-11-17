@@ -11,6 +11,8 @@ const inputSchema = z.object({ intentId: studioEntityIdSchema, workId: studioEnt
   sourceServerRevision: z.number().int().positive().max(2_147_483_647), sourceContentDigest: sha256Schema,
   pageCount: z.number().int().positive().max(100_000), title: z.string().trim().min(1).max(240),
   deviceId: studioEntityIdSchema, createdAt: isoTimestampSchema,
+  reviewerIds: z.array(studioEntityIdSchema).min(1).max(64)
+    .refine((ids) => new Set(ids).size === ids.length, "reviewers must be unique").optional(),
   sourceRevision: studioReviewCaptureSourceRevisionSchema.optional(), writeContext: StudioScopedWriteContextSchema.optional() }).strict();
 const intentSchema = inputSchema.extend({ projectId: studioEntityIdSchema, artifactId: studioEntityIdSchema,
   expectedHeadRevisionId: studioEntityIdSchema, expectedHeadRootGraphHash: sha256Schema,

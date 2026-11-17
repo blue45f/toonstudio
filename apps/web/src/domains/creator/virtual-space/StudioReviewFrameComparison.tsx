@@ -6,7 +6,14 @@ import { matchReviewSourceFrame, reviewFrameChoices, reviewFrameCrop, type Revie
 import type { StudioVirtualSpaceReviewPreview as Preview } from "./studio-virtual-space-review-preview";
 
 const control = "min-h-11 min-w-0 rounded-lg border border-line bg-card px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent";
-interface Props { readonly left: Preview; readonly right: Preview }
+interface Props {
+  readonly left: Preview;
+  readonly right: Preview;
+  readonly leftAllPages?: readonly Preview[];
+  readonly rightAllPages?: readonly Preview[];
+  readonly leftAllLoaded?: boolean;
+  readonly rightAllLoaded?: boolean;
+}
 
 /** Read-only source-ID navigation, never a comment reattachment or editor mutation. */
 export function StudioReviewFrameComparison(props: Props) {
@@ -22,22 +29,44 @@ function FrameComparisonPanel(props: Props) {
     {open ? <div id={id}><FrameComparisonBody {...props} /></div> : null}
   </section>;
 }
-function FrameComparisonBody({ left, right }: Props) {
+function FrameComparisonBody({ left, right, leftAllPages, rightAllPages, leftAllLoaded, rightAllLoaded }: Props) {
   const bt = useBilingual("StudioReviewFrameComparison");
   const [side, setSide] = useState<"left" | "right">("left");
   const [query, setQuery] = useState("");
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState("");
   const source = side === "left" ? left : right, target = side === "left" ? right : left;
+  const targetPages = side === "left" ? rightAllPages : leftAllPages;
+  const targetComplete = Boolean(side === "left" ? rightAllLoaded : leftAllLoaded);
   const choices = useMemo(() => reviewFrameChoices(source, query, offset), [source, query, offset]);
   const match = useMemo(() => selected ? matchReviewSourceFrame(source, target, selected) : null, [source, target, selected]);
+  const absentAcrossAllTargetPages = useMemo(() => {
+    if (!selected || !targetComplete || !targetPages?.length) return false;
+    return targetPages.every((page) => page.mapping.status === "mapped"
+      && !page.mapping.page.frames.some((frame) => frame.id === selected));
+  }, [selected, targetComplete, targetPages]);
+  const isDeletedInCurrentOrNewer = useMemo(() => {
+    if (!absentAcrossAllTargetPages) return false;
+    if (side === "right") return true;
+    return source.mapping.status === "mapped"
+      && target.mapping.status === "mapped"
+      && target.mapping.sourceServerRevision >= source.mapping.sourceServerRevision;
+  }, [absentAcrossAllTargetPages, side, source.mapping, target.mapping]);
+  const matchedOrdinals = useMemo(() => {
+    if (match?.kind !== "matched" || source.mapping.status !== "mapped" || target.mapping.status !== "mapped") return null;
+    const srcIdx = source.mapping.page.frames.findIndex((frame) => frame.id === selected);
+    const tgtIdx = target.mapping.page.frames.findIndex((frame) => frame.id === selected);
+    return srcIdx >= 0 && tgtIdx >= 0 ? { src: srcIdx + 1, tgt: tgtIdx + 1 } : null;
+  }, [match, selected, source.mapping, target.mapping]);
   const resetSelection = () => { setSelected(""); setOffset(0); };
   const problems: Record<Exclude<ReviewFrameMatch["kind"], "matched">, string> = {
     "source-unavailable": bt("선택한 원본 컷을 확인할 수 없습니다.", "The selected source cut is unavailable."),
     "source-ambiguous": bt("원본 컷 ID가 중복되어 연결하지 않습니다.", "The source cut ID is ambiguous; no match is made."),
     "target-unmapped": bt("비교 페이지에 검증된 원본 위치 정보가 없습니다.", "The comparison page has no verified source mapping."),
     "different-page": bt("원본 페이지가 다릅니다. 같은 컷 번호나 ID만으로 연결하지 않습니다.", "The source pages differ. A cut number or ID alone is not sufficient."),
-    "not-found": bt("선택된 비교 페이지에서 대응 컷을 확인하지 못했습니다. 삭제 여부는 단정하지 않습니다.", "No corresponding cut is present in this selected page. This does not establish deletion."),
+    "not-found": isDeletedInCurrentOrNewer
+      ? bt("현재 버전에서 삭제된 컷입니다. 이전 버전의 컷 영역과 의견 이력은 그대로 보존됩니다.", "Cut deleted in the current version. Original cut bounds and notes remain preserved.")
+      : bt("선택된 비교 페이지에서 대응 컷을 확인하지 못했습니다. 삭제 여부는 단정하지 않습니다.", "No corresponding cut is present in this selected page. This does not establish deletion."),
     "target-ambiguous": bt("비교 페이지의 컷 ID가 중복되어 연결하지 않습니다.", "The comparison cut ID is ambiguous; no match is made."),
   };
   const safeSource = match && match.kind !== "source-unavailable" && match.kind !== "source-ambiguous";
@@ -69,13 +98,21 @@ function FrameComparisonBody({ left, right }: Props) {
     </div> : null}
     {match ? <>
       <p role="status" className="text-sm">{match.kind === "matched"
-        ? bt("같은 원본 컷 ID입니다. 각 버전의 위치·크기로 따로 표시하며 내용이 같다는 뜻은 아닙니다.", "Same source cut ID. Each version uses its own position and size; content need not be identical.") : problems[match.kind]}</p>
+        ? matchedOrdinals && matchedOrdinals.src !== matchedOrdinals.tgt
+          ? bt(`같은 원본 컷 ID입니다 (선택본 ${matchedOrdinals.src}번째 컷 ↔ 비교본 ${matchedOrdinals.tgt}번째 컷). 컷 순서가 바뀌어도 고유 ID로 정확히 연결합니다.`,
+            `Same source cut ID (cut ${matchedOrdinals.src} vs cut ${matchedOrdinals.tgt}). Reordered cuts still match by stable ID.`)
+          : bt("같은 원본 컷 ID입니다. 각 버전의 위치·크기로 따로 표시하며 내용이 같다는 뜻은 아닙니다.", "Same source cut ID. Each version uses its own position and size; content need not be identical.")
+        : problems[match.kind]}</p>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2">
         {(["left", "right"] as const).map((pane) => <div key={pane} className="min-w-0">
           <p className="mb-2 text-sm font-semibold">{pane === "left" ? bt("A · 기준본 컷", "A · Original cut") : bt("B · 비교본 컷", "B · Comparison cut")}</p>
           {(pane === side ? safeSource : match.kind === "matched")
             ? <CutCrop preview={pane === "left" ? left : right} frameId={selected} label={pane === "left" ? bt("기준본 컷 영역", "Original cut bounds") : bt("비교본 컷 영역", "Comparison cut bounds")} />
-            : <p className="rounded-lg border border-line p-3 text-sm">{bt("대응 근거가 없어 컷 이미지를 표시하지 않습니다.", "No cut image is shown without correspondence evidence.")}</p>}
+            : <p className="rounded-lg border border-line p-3 text-sm" data-testid="review-cut-missing-placeholder">
+              {isDeletedInCurrentOrNewer
+                ? bt("현재 버전에서 삭제된 컷", "Cut deleted in the current version")
+                : bt("대응 근거가 없어 컷 이미지를 표시하지 않습니다.", "No cut image is shown without correspondence evidence.")}
+            </p>}
         </div>)}
       </div>
       <p className="text-xs text-fg-2">{bt("페이지 안의 컷 경계 상자를 보여줍니다. 비정형 컷은 주변 이미지가 포함될 수 있으며 원본 파일을 자르지 않습니다.", "Shows each cut's bounding box within the page. Non-rectangular cuts may include surrounding pixels; source files are not cropped.")}</p>

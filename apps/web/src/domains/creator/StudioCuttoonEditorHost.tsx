@@ -3280,6 +3280,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   const [inspectorLayout, setInspectorLayout] = useState<StudioInspectorLayout>(() =>
     workspaceState.liveLayout.inspector
   );
+  const [pendingSaveIntent, setPendingSaveIntent] = useState<"draft" | "published" | null>(null);
   const [drawingPaletteLayout, setDrawingPaletteLayout] =
     useState<StudioDrawingPaletteLayout>(
       () => workspaceState.liveLayout.drawingPalettes
@@ -3881,14 +3882,12 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     // artist who saved a workspace on a desktop still gets that workspace back on a desktop.
     const deviceKind = currentStudioWorkspaceDeviceKind();
     const presented = resolveStudioWorkspaceDeviceLayout(layout, deviceKind);
-    setInspectorLayout(presented.inspector);
+    const preserveSaveStep = (source === "owner-hydration" || source === "owner-scope-change") && pendingSaveIntent !== null;
+    if (!preserveSaveStep) setInspectorLayout(presented.inspector);
     setForceLeftPanelOpen(false);
-    canvasWidePanelRestoreRef.current = {
-      left: presented.desktop.leftPanelOpen,
-      right: presented.desktop.rightPanelOpen,
-    };
+    canvasWidePanelRestoreRef.current = { left: presented.desktop.leftPanelOpen, right: presented.desktop.rightPanelOpen };
     setLeftPanelOpenWithOverride(presented.desktop.leftPanelOpen);
-    setRightPanelOpenWithOverride(presented.desktop.rightPanelOpen);
+    if (!preserveSaveStep) setRightPanelOpenWithOverride(presented.desktop.rightPanelOpen);
     if ((source === "owner-scope-change" || source === "owner-hydration") && uiDensityMode === "focus") {
       setForceLeftPanelOpen(false);
       setForceRightPanelOpen(false);
@@ -3901,7 +3900,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     setDrawingPaletteLayout(presented.drawingPalettes);
     viewportPanelMemory.onWorkspaceLayoutApplied(presented, source);
     setQuickActionsPreferences(presented.quickActions);
-    setMobileSheet(null);
+    if (!preserveSaveStep) setMobileSheet(null);
     setQuickActionsOpen(false);
     closeStudioMenusForWorkspace(source);
     if (workspaceId && (studioRoute.surface === "canvas" || ["switch", "reload", "active-workspace-delete"].includes(source))) applyStudioWorkspaceLaunchSurface(workspaceId);
@@ -6636,7 +6635,6 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
   });
 
   const [title, setTitleState] = useState(localCanvasSeed?.title ?? "");
-  const [pendingSaveIntent, setPendingSaveIntent] = useState<"draft" | "published" | null>(null);
   const setTitle = useStudioDocumentMutationSetter(title, setTitleState, {
     markStudioDocumentChanged, onAcceptedMutation: invalidatePendingRetainedRedo,
   });
@@ -17426,7 +17424,6 @@ const puppetWarpArmed =
     setPendingSaveIntent(status);
     preloadStudioCaptureReadinessRuntime();
     preloadStudioSavePayloadRuntime();
-    setTool("select");
     setMenu(null);
     if (isMobile) {
       mobileSheetAutofocusTargetRef.current = "publish-title";

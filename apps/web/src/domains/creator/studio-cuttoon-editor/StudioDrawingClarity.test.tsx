@@ -331,6 +331,79 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("기존");
     nextColdLoad.unmount();
   });
+
+  it("제목 필수 저장(pendingSaveIntent) 전환 시 데스크톱 간단 화면에서 작품 정보·레이어 패널을 자동 열고 내부 입력 포커스와 한글 IME 조합 Escape를 보호한다", () => {
+    const base = session();
+    function SaveProbe({ pendingSaveIntent }: { pendingSaveIntent: "draft" | "published" | null }) {
+      return (
+        <StudioDrawingClarityProvider session={{ ...base, pendingSaveIntent }}>
+          <button data-studio-clarity-save="true">저장</button>
+          <Probe />
+          <InputInsideLayers />
+        </StudioDrawingClarityProvider>
+      );
+    }
+    function InputInsideLayers() {
+      const state = useStudioDrawingClarity();
+      if (state?.panel !== "layers") return null;
+      return createPortal(
+        <input aria-label="작품 제목 (필수)" defaultValue="" />,
+        document.getElementById("studio-drawing-clarity-panel-layers") ?? document.body,
+      );
+    }
+    const view = render(<SaveProbe pendingSaveIntent={null} />);
+    expect(screen.queryByRole("heading", { name: "레이어·속성" })).toBeNull();
+
+    view.rerender(<SaveProbe pendingSaveIntent="draft" />);
+    expect(screen.getByRole("heading", { name: "레이어·속성" })).toBeTruthy();
+
+    const titleInput = screen.getByRole("textbox", { name: "작품 제목 (필수)" });
+    titleInput.focus();
+    expect(document.activeElement).toBe(titleInput);
+
+    // 한글 조합 중 Escape는 패널을 닫지 않아야 한다.
+    fireEvent.keyDown(titleInput, { key: "Escape", isComposing: true });
+    expect(screen.getByRole("heading", { name: "레이어·속성" })).toBeTruthy();
+    fireEvent.keyDown(titleInput, { key: "Escape", keyCode: 229 });
+    expect(screen.getByRole("heading", { name: "레이어·속성" })).toBeTruthy();
+
+    // 일반 Escape는 패널을 닫고 저장 버튼으로 포커스를 되돌린다.
+    fireEvent.keyDown(titleInput, { key: "Escape" });
+    expect(screen.queryByRole("heading", { name: "레이어·속성" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
+  });
+
+  it("저장소에 간단 화면 선택이 남아 있어도 URL에 drawingShell 또는 roleWorkspace가 명시되면 요청한 모드를 우선한다", () => {
+    const storage = memoryStorage();
+    const base = session();
+    const first = render(
+      <StudioDrawingClarityProvider session={base} choiceStorage={storage}>
+        <Probe />
+      </StudioDrawingClarityProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    first.unmount();
+
+    for (const search of ["?drawingShell=integrated", "?roleWorkspace=authoring"]) {
+      const explicitView = render(
+        <StudioDrawingClarityProvider
+          session={{ ...base, location: { ...base.location, search } }}
+          choiceStorage={storage}
+        >
+          <Probe />
+        </StudioDrawingClarityProvider>,
+      );
+      expect(screen.getByLabelText("화면").textContent).toBe("기존");
+      explicitView.unmount();
+    }
+  });
+
+  it("간단 화면의 보조 패널과 페이지 스트립은 캔버스 폭·높이를 밀지 않는 절대 위치 오버레이로 배치한다", () => {
+    const css = readFileSync("apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css", "utf8");
+    expect(css).toContain(".studio-drawing-clarity-pane{position:absolute;top:0;bottom:0;z-index:35;");
+    expect(css).toContain("[data-studio-drawing-clarity=true][data-studio-drawing-clarity-panel=pages] [data-studio-page-sequence-strip=true]{position:absolute!important;");
+  });
 });
 
 describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성", () => {

@@ -11,6 +11,14 @@ const sql = readFileSync(
   "utf8",
 );
 
+const repositorySource = readFileSync(
+  join(
+    process.cwd(),
+    "apps/api/src/modules/creator/creator-publication-media.repository.ts",
+  ),
+  "utf8",
+);
+
 describe("creator publication media migration", () => {
   it("stores immutable digest references without inline image bytes", () => {
     expect(sql).toContain("BEGIN;");
@@ -27,5 +35,16 @@ describe("creator publication media migration", () => {
       "REVOKE ALL ON TABLE public.creator_work_publication_media FROM PUBLIC",
     );
     expect(sql).not.toMatch(/data:image|base64/iu);
+  });
+
+  it("uses explicit column-scoped INSERTs compatible with least-privilege runtime role ACLs", () => {
+    expect(repositorySource).toContain(
+      '("purpose","digest","contractVersion","providerId","objectPath","byteLength","contentType")',
+    );
+    expect(repositorySource).toContain(
+      '("workId","slot","pageIndex","purpose","objectDigest","mediaType","byteLength","createdBy")',
+    );
+    expect(repositorySource).not.toContain(".insert(creatorAssetStorageObjects)");
+    expect(repositorySource).not.toContain(".insert(creatorWorkPublicationMedia)");
   });
 });

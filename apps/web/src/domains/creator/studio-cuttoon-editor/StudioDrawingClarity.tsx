@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { isImeKeyboardEvent } from "@/shared/lib/palette-ime-guard";
 
 import {
   isUntouchedStudioDrawingLayout,
@@ -22,7 +23,10 @@ import { DrawingClarityContext, type StudioDrawingClarityPanel } from "./StudioD
 export type StudioDrawingClaritySession = Pick<StudioCuttoonEditorViewSession,
   "currentWorkspaceOwnerScope" | "isMobile" | "workspaceState" | "workMode" | "canvasOnlyMode" | "mobileImmersive"
   | "uiDensityMode" | "studioDrawingClarityBaseline" | "location" | "appSettings">
-  & { readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "setStudioUiDensity"> };
+  & {
+    readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
+    readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "setStudioUiDensity">;
+  };
 
 function hasVisibleDialog() {
   return Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"],dialog[open]'))
@@ -86,7 +90,11 @@ export function StudioDrawingClarityProvider({
       ? { ownerScope: owner, source: "default", state: s.workspaceState }
       : null;
   const effectiveBaseline = s.studioDrawingClarityBaseline ?? optimisticBaseline;
-  const active = available && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile) && s.uiDensityMode === "simple"
+  const explicitUrlOverridesClarity = (() => {
+    const params = new URLSearchParams(s.location.search);
+    return params.has("roleWorkspace") || params.has("drawingShell");
+  })();
+  const active = available && !explicitUrlOverridesClarity && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile) && s.uiDensityMode === "simple"
     && (selected ?? (s.workspaceState.activeWorkspaceId === effectiveBaseline?.state.activeWorkspaceId && studioDrawingClarityEligible({
       baseline: effectiveBaseline, ownerScope: owner, densityMode: s.uiDensityMode,
       workMode: s.workMode, search: s.location.search, toolbarConfigured: personalToolbar,
@@ -125,6 +133,17 @@ export function StudioDrawingClarityProvider({
     triggerRef.current = trigger;
     setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: next } }));
   }, [owner, viewportBucket, workspace]);
+  const prevPendingSaveKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const nextIntent = s.pendingSaveIntent ?? null;
+    const nextKey = active && !s.isMobile && nextIntent ? `${owner}:${workspace}:${viewportBucket}:${nextIntent}` : null;
+    if (prevPendingSaveKeyRef.current === nextKey) return;
+    prevPendingSaveKeyRef.current = nextKey;
+    if (!nextKey) return;
+    const saveTrigger = document.querySelector<HTMLElement>('[data-studio-clarity-save="true"]');
+    if (saveTrigger) triggerRef.current = saveTrigger;
+    setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: "layers" } }));
+  }, [active, owner, s.isMobile, s.pendingSaveIntent, viewportBucket, workspace]);
   const setDensity = s.studioMenubarContentHandlers.setStudioUiDensity;
   const chooseSimple = useCallback(() => {
     setDensity?.("simple");
@@ -143,7 +162,9 @@ export function StudioDrawingClarityProvider({
     if (!panel) return;
     const targetId = `studio-drawing-clarity-panel-${panel}`;
     const focus = () => {
-      const target = document.getElementById(targetId)?.querySelector<HTMLElement>("[data-clarity-pane-heading]");
+      const pane = document.getElementById(targetId);
+      if (pane && document.activeElement instanceof Node && pane.contains(document.activeElement)) return true;
+      const target = pane?.querySelector<HTMLElement>("[data-clarity-pane-heading]");
       if (!target) return false;
       if (!hasVisibleDialog()) target.focus({ preventScroll: true });
       return true;
@@ -151,7 +172,7 @@ export function StudioDrawingClarityProvider({
     const observer = focus() ? null : new MutationObserver(() => { if (focus()) observer?.disconnect(); });
     observer?.observe(document.body, { childList: true, subtree: true });
     const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented || hasVisibleDialog()) return;
+      if (event.key !== "Escape" || event.defaultPrevented || isImeKeyboardEvent(event) || hasVisibleDialog()) return;
       event.preventDefault(); event.stopPropagation(); close();
     };
     document.addEventListener("keydown", escape);

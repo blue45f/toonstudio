@@ -529,7 +529,7 @@ export function StudioCuttoonEditorChrome(s: StudioCuttoonEditorViewSession) {
           : "empty:hidden")}
       >
         {densityShowsStatusRail && error ? (
-          <div role="alert" className="my-1 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-bad/40 bg-bad/10 px-2.5 py-1.5 text-xs text-bad">
+          <div role="alert" className={cn("my-1 flex flex-wrap items-start justify-between gap-2 rounded-lg border border-bad/40 bg-panel/95 px-2.5 py-1.5 text-xs text-bad shadow-md backdrop-blur-md", !mobileImmersive && "absolute inset-x-2 top-0 z-[60]")}>
             <span className="min-w-0 flex-1 break-words">{error}</span>
             <button
               type="button"

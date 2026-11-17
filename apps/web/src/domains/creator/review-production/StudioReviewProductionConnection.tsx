@@ -22,10 +22,10 @@ function reasonText(reason: StudioReviewProductionReason, bt: (ko: string, en: s
     case "assignment-required": return bt("의견 담당자마다 기존 제작 역할을 선택해 주세요. 없는 역할이나 이 작업의 오래된 담당자는 제작 보드에서 먼저 정리할 수 있어요.", "Select an existing production role for each comment assignee. Create missing roles or update outdated task assignments on the production board first.");
     case "existing-link": return bt("이 작업에는 다른 검수 의견이 연결되어 있어요. 이전 연결을 확인해 교체하거나 다른 작업을 선택해 주세요.", "This task links to another review comment. Review and confirm replacement, or choose a different task.");
     case "conflict": return bt("다른 수정이 먼저 저장되었거나 인계 내용이 바뀌었어요. 최신 작업을 다시 읽고 선택을 확인해 주세요. 자동으로 덮어쓰지 않았어요.", "Another change was saved or the handoff changed. Reload the tasks and check your selection. No automatic overwrite was attempted.");
-    case "uncertain": return bt("연결 저장 결과를 확인하지 못했어요. 선택은 남아 있습니다. 다시 확인하면 같은 의견의 연결을 먼저 읽고 필요한 경우에만 저장해요.", "The connection could not be confirmed. Your choices are preserved. An explicit retry reads the same comment connection before saving if needed.");
+    case "uncertain": return bt("검수 의견 자체는 저장되어 보존되었습니다. 후속 제작 작업 연결 저장 결과만 확인하지 못했어요. 선택은 남아 있으니 다시 확인하면 같은 의견의 연결을 먼저 읽고 필요한 경우에만 저장해요.", "The review comment itself is saved and preserved. Only the follow-up task connection could not be confirmed. Your choices are preserved. An explicit retry reads the same comment connection before saving if needed.");
     case "expired": return bt("작업 정보의 확인 시간이 지나 다시 읽어야 해요. 선택은 남겨 두었습니다.", "Task information needs a fresh read. Your choices are preserved.");
     case "context-changed": return bt("계정이나 화면 상태가 바뀌어 진행 중인 연결을 중단했어요.", "The account or page state changed, so the pending connection was stopped.");
-    default: return bt("제작 작업을 확인하지 못했어요. 다시 읽어 주세요.", "Production tasks could not be verified. Please reload.");
+    default: return bt("검수 의견은 이미 안전하게 저장되어 있습니다. 제작 작업 목록만 지금 확인하지 못했으니 다시 읽어 주세요.", "The review comment is safely saved. Production tasks could not be verified right now; please reload.");
   }
 }
 

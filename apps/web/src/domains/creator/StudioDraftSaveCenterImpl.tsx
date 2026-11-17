@@ -1,15 +1,12 @@
 import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
 import {
-  CheckCircle2,
   Cloud,
-  CloudOff,
   Database,
   Download,
   History,
   Loader2,
   RefreshCw,
   Save,
-  ShieldAlert,
   X,
 } from "lucide-react";
 import {
@@ -21,22 +18,25 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
-import { StudioDraftSaveRecordMetrics } from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics";
 import {
+  DraftSaveStatusCard as SaveStatusCard,
+  DraftSaveStatusIcon as StatusIcon,
+  StudioDraftSaveRecordMetrics,
+} from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics";
+import {
+  DRAFT_SAVE_TONE_CLASS as TONE_CLASS,
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
   formatStudioDraftSaveTime,
+  isStudioDraftSaveConflictMessage,
   resolveStudioDraftSaveCenter,
   resolveStudioDraftServerRevision,
   resolveStudioDraftServerSavedAt,
   type StudioDraftSaveCenterInput,
-  type StudioDraftSaveStatusSection,
-  type StudioDraftSaveTone,
 } from "./studio-draft-save-center-model";
 import {
   clearStudioDraftSaveOutbox,
@@ -115,14 +115,6 @@ export interface StudioDraftSaveCenterProps {
   readonly onExportBackup: () => unknown;
 }
 
-const TONE_CLASS: Readonly<Record<StudioDraftSaveTone, string>> = {
-  success: "border-accent/35 bg-accent-soft/25 text-accent",
-  progress: "border-accent/35 bg-accent-soft/25 text-accent",
-  warning: "border-warning/40 bg-warning-soft/25 text-warning",
-  danger: "border-danger/40 bg-danger-soft/25 text-danger",
-  neutral: "border-line bg-card/95 text-fg-2",
-};
-
 /** 두 배치가 공유하는 저장 상태 버튼 모양(44px, 보이는 포커스 링). */
 const TRIGGER_CLASS = "flex min-h-11 items-center gap-2 rounded-full border text-xs font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 /** 모바일·캔버스 전용 화면의 부유 칩. */
@@ -193,42 +185,6 @@ function leadershipBasisLabel(basis: StudioDraftSaveLeadershipView["basis"] | nu
     default:
       return frozenStatus4Text("studio.frozenStatus4.draft.basisChecking", "담당 확인 중");
   }
-}
-
-function StatusIcon({ tone, className }: { tone: StudioDraftSaveTone; className?: string }) {
-  if (tone === "danger") return <ShieldAlert aria-hidden className={className} />;
-  if (tone === "warning") return <CloudOff aria-hidden className={className} />;
-  if (tone === "progress") {
-    return <Loader2 aria-hidden className={cn(className, "animate-spin motion-reduce:animate-none")} />;
-  }
-  if (tone === "success") return <CheckCircle2 aria-hidden className={className} />;
-  return <Save aria-hidden className={className} />;
-}
-
-function SaveStatusCard({
-  icon,
-  label,
-  section,
-  footer,
-}: {
-  icon: ReactNode;
-  label: string;
-  section: StudioDraftSaveStatusSection;
-  footer: string;
-}) {
-  return (
-    <section className={cn("rounded-xl border p-3", TONE_CLASS[section.tone])}>
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 shrink-0" aria-hidden>{icon}</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] opacity-75">{label}</p>
-          <p className="mt-0.5 text-sm font-bold leading-snug">{section.title}</p>
-          <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{section.detail}</p>
-          <p className="mt-2 text-[0.68rem] font-semibold opacity-80">{footer}</p>
-        </div>
-      </div>
-    </section>
-  );
 }
 
 export function StudioDraftSaveCenter({
@@ -642,7 +598,17 @@ export function StudioDraftSaveCenter({
   const dialogPlacementClass = inline
     ? "fixed z-[100]"
     : cn("absolute right-0", anchorAtBottom ? "bottom-full mb-2" : "top-full mt-2");
-  const criticalSaveLabel = serverSaveError ? bt("서버 저장 확인 필요", "Check the server save") : outboxWarning ? bt("저장 대기 기록 확인 필요", "Check the pending save record") : null;
+  const criticalSaveLabel = serverSaveError
+    ? isStudioDraftSaveConflictMessage(serverSaveError)
+      ? bt("변경 충돌 확인 필요", "Check conflicting changes")
+      : bt("서버 저장 확인 필요", "Check the server save")
+    : outboxWarning
+      ? bt("저장 대기 기록 확인 필요", "Check the pending save record")
+      : !isOnline
+        ? bt("연결 복구 후 재시도", "Retry after connection restores")
+        : saving
+          ? bt("서버에 저장 중", "Saving to server")
+          : null;
   const recordMetrics = <StudioDraftSaveRecordMetrics checkpointCount={checkpointCount} serverRevision={serverRevision} serverRevisionLoading={serverRevisionLoading} serverRevisionCount={serverRevisions.length} lastServerSaveAt={lastServerSaveAt} loadingLabel={frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoading", "버전 기록 불러오는 중")} />;
   const recordExplanation = <p className="mt-3 text-[0.68rem] leading-relaxed text-fg-3">             같은 탭의 저장 예약과 재실행 후 확인할 기기 기록은 구분됩니다. 저장 대기 기록은 원고 저장 완료를 뜻하지 않습니다. 원고 복구·기기 저장 상태를 확인하고 프로젝트 백업을 보관해 주세요. 충돌 시에는 자동 덮어쓰기 대신 버전 비교·복원 흐름을 사용합니다.           </p>;
   const protectionInfo = (

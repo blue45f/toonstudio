@@ -1,4 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Brush,
   CheckCircle2,
@@ -37,8 +38,12 @@ import {
 } from "../drawing/studio-csp-benchmark-scorecard";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
+import { isStudioDraftSaveConflictMessage } from "../studio-draft-save-center-model";
+import { EMPTY_STUDIO_SAVE_SYNC_SIGNALS, resolveSaveSyncStatusFromSignals } from "../studio-save-sync-signals";
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+
+const NOOP_SYNC_SUBSCRIBE = () => () => {};
 
 const LazyStudioDrawingClarityExport = lazyRetry(
   () => import("./StudioDrawingClarityExport").then((module) => ({ default: module.StudioDrawingClarityExport })),
@@ -104,6 +109,7 @@ function nextInCycle<T extends number>(list: readonly T[], current: number): T {
  */
 export function StudioDrawingAppBar({ session }: { readonly session: StudioCuttoonEditorViewSession }) {
   const s = session;
+  const routerLocation = useLocation();
   const headerRef = useRef<HTMLElement>(null);
   const exportToggleRef = useRef<HTMLButtonElement>(null);
   const advancedToggleRef = useRef<HTMLButtonElement>(null);
@@ -139,22 +145,57 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
   const mobileStripSuppressed = Boolean(s.canvasOnlyMode || s.mobileSheet);
   const mobileStripVisible = !mobileStripSuppressed && !mobileStripCollapsed;
 
+  const saveSyncStore = "saveSyncStore" in s ? s.saveSyncStore : undefined;
+  const saveSignals = useSyncExternalStore(
+    saveSyncStore ? saveSyncStore.subscribe : NOOP_SYNC_SUBSCRIBE,
+    () => (saveSyncStore ? saveSyncStore.getSignals() : EMPTY_STUDIO_SAVE_SYNC_SIGNALS),
+    () => EMPTY_STUDIO_SAVE_SYNC_SIGNALS,
+  );
+  const resolvedLocalSync = saveSyncStore ? resolveSaveSyncStatusFromSignals(saveSignals) : null;
+  const activeErrorMessage = typeof s.error === "string" && s.error.trim() ? s.error.trim() : "";
+  const isConflictError = activeErrorMessage !== "" && isStudioDraftSaveConflictMessage(activeErrorMessage);
   const hasServerWork = Boolean(s.workId || s.loadedWork?.id || s.sharedDocument?.workId);
-  const isSyncBusy = Boolean(s.saving || s.collaborationOperationSyncPending);
-  const hasSyncError = Boolean(s.serverRevisionError);
-  const isOfflineProtected = Boolean(s.offlineSceneNotice);
+  const isSyncBusy = Boolean(s.saving || s.collaborationOperationSyncPending || (resolvedLocalSync && resolvedLocalSync.pendingOperationsCount > 0));
+  const hasSyncError = Boolean(s.serverRevisionError || activeErrorMessage !== "" || (resolvedLocalSync && !resolvedLocalSync.localDurable));
+  const isOfflineProtected = Boolean(s.offlineSceneNotice || (resolvedLocalSync && !saveSignals.isOnline));
 
-  const syncLabel = hasSyncError
-    ? tx("동기화 확인 필요")
-    : isOfflineProtected
-      ? tx("오프라인 보호 중")
-      : isSyncBusy
-        ? hasServerWork
-          ? tx("실시간 저장 중…")
-          : tx("이 기기에 저장 중…")
-        : hasServerWork
-          ? tx("실시간 동기화됨")
-          : tx("이 기기에 자동 저장됨");
+  const hasUnsavedLocalEdits = Boolean("dirty" in s && (s as { readonly dirty?: boolean }).dirty);
+  const syncLabel = isConflictError
+    ? tx("변경 충돌 확인 필요")
+    : activeErrorMessage !== ""
+      ? tx("연결 복구 후 재시도")
+      : hasSyncError
+        ? tx("동기화 확인 필요")
+        : isOfflineProtected
+          ? tx("오프라인 보호 중")
+          : isSyncBusy
+            ? s.saving && resolvedLocalSync
+              ? tx("서버에 저장 중…")
+              : hasServerWork
+                ? tx("실시간 저장 중…")
+                : tx("이 기기에 저장 중…")
+            : hasServerWork
+              ? resolvedLocalSync
+                ? hasUnsavedLocalEdits
+                  ? tx("이 기기에 임시 보관")
+                  : tx("서버 저장 완료")
+                : tx("실시간 동기화됨")
+              : resolvedLocalSync
+                ? saveSignals.lastReceipt || hasUnsavedLocalEdits
+                  ? tx("이 기기에 임시 보관")
+                  : tx("아직 저장 전")
+                : tx("이 기기에 자동 저장됨");
+
+  const docTitle =
+    (typeof s.title === "string" && s.title.trim())
+    || (typeof s.name === "string" && s.name.trim())
+    || tx("제목 없는 원고");
+  const integratedHref = useMemo(() => {
+    const params = new URLSearchParams(routerLocation.search);
+    params.set("drawingShell", "integrated");
+    const qs = params.toString();
+    return `${routerLocation.pathname || "/studio"}${qs ? `?${qs}` : ""}`;
+  }, [routerLocation.pathname, routerLocation.search]);
 
   const cspScorecard = useMemo(
     () =>
@@ -268,7 +309,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
                 CSP {cspScorecard.compositeRatio}×
               </span>
             </div>
-            <span className="block max-w-40 truncate text-[0.65rem] text-fg-3">{typeof s.name === "string" && s.name ? s.name : tx("제목 없는 원고")}</span>
+            <span className="block max-w-40 truncate text-[0.65rem] text-fg-3">{docTitle}</span>
           </div>
         </div>
 
@@ -630,7 +671,7 @@ export function StudioDrawingAppBar({ session }: { readonly session: StudioCutto
             <button type="button" data-testid="drawing-appbar-help-button" className={cn(buttonClass({ variant: s.shortcutsOpen ? "solid" : "quiet", size: "icon" }))} aria-pressed={Boolean(s.shortcutsOpen)} aria-label={tx("단축키 및 입문 가이드")} title={`${tx("단축키 및 클립스튜디오·프로크리에이트 이주 가이드")} · ?`} onClick={() => s.setShortcutsOpen?.((value: boolean) => !value)}>
               <HelpCircle size={16} aria-hidden="true" />
             </button>
-            <Link href="/studio?drawingShell=integrated" className={cn(buttonClass({ variant: "outline", size: "sm" }), "min-h-8 gap-1 px-2 text-[0.66rem] font-bold")}>
+            <Link href={integratedHref} className={cn(buttonClass({ variant: "outline", size: "sm" }), "min-h-8 gap-1 px-2 text-[0.66rem] font-bold")}>
               <PanelRight size={14} aria-hidden="true" />
               {tx("전체 스튜디오")}
             </Link>

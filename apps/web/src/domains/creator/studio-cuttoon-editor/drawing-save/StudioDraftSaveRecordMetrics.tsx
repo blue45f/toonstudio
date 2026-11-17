@@ -1,7 +1,43 @@
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, CloudOff, Loader2, Save, ShieldAlert } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { formatStudioDraftSaveTime } from "../../studio-draft-save-center-model";
+import { cn } from "@/shared/lib/utils";
+import {
+  DRAFT_SAVE_TONE_CLASS,
+  formatStudioDraftSaveTime,
+  type StudioDraftSaveStatusSection,
+  type StudioDraftSaveTone,
+} from "../../studio-draft-save-center-model";
+
+export function DraftSaveStatusIcon({ tone, className }: { readonly tone: StudioDraftSaveTone; readonly className?: string }) {
+  if (tone === "danger") return <ShieldAlert aria-hidden className={className} />;
+  if (tone === "warning") return <CloudOff aria-hidden className={className} />;
+  if (tone === "progress") return <Loader2 aria-hidden className={cn(className, "animate-spin motion-reduce:animate-none")} />;
+  if (tone === "success") return <CheckCircle2 aria-hidden className={className} />;
+  return <Save aria-hidden className={className} />;
+}
+
+export function DraftSaveStatusCard({ icon, label, section, footer }: {
+  readonly icon: ReactNode;
+  readonly label: string;
+  readonly section: StudioDraftSaveStatusSection;
+  readonly footer: string;
+}) {
+  return (
+    <section className={cn("rounded-xl border p-3", DRAFT_SAVE_TONE_CLASS[section.tone])}>
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 shrink-0" aria-hidden>{icon}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] opacity-75">{label}</p>
+          <p className="mt-0.5 text-sm font-bold leading-snug">{section.title}</p>
+          <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{section.detail}</p>
+          <p className="mt-2 text-[0.68rem] font-semibold opacity-80">{footer}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /** 저장 판정을 만들지 않고 기존 저장·버전 기록의 표시만 담당한다. */
 export function StudioDraftSaveRecordMetrics({ checkpointCount, serverRevision, serverRevisionLoading, serverRevisionCount, lastServerSaveAt, loadingLabel }: {

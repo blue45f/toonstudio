@@ -14,6 +14,7 @@ import { resolveStudioEditAvailability } from "../studio-edit-controls";
 import { StudioCrdtDocument } from "../live/studio-crdt-document";
 import { studioDrawElementToCrdtStroke, studioPageToCrdtPage } from "../live/studio-crdt-page-bridge";
 import { publishStudioCrdtSceneGraphDiff } from "../live/studio-crdt-scene-publisher";
+import { EMPTY_STUDIO_SAVE_SYNC_SIGNALS } from "../studio-save-sync-signals";
 import type { PageState } from "../studio-page-state";
 
 afterEach(() => {
@@ -396,5 +397,94 @@ describe("StudioDrawingAppBar", () => {
     fireEvent.click(screen.getByRole("button", { name: "단독 빈 캔버스" }));
     expect(screen.getByTestId("presentation-mode").textContent).toBe("app");
     pwaView.unmount();
+  });
+
+  it("원고 title을 우선 표시하고 saveSyncStore·오류 상태에 맞춰 임시 보관·서버 저장·충돌·재시도 문구와 문서 보존 전체 스튜디오 링크를 제공한다", () => {
+    const makeSyncStore = (overrides: Partial<typeof EMPTY_STUDIO_SAVE_SYNC_SIGNALS> = {}) => {
+      const snapshot = { ...EMPTY_STUDIO_SAVE_SYNC_SIGNALS, hydrated: true, localRole: "leader" as const, ...overrides };
+      return {
+        subscribe: () => () => {},
+        getSignals: () => snapshot,
+      };
+    };
+
+    // 1. 미저장 초기 빈 원고
+    const { rerender } = render(
+      <MemoryRouter initialEntries={["/studio/canvas?workId=work-42&drawingShell=app"]}>
+        <StudioDrawingAppBar
+          session={createMockSession({
+            title: "6컷 검수 원고",
+            name: "구형 이름",
+            workId: null,
+            dirty: false,
+            saveSyncStore: makeSyncStore({ lastReceipt: null }),
+          } as Record<string, unknown>)}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("6컷 검수 원고")).toBeTruthy();
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("아직 저장 전");
+    fireEvent.click(screen.getByTestId("drawing-appbar-advanced-toggle"));
+    const fullLink = screen.getByRole("link", { name: "전체 스튜디오" });
+    expect(fullLink.getAttribute("href")).toBe("/studio/canvas?workId=work-42&drawingShell=integrated");
+
+    // 2. 로컬 수정본(dirty=true)은 서버 작품이 있어도 서버 저장 완료와 혼합하지 않고 임시 보관으로 표시
+    rerender(
+      <MemoryRouter initialEntries={["/studio/canvas?workId=work-42&drawingShell=app"]}>
+        <StudioDrawingAppBar
+          session={createMockSession({
+            title: "6컷 검수 원고",
+            workId: "work-42",
+            dirty: true,
+            saveSyncStore: makeSyncStore(),
+          } as Record<string, unknown>)}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("이 기기에 임시 보관");
+
+    // 3. 서버 저장 완료(dirty=false)
+    rerender(
+      <MemoryRouter initialEntries={["/studio/canvas?workId=work-42&drawingShell=app"]}>
+        <StudioDrawingAppBar
+          session={createMockSession({
+            title: "6컷 검수 원고",
+            workId: "work-42",
+            dirty: false,
+            saveSyncStore: makeSyncStore(),
+          } as Record<string, unknown>)}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("서버 저장 완료");
+
+    // 4. 409 버전 충돌 vs 503 연결 오류 구분
+    rerender(
+      <MemoryRouter initialEntries={["/studio/canvas?workId=work-42&drawingShell=app"]}>
+        <StudioDrawingAppBar
+          session={createMockSession({
+            title: "6컷 검수 원고",
+            workId: "work-42",
+            error: "다른 곳에서 먼저 저장된 버전 충돌(409)이 감지되었습니다.",
+            saveSyncStore: makeSyncStore(),
+          } as Record<string, unknown>)}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("변경 충돌 확인 필요");
+
+    rerender(
+      <MemoryRouter initialEntries={["/studio/canvas?workId=work-42&drawingShell=app"]}>
+        <StudioDrawingAppBar
+          session={createMockSession({
+            title: "6컷 검수 원고",
+            workId: "work-42",
+            error: "503 Service Unavailable: 일시적인 서버 연결 오류",
+            saveSyncStore: makeSyncStore(),
+          } as Record<string, unknown>)}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("drawing-appbar-sync-status").textContent).toContain("연결 복구 후 재시도");
   });
 });

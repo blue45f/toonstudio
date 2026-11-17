@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 
 import type {
+  AssignStudioReviewers,
   CommitStudioRevision,
   CreateCompatibilityReport,
   CreateStudioArtifact,
@@ -226,6 +227,15 @@ export class StudioProjectGraphService {
   ) {
     return this.execute(() =>
       this.repository.decideReview(actorUserId, reviewId, input));
+  }
+
+  assignReviewers(
+    actorUserId: string,
+    reviewId: string,
+    input: AssignStudioReviewers,
+  ) {
+    return this.execute(() =>
+      this.repository.assignReviewers(actorUserId, reviewId, input));
   }
 
   resolveReviewComment(

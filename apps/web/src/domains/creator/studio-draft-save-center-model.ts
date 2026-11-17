@@ -13,6 +13,14 @@ export type StudioDraftSaveTone =
   | "danger"
   | "neutral";
 
+export const DRAFT_SAVE_TONE_CLASS: Readonly<Record<StudioDraftSaveTone, string>> = {
+  success: "border-accent/35 bg-accent-soft/25 text-accent",
+  progress: "border-accent/35 bg-accent-soft/25 text-accent",
+  warning: "border-warning/40 bg-warning-soft/25 text-warning",
+  danger: "border-danger/40 bg-danger-soft/25 text-danger",
+  neutral: "border-line bg-card/95 text-fg-2",
+};
+
 export type StudioDraftSavePhase =
   | "load-risk"
   | "loading"
@@ -87,8 +95,9 @@ export interface StudioDraftSaveCenterViewModel {
 
 const MAX_SAFE_REVISION = 2_147_483_647;
 const SAVE_ERROR_PATTERN =
-  /(?:초안\s*저장|서버.{0,12}저장|저장하지\s*못|저장에\s*실패|먼저\s*저장|revision|동기화\s*확인\s*후)/iu;
-const CONFLICT_PATTERN = /(?:먼저\s*저장|revision|최신.{0,12}(?:불러|문서)|동기화\s*확인\s*후)/iu;
+  /(?:초안\s*저장|서버.{0,12}저장|저장하지\s*못|저장에\s*실패|먼저\s*저장|revision|동기화\s*확인\s*후|일시적으로\s*사용할\s*수\s*없|연결이\s*끊|네트워크|서버에\s*연결할\s*수\s*없|응답이\s*지연|변경되었습니다|충돌|\b(?:409|502|503|504)\b|service\s*unavailable|conflict)/iu;
+const CONFLICT_PATTERN =
+  /(?:먼저\s*저장|revision|최신.{0,12}(?:불러|문서|상태)|동기화\s*확인\s*후|다른\s*곳에서\s*내용이\s*변경|충돌|\b409\b|conflict)/iu;
 
 function normalizedRevision(value: unknown): number | null {
   return typeof value === "number"

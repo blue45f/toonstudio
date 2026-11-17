@@ -5,6 +5,7 @@ import {
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
   formatStudioDraftSaveTime,
+  isStudioDraftSaveConflictMessage,
   resolveStudioDraftSaveCenter,
   resolveStudioDraftServerRevision,
   resolveStudioDraftServerSavedAt,
@@ -231,11 +232,16 @@ describe("draft save helpers", () => {
     })).toBe(Date.parse("2026-09-09T03:00:00.000Z"));
   });
 
-  it("filters unrelated global errors and keeps save-specific errors", () => {
+  it("filters unrelated global errors and keeps save-specific errors including 503/network/409", () => {
     expect(extractStudioDraftSaveError("PSD 내보내기에 실패했습니다.")).toBeNull();
     expect(extractStudioDraftSaveError("서버 초안 저장에 실패했습니다.")).toBe(
       "서버 초안 저장에 실패했습니다.",
     );
+    expect(extractStudioDraftSaveError("503 Service Unavailable")).toBe("503 Service Unavailable");
+    expect(extractStudioDraftSaveError("네트워크 연결이 끊어졌습니다.")).toBe("네트워크 연결이 끊어졌습니다.");
+    expect(extractStudioDraftSaveError("HTTP 409 Conflict")).toBe("HTTP 409 Conflict");
+    expect(isStudioDraftSaveConflictMessage("HTTP 409 Conflict")).toBe(true);
+    expect(isStudioDraftSaveConflictMessage("503 Service Unavailable")).toBe(false);
   });
 
   it("formats relative save time and autosave intervals", () => {

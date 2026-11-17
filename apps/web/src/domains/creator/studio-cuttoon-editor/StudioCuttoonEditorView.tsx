@@ -200,7 +200,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { re
         )}
       >
         <StudioCuttoonEditorChrome {...s} />
-        {s.saveSyncStore ? (
+        {s.saveSyncStore && !(drawingAppPresentation && !canvasOnlyMode && !mobileImmersive) ? (
           <Suspense fallback={null}>
             <StudioSaveStatusChromeMount
               store={s.saveSyncStore}

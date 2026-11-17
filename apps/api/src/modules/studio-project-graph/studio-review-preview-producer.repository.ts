@@ -159,7 +159,24 @@ export class StudioReviewPreviewProducerRepository {
       const intent: StudioReviewPreviewIntent = { ...input, projectId: project.id, artifactId,
         expectedHeadRevisionId: artifact.headRevisionId, expectedHeadRootGraphHash: head.rootGraphHash,
         ...(sourceRevisionScope ? { sourceRevisionScope } : {}) };
-      await target(connection, actor, intent, false);
+      const targetAccess = await target(connection, actor, intent, false);
+      if (intent.reviewerIds?.length) {
+        assertAccess(targetAccess.access, "manage");
+        const reviewerAccess = await connection.query<{ id: string }>(
+          `SELECT candidate.id
+           FROM unnest($1::text[]) AS candidate(id)
+           WHERE candidate.id = $2
+              OR EXISTS (
+                SELECT 1
+                FROM creator_work_collaborator membership
+                WHERE membership."workId" = $3
+                  AND membership."userId" = candidate.id
+                  AND membership.status = 'active'
+              )`,
+          [intent.reviewerIds, source.ownerUserId, intent.workId],
+        );
+        if (reviewerAccess.rows.length !== intent.reviewerIds.length) invariant("reviewer_access_missing");
+      }
       verifySource(source, intent);
       await target(connection, actor, intent, true);
       await connection.query(`INSERT INTO studio_mutation_receipt ("artifactId","actorUserId","idempotencyKeyHash","requestHash","resultRevisionId",response) VALUES ($1,$2,$3,$4,$5,$6::jsonb)`,
@@ -291,10 +308,30 @@ export class StudioReviewPreviewProducerRepository {
           JSON.stringify(access.row.projectScope), studioReviewPreviewDigest(payload), JSON.stringify(operation), intent.createdAt]);
       await client.query(`INSERT INTO studio_review (id,"artifactId","revisionId","requestedBy",title,status) VALUES ($1,$2,$3,$4,$5,'open')`,
         [reviewId, intent.artifactId, revisionId, actor, intent.title]);
+      const designatedReviewerIds = intent.reviewerIds?.length ? intent.reviewerIds : [source.ownerUserId];
+      if (intent.reviewerIds?.length) {
+        assertAccess(access.access, "manage");
+        const reviewerAccess = await client.query<{ id: string }>(
+          `SELECT candidate.id
+           FROM unnest($1::text[]) AS candidate(id)
+           WHERE candidate.id = $2
+              OR EXISTS (
+                SELECT 1
+                FROM creator_work_collaborator membership
+                WHERE membership."workId" = $3
+                  AND membership."userId" = candidate.id
+                  AND membership.status = 'active'
+              )`,
+          [intent.reviewerIds, source.ownerUserId, intent.workId],
+        );
+        if (reviewerAccess.rows.length !== intent.reviewerIds.length) invariant("reviewer_access_missing");
+      }
       // The owner already has decision authority. Submission must not promote an
       // editing collaborator into a designated reviewer who can self-approve.
-      await client.query(`INSERT INTO studio_review_reviewer ("reviewId","reviewerUserId") VALUES ($1,$2)`,
-        [reviewId, source.ownerUserId]);
+      for (const reviewerUserId of designatedReviewerIds) {
+        await client.query(`INSERT INTO studio_review_reviewer ("reviewId","reviewerUserId") VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [reviewId, reviewerUserId]);
+      }
       // Keep metadata monotonic across clock adjustment and legacy client-dated
       // artifacts without relaxing either database time constraint.
       await client.query(`UPDATE studio_artifact SET "headRevisionId"=$2,"updatedAt"=GREATEST("createdAt","updatedAt",clock_timestamp()) WHERE id=$1`, [intent.artifactId, checkpointId]);

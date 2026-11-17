@@ -721,7 +721,7 @@ export function StudioInspectorAsideShell({
             panelId={tabA11y.primary.publish.panelId}
             panelLabelledBy={tabA11y.primary.publish.tabId}
             autoFocusTitle={
-              isMobile && mobileSheet === "props" && pendingSaveIntent !== null
+              pendingSaveIntent !== null && (!isMobile || mobileSheet === "props")
             }
             description={description}
             readOnly={inspectorInteractionPolicy.global.disabled}

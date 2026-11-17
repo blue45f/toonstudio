@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deriveStudioReviewPageMapping } from "@toonstudio/studio-project-model";
 import { persistSession } from "@/domains/auth/public/session/auth-session-state";
@@ -99,5 +100,74 @@ describe("real pinned preview to spatial note integration", () => {
     render(<StudioPinnedReviewPanel subject={subject} />); await screen.findByText(/페이지·컷 위치를 확인할 수 없어/u);
     expect(screen.queryByLabelText("위치 방식")).toBeNull(); write(); save();
     await waitFor(() => expect(f.create).toHaveBeenCalledOnce()); expect(f.create.mock.lastCall?.[1].anchor).not.toHaveProperty("source");
+  });
+
+  it("6컷 원고의 컷 3 영역·컷 의견 목록에 1페이지 · 컷 3 레이블을 매핑해 표시한다", async () => {
+    const sixCutDoc = {
+      width: 800,
+      pagesList: [{
+        id: "page-0",
+        canvasH: 1800,
+        elements: Array.from({ length: 6 }, (_, idx) => ({
+          id: `cut-${idx + 1}`,
+          type: "frame",
+          x: 40,
+          y: idx * 280 + 20,
+          width: 720,
+          height: 240,
+        })),
+      }],
+    };
+    const sixCutMapping = deriveStudioReviewPageMapping(sixCutDoc, {
+      sourceServerRevision: 7,
+      sourceContentDigest: subject.rootGraphHash,
+      ordinal: 0,
+      renderWidth: 800,
+      renderHeight: 1800,
+    });
+    f.verify.mockImplementation(async () => ({
+      ...verified(),
+      review: {
+        title: "6컷 검수 A",
+        status: "open",
+        reviewerIds: ["actor-a"],
+        comments: [{
+          id: "saved-cut3-note",
+          body: "컷 3 손 위치 보정 필요",
+          severity: "required",
+          status: "open",
+          anchor: {
+            kind: "region",
+            x: 100,
+            y: 620,
+            width: 120,
+            height: 80,
+            artifactId: "artifact",
+            revisionId: "snapshot",
+            scope: { projectId: "project" },
+            source: {
+              version: 1,
+              sourceServerRevision: 7,
+              sourceContentDigest: subject.rootGraphHash,
+              pageOrdinal: 0,
+              pageId: "page-0",
+              frameId: "cut-3",
+            },
+          },
+        }],
+      },
+    } as unknown as StudioVirtualSpaceReviewVerification));
+    f.read.mockImplementation(async () => ({
+      ok: true,
+      subject,
+      previews: [{ ...preview(0), mapping: sixCutMapping }],
+      nextCursor: null,
+    }));
+    render(<MemoryRouter><StudioPinnedReviewPanel subject={subject} /></MemoryRouter>);
+    await screen.findAllByText("컷 3 손 위치 보정 필요");
+    await waitFor(() => {
+      const noteCard = screen.getByRole("article");
+      expect(noteCard.textContent).toContain("1페이지 · 컷 3 · 지정 영역 (100, 620 px)");
+    });
   });
 });

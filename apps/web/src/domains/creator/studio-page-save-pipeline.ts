@@ -946,7 +946,6 @@ export async function runStudioPageSavePipeline(
       }
       if (saveScopeStillCurrent()) {
         setError(message);
-        openWorkMetadataStep(status);
       }
     }
   } finally {

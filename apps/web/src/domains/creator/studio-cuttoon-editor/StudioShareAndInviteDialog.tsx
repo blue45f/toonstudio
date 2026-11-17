@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { isImeKeyboardEvent } from "@/shared/lib/palette-ime-guard";
 import { cn } from "@/shared/lib/utils";
 import Link from "@/shared/navigation/router-link";
 
@@ -272,6 +273,12 @@ export default function StudioShareAndInviteDialog({
                 value={inviteTarget}
                 onChange={(event) => setInviteTarget(event.currentTarget.value)}
                 onKeyDown={(event) => {
+                  if (isImeKeyboardEvent(event)) {
+                    if (event.key === "Enter" || event.key === "Escape") {
+                      event.preventDefault();
+                    }
+                    return;
+                  }
                   if (event.key === "Enter") {
                     event.preventDefault();
                     submitQuickInvite();
