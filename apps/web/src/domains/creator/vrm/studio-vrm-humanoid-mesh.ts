@@ -1807,8 +1807,7 @@ function buildBottoms(rig: StudioVrmRig): SurfaceBuilder {
   ];
   addLoft(builder, profiles.map(([y, rx, rz, exponent], index) => {
     const base = verticalRing([0, y, 0], rx * unit + thickness, rz * unit + thickness, torsoSkin(rig, y, h), index / (profiles.length - 1), exponent);
-    const amp = 0.035 * (index / (profiles.length - 1)) ** 2;
-    return { ...base, point: (angle: number) => { const p = base.point(angle); const w = 1 + amp * Math.cos(angle * 12); return [p[0] * w, p[1], p[2] * w]; } };
+    return base;
   }), { segments: TORSO_SEGMENTS });
   return builder;
 }
