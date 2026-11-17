@@ -19,6 +19,9 @@ export const studioReviewPreviewCaptureSchema = z.object({
   title: z.string().trim().min(1).max(240),
   deviceId: studioEntityIdSchema,
   createdAt: isoTimestampSchema,
+  reviewerIds: z.array(studioEntityIdSchema).min(1).max(64)
+    .refine((ids) => new Set(ids).size === ids.length, "reviewers must be unique")
+    .optional(),
   sourceRevision: studioReviewCaptureSourceRevisionSchema.optional(),
   writeContext: StudioScopedWriteContextSchema.optional(),
 }).strict();

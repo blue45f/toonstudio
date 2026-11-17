@@ -17,6 +17,7 @@ import { StudioReviewCommentAssignment } from "./StudioReviewCommentAssignment";
 import { studioReviewRosterName, useStudioReviewRoster } from "./use-studio-review-roster";
 import { normalizeStudioReviewAssignees, studioReviewAssigneesAllowed, studioReviewDueAt } from "./studio-review-comment-assignment";
 import { verifyStudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewSubject, type StudioVirtualSpaceReviewVerification } from "./studio-virtual-space-review-invitation";
+import type { StudioVirtualSpaceReviewPreview } from "./studio-virtual-space-review-preview";
 import { StudioPinnedReviewPreview } from "./StudioPinnedReviewPreview";
 import { serializeStudioReviewPenStrokes } from "./studio-review-pen-model";
 import { StudioPinnedReviewWorkflow } from "./StudioPinnedReviewWorkflow";
@@ -78,6 +79,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
   const [loading, setLoading] = useState(false);
   const [annotation, setAnnotation] = useState<StudioReviewAnnotationSelection | null>(null);
   const [needsLocation, setNeedsLocation] = useState(false);
+  const [loadedPreviews, setLoadedPreviews] = useState<readonly StudioVirtualSpaceReviewPreview[]>([]);
   const roster = useStudioReviewRoster({ actorId, workId: subject?.workId ?? null, enabled: result?.ok === true,
     autoStart: result?.ok === true && result.review.comments.some((comment) => Boolean(comment.assigneeIds?.length)) });
   const annotationRef = useRef<StudioReviewAnnotationSelection | null>(null);
@@ -224,6 +226,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       <details className="mt-2 text-xs"><summary className="flex min-h-11 cursor-pointer items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{bt("버전 식별 정보", "Version identity")}</summary><code className="break-all">{result.subject.rootGraphHash}</code></details>
       <StudioPinnedReviewPreview key={JSON.stringify(result.subject)} subject={subject ?? result.subject} onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }}
         notes={result.review.comments}
+        onPreviewsChange={setLoadedPreviews}
         annotation={result.project.access.comment && ["open", "changes-requested"].includes(result.review.status)
           ? { selected: annotation, onSelect: selectAnnotation, disabled: busy, commentInputId: inputId } : undefined} />
       <StudioPinnedReviewComparison subject={subject ?? result.subject} title={result.review.title}
@@ -232,11 +235,16 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       <StudioReviewNoteFilters comments={result.review.comments} view={noteView} query={noteQuery} actorId={actorId}
         onView={setNoteView} onQuery={setNoteQuery} onJump={jumpNote} listId={`${inputId}-notes`} />
       <div id={`${inputId}-notes`} className="mt-4 space-y-3" aria-label={bt("검토 의견", "Review notes")}>
-        {result.review.comments.map((comment) => <article key={comment.id} id={`${inputId}-note-${comment.id}`} tabIndex={-1}
+        {result.review.comments.map((comment) => {
+          const matchedPreview = comment.anchor?.source !== undefined
+            ? loadedPreviews.find((preview) => preview.ordinal === comment.anchor?.source?.pageOrdinal)
+            : undefined;
+          const commentMapping = matchedPreview?.mapping.status === "mapped" ? matchedPreview.mapping : undefined;
+          return <article key={comment.id} id={`${inputId}-note-${comment.id}`} tabIndex={-1}
           hidden={!reviewNoteMatches(comment, noteView, noteQuery, actorId)} aria-current={activeNoteId === comment.id ? "true" : undefined}
           className="rounded-xl border border-line p-3 outline-none focus:ring-2 focus:ring-accent">
           <p className="whitespace-pre-wrap break-words text-sm">{comment.body}</p>
-          <p className="mt-2 text-xs text-fg-3"><StudioReviewAnnotationLocation anchor={comment.anchor ?? { kind: "artifact" }} /></p>
+          <p className="mt-2 text-xs text-fg-3"><StudioReviewAnnotationLocation anchor={comment.anchor ?? { kind: "artifact" }} mapping={commentMapping} /></p>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-3">
             <span className={`rounded-full border border-line px-2 py-0.5 font-semibold ${comment.severity === "required" ? "text-bad" : comment.severity === "recommended" ? "text-warn" : "text-fg-2"}`}>
               {comment.severity === "required" ? bt("필수", "Required") : comment.severity === "recommended" ? bt("권장", "Recommended") : bt("제안", "Suggestion")}
@@ -254,13 +262,14 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
               <StudioReviewResolution request={resolutionRequest} onRecorded={() => { void refresh(true); }}
                 onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }} />
             </Suspense> : null}
-        </article>)}
+        </article>;
+        })}
         {!result.review.comments.length ? <p className="text-sm">{bt("아직 검토 의견이 없어요.", "No review notes yet.")}</p> : null}
       </div>
       {result.project.access.comment && ["open", "changes-requested"].includes(result.review.status) ? <form className="mt-4" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="mb-3 rounded-lg border border-line p-3 text-sm" aria-live="polite">
           {needsLocation ? bt("위치를 다시 선택하거나 전체 검수본 의견으로 바꿔 주세요.", "Select a location again or choose a note on the whole review.")
-            : annotation ? <StudioReviewAnnotationLocation anchor={annotation.anchor} /> : bt("전체 검수본에 의견을 남깁니다.", "Your note will apply to the whole review.")}
+            : annotation ? <StudioReviewAnnotationLocation anchor={annotation.anchor} mapping={annotation.mapping} /> : bt("전체 검수본에 의견을 남깁니다.", "Your note will apply to the whole review.")}
           {annotation || needsLocation ? <button type="button" className="ml-2 min-h-11 rounded-lg border border-line px-3" disabled={busy}
             onClick={() => { selectAnnotation(null); setNeedsLocation(false); }}>{bt("전체 검수본에 의견", "Use whole review")}</button> : null}
         </div>
@@ -281,7 +290,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       {actorId && subject ? <StudioReviewDraftShelf scope={{ actorId, subject }} compose={draftCompose} disabled={busy} onBusy={setBusy}
           onStored={() => { setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false); }}
           onPublished={() => { void refresh(true); }} /> : null}
-      <StudioPinnedReviewWorkflow verified={result} onRefresh={() => { void refresh(true); }} onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }} />
+      <StudioPinnedReviewWorkflow verified={result} previews={loadedPreviews} roster={roster} onRefresh={() => { void refresh(true); }} onRevoked={() => { invalidateActiveView(); setResult({ ok: false, reason: "access-denied" }); }} />
       {showShareTools && result.project.access.edit ? <Suspense fallback={<p className="mt-3 text-sm" role="status">{bt("공유 도구를 불러오는 중…", "Loading sharing tools…")}</p>}><StudioPinnedReviewShareManager verified={result} /></Suspense> : null}
       {showExportTools && result.review.status === "approved" ? <Suspense fallback={<p className="mt-3 text-sm" role="status">{bt("내보내기 도구를 불러오는 중…", "Loading export tools…")}</p>}><StudioReviewExport verified={result} /></Suspense> : null}
     </> : null}

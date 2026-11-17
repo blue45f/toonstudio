@@ -757,7 +757,7 @@ const STUDIO_PROJECT_GRAPH_RUNTIME_ACL = Object.freeze([
     relation: "studio_review_comment",
     insert: true,
     delete: false,
-    mutableColumns: ["status", "resolutionRevisionId", "updatedAt"],
+    mutableColumns: ["status", "resolutionRevisionId", "resolvedBy", "updatedAt"],
   },
   {
     relation: "studio_review_comment_assignee",

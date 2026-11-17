@@ -261,6 +261,22 @@ export const CreateStudioReviewSchema = z
   });
 export class CreateStudioReviewDto extends createZodDto(CreateStudioReviewSchema) {}
 
+export const AssignStudioReviewersSchema = z
+  .object({
+    reviewerIds: z.array(studioEntityIdSchema).min(1).max(64),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (new Set(input.reviewerIds).size !== input.reviewerIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["reviewerIds"],
+        message: "reviewers must be unique",
+      });
+    }
+  });
+export class AssignStudioReviewersDto extends createZodDto(AssignStudioReviewersSchema) {}
+
 export const CreateStudioReviewCommentSchema = z
   .object({
     id: studioEntityIdSchema,
@@ -406,6 +422,7 @@ export type CommitStudioRevision = z.infer<typeof CommitStudioRevisionSchema>;
 export type RestoreStudioRevision = z.infer<typeof RestoreStudioRevisionSchema>;
 export type RegisterStudioBlob = z.infer<typeof RegisterStudioBlobSchema>;
 export type CreateStudioReview = z.infer<typeof CreateStudioReviewSchema>;
+export type AssignStudioReviewers = z.infer<typeof AssignStudioReviewersSchema>;
 export type DecideStudioReview = z.infer<typeof DecideStudioReviewSchema>;
 export type ResolveStudioReviewComment = z.infer<typeof ResolveStudioReviewCommentSchema>;
 export type CreateStudioReviewComment = z.infer<typeof CreateStudioReviewCommentSchema>;

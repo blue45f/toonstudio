@@ -5,9 +5,10 @@ import { persistSession } from "@/domains/auth/public/session/auth-session-state
 import { StudioPinnedReviewWorkflow } from "./StudioPinnedReviewWorkflow";
 import type { StudioVirtualSpaceVerifiedReview } from "./studio-virtual-space-review-invitation";
 
-const f = vi.hoisted(() => ({ verify: vi.fn(), decide: vi.fn(), revisions: vi.fn(), resolve: vi.fn(), reopen: vi.fn(), refresh: vi.fn(), revoke: vi.fn(), actor: "reviewer" }));
+const f = vi.hoisted(() => ({ verify: vi.fn(), decide: vi.fn(), revisions: vi.fn(), resolve: vi.fn(), reopen: vi.fn(), assign: vi.fn(), refresh: vi.fn(), revoke: vi.fn(), actor: "reviewer" }));
 vi.mock("@/domains/auth/public/session/auth-session-store", () => ({ useSession: () => ({ data: { user: { id: f.actor } } }) }));
 vi.mock("./studio-virtual-space-review-invitation", () => ({ verifyStudioVirtualSpaceReviewSubject: f.verify }));
+vi.mock("./studio-review-reviewer-client", () => ({ assignStudioReviewers: f.assign }));
 vi.mock("../project-graph/studio-project-graph-client", () => ({ decideStudioReview: f.decide, listStudioArtifactRevisions: f.revisions, resolveStudioReviewComment: f.resolve, reopenStudioReviewComment: f.reopen }));
 const subject = { schemaVersion: 1 as const, workId: "work", projectId: "project", artifactId: "artifact", reviewId: "review", revisionId: "snapshot", rootGraphHash: "a".repeat(64) };
 const comment = { id: "note", body: "Move the final panel.", status: "open", severity: "required", resolutionRevisionId: null };
@@ -128,5 +129,50 @@ describe("Pinned review revision workflow", () => {
     expect(screen.getByRole("option", { name: /Current saved version/u })).toBeTruthy();
     expect(screen.queryByRole("option", { name: /stale/u })).toBeNull();
     expect(f.revisions).toHaveBeenCalledTimes(2);
+  });
+
+  it("지정 검수자가 배정된 버전에서 제출 작가의 자가 승인을 차단하고 지정 검수자에게는 5개 요약(작품·회차·버전·컷 수·미해결 수)을 표시한다", async () => {
+    f.assign.mockResolvedValue({ id: "review", reviewerIds: ["writer", "reviewer"] });
+    f.actor = "writer";
+    persistSession({ user: { id: "writer" }, token: null });
+    const writerView: StudioVirtualSpaceVerifiedReview = {
+      ...verified(),
+      project: { title: "달빛 공방", access: { edit: true, manageMembers: true }, artifacts: [{ id: "artifact", title: "1화 원고" }] } as unknown as StudioVirtualSpaceVerifiedReview["project"],
+      review: { title: "1화 수정본 B", requestedBy: "writer", status: "open", reviewerIds: ["writer", "reviewer"], comments: [] } as unknown as StudioVirtualSpaceVerifiedReview["review"],
+    };
+    const previews = [{
+      ordinal: 0, sha256: "b".repeat(64), byteLength: 100, mediaType: "image/png" as const, url: "https://preview.invalid/0.png", expiresAt: Date.now() + 30_000,
+      mapping: { status: "mapped" as const, version: 1 as const, sourceServerRevision: 2, sourceContentDigest: subject.rootGraphHash,
+        page: { id: "page-0", ordinal: 0, width: 800, height: 1200, renderWidth: 800, renderHeight: 1200,
+          frames: Array.from({ length: 6 }, (_, i) => ({ id: `cut-${i + 1}`, bounds: { x: 0, y: i * 180, width: 800, height: 160 } })), elements: [] } },
+    }];
+    const roster = {
+      members: [
+        { userId: "writer", name: "작가", image: "", role: "owner" as const, status: "active" as const, isOwner: true },
+        { userId: "reviewer-2", name: "부검수자", image: "", role: "editor" as const, status: "active" as const, isOwner: false },
+      ],
+      candidates: [], status: "idle" as const, refresh: vi.fn(),
+    };
+    const view = render(<StudioPinnedReviewWorkflow verified={writerView} previews={previews} roster={roster} onRefresh={f.refresh} onRevoked={f.revoke} />);
+    expect((screen.getByRole("button", { name: "이 검수본 승인" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId("self-approval-blocked-notice").textContent).toContain("직접 승인할 수 없어요");
+
+    fireEvent.change(screen.getByLabelText("지정할 검수자"), { target: { value: "reviewer-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "지정 검수자에게 요청" }));
+    await waitFor(() => expect(f.assign).toHaveBeenCalledWith("review", ["reviewer-2"]));
+
+    f.actor = "reviewer";
+    persistSession({ user: { id: "reviewer" }, token: null });
+    f.verify.mockResolvedValue(writerView);
+    view.rerender(<StudioPinnedReviewWorkflow verified={writerView} previews={previews} onRefresh={f.refresh} onRevoked={f.revoke} />);
+    const approveBtn = screen.getByRole("button", { name: "이 검수본 승인" }) as HTMLButtonElement;
+    expect(approveBtn.disabled).toBe(false);
+    fireEvent.click(approveBtn);
+    const summary = screen.getByTestId("approval-precheck-summary").textContent ?? "";
+    expect(summary).toContain("달빛 공방");
+    expect(summary).toContain("1화 원고");
+    expect(summary).toContain("1화 수정본 B · snapshot");
+    expect(summary).toContain("1페이지 · 6컷");
+    expect(summary).toContain("전체 0건 · 필수 0건");
   });
 });

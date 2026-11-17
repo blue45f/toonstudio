@@ -119,7 +119,14 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
     label: bt("기준 검수본", "Original snapshot") },
   { state: right, page: rightPage, title: choice.title, subject: choice.subject, setOrdinal: (ordinal: number | null) => selectPage("right", ordinal),
     label: bt("비교 검수본", "Comparison snapshot") }];
+  const leftAllPages = left.result?.ok ? left.result.previews : undefined;
+  const rightAllPages = right.result?.ok ? right.result.previews : undefined;
+  const leftAllLoaded = Boolean(left.result?.ok && !left.cursor && !left.result.nextCursor);
+  const rightAllLoaded = Boolean(right.result?.ok && !right.cursor && !right.result.nextCursor);
   return <div className="space-y-3">
+    <p className="rounded-lg border border-accent/35 bg-panel px-3 py-2 text-xs font-medium text-fg-2" data-testid="review-compare-target-version">
+      {bt(`현재 의견·결정 대상 버전: ${title} · ${base.revisionId}`, `Active note & decision target version: ${title} · ${base.revisionId}`)}
+    </p>
     <div className="grid gap-3 sm:grid-cols-2">
       {sides.map((side) => <div key={side.label} className="min-w-0 rounded-lg bg-panel p-3">
         <h3 className="font-semibold">{side.label} · {side.title}</h3>
@@ -148,6 +155,8 @@ export function StudioPinnedReviewComparisonImages({ base, title, choice, onRevo
     {linked ? <p className="text-xs text-fg-2">{leftPage && rightPage && sameReviewSourcePage(leftPage, rightPage)
       ? bt("같은 페이지의 상대 스크롤 위치를 연결합니다. 컷 위치가 바뀌면 각각 확인하세요.", "Relative scroll positions are linked within the same page. Verify moved cuts independently.")
       : bt("페이지가 서로 달라 스크롤은 독립적으로 움직여요. 다음 페이지 목록도 확인할 수 있어요.", "Different pages scroll independently. Check additional page lists when needed.")}</p> : null}
-    {leftPage && rightPage ? <StudioReviewCompareDisplay left={leftPage} right={rightPage} linked={linked} /> : null}
+    {leftPage && rightPage ? <StudioReviewCompareDisplay left={leftPage} right={rightPage} linked={linked}
+      leftAllPages={leftAllPages} rightAllPages={rightAllPages}
+      leftAllLoaded={leftAllLoaded} rightAllLoaded={rightAllLoaded} /> : null}
   </div>;
 }

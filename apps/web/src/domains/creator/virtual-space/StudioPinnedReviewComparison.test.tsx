@@ -365,4 +365,37 @@ describe("source-cut comparison in the actual pinned workbench", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "원본 컷 ID 검색" }), { target: { value: "absent" } });
     expect(screen.queryByRole("img", { name: "비교본 컷 영역" })).toBeNull();
   });
+
+  it("컷 재배열 시 순번이 아닌 안정 frameId로 연결하고 삭제된 이전 버전 컷을 현재 버전에서 삭제된 컷으로 명시한다", async () => {
+    f.read.mockImplementation(async (subject) => {
+      const p = sourceCutPreview(subject);
+      if (p.mapping.status !== "mapped") throw new Error("fixture");
+      p.mapping.page.frames = subject === prior
+        ? [
+          { id: "cut-1", bounds: { x: 0, y: 0, width: 200, height: 200 } },
+          { id: "cut-2", bounds: { x: 0, y: 220, width: 200, height: 200 } },
+          { id: "cut-deleted", bounds: { x: 0, y: 440, width: 200, height: 200 } },
+        ]
+        : [
+          { id: "cut-2", bounds: { x: 0, y: 0, width: 200, height: 200 } },
+          { id: "cut-1", bounds: { x: 0, y: 220, width: 200, height: 200 } },
+        ];
+      return ready(subject, [p]);
+    });
+    mount(); await openComparison(); await choose();
+    expect(screen.getByTestId("review-compare-target-version").textContent).toContain("현재 의견·결정 대상 버전: 현재 검수본 · current-revision");
+    expect(screen.getByTestId("review-compare-sync-status").textContent).toContain("확대 100%");
+
+    fireEvent.click(screen.getByRole("button", { name: "컷 단위로 비교" }));
+    fireEvent.change(screen.getByLabelText("컷을 고를 검수본"), { target: { value: "right" } });
+    const cutSelect = screen.getByRole("combobox", { name: "비교할 원본 컷" });
+
+    // 재배열된 cut-2: 이전 검수본 2번째 컷 ↔ 현재 검수본 1번째 컷으로 정확히 매칭
+    fireEvent.change(cutSelect, { target: { value: "cut-2" } });
+    expect(screen.getByText(/선택본 2번째 컷 ↔ 비교본 1번째 컷/u)).toBeTruthy();
+
+    // 삭제된 cut-deleted: 현재 버전에서 삭제된 컷으로 명시
+    fireEvent.change(cutSelect, { target: { value: "cut-deleted" } });
+    expect(screen.getByTestId("review-cut-missing-placeholder").textContent).toBe("현재 버전에서 삭제된 컷");
+  });
 });

@@ -24,14 +24,18 @@ export function StudioReviewImage({ preview, label, className = "block h-auto w-
   </figure>;
 }
 
-export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, notes }: {
+export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, notes, onPreviewsChange }: {
   readonly subject: StudioVirtualSpaceReviewSubject;
   readonly onRevoked: () => void;
   readonly annotation?: StudioReviewAnnotationControl;
   readonly notes?: readonly StudioReviewAnnotationNote[];
+  readonly onPreviewsChange?: (previews: readonly StudioVirtualSpaceReviewPreview[]) => void;
 }) {
   const bt = useBilingual("StudioPinnedReviewPreview");
   const { result, cursor, setCursor, refresh } = useStudioPinnedReviewPreviews(subject, onRevoked);
+  useEffect(() => {
+    onPreviewsChange?.(result?.ok ? result.previews : []);
+  }, [onPreviewsChange, result]);
   useEffect(() => {
     const selected = annotation?.selected;
     if (!selected) return;

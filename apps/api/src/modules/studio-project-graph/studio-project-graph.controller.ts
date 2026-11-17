@@ -19,6 +19,7 @@ import { studioEntityIdSchema } from "@toonstudio/studio-project-model";
 import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
 
 import {
+  AssignStudioReviewersDto,
   CommitStudioRevisionDto,
   CreateCompatibilityReportDto,
   CreateStudioProjectGraphDto,
@@ -312,6 +313,23 @@ export class StudioProjectGraphController {
     @Headers("x-user-id") userId?: string,
   ) {
     return this.service.decideReview(
+      authenticatedStudioUserId(userId),
+      params.reviewId,
+      body,
+    );
+  }
+
+  @Post("/reviews/:reviewId/reviewers")
+  @HttpCode(HttpStatus.OK)
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  assignReviewers(
+    @Param(new ZodValidationPipe(StudioReviewParamsDto))
+    params: StudioReviewParamsDto,
+    @Body(new ZodValidationPipe(AssignStudioReviewersDto))
+    body: AssignStudioReviewersDto,
+    @Headers("x-user-id") userId?: string,
+  ) {
+    return this.service.assignReviewers(
       authenticatedStudioUserId(userId),
       params.reviewId,
       body,

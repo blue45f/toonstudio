@@ -16,6 +16,10 @@ interface CompareDisplayProps {
   readonly left: StudioVirtualSpaceReviewPreview;
   readonly right: StudioVirtualSpaceReviewPreview;
   readonly linked: boolean;
+  readonly leftAllPages?: readonly StudioVirtualSpaceReviewPreview[];
+  readonly rightAllPages?: readonly StudioVirtualSpaceReviewPreview[];
+  readonly leftAllLoaded?: boolean;
+  readonly rightAllLoaded?: boolean;
 }
 
 /** Immutable leased previews only; no write or editor-selection capability. */
@@ -24,7 +28,7 @@ export function StudioReviewCompareDisplay(props: CompareDisplayProps) {
   return <CompareDisplayForPages key={JSON.stringify([reviewPreviewIdentity(props.left), reviewPreviewIdentity(props.right)])} {...props} />;
 }
 
-function CompareDisplayForPages({ left, right, linked }: CompareDisplayProps) {
+function CompareDisplayForPages({ left, right, linked, leftAllPages, rightAllPages, leftAllLoaded, rightAllLoaded }: CompareDisplayProps) {
   const bt = useBilingual("StudioReviewCompareDisplay");
   const hint = useId();
   const narrow = useMediaQuery("(max-width: 767px)");
@@ -47,7 +51,13 @@ function CompareDisplayForPages({ left, right, linked }: CompareDisplayProps) {
       className="block h-auto w-full max-h-none rounded-lg" figureClassName="" />;
   };
   return <div className="space-y-3" data-review-compare-layout={layout}>
-    <StudioReviewFrameComparison left={left} right={right} />
+    <StudioReviewFrameComparison left={left} right={right} leftAllPages={leftAllPages} rightAllPages={rightAllPages}
+      leftAllLoaded={leftAllLoaded} rightAllLoaded={rightAllLoaded} />
+    <p className="text-xs font-medium text-fg-2" data-testid="review-compare-sync-status">
+      {linked && sameReviewSourcePage(left, right)
+        ? bt(`동기화 상태: 페이지 스크롤 연결 켜짐 · 확대 ${zoom}%`, `Sync: page scroll linked · Zoom ${zoom}%`)
+        : bt(`동기화 상태: 독립 이동 · 확대 ${zoom}%`, `Sync: independent scroll · Zoom ${zoom}%`)}
+    </p>
     <div className="flex flex-wrap items-center gap-2" aria-label={bt("비교 표시 방식", "Comparison layout")}>
       <button type="button" className={control} aria-pressed={layout === "side-by-side"} onClick={() => changeMode("side-by-side")}>{bt("나란히 보기", "Side by side")}</button>
       <button type="button" className={control} aria-pressed={layout === "single"} onClick={() => changeMode("single")}>{bt("A/B 전환", "A/B view")}</button>
