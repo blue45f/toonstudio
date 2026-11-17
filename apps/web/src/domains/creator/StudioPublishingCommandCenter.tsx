@@ -1,113 +1,57 @@
 import "./studio-shell/creator-workflow-surfaces.css";
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  CalendarClock,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Globe2,
-  ImagePlus,
-  Link2,
-  Loader2,
-  LockKeyhole,
-  PenLine,
-  RefreshCw,
-  Save,
-  Send,
-  ShieldCheck,
-  Star,
-  Trash2,
-  Upload,
+  ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, Check, ChevronLeft, ChevronRight,
+  Eye, Globe2, ImagePlus, Link2, Loader2, LockKeyhole, PenLine, RefreshCw, Save, Send,
+  ShieldCheck, Star, Trash2, Upload,
 } from "lucide-react";
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
 import { frozenStatus2Text } from "./status-i18n/studio-frozen2-status-i18n";
 import {
-  confirmStudioDestructiveAction,
-  recordStudioDestructiveOutcome,
+  confirmStudioDestructiveAction, recordStudioDestructiveOutcome,
 } from "./studio-destructive-action-preview";
 import { studioDiscardLocalChangesRequest } from "./studio-destructive-command-catalog";
 import { downscaleImageFile } from "./studio-image-utils";
 import {
-  getStudioSharedDocument,
-  getStudioSharedDocumentMeta,
-  isStudioSharedDocumentAccessError,
-  isStudioSharedDocumentRevisionConflictError,
-  updateStudioSharedDocument,
-  type StudioSharedDocumentMeta,
+  getStudioSharedDocument, getStudioSharedDocumentMeta, isStudioSharedDocumentAccessError,
+  isStudioSharedDocumentRevisionConflictError, updateStudioSharedDocument, type StudioSharedDocumentMeta,
 } from "./studio-shared-document-client";
 import {
-  assertStudioUploadSourceBatch,
-  inspectStudioUploadSourceImage,
-  selectStudioUploadDecodedPixelLimit,
+  assertStudioUploadSourceBatch, inspectStudioUploadSourceImage, selectStudioUploadDecodedPixelLimit,
 } from "./studio-upload-image-safety";
 import {
-  formatStudioUploadBytes,
-  studioDataUrlByteLength,
-  summarizeStudioUploadConversion,
+  formatStudioUploadBytes, studioDataUrlByteLength, summarizeStudioUploadConversion,
   type StudioUploadImageSourceMetadata,
 } from "./studio-upload-conversion";
 import {
-  STUDIO_UPLOAD_ACTION_DOCK_CLASS,
-  STUDIO_UPLOAD_CONTAINER_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROL_CLASS,
-  STUDIO_UPLOAD_PAGE_CONTROLS_CLASS,
-  STUDIO_UPLOAD_PAGE_LIST_CLASS,
-  STUDIO_UPLOAD_PAGE_ROW_CLASS,
+  STUDIO_UPLOAD_ACTION_DOCK_CLASS, STUDIO_UPLOAD_CONTAINER_CLASS, STUDIO_UPLOAD_PAGE_CONTROL_CLASS,
+  STUDIO_UPLOAD_PAGE_CONTROLS_CLASS, STUDIO_UPLOAD_PAGE_LIST_CLASS, STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
 import {
-  advanceStudioUploadSharedMetaAfterSave,
-  assertStudioUploadJsonPayloadSize,
-  assertStudioUploadPublishScope,
-  assertStudioUploadSharedMetaUnchanged,
-  canEditStudioUploadSharedDocument,
-  canPublishStudioUploadSharedDocument,
-  captureStudioUploadPublishScope,
-  isStudioUploadHydrationScopeCurrent,
-  isStudioUploadPublishScopeCurrent,
-  isStudioUploadPublishScopeInvalidatedError,
-  isStudioUploadSharedAccessChangedError,
-  isStudioUploadWorkspaceLocked,
-  resolveStudioUploadActionLocks,
-  resolveStudioUploadSharedCrdtSaveFence,
-  resolveStudioUploadUpdateRevision,
-  runStudioUploadPublishStages,
-  shouldResetStudioUploadDraft,
-  validateStudioUploadHydratedSharedDocument,
-  validateStudioUploadSavedWork,
-  type StudioUploadCurrentScope,
-  type StudioUploadHydrationStatus,
-  type StudioUploadPublishScope,
+  advanceStudioUploadSharedMetaAfterSave, assertStudioUploadJsonPayloadSize,
+  assertStudioUploadPublishScope, assertStudioUploadSharedMetaUnchanged,
+  canEditStudioUploadSharedDocument, canPublishStudioUploadSharedDocument,
+  captureStudioUploadPublishScope, isStudioUploadHydrationScopeCurrent,
+  isStudioUploadPublishScopeCurrent, isStudioUploadPublishScopeInvalidatedError,
+  isStudioUploadSharedAccessChangedError, isStudioUploadWorkspaceLocked,
+  resolveStudioUploadActionLocks, resolveStudioUploadSharedCrdtSaveFence,
+  resolveStudioUploadUpdateRevision, runStudioUploadPublishStages,
+  shouldResetStudioUploadDraft, validateStudioUploadHydratedSharedDocument,
+  validateStudioUploadSavedWork, type StudioUploadCurrentScope,
+  type StudioUploadHydrationStatus, type StudioUploadPublishScope,
 } from "./studio-upload-publish-safety";
 import { resolveStudioUploadWorkId } from "./studio-upload-route";
 import {
-  refreshStudioUpdateSafety,
-  registerStudioUpdateSafetySource,
-  type StudioUpdateSafetySourceSnapshot,
+  refreshStudioUpdateSafety, registerStudioUpdateSafetySource, type StudioUpdateSafetySourceSnapshot,
 } from "./studio-update-safety";
 import {
-  parseStudioPublicationTags,
-  suggestStudioPublicationSocialMetadata,
-  validateStudioPublicationPreflight,
+  parseStudioPublicationTags, suggestStudioPublicationSocialMetadata, validateStudioPublicationPreflight,
 } from "./studio-publication-preflight";
 import {
-  createStudioPublicationCoverDataUrl,
-  normalizeStudioPublicationCover,
-  readStudioPublicationCover,
-  resolveStudioPublicationCoverPageIndex,
-  writeStudioPublicationCover,
+  createStudioPublicationCoverDataUrl, normalizeStudioPublicationCover, readStudioPublicationCover,
+  resolveStudioPublicationCoverPageIndex, writeStudioPublicationCover,
 } from "./studio-publication-cover";
 import { StudioPublicationControls } from "./StudioPublicationControls";
 import { CreatorAiTrainingBadgeFor } from "./ai-training-consent/CreatorAiTrainingBadge";
@@ -130,6 +74,17 @@ import {
   resolveStudioPublishResultKind,
 } from "./studio-publish-result";
 import type { PublishVerdictInput } from "./studio-publish-verdict";
+import {
+  StudioPublishingHandoffDismissButton,
+  StudioPublishingHandoffLocalBadge,
+  StudioPublishingPersistenceDockStatus,
+  StudioPublishingPersistenceSummaryStatus,
+} from "./publishing/StudioPublishingPersistenceStatus";
+import {
+  deriveStudioPublishingPersistenceStatus,
+  type StudioPublishingConfirmedSaveReceipt,
+  type StudioPublishingFailedSaveAttempt,
+} from "./publishing/studio-publishing-persistence-status";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -265,7 +220,7 @@ export function StudioPublishingCommandCenter({
   workId: routeWorkId,
 }: StudioPublishingCommandCenterProps = {}) {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const { data: session } = useSession();
   const publisherIdentity = resolveStudioPublisherIdentity(session?.user);
   const authUserId = publisherIdentity.id;
@@ -305,6 +260,8 @@ export function StudioPublishingCommandCenter({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [confirmedSaveReceipt, setConfirmedSaveReceipt] = useState<StudioPublishingConfirmedSaveReceipt | null>(null);
+  const [failedSaveAttempt, setFailedSaveAttempt] = useState<StudioPublishingFailedSaveAttempt | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
@@ -483,6 +440,10 @@ export function StudioPublishingCommandCenter({
       setError(null);
       setSuccessMessage(null);
       setDirty(false);
+      setFailedSaveAttempt(null);
+      setConfirmedSaveReceipt((prev) =>
+        prev && prev.authUserId === authUserId && prev.savedWorkId === workId ? prev : null,
+      );
       setHydrationError(null);
       setWorkRevision(undefined);
       setHydratedScope(null);
@@ -490,6 +451,7 @@ export function StudioPublishingCommandCenter({
       setHydrationStatus(workId ? "loading" : "ready");
     } else if (adoptingGuestDraft) {
       setError(null);
+      setFailedSaveAttempt(null);
     }
   }, [authUserId, routeChallengeId, routeSeriesId, routeTitleId, workId]);
 
@@ -601,6 +563,7 @@ export function StudioPublishingCommandCenter({
         setHydratedScope(scope);
         setSharedMeta(meta);
         setDirty(false);
+        setFailedSaveAttempt(null);
         setHydrationStatus("ready");
         setHydrationError(null);
       })
@@ -853,8 +816,22 @@ export function StudioPublishingCommandCenter({
     };
   }, [linkedChallengeId, linkedSeriesId]);
 
+  function clearHandoffQueryParam() {
+    handoffGenerationRef.current += 1;
+    setHandoffLoading(false);
+    setHandoffError(null);
+    setHandoffContext(null);
+    setParams((current) => {
+      if (!current.has("handoff")) return current;
+      const next = new URLSearchParams(current);
+      next.delete("handoff");
+      return next;
+    }, { replace: true });
+  }
+
   function markChanged() {
     setDirty(true);
+    setFailedSaveAttempt(null);
     setPublisherConfirmed(false);
     setError(null);
     setRecoveryError(null);
@@ -866,6 +843,7 @@ export function StudioPublishingCommandCenter({
 
   function leavePublishResult(nextStep: CommandStep) {
     setStep(nextStep);
+    setFailedSaveAttempt(null);
     setError(null);
     setRecoveryError(null);
     setSuccessMessage(null);
@@ -931,6 +909,7 @@ export function StudioPublishingCommandCenter({
         setCoverFocalX(0.5);
         setCoverFocalY(0.5);
       }
+      if (handoffId && !handoffContext) clearHandoffQueryParam();
       markChanged();
       if (!title.trim() && next[0]) {
         const base = next[0].name.replace(/\.[^.]+$/u, "").trim();
@@ -1032,11 +1011,15 @@ export function StudioPublishingCommandCenter({
       setStep("distribution");
       return;
     }
+    const recordSaveFailure = (message: string) => {
+      setError(message);
+      setFailedSaveAttempt({ authUserId, workId, message });
+    };
     let publishScope: StudioUploadPublishScope;
     try {
       publishScope = captureStudioUploadPublishScope(authUserId, workId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.loginToSave", "로그인 후 저장할 수 있어요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.loginToSave", "로그인 후 저장할 수 있어요."));
       return;
     }
     let baseRevision: number | undefined;
@@ -1048,17 +1031,17 @@ export function StudioPublishingCommandCenter({
         workRevision,
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.reloadWork", "기존 작품을 다시 불러와 주세요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.reloadWork", "기존 작품을 다시 불러와 주세요."));
       return;
     }
     const sharedMetaSnapshot = sharedMeta;
     if (publishScope.workId) {
       if (!sharedMetaSnapshot || !canEditStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.pub.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.pub.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
         return;
       }
       if (intent === "publish" && !canPublishStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
         return;
       }
     }
@@ -1147,7 +1130,7 @@ export function StudioPublishingCommandCenter({
         toolIds: origin.toolIds,
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.integrityFailed", "게시 원본의 무결성 정보를 만들지 못했습니다."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.integrityFailed", "게시 원본의 무결성 정보를 만들지 못했습니다."));
       return;
     }
     if (!isStudioUploadPublishScopeCurrent(
@@ -1172,6 +1155,7 @@ export function StudioPublishingCommandCenter({
     publishRequestIdRef.current = requestId;
     publishAbortRef.current = controller;
     setSaving(true);
+    setFailedSaveAttempt(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -1283,6 +1267,13 @@ export function StudioPublishingCommandCenter({
         if (directiveSnapshot) setDirective(directiveSnapshot);
       }
       setDirty(false);
+      setFailedSaveAttempt(null);
+      setConfirmedSaveReceipt({
+        authUserId: publishScope.authUserId,
+        savedWorkId: saved.workId,
+        sourceWorkId: publishScope.workId,
+        revision: saved.revision ?? sharedMetaSnapshot?.revision ?? null,
+      });
       setPublisherConfirmed(false);
       if (handoffId) {
         try {
@@ -1311,6 +1302,7 @@ export function StudioPublishingCommandCenter({
           navigate(resultHref);
           return;
         }
+        if (handoffId) clearHandoffQueryParam();
         const revision = saved.revision ?? sharedMetaSnapshot.revision;
         setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
       } else {
@@ -1339,7 +1331,7 @@ export function StudioPublishingCommandCenter({
           setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.sharedPermissionOrVersion", "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."));
           setError(null);
         } else {
-          setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.saveFailed", "저장에 실패했어요."));
+          recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.saveFailed", "저장에 실패했어요."));
         }
       }
     } finally {
@@ -1398,6 +1390,15 @@ export function StudioPublishingCommandCenter({
         setWorkRevision(result.work.revision);
       }
       setDirty(false);
+      setFailedSaveAttempt(null);
+      if (authUserId) {
+        setConfirmedSaveReceipt({
+          authUserId,
+          savedWorkId: workId,
+          sourceWorkId: workId,
+          revision: Number.isSafeInteger(result.work.revision) ? result.work.revision : (workRevision ?? null),
+        });
+      }
       setPublisherConfirmed(false);
       setSuccessMessage(publishResult === "scheduled" ? frozenStatus2Text("studio.frozenStatus2.pub.cancelScheduled", "게시 예약을 취소하고 비공개 초안으로 전환했습니다.") : frozenStatus2Text("studio.frozenStatus2.pub.successMadePrivate", "작품을 비공개 초안으로 전환했습니다."));
       navigate(buildStudioPublishResultHref(workId, "private"), { replace: true });
@@ -1415,6 +1416,7 @@ export function StudioPublishingCommandCenter({
         detail: message,
       });
       setRecoveryError(message);
+      setFailedSaveAttempt({ authUserId, workId, message });
     } finally {
       if (recoveryAbortRef.current === controller) {
         recoveryAbortRef.current = null;
@@ -1429,6 +1431,14 @@ export function StudioPublishingCommandCenter({
   }
 
   const currentStepIndex = COMMAND_STEPS.findIndex((candidate) => candidate.id === step);
+  const savingBusyLabel = frozenStatus2Text("studio.frozenStatus2.pub.savingBusy", "저장 중…");
+  const persistenceStatus = deriveStudioPublishingPersistenceStatus({
+    authUserId, workId, pageCount: pages.length, title, description, tagsText,
+    hasHandoffContext: handoffContext !== null, dirty, saving, recoveryBusy, hydrating,
+    loadingFiles, handoffLoading, hydrationStatus, hydrationScopeCurrent,
+    hasHydratedScope: hydratedScope !== null, handoffError, workRevision,
+    confirmedSaveReceipt, failedSaveAttempt,
+  });
   const primaryDisabled =
     !loggedIn ||
     publishLocked ||
@@ -1576,32 +1586,32 @@ export function StudioPublishingCommandCenter({
         >
           <p className="text-sm font-semibold text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffHeadingFailed", "게시 원고를 불러오지 못했어요")}</p>
           <p className="mt-1 text-sm leading-relaxed text-fg-2">{handoffError}</p>
-          <Link
-            href="/studio"
-            className={buttonClass({
-              size: "sm",
-              variant: "outline",
-              className: "mt-3 min-h-11 gap-1.5",
-            })}
-          >
-            <PenLine size={14} aria-hidden /> 편집기로 돌아가기
-          </Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link
+              href="/studio"
+              className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}
+            >
+              <PenLine size={14} aria-hidden /> 편집기로 돌아가기
+            </Link>
+            <StudioPublishingHandoffDismissButton onDismiss={clearHandoffQueryParam} />
+          </div>
         </div>
       ) : null}
       {handoffContext && !handoffLoading ? (
         <div
           data-studio-publish-handoff-loaded="true"
-          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-good/40 bg-good/8 px-3 py-3"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-accent/35 bg-accent/8 px-3 py-3"
           role="status"
           aria-live="polite"
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-good/15 text-good">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent/15 text-accent">
             <Send size={16} aria-hidden />
           </span>
           <span className="min-w-0 flex-1">
             <strong className="block text-sm text-fg">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceived", { count: handoffContext.pageCount }, "편집기 원고 {count}페이지를 받았습니다")}</strong>
             <span className="mt-0.5 block text-xs leading-relaxed text-fg-2">{frozenStatus2Text("studio.frozenStatus2.pub.handoffReceivedDetail", "제목과 페이지 순서를 유지했습니다. 서버 저장이 완료되면 로컬 인계본을 자동 정리하며, 저장하지 않아도 24시간 뒤 만료됩니다.")}</span>
           </span>
+          <StudioPublishingHandoffLocalBadge loggedIn={loggedIn} />
           {handoffContext.sourceWorkId ? (
             <span className="max-w-full truncate rounded-full border border-line bg-card/70 px-2.5 py-1 font-mono text-[0.65rem] text-fg-3">
               {handoffContext.sourceWorkId}
@@ -1685,21 +1695,7 @@ export function StudioPublishingCommandCenter({
             ? `다음: ${COMMAND_STEPS[currentStepIndex + 1]?.label}`
             : "마지막 단계예요. 사전검사를 통과하면 게시할 수 있어요."}
         </span>
-        <span className="ml-auto" role="status">
-          {saving ? (
-            <span className="inline-flex items-center gap-1.5 text-fg-2">
-              <Loader2 size={13} className="animate-spin" /> {frozenStatus2Text("studio.frozenStatus2.pub.savingBusy", "저장 중…")}
-            </span>
-          ) : dirty ? (
-            <span className="inline-flex items-center gap-1.5 text-warn">
-              <span className="size-2 rounded-full bg-warn" /> 저장되지 않은 변경이 있어요 — 아래 "초안 저장"으로 언제든 중간 저장할 수 있어요
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-good">
-              <Check size={13} /> 현재 버전까지 저장됨
-            </span>
-          )}
-        </span>
+        <StudioPublishingPersistenceSummaryStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
       </div>
 
       <nav aria-label="게시 단계" className="mb-5 grid gap-2 sm:grid-cols-3">
@@ -2036,7 +2032,7 @@ export function StudioPublishingCommandCenter({
 
       <div className={cn("mt-5", STUDIO_UPLOAD_ACTION_DOCK_CLASS)}>
         <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-fg-3">
-          {dirty ? <span className="inline-flex items-center gap-1.5 text-warn"><span className="size-2 rounded-full bg-warn" /> 저장 또는 게시하면 현재 변경이 새 저장 버전에 함께 반영됩니다.</span> : <span className="inline-flex items-center gap-1.5 text-good"><Check size={13} /> 현재 버전 저장됨</span>}
+          <StudioPublishingPersistenceDockStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
           {sharedMeta && <span className="hidden sm:inline">· 역할 {sharedMeta.role}</span>}
         </div>
         <button

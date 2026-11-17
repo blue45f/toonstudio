@@ -84,6 +84,9 @@ apps/api/src/modules/production-collaboration/production-webhook-network.test.ts
 apps/api/src/modules/production-collaboration/production-workflow-command.test.ts
 apps/api/src/modules/promotion/promotion.service.error-disclosure.test.ts
 apps/api/src/modules/studio-ai/studio-3d-generation-provider-identity-store.test.ts
+apps/api/src/modules/studio-ai/studio-ai-capabilities.test.ts
+apps/api/src/modules/studio-ai/studio-ai-cloudflare-media.test.ts
+apps/api/src/modules/studio-ai/studio-ai-provider.test.ts
 apps/api/src/modules/studio-project-graph
 apps/api/src/modules/studio-project-graph/manuscript-version-share/manuscript-version-share.controller.test.ts
 apps/api/src/modules/studio-project-graph/manuscript-version-share/manuscript-version-share.http.test.ts

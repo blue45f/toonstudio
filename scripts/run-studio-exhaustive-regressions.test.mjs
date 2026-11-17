@@ -12,6 +12,7 @@ import {
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const workflow = readFileSync(join(REPOSITORY_ROOT, ".github/workflows/studio-exhaustive-regressions.yml"), "utf8");
+const focusedWorkflow = workflow.split(/^ {2}followup:/mu)[0];
 const paths = [...workflow.matchAll(/^ {6}- (.+)$/gmu)].map(match => match[1]);
 const covers = file => paths.some(pattern => new RegExp(`^${pattern.split("*").map(part => part.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("[^/]*")}$`, "u").test(file));
 
@@ -178,19 +179,20 @@ test("LivingInk exit 0도 실제 WebGL2 미실행·누락·파손된 summary이�
   }
 });
 
-test("단일 표준 Linux 15분 job이고 PR/수동 외 trigger·빌드·저장 비용을 추가하지 않는다", () => {
+test("기본 회귀는 단일 표준 Linux 15분 job이며 PR·기본 수동 실행 범위를 유지한다", () => {
   assert.match(workflow, /pull_request:\n {4}types: \[opened, reopened, synchronize, ready_for_review\]\n {4}branches: \[main\]/u);
   assert.match(workflow, /^ {2}workflow_dispatch:/mu);
   assert.doesNotMatch(workflow, /^ {2}(?:push|schedule|workflow_run|merge_group):/mu);
-  assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 1);
-  assert.match(workflow, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: 15/u);
+  assert.equal([...focusedWorkflow.matchAll(/^ {4}runs-on: /gmu)].length, 1);
+  assert.match(focusedWorkflow, /if: github\.event_name != 'workflow_dispatch' \|\| inputs\.suite == 'regressions' \|\| inputs\.suite == ''/u);
+  assert.match(focusedWorkflow, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: 15/u);
   assert.match(workflow, /group: \$\{\{ github\.workflow \}\}-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}/u);
   assert.match(workflow, /cancel-in-progress: true/u);
   assert.match(workflow, /permissions:\n {2}contents: read/u);
   assert.match(workflow, /persist-credentials: false/u);
   assert.doesNotMatch(workflow, /continue-on-error|actions\/(?:upload-artifact|cache)|cache:|pnpm (?:run )?(?:build|test)\b|matrix:/u);
   assert.match(workflow, /pnpm exec playwright install --with-deps chromium\n/u);
-  assert.doesNotMatch(workflow, /playwright install[^\n]*(?:firefox|webkit)/u);
+  assert.doesNotMatch(focusedWorkflow, /playwright install[^\n]*(?:firefox|webkit)/u);
   assert.match(workflow, /Date\.now\(\) \+ 14 \* 60_000/u);
   assert.match(workflow, /if: always\(\)\n {8}run: node scripts\/run-studio-exhaustive-regressions\.mjs --publish/u);
   assert.ok(workflow.indexOf("node --test") < workflow.indexOf("pnpm install"));
