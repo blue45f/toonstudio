@@ -5,6 +5,7 @@
   "license": "CC0-1.0",
   "generator": "Blender 5.3.0 (scripts/blender/generate_lumiere_atelier_v16.py · OpenPBR Dispersion & manifold 0-defect verified)",
   "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
   "units": "meter",
   "upAxis": "Y",
   "externalSources": [],
