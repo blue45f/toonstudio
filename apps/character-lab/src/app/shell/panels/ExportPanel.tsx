@@ -374,6 +374,33 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
       dispatch,
       applyStoreEvent: (event) => store.applyEvent(event),
       getRegisteredPackage: (characterId) => packagePlans.get(characterId),
+      ensurePackageRegistered: async (characterId, expectedSha256) => {
+        const existing = packagePlans.get(characterId);
+        if (existing) return existing;
+        if (typeof fetch !== "function") return undefined;
+        try {
+          const { browserPackageLoader } = await import("./PackagePanel");
+          const indexResult = await browserPackageLoader.loadIndex();
+          if (!indexResult.ok) return undefined;
+          const entry = indexResult.entries.find((item) => item.characterId === characterId);
+          if (!entry) return undefined;
+          if (entry.glbSha256 !== expectedSha256) {
+            // 다른 SHA가 인덱스에 등록되어 있으면 해시 불일치 가드가 정확히 동작하도록 기존 엔트리를 반환한다.
+            return { glbSha256: entry.glbSha256, capabilities: currentState.capabilities };
+          }
+          const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });
+          if (!loaded.ok) return undefined;
+          let capabilities = loaded.plan.capabilities;
+          if (engineSession.engine()) {
+            const reloaded = await engineSession.reloadSource({ kind: "package", plan: loaded.plan });
+            if (reloaded) capabilities = reloaded.capabilities;
+          }
+          packagePlans.register(loaded.plan);
+          return { glbSha256: loaded.plan.glbSha256, capabilities };
+        } catch {
+          return undefined;
+        }
+      },
       peekKitManifest: kitPlans ? (src) => kitPlans.peek(src) : undefined,
       catalog,
       validateKitRecipe: kitPlans ? (recipe) => kitPlans.plan(recipe) : undefined,

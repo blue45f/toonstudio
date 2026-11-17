@@ -21,6 +21,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -30,8 +31,8 @@ import { createStudioHybridDccWorkspace, workspaceUndo } from "./studio-hybrid-d
 const WEB_PUBLIC_DIR = path.resolve(import.meta.dirname, "../../../../public");
 
 describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
-  it("18종 기본·정밀 건축·유기체 도형이 모두 등록되어 있다", () => {
-    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(18);
+  it("20종 기본·정밀 건축·유기체·크리스탈 도형이 모두 등록되어 있다", () => {
+    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(20);
   });
 
   it.each(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.map(({ kind }) => kind))(
@@ -182,6 +183,33 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
       }
       expect(totalTris).toBeGreaterThan(0);
       expect(Math.abs(totalTris - item.triangles), item.id).toBeLessThan(item.triangles * 0.5);
+    }
+  });
+
+  it("Blender 5.3 뤼미에르 아틀리에 V16(6종)가 실제 디스크 GLB·썸네일과 일치하며 하프에지 메시로 무손실 디코딩된다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT).toHaveLength(6);
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT) {
+      expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-lumiere-v16\/.+\.glb$/u);
+      expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-lumiere-v16\/thumbnails\/.+\.png$/u);
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      expect(imported.value.assets.length).toBeGreaterThan(0);
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
     }
   });
 });

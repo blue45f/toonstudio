@@ -13,6 +13,7 @@ import {
   STUDIO_3D_PROP_CATEGORY_LABELS,
   STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG,
   STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
+  STUDIO_BLENDER_LUMIERE_V16_PROP_CATALOG,
   STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
   STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
@@ -35,6 +36,7 @@ import type { ReactElement } from "react";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
 type PropCatalogFilter =
+  | "blender-lumiere-v16"
   | "blender-precision-bg-v14"
   | "blender-artisan-v15"
   | "blender-hero-v12"
@@ -45,6 +47,7 @@ type PropCatalogFilter =
   | Studio3DPropCatalogCategory;
 
 const PROP_CATEGORY_FILTERS: readonly { readonly id: PropCatalogFilter; readonly label: string }[] = [
+  { id: "blender-lumiere-v16", label: `블렌더 뤼미에르 V16 (${STUDIO_BLENDER_LUMIERE_V16_PROP_CATALOG.length})` },
   { id: "blender-precision-bg-v14", label: `블렌더 배경 V14 (${STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG.length})` },
   { id: "blender-artisan-v15", label: `블렌더 아티잔 V15 (${STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG.length})` },
   { id: "blender-hero-v12", label: `블렌더 히어로 V12 (${STUDIO_BLENDER_HERO_V12_PROP_CATALOG.length})` },

@@ -189,6 +189,7 @@ export interface ApplyImportedRecipeParams {
   readonly dispatch: (cmd: LabCommand) => void;
   readonly applyStoreEvent: (event: LabEvent) => void;
   readonly getRegisteredPackage: (characterId: string) => { readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined;
+  readonly ensurePackageRegistered?: (characterId: string, expectedSha256: string) => Promise<{ readonly glbSha256: string; readonly capabilities: LabStateCapabilities } | undefined>;
   readonly peekKitManifest: ((source: Extract<RecipeSource, { readonly kind: "kit" }>) => KitManifest | undefined) | undefined;
   readonly catalog?: PresetCatalog;
   readonly validateKitRecipe?: ((recipe: CharacterRecipe) => Promise<unknown>) | undefined;
@@ -213,6 +214,7 @@ export async function applyImportedRecipeText(
     dispatch,
     applyStoreEvent,
     getRegisteredPackage,
+    ensurePackageRegistered,
     peekKitManifest,
     catalog,
     validateKitRecipe,
@@ -237,7 +239,10 @@ export async function applyImportedRecipeText(
 
   const nextSource = parsed.recipe.source;
   if (nextSource.kind === "package") {
-    const registered = getRegisteredPackage(nextSource.characterId);
+    let registered = getRegisteredPackage(nextSource.characterId);
+    if (!registered && ensurePackageRegistered) {
+      registered = await ensurePackageRegistered(nextSource.characterId, nextSource.sha256);
+    }
     if (registered && registered.glbSha256 !== nextSource.sha256) {
       return {
         ok: false,
@@ -307,7 +312,7 @@ export async function applyImportedRecipeText(
         importNotices.push(
           `제작 패키지 '${nextSource.characterId}'가 아직 로드되지 않았습니다. 제작 패키지 탭에서 해당 패키지를 불러오면 스켈레톤·슬롯 능력이 활성화됩니다.`,
         );
-      } else if (!engine) {
+      } else {
         applyStoreEvent({ type: "source/capabilities", capabilities: registered.capabilities });
       }
     } else if (nextSource.kind === "kit" && !engine) {

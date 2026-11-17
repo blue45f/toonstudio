@@ -68,6 +68,8 @@ export interface RigPart {
   readonly outlineMeshes: readonly Mesh[];
   /** 원 재질(PBR). 패키지는 로더가 만든 재질, 절차는 프리셋 재질 */
   readonly pbr: PBRMaterial;
+  /** 멀티 프리미티브 패키지 파츠의 서브메시별 원본 PBR 재질(없으면 모든 메시가 `pbr` 공유) */
+  readonly meshPbrs?: readonly PBRMaterial[];
   /** 알베도 텍스처 존재 여부(`tint`가 없으면 있을 때 레시피 색 틴트를 적용하지 않는다) */
   readonly hasAlbedoTexture: boolean;
   /** 키트 파츠의 색 틴트. 있으면 알베도 텍스처가 있어도 색을 곱한다(recolor: 레시피 색, fixed: 고정색). */

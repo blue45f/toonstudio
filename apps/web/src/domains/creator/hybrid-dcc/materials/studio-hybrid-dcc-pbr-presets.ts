@@ -2,9 +2,10 @@
  * 정밀 3D 모델러(Hybrid DCC)용 물리 기반 스튜디오 표면 재질 프리셋(Physically Plausible Studio PBR).
  *
  * 원칙:
- * - 이진 금속도(Binary Metallic): 유전체(점토·원목·석재·패브릭)는 항상 `metalness: 0.0`,
+ * - 이진 금속도(Binary Metallic): 유전체(점토·원목·석재·패브릭·백자·크리스탈)는 항상 `metalness: 0.0`,
  *   순수 금속(황동·스틸)은 항상 `metalness: 1.0`을 유지해 비물리적 프레넬 오염을 원천 차단한다.
- * - 유광 원목은 `clearcoat`(바니시 코팅), 무광 직물은 `sheen`(미세 섬유 역광)으로 표현한다.
+ * - 유광 원목·백자는 `clearcoat`(바니시/유약 코팅), 무광 직물은 `sheen`(미세 섬유 역광),
+ *   보석·프리즘 수정은 Blender 5.3 OpenPBR 규약에 맞춘 `transmission` + `dispersion`(빛 분산)으로 표현한다.
  */
 
 export type StudioHybridDccPbrPresetId =
@@ -15,7 +16,7 @@ export type StudioHybridDccPbrPresetId =
   | "anodized-steel"
   | "matte-fabric"
   | "glazed-porcelain"
-  | "royal-velvet";
+  | "crystal-prism";
 
 export interface StudioHybridDccPbrPreset {
   readonly id: StudioHybridDccPbrPresetId;
@@ -32,6 +33,9 @@ export interface StudioHybridDccPbrPreset {
   readonly sheenRoughness: number;
   readonly sheenColor: string;
   readonly ior: number;
+  readonly transmission: number;
+  readonly dispersion: number;
+  readonly thickness: number;
 }
 
 export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] = Object.freeze([
@@ -49,6 +53,9 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
     ior: 1.5,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "satin-oak",
@@ -64,6 +71,9 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
     ior: 1.52,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "limestone",
@@ -79,6 +89,9 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
     ior: 1.5,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "brushed-brass",
@@ -94,6 +107,9 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
     ior: 1.5,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "anodized-steel",
@@ -109,6 +125,9 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
     ior: 1.5,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "matte-fabric",
@@ -124,36 +143,45 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.56,
     sheenColor: "#e8edf5",
     ior: 1.48,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
     id: "glazed-porcelain",
-    label: ["백자 유약 도자기", "Glazed porcelain"],
-    hint: ["티팟·찻잔·조형 흉상 고광택 유약 유전체", "High-clearcoat ceramic & tea-ware glaze"],
-    baseColor: "#f6f2eb",
-    selectedColor: "#e69a58",
+    label: ["유약 백자", "Glazed porcelain"],
+    hint: ["고광택 도자기·조형 흉상·세라믹 유약", "High-gloss ceramic & sculpture glaze"],
+    baseColor: "#f5f1ea",
+    selectedColor: "#ef9d56",
     metalness: 0,
     roughness: 0.14,
-    clearcoat: 0.9,
+    clearcoat: 0.88,
     clearcoatRoughness: 0.08,
     sheen: 0,
     sheenRoughness: 0.5,
     sheenColor: "#ffffff",
-    ior: 1.54,
+    ior: 1.56,
+    transmission: 0,
+    dispersion: 0,
+    thickness: 0,
   },
   {
-    id: "royal-velvet",
-    label: ["로열 벨벳", "Royal velvet"],
-    hint: ["황실 망토·드레이퍼리·무대 커튼 깊은 쉰 직물", "Deep grazing-angle velvet sheen"],
-    baseColor: "#6d213c",
-    selectedColor: "#e28855",
+    id: "crystal-prism",
+    label: ["프리즘 크리스탈", "Crystal prism"],
+    hint: ["Blender 5.3 빛 분산·굴절 투명 보석", "OpenPBR refractive dispersion crystal"],
+    baseColor: "#cbeafe",
+    selectedColor: "#67e8f9",
     metalness: 0,
-    roughness: 0.78,
-    clearcoat: 0,
-    clearcoatRoughness: 0.5,
-    sheen: 0.84,
-    sheenRoughness: 0.34,
-    sheenColor: "#f5d7e4",
-    ior: 1.49,
+    roughness: 0.06,
+    clearcoat: 1,
+    clearcoatRoughness: 0.04,
+    sheen: 0,
+    sheenRoughness: 0.5,
+    sheenColor: "#ffffff",
+    ior: 2.15,
+    transmission: 0.88,
+    dispersion: 0.45,
+    thickness: 0.65,
   },
 ]);
 
@@ -177,6 +205,9 @@ export interface ResolvedStudioHybridDccPhysicalProps {
   readonly sheenRoughness: number;
   readonly sheenColor: string;
   readonly ior: number;
+  readonly transmission: number;
+  readonly dispersion: number;
+  readonly thickness: number;
 }
 
 export function resolveStudioHybridDccPhysicalProps(
@@ -198,5 +229,8 @@ export function resolveStudioHybridDccPhysicalProps(
     sheenRoughness: preset.sheenRoughness,
     sheenColor: preset.sheenColor,
     ior: preset.ior,
+    transmission: preset.transmission,
+    dispersion: preset.dispersion,
+    thickness: preset.thickness,
   };
 }

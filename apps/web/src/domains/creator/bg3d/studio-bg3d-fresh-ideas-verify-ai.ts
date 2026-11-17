@@ -103,7 +103,7 @@ export function generateBlenderWebtoonFreshIdeasRemix(
     crowdEval,
   } = input;
 
-  const headerKo = `💡 Remix: ${lightingPreset.nameKo} × ${weaponPreset.nameKo} 웹툰 3D 연출 · Sources used: ToonStudio Blender 5.2 Engine & Verify AI`;
+  const headerKo = `💡 Remix: ${lightingPreset.nameKo} × ${weaponPreset.nameKo} 웹툰 3D 연출 · Sources used: ToonStudio Blender 5.3 Engine & Verify AI`;
 
   const remixes: readonly FreshIdeaLensRemix[] = Object.freeze([
     {
@@ -131,7 +131,7 @@ export function generateBlenderWebtoonFreshIdeasRemix(
       id: "practical-playbook",
       badgeKo: "4. ✅ PRACTICAL PLAYBOOK",
       lensTitle: "클라이맥스 판타지 웹툰 컷 10분 완성 4단계 실행 플레이북",
-      pitchKo: "이론 없이 오늘 바로 원고 컷에 적용하는 Blender 5.2 × Verify AI 실전 체크리스트",
+      pitchKo: "이론 없이 오늘 바로 원고 컷에 적용하는 Blender 5.3 × Verify AI 실전 체크리스트",
       angleKo: "현재 설정된 조명·셰이더·리깅 프리셋을 손실 없이 2D 원고 레이어로 직결하는 4단계 전술 가이드입니다:",
       actionableStepsKo: [
         `조명 고정: [${lightingPreset.nameKo}] 선택 후 대비율 ${lightingEval.contrastRatio}:1 (${lightingEval.webtoonReadabilityGrade}등급) 및 역광 실루엣 확인`,
@@ -227,9 +227,9 @@ export function evaluateBlenderSceneWithVerifyAi(
     schemaVersion: 1,
     runId: `blender-verify-ai-${lightingPreset.id}-${weaponPreset.id}`,
     createdAt: "2026-11-09T05:00:00.000Z",
-    candidateLabel: `Blender 5.2 × ToonStudio (${lightingPreset.nameKo} / ${weaponPreset.nameKo})`,
+    candidateLabel: `Blender 5.3 × ToonStudio (${lightingPreset.nameKo} / ${weaponPreset.nameKo})`,
     provider: "toonstudio-blender-hybrid-dcc",
-    model: "blender-5.2-eevee-npr-itasc-verify-v1",
+    model: "blender-5.3-eevee-openpbr-itasc-verify-v2",
     cases: [
       {
         id: "fantasy-climax-establishing-shot",

@@ -1,0 +1,87 @@
+{
+  "schema": "toonstudio.blender-lumiere-atelier-assets.v16",
+  "createdAt": "2026-11-17",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_lumiere_atelier_v16.py · OpenPBR Dispersion & manifold 0-defect verified)",
+  "tool": "Blender 5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "files": [
+    {
+      "file": "webtoon-aristocrat-tiara-bust-v16.glb",
+      "bytes": 730336,
+      "sha256": "901f0ab3b89920017efff8cd2b6b50afa26fb5ae020fd3dd6fc92080cfc4bc58",
+      "triangles": 26256,
+      "vertices": 13230
+    },
+    {
+      "file": "webtoon-celestial-chrono-orrery-clock-v16.glb",
+      "bytes": 333500,
+      "sha256": "45571923d6ad99833cc782b9f21aeb3f792b0826cd50da7a769dc9a4ab1a5eb6",
+      "triangles": 9532,
+      "vertices": 4784
+    },
+    {
+      "file": "webtoon-crystal-prism-sanctum-altar-v16.glb",
+      "bytes": 281736,
+      "sha256": "c7103014bfaae048d31f921d40dfcf04368c39cb53c930cb22bf6661484888fc",
+      "triangles": 7548,
+      "vertices": 3830
+    },
+    {
+      "file": "webtoon-grand-spiral-library-rotunda-v16.glb",
+      "bytes": 822968,
+      "sha256": "045f4517057d75b6cd3c93bfb12b2f59bd136171f845bfe0984e5c1a8d121208",
+      "triangles": 22496,
+      "vertices": 11666
+    },
+    {
+      "file": "webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.glb",
+      "bytes": 301108,
+      "sha256": "dc2481f9fe5150023bdf040b0f07a64348e71c229a72ec309628913ab2a02d2a",
+      "triangles": 7620,
+      "vertices": 3972
+    },
+    {
+      "file": "webtoon-parisian-patisserie-display-cart-v16.glb",
+      "bytes": 296024,
+      "sha256": "b3bf9ff418e30ee2f4d32d591e08cf079c9cc036ddd773040b44ca28987eb0d2",
+      "triangles": 7980,
+      "vertices": 4130
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-aristocrat-tiara-bust-v16.png",
+      "bytes": 332149,
+      "sha256": "8bc98d6d1d6047c0418d6ba5f331ed4805969dcb8ebd6978aab11a52014cd400"
+    },
+    {
+      "file": "thumbnails/webtoon-celestial-chrono-orrery-clock-v16.png",
+      "bytes": 358448,
+      "sha256": "fc2259056f3cedcb9f18b11e70046f4b9e8beee44c374d1171eed333b21b0052"
+    },
+    {
+      "file": "thumbnails/webtoon-crystal-prism-sanctum-altar-v16.png",
+      "bytes": 315842,
+      "sha256": "8af9c4717542b2416748bcadf7d0cb896dbc98727ee18e12fa0c4f66e165fc5e"
+    },
+    {
+      "file": "thumbnails/webtoon-grand-spiral-library-rotunda-v16.png",
+      "bytes": 346154,
+      "sha256": "e00365c3537139c380c8a6b221ce4936eae71df615cefaf67fb3a357f6f1c140"
+    },
+    {
+      "file": "thumbnails/webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.png",
+      "bytes": 335237,
+      "sha256": "e76b5c8a756d6fb6a50854bce04fa8a920b4436a400356a5c62eba0e84894919"
+    },
+    {
+      "file": "thumbnails/webtoon-parisian-patisserie-display-cart-v16.png",
+      "bytes": 336669,
+      "sha256": "445152b87d45d17cf9f9c16412ef2a58147a69e7025e006fada17c7c72892946"
+    }
+  ]
+}

@@ -222,7 +222,7 @@ export function createLabRuntime(deps: LabRuntimeDeps): LabRuntime {
         if (source.kind === "package") packagePlans.register(source.plan);
         const engine = innerSession.engine();
         if (engine) {
-          applyLoop.markSourceLoaded(engine, source);
+          applyLoop.markSourceLoaded(engine, source, capabilities);
           deps.onSourceLoaded?.(engine, source);
         }
       }

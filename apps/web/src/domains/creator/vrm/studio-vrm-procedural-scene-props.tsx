@@ -242,9 +242,9 @@ function PropShield({ scale: s }: { scale: number }) {
 function PropBook({ scale: s }: { scale: number }) {
   return (
     <group scale={s} rotation={[0.2, 0.3, 0]}>
-      <mesh position={[0, 0, 0]}><boxGeometry args={[1.6, 2.0, 0.3]} /><meshStandardMaterial color={0x7c2d12} /></mesh>
-      <mesh position={[0, 0, 0.16]}><boxGeometry args={[1.4, 1.8, 0.02]} /><meshStandardMaterial color={0xfef3c7} /></mesh>
-      <mesh position={[-0.8, 0, 0]}><boxGeometry args={[0.06, 2.0, 0.34]} /><meshStandardMaterial color={0x5c2d12} /></mesh>
+      <mesh position={[0, 0, 0]}><boxGeometry args={[1.6, 2.0, 0.3]} /><meshPhysicalMaterial color={0x7c2d12} metalness={0} roughness={0.58} sheen={0.45} sheenRoughness={0.5} clearcoat={0.18} clearcoatRoughness={0.35} /></mesh>
+      <mesh position={[0, 0, 0.16]}><boxGeometry args={[1.4, 1.8, 0.02]} /><meshStandardMaterial color={0xfef3c7} metalness={0} roughness={0.82} /></mesh>
+      <mesh position={[-0.8, 0, 0]}><boxGeometry args={[0.06, 2.0, 0.34]} /><meshPhysicalMaterial color={0x5c2d12} metalness={0} roughness={0.52} clearcoat={0.25} clearcoatRoughness={0.3} /></mesh>
     </group>
   );
 }
@@ -267,7 +267,7 @@ function PropGem({ scale: s }: { scale: number }) {
   return (
     <group scale={s}>
       <mesh position={[0, 0.6, 0]} rotation={[0, 0.3, 0]}>
-        <octahedronGeometry args={[0.7, 0]} /><meshPhysicalMaterial color={0x8b5cf6} metalness={0} roughness={0.08} ior={1.77} clearcoat={1} clearcoatRoughness={0.05} transparent opacity={0.88} />
+        <octahedronGeometry args={[0.7, 0]} /><meshPhysicalMaterial color={0x8b5cf6} metalness={0} roughness={0.05} ior={2.15} transmission={0.86} dispersion={0.42} thickness={0.55} clearcoat={1} clearcoatRoughness={0.04} transparent opacity={0.92} />
       </mesh>
     </group>
   );
@@ -276,7 +276,7 @@ function PropGem({ scale: s }: { scale: number }) {
 function PropCrystal({ scale: s }: { scale: number }) {
   return (
     <group scale={s}>
-      <mesh position={[0, 0.8, 0]}><sphereGeometry args={[0.9, 28, 28]} /><meshPhysicalMaterial color={0xa78bfa} metalness={0} roughness={0.05} ior={1.55} clearcoat={1} clearcoatRoughness={0.04} transparent opacity={0.62} /></mesh>
+      <mesh position={[0, 0.8, 0]}><sphereGeometry args={[0.9, 28, 28]} /><meshPhysicalMaterial color={0xa78bfa} metalness={0} roughness={0.04} ior={1.92} transmission={0.82} dispersion={0.36} thickness={0.65} clearcoat={1} clearcoatRoughness={0.03} transparent opacity={0.84} /></mesh>
       <mesh position={[0, 0.8, 0]}><sphereGeometry args={[0.92, 24, 24]} /><meshStandardMaterial color={0xc4b5fd} wireframe /></mesh>
     </group>
   );
@@ -598,16 +598,16 @@ function PropPotion({ scale: s }: { scale: number }) {
   return (
     <group scale={s}>
       {/* bottle body */}
-      <mesh position={[0, 0.5, 0]}><sphereGeometry args={[0.5, 16, 16]} /><meshStandardMaterial color={0xa78bfa} transparent opacity={0.5} /></mesh>
+      <mesh position={[0, 0.5, 0]}><sphereGeometry args={[0.5, 24, 24]} /><meshPhysicalMaterial color={0xc4b5fd} metalness={0} roughness={0.05} ior={1.52} transmission={0.85} dispersion={0.32} thickness={0.35} clearcoat={1} clearcoatRoughness={0.04} transparent opacity={0.58} /></mesh>
       {/* liquid */}
-      <mesh position={[0, 0.35, 0]}><sphereGeometry args={[0.42, 16, 12]} /><meshStandardMaterial color={0x7c3aed} transparent opacity={0.7} /></mesh>
+      <mesh position={[0, 0.35, 0]}><sphereGeometry args={[0.42, 20, 16]} /><meshPhysicalMaterial color={0x7c3aed} emissive={0x4c1d95} emissiveIntensity={0.35} metalness={0} roughness={0.14} ior={1.36} transparent opacity={0.82} /></mesh>
       {/* neck */}
-      <mesh position={[0, 1.1, 0]}><cylinderGeometry args={[0.12, 0.18, 0.5, 8]} /><meshStandardMaterial color={0xc4b5fd} transparent opacity={0.5} /></mesh>
+      <mesh position={[0, 1.1, 0]}><cylinderGeometry args={[0.12, 0.18, 0.5, 16]} /><meshPhysicalMaterial color={0xddd6fe} metalness={0} roughness={0.06} ior={1.52} transmission={0.85} clearcoat={1} transparent opacity={0.58} /></mesh>
       {/* cork */}
-      <mesh position={[0, 1.45, 0]}><cylinderGeometry args={[0.14, 0.12, 0.2, 8]} /><meshStandardMaterial color={0xa16207} /></mesh>
+      <mesh position={[0, 1.45, 0]}><cylinderGeometry args={[0.14, 0.12, 0.2, 12]} /><meshStandardMaterial color={0xa16207} metalness={0} roughness={0.78} /></mesh>
       {/* bubbles */}
-      <mesh position={[-0.1, 0.55, 0.15]}><sphereGeometry args={[0.06, 8, 8]} /><meshStandardMaterial color={0xe9d5ff} transparent opacity={0.6} /></mesh>
-      <mesh position={[0.15, 0.65, -0.1]}><sphereGeometry args={[0.04, 8, 8]} /><meshStandardMaterial color={0xe9d5ff} transparent opacity={0.6} /></mesh>
+      <mesh position={[-0.1, 0.55, 0.15]}><sphereGeometry args={[0.06, 10, 10]} /><meshStandardMaterial color={0xe9d5ff} emissive={0xa855f7} emissiveIntensity={0.4} transparent opacity={0.75} /></mesh>
+      <mesh position={[0.15, 0.65, -0.1]}><sphereGeometry args={[0.04, 10, 10]} /><meshStandardMaterial color={0xe9d5ff} emissive={0xa855f7} emissiveIntensity={0.4} transparent opacity={0.75} /></mesh>
     </group>
   );
 }
@@ -630,18 +630,18 @@ function PropGuitar({ scale: s }: { scale: number }) {
   return (
     <group scale={s}>
       {/* body */}
-      <mesh position={[0, 0.6, 0]}><sphereGeometry args={[0.7, 16, 16]} /><meshStandardMaterial color={0xa16207} /></mesh>
-      <mesh position={[0, 1.2, 0]}><sphereGeometry args={[0.5, 16, 16]} /><meshStandardMaterial color={0x92400e} /></mesh>
+      <mesh position={[0, 0.6, 0]}><sphereGeometry args={[0.7, 20, 20]} /><meshPhysicalMaterial color={0xa16207} metalness={0} roughness={0.26} clearcoat={0.85} clearcoatRoughness={0.12} /></mesh>
+      <mesh position={[0, 1.2, 0]}><sphereGeometry args={[0.5, 20, 20]} /><meshPhysicalMaterial color={0x92400e} metalness={0} roughness={0.26} clearcoat={0.85} clearcoatRoughness={0.12} /></mesh>
       {/* sound hole */}
-      <mesh position={[0, 0.6, 0.55]} rotation={[0, 0, 0]}><torusGeometry args={[0.2, 0.03, 8, 16]} /><meshStandardMaterial color={0x1e1b4b} /></mesh>
+      <mesh position={[0, 0.6, 0.55]} rotation={[0, 0, 0]}><torusGeometry args={[0.2, 0.03, 10, 20]} /><meshStandardMaterial color={0x1e1b4b} metalness={0} roughness={0.5} /></mesh>
       {/* neck */}
-      <mesh position={[0, 2.2, 0]}><boxGeometry args={[0.15, 1.6, 0.08]} /><meshStandardMaterial color={0x78350f} /></mesh>
+      <mesh position={[0, 2.2, 0]}><boxGeometry args={[0.15, 1.6, 0.08]} /><meshPhysicalMaterial color={0x78350f} metalness={0} roughness={0.34} clearcoat={0.45} /></mesh>
       {/* headstock */}
-      <mesh position={[0, 3.1, 0]}><boxGeometry args={[0.2, 0.3, 0.1]} /><meshStandardMaterial color={0x5c4033} /></mesh>
+      <mesh position={[0, 3.1, 0]}><boxGeometry args={[0.2, 0.3, 0.1]} /><meshPhysicalMaterial color={0x5c4033} metalness={0} roughness={0.34} clearcoat={0.45} /></mesh>
       {/* strings */}
-      <mesh position={[0, 1.8, 0.06]}><boxGeometry args={[0.08, 2.5, 0.01]} /><meshStandardMaterial color={0xe5e7eb} /></mesh>
+      <mesh position={[0, 1.8, 0.06]}><boxGeometry args={[0.08, 2.5, 0.01]} /><meshStandardMaterial color={0xe5e7eb} metalness={1} roughness={0.2} /></mesh>
       {/* bridge */}
-      <mesh position={[0, 0.2, 0.55]}><boxGeometry args={[0.3, 0.05, 0.04]} /><meshStandardMaterial color={0x1e1b4b} /></mesh>
+      <mesh position={[0, 0.2, 0.55]}><boxGeometry args={[0.3, 0.05, 0.04]} /><meshStandardMaterial color={0x1e1b4b} metalness={0} roughness={0.45} /></mesh>
     </group>
   );
 }

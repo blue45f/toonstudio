@@ -27,6 +27,7 @@ export type StudioBg3dEssentialAssetCategory =
   | "blender-modeler-kit-v13-prop-3d"
   | "blender-precision-bg-v14-prop-3d"
   | "blender-artisan-v15-prop-3d"
+  | "blender-lumiere-v16-prop-3d"
   | "original-scene-prop-3d"
   | "original-hand-wear-prop-3d";
 
@@ -97,7 +98,13 @@ export const STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES: readonly StudioBg3dEssentia
       id: "blender-artisan-v15-prop-3d",
       labelKo: "블렌더 아티잔 아틀리에 V15",
       labelEn: "Blender Artisan Atelier V15",
-      descriptionKo: "스타일라이즈 주인공 흉상·천상 먹빛 아스트롤라베 턴테이블·로열 온실 돔 가제보·아티잔 제도 이젤 램프 4종",
+      descriptionKo: "스타일라이즈 주인공 흉상·천상 먹빛 아스트롤라베·로열 온실 돔 가제보·제도 이젤·티파티·마도서·마이크 8종",
+    },
+    {
+      id: "blender-lumiere-v16-prop-3d",
+      labelKo: "블렌더 5.3 뤼미에르 아틀리에 V16",
+      labelEn: "Blender 5.3 Lumiere Atelier V16",
+      descriptionKo: "귀족 티아라 흉상·분산 크리스탈 제단·나선 대도서관 로툰다·파리 파티세리 카트·천체 오러리·달빛 한옥 연꽃 정자 6종",
     },
     {
       id: "original-scene-prop-3d",
@@ -230,6 +237,15 @@ const RAW_BLENDER_ARTISAN_V15_ROWS: readonly RawAssetRow[] = [
   ["webtoon-rofan-imperial-tea-carriage-table-v15", "로판 황실 3단 티파티 다과 테이블 (V15)", "Rofan Imperial Tea-Party Table V15"],
   ["webtoon-arcane-grimoire-magic-circle-pedestal-v15", "아케인 마도서·마법진 성소 제단 (V15)", "Arcane Grimoire Magic-Circle Pedestal V15"],
   ["webtoon-kpop-stage-crown-mic-stand-v15", "아이돌 크라운 스탠드 마이크 세트 (V15)", "K-Pop Stage Crown Mic Stand V15"],
+];
+
+const RAW_BLENDER_LUMIERE_V16_ROWS: readonly RawAssetRow[] = [
+  ["webtoon-aristocrat-tiara-bust-v16", "로판 귀족 티아라 여주인공 두상·흉상 (V16)", "Webtoon Aristocrat Tiara Heroine Bust V16"],
+  ["webtoon-crystal-prism-sanctum-altar-v16", "오픈PBR 크리스탈 프리즘 성소 제단 (V16)", "OpenPBR Crystal Prism Sanctum Altar V16"],
+  ["webtoon-grand-spiral-library-rotunda-v16", "나선 대도서관 로툰다 2층 아치 서가 (V16)", "Grand Spiral Library Rotunda V16"],
+  ["webtoon-parisian-patisserie-display-cart-v16", "파리지앵 파티세리 디저트 유리 쇼케이스 카트 (V16)", "Parisian Patisserie Display Cart V16"],
+  ["webtoon-celestial-chrono-orrery-clock-v16", "천체 크로노 오러리 아밀러리 시계탑 코어 (V16)", "Celestial Chrono Orrery Clock V16"],
+  ["webtoon-moonlight-hanok-lotus-lantern-pavilion-v16", "달빛 한옥 연꽃 등롱 팔작 정자 (V16)", "Moonlight Hanok Lotus Lantern Pavilion V16"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));
@@ -489,6 +505,20 @@ export const STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG: readonly StudioBg3dEssenti
         fileName: `ToonStudio-${slug}.glb`,
         license: "CC0-1.0",
         tags: Object.freeze(["character", "fantasy", "architecture", "artisan-atelier", "blender-v15", "아티잔", "아틀리에", "흉상", "아스트롤라베", "온실", "이젤", slug, labelKo, labelEn]),
+      }),
+    ),
+    ...RAW_BLENDER_LUMIERE_V16_ROWS.map(([slug, labelKo, labelEn]): StudioBg3dEssentialAssetEntry =>
+      Object.freeze({
+        id: `blender-lumiere-v16-${slug}`,
+        category: "blender-lumiere-v16-prop-3d",
+        labelKo,
+        labelEn,
+        glbUrl: `/studio-assets/blender-lumiere-v16/${slug}.glb`,
+        previewUrl: `/studio-assets/blender-lumiere-v16/thumbnails/${slug}.png`,
+        turnaround2dUrl: null,
+        fileName: `ToonStudio-${slug}.glb`,
+        license: "CC0-1.0",
+        tags: Object.freeze(["character", "fantasy", "architecture", "lumiere-atelier", "blender-v16", "뤼미에르", "티아라", "크리스탈", "도서관", "파티세리", "오러리", "한옥", slug, labelKo, labelEn]),
       }),
     ),
     ...mapOriginal3dRows(RAW_ORIGINAL_SCENE_PROP_ROWS, "original-scene-prop-3d", [

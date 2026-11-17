@@ -56,6 +56,7 @@ export interface Studio3DPropCatalogEntry {
     | `/studio-assets/blender-hero-v12/${string}.glb`
     | `/studio-assets/blender-precision-bg-v14/${string}.glb`
     | `/studio-assets/blender-artisan-v15/${string}.glb`
+    | `/studio-assets/blender-lumiere-v16/${string}.glb`
     | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
     | `/assets/studio/cc0-20260906/assets/kenney-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
@@ -65,6 +66,7 @@ export interface Studio3DPropCatalogEntry {
     | `/studio-assets/blender-hero-v12/thumbnails/${string}.png`
     | `/studio-assets/blender-precision-bg-v14/thumbnails/${string}.png`
     | `/studio-assets/blender-artisan-v15/thumbnails/${string}.png`
+    | `/studio-assets/blender-lumiere-v16/thumbnails/${string}.png`
     | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
     | `/assets/studio/cc0-20260906/previews/kenney-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
@@ -136,6 +138,16 @@ export const STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG: readonly Studio3DPropCatal
   { id: "v15_celestial_ink_astrolabe", name: "천상 먹빛 아스트롤라베 회전대 (V15)", category: "fantasy", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-celestial-ink-astrolabe-turntable-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png", defaultPosition: [0, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v15_royal_conservatory_dome_gazebo", name: "로열 온실 돔 가제보 정자 (V15)", category: "architecture", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-royal-conservatory-dome-gazebo-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-royal-conservatory-dome-gazebo-v15.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v15_artisan_drafting_easel_lamp", name: "아티잔 제도 이젤·관절 작업등 세트 (V15)", category: "furniture", modelUrl: "/studio-assets/blender-artisan-v15/webtoon-artisan-drafting-easel-lamp-v15.glb", thumbnailUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png", defaultPosition: [0, 0, -0.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** Blender 5.3 뤼미에르 아틀리에(blender-lumiere-v16) 6종 및 512×512 스튜디오 썸네일 카탈로그. */
+export const STUDIO_BLENDER_LUMIERE_V16_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  { id: "v16_aristocrat_tiara_bust", name: "로판 귀족 티아라 여주인공 흉상 (V16)", category: "mannequin", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-aristocrat-tiara-bust-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-aristocrat-tiara-bust-v16.png", defaultPosition: [0, 0, 0], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v16_crystal_prism_sanctum_altar", name: "오픈PBR 크리스탈 프리즘 성소 제단 (V16)", category: "fantasy", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-crystal-prism-sanctum-altar-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-crystal-prism-sanctum-altar-v16.png", defaultPosition: [0, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v16_grand_spiral_library_rotunda", name: "나선 대도서관 로툰다 서가 (V16)", category: "architecture", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-grand-spiral-library-rotunda-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-grand-spiral-library-rotunda-v16.png", defaultPosition: [0, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v16_parisian_patisserie_display_cart", name: "파리지앵 파티세리 디저트 카트 (V16)", category: "furniture", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-parisian-patisserie-display-cart-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-parisian-patisserie-display-cart-v16.png", defaultPosition: [0, 0, -1.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v16_celestial_chrono_orrery_clock", name: "천체 크로노 오러리 시계탑 코어 (V16)", category: "fantasy", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-celestial-chrono-orrery-clock-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-celestial-chrono-orrery-clock-v16.png", defaultPosition: [0, 0, -1.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v16_moonlight_hanok_lotus_pavilion", name: "달빛 한옥 연꽃 등롱 정자 (V16)", category: "architecture", modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.glb", thumbnailUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
 /** Poly Haven CC0 2K PBR 고해상도 실사 소품·가구·건축·자연물 카탈로그 (141종 전수 + 전용 썸네일). */
@@ -339,6 +351,7 @@ export const STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG: readonly Studio3DPropCatalogEn
 
 /** 퍼블릭 번들(`/studio-assets/blender-precision-bg-v14/*.glb`, `/studio-assets/blender-artisan-v15/*.glb`, `/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (284종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  ...STUDIO_BLENDER_LUMIERE_V16_PROP_CATALOG,
   ...STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
   ...STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG,
   ...STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
@@ -593,6 +606,17 @@ export const STUDIO_SCENE_PROP_LAYOUT_PRESETS: readonly StudioRoomLayoutPreset[]
       { modelUrl: "/assets/studio/cc0-20260906/assets/kenney-survival/chest.glb", name: "생존 보급 상자", position: [0.6, 0, -1.1], rotation: [0, -0.3, 0], scale: [1, 1, 1], visible: true },
     ],
   },
+  {
+    id: "lumiere_royal_atelier",
+    label: "블렌더 5.3 뤼미에르 황실 아틀리에 (나선 대도서관 + 크리스탈 성소 + 천체 오러리 + 파티세리 카트 + 귀족 티아라 흉상)",
+    objects: [
+      { modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-grand-spiral-library-rotunda-v16.glb", name: "나선 대도서관 로툰다", position: [0, 0, -3.2], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-crystal-prism-sanctum-altar-v16.glb", name: "크리스탈 프리즘 제단", position: [-1.8, 0, -1.8], rotation: [0, 0.25, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-celestial-chrono-orrery-clock-v16.glb", name: "천체 크로노 오러리", position: [1.8, 0, -1.8], rotation: [0, -0.25, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-parisian-patisserie-display-cart-v16.glb", name: "파티세리 쇼케이스 카트", position: [-1.4, 0, 0.4], rotation: [0, 0.35, 0], scale: [1, 1, 1], visible: true },
+      { modelUrl: "/studio-assets/blender-lumiere-v16/webtoon-aristocrat-tiara-bust-v16.glb", name: "귀족 티아라 여주인공 흉상", position: [0, 0, 0.2], rotation: [0, 0, 0], scale: [1, 1, 1], visible: true },
+    ],
+  },
 ]);
 
 const ALL_LAYOUT_PRESETS_BY_ID = new Map<string, StudioRoomLayoutPreset>(
@@ -608,9 +632,10 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "blender-precision-bg-v14" | "blender-artisan-v15" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "blender-lumiere-v16" | "blender-precision-bg-v14" | "blender-artisan-v15" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
+  if (category === "blender-lumiere-v16") return STUDIO_BLENDER_LUMIERE_V16_PROP_CATALOG;
   if (category === "blender-precision-bg-v14") return STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG;
   if (category === "blender-artisan-v15") return STUDIO_BLENDER_ARTISAN_V15_PROP_CATALOG;
   if (category === "blender-hero-v12") return STUDIO_BLENDER_HERO_V12_PROP_CATALOG;

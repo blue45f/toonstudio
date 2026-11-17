@@ -12,7 +12,7 @@
  */
 import { KIT_DEFAULT_SLOTS, KIT_PART_SLOTS, failVisible, isLabFailure, isPresetId, kitGeometryKey } from "../../contracts";
 import { stableStringify } from "../../shared/stable-json";
-import { createApplyPlanner } from "../../state/apply-plan";
+import { createApplyPlanner, layoutFromPalette } from "../../state/apply-plan";
 
 import type {
   ApplyPlan,
@@ -85,7 +85,7 @@ export interface ApplyLoop {
    * `source/set`을 보낸다) 레시피가 따라잡는 입력 변경이 올 때까지 기다린다 — 그 사이 step이 이전 소스를 가리키는 레시피로
    * 방금 올린 소스를 지우고 다시 만들지 않게 한다. 끝내 따라잡지 않으면 다음 입력 변경에서 레시피(단일 진실) 소스로 되돌린다.
    */
-  markSourceLoaded(engine: CharacterEngine, source: CharacterSource): void;
+  markSourceLoaded(engine: CharacterEngine, source: CharacterSource, capabilities?: SourceCapabilities): void;
   /**
    * 소스 로드를 다시 시도한다(키트 "다시 불러오기"). 실패 기억(`failedSource`)을 지우고 이미 올라간 소스도 버려 레시피 소스를
    * `buildSource`부터 다시 만들어 올린다. 엔진이 없으면 다음에 엔진이 ready가 될 때 새로 올린다.
@@ -236,6 +236,10 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       } catch (error) {
         report("source-loaded-hook-failed", "소스 로드 후처리(페인트 레이어 재업로드 등)에 실패했습니다.", error);
       }
+    } else if (loadedCapabilities && !sameCapabilities(loadedCapabilities.capabilities, state.capabilities)) {
+      deps.store.applyEvent({ type: "source/capabilities", capabilities: loadedCapabilities.capabilities });
+      state = deps.store.getState();
+      recipe = state.recipe;
     }
     const nextShadingKey = stableStringify(recipe.shading);
     if (nextShadingKey !== shadingKey) {
@@ -262,10 +266,20 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       return;
     }
     try {
-      // 플래너는 revision을 알 수 없어 0을 돌려준다(state/apply-plan) — 스토어 getPlan과 같이 history revision으로 덮어쓴다.
-      const basePlan = deps.planner(recipe, state.capabilities, deps.catalog);
+      // 제작 패키지는 알파벳순 파츠(partIdPalette)를 쓰므로 DEFAULT_PART_LAYOUT 대신 팔레트 레이아웃으로 계획해 상의·신발 숨김과 역할 오매핑을 막는다.
+      const packagePaletteLayout =
+        recipe.source.kind === "package" && loadedCapabilities && Object.keys(loadedCapabilities.partIdPalette).length > 0
+          ? layoutFromPalette(loadedCapabilities.partIdPalette)
+          : null;
+      const basePlan = packagePaletteLayout
+        ? createApplyPlanner({
+            partLayout: packagePaletteLayout,
+            ...(loadedCapabilities?.custom !== undefined ? { custom: loadedCapabilities.custom } : {}),
+            ...(loadedCapabilities ? { features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames } } : {}),
+          })(recipe, state.capabilities, deps.catalog)
+        : deps.planner(recipe, state.capabilities, deps.catalog);
       const customPlan =
-        loadedCapabilities?.custom !== undefined
+        !packagePaletteLayout && loadedCapabilities?.custom !== undefined
           ? createApplyPlanner({
               custom: loadedCapabilities.custom,
               features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames },
@@ -303,6 +317,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
         if (status.phase === "idle" || status.phase === "failed" || status.phase === "lost") {
           loadedEngine = null;
           loadedSourceKey = null;
+          loadedCapabilities = null;
           lastPlan = null;
           lastReceipt = null;
           resetForEngine();
@@ -323,9 +338,10 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
     lastPlan: () => lastPlan,
     lastReceipt: () => lastReceipt,
     snapshot: () => snapshot,
-    markSourceLoaded(engine, source) {
+    markSourceLoaded(engine, source, capabilities) {
       const recipe = deps.store.getState().recipe;
       loadedEngine = engine;
+      loadedCapabilities = capabilities ?? null;
       // 절차 소스는 지금 레시피로 만든 것으로 본다(패널이 올리는 소스는 패키지뿐이고, 절차 소스는 루프만 만든다).
       loadedSourceKey = source.kind === "procedural" ? recipeSourceKey(recipe) : sourceKeyOf(source);
       resetForEngine();
