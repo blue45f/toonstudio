@@ -479,7 +479,7 @@ export function TitleEpisodeSection({
                 return leadAuthor ? (
                   <Link
                     href={`/author/${encodeURIComponent(leadAuthor)}`}
-                    className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
                   >
                     {formatI18nTemplate(bi("{v0}의 다른 작품", "More by {v0}"), { v0: leadAuthor })}
                   </Link>
@@ -487,7 +487,7 @@ export function TitleEpisodeSection({
               })()}
               <Link
                 href="/explore"
-                className="inline-flex min-h-10 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-accent transition-colors hover:text-accent-2"
               >
                 {bi("비슷한 작품 탐색하기", "Explore similar titles")}
               </Link>

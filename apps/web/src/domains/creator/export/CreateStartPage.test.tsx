@@ -166,7 +166,7 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(screen.getByRole("heading", { name: "어떻게 시작할까요?" })).toBeTruthy();
   });
 
-  it("기본 화면에는 Grand Atelier V4 1클릭 규격 프리셋·인라인 세부 규격·두 선택·제작 파이프라인·장르 스타터를 한 화면에 통합 노출한다", () => {
+  it("기본 화면에는 주요 시작 카드와 표준 규격을 바로 보여주고 세부 픽셀 규격·전문 도구·한 줄 콘티는 접힌 펼침 영역으로 둔다", () => {
     renderStartSheet("/create");
     const atelierPresets = screen.getByTestId("create-grand-atelier-presets");
     expect(within(atelierPresets).getByRole("link", { name: "1클릭 바로 그리기" }).getAttribute("href"))
@@ -174,10 +174,20 @@ describe("CreateStartPage (작품 시작 시트)", () => {
     expect(within(atelierPresets).getByRole("link", { name: "4컷 캔버스 열기" }).getAttribute("href"))
       .toContain("/studio/new?lane=blank&preset=instatoon-square");
 
+    const proDisclosure = screen.getByTestId("create-pro-tools-disclosure") as HTMLDetailsElement;
+    expect(proDisclosure.open).toBe(false);
+    expect(within(proDisclosure).getByText("세부 캔버스 규격·전문 도구 열기")).toBeTruthy();
+
+    const aiDisclosure = screen.getByTestId("create-ai-blueprint-disclosure") as HTMLDetailsElement;
+    expect(aiDisclosure.open).toBe(false);
+    expect(within(aiDisclosure).getByText("글 한 줄로 콘티 초안 만들기")).toBeTruthy();
+
+    fireEvent.click(within(proDisclosure).getByText("세부 캔버스 규격·전문 도구 열기"));
     const specBuilder = screen.getByTestId("create-inline-spec-builder");
     fireEvent.change(within(specBuilder).getByLabelText("캔버스 가로 폭 픽셀"), { target: { value: "1080" } });
     expect(within(specBuilder).getByTestId("create-inline-spec-submit").getAttribute("href"))
       .toBe("/studio/new?lane=blank&width=1080&height=12800&dpi=300&collab=team");
+    expect(within(proDisclosure).getByText("브러시 실험실")).toBeTruthy();
 
     const guide = screen.getByTestId("create-start-persona-guide");
     expect(within(guide).getByRole("heading", { name: "이야기부터 시작" })).toBeTruthy();

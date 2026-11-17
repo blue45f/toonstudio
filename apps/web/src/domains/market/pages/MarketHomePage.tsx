@@ -8,7 +8,6 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Store,
   Upload,
 } from "lucide-react";
@@ -213,7 +212,7 @@ export function MarketHomePage() {
             surface="plain"
             className="market-home-masthead"
             icon={Store}
-            eyebrow="MATERIAL MARKET"
+            eyebrow={t("소재 마켓", "Material Market")}
             title={t("장면에 필요한 소재", "Materials for your scene")}
             description={t(
               "배경·브러시·템플릿을 찾고, 사용 조건을 확인하세요.",
@@ -223,20 +222,11 @@ export function MarketHomePage() {
             asideClassName="market-home-masthead__aside hidden lg:block"
             actions={
               <div className="market-home-meta">
-                <img
-                  src="/brand/luminous-atelier-20261114/icon-nav-asset-market.webp"
-                  alt=""
-                  aria-hidden="true"
-                  width={36}
-                  height={36}
-                  decoding="async"
-                  className="size-9 shrink-0 rounded-xl border border-line/70 bg-panel/80 object-cover p-0.5 shadow-sm"
-                />
                 <Link href="/market/browse" className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 min-w-11" })}>
                   <Store className="h-4 w-4" aria-hidden="true" />
                   {t("전체 소재 보기", "Browse all materials")}
                 </Link>
-                <span className="inline-flex items-center rounded-full border border-good/30 bg-good/10 px-3 py-1.5 text-xs font-semibold text-good">
+                <span className="text-xs font-medium text-fg-3">
                   {isPaidMode ? t("현재 유료 운영 모드", "Currently in paid operation mode") : t("현재 무료 운영 모드", "Currently in free operation mode")}
                 </span>
               </div>
@@ -247,9 +237,7 @@ export function MarketHomePage() {
         </Container>
       </section>
 
-      <MarketGrandAtelierShowcase />
-
-      <Container size="wide" className="pt-6 sm:pt-8">
+      <Container size="wide" className="pt-4 sm:pt-6">
         <MarketHomePresets activeId={activePresetId} onSelect={setActivePresetId} allButtonRef={allPresetRef} />
         <div
           role="group"
@@ -267,8 +255,8 @@ export function MarketHomePage() {
                 onClick={() => setQuickFilterId(chip.id)}
                 className={
                   active
-                    ? "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-accent bg-accent/15 px-3.5 py-2 text-xs font-bold text-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
-                    : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-panel/80 px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    ? "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-accent bg-accent/15 px-3.5 py-2 text-xs font-semibold text-accent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    : "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line bg-panel/80 px-3.5 py-2 text-xs font-medium text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 }
               >
                 {t(chip.ko, chip.en)}
@@ -278,10 +266,10 @@ export function MarketHomePage() {
         </div>
       </Container>
 
-      <Container size="wide" className="pb-10 pt-8 sm:pb-12 sm:pt-10">
+      <Container size="wide" className="pb-6 pt-6 sm:pb-8 sm:pt-8">
         <div className="flex items-baseline justify-between gap-3">
           <div>
-            <h2 className="eyebrow text-fg-3">{t("최근 공유", "Recently shared")}</h2>
+            <h2 className="text-sm font-semibold text-fg">{t("최근 공유", "Recently shared")}</h2>
             <p className="mt-1 text-xs leading-5 text-fg-3">{t("최근 공개된 리소스를 실제 미리보기와 함께 확인합니다.", "Browse recently published resources with real previews.")}</p>
           </div>
           <Link href="/market/browse" className="inline-flex min-h-11 min-w-11 shrink-0 items-center whitespace-nowrap px-2 text-sm text-accent hover:text-accent-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70">
@@ -320,7 +308,7 @@ export function MarketHomePage() {
         {hasFatalLatestError ? null : (
           <>
             {latest.loading ? <p role="status" className="sr-only">{t("최근 공유된 마켓 리소스를 불러오는 중입니다.", "Loading recently shared market resources.")}</p> : null}
-            <ul aria-busy={latest.loading || undefined} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <ul aria-busy={latest.loading || undefined} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
               {latest.loading && latest.items.length === 0
                 ? Array.from({ length: 8 }, (_, index) => (
                     <li key={index} aria-hidden="true">
@@ -378,6 +366,8 @@ export function MarketHomePage() {
         )}
       </Container>
 
+      <MarketGrandAtelierShowcase />
+
       </div>
       </> : null}
 
@@ -400,10 +390,10 @@ export function MarketHomePage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
-                STAGE-BY-STAGE ASSET STARTER
+              <p className="text-xs font-semibold text-accent">
+                {t("공정별 시작 소재", "Assets by stage")}
               </p>
-              <h2 id="market-starter-guide-heading" className="mt-0.5 text-base font-bold text-fg sm:text-lg">
+              <h2 id="market-starter-guide-heading" className="mt-0.5 text-base font-semibold text-fg sm:text-lg">
                 {t("웹툰 5대 공정별 필수 에셋 스타터 가이드", "5-Stage Webtoon Essential Asset Starter Guide")}
               </h2>
               <p className="mt-0.5 text-xs text-fg-2">
@@ -415,16 +405,16 @@ export function MarketHomePage() {
             </div>
             <Link
               href="/market/fit-lab"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft/20 px-3.5 py-2 text-xs font-bold text-accent hover:bg-accent-soft/35"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft/20 px-3.5 py-2 text-xs font-semibold text-accent hover:bg-accent-soft/35"
             >
               {t("원고 위 시험 (Fit Lab) 바로가기", "Open Fit Lab")}
               <ArrowRight size={13} aria-hidden="true" />
             </Link>
           </div>
-          <ol className="mt-3.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+          <ol className="mt-3.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {[
               {
-                step: "01",
+                step: "1",
                 stageKo: "콘티·연출",
                 stageEn: "Storyboard & Layout",
                 descKo: "세로 스크롤 컷 분할 템플릿·구도 가이드",
@@ -432,7 +422,7 @@ export function MarketHomePage() {
                 href: "/market/browse?kind=template",
               },
               {
-                step: "02",
+                step: "2",
                 stageKo: "3D 배경",
                 stageEn: "3D Backgrounds",
                 descKo: "학교·방·거리 등 카메라 앵글 회전형 3D 공간",
@@ -440,7 +430,7 @@ export function MarketHomePage() {
                 href: "/market/browse?kind=3d-asset",
               },
               {
-                step: "03",
+                step: "3",
                 stageKo: "선화·펜",
                 stageEn: "Line Art & Pens",
                 descKo: "필압 G펜·거친 먹선·머리카락 전용 브러시",
@@ -448,7 +438,7 @@ export function MarketHomePage() {
                 href: "/market/browse?kind=brush",
               },
               {
-                step: "04",
+                step: "4",
                 stageKo: "채색·음영",
                 stageEn: "Color & Shading",
                 descKo: "캐릭터 피부·시간대별 조명 팔레트와 스크린톤",
@@ -456,7 +446,7 @@ export function MarketHomePage() {
                 href: "/market/browse?kind=palette",
               },
               {
-                step: "05",
+                step: "5",
                 stageKo: "말풍선·마감",
                 stageEn: "Balloons & Finish",
                 descKo: "대사 말풍선·효과음 레터링·분위기 보정 필터",
@@ -466,8 +456,8 @@ export function MarketHomePage() {
             ].map((item) => (
               <li key={item.step} className="flex flex-col justify-between rounded-xl border border-line bg-card p-3">
                 <div>
-                  <span className="text-[11px] font-bold text-accent">STEP {item.step}</span>
-                  <h3 className="mt-1 text-sm font-bold text-fg">{t(item.stageKo, item.stageEn)}</h3>
+                  <span className="text-[11px] font-semibold text-accent tabular-nums">{t(`${item.step}단계`, `Step ${item.step}`)}</span>
+                  <h3 className="mt-1 text-sm font-semibold text-fg">{t(item.stageKo, item.stageEn)}</h3>
                   <p className="mt-1 text-xs leading-5 text-fg-2">{t(item.descKo, item.descEn)}</p>
                 </div>
                 <Link
@@ -487,8 +477,8 @@ export function MarketHomePage() {
         <Container size="wide">
           <div className="flex items-baseline justify-between gap-3">
             <div>
-              <p className="eyebrow text-accent">Webtoon Collections</p>
-              <h2 className="mt-1 text-lg font-bold text-fg sm:text-xl">{t("장르·제작 목적 컬렉션", "Genre & purpose collections")}</h2>
+              <p className="text-xs font-semibold text-accent">{t("주제별 컬렉션", "Curated collections")}</p>
+              <h2 className="mt-1 text-lg font-semibold text-fg sm:text-xl">{t("장르·제작 목적 컬렉션", "Genre & purpose collections")}</h2>
               <p className="mt-1 text-sm leading-6 text-fg-2">{t("장면 예시에서 출발해 관련 태그의 리소스를 탐색하세요. 이미지는 테마를 설명하기 위한 예시입니다.", "Start from a scene example and explore resources with related tags. Images are illustrative examples of each theme.")}</p>
             </div>
             <Link
@@ -498,7 +488,7 @@ export function MarketHomePage() {
               {t("전체 보기", "View all")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
             </Link>
           </div>
-          <SiteRail label={t("장르·제작 목적 컬렉션", "Genre & purpose collections")} columns="sm:grid-cols-2 lg:grid-cols-4" className="mt-4 gap-3.5" itemClassName="w-[min(78vw,17rem)]">
+          <SiteRail label={t("장르·제작 목적 컬렉션", "Genre & purpose collections")} columns="sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" className="mt-4 gap-3.5" itemClassName="w-[min(78vw,17rem)]">
             {MARKET_CURATED_THEMES.map((theme, index) => {
               const ThemeIcon = theme.icon;
               return (
@@ -511,18 +501,17 @@ export function MarketHomePage() {
                   <img src={theme.image} alt="" loading="lazy" width={640} height={360} className="-mx-4 -mt-4 mb-4 aspect-[1.9] max-w-none object-cover transition-transform duration-200 motion-reduce:transition-none" style={{ width: "calc(100% + 2rem)", objectPosition: theme.id === "pose-guide-3d" ? "40% 45%" : "center" }} />
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-raised px-2 py-0.5 text-xs font-bold text-accent">
-                        <Sparkles className="size-2.5" aria-hidden="true" />
+                      <span className="inline-flex items-center rounded-md bg-raised px-2 py-0.5 text-xs font-semibold text-fg-2">
                         {theme.badge}
                       </span>
-                      <ThemeIcon className="size-4 text-fg-3 transition-all group-hover:-rotate-6 group-hover:scale-110 group-hover:text-accent" aria-hidden="true" />
+                      <ThemeIcon className="size-4 text-fg-3 transition-colors group-hover:text-accent" aria-hidden="true" />
                     </div>
-                    <h3 className="mt-2.5 text-base font-bold text-fg transition-colors group-hover:text-accent">{theme.title}</h3>
+                    <h3 className="mt-2.5 text-base font-semibold text-fg transition-colors group-hover:text-accent">{theme.title}</h3>
                     <p className="mt-1 line-clamp-2 text-sm leading-6 text-fg-2">{theme.subtitle}</p>
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-2.5 text-xs font-medium text-fg-2">
                     <span className="font-semibold text-accent">{t(`#${theme.tag} 소재 찾기`, `Find #${theme.tag} materials`)}</span>
-                    <span className="flex items-center gap-1 text-fg-3 transition-transform group-hover:translate-x-1">
+                    <span className="flex items-center gap-1 text-fg-3">
                       {t("보러가기", "See more")} <ArrowRight className="size-3" aria-hidden="true" />
                     </span>
                   </div>
@@ -539,7 +528,7 @@ export function MarketHomePage() {
             <div>
               <div className="flex items-center gap-2">
                 <Cuboid className="size-4 text-accent" aria-hidden="true" />
-                <h2 className="text-base font-bold text-fg sm:text-lg">{t("3D 배경·데생 추천", "Recommended 3D backgrounds & drawing guides")}</h2>
+                <h2 className="text-base font-semibold text-fg sm:text-lg">{t("3D 배경·데생 추천", "Recommended 3D backgrounds & drawing guides")}</h2>
               </div>
               <p className="mt-1 text-xs leading-5 text-fg-3">{t("카메라를 돌려 구도를 잡고 캔버스로 가져올 수 있는 3D 리소스입니다.", "3D resources you can orbit to frame a shot, then bring onto the canvas.")}</p>
             </div>
@@ -547,7 +536,7 @@ export function MarketHomePage() {
               {t("3D 전체 보기", "View all 3D")} <ArrowRight size={14} aria-hidden="true" className="ml-1" />
             </Link>
           </div>
-          <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4">
             {materials3D.slice(0, 4).map((record, index) => (
               <li key={record.id} {...introItemProps(index)}>
                 <MarketResourceCard
@@ -568,8 +557,8 @@ export function MarketHomePage() {
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
-              <p className="eyebrow text-accent">VERIFIED WORKFLOW & CREATORS</p>
-              <h2 className="mt-1 text-base font-bold text-fg sm:text-lg">
+              <p className="text-xs font-semibold text-accent">{t("사용 조건 검증 소재", "Rights-verified materials")}</p>
+              <h2 className="mt-1 text-base font-semibold text-fg sm:text-lg">
                 {t("안심 연재 조건 & 배급자 스토어 바로가기", "Commercial No-AI picks & creator storefronts")}
               </h2>
             </div>
@@ -582,7 +571,7 @@ export function MarketHomePage() {
             </Link>
           </div>
 
-          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {[
               {
                 titleKo: "AI 미포함 · 상업 연재 허용",
@@ -619,11 +608,11 @@ export function MarketHomePage() {
                 className="group flex flex-col justify-between rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/50 hover:bg-raised"
               >
                 <div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-good">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-fg-3">
                     <ShieldCheck className="size-3.5" aria-hidden="true" />
-                    MANIFEST VERIFIED
+                    {t("사용 조건 표기됨", "Terms disclosed")}
                   </span>
-                  <h3 className="mt-1 text-sm font-bold text-fg group-hover:text-accent">
+                  <h3 className="mt-1 text-sm font-semibold text-fg group-hover:text-accent">
                     {t(shelf.titleKo, shelf.titleEn)}
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-fg-2">
@@ -640,7 +629,7 @@ export function MarketHomePage() {
 
           {featuredPublishers.length > 0 ? (
             <div className="mt-4 border-t border-line/70 pt-3.5">
-              <p className="text-xs font-bold text-fg-3">
+              <p className="text-xs font-semibold text-fg-3">
                 {t("최근 활동 배급자 스토어", "Active publisher storefronts")}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -667,13 +656,13 @@ export function MarketHomePage() {
 
       {popularTags.length >= 3 ? (
         <Container size="wide" className="pb-10 sm:pb-12">
-          <h2 className="eyebrow text-fg-3">{t("최근 공유 소재의 키워드", "Keywords from recently shared materials")}</h2>
+          <h2 className="text-xs font-semibold text-fg-3">{t("최근 공유 소재의 키워드", "Keywords from recently shared materials")}</h2>
           <ul className="-mx-4 mt-3 flex snap-x gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
             {popularTags.map((tag) => (
               <li key={tag} className="shrink-0 snap-start">
                 <Link
                   href={`/market/browse?tag=${encodeURIComponent(tag)}`}
-                  className="inline-flex min-h-11 items-center rounded-xl bg-raised px-3 py-2 text-sm text-fg-2 transition-all duration-150 hover:-translate-y-0.5 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  className="inline-flex min-h-11 items-center rounded-xl bg-raised px-3 py-2 text-sm text-fg-2 transition-colors duration-150 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 >
                   #{tag}
                 </Link>
@@ -688,8 +677,8 @@ export function MarketHomePage() {
       {showBand("sell") ? <section data-market-band="sell" className="border-y border-line bg-panel py-6 sm:py-10" aria-labelledby="market-seller-band-title">
         <Container size="wide" className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-2xl">
-            <p className="eyebrow text-accent">FOR SELLERS</p>
-            <h2 id="market-seller-band-title" className="mt-2 text-xl font-bold text-fg sm:text-2xl">
+            <p className="text-xs font-semibold text-accent">{t("소재 판매·공유", "Sell & share materials")}</p>
+            <h2 id="market-seller-band-title" className="mt-2 text-xl font-semibold text-fg sm:text-2xl">
               {t("만든 소재를 공유하고 판매해 보세요", "Share and sell the materials you made")}
             </h2>
             <p className="mt-2 text-sm leading-6 text-fg-2">
@@ -734,16 +723,16 @@ export function MarketHomePage() {
           />
         </SiteDisclosure>
         <section className="market-production-route mb-12" aria-labelledby="market-next-step-title">
-          <div><span className="eyebrow text-accent">MATERIALS INTO YOUR NEXT PANEL</span><h2 id="market-next-step-title" className="mt-3">{t("재료를 골랐다면,", "Picked your materials?")}<br />{t("이제 내 원고에 맞춰보세요.", "Now fit them to your manuscript.")}</h2><p>{t("마음에 드는 소재를 모으고 제작 조건을 비교하세요. 선화·채색이 막히는 순간에는 학습 과정을, 장면의 근거가 필요할 때에는 리서치 데스크를 이어서 활용할 수 있습니다.", "Collect the materials you like and compare production conditions. When line art or coloring stalls, continue with learning paths; when a scene needs grounding, continue with the research desk.")}</p></div>
+          <div><span className="text-xs font-semibold text-accent">{t("다음 작업 이어가기", "Continue to your panel")}</span><h2 id="market-next-step-title" className="mt-3">{t("재료를 골랐다면,", "Picked your materials?")}<br />{t("이제 내 원고에 맞춰보세요", "Now fit them to your manuscript")}</h2><p>{t("마음에 드는 소재를 모으고 제작 조건을 비교하세요. 선화·채색이 막히는 순간에는 학습 과정을, 장면의 근거가 필요할 때에는 리서치 데스크를 이어서 활용할 수 있습니다.", "Collect the materials you like and compare production conditions. When line art or coloring stalls, continue with learning paths; when a scene needs grounding, continue with the research desk.")}</p></div>
           <nav aria-label={t("리소스 선택 다음 작업", "Next steps after choosing resources")}><Link href="/market/library">{t("내 에셋에서 작업 재료 정리", "Organize working materials in my assets")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/learn/paths/visual-finish">{t("선과 색의 완성도를 높이는 실습", "Practice to polish lines and colors")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/research/assets">{t("복식·소품·배경 레퍼런스 찾기", "Find costume, prop & background references")} <ArrowRight size={16} aria-hidden="true" /></Link><Link href="/studio">{t("ToonStudio에서 다음 컷 그리기", "Draw the next panel in ToonStudio")} <ArrowRight size={16} aria-hidden="true" /></Link></nav>
         </section>
         <SiteDisclosure
           icon={BadgeCheck}
           title={t("사용권 안내", "License guide")}
           summary={t("무료 여부와 별개로 상업 이용, 수정, 출처 표기 조건을 확인하세요.", "Regardless of whether it's free, check the conditions for commercial use, modification, and attribution.")}
-          badge={<span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-bold text-fg-2">{MARKET_LICENSE_GUIDE.length}</span>}
+          badge={<span className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-fg-2 tabular-nums">{MARKET_LICENSE_GUIDE.length}</span>}
         >
-          <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {MARKET_LICENSE_GUIDE.map((license) => (
               <li key={license.license} className="rounded-xl border border-line bg-card p-4 transition-colors hover:border-accent/30 hover:bg-raised/60">
                 <h3 className="text-sm font-semibold text-fg">{license.label}</h3>

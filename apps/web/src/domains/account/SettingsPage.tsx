@@ -1,4 +1,4 @@
-import { Settings, Star, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, SearchX, UserCog, ChevronRight, Sparkles, RefreshCw, Languages, MonitorSmartphone, Database } from "lucide-react";
+import { Settings, Star, Sliders, SlidersHorizontal, ShieldCheck, Trash2, Check, Download, Upload, Clock, SearchX, UserCog, ChevronRight, RefreshCw, Languages, MonitorSmartphone, Database } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -32,7 +32,6 @@ import { detectBrowserRegionSettings, planRegionSettingsSync, readLocalRegionSet
 
 import { AppearanceSettings } from "@/shared/components/appearance/AppearanceSettings";
 import { StudioInteractionSfxSettingsSection } from "@/domains/account/StudioInteractionSfxSettingsSection";
-import { PageIntro } from "@/shared/components/page-intro";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
 import { RegionalPreferences } from "@/shared/components/RegionalPreferences";
 import { useSiteExperience } from "@/shared/components/site-experience/site-experience-context";
@@ -361,7 +360,6 @@ export function SettingsPage() {
 
   return (
     <Container size="default" className="py-6 sm:py-14">
-      <PageIntro variant="restrained">
       <div className="max-w-3xl">
       <SitePageHeader
         surface="plain"
@@ -389,12 +387,12 @@ export function SettingsPage() {
       </div>
 
       <div hidden={overview}>
-      <Link to={`${location.pathname}?${(() => { const next = new URLSearchParams(location.search); next.set("view", "overview"); return next.toString(); })()}`} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-bold text-fg-2">{bi("설정 목록으로", "All settings")}</Link>
+      <Link to={`${location.pathname}?${(() => { const next = new URLSearchParams(location.search); next.set("view", "overview"); return next.toString(); })()}`} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-semibold text-fg-2">{bi("설정 목록으로", "All settings")}</Link>
       {/* 직접 주소·검색·앵커가 선택한 설정 영역만 연다. */}
-      <div className="lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
+      <div className="md:grid md:grid-cols-[12rem_minmax(0,1fr)] md:items-start md:gap-5 lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)] lg:items-start lg:gap-6">
       <SectionNav
         mode="tabs"
-        className="mb-6 lg:mb-0"
+        className="mb-6 md:sticky md:top-[5.5rem] md:mb-0 md:flex md:flex-col md:gap-1 md:overflow-visible md:rounded-xl md:border md:border-line md:bg-panel md:p-2.5 lg:mb-0 [&_button]:md:min-h-11 [&_button]:md:w-full [&_button]:md:flex-row [&_button]:md:justify-start [&_button]:md:rounded-lg [&_button]:md:px-2.5 [&_button]:md:py-1.5 [&_button]:md:text-left"
         items={tabs}
         value={activeTab}
         onChange={selectNavTab}
@@ -417,7 +415,7 @@ export function SettingsPage() {
 
         {/* 표시 설정 */}
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.display")}>
-          {experience && <Row icon={Sparkles}
+          {experience && <Row icon={Sliders}
             title={lang.startsWith("ko") ? "화면 효과" : "Appearance"}
             desc={lang.startsWith("ko") ? "화려한 색채와 차분한 화면 중 선택하세요. 스튜디오는 변경되지 않습니다." : "Choose a vivid or calm appearance. Studio remains unchanged."}>
             <Choice options={[
@@ -498,7 +496,7 @@ export function SettingsPage() {
       {/* 필터 */}
       <RevealOnScroll variant="fade">
       <div id="settings-filters" className="mt-8 scroll-mt-28">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.filters")}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-fg-2">{t("settings.section.filters")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.filters")}>
           <Row
             icon={SlidersHorizontal}
@@ -536,7 +534,7 @@ export function SettingsPage() {
       {/* 연령 확인 */}
       <RevealOnScroll variant="fade">
       <div id="settings-age" className="scroll-mt-28">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.age")}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-fg-2">{t("settings.section.age")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.age")}>
           <Row
             icon={ShieldCheck}
@@ -577,7 +575,7 @@ export function SettingsPage() {
       {/* 내 데이터 */}
       <RevealOnScroll variant="fade">
       <div id="settings-data" className="scroll-mt-28">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.data")}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-fg-2">{t("settings.section.data")}</h2>
         <section className="rounded-2xl border border-line bg-panel/40 px-5" aria-label={t("settings.section.data")}>
           <Row icon={Download} title={t("settings.data.export")} desc={t("settings.data.exportDesc")}>
             <button
@@ -711,7 +709,7 @@ export function SettingsPage() {
       {/* 계정 */}
       <RevealOnScroll variant="fade">
       <div id="account-security" className="scroll-mt-28">
-        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-fg-3">{t("settings.section.account")}</h2>
+        <h2 className="mb-2 text-sm font-semibold text-fg-2">{t("settings.section.account")}</h2>
         <section
           aria-label={t("settings.section.account")}
           className="rounded-2xl border border-line bg-panel/40 px-5"
@@ -758,7 +756,6 @@ export function SettingsPage() {
       </div>
       </div>
       <SavedToast visible={saveNotice} message={t("settings.filters.saved")} />
-      </PageIntro>
     </Container>
   );
 }

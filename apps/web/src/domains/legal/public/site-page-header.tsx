@@ -195,7 +195,7 @@ export function SitePageHeader({
       <h1
         id={titleId}
         className={cn(
-          "text-balance break-keep font-bold",
+          "text-balance break-keep font-semibold",
           compact ? "mt-1.5" : "mt-2.5",
           onArt ? "max-w-3xl text-white" : "text-fg",
           TITLE_SIZE[size],
@@ -265,17 +265,11 @@ export function SitePageHeader({
         panel
           ? compact
             ? "rounded-xl border border-line bg-panel/60 p-4 sm:p-5"
-            : "overflow-hidden rounded-3xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-5 shadow-sm sm:p-7 lg:p-8"
+            : "overflow-hidden rounded-3xl border border-line bg-panel p-5 shadow-sm sm:p-7 lg:p-8"
           : compact ? "border-b border-line pb-4 sm:pb-5" : "border-b border-line pb-6 sm:pb-8",
         className,
       )}
     >
-      {panel && !compact ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2 opacity-90"
-        />
-      ) : null}
       <div
         className={cn(
           "grid",

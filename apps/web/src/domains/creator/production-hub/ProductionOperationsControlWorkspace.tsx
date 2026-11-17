@@ -125,7 +125,7 @@ function toneClass(tone: Tone): string {
 
 function Pill({ children, tone = "neutral" }: { readonly children: ReactNode; readonly tone?: Tone }) {
   return (
-    <span className={cn("inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-bold", toneClass(tone))}>
+    <span className={cn("inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums", toneClass(tone))}>
       {children}
     </span>
   );
@@ -166,7 +166,7 @@ function Section({ title, description, children, action }: {
     <section className="rounded-2xl border border-line bg-card p-4 sm:p-5">
       <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-black text-fg">{title}</h3>
+          <h3 className="text-sm font-semibold text-fg">{title}</h3>
           <p className="mt-1 max-w-3xl text-xs leading-5 text-fg-2">{description}</p>
         </div>
         {action}
@@ -214,7 +214,7 @@ function ExternalReviewAccessCard({ access, nowMs, canManage, disabled, onUpdate
   return (
     <div className="rounded-xl border border-line bg-panel p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-black text-fg">{access.label}</p>
+        <p className="text-xs font-semibold text-fg">{access.label}</p>
         <Pill tone={expired ? "danger" : "success"}>{expired ? "만료됨" : access.status}</Pill>
       </div>
       <p className="mt-1 text-[0.6875rem] text-fg-3">
@@ -677,7 +677,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
         <p className="text-xs">모르는 값을 0시간이나 기본 8시간으로 확정하지 않습니다. 실제 공수·가용량을 저장하기 전에는 완료일·신뢰도를 확정 표시하거나 일정 회복안을 적용하지 않습니다.</p>
         <button type="button" className="min-h-11 rounded-lg border border-line px-3 text-sm" onClick={() => setView("calendar")}>가용 시간 확인하기</button>
       </section> : null}
-      <section className="overflow-hidden rounded-3xl border border-accent/30 bg-card">
+      <section className="overflow-hidden rounded-2xl border border-line bg-card">
         <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -692,27 +692,27 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                       : `게시 여유 ${Math.floor(schedule.marginHours / 24)}일`}
               </Pill>
             </div>
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-fg sm:text-3xl">운영 센터</h2>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">운영 센터</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2">
               실제 근무 캘린더, 마감을 좌우하는 핵심 작업, 컷 배정, 플랫폼별 연재, 외부 검수, 자동화와 개인화 설정을 한곳에서 관리합니다.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-line bg-panel p-3">
-              <p className="text-[0.6875rem] font-bold text-fg-3">핵심 업무</p>
-              <p className="mt-1 text-xl font-black text-fg">{schedule.criticalTaskIds.length}</p>
+              <p className="text-xs font-medium text-fg-3">핵심 업무</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-fg">{schedule.criticalTaskIds.length}</p>
             </div>
             <div className="rounded-xl border border-line bg-panel p-3">
-              <p className="text-[0.6875rem] font-bold text-fg-3">완료 신뢰도</p>
-              <p className="mt-1 text-xl font-black text-fg">{schedule.confidencePercent === null ? "—" : `${schedule.confidencePercent}%`}</p>
+              <p className="text-xs font-medium text-fg-3">완료 신뢰도</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-fg">{schedule.confidencePercent === null ? "—" : `${schedule.confidencePercent}%`}</p>
             </div>
             <div className="rounded-xl border border-line bg-panel p-3">
-              <p className="text-[0.6875rem] font-bold text-fg-3">외부 검수</p>
-              <p className="mt-1 text-xl font-black text-fg">{activeExternalReviews.length}</p>
+              <p className="text-xs font-medium text-fg-3">외부 검수</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-fg">{activeExternalReviews.length}</p>
             </div>
             <div className={cn("rounded-xl border p-3", unreadNotifications.length > 0 ? "border-warn/35 bg-warn/10" : "border-line bg-panel")}>
-              <p className="text-[0.6875rem] font-bold text-fg-3">읽지 않은 알림</p>
-              <p className="mt-1 text-xl font-black text-fg">{unreadNotifications.length}</p>
+              <p className="text-xs font-medium text-fg-3">읽지 않은 알림</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-fg">{unreadNotifications.length}</p>
             </div>
           </div>
         </div>
@@ -733,7 +733,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               <span>
-                <span className="block text-xs font-black">{label}</span>
+                <span className="block text-xs font-semibold">{label}</span>
                 <span className={cn("mt-0.5 block text-[0.625rem]", view === itemId ? "text-on-accent/75" : "text-fg-3")}>{description}</span>
               </span>
             </button>
@@ -746,11 +746,11 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
       {view === "schedule" ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-[0.6875rem] font-bold text-fg-3">예상 완료</p><p className="mt-2 text-lg font-black text-fg">{schedule.inputReadiness.complete ? formatDate(schedule.projectFinishAt) : "입력 확인 필요"}</p></div>
-            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-[0.6875rem] font-bold text-fg-3">게시 목표</p><p className="mt-2 text-lg font-black text-fg">{formatDate(schedule.releaseAt)}</p></div>
-            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-[0.6875rem] font-bold text-fg-3">예상 공정 길이</p><p className="mt-2 text-lg font-black text-fg">{schedule.inputReadiness.complete ? `${Math.round(schedule.projectDurationHours)}h` : "공수·가용량 확인 필요"}</p></div>
-            <div className={cn("rounded-2xl border p-4", schedule.marginHours !== null && schedule.marginHours < 0 ? "border-bad/35 bg-bad/10" : "border-good/35 bg-good/10")}><p className="text-[0.6875rem] font-bold text-fg-3">일정 여유</p><p className="mt-2 text-lg font-black text-fg">{schedule.marginHours === null ? "—" : `${Math.round(schedule.marginHours)}h`}</p></div>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-xs font-medium text-fg-3">예상 완료</p><p className="mt-2 text-lg font-semibold tabular-nums text-fg">{schedule.inputReadiness.complete ? formatDate(schedule.projectFinishAt) : "입력 확인 필요"}</p></div>
+            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-xs font-medium text-fg-3">게시 목표</p><p className="mt-2 text-lg font-semibold tabular-nums text-fg">{formatDate(schedule.releaseAt)}</p></div>
+            <div className="rounded-2xl border border-line bg-card p-4"><p className="text-xs font-medium text-fg-3">예상 공정 길이</p><p className="mt-2 text-lg font-semibold tabular-nums text-fg">{schedule.inputReadiness.complete ? `${Math.round(schedule.projectDurationHours)}h` : "공수·가용량 확인 필요"}</p></div>
+            <div className={cn("rounded-2xl border p-4", schedule.marginHours !== null && schedule.marginHours < 0 ? "border-bad/35 bg-bad/10" : "border-good/35 bg-good/10")}><p className="text-xs font-medium text-fg-3">일정 여유</p><p className="mt-2 text-lg font-semibold tabular-nums text-fg">{schedule.marginHours === null ? "—" : `${Math.round(schedule.marginHours)}h`}</p></div>
           </div>
 
           <Section
@@ -771,9 +771,9 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <Pill tone={tone}>{baseline ? "기준안" : `${Math.round(scenario.savedHours)}h 단축`}</Pill>
-                        <h4 className="mt-2 text-sm font-black text-fg">{scenario.label}</h4>
+                        <h4 className="mt-2 text-sm font-semibold text-fg">{scenario.label}</h4>
                       </div>
-                      <span className="text-right text-[0.6875rem] text-fg-3">
+                      <span className="text-right text-[0.6875rem] tabular-nums text-fg-3">
                         {scenario.confidencePercent === null ? "신뢰도 —" : `신뢰도 ${scenario.confidencePercent}%`}
                       </span>
                     </div>
@@ -821,7 +821,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             {schedule.inputReadiness.complete && schedule.nodes.length > 0 ? (
               <div className="overflow-x-auto rounded-xl border border-line">
                 <table className="w-full min-w-[56rem] border-collapse text-left">
-                  <thead className="bg-panel text-[0.6875rem] font-black uppercase tracking-[0.08em] text-fg-3">
+                  <thead className="bg-panel text-xs font-medium text-fg-3">
                     <tr>
                       <th className="px-3 py-3">업무</th>
                       <th className="px-3 py-3">공정</th>
@@ -837,14 +837,14 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
                             {node.critical ? <Pill tone="danger">핵심</Pill> : <Pill tone="neutral">여유</Pill>}
-                            <span className="font-bold text-fg">{node.task.title}</span>
+                            <span className="font-semibold text-fg">{node.task.title}</span>
                           </div>
                         </td>
                         <td className="px-3 py-3 text-fg-2">{node.task.processKey}</td>
-                        <td className="px-3 py-3 text-right font-semibold text-fg">{Math.round(node.expectedHours * 10) / 10}h</td>
-                        <td className="px-3 py-3 text-right font-semibold text-fg">{Math.round(node.totalFloatHours * 10) / 10}h</td>
-                        <td className="px-3 py-3 text-fg-2">{formatDate(node.forecastStartAt)}</td>
-                        <td className="px-3 py-3 text-fg-2">{formatDate(node.forecastEndAt)}</td>
+                        <td className="px-3 py-3 text-right font-semibold tabular-nums text-fg">{Math.round(node.expectedHours * 10) / 10}h</td>
+                        <td className="px-3 py-3 text-right font-semibold tabular-nums text-fg">{Math.round(node.totalFloatHours * 10) / 10}h</td>
+                        <td className="px-3 py-3 tabular-nums text-fg-2">{formatDate(node.forecastStartAt)}</td>
+                        <td className="px-3 py-3 tabular-nums text-fg-2">{formatDate(node.forecastEndAt)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -853,7 +853,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             ) : (
               <div className="rounded-xl border border-dashed border-line p-8 text-center">
                 <AlertTriangle className="mx-auto size-8 text-warn" aria-hidden="true" />
-                <p className="mt-3 text-sm font-black text-fg">{t("productionHub.operations.emptySchedulable", "계산 가능한 일정이 없습니다")}</p>
+                <p className="mt-3 text-sm font-semibold text-fg">{t("productionHub.operations.emptySchedulable", "계산 가능한 일정이 없습니다")}</p>
                 <p className="mt-1 text-xs text-fg-2">작업 공수와 의존관계를 확인하거나 순환 의존성을 해소해 주세요.</p>
               </div>
             )}
@@ -871,7 +871,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                 담당자
                 <select
                   aria-label="개인 작업함 담당자"
-                  className="min-h-9 rounded-lg border border-line bg-panel px-2 text-fg"
+                  className="min-h-11 rounded-lg border border-line bg-panel px-2 text-fg"
                   value={selectedAssignmentId}
                   onChange={(event) => loadCalendar(event.target.value)}
                 >
@@ -893,7 +893,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
               ] as const).map(([key, label, tasks, tone]) => (
                 <article key={key} className="rounded-2xl border border-line bg-panel p-4">
                   <header className="flex items-center justify-between gap-2">
-                    <h4 className="text-sm font-black text-fg">{label}</h4>
+                    <h4 className="text-sm font-semibold text-fg">{label}</h4>
                     <Pill tone={tone}>{tasks.length}</Pill>
                   </header>
                   <div className="mt-3 space-y-2">
@@ -972,7 +972,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                 {["일", "월", "화", "수", "목", "금", "토"].map((label, day) => {
                   const checked = calendarWeekdays.includes(day);
                   return (
-                    <label key={label} className={cn("flex min-h-9 cursor-pointer items-center gap-2 rounded-lg border px-3 text-xs font-bold", checked ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel text-fg-2")}>
+                    <label key={label} className={cn("flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-xs font-semibold", checked ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel text-fg-2")}>
                       <input
                         type="checkbox"
                         className="sr-only"
@@ -988,7 +988,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
               </div>
             </fieldset>
             <div className="mt-5 rounded-xl border border-line bg-panel p-4">
-              <h4 className="text-xs font-black text-fg">휴가·부재 추가</h4>
+              <h4 className="text-xs font-semibold text-fg">휴가·부재 추가</h4>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="text-xs font-semibold text-fg-2">시작일<input className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg" type="date" value={timeOffFrom} onChange={(event) => setTimeOffFrom(event.target.value)} /></label>
                 <label className="text-xs font-semibold text-fg-2">종료일<input className="mt-1.5 min-h-10 w-full rounded-lg border border-line bg-card px-3 text-sm text-fg" type="date" value={timeOffTo} onChange={(event) => setTimeOffTo(event.target.value)} /></label>
@@ -1055,8 +1055,8 @@ export function ProductionOperationsControlWorkspace({  aggregate,
                 const selected = index + 1 >= Math.min(cutFrom, cutTo) && index + 1 <= Math.max(cutFrom, cutTo);
                 return (
                   <div key={cut.cutId} className={cn("rounded-xl border p-3", selected ? "border-accent/40 bg-accent-soft" : "border-line bg-panel opacity-65")}>
-                    <div className="flex items-center justify-between gap-2"><span className="text-xs font-black text-fg">{cut.order}컷 · {cut.cutId}</span><Pill tone={selected ? "accent" : "neutral"}>{cut.estimatedHours}h</Pill></div>
-                    <p className="mt-1 text-[0.6875rem] text-fg-2">{cut.framing} · {cut.camera} · {cut.layerRequirements.length}개 레이어 요구</p>
+                    <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold tabular-nums text-fg">{cut.order}컷 · {cut.cutId}</span><Pill tone={selected ? "accent" : "neutral"}>{cut.estimatedHours}h</Pill></div>
+                    <p className="mt-1 text-[0.6875rem] tabular-nums text-fg-2">{cut.framing} · {cut.camera} · {cut.layerRequirements.length}개 레이어 요구</p>
                   </div>
                 );
               })}
@@ -1104,7 +1104,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
           <Section title="연재 준비도" description="예약 버튼이 비활성화된 이유를 항목별로 보여 줍니다.">
             <div className={cn("rounded-2xl border p-4", releaseReadiness.ready ? "border-good/35 bg-good/10" : "border-warn/35 bg-warn/10")}>
-              <div className="flex items-center justify-between gap-3"><div><p className="text-[0.6875rem] font-bold text-fg-3">준비 점수</p><p className="mt-1 text-3xl font-black text-fg">{releaseReadiness.score}</p></div>{releaseReadiness.ready ? <CheckCircle2 className="size-9 text-good" aria-hidden="true" /> : <AlertTriangle className="size-9 text-warn" aria-hidden="true" />}</div>
+              <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-medium text-fg-3">준비 점수</p><p className="mt-1 text-3xl font-semibold tabular-nums text-fg">{releaseReadiness.score}</p></div>{releaseReadiness.ready ? <CheckCircle2 className="size-9 text-good" aria-hidden="true" /> : <AlertTriangle className="size-9 text-warn" aria-hidden="true" />}</div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-card"><div className={cn("h-full rounded-full", releaseReadiness.ready ? "bg-good" : "bg-warn")} style={{ width: `${releaseReadiness.score}%` }} /></div>
             </div>
             <div className="mt-3 space-y-2">
@@ -1162,7 +1162,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             <button type="button" className={cn(buttonClass(), "mt-4 w-full")} disabled={!canManage || busyKey !== null || !reviewSubmissionId} onClick={() => void generateExternalReview()}>{busyKey === "external-review" ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}외부 검수 링크 만들기</button>
             {generatedReviewLink ? (
               <div className="mt-4 rounded-xl border border-good/35 bg-good/10 p-3">
-                <p className="text-xs font-black text-fg">이번 한 번만 표시되는 링크</p>
+                <p className="text-xs font-semibold text-fg">이번 한 번만 표시되는 링크</p>
                 <p className="mt-2 break-all rounded-lg bg-card p-2 font-mono text-[0.6875rem] text-fg-2">{generatedReviewLink}</p>
                 <button type="button" className={cn(buttonClass({ variant: "outline", size: "sm" }), "mt-2")} onClick={() => void globalThis.navigator?.clipboard?.writeText(generatedReviewLink)}><Copy className="size-3.5" aria-hidden="true" />복사</button>
               </div>
@@ -1206,7 +1206,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
           <div className="space-y-4">
             <Section title="등록된 규칙" description="실행 근거와 마지막 평가 시각을 확인합니다.">
-              <div className="space-y-2">{(aggregate.automationRules ?? []).map((rule) => <div key={rule.id} className="rounded-xl border border-line bg-panel p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-fg">{rule.name}</p><Pill tone={rule.enabled ? "success" : "neutral"}>{rule.enabled ? "활성" : "중지"}</Pill></div><p className="mt-1 text-[0.6875rem] text-fg-3">{rule.trigger} · 행동 {rule.actions.length}개</p><p className="mt-1 text-[0.6875rem] text-fg-3">최근 평가 {formatDate(rule.lastEvaluatedAt)}</p></div>)}{(aggregate.automationRules ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">{t("productionHub.operations.emptyRules", "등록된 규칙이 없습니다.")}</div> : null}</div>
+              <div className="space-y-2">{(aggregate.automationRules ?? []).map((rule) => <div key={rule.id} className="rounded-xl border border-line bg-panel p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-semibold text-fg">{rule.name}</p><Pill tone={rule.enabled ? "success" : "neutral"}>{rule.enabled ? "활성" : "중지"}</Pill></div><p className="mt-1 text-[0.6875rem] tabular-nums text-fg-3">{rule.trigger} · 행동 {rule.actions.length}개</p><p className="mt-1 text-[0.6875rem] tabular-nums text-fg-3">최근 평가 {formatDate(rule.lastEvaluatedAt)}</p></div>)}{(aggregate.automationRules ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-fg-3">{t("productionHub.operations.emptyRules", "등록된 규칙이 없습니다.")}</div> : null}</div>
             </Section>
             <Section title="알림 받은함" description="선택한 담당자의 알림을 같은 원인별로 묶고 안전한 작품 경로로 이동합니다.">
               <ProductionNotificationDigest aggregate={aggregate} assignmentId={selectedAssignmentId} disabled={!canEdit || busyKey !== null} onRead={markNotificationRead} />
@@ -1217,7 +1217,7 @@ export function ProductionOperationsControlWorkspace({  aggregate,
 
       {view === "analytics" ? (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {[
               ["전체 완료율", `${flowAnalytics.completionPercent}%`, `완료 ${flowAnalytics.completedTaskCount} / 전체 ${flowAnalytics.totalTaskCount}`, BarChart3, "accent"],
               ["잔여 예상 공수", `${flowAnalytics.remainingHours}h${schedule.inputReadiness.missingEstimateIds.length ? " + 미입력" : ""}`, `열린 업무 ${flowAnalytics.openTaskCount}개 · 공수 미입력 ${schedule.inputReadiness.missingEstimateIds.length}개`, Clock3, "neutral"],
@@ -1225,20 +1225,20 @@ export function ProductionOperationsControlWorkspace({  aggregate,
               ["연재 준비도", flowAnalytics.averageReleaseReadiness === null ? "—" : `${flowAnalytics.averageReleaseReadiness}%`, `활성 위험 ${flowAnalytics.activeRiskCount}건`, Rocket, "neutral"],
             ].map(([label, value, detail, Icon, tone]) => (
               <div key={String(label)} className={cn("rounded-2xl border p-4", toneClass(tone as Tone))}>
-                <div className="flex items-center justify-between gap-2"><p className="text-[0.6875rem] font-black uppercase tracking-[0.1em]">{String(label)}</p><Icon className="size-4" aria-hidden="true" /></div>
-                <p className="mt-2 text-2xl font-black text-fg">{String(value)}</p><p className="mt-1 text-xs text-fg-2">{String(detail)}</p>
+                <div className="flex items-center justify-between gap-2"><p className="text-xs font-medium">{String(label)}</p><Icon className="size-4" aria-hidden="true" /></div>
+                <p className="mt-2 text-2xl font-semibold tabular-nums text-fg">{String(value)}</p><p className="mt-1 text-xs tabular-nums text-fg-2">{String(detail)}</p>
               </div>
             ))}
           </div>
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.7fr)]">
             <Section title="공정 병목 분석" description="잔여 공수, 추정 불확실성, 차단·지연·검수 대기를 합산해 먼저 조치할 공정을 정렬합니다.">
               <div className="overflow-x-auto rounded-xl border border-line"><table className="w-full min-w-[42rem] border-collapse text-left">
-                <thead className="bg-panel text-[0.6875rem] font-black text-fg-3"><tr><th className="px-3 py-3">공정</th><th className="px-3 py-3 text-right">병목 점수</th><th className="px-3 py-3 text-right">잔여 공수</th><th className="px-3 py-3 text-right">열린 업무</th><th className="px-3 py-3 text-right">차단·초과·검수</th></tr></thead>
-                <tbody>{flowAnalytics.processes.map((process, index) => <tr key={process.processKey} className="border-t border-line text-xs"><td className="px-3 py-3"><div className="flex items-center gap-2"><Pill tone={index === 0 && process.bottleneckScore > 0 ? "danger" : index < 3 ? "warning" : "neutral"}>{index + 1}</Pill><span className="font-bold text-fg">{process.processKey}</span></div></td><td className="px-3 py-3 text-right font-black text-fg">{process.bottleneckScore}</td><td className="px-3 py-3 text-right text-fg-2">{process.remainingHours}h</td><td className="px-3 py-3 text-right text-fg-2">{process.openTaskCount}</td><td className="px-3 py-3 text-right text-fg-2">{process.blockedCount} · {process.overdueCount} · {process.reviewCount}</td></tr>)}</tbody>
+                <thead className="bg-panel text-xs font-medium text-fg-3"><tr><th className="px-3 py-3">공정</th><th className="px-3 py-3 text-right">병목 점수</th><th className="px-3 py-3 text-right">잔여 공수</th><th className="px-3 py-3 text-right">열린 업무</th><th className="px-3 py-3 text-right">차단·초과·검수</th></tr></thead>
+                <tbody>{flowAnalytics.processes.map((process, index) => <tr key={process.processKey} className="border-t border-line text-xs tabular-nums"><td className="px-3 py-3"><div className="flex items-center gap-2"><Pill tone={index === 0 && process.bottleneckScore > 0 ? "danger" : index < 3 ? "warning" : "neutral"}>{index + 1}</Pill><span className="font-semibold text-fg">{process.processKey}</span></div></td><td className="px-3 py-3 text-right font-semibold text-fg">{process.bottleneckScore}</td><td className="px-3 py-3 text-right text-fg-2">{process.remainingHours}h</td><td className="px-3 py-3 text-right text-fg-2">{process.openTaskCount}</td><td className="px-3 py-3 text-right text-fg-2">{process.blockedCount} · {process.overdueCount} · {process.reviewCount}</td></tr>)}</tbody>
               </table></div>
             </Section>
             <Section title="예산·정산 전망" description="계약, 승인 변경, 청구서와 검증된 지급을 통화별로 분리해 계산합니다.">
-              <div className="space-y-3">{financialForecast.currencies.map((forecast) => <article key={forecast.currency} className="rounded-xl border border-line bg-panel p-4"><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2"><Coins className="size-4 text-accent" aria-hidden="true" /><p className="text-sm font-black text-fg">{forecast.currency}</p></div><Pill tone={forecast.overdueInvoiceCount > 0 ? "danger" : "success"}>기한 초과 {forecast.overdueInvoiceCount}</Pill></div><dl className="mt-3 grid grid-cols-2 gap-2 text-[0.6875rem]"><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">계약+변경 전망</dt><dd className="mt-1 font-black text-fg">{formatMoney(forecast.currency, forecast.forecastMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">청구</dt><dd className="mt-1 font-black text-fg">{formatMoney(forecast.currency, forecast.invoicedMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">검증 지급</dt><dd className="mt-1 font-black text-good">{formatMoney(forecast.currency, forecast.verifiedPaidMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">미지급 잔액</dt><dd className="mt-1 font-black text-warn">{formatMoney(forecast.currency, forecast.outstandingMinor)}</dd></div></dl></article>)}
+              <div className="space-y-3">{financialForecast.currencies.map((forecast) => <article key={forecast.currency} className="rounded-xl border border-line bg-panel p-4"><div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2"><Coins className="size-4 text-accent" aria-hidden="true" /><p className="text-sm font-semibold text-fg">{forecast.currency}</p></div><Pill tone={forecast.overdueInvoiceCount > 0 ? "danger" : "success"}>기한 초과 {forecast.overdueInvoiceCount}</Pill></div><dl className="mt-3 grid grid-cols-2 gap-2 text-[0.6875rem] tabular-nums"><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">계약+변경 전망</dt><dd className="mt-1 font-semibold text-fg">{formatMoney(forecast.currency, forecast.forecastMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">청구</dt><dd className="mt-1 font-semibold text-fg">{formatMoney(forecast.currency, forecast.invoicedMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">검증 지급</dt><dd className="mt-1 font-semibold text-good">{formatMoney(forecast.currency, forecast.verifiedPaidMinor)}</dd></div><div className="rounded-lg border border-line bg-card p-2"><dt className="text-fg-3">미지급 잔액</dt><dd className="mt-1 font-semibold text-warn">{formatMoney(forecast.currency, forecast.outstandingMinor)}</dd></div></dl></article>)}
                 {financialForecast.currencies.length === 0 ? <div className="rounded-xl border border-dashed border-line p-7 text-center text-xs text-fg-3">{t("productionHub.operations.emptyFinanceData", "등록된 계약·청구 데이터가 없습니다.")}</div> : null}
                 {financialForecast.warnings.map((warning) => <div key={warning} className="flex gap-2 rounded-xl border border-warn/35 bg-warn/10 p-3 text-xs text-fg-2"><AlertTriangle className="size-4 shrink-0 text-warn" aria-hidden="true" /><span>{warning}</span></div>)}
               </div>
@@ -1262,10 +1262,10 @@ export function ProductionOperationsControlWorkspace({  aggregate,
             <div className="grid gap-3 sm:grid-cols-2">
               {(aggregate.savedViews ?? []).map((savedView) => (
                 <article key={savedView.id} className="rounded-2xl border border-line bg-panel p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-black text-fg">{savedView.name}</h4><Pill tone={savedView.shared ? "accent" : "neutral"}>{savedView.shared ? "팀 공유" : "개인"}</Pill></div>
+                  <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-semibold text-fg">{savedView.name}</h4><Pill tone={savedView.shared ? "accent" : "neutral"}>{savedView.shared ? "팀 공유" : "개인"}</Pill></div>
                   <p className="mt-2 text-xs text-fg-2">{savedView.resource} · {savedView.density}</p>
                   <div className="mt-3 flex flex-wrap gap-1.5">{savedView.dashboardWidgets.map((widget) => <span key={widget} className="rounded-full border border-line bg-card px-2 py-1 text-[0.625rem] font-semibold text-fg-2">{widget}</span>)}</div>
-                  <p className="mt-3 text-[0.6875rem] text-fg-3">열 {savedView.columns.length}개 · {formatDate(savedView.updatedAt)}</p>
+                  <p className="mt-3 text-[0.6875rem] tabular-nums text-fg-3">열 {savedView.columns.length}개 · {formatDate(savedView.updatedAt)}</p>
                 </article>
               ))}
               {(aggregate.savedViews ?? []).length === 0 ? <div className="rounded-xl border border-dashed border-line p-8 text-center text-xs text-fg-3 sm:col-span-2">{t("productionHub.operations.emptySavedViews", "저장된 운영 보기가 없습니다.")}</div> : null}

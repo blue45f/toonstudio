@@ -183,7 +183,7 @@ export function AppShell({
   showCommandPalette = true,
   showGlobalOverlays = true,
   publicExperience = false,
-  mainClassName = "min-h-screen pb-[max(5rem,var(--floating-stack-clearance,0px))] outline-none md:pb-[var(--floating-stack-clearance,0px)]",
+  mainClassName = "min-h-dvh pb-[max(5rem,var(--floating-stack-clearance,0px))] outline-none md:pb-[var(--floating-stack-clearance,0px)]",
 }: AppShellProps) {
   const { pathname, search } = useLocation();
   const t = useT();
@@ -213,9 +213,9 @@ export function AppShell({
   // 날씨·계절 배경: 몰입형 작업 화면과 작업 집중 경로(편집기·3D·제작 보드·발표·영상·관리자)에서는 끈다.
   const ambientBackdrop = !immersiveVirtualExperience && isAmbientRouteAllowed(pathname);
   const resolvedMainClassName = immersiveVirtualHome || immersiveReader || taskRoute !== null
-    ? "min-h-[100dvh] bg-canvas outline-none"
+    ? "min-h-dvh bg-canvas outline-none"
     : immersiveVirtualProject
-      ? "min-h-[100dvh] bg-canvas outline-none"
+      ? "min-h-dvh bg-canvas outline-none"
       : mainClassName;
 
   return (
@@ -245,7 +245,7 @@ export function AppShell({
           <Suspense fallback={null}><AmbientExperienceHost /></Suspense>
         ) : null}
         {showSkipLink ? (
-          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-canvas focus:shadow-2xl focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:flex focus:min-h-11 focus:items-center focus:rounded-xl focus:border focus:border-line-strong focus:bg-fg focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-canvas focus:shadow-lg focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent">
             {t("app.skipToContent")}
           </a>
         ) : null}

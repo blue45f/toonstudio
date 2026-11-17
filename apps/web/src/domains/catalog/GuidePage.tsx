@@ -243,7 +243,7 @@ export function GuidePage() {
               <a
                 key={item.href}
                 href={item.href}
-                className="inline-flex min-h-9 items-center rounded-full border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
               >
                 {item.label}
               </a>

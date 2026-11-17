@@ -171,24 +171,24 @@ export const LAYOUT_TOKENS = {
    */
   type: {
     /** 히어로 H1 — font-display + 2rem/4xl/6xl (PricingPage·MembershipPolicyPage 기준). */
-    heroTitle: "font-display text-[2rem] leading-[1.18] font-black tracking-[-0.04em] text-fg break-keep text-balance sm:text-4xl sm:leading-[1.12] lg:text-6xl",
+    heroTitle: "font-display text-[2rem] leading-[1.18] font-semibold tracking-[-0.04em] text-fg break-keep text-balance sm:text-4xl sm:leading-[1.12] lg:text-6xl",
     /**
      * 히어로 H1 에디토리얼 변형 — 세리프 이탤릭을 명시적으로 고른 표면 전용(홈 포스터 기준).
      * 크기는 `LAYOUT_TYPE_SCALE.editorial.heading`과 같다. 일반 표면은 display 변형을 쓴다.
      */
     heroTitleEditorial:
-      "font-serif text-[clamp(2.25rem,3.4vw,3.375rem)] leading-[1.14] font-bold italic tracking-[-0.035em] text-fg break-keep text-balance",
+      "font-serif text-[clamp(2.25rem,3.4vw,3.375rem)] leading-[1.14] font-semibold italic tracking-[-0.035em] text-fg break-keep text-balance",
     /** 섹션 H2 — font-display + 2xl/3xl/4xl. */
-    sectionTitle: "font-display text-2xl leading-snug font-black tracking-tight text-fg break-keep text-balance sm:text-3xl lg:text-4xl",
+    sectionTitle: "font-display text-2xl leading-snug font-semibold tracking-tight text-fg break-keep text-balance sm:text-3xl lg:text-4xl",
     /** 히어로 리드 문단. */
     heroLede: "mt-5 max-w-3xl text-base leading-7 text-fg-2 break-keep text-pretty sm:text-lg",
     /** 섹션 설명 문단(휴대폰도 본문 16px). */
     sectionDescription: "mt-4 max-w-3xl text-base leading-7 text-fg-2 break-keep text-pretty",
-    /** 영문 eyebrow 라벨 — 전역 `@utility eyebrow` (display, uppercase, 0.16em, 0.75rem). */
+    /** 섹션 eyebrow 라벨 — 전역 `@utility eyebrow` (display, 0.02em, 0.75rem). */
     eyebrow: "eyebrow flex items-center gap-2 text-accent",
     /** 히어로용 pill eyebrow — Pricing/Membership 히어로와 동일. */
     heroEyebrow:
-      "inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-soft px-3 py-1 text-xs font-black tracking-[0.14em] text-accent",
+      "inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent-soft px-3 py-1 text-xs font-medium tracking-[0.02em] text-accent",
   },
 
   /** 카드 스케일 (감사: rounded-2xl/3xl + border-line + bg-panel). */
@@ -209,7 +209,7 @@ export const LAYOUT_TOKENS = {
   formStep: "mt-4 rounded-3xl border border-line bg-card p-4 sm:p-5",
   /** 단계 번호 배지 — 숫자만 들어가는 원형 배지. */
   formStepBadge:
-    "grid size-7 shrink-0 place-items-center rounded-full bg-accent text-xs font-black text-on-accent",
+    "grid size-7 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-on-accent",
 } as const;
 
 export type LayoutSectionSpacing = keyof typeof LAYOUT_TOKENS.sectionSpacing;

@@ -427,7 +427,7 @@ export function MarketBrowsePage({ embedded = false }: { readonly embedded?: boo
                 <p className="mt-0.5 text-xs leading-5 text-fg-3">{t(activeFamily.description, activeFamily.descriptionEn)}</p>
               </div>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
               {activeFamily.subcategories.map((subcategory) => {
                 const selected = activeKind === subcategory.kind && query.tag === subcategory.tag;
                 return (

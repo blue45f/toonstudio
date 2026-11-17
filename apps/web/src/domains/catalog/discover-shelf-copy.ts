@@ -29,7 +29,7 @@ export function discoverShelfCopies(
   const isToday = day === kstToday;
   return {
     weekday: {
-      eyebrow: isToday ? "TODAY" : "WEEKLY",
+      eyebrow: "",
       title: isToday
         ? bt("오늘 업데이트되는 웹툰", "Webtoons updating today")
         : formatI18nTemplate(bt("{v0}요일 연재 인기작", "Popular {v0} serials"), { v0: bt(day, englishWeekDay(day)) }),
@@ -37,19 +37,19 @@ export function discoverShelfCopies(
       action: bt("연재 캘린더", "Release calendar"),
     },
     "top-rated": {
-      eyebrow: "TOP RATED",
+      eyebrow: "",
       title: bt("평점 랭킹 상위 작품", "Top of the rating ranking"),
       desc: bt("통합 랭킹의 평점 산식으로 고른 작품이에요.", "Picked with the unified ranking's rating formula."),
       action: bt("평점 랭킹 보기", "Rating ranking"),
     },
     free: {
-      eyebrow: "FREE TO START",
+      eyebrow: "",
       title: bt("무료·기다리면 무료로 시작", "Start free or wait-for-free"),
       desc: bt("무료 또는 기다리면 무료로 볼 수 있는 인기작이에요.", "Popular stories you can start free or wait-for-free."),
       action: bt("무료 작품 더 보기", "More free stories"),
     },
     newest: {
-      eyebrow: "NEW",
+      eyebrow: "",
       title: bt("최근 공개된 작품", "Recently released"),
       desc: bt("공개 연도가 가까운 작품부터 보여 줘요.", "Stories with the most recent release year first."),
       action: bt("탐색에서 더 보기", "More in Explore"),

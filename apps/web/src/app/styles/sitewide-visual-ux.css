@@ -545,9 +545,9 @@ body:has([data-studio-beta-notice-host="true"]) > [data-beta-open-prompt="engage
     justify-content: flex-start;
   }
   /* 스튜디오 베타 확인은 화면 맨 아래 줄을 쓰므로 같은 줄 오른쪽의 ⚙ 행(약 17rem)과 폭이 닿지 않게
-     좁은 태블릿(768px)에서는 폭을 줄인다. 넓은 화면에서는 기존 31rem 그대로다. */
+     좁은 태블릿(768px)에서는 호스트 폭(100%) 기준으로 줄여 스크롤바 오버플로를 막는다. */
   [data-studio-beta-notice="true"] {
-    width: min(31rem, calc(100vw - 19rem));
+    width: min(31rem, calc(100% - 19rem));
   }
 }
 

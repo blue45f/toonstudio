@@ -28,7 +28,7 @@ export function InspectorSection({
 }) {
   const body = (
     <>
-      {hint ? <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3 [word-break:keep-all]">{hint}</p> : null}
       <div className="mt-2 space-y-2">{children}</div>
     </>
   );
@@ -41,7 +41,7 @@ export function InspectorSection({
       >
         <summary
           className={cn(
-            "flex cursor-pointer list-none items-center gap-1.5 text-[0.78rem] font-bold text-fg",
+            "flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-[0.78rem] font-bold text-fg [word-break:keep-all]",
             STUDIO_FOCUS_RING,
           )}
         >
@@ -58,7 +58,7 @@ export function InspectorSection({
   }
   return (
     <section className="border-t border-line/60 px-3 py-3 first:border-t-0" data-character-inspector-section={title}>
-      <h3 className="text-[0.78rem] font-bold text-fg">{title}</h3>
+      <h3 className="text-[0.78rem] font-bold text-fg [word-break:keep-all]">{title}</h3>
       {body}
     </section>
   );
@@ -68,7 +68,7 @@ export function InspectorNote({ tone = "muted", children }: { readonly tone?: "m
   return (
     <p
       className={cn(
-        "flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-[0.66rem] leading-relaxed",
+        "flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-[0.66rem] leading-relaxed [word-break:keep-all]",
         tone === "warn" ? "border-warn/45 bg-warn/10 text-warn" : "border-dashed border-line bg-card/50 text-fg-3",
       )}
     >

@@ -13,27 +13,22 @@
  */
 
 .page-intro {
-  --intro-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --intro-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .page-intro > * {
-  animation-duration: 0.7s;
+  animation-duration: 0.42s;
   animation-timing-function: var(--intro-ease);
   animation-fill-mode: both;
 }
 
-/* 자식 순서대로 스태거 (최대 12개, 이후는 마지막 지연 유지) */
+/* 자식 순서대로 스태거 (최대 6개, 이후는 동일 지연 유지) */
 .page-intro > *:nth-child(1) { animation-delay: 0.02s; }
-.page-intro > *:nth-child(2) { animation-delay: 0.1s; }
-.page-intro > *:nth-child(3) { animation-delay: 0.18s; }
-.page-intro > *:nth-child(4) { animation-delay: 0.26s; }
-.page-intro > *:nth-child(5) { animation-delay: 0.34s; }
-.page-intro > *:nth-child(6) { animation-delay: 0.42s; }
-.page-intro > *:nth-child(7) { animation-delay: 0.5s; }
-.page-intro > *:nth-child(8) { animation-delay: 0.58s; }
-.page-intro > *:nth-child(9) { animation-delay: 0.64s; }
-.page-intro > *:nth-child(10) { animation-delay: 0.7s; }
-.page-intro > *:nth-child(n + 11) { animation-delay: 0.74s; }
+.page-intro > *:nth-child(2) { animation-delay: 0.07s; }
+.page-intro > *:nth-child(3) { animation-delay: 0.12s; }
+.page-intro > *:nth-child(4) { animation-delay: 0.17s; }
+.page-intro > *:nth-child(5) { animation-delay: 0.22s; }
+.page-intro > *:nth-child(n + 6) { animation-delay: 0.26s; }
 
 /* ── unfold: 온보딩 단계가 펼쳐지듯 ─────────────────────────────── */
 .page-intro[data-variant="unfold"] > * {
@@ -44,11 +39,11 @@
 @keyframes page-intro-unfold {
   from {
     opacity: 0;
-    transform: translateY(26px) scale(0.985);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -61,16 +56,11 @@
 @keyframes page-intro-chapter {
   from {
     opacity: 0;
-    transform: translateY(34px);
-    filter: blur(3px);
-  }
-  60% {
-    filter: blur(0);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 

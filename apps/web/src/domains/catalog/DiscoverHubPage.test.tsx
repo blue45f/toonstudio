@@ -279,7 +279,7 @@ describe("DiscoverHubPage", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /완결 \(Completed\)/u }));
+    fireEvent.click(screen.getByRole("button", { name: /완결 작품/u }));
     expect(onApplyFilters).toHaveBeenCalledWith({
       ...EMPTY_TITLE_FILTERS,
       status: ["completed"],
@@ -287,13 +287,17 @@ describe("DiscoverHubPage", () => {
     expect(onChangeSort).toHaveBeenCalledWith("rating");
     const readingTempoBar = screen.getByTestId("explore-rea-reading-tempo-bar");
     fireEvent.click(within(readingTempoBar).getByRole("button", {
-      name: "Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)",
+      name: "가볍게 읽는 짧은 회차",
     }));
     expect(onApplyFilters).toHaveBeenLastCalledWith({
       ...EMPTY_TITLE_FILTERS,
       status: ["ongoing"],
     });
     expect(onChangeSort).toHaveBeenLastCalledWith("newest");
+    const readerOptions = screen.getByTestId("explore-rea-reader-simulator-bar");
+    expect(readerOptions.closest("details")?.open).toBe(false);
+    expect(within(readerOptions.closest("details") as HTMLElement).getByText("열람 화면 보기 설정")).toBeTruthy();
+    expect(screen.getByTestId("explore-rea-directory-bar").textContent).not.toMatch(/빌리빌리|콰이칸|메챠코믹|DIRECTORY/u);
   });
 
   it("최근 본 작품 이어보기 바와 추천 선반 더보기 점진적 노출을 지원한다", async () => {

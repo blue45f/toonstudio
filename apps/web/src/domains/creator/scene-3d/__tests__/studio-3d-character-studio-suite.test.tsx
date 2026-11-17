@@ -212,6 +212,11 @@ describe("Tooning 3D Studio (TD) & 3D Asset Store Engine", () => {
 
   it("renders StudioBg3dShaperCharacterStudioPanel with the integrated 3D Studio 5-tab inspector", () => {
     render(<StudioBg3dShaperCharacterStudioPanel />);
+    const disclosure = screen.getByTestId("shaper-character-inspector-disclosure") as HTMLDetailsElement;
+    expect(disclosure.open).toBe(false);
+    disclosure.open = true;
+    fireEvent(disclosure, new Event("toggle"));
+
     expect(screen.getByTestId("tooning-3d-studio-inspector-panel")).toBeTruthy();
     expect(screen.getByTestId("td-body-21-bones-tab")).toBeTruthy();
 

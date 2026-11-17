@@ -11,15 +11,6 @@ import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual, useBilingualLocalizer } from "@/shared/lib/i18n-bilingual-copy";
 
-const HERO_GLOW_STYLE = {
-  background: "linear-gradient(to bottom, color-mix(in oklab, var(--illustrated-3d-accent) 12%, transparent), transparent)",
-} as const;
-
-const HERO_BLOOM_STYLE = {
-  background:
-    "radial-gradient(closest-side, color-mix(in oklab, var(--illustrated-3d-cyan) 12%, transparent), transparent 72%)",
-} as const;
-
 // 미리보기 스테이지 아래에 붙는 작업 단계 칩 — 전부 아래 가이드(#how-to)로 이어지는 실제 동선이다.
 const STAGE_STEPS: readonly { readonly ko: string; readonly en: string }[] = [
   { ko: "프리셋 고르기", en: "Pick a preset" },
@@ -37,7 +28,7 @@ function WebGlBlockedNotice({ onDismiss }: { readonly onDismiss: () => void }) {
       className="mt-5 flex items-start gap-3 rounded-2xl border border-warn/45 bg-warn/10 p-4 text-sm leading-relaxed text-fg-2"
     >
       <AlertTriangle size={18} aria-hidden className="mt-0.5 shrink-0 text-warn" />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 [word-break:keep-all]">
         <p className="font-semibold text-fg">{bt("이 브라우저에서는 3D 편집기를 열 수 없습니다", "The 3D editor can't open in this browser")}</p>
         <p className="mt-1">
           {bt(
@@ -69,27 +60,23 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
 
   return (
     <section className="studio-character-guide__hero relative overflow-hidden border-b border-line bg-ledger">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-56 opacity-70" style={HERO_GLOW_STYLE} />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 top-6 size-[30rem] rounded-full opacity-60 blur-3xl"
-        style={HERO_BLOOM_STYLE}
-      />
       <Container
         size="wide"
         className="studio-character-guide__intro relative grid gap-6 py-8 sm:py-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-center lg:gap-12 lg:py-16"
       >
         <div className="max-w-2xl">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-accent/25 bg-card/85 px-3 py-1.5 shadow-xs backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-1.5">
             <img
               src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
               alt=""
               aria-hidden="true"
-              className="size-6 rounded-md border border-line object-cover"
+              className="size-5 rounded border border-line object-cover"
               loading="lazy"
               decoding="async"
             />
-            <p className="eyebrow text-accent">CHARACTER SHAPER</p>
+            <span className="text-xs font-medium text-fg-2 [word-break:keep-all]">
+              {bt("캐릭터 셰이퍼", "Character Shaper")}
+            </span>
           </div>
           <h1 className="mt-3 text-balance [word-break:keep-all] text-[clamp(1.9rem,5vw,3rem)] font-bold leading-[1.12] tracking-tight text-fg">
             {bt("프리셋으로 시작하는 3D 웹툰 캐릭터", "3D webtoon characters that start from presets")}
@@ -114,12 +101,12 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
             <RouterLink
               {...editor.openLink}
               data-character-shaper-start="hero"
-              className={buttonClass({ variant: "solid", size: "lg" })}
+              className={buttonClass({ variant: "solid", size: "lg", className: "min-h-11 [word-break:keep-all]" })}
             >
               {bt("샘플 캐릭터로 바로 시작", "Start with a sample character")}
               <ArrowRight size={18} aria-hidden="true" />
             </RouterLink>
-            <a href="#how-to" className={buttonClass({ variant: "outline", size: "lg" })}>
+            <a href="#how-to" className={buttonClass({ variant: "outline", size: "lg", className: "min-h-11 [word-break:keep-all]" })}>
               {bt("사용 가이드", "User guide")}
             </a>
           </div>
@@ -130,7 +117,7 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
             )}
           </p>
           {editor.webglBlocked ? <WebGlBlockedNotice onDismiss={editor.close} /> : null}
-          <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-fg-2 sm:mt-6">
+          <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-fg-2 [word-break:keep-all] sm:mt-6">
             {heroFacts.map((fact) => (
               <li key={fact} className="inline-flex items-center gap-1.5">
                 <Check size={14} aria-hidden className="shrink-0 text-accent" />
@@ -146,7 +133,9 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
               <span />
               <span />
             </span>
-            <span className="studio-character-guide__stage-label">CHARACTER SHAPER — PREVIEW</span>
+            <span className="studio-character-guide__stage-label [word-break:keep-all]">
+              {bt("캐릭터 작업실 미리보기", "Character workshop preview")}
+            </span>
           </div>
           <Studio3dIllustration responsiveCompact />
           <nav
@@ -157,7 +146,7 @@ export function CharacterShaperLandingHero({ editor }: { readonly editor: Charac
               <a
                 key={step.ko}
                 href="#how-to"
-                className="studio-character-guide__stage-step inline-flex min-h-11 items-center justify-center"
+                className="studio-character-guide__stage-step inline-flex min-h-11 items-center justify-center [word-break:keep-all]"
               >
                 {bt(step.ko, step.en)}
               </a>

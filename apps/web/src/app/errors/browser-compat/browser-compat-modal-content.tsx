@@ -89,7 +89,7 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
       />
 
       {/* 모달 팝업 컨테이너 */}
-      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="browser-compat-title" aria-describedby="browser-compat-description" data-stable-contrast="true" className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl border border-line-strong bg-panel/95 p-5 sm:p-8 text-fg shadow-2xl backdrop-blur-xl transition-all">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="browser-compat-title" aria-describedby="browser-compat-description" data-stable-contrast="true" className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl border border-line-strong bg-panel/95 p-5 sm:p-8 text-fg shadow-xl backdrop-blur-xl">
         {/* 닫기 버튼 (비블로킹 모드일 때만 표시) */}
         {!isBlocking && (
           <button
@@ -153,9 +153,9 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
             href="https://www.google.com/chrome/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-all hover:border-accent/50 hover:bg-accent/10 hover:scale-[1.02] group"
+            className="flex min-h-11 flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-colors duration-150 hover:border-line-strong hover:bg-raised"
           >
-            <Globe size={24} className="mb-2 text-cool group-hover:scale-110 transition-transform" />
+            <Globe size={18} strokeWidth={1.5} className="mb-2 text-fg-2" />
             <span className="text-xs font-semibold text-fg">Chrome</span>
             <span className="text-xs text-fg-3">권장</span>
           </a>
@@ -164,9 +164,9 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
             href="https://www.microsoft.com/edge"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-all hover:border-accent/50 hover:bg-accent/10 hover:scale-[1.02] group"
+            className="flex min-h-11 flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-colors duration-150 hover:border-line-strong hover:bg-raised"
           >
-            <Globe size={24} className="mb-2 text-good group-hover:scale-110 transition-transform" />
+            <Globe size={18} strokeWidth={1.5} className="mb-2 text-fg-2" />
             <span className="text-xs font-semibold text-fg">Edge</span>
             <span className="text-xs text-fg-3">최신</span>
           </a>
@@ -175,9 +175,9 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
             href="https://www.apple.com/safari/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-all hover:border-accent/50 hover:bg-accent/10 hover:scale-[1.02] group"
+            className="flex min-h-11 flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-colors duration-150 hover:border-line-strong hover:bg-raised"
           >
-            <Compass size={24} className="mb-2 text-cool group-hover:scale-110 transition-transform" />
+            <Compass size={18} strokeWidth={1.5} className="mb-2 text-fg-2" />
             <span className="text-xs font-semibold text-fg">Safari</span>
             <span className="text-xs text-fg-3">macOS/iOS</span>
           </a>
@@ -186,9 +186,9 @@ export const BrowserCompatModalContent: React.FC<BrowserCompatModalProps> = ({
             href="https://www.mozilla.org/firefox/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-all hover:border-accent/50 hover:bg-accent/10 hover:scale-[1.02] group"
+            className="flex min-h-11 flex-col items-center justify-center rounded-2xl border border-line bg-card p-3 text-center transition-colors duration-150 hover:border-line-strong hover:bg-raised"
           >
-            <Globe size={24} className="mb-2 text-accent group-hover:scale-110 transition-transform" />
+            <Globe size={18} strokeWidth={1.5} className="mb-2 text-fg-2" />
             <span className="text-xs font-semibold text-fg">Firefox</span>
             <span className="text-xs text-fg-3">최신</span>
           </a>

@@ -41,8 +41,8 @@ export function LibraryPage() {
   return (
     <Container size="wide" className="py-6 sm:py-10">
       <header className="mb-5 flex flex-col gap-2">
-        <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">
-          <Library size={24} className="shrink-0 text-accent" aria-hidden="true" />
+        <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
+          <Library size={22} strokeWidth={1.5} className="shrink-0 text-accent" aria-hidden="true" />
           {tx("내 서재")}
         </h1>
         <p className="max-w-3xl text-sm leading-relaxed text-fg-3">
@@ -58,11 +58,11 @@ export function LibraryPage() {
         renderDiaryTab={(titlesById) => <LibraryDiaryTab titlesById={titlesById} />}
       />
 
-      <details className="group mt-6 rounded-2xl border border-line bg-card/60">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-          <Library size={18} className="shrink-0 text-accent" aria-hidden="true" />
+      <details className="group mt-6 rounded-2xl border border-line bg-card">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+          <Library size={17} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden="true" />
           {bt("서재 사용법", "Library guide")}
-          <ChevronDown size={18} aria-hidden="true" className="ml-auto shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+          <ChevronDown size={17} strokeWidth={1.5} aria-hidden="true" className="ml-auto shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
         </summary>
         <div className="space-y-5 border-t border-line p-4 sm:p-5">
           <MySpaceModuleChrome />
@@ -79,16 +79,16 @@ export function LibraryPage() {
                 <Link
                   href={step.href}
                   aria-current={index === currentStep ? "step" : undefined}
-                  className="group flex min-w-0 flex-1 flex-col gap-1 rounded-2xl border border-line bg-card/60 p-2.5 transition-colors hover:border-accent/45 hover:bg-accent-soft/40 sm:p-3"
+                  className="group flex min-h-11 min-w-0 flex-1 flex-col gap-1 rounded-xl border border-line bg-panel p-2.5 transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none sm:p-3"
                 >
                   <span className="flex items-center gap-1.5">
                     <span
                       aria-hidden="true"
-                      className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent"
+                      className="numeral grid size-6 shrink-0 place-items-center rounded-md bg-accent-soft text-xs font-semibold text-accent"
                     >
                       {index + 1}
                     </span>
-                    <span className="truncate text-xs font-bold text-fg sm:text-sm">{tx(step.label)}</span>
+                    <span className="truncate text-xs font-semibold text-fg sm:text-sm">{tx(step.label)}</span>
                   </span>
                   <span className="pl-[1.875rem] text-xs leading-snug text-fg-3 sm:text-xs">
                     {tx(step.desc)}
@@ -96,7 +96,7 @@ export function LibraryPage() {
                 </Link>
                 {index < JOURNEY_STEPS.length - 1 && (
                   <span aria-hidden="true" className="hidden w-6 shrink-0 place-items-center text-fg-3 sm:grid">
-                    <ChevronRight size={14} />
+                    <ChevronRight size={14} strokeWidth={1.5} />
                   </span>
                 )}
               </li>
@@ -128,17 +128,12 @@ export function LibraryPage() {
                   aria-current={isCurrent ? "page" : undefined}
                   className={
                     isCurrent
-                      ? "flex flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 shadow-sm transition-colors"
-                      : "flex flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/80 p-3.5 transition-colors hover:border-accent/45 hover:bg-card"
+                      ? "flex min-h-11 flex-col justify-between gap-1.5 rounded-xl border border-accent bg-accent-soft p-3.5 transition-colors duration-150 motion-reduce:transition-none"
+                      : "flex min-h-11 flex-col justify-between gap-1.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none"
                   }
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-extrabold text-fg">{pillar.label}</span>
-                    <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                      {pillar.badge}
-                    </span>
-                  </div>
-                  <p className="text-[11px] leading-snug text-fg-3">{pillar.description}</p>
+                  <span className="text-xs font-semibold text-fg">{pillar.label}</span>
+                  <p className="text-xs leading-snug text-fg-3">{pillar.description}</p>
                 </Link>
               );
             })}

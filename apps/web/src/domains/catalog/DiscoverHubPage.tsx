@@ -89,7 +89,7 @@ function DiscoverCardArt({
           aria-hidden="true"
           data-testid="discover-art-fallback"
           className={cn(
-            "grid place-items-center bg-[linear-gradient(145deg,color-mix(in_oklch,var(--color-accent)_26%,var(--color-panel)),color-mix(in_oklch,var(--color-cool)_20%,var(--color-canvas)))] px-2 text-center text-[11px] font-bold text-fg-2",
+            "grid place-items-center bg-panel px-2 text-center text-[11px] font-semibold text-fg-2",
             className,
           )}
         >
@@ -230,7 +230,7 @@ function CatalogSnapshotLine({ snapshot, loading }: { readonly snapshot: Discove
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-baseline gap-1">
               <dt className="order-2">{stat.label}</dt>
-              <dd className={cn("numeral order-1 text-sm font-bold", "text-fg")}>{stat.value}</dd>
+              <dd className={cn("numeral order-1 text-sm font-semibold", "text-fg")}>{stat.value}</dd>
             </div>
           ))}
         </dl>
@@ -335,25 +335,12 @@ export function DiscoverHubPage() {
       <div className="discover-hub-hero" data-has-spotlight={showSpotlight ? "true" : "false"}>
         <div className="discover-hub-intro">
       <header className="discover-hub-header" aria-labelledby="discover-title">
-        <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-accent/35 bg-card/80 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
-          <img
-            src="/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp"
-            alt=""
-            aria-hidden="true"
-            width={20}
-            height={20}
-            loading="eager"
-            decoding="async"
-            className="size-5 rounded-md object-cover"
-          />
-          <span>{bt("작품 탐색 아틀리에", "Story Discovery Atelier")}</span>
-        </div>
-        <h1 id="discover-title" className="discover-hub-title font-bold tracking-tight text-fg">
+        <h1 id="discover-title" className="discover-hub-title font-semibold tracking-tight text-fg">
           {bt("다음 이야기를 찾아요", "Find your next story")}
         </h1>
         <div className="discover-hub-search">
         <form onSubmit={submit} role="search" className="discover-hub-search-form grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
-          <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-line-strong bg-card/90 px-3.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
+          <label className="flex min-h-12 min-w-0 items-center gap-2.5 rounded-2xl border border-line-strong bg-card px-3.5 focus-within:border-accent/55 focus-within:ring-2 focus-within:ring-accent/25">
             <span className="sr-only">{searchLabel}</span>
             <input
               type="search"
@@ -383,8 +370,8 @@ export function DiscoverHubPage() {
               </button>
             ) : null}
           </label>
-          <button type="submit" aria-label={bt("작품 검색", "Search stories")} style={{ minInlineSize: 48, minBlockSize: 48 }} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-bold" })}>
-            <Search size={19} aria-hidden="true" />
+          <button type="submit" aria-label={bt("작품 검색", "Search stories")} style={{ minInlineSize: 48, minBlockSize: 48 }} className={buttonClass({ size: "lg", className: "discover-hub-submit min-h-12 gap-2 rounded-2xl text-base font-semibold" })}>
+            <Search size={18} strokeWidth={1.5} aria-hidden="true" />
             <span className="hidden sm:inline">{bt("검색", "Search")}</span>
           </button>
         </form>
@@ -414,45 +401,27 @@ export function DiscoverHubPage() {
         <section
           aria-label={bt("최근 본 작품 이어보기", "Continue reading")}
           data-testid="discover-quick-return-bar"
-          className="relative mb-5 flex flex-wrap items-center justify-between gap-2.5 overflow-hidden rounded-2xl border border-accent/30 bg-card/90 px-3.5 py-2.5 shadow-sm backdrop-blur-md"
+          className="mb-5 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-line bg-card px-4 py-3"
         >
-          <img
-            src="/brand/luminous-atelier-20261114/scene-market-discover-aurora.webp"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            className="pointer-events-none absolute inset-0 size-full object-cover opacity-15"
-          />
-          <div className="relative z-10 flex items-center gap-2 text-xs font-extrabold text-fg">
-            <img
-              src="/brand/luminous-atelier-20261114/icon-nav-discover-cuts.webp"
-              alt=""
-              aria-hidden="true"
-              width={22}
-              height={22}
-              loading="lazy"
-              decoding="async"
-              className="size-5 shrink-0 rounded-md object-cover"
-            />
+          <div className="flex items-center gap-2 text-xs font-semibold text-fg">
             <span>{bt("최근 본 작품 이어보기", "Continue reading")}</span>
           </div>
-          <div className="relative z-10 flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {quickReturnModel.hasHistory ? (
               <>
                 {quickReturnModel.recentTitles.map((item) => (
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft/75 px-3.5 text-xs font-bold text-fg transition-colors hover:border-accent hover:text-accent"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-accent/40 bg-accent-soft px-3.5 text-xs font-semibold text-fg transition-colors duration-150 hover:border-accent hover:text-accent motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("이어보기", "Resume")}`}</span>
-                    <ArrowRight size={13} aria-hidden="true" />
+                    <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
                   </Link>
                 ))}
                 <Link
                   href="/library"
-                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-full border border-line bg-panel/85 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg border border-line bg-panel px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
                 >
                   {bt("최근 열람 서재", "Recent history")}
                 </Link>
@@ -463,15 +432,15 @@ export function DiscoverHubPage() {
                   <Link
                     key={item.id}
                     href={`/title/${item.slug}`}
-                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-full border border-line bg-panel/85 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-accent"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-lg border border-line bg-panel px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
                   >
                     <span>{`${item.title} ${bt("첫 화부터", "Start Ep. 1")}`}</span>
-                    <ArrowRight size={13} aria-hidden="true" />
+                    <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
                   </Link>
                 ))}
                 <Link
                   href="/ranking"
-                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-full border border-accent/35 bg-accent-soft/60 px-3.5 text-xs font-bold text-accent transition-colors hover:border-accent"
+                  className="inline-flex min-h-11 min-w-11 items-center gap-1 rounded-lg border border-accent/35 bg-accent-soft px-3.5 text-xs font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none"
                 >
                   {bt("추천 에피소드 바로가기", "Jump to featured episodes")}
                 </Link>
@@ -482,10 +451,10 @@ export function DiscoverHubPage() {
         {localMatches && (localMatches.titles.length > 0 || localMatches.genres.length > 0 || localMatches.tags.length > 0) ? (
           <div
             data-testid="discover-local-matches"
-            className="mb-6 rounded-2xl border border-accent/35 bg-card/90 p-4 shadow-sm"
+            className="mb-6 rounded-2xl border border-line bg-card p-4"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold text-accent">
+              <p className="text-xs font-semibold text-accent">
                 {bt(`찾은 작품 ${localMatches.titles.length}편`, `${localMatches.titles.length} matching stories`)}
               </p>
               <Link
@@ -493,11 +462,11 @@ export function DiscoverHubPage() {
                 className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-fg-2 hover:text-accent"
               >
                 {bt("전체 검색 결과 보기", "See all search results")}
-                <ArrowRight size={13} aria-hidden="true" />
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </div>
             {localMatches.titles.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {localMatches.titles.map((item) => (
                   <TitleCard key={item.id} title={item} />
                 ))}
@@ -524,10 +493,7 @@ export function DiscoverHubPage() {
       >
         <div>
           <div className="sr-only">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
-              SERIALIZATION TRACKS · ORIGINALS / CANVAS / WUF / CUTS
-            </span>
-            <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+            <h2 className="text-sm font-semibold text-fg sm:text-base">
               {bt("연재 트랙별 바로가기", "Browse by serialization track")}
             </h2>
           </div>
@@ -564,10 +530,10 @@ export function DiscoverHubPage() {
                     });
                   }}
                   className={cn(
-                    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg border px-1 text-[10px] font-bold transition-colors sm:text-xs",
+                    "inline-flex min-h-11 min-w-0 items-center justify-center rounded-lg border px-1 text-[10px] font-semibold transition-colors duration-150 sm:text-xs motion-reduce:transition-none",
                     selected
-                      ? "border-accent bg-accent text-canvas shadow-sm"
-                      : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
+                      ? "border-accent bg-accent text-on-accent"
+                      : "border-line bg-panel/70 text-fg-2 hover:border-line-strong hover:text-fg",
                   )}
                 >
                   <span aria-hidden="true">{bt(...TRACK_SHORT_LABELS[track.id])}</span>
@@ -599,14 +565,14 @@ export function DiscoverHubPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={activeTrack.primaryRoute}
-                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4 text-xs font-bold" })}
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-4 text-xs font-semibold" })}
               >
                 {bt(activeTrack.label, SERIALIZATION_TRACK_EN[activeTrack.id].label)} {bt("열기", "Open")}
-                <ArrowRight size={13} aria-hidden="true" />
+                <ArrowRight size={13} strokeWidth={1.5} aria-hidden="true" />
               </Link>
               <Link
                 href={activeTrack.secondaryRoute}
-                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-full px-3.5 text-xs font-semibold" })}
+                className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 rounded-lg px-3.5 text-xs font-semibold" })}
               >
                 {bt(activeTrack.secondaryLabel, SERIALIZATION_TRACK_EN[activeTrack.id].secondaryLabel)}
               </Link>
@@ -618,7 +584,6 @@ export function DiscoverHubPage() {
 
       <Section
         className="mt-8 sm:mt-10"
-        eyebrow={bt("다른 찾기 방법", "More ways to discover")}
         title={bt("다른 방법으로 찾기", "More ways to find a story")}
       >
         <details className="discover-hub-genres">

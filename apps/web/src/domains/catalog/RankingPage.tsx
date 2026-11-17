@@ -1,6 +1,6 @@
 import "./catalog-page-controls.css";
 import "./ranking-page-density.css";
-import { Calculator, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
+import { Calculator, ChevronDown, Compass, GitCompare, PenLine, Trophy, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -32,24 +32,24 @@ import {
 const SCOPE = "domains.catalog.RankingPage";
 const tx = (source: string): string => translateCurrentStaticSourceText(SCOPE, "ko", source);
 
-const STREAM_MODE_EN_COPY: Readonly<
-  Record<RankingStreamModeId, { readonly label: string; readonly subtitle: string }>
+const STREAM_MODE_COPY: Readonly<
+  Record<RankingStreamModeId, { readonly label: readonly [string, string]; readonly subtitle: readonly [string, string] }>
 > = {
   hottest: {
-    label: "Hottest Now",
-    subtitle: "Flagship hits leading live views and reader completion rates",
+    label: ["실시간 인기작", "Popular now"],
+    subtitle: ["지금 조회와 완독 흐름이 가장 활발한 대표 작품", "Series leading current views and completion rates"],
   },
   trending: {
-    label: "Trending New",
-    subtitle: "Series surging in bookmarks and trailer engagement right after release",
+    label: ["주목받는 신작", "Rising new"],
+    subtitle: ["최근 공개 직후 관심과 반응이 빠르게 늘어난 작품", "Series gaining reader interest right after release"],
   },
   completed: {
-    label: "Completed Classics",
-    subtitle: "Top-rated finished series verified through the finale for binge reading",
+    label: ["완결 정주행", "Completed picks"],
+    subtitle: ["결말까지 평점이 고르게 검증된 완결 작품", "Well-rated finished series ready to read straight through"],
   },
   "canvas-rising": {
-    label: "CANVAS Rising",
-    subtitle: "Open-league contenders on track for official serialization promotion",
+    label: ["자유 연재 기대작", "Indie rising"],
+    subtitle: ["창작자 자유 연재 중 독자 호응이 돋보이는 작품", "Creator-published series gaining strong reader support"],
   },
 };
 
@@ -79,21 +79,26 @@ export function RankingPage() {
   const [decayWindow, setDecayWindow] = useState<"24h" | "7d" | "30d">("24h");
   const formulaEngines = {
     "naver-velocity": {
-      label: bt("네이버·라인웹툰 조회 가속도 + 완독률(91%)", "Naver/LINE Velocity + Read-Through (91%)"),
-      summary: bt("Score = 0.55×ΔViews + 0.35×ReadThrough(91%) + 0.10×SuperLike", "Score = 0.55×ΔViews + 0.35×ReadThrough(91%) + 0.10×SuperLike"),
+      label: bt("조회·완독 중심", "Views & completion"),
+      summary: bt("조회·완독·관심 변화를 반영한 순위 기준", "Ranked by recent views, completion, and reader interest"),
     },
     "kakao-waitfree": {
-      label: bt("카카오페이지·픽코마 24h 기다무 충전 전환율(+34%)", "KakaoPage/Piccoma 24h Wait-Free Conversion (+34%)"),
-      summary: bt("Score = 0.45×WaitFreeReturn(24h) + 0.40×PaidPass + 0.15×BingeDepth", "Score = 0.45×WaitFreeReturn(24h) + 0.40×PaidPass + 0.15×BingeDepth"),
+      label: bt("재방문·정주행 중심", "Return & binge depth"),
+      summary: bt("다시 찾는 독자와 연속 열람 흐름을 반영한 순위 기준", "Ranked by returning readers and multi-episode sessions"),
     },
     "anilist-bayesian": {
-      label: bt("AniList·MangaUpdates·MAL 베이지안 가중 평점(WR)", "AniList/MangaUpdates/MAL Bayesian Weighted Rating (WR)"),
-      summary: bt("WR = (v/(v+m))×R + (m/(v+m))×C · 표본 편향 제거 정밀 랭킹", "WR = (v/(v+m))×R + (m/(v+m))×C · Sample-bias corrected"),
+      label: bt("고른 평가 중심", "Balanced ratings"),
+      summary: bt("평가 수와 평점 분포를 고르게 반영한 순위 기준", "Ranked by rating consistency adjusted for sample size"),
     },
     "bilibili-danmaku": {
-      label: bt("빌리빌리·콰이칸 탄막(Danmaku) 밀도 & 열기 지수", "Bilibili/Kuaikan Danmaku Density & Heat Index"),
-      summary: bt("Heat = 0.50×DanmakuPerCut + 0.30×ShareVelocity + 0.20×CoinGift", "Heat = 0.50×DanmakuPerCut + 0.30×ShareVelocity + 0.20×CoinGift"),
+      label: bt("독자 대화·공유 중심", "Reader buzz & shares"),
+      summary: bt("감상 의견과 추천 공유 흐름을 반영한 순위 기준", "Ranked by reader comments and sharing momentum"),
     },
+  } as const;
+  const decayWindowLabels = {
+    "24h": bt("최근 하루", "Past 24 hours"),
+    "7d": bt("최근 7일", "Past 7 days"),
+    "30d": bt("최근 30일", "Past 30 days"),
   } as const;
   const axis: RankAxis =
     RANK_AXES.find((entry) => entry.key === searchParams.get("axis"))?.key ?? "popular";
@@ -107,7 +112,7 @@ export function RankingPage() {
     <PageEntrance variant="slide">
     <Container size="wide" className="ranking-page-layout py-6">
       <header className="mb-3 min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{tx("통합 랭킹")}</h1>
         <p className="mt-1 text-sm text-fg-2">{bt("여덟 가지 관점으로 작품을 찾아보세요.", "Find stories from eight perspectives.")}</p>
       </header>
       <SiteContextualSubNav pathnameOverride="/ranking" className="mb-3" />
@@ -129,15 +134,15 @@ export function RankingPage() {
       <SiteDisclosure
         className="ranking-page-support"
         icon={Calculator}
-        title={bt("랭킹 스트림 · 산식 시뮬레이터", "Ranking streams and formula simulator")}
-        summary={bt("빠른 관점 전환과 산식 설명을 펼쳐보세요.", "Expand quick views and formula explanations.")}
+        title={bt("관점별 모아보기", "Browse ranking views")}
+        summary={bt("원하는 기준으로 순위를 빠르게 전환해 보세요.", "Switch between ranking perspectives.")}
         bodyClassName="p-3 sm:p-4 [&_button]:min-h-11 [&_a]:min-h-11"
       >
-      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-5" />
+      <SiteArtSurfaceSpotlight cardId="nb-ranking-constellation" compact className="mb-4" />
 
       <div
         role="group"
-        aria-label={bt("4대 글로벌 랭킹 스트림", "4-stream ranking selector")}
+        aria-label={bt("주요 순위 모음", "Featured ranking views")}
         data-testid="ranking-rea-stream-modes"
         className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4"
       >
@@ -151,7 +156,7 @@ export function RankingPage() {
                   ? "completed"
                   : "rating";
           const isCurrent = axis === targetAxis;
-          const enStream = STREAM_MODE_EN_COPY[stream.id];
+          const streamCopy = STREAM_MODE_COPY[stream.id];
           return (
             <Link
               key={stream.id}
@@ -159,17 +164,12 @@ export function RankingPage() {
               aria-current={isCurrent ? "page" : undefined}
               className={
                 isCurrent
-                  ? "flex min-h-11 flex-col justify-between gap-1.5 rounded-2xl border border-accent bg-accent/12 p-3.5 text-left shadow-sm transition-colors"
-                  : "flex min-h-11 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-card/75 p-3.5 text-left transition-colors hover:border-accent/45 hover:bg-card"
+                  ? "flex min-h-11 flex-col justify-between gap-1.5 rounded-xl border border-accent bg-accent-soft p-3.5 text-left transition-colors duration-150 motion-reduce:transition-none"
+                  : "flex min-h-11 flex-col justify-between gap-1.5 rounded-xl border border-line bg-card p-3.5 text-left transition-colors duration-150 hover:border-line-strong hover:bg-raised motion-reduce:transition-none"
               }
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-extrabold text-fg">{bt(stream.label, enStream.label)}</span>
-                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                  {stream.badge}
-                </span>
-              </div>
-              <p className="text-[11px] leading-snug text-fg-3">{bt(stream.subtitle, enStream.subtitle)}</p>
+              <span className="text-xs font-semibold text-fg">{bt(...streamCopy.label)}</span>
+              <p className="text-xs leading-snug text-fg-3">{bt(...streamCopy.subtitle)}</p>
             </Link>
           );
         })}
@@ -179,9 +179,9 @@ export function RankingPage() {
         role="group"
         aria-label={bt("랭킹 관점 빠른 전환", "Quick ranking view switcher")}
         data-testid="ranking-quick-axes"
-        className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-card/65 px-3.5 py-2.5"
+        className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-card px-3.5 py-2.5"
       >
-        <span className="text-xs font-bold text-fg-2">{bt("관점 바로가기:", "Quick views:")}</span>
+        <span className="text-xs font-semibold text-fg-2">{bt("관점 바로가기", "Quick views")}</span>
         {RANK_AXES.slice(0, 5).map((entry) => {
           const isCurrent = entry.key === axis;
           return (
@@ -191,8 +191,8 @@ export function RankingPage() {
               aria-current={isCurrent ? "page" : undefined}
               className={
                 isCurrent
-                  ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent px-3.5 py-1.5 text-xs font-bold text-on-accent"
-                  : "inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3.5 py-1.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                  ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent px-3 py-1.5 text-xs font-semibold text-on-accent"
+                  : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               }
             >
               {bt(entry.label, RANK_AXIS_EN_LABEL[entry.key])}
@@ -201,50 +201,56 @@ export function RankingPage() {
         })}
       </div>
 
-      <section
-        aria-label={bt("REA 글로벌 플랫폼 랭킹 산식 및 감쇠 윈도우 시뮬레이터", "REA Global Platform Ranking Formula & Decay Simulator")}
-        data-testid="ranking-rea-formula-simulator-bar"
-        className="mb-5 rounded-2xl border border-line bg-card/80 p-3.5"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-extrabold text-fg">
-            {bt("네이버 · 카카오/픽코마 · AniList/MangaUpdates · 빌리빌리 랭킹 산식 시뮬레이터", "Naver / Kakao·Piccoma / AniList·MangaUpdates / Bilibili Ranking Formula Simulator")}
-          </span>
-          <span data-testid="ranking-rea-formula-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-            {`${formulaEngines[algorithmEngine].summary} · Window(${decayWindow})`}
-          </span>
-        </div>
-        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("랭킹 산식 엔진", "Ranking formula engine")}>
-            {(Object.keys(formulaEngines) as (keyof typeof formulaEngines)[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                data-testid={`ranking-rea-engine-${key}`}
-                aria-pressed={algorithmEngine === key}
-                onClick={() => setAlgorithmEngine(key)}
-                className={`inline-flex min-h-11 items-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${algorithmEngine === key ? "border-accent bg-accent text-on-accent" : "border-line bg-panel text-fg-2 hover:border-accent/50"}`}
-              >
-                {formulaEngines[key].label}
-              </button>
-            ))}
+      <details className="group rounded-xl border border-line bg-card">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+          <span>{bt("집계 기준 보기", "How rankings are weighed")}</span>
+          <ChevronDown size={15} strokeWidth={1.5} aria-hidden="true" className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <section
+          aria-label={bt("집계 기준 보기", "How rankings are weighed")}
+          data-testid="ranking-rea-formula-simulator-bar"
+          className="border-t border-line/70 p-3.5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-fg">
+              {bt("순위 집계 방식", "Ranking criteria")}
+            </span>
+            <span data-testid="ranking-rea-formula-status" className="text-xs font-medium text-fg-2">
+              {`${formulaEngines[algorithmEngine].summary} · ${decayWindowLabels[decayWindow]}`}
+            </span>
           </div>
-          <div className="flex items-center gap-1.5" role="group" aria-label={bt("시간 감쇠 윈도우", "Time decay window")}>
-            {(["24h", "7d", "30d"] as const).map((win) => (
-              <button
-                key={win}
-                type="button"
-                data-testid={`ranking-rea-window-${win}`}
-                aria-pressed={decayWindow === win}
-                onClick={() => setDecayWindow(win)}
-                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${decayWindow === win ? "border-accent bg-accent/15 text-accent" : "border-line bg-panel text-fg-3"}`}
-              >
-                {win}
-              </button>
-            ))}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={bt("집계 관점 선택", "Choose ranking criteria")}>
+              {(Object.keys(formulaEngines) as (keyof typeof formulaEngines)[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  data-testid={`ranking-rea-engine-${key}`}
+                  aria-pressed={algorithmEngine === key}
+                  onClick={() => setAlgorithmEngine(key)}
+                  className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none ${algorithmEngine === key ? "border-accent bg-accent font-semibold text-on-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
+                >
+                  {formulaEngines[key].label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5" role="group" aria-label={bt("집계 기간", "Aggregation period")}>
+              {(["24h", "7d", "30d"] as const).map((win) => (
+                <button
+                  key={win}
+                  type="button"
+                  data-testid={`ranking-rea-window-${win}`}
+                  aria-pressed={decayWindow === win}
+                  onClick={() => setDecayWindow(win)}
+                  className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors duration-150 motion-reduce:transition-none ${decayWindow === win ? "border-accent bg-accent-soft font-semibold text-accent" : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg"}`}
+                >
+                  {decayWindowLabels[win]}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </details>
 
       </SiteDisclosure>
       <SiteDisclosure className="ranking-page-support" title={bt("공유 · 창작으로 이어가기", "Share or start creating")} bodyClassName="flex flex-wrap items-center gap-2">
@@ -252,9 +258,9 @@ export function RankingPage() {
           <Link
             href="/create"
             data-testid="ranking-create-bridge"
-            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-full px-4" })}
+            className={buttonClass({ variant: "solid", size: "sm", className: "min-h-11 gap-1.5 rounded-lg px-4" })}
           >
-            <PenLine size={14} aria-hidden="true" />
+            <PenLine size={14} strokeWidth={1.5} aria-hidden="true" />
             {bt("영감으로 작품 시작", "Start a story")}
           </Link>
           <SharePageButton path="/ranking" text={tx("툰스튜디오 통합 랭킹")} label={tx("랭킹 공유")} />
@@ -262,7 +268,7 @@ export function RankingPage() {
       <nav className="ranking-page-next-actions" aria-label={bt("랭킹 다음 행동", "After the ranking")}>
         {NEXT_STEPS.map((step) => (
           <Link key={step.href} href={step.href} className="ranking-page-next-link">
-            <step.icon size={16} aria-hidden="true" />
+            <step.icon size={16} strokeWidth={1.5} aria-hidden="true" />
             <span>{bt(...step.title)}</span>
             <span className="sr-only">{bt(...step.body)}</span>
           </Link>

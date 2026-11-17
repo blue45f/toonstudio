@@ -4,7 +4,6 @@ import {
   Clapperboard,
   Megaphone,
   MessageCircle,
-  Sparkles,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -76,6 +75,12 @@ const COPY = {
     "오픈 연재 승격 리그 및 창작자 성장 트랙",
     "Open serialization promotion league and creator growth tracks",
   ),
+  leagueEyebrow: defineBilingualText(
+    "communityPage",
+    "leagueEyebrow",
+    "연재 성장 단계",
+    "Serialization growth stages",
+  ),
   leagueHeading: defineBilingualText(
     "communityPage",
     "leagueHeading",
@@ -83,6 +88,8 @@ const COPY = {
     "4-stage creator growth league from Episode 1 to weekly Originals and IP monetization",
   ),
   leaguePromoteCta: defineBilingualText("communityPage", "leaguePromoteCta", "내 작품 홍보 등록", "Register work promotion"),
+  tierStepTemplate: defineBilingualText("communityPage", "tierStepTemplate", "{v0}단계", "Stage {v0}"),
+  tierChallengeBadge: defineBilingualText("communityPage", "tierChallengeBadge", "1단계 · 오픈 연재", "Stage 1 · Open Canvas"),
   tierChallengeLabel: defineBilingualText("communityPage", "tierChallengeLabel", "도전만화 · 오픈 캔버스", "Challenge · Open Canvas"),
   tierChallengeDesc: defineBilingualText(
     "communityPage",
@@ -91,6 +98,7 @@ const COPY = {
     "Open serialization track where anyone publishes Episode 1 and gathers reader feedback",
   ),
   tierChallengeCta: defineBilingualText("communityPage", "tierChallengeCta", "오픈 연재 시작", "Start open series"),
+  tierBestBadge: defineBilingualText("communityPage", "tierBestBadge", "2단계 · 승격 후보", "Stage 2 · Showcase"),
   tierBestLabel: defineBilingualText("communityPage", "tierBestLabel", "베스트도전 · 쇼케이스 승격", "Best Challenge · Showcase"),
   tierBestDesc: defineBilingualText(
     "communityPage",
@@ -99,7 +107,8 @@ const COPY = {
     "Promotion-candidate showcase featuring top works by read-through, ratings, and trailer engagement",
   ),
   tierBestCta: defineBilingualText("communityPage", "tierBestCta", "작품 홍보관 등록", "Submit to showcase"),
-  tierOriginalsLabel: defineBilingualText("communityPage", "tierOriginalsLabel", "정식 요일연재 · ORIGINALS", "Weekly Originals"),
+  tierOriginalsBadge: defineBilingualText("communityPage", "tierOriginalsBadge", "3단계 · 정식 연재", "Stage 3 · Originals"),
+  tierOriginalsLabel: defineBilingualText("communityPage", "tierOriginalsLabel", "정식 요일연재 · 오리지널", "Weekly Originals"),
   tierOriginalsDesc: defineBilingualText(
     "communityPage",
     "tierOriginalsDesc",
@@ -107,6 +116,7 @@ const COPY = {
     "Expand readership through weekly schedules, live rankings, and wait-until-free programming",
   ),
   tierOriginalsCta: defineBilingualText("communityPage", "tierOriginalsCta", "요일연재 편성표", "Weekly calendar"),
+  tierIpBadge: defineBilingualText("communityPage", "tierIpBadge", "4단계 · 수익·IP", "Stage 4 · Revenue & IP"),
   tierIpLabel: defineBilingualText("communityPage", "tierIpLabel", "수익화 · 2차 IP 사업화", "Monetization & IP Expansion"),
   tierIpDesc: defineBilingualText(
     "communityPage",
@@ -115,71 +125,77 @@ const COPY = {
     "Connect paid episodes, patron support, and print/video/game IP adaptations",
   ),
   tierIpCta: defineBilingualText("communityPage", "tierIpCta", "수익·정산 센터", "Revenue center"),
+  reaSupportSummary: defineBilingualText(
+    "communityPage",
+    "reaSupportSummary",
+    "창작 활동 지원 도구",
+    "Creator support tools",
+  ),
   reaLinkTimelapse: defineBilingualText(
     "communityPage",
     "reaLinkTimelapse",
-    "직무별 WIP 타임랩스·pixiv Sketch 라이브",
-    "Role WIP Timelapses & Live Sketch",
+    "작업 과정 타임랩스 갤러리",
+    "Production timelapse gallery",
   ),
   reaLinkHuman: defineBilingualText(
     "communityPage",
     "reaLinkHuman",
-    "인간 순수 창작 (Cara/DeviantArt No-AI)",
-    "Human-Verified Art (No-AI)",
+    "직접 그린 창작물 모아보기",
+    "Hand-drawn creator works",
   ),
   reaLinkAiProvenance: defineBilingualText(
     "communityPage",
     "reaLinkAiProvenance",
-    "AI 보조 투명성·Dribbble 5색 팔레트 스와치",
-    "AI Provenance & 5-Color Swatch",
+    "AI 보조 표기·색상 팔레트 보기",
+    "AI disclosure & color palette",
   ),
   reaLinkMembership: defineBilingualText(
     "communityPage",
     "reaLinkMembership",
-    "팬딩(Fanding)·포스타입·Patreon·FANBOX·Substack 선공개/PSD 티어",
-    "Fanding · Postype · Patreon · FANBOX · Substack PSD Tiers",
+    "창작자 멤버십·선공개 후원",
+    "Creator membership & early access",
   ),
   reaLinkRecruiting: defineBilingualText(
     "communityPage",
     "reaLinkRecruiting",
-    "크레페·크몽·스튜디오 어시스턴트 구인 매칭",
-    "CREPE · Kmong · Studio Assistant Recruiting",
+    "스튜디오 어시스턴트 구인 매칭",
+    "Studio assistant recruiting",
   ),
   reaSimulatorGroup: defineBilingualText(
     "communityPage",
     "reaSimulatorGroup",
-    "크리에이터 수익화·부스·출처증명 시뮬레이터",
-    "Creator monetization, booth, and provenance simulator",
+    "창작 수익·인쇄·저작권 보호 안내",
+    "Creator monetization, print, and provenance guide",
   ),
   reaTrackCommission: defineBilingualText(
     "communityPage",
     "reaTrackCommission",
-    "Skeb·VGen·크레페 무수정 커미션 슬롯",
-    "Skeb · VGen · CREPE Commission Slots",
+    "무수정 리퀘스트·커미션 슬롯",
+    "Request & commission slots",
   ),
   reaTrackTier: defineBilingualText(
     "communityPage",
     "reaTrackTier",
-    "텀블벅·팬딩·DLsite·Fantia 티어 보상",
-    "Tumblbug · Fanding · DLsite · Fantia Tiers",
+    "후원 달성률·멤버십 단계별 보상",
+    "Funding goals & membership tiers",
   ),
   reaTrackBooth: defineBilingualText(
     "communityPage",
     "reaTrackBooth",
-    "코미케·멜론북스·pictSQUARE 300DPI 부스컷",
-    "Comiket · Melonbooks 300DPI Booth Cut",
+    "행사 부스컷·300DPI 인쇄 재단선",
+    "Event booth cut & 300DPI print bleed",
   ),
   reaTrackShield: defineBilingualText(
     "communityPage",
     "reaTrackShield",
-    "Cara No-AI · C2PA · Nightshade 보호",
-    "Cara No-AI · C2PA · Nightshade Shield",
+    "창작 출처 서명·무단 학습 방지",
+    "Provenance signature & training shield",
   ),
   configurationPreview: defineBilingualText("communityPage", "configurationPreview", "구성 미리보기:", "Configuration preview:"),
-  commissionPreview: defineBilingualText("communityPage", "commissionPreview", "Skeb 무수정 리퀘스트 + VGen·크레페 캐릭터 시트 슬롯 예약 구성 예시", "Skeb requests + VGen/Crepe character sheet booking configuration example"),
-  tierPreview: defineBilingualText("communityPage", "tierPreview", "텀블벅·와디즈 달성률 게이지 + 팬딩·DLsite·Fantia PSD 티어 배포 구성 예시", "Tumblbug/Wadiz funding progress + Fanding/DLsite/Fantia PSD tier distribution configuration example"),
-  boothPreview: defineBilingualText("communityPage", "boothPreview", "코미케 써클컷 + 멜론북스·suzuri 300DPI CMYK 3mm 재단선 검토 예시", "Comiket booth artwork + Melonbooks/suzuri 300DPI CMYK 3mm bleed review example"),
-  protectionPreview: defineBilingualText("communityPage", "protectionPreview", "Cara No-AI 타임랩스 + C2PA 서명 매니페스트 + Glaze/Nightshade 보호 방식 검토 예시", "Cara No-AI timelapse + C2PA signature manifest + Glaze/Nightshade protection approach review example"),
+  commissionPreview: defineBilingualText("communityPage", "commissionPreview", "무수정 리퀘스트와 캐릭터 시트 작업 슬롯 예약 구성 예시", "Request and character sheet slot booking configuration example"),
+  tierPreview: defineBilingualText("communityPage", "tierPreview", "후원 달성률 게이지와 원본 파일 단계별 배포 구성 예시", "Funding progress gauge and tiered source file distribution example"),
+  boothPreview: defineBilingualText("communityPage", "boothPreview", "행사 부스 소개 컷과 300DPI 인쇄용 3mm 재단선 검토 예시", "Event booth artwork and 300DPI 3mm print bleed review example"),
+  protectionPreview: defineBilingualText("communityPage", "protectionPreview", "작업 과정 타임랩스와 창작 출처 서명·무단 학습 방지 검토 예시", "Drawing timelapse and provenance signature protection review example"),
   docTitle: defineBilingualText(
     "communityPage",
     "docTitle",
@@ -189,8 +205,8 @@ const COPY = {
   heroEyebrow: defineBilingualText(
     "communityPage",
     "heroEyebrow",
-    "COMMUNITY · 이야기가 우리를 잇다",
-    "COMMUNITY · STORIES BRING US TOGETHER",
+    "커뮤니티 · 이야기가 우리를 잇다",
+    "Community · Stories bring us together",
   ),
   heroTitle: defineBilingualText(
     "communityPage",
@@ -234,108 +250,37 @@ const COPY = {
   promoteAmateur: defineBilingualText("communityPage", "promoteAmateur", "아마추어 작가 찾기", "Find amateur creators"),
   promoteTrailer: defineBilingualText("communityPage", "promoteTrailer", "트레일러 상영관", "Trailer theater"),
   promoteNew: defineBilingualText("communityPage", "promoteNew", "내 작품 소개하기", "Introduce my work"),
-  directoriesEyebrow: defineBilingualText(
-    "communityPage",
-    "directoriesEyebrow",
-    "FIND YOUR CONVERSATION",
-    "FIND YOUR CONVERSATION",
-  ),
-  directoriesTitle: defineBilingualText(
-    "communityPage",
-    "directoriesTitle",
-    "어떤 이야기부터 나눌까요?",
-    "Which story will you talk about first?",
-  ),
-  directoriesCta: defineBilingualText(
-    "communityPage",
-    "directoriesCta",
-    "영감을 내 웹툰으로",
-    "Turn inspiration into my webtoon",
-  ),
+  directoriesEyebrow: defineBilingualText("communityPage", "directoriesEyebrow", "대화 주제 찾기", "Find your conversation"),
+  directoriesTitle: defineBilingualText("communityPage", "directoriesTitle", "어떤 이야기부터 나눌까요?", "Which story will you talk about first?"),
+  directoriesCta: defineBilingualText("communityPage", "directoriesCta", "영감을 내 웹툰으로", "Turn inspiration into my webtoon"),
   directoriesDescription: defineBilingualText(
     "communityPage",
     "directoriesDescription",
     "관심 있는 작품이나 작가, 모임부터 들어가 지금 오가는 대화를 확인하세요.",
     "Start from a work, creator or club you care about and see what people are talking about.",
   ),
-  promoteEyebrow: defineBilingualText("communityPage", "promoteEyebrow", "SHOWCASE", "SHOWCASE"),
-  promoteAmateurBody: defineBilingualText(
-    "communityPage",
-    "promoteAmateurBody",
-    "첫 연재를 시작한 작가의 소개 글을 모아 봅니다.",
-    "Browse introductions from creators starting their first series.",
-  ),
-  promoteTrailerBody: defineBilingualText(
-    "communityPage",
-    "promoteTrailerBody",
-    "작품 소개 영상과 제작 과정 영상을 모아 봅니다.",
-    "Watch work trailers and making-of videos in one place.",
-  ),
-  promoteNewBody: defineBilingualText(
-    "communityPage",
-    "promoteNewBody",
-    "내 작품 소개와 홍보 영상을 올리고 피드백을 받아요.",
-    "Post your work intro or trailer and collect feedback.",
-  ),
-  promoteStudio: defineBilingualText(
-    "communityPage",
-    "promoteStudio",
-    "홍보 영상 스튜디오",
-    "Promo video studio",
-  ),
-  promoteStudioBody: defineBilingualText(
-    "communityPage",
-    "promoteStudioBody",
-    "웹툰 컷으로 10·15·30·60초 예고편과 세로 쇼츠를 바로 만듭니다.",
-    "Turn webtoon panels into 10, 15, 30, or 60-second trailers and vertical shorts.",
-  ),
-  promoteStudioCta: defineBilingualText(
-    "communityPage",
-    "promoteStudioCta",
-    "예고편 만들기",
-    "Create trailer",
-  ),
+  promoteEyebrow: defineBilingualText("communityPage", "promoteEyebrow", "작품 쇼케이스", "Work showcase"),
+  promoteAmateurBody: defineBilingualText("communityPage", "promoteAmateurBody", "첫 연재를 시작한 작가의 소개 글을 모아 봅니다.", "Browse introductions from creators starting their first series."),
+  promoteTrailerBody: defineBilingualText("communityPage", "promoteTrailerBody", "작품 소개 영상과 제작 과정 영상을 모아 봅니다.", "Watch work trailers and making-of videos in one place."),
+  promoteNewBody: defineBilingualText("communityPage", "promoteNewBody", "내 작품 소개와 홍보 영상을 올리고 피드백을 받아요.", "Post your work intro or trailer and collect feedback."),
+  promoteStudio: defineBilingualText("communityPage", "promoteStudio", "홍보 영상 스튜디오", "Promo video studio"),
+  promoteStudioBody: defineBilingualText("communityPage", "promoteStudioBody", "웹툰 컷으로 10·15·30·60초 예고편과 세로 쇼츠를 바로 만듭니다.", "Turn webtoon panels into 10, 15, 30, or 60-second trailers and vertical shorts."),
+  promoteStudioCta: defineBilingualText("communityPage", "promoteStudioCta", "예고편 만들기", "Create trailer"),
   promoteOpen: defineBilingualText("communityPage", "promoteOpen", "둘러보기", "Browse"),
   unifiedFeedRegion: defineBilingualText("communityPage", "unifiedFeedRegion", "통합 커뮤니티 피드", "Unified community feed"),
   unifiedFeedLabel: defineBilingualText("communityPage", "unifiedFeedLabel", "통합 커뮤니티 피드", "Unified community feed"),
-  scopeEyebrow: defineBilingualText("communityPage", "scopeEyebrow", "COMMUNITY DIRECTORY", "COMMUNITY DIRECTORY"),
+  scopeEyebrow: defineBilingualText("communityPage", "scopeEyebrow", "커뮤니티", "Community"),
   scopeTitleTemplate: defineBilingualText("communityPage", "scopeTitleTemplate", "{v0} 커뮤니티", "{v0} community"),
-  scopeDocTitleTemplate: defineBilingualText(
-    "communityPage",
-    "scopeDocTitleTemplate",
-    "{v0} 커뮤니티 · 툰스튜디오",
-    "{v0} community · ToonStudio",
-  ),
-  scopeNotFoundTitle: defineBilingualText(
-    "communityPage",
-    "scopeNotFoundTitle",
-    "커뮤니티 범주를 찾을 수 없어요",
-    "We couldn't find that community category",
-  ),
+  scopeDocTitleTemplate: defineBilingualText("communityPage", "scopeDocTitleTemplate", "{v0} 커뮤니티 · 툰스튜디오", "{v0} community · ToonStudio"),
+  scopeNotFoundTitle: defineBilingualText("communityPage", "scopeNotFoundTitle", "커뮤니티 범주를 찾을 수 없어요", "We couldn't find that community category"),
   scopeNotFoundCta: defineBilingualText("communityPage", "scopeNotFoundCta", "통합 커뮤니티로 이동", "Go to the unified community"),
 } as const;
 
 const LEAGUE_TIER_COPY_KEYS = {
-  challenge: {
-    label: COPY.tierChallengeLabel,
-    description: COPY.tierChallengeDesc,
-    cta: COPY.tierChallengeCta,
-  },
-  "best-challenge": {
-    label: COPY.tierBestLabel,
-    description: COPY.tierBestDesc,
-    cta: COPY.tierBestCta,
-  },
-  originals: {
-    label: COPY.tierOriginalsLabel,
-    description: COPY.tierOriginalsDesc,
-    cta: COPY.tierOriginalsCta,
-  },
-  "creator-101": {
-    label: COPY.tierIpLabel,
-    description: COPY.tierIpDesc,
-    cta: COPY.tierIpCta,
-  },
+  challenge: { badge: COPY.tierChallengeBadge, label: COPY.tierChallengeLabel, description: COPY.tierChallengeDesc, cta: COPY.tierChallengeCta },
+  "best-challenge": { badge: COPY.tierBestBadge, label: COPY.tierBestLabel, description: COPY.tierBestDesc, cta: COPY.tierBestCta },
+  originals: { badge: COPY.tierOriginalsBadge, label: COPY.tierOriginalsLabel, description: COPY.tierOriginalsDesc, cta: COPY.tierOriginalsCta },
+  "creator-101": { badge: COPY.tierIpBadge, label: COPY.tierIpLabel, description: COPY.tierIpDesc, cta: COPY.tierIpCta },
 } as const;
 
 function parseScope(raw: string | undefined): Exclude<FanCafeScopeFilter, "all" | "cafe"> | null {
@@ -546,16 +491,16 @@ export function CommunityPage() {
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-accent">
-                  OPEN SERIALIZATION LEAGUE · CHALLENGE → BEST → ORIGINALS → IP BIZ
+                <span className="text-xs font-semibold text-accent">
+                  {t(COPY.leagueEyebrow)}
                 </span>
-                <h2 className="mt-0.5 text-sm font-bold text-fg sm:text-base">
+                <h2 className="mt-0.5 text-sm font-semibold text-fg sm:text-base">
                   {t(COPY.leagueHeading)}
                 </h2>
               </div>
               <Link
                 href="/community/promote"
-                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5 text-xs font-bold" })}
+                className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 rounded-full px-3.5 text-xs font-semibold" })}
               >
                 {t(COPY.leaguePromoteCta)}
                 <ArrowRight size={13} aria-hidden="true" />
@@ -576,17 +521,17 @@ export function CommunityPage() {
                         style={{ backgroundImage: `url(${LEAGUE_TIER_IMAGES[tier.id] ?? "/assets/site-experience/site-art-v1/cards/nb-community-plaza-640.webp"})` }}
                       />
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-extrabold text-accent">{tier.badge}</span>
-                        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
-                          STEP {tier.stepNumber}
+                        <span className="text-xs font-semibold text-accent">{t(copyKeys.badge)}</span>
+                        <span className="rounded-md bg-raised px-2 py-0.5 text-[11px] font-medium text-fg-2 tabular-nums">
+                          {formatI18nTemplate(t(COPY.tierStepTemplate), { v0: String(tier.stepNumber) })}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs font-extrabold text-fg sm:text-sm">{t(copyKeys.label)}</p>
+                      <p className="mt-1 text-xs font-semibold text-fg sm:text-sm">{t(copyKeys.label)}</p>
                       <p className="mt-1 text-[11px] leading-snug text-fg-3">{t(copyKeys.description)}</p>
                     </div>
                     <Link
                       href={tier.route}
-                      className="inline-flex min-h-11 items-center gap-1 text-xs font-bold text-accent hover:underline"
+                      className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-accent hover:underline"
                     >
                       {t(copyKeys.cta)}
                       <ArrowRight size={12} aria-hidden="true" />
@@ -612,7 +557,7 @@ export function CommunityPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <SiteLinkCard
                 href="/community/promote?stage=amateur"
-                icon={Sparkles}
+                icon={UsersRound}
                 title={t(COPY.promoteAmateur)}
                 description={t(COPY.promoteAmateurBody)}
                 cta={t(COPY.promoteOpen)}
@@ -639,69 +584,71 @@ export function CommunityPage() {
                 cta={t(COPY.promoteNew)}
               />
             </div>
-            <div
-              data-testid="community-rea-creator-showcase-bar"
-              className="mt-4 space-y-2.5 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
-            >
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="font-extrabold text-accent">
-                  CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE · DRIBBBLE · PATREON · POSTYPE · FANDING · SUBSTACK · DLSITE · COMIKET
-                </span>
-                {([
-                  { href: "/community/timelapses", label: COPY.reaLinkTimelapse },
-                  { href: "/community?provenance=human-verified", label: COPY.reaLinkHuman },
-                  { href: "/community?provenance=ai-assisted", label: COPY.reaLinkAiProvenance },
-                  { href: "/creator/membership", label: COPY.reaLinkMembership },
-                  { href: "/team/recruiting", label: COPY.reaLinkRecruiting },
-                ] as const).map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 text-[11px] font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
-                  >
-                    {t(item.label)}
-                  </Link>
-                ))}
-              </div>
+            <details className="mt-4 rounded-2xl border border-line bg-card/75 px-4 py-1 open:pb-3">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 py-2 text-xs font-semibold text-fg-2 [&::-webkit-details-marker]:hidden">
+                <span>{t(COPY.reaSupportSummary)}</span>
+              </summary>
               <div
-                data-testid="community-rea-interactive-workbench"
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-panel/80 px-3 py-2"
+                data-testid="community-rea-creator-showcase-bar"
+                className="space-y-2.5 border-t border-line/70 pt-3 text-xs"
               >
-                <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t(COPY.reaSimulatorGroup)}>
-                  <span className="text-[11px] font-extrabold text-accent">{t(COPY.configurationPreview)}</span>
+                <div className="flex flex-wrap items-center gap-1.5">
                   {([
-                    { id: "skeb-vgen-commission", label: COPY.reaTrackCommission },
-                    { id: "tumblbug-fantia-tier", label: COPY.reaTrackTier },
-                    { id: "comiket-booth-cut", label: COPY.reaTrackBooth },
-                    { id: "c2pa-nightshade-shield", label: COPY.reaTrackShield },
-                  ] as const).map((track) => (
-                    <button
-                      key={track.id}
-                      type="button"
-                      data-testid={`community-rea-track-${track.id}`}
-                      aria-pressed={activeReaTrack === track.id}
-                      onClick={() => setActiveReaTrack(track.id)}
-                      className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                        activeReaTrack === track.id
-                          ? "bg-accent text-on-accent"
-                          : "border border-line bg-card text-fg-2 hover:border-accent/45"
-                      }`}
+                    { href: "/community/timelapses", label: COPY.reaLinkTimelapse },
+                    { href: "/community?provenance=human-verified", label: COPY.reaLinkHuman },
+                    { href: "/community?provenance=ai-assisted", label: COPY.reaLinkAiProvenance },
+                    { href: "/creator/membership", label: COPY.reaLinkMembership },
+                    { href: "/team/recruiting", label: COPY.reaLinkRecruiting },
+                  ] as const).map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="inline-flex min-h-11 items-center rounded-xl border border-line bg-panel px-3 text-[11px] font-medium text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
                     >
-                      {t(track.label)}
-                    </button>
+                      {t(item.label)}
+                    </Link>
                   ))}
                 </div>
-                <span data-testid="community-rea-active-track-summary" className="text-[11px] font-semibold text-fg-2">
-                  {activeReaTrack === "skeb-vgen-commission"
-                    ? t(COPY.commissionPreview)
-                    : activeReaTrack === "tumblbug-fantia-tier"
-                      ? t(COPY.tierPreview)
-                      : activeReaTrack === "comiket-booth-cut"
-                        ? t(COPY.boothPreview)
-                        : t(COPY.protectionPreview)}
-                </span>
+                <div
+                  data-testid="community-rea-interactive-workbench"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-panel/80 px-3 py-2"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t(COPY.reaSimulatorGroup)}>
+                    <span className="text-[11px] font-semibold text-fg-2">{t(COPY.configurationPreview)}</span>
+                    {([
+                      { id: "skeb-vgen-commission", label: COPY.reaTrackCommission },
+                      { id: "tumblbug-fantia-tier", label: COPY.reaTrackTier },
+                      { id: "comiket-booth-cut", label: COPY.reaTrackBooth },
+                      { id: "c2pa-nightshade-shield", label: COPY.reaTrackShield },
+                    ] as const).map((track) => (
+                      <button
+                        key={track.id}
+                        type="button"
+                        data-testid={`community-rea-track-${track.id}`}
+                        aria-pressed={activeReaTrack === track.id}
+                        onClick={() => setActiveReaTrack(track.id)}
+                        className={`inline-flex min-h-11 items-center rounded-xl px-3 text-[11px] font-semibold transition-colors ${
+                          activeReaTrack === track.id
+                            ? "bg-accent text-on-accent"
+                            : "border border-line bg-card text-fg-2 hover:border-accent/45"
+                        }`}
+                      >
+                        {t(track.label)}
+                      </button>
+                    ))}
+                  </div>
+                  <span data-testid="community-rea-active-track-summary" className="text-[11px] font-medium text-fg-2">
+                    {activeReaTrack === "skeb-vgen-commission"
+                      ? t(COPY.commissionPreview)
+                      : activeReaTrack === "tumblbug-fantia-tier"
+                        ? t(COPY.tierPreview)
+                        : activeReaTrack === "comiket-booth-cut"
+                          ? t(COPY.boothPreview)
+                          : t(COPY.protectionPreview)}
+                  </span>
+                </div>
               </div>
-            </div>
+            </details>
           </Section>
         </CommunityDisclosure>
       ) : null}
@@ -739,7 +686,7 @@ export function CommunityScopePage() {
   if (!scope) {
     return (
       <Container size="wide" className="py-10 sm:py-14">
-        <SitePageHeader surface="plain" icon={UsersRound} eyebrow="COMMUNITY" title={t(COPY.scopeNotFoundTitle)} actions={backToCommunity} />
+        <SitePageHeader surface="plain" icon={UsersRound} eyebrow={t(COPY.scopeEyebrow)} title={t(COPY.scopeNotFoundTitle)} actions={backToCommunity} />
       </Container>
     );
   }

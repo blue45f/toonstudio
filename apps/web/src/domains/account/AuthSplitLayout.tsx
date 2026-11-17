@@ -41,14 +41,11 @@ export function AuthSplitLayout({
               ToonStudio
             </p>
           </div>
-          <p className="mt-4 hidden max-w-md font-display text-[1.55rem] font-bold leading-snug tracking-[-0.02em] sm:block">
+          <p className="mt-4 hidden max-w-md font-display text-[1.55rem] font-semibold leading-snug tracking-[-0.02em] sm:block">
             {bt(
               "상상하는 모든 이야기가, 여기서 작품이 됩니다",
               "Every story you imagine becomes a work here"
             )}
-          </p>
-          <p className="mt-2 hidden text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/70 sm:block">
-            Story comes to life
           </p>
         </div>
       </div>

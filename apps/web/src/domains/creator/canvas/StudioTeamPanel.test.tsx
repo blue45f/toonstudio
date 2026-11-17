@@ -156,7 +156,7 @@ describe("StudioTeamPanel shell and first-use states", () => {
     expect(html).toContain("로그인이 필요해요");
     expect(html).toContain("size-11");
     expect(html).toContain("팀 작업 공간");
-    expect(html).toContain("TEAM COLLABORATION");
+    expect(html).not.toContain("TEAM COLLABORATION");
     expect(html).toContain("사람·권한");
     expect(html).toContain("함께 작업");
   });
@@ -180,7 +180,9 @@ describe("StudioTeamPanel shell and first-use states", () => {
 
     expect(html).toContain("bottom-[calc(7rem+env(safe-area-inset-bottom))]");
     expect(html).toContain("z-[90]");
-    expect(html).toContain("w-[100dvw]");
+    expect(html).toContain("inset-0");
+    expect(html).toContain("w-full");
+    expect(html).not.toContain("w-[100dvw]");
     expect(html).toContain("max-h-[min(72dvh,calc(100dvh-7.75rem-env(safe-area-inset-top)))]");
     expect(html).toContain("sm:inset-y-0");
     expect(html).toContain("sm:w-[26rem]");

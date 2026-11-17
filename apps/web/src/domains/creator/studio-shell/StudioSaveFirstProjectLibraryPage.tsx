@@ -405,8 +405,8 @@ export function StudioSaveFirstProjectLibraryPage({
       <Container size="wide" className="py-7 sm:py-11">
         <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-[0.68rem] font-black uppercase tracking-[0.18em] text-accent">TOONSTUDIO</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-fg sm:text-4xl">{bt(VIEW_LABELS[view].ko, VIEW_LABELS[view].en)}</h1>
+            <p className="text-xs font-semibold text-accent">{bt("내 작업 공간", "Workspace")}</p>
+            <h1 className="mt-1.5 text-3xl font-bold tracking-tight text-fg sm:text-4xl">{bt(VIEW_LABELS[view].ko, VIEW_LABELS[view].en)}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fg-2 sm:text-base">
               {bt(VIEW_DESCRIPTIONS[view].ko, VIEW_DESCRIPTIONS[view].en)}
             </p>

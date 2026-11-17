@@ -206,10 +206,10 @@
 .studio-character-guide__stage-dots > span { width: 0.625rem; height: 0.625rem; border-radius: 999px; background: var(--illustrated-3d-edge, var(--color-line-strong)); }
 .studio-character-guide__stage-dots > span:first-child { background: var(--illustrated-3d-accent, var(--color-accent)); }
 .studio-character-guide__stage-label {
-  color: var(--color-fg-3);
-  font-size: 0.625rem;
-  font-weight: 750;
-  letter-spacing: 0.14em;
+  color: var(--color-fg-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 .studio-character-guide__stage-strip {
   display: flex;

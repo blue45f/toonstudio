@@ -22,11 +22,11 @@ export function ProductionCollabHubRbacCard({
   return (
     <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-7" data-testid="collab-pillar-2-rbac">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <ShieldCheck size={16} className="text-accent" aria-hidden="true" />
           {bt("② 웹툰 4대 직무별 권한 & 레이어 보호 (RBAC)", "2. Webtoon 4-Role RBAC & Layer Protection")}
         </h3>
-        <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 text-[0.68rem] font-bold text-fg-2">
+        <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 text-[0.68rem] font-semibold text-fg-2">
           <Lock size={12} className="text-accent" aria-hidden="true" />
           {bt(activePreset.layerGuardKo, activePreset.layerGuardEn)}
         </span>
@@ -53,7 +53,7 @@ export function ProductionCollabHubRbacCard({
                   : "border-line bg-panel text-fg-2 hover:bg-raised hover:text-fg",
               )}
             >
-              <strong className="text-xs font-black text-fg">{bt(preset.titleKo, preset.titleEn)}</strong>
+              <strong className="text-xs font-semibold text-fg">{bt(preset.titleKo, preset.titleEn)}</strong>
               <span className="mt-1 text-[0.68rem] leading-4 text-fg-2">{bt(preset.summaryKo, preset.summaryEn)}</span>
             </button>
           );
@@ -101,7 +101,7 @@ export function ProductionCollabHubTimelineSection({
   return (
     <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-5" data-testid="collab-pillar-5-history">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <History size={16} className="text-accent" aria-hidden="true" />
           {bt("⑤ 수정 이력 타임라인 (안전 복원)", "5. Revision Timeline & Safe Restore")}
         </h3>
@@ -110,7 +110,7 @@ export function ProductionCollabHubTimelineSection({
           data-testid="collab-hub-save-snapshot"
           disabled={!canSaveCheckpoint}
           onClick={onSaveCheckpoint}
-          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 gap-1 px-2.5 text-[0.7rem]" })}
+          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1 px-3 text-xs" })}
         >
           <Save size={13} aria-hidden="true" />
           {bt("스냅샷 보관", "Save snapshot")}
@@ -137,28 +137,28 @@ export function ProductionCollabHubTimelineSection({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <strong className="text-xs font-black text-fg">{item.versionId}</strong>
+                  <strong className="text-xs font-semibold tabular-nums text-fg">{item.versionId}</strong>
                   {isLatest ? (
-                    <span className="rounded-full border border-good/35 bg-good/10 px-2 py-0.5 text-[0.625rem] font-bold text-good">
+                    <span className="rounded-full border border-good/35 bg-good/10 px-2 py-0.5 text-[0.625rem] font-semibold text-good">
                       {bt("최신본", "Latest")}
                     </span>
                   ) : (
-                    <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.625rem] font-semibold text-fg-3">
+                    <span className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.625rem] font-medium text-fg-3">
                       {bt("이전본", "Older")}
                     </span>
                   )}
                   {!isLatest && (item.status === "approved" || item.decisions.some((d) => d.decision === "approved")) ? (
                     <span
                       data-stale-approval-badge={item.versionId}
-                      className="rounded-full border border-warning/45 bg-warning-soft/20 px-2 py-0.5 text-[0.625rem] font-bold text-warning"
+                      className="rounded-full border border-warning/45 bg-warning-soft/20 px-2 py-0.5 text-[0.625rem] font-semibold text-warning"
                     >
                       {bt("구버전 승인 · 최신본 승인 아님", "Older rev. approval · not latest")}
                     </span>
                   ) : null}
                 </div>
-                <span className="text-[0.65rem] text-fg-3">{item.updatedAt.slice(0, 16).replace("T", " ")}</span>
+                <span className="text-[0.65rem] tabular-nums text-fg-3">{item.updatedAt.slice(0, 16).replace("T", " ")}</span>
               </div>
-              <p className="mt-1 text-xs font-semibold text-fg-2">
+              <p className="mt-1 text-xs font-medium text-fg-2">
                 {meta ? `${meta.authorKo} — ${bt(meta.memoKo, meta.memoEn)}` : bt(`보관된 핀 스레드 ${item.threads.length}건 스냅샷`, `Saved snapshot (${item.threads.length} pin threads)`)}
               </p>
               <div className="mt-2 flex flex-wrap items-center justify-end gap-1.5">
@@ -167,15 +167,15 @@ export function ProductionCollabHubTimelineSection({
                   data-testid={`collab-hub-pin-view-${item.versionId}`}
                   aria-pressed={isViewed}
                   onClick={() => onPinViewRevision(item.versionId)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-line bg-card px-2 py-1 text-[0.68rem] font-semibold text-fg-2 hover:text-fg"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:text-fg"
                 >
-                  <Eye size={11} aria-hidden="true" />
+                  <Eye size={12} aria-hidden="true" />
                   {isViewed ? bt("열람 중", "Viewing") : bt("고정 열람", "Pin view")}
                 </button>
                 <button
                   type="button"
                   onClick={onCompareOnion}
-                  className="rounded-lg border border-line bg-card px-2 py-1 text-[0.68rem] font-semibold text-fg-2 hover:text-fg"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 hover:text-fg"
                 >
                   {bt("어니언스킨 비교", "Compare")}
                 </button>
@@ -184,7 +184,7 @@ export function ProductionCollabHubTimelineSection({
                   data-testid={`collab-hub-restore-${item.versionId}`}
                   disabled={!canRestoreHistory}
                   onClick={() => onRestoreRevision(item.versionId)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-accent/40 bg-accent-soft px-2.5 py-1 text-[0.68rem] font-bold text-fg hover:bg-raised disabled:opacity-45"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-fg hover:bg-raised disabled:opacity-45"
                 >
                   <RotateCcw size={12} aria-hidden="true" />
                   {bt("안전 복원", "Safe restore")}

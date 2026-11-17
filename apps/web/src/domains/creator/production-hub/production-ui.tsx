@@ -97,10 +97,10 @@ export function ProductionMetric({
   return (
     <div className={cn("rounded-2xl border p-3.5", SURFACE_TONE_CLASSES[tone])}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[0.6875rem] font-bold uppercase tracking-[0.12em] text-fg-3">{label}</p>
+        <p className="text-xs font-medium text-fg-3">{label}</p>
         <Icon className="size-4 text-fg-3" aria-hidden="true" />
       </div>
-      <p className="mt-2 text-2xl font-black tracking-tight text-fg">{value}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-fg">{value}</p>
       <p className="mt-1 text-xs leading-relaxed text-fg-2">{detail}</p>
     </div>
   );
@@ -181,7 +181,7 @@ export function ProductionAvatar({
       title={name}
       data-avatar-kind={showPhoto ? "photo" : "monogram"}
       className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-black ring-2 ring-card",
+        "inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold ring-2 ring-card",
         sizeClass,
         showPhoto ? "bg-raised" : AVATAR_TONES[avatarToneIndex(name)],
         className,

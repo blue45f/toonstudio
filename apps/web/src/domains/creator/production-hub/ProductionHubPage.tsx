@@ -94,7 +94,7 @@ function ProjectError({ message, refreshing, onRefresh }: { readonly message: st
       <div role="alert" className="mx-auto max-w-4xl rounded-2xl border border-bad/30 bg-bad/10 p-6">
         <div className="grid items-center gap-6 sm:grid-cols-[minmax(0,1fr)_15rem]">
           <div>
-            <h1 className="font-bold">{bt("프로젝트를 열 수 없습니다", "Can't open this project")}</h1>
+            <h1 className="font-semibold [word-break:keep-all]">{bt("프로젝트를 열 수 없습니다", "Can't open this project")}</h1>
             <p className="mt-2 text-sm text-fg-2">{message}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" disabled={refreshing} onClick={onRefresh} className={buttonClass({ variant: "outline", className: "min-h-11 gap-1.5" })}>

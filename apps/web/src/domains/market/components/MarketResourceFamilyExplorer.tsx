@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 
 import { MARKET_FAMILY_ART } from "../models/market-family-art";
 import {
@@ -98,10 +98,10 @@ function FamilyCard({
       <div className="relative mt-auto pt-4">
         <Link
           href={marketResourceBrowseHref(first)}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-accent-soft px-3 py-2 text-sm font-bold text-accent transition-colors hover:bg-accent hover:text-on-accent"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-accent-soft px-3 py-2 text-sm font-semibold text-accent transition-colors hover:bg-accent hover:text-on-accent"
         >
-          <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="min-w-0 [overflow-wrap:anywhere]">{bt(`${family.label} 둘러보기`, `Browse ${family.labelEn}`)}</span>
+          <ArrowRight className="size-3.5 shrink-0" aria-hidden="true" />
         </Link>
       </div>
     </article>
@@ -115,8 +115,8 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
     <section className={cn("min-w-0", className)} aria-labelledby="market-resource-family-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow text-accent">Resource Library</p>
-          <h2 id="market-resource-family-title" className="mt-1 text-xl font-bold text-fg sm:text-2xl">{bt("장면을 만들 순서대로 고르세요", "Pick in the order you build a scene")}</h2>
+          <p className="text-xs font-semibold text-accent">{bt("제작 단계별 소재", "Materials by stage")}</p>
+          <h2 id="market-resource-family-title" className="mt-1 text-xl font-semibold text-fg sm:text-2xl">{bt("장면을 만들 순서대로 고르세요", "Pick in the order you build a scene")}</h2>
           <p className="mt-1.5 max-w-3xl break-keep text-sm leading-6 text-fg-2">
             {bt(
               "템플릿부터 배경, 브러시까지 필요한 소재를 찾아보세요.",
@@ -161,7 +161,7 @@ export function MarketResourceFamilyExplorer({ className, compact = false }: Mar
         label={bt("리소스 작업군", "Resource families")}
         ordered
         className="mt-5 gap-3"
-        columns="sm:grid-cols-2 xl:grid-cols-3"
+        columns="sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3"
         itemClassName="w-[min(82vw,20rem)]"
       >
         {MARKET_RESOURCE_FAMILIES.map((family) => (

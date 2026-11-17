@@ -28,14 +28,9 @@ export function ShowcaseHero() {
       aria-labelledby="showcase-hero-title"
       className="relative isolate mb-6 overflow-hidden rounded-3xl border border-line bg-panel/60 p-5 sm:p-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-center lg:gap-8"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 -top-28 -z-10 size-80 rounded-full opacity-70 blur-3xl"
-        style={{ background: "radial-gradient(circle, color-mix(in oklch, var(--color-accent) 30%, transparent), transparent 70%)" }}
-      />
       <div className="min-w-0">
-        <p className="eyebrow text-accent">CREATOR SHOWCASE</p>
-        <h1 id="showcase-hero-title" className="mt-2 text-balance break-keep text-3xl font-black tracking-tight text-fg sm:text-4xl">
+        <p className="text-xs font-semibold text-accent">{bt("작품 둘러보기", "Creator gallery")}</p>
+        <h1 id="showcase-hero-title" className="mt-2 text-balance break-keep text-3xl font-bold tracking-tight text-fg sm:text-4xl">
           {bt("창작 갤러리", "Creator gallery")}
         </h1>
         <p className="mt-2 max-w-xl text-pretty break-keep text-base leading-7 text-fg-2">
@@ -45,7 +40,7 @@ export function ShowcaseHero() {
           )}
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <Link href="/studio" className={buttonClass({ size: "md", variant: "solid", className: "gap-1.5 shadow-lg shadow-accent/20" })}>
+          <Link href="/studio" className={buttonClass({ size: "md", variant: "solid", className: "gap-1.5" })}>
             <PenLine size={16} aria-hidden />
             {bt("웹툰 그리기", "Draw a webtoon")}
             <ArrowRight size={16} aria-hidden />

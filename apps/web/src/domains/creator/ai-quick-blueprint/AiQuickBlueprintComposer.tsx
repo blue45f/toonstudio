@@ -4,7 +4,6 @@ import {
   FileText,
   Plus,
   RefreshCw,
-  Sparkles,
   Users,
   Wand2,
 } from "lucide-react";
@@ -253,29 +252,28 @@ export function AiQuickBlueprintComposer({
       data-testid="ai-quick-blueprint-composer"
       aria-label={bt("AI 자동 콘티·대사 메이커", "AI Storyboard & Dialogue Auto-Composer")}
       className={cn(
-        "mt-6 rounded-2xl border border-accent/40 bg-gradient-to-br from-panel via-card to-panel p-4 shadow-sm sm:p-5",
+        "mt-6 rounded-2xl border border-line bg-panel/50 p-4 sm:p-5",
         className,
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-2xl">
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-accent">
-            <Wand2 size={13} aria-hidden="true" />
-            {bt("AI 자동 콘티 · 대사 메이커", "AI AUTO STORYBOARD & SCRIPT")}
+          <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
+            <Wand2 size={14} aria-hidden="true" />
+            {bt("콘티·대사 초안 도구", "Storyboard & dialogue draft")}
           </p>
           <h2 className="mt-1 text-base font-bold text-fg [word-break:keep-all] sm:text-lg">
             {bt(
-              "한 줄만 적거나 추천 소재를 누르면, 컷 구성·카메라 구도·말풍선 대사를 바로 짜드려요",
-              "Type one line or tap a spark to auto-compose panels, camera shots, and dialogue",
+              "한 줄만 적거나 예시 소재를 고르면 컷 구성과 말풍선 대사 초안을 만들어 드려요",
+              "Enter one line or pick an example to draft panel layouts and dialogue",
             )}
           </h2>
         </div>
         {blueprint ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/35 bg-accent-soft px-3 py-1 text-xs font-bold text-accent">
-            <Sparkles size={12} aria-hidden="true" />
+          <span className="inline-flex items-center rounded-md border border-line bg-canvas px-2.5 py-1 text-xs font-medium text-fg-2">
             {blueprint.source === "cloud-ai"
               ? bt("클라우드 AI 윤문 적용됨", "Cloud AI Polished")
-              : bt("즉시 스마트 콘티 설계됨", "Smart Blueprint Ready")}
+              : bt("콘티 초안 준비됨", "Blueprint Draft Ready")}
           </span>
         ) : null}
       </div>
@@ -292,8 +290,8 @@ export function AiQuickBlueprintComposer({
             maxLength={200}
             onChange={(event) => setIdea(event.target.value)}
             placeholder={bt(
-              "예: 비 오는 날 헌책방에서 내일의 일기장을 주웠다 (비워두면 인기 소재로 자동 구성)",
-              "e.g. Found tomorrow's diary in a rainy bookshop (leave blank for a trending pick)",
+              "예: 비 오는 날 헌책방에서 내일의 일기장을 주웠다",
+              "e.g. Found tomorrow's diary in a rainy bookshop",
             )}
             className="min-h-12 min-w-0 flex-1 rounded-xl border border-line bg-canvas px-3.5 py-2.5 text-sm font-medium text-fg placeholder:text-fg-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
           />
@@ -304,29 +302,27 @@ export function AiQuickBlueprintComposer({
               variant: "solid",
               size: "lg",
               className:
-                "min-h-12 shrink-0 gap-2 rounded-xl px-5 font-extrabold transition-[transform,background-color,opacity] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
+                "min-h-12 shrink-0 gap-2 rounded-xl px-5 font-bold transition-[transform,background-color,opacity] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none",
             })}
           >
-            <Sparkles size={16} aria-hidden="true" />
             {blueprint
               ? bt("콘티 다시 짜기", "Rebuild Blueprint")
-              : bt("AI로 콘티·대사 짜기", "Compose Storyboard")}
+              : bt("콘티 초안 만들기", "Compose Storyboard")}
           </button>
         </div>
 
         <div
           role="group"
           aria-label={bt("원탭 인기 아이디어 추천", "One-tap trending story sparks")}
-          className="-mx-1 flex flex-nowrap items-center gap-1.5 overflow-x-auto px-1 pb-1 [scroll-snap-type:x_proximity] [scrollbar-width:none]"
+          className="flex flex-wrap items-center gap-1.5"
         >
           {AI_IDEA_SPARK_PRESETS.map((preset) => (
             <button
               key={preset.id}
               type="button"
               onClick={() => handleSelectSpark(preset.id)}
-              className="inline-flex min-h-11 shrink-0 [scroll-snap-align:start] items-center gap-1.5 rounded-full border border-line bg-canvas/90 px-3.5 py-2 text-xs font-semibold text-fg-2 transition-[transform,border-color,background-color,color] duration-150 hover:border-accent/55 hover:bg-accent-soft/50 hover:text-fg enabled:active:scale-[0.97] motion-reduce:transition-none motion-reduce:transform-none"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-canvas/90 px-3 py-2 text-xs font-medium text-fg-2 transition-[transform,border-color,background-color,color] duration-150 hover:border-accent/55 hover:bg-card hover:text-fg enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none"
             >
-              <Sparkles size={12} aria-hidden="true" className="text-accent" />
               <span>{bt(preset.chipKo, preset.chipEn)}</span>
             </button>
           ))}
@@ -486,30 +482,30 @@ export function AiQuickBlueprintComposer({
             <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold text-fg">
                 {bt(
-                  `컷별 콘티 · 말풍선 설계 (${blueprint.cuts.length}컷 — 모바일에서 좌우로 넘겨 보세요)`,
-                  `Panel-by-Panel Blueprint (${blueprint.cuts.length} panels — swipe horizontally on mobile)`,
+                  `컷별 콘티 · 말풍선 설계 (${blueprint.cuts.length}컷)`,
+                  `Panel-by-Panel Blueprint (${blueprint.cuts.length} panels)`,
                 )}
               </h3>
               {blueprint.cuts.length < 8 ? (
                 <button
                   type="button"
                   onClick={() => setBlueprint((prev) => (prev ? appendBlueprintCut(prev) : prev))}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-canvas px-3 py-1.5 text-xs font-bold text-fg transition-colors hover:border-accent/55 hover:text-accent"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-fg transition-colors hover:border-accent/55 hover:text-accent"
                 >
                   <Plus size={13} aria-hidden="true" />
-                  {bt("보너스 컷 추가", "Add bonus panel")}
+                  {bt("컷 추가", "Add panel")}
                 </button>
               ) : null}
             </div>
 
             <ol
               aria-label={bt("생성된 컷 콘티 목록", "Generated storyboard panels")}
-              className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2 [scroll-snap-type:x_proximity] sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-3"
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3"
             >
               {blueprint.cuts.map((cut) => (
                 <li
                   key={cut.id}
-                  className="flex w-[85vw] max-w-[21rem] shrink-0 [scroll-snap-align:start] flex-col justify-between rounded-xl border border-line bg-canvas/95 p-3.5 sm:w-auto sm:max-w-none"
+                  className="flex min-w-0 w-full flex-col justify-between rounded-xl border border-line bg-canvas/95 p-3.5"
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">

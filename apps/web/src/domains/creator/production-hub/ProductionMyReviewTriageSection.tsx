@@ -1,5 +1,5 @@
 import type { ProductionProjectAggregate } from "@toonstudio/core/production";
-import { ArrowRight, Clock3, Filter, RotateCcw, Sparkles, UserCheck } from "lucide-react";
+import { ArrowRight, Clock3, Filter, RotateCcw, UserCheck } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -160,15 +160,14 @@ export function ProductionMyReviewTriageSection({
       data-triage-status={filters.status}
       data-triage-assignee={filters.assignee}
       aria-labelledby="my-review-triage-heading"
-      className={cn("rounded-3xl border border-accent/30 bg-card p-4 shadow-sm sm:p-5", className)}
+      className={cn("rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-5", className)}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="inline-flex items-center gap-1.5 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-accent">
-            <Sparkles className="size-3.5" aria-hidden="true" />
+          <p className="text-xs font-semibold text-accent">
             {bt("마감 직전 검수 집중 큐", "Deadline review triage")}
           </p>
-          <h2 id="my-review-triage-heading" className="mt-1 text-base font-black text-fg sm:text-lg">
+          <h2 id="my-review-triage-heading" className="mt-1 text-base font-semibold text-fg sm:text-lg">
             {bt("내가 처리할 검수", "Reviews to handle")}
           </h2>
           <p className="mt-1 text-xs leading-5 text-fg-2">
@@ -184,7 +183,7 @@ export function ProductionMyReviewTriageSection({
             type="button"
             data-triage-reset="true"
             onClick={() => updateFilters({ status: "all", assignee: "all" })}
-            className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-10 gap-1.5 text-xs" })}
+            className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 gap-1.5 text-xs" })}
           >
             <RotateCcw className="size-3.5" aria-hidden="true" />
             {bt("필터 초기화", "Reset filters")}
@@ -209,7 +208,7 @@ export function ProductionMyReviewTriageSection({
                 aria-pressed={active}
                 onClick={() => updateFilters({ status: button.id })}
                 className={cn(
-                  "inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
                   active
                     ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-card text-fg-2 hover:border-accent/40 hover:text-fg",
@@ -291,13 +290,13 @@ export function ProductionMyReviewTriageSection({
                         {showProjectTitle ? (
                           <ProductionPill tone="neutral">{item.projectTitle}</ProductionPill>
                         ) : null}
-                        <span className="rounded-md bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-black text-accent">
+                        <span className="rounded-md bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent">
                           {item.cutId}
                         </span>
                       </div>
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 text-xs font-bold tabular-nums",
+                          "inline-flex items-center gap-1 text-xs font-semibold tabular-nums",
                           due.urgent ? "text-bad" : "text-fg-3",
                         )}
                       >
@@ -306,7 +305,7 @@ export function ProductionMyReviewTriageSection({
                       </span>
                     </div>
 
-                    <p className="mt-2 text-sm font-black text-fg group-hover:text-accent">
+                    <p className="mt-2 text-sm font-semibold text-fg group-hover:text-accent">
                       {item.title}
                     </p>
                     <p className="mt-1 line-clamp-2 text-xs leading-5 text-fg-2">
@@ -315,10 +314,10 @@ export function ProductionMyReviewTriageSection({
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 text-xs">
-                    <span className="truncate font-semibold text-fg-2">
+                    <span className="truncate font-medium text-fg-2">
                       {bt(`담당: ${item.primaryAssigneeLabel}`, `Owner: ${item.primaryAssigneeLabel}`)}
                     </span>
-                    <span className="inline-flex items-center gap-1 font-bold text-accent">
+                    <span className="inline-flex items-center gap-1 font-semibold text-accent">
                       {bt(`${item.cutId} 대상 컷 열기`, `Open ${item.cutId}`)}
                       <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
                     </span>
@@ -333,14 +332,14 @@ export function ProductionMyReviewTriageSection({
           data-triage-empty="true"
           className="mt-4 rounded-2xl border border-dashed border-line bg-panel p-5 text-center text-xs text-fg-2"
         >
-          <p className="font-bold text-fg">
+          <p className="font-semibold text-fg">
             {bt("선택한 상태·담당자 조건에 해당하는 검수 항목이 없습니다.", "No review items match the selected status and assignee filters.")}
           </p>
           {hasActiveFilter ? (
             <button
               type="button"
               onClick={() => updateFilters({ status: "all", assignee: "all" })}
-              className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-9 text-xs" })}
+              className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11 text-xs" })}
             >
               {bt("전체 검수 보기", "Show all reviews")}
             </button>

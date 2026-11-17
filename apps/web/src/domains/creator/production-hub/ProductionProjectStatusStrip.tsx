@@ -73,7 +73,7 @@ export function ProductionProjectStatusStrip({ aggregate }: { readonly aggregate
         <span className="text-xs font-semibold text-fg-2">{bt("아직 등록된 작업이 없어요", "No tasks yet")}</span>
       ) : (
         <span className="inline-flex min-w-0 items-center gap-2">
-          <span className="text-xs font-bold text-fg">{bt("진행률", "Progress")}</span>
+          <span className="text-xs font-semibold text-fg">{bt("진행률", "Progress")}</span>
           <span
             className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-raised sm:w-32"
             role="progressbar"
@@ -84,31 +84,31 @@ export function ProductionProjectStatusStrip({ aggregate }: { readonly aggregate
           >
             <span className="block h-full rounded-full bg-accent" style={{ width: `${progress.percent}%` }} />
           </span>
-          <span className="text-xs text-fg-2">
+          <span className="text-xs tabular-nums text-fg-2">
             {progress.percent}% · {bt(`${progress.completed}/${progress.total} 완료`, `${progress.completed}/${progress.total} done`)}
           </span>
         </span>
       )}
       {progress.blocked > 0 ? (
-        <ProductionPill tone="warning">{bt(`막힌 작업 ${progress.blocked}`, `${progress.blocked} blocked`)}</ProductionPill>
+        <ProductionPill tone="warning" className="tabular-nums">{bt(`막힌 작업 ${progress.blocked}`, `${progress.blocked} blocked`)}</ProductionPill>
       ) : null}
       {progress.inReview > 0 ? (
-        <ProductionPill tone="accent">{bt(`검수 대기 ${progress.inReview}`, `${progress.inReview} in review`)}</ProductionPill>
+        <ProductionPill tone="accent" className="tabular-nums">{bt(`검수 대기 ${progress.inReview}`, `${progress.inReview} in review`)}</ProductionPill>
       ) : null}
       {urgentEpisode ? (
         <Link
-          className="inline-flex min-h-6 max-w-full items-center gap-1 text-xs font-semibold text-fg-2 outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent"
+          className="inline-flex min-h-9 max-w-full items-center gap-1 text-xs font-semibold text-fg-2 outline-none hover:text-accent focus-visible:ring-2 focus-visible:ring-accent"
           to={productionEpisodeRoomPath(projectId, urgentEpisode.episodeId)}
         >
           <span className="shrink-0 text-fg-3">{bt("가장 급한 회차", "Most urgent")}</span>
           <span className="truncate">{urgentEpisode.title}</span>
           {urgentEpisode.daysUntilRelease !== null ? (
-            <span className="shrink-0 text-accent">{formatProductionDday(urgentEpisode.daysUntilRelease, bt)}</span>
+            <span className="shrink-0 tabular-nums text-accent">{formatProductionDday(urgentEpisode.daysUntilRelease, bt)}</span>
           ) : null}
         </Link>
       ) : null}
       {nextAction ? <span className="ms-auto inline-flex items-center gap-2">
-        <span className="hidden text-[0.6875rem] font-black uppercase tracking-[0.14em] text-fg-3 sm:inline">
+        <span className="hidden text-xs font-medium text-fg-3 sm:inline">
           {bt("지금 할 일", "Next up")}
         </span>
         <Link className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5" })} to={nextAction.href}>

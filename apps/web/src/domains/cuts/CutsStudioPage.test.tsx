@@ -24,13 +24,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("CutsStudioPage REA 렌더 엔진 및 프레임레이트 컨트롤러", () => {
-  it("프리셋 바와 렌더 엔진·FPS 컨트롤러를 렌더링하고 버튼 전환 시 상태를 갱신한다", () => {
+describe("CutsStudioPage 회차 선택 우선 배치 및 고급 모션·오디오 접기 설정", () => {
+  it("1단계 회차 선택을 먼저 배치하고 고급 모션·오디오 설정은 하단 접힘 영역에서 전환한다", () => {
     render(
       <MemoryRouter initialEntries={["/cuts/studio"]}>
         <CutsStudioPage />
       </MemoryRouter>,
     );
+
+    const episodeGroup = screen.getByRole("radiogroup", { name: "회차 선택" });
+    const advancedDetails = screen.getByTestId("cuts-studio-advanced-disclosure") as HTMLDetailsElement;
+    expect(advancedDetails.open).toBe(false);
+    expect(screen.getByText("고급 모션·오디오 설정")).toBeTruthy();
+    expect(
+      episodeGroup.compareDocumentPosition(advancedDetails) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     expect(screen.getByTestId("cuts-rea-movingtoon-preset-bar")).toBeTruthy();
     expect(screen.getByTestId("cuts-studio-rea-engine-controller")).toBeTruthy();
@@ -48,9 +56,7 @@ describe("CutsStudioPage REA 렌더 엔진 및 프레임레이트 컨트롤러",
     const status = screen.getByTestId("cuts-studio-rea-engine-status");
     expect(status.textContent).toContain("gsap-parallax-25d");
     expect(status.textContent).toContain("60fps-webgpu");
-    expect(status.textContent).toContain("Rive");
-    expect(status.textContent).toContain("Onoma AI Insertoon");
-    expect(status.textContent).toContain("ElevenLabs");
+    expect(advancedDetails.textContent).not.toMatch(/TOON BOOM|CAPCUT|KLING/iu);
 
     fireEvent.click(riveEngineBtn);
     fireEvent.click(promotionFpsBtn);

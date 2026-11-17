@@ -217,7 +217,7 @@ export function FeaturesOverviewPage() {
           <a
             key={category.id}
             href={`#features-${category.id}`}
-            className="inline-flex min-h-10 items-center rounded-full border border-line bg-panel/60 px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel/60 px-4 text-sm font-semibold text-fg-2 transition-colors hover:border-accent/40 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
           >
             {text(category.title)}
           </a>
@@ -301,7 +301,7 @@ export function FeaturesOverviewPage() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="group flex h-full min-h-[5.5rem] items-start gap-3 rounded-2xl border border-line bg-card/75 p-4 transition-all hover:-translate-y-0.5 hover:border-accent/40 hover:bg-card hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                    className="group flex h-full min-h-[5.5rem] items-start gap-3 rounded-2xl border border-line bg-card/75 p-4 transition-[border-color,background-color] duration-150 hover:border-accent/40 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none"
                   >
                     <span className="min-w-0 flex-1 pt-0.5">
                       <strong className="block text-sm font-bold text-fg transition-colors group-hover:text-accent">

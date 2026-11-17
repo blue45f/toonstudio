@@ -143,7 +143,7 @@ function PageIntroView({ variant, pathname, children }: {
           aria-hidden="true"
         >
           <IntroMotif variant={variant} />
-          <p className="page-intro__skip-hint">
+          <p className="page-intro__skip-hint min-h-11 [word-break:keep-all]">
             {t("클릭 또는 ESC로 건너뛰기", "Click or press ESC to skip")}
           </p>
         </div>

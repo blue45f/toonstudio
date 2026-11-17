@@ -288,16 +288,12 @@
   }
 }
 
-/* 히어로 persimmon 글로 — 아주 느린 호흡(브랜드 맥동). warm-ink 축 유지, opacity/scale 만. */
+/* 히어로 배경 광원 — 무한 맥동 없이 정적 상태 유지. */
 @keyframes hero-bloom {
   0%,
   100% {
-    opacity: 0.55;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.06);
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -335,12 +331,11 @@
   }
 }
 
-/* 라우트 진입 — 페이지는 또렷하게 안착하고, 얇은 스펙트럼 광막이 대각선으로 한 번 훑는다. */
+/* 라우트 진입 — 블러·채도 왜곡이나 무지개 스윕 없이 차분히 안착한다. */
 @keyframes route-stage-in {
   from {
-    opacity: 0.35;
-    transform: translateY(18px) scale(0.992);
-    filter: blur(4px) saturate(1.25);
+    opacity: 0;
+    transform: translateY(8px);
   }
   to {
     /* transform/filter를 identity 값(translateY(0) scale(1) 등)이 아니라 리터럴 none으로 끝내야 한다 —
@@ -354,30 +349,14 @@
   }
 }
 
-@keyframes route-spectrum-wipe {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) skewX(-18deg);
-  }
-  18% {
-    opacity: 0.72;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(380%, 0, 0) skewX(-18deg);
-  }
-}
-
 @keyframes dialog-materialize {
   from {
     opacity: 0;
-    transform: translate3d(0, 18px, 0);
-    filter: blur(7px) saturate(1.25);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
-    filter: blur(0) saturate(1);
+    transform: none;
   }
 }
 
@@ -404,15 +383,11 @@
   }
 }
 
-/* 랭킹 Top3 메달 글로 — 순위 배지가 은은히 맥동. 톤은 --medal-glow(금/은/동)로 행에서 주입.
-   box-shadow 만 애니메이션(레이아웃 무관). 전역 reduced-motion 가드가 무한 반복을 무효화한다. */
+/* 랭킹 Top3 메달 강조 — 무한 글로우 맥동 대신 정적 테두리·표면 단계만 사용한다. */
 @keyframes rank-medal-pulse {
   0%,
   100% {
-    box-shadow: 0 0 2px 0 transparent;
-  }
-  50% {
-    box-shadow: 0 0 13px 2px var(--medal-glow, oklch(0.72 0.185 42 / 0.4));
+    box-shadow: none;
   }
 }
 
@@ -520,12 +495,12 @@ select:not([multiple]):not([size]):not([data-select-native]) {
    시그니처 유틸리티
    ============================================================ */
 
-/* 라우터 전환 효과. pseudo-element는 포인터를 가로채지 않고 1회만 재생된다. */
+/* 라우터 전환 효과. 짧은 페이드·상승만 수행하고 무지개 블러 스윕 장식은 두지 않는다. */
 .route-stage {
   position: relative;
   isolation: isolate;
   min-width: 0;
-  animation: route-stage-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: route-stage-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* route-stage-in의 fill-mode(both)가 애니메이션 종료 후에도 to 프레임의 계산된 transform/filter를
@@ -533,46 +508,22 @@ select:not([multiple]):not([size]):not([data-select-native]) {
    none이 아닌 한 이 요소는 계속 새 containing block이 되어 자손의 position: fixed를 뷰포트가 아니라
    이 요소(라우트 전체 콘텐츠 — 뷰포트보다 훨씬 길 수 있음) 기준으로 밀어버린다. AppRouter가
    route-stage-in의 animationend에서 이 클래스를 붙여 애니메이션 자체를 끊고 transform/filter를
-   확실히 none으로 되돌린다. ::before(스펙트럼 와이프)는 .route-stage 클래스 자체로 계속 붙어 있으니
-   영향 없음. */
+   확실히 none으로 되돌린다. */
 .route-stage--settled {
   animation: none;
   transform: none;
   filter: none;
 }
 
-/* 편집기는 캔버스 위치를 즉시 안정시키고 라우트 장식이 첫 스트로크를 덮지 않게 한다. */
-.route-stage.route-stage--instant::before {
-  content: none;
+/* 편집기는 캔버스 위치를 즉시 안정시킨다. */
+.route-stage.route-stage--instant {
   animation: none;
-}
-
-.route-stage::before {
-  content: "";
-  position: fixed;
-  z-index: 80;
-  top: -18vh;
-  bottom: -18vh;
-  left: -48vw;
-  width: 42vw;
-  min-width: 180px;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    oklch(0.72 0.185 42 / 0.34) 22%,
-    oklch(0.78 0.16 290 / 0.28) 50%,
-    oklch(0.8 0.11 232 / 0.24) 72%,
-    transparent
-  );
-  filter: blur(16px);
-  animation: route-spectrum-wipe 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* 공통 모달/팝업 진입. 바텀 시트는 같은 효과를 아래 방향 문법으로 특화한다. */
 [role="dialog"][aria-modal="true"] {
   transform-origin: 50% 35%;
-  animation: dialog-materialize 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: dialog-materialize 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 [role="dialog"][aria-modal="true"][data-stable-contrast="true"] {
@@ -618,12 +569,11 @@ select:not([multiple]):not([size]):not([data-select-native]) {
   font-weight: 700;
 }
 
-/* 영문 라벨 (대문자 트래킹) — 대문자 12px는 소문자 14px만큼 읽혀 휴대폰에서도 바닥선(12px)을 지킨다. */
+/* 섹션 눈썹 라벨 — 대문자 강제 없이 문장형·한국어로 차분하게 읽히며 휴대폰에서도 바닥선(12px)을 지킨다. */
 @utility eyebrow {
   font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-weight: 500;
   font-size: 0.75rem;
 }
 

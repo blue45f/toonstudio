@@ -344,6 +344,11 @@ describe("TitleReaderPage — 원고 없는 화면의 정직한 상태", () => {
     const review = bridge.querySelector('a[href$="#title-reviews"]');
     expect(review).not.toBeNull();
     expect(bridge.querySelectorAll("a")).toHaveLength(5);
+    expect(within(bridge).getByText("숏폼 컷 만들기")).toBeTruthy();
+    expect(within(bridge).getByText("작가 응원·소식")).toBeTruthy();
+    expect(within(bridge).getByText("감상 기록 남기기")).toBeTruthy();
+    expect(within(bridge).getByText("비슷한 작품 찾기")).toBeTruthy();
+    expect(bridge.textContent).not.toMatch(/NAVER CUTS|PIXIV|RIDI|TAPAS/u);
   });
 });
 

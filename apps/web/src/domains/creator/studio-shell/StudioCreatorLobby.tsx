@@ -3,7 +3,6 @@ import {
   Clock3,
   Lightbulb,
   Plus,
-  Sparkles,
   Upload,
   WandSparkles,
 } from "lucide-react";
@@ -311,8 +310,7 @@ function StudioLobbyHero() {
     <section className="studio-lobby-hero" aria-labelledby="studio-lobby-title">
       <div className="studio-lobby-hero__copy">
         <p className="studio-lobby-eyebrow">
-          <Sparkles size={13} aria-hidden="true" />
-          TOONSTUDIO CREATOR LOBBY
+          {bi("크리에이터 작업실", "Creator workspace")}
         </p>
         <h2 id="studio-lobby-title">{bi("오늘은 어떤 이야기를 만들까요?", "What story will you create today?")}</h2>
         <StudioPageIntro motif="pen" className="studio-lobby-hero__intro" />
@@ -494,7 +492,7 @@ function StudioLobbyAiDirector() {
         <LobbyArtImage className="studio-lobby-director__avatar" art={avatar} sizes="4rem" loading="lazy" />
         <div>
           <p className="studio-lobby-eyebrow">
-            <Sparkles size={12} aria-hidden="true" /> AI CREATIVE DIRECTOR
+            {bi("창작 도우미", "Creative helper")}
           </p>
           <h2 id="studio-ai-director-title">{bi("AI 디렉터와 함께", "Create with the AI director")}</h2>
         </div>
@@ -650,7 +648,7 @@ function StudioLobbyWorkflowGuide() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="studio-lobby-eyebrow">
-            <Sparkles size={12} aria-hidden="true" /> STEP-BY-STEP WORKFLOW
+            {bi("단계별 제작 순서", "Step-by-step workflow")}
           </p>
           <h2 id="studio-lobby-workflow-guide-title" className="mt-1 text-base font-bold text-fg sm:text-lg">
             {bi(

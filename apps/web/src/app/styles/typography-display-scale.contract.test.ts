@@ -64,10 +64,10 @@ describe("디스플레이 타이포 스케일 단일화 계약", () => {
 
   it("display 변형 클래스 문자열은 기존 단계값을 그대로 유지한다 (회귀 고정)", () => {
     expect(tokensBlock).toContain(
-      'heroTitle: "font-display text-[2rem] leading-[1.18] font-black tracking-[-0.04em] text-fg break-keep text-balance sm:text-4xl sm:leading-[1.12] lg:text-6xl"',
+      'heroTitle: "font-display text-[2rem] leading-[1.18] font-semibold tracking-[-0.04em] text-fg break-keep text-balance sm:text-4xl sm:leading-[1.12] lg:text-6xl"',
     );
     expect(tokensBlock).toContain(
-      'sectionTitle: "font-display text-2xl leading-snug font-black tracking-tight text-fg break-keep text-balance sm:text-3xl lg:text-4xl"',
+      'sectionTitle: "font-display text-2xl leading-snug font-semibold tracking-tight text-fg break-keep text-balance sm:text-3xl lg:text-4xl"',
     );
   });
 

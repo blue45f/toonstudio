@@ -1,4 +1,4 @@
-import { ChevronDown, Sparkles, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MATERIAL_INTENT_MAX_LENGTH } from "@toonstudio/core/material-intent-plan";
 
@@ -170,7 +170,7 @@ export function MarketSentenceSearch({ onApply }: MarketSentenceSearchProps) {
         onClick={toggle}
         className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-accent hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
       >
-        <Sparkles className="size-4" aria-hidden="true" />
+        <Search className="size-4" aria-hidden="true" />
         {t("문장으로 찾기", "Find by sentence")}
         <ChevronDown className={cn("size-4 motion-safe:transition-transform", open && "rotate-180")} aria-hidden="true" />
       </button>

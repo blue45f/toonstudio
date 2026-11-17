@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import type { SortKey } from "@/shared/lib/search";
 import type { SerialStatus } from "@/shared/lib/types";
@@ -21,36 +22,36 @@ export interface ExploreReaDirectoryBarProps {
 }
 
 const DIRECTORY_MODE_LABELS: Readonly<Record<ExploreDirectoryModeId, readonly [string, string]>> = {
-  all: ["전체 디렉터리", "All Directory"],
-  ongoing: ["연재중 (Ongoing)", "Ongoing"],
-  completed: ["완결 (Completed)", "Completed"],
-  hiatus: ["시즌 휴재·재정비", "Season Hiatus"],
-  alpha: ["가나다 · A-Z 순", "A–Z Order"],
-  updated: ["최신 업데이트순", "Recently Updated"],
+  all: ["전체 목록", "All titles"],
+  ongoing: ["연재 중", "Ongoing"],
+  completed: ["완결 작품", "Completed"],
+  hiatus: ["시즌 휴재", "Season hiatus"],
+  alpha: ["가나다순", "A–Z order"],
+  updated: ["최근 업데이트순", "Recently updated"],
 };
 
 const COMBO_LABELS: Readonly<
   Record<string, { readonly label: readonly [string, string]; readonly tag: readonly [string, string] }>
 > = {
   "regression-fantasy": {
-    label: ["회귀 · 헌터 · 액션판타지", "Regression & Hunter Fantasy"],
-    tag: ["#회귀/각성", "#Regression"],
+    label: ["회귀 · 헌터 판타지", "Regression & hunter fantasy"],
+    tag: ["#회귀", "#Regression"],
   },
   "contract-rofan": {
-    label: ["계약결혼 · 황궁 로맨스판타지", "Royal Contract RoFan"],
-    tag: ["#계약관계", "#ContractMarriage"],
+    label: ["계약결혼 · 로맨스판타지", "Contract romance fantasy"],
+    tag: ["#로맨스판타지", "#RoFan"],
   },
   "cyberpunk-sf": {
-    label: ["사이버펑크 · 디스토피아 SF", "Cyberpunk & Dystopian Sci-Fi"],
-    tag: ["#네오서울", "#Cyberpunk"],
+    label: ["근미래 · 디스토피아 SF", "Near-future & sci-fi"],
+    tag: ["#SF", "#SciFi"],
   },
   "mystery-thriller": {
-    label: ["두뇌심리전 · 미스터리 스릴러", "Mind-Game Mystery Thriller"],
-    tag: ["#반전서사", "#PlotTwist"],
+    label: ["추리 · 심리 스릴러", "Mystery & thriller"],
+    tag: ["#반전", "#Mystery"],
   },
   "slice-of-life-cuts": {
-    label: ["공감 일상 · 숏폼 개그툰", "Slice-of-Life & Short Gag"],
-    tag: ["#가벼운호흡", "#BiteSized"],
+    label: ["일상 · 가벼운 개그", "Slice of life & comedy"],
+    tag: ["#일상", "#SliceOfLife"],
   },
 };
 
@@ -62,41 +63,41 @@ const TEMPO_PRESETS: readonly {
 }[] = [
   {
     id: "naver-weekly-long",
-    label: ["네이버·카카오 주간 정통 (65~80컷)", "Naver/Kakao Weekly (65-80 cuts)"],
+    label: ["긴 호흡 주간 연재작", "Full-length weekly series"],
     status: ["ongoing"],
     sortKey: "popular",
   },
   {
     id: "tapas-bite-sized",
-    label: ["Tapas·WEBTOON·MANGA Plus 글로벌 동시연재 (30~45컷)", "Tapas/WEBTOON/MANGA Plus Simulrelease (30-45 cuts)"],
+    label: ["가볍게 읽는 짧은 회차", "Short, quick episodes"],
     status: ["ongoing"],
     sortKey: "newest",
   },
   {
     id: "lezhin-binge-complete",
-    label: ["리디·레진·봄툰·피너툰·Manta·Piccoma 완결 정주행 패스", "Ridi/Lezhin/Bomtoon/Peanutoon/Manta/Piccoma Binge Pass"],
+    label: ["몰아보기 좋은 완결작", "Completed series to binge"],
     status: ["completed"],
     sortKey: "rating",
   },
   {
     id: "munpia-novelpia-watcha",
-    label: ["문피아·조아라·노벨피아·교보eBook·밀리의서재 노벨코믹스 & 왓챠피디아 고별점 픽", "Munpia/Joara/Novelpia/Kyobo/Millie Novel-Comics & Watcha Pedia Top Rated"],
+    label: ["원작 소설 기반 · 높은 평점", "Novel adaptations · top rated"],
     status: ["ongoing"],
     sortKey: "rating",
   },
   {
     id: "bilibili-kuaikan-comicdays",
-    label: ["빌리빌리·콰이칸·동만·토나리노영점프·쿠라게번치·망가도서관Z·포켓코믹스·진강문학성·SFACG 아시아/글로벌 인기작", "Bilibili/Kuaikan/Dongman/Tonari no Young Jump/Kurage Bunch/Manga Library Z/Pocket Comics/JJWXC/SFACG Global Hits"],
+    label: ["독자 반응이 활발한 인기작", "Popular with active readers"],
     status: ["ongoing"],
     sortKey: "popular",
   },
 ];
 
 const READER_VIEW_MODES = [
-  { id: "vertical", label: ["네이버·카카오 세로 스크롤", "Vertical Scroll"] },
-  { id: "koma-swipe", label: ["메챠코믹 코마뷰 (1컷 스와이프)", "Mecha Comic Koma-View"] },
-  { id: "spread-rtl", label: ["점프+·ComicFuz 좌우 양면(RTL)", "Jump+/ComicFuz Spread (RTL)"] },
-  { id: "alt-text-a11y", label: ["Corona EX·Sylph 스크린리더 대사색인", "Corona EX/Sylph Screen-Reader Alt-Text"] },
+  { id: "vertical", label: ["세로 스크롤", "Vertical scroll"] },
+  { id: "koma-swipe", label: ["한 컷씩 넘기기", "Single-panel swipe"] },
+  { id: "spread-rtl", label: ["두 쪽 펼쳐보기", "Two-page spread"] },
+  { id: "alt-text-a11y", label: ["대사 텍스트 안내", "Dialogue text guide"] },
 ] as const;
 
 function mapSortKey(sortValue: ExploreDirectoryMode["sortValue"]): SortKey {
@@ -132,47 +133,42 @@ export function ExploreReaDirectoryBar({
 
   return (
     <section
-      aria-label={bt("디렉터리 모드 및 취향 태그 조합기", "Directory modes and preference tag combinator")}
+      aria-label={bt("빠른 조건 및 열람 화면 설정", "Quick filters and reader display options")}
       data-testid="explore-rea-directory-bar"
-      className="rounded-2xl border border-line bg-card/85 p-4 shadow-sm"
+      className="rounded-2xl border border-line bg-card p-4"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("디렉터리 빠른 전환", "Directory mode presets")}>
-          <span className="mr-1 text-xs font-extrabold uppercase tracking-wider text-accent">
-            DIRECTORY
-          </span>
-          {EXPLORE_DIRECTORY_MODES.map((mode) => {
-            const active = isModeActive(mode);
-            const labelPair = DIRECTORY_MODE_LABELS[mode.id];
-            return (
-              <button
-                key={mode.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => {
-                  runSameDocumentViewTransition(() => {
-                    onApplyFilters({
-                      ...filters,
-                      status: mapStatusFilter(mode.statusValue),
-                    });
-                    onChangeSort(mapSortKey(mode.sortValue));
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("연재 상태 빠른 전환", "Status presets")}>
+        <span className="mr-1 text-xs font-semibold text-fg-2">
+          {bt("연재 상태", "Status")}
+        </span>
+        {EXPLORE_DIRECTORY_MODES.map((mode) => {
+          const active = isModeActive(mode);
+          const labelPair = DIRECTORY_MODE_LABELS[mode.id];
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                runSameDocumentViewTransition(() => {
+                  onApplyFilters({
+                    ...filters,
+                    status: mapStatusFilter(mode.statusValue),
                   });
-                }}
-                className={cn(
-                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition-colors",
-                  active
-                    ? "border-accent bg-accent text-canvas shadow-sm"
-                    : "border-line bg-panel/70 text-fg-2 hover:border-accent/45 hover:text-fg",
-                )}
-              >
-                <span>{bt(...labelPair)}</span>
-                <span className="rounded-full bg-canvas/20 px-1.5 py-0.5 text-[10px] font-extrabold">
-                  {mode.badge}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  onChangeSort(mapSortKey(mode.sortValue));
+                });
+              }}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+                active
+                  ? "border-accent bg-accent text-on-accent font-semibold"
+                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
+              )}
+            >
+              <span>{bt(...labelPair)}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div
@@ -181,8 +177,8 @@ export function ExploreReaDirectoryBar({
         data-testid="explore-preference-tag-combos"
         className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3"
       >
-        <span className="mr-1 text-xs font-bold text-fg-3">
-          {bt("취향 조합:", "Taste Combos:")}
+        <span className="mr-1 text-xs font-semibold text-fg-2">
+          {bt("인기 조합", "Popular themes")}
         </span>
         {EXPLORE_PREFERENCE_TAG_COMBOS.map((combo) => {
           const active = filters.genres.length === 1 && filters.genres[0] === combo.genreValue;
@@ -201,14 +197,14 @@ export function ExploreReaDirectoryBar({
                 });
               }}
               className={cn(
-                "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-colors",
+                "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
                 active
-                  ? "border-accent/65 bg-accent-soft text-accent"
-                  : "border-line bg-panel/60 text-fg-2 hover:border-accent/45 hover:text-fg",
+                  ? "border-accent/65 bg-accent-soft text-accent font-semibold"
+                  : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
               )}
             >
               <span>{comboCopy ? bt(...comboCopy.label) : combo.id}</span>
-              <span className="text-[11px] text-fg-3">{comboCopy ? bt(...comboCopy.tag) : ""}</span>
+              <span className="text-xs text-fg-3">{comboCopy ? bt(...comboCopy.tag) : ""}</span>
             </button>
           );
         })}
@@ -216,12 +212,12 @@ export function ExploreReaDirectoryBar({
 
       <div
         role="group"
-        aria-label={bt("글로벌 포털 열독 템포·연재 호흡 프리셋", "Global portal reading tempo presets")}
+        aria-label={bt("읽기 호흡별 빠른 선택", "Reading pace presets")}
         data-testid="explore-rea-reading-tempo-bar"
-        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3 text-[11px]"
+        className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3 text-xs"
       >
-        <span className="mr-1 font-bold text-fg-3">
-          {bt("포털 호흡 벤치마크:", "Portal Pacing:")}
+        <span className="mr-1 font-semibold text-fg-2">
+          {bt("읽기 호흡", "Reading pace")}
         </span>
         {TEMPO_PRESETS.map((preset) => (
           <button
@@ -234,48 +230,62 @@ export function ExploreReaDirectoryBar({
                 onChangeSort(preset.sortKey);
               });
             }}
-            className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line bg-panel/60 px-3 py-1.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+            className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-line bg-panel px-3 py-1.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
           >
             {bt(...preset.label)}
           </button>
         ))}
       </div>
-      <div
-        role="group"
-        aria-label={bt("글로벌 리더 뷰포트 & 접근성 시뮬레이터", "Global reader viewport and accessibility simulator")}
-        data-testid="explore-rea-reader-simulator-bar"
-        className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-3 text-[11px]"
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-bold text-accent">{bt("리더 뷰포트·접근성 모드:", "Reader & A11y Mode:")}</span>
-          {READER_VIEW_MODES.map((rm) => (
-            <button
-              key={rm.id}
-              type="button"
-              aria-pressed={readerViewMode === rm.id}
-              data-testid={`explore-reader-mode-${rm.id}`}
-              onClick={() => setReaderViewMode(rm.id)}
-              className={cn(
-                "inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 font-semibold transition-colors",
-                readerViewMode === rm.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-panel/60 text-fg-2 hover:border-accent/40",
-              )}
-            >
-              {bt(rm.label[0], rm.label[1])}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-pressed={danmakuHeatmapOn}
-          data-testid="explore-danmaku-heatmap-toggle"
-          onClick={() => setDanmakuHeatmapOn((v) => !v)}
-          className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 py-1.5 font-mono text-[10px] font-bold text-success hover:border-accent/40"
+
+      <details className="group mt-3 border-t border-line/70 pt-2">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-1 text-xs font-medium text-fg-2 transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+          <span>{bt("열람 화면 보기 설정", "Reader display options")}</span>
+          <ChevronDown size={15} strokeWidth={1.5} aria-hidden="true" className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <div
+          role="group"
+          aria-label={bt("열람 화면 보기 설정", "Reader display options")}
+          data-testid="explore-rea-reader-simulator-bar"
+          className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs"
         >
-          {danmakuHeatmapOn
-            ? bt("빌리빌리·콰이칸 컷별 탄막 히트맵 ON · 75개 언어 동시연재", "Bilibili/Kuaikan Danmaku Heatmap ON · 75-Lang Simulpub")
-            : bt("탄막 히트맵 OFF (클린 리더)", "Danmaku Heatmap OFF (Clean Reader)")}
-        </button>
-      </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 font-semibold text-fg-2">{bt("화면 방식", "Layout")}</span>
+            {READER_VIEW_MODES.map((rm) => (
+              <button
+                key={rm.id}
+                type="button"
+                aria-pressed={readerViewMode === rm.id}
+                data-testid={`explore-reader-mode-${rm.id}`}
+                onClick={() => setReaderViewMode(rm.id)}
+                className={cn(
+                  "inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 font-medium transition-colors duration-150 motion-reduce:transition-none",
+                  readerViewMode === rm.id
+                    ? "border-accent bg-accent-soft text-accent font-semibold"
+                    : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
+                )}
+              >
+                {bt(rm.label[0], rm.label[1])}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-pressed={danmakuHeatmapOn}
+            data-testid="explore-danmaku-heatmap-toggle"
+            onClick={() => setDanmakuHeatmapOn((v) => !v)}
+            className={cn(
+              "inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+              danmakuHeatmapOn
+                ? "border-accent/55 bg-accent-soft text-accent font-semibold"
+                : "border-line bg-panel text-fg-2 hover:border-line-strong hover:text-fg",
+            )}
+          >
+            {danmakuHeatmapOn
+              ? bt("독자 반응 표시 켜짐", "Reader reactions on")
+              : bt("독자 반응 표시 꺼짐", "Reader reactions off")}
+          </button>
+        </div>
+      </details>
     </section>
   );
 }

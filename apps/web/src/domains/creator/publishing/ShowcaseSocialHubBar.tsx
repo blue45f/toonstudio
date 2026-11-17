@@ -1,4 +1,4 @@
-import { Film, Images, MessageCircle, MessagesSquare, Sparkles, Users } from "lucide-react";
+import { Film, Images, MessageCircle, MessagesSquare, Users } from "lucide-react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -21,16 +21,14 @@ export function ShowcaseSocialHubBar() {
     <nav
       aria-label={bt("창작 소셜 4탭 허브", "Creator social 4-tab hub")}
       data-testid="showcase-social-hub-bar"
-      className="relative mb-5 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
+      className="relative mb-5 overflow-hidden rounded-2xl border border-line bg-panel/60"
     >
-      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-4 py-2.5">
-        <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
-          <Sparkles size={13} aria-hidden="true" />
-          <span>{bt("CREATOR SOCIAL SALON · 갤러리 · 타임랩스 · 협업", "CREATOR SOCIAL SALON · GALLERY · TIMELAPSE · TEAM")}</span>
+        <span className="text-xs font-semibold text-accent">
+          {bt("갤러리 · 타임랩스 · 팀 협업", "Gallery, timelapses & team collaboration")}
         </span>
-        <span className="text-[11px] font-semibold text-fg-2">
-          {bt("완성 아트워크 감상부터 분업 스튜디오 매칭까지 한 화면에서 전환", "Switch from finished artwork to studio team matching in one click")}
+        <span className="text-xs text-fg-2">
+          {bt("완성 아트워크 감상부터 분업 스튜디오 매칭까지 이어집니다", "Move from finished artwork to studio team matching")}
         </span>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 p-2.5">

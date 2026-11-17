@@ -234,7 +234,7 @@ export function Studio3dCharacterStudioInspectorPanel({
               aria-selected={active}
               disabled={disabled}
               onClick={() => setInspectorTab(tab.id)}
-              className={`flex min-h-11 items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[0.65rem] font-bold transition-all ${
+              className={`flex min-h-11 items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-[0.65rem] font-bold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                 active
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-line bg-card text-fg-3 hover:text-fg"

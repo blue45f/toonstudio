@@ -1,5 +1,5 @@
 import { translateBilingualValueForLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
-import { Sparkles } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 import { useSiteExperience } from "./site-experience/site-experience-context";
 
@@ -17,13 +17,13 @@ export function PublicSiteAppearanceToggle({ locale, className }: { locale: "ko"
   return (
     <button
       type="button"
-      className={cx("site-experience-toggle site-experience-toggle--compact", className)}
+      className={cx("site-experience-toggle site-experience-toggle--compact min-h-11 min-w-11", className)}
       aria-label={bi("차분한 화면", "Calm appearance")}
       aria-pressed={settings.mode === "calm"}
       title={bi("차분한 화면 전환", "Toggle calm appearance")}
       onClick={() => settings.setMode(settings.mode === "vivid" ? "calm" : "vivid")}
     >
-      <Sparkles size={16} aria-hidden="true" />
+      <SlidersHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />
     </button>
   );
 }

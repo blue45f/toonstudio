@@ -42,6 +42,8 @@ describe("CI·QA 관리자 보드", () => {
     expect(screen.getAllByRole("row")).toHaveLength(13);
     expect(screen.getByText(/core · 미확인 \/ verify · 미확인/u)).toBeTruthy();
     expect(screen.getByText("유효한 완료 근거 0개")).toBeTruthy();
+    expect(screen.getByText("배포 검증 근거")).toBeTruthy();
+    expect(screen.getAllByText("검증 최신성").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/자동 CI 연결 없음/u)).toBeTruthy();
     expect(localStorage.getItem(getQualityStorageKey(user))).toBeNull();
     const overview = screen.getByText("검증 전체 현황과 기준 커밋").closest("details");
@@ -133,6 +135,7 @@ describe("CI·QA 관리자 보드", () => {
     show(board);
     expect(screen.getByText("stale · SHA 불일치")).toBeTruthy();
     expect(screen.getByText("유효한 완료 근거 0개")).toBeTruthy();
+    expect(screen.getByText(/갱신 필요 · 1개 근거를 다시 확인하세요/u)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "기준 커밋·최신성" }));
     change("TTL (시간)", "48");
     fireEvent.click(screen.getByRole("button", { name: "기준 저장" }));

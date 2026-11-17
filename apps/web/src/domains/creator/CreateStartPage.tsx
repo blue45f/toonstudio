@@ -1,5 +1,5 @@
 // 작품 시작 시트(/create) — 작품을 시작하는 유일한 정문(S2-6).
-import { ArrowLeft, ArrowRight, BookHeart, BookOpen, Clapperboard, LayoutTemplate, MessageSquare, Plus, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookHeart, BookOpen, ChevronDown, Clapperboard, LayoutTemplate, MessageSquare, Plus, Upload } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 
@@ -131,6 +131,8 @@ export function CreateStartPage() {
     ? requestedSection : "all";
   const headingRef = useRef<HTMLHeadingElement>(null);
   const previousSection = useRef(activeSection);
+  const initialIdea = searchParams.get("idea") ?? "";
+  const [aiComposerOpen, setAiComposerOpen] = useState(() => initialIdea.trim().length > 0);
   useEffect(() => {
     if (previousSection.current === activeSection) return;
     previousSection.current = activeSection;
@@ -157,6 +159,58 @@ export function CreateStartPage() {
       </div>
     </div>
   ) : null;
+
+  const renderStoryPipelineSection = (spacingClass: string) => (
+    <section
+      aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
+      data-testid="create-rea-story-pipeline"
+      className={`${spacingClass} rounded-2xl border border-line bg-panel/60 p-4 sm:p-5`}
+    >
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold text-accent">
+            {bt("4단계 제작 흐름", "4-step workflow")}
+          </p>
+          <h2 className="mt-0.5 text-sm font-bold text-fg">
+            {bt("줄거리 정리부터 콘티 · 3D 배경 · 연재 준비까지 차례대로 이어가요", "Follow four clear steps from story notes to boards, 3D scenes, and release preparation")}
+          </h2>
+        </div>
+        <Link
+          href="/studio/ai-lab"
+          style={{ minHeight: "48px" }}
+          className="inline-flex min-h-11 scroll-my-24 items-center rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg transition-colors hover:border-accent/55 hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {bt("AI 창작 도우미 열기 →", "Open AI Creative Helper →")}
+        </Link>
+      </div>
+      <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
+        {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
+          const enMode = PIPELINE_MODE_EN_COPY[mode.id];
+          const descriptionKo = mode.id === "ink-render-publish"
+            ? "회차와 게시 설정을 확인해요. 게시용 파일 준비는 외부 게시 완료와 달라요. 외부 채널에는 직접 업로드·예약해 주세요."
+            : mode.description;
+          return (
+            <Link
+              key={mode.id}
+              href={mode.targetHref}
+              className="flex min-h-11 flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
+            >
+              <div>
+                <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                  {bt(mode.step, enMode?.step ?? mode.step)}
+                </span>
+                <p className="mt-2 text-xs font-bold text-fg">{bt(mode.label, enMode?.label ?? mode.label)}</p>
+                <p className="mt-1 text-xs leading-relaxed text-fg-2">{bt(descriptionKo, enMode?.description ?? descriptionKo)}</p>
+              </div>
+              <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent">
+                {bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)} →
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
 
   const sectionHref = (section: "all" | "lanes" | "pipeline" | "continue" | "topics" | "presets" | "tools") => {
     const next = new URLSearchParams(searchParams);
@@ -230,19 +284,6 @@ export function CreateStartPage() {
             <StudioQuickStart locale={locale} presentation="drawing-card" />
           </section>
 
-          <Suspense fallback={null}>
-            <AiQuickBlueprintComposer initialIdea={searchParams.get("idea") ?? ""} />
-          </Suspense>
-
-          <div className="mt-6">
-            <CreateStartGrandAtelierSection storyHref={storyHref} compactOnMobile={isMobileViewport} />
-          </div>
-
-          <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
-            <Link href="/studio/templates">{bt("템플릿 고르기", "Choose a template")}<ArrowRight size={18} aria-hidden /></Link>
-            <Link href="/studio/import">{bt("파일 가져오기", "Import a file")}<Upload size={18} aria-hidden /></Link>
-          </nav>
-
           <section className="create-start-recent" aria-label={bt("최근 작업", "Recent work")}>
             {recentWorkError ?? (recentProject && recentTarget ? (
               <Link href={recentTarget.href} className="create-start-recent-link"
@@ -255,7 +296,60 @@ export function CreateStartPage() {
               <div className="create-start-recent-empty"><span>{bt("아직 작업한 작품이 없어요.", "No works yet.")}</span><Link href="/studio">{bt("내 작업 보기", "View my work")}<ArrowRight size={17} aria-hidden /></Link></div>
             ))}
           </section>
+
+          <nav className="create-start-secondary" aria-label={bt("다른 자료로 시작하기", "Start with existing materials")}>
+            <Link href="/studio/templates">{bt("템플릿 고르기", "Choose a template")}<ArrowRight size={18} aria-hidden /></Link>
+            <Link href="/studio/import">{bt("파일 가져오기", "Import a file")}<Upload size={18} aria-hidden /></Link>
+          </nav>
+
+          <div className="mt-6">
+            <CreateStartGrandAtelierSection storyHref={storyHref} />
+          </div>
+
+          <details
+            open={aiComposerOpen}
+            onToggle={(event) => {
+              if (event.target === event.currentTarget) {
+                setAiComposerOpen(event.currentTarget.open);
+              }
+            }}
+            data-testid="create-ai-blueprint-disclosure"
+            className="group/ai-composer mt-4 rounded-2xl border border-line bg-panel/45"
+          >
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-fg transition-colors hover:bg-card/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0 [word-break:keep-all]">
+                {bt("글 한 줄로 콘티 초안 만들기", "Draft a storyboard from one line")}
+              </span>
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-2">
+                <span>{bt("선택 도구", "Optional")}</span>
+                <ChevronDown size={16} aria-hidden="true" className="transition-transform duration-150 group-open/ai-composer:rotate-180 motion-reduce:transition-none" />
+              </span>
+            </summary>
+            <div className="border-t border-line/70 p-4 sm:p-5">
+              <Suspense fallback={null}>
+                <AiQuickBlueprintComposer
+                  initialIdea={initialIdea}
+                  className="mt-0 border-0 bg-transparent p-0 shadow-none sm:p-0"
+                />
+              </Suspense>
+            </div>
+          </details>
         </>
+      ) : null}
+
+      {activeSection === "all" && !isMobileViewport ? (
+        <details className="group/workflow-more mt-4 rounded-2xl border border-line bg-panel/45">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-fg transition-colors hover:bg-card/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <span className="min-w-0 [word-break:keep-all]">
+              {bt("장르 프리셋 · 4단계 제작 흐름 보기", "Browse genre presets & 4-step workflow")}
+            </span>
+            <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-2 transition-transform duration-150 group-open/workflow-more:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <div className="space-y-4 border-t border-line/70 p-4 sm:p-5">
+            <CreateStartGenreStarterSection className="mt-0" />
+            {renderStoryPipelineSection("mt-0")}
+          </div>
+        </details>
       ) : null}
 
       {activeSection === "all" ? <nav aria-label={bt("다른 시작 화면", "More start pages")}
@@ -273,60 +367,9 @@ export function CreateStartPage() {
         ))}
       </nav> : null}
 
-      {(activeSection === "all" && !isMobileViewport) || activeSection === "pipeline" || activeSection === "tools" ? (
-      <section
-        aria-label={bt("웹소설 원작 · 시놉시스 → 웹툰 4단계 파이프라인", "Webnovel & Synopsis to Webtoon 4-Step Pipeline")}
-        data-testid="create-rea-story-pipeline"
-        className="mt-6 rounded-2xl border border-line bg-panel/60 p-4 sm:p-5"
-      >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
-              {bt("4단계 제작 흐름", "4-STEP WORKFLOW")}
-            </p>
-            <h2 className="text-sm font-bold text-fg">
-              {bt("줄거리 정리부터 콘티 · 3D 배경 · 연재 준비까지 차례대로 이어가요", "Follow four clear steps from story notes to boards, 3D scenes, and release preparation")}
-            </h2>
-          </div>
-          <Link
-            href="/studio/ai-lab"
-            style={{ minHeight: "48px" }}
-            className="inline-flex min-h-11 scroll-my-24 items-center rounded-full border border-accent/40 bg-accent-soft px-3.5 py-2 text-[11px] font-bold text-accent hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            {bt("AI 창작 도우미 열기 →", "Open AI Creative Helper →")}
-          </Link>
-        </div>
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          {STORY_TO_WEBTOON_PIPELINE_MODES.map((mode) => {
-            const enMode = PIPELINE_MODE_EN_COPY[mode.id];
-            const descriptionKo = mode.id === "ink-render-publish"
-              ? "회차와 게시 설정을 확인해요. 게시용 파일 준비는 외부 게시 완료와 달라요. 외부 채널에는 직접 업로드·예약해 주세요."
-              : mode.description;
-            return (
-              <Link
-                key={mode.id}
-                href={mode.targetHref}
-                className="flex min-h-11 flex-col justify-between rounded-xl border border-line/80 bg-canvas/85 p-3.5 text-left transition-colors hover:border-accent/50"
-              >
-                <div>
-                  <span className="inline-block rounded bg-accent/15 px-2 py-0.5 text-[10px] font-extrabold text-accent">
-                    {bt(mode.step, enMode?.step ?? mode.step)}
-                  </span>
-                  <p className="mt-2 text-xs font-bold text-fg">{bt(mode.label, enMode?.label ?? mode.label)}</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-fg-2">{bt(descriptionKo, enMode?.description ?? descriptionKo)}</p>
-                </div>
-                <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-accent">
-                  {bt(mode.ctaLabel, enMode?.ctaLabel ?? mode.ctaLabel)} →
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      {activeSection === "pipeline" || activeSection === "tools" ? renderStoryPipelineSection("mt-6") : null}
 
-      ) : null}
-
-      {(activeSection === "all" && !isMobileViewport) || activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
+      {activeSection === "presets" ? <CreateStartGenreStarterSection /> : null}
 
       {activeSection === "topics" ? (
       <section

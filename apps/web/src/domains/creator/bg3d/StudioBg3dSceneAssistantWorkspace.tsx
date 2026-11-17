@@ -3,9 +3,9 @@
 // shared viewport even when the bag identity itself stays stable.
 
 import {
-  ArrowLeft, ArrowRight, Box, Camera, Check, CircleUserRound,
+  ArrowLeft, ArrowRight, Box, Camera, Check, CircleUserRound, Compass,
   Copy, Cuboid, Focus, ImagePlus, Layers3, Loader2, Maximize2, Move3d, Rotate3d,
-  Save, Scaling, ScanLine, SlidersHorizontal, Sparkles, Trash2, Upload,
+  Save, Scaling, ScanLine, SlidersHorizontal, SunMedium, Trash2, Upload, UserPlus,
 } from "lucide-react";
 import { useEffect, useReducer, useRef, useState } from "react";
 
@@ -209,7 +209,7 @@ function ChooseStep({
       <section className="scene-assistant__hero">
         <img src="/brand/illustrated-20260928/background-city.webp" alt="" decoding="async" loading="lazy" />
         <div>
-          <p><Sparkles size={13} aria-hidden /> 1분 장면 제작</p>
+          <p><Compass size={13} aria-hidden /> 1분 장면 제작</p>
           <h3>무엇을 만들까요?</h3>
           <span>장소나 인물을 고르면 배치부터 웹툰 적용까지 필요한 도구만 보여 드립니다.</span>
           <small>{bt("창작 영감을 위한 예시 일러스트", "Illustration for creative inspiration")}</small>
@@ -221,7 +221,7 @@ function ChooseStep({
       {goal === "background" ? (
         <section aria-labelledby="scene-assistant-scene-title">
           <div className="scene-assistant__section-title">
-            <div><p>CURATED SCENE COLLECTION</p><h4 id="scene-assistant-scene-title">장면 프리셋</h4></div>
+            <h4 id="scene-assistant-scene-title">장면 프리셋</h4>
             {hasScene ? <span>선택하면 현재 장면을 바꿉니다</span> : <span>선택 즉시 3D 장면을 구성합니다</span>}
           </div>
           <div className="scene-assistant__scene-grid">
@@ -240,7 +240,7 @@ function ChooseStep({
       {goal === "background" && assets.length > 0 ? (
         <section aria-labelledby="scene-assistant-env-assets-title">
           <div className="scene-assistant__section-title">
-            <div><p>READY 3D ENVIRONMENTS</p><h4 id="scene-assistant-env-assets-title">준비된 3D 환경 모델</h4></div>
+            <h4 id="scene-assistant-env-assets-title">준비된 3D 환경 모델</h4>
             <span>장면에 추가해 공간 밀도를 높여요</span>
           </div>
           <div className="scene-assistant__asset-grid" data-testid="scene-assistant-env-asset-grid">
@@ -253,12 +253,9 @@ function ChooseStep({
       {goal !== "background" ? (
         <section aria-labelledby="scene-assistant-assets-title">
           <div className="scene-assistant__section-title">
-            <div>
-              <p>{goal === "character" ? "CHARACTER & POSE" : "SMART PROPS"}</p>
-              <h4 id="scene-assistant-assets-title">
-                {goal === "character" ? "인물·포즈 소재" : "바로 놓는 소품"}
-              </h4>
-            </div>
+            <h4 id="scene-assistant-assets-title">
+              {goal === "character" ? "인물·포즈 소재" : "바로 놓는 소품"}
+            </h4>
             <span>선택 후 화면에서 위치만 정하세요</span>
           </div>
           {goal === "character" ? (
@@ -269,7 +266,7 @@ function ChooseStep({
                 <ArrowRight size={15} aria-hidden />
               </a>
               <a href={studioAssistantSurfaceHref("character")}>
-                <Sparkles size={18} aria-hidden />
+                <UserPlus size={18} aria-hidden />
                 <span><strong>새 캐릭터 만들기</strong><small>외형을 만들고 프로젝트 소재로 재사용</small></span>
                 <ArrowRight size={15} aria-hidden />
               </a>
@@ -335,7 +332,7 @@ function ArrangeStep({
       {selectedCount > 0 ? (
         <section aria-labelledby="scene-assistant-transform-title">
           <div className="scene-assistant__section-title compact">
-            <div><p>SELECTED ITEM</p><h4 id="scene-assistant-transform-title">선택 항목 조정</h4></div>
+            <h4 id="scene-assistant-transform-title">선택 항목 조정</h4>
           </div>
           <div className="scene-assistant__action-grid three">
             {TRANSFORM_ACTIONS.map((action) => {
@@ -378,7 +375,7 @@ function ArrangeStep({
 
       <section aria-labelledby="scene-assistant-add-title">
         <div className="scene-assistant__section-title compact">
-          <div><p>ADD TO SCENE</p><h4 id="scene-assistant-add-title">장면에 더하기</h4></div>
+          <h4 id="scene-assistant-add-title">장면에 더하기</h4>
           <span>필요한 것만 추가하세요</span>
         </div>
         <div className="scene-assistant__add-grid">
@@ -429,7 +426,7 @@ function FrameStep({
 
       <section aria-labelledby="scene-assistant-camera-title">
         <div className="scene-assistant__section-title compact">
-          <div><p>CAMERA COMPOSITION</p><h4 id="scene-assistant-camera-title">추천 구도</h4></div>
+          <h4 id="scene-assistant-camera-title">추천 구도</h4>
           <span>언제든 다시 바꿀 수 있습니다</span>
         </div>
         <div className="scene-assistant__camera-grid">
@@ -492,7 +489,7 @@ function FinishStep({
           <span className="color" /><span className="line" /><span className="tone" />
         </div>
         <div>
-          <p><Sparkles size={13} aria-hidden /> 웹툰 적용 준비</p>
+          <p><SunMedium size={13} aria-hidden /> 웹툰 적용 준비</p>
           <h3>어떤 모습으로 넣을까요?</h3>
           <span>적용 후에도 연결된 장면을 다시 열어 구도와 스타일을 바꿀 수 있습니다.</span>
         </div>
@@ -500,7 +497,7 @@ function FinishStep({
 
       <section aria-labelledby="scene-assistant-output-title">
         <div className="scene-assistant__section-title compact">
-          <div><p>OUTPUT STYLE</p><h4 id="scene-assistant-output-title">작화 스타일</h4></div>
+          <h4 id="scene-assistant-output-title">작화 스타일</h4>
           <span>추천: 컬러 배경</span>
         </div>
         <div className="scene-assistant__output-grid">
@@ -808,8 +805,8 @@ export function StudioBg3dSceneAssistantWorkspace({
         <SheetHandle state={sheetState} onChange={setSheetState} />
         <div className="scene-assistant__panel-head">
           <div className="scene-assistant__panel-title">
-            <span><Sparkles size={15} aria-hidden /></span>
-            <div><p>SCENE ASSISTANT</p><h3>{STUDIO_BG3D_ASSISTANT_STEPS[studioBg3dAssistantStepIndex(step)]?.label}</h3></div>
+            <span><Compass size={15} aria-hidden /></span>
+            <div><h3>{STUDIO_BG3D_ASSISTANT_STEPS[studioBg3dAssistantStepIndex(step)]?.label}</h3></div>
           </div>
           <button type="button" className="scene-assistant__precision" onClick={openProfessionalForContext}>
             <SlidersHorizontal size={14} aria-hidden /> 정밀 편집

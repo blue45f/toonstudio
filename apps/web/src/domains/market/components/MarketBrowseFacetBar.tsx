@@ -4,7 +4,6 @@ import {
   Cpu,
   History,
   ShieldCheck,
-  Sparkles,
   Store,
   Trash2,
   X,
@@ -227,8 +226,7 @@ export function MarketBrowseFacetBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 border-t border-line/60 pt-2.5">
-        <span className="mr-1 inline-flex items-center gap-1 text-xs font-bold text-fg-3">
-          <Sparkles className="size-3 text-accent" aria-hidden="true" />
+        <span className="mr-1 text-xs font-semibold text-fg-3">
           {t("장르·작업 태그:", "Quick tags:")}
         </span>
         {QUICK_WORKFLOW_TAGS.map((tag) => {

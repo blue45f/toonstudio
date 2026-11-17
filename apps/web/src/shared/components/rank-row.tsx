@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Minus, HelpCircle, Sparkles } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus, HelpCircle } from "lucide-react";
 import { memo, useId, useState } from "react";
 
 import { AdultOverlay } from "./adult-overlay";
@@ -61,13 +61,6 @@ export function MiniPoster({
 export const RANK_ENTRY_STAGGER_CAP = 12;
 export const RANK_ENTRY_STAGGER_STEP_MS = 45;
 
-// Top3 메달 글로 톤 — 금/은/동. rank-medal-pulse 키프레임이 --medal-glow 로 소비한다.
-const MEDAL_GLOW: Record<number, string> = {
-  1: "oklch(0.84 0.16 85 / 0.5)", // 금
-  2: "oklch(0.85 0.02 250 / 0.4)", // 은
-  3: "oklch(0.7 0.12 55 / 0.45)", // 동
-};
-
 function Delta({ delta }: { delta: number }) {
   if (delta > 0)
     return (
@@ -126,7 +119,7 @@ export const RankRow = memo(function RankRow({
   return (
     <div
       className={cn(
-        "group/row flex flex-col rounded-xl border border-line/45 bg-card/35 transition-all duration-150 hover:border-line hover:bg-card overflow-hidden",
+        "group/row flex flex-col rounded-xl border border-line/45 bg-card/35 transition-colors duration-150 hover:border-line hover:bg-card overflow-hidden",
         expanded && "border-accent/40 bg-card shadow-sm",
         className
       )}
@@ -142,13 +135,10 @@ export const RankRow = memo(function RankRow({
           aria-expanded={expanded}
           aria-controls={detailId}
           className={cn(
-            "relative flex min-h-11 flex-col items-center justify-center rounded-xl border px-1.5 py-1 transition-all cursor-pointer hover:border-accent hover:bg-accent-soft/30",
+            "relative flex min-h-11 flex-col items-center justify-center rounded-xl border px-1.5 py-1 transition-colors duration-150 cursor-pointer hover:border-accent hover:bg-accent-soft/30",
             top3 ? "border-accent/45 bg-accent/10 text-accent" : "border-line/70 bg-canvas/40 text-fg-3",
-            // Top3 메달 글로 — 은은한 무한 맥동. ring 도 box-shadow 라 확장 시(ring 표시)엔 꺼서 충돌 회피.
-            top3 && !expanded && "motion-safe:[animation:rank-medal-pulse_2.8s_ease-in-out_infinite]",
             expanded && "border-accent bg-accent-soft/40 ring-2 ring-accent/10"
           )}
-          style={top3 ? ({ "--medal-glow": MEDAL_GLOW[rank] } as React.CSSProperties) : undefined}
         >
           <span
             className={cn(
@@ -210,7 +200,7 @@ export const RankRow = memo(function RankRow({
             aria-expanded={expanded}
             aria-controls={detailId}
             className={cn(
-              "flex min-h-11 items-center gap-2 rounded-md border text-right px-2 py-1 transition-all cursor-pointer hover:border-accent hover:bg-accent-soft/20",
+              "flex min-h-11 items-center gap-2 rounded-md border text-right px-2 py-1 transition-colors duration-150 cursor-pointer hover:border-accent hover:bg-accent-soft/20",
               expanded ? "border-accent/40 bg-accent-soft/20" : "border-line/70 bg-canvas/30"
             )}
           >
@@ -241,8 +231,7 @@ export const RankRow = memo(function RankRow({
         <div id={detailId} className="border-t border-line/45 bg-canvas/40 px-3 py-3 text-xs rounded-b-xl animate-fade-in">
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 font-semibold text-accent text-[0.7rem] uppercase tracking-wider">
-                <Sparkles size={11} />
+              <span className="flex items-center gap-1 font-medium text-accent text-xs tracking-[0.02em]">
                 {t("ranking.breakdownTitle")}
               </span>
               <span className="font-mono text-[10px] text-fg-3">

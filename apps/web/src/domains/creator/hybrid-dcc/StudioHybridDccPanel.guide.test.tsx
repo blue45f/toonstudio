@@ -44,6 +44,9 @@ describe("StudioHybridDccPanel first-screen guide", () => {
     await waitFor(() => {
       expect(document.querySelector("[data-studio-hybrid-dcc-stats]")?.getAttribute("data-assets")).toBe("1");
     });
+    expect(document.querySelector("[data-studio-hybrid-dcc-stats]")?.textContent).toContain("오류 0 · 경고 0 · 선택 큐브");
+    const meshIdDisclosure = screen.getByTestId("studio-hybrid-dcc-mesh-id-disclosure") as HTMLDetailsElement;
+    expect(meshIdDisclosure.open).toBe(false);
     // 사용자가 직접 열거나 닫지 않았다면 오브젝트가 생긴 뒤에는 안내가 물러난다.
     expect(document.querySelector("[data-studio-hybrid-dcc-intro]")).toBeNull();
     expect(guideToggle().getAttribute("aria-expanded")).toBe("false");

@@ -22,7 +22,7 @@ import Link from "@/shared/navigation/router-link";
 import { listWorks, type WorkSummary } from "@/platform/creator-client";
 
 const TEXT_LINK = "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-1 text-sm font-semibold text-fg-2 underline-offset-4 transition-colors hover:text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
-const CARD_CLASS = "rounded-2xl border border-accent/30 bg-gradient-to-r from-accent-soft via-panel to-cool/10 p-3 sm:p-4";
+const CARD_CLASS = "rounded-2xl border border-line bg-card p-3 sm:p-4";
 const COVER_CLASS = "h-[5.875rem] w-[4.625rem] shrink-0 overflow-hidden rounded-xl sm:h-[6.75rem] sm:w-[7.625rem]";
 
 export function ShowcaseHeader() {

@@ -88,9 +88,9 @@
   min-height: 2.75rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: var(--spectacle-gradient);
+  background: var(--color-accent);
   color: var(--color-on-accent);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.85rem;
   white-space: nowrap;
   text-decoration: none;
@@ -165,7 +165,7 @@
 }
 .cuts-player__progress-bar {
   height: 100%;
-  background: var(--spectacle-gradient);
+  background: var(--color-accent);
   transition: width 0.2s linear;
 }
 

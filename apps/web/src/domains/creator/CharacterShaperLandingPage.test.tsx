@@ -107,6 +107,8 @@ describe("CharacterShaperLandingPage", () => {
     }
 
     expect(screen.getByRole("link", { name: "사용 가이드" }).getAttribute("href")).toBe("#how-to");
+    expect(screen.getByText("캐릭터 작업실 미리보기")).toBeTruthy();
+    expect(screen.queryByText("CHARACTER SHAPER — PREVIEW")).toBeNull();
     expect(screen.getByText("캐릭터의 첫 장면을 준비하세요")).toBeTruthy();
     expect(screen.getByText("창작 영감을 위한 예시 일러스트")).toBeTruthy();
     expect(document.querySelectorAll(".studio-3d-illustration__portraits img")).toHaveLength(2);

@@ -53,20 +53,22 @@ describe("CommunityPage", () => {
     expect(screen.getByRole("link", { name: /창작자 갤러리/ }).getAttribute("href")).toBe("/showcase");
     // 공개 공고 탐색과 이력서·지원·제안의 채용 업무 진입을 분리한다.
     expect(screen.getByRole("link", { name: "웹툰 구인·의뢰" }).getAttribute("href")).toBe("/collaborate");
-    expect(screen.getByRole("link", { name: "크레페·크몽·스튜디오 어시스턴트 구인 매칭" }).getAttribute("href")).toBe("/team/recruiting");
-    expect(screen.getByRole("link", { name: /FANBOX·Substack 선공개\/PSD 티어/ }).getAttribute("href")).toBe("/creator/membership");
+    expect(screen.getByRole("link", { name: "스튜디오 어시스턴트 구인 매칭" }).getAttribute("href")).toBe("/team/recruiting");
+    expect(screen.getByRole("link", { name: "창작자 멤버십·선공개 후원" }).getAttribute("href")).toBe("/creator/membership");
     // 홍보 공간은 텍스트 화살표 대신 같은 카드 문법으로 이어진다.
     expect(screen.getByRole("link", { name: /트레일러 상영관/ }).getAttribute("href")).toBe("/community/promote?kind=trailer");
     expect(screen.getByTestId("community-quick-guide")).toBeTruthy();
-    expect(screen.getByTestId("community-rea-creator-showcase-bar").textContent).toContain(
-      "CARA · PIXIV · ARTSTATION · BEHANCE SHOWCASE",
-    );
+    expect(screen.getByText("연재 성장 단계")).toBeTruthy();
+    expect(screen.getByText("작품 쇼케이스")).toBeTruthy();
+    const supportBar = screen.getByTestId("community-rea-creator-showcase-bar");
+    expect(supportBar.closest("details")?.querySelector("summary")?.textContent).toBe("창작 활동 지원 도구");
+    expect(supportBar.textContent).not.toMatch(/CARA|PIXIV|ARTSTATION|Skeb|VGen/iu);
     expect(screen.getByTestId("community-rea-interactive-workbench")).toBeTruthy();
     expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain(
-      "Skeb 무수정 리퀘스트",
+      "무수정 리퀘스트와 캐릭터 시트 작업 슬롯 예약 구성 예시",
     );
     fireEvent.click(screen.getByTestId("community-rea-track-c2pa-nightshade-shield"));
-    expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain("Glaze/Nightshade 보호 방식 검토 예시");
+    expect(screen.getByTestId("community-rea-active-track-summary").textContent).toContain("창작 출처 서명·무단 학습 방지 검토 예시");
     expect(screen.getByTestId("community-rea-active-track-summary").textContent).not.toContain("보호 활성");
     // 이모지 아이콘을 쓰지 않는다(사이트 공통 아이콘 문법).
     expect(document.body.textContent).not.toMatch(/[📚🖋☕🫧]/u);

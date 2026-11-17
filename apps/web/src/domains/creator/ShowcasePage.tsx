@@ -122,14 +122,14 @@ export function ShowcasePage() {
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-accent">
-                  {bt("작품 소개 · 팀 모집 · 공모", "PORTFOLIO · RECRUITING · CONTEST")}
+                <p className="text-xs font-semibold text-accent">
+                  {bt("작품 소개 · 팀 모집 · 공모", "Portfolio, recruiting & contests")}
                 </p>
-                <h2 className="text-sm font-bold text-fg">
+                <h2 className="mt-0.5 text-sm font-bold text-fg">
                   {bt("작품 소개와 협업 시작하기", "Share work and start collaborating")}
                 </h2>
               </div>
-              <span className="rounded-full border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-semibold text-fg-3">
+              <span className="rounded-lg border border-line bg-canvas px-2.5 py-0.5 text-[11px] font-medium text-fg-3">
                 {bt("공정별 포트폴리오 · 팀 매칭 · 공모전 연결", "Stage Portfolio · Team Match · Contest")}
               </span>
             </div>

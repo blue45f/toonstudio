@@ -11,7 +11,6 @@ import {
   LockKeyhole,
   LogIn,
   Mail,
-  Sparkles,
   Trash2,
   UserPlus,
   UserRound,
@@ -378,20 +377,14 @@ export function AuthForm({
           className={cn(
             "relative",
             variant === "dialog"
-              ? "mb-5 overflow-hidden rounded-2xl border border-line/80 bg-[radial-gradient(circle_at_18%_0%,var(--color-accent-soft),transparent_58%),linear-gradient(145deg,var(--color-card),var(--color-panel))] p-4 pr-14 shadow-sm"
+              ? "mb-5 rounded-2xl border border-line bg-panel/60 p-4 pr-14"
               : "mb-7"
           )}
         >
-          {variant === "dialog" ? (
-            <span
-              aria-hidden="true"
-              className="absolute -right-8 -top-8 size-28 rounded-full border border-accent/15 bg-accent/5"
-            />
-          ) : null}
             <div className="relative flex items-start gap-3">
               <ToonStudioMark className="size-11 rounded-xl" />
               <div className="min-w-0">
-                <p className="font-display text-[0.66rem] font-bold uppercase tracking-[0.16em] text-accent">
+                <p className="text-xs font-semibold text-fg-2">
                   {translateCurrentStaticSourceText(
                     "domains.auth.components.auth.modal",
                     "ko",
@@ -401,7 +394,7 @@ export function AuthForm({
                 <TitleTag
                   id={titleId}
                   className={cn(
-                    "mt-1 font-display font-bold tracking-[-0.025em] text-fg",
+                    "mt-1 font-display font-semibold tracking-[-0.025em] text-fg",
                     variant === "page" ? "text-[1.65rem] leading-snug" : "text-xl"
                   )}
                 >
@@ -592,7 +585,6 @@ export function AuthForm({
                               }}
                               className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-raised px-3 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                             >
-                              <Sparkles size={13} />
                               {translateCurrentStaticSourceText(
                                 "domains.auth.components.auth.modal",
                                 "ko",
@@ -937,7 +929,7 @@ export function AuthForm({
             <button
               type="submit"
               disabled={isSubmitting || (mode === "signup" && emailAvailable === false)}
-              className="group mt-0.5 flex h-12 items-center justify-center gap-2 rounded-xl border border-accent bg-accent text-sm font-bold text-on-accent shadow-lg shadow-accent/15 outline-none transition-[background-color,box-shadow,transform] hover:bg-accent-2 hover:shadow-accent/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+              className="group mt-0.5 flex h-12 items-center justify-center gap-2 rounded-xl border border-accent bg-accent text-sm font-semibold text-on-accent shadow-sm outline-none transition-[background-color,transform] hover:bg-accent-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
             >
               {mode === "login" ? (
                 <LogIn

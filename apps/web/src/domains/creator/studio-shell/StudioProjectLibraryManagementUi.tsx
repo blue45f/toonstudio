@@ -235,7 +235,7 @@ export function StudioProjectLibraryCard({
       data-selected={checked || undefined}
       data-recent-primary={isMostRecent || undefined}
       className={cn(
-        "group relative min-w-0 overflow-hidden rounded-2xl border bg-gradient-to-b from-card to-panel/90 p-3.5 shadow-sm transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-accent/45 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:transform-none sm:p-4",
+        "group relative min-w-0 overflow-hidden rounded-2xl border bg-card p-3.5 transition-[border-color,background-color] duration-150 hover:border-accent/45 motion-reduce:transition-none sm:p-4",
         checked ? "border-accent ring-2 ring-accent/20" : isMostRecent ? "border-accent/40" : "border-line",
       )}
     >
@@ -245,10 +245,10 @@ export function StudioProjectLibraryCard({
         className={cn(
           "pointer-events-none absolute inset-x-0 top-0 h-0.5",
           isMostRecent
-            ? "bg-gradient-to-r from-accent via-cool to-accent-2"
+            ? "bg-accent/70"
             : temporary
-              ? "bg-gradient-to-r from-warning/75 via-warning/35 to-transparent"
-              : "bg-gradient-to-r from-accent/65 via-cool/45 to-transparent",
+              ? "bg-warning/55"
+              : "bg-line",
         )}
       />
       <StudioProjectCardThumbnail

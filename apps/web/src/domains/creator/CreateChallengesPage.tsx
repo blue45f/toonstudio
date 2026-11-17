@@ -1,6 +1,5 @@
 // 창작 챌린지 — 진행 중 주제 카드(D-day) + 챌린지별 참여작 그리드 + 참여 3단계 안내.
-import { useFx } from "@toonstudio/core/fx";
-import { ArrowLeft, CalendarClock, LayoutGrid, Lightbulb, PenLine, Share2, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowLeft, CalendarClock, LayoutGrid, Lightbulb, PenLine, Share2, Trophy, Users } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { WorkGridSkeleton } from "./creator-community-ui";
@@ -19,7 +18,6 @@ import { useShowcaseResource } from "./publishing/use-showcase-resource";
 
 import { CountUp } from "@/shared/components/count-up";
 import { Container } from "@/shared/components/section";
-import { ShimmerTitle } from "@/shared/components/shimmer-title";
 import { SharePageButton } from "@/shared/components/share-page-button";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn, formatCount } from "@/shared/lib/utils";
@@ -38,7 +36,7 @@ const URGENT_DDAY = 3;
 const ONGOING_CARD_LIMIT = 4;
 /** 좁은 화면 레일에서 챌린지 카드 한 장의 너비 — 다음 카드가 살짝 보여 옆으로 넘길 수 있음을 알린다. */
 const CHALLENGE_RAIL_ITEM = "w-[78%] min-[480px]:w-[46%]";
-const CHALLENGE_RAIL_GRID = "sm:grid-cols-2 xl:grid-cols-4";
+const CHALLENGE_RAIL_GRID = "sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4";
 
 // 마감 D-day 칩 — 마감 임박(3일 이내)은 경고 톤. 색 외에 아이콘·문구로도 상태를 전달한다.
 function DdayChip({ endsAt }: { endsAt: string | null }) {
@@ -117,25 +115,25 @@ function ChallengeCard({
       onClick={onSelect}
       aria-pressed={active}
       className={cn(
-        "sheen-sweep group relative flex h-full w-full flex-col rounded-2xl border p-4 text-left transition-[transform,background-color,border-color,box-shadow] duration-200 ease-out-expo hover:-translate-y-0.5 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        "group relative flex h-full w-full flex-col rounded-2xl border p-4 text-left transition-[background-color,border-color,transform] duration-150 enabled:active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:transform-none",
         active
-          ? "border-accent/60 bg-accent-soft shadow-lg shadow-accent/15"
-          : "border-line bg-panel/30 hover:border-accent/40 hover:bg-panel/50",
+          ? "border-accent bg-accent-soft/55"
+          : "border-line bg-card/70 hover:border-accent/45 hover:bg-panel/60",
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
-          <Trophy size={12} aria-hidden className="transition-transform duration-200 ease-out-expo group-hover:-rotate-6 group-hover:scale-110" />
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
+          <Trophy size={12} aria-hidden />
           {challenge.state === "ended" ? bt("지난 챌린지", "Past challenge") : bt("주간 챌린지", "Weekly challenge")}
         </span>
         <DdayChip endsAt={challenge.endsAt} />
       </div>
-      <h3 className="mt-2 text-lg font-bold leading-tight text-fg transition-colors group-hover:text-accent">{challenge.title}</h3>
+      <h3 className="mt-2 text-lg font-bold leading-tight text-fg [word-break:keep-all] transition-colors group-hover:text-accent">{challenge.title}</h3>
       <p className="mt-1.5 line-clamp-2 break-keep text-sm leading-relaxed text-fg-2">{challenge.theme}</p>
       <ChallengePeriodLine challenge={challenge} />
       <span className="mt-auto inline-flex items-center gap-1 pt-3 text-xs text-fg-2">
         <Users size={12} aria-hidden />
-        {bt("참여작", "Entries")} <span className="numeral font-semibold">{formatCount(challenge.entries)}</span>
+        {bt("참여작", "Entries")} <span className="numeral font-semibold tabular-nums">{formatCount(challenge.entries)}</span>
       </span>
       {active ? <span className="sr-only">{bt("선택됨", "Selected")}</span> : null}
     </button>
@@ -144,7 +142,7 @@ function ChallengeCard({
 
 function ChallengeListSkeleton() {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-hidden>
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4" aria-hidden>
       {Array.from({ length: ONGOING_CARD_LIMIT }, (_, index) => (
         <div key={index} className="rounded-2xl border border-line bg-panel/30 p-4">
           <span className="skeleton block h-4 w-1/2" />
@@ -159,17 +157,11 @@ function ChallengeListSkeleton() {
 
 function JoinFromStudioLink({ challenge }: { challenge: ChallengeSummary }) {
   const bt = useBilingual("CreateChallengesPage");
-  const fx = useFx();
   return (
     <Link
       href={buildStudioHref({ challengeId: challenge.id })}
       data-no-sfx
-      onClick={(event) => {
-        // 참여 시작은 작은 보상감 — 강조색 파티클 + 'pop'. 모션 감소 설정은 fx 가 존중한다.
-        fx.sfx("pop");
-        fx.burstAt(event.currentTarget, { count: 16, spread: 1.1 });
-      }}
-      className={buttonClass({ size: "sm", variant: "solid", className: "gap-1.5 shadow-lg shadow-accent/25" })}
+      className={buttonClass({ size: "sm", variant: "solid", className: "min-h-11 gap-1.5" })}
     >
       <PenLine size={14} aria-hidden />
       {bt("스튜디오에서 참여하기", "Join from Studio")}
@@ -261,22 +253,14 @@ export function CreateChallengesPage() {
         {bt("창작 갤러리", "Creator gallery")}
       </Link>
 
-      <header className="relative mb-6 overflow-hidden rounded-2xl border border-line bg-panel/45 p-5 surface-hl shadow-lg shadow-black/15 sm:p-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-16 -top-16 size-72 rounded-full opacity-60 blur-3xl motion-safe:[animation:hero-bloom_11s_ease-in-out_infinite]"
-          style={{ background: "radial-gradient(closest-side, color-mix(in oklch, var(--color-accent) 24%, transparent), transparent 72%)" }}
-        />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-6 rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="eyebrow flex items-center gap-2 text-accent">
-              <span aria-hidden className="pulse-dot shrink-0" />
-              <Sparkles size={14} aria-hidden /> CREATOR CHALLENGE
+            <p className="text-xs font-semibold text-accent">
+              {bt("주간 창작 공모", "Weekly challenge")}
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-              <ShimmerTitle as="span" particleCount={22} particleSpread={1.2}>
-                {bt("창작 챌린지", "Creator challenges")}
-              </ShimmerTitle>
+            <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+              {bt("창작 챌린지", "Creator challenges")}
             </h1>
             <StudioPageIntro motif="cards" className="mt-1" />
             <p className="mt-2 max-w-2xl text-pretty break-keep text-base leading-relaxed text-fg-2 sm:text-sm">
@@ -286,7 +270,7 @@ export function CreateChallengesPage() {
               )}
             </p>
           </div>
-          <Link href={SHOWCASE_HOME_PATH} className={buttonClass({ size: "sm", variant: "outline", className: "gap-1.5" })}>
+          <Link href={SHOWCASE_HOME_PATH} className={buttonClass({ size: "sm", variant: "outline", className: "min-h-11 gap-1.5" })}>
             <LayoutGrid size={14} aria-hidden />
             {bt("갤러리에서 작품 보기", "Browse the gallery")}
           </Link>

@@ -32,10 +32,11 @@
   pointer-events: none;
   background: var(--art-scrim);
 }
-/* 아트가 없을 땐 스펙트럼+타이포 커버가 무대다 (§6.2 (2) 대형 비주얼). */
+/* 아트가 없을 땐 차분한 원고실 패널 단계가 무대다 (§6.2 (2) 대형 비주얼). */
 :where(.spectacle-hero[data-spectacle-art="none"]) {
-  background: linear-gradient(140deg, color-mix(in oklch, var(--domain-tint) 30%, var(--unified-panel)), var(--unified-panel) 62%);
-  color: var(--unified-fg);
+  --spectacle-surface: var(--spectacle-gradient);
+  background: color-mix(in oklch, var(--domain-tint) 6%, var(--unified-panel));
+  color: var(--color-fg);
 }
 :where(.spectacle-hero[data-spectacle-art="none"])::before { background: none; }
 :where(.spectacle-hero-inner) {
@@ -56,18 +57,23 @@
 :where(.spectacle-hero-title) {
   font-family: var(--font-display), sans-serif;
   font-size: clamp(36px, 3.4vw, 54px);
-  font-weight: 760;
+  font-weight: 600;
   line-height: 1.14;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
+  color: var(--color-fg);
   text-wrap: balance;
   word-break: keep-all;
 }
+:where(.spectacle-hero[data-spectacle-art="image"]) :where(.spectacle-hero-title) {
+  color: var(--art-on);
+}
 :where(.spectacle-hero-title) :where(em) {
-  background: var(--spectacle-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-style: inherit;
+  background: none;
+  color: var(--color-fg);
+  font-style: normal;
+}
+:where(.spectacle-hero[data-spectacle-art="image"]) :where(.spectacle-hero-title) :where(em) {
+  color: var(--art-on);
 }
 :where(.spectacle-hero-lede) { font-size: 15.5px; line-height: 1.55; text-wrap: pretty; }
 /* 글래스 패널 — 히어로 안의 보조 패널(안내·요약) 표준 면. */

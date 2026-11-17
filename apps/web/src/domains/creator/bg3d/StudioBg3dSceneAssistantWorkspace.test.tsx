@@ -76,6 +76,7 @@ describe("StudioBg3dSceneAssistantWorkspace", () => {
     expect(screen.getByRole("button", { name: /인물·포즈/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /소품/ })).toBeDefined();
     expect(screen.queryByText(/글로벌 축|로컬 축|법선 정렬|LT/u)).toBeNull();
+    expect(screen.queryByText(/CURATED SCENE COLLECTION|SCENE ASSISTANT/u)).toBeNull();
     expect((screen.getByRole("button", { name: "다음: 배치하기" }) as HTMLButtonElement).disabled).toBe(true);
   });
 

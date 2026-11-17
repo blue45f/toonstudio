@@ -178,9 +178,9 @@ function Metric({
   if (tone === "danger") toneClass = "border-danger/30 bg-danger/10";
   return (
     <div className={cn("rounded-2xl border p-3.5", toneClass)}>
-      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.14em] text-fg-3">{label}</p>
-      <p className="mt-2 text-2xl font-black tracking-tight text-fg">{value}</p>
-      <p className="mt-1 text-xs leading-relaxed text-fg-2">{detail}</p>
+      <p className="text-xs font-medium text-fg-3">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-fg">{value}</p>
+      <p className="mt-1 text-xs leading-relaxed tabular-nums text-fg-2">{detail}</p>
     </div>
   );
 }
@@ -205,7 +205,7 @@ function Pill({
   if (tone === "accent") toneClass = "border-accent/30 bg-accent-soft text-accent";
   return (
     <span className={cn(
-      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold",
+      "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums",
       toneClass,
     )}>
       {children}
@@ -831,7 +831,7 @@ function StudioProductionHubWorkspace({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <Radio className="size-4 text-accent" aria-hidden="true" />
-              <p className="text-[0.6875rem] font-black uppercase tracking-[0.16em] text-fg-3">
+              <p className="text-xs font-semibold text-fg-3">
                 {SURFACE_META[surface].label}
               </p>
               <Pill tone={releaseReady ? "success" : configured ? "warning" : "neutral"}>
@@ -844,7 +844,7 @@ function StudioProductionHubWorkspace({
               defaultValue={workspace.title}
               aria-label={translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "프로젝트 제목")}
               disabled={!capabilities.canEdit || Boolean(loadError) || persistence === "loading" || persistence === "saving"}
-              className="mt-0.5 min-h-11 w-full max-w-3xl bg-transparent text-base font-black tracking-tight outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
+              className="mt-0.5 min-h-11 w-full max-w-3xl bg-transparent text-base font-semibold tracking-tight outline-none disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
               onBlur={(event) => {
                 const title = event.currentTarget.value.trim();
                 if (!title || title === workspaceRef.current.title) return;
@@ -858,7 +858,7 @@ function StudioProductionHubWorkspace({
           </div>
           <Link
             href={scope.editorHref}
-            className={buttonClass({ variant: "outline", size: "sm" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })}
           >
             {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "원고 열기")}</Link>
         </div>
@@ -877,7 +877,7 @@ function StudioProductionHubWorkspace({
                   href={surfaceHref(item, scope)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold transition-colors pointer-coarse:min-h-11",
+                    "inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-xs font-semibold transition-colors motion-reduce:transition-none",
                     active
                       ? "bg-accent text-on-accent"
                       : "text-fg-2 hover:bg-raised hover:text-fg",
@@ -938,7 +938,7 @@ function StudioProductionHubWorkspace({
         ) : null}
 
         <div className={cn(
-          "grid gap-3 sm:grid-cols-2",
+          "grid gap-3 sm:grid-cols-2 md:grid-cols-3",
           showCollaborationUi ? "xl:grid-cols-4" : "xl:grid-cols-3",
         )}>
           <Metric
@@ -1014,12 +1014,12 @@ function StudioProductionHubWorkspace({
                 ) : (
                   <AlertTriangle className="mx-auto size-9 text-warn" aria-hidden="true" />
                 )}
-                <p className="mt-2 text-sm font-black">
+                <p className="mt-2 text-sm font-semibold">
                   {releaseReady
                     ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "제작 체크리스트를 확인했어요")
                     : configured ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "확인할 내용이 있어요") : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "할 일을 먼저 추가하세요")}
                 </p>
-                <p className="mt-1 text-xs text-fg-2">
+                <p className="mt-1 text-xs tabular-nums text-fg-2">
                   {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "먼저 해결할 항목 ")}{blocked} {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "· 확인할 의견 ")}{openBlockers + openMajor}
                 </p>
               </div>
@@ -1098,8 +1098,8 @@ function StudioProductionHubWorkspace({
                       className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3"
                     >
                       <div>
-                        <h3 className="text-sm font-bold">{version.name}</h3>
-                        <p className="mt-1 text-xs text-fg-2">
+                        <h3 className="text-sm font-semibold">{version.name}</h3>
+                        <p className="mt-1 text-xs tabular-nums text-fg-2">
                           {DATE_TIME_FORMATTER.format(new Date(version.createdAt))} {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "· 작업 ")}{version.tasks.length} {translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "· 검수 ")}{version.reviews.length}
                         </p>
                       </div>
@@ -1167,7 +1167,7 @@ function StudioProductionHubWorkspace({
               ) : (
                 <AlertTriangle className="size-8 text-warn" aria-hidden="true" />
               )}
-              <h2 className="mt-3 text-base font-black">
+              <h2 className="mt-3 text-base font-semibold">
                 {capabilities.canInvite
                   ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "서버 초대 서비스에서 링크를 발급하세요")
                   : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 모드에서는 초대 링크를 만들 수 없습니다")}
@@ -1191,7 +1191,7 @@ function StudioProductionHubWorkspace({
           >
             <div className="rounded-2xl border border-warn/30 bg-warn/10 p-5">
               <AlertTriangle className="size-8 text-warn" aria-hidden="true" />
-              <h2 className="mt-3 text-base font-black">
+              <h2 className="mt-3 text-base font-semibold">
                 {inviteParameter
                   ? translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "이 링크는 서버에서 검증되지 않았습니다")
                   : translateCurrentStaticSourceText("domains.creator.studio.production.StudioProductionHubPageV2", "ko", "검증할 서버 초대 링크가 없습니다")}

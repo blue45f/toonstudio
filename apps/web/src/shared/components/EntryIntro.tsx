@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { resolveAssetUrl } from "@/shared/catalog/catalog-static";
 import { useMediaQuery } from "@/shared/hooks/use-media-query";
+import { translateBilingualValueForActiveLocale } from "@/shared/lib/i18n-bilingual-copy";
 
 import { ToonStudioWordmark } from "./toonstudio-brand";
 import { markEntryIntroSeen, shouldPlayEntryIntro } from "./entry-intro-session";
@@ -59,7 +60,7 @@ type Phase = "show" | "fade" | "gone";
  * 이 컴포넌트로 통합한다:
  *
  * - 연출은 하나만: 인트로 전용 고품질 히어로 아트 위에 현행 워드마크와
- *   태그라인 "Stories Come to Life"가 마크 → 워드마크 → 구분선 → 태그라인
+ *   태그라인 "그리는 사람들을 위한 작업실"이 마크 → 워드마크 → 구분선 → 태그라인
  *   순으로 차분히 등장한다. 사라지면 같은 계열 아트의 홈이 이미 완성돼 있다.
  * - 본문은 아래에서 먼저 그려지고, 오버레이는 pointer-events:none이라 입력을
  *   막지 않는다. 클릭·키 입력으로 스킵되되, 마운트 직후 1200ms는 우발 입력
@@ -200,8 +201,12 @@ export function EntryIntro({ once, onDone }: EntryIntroProps = {}) {
           </span>
         </div>
         <div className={styles.line} />
-        <p className={styles.tagline} lang="en">
-          Stories Come to Life
+        <p className={`${styles.tagline} [word-break:keep-all]`}>
+          {translateBilingualValueForActiveLocale(
+            "EntryIntro",
+            "그리는 사람들을 위한 작업실",
+            "A studio for people who draw",
+          )}
         </p>
       </div>
     </div>

@@ -65,7 +65,7 @@ function DashboardCard({
   return (
     <section className={cn("min-w-0 rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-5", className)}>
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-black text-fg">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <span className="grid size-7 place-items-center rounded-lg bg-accent-soft text-accent">
             <Icon className="size-4" aria-hidden="true" />
           </span>
@@ -204,20 +204,19 @@ export function ProductionProjectDashboard({
     <div data-production-dashboard="true" className="grid gap-4 xl:grid-cols-12">
       <section
         aria-labelledby="production-dashboard-progress"
-        className="relative overflow-hidden rounded-3xl border border-accent/30 bg-gradient-to-br from-accent-soft via-card to-card p-5 shadow-sm xl:col-span-12"
+        className="relative overflow-hidden rounded-2xl border border-line bg-card p-5 shadow-sm xl:col-span-12"
       >
-        <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full border border-accent/15" />
         <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] lg:items-center">
           <div>
-            <h2 id="production-dashboard-progress" className="text-xs font-black uppercase tracking-[0.14em] text-accent">
+            <h2 id="production-dashboard-progress" className="text-xs font-semibold text-accent">
               {bt("전체 진행률", "Overall progress")}
             </h2>
             <div className="mt-2 flex flex-wrap items-end gap-x-4 gap-y-1">
-              <p className="text-5xl font-black tracking-tight text-fg tabular-nums">
+              <p className="text-4xl font-semibold tracking-tight text-fg tabular-nums sm:text-5xl">
                 {progress.percent}
                 <span className="text-2xl text-fg-3">%</span>
               </p>
-              <p className="pb-2 text-sm text-fg-2">
+              <p className="pb-2 text-sm tabular-nums text-fg-2">
                 {bt(`작업 ${progress.total}개 중 ${progress.completed}개 승인·완료`, `${progress.completed} of ${progress.total} tasks approved or done`)}
               </p>
             </div>
@@ -229,7 +228,7 @@ export function ProductionProjectDashboard({
               aria-valuenow={progress.percent}
               className="mt-3 h-2.5 overflow-hidden rounded-full bg-raised"
             >
-              <div className="h-full rounded-full bg-gradient-to-r from-accent to-cool" style={{ width: `${progress.percent}%` }} />
+              <div className="h-full rounded-full bg-accent" style={{ width: `${progress.percent}%` }} />
             </div>
             <ul className="mt-3 flex flex-wrap gap-2 text-xs">
               <li><ProductionPill tone="accent"><ClipboardCheck className="size-3" aria-hidden="true" />{bt(`검수 중 ${progress.inReview}`, `${progress.inReview} in review`)}</ProductionPill></li>
@@ -276,12 +275,12 @@ export function ProductionProjectDashboard({
                     to={productionEpisodeRoomPath(aggregate.projectId, episode.episodeId)}
                     className="group grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-3 rounded-xl border border-line bg-panel p-3 outline-none transition-colors hover:border-accent/40 focus-visible:ring-2 focus-visible:ring-accent sm:grid-cols-[3rem_minmax(0,1fr)_7.5rem] motion-reduce:transition-none"
                   >
-                    <span className="grid size-12 place-items-center rounded-xl bg-gradient-to-br from-accent to-cool text-sm font-black text-on-accent">
+                    <span className="grid size-12 place-items-center rounded-xl bg-accent-soft text-sm font-semibold tabular-nums text-accent">
                       {episode.episodeNumber ?? "EP"}
                     </span>
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-1.5">
-                        <span className="truncate text-sm font-bold text-fg group-hover:text-accent">
+                        <span className="truncate text-sm font-semibold text-fg group-hover:text-accent">
                           {episode.episodeNumber ? bt(`${episode.episodeNumber}화 · ${episode.title}`, `Ep. ${episode.episodeNumber} · ${episode.title}`) : episode.title}
                         </span>
                         <ProductionPill tone={episodeStateTone(episode.state)}>{episodeStateLabel(episode.state, bt)}</ProductionPill>
@@ -292,17 +291,17 @@ export function ProductionProjectDashboard({
                         </span>
                         <span className="text-[0.6875rem] tabular-nums text-fg-3">{episode.progressPercent}%</span>
                       </span>
-                      <span className="mt-1 block text-[0.6875rem] text-fg-3">
+                      <span className="mt-1 block text-[0.6875rem] tabular-nums text-fg-3">
                         {bt(`열린 작업 ${episode.openTaskCount}`, `${episode.openTaskCount} open`)}
                         {episode.overdueCount ? <span className="text-bad"> · {bt(`기한 지남 ${episode.overdueCount}`, `${episode.overdueCount} overdue`)}</span> : null}
                       </span>
                     </span>
                     <span className="col-span-2 flex items-center justify-between gap-2 sm:col-span-1 sm:flex-col sm:items-end">
-                      <span className={cn("inline-flex items-center gap-1 text-sm font-black tabular-nums", late ? "text-bad" : days !== null && days <= 3 ? "text-warn" : "text-fg")}>
+                      <span className={cn("inline-flex items-center gap-1 text-sm font-semibold tabular-nums", late ? "text-bad" : days !== null && days <= 3 ? "text-warn" : "text-fg")}>
                         <Clock3 className="size-3.5" aria-hidden="true" />
                         {formatProductionDday(days, bt)}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-accent">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
                         {bt("회차 룸", "Room")}
                         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
                       </span>

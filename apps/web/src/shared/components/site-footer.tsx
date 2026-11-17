@@ -51,36 +51,35 @@ export function SiteFooter() {
     <footer data-site-chrome="footer" className="site-footer pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
       <div className="site-footer__inner">
         <div className="site-footer__story-band">
-          <Link href="/" className="site-footer__brand" aria-label={bi("ToonStudio 홈", "ToonStudio home")}>
+          <Link href="/" className="site-footer__brand min-h-11" aria-label={bi("ToonStudio 홈", "ToonStudio home")}>
             <ToonStudioBrand wordmarkClassName="site-footer__wordmark" />
           </Link>
-          <p className="site-footer__story">
-            <span>{bi("그리는 순간, 이야기가 살아납니다.", "The moment you draw, your story comes alive.")}</span>
-            <em lang="en">Stories Come to Life</em>
+          <p className="site-footer__story [word-break:keep-all]">
+            <span>{bi("그리는 사람들을 위한 작업실 · 그리는 순간 이야기가 살아납니다", "A studio for people who draw · where stories come alive")}</span>
           </p>
-          <Link href={make.href} className="site-footer__create">
-            {siteNavigationText(make.label, locale)}<ArrowRight size={16} aria-hidden="true" />
+          <Link href={make.href} className="site-footer__create min-h-11 [word-break:keep-all]">
+            {siteNavigationText(make.label, locale)}<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </div>
 
-        <nav className="site-footer__quick" aria-label={bi("메뉴와 도움말", "Menus and help")}>
-          <Link href="/sitemap">{siteNavigationText(SITE_NAVIGATION_ITEMS.allMenu.label, locale)}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <nav className="site-footer__quick [word-break:keep-all]" aria-label={bi("메뉴와 도움말", "Menus and help")}>
+          <Link href="/sitemap">{siteNavigationText(SITE_NAVIGATION_ITEMS.allMenu.label, locale)}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" /></Link>
           <Link href="/help">{siteNavigationText(SITE_NAVIGATION_ITEMS.help.label, locale)}</Link>
         </nav>
         <details className="site-footer__more">
-          <summary>{bi("서비스 안내 더 보기", "More service information")}<ChevronDown size={16} aria-hidden="true" /></summary>
+          <summary className="min-h-11 [word-break:keep-all]">{bi("서비스 안내 더 보기", "More service information")}<ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" /></summary>
         <div className="site-footer__navigation">
-          <div className="site-footer__introduction">
+          <div className="site-footer__introduction [word-break:keep-all]">
             <p>{bi("상상에서 첫 장면으로, 첫 장면에서 완성한 작품으로.", "From an idea to your first scene, and from a scene to a finished story.")}</p>
             <p className="site-footer__description">{t("footer.description.secondary")}</p>
             <Link href={research.href} className="site-footer__research">
-              {siteNavigationText(research.label, locale)}<ArrowRight size={15} aria-hidden="true" />
+              {siteNavigationText(research.label, locale)}<ArrowRight size={15} strokeWidth={1.5} aria-hidden="true" />
             </Link>
             <nav className="site-footer__utilities" aria-label={bi("계정과 환경 설정", "Account and preferences")}>
               {SITE_UTILITY_NAVIGATION.map((item) => {
                 const Icon = item.icon;
                 return <Link key={item.id} href={item.href}>
-                  <Icon size={15} aria-hidden="true" />{siteNavigationText(item.label, locale)}
+                  <Icon size={16} strokeWidth={1.5} aria-hidden="true" />{siteNavigationText(item.label, locale)}
                 </Link>;
               })}
             </nav>

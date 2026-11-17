@@ -1644,7 +1644,7 @@ export function StudioTeamPanel({
   const panel = (
     // 닫기는 Escape와 명시적 버튼으로도 제공된다. 이 핸들러는 포인터 백드롭 전용이다.
     <div
-      className="fixed inset-y-0 left-0 z-[90] w-[100dvw] bg-[oklch(0.08_0.01_70/0.72)] backdrop-blur-[2px]"
+      className="fixed inset-0 z-[90] w-full bg-[oklch(0.08_0.01_70/0.72)] backdrop-blur-[2px]"
       data-testid="studio-team-panel-backdrop"
       onPointerDown={handleBackdropPointerDown}
     >
@@ -1663,11 +1663,8 @@ export function StudioTeamPanel({
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-accent">
-              <UsersRound size={17} aria-hidden="true" />
-              <span className="text-xs font-semibold">TEAM COLLABORATION</span>
-            </div>
-            <h2 className="mt-1 text-base font-bold tracking-tight text-fg" id={titleId}>
+            <h2 className="flex items-center gap-2 text-base font-bold tracking-tight text-fg" id={titleId}>
+              <UsersRound size={17} aria-hidden="true" className="shrink-0 text-accent" />
               팀 작업 공간
             </h2>
             <p className="mt-0.5 text-xs leading-relaxed text-fg-3" id={descriptionId}>

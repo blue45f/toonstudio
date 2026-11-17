@@ -71,7 +71,9 @@ describe("MarketHomePage", () => {
     expect(types.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(browse.getAttribute("href")).toBe("/market/browse");
     expect(screen.getByTestId("market-atelier-ribbon")).toBeTruthy();
-    expect(screen.getByTestId("market-grand-atelier-showcase")).toBeTruthy();
+    const showcase = screen.getByTestId("market-grand-atelier-showcase") as HTMLDetailsElement;
+    expect(showcase.open).toBe(false);
+    expect(recent.compareDocumentPosition(showcase) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "소재 카테고리" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "마켓 주요 내비게이션" })).toBeTruthy();
     expect(within(navigation).getByRole("link", { name: "소재 둘러보기" }).getAttribute("href")).toBe("/market?section=explore");

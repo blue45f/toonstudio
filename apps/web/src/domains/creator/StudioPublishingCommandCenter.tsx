@@ -1534,11 +1534,10 @@ export function StudioPublishingCommandCenter({
         )}
       </div>
 
-      <header className="creator-workflow-topbar mb-5 overflow-hidden rounded-2xl border border-line bg-panel/50 p-5 surface-hl sm:p-6">
-        <div className="flex flex-wrap items-start gap-4">
+      <header className="creator-workflow-topbar mb-5 overflow-hidden rounded-2xl border border-line bg-panel/50 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start gap-4 md:flex-nowrap md:items-center md:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="eyebrow text-accent">PUBLISH COMMAND CENTER</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {workId ? "게시 설정 및 작품 수정" : "게시 명령 센터"}
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-fg-2">
@@ -1698,7 +1697,7 @@ export function StudioPublishingCommandCenter({
         <StudioPublishingPersistenceSummaryStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
       </div>
 
-      <nav aria-label="게시 단계" className="mb-5 grid gap-2 sm:grid-cols-3">
+      <nav aria-label="게시 단계" className="mb-5 grid gap-2 md:grid-cols-3">
         {COMMAND_STEPS.map((candidate, index) => {
           const active = candidate.id === step;
           const complete = index < currentStepIndex;
@@ -1809,7 +1808,7 @@ export function StudioPublishingCommandCenter({
 
             {coverPage ? (
               <section
-                className="mt-4 grid gap-4 rounded-2xl border border-line bg-canvas/55 p-3 sm:grid-cols-[10rem_minmax(0,1fr)]"
+                className="mt-4 grid gap-4 rounded-2xl border border-line bg-canvas/55 p-3 sm:grid-cols-[10rem_minmax(0,1fr)] md:p-4"
                 aria-labelledby="studio-publish-cover-heading"
               >
                 <div className="relative mx-auto aspect-[3/4] w-full max-w-40 overflow-hidden rounded-xl border border-line bg-raised">
@@ -1822,8 +1821,7 @@ export function StudioPublishingCommandCenter({
                   <span className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-[0.65rem] font-bold text-white">3:4</span>
                 </div>
                 <div className="min-w-0">
-                  <p className="eyebrow text-accent">COVER THUMBNAIL</p>
-                  <h3 id="studio-publish-cover-heading" className="mt-1 text-sm font-bold text-fg">표지 크롭과 초점</h3>
+                  <h3 id="studio-publish-cover-heading" className="text-sm font-bold text-fg">표지 크롭과 초점</h3>
                   <p className="mt-1 text-xs leading-relaxed text-fg-3">
                     <strong className="text-fg-2">{coverPage.name}</strong>을 갤러리·공유 카드용 3:4 표지로 사용합니다. 원고 이미지는 자르지 않습니다.
                   </p>
@@ -1840,7 +1838,7 @@ export function StudioPublishingCommandCenter({
                           title={preset.label}
                           onClick={() => selectCoverFocalPoint(preset.x, preset.y)}
                           className={cn(
-                            "grid size-9 place-items-center rounded-lg border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
+                            "grid size-11 place-items-center rounded-lg border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
                             selected
                               ? "border-accent/60 bg-accent/15 text-accent"
                               : "border-line bg-card/65 text-fg-3 hover:border-accent/35 hover:text-fg",
@@ -1939,8 +1937,7 @@ export function StudioPublishingCommandCenter({
           <section className="rounded-2xl border border-line bg-panel/35 p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-2">
               <div>
-                <p className="eyebrow text-accent">READER PREVIEW</p>
-                <h2 className="mt-1 text-lg font-bold text-fg">독자 화면 최종 미리보기</h2>
+                <h2 className="text-lg font-bold text-fg">독자 화면 최종 미리보기</h2>
               </div>
               <span className="ml-auto rounded-full border border-line bg-card/60 px-2.5 py-1 text-xs text-fg-3">
                 {directive.readingMode === "vertical" ? "세로 스크롤" : directive.readingDirection === "rtl" ? "페이지 · 우→좌" : "페이지 · 좌→우"}
@@ -1962,7 +1959,7 @@ export function StudioPublishingCommandCenter({
             </div>
           </section>
 
-          <aside className="space-y-4">
+          <aside className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
             <StudioPublishAccountReviewCard
               identity={publisherIdentity}
               environment={publishEnvironment}

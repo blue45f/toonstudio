@@ -73,9 +73,8 @@ export function StudioProjectTeamKanbanBridge({
     <section
       aria-label={bt("팀 제작 진행 단계", "Team production stages")}
       data-testid="studio-project-team-kanban-bridge"
-      className="relative mt-4 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
+      className="relative mt-4 overflow-hidden rounded-2xl border border-line bg-panel/65"
     >
-      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
       <div className="space-y-3.5 p-3.5 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 space-y-1">

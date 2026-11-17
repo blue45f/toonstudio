@@ -81,7 +81,7 @@ describe("floating menu design contracts", () => {
     // 넓은 화면에서는 오른쪽 아래 ⚙ 행·맨 위로를 가리지 않도록 알림 열(왼쪽)의 맨 위에 둔다.
     expect(sitewideCss).toContain("bottom: calc(max(1rem, var(--service-status-overlay-clearance, 0px)) + 4rem);");
     // 스튜디오 베타 확인은 맨 아래 줄을 쓰므로 좁은 태블릿에서 ⚙ 행과 폭이 닿지 않게 줄인다.
-    expect(sitewideCss).toContain("width: min(31rem, calc(100vw - 19rem));");
+    expect(sitewideCss).toContain("width: min(31rem, calc(100% - 19rem));");
     // 가입 버튼 줄을 가리던 6.25rem 높이 제한·내부 스크롤을 다시 쓰지 않는다.
     const betaRules = [...sitewideCss.matchAll(/\[data-beta-open-prompt="engaged"\][^{]*\{([^}]*)\}/gu)]
       .map((match) => match[1]);

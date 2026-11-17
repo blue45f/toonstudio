@@ -263,18 +263,6 @@ const HEADER_EXTRA_ENTRY_TEXT: {
   },
 };
 
-const HEADER_CHILD_PREMIUM_ICONS: Readonly<Partial<Record<string, string>>> = {
-  studio: "/brand/toonstudio-premium-icons/projects.webp",
-  make: "/brand/toonstudio-premium-icons/create.webp",
-  comic: "/brand/toonstudio-premium-icons/canvas.webp",
-  shaper: "/brand/toonstudio-premium-icons/character.webp",
-  bg3d: "/brand/toonstudio-premium-icons/background.webp",
-  "virtual-studio": "/brand/toonstudio-premium-icons/space.webp",
-  production: "/brand/toonstudio-premium-icons/team.webp",
-  "header-team-people": "/brand/toonstudio-premium-icons/team.webp",
-  collaborate: "/brand/toonstudio-premium-icons/community.webp",
-};
-
 /**
  * 헤더 1차 메뉴 (Grand Atelier V4):
  * 제작(내 작업)·협업·탐색(작품 찾기)·커뮤니티·배우기·마켓(소재 찾기) 6대 핵심 축을
@@ -610,44 +598,31 @@ function HeaderPrimaryNavigationEntry({
         <ul
           id={submenuId}
           aria-label={label}
-          className="rounded-xl border border-line bg-panel p-1.5 shadow-2xl"
+          className="rounded-xl border border-line bg-panel p-1.5 shadow-lg"
         >
           {item.children.map((child) => {
             const childActive = activeChild?.id === child.id;
             const ChildIcon = child.icon;
-            const premiumIconSrc = HEADER_CHILD_PREMIUM_ICONS[child.id];
             return (
               <li key={child.id}>
                 <Link
                   href={child.href}
                   aria-current={childActive ? "page" : undefined}
                   className={cx(
-                    "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                    "group/child flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-sm [word-break:keep-all] outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                     childActive
-                      ? "bg-accent-soft text-accent"
+                      ? "bg-raised text-fg"
                       : "text-fg-2 hover:bg-raised hover:text-fg"
                   )}
                 >
-                  {premiumIconSrc ? (
-                    <img
-                      src={premiumIconSrc}
-                      alt=""
-                      aria-hidden="true"
-                      width={24}
-                      height={24}
-                      loading="lazy"
-                      decoding="async"
-                      className="size-6 shrink-0 rounded-md object-cover"
-                    />
-                  ) : (
-                    <ChildIcon
-                      size={16}
-                      aria-hidden="true"
-                      className="shrink-0"
-                    />
-                  )}
+                  <ChildIcon
+                    size={16}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className={cx("size-4 shrink-0", childActive ? "text-accent" : "text-fg-3 group-hover/child:text-fg-2")}
+                  />
                   <span className="min-w-0">
-                    <span className="block font-semibold">
+                    <span className="block font-medium">
                       {siteNavigationText(child.label, locale)}
                     </span>
                     <span className="block truncate text-xs text-fg-3">
@@ -756,7 +731,7 @@ export function SiteHeader({
             <span className="site-header__brand-mark"><ToonStudioMark className="size-7 rounded-md" /></span>
             <span className="site-header__brand-copy">
               <span className="flex items-center gap-1.5">
-                <span className="truncate font-display text-[1.05rem] font-bold tracking-[-0.02em] text-fg transition-colors group-hover:text-accent sm:text-lg"><ToonStudioWordmark /></span>
+                <span className="truncate font-display text-[1.05rem] font-semibold tracking-[-0.02em] text-fg transition-colors duration-150 group-hover:text-accent sm:text-lg"><ToonStudioWordmark /></span>
               </span>
               <span className="site-header__tagline">{brandTagline}</span>
             </span>
@@ -773,13 +748,13 @@ export function SiteHeader({
               type="button"
               onClick={openSearch}
               aria-label={t("nav.searchOpen")}
-              className="site-header__search group flex size-11 shrink-0 items-center justify-center rounded-full border border-line bg-card/85 text-fg-3 shadow-sm outline-none transition-[border-color,background-color,color,box-shadow] duration-150 hover:border-accent/45 hover:bg-card hover:text-fg focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:justify-between sm:px-3.5"
+              className="site-header__search group flex size-11 shrink-0 items-center justify-center rounded-[var(--site-control-radius)] border border-line bg-card/85 text-fg-3 outline-none transition-[border-color,background-color,color,transform] duration-150 hover:border-line-strong hover:bg-card hover:text-fg enabled:active:scale-[0.98] focus-visible:border-accent/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none sm:justify-between sm:px-3"
             >
               <span className="flex min-w-0 items-center gap-2">
-                <Search size={16} className="shrink-0 transition-colors group-hover:text-accent" />
-                <span className="site-header__search-label truncate text-sm">{bi("기능·브러시·작품 검색", t("nav.search"))}</span>
+                <Search size={16} strokeWidth={1.5} className="shrink-0 text-fg-3 transition-colors duration-150 group-hover:text-fg" />
+                <span className="site-header__search-label truncate text-sm [word-break:keep-all]">{bi("검색", t("nav.search"))}</span>
               </span>
-              <kbd aria-hidden="true" className="site-header__search-shortcut items-center gap-0.5 rounded-full border border-line bg-panel px-1.5 py-0.5 font-display text-[0.62rem] text-fg-3">⌘K</kbd>
+              <kbd aria-hidden="true" className="site-header__search-shortcut items-center gap-0.5 rounded border border-line bg-panel px-1.5 py-0.5 font-mono text-xs text-fg-3">⌘K</kbd>
             </button>
 
             {/* 새 작품은 위치가 아니라 동작이다. 현재 위치 표시는 주 메뉴 한 곳에만 둔다. */}
@@ -787,10 +762,9 @@ export function SiteHeader({
               href={CANONICAL_CREATE_HREF}
               aria-label={siteNavigationText(create.label, locale)}
               title={siteNavigationText(create.description, locale)}
-              className="site-header__create group relative hidden h-11 min-w-11 shrink-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-full border px-3.5 text-sm font-bold [text-wrap:nowrap] [word-break:keep-all] outline-none transition-all duration-200 ease-out-expo hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none sm:flex"
+              className="site-header__create hidden h-11 min-w-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[var(--site-control-radius)] border border-transparent bg-accent px-3.5 text-sm font-semibold text-on-accent [text-wrap:nowrap] [word-break:keep-all] outline-none transition-[background-color,border-color,color,transform] duration-150 hover:bg-accent-2 active:scale-[0.98] enabled:active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transform-none motion-reduce:transition-none sm:flex"
             >
-              <span aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-on-accent/45 to-transparent" />
-              <Palette size={16} className="shrink-0 transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-110" />
+              <Palette size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
               <span className="hidden min-w-max whitespace-nowrap xl:inline-block">{keepInlineText(siteNavigationText(create.label, locale))}</span>
             </Link>
 

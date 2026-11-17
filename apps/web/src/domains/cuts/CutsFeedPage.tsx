@@ -7,7 +7,7 @@
  * 조회수는 1.5초 이상 시청했을 때 한 번만 집계한다.
  */
 
-import { BookOpen, Clapperboard, Coins, Eye, Heart, Share2, Shuffle } from "lucide-react";
+import { BookOpen, ChevronDown, Clapperboard, Coins, Eye, Heart, Share2, Shuffle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -461,65 +461,72 @@ export function CutsFeedPage() {
           </Link>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl px-4 pb-4 pt-2">
-        <SiteContextualSubNav pathnameOverride="/cuts" />
-        <section
-          data-testid="cuts-rea-interactive-motion-dub-bar"
-          aria-label={t("무빙툰 모션·더빙·립싱크 구성 미리보기", "Moving-Toon Motion, Dubbing & Lip-Sync Configuration Preview")}
-          className="relative mt-2 overflow-hidden rounded-2xl border border-white/20 bg-[#0b0d18]/95 px-4 py-3 text-xs text-white shadow-sm backdrop-blur-md"
-        >
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 엔진 선택", "Motion Engine Selection")}>
-              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/12 px-2 py-0.5 font-extrabold text-[#ffd479]">{t("모션 엔진:", "Motion Engine:")}</span>
-              {([
-                { id: "rive-statemachine", ko: "Rive 60fps 상태머신·Spine 2.5D", en: "Rive 60fps State Machine & Spine 2.5D" },
-                { id: "kling-pikaframes", ko: "Kling 1.6 모션브러시·Pikaframes", en: "Kling 1.6 Motion Brush & Pikaframes" },
-                { id: "tooncrafter-cacani", ko: "ToonCrafter·CACANi·Retas 자동 동화", en: "ToonCrafter/CACANi Auto-Inbetween" },
-              ] as const).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-testid={`cuts-rea-motion-${item.id}`}
-                  aria-pressed={motionEngine === item.id}
-                  onClick={() => setMotionEngine(item.id)}
-                  className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                    motionEngine === item.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
-                  }`}
-                >
-                  {t(item.ko, item.en)}
-                </button>
-              ))}
+      <div className="mx-auto w-full max-w-5xl px-4 pb-3 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SiteContextualSubNav pathnameOverride="/cuts" />
+        </div>
+        <details className="group/cuts-aux mt-2 rounded-xl border border-white/12 bg-[#0d101c]/90 text-xs text-white/90">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-xs font-medium text-white/80 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+            <span>{t("재생·음성 보조 옵션", "Playback & voice options")}</span>
+            <ChevronDown size={15} aria-hidden="true" className="shrink-0 text-white/60 transition-transform duration-150 group-open/cuts-aux:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <section
+            data-testid="cuts-rea-interactive-motion-dub-bar"
+            aria-label={t("재생·음성 보조 옵션 설정", "Playback & voice options configuration")}
+            className="border-t border-white/10 px-3.5 py-3"
+          >
+            <div className="flex flex-col gap-2.5 md:flex-row md:flex-wrap md:items-center md:justify-between">
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("모션 방식 선택", "Motion mode selection")}>
+                <span className="shrink-0 whitespace-nowrap pr-1 font-semibold text-white/70">{t("모션", "Motion")}</span>
+                {([
+                  { id: "rive-statemachine", ko: "인터랙티브 모션", en: "Interactive motion" },
+                  { id: "kling-pikaframes", ko: "카메라 움직임", en: "Camera motion" },
+                  { id: "tooncrafter-cacani", ko: "중간 프레임 보간", en: "Frame interpolation" },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`cuts-rea-motion-${item.id}`}
+                    aria-pressed={motionEngine === item.id}
+                    onClick={() => setMotionEngine(item.id)}
+                    className={`inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold transition-colors ${
+                      motionEngine === item.id ? "bg-white text-black" : "border border-white/15 bg-white/8 text-white/85 hover:bg-white/16"
+                    }`}
+                  >
+                    {t(item.ko, item.en)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("음성·음향 보조 선택", "Voice & audio options")}>
+                <span className="shrink-0 whitespace-nowrap pr-1 font-semibold text-white/70">{t("음성·음향", "Audio")}</span>
+                {([
+                  { id: "rask-heygen-130lang", ko: "다국어 더빙", en: "Multilingual dubbing" },
+                  { id: "audio2face-rhubarb", ko: "입모양 맞춤", en: "Lip-sync match" },
+                  { id: "lufs14-ducking", ko: "배경음 자동 조절", en: "Auto background volume" },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`cuts-rea-dub-${item.id}`}
+                    aria-pressed={dubbingMode === item.id}
+                    onClick={() => setDubbingMode(item.id)}
+                    className={`inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold transition-colors ${
+                      dubbingMode === item.id ? "bg-white text-black" : "border border-white/15 bg-white/8 text-white/85 hover:bg-white/16"
+                    }`}
+                  >
+                    {t(item.ko, item.en)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t("더빙 및 음향 마스터링", "Dubbing & Audio Mastering")}>
-              <span className="shrink-0 whitespace-nowrap rounded-md bg-white/12 px-2 py-0.5 font-extrabold text-[#84d8ff]">{t("더빙·사운드:", "Dubbing & Audio:")}</span>
-              {([
-                { id: "rask-heygen-130lang", ko: "Rask·HeyGen 130개국어 보이스클로닝", en: "Rask/HeyGen 130-Lang Voice Clone" },
-                { id: "audio2face-rhubarb", ko: "Audio2Face·Rhubarb 6음소 립싱크", en: "Audio2Face/Rhubarb 6-Viseme Lip-Sync" },
-                { id: "lufs14-ducking", ko: "-14 LUFS & -12dB BGM 오토더킹", en: "-14 LUFS & -12dB BGM Auto-Ducking" },
-              ] as const).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  data-testid={`cuts-rea-dub-${item.id}`}
-                  aria-pressed={dubbingMode === item.id}
-                  onClick={() => setDubbingMode(item.id)}
-                  className={`inline-flex min-h-11 items-center rounded-full px-3 text-[11px] font-bold transition-colors ${
-                    dubbingMode === item.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
-                  }`}
-                >
-                  {t(item.ko, item.en)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p data-testid="cuts-rea-active-engine-summary" className="mt-1.5 text-[11px] text-white/85">
-            {t(
-              `[구성 미리보기] ${motionEngine === "rive-statemachine" ? "Rive 스크롤/탭 상태머신 + Spine/Live2D 60fps WebGL2 패럴랙스" : motionEngine === "kling-pikaframes" ? "Kling 1.6 모션브러시 궤적 + Pikaframes/Runway Act-One 표정 전이" : "ToonCrafter·CACANi·TVPaint 원화 간 벡터 동화(Inbetween) 자동 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "Rask AI·Papercup·HeyGen 130개국어 화자 음색 보존 더빙 + OpusClip/Submagic 키네틱 자막" : dubbingMode === "audio2face-rhubarb" ? "NVIDIA Audio2Face + Rhubarb 6음소(A~F) 60fps 입모양 동기화" : "Krisp·Adobe Podcast 노이즈 제거 + -14 LUFS 음압 정규화 & 대사 발화 시 BGM -12dB 감쇠"} · 영상·음성 생성 실행 전 구성 예시입니다.`,
-              `[Configuration Preview] ${motionEngine} + ${dubbingMode} · A configuration example before video or audio generation.`,
-            )}
-          </p>
-        </section>
+            <p data-testid="cuts-rea-active-engine-summary" className="mt-2 text-[11px] text-white/70">
+              {t(
+                `선택한 보조 설정: ${motionEngine === "rive-statemachine" ? "인터랙티브 모션" : motionEngine === "kling-pikaframes" ? "카메라 움직임" : "중간 프레임 보간"} · ${dubbingMode === "rask-heygen-130lang" ? "다국어 더빙" : dubbingMode === "audio2face-rhubarb" ? "입모양 맞춤" : "배경음 자동 조절"}`,
+                `Selected options: ${motionEngine === "rive-statemachine" ? "Interactive motion" : motionEngine === "kling-pikaframes" ? "Camera motion" : "Frame interpolation"} · ${dubbingMode === "rask-heygen-130lang" ? "Multilingual dubbing" : dubbingMode === "audio2face-rhubarb" ? "Lip-sync match" : "Auto background volume"}`,
+              )}
+            </p>
+          </section>
+        </details>
       </div>
       {fanOf ? (
         <div className="cuts-feed__filter" role="status">

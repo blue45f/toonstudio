@@ -62,8 +62,8 @@ function isMySpaceCategory(value: string): value is MySpaceCategory {
 
 const COPY = {
   ko: {
-    eyebrow: "MY SPACE",
-    title: "내 작업과 기록을 한곳에서.",
+    eyebrow: "내 공간",
+    title: "내 작업과 기록을 한곳에서",
     body: "프로젝트, 공개한 작품, 서재, 에셋, 활동과 설정을 각각 찾지 않아도 됩니다. 내 공간에서 필요한 다음 화면으로 바로 이동하세요.",
     syncLocal: "현재 기록은 이 브라우저를 중심으로 보관됩니다. 로그인하면 지원되는 데이터는 계정과 이어집니다.",
     syncAccount: "로그인한 계정과 이 브라우저의 작업을 이어서 사용할 수 있습니다. 프로젝트별 저장 위치는 각 작업공간에서 확인하세요.",
@@ -100,7 +100,7 @@ const COPY = {
       "작품 감상 기록과 컬렉션은 내 서재에서 관리합니다.",
       "설치한 에셋과 관심 에셋은 마켓의 내 에셋에서 관리합니다.",
     ],
-    continueEyebrow: "CONTINUE WORK",
+    continueEyebrow: "이어서 하기",
     continueTitle: "가장 최근 작업부터 이어가세요",
     continueAction: "이어서 작업",
     revisitTitle: "최근에 보던 곳으로 돌아가기",
@@ -136,8 +136,8 @@ const COPY = {
     ] as const,
   },
   en: {
-    eyebrow: "MY SPACE",
-    title: "Keep your work and history in one place.",
+    eyebrow: "My Space",
+    title: "Keep your work and history in one place",
     body: "You should not have to hunt separately for projects, published work, library data, assets, activity and settings. My Space connects the next destination directly.",
     syncLocal: "Current history is primarily stored in this browser. Sign in to continue supported data with your account.",
     syncAccount: "Continue with your signed-in account and work available in this browser. Check each workspace for project-specific storage details.",
@@ -174,7 +174,7 @@ const COPY = {
       "Manage reading history and collections in My Library.",
       "Manage installed and bookmarked assets in Market > My Assets.",
     ],
-    continueEyebrow: "CONTINUE WORK",
+    continueEyebrow: "Continue work",
     continueTitle: "Continue from your most recent work",
     continueAction: "Continue working",
     revisitTitle: "Return to where you left off",
@@ -420,12 +420,12 @@ export function MySpaceHubPage() {
           data-my-space-next-action="true"
         >
           {recent ? (
-            <div className="relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent-soft/65 via-card to-panel p-3 shadow-sm sm:p-5">
+            <div className="relative overflow-hidden rounded-2xl border border-line bg-panel/80 p-3 shadow-sm sm:p-5">
               <div className="relative grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="eyebrow text-accent">{copy.continueEyebrow}</p>
-                    <span className="inline-flex items-center gap-1 text-[0.68rem] font-bold text-fg-2">
+                    <p className="text-xs font-semibold text-accent">{copy.continueEyebrow}</p>
+                    <span className="inline-flex items-center gap-1 text-[0.68rem] font-semibold text-fg-2 tabular-nums">
                       <Clock3 size={12} aria-hidden="true" />
                       {visitTimeLabel(recent.visitedAt, locale)}
                     </span>
@@ -576,7 +576,7 @@ export function MySpaceHubPage() {
             </div>
           </div>
           {!showDestinations ? <p className="mt-3 text-sm text-fg-2">{copy.chooseBody}</p> : visibleDestinations.length > 0 ? (
-            <div data-testid="my-space-destination-results" className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+            <div data-testid="my-space-destination-results" className="mt-3 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {visibleDestinations.map(({ entry: [title, body, href], icon }) => (
                 <SiteLinkCard key={href} href={href} icon={icon} title={title} description={body} cta={copy.open} />
               ))}
@@ -623,8 +623,8 @@ export function MySpaceHubPage() {
         ) : null}
 
         <div className="mt-4 rounded-2xl border border-line bg-panel/45 p-3.5 sm:p-4">
-          <h2 className="text-sm font-bold text-fg">{copy.quickTitle}</h2>
-          <div className="mt-2.5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <h2 className="text-sm font-semibold text-fg">{copy.quickTitle}</h2>
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {copy.quickActions.map(([title, body, href], index) => (
               <SiteLinkCard key={href} layout="compact" href={href} icon={QUICK_ICONS[index]} title={title} description={body} />
             ))}

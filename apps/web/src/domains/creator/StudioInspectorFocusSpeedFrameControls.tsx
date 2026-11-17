@@ -70,7 +70,7 @@ export function StudioInspectorFocusSpeedFrameControls({
       {/* 집중선 및 속도선 선 효과 설정 */}
       {selected.type === "focusLines" && (
         <div className="mt-3 space-y-3 border-t border-line/50 pt-3">
-          <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">집중선 설정</p>
+          <p className="text-xs font-semibold text-fg-3">집중선 설정</p>
 
           <div className="space-y-1 rounded-lg border border-line bg-card/45 p-2">
             <p className="text-[0.66rem] font-semibold text-fg-3">집중선 프리셋</p>
@@ -219,7 +219,7 @@ export function StudioInspectorFocusSpeedFrameControls({
 
       {selected.type === "speedLines" && (
         <div className="mt-3 space-y-3 border-t border-line/50 pt-3">
-          <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">속도선 설정</p>
+          <p className="text-xs font-semibold text-fg-3">속도선 설정</p>
 
           <div className="space-y-1 rounded-lg border border-line bg-card/45 p-2">
             <p className="text-[0.66rem] font-semibold text-fg-3">속도선 프리셋</p>
@@ -314,7 +314,7 @@ export function StudioInspectorFocusSpeedFrameControls({
         <div className="mt-3 space-y-3 border-t border-line/50 pt-3">
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-wider text-fg-3">이야기 비트·연속성</p>
+              <p className="text-xs font-semibold text-fg-3">이야기 비트·연속성</p>
               {selected.storyBeat ? (
                 <button
                   type="button"
@@ -409,7 +409,7 @@ export function StudioInspectorFocusSpeedFrameControls({
           </div>
           <div className="border-t border-line/40" />
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">패널 컷 분할</p>
+            <p className="text-xs font-semibold text-fg-3">패널 컷 분할</p>
             {onUndoCutAction ? (
               <button
                 type="button"
@@ -544,7 +544,7 @@ export function StudioInspectorFocusSpeedFrameControls({
           </Suspense>
 
           <div className="mt-3.5 border-t border-line/40 pt-2.5 space-y-2.5">
-            <p className="text-[0.66rem] font-semibold text-fg-3 uppercase tracking-wider">패널 배경 및 테두리</p>
+            <p className="text-xs font-semibold text-fg-3">패널 배경 및 테두리</p>
 
             <label className="flex items-center justify-between gap-2 text-sm text-fg-2">
               배경색

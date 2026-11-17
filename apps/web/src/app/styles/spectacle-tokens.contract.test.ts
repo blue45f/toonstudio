@@ -81,7 +81,7 @@ describe("표현 토큰 층 계약 (S3-15)", () => {
   it("forced-colors에서 그라디언트·글로우·elevation이 전부 제거된다 (§6.4 경계 1)", () => {
     expect(assignments(unified, "--spectacle-gradient")).toContain("none");
     expect(assignments(unified, "--spectacle-glow")).toEqual([
-      "0 0 32px color-mix(in oklch, var(--spectacle-1) 26%, transparent)",
+      "0 1px 2px color-mix(in oklch, var(--spectacle-1) 10%, transparent)",
       "none",
     ]);
     for (const token of ["--elevation-1", "--elevation-2", "--elevation-3"]) {

@@ -6,7 +6,7 @@
  * 게스트에게 로그인 유도를 띄운다.
  */
 
-import { ArrowLeft, ArrowRight, Check, Clapperboard, Coins, Shuffle, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Clapperboard, Coins, Shuffle, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -386,200 +386,6 @@ export function CutsStudioPage() {
 
       <Stepper step={step} />
 
-      <div
-        data-testid="cuts-rea-movingtoon-preset-bar"
-        className="my-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
-      >
-        <div className="flex flex-wrap items-center gap-1.5">
-          <img
-            src="/assets/site-experience/site-art-v1/motion-previews/atelier-interactive-stage-640.webp"
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            width={56}
-            height={32}
-            className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
-          />
-          <span className="font-extrabold text-accent">
-            {t("RIVE · SPINE · LIVE2D · GSAP · PLAYCANVAS · THEATRE.JS 무빙툰 프리셋:", "RIVE · SPINE · LIVE2D · GSAP · PLAYCANVAS · THEATRE.JS Presets:")}
-          </span>
-          {[
-            t("GSAP ScrollTrigger 패럴랙스 깊이 루프 (2.5D)", "GSAP ScrollTrigger Parallax Loop (2.5D)"),
-            t("PlayCanvas·cables.gl WebGPU 셰이더 & Theatre.js 카메라 커브", "PlayCanvas/cables.gl WebGPU & Theatre.js Curve"),
-            t("Cascadeur·Runway·Pika·Kling·Hailuo 액션 카메라 셰이크 & 모션 브러시", "Cascadeur/Runway/Pika/Kling/Hailuo Camera Shake & Motion"),
-            t("타입캐스트·수퍼톤·ElevenLabs AI 성우 더빙 & 뮤팟·Suno·Epidemic 효과음 싱크", "Typecast/Supertone/ElevenLabs Voice & Mewpot/Suno/Epidemic SFX Sync"),
-            t("오노마AI 인서툰·브루(Vrew)·Katalist 대본 자막 타이밍 & 9:16 릴스 안전영역", "Onoma AI Insertoon/Vrew/Katalist Subtitle Sync & 9:16 Safe-Zone"),
-          ].map((presetLabel) => (
-            <span
-              key={presetLabel}
-              className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11px] font-semibold text-fg-2"
-            >
-              {presetLabel}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <section
-        data-testid="cuts-studio-rea-engine-controller"
-        aria-label={t(
-          "REA 무빙툰 렌더 엔진 및 프레임레이트 컨트롤러",
-          "REA Movingtoon Render Engine & Frame-Rate Controller",
-        )}
-        className="my-3 rounded-2xl border border-line bg-card/85 px-4 py-3 text-xs"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div
-            className="flex flex-wrap items-center gap-1.5"
-            role="group"
-            aria-label={t("무빙툰 렌더 엔진 선택", "Movingtoon Render Engine Selection")}
-          >
-            <span className="font-extrabold text-accent">
-              {t("렌더 엔진:", "Render Engine:")}
-            </span>
-            {([
-              {
-                id: "gsap-parallax-25d",
-                ko: "GSAP 2.5D 패럴랙스 깊이 루프",
-                en: "GSAP 2.5D Parallax Depth Loop",
-              },
-              {
-                id: "rive-spine-state-rig",
-                ko: "Rive·Spine·Live2D 상태머신 리깅",
-                en: "Rive/Spine/Live2D State Machine Rig",
-              },
-              {
-                id: "vrew-insertoon-beat-sync",
-                ko: "Vrew·오노마AI 인서툰 비트 자막 싱크",
-                en: "Vrew & Onoma AI Insertoon Beat Sync",
-              },
-              {
-                id: "elevenlabs-typecast-lufs14",
-                ko: "ElevenLabs·타입캐스트 -14 LUFS 마스터링",
-                en: "ElevenLabs & Typecast -14 LUFS Mastering",
-              },
-            ] as const).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`cuts-studio-rea-engine-${item.id}`}
-                aria-pressed={studioEngine === item.id}
-                onClick={() => setStudioEngine(item.id)}
-                className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                  studioEngine === item.id
-                    ? "border-accent bg-accent text-on-accent"
-                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
-                }`}
-              >
-                {t(item.ko, item.en)}
-              </button>
-            ))}
-          </div>
-          <div
-            className="flex flex-wrap items-center gap-1.5"
-            role="group"
-            aria-label={t("목표 프레임레이트 선택", "Target Frame-Rate Selection")}
-          >
-            <span className="font-extrabold text-accent">
-              {t("타깃 FPS:", "Target FPS:")}
-            </span>
-            {([
-              { id: "60fps-webgpu", ko: "60fps WebGPU 표준", en: "60fps WebGPU Standard" },
-              { id: "120fps-promotion", ko: "120fps ProMotion 고주사율", en: "120fps ProMotion High-Refresh" },
-              { id: "24fps-anime-cel", ko: "24fps 애니 작화 셀", en: "24fps Anime Cel Cadence" },
-            ] as const).map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`cuts-studio-rea-fps-${item.id}`}
-                aria-pressed={targetFps === item.id}
-                onClick={() => setTargetFps(item.id)}
-                className={`inline-flex min-h-11 items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                  targetFps === item.id
-                    ? "border-accent bg-accent text-on-accent"
-                    : "border-line bg-panel text-fg-2 hover:border-accent/50"
-                }`}
-              >
-                {t(item.ko, item.en)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p data-testid="cuts-studio-rea-engine-status" className="mt-2 text-[11px] text-fg-2">
-          {t(
-            `[활성 렌더 파이프라인] 엔진: ${studioEngine} · 주사율: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs 무빙툰 규격 호환`,
-            `[Active Render Pipeline] Engine: ${studioEngine} · Frame-Rate: ${targetFps} · Rive, Spine, Live2D, Vrew, Onoma AI Insertoon, ElevenLabs movingtoon spec ready`,
-          )}
-        </p>
-      </section>
-      <section
-        data-testid="cuts-studio-rea-keyframe-ducking-bar"
-        aria-label={t("REA 9:16 무빙툰 키프레임 이징 커브 및 오토더킹 스튜디오 바", "REA 9:16 moving-toon keyframe easing curve & auto-ducking studio bar")}
-        className="my-3 rounded-2xl border border-line bg-card/90 p-3.5 text-xs"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <strong className="font-extrabold text-accent">
-            {t("RIVE · TOON BOOM · CAPCUT · VREW · KLING 1.6 카메라 키프레임 커브 & -12dB 보이스 오토더킹", "RIVE · TOON BOOM · CAPCUT · VREW · KLING 1.6 Camera Keyframe Curve & -12dB Auto-Ducking")}
-          </strong>
-          <span data-testid="cuts-studio-rea-ducking-badge" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
-            {duckingProfile === "dialogue-minus12db"
-              ? t("대사 발화 시 BGM -12dB 감쇠 · Rhubarb 6음소 싱크", "Dialogue -12dB BGM Ducking · Rhubarb 6-Viseme")
-              : duckingProfile === "sfx-punch-minus6db"
-                ? t("타격 효과음 구간 -6dB 사이드체인 · 60fps", "SFX Impact -6dB Sidechain · 60fps")
-                : t("전 구간 -14 LUFS 라우드니스 정규화", "-14 LUFS Broadcast Loudness Normalization")}
-          </span>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("카메라 키프레임 커브 프리셋", "Camera keyframe curve presets")}>
-            {([
-              { id: "spring-impact", ko: "스프링 임팩트 줌 (Cubic-Bezier 0.22,1,0.36,1)", en: "Spring Impact Zoom (0.22,1,0.36,1)" },
-              { id: "smooth-pan-25d", ko: "2.5D 다층 패럴랙스 글라이드", en: "2.5D Multi-Plane Parallax Glide" },
-              { id: "shonen-shake-burst", ko: "액션 타격 카메라 셰이크 & 스피드라인", en: "Action Camera Shake & Speedline" },
-              { id: "emotional-slowzoom", ko: "감정 클로즈업 슬로우 랙포커스", en: "Emotional Slow Zoom & Rack Focus" },
-            ] as const).map((curve) => (
-              <button
-                key={curve.id}
-                type="button"
-                aria-pressed={cameraCurve === curve.id}
-                data-testid={`cuts-studio-rea-curve-${curve.id}`}
-                onClick={() => setCameraCurve(curve.id)}
-                className={cameraCurve === curve.id ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent/15 px-3 py-1.5 font-bold text-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-fg-2 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
-              >
-                {t(curve.ko, curve.en)}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1" role="group" aria-label={t("오디오 오토더킹 프로필", "Audio auto-ducking profile")}>
-            {([
-              { id: "dialogue-minus12db", ko: "대사 -12dB 더킹", en: "Dialogue -12dB" },
-              { id: "sfx-punch-minus6db", ko: "효과음 -6dB 더킹", en: "SFX -6dB" },
-              { id: "cinema-lufs14", ko: "-14 LUFS 마스터링", en: "-14 LUFS Master" },
-            ] as const).map((duck) => (
-              <button
-                key={duck.id}
-                type="button"
-                aria-pressed={duckingProfile === duck.id}
-                data-testid={`cuts-studio-rea-duck-${duck.id}`}
-                onClick={() => setDuckingProfile(duck.id)}
-                className={duckingProfile === duck.id ? "inline-flex min-h-11 items-center rounded-md border border-accent bg-accent px-3 py-1.5 text-[11px] font-bold text-on-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-3 py-1.5 text-[11px] text-fg-3 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
-              >
-                {t(duck.ko, duck.en)}
-              </button>
-            ))}
-          </div>
-        </div>
-        <p data-testid="cuts-studio-rea-keyframe-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
-          {cameraCurve === "spring-impact"
-            ? t("Rive·Theatre.js 스프링 이징 커브로 핵심 대사 컷 진입 첫 0.18초에 시선을 고정하고 말풍선 팝업 타이밍을 동기화합니다.", "Locks viewer focus in the first 0.18s using Rive/Theatre.js spring easing synced to speech-balloon pop-in.")
-            : cameraCurve === "smooth-pan-25d"
-              ? t("전경 캐릭터와 3D 배경 레이어를 1:0.35 깊이 비율로 분리 이동하여 스크롤 원고를 자연스러운 9:16 무빙툰으로 변환합니다.", "Separates foreground character and 3D background layers at a 1:0.35 depth ratio for smooth 9:16 motion comics.")
-              : cameraCurve === "shonen-shake-burst"
-                ? t("클라이맥스 타격 프레임에 12Hz 감쇠 진동과 집중선 오버레이를 결합해 소년만화풍 타격감을 극대화합니다.", "Combines 12Hz damped camera shake with speedline overlays on impact frames for shonen action punch.")
-                : t("감정선 독백 구간에서 1.00x → 1.14x 선형 줌인과 피사계 심도(DoF) 블러를 적용해 대사 전달력을 높입니다.", "Applies a 1.00x → 1.14x slow push-in with subtle depth-of-field blur during emotional monologues.")}
-        </p>
-      </section>
-
       {remixParamInvalid ? (
         <p className="cuts-studio__notice" role="note">
           {t(
@@ -613,8 +419,6 @@ export function CutsStudioPage() {
             onSelect={handleSelect}
             remixOverrides={remixPolicyOverrides}
           />
-          <RemixPolicySettings />
-          <RewardFundLink />
           <div className="cuts-studio__actions">
             <button
               type="button"
@@ -625,6 +429,8 @@ export function CutsStudioPage() {
               {t("클립으로 변환하기", "Convert to clip")} <ArrowRight size={16} aria-hidden="true" />
             </button>
           </div>
+          <RemixPolicySettings />
+          <RewardFundLink />
         </>
       ) : null}
 
@@ -671,7 +477,7 @@ export function CutsStudioPage() {
         <div className="cuts-studio__notice" role="status">
           <p>
             <Check size={18} aria-hidden="true" />{" "}
-            {t("클립이 피드에 게시됐어요!", "Your clip is live on the feed!")}
+            {t("클립이 피드에 게시됐어요", "Your clip is live on the feed")}
           </p>
           <div className="cuts-studio__actions">
             <button
@@ -706,6 +512,212 @@ export function CutsStudioPage() {
           </div>
         </div>
       ) : null}
+
+      <details
+        data-testid="cuts-studio-advanced-disclosure"
+        className="group/cuts-adv mt-6 rounded-2xl border border-line bg-panel/60"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-fg transition-colors hover:bg-card/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+          <span>{t("고급 모션·오디오 설정", "Advanced motion & audio settings")}</span>
+          <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-2 transition-transform duration-150 group-open/cuts-adv:rotate-180 motion-reduce:transition-none" />
+        </summary>
+        <div className="space-y-3 border-t border-line p-4">
+          <div
+            data-testid="cuts-rea-movingtoon-preset-bar"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-card/85 px-3.5 py-2.5 text-xs"
+          >
+            <div className="flex flex-wrap items-center gap-1.5">
+              <img
+                src="/assets/site-experience/site-art-v1/motion-previews/atelier-interactive-stage-640.webp"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                width={56}
+                height={32}
+                className="h-8 w-14 shrink-0 rounded-md border border-line object-cover"
+              />
+              <span className="font-semibold text-fg">
+                {t("지원 연출 방식", "Supported motion styles")}
+              </span>
+              {[
+                t("전경·배경 깊이감 이동", "Layered depth parallax"),
+                t("부드러운 카메라 곡선", "Smooth camera curves"),
+                t("장면 전환·화면 흔들림", "Impact camera shake"),
+                t("내레이션·효과음 맞춤", "Voice & sound sync"),
+                t("대사 자막·세로 안전영역", "Subtitle timing & 9:16 safe zone"),
+              ].map((presetLabel) => (
+                <span
+                  key={presetLabel}
+                  className="rounded-lg border border-line bg-panel px-2.5 py-1 text-[11px] font-medium text-fg-2"
+                >
+                  {presetLabel}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <section
+            data-testid="cuts-studio-rea-engine-controller"
+            aria-label={t(
+              "모션 방식 및 프레임 속도 설정",
+              "Motion mode & frame-rate settings",
+            )}
+            className="rounded-xl border border-line bg-card/85 px-3.5 py-3 text-xs"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div
+                className="flex flex-wrap items-center gap-1.5"
+                role="group"
+                aria-label={t("모션 연출 방식 선택", "Motion style selection")}
+              >
+                <span className="font-semibold text-fg">
+                  {t("모션 방식", "Motion style")}
+                </span>
+                {([
+                  {
+                    id: "gsap-parallax-25d",
+                    ko: "깊이감 스크롤 연출",
+                    en: "Layered depth motion",
+                  },
+                  {
+                    id: "rive-spine-state-rig",
+                    ko: "캐릭터 관절 모션",
+                    en: "Character rig motion",
+                  },
+                  {
+                    id: "vrew-insertoon-beat-sync",
+                    ko: "대사 박자 자막 맞춤",
+                    en: "Dialogue beat sync",
+                  },
+                  {
+                    id: "elevenlabs-typecast-lufs14",
+                    ko: "성우 톤·음량 균일화",
+                    en: "Voice tone & level balance",
+                  },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`cuts-studio-rea-engine-${item.id}`}
+                    aria-pressed={studioEngine === item.id}
+                    onClick={() => setStudioEngine(item.id)}
+                    className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                      studioEngine === item.id
+                        ? "border-accent bg-accent text-on-accent"
+                        : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                    }`}
+                  >
+                    {t(item.ko, item.en)}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="flex flex-wrap items-center gap-1.5"
+                role="group"
+                aria-label={t("목표 프레임 속도 선택", "Target frame-rate selection")}
+              >
+                <span className="font-semibold text-fg">
+                  {t("프레임 속도", "Frame rate")}
+                </span>
+                {([
+                  { id: "60fps-webgpu", ko: "60fps 부드러운 재생", en: "60fps smooth" },
+                  { id: "120fps-promotion", ko: "120fps 고주사율", en: "120fps high refresh" },
+                  { id: "24fps-anime-cel", ko: "24fps 만화 영화 호흡", en: "24fps animation cadence" },
+                ] as const).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`cuts-studio-rea-fps-${item.id}`}
+                    aria-pressed={targetFps === item.id}
+                    onClick={() => setTargetFps(item.id)}
+                    className={`inline-flex min-h-11 items-center rounded-lg border px-3 py-1.5 text-[11px] font-semibold transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                      targetFps === item.id
+                        ? "border-accent bg-accent text-on-accent"
+                        : "border-line bg-panel text-fg-2 hover:border-accent/50"
+                    }`}
+                  >
+                    {t(item.ko, item.en)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p data-testid="cuts-studio-rea-engine-status" className="mt-2 text-[11px] text-fg-2">
+              {t(
+                `선택된 설정: ${studioEngine} · ${targetFps} · 세로형 9:16 클립 미리보기에 반영됩니다`,
+                `Selected preset: ${studioEngine} · ${targetFps} · Applied to 9:16 vertical clip preview`,
+              )}
+            </p>
+          </section>
+
+          <section
+            data-testid="cuts-studio-rea-keyframe-ducking-bar"
+            aria-label={t("카메라 움직임 곡선 및 배경음 자동 조절", "Camera motion curve & auto background volume")}
+            className="rounded-xl border border-line bg-card/90 p-3.5 text-xs"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="font-semibold text-fg">
+                {t("카메라 움직임 곡선 · 배경음 자동 조절", "Camera motion curve & auto background volume")}
+              </strong>
+              <span data-testid="cuts-studio-rea-ducking-badge" className="rounded-md border border-line bg-panel px-2.5 py-0.5 text-[11px] font-medium text-fg-2">
+                {duckingProfile === "dialogue-minus12db"
+                  ? t("대사 구간 배경음 낮춤", "Lower music on dialogue")
+                  : duckingProfile === "sfx-punch-minus6db"
+                    ? t("효과음 구간 강조", "Emphasize sound effects")
+                    : t("전체 음량 균일 맞춤", "Balanced overall loudness")}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("카메라 움직임 곡선 프리셋", "Camera motion curve presets")}>
+                {([
+                  { id: "spring-impact", ko: "탄력 줌인 강조", en: "Crisp focus zoom" },
+                  { id: "smooth-pan-25d", ko: "다층 깊이 패닝", en: "Layered depth pan" },
+                  { id: "shonen-shake-burst", ko: "액션 화면 흔들림", en: "Action impact shake" },
+                  { id: "emotional-slowzoom", ko: "천천히 다가가는 클로즈업", en: "Slow emotional zoom" },
+                ] as const).map((curve) => (
+                  <button
+                    key={curve.id}
+                    type="button"
+                    aria-pressed={cameraCurve === curve.id}
+                    data-testid={`cuts-studio-rea-curve-${curve.id}`}
+                    onClick={() => setCameraCurve(curve.id)}
+                    className={cameraCurve === curve.id ? "inline-flex min-h-11 items-center rounded-lg border border-accent bg-accent/15 px-3 py-1.5 font-semibold text-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1.5 text-fg-2 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
+                  >
+                    {t(curve.ko, curve.en)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1" role="group" aria-label={t("배경음 조절 방식", "Background audio balance")}>
+                {([
+                  { id: "dialogue-minus12db", ko: "대사 중심 조절", en: "Dialogue focus" },
+                  { id: "sfx-punch-minus6db", ko: "효과음 중심 조절", en: "SFX focus" },
+                  { id: "cinema-lufs14", ko: "전체 음량 균일화", en: "Balanced loudness" },
+                ] as const).map((duck) => (
+                  <button
+                    key={duck.id}
+                    type="button"
+                    aria-pressed={duckingProfile === duck.id}
+                    data-testid={`cuts-studio-rea-duck-${duck.id}`}
+                    onClick={() => setDuckingProfile(duck.id)}
+                    className={duckingProfile === duck.id ? "inline-flex min-h-11 items-center rounded-md border border-accent bg-accent px-3 py-1.5 text-[11px] font-semibold text-on-accent transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" : "inline-flex min-h-11 items-center rounded-md border border-line bg-panel px-3 py-1.5 text-[11px] text-fg-3 transition-colors motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"}
+                  >
+                    {t(duck.ko, duck.en)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p data-testid="cuts-studio-rea-keyframe-status" className="mt-2 rounded-xl border border-line bg-panel/70 px-3 py-2 text-[11px] leading-relaxed text-fg-2">
+              {cameraCurve === "spring-impact"
+                ? t("핵심 대사 장면에 진입할 때 빠르게 초점을 맞추고 말풍선 등장 시점을 함께 맞춥니다.", "Focuses quickly on key dialogue panels in sync with speech-balloon timing.")
+                : cameraCurve === "smooth-pan-25d"
+                  ? t("전경 인물과 배경의 이동 속도를 다르게 두어 자연스러운 공간감을 만듭니다.", "Moves foreground characters and backgrounds at distinct speeds for natural depth.")
+                  : cameraCurve === "shonen-shake-burst"
+                    ? t("강한 동작 장면에 짧은 화면 흔들림을 더해 역동적인 인상을 줍니다.", "Adds brief camera shake on action beats for a crisp sense of impact.")
+                    : t("독백 구간에서 천천히 화면을 당겨 대사에 시선이 머물도록 돕습니다.", "Slowly pushes in during monologues so attention stays on the dialogue.")}
+            </p>
+          </section>
+        </div>
+      </details>
     </div>
   );
 }

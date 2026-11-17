@@ -327,6 +327,12 @@ export function StudioHybridDccPanel({
   const activeRecord = ws.activeAssetId
     ? ws.session.state.geometry.records[ws.activeAssetId] ?? null
     : null;
+  const activeAssetIndex = activeRecord
+    ? authorityRecords.findIndex(({ assetId }) => assetId === activeRecord.assetId)
+    : -1;
+  const activeFriendlyName = activeRecord
+    ? friendlyHybridDccAssetName(bt, activeRecord.assetId, Math.max(0, activeAssetIndex))
+    : null;
   const activeRights = ws.activeAssetId
     ? ws.session.state.rightsBom.find(({ assetId }) => assetId === ws.activeAssetId) ?? null
     : null;
@@ -713,15 +719,22 @@ export function StudioHybridDccPanel({
           />
         </div>
 
-        <div className={cn("order-2 min-w-0 space-y-3 lg:col-start-2 lg:row-span-2 lg:row-start-1", introVisible ? "xl:col-start-2" : "xl:col-start-3")}>
+        <div
+          className={cn(
+            "order-2 grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-2 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:grid-cols-1",
+            introVisible ? "xl:col-start-2" : "xl:col-start-3",
+          )}
+        >
           {workbenchMode !== "material" && workbenchMode !== "shot" ? (
-            <StudioHybridDccPrimitiveBar
-              busy={busy}
-              hasActiveAsset={hasActiveAsset}
-              onAddPrimitive={(kind, label) => { void run(label, () => workspaceAddStarterPrimitive(ws, kind)); }}
-              onApplyRecipe={(id, label) => runModifier(label, () => workspaceApplyActiveModelingRecipe(ws, id))}
-              onImportFile={(file) => { void modelImport.open(file); }}
-            />
+            <div className="min-w-0 md:col-span-2 lg:col-span-1">
+              <StudioHybridDccPrimitiveBar
+                busy={busy}
+                hasActiveAsset={hasActiveAsset}
+                onAddPrimitive={(kind, label) => { void run(label, () => workspaceAddStarterPrimitive(ws, kind)); }}
+                onApplyRecipe={(id, label) => runModifier(label, () => workspaceApplyActiveModelingRecipe(ws, id))}
+                onImportFile={(file) => { void modelImport.open(file); }}
+              />
+            </div>
           ) : null}
           <section
             className="rounded-2xl border border-line bg-panel p-3"
@@ -769,10 +782,19 @@ export function StudioHybridDccPanel({
             {activeRecord ? (
               <div className="space-y-3 pt-3">
                 <div>
-                  <p className="truncate text-sm font-semibold text-fg">{activeRecord.assetId}</p>
-                  <p className="mt-0.5 font-mono text-[0.6875rem] text-fg-3">
-                    {activeRecord.meshHash.slice(0, 18)}…
-                  </p>
+                  <p className="truncate text-sm font-semibold text-fg">{activeFriendlyName}</p>
+                  <details
+                    className="mt-1.5 rounded-lg border border-line/70 bg-canvas/40 px-2.5 py-1.5 text-[0.6875rem] text-fg-3"
+                    data-testid="studio-hybrid-dcc-mesh-id-disclosure"
+                  >
+                    <summary className="cursor-pointer select-none font-medium text-fg-2 [word-break:keep-all]">
+                      {bt("고급 메시 식별 정보", "Advanced mesh identifiers")}
+                    </summary>
+                    <dl className="mt-1.5 space-y-0.5 border-t border-line/50 pt-1.5 font-mono text-[0.65rem] tabular-nums">
+                      <div className="flex justify-between gap-2"><dt className="text-fg-3">ID</dt><dd className="truncate text-fg-2">{activeRecord.assetId}</dd></div>
+                      <div className="flex justify-between gap-2"><dt className="text-fg-3">Hash</dt><dd className="truncate text-fg-2">{activeRecord.meshHash.slice(0, 18)}…</dd></div>
+                    </dl>
+                  </details>
                 </div>
                 <div
                   className="rounded-lg border border-accent/25 bg-accent-soft px-2.5 py-2 text-xs leading-relaxed text-fg-2"
@@ -923,8 +945,8 @@ export function StudioHybridDccPanel({
                     <span className="block truncate text-xs font-medium">
                       {friendlyHybridDccAssetName(bt, record.assetId, recordIndex)}
                     </span>
-                    <span className="block truncate text-[0.6875rem] text-fg-2">
-                      {record.assetId} · {bt("버전", "rev")} {record.revision}
+                    <span className="block truncate text-[0.6875rem] tabular-nums text-fg-3">
+                      {bt("버전", "rev")} {record.revision}
                     </span>
                   </button>
                   <button
@@ -1018,7 +1040,7 @@ export function StudioHybridDccPanel({
             : log}
         </p>
         <p
-          className="mt-1 min-w-0 break-words text-[0.6875rem] text-fg-3 [overflow-wrap:anywhere]"
+          className="mt-1 min-w-0 break-words text-[0.6875rem] tabular-nums text-fg-3 [overflow-wrap:anywhere]"
           data-studio-hybrid-dcc-stats="true"
           data-studio-hybrid-dcc-state-hash={ws.session.state.stateHash}
           data-assets={Object.keys(ws.session.state.geometry.records).length}
@@ -1035,7 +1057,7 @@ export function StudioHybridDccPanel({
           data-dynatopo-faces={ws.lastDynatopo?.facesAfter ?? 0}
           data-retopo-faces={ws.lastRetopo?.facesAfter ?? 0}
         >
-          {bt("상태 점검", "Health")} · {bt("오류", "errors")} {diag.errorCount} · {bt("경고", "warnings")} {diag.warningCount} · {bt("선택", "selected")} {ws.activeAssetId ?? bt("없음", "none")} · {bt("오브젝트", "objects")} {authorityRecords.length} · {bt("컷", "shots")} {ws.bridge.shots.length}
+          {bt("오류", "Errors")} {diag.errorCount} · {bt("경고", "Warnings")} {diag.warningCount} · {bt("선택", "Selected")} {activeFriendlyName ?? bt("없음", "None")} · {bt("오브젝트", "Objects")} {authorityRecords.length} · {bt("컷", "Shots")} {ws.bridge.shots.length}
         </p>
       </footer>
     </section>

@@ -1,4 +1,4 @@
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, SunMedium } from "lucide-react";
 import { useId, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -57,7 +57,7 @@ export function StudioHybridDccViewportInteractionBar({
         <details className="group rounded-xl border border-line/70 bg-canvas/35" data-testid="studio-hybrid-dcc-pbr-look-disclosure">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-              <Sparkles size={13} aria-hidden="true" className="shrink-0 text-accent" />
+              <SunMedium size={13} aria-hidden="true" className="shrink-0 text-accent" />
               <span className="truncate">{bt("스튜디오 표면 질감", "Studio surface look")}</span>
             </span>
             <span className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-fg-3">

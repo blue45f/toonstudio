@@ -74,7 +74,7 @@ describe("EntryIntro", () => {
 
     expect(container.textContent).toContain("Toon");
     expect(container.textContent).toContain("Studio");
-    expect(container.textContent).toContain("Stories Come to Life");
+    expect(container.textContent).toContain("그리는 사람들을 위한 작업실");
     // 구 브랜드 표기가 남아 있지 않다.
     expect(container.textContent).not.toContain("SPECTRUM");
     expect(container.textContent).not.toContain("Beta Service");

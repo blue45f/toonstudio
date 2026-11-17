@@ -71,13 +71,7 @@ import { cn } from "@/shared/lib/utils";
 /* Slot tables                                                                 */
 /* -------------------------------------------------------------------------- */
 
-const FACE_KEYS: readonly (keyof AvatarForgeFaceParams)[] = [
-  "headWidth",
-  "headHeight",
-  "headDepth",
-  "cheekVolume",
-  "chinLength",
-];
+const FACE_KEYS: readonly (keyof AvatarForgeFaceParams)[] = ["headWidth", "headHeight", "headDepth", "cheekVolume", "chinLength"];
 
 const MORPH_IDS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly AvatarForgeSemanticFaceMorphId[]>> = {
   eyes: ["eyeSize", "eyeSpacing", "eyeTilt"],
@@ -87,17 +81,8 @@ const MORPH_IDS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly AvatarForgeS
   irises: ["irisSize"],
 };
 
-const WARDROBE_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly WardrobeSlot[]>> = {
-  top: ["top", "outer"],
-  bottom: ["bottom"],
-  shoes: ["shoes"],
-};
-
-const COSTUME_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly CostumeSlot[]>> = {
-  top: ["tops", "outer", "onepiece"],
-  bottom: ["bottoms"],
-  shoes: ["shoes"],
-};
+const WARDROBE_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly WardrobeSlot[]>> = { top: ["top", "outer"], bottom: ["bottom"], shoes: ["shoes"] };
+const COSTUME_SLOTS_BY_SLOT: Partial<Record<CharacterSlotKind, readonly CostumeSlot[]>> = { top: ["tops", "outer", "onepiece"], bottom: ["bottoms"], shoes: ["shoes"] };
 
 const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   eyeSize: "왼쪽은 작게, 오른쪽은 크게",
@@ -111,12 +96,11 @@ const MORPH_HINTS: Readonly<Record<AvatarForgeSemanticFaceMorphId, string>> = {
   earSize: "귀 크기",
 };
 
-
-const SWATCH_TONE = "grid size-11 place-items-center rounded-lg border border-line hover:border-line-strong";
+const SWATCH_TONE = "grid size-11 min-h-11 min-w-11 place-items-center rounded-lg border border-line transition-colors duration-150 hover:border-line-strong motion-reduce:transition-none";
 
 const ROW_BUTTON = cn(
-  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.7rem] font-semibold text-fg-2",
-  "transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+  "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-card px-3 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]",
+  "transition-colors duration-150 hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
   STUDIO_FOCUS_RING,
 );
 
@@ -731,10 +715,10 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
       <header className="sticky top-0 z-10 shrink-0 border-b border-line bg-panel/95 px-3 py-3 backdrop-blur">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 id={headingId} className="text-sm font-bold text-fg">
+            <h2 id={headingId} className="text-sm font-bold text-fg [word-break:keep-all]">
               {meta.label}
             </h2>
-            <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3">{meta.hint}</p>
+            <p className="mt-0.5 text-[0.66rem] leading-relaxed text-fg-3 [word-break:keep-all]">{meta.hint}</p>
           </div>
           {onClose ? (
             <button
@@ -742,8 +726,8 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
               aria-label="정밀 조절 닫기"
               onClick={onClose}
               className={cn(
-                "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2",
-                "transition-colors hover:bg-raised hover:text-fg motion-reduce:transition-none",
+                "grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2",
+                "transition-colors duration-150 hover:bg-raised hover:text-fg motion-reduce:transition-none",
                 STUDIO_FOCUS_RING,
               )}
             >
@@ -757,12 +741,12 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
               <CharacterSlotPreview spec={focus.preview} size={96} selected={focus.id === selectedEntry?.id} title={focus.label} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[0.8rem] font-bold text-fg">{focus.label}</p>
-              <p className="mt-0.5 line-clamp-2 text-[0.66rem] leading-relaxed text-fg-3">{focus.hint}</p>
+              <p className="truncate text-[0.8rem] font-bold text-fg [word-break:keep-all]">{focus.label}</p>
+              <p className="mt-0.5 line-clamp-2 text-[0.66rem] leading-relaxed text-fg-3 [word-break:keep-all]">{focus.hint}</p>
               {badge ? (
                 <p
                   className={cn(
-                    "mt-1.5 inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.62rem] font-semibold",
+                    "mt-1.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.62rem] font-semibold [word-break:keep-all]",
                     badge.tone === "good" && "border-good/40 bg-good/10 text-good",
                     badge.tone === "warn" && "border-warn/45 bg-warn/15 text-warn",
                     badge.tone === "bad" && "border-bad/45 bg-bad/15 text-bad",
@@ -771,16 +755,16 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
                   {badge.label}
                 </p>
               ) : null}
-              {reason ? <p className="mt-1 text-[0.64rem] leading-relaxed text-warn">{reason}</p> : null}
+              {reason ? <p className="mt-1 text-[0.64rem] leading-relaxed text-warn [word-break:keep-all]">{reason}</p> : null}
             </div>
           </div>
         ) : (
-          <p className="mt-2.5 rounded-xl border border-dashed border-line bg-card/50 px-2.5 py-3 text-[0.66rem] leading-relaxed text-fg-3">
+          <p className="mt-2.5 rounded-xl border border-dashed border-line bg-card/50 px-2.5 py-3 text-[0.66rem] leading-relaxed text-fg-3 [word-break:keep-all]">
             카드에 마우스를 올리거나 하나 선택하면 여기에서 크게 볼 수 있습니다.
           </p>
         )}
         {busyReason ? (
-          <p role="status" className="mt-2 text-[0.64rem] font-semibold leading-relaxed text-warn">
+          <p role="status" className="mt-2 text-[0.64rem] font-semibold leading-relaxed text-warn [word-break:keep-all]">
             {busyReason}
           </p>
         ) : null}
@@ -796,12 +780,12 @@ export function CharacterShaperInspector({ h, binding, slot, hoveredEntryId, onC
         )}
 
         <section className="border-t border-line/60 px-3 py-3" aria-label="이 모델에서 되는 것">
-          <h3 className="text-[0.78rem] font-bold text-fg">이 모델에서 되는 것</h3>
+          <h3 className="text-[0.78rem] font-bold text-fg [word-break:keep-all]">이 모델에서 되는 것</h3>
           <dl className="mt-2 space-y-1">
             {capabilityLines.map((line) => (
               <div key={line.label} className="flex items-start justify-between gap-2 text-[0.66rem] leading-relaxed">
-                <dt className="shrink-0 font-semibold text-fg-2">{line.label}</dt>
-                <dd className={cn("min-w-0 text-right", line.ok ? "text-fg-3" : "text-warn")}>
+                <dt className="shrink-0 font-semibold text-fg-2 [word-break:keep-all]">{line.label}</dt>
+                <dd className={cn("min-w-0 text-right tabular-nums [word-break:keep-all]", line.ok ? "text-fg-3" : "text-warn")}>
                   {line.ok ? "" : "제한: "}
                   {line.value}
                 </dd>

@@ -294,7 +294,6 @@ export function TitleDetailPage() {
         <summary>{bi("독자 리뷰", "Reader reviews")}</summary>
       <Section
         className="mt-10 sm:mt-14"
-        eyebrow="REVIEWS"
         title={
           <span className="flex items-baseline gap-3">
             {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "리뷰")}
@@ -362,26 +361,26 @@ export function TitleDetailPage() {
           {/* 회차 빈 상태의 "다른 플랫폼 더 보기"가 도착하는 시그니처 Starlight 라우터 카드 (D-9 · 시안 E) */}
           <div
             data-title-where-to-read-router="true"
-            className="relative scroll-mt-24 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-b from-accent/10 via-panel/85 to-card p-4 shadow-sm"
+            className="relative scroll-mt-24 overflow-hidden rounded-2xl border border-line bg-card p-4"
           >
             <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0">
-              <GenreSpectrum genres={title.genres} height={3} />
+              <GenreSpectrum genres={title.genres} height={2} />
             </div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 pt-0.5">
-              <div className="flex items-center gap-2">
-                <span className="grid size-7 place-items-center rounded-lg border border-accent/35 bg-accent-soft text-accent">
-                  <MapPin size={14} aria-hidden="true" />
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-8 place-items-center rounded-lg border border-line bg-panel text-fg-2">
+                  <MapPin size={15} strokeWidth={1.5} aria-hidden="true" />
                 </span>
                 <div>
-                  <p className="font-display text-[10px] font-extrabold uppercase tracking-wider text-accent">
+                  <p className="text-xs font-medium text-fg-2">
                     {bi("공식 감상처", "Official reading platforms")}
                   </p>
-                  <p className="text-sm font-bold text-fg">
+                  <p className="text-sm font-semibold text-fg">
                     {bi("어디서 볼 수 있나요", "Where to read")}
                   </p>
                 </div>
               </div>
-              <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 text-[11px] font-bold text-fg-2">
+              <span className="rounded-lg border border-line bg-panel px-2.5 py-0.5 text-xs font-medium tabular-nums text-fg-2">
                 {formatI18nTemplate(String(bi("{v0}개 플랫폼", "{v0} platforms")), { v0: String(title.availability.length) })}
               </span>
             </div>
@@ -446,27 +445,27 @@ export function TitleDetailPage() {
           <nav
             aria-label={bi("작품 상세 섹션 이동 및 크로스 허브 브리지", "Title section jump and cross-hub bridge")}
             data-testid="title-detail-rea-bridge-bar"
-            className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card/75 px-4 py-2.5 text-xs"
+            className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card px-4 py-2.5 text-xs"
           >
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-[10px] font-extrabold uppercase tracking-wider text-accent">
+              <span className="mr-1 text-xs font-semibold text-fg-2">
                 {bi("다른 활동", "More activities")}
               </span>
               <a
                 href="#title-episodes-anchor"
-                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-panel px-3.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               >
                 {bi("회차 목록", "Episodes")}
               </a>
               <a
                 href="#title-availability"
-                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-panel px-3.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               >
                 {bi("연재처 · 가격 비교", "Platforms & pricing")}
               </a>
               <a
                 href="#metrics"
-                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-panel px-3.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               >
                 {bi("완독률 · 정주행 지표", "Completion & binge metrics")}
               </a>
@@ -474,19 +473,19 @@ export function TitleDetailPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               <Link
                 href="/cuts"
-                className="inline-flex min-h-12 items-center rounded-full border border-accent/35 bg-accent/10 px-3.5 font-bold text-accent transition-colors hover:bg-accent/20"
+                className="inline-flex min-h-12 items-center rounded-lg border border-accent/40 bg-accent-soft px-3.5 font-semibold text-accent transition-colors duration-150 hover:border-accent motion-reduce:transition-none"
               >
                 {bi("숏폼 컷츠 보기", "Watch short-form cuts")}
               </Link>
               <Link
                 href="/compare"
-                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-panel px-3.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               >
                 {bi("작품 스펙 비교", "Compare title specs")}
               </Link>
               <Link
                 href="/showcase/promo"
-                className="inline-flex min-h-12 items-center rounded-full border border-line bg-panel px-3.5 font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent"
+                className="inline-flex min-h-12 items-center rounded-lg border border-line bg-panel px-3.5 font-medium text-fg-2 transition-colors duration-150 hover:border-line-strong hover:text-fg motion-reduce:transition-none"
               >
                 {bi("트레일러 제작", "Create trailer")}
               </Link>
@@ -555,14 +554,14 @@ export function TitleDetailPage() {
           {translateBilingualValueForActiveLocale("TitleDetailPage", "작품 지표 · 관련 콘텐츠", "Title metrics and related content")}
         </summary>
       <section id="metrics" className="mt-10 scroll-mt-24 sm:mt-14">
-        <h2 className="eyebrow mb-1 text-accent">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "METRICS · 지표")}</h2>
+        <h2 className="mb-1 text-base font-semibold text-fg">{bi("작품 지표", "Title metrics")}</h2>
         <p className="mb-4 text-xs text-fg-2">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률·몰입·분포는 수집값과 추정값을 함께 사용합니다.")}</p>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-line bg-card p-5">
+          <div className="rounded-2xl border border-line bg-panel p-5">
             <h3 className="mb-4 text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "평점 분포")}</h3>
             <DistributionBars dist={title.stats.ratingDist} />
           </div>
-          <div className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-5">
+          <div className="flex flex-col gap-4 rounded-2xl border border-line bg-panel p-5">
             <h3 className="text-sm font-semibold text-fg">{translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "정주행 지표")}</h3>
             <MeterBar label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "완독률")} value={Math.round(title.stats.completionRate)} suffix="%" />
             <MeterBar label={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "몰입 지수")} value={Math.round(title.stats.bingeIndex)} color="var(--color-cool)" />
@@ -580,14 +579,13 @@ export function TitleDetailPage() {
       {(hasFamily || hasExternalMedia) && (
         <Section
           className="mt-10 sm:mt-14"
-          eyebrow="ADAPTATION"
           title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "같은 이야기, 다른 형태")}
           desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "원작·웹툰부터 드라마·영화·애니메이션까지, 하나의 우주로 연결했습니다.")}
         >
-          <div className="rounded-2xl border border-line bg-card p-5">
-            <div className="mb-4 flex items-center gap-2 text-fg-3">
-              <Layers size={15} />
-              <span className="eyebrow">{original.title} {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "유니버스")}</span>
+          <div className="rounded-2xl border border-line bg-panel p-5">
+            <div className="mb-4 flex items-center gap-2 text-fg-2">
+              <Layers size={15} strokeWidth={1.5} />
+              <span className="text-xs font-medium">{original.title} {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "유니버스")}</span>
             </div>
             <AdaptationGraph
               original={original}
@@ -605,7 +603,6 @@ export function TitleDetailPage() {
 
       <Section
         className="mt-10 sm:mt-14"
-        eyebrow="COMMUNITY"
         title={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0} 팬카페"), { v0: String(title.title) })}
         desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작품 해석, 정주행 메모, 팬아트 아이디어를 독자들과 나눕니다.")}
       >
@@ -617,20 +614,19 @@ export function TitleDetailPage() {
       <div id="title-character-talk" className="scroll-mt-24">
       <Section
         className="mt-10 sm:mt-14"
-        eyebrow="CHARACTER TALK"
         title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "등장인물과 직접 대화해요")}
         desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "작가가 승인한 설정 그대로 캐릭터와 이야기하는 캐릭터 토크예요. 작가가 챗을 연 작품이면 바로 대화를 시작할 수 있어요.")}
       >
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-card p-5">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
-            <MessageSquareText size={20} aria-hidden />
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel p-5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2">
+            <MessageSquareText size={18} strokeWidth={1.5} aria-hidden />
           </span>
           <p className="min-w-0 flex-1 text-sm leading-relaxed text-fg-2">
             {formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "「{v0}」의 캐릭터에게 궁금한 걸 직접 물어보세요."), { v0: String(title.title) })}
           </p>
           <Link
             href={`/character-chat?work=${encodeURIComponent(title.slug ?? slug ?? "")}`}
-            className="inline-flex min-h-12 items-center rounded-lg bg-accent px-4 text-xs font-bold text-on-accent hover:bg-accent/90"
+            className="inline-flex min-h-12 items-center rounded-lg bg-accent px-4 text-xs font-semibold text-on-accent transition-colors duration-150 hover:bg-accent/90 motion-reduce:transition-none"
           >
             {translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "캐릭터와 대화하기")}
           </Link>
@@ -643,7 +639,6 @@ export function TitleDetailPage() {
       {byAuthor.length > 0 && !isPlaceholderAuthorName(title.author) && (
         <Section
           className="mt-10 sm:mt-14"
-          eyebrow="BY THIS AUTHOR"
           title={formatI18nTemplate(translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "{v0}의 다른 작품"), { v0: String(title.author) })}
           desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "같은 작가가 그린·쓴 다른 작품")}
         >
@@ -658,7 +653,6 @@ export function TitleDetailPage() {
       {similar.length > 0 && (
         <Section
           className="mt-10 sm:mt-14"
-          eyebrow="SIMILAR"
           title={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "이 작품과 비슷한")}
           desc={translateCurrentStaticSourceText("domains.catalog.TitleDetailPage", "ko", "장르·태그·어댑테이션 관계로 찾은 추천")}
         >

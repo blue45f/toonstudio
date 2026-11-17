@@ -80,16 +80,16 @@ export function CreatorRoleTaskInbox({
         <div>
           <div className="flex items-center gap-2 text-accent">
             <ListChecks className="size-4" aria-hidden="true" />
-            <p className="text-[0.6875rem] font-black uppercase tracking-[0.14em]">MY ROLE INBOX</p>
+            <p className="text-xs font-semibold">내 직무 작업함</p>
           </div>
-          <h2 id="creator-role-task-inbox-title" className="mt-1 text-sm font-black text-fg">
+          <h2 id="creator-role-task-inbox-title" className="mt-1 text-sm font-semibold text-fg">
             지금 먼저 볼 내 업무
           </h2>
           <p className="mt-1 text-xs leading-relaxed text-fg-2">
             실제 배정, 현재 직무, 마감과 차단 상태를 기준으로 우선순위를 계산했습니다.
           </p>
         </div>
-        <span className="inline-flex min-h-7 items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 text-xs font-black text-accent">
+        <span className="inline-flex min-h-7 items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 text-xs font-semibold tabular-nums text-accent">
           {items.length}건
         </span>
       </header>

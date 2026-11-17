@@ -10,12 +10,6 @@
   --ease-spring-gentle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@supports (transition-timing-function: linear(0, 1)) {
-  :root {
-    --ease-spring-gentle: linear(0, 0.43 13%, 0.79 29%, 0.96 47%, 1.012 66%, 1 100%);
-  }
-}
-
 @media (max-width: 767px) {
   :root {
     --motion-fast: 110ms;

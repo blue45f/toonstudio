@@ -76,7 +76,7 @@ function ProcessLensSummary({ aggregate, lens }: { readonly aggregate: Productio
     enParts.push("all done");
   }
   return (
-    <span className="text-xs text-fg-3" role="status">
+    <span className="text-xs tabular-nums text-fg-3" role="status">
       {bt(koParts.join(" · "), enParts.join(" · "))}
     </span>
   );
@@ -92,7 +92,7 @@ function SaveStatus({ saveState, revision, isDemo }: { readonly saveState: Produ
         ? bt("저장 실패", "Save failed")
         : isDemo ? bt("샘플 · 서버 저장 안 함", "Sample · not saved to server") : bt(`버전 ${revision}`, `Version ${revision}`);
   return (
-    <span className="inline-flex min-h-11 items-center gap-1.5 text-xs text-fg-3" role="status">
+    <span className="inline-flex min-h-11 items-center gap-1.5 text-xs tabular-nums text-fg-3" role="status">
       {isDemo ? <CloudOff className="size-3.5" aria-hidden="true" /> : null}
       {text}
     </span>
@@ -119,7 +119,7 @@ function ProductionProjectCoverTile({ aggregate }: { readonly aggregate: Product
   return (
     <span
       aria-hidden="true"
-      className="studio-texture-paper flex h-16 w-12 shrink-0 select-none items-center justify-center rounded-lg border border-line bg-[linear-gradient(150deg,var(--color-accent-soft),var(--color-panel)_58%,var(--color-raised))] text-xl font-black text-accent sm:h-[4.5rem] sm:w-[3.375rem]"
+      className="studio-texture-paper flex h-16 w-12 shrink-0 select-none items-center justify-center rounded-lg border border-line bg-accent-soft text-xl font-semibold text-accent sm:h-[4.5rem] sm:w-[3.375rem]"
     >
       {aggregate.title.trim().charAt(0) || "?"}
     </span>
@@ -150,7 +150,7 @@ export function ProductionProjectHeader({
           <ProductionProjectCoverTile aggregate={aggregate} />
           <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Link className="inline-flex min-h-6 items-center font-bold tracking-[0.04em] text-accent hover:underline" to="/production">
+            <Link className="inline-flex min-h-9 items-center font-semibold text-accent hover:underline" to="/production">
               {bt("제작 관리", "Production")}
             </Link>
             <ChevronRight className="size-3.5 text-fg-3" aria-hidden="true" />
@@ -159,7 +159,7 @@ export function ProductionProjectHeader({
               {bt("내 권한", "My access")}: {projectAccessRoleLabel(access.role, bt)}
             </ProductionPill>
           </div>
-          <h1 className="mt-1 truncate text-xl font-black tracking-tight text-fg sm:text-2xl">{aggregate.title}</h1>
+          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-fg sm:text-2xl">{aggregate.title}</h1>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -167,7 +167,7 @@ export function ProductionProjectHeader({
           <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:ring-2 focus-within:ring-accent">
             <span>{bt("내 역할", "My role")}</span>
             <select
-              className="min-h-10 bg-transparent font-semibold text-fg outline-none"
+              className="min-h-11 bg-transparent font-semibold text-fg outline-none"
               value={roleLens}
               onChange={(event) => {
                 const next = parseRoleLens(event.target.value);
@@ -182,7 +182,7 @@ export function ProductionProjectHeader({
           <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-card px-3 text-xs text-fg-2 focus-within:ring-2 focus-within:ring-accent">
             <span>{bt("내 공정", "My process")}</span>
             <select
-              className="min-h-10 bg-transparent font-semibold text-fg outline-none"
+              className="min-h-11 bg-transparent font-semibold text-fg outline-none"
               value={processLens}
               onChange={(event) => {
                 const next = parseProcessLens(event.target.value);

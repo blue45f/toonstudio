@@ -53,8 +53,8 @@
   --spectacle-1: var(--unified-accent);
   --spectacle-2: var(--unified-accent-2);
   --spectacle-3: var(--color-cool, var(--unified-accent-2));
-  --spectacle-gradient: linear-gradient(100deg, var(--spectacle-1), var(--spectacle-2) 52%, var(--spectacle-3));
-  --spectacle-glow: 0 0 32px color-mix(in oklch, var(--spectacle-1) 26%, transparent);
+  --spectacle-gradient: linear-gradient(135deg, var(--spectacle-1), color-mix(in oklch, var(--spectacle-2) 90%, var(--spectacle-1)) 64%, color-mix(in oklch, var(--spectacle-3) 12%, var(--spectacle-1)));
+  --spectacle-glow: 0 1px 2px color-mix(in oklch, var(--spectacle-1) 10%, transparent);
   --spectacle-duration-enter: 180ms;
   --domain-tint: var(--spectacle-1);
   --surface-glass: var(--unified-glass);
@@ -128,8 +128,8 @@
   max-width: 24ch;
   font-family: var(--font-display);
   font-size: var(--site-heading-size);
-  font-weight: 760;
-  letter-spacing: -0.045em;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -161,8 +161,8 @@ h1[data-type-variant="editorial"],
 [data-site-experience] .route-stage[data-theme-contract="unified"] [data-section-title] {
   font-family: var(--font-display);
   font-size: var(--site-section-title-size);
-  font-weight: 720;
-  letter-spacing: -0.035em;
+  font-weight: 600;
+  letter-spacing: -0.025em;
   line-height: 1.35;
   text-wrap: balance;
 }

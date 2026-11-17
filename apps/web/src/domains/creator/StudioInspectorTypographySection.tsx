@@ -217,7 +217,7 @@ export function StudioInspectorTypographySection({
           loadingLabel={t("studio.canvas.panelLoading.typographyAppearance", "외형을 여는 중...")}
         >
           <div className="space-y-2.5">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-fg-3">글자 외곽선 (Border)</p>
+            <p className="text-xs font-semibold text-fg-3">글자 외곽선</p>
 
             <div className="flex items-center justify-between gap-2 text-sm text-fg-2">
               외곽선 사용
@@ -307,7 +307,7 @@ export function StudioInspectorTypographySection({
           </div>
 
           <div className="space-y-2.5 border-t border-line/40 pt-2.5">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-fg-3">글자 그림자 (Shadow)</p>
+            <p className="text-xs font-semibold text-fg-3">글자 그림자</p>
 
             <div className="flex items-center justify-between gap-2 text-sm text-fg-2">
               그림자 사용

@@ -1,4 +1,4 @@
-import { ArrowRight, FileUp, PlayCircle, Plus, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, FileUp, PlayCircle, Plus, ShieldCheck } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
@@ -26,7 +26,7 @@ const COPY = {
     ],
   },
   en: {
-    eyebrow: "START YOUR FIRST WORK",
+    eyebrow: "Start your first work",
     title: "No work to show",
     body: "Create a new work, bring in an existing file, or explore a safe sample workflow first. Temporary autosave begins as soon as you start creating.",
     visualAlt: "Original ToonStudio visual showing a creative workspace and story panels",
@@ -53,7 +53,7 @@ export function StudioProjectLibraryEmptyVisual({ locale }: { readonly locale: s
   return (
     <section className="studio-project-empty-visual" aria-labelledby="studio-project-empty-title" lang={locale}>
       <div className="studio-project-empty-visual__copy">
-        <p className="studio-project-empty-visual__eyebrow"><Sparkles size={14} aria-hidden="true" />{copy.eyebrow}</p>
+        <p className="studio-project-empty-visual__eyebrow">{copy.eyebrow}</p>
         <h2 id="studio-project-empty-title">{copy.title}</h2>
         <p className="studio-project-empty-visual__body">{copy.body}</p>
         <div className="studio-project-empty-visual__badges" aria-label={bt("작업 보호 기능", "Work protection features")}>
@@ -74,8 +74,7 @@ export function StudioProjectLibraryEmptyVisual({ locale }: { readonly locale: s
         {visualFailed ? (
           <div role="img" aria-label={copy.visualAlt} className="grid h-full min-h-[280px] place-items-center bg-panel p-6 text-center text-fg-2">
             <div>
-              <Sparkles size={28} className="mx-auto text-accent" aria-hidden="true" />
-              <p className="mt-2 text-xs font-bold">TOONSTUDIO CREATIVE WORKSPACE</p>
+              <p className="text-xs font-semibold">{bt("창작 작업실 미리보기", "Creative workspace preview")}</p>
             </div>
           </div>
         ) : (
@@ -87,7 +86,7 @@ export function StudioProjectLibraryEmptyVisual({ locale }: { readonly locale: s
             onError={() => setVisualFailed(true)}
           />
         )}
-        <figcaption>TOONSTUDIO · START → CREATE → CONTINUE</figcaption>
+        <figcaption>{bt("시작 · 제작 · 이어서 작업", "Start · Create · Continue")}</figcaption>
       </motion.figure>
       <div className="studio-project-empty-visual__routes">
         {copy.routes.map(([number, title, body], index) => (

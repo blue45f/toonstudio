@@ -120,16 +120,16 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
       <details className="ci-quality-overview">
         <summary>검증 전체 현황과 기준 커밋</summary>
       <section className="ci-quality-release" aria-label="기준 커밋과 검증 요약">
-        <div><p className="ci-quality-eyebrow">RELEASE EVIDENCE</p><h2>완료 표시와 유효한 근거를<br className="ci-quality-desktop-break" /> 함께 확인합니다.</h2><p>현재 SHA·실행 시각·범위·로그를 대조하세요.<br />core·verify 녹색이나 부분 통계는 전체 suite 성공의 보증이 아닙니다.</p></div>
+        <div><p className="ci-quality-eyebrow">배포 검증 근거</p><h2>완료 표시와 유효한 근거를<br className="ci-quality-desktop-break" /> 함께 확인합니다</h2><p>현재 SHA·실행 시각·범위·로그를 대조하세요.<br />core·verify 녹색이나 부분 통계는 전체 suite 성공의 보증이 아닙니다.</p></div>
         <div className="ci-quality-commit"><span>기준 커밋 SHA</span><a href={board.commit.url || undefined} target="_blank" rel="noopener noreferrer"><code>{board.commit.sha.slice(0, 9)}</code></a><strong>{board.commit.message || "메시지 미등록"}</strong><small>커밋 {qualityDate(board.commit.committedAt)}</small><small>{board.commit.source === "remote-main" ? "원격 main 관측" : "수동 기준 기록"} · {qualityDate(board.commit.observedAt)}</small><p>core · {statusLabels[board.checks.find((check) => check.id === "ci-core")?.status ?? "unknown"]} / verify · {statusLabels[board.checks.find((check) => check.id === "ci-verify")?.status ?? "unknown"]}</p></div>
       </section>
       <div className="ci-quality-metrics" aria-label="검증 집계">
         <div className="ci-quality-card ci-quality-metric"><span>추적 중인 검사</span><strong>{summary.tracked}</strong><small>정본 CI · 전용 게이트</small></div>
         <div className="ci-quality-card ci-quality-metric"><span>완료한 검사</span><strong>{summary.byStatus.done} <small>/ {summary.tracked}</small></strong><small>유효한 완료 근거 {summary.validCompleted}개</small></div>
         <div className="ci-quality-card ci-quality-metric"><span>실패한 검사</span><strong>{summary.byStatus.failed}</strong><small>{summary.byStatus.failed ? "변경·원인·권장 조치 확인" : "실패 결과 미등록"}</small></div>
-        <div className="ci-quality-card ci-quality-metric"><span>근거 확인 필요</span><strong>{summary.tracked - summary.fresh}</strong><small>stale {summary.stale} · 미등록 {summary.missing} · 오류 {summary.invalid}</small></div>
+        <div className="ci-quality-card ci-quality-metric"><span>근거 확인 필요</span><strong>{summary.tracked - summary.fresh}</strong><small>만료 {summary.stale} · 미등록 {summary.missing} · 오류 {summary.invalid}</small></div>
       </div>
-      <div className="ci-quality-freshness-summary"><span><strong>Evidence freshness</strong> · 유효 {summary.fresh}/{summary.tracked} · TTL {board.ttlHours}h</span><span>{summary.stale || summary.invalid ? `stale warning · ${summary.stale + summary.invalid}개 근거를 다시 확인하세요.` : "SHA 불일치·TTL 초과·미래 시각은 유효 근거로 집계하지 않습니다."}</span></div>
+      <div className="ci-quality-freshness-summary"><span><strong>검증 최신성</strong> · 유효 {summary.fresh}/{summary.tracked} · TTL {board.ttlHours}h</span><span>{summary.stale || summary.invalid ? `갱신 필요 · ${summary.stale + summary.invalid}개 근거를 다시 확인하세요.` : "SHA 불일치·TTL 초과·미래 시각은 유효 근거로 집계하지 않습니다."}</span></div>
       </details>
     </> : <div className="ci-quality-card ci-quality-empty"><h2>기록을 복구한 뒤 보드를 사용할 수 있습니다.</h2><p>저장된 데이터의 읽기·검증 실패를 확인하세요. JSON 관리에서 올바른 백업을 검토 후 가져올 수 있습니다.</p></div>}
     <footer className="ci-quality-footer"><span>현재 관리자의 브라우저 저장 · 서버·다른 기기와 자동 공유하지 않습니다.</span><span>{unsaved ? "저장되지 않은 기록 있음 · JSON 백업 필요" : "JSON 내보내기로 백업·이동 가능"}</span></footer>

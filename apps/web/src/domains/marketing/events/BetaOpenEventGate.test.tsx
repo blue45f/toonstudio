@@ -53,7 +53,9 @@ describe("BetaOpenEventGate", () => {
     act(() => vi.advanceTimersByTime(8_000));
     fireEvent.scroll(window);
 
-    expect(screen.getByRole("region", { name: "베타 오픈 혜택" })).toBeTruthy();
+    const region = screen.getByRole("region", { name: "베타 오픈 혜택" });
+    expect(region).toBeTruthy();
+    expect(region.textContent).not.toContain("BETA OPEN");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.body.style.overflow).toBe("");
   });

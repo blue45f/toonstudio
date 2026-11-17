@@ -236,8 +236,8 @@ export function CharacterRangeControl({
     <div data-character-range={label} className="rounded-xl border border-line/80 bg-card/70 p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <label htmlFor={rangeId} className="block text-[0.72rem] font-bold text-fg-2">{label}</label>
-          {hint ? <p id={hintId} className="mt-0.5 line-clamp-2 text-[0.62rem] leading-relaxed text-fg-3">{hint}</p> : null}
+          <label htmlFor={rangeId} className="block text-[0.72rem] font-bold text-fg-2 [word-break:keep-all]">{label}</label>
+          {hint ? <p id={hintId} className="mt-0.5 line-clamp-2 text-[0.62rem] leading-relaxed text-fg-3 [word-break:keep-all]">{hint}</p> : null}
         </div>
         <output htmlFor={rangeId} aria-live="off" className="shrink-0 rounded-md border border-line bg-panel px-1.5 py-0.5 text-[0.66rem] font-bold tabular-nums text-fg-2">
           {readout}
@@ -309,8 +309,8 @@ export function CharacterRangeControl({
           </button>
         ) : null}
       </div>
-      <p className="mt-1 text-[0.6rem] text-fg-3">기본 {defaultReadout} · Shift 10배 · Alt 미세 조절</p>
-      {error ? <p id={errorId} role="status" className="mt-1 text-[0.64rem] text-warn">{error}</p> : null}
+      <p className="mt-1 text-[0.6rem] tabular-nums text-fg-3 [word-break:keep-all]">기본 {defaultReadout} · Shift 10배 · Alt 미세 조절</p>
+      {error ? <p id={errorId} role="status" className="mt-1 text-[0.64rem] text-warn [word-break:keep-all]">{error}</p> : null}
     </div>
   );
 }
@@ -427,10 +427,10 @@ export function CharacterColorControl({
         commitDraft();
       }}>
       <div className="flex items-center justify-between gap-2">
-        <label htmlFor={pickerId} className="text-[0.72rem] font-bold text-fg-2">{label}</label>
-        <span className="text-[0.62rem] text-fg-3">{previewColor ? previewColor.toUpperCase() : "모델 원본 색"}</span>
+        <label htmlFor={pickerId} className="text-[0.72rem] font-bold text-fg-2 [word-break:keep-all]">{label}</label>
+        <span className="text-[0.62rem] tabular-nums text-fg-3 [word-break:keep-all]">{previewColor ? previewColor.toUpperCase() : "모델 원본 색"}</span>
       </div>
-      {hint ? <p className="mt-0.5 text-[0.62rem] leading-relaxed text-fg-3">{hint}</p> : null}
+      {hint ? <p className="mt-0.5 text-[0.62rem] leading-relaxed text-fg-3 [word-break:keep-all]">{hint}</p> : null}
       <div className="mt-1.5 flex items-center gap-1.5">
         <input id={pickerId} type="color" value={previewColor ?? current ?? "#8a6257"} disabled={disabled}
           aria-label={`${label} 색 선택`} className={cn("size-11 shrink-0 cursor-pointer rounded-lg border border-line bg-panel p-1 disabled:cursor-not-allowed disabled:opacity-45", STUDIO_FOCUS_RING)}
@@ -448,12 +448,12 @@ export function CharacterColorControl({
       </div>
       {draft !== null ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="min-w-0 flex-1 text-[0.62rem] text-fg-3">색을 확인한 뒤 적용하세요.</span>
+          <span className="min-w-0 flex-1 text-[0.62rem] text-fg-3 [word-break:keep-all]">색을 확인한 뒤 적용하세요.</span>
           <button type="button" disabled={disabled} aria-label={`${label} 색 적용`} onClick={commitDraft} className={ACTION_BUTTON}><Check size={14} aria-hidden /></button>
           <button type="button" aria-label={`${label} 색 변경 취소`} onClick={cancel} className={ACTION_BUTTON}><X size={14} aria-hidden /></button>
         </div>
       ) : null}
-      {error ? <p id={errorId} role="status" className="mt-1 text-[0.64rem] text-warn">{error}</p> : null}
+      {error ? <p id={errorId} role="status" className="mt-1 text-[0.64rem] text-warn [word-break:keep-all]">{error}</p> : null}
       {swatches.length > 0 ? (
         <div role="group" aria-label={`${label} 추천 색`} className="mt-1.5 flex flex-wrap gap-1">
           {swatches.map((swatch) => {
@@ -514,9 +514,9 @@ function CharacterSwatchGroup({ label, options, value, onSelect, disabled = fals
               title={option.hint ? `${option.label} · ${option.hint}` : option.label}
               onClick={() => onSelect(option.id)}
               className={cn(
-                "relative grid size-9 shrink-0 place-items-center rounded-full border-2 transition-transform duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
+                "relative grid size-11 min-h-11 min-w-11 shrink-0 place-items-center rounded-full border-2 transition-[border-color,box-shadow,transform] duration-150 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none motion-reduce:transform-none",
                 STUDIO_FOCUS_RING,
-                selected ? "border-accent shadow-[0_0_0_2px_var(--color-panel),0_0_0_4px_var(--color-accent)]" : "border-line hover:scale-105",
+                selected ? "border-accent shadow-[0_0_0_2px_var(--color-panel),0_0_0_4px_var(--color-accent)]" : "border-line hover:border-line-strong",
               )}
               style={{ background: swatchBackground(option) }}
             >
@@ -529,7 +529,7 @@ function CharacterSwatchGroup({ label, options, value, onSelect, disabled = fals
           );
         })}
       </div>
-      <p className="mt-1.5 text-[0.7rem] font-semibold text-fg-2" aria-hidden>
+      <p className="mt-1.5 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]" aria-hidden>
         {active ? active.label : "직접 고른 색"}
       </p>
     </div>
@@ -550,7 +550,7 @@ export function CharacterChipGroup(props: CharacterChipGroupProps) {
         return (
           <button key={option.id} type="button" aria-pressed={active} disabled={disabled || option.disabled}
             title={option.hint ? `${option.label} · ${option.hint}` : option.label} onClick={() => onSelect(option.id)}
-            className={cn("inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[0.7rem] font-semibold", "transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none", STUDIO_FOCUS_RING, active ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg")}>
+            className={cn("inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border px-2.5 text-[0.7rem] font-semibold [word-break:keep-all]", "transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none", STUDIO_FOCUS_RING, active ? "border-accent bg-accent-soft text-accent" : "border-line bg-card text-fg-2 hover:bg-raised hover:text-fg")}>
             {option.swatch ? <span aria-hidden className="size-3.5 shrink-0 rounded-full border border-line/70" style={{ backgroundColor: option.swatch }} /> : null}
             <span className="truncate">{option.label}</span>
             {active ? <Check size={12} aria-hidden className="shrink-0" /> : null}
@@ -580,7 +580,7 @@ export function CharacterMirrorPoseToggle({
       data-testid="character-shaper-mirror-pose"
       aria-label={label}
       className={cn(
-        "inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-3 text-[0.72rem] font-semibold text-fg-2",
+        "inline-flex min-h-11 items-center justify-center rounded-xl border border-line bg-card px-3 text-[0.72rem] font-semibold text-fg-2 [word-break:keep-all]",
         "transition-colors hover:bg-raised hover:text-fg disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
         STUDIO_FOCUS_RING,
       )}

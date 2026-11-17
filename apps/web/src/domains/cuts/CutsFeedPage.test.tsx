@@ -81,11 +81,16 @@ describe("CutsFeedPage 준비 상태", () => {
     expect(screen.getByRole("button", { name: "리워드 대상" }).className).toContain("min-h-11");
     expect(screen.getByRole("button", { name: "리믹스 가능" }).className).toContain("min-h-11");
     expect(screen.getByRole("button", { name: "인기순" }).className).toContain("min-h-11");
-    expect(screen.getByTestId("cuts-rea-interactive-motion-dub-bar")).toBeTruthy();
+    const auxBar = screen.getByTestId("cuts-rea-interactive-motion-dub-bar");
+    expect(auxBar).toBeTruthy();
+    expect(auxBar.closest("details")?.open).toBe(false);
+    expect(screen.getByText("재생·음성 보조 옵션")).toBeTruthy();
     expect(screen.getByTestId("cuts-rea-motion-rive-statemachine").className).toContain("min-h-11");
+    expect(screen.getByTestId("cuts-rea-motion-rive-statemachine").textContent).toBe("인터랙티브 모션");
     expect(screen.getByTestId("cuts-rea-dub-rask-heygen-130lang").className).toContain("min-h-11");
+    expect(screen.getByTestId("cuts-rea-dub-rask-heygen-130lang").textContent).toBe("다국어 더빙");
     expect(screen.getByTestId("cuts-rea-active-engine-summary").textContent).toContain(
-      "[구성 미리보기] Rive 스크롤/탭 상태머신",
+      "선택한 보조 설정: 인터랙티브 모션 · 다국어 더빙",
     );
   });
 

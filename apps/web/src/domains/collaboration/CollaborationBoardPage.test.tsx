@@ -75,10 +75,14 @@ describe("구인·의뢰 게시판 상태", () => {
 
     const chipGroup = screen.getByRole("group", { name: "웹툰 공정별 어시스턴트·파트너 원클릭 필터" });
     expect(chipGroup).toBeTruthy();
-    expect(screen.getByTestId("collaborate-rea-interactive-vcs-sla-bar")).toBeTruthy();
+    expect(screen.getByText("팀원 모집·협업")).toBeTruthy();
+    const vcsBar = screen.getByTestId("collaborate-rea-interactive-vcs-sla-bar");
+    expect(vcsBar.closest("details")?.querySelector("summary")?.textContent).toContain("협업 버전·검수 방식 안내");
+    expect(Boolean(chipGroup.compareDocumentPosition(vcsBar) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(vcsBar.textContent).not.toMatch(/Anchorpoint|Perforce|Diversion|Unity VCS|Magma|SyncSketch|Ziflow/iu);
     fireEvent.click(screen.getByTestId("collaborate-rea-vcs-diversion-branch"));
     expect(screen.getByTestId("collaborate-rea-active-vcs-summary").textContent).toContain(
-      "[구성 미리보기] Diversion·Unity VCS 아티스트 브랜치 병합",
+      "구성 미리보기: 작업자별 스냅샷 분기·병합",
     );
     expect(screen.getByTestId("collaborate-rea-active-vcs-summary").textContent).toContain("실제 편집 권한은 프로젝트의 계정·직군·공정 정책을 따릅니다.");
 

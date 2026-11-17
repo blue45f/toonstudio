@@ -1075,7 +1075,7 @@ export function StudioHybridDccViewport({
           </p>
         </div>
 
-        {detectedWebgl === true ? (
+        {detectedWebgl === true || Boolean(onComponentSelectionModeChange) ? (
         <div className="pointer-events-auto flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-panel/95 p-1 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]">
           {onComponentSelectionModeChange ? (
             <>
@@ -1097,9 +1097,11 @@ export function StudioHybridDccViewport({
                   </SegmentedButton>
                 ))}
               </div>
-              <span className="my-1 w-px shrink-0 bg-line" aria-hidden="true" />
+              {detectedWebgl === true ? <span className="my-1 w-px shrink-0 bg-line" aria-hidden="true" /> : null}
             </>
           ) : null}
+          {detectedWebgl === true ? (
+            <>
           {onCommitAssetTransform && effectiveSelectionMode === "object" ? (
             <>
               <div className="flex shrink-0 gap-1" role="group" aria-label="오브젝트 변환 도구">
@@ -1211,6 +1213,8 @@ export function StudioHybridDccViewport({
               </SegmentedButton>
             ))}
           </div>
+            </>
+          ) : null}
         </div>
         ) : null}
       </div>

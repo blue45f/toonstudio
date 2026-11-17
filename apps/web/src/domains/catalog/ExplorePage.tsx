@@ -1,5 +1,5 @@
 import { useFx } from "@toonstudio/core/fx";
-import { ChevronDown, Compass, LayoutGrid, RefreshCw, RotateCcw, Rows3, Search, Shuffle, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import { ChevronDown, Compass, LayoutGrid, RefreshCw, RotateCcw, Rows3, Search, Shuffle, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -473,7 +473,7 @@ export function ExplorePage() {
               onClick={reload}
               className="inline-flex min-h-11 items-center gap-1.5 rounded-md text-sm font-medium text-fg-3 transition-colors duration-150 hover:text-accent"
             >
-              <RefreshCw size={13} className={cn(loading && "animate-spin")} />
+              <RefreshCw size={13} strokeWidth={1.5} aria-hidden="true" />
               {bt("갱신", "Refresh")}
             </button>
             {hasFilter && (
@@ -534,16 +534,7 @@ export function ExplorePage() {
             )}
           </>
         ) : (
-          <div className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-dashed border-line bg-gradient-to-b from-card/55 to-panel/30 p-8 text-center sm:p-12">
-            {/* 은은한 액센트 글로우 — 배경에만 깔려 가독성 영향 없음(창작 게시판 빈-상태와 톤 정합). */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute left-1/2 top-2 h-32 w-32 -translate-x-1/2 rounded-full opacity-50 blur-3xl"
-              style={{
-                background:
-                  "radial-gradient(circle, color-mix(in oklch, var(--color-accent) 32%, transparent), transparent 70%)",
-              }}
-            />
+          <div className="relative flex flex-col items-center overflow-hidden rounded-2xl border border-dashed border-line bg-card p-8 text-center sm:p-12">
             <img
               ref={(node) => {
                 if (node && node.complete && node.naturalWidth === 0) {
@@ -558,7 +549,7 @@ export function ExplorePage() {
               onError={() => setEmptyArtFailed(true)}
               data-fallback-active={emptyArtFailed ? "true" : undefined}
               className={cn(
-                "relative mb-2 h-36 w-full max-w-sm rounded-2xl border border-line/60 object-cover",
+                "relative mb-3 h-36 w-full max-w-sm rounded-xl border border-line/60 object-cover",
                 emptyArtFailed && "hidden",
               )}
             />
@@ -566,20 +557,16 @@ export function ExplorePage() {
               <div
                 aria-hidden="true"
                 data-testid="explore-empty-art-fallback"
-                className="relative mb-2 flex h-24 w-full max-w-sm items-center justify-center rounded-2xl border border-line/60 bg-panel/70 px-4 text-xs font-semibold tracking-wider text-fg-3"
+                className="relative mb-3 flex h-24 w-full max-w-sm items-center justify-center rounded-xl border border-line/60 bg-panel px-4 text-xs font-medium text-fg-3"
               >
                 {bt("조건에 맞는 작품 없음", "No titles match these filters")}
               </div>
             )}
             <span
               aria-hidden
-              className="pf-glow relative mb-4 grid size-14 place-items-center rounded-2xl border border-accent/30 bg-accent-soft/60 text-accent"
+              className="relative mb-3 grid size-12 place-items-center rounded-xl border border-line bg-panel text-fg-2"
             >
-              <Compass size={26} />
-              <Sparkles
-                size={12}
-                className="pf-sparkle absolute -right-1 -top-1 text-warn"
-              />
+              <Compass size={22} strokeWidth={1.5} />
             </span>
             <p className="relative text-sm font-medium text-fg">
               {bt("조건에 맞는 작품이 없어요.", "No titles match these conditions.")}

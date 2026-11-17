@@ -241,7 +241,7 @@ export function CalendarPage() {
   return (
     <Container size="wide" className="calendar-page-layout py-6">
       <header className="mb-3 min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{bt("연재 캘린더", "Release Calendar")}</h1>
         <p className="mt-1 text-sm text-fg-2">
           {bt("오늘은", "Today is")} <span className="font-semibold text-accent">{todayLabel}</span>{" · "}{loading ? bt("연재 정보를 확인하고 있어요.", "Checking release information.") : countsReady ? <>{todayCount.toLocaleString(locale)}{bt("편의 새 회차", " stories with new episodes")}</> : bt("연재 편수를 확인할 수 없습니다.", "Release counts are unavailable.")}
         </p>
@@ -282,10 +282,7 @@ export function CalendarPage() {
         >
           <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
             <p className="flex min-w-0 items-center gap-2 text-sm">
-              <span className="relative flex size-2 shrink-0" aria-hidden="true">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" />
-                <span className="relative inline-flex size-2 rounded-full bg-accent" />
-              </span>
+              <span className="inline-flex size-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
               <span className="truncate">
                 <strong className="font-semibold text-fg">{bt("오늘", "Today")} {todayLabel}</strong>
                 <span className="text-fg-2">
@@ -400,10 +397,10 @@ export function CalendarPage() {
                   id={isToday ? "calendar-today-col" : undefined}
                   className={cn(
                     "relative flex scroll-mt-[calc(var(--site-header-sticky-offset,5rem)+5rem)] flex-col overflow-hidden rounded-2xl border",
-                    isToday ? "border-accent/55 bg-gradient-to-b from-accent-soft/45 via-panel/55 to-card/75 shadow-sm" : "border-line bg-panel/35"
+                    isToday ? "border-accent/55 bg-card" : "border-line bg-panel/35"
                   )}
                 >
-                  {isToday ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" /> : null}
+                  {isToday ? <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-px bg-accent/60" /> : null}
                   <header
                     className={cn(
                       "flex items-center justify-between rounded-t-2xl border-b px-3.5 py-2.5",

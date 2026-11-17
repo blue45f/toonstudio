@@ -4,7 +4,6 @@ import { useId } from "react";
 import { AuthForm } from "@/domains/auth/public/account-auth-form";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { SiteLinkCard } from "@/domains/legal/public/site-link-card";
-import { PageIntro } from "@/shared/components/page-intro";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import Link from "@/shared/navigation/router-link";
@@ -78,15 +77,14 @@ export function AuthEntryPage({ mode }: { readonly mode: AuthEntryMode }) {
   useDocumentTitle(signup ? bt("회원가입", "Sign up") : bt("로그인", "Sign in"));
 
   return (
-    <PageIntro variant="restrained">
-      <AuthSplitLayout>
-        {status === "authenticated" ? (
-          <div>
-            <span className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent">
-              <UserRound size={22} aria-hidden="true" />
-            </span>
-            <p className="eyebrow mt-5 text-accent">ACCOUNT</p>
-            <h1 className="mt-2 font-display text-[1.65rem] font-bold leading-snug tracking-[-0.025em] text-fg">
+    <AuthSplitLayout>
+      {status === "authenticated" ? (
+        <div>
+          <span className="grid size-12 place-items-center rounded-2xl bg-accent-soft text-accent">
+            <UserRound size={22} aria-hidden="true" />
+          </span>
+          <p className="mt-5 text-xs font-semibold text-accent">{bt("계정", "Account")}</p>
+          <h1 className="mt-2 font-display text-[1.65rem] font-semibold leading-snug tracking-[-0.025em] text-fg">
               {signup
                 ? bt("가입이 끝났어요", "You're all signed up")
                 : bt("이미 로그인되어 있어요", "You're already signed in")}
@@ -141,6 +139,5 @@ export function AuthEntryPage({ mode }: { readonly mode: AuthEntryMode }) {
           </>
         )}
       </AuthSplitLayout>
-    </PageIntro>
   );
 }

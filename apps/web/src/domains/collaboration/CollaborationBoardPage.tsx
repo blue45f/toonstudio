@@ -111,9 +111,9 @@ export function CollaborationBoardPage() {
         <div className="absolute inset-0 bg-[linear-gradient(78deg,oklch(0.09_0.025_265/0.45)_0%,transparent_58%)]" />
       </div>
       <div className="relative">
-      <p className="eyebrow text-[oklch(0.85_0.09_265)]">TOONSTUDIO COLLABORATE</p>
-      <h1 className="mt-4 max-w-3xl text-3xl font-bold leading-tight tracking-tight text-white sm:text-5xl">{bt("다음 회차, 함께 완성할 사람을 찾으세요.", "Find the person to finish the next episode with.")}</h1>
-      <p className="mt-5 max-w-2xl text-base leading-8 text-white/80">{bt("콘티부터 선화·채색·배경·3D까지. 팀원 모집, 보조 작업 의뢰, 작업자 포트폴리오를 한곳에서 연결합니다. 공고 등록과 지원은 무료예요.", "From storyboards to line art, color, backgrounds, and 3D. Hire teammates, commission work, and browse portfolios in one place. Posting and applying are free.")}</p>
+      <p className="text-xs font-semibold text-white/80">{bt("팀원 모집·협업", "Team hiring & collaboration")}</p>
+      <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">{bt("다음 회차, 함께 완성할 사람을 찾으세요", "Find the person to finish the next episode with")}</h1>
+      <p className="mt-4 max-w-2xl text-base leading-8 text-white/80">{bt("콘티부터 선화·채색·배경·3D까지. 팀원 모집, 보조 작업 의뢰, 작업자 포트폴리오를 한곳에서 연결합니다. 공고 등록과 지원은 무료예요.", "From storyboards to line art, color, backgrounds, and 3D. Hire teammates, commission work, and browse portfolios in one place. Posting and applying are free.")}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/collaborate/new" className={collabPrimary}><Plus size={17} aria-hidden="true" />{bt("모집 글 올리기", "Post a gig")}</Link>
         <a href="#collaboration-results" className={collabButton}><Search size={17} aria-hidden="true" />{bt("공고 둘러보기", "Browse posts")}</a>
@@ -127,87 +127,7 @@ export function CollaborationBoardPage() {
       <p className="mt-5 flex items-center gap-2 text-xs text-white/60"><ShieldCheck size={15} aria-hidden="true" />{bt("지원 연락처 비공개 · 보수 조건 명시 · 결제 중개 없음", "Application contacts stay private · pay terms required · no payment brokering")}</p>
       </div>
     </header>
-    <div
-      data-testid="collaborate-rea-tracks"
-      className="mt-5 grid gap-2.5 sm:grid-cols-3"
-    >
-      {SHOWCASE_COLLABORATION_TRACKS.map((track) => (
-        <Link
-          key={track.id}
-          href={track.route}
-          className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel/70 px-4 py-3 text-left transition-colors hover:border-accent/50"
-        >
-          <div className="min-w-0">
-            <span className="inline-block rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-extrabold text-accent">
-              {track.badge}
-            </span>
-            <p className="mt-1 truncate text-xs font-bold text-fg">{track.label}</p>
-          </div>
-          <span className="shrink-0 text-xs font-bold text-accent">{track.ctaLabel} →</span>
-        </Link>
-      ))}
-    </div>
-    <section
-      data-testid="collaborate-rea-interactive-vcs-sla-bar"
-      aria-label={bt("공동작업 잠금·검수·용어집 구성 미리보기", "Collaboration Lock, Proofing & Glossary Configuration Preview")}
-      className="mt-4 rounded-2xl border border-accent/25 bg-panel/80 p-3.5 text-xs"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("바이너리 잠금 및 VCS 모드", "Binary Lock & VCS Mode")}>
-          <span className="font-extrabold text-accent">{bt("VCS·레이어 잠금:", "VCS & Layer Lock:")}</span>
-          {([
-            { id: "anchorpoint-perforce", ko: "Anchorpoint·Perforce .clip/.psd/.blend 배타 잠금", en: "Anchorpoint/Perforce .clip/.psd/.blend Lock" },
-            { id: "diversion-branch", ko: "Diversion·Unity VCS 클라우드 스냅샷 브랜치", en: "Diversion/Unity VCS Cloud Branch" },
-            { id: "rbac-18layer", ko: "Magma·Figma 15직무×18레이어 무충돌 RBAC", en: "Magma/Figma 15-Role×18-Layer RBAC" },
-          ] as const).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-testid={`collaborate-rea-vcs-${item.id}`}
-              aria-pressed={binaryLockMode === item.id}
-              onClick={() => setBinaryLockMode(item.id)}
-              className={`inline-flex min-h-11 min-w-11 items-center rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                binaryLockMode === item.id
-                  ? "bg-accent text-on-accent"
-                  : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
-              }`}
-            >
-              {bt(item.ko, item.en)}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("검수 및 다국어 용어집 게이트", "Proofing & Glossary Gate")}>
-          <span className="font-extrabold text-fg-2">{bt("검수·글로서리:", "Proofing & Glossary:")}</span>
-          {([
-            { id: "syncsketch-ziflow", ko: "SyncSketch·Ziflow 프레임 레드라인", en: "SyncSketch/Ziflow Frame Redline" },
-            { id: "loupe-onionskin", ko: "Loupe.art·ReviewStudio 어니언스킨 Diff", en: "Loupe.art/ReviewStudio Onion-Skin Diff" },
-            { id: "smartling-glossary", ko: "Smartling·Crowdin 75개 언어 글로서리 잠금", en: "Smartling/Crowdin 75-Locale Glossary Lock" },
-          ] as const).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              data-testid={`collaborate-rea-proofing-${item.id}`}
-              aria-pressed={proofingMode === item.id}
-              onClick={() => setProofingMode(item.id)}
-              className={`inline-flex min-h-11 min-w-11 items-center rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                proofingMode === item.id
-                  ? "bg-accent text-on-accent"
-                  : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
-              }`}
-            >
-              {bt(item.ko, item.en)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <p data-testid="collaborate-rea-active-vcs-summary" className="mt-2 text-[11px] font-semibold text-fg-2">
-        {bt(
-          `[구성 미리보기] ${binaryLockMode === "anchorpoint-perforce" ? "Anchorpoint·Perforce Git LFS 대용량 바이너리 배타 잠금" : binaryLockMode === "diversion-branch" ? "Diversion·Unity VCS 아티스트 브랜치 병합" : "15개 세부직무 × 18개 레이어 권한 구성"} · ${proofingMode === "syncsketch-ziflow" ? "SyncSketch·Ziflow·PageProof 컷별 레드라인 승인 게이트" : proofingMode === "loupe-onionskin" ? "Loupe.art·Chromatic 전/후 레이어 픽셀 Diff 비교" : "Smartling·MemoQ·Crowdin 75개 언어 세계관 고유명사(인명·스킬명) 용어집"} · 실제 편집 권한은 프로젝트의 계정·직군·공정 정책을 따릅니다.`,
-          `[Configuration Preview] ${binaryLockMode} + ${proofingMode} · Editing access follows the project's account, role and stage policies.`,
-        )}
-      </p>
-    </section>
-    <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-bold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
+    <div className="mt-6 grid gap-3 sm:grid-cols-3">{categories.map(({ type: category, label, enLabel, description, enDescription, icon: Icon }) => <button key={category} type="button" aria-pressed={type === category} onClick={() => change("type", type === category ? "all" : category)} className={`flex min-h-24 items-center gap-4 rounded-2xl border p-5 text-left transition-colors ${type === category ? "border-accent bg-accent/10" : "border-line bg-panel hover:border-accent/50"}`}><Icon size={25} className="shrink-0 text-accent" aria-hidden="true" /><span className="font-semibold text-fg">{bt(label, enLabel)}<span className="mt-1 block text-xs font-normal text-fg-3">{bt(description, enDescription)}</span></span></button>)}</div>
     <section id="collaboration-results" className="mt-8 scroll-mt-24" aria-label={bt("공고 검색과 필터", "Post search and filters")}>
       {visibleViews.length > 1 ? (
         <div className="flex flex-wrap gap-2">{visibleViews.map(([key]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => change("view", key)} className={`${collabButton} ${view === key ? "border-accent text-accent" : ""}`}>{viewLabel(key as keyof typeof views)}</button>)}</div>
@@ -218,7 +138,7 @@ export function CollaborationBoardPage() {
         data-collaboration-role-chips="true"
         className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel/70 p-3"
       >
-        <span className="mr-1 text-xs font-bold text-fg-3">
+        <span className="mr-1 text-xs font-semibold text-fg-3">
           {bt("공정별 빠른 필터:", "Stage role filter:")}
         </span>
         {PROCESS_ROLE_CHIPS.map((chip) => {
@@ -256,12 +176,105 @@ export function CollaborationBoardPage() {
       </details>
     </section>
     {view !== "all" && !userId ? <CollabLogin /> : <CollaborationResults key={`${params.toString()}:${userId || "guest"}`} params={params} userId={userId} onNext={(cursor) => { const next = new URLSearchParams(params); next.set("cursor", cursor); setParams(next); }} />}
+    <details className="mt-8 rounded-2xl border border-line bg-panel/60 px-4 py-1 open:pb-4">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-fg-2 [&::-webkit-details-marker]:hidden">
+        <span>{bt("협업 버전·검수 방식 안내", "Version control & review guide")}</span>
+        <span className="text-xs font-normal text-fg-3">{bt("원본 잠금 · 권한 분리 · 수정 확인", "File lock · role access · review")}</span>
+      </summary>
+      <section
+        data-testid="collaborate-rea-interactive-vcs-sla-bar"
+        aria-label={bt("공동작업 잠금·검수·용어집 구성 미리보기", "Collaboration Lock, Proofing & Glossary Configuration Preview")}
+        className="mt-2 border-t border-line/70 pt-3 text-xs"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("바이너리 잠금 및 VCS 모드", "Binary Lock & VCS Mode")}>
+            <span className="font-semibold text-fg-2">{bt("파일·레이어 관리:", "File & layer lock:")}</span>
+            {([
+              { id: "anchorpoint-perforce", ko: "원본 파일(.clip·.psd·.blend) 단독 잠금", en: "Exclusive source file lock (.clip/.psd/.blend)" },
+              { id: "diversion-branch", ko: "작업자별 클라우드 스냅샷 분기", en: "Per-artist cloud snapshot branch" },
+              { id: "rbac-18layer", ko: "직무별 레이어 편집 권한 분리", en: "Role-based layer editing permissions" },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`collaborate-rea-vcs-${item.id}`}
+                aria-pressed={binaryLockMode === item.id}
+                onClick={() => setBinaryLockMode(item.id)}
+                className={`inline-flex min-h-11 min-w-11 items-center rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                  binaryLockMode === item.id
+                    ? "bg-accent text-on-accent"
+                    : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
+                }`}
+              >
+                {bt(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={bt("검수 및 다국어 용어집 게이트", "Proofing & Glossary Gate")}>
+            <span className="font-semibold text-fg-2">{bt("검수·용어집:", "Review & glossary:")}</span>
+            {([
+              { id: "syncsketch-ziflow", ko: "컷별 수정 지시·승인 확인", en: "Per-panel redline & approval check" },
+              { id: "loupe-onionskin", ko: "전·후 레이어 겹쳐보기 비교", en: "Before/after onion-skin comparison" },
+              { id: "smartling-glossary", ko: "다국어 고유명사 용어집 고정", en: "Multilingual glossary lock" },
+            ] as const).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`collaborate-rea-proofing-${item.id}`}
+                aria-pressed={proofingMode === item.id}
+                onClick={() => setProofingMode(item.id)}
+                className={`inline-flex min-h-11 min-w-11 items-center rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                  proofingMode === item.id
+                    ? "bg-accent text-on-accent"
+                    : "border border-line bg-canvas text-fg-2 hover:border-accent/45"
+                }`}
+              >
+                {bt(item.ko, item.en)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p data-testid="collaborate-rea-active-vcs-summary" className="mt-2.5 text-[11px] font-medium text-fg-2">
+          {bt(
+            `구성 미리보기: ${binaryLockMode === "anchorpoint-perforce" ? "대용량 원본 파일 단독 잠금" : binaryLockMode === "diversion-branch" ? "작업자별 스냅샷 분기·병합" : "세부 직무별 레이어 편집 권한 분리"} · ${proofingMode === "syncsketch-ziflow" ? "컷별 수정 지시 및 승인 확인" : proofingMode === "loupe-onionskin" ? "전·후 레이어 비교 검수" : "다국어 세계관 고유명사 용어집 고정"} · 실제 편집 권한은 프로젝트의 계정·직군·공정 정책을 따릅니다.`,
+            `Configuration preview: ${binaryLockMode} + ${proofingMode} · Editing access follows the project's account, role and stage policies.`,
+          )}
+        </p>
+      </section>
+    </details>
+    <div
+      data-testid="collaborate-rea-tracks"
+      className="mt-5 grid gap-2.5 sm:grid-cols-3"
+    >
+      {SHOWCASE_COLLABORATION_TRACKS.map((track) => {
+        const cleanBadge = track.id === "portfolio-curation"
+          ? bt("포트폴리오", "Portfolio")
+          : track.id === "team-recruiting"
+            ? bt("구인·팀 매칭", "Jobs & matching")
+            : bt("공모·피칭", "Contests & pitch");
+        return (
+          <Link
+            key={track.id}
+            href={track.route}
+            className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel/70 px-4 py-3 text-left transition-colors hover:border-accent/50"
+          >
+            <div className="min-w-0">
+              <span className="inline-block rounded bg-raised px-1.5 py-0.5 text-[11px] font-semibold text-fg-2">
+                {cleanBadge}
+              </span>
+              <p className="mt-1 truncate text-xs font-semibold text-fg">{track.label}</p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-accent">{track.ctaLabel} →</span>
+          </Link>
+        );
+      })}
+    </div>
     <CollaborationCrewDivisionPlanner onSelectRoleFilter={(role) => change("role", role)} />
     <CollaborationInstantQuoteMatcherSuite onApplyRoleFilter={(role) => change("role", role)} />
     <div className="mt-8">
       <CollaborationTopicSubteamHuddleSuite />
     </div>
-    <div className="mt-10 grid gap-5 lg:grid-cols-2"><CollaborationSafety /><section className="rounded-2xl border border-line bg-panel p-5"><p className="eyebrow text-accent">FROM PEOPLE TO PRODUCTION</p><h2 className="mt-3 text-lg font-bold text-fg">{bt("동료를 만나고, 내 작업으로 이어가세요.", "Meet collaborators, keep building your own work.")}</h2><p className="mt-3 text-sm leading-7 text-fg-2">{bt("갤러리에서 작업 스타일을 확인하고, 공고에서 범위와 조건을 합의하세요. 지원만으로 스튜디오의 비공개 작업 권한이 생기지는 않습니다.", "Check styles in the gallery, agree on scope and terms in posts. Applying doesn't grant private studio access.")}</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/studio" className={collabButton}>{bt("내 작업", "My work")}</Link><Link href="/production" className={collabButton}>{bt("제작 관리", "Production")}</Link><Link href="/market" className={collabButton}>{bt("에셋 마켓", "Asset market")}</Link><Link href="/community" className={collabButton}>{bt("커뮤니티", "Community")}</Link></div></section></div>
+    <div className="mt-10 grid gap-5 lg:grid-cols-2"><CollaborationSafety /><section className="rounded-2xl border border-line bg-panel p-5"><p className="text-xs font-semibold text-accent">{bt("협업에서 제작까지", "From collaboration to production")}</p><h2 className="mt-2 text-lg font-semibold text-fg">{bt("동료를 만나고, 내 작업으로 이어가세요", "Meet collaborators, keep building your own work")}</h2><p className="mt-3 text-sm leading-7 text-fg-2">{bt("갤러리에서 작업 스타일을 확인하고, 공고에서 범위와 조건을 합의하세요. 지원만으로 스튜디오의 비공개 작업 권한이 생기지는 않습니다.", "Check styles in the gallery, agree on scope and terms in posts. Applying doesn't grant private studio access.")}</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/studio" className={collabButton}>{bt("내 작업", "My work")}</Link><Link href="/production" className={collabButton}>{bt("제작 관리", "Production")}</Link><Link href="/market" className={collabButton}>{bt("에셋 마켓", "Asset market")}</Link><Link href="/community" className={collabButton}>{bt("커뮤니티", "Community")}</Link></div></section></div>
   </Container>;
 }
 function TemplateLinks() {

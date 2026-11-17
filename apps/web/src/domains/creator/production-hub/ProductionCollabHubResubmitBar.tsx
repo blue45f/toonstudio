@@ -55,11 +55,11 @@ export function ProductionCollabHubInviteCard({
   return (
     <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-5" data-testid="collab-pillar-1-invite">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <Link2 size={16} className="text-accent" aria-hidden="true" />
           {bt("① 통합 초대 (팀 + 원고 동시 연결)", "1. Unified Invite (Team + Manuscript)")}
         </h3>
-        <Link to="/team/people" className="text-xs font-bold text-accent hover:underline">
+        <Link to="/team/people" className="inline-flex min-h-11 items-center text-xs font-semibold text-accent hover:underline">
           {bt("팀원 관리 ↗", "Manage team ↗")}
         </Link>
       </div>
@@ -72,13 +72,13 @@ export function ProductionCollabHubInviteCard({
           readOnly
           aria-label={bt("팀과 원고 통합 초대 링크", "Unified team and manuscript invite URL")}
           value={unifiedInviteUrl}
-          className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg-2"
+          className="min-h-11 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg-2"
         />
         <button
           type="button"
           data-testid="collab-hub-copy-invite"
           onClick={onCopyInvite}
-          className={buttonClass({ size: "sm", className: "min-h-10 shrink-0 gap-1.5 text-xs" })}
+          className={buttonClass({ size: "sm", className: "min-h-11 shrink-0 gap-1.5 text-xs" })}
         >
           {inviteCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
           {inviteCopied ? bt("링크 복사됨", "Copied") : bt("1클릭 링크 복사", "Copy invite link")}
@@ -97,13 +97,13 @@ export function ProductionCollabHubInviteCard({
           }}
           aria-label={bt("초대할 협업자 이메일 또는 아이디", "Collaborator email or handle")}
           placeholder={bt("@아이디 또는 이메일로 직무 지정 초대", "Invite by @handle or email")}
-          className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg placeholder:text-fg-3"
+          className="min-h-11 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg placeholder:text-fg-3"
         />
         <button
           type="button"
           data-testid="collab-hub-send-invite"
           onClick={onSendInvite}
-          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 shrink-0 gap-1.5 text-xs" })}
+          className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 shrink-0 gap-1.5 text-xs" })}
         >
           <UserPlus size={14} aria-hidden="true" />
           {bt("초대 발송", "Invite")}
@@ -220,7 +220,7 @@ export function ProductionCollabHubStageAndResubmitBar({
           </span>
           <span
             data-testid="collab-hub-approval-tally"
-            className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.68rem] text-fg-2"
+            className="rounded-full border border-line bg-card px-2 py-0.5 text-[0.68rem] tabular-nums text-fg-2"
           >
             {bt(`현재 리비전 승인 ${currentApprovedCount}/${requiredCount}`, `Current rev approvals ${currentApprovedCount}/${requiredCount}`)}
           </span>
@@ -230,7 +230,7 @@ export function ProductionCollabHubStageAndResubmitBar({
             type="button"
             disabled={!canDecide}
             onClick={onRequestRevisionStage}
-            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}
+            className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 px-3 text-xs" })}
           >
             {bt("수정 요청", "Request changes")}
           </button>
@@ -239,7 +239,7 @@ export function ProductionCollabHubStageAndResubmitBar({
             data-testid="collab-hub-approve-btn"
             disabled={!canDecide}
             onClick={onApproveStage}
-            className={buttonClass({ size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}
+            className={buttonClass({ size: "sm", className: "min-h-11 px-3 text-xs" })}
           >
             {bt("검수 최종 승인", "Approve")}
           </button>

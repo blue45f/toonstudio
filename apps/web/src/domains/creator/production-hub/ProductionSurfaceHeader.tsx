@@ -55,7 +55,7 @@ export function ProductionSurfaceHeader({
           <Icon className="size-5" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h2 className="text-lg font-black tracking-tight text-fg">{bt(definition.label.ko, definition.label.en)}</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-fg">{bt(definition.label.ko, definition.label.en)}</h2>
           <p className="text-xs leading-5 text-fg-2">{bt(definition.description.ko, definition.description.en)}</p>
         </div>
       </div>

@@ -464,11 +464,11 @@ export function IrPitchPage() {
                       <li key={stat.en} className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">{bi(stat.ko, stat.en)}</li>
                     ))}
                   </ul>
-                  <Link href={capability.href} className="mt-1 inline-flex min-h-9 items-center gap-1.5 text-sm font-bold text-accent hover:text-accent-2">
+                  <Link href={capability.href} className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-accent hover:text-accent-2">
                     {copy.cta}<ArrowRight size={14} aria-hidden="true" />
                   </Link>
                   {capability.chapterStart !== null ? (
-                    <Link href={productTourChapterHref(capability.chapterStart)} className="inline-flex min-h-9 items-center gap-1.5 text-sm font-semibold text-fg-2 hover:text-fg">
+                    <Link href={productTourChapterHref(capability.chapterStart)} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-fg-2 hover:text-fg">
                       <CirclePlay size={14} className="text-accent" aria-hidden="true" />{bi("투어에서 이 장면 보기", "Watch this in the tour")}
                     </Link>
                   ) : null}
@@ -666,7 +666,7 @@ export function IrPitchPage() {
                 </div>
               </div>
               <div className="h-1 shrink-0 bg-line/50" aria-hidden="true">
-                <div className="h-full bg-accent transition-all duration-300 motion-reduce:transition-none" style={{ width: `${((scene + 1) / SCENE_COUNT) * 100}%` }} />
+                <div className="h-full w-full origin-left bg-accent transition-transform duration-200 motion-reduce:transition-none" style={{ transform: `scaleX(${(scene + 1) / SCENE_COUNT})` }} />
               </div>
               <div className="relative flex-1 overflow-y-auto">
                 {scenes[scene]}

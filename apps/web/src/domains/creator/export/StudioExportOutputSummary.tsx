@@ -47,9 +47,8 @@ export function StudioExportOutputSummary({
       tabIndex={-1}
       data-studio-export-output-summary="true"
       aria-labelledby={`${summaryId}-title`}
-      className="relative mt-3 min-w-0 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/8 via-panel/85 to-card p-3.5 shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+      className="relative mt-3 min-w-0 overflow-hidden rounded-2xl border border-line bg-panel/65 p-3.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
     >
-      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-good" />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 id={`${summaryId}-title`} className="text-xs font-extrabold text-fg">
           {exportMenuText("outputSummary")}

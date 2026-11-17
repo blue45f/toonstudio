@@ -70,8 +70,12 @@ describe("통합 랭킹 페이지", () => {
     expect(screen.getByText("여덟 가지 관점으로 작품을 찾아보세요.")).toBeTruthy();
     expect(screen.queryByText("현재 축:")).toBeNull();
     expect(screen.getByTestId("ranking-quick-axes")).toBeTruthy();
-    expect(screen.getByTestId("ranking-rea-formula-simulator-bar")).toBeTruthy();
-    expect(screen.getByTestId("ranking-rea-formula-status").textContent).toContain("Score = 0.55×ΔViews");
+    const simulator = screen.getByTestId("ranking-rea-formula-simulator-bar");
+    expect(simulator).toBeTruthy();
+    expect(simulator.closest("details")?.open).toBe(false);
+    expect(within(simulator.closest("details") as HTMLElement).getByText("집계 기준 보기")).toBeTruthy();
+    expect(screen.getByTestId("ranking-rea-formula-status").textContent).toContain("조회·완독·관심 변화를 반영한 순위 기준");
+    expect(simulator.textContent).not.toMatch(/Score =|REA|빌리빌리|AniList/u);
   });
 
   it("영어 로케일(en)에서 스트림·빠른 관점·산식 시뮬레이터에 한글이 누수되지 않고 44px 최소 높이를 지킨다", () => {

@@ -9,7 +9,6 @@ import {
 
 import { getApiErrorMessage } from "@/platform/api";
 import { creatorSub2StatusText } from "../status-i18n/studio-creator-sub2-status-i18n-r3c13b";
-import { PageEntrance } from "@/shared/components/page-entrance/PageEntrance";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
@@ -79,9 +78,9 @@ function PinnedReviewUnavailable({ message, canRetry, onRetry }: {
     bt("검수본이 새 버전으로 바뀌어 새 링크가 필요할 수 있어요.", "A newer review version may need a new link."),
   ];
   return <div className="flex min-h-dvh items-center justify-center bg-canvas p-6 text-fg">
-    <section className="w-full max-w-lg rounded-3xl border border-bad/35 bg-card p-7" role="alert">
+    <section className="w-full max-w-lg rounded-2xl border border-bad/35 bg-card p-7" role="alert">
       <AlertTriangle className="mx-auto size-10 text-bad" aria-hidden="true" />
-      <h1 className="mt-4 text-balance break-keep text-center text-xl font-black">{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.unavailableTitle", "고정 검수본을 열 수 없습니다")}</h1>
+      <h1 className="mt-4 text-balance break-keep text-center text-xl font-semibold">{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.unavailableTitle", "고정 검수본을 열 수 없습니다")}</h1>
       <p className="mt-2 break-keep text-center text-sm leading-6 text-fg-2">{message}</p>
       <ul className="mt-5 space-y-2 rounded-2xl border border-line bg-panel p-4 text-xs leading-5 text-fg-2">
         {reasons.map((reason) => <li key={reason} className="flex gap-2 break-keep"><span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-fg-3" />{reason}</li>)}
@@ -308,38 +307,37 @@ export function StudioPinnedReviewSharePage() {
   }
 
   return (
-    <PageEntrance variant="pop">
     <div className="min-h-dvh bg-canvas text-fg">
     <header className="border-b border-line bg-card">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 text-[0.6875rem] font-black text-accent">ToonStudio · {purposeLabel(view.purpose)}</span>
-              <span className="rounded-full border border-line bg-raised px-2.5 py-1 text-[0.6875rem] font-bold text-fg-2">{view.role === "commenter" ? "댓글 가능" : "열람 전용"}</span>
+              <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-1 text-[0.6875rem] font-semibold text-accent">ToonStudio · {purposeLabel(view.purpose)}</span>
+              <span className="rounded-full border border-line bg-raised px-2.5 py-1 text-[0.6875rem] font-semibold text-fg-2">{view.role === "commenter" ? "댓글 가능" : "열람 전용"}</span>
             </div>
-            <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">{view.title}</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight [word-break:keep-all] sm:text-3xl">{view.title}</h1>
             {view.instructions ? <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-fg-2">{view.instructions}</p> : null}
           </div>
           <div className="rounded-xl border border-line bg-panel px-4 py-3 text-xs text-fg-2">
             <p className="flex items-center gap-2"><ShieldCheck className="size-4 text-good" aria-hidden="true" />현재 원고가 아닌 고정 검수 이미지</p>
-            <p className="mt-2">만료 · {formatDate(view.expiresAt)}</p>
+            <p className="mt-2 tabular-nums">만료 · {formatDate(view.expiresAt)}</p>
           </div>
         </div>
       </div>
     </header>
 
     <div className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="min-w-0 rounded-3xl border border-line bg-card p-3 sm:p-5" aria-label="고정 검수 이미지">
+      <section className="min-w-0 rounded-2xl border border-line bg-card p-3 sm:p-5" aria-label="고정 검수 이미지">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-black">{currentPage ? `${currentPage.ordinal + 1}페이지` : "페이지"}</h2>
-            {currentPage ? <p className="mt-1 text-xs text-fg-3">{currentPage.width}×{currentPage.height} · SHA-256 {currentPage.sha256.slice(0, 12)}…</p> : null}
+            <h2 className="font-semibold tabular-nums">{currentPage ? `${currentPage.ordinal + 1}페이지` : "페이지"}</h2>
+            {currentPage ? <p className="mt-1 text-xs tabular-nums text-fg-3">{currentPage.width}×{currentPage.height}px</p> : null}
           </div>
           <div className="flex gap-2">
-            <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={currentIndex <= 0}
+            <button type="button" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })} disabled={currentIndex <= 0}
               onClick={() => selectShareOrdinal(view.pages[currentIndex - 1]!.ordinal)} aria-label="이전 페이지"><ChevronLeft className="size-4" aria-hidden="true" />이전</button>
-            <button type="button" className={buttonClass({ variant: "outline", size: "sm" })} disabled={currentIndex < 0 || currentIndex >= view.pages.length - 1}
+            <button type="button" className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11" })} disabled={currentIndex < 0 || currentIndex >= view.pages.length - 1}
               onClick={() => selectShareOrdinal(view.pages[currentIndex + 1]!.ordinal)} aria-label="다음 페이지">다음<ChevronRight className="size-4" aria-hidden="true" /></button>
           </div>
         </div>
@@ -359,7 +357,7 @@ export function StudioPinnedReviewSharePage() {
             <div className="relative">
               {imageUrl ? <img src={imageUrl} alt={`${currentPage.ordinal + 1}페이지 고정 검수 이미지`} className="block h-auto w-full max-w-none" /> : null}
               {view.watermark && imageUrl ? <div className="pointer-events-none absolute inset-0 grid place-items-center overflow-hidden" aria-hidden="true">
-                <span className="rotate-[-22deg] select-none text-5xl font-black tracking-[0.3em] text-fg/10 sm:text-7xl">REVIEW</span>
+                <span className="rotate-[-22deg] select-none text-5xl font-semibold tracking-[0.3em] text-fg/10 sm:text-7xl">REVIEW</span>
               </div> : null}
             </div>
           </StudioReviewImageViewport> : null}
@@ -371,7 +369,7 @@ export function StudioPinnedReviewSharePage() {
               <p className="text-sm text-fg-2">{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageLoadFailed", "선택한 검수 이미지를 불러오지 못했습니다.")}</p>
               <button
                 type="button"
-                className={buttonClass({ variant: "outline", size: "sm", className: "mt-3" })}
+                className={buttonClass({ variant: "outline", size: "sm", className: "mt-3 min-h-11" })}
                 onClick={() => setImageReloadTick((tick) => tick + 1)}
               >
                 {creatorSub2StatusText("studio.creatorSub2.status.reviewShare.imageRetry", "이미지 다시 불러오기")}
@@ -380,27 +378,33 @@ export function StudioPinnedReviewSharePage() {
           ) : null}
         </div>
         <div className="mt-3 flex flex-wrap gap-2" aria-label="페이지 선택">
-          {view.pages.map((page) => <button key={page.ordinal} type="button" className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm", page.ordinal === selectedOrdinal ? "border-accent bg-accent-soft text-accent" : "border-line")}
+          {view.pages.map((page) => <button key={page.ordinal} type="button" className={cn("min-h-11 min-w-11 rounded-lg border px-3 text-sm tabular-nums", page.ordinal === selectedOrdinal ? "border-accent bg-accent-soft font-semibold text-accent" : "border-line")}
             aria-current={page.ordinal === selectedOrdinal ? "page" : undefined} onClick={() => selectShareOrdinal(page.ordinal)}>{page.ordinal + 1}</button>)}
         </div>
-        {view.rightsStatement ? <details className="mt-4 rounded-xl border border-line p-3 text-sm"><summary className="cursor-pointer font-semibold">공유 권리 확인</summary><p className="mt-2 whitespace-pre-wrap text-fg-2">{view.rightsStatement}</p></details> : null}
-        <details className="mt-3 text-xs text-fg-3"><summary className="cursor-pointer">고정 버전 식별 정보</summary><code className="mt-2 block break-all">{view.revisionFingerprint}</code></details>
+        {view.rightsStatement ? <details className="mt-4 rounded-xl border border-line p-3 text-sm"><summary className="flex min-h-11 cursor-pointer items-center font-semibold">공유 권리 확인</summary><p className="mt-2 whitespace-pre-wrap text-fg-2">{view.rightsStatement}</p></details> : null}
+        <details className="mt-3 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs text-fg-3">
+          <summary className="flex min-h-11 cursor-pointer items-center font-medium text-fg-2">원본 무결성 정보</summary>
+          <div className="mt-1.5 space-y-1 pb-2 font-mono text-[0.6875rem]">
+            {currentPage ? <p className="break-all">SHA-256 · {currentPage.sha256}</p> : null}
+            <p className="break-all">버전 지문 · {view.revisionFingerprint}</p>
+          </div>
+        </details>
       </section>
 
       <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-        {view.role === "commenter" ? <form onSubmit={(event) => void submit(event)} className="rounded-3xl border border-accent/30 bg-card p-5">
-          <div className="flex items-center gap-2"><MessageSquareText className="size-5 text-accent" aria-hidden="true" /><h2 className="font-black">이 페이지에 의견 남기기</h2></div>
+        {view.role === "commenter" ? <form onSubmit={(event) => void submit(event)} className="rounded-2xl border border-line bg-card p-5">
+          <div className="flex items-center gap-2"><MessageSquareText className="size-5 text-accent" aria-hidden="true" /><h2 className="font-semibold">이 페이지에 의견 남기기</h2></div>
           <label className="mt-4 block text-xs font-semibold text-fg-2">검토자 이름<input className="mt-1.5 min-h-11 w-full rounded-lg border border-line bg-panel px-3 text-sm text-fg" maxLength={120} autoComplete="name" value={reviewerName} onChange={(event) => setReviewerName(event.target.value)} /></label>
           <label className="mt-4 block text-xs font-semibold text-fg-2">의견<textarea className="mt-1.5 min-h-32 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg" maxLength={4000} value={body} onChange={(event) => setBody(event.target.value)} /></label>
-          <button type="submit" className={cn(buttonClass(), "mt-4 w-full")} disabled={submitting || selectedOrdinal === null || !reviewerName.trim() || !body.trim()}>{submitting ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <MessageSquareText className="size-4" aria-hidden="true" />}{submitting ? creatorSub2StatusText("studio.creatorSub2.status.reviewShare.saving", "저장 중…") : "의견 기록"}</button>
+          <button type="submit" className={cn(buttonClass({ className: "min-h-11" }), "mt-4 w-full")} disabled={submitting || selectedOrdinal === null || !reviewerName.trim() || !body.trim()}>{submitting ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <MessageSquareText className="size-4" aria-hidden="true" />}{submitting ? creatorSub2StatusText("studio.creatorSub2.status.reviewShare.saving", "저장 중…") : "의견 기록"}</button>
           <p className="mt-3 text-[0.6875rem] leading-5 text-fg-3">의견은 선택한 고정 페이지에만 연결됩니다. 프로젝트의 다른 원고나 팀 공간에는 접근할 수 없습니다.</p>
-        </form> : <section className="rounded-3xl border border-line bg-card p-5 text-sm text-fg-2"><h2 className="font-black text-fg">열람 전용 링크</h2><p className="mt-2">이 링크는 댓글·승인·원고 수정을 허용하지 않습니다.</p></section>}
+        </form> : <section className="rounded-2xl border border-line bg-card p-5 text-sm text-fg-2"><h2 className="font-semibold text-fg">열람 전용 링크</h2><p className="mt-2">이 링크는 댓글·승인·원고 수정을 허용하지 않습니다.</p></section>}
 
-        <section className="rounded-3xl border border-line bg-card p-5">
-          <h2 className="font-black">기록된 의견</h2>
+        <section className="rounded-2xl border border-line bg-card p-5">
+          <h2 className="font-semibold">기록된 의견</h2>
           <div className="mt-3 space-y-2">
             {view.feedback.filter((item) => item.pageOrdinal === selectedOrdinal).map((item) => <article key={item.id} className="rounded-xl border border-line bg-panel p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-black">{item.reviewerName}</p><time className="text-[0.625rem] text-fg-3" dateTime={item.createdAt}>{formatDate(item.createdAt)}</time></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold">{item.reviewerName}</p><time className="text-[0.625rem] tabular-nums text-fg-3" dateTime={item.createdAt}>{formatDate(item.createdAt)}</time></div>
               <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-fg-2">{item.body}</p>
             </article>)}
             {!view.feedback.some((item) => item.pageOrdinal === selectedOrdinal) ? <p className="rounded-xl border border-dashed border-line p-4 text-center text-xs text-fg-3">{creatorSub2StatusText("studio.creatorSub2.status.reviewShare.feedbackEmpty", "이 페이지에는 아직 의견이 없습니다.")}</p> : null}
@@ -416,7 +420,7 @@ export function StudioPinnedReviewSharePage() {
                 type="button"
                 data-testid="pinned-review-retry-feedback-btn"
                 onClick={() => void submitFeedback()}
-                className={buttonClass({ variant: "outline", size: "sm", className: "mt-2.5 min-h-9 w-full gap-1.5 text-xs" })}
+                className={buttonClass({ variant: "outline", size: "sm", className: "mt-2.5 min-h-11 w-full gap-1.5 text-xs" })}
               >
                 <RefreshCw className="size-3.5" aria-hidden="true" />
                 {bt("같은 의견 다시 보내기", "Retry sending same feedback")}
@@ -427,6 +431,5 @@ export function StudioPinnedReviewSharePage() {
       </aside>
     </div>
   </div>
-    </PageEntrance>
   );
 }

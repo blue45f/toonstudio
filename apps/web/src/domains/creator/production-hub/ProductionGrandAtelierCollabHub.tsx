@@ -1,4 +1,4 @@
-import { Columns2, ExternalLink, Eye, MapPin, MessageSquarePlus, Sparkles, Users } from "lucide-react";
+import { Columns2, ExternalLink, Eye, MapPin, MessageSquarePlus, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -409,7 +409,7 @@ export function ProductionGrandAtelierCollabHub() {
     <section
       aria-labelledby="grand-atelier-collab-hub-title"
       data-testid="grand-atelier-collab-hub"
-      className="mt-6 rounded-3xl border border-accent/30 bg-panel p-4 shadow-xl sm:p-6"
+      className="mt-3 rounded-2xl border border-line bg-panel p-4 sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <div className="flex items-center gap-3">
@@ -423,14 +423,14 @@ export function ProductionGrandAtelierCollabHub() {
           />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id="grand-atelier-collab-hub-title" className="text-lg font-black tracking-tight text-fg sm:text-xl">
+              <h2 id="grand-atelier-collab-hub-title" className="text-lg font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-xl">
                 {bt("초대 · 직무 권한 · 실시간 컷 · 핀 검수 · 이력 원스톱 관제실", "5-Pillar Collaboration Control Room")}
               </h2>
-              <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 text-[0.68rem] font-bold text-accent">
+              <span className="rounded-full border border-accent/35 bg-accent-soft px-2.5 py-0.5 text-[0.68rem] font-semibold text-accent">
                 {bt("합성 데모 · 고객 데이터 없음", "Synthetic demo · zero customer data")}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-fg-2">
+            <p className="mt-0.5 text-xs text-fg-2 [word-break:keep-all]">
               {bt(
                 "깊은 하위 탭을 찾지 않고 한 화면에서 팀 초대, 4대 웹툰 직무 잠금, 컷 점유 따라가기, 전후 핀 검수, 안전 이력 복원을 바로 실행합니다.",
                 "Invite collaborators, configure 4 webtoon job locks, follow cut occupancy, review coordinate pins, and restore history on one screen.",
@@ -439,11 +439,10 @@ export function ProductionGrandAtelierCollabHub() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/studio/comic" className={buttonClass({ size: "sm", className: "min-h-10 gap-1.5 text-xs" })}>
-            <Sparkles size={14} aria-hidden="true" />
+          <Link to="/studio/comic" className={buttonClass({ size: "sm", className: "min-h-11 gap-1.5 text-xs" })}>
             {bt("공동 드로잉 열기", "Open shared canvas")}
           </Link>
-          <Link to={externalPdReviewHref} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 gap-1.5 text-xs" })}>
+          <Link to={externalPdReviewHref} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 gap-1.5 text-xs" })}>
             <ExternalLink size={14} aria-hidden="true" />
             {bt("외부 PD 전용 검수창", "External PD review")}
           </Link>
@@ -492,7 +491,7 @@ export function ProductionGrandAtelierCollabHub() {
         <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-12" data-testid="collab-pillar-3-presence">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
                 <Users size={16} className="text-accent" aria-hidden="true" />
                 {bt("③ 실시간 공동 작업 & 컷 점유 현황", "3. Live Co-Editing & Cut Occupancy")}
               </h3>
@@ -504,7 +503,7 @@ export function ProductionGrandAtelierCollabHub() {
               </p>
             </div>
             {followingMember ? (
-              <span className="rounded-full border border-success/40 bg-success-soft/20 px-3 py-1 text-xs font-bold text-success">
+              <span className="rounded-full border border-success/40 bg-success-soft/20 px-3 py-1 text-xs font-semibold text-success">
                 {bt(`현재 시점 따라가기 중: ${followingMember}`, `Following: ${followingMember}`)}
               </span>
             ) : null}
@@ -522,10 +521,10 @@ export function ProductionGrandAtelierCollabHub() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-md bg-accent px-2 py-0.5 text-[0.68rem] font-black text-on-accent">
+                      <span className="rounded-md bg-accent px-2 py-0.5 text-[0.68rem] font-semibold tabular-nums text-on-accent">
                         {bt(card.cutBadgeKo, card.cutBadgeEn)}
                       </span>
-                      <strong className="truncate text-xs font-black text-fg">{bt(card.memberKo, card.memberEn)}</strong>
+                      <strong className="truncate text-xs font-semibold text-fg">{bt(card.memberKo, card.memberEn)}</strong>
                     </div>
                     <p className="mt-1 truncate text-xs text-fg-2">{bt(card.activityKo, card.activityEn)}</p>
                   </div>
@@ -537,13 +536,13 @@ export function ProductionGrandAtelierCollabHub() {
                         handleSelectHubCut(card.cutId);
                         setFollowingMember(bt(card.memberKo, card.memberEn));
                       }}
-                      className={buttonClass({ variant: "outline", size: "sm", className: "min-h-9 px-2.5 text-xs" })}
+                      className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 px-2.5 text-xs" })}
                     >
                       {bt("따라가기 ↗", "Follow ↗")}
                     </button>
                     <Link
                       to={card.episodeHref}
-                      className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-9 px-2 text-xs" })}
+                      className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 px-2.5 text-xs" })}
                     >
                       {bt("룸", "Room")}
                     </Link>
@@ -557,7 +556,7 @@ export function ProductionGrandAtelierCollabHub() {
         {/* ④ 좌표 핀 댓글 · 전후 비교 · 3단계 검수 승인 */}
         <article className="rounded-2xl border border-line bg-card p-4 lg:col-span-7" data-testid="collab-pillar-4-review">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-sm font-black text-fg">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
               <MapPin size={16} className="text-accent" aria-hidden="true" />
               {bt("④ 좌표 핀 댓글 · 전후 비교 · 3단계 검수 승인", "4. Coordinate Pin Review · Diff · 3-Stage Approval")}
             </h3>
@@ -620,7 +619,7 @@ export function ProductionGrandAtelierCollabHub() {
                 aria-selected={selectedCutId === cut.cutId}
                 onClick={() => handleSelectHubCut(cut.cutId)}
                 className={cn(
-                  "min-h-8 rounded-lg border px-2.5 text-xs font-bold",
+                  "min-h-11 rounded-lg border px-3 text-xs font-semibold tabular-nums",
                   selectedCutId === cut.cutId
                     ? "border-accent bg-accent text-on-accent"
                     : "border-line bg-panel text-fg-2 hover:text-fg",
@@ -695,7 +694,7 @@ export function ProductionGrandAtelierCollabHub() {
                   key={thread.id}
                   style={{ left: `${coord.xPercent}%`, top: `${coord.yPercent}%` }}
                   className={cn(
-                    "pointer-events-none absolute z-20 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-[0.68rem] font-black shadow",
+                    "pointer-events-none absolute z-20 grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border text-[0.68rem] font-semibold tabular-nums shadow",
                     thread.status === "resolved"
                       ? "border-success bg-success-soft text-success"
                       : "border-accent bg-accent text-on-accent",
@@ -725,14 +724,14 @@ export function ProductionGrandAtelierCollabHub() {
                   ? `${formatCutPinTargetId({ ...pinCoord, cutId: selectedCutId })} — ${bt("수정 피드백 입력", "Write pin feedback")}`
                   : bt("외부 열람자 권한에서는 댓글 작성이 잠겨 있습니다", "Comments are locked in Viewer role")
               }
-              className="min-h-10 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg placeholder:text-fg-3 disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-xl border border-line bg-panel px-3 text-xs text-fg placeholder:text-fg-3 disabled:opacity-50"
             />
             <button
               type="button"
               data-testid="collab-hub-add-pin-btn"
               disabled={!permissions.canComment}
               onClick={handleAddPinComment}
-              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-10 shrink-0 gap-1.5 text-xs" })}
+              className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 shrink-0 gap-1.5 text-xs" })}
             >
               <MessageSquarePlus size={14} aria-hidden="true" />
               {bt("핀 댓글 등록", "Add pin")}
@@ -741,7 +740,7 @@ export function ProductionGrandAtelierCollabHub() {
           {pinError ? (
             <div role="alert" data-testid="collab-hub-pin-error" className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-bad/35 bg-bad/10 px-3 py-2 text-xs text-fg">
               <span>{pinError}</span>
-              <button type="button" data-testid="collab-hub-retry-pin-btn" onClick={handleAddPinComment} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-8 px-2.5 text-[0.7rem]" })}>
+              <button type="button" data-testid="collab-hub-retry-pin-btn" onClick={handleAddPinComment} className={buttonClass({ variant: "outline", size: "sm", className: "min-h-11 px-3 text-xs" })}>
                 {bt("같은 핀 댓글 다시 보내기", "Retry sending same pin")}
               </button>
             </div>
@@ -751,13 +750,13 @@ export function ProductionGrandAtelierCollabHub() {
             {activeCutThreads.map((thread, idx) => (
               <li key={thread.id} className="flex items-center justify-between gap-2 rounded-xl border border-line bg-panel px-3 py-2 text-xs">
                 <span className="min-w-0 truncate text-fg-2">
-                  <strong className="text-fg">#{idx + 1} {thread.targetId}:</strong> {thread.messages.at(-1)?.body}
+                  <strong className="font-semibold tabular-nums text-fg">#{idx + 1} {thread.targetId}:</strong> {thread.messages.at(-1)?.body}
                 </span>
                 <button
                   type="button"
                   disabled={!permissions.canResolve}
                   onClick={() => handleToggleResolve(thread.id, thread.status === "resolved")}
-                  className="shrink-0 rounded-lg border border-line bg-card px-2 py-1 text-[0.68rem] font-bold text-fg hover:bg-raised disabled:opacity-45"
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-line bg-card px-3 text-xs font-semibold text-fg hover:bg-raised disabled:opacity-45"
                 >
                   {thread.status === "resolved" ? bt("재오픈", "Reopen") : bt("해결 처리", "Resolve")}
                 </button>

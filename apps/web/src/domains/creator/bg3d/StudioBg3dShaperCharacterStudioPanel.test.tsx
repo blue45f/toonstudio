@@ -27,6 +27,9 @@ describe("StudioBg3dShaperCharacterStudioPanel", () => {
     expect(markup).toContain("7.8등신 K-POP 아이돌 센터");
     expect(markup).toContain("3D 표면 직접 잉킹 (3D Inking)");
     expect(markup).toContain("min-h-11");
+    expect(markup).not.toContain("transition-all");
+    expect(markup).toContain("shaper-kitbash-disclosure");
+    expect(markup).toContain("shaper-character-inspector-disclosure");
   });
 
   it("filters archetypes by genre, updates sliders/hair/outfit/cel-shading, and places 3D primitives in scene", () => {

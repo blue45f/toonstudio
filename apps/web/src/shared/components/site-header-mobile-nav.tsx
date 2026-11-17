@@ -257,10 +257,10 @@ export function MobileHeaderNavigation({
                 <div className="flex min-w-0 items-center gap-3">
                   <ToonStudioMark className="size-10 rounded-[0.85rem]" />
                   <div className="min-w-0">
-                    <span className="block truncate font-display text-sm font-bold text-fg">
+                    <span className="block truncate font-display text-sm font-semibold text-fg">
                       <ToonStudioWordmark />
                     </span>
-                    <span className="mt-0.5 block truncate text-[0.68rem] text-fg-3">
+                    <span className="mt-0.5 block truncate text-xs text-fg-3 [word-break:keep-all]">
                       {menuDescription}
                     </span>
                   </div>
@@ -341,7 +341,7 @@ export function MobileHeaderNavigation({
         >
           <div
             className={cx(
-              "mx-auto grid max-w-md pb-[env(safe-area-inset-bottom)]",
+              "mx-auto grid max-w-md px-1 pb-[env(safe-area-inset-bottom)] md:max-w-2xl md:px-4",
               mobileTabs.length === 5 ? "grid-cols-5" : "grid-cols-4"
             )}
           >

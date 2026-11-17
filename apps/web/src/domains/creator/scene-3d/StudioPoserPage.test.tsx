@@ -136,35 +136,41 @@ describe("StudioPoserPage (/studio/poser)", () => {
     useToastStore.setState({ toasts: [] });
   });
 
-  it("REA 포저 투시 워크벤치에서 카메라 렌즈·관절 솔버를 전환하고 en 로케일에서 한글을 포함하지 않는다", () => {
+  it("REA 포저 투시 워크벤치에서 카메라 렌즈·관절 보정을 한국어로 표시하고 en 로케일에서 한글을 포함하지 않는다", () => {
     useI18n.setState({ lang: "ko" });
     renderPage();
+    expect(screen.getByTestId("studio-poser-varco3d-workbench-toggle").textContent).toContain("에셋 140종 · 리깅 66종");
     const bar = screen.getByTestId("studio-poser-rea-foreshortening-bar");
-    expect(bar.textContent).toContain("Clip Studio 3D Poser · Magic Poser · Cascadeur · VRoid Studio");
+    expect(bar.textContent).not.toContain("Clip Studio");
     expect(screen.getByTestId("poser-rea-lens-manga-18mm-foreshorten").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("poser-rea-solver-com-gravity-balance").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toBe(
+      "카메라: 만화 18mm 과장 투시 · 관절 보정: 무게중심 자동 균형",
+    );
 
     fireEvent.click(screen.getByTestId("poser-rea-lens-standard-35mm-dialogue"));
     expect(screen.getByTestId("poser-rea-lens-standard-35mm-dialogue").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("poser-rea-lens-manga-18mm-foreshorten").getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("standard-35mm-dialogue");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("카메라: 표준 35mm 대화 샷");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).not.toContain("standard-35mm-dialogue");
 
     fireEvent.click(screen.getByTestId("poser-rea-lens-tele-85mm-portrait"));
     expect(screen.getByTestId("poser-rea-lens-tele-85mm-portrait").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("tele-85mm-portrait");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("카메라: 망원 85mm 인물 압축");
 
     fireEvent.click(screen.getByTestId("poser-rea-solver-clavicle-auto-twist"));
     expect(screen.getByTestId("poser-rea-solver-clavicle-auto-twist").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("poser-rea-solver-com-gravity-balance").getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("clavicle-auto-twist");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("관절 보정: 쇄골·어깨 자동 연동 회전");
 
     fireEvent.click(screen.getByTestId("poser-rea-solver-hand-grip-preset"));
     expect(screen.getByTestId("poser-rea-solver-hand-grip-preset").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("hand-grip-preset");
+    expect(screen.getByTestId("studio-poser-rea-status").textContent).toContain("관절 보정: 손가락 파지 프리셋");
 
     act(() => {
       useI18n.setState({ lang: "en" });
     });
     expect(bar.textContent).not.toMatch(/[가-힣]/u);
+    expect(screen.getByTestId("studio-poser-varco3d-workbench-toggle").textContent).not.toMatch(/[가-힣]/u);
   });
 });

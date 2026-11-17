@@ -1,4 +1,5 @@
 import {
+  ChevronRight,
   Download,
   Film,
   Layers,
@@ -8,7 +9,6 @@ import {
   Shirt,
   Sliders,
   Smile,
-  Sparkles,
   User,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -129,7 +129,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
   return (
     <div className="flex flex-col gap-3 p-3 text-xs text-fg">
       {/* Luminous Atelier Shaper Header */}
-      <div className="flex items-center gap-2.5 rounded-xl border border-accent/25 bg-gradient-to-r from-card via-raised/70 to-card p-2.5 shadow-sm">
+      <div className="flex items-center gap-2.5 rounded-xl border border-line bg-card p-2.5">
         <img
           src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"
           alt=""
@@ -139,16 +139,16 @@ export function StudioBg3dShaperCharacterStudioPanel({
           decoding="async"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[0.72rem] font-bold tracking-tight text-fg">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[0.72rem] font-bold tracking-tight text-fg [word-break:keep-all]">
               3D 캐릭터랩 &amp; 셰이퍼 스튜디오
             </span>
-            <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[0.6rem] font-semibold text-accent">
+            <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[0.6rem] font-semibold tabular-nums text-accent">
               11 아키타입
             </span>
           </div>
-          <p className="mt-0.5 text-[0.64rem] leading-snug text-fg-3">
-            4~9등신 연속 비례 · V라인·눈매 조형 · 헤어 6종 · 웹툰 코디 6종 · SDF 셀셰이딩
+          <p className="mt-0.5 text-[0.64rem] leading-snug text-fg-3 [word-break:keep-all]">
+            4~9등신 연속 비례 · V라인·눈매 조형 · 헤어 6종 · 웹툰 코디 6종 · 셀셰이딩
           </p>
         </div>
       </div>
@@ -159,13 +159,13 @@ export function StudioBg3dShaperCharacterStudioPanel({
           type="button"
           disabled={disabled}
           onClick={() => setActiveTab("shaper")}
-          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
             activeTab === "shaper"
               ? "border border-line bg-raised text-fg shadow-sm"
               : "text-fg-3 hover:text-fg"
           }`}
         >
-          <User className="h-3.5 w-3.5 text-accent" />
+          <User className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
           <span>셰이퍼 캐릭터</span>
         </button>
 
@@ -173,13 +173,13 @@ export function StudioBg3dShaperCharacterStudioPanel({
           type="button"
           disabled={disabled}
           onClick={() => setActiveTab("tooning")}
-          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
             activeTab === "tooning"
               ? "border border-line bg-raised text-fg shadow-sm"
               : "text-fg-3 hover:text-fg"
           }`}
         >
-          <Smile className="h-3.5 w-3.5 text-accent" />
+          <Smile className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
           <span>투닝 표정 &amp; SFX</span>
         </button>
 
@@ -187,13 +187,13 @@ export function StudioBg3dShaperCharacterStudioPanel({
           type="button"
           disabled={disabled}
           onClick={() => setActiveTab("storyboard")}
-          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[0.7rem] font-bold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
             activeTab === "storyboard"
               ? "border border-line bg-raised text-fg shadow-sm"
               : "text-fg-3 hover:text-fg"
           }`}
         >
-          <Film className="h-3.5 w-3.5 text-accent" />
+          <Film className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
           <span>세로 연출 &amp; PSD</span>
         </button>
       </div>
@@ -203,7 +203,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
         <div className="flex flex-col gap-3">
           {/* Genre Filter Chips */}
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
               웹툰 장르 필터
             </span>
             <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="웹툰 장르 필터">
@@ -215,7 +215,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   aria-pressed={genreFilter === genre.id}
                   data-testid={`shaper-genre-chip-${genre.id}`}
                   onClick={() => setGenreFilter(genre.id)}
-                  className={`min-h-11 rounded-lg border px-2 py-1.5 text-center text-[0.68rem] font-semibold transition-all ${
+                  className={`min-h-11 rounded-lg border px-2 py-1.5 text-center text-[0.68rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     genreFilter === genre.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg-2 hover:border-line-strong hover:bg-raised hover:text-fg"
@@ -229,7 +229,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
 
           {/* Archetype Grid */}
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-[0.7rem] font-semibold tabular-nums text-fg-2 [word-break:keep-all]">
               웹툰 체형 프로포션 (아키타입 · {filteredArchetypes.length}종)
             </span>
             <div className="grid grid-cols-2 gap-1.5">
@@ -241,7 +241,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   aria-pressed={customizer.archetype === archetype.id}
                   data-testid={`shaper-archetype-${archetype.id}`}
                   onClick={() => handleSelectArchetype(archetype.id)}
-                  className={`flex min-h-11 items-center rounded-lg border p-2 text-left text-[0.68rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center rounded-lg border p-2 text-left text-[0.68rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     customizer.archetype === archetype.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -255,15 +255,15 @@ export function StudioBg3dShaperCharacterStudioPanel({
 
           {/* Continuous Webtoon Customizer Sliders */}
           <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/70 p-2.5">
-            <div className="flex items-center gap-1.5 text-[0.7rem] font-bold text-fg">
-              <Sliders className="h-3.5 w-3.5 text-accent" />
+            <div className="flex items-center gap-1.5 text-[0.7rem] font-bold text-fg [word-break:keep-all]">
+              <Sliders className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <span>연속 체형·안면·투톤 정밀 슬라이더</span>
             </div>
 
             <label className="flex flex-col gap-1 text-[0.66rem] text-fg-2">
               <div className="flex justify-between">
                 <span>등신비 (4.0~9.0등신)</span>
-                <strong className="text-fg">{customizer.headRatio.toFixed(1)}등신</strong>
+                <strong className="tabular-nums text-fg">{customizer.headRatio.toFixed(1)}등신</strong>
               </div>
               <input
                 type="range"
@@ -284,7 +284,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
             <label className="flex flex-col gap-1 text-[0.66rem] text-fg-2">
               <div className="flex justify-between">
                 <span>어깨·체형 밸런스</span>
-                <strong className="text-fg">{customizer.shoulderBalance.toFixed(2)}</strong>
+                <strong className="tabular-nums text-fg">{customizer.shoulderBalance.toFixed(2)}</strong>
               </div>
               <input
                 type="range"
@@ -305,7 +305,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
             <label className="flex flex-col gap-1 text-[0.66rem] text-fg-2">
               <div className="flex justify-between">
                 <span>V라인 턱선</span>
-                <strong className="text-fg">{customizer.jawVLine.toFixed(2)}</strong>
+                <strong className="tabular-nums text-fg">{customizer.jawVLine.toFixed(2)}</strong>
               </div>
               <input
                 type="range"
@@ -326,7 +326,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
             <label className="flex flex-col gap-1 text-[0.66rem] text-fg-2">
               <div className="flex justify-between">
                 <span>눈 크기·눈매 각도</span>
-                <strong className="text-fg">{customizer.eyeSizeTilt.toFixed(2)}</strong>
+                <strong className="tabular-nums text-fg">{customizer.eyeSizeTilt.toFixed(2)}</strong>
               </div>
               <input
                 type="range"
@@ -347,7 +347,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
             <label className="flex flex-col gap-1 text-[0.66rem] text-fg-2">
               <div className="flex justify-between">
                 <span>헤어 볼륨·투톤 그라데이션</span>
-                <strong className="text-fg">{Math.round(customizer.hairVolumeOmbre * 100)}%</strong>
+                <strong className="tabular-nums text-fg">{Math.round(customizer.hairVolumeOmbre * 100)}%</strong>
               </div>
               <input
                 type="range"
@@ -368,8 +368,8 @@ export function StudioBg3dShaperCharacterStudioPanel({
 
           {/* Hair Silhouette Selector */}
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2">
-              <Scissors className="h-3.5 w-3.5 text-accent" />
+            <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
+              <Scissors className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <span>헤어 실루엣 선택 (6종)</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="헤어 실루엣 선택">
@@ -383,7 +383,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   onClick={() =>
                     setCustomizer((prev) => ({ ...prev, hairSilhouetteId: hair.id }))
                   }
-                  className={`flex min-h-11 items-center rounded-lg border px-2.5 py-1.5 text-left text-[0.67rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center rounded-lg border px-2.5 py-1.5 text-left text-[0.67rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     customizer.hairSilhouetteId === hair.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -397,8 +397,8 @@ export function StudioBg3dShaperCharacterStudioPanel({
 
           {/* Webtoon Outfit Sets */}
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2">
-              <Shirt className="h-3.5 w-3.5 text-accent" />
+            <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
+              <Shirt className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <span>웹툰 의상 코디 세트 (6종)</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="웹툰 의상 코디 세트">
@@ -410,7 +410,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   aria-pressed={customizer.outfitSetId === outfit.id}
                   data-testid={`shaper-outfit-${outfit.id as ShaperOutfitSetId}`}
                   onClick={() => setCustomizer((prev) => ({ ...prev, outfitSetId: outfit.id }))}
-                  className={`flex min-h-11 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-[0.67rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-[0.67rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     customizer.outfitSetId === outfit.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -429,8 +429,8 @@ export function StudioBg3dShaperCharacterStudioPanel({
 
           {/* Webtoon Cel-Shading & Outline Presets */}
           <div className="flex flex-col gap-2 rounded-xl border border-line bg-card/70 p-2.5">
-            <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2">
-              <Palette className="h-3.5 w-3.5 text-accent" />
+            <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
+              <Palette className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <span>웹툰 셀셰이딩 &amp; 외곽선 프리셋</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="웹툰 셀셰이딩 프리셋">
@@ -442,7 +442,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   aria-pressed={customizer.celShadingPresetId === cel.id}
                   data-testid={`shaper-cel-${cel.id}`}
                   onClick={() => handleSelectCelPreset(cel.id)}
-                  className={`flex min-h-11 items-center rounded-lg border px-2 py-1.5 text-left text-[0.66rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center rounded-lg border px-2 py-1.5 text-left text-[0.66rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     customizer.celShadingPresetId === cel.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -455,7 +455,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
             <label className="flex flex-col gap-1 text-[0.65rem] text-fg-2">
               <div className="flex justify-between">
                 <span>펜선 외곽선 두께</span>
-                <strong className="text-fg">{customizer.outlineThicknessMm.toFixed(1)} mm</strong>
+                <strong className="tabular-nums text-fg">{customizer.outlineThicknessMm.toFixed(1)} mm</strong>
               </div>
               <input
                 type="range"
@@ -480,7 +480,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
           {/* Live Summary & 3D Scene Placement Action */}
           <div className="flex flex-col gap-2 rounded-xl border border-accent/35 bg-accent/10 p-2.5">
             <p
-              className="text-[0.66rem] leading-relaxed text-fg-2"
+              className="text-[0.66rem] leading-relaxed text-fg-2 [word-break:keep-all]"
               data-testid="shaper-live-character-summary"
             >
               {liveSceneBuild.summaryKo}
@@ -490,9 +490,9 @@ export function StudioBg3dShaperCharacterStudioPanel({
               disabled={disabled}
               data-testid="shaper-place-scene-btn"
               onClick={handlePlaceCharacterInScene}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[0.72rem] font-bold text-bg shadow-sm transition-all hover:opacity-90"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[0.72rem] font-bold text-bg shadow-sm transition-[background-color,border-color,color,transform] duration-150 hover:opacity-90 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all]"
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <User className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>현재 캐릭터 설정 요약 &amp; 3D 씬 배치</span>
             </button>
           </div>
@@ -500,8 +500,8 @@ export function StudioBg3dShaperCharacterStudioPanel({
           {/* 3D Surface Direct Inking */}
           <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-card/60 p-2.5 text-[0.68rem]">
             <div className="flex flex-col">
-              <span className="font-bold text-fg">3D 표면 직접 잉킹 (3D Inking)</span>
-              <span className="text-[0.62rem] text-fg-3">
+              <span className="font-bold text-fg [word-break:keep-all]">3D 표면 직접 잉킹 (3D Inking)</span>
+              <span className="text-[0.62rem] text-fg-3 [word-break:keep-all]">
                 3D 캐릭터 표면에 그린 선이 포즈 변형 시에도 자연스럽게 따라 움직임
               </span>
             </div>
@@ -509,7 +509,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
               type="button"
               disabled={disabled}
               onClick={() => setIsSurfaceInking(!isSurfaceInking)}
-              className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 font-bold transition-all ${
+              className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 font-bold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none ${
                 isSurfaceInking
                   ? "border-accent bg-accent text-bg"
                   : "border-line bg-card text-fg hover:bg-raised"
@@ -525,7 +525,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
       {activeTab === "tooning" && (
         <div className="flex flex-col gap-2.5">
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
               16종 표정 블렌드셰이프 프리셋
             </span>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
@@ -544,7 +544,7 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => setSelectedEmotion(emotion.id as CreatorPlusEmotionPreset)}
-                  className={`min-h-11 rounded-lg border p-1.5 text-center text-[0.68rem] font-semibold transition-all ${
+                  className={`min-h-11 rounded-lg border p-1.5 text-center text-[0.68rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     selectedEmotion === emotion.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
@@ -557,24 +557,24 @@ export function StudioBg3dShaperCharacterStudioPanel({
           </div>
 
           <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-card/60 p-2.5">
-            <span className="text-[0.68rem] font-semibold text-fg-2">
+            <span className="text-[0.68rem] font-semibold text-fg-2 [word-break:keep-all]">
               3D 월드 공간 말풍선 &amp; 대사 (Mouth Tracking)
             </span>
             <div className="flex items-center gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-accent" />
+              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <input
                 type="text"
                 value={bubbleText}
                 disabled={disabled}
                 onChange={(e) => setBubbleText(e.target.value)}
-                placeholder="말풍선 대사 입력..."
+                placeholder="말풍선 대사 입력"
                 className="min-h-11 w-full rounded-md border border-line bg-field px-2.5 py-1 text-[0.7rem] text-fg focus:border-accent focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2">
+            <span className="mb-1.5 block text-[0.7rem] font-semibold text-fg-2 [word-break:keep-all]">
               3D 감정 이모트 스티커 파티클
             </span>
             <div className="grid grid-cols-3 gap-1.5">
@@ -591,13 +591,12 @@ export function StudioBg3dShaperCharacterStudioPanel({
                   type="button"
                   disabled={disabled}
                   onClick={() => setSelectedEmote(emote.id as EmoteSfxKind)}
-                  className={`flex min-h-11 items-center justify-center gap-1 rounded-lg border p-1.5 text-[0.65rem] font-semibold transition-all ${
+                  className={`flex min-h-11 items-center justify-center rounded-lg border p-1.5 text-[0.65rem] font-semibold transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all] ${
                     selectedEmote === emote.id
                       ? "border-accent bg-accent/15 text-accent"
                       : "border-line bg-card text-fg hover:border-line-strong hover:bg-raised"
                   }`}
                 >
-                  <Sparkles className="h-3 w-3 text-accent" />
                   <span>{emote.label}</span>
                 </button>
               ))}
@@ -610,14 +609,14 @@ export function StudioBg3dShaperCharacterStudioPanel({
       {activeTab === "storyboard" && (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[0.7rem] font-semibold text-fg-2">
+            <span className="text-[0.7rem] font-semibold tabular-nums text-fg-2 [word-break:keep-all]">
               세로 스크롤 웹툰 컷 리스트 ({cuts.length}컷)
             </span>
             <button
               type="button"
               disabled={disabled}
               onClick={handleAddCut}
-              className="min-h-11 rounded-md border border-line bg-card px-3 py-1.5 text-[0.65rem] font-bold text-fg hover:bg-raised"
+              className="min-h-11 rounded-md border border-line bg-card px-3 py-1.5 text-[0.65rem] font-bold text-fg transition-[background-color,border-color,color,transform] duration-150 hover:bg-raised enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none"
             >
               + 컷 추가
             </button>
@@ -630,12 +629,12 @@ export function StudioBg3dShaperCharacterStudioPanel({
                 className="flex items-center justify-between rounded-lg border border-line bg-card/60 p-2 text-[0.68rem]"
               >
                 <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/20 font-bold text-accent">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/20 font-bold tabular-nums text-accent">
                     {cut.cutNumber}
                   </span>
-                  <span className="font-semibold text-fg">{cut.title}</span>
+                  <span className="font-semibold text-fg [word-break:keep-all]">{cut.title}</span>
                 </div>
-                <span className="rounded bg-raised px-1.5 py-0.5 text-[0.62rem] text-fg-3">
+                <span className="rounded bg-raised px-1.5 py-0.5 text-[0.62rem] tabular-nums text-fg-3">
                   {cut.aspectRatio}
                 </span>
               </div>
@@ -643,20 +642,20 @@ export function StudioBg3dShaperCharacterStudioPanel({
           </div>
 
           <div className="mt-1 flex flex-col gap-2 rounded-xl border border-line bg-card/60 p-2.5">
-            <div className="flex items-center gap-1.5 text-[0.68rem] font-bold text-fg">
-              <Layers className="h-3.5 w-3.5 text-accent" />
+            <div className="flex items-center gap-1.5 text-[0.68rem] font-bold text-fg [word-break:keep-all]">
+              <Layers className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <span>8종 분리 레이어 PSD 마스터 내보내기</span>
             </div>
-            <p className="text-[0.62rem] text-fg-3">
+            <p className="text-[0.62rem] text-fg-3 [word-break:keep-all]">
               선화(Line), 밑색(Flat), 1·2차 툰 음영(Shadow), 역광(Rim), 감정 SFX, 말풍선, 배경이 각각 독립 분리된 PSD로 즉시 출력됩니다.
             </p>
             <button
               type="button"
               disabled={disabled}
               onClick={onExportPsd}
-              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[0.7rem] font-bold text-bg shadow-sm transition-all hover:opacity-90"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[0.7rem] font-bold text-bg shadow-sm transition-[background-color,border-color,color,transform] duration-150 hover:opacity-90 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none [word-break:keep-all]"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>클립스튜디오/포토샵용 PSD 내보내기</span>
             </button>
           </div>
@@ -664,15 +663,53 @@ export function StudioBg3dShaperCharacterStudioPanel({
       )}
 
       {/* 파라메트릭 3D 캐릭터 아나토미·복식·포즈 블록아웃 & 배경 킷배시 모델러 */}
-      <StudioBg3dKitbashCharacterModelerPanel
-        defaultMode="character"
-        disabled={disabled}
-        onStatusChange={onStatusChange}
-        onInsertScenePrimitives={onInsertScenePrimitives}
-      />
+      <details
+        className="group rounded-xl border border-line bg-card/60"
+        data-testid="shaper-kitbash-disclosure"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[0.7rem] font-semibold text-fg transition-[background-color,color] duration-150 hover:bg-raised/60 motion-reduce:transition-none">
+          <span className="flex items-center gap-1.5 [word-break:keep-all]">
+            <ChevronRight
+              aria-hidden="true"
+              className="h-3.5 w-3.5 shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+            />
+            <span>아나토미·복식 블록아웃 &amp; 배경 킷배시</span>
+          </span>
+          <span className="shrink-0 rounded-md bg-raised px-1.5 py-0.5 text-[0.6rem] font-medium text-fg-3">
+            고급 조형
+          </span>
+        </summary>
+        <div className="border-t border-line/70 p-2">
+          <StudioBg3dKitbashCharacterModelerPanel
+            defaultMode="character"
+            disabled={disabled}
+            onStatusChange={onStatusChange}
+            onInsertScenePrimitives={onInsertScenePrimitives}
+          />
+        </div>
+      </details>
 
       {/* Tooning 3D Studio (TD) Complete 5-Tab Inspector, 23 Camera Presets & 3D Asset Store */}
-      <Studio3dCharacterStudioInspectorPanel disabled={disabled} />
+      <details
+        className="group rounded-xl border border-line bg-card/60"
+        data-testid="shaper-character-inspector-disclosure"
+      >
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-[0.7rem] font-semibold text-fg transition-[background-color,color] duration-150 hover:bg-raised/60 motion-reduce:transition-none">
+          <span className="flex items-center gap-1.5 [word-break:keep-all]">
+            <ChevronRight
+              aria-hidden="true"
+              className="h-3.5 w-3.5 shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+            />
+            <span>3D 캐릭터 정밀 인스펙터 &amp; 카메라</span>
+          </span>
+          <span className="shrink-0 rounded-md bg-raised px-1.5 py-0.5 text-[0.6rem] font-medium tabular-nums text-fg-3">
+            21본 · 23카메라
+          </span>
+        </summary>
+        <div className="border-t border-line/70 p-2">
+          <Studio3dCharacterStudioInspectorPanel disabled={disabled} />
+        </div>
+      </details>
     </div>
   );
 }

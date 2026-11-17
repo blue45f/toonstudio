@@ -22,7 +22,7 @@ const LINK_BASE_CLASS =
   "group flex min-h-11 shrink-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none";
 
 const SUMMARY_CLASS =
-  "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 text-sm font-bold text-fg-2 outline-none hover:bg-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden";
+  "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 text-sm font-semibold text-fg-2 outline-none hover:bg-raised hover:text-fg focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden";
 
 function SurfaceLink({
   projectId,
@@ -146,13 +146,13 @@ function NavGroup({
       <summary className={SUMMARY_CLASS}>
         <span className="flex min-w-0 items-center gap-2">
           {marker !== null ? (
-            <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-raised text-[0.6875rem] font-black text-fg-2">{marker}</span>
+            <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-raised text-[0.6875rem] font-semibold tabular-nums text-fg-2">{marker}</span>
           ) : (
             <Settings2 className="size-4 shrink-0" aria-hidden="true" />
           )}
           <span className="truncate">{label}</span>
           {current ? (
-            <span className="shrink-0 rounded-full border border-line bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-bold text-accent">
+            <span className="shrink-0 rounded-full border border-line bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold text-accent">
               {bt("지금 단계", "Current")}
             </span>
           ) : null}
@@ -213,7 +213,7 @@ export function ProductionProjectNav({
           {bt("화면 전환 · 제작 단계와 관리", "Switch screen · stages and management")}
           <ChevronDown className="size-4 shrink-0 transition-transform group-open/project-menu:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
         </summary>
-      <p className="hidden px-5 pt-1 text-[0.6875rem] font-black uppercase tracking-[0.14em] text-fg-3 lg:block">
+      <p className="hidden px-5 pt-1 text-xs font-medium text-fg-3 lg:block">
         {bt("제작 단계", "Stages")}
       </p>
       <div className="space-y-1 px-2 pb-2 pt-1 lg:px-3">

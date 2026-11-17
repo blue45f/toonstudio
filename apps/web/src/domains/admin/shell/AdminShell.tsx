@@ -97,7 +97,7 @@ function AdminNavigation({
                   aria-expanded={expanded}
                   aria-controls={listId}
                   onClick={() => toggleGroup(group.id)}
-                  className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-fg-3 transition-colors hover:bg-raised/60 hover:text-fg"
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-xs font-semibold text-fg-3 transition-colors hover:bg-raised/60 hover:text-fg"
                 >
                   <span>{copy.groups[group.id]}</span>
                   <ChevronDown
