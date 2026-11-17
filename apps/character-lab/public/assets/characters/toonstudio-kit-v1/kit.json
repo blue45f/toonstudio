@@ -2571,7 +2571,7 @@
       "file": {
         "path": "bases/female.glb",
         "bytes": 11781396,
-        "sha256": "372ae569189318a60bd662676cd426fd7ca703e601e72e533c5f14cec446a033"
+        "sha256": "d838f32e552996437757d095f8c6f874dfceacfe4143c853917fe8599727d7e4"
       },
       "heightM": 1.6465,
       "boundsM": {
@@ -3002,7 +3002,7 @@
       "file": {
         "path": "bases/male.glb",
         "bytes": 11420344,
-        "sha256": "ba963ac48d802762aa4ddebc2b4545948b75e9c725a52252ebf643a60535a189"
+        "sha256": "a51db873ae96753b630208fb582e6e8699ee894a1e191dc07ce501a67422ba70"
       },
       "heightM": 1.6444,
       "boundsM": {

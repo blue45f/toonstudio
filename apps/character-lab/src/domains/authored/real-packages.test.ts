@@ -1,5 +1,5 @@
 /**
- * 실제 제작 패키지 4종(public/assets/characters)을 fs 포트로 끝까지 로드한다.
+ * 실제 제작 패키지 9종(public/assets/characters)을 fs 포트로 끝까지 로드한다.
  * GLB 바이트의 SHA-256을 Node crypto로 계산해 manifest·index 값과 대조하고, 규칙 판정과 Blender 레인 선언(slot-mapping.json)을 비교한다.
  */
 import { createHash } from "node:crypto";
@@ -52,7 +52,7 @@ async function loadIndexEntries(): Promise<readonly AuthoredIndexEntry[]> {
 }
 
 describe("authored/real-packages (public/assets/characters)", () => {
-  it("index.json은 Orion(primary)·reference·tripo-h31·shaper-atelier 2종까지 다섯 항목을 낸다", async () => {
+  it("index.json은 Orion(primary)·reference·tripo-h31·한국형 웹툰 Shaper 6종까지 아홉 항목을 낸다", async () => {
     const entries = await loadIndexEntries();
     expect(entries.map((entry) => entry.characterId)).toEqual([
       "avatar-orion-authored",
@@ -60,6 +60,10 @@ describe("authored/real-packages (public/assets/characters)", () => {
       "tripo-h31-rigged-webtoon",
       "shaper-atelier-protagonist",
       "shaper-atelier-male-lead",
+      "shaper-rofan-empress",
+      "shaper-murim-swordmaster",
+      "shaper-cyber-idol",
+      "shaper-noir-duke",
     ]);
     expect(entries[0]?.primary).toBe(true);
     expect(entries[0]?.manifestFormat).toBe("authored-character");
@@ -68,9 +72,14 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(entries[1]?.summary.skeleton).toBe(false);
     expect(entries[2]?.summary.skeleton).toBe(true);
     expect(entries[3]?.summary.skeleton).toBe(true);
-    expect(entries[3]?.summary.hairLodTriangles).toEqual([3296, 1712, 948]);
+    expect(entries[3]?.summary.hairLodTriangles).toEqual([5839, 2714, 900]);
     expect(entries[4]?.summary.skeleton).toBe(true);
-    expect(entries[4]?.summary.hairLodTriangles).toEqual([4176, 1596, 846]);
+    expect(entries[4]?.summary.hairLodTriangles).toEqual([4382, 2107, 672]);
+    for (const entry of entries.slice(3)) {
+      expect(entry.contactSheetUrl).toBe(`/assets/characters/${entry.characterId}/contact-sheet.png`);
+      expect(entry.summary.skeleton).toBe(true);
+      expect(entry.summary.semanticShapeKeys).toBe(24);
+    }
   });
 
   it("Orion: GLB 실측 SHA-256 = manifest·index 값, 플랜·매핑·능력 판정이 선언과 ears·accessory만 다르다", async () => {
@@ -180,55 +189,67 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(comparison.divergent).toEqual([]);
   });
 
-  it("shaper-atelier-protagonist: Blender 5.2 제작 7.5등신 주인공(55본·24 의미축·12 FACS·3-LOD 헤어·분리형 의상 4종)이 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async () => {
+  it.each([
+    {
+      id: "shaper-atelier-protagonist",
+      sha: "ebbfbe6b082484d039daf41f99a30da920551c2824f4ce83f8484bf374658854",
+      bytes: 2_580_476,
+      hairStyle: "wolf-layered",
+      lod: [5839, 2714, 900],
+    },
+    {
+      id: "shaper-atelier-male-lead",
+      sha: "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e",
+      bytes: 2_303_868,
+      hairStyle: "short-layered",
+      lod: [4382, 2107, 672],
+    },
+    {
+      id: "shaper-rofan-empress",
+      sha: "a5ab43ccf0f0c27cb2d38bc7de63f4c5e0cbfd58456e15842a728b4b3ce286bb",
+      bytes: 2_524_596,
+      hairStyle: "romance-long",
+      lod: [5179, 2725, 983],
+    },
+    {
+      id: "shaper-murim-swordmaster",
+      sha: "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792",
+      bytes: 2_185_668,
+      hairStyle: "action-pony",
+      lod: [3880, 2161, 830],
+    },
+    {
+      id: "shaper-cyber-idol",
+      sha: "6c947886d41b3558536ec6c3497f8d6ec67737edd0c8ff6f86f7e5bbbd0899be",
+      bytes: 2_483_212,
+      hairStyle: "twin-tail",
+      lod: [5739, 3192, 1421],
+    },
+    {
+      id: "shaper-noir-duke",
+      sha: "f2bf5ea1a830bed12ed4b3f15e76ceb866c47b4521d0b074b0b9c58470bde0db",
+      bytes: 2_477_584,
+      hairStyle: "wolf-layered",
+      lod: [5536, 2603, 854],
+    },
+  ])("$id: Blender 5.3 제작 한국형 웹툰 리깅 패키지(55본·24 의미축·12 FACS·3-LOD 헤어)가 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async ({ id, sha, bytes, hairStyle, lod }) => {
     const entries = await loadIndexEntries();
-    const shaper = entries.find((entry) => entry.characterId === "shaper-atelier-protagonist");
-    if (!shaper) throw new Error("shaper-atelier-protagonist");
-    const loaded = await loadAuthoredPackageFlow(fsPort(), shaper, { sha256, now: 1 });
+    const entry = entries.find((candidate) => candidate.characterId === id);
+    if (!entry) throw new Error(id);
+    expect(entry.summary.hairLodTriangles).toEqual(lod);
+    const loaded = await loadAuthoredPackageFlow(fsPort(), entry, { sha256, now: 1 });
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     const { plan, detail } = loaded;
-    expect(detail.observedSha256).toBe("9b3a89fc2725be591bc05fea6ba8c5f737dd4ece5991d6473900b6f915f06341");
-    expect(plan.glbBytes).toBe(1_010_448);
+    expect(detail.observedSha256).toBe(sha);
+    expect(plan.glbBytes).toBe(bytes);
     expect(detail.warnings).toEqual([]);
     expect(Object.values(plan.boneMap)).toHaveLength(55);
     expect(detail.judgement.mappings.bones.required.missing).toEqual([]);
     expect(detail.judgement.mappings.bones.fingers.missing).toEqual([]);
     expect(plan.boneMap["TS_ShaperEye.L"]).toBe("leftEye");
     expect(plan.boneMap["TS_ShaperEye.R"]).toBe("rightEye");
-    expect(plan.meshRoles.TS_Top_blazer).toBe("top");
-    expect(plan.meshRoles["TS_Bottom_pleated-skirt"]).toBe("bottom");
-    expect(plan.meshRoles.TS_Shoes_loafers).toBe("shoes");
-    expect(plan.meshRoles.TS_Accessory_ribbon).toBe("accessory");
-    expect(detail.hairLod).toMatchObject({ style: "wolf-layered", lods: [0, 1, 2], chosen: 0 });
-    expect(detail.judgement.facsUnits.length).toBeGreaterThanOrEqual(12);
-    const unavailableSlots = CHARACTER_SLOT_KINDS.filter((slot) => plan.capabilities[slot].status === "unavailable");
-    expect(unavailableSlots).toEqual([]);
-    const comparison = compareCapabilities(detail.judgement.ruleOnly, plan.capabilities);
-    expect(comparison.divergent).toEqual([]);
-  });
-
-  it("shaper-atelier-male-lead: Blender 5.2 제작 8등신 남주인공(55본·24 의미축·12 FACS·3-LOD 헤어·분리형 의상 4종)이 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async () => {
-    const entries = await loadIndexEntries();
-    const maleLead = entries.find((entry) => entry.characterId === "shaper-atelier-male-lead");
-    if (!maleLead) throw new Error("shaper-atelier-male-lead");
-    const loaded = await loadAuthoredPackageFlow(fsPort(), maleLead, { sha256, now: 1 });
-    expect(loaded.ok).toBe(true);
-    if (!loaded.ok) return;
-    const { plan, detail } = loaded;
-    expect(detail.observedSha256).toBe("34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18");
-    expect(plan.glbBytes).toBe(631_088);
-    expect(detail.warnings).toEqual([]);
-    expect(Object.values(plan.boneMap)).toHaveLength(55);
-    expect(detail.judgement.mappings.bones.required.missing).toEqual([]);
-    expect(detail.judgement.mappings.bones.fingers.missing).toEqual([]);
-    expect(plan.boneMap["TS_ShaperEye.L"]).toBe("leftEye");
-    expect(plan.boneMap["TS_ShaperEye.R"]).toBe("rightEye");
-    expect(plan.meshRoles["TS_Top_trench-coat"]).toBe("top");
-    expect(plan.meshRoles.TS_Bottom_slacks).toBe("bottom");
-    expect(plan.meshRoles.TS_Shoes_boots).toBe("shoes");
-    expect(plan.meshRoles.TS_Accessory_earring).toBe("accessory");
-    expect(detail.hairLod).toMatchObject({ style: "short-layered", lods: [0, 1, 2], chosen: 0 });
+    expect(detail.hairLod).toMatchObject({ style: hairStyle, lods: [0, 1, 2], chosen: 0 });
     expect(detail.judgement.facsUnits.length).toBeGreaterThanOrEqual(12);
     const unavailableSlots = CHARACTER_SLOT_KINDS.filter((slot) => plan.capabilities[slot].status === "unavailable");
     expect(unavailableSlots).toEqual([]);

@@ -90,8 +90,12 @@ describe("PackagePanel", () => {
     await screen.findByText("Avatar Orion · Authored Toon");
     expect(screen.getByText("ToonStudio Reference Character")).toBeTruthy();
     expect(screen.getByText("Tripo Studio H3.1 · SHAPER Rigged Webtoon")).toBeTruthy();
-    expect(screen.getByText("SHAPER Atelier · Webtoon Protagonist (7.5등신 풀파츠)")).toBeTruthy();
-    expect(screen.getByText("SHAPER Atelier · Male Lead Hunter (8등신 풀파츠)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Webtoon Protagonist (7.5등신 학원 로맨스)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Male Lead Hunter (8등신 판타지 헌터)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Rofan Imperial Empress (로판 황녀 쿠튀르)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Murim Azure Swordmaster (무협 청운 검존)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Cyber K-Pop Center Idol (네온 스테이지 아이돌)")).toBeTruthy();
+    expect(screen.getByText("SHAPER Atelier · Northern Cold Duke (북부대공 느와르 코트)")).toBeTruthy();
     expect(screen.getByText("주 캐릭터")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Avatar Orion · Authored Toon 불러오기" }));
     await waitFor(() => expect(screen.getByRole("table")).toBeTruthy(), { timeout: 15000 });

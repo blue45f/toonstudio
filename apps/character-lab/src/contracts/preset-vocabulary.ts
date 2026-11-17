@@ -43,7 +43,7 @@ export type ExpressionPresetName = SlotPresetIds["expression"][number];
 export type PosePresetName = SlotPresetIds["pose"][number];
 export type HandPosePresetName = SlotPresetIds["hand-pose"][number];
 
-/** Blender kit가 제작하는 헤어 스타일(앞 6개). `twin-tail`은 절차 소스 전용. */
+/** Blender kit 및 Shaper Atelier 파이프라인이 제작하는 헤어 스타일(7종 전체). */
 export const BLENDER_HAIR_STYLE_IDS: readonly HairStyleId[] = [
   "short-layered",
   "soft-bob",
@@ -51,6 +51,7 @@ export const BLENDER_HAIR_STYLE_IDS: readonly HairStyleId[] = [
   "action-pony",
   "hime-cut",
   "wolf-layered",
+  "twin-tail",
 ];
 
 /** 슬롯별 최소 프리셋 개수(카탈로그 불변식) */

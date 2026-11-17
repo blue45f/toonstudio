@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.character-lab.authored-character-index/1",
-  "generatedAt": "2026-10-01",
+  "generatedAt": "2026-11-17",
   "baseUrl": "/assets/characters/",
   "primary": "avatar-orion-authored",
   "characters": [
@@ -114,79 +114,235 @@
     },
     {
       "id": "shaper-atelier-protagonist",
-      "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 풀파츠)",
+      "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 학원 로맨스)",
       "role": "shaper-flagship",
       "license": "CC0-1.0",
-      "generatedAt": "2026-11-12",
+      "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 4,
+      "textures": 5,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        3296,
-        1712,
-        948
+        5839,
+        2714,
+        900
       ],
-      "glbTriangles": 14538,
+      "glbTriangles": 44533,
       "files": {
         "glb": {
           "path": "shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
-          "bytes": 1010448,
-          "sha256": "9b3a89fc2725be591bc05fea6ba8c5f737dd4ece5991d6473900b6f915f06341"
+          "bytes": 2580476,
+          "sha256": "ebbfbe6b082484d039daf41f99a30da920551c2824f4ce83f8484bf374658854"
         },
         "manifest": {
           "path": "shaper-atelier-protagonist/manifest.json",
-          "bytes": 37153,
-          "sha256": "b43d7e905afe1234dcda498b97816ee255d46a591903a566f2f3917b0c56cfdd"
+          "bytes": 37626,
+          "sha256": "50b4c4f825137b29a1b63ac8636574c183ea85ba5c0844b6e2d2d65a4a5b0934"
         },
         "slotMapping": {
           "path": "shaper-atelier-protagonist/slot-mapping.json",
           "bytes": 4257,
-          "sha256": "0416a065cb95a289fe0897491caabcde6642ae895b6105643e7123751d31920e"
+          "sha256": "fa2f676dd9579ceb72ea0cdbdf1835d7de667046c998ee028d076fe994876bf2"
         },
         "contactSheet": {
           "path": "shaper-atelier-protagonist/contact-sheet.png",
-          "bytes": 516884,
-          "sha256": "1599ebcc4329e272af031d4014f4cb4eccd5edda92b267cd865faae265762d2d"
+          "bytes": 1342098,
+          "sha256": "ccdc652a649355d51c688c9b475d758543bd50d7609e3fc917334a5da847c844"
         }
       }
     },
     {
       "id": "shaper-atelier-male-lead",
-      "displayName": "SHAPER Atelier · Male Lead Hunter (8등신 풀파츠)",
+      "displayName": "SHAPER Atelier · Male Lead Hunter (8등신 판타지 헌터)",
       "role": "shaper-male-lead",
       "license": "CC0-1.0",
-      "generatedAt": "2026-11-12",
+      "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 4,
+      "textures": 5,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        4176,
-        1596,
-        846
+        4382,
+        2107,
+        672
       ],
-      "glbTriangles": 13502,
+      "glbTriangles": 37891,
       "files": {
         "glb": {
           "path": "shaper-atelier-male-lead/shaper-atelier-male-lead.glb",
-          "bytes": 631088,
-          "sha256": "34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18"
+          "bytes": 2303868,
+          "sha256": "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e"
         },
         "manifest": {
           "path": "shaper-atelier-male-lead/manifest.json",
-          "bytes": 36814,
-          "sha256": "7a58c67545807a0650ae68d3b91412686f950f255a0a5b3d0d1c24c2f693f731"
+          "bytes": 37620,
+          "sha256": "e78ff1792247295df69d6420d7fb523f7b664d862a15706e2a40e0a6ea34f128"
         },
         "slotMapping": {
           "path": "shaper-atelier-male-lead/slot-mapping.json",
           "bytes": 4251,
-          "sha256": "0c861886a2cf7914f67a1e106afa79d4a9ca4239cb4d7fe2719263ef254b44c9"
+          "sha256": "3d74980d6e80d362cb0aa94c5c07db3e0e46672c66f71adfdca1d6d1ab345cd9"
         },
         "contactSheet": {
           "path": "shaper-atelier-male-lead/contact-sheet.png",
-          "bytes": 177918,
-          "sha256": "b45eb1872d85985c0a0f72ba400ab27f27b8524acf082e5bd855303ad59a2690"
+          "bytes": 1280858,
+          "sha256": "cc9f213114ab894818bd4f791b3a900d609f4388651169618076b2d24e0fa362"
+        }
+      }
+    },
+    {
+      "id": "shaper-rofan-empress",
+      "displayName": "SHAPER Atelier · Rofan Imperial Empress (로판 황녀 쿠튀르)",
+      "role": "shaper-rofan",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 5,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5179,
+        2725,
+        983
+      ],
+      "glbTriangles": 43491,
+      "files": {
+        "glb": {
+          "path": "shaper-rofan-empress/shaper-rofan-empress.glb",
+          "bytes": 2524596,
+          "sha256": "a5ab43ccf0f0c27cb2d38bc7de63f4c5e0cbfd58456e15842a728b4b3ce286bb"
+        },
+        "manifest": {
+          "path": "shaper-rofan-empress/manifest.json",
+          "bytes": 37588,
+          "sha256": "bba120b278d6a6607e8864bd7e4a9a7c62ae413d8abc345487e913330e64eb41"
+        },
+        "slotMapping": {
+          "path": "shaper-rofan-empress/slot-mapping.json",
+          "bytes": 4261,
+          "sha256": "408d7921a76a2eb41e219d70a57c26e836ab72529d0450b2f6eba28a48015591"
+        },
+        "contactSheet": {
+          "path": "shaper-rofan-empress/contact-sheet.png",
+          "bytes": 1371349,
+          "sha256": "3a063fc7ab29b14cb1d37589b74f908e8550ba8f87139c2ae40b3907a1f97cc0"
+        }
+      }
+    },
+    {
+      "id": "shaper-murim-swordmaster",
+      "displayName": "SHAPER Atelier · Murim Azure Swordmaster (무협 청운 검존)",
+      "role": "shaper-murim",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 5,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        3880,
+        2161,
+        830
+      ],
+      "glbTriangles": 35860,
+      "files": {
+        "glb": {
+          "path": "shaper-murim-swordmaster/shaper-murim-swordmaster.glb",
+          "bytes": 2185668,
+          "sha256": "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792"
+        },
+        "manifest": {
+          "path": "shaper-murim-swordmaster/manifest.json",
+          "bytes": 37577,
+          "sha256": "6d6cf7bcc8b5d468a91536da4a887981d90f32fc8795b0ee5012e856620cc186"
+        },
+        "slotMapping": {
+          "path": "shaper-murim-swordmaster/slot-mapping.json",
+          "bytes": 4255,
+          "sha256": "5df3d8dcc5068147b39243535989d22d652c1be5410997a4de74e7af8f9a8a90"
+        },
+        "contactSheet": {
+          "path": "shaper-murim-swordmaster/contact-sheet.png",
+          "bytes": 1325895,
+          "sha256": "0b238fc99832ce9c8b7fc9307a5826f3ea146624b69314ac1274f94832d99a76"
+        }
+      }
+    },
+    {
+      "id": "shaper-cyber-idol",
+      "displayName": "SHAPER Atelier · Cyber K-Pop Center Idol (네온 스테이지 아이돌)",
+      "role": "shaper-idol",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 5,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5739,
+        3192,
+        1421
+      ],
+      "glbTriangles": 42738,
+      "files": {
+        "glb": {
+          "path": "shaper-cyber-idol/shaper-cyber-idol.glb",
+          "bytes": 2483212,
+          "sha256": "6c947886d41b3558536ec6c3497f8d6ec67737edd0c8ff6f86f7e5bbbd0899be"
+        },
+        "manifest": {
+          "path": "shaper-cyber-idol/manifest.json",
+          "bytes": 37581,
+          "sha256": "7348e7e3d748f52908a64c1f4d03becad69f9dd9eb538cbfdae338f1194de830"
+        },
+        "slotMapping": {
+          "path": "shaper-cyber-idol/slot-mapping.json",
+          "bytes": 4258,
+          "sha256": "f58fadf3a2ea3099ef0b4a94f45d8b8e44864b7d3cecae666eb73362888cce39"
+        },
+        "contactSheet": {
+          "path": "shaper-cyber-idol/contact-sheet.png",
+          "bytes": 1404848,
+          "sha256": "0b29db143c6bfae63588846c418706c2d8e540542c8dd6cb1d6afbab6f0ed013"
+        }
+      }
+    },
+    {
+      "id": "shaper-noir-duke",
+      "displayName": "SHAPER Atelier · Northern Cold Duke (북부대공 느와르 코트)",
+      "role": "shaper-noir",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 5,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5536,
+        2603,
+        854
+      ],
+      "glbTriangles": 42355,
+      "files": {
+        "glb": {
+          "path": "shaper-noir-duke/shaper-noir-duke.glb",
+          "bytes": 2477584,
+          "sha256": "f2bf5ea1a830bed12ed4b3f15e76ceb866c47b4521d0b074b0b9c58470bde0db"
+        },
+        "manifest": {
+          "path": "shaper-noir-duke/manifest.json",
+          "bytes": 37568,
+          "sha256": "62899ca26c627c00eda59c5b24ea0495a4bfbf01062a16ab9dad8fc9b35c1dc0"
+        },
+        "slotMapping": {
+          "path": "shaper-noir-duke/slot-mapping.json",
+          "bytes": 4259,
+          "sha256": "d2dff4334bc89bd89241f389d4512afdbf27d882329067833c5226f9145b97a5"
+        },
+        "contactSheet": {
+          "path": "shaper-noir-duke/contact-sheet.png",
+          "bytes": 1346495,
+          "sha256": "1e08056842ee20777dead05e4e8b47be1216537a4e9c070c52ca68c17d36b5a7"
         }
       }
     }

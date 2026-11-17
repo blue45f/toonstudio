@@ -79,7 +79,7 @@ export const STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT: readonly StudioHybridDccPreci
     },
   ]);
 
-/** Blender 5.2 아티잔 아틀리에 V15(4종, CC0-1.0) — 두상 조형·아스트롤라베 소품·온실 가제보·제도 이젤. */
+/** Blender 5.3 아티잔 아틀리에 V15(8종, CC0-1.0) — 웹툰 남녀 두상 조형·아스트롤라베·온실 가제보·이젤·황실 다과상·마도서 제단·아이돌 마이크. */
 export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
   Object.freeze([
     {
@@ -87,9 +87,18 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
       fileName: "webtoon-stylized-protagonist-bust-v15.glb",
       glbUrl: "/studio-assets/blender-artisan-v15/webtoon-stylized-protagonist-bust-v15.glb",
       previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-stylized-protagonist-bust-v15.png",
-      label: ["스타일라이즈 주인공 흉상", "Stylized protagonist bust"],
-      hint: ["웹툰 두상 조형 기준·눈동자·헤어 매스", "Webtoon bust with iris and hair masses"],
-      triangles: 16772,
+      label: ["스타일라이즈 여주인공 흉상", "Stylized heroine bust"],
+      hint: ["7.5등신 두상 조형·홍채·레이어드 헤어", "Heroine bust with jewel iris & bangs"],
+      triangles: 25024,
+    },
+    {
+      id: "webtoon-male-lead-hunter-bust-v15",
+      fileName: "webtoon-male-lead-hunter-bust-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-male-lead-hunter-bust-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-male-lead-hunter-bust-v15.png",
+      label: ["판타지 헌터 남주인공 흉상", "Hunter male-lead bust"],
+      hint: ["8등신 샤프 턱선·하이칼라 코트·견장", "Sharp jawline, high-collar coat & clasp"],
+      triangles: 21436,
     },
     {
       id: "webtoon-celestial-ink-astrolabe-turntable-v15",
@@ -97,7 +106,7 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
       glbUrl: "/studio-assets/blender-artisan-v15/webtoon-celestial-ink-astrolabe-turntable-v15.glb",
       previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png",
       label: ["천상 먹빛 아스트롤라베", "Celestial ink astrolabe"],
-      hint: ["황동 링·먹빛 원판·회전대", "Brass rings, ink dial & turntable"],
+      hint: ["삼중 황동 짐벌 링·먹빛 성좌판·회전대", "Triple brass gimbal rings & ink dial"],
       triangles: 9856,
     },
     {
@@ -106,7 +115,7 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
       glbUrl: "/studio-assets/blender-artisan-v15/webtoon-royal-conservatory-dome-gazebo-v15.glb",
       previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-royal-conservatory-dome-gazebo-v15.png",
       label: ["로열 온실 돔 가제보", "Royal conservatory gazebo"],
-      hint: ["유리 돔·청동 프레임·석조 기단", "Glass dome, bronze frame & limestone base"],
+      hint: ["유리 리브 돔·청동 아치·석조 기단", "Ribbed glass dome, arches & plinth"],
       triangles: 12528,
     },
     {
@@ -115,8 +124,35 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
       glbUrl: "/studio-assets/blender-artisan-v15/webtoon-artisan-drafting-easel-lamp-v15.glb",
       previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png",
       label: ["아티잔 제도 이젤·작업등", "Artisan drafting easel & lamp"],
-      hint: ["원목 이젤·관절 황동 램프·도면", "Oak easel, articulated brass lamp & sheet"],
-      triangles: 2456,
+      hint: ["원목 H-이젤·관절 황동 램프·원고지", "Oak H-frame easel & articulated lamp"],
+      triangles: 2780,
+    },
+    {
+      id: "webtoon-rofan-imperial-tea-carriage-table-v15",
+      fileName: "webtoon-rofan-imperial-tea-carriage-table-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-rofan-imperial-tea-carriage-table-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-rofan-imperial-tea-carriage-table-v15.png",
+      label: ["로판 황실 티파티 다과 테이블", "Imperial tea-party table"],
+      hint: ["3단 애프터눈 티 스탠드·백자 티팟·찻잔", "3-tier gilded stand, teapot & teacups"],
+      triangles: 5524,
+    },
+    {
+      id: "webtoon-arcane-grimoire-magic-circle-pedestal-v15",
+      fileName: "webtoon-arcane-grimoire-magic-circle-pedestal-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-arcane-grimoire-magic-circle-pedestal-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-arcane-grimoire-magic-circle-pedestal-v15.png",
+      label: ["아케인 마도서·마법진 성소 제단", "Arcane grimoire pedestal"],
+      hint: ["8각 룬 석조 제단·펼친 마도서·마나 수정", "Octagonal rune altar, open tome & crystals"],
+      triangles: 5120,
+    },
+    {
+      id: "webtoon-kpop-stage-crown-mic-stand-v15",
+      fileName: "webtoon-kpop-stage-crown-mic-stand-v15.glb",
+      glbUrl: "/studio-assets/blender-artisan-v15/webtoon-kpop-stage-crown-mic-stand-v15.glb",
+      previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-kpop-stage-crown-mic-stand-v15.png",
+      label: ["아이돌 크라운 스탠드 마이크", "K-pop crown stage mic stand"],
+      hint: ["크라운 스타 가드·네온 링 베이스·리본", "Star-crown mic capsule & stage ring base"],
+      triangles: 3788,
     },
   ]);
 
@@ -289,4 +325,78 @@ export function buildOctagonalPillarMesh(): StudioEditableMesh {
     faces.push([ring(last, s), ring(last, s + 1), topPole]);
   }
   return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), false);
+}
+
+/** 5. 리브 온실 돔 (12각 몰딩 드럼 기단 + 반구형 리브 돔, χ=2 수밀). */
+export function buildRibbedConservatoryDomeMesh(): StudioEditableMesh {
+  const segs = 12;
+  const stations: ReadonlyArray<{ readonly y: number; readonly r: number }> = [
+    { y: -0.46, r: 0.64 },
+    { y: -0.34, r: 0.64 },
+    { y: -0.28, r: 0.58 },
+    { y: -0.10, r: 0.58 },
+    { y: 0.08, r: 0.54 },
+    { y: 0.24, r: 0.44 },
+    { y: 0.37, r: 0.29 },
+    { y: 0.45, r: 0.13 },
+  ];
+  const positions: StudioMeshVec3[] = [vec(0, -0.46, 0)];
+  for (const st of stations) {
+    for (let s = 0; s < segs; s += 1) {
+      const theta = (s * Math.PI * 2) / segs;
+      const rib = st.y > -0.10 && s % 2 === 0 ? 1.035 : 1.0;
+      positions.push(vec(st.r * rib * Math.cos(theta), st.y, -st.r * rib * Math.sin(theta)));
+    }
+  }
+  const topPole = positions.length;
+  positions.push(vec(0, 0.50, 0));
+  const ring = (r: number, s: number): number => 1 + r * segs + (s % segs);
+  const faces: number[][] = [];
+  for (let s = 0; s < segs; s += 1) faces.push([0, ring(0, s + 1), ring(0, s)]);
+  for (let r = 0; r < stations.length - 1; r += 1) {
+    for (let s = 0; s < segs; s += 1) {
+      faces.push([ring(r, s), ring(r, s + 1), ring(r + 1, s + 1), ring(r + 1, s)]);
+    }
+  }
+  const last = stations.length - 1;
+  for (let s = 0; s < segs; s += 1) faces.push([ring(last, s), ring(last, s + 1), topPole]);
+  return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), true);
+}
+
+/** 6. 선반 세공 성배·화병 기단 (12각 발판·밸러스터 스템·오목 보울 회전체, χ=2 수밀). */
+export function buildTurnedGobletPedestalMesh(): StudioEditableMesh {
+  const segs = 12;
+  const stations: ReadonlyArray<{ readonly y: number; readonly r: number }> = [
+    { y: -0.50, r: 0.30 },
+    { y: -0.44, r: 0.30 },
+    { y: -0.38, r: 0.12 },
+    { y: -0.18, r: 0.085 },
+    { y: -0.08, r: 0.135 },
+    { y: 0.02, r: 0.095 },
+    { y: 0.18, r: 0.28 },
+    { y: 0.42, r: 0.35 },
+    { y: 0.48, r: 0.37 },
+    { y: 0.44, r: 0.31 },
+    { y: 0.20, r: 0.22 },
+  ];
+  const positions: StudioMeshVec3[] = [vec(0, -0.50, 0)];
+  for (const st of stations) {
+    for (let s = 0; s < segs; s += 1) {
+      const theta = (s * Math.PI * 2) / segs;
+      positions.push(vec(st.r * Math.cos(theta), st.y, -st.r * Math.sin(theta)));
+    }
+  }
+  const innerWellPole = positions.length;
+  positions.push(vec(0, 0.12, 0));
+  const ring = (r: number, s: number): number => 1 + r * segs + (s % segs);
+  const faces: number[][] = [];
+  for (let s = 0; s < segs; s += 1) faces.push([0, ring(0, s + 1), ring(0, s)]);
+  for (let r = 0; r < stations.length - 1; r += 1) {
+    for (let s = 0; s < segs; s += 1) {
+      faces.push([ring(r, s), ring(r, s + 1), ring(r + 1, s + 1), ring(r + 1, s)]);
+    }
+  }
+  const last = stations.length - 1;
+  for (let s = 0; s < segs; s += 1) faces.push([ring(last, s), ring(last, s + 1), innerWellPole]);
+  return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), true);
 }

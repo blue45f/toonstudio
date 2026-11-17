@@ -617,6 +617,14 @@ export function PackagePanel({
                 data-character-id={entry.characterId}
                 data-selected={isSelectedPackage ? "true" : "false"}
               >
+                {entry.contactSheetUrl ? (
+                  <img
+                    src={entry.contactSheetUrl}
+                    alt={`${entry.displayName} 4면도 스튜디오 프리뷰`}
+                    loading="lazy"
+                    className="cl-package-contact-thumb"
+                  />
+                ) : null}
                 <div className="cl-package-item-head">
                   <strong>{entry.displayName}</strong>
                   {isSelectedPackage ? (

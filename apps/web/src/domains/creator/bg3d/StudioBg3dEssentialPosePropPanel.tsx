@@ -88,7 +88,7 @@ export function StudioBg3dEssentialPosePropPanel({
     <section
       data-testid="bg3d-essential-pose-prop-panel"
       aria-label="필수 포즈 마네킹 및 히어로 소품 라이브러리"
-      className="mt-3 rounded-xl border border-line bg-card/60 p-3"
+      className="mt-3 rounded-xl border border-line bg-card/85 p-3 tabular-nums"
     >
       <div className="flex items-center justify-between gap-2">
         <div>
@@ -96,7 +96,7 @@ export function StudioBg3dEssentialPosePropPanel({
             3D 인체 포즈 마네킹 · 필수 건축/히어로/오리지널 소품 ({STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG.length}종)
           </h4>
           <p className="mt-0.5 text-[0.62rem] text-fg-3">
-            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · V15 아티잔 4종 · 오리지널 68종 (CC0 1.0)
+            포즈 마네킹 8종 · 필수 건축 8종 · V8 히어로 11종 · V9 킷배시 6종 · V10 배경소품 8종 · V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · V15 아티잔 8종 · 오리지널 68종 (CC0 1.0)
           </p>
         </div>
         <button
@@ -207,7 +207,7 @@ export function StudioBg3dEssentialPosePropPanel({
                 <div
                   key={entry.id}
                   data-testid={`bg3d-essential-item-${entry.id}`}
-                  className="flex flex-col justify-between gap-1.5 rounded-lg border border-line bg-panel p-2"
+                  className="flex flex-col justify-between gap-2 rounded-lg border border-line bg-panel p-2.5 transition-colors hover:border-accent/45"
                 >
                   <div className="flex items-center gap-2">
                     {entry.previewUrl ? (
@@ -215,7 +215,7 @@ export function StudioBg3dEssentialPosePropPanel({
                         src={entry.previewUrl}
                         alt={entry.labelKo}
                         loading="lazy"
-                        className="size-10 shrink-0 rounded border border-line/60 bg-card object-contain"
+                        className="size-12 shrink-0 rounded-md border border-line/75 bg-card p-0.5 object-contain"
                       />
                     ) : (
                       <div

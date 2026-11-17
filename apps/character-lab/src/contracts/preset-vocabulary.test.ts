@@ -22,8 +22,8 @@ describe("contracts/preset-vocabulary", () => {
   });
 
   it("Blender HairStyle 6종이 헤어 어휘 앞 6개와 같다", () => {
-    expect(BLENDER_HAIR_STYLE_IDS).toEqual(["short-layered", "soft-bob", "romance-long", "action-pony", "hime-cut", "wolf-layered"]);
-    expect(SLOT_PRESET_IDS.hair.slice(0, 6)).toEqual(BLENDER_HAIR_STYLE_IDS);
+    expect(BLENDER_HAIR_STYLE_IDS).toEqual(["short-layered", "soft-bob", "romance-long", "action-pony", "hime-cut", "wolf-layered", "twin-tail"]);
+    expect(SLOT_PRESET_IDS.hair).toEqual(BLENDER_HAIR_STYLE_IDS);
   });
 
   it("외형 12슬롯 어휘 합이 64개다", () => {

@@ -15,6 +15,8 @@ import {
   buildDoorwayPortalWallMesh,
   buildMoldedPlinthMesh,
   buildOctagonalPillarMesh,
+  buildRibbedConservatoryDomeMesh,
+  buildTurnedGobletPedestalMesh,
   buildWindowWallModuleMesh,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
@@ -44,6 +46,8 @@ export type StudioHybridDccStarterPrimitiveKind =
   | "window-wall"
   | "doorway-frame"
   | "molded-plinth"
+  | "ribbed-dome"
+  | "turned-goblet"
   | "stairs"
   | "grid";
 
@@ -120,6 +124,8 @@ export const STUDIO_HYBRID_DCC_STARTER_PRIMITIVES: readonly StudioHybridDccStart
     { kind: "window-wall", assetPrefix: "asset-window-wall", label: ["창호 개구부 벽", "Window wall"], hint: ["2.0m 창턱 내장 수밀 벽체", "Watertight window wall"] },
     { kind: "doorway-frame", assetPrefix: "asset-doorway-frame", label: ["문틀 포털 벽", "Doorway wall"], hint: ["문설주·상인방·문지방 벽체", "Watertight portal wall"] },
     { kind: "molded-plinth", assetPrefix: "asset-molded-plinth", label: ["다단 몰딩 기단", "Molded plinth"], hint: ["제단·동상·외벽 코니스 기단", "Multi-stepped plinth"] },
+    { kind: "ribbed-dome", assetPrefix: "asset-ribbed-dome", label: ["리브 온실 돔", "Ribbed dome"], hint: ["12각 드럼 기단·반구형 지붕 돔", "12-rib watertight architectural dome"] },
+    { kind: "turned-goblet", assetPrefix: "asset-turned-goblet", label: ["세공 성배·화병", "Turned goblet"], hint: ["로판 다과·성소 의식용 선반 기물", "Watertight lathe chalice & urn"] },
     {
       kind: "stairs",
       assetPrefix: "asset-stairs",
@@ -677,6 +683,10 @@ export function createStudioHybridDccStarterPrimitiveMesh(
       return buildDoorwayPortalWallMesh();
     case "molded-plinth":
       return buildMoldedPlinthMesh();
+    case "ribbed-dome":
+      return buildRibbedConservatoryDomeMesh();
+    case "turned-goblet":
+      return buildTurnedGobletPedestalMesh();
     case "stairs":
       return buildStairsMesh();
   }

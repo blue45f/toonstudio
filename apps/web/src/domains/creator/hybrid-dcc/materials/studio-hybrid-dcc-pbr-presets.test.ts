@@ -8,7 +8,7 @@ import {
 
 describe("studio-hybrid-dcc-pbr-presets", () => {
   it("모든 프리셋이 이진 금속도(0 또는 1)와 유효한 clearcoat·sheen·ior 범위를 지킨다", () => {
-    expect(STUDIO_HYBRID_DCC_PBR_PRESETS).toHaveLength(6);
+    expect(STUDIO_HYBRID_DCC_PBR_PRESETS).toHaveLength(8);
     for (const preset of STUDIO_HYBRID_DCC_PBR_PRESETS) {
       expect([0, 1]).toContain(preset.metalness);
       expect(preset.roughness).toBeGreaterThanOrEqual(0.05);
@@ -40,6 +40,14 @@ describe("studio-hybrid-dcc-pbr-presets", () => {
     const fabric = resolveStudioHybridDccPhysicalProps("matte-fabric", "#a0a0a0", false);
     expect(fabric.metalness).toBe(0);
     expect(fabric.sheen).toBeGreaterThan(0.4);
+
+    const porcelain = resolveStudioHybridDccPhysicalProps("glazed-porcelain", "#a0a0a0", false);
+    expect(porcelain.metalness).toBe(0);
+    expect(porcelain.clearcoat).toBeGreaterThan(0.8);
+
+    const velvet = resolveStudioHybridDccPhysicalProps("royal-velvet", "#a0a0a0", false);
+    expect(velvet.metalness).toBe(0);
+    expect(velvet.sheen).toBeGreaterThan(0.8);
 
     expect(getStudioHybridDccPbrPreset("studio-clay").id).toBe("studio-clay");
   });

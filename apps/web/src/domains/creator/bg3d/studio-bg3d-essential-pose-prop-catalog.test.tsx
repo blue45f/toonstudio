@@ -73,7 +73,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
   });
 
   it("V11 상부 배경·V12 플래그십 히어로·V13 모델러 키트·V14 정밀 배경 베이를 포함한 133종 CC0 GLB와 기존 assets/3d 정본을 빠짐없이 등록한다", () => {
-    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(137);
+    expect(STUDIO_BG3D_ESSENTIAL_POSE_PROP_CATALOG).toHaveLength(141);
     expect(STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES).toHaveLength(12);
 
     const poses = listStudioBg3dEssentialAssetsByCategory("pose-3d");
@@ -98,7 +98,7 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     expect(blenderHeroV12Props).toHaveLength(4);
     expect(blenderModelerV13Props).toHaveLength(8);
     expect(blenderPrecisionBgV14Props).toHaveLength(6);
-    expect(blenderArtisanV15Props).toHaveLength(4);
+    expect(blenderArtisanV15Props).toHaveLength(8);
     expect(originalSceneProps).toHaveLength(33);
     expect(originalHandWearProps).toHaveLength(35);
 
@@ -267,9 +267,9 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     }
   });
 
-  it("V15 아티잔 아틀리에 카탈로그의 4개 GLB는 출처·라이선스 원장과 같은 경로·바이트·SHA를 갖는다", async () => {
+  it("V15 아티잔 아틀리에 카탈로그의 8개 GLB는 출처·라이선스 원장과 같은 경로·바이트·SHA를 갖는다", async () => {
     const entries = listStudioBg3dEssentialAssetsByCategory("blender-artisan-v15-prop-3d");
-    expect(entries).toHaveLength(4);
+    expect(entries).toHaveLength(8);
     const root = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-artisan-v15");
     const files = fs.readdirSync(root).filter((name) => name.endsWith(".glb")).sort();
     expect(entries.map((entry) => path.basename(entry.glbUrl)).sort()).toEqual(files);
@@ -342,8 +342,8 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
     const onFile = vi.fn();
     render(<StudioBg3dEssentialPosePropPanel onFile={onFile} />);
 
-    expect(screen.getByText(/V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · V15 아티잔 4종/u)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /137종/u })).toBeTruthy();
+    expect(screen.getByText(/V11 상부배경 6종 · V12 히어로 4종 · V13 모델러 8종 · V14 정밀배경 6종 · V15 아티잔 8종/u)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /141종/u })).toBeTruthy();
     fireEvent.click(screen.getByTestId("bg3d-essential-pose-prop-toggle"));
     expect(screen.getByTestId("bg3d-essential-item-pose-neutral-3d")).toBeTruthy();
     expect(screen.getByTestId("bg3d-essential-item-prop-desk")).toBeTruthy();

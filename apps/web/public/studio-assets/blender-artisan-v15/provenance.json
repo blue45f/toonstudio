@@ -3,61 +3,109 @@
   "createdAt": "2026-11-17",
   "creator": "ToonStudio",
   "license": "CC0-1.0",
-  "generator": "Blender 5.2.0 LTS (scripts/blender/generate_artisan_atelier_v15.py · manifold 0-defect verified)",
-  "tool": "Blender 5.2.0 LTS",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_artisan_atelier_v15.py · 8-asset manifold 0-defect verified)",
+  "tool": "Blender 5.3.0",
   "units": "meter",
   "upAxis": "Y",
   "externalSources": [],
   "files": [
     {
+      "file": "webtoon-arcane-grimoire-magic-circle-pedestal-v15.glb",
+      "bytes": 171980,
+      "sha256": "dad63d176617200cbd8fffc2777d7d21fe0d73c56404df70ff12be9487ef3188",
+      "triangles": 5120,
+      "vertices": 4211
+    },
+    {
       "file": "webtoon-artisan-drafting-easel-lamp-v15.glb",
-      "bytes": 108320,
-      "sha256": "a6f42ac4f307811ccd9044b31a221de3a5cfe8d759185d44c854675f500e1315",
+      "bytes": 108032,
+      "sha256": "f31278300d66388f7b92b2f2000fb2ed032b44c1dbfbbd3f0eace329f47133f7",
       "triangles": 2780,
-      "vertices": 1446
+      "vertices": 2620
     },
     {
       "file": "webtoon-celestial-ink-astrolabe-turntable-v15.glb",
-      "bytes": 306856,
-      "sha256": "ef7c568978a3d9925d533493b4056d0aaa3fe94758fc47fb2c8d70c64328f599",
+      "bytes": 306632,
+      "sha256": "188b73fd6be21feac99ab88201b894ab9931968c94083c13e5d7bd6a2e6da2cd",
       "triangles": 9856,
-      "vertices": 4944
+      "vertices": 7570
+    },
+    {
+      "file": "webtoon-kpop-stage-crown-mic-stand-v15.glb",
+      "bytes": 126256,
+      "sha256": "4bec5c342a08a5e8390968589a80b1867a829ace356951d07e743c28ed35ab46",
+      "triangles": 3788,
+      "vertices": 3026
+    },
+    {
+      "file": "webtoon-male-lead-hunter-bust-v15.glb",
+      "bytes": 587968,
+      "sha256": "4f8be8ab385b2e7dca7ff378575f5456ba5c24494a5cc999c70eda56723ac6ef",
+      "triangles": 21436,
+      "vertices": 13978
+    },
+    {
+      "file": "webtoon-rofan-imperial-tea-carriage-table-v15.glb",
+      "bytes": 183228,
+      "sha256": "3fb67dba5ca9b42b89902ed277c2d0a346d4218639cbb37796cca7b6588fa60f",
+      "triangles": 5524,
+      "vertices": 4518
     },
     {
       "file": "webtoon-royal-conservatory-dome-gazebo-v15.glb",
-      "bytes": 416248,
-      "sha256": "e9a966f8018053120c13b5c52f5d6f5e672a69d043c04d86e1e35cf4e2fe6b72",
+      "bytes": 416020,
+      "sha256": "563b7c2bf859f0f1dab58b3d363011f6eaa09c90c2a9c830d2a7e2feebcfa237",
       "triangles": 12528,
-      "vertices": 6366
+      "vertices": 10492
     },
     {
       "file": "webtoon-stylized-protagonist-bust-v15.glb",
-      "bytes": 681236,
-      "sha256": "a12335def3c472817fbea6c801a663bd4fe06c01c0ff822af4aaeb59b86765ab",
-      "triangles": 24544,
-      "vertices": 12364
+      "bytes": 698076,
+      "sha256": "600af8c68b616492fa21b97b78ad24b544d944b601753fe71e3c1f14bec39863",
+      "triangles": 25024,
+      "vertices": 16633
     }
   ],
   "thumbnails": [
     {
+      "file": "thumbnails/webtoon-arcane-grimoire-magic-circle-pedestal-v15.png",
+      "bytes": 290150,
+      "sha256": "2e0fc4f12536a7656bc3b001412d3b87ff529a64d8f97bc149bf05652fec15e4"
+    },
+    {
       "file": "thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png",
-      "bytes": 282009,
-      "sha256": "50f481c451c990a481c7e21ddd910e704e69c5d28d0ad1db605f26615c218cfc"
+      "bytes": 291691,
+      "sha256": "cac61fc8b66e477b7d8a6b6200649908772167ad6348a75207de6a63cd45a803"
     },
     {
       "file": "thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png",
-      "bytes": 325842,
-      "sha256": "d7ba8ff366bb9190f73a9e4ac38ec9d58564b2c2d7ccb3253c215921b0558805"
+      "bytes": 341753,
+      "sha256": "63be584df63c1af2eebc749e5f3ee27140bbc0724124d7b88c7d8be5d47227b6"
+    },
+    {
+      "file": "thumbnails/webtoon-kpop-stage-crown-mic-stand-v15.png",
+      "bytes": 274988,
+      "sha256": "e42cd627337e7a8fc281305e8aadf9c500ef852461a00330b8e1d270a6918321"
+    },
+    {
+      "file": "thumbnails/webtoon-male-lead-hunter-bust-v15.png",
+      "bytes": 290728,
+      "sha256": "b167ca872f83a073f97762e397e672658eb465180ba857affdf42db364d282da"
+    },
+    {
+      "file": "thumbnails/webtoon-rofan-imperial-tea-carriage-table-v15.png",
+      "bytes": 289687,
+      "sha256": "6d478c9482d07a821eb8c0cae15112932499b785502386ce745a8ded70a28177"
     },
     {
       "file": "thumbnails/webtoon-royal-conservatory-dome-gazebo-v15.png",
-      "bytes": 288034,
-      "sha256": "39127c41b14b464641cc8602ab27ea06f9d10ebf6e1b626b4a1ea2ececcc81c7"
+      "bytes": 292847,
+      "sha256": "de06693df3cfc694de67aaa81148ecc76d0a5c83431ef2111abb6f3558b4bf03"
     },
     {
       "file": "thumbnails/webtoon-stylized-protagonist-bust-v15.png",
-      "bytes": 284253,
-      "sha256": "65ce4ecff9f362cdaf4dc212b111c382d5f6bfd09b39b33f1ffe604098e8e88e"
+      "bytes": 300423,
+      "sha256": "225bfa822f424cf954f793e72b71cac237c2169c73308c7e696c231e457805cd"
     }
   ]
 }

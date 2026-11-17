@@ -13,7 +13,9 @@ export type StudioHybridDccPbrPresetId =
   | "limestone"
   | "brushed-brass"
   | "anodized-steel"
-  | "matte-fabric";
+  | "matte-fabric"
+  | "glazed-porcelain"
+  | "royal-velvet";
 
 export interface StudioHybridDccPbrPreset {
   readonly id: StudioHybridDccPbrPresetId;
@@ -122,6 +124,36 @@ export const STUDIO_HYBRID_DCC_PBR_PRESETS: readonly StudioHybridDccPbrPreset[] 
     sheenRoughness: 0.56,
     sheenColor: "#e8edf5",
     ior: 1.48,
+  },
+  {
+    id: "glazed-porcelain",
+    label: ["백자 유약 도자기", "Glazed porcelain"],
+    hint: ["티팟·찻잔·조형 흉상 고광택 유약 유전체", "High-clearcoat ceramic & tea-ware glaze"],
+    baseColor: "#f6f2eb",
+    selectedColor: "#e69a58",
+    metalness: 0,
+    roughness: 0.14,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.08,
+    sheen: 0,
+    sheenRoughness: 0.5,
+    sheenColor: "#ffffff",
+    ior: 1.54,
+  },
+  {
+    id: "royal-velvet",
+    label: ["로열 벨벳", "Royal velvet"],
+    hint: ["황실 망토·드레이퍼리·무대 커튼 깊은 쉰 직물", "Deep grazing-angle velvet sheen"],
+    baseColor: "#6d213c",
+    selectedColor: "#e28855",
+    metalness: 0,
+    roughness: 0.78,
+    clearcoat: 0,
+    clearcoatRoughness: 0.5,
+    sheen: 0.84,
+    sheenRoughness: 0.34,
+    sheenColor: "#f5d7e4",
+    ior: 1.49,
   },
 ]);
 

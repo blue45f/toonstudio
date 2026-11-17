@@ -11,7 +11,7 @@
  * `apps/web/public/studio-assets/blender-hero-v12/*.glb` (4종),
  * `apps/web/public/studio-assets/blender-modeler-kit-v13/*.glb` (8종),
  * `apps/web/public/studio-assets/blender-precision-bg-v14/*.glb` (6종),
- * `apps/web/public/studio-assets/blender-artisan-v15/*.glb` (4종),
+ * `apps/web/public/studio-assets/blender-artisan-v15/*.glb` (8종),
  * `apps/web/public/assets/3d/*.glb` (68종)의 총 137종 CC0-1.0 1st-party GLB 모델을
  * 3D 배경 편집기(BG3D) 에셋 라이브러리에서 원클릭으로 가져와 배치할 수 있게 한다.
  */
@@ -222,10 +222,14 @@ const RAW_BLENDER_PRECISION_BG_V14_ROWS: readonly RawAssetRow[] = [
 ];
 
 const RAW_BLENDER_ARTISAN_V15_ROWS: readonly RawAssetRow[] = [
-  ["webtoon-stylized-protagonist-bust-v15", "웹툰 스타일라이즈 주인공 두상·흉상 (V15)", "Webtoon Stylized Protagonist Bust V15"],
+  ["webtoon-stylized-protagonist-bust-v15", "웹툰 스타일라이즈 여주인공 두상·흉상 (V15)", "Webtoon Stylized Protagonist Bust V15"],
+  ["webtoon-male-lead-hunter-bust-v15", "판타지 헌터 남주인공 두상·흉상 (V15)", "Webtoon Male-Lead Hunter Bust V15"],
   ["webtoon-celestial-ink-astrolabe-turntable-v15", "천상 먹빛 아스트롤라베 회전대 (V15)", "Celestial Ink Astrolabe Turntable V15"],
   ["webtoon-royal-conservatory-dome-gazebo-v15", "로열 온실 돔 가제보 정자 (V15)", "Royal Conservatory Dome Gazebo V15"],
   ["webtoon-artisan-drafting-easel-lamp-v15", "아티잔 제도 이젤·관절 작업등 세트 (V15)", "Artisan Drafting Easel & Task Lamp V15"],
+  ["webtoon-rofan-imperial-tea-carriage-table-v15", "로판 황실 3단 티파티 다과 테이블 (V15)", "Rofan Imperial Tea-Party Table V15"],
+  ["webtoon-arcane-grimoire-magic-circle-pedestal-v15", "아케인 마도서·마법진 성소 제단 (V15)", "Arcane Grimoire Magic-Circle Pedestal V15"],
+  ["webtoon-kpop-stage-crown-mic-stand-v15", "아이돌 크라운 스탠드 마이크 세트 (V15)", "K-Pop Stage Crown Mic Stand V15"],
 ];
 
 const REFINED_V8_THUMBNAIL_SLUGS = new Set(RAW_REFINED_V8_ROWS.map(([slug]) => slug));

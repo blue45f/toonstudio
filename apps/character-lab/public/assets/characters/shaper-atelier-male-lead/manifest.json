@@ -1,38 +1,39 @@
 {
   "schema": "toonstudio.character-lab.authored-character/1",
   "id": "shaper-atelier-male-lead",
-  "displayName": "SHAPER Atelier · Male Lead Hunter (8등신 풀파츠)",
+  "displayName": "SHAPER Atelier · Male Lead Hunter (8등신 판타지 헌터)",
   "role": "shaper-male-lead",
   "license": "CC0-1.0",
-  "generatedAt": "2026-11-12",
+  "generatedAt": "2026-11-17",
   "generator": {
-    "pipeline": "Blender 5.2.0 LTS SHAPER Atelier Multi-Part Pipeline (pipelineVersion 1)",
-    "blenderVersion": "5.2.0 LTS"
+    "pipeline": "Blender 5.3 SHAPER Korean Webtoon Atelier Pipeline (pipelineVersion 1)",
+    "blenderVersion": "5.3.0"
   },
   "pipelineRun": {
-    "pipelineManifestConfigDigest": "34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18",
+    "pipelineManifestConfigDigest": "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e",
     "toonstudioPackageKind": "toonstudio.character-package"
   },
   "sourceProvenance": {
     "license": "CC0-1.0",
-    "author": "ToonStudio Character Lab (Original Procedural BMesh + Delight Textures in Blender 5.2)",
-    "note": "외부 스캔·AI 생성물 없이 Blender 5.2에서 직접 로프팅 제작한 8등신 웹툰 남주인공 패키지(55 휴머노이드 T-Pose 본 + 얼굴 24·표정 12 셰이프 키 + 댄디 레이어드 헤어 3-LOD & _Outline + 트렌치코트/슬랙스/부츠/이어링 분리 워드로브)."
+    "upstreamBase": "Blender Foundation Human Base Meshes v1.4.1 (CC0-1.0) + ToonStudio Original Forged Parts",
+    "author": "ToonStudio Character Lab (Blender 5.3 Korean Webtoon Head + Couture Pipeline)",
+    "note": "Blender 5.3에서 8등신 남성 헌터 바디·날렵한 한국 웹툰 남주인공 헤드·마력 광휘 홍채·쉼표 레이어드 헤어·롱 트렌치코트 테일·마나 이어커프를 정밀 조형한 액션 판타지 남주인공 패키지."
   },
   "files": {
     "glb": {
       "path": "shaper-atelier-male-lead.glb",
-      "bytes": 631088,
-      "sha256": "34df4e1716b5a535c7748247a12e7df1ca40475bc2528adde8e8fe6ee2111e18"
+      "bytes": 2303868,
+      "sha256": "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e"
     },
     "contactSheet": {
       "path": "contact-sheet.png",
-      "bytes": 177918,
-      "sha256": "b45eb1872d85985c0a0f72ba400ab27f27b8524acf082e5bd855303ad59a2690"
+      "bytes": 1280858,
+      "sha256": "cc9f213114ab894818bd4f791b3a900d609f4388651169618076b2d24e0fa362"
     },
     "slotMapping": {
       "path": "slot-mapping.json",
       "bytes": 4251,
-      "sha256": "0c861886a2cf7914f67a1e106afa79d4a9ca4239cb4d7fe2719263ef254b44c9"
+      "sha256": "3d74980d6e80d362cb0aa94c5c07db3e0e46672c66f71adfdca1d6d1ab345cd9"
     }
   },
   "skeleton": {
@@ -1115,7 +1116,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 48,
+      "triangles": 444,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1131,7 +1132,7 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 4176,
+      "triangles": 4382,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1147,7 +1148,7 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 4176,
+      "triangles": 4382,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1163,7 +1164,7 @@
       "lod": 1,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 1596,
+      "triangles": 2107,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1179,7 +1180,7 @@
       "lod": 2,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 846,
+      "triangles": 672,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1195,7 +1196,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 440,
+      "triangles": 3786,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1211,7 +1212,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 332,
+      "triangles": 6661,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1227,7 +1228,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 96,
+      "triangles": 26,
       "morphTargets": [
         "HappyBrow",
         "AngryBrow"
@@ -1246,7 +1247,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 96,
+      "triangles": 26,
       "morphTargets": [
         "HappyBrow",
         "AngryBrow"
@@ -1265,7 +1266,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 20,
+      "triangles": 216,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1281,7 +1282,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 20,
+      "triangles": 216,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1297,7 +1298,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 624,
+      "triangles": 6440,
       "morphTargets": [
         "faceEyeSizeBig",
         "faceEyeSizeSmall",
@@ -1350,7 +1351,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 8,
+      "triangles": 24,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1366,7 +1367,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 8,
+      "triangles": 24,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1382,7 +1383,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 22,
+      "triangles": 168,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1398,11 +1399,43 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 22,
+      "triangles": 168,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
           "TS_Shaper_Iris_R"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Lash_L",
+      "part": "lash",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 52,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Lash_L"
+        ],
+        "parentTransformNode": null,
+        "morphTargetManagerPerPiece": false
+      }
+    },
+    {
+      "node": "TS_Shaper_Lash_R",
+      "part": "lash",
+      "lod": null,
+      "parentNode": "Armature",
+      "skinned": true,
+      "triangles": 52,
+      "morphTargets": [],
+      "babylonLoad": {
+        "splitInto": [
+          "TS_Shaper_Lash_R"
         ],
         "parentTransformNode": null,
         "morphTargetManagerPerPiece": false
@@ -1414,7 +1447,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 256,
+      "triangles": 2472,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1430,7 +1463,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 716,
+      "triangles": 5573,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1451,9 +1484,9 @@
         "enabled": true,
         "style": "short-layered",
         "lodTriangles": [
-          4176,
-          1596,
-          846
+          4382,
+          2107,
+          672
         ],
         "replacedSourceMeshes": []
       },

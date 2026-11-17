@@ -30,8 +30,8 @@ import { createStudioHybridDccWorkspace, workspaceUndo } from "./studio-hybrid-d
 const WEB_PUBLIC_DIR = path.resolve(import.meta.dirname, "../../../../public");
 
 describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
-  it("16종 기본·정밀 건축·유기체 도형이 모두 등록되어 있다", () => {
-    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(16);
+  it("18종 기본·정밀 건축·유기체 도형이 모두 등록되어 있다", () => {
+    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(18);
   });
 
   it.each(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.map(({ kind }) => kind))(
@@ -157,8 +157,8 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     }
   });
 
-  it("Blender 5.2 아티잔 아틀리에 V15(4종)가 실제 디스크 GLB·썸네일과 일치하며 하프에지 수밀 메시로 임포트된다", () => {
-    expect(STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT).toHaveLength(4);
+  it("Blender 5.3 아티잔 아틀리에 V15(8종)가 실제 디스크 GLB·썸네일과 일치하며 하프에지 수밀 메시로 임포트된다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT).toHaveLength(8);
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT) {
       expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-artisan-v15\/.+\.glb$/u);
       expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-artisan-v15\/thumbnails\/.+\.png$/u);

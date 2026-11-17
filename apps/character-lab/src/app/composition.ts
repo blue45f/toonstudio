@@ -44,7 +44,7 @@ import { ViewportPane } from "./shell/panels/ViewportPane";
 import { VisionPanel } from "./shell/panels/VisionPanel";
 import { createProceduralSourceBuilder } from "./shell/procedural-source";
 
-import type { CharacterEngine, CharacterEngineFactory, PaintLayer, SlotKind } from "../contracts";
+import type { CharacterEngine, CharacterEngineFactory, CharacterRecipe, KitBaseId, PaintLayer, SlotKind } from "../contracts";
 import type { PaintSession } from "../paint/paint-session";
 import type { LabPanels, LabRuntime, LabRuntimeDeps } from "./shell/lab-runtime";
 import type { SubdivisionLevels } from "./shell/procedural-source";
@@ -100,6 +100,41 @@ export const COMPOSED_PANELS: LabPanels = Object.freeze({
 });
 
 /** 통합 테스트용 교체 지점(GPU 없는 Node에서 같은 조립을 모의 엔진 팩토리로 돌린다). 앱 진입점은 인자 없이 호출한다. */
+/**
+ * 브라우저 기본 쇼케이스 부팅 레시피: 모듈식 키트 위에 한국형 웹툰 아카데미 주인공 풀 착장(울프 레이어드 헤어·블레이저·플리츠 스커트·로퍼·리본·별빛 홍채)과
+ * 은은한 미소 표정을 입혀 첫 화면부터 완성도 높은 웹툰 캐릭터 실루엣을 보여준다.
+ * 단위 테스트가 인자 없이 호출하는 `composeCharacterLab()` 기본값(`createKitDefaultRecipe()`)은 그대로 유지한다.
+ */
+export function createKitShowcaseBootRecipe(baseId: KitBaseId = "female"): CharacterRecipe {
+  const base = createKitDefaultRecipe(baseId);
+  return {
+    ...base,
+    slots: {
+      ...base.slots,
+      hair: "hair/wolf-layered",
+      top: "top/blazer",
+      bottom: "bottom/pleated-skirt",
+      shoes: "shoes/loafers",
+      accessory: "accessory/ribbon",
+      irises: "irises/star-highlight",
+    },
+    colors: {
+      ...base.colors,
+      skin: "#f7dcd0",
+      iris: "#5b48c8",
+      hair: "#241d2e",
+      brow: "#2a2133",
+      top: "#23293c",
+      bottom: "#3c3148",
+      shoes: "#2a2024",
+      accessory: "#b83b56",
+    },
+    expression: {
+      mouthSmile: 0.16,
+    },
+  };
+}
+
 export interface CompositionOverrides {
   readonly loadFactory?: LabRuntimeDeps["loadFactory"];
   readonly decideBackend?: LabRuntimeDeps["decideBackend"];
@@ -109,6 +144,8 @@ export interface CompositionOverrides {
    * `"procedural"`은 절차 휴머노이드다(키트 에셋이 없는 Node 환경에서는 `kit.json` fetch를 가짜로 꽂아 `"kit"`를 돌린다).
    */
   readonly defaultSource?: BootSource;
+  /** 브라우저 진입점이 초기 풀 착장 레시피를 주입할 때 쓴다. 생략하면 기존 기본 레시피를 유지한다. */
+  readonly initialRecipe?: CharacterRecipe;
   /** 키트 `kit.json` 로더·계획 빌더 교체(테스트가 가짜 fetch를 꽂는다). 기본은 브라우저 fetch 바인딩 + `buildKitPlanDetailed`. */
   readonly kit?: LabRuntimeDeps["kit"];
 }
@@ -138,7 +175,7 @@ export function composeCharacterLab(overrides: CompositionOverrides = {}): LabRu
     physicsProviders: createPhysicsProviderFactory(),
     buildProceduralSource,
     proceduralGeometryKey: geometryKeyOf,
-    initialRecipe: (overrides.defaultSource ?? DEFAULT_BOOT_SOURCE) === "kit" ? createKitDefaultRecipe() : createDefaultRecipe(),
+    initialRecipe: overrides.initialRecipe ?? ((overrides.defaultSource ?? DEFAULT_BOOT_SOURCE) === "kit" ? createKitDefaultRecipe() : createDefaultRecipe()),
     kit: overrides.kit ?? { loadManifest: loadKitManifest, buildPlan: buildKitPlanDetailed },
     presetUnavailableReasonKo,
     // 지오메트리 슬롯(헤어·의상·눈…) 프리셋 카드는 그 프리셋을 입힌 임시 소스로 그린다(엔진이 thumbnailSources를 지원할 때만 쓰인다).
