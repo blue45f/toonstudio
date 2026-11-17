@@ -305,6 +305,11 @@ export function onDisconnect(this: StudioLiveSocketTransportHost, reason: unknow
     message: `팀 서버 연결이 끊겼습니다${typeof reason === "string" ? ` (${reason})` : ""}. 자동으로 다시 연결합니다.`,
     recoverable: true,
   });
+  // 서버가 끊은 연결은 Socket.IO Manager가 재시도하지 않으므로 기존 지연 재연결을 사용한다.
+  if (reason === "io server disconnect") {
+    this.reconnectExhausted = true;
+    this.scheduleSocketReconnect();
+  }
 }
 
 export function onServerError(this: StudioLiveSocketTransportHost, value: unknown) {
