@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statfsSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { validateHelperReport } from "./run-studio-exhaustive-regressions.mjs";
 
 export const ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const MAX_JSON_BYTES = 4 * 1024 * 1024;
@@ -28,6 +29,10 @@ const native = scenario => Object.freeze({
 const pencil = Object.freeze({ id: "media-pencil-grain", kind: "media", command: "pnpm", minutes: 4,
   args: ["exec", "tsx", "scripts/verify-studio-brush-media.mts"], report: "studio-brush-media-report.json",
   medium: "pencil-grain", env: { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" } });
+const inappEditor = Object.freeze({ id: "inapp-kakaotalk-android-360-editor", kind: "inapp", command: "pnpm", minutes: 4,
+  args: ["exec", "tsx", "scripts/verify-studio-inapp-browser.mts"], report: "studio-inapp-browser-report.json",
+  profile: "kakaotalk-android-360", route: "editor",
+  env: { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" } });
 export const SUITES = Object.freeze({
   followup: Object.freeze([
     Object.freeze({ id: "service-worker", kind: "sw", command: "pnpm", minutes: 6,
@@ -40,12 +45,15 @@ export const SUITES = Object.freeze({
     pencil,
     Object.freeze({ id: "hokusai-live-integration", kind: "hokusai", command: "pnpm", minutes: 6,
       args: ["exec", "tsx", "scripts/verify-studio-hokusai-live-integration.mts"], report: "studio-hokusai-live-integration.json", env: {} }),
-    Object.freeze({ id: "inapp-kakaotalk-android-360-editor", kind: "inapp", command: "pnpm", minutes: 4,
-      args: ["exec", "tsx", "scripts/verify-studio-inapp-browser.mts"], report: "studio-inapp-browser-report.json",
-      profile: "kakaotalk-android-360", route: "editor",
-      env: { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" } }),
+    inappEditor,
   ]),
   "pencil-only": Object.freeze([pencil]),
+  "canvas-layout": Object.freeze([
+    Object.freeze({ id: "ui-helpers-and-chrome-layout", kind: "helpers", command: "pnpm", minutes: 3,
+      args: ["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"],
+      report: "helper-results.json", env: {} }),
+    pencil, inappEditor,
+  ]),
 });
 const json = path => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -56,7 +64,7 @@ const empty = value => Array.isArray(value) && value.length === 0;
 const save = (directory, state) => writeJson(join(directory, "summary.json"), state);
 
 export function planFor(suite) {
-  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives, residual 또는 pencil-only이어야 합니다.");
+  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives, residual, pencil-only 또는 canvas-layout이어야 합니다.");
   return SUITES[suite];
 }
 
@@ -68,7 +76,7 @@ export function initialize(directory, suite, deadlineMs, sourceMode = "artifact"
   requireValue(Object.hasOwn(SOURCE_MODES, sourceMode), "source_mode는 artifact 또는 fresh-source여야 합니다.");
   requireValue(Number.isSafeInteger(deadlineMs) && deadlineMs > 0, `${SOURCE_MODES[sourceMode].workMinutes}분 작업 deadline이 필요합니다.`);
   mkdirSync(directory, { recursive: true });
-  const state = { schema: 1, suite, sourceMode, scope: "selected-original-cases-only", startedAt: new Date().toISOString(),
+  const state = { schema: 1, suite, sourceMode, scope: suite === "canvas-layout" ? "selected-original-cases-and-css-fixtures" : "selected-original-cases-only", startedAt: new Date().toISOString(),
     deadlineMs, phase: "setup", status: "incomplete", provenance: null, build: null, failures: [],
     cases: planFor(suite).map(item => ({ id: item.id, status: "not_run", exitCode: null, reason: null, durationMs: null })) };
   save(directory, state);
@@ -306,6 +314,8 @@ export function validateReport(item, report, build) {
       && JSON.stringify(report.planned) === JSON.stringify([{ profile: item.profile, route: item.route }])
       && report.results?.length === 1 && result.profile === item.profile && result.route === item.route
       && result.ok === true && empty(result.hardFailures), "정확한 인앱 profile/route 한 행의 원래 접근성·이탈·오류 계약이 통과하지 않았습니다.");
+  } else if (item.kind === "helpers") {
+    validateHelperReport(report);
   } else throw new Error(`지원하지 않는 후속 검사 kind: ${item.kind}`);
 }
 
@@ -362,6 +372,7 @@ export async function runCases(directory, state, { env = process.env, signal, ru
     const started = Date.now();
     const childEnv = { ...env, ...item.env, TOONSPECTRUM_VERIFY_DIR: target, TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: target,
       TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR: target, TOONSPECTRUM_HOKUSAI_LIVE_INTEGRATION_DIR: target, TOONSPECTRUM_INAPP_VERIFY_DIR: target };
+    if (item.kind === "helpers") childEnv.PLAYWRIGHT_JSON_OUTPUT_FILE = join(target, item.report);
     for (const key of ["GH_TOKEN", "GITHUB_TOKEN", "TOONSPECTRUM_VERIFY_ORIGIN", "TOONSPECTRUM_VERIFY_BASE_URL"]) delete childEnv[key];
     const result = await run(item.command, item.args, { env: childEnv, signal,
       deadlineMs: Math.min(state.deadlineMs, Date.now() + item.minutes * 60_000), logPath: join(target, "process.log") });
@@ -419,7 +430,8 @@ export function publish(directory, state, { output = process.stdout, summaryPath
   save(directory, state); writeJson(join(directory, "evidence-manifest.json"), manifest);
   output.write(`::group::Studio selected follow-up results\n${JSON.stringify(state, null, 2)}\n::endgroup::\n`);
   for (const document of documents) output.write(`::group::${document.path}\n${document.raw}\n::endgroup::\n`);
-  let summary = `## Studio ${state.suite} / ${state.sourceMode}: ${state.status}\n\n선택한 원래 시나리오 ${state.cases.length}개만 검증합니다. 전체 exhaustive/native matrix 통과를 뜻하지 않습니다. 신규 artifact/cache 업로드 없음.\n\n`
+  const scope = state.suite === "canvas-layout" ? "선택한 원래 production 시나리오 2개와 UI/CSS fixture 묶음 1개" : `선택한 원래 시나리오 ${state.cases.length}개`;
+  let summary = `## Studio ${state.suite} / ${state.sourceMode}: ${state.status}\n\n${scope}만 검증합니다. 전체 exhaustive/native matrix 통과를 뜻하지 않습니다. 신규 artifact/cache 업로드 없음.\n\n`
     + `| 검사 | 상태 | 종료 코드 | ms |\n|---|---|---:|---:|\n${state.cases.map(item => `| ${item.id} | ${item.status} | ${item.exitCode ?? "—"} | ${item.durationMs ?? "—"} |`).join("\n")}\n\n`
     + `\`\`\`json\n${JSON.stringify(state, null, 2)}\n\`\`\`\n\n원본 JSON 전체 보존: ${state.publication.complete ? "성공" : "실패"}. 파일별 Actions 로그 그룹을 확인하세요.\n`;
   for (const document of documents) {

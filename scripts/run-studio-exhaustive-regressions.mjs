@@ -9,7 +9,7 @@ import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const REPOSITORY_ROOT = fileURLToPath(new URL("../", import.meta.url));
-export const EXPECTED_HELPER_TESTS = 21;
+export const EXPECTED_HELPER_TESTS = 28;
 export const MAX_LOG_JSON_BYTES = 4 * 1024 * 1024;
 export const MAX_STEP_SUMMARY_BYTES = 512 * 1024;
 export const SOURCE_GATE_IDS = Object.freeze([
@@ -52,7 +52,7 @@ export function initializeRun(directory, deadlineMs, gates = REGRESSION_GATES) {
   return state;
 }
 
-/** Playwright의 exit 0만 믿지 않고 실제 21개 모두 처음 시도에서 성공했는지 확인한다. */
+/** Playwright의 exit 0만 믿지 않고 실제 28개 모두 처음 시도에서 성공했는지 확인한다. */
 export function validateHelperReport(report, expected = EXPECTED_HELPER_TESTS) {
   const tests = [];
   const visit = suite => {

@@ -14,6 +14,13 @@ on:
       - playwright.studio-qa-helpers.config.ts
       - e2e/studio-qa-interactions.spec.mts
       - e2e/studio-qa-shell-interactions.spec.mts
+      - e2e/studio-drawing-chrome-layout.spec.mts
+      - apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css
+      - apps/web/src/domains/creator/studio-shell/studio-document-chrome.css
+      - apps/web/src/app/styles/sitewide-visual-ux.css
+      - apps/web/src/app/styles/mobile-first-shell.css
+      - apps/web/src/shared/styles/studio-route.css
+      - apps/web/src/domains/creator/studio-shell/studio-visual-identity-v2.css
       - scripts/lib/studio-shell-interactions.ts
       - scripts/lib/studio-primary-color-interactions.ts
       - scripts/lib/studio-brush-catalog-interactions.ts
@@ -83,6 +90,7 @@ on:
           - native-representatives
           - residual
           - pencil-only
+          - canvas-layout
       source_mode:
         description: 기존 산출물 재사용(20분) 또는 현재 SHA production 빌드(40분)
         type: choice
@@ -162,7 +170,7 @@ jobs:
 
   followup:
     name: 선택한 production Studio 후속 검사
-    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual' || inputs.suite == 'pencil-only')
+    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual' || inputs.suite == 'pencil-only' || inputs.suite == 'canvas-layout')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.source_mode == 'fresh-source' && 40 || 20 }}
     permissions:
