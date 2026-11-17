@@ -54,6 +54,7 @@ export interface Studio3DPropCatalogEntry {
   readonly modelUrl:
     | `/assets/3d/${string}.glb`
     | `/studio-assets/blender-hero-v12/${string}.glb`
+    | `/studio-assets/blender-precision-bg-v14/${string}.glb`
     | `/assets/studio/cc0-20260906/assets/polyhaven-${string}.glb`
     | `/assets/studio/cc0-20260906/assets/kenney-${string}.glb`
     | `/creator-essentials/prop-${string}.glb`
@@ -61,6 +62,7 @@ export interface Studio3DPropCatalogEntry {
   readonly thumbnailUrl?:
     | `/assets/3d/refined-v8/thumbnails/${string}.png`
     | `/studio-assets/blender-hero-v12/thumbnails/${string}.png`
+    | `/studio-assets/blender-precision-bg-v14/thumbnails/${string}.png`
     | `/assets/studio/cc0-20260906/previews/polyhaven-${string}.png`
     | `/assets/studio/cc0-20260906/previews/kenney-${string}.png`
     | `/creator-essentials/prop-${string}.preview.png`
@@ -114,6 +116,16 @@ export const STUDIO_BLENDER_HERO_V12_PROP_CATALOG: readonly Studio3DPropCatalogE
   { id: "v12_fantasy_runic_sword_altar", name: "로판·판타지 각성 룬 대검 제단 (V12)", category: "fantasy", modelUrl: "/studio-assets/blender-hero-v12/fantasy-runic-sword-altar-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/fantasy-runic-sword-altar-v12.png", defaultPosition: [0, 0, -1.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v12_modern_cafe_espresso_bar", name: "모던 에스프레소 카페 바·쇼케이스 (V12)", category: "furniture", modelUrl: "/studio-assets/blender-hero-v12/modern-cafe-espresso-bar-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/modern-cafe-espresso-bar-v12.png", defaultPosition: [0, 0, -1.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
   { id: "v12_hunter_gate_holo_terminal", name: "헌터 각성 포털 링·홀로 터미널 (V12)", category: "scifi", modelUrl: "/studio-assets/blender-hero-v12/hunter-gate-holo-terminal-v12.glb", thumbnailUrl: "/studio-assets/blender-hero-v12/thumbnails/hunter-gate-holo-terminal-v12.png", defaultPosition: [0, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+]);
+
+/** Blender 5.2 정밀 건축 웹툰 배경 베이(blender-precision-bg-v14) 6종 및 512×512 스튜디오 썸네일 카탈로그. */
+export const STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  { id: "v14_modern_corner_bakery_cafe_bay", name: "모던 코너 베이커리·카페 통창 파사드 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/modern-corner-bakery-cafe-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/modern-corner-bakery-cafe-bay-v14.png", defaultPosition: [0, 0, -2.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v14_korean_highschool_window_corridor_bay", name: "한국 고등학교 교실·복도 창측 정밀 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/korean-highschool-window-corridor-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/korean-highschool-window-corridor-bay-v14.png", defaultPosition: [0, 0, -2.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v14_rofan_grand_vault_colonnade_bay", name: "로판 황궁 리브 볼트·코린트 열주 회랑 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/rofan-grand-vault-colonnade-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/rofan-grand-vault-colonnade-bay-v14.png", defaultPosition: [0, 0, -2.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v14_modern_officetel_studio_loft_bay", name: "현대 오피스텔·원룸 복층 창가 코너 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/modern-officetel-studio-loft-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/modern-officetel-studio-loft-bay-v14.png", defaultPosition: [0, 0, -2.2], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v14_subway_platform_screen_door_bay", name: "도시 지하철 승강장 스크린도어·안전선 정밀 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/subway-platform-screen-door-bay-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/subway-platform-screen-door-bay-v14.png", defaultPosition: [0, 0, -2.6], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
+  { id: "v14_rooftop_sunset_parapet_stairhouse", name: "학교·빌딩 옥상 계단실·난간 펜스 베이 (V14)", category: "architecture", modelUrl: "/studio-assets/blender-precision-bg-v14/rooftop-sunset-parapet-stairhouse-v14.glb", thumbnailUrl: "/studio-assets/blender-precision-bg-v14/thumbnails/rooftop-sunset-parapet-stairhouse-v14.png", defaultPosition: [0, 0, -2.4], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
 /** Poly Haven CC0 2K PBR 고해상도 실사 소품·가구·건축·자연물 카탈로그 (141종 전수 + 전용 썸네일). */
@@ -315,8 +327,9 @@ export const STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG: readonly Studio3DPropCatalogEn
   { id: "kn_watercraft_boat_fan", name: "늪지대 에어보트 (Kenney)", category: "scifi", modelUrl: "/assets/studio/cc0-20260906/assets/kenney-watercraft/boat-fan.glb", thumbnailUrl: "/assets/studio/cc0-20260906/previews/kenney-watercraft-boat-fan.png", defaultPosition: [1.2, 0, -1.8], defaultRotation: [0, 0, 0], defaultScale: [1, 1, 1] },
 ]);
 
-/** 퍼블릭 번들(`/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (274종). */
+/** 퍼블릭 번들(`/studio-assets/blender-precision-bg-v14/*.glb`, `/studio-assets/blender-hero-v12/*.glb`, `/assets/3d/*.glb`, `/assets/studio/cc0-20260906/assets/{polyhaven,kenney}-*.glb`, `/creator-essentials/{prop,pose}-*.glb`) 배경·거점·인테리어·건축·자연·마네킹 카탈로그 (280종). */
 export const STUDIO_BUNDLED_SCENE_PROP_CATALOG: readonly Studio3DPropCatalogEntry[] = Object.freeze([
+  ...STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
   ...STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
   ...STUDIO_REFINED_V8_PROP_CATALOG,
   ...STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
@@ -584,9 +597,10 @@ export function findStudio3DPropCatalogEntry(propId: string): Studio3DPropCatalo
 }
 
 export function listStudio3DPropCatalogByCategory(
-  category: Studio3DPropCatalogCategory | "all" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
+  category: Studio3DPropCatalogCategory | "all" | "blender-precision-bg-v14" | "blender-hero-v12" | "refined-v8" | "polyhaven-pbr" | "kenney-blockout" = "all",
 ): readonly Studio3DPropCatalogEntry[] {
   if (category === "all") return STUDIO_BUNDLED_SCENE_PROP_CATALOG;
+  if (category === "blender-precision-bg-v14") return STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG;
   if (category === "blender-hero-v12") return STUDIO_BLENDER_HERO_V12_PROP_CATALOG;
   if (category === "refined-v8") return STUDIO_REFINED_V8_PROP_CATALOG;
   if (category === "polyhaven-pbr") return STUDIO_POLYHAVEN_PBR_PROP_CATALOG;

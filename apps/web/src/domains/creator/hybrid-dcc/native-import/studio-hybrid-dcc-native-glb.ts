@@ -16,7 +16,23 @@ interface PrimitiveJob {
   readonly sourceVertices: readonly number[]; readonly sourceTriangles: readonly (readonly [number, number, number])[];
   readonly placement: ReturnType<typeof nativeWorldPlacement>;
 }
-const KNOWN_METADATA_EXTENSIONS = new Set(["VRM", "VRMC_vrm", "VRMC_springBone", "VRMC_materials_mtoon", "KHR_materials_unlit", "KHR_texture_transform"]);
+const KNOWN_METADATA_EXTENSIONS = new Set([
+  "VRM",
+  "VRMC_vrm",
+  "VRMC_springBone",
+  "VRMC_materials_mtoon",
+  "KHR_materials_unlit",
+  "KHR_materials_clearcoat",
+  "KHR_materials_emissive_strength",
+  "KHR_materials_ior",
+  "KHR_materials_sheen",
+  "KHR_materials_specular",
+  "KHR_materials_transmission",
+  "KHR_materials_volume",
+  "KHR_materials_anisotropy",
+  "KHR_lights_punctual",
+  "KHR_texture_transform",
+]);
 function boundedName(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim() ? value.slice(0, 128) : fallback;
 }

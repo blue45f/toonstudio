@@ -11,12 +11,22 @@ import {
 } from "../studio-editable-half-edge-mesh";
 
 import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
+import {
+  buildDoorwayPortalWallMesh,
+  buildMoldedPlinthMesh,
+  buildOctagonalPillarMesh,
+  buildWindowWallModuleMesh,
+  STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
+  type StudioHybridDccPrecisionBgKitItem,
+} from "./studio-hybrid-dcc-architectural-primitives";
 import { createStudioHybridDccIdentityTransform } from "./studio-hybrid-dcc-object-transform";
 import {
   synchronizeWorkspaceGeometryAuthority,
   workspaceAddUnitCube,
   type StudioHybridDccWorkspace,
 } from "./studio-hybrid-dcc-workspace";
+
+export { STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT, type StudioHybridDccPrecisionBgKitItem };
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"
@@ -26,9 +36,13 @@ export type StudioHybridDccStarterPrimitiveKind =
   | "capsule"
   | "cylinder"
   | "column"
+  | "octagonal-pillar"
   | "cone"
   | "torus"
   | "arch"
+  | "window-wall"
+  | "doorway-frame"
+  | "molded-plinth"
   | "stairs"
   | "grid";
 
@@ -83,6 +97,7 @@ export const STUDIO_HYBRID_DCC_STARTER_PRIMITIVES: readonly StudioHybridDccStart
       label: ["플루티드 기둥", "Fluted column"],
       hint: ["주초·골기둥·주두 일체형", "Classical architectural pillar"],
     },
+    { kind: "octagonal-pillar", assetPrefix: "asset-octagonal-pillar", label: ["8각 챔퍼 기둥", "Octagonal pillar"], hint: ["지하철·성당 구조 기둥", "8-sided chamfered column"] },
     {
       kind: "cone",
       assetPrefix: "asset-cone",
@@ -101,6 +116,9 @@ export const STUDIO_HYBRID_DCC_STARTER_PRIMITIVES: readonly StudioHybridDccStart
       label: ["아치 블록", "Arch"],
       hint: ["창문·회랑·대문 아치", "Doorways & arcades"],
     },
+    { kind: "window-wall", assetPrefix: "asset-window-wall", label: ["창호 개구부 벽", "Window wall"], hint: ["2.0m 창턱 내장 수밀 벽체", "Watertight window wall"] },
+    { kind: "doorway-frame", assetPrefix: "asset-doorway-frame", label: ["문틀 포털 벽", "Doorway wall"], hint: ["문설주·상인방·문지방 벽체", "Watertight portal wall"] },
+    { kind: "molded-plinth", assetPrefix: "asset-molded-plinth", label: ["다단 몰딩 기단", "Molded plinth"], hint: ["제단·동상·외벽 코니스 기단", "Multi-stepped plinth"] },
     {
       kind: "stairs",
       assetPrefix: "asset-stairs",
@@ -642,6 +660,8 @@ export function createStudioHybridDccStarterPrimitiveMesh(
       return buildCylinderMesh();
     case "column":
       return buildClassicalColumnMesh();
+    case "octagonal-pillar":
+      return buildOctagonalPillarMesh();
     case "cone":
       return buildConeMesh();
     case "torus":
@@ -650,6 +670,12 @@ export function createStudioHybridDccStarterPrimitiveMesh(
       return buildGridMesh();
     case "arch":
       return buildArchMesh();
+    case "window-wall":
+      return buildWindowWallModuleMesh();
+    case "doorway-frame":
+      return buildDoorwayPortalWallMesh();
+    case "molded-plinth":
+      return buildMoldedPlinthMesh();
     case "stairs":
       return buildStairsMesh();
   }

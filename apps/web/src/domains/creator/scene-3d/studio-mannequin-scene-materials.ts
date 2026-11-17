@@ -52,10 +52,21 @@ export function createStudioMannequinMaterialPalette(
   gradientMap: THREE.Texture,
 ): StudioMannequinMaterialPalette {
   if (style === "clay") {
+    const clay = (color: THREE.ColorRepresentation, roughness = 0.74) =>
+      new THREE.MeshPhysicalMaterial({
+        color,
+        metalness: 0,
+        roughness,
+        clearcoat: 0.06,
+        clearcoatRoughness: 0.52,
+        sheen: 0.18,
+        sheenRoughness: 0.68,
+        sheenColor: new THREE.Color(0xfaf5ef),
+      });
     return {
-      body: standardMaterial(0xe8e2da, 0.86, 0.02),
-      joint: standardMaterial(0xc9beb2, 0.72, 0.03),
-      landmark: standardMaterial(0xf8f3ed, 0.66, 0.01),
+      body: clay(0xe8e2da, 0.74),
+      joint: clay(0xc9beb2, 0.74),
+      landmark: clay(0xf8f3ed, 0.74),
       eye: standardMaterial(0x36312d, 0.74, 0),
     };
   }
@@ -92,11 +103,19 @@ export function createStudioMannequinMaterialPalette(
     };
   }
   if (style === "bronze") {
+    const bronze = (color: THREE.ColorRepresentation, roughness: number) =>
+      new THREE.MeshPhysicalMaterial({
+        color,
+        metalness: 1,
+        roughness,
+        clearcoat: 0.16,
+        clearcoatRoughness: 0.22,
+      });
     return {
-      body: standardMaterial(0x9c6b30, 0.28, 0.72),
-      joint: standardMaterial(0x71451f, 0.24, 0.8),
-      landmark: standardMaterial(0xc5944d, 0.22, 0.68),
-      eye: standardMaterial(0x1e1813, 0.32, 0.55),
+      body: bronze(0x9c6b30, 0.26),
+      joint: bronze(0x71451f, 0.22),
+      landmark: bronze(0xc5944d, 0.2),
+      eye: bronze(0x1e1813, 0.3),
     };
   }
   if (style === "porcelain") {
@@ -132,10 +151,19 @@ export function createStudioMannequinMaterialPalette(
       eye: standardMaterial(0x2b211d, 0.42, 0),
     };
   }
+  const wood = (color: THREE.ColorRepresentation, roughness = 0.46) =>
+    new THREE.MeshPhysicalMaterial({
+      color,
+      metalness: 0,
+      roughness,
+      clearcoat: 0.36,
+      clearcoatRoughness: 0.24,
+      ior: 1.52,
+    });
   return {
-    body: standardMaterial(0xc58b57, 0.62, 0.02),
-    joint: standardMaterial(0x9f6437, 0.54, 0.03),
-    landmark: standardMaterial(0xd39a63, 0.54, 0.01),
+    body: wood(0xc58b57, 0.46),
+    joint: wood(0x9f6437, 0.46),
+    landmark: wood(0xd39a63, 0.46),
     eye: standardMaterial(0x30251d, 0.48, 0),
   };
 }

@@ -9,6 +9,7 @@
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
 import type { StudioBg3dCameraSettings } from "./studio-bg3d-scene-document-types";
+import { calibrateSketchUpArchitecturalPrimitivesPbr } from "./studio-bg3d-sketchup-pbr";
 import { buildSketchUpUrbanArchitecturalPrimitives } from "./studio-bg3d-sketchup-urban-components";
 
 export interface SketchUpSandboxTerrainGrid {
@@ -778,12 +779,13 @@ export function buildSketchUpArchitecturalComponentPrimitives(
     }
   }
 
+  const calibratedPrimitives = calibrateSketchUpArchitecturalPrimitivesPbr(params.kind, primitives);
   return {
     kind: params.kind,
     labelKo,
-    primitiveCount: primitives.length,
-    primitives,
-    summaryKo: `${labelKo} (${primitives.length}개 프리미티브 생성 완료)`,
+    primitiveCount: calibratedPrimitives.length,
+    primitives: calibratedPrimitives,
+    summaryKo: `${labelKo} (${calibratedPrimitives.length}개 프리미티브 생성 완료)`,
   };
 }
 

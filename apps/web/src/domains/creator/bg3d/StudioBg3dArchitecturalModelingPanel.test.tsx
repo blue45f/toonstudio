@@ -3,6 +3,11 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { BgPrimitive } from "../studio-background-3d-metadata";
+import { DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE } from "./studio-bg3d-scene-document-types";
+import {
+  buildSketchUpArchitecturalComponentPrimitives,
+  type SketchUpArchitecturalComponentKind,
+} from "./studio-bg3d-sketchup-full-engine";
 import { StudioBg3dArchitecturalModelingPanel } from "./StudioBg3dArchitecturalModelingPanel";
 
 describe("StudioBg3dArchitecturalModelingPanel", () => {
@@ -139,5 +144,89 @@ describe("StudioBg3dArchitecturalModelingPanel", () => {
     fireEvent.click(screen.getByTestId("spatial-modeler-arch-insert-scene-btn"));
     expect(insert).toHaveBeenCalledTimes(1);
     expect(insert.mock.calls[0]?.[0]?.length).toBeGreaterThanOrEqual(14);
+  });
+
+  it("12종 건축 요소 프리미티브 전원에 이진 금속도(0/1)와 유리 투과율(0.38) 등 물리 보정 materialOverride를 부여한다", () => {
+    const allKinds: readonly SketchUpArchitecturalComponentKind[] = [
+      "staircase-straight",
+      "staircase-l-landing",
+      "staircase-spiral",
+      "roof-gable",
+      "roof-hip",
+      "roof-hanok",
+      "window-bay",
+      "door-arch",
+      "street-colonnade",
+      "storefront-awning",
+      "rooftop-mechanical",
+      "street-bus-shelter",
+    ];
+    for (const kind of allKinds) {
+      const built = buildSketchUpArchitecturalComponentPrimitives({
+        kind,
+        widthMeters: 4.2,
+        heightMeters: 3.2,
+        depthMeters: 3.6,
+        stepOrBayCount: 4,
+      });
+      expect(built.primitives.length).toBeGreaterThan(0);
+      for (const primitive of built.primitives) {
+        const override = primitive.materialOverride;
+        expect(override, `${kind}:${primitive.id}`).toBeDefined();
+        expect(override?.colorMode).toBe(DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE.colorMode);
+        expect([0, 1]).toContain(override?.metalness);
+        expect(override?.roughness).not.toBeNull();
+        expect(override!.roughness!).toBeGreaterThan(0);
+        expect(override!.roughness!).toBeLessThan(1);
+      }
+    }
+
+    const spiral = buildSketchUpArchitecturalComponentPrimitives({
+      kind: "staircase-spiral",
+      widthMeters: 3.2,
+      heightMeters: 3.6,
+      depthMeters: 3.2,
+      stepOrBayCount: 6,
+    }).primitives;
+    expect(spiral.find((p) => p.id === "skp-arch-spiral-column")?.materialOverride?.metalness).toBe(1);
+    expect(spiral.find((p) => p.id === "skp-arch-spiral-tread-0")?.materialOverride).toMatchObject({
+      metalness: 0,
+      roughness: 0.36,
+    });
+
+    const storefront = buildSketchUpArchitecturalComponentPrimitives({
+      kind: "storefront-awning",
+      widthMeters: 4.8,
+      heightMeters: 3.2,
+      depthMeters: 2.4,
+      stepOrBayCount: 3,
+    }).primitives;
+    expect(storefront.find((p) => p.id === "skp-arch-shop-wall")?.materialOverride?.metalness).toBe(0);
+    expect(storefront.find((p) => p.id === "skp-arch-shop-mullion-0")?.materialOverride?.metalness).toBe(1);
+    expect(storefront.find((p) => p.id === "skp-arch-shop-glass-0")?.materialOverride).toMatchObject({
+      metalness: 0,
+      opacityMultiplier: 0.38,
+    });
+
+    const rooftop = buildSketchUpArchitecturalComponentPrimitives({
+      kind: "rooftop-mechanical",
+      widthMeters: 4.0,
+      heightMeters: 2.6,
+      depthMeters: 3.0,
+      stepOrBayCount: 3,
+    }).primitives;
+    expect(rooftop.find((p) => p.id === "skp-arch-roof-curb")?.materialOverride?.metalness).toBe(0);
+    expect(rooftop.find((p) => p.id === "skp-arch-roof-hvac-0")?.materialOverride?.metalness).toBe(1);
+
+    const shelter = buildSketchUpArchitecturalComponentPrimitives({
+      kind: "street-bus-shelter",
+      widthMeters: 4.0,
+      heightMeters: 2.5,
+      depthMeters: 1.8,
+      stepOrBayCount: 3,
+    }).primitives;
+    expect(shelter.find((p) => p.id === "skp-arch-bus-glass-0")?.materialOverride?.opacityMultiplier).toBe(0.38);
+    expect(shelter.find((p) => p.id === "skp-arch-bus-canopy")?.materialOverride?.metalness).toBe(1);
+    expect(shelter.find((p) => p.id === "skp-arch-bus-bench")?.materialOverride?.metalness).toBe(0);
   });
 });

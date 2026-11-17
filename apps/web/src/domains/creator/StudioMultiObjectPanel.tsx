@@ -12,6 +12,7 @@ import { useState } from "react";
 import {
   STUDIO_3D_PROP_CATEGORY_LABELS,
   STUDIO_BLENDER_HERO_V12_PROP_CATALOG,
+  STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG,
   STUDIO_BUNDLED_SCENE_PROP_CATALOG,
   STUDIO_KENNEY_BLOCKOUT_PROP_CATALOG,
   STUDIO_POLYHAVEN_PBR_PROP_CATALOG,
@@ -33,6 +34,7 @@ import type { ReactElement } from "react";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 
 type PropCatalogFilter =
+  | "blender-precision-bg-v14"
   | "blender-hero-v12"
   | "refined-v8"
   | "polyhaven-pbr"
@@ -41,6 +43,7 @@ type PropCatalogFilter =
   | Studio3DPropCatalogCategory;
 
 const PROP_CATEGORY_FILTERS: readonly { readonly id: PropCatalogFilter; readonly label: string }[] = [
+  { id: "blender-precision-bg-v14", label: `블렌더 배경 V14 (${STUDIO_BLENDER_PRECISION_BG_V14_PROP_CATALOG.length})` },
   { id: "blender-hero-v12", label: `블렌더 히어로 V12 (${STUDIO_BLENDER_HERO_V12_PROP_CATALOG.length})` },
   { id: "refined-v8", label: "개선형 v8" },
   { id: "polyhaven-pbr", label: `Poly Haven PBR (${STUDIO_POLYHAVEN_PBR_PROP_CATALOG.length})` },

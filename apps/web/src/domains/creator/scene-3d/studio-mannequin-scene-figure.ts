@@ -103,6 +103,24 @@ function hasNonZeroSplay(splay?: Partial<StudioMannequinFingerSplayMap>): boolea
 
 const SPLIT_TORSO_TUBE_IDS = new Set(["loft-pelvis-basin", "loft-spine-waist", "loft-chest-ribcage"]);
 
+const LIMB_SOCKET_INTERPENETRATION_JOINTS: ReadonlySet<StudioMannequinJointId> = new Set([
+  "spine",
+  "neck",
+  "leftUpperArm",
+  "rightUpperArm",
+  "leftLowerArm",
+  "rightLowerArm",
+  "leftUpperLeg",
+  "rightUpperLeg",
+  "leftLowerLeg",
+  "rightLowerLeg",
+]);
+
+function resolveSubdCircumferentialSegments(relativeRadius: number): number {
+  const radialSegments = relativeRadius < 0.055 ? 12 : relativeRadius < 0.11 ? 20 : 28;
+  return radialSegments < 20 ? 18 : radialSegments < 28 ? 26 : 32;
+}
+
 export function resolveStudioMannequinEffectorHandleRadius(spec: StudioMannequinSpec): number {
   return Math.min(spec.headUnit * 0.16, spec.heightM * 0.023);
 }
@@ -217,8 +235,8 @@ export function createStudioMannequinSceneFigure(input: {
     let mesh: THREE.Mesh;
     if (primitive.kind === "sphere") {
       const relativeRadius = primitive.radius / Math.max(0.001, spec.headUnit);
-      const widthSegments = relativeRadius < 0.055 ? 16 : relativeRadius < 0.11 ? 24 : 40;
-      const heightSegments = relativeRadius < 0.055 ? 10 : relativeRadius < 0.11 ? 16 : 28;
+      const widthSegments = relativeRadius < 0.055 ? 20 : relativeRadius < 0.11 ? 28 : 40;
+      const heightSegments = relativeRadius < 0.055 ? 16 : relativeRadius < 0.11 ? 20 : 28;
       mesh = new THREE.Mesh(
         new THREE.SphereGeometry(primitive.radius, widthSegments, heightSegments),
         material,
@@ -250,15 +268,22 @@ export function createStudioMannequinSceneFigure(input: {
         && endRadius > 0
         && Math.abs(endRadius - primitive.radius) > 1e-6;
       const relativeRadius = primitive.radius / Math.max(0.001, spec.headUnit);
-      const radialSegments = relativeRadius < 0.055 ? 12 : relativeRadius < 0.11 ? 20 : 28;
+      const radialSegments = resolveSubdCircumferentialSegments(relativeRadius);
       const middleLength = Math.max(0.001, segmentLength - primitive.radius * 2);
+      const minTaperRadius = hasAnatomicalTaper ? Math.min(primitive.radius, endRadius) : primitive.radius;
+      const interpenetration =
+        hasAnatomicalTaper
+        && role === "body"
+        && LIMB_SOCKET_INTERPENETRATION_JOINTS.has(primitive.jointId)
+          ? Math.min(segmentLength * 0.08, minTaperRadius * 0.24, 0.01)
+          : 0;
       const geometry = hasAnatomicalTaper
         ? new THREE.CylinderGeometry(
             endRadius,
             primitive.radius,
-            Math.max(0.001, segmentLength),
+            Math.max(0.001, segmentLength + interpenetration * 2),
             radialSegments,
-            3,
+            6,
             false,
           )
         : new THREE.CapsuleGeometry(

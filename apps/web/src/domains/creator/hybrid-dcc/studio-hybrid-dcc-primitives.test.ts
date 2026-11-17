@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +9,7 @@ import {
   validateStudioEditableMeshSerializableAuthority,
 } from "../studio-editable-half-edge-mesh";
 
+import { decodeStudioNativeGlb } from "./native-import/studio-hybrid-dcc-native-glb";
 import { exportStudioHybridDccMeshGlb } from "./studio-hybrid-dcc-glb-export";
 import {
   STUDIO_HYBRID_DCC_MODELING_RECIPES,
@@ -15,15 +19,18 @@ import {
   computeStudioHybridDccMeshQualitySummary,
   createStudioHybridDccStarterPrimitiveMesh,
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
 import { applyStudioSculptStroke } from "./studio-hybrid-sculpt-kernel";
 import { createStudioHybridDccWorkspace, workspaceUndo } from "./studio-hybrid-dcc-workspace";
 
+const WEB_PUBLIC_DIR = path.resolve(import.meta.dirname, "../../../../public");
+
 describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
-  it("12종 기본·고급 도형이 모두 등록되어 있다", () => {
-    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(12);
+  it("16종 기본·정밀 건축·유기체 도형이 모두 등록되어 있다", () => {
+    expect(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES).toHaveLength(16);
   });
 
   it.each(STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.map(({ kind }) => kind))(
@@ -61,18 +68,18 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
 
   it("작업대에 여러 도형을 연속 추가하고 단일 되돌리기로 복원한다", () => {
     let ws = createStudioHybridDccWorkspace("primitives-doc");
-    ws = workspaceAddStarterPrimitive(ws, "bevel-box");
-    expect(ws.activeAssetId).toBe("asset-bevel-box");
-    ws = workspaceAddStarterPrimitive(ws, "column");
-    expect(ws.activeAssetId).toBe("asset-column");
+    ws = workspaceAddStarterPrimitive(ws, "window-wall");
+    expect(ws.activeAssetId).toBe("asset-window-wall");
+    ws = workspaceAddStarterPrimitive(ws, "molded-plinth");
+    expect(ws.activeAssetId).toBe("asset-molded-plinth");
     expect(Object.keys(ws.session.state.geometry.records)).toEqual([
-      "asset-bevel-box",
-      "asset-column",
+      "asset-window-wall",
+      "asset-molded-plinth",
     ]);
-    expect(ws.session.state.objectTransforms["asset-column"]?.position[0]).toBeGreaterThan(0);
+    expect(ws.session.state.objectTransforms["asset-molded-plinth"]?.position[0]).toBeGreaterThan(0);
 
     const undone = workspaceUndo(ws);
-    expect(Object.keys(undone.session.state.geometry.records)).toEqual(["asset-bevel-box"]);
+    expect(Object.keys(undone.session.state.geometry.records)).toEqual(["asset-window-wall"]);
   });
 
   it.each(STUDIO_HYBRID_DCC_MODELING_RECIPES.map(({ id }) => id))(
@@ -119,6 +126,33 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
       expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-modeler-kit-v13\/.+\.glb$/u);
       expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-modeler-kit-v13\/thumbnails\/.+\.png$/u);
       expect(item.triangles).toBeGreaterThanOrEqual(2500);
+    }
+  });
+
+  it("Blender 5.2 정밀 배경 베이 V14(6종)가 실제 디스크 GLB·썸네일과 일치하며 하프에지 수밀 메시로 임포트된다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT).toHaveLength(6);
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT) {
+      expect(item.glbUrl).toMatch(/^\/studio-assets\/blender-precision-bg-v14\/.+\.glb$/u);
+      expect(item.previewUrl).toMatch(/^\/studio-assets\/blender-precision-bg-v14\/thumbnails\/.+\.png$/u);
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath)).toBe(true);
+      expect(fs.existsSync(thumbPath)).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      expect(imported.value.assets).toHaveLength(4);
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
     }
   });
 });
