@@ -16,84 +16,49 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "../bg3d/studio-bg3d-lt-render";
-import {
-  captureStudioVrmRgba,
-  encodeStudioVrmCapturePngDataUrl,
-} from "../vrm/studio-vrm-raster-capture";
+import { captureStudioVrmRgba, encodeStudioVrmCapturePngDataUrl } from "../vrm/studio-vrm-raster-capture";
 
 import { fitStudioMannequinCameraToBounds } from "./studio-mannequin-camera-framing";
-import {
-  resolveStudioMannequinSurfaceMode,
-  type StudioMannequinSurfaceMode,
-} from "./studio-mannequin-ecorche-anatomy";
+import { resolveStudioMannequinSurfaceMode, type StudioMannequinSurfaceMode } from "./studio-mannequin-ecorche-anatomy";
+import { StudioMannequinWebglUnavailableError, probeStudioMannequinWebgl2Support } from "./studio-mannequin-webgl-probe";
 import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
 import {
-  buildStudioMannequinSpec,
-  clampStudioMannequinJointRotation,
-  getStudioMannequinJointLimit,
-  isStudioMannequinJointId,
-  type StudioMannequinChainSpec,
-  type StudioMannequinJointId,
-  type StudioMannequinMaterialStyle,
-  type StudioMannequinSpec,
-  type StudioMannequinVec3,
+  buildStudioMannequinSpec, clampStudioMannequinJointRotation, getStudioMannequinJointLimit,
+  isStudioMannequinJointId, type StudioMannequinChainSpec, type StudioMannequinJointId,
+  type StudioMannequinMaterialStyle, type StudioMannequinSpec, type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import {
-  createStudioMannequinRestPose,
-  normalizeStudioMannequinPose,
-  type StudioMannequinPose,
+  createStudioMannequinRestPose, normalizeStudioMannequinPose, type StudioMannequinPose,
 } from "./studio-mannequin-poses";
 import {
-  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
-  analyzeStudioMannequinBalance,
-  applyStudioMannequinScapulohumeralRhythm,
-  type StudioMannequinBalanceReport,
-  type StudioMannequinGuideVisibility,
-  type StudioMannequinJointLockMap,
+  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY, analyzeStudioMannequinBalance,
+  applyStudioMannequinScapulohumeralRhythm, type StudioMannequinBalanceReport,
+  type StudioMannequinGuideVisibility, type StudioMannequinJointLockMap,
 } from "./studio-mannequin-pro-kinematics";
 import { createStudioMannequinProOverlayController } from "./studio-mannequin-pro-overlays";
 import {
-  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
-  clampStudioMannequinFovDeg,
-  computeStudioMannequinQuadViewRects,
-  createStudioMannequinQuadOrthoRig,
-  resolveStudioMannequinQuadPointerNdc,
+  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG, clampStudioMannequinFovDeg, computeStudioMannequinQuadViewRects,
+  createStudioMannequinQuadOrthoRig, resolveStudioMannequinQuadPointerNdc,
 } from "./studio-mannequin-quad-view";
 import {
-  buildStudioMannequinJointRangeArc,
-  resolveStudioMannequinOutlineMode,
-  resolveStudioMannequinOutlineVisible,
-  STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT,
-  type StudioMannequinOutlineMode,
+  buildStudioMannequinJointRangeArc, resolveStudioMannequinOutlineMode, resolveStudioMannequinOutlineVisible,
+  STUDIO_MANNEQUIN_OUTLINE_MODE_DEFAULT, type StudioMannequinOutlineMode,
 } from "./studio-mannequin-readability";
 import {
-  resolveStudioMannequinLightingPlan,
-  type StudioMannequinLightingPlan,
-  type StudioMannequinLightingRig,
+  resolveStudioMannequinLightingPlan, type StudioMannequinLightingPlan, type StudioMannequinLightingRig,
 } from "./studio-mannequin-lighting";
 import {
-  createStudioMannequinSceneFigure,
-  type StudioMannequinBodyMeshUserData,
-  type StudioMannequinEffectorHandleUserData,
-  type StudioMannequinFigureEcorcheState,
-  type StudioMannequinFigureId,
-  type StudioMannequinFigureMaterials,
+  createStudioMannequinSceneFigure, type StudioMannequinBodyMeshUserData, type StudioMannequinEffectorHandleUserData,
+  type StudioMannequinFigureEcorcheState, type StudioMannequinFigureId, type StudioMannequinFigureMaterials,
   type StudioMannequinSceneFigure,
 } from "./studio-mannequin-scene-figure";
 import {
-  createStudioMannequinLightingObject,
-  disposeStudioMannequinLightObject,
-  mountStudioMannequinLightingGroup,
-  readStudioMannequinLightingSnapshot,
-  replaceStudioMannequinLightingGroup,
-  snapshotStudioMannequinLightingPlan,
-  type StudioMannequinLightingSnapshot,
-  type StudioMannequinMountedLightSnapshot,
+  createStudioMannequinLightingObject, disposeStudioMannequinLightObject, mountStudioMannequinLightingGroup,
+  readStudioMannequinLightingSnapshot, replaceStudioMannequinLightingGroup, snapshotStudioMannequinLightingPlan,
+  type StudioMannequinLightingSnapshot, type StudioMannequinMountedLightSnapshot,
 } from "./studio-mannequin-scene-lighting";
 import {
-  createStudioMannequinMaterialPalette,
-  createStudioMannequinToonGradientTexture,
-  disposeStudioMannequinMaterialPalette,
+  createStudioMannequinMaterialPalette, createStudioMannequinToonGradientTexture, disposeStudioMannequinMaterialPalette,
 } from "./studio-mannequin-scene-materials";
 
 export type { StudioMannequinFigureId, StudioMannequinFigureEcorcheState } from "./studio-mannequin-scene-figure";
@@ -413,6 +378,9 @@ export function createStudioMannequinScene(
   options: StudioMannequinSceneOptions,
 ): StudioMannequinSceneHandle {
   const { container } = options;
+  if (!probeStudioMannequinWebgl2Support()) {
+    throw new StudioMannequinWebglUnavailableError();
+  }
   let spec = options.initialSpec ?? buildStudioMannequinSpec(undefined);
   let disposed = false;
 

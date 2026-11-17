@@ -12,38 +12,18 @@ import { OrthographicCamera } from "@react-three/drei/core/OrthographicCamera.js
 import { PerspectiveCamera } from "@react-three/drei/core/PerspectiveCamera.js";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
-  AlertTriangle,
-  Boxes,
-  Camera,
-  CircleDashed,
-  Cuboid,
-  Expand,
-  Layers,
-  Move3d,
-  Rotate3d,
-  School,
-  Triangle,
-  Upload,
+  AlertTriangle, Boxes, Camera, CircleDashed, Cuboid, Expand, Layers, Move3d, Rotate3d, School, Triangle, Upload,
 } from "lucide-react";
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import type {
-  StudioHybridDccComponentMode,
-  StudioHybridDccComponentSelection,
-  StudioHybridDccSelectionMode,
-  StudioHybridDccSelectionOperation,
+  StudioHybridDccComponentMode, StudioHybridDccComponentSelection,
+  StudioHybridDccSelectionMode, StudioHybridDccSelectionOperation,
 } from "./studio-hybrid-dcc-component-selection";
 import {
-  STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION,
-  type StudioHybridDccObjectTransform,
+  STUDIO_HYBRID_DCC_OBJECT_TRANSFORM_REVISION, type StudioHybridDccObjectTransform,
 } from "./studio-hybrid-dcc-object-transform";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { createStudioHybridDccBoundaryOrbitGate, handleStudioHybridDccViewportMeshClick, type StudioHybridDccBoundaryEndpointPickHandler } from "./studio-hybrid-dcc-viewport-mesh-click";
@@ -63,6 +43,7 @@ import { StudioHybridDccTransformGizmo } from "./StudioHybridDccTransformGizmo";
 import {
   SegmentedButton,
   StudioHybridDccCanvasBoundary,
+  StudioHybridDccEngineStatusBadge,
   StudioHybridDccLocalEnvironment,
 } from "./StudioHybridDccViewportParts";
 import { StudioHybridDccViewportInteractionBar } from "./StudioHybridDccViewportInteractionBar";
@@ -1070,9 +1051,12 @@ export function StudioHybridDccViewport({
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
         <div className="pointer-events-auto rounded-xl border border-line bg-panel/95 px-3 py-2 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Boxes size={15} className="text-accent" aria-hidden="true" />
             <span className="text-xs font-semibold text-fg">3D 작업 뷰</span>
+            <StudioHybridDccEngineStatusBadge
+              state={detectedWebgl === null ? "initializing" : detectedWebgl === false || contextLost ? "error" : "ready"}
+            />
           </div>
           <p className="mt-0.5 font-[var(--font-display)] text-[0.66rem] tabular-nums text-fg-2" aria-live="polite">
             V {snapshot.totalVertices.toLocaleString("ko-KR")} · △ {snapshot.totalTriangles.toLocaleString("ko-KR")}
@@ -1086,6 +1070,7 @@ export function StudioHybridDccViewport({
           </p>
         </div>
 
+        {detectedWebgl === true ? (
         <div className="pointer-events-auto flex max-w-full gap-1 overflow-x-auto rounded-xl border border-line bg-panel/95 p-1 shadow-[0_8px_22px_oklch(0.08_0.008_70/0.28)]">
           {onComponentSelectionModeChange ? (
             <>
@@ -1222,6 +1207,7 @@ export function StudioHybridDccViewport({
             ))}
           </div>
         </div>
+        ) : null}
       </div>
 
       {snapshot.assets.length > 0 ? (

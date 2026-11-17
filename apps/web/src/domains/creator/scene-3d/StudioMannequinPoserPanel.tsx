@@ -8,18 +8,7 @@
  */
 
 import { StudioMannequinRotationControls, type StudioMannequinRotationCommand } from "./StudioMannequinRotationControls";
-import {
-  AlertTriangle,
-  Camera,
-  PersonStanding,
-  Redo2,
-  Sliders,
-  Sparkles,
-  Undo2,
-  UserRound,
-  Wand2,
-  X,
-} from "lucide-react";
+import { Camera, PersonStanding, Redo2, Sliders, Sparkles, Undo2, UserRound, Wand2, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
@@ -28,17 +17,14 @@ import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destruc
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
 import { STUDIO_FOCUS_RING, studioSegmentChipClass } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
-import {
-  StudioVrmPhotoPoseScanner,
-  type StudioVrmPhotoPoseApplyPayload,
-} from "../vrm/StudioVrmPhotoPoseScanner";
+import { StudioVrmPhotoPoseScanner, type StudioVrmPhotoPoseApplyPayload } from "../vrm/StudioVrmPhotoPoseScanner";
 
 import { getWebtoonPosePresetById } from "./studio-3d-advanced-poses-library";
 import { StudioMannequinDuoFigureSwitch, StudioMannequinDuoPartnerCard } from "./StudioMannequinDuoPartnerCard";
+import { StudioMannequinEngineStatusBadge, StudioMannequinSceneErrorStage } from "./StudioMannequinEngineReadiness";
+import { isStudioMannequinWebglUnavailableError } from "./studio-mannequin-webgl-probe";
 import {
-  isStudioMannequinDuoPreset,
-  resolveStudioMannequinLibraryPresetPose,
-  resolveStudioMannequinWebtoonPresetPose,
+  isStudioMannequinDuoPreset, resolveStudioMannequinLibraryPresetPose, resolveStudioMannequinWebtoonPresetPose,
 } from "./studio-mannequin-preset-application";
 import { composeStudioMannequinDuoState, useStudioMannequinDuoPartner } from "./use-studio-mannequin-duo-partner";
 import { StudioMannequinCameraSection, type StudioMannequinWebcamLoadingStage } from "./StudioMannequinCameraSection";
@@ -48,85 +34,42 @@ import { studioMannequinPosesNearlyEqual, useStudioMannequinViewportGestures } f
 import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
 import { applyStudioBodyMorph, type StudioBodyMorph } from "./studio-body-morphs";
 import {
-  mergeHandPadIntoFingerPose,
-  type StudioMannequinFingerSplayMap,
-  type StudioMannequinHandPadOutput,
-  type StudioMannequinSurfaceMode,
+  mergeHandPadIntoFingerPose, type StudioMannequinFingerSplayMap, type StudioMannequinHandPadOutput, type StudioMannequinSurfaceMode,
 } from "./studio-mannequin-ecorche-anatomy";
 import {
-  analyzeStudioMannequinGesture,
-  applyStudioMannequinBreathingParams,
-  applyStudioMannequinGazeTarget,
-  type StudioMannequinHandContactTargetId,
+  analyzeStudioMannequinGesture, applyStudioMannequinBreathingParams, applyStudioMannequinGazeTarget, type StudioMannequinHandContactTargetId,
 } from "./studio-mannequin-gesture-dynamics";
 import {
-  STUDIO_MANNEQUIN_BODY_PRESETS,
-  STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
-  STUDIO_MANNEQUIN_FINGER_NAMES,
-  STUDIO_MANNEQUIN_HEAD_PRESETS,
-  buildStudioMannequinSpec,
-  clampStudioMannequinBodyParams,
-  clampStudioMannequinFingerPose,
-  clampStudioMannequinJointRotation,
-  resolveStudioMannequinArchetypeParams,
-  type StudioMannequinBodyParams,
-  type StudioMannequinFingerName,
-  type StudioMannequinFingerPose,
-  type StudioMannequinJointId,
-  type StudioMannequinMaterialStyle,
-  type StudioMannequinVec3,
+  STUDIO_MANNEQUIN_BODY_PRESETS, STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS, STUDIO_MANNEQUIN_FINGER_NAMES,
+  STUDIO_MANNEQUIN_HEAD_PRESETS, buildStudioMannequinSpec, clampStudioMannequinBodyParams,
+  clampStudioMannequinFingerPose, clampStudioMannequinJointRotation, resolveStudioMannequinArchetypeParams,
+  type StudioMannequinBodyParams, type StudioMannequinFingerName, type StudioMannequinFingerPose,
+  type StudioMannequinJointId, type StudioMannequinMaterialStyle, type StudioMannequinVec3,
 } from "./studio-mannequin-model";
-import {
-  STUDIO_MANNEQUIN_FOV_DEFAULT_DEG,
-  clampStudioMannequinFovDeg,
-} from "./studio-mannequin-quad-view";
+import { STUDIO_MANNEQUIN_FOV_DEFAULT_DEG, clampStudioMannequinFovDeg } from "./studio-mannequin-quad-view";
 import { createStudioMannequinPhotoPoseApplyPlan } from "./studio-mannequin-photo-pose-apply";
 import {
-  createStudioMannequinHandFrameResult,
-  disposeStudioMannequinHandLandmarker,
-  getStudioMannequinHandTrackingErrorMessage,
-  initStudioMannequinHandLandmarker,
-  type StudioMannequinHandLandmarker,
+  createStudioMannequinHandFrameResult, disposeStudioMannequinHandLandmarker,
+  getStudioMannequinHandTrackingErrorMessage, initStudioMannequinHandLandmarker, type StudioMannequinHandLandmarker,
 } from "./studio-mannequin-hand-tracking";
 import {
-  STUDIO_MANNEQUIN_POSE_PRESETS,
-  canonicalizeStudioMannequinRigState,
-  createStudioMannequinRestPose,
-  encodeStudioMannequinShareHash,
-  exportStudioMannequinStateToJSON,
-  normalizeStudioMannequinPose,
-  studioMannequinPosePresetScope,
-  type StudioMannequinHandContactMap,
-  type StudioMannequinPersistentPartner,
-  type StudioMannequinPersistentRigState,
-  type StudioMannequinPersistentState,
-  type StudioMannequinPose,
+  STUDIO_MANNEQUIN_POSE_PRESETS, canonicalizeStudioMannequinRigState, createStudioMannequinRestPose,
+  encodeStudioMannequinShareHash, exportStudioMannequinStateToJSON, normalizeStudioMannequinPose,
+  studioMannequinPosePresetScope, type StudioMannequinHandContactMap, type StudioMannequinPersistentPartner,
+  type StudioMannequinPersistentRigState, type StudioMannequinPersistentState, type StudioMannequinPose,
   type StudioMannequinPoseCategory,
 } from "./studio-mannequin-poses";
 import {
-  hasActiveStudioMannequinSemanticContacts,
-  importStudioMannequinStateWithDiagnostics,
-  mirrorStudioMannequinSemanticContacts,
-  parseStudioMannequinShareHashWithDiagnostics,
-  reconcileStudioMannequinSemanticContactsAfterManualEdit,
-  resolveContrappostoToggleTransition,
-  resolveHandContactToggleTransition,
-  resolveUndoRedoSemanticStep,
-  retargetStudioMannequinSemanticPose,
+  hasActiveStudioMannequinSemanticContacts, importStudioMannequinStateWithDiagnostics,
+  mirrorStudioMannequinSemanticContacts, parseStudioMannequinShareHashWithDiagnostics,
+  reconcileStudioMannequinSemanticContactsAfterManualEdit, resolveContrappostoToggleTransition,
+  resolveHandContactToggleTransition, resolveUndoRedoSemanticStep, retargetStudioMannequinSemanticPose,
 } from "./studio-mannequin-semantic-persistence";
 import {
-  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY,
-  analyzeStudioMannequinBalance,
-  applyStudioMannequinJointLocks,
-  applyStudioMannequinScapulohumeralRhythm,
-  exportMannequinParamsToCsp3dp,
-  exportMannequinPoseToCspPep,
-  importCsp3dpToMannequinParams,
-  importCspPepPoseToMannequin,
-  stabilizeStudioMannequinCenterOfMass,
-  toggleStudioMannequinJointLock,
-  type StudioMannequinGuideVisibility,
-  type StudioMannequinJointLockMap,
+  STUDIO_MANNEQUIN_DEFAULT_GUIDE_VISIBILITY, analyzeStudioMannequinBalance, applyStudioMannequinJointLocks,
+  applyStudioMannequinScapulohumeralRhythm, exportMannequinParamsToCsp3dp, exportMannequinPoseToCspPep,
+  importCsp3dpToMannequinParams, importCspPepPoseToMannequin, stabilizeStudioMannequinCenterOfMass,
+  toggleStudioMannequinJointLock, type StudioMannequinGuideVisibility, type StudioMannequinJointLockMap,
 } from "./studio-mannequin-pro-kinematics";
 import { StudioMannequinBodySection, StudioMannequinJointSection } from "./StudioMannequinProSections";
 import {
@@ -188,6 +131,12 @@ export interface StudioMannequinPoserPanelProps {
   readonly onInsert: (result: StudioMannequinCaptureResult) => Promise<boolean | void> | boolean | void;
   readonly initialPosePresetId?: string;
   readonly captureTarget?: "canvas" | "download";
+  readonly presentation?: "modal" | "page";
+  readonly externalCameraRequest?: { readonly fovDeg: number; readonly nonce: number };
+  readonly externalSolverRequest?: {
+    readonly solverId: "com-gravity-balance" | "clavicle-auto-twist" | "hand-grip-preset";
+    readonly nonce: number;
+  };
 }
 
 type MannequinTabId = "shaper" | "body" | "pose" | "magic" | "joint" | "camera";
@@ -238,6 +187,9 @@ export function StudioMannequinPoserPanel({
   onInsert,
   initialPosePresetId,
   captureTarget = "canvas",
+  presentation = "modal",
+  externalCameraRequest,
+  externalSolverRequest,
 }: StudioMannequinPoserPanelProps): ReactElement | null {
   const dialogTitleId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -279,6 +231,8 @@ export function StudioMannequinPoserPanel({
   const [copiedLink, setCopiedLink] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sceneError, setSceneError] = useState<string | null>(null);
+  const [sceneReady, setSceneReady] = useState(false);
+  const [sceneRetryNonce, setSceneRetryNonce] = useState(0);
   const [persistenceStatus, setPersistenceStatus] = useState<StudioMannequinPersistenceStatus>("idle");
   const [photoPoseApplyStatus, setPhotoPoseApplyStatus] = useState<StudioMannequinPhotoPoseApplyStatus | null>(null);
   const footGrounding = useStudioMannequinFootGrounding();
@@ -967,7 +921,10 @@ export function StudioMannequinPoserPanel({
   }, [hydrateLoadedMannequinState, open, stateRepository]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setSceneReady(false);
+      return;
+    }
     const container = viewportRef.current;
     if (!container) return;
 
@@ -995,25 +952,27 @@ export function StudioMannequinPoserPanel({
       sceneRef.current = handle;
       if (projectionRef.current !== "perspective") handle.setProjection(projectionRef.current);
       attachDuoScene(handle);
+      setSceneReady(true);
       setSceneError(null);
     } catch (cause) {
-      setSceneError(getErrorText(cause, frozenStatus2Text("studio.frozenStatus2.mannequin.sceneInitFailed", "3D 데생 인형 씬을 초기화하지 못했습니다. WebGL 지원을 확인하세요.")));
+      setSceneReady(false);
+      const fallbackMsg = frozenStatus2Text("studio.frozenStatus2.mannequin.sceneInitFailed", "3D 데생 인형 씬을 초기화하지 못했습니다. WebGL 지원을 확인하세요.");
+      setSceneError(isStudioMannequinWebglUnavailableError(cause) ? fallbackMsg : getErrorText(cause, fallbackMsg));
       return;
     }
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      handle.resize(entry.contentRect.width, entry.contentRect.height);
-    });
-    resizeObserver.observe(container);
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver((entries) => { const entry = entries[0]; if (entry) handle.resize(entry.contentRect.width, entry.contentRect.height); })
+      : null;
+    resizeObserver?.observe(container);
 
     return () => {
-      resizeObserver.disconnect();
+      resizeObserver?.disconnect();
       sceneRef.current = null;
+      setSceneReady(false);
       handle.dispose();
     };
-  }, [applySemanticMeta, attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture]);
+  }, [applySemanticMeta, attachDuoScene, commitPose, groundFootPose, notePoseEdited, open, readCurrentSemanticMeta, recordPoseHistoryOncePerGesture, sceneRetryNonce]);
 
   useEffect(() => {
     sceneRef.current?.setBodySpec(spec);
@@ -1270,6 +1229,18 @@ export function StudioMannequinPoserPanel({
     setCameraFovDeg(clamped);
     sceneRef.current?.setCameraFovDeg?.(clamped);
   }, [syncStateSnapshot]);
+
+  useEffect(() => {
+    if (!open || !externalCameraRequest || externalCameraRequest.nonce <= 0) return;
+    handleCameraFovChange(externalCameraRequest.fovDeg);
+  }, [externalCameraRequest, handleCameraFovChange, open]);
+
+  useEffect(() => {
+    if (!open || !externalSolverRequest || externalSolverRequest.nonce <= 0) return;
+    if (externalSolverRequest.solverId === "com-gravity-balance") handleAutoBalance();
+    else if (externalSolverRequest.solverId === "clavicle-auto-twist") setScapulohumeralRhythm(true);
+    else if (externalSolverRequest.solverId === "hand-grip-preset") applyPosePreset("fist");
+  }, [applyPosePreset, externalSolverRequest, handleAutoBalance, open]);
 
   const handleExportJson = useCallback(() => {
     const json = exportStudioMannequinStateToJSON(stateRef.current);
@@ -1539,16 +1510,25 @@ export function StudioMannequinPoserPanel({
   if (!open) return null;
 
   const selectedRotation: StudioMannequinVec3 = selectedJointId ? pose.joints[selectedJointId] ?? [0, 0, 0] : [0, 0, 0];
+  const engineState = sceneError ? "error" : sceneReady ? "ready" : "initializing";
+  const closePanel = sceneError && persistenceStatus !== "ready"
+    ? onClose
+    : persistenceStatus === "memory-only"
+      ? closeWithoutPersist
+      : closeWithPersist;
 
-  return createPortal(
+  const panelContent = (
     <div
-      role="dialog"
-      aria-modal="true"
+      role={presentation === "page" ? "region" : "dialog"}
+      aria-modal={presentation === "page" ? undefined : "true"}
       aria-labelledby={dialogTitleId}
       data-studio-mannequin-dialog="true"
+      data-studio-mannequin-presentation={presentation}
       data-studio-3d-reference="tooncraft"
-      className="fixed inset-0 z-[80] isolate flex flex-col overflow-hidden overscroll-none bg-canvas/85 p-2 text-fg backdrop-blur-sm sm:p-4"
-      style={{
+      className={presentation === "page"
+        ? "relative isolate flex h-[min(78dvh,54rem)] min-h-[34rem] w-full flex-col overflow-hidden text-fg"
+        : "fixed inset-0 z-[80] isolate flex flex-col overflow-hidden overscroll-none bg-canvas/85 p-2 text-fg backdrop-blur-sm sm:p-4"}
+      style={presentation === "page" ? undefined : {
         paddingTop: "max(0.5rem, env(safe-area-inset-top))",
         paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
       }}
@@ -1558,12 +1538,13 @@ export function StudioMannequinPoserPanel({
       <input ref={csp3dpInputRef} type="file" accept=".3dp,.xml" className="hidden" onChange={handleImportCsp3dp} />
 
       <div data-studio-mannequin-surface="true" className="mx-auto flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
-        <header data-studio-mannequin-header="true" className="flex items-center justify-between gap-2 border-b border-line/70 px-3 py-2">
+        <header data-studio-mannequin-header="true" className="flex flex-wrap items-center justify-between gap-1.5 border-b border-line/70 px-3 py-2">
           <div className="flex min-w-0 items-center gap-2">
             <h2 id={dialogTitleId} className="flex shrink-0 items-center gap-1.5 text-sm font-bold tracking-tight">
               <PersonStanding size={16} className="text-accent" aria-hidden />
               3D 데생 인형
             </h2>
+            <StudioMannequinEngineStatusBadge state={engineState} />
             <span
               aria-live="polite"
               className={cn(
@@ -1591,10 +1572,10 @@ export function StudioMannequinPoserPanel({
             <ModalStatusSlot className="flex min-w-0 justify-end" />
             <button
               type="button"
-              onClick={persistenceStatus === "memory-only" ? closeWithoutPersist : closeWithPersist}
-              disabled={persistenceStatus === "idle" || persistenceStatus === "loading" || persistenceStatus === "saving"}
+              onClick={closePanel}
+              disabled={!sceneError && (persistenceStatus === "idle" || persistenceStatus === "loading" || persistenceStatus === "saving")}
               title={
-                persistenceStatus === "loading" || persistenceStatus === "idle"
+                !sceneError && (persistenceStatus === "loading" || persistenceStatus === "idle")
                   ? "포즈 상태를 불러온 뒤 닫을 수 있습니다."
                   : persistenceStatus === "memory-only"
                     ? "현재 탭의 변경을 저장하지 않고 닫습니다. 먼저 JSON으로 내보내세요."
@@ -1611,12 +1592,16 @@ export function StudioMannequinPoserPanel({
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <div data-studio-mannequin-stage="true" className="relative min-h-0 flex-1 basis-1/2">
             {sceneError ? (
-              <div className="grid h-full place-items-center p-6 text-center">
-                <div className="max-w-xs space-y-2">
-                  <AlertTriangle size={22} className="mx-auto text-warn" aria-hidden />
-                  <p className="text-xs leading-relaxed text-fg-2">{sceneError}</p>
-                </div>
-              </div>
+              <StudioMannequinSceneErrorStage
+                message={sceneError}
+                presentation={presentation}
+                onRetry={() => {
+                  setSceneError(null);
+                  setSceneReady(false);
+                  setSceneRetryNonce((n) => n + 1);
+                }}
+                onReturnToStudio={closePanel}
+              />
             ) : (
               <div
                 ref={viewportRef}
@@ -1824,7 +1809,7 @@ export function StudioMannequinPoserPanel({
                     }}
                     onCapture={handleCapture}
                     capturing={capturing}
-                    captureDisabled={persistenceStatus !== "ready"}
+                    captureDisabled={persistenceStatus !== "ready" || Boolean(sceneError) || !sceneReady}
                     captureLabel={captureTarget === "download" ? "PNG로 저장" : "캔버스로 캡처"}
                     webcamActive={webcamActive}
                     webcamLoadingStage={webcamLoadingStage}
@@ -1854,7 +1839,7 @@ export function StudioMannequinPoserPanel({
           </aside>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+  return presentation === "page" ? panelContent : createPortal(panelContent, document.body);
 }

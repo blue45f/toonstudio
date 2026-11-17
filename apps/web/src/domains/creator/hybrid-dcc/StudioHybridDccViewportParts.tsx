@@ -1,8 +1,9 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import { Component, useEffect, type ReactNode } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
 
 /**
@@ -104,5 +105,47 @@ export function SegmentedButton({
     >
       {children}
     </button>
+  );
+}
+
+export type StudioHybridDccEngineState = "initializing" | "ready" | "error";
+
+export function StudioHybridDccEngineStatusBadge({
+  state,
+}: {
+  readonly state: StudioHybridDccEngineState;
+}) {
+  const bt = useBilingual("StudioHybridDccViewport");
+  const label =
+    state === "ready"
+      ? bt("WebGL2 활성", "WebGL2 active")
+      : state === "error"
+        ? bt("WebGL2 미지원", "WebGL2 unavailable")
+        : bt("렌더러 확인 중", "Checking renderer");
+
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      data-testid="studio-hybrid-dcc-engine-status"
+      data-engine-state={state}
+      className={classes(
+        "inline-flex min-h-5 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.62rem] font-semibold [word-break:keep-all]",
+        state === "ready"
+          ? "border-good/35 bg-good/10 text-good"
+          : state === "error"
+            ? "border-warn/45 bg-warn/10 text-warn"
+            : "border-line bg-card/70 text-fg-2",
+      )}
+    >
+      {state === "initializing" ? (
+        <Loader2 size={10} className="shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      ) : state === "ready" ? (
+        <Check size={10} className="shrink-0" aria-hidden="true" />
+      ) : (
+        <AlertTriangle size={10} className="shrink-0" aria-hidden="true" />
+      )}
+      <span>{label}</span>
+    </span>
   );
 }

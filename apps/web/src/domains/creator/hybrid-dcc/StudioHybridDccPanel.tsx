@@ -185,10 +185,11 @@ export function StudioHybridDccPanel({
       createStudioHybridDccComponentSelection(),
       ws,
     ));
-  const [log, setLog] = useState<string>(() => bt(
+  const defaultReadyLog = bt(
     "준비됨 · 큐브를 추가하거나 모델을 가져와 3D 제작을 시작하세요.",
     "Ready · Add a cube or import a model to start.",
-  ));
+  );
+  const [log, setLog] = useState<string>(() => defaultReadyLog);
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
   // null = 아직 확인 전. 확인이 끝나면 뷰포트와 상단 안내가 같은 결과를 쓴다.
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
@@ -1008,7 +1009,13 @@ export function StudioHybridDccPanel({
 
       <footer className="sticky bottom-0 z-10 min-w-0 rounded-xl border border-line bg-panel px-3 py-2 shadow-lg [overflow-wrap:anywhere]">
         <p className="min-w-0 break-words text-xs text-fg [overflow-wrap:anywhere]" data-studio-hybrid-dcc-log="true" aria-live="polite">
-          {busy ? bt("작업 처리 중… ", "Working… ") : ""}{log}
+          {busy ? bt("작업 처리 중… ", "Working… ") : ""}
+          {webglSupported === false && log === defaultReadyLog
+            ? bt(
+                "3D 미리보기 대기 · 그래픽 가속(WebGL 2)이 꺼져 있어 3D 화면을 멈췄습니다. 메시 데이터와 파일 가져오기는 안전합니다.",
+                "3D preview paused · WebGL 2 hardware acceleration is off. Mesh data and file imports remain safe.",
+              )
+            : log}
         </p>
         <p
           className="mt-1 min-w-0 break-words text-[0.6875rem] text-fg-3 [overflow-wrap:anywhere]"
