@@ -1868,7 +1868,7 @@ export class StudioProjectGraphRepository {
       if (!review) throw new StudioProjectNotFoundError("review");
       const accessResult = await loadArtifactAccess(client, actorUserId, review.artifactId, true);
       if (!accessResult) throw new StudioProjectNotFoundError("artifact");
-      assertAccess(accessResult.access, "manageMembers");
+      assertAccess(accessResult.access, "manage");
       if (!["open", "changes-requested"].includes(review.status)) {
         throw new StudioRepositoryInvariantError("review_already_decided", "cannot assign reviewers after a terminal review decision");
       }

@@ -161,7 +161,7 @@ export class StudioReviewPreviewProducerRepository {
         ...(sourceRevisionScope ? { sourceRevisionScope } : {}) };
       const targetAccess = await target(connection, actor, intent, false);
       if (intent.reviewerIds?.length) {
-        assertAccess(targetAccess.access, "manageMembers");
+        assertAccess(targetAccess.access, "manage");
         const reviewerAccess = await connection.query<{ id: string }>(
           `SELECT candidate.id
            FROM unnest($1::text[]) AS candidate(id)
@@ -310,7 +310,7 @@ export class StudioReviewPreviewProducerRepository {
         [reviewId, intent.artifactId, revisionId, actor, intent.title]);
       const designatedReviewerIds = intent.reviewerIds?.length ? intent.reviewerIds : [source.ownerUserId];
       if (intent.reviewerIds?.length) {
-        assertAccess(access.access, "manageMembers");
+        assertAccess(access.access, "manage");
         const reviewerAccess = await client.query<{ id: string }>(
           `SELECT candidate.id
            FROM unnest($1::text[]) AS candidate(id)
