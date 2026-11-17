@@ -128,6 +128,7 @@ describe("explicit saved comment production UI", () => {
     io.save.mockRejectedValueOnce(new Error("lost")); renderUi(<StudioReviewProductionConnection request={f.request} />); await select();
     fireEvent.click(screen.getByRole("button", { name: "선택한 작업에 연결" }));
     const retry = await screen.findByRole("button", { name: "같은 연결 다시 확인" }); expect(io.save).toHaveBeenCalledOnce();
+    expect(screen.getByText(/검수 의견 자체는 저장되어 보존되었습니다/u)).toBeTruthy();
     fireEvent.click(retry); await screen.findByText(/제작 작업에 연결했어요/u);
     expect(io.save).toHaveBeenCalledTimes(2); expect(io.save.mock.calls[0]?.slice(0, 3)).toEqual(io.save.mock.calls[1]?.slice(0, 3));
   });

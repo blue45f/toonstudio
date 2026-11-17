@@ -164,10 +164,10 @@ describe("real pinned preview to spatial note integration", () => {
       nextCursor: null,
     }));
     render(<MemoryRouter><StudioPinnedReviewPanel subject={subject} /></MemoryRouter>);
-    await screen.findByText("컷 3 손 위치 보정 필요");
+    await screen.findAllByText("컷 3 손 위치 보정 필요");
     await waitFor(() => {
-      const noteCard = screen.getByText("컷 3 손 위치 보정 필요").closest("article");
-      expect(noteCard?.textContent).toContain("1페이지 · 컷 3 · 지정 영역 (100, 620 px)");
+      const noteCard = screen.getByRole("article");
+      expect(noteCard.textContent).toContain("1페이지 · 컷 3 · 지정 영역 (100, 620 px)");
     });
   });
 });

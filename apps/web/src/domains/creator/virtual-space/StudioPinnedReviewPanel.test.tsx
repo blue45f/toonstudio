@@ -295,4 +295,33 @@ describe("Pinned review UI authority", () => {
     expect(f.newId).toHaveBeenCalledOnce();
     expect(f.decide).not.toHaveBeenCalled();
   });
+
+  it("응답 유실 뒤 검토 기록 새로 확인으로 서버 반영이 확인되면 중복 POST 없이 초안을 수렴하고 결정적 409 거절은 불확실 상태로 남기지 않는다", async () => {
+    f.create.mockRejectedValueOnce(new Error("network response lost"));
+    render(<StudioPinnedReviewPanel subject={subject} />);
+    await writeNote();
+    await screen.findByText(/저장 결과를 확인하지 못했어요/u);
+
+    const baseline = verified();
+    if (!baseline.ok) throw new Error("Missing baseline");
+    f.verify.mockResolvedValue({
+      ...baseline,
+      review: {
+        ...baseline.review,
+        comments: [{ id: "note-identity", body: "Keep the final panel.", status: "open", severity: "note" }],
+      },
+    } as StudioVirtualSpaceReviewVerification);
+    fireEvent.click(screen.getByRole("button", { name: "검토 기록 새로 확인" }));
+    await screen.findByText(/이미 저장된 것을 확인했어요/u);
+    expect((screen.getByLabelText("이 버전에 의견 남기기") as HTMLTextAreaElement).value).toBe("");
+    expect(f.create).toHaveBeenCalledOnce();
+
+    // 결정적 409 거절 시 불확실 보류 배너 대신 상태 변경 안내를 표시한다.
+    f.newId.mockReturnValue("note-conflict");
+    f.create.mockRejectedValueOnce(Object.assign(new Error("conflict"), { status: 409 }));
+    fireEvent.change(screen.getByLabelText("이 버전에 의견 남기기"), { target: { value: "Second note" } });
+    fireEvent.click(screen.getByRole("button", { name: "의견 저장" }));
+    await screen.findByText(/검수 상태나 의견 조건이 변경되어 저장하지 않았어요/u);
+    expect(screen.queryByText(/직접 저장한 의견의 결과부터 다시 확인해 주세요/u)).toBeNull();
+  });
 });

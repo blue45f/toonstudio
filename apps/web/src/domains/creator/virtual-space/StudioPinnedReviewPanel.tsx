@@ -5,7 +5,8 @@ import { lazy, Suspense, useCallback, useEffect, useId, useLayoutEffect, useRef,
 import { validateStudioReviewSpatialAnchor } from "@toonstudio/studio-project-model";
 import { useSession } from "@/domains/auth/public/session/auth-session-store";
 import { getAuthSessionRevision, listeners as sessionListeners, type Session } from "@/domains/auth/public/session/auth-session-state";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { httpStatus } from "@/platform/api";
+import { translateBilingualValueForActiveLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { createStudioReviewComment, newStudioProjectGraphId } from "../project-graph/studio-project-graph-client";
 import type { StudioReviewCommentCreateInput } from "../project-graph/studio-project-graph-contract";
 import { getStudioTeam } from "../studio-team-client";
@@ -114,6 +115,10 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
     if (scope !== generation.current || own !== readGeneration.current) return;
     if (sessionRevision !== getAuthSessionRevision()) { setResult(null); setLoading(false); return; }
     if (!next.ok || !next.project.access.comment || !["open", "changes-requested"].includes(next.review.status)) selectAnnotation(null);
+    if (next.ok && attempted.current && next.review.comments.some((comment) => comment.id === attempted.current?.input.id)) {
+      attempted.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
+      setNotice(translateBilingualValueForActiveLocale("StudioPinnedReviewPanel", "목록 재확인 결과 이 검수 버전에 의견이 이미 저장된 것을 확인했어요.", "Verified on refresh: your note was already saved to this review version."));
+    }
     setResult(next.ok && next.expiresAt <= Date.now() ? { ok: false, reason: "unavailable" } : next); setLoading(false);
   }, [actorId, subject, selectAnnotation]);
   useEffect(() => {
@@ -189,8 +194,20 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       attempted.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
       setNotice(bt("이 검수 버전에 의견을 남겼어요.", "Your note was saved to this review version."));
       await refresh();
-    } catch {
-      if (own === generation.current && sessionRevision === getAuthSessionRevision()) setNotice(bt("저장 결과를 확인하지 못했어요. 입력은 남겨 두었어요. 목록을 새로 확인해 주세요.", "The save could not be confirmed. Your draft is preserved. Refresh the review before trying again."));
+    } catch (error) {
+      if (own === generation.current && sessionRevision === getAuthSessionRevision()) {
+        const status = httpStatus(error)
+          ?? (error && typeof error === "object" && "status" in error && typeof error.status === "number" ? error.status : null);
+        const deterministicClientRejection = status !== null && status >= 400 && status < 500 && status !== 408 && status !== 429;
+        if (deterministicClientRejection) {
+          attempted.current = null;
+          setNotice(status === 403
+            ? bt("현재 검수본에 의견을 남길 권한이 변경되었어요. 검토 기록을 새로 확인해 주세요.", "Comment permission changed. Refresh the review.")
+            : bt("검수 상태나 의견 조건이 변경되어 저장하지 않았어요. 검토 기록을 새로 확인해 주세요.", "Review state or note conditions changed; the note was not saved. Refresh the review."));
+        } else {
+          setNotice(bt("저장 결과를 확인하지 못했어요. 입력은 남겨 두었어요. 목록을 새로 확인해 주세요.", "The save could not be confirmed. Your draft is preserved. Refresh the review before trying again."));
+        }
+      }
     } finally { if (own === generation.current) setBusy(false); }
   };
   const draftDue = studioReviewDueAt(due);
