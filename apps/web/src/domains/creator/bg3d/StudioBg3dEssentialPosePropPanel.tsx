@@ -40,6 +40,8 @@ function categoryShortLabel(category: StudioBg3dEssentialAssetCategory): string 
       return "V13 모델러";
     case "blender-precision-bg-v14-prop-3d":
       return "V14 정밀배경";
+    case "blender-artisan-v15-prop-3d":
+      return "V15 아티잔";
     case "original-scene-prop-3d":
       return "배경·가구";
     case "original-hand-wear-prop-3d":
