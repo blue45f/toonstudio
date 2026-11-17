@@ -144,6 +144,8 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 #studio-app-shell[data-studio-drawing-clarity=true] :is([data-studio-canvas-status-rail],[data-studio-status-bar]){
   border-color:color-mix(in oklch,var(--color-accent) 22%,var(--color-line-strong))!important;background:color-mix(in oklch,var(--color-panel) 90%,transparent)!important;backdrop-filter:blur(16px) saturate(1.2)
 }
+/* 데스크톱에서도 자동저장 복구·팔로워·내부편집·채우기 미리보기 배너가 마운트될 때 캔버스 원점(77.5px)이 밀리지 않도록 오버레이로 고정한다. */
+[data-studio-editor=true] [data-studio-canvas-status-rail]:not([data-studio-canvas-status-rail-filled])>:not([data-studio-selection-command-lane=true]){position:absolute;inset:3.5rem .75rem auto;z-index:25;margin-bottom:0}
 #studio-app-shell[data-studio-drawing-clarity-mobile=true] [data-studio-mobile-editing-dock=true]{
   background:color-mix(in oklch,var(--color-panel) 92%,transparent);backdrop-filter:blur(18px) saturate(1.2)
 }
