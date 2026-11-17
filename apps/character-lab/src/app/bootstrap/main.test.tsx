@@ -7,7 +7,7 @@
 import { act, cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { failVisible } from "../../contracts";
+import { createKitDefaultRecipe, failVisible } from "../../contracts";
 
 beforeEach(() => {
   vi.resetModules();
@@ -32,6 +32,7 @@ describe("app/bootstrap/main", () => {
     const { CatalogInvariantError } = await import("../shell/catalog-registry");
     const error = new CatalogInvariantError([failVisible("catalog-slot-min", "슬롯 hair의 프리셋이 부족합니다.", undefined, 0)]);
     vi.doMock("../composition", () => ({
+      createKitShowcaseBootRecipe: () => createKitDefaultRecipe(),
       composeCharacterLab: () => {
         throw error;
       },
@@ -44,6 +45,7 @@ describe("app/bootstrap/main", () => {
 
   it("영역 모듈 초기화 오류는 오류 이름·메시지를 그대로 보여준다", async () => {
     vi.doMock("../composition", () => ({
+      createKitShowcaseBootRecipe: () => createKitDefaultRecipe(),
       composeCharacterLab: () => {
         throw new RangeError("세분 단계가 범위를 벗어났습니다.");
       },
@@ -56,7 +58,10 @@ describe("app/bootstrap/main", () => {
   it("정상 조립이면 엔진을 만들지 않은 채 셸 골격(슬롯 레일·인스펙터)을 그린다", async () => {
     const { createMockRuntime } = await import("../../testing/mock-runtime");
     const mock = createMockRuntime();
-    vi.doMock("../composition", () => ({ composeCharacterLab: () => mock.runtime }));
+    vi.doMock("../composition", () => ({
+      createKitShowcaseBootRecipe: () => createKitDefaultRecipe(),
+      composeCharacterLab: () => mock.runtime,
+    }));
     await startApp();
     expect(screen.getByRole("heading", { level: 1, name: "ToonStudio Character Lab" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "슬롯 레일(15칸)" })).toBeTruthy();

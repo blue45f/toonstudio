@@ -10,7 +10,7 @@
     "blenderVersion": "5.3.0"
   },
   "pipelineRun": {
-    "pipelineManifestConfigDigest": "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792",
+    "pipelineManifestConfigDigest": "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed",
     "toonstudioPackageKind": "toonstudio.character-package"
   },
   "sourceProvenance": {
@@ -22,13 +22,13 @@
   "files": {
     "glb": {
       "path": "shaper-murim-swordmaster.glb",
-      "bytes": 2185668,
-      "sha256": "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792"
+      "bytes": 2126008,
+      "sha256": "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed"
     },
     "contactSheet": {
       "path": "contact-sheet.png",
-      "bytes": 1325895,
-      "sha256": "0b238fc99832ce9c8b7fc9307a5826f3ea146624b69314ac1274f94832d99a76"
+      "bytes": 1434383,
+      "sha256": "1201bf5fd1970e8c23099e99103a174cfb0f2e709d892a6e208b2a19aef77000"
     },
     "slotMapping": {
       "path": "slot-mapping.json",
@@ -1132,7 +1132,7 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 3880,
+      "triangles": 3768,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1148,7 +1148,7 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 3880,
+      "triangles": 3768,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1164,7 +1164,7 @@
       "lod": 1,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 2161,
+      "triangles": 2089,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1180,7 +1180,7 @@
       "lod": 2,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 830,
+      "triangles": 801,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1212,7 +1212,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 6661,
+      "triangles": 6607,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1484,9 +1484,9 @@
         "enabled": true,
         "style": "action-pony",
         "lodTriangles": [
-          3880,
-          2161,
-          830
+          3768,
+          2089,
+          801
         ],
         "replacedSourceMeshes": []
       },

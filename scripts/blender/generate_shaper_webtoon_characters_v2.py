@@ -25,6 +25,7 @@ from shaper_webtoon_head_and_textures import (  # noqa: E402
     _hex_to_rgb01,
     bake_couture_fabric_texture,
     bake_jewel_iris_texture,
+    bake_luster_surface_texture,
     bake_ombre_hair_texture,
     bake_webtoon_skin_texture,
     build_korean_webtoon_head_and_face,
@@ -191,7 +192,7 @@ CHARACTER_SPECS: list[dict[str, Any]] = [
             "hairRoot": "#C49240", "hairMid": "#E6BF6E", "hairTip": "#FFF0BE", "hairHalo": "#FFFFFF",
             "top1": "#F5ECE0", "top2": "#DBC6AA", "topAcc": "#E5B95C", "topPat": "brocade",
             "bot1": "#7A1C34", "bot2": "#4D0F20", "botAcc": "#F0C86E", "botPat": "brocade",
-            "shoe": "#D8B46A", "acc": "#F4CA64", "gold": "#FFE08A",
+            "shoe": "#D8B46A", "acc": "#D92654", "gold": "#FFE08A",
         },
         "noteKo": "Blender 5.3에서 금빛 롱 웨이브 헤어·에메랄드 보석안·벨벳 숄더 케이프·황실 브로케이드 롱 드레스·루비 세공 티아라 크라운을 조형한 로맨스 판타지 황녀 패키지.",
     },
@@ -286,6 +287,18 @@ def _clear_mesh_shape_keys(obj: bpy.types.Object) -> None:
         obj.shape_key_clear()
 
 
+def _replace_accessory_object(part_objs: dict[str, bpy.types.Object], new_obj: bpy.types.Object) -> None:
+    acc_obj = part_objs["accessory"]
+    w_list = _extract_vert_weights(new_obj)
+    acc_obj.data = new_obj.data
+    acc_obj.data.name = acc_obj.name
+    acc_obj.vertex_groups.clear()
+    _assign_weights(acc_obj, w_list)
+    new_obj.hide_render = True
+    for c_ref in list(new_obj.users_collection):
+        c_ref.objects.unlink(new_obj)
+
+
 def _extract_vert_weights(obj: bpy.types.Object) -> list[dict[str, float]]:
     idx_to_name = {vg.index: vg.name for vg in obj.vertex_groups}
     out: list[dict[str, float]] = []
@@ -299,14 +312,23 @@ def _extract_vert_weights(obj: bpy.types.Object) -> list[dict[str, float]]:
     return out
 
 
-def _fold_vertex_groups_to_55(obj: bpy.types.Object, arm_obj: bpy.types.Object) -> None:
+def _fold_vertex_groups_to_55(
+    obj: bpy.types.Object,
+    arm_obj: bpy.types.Object,
+    rebind_body_neck: bool = False,
+) -> None:
     for old_n, new_n in BONE_RENAME_MAP.items():
         vg = obj.vertex_groups.get(old_n)
         if vg:
             vg.name = new_n
 
+    fold_map = dict(END_BONE_FOLD_MAP)
+    if rebind_body_neck:
+        fold_map["mixamorig:Head"] = "mixamorig:Neck"
+        fold_map["TS_ShaperJaw"] = "mixamorig:Neck"
+
     vg_index_to_name = {vg.index: vg.name for vg in obj.vertex_groups}
-    end_indices = {idx: END_BONE_FOLD_MAP[name] for idx, name in vg_index_to_name.items() if name in END_BONE_FOLD_MAP}
+    end_indices = {idx: fold_map[name] for idx, name in vg_index_to_name.items() if name in fold_map}
     if end_indices:
         for v in obj.data.vertices:
             add_map: dict[str, float] = {}
@@ -324,7 +346,7 @@ def _fold_vertex_groups_to_55(obj: bpy.types.Object, arm_obj: bpy.types.Object) 
                         cur_w = g.weight
                         break
                 p_vg.add([v.index], min(1.0, cur_w + extra_w), "REPLACE")
-        for old_end in END_BONE_FOLD_MAP:
+        for old_end in fold_map:
             vg = obj.vertex_groups.get(old_end)
             if vg:
                 obj.vertex_groups.remove(vg)
@@ -356,18 +378,39 @@ def _decimate_clean(obj: bpy.types.Object, ratio: float) -> None:
     bpy.ops.object.modifier_apply(modifier=mod.name)
 
 
-def _trim_body_hidden_regions(body_obj: bpy.types.Object, hide_feet: bool) -> None:
+def _measure_and_trim_body_neck(
+    body_obj: bpy.types.Object,
+    neck_z: float,
+    hide_feet: bool,
+    is_male: bool,
+) -> tuple[float, float, float]:
     bm = bmesh.new()
     bm.from_mesh(body_obj.data)
+    ring_pts = [
+        v.co.copy() for v in bm.verts
+        if abs(v.co.x) < 0.082 and (neck_z - 0.018) <= v.co.z <= (neck_z + 0.010)
+    ]
+    if len(ring_pts) >= 8:
+        rx_fit = max(0.038, min(0.060, max(abs(p.x) for p in ring_pts) * 0.96))
+        min_y = min(p.y for p in ring_pts)
+        max_y = max(p.y for p in ring_pts)
+        ry_fit = max(0.038, min(0.060, 0.5 * (max_y - min_y) * 0.96))
+        cy_fit = 0.5 * (min_y + max_y)
+    else:
+        rx_fit = 0.051 if is_male else 0.044
+        ry_fit = 0.051 if is_male else 0.045
+        cy_fit = -0.022
+
     to_del = [
         v for v in bm.verts
-        if (abs(v.co.x) < 0.085 and v.co.z > 1.422) or (hide_feet and v.co.z < 0.095)
+        if (abs(v.co.x) < 0.082 and v.co.z > neck_z + 0.006) or (hide_feet and v.co.z < 0.095)
     ]
     if to_del:
         bmesh.ops.delete(bm, geom=to_del, context="VERTS")
     bm.to_mesh(body_obj.data)
     bm.free()
     body_obj.data.update()
+    return (rx_fit, ry_fit, cy_fit)
 
 
 def _create_hair_outline(lod0_obj: bpy.types.Object, style: str, outline_hex: str = "#16111B") -> bpy.types.Object:
@@ -408,6 +451,15 @@ def _new_bmesh_part(name: str, bm: bmesh.types.BMesh, mat: bpy.types.Material, a
     mesh = bpy.data.meshes.new(name)
     bm.to_mesh(mesh)
     bm.free()
+    if not mesh.uv_layers:
+        uv_data = mesh.uv_layers.new(name="UVMap").data
+        for poly in mesh.polygons:
+            for k_idx, loop_idx in enumerate(poly.loop_indices):
+                v_co = mesh.vertices[mesh.loops[loop_idx].vertex_index].co
+                uv_data[loop_idx].uv = (
+                    0.5 + 0.35 * math.sin(v_co.x * 18.0 + v_co.y * 13.0) + 0.03 * k_idx,
+                    0.15 + 0.70 * max(0.0, min(1.0, (v_co.z - 0.45) / 1.25)),
+                )
     for p in mesh.polygons:
         p.use_smooth = True
     obj = bpy.data.objects.new(name, mesh)
@@ -467,7 +519,7 @@ def _join_into(target: bpy.types.Object, extras: list[bpy.types.Object]) -> None
 
 
 def _trim_kit_hair_inner_forehead_fringe(hair_obj: bpy.types.Object, eye_z: float, y_cranium: float) -> None:
-    """Removes short jagged inner forehead triangles on kit hair before joining sculpted bangs."""
+    """Trims inner forehead kit-hair triangles so eyes remain crisp in small cuts."""
     weights = _extract_vert_weights(hair_obj)
     bm = bmesh.new()
     bm.from_mesh(hair_obj.data)
@@ -475,7 +527,7 @@ def _trim_kit_hair_inner_forehead_fringe(hair_obj: bpy.types.Object, eye_z: floa
     keep_indices = []
     to_del = []
     for v in bm.verts:
-        if abs(v.co.x) < 0.048 and v.co.y < y_cranium - 0.068 and eye_z + 0.010 < v.co.z < eye_z + 0.088:
+        if abs(v.co.x) < 0.054 and v.co.y < y_cranium - 0.054 and eye_z - 0.055 < v.co.z < eye_z + 0.088:
             to_del.append(v)
         else:
             keep_indices.append(v.index)
@@ -498,7 +550,7 @@ def _scale_head_proportion_around_neck(
     acc_obj: bpy.types.Object,
     h_scale: float,
 ) -> None:
-    """Scales head, eyes, hair, and head-mounted accessories around neck pivot for true Korean manhwa proportions."""
+    """Scales head, eyes, hair, and head accessories smoothly above neck base."""
     pivot = arm_obj.data.bones["mixamorig:Neck"].head_local.copy()
     head_bones = {"mixamorig:Head", "TS_ShaperEye.L", "TS_ShaperEye.R", "TS_ShaperJaw"}
 
@@ -514,22 +566,27 @@ def _scale_head_proportion_around_neck(
             eb.tail = pivot + (eb.tail - pivot) * h_scale
     bpy.ops.object.mode_set(mode="OBJECT")
 
+    def _neck_taper_scale(z_val: float, is_head_mesh: bool) -> float:
+        if not is_head_mesh:
+            return h_scale
+        t = max(0.0, min(1.0, (z_val - (pivot.z + 0.002)) / 0.040))
+        return 1.0 + (h_scale - 1.0) * (t * t * (3.0 - 2.0 * t))
+
     for m_obj in head_group_objs:
+        is_head_m = m_obj.name == "TS_Shaper_Head"
         if m_obj.data.shape_keys:
+            basis_zs = [elem.co.z for elem in m_obj.data.shape_keys.key_blocks[0].data]
             for kb in m_obj.data.shape_keys.key_blocks:
-                for elem in kb.data:
-                    elem.co = pivot + (elem.co - pivot) * h_scale
+                for idx_v, elem in enumerate(kb.data):
+                    s_v = _neck_taper_scale(basis_zs[idx_v], is_head_m)
+                    elem.co = pivot + (elem.co - pivot) * s_v
         else:
             for v in m_obj.data.vertices:
-                v.co = pivot + (v.co - pivot) * h_scale
+                s_v = _neck_taper_scale(v.co.z, is_head_m)
+                v.co = pivot + (v.co - pivot) * s_v
         m_obj.data.update()
 
-    for v in body_obj.data.vertices:
-        if v.co.z > pivot.z - 0.015:
-            t = max(0.0, min(1.0, (v.co.z - (pivot.z - 0.015)) / 0.040))
-            s_loc = 1.0 + (h_scale - 1.0) * t
-            v.co = pivot + (v.co - pivot) * s_loc
-    body_obj.data.update()
+    _ = body_obj
 
     vg_head = acc_obj.vertex_groups.get("mixamorig:Head")
     if vg_head is not None:
@@ -628,8 +685,10 @@ def _add_bespoke_couture(
             for iu in range(17):
                 f = bm_coat.faces.new((c_rings[iv][iu], c_rings[iv][iu + 1], c_rings[iv + 1][iu + 1], c_rings[iv + 1][iu]))
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_l].uv = (0.5, 0.85)
+                f.loops[0][uv_l].uv = (iu / 17.0, 0.82 + 0.14 * (iv / 3.0))
+                f.loops[1][uv_l].uv = ((iu + 1) / 17.0, 0.82 + 0.14 * (iv / 3.0))
+                f.loops[2][uv_l].uv = ((iu + 1) / 17.0, 0.82 + 0.14 * ((iv + 1) / 3.0))
+                f.loops[3][uv_l].uv = (iu / 17.0, 0.82 + 0.14 * ((iv + 1) / 3.0))
         tails = _new_bmesh_part("_tmp_tails", bm_coat, top_mat, arm_obj, "mixamorig:Hips")
         tw_list = [
             {"mixamorig:Neck": 0.7, "mixamorig:Spine2": 0.3} if v.co.z > 1.30
@@ -671,28 +730,36 @@ def _add_bespoke_couture(
         tiara = _new_bmesh_part("_tmp_tiara", bm_t, gold_mat, arm_obj, "mixamorig:Head")
 
         bm_gem = bmesh.new()
-        for ang, gz in ((0.0, base_z + 0.022), (-0.48, base_z + 0.015), (0.48, base_z + 0.015), (0.0, 1.385)):
+        for ang, gz in ((0.0, base_z + 0.022), (-0.48, base_z + 0.015), (0.48, base_z + 0.015)):
             g = bmesh.ops.create_uvsphere(bm_gem, u_segments=12, v_segments=8, radius=0.0058)
-            vec_t = (0.0, -0.072, gz) if gz < 1.45 else (band_r_x * math.sin(ang), -0.055 - band_r_y * math.cos(ang), gz)
-            bmesh.ops.translate(bm_gem, vec=vec_t, verts=g["verts"])
+            bmesh.ops.translate(bm_gem, vec=(band_r_x * math.sin(ang), -0.055 - band_r_y * math.cos(ang), gz), verts=g["verts"])
         gems = _new_bmesh_part("_tmp_gems", bm_gem, gem_mat, arm_obj, "mixamorig:Head")
-        _join_into(part_objs["accessory"], [tiara, gems])
+
+        bm_brooch = bmesh.new()
+        gb_set = bmesh.ops.create_uvsphere(bm_brooch, u_segments=14, v_segments=10, radius=0.0082)
+        bmesh.ops.scale(bm_brooch, vec=(1.05, 0.48, 1.25), verts=gb_set["verts"])
+        bmesh.ops.translate(bm_brooch, vec=(0.0, -0.106, 1.338), verts=gb_set["verts"])
+        collar_gem = _new_bmesh_part("_tmp_collar_gem", bm_brooch, gem_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(tiara, [gems, collar_gem])
+        _replace_accessory_object(part_objs, tiara)
 
         bm_cp = bmesh.new()
         uv_cp = bm_cp.loops.layers.uv.new("UVMap")
         c_rows = []
         for iv in range(7):
             tv = iv / 6.0
-            z = 1.382 - 0.135 * tv
-            rx, ry = 0.085 + 0.135 * (tv ** 0.78), 0.072 + 0.068 * (tv ** 0.85)
+            z = 1.374 - 0.132 * tv
+            rx, ry = 0.078 + 0.142 * (tv ** 0.78), 0.068 + 0.072 * (tv ** 0.85)
             c_rows.append([bm_cp.verts.new(((rx + 0.004 * math.sin((iu / 24) * 20.0 * math.pi) * tv) * math.sin((iu / 24) * 2.0 * math.pi), -0.015 - (ry + 0.004 * math.sin((iu / 24) * 20.0 * math.pi) * tv) * math.cos((iu / 24) * 2.0 * math.pi), z)) for iu in range(24)])
         for iv in range(6):
             for iu in range(24):
                 inext = (iu + 1) % 24
                 f = bm_cp.faces.new((c_rows[iv][iu], c_rows[iv][inext], c_rows[iv + 1][inext], c_rows[iv + 1][iu]))
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_cp].uv = (iu / 24, 1.0 - iv / 6.0)
+                f.loops[0][uv_cp].uv = (iu / 24.0, 1.0 - iv / 6.0)
+                f.loops[1][uv_cp].uv = ((iu + 1) / 24.0, 1.0 - iv / 6.0)
+                f.loops[2][uv_cp].uv = ((iu + 1) / 24.0, 1.0 - (iv + 1) / 6.0)
+                f.loops[3][uv_cp].uv = (iu / 24.0, 1.0 - (iv + 1) / 6.0)
         cape = _new_bmesh_part("_tmp_cape", bm_cp, top_mat, arm_obj, "mixamorig:Spine2")
         _join_into(part_objs["top"], [cape])
 
@@ -705,8 +772,10 @@ def _add_bespoke_couture(
                 inext = (iu + 1) % 24
                 f = bm_sash.faces.new((s_rows[iv][iu], s_rows[iv][inext], s_rows[iv + 1][inext], s_rows[iv + 1][iu]))
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_s].uv = (iu / 24, 0.05)
+                f.loops[0][uv_s].uv = (iu / 24.0, 0.05 + 0.16 * (iv / 4.0))
+                f.loops[1][uv_s].uv = ((iu + 1) / 24.0, 0.05 + 0.16 * (iv / 4.0))
+                f.loops[2][uv_s].uv = ((iu + 1) / 24.0, 0.05 + 0.16 * ((iv + 1) / 4.0))
+                f.loops[3][uv_s].uv = (iu / 24.0, 0.05 + 0.16 * ((iv + 1) / 4.0))
         sash = _new_bmesh_part("_tmp_sash", bm_sash, gold_mat, arm_obj, "mixamorig:Spine")
         _join_into(part_objs["top"], [sash])
 
@@ -727,14 +796,7 @@ def _add_bespoke_couture(
         sw_weights = [{"mixamorig:Head": 1.0} if v.co.z > 1.59 and v.co.y < 0.08 else {"mixamorig:Spine2": 1.0} for v in sword_obj.data.vertices]
         sword_obj.vertex_groups.clear()
         _assign_weights(sword_obj, sw_weights)
-        old_acc = part_objs["accessory"]
-        acc_name = old_acc.name
-        old_mesh = old_acc.data
-        bpy.data.objects.remove(old_acc, do_unlink=True)
-        bpy.data.meshes.remove(old_mesh)
-        sword_obj.name = acc_name
-        sword_obj.data.name = acc_name
-        part_objs["accessory"] = sword_obj
+        _replace_accessory_object(part_objs, sword_obj)
 
     elif mode == "cyber-idol":
         bm_id = bmesh.new()
@@ -770,8 +832,10 @@ def _add_bespoke_couture(
             for iu in range(21):
                 f = bm_dc.faces.new((d_rows[iv][iu], d_rows[iv][iu + 1], d_rows[iv + 1][iu + 1], d_rows[iv + 1][iu]))
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_dc].uv = (iu / 21.0, 1.0 - iv / 9.0)
+                f.loops[0][uv_dc].uv = (iu / 21.0, 1.0 - iv / 9.0)
+                f.loops[1][uv_dc].uv = ((iu + 1) / 21.0, 1.0 - iv / 9.0)
+                f.loops[2][uv_dc].uv = ((iu + 1) / 21.0, 1.0 - (iv + 1) / 9.0)
+                f.loops[3][uv_dc].uv = (iu / 21.0, 1.0 - (iv + 1) / 9.0)
         dc_cape = _new_bmesh_part("_tmp_duke_cape", bm_dc, top_mat, arm_obj, "mixamorig:Spine2")
         dc_weights = [{"mixamorig:Spine2": 0.85, "mixamorig:Neck": 0.15} if v.co.z > 1.20 else {"mixamorig:Spine1": 0.65, "mixamorig:Hips": 0.35} for v in dc_cape.data.vertices]
         dc_cape.vertex_groups.clear()
@@ -1105,6 +1169,10 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
             hair_png = bake_ombre_hair_texture(str(tdir / "hair.png"), cols["hairRoot"], cols["hairMid"], cols["hairTip"], cols["hairHalo"])
             top_png = bake_couture_fabric_texture(str(tdir / "top.png"), cols["top1"], cols["top2"], cols["topAcc"], cols["topPat"])
             bot_png = bake_couture_fabric_texture(str(tdir / "bot.png"), cols["bot1"], cols["bot2"], cols["botAcc"], cols["botPat"])
+            shoe_png = bake_luster_surface_texture(str(tdir / "shoe.png"), cols["shoe"])
+            acc_png = bake_luster_surface_texture(str(tdir / "acc.png"), cols["acc"])
+            gold_png = bake_luster_surface_texture(str(tdir / "gold.png"), cols["gold"], "#FFFFFF")
+            gem_png = bake_luster_surface_texture(str(tdir / "gem.png"), cols["acc"], "#FFFFFF")
 
             prev_objs = list(bpy.data.objects)
             prev_vis = {o.name: o.hide_render for o in prev_objs}
@@ -1144,9 +1212,15 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
             body_obj.name = "TS_Shaper_Body"
             body_obj.data.name = "TS_Shaper_Body"
             _clear_mesh_shape_keys(body_obj)
-            _trim_body_hidden_regions(body_obj, hide_feet=spec["hideFeet"])
+            neck_z_val = arm_obj.data.bones["mixamorig:Neck"].head_local.z
+            neck_ring_fit = _measure_and_trim_body_neck(
+                body_obj,
+                neck_z=neck_z_val,
+                hide_feet=spec["hideFeet"],
+                is_male=(gender == "male"),
+            )
             _decimate_clean(body_obj, ratio=0.18)
-            _fold_vertex_groups_to_55(body_obj, arm_obj)
+            _fold_vertex_groups_to_55(body_obj, arm_obj, rebind_body_neck=True)
 
             skin_mat = make_textured_pbr_material(f"mat_skin_{cid}", skin_png, roughness=0.62)
             sclera_mat = make_textured_pbr_material(f"mat_sclera_{cid}", None, (0.985, 0.985, 0.995, 1.0), roughness=0.24)
@@ -1159,12 +1233,12 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
             top_mat = make_textured_pbr_material(f"mat_top_{cid}", top_png, roughness=0.64)
             bot_mat = make_textured_pbr_material(f"mat_bot_{cid}", bot_png, roughness=0.66)
             sr, sg, sb = _hex_to_rgb01(cols["shoe"])
-            shoe_mat = make_textured_pbr_material(f"mat_shoe_{cid}", None, (sr, sg, sb, 1.0), roughness=0.36)
+            shoe_mat = make_textured_pbr_material(f"mat_shoe_{cid}", shoe_png, (sr, sg, sb, 1.0), roughness=0.36)
             ar_c, ag_c, ab_c = _hex_to_rgb01(cols["acc"])
-            acc_mat = make_textured_pbr_material(f"mat_acc_{cid}", None, (ar_c, ag_c, ab_c, 1.0), roughness=0.34, emission_hex=cols["acc"], emission_strength=0.06)
+            acc_mat = make_textured_pbr_material(f"mat_acc_{cid}", acc_png, (ar_c, ag_c, ab_c, 1.0), roughness=0.34, emission_hex=cols["acc"], emission_strength=0.06)
             gr, gg, gb = _hex_to_rgb01(cols["gold"])
-            gold_mat = make_textured_pbr_material(f"mat_gold_{cid}", None, (gr, gg, gb, 1.0), roughness=0.24, metallic=1.0)
-            gem_mat = make_textured_pbr_material(f"mat_gem_{cid}", None, (ar_c, ag_c, ab_c, 1.0), roughness=0.12, emission_hex=cols["acc"], emission_strength=0.26)
+            gold_mat = make_textured_pbr_material(f"mat_gold_{cid}", gold_png, (gr, gg, gb, 1.0), roughness=0.24, metallic=1.0)
+            gem_mat = make_textured_pbr_material(f"mat_gem_{cid}", gem_png, (ar_c, ag_c, ab_c, 1.0), roughness=0.12, emission_hex=cols["acc"], emission_strength=0.26)
 
             body_obj.data.materials.clear()
             body_obj.data.materials.append(skin_mat)
@@ -1179,6 +1253,7 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 highlight_mat=hl_mat,
                 lash_mat=lash_mat,
                 brow_mat=brow_mat,
+                neck_ring_fit=neck_ring_fit,
             )
 
             before_h = set(bpy.data.objects)

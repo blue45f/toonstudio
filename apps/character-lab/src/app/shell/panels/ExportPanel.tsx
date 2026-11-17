@@ -384,7 +384,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           if (!indexResult.ok) return undefined;
           const entry = indexResult.entries.find((item) => item.characterId === characterId);
           if (!entry) return undefined;
-          if (entry.glbSha256 !== expectedSha256) {
+          if (entry.glbSha256 !== null && entry.glbSha256 !== expectedSha256) {
             // 다른 SHA가 인덱스에 등록되어 있으면 해시 불일치 가드가 정확히 동작하도록 기존 엔트리를 반환한다.
             return { glbSha256: entry.glbSha256, capabilities: currentState.capabilities };
           }

@@ -72,9 +72,9 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(entries[1]?.summary.skeleton).toBe(false);
     expect(entries[2]?.summary.skeleton).toBe(true);
     expect(entries[3]?.summary.skeleton).toBe(true);
-    expect(entries[3]?.summary.hairLodTriangles).toEqual([5839, 2714, 900]);
+    expect(entries[3]?.summary.hairLodTriangles).toEqual([5771, 2683, 892]);
     expect(entries[4]?.summary.skeleton).toBe(true);
-    expect(entries[4]?.summary.hairLodTriangles).toEqual([4382, 2107, 672]);
+    expect(entries[4]?.summary.hairLodTriangles).toEqual([4288, 2065, 653]);
     for (const entry of entries.slice(3)) {
       expect(entry.contactSheetUrl).toBe(`/assets/characters/${entry.characterId}/contact-sheet.png`);
       expect(entry.summary.skeleton).toBe(true);
@@ -192,45 +192,45 @@ describe("authored/real-packages (public/assets/characters)", () => {
   it.each([
     {
       id: "shaper-atelier-protagonist",
-      sha: "ebbfbe6b082484d039daf41f99a30da920551c2824f4ce83f8484bf374658854",
-      bytes: 2_580_476,
+      sha: "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
+      bytes: 2_601_684,
       hairStyle: "wolf-layered",
-      lod: [5839, 2714, 900],
+      lod: [5771, 2683, 892],
     },
     {
       id: "shaper-atelier-male-lead",
-      sha: "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e",
-      bytes: 2_303_868,
+      sha: "ac54779a30a81ab3f90af99480428019f8b5bb2180278e7048d0228d372437eb",
+      bytes: 2_246_668,
       hairStyle: "short-layered",
-      lod: [4382, 2107, 672],
+      lod: [4288, 2065, 653],
     },
     {
       id: "shaper-rofan-empress",
-      sha: "a5ab43ccf0f0c27cb2d38bc7de63f4c5e0cbfd58456e15842a728b4b3ce286bb",
-      bytes: 2_524_596,
+      sha: "0f68d79c97be0273364d89765afaa79d0ab6d994c470d6ede4d41d6c34c2caee",
+      bytes: 2_495_548,
       hairStyle: "romance-long",
-      lod: [5179, 2725, 983],
+      lod: [5037, 2617, 930],
     },
     {
       id: "shaper-murim-swordmaster",
-      sha: "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792",
-      bytes: 2_185_668,
+      sha: "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed",
+      bytes: 2_126_008,
       hairStyle: "action-pony",
-      lod: [3880, 2161, 830],
+      lod: [3768, 2089, 801],
     },
     {
       id: "shaper-cyber-idol",
-      sha: "6c947886d41b3558536ec6c3497f8d6ec67737edd0c8ff6f86f7e5bbbd0899be",
-      bytes: 2_483_212,
+      sha: "176e55649da5fba564eb914ded97d42d7ad8e49a6428a0dcc5e9d21e30979074",
+      bytes: 2_514_380,
       hairStyle: "twin-tail",
-      lod: [5739, 3192, 1421],
+      lod: [5590, 3104, 1365],
     },
     {
       id: "shaper-noir-duke",
-      sha: "f2bf5ea1a830bed12ed4b3f15e76ceb866c47b4521d0b074b0b9c58470bde0db",
-      bytes: 2_477_584,
+      sha: "98b038f6474f966e22d1c33e211119cb4788877b2c681130d13488ba59d2abec",
+      bytes: 2_466_808,
       hairStyle: "wolf-layered",
-      lod: [5536, 2603, 854],
+      lod: [5460, 2567, 848],
     },
   ])("$id: Blender 5.3 제작 한국형 웹툰 리깅 패키지(55본·24 의미축·12 FACS·3-LOD 헤어)가 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async ({ id, sha, bytes, hairStyle, lod }) => {
     const entries = await loadIndexEntries();

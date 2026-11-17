@@ -120,24 +120,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 8,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        5839,
-        2714,
-        900
+        5771,
+        2683,
+        892
       ],
-      "glbTriangles": 44533,
+      "glbTriangles": 44310,
       "files": {
         "glb": {
           "path": "shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
-          "bytes": 2580476,
-          "sha256": "ebbfbe6b082484d039daf41f99a30da920551c2824f4ce83f8484bf374658854"
+          "bytes": 2601684,
+          "sha256": "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad"
         },
         "manifest": {
           "path": "shaper-atelier-protagonist/manifest.json",
           "bytes": 37626,
-          "sha256": "50b4c4f825137b29a1b63ac8636574c183ea85ba5c0844b6e2d2d65a4a5b0934"
+          "sha256": "84ff9875ef9425a81cfec0449cab53d0c9e3decd9605f8bd7ddba86a649c50ef"
         },
         "slotMapping": {
           "path": "shaper-atelier-protagonist/slot-mapping.json",
@@ -146,8 +146,8 @@
         },
         "contactSheet": {
           "path": "shaper-atelier-protagonist/contact-sheet.png",
-          "bytes": 1342098,
-          "sha256": "ccdc652a649355d51c688c9b475d758543bd50d7609e3fc917334a5da847c844"
+          "bytes": 1436695,
+          "sha256": "ccf2b252c9217a0ecf24259d360faba4f86f117ed1fdeb06f4484d65e63d6cc9"
         }
       }
     },
@@ -159,24 +159,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 9,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        4382,
-        2107,
-        672
+        4288,
+        2065,
+        653
       ],
-      "glbTriangles": 37891,
+      "glbTriangles": 37588,
       "files": {
         "glb": {
           "path": "shaper-atelier-male-lead/shaper-atelier-male-lead.glb",
-          "bytes": 2303868,
-          "sha256": "0d61ea335f7068ec1277bd11ece2da8292d405d9cef2cb0048681af84e48721e"
+          "bytes": 2246668,
+          "sha256": "ac54779a30a81ab3f90af99480428019f8b5bb2180278e7048d0228d372437eb"
         },
         "manifest": {
           "path": "shaper-atelier-male-lead/manifest.json",
           "bytes": 37620,
-          "sha256": "e78ff1792247295df69d6420d7fb523f7b664d862a15706e2a40e0a6ea34f128"
+          "sha256": "b7e020926d3513c6647c5bbfa26bc2a1e78c898f81f2a2c4c35371caf175171b"
         },
         "slotMapping": {
           "path": "shaper-atelier-male-lead/slot-mapping.json",
@@ -185,8 +185,8 @@
         },
         "contactSheet": {
           "path": "shaper-atelier-male-lead/contact-sheet.png",
-          "bytes": 1280858,
-          "sha256": "cc9f213114ab894818bd4f791b3a900d609f4388651169618076b2d24e0fa362"
+          "bytes": 1385346,
+          "sha256": "a0ca38ba8da2502b38befab804624d0cf9dc755bcd622205fcd41782d1c299b4"
         }
       }
     },
@@ -198,24 +198,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 8,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        5179,
-        2725,
-        983
+        5037,
+        2617,
+        930
       ],
-      "glbTriangles": 43491,
+      "glbTriangles": 42779,
       "files": {
         "glb": {
           "path": "shaper-rofan-empress/shaper-rofan-empress.glb",
-          "bytes": 2524596,
-          "sha256": "a5ab43ccf0f0c27cb2d38bc7de63f4c5e0cbfd58456e15842a728b4b3ce286bb"
+          "bytes": 2495548,
+          "sha256": "0f68d79c97be0273364d89765afaa79d0ab6d994c470d6ede4d41d6c34c2caee"
         },
         "manifest": {
           "path": "shaper-rofan-empress/manifest.json",
-          "bytes": 37588,
-          "sha256": "bba120b278d6a6607e8864bd7e4a9a7c62ae413d8abc345487e913330e64eb41"
+          "bytes": 37587,
+          "sha256": "6770db6a05759de1c13ce08955100c2965fb68f7ec7b3535e7a5c7997ab05bdf"
         },
         "slotMapping": {
           "path": "shaper-rofan-empress/slot-mapping.json",
@@ -224,8 +224,8 @@
         },
         "contactSheet": {
           "path": "shaper-rofan-empress/contact-sheet.png",
-          "bytes": 1371349,
-          "sha256": "3a063fc7ab29b14cb1d37589b74f908e8550ba8f87139c2ae40b3907a1f97cc0"
+          "bytes": 1503252,
+          "sha256": "1ced120a53dbfd0494e44edeafd30c719626f5f7987d19176b92caddd01ba586"
         }
       }
     },
@@ -237,24 +237,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 8,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        3880,
-        2161,
-        830
+        3768,
+        2089,
+        801
       ],
-      "glbTriangles": 35860,
+      "glbTriangles": 35481,
       "files": {
         "glb": {
           "path": "shaper-murim-swordmaster/shaper-murim-swordmaster.glb",
-          "bytes": 2185668,
-          "sha256": "49d103398eba42d7ee64f7533106a421b594cbe48f91db4797a6e84313d79792"
+          "bytes": 2126008,
+          "sha256": "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed"
         },
         "manifest": {
           "path": "shaper-murim-swordmaster/manifest.json",
           "bytes": 37577,
-          "sha256": "6d6cf7bcc8b5d468a91536da4a887981d90f32fc8795b0ee5012e856620cc186"
+          "sha256": "ec8ba817b4965ddb2e41af54cf947a2c3252df8491bf845ea9e3173e5f484445"
         },
         "slotMapping": {
           "path": "shaper-murim-swordmaster/slot-mapping.json",
@@ -263,8 +263,8 @@
         },
         "contactSheet": {
           "path": "shaper-murim-swordmaster/contact-sheet.png",
-          "bytes": 1325895,
-          "sha256": "0b238fc99832ce9c8b7fc9307a5826f3ea146624b69314ac1274f94832d99a76"
+          "bytes": 1434383,
+          "sha256": "1201bf5fd1970e8c23099e99103a174cfb0f2e709d892a6e208b2a19aef77000"
         }
       }
     },
@@ -276,24 +276,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 9,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        5739,
-        3192,
-        1421
+        5590,
+        3104,
+        1365
       ],
-      "glbTriangles": 42738,
+      "glbTriangles": 42246,
       "files": {
         "glb": {
           "path": "shaper-cyber-idol/shaper-cyber-idol.glb",
-          "bytes": 2483212,
-          "sha256": "6c947886d41b3558536ec6c3497f8d6ec67737edd0c8ff6f86f7e5bbbd0899be"
+          "bytes": 2514380,
+          "sha256": "176e55649da5fba564eb914ded97d42d7ad8e49a6428a0dcc5e9d21e30979074"
         },
         "manifest": {
           "path": "shaper-cyber-idol/manifest.json",
           "bytes": 37581,
-          "sha256": "7348e7e3d748f52908a64c1f4d03becad69f9dd9eb538cbfdae338f1194de830"
+          "sha256": "ebe43b396ad9d18abf600bb829425d33df9ce1357b84ce70af4f4745ad665607"
         },
         "slotMapping": {
           "path": "shaper-cyber-idol/slot-mapping.json",
@@ -302,8 +302,8 @@
         },
         "contactSheet": {
           "path": "shaper-cyber-idol/contact-sheet.png",
-          "bytes": 1404848,
-          "sha256": "0b29db143c6bfae63588846c418706c2d8e540542c8dd6cb1d6afbab6f0ed013"
+          "bytes": 1530488,
+          "sha256": "4473a5a78ff7dac0179bfd48508641eb197250b5f1c6f5d17bc8d2ba54720078"
         }
       }
     },
@@ -315,24 +315,24 @@
       "generatedAt": "2026-11-17",
       "qualityScore": 100,
       "skeleton": true,
-      "textures": 5,
+      "textures": 8,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        5536,
-        2603,
-        854
+        5460,
+        2567,
+        848
       ],
-      "glbTriangles": 42355,
+      "glbTriangles": 42107,
       "files": {
         "glb": {
           "path": "shaper-noir-duke/shaper-noir-duke.glb",
-          "bytes": 2477584,
-          "sha256": "f2bf5ea1a830bed12ed4b3f15e76ceb866c47b4521d0b074b0b9c58470bde0db"
+          "bytes": 2466808,
+          "sha256": "98b038f6474f966e22d1c33e211119cb4788877b2c681130d13488ba59d2abec"
         },
         "manifest": {
           "path": "shaper-noir-duke/manifest.json",
           "bytes": 37568,
-          "sha256": "62899ca26c627c00eda59c5b24ea0495a4bfbf01062a16ab9dad8fc9b35c1dc0"
+          "sha256": "a43fb83fe8071c9f0ad37c671d09c421830a7352bd4a52d69ab76ea64f6fbd63"
         },
         "slotMapping": {
           "path": "shaper-noir-duke/slot-mapping.json",
@@ -341,8 +341,8 @@
         },
         "contactSheet": {
           "path": "shaper-noir-duke/contact-sheet.png",
-          "bytes": 1346495,
-          "sha256": "1e08056842ee20777dead05e4e8b47be1216537a4e9c070c52ca68c17d36b5a7"
+          "bytes": 1492754,
+          "sha256": "460de942cb19eb42a7f28ee88fc425a26a6d65f6173701c92552f4d5bcadf7a8"
         }
       }
     }
