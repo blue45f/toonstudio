@@ -25,19 +25,22 @@ export function StudioDrawingClarityBarFallback({ title }: { readonly title: str
   const bt = useBilingual("studio.drawingClarity");
   const resolvedTitle = title.trim() || bt("제목 없는 원고", "Untitled draft");
   return (
-    <header
-      id="studio-menubar"
-      role="region"
-      aria-label={bt("드로잉 도구와 저장", "Drawing tools and save")}
-      data-studio-app-menubar="true"
-      data-studio-drawing-clarity-header="true"
-      data-studio-menubar-loading="true"
-      className="studio-drawing-clarity-header"
-    >
-      <div className="studio-drawing-clarity-title">
-        <h1 title={title}>{resolvedTitle}</h1>
-        <div id="studio-document-chrome-slot" data-studio-document-chrome-slot="true" />
-      </div>
-    </header>
+    <>
+      <header
+        id="studio-menubar"
+        role="region"
+        aria-label={bt("드로잉 도구와 저장", "Drawing tools and save")}
+        data-studio-app-menubar="true"
+        data-studio-drawing-clarity-header="true"
+        data-studio-menubar-loading="true"
+        className="studio-drawing-clarity-header"
+      >
+        <div className="studio-drawing-clarity-title">
+          <h1 title={title}>{resolvedTitle}</h1>
+          <div id="studio-document-chrome-slot" data-studio-document-chrome-slot="true" />
+        </div>
+      </header>
+      <div aria-hidden="true" className="studio-drawing-clarity-context-row" />
+    </>
   );
 }

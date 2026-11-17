@@ -31,6 +31,7 @@ import {
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
   formatStudioDraftSaveTime,
+  isStudioDraftSaveConflictMessage,
   resolveStudioDraftSaveCenter,
   resolveStudioDraftServerRevision,
   resolveStudioDraftServerSavedAt,
@@ -642,7 +643,17 @@ export function StudioDraftSaveCenter({
   const dialogPlacementClass = inline
     ? "fixed z-[100]"
     : cn("absolute right-0", anchorAtBottom ? "bottom-full mb-2" : "top-full mt-2");
-  const criticalSaveLabel = serverSaveError ? bt("서버 저장 확인 필요", "Check the server save") : outboxWarning ? bt("저장 대기 기록 확인 필요", "Check the pending save record") : null;
+  const criticalSaveLabel = serverSaveError
+    ? isStudioDraftSaveConflictMessage(serverSaveError)
+      ? bt("변경 충돌 확인 필요", "Check conflicting changes")
+      : bt("서버 저장 확인 필요", "Check the server save")
+    : outboxWarning
+      ? bt("저장 대기 기록 확인 필요", "Check the pending save record")
+      : !isOnline
+        ? bt("연결 복구 후 재시도", "Retry after connection restores")
+        : saving
+          ? bt("서버에 저장 중", "Saving to server")
+          : null;
   const recordMetrics = <StudioDraftSaveRecordMetrics checkpointCount={checkpointCount} serverRevision={serverRevision} serverRevisionLoading={serverRevisionLoading} serverRevisionCount={serverRevisions.length} lastServerSaveAt={lastServerSaveAt} loadingLabel={frozenStatus4Text("studio.frozenStatus4.draft.revisionsLoading", "버전 기록 불러오는 중")} />;
   const recordExplanation = <p className="mt-3 text-[0.68rem] leading-relaxed text-fg-3">             같은 탭의 저장 예약과 재실행 후 확인할 기기 기록은 구분됩니다. 저장 대기 기록은 원고 저장 완료를 뜻하지 않습니다. 원고 복구·기기 저장 상태를 확인하고 프로젝트 백업을 보관해 주세요. 충돌 시에는 자동 덮어쓰기 대신 버전 비교·복원 흐름을 사용합니다.           </p>;
   const protectionInfo = (

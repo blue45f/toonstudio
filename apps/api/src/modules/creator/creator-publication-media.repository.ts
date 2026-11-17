@@ -122,19 +122,13 @@ export class CreatorPublicationMediaRepository {
         ) {
           throw new CreatorPublicationMediaStorageConflictError();
         }
-        await transaction
-          .insert(creatorAssetStorageObjects)
-          .values({
-            purpose: object.purpose,
-            digest: object.digest,
-            contractVersion: object.contractVersion,
-            providerId: object.providerId,
-            objectPath: object.objectPath,
-            byteLength: object.byteLength,
-            contentType: object.contentType,
-          })
-          .onConflictDoNothing();
-        const [storedObject] = await transaction
+        // 최소 권한 runtime ACL(buildCreatorAssetObjectStorageRuntimeAclSql)은 허용 열에만 INSERT를 부여한다.
+        // Drizzle의 .insert().values()는 생략 열에도 DEFAULT를 나열해 비소유자 런타임 롤에서 42501 → 503을 유발한다.
+        await transaction.execute(sql`INSERT INTO ${creatorAssetStorageObjects}
+          ("purpose","digest","contractVersion","providerId","objectPath","byteLength","contentType")
+          VALUES (${object.purpose},${object.digest},${object.contractVersion},${object.providerId},
+            ${object.objectPath},${object.byteLength},${object.contentType}) ON CONFLICT DO NOTHING`);
+        let [storedObject] = await transaction
           .select()
           .from(creatorAssetStorageObjects)
           .where(and(
@@ -143,6 +137,27 @@ export class CreatorPublicationMediaRepository {
           ))
           .limit(1)
           .for("update");
+        if (
+          storedObject
+          && storedObject.state === "deleted"
+          && exactObject(objectFromRow(storedObject), object)
+        ) {
+          const [reactivated] = await transaction
+            .update(creatorAssetStorageObjects)
+            .set({
+              state: "active",
+              deleteToken: null,
+              deletedAt: null,
+              updatedAt: sql`now()`,
+            })
+            .where(and(
+              eq(creatorAssetStorageObjects.purpose, "export"),
+              eq(creatorAssetStorageObjects.digest, object.digest),
+              eq(creatorAssetStorageObjects.state, "deleted"),
+            ))
+            .returning();
+          storedObject = reactivated ?? storedObject;
+        }
         if (
           !storedObject
           || storedObject.state !== "active"
@@ -153,19 +168,11 @@ export class CreatorPublicationMediaRepository {
         }
 
         const slot = creatorPublicationMediaSlot(input.target);
-        await transaction
-          .insert(creatorWorkPublicationMedia)
-          .values({
-            workId,
-            slot,
-            pageIndex: creatorPublicationMediaPageIndex(input.target),
-            purpose: "export",
-            objectDigest: object.digest,
-            mediaType: input.mediaType,
-            byteLength: input.byteLength,
-            createdBy: actorUserId,
-          })
-          .onConflictDoNothing();
+        const pageIndex = creatorPublicationMediaPageIndex(input.target);
+        await transaction.execute(sql`INSERT INTO ${creatorWorkPublicationMedia}
+          ("workId","slot","pageIndex","purpose","objectDigest","mediaType","byteLength","createdBy")
+          VALUES (${workId},${slot},${pageIndex},${"export"},${object.digest},
+            ${input.mediaType},${input.byteLength},${actorUserId}) ON CONFLICT DO NOTHING`);
         const [storedReference] = await transaction
           .select({
             mediaType: creatorWorkPublicationMedia.mediaType,

@@ -432,7 +432,7 @@ export function StudioCuttoonEditorWorkspace(s: StudioCuttoonEditorViewSession) 
           </div>
         </div>
         {compact ? (
-          <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="hidden w-14 shrink-0 border-r border-line bg-panel md:block" />}>
+          <Suspense fallback={<div aria-hidden="true" data-studio-clarity-rail-loading="true" className="studio-drawing-clarity-rail hidden md:flex" />}>
             <LazyStudioDrawingClarityRail session={s} />
           </Suspense>
         ) : null}
