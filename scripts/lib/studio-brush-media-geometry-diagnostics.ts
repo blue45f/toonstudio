@@ -8,11 +8,18 @@ import type { Page } from "playwright";
 
 interface Point { readonly x: number; readonly y: number }
 interface Rect extends Point { readonly width: number; readonly height: number }
+interface ChromeGeometry {
+  readonly key: string; readonly tag: string; readonly className: string; readonly rect: Rect | null;
+  readonly hidden: boolean; readonly states: Readonly<Record<string, string>>; readonly childElementCount: number;
+  readonly style: { readonly display: string; readonly lineHeight: string; readonly fontSize: string;
+    readonly paddingTop: string; readonly paddingBottom: string; readonly whiteSpace: string } | null;
+}
 interface GeometryFrame {
   readonly label: string; readonly at: number; readonly stage: Rect | null;
   readonly clientSize: readonly number[] | null; readonly transform: readonly number[] | null;
   readonly scroll: readonly number[]; readonly viewport: Rect | null; readonly viewportScroll: readonly number[] | null;
   readonly workspace: Rect | null;
+  readonly chrome: readonly ChromeGeometry[]; readonly chromeTruncated: boolean;
 }
 interface PointerObservation extends Point {
   readonly kind: string; readonly at: number; readonly trusted: boolean;
@@ -43,11 +50,68 @@ export function installStudioBrushMediaGeometryProbe(): void {
     const rect = element.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
   };
+  // page.evaluate 직렬화에 필요한 상수·헬퍼를 관측기 안에 둔다. 문구·제목·페이지 식별자는 읽지 않는다.
+  const chromeSelectors = [
+    ["document", "html"], ["app-shell", "[data-studio-app-shell=true]"],
+    ["menubar", "#studio-menubar, [data-studio-app-menubar], .studio-drawing-clarity-header"],
+    ["command-bar", "[data-studio-menubar-command-bar]"],
+    ["clarity-title", ".studio-drawing-clarity-title"], ["clarity-heading", ".studio-drawing-clarity-title > h1"],
+    ["document-chrome", "#studio-document-chrome-slot, [data-studio-document-chrome-slot]"],
+    ["save-mount", "[data-studio-save-status-chrome-mount]"], ["save-center", "[data-studio-save-sync-status-center]"],
+    ["save-summary", "[data-studio-save-sync-status-center] > button, button[data-studio-drawing-save-summary]"],
+    ["save-label-container", "[data-studio-save-sync-status-center] > button > span"],
+    ["notice-summary", "[data-studio-connection-notice-summary]"],
+    ["service-summary", "[data-service-status-placement=editor-summary]"],
+    ["global-status-rail", "[data-studio-global-status-rail]"],
+    ["context-row", ".studio-drawing-clarity-context-row"],
+  ] as const;
+  const stateAttributes = ["data-state", "data-studio-local-save-state", "data-studio-drawing-clarity",
+    "data-service-capability-state", "data-service-degraded-banner"];
+  const stateValues = new Set(["open", "closed", "active", "inactive", "on", "off", "checked", "unchecked", "indeterminate",
+    "loading", "ready", "idle", "pending", "saved", "failed", "empty", "readonly", "degraded", "available", "unavailable",
+    "unknown", "warming", "recovered", "true", "false"]);
+  const chromeOf = (workspace: Element | null): { chrome: ChromeGeometry[]; chromeTruncated: boolean } => {
+    const chrome: ChromeGeometry[] = [], seen = new Set<Element>();
+    let chromeTruncated = false;
+    const add = (key: string, element: Element, computed: boolean): void => {
+      if (seen.has(element)) return;
+      if (chrome.length >= 40) { chromeTruncated = true; return; }
+      seen.add(element);
+      const style = computed ? getComputedStyle(element) : null;
+      chrome.push({ key, tag: element.tagName.toLowerCase(), className: (element.getAttribute("class") ?? "").slice(0, 512),
+        rect: rectOf(element), hidden: element.hasAttribute("hidden"), childElementCount: element.childElementCount,
+        states: Object.fromEntries(stateAttributes.flatMap(name => {
+          const value = element.getAttribute(name);
+          return value !== null && stateValues.has(value) ? [[name, value]] : [];
+        })),
+        style: style ? { display: style.display, lineHeight: style.lineHeight, fontSize: style.fontSize,
+          paddingTop: style.paddingTop, paddingBottom: style.paddingBottom, whiteSpace: style.whiteSpace } : null });
+    };
+    for (const [key, selector] of chromeSelectors) {
+      const matches = document.querySelectorAll(selector);
+      if (matches.length > 3) chromeTruncated = true;
+      for (let index = 0; index < Math.min(matches.length, 3); index += 1) add(`${key}:${index}`, matches[index]!, true);
+    }
+    // 알려진 chrome 외에 workspace를 밀 수 있는 조상 앞형제도 깊이·개수를 제한해 함께 읽는다.
+    let branch = workspace;
+    for (let depth = 0; branch && branch !== document.body && depth < 6; depth += 1) {
+      if (depth > 0) add(`workspace-ancestor:${depth}`, branch, false);
+      let sibling = branch.previousElementSibling;
+      for (let index = 0; sibling && index < 4; index += 1) {
+        add(`workspace-preceding:${depth}:${index}`, sibling, false); sibling = sibling.previousElementSibling;
+      }
+      if (sibling) chromeTruncated = true;
+      branch = branch.parentElement;
+    }
+    if (branch && branch !== document.body) chromeTruncated = true;
+    return { chrome, chromeTruncated };
+  };
   const capture = (label: string, force = false): void => {
     if (evidence.frames.length >= 240) { evidence.truncated = true; return; }
     const content = Array.from(document.querySelectorAll<HTMLElement>(".konvajs-content"))
       .find(element => element.getClientRects().length > 0) ?? null;
     const viewport = content?.closest<HTMLElement>("[data-studio-canvas-viewport]") ?? null;
+    const workspace = content?.closest("#studio-workspace") ?? null;
     const runtime = (window as Window & { Konva?: { stages?: Array<{
       container(): HTMLElement; getAbsoluteTransform(): { getMatrix(): number[] };
     }> } }).Konva;
@@ -56,7 +120,8 @@ export function installStudioBrushMediaGeometryProbe(): void {
       transform: stage?.getAbsoluteTransform().getMatrix().slice(0, 6) ?? null,
       scroll: [window.scrollX, window.scrollY], viewport: rectOf(viewport),
       viewportScroll: viewport ? [viewport.scrollLeft, viewport.scrollTop] : null,
-      workspace: rectOf(content?.closest("#studio-workspace") ?? null) };
+      workspace: rectOf(workspace), ...chromeOf(workspace) };
+    if (geometry.chromeTruncated) evidence.truncated = true;
     evidence.frameReads += 1;
     const signature = JSON.stringify(geometry);
     if (force || signature !== lastSignature) evidence.frames.push({ label, at: performance.now(), ...geometry });

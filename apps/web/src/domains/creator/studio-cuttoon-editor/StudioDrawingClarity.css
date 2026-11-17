@@ -1,6 +1,7 @@
 /* 원고·실제 저장 권위는 그대로 두고 기본 그리기를 루미너스 아틀리에 작업 화면으로 정리한다. */
 .studio-drawing-clarity-header{position:relative;z-index:50;display:flex;align-items:center;gap:12px;min-height:64px;flex-shrink:0;padding:7px 16px;border-bottom:1px solid color-mix(in oklch,var(--color-accent) 22%,var(--color-line));background:linear-gradient(98deg,color-mix(in oklch,var(--color-panel) 91%,transparent),color-mix(in oklch,var(--color-raised) 85%,var(--color-accent-soft))),url("/brand/luminous-atelier-20261114/scene-studio-canvas-aura.webp") right center/380px auto no-repeat;backdrop-filter:blur(20px) saturate(1.24);box-shadow:0 10px 28px -20px rgb(8 12 28 / .5);color:var(--color-fg)}
-.studio-drawing-clarity-title{position:relative;flex:1;min-width:0;min-height:48px}
+/* 비동기 안내 한 줄의 공간을 미리 확보해 첫 획 도중 캔버스 원점이 밀리지 않게 한다. */
+.studio-drawing-clarity-title{position:relative;flex:1;min-width:0;min-height:64px}
 .studio-drawing-clarity-title h1{position:absolute;inset:2px 0 auto;z-index:1;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:700;line-height:20px}
 .studio-drawing-clarity-title [data-studio-document-chrome-slot]{display:block;position:static;min-width:0;width:100%;max-width:none;margin:0}
 .studio-drawing-clarity-title [data-studio-save-status-chrome-mount],.studio-drawing-clarity-title [data-studio-save-sync-status-center]{display:block;min-width:0;width:100%}
@@ -8,7 +9,6 @@ button[data-studio-drawing-save-summary=true]{display:flex;align-items:flex-end;
 button[data-studio-drawing-save-summary=true]>svg{margin-bottom:2px;flex-shrink:0}
 button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%}
 [data-studio-drawing-save-summary=true] time{white-space:nowrap}
-.studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)){min-height:64px}
 [data-studio-connection-notice-summary]{white-space:normal}
 .studio-drawing-clarity-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;min-width:48px;padding:8px 12px;border:1px solid color-mix(in oklch,var(--color-line-strong) 84%,transparent);border-radius:14px;background:color-mix(in oklch,var(--color-card) 86%,var(--color-panel));color:var(--color-fg);font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgb(255 255 255 / .08);transition:transform .18s cubic-bezier(.16,1,.3,1),background-color .18s ease,border-color .18s ease,box-shadow .18s ease}
 .studio-drawing-clarity-button:hover:not(:disabled),.studio-drawing-clarity-rail button:hover:not(:disabled){background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 44%,var(--color-line-strong));transform:translateY(-1px);box-shadow:inset 0 1px 0 rgb(255 255 255 / .12),0 8px 18px -12px rgb(8 12 28 / .5)}

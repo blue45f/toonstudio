@@ -349,6 +349,33 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       </header>
     </>);
   }
+  it.each([false, true])("안내의 추가·제거와 무관하게 제목 자리의 최소 높이를 예약한다 (mobile=%s)", mobile => {
+    showStatus("saved", null, true, mobile);
+    const title = screen.getByTestId("저장 자리");
+    const host = screen.getByTestId("상태 버튼").querySelector("[data-studio-connection-notice-summary]");
+    if (!(host instanceof HTMLElement)) throw new Error("중요한 안내의 요약 자리가 필요합니다.");
+    // JSDOM은 실제 줄바꿈 높이를 재지 않는다. CSS 하한과 표시 계약만 검사한다.
+    const expectReservedSpace = () => {
+      const style = getComputedStyle(title);
+      expect(style.minHeight).toBe("64px");
+      expect(["", "auto"]).toContain(style.height);
+      expect(["", "none"]).toContain(style.maxHeight);
+      expect(["hidden", "clip"]).not.toContain(style.overflow);
+    };
+    expectReservedSpace();
+    for (const notice of ["일부 오프라인 도구 준비 필요", "Some offline tools still need preparation"]) {
+      const alert = document.createElement("span");
+      alert.setAttribute("role", "alert");
+      alert.textContent = notice;
+      host.append(alert);
+      expectReservedSpace();
+      expect(screen.getByRole("alert").textContent).toBe(notice);
+      expect(getComputedStyle(host).whiteSpace).toBe("normal");
+      expect(screen.getByTestId("상태 문구").textContent).toBe("이 기기에 저장됨 · 14:30");
+      alert.remove();
+      expectReservedSpace();
+    }
+  });
   it("정상 저장도 결과와 저장 대상을 직접 읽을 수 있는 48px 진입점으로 유지한다", () => {
     showStatus("saved", null);
     expect(getComputedStyle(screen.getByTestId("상태 버튼")).minHeight).toBe("48px");

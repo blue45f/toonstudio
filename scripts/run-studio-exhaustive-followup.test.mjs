@@ -6,6 +6,7 @@ import {
   ROOT, SOURCE_MODES, SUITES, browsersFor, diskCleanupPlan, ensureDiskCapacity, execute, initialize, parseInputs, planFor, publish, runCases,
   validateBuild, validateChangedPaths, validateDiskSpace, validateFreshSource, validateMetadata, validateReport,
 } from "./run-studio-exhaustive-followup.mjs";
+import { EXPECTED_HELPER_TESTS } from "./run-studio-exhaustive-regressions.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const sha = "a".repeat(40);
@@ -34,6 +35,8 @@ function metadata() {
 }
 
 function reportFor(item) {
+  if (item.kind === "helpers") return { errors: [], stats: { expected: EXPECTED_HELPER_TESTS, unexpected: 0, flaky: 0, skipped: 0 },
+    suites: [{ specs: Array.from({ length: EXPECTED_HELPER_TESTS }, () => ({ tests: [{ expectedStatus: "passed", status: "expected", results: [{ status: "passed" }] }] })) }] };
   if (item.kind === "sw") return { ok: true, phase: "complete", failures: [], pageErrors: [], workerState: { buildId: build.buildId } };
   if (item.kind === "matrix") return { hardFailures: 0, locale: "ko-KR", colorScheme: "light", reducedMotion: "no-preference",
     results: [{ scope: item.scope, failures: [], pageErrors: [], consoleErrors: [], previewFixture: { unexpectedResponses: [] } }] };
@@ -66,7 +69,7 @@ function readyState(t, suite = "followup", deadline = Date.now() + 10_000) {
 test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 새 저장 비용은 만들지 않는다", () => {
   assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 2);
   assert.match(workflow, /default: regressions/u);
-  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual'\)/u);
+  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual' \|\| inputs\.suite == 'pencil-only' \|\| inputs\.suite == 'canvas-layout'\)/u);
   assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ inputs\.source_mode == 'fresh-source' && 40 \|\| 20 \}\}/u);
   assert.match(followupJob, /STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' \? 39 : 19/u);
   assert.match(followupJob, /Date\.now\(\) \+ minutes \* 60_000/u);
@@ -94,8 +97,8 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
   assert.doesNotMatch(followupJob, /43971954502|14279822839|a2cf3525/u);
 });
 
-test("고정된 후속4·native3·남은5case만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
-  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual"]);
+test("고정된 후속 묶음만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
+  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual", "pencil-only", "canvas-layout"]);
   assert.deepEqual(planFor("followup").map(item => item.id), ["service-worker", "webkit-kakaotalk-android-360-animation", "chromium-tablet-768-animation", "native-paint-bucket"]);
   assert.deepEqual(planFor("native-representatives").map(item => item.scenario), ["paint-bucket", "selection-rect", "filter-inside"]);
   assert.deepEqual(SUITES.followup[0].args, ["exec", "tsx", "scripts/verify-studio-service-worker.mts"]);
@@ -103,6 +106,12 @@ test("고정된 후속4·native3·남은5case만 선택하며 임의 명령·전
     "media-pencil-grain", "hokusai-live-integration", "inapp-kakaotalk-android-360-editor"]);
   assert.deepEqual(planFor("residual").map(item => item.minutes), [3, 5, 4, 6, 4]);
   assert.deepEqual(SUITES.residual[2].env, { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" });
+  assert.deepEqual(planFor("pencil-only"), [SUITES.residual[2]]);
+  assert.deepEqual(browsersFor("pencil-only"), ["chromium"]);
+  assert.deepEqual(planFor("canvas-layout").map(item => item.id), ["ui-helpers-and-chrome-layout", "media-pencil-grain", "inapp-kakaotalk-android-360-editor"]);
+  assert.deepEqual(planFor("canvas-layout").slice(1), [SUITES.residual[2], SUITES.residual[4]]);
+  assert.deepEqual(planFor("canvas-layout").map(item => item.minutes), [3, 4, 4]);
+  assert.deepEqual(browsersFor("canvas-layout"), ["chromium"]);
   assert.deepEqual(SUITES.residual[4].env, { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" });
   assert.deepEqual(browsersFor("followup"), ["chromium", "webkit"]);
   assert.deepEqual(browsersFor("residual"), ["chromium", "webkit"]);
@@ -315,6 +324,27 @@ test("남은5개는 각 원래 명령과 고정scope를 실행하고 진단 JSON
   assert.equal(index, 5); assert.equal(publish(directory, state, { output: captured.output }).status, "passed");
   assert.match(captured.text(), /studio-brush-media-pencil-grain-geometry\.json/u);
   assert.match(captured.text(), /"diagnostic":"preserved"/u);
+});
+
+test("레이아웃 후속은 28개 DOM·CSS 결과와 원래 연필·모바일 두 사례를 모두 보존한다", async t => {
+  const { directory, state } = readyState(t, "canvas-layout");
+  let index = 0;
+  await runCases(directory, state, { env: {}, run: async (command, args, options) => {
+    const item = SUITES["canvas-layout"][index++];
+    assert.equal(command, item.command); assert.deepEqual(args, item.args);
+    if (item.kind === "helpers") assert.equal(options.env.PLAYWRIGHT_JSON_OUTPUT_FILE, join(options.env.TOONSPECTRUM_VERIFY_DIR, item.report));
+    writeFileSync(join(options.env.TOONSPECTRUM_VERIFY_DIR, item.report), JSON.stringify(reportFor(item)));
+    return { exitCode: 0, reason: null };
+  } });
+  assert.equal(index, 3);
+  assert.equal(state.scope, "selected-original-cases-and-css-fixtures");
+  assert.equal(publish(directory, state, { output: capture().output }).status, "passed");
+  const helper = SUITES["canvas-layout"][0];
+  for (const mutate of [report => { report.stats.expected -= 1; }, report => { report.stats.skipped = 1; },
+    report => { report.suites[0].specs[0].tests[0].results.push({ status: "passed" }); }]) {
+    const report = reportFor(helper); mutate(report);
+    assert.throws(() => validateReport(helper, report, build));
+  }
 });
 
 test("한case 실패와 누락report를 남기고 후속case는 계속 실행한다", async t => {

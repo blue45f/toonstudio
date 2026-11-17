@@ -62,13 +62,13 @@ function livingInkReport() {
   };
 }
 
-test("원래 source harness 8개와 presentation/LivingInk, DOM 21개를 정확히 실행한다", () => {
+test("원래 source harness 8개와 presentation/LivingInk, DOM·CSS 28개를 정확히 실행한다", () => {
   assert.deepEqual(SOURCE_GATE_IDS, [
     "gpu-committed-parity", "engine-webgpu-filter-parity", "canvaskit-quality-worker",
     "dynamic-dual-tip-webgpu", "dynamic-dual-tip-webgpu-v2", "engine-webgpu-textured-brush",
     "engine-webgpu-tile-provider", "engine-tile-storage-opfs-v2",
   ]);
-  assert.equal(EXPECTED_HELPER_TESTS, 21);
+  assert.equal(EXPECTED_HELPER_TESTS, 28);
   assert.equal(REGRESSION_GATES.length, 11);
   assert.equal(new Set(REGRESSION_GATES.map(gate => gate.id)).size, 11);
   assert.deepEqual(REGRESSION_GATES.slice(-2).map(gate => gate.id), ["engine-webgpu-presentation", "living-ink-execution"]);
@@ -84,28 +84,34 @@ test("원래 source harness 8개와 presentation/LivingInk, DOM 21개를 정확�
   assert.deepEqual(REGRESSION_GATES[0].args, ["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]);
 });
 
-test("helper의 실제 두 파일/표시 selector/실패 계약을 유지하고 skip·force로 축소하지 않는다", () => {
+test("helper·CSS의 실제 세 파일/표시 selector/실패 계약을 유지하고 skip·force로 축소하지 않는다", () => {
   const config = readFileSync(join(REPOSITORY_ROOT, "playwright.studio-qa-helpers.config.ts"), "utf8");
-  assert.match(config, /testMatch: \["studio-qa-interactions\.spec\.mts", "studio-qa-shell-interactions\.spec\.mts"\]/u);
+  assert.match(config, /testMatch: \["studio-qa-interactions\.spec\.mts", "studio-qa-shell-interactions\.spec\.mts", "studio-drawing-chrome-layout\.spec\.mts"\]/u);
   assert.match(config, /workers: 1/u);
   assert.match(config, /retries: 0/u);
   assert.match(config, /forbidOnly: Boolean\(process\.env\.CI\)/u);
   assert.doesNotMatch(config, /webServer|grep|testIgnore/u);
   const brush = readFileSync(join(REPOSITORY_ROOT, "e2e/studio-qa-interactions.spec.mts"), "utf8");
   const shell = readFileSync(join(REPOSITORY_ROOT, "e2e/studio-qa-shell-interactions.spec.mts"), "utf8");
+  const layout = readFileSync(join(REPOSITORY_ROOT, "e2e/studio-drawing-chrome-layout.spec.mts"), "utf8");
   assert.match(brush, /\["direct", "dock", "mobile"\]/u);
   assert.match(brush, /setStudioPrimaryColorThroughUi\(page, "#A1B2C3"\)/u);
   assert.match(brush, /clickStudioToolThroughUi\(page, "select"\)\)\.rejects\.toThrow/u);
   assert.match(shell, /openStudioMainMenu\(page, "view"\)/u);
   assert.match(shell, /toHaveAttribute\("data-selection", "active"\)/u);
   assert.match(shell, /expect\(failures\)\.toHaveLength\(2\)/u);
-  assert.doesNotMatch(`${brush}\n${shell}`, /test\.(?:skip|fixme|only)|force:\s*true/u);
+  assert.doesNotMatch(`${brush}\n${shell}\n${layout}`, /test\.(?:skip|fixme|only)|force:\s*true/u);
+  for (const path of ["e2e/studio-drawing-chrome-layout.spec.mts", "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css",
+    "apps/web/src/domains/creator/studio-shell/studio-document-chrome.css", "apps/web/src/app/styles/sitewide-visual-ux.css", "apps/web/src/app/styles/mobile-first-shell.css",
+    "apps/web/src/shared/styles/studio-route.css", "apps/web/src/domains/creator/studio-shell/studio-visual-identity-v2.css"]) {
+    assert.ok(covers(path), `${path}: CSS 회귀 변경 감지 누락`);
+  }
 });
 
 test("UI report는 누락·추가·skip·retry·expected failure를 성공으로 승인하지 않는다", () => {
-  assert.equal(validateHelperReport(helperReport()), 21);
-  for (const count of [0, 20, 22]) assert.throws(() => validateHelperReport(helperReport(count)));
-  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 20]]) {
+  assert.equal(validateHelperReport(helperReport()), 28);
+  for (const count of [0, 27, 29]) assert.throws(() => validateHelperReport(helperReport(count)));
+  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 27]]) {
     const report = helperReport();
     report.stats[key] = value;
     assert.throws(() => validateHelperReport(report), key);
