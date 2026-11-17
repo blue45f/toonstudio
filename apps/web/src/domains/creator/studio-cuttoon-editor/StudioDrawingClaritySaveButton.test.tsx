@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { DrawingClarityContext } from "./StudioDrawingClarityContext";
 import { StudioDrawingClaritySaveButton, type StudioDrawingClaritySaveSession } from "./StudioDrawingClaritySaveButton";
 
 const scoped = vi.hoisted(() => ({ available: false, pendingConfirmation: false }));
@@ -78,5 +79,26 @@ describe("간단한 그리기의 기존 초안 저장 연결", () => {
     copy.labels = { "저장": "보관하기", "초안 저장": "임시 원고 보관" };
     render(<StudioDrawingClaritySaveButton session={session()} />);
     expect(screen.getByRole("button", { name: "보관하기 · 임시 원고 보관" }).textContent).toBe("보관하기");
+  });
+
+  it("간단 화면에서 제목이 비어 있는 상태로 저장을 다시 누르면 닫혀 있던 속성 패널을 재노출한다", () => {
+    const reveal = vi.fn();
+    const value: StudioDrawingClaritySaveSession = {
+      ...session(),
+      title: "   ",
+      pendingSaveIntent: "draft",
+    };
+    render(
+      <DrawingClarityContext.Provider value={{
+        active: true, available: true, panel: null,
+        open: vi.fn(), reveal, close: vi.fn(), chooseSimple: vi.fn(), showSavedLayout: vi.fn(),
+      }}>
+        <StudioDrawingClaritySaveButton session={value} />
+      </DrawingClarityContext.Provider>,
+    );
+    const button = screen.getByRole("button", { name: "초안 저장" });
+    fireEvent.click(button);
+    expect(reveal).toHaveBeenCalledExactlyOnceWith("layers", button);
+    expect(value.studioMenubarContentHandlers.handleSave).toHaveBeenCalledExactlyOnceWith("draft");
   });
 });

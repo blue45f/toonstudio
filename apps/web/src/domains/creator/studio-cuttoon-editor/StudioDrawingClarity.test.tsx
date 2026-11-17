@@ -473,4 +473,54 @@ describe("원고명 아래 실제 저장 결과와 중요한 안내의 가시성
       expect(getComputedStyle(screen.getByTestId("상태 문구")).clipPath).not.toBe("inset(50%)"); view.unmount();
     }
   });
+
+  it("데스크톱 간단 화면에서 제목 미입력으로 초안 저장 보류(pendingSaveIntent)가 시작되면 속성 패널을 자동 노출하고 제목 입력 포커스를 보존한다", () => {
+    function SaveMetadataProbe({ intent }: { readonly intent: "draft" | "published" | null }) {
+      const clarity = useStudioDrawingClarity();
+      if (!clarity) throw new Error("화면 선택 context가 필요합니다.");
+      return <>
+        <button type="button" data-studio-clarity-save="true">저장</button>
+        <section id="studio-drawing-clarity-panel-layers" hidden={clarity.panel !== "layers"}>
+          <h2 tabIndex={-1} data-clarity-pane-heading>레이어·속성</h2>
+          <input aria-label="작품 제목 (필수)" placeholder="작품 제목" data-save-intent={intent ?? undefined} />
+        </section>
+      </>;
+    }
+    const base = { ...session(), pendingSaveIntent: null };
+    const view = render(
+      <StudioDrawingClarityProvider session={base}>
+        <SaveMetadataProbe intent={null} />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(document.getElementById("studio-drawing-clarity-panel-layers")?.hasAttribute("hidden")).toBe(true);
+
+    view.rerender(
+      <StudioDrawingClarityProvider session={{ ...base, pendingSaveIntent: "draft" }}>
+        <SaveMetadataProbe intent="draft" />
+      </StudioDrawingClarityProvider>,
+    );
+    const pane = document.getElementById("studio-drawing-clarity-panel-layers");
+    expect(pane?.hasAttribute("hidden")).toBe(false);
+    const titleInput = screen.getByLabelText("작품 제목 (필수)");
+    titleInput.focus();
+    expect(document.activeElement).toBe(titleInput);
+
+    // 지연된 계정 작업공간 복원(owner 전환)이 뒤늦게 완료되어도 제목 입력 중이던 속성 패널이 닫히지 않아야 한다.
+    const hydratedOwner = "user:owner-1";
+    view.rerender(
+      <StudioDrawingClarityProvider session={{
+        ...base,
+        currentWorkspaceOwnerScope: hydratedOwner,
+        studioDrawingClarityBaseline: { ownerScope: hydratedOwner, source: "default", state: base.workspaceState },
+        pendingSaveIntent: "draft",
+      }}>
+        <SaveMetadataProbe intent="draft" />
+      </StudioDrawingClarityProvider>,
+    );
+    expect(pane?.hasAttribute("hidden")).toBe(false);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(pane?.hasAttribute("hidden")).toBe(true);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
+  });
 });

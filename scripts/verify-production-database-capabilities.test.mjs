@@ -18,6 +18,7 @@ import {
   buildRuntimeCutoverLedgerAclViolationSql,
   buildRuntimeDatabaseRoleBoundaryStateSql,
   buildStudioProductionRuntimeAclViolationSql,
+  buildStudioProjectGraphRuntimeAclSql,
   buildStudioProjectGraphRuntimeAclViolationSql,
   buildTrafficAnalyticsRuntimeAclViolationSql,
 } from "./run-production-database-migrations.mjs";
@@ -242,4 +243,15 @@ test("production verification includes the member messaging ACL boundary", () =>
   expect(violation).toContain("SELECT, INSERT, UPDATE, DELETE");
   expect(violation).toContain("0::oid");
   expect(violation).not.toContain("'PUBLIC'");
+});
+
+test("studio project graph runtime ACL permits comment resolution actor updates without immutable column mutation", () => {
+  const acl = buildStudioProjectGraphRuntimeAclSql("webdex_runtime");
+  const violation = buildStudioProjectGraphRuntimeAclViolationSql("webdex_runtime");
+  expect(acl).toContain(
+    'GRANT UPDATE ("status", "resolutionRevisionId", "resolvedBy", "updatedAt")\n  ON TABLE public.studio_review_comment\n  TO "webdex_runtime";',
+  );
+  expect(violation).toContain(
+    "ARRAY['status', 'resolutionRevisionId', 'resolvedBy', 'updatedAt']::text[]",
+  );
 });

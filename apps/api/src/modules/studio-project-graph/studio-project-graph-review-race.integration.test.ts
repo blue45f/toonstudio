@@ -731,12 +731,43 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
         await asRuntime(async () => {
           expect((await client.query('SELECT "reviewId" FROM studio_review_policy WHERE "reviewId"=$1', [f.reviewId])).rows).toHaveLength(1);
           await client.query('UPDATE studio_review_policy SET "stateVersion"=2 WHERE "reviewId"=$1', [f.reviewId]);
+          const commentId = randomUUID();
+          const anchor = {
+            kind: "artifact",
+            artifactId: f.artifactId,
+            revisionId: f.snapshotId,
+            scope: { projectId: f.projectId },
+          };
+          await client.query(
+            `INSERT INTO studio_review_comment (id, "reviewId", "authorUserId", anchor, body, severity, status, strokes)
+             VALUES ($1, $2, $3, $4::jsonb, '필수 수정 의견', 'required', 'open', '[]'::jsonb)`,
+            [commentId, f.reviewId, f.actor, JSON.stringify(anchor)],
+          );
+          await client.query(
+            `UPDATE studio_review_comment
+             SET status = 'resolved',
+                 "resolutionRevisionId" = $2,
+                 "resolvedBy" = $3,
+                 "updatedAt" = GREATEST(statement_timestamp(), "createdAt", "updatedAt")
+             WHERE id = $1`,
+            [commentId, f.initialId, f.actor],
+          );
+          await client.query(
+            `UPDATE studio_review_comment
+             SET status = 'reopened',
+                 "resolutionRevisionId" = NULL,
+                 "resolvedBy" = NULL,
+                 "updatedAt" = GREATEST(statement_timestamp(), "createdAt", "updatedAt")
+             WHERE id = $1`,
+            [commentId],
+          );
           const { policyCommandHash } = await import("./studio-review-policy-store");
           const vote = { id: randomUUID(), type: "vote", pin: { reviewId: f.reviewId, artifactId: f.artifactId, revisionId: f.snapshotId, rootGraphHash: "a".repeat(64) },
             expectedPolicyVersion: 1, expectedStateVersion: 1, groupId: "reviewers", decision: "approve", note: "" };
           await client.query(`INSERT INTO studio_review_policy_event (id,"reviewId","policyVersion","stateVersion",kind,"actorId","commandHash",payload,"accessEpoch")
             VALUES ($1,$2,1,2,'vote',$3,$4,$5::jsonb,studio_review_policy_actor_epoch($2,$3))`, [vote.id, f.reviewId, f.actor, policyCommandHash(vote), JSON.stringify(vote)]);
         });
+        await expect(asRuntime(async () => { await client.query(`UPDATE studio_review_comment SET body = '변조' WHERE "reviewId" = $1`, [f.reviewId]); })).rejects.toThrow(/permission denied/u);
         await expect(asRuntime(async () => { await client.query('UPDATE studio_review_policy SET "revisionId"=$2 WHERE "reviewId"=$1', [f.reviewId, f.snapshotId]); })).rejects.toThrow(/permission denied/u);
         await expect(asRuntime(async () => { await client.query('UPDATE studio_review_policy_event SET payload=$2::jsonb WHERE "reviewId"=$1', [f.reviewId, '{}']); })).rejects.toThrow(/permission denied/u);
         await expect(asRuntime(async () => { await client.query('DELETE FROM studio_review_policy_event WHERE "reviewId"=$1', [f.reviewId]); })).rejects.toThrow(/permission denied/u);
