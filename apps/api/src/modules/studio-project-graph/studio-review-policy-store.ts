@@ -60,3 +60,64 @@ export async function assertReviewPolicyApproval(client: PoolClient, reviewId: s
   if (!access.canConfigure && !access.eligibleReviewerIds.includes(actorId)) throw new StudioReviewPolicyError("forbidden");
   if (!policy.satisfied) throw new StudioReviewPolicyError("unsatisfied");
 }
+
+export async function assertActiveProjectReviewers(
+  client: PoolClient,
+  reviewerIds: readonly string[],
+  ownerUserId: string,
+  workId: string,
+): Promise<boolean> {
+  if (reviewerIds.length === 0) return true;
+  const reviewerAccess = await client.query<{ id: string }>(
+    `SELECT candidate.id
+     FROM unnest($1::text[]) AS candidate(id)
+     WHERE candidate.id = $2
+        OR EXISTS (
+          SELECT 1
+          FROM creator_work_collaborator membership
+          WHERE membership."workId" = $3
+            AND membership."userId" = candidate.id
+            AND membership.status = 'active'
+        )`,
+    [reviewerIds, ownerUserId, workId],
+  );
+  return reviewerAccess.rows.length === reviewerIds.length;
+}
+
+export async function upsertStudioReviewReviewers(
+  client: PoolClient,
+  reviewId: string,
+  reviewerIds: readonly string[],
+): Promise<readonly string[]> {
+  for (const reviewerUserId of reviewerIds) {
+    await client.query(
+      `INSERT INTO studio_review_reviewer ("reviewId", "reviewerUserId")
+       VALUES ($1, $2)
+       ON CONFLICT ("reviewId", "reviewerUserId") DO NOTHING`,
+      [reviewId, reviewerUserId],
+    );
+  }
+  const current = await client.query<{ reviewerUserId: string }>(
+    `SELECT "reviewerUserId"
+     FROM studio_review_reviewer
+     WHERE "reviewId" = $1
+     ORDER BY "reviewerUserId"`,
+    [reviewId],
+  );
+  return Object.freeze(current.rows.map((row) => row.reviewerUserId));
+}
+
+export async function hasPeerDesignatedReviewer(
+  client: PoolClient,
+  reviewId: string,
+  actorUserId: string,
+): Promise<boolean> {
+  const peerReviewer = await client.query<{ hasPeer: boolean }>(
+    `SELECT EXISTS (
+       SELECT 1 FROM studio_review_reviewer
+       WHERE "reviewId" = $1 AND "reviewerUserId" <> $2
+     ) AS "hasPeer"`,
+    [reviewId, actorUserId],
+  );
+  return peerReviewer.rows[0]?.hasPeer === true;
+}

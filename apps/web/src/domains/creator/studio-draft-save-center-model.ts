@@ -13,6 +13,14 @@ export type StudioDraftSaveTone =
   | "danger"
   | "neutral";
 
+export const DRAFT_SAVE_TONE_CLASS: Readonly<Record<StudioDraftSaveTone, string>> = {
+  success: "border-accent/35 bg-accent-soft/25 text-accent",
+  progress: "border-accent/35 bg-accent-soft/25 text-accent",
+  warning: "border-warning/40 bg-warning-soft/25 text-warning",
+  danger: "border-danger/40 bg-danger-soft/25 text-danger",
+  neutral: "border-line bg-card/95 text-fg-2",
+};
+
 export type StudioDraftSavePhase =
   | "load-risk"
   | "loading"

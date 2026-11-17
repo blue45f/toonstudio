@@ -1,15 +1,12 @@
 import { useStudioScopedDraftSaveState } from "./studio-collab/studio-scoped-draft-save";
 import {
-  CheckCircle2,
   Cloud,
-  CloudOff,
   Database,
   Download,
   History,
   Loader2,
   RefreshCw,
   Save,
-  ShieldAlert,
   X,
 } from "lucide-react";
 import {
@@ -21,13 +18,17 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useEditorStatusSlot, useServiceStatusSlot } from "@/shared/lib/modal-status-slot";
-import { StudioDraftSaveRecordMetrics } from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics";
 import {
+  DraftSaveStatusCard as SaveStatusCard,
+  DraftSaveStatusIcon as StatusIcon,
+  StudioDraftSaveRecordMetrics,
+} from "./studio-cuttoon-editor/drawing-save/StudioDraftSaveRecordMetrics";
+import {
+  DRAFT_SAVE_TONE_CLASS as TONE_CLASS,
   extractStudioDraftSaveError,
   formatStudioDraftSaveInterval,
   formatStudioDraftSaveTime,
@@ -36,8 +37,6 @@ import {
   resolveStudioDraftServerRevision,
   resolveStudioDraftServerSavedAt,
   type StudioDraftSaveCenterInput,
-  type StudioDraftSaveStatusSection,
-  type StudioDraftSaveTone,
 } from "./studio-draft-save-center-model";
 import {
   clearStudioDraftSaveOutbox,
@@ -116,14 +115,6 @@ export interface StudioDraftSaveCenterProps {
   readonly onExportBackup: () => unknown;
 }
 
-const TONE_CLASS: Readonly<Record<StudioDraftSaveTone, string>> = {
-  success: "border-accent/35 bg-accent-soft/25 text-accent",
-  progress: "border-accent/35 bg-accent-soft/25 text-accent",
-  warning: "border-warning/40 bg-warning-soft/25 text-warning",
-  danger: "border-danger/40 bg-danger-soft/25 text-danger",
-  neutral: "border-line bg-card/95 text-fg-2",
-};
-
 /** 두 배치가 공유하는 저장 상태 버튼 모양(44px, 보이는 포커스 링). */
 const TRIGGER_CLASS = "flex min-h-11 items-center gap-2 rounded-full border text-xs font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 /** 모바일·캔버스 전용 화면의 부유 칩. */
@@ -194,42 +185,6 @@ function leadershipBasisLabel(basis: StudioDraftSaveLeadershipView["basis"] | nu
     default:
       return frozenStatus4Text("studio.frozenStatus4.draft.basisChecking", "담당 확인 중");
   }
-}
-
-function StatusIcon({ tone, className }: { tone: StudioDraftSaveTone; className?: string }) {
-  if (tone === "danger") return <ShieldAlert aria-hidden className={className} />;
-  if (tone === "warning") return <CloudOff aria-hidden className={className} />;
-  if (tone === "progress") {
-    return <Loader2 aria-hidden className={cn(className, "animate-spin motion-reduce:animate-none")} />;
-  }
-  if (tone === "success") return <CheckCircle2 aria-hidden className={className} />;
-  return <Save aria-hidden className={className} />;
-}
-
-function SaveStatusCard({
-  icon,
-  label,
-  section,
-  footer,
-}: {
-  icon: ReactNode;
-  label: string;
-  section: StudioDraftSaveStatusSection;
-  footer: string;
-}) {
-  return (
-    <section className={cn("rounded-xl border p-3", TONE_CLASS[section.tone])}>
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 shrink-0" aria-hidden>{icon}</span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.08em] opacity-75">{label}</p>
-          <p className="mt-0.5 text-sm font-bold leading-snug">{section.title}</p>
-          <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">{section.detail}</p>
-          <p className="mt-2 text-[0.68rem] font-semibold opacity-80">{footer}</p>
-        </div>
-      </div>
-    </section>
-  );
 }
 
 export function StudioDraftSaveCenter({

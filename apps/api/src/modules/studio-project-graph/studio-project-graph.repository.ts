@@ -1,4 +1,5 @@
-import { assertReviewPolicyApproval } from "./studio-review-policy-store";
+import { assertActiveProjectReviewers, assertReviewPolicyApproval, hasPeerDesignatedReviewer,
+  upsertStudioReviewReviewers } from "./studio-review-policy-store";
 import { createHash } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
@@ -1667,54 +1668,21 @@ export class StudioProjectGraphRepository {
         );
       }
 
-      const reviewerAccess = await client.query<{ id: string }>(
-        `SELECT candidate.id
-         FROM unnest($1::text[]) AS candidate(id)
-         WHERE candidate.id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM creator_work_collaborator membership
-              WHERE membership."workId" = $3
-                AND membership."userId" = candidate.id
-                AND membership.status = 'active'
-            )`,
-        [
-          input.reviewerIds,
-          accessResult.row.ownerUserId,
-          accessResult.row.workId,
-        ],
+      const hasReviewerAccess = await assertActiveProjectReviewers(
+        client, input.reviewerIds, accessResult.row.ownerUserId, accessResult.row.workId,
       );
-      if (reviewerAccess.rows.length !== input.reviewerIds.length) {
-        throw new StudioRepositoryInvariantError(
-          "reviewer_access_missing",
-          "every reviewer must have active access to the project",
-        );
+      if (!hasReviewerAccess) {
+        throw new StudioRepositoryInvariantError("reviewer_access_missing", "every reviewer must have active access to the project");
       }
-
       const inserted = await client.query<{ createdAt: Date }>(
-        `INSERT INTO studio_review (
-           id, "artifactId", "revisionId", "requestedBy", title, status
-         ) VALUES ($1, $2, $3, $4, $5, 'open')
-         RETURNING "createdAt"`,
+        `INSERT INTO studio_review (id, "artifactId", "revisionId", "requestedBy", title, status)
+         VALUES ($1, $2, $3, $4, $5, 'open') RETURNING "createdAt"`,
         [input.id, artifactId, input.revisionId, actorUserId, input.title],
       );
-      for (const reviewerId of input.reviewerIds) {
-        await client.query(
-          `INSERT INTO studio_review_reviewer ("reviewId", "reviewerUserId")
-           VALUES ($1, $2)`,
-          [input.id, reviewerId],
-        );
-      }
+      await upsertStudioReviewReviewers(client, input.id, input.reviewerIds);
       await client.query("COMMIT");
-      return {
-        id: input.id,
-        artifactId,
-        revisionId: input.revisionId,
-        title: input.title,
-        status: "open",
-        reviewerIds: input.reviewerIds,
-        createdAt: toIso(inserted.rows[0]!.createdAt),
-      };
+      return { id: input.id, artifactId, revisionId: input.revisionId, title: input.title,
+        status: "open", reviewerIds: input.reviewerIds, createdAt: toIso(inserted.rows[0]!.createdAt) };
     } catch (error) {
       await client.query("ROLLBACK");
       if (
@@ -1888,23 +1856,13 @@ export class StudioProjectGraphRepository {
   }
 
   async assignReviewers(
-    actorUserId: string,
-    reviewId: string,
-    input: { readonly reviewerIds: readonly string[] },
+    actorUserId: string, reviewId: string, input: { readonly reviewerIds: readonly string[] },
   ): Promise<{ readonly id: string; readonly reviewerIds: readonly string[] }> {
     const client = await dbPool.connect();
     try {
       await client.query("BEGIN");
-      const reviewResult = await client.query<{
-        id: string;
-        artifactId: string;
-        status: StudioReviewSummaryRecord["status"];
-      }>(
-        `SELECT id, "artifactId", status
-         FROM studio_review
-         WHERE id = $1
-         FOR UPDATE`,
-        [reviewId],
+      const reviewResult = await client.query<{ id: string; artifactId: string; status: StudioReviewSummaryRecord["status"] }>(
+        `SELECT id, "artifactId", status FROM studio_review WHERE id = $1 FOR UPDATE`, [reviewId],
       );
       const review = reviewResult.rows[0];
       if (!review) throw new StudioProjectNotFoundError("review");
@@ -1912,56 +1870,15 @@ export class StudioProjectGraphRepository {
       if (!accessResult) throw new StudioProjectNotFoundError("artifact");
       assertAccess(accessResult.access, "manageMembers");
       if (!["open", "changes-requested"].includes(review.status)) {
-        throw new StudioRepositoryInvariantError(
-          "review_already_decided",
-          "cannot assign reviewers after a terminal review decision",
-        );
+        throw new StudioRepositoryInvariantError("review_already_decided", "cannot assign reviewers after a terminal review decision");
       }
-      const reviewerAccess = await client.query<{ id: string }>(
-        `SELECT candidate.id
-         FROM unnest($1::text[]) AS candidate(id)
-         WHERE candidate.id = $2
-            OR EXISTS (
-              SELECT 1
-              FROM creator_work_collaborator membership
-              WHERE membership."workId" = $3
-                AND membership."userId" = candidate.id
-                AND membership.status = 'active'
-            )`,
-        [input.reviewerIds, accessResult.row.ownerUserId, accessResult.row.workId],
-      );
-      if (reviewerAccess.rows.length !== input.reviewerIds.length) {
-        throw new StudioRepositoryInvariantError(
-          "reviewer_access_missing",
-          "every reviewer must have active access to the project",
-        );
+      if (!(await assertActiveProjectReviewers(client, input.reviewerIds, accessResult.row.ownerUserId, accessResult.row.workId))) {
+        throw new StudioRepositoryInvariantError("reviewer_access_missing", "every reviewer must have active access to the project");
       }
-      for (const reviewerUserId of input.reviewerIds) {
-        await client.query(
-          `INSERT INTO studio_review_reviewer ("reviewId", "reviewerUserId")
-           VALUES ($1, $2)
-           ON CONFLICT ("reviewId", "reviewerUserId") DO NOTHING`,
-          [reviewId, reviewerUserId],
-        );
-      }
-      const current = await client.query<{ reviewerUserId: string }>(
-        `SELECT "reviewerUserId"
-         FROM studio_review_reviewer
-         WHERE "reviewId" = $1
-         ORDER BY "reviewerUserId"`,
-        [reviewId],
-      );
+      const reviewerIds = await upsertStudioReviewReviewers(client, reviewId, input.reviewerIds);
       await client.query("COMMIT");
-      return {
-        id: reviewId,
-        reviewerIds: Object.freeze(current.rows.map((row) => row.reviewerUserId)),
-      };
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+      return { id: reviewId, reviewerIds };
+    } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
   }
 
   async decideReview(
@@ -2028,17 +1945,8 @@ export class StudioProjectGraphRepository {
         };
       }
       if (input.status === "approved") {
-        if (review.requestedBy === actorUserId) {
-          const peerReviewer = await client.query<{ hasPeer: boolean }>(
-            `SELECT EXISTS (
-               SELECT 1 FROM studio_review_reviewer
-               WHERE "reviewId" = $1 AND "reviewerUserId" <> $2
-             ) AS "hasPeer"`,
-            [reviewId, actorUserId],
-          );
-          if (peerReviewer.rows[0]?.hasPeer === true) {
-            throw new StudioProjectForbiddenError("manage");
-          }
+        if (review.requestedBy === actorUserId && await hasPeerDesignatedReviewer(client, reviewId, actorUserId)) {
+          throw new StudioProjectForbiddenError("manage");
         }
         await assertReviewPolicyApproval(client, reviewId, actorUserId, input.policyExpectation);
         const blocking = await client.query<{ count: number | string }>(
