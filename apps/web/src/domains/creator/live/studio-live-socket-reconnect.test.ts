@@ -90,7 +90,7 @@ const transports: StudioLiveSocketTransport[] = [];
 function createTransport(refreshSocketCredential?: () => Promise<string>) {
   const socket = new ReconnectSocket({ sessionToken: "test-session" });
   const transport = new StudioLiveSocketTransport(
-    { workId: "reconnect-work", participant: PARTICIPANT },
+    { workId: "reconnect-work", roomName: "unused-server-room", participant: PARTICIPANT },
     "test-session",
     { createSocket: () => socket, refreshSocketCredential },
   );
