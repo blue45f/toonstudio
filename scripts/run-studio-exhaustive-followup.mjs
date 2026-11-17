@@ -235,7 +235,8 @@ export function validateBuild(directory, sourceSha) {
   const meta = json(join(directory, ".vite/build-meta.json"));
   requireValue(meta.gitSha === sourceSha && /^[0-9a-f]{12,64}$/u.test(meta.buildId ?? ""), "production build-meta의 SHA 또는 buildId가 다릅니다.");
   const worker = readFileSync(join(directory, "sw.js"), "utf8");
-  requireValue(new RegExp(`(?:\\bbuildId|["']buildId["'])\\s*:\\s*["']${meta.buildId}["']`, "u").test(worker), "실제 sw.js와 build-meta의 buildId가 다릅니다.");
+  const workerBuildId = new RegExp("(?:\\bbuildId|[\"']buildId[\"'])\\s*:\\s*([\"'`])" + meta.buildId + "\\1(?=\\s*[,}])", "u");
+  requireValue(workerBuildId.test(worker), "실제 sw.js와 build-meta의 buildId가 다릅니다.");
   const manifest = json(join(directory, ".vite/manifest.json"));
   const entry = manifest["index.html"]?.file;
   requireValue(typeof entry === "string" && entry.startsWith("assets/") && !entry.split("/").includes("..")

@@ -108,6 +108,18 @@ describe("Studio AI capability registry — Cloudflare 모달리티", () => {
     expect(isCloudflareImageModel("@cf/black-forest-labs/flux-2-dev")).toBe(false);
   });
 
+  it.each([
+    "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+    "@cf/runwayml/stable-diffusion-v1-5-inpainting",
+    "@cf/bytedance/stable-diffusion-xl-lightning",
+    "@cf/lykon/dreamshaper-8-lcm",
+  ])("2026-11-20 종료 이미지 모델 %s는 운영 override로도 등록되지 않는다", (model) => {
+    expect(resolveStudioAiCapabilityProviders("image-generation", {
+      ...cloudflareEnv,
+      STUDIO_AI_FREE_CLOUDFLARE_IMAGE_MODEL: model,
+    })).toEqual([]);
+  });
+
   it("임베딩은 다국어 bge-m3만 등록되고 영어 전용 모델은 제외된다", () => {
     const providers = resolveStudioAiCapabilityProviders("embedding", cloudflareEnv);
     expect(providers).toHaveLength(1);
@@ -125,11 +137,23 @@ describe("Studio AI capability registry — Cloudflare 모달리티", () => {
     })).toEqual([]);
   });
 
-  it("chat 무료 모델 allowlist 밖이면 계정 자체가 미구성이라 미디어 능력도 등록되지 않는다", () => {
-    expect(resolveStudioAiCapabilityProviders("image-generation", {
+  it("2026-11-20 종료 embeddinggemma-300m은 운영 override로도 등록되지 않는다", () => {
+    expect(resolveStudioAiCapabilityProviders("embedding", {
       ...cloudflareEnv,
-      STUDIO_AI_FREE_CLOUDFLARE_MODEL: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      STUDIO_AI_FREE_CLOUDFLARE_EMBEDDING_MODEL: "@cf/google/embeddinggemma-300m",
     })).toEqual([]);
+  });
+
+  it("chat 무료 모델 allowlist 밖이면 계정 자체가 미구성이라 미디어 능력도 등록되지 않는다", () => {
+    for (const model of ["@cf/qwen/qwen3-30b-a3b-fp8", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"]) {
+      const disabledEnv = { ...cloudflareEnv, STUDIO_AI_FREE_CLOUDFLARE_MODEL: model };
+      const disabledStatuses = studioAiCapabilityStatuses(disabledEnv);
+      for (const capability of ["image-generation", "embedding"] as const) {
+        expect(resolveStudioAiCapabilityProviders(capability, disabledEnv)).toEqual([]);
+        expect(disabledStatuses.find((entry) => entry.capability === capability))
+          .toMatchObject({ provider: "cloudflare", configured: false });
+      }
+    }
     const statuses = studioAiCapabilityStatuses(cloudflareEnv);
     expect(statuses.find((entry) => entry.capability === "image-generation"))
       .toMatchObject({ provider: "cloudflare", configured: true });

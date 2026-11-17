@@ -195,13 +195,20 @@ test("실제build-meta·manifest·SW 일치와 진입파일 존재를 요구한�
   writeFileSync(join(directory, ".vite/build-meta.json"), JSON.stringify(build));
   writeFileSync(join(directory, ".vite/manifest.json"), JSON.stringify({ "index.html": { file: "assets/app.js" } }));
   writeFileSync(join(directory, "index.html"), "<html></html>"); writeFileSync(join(directory, "assets/app.js"), "export {};");
-  writeFileSync(join(directory, "sw.js"), `const manifest={buildId:"${build.buildId}"};`);
-  assert.equal(validateBuild(directory, sha).buildId, build.buildId);
-  writeFileSync(join(directory, "sw.js"), `const manifest={"buildId":"${build.buildId}"};`);
+  for (const quote of ["'", '"', "`"]) {
+    for (const key of ["buildId", '"buildId"']) {
+      writeFileSync(join(directory, "sw.js"), `const manifest={${key}:${quote}${build.buildId}${quote}};`);
+      assert.equal(validateBuild(directory, sha).buildId, build.buildId);
+    }
+  }
+  // 현재 Vite/Oxc가 실제 SW entry를 번들링한 정적 manifest 형식을 보존한다.
+  writeFileSync(join(directory, "sw.js"), 'var H=self,U={buildId:`' + build.buildId + '`,shellUrls:[`/index.html`],criticalUrls:[`/index.html`],warmUrls:[],offlineUrls:[]};');
   assert.equal(validateBuild(directory, sha).buildId, build.buildId);
   assert.throws(() => validateBuild(directory, "d".repeat(40)));
-  writeFileSync(join(directory, "sw.js"), 'const manifest={buildId:"ffffffffffff"};');
-  assert.throws(() => validateBuild(directory, sha), /sw.js/u);
+  for (const literal of ['"ffffffffffff"', '`ffffffffffff`', '"' + build.buildId + "'", '`' + build.buildId + '"', '`' + build.buildId + '${suffix}`', '`${"' + build.buildId + '"}`', '`' + build.buildId + '`+suffix']) {
+    writeFileSync(join(directory, "sw.js"), `const manifest={buildId:${literal}};`);
+    assert.throws(() => validateBuild(directory, sha), /sw.js/u);
+  }
   rmSync(join(directory, "sw.js")); assert.throws(() => validateBuild(directory, sha), /파일/u);
 });
 
