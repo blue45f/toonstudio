@@ -38,6 +38,7 @@ import { STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED } from "../apps/web/src/
 import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
+import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
   findFreePort,
@@ -1347,10 +1348,7 @@ async function activatePenAndWatercolor(
 }
 
 async function openLayerNavigator(page: Page): Promise<void> {
-  const navigator = page.getByTestId("studio-inspector-navigator");
-  await navigator.waitFor({ state: "visible" });
-  const layers = navigator.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layers.getAttribute("aria-selected") !== "true") await layers.click();
+  await openStudioLayerNavigator(page, 12_000);
 }
 
 async function waitForLayerCount(page: Page, expected: number): Promise<number> {

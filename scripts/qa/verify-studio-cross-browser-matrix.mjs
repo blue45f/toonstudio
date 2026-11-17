@@ -6,16 +6,16 @@
  * WebKit across desktop, tablet and embedded-mobile viewport contracts.
  */
 
-import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
+import { preview as startVitePreview } from "vite";
 
 import { isOptionalStudioPreviewApiError } from "../lib/studio-verify-preview-errors.mts";
-import { installStudioOfflinePreviewFixture } from "../lib/studio-offline-preview-fixture.mjs";
+import { createStudioOfflinePreviewServerFixture, installStudioOfflinePreviewFixture } from "../lib/studio-offline-preview-fixture.mjs";
 
 const OUTPUT_DIR = resolve(process.env.TOONSPECTRUM_VERIFY_DIR ?? "artifacts/studio-cross-browser");
 const LOCALE = process.env.TOONSPECTRUM_VERIFY_LOCALE ?? "ko-KR";
@@ -120,22 +120,6 @@ async function waitForServer(url, timeoutMs = 60_000) {
     await new Promise((resolveSleep) => setTimeout(resolveSleep, 300));
   }
   throw new Error(`Preview server did not become ready: ${lastError ?? url}`);
-}
-
-function stopProcess(child) {
-  if (!child?.pid) return;
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    return;
-  }
-  setTimeout(() => {
-    try {
-      process.kill(-child.pid, "SIGKILL");
-    } catch {
-      // Already stopped.
-    }
-  }, 5_000).unref?.();
 }
 
 export async function installGuestBoundary(page) {
@@ -258,13 +242,13 @@ async function main() { // NOSONAR javascript:S3776
   const externalBaseUrl = process.env.TOONSPECTRUM_VERIFY_BASE_URL;
   const port = externalBaseUrl ? 0 : await findFreePort();
   const baseUrl = externalBaseUrl ?? `http://127.0.0.1:${port}`;
-  const preview = externalBaseUrl ? null : spawn(
-    "pnpm",
-    ["exec", "vite", "preview", "--config", "apps/web/vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
-    { detached: true, env: { ...process.env, CI: "1" }, stdio: ["ignore", "pipe", "pipe"] },
-  );
-  preview?.stdout.on("data", (chunk) => process.stdout.write(chunk));
-  preview?.stderr.on("data", (chunk) => process.stderr.write(chunk));
+  const serverFixture = externalBaseUrl ? null : createStudioOfflinePreviewServerFixture(baseUrl);
+  const preview = serverFixture ? await startVitePreview({
+    configFile: fileURLToPath(new URL("../../apps/web/vite.config.ts", import.meta.url)),
+    preview: { host: "127.0.0.1", port, strictPort: true },
+    plugins: [serverFixture.plugin],
+  }) : null;
+  preview?.printUrls();
 
   let hardFailures = 0;
   let warnings = 0;
@@ -292,7 +276,7 @@ async function main() { // NOSONAR javascript:S3776
             colorScheme: COLOR_SCHEME,
             reducedMotion: REDUCED_MOTION,
           });
-          const previewFixture = await installStudioOfflinePreviewFixture(context, externalBaseUrl ? "" : baseUrl);
+          const previewFixture = await installStudioOfflinePreviewFixture(context, externalBaseUrl ? "" : baseUrl, serverFixture);
           try {
             for (const route of selected(ROUTES, "TOONSPECTRUM_VERIFY_ROUTES")) {
               const page = await context.newPage();
@@ -354,7 +338,12 @@ async function main() { // NOSONAR javascript:S3776
                   failures.push(...metrics.smallTargets.map((item) => `small tap target: ${item}`));
                   failures.push(...metrics.unnamed.map((item) => `unnamed control: ${item}`));
                 }
-                results.push({ scope, metrics, previewFixture: fixtureEvidence(), pageErrors, consoleErrors, consoleDetails, failedResponses, failures });
+                const serviceWorker = await page.evaluate(() => ({
+                  supported: "serviceWorker" in navigator,
+                  controller: navigator.serviceWorker?.controller?.scriptURL ?? null,
+                  state: navigator.serviceWorker?.controller?.state ?? null,
+                }));
+                results.push({ scope, metrics, previewFixture: fixtureEvidence(), serviceWorker, pageErrors, consoleErrors, consoleDetails, failedResponses, failures });
                 for (const failure of failures) {
                   hardFailures += 1;
                   log(`${scope} FAIL: ${failure}`);
@@ -395,11 +384,14 @@ async function main() { // NOSONAR javascript:S3776
       }
     }
   } finally {
-    stopProcess(preview);
-    await writeFile(join(OUTPUT_DIR, "report.json"), JSON.stringify({
-      baseUrl, locale: LOCALE, colorScheme: COLOR_SCHEME, reducedMotion: REDUCED_MOTION,
-      hardFailures, warnings, results,
-    }, null, 2));
+    try {
+      await preview?.close();
+    } finally {
+      await writeFile(join(OUTPUT_DIR, "report.json"), JSON.stringify({
+        baseUrl, locale: LOCALE, colorScheme: COLOR_SCHEME, reducedMotion: REDUCED_MOTION,
+        hardFailures, warnings, results,
+      }, null, 2));
+    }
   }
 
   log(`RESULT: ${hardFailures ? "FAIL" : "PASS"} hardFailures=${hardFailures} warnings=${warnings} locale=${LOCALE} color=${COLOR_SCHEME} motion=${REDUCED_MOTION}`);

@@ -32,6 +32,18 @@ export const SUITES = Object.freeze({
     matrix("webkit", "kakaotalk-android-360"), matrix("chromium", "tablet-768"), native("paint-bucket"),
   ]),
   "native-representatives": Object.freeze([native("paint-bucket"), native("selection-rect"), native("filter-inside")]),
+  residual: Object.freeze([
+    matrix("webkit", "kakaotalk-android-360"), native("dodge-burn"),
+    Object.freeze({ id: "media-pencil-grain", kind: "media", command: "pnpm", minutes: 4,
+      args: ["exec", "tsx", "scripts/verify-studio-brush-media.mts"], report: "studio-brush-media-report.json",
+      medium: "pencil-grain", env: { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" } }),
+    Object.freeze({ id: "hokusai-live-integration", kind: "hokusai", command: "pnpm", minutes: 6,
+      args: ["exec", "tsx", "scripts/verify-studio-hokusai-live-integration.mts"], report: "studio-hokusai-live-integration.json", env: {} }),
+    Object.freeze({ id: "inapp-kakaotalk-android-360-editor", kind: "inapp", command: "pnpm", minutes: 4,
+      args: ["exec", "tsx", "scripts/verify-studio-inapp-browser.mts"], report: "studio-inapp-browser-report.json",
+      profile: "kakaotalk-android-360", route: "editor",
+      env: { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" } }),
+  ]),
 });
 const json = path => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -42,8 +54,12 @@ const empty = value => Array.isArray(value) && value.length === 0;
 const save = (directory, state) => writeJson(join(directory, "summary.json"), state);
 
 export function planFor(suite) {
-  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup 또는 native-representatives여야 합니다.");
+  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives 또는 residual이어야 합니다.");
   return SUITES[suite];
+}
+
+export function browsersFor(suite) {
+  return ["chromium", ...(planFor(suite).some(item => item.env.TOONSPECTRUM_VERIFY_ENGINES === "webkit") ? ["webkit"] : [])];
 }
 
 export function initialize(directory, suite, deadlineMs, sourceMode = "artifact") {
@@ -254,14 +270,41 @@ export function validateReport(item, report, build) {
       && report.results?.length === 1 && result.scope === item.scope
       && !result.navigationError && empty(result.failures) && empty(result.pageErrors) && empty(result.consoleErrors)
       && empty(result.previewFixture?.unexpectedResponses), "정확한 browser/profile/route 한 행이 모두 통과하지 않았습니다.");
-  } else {
+  } else if (item.kind === "native") {
     const evidence = report.scenarios?.[0]?.evidence;
     requireValue(report.ok === true && report.scenarios?.length === 1 && empty(report.violations)
       && evidence?.id === item.scenario && evidence.status === "passed" && evidence.failure == null && evidence.failurePhase == null
       && evidence.undo?.attempted === true && evidence.undo.restored === true && evidence.undo.retainedEditableRasterWhenExpected === true
       && (!item.scenario.startsWith("selection-") || (evidence.undo.selectionStateCleared === true && evidence.undo.durableSnapshotRetained === true))
       && empty(evidence.browserErrors) && empty(evidence.failedResponses), "선택한 native 시나리오의 원래 픽셀·Undo 계약이 통과하지 않았습니다.");
-  }
+  } else if (item.kind === "media") {
+    const entry = report.cases?.[0];
+    const cleanFindings = value => Array.isArray(value) && value.every(finding => finding.level !== "error");
+    requireValue(report.kind === "toonstudio-studio-brush-media-browser-quality-v2" && report.ok === true
+      && report.cases?.length === 1 && entry.id === item.medium && entry.metrics?.id === item.medium
+      && entry.evaluation?.ok === true && cleanFindings(entry.evaluation.findings)
+      && report.suite?.ok === true && cleanFindings(report.suite.findings)
+      && empty(report.executionFailures) && empty(report.unexpectedBrowserErrors)
+      && ["console", "page", "responses"].every(key => empty(entry.browserErrors?.[key])),
+    "선택한 매체의 원래 coverage·픽셀·Undo/Redo·누적 품질 계약이 통과하지 않았습니다.");
+  } else if (item.kind === "hokusai") {
+    requireValue(report.status === "ok" && report.schemaVersion === 3
+      && report.execution === "vite-production-preview-shipped-studio-policy-and-explicit-inspector" && empty(report.issues)
+      && JSON.stringify(report.shelf?.map(entry => entry.presetId)) === JSON.stringify(["pencil", "charcoal", "oil"])
+      && report.explicitInspector?.sourceRestoredByUndo === true && report.explicitInspector.pairRestoredByRedo === true
+      && report.explicitInspector.pairPreservedByReload === true
+      && ["consoleErrors", "consoleWarnings", "pageErrors", "requestFailures", "fiveHundredResponses"].every(key => empty(report.diagnostics?.[key])),
+    "Hokusai 원래 세 매체·실제 변환·Undo/Redo·재로드 통합 계약이 통과하지 않았습니다.");
+  } else if (item.kind === "inapp") {
+    const result = report.results?.[0];
+    requireValue(report.kind === "toonstudio-studio-inapp-browser-v1" && report.scope === "selected" && report.ok === true
+      && report.phase === "complete" && report.complete === true && report.selectionValid === true
+      && report.activeCase === null && report.fatalFailure === null && empty(report.notRun)
+      && report.totalEligible === 38 && report.excludedByFilter === 37 && empty(report.failures)
+      && JSON.stringify(report.planned) === JSON.stringify([{ profile: item.profile, route: item.route }])
+      && report.results?.length === 1 && result.profile === item.profile && result.route === item.route
+      && result.ok === true && empty(result.hardFailures), "정확한 인앱 profile/route 한 행의 원래 접근성·이탈·오류 계약이 통과하지 않았습니다.");
+  } else throw new Error(`지원하지 않는 후속 검사 kind: ${item.kind}`);
 }
 
 function terminate(child, signal) {
@@ -315,7 +358,8 @@ export async function runCases(directory, state, { env = process.env, signal, ru
     Object.assign(record, { status: "running", startedAt: new Date().toISOString(), command: [item.command, ...item.args], env: item.env });
     save(directory, state);
     const started = Date.now();
-    const childEnv = { ...env, ...item.env, TOONSPECTRUM_VERIFY_DIR: target, TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: target };
+    const childEnv = { ...env, ...item.env, TOONSPECTRUM_VERIFY_DIR: target, TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: target,
+      TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR: target, TOONSPECTRUM_HOKUSAI_LIVE_INTEGRATION_DIR: target, TOONSPECTRUM_INAPP_VERIFY_DIR: target };
     for (const key of ["GH_TOKEN", "GITHUB_TOKEN", "TOONSPECTRUM_VERIFY_ORIGIN", "TOONSPECTRUM_VERIFY_BASE_URL"]) delete childEnv[key];
     const result = await run(item.command, item.args, { env: childEnv, signal,
       deadlineMs: Math.min(state.deadlineMs, Date.now() + item.minutes * 60_000), logPath: join(target, "process.log") });
@@ -420,7 +464,7 @@ async function main() {
     } else {
       state.phase = command.slice(2); save(directory, state);
       const args = command === "--install" ? ["install", "--frozen-lockfile", "--prefer-offline"]
-        : ["exec", "playwright", "install", "--with-deps", "chromium", ...(suite === "followup" ? ["webkit"] : [])];
+        : ["exec", "playwright", "install", "--with-deps", ...browsersFor(suite)];
       const result = await execute("pnpm", args, { env, deadlineMs: state.deadlineMs, signal: controller.signal });
       requireValue(result.exitCode === 0 && !result.reason, `검증 준비 실패: ${result.reason ?? result.exitCode}`);
     }

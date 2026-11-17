@@ -62,13 +62,13 @@ function livingInkReport() {
   };
 }
 
-test("원래 source harness 8개와 presentation/LivingInk, DOM 19개를 정확히 실행한다", () => {
+test("원래 source harness 8개와 presentation/LivingInk, DOM 21개를 정확히 실행한다", () => {
   assert.deepEqual(SOURCE_GATE_IDS, [
     "gpu-committed-parity", "engine-webgpu-filter-parity", "canvaskit-quality-worker",
     "dynamic-dual-tip-webgpu", "dynamic-dual-tip-webgpu-v2", "engine-webgpu-textured-brush",
     "engine-webgpu-tile-provider", "engine-tile-storage-opfs-v2",
   ]);
-  assert.equal(EXPECTED_HELPER_TESTS, 19);
+  assert.equal(EXPECTED_HELPER_TESTS, 21);
   assert.equal(REGRESSION_GATES.length, 11);
   assert.equal(new Set(REGRESSION_GATES.map(gate => gate.id)).size, 11);
   assert.deepEqual(REGRESSION_GATES.slice(-2).map(gate => gate.id), ["engine-webgpu-presentation", "living-ink-execution"]);
@@ -103,9 +103,9 @@ test("helper의 실제 두 파일/표시 selector/실패 계약을 유지하고 
 });
 
 test("UI report는 누락·추가·skip·retry·expected failure를 성공으로 승인하지 않는다", () => {
-  assert.equal(validateHelperReport(helperReport()), 19);
-  for (const count of [0, 18, 20]) assert.throws(() => validateHelperReport(helperReport(count)));
-  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 18]]) {
+  assert.equal(validateHelperReport(helperReport()), 21);
+  for (const count of [0, 20, 22]) assert.throws(() => validateHelperReport(helperReport(count)));
+  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 20]]) {
     const report = helperReport();
     report.stats[key] = value;
     assert.throws(() => validateHelperReport(report), key);

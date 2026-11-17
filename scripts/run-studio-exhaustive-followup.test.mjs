@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  ROOT, SOURCE_MODES, SUITES, diskCleanupPlan, ensureDiskCapacity, execute, initialize, parseInputs, planFor, publish, runCases,
+  ROOT, SOURCE_MODES, SUITES, browsersFor, diskCleanupPlan, ensureDiskCapacity, execute, initialize, parseInputs, planFor, publish, runCases,
   validateBuild, validateChangedPaths, validateDiskSpace, validateFreshSource, validateMetadata, validateReport,
 } from "./run-studio-exhaustive-followup.mjs";
 
@@ -37,6 +37,17 @@ function reportFor(item) {
   if (item.kind === "sw") return { ok: true, phase: "complete", failures: [], pageErrors: [], workerState: { buildId: build.buildId } };
   if (item.kind === "matrix") return { hardFailures: 0, locale: "ko-KR", colorScheme: "light", reducedMotion: "no-preference",
     results: [{ scope: item.scope, failures: [], pageErrors: [], consoleErrors: [], previewFixture: { unexpectedResponses: [] } }] };
+  if (item.kind === "media") return { kind: "toonstudio-studio-brush-media-browser-quality-v2", ok: true,
+    cases: [{ id: item.medium, metrics: { id: item.medium }, evaluation: { ok: true, findings: [] }, browserErrors: { console: [], page: [], responses: [] } }],
+    suite: { ok: true, findings: [] }, executionFailures: [], unexpectedBrowserErrors: [] };
+  if (item.kind === "hokusai") return { status: "ok", schemaVersion: 3, execution: "vite-production-preview-shipped-studio-policy-and-explicit-inspector",
+    issues: [], shelf: ["pencil", "charcoal", "oil"].map(presetId => ({ presetId })),
+    explicitInspector: { sourceRestoredByUndo: true, pairRestoredByRedo: true, pairPreservedByReload: true },
+    diagnostics: { consoleErrors: [], consoleWarnings: [], pageErrors: [], requestFailures: [], fiveHundredResponses: [] } };
+  if (item.kind === "inapp") return { kind: "toonstudio-studio-inapp-browser-v1", scope: "selected", ok: true,
+    phase: "complete", complete: true, selectionValid: true, activeCase: null, fatalFailure: null, notRun: [],
+    totalEligible: 38, excludedByFilter: 37, failures: [], planned: [{ profile: item.profile, route: item.route }],
+    results: [{ profile: item.profile, route: item.route, ok: true, hardFailures: [] }] };
   return { ok: true, violations: [], scenarios: [{ evidence: { id: item.scenario, status: "passed",
     undo: { attempted: true, restored: true, retainedEditableRasterWhenExpected: true,
       selectionStateCleared: item.scenario.startsWith("selection-") ? true : null,
@@ -55,7 +66,7 @@ function readyState(t, suite = "followup", deadline = Date.now() + 10_000) {
 test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 새 저장 비용은 만들지 않는다", () => {
   assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 2);
   assert.match(workflow, /default: regressions/u);
-  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives'\)/u);
+  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual'\)/u);
   assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ inputs\.source_mode == 'fresh-source' && 40 \|\| 20 \}\}/u);
   assert.match(followupJob, /STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' \? 39 : 19/u);
   assert.match(followupJob, /Date\.now\(\) \+ minutes \* 60_000/u);
@@ -83,11 +94,19 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
   assert.doesNotMatch(followupJob, /43971954502|14279822839|a2cf3525/u);
 });
 
-test("고정된 원래4case와 별도native3case만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
-  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives"]);
+test("고정된 후속4·native3·남은5case만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
+  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual"]);
   assert.deepEqual(planFor("followup").map(item => item.id), ["service-worker", "webkit-kakaotalk-android-360-animation", "chromium-tablet-768-animation", "native-paint-bucket"]);
   assert.deepEqual(planFor("native-representatives").map(item => item.scenario), ["paint-bucket", "selection-rect", "filter-inside"]);
   assert.deepEqual(SUITES.followup[0].args, ["exec", "tsx", "scripts/verify-studio-service-worker.mts"]);
+  assert.deepEqual(planFor("residual").map(item => item.id), ["webkit-kakaotalk-android-360-animation", "native-dodge-burn",
+    "media-pencil-grain", "hokusai-live-integration", "inapp-kakaotalk-android-360-editor"]);
+  assert.deepEqual(planFor("residual").map(item => item.minutes), [3, 5, 4, 6, 4]);
+  assert.deepEqual(SUITES.residual[2].env, { TOONSPECTRUM_BRUSH_VERIFY_IDS: "pencil-grain" });
+  assert.deepEqual(SUITES.residual[4].env, { TOONSPECTRUM_INAPP_VERIFY_PROFILES: "kakaotalk-android-360", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "editor" });
+  assert.deepEqual(browsersFor("followup"), ["chromium", "webkit"]);
+  assert.deepEqual(browsersFor("residual"), ["chromium", "webkit"]);
+  assert.deepEqual(browsersFor("native-representatives"), ["chromium"]);
   assert.throws(() => planFor("")); assert.throws(() => planFor("all")); assert.throws(() => planFor("toString"));
   for (const item of Object.values(SUITES).flat()) {
     assert.doesNotMatch(JSON.stringify(item), /--deep|--skip|reducedMotion|force|timeout=/u);
@@ -213,7 +232,7 @@ test("실제build-meta·manifest·SW 일치와 진입파일 존재를 요구한�
 });
 
 test("exit0이어도 빈·다른scope·pageerror·SW미완료·native실패 report는 통과하지 않는다", () => {
-  for (const item of SUITES.followup) {
+  for (const item of Object.values(SUITES).flat()) {
     validateReport(item, reportFor(item), build);
     assert.throws(() => validateReport(item, {}, build));
   }
@@ -247,6 +266,55 @@ test("exit0이어도 빈·다른scope·pageerror·SW미완료·native실패 repo
       }
     }
   }
+});
+
+test("남은 매체·Hokusai·인앱 검사도 누락·다른scope·원래 실패를 통과로 바꾸지 않는다", () => {
+  const mutations = {
+    media: [report => { report.cases = []; }, report => { report.cases.push(report.cases[0]); },
+      report => { report.cases[0].id = "different-medium"; }, report => { report.cases[0].metrics.id = "other"; },
+      report => { report.cases[0].evaluation.ok = false; }, report => { report.cases[0].evaluation.findings.push({ level: "error" }); },
+      report => { report.suite.ok = false; }, report => { report.executionFailures.push("stroke did not execute"); },
+      report => { report.unexpectedBrowserErrors.push("page error"); }, report => { report.cases[0].browserErrors.responses.push("HTTP 502"); }],
+    hokusai: [report => { report.status = "error"; }, report => { report.schemaVersion = 2; },
+      report => { report.execution = "mock"; }, report => { report.shelf.pop(); }, report => { report.shelf[0].presetId = "oil"; },
+      report => { report.issues.push("original policy failed"); }, report => { report.explicitInspector = null; },
+      ...["sourceRestoredByUndo", "pairRestoredByRedo", "pairPreservedByReload"].map(key => report => { report.explicitInspector[key] = false; }),
+      report => { report.diagnostics.consoleWarnings.push("GPU warning"); }, report => { delete report.diagnostics.pageErrors; }],
+    inapp: [report => { report.scope = "full"; }, report => { report.planned[0].route = "home"; },
+      report => { report.results = []; }, report => { report.results.push(report.results[0]); }, report => { report.results[0].profile = "other"; },
+      report => { report.excludedByFilter = 0; }, report => { report.totalEligible = 1; }, report => { report.failures.push("fatal"); },
+      report => { report.phase = "case"; }, report => { report.complete = false; }, report => { report.selectionValid = false; },
+      report => { report.activeCase = report.planned[0]; }, report => { report.fatalFailure = { message: "timeout" }; },
+      report => { report.notRun = report.planned; },
+      report => { report.results[0].ok = false; }, report => { report.results[0].hardFailures.push("closed detail failed"); }],
+  };
+  for (const item of SUITES.residual.filter(value => Object.hasOwn(mutations, value.kind))) {
+    for (const mutate of mutations[item.kind]) {
+      const report = reportFor(item); mutate(report);
+      assert.throws(() => validateReport(item, report, build), `${item.kind}: ${mutate}`);
+    }
+  }
+});
+
+test("남은5개는 각 원래 명령과 고정scope를 실행하고 진단 JSON까지 보존한다", async t => {
+  const { directory, state } = readyState(t, "residual");
+  let index = 0;
+  await runCases(directory, state, { env: { TOONSPECTRUM_BRUSH_VERIFY_IDS: "all", TOONSPECTRUM_INAPP_VERIFY_ROUTES: "home" },
+    run: async (command, args, options) => {
+      const item = SUITES.residual[index++];
+      assert.equal(command, item.command); assert.deepEqual(args, item.args);
+      for (const [key, value] of Object.entries(item.env)) assert.equal(options.env[key], value);
+      for (const key of ["TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR", "TOONSPECTRUM_HOKUSAI_LIVE_INTEGRATION_DIR", "TOONSPECTRUM_INAPP_VERIFY_DIR"]) {
+        assert.equal(options.env[key], options.env.TOONSPECTRUM_VERIFY_DIR);
+      }
+      writeFileSync(join(options.env.TOONSPECTRUM_VERIFY_DIR, item.report), JSON.stringify(reportFor(item)));
+      if (item.kind === "media") writeFileSync(join(options.env.TOONSPECTRUM_VERIFY_DIR, "studio-brush-media-pencil-grain-geometry.json"), '{"diagnostic":"preserved"}');
+      return { exitCode: 0, reason: null };
+    } });
+  const captured = capture();
+  assert.equal(index, 5); assert.equal(publish(directory, state, { output: captured.output }).status, "passed");
+  assert.match(captured.text(), /studio-brush-media-pencil-grain-geometry\.json/u);
+  assert.match(captured.text(), /"diagnostic":"preserved"/u);
 });
 
 test("한case 실패와 누락report를 남기고 후속case는 계속 실행한다", async t => {

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { openStudioExportPanel, openStudioMainMenu, runStudioClarityAction, visibleStudioControl } from "../scripts/lib/studio-shell-interactions";
+import { openStudioExportPanel, openStudioLayerNavigator, openStudioMainMenu, runStudioClarityAction, visibleStudioControl } from "../scripts/lib/studio-shell-interactions";
 import { auditPage, auditSkipLinks } from "../scripts/qa/verify-studio-cross-browser-matrix.mjs";
 
 test("표시된 셸 하나만 선택하고 두 조작 대상이 보이면 실패한다", async ({ page }) => {
@@ -85,4 +85,27 @@ test("포커스해도 숨은 링크와 실제 이동하지 않는 skip target은
   expect(failures).toHaveLength(2);
   expect(failures[0]).toContain("not visible on keyboard focus");
   expect(failures[1]).toContain("did not focus its target");
+});
+
+test("닫힌 레이어 패널을 실제 더보기로 열고 이미 열린 탭을 다시 닫지 않는다", async ({ page }) => {
+  await page.setContent(`<summary data-studio-clarity-more-trigger="true"
+    onclick="document.querySelector('[data-studio-drawing-task-browser]').hidden=false">더보기</summary>
+    <section data-studio-drawing-task-browser="true" hidden>
+      <button data-drawing-task-category="document" onclick="document.querySelector('[data-studio-clarity-action]').hidden=false">원고와 레이어</button>
+      <button data-studio-clarity-action="layers" hidden onclick="document.querySelector('aside').hidden=false;this.closest('section').hidden=true">레이어·속성 보기</button>
+    </section>
+    <aside data-testid="studio-inspector-navigator" hidden><button data-studio-inspector-primary-tab="layers"
+      aria-selected="false" onclick="this.setAttribute('aria-selected',this.getAttribute('aria-selected')==='true'?'false':'true')">레이어</button></aside>`);
+  await openStudioLayerNavigator(page, 2_000);
+  await expect(page.locator('[data-studio-inspector-primary-tab="layers"]')).toHaveAttribute("aria-selected", "true");
+  await openStudioLayerNavigator(page, 2_000);
+  await expect(page.locator('[data-studio-inspector-primary-tab="layers"]')).toHaveAttribute("aria-selected", "true");
+});
+
+test("분할 레이어에는 제거된 탭을 요구하지 않고 실제 탭 선택 실패는 거부한다", async ({ page }) => {
+  await page.setContent('<section data-studio-inspector-layers-split="true">레이어 목록</section>');
+  await openStudioLayerNavigator(page, 1_000);
+  await page.setContent(`<aside data-testid="studio-inspector-navigator"><button
+    data-studio-inspector-primary-tab="layers" aria-selected="false">동작하지 않는 레이어 탭</button></aside>`);
+  await expect(openStudioLayerNavigator(page, 1_000)).rejects.toThrow();
 });

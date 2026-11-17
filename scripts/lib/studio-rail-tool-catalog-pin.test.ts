@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { pinStudioRailToolFromCatalog, pinStudioRailToolInCatalog } from "./studio-rail-tool-catalog-pin";
+import { pinStudioRailToolFromCatalog, pinStudioRailToolInCatalog, studioRailToolDiagnosticError } from "./studio-rail-tool-catalog-pin";
 
 import type { Locator, Page } from "playwright";
 
@@ -59,7 +59,9 @@ describe("전체 도구 분류 정문에서 실제 검색으로 고정하기", (
   });
 });
 
-function idFixture(id: string, { pinned = false, searchError, pinError }: { pinned?: boolean; searchError?: Error; pinError?: Error } = {}) {
+function idFixture(id: string, { pinned = false, searchError, pinError, applyPin = true, acknowledgement }: {
+  pinned?: boolean; searchError?: Error; pinError?: Error; applyPin?: boolean; acknowledgement?: Promise<void>;
+} = {}) {
   const state = { query: "", pinned, used: false };
   const calls: string[] = [];
   const pin = {
@@ -69,22 +71,32 @@ function idFixture(id: string, { pinned = false, searchError, pinError }: { pinn
     }),
     click: vi.fn(async () => {
       if (pinError) throw pinError;
-      state.pinned = !state.pinned; calls.push("pin");
+      if (applyPin) state.pinned = !state.pinned;
+      calls.push("pin");
     }),
   };
   const waitFor = vi.fn(async (options: { state: string; timeout: number }) => {
     expect(state.query).toBe(id); expect(options.state).toBe("visible"); calls.push("entry-visible");
   });
+  const confirm = vi.fn(async (options: { state: string; timeout: number }) => {
+    expect(options.state).toBe("visible");
+    await acknowledgement;
+    if (!state.pinned) throw new Error("고정 상태가 반영되지 않았습니다");
+    calls.push("confirmed");
+  });
+  const page = { evaluate: vi.fn(async () => ({ toolId: id, states: [{ catalogId: id, pinPressed: String(state.pinned) }] })) } as unknown as Page;
   const entry = {
     waitFor,
     locator: (selector: string) => {
       expect(selector).toBe(".."); expect(state.query).toBe(id);
       return { locator: (pinSelector: string) => {
+        if (pinSelector === 'button[aria-pressed="true"]') return { waitFor: confirm };
         expect(pinSelector).toBe("button[aria-pressed]"); return pin;
       } };
     },
   };
   const catalog = {
+    page: () => page,
     getByRole: (role: string, options: { name: string; exact: boolean }) => {
       expect(role).toBe("searchbox"); expect(options).toEqual({ name: "전체 도구 검색", exact: true });
       return { fill: vi.fn(async (query: string) => {
@@ -98,7 +110,7 @@ function idFixture(id: string, { pinned = false, searchError, pinError }: { pinn
       return entry;
     },
   } as unknown as Locator;
-  return { catalog, state, calls, pin, waitFor };
+  return { catalog, state, calls, pin, waitFor, confirm };
 }
 
 describe("전체 도구의 ID 검색과 같은 행의 고정", () => {
@@ -106,7 +118,7 @@ describe("전체 도구의 ID 검색과 같은 행의 고정", () => {
     const f = idFixture(id);
     await pinStudioRailToolInCatalog(f.catalog, id);
     expect(f.state).toEqual({ query: id, pinned: true, used: false });
-    expect(f.calls).toEqual(["search", "pin"]);
+    expect(f.calls).toEqual(["search", "pin", "confirmed"]);
     expect(f.waitFor).not.toHaveBeenCalled();
   });
   it("이미 고정된 도구는 고정을 해제하지 않는다", async () => {
@@ -118,16 +130,44 @@ describe("전체 도구의 ID 검색과 같은 행의 고정", () => {
     const f = idFixture("fill");
     await pinStudioRailToolInCatalog(f.catalog, "fill", 16_000);
     expect(f.waitFor).toHaveBeenCalledWith({ state: "visible", timeout: 16_000 });
-    expect(f.calls).toEqual(["search", "entry-visible", "pin"]);
+    expect(f.confirm).toHaveBeenCalledWith({ state: "visible", timeout: 16_000 });
+    expect(f.calls).toEqual(["search", "entry-visible", "pin", "confirmed"]);
   });
   it("검색 실패 뒤 다른 도구를 고정하거나 계속하지 않는다", async () => {
     const failure = new Error("ID 검색 실패"), f = idFixture("bg3d", { searchError: failure });
-    await expect(pinStudioRailToolInCatalog(f.catalog, "bg3d")).rejects.toBe(failure);
+    await expect(pinStudioRailToolInCatalog(f.catalog, "bg3d")).rejects.toMatchObject({ cause: failure });
     expect(f.pin.click).not.toHaveBeenCalled(); expect(f.state.pinned).toBe(false);
   });
   it("고정 실패를 원래 호출자에게 전달한다", async () => {
     const failure = new Error("ID 고정 실패"), f = idFixture("rotate-view", { pinError: failure });
-    await expect(pinStudioRailToolInCatalog(f.catalog, "rotate-view")).rejects.toBe(failure);
+    await expect(pinStudioRailToolInCatalog(f.catalog, "rotate-view")).rejects.toMatchObject({ cause: failure });
     expect(f.state.pinned).toBe(false); expect(f.calls).toEqual(["search"]);
+  });
+  it("클릭이 끝나도 실제 고정 상태가 바뀌지 않으면 DOM 증거와 함께 실패한다", async () => {
+    const f = idFixture("dodge-burn", { applyPin: false });
+    await expect(pinStudioRailToolInCatalog(f.catalog, "dodge-burn")).rejects.toThrow('"pinPressed":"false"');
+    expect(f.state.pinned).toBe(false); expect(f.calls).toEqual(["search", "pin"]);
+  });
+  it("실제 고정 확인 전에는 호출자의 catalog 닫기 단계로 돌아가지 않는다", async () => {
+    let acknowledge!: () => void;
+    const f = idFixture("dodge-burn", { acknowledgement: new Promise<void>(resolve => { acknowledge = resolve; }) });
+    let completed = false;
+    const pending = pinStudioRailToolInCatalog(f.catalog, "dodge-burn").then(() => { completed = true; });
+    await vi.waitFor(() => expect(f.confirm).toHaveBeenCalled());
+    expect(completed).toBe(false);
+    acknowledge(); await pending; expect(completed).toBe(true);
+  });
+  it("DOM 관측 자체의 실패로 원래 오류를 덮지 않는다", async () => {
+    const failure = new Error("rail missing"), page = { evaluate: vi.fn().mockRejectedValue(new Error("page closed")) } as unknown as Page;
+    const error = await studioRailToolDiagnosticError(page, "dodge-burn", failure);
+    expect(error.cause).toBe(failure); expect(error.message).toContain("rail missing"); expect(error.message).toContain("page closed");
+    expect(await studioRailToolDiagnosticError(page, "dodge-burn", error)).toBe(error);
+    expect(page.evaluate).toHaveBeenCalledTimes(1);
+  });
+  it("catalog에서 확인한 고정 상태와 이후 rail 실패를 구분해 기록한다", async () => {
+    const page = { evaluate: vi.fn().mockResolvedValue({ toolId: "dodge-burn", states: [] }) } as unknown as Page;
+    const error = await studioRailToolDiagnosticError(page, "dodge-burn", new Error("rail missing"), true);
+    expect(error.message).toContain('"catalogPinConfirmed":true');
+    expect(error.message).toContain('"states":[]');
   });
 });

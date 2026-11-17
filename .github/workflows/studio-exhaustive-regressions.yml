@@ -20,6 +20,10 @@ on:
       - scripts/lib/studio-tool-interactions.ts
       - scripts/lib/studio-bg3d-ui-interactions.ts
       - scripts/lib/studio-offline-preview-fixture.*
+      - scripts/lib/studio-inapp-*.mts
+      - scripts/lib/studio-inapp-*.ts
+      - scripts/lib/studio-rail-tool-catalog-pin.*
+      - scripts/lib/studio-brush-media-geometry-diagnostics.*
       - scripts/lib/studio-engine-presentation-browser-diagnostics.ts
       - scripts/lib/repo-paths.mjs
       - scripts/qa/verify-studio-cross-browser-matrix.mjs
@@ -77,6 +81,7 @@ on:
           - regressions
           - followup
           - native-representatives
+          - residual
       source_mode:
         description: 기존 산출물 재사용(20분) 또는 현재 SHA production 빌드(40분)
         type: choice
@@ -156,7 +161,7 @@ jobs:
 
   followup:
     name: 선택한 production Studio 후속 검사
-    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives')
+    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual')
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.source_mode == 'fresh-source' && 40 || 20 }}
     permissions:

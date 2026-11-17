@@ -43,7 +43,7 @@ import { captureStudioDocumentBeforeDeadline, captureStudioDocumentRoi } from ".
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { isStaticPreviewReadinessResponse, isStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { setStudioPrimaryColorThroughUi as setPrimaryColor } from "./lib/studio-primary-color-interactions";
-import { pinStudioRailToolInCatalog } from "./lib/studio-rail-tool-catalog-pin";
+import { pinStudioRailToolInCatalog, studioRailToolDiagnosticError } from "./lib/studio-rail-tool-catalog-pin";
 import { openStudioMainMenu, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { clickStudioToolThroughUi } from "./lib/studio-tool-interactions";
 import {
@@ -563,20 +563,19 @@ async function visibleLocator(locator: Locator): Promise<Locator> {
   throw new Error("no visible locator candidate");
 }
 
-// 번역·간소 도구막대에 의존하지 않고 출시된 전체 도구 카탈로그에서 필요한 도구만 고정한다.
 async function toolButton(page: Page, id: StudioRailToolId): Promise<Locator> {
-  // 정밀 픽셀 도구는 현재 UI의 프로젝트·창 도구 진입으로 저장 배치를 연 뒤 조작한다.
-  // 간단한 채우기 버튼은 설정 패널만 여는 별도 동작이므로 같은 id로 혼동하지 않는다.
-  await showStudioProjectWindowTools(page);
-  const rail = page.locator('[data-studio-tool-rail="true"]');
-  const locator = rail.locator(`button[data-studio-rail-tool-id="${id}"]`);
-  if (await locator.filter({ visible: true }).count() > 0) return visibleStudioControl(locator, `정밀 도구 ${id}`);
-  await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
-  const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
-  await catalog.waitFor({ state: "visible", timeout: 16_000 });
-  await pinStudioRailToolInCatalog(catalog, id, 16_000);
-  await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
-  return visibleStudioControl(locator, `정밀 도구 ${id}`);
+  let catalogPinConfirmed = false; try {
+    await showStudioProjectWindowTools(page);
+    const rail = page.locator('[data-studio-tool-rail="true"]');
+    const locator = rail.locator(`button[data-studio-rail-tool-id="${id}"]`);
+    if (await locator.filter({ visible: true }).count() > 0) return await visibleStudioControl(locator, `정밀 도구 ${id}`);
+    await rail.getByRole("button", { name: "전체 도구", exact: true }).click();
+    const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true });
+    await catalog.waitFor({ state: "visible", timeout: 16_000 });
+    await pinStudioRailToolInCatalog(catalog, id, 16_000); catalogPinConfirmed = true;
+    await catalog.getByRole("button", { name: "전체 도구 닫기", exact: true }).click();
+    return await visibleStudioControl(locator, `정밀 도구 ${id}`);
+  } catch (error) { throw await studioRailToolDiagnosticError(page, id, error, catalogPinConfirmed); }
 }
 
 async function waitForToolButton(page: Page, id: StudioRailToolId): Promise<Locator> {

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readStudioProjectLibrary } from "../studio-project-library-store";
 import { readStudioProjectFeatureSuite } from "../studio-project-feature-suite-store";
 import { storyDevelopmentStorageKey } from "../studio-story-adaptation";
+import type { AiBlueprintHandoffStorage } from "./ai-quick-blueprint-handoff";
 
 import {
   AI_IDEA_SPARK_PRESETS,
@@ -146,10 +147,61 @@ describe("ai-quick-blueprint-engine", () => {
 
     const rawDoc = window.localStorage.getItem(storyDevelopmentStorageKey(result.projectId));
     expect(rawDoc).not.toBeNull();
-    expect(rawDoc).toContain(blueprint.title);
+    expect(JSON.parse(rawDoc ?? "null")).toMatchObject({
+      version: 1, sourceKind: "original", title: blueprint.title, logline: blueprint.logline,
+      chapters: [{ id: "chapter-1", status: "draft", body: expect.any(String) }],
+      updatedAt: "2026-11-17T00:00:00.000Z",
+    });
 
     const suite = readStudioProjectFeatureSuite(window.localStorage, result.projectId);
     expect(suite?.storyBeats).toHaveLength(6);
+  });
+
+  it("서로 다른 작품에 새 초안을 쓰고 이전 작품의 대본·비트를 그대로 다시 읽는다", () => {
+    const first = buildAiQuickBlueprint({ idea: "첫 작품의 비밀 야식", formatId: "webtoon-6", toneId: "romance", locale: "ko" });
+    const firstResult = openAiQuickBlueprintInStudio(window.localStorage, first);
+    const firstKey = storyDevelopmentStorageKey(firstResult.projectId);
+    const firstDocument = window.localStorage.getItem(firstKey);
+    const firstBeats = readStudioProjectFeatureSuite(window.localStorage, firstResult.projectId)?.storyBeats;
+    const second = buildAiQuickBlueprint({ idea: "다른 작품의 달나라 탐험", formatId: "instatoon-4", toneId: "action", locale: "ko" });
+    const secondResult = openAiQuickBlueprintInStudio(window.localStorage, second);
+    expect(secondResult.projectId).not.toBe(firstResult.projectId);
+    expect(window.localStorage.getItem(firstKey)).toBe(firstDocument);
+    expect(readStudioProjectFeatureSuite(window.localStorage, firstResult.projectId)?.storyBeats).toEqual(firstBeats);
+    expect(JSON.parse(window.localStorage.getItem(storyDevelopmentStorageKey(secondResult.projectId)) ?? "null"))
+      .toMatchObject({ version: 1, title: second.title, logline: second.logline });
+    expect(readStudioProjectFeatureSuite(window.localStorage, secondResult.projectId)?.storyBeats).toHaveLength(4);
+  });
+
+  it("대본 쓰기가 실패하면 새 프로젝트를 되돌리고 기존 작품의 문서를 보존한다", () => {
+    const blueprint = buildAiQuickBlueprint({ idea: "보존할 기존 작품", formatId: "webtoon-6", toneId: "romance", locale: "ko" });
+    const existing = openAiQuickBlueprintInStudio(window.localStorage, blueprint);
+    const existingKey = storyDevelopmentStorageKey(existing.projectId);
+    const existingDocument = window.localStorage.getItem(existingKey);
+    const existingBeats = readStudioProjectFeatureSuite(window.localStorage, existing.projectId)?.storyBeats;
+    let attemptedStoryKey: string | null = null;
+    const failure = new Error("QuotaExceededError");
+    const storage: AiBlueprintHandoffStorage = {
+      getItem: key => window.localStorage.getItem(key),
+      setItem: (key, value) => {
+        if (key.startsWith("toonstudio:story-development:v1:")) { attemptedStoryKey = key; throw failure; }
+        window.localStorage.setItem(key, value);
+      },
+      removeItem: key => window.localStorage.removeItem(key),
+    };
+    let caught: unknown;
+    try { openAiQuickBlueprintInStudio(storage, blueprint); } catch (error) { caught = error; }
+    expect(caught).toBeInstanceOf(Error);
+    if (!(caught instanceof Error)) throw new Error("실패한 저장이 오류를 반환하지 않았습니다.");
+    expect(caught.message).toContain("콘티 초안을 작품에 저장하지 못했어요");
+    expect(caught.cause).toBe(failure);
+    expect(attemptedStoryKey).not.toBeNull();
+    if (attemptedStoryKey === null) throw new Error("대본 쓰기 실패 경로를 실행하지 않았습니다.");
+    expect(attemptedStoryKey).not.toBe(existingKey);
+    expect(window.localStorage.getItem(attemptedStoryKey)).toBeNull();
+    expect(readStudioProjectLibrary(window.localStorage).projects.map(project => project.id)).toEqual([existing.projectId]);
+    expect(window.localStorage.getItem(existingKey)).toBe(existingDocument);
+    expect(readStudioProjectFeatureSuite(window.localStorage, existing.projectId)?.storyBeats).toEqual(existingBeats);
   });
 
   it("인터뷰 맥락 추천과 워크시트 생성이 빈 입력에도 안전하게 동작한다", () => {
