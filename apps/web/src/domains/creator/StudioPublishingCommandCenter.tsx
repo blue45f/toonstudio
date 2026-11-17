@@ -1,35 +1,10 @@
 import "./studio-shell/creator-workflow-surfaces.css";
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  CalendarClock,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Globe2,
-  ImagePlus,
-  Link2,
-  Loader2,
-  LockKeyhole,
-  PenLine,
-  RefreshCw,
-  Save,
-  Send,
-  ShieldCheck,
-  Star,
-  Trash2,
-  Upload,
+  ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CalendarClock, Check, ChevronLeft, ChevronRight,
+  Eye, Globe2, ImagePlus, Link2, Loader2, LockKeyhole, PenLine, RefreshCw, Save, Send,
+  ShieldCheck, Star, Trash2, Upload,
 } from "lucide-react";
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { buildStudioHref } from "./creator-studio-links";
@@ -68,46 +43,28 @@ import {
   STUDIO_UPLOAD_PAGE_ROW_CLASS,
 } from "./studio-upload-layout";
 import {
-  advanceStudioUploadSharedMetaAfterSave,
-  assertStudioUploadJsonPayloadSize,
-  assertStudioUploadPublishScope,
-  assertStudioUploadSharedMetaUnchanged,
-  canEditStudioUploadSharedDocument,
-  canPublishStudioUploadSharedDocument,
-  captureStudioUploadPublishScope,
-  isStudioUploadHydrationScopeCurrent,
-  isStudioUploadPublishScopeCurrent,
-  isStudioUploadPublishScopeInvalidatedError,
-  isStudioUploadSharedAccessChangedError,
-  isStudioUploadWorkspaceLocked,
-  resolveStudioUploadActionLocks,
-  resolveStudioUploadSharedCrdtSaveFence,
-  resolveStudioUploadUpdateRevision,
-  runStudioUploadPublishStages,
-  shouldResetStudioUploadDraft,
-  validateStudioUploadHydratedSharedDocument,
-  validateStudioUploadSavedWork,
-  type StudioUploadCurrentScope,
-  type StudioUploadHydrationStatus,
-  type StudioUploadPublishScope,
+  advanceStudioUploadSharedMetaAfterSave, assertStudioUploadJsonPayloadSize,
+  assertStudioUploadPublishScope, assertStudioUploadSharedMetaUnchanged,
+  canEditStudioUploadSharedDocument, canPublishStudioUploadSharedDocument,
+  captureStudioUploadPublishScope, isStudioUploadHydrationScopeCurrent,
+  isStudioUploadPublishScopeCurrent, isStudioUploadPublishScopeInvalidatedError,
+  isStudioUploadSharedAccessChangedError, isStudioUploadWorkspaceLocked,
+  resolveStudioUploadActionLocks, resolveStudioUploadSharedCrdtSaveFence,
+  resolveStudioUploadUpdateRevision, runStudioUploadPublishStages,
+  shouldResetStudioUploadDraft, validateStudioUploadHydratedSharedDocument,
+  validateStudioUploadSavedWork, type StudioUploadCurrentScope,
+  type StudioUploadHydrationStatus, type StudioUploadPublishScope,
 } from "./studio-upload-publish-safety";
 import { resolveStudioUploadWorkId } from "./studio-upload-route";
 import {
-  refreshStudioUpdateSafety,
-  registerStudioUpdateSafetySource,
-  type StudioUpdateSafetySourceSnapshot,
+  refreshStudioUpdateSafety, registerStudioUpdateSafetySource, type StudioUpdateSafetySourceSnapshot,
 } from "./studio-update-safety";
 import {
-  parseStudioPublicationTags,
-  suggestStudioPublicationSocialMetadata,
-  validateStudioPublicationPreflight,
+  parseStudioPublicationTags, suggestStudioPublicationSocialMetadata, validateStudioPublicationPreflight,
 } from "./studio-publication-preflight";
 import {
-  createStudioPublicationCoverDataUrl,
-  normalizeStudioPublicationCover,
-  readStudioPublicationCover,
-  resolveStudioPublicationCoverPageIndex,
-  writeStudioPublicationCover,
+  createStudioPublicationCoverDataUrl, normalizeStudioPublicationCover, readStudioPublicationCover,
+  resolveStudioPublicationCoverPageIndex, writeStudioPublicationCover,
 } from "./studio-publication-cover";
 import { StudioPublicationControls } from "./StudioPublicationControls";
 import { CreatorAiTrainingBadgeFor } from "./ai-training-consent/CreatorAiTrainingBadge";
@@ -130,6 +87,15 @@ import {
   resolveStudioPublishResultKind,
 } from "./studio-publish-result";
 import type { PublishVerdictInput } from "./studio-publish-verdict";
+import {
+  StudioPublishingPersistenceDockStatus,
+  StudioPublishingPersistenceSummaryStatus,
+} from "./publishing/StudioPublishingPersistenceStatus";
+import {
+  deriveStudioPublishingPersistenceStatus,
+  type StudioPublishingConfirmedSaveReceipt,
+  type StudioPublishingFailedSaveAttempt,
+} from "./publishing/studio-publishing-persistence-status";
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
@@ -305,6 +271,8 @@ export function StudioPublishingCommandCenter({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [confirmedSaveReceipt, setConfirmedSaveReceipt] = useState<StudioPublishingConfirmedSaveReceipt | null>(null);
+  const [failedSaveAttempt, setFailedSaveAttempt] = useState<StudioPublishingFailedSaveAttempt | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
@@ -483,6 +451,10 @@ export function StudioPublishingCommandCenter({
       setError(null);
       setSuccessMessage(null);
       setDirty(false);
+      setFailedSaveAttempt(null);
+      setConfirmedSaveReceipt((prev) =>
+        prev && prev.authUserId === authUserId && prev.savedWorkId === workId ? prev : null,
+      );
       setHydrationError(null);
       setWorkRevision(undefined);
       setHydratedScope(null);
@@ -490,6 +462,7 @@ export function StudioPublishingCommandCenter({
       setHydrationStatus(workId ? "loading" : "ready");
     } else if (adoptingGuestDraft) {
       setError(null);
+      setFailedSaveAttempt(null);
     }
   }, [authUserId, routeChallengeId, routeSeriesId, routeTitleId, workId]);
 
@@ -601,6 +574,7 @@ export function StudioPublishingCommandCenter({
         setHydratedScope(scope);
         setSharedMeta(meta);
         setDirty(false);
+        setFailedSaveAttempt(null);
         setHydrationStatus("ready");
         setHydrationError(null);
       })
@@ -855,6 +829,7 @@ export function StudioPublishingCommandCenter({
 
   function markChanged() {
     setDirty(true);
+    setFailedSaveAttempt(null);
     setPublisherConfirmed(false);
     setError(null);
     setRecoveryError(null);
@@ -866,6 +841,7 @@ export function StudioPublishingCommandCenter({
 
   function leavePublishResult(nextStep: CommandStep) {
     setStep(nextStep);
+    setFailedSaveAttempt(null);
     setError(null);
     setRecoveryError(null);
     setSuccessMessage(null);
@@ -1032,11 +1008,15 @@ export function StudioPublishingCommandCenter({
       setStep("distribution");
       return;
     }
+    const recordSaveFailure = (message: string) => {
+      setError(message);
+      setFailedSaveAttempt({ authUserId, workId, message });
+    };
     let publishScope: StudioUploadPublishScope;
     try {
       publishScope = captureStudioUploadPublishScope(authUserId, workId);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.loginToSave", "로그인 후 저장할 수 있어요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.loginToSave", "로그인 후 저장할 수 있어요."));
       return;
     }
     let baseRevision: number | undefined;
@@ -1048,17 +1028,17 @@ export function StudioPublishingCommandCenter({
         workRevision,
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.reloadWork", "기존 작품을 다시 불러와 주세요."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.reloadWork", "기존 작품을 다시 불러와 주세요."));
       return;
     }
     const sharedMetaSnapshot = sharedMeta;
     if (publishScope.workId) {
       if (!sharedMetaSnapshot || !canEditStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.pub.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.pub.cannotSaveShared", "현재 역할은 공동 원고를 저장할 수 없습니다."));
         return;
       }
       if (intent === "publish" && !canPublishStudioUploadSharedDocument(sharedMetaSnapshot)) {
-        setError(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
+        recordSaveFailure(frozenStatus2Text("studio.frozenStatus2.pub.ownerOnlyVisibility", "공개 범위와 게시 상태는 작품 소유자만 변경할 수 있습니다."));
         return;
       }
     }
@@ -1147,7 +1127,7 @@ export function StudioPublishingCommandCenter({
         toolIds: origin.toolIds,
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.integrityFailed", "게시 원본의 무결성 정보를 만들지 못했습니다."));
+      recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.integrityFailed", "게시 원본의 무결성 정보를 만들지 못했습니다."));
       return;
     }
     if (!isStudioUploadPublishScopeCurrent(
@@ -1172,6 +1152,7 @@ export function StudioPublishingCommandCenter({
     publishRequestIdRef.current = requestId;
     publishAbortRef.current = controller;
     setSaving(true);
+    setFailedSaveAttempt(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -1283,6 +1264,13 @@ export function StudioPublishingCommandCenter({
         if (directiveSnapshot) setDirective(directiveSnapshot);
       }
       setDirty(false);
+      setFailedSaveAttempt(null);
+      setConfirmedSaveReceipt({
+        authUserId: publishScope.authUserId,
+        savedWorkId: saved.workId,
+        sourceWorkId: publishScope.workId,
+        revision: saved.revision ?? sharedMetaSnapshot?.revision ?? null,
+      });
       setPublisherConfirmed(false);
       if (handoffId) {
         try {
@@ -1339,7 +1327,7 @@ export function StudioPublishingCommandCenter({
           setHydrationError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.sharedPermissionOrVersion", "공동 문서 권한 또는 버전이 변경되었습니다. 다시 불러와 주세요."));
           setError(null);
         } else {
-          setError(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.saveFailed", "저장에 실패했어요."));
+          recordSaveFailure(cause instanceof Error ? cause.message : frozenStatus2Text("studio.frozenStatus2.pub.saveFailed", "저장에 실패했어요."));
         }
       }
     } finally {
@@ -1398,6 +1386,15 @@ export function StudioPublishingCommandCenter({
         setWorkRevision(result.work.revision);
       }
       setDirty(false);
+      setFailedSaveAttempt(null);
+      if (authUserId) {
+        setConfirmedSaveReceipt({
+          authUserId,
+          savedWorkId: workId,
+          sourceWorkId: workId,
+          revision: Number.isSafeInteger(result.work.revision) ? result.work.revision : (workRevision ?? null),
+        });
+      }
       setPublisherConfirmed(false);
       setSuccessMessage(publishResult === "scheduled" ? frozenStatus2Text("studio.frozenStatus2.pub.cancelScheduled", "게시 예약을 취소하고 비공개 초안으로 전환했습니다.") : frozenStatus2Text("studio.frozenStatus2.pub.successMadePrivate", "작품을 비공개 초안으로 전환했습니다."));
       navigate(buildStudioPublishResultHref(workId, "private"), { replace: true });
@@ -1415,6 +1412,7 @@ export function StudioPublishingCommandCenter({
         detail: message,
       });
       setRecoveryError(message);
+      setFailedSaveAttempt({ authUserId, workId, message });
     } finally {
       if (recoveryAbortRef.current === controller) {
         recoveryAbortRef.current = null;
@@ -1429,6 +1427,14 @@ export function StudioPublishingCommandCenter({
   }
 
   const currentStepIndex = COMMAND_STEPS.findIndex((candidate) => candidate.id === step);
+  const savingBusyLabel = frozenStatus2Text("studio.frozenStatus2.pub.savingBusy", "저장 중…");
+  const persistenceStatus = deriveStudioPublishingPersistenceStatus({
+    authUserId, workId, pageCount: pages.length, title, description, tagsText,
+    hasHandoffContext: handoffContext !== null, dirty, saving, recoveryBusy, hydrating,
+    loadingFiles, handoffLoading, hydrationStatus, hydrationScopeCurrent,
+    hasHydratedScope: hydratedScope !== null, handoffError, workRevision,
+    confirmedSaveReceipt, failedSaveAttempt,
+  });
   const primaryDisabled =
     !loggedIn ||
     publishLocked ||
@@ -1685,21 +1691,7 @@ export function StudioPublishingCommandCenter({
             ? `다음: ${COMMAND_STEPS[currentStepIndex + 1]?.label}`
             : "마지막 단계예요. 사전검사를 통과하면 게시할 수 있어요."}
         </span>
-        <span className="ml-auto" role="status">
-          {saving ? (
-            <span className="inline-flex items-center gap-1.5 text-fg-2">
-              <Loader2 size={13} className="animate-spin" /> {frozenStatus2Text("studio.frozenStatus2.pub.savingBusy", "저장 중…")}
-            </span>
-          ) : dirty ? (
-            <span className="inline-flex items-center gap-1.5 text-warn">
-              <span className="size-2 rounded-full bg-warn" /> 저장되지 않은 변경이 있어요 — 아래 "초안 저장"으로 언제든 중간 저장할 수 있어요
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-good">
-              <Check size={13} /> 현재 버전까지 저장됨
-            </span>
-          )}
-        </span>
+        <StudioPublishingPersistenceSummaryStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
       </div>
 
       <nav aria-label="게시 단계" className="mb-5 grid gap-2 sm:grid-cols-3">
@@ -2036,7 +2028,7 @@ export function StudioPublishingCommandCenter({
 
       <div className={cn("mt-5", STUDIO_UPLOAD_ACTION_DOCK_CLASS)}>
         <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-fg-3">
-          {dirty ? <span className="inline-flex items-center gap-1.5 text-warn"><span className="size-2 rounded-full bg-warn" /> 저장 또는 게시하면 현재 변경이 새 저장 버전에 함께 반영됩니다.</span> : <span className="inline-flex items-center gap-1.5 text-good"><Check size={13} /> 현재 버전 저장됨</span>}
+          <StudioPublishingPersistenceDockStatus status={persistenceStatus} savingLabel={savingBusyLabel} />
           {sharedMeta && <span className="hidden sm:inline">· 역할 {sharedMeta.role}</span>}
         </div>
         <button
