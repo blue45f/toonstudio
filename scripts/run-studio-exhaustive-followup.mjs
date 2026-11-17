@@ -2,13 +2,15 @@
 /** 기존 production 산출물에서 정해진 후속 검사만 실행하고 미실행·증거 누락을 실패로 보존한다. */
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statfsSync, statSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const MAX_JSON_BYTES = 4 * 1024 * 1024;
 export const MAX_SUMMARY_BYTES = 256 * 1024;
+export const SOURCE_MODES = Object.freeze({ artifact: { jobMinutes: 20, workMinutes: 19 }, "fresh-source": { jobMinutes: 40, workMinutes: 39 } });
+const SDK_PATHS = Object.freeze(["/usr/local/lib/android/sdk", "/usr/share/dotnet/sdk"]);
 const runnerPath = "scripts/run-studio-exhaustive-followup.mjs";
 const workflowPath = ".github/workflows/studio-exhaustive-regressions.yml";
 const matrix = (engine, profile) => Object.freeze({
@@ -44,10 +46,11 @@ export function planFor(suite) {
   return SUITES[suite];
 }
 
-export function initialize(directory, suite, deadlineMs) {
-  requireValue(Number.isSafeInteger(deadlineMs) && deadlineMs > 0, "19분 작업 deadline이 필요합니다.");
+export function initialize(directory, suite, deadlineMs, sourceMode = "artifact") {
+  requireValue(Object.hasOwn(SOURCE_MODES, sourceMode), "source_mode는 artifact 또는 fresh-source여야 합니다.");
+  requireValue(Number.isSafeInteger(deadlineMs) && deadlineMs > 0, `${SOURCE_MODES[sourceMode].workMinutes}분 작업 deadline이 필요합니다.`);
   mkdirSync(directory, { recursive: true });
-  const state = { schema: 1, suite, scope: "selected-original-cases-only", startedAt: new Date().toISOString(),
+  const state = { schema: 1, suite, sourceMode, scope: "selected-original-cases-only", startedAt: new Date().toISOString(),
     deadlineMs, phase: "setup", status: "incomplete", provenance: null, build: null, failures: [],
     cases: planFor(suite).map(item => ({ id: item.id, status: "not_run", exitCode: null, reason: null, durationMs: null })) };
   save(directory, state);
@@ -93,16 +96,36 @@ export function validateChangedPaths(paths) {
   return paths;
 }
 
-function verifySource(sourceSha) {
+export function validateFreshSource(sourceSha, actualSha, eventSha, trackedStatus) {
+  requireValue(/^[0-9a-f]{40}$/u.test(sourceSha ?? "") && sourceSha === actualSha && sourceSha === eventSha,
+    "fresh-source는 source_sha·checkout HEAD·GITHUB_SHA가 정확히 일치해야 합니다.");
+  requireValue(typeof trackedStatus === "string" && !trackedStatus, `추적된 제품 입력이 바뀌었습니다. 변경을 검토하고 새 SHA를 지정하세요: ${trackedStatus}`);
+}
+
+function verifySource(sourceSha, sourceMode = "artifact", env = process.env) {
+  const runnerSha = git(["rev-parse", "HEAD"]);
+  const trackedStatus = git(["status", "--porcelain", "--untracked-files=no"]);
+  if (sourceMode === "fresh-source") {
+    validateFreshSource(sourceSha, runnerSha, env.GITHUB_SHA, trackedStatus);
+    return { runnerSha, sourceTree: git(["rev-parse", `${sourceSha}^{tree}`]), changedPaths: [] };
+  }
   git(["merge-base", "--is-ancestor", sourceSha, "HEAD"]);
   // rename을 해제해야 제품 파일을 허용 경로로 옮기는 삭제도 검출한다.
   const changes = git(["diff", "--no-renames", "--name-only", "-z", sourceSha, "HEAD"]).split("\0").filter(Boolean);
   validateChangedPaths(changes);
-  requireValue(!git(["status", "--porcelain", "--untracked-files=no"]), "추적된 작업 파일이 바뀌었습니다. source 동일성을 먼저 복구하세요.");
-  return { runnerSha: git(["rev-parse", "HEAD"]), sourceTree: git(["rev-parse", `${sourceSha}^{tree}`]), changedPaths: changes };
+  requireValue(!trackedStatus, "추적된 작업 파일이 바뀌었습니다. source 동일성을 먼저 복구하세요.");
+  return { runnerSha, sourceTree: git(["rev-parse", `${sourceSha}^{tree}`]), changedPaths: changes };
 }
 
 async function provenance(directory, state, env) {
+  if (state.sourceMode === "fresh-source") {
+    requireValue(env.GITHUB_ACTIONS === "true" && env.GITHUB_EVENT_NAME === "workflow_dispatch", "fresh-source는 승인된 수동 GitHub Actions에서만 실행하세요.");
+    state.provenance = { sourceMode: state.sourceMode, sourceSha: env.STUDIO_FOLLOWUP_SOURCE_SHA,
+      ...verifySource(env.STUDIO_FOLLOWUP_SOURCE_SHA, state.sourceMode, env) };
+    state.phase = "prepare-disk";
+    save(directory, state); writeJson(join(directory, "provenance.json"), state.provenance);
+    return;
+  }
   const input = parseInputs(env);
   requireValue(env.GH_TOKEN, "산출물을 읽을 actions:read 토큰이 없습니다.");
   const get = async path => {
@@ -120,6 +143,69 @@ async function provenance(directory, state, env) {
   writeJson(join(directory, "provenance.json"), state.provenance);
   requireValue(state.deadlineMs - Date.now() > 60_000, "다운로드 전에 작업 예산이 소진됐습니다.");
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `download_minutes=${Math.min(6, Math.floor((state.deadlineMs - Date.now()) / 60_000))}\n`);
+}
+
+/** 계획 함수는 파일을 삭제하지 않는다. 실제 정리는 아래 고정 경로에만 적용한다. */
+export function diskCleanupPlan(env, { platform = process.platform, realpath = realpathSync, lstat = lstatSync } = {}) {
+  requireValue(env.GITHUB_ACTIONS === "true" && env.RUNNER_ENVIRONMENT === "github-hosted" && env.RUNNER_OS === "Linux"
+    && env.ImageOS === "ubuntu24" && env.TOONSTUDIO_CI_RUNNER_ENVIRONMENT === "github-hosted"
+    && env.TOONSTUDIO_CI_RUNNER_OS === "Linux" && platform === "linux", "SDK 정리는 GitHub-hosted Ubuntu 24.04에서만 허용합니다.");
+  const workspace = env.GITHUB_WORKSPACE;
+  requireValue(typeof workspace === "string" && isAbsolute(workspace) && workspace !== "/" && resolve(workspace) === workspace,
+    "정규화된 절대 workspace 경로가 필요합니다.");
+  for (const target of [workspace, ...SDK_PATHS]) {
+    for (let component = target; component !== "/"; component = dirname(component)) {
+      try { requireValue(!lstat(component).isSymbolicLink(), `심볼릭 링크 경로는 정리할 수 없습니다: ${component}`); }
+      catch (error) { if (error.code !== "ENOENT") throw error; }
+    }
+  }
+  requireValue(realpath(workspace) === workspace, "workspace 실제 경로가 다릅니다.");
+  for (const target of SDK_PATHS) requireValue(workspace !== target && !workspace.startsWith(`${target}/`) && !target.startsWith(`${workspace}/`),
+    `workspace와 SDK 경로가 겹칩니다: ${target}`);
+  return { workspace, targets: [...SDK_PATHS], minimumFreeBytes: 20 * 1024 ** 3 };
+}
+
+export function validateDiskSpace(bytes, minimumFreeBytes = 20 * 1024 ** 3) {
+  requireValue(Number.isSafeInteger(bytes) && bytes >= minimumFreeBytes, "전체 assets와 빌드에 필요한 최소 20 GiB 여유가 없습니다.");
+}
+
+function prepareDisk(directory, state, env) {
+  requireValue(state.sourceMode === "fresh-source" && state.provenance, "fresh-source 검증을 먼저 완료하세요.");
+  const plan = diskCleanupPlan(env);
+  const available = () => { const info = statfsSync(plan.workspace); return info.bavail * info.bsize; };
+  const receipt = { ...plan, beforeBytes: available(), afterBytes: null };
+  writeJson(join(directory, "disk.json"), receipt);
+  execFileSync("sudo", ["rm", "-rf", "--", ...plan.targets], {
+    stdio: "inherit", timeout: Math.max(1, Math.min(60_000, state.deadlineMs - Date.now())),
+  });
+  receipt.afterBytes = available();
+  writeJson(join(directory, "disk.json"), receipt);
+  console.log(JSON.stringify(receipt));
+  validateDiskSpace(receipt.afterBytes, plan.minimumFreeBytes);
+  state.diskPrepared = true; save(directory, state);
+}
+
+async function freshWork(command, directory, state, env, signal) {
+  requireValue(state.sourceMode === "fresh-source" && state.provenance && state.diskPrepared, "fresh-source와 SDK·디스크 검증을 먼저 완료하세요.");
+  verifySource(state.provenance.sourceSha, state.sourceMode, env);
+  state.phase = command.slice(2); save(directory, state);
+  if (command === "--hydrate") {
+    const result = await execute("git", ["sparse-checkout", "disable"], { env, signal,
+      deadlineMs: Math.min(state.deadlineMs, Date.now() + 5 * 60_000) });
+    requireValue(result.exitCode === 0 && !result.reason, `전체 asset 복원 실패: ${result.reason ?? result.exitCode}`);
+    verifySource(state.provenance.sourceSha, state.sourceMode, env);
+    state.fullCheckout = true; save(directory, state); return;
+  }
+  requireValue(state.fullCheckout, "production 빌드 전에 전체 assets·vrm를 복원하세요.");
+  const started = Date.now();
+  const result = await execute("pnpm", ["run", "build:bundle"], {
+    env: { ...env, VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH: "true" }, signal, deadlineMs: state.deadlineMs,
+  });
+  state.buildAttempt = { command: ["pnpm", "run", "build:bundle"], env: { VITE_STUDIO_AUTOMERGE_OFFLINE_BRANCH: "true" },
+    ...result, durationMs: Date.now() - started, trackedStatusAfterBuild: git(["status", "--porcelain", "--untracked-files=no"]) };
+  writeJson(join(directory, "build-attempt.json"), state.buildAttempt); save(directory, state);
+  verifySource(state.provenance.sourceSha, state.sourceMode, env);
+  requireValue(result.exitCode === 0 && !result.reason, `production 빌드 실패: ${result.reason ?? result.exitCode}`);
 }
 
 export function validateBuild(directory, sourceSha) {
@@ -237,7 +323,7 @@ export function publish(directory, state, { output = process.stdout, summaryPath
     if (record.status === "running") { record.status = "failed"; record.reason = "interrupted_before_result"; }
     if (record.status === "not_run" && !record.reason) record.reason = `setup_incomplete: ${state.phase}`;
   }
-  const expected = ["provenance.json", "build.json", ...planFor(state.suite).flatMap(item => {
+  const expected = ["provenance.json", "build.json", ...(state.sourceMode === "fresh-source" ? ["disk.json", "build-attempt.json"] : []), ...planFor(state.suite).flatMap(item => {
     const record = state.cases.find(value => value.id === item.id);
     return record.status === "passed" ? [`evidence/${item.id}/${item.report}`, `evidence/${item.id}/case-result.json`] : [];
   })];
@@ -266,7 +352,7 @@ export function publish(directory, state, { output = process.stdout, summaryPath
   save(directory, state); writeJson(join(directory, "evidence-manifest.json"), manifest);
   output.write(`::group::Studio selected follow-up results\n${JSON.stringify(state, null, 2)}\n::endgroup::\n`);
   for (const document of documents) output.write(`::group::${document.path}\n${document.raw}\n::endgroup::\n`);
-  let summary = `## Studio ${state.suite}: ${state.status}\n\n선택한 원래 시나리오 ${state.cases.length}개만 검증합니다. 전체 exhaustive/native matrix 통과를 뜻하지 않습니다. 신규 artifact/cache 업로드 없음.\n\n`
+  let summary = `## Studio ${state.suite} / ${state.sourceMode}: ${state.status}\n\n선택한 원래 시나리오 ${state.cases.length}개만 검증합니다. 전체 exhaustive/native matrix 통과를 뜻하지 않습니다. 신규 artifact/cache 업로드 없음.\n\n`
     + `| 검사 | 상태 | 종료 코드 | ms |\n|---|---|---:|---:|\n${state.cases.map(item => `| ${item.id} | ${item.status} | ${item.exitCode ?? "—"} | ${item.durationMs ?? "—"} |`).join("\n")}\n\n`
     + `\`\`\`json\n${JSON.stringify(state, null, 2)}\n\`\`\`\n\n원본 JSON 전체 보존: ${state.publication.complete ? "성공" : "실패"}. 파일별 Actions 로그 그룹을 확인하세요.\n`;
   for (const document of documents) {
@@ -280,31 +366,35 @@ export function publish(directory, state, { output = process.stdout, summaryPath
 
 async function main() {
   const command = process.argv[2];
-  requireValue(process.argv.length === 3 && ["--init", "--provenance", "--dist", "--install", "--browsers", "--run", "--publish", "--check"].includes(command),
-    `node ${runnerPath} --init|--provenance|--dist|--install|--browsers|--run|--publish|--check 로 실행하세요.`);
+  requireValue(process.argv.length === 3 && ["--init", "--provenance", "--prepare-disk", "--hydrate", "--build", "--dist", "--install", "--browsers", "--run", "--publish", "--check"].includes(command),
+    `node ${runnerPath} --init|--provenance|--prepare-disk|--hydrate|--build|--dist|--install|--browsers|--run|--publish|--check 로 실행하세요.`);
   const env = process.env;
   const suite = env.STUDIO_FOLLOWUP_SUITE ?? "followup";
-  if (command === "--check") { console.log(JSON.stringify({ suites: SUITES, artifactUpload: false, cacheUpload: false }, null, 2)); return; }
+  const sourceMode = env.STUDIO_FOLLOWUP_SOURCE_MODE || "artifact";
+  if (command === "--check") { console.log(JSON.stringify({ suites: SUITES, sourceModes: SOURCE_MODES, artifactUpload: false, cacheUpload: false }, null, 2)); return; }
   const directory = resolve(env.TOONSPECTRUM_FOLLOWUP_VERIFY_DIR ?? join(ROOT, "artifacts/studio-exhaustive-followup"));
   const state = command === "--init" || !existsSync(join(directory, "summary.json"))
-    ? initialize(directory, suite, Number(env.STUDIO_QA_DEADLINE_MS)) : json(join(directory, "summary.json"));
-  requireValue(state.suite === suite, "시작한 suite와 현재 입력이 다릅니다.");
+    ? initialize(directory, suite, Number(env.STUDIO_QA_DEADLINE_MS), sourceMode) : json(join(directory, "summary.json"));
+  requireValue(state.suite === suite && state.sourceMode === sourceMode, "시작한 suite·source_mode와 현재 입력이 다릅니다.");
   const controller = new AbortController();
   const abort = () => controller.abort();
   process.once("SIGTERM", abort); process.once("SIGINT", abort);
   try {
     if (command === "--init") return;
     if (command === "--publish") { process.exitCode = publish(directory, state, { summaryPath: env.GITHUB_STEP_SUMMARY }).status === "passed" ? 0 : 1; return; }
-    requireValue(Date.now() < state.deadlineMs, "19분 작업 예산이 소진됐습니다. 미실행 결과를 확인하세요.");
+    requireValue(Date.now() < state.deadlineMs, `${SOURCE_MODES[sourceMode].workMinutes}분 작업 예산이 소진됐습니다. 미실행 결과를 확인하세요.`);
     if (command === "--provenance") await provenance(directory, state, env);
+    else if (command === "--prepare-disk") prepareDisk(directory, state, env);
+    else if (["--hydrate", "--build"].includes(command)) await freshWork(command, directory, state, env, controller.signal);
     else if (command === "--dist") {
       requireValue(state.provenance, "먼저 생산 산출물과 source를 검증하세요.");
-      requireValue(verifySource(state.provenance.sourceSha).runnerSha === state.provenance.runnerSha, "검증 도중 runner SHA가 바뀌었습니다.");
+      if (sourceMode === "fresh-source") requireValue(state.buildAttempt?.exitCode === 0 && !state.buildAttempt.reason, "현재 source의 production 빌드가 완료되지 않았습니다.");
+      requireValue(verifySource(state.provenance.sourceSha, sourceMode, env).runnerSha === state.provenance.runnerSha, "검증 도중 runner SHA가 바뀌었습니다.");
       state.build = { ...validateBuild(join(ROOT, "dist"), state.provenance.sourceSha),
         headerPolicySha256: digest(join(ROOT, "config/http-response-headers.json")) };
       writeJson(join(directory, "build.json"), state.build); save(directory, state);
     } else if (command === "--run") {
-      verifySource(state.provenance?.sourceSha);
+      verifySource(state.provenance?.sourceSha, sourceMode, env);
       process.exitCode = (await runCases(directory, state, { env, signal: controller.signal })).status === "passed" ? 0 : 1;
     } else {
       state.phase = command.slice(2); save(directory, state);

@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  ROOT, SUITES, execute, initialize, parseInputs, planFor, publish, runCases,
-  validateBuild, validateChangedPaths, validateMetadata, validateReport,
+  ROOT, SOURCE_MODES, SUITES, diskCleanupPlan, execute, initialize, parseInputs, planFor, publish, runCases,
+  validateBuild, validateChangedPaths, validateDiskSpace, validateFreshSource, validateMetadata, validateReport,
 } from "./run-studio-exhaustive-followup.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
@@ -52,24 +52,34 @@ function readyState(t, suite = "followup", deadline = Date.now() + 10_000) {
   return { directory, state };
 }
 
-test("기본11gate와 상호 배타적인 수동20분 job만 추가하고 새 저장 비용은 만들지 않는다", () => {
+test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 새 저장 비용은 만들지 않는다", () => {
   assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 2);
   assert.match(workflow, /default: regressions/u);
   assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives'\)/u);
-  assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: 20/u);
-  assert.match(followupJob, /Date\.now\(\) \+ 19 \* 60_000/u);
+  assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ inputs\.source_mode == 'fresh-source' && 40 \|\| 20 \}\}/u);
+  assert.match(followupJob, /STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' \? 39 : 19/u);
+  assert.match(followupJob, /Date\.now\(\) \+ minutes \* 60_000/u);
+  assert.deepEqual(SOURCE_MODES, { artifact: { jobMinutes: 20, workMinutes: 19 }, "fresh-source": { jobMinutes: 40, workMinutes: 39 } });
+  assert.match(workflow, /source_mode:[\s\S]*default: artifact/u);
   assert.match(followupJob, /permissions:\n {6}contents: read\n {6}actions: read/u);
   assert.match(followupJob, /actions\/download-artifact@v8/u);
   assert.match(followupJob, /artifact-ids: \$\{\{ inputs\.artifact_id \}\}/u);
   assert.match(followupJob, /run-id: \$\{\{ inputs\.producer_run_id \}\}/u);
   assert.match(followupJob, /digest-mismatch: error/u);
-  assert.match(followupJob, /timeout-minutes: \$\{\{ fromJSON\(steps\.provenance\.outputs\.download_minutes\) \}\}/u);
+  assert.match(followupJob, /timeout-minutes: \$\{\{ fromJSON\(steps\.provenance\.outputs\.download_minutes \|\| '6'\) \}\}/u);
+  assert.match(followupJob, /if: inputs\.source_mode != 'fresh-source'\n {8}uses: actions\/download-artifact/u);
+  for (const command of ["prepare-disk", "hydrate", "build"]) assert.match(followupJob,
+    new RegExp(`if: inputs\\.source_mode == 'fresh-source'\\n(?: {8}env:[\\s\\S]*?)? {8}run: node scripts/run-studio-exhaustive-followup\\.mjs --${command}`, "u"));
   assert.match(followupJob, /if: always\(\)[\s\S]*run-studio-exhaustive-followup\.mjs --publish/u);
   assert.doesNotMatch(workflow, /continue-on-error|actions\/(?:upload-artifact|cache)|cache:|matrix:|pnpm (?:run )?build\b/u);
   assert.doesNotMatch(workflow, /^ {2}(?:push|schedule|workflow_run|merge_group):/mu);
   assert.ok(followupJob.indexOf("--init") < followupJob.indexOf("--provenance"));
   assert.ok(followupJob.indexOf("--provenance") < followupJob.indexOf("download-artifact@"));
   assert.ok(followupJob.indexOf("--dist") < followupJob.indexOf("--install"));
+  assert.ok(followupJob.indexOf("--prepare-disk") < followupJob.indexOf("--hydrate"));
+  assert.ok(followupJob.indexOf("--hydrate") < followupJob.indexOf("--install"));
+  assert.ok(followupJob.indexOf("--install") < followupJob.indexOf("--build"));
+  assert.ok(followupJob.indexOf("--build") < followupJob.lastIndexOf("--dist"));
   assert.doesNotMatch(followupJob, /43971954502|14279822839|a2cf3525/u);
 });
 
@@ -109,6 +119,40 @@ test("앱·verifier·lockfile·빌드설정이 달라지면 기존dist 재사용
     "config/http-response-headers.json", "scripts/verify-studio-service-worker.mts", "docs/changed-build-input.md"]) {
     assert.throws(() => validateChangedPaths([path]), /새 빌드/u);
   }
+});
+
+test("fresh-source는 입력·checkout·event의 정확한 SHA와 빌드 전후 깨끗한 추적 파일을 요구한다", t => {
+  validateFreshSource(sha, sha, sha, "");
+  for (const values of [["main", sha, sha, ""], [sha, "b".repeat(40), sha, ""], [sha, sha, "b".repeat(40), ""],
+    [sha, sha, undefined, ""], [sha, sha, sha, " M apps/web/src/catalog.generated.ts"], [sha, sha, sha, undefined]]) {
+    assert.throws(() => validateFreshSource(...values));
+  }
+  const directory = temporary(t);
+  assert.equal(initialize(directory, "followup", Date.now() + 39 * 60_000, "fresh-source").sourceMode, "fresh-source");
+  assert.throws(() => initialize(directory, "followup", Date.now() + 1000, "arbitrary-mode"));
+});
+
+test("SDK 계획은 hosted Ubuntu24의 고정 두 경로만 허용하고 실제 삭제를 하지 않는다", () => {
+  const env = { GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-hosted", RUNNER_OS: "Linux", ImageOS: "ubuntu24",
+    TOONSTUDIO_CI_RUNNER_ENVIRONMENT: "github-hosted", TOONSTUDIO_CI_RUNNER_OS: "Linux", GITHUB_WORKSPACE: "/home/runner/work/project/project" };
+  const visited = [];
+  const inspect = { platform: "linux", realpath: path => path, lstat: path => { visited.push(path); return { isSymbolicLink: () => false }; } };
+  assert.deepEqual(diskCleanupPlan(env, inspect), { workspace: env.GITHUB_WORKSPACE,
+    targets: ["/usr/local/lib/android/sdk", "/usr/share/dotnet/sdk"], minimumFreeBytes: 20 * 1024 ** 3 });
+  for (const path of ["/home", "/home/runner/work", "/usr", "/usr/local/lib/android", "/usr/share/dotnet"]) assert.ok(visited.includes(path));
+  for (const key of ["GITHUB_ACTIONS", "RUNNER_ENVIRONMENT", "RUNNER_OS", "ImageOS", "TOONSTUDIO_CI_RUNNER_ENVIRONMENT", "TOONSTUDIO_CI_RUNNER_OS"]) {
+    assert.throws(() => diskCleanupPlan({ ...env, [key]: "unexpected" }, inspect));
+  }
+  assert.throws(() => diskCleanupPlan(env, { ...inspect, platform: "darwin" }));
+  assert.throws(() => diskCleanupPlan(env, { ...inspect, realpath: () => "/different/workspace" }));
+  for (const workspace of ["", "/", "relative", "/home/runner/../other", "/usr", "/usr/share/dotnet/sdk", "/usr/local/lib/android/sdk/nested"]) {
+    assert.throws(() => diskCleanupPlan({ ...env, GITHUB_WORKSPACE: workspace }, inspect));
+  }
+  for (const linked of ["/home", env.GITHUB_WORKSPACE, "/usr/local", "/usr/share/dotnet/sdk"]) {
+    assert.throws(() => diskCleanupPlan(env, { ...inspect, lstat: path => ({ isSymbolicLink: () => path === linked }) }));
+  }
+  validateDiskSpace(20 * 1024 ** 3);
+  for (const bytes of [20 * 1024 ** 3 - 1, -1, NaN, Infinity, "21474836480"]) assert.throws(() => validateDiskSpace(bytes));
 });
 
 test("실제build-meta·manifest·SW 일치와 진입파일 존재를 요구한다", t => {

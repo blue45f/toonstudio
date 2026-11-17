@@ -76,6 +76,13 @@ on:
           - regressions
           - followup
           - native-representatives
+      source_mode:
+        description: 기존 산출물 재사용(20분) 또는 현재 SHA production 빌드(40분)
+        type: choice
+        default: artifact
+        options:
+          - artifact
+          - fresh-source
       producer_run_id:
         description: 후속 검사에 사용할 main brush stability 성공 실행 ID
         type: string
@@ -85,7 +92,7 @@ on:
         type: string
         required: false
       source_sha:
-        description: 산출물을 만든 정확한 40자리 main SHA
+        description: 정확한 40자리 빌드 SHA(fresh-source는 선택한 브랜치 HEAD)
         type: string
         required: false
 
@@ -150,7 +157,7 @@ jobs:
     name: 선택한 production Studio 후속 검사
     if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.source_mode == 'fresh-source' && 40 || 20 }}
     permissions:
       contents: read
       actions: read
@@ -158,17 +165,19 @@ jobs:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=8192
       STUDIO_FOLLOWUP_SUITE: ${{ inputs.suite }}
+      STUDIO_FOLLOWUP_SOURCE_MODE: ${{ inputs.source_mode || 'artifact' }}
       STUDIO_FOLLOWUP_RUN_ID: ${{ inputs.producer_run_id }}
       STUDIO_FOLLOWUP_ARTIFACT_ID: ${{ inputs.artifact_id }}
       STUDIO_FOLLOWUP_SOURCE_SHA: ${{ inputs.source_sha }}
     steps:
-      - name: 준비를 포함한 19분 제한과 마지막 결과 출력 1분 확보
+      - name: 출처별 전체 작업 제한과 마지막 결과 출력 1분 확보
         run: |
           node <<'NODE'
           const { appendFileSync } = require('node:fs');
           const { join } = require('node:path');
+          const minutes = process.env.STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' ? 39 : 19;
           appendFileSync(process.env.GITHUB_ENV,
-            `STUDIO_QA_DEADLINE_MS=${Date.now() + 19 * 60_000}\n`
+            `STUDIO_QA_DEADLINE_MS=${Date.now() + minutes * 60_000}\n`
             + `TOONSPECTRUM_FOLLOWUP_VERIFY_DIR=${join(process.env.RUNNER_TEMP, 'studio-exhaustive-followup')}\n`);
           NODE
       - uses: actions/checkout@v7
@@ -191,15 +200,16 @@ jobs:
         run: |
           node --test scripts/run-studio-exhaustive-regressions.test.mjs scripts/run-studio-exhaustive-followup.test.mjs
           node scripts/run-studio-exhaustive-followup.mjs --check
-      - name: 성공한 main 산출물과 제품 소스 동일성 확인
+      - name: 빌드 출처와 정확한 제품 소스 확인
         id: provenance
         timeout-minutes: 2
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/run-studio-exhaustive-followup.mjs --provenance
       - name: 기존 production dist 한 개만 복원
+        if: inputs.source_mode != 'fresh-source'
         uses: actions/download-artifact@v8
-        timeout-minutes: ${{ fromJSON(steps.provenance.outputs.download_minutes) }}
+        timeout-minutes: ${{ fromJSON(steps.provenance.outputs.download_minutes || '6') }}
         with:
           run-id: ${{ inputs.producer_run_id }}
           artifact-ids: ${{ inputs.artifact_id }}
@@ -207,7 +217,17 @@ jobs:
           digest-mismatch: error
           path: dist
       - name: 실제 dist SHA·manifest·SW buildId 확인
+        if: inputs.source_mode != 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --dist
+      - name: fresh 빌드의 미사용 SDK 정리와 최소 20 GiB 확인
+        if: inputs.source_mode == 'fresh-source'
+        env:
+          TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
+        run: node scripts/run-studio-exhaustive-followup.mjs --prepare-disk
+      - name: production 빌드에 필요한 전체 assets·vrm 복원
+        if: inputs.source_mode == 'fresh-source'
+        run: node scripts/run-studio-exhaustive-followup.mjs --hydrate
       - uses: pnpm/action-setup@v6
         timeout-minutes: 1
       - uses: actions/setup-node@v7
@@ -216,6 +236,12 @@ jobs:
           node-version: 24
       - name: 전체 작업 제한 안에서 의존성 준비
         run: node scripts/run-studio-exhaustive-followup.mjs --install
+      - name: 정확한 현재 SHA로 원래 production 빌드 한 번 실행
+        if: inputs.source_mode == 'fresh-source'
+        run: node scripts/run-studio-exhaustive-followup.mjs --build
+      - name: 새 빌드 SHA·manifest·SW와 추적 파일 동일성 확인
+        if: inputs.source_mode == 'fresh-source'
+        run: node scripts/run-studio-exhaustive-followup.mjs --dist
       - name: 선택 검사에 필요한 브라우저만 준비
         run: node scripts/run-studio-exhaustive-followup.mjs --browsers
       - name: 원래 판정 기준으로 선택한 시나리오 실행
