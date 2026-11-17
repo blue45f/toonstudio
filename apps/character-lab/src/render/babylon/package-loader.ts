@@ -124,8 +124,11 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
     if (!firstMesh) return;
     const materialId = firstMesh.material ? Math.min(255, materialIndex.get(firstMesh.material) ?? 0) : 0;
     const pbr = deps.adaptMaterial(group.role, firstMesh);
+    const meshPbrs: PBRMaterial[] = [];
     for (const mesh of group.meshes) {
-      mesh.material = pbr;
+      const meshPbr = mesh === firstMesh || mesh.material === firstMesh.material ? pbr : deps.adaptMaterial(group.role, mesh);
+      mesh.material = meshPbr;
+      meshPbrs.push(meshPbr);
       mesh.metadata = rigMeshMetadata(partId, group.role, materialId, false);
       mesh.receiveShadows = true;
       const manager = mesh.morphTargetManager;
@@ -141,7 +144,7 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
     const forceHidden = group.hairLod !== null && group.hairLod !== chosenLod;
     const colorKey = ROLE_COLOR_KEY[group.role];
     const materialPreset = ROLE_DEFAULT_PRESET[group.role];
-    const hasAlbedoTexture = pbr.albedoTexture !== null;
+    const hasAlbedoTexture = meshPbrs.some((mat) => mat.albedoTexture !== null);
     const part: RigPart = {
       id: group.baseName,
       partId,
@@ -152,6 +155,7 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
       meshes: group.meshes,
       outlineMeshes: group.outlines,
       pbr,
+      meshPbrs,
       hasAlbedoTexture,
       toon: null,
       colorHex: resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null),

@@ -48,6 +48,10 @@ async function createResources(
           sheenRoughness: pbr.sheenRoughness,
           sheenColor: new THREE.Color(pbr.sheenColor),
           ior: pbr.ior,
+          transmission: pbr.transmission,
+          dispersion: pbr.dispersion,
+          thickness: pbr.thickness,
+          transparent: pbr.transmission > 0,
           side: THREE.DoubleSide,
         });
         const hidden = new THREE.MeshBasicMaterial({ visible: false });
@@ -125,6 +129,10 @@ export function StudioHybridDccSurfaceMaterial({
         sheenRoughness={pbr.sheenRoughness}
         sheenColor={pbr.sheenColor}
         ior={pbr.ior}
+        transmission={pbr.transmission}
+        dispersion={pbr.dispersion}
+        thickness={pbr.thickness}
+        transparent={pbr.transmission > 0}
         side={THREE.DoubleSide}
       />
     );

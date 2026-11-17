@@ -1,4 +1,4 @@
-import { Building2, Boxes, ChevronDown, Layers, PackageOpen, Sparkles } from "lucide-react";
+import { Building2, Boxes, ChevronDown, Gem, Layers, PackageOpen, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -12,6 +12,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccPrecisionBgKitItem,
@@ -245,6 +246,34 @@ export function StudioHybridDccPrimitiveBar({
           </div>
         </details>
       ) : null}
+
+      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v16-lumiere-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
+            <Gem size={14} aria-hidden="true" className="shrink-0 text-accent" />
+            <span className="truncate">
+              {bt(
+                `블렌더 5.3 뤼미에르 아틀리에 V16 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.length}종)`,
+                `Blender 5.3 Lumiere atelier V16 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
 
       <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
         <summary

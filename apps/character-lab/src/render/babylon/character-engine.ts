@@ -634,13 +634,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       // 베타 재질(NodeMaterial 툰·OpenPBR)은 만들어져 있고 요청된 때만 끼운다. 아니면 기본 경로(ShaderMaterial 툰·PBRMaterial).
       const nodeToon = toon && useBeta ? this.beta.nodeToonMaterial(part) : null;
       const openPbr = !toon && useBeta ? this.beta.openPbrMaterial(part) : null;
-      const material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? part.pbr);
       // 기본 ShaderMaterial 툰은 `ensureToonMaterial`이 값을 넣지만 NodeMaterial 툰은 따로 넣어야 한다(램프 단계·림·얼굴 SDF 변경이 반영되도록).
       if (nodeToon) this.beta.updateNodeToon(part, this.toonValues(part, rig), this.toonTextures(part));
       // 키트의 눈·입 안 계열·머리·속옷은 hull 외곽선을 켜지 않고 몸은 얇게 그린다(`outline-policy.ts`). 절차 소스는 모든 파츠에 켠다.
       const hull = outline === "hull" && hullOutlineAllowed(rig.kind, part.role);
-      for (const mesh of part.meshes) {
-        mesh.material = material;
+      part.meshes.forEach((mesh, meshIndex) => {
+        const meshPbr = part.meshPbrs?.[meshIndex] ?? part.pbr;
+        mesh.material = toon ? (nodeToon ?? this.ensureToonMaterial(part, rig)) : (openPbr ?? meshPbr);
         mesh.renderOutline = hull && !pressure;
         if (hull) {
           mesh.outlineWidth = TOON_OUTLINE_WIDTH * hullOutlineWidthScale(rig.kind, part.role);
@@ -653,7 +653,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         } else if (mesh.edgesRenderer) {
           mesh.disableEdgesRendering();
         }
-      }
+      });
       setRigPartVisible(part, part.visible, this.outlinesVisible());
     }
   }
@@ -785,7 +785,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const options = this.materialOptions();
     return {
       applyPreset: (part, preset) => {
-        applyPresetParams(options, part.pbr, preset, part.hasAlbedoTexture && part.tint === undefined ? null : part.colorHex);
+        if (rigOf()?.kind === "package") {
+          for (const mat of part.meshPbrs ?? [part.pbr]) {
+            adaptLoadedMaterial(options, mat, part.role, mat.name);
+          }
+        } else {
+          applyPresetParams(options, part.pbr, preset, part.hasAlbedoTexture && part.tint === undefined ? null : part.colorHex);
+        }
         if (part.toon) part.toon.backFaceCulling = part.pbr.backFaceCulling;
         this.pushToon(part, rigOf());
         this.beta.updateOpenPbr(part);
@@ -1095,14 +1101,15 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     // 내보내기는 보는 셰이딩 모드와 무관하게 파츠의 PBR 재질로 하므로 내보내는 동안만 PBR로 바꿨다가 되돌린다(뷰포트가 그동안 PBR로 보인다).
     const swapped: Array<() => void> = [];
     for (const part of rig.parts) {
-      for (const mesh of part.meshes) {
+      part.meshes.forEach((mesh, meshIndex) => {
+        const targetPbr = part.meshPbrs?.[meshIndex] ?? part.pbr;
         const current = mesh.material;
-        if (current === part.pbr) continue;
-        mesh.material = part.pbr;
+        if (current === targetPbr) return;
+        mesh.material = targetPbr;
         swapped.push(() => {
           mesh.material = current;
         });
-      }
+      });
     }
     try {
       const exported = await exportRigGlbWithReport(this.character.scene, rig, "character", this.now());

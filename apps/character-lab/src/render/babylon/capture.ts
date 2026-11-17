@@ -13,6 +13,7 @@
  * 이미 제출된 뒤다(WebGL·WebGPU 모두 제출 순서대로 실행).
  */
 import { Color4 } from "@babylonjs/core/Maths/math.color.js";
+import { Matrix } from "@babylonjs/core/Maths/math.vector.js";
 
 import { CAPTURE_PROFILE_ID, estimateCaptureBytes, failVisible } from "../../contracts";
 import { decodeDepth, toCapturedRaster } from "../../export/raster-convert";
@@ -397,11 +398,30 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
     throw failVisible("capture-around-single-pass", "일시 적용 구간은 단일 패스 캡처에서만 쓸 수 있습니다.", undefined, deps.now);
   }
   const camera = deps.character.captureCamera;
-  /** 프레이밍은 렌더 직전(일시 적용 뒤)에 계산한다: 플랜의 가시성·포즈가 bounds에 반영되도록. */
+  const engine = deps.scene.getEngine();
+  const targetAspect = width / height;
+  /** 프레이밍은 렌더 직전(일시 적용 뒤)에 계산한다: 플랜의 가시성·포즈가 bounds에 반영되도록. RTT 크기가 비정방형(예: 320×512 웹툰 컷)이어도 메인 캔버스 종횡비로 찌그러지지 않게 목표 종횡비 투영 행렬을 고정한다. */
   const frame = (pass: RenderPassId): readonly Mesh[] => {
-    deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig), width / height);
+    deps.character.applyFraming(camera, options.framing, computeRigBounds(deps.rig), targetAspect);
     camera.getViewMatrix(true);
-    camera.getProjectionMatrix(true);
+    const maxZ = camera.ignoreCameraMaxZ ? 0 : camera.maxZ;
+    const reverseDepth = engine.useReverseDepthBuffer;
+    const nearZ = reverseDepth ? maxZ : Math.max(0.001, camera.minZ);
+    const farZ = reverseDepth ? Math.max(0.001, camera.minZ) : maxZ;
+    const projection = new Matrix();
+    const buildProjection = deps.scene.useRightHandedSystem ? Matrix.PerspectiveFovRHToRef : Matrix.PerspectiveFovLHToRef;
+    buildProjection(
+      camera.fov,
+      targetAspect,
+      nearZ,
+      farZ,
+      projection,
+      camera.fovMode === 0,
+      engine.isNDCHalfZRange,
+      camera.projectionPlaneTilt,
+      reverseDepth,
+    );
+    camera.freezeProjectionMatrix(projection);
     return rigVisibleMeshes(deps.rig, { includeOutlines: deps.includeOutlines && pass === "lit" });
   };
   const passes: Partial<Record<RasterPassId, CapturedRaster>> = {};
@@ -411,25 +431,29 @@ export async function captureFrame(deps: CaptureDeps, options: CaptureFrameOptio
   let lateBoxes: SyntheticBox[] | null = null;
   const flipY = RTT_READBACK_FLIP_Y[deps.lane];
   const premultiplied = RTT_READBACK_PREMULTIPLIED[deps.lane];
-  for (const pass of options.passes) {
-    const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around, pass === "lit" ? options.ownership : undefined);
-    if (rendered.hairOwnership) hairOwnership = rendered.hairOwnership;
-    if (rendered.bytes === null) {
-      synthetic = true;
-      // 일시 적용 구간 안에서 만든 상자가 있으면 그것을, 없으면(비동기 readback이 뒤늦게 null) 현재 상태로 만든다.
-      const boxes = rendered.boxes ?? (lateBoxes ??= syntheticBoxes(deps, camera, width, height));
-      if (pass === "depth") depth = rasterizeSyntheticDepth(width, height, boxes, camera.minZ, camera.maxZ);
-      else passes[pass] = rasterizeSyntheticPass(pass, width, height, boxes);
-      continue;
+  try {
+    for (const pass of options.passes) {
+      const rendered = await renderPass(deps, camera, pass, width, height, frame, options.around, pass === "lit" ? options.ownership : undefined);
+      if (rendered.hairOwnership) hairOwnership = rendered.hairOwnership;
+      if (rendered.bytes === null) {
+        synthetic = true;
+        // 일시 적용 구간 안에서 만든 상자가 있으면 그것을, 없으면(비동기 readback이 뒤늦게 null) 현재 상태로 만든다.
+        const boxes = rendered.boxes ?? (lateBoxes ??= syntheticBoxes(deps, camera, width, height));
+        if (pass === "depth") depth = rasterizeSyntheticDepth(width, height, boxes, camera.minZ, camera.maxZ);
+        else passes[pass] = rasterizeSyntheticPass(pass, width, height, boxes);
+        continue;
+      }
+      if (pass === "depth") {
+        depth = decodeDepth(rendered.bytes, width, height, { near: camera.minZ, far: camera.maxZ, flipY, encoding: "rgba-packed" });
+      } else {
+        // ID·법선 패스는 알파 255 상수라 premultiply 영향이 없고, flat/lit만 투명 clear와 블렌딩 영향을 받는다.
+        passes[pass] = toCapturedRaster(rendered.bytes, width, height, { flipY, premultiplied: premultiplied && (pass === "flat" || pass === "lit") });
+      }
     }
-    if (pass === "depth") {
-      depth = decodeDepth(rendered.bytes, width, height, { near: camera.minZ, far: camera.maxZ, flipY, encoding: "rgba-packed" });
-    } else {
-      // ID·법선 패스는 알파 255 상수라 premultiply 영향이 없고, flat/lit만 투명 clear와 블렌딩 영향을 받는다.
-      passes[pass] = toCapturedRaster(rendered.bytes, width, height, { flipY, premultiplied: premultiplied && (pass === "flat" || pass === "lit") });
-    }
+    return { passes, synthetic, ...(depth ? { depth } : {}), ...(hairOwnership ? { hairOwnership } : {}) };
+  } finally {
+    camera.unfreezeProjectionMatrix();
   }
-  return { passes, synthetic, ...(depth ? { depth } : {}), ...(hairOwnership ? { hairOwnership } : {}) };
 }
 
 export async function capturePasses(deps: CaptureDeps, req: CaptureRequest, framing: CameraFraming): Promise<CaptureResult> {

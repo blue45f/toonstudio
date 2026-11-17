@@ -13,6 +13,8 @@ import {
 import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   buildDoorwayPortalWallMesh,
+  buildFacetedGemPrismMesh,
+  buildLotusPagodaLanternMesh,
   buildMoldedPlinthMesh,
   buildOctagonalPillarMesh,
   buildRibbedConservatoryDomeMesh,
@@ -20,6 +22,7 @@ import {
   buildWindowWallModuleMesh,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   type StudioHybridDccPrecisionBgKitItem,
 } from "./studio-hybrid-dcc-architectural-primitives";
 import { createStudioHybridDccIdentityTransform } from "./studio-hybrid-dcc-object-transform";
@@ -29,12 +32,18 @@ import {
   type StudioHybridDccWorkspace,
 } from "./studio-hybrid-dcc-workspace";
 
-export { STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT, STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT, type StudioHybridDccPrecisionBgKitItem };
+export {
+  STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
+  type StudioHybridDccPrecisionBgKitItem,
+};
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"
   | "bevel-box"
   | "sculpt-sphere"
+  | "gem-prism"
   | "sphere"
   | "capsule"
   | "cylinder"
@@ -48,6 +57,7 @@ export type StudioHybridDccStarterPrimitiveKind =
   | "molded-plinth"
   | "ribbed-dome"
   | "turned-goblet"
+  | "lotus-lantern"
   | "stairs"
   | "grid";
 
@@ -60,84 +70,26 @@ export interface StudioHybridDccStarterPrimitiveSpec {
 
 export const STUDIO_HYBRID_DCC_STARTER_PRIMITIVES: readonly StudioHybridDccStarterPrimitiveSpec[] =
   Object.freeze([
-    {
-      kind: "cube",
-      assetPrefix: "asset-cube",
-      label: ["큐브", "Cube"],
-      hint: ["가구·건물 블록 시작", "Box blockout"],
-    },
-    {
-      kind: "bevel-box",
-      assetPrefix: "asset-bevel-box",
-      label: ["챔퍼 박스", "Chamfer box"],
-      hint: ["하이라이트 모따기 블록", "26-face chamfered solid"],
-    },
-    {
-      kind: "sculpt-sphere",
-      assetPrefix: "asset-sculpt-sphere",
-      label: ["조형 구체", "Sculpt sphere"],
-      hint: ["균일 사각면 조형 베이스", "Quad-sphere for sculpting"],
-    },
-    {
-      kind: "capsule",
-      assetPrefix: "asset-capsule",
-      label: ["캡슐", "Capsule"],
-      hint: ["팔다리·관절·쿠션 기본형", "Limbs, joints & bolsters"],
-    },
-    {
-      kind: "sphere",
-      assetPrefix: "asset-sphere",
-      label: ["UV 구체", "UV sphere"],
-      hint: ["둥근 소품·조명 구체", "Round props & lamps"],
-    },
-    {
-      kind: "cylinder",
-      assetPrefix: "asset-cylinder",
-      label: ["원기둥", "Cylinder"],
-      hint: ["컵·파이프·가로등 봉", "Cups, pipes & poles"],
-    },
-    {
-      kind: "column",
-      assetPrefix: "asset-column",
-      label: ["플루티드 기둥", "Fluted column"],
-      hint: ["주초·골기둥·주두 일체형", "Classical architectural pillar"],
-    },
+    { kind: "cube", assetPrefix: "asset-cube", label: ["큐브", "Cube"], hint: ["가구·건물 블록 시작", "Box blockout"] },
+    { kind: "bevel-box", assetPrefix: "asset-bevel-box", label: ["챔퍼 박스", "Chamfer box"], hint: ["하이라이트 모따기 블록", "26-face chamfered solid"] },
+    { kind: "sculpt-sphere", assetPrefix: "asset-sculpt-sphere", label: ["조형 구체", "Sculpt sphere"], hint: ["균일 사각면 조형 베이스", "Quad-sphere for sculpting"] },
+    { kind: "gem-prism", assetPrefix: "asset-gem-prism", label: ["보석 프리즘", "Gem prism"], hint: ["브릴리언트 컷 굴절 수정체", "Brilliant-cut crystal solid"] },
+    { kind: "capsule", assetPrefix: "asset-capsule", label: ["캡슐", "Capsule"], hint: ["팔다리·관절·쿠션 기본형", "Limbs, joints & bolsters"] },
+    { kind: "sphere", assetPrefix: "asset-sphere", label: ["UV 구체", "UV sphere"], hint: ["둥근 소품·조명 구체", "Round props & lamps"] },
+    { kind: "cylinder", assetPrefix: "asset-cylinder", label: ["원기둥", "Cylinder"], hint: ["컵·파이프·가로등 봉", "Cups, pipes & poles"] },
+    { kind: "column", assetPrefix: "asset-column", label: ["플루티드 기둥", "Fluted column"], hint: ["주초·골기둥·주두 일체형", "Classical architectural pillar"] },
     { kind: "octagonal-pillar", assetPrefix: "asset-octagonal-pillar", label: ["8각 챔퍼 기둥", "Octagonal pillar"], hint: ["지하철·성당 구조 기둥", "8-sided chamfered column"] },
-    {
-      kind: "cone",
-      assetPrefix: "asset-cone",
-      label: ["원뿔", "Cone"],
-      hint: ["지붕·고깔·첨탑", "Roofs & spires"],
-    },
-    {
-      kind: "torus",
-      assetPrefix: "asset-torus",
-      label: ["토러스", "Torus"],
-      hint: ["고리·손잡이·타이어", "Rings & handles"],
-    },
-    {
-      kind: "arch",
-      assetPrefix: "asset-arch",
-      label: ["아치 블록", "Arch"],
-      hint: ["창문·회랑·대문 아치", "Doorways & arcades"],
-    },
+    { kind: "cone", assetPrefix: "asset-cone", label: ["원뿔", "Cone"], hint: ["지붕·고깔·첨탑", "Roofs & spires"] },
+    { kind: "torus", assetPrefix: "asset-torus", label: ["토러스", "Torus"], hint: ["고리·손잡이·타이어", "Rings & handles"] },
+    { kind: "arch", assetPrefix: "asset-arch", label: ["아치 블록", "Arch"], hint: ["창문·회랑·대문 아치", "Doorways & arcades"] },
     { kind: "window-wall", assetPrefix: "asset-window-wall", label: ["창호 개구부 벽", "Window wall"], hint: ["2.0m 창턱 내장 수밀 벽체", "Watertight window wall"] },
     { kind: "doorway-frame", assetPrefix: "asset-doorway-frame", label: ["문틀 포털 벽", "Doorway wall"], hint: ["문설주·상인방·문지방 벽체", "Watertight portal wall"] },
     { kind: "molded-plinth", assetPrefix: "asset-molded-plinth", label: ["다단 몰딩 기단", "Molded plinth"], hint: ["제단·동상·외벽 코니스 기단", "Multi-stepped plinth"] },
     { kind: "ribbed-dome", assetPrefix: "asset-ribbed-dome", label: ["리브 온실 돔", "Ribbed dome"], hint: ["12각 드럼 기단·반구형 지붕 돔", "12-rib watertight architectural dome"] },
     { kind: "turned-goblet", assetPrefix: "asset-turned-goblet", label: ["세공 성배·화병", "Turned goblet"], hint: ["로판 다과·성소 의식용 선반 기물", "Watertight lathe chalice & urn"] },
-    {
-      kind: "stairs",
-      assetPrefix: "asset-stairs",
-      label: ["직선 계단", "Block stairs"],
-      hint: ["실내·복층 수밀 계단 블록", "5-step watertight stair"],
-    },
-    {
-      kind: "grid",
-      assetPrefix: "asset-grid",
-      label: ["분할 평면", "Grid plane"],
-      hint: ["바닥·지형·천 시뮬레이션", "Floor, terrain & cloth"],
-    },
+    { kind: "lotus-lantern", assetPrefix: "asset-lotus-lantern", label: ["연꽃 석등·정자 지붕", "Lotus lantern"], hint: ["8각 연화대좌·처마 옥개석 코어", "Octagonal Hanok lantern & roof"] },
+    { kind: "stairs", assetPrefix: "asset-stairs", label: ["직선 계단", "Block stairs"], hint: ["실내·복층 수밀 계단 블록", "5-step watertight stair"] },
+    { kind: "grid", assetPrefix: "asset-grid", label: ["분할 평면", "Grid plane"], hint: ["바닥·지형·천 시뮬레이션", "Floor, terrain & cloth"] },
   ]);
 
 export interface StudioHybridDccBlenderKitItem {
@@ -659,6 +611,8 @@ export function createStudioHybridDccStarterPrimitiveMesh(
       return buildBevelBoxMesh();
     case "sculpt-sphere":
       return buildSculptQuadSphereMesh();
+    case "gem-prism":
+      return buildFacetedGemPrismMesh();
     case "capsule":
       return buildCapsuleMesh();
     case "sphere":
@@ -687,6 +641,8 @@ export function createStudioHybridDccStarterPrimitiveMesh(
       return buildRibbedConservatoryDomeMesh();
     case "turned-goblet":
       return buildTurnedGobletPedestalMesh();
+    case "lotus-lantern":
+      return buildLotusPagodaLanternMesh();
     case "stairs":
       return buildStairsMesh();
   }

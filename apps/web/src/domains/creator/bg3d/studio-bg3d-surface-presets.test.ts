@@ -13,8 +13,8 @@ import {
 } from "./studio-bg3d-surface-presets";
 
 describe("STUDIO_BG3D_SURFACE_PRESETS", () => {
-  it("프리셋 id는 유일하고 기존 8종과 건축 PBR 5종(총 13종)을 한글 라벨·설명으로 제공한다", () => {
-    expect(STUDIO_BG3D_SURFACE_PRESETS).toHaveLength(13);
+  it("프리셋 id는 유일하고 기존 8종과 건축·고급 PBR 7종(총 15종)을 한글 라벨·설명으로 제공한다", () => {
+    expect(STUDIO_BG3D_SURFACE_PRESETS).toHaveLength(15);
     expect(new Set(STUDIO_BG3D_SURFACE_PRESETS.map((preset) => preset.id)).size).toBe(
       STUDIO_BG3D_SURFACE_PRESETS.length,
     );
@@ -28,6 +28,8 @@ describe("STUDIO_BG3D_SURFACE_PRESETS", () => {
       { id: "brushed-brass", label: "브러시드 황동", roughness: 0.24, metalness: 1 },
       { id: "anodized-steel", label: "아노다이징 스틸", roughness: 0.28, metalness: 1 },
       { id: "matte-plaster", label: "매트 회벽·도장", roughness: 0.88, metalness: 0 },
+      { id: "crystal-prism", label: "프리즘 크리스탈", roughness: 0.06, metalness: 0 },
+      { id: "royal-velvet", label: "로열 벨벳·패브릭", roughness: 0.84, metalness: 0 },
     ] as const;
     for (const expected of expectedArchPresets) {
       expect(isStudioBg3dSurfacePresetId(expected.id)).toBe(true);
@@ -39,6 +41,7 @@ describe("STUDIO_BG3D_SURFACE_PRESETS", () => {
       const override = buildStudioBg3dSurfacePresetOverride(expected.id);
       expect(override).toMatchObject({
         ...DEFAULT_STUDIO_BG3D_MATERIAL_OVERRIDE,
+        ...preset?.patch,
         roughness: expected.roughness,
         metalness: expected.metalness,
       });

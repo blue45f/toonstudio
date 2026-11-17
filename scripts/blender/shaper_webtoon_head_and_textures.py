@@ -1,12 +1,15 @@
 """
-Blender 5.2/5.3 Procedural Korean Webtoon Head, Jewel Eye Rig & Delight Texture Baker (v2.1).
+Blender 5.2/5.3 Procedural Korean Webtoon Head, Jewel Eye Rig & Delight Texture Baker (v2.2).
 
-Upgrades:
-- True Korean manhwa / anime craniofacial proportions (compact lower face, landmark-locked 512x512
-  peach blush, crisp anime nose shadow & rosy gradient smile-line lips).
-- Wide expressive anime eyes with top-hooded winged upper lashes + lower outer lash ticks (zero
-  surprised sclera gap above iris) and calm relaxed brows.
-- Sculpted keeled face-framing bangs & side locks generator for webtoon hair silhouettes.
+Upgrades (v2.2):
+- Non-degenerate 2D UV parameterization on 3D ears, crown pole, and hair caps (eliminates WebGL2 PBR
+  cotangent NaN black-and-white noise speckles).
+- Smooth cylindrical Korean manhwa neck-to-chin transition + strictly bounded `jawOpen` shape key
+  (eliminates pinched conical neck seam and downward chin-to-neck spike).
+- Eye-clearing parted bangs geometry (`murim-whisker`, `curtain-protagonist`, `rofan-noble`, etc.)
+  for crisp iris readability even in 320x512 small webtoon cuts.
+- Bespoke luster texture baker (`bake_luster_surface_texture`) for shoes, gold filigree, and gems so
+  authored PBR colors are preserved across viewport, PNG capture, and GLB round-trips.
 """
 from __future__ import annotations
 
@@ -59,20 +62,20 @@ def _write_png_rgba(path: str, width: int, height: int, rows_rgba_bytes: list[by
 def _landmark_v(z: float, z_neck_bot: float, z_chin: float, z_mouth: float, z_nose: float, eye_z: float, z_crown: float) -> float:
     """Piecewise linear UV V mapping so facial paint lands 100% on sculpted landmarks."""
     stops = [
-        (z_neck_bot, 0.0),
+        (z_neck_bot, 0.02),
         (z_chin, 0.250),
         (z_mouth, 0.402),
         (z_nose, 0.505),
         (eye_z, 0.615),
-        (z_crown, 1.0),
+        (z_crown, 0.985),
     ]
     if z <= stops[0][0]:
-        return 0.0
+        return 0.02
     for (z0, v0), (z1, v1) in zip(stops[:-1], stops[1:]):
         if z <= z1:
             t = (z - z0) / max(1e-6, z1 - z0)
             return v0 + (v1 - v0) * t
-    return 1.0
+    return 0.985
 
 
 def bake_webtoon_skin_texture(
@@ -96,9 +99,8 @@ def bake_webtoon_skin_texture(
     for py in range(size):
         v = 1.0 - (py + 0.5) / size
         row = bytearray(size * 4)
-        # Soft cast shadow under chin/jaw onto neck (v < 0.26)
-        neck_shade = (1.0 - _smoothstep(0.08, 0.27, v)) * 0.28
-        crown_warm = _smoothstep(0.72, 0.96, v) * 0.06
+        neck_shade = (1.0 - _smoothstep(0.12, 0.26, v)) * 0.18
+        crown_warm = _smoothstep(0.72, 0.96, v) * 0.05
         for px in range(size):
             u = (px + 0.5) / size
             col = _lerp3(skin, shadow, neck_shade + crown_warm)
@@ -111,19 +113,26 @@ def bake_webtoon_skin_texture(
                 if d2 < 2.0:
                     col = _lerp3(col, blush, math.exp(-d2 * 1.4) * blush_strength)
 
+            # Soft warm ear-helix flush on dedicated ear UV zones (u in [0.10, 0.20] and [0.80, 0.90], v in [0.50, 0.62])
+            for ear_u in (0.15, 0.85):
+                edx = (u - ear_u) / 0.045
+                edy = (v - 0.56) / 0.055
+                ed2 = edx * edx + edy * edy
+                if ed2 < 1.6:
+                    col = _lerp3(col, blush, math.exp(-ed2 * 1.5) * 0.16)
+
             # Crisp anime nose-side warm shadow wedge + tiny highlight tip at u = 0.5, v = 0.505
             dnx = (u - 0.505) / 0.0085
             dny = (v - 0.508) / 0.026
             if dnx * dnx + dny * dny < 1.8:
                 col = _lerp3(col, nose_shade, math.exp(-(dnx * dnx + dny * dny) * 1.9) * 0.46)
-            # Subtle nose-tip blush glow
             dnb_x = (u - 0.5) / 0.018
             dnb_y = (v - 0.503) / 0.018
             if dnb_x * dnb_x + dnb_y * dnb_y < 1.5:
                 col = _lerp3(col, blush, math.exp(-(dnb_x * dnb_x + dnb_y * dnb_y) * 1.8) * 0.22)
 
             # Delicate double-eyelid crease line above eyes (u = 0.5 +- 0.068, v = 0.650)
-            for eu, sgn in ((0.432, -1.0), (0.568, 1.0)):
+            for eu in (0.432, 0.568):
                 dex = (u - eu) / 0.038
                 arch_v = 0.650 - 0.008 * (dex * dex)
                 dey = (v - arch_v) / 0.0045
@@ -138,7 +147,6 @@ def bake_webtoon_skin_texture(
             dl2 = dlx * dlx + dly * dly
             if dl2 < 1.7:
                 col = _lerp3(col, lip, math.exp(-dl2 * 1.7) * lip_strength)
-            # Crisp lip-part smile line + subtle lower-lip specular pearl dot
             if abs(dlx) < 1.05:
                 d_seam = (v - (0.402 + smile_curve)) / 0.0024
                 if abs(d_seam) < 1.9:
@@ -314,6 +322,35 @@ def bake_couture_fabric_texture(
     return path
 
 
+def bake_luster_surface_texture(
+    path: str,
+    primary_hex: str,
+    highlight_hex: str | None = None,
+    size: int = 128,
+) -> str:
+    """Bakes a rich subtle luster gradient texture for shoes, gold trim, and gems so authored colors survive untinted."""
+    base = _hex_to_rgb01(primary_hex)
+    hi = _hex_to_rgb01(highlight_hex) if highlight_hex else _lerp3(base, (1.0, 1.0, 1.0), 0.28)
+    deep = _lerp3(base, (0.04, 0.03, 0.06), 0.22)
+    rows: list[bytes] = []
+    for py in range(size):
+        v = 1.0 - (py + 0.5) / size
+        row = bytearray(size * 4)
+        for px in range(size):
+            u = (px + 0.5) / size
+            col = _lerp3(deep, base, _smoothstep(0.05, 0.70, v))
+            sheen = math.exp(-(((v - 0.68) / 0.16) ** 2)) * (0.45 + 0.55 * math.sin(u * math.pi))
+            col = _lerp3(col, hi, sheen * 0.36)
+            idx = px * 4
+            row[idx] = int(_clamp01(col[0]) * 255)
+            row[idx + 1] = int(_clamp01(col[1]) * 255)
+            row[idx + 2] = int(_clamp01(col[2]) * 255)
+            row[idx + 3] = 255
+        rows.append(bytes(row))
+    _write_png_rgba(path, size, size, rows)
+    return path
+
+
 def make_textured_pbr_material(
     name: str,
     tex_path: str | None = None,
@@ -382,78 +419,80 @@ def build_sculpted_webtoon_bangs_bmesh(
 ) -> bmesh.types.BMesh:
     """
     Sculpts lush, tapered 3D keeled ribbon front bangs & cheek-framing side tresses
-    that sweep naturally over the forehead down to brow/cheekbone level.
+    with guaranteed iris clearance so eyes remain crisp in 320x512 small webtoon cuts.
     """
     bm = bmesh.new()
     uv_l = bm.loops.layers.uv.new("UVMap")
     is_male = gender == "male"
 
-    # Define strand specs: (az_deg_start, az_deg_end, width_rad, z_start, z_end, bulge_front, curve_x)
-    # az_deg = 0 is front center (-Y), +deg is +X (left), -deg is -X (right)
+    # Strand specs: (az_deg_start, az_deg_end, width_rad, z_start, z_end, bulge_front, curve_x)
+    # Note: Eyes sit around +-22..26 deg at eye_z; center/inner strands stop above brow/upper lash
+    # (eye_z + 0.015), while long cheek strands sweep outside +-34 deg!
     if bang_style == "curtain-protagonist":
         strands = [
-            (-8.0, -3.0, 0.015, eye_z + 0.095, eye_z + 0.008, 0.011, -0.004),
-            (8.0, 3.0, 0.015, eye_z + 0.095, eye_z + 0.008, 0.011, 0.004),
-            (-20.0, -26.0, 0.022, eye_z + 0.092, eye_z - 0.018, 0.012, -0.006),
-            (20.0, 26.0, 0.022, eye_z + 0.092, eye_z - 0.018, 0.012, 0.006),
-            (-38.0, -44.0, 0.024, eye_z + 0.082, eye_z - 0.072, 0.010, -0.004),
-            (38.0, 44.0, 0.024, eye_z + 0.082, eye_z - 0.072, 0.010, 0.004),
+            (-7.0, -3.0, 0.013, eye_z + 0.094, eye_z + 0.016, 0.010, -0.003),
+            (7.0, 3.0, 0.013, eye_z + 0.094, eye_z + 0.016, 0.010, 0.003),
+            (-19.0, -29.0, 0.019, eye_z + 0.091, eye_z + 0.012, 0.011, -0.006),
+            (19.0, 29.0, 0.019, eye_z + 0.091, eye_z + 0.012, 0.011, 0.006),
+            (-36.0, -44.0, 0.023, eye_z + 0.082, eye_z - 0.072, 0.010, -0.004),
+            (36.0, 44.0, 0.023, eye_z + 0.082, eye_z - 0.072, 0.010, 0.004),
         ]
     elif bang_style == "hunter-comma":
         strands = [
-            (-5.0, 9.0, 0.022, eye_z + 0.096, eye_z + 0.002, 0.014, 0.008),
-            (-16.0, -24.0, 0.022, eye_z + 0.094, eye_z + 0.004, 0.013, -0.005),
-            (18.0, 26.0, 0.021, eye_z + 0.092, eye_z + 0.002, 0.013, 0.005),
-            (-36.0, -40.0, 0.019, eye_z + 0.082, eye_z - 0.036, 0.009, -0.002),
-            (36.0, 40.0, 0.019, eye_z + 0.082, eye_z - 0.036, 0.009, 0.002),
+            (-4.0, 6.0, 0.018, eye_z + 0.095, eye_z + 0.016, 0.012, 0.006),
+            (-17.0, -28.0, 0.019, eye_z + 0.093, eye_z + 0.014, 0.011, -0.005),
+            (18.0, 29.0, 0.019, eye_z + 0.091, eye_z + 0.014, 0.011, 0.005),
+            (-36.0, -41.0, 0.019, eye_z + 0.082, eye_z - 0.038, 0.009, -0.002),
+            (36.0, 41.0, 0.019, eye_z + 0.082, eye_z - 0.038, 0.009, 0.002),
         ]
     elif bang_style == "rofan-noble":
         strands = [
-            (-14.0, -24.0, 0.024, eye_z + 0.096, eye_z - 0.012, 0.012, -0.008),
-            (14.0, 24.0, 0.024, eye_z + 0.096, eye_z - 0.012, 0.012, 0.008),
-            (-36.0, -42.0, 0.026, eye_z + 0.086, eye_z - 0.105, 0.011, -0.005),
-            (36.0, 42.0, 0.026, eye_z + 0.086, eye_z - 0.105, 0.011, 0.005),
+            (-15.0, -29.0, 0.021, eye_z + 0.095, eye_z + 0.012, 0.011, -0.007),
+            (15.0, 29.0, 0.021, eye_z + 0.095, eye_z + 0.012, 0.011, 0.007),
+            (-36.0, -43.0, 0.025, eye_z + 0.086, eye_z - 0.105, 0.010, -0.005),
+            (36.0, 43.0, 0.025, eye_z + 0.086, eye_z - 0.105, 0.010, 0.005),
         ]
     elif bang_style == "murim-whisker":
+        # Cleanly parted dragon-whisker bangs leaving both irises 100% unobstructed!
         strands = [
-            (-12.0, -20.0, 0.020, eye_z + 0.094, eye_z - 0.025, 0.012, -0.006),
-            (12.0, 20.0, 0.020, eye_z + 0.094, eye_z - 0.025, 0.012, 0.006),
-            (-35.0, -39.0, 0.020, eye_z + 0.084, eye_z - 0.115, 0.010, -0.004),
-            (35.0, 39.0, 0.020, eye_z + 0.084, eye_z - 0.115, 0.010, 0.004),
+            (-15.0, -30.0, 0.017, eye_z + 0.093, eye_z + 0.012, 0.010, -0.006),
+            (15.0, 30.0, 0.017, eye_z + 0.093, eye_z + 0.012, 0.010, 0.006),
+            (-36.0, -42.0, 0.019, eye_z + 0.084, eye_z - 0.112, 0.009, -0.004),
+            (36.0, 42.0, 0.019, eye_z + 0.084, eye_z - 0.112, 0.009, 0.004),
         ]
     elif bang_style == "idol-air":
         strands = [
-            (0.0, 0.0, 0.015, eye_z + 0.096, eye_z + 0.012, 0.012, 0.0),
-            (-13.0, -15.0, 0.017, eye_z + 0.095, eye_z + 0.010, 0.012, -0.002),
-            (13.0, 15.0, 0.017, eye_z + 0.095, eye_z + 0.010, 0.012, 0.002),
-            (-33.0, -36.0, 0.023, eye_z + 0.085, eye_z - 0.085, 0.010, -0.003),
-            (33.0, 36.0, 0.023, eye_z + 0.085, eye_z - 0.085, 0.010, 0.003),
+            (0.0, 0.0, 0.013, eye_z + 0.095, eye_z + 0.018, 0.010, 0.0),
+            (-13.0, -17.0, 0.015, eye_z + 0.094, eye_z + 0.016, 0.010, -0.002),
+            (13.0, 17.0, 0.015, eye_z + 0.094, eye_z + 0.016, 0.010, 0.002),
+            (-34.0, -38.0, 0.022, eye_z + 0.085, eye_z - 0.085, 0.010, -0.003),
+            (34.0, 38.0, 0.022, eye_z + 0.085, eye_z - 0.085, 0.010, 0.003),
         ]
     else:  # duke-wolf
         strands = [
-            (-4.0, -12.0, 0.022, eye_z + 0.096, eye_z - 0.004, 0.014, -0.006),
-            (7.0, 16.0, 0.022, eye_z + 0.096, eye_z + 0.002, 0.014, 0.006),
-            (-26.0, -32.0, 0.022, eye_z + 0.090, eye_z - 0.042, 0.012, -0.004),
-            (26.0, 32.0, 0.022, eye_z + 0.090, eye_z - 0.042, 0.012, 0.004),
-            (-40.0, -44.0, 0.021, eye_z + 0.080, eye_z - 0.085, 0.010, -0.003),
-            (40.0, 44.0, 0.021, eye_z + 0.080, eye_z - 0.085, 0.010, 0.003),
+            (-5.0, -14.0, 0.018, eye_z + 0.095, eye_z + 0.015, 0.012, -0.005),
+            (7.0, 17.0, 0.018, eye_z + 0.095, eye_z + 0.015, 0.012, 0.005),
+            (-27.0, -34.0, 0.020, eye_z + 0.090, eye_z - 0.028, 0.011, -0.004),
+            (27.0, 34.0, 0.020, eye_z + 0.090, eye_z - 0.028, 0.011, 0.004),
+            (-39.0, -44.0, 0.020, eye_z + 0.080, eye_z - 0.085, 0.009, -0.003),
+            (39.0, 44.0, 0.020, eye_z + 0.080, eye_z - 0.085, 0.009, 0.003),
         ]
 
     rx_base = 0.0775 if not is_male else 0.0795
     ry_base = 0.0815
 
-    n_prof = 8  # Smooth 8-vert curved anime ribbon cross-section (zero sharp facet stripes!)
+    n_prof = 8
     for idx_s, (a0, a1, w_half, zs, ze, bulge, cx_off) in enumerate(strands):
         n_seg = 12
-        zs_adj = zs - 0.008  # Start slightly lower inside hair cap so root never pokes above crown
+        zs_adj = zs - 0.008
         rows_s: list[list[bmesh.types.BMVert]] = []
         for iseg in range(n_seg):
-            t = iseg / (n_seg - 1)  # 0 root tucked inside hair cap -> 1 tapered tip
+            t = iseg / (n_seg - 1)
             ang = math.radians(a0 + (a1 - a0) * (t ** 1.15))
             taper = math.sin(min(1.0, t * 1.18) * math.pi * 0.5) if t < 0.25 else (1.0 - ((t - 0.25) / 0.75) ** 1.45)
             taper = max(0.035, taper)
             w = w_half * taper
-            thick = 0.0038 * taper
+            thick = 0.0036 * taper
 
             z = zs_adj + (ze - zs_adj) * (t ** 0.92)
             root_tuck = (1.0 - _smoothstep(0.0, 0.26, t)) * 0.015
@@ -469,10 +508,9 @@ def build_sculpted_webtoon_bangs_bmesh(
             tx, ty = math.cos(ang), math.sin(ang)
             nx, ny = math.sin(ang), -math.cos(ang)
 
-            ring_p: list[bmesh.types.BMVert] = []
+            ring_p: list[bmesh.types.BMVert]] = []
             for k in range(n_prof):
                 phi = (k / n_prof) * 2.0 * math.pi
-                # Wide curved front ribbon, shallow back
                 across = -math.cos(phi) * w
                 out_n = math.sin(phi) * (thick if math.sin(phi) >= 0.0 else thick * 0.42)
                 curve_cup = -0.0018 * (math.cos(phi) ** 2) * taper
@@ -487,12 +525,12 @@ def build_sculpted_webtoon_bangs_bmesh(
 
         for iseg in range(n_seg - 1):
             r0, r1 = rows_s[iseg], rows_s[iseg + 1]
-            v0, v1 = 1.0 - iseg / (n_seg - 1), 1.0 - (iseg + 1) / (n_seg - 1)
+            v0, v1 = 0.97 - 0.94 * (iseg / (n_seg - 1)), 0.97 - 0.94 * ((iseg + 1) / (n_seg - 1))
             for k in range(n_prof):
                 kn = (k + 1) % n_prof
                 f = bm.faces.new((r0[k], r0[kn], r1[kn], r1[k]))
                 f.smooth = True
-                u0_uv = (idx_s * 0.13 + (k / n_prof) * 0.12) % 0.96
+                u0_uv = (idx_s * 0.13 + (k / n_prof) * 0.12) % 0.92 + 0.02
                 u1_uv = u0_uv + 0.12 / n_prof
                 f.loops[0][uv_l].uv = (u0_uv, v0)
                 f.loops[1][uv_l].uv = (u1_uv, v0)
@@ -500,10 +538,12 @@ def build_sculpted_webtoon_bangs_bmesh(
                 f.loops[3][uv_l].uv = (u0_uv, v1)
         f_root = bm.faces.new(list(reversed(rows_s[0])))
         f_tip = bm.faces.new(rows_s[-1])
-        for lp in f_root.loops:
-            lp[uv_l].uv = (0.5, 0.98)
-        for lp in f_tip.loops:
-            lp[uv_l].uv = (0.5, 0.02)
+        for k_lp, lp in enumerate(f_root.loops):
+            ang_lp = (k_lp / max(1, len(f_root.loops))) * 2.0 * math.pi
+            lp[uv_l].uv = (0.5 + 0.02 * math.cos(ang_lp), 0.96 + 0.02 * math.sin(ang_lp))
+        for k_lp, lp in enumerate(f_tip.loops):
+            ang_lp = (k_lp / max(1, len(f_tip.loops))) * 2.0 * math.pi
+            lp[uv_l].uv = (0.5 + 0.02 * math.cos(ang_lp), 0.04 + 0.02 * math.sin(ang_lp))
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     return bm
@@ -519,6 +559,7 @@ def build_korean_webtoon_head_and_face(
     highlight_mat: bpy.types.Material,
     lash_mat: bpy.types.Material,
     brow_mat: bpy.types.Material,
+    neck_ring_fit: tuple[float, float, float] | None = None,
     scale_z: float = 1.0,
     z_offset: float = 0.0,
 ) -> dict[str, bpy.types.Object]:
@@ -530,12 +571,18 @@ def build_korean_webtoon_head_and_face(
     eye_z = b_eye_l.z
     eye_x = 0.0322 if not is_male else 0.0326
     y_cranium = b_head.y - 0.0355
-    z_neck_bot = b_neck.z - 0.032 * scale_z + z_offset
-    # True Korean webtoon compact lower face!
+    # Start neck cleanly just below mixamorig:Neck so it docks seamlessly into TS_Shaper_Body's neck!
+    z_neck_bot = b_neck.z - 0.012 * scale_z + z_offset
     z_chin = eye_z - (0.065 if not is_male else 0.072) * scale_z
     z_nose = eye_z - (0.022 if not is_male else 0.025) * scale_z
     z_mouth = eye_z - (0.041 if not is_male else 0.045) * scale_z
     z_crown = eye_z + (0.111 if not is_male else 0.110) * scale_z
+
+    fit_rx, fit_ry, fit_cy = neck_ring_fit if neck_ring_fit else (
+        (0.045 if not is_male else 0.052),
+        (0.046 if not is_male else 0.052),
+        -0.022,
+    )
 
     nu, nv = 64, 48
     bm = bmesh.new()
@@ -549,38 +596,41 @@ def build_korean_webtoon_head_and_face(
         ring_zs.append(z)
 
         s = (z - z_chin) / max(1e-5, (z_crown - z_chin))
-        neck_blend = 1.0 - _smoothstep(-0.34, 0.08, s)
-
-        neck_rx = 0.044 if not is_male else 0.051
-        neck_ry = 0.045 if not is_male else 0.051
-        neck_cy = -0.022 + (-0.012) * _smoothstep(z_neck_bot, z_chin, z)
+        # Smooth anatomical neck column: below z_chin (s <= 0), pure cylindrical neck tapering gently upward;
+        # above z_chin (s > 0), blends smoothly into the V-line jaw & cranium without pinching X-width!
+        neck_up_t = _smoothstep(z_neck_bot, z_chin + 0.010, z)
+        neck_rx = fit_rx * (1.0 - 0.10 * neck_up_t)
+        neck_ry = fit_ry * (1.0 - 0.08 * neck_up_t)
+        neck_cy = fit_cy + (-0.010) * neck_up_t
 
         max_rx = 0.0748 if not is_male else 0.0768
         if face_style == "sharp":
             max_rx *= 0.985
 
-        if s < 0.0:
-            head_rx = 0.015
-            head_ry_front = 0.062
-            head_ry_back = 0.068
+        chin_tip_w = 0.0220 if not is_male else 0.0260
+        if s <= 0.0:
+            t_jaw = 0.0
+            head_rx = neck_rx
+            head_ry_front = 0.068
+            head_ry_back = 0.072
         elif s < 0.38:
             t_jaw = s / 0.38
-            v_pow = 0.60 if not is_male else 0.68
+            v_pow = 0.62 if not is_male else 0.70
             if face_style == "cute":
-                v_pow = 0.55
+                v_pow = 0.56
             elif face_style == "sharp":
-                v_pow = 0.72
-            chin_tip_w = 0.0130 if not is_male else 0.0168
+                v_pow = 0.74
             head_rx = chin_tip_w + (max_rx - chin_tip_w) * (t_jaw ** v_pow)
             head_ry_front = 0.070 + 0.007 * math.sin(t_jaw * math.pi * 0.65)
             head_ry_back = 0.074 + 0.016 * _smoothstep(0.0, 1.0, t_jaw)
         else:
             t_top = _clamp01((s - 0.38) / 0.62)
-            dome = math.sqrt(max(0.015, 1.0 - (t_top ** 1.95)))
+            dome = math.sqrt(max(0.018, 1.0 - (t_top ** 1.95)))
             head_rx = max_rx * dome
             head_ry_front = 0.077 * dome
             head_ry_back = 0.090 * dome
 
+        neck_blend = 1.0 - _smoothstep(-0.04, 0.12, s)
         row_v: list[bmesh.types.BMVert] = []
         for iu in range(nu):
             theta = ((iu / nu) - 0.5) * (2.0 * math.pi)
@@ -594,13 +644,13 @@ def build_korean_webtoon_head_and_face(
             hx = head_rx * sin_t
             hy = y_cranium - (ry * front_flat) * cos_t
 
-            chin_mask = _smoothstep(0.15, 0.85, cos_t)
-            local_neck_blend = neck_blend * (1.0 - 0.76 * chin_mask * _smoothstep(-0.10, 0.03, s))
+            # Front chin projects cleanly forward at s >= 0 while the neck cylinder underneath stays smooth & round
+            chin_proj = _smoothstep(0.20, 0.85, cos_t) * _smoothstep(-0.03, 0.04, s)
+            local_neck_blend = neck_blend * (1.0 - 0.65 * chin_proj)
             x = hx * (1.0 - local_neck_blend) + nx * local_neck_blend
             y = hy * (1.0 - local_neck_blend) + ny * local_neck_blend
 
-            if cos_t > 0.10 and -0.05 < s < 0.78:
-                # Soft anime cheek apple
+            if cos_t > 0.10 and -0.03 < s < 0.78:
                 for sx in (-1.0, 1.0):
                     dcx = (x - sx * (eye_x * 1.12)) / 0.022
                     dcz = (z - (eye_z - 0.018 * scale_z)) / (0.018 * scale_z)
@@ -610,7 +660,6 @@ def build_korean_webtoon_head_and_face(
                         y -= c_push
                         x += sx * c_push * 0.45
 
-                # Recessed flat anime eye plane
                 for sx in (-1.0, 1.0):
                     dex = (x - sx * eye_x) / 0.022
                     dez = (z - eye_z) / (0.015 * scale_z)
@@ -618,7 +667,6 @@ def build_korean_webtoon_head_and_face(
                     if de2 < 2.1:
                         y += math.exp(-de2 * 1.35) * 0.0044
 
-                # Petite crisp Korean webtoon nose
                 dnx = x / (0.0062 if not is_male else 0.0072)
                 dnz_tip = (z - z_nose) / (0.0095 * scale_z)
                 tip_w = math.exp(-(dnx * dnx * 1.3 + dnz_tip * dnz_tip * 1.4))
@@ -626,7 +674,6 @@ def build_korean_webtoon_head_and_face(
                 bridge_w = math.exp(-(dnx * dnx * 1.9)) * bridge_t
                 y -= (0.0102 if not is_male else 0.0124) * tip_w + (0.0032 if not is_male else 0.0048) * bridge_w
 
-                # Soft anime lips right at z_mouth
                 dmx = x / 0.0145
                 if abs(dmx) < 1.6:
                     mx_env = math.exp(-(dmx * dmx) * 1.4)
@@ -640,7 +687,6 @@ def build_korean_webtoon_head_and_face(
                         - 0.0020 * math.exp(-dcz_seam * dcz_seam)
                     ) * mx_env
 
-                # Crisp delicate chin tip
                 dch_x = x / 0.013
                 dch_z = (z - (z_chin + 0.005 * scale_z)) / (0.0085 * scale_z)
                 if dch_x * dch_x + dch_z * dch_z < 2.0:
@@ -663,19 +709,21 @@ def build_korean_webtoon_head_and_face(
 
     crown_pole = bm.verts.new((0.0, y_cranium, z_crown + 0.0025 * scale_z))
     top_ring = ring_verts[-1]
+    v_top_ring = _landmark_v(ring_zs[-1], z_neck_bot, z_chin, z_mouth, z_nose, eye_z, z_crown)
     for iu in range(nu):
         iu_next = (iu + 1) % nu
         f = bm.faces.new((top_ring[iu], top_ring[iu_next], crown_pole))
         f.smooth = True
-        f.loops[0][uv_layer].uv = (iu / nu, 1.0)
-        f.loops[1][uv_layer].uv = ((iu + 1) / nu, 1.0)
-        f.loops[2][uv_layer].uv = ((iu + 0.5) / nu, 1.0)
+        f.loops[0][uv_layer].uv = (iu / nu, v_top_ring)
+        f.loops[1][uv_layer].uv = ((iu + 1) / nu, v_top_ring)
+        f.loops[2][uv_layer].uv = ((iu + 0.5) / nu, 0.998)
 
-    # Sculpted 3D anime C-ears
+    # Sculpted 3D anime C-ears with clean non-degenerate 2D UV islands!
     ear_z_mid = eye_z - 0.008 * scale_z
     ear_y_mid = y_cranium - 0.004
     ear_x_base = 0.0738 if not is_male else 0.0758
     for sx in (-1.0, 1.0):
+        u_ear_center = 0.15 if sx < 0 else 0.85
         ear_rings: list[list[bmesh.types.BMVert]] = []
         n_eu, n_ev = 12, 8
         for iev in range(n_ev):
@@ -691,22 +739,42 @@ def build_korean_webtoon_head_and_face(
                 erow.append(bm.verts.new((ex, ey, ez)))
             ear_rings.append(erow)
         for iev in range(n_ev - 1):
+            v0_e = 0.51 + 0.09 * (iev / (n_ev - 1))
+            v1_e = 0.51 + 0.09 * ((iev + 1) / (n_ev - 1))
             for ieu in range(n_eu):
                 inext = (ieu + 1) % n_eu
-                pts = (ear_rings[iev][ieu], ear_rings[iev][inext], ear_rings[iev + 1][inext], ear_rings[iev + 1][ieu]) if sx > 0 else (ear_rings[iev][inext], ear_rings[iev][ieu], ear_rings[iev + 1][ieu], ear_rings[iev + 1][inext])
-                f = bm.faces.new(pts)
+                u0_e = u_ear_center - 0.04 + 0.08 * (ieu / n_eu)
+                u1_e = u_ear_center - 0.04 + 0.08 * ((ieu + 1) / n_eu)
+                if sx > 0:
+                    f = bm.faces.new((ear_rings[iev][ieu], ear_rings[iev][inext], ear_rings[iev + 1][inext], ear_rings[iev + 1][ieu]))
+                    f.loops[0][uv_layer].uv = (u0_e, v0_e)
+                    f.loops[1][uv_layer].uv = (u1_e, v0_e)
+                    f.loops[2][uv_layer].uv = (u1_e, v1_e)
+                    f.loops[3][uv_layer].uv = (u0_e, v1_e)
+                else:
+                    f = bm.faces.new((ear_rings[iev][inext], ear_rings[iev][ieu], ear_rings[iev + 1][ieu], ear_rings[iev + 1][inext]))
+                    f.loops[0][uv_layer].uv = (u1_e, v0_e)
+                    f.loops[1][uv_layer].uv = (u0_e, v0_e)
+                    f.loops[2][uv_layer].uv = (u0_e, v1_e)
+                    f.loops[3][uv_layer].uv = (u1_e, v1_e)
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_layer].uv = (0.18 if sx < 0 else 0.82, 0.58)
         tip_v = bm.verts.new((sx * (ear_x_base + 0.0105), ear_y_mid + 0.0052, ear_z_mid + 0.002))
         last_r = ear_rings[-1]
         for ieu in range(n_eu):
             inext = (ieu + 1) % n_eu
-            pts = (last_r[ieu], last_r[inext], tip_v) if sx > 0 else (last_r[inext], last_r[ieu], tip_v)
-            f = bm.faces.new(pts)
+            u0_e = u_ear_center - 0.04 + 0.08 * (ieu / n_eu)
+            u1_e = u_ear_center - 0.04 + 0.08 * ((ieu + 1) / n_eu)
+            if sx > 0:
+                f = bm.faces.new((last_r[ieu], last_r[inext], tip_v))
+                f.loops[0][uv_layer].uv = (u0_e, 0.60)
+                f.loops[1][uv_layer].uv = (u1_e, 0.60)
+                f.loops[2][uv_layer].uv = (0.5 * (u0_e + u1_e), 0.615)
+            else:
+                f = bm.faces.new((last_r[inext], last_r[ieu], tip_v))
+                f.loops[0][uv_layer].uv = (u1_e, 0.60)
+                f.loops[1][uv_layer].uv = (u0_e, 0.60)
+                f.loops[2][uv_layer].uv = (0.5 * (u0_e + u1_e), 0.615)
             f.smooth = True
-            for lp in f.loops:
-                lp[uv_layer].uv = (0.18 if sx < 0 else 0.82, 0.58)
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     head_mesh = bpy.data.meshes.new("TS_Shaper_Head")
@@ -720,12 +788,20 @@ def build_korean_webtoon_head_and_face(
 
     h_weights: list[dict[str, float]] = []
     for v in head_obj.data.vertices:
-        wz_neck = 1.0 - _smoothstep(z_neck_bot + 0.015, z_chin + 0.018, v.co.z)
+        # Bottom ring blends into Spine2 + Neck so neck rotation never cracks the collar seam!
+        w_spine2 = (1.0 - _smoothstep(z_neck_bot, z_neck_bot + 0.012, v.co.z)) * 0.35
+        wz_neck = (1.0 - _smoothstep(z_neck_bot + 0.010, z_chin + 0.016, v.co.z)) - w_spine2
+        wz_neck = max(0.0, wz_neck)
         jaw_mask = 0.0
-        if v.co.y < y_cranium - 0.025 and v.co.z < z_mouth + 0.004:
-            jaw_mask = _smoothstep(z_mouth + 0.004, z_chin + 0.006, v.co.z) * _smoothstep(y_cranium - 0.025, y_cranium - 0.060, v.co.y) * 0.65
-        w_head = max(0.0, 1.0 - wz_neck - jaw_mask)
-        h_weights.append({"mixamorig:Neck": wz_neck, "mixamorig:Head": w_head, "TS_ShaperJaw": jaw_mask})
+        if v.co.y < y_cranium - 0.032 and z_chin + 0.002 < v.co.z < z_mouth + 0.004:
+            jaw_mask = (
+                _smoothstep(z_chin + 0.002, z_chin + 0.012, v.co.z)
+                * (1.0 - _smoothstep(z_mouth - 0.004, z_mouth + 0.004, v.co.z))
+                * _smoothstep(y_cranium - 0.032, y_cranium - 0.062, v.co.y)
+                * 0.45
+            )
+        w_head = max(0.0, 1.0 - w_spine2 - wz_neck - jaw_mask)
+        h_weights.append({"mixamorig:Spine2": w_spine2, "mixamorig:Neck": wz_neck, "mixamorig:Head": w_head, "TS_ShaperJaw": jaw_mask})
     _assign_weights(head_obj, h_weights)
 
     head_obj.shape_key_add(name="Basis", from_mix=False)
@@ -752,14 +828,16 @@ def build_korean_webtoon_head_and_face(
         return math.exp(-(((co.x / 0.015) ** 2 + ((co.z - (z_nose + 0.005)) / 0.016) ** 2) * 1.3))
 
     def mouth_inf(co: Vector) -> float:
-        if co.y > y_cranium - 0.040:
+        # Strictly zero below z_chin so mouth/jaw morphs NEVER pull neck vertices!
+        if co.y > y_cranium - 0.042 or co.z < z_chin:
             return 0.0
-        return math.exp(-(((co.x / 0.022) ** 2 + ((co.z - z_mouth) / 0.014) ** 2) * 1.3))
+        chin_guard = _smoothstep(z_chin, z_chin + 0.010, co.z)
+        return chin_guard * math.exp(-(((co.x / 0.021) ** 2 + ((co.z - z_mouth) / 0.012) ** 2) * 1.45))
 
     def jaw_inf(co: Vector) -> float:
-        if co.z > eye_z - 0.012 or co.z < z_neck_bot + 0.025:
+        if co.z > eye_z - 0.012 or co.z < z_chin - 0.004:
             return 0.0
-        return _smoothstep(eye_z - 0.012, z_chin + 0.012, co.z) * _smoothstep(z_neck_bot + 0.02, z_chin, co.z)
+        return _smoothstep(eye_z - 0.012, z_chin + 0.014, co.z) * _smoothstep(z_chin - 0.004, z_chin + 0.010, co.z)
 
     def ear_inf(co: Vector) -> float:
         if abs(co.x) < ear_x_base - 0.006:
@@ -784,8 +862,8 @@ def build_korean_webtoon_head_and_face(
     add_head_sk("faceLipFullnessLow", lambda c: (0.0, 0.0020 * mouth_inf(c), -(c.z - z_mouth) * 0.18 * mouth_inf(c)))
     add_head_sk("faceJawWidthWide", lambda c: (c.x * 0.12 * jaw_inf(c), 0.0, 0.0))
     add_head_sk("faceJawWidthNarrow", lambda c: (-c.x * 0.12 * jaw_inf(c), 0.0, 0.0))
-    add_head_sk("faceChinLengthLong", lambda c: (0.0, 0.0, -0.0060 * jaw_inf(c) * _smoothstep(0.03, 0.0, abs(c.x))))
-    add_head_sk("faceChinLengthShort", lambda c: (0.0, 0.0, 0.0052 * jaw_inf(c) * _smoothstep(0.03, 0.0, abs(c.x))))
+    add_head_sk("faceChinLengthLong", lambda c: (0.0, 0.0, -0.0052 * jaw_inf(c) * _smoothstep(0.028, 0.0, abs(c.x))))
+    add_head_sk("faceChinLengthShort", lambda c: (0.0, 0.0, 0.0046 * jaw_inf(c) * _smoothstep(0.028, 0.0, abs(c.x))))
     add_head_sk("faceCheekVolumeHigh", lambda c: (c.x * 0.07 * jaw_inf(c), -0.0032 * jaw_inf(c) * max(0.0, -c.y), 0.0))
     add_head_sk("faceCheekVolumeLow", lambda c: (-c.x * 0.06 * jaw_inf(c), 0.0026 * jaw_inf(c) * max(0.0, -c.y), 0.0))
     add_head_sk("faceEarSizeBig", lambda c: ((1.0 if c.x >= 0 else -1.0) * 0.0045 * ear_inf(c), 0.0, (c.z - ear_z_mid) * 0.18 * ear_inf(c)))
@@ -793,7 +871,7 @@ def build_korean_webtoon_head_and_face(
 
     add_head_sk("mouthSmile", lambda c: (c.x * 0.16 * mouth_inf(c), 0.0010 * mouth_inf(c), (abs(c.x) / 0.015) * 0.0040 * mouth_inf(c)))
     add_head_sk("mouthFrown", lambda c: (0.0, 0.0, -(abs(c.x) / 0.015) * 0.0036 * mouth_inf(c)))
-    add_head_sk("jawOpen", lambda c: (0.0, 0.0024 * mouth_inf(c), -0.0088 * mouth_inf(c) * (1.0 if c.z < z_mouth else 0.15)))
+    add_head_sk("jawOpen", lambda c: (0.0, 0.0018 * mouth_inf(c), -0.0056 * mouth_inf(c) * (1.0 if c.z < z_mouth else 0.12)))
     add_head_sk("mouthPucker", lambda c: (-c.x * 0.30 * mouth_inf(c), -0.0036 * mouth_inf(c), 0.0))
     add_head_sk("mouthFunnel", lambda c: (-c.x * 0.22 * mouth_inf(c), -0.0030 * mouth_inf(c), -0.0032 * mouth_inf(c) * (1.0 if c.z < z_mouth else -0.4)))
     add_head_sk("eyeBlinkLeft", lambda c: (0.0, -0.0025 * eye_inf(c)[0] if c.x > 0 else 0.0, -(c.z - (eye_z - 0.004)) * 0.85 * eye_inf(c)[0] if c.x > 0 and c.z > eye_z - 0.004 else 0.0))
@@ -807,11 +885,10 @@ def build_korean_webtoon_head_and_face(
     eye_skin_verts = [v.co.y for v in head_obj.data.vertices if abs(v.co.x - eye_x) < 0.006 and abs(v.co.z - eye_z) < 0.006 and v.co.y < y_cranium]
     y_eye_surf = min(eye_skin_verts) if eye_skin_verts else (y_cranium - 0.070)
 
-    # Wide expressive Korean webtoon eye dimensions (no round O_O stare!)
     eye_w = 0.0180 if not is_male else 0.0174
-    eye_h = (0.0124 if face_style != "sharp" else 0.0102) if not is_male else 0.0086
+    eye_h = (0.0124 if face_style != "sharp" else 0.0102) if not is_male else 0.0088
     iris_rx = eye_w * 0.70
-    iris_rz = eye_h * 0.98  # Fills vertical eye opening top-to-bottom so upper lash hoods top of iris!
+    iris_rz = eye_h * 0.98
     iris_z_shift = eye_h * 0.07
 
     created: dict[str, bpy.types.Object] = {"head": head_obj}
@@ -824,7 +901,7 @@ def build_korean_webtoon_head_and_face(
             cornea = -0.0018 * max(0.0, 1.0 - (dx_local / eye_w) ** 2 - (dz_local / max(0.006, eye_h)) ** 2)
             return y_eye_surf - offset_front + head_curve + cornea
 
-        # 1. Almond Sclera
+        # 1. Almond Sclera (with non-degenerate radial UVs)
         bm_e = bmesh.new()
         uv_e = bm_e.loops.layers.uv.new("UVMap")
         nr_e, na_e = 5, 24
@@ -842,17 +919,23 @@ def build_korean_webtoon_head_and_face(
             erings.append(erow_v)
         for ia in range(na_e):
             inext = (ia + 1) % na_e
+            a0, a1 = (ia / na_e) * 2.0 * math.pi, (inext / na_e) * 2.0 * math.pi
             f = bm_e.faces.new((ec_v, erings[0][inext], erings[0][ia]))
             f.smooth = True
-            for lp in f.loops:
-                lp[uv_e].uv = (0.5, 0.5)
+            f.loops[0][uv_e].uv = (0.5, 0.5)
+            f.loops[1][uv_e].uv = (0.5 + 0.1 * math.cos(a1), 0.5 + 0.1 * math.sin(a1))
+            f.loops[2][uv_e].uv = (0.5 + 0.1 * math.cos(a0), 0.5 + 0.1 * math.sin(a0))
         for ir in range(nr_e - 1):
+            fr0, fr1 = (ir + 1) / nr_e, (ir + 2) / nr_e
             for ia in range(na_e):
                 inext = (ia + 1) % na_e
+                a0, a1 = (ia / na_e) * 2.0 * math.pi, (inext / na_e) * 2.0 * math.pi
                 f = bm_e.faces.new((erings[ir][ia], erings[ir][inext], erings[ir + 1][inext], erings[ir + 1][ia]))
                 f.smooth = True
-                for lp in f.loops:
-                    lp[uv_e].uv = (0.5, 0.5)
+                f.loops[0][uv_e].uv = (0.5 + 0.45 * fr0 * math.cos(a0), 0.5 + 0.45 * fr0 * math.sin(a0))
+                f.loops[1][uv_e].uv = (0.5 + 0.45 * fr0 * math.cos(a1), 0.5 + 0.45 * fr0 * math.sin(a1))
+                f.loops[2][uv_e].uv = (0.5 + 0.45 * fr1 * math.cos(a1), 0.5 + 0.45 * fr1 * math.sin(a1))
+                f.loops[3][uv_e].uv = (0.5 + 0.45 * fr1 * math.cos(a0), 0.5 + 0.45 * fr1 * math.sin(a0))
         bmesh.ops.recalc_face_normals(bm_e, faces=bm_e.faces)
         m_eye = bpy.data.meshes.new(f"TS_Shaper_Eye_{side_tag}")
         bm_e.to_mesh(m_eye)
@@ -912,6 +995,7 @@ def build_korean_webtoon_head_and_face(
 
         # 3. Dual Starlight Catchlights
         bm_h = bmesh.new()
+        uv_h = bm_h.loops.layers.uv.new("UVMap")
         for h_dx, h_dz, h_rx, h_rz in (
             (iris_rx * 0.36, iris_rz * 0.26, iris_rx * 0.25, iris_rz * 0.22),
             (-iris_rx * 0.34, -iris_rz * 0.32, iris_rx * 0.13, iris_rz * 0.13),
@@ -926,8 +1010,12 @@ def build_korean_webtoon_head_and_face(
                 for k in range(12)
             ]
             for k in range(12):
-                f = bm_h.faces.new((hc, hring[(k + 1) % 12], hring[k]))
+                kn = (k + 1) % 12
+                f = bm_h.faces.new((hc, hring[kn], hring[k]))
                 f.smooth = True
+                f.loops[0][uv_h].uv = (0.5, 0.5)
+                f.loops[1][uv_h].uv = (0.5 + 0.4 * math.cos(kn * 2.0 * math.pi / 12), 0.5 + 0.4 * math.sin(kn * 2.0 * math.pi / 12))
+                f.loops[2][uv_h].uv = (0.5 + 0.4 * math.cos(k * 2.0 * math.pi / 12), 0.5 + 0.4 * math.sin(k * 2.0 * math.pi / 12))
         bmesh.ops.recalc_face_normals(bm_h, faces=bm_h.faces)
         m_hl = bpy.data.meshes.new(f"TS_Shaper_Highlight_{side_tag}")
         bm_h.to_mesh(m_hl)
@@ -939,8 +1027,9 @@ def build_korean_webtoon_head_and_face(
         _assign_weights(o_hl, [{eye_bone: 1.0} for _ in o_hl.data.vertices])
         created[f"highlight_{side_tag}"] = o_hl
 
-        # 4. Lush Top-Hooding Anime Upper Eyelash Wing + Delicate Outer Lower Lash (`TS_Shaper_Lash_L/R`)
+        # 4. Lush Top-Hooding Anime Upper Eyelash Wing + Delicate Outer Lower Lash
         bm_l = bmesh.new()
+        uv_lsh = bm_l.loops.layers.uv.new("UVMap")
         n_ls = 20
         lash_rows = []
         for il in range(n_ls):
@@ -949,7 +1038,6 @@ def build_korean_webtoon_head_and_face(
             dx_in = sx * (-eye_w * 0.98 * math.cos(ang_l))
             wing_extra_x = sx * (0.0046 if not is_male else 0.0034) * (tl ** 2.2)
             wing_extra_z = (0.0026 if face_style == "sharp" else 0.0016) * (tl ** 2.0)
-            # Sit slightly lower (0.84*eye_h) so thick lash hoods top of iris & eliminates surprised white gap!
             dz_in = eye_h * 0.84 * math.sin(ang_l) + wing_extra_z
             thick = (0.0036 if not is_male else 0.0028) * (0.40 + 0.85 * math.sin(tl * math.pi * 0.82))
             v_bot = bm_l.verts.new((cx + dx_in + wing_extra_x * 0.6, surface_y(dx_in, dz_in, 0.0048), eye_z + dz_in - thick * 0.35))
@@ -958,10 +1046,14 @@ def build_korean_webtoon_head_and_face(
         for il in range(n_ls - 1):
             b0, t0 = lash_rows[il]
             b1, t1 = lash_rows[il + 1]
+            u0_l, u1_l = il / (n_ls - 1), (il + 1) / (n_ls - 1)
             f = bm_l.faces.new((b0, b1, t1, t0) if sx > 0 else (b1, b0, t0, t1))
             f.smooth = True
+            f.loops[0][uv_lsh].uv = (u0_l, 0.2)
+            f.loops[1][uv_lsh].uv = (u1_l, 0.2)
+            f.loops[2][uv_lsh].uv = (u1_l, 0.8)
+            f.loops[3][uv_lsh].uv = (u0_l, 0.8)
 
-        # Subtle outer-lower waterline accent strip
         low_rows = []
         for il in range(8):
             tl = 0.42 + 0.56 * (il / 7.0)
@@ -975,8 +1067,13 @@ def build_korean_webtoon_head_and_face(
         for il in range(7):
             b0, t0 = low_rows[il]
             b1, t1 = low_rows[il + 1]
+            u0_l, u1_l = il / 7.0, (il + 1) / 7.0
             f = bm_l.faces.new((b0, b1, t1, t0) if sx > 0 else (b1, b0, t0, t1))
             f.smooth = True
+            f.loops[0][uv_lsh].uv = (u0_l, 0.1)
+            f.loops[1][uv_lsh].uv = (u1_l, 0.1)
+            f.loops[2][uv_lsh].uv = (u1_l, 0.4)
+            f.loops[3][uv_lsh].uv = (u0_l, 0.4)
 
         bmesh.ops.recalc_face_normals(bm_l, faces=bm_l.faces)
         m_lash = bpy.data.meshes.new(f"TS_Shaper_Lash_{side_tag}")
@@ -991,6 +1088,7 @@ def build_korean_webtoon_head_and_face(
 
         # 5. Calm, Confident Korean Webtoon Eyebrow (`TS_Shaper_Brow_L/R`)
         bm_b = bmesh.new()
+        uv_brw = bm_b.loops.layers.uv.new("UVMap")
         n_bs = 14
         brow_rows = []
         brow_z_base = eye_z + (0.0162 if not is_male else 0.0132) * scale_z
@@ -1009,8 +1107,13 @@ def build_korean_webtoon_head_and_face(
         for ib in range(n_bs - 1):
             b0, t0 = brow_rows[ib]
             b1, t1 = brow_rows[ib + 1]
+            u0_b, u1_b = ib / (n_bs - 1), (ib + 1) / (n_bs - 1)
             f = bm_b.faces.new((b0, b1, t1, t0) if sx > 0 else (b1, b0, t0, t1))
             f.smooth = True
+            f.loops[0][uv_brw].uv = (u0_b, 0.25)
+            f.loops[1][uv_brw].uv = (u1_b, 0.25)
+            f.loops[2][uv_brw].uv = (u1_b, 0.75)
+            f.loops[3][uv_brw].uv = (u0_b, 0.75)
         bmesh.ops.recalc_face_normals(bm_b, faces=bm_b.faces)
         m_brow = bpy.data.meshes.new(f"TS_Shaper_Brow_{side_tag}")
         bm_b.to_mesh(m_brow)

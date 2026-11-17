@@ -156,6 +156,65 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
     },
   ]);
 
+/** Blender 5.3 뤼미에르 아틀리에 V16(6종, CC0-1.0) — 오픈PBR 분산 크리스탈 성소·귀족 티아라 흉상·나선 대도서관·파리 파티세리 카트·천체 오러리·달빛 한옥 연꽃 정자. */
+export const STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-aristocrat-tiara-bust-v16",
+      fileName: "webtoon-aristocrat-tiara-bust-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-aristocrat-tiara-bust-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-aristocrat-tiara-bust-v16.png",
+      label: ["로판 귀족 티아라 여주인공 흉상", "Aristocrat tiara heroine bust"],
+      hint: ["오픈PBR 루비 티아라·벨벳 드레스·두상", "Ruby tiara, velvet bodice & bust"],
+      triangles: 26256,
+    },
+    {
+      id: "webtoon-crystal-prism-sanctum-altar-v16",
+      fileName: "webtoon-crystal-prism-sanctum-altar-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-crystal-prism-sanctum-altar-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-crystal-prism-sanctum-altar-v16.png",
+      label: ["크리스탈 프리즘 성소 제단", "Crystal prism sanctum altar"],
+      hint: ["분산 굴절 수정 모놀리스·할로 링·기단", "Dispersion crystal spire & halo rings"],
+      triangles: 7548,
+    },
+    {
+      id: "webtoon-grand-spiral-library-rotunda-v16",
+      fileName: "webtoon-grand-spiral-library-rotunda-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-grand-spiral-library-rotunda-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-grand-spiral-library-rotunda-v16.png",
+      label: ["나선 대도서관 로툰다 서가", "Grand spiral library rotunda"],
+      hint: ["2층 월넛 아치 서가·나선 계단·황동 난간", "2-tier walnut rotunda & spiral stair"],
+      triangles: 22496,
+    },
+    {
+      id: "webtoon-parisian-patisserie-display-cart-v16",
+      fileName: "webtoon-parisian-patisserie-display-cart-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-parisian-patisserie-display-cart-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-parisian-patisserie-display-cart-v16.png",
+      label: ["파리지앵 파티세리 디저트 카트", "Parisian patisserie display cart"],
+      hint: ["투명 유리 쇼케이스·스트라이프 캐노피·마카롱", "Glass vitrine, striped awning & pastries"],
+      triangles: 7980,
+    },
+    {
+      id: "webtoon-celestial-chrono-orrery-clock-v16",
+      fileName: "webtoon-celestial-chrono-orrery-clock-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-celestial-chrono-orrery-clock-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-celestial-chrono-orrery-clock-v16.png",
+      label: ["천체 크로노 오러리 시계탑 코어", "Celestial chrono orrery clock"],
+      hint: ["삼중 황동 아밀러리 링·태양구·기어", "Armillary brass rings, sun core & gears"],
+      triangles: 9532,
+    },
+    {
+      id: "webtoon-moonlight-hanok-lotus-lantern-pavilion-v16",
+      fileName: "webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.glb",
+      glbUrl: "/studio-assets/blender-lumiere-v16/webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.glb",
+      previewUrl: "/studio-assets/blender-lumiere-v16/thumbnails/webtoon-moonlight-hanok-lotus-lantern-pavilion-v16.png",
+      label: ["달빛 한옥 연꽃 등롱 정자", "Moonlight Hanok lotus pavilion"],
+      hint: ["화강암 기단·배흘림기둥·팔작 처마·연꽃등", "Granite plinth, Hanok eaves & lotus lanterns"],
+      triangles: 7620,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }
@@ -399,4 +458,72 @@ export function buildTurnedGobletPedestalMesh(): StudioEditableMesh {
   const last = stations.length - 1;
   for (let s = 0; s < segs; s += 1) faces.push([ring(last, s), ring(last, s + 1), innerWellPole]);
   return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), true);
+}
+
+/** 7. 브릴리언트 컷 보석 프리즘 (16분할 크라운 베젤·거들·파빌리온 큘릿 일체형, χ=2 수밀). */
+export function buildFacetedGemPrismMesh(): StudioEditableMesh {
+  const segs = 16;
+  const stations: ReadonlyArray<{ readonly y: number; readonly r: number; readonly star: number }> = [
+    { y: -0.24, r: 0.28, star: 1.0 },
+    { y: 0.04, r: 0.54, star: 1.0 },
+    { y: 0.11, r: 0.54, star: 1.0 },
+    { y: 0.27, r: 0.43, star: 0.92 },
+    { y: 0.38, r: 0.26, star: 1.0 },
+  ];
+  const positions: StudioMeshVec3[] = [vec(0, -0.48, 0)];
+  for (const st of stations) {
+    for (let s = 0; s < segs; s += 1) {
+      const theta = (s * Math.PI * 2) / segs;
+      const rad = st.r * (s % 2 === 1 ? st.star : 1.0);
+      positions.push(vec(rad * Math.cos(theta), st.y, -rad * Math.sin(theta)));
+    }
+  }
+  const tablePole = positions.length;
+  positions.push(vec(0, 0.38, 0));
+  const ring = (r: number, s: number): number => 1 + r * segs + (s % segs);
+  const faces: number[][] = [];
+  for (let s = 0; s < segs; s += 1) faces.push([0, ring(0, s + 1), ring(0, s)]);
+  for (let r = 0; r < stations.length - 1; r += 1) {
+    for (let s = 0; s < segs; s += 1) {
+      faces.push([ring(r, s), ring(r, s + 1), ring(r + 1, s + 1), ring(r + 1, s)]);
+    }
+  }
+  const last = stations.length - 1;
+  for (let s = 0; s < segs; s += 1) faces.push([ring(last, s), ring(last, s + 1), tablePole]);
+  return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), false);
+}
+
+/** 8. 8각 연꽃 석등·정자 지붕 코어 (연화대좌·8각 화사석·처마 옥개석·보주 일체형, χ=2 수밀). */
+export function buildLotusPagodaLanternMesh(): StudioEditableMesh {
+  const segs = 8;
+  const stations: ReadonlyArray<{ readonly y: number; readonly r: number }> = [
+    { y: -0.56, r: 0.40 },
+    { y: -0.44, r: 0.43 },
+    { y: -0.34, r: 0.26 },
+    { y: 0.10, r: 0.25 },
+    { y: 0.15, r: 0.54 },
+    { y: 0.21, r: 0.50 },
+    { y: 0.36, r: 0.24 },
+    { y: 0.48, r: 0.09 },
+  ];
+  const positions: StudioMeshVec3[] = [vec(0, -0.56, 0)];
+  for (const st of stations) {
+    for (let s = 0; s < segs; s += 1) {
+      const theta = ((s + 0.5) * Math.PI * 2) / segs;
+      positions.push(vec(st.r * Math.cos(theta), st.y, -st.r * Math.sin(theta)));
+    }
+  }
+  const finialPole = positions.length;
+  positions.push(vec(0, 0.60, 0));
+  const ring = (r: number, s: number): number => 1 + r * segs + (s % segs);
+  const faces: number[][] = [];
+  for (let s = 0; s < segs; s += 1) faces.push([0, ring(0, s + 1), ring(0, s)]);
+  for (let r = 0; r < stations.length - 1; r += 1) {
+    for (let s = 0; s < segs; s += 1) {
+      faces.push([ring(r, s), ring(r, s + 1), ring(r + 1, s + 1), ring(r + 1, s)]);
+    }
+  }
+  const last = stations.length - 1;
+  for (let s = 0; s < segs; s += 1) faces.push([ring(last, s), ring(last, s + 1), finialPole]);
+  return withSmooth(createStudioEditableMeshFromPolygons(positions, faces), false);
 }

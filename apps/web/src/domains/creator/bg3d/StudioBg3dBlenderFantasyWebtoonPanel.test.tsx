@@ -156,7 +156,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     ).toContain("B_SZ");
     expect(
       screen.getByTestId("bg3d-blender-live-sync-readout").textContent,
-    ).toContain("Blender 5.2 EEVEE 라이브 씬");
+    ).toContain("Blender 5.3 EEVEE 라이브 씬");
     expect(
       screen.getByTestId("bg3d-blender-cross-labs-bridge-readout").textContent,
     ).toContain("Cross-Labs Verify AI PASS");

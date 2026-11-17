@@ -165,17 +165,18 @@ export interface BlenderLiveSceneSyncInput {
 }
 
 export const BLENDER_LIVE_SCENE_OBJECTS: readonly string[] = Object.freeze([
-  "Arcane_Core_Sphere",
-  "Celestial_Halo_Ring",
-  "Altar_Base",
-  "Runic_Pillar_Left",
-  "Runic_Pillar_Right",
-  "ToonStudio_3D_Title",
-  "Backdrop_Cyclorama",
-  "Camera",
-  "Key",
-  "Fill",
-  "Rim",
+  "Lumiere_Gallery_Stage",
+  "Lumiere_Stage_Gold_Rings",
+  "Lumiere_Aristocrat_Tiara_Bust",
+  "Lumiere_Crystal_Prism_Sanctum",
+  "Lumiere_Grand_Spiral_Library",
+  "Lumiere_Parisian_Patisserie_Cart",
+  "Lumiere_Celestial_Chrono_Orrery",
+  "Lumiere_Moonlight_Hanok_Pavilion",
+  "StudioShowcaseCamera",
+  "Key_Light",
+  "Fill_Light",
+  "Rim_Light",
 ]);
 
 export function buildBlenderLiveSceneSyncBridge(
@@ -198,7 +199,7 @@ export function buildBlenderLiveSceneSyncBridge(
     renderEngine: "BLENDER_EEVEE",
     syncedObjectNames: BLENDER_LIVE_SCENE_OBJECTS,
     syncedObjectCount: BLENDER_LIVE_SCENE_OBJECTS.length,
-    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794204758.png",
+    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794932219.png",
     liveSyncReady: Boolean(
       lightingPresetId &&
         shaderPresetId &&
@@ -206,7 +207,7 @@ export function buildBlenderLiveSceneSyncBridge(
         weaponPresetId &&
         monsterPresetId,
     ),
-    syncLatencyMs: 18,
-    summaryKo: `Blender 5.2 EEVEE 라이브 씬(${BLENDER_LIVE_SCENE_OBJECTS.length}개 오브젝트 · ${focalLengthMm}mm / 틸트 ${cameraTiltDeg}°) 동기화 준비 완료 (18ms)`,
+    syncLatencyMs: 16,
+    summaryKo: `Blender 5.3 EEVEE 라이브 씬(${BLENDER_LIVE_SCENE_OBJECTS.length}개 오브젝트 · ${focalLengthMm}mm / 틸트 ${cameraTiltDeg}°) 동기화 준비 완료 (16ms)`,
   });
 }

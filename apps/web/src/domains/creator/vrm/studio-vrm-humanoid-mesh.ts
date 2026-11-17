@@ -858,13 +858,14 @@ function buildHead(builder: SurfaceBuilder, rig: StudioVrmRig, surface: StudioVr
       const x = -Math.cos(phi) * sinTheta;
       const z = Math.sin(phi) * sinTheta;
 
+      const earRelief = Math.abs(x) > 0.88 && Math.abs(z) < 0.24 && cosTheta > -0.24 && cosTheta < 0.14
+        ? 1 + 0.11 * (1 - Math.abs(z) / 0.24) * (1 - Math.abs(cosTheta + 0.05) / 0.19) : 1;
       line.push(
-        builder.vertex(
-          [
-            head.center[0] + head.radiusX * x * narrow * cheekGain,
-            head.center[1] + head.radiusY * cosTheta * stretch,
-            head.center[2] + head.radiusZ * z * narrow * headFrontFlatten(z),
-          ],
+        builder.vertex([
+          head.center[0] + head.radiusX * x * narrow * cheekGain * earRelief,
+          head.center[1] + head.radiusY * cosTheta * stretch,
+          head.center[2] + head.radiusZ * z * narrow * headFrontFlatten(z),
+        ],
           [
             meshLerp(u0, u1, column / HEAD_COLUMNS),
             meshLerp(v0, v1, 1 - row / HEAD_ROWS),
@@ -1799,26 +1800,16 @@ function buildBottoms(rig: StudioVrmRig): SurfaceBuilder {
   const thickness = 0.008 * unit;
 
   const profiles: readonly TorsoProfile[] = [
-    [waistY + 0.012 * h, 0.082, 0.07, 2.3],
-    [hipsY + 0.025 * h, 0.099, 0.08, 2.3],
-    [hipsY - 0.045 * h, 0.108, 0.09, 2.2],
-    [hipsY - 0.115 * h, 0.115, 0.099, 2.1],
+    [waistY + 0.012 * h, 0.082, 0.07, 2.35],
+    [hipsY + 0.025 * h, 0.101, 0.082, 2.24],
+    [hipsY - 0.045 * h, 0.116, 0.096, 2.12],
+    [hipsY - 0.118 * h, 0.128, 0.108, 2.04],
   ];
-
-  addLoft(
-    builder,
-    profiles.map(([y, rx, rz, exponent], index) =>
-      verticalRing(
-        [0, y, 0],
-        rx * unit + thickness,
-        rz * unit + thickness,
-        torsoSkin(rig, y, h),
-        index / (profiles.length - 1),
-        exponent,
-      ),
-    ),
-    { segments: TORSO_SEGMENTS },
-  );
+  addLoft(builder, profiles.map(([y, rx, rz, exponent], index) => {
+    const base = verticalRing([0, y, 0], rx * unit + thickness, rz * unit + thickness, torsoSkin(rig, y, h), index / (profiles.length - 1), exponent);
+    const amp = 0.035 * (index / (profiles.length - 1)) ** 2;
+    return { ...base, point: (angle: number) => { const p = base.point(angle); const w = 1 + amp * Math.cos(angle * 12); return [p[0] * w, p[1], p[2] * w]; } };
+  }), { segments: TORSO_SEGMENTS });
   return builder;
 }
 

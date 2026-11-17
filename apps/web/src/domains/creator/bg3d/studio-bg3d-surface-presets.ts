@@ -104,6 +104,18 @@ export const STUDIO_BG3D_SURFACE_PRESETS: readonly StudioBg3dSurfacePreset[] = O
     description: "눈부심 없이 부드럽게 퍼지는 실내 회벽·수성 도장 벽면",
     patch: { roughness: 0.88, metalness: 0, ...NEUTRAL_PATCH_BASE },
   },
+  {
+    id: "crystal-prism",
+    label: "프리즘 크리스탈",
+    description: "맑은 굴절과 은은한 광채가 살아 있는 보석·크리스탈 표면",
+    patch: { roughness: 0.06, metalness: 0, emissiveColor: "#bae6fd", emissiveIntensity: 0.35, opacityMultiplier: 0.52 },
+  },
+  {
+    id: "royal-velvet",
+    label: "로열 벨벳·패브릭",
+    description: "부드럽게 빛을 머금는 커튼·소파·벨벳 원단 표면",
+    patch: { roughness: 0.84, metalness: 0, ...NEUTRAL_PATCH_BASE },
+  },
 ]);
 
 const SURFACE_PRESET_IDS = new Set(STUDIO_BG3D_SURFACE_PRESETS.map((preset) => preset.id));
@@ -112,7 +124,7 @@ export function isStudioBg3dSurfacePresetId(id: string): boolean {
   return SURFACE_PRESET_IDS.has(id);
 }
 
-/** 프리셋 또는 등록한 표면 재질 ID를 완전한 오버라이드로 변환한다. 모르는 ID는 null이다. */
+/** 프리셋 또는 등록한 표면 재질 ID를 완전한 오버라이드 변환한다. 모르는 ID는 null이다. */
 export function buildStudioBg3dSurfacePresetOverride(id: string): StudioBg3dMaterialOverride | null {
   const preset = STUDIO_BG3D_SURFACE_PRESETS.find((candidate) => candidate.id === id);
   if (preset) {

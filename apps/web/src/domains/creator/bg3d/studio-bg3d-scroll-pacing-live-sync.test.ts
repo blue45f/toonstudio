@@ -25,7 +25,7 @@ describe("studio-bg3d-scroll-pacing-live-sync (Phase 4)", () => {
     expect(plan.summaryKo).toContain("B_SZ");
   });
 
-  it("builds a deterministic Blender 5.2 live scene synchronization bridge", () => {
+  it("builds a deterministic Blender 5.3 live scene synchronization bridge", () => {
     const bridge = buildBlenderLiveSceneSyncBridge({
       lightingPresetId: "abyss-rim",
       shaderPresetId: "holy-paladin-gold",
@@ -39,6 +39,6 @@ describe("studio-bg3d-scroll-pacing-live-sync (Phase 4)", () => {
     expect(bridge.renderEngine).toBe("BLENDER_EEVEE");
     expect(bridge.syncedObjectCount).toBe(BLENDER_LIVE_SCENE_OBJECTS.length);
     expect(bridge.liveSyncReady).toBe(true);
-    expect(bridge.summaryKo).toContain("Blender 5.2 EEVEE");
+    expect(bridge.summaryKo).toContain("Blender 5.3 EEVEE");
   });
 });
