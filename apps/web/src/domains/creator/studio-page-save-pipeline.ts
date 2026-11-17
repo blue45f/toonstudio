@@ -892,17 +892,13 @@ export async function runStudioPageSavePipeline(
   } catch (err) {
     if (saveScopeStillCurrent()) {
       let message = err instanceof Error ? err.message : frozenStatus6Text("studio.frozenStatus6.pageSave.saveFailed", "저장에 실패했어요.");
-      if (
-        !(err instanceof StudioApiPayloadSafetyError) &&
-        sharedDocument &&
-        workId &&
-        saveAuthScopeKey
-      ) {
+      let canReopenMetadata = true;
+      if (!(err instanceof StudioApiPayloadSafetyError) && sharedDocument && workId && saveAuthScopeKey) {
         try {
           const { getStudioSharedDocumentMeta } = await import("./studio-shared-document-client");
           const fresh = await getStudioSharedDocumentMeta(workId, saveController.signal);
           if (saveScopeStillCurrent()) {
-            if (fresh.access !== "edit") lockStudioMutationsNow();
+            if (fresh.access !== "edit") { lockStudioMutationsNow(); canReopenMetadata = false; }
             setSharedDocumentScope((current) =>
               current &&
               current.authScopeKey === saveAuthScopeKey &&
@@ -926,6 +922,7 @@ export async function runStudioPageSavePipeline(
         } catch {
           if (saveScopeStillCurrent()) {
             lockStudioMutationsNow();
+            canReopenMetadata = false;
             setSharedDocumentScope((current) =>
               current &&
               current.authScopeKey === saveAuthScopeKey &&
@@ -946,6 +943,7 @@ export async function runStudioPageSavePipeline(
       }
       if (saveScopeStillCurrent()) {
         setError(message);
+        if (canReopenMetadata) openWorkMetadataStep(status);
       }
     }
   } finally {

@@ -390,13 +390,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           }
           const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });
           if (!loaded.ok) return undefined;
-          let capabilities = loaded.plan.capabilities;
-          if (engineSession.engine()) {
-            const reloaded = await engineSession.reloadSource({ kind: "package", plan: loaded.plan });
-            if (reloaded) capabilities = reloaded.capabilities;
-          }
           packagePlans.register(loaded.plan);
-          return { glbSha256: loaded.plan.glbSha256, capabilities };
+          return { glbSha256: loaded.plan.glbSha256, capabilities: loaded.plan.capabilities };
         } catch {
           return undefined;
         }

@@ -58,6 +58,7 @@ export const studioProjectRecordSchema = z
   .object({
     id: studioEntityIdSchema,
     workId: studioEntityIdSchema,
+    title: z.string().trim().min(1).max(240).optional(),
     schemaVersion: z.literal(3),
     authorityVersion: projectAuthorityVersionSchema,
     ownerUserId: studioEntityIdSchema,

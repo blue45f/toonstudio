@@ -196,7 +196,7 @@ function PinnedReviewWorkflowForActor({ verified, previews, roster, onRefresh, o
       {approvalConfirmation ? <div className="rounded-lg border border-line p-3" data-testid="approval-confirmation-card">
         <p className="text-sm font-semibold">{bt("승인 후 이 검수의 결정을 바꿀 수 없습니다. 아래 5개 항목을 확인하고 이 버전을 승인할까요?", "The decision cannot be replaced after approval. Verify the 5 items below and approve this version?")}</p>
         <dl className="mt-2 grid grid-cols-1 gap-1.5 rounded-lg bg-panel p-2.5 text-xs sm:grid-cols-2" data-testid="approval-precheck-summary">
-          <div><dt className="text-fg-3">{bt("작품", "Work")}</dt><dd className="font-semibold text-fg break-all">{verified.project.workId || subject.workId}</dd></div>
+          <div><dt className="text-fg-3">{bt("작품", "Work")}</dt><dd className="font-semibold text-fg break-all">{verified.project.title || verified.project.workId || subject.workId}</dd></div>
           <div><dt className="text-fg-3">{bt("회차·원고", "Episode / Manuscript")}</dt><dd className="font-semibold text-fg break-words">{artifactRecord?.title || verified.review.title || subject.artifactId}</dd></div>
           <div><dt className="text-fg-3">{bt("승인 대상 버전", "Target version")}</dt><dd className="font-semibold text-fg break-all">{verified.review.title ? `${verified.review.title} · ${subject.revisionId}` : subject.revisionId}</dd></div>
           <div><dt className="text-fg-3">{bt("분량(페이지·컷)", "Pages & cuts")}</dt><dd className="font-semibold text-fg">{cutCountSummary}</dd></div>

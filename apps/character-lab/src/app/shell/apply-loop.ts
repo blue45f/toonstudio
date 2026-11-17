@@ -139,6 +139,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
   let snapshot: ApplyLoopSnapshot = { plan: null, receipt: null, sequence };
   let loadedEngine: CharacterEngine | null = null;
   let loadedSourceKey: string | null = null;
+  let appliedRecipe: CharacterRecipe | null = null;
   let appliedRevision = -1;
   let appliedCapabilities: LabState["capabilities"] | null = null;
   let shadingKey: string | null = null;
@@ -177,6 +178,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
   };
 
   const resetForEngine = (): void => {
+    appliedRecipe = null;
     appliedRevision = -1;
     appliedCapabilities = null;
     shadingKey = null;
@@ -261,7 +263,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       }
     }
     const revision = state.history.revision;
-    if (revision === appliedRevision && state.capabilities === appliedCapabilities && lastPlan !== null) {
+    if (recipe === appliedRecipe && revision === appliedRevision && state.capabilities === appliedCapabilities && lastPlan !== null) {
       settledEngine = engine;
       return;
     }
@@ -274,8 +276,9 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       const basePlan = packagePaletteLayout
         ? createApplyPlanner({
             partLayout: packagePaletteLayout,
-            ...(loadedCapabilities?.custom !== undefined ? { custom: loadedCapabilities.custom } : {}),
-            ...(loadedCapabilities ? { features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames } } : {}),
+            ...(loadedCapabilities?.custom !== undefined
+              ? { custom: loadedCapabilities.custom, features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames } }
+              : {}),
           })(recipe, state.capabilities, deps.catalog)
         : deps.planner(recipe, state.capabilities, deps.catalog);
       const customPlan =
@@ -292,6 +295,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       };
       lastReceipt = engine.applyPlan(plan);
       lastPlan = plan;
+      appliedRecipe = recipe;
       appliedRevision = revision;
       appliedCapabilities = state.capabilities;
     } catch (error) {

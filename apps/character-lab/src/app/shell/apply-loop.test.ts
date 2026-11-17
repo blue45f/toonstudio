@@ -6,7 +6,7 @@ import { kitManifestFixture } from "../../testing/kit-fixtures";
 import { FIXTURE_GLB_SHA256, characterPackageManifestFixture } from "../../testing/manifest-fixtures";
 import { createMockEngine } from "../../testing/mock-engine";
 import { createMockEngineSession, createMockLabStore } from "../../testing/mock-store";
-import { applyPlanFixture, minimalHumanoidModelFixture } from "../../testing/recipe-fixtures";
+import { applyPlanFixture, minimalHumanoidModelFixture, presetEntryFixture } from "../../testing/recipe-fixtures";
 
 import { createApplyLoop, sourceKeyOf } from "./apply-loop";
 
@@ -559,6 +559,53 @@ describe("app/shell/apply-loop 빌드 ↔ 바인딩 양보(P-01)", () => {
     await loop.flush();
     expect(engine.calls.map((call) => call.method)).toEqual(["loadSource", "setShading", "setPhysicsProvider", "applyPlan"]);
     expect(loop.settled()).toBe(true);
+  });
+
+  it("제작 패키지(package) 소스는 partIdPalette(17 파츠)로 상의·신발을 모두 가시화하고 Mixamo boneNames여도 휴머노이드 포즈를 보존한다", async () => {
+    const pkgPlan = packagePlanFixture();
+    const base = createDefaultRecipe();
+    const recipe: CharacterRecipe = {
+      ...base,
+      source: { kind: "package", characterId: pkgPlan.manifest.characterId, sha256: pkgPlan.glbSha256 },
+      slots: { ...base.slots, pose: "pose/hands-on-hips", top: "top/blazer", shoes: "shoes/loafers", accessory: "accessory/ribbon" },
+      pose: { leftUpperArm: [0.5, -0.2, -0.36, 0.76] },
+    };
+    const store = createMockLabStore({ recipe });
+    const session = createMockEngineSession();
+    const engine = createMockEngine({
+      capabilities: ALL_AVAILABLE_CAPABILITIES,
+      boneNames: ["mixamorig:Hips", "mixamorig:LeftArm"],
+      partIdPalette: {
+        1: { role: "accessory", labelKo: "장신구" },
+        16: { role: "shoes", labelKo: "신발" },
+        17: { role: "top", labelKo: "상의" },
+      },
+    });
+    const catalog = createPresetCatalog([
+      presetEntryFixture("pose/hands-on-hips", { labelKo: "허리손", requires: ["bone:leftUpperArm"] }),
+      presetEntryFixture("top/blazer", { labelKo: "블레이저" }),
+      presetEntryFixture("shoes/loafers", { labelKo: "로퍼" }),
+      presetEntryFixture("accessory/ribbon", { labelKo: "리본" }),
+    ]);
+    const loop = createApplyLoop({
+      store,
+      catalog,
+      planner,
+      engineSession: session,
+      buildSource: () => ({ kind: "package", plan: pkgPlan }),
+      now: () => 1,
+    });
+    loop.start();
+    session.setEngine(engine);
+    session.setStatus({ phase: "ready", backend: "webgpu", diagnostics: engine.diagnostics });
+    await loop.flush();
+    const applied = loop.lastPlan();
+    expect(applied?.parts.map((p) => ({ id: p.partId, vis: p.visible }))).toEqual([
+      { id: 1, vis: true },
+      { id: 16, vis: true },
+      { id: 17, vis: true },
+    ]);
+    expect(applied?.boneRotations.leftUpperArm).toBeDefined();
   });
 });
 
