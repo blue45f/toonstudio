@@ -34,7 +34,7 @@ export function StudioPinnedReviewPreview({ subject, onRevoked, annotation, note
   const bt = useBilingual("StudioPinnedReviewPreview");
   const { result, cursor, setCursor, refresh } = useStudioPinnedReviewPreviews(subject, onRevoked);
   useEffect(() => {
-    onPreviewsChange?.(result?.ok ? result.previews : []);
+    if (result?.ok) onPreviewsChange?.(result.previews);
   }, [onPreviewsChange, result]);
   useEffect(() => {
     const selected = annotation?.selected;

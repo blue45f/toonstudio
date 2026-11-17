@@ -193,7 +193,7 @@ function PinnedReviewForActor({ actorId, subject, resolutionRequest, showShareTo
       if (own !== generation.current || sessionRevision !== getAuthSessionRevision()) return;
       attempted.current = null; setBody(""); setAssigneeIds([]); setDue(""); selectAnnotation(null); setNeedsLocation(false);
       setNotice(bt("이 검수 버전에 의견을 남겼어요.", "Your note was saved to this review version."));
-      await refresh();
+      await refresh(true);
     } catch (error) {
       if (own === generation.current && sessionRevision === getAuthSessionRevision()) {
         const status = httpStatus(error)
