@@ -49,6 +49,15 @@ test("실제 Nest 소비 경로의 보안 백포트와 원본 타입·라이선�
     assert.equal(consumer("deepmerge/package.json").version, "4.3.1+toonstudio.1");
   } catch (error) {
     assert.equal(error?.code, "MODULE_NOT_FOUND");
+    const nestjsZodVersion = lock.importers?.["apps/api"]?.dependencies?.["nestjs-zod"]?.version;
+    assert.equal(typeof nestjsZodVersion, "string", "API nestjs-zod 잠금 항목이 필요하다.");
+    const snapshot = lock.snapshots?.[`nestjs-zod@${nestjsZodVersion}`];
+    assert.ok(snapshot, "API nestjs-zod 잠금 스냅샷이 필요하다.");
+    assert.equal(
+      ["dependencies", "optionalDependencies"].some((key) => Object.hasOwn(snapshot[key] ?? {}, "deepmerge")),
+      false,
+      "잠금파일이 요구하는 deepmerge 설치가 누락되면 안 된다.",
+    );
   }
   for (const file of provenance.files) {
     const local = readFileSync(join(FORK, file.path));
