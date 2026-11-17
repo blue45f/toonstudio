@@ -169,19 +169,39 @@ export function validateDiskSpace(bytes, minimumFreeBytes = 20 * 1024 ** 3) {
   requireValue(Number.isSafeInteger(bytes) && bytes >= minimumFreeBytes, "전체 assets와 빌드에 필요한 최소 20 GiB 여유가 없습니다.");
 }
 
+export function ensureDiskCapacity(plan, { available, cleanup, record }) {
+  const receipt = { ...plan, beforeBytes: available(), afterBytes: null, cleanup: "not-started" };
+  requireValue(Number.isSafeInteger(receipt.beforeBytes) && receipt.beforeBytes >= 0, "현재 디스크 여유 바이트를 확인하지 못했습니다.");
+  if (receipt.beforeBytes >= plan.minimumFreeBytes) {
+    receipt.afterBytes = receipt.beforeBytes;
+    receipt.cleanup = "not-required";
+    record(receipt);
+    return receipt;
+  }
+  receipt.cleanup = "required";
+  record(receipt);
+  try { cleanup(plan.targets); }
+  catch (error) {
+    receipt.cleanup = "failed"; receipt.cleanupError = error.message; record(receipt); throw error;
+  }
+  receipt.afterBytes = available();
+  receipt.cleanup = "completed";
+  record(receipt);
+  validateDiskSpace(receipt.afterBytes, plan.minimumFreeBytes);
+  return receipt;
+}
+
 function prepareDisk(directory, state, env) {
   requireValue(state.sourceMode === "fresh-source" && state.provenance, "fresh-source 검증을 먼저 완료하세요.");
   const plan = diskCleanupPlan(env);
   const available = () => { const info = statfsSync(plan.workspace); return info.bavail * info.bsize; };
-  const receipt = { ...plan, beforeBytes: available(), afterBytes: null };
-  writeJson(join(directory, "disk.json"), receipt);
-  execFileSync("sudo", ["rm", "-rf", "--", ...plan.targets], {
-    stdio: "inherit", timeout: Math.max(1, Math.min(60_000, state.deadlineMs - Date.now())),
+  const receipt = ensureDiskCapacity(plan, {
+    available, record: value => writeJson(join(directory, "disk.json"), value),
+    cleanup: targets => execFileSync("sudo", ["rm", "-rf", "--", ...targets], {
+      stdio: "inherit", timeout: Math.max(1, Math.min(60_000, state.deadlineMs - Date.now())),
+    }),
   });
-  receipt.afterBytes = available();
-  writeJson(join(directory, "disk.json"), receipt);
   console.log(JSON.stringify(receipt));
-  validateDiskSpace(receipt.afterBytes, plan.minimumFreeBytes);
   state.diskPrepared = true; save(directory, state);
 }
 
