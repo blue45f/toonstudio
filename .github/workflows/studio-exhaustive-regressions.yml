@@ -9,6 +9,8 @@ on:
       - .github/workflows/studio-exhaustive-regressions.yml
       - scripts/run-studio-exhaustive-regressions.mjs
       - scripts/run-studio-exhaustive-regressions.test.mjs
+      - scripts/run-studio-exhaustive-followup.mjs
+      - scripts/run-studio-exhaustive-followup.test.mjs
       - playwright.studio-qa-helpers.config.ts
       - e2e/studio-qa-interactions.spec.mts
       - e2e/studio-qa-shell-interactions.spec.mts
@@ -65,6 +67,27 @@ on:
       - apps/web/src/domains/creator/render/studio-engine-webgpu-textured-brush-plan.ts
       - apps/web/vite.config.ts
   workflow_dispatch:
+    inputs:
+      suite:
+        description: 기본 회귀 또는 기존 production 산출물의 제한 후속 검사
+        type: choice
+        default: regressions
+        options:
+          - regressions
+          - followup
+          - native-representatives
+      producer_run_id:
+        description: 후속 검사에 사용할 main brush stability 성공 실행 ID
+        type: string
+        required: false
+      artifact_id:
+        description: 해당 실행의 studio-stability-dist 산출물 ID
+        type: string
+        required: false
+      source_sha:
+        description: 산출물을 만든 정확한 40자리 main SHA
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -76,6 +99,7 @@ concurrency:
 jobs:
   focused:
     name: Studio helper and GPU regressions
+    if: github.event_name != 'workflow_dispatch' || inputs.suite == 'regressions' || inputs.suite == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
@@ -121,3 +145,86 @@ jobs:
       - name: Publish structured results and failure diagnostics
         if: always()
         run: node scripts/run-studio-exhaustive-regressions.mjs --publish
+
+  followup:
+    name: 선택한 production Studio 후속 검사
+    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CI: "1"
+      NODE_OPTIONS: --max-old-space-size=8192
+      STUDIO_FOLLOWUP_SUITE: ${{ inputs.suite }}
+      STUDIO_FOLLOWUP_RUN_ID: ${{ inputs.producer_run_id }}
+      STUDIO_FOLLOWUP_ARTIFACT_ID: ${{ inputs.artifact_id }}
+      STUDIO_FOLLOWUP_SOURCE_SHA: ${{ inputs.source_sha }}
+    steps:
+      - name: 준비를 포함한 19분 제한과 마지막 결과 출력 1분 확보
+        run: |
+          node <<'NODE'
+          const { appendFileSync } = require('node:fs');
+          const { join } = require('node:path');
+          appendFileSync(process.env.GITHUB_ENV,
+            `STUDIO_QA_DEADLINE_MS=${Date.now() + 19 * 60_000}\n`
+            + `TOONSPECTRUM_FOLLOWUP_VERIFY_DIR=${join(process.env.RUNNER_TEMP, 'studio-exhaustive-followup')}\n`);
+          NODE
+      - uses: actions/checkout@v7
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+          filter: blob:none
+          fetch-depth: 0
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/apps/web/public/assets/
+            !/apps/web/public/vrm/
+            !/artifacts/
+            !/docs/
+            !/tests/benchmarks/results/
+      - name: 모든 선택 검사 상태를 미실행으로 기록
+        run: node scripts/run-studio-exhaustive-followup.mjs --init
+      - name: 의존성 없는 실행·비용·산출물 계약 확인
+        run: |
+          node --test scripts/run-studio-exhaustive-regressions.test.mjs scripts/run-studio-exhaustive-followup.test.mjs
+          node scripts/run-studio-exhaustive-followup.mjs --check
+      - name: 성공한 main 산출물과 제품 소스 동일성 확인
+        id: provenance
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/run-studio-exhaustive-followup.mjs --provenance
+      - name: 기존 production dist 한 개만 복원
+        uses: actions/download-artifact@v8
+        timeout-minutes: ${{ fromJSON(steps.provenance.outputs.download_minutes) }}
+        with:
+          run-id: ${{ inputs.producer_run_id }}
+          artifact-ids: ${{ inputs.artifact_id }}
+          github-token: ${{ github.token }}
+          digest-mismatch: error
+          path: dist
+      - name: 실제 dist SHA·manifest·SW buildId 확인
+        run: node scripts/run-studio-exhaustive-followup.mjs --dist
+      - uses: pnpm/action-setup@v6
+        timeout-minutes: 1
+      - uses: actions/setup-node@v7
+        timeout-minutes: 1
+        with:
+          node-version: 24
+      - name: 전체 작업 제한 안에서 의존성 준비
+        run: node scripts/run-studio-exhaustive-followup.mjs --install
+      - name: 선택 검사에 필요한 브라우저만 준비
+        run: node scripts/run-studio-exhaustive-followup.mjs --browsers
+      - name: 원래 판정 기준으로 선택한 시나리오 실행
+        run: node scripts/run-studio-exhaustive-followup.mjs --run
+      - name: 실패·미실행과 원본 JSON을 제한된 로그에 보존
+        if: always()
+        run: |
+          if test -f scripts/run-studio-exhaustive-followup.mjs; then
+            node scripts/run-studio-exhaustive-followup.mjs --publish
+          else
+            node -e 'console.error("checkout 실패: 선택한 모든 후속 검사는 미실행입니다."); process.exitCode = 1'
+          fi
