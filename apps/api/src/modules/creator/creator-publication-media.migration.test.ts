@@ -28,4 +28,22 @@ describe("creator publication media migration", () => {
     );
     expect(sql).not.toMatch(/data:image|base64/iu);
   });
+
+  it("aligns repository INSERT column lists with least-privilege runtime role GRANT INSERT columns", () => {
+    const repoSource = readFileSync(
+      join(
+        process.cwd(),
+        "apps/api/src/modules/creator/creator-publication-media.repository.ts",
+      ),
+      "utf8",
+    );
+    expect(repoSource).not.toContain(".insert(creatorAssetStorageObjects)");
+    expect(repoSource).not.toContain(".insert(creatorWorkPublicationMedia)");
+    expect(repoSource).toContain(
+      '("purpose","digest","contractVersion","providerId","objectPath","byteLength","contentType")',
+    );
+    expect(repoSource).toContain(
+      '("workId","slot","pageIndex","purpose","objectDigest","mediaType","byteLength","createdBy")',
+    );
+  });
 });

@@ -22,7 +22,10 @@ import { DrawingClarityContext, type StudioDrawingClarityPanel } from "./StudioD
 export type StudioDrawingClaritySession = Pick<StudioCuttoonEditorViewSession,
   "currentWorkspaceOwnerScope" | "isMobile" | "workspaceState" | "workMode" | "canvasOnlyMode" | "mobileImmersive"
   | "uiDensityMode" | "studioDrawingClarityBaseline" | "location" | "appSettings">
-  & { readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "setStudioUiDensity"> };
+  & {
+    readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
+    readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "setStudioUiDensity">;
+  };
 
 function hasVisibleDialog() {
   return Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"],dialog[open]'))
@@ -125,6 +128,17 @@ export function StudioDrawingClarityProvider({
     triggerRef.current = trigger;
     setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: next } }));
   }, [owner, viewportBucket, workspace]);
+  const prevPendingSaveKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const nextIntent = s.pendingSaveIntent ?? null;
+    const nextKey = active && !s.isMobile && nextIntent ? `${owner}:${workspace}:${viewportBucket}:${nextIntent}` : null;
+    if (prevPendingSaveKeyRef.current === nextKey) return;
+    prevPendingSaveKeyRef.current = nextKey;
+    if (!nextKey) return;
+    const saveTrigger = document.querySelector<HTMLElement>('[data-studio-clarity-save="true"]');
+    if (saveTrigger) triggerRef.current = saveTrigger;
+    setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: "layers" } }));
+  }, [active, owner, s.isMobile, s.pendingSaveIntent, viewportBucket, workspace]);
   const setDensity = s.studioMenubarContentHandlers.setStudioUiDensity;
   const chooseSimple = useCallback(() => {
     setDensity?.("simple");
@@ -143,7 +157,9 @@ export function StudioDrawingClarityProvider({
     if (!panel) return;
     const targetId = `studio-drawing-clarity-panel-${panel}`;
     const focus = () => {
-      const target = document.getElementById(targetId)?.querySelector<HTMLElement>("[data-clarity-pane-heading]");
+      const pane = document.getElementById(targetId);
+      if (pane && document.activeElement instanceof Node && pane.contains(document.activeElement)) return true;
+      const target = pane?.querySelector<HTMLElement>("[data-clarity-pane-heading]");
       if (!target) return false;
       if (!hasVisibleDialog()) target.focus({ preventScroll: true });
       return true;

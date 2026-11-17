@@ -9,10 +9,13 @@ import {
 } from "../studio-save-sync-signals";
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
+import { useStudioDrawingClarity } from "./StudioDrawingClarityContext";
 
 export type StudioDrawingClaritySaveSession = Pick<StudioCuttoonEditorViewSession,
   "saving" | "collaborationDocumentLocked" | "collaborationLockMessage">
   & {
+    readonly title?: string;
+    readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
     readonly saveSyncStore?: StudioSaveSyncSignalStore;
     readonly sharedDocument: Pick<NonNullable<StudioCuttoonEditorViewSession["sharedDocument"]>, "role"> | null;
     readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "handleSave">;
@@ -25,6 +28,7 @@ export function StudioDrawingClaritySaveButton({ session: s }: {
   readonly session: StudioDrawingClaritySaveSession;
 }) {
   const bt = useBilingual("studio.drawingClarity"), scopedSave = useStudioScopedDraftSaveState();
+  const clarity = useStudioDrawingClarity();
   const statusDescId = useId();
   const signals = useSyncExternalStore(
     s.saveSyncStore ? s.saveSyncStore.subscribe : NOOP_SUBSCRIBE,
@@ -44,7 +48,13 @@ export function StudioDrawingClaritySaveButton({ session: s }: {
       className="studio-drawing-clarity-button studio-drawing-clarity-save" disabled={disabled}
       aria-label={name} aria-describedby={saveSummary ? statusDescId : undefined}
       title={disabled ? s.collaborationLockMessage() : undefined}
-      onClick={() => void s.studioMenubarContentHandlers.handleSave("draft")}>{caption}</button>
+      onClick={(event) => {
+        const trigger = event.currentTarget;
+        if (clarity?.active && s.pendingSaveIntent !== undefined && typeof s.title === "string" && !s.title.trim()) {
+          clarity.reveal("layers", trigger);
+        }
+        void s.studioMenubarContentHandlers.handleSave("draft");
+      }}>{caption}</button>
     {saveSummary ? <span id={statusDescId} className="sr-only" data-studio-clarity-save-status="true">{saveSummary}</span> : null}
   </>;
 }
