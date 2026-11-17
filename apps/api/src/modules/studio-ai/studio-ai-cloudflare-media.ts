@@ -43,12 +43,13 @@ const FLUX_NEURONS_PER_TILE = 4.8;
 const FLUX_NEURONS_PER_STEP = 9.6;
 const FLUX_DEFAULT_TILES = 4; // 1024x1024
 const FLUX_DEFAULT_STEPS = 4;
+const FLUX_MAX_PROMPT_LENGTH = 2_048;
 
 function validateImageInput(input: StudioAiImageGenerationInput): void {
-  if (!input.prompt.trim() || input.prompt.length > 4_000) {
+  if (!input.prompt.trim() || Array.from(input.prompt).length > FLUX_MAX_PROMPT_LENGTH) {
     throw new StudioAiCapabilityInputError(
       "image-generation",
-      "이미지 생성 지시는 1~4,000자로 입력해야 해요.",
+      "이미지 생성 지시는 1~2,048자로 입력해야 해요.",
     );
   }
   if (
