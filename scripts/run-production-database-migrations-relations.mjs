@@ -74,6 +74,8 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "admin_banned_words",
   "admin_content_reports",
   "admin_member_test_accounts",
+  "admin_nestjs_quality_board",
+  "admin_nestjs_quality_history",
   "admin_promos",
   "admin_security_policies",
   "business_inquiry",

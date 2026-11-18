@@ -1,6 +1,6 @@
 import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "../../config/database-role-mode";
 import { dbPool } from "../../platform/database";
-import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
+import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/schema/admin.schema";
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
@@ -20,7 +20,7 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_audit_logs",
   "admin_banned_words",
   "admin_content_reports",
-  "admin_member_test_accounts",
+  "admin_member_test_accounts", "admin_nestjs_quality_board", "admin_nestjs_quality_history",
   "admin_promos",
   "admin_security_policies",
   "app_setting",

@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { CiQualityBoard } from "../../domains/operations/ci-quality/CiQualityBoard";
 import { loadAdminIdentity, type AdminIdentity } from "../../platform/http/admin-identity";
 
 type Access = { phase: "checking" | "ready" | "denied"; actor: AdminIdentity | null; error: string };
+const NestQualityBoard = lazy(() => import("../../domains/operations/nestjs-quality/NestQualityBoard").then((module) => ({ default: module.NestQualityBoard })));
 
 export function CiQualityAccess() {
+  const isNest = new URLSearchParams(window.location.search).get("view") === "nestjs";
   const [access, setAccess] = useState<Access>({ phase: "checking", actor: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const sequence = useRef(0);
@@ -60,7 +62,9 @@ export function CiQualityAccess() {
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>관리자 권한 다시 확인</button>
     </div>}
     {access.actor && <div hidden={access.phase !== "ready"}>
-      <CiQualityBoard key={access.actor.id} userIdentity={access.actor.id} />
+      {isNest ? <Suspense fallback={<p role="status">NestJS 보드 화면을 준비하고 있습니다.</p>}><NestQualityBoard key={access.actor.id} userIdentity={access.actor.id} role={access.actor.role} verified={access.phase === "ready"}
+        onUnauthorized={(error) => { sequence.current += 1; setAccess({ phase: "denied", actor: null, error }); }} /></Suspense>
+        : <CiQualityBoard key={access.actor.id} userIdentity={access.actor.id} />}
     </div>}
   </section>;
 }

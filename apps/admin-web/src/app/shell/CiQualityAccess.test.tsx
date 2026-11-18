@@ -4,15 +4,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CiQualityAccess } from "./CiQualityAccess";
 
-const mocks = vi.hoisted(() => ({ identity: vi.fn(), mount: vi.fn() }));
+const mocks = vi.hoisted(() => ({ identity: vi.fn(), mount: vi.fn(), nest: vi.fn() }));
 vi.mock("../../platform/http/admin-identity", () => ({ loadAdminIdentity: mocks.identity }));
 vi.mock("../../domains/operations/ci-quality/CiQualityBoard", () => ({ CiQualityBoard: ({ userIdentity }: { userIdentity: string }) => {
   mocks.mount(userIdentity);
   return <p>보드 사용자 {userIdentity}</p>;
 } }));
+vi.mock("../../domains/operations/nestjs-quality/NestQualityBoard", () => ({ NestQualityBoard: (props: { userIdentity: string; role: string; verified: boolean }) => {
+  mocks.nest(props);
+  return <p>Nest 보드 사용자 {props.userIdentity} · {props.role}</p>;
+} }));
 
 beforeEach(() => { vi.clearAllMocks(); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.history.replaceState(null, "", "/"); });
 
 describe("CI·QA 권한 경계", () => {
   it("서버 확인이 끝나기 전에 보드나 저장소를 열지 않는다", async () => {
@@ -63,5 +67,16 @@ describe("CI·QA 권한 경계", () => {
     await screen.findByText("보드 사용자 actor-b");
     resolveFirst?.({ id: "actor-a", role: "admin" });
     await waitFor(() => expect(screen.queryByText("보드 사용자 actor-a")).toBeNull());
+  });
+  it("NestJS 보기에도 권한 확인 전 mount를 막고 operator 역할을 전달한다", async () => {
+    window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
+    let allow: ((value: { id: string; role: string }) => void) | undefined;
+    mocks.identity.mockReturnValueOnce(new Promise((resolve) => { allow = resolve; }));
+    render(<CiQualityAccess />);
+    expect(mocks.nest).not.toHaveBeenCalled();
+    allow?.({ id: "operator-a", role: "operator" });
+    await screen.findByText("Nest 보드 사용자 operator-a · operator");
+    expect(mocks.nest).toHaveBeenLastCalledWith(expect.objectContaining({ userIdentity: "operator-a", role: "operator", verified: true }));
+    expect(mocks.mount).not.toHaveBeenCalled();
   });
 });
