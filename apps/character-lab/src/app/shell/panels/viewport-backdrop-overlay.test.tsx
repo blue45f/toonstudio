@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMockEngine } from "../../../testing/mock-engine";
@@ -141,5 +141,37 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
 
     fireEvent.change(screen.getByTestId("viewport-manga-lines-select"), { target: { value: "romance-sparkle" } });
     expect(screen.getByTestId("viewport-manga-romance-sparkles")).toBeTruthy();
+  });
+
+  it("웹툰 3D 손 소품 어태치먼트 선택 시 엔진 setHandProp 호출·왼손/오른손 전환·그립 포즈 맞춤 및 해제를 수행한다", async () => {
+    const dispatched: LabCommand[] = [];
+    const engine = renderReadyViewport((cmd) => dispatched.push(cmd));
+
+    const propSelect = screen.getByTestId("viewport-hand-prop-select") as HTMLSelectElement;
+    expect(propSelect.options.length).toBe(5);
+
+    fireEvent.change(propSelect, { target: { value: "coffee-cup" } });
+    const firstCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
+    expect(firstCall?.args[0]).toMatchObject({
+      propId: "coffee-cup",
+      hand: "rightHand",
+      glbUrl: "/assets/props/webtoon-hand-props-v1/coffee-cup.glb",
+    });
+
+    const sideSelect = await screen.findByTestId("viewport-hand-prop-side");
+    fireEvent.change(sideSelect, { target: { value: "leftHand" } });
+    await waitFor(() => expect((screen.getByTestId("viewport-hand-prop-grip-pose") as HTMLButtonElement).disabled).toBe(false));
+    const sideCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
+    expect(sideCall?.args[0]).toMatchObject({
+      propId: "coffee-cup",
+      hand: "leftHand",
+    });
+
+    fireEvent.click(screen.getByTestId("viewport-hand-prop-grip-pose"));
+    expect(dispatched.some((cmd) => cmd.type === "pose/set")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/fist")).toBe(true);
+
+    fireEvent.change(propSelect, { target: { value: "" } });
+    await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
   });
 });

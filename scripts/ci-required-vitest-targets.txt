@@ -114,8 +114,15 @@ apps/api/src/runtime/runtime-boundary.test.ts
 apps/api/src/session-middleware.test.ts
 apps/brush-lab/src/boundary.test.ts
 apps/character-lab/scripts/browser-gpu-proof.test.mjs
+apps/character-lab/src/app/shell/panels/ExportPanel.test.tsx
+apps/character-lab/src/app/shell/panels/RenderPanel.test.tsx
+apps/character-lab/src/app/shell/panels/ViewportPane.test.tsx
+apps/character-lab/src/app/shell/panels/viewport-backdrop-overlay.test.tsx
 apps/character-lab/src/architecture.test.ts
 apps/character-lab/src/contracts/recipe.test.ts
+apps/character-lab/src/export/webtoon-strip-composer.test.ts
+apps/character-lab/src/render/babylon-character-engine.test.ts
+apps/character-lab/src/render/babylon-hand-prop.test.ts
 apps/character-lab/src/state/apply-plan.test.ts
 apps/character-lab/src/state/history.test.ts
 apps/web/config/vite-pigment-license-boundary.test.ts

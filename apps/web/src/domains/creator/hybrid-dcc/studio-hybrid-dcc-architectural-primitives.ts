@@ -311,6 +311,38 @@ export const STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT: readonly StudioHybridDccPr
     },
   ]);
 
+/** Blender 5.3 개폐형 가동 파츠 & 캐릭터 IK 스냅 소켓 브리지 V20(3종, CC0-1.0) — 슬라이딩 통창·쌍여닫이 월문 격자창·블래스트 에어락. */
+export const STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-articulated-modern-sliding-terrace-v20",
+      fileName: "webtoon-articulated-modern-sliding-terrace-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-modern-sliding-terrace-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-modern-sliding-terrace-v20.png",
+      label: ["개폐형 현대 슬라이딩 통창·IK 베이", "Articulated modern sliding terrace"],
+      hint: ["0~100% 슬라이딩 통창·손목·난간·핸들 IK 소켓", "Sliding sash leaf & character IK snap sockets"],
+      triangles: 4296,
+    },
+    {
+      id: "webtoon-articulated-murim-lattice-moongate-v20",
+      fileName: "webtoon-articulated-murim-lattice-moongate-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-murim-lattice-moongate-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-murim-lattice-moongate-v20.png",
+      label: ["개폐형 무협 월문 격자창·IK 누각", "Articulated murim Moon-Gate shutters"],
+      hint: ["쌍여닫이 한지 격자창·서안·청옥 난간 IK 소켓", "Dual-hinge lattice shutters & celadon IK sockets"],
+      triangles: 5512,
+    },
+    {
+      id: "webtoon-articulated-scifi-iris-airlock-v20",
+      fileName: "webtoon-articulated-scifi-iris-airlock-v20.glb",
+      glbUrl: "/studio-assets/blender-articulated-ik-v20/webtoon-articulated-scifi-iris-airlock-v20.glb",
+      previewUrl: "/studio-assets/blender-articulated-ik-v20/thumbnails/webtoon-articulated-scifi-iris-airlock-v20.png",
+      label: ["개폐형 SF 블래스트 에어락·IK 베이", "Articulated sci-fi blast airlock"],
+      hint: ["양방향 해치·회전 홀로코어·콘솔 IK 소켓", "Split blast doors, holo-core & helm IK sockets"],
+      triangles: 4340,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

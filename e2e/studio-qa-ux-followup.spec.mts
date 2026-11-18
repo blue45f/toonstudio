@@ -66,7 +66,7 @@ for (const edge of ["left", "right"] as const) {
 test("현재 그리기 셸과 기존 상세 셸 각각의 실제 준비 신호를 기다린다", async ({ page }) => {
   await page.setContent('<div data-studio-editor="true" data-studio-drawing-clarity="true"><button data-studio-clarity-more-trigger="true">더보기</button></div>');
   await waitForStudioShellHydration(page, 500);
-  await page.setContent('<div data-studio-editor="true"><button hidden data-studio-command-bar-settings-trigger="true">설정</button></div>');
+  await page.setContent('<div data-studio-editor="true"><main data-studio-canvas-viewport="true">작업 캔버스</main><button hidden data-studio-command-bar-settings-trigger="true">설정</button></div>');
   await waitForStudioShellHydration(page, 500);
 });
 
@@ -87,7 +87,7 @@ test("모바일은 실제 더보기와 창 배치를 요청한 뒤에만 숨은 
       const editor = document.querySelector('[data-studio-editor="true"]');
       if (!editor) throw new Error("편집기 없음");
       editor.removeAttribute("data-studio-drawing-clarity");
-      editor.innerHTML = '<button hidden data-studio-command-bar-settings-trigger="true">설정</button><span data-testid="studio-workspace-menu-gate"><button hidden aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
+      editor.innerHTML = '<main data-studio-canvas-viewport="true">작업 캔버스</main><button hidden data-studio-command-bar-settings-trigger="true">설정</button><span data-testid="studio-workspace-menu-gate"><button hidden aria-haspopup="dialog" aria-label="작업공간: 기본">작업공간</button></span>';
     });
   });
   const result = await inspectStudioMobileWorkspaceMenuDormancy(page);

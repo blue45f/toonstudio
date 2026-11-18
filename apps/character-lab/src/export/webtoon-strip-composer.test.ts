@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { createMockEngine } from "../testing/mock-engine";
+
 import { MAX_PNG_EXPORT_DIMENSION } from "./export-session";
 import { isPng } from "./png-encoder";
 import {
@@ -8,7 +10,6 @@ import {
   composeWebtoonVerticalStrip,
   exportWebtoonVerticalStripPng,
 } from "./webtoon-strip-composer";
-import { createMockEngine } from "../testing/mock-engine";
 
 describe("webtoon-strip-composer", () => {
   it("clampWebtoonStripLayout은 800px 원고 폭과 1024px 최대 폭 모두에서 4096px 이하 세로 스트립을 계산한다", () => {
@@ -32,7 +33,6 @@ describe("webtoon-strip-composer", () => {
     const layout = clampWebtoonStripLayout(48, true);
     const panels = WEBTOON_VERTICAL_STRIP_CUTS.map((_, cutIdx) => {
       const rgba = new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4);
-      // 중앙 픽셀 하나에 고유 색상을 불투명(255)으로 찍는다
       const cx = Math.floor(layout.cutWidth / 2);
       const cy = Math.floor(layout.cutHeight / 2);
       const p = (cy * layout.cutWidth + cx) * 4;
@@ -61,7 +61,70 @@ describe("webtoon-strip-composer", () => {
     expect(Array.from(strip.rgba.slice(charIdx, charIdx + 4))).toEqual([40, 90, 200, 255]);
   });
 
-  it("exportWebtoonVerticalStripPng는 4가지 웹툰 카메라 앵글로 순차 캡처해 PNG를 인코딩한다", async () => {
+  it("mangaFx 활성화 시 집중선·속도선·스파클 효과선을 캐릭터 뒤에 깔고 말풍선 프레임을 좌우 교차 베이킹한다", () => {
+    const layout = clampWebtoonStripLayout(96, true);
+    const panels = WEBTOON_VERTICAL_STRIP_CUTS.map(() => {
+      const rgba = new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4);
+      const cx = Math.floor(layout.cutWidth / 2);
+      const cy = Math.floor(layout.cutHeight / 2);
+      const p = (cy * layout.cutWidth + cx) * 4;
+      rgba[p] = 210;
+      rgba[p + 1] = 55;
+      rgba[p + 2] = 95;
+      rgba[p + 3] = 255;
+      return { width: layout.cutWidth, height: layout.cutHeight, rgba };
+    });
+
+    const plainStrip = composeWebtoonVerticalStrip(panels, layout);
+    const fxFocus = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "focus-radial",
+      includeSpeechBubbles: true,
+      intensity: 0.85,
+    });
+    const fxSpeed = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "speed-diagonal",
+      includeSpeechBubbles: true,
+      intensity: 0.85,
+    });
+    const fxSparkle = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "romance-sparkle",
+      includeSpeechBubbles: true,
+      intensity: 0.85,
+    });
+
+    // 불투명 캐릭터 중심 픽셀은 효과선에 덮이지 않고 그대로 보존되어야 한다
+    const charX = layout.marginX + layout.borderPx + Math.floor(layout.cutWidth / 2);
+    const charY = layout.marginY + layout.borderPx + layout.bubbleSafeTopPx + Math.floor(layout.cutHeight / 2);
+    const charIdx = (charY * fxFocus.width + charX) * 4;
+    expect(Array.from(fxFocus.rgba.slice(charIdx, charIdx + 4))).toEqual([210, 55, 95, 255]);
+
+    // plain 대비 변경 픽셀 수가 충분히 발생해야 한다(효과선 + 말풍선)
+    const countDiffPixels = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
+      let diff = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) diff += 1;
+      }
+      return diff;
+    };
+    expect(countDiffPixels(plainStrip.rgba, fxFocus.rgba)).toBeGreaterThan(200);
+    expect(countDiffPixels(plainStrip.rgba, fxSpeed.rgba)).toBeGreaterThan(200);
+    expect(countDiffPixels(plainStrip.rgba, fxSparkle.rgba)).toBeGreaterThan(100);
+
+    // 1컷 좌상단 말풍선 중심 픽셀은 밝은 아이보리(#FFFEFB 97% 알파 블렌드 -> 250 이상)로 채워진다
+    const innerX = layout.marginX + layout.borderPx;
+    const innerY = layout.marginY + layout.borderPx;
+    const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
+    const bubbleCx = innerX + Math.round(layout.cutWidth * 0.26);
+    const bubbleCy = innerY + Math.round(Math.max(5, Math.round(innerHeight * 0.085)) * 1.32);
+    const bubbleIdx = (bubbleCy * fxFocus.width + bubbleCx) * 4;
+    expect(fxFocus.rgba[bubbleIdx]).toBeGreaterThanOrEqual(250);
+    expect(fxFocus.rgba[bubbleIdx + 1]).toBeGreaterThanOrEqual(250);
+  });
+
+  it("exportWebtoonVerticalStripPng는 4가지 웹툰 카메라 앵글로 순차 캡처해 PNG를 인코딩하고 mangaFx 파일 접미사를 구분한다", async () => {
     const engine = createMockEngine();
     const steps: string[] = [];
     const outcome = await exportWebtoonVerticalStripPng(
@@ -87,5 +150,19 @@ describe("webtoon-strip-composer", () => {
     expect(modes).toEqual(["full-body", "bust", "face", "bust"]);
     const pitches = renderCalls.map((c) => (c.args[0] as { camera?: { pitchDeg: number } }).camera?.pitchDeg);
     expect(pitches).toEqual([-14, 0, 0, 18]);
+
+    const fxOutcome = await exportWebtoonVerticalStripPng(
+      engine,
+      {
+        stripWidth: 64,
+        includeBubbleSafeZone: true,
+        mangaFx: { enabled: true, linesKind: "speed-diagonal", includeSpeechBubbles: true },
+      },
+      { now: () => 200 },
+    );
+    expect(fxOutcome.ok).toBe(true);
+    if (!fxOutcome.ok) return;
+    expect(isPng(fxOutcome.bytes)).toBe(true);
+    expect(fxOutcome.receipt.fileName).toMatch(/-webtoon-4cut-fx-strip\.png$/u);
   });
 });

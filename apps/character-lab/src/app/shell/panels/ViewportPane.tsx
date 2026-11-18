@@ -27,6 +27,8 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
+import { ViewportHandPropControls } from "./viewport-hand-prop-controls";
+import { useViewportHandPropSession } from "./viewport-hand-prop-session";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
@@ -110,6 +112,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const handPropControls = useViewportHandPropSession(engine, labState.recipe.pose, dispatch, setNotice);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -702,6 +705,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           onChangeDialogueText={(dialogueText) => setMangaFx((prev) => ({ ...prev, dialogueText }))}
           onChangeIntensity={(intensity) => setMangaFx((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
         />
+        <ViewportHandPropControls {...handPropControls} />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
           <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
