@@ -27,6 +27,7 @@ import {
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
@@ -175,6 +176,23 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(beat100.slitApertureWidthM).toBe(1.68);
     expect(beat15.floorShadowLengthM).toBeGreaterThan(beat100.floorShadowLengthM);
     expect(beat15.combinedWeeklyHoursSaved).toBe(25.9);
+
+    const bokeh15 = evaluateAtmosphericBokehAndQuarterlyRoi({
+      openRatioPct: 15,
+      moteStyleId: "amber-dust-motes",
+      climaxSequencesPerEpisode: 3,
+      baseCombinedWeeklyHoursSaved: 25.9,
+    });
+    const bokeh100 = evaluateAtmosphericBokehAndQuarterlyRoi({
+      openRatioPct: 100,
+      moteStyleId: "abyss-mana-embers",
+      climaxSequencesPerEpisode: 3,
+      baseCombinedWeeklyHoursSaved: 25.9,
+    });
+    expect(bokeh15.recommendedApertureFStop).toBe(1.8);
+    expect(bokeh100.recommendedApertureFStop).toBe(5.6);
+    expect(bokeh15.foregroundCocDiameterPx).toBeGreaterThan(bokeh100.foregroundCocDiameterPx);
+    expect(bokeh15.bankedEpisodesPerQuarter).toBeGreaterThan(4.2);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

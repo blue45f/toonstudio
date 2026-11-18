@@ -1,5 +1,11 @@
 import { Clock, Layers, Sun } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { StudioBg3dAtmosphericBokehDofCard } from "./StudioBg3dAtmosphericBokehDofCard";
+import {
+  evaluateAtmosphericBokehAndQuarterlyRoi,
+  type AtmosphericMoteStyleId,
+} from "./studio-bg3d-atmospheric-bokeh-dof";
 import {
   SLIT_SEQUENCE_3BEAT_PRESETS,
   type SlitGodRayShadowDriftEvaluation,
@@ -17,7 +23,7 @@ export interface StudioBg3dSlitGodRaySequenceCardProps {
 }
 
 /**
- * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V21 가변 슬릿 고드레이·그림자 드리프트 & 3연속 시퀀스 어셈블러:
+ * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V21 슬릿 고드레이·그림자 드리프트 & V22 보케 심도(DoF) 통합 섹션:
  * 4px 그리드 간격, 중첩 반경(`rounded-2xl -> rounded-xl -> rounded-lg -> rounded-md`),
  * 16px stroke-1.5 단일 라인 아이콘, 500/600 웨이트 상한, tabular-nums 고정폭 지표를 준수한다.
  */
@@ -27,6 +33,27 @@ export function StudioBg3dSlitGodRaySequenceCard({
   onApplySequenceBeat,
   onChangeInteractionCutRatioPct,
 }: StudioBg3dSlitGodRaySequenceCardProps) {
+  const [moteStyleId, setMoteStyleId] =
+    useState<AtmosphericMoteStyleId>("rofan-gilded-petals");
+  const [climaxSequencesPerEpisode, setClimaxSequencesPerEpisode] =
+    useState<number>(3);
+
+  const bokehEvaluation = useMemo(
+    () =>
+      evaluateAtmosphericBokehAndQuarterlyRoi({
+        openRatioPct: evaluation.openRatioPct,
+        moteStyleId,
+        climaxSequencesPerEpisode,
+        baseCombinedWeeklyHoursSaved: evaluation.combinedWeeklyHoursSaved,
+      }),
+    [
+      evaluation.openRatioPct,
+      moteStyleId,
+      climaxSequencesPerEpisode,
+      evaluation.combinedWeeklyHoursSaved,
+    ],
+  );
+
   return (
     <section
       data-testid="bg3d-blender-slit-godray-section"
@@ -35,7 +62,7 @@ export function StudioBg3dSlitGodRaySequenceCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-2 text-sm font-semibold text-fg">
           <Sun size={16} strokeWidth={1.5} className="shrink-0 text-fg-2" aria-hidden />
-          <span>5D. 개폐율 연동 가변 슬릿 고드레이(V21) · 그림자 드리프트 · 3연속 컷 어셈블러</span>
+          <span>5D. 개폐율 연동 가변 슬릿 고드레이(V21) · 보케 심도(V22) · 3연속 컷 어셈블러</span>
         </span>
         <span
           data-testid="bg3d-blender-slit-godray-badge"
@@ -71,14 +98,21 @@ export function StudioBg3dSlitGodRaySequenceCard({
 
         <div className="flex flex-wrap items-center gap-2 lg:col-span-7 lg:justify-end">
           {SLIT_SEQUENCE_3BEAT_PRESETS.map((beat) => {
-            const active = beat.id === evaluation.activeBeatPreset.id && evaluation.openRatioPct === beat.openRatioPct;
+            const active =
+              beat.id === evaluation.activeBeatPreset.id &&
+              evaluation.openRatioPct === beat.openRatioPct;
             return (
               <button
                 key={beat.id}
                 type="button"
                 disabled={disabled}
                 data-testid={`bg3d-blender-v21-beat-${beat.openRatioPct}`}
-                onClick={() => onApplySequenceBeat(beat)}
+                onClick={() => {
+                  if (beat.openRatioPct === 15) setMoteStyleId("amber-dust-motes");
+                  else if (beat.openRatioPct === 65) setMoteStyleId("rofan-gilded-petals");
+                  else setMoteStyleId("abyss-mana-embers");
+                  onApplySequenceBeat(beat);
+                }}
                 className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
@@ -115,7 +149,7 @@ export function StudioBg3dSlitGodRaySequenceCard({
         <div className="rounded-xl border border-line bg-card px-3 py-2">
           <span className="block text-xs text-fg-3">주간 누적 총 절감</span>
           <span className="mt-1 block font-mono text-base font-medium tabular-nums text-fg">
-            {evaluation.combinedWeeklyHoursSaved.toFixed(1)}h
+            {bokehEvaluation.totalWeeklyHoursWithBokeh.toFixed(1)}h
           </span>
         </div>
       </div>
@@ -147,6 +181,13 @@ export function StudioBg3dSlitGodRaySequenceCard({
           />
         </label>
       </div>
+
+      <StudioBg3dAtmosphericBokehDofCard
+        disabled={disabled}
+        evaluation={bokehEvaluation}
+        onSelectMoteStyleId={setMoteStyleId}
+        onChangeClimaxSequencesPerEpisode={setClimaxSequencesPerEpisode}
+      />
     </section>
   );
 }
