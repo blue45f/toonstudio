@@ -57,7 +57,7 @@ SQL의 추가형 구문이 기존 객체의 정의 일치까지 입증하지는 
 1. 최신 main의 PR/CI 상태를 기록하고 Actions의 **Onpod admin read-only audit**를 main에서 수동 실행한다. 이 워크플로는 변경을 실행하지 않으므로 배포 CI 게이트를 대체하지 않는다.
 2. 워크플로는 실행 당시 `github.sha`, checkout HEAD, 다시 조회한 origin/main, 입력 SHA가 같은지 확인한다. 실행 대기 중 main이 바뀌면 실패하며 이전 SHA로 진행하지 않는다.
 3. 운영 secret이 없는 단계에서 두 Node 테스트를 실행하고 공식 Onpod CLI `0.7.159`를 설치한다. 정본 npm 패키지의 installer는 해당 버전의 release 바이너리 SHA-256을 검증한다.
-4. 마지막 단계만 `ONPOD_DEPLOY_TOKEN`을 받는다. 고정 앱 `toonstudio-api`의 상태를 조회하고 `free_tier === true`와 `state === running`일 때만 다음 진단을 실행한다. 절전 앱을 깨우거나 플랜을 바꾸지 않는다.
+4. 마지막 단계만 `ONPOD_DEPLOY_TOKEN`을 받는다. 고정 앱 `toonstudio-api`의 상태를 조회하고 `free_tier === true`와 `state === running`일 때만 다음 진단을 실행한다. 사전 조회에서 절전·비실행 상태이면 `exec`를 호출하지 않고, 플랜 변경 명령은 보내지 않는다. 다만 [Onpod의 2026-10-20 공식 변경 기록](https://onpod.ai/updates)에 명시된 `exec`의 자동 절전 해제 동작 때문에 상태 조회와 `exec` 사이에 절전으로 전환되는 경우까지 원자적으로 배제할 수는 없다.
 5. 공식 CLI의 stdin 전송으로 고정 Node payload를 한 번 실행한다. Node heap 상한 64 MiB, CLI timeout 40초, 로컬 자식 프로세스 timeout 60초다. 대상 앱의 기존 `DATABASE_URL`은 컨테이너 내부에서만 사용한다.
 6. 내부 호스트가 `toonstudio-db.db.onpod.local:5432`인지 확인하고 `BEGIN READ ONLY`, 조회 제한 시간, 마지막 `ROLLBACK`·연결 종료를 확인한다. 개인 원문·식별자를 읽어 출력하지 않는다.
 7. 허용된 sentinel JSON 하나를 검증한 뒤 필드·값을 다시 허용 목록으로 투영한다. 원래 stdout/stderr, 예외 메시지, DB URL, 토큰, 환경변수 맵은 로그·artifact에 남기지 않는다. Actions 요약에는 정제된 JSON만 남긴다.

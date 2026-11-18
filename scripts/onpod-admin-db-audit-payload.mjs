@@ -43,7 +43,7 @@ const CONSTRAINTS = Object.freeze({
   admin_cloud_workboard_receipt: "admin_cloud_workboard_receipt_digest_check",
   admin_ai_operations_board: "admin_ai_operations_board_singleton admin_ai_operations_board_revision admin_ai_operations_board_state admin_ai_operations_board_payload",
   admin_ai_operations_audit: "admin_ai_operations_audit_revision admin_ai_operations_audit_before admin_ai_operations_audit_after",
-  admin_ai_operations_receipt: "admin_ai_operations_receipt_digest_check",
+  admin_ai_operations_receipt: "admin_ai_operations_receipt_digest",
 });
 const TRIGGERS = Object.freeze({
   admin_business_plan: "admin_business_plan_delete_guard admin_business_plan_truncate_guard",

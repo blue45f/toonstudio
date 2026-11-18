@@ -1,6 +1,7 @@
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 import {
@@ -18,6 +19,30 @@ const migrations = Array.from({ length: 24 }, (_, index) => ({
   checksum: hash(`migration fixture ${index + 1}`),
 }));
 const options = { expectedMigrations: migrations, expectedRelations: ADMIN_BOARD_RELATIONS };
+
+function migratedAdminCatalog() {
+  const paths = readFileSync(new URL("./production-database-migrations.manifest", import.meta.url), "utf8")
+    .split(/\r?\n/u).map((line) => line.trim()).filter((line) => /\/012[2-8]_[a-z0-9_]+\.sql$/u.test(line));
+  assert.deepEqual(paths.map((path) => path.match(/\/(\d{4})_/u)?.[1]), ["0122", "0123", "0124", "0125", "0126", "0127", "0128"]);
+  const catalog = { columns: {}, constraints: {}, triggers: {} };
+  const add = (kind, relation, name) => (catalog[kind][relation] ??= new Set()).add(name);
+  for (const path of paths) {
+    const sql = readFileSync(new URL(`../${path}`, import.meta.url), "utf8")
+      .replace(/\/\*[\s\S]*?\*\/|--[^\n]*/gu, "");
+    // 이 7개 SQL의 DDL 정의만 읽는다. 주석·존재 여부 조회·모의 catalog는 이름의 근거가 아니다.
+    for (const [, command, relation, body] of sql.matchAll(/\b(CREATE TABLE IF NOT EXISTS|ALTER TABLE)\s+public\.([a-z_]+)\b([^;]*);/gu)) {
+      if (command === "CREATE TABLE IF NOT EXISTS") {
+        for (const [, name] of body.matchAll(/^\s+([a-z_]+)\s+(?:text|integer|bigint|boolean|uuid|jsonb|timestamptz)\b/gmu)) add("columns", relation, name);
+      } else {
+        for (const [, name] of body.matchAll(/\bADD COLUMN IF NOT EXISTS ([a-z_]+)\b/gu)) add("columns", relation, name);
+      }
+      for (const [, name] of body.matchAll(/\bCONSTRAINT ([a-z_]+)\b/gu)) add("constraints", relation, name);
+    }
+    for (const [, name, relation] of sql.matchAll(/\bCREATE TRIGGER ([a-z_]+)\b[^;]*?\bON public\.([a-z_]+)\b[^;]*;/gu)) add("triggers", relation, name);
+  }
+  return catalog;
+}
+
 function ledgerRow(migration) {
   return { ...migration, state: "applied", provenance: Number(migration.id.slice(0, 4)) <= 19 ? "adopted"
     : migration.id === "0023_production_migration_ledger" ? "bootstrap" : "executed",
@@ -81,6 +106,36 @@ function fixture(overrides = {}) {
   };
   return { data, runtime, Client, calls, clientOptions, stats: () => ({ connects, ends }) };
 }
+
+test("0122~0128 실제 SQL의 열·명시 제약·트리거 이름이 진단 목록과 관계별로 일치한다", () => {
+  const catalog = migratedAdminCatalog();
+  assert.deepEqual(Object.keys(catalog.columns).sort(), [...ADMIN_BOARD_RELATIONS].sort());
+  for (const relation of ADMIN_BOARD_RELATIONS) {
+    for (const kind of ["columns", "constraints", "triggers"]) {
+      assert.deepEqual((ADMIN_BOARD_AUDIT_NAMES[kind][relation]?.split(" ") ?? []).sort(),
+        [...catalog[kind][relation] ?? []].sort(), `${relation}의 ${kind} 이름은 실제 migration 정의와 같아야 한다`);
+    }
+  }
+});
+
+test("0126 receipt의 실제 제약 이름으로 정상·누락·미검증 catalog를 구분한다", async () => {
+  const catalog = migratedAdminCatalog();
+  const relation = "admin_ai_operations_receipt";
+  const names = [...catalog.constraints[relation]];
+  assert.equal(names.length, 1);
+  for (const state of ["present", "missing", "unvalidated"]) {
+    const f = fixture();
+    f.data.inventory = [{ ...f.data.inventory[0], name: relation }];
+    f.data.columns = [...catalog.columns[relation]].map((name) => ({ ...f.data.columns[0], relation, name }));
+    f.data.constraints = state === "missing" ? [] : names.map((name) => ({ relation, name, type: "c", validated: state === "present" }));
+    const report = await runOnpodAdminDbAudit({ ...options, expectedRelations: [relation] }, f.runtime);
+    assert.equal(report.status, "ok");
+    assert.deepEqual(f.calls.find(({ text }) => text.includes("audit:constraints")).values, [[relation], names]);
+    assert.deepEqual(report.catalog[0].constraints.required, names.map((name) => ({
+      name, present: state !== "missing", validated: state === "missing" ? null : state === "present",
+    })));
+  }
+});
 
 test("진단 source는 검토한 manifest와 관리자 관계만 허용하며 임의 SQL을 받지 않는다", () => {
   for (const change of [
