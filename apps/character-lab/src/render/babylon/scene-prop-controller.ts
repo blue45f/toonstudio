@@ -1,4 +1,4 @@
-/** 손·머리·무대 소품의 활성 선택과 리그 재부착·해제 수명을 관리한다. */
+/** 손·머리·무대 소품 슬롯의 활성 선택과 리그 핸들을 관리한다. 엔진의 직렬 실행·자원 갱신 경계는 host에 위임한다. */
 import {
   HAND_PROP_PART_ID,
   HEAD_PROP_PART_ID,
@@ -12,128 +12,122 @@ import type { CharacterRig, RigPart } from "./character-rig";
 import type { HandPropHandle, HeadPropHandle, ScenePropLoadDeps, StagePropHandle } from "./hand-prop-attachment";
 import type { HandPropAttachment, HeadPropAttachment, StagePropAttachment } from "../../contracts";
 
-export interface ScenePropControllerDeps {
+interface ScenePropHost {
   readonly assertAlive: () => void;
   readonly runExclusive: (operation: () => Promise<void>) => Promise<void>;
-  readonly rig: () => CharacterRig | null;
+  readonly readRig: () => CharacterRig | null;
   readonly loadDeps: () => ScenePropLoadDeps;
   readonly disposePassMaterials: (partId: number) => void;
-  readonly releaseRigPart: (rig: CharacterRig, part: RigPart) => void;
+  readonly releasePart: (rig: CharacterRig, part: RigPart) => void;
   readonly refresh: (rig: CharacterRig) => Promise<void>;
-  readonly reportReattachFailure: (error: unknown) => void;
 }
 
-export class ScenePropController {
-  private readonly deps: ScenePropControllerDeps;
-  private activeHandProp: HandPropAttachment | null = null;
-  private handPropHandle: HandPropHandle | null = null;
-  private activeHeadProp: HeadPropAttachment | null = null;
-  private headPropHandle: HeadPropHandle | null = null;
-  private activeStageProp: StagePropAttachment | null = null;
-  private stagePropHandle: StagePropHandle | null = null;
+export interface ScenePropController {
+  hasActive(): boolean;
+  syncActive(rig: CharacterRig): Promise<void>;
+  detach(rig: CharacterRig | null): void;
+  setHandProp(attachment: HandPropAttachment | null): Promise<void>;
+  setHeadProp(attachment: HeadPropAttachment | null): Promise<void>;
+  setStageProp(attachment: StagePropAttachment | null): Promise<void>;
+}
 
-  constructor(deps: ScenePropControllerDeps) {
-    this.deps = deps;
-  }
+export function createScenePropController(host: ScenePropHost): ScenePropController {
+  let activeHandProp: HandPropAttachment | null = null;
+  let handPropHandle: HandPropHandle | null = null;
+  let activeHeadProp: HeadPropAttachment | null = null;
+  let headPropHandle: HeadPropHandle | null = null;
+  let activeStageProp: StagePropAttachment | null = null;
+  let stagePropHandle: StagePropHandle | null = null;
 
-  hasActive(): boolean {
-    return Boolean(this.activeHandProp || this.activeHeadProp || this.activeStageProp);
-  }
-
-  async reattach(rig: CharacterRig): Promise<void> {
-    try {
-      if (this.activeHandProp) await this.syncActiveHandPropToRig(rig);
-      if (this.activeHeadProp) await this.syncActiveHeadPropToRig(rig);
-      if (this.activeStageProp) await this.syncActiveStagePropToRig(rig);
-    } catch (error) {
-      this.deps.reportReattachFailure(error);
-    }
-  }
-
-  detach(rig: CharacterRig | null): void {
-    this.detachHandPropFromRig(rig);
-    this.detachHeadPropFromRig(rig);
-    this.detachStagePropFromRig(rig);
-  }
-
-  private detachHandPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.handPropHandle;
+  const detachHandPropFromRig = (rig: CharacterRig | null): void => {
+    const handle = handPropHandle;
     if (!handle) return;
-    this.handPropHandle = null;
-    this.deps.disposePassMaterials(HAND_PROP_PART_ID);
-    if (rig) this.deps.releaseRigPart(rig, handle.part);
+    handPropHandle = null;
+    host.disposePassMaterials(HAND_PROP_PART_ID);
+    if (rig) host.releasePart(rig, handle.part);
     handle.dispose();
-  }
+  };
 
-  private detachHeadPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.headPropHandle;
+  const detachHeadPropFromRig = (rig: CharacterRig | null): void => {
+    const handle = headPropHandle;
     if (!handle) return;
-    this.headPropHandle = null;
-    this.deps.disposePassMaterials(HEAD_PROP_PART_ID);
-    if (rig) this.deps.releaseRigPart(rig, handle.part);
+    headPropHandle = null;
+    host.disposePassMaterials(HEAD_PROP_PART_ID);
+    if (rig) host.releasePart(rig, handle.part);
     handle.dispose();
-  }
+  };
 
-  private detachStagePropFromRig(rig: CharacterRig | null): void {
-    const handle = this.stagePropHandle;
+  const detachStagePropFromRig = (rig: CharacterRig | null): void => {
+    const handle = stagePropHandle;
     if (!handle) return;
-    this.stagePropHandle = null;
-    this.deps.disposePassMaterials(STAGE_PROP_PART_ID);
-    if (rig) this.deps.releaseRigPart(rig, handle.part);
+    stagePropHandle = null;
+    host.disposePassMaterials(STAGE_PROP_PART_ID);
+    if (rig) host.releasePart(rig, handle.part);
     handle.dispose();
-  }
+  };
 
-  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHandPropFromRig(rig);
-    if (!this.activeHandProp) return;
-    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, this.deps.loadDeps());
-  }
+  const syncActiveHandPropToRig = async (rig: CharacterRig): Promise<void> => {
+    detachHandPropFromRig(rig);
+    if (!activeHandProp) return;
+    handPropHandle = await attachHandPropToRig(rig, activeHandProp, host.loadDeps());
+  };
 
-  private async syncActiveHeadPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHeadPropFromRig(rig);
-    if (!this.activeHeadProp) return;
-    this.headPropHandle = await attachHeadPropToRig(rig, this.activeHeadProp, this.deps.loadDeps());
-  }
+  const syncActiveHeadPropToRig = async (rig: CharacterRig): Promise<void> => {
+    detachHeadPropFromRig(rig);
+    if (!activeHeadProp) return;
+    headPropHandle = await attachHeadPropToRig(rig, activeHeadProp, host.loadDeps());
+  };
 
-  private async syncActiveStagePropToRig(rig: CharacterRig): Promise<void> {
-    this.detachStagePropFromRig(rig);
-    if (!this.activeStageProp) return;
-    this.stagePropHandle = await attachStagePropToRig(rig, this.activeStageProp, this.deps.loadDeps());
-  }
+  const syncActiveStagePropToRig = async (rig: CharacterRig): Promise<void> => {
+    detachStagePropFromRig(rig);
+    if (!activeStageProp) return;
+    stagePropHandle = await attachStagePropToRig(rig, activeStageProp, host.loadDeps());
+  };
 
-  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
-    this.deps.assertAlive();
-    return this.deps.runExclusive(async () => {
-      this.deps.assertAlive();
-      this.activeHandProp = attachment;
-      const rig = this.deps.rig();
-      if (!rig) return;
-      await this.syncActiveHandPropToRig(rig);
-      await this.deps.refresh(rig);
-    });
-  }
-
-  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
-    this.deps.assertAlive();
-    return this.deps.runExclusive(async () => {
-      this.deps.assertAlive();
-      this.activeHeadProp = attachment;
-      const rig = this.deps.rig();
-      if (!rig) return;
-      await this.syncActiveHeadPropToRig(rig);
-      await this.deps.refresh(rig);
-    });
-  }
-
-  async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
-    this.deps.assertAlive();
-    return this.deps.runExclusive(async () => {
-      this.deps.assertAlive();
-      this.activeStageProp = attachment;
-      const rig = this.deps.rig();
-      if (!rig) return;
-      await this.syncActiveStagePropToRig(rig);
-      await this.deps.refresh(rig);
-    });
-  }
+  return {
+    hasActive: () => Boolean(activeHandProp || activeHeadProp || activeStageProp),
+    async syncActive(rig) {
+      if (activeHandProp) await syncActiveHandPropToRig(rig);
+      if (activeHeadProp) await syncActiveHeadPropToRig(rig);
+      if (activeStageProp) await syncActiveStagePropToRig(rig);
+    },
+    detach(rig) {
+      detachHandPropFromRig(rig);
+      detachHeadPropFromRig(rig);
+      detachStagePropFromRig(rig);
+    },
+    setHandProp(attachment) {
+      host.assertAlive();
+      return host.runExclusive(async () => {
+        host.assertAlive();
+        activeHandProp = attachment;
+        const rig = host.readRig();
+        if (!rig) return;
+        await syncActiveHandPropToRig(rig);
+        await host.refresh(rig);
+      });
+    },
+    setHeadProp(attachment) {
+      host.assertAlive();
+      return host.runExclusive(async () => {
+        host.assertAlive();
+        activeHeadProp = attachment;
+        const rig = host.readRig();
+        if (!rig) return;
+        await syncActiveHeadPropToRig(rig);
+        await host.refresh(rig);
+      });
+    },
+    setStageProp(attachment) {
+      host.assertAlive();
+      return host.runExclusive(async () => {
+        host.assertAlive();
+        activeStageProp = attachment;
+        const rig = host.readRig();
+        if (!rig) return;
+        await syncActiveStagePropToRig(rig);
+        await host.refresh(rig);
+      });
+    },
+  };
 }

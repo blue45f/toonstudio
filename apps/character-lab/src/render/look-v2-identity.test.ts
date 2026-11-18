@@ -1,7 +1,7 @@
 /**
  * 레시피 v3 `LOOK_V2_IDENTITY`(contracts/art-style.ts)가 v2 렌더 상수와 같은 값인지 대조한다(2026-10-23 CORE-1, 설계 K3).
  * 값이 어긋나면 v2 레시피를 v3로 올렸을 때 화풍 경로(R-1·R-2)가 다른 그림을 낸다. 엔진 파일(render/babylon/**)은 시험이 import할 수 없으므로
- * (architecture.test.ts 규칙 5) 순수 상수 모듈을 직접 비교하고 엔진 내부 색상은 소스 문자열에서 읽는다.
+ * (architecture.test.ts 규칙 5) 그 상수는 소스 문자열에서 읽는다.
  */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -10,7 +10,6 @@ import { describe, expect, it } from "vitest";
 
 import { LOOK_V2_IDENTITY, PART_ROLES, PART_ROLE_SHADE_GROUP } from "../contracts";
 
-import { TOON_OUTLINE_WIDTH } from "./character-render-constants";
 import { toonShadeTint } from "./material-presets";
 import { TOON_RIM_EDGE0, TOON_RIM_EDGE1 } from "./toon-reference";
 
@@ -38,9 +37,11 @@ describe("render: LOOK_V2_IDENTITY ↔ v2 렌더 상수", () => {
     expect(LOOK_V2_IDENTITY.rim.strength).toBe(1);
   });
 
-  it("공통 상수의 hull 폭·엔진 소스의 외곽선 색·림 색과 같다", () => {
+  it("엔진 소스의 hull 폭·외곽선 색·림 색과 같다", () => {
     const source = engineSource();
-    expect(TOON_OUTLINE_WIDTH * 1000).toBeCloseTo(LOOK_V2_IDENTITY.line.widthMm, 12);
+    const width = /export const TOON_OUTLINE_WIDTH = ([0-9.]+);/u.exec(source)?.[1];
+    expect(width).toBeDefined();
+    expect(Number(width) * 1000).toBeCloseTo(LOOK_V2_IDENTITY.line.widthMm, 12);
     const outline = /mesh\.outlineColor\.set\(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/u.exec(source);
     expect(outline).not.toBeNull();
     expect(LOOK_V2_IDENTITY.line.color).toEqual({ mode: "fixed", rgb: [Number(outline?.[1]), Number(outline?.[2]), Number(outline?.[3])] });

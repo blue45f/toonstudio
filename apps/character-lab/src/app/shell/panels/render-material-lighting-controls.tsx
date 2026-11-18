@@ -18,7 +18,7 @@ interface RenderMaterialLightingControlsProps {
   readonly dispatch: (command: LabCommand) => void;
 }
 
-/** 소재·장르·조명 프리셋을 기존 명령 순서대로 적용하는 표시 영역. */
+/** 장르·소재·조명 프리셋을 표시하고 기존 명령 생성 결과를 전달한다. */
 export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: RenderMaterialLightingControlsProps) {
   return (
     <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">

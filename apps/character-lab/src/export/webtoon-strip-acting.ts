@@ -1,4 +1,4 @@
-/** 세로 4컷 스트립의 연기 프리셋과 기준 플랜을 보존하는 순수 키프레임 계산. */
+/** 웹툰 4컷 연기 프리셋과 표정·시선·목/고개 스냅샷의 순수 계산. */
 import { eyeAnglesQuaternion, expressionToMorphWeights } from "../contracts";
 import { qNormalize } from "../shared/math";
 

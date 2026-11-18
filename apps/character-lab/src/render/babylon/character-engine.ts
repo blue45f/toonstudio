@@ -7,33 +7,31 @@
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
-import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isLabFailure } from "../../contracts";
+import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
-import { qConjugate, qMultiply, qRotateVec3 } from "../../shared/math";
+import { qConjugate, qMultiply, qRotateVec3, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
 import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
-import { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "../character-render-constants";
 import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
-import { describeSparseMorphReport } from "../glb-sparse-morph";
-import { summarizeJointOffsets } from "../joint-offsets";
 import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
-import { describeMorphTextureMode } from "../morph-limits";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
-import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { inspectRigCapabilities, inspectRigPaint, inspectViewportCamera, projectRigJointHandles, readRigBone } from "./character-engine-inspection";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
+import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
+import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
@@ -48,10 +46,9 @@ import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
-import { ScenePropController } from "./scene-prop-controller";
+import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
-import type { BoneReading } from "./character-engine-inspection";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
@@ -79,6 +76,7 @@ import type {
   PhysicsProviderId,
   PhysicsStatus,
   CharacterPickOptions, PickHit,
+  Quat,
   SettleReceipt,
   ShadingProfile,
   SkeletonData,
@@ -98,19 +96,38 @@ import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
 import type { CharacterScene } from "./scene-builder";
 import type { ReadbackLane } from "../readback";
 import type { PaintInspection, RigInspection, SceneInspection } from "../rig-inspection";
-import type { SceneFeatureSource, SceneFeatureState } from "../scene-features";
+import type { SceneFeatureSource } from "../scene-features";
 import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camera";
 import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
-import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
-export type { BoneReading } from "./character-engine-inspection";
 
-export { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "../character-render-constants";
+/**
+ * 썸네일 임시 리그 전용 레이어 마스크. 메인 카메라(기본 0x0fffffff)가 그리지 않으므로 캡처 중 비동기 구간에도
+ * 뷰포트에 임시 리그가 보이지 않는다. 캡처 RTT는 `renderList`를 쓰므로 레이어 마스크를 검사하지 않는다.
+ */
+export const THUMBNAIL_LAYER_MASK = 0x10000000;
+
+/** 얼굴 SDF 임계 맵 해상도 */
+export const FACE_SDF_SIZE = 128;
+/** 툰 외곽선(hull) 폭(월드 단위, m) */
+export const TOON_OUTLINE_WIDTH = 0.004;
+/** 엣지 외곽선 각도 임계(cos) */
+export const TOON_EDGE_EPSILON = 0.95;
+
+/** `readBone` 결과 */
+export interface BoneReading {
+  readonly name: string;
+  readonly humanoid: string | null;
+  readonly position: Vec3;
+  readonly rotation: Quat;
+  readonly localRotation: Quat;
+  readonly auxiliary: boolean;
+}
 
 export interface BabylonCharacterEngineDeps {
   /** 이미 초기화된 Babylon 엔진(WebGPUEngine·Engine·NullEngine) */
@@ -146,13 +163,6 @@ export interface BabylonCharacterEngineDeps {
    * 앱 팩토리는 `EngineFactoryOptions.onFailure`를 넘긴다. 없으면 물리 브리지 상태(`unavailable`)에만 남는다.
    */
   readonly onFailure?: (failure: LabFailure) => void;
-}
-
-/** 지금 influence > 0인 morph 타깃 수. `numInfluencers`는 attribute 모드에서 8개로 잘려 있어 초과분(무시되는 타깃)을 셀 수 없다. */
-function activeMorphTargets(manager: MorphTargetManager): number {
-  let active = 0;
-  for (let index = 0; index < manager.numTargets; index += 1) if (manager.getTarget(index).influence > 0) active += 1;
-  return active;
 }
 
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
@@ -195,15 +205,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
-  private readonly sceneProps = new ScenePropController({
+  private readonly sceneProps = createScenePropController({
     assertAlive: () => this.assertAlive(),
     runExclusive: (operation) => this.runExclusive(operation),
-    rig: () => this.rig,
+    readRig: () => this.rig,
     loadDeps: () => this.scenePropDeps(),
     disposePassMaterials: (partId) => this.disposePassMaterials(partId),
-    releaseRigPart: (rig, part) => this.beta.releaseRig(rigWithParts(rig, [part])),
+    releasePart: (rig, part) => this.beta.releaseRig(rigWithParts(rig, [part])),
     refresh: (rig) => this.finalizeRigPropRefresh(rig),
-    reportReattachFailure: (error) => this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다."),
   });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
@@ -349,7 +358,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.rig = rig;
     this.kit = kit;
     if (this.sceneProps.hasActive()) {
-      await this.sceneProps.reattach(rig);
+      try {
+        await this.sceneProps.syncActive(rig);
+      } catch (error) {
+        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
+      }
     }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
     try {
@@ -365,11 +378,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.applyMaterialsForMode(rig);
     this.beta.syncIblShadows();
     this.setCamera(this.framing);
-    return this.sourceCapabilities(rig);
-  }
-
-  private sourceCapabilities(rig: CharacterRig): SourceCapabilities {
-    return inspectRigCapabilities(rig);
+    return readRigSourceCapabilities(rig);
   }
 
   /**
@@ -423,7 +432,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       this.unloadRig();
       return toFailure(error, "source-load-failed", "키트 파츠를 엔진에 합치지 못했습니다.", this.now());
     }
-    return this.sourceCapabilities(rig);
+    return readRigSourceCapabilities(rig);
   }
 
   /** partId를 키로 캐시한 밑색·ID 패스 재질을 해제한다(다음 캡처에서 파츠에 맞게 다시 만든다). */
@@ -579,18 +588,17 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     this.beta.syncIblShadows();
   }
 
-  setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
     return this.sceneProps.setHandProp(attachment);
   }
 
-  setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
+  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
     return this.sceneProps.setHeadProp(attachment);
   }
 
-  setStageProp(attachment: StagePropAttachment | null): Promise<void> {
+  async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
     return this.sceneProps.setStageProp(attachment);
   }
-
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
     const rig = this.requireRig("apply-plan-no-source", "플랜을 적용할 캐릭터 소스가 없습니다. loadSource 뒤에 호출하세요.");
@@ -1023,11 +1031,37 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   jointHandles(): readonly JointDragHandle[] {
     const rig = this.rig;
     if (this.disposed || !rig) return [];
-    return projectRigJointHandles(rig, this.character.camera, this.engine);
+    const camera = this.character.camera;
+    const width = this.engine.getRenderWidth();
+    const height = this.engine.getRenderHeight();
+    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
+    const viewport = new Viewport(0, 0, width, height);
+    const handles: JointDragHandle[] = [];
+    for (const [bone, rb] of rig.humanoid) {
+      const world = rigBoneWorld(rb).position;
+      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
+      handles.push({ bone, screen: [projected.x, projected.y], world });
+    }
+    return handles;
   }
 
   viewportCamera(): ViewportCameraInfo {
-    return inspectViewportCamera(this.character.camera, this.engine);
+    const camera = this.character.camera;
+    // 위치는 구면 좌표에서 직접 계산한다(ArcRotateCamera의 globalPosition은 다음 렌더 전까지 이전 값일 수 있다).
+    const target = fromVector3(camera.target);
+    const sinBeta = Math.sin(camera.beta);
+    const position: Vec3 = [
+      target[0] + camera.radius * Math.cos(camera.alpha) * sinBeta,
+      target[1] + camera.radius * Math.cos(camera.beta),
+      target[2] + camera.radius * Math.sin(camera.alpha) * sinBeta,
+    ];
+    const direction = v3Sub(target, position);
+    const forward: Vec3 = v3Length(direction) < 1e-9 ? [0, 0, -1] : v3Normalize(direction);
+    // 우수 좌표 카메라 기저: right = forward × worldUp (forward가 world up과 평행이면 +X로 대체), up = right × forward
+    const crossUp = v3Cross(forward, [0, 1, 0]);
+    const right: Vec3 = v3Length(crossUp) < 1e-6 ? [1, 0, 0] : v3Normalize(crossUp);
+    const up: Vec3 = v3Cross(right, forward);
+    return { position, forward, right, up, fovY: camera.fov, width: this.engine.getRenderWidth(), height: this.engine.getRenderHeight() };
   }
 
   /** 관절 드래그·IK용 포즈 프레임 스켈레톤(휴머노이드 이름, 포즈 규약별 rest). 본이 없으면 null. */
@@ -1037,12 +1071,17 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   /** 본의 현재 월드 변환·로컬 회전(진단·테스트). 이름은 소스 이름 또는 휴머노이드 이름. */
   readBone(name: string): BoneReading | null {
-    return readRigBone(this.rig, name);
+    const rig = this.rig;
+    if (!rig) return null;
+    const rb = rig.bones.get(name) ?? (isHumanoidBoneName(name) ? rig.humanoid.get(name) : undefined);
+    if (!rb) return null;
+    const world = rigBoneWorld(rb);
+    return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
   }
 
   /** 부위별 페인트 텍스처 점검(크기·revision·invertY·decal 연결). 텍스처가 없으면 빈 배열. */
   inspectPaint(): readonly PaintInspection[] {
-    return inspectRigPaint(this.rig, this.paintTextures);
+    return readPaintInspection(this.rig, this.paintTextures);
   }
 
   /** 장면 설정 평문 보고(우수 좌표·clear 알파·톤맵·광원·그림자 생성기 등). Babylon 객체는 노출하지 않는다. */
@@ -1114,68 +1153,30 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   readHud(): HudSample {
-    const scene = this.character.scene;
-    const adapter = this.diagnostics.adapter;
-    const adapterLabel = this.lane === "null" ? "NullEngine" : [adapter?.vendor, adapter?.device ?? adapter?.description].filter((value): value is string => Boolean(value)).join(" ") || (this.diagnostics.renderer ?? "어댑터 정보 없음");
-    return {
-      frameMs: this.frameStats.last(),
-      frameMsP95: this.frameStats.p95(),
-      gpuFrameMs: this.hud.gpuFrameMs(),
-      drawCalls: this.hud.drawCalls(),
-      activeMeshes: scene.getActiveMeshes().length,
-      triangles: Math.floor(scene.getActiveIndices() / 3),
+    return readEngineHud({
+      scene: this.character.scene,
+      diagnostics: this.diagnostics,
+      lane: this.lane,
+      frameStats: this.frameStats,
+      hud: this.hud,
       backend: this.backend,
-      adapterLabel,
-      physicsProvider: this.physics.currentId(),
-      shadingMode: this.shading.mode,
-    };
+      physics: this.physics,
+      shading: this.shading,
+    });
   }
 
   sceneFeatures(): FullSceneFeatureReport {
-    const post = this.postfx.states();
-    const rig = this.rig;
-    const caps = this.engine.getCaps();
-    const managers = rig
-      ? rig.parts.flatMap((part) =>
-          part.meshes.flatMap((mesh) => {
-            const manager = mesh.morphTargetManager;
-            return manager
-              ? [{ name: mesh.name, targetCount: manager.numTargets, vertexCount: mesh.getTotalVertices(), supportsNormals: manager.supportsNormals, usingTexture: manager.isUsingTextureForTargets, activeTargets: activeMorphTargets(manager) }]
-              : [];
-          }),
-        )
-      : [];
-    const morphTexture = describeMorphTextureMode(managers, { maxTextureSize: caps.maxTextureSize, maxArrayLayers: caps.texture2DArrayMaxLayerCount }, rig ? "morph 타깃이 있는 파츠가 없습니다." : "소스가 없습니다.");
-    const boneTexture = !rig?.skeleton ? featureOff(rig ? "스켈레톤이 없습니다." : "소스가 없습니다.") : rig.skeleton.isUsingTextureForMatrices ? featureActive(`${rig.skeleton.bones.length}본`) : featureUnavailable("엔진이 본 행렬 텍스처를 지원하지 않아 uniform 배열 모드로 동작합니다.");
-    const base = createFeatureReport({
-      cascadedShadows: this.character.shadowState(),
-      subsurfaceScattering: this.character.sssState(),
-      imageBasedLighting: this.shading.ibl.enabled ? this.ibl.state : featureOff("프로파일에서 IBL을 껐습니다."),
-      taa: post.taa,
-      ssao: post.ssao,
-      msaa: post.msaa,
-      gpuTimer: this.hud.gpuTimerState(),
-      morphTextureMode: morphTexture,
-      boneTextureMode: boneTexture,
+    return readEngineFeatures({
+      postfx: this.postfx,
+      rig: this.rig,
+      engine: this.engine,
+      character: this.character,
+      shading: this.shading,
+      ibl: this.ibl,
+      hud: this.hud,
+      beta: this.beta,
+      lastGlbReport: this.lastGlbReport,
     });
-    return { ...base, ...this.beta.report(), jointOffsets: this.jointOffsetState(), glbMorphSparse: this.glbSparseState() };
-  }
-
-  private jointOffsetState(): SceneFeatureState {
-    const rig = this.rig;
-    if (!rig) return featureOff("소스가 없습니다.");
-    const binding = rig.jointOffsets;
-    if (!binding) return featureOff(rig.kind === "package" ? "제작 패키지에는 체형 morph 관절 오프셋이 없습니다." : "이 소스는 관절 오프셋을 주지 않아 morph만 정점에 반영됩니다.");
-    const summary = summarizeJointOffsets(binding.table);
-    const applied = binding.snapshot().size;
-    return featureActive(`morph ${summary.morphCount}개 · 관절 ${summary.boneCount}개 · 최대 ${(summary.maxOffsetM * 1000).toFixed(0)} mm · 지금 ${applied}개 본이 옮겨짐(역바인드 재생성)`);
-  }
-
-  private glbSparseState(): SceneFeatureState {
-    const report = this.lastGlbReport;
-    if (!report) return featureActive("내보낼 때마다 변경량 0 정점의 morph를 sparse accessor로 정리합니다(아직 내보내지 않음).");
-    if (report.unchanged) return report.morphAccessors === 0 ? featureOff("마지막 내보내기: morph target가 없어 정리할 것이 없습니다.") : featureUnavailable(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
-    return featureActive(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
   }
 
   betaFeatures(): BetaFeatureReport {

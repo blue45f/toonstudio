@@ -11,12 +11,14 @@
  */
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 
-import { sameOffset, sumJointOffsets } from "../joint-offsets";
+import { sameOffset, sumJointOffsets, summarizeJointOffsets } from "../joint-offsets";
+import { featureActive, featureOff } from "../scene-features";
 
 import { toQuaternion } from "./convert";
 
-import type { RigBone } from "./character-rig";
+import type { CharacterRig, RigBone } from "./character-rig";
 import type { MorphJointOffsets, Vec3 } from "../../contracts";
+import type { SceneFeatureState } from "../scene-features";
 import type { Skeleton } from "@babylonjs/core/Bones/skeleton.js";
 
 export interface JointOffsetRig {
@@ -37,6 +39,16 @@ export interface JointOffsetDeps {
   readonly skeleton: Skeleton | null;
   /** 이 이름의 morph가 리그에 있는지(없으면 정점이 안 움직이므로 본도 움직이지 않는다) */
   readonly morphAvailable: (morphName: string) => boolean;
+}
+
+/** 리그의 현재 관절 오프셋 상태를 장면 기능 보고로 요약한다. */
+export function readJointOffsetState(rig: Pick<CharacterRig, "kind" | "jointOffsets"> | null): SceneFeatureState {
+  if (!rig) return featureOff("소스가 없습니다.");
+  const binding = rig.jointOffsets;
+  if (!binding) return featureOff(rig.kind === "package" ? "제작 패키지에는 체형 morph 관절 오프셋이 없습니다." : "이 소스는 관절 오프셋을 주지 않아 morph만 정점에 반영됩니다.");
+  const summary = summarizeJointOffsets(binding.table);
+  const applied = binding.snapshot().size;
+  return featureActive(`morph ${summary.morphCount}개 · 관절 ${summary.boneCount}개 · 최대 ${(summary.maxOffsetM * 1000).toFixed(0)} mm · 지금 ${applied}개 본이 옮겨짐(역바인드 재생성)`);
 }
 
 /** 오프셋 표가 비어 있으면(오프셋이 있는 morph가 없으면) null — 소비할 것이 없다. */
