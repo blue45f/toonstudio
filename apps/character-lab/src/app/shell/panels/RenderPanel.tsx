@@ -22,46 +22,19 @@ import {
   isMaterialSurfacePresetActive,
   summarizeActiveMaterialAndShadowKo,
 } from "./render-material-lighting-presets";
+import {
+  CASCADE_CHOICES, DEFAULT_RENDER_POLL_MS, OUTLINE_LABELS_KO, QUALITY_IDS, RAMP_CHOICES, TONE_LABELS_KO,
+  describeBetaState, failureMessage, isOutline, isToneMapping,
+} from "./render-panel-helpers";
 import { hudRows } from "./viewport-interactions";
 
-import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
-import type { BetaFeatureId, BetaFeatureReport, BetaFeatureState } from "../../../render/beta-features";
+import type { RenderPanelProps } from "./render-panel-helpers";
+import type { HudSample, ShadingProfile } from "../../../contracts";
+import type { BetaFeatureId, BetaFeatureReport } from "../../../render/beta-features";
 import type { SceneFeatureReport } from "../../../render/scene-features";
 import type { ChangeEvent } from "react";
 
-export interface RenderPanelProps {
-  /** HUD·기능 보고 갱신 주기(ms). 0 이하면 한 번만 읽는다. */
-  readonly pollIntervalMs?: number;
-}
-
-export const DEFAULT_RENDER_POLL_MS = 500;
-
-const QUALITY_IDS: readonly QualityPresetId[] = ["preview", "standard", "hero"];
-const TONE_LABELS_KO: Readonly<Record<ToneMapping, string>> = { "khr-pbr-neutral": "KHR PBR Neutral(기본)", aces: "ACES", none: "없음" };
-const OUTLINE_LABELS_KO = { none: "없음", hull: "외곽 셸(hull)", edge: "엣지 검출" } as const;
-const CASCADE_CHOICES = [1, 2, 3, 4] as const;
-const RAMP_CHOICES = [2, 3, 4] as const;
-
-function isToneMapping(value: string): value is ToneMapping {
-  return (TONE_MAPPINGS as readonly string[]).includes(value);
-}
-
-function isOutline(value: string): value is ShadingProfile["toon"]["outline"] {
-  return value === "none" || value === "hull" || value === "edge";
-}
-
-/** 베타 항목 한 줄 상태(한글). 요청했지만 지금은 적용되지 않는 경우(모드 불일치 등)는 오류가 아니라 '대기'다. */
-export function describeBetaState(state: BetaFeatureState): string {
-  if (state.status === "active") return state.detail ? `활성 — ${state.detail}` : "활성";
-  if (state.status === "unavailable") return `사용 불가 — ${state.reasonKo ?? "사유 없음"}`;
-  if (state.requested) return `대기 — ${state.reasonKo ?? "지금은 적용되지 않습니다."}`;
-  return state.reasonKo ? `꺼짐 — ${state.reasonKo}` : "꺼짐";
-}
-
-function failureMessage(error: unknown): string {
-  if (typeof error === "object" && error !== null && "reasonKo" in error && typeof (error as { reasonKo: unknown }).reasonKo === "string") return (error as { reasonKo: string }).reasonKo;
-  return error instanceof Error ? error.message : "알 수 없는 오류";
-}
+export { DEFAULT_RENDER_POLL_MS, describeBetaState, type RenderPanelProps } from "./render-panel-helpers";
 
 export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderPanelProps) {
   const state = useLabState();

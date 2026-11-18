@@ -37,8 +37,9 @@ import {
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
-import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { ControlPointDragSession, DragSession } from "./viewport-drag-types";
+import type { JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -59,32 +60,6 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
 const FILL: CSSProperties = { position: "absolute", inset: 0 };
 const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
-interface DragSession {
-  readonly pointerId: number;
-  readonly target: SVGCircleElement;
-  readonly engine: CharacterEngine;
-  readonly skeleton: SkeletonData;
-  readonly handle: JointDragHandle;
-  readonly pivot: DragPivot;
-  readonly startPose: Pose;
-  readonly startPixel: readonly [number, number];
-  readonly basePlan: ApplyPlan | null;
-  readonly mode: ShaperGizmoMode;
-  readonly baseBody: ParamValues<BodyParamKey>;
-  outcome: JointDragOutcome | null;
-  ikOutcome: { readonly pose: Pose; readonly labelKo: string } | null;
-  scaleOutcome: { readonly key: BodyParamKey; readonly value: number; readonly labelKo: string } | null;
-}
-
-interface ControlPointDragSession {
-  readonly pointerId: number;
-  readonly target: SVGCircleElement;
-  readonly controlPoint: ShaperProjectedControlPoint;
-  readonly startPixel: readonly [number, number];
-  readonly baseFace: ParamValues<FaceParamKey>;
-  readonly baseBody: ParamValues<BodyParamKey>;
-  changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
-}
 
 function failureText(error: unknown, fallback: string): string {
   return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
