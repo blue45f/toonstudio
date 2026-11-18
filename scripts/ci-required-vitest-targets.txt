@@ -9,6 +9,7 @@ apps/api/src/modules/admin/admin-traffic.service.test.ts
 apps/api/src/modules/auth/anonymous-client-limit.test.ts
 apps/api/src/modules/auth/auth-client-ip.test.ts
 apps/api/src/modules/business-inquiry/business-inquiry.rate-limit.test.ts
+apps/api/src/modules/business-plan/business-plan.integration.test.ts
 apps/api/src/modules/business-plan/business-plan.test.ts
 apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts

@@ -263,6 +263,24 @@ test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드�
     "opt-in PostgreSQL 비교는 비DB shard에서 실행하지 않는다");
 });
 
+test("사업계획서 저장 회귀는 DB 없는 shard에서 제외하고 필수 PostgreSQL 작업에서 실행한다", () => {
+  const integration = "apps/api/src/modules/business-plan/business-plan.integration.test.ts";
+  const unit = "apps/api/src/modules/business-plan/business-plan.test.ts";
+  const product = expandGlobTargets(executionTargetsByShard().product);
+  const resolved = resolveRequiredTargets(product);
+  assert.ok(resolved.includes(unit));
+  assert.ok(resolved.includes(integration));
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration));
+  const args = buildShardVitestArgs(product);
+  const excluded = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  assert.ok(excluded.includes(integration), "DB 없는 실행에서 skip 성공으로 처리할 수 없습니다.");
+  assert.ok(!excluded.includes(unit));
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/\n {2}database:\n([\s\S]*?)\n {2}core:/u)?.[1];
+  assert.ok(database, "필수 PostgreSQL 작업을 찾을 수 없습니다.");
+  assert.equal(database.split(integration).length - 1, 1, "필수 DB 작업에서 사업계획서 회귀를 정확히 한 번 실행해야 합니다.");
+});
+
 test("directory targets remove redundant child execution without reducing coverage", () => {
   const input = [
     "apps/web/src/domains/creator/export",
