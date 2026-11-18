@@ -26,10 +26,8 @@ interface UseStudioPreferencesRuntimeOptions {
   readonly launchSearch: string;
   readonly taskWorkspace?: StudioDocumentWorkspaceId | null;
   /**
-   * Current episode pipeline stage, when the host knows one. The host passes
-   * the episode-pipeline-rail derivation verbatim — no new derivation is made
-   * here. Null means "no stage source": the saved mode then applies as-is and
-   * no suggestion is produced.
+   * 호스트가 전달한 episode-pipeline-rail 단계 값을 재계산 없이 사용한다.
+   * null이면 저장된 작업 모드를 그대로 적용하고 작업 모드를 제안하지 않는다.
    */
   readonly episodeStage?: string | null;
   readonly applyMirroredSettings: (settings: StudioAppSettings) => void;
