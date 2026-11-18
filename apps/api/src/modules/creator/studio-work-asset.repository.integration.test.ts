@@ -232,7 +232,7 @@ describeWithDirectPostgres(
         await owner.query(`GRANT USAGE ON SCHEMA public TO "${role}";
           GRANT SELECT ON TABLE public."user",public.creator_work,public.creator_draft_collaboration_room,
             public.creator_work_scoped_write_policy,public.creator_work_asset,public.creator_work_asset_tombstone,
-            public.creator_work_raster_asset TO "${role}";
+            public.creator_work_raster_asset,public.studio_work_vrm_cut TO "${role}";
           GRANT UPDATE (name) ON TABLE public."user" TO "${role}";
           GRANT UPDATE ("updatedAt") ON TABLE public.creator_work,public.creator_draft_collaboration_room TO "${role}";
           GRANT INSERT ON TABLE public.creator_work_asset TO "${role}";`);
