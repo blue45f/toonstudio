@@ -20,6 +20,7 @@ on:
       - e2e/studio-qa-ux-followup.spec.mts
       - e2e/helpers/studio-react-fixture.mts
       - e2e/helpers/studio-bg3d-production-workflow.ts
+      - e2e/helpers/studio-bg3d-rotation-ring.ts
       - e2e/studio-3d-visual-verification.spec.ts
       - e2e/studio-bg3d-production-rotation.runtime.ts
       - e2e/studio-bg3d-compositor-sampler.ts
@@ -33,6 +34,7 @@ on:
       - apps/web/src/domains/creator/canvas/studio-canvas-notice-placement.*
       - apps/web/src/domains/creator/bg3d/studio-bg3d-mobile-workspace.css
       - apps/web/src/domains/creator/bg3d/StudioBg3dEditorViewport.tsx
+      - apps/web/src/domains/creator/bg3d/StudioBg3dAttachedTransformControls.*
       - apps/web/src/domains/creator/bg3d/studio-bg3d-prosuite-hint.ts
       - apps/web/src/domains/creator/studio-workspace-route.*
       - apps/web/src/domains/creator/studio-router/studio-route-manifest.ts
@@ -47,10 +49,13 @@ on:
       - scripts/lib/studio-shell-interactions.ts
       - scripts/lib/studio-shell-readiness.test.ts
       - scripts/lib/studio-preview-navigation-settlement.*
+      - scripts/lib/studio-companion-request-timeline.*
       - scripts/lib/studio-autosave-opfs-diagnostics.ts
       - scripts/lib/studio-artist-transparent-wash-evidence.ts
       - scripts/lib/studio-brush-latency-eraser-fixture.*
       - scripts/lib/studio-brush-first-contact-diagnostics.*
+      - scripts/lib/studio-bg3d-rotation-ring.*
+      - scripts/fixtures/studio-bg3d-y-ring-698x743.json
       - scripts/lib/studio-primary-color-interactions.ts
       - scripts/lib/studio-brush-catalog-interactions.ts
       - scripts/lib/studio-tool-interactions.ts

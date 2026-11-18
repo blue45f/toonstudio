@@ -1417,11 +1417,11 @@ async function runMobileDockLayout(
   );
 
   let historyFocusReady = true;
-  for (const label of ["실행취소", "다시실행"] as const) {
+  for (const action of ["undo", "redo"] as const) {
     // Fresh documents expose the disabled-reason coach wrapper as the keyboard target while the
-    // native button is aria-hidden. Locate that wrapper through its stable child command label.
+    // native button is aria-hidden. Locate that wrapper through its stable child command identity.
     const target = primary.locator(
-      `[data-studio-tool-hint-target="true"]:has(> button[aria-label="${label}"])`,
+      `[data-studio-tool-hint-target="true"]:has(> button[data-studio-primary-action="${action}"])`,
     );
     await revealOverflowTarget(target);
     await target.focus();

@@ -2192,9 +2192,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       for (const point of points.slice(1)) await page.mouse.move(point.x, point.y);
       await page.mouse.up();
       if (mobile) {
-        const toolsToggle = page.locator('[data-studio-mobile-workspace-toggle="true"]');
-        if (await toolsToggle.getAttribute("aria-expanded") !== "true") await toolsToggle.click();
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 1);
@@ -2205,7 +2202,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       }
       await page.keyboard.press("Meta+z");
       if (mobile) {
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 0);
@@ -2215,7 +2211,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       }
       await page.keyboard.press("Meta+Shift+z");
       if (mobile) {
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 1);

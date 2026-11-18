@@ -1538,8 +1538,8 @@ async function runVerticalSlice(
   }, undefined, { timeout: 12_000 });
   const assetId = await stats.getAttribute("data-active");
   if (!assetId || assetId === "none") block("primitive-identity", "Created cube has no stable asset ID");
-  const outlinerIdentity = panel.locator('[data-studio-hybrid-dcc-outliner="true"] button')
-    .filter({ hasText: assetId }).first();
+  const outlinerIdentity = panel.locator('[data-studio-hybrid-dcc-outliner="true"]')
+    .getByRole("button", { name: `${assetId} 숨기기`, exact: true });
   const selectionSummary = panel.locator(
     '[data-studio-hybrid-dcc-component-selection-summary="true"]',
   );

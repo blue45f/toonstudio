@@ -5,30 +5,31 @@
  * NullEngine 캡처는 synthetic=true·backend=null이며 실제 셰이더·readback 검증은 브라우저 프로브가 맡는다.
  */
 import { Constants } from "@babylonjs/core/Engines/constants.js";
+import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
-import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
-import { v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
+import { qConjugate, qMultiply, qRotateVec3, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
 import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
-import { generateFaceSdf } from "../face-sdf";
+import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
 import { createKitBytesCache } from "../kit-bytes-cache";
+import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
+import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
+import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "./character-engine-constants";
 import { CharacterOutlineController } from "./character-outline-controller";
-import { applyRigPlan, computeRigBounds, inspectRig, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
-import { fromQuaternion, fromVector3, toVector3 } from "./convert";
+import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
+import { fromQuaternion, fromVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
-import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
+import { readEngineFeatures, readEngineHud, readPaintInspection, readRigJointHandles, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
@@ -42,12 +43,10 @@ import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
-import { rigPartAlbedoTexture, rigPartAlphaCutoff, rigPartHasAlbedoTexture, rigPartOpenPbrParams, rigToonValues, usesRigVertexColor } from "./rig-material-values";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
-import type { BabylonCharacterEngineDeps, BoneReading } from "./character-engine-types";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
@@ -69,11 +68,14 @@ import type {
   StagePropAttachment,
   JointDragHandle,
   KitPlan,
+  LabFailure,
   PaintLayer,
   PartRole,
+  PhysicsProviderFactory,
   PhysicsProviderId,
   PhysicsStatus,
   CharacterPickOptions, PickHit,
+  Quat,
   SettleReceipt,
   ShadingProfile,
   SkeletonData,
@@ -83,8 +85,9 @@ import type {
 } from "../../contracts";
 import type { BetaFeaturePort, BetaFeatureId, BetaFeatureReport, BetaFeatureState, FullSceneFeatureReport } from "../beta-features";
 import type { SparseMorphReport } from "../glb-sparse-morph";
+import type { OpenPbrParams } from "../openpbr-mapping";
 import type { ProjectionPaintHost, ProjectionPaintPort } from "../projection-paint";
-import type { BetaController } from "./beta-controller";
+import type { BetaController, BetaLoaders } from "./beta-controller";
 import type { MaterialFactoryOptions } from "./materials/material-factory";
 import type { NodeToonTextures } from "./materials/node-toon-material";
 import type { ToonUniformValues } from "./materials/toon-shader";
@@ -97,11 +100,69 @@ import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camer
 import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
+import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-export { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "./character-engine-constants";
 export type { ReadbackLane } from "../readback";
-export type { BabylonCharacterEngineDeps, BoneReading } from "./character-engine-types";
+
+/**
+ * 썸네일 임시 리그 전용 레이어 마스크. 메인 카메라(기본 0x0fffffff)가 그리지 않으므로 캡처 중 비동기 구간에도
+ * 뷰포트에 임시 리그가 보이지 않는다. 캡처 RTT는 `renderList`를 쓰므로 레이어 마스크를 검사하지 않는다.
+ */
+export const THUMBNAIL_LAYER_MASK = 0x10000000;
+
+/** 얼굴 SDF 임계 맵 해상도 */
+export const FACE_SDF_SIZE = 128;
+/** 툰 외곽선(hull) 폭(월드 단위, m) */
+export const TOON_OUTLINE_WIDTH = 0.004;
+/** 엣지 외곽선 각도 임계(cos) */
+export const TOON_EDGE_EPSILON = 0.95;
+
+/** `readBone` 결과 */
+export interface BoneReading {
+  readonly name: string;
+  readonly humanoid: string | null;
+  readonly position: Vec3;
+  readonly rotation: Quat;
+  readonly localRotation: Quat;
+  readonly auxiliary: boolean;
+}
+
+export interface BabylonCharacterEngineDeps {
+  /** 이미 초기화된 Babylon 엔진(WebGPUEngine·Engine·NullEngine) */
+  readonly engine: AbstractEngine;
+  readonly lane: ReadbackLane;
+  readonly diagnostics: EngineDiagnostics;
+  readonly physicsProviders: PhysicsProviderFactory;
+  /** 제작 패키지 GLB 바이트 로더. 기본은 `fetch`(브라우저). 테스트는 node:fs로 주입한다. */
+  readonly fetchBytes?: (url: string) => Promise<Uint8Array>;
+  /** 패키지 SHA-256을 플랜과 대조한다(기본 true). */
+  readonly verifyPackageSha?: boolean;
+  /** 캡처 전에 패스 셰이더 컴파일을 기다릴지(기본: lane !== "null"). NullEngine은 컴파일하지 않으므로 하네스가 끈다. */
+  readonly awaitShaderCompile?: boolean;
+  /** `engine.runRenderLoop` 구동 여부(기본: lane !== "null") */
+  readonly runRenderLoop?: boolean;
+  /** 엔진 핸들 해제(기본 engine.dispose) */
+  readonly disposeEngine?: () => void;
+  readonly now?: () => number;
+  /**
+   * IBL 생성기(기본 `createProceduralIbl`). **엔진의 실제 장면**을 받는다 — IBL 큐브 텍스처는 만든 장면의 소유라 장면이 해제되면 같이 파괴된다.
+   * (이전에는 임시 프로브 장면에 만들어 해제하는 바람에 환경 텍스처가 죽은 채 남아 모든 PBR 재질이 영원히 isReady=false가 됐다 — 브라우저 실측.)
+   * 테스트가 장면 소유권을 검증하려고 주입한다.
+   */
+  readonly createIbl?: (scene: Scene) => Promise<ProceduralIbl>;
+  /** 베타 무거운 모듈 로더(기본: 동적 import). 테스트가 가짜 IBL 파이프라인·실패 경로를 주입한다. */
+  readonly betaLoaders?: BetaLoaders;
+  /** 베타 재질 준비 대기 상한(ms) 덮어쓰기. 기본은 GPU 레인 90초·NullEngine 0(기다리지 않음). 테스트가 시간 초과 경로를 짧게 검증한다. */
+  readonly betaMaterialReadyTimeoutMs?: number;
+  /** 캡처 셰이더 컴파일 대기 상한(ms) 덮어쓰기. 기본 90초. 테스트가 `capture-shader-timeout` 경로를 짧게 검증한다. */
+  readonly captureCompileTimeoutMs?: number;
+  /**
+   * 엔진을 계속 쓸 수 있는 비치명 실패를 앱에 알린다(프레임 중 물리 스텝 오류, 소스를 올린 뒤 물리 provider가 새 체인을 거부).
+   * 앱 팩토리는 `EngineFactoryOptions.onFailure`를 넘긴다. 없으면 물리 브리지 상태(`unavailable`)에만 남는다.
+   */
+  readonly onFailure?: (failure: LabFailure) => void;
+}
 
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
   readonly backend: EngineBackend;
@@ -203,7 +264,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       rig: () => this.rig,
       toonParams: (part, rig) => this.toonValues(part, rig),
       toonTextures: (part) => this.toonTextures(part),
-      openPbrParams: (part) => rigPartOpenPbrParams(part, this.character.sssAvailable),
+      openPbrParams: (part) => this.openPbrParams(part),
       openPbrAlbedoTexture: (part) => (part.hasAlbedoTexture ? part.pbr.albedoTexture : this.maskedParts.has(part) ? this.mouthMask : null),
       materialsChanged: () => {
         this.applyMaterialsForMode(this.rig);
@@ -636,11 +697,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   private ensureToonMaterial(part: RigPart, rig: CharacterRig): ShaderMaterial {
     if (!part.toon) {
-      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: usesRigVertexColor(part, rig) });
+      part.toon = createPassMaterial({ scene: this.character.scene, language: shaderLanguageFor(this.engine) }, "toon", `toon:${part.id}`, { vertexColor: this.usesVertexColor(part, rig) });
       part.toon.backFaceCulling = part.pbr.backFaceCulling;
     }
     setToonUniforms(part.toon, this.toonValues(part, rig));
-    setAlphaCutoff(part.toon, rigPartAlphaCutoff(part));
+    setAlphaCutoff(part.toon, this.alphaCutoffOf(part));
     setToonTextures(part.toon, this.toonTextures(part));
     return part.toon;
   }
@@ -657,8 +718,34 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const part of rig.parts) this.pushToon(part, rig);
   }
 
+  /**
+   * 툰·밑색 패스가 메시의 정점 색(`COLOR_0`)을 알베도에 곱할지. 키트 파츠만이다: 키트의 `COLOR_0`은 계약상 회색 AO(R=G=B)다.
+   * 제작 패키지(Orion: 채널마다 다른 v0 의미)와 절차 소스는 툰이 정점 색을 읽지 않던 기존 거동을 그대로 둔다(PBR은 이미 곱한다).
+   */
+  private usesVertexColor(part: RigPart, rig: CharacterRig | null): boolean {
+    return isKitPart(rig, part) && partHasVertexColors(part);
+  }
+
+  /**
+   * 알베도 텍스처 알파 컷오프. glTF `alphaMode: MASK`(키트의 눈썹·속눈썹)로 올라온 재질은 로더가 PBR을 알파 테스트(`alphaCutOff`)로 둔다 —
+   * 툰·밑색 ShaderMaterial은 알파를 쓰지 않아 컷아웃 카드가 불투명하게 그려지므로 같은 컷오프로 버린다. 알베도 텍스처가 없거나 알파 테스트가 아니면 0(끔)이다.
+   */
+  private alphaCutoffOf(part: RigPart): number {
+    return part.hasAlbedoTexture && part.pbr.transparencyMode === Material.MATERIAL_ALPHATEST ? part.pbr.alphaCutOff : 0;
+  }
+
   private toonTextures(part: RigPart): NodeToonTextures {
-    return { albedo: rigPartAlbedoTexture(part, this.maskedParts.has(part), this.mouthMask, this.whiteTexture), paint: this.paintTextures.get(part.role) ?? this.clearTexture, sdf: this.sdfTexture };
+    return { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture, sdf: this.sdfTexture };
+  }
+
+  /** 패키지 알베도가 있거나 입 안 마스크를 쓰는 파츠(툰·flat 패스가 알베도 샘플을 곱한다) */
+  private usesAlbedoTexture(part: RigPart): boolean {
+    return part.hasAlbedoTexture || this.maskedParts.has(part);
+  }
+
+  private albedoTexture(part: RigPart): BaseTexture {
+    if (part.hasAlbedoTexture && part.pbr.albedoTexture) return part.pbr.albedoTexture;
+    return this.maskedParts.has(part) ? this.mouthMask : this.whiteTexture;
   }
 
   /**
@@ -674,11 +761,61 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
   }
 
+  private openPbrParams(part: RigPart): OpenPbrParams {
+    // 키트 틴트 파츠는 텍스처가 있어도 색(= 틴트)을 곱한다.
+    const albedo: readonly [number, number, number] = part.hasAlbedoTexture && part.tint === undefined ? [1, 1, 1] : hexToLinear(part.colorHex);
+    return mapPresetToOpenPbr(MATERIAL_PRESETS[part.materialPreset], albedo, { sssAvailable: this.character.sssAvailable });
+  }
+
+  /** 머리 본의 rest 대비 회전으로 얼굴 forward(+Z)·right(+X)를 구한다(패키지의 비항등 rest도 동일). */
+  private headAxes(rig: CharacterRig | null): { readonly forward: Vec3; readonly right: Vec3 } {
+    const head = rig?.humanoid.get("head");
+    if (!head) return { forward: [0, 0, 1], right: [1, 0, 0] };
+    const delta = qMultiply(rigBoneWorld(head).rotation, qConjugate(head.restWorld));
+    return { forward: qRotateVec3(delta, [0, 0, 1]), right: qRotateVec3(delta, [1, 0, 0]) };
+  }
+
   private toonValues(part: RigPart, rig: CharacterRig | null): ToonUniformValues {
-    return rigToonValues(part, rig, {
-      shading: this.shading, character: this.character, averageColor: this.ibl.averageColor,
-      hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: rigPartHasAlbedoTexture(part, this.maskedParts.has(part)),
-    });
+    const toon = this.shading.toon;
+    const ibl = this.shading.ibl;
+    const key = this.character.keyLight;
+    const lightScale = Math.min(1, key.intensity / 2.4);
+    const ambientScale = (ibl.enabled ? ibl.intensity : 0) * 0.5 + this.character.fillLight.intensity * 0.5;
+    const average = this.ibl.averageColor;
+    const axes = this.headAxes(rig);
+    const face = faceSdfUniforms(axes.forward, axes.right, this.character.sunDirection);
+    // 얼굴 SDF 그림자는 절차 머리의 정면 대칭 UV를 전제로 한 해석 맵이다. 키트 머리 UV(HBM 재전개)에는 맞지 않아 키트(v1)는 N·L 램프로 음영한다.
+    const useFaceSdf = toon.faceSdfShadow && part.role === "head" && !isKitPart(rig, part);
+    // 광원 + 환경의 합이 1을 넘으면 밝은 알베도가 흰색으로 날아가므로 같은 비율로 정규화한다(툰 색에는 톤맵이 없다).
+    const lighting = normalizeToonLighting(
+      [key.diffuse.r * lightScale, key.diffuse.g * lightScale, key.diffuse.b * lightScale],
+      [Math.min(1, average[0] * ambientScale), Math.min(1, average[1] * ambientScale), Math.min(1, average[2] * ambientScale)],
+    );
+    const look = this.shading.look;
+    return {
+      baseColor: srgb(part.colorHex),
+      shadeTint: toonShadeTint(part.role),
+      lightColor: lighting.light,
+      ambientColor: lighting.ambient,
+      toLight: this.character.sunDirection,
+      rimColor: [0.35, 0.35, 0.4],
+      rampSteps: toon.rampSteps,
+      rim: toon.rim,
+      faceSdf: useFaceSdf,
+      hasPaint: this.paintTextures.get(part.role) !== null,
+      faceThreshold: face.threshold,
+      flipU: face.flipU,
+      sdfOffset: 0,
+      hasAlbedo: this.usesAlbedoTexture(part),
+      mangaToneKind: look.tone.kind,
+      mangaToneStrength: look.tone.strength,
+      mangaCellPerHead: look.tone.cellPerHead,
+      mangaAngleDeg: look.tone.angleDeg,
+      mangaInk: look.tone.ink,
+      gradeSaturation: look.grade.saturation,
+      gradeLightness: look.grade.lightness,
+      rampSoftness: look.ramp.softness,
+    };
   }
 
   private materialOptions(): MaterialFactoryOptions {
@@ -707,7 +844,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         this.beta.updateOpenPbr(part);
         if (!trackFlatPass) return;
         const flat = this.flatMaterials.get(part.partId);
-        if (flat) setFlatUniforms(flat, { baseColor: srgb(hex), hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: rigPartHasAlbedoTexture(part, this.maskedParts.has(part)) });
+        if (flat) setFlatUniforms(flat, { baseColor: srgb(hex), hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: this.usesAlbedoTexture(part) });
       },
     };
   }
@@ -858,13 +995,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       flat: (part) => {
         let material = this.flatMaterials.get(part.partId);
         if (!material) {
-          material = createPassMaterial(deps, "flat", `flat:${part.id}`, { vertexColor: usesRigVertexColor(part, this.rig) });
+          material = createPassMaterial(deps, "flat", `flat:${part.id}`, { vertexColor: this.usesVertexColor(part, this.rig) });
           this.flatMaterials.set(part.partId, material);
         }
         material.backFaceCulling = part.pbr.backFaceCulling;
-        setFlatUniforms(material, { baseColor: srgb(part.colorHex), hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: rigPartHasAlbedoTexture(part, this.maskedParts.has(part)) });
-        setAlphaCutoff(material, rigPartAlphaCutoff(part));
-        setFlatTextures(material, { albedo: rigPartAlbedoTexture(part, this.maskedParts.has(part), this.mouthMask, this.whiteTexture), paint: this.paintTextures.get(part.role) ?? this.clearTexture });
+        setFlatUniforms(material, { baseColor: srgb(part.colorHex), hasPaint: this.paintTextures.get(part.role) !== null, hasAlbedo: this.usesAlbedoTexture(part) });
+        setAlphaCutoff(material, this.alphaCutoffOf(part));
+        setFlatTextures(material, { albedo: this.albedoTexture(part), paint: this.paintTextures.get(part.role) ?? this.clearTexture });
         return material;
       },
       id: (part) => {
@@ -898,18 +1035,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   jointHandles(): readonly JointDragHandle[] {
     const rig = this.rig;
     if (this.disposed || !rig) return [];
-    const camera = this.character.camera;
-    const width = this.engine.getRenderWidth();
-    const height = this.engine.getRenderHeight();
-    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
-    const viewport = new Viewport(0, 0, width, height);
-    const handles: JointDragHandle[] = [];
-    for (const [bone, rb] of rig.humanoid) {
-      const world = rigBoneWorld(rb).position;
-      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
-      handles.push({ bone, screen: [projected.x, projected.y], world });
-    }
-    return handles;
+    return readRigJointHandles(
+      rig, this.character.camera, this.engine.getRenderWidth(), this.engine.getRenderHeight(),
+    );
   }
 
   viewportCamera(): ViewportCameraInfo {
@@ -980,10 +1108,10 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       // PBR decalMap 플러그인 getter가 지연 생성하므로 런타임에는 null이 아니다(타입만 Nullable).
       const decal = part.pbr.decalMap;
       if (decal) decal.isEnabled = true;
-      if (part.toon) setToonTextures(part.toon, { albedo: rigPartAlbedoTexture(part, this.maskedParts.has(part), this.mouthMask, this.whiteTexture), paint: texture, sdf: this.sdfTexture });
+      if (part.toon) setToonTextures(part.toon, { albedo: this.albedoTexture(part), paint: texture, sdf: this.sdfTexture });
       this.pushToon(part, rig);
       const flat = this.flatMaterials.get(part.partId);
-      if (flat) setFlatTextures(flat, { albedo: rigPartAlbedoTexture(part, this.maskedParts.has(part), this.mouthMask, this.whiteTexture), paint: texture });
+      if (flat) setFlatTextures(flat, { albedo: this.albedoTexture(part), paint: texture });
     }
   }
 

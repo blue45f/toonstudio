@@ -22,7 +22,7 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
-import { WEBTOON_STRIP_ACTING_ARCS, exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
+import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
@@ -34,6 +34,7 @@ import {
 } from "../unsaved-work";
 
 import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
+import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -51,7 +52,6 @@ import type { StripDirectorSession } from "./viewport-scene-director";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
-import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -629,65 +629,7 @@ export function ExportPanel({
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-acting-arc`}>4컷 연기 시퀀스</label>
-          <select
-            id={`${ids}-strip-acting-arc`}
-            data-testid="export-strip-acting-arc"
-            value={stripActingArc}
-            onChange={(event) => stripDirector.update({ actingArc: event.target.value as WebtoonStripActingArcId })}
-          >
-            <option value="none">고정 표정·시선 (단일 포즈 유지)</option>
-            {WEBTOON_STRIP_ACTING_ARCS.map((arc) => (
-              <option key={arc.id} value={arc.id}>
-                {arc.labelKo}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-bake-fx`}>
-            <input
-              id={`${ids}-strip-bake-fx`}
-              data-testid="export-strip-bake-fx"
-              type="checkbox"
-              checked={bakeStripFx}
-              onChange={(event) => stripDirector.update({ bakeStripFx: event.target.checked })}
-            />{" "}
-            4컷 말풍선·효과선 베이킹
-          </label>
-          <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
-          <select
-            id={`${ids}-strip-fx-lines`}
-            data-testid="export-strip-fx-lines"
-            value={stripFxLines}
-            disabled={!bakeStripFx}
-            onChange={(event) => stripDirector.update({ stripFxLines: event.target.value as WebtoonStripFxLinesKind })}
-          >
-            <option value="focus-radial">집중선 (방사형)</option>
-            <option value="speed-diagonal">속도선 (대각선)</option>
-            <option value="romance-sparkle">로맨스 스파클</option>
-            <option value="none">말풍선만 (효과선 없음)</option>
-          </select>
-        </div>
-        <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 한국어 식자 대사">
-          {([0, 1, 2, 3] as const).map((cutIdx) => (
-            <label key={cutIdx} htmlFor={`${ids}-strip-dialogue-${cutIdx}`} className="cl-export-dialogue-item">
-              <span>{`${cutIdx + 1}컷 대사`}</span>
-              <input
-                id={`${ids}-strip-dialogue-${cutIdx}`}
-                data-testid={`export-strip-dialogue-${cutIdx}`}
-                type="text"
-                maxLength={42}
-                disabled={!bakeStripFx}
-                value={dialogueLines[cutIdx]}
-                onChange={(event) => stripDirector.setDialogueLine(cutIdx, event.target.value)}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <ExportStripDirectorSection ids={ids} state={directorState} stripDirector={stripDirector} />
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
@@ -729,8 +671,24 @@ export function ExportPanel({
         <button type="button" onClick={onShaperPresetSave} disabled={busy !== null}>
           SHAPER 프리셋 저장
         </button>
-        <button type="button" data-testid="export-copy-recipe-clipboard" title="외부 서버 전송 없이 로컬 클립보드로 현재 캐릭터 레시피 JSON(다중 페인트 서브레이어 포함)을 즉시 복사합니다" onClick={onCopyRecipeClipboard} disabled={busy !== null}>레시피 클립보드 복사</button>
-        <button type="button" data-testid="export-paste-recipe-clipboard" title="클립보드에 복사된 레시피(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 즉시 불러옵니다" onClick={onPasteRecipeClipboard} disabled={busy !== null}>클립보드 레시피 붙여넣기</button>
+        <button
+          type="button"
+          data-testid="export-copy-recipe-clipboard"
+          title="외부 서버 전송 없이 로컬 클립보드로 현재 캐릭터 레시피 JSON(다중 페인트 서브레이어 포함)을 즉시 복사합니다"
+          onClick={onCopyRecipeClipboard}
+          disabled={busy !== null}
+        >
+          레시피 클립보드 복사
+        </button>
+        <button
+          type="button"
+          data-testid="export-paste-recipe-clipboard"
+          title="클립보드에 복사된 레시피(.character.json) 또는 SHAPER 프리셋(.preset) 텍스트를 즉시 불러옵니다"
+          onClick={onPasteRecipeClipboard}
+          disabled={busy !== null}
+        >
+          클립보드 레시피 붙여넣기
+        </button>
         <label className="cl-export-file" htmlFor={`${ids}-file`}>
           레시피 불러오기
           <input

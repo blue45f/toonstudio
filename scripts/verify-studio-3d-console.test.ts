@@ -205,10 +205,10 @@ describe("3D character production-preview color boundary", () => {
       toggleOff,
     );
 
-    // 메뉴바 프레젠테이션(UX 감사 2026-09-02)이 3D 를 삽입 메뉴로 옮겼으므로 진입은
-    // 삽입 트리거와 삽입 드롭다운을 거친다. 항목 id·라벨은 카탈로그 그대로다.
-    expect(threeDMenu).toContain('name: STUDIO_INSERT_MENU_TITLE, exact: true');
-    expect(threeDMenu).toContain('[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]');
+    // 현재 그리기 셸의 실제 프로젝트·창 경로로 삽입 메뉴를 열고 정확한 이름을 확인한다.
+    // 공통 helper의 메뉴 열기 동작과 별개로 잘못 열린 메뉴는 여기서 계속 실패해야 한다.
+    expect(threeDMenu).toContain('await openStudioMainMenu(page, "insert")');
+    expect(threeDMenu).toContain('await menu.getAttribute("aria-label") !== STUDIO_INSERT_MENU_TITLE');
     expect(verifierSource).toContain('const STUDIO_INSERT_MENU_TITLE = "삽입"');
     expect(productionPreview).toContain('name: "중립 데생 인형 보기"');
     expect(baseline).toBeGreaterThanOrEqual(0);

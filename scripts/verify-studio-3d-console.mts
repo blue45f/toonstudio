@@ -40,6 +40,7 @@ import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { runStudioBg3dTextureGpuProof } from "./lib/studio-bg3d-texture-gpu-proof";
 import { isStaticPreviewReadinessUnavailable as isStudio3dStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { readStudioProductionThreeModuleUrls, resolveStudioProductionThreeExports } from "./lib/studio-production-three-exports.mjs";
+import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICK_START_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -868,11 +869,10 @@ const STUDIO_INSERT_MENU_TITLE = "삽입";
  * menubar is mounted; `full` density has no such row). Row labels follow the shipped catalogue.
  */
 async function openThreeDMenu(page: Page): Promise<Locator> {
-  const mainMenu = page.locator('[data-studio-main-menu="true"]');
-  await mainMenu.waitFor({ state: "visible", timeout: 20_000 });
-  await mainMenu.getByRole("menuitem", { name: STUDIO_INSERT_MENU_TITLE, exact: true }).click();
-  const menu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
-  await menu.waitFor({ state: "visible", timeout: 5_000 });
+  const menu = await openStudioMainMenu(page, "insert");
+  if (await menu.getAttribute("aria-label") !== STUDIO_INSERT_MENU_TITLE) {
+    throw new Error("3D 항목을 포함한 실제 삽입 메뉴가 열리지 않았습니다.");
+  }
   const fold = menu.locator('[data-studio-menu-item-id="advanced-sections-fold:insert"]');
   if (await fold.count() > 0 && await fold.getAttribute("aria-expanded") !== "true") await fold.click();
   return menu;

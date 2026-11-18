@@ -25,7 +25,6 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES,
   buildDuoEyeContactCommands, toDuoPartnerAttachment, type DuoShotState,
 } from "./viewport-duo-shot-guide";
-import { useViewportHandPropSession } from "./viewport-hand-prop-session";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
@@ -33,15 +32,14 @@ import {
 import {
   DEFAULT_MANGA_FX_STATE, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
-import { getDefaultStripDirectorSession } from "./viewport-scene-director";
+import { useViewportSceneProps } from "./viewport-scene-props";
 import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
-import type { ControlPointDragSession, DragSession } from "./viewport-drag-session";
-import type { JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose } from "../../../contracts";
+import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -56,6 +54,33 @@ export interface ViewportPaneProps {
 export const DEFAULT_HUD_INTERVAL_MS = 250;
 const FILL: CSSProperties = { position: "absolute", inset: 0 };
 const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
+
+interface DragSession {
+  readonly pointerId: number;
+  readonly target: SVGCircleElement;
+  readonly engine: CharacterEngine;
+  readonly skeleton: SkeletonData;
+  readonly handle: JointDragHandle;
+  readonly pivot: DragPivot;
+  readonly startPose: Pose;
+  readonly startPixel: readonly [number, number];
+  readonly basePlan: ApplyPlan | null;
+  readonly mode: ShaperGizmoMode;
+  readonly baseBody: ParamValues<BodyParamKey>;
+  outcome: JointDragOutcome | null;
+  ikOutcome: { readonly pose: Pose; readonly labelKo: string } | null;
+  scaleOutcome: { readonly key: BodyParamKey; readonly value: number; readonly labelKo: string } | null;
+}
+
+interface ControlPointDragSession {
+  readonly pointerId: number;
+  readonly target: SVGCircleElement;
+  readonly controlPoint: ShaperProjectedControlPoint;
+  readonly startPixel: readonly [number, number];
+  readonly baseFace: ParamValues<FaceParamKey>;
+  readonly baseBody: ParamValues<BodyParamKey>;
+  changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
+}
 
 function failureText(error: unknown, fallback: string): string {
   return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
@@ -92,12 +117,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
-  const stripDirector = getDefaultStripDirectorSession();
-  const activeDirectorId = useSyncExternalStore(
-    stripDirector.subscribe,
-    () => stripDirector.getState().activeDirectorId,
-    () => stripDirector.getState().activeDirectorId,
-  );
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
@@ -113,14 +132,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const { controls: handPropControls, selectSceneDirector } = useViewportHandPropSession(
-    engine,
-    labState.recipe.pose,
-    labState.recipe.shading,
-    stripDirector,
-    dispatch,
-    setNotice,
-  );
+  const {
+    activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
+    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector,
+  } = useViewportSceneProps({ engine, recipe: labState.recipe, dispatch, setNotice, failureText });
   const [canvasGeneration, setCanvasGeneration] = useState(0);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -682,6 +697,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
   };
+
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <ViewportToolbar
@@ -704,12 +720,20 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         }}
         mangaFx={{ state: mangaFx, set: setMangaFx }}
         sceneDirector={{
-          engineReady: handPropControls.engineReady,
-          busy: handPropControls.busy,
+          engineReady: Boolean(engine?.setHandProp),
+          busy: handPropBusy,
           activeDirectorId,
-          onSelectDirector: (presetId) => void selectSceneDirector(presetId),
+          onSelectDirector: (presetId) => void onSelectSceneDirector(presetId),
         }}
-        handProp={handPropControls}
+        handProp={{
+          engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,
+          headPropId, stagePropId,
+          onSelectProp: (nextPropId) => void onApplyHandProp(nextPropId, handPropSide),
+          onChangeHand: (nextSide) => void onApplyHandProp(handPropId, nextSide),
+          onApplyGripPose: onApplyHandPropGripPose,
+          onSelectHeadProp: (nextHeadPropId) => void onApplyHeadProp(nextHeadPropId),
+          onSelectStageProp: (nextStagePropId) => void onApplyStageProp(nextStagePropId),
+        }}
         overlay={{
           handles: { value: showHandles, set: setShowHandles },
           fingers: { value: showFingers, set: setShowFingers },

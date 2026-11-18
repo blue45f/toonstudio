@@ -20,6 +20,10 @@ interface CpuClockAnchor {
   readonly beforeStartMs: number;
   readonly afterStartMs: number;
 }
+interface CpuStopClockAnchor {
+  readonly beforeStopMs: number;
+  readonly afterStopMs: number;
+}
 interface CpuFrame {
   readonly nodeId: number;
   readonly functionName: string;
@@ -45,15 +49,17 @@ function sourcePath(value: string): string {
   catch { return value.split(/[?#]/u)[0]!.slice(0, 256); }
 }
 
-/** 표본의 누적 CPU clock을 시작 호출 전후 browser clock 범위에 정렬한다. */
+/** 시작·종료 호출 전후의 일관된 browser clock 교집합에 CPU 표본을 정렬한다. */
 export function summarizeStudioBrushFirstContactCpu(
   profile: unknown,
   anchor: CpuClockAnchor | null,
   firstInput: StudioBrushDiagnosticInputSample | null,
   caseId: string,
+  stopAnchor: CpuStopClockAnchor | null = null,
 ) {
   const envelope = { kind: "toonstudio-studio-brush-first-contact-cpu-v1", schemaVersion: 1,
     caseId, rawProfileSaved: false, firstInput,
+    clockBrackets: { start: anchor, stop: stopAnchor },
     limitation: "CPU 표본은 함수 실행 시간의 추정이다. browser 시작 bracket에 걸친 표본은 경계가 모호하며, 별도 continuous 획의 수치를 첫 접촉 비용으로 간주하지 않는다." } as const;
   const unavailable = (issue: string) => ({ ...envelope, status: "unavailable" as const, issues: [issue] });
   const clock = firstInput?.clock;
@@ -73,6 +79,18 @@ export function summarizeStudioBrushFirstContactCpu(
     || !Array.isArray(data.nodes) || !Array.isArray(data.samples) || !Array.isArray(data.timeDeltas)
     || data.samples.length === 0 || data.samples.length !== data.timeDeltas.length) {
     return unavailable("CPU profile의 clock 또는 sample 배열이 유효하지 않다.");
+  }
+  const durationMs = (data.endTime - data.startTime) / 1_000;
+  if (stopAnchor && (!finite(stopAnchor.beforeStopMs) || !finite(stopAnchor.afterStopMs)
+    || stopAnchor.beforeStopMs > stopAnchor.afterStopMs || stopAnchor.beforeStopMs < clock.observedAt)) {
+    return unavailable("CPU profile 종료의 browser clock 범위를 확인하지 못했다.");
+  }
+  const alignedStartLowerMs = Math.max(anchor.beforeStartMs,
+    stopAnchor ? stopAnchor.beforeStopMs - durationMs : anchor.beforeStartMs);
+  const alignedStartUpperMs = Math.min(anchor.afterStartMs,
+    stopAnchor ? stopAnchor.afterStopMs - durationMs : anchor.afterStartMs);
+  if (alignedStartLowerMs > alignedStartUpperMs) {
+    return unavailable("CPU profile 시작·종료 clock 범위가 일치하지 않는다.");
   }
   const frames = new Map<number, CpuFrame>();
   for (const value of data.nodes) {
@@ -94,7 +112,7 @@ export function summarizeStudioBrushFirstContactCpu(
     elapsedMs += delta / 1_000;
     samples.push({ frame, elapsedMs, deltaMs: delta / 1_000 });
   }
-  const midpoint = (anchor.beforeStartMs + anchor.afterStartMs) / 2;
+  const midpoint = (alignedStartLowerMs + alignedStartUpperMs) / 2;
   const windows = [
     { id: "before-input-50ms", startMs: clock.eventTime - 50, endMs: clock.eventTime },
     { id: "input-to-first-observation", startMs: clock.eventTime, endMs: clock.observedAt },
@@ -103,7 +121,7 @@ export function summarizeStudioBrushFirstContactCpu(
     let estimatedSamples = 0, definiteSamples = 0, possibleSamples = 0;
     const aggregate = new Map<number, CpuFrame & { sampleCount: number; sampleWeightMs: number }>();
     for (const sample of samples) {
-      const lower = anchor.beforeStartMs + sample.elapsedMs, upper = anchor.afterStartMs + sample.elapsedMs;
+      const lower = alignedStartLowerMs + sample.elapsedMs, upper = alignedStartUpperMs + sample.elapsedMs;
       const estimate = midpoint + sample.elapsedMs;
       if (upper >= window.startMs && lower < window.endMs) possibleSamples += 1;
       if (lower >= window.startMs && upper < window.endMs) definiteSamples += 1;
@@ -121,9 +139,11 @@ export function summarizeStudioBrushFirstContactCpu(
         .slice(0, 10).map(entry => ({ ...entry, sampleWeightMs: Math.round(entry.sampleWeightMs * 1_000) / 1_000 })) };
   });
   return { ...envelope, status: "complete" as const, issues: [],
-    clockAlignment: { ...anchor, uncertaintyMs: anchor.afterStartMs - anchor.beforeStartMs,
-      estimate: "midpoint of browser clock bracket; CPU sample offsets are relative to profile.startTime" },
-    profile: { startTimeUs: data.startTime, endTimeUs: data.endTime, durationMs: (data.endTime - data.startTime) / 1_000,
+    clockAlignment: { ...anchor, alignedStartLowerMs, alignedStartUpperMs,
+      uncertaintyMs: alignedStartUpperMs - alignedStartLowerMs,
+      basis: stopAnchor ? "start-stop-intersection" : "start-only",
+      estimate: "midpoint of consistent browser clock bounds; CPU sample offsets are relative to profile.startTime" },
+    profile: { startTimeUs: data.startTime, endTimeUs: data.endTime, durationMs,
       nodeCount: frames.size, sampleCount: samples.length, samplingWeight: "timeDeltas clipped to each estimated window" }, windows };
 }
 
@@ -144,8 +164,11 @@ export async function createStudioBrushFirstContactCpuCapture(page: Page, direct
     recordFirstInput(input: StudioBrushDiagnosticInputSample) { firstInput = input; },
     async finish() {
       try {
+        const beforeStopMs = started ? await page.evaluate(() => performance.now()).catch(() => null) : null;
         const captured = started ? await session.send("Profiler.stop").catch(() => null) : null;
-        const summary = summarizeStudioBrushFirstContactCpu(captured?.profile, anchor, firstInput, caseId);
+        const afterStopMs = started ? await page.evaluate(() => performance.now()).catch(() => null) : null;
+        const stopAnchor = beforeStopMs !== null && afterStopMs !== null ? { beforeStopMs, afterStopMs } : null;
+        const summary = summarizeStudioBrushFirstContactCpu(captured?.profile, anchor, firstInput, caseId, stopAnchor);
         const encoded = `${JSON.stringify(summary, null, 2)}\n`;
         if (Buffer.byteLength(encoded, "utf8") > 64 * 1024) throw new Error("첫 접촉 CPU 진단의 64KiB 상한을 초과했습니다.");
         writeFileSync(join(directory, `studio-brush-latency-${caseId}-cpu-summary.json`), encoded);
