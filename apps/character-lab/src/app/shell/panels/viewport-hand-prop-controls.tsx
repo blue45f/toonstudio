@@ -193,6 +193,32 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
       hand: [12, 12, -8],
     },
   },
+  {
+    id: "idol-prism-lightstick",
+    labelKo: "아이돌 프리즘 응원봉·마이크",
+    genreHintKo: "아이돌·콘서트·연예계 무대 클로즈업 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/idol-prism-lightstick.glb",
+    sha256: "d27ead99905d12e842fc80fff315f70bf67892a1de41001b35c5423647a170d0",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [18, 30, 52],
+      lowerArm: [34, 88, -22],
+      hand: [14, 16, -8],
+    },
+  },
+  {
+    id: "varsity-basketball",
+    labelKo: "체전 에이스 농구공",
+    genreHintKo: "학원 스포츠·청춘 코트 라이벌전 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/varsity-basketball.glb",
+    sha256: "1283f60ba4e0f85fd75298655bbaef59f367698b7b7c7c9c3c333a73672e9c19",
+    handPreset: "hand-pose/open",
+    rightArmEulerDeg: {
+      upperArm: [10, 22, 58],
+      lowerArm: [20, 74, -16],
+      hand: [8, 10, -6],
+    },
+  },
 ]);
 
 export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze([
@@ -296,6 +322,20 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     genreHintKo: "법정·메디컬·정치 진실 공방 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/courtroom-gavel-podium.glb",
     sha256: "e2897e603bc03c1bbd0b297bd0f73f803e35ebadc3015d4ebc00ab66d36560d7",
+  },
+  {
+    id: "concert-spotlight-mic-stand",
+    labelKo: "아이돌 콘서트 스탠드마이크·네온 링",
+    genreHintKo: "아이돌·연예계·뮤직 어워드 앙코르 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/concert-spotlight-mic-stand.glb",
+    sha256: "0415bb6e8128234290393db5b652e7e182f31a1e7037be0637fffd34b425f5c3",
+  },
+  {
+    id: "court-hoop-stanchion",
+    labelKo: "학원 체육관 농구 골대·백보드",
+    genreHintKo: "학원 스포츠·체전 결승전 코트 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/court-hoop-stanchion.glb",
+    sha256: "faa30be4490968cb8d6f770a91ccd0cc98c6cf4e7d5ef849966e88a85d5d5cce",
   },
 ]);
 

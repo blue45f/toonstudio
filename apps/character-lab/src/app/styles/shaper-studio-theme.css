@@ -642,6 +642,71 @@ input:not(input[type="range"]):user-valid {
   height: auto;
 }
 
+/* ---------- 에피소드 다중 4컷 콘티 큐시트 매니저 (1px 헤어라인 · 고정폭 숫자) ---------- */
+.cl-export-cutsheet {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+  margin-block-end: 8px;
+  border-bottom: 1px solid var(--shaper-line);
+}
+
+.cl-cutsheet-summary {
+  font-size: 0.75rem;
+  color: var(--shaper-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-cutsheet-beat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cl-cutsheet-beat-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--shaper-panel-2);
+  font-size: 0.75rem;
+}
+
+.cl-cutsheet-beat-item[data-active="true"] {
+  outline: 1px solid var(--shaper-line-strong);
+  background: var(--shaper-surface-elevated);
+}
+
+.cl-cutsheet-beat-range {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--lab-accent);
+}
+
+.cl-cutsheet-beat-name {
+  font-weight: 500;
+  color: var(--shaper-fg);
+}
+
+.cl-cutsheet-beat-meta {
+  flex: 1 1 auto;
+  color: var(--shaper-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-cutsheet-beat-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .cl-paint-swatch,
 .cl-color-swatch {
   forced-color-adjust: none;

@@ -164,20 +164,20 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setSfxStamp").at(-1)?.args[0]).toBeNull());
   });
 
-  it("웹툰 3D 소품 28종·7번째 법정·메디컬 씬 디렉터·상대역 자동 캐스팅·스크린톤/무드/호흡 동기화가 엔진에 실시간 반영된다", async () => {
+  it("웹툰 3D 소품 32종·9대 장르 씬 디렉터(법정·아이돌·스포츠 포함)·상대역 자동 캐스팅·스크린톤/무드/호흡 동기화가 엔진에 실시간 반영된다", async () => {
     const dispatched: LabCommand[] = [];
     const engine = renderReadyViewport((cmd) => dispatched.push(cmd));
 
     const propSelect = screen.getByTestId("viewport-hand-prop-select") as HTMLSelectElement;
-    expect(propSelect.options.length).toBe(9);
+    expect(propSelect.options.length).toBe(11);
     expect(Array.from(propSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
 
-    fireEvent.change(propSelect, { target: { value: "medical-chart-clipboard" } });
+    fireEvent.change(propSelect, { target: { value: "idol-prism-lightstick" } });
     const firstCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
     expect(firstCall?.args[0]).toMatchObject({
-      propId: "medical-chart-clipboard",
+      propId: "idol-prism-lightstick",
       hand: "rightHand",
-      glbUrl: "/assets/props/webtoon-hand-props-v1/medical-chart-clipboard.glb",
+      glbUrl: "/assets/props/webtoon-hand-props-v1/idol-prism-lightstick.glb",
     });
 
     const sideSelect = await screen.findByTestId("viewport-hand-prop-side");
@@ -185,13 +185,13 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect((screen.getByTestId("viewport-hand-prop-grip-pose") as HTMLButtonElement).disabled).toBe(false));
     const sideCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
     expect(sideCall?.args[0]).toMatchObject({
-      propId: "medical-chart-clipboard",
+      propId: "idol-prism-lightstick",
       hand: "leftHand",
     });
 
     fireEvent.click(screen.getByTestId("viewport-hand-prop-grip-pose"));
     expect(dispatched.some((cmd) => cmd.type === "pose/set")).toBe(true);
-    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/open")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/fist")).toBe(true);
 
     fireEvent.change(propSelect, { target: { value: "" } });
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
@@ -208,52 +208,48 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     );
 
     const stageSelect = screen.getByTestId("viewport-stage-prop-select") as HTMLSelectElement;
-    expect(stageSelect.options.length).toBe(9);
+    expect(stageSelect.options.length).toBe(11);
     expect(Array.from(stageSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(stageSelect, { target: { value: "courtroom-gavel-podium" } });
+    fireEvent.change(stageSelect, { target: { value: "court-hoop-stanchion" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
-        propId: "courtroom-gavel-podium",
-        glbUrl: "/assets/props/webtoon-stage-props-v1/courtroom-gavel-podium.glb",
+        propId: "court-hoop-stanchion",
+        glbUrl: "/assets/props/webtoon-stage-props-v1/court-hoop-stanchion.glb",
       }),
     );
 
-    // 원클릭 장르 씬 디렉터(7종 + 기본 옵션 = 8개) 선택 + 법정·메디컬 진실 공방 상대역 자동 캐스팅 실행 검증
     const directorSelect = screen.getByTestId("viewport-scene-director-select") as HTMLSelectElement;
-    expect(directorSelect.options.length).toBe(8);
-    fireEvent.change(directorSelect, { target: { value: "director-legal-medical-tribunal" } });
+    expect(directorSelect.options.length).toBe(10);
+    fireEvent.change(directorSelect, { target: { value: "director-idol-encore-stage" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
-        propId: "wire-glasses",
+        propId: "pearl-earrings-pin",
       }),
     );
     expect(dispatched.some((cmd) => cmd.type === "shading/set")).toBe(true);
     const sessionState = getDefaultStripDirectorSession().getState();
-    expect(sessionState.manuscriptMood).toBe("daylight-paper");
+    expect(sessionState.manuscriptMood).toBe("backlit-awakening");
     expect(sessionState.gutterPaces).toEqual(["compact", "dramatic-pause", "cliffhanger"]);
-    expect(sessionState.screentones).toEqual(["classic-ink-45", "shadow-fade-mono", "cyan-noir-dots", "classic-ink-45"]);
-    expect(sessionState.cutCameraPresets).toEqual(["low-full", "duo-wide", "dutch-left-bust", "front-face"]);
+    expect(sessionState.screentones).toEqual(["rose-duotone-dots", "none", "rose-duotone-dots", "cyan-noir-dots"]);
 
-    // 다국어 전환 시 법정·메디컬 진실 공방 대사팩이 EN / JA로 자동 전환된다
     getDefaultStripDirectorSession().setLocale("en");
-    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("Your Honor");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("sea of lights");
     getDefaultStripDirectorSession().setLocale("ja");
-    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("裁判長");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("星明かり");
     getDefaultStripDirectorSession().setLocale("ko");
 
-    // 상대역 자동 캐스팅 버튼 클릭 시 오피스 CEO(shaper-office-ceo) + 냉엄 응시 + 서류철 소품이 일괄 적용된다
     dispatched.length = 0;
     const castDuoBtn = await screen.findByTestId("viewport-director-cast-duo");
     fireEvent.click(castDuoBtn);
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
-        characterId: "shaper-office-ceo",
-        stance: "arms-crossed",
-        expression: "stern-glare",
+        characterId: "shaper-cyber-idol",
+        stance: "conversational",
+        expression: "warm-smile",
         handProp: {
-          propId: "case-folder",
+          propId: "idol-prism-lightstick",
           hand: "leftHand",
-          glbUrl: "/assets/props/webtoon-hand-props-v1/case-folder.glb",
+          glbUrl: "/assets/props/webtoon-hand-props-v1/idol-prism-lightstick.glb",
         },
       }),
     );
@@ -261,15 +257,14 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(dispatched.some((cmd) => cmd.type === "eye-gaze/set")).toBe(true);
     expect(castDuoBtn.getAttribute("aria-pressed")).toBe("true");
 
-    // 3D 듀오 활성 상태에서 다른 장르 디렉터(무협 각성)로 전환하면 상대역도 청운 검존 + 청옥 부채로 자동 전환된다
-    fireEvent.change(directorSelect, { target: { value: "director-murim-awakening" } });
+    fireEvent.change(directorSelect, { target: { value: "director-varsity-court-rival" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
-        characterId: "shaper-murim-swordmaster",
-        expression: "stern-glare",
+        characterId: "shaper-atelier-male-lead",
+        expression: "cold-smirk",
         handProp: {
-          propId: "jade-folding-fan",
-          glbUrl: "/assets/props/webtoon-hand-props-v1/jade-folding-fan.glb",
+          propId: "varsity-basketball",
+          glbUrl: "/assets/props/webtoon-hand-props-v1/varsity-basketball.glb",
         },
       }),
     );

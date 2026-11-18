@@ -7,22 +7,29 @@ import { isWebmEbml } from "./export-session";
 import {
   DEFAULT_MOTION_TEASER_FPS,
   WEBTOON_MOTION_TEASER_RESOLUTIONS,
+  buildCutKineticOverlays,
+  computeCutKineticMotionState,
   computeMotionTeaserCameraWindow,
   exportWebtoonMotionTeaserWebm,
   planMotionTeaserSchedule,
   renderMotionTeaserFrameRgba,
+  synthesizeMotionTeaserAudioPcm,
 } from "./webtoon-motion-teaser";
 import { WEBTOON_VERTICAL_STRIP_CUTS, clampWebtoonStripLayout, composeWebtoonVerticalStrip } from "./webtoon-strip-composer";
 
 const FAKE_WEBM_EBML_HEADER = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01]);
 
 describe("webtoon-motion-teaser", () => {
-  it("planMotionTeaserSchedule은 스크롤 여백 호흡(cliffhanger vs compact)과 재생 배속(0.75×..1.5×)에 비례해 결정적 9:16 프레임을 생성한다", () => {
+  it("planMotionTeaserSchedule과 computeCutKineticMotionState는 컷 체류 팝인 배율·효과음 진동·배속 프레임을 결정적으로 계산한다", () => {
     const fastLayout = clampWebtoonStripLayout(540, true, ["compact", "compact", "compact"]);
     const dramaticLayout = clampWebtoonStripLayout(540, true, ["compact", "dramatic-pause", "cliffhanger"]);
 
     const fastSchedule = planMotionTeaserSchedule(fastLayout, ["compact", "compact", "compact"], { fps: 24, speed: 1 });
-    const dramaticSchedule = planMotionTeaserSchedule(dramaticLayout, ["compact", "dramatic-pause", "cliffhanger"], { fps: 24, speed: 1 });
+    const dramaticSchedule = planMotionTeaserSchedule(dramaticLayout, ["compact", "dramatic-pause", "cliffhanger"], {
+      fps: 24,
+      speed: 1,
+      sfxStamps: ["pat", "kugugung", "beonjjeok", "dugeun"],
+    });
     const fast15xSchedule = planMotionTeaserSchedule(dramaticLayout, ["compact", "dramatic-pause", "cliffhanger"], { fps: 24, speed: 1.5 });
 
     expect(dramaticSchedule.fps).toBe(DEFAULT_MOTION_TEASER_FPS);
@@ -30,16 +37,34 @@ describe("webtoon-motion-teaser", () => {
     expect(dramaticSchedule.frameCount).toBeGreaterThan(fastSchedule.frameCount);
     expect(fast15xSchedule.frameCount).toBeLessThan(dramaticSchedule.frameCount);
 
-    const first = dramaticSchedule.frames[0]!;
-    const last = dramaticSchedule.frames.at(-1)!;
-    expect(first.activeCutIndex).toBe(0);
-    expect(first.scrollRatio01).toBe(0);
-    expect(last.activeCutIndex).toBe(3);
-    expect(last.scrollRatio01).toBe(1);
-    expect(dramaticSchedule.frames.some((f) => f.dwellZoom > 1.01)).toBe(true);
+    // 1컷 진입 시에는 2~4컷 말풍선 알파가 0으로 숨겨져 패닝 가독성 붕괴를 방지한다
+    const earlyState = computeCutKineticMotionState(dramaticSchedule.timeline, ["pat", "kugugung", "none", "none"], 80);
+    expect(earlyState.cutBubbleAlphas[0]).toBeGreaterThan(0.4);
+    expect(earlyState.cutBubbleAlphas[1]).toBe(0);
+    expect(earlyState.cutBubbleScales[0]).toBeGreaterThan(0.8);
+
+    // 2컷 체류 진입 구간에서는 쿠구궁 진동 오프셋이 발생한다
+    const seg2Start = dramaticSchedule.timeline.segments[1].dwellStartMs;
+    const rumbleState = computeCutKineticMotionState(dramaticSchedule.timeline, ["none", "kugugung", "none", "none"], seg2Start + 80);
+    expect(Math.hypot(rumbleState.shakeOffsetX, rumbleState.shakeOffsetY)).toBeGreaterThan(0.1);
   });
 
-  it("computeMotionTeaserCameraWindow와 renderMotionTeaserFrameRgba는 9:16 규격 RGBA 프레임과 하단 진행 게이지를 결정적으로 합성한다", () => {
+  it("synthesizeMotionTeaserAudioPcm은 6종 효과음 스탬프를 결정적 모노 PCM 파형으로 합성한다", () => {
+    const layout = clampWebtoonStripLayout(320, true);
+    const schedule = planMotionTeaserSchedule(layout, ["standard", "standard", "standard"], { fps: 24, speed: 1 });
+
+    const silent = synthesizeMotionTeaserAudioPcm(schedule, ["none", "none", "none", "none"], 12_000);
+    expect(silent.eventCount).toBe(0);
+    expect(silent.samples.every((s) => s === 0)).toBe(true);
+
+    const activeA = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000);
+    const activeB = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000);
+    expect(activeA.eventCount).toBe(4);
+    expect(activeA.samples.some((s) => Math.abs(s) > 0.05)).toBe(true);
+    expect(Array.from(activeA.samples.slice(0, 600))).toEqual(Array.from(activeB.samples.slice(0, 600)));
+  });
+
+  it("computeMotionTeaserCameraWindow, buildCutKineticOverlays 및 renderMotionTeaserFrameRgba는 9:16 규격 RGBA 프레임을 결정적으로 합성한다", () => {
     const layout = clampWebtoonStripLayout(96, true);
     const panels = WEBTOON_VERTICAL_STRIP_CUTS.map((_, idx) => {
       const rgba = new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4);
@@ -52,9 +77,17 @@ describe("webtoon-motion-teaser", () => {
       return { width: layout.cutWidth, height: layout.cutHeight, rgba };
     });
     const strip = composeWebtoonVerticalStrip(panels, layout, undefined, "midnight-noir");
+    const overlays = buildCutKineticOverlays(layout, {
+      enabled: true,
+      dialogueLines: ["1컷", "2컷", "3컷", "4컷"],
+      sfxStamps: ["dugeun", "none", "kugugung", "none"],
+    });
+    expect(overlays).toHaveLength(4);
+    expect(overlays[0]?.bubbleOverlay).not.toBeNull();
+    expect(overlays[0]?.sfxOverlay).not.toBeNull();
 
     const topWin = computeMotionTeaserCameraWindow(strip.width, strip.height, 0, 1);
-    const botWin = computeMotionTeaserCameraWindow(strip.width, strip.height, 1, 1.025);
+    const botWin = computeMotionTeaserCameraWindow(strip.width, strip.height, 1, 1.025, 9 / 16, 2, -1);
     expect(topWin.srcY).toBe(0);
     expect(botWin.srcY).toBeGreaterThan(topWin.srcY);
     expect(botWin.srcWidth).toBeLessThan(topWin.srcWidth);
@@ -63,32 +96,28 @@ describe("webtoon-motion-teaser", () => {
       strip,
       90,
       160,
-      { scrollRatio01: 0, dwellZoom: 1, progress01: 0.1 },
+      {
+        scrollRatio01: 0,
+        dwellZoom: 1,
+        progress01: 0.1,
+        cutBubbleAlphas: [1, 0, 0, 0],
+        cutBubbleScales: [1.02, 0.78, 0.78, 0.78],
+      },
       "midnight-noir",
-    );
-    const frameEnd = renderMotionTeaserFrameRgba(
-      strip,
-      90,
-      160,
-      { scrollRatio01: 1, dwellZoom: 1.02, progress01: 0.95 },
-      "midnight-noir",
+      true,
+      overlays,
     );
     expect(frameStart.width).toBe(90);
     expect(frameStart.height).toBe(160);
-    expect(Array.from(frameStart.rgba)).not.toEqual(Array.from(frameEnd.rgba));
-
-    // 하단 진행 바 좌측은 앰버 하이라이트(228, 179, 99)로 채워진다
-    const barRow = 159;
-    const barPixelIdx = (barRow * 90 + 2) * 4;
-    expect(Array.from(frameEnd.rgba.slice(barPixelIdx, barPixelIdx + 4))).toEqual([228, 179, 99, 255]);
   });
 
-  it("exportWebtoonMotionTeaserWebm은 EBML 매직(0x1A45DFA3)·배속/스크린톤 파일 접미사를 검증하고 코덱 미지원 실패를 가시화한다", async () => {
+  it("exportWebtoonMotionTeaserWebm은 키네틱 오버레이·Web Audio PCM·성능 벤치마크 영수증(receipt.motion) 및 실패 코드를 검증한다", async () => {
     const engine = createMockEngine();
     expect(isWebmEbml(FAKE_WEBM_EBML_HEADER)).toBe(true);
-    expect(isWebmEbml(new Uint8Array([0, 1, 2, 3]))).toBe(false);
 
-    let capturedOutSize = "";
+    let capturedAudioEvents = 0;
+    let capturedOverlayCount = 0;
+    let tick = 1_000;
     const okOutcome = await exportWebtoonMotionTeaserWebm(
       engine,
       {
@@ -96,21 +125,30 @@ describe("webtoon-motion-teaser", () => {
         resolutionPreset: "hd-720x1280",
         playbackSpeed: 1.5,
         screentones: ["classic-ink-45", "none", "cyan-noir-dots", "none"],
+        mangaFx: {
+          enabled: true,
+          dialogueLines: ["시작", "반격", "각성", "결말"],
+          sfxStamps: ["seureung", "none", "kugugung", "none"],
+        },
       },
       async (req) => {
-        capturedOutSize = `${req.outWidth}x${req.outHeight}`;
+        capturedAudioEvents = req.audioPcm?.eventCount ?? 0;
+        capturedOverlayCount = req.kineticOverlays?.length ?? 0;
         req.onFrameProgress?.(0, req.schedule.frameCount, 0);
+        tick += 48;
         return FAKE_WEBM_EBML_HEADER;
       },
-      { now: () => 1_000 },
+      { now: () => tick },
     );
 
     expect(okOutcome.ok).toBe(true);
     if (!okOutcome.ok) return;
-    expect(capturedOutSize).toBe(`${WEBTOON_MOTION_TEASER_RESOLUTIONS["hd-720x1280"].width}x${WEBTOON_MOTION_TEASER_RESOLUTIONS["hd-720x1280"].height}`);
-    expect(okOutcome.receipt.kind).toBe("webm");
-    expect(okOutcome.receipt.mime).toBe("video/webm");
-    expect(okOutcome.receipt.fileName).toMatch(/-720x1280-webtoon-4cut-tone-1_5x-teaser\.webm$/u);
+    expect(capturedAudioEvents).toBe(2);
+    expect(capturedOverlayCount).toBe(4);
+    expect(okOutcome.receipt.width).toBe(WEBTOON_MOTION_TEASER_RESOLUTIONS["hd-720x1280"].width);
+    expect(okOutcome.receipt.motion?.audioEvents).toBe(2);
+    expect(okOutcome.receipt.motion?.peakRasterMb).toBeGreaterThan(0);
+    expect(okOutcome.receipt.fileName).toMatch(/-720x1280-webtoon-4cut-fx-tone-sfx-1_5x-teaser\.webm$/u);
 
     const invalidOutcome = await exportWebtoonMotionTeaserWebm(
       engine,

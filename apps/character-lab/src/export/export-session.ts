@@ -30,7 +30,7 @@ export const MAX_PNG_EXPORT_DIMENSION = 4096;
 export const MAX_PSD_EXPORT_DIMENSION = PSD_MAX_DIMENSION;
 export const MAX_SETTLE_STEPS = 600;
 
-export type ExportKind = "png" | "psd" | "glb" | "webm" | "recipe" | "shaper-preset";
+export type ExportKind = "png" | "psd" | "glb" | "webm" | "recipe" | "shaper-preset" | "cutsheet";
 
 export interface ExportCaptureOptions {
   readonly width: number;
@@ -47,6 +47,13 @@ export interface ExportPsdOptions extends ExportCaptureOptions {
   readonly mangaFx?: PsdMangaFxOptions;
 }
 
+export interface MotionTeaserReceiptMetrics {
+  readonly frameCount: number;
+  readonly avgFrameMs: number;
+  readonly peakRasterMb: number;
+  readonly audioEvents: number;
+}
+
 export interface ExportReceipt {
   readonly kind: ExportKind;
   readonly fileName: string;
@@ -57,6 +64,7 @@ export interface ExportReceipt {
   readonly settleSteps?: number;
   readonly provenance?: CaptureProvenance;
   readonly psd?: PsdPlanReceipt;
+  readonly motion?: MotionTeaserReceiptMetrics;
   readonly durationMs: number;
 }
 
