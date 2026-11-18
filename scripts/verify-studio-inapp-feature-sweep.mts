@@ -41,6 +41,7 @@ import {
   type StudioInAppStep,
   type StudioInAppStepOutcome,
 } from "./lib/studio-inapp-sweep-harness.mjs";
+import { createStudioQuickBrushStep } from "./lib/studio-quick-brush-interactions";
 import { showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
 import {
@@ -362,15 +363,7 @@ const STEPS: readonly StudioInAppStep[] = Object.freeze([
       return "ok";
     },
   },
-  {
-    id: "brush-quick-tray",
-    label: "빠른 브러시 트레이",
-    run: async (page) => {
-      const sheet = await openDrawSettings(page);
-      const tray = sheet.locator('[data-studio-brush-tray="true"]');
-      return clickLocator(page, tray.locator('[role="option"]'), "brush tray option");
-    },
-  },
+  createStudioQuickBrushStep({ openSettings: openDrawSettings, click: clickInView, settle }),
   {
     id: "brush-library-open",
     label: "브러시 전체 라이브러리",

@@ -34,7 +34,7 @@ import {
 } from "playwright";
 
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
-import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   stopChildProcess,
@@ -1121,10 +1121,7 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
 }
 
 async function countVisibleNativeLayers(page: Page): Promise<number> {
-  const navigator = page.getByTestId("studio-inspector-navigator");
-  await navigator.waitFor({ state: "visible", timeout: 10_000 });
-  const layers = navigator.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layers.count() > 0 && await layers.getAttribute("aria-selected") !== "true") await layers.click(); // 레이어 패널이 속성과 통합된 배치에는 탭이 없다
+  await openStudioLayerNavigator(page);
   return page.locator('[data-studio-layer-row="true"]').count();
 }
 

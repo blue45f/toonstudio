@@ -40,6 +40,33 @@ export async function openStudioBg3dEnginePanel(dialog: Locator, timeoutMs = 15_
   if (await camera.getAttribute("aria-selected") !== "true") await camera.click();
 }
 
+/** 컷 프로젝트의 별도 기록과 구별해 실제 장면 뷰포트의 Undo/Redo를 선택한다. */
+export async function studioBg3dSceneHistoryControl(
+  dialog: Locator, action: "undo" | "redo", timeoutMs = 15_000,
+): Promise<Locator> {
+  const name = action === "undo" ? "실행 취소" : "다시 실행";
+  return visibleStudioControl(dialog.getByTestId("studio-bg3d-viewport")
+    .getByRole("button", { name, exact: true }), `3D 장면 ${name}`, timeoutMs);
+}
+
+/** 픽셀 검사는 사용자가 접을 수 있는 컷·에셋 패널을 먼저 접고 같은 온전한 캔버스를 측정한다. */
+export async function prepareStudioBg3dViewportCapture(dialog: Locator): Promise<void> {
+  const cuts = dialog.getByTestId("scene3d-cut-panel").filter({ visible: true });
+  if (await cuts.count() > 0) {
+    const panel = await visibleStudioControl(cuts, "3D 컷 버전 패널");
+    if (await panel.getAttribute("open") !== null) {
+      await panel.locator(":scope > summary").click();
+      await panel.and(dialog.page().locator("details:not([open])")).waitFor({ state: "visible" });
+    }
+  }
+  const shelf = dialog.getByTestId("studio-bg3d-asset-shelf").filter({ visible: true });
+  if (await shelf.count() > 0) {
+    await (await visibleStudioControl(shelf.getByRole("button", { name: /^(쉘프 접기|Collapse shelf)$/u }), "3D 에셋 쉘프 접기")).click();
+    await shelf.waitFor({ state: "hidden" });
+  }
+  await dialog.getByTestId("studio-bg3d-viewport").scrollIntoViewIfNeeded();
+}
+
 /** 데스크톱의 전체 도구와 모바일 더보기는 같은 출시 카탈로그로 연결된다. */
 export async function openStudioAllTools(page: Page): Promise<Locator> {
   const catalog = page.getByRole("dialog", { name: "전체 도구", exact: true }).filter({ visible: true });

@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 /** UI helper와 제품 CSS의 독립 회귀를 확인하며, 앱 빌드·API 서버는 필요하지 않다. */
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["studio-qa-interactions.spec.mts", "studio-qa-shell-interactions.spec.mts", "studio-drawing-chrome-layout.spec.mts"],
+  testMatch: ["studio-qa-interactions.spec.mts", "studio-qa-shell-interactions.spec.mts", "studio-drawing-chrome-layout.spec.mts", "studio-qa-ux-followup.spec.mts", "studio-bg3d-qa-interactions.spec.mts"],
   workers: 1,
   retries: 0,
   forbidOnly: Boolean(process.env.CI),

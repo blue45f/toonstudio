@@ -32,6 +32,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { DIST_DIR, REPO_ROOT } from "./lib/repo-paths.mjs";
+import { studioArtistTransparentWashIssues, type StudioArtistJourneySupportingEvidence } from "./lib/studio-artist-transparent-wash-evidence";
 import { studioRecoveryReceiptIsComplete } from "./lib/studio-verify-recovery";
 import { STUDIO_LONG_BRUSH_QUALITY_REPORT_SCHEMA_VERSION } from "./studio-brush-long-matrix-quality";
 import {
@@ -75,6 +76,7 @@ export interface StudioArtistJourneyAudit {
     analyzedBrushes: number;
     livePixelsVerifiedBrushes: number;
     settledPixelsVerifiedBrushes: number;
+    transparentWashVerifiedBrushes: number;
     qualityPassedBrushes: number;
   }>;
   readonly lifecycle: Readonly<{
@@ -106,6 +108,7 @@ interface StudioArtistJourneyRunReport {
     log: string;
     lifecycleReport: string;
     liveCommitReport: string;
+    longBrushResult: string;
     report: string;
   }>;
   readonly childPlans: readonly StudioArtistJourneyChildPlan[];
@@ -357,7 +360,8 @@ function auditLifecycleReport(
 
 function auditLiveCommitReport(
   value: unknown,
-  issues: string[]
+  issues: string[],
+  supporting: StudioArtistJourneySupportingEvidence | undefined,
 ): StudioArtistJourneyAudit["liveCommit"] & Readonly<{
   pointer: boolean;
   live: boolean;
@@ -408,7 +412,10 @@ function auditLiveCommitReport(
 
   let livePixelsVerifiedBrushes = 0;
   let settledPixelsVerifiedBrushes = 0;
-  let policyScopedBrushCount = 0;
+  let liveScopedBrushCount = 0;
+  let settledScopedBrushCount = 0;
+  let transparentWashBrushCount = 0;
+  let transparentWashVerifiedBrushes = 0;
   let qualityPassedBrushes = 0;
   const ids = new Set<string>();
   let everySave = evidence.length > 0;
@@ -423,8 +430,16 @@ function auditLiveCommitReport(
     const quality = record(entry?.quality);
     const policyKind = record(quality?.policy)?.kind;
     const isRecordOnlyDiscrete = policyKind === "record-only-discrete";
+    const isTransparentWash = policyKind === "record-only-transparent";
     if (!isRecordOnlyDiscrete) {
-      policyScopedBrushCount += 1;
+      liveScopedBrushCount += 1;
+      if (!isTransparentWash) settledScopedBrushCount += 1;
+    }
+    if (isTransparentWash && entry) {
+      transparentWashBrushCount += 1;
+      const transparentIssues = studioArtistTransparentWashIssues(entry, expectedBrushes, supporting);
+      issues.push(...transparentIssues);
+      if (transparentIssues.length === 0) transparentWashVerifiedBrushes += 1;
     }
     const frames = record(quality?.frames);
     const live = record(frames?.live);
@@ -435,12 +450,13 @@ function auditLiveCommitReport(
     const settledPixels = positiveInteger(settled?.visiblePixels) ?? 0;
     if (!isRecordOnlyDiscrete) {
       if (livePixels > 0) livePixelsVerifiedBrushes += 1;
-      if (settledPixels > 0) settledPixelsVerifiedBrushes += 1;
+      if (!isTransparentWash && settledPixels > 0) settledPixelsVerifiedBrushes += 1;
     }
     if (quality?.ok === true) qualityPassedBrushes += 1;
     if (
-      releasedPixels === 0
-      || (!isRecordOnlyDiscrete && (livePixels === 0 || settledPixels === 0))
+      (!isTransparentWash && releasedPixels === 0)
+      || (!isRecordOnlyDiscrete && livePixels === 0)
+      || (!isRecordOnlyDiscrete && !isTransparentWash && settledPixels === 0)
     ) {
       issues.push(`live/commit: ${id || index} has a missing rendered phase`);
     }
@@ -497,28 +513,31 @@ function auditLiveCommitReport(
     analyzedBrushes,
     livePixelsVerifiedBrushes,
     settledPixelsVerifiedBrushes,
+    transparentWashVerifiedBrushes,
     qualityPassedBrushes,
     pointer: complete,
     live:
       complete
-      && livePixelsVerifiedBrushes === policyScopedBrushCount,
+      && livePixelsVerifiedBrushes === liveScopedBrushCount,
     commit:
       complete
-      && settledPixelsVerifiedBrushes === policyScopedBrushCount
+      && settledPixelsVerifiedBrushes === settledScopedBrushCount
+      && transparentWashVerifiedBrushes === transparentWashBrushCount
       && qualityPassedBrushes === analyzedBrushes,
     // A completed long-brush report is emitted only after every per-brush Undo assertion passes.
-    undo: complete && report?.completed === true,
-    save: complete && everySave,
+    undo: complete && report?.completed === true && transparentWashVerifiedBrushes === transparentWashBrushCount,
+    save: complete && everySave && transparentWashVerifiedBrushes === transparentWashBrushCount,
   };
 }
 
 export function auditStudioArtistJourneyReports(
   lifecycleReport: unknown,
-  liveCommitReport: unknown
+  liveCommitReport: unknown,
+  supporting?: StudioArtistJourneySupportingEvidence,
 ): StudioArtistJourneyAudit {
   const issues: string[] = [];
   const lifecycle = auditLifecycleReport(lifecycleReport, issues);
-  const liveCommit = auditLiveCommitReport(liveCommitReport, issues);
+  const liveCommit = auditLiveCommitReport(liveCommitReport, issues, supporting);
   const coverage = Object.freeze({
     pointer: lifecycle.pointer && liveCommit.pointer,
     live: liveCommit.live,
@@ -540,6 +559,7 @@ export function auditStudioArtistJourneyReports(
       analyzedBrushes: liveCommit.analyzedBrushes,
       livePixelsVerifiedBrushes: liveCommit.livePixelsVerifiedBrushes,
       settledPixelsVerifiedBrushes: liveCommit.settledPixelsVerifiedBrushes,
+      transparentWashVerifiedBrushes: liveCommit.transparentWashVerifiedBrushes,
       qualityPassedBrushes: liveCommit.qualityPassedBrushes,
     }),
     lifecycle: Object.freeze({
@@ -707,9 +727,11 @@ async function main(): Promise<void> {
     plans[1]!.outputDirectory,
     "long-brush-quality-report.json"
   );
+  const longBrushResultPath = findReport(plans[1]!.outputDirectory, "studio-brush-long-result.json");
   const audit = auditStudioArtistJourneyReports(
     readJsonReport(lifecycleReportPath),
-    readJsonReport(liveCommitReportPath)
+    readJsonReport(liveCommitReportPath),
+    { longBrushResult: readJsonReport(longBrushResultPath), artifactRoot: plans[1]!.outputDirectory },
   );
   if (!audit.ok) {
     throw new Error(
@@ -726,6 +748,7 @@ async function main(): Promise<void> {
       log: logPath,
       lifecycleReport: lifecycleReportPath,
       liveCommitReport: liveCommitReportPath,
+      longBrushResult: longBrushResultPath,
       report: reportPath,
     },
     childPlans: plans,

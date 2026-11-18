@@ -6,6 +6,8 @@ import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdir
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { validateHelperReport } from "./run-studio-exhaustive-regressions.mjs";
+import { STABILIZATION_SUITES, finalizeStabilizationEvidence, isStabilizationSuite, stabilizationRuntime,
+  validateStabilizationFiles, validateStabilizationReport } from "./studio-stabilization-followup-cases.mjs";
 
 export const ROOT = fileURLToPath(new URL("../", import.meta.url));
 export const MAX_JSON_BYTES = 4 * 1024 * 1024;
@@ -54,6 +56,7 @@ export const SUITES = Object.freeze({
       report: "helper-results.json", env: {} }),
     pencil, inappEditor,
   ]),
+  ...STABILIZATION_SUITES,
 });
 const json = path => JSON.parse(readFileSync(path, "utf8"));
 const writeJson = (path, value) => writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -64,7 +67,7 @@ const empty = value => Array.isArray(value) && value.length === 0;
 const save = (directory, state) => writeJson(join(directory, "summary.json"), state);
 
 export function planFor(suite) {
-  requireValue(Object.hasOwn(SUITES, suite), "suite는 followup, native-representatives, residual, pencil-only 또는 canvas-layout이어야 합니다.");
+  requireValue(Object.hasOwn(SUITES, suite), `지원하는 고정 suite만 선택하세요: ${Object.keys(SUITES).join(", ")}`);
   return SUITES[suite];
 }
 
@@ -74,6 +77,7 @@ export function browsersFor(suite) {
 
 export function initialize(directory, suite, deadlineMs, sourceMode = "artifact") {
   requireValue(Object.hasOwn(SOURCE_MODES, sourceMode), "source_mode는 artifact 또는 fresh-source여야 합니다.");
+  requireValue(!isStabilizationSuite(suite) || sourceMode === "fresh-source", "새 stabilization suite는 정확한 현재 SHA의 fresh-source 빌드가 필요합니다.");
   requireValue(Number.isSafeInteger(deadlineMs) && deadlineMs > 0, `${SOURCE_MODES[sourceMode].workMinutes}분 작업 deadline이 필요합니다.`);
   mkdirSync(directory, { recursive: true });
   const state = { schema: 1, suite, sourceMode, scope: suite === "canvas-layout" ? "selected-original-cases-and-css-fixtures" : "selected-original-cases-only", startedAt: new Date().toISOString(),
@@ -116,7 +120,8 @@ export function validateMetadata(input, run, artifact, now = Date.now()) {
 
 export function validateChangedPaths(paths) {
   const allowed = new Set([workflowPath, runnerPath, "scripts/run-studio-exhaustive-followup.test.mjs",
-    "scripts/run-studio-exhaustive-regressions.test.mjs"]);
+    "scripts/run-studio-exhaustive-regressions.test.mjs", "scripts/studio-stabilization-followup-cases.mjs",
+    "scripts/studio-stabilization-followup-cases.test.mjs", "playwright.studio-production-followup.config.ts"]);
   const rejected = paths.filter(path => !allowed.has(path));
   requireValue(rejected.length === 0, `기존 dist와 제품 입력이 다릅니다. 새 빌드가 필요합니다: ${rejected.join(", ")}`);
   return paths;
@@ -316,7 +321,8 @@ export function validateReport(item, report, build) {
       && result.ok === true && empty(result.hardFailures), "정확한 인앱 profile/route 한 행의 원래 접근성·이탈·오류 계약이 통과하지 않았습니다.");
   } else if (item.kind === "helpers") {
     validateHelperReport(report);
-  } else throw new Error(`지원하지 않는 후속 검사 kind: ${item.kind}`);
+  } else if (!item.stabilization) throw new Error(`지원하지 않는 후속 검사 kind: ${item.kind}`);
+  if (item.stabilization) validateStabilizationReport(item, report);
 }
 
 function terminate(child, signal) {
@@ -367,19 +373,24 @@ export async function runCases(directory, state, { env = process.env, signal, ru
     }
     const target = join(directory, "evidence", item.id);
     mkdirSync(target, { recursive: true });
-    Object.assign(record, { status: "running", startedAt: new Date().toISOString(), command: [item.command, ...item.args], env: item.env });
+    const runtime = stabilizationRuntime(item, target);
+    Object.assign(record, { status: "running", startedAt: new Date().toISOString(), command: [item.command, ...runtime.args], env: item.env,
+      ...(item.evidenceScope ? { evidenceScope: item.evidenceScope } : {}) });
     save(directory, state);
     const started = Date.now();
-    const childEnv = { ...env, ...item.env, TOONSPECTRUM_VERIFY_DIR: target, TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: target,
+    const childEnv = { ...env, ...runtime.env, ...item.env, TOONSPECTRUM_VERIFY_DIR: target, TOONSPECTRUM_NATIVE_RASTER_VERIFY_DIR: target,
       TOONSPECTRUM_BRUSH_MEDIA_VERIFY_DIR: target, TOONSPECTRUM_HOKUSAI_LIVE_INTEGRATION_DIR: target, TOONSPECTRUM_INAPP_VERIFY_DIR: target };
     if (item.kind === "helpers") childEnv.PLAYWRIGHT_JSON_OUTPUT_FILE = join(target, item.report);
     for (const key of ["GH_TOKEN", "GITHUB_TOKEN", "TOONSPECTRUM_VERIFY_ORIGIN", "TOONSPECTRUM_VERIFY_BASE_URL"]) delete childEnv[key];
-    const result = await run(item.command, item.args, { env: childEnv, signal,
+    if (item.stabilization) for (const key of ["PLAYWRIGHT_EXECUTABLE_PATH", "TOONSPECTRUM_BG3D_INAPP_VERIFY_ORIGIN"]) delete childEnv[key];
+    const result = await run(item.command, runtime.args, { env: childEnv, signal,
       deadlineMs: Math.min(state.deadlineMs, Date.now() + item.minutes * 60_000), logPath: join(target, "process.log") });
     Object.assign(record, result, { durationMs: Date.now() - started, completedAt: new Date().toISOString() });
     try {
       requireValue(record.exitCode === 0 && !record.reason, record.reason ?? `검증 프로세스 exit ${record.exitCode}`);
+      finalizeStabilizationEvidence(item, target, ROOT);
       validateReport(item, json(join(target, item.report)), state.build);
+      validateStabilizationFiles(item, target, json(join(target, item.report)));
       record.reportSha256 = digest(join(target, item.report));
     } catch (error) { record.reason = error.message; record.exitCode = record.exitCode || 1; }
     record.status = record.exitCode === 0 && !record.reason ? "passed" : "failed";
@@ -413,6 +424,7 @@ export function publish(directory, state, { output = process.stdout, summaryPath
       const path = join(directory, "evidence", item.id, item.report);
       requireValue(digest(path) === record.reportSha256, `${item.id}: 판정 뒤 원본 report가 바뀌었습니다.`);
       validateReport(item, json(path), state.build);
+      validateStabilizationFiles(item, dirname(path), json(path));
     } catch (error) { errors.push(error.message); }
   }
   const documents = [];

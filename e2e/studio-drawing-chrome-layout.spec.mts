@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { buildStudioReactFixture } from "./helpers/studio-react-fixture.mjs";
+
 const styles = [
   "../apps/web/src/app/styles/sitewide-visual-ux.css",
   "../apps/web/src/app/styles/mobile-first-shell.css",
@@ -10,6 +12,46 @@ const styles = [
   "../apps/web/src/domains/creator/studio-shell/studio-document-chrome.css",
   "../apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css",
 ].map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
+
+async function mountProductSaveCenter(page: Page) {
+  // 저장 버튼·native dialog·slot 등록·포커스 복귀는 제품 코드다. 외부 상태 생산자만 문구 fixture로 공급한다.
+  const source = await buildStudioReactFixture(`
+      import { useEffect, useState } from "react";
+      import { createRoot } from "react-dom/client";
+      import { createPortal } from "react-dom";
+      import { StudioSaveSyncStatusCenter } from "./domains/creator/StudioSaveSyncStatusCenter";
+      import { createEmptyOperationJournal } from "./domains/creator/studio-operation-recovery-coordinator";
+      import { useEditorStatusSlot } from "./shared/lib/modal-status-slot";
+      function Notices() {
+        const slot = useEditorStatusSlot(), [messages, setMessages] = useState<string[]>([]);
+        useEffect(() => {
+          if (!slot) return;
+          const change = (event: Event) => {
+            if (event instanceof CustomEvent && Array.isArray(event.detail) && event.detail.every(value => typeof value === "string")) setMessages(event.detail);
+          };
+          window.addEventListener("studio-fixture-notices", change);
+          slot.summary.dataset.fixtureNoticesReady = "true";
+          return () => {
+            window.removeEventListener("studio-fixture-notices", change);
+            delete slot.summary.dataset.fixtureNoticesReady;
+          };
+        }, [slot]);
+        if (!slot) return null;
+        return <>
+          {createPortal(messages.map(message => <span key={message} role="status" data-studio-offline-important="true">{message}</span>), slot.summary)}
+          {createPortal(<section aria-label="전체 작업 안내">{messages.map(message =>
+            <p key={message} data-fixture-full-notice="true" style={{fontSize:24,lineHeight:1.5,whiteSpace:"normal"}}>{message}</p>
+          )}</section>, slot.element)}
+        </>;
+      }
+      const root = document.querySelector("[data-studio-save-status-chrome-mount]");
+      if (!root) throw new Error("저장 상태 fixture 자리가 없습니다.");
+      createRoot(root).render(<><StudioSaveSyncStatusCenter presentation="drawing" journal={createEmptyOperationJournal("chrome-layout-fixture")}/><Notices/></>);
+    `);
+  await page.addScriptTag({ content: source });
+  await expect(page.locator('button[data-studio-drawing-save-summary="true"]')).toHaveAttribute("aria-describedby", /.+/u);
+  await expect(page.locator('[data-fixture-notices-ready="true"]')).toHaveCount(1);
+}
 
 /** 제품 CSS와 저장 요약의 실제 중첩 구조를 사용한다. 앱의 획·저장 검증은 별도 production 검사에서 한다. */
 async function mountHeader(page: Page, mobile: boolean) {
@@ -101,43 +143,54 @@ for (const mobile of [false, true]) {
   }
 }
 
-test("좁은320 화면과 두 배 글꼴에서도 긴 영문·복수 안내를 자르지 않는다", async ({ page }) => {
+test("좁은320 화면과 두 배 글꼴의 긴 안내를 실제 저장 상세에서 모두 읽고 복귀한다", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await mountHeader(page, true);
   await page.locator("html").evaluate(node => { node.setAttribute("lang", "en"); });
-  const summary = page.getByRole("button", { name: "저장 상태 열기", exact: true });
+  await mountProductSaveCenter(page);
+  const summary = page.locator('button[data-studio-drawing-save-summary="true"]');
   await summary.evaluate(node => { node.style.fontSize = "24px"; });
   const before = await geometry(page);
   const messages = ["Offline tools could not be prepared · Check again", "Storage about 95% full · Back up your work"];
-  await setNotices(page, messages);
+  await page.evaluate(texts => window.dispatchEvent(new CustomEvent("studio-fixture-notices", { detail: texts })), messages);
   await expect(page.getByRole("status")).toHaveText(messages);
   await expect(summary).toHaveAccessibleDescription(messages.join(" "));
-  const bounds = await page.locator("#notice").evaluate(slot => {
-    const button = slot.closest("button");
-    if (!button) throw new Error("저장 버튼이 없습니다.");
-    const rect = button.getBoundingClientRect();
-    const range = document.createRange();
-    range.selectNodeContents(slot);
-    return {
-      overflow: button.scrollHeight - button.clientHeight,
-      text: [...range.getClientRects()].map(part => ({ left: part.left, right: part.right, top: part.top, bottom: part.bottom })),
-      button: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom },
-    };
-  });
-  expect(bounds.overflow).toBeLessThanOrEqual(1);
-  expect(bounds.text.length).toBeGreaterThan(2);
-  for (const rect of bounds.text) {
-    expect(rect.left).toBeGreaterThanOrEqual(bounds.button.left - 1);
-    expect(rect.right).toBeLessThanOrEqual(bounds.button.right + 1);
-    expect(rect.top).toBeGreaterThanOrEqual(bounds.button.top - 1);
-    expect(rect.bottom).toBeLessThanOrEqual(bounds.button.bottom + 1);
-  }
-  const after = await geometry(page);
-  expect(after.title.height).toBeGreaterThan(before.title.height);
-  expect(after.workspace.y).toBeGreaterThanOrEqual(after.header.y + after.header.height);
+  expect(await geometry(page)).toEqual(before);
   await summary.focus();
   await expect(summary).toBeFocused();
-  await summary.click({ trial: true });
-  await setNotices(page, []);
+  await summary.click();
+  const dialog = page.locator('dialog[data-studio-drawing-save-dialog="true"]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(await dialog.evaluate(node => node.matches(":modal"))).toBe(true);
+  const close = dialog.getByRole("button", { name: "저장 상태 닫기", exact: true });
+  await expect(close).toBeFocused();
+  const notices = dialog.locator("[data-fixture-full-notice]");
+  await expect(notices).toHaveText(messages);
+  for (const notice of await notices.all()) {
+    await notice.scrollIntoViewIfNeeded();
+    await expect(notice).toBeVisible();
+    const bounds = await notice.evaluate(node => {
+      const viewport = node.closest(".studio-drawing-dialog-content")?.getBoundingClientRect();
+      if (!viewport) throw new Error("저장 상세 스크롤 영역이 없습니다.");
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return { clip: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom },
+        text: [...range.getClientRects()].map(rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom })) };
+    });
+    expect(bounds.text.length).toBeGreaterThan(1);
+    for (const rect of bounds.text) {
+      expect(rect.left).toBeGreaterThanOrEqual(bounds.clip.left - 1);
+      expect(rect.right).toBeLessThanOrEqual(bounds.clip.right + 1);
+      expect(rect.top).toBeGreaterThanOrEqual(bounds.clip.top - 1);
+      expect(rect.bottom).toBeLessThanOrEqual(bounds.clip.bottom + 1);
+    }
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(summary).toBeFocused();
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("studio-fixture-notices", { detail: [] })));
+  await expect(summary).toHaveAccessibleDescription("");
   expect(await geometry(page)).toEqual(before);
 });

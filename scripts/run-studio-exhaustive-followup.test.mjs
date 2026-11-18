@@ -69,8 +69,8 @@ function readyState(t, suite = "followup", deadline = Date.now() + 10_000) {
 test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 새 저장 비용은 만들지 않는다", () => {
   assert.equal([...workflow.matchAll(/^ {4}runs-on: /gmu)].length, 2);
   assert.match(workflow, /default: regressions/u);
-  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual' \|\| inputs\.suite == 'pencil-only' \|\| inputs\.suite == 'canvas-layout'\)/u);
-  assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ inputs\.source_mode == 'fresh-source' && 40 \|\| 20 \}\}/u);
+  assert.match(followupJob, /if: github\.event_name == 'workflow_dispatch' && \(inputs\.suite == 'followup' \|\| inputs\.suite == 'native-representatives' \|\| inputs\.suite == 'residual' \|\| inputs\.suite == 'pencil-only' \|\| inputs\.suite == 'canvas-layout' \|\| inputs\.suite == 'interaction-followup' \|\| inputs\.suite == '3d-followup'\)/u);
+  assert.match(followupJob, /runs-on: ubuntu-24\.04\n {4}timeout-minutes: \$\{\{ \(inputs\.source_mode == 'fresh-source' \|\| inputs\.suite == 'interaction-followup' \|\| inputs\.suite == '3d-followup'\) && 40 \|\| 20 \}\}/u);
   assert.match(followupJob, /STUDIO_FOLLOWUP_SOURCE_MODE === 'fresh-source' \? 39 : 19/u);
   assert.match(followupJob, /Date\.now\(\) \+ minutes \* 60_000/u);
   assert.deepEqual(SOURCE_MODES, { artifact: { jobMinutes: 20, workMinutes: 19 }, "fresh-source": { jobMinutes: 40, workMinutes: 39 } });
@@ -81,9 +81,9 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
   assert.match(followupJob, /run-id: \$\{\{ inputs\.producer_run_id \}\}/u);
   assert.match(followupJob, /digest-mismatch: error/u);
   assert.match(followupJob, /timeout-minutes: \$\{\{ fromJSON\(steps\.provenance\.outputs\.download_minutes \|\| '6'\) \}\}/u);
-  assert.match(followupJob, /if: inputs\.source_mode != 'fresh-source'\n {8}uses: actions\/download-artifact/u);
+  assert.match(followupJob, /if: env\.STUDIO_FOLLOWUP_SOURCE_MODE != 'fresh-source'\n {8}uses: actions\/download-artifact/u);
   for (const command of ["prepare-disk", "hydrate", "build"]) assert.match(followupJob,
-    new RegExp(`if: inputs\\.source_mode == 'fresh-source'\\n(?: {8}env:[\\s\\S]*?)? {8}run: node scripts/run-studio-exhaustive-followup\\.mjs --${command}`, "u"));
+    new RegExp(`if: env\\.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'\\n(?: {8}env:[\\s\\S]*?)? {8}run: node scripts/run-studio-exhaustive-followup\\.mjs --${command}`, "u"));
   assert.match(followupJob, /if: always\(\)[\s\S]*run-studio-exhaustive-followup\.mjs --publish/u);
   assert.doesNotMatch(workflow, /continue-on-error|actions\/(?:upload-artifact|cache)|cache:|matrix:|pnpm (?:run )?build\b/u);
   assert.doesNotMatch(workflow, /^ {2}(?:push|schedule|workflow_run|merge_group):/mu);
@@ -98,7 +98,7 @@ test("기본11gate와 상호 배타적인 수동20·40분 job만 사용하고 �
 });
 
 test("고정된 후속 묶음만 선택하며 임의 명령·전체matrix를 받지 않는다", () => {
-  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual", "pencil-only", "canvas-layout"]);
+  assert.deepEqual(Object.keys(SUITES), ["followup", "native-representatives", "residual", "pencil-only", "canvas-layout", "interaction-followup", "3d-followup"]);
   assert.deepEqual(planFor("followup").map(item => item.id), ["service-worker", "webkit-kakaotalk-android-360-animation", "chromium-tablet-768-animation", "native-paint-bucket"]);
   assert.deepEqual(planFor("native-representatives").map(item => item.scenario), ["paint-bucket", "selection-rect", "filter-inside"]);
   assert.deepEqual(SUITES.followup[0].args, ["exec", "tsx", "scripts/verify-studio-service-worker.mts"]);
@@ -241,7 +241,7 @@ test("실제build-meta·manifest·SW 일치와 진입파일 존재를 요구한�
 });
 
 test("exit0이어도 빈·다른scope·pageerror·SW미완료·native실패 report는 통과하지 않는다", () => {
-  for (const item of Object.values(SUITES).flat()) {
+  for (const item of Object.values(SUITES).flat().filter(value => !value.stabilization)) {
     validateReport(item, reportFor(item), build);
     assert.throws(() => validateReport(item, {}, build));
   }
@@ -326,7 +326,7 @@ test("남은5개는 각 원래 명령과 고정scope를 실행하고 진단 JSON
   assert.match(captured.text(), /"diagnostic":"preserved"/u);
 });
 
-test("레이아웃 후속은 28개 DOM·CSS 결과와 원래 연필·모바일 두 사례를 모두 보존한다", async t => {
+test("레이아웃 후속은 50개 DOM·CSS 결과와 원래 연필·모바일 두 사례를 모두 보존한다", async t => {
   const { directory, state } = readyState(t, "canvas-layout");
   let index = 0;
   await runCases(directory, state, { env: {}, run: async (command, args, options) => {

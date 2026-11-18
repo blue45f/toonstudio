@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -121,7 +121,93 @@ function liveCommitReport(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function transparentWashFixture(root: string) {
+  const id = "inkwash-water-brush";
+  const quality = {
+    ok: true,
+    policy: { kind: "record-only-transparent", reason: "water-only wash deposits no pigment" },
+    frames: {
+      live: { visiblePixels: 100 },
+      released: { visiblePixels: 0 },
+      settled: { visiblePixels: 0 },
+    },
+    transitions: {
+      liveToReleased: { from: "live", to: "released" },
+      liveToSettled: { from: "live", to: "settled" },
+      releasedToSettled: { from: "released", to: "settled" },
+    },
+  };
+  const water = { ...qualityEntry(id), quality };
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=", "base64");
+  for (const artifact of Object.values(water.artifacts)) {
+    const path = join(root, artifact.relativeToScratch);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, png);
+  }
+  const persisted = {
+    id, operation: "paint", persistedMode: "pen", expectedRuntimeBrushId: id,
+    persistedBrushId: id, persistedCatalogId: id, persistedPathDistance: 500,
+    undoRestoredPixels: true, qualityPolicy: "record-only-transparent", qualityOk: true,
+  };
+  return {
+    water,
+    persisted,
+    report: liveCommitReport({ evidence: [qualityEntry("pen"), water] }),
+    supporting: {
+      artifactRoot: root,
+      longBrushResult: { ok: true, errorCount: 0, presetCount: 2, evidence: [{ id: "pen" }, persisted] },
+    },
+  };
+}
+
 describe("Studio artist journey evidence audit", () => {
+  it("투명 물붓은 실제 젖음·저장·Undo·PNG를 확인하고 안료 0px를 별도 집계한다", () => {
+    const root = mkdtempSync(join(tmpdir(), "artist-transparent-"));
+    try {
+      const f = transparentWashFixture(root);
+      const audit = auditStudioArtistJourneyReports(lifecycleReport(), f.report, f.supporting);
+      expect(audit.ok).toBe(true);
+      expect(audit.liveCommit).toMatchObject({
+        livePixelsVerifiedBrushes: 2, settledPixelsVerifiedBrushes: 1, transparentWashVerifiedBrushes: 1,
+      });
+      expect(Object.values(audit.coverage).every(Boolean)).toBe(true);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it.each([
+    "live", "released", "settled", "undo", "brush", "path", "duplicate", "missing-png", "invalid-png", "pigmented-id",
+  ] as const)("투명 물붓의 %s 증거가 잘못되면 예외로 통과하지 않는다", (broken) => {
+    const root = mkdtempSync(join(tmpdir(), "artist-transparent-"));
+    try {
+      const f = transparentWashFixture(root);
+      if (broken === "live") f.water.quality.frames.live.visiblePixels = 0;
+      if (broken === "released") f.water.quality.frames.released.visiblePixels = 4;
+      if (broken === "settled") f.water.quality.frames.settled.visiblePixels = 4;
+      if (broken === "undo") f.persisted.undoRestoredPixels = false;
+      if (broken === "brush") f.persisted.persistedBrushId = "pen";
+      if (broken === "path") f.persisted.persistedPathDistance = 299;
+      if (broken === "duplicate") f.supporting.longBrushResult.evidence[0] = f.persisted;
+      if (broken === "missing-png") rmSync(join(root, f.water.artifacts.live.relativeToScratch));
+      if (broken === "invalid-png") writeFileSync(join(root, f.water.artifacts.live.relativeToScratch), "not a png");
+      if (broken === "pigmented-id") f.water.id = "pen";
+      const audit = auditStudioArtistJourneyReports(lifecycleReport(), f.report, f.supporting);
+      expect(audit.ok).toBe(false);
+      expect(audit.liveCommit.transparentWashVerifiedBrushes).toBe(0);
+      expect(audit.coverage.commit).toBe(false);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
+  it("투명 물붓의 supporting report가 없거나 일반 안료 획이 0px이면 실패한다", () => {
+    const root = mkdtempSync(join(tmpdir(), "artist-transparent-"));
+    try {
+      const f = transparentWashFixture(root);
+      expect(auditStudioArtistJourneyReports(lifecycleReport(), f.report).ok).toBe(false);
+      f.water.quality.policy.kind = "strict-continuous";
+      expect(auditStudioArtistJourneyReports(lifecycleReport(), f.report, f.supporting).issues)
+        .toContain("live/commit: inkwash-water-brush has a missing rendered phase");
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
+
   it("accepts complete pointer/live/commit/Undo/save/reload/export browser evidence", () => {
     const audit = auditStudioArtistJourneyReports(
       lifecycleReport(),

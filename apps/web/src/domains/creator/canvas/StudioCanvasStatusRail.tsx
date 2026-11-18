@@ -20,6 +20,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { presentStudioAutosaveDocumentLeadership } from "../studio-autosave-document-leader";
 import { StudioRecoveryNotice } from "./StudioRecoveryNotice";
+import { observeStudioCanvasNoticePlacement } from "./studio-canvas-notice-placement";
 
 import { StudioReliabilityStatusRail } from "../StudioReliabilityStatusRail";
 import { StudioToolHintTarget } from "../StudioToolHint";
@@ -402,29 +403,9 @@ export function StudioCanvasStatusRail({
 
   const noticeRailRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    if (!mobileImmersive || !mobileNoticeStripFilled) return;
+    if (!mobileNoticeStripFilled) return;
     const rail = noticeRailRef.current;
-    const host = rail?.parentElement;
-    if (!rail || !host) return;
-    const controls = host.querySelector("[data-studio-floating-controls]");
-    if (!controls) return;
-    const placeBelowControls = () => {
-      const hostTop = host.getBoundingClientRect().top;
-      const bottom = Math.max(64, ...Array.from(controls.children, (child) =>
-        child.getBoundingClientRect().bottom - hostTop));
-      rail.style.top = `${Math.ceil(bottom + 8)}px`;
-    };
-    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(placeBelowControls);
-    const observeChildren = () => {
-      resize?.disconnect();
-      resize?.observe(host);
-      for (const child of controls.children) resize?.observe(child);
-      placeBelowControls();
-    };
-    const mutations = new MutationObserver(observeChildren);
-    mutations.observe(controls, { childList: true });
-    observeChildren();
-    return () => { resize?.disconnect(); mutations.disconnect(); };
+    return rail ? observeStudioCanvasNoticePlacement(rail, mobileImmersive) : undefined;
   }, [mobileImmersive, mobileNoticeStripFilled]);
 
   return (

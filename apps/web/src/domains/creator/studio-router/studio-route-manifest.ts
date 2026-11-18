@@ -63,7 +63,7 @@ export const STUDIO_ROUTE_MANIFEST = Object.freeze([
     id: "studio-editor",
     kind: "editor",
     ownsDocumentTitle: true,
-    pattern: "/studio/(work/:workId|remix/:sourceWorkId)?/:surface(canvas|comic|animation|brushes|bg3d|poser|character)?",
+    pattern: "/studio/canvas/poser | /studio/(work/:workId|remix/:sourceWorkId)?/:surface(canvas|comic|animation|brushes|bg3d|poser|character)?",
   },
   {
     id: "studio-composition",

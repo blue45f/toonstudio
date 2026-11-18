@@ -62,13 +62,13 @@ function livingInkReport() {
   };
 }
 
-test("원래 source harness 8개와 presentation/LivingInk, DOM·CSS 28개를 정확히 실행한다", () => {
+test("원래 source harness 8개와 presentation/LivingInk, DOM·CSS 50개를 정확히 실행한다", () => {
   assert.deepEqual(SOURCE_GATE_IDS, [
     "gpu-committed-parity", "engine-webgpu-filter-parity", "canvaskit-quality-worker",
     "dynamic-dual-tip-webgpu", "dynamic-dual-tip-webgpu-v2", "engine-webgpu-textured-brush",
     "engine-webgpu-tile-provider", "engine-tile-storage-opfs-v2",
   ]);
-  assert.equal(EXPECTED_HELPER_TESTS, 28);
+  assert.equal(EXPECTED_HELPER_TESTS, 50);
   assert.equal(REGRESSION_GATES.length, 11);
   assert.equal(new Set(REGRESSION_GATES.map(gate => gate.id)).size, 11);
   assert.deepEqual(REGRESSION_GATES.slice(-2).map(gate => gate.id), ["engine-webgpu-presentation", "living-ink-execution"]);
@@ -84,9 +84,9 @@ test("원래 source harness 8개와 presentation/LivingInk, DOM·CSS 28개를 �
   assert.deepEqual(REGRESSION_GATES[0].args, ["exec", "playwright", "test", "--config", "playwright.studio-qa-helpers.config.ts", "--reporter=list,json"]);
 });
 
-test("helper·CSS의 실제 세 파일/표시 selector/실패 계약을 유지하고 skip·force로 축소하지 않는다", () => {
+test("helper·CSS의 실제 다섯 파일/표시 selector/실패 계약을 유지하고 skip·force로 축소하지 않는다", () => {
   const config = readFileSync(join(REPOSITORY_ROOT, "playwright.studio-qa-helpers.config.ts"), "utf8");
-  assert.match(config, /testMatch: \["studio-qa-interactions\.spec\.mts", "studio-qa-shell-interactions\.spec\.mts", "studio-drawing-chrome-layout\.spec\.mts"\]/u);
+  assert.match(config, /testMatch: \["studio-qa-interactions\.spec\.mts", "studio-qa-shell-interactions\.spec\.mts", "studio-drawing-chrome-layout\.spec\.mts", "studio-qa-ux-followup\.spec\.mts", "studio-bg3d-qa-interactions\.spec\.mts"\]/u);
   assert.match(config, /workers: 1/u);
   assert.match(config, /retries: 0/u);
   assert.match(config, /forbidOnly: Boolean\(process\.env\.CI\)/u);
@@ -109,9 +109,9 @@ test("helper·CSS의 실제 세 파일/표시 selector/실패 계약을 유지�
 });
 
 test("UI report는 누락·추가·skip·retry·expected failure를 성공으로 승인하지 않는다", () => {
-  assert.equal(validateHelperReport(helperReport()), 28);
-  for (const count of [0, 27, 29]) assert.throws(() => validateHelperReport(helperReport(count)));
-  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 27]]) {
+  assert.equal(validateHelperReport(helperReport()), 50);
+  for (const count of [0, 49, 51]) assert.throws(() => validateHelperReport(helperReport(count)));
+  for (const [key, value] of [["unexpected", 1], ["flaky", 1], ["skipped", 1], ["expected", 49]]) {
     const report = helperReport();
     report.stats[key] = value;
     assert.throws(() => validateHelperReport(report), key);
