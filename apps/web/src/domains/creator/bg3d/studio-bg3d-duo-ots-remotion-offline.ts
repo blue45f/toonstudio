@@ -224,14 +224,14 @@ export function evaluateDuoOtsRemotionAndOffline(
     `remotion60fps|360f|${duo.id}|${input.continuityDigestHex}|clamp`,
   );
   const motionAudit: DeterministicMotionAudit = Object.freeze({
-    fps: 60,
-    totalFrames: 360,
-    unseededRandomCalls: 0,
-    wallClockCalls: 0,
-    extrapolateClamped: true,
-    checkpointFramesVerified: [0, 111, 246, 359],
+    fps: 60 as const,
+    totalFrames: 360 as const,
+    unseededRandomCalls: 0 as const,
+    wallClockCalls: 0 as const,
+    extrapolateClamped: true as const,
+    checkpointFramesVerified: [0, 111, 246, 359] as const,
     frameParityDigestHex,
-    deterministicPassed: true,
+    deterministicPassed: true as const,
   });
 
   const queuedCheckpointCount = input.networkOnline ? 0 : 3;

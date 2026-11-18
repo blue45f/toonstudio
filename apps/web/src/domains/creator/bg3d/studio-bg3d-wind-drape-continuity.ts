@@ -202,21 +202,21 @@ export function evaluateWindDrapeAndContinuity(
   const tankobonSpec: TankobonSpreadOverscanSpec =
     input.tankobonFormatId === "B5"
       ? Object.freeze({
-          formatId: "B5",
-          trimSpreadMm: [364, 257],
-          bleedMm: 3,
-          fullBleedSpreadMm: [370, 263],
-          printPixels350Dpi: [5098, 3624],
+          formatId: "B5" as const,
+          trimSpreadMm: [364, 257] as const,
+          bleedMm: 3 as const,
+          fullBleedSpreadMm: [370, 263] as const,
+          printPixels350Dpi: [5098, 3624] as const,
           horizontalOverscanPct: 34.0,
           safeWorldWidthM: 3.7,
           extraModelingMinutes: 0,
         })
       : Object.freeze({
-          formatId: "A5",
-          trimSpreadMm: [296, 210],
-          bleedMm: 3,
-          fullBleedSpreadMm: [302, 216],
-          printPixels350Dpi: [4161, 2976],
+          formatId: "A5" as const,
+          trimSpreadMm: [296, 210] as const,
+          bleedMm: 3 as const,
+          fullBleedSpreadMm: [302, 216] as const,
+          printPixels350Dpi: [4161, 2976] as const,
           horizontalOverscanPct: 34.0,
           safeWorldWidthM: 3.7,
           extraModelingMinutes: 0,

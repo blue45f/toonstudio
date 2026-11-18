@@ -217,8 +217,8 @@ export function evaluateDustLodCliffhangerAndPack(
   const bundleChecksumHex = computeBundleChecksumHex(checksumSeed);
 
   const packManifest: ToonPackArchiveBundleJson = Object.freeze({
-    schema: "toonstudio.toonpack.v27",
-    episodeCutCount: 70,
+    schema: "toonstudio.toonpack.v27" as const,
+    episodeCutCount: 70 as const,
     locale: input.locale,
     tankobonFormatId: input.tankobonFormatId,
     continuityDigestHex: input.continuityDigestHex,
@@ -229,7 +229,7 @@ export function evaluateDustLodCliffhangerAndPack(
       "teaser_9x16.toonmotion.json",
       "stems_48khz.toonaudio.json",
       "captions_multi.toonsubs.vtt",
-    ],
+    ] as const,
     bundleChecksumHex,
   });
 
