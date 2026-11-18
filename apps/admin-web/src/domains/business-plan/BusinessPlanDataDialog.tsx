@@ -1,5 +1,5 @@
 import { BUSINESS_PLAN_MAX_IMPORT_BYTES, parseBusinessPlanState, todayKst } from "@toonstudio/contracts/business-plan";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { BusinessPlanDialog, BusinessPlanError, downloadBusinessPlan, errorMessage } from "./business-plan-ui";
 
@@ -7,6 +7,7 @@ import type { BusinessPlanCommit } from "./business-plan-ui";
 import type { BusinessPlanState } from "@toonstudio/contracts/business-plan";
 
 export function BusinessPlanDataDialog({ board, onCommit, onClose }: { board: BusinessPlanState | null; onCommit: BusinessPlanCommit; onClose: () => void }) {
+  const jsonId = useId();
   const currentJson = board ? JSON.stringify(board) : "";
   const [raw, setRaw] = useState(currentJson);
   const [candidate, setCandidate] = useState<BusinessPlanState | null>(null);
@@ -34,7 +35,7 @@ export function BusinessPlanDataDialog({ board, onCommit, onClose }: { board: Bu
         try { const text = await file.text(); setRaw(text); review(text); } catch { setError("백업 파일을 읽지 못했습니다. 파일을 다시 선택하세요."); }
       }} /></label></div>
       <p className="bp-notice">가져오기는 현재 화면의 작업·주장·문서·점검 전체를 교체합니다. 서버 기록은 ‘서버에 저장’을 누를 때 변경됩니다. 다른 관리자의 최신 기록과 충돌하면 덮어쓰기를 차단합니다.</p>
-      <label className="bp-field"><span>사업계획서 보드 JSON</span><textarea className="bp-json" value={raw} rows={14} spellCheck={false} onChange={(event) => { setRaw(event.target.value); setCandidate(null); setNotice(""); }} /></label>
+      <label className="bp-field" htmlFor={jsonId}><span id={`${jsonId}-label`}>사업계획서 보드 JSON</span><textarea id={jsonId} aria-labelledby={`${jsonId}-label`} className="bp-json" value={raw} rows={14} spellCheck={false} onChange={(event) => { setRaw(event.target.value); setCandidate(null); setNotice(""); }} /></label>
       {notice && <p role="status" className="bp-notice">{notice}</p>}
       <BusinessPlanError error={error} />
       {candidate && <div className="bp-notice bp-notice--good"><strong>가져오기 검토 완료</strong><p>{candidate.project.title} · 작업 {candidate.tasks.length}개 · 주장 {candidate.claims.length}개 · 문서 {candidate.documents.length}개 · 멘토 요청 {candidate.mentor.length}개</p><p>4개 실행 항목은 승인 대기로 유지됩니다.</p></div>}

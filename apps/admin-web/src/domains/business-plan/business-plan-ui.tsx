@@ -107,7 +107,7 @@ export function TextAreaField({ label, name, value = "", hint, rows = 3, maxLeng
 
 export function SelectField({ label, name, value = "", options, full = false }: { label: string; name: string; value?: string; options: readonly (string | { value: string; label: string })[]; full?: boolean }) {
   const id = useId();
-  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span>{label}</span><select id={id} name={name} defaultValue={value}>{options.map((option) => typeof option === "string" ? <option key={option} value={option}>{option}</option> : <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
+  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span id={`${id}-label`}>{label}</span><select id={id} name={name} defaultValue={value} aria-labelledby={`${id}-label`}>{options.map((option) => typeof option === "string" ? <option key={option} value={option}>{option}</option> : <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
 }
 
 export function CheckField({ label, name, checked = false, hint }: { label: string; name: string; checked?: boolean; hint?: string }) {
