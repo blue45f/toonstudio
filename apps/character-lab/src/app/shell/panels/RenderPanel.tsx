@@ -2,28 +2,19 @@
  * RenderPanel: 셰이딩 모드(PBR/툰)·품질 프리셋·톤맵·그림자(캐스케이드·PCF·접촉 경화)·후처리(FXAA·블룸·샤프닝·TAA/SSAO 베타)·IBL 세기·
  * 툰 옵션을 `shading/set`으로 바꾸고, 엔진이 보고하는 기능 가용성(CSM·SSS·IBL·TAA·SSAO·GPU 타이머·텍스처 모드)과 HUD 수치를 표로 보인다.
  */
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../../../contracts";
-import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RIG_CAPABILITY_IDS, hasBetaFeatures, readBetaFeatures, readExtendedFeatures } from "../../../render/beta-features";
+import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, hasBetaFeatures, readBetaFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
-import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
+import { readSceneFeatures } from "../../../render/scene-features";
 import { applyLabShaperGen3dLookToShading, buildLabShaperGen3dPipelineSpec, LAB_SHAPER_GEN3D_LOOK_PRESETS, type LabShaperGen3dLookId } from "../../../render/shaper-gen3d-bridge";
+import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "../../../render/style/character-verify-ai-fresh-ideas";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
-import {
-  WEBTOON_GENRE_SCENE_PRESETS,
-  WEBTOON_LIGHTING_SHADOW_PRESETS,
-  WEBTOON_MATERIAL_SURFACE_PRESETS,
-  buildGenreScenePresetCommands,
-  buildLightingShadowCommands,
-  buildMaterialSurfaceCommands,
-  buildResetMaterialLightingCommands,
-  isMaterialSurfacePresetActive,
-  summarizeActiveMaterialAndShadowKo,
-} from "./render-material-lighting-presets";
-import { RenderVerifyAiPanel } from "./render-verify-ai-panel";
+import { RenderFeatureStatus } from "./render-feature-status";
+import { RenderMaterialLightingControls } from "./render-material-lighting-controls";
 import { hudRows } from "./viewport-interactions";
 
 import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
@@ -95,9 +86,28 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [tripoLookId, setTripoLookId] = useState<LabShaperGen3dLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
+  const [selectedLensId, setSelectedLensId] = useState<CharacterLabFreshLensId>("contrarian-take");
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
+
+  const verifyAiReport = useMemo(
+    () =>
+      evaluateCharacterLabVerifyAiGate({
+        shading,
+        lookId: tripoLookId,
+        delight: tripoDelight,
+        disableHairInline,
+      }),
+    [shading, tripoLookId, tripoDelight, disableHairInline],
+  );
+
+  const activeLensRemix = useMemo(
+    () =>
+      verifyAiReport.remixes.find((r) => r.id === selectedLensId) ??
+      verifyAiReport.remixes[0]!,
+    [verifyAiReport.remixes, selectedLensId],
+  );
 
   const poll = useCallback((): void => {
     if (!engine) {
@@ -173,7 +183,6 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   };
 
   const betaSupported = engine !== null && hasBetaFeatures(engine);
-  const extended = readExtendedFeatures(features);
   const isToon = shading.mode === "toon";
   const isKit = state.recipe.source.kind === "kit";
   const hudList = hud ? hudRows(hud) : [];
@@ -222,72 +231,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </button>
       </div>
 
-      <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">
-        <legend>피부·의상 소재 & 툰 셰이딩·그림자 프리셋</legend>
-        <p className="cl-render-hint" data-testid="render-material-shadow-summary">
-          {summarizeActiveMaterialAndShadowKo(state.recipe.surfaces, shading)}
-        </p>
-        <div className="cl-render-row" role="group" aria-label="한국 웹툰 장르별 1-클릭 마스터 씬 프리셋" data-testid="render-webtoon-genre-scene-presets">
-          {WEBTOON_GENRE_SCENE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-genre-preset-${preset.id}`}
-              title={`[${preset.genreTagKo}] ${preset.summaryKo}`}
-              onClick={() => {
-                for (const command of buildGenreScenePresetCommands(state.recipe.surfaces, shading, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row" role="group" aria-label="피부·의상 표면 소재 프리셋" data-testid="render-surface-material-presets">
-          {WEBTOON_MATERIAL_SURFACE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-surface-preset-${preset.id}`}
-              aria-pressed={isMaterialSurfacePresetActive(state.recipe.surfaces, preset)}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildMaterialSurfaceCommands(state.recipe.surfaces, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row" role="group" aria-label="툰 셰이딩·그림자 연출 프리셋" data-testid="render-toon-shadow-presets">
-          {WEBTOON_LIGHTING_SHADOW_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-lighting-preset-${preset.id}`}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildLightingShadowCommands(shading, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row">
-          <button
-            type="button"
-            data-testid="render-reset-material-lighting-btn"
-            onClick={() => {
-              for (const command of buildResetMaterialLightingCommands(state.recipe.surfaces)) dispatch(command);
-            }}
-          >
-            기본 소재·조명 복원
-          </button>
-        </div>
-      </fieldset>
+      <RenderMaterialLightingControls surfaces={state.recipe.surfaces} shading={shading} dispatch={dispatch} />
 
       <div className="cl-render-row" role="group" aria-label="셰이딩 모드">
         <button type="button" aria-pressed={!isToon} onClick={() => set({ mode: "pbr" })}>
@@ -666,13 +610,56 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         })()}
       </fieldset>
 
-      <RenderVerifyAiPanel
-        shading={shading}
-        lookId={tripoLookId}
-        delight={tripoDelight}
-        disableHairInline={disableHairInline}
-        onApplyShading={set}
-      />
+      <fieldset className="cl-render-group" data-testid="character-lab-verify-ai-panel">
+        <legend>Character Labs × 5-Lens 연출 리믹스 & Verify AI 턴어라운드 품질 게이트</legend>
+        <p className="cl-render-status" data-testid="character-lab-verify-ai-badge">
+          {verifyAiReport.summaryBadgeKo}
+        </p>
+        <p className="cl-render-hint" data-testid="character-lab-remix-header">
+          {verifyAiReport.remixHeaderKo}
+        </p>
+        <div className="cl-render-row" role="group" aria-label="캐릭터 5-Lens 크리에이티브 리믹스">
+          {verifyAiReport.remixes.map((remix) => (
+            <button
+              key={remix.id}
+              type="button"
+              className="cl-preset-chip"
+              data-testid={`character-lab-fresh-lens-${remix.id}`}
+              aria-pressed={remix.id === activeLensRemix.id}
+              onClick={() => setSelectedLensId(remix.id)}
+            >
+              {remix.badgeKo}
+            </button>
+          ))}
+        </div>
+        <div data-testid="character-lab-fresh-lens-detail">
+          <p className="cl-render-hint">
+            <strong>{activeLensRemix.badgeKo}: {activeLensRemix.titleKo}</strong>
+          </p>
+          <p className="cl-render-hint">
+            → <strong>Angle:</strong> {activeLensRemix.angleKo}
+          </p>
+          {activeLensRemix.actionableStepsKo ? (
+            <ol className="cl-render-hint" data-testid="character-lab-fresh-lens-steps">
+              {activeLensRemix.actionableStepsKo.map((step, idx) => (
+                <li key={idx}>{step}</li>
+              ))}
+            </ol>
+          ) : null}
+        </div>
+        <div className="cl-render-row">
+          <span className="cl-render-hint" data-testid="character-lab-remediation-readout">
+            {verifyAiReport.remediationKo}
+          </span>
+          <button
+            type="button"
+            data-testid="character-lab-apply-verify-ai-patch-btn"
+            onClick={() => set(verifyAiReport.recommendedShadingPatch)}
+          >
+            Verify AI 캐릭터 툰 최적 보정 적용
+          </button>
+        </div>
+      </fieldset>
 
       <fieldset className="cl-render-group" data-group="beta">
         <legend>
@@ -721,44 +708,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </p>
       </fieldset>
 
-      <h3 className="cl-render-title">엔진 기능 상태</h3>
-      {!engine ? (
-        <p className="cl-render-hint">엔진이 준비되면 기능 가용성이 여기에 표시됩니다.</p>
-      ) : features ? (
-        <table className="cl-render-table" aria-label="엔진 기능 상태">
-          <tbody>
-            {SCENE_FEATURE_IDS.map((id) => {
-              const entry = features[id];
-              return (
-                <tr key={id} data-feature={id} data-status={entry.status}>
-                  <th scope="row">{SCENE_FEATURE_LABELS_KO[id]}</th>
-                  <td>{SCENE_FEATURE_STATUS_LABELS_KO[entry.status]}</td>
-                  <td>{entry.reasonKo ?? entry.detail ?? ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      ) : (
-        <p className="cl-render-hint">이 엔진은 기능 가용성 보고를 제공하지 않습니다.</p>
-      )}
-      {extended ? (
-        <table className="cl-render-table" aria-label="확장 기능 상태">
-          <tbody>
-            {RIG_CAPABILITY_IDS.map((id) => {
-              const entry = extended[id];
-              if (!entry) return null;
-              return (
-                <tr key={id} data-feature={id} data-status={entry.status}>
-                  <th scope="row">{EXTENDED_FEATURE_LABELS_KO[id]}</th>
-                  <td>{SCENE_FEATURE_STATUS_LABELS_KO[entry.status]}</td>
-                  <td>{entry.reasonKo ?? entry.detail ?? ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      ) : null}
+      <RenderFeatureStatus engineReady={Boolean(engine)} features={features} />
 
       <h3 className="cl-render-title">HUD 수치</h3>
       {hudList.length > 0 ? (

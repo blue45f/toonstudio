@@ -19,8 +19,16 @@ import type {
   LabFailure,
 } from "../contracts";
 
-export { WEBTOON_STRIP_ACTING_ARCS, buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
-export type { WebtoonStripActingArcId, WebtoonStripActingArcSpec, WebtoonStripCutActingKeyframe } from "./webtoon-strip-acting";
+export {
+  WEBTOON_STRIP_ACTING_ARCS,
+  buildActingCutPlan,
+  findWebtoonStripActingArc,
+} from "./webtoon-strip-acting";
+export type {
+  WebtoonStripActingArcId,
+  WebtoonStripActingArcSpec,
+  WebtoonStripCutActingKeyframe,
+} from "./webtoon-strip-acting";
 
 export interface WebtoonStripCutSpec {
   readonly id: string;

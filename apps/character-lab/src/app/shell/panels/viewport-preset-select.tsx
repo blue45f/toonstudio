@@ -1,21 +1,15 @@
-/** 뷰포트의 SHAPER 내장 프리셋 선택 목록. 적용 명령은 ViewportPane이 처리한다. */
 import { SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, WEBTOON_SIGNATURE_POSES } from "./shaper-control-points";
 import { SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS } from "./viewport-interactions";
 
 interface ViewportPresetSelectProps {
-  readonly value: string;
-  readonly onSelect: (value: string) => void;
+  readonly presetId: string;
+  readonly onSelect: (presetId: string) => void;
 }
 
-export function ViewportPresetSelect({ value, onSelect }: ViewportPresetSelectProps) {
+/** 프리셋 표시만 담당하며 선택 상태와 명령 적용은 뷰포트가 유지한다. */
+export function ViewportPresetSelect({ presetId, onSelect }: ViewportPresetSelectProps) {
   return (
-    <select
-      className="cl-viewport-select"
-      aria-label="SHAPER 내장 프리셋"
-      value={value}
-      title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다"
-      onChange={(event) => onSelect(event.target.value)}
-    >
+    <select className="cl-viewport-select" aria-label="SHAPER 내장 프리셋" value={presetId} title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다" onChange={(event) => onSelect(event.target.value)}>
       <option value="">SHAPER 프리셋 적용…</option>
       <optgroup label="한국 웹툰 시그니처 연기·액션 (포즈+손+시선+표정)">
         {Object.values(WEBTOON_SIGNATURE_POSES).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
