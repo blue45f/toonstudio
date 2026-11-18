@@ -66,6 +66,15 @@
       "bytes": 32824,
       "sha256": "d01c1337934e7bc503ae1508b7dbe50019085c54bd2b598f6bd69fda69dddabd",
       "triangles": 252
+    },
+    {
+      "id": "courtroom-gavel-podium",
+      "labelKo": "법정 의사봉·증인석 연단",
+      "meshName": "TS_StageProp_courtroom-gavel-podium",
+      "path": "courtroom-gavel-podium.glb",
+      "bytes": 39816,
+      "sha256": "e2897e603bc03c1bbd0b297bd0f73f803e35ebadc3015d4ebc00ab66d36560d7",
+      "triangles": 420
     }
   ]
 }

@@ -10,7 +10,7 @@
  *   주선(숨김)             lit에서 추가 추출한 선 효과, normal(켜면 원본 선 위에 추가)
  *   [페인트](숨김 그룹)    페인트/<부위> (UV 공간)         (칠한 픽셀이 있는 레이어만)
  *   [헤어 분리](열림 그룹) 헤어 밑색·음영·주선              (splitHairLayers)
- *   [웹툰 만화 연출](열림 그룹) 효과선·말풍선 프레임·대사 식자·효과음 스탬프 (mangaFx.enabled)
+ *   [웹툰 만화 연출](열림 그룹) 스크린톤 망점·효과선·말풍선 프레임·대사 식자·효과음 스탬프 (mangaFx.enabled)
  * 합성(root imageData)은 원본 lit다. 기본 가시 레이어는 그 coverage를 보존하고 밑색×음영→screen 하이라이트로 재합성한다.
  */
 import { PART_ROLES, PART_ROLE_LABELS_KO, failVisible } from "../contracts";
@@ -19,23 +19,24 @@ import { extractLineArt, extractOutlinePassLuminanceToAlpha, lineArtToRaster } f
 import { decodeIdPass } from "./raster-convert";
 import { multiplyByte, recompose, screenByte, splitTones } from "./tone-split";
 import {
-  renderTransparentActionLinesLayer,
   renderTransparentDialogueTextLayer,
-  renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
-} from "./webtoon-strip-composer";
+} from "./webtoon-strip-bubbles";
+import { renderTransparentActionLinesLayer, renderTransparentSfxStampLayer } from "./webtoon-strip-manga-fx";
+import { renderTransparentScreentoneLayer } from "./webtoon-strip-screentone";
 
 import type { CaptureResult, CapturedDepth, CapturedRaster, LabFailure, PaintLayer, PartRole } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
 import type {
   WebtoonDialogueLocale,
-  WebtoonJaWritingMode,
   WebtoonSfxStampOption,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
   WebtoonStripFxLinesKind,
   WebtoonStripSpeakerTarget,
-} from "./webtoon-strip-composer";
+} from "./webtoon-strip-fx-options";
+import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
+import type { WebtoonScreentoneId } from "./webtoon-strip-screentone";
 
 export type PsdBlendMode = "normal" | "multiply" | "screen";
 
@@ -89,6 +90,7 @@ export interface PsdMangaFxOptions {
   readonly enabled: boolean;
   readonly locale?: WebtoonDialogueLocale;
   readonly jaWritingMode?: WebtoonJaWritingMode;
+  readonly screentone?: WebtoonScreentoneId;
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly bubbleShape?: WebtoonStripBubbleShape;
   readonly dialogueText?: string;
@@ -103,17 +105,7 @@ export interface PsdPlanOptions {
   readonly includeIdMasks: boolean;
   readonly includeReferencePasses: boolean;
   readonly lineArt?: Partial<LineArtOptions>;
-  /**
-   * SHAPER ExportManager::createHairLayer(0x0600018a) 호환 옵션:
-   * true이고 part-id 패스에 헤어(hair / hair-accessory) 픽셀이 있으면
-   * 본체 레이어에서 해당 픽셀을 제거하고 "헤어 분리" 그룹으로 옮긴다.
-   * 헤어 하이라이트는 밑색에 보존하고 음영·주선은 밑색 알파에 클리핑한다.
-   */
   readonly splitHairLayers?: boolean;
-  /**
-   * 포토샵·클립스튜디오 원고 식자/후보정 전용 만화 연출 분리 옵션:
-   * true이면 최상단에 "웹툰 만화 연출" 그룹(효과선·말풍선 프레임·대사 식자·효과음 스탬프)을 각각 독립 투명 레이어로 추가한다.
-   */
   readonly mangaFx?: PsdMangaFxOptions;
 }
 
@@ -136,6 +128,7 @@ export const PSD_LAYER_NAMES = Object.freeze({
   hairShade: "헤어 음영",
   hairLine: "헤어 주선",
   mangaFxGroup: "웹툰 만화 연출",
+  mangaFxScreentone: "스크린톤 망점",
   mangaFxLines: "효과선",
   mangaFxBubble: "말풍선 프레임",
   mangaFxDialogue: "대사 식자",
@@ -167,16 +160,11 @@ function hsvToRgb(h: number, s: number, v: number): readonly [number, number, nu
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-/**
- * 부위별 결정적 마스크 색(황금각 간격 HSV). 색은 `PART_ROLES` 인덱스로만 정해지므로 역할은 배열 **끝에만** 더해야 기존 색이 안 바뀐다
- * (키트 v1의 `underwear`가 그렇게 추가됐고 골든은 psd-plan.test.ts가 고정한다).
- */
 export function idMaskColor(role: PartRole): readonly [number, number, number] {
   const index = Math.max(0, PART_ROLES.indexOf(role));
   return hsvToRgb((index * 0.381966) % 1, 0.65, 0.95);
 }
 
-/** partId 픽셀 → 부위별 단색 마스크 래스터(alpha 255/0) */
 export function buildIdMaskLayers(partIds: Uint16Array, width: number, height: number, palette: CaptureResult["partIdPalette"]): PsdRasterLayerPlan[] {
   const byRole = new Map<PartRole, Set<number>>();
   for (const [key, entry] of Object.entries(palette)) {
@@ -208,7 +196,6 @@ export function buildIdMaskLayers(partIds: Uint16Array, width: number, height: n
   return layers;
 }
 
-/** 깊이 → 회색 래스터(가까울수록 밝음), lit alpha>0인 픽셀만 불투명 */
 export function depthToRaster(depth: CapturedDepth, lit: CapturedRaster): CapturedRaster {
   const rgba = new Uint8ClampedArray(depth.width * depth.height * 4);
   for (let p = 0; p < depth.depth.length; p += 1) {
@@ -221,7 +208,6 @@ export function depthToRaster(depth: CapturedDepth, lit: CapturedRaster): Captur
   return { width: depth.width, height: depth.height, rgba };
 }
 
-/** 정수 배율 박스 다운샘플(premultiplied 평균 후 straight 복원) */
 export function downsampleRaster(source: CapturedRaster, factor: number): CapturedRaster {
   if (factor <= 1) return source;
   const width = Math.max(1, Math.floor(source.width / factor));
@@ -288,7 +274,6 @@ function filterRasterByPartIdSet(source: CapturedRaster, partIds: Uint16Array, a
   return { raster: { width: source.width, height: source.height, rgba }, pixelCount };
 }
 
-/** 헤어 그룹을 숨겼을 때 본체에 색·선이 남지 않도록 해당 픽셀의 RGBA를 모두 비운다. */
 function withoutPartIds(source: CapturedRaster, partIds: Uint16Array, removedIds: ReadonlySet<number>): CapturedRaster {
   const rgba = new Uint8ClampedArray(source.rgba);
   for (let p = 0; p < partIds.length; p += 1) {
@@ -297,7 +282,6 @@ function withoutPartIds(source: CapturedRaster, partIds: Uint16Array, removedIds
   return { width: source.width, height: source.height, rgba };
 }
 
-/** lit의 실제 coverage를 밑색에 보존한다. flat 밖 hull은 이미 렌더된 RGB를 쓰며 입력 캡처를 수정하지 않는다. */
 function flatWithLitCoverage(flat: CapturedRaster, lit: CapturedRaster): CapturedRaster {
   const rgba = new Uint8ClampedArray(flat.rgba.length);
   for (let i = 0; i < rgba.length; i += 4) {
@@ -312,12 +296,10 @@ function flatWithLitCoverage(flat: CapturedRaster, lit: CapturedRaster): Capture
   return { width: flat.width, height: flat.height, rgba };
 }
 
-/** 3레이어 형식을 유지하면서 screen 하이라이트를 헤어 밑색으로 옮긴다. */
 function hairBaseWithHighlights(flat: CapturedRaster, highlight: CapturedRaster): CapturedRaster {
   const rgba = new Uint8ClampedArray(flat.rgba);
   for (let i = 0; i < rgba.length; i += 4) {
     if ((rgba[i + 3] ?? 0) === 0) continue;
-    // splitTones는 채널마다 음영 또는 하이라이트 하나만 사용하므로 순서를 바꿔도 재합성이 같다.
     for (let c = 0; c < 3; c += 1) rgba[i + c] = screenByte(rgba[i + c] ?? 0, highlight.rgba[i + c] ?? 0);
   }
   return { width: flat.width, height: flat.height, rgba };
@@ -385,7 +367,6 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
       const mask = ownership.raster;
       if (mask.width !== width || mask.height !== height || mask.rgba.length !== width * height * 4) return { ok: false, failure: failVisible("psd-hair-ownership-size", "헤어 소유권 마스크 크기가 원본 캡처와 다릅니다.", undefined, now) };
       hairSelection = new Uint16Array(width * height);
-      // 해상도·MSAA가 같은 실제 기하 coverage의 과반 소유를 쓴다. 원본 RGB·이웃 픽셀에서 추정하지 않는다.
       for (let p = 0; p < hairSelection.length; p += 1) if ((mask.rgba[p * 4 + 3] ?? 0) > 0 && (mask.rgba[p * 4] ?? 0) >= 128) hairSelection[p] = 1;
       ids = new Set([1]);
     } else if (partIds && ids.size && partIds.some((id, p) => id === 0 && (lit.rgba[p * 4 + 3] ?? 0) > 0)) {
@@ -450,7 +431,6 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     fullLineRaster = lineArtToRaster(lineMask, width, height);
   }
   layers.push({ ...raster(PSD_LAYER_NAMES.line, "normal", bodyRaster(fullLineRaster), true), clipping: true });
-  // 클리핑 주선과 밑색 사이에 숨긴 그룹을 끼우면 그 그룹이 PSD의 새 clipping base가 된다.
   if (paintChildren.length > 0) layers.push(group(PSD_LAYER_NAMES.paint, true, paintChildren));
 
   if (hairSelection && hairIds && hairFlat) {
@@ -464,7 +444,6 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
         { ...raster(PSD_LAYER_NAMES.hairLine, "normal", hairLine, true), clipping: true },
       ]),
     );
-    // 영수증도 실제 분리한 색 레이어로 재합성한다(추출 주선은 기존과 같이 MAE 대상에서 제외).
     for (let i = 0; i < hairBase.rgba.length; i += 4) {
       if ((hairBase.rgba[i + 3] ?? 0) === 0) continue;
       for (let c = 0; c < 3; c += 1) recomposed.rgba[i + c] = multiplyByte(hairBase.rgba[i + c] ?? 0, hairShade.rgba[i + c] ?? 0);
@@ -477,6 +456,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     const fx = options.mangaFx;
     const locale: WebtoonDialogueLocale = fx.locale ?? "ko";
     const jaWritingMode: WebtoonJaWritingMode = fx.jaWritingMode ?? "horizontal";
+    const screentone: WebtoonScreentoneId = fx.screentone ?? "none";
     const linesKind: WebtoonStripFxLinesKind = fx.linesKind ?? "focus-radial";
     const bubbleShape: WebtoonStripBubbleShape = fx.bubbleShape ?? "oval";
     const dialogueText = fx.dialogueText ?? "";
@@ -486,6 +466,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     const sfxStamp: WebtoonSfxStampOption = fx.sfxStamp ?? "none";
     const intensity = fx.intensity ?? 0.78;
 
+    const screentoneRaster = renderTransparentScreentoneLayer(width, height, screentone, intensity);
     const linesRaster = renderTransparentActionLinesLayer(width, height, linesKind, intensity, 0);
     const bubbleRaster = renderTransparentSpeechBubbleFrameLayer(width, height, {
       shape: bubbleShape,
@@ -516,6 +497,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
 
     layers.push(
       group(PSD_LAYER_NAMES.mangaFxGroup, false, [
+        raster(PSD_LAYER_NAMES.mangaFxScreentone, "normal", screentoneRaster, screentone === "none"),
         raster(PSD_LAYER_NAMES.mangaFxLines, "normal", linesRaster, linesKind === "none"),
         raster(PSD_LAYER_NAMES.mangaFxBubble, "normal", bubbleRaster, bubbleShape === "none"),
         raster(PSD_LAYER_NAMES.mangaFxDialogue, "normal", dialogueRaster, bubbleShape === "none" || dialogueText.trim().length === 0),

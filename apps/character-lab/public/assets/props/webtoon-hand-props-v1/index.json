@@ -66,6 +66,15 @@
       "bytes": 21088,
       "sha256": "48728a67eb6ba193013e9f20ca6d103d5be6b8fc543235518283e009385e28f3",
       "triangles": 244
+    },
+    {
+      "id": "medical-chart-clipboard",
+      "labelKo": "메디컬 진단 차트·클립보드",
+      "meshName": "TS_Prop_medical-chart-clipboard",
+      "path": "medical-chart-clipboard.glb",
+      "bytes": 20852,
+      "sha256": "d0ab036ca3f079d3745fe2850c732f1f801c4f603ed0e6317452a6771f656d12",
+      "triangles": 116
     }
   ]
 }

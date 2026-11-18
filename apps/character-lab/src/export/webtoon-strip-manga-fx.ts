@@ -1,111 +1,108 @@
-/**
- * 레이어 PSD 내보내기용 만화 연출(효과선·말풍선 프레임·대사 식자·효과음 스탬프) 투명 분리 레이어 빌더 및
- * 래스터 회전·사각 영역 채우기·효과음 스탬프 합성 모듈.
- */
-import {
-  WEBTOON_SFX_STAMP_KO_TEXT,
-  resolveSfxGlyphByLocale,
-  resolveSpeakerBubblePlacement,
-} from "./webtoon-strip-composer";
-import {
-  bakeDeterministicDialogueGlyphs,
-  bakePanelActionLines,
-  bakeSpeechBubbleDialogueText,
-  bakeSpeechBubbleFrame,
-  blendPixelRgba,
-  drawClippedLineRgba,
-  resolveFontStackByLocale,
-} from "./webtoon-strip-raster-fx";
+/** 컷 내부 효과선·효과음 스탬프와 PSD용 독립 투명 레이어. */
+import { bakeDeterministicDialogueGlyphs, resolveFontStackByLocale } from "./webtoon-strip-bubbles";
+import { WEBTOON_SFX_STAMP_KO_TEXT, resolveSfxGlyphByLocale, resolveSpeakerBubblePlacement } from "./webtoon-strip-fx-options";
+import { blendPixelRgba, drawClippedLineRgba } from "./webtoon-strip-raster";
 
 import type {
   WebtoonDialogueLocale,
   WebtoonSfxStampOption,
-  WebtoonStripBubbleFontScale,
-  WebtoonStripBubbleShape,
   WebtoonStripFxLinesKind,
   WebtoonStripSpeakerTarget,
-} from "./webtoon-strip-composer";
-import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
+} from "./webtoon-strip-fx-options";
 import type { CapturedRaster } from "../contracts";
 
-/** 더치 틸트(Dutch Angle) 연출을 위해 투명 배경 RGBA 패널을 중심 기준으로 쌍선형(bilinear) 회전한다. */
-export function rotateRasterBilinear(
-  source: CapturedRaster,
-  angleDeg: number,
-  zoomScale = 1.06,
-): CapturedRaster {
-  if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.05) return source;
-  const { width, height } = source;
-  const out = new Uint8ClampedArray(width * height * 4);
-  const rad = (-angleDeg * Math.PI) / 180;
-  const cosA = Math.cos(rad) / Math.max(0.5, zoomScale);
-  const sinA = Math.sin(rad) / Math.max(0.5, zoomScale);
-  const cx = (width - 1) * 0.5;
-  const cy = (height - 1) * 0.5;
-  const src = source.rgba;
-
-  for (let y = 0; y < height; y += 1) {
-    const dy = y - cy;
-    for (let x = 0; x < width; x += 1) {
-      const dx = x - cx;
-      const sx = cx + dx * cosA - dy * sinA;
-      const sy = cy + dx * sinA + dy * cosA;
-      if (sx < 0 || sx > width - 1 || sy < 0 || sy > height - 1) continue;
-      const x0 = Math.floor(sx);
-      const y0 = Math.floor(sy);
-      const x1 = Math.min(width - 1, x0 + 1);
-      const y1 = Math.min(height - 1, y0 + 1);
-      const fx = sx - x0;
-      const fy = sy - y0;
-      const w00 = (1 - fx) * (1 - fy);
-      const w10 = fx * (1 - fy);
-      const w01 = (1 - fx) * fy;
-      const w11 = fx * fy;
-
-      const i00 = (y0 * width + x0) * 4;
-      const i10 = (y0 * width + x1) * 4;
-      const i01 = (y1 * width + x0) * 4;
-      const i11 = (y1 * width + x1) * 4;
-
-      const a00 = (src[i00 + 3] ?? 0) * w00;
-      const a10 = (src[i10 + 3] ?? 0) * w10;
-      const a01 = (src[i01 + 3] ?? 0) * w01;
-      const a11 = (src[i11 + 3] ?? 0) * w11;
-      const aSum = a00 + a10 + a01 + a11;
-      if (aSum <= 0.5) continue;
-
-      const dst = (y * width + x) * 4;
-      out[dst] = Math.round(((src[i00] ?? 0) * a00 + (src[i10] ?? 0) * a10 + (src[i01] ?? 0) * a01 + (src[i11] ?? 0) * a11) / aSum);
-      out[dst + 1] = Math.round(((src[i00 + 1] ?? 0) * a00 + (src[i10 + 1] ?? 0) * a10 + (src[i01 + 1] ?? 0) * a01 + (src[i11 + 1] ?? 0) * a11) / aSum);
-      out[dst + 2] = Math.round(((src[i00 + 2] ?? 0) * a00 + (src[i10 + 2] ?? 0) * a10 + (src[i01 + 2] ?? 0) * a01 + (src[i11 + 2] ?? 0) * a11) / aSum);
-      out[dst + 3] = Math.round(aSum);
-    }
-  }
-  return { width, height, rgba: out };
+function deterministicHash01(index: number, seed: number): number {
+  const raw = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;
+  return raw - Math.floor(raw);
 }
 
-export function fillRectRgba(
+export function bakePanelActionLines(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
-  x0: number,
-  y0: number,
-  w: number,
-  h: number,
-  r: number,
-  g: number,
-  b: number,
-  a = 255,
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  kind: WebtoonStripFxLinesKind,
+  intensity: number,
+  cutIndex: number,
 ): void {
-  const xEnd = x0 + w;
-  const yEnd = y0 + h;
-  for (let y = y0; y < yEnd; y += 1) {
-    let offset = (y * canvasWidth + x0) * 4;
-    for (let x = x0; x < xEnd; x += 1) {
-      rgba[offset] = r;
-      rgba[offset + 1] = g;
-      rgba[offset + 2] = b;
-      rgba[offset + 3] = a;
-      offset += 4;
+  if (kind === "none") return;
+  const clipX1 = innerX + innerWidth;
+  const clipY1 = innerY + innerHeight;
+  const cx = innerX + innerWidth * 0.5;
+  const cy = innerY + innerHeight * 0.46;
+  const strokeScale = Math.max(0.55, innerWidth / 720);
+
+  if (kind === "focus-radial") {
+    const lineCount = Math.round(32 + intensity * 36);
+    const minDim = Math.min(innerWidth, innerHeight);
+    for (let i = 0; i < lineCount; i += 1) {
+      const ang = (i / lineCount) * Math.PI * 2 + (deterministicHash01(i, cutIndex + 1.3) - 0.5) * 0.06;
+      const rIn = minDim * (0.31 + deterministicHash01(i, cutIndex + 4.1) * 0.11);
+      const rOut = Math.hypot(innerWidth, innerHeight) * 0.65;
+      drawClippedLineRgba(
+        rgba,
+        canvasWidth,
+        innerX,
+        innerY,
+        clipX1,
+        clipY1,
+        cx + Math.cos(ang) * rIn,
+        cy + Math.sin(ang) * rIn,
+        cx + Math.cos(ang) * rOut,
+        cy + Math.sin(ang) * rOut,
+        (0.65 + deterministicHash01(i, 7.7) * 0.95) * strokeScale,
+        24,
+        21,
+        28,
+        0.55 * intensity,
+      );
+    }
+  } else if (kind === "speed-diagonal") {
+    const lineCount = Math.round(22 + intensity * 26);
+    const dirX = 0.88;
+    const dirY = -0.475;
+    const perpX = -dirY;
+    const perpY = dirX;
+    for (let i = 0; i < lineCount; i += 1) {
+      const lane = ((i / Math.max(1, lineCount - 1)) - 0.5) * (innerWidth + innerHeight) * 0.62;
+      const side = i % 2 === 0 ? -1 : 1;
+      const startOff = side < 0 ? -innerWidth * 0.72 : innerWidth * (0.20 + deterministicHash01(i, 2.9) * 0.16);
+      const segLen = innerWidth * (0.28 + deterministicHash01(i, 6.1) * 0.28);
+      const bx = cx + perpX * lane;
+      const by = cy + perpY * lane;
+      drawClippedLineRgba(
+        rgba,
+        canvasWidth,
+        innerX,
+        innerY,
+        clipX1,
+        clipY1,
+        bx + dirX * startOff,
+        by + dirY * startOff,
+        bx + dirX * (startOff + segLen),
+        by + dirY * (startOff + segLen),
+        (0.6 + deterministicHash01(i, 9.2) * 0.85) * strokeScale,
+        24,
+        21,
+        28,
+        0.52 * intensity,
+      );
+    }
+  } else if (kind === "romance-sparkle") {
+    const spots = [
+      [0.16, 0.22, 0.036],
+      [0.84, 0.20, 0.042],
+      [0.14, 0.62, 0.030],
+      [0.86, 0.58, 0.034],
+    ] as const;
+    for (const [ux, uy, ur] of spots) {
+      const sx = innerX + innerWidth * ux;
+      const sy = innerY + innerHeight * uy;
+      const arm = Math.max(3, innerWidth * ur * (0.75 + intensity * 0.35));
+      drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, sx - arm, sy, sx + arm, sy, 0.9 * strokeScale, 240, 201, 120, 0.88);
+      drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, sx, sy - arm, sx, sy + arm, 0.9 * strokeScale, 240, 201, 120, 0.88);
     }
   }
 }
@@ -285,78 +282,6 @@ export function renderTransparentActionLinesLayer(
   const rgba = new Uint8ClampedArray(width * height * 4);
   const safeIntensity = Math.min(1, Math.max(0.2, Number.isFinite(intensity) ? intensity : 0.78));
   bakePanelActionLines(rgba, width, 0, 0, width, height, kind, safeIntensity, cutIndex);
-  return { width, height, rgba };
-}
-
-export function renderTransparentSpeechBubbleFrameLayer(
-  width: number,
-  height: number,
-  options: {
-    readonly shape?: WebtoonStripBubbleShape;
-    readonly speakerTarget?: WebtoonStripSpeakerTarget;
-    readonly partnerSide?: "left" | "right";
-    readonly locale?: WebtoonDialogueLocale;
-    readonly jaWritingMode?: WebtoonJaWritingMode;
-    readonly dialogueText?: string;
-    readonly cutIndex?: number;
-  } = {},
-): CapturedRaster {
-  const rgba = new Uint8ClampedArray(width * height * 4);
-  const placement = resolveSpeakerBubblePlacement(
-    options.cutIndex ?? 0,
-    options.speakerTarget ?? "auto",
-    options.partnerSide ?? "right",
-  );
-  bakeSpeechBubbleFrame(
-    rgba,
-    width,
-    0,
-    0,
-    width,
-    height,
-    placement,
-    options.shape ?? "oval",
-    options.locale ?? "ko",
-    options.dialogueText,
-    options.jaWritingMode ?? "horizontal",
-  );
-  return { width, height, rgba };
-}
-
-export function renderTransparentDialogueTextLayer(
-  width: number,
-  height: number,
-  options: {
-    readonly dialogueText?: string;
-    readonly shape?: WebtoonStripBubbleShape;
-    readonly fontScale?: WebtoonStripBubbleFontScale;
-    readonly speakerTarget?: WebtoonStripSpeakerTarget;
-    readonly partnerSide?: "left" | "right";
-    readonly locale?: WebtoonDialogueLocale;
-    readonly jaWritingMode?: WebtoonJaWritingMode;
-    readonly cutIndex?: number;
-  } = {},
-): CapturedRaster {
-  const rgba = new Uint8ClampedArray(width * height * 4);
-  const placement = resolveSpeakerBubblePlacement(
-    options.cutIndex ?? 0,
-    options.speakerTarget ?? "auto",
-    options.partnerSide ?? "right",
-  );
-  bakeSpeechBubbleDialogueText(
-    rgba,
-    width,
-    0,
-    0,
-    width,
-    height,
-    placement,
-    options.dialogueText,
-    options.shape ?? "oval",
-    options.fontScale ?? "md",
-    options.locale ?? "ko",
-    options.jaWritingMode ?? "horizontal",
-  );
   return { width, height, rgba };
 }
 

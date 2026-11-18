@@ -845,4 +845,72 @@ describe("ExportPanel", () => {
     fireEvent.keyDown(screen.getByTestId("export-failure-alert"), { key: "Escape" });
     expect(screen.queryByTestId("export-failure-alert")).toBeNull();
   }, 60000);
+
+  it("컷별 할프톤 망점 스크린톤(-tone)·만화 연출 5단 분리 PSD·모바일 오토패닝 미리보기 및 9:16 숏폼 WebM 모션 티저 내보내기를 지원한다", async () => {
+    const calls: SaveCall[] = [];
+    const engine = createMockEngine();
+    const fakeEbmlWebm = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01]);
+    render(
+      <MockLabProvider engineSession={readySession(engine)}>
+        <ExportPanel
+          session={createPaintSession({ layerSize: 8 })}
+          deps={{
+            save: fakeSave(calls),
+            now: () => 50,
+            encodeMotionWebm: async (req) => {
+              req.onFrameProgress?.(0, req.schedule.frameCount, 0);
+              return fakeEbmlWebm;
+            },
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "48" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "48" } });
+
+    const allToneSelect = screen.getByTestId("export-strip-screentone-all") as HTMLSelectElement;
+    fireEvent.change(allToneSelect, { target: { value: "classic-ink-45" } });
+    expect((screen.getByTestId("export-strip-screentone-0") as HTMLSelectElement).value).toBe("classic-ink-45");
+    expect((screen.getByTestId("export-strip-screentone-3") as HTMLSelectElement).value).toBe("classic-ink-45");
+
+    fireEvent.change(screen.getByTestId("export-strip-screentone-2"), { target: { value: "cyan-noir-dots" } });
+    expect((screen.getByTestId("export-strip-screentone-all") as HTMLSelectElement).value).toBe("");
+
+    fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.fileName).toMatch(/-webtoon-4cut-tone-strip\.png$/u);
+    expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
+
+    fireEvent.click(screen.getByTestId("export-webtoon-motion-webm"));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]?.mime).toBe("video/webm");
+    expect(calls[1]?.fileName).toMatch(/-540x960-webtoon-4cut-tone-teaser\.webm$/u);
+
+    expect(screen.queryByTestId("export-webtoon-reader-preview")).toBeNull();
+    fireEvent.click(screen.getByTestId("export-webtoon-reader-preview-btn"));
+    const readerSection = await screen.findByTestId("export-webtoon-reader-preview");
+    expect(readerSection).toBeTruthy();
+    expect(screen.getByTestId("webtoon-reader-active-cut").textContent).toContain("1컷 / 4컷");
+
+    fireEvent.click(screen.getByTestId("webtoon-reader-jump-2"));
+    expect(screen.getByTestId("webtoon-reader-active-cut").textContent).toContain("3컷 / 4컷");
+    expect(screen.getByTestId("webtoon-reader-autopan-toggle").getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.change(screen.getByTestId("webtoon-reader-speed"), { target: { value: "1.5" } });
+    expect((screen.getByTestId("webtoon-reader-speed") as HTMLSelectElement).value).toBe("1.5");
+
+    fireEvent.click(screen.getByTestId("webtoon-reader-export-webm"));
+    await waitFor(() => expect(calls).toHaveLength(3));
+    expect(calls[2]?.mime).toBe("video/webm");
+    expect(calls[2]?.fileName).toMatch(/-540x960-webtoon-4cut-tone-1_5x-teaser\.webm$/u);
+
+    fireEvent.click(screen.getByTestId("webtoon-reader-close"));
+    expect(screen.queryByTestId("export-webtoon-reader-preview")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("export-psd-manga-fx"));
+    fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(String.fromCharCode(...(calls[3]?.bytes.subarray(0, 4) ?? []))).toBe("8BPS");
+  });
 });

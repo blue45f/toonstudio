@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
@@ -23,13 +23,18 @@ import {
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import { ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
-  DEFAULT_DUO_SHOT_STATE, buildDuoEyeContactCommands, type DuoShotState,
+  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES,
+  buildDuoEyeContactCommands, toDuoPartnerAttachment, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
-import { useViewportSceneProps } from "./viewport-scene-props";
+import {
+  DEFAULT_MANGA_FX_STATE, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
+import { failureText, useViewportSceneProps } from "./viewport-scene-props";
 import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
 
@@ -79,9 +84,6 @@ interface ControlPointDragSession {
   changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
 }
 
-function failureText(error: unknown, fallback: string): string {
-  return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
-}
 
 function releaseCapture(el: Element | undefined, pointerId: number): void {
   if (el && typeof el.releasePointerCapture === "function" && el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
@@ -115,8 +117,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [tankobonGuide, setTankobonGuide] = useState(false);
+  const stripDirector = getDefaultStripDirectorSession();
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
+  const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -129,24 +133,21 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
-  const {
-    stripDirector, mangaFx, setMangaFx, sfxBusy, onToggleMangaFx, onChangeMangaSfxStamp,
-    activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
-    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, castDirectorDuoPartner, onSelectSceneDirector, syncDuoPartner3d,
-  } = useViewportSceneProps({
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const sceneProps = useViewportSceneProps({
     engine,
     recipe: labState.recipe,
-    getLatestRecipe: () => store.getState().recipe,
-    subjectHeightCm: subjectHeight.heightCm,
+    dispatch,
+    onNotice: setNotice,
+    mangaFx,
+    setMangaFx,
     duoShot,
     setDuoShot,
-    setDuo3dBusy,
-    dispatch,
-    setNotice,
-    failureText,
+    duo3dBusy,
+    stripDirector,
+    getRecipe: () => store.getState().recipe,
+    syncDuoPartner3d: (next, prev) => syncDuoPartner3d(next, prev),
   });
-  const [canvasGeneration, setCanvasGeneration] = useState(0);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -674,7 +675,28 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const boneLinks = engine && showHandles && poseSkeleton ? computeVisibleBoneLinks(handles, poseSkeleton, { onFailure: onRenderFailure }) : [];
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
+  const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
 
+  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
+    if (!engine?.setDuoPartner) return;
+    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
+    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
+    if (!nextAttachment && !prevAttachment) return;
+    setDuo3dBusy(true);
+    try {
+      await engine.setDuoPartner(nextAttachment);
+      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+      setNotice(
+        nextAttachment
+          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
+          : "3D 듀오 상대역 배치를 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+    } finally {
+      setDuo3dBusy(false);
+    }
+  };
   const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
     setDuoShot((prev) => {
       const next = updater(prev);
@@ -712,32 +734,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           duo3dBusy,
           applyEyeContact: onApplyDuoEyeContact,
         }}
-        mangaFx={{
-          state: mangaFx,
-          set: setMangaFx,
-          sfxBusy,
-          onToggle: onToggleMangaFx,
-          onChangeSfxStamp: onChangeMangaSfxStamp,
-        }}
-        director={{
-          engineReady: Boolean(engine?.setHandProp),
-          busy: handPropBusy || duo3dBusy,
-          activeDirectorId,
-          duoPartnerActive: Boolean(activeDirectorId && duoShot.enabled && duoShot.render3dPartner),
-          onSelectDirector: (presetId) => void onSelectSceneDirector(presetId),
-          onCastDuoPartner: () => {
-            if (activeDirectorId) void castDirectorDuoPartner(activeDirectorId);
-          },
-        }}
-        handProp={{
-          engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,
-          headPropId, stagePropId,
-          onSelectProp: (nextPropId) => void onApplyHandProp(nextPropId, handPropSide),
-          onChangeHand: (nextSide) => void onApplyHandProp(handPropId, nextSide),
-          onApplyGripPose: onApplyHandPropGripPose,
-          onSelectHeadProp: (nextHeadPropId) => void onApplyHeadProp(nextHeadPropId),
-          onSelectStageProp: (nextStagePropId) => void onApplyStageProp(nextStagePropId),
-        }}
+        mangaFx={sceneProps.mangaFx}
+        director={sceneProps.sceneDirector}
+        handProp={sceneProps.handProp}
         overlay={{
           handles: { value: showHandles, set: setShowHandles },
           fingers: { value: showFingers, set: setShowFingers },
