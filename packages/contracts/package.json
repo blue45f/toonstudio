@@ -436,6 +436,11 @@
       "types": "./src/studio-linked-3d-correction.ts",
       "import": "./src/studio-linked-3d-correction.ts",
       "default": "./src/studio-linked-3d-correction.ts"
+    },
+    "./admin-workspace": {
+      "types": "./src/admin-workspace/index.ts",
+      "import": "./src/admin-workspace/index.ts",
+      "default": "./src/admin-workspace/index.ts"
     }
   },
   "dependencies": {

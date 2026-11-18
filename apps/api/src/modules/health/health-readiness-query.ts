@@ -31,3 +31,12 @@ export function containsEvery(
     required.every((value) => actualSet.has(value))
   );
 }
+
+/** 준비 상태 SQL 결과의 정적 계약. 질의 실행과 판정에서 같은 타입을 사용한다. */
+export interface DatabasePingRow {
+  ready: number;
+}
+
+export interface MigrationCatalogRow {
+  migrationIds: string[] | null;
+}
