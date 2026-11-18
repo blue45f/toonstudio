@@ -22,10 +22,11 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
-import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
-import type { WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
+import { WEBTOON_STRIP_ACTING_ARCS, exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
+import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
-import { useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
+import { planApply } from "../../../state/apply-plan";
+import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
   captureCharacterWorkBackup,
   hasUnsavedCharacterWork,
@@ -110,6 +111,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     };
   }, []);
 
+  const applyPlan = useApplyPlan();
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -118,6 +120,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
   const [splitHairLayers, setSplitHairLayers] = useState(false);
   const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
+  const [stripActingArc, setStripActingArc] = useState<WebtoonStripActingArcId>("none");
   const [bakeStripFx, setBakeStripFx] = useState(false);
   const [stripFxLines, setStripFxLines] = useState<WebtoonStripFxLinesKind>("focus-radial");
   const [busy, setBusy] = useState<ExportBusyKind | null>(null);
@@ -276,6 +279,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     void run("webtoon-strip", async () => {
       const engine = requireEngine("webtoon-strip");
       if (!engine) return;
+      const effectiveBasePlan = applyPlan ?? planApply(labState.recipe, labState.capabilities, catalog);
       finish(
         "webtoon-strip",
         await exportWebtoonVerticalStripPng(
@@ -283,6 +287,14 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            ...(stripActingArc !== "none"
+              ? {
+                  actingArc: {
+                    arcId: stripActingArc,
+                    basePlan: effectiveBasePlan,
+                  },
+                }
+              : {}),
             ...(bakeStripFx
               ? {
                   mangaFx: {
@@ -610,30 +622,48 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <div className="cl-export-row" role="group" aria-label="세로 4컷 스트립 연출 베이킹">
-        <label htmlFor={`${ids}-strip-bake-fx`}>
-          <input
-            id={`${ids}-strip-bake-fx`}
-            data-testid="export-strip-bake-fx"
-            type="checkbox"
-            checked={bakeStripFx}
-            onChange={(event) => setBakeStripFx(event.target.checked)}
-          />{" "}
-          4컷 말풍선·효과선 베이킹
-        </label>
-        <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
-        <select
-          id={`${ids}-strip-fx-lines`}
-          data-testid="export-strip-fx-lines"
-          value={stripFxLines}
-          disabled={!bakeStripFx}
-          onChange={(event) => setStripFxLines(event.target.value as WebtoonStripFxLinesKind)}
-        >
-          <option value="focus-radial">집중선 (방사형)</option>
-          <option value="speed-diagonal">속도선 (대각선)</option>
-          <option value="romance-sparkle">로맨스 스파클</option>
-          <option value="none">말풍선만 (효과선 없음)</option>
-        </select>
+      <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
+        <div className="cl-export-row">
+          <label htmlFor={`${ids}-strip-acting-arc`}>4컷 연기 시퀀스</label>
+          <select
+            id={`${ids}-strip-acting-arc`}
+            data-testid="export-strip-acting-arc"
+            value={stripActingArc}
+            onChange={(event) => setStripActingArc(event.target.value as WebtoonStripActingArcId)}
+          >
+            <option value="none">고정 표정·시선 (단일 포즈 유지)</option>
+            {WEBTOON_STRIP_ACTING_ARCS.map((arc) => (
+              <option key={arc.id} value={arc.id}>
+                {arc.labelKo}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="cl-export-row">
+          <label htmlFor={`${ids}-strip-bake-fx`}>
+            <input
+              id={`${ids}-strip-bake-fx`}
+              data-testid="export-strip-bake-fx"
+              type="checkbox"
+              checked={bakeStripFx}
+              onChange={(event) => setBakeStripFx(event.target.checked)}
+            />{" "}
+            4컷 말풍선·효과선 베이킹
+          </label>
+          <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
+          <select
+            id={`${ids}-strip-fx-lines`}
+            data-testid="export-strip-fx-lines"
+            value={stripFxLines}
+            disabled={!bakeStripFx}
+            onChange={(event) => setStripFxLines(event.target.value as WebtoonStripFxLinesKind)}
+          >
+            <option value="focus-radial">집중선 (방사형)</option>
+            <option value="speed-diagonal">속도선 (대각선)</option>
+            <option value="romance-sparkle">로맨스 스파클</option>
+            <option value="none">말풍선만 (효과선 없음)</option>
+          </select>
+        </div>
       </div>
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>

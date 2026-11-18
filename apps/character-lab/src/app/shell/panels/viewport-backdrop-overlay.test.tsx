@@ -173,5 +173,32 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
 
     fireEvent.change(propSelect, { target: { value: "" } });
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
+
+    // 머리 액세서리 4종 및 배경 스테이지 프롭 3종 장착·해제 검증 + Unslop 무이모지 라벨 확인
+    const headSelect = screen.getByTestId("viewport-head-prop-select") as HTMLSelectElement;
+    expect(headSelect.options.length).toBe(5);
+    expect(Array.from(headSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
+    fireEvent.change(headSelect, { target: { value: "wire-glasses" } });
+    await waitFor(() =>
+      expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
+        propId: "wire-glasses",
+        glbUrl: "/assets/props/webtoon-head-props-v1/wire-glasses.glb",
+      }),
+    );
+
+    const stageSelect = screen.getByTestId("viewport-stage-prop-select") as HTMLSelectElement;
+    expect(stageSelect.options.length).toBe(4);
+    fireEvent.change(stageSelect, { target: { value: "murim-sword-aura" } });
+    await waitFor(() =>
+      expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
+        propId: "murim-sword-aura",
+        glbUrl: "/assets/props/webtoon-stage-props-v1/murim-sword-aura.glb",
+      }),
+    );
+
+    fireEvent.change(headSelect, { target: { value: "" } });
+    await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toBeNull());
+    fireEvent.change(stageSelect, { target: { value: "" } });
+    await waitFor(() => expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toBeNull());
   });
 });
