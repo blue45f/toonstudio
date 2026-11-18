@@ -158,10 +158,12 @@ export function isKitPart(rig: Pick<CharacterRig, "kind"> | null, part: Pick<Rig
   return rig?.kind === "kit" || part.tint !== undefined;
 }
 
-/** 가시 메시의 월드 AABB 합집합(없으면 null). 스키닝 적용 전 bind 포즈 기준. */
+/** 가시 메시의 월드 AABB 합집합(없으면 null). 스키닝 적용 전 bind 포즈 기준. 런타임 스테이지/부속 소품(extra:*)은 카메라 프레이밍 중심을 흔들지 않도록 제외한다. */
 export function computeRigBounds(rig: CharacterRig): WorldBounds | null {
+  const coreParts = rig.parts.filter((part) => !part.id.startsWith("extra:") && part.visible && !part.forceHidden);
+  const targetMeshes = coreParts.length > 0 ? coreParts.flatMap((part) => part.meshes) : rigVisibleMeshes(rig, { includeOutlines: false });
   const boxes: Array<{ min: Vec3; max: Vec3 }> = [];
-  for (const mesh of rigVisibleMeshes(rig, { includeOutlines: false })) {
+  for (const mesh of targetMeshes) {
     if (mesh.getTotalVertices() === 0) continue;
     mesh.computeWorldMatrix(true);
     const box = mesh.getBoundingInfo().boundingBox;
@@ -319,6 +321,8 @@ export function applyRigPlan(rig: CharacterRig, plan: ApplyPlan, options: ApplyR
       rig.materials.applyColor(part, hex);
     }
   }
+  for (const rb of rig.bones.values()) rb.node.computeWorldMatrix(true);
+  rig.skeleton?.prepare(true);
   return {
     revision: plan.revision,
     appliedMorphs,

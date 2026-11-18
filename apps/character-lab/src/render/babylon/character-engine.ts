@@ -34,12 +34,12 @@ import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
+import { CharacterScenePropController, createScenePropLoadDeps } from "./character-scene-prop-controller";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
-import { HAND_PROP_PART_ID, attachHandPropToRig } from "./hand-prop-attachment";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
@@ -54,7 +54,6 @@ import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { HandPropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -69,7 +68,9 @@ import type {
   EngineBackend,
   EngineDiagnostics,
   HandPropAttachment,
+  HeadPropAttachment,
   HudSample,
+  StagePropAttachment,
   JointDragHandle,
   KitPlan,
   PaintLayer,
@@ -149,8 +150,15 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
-  private activeHandProp: HandPropAttachment | null = null;
-  private handPropHandle: HandPropHandle | null = null;
+  private readonly sceneProps = new CharacterScenePropController({
+    assertAlive: () => this.assertAlive(),
+    runExclusive: (task) => this.runExclusive(task),
+    rig: () => this.rig,
+    loadDeps: () => this.scenePropDeps(),
+    disposePassMaterials: (partId) => this.disposePassMaterials(partId),
+    releaseRig: (rig) => this.beta.releaseRig(rig),
+    finalizeRigPropRefresh: (rig) => this.finalizeRigPropRefresh(rig),
+  });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -294,11 +302,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
-    if (this.activeHandProp) {
+    if (this.sceneProps.activeHandProp || this.sceneProps.activeHeadProp || this.sceneProps.activeStageProp) {
       try {
-        await this.syncActiveHandPropToRig(rig);
+        if (this.sceneProps.activeHandProp) await this.sceneProps.syncActiveHandPropToRig(rig);
+        if (this.sceneProps.activeHeadProp) await this.sceneProps.syncActiveHeadPropToRig(rig);
+        if (this.sceneProps.activeStageProp) await this.sceneProps.syncActiveStagePropToRig(rig);
       } catch (error) {
-        this.reportFailure(error, "hand-prop-reattach-failed", "새 캐릭터 소스에 손 소품을 다시 부착하지 못했습니다.");
+        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
       }
     }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
@@ -507,50 +517,45 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
-    this.detachHandPropFromRig(rig);
+    this.sceneProps.detachHandPropFromRig(rig);
+    this.sceneProps.detachHeadPropFromRig(rig);
+    this.sceneProps.detachStagePropFromRig(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
   }
 
-  private detachHandPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.handPropHandle;
-    if (!handle) return;
-    this.handPropHandle = null;
-    this.disposePassMaterials(HAND_PROP_PART_ID);
-    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
-    handle.dispose();
+  private scenePropDeps() {
+    return createScenePropLoadDeps(
+      this.materialOptions(),
+      this.character.scene,
+      (url: string) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
+      this.deps.verifyPackageSha ?? true,
+      this.now(),
+    );
   }
 
-  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHandPropFromRig(rig);
-    if (!this.activeHandProp) return;
-    const materialOptions = this.materialOptions();
-    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, {
-      scene: this.character.scene,
-      fetchBytes: (url) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
-      adaptMaterial: (role, mesh) => adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
-      verifyIntegrity: this.deps.verifyPackageSha ?? true,
-      now: this.now(),
-    });
+  private async finalizeRigPropRefresh(rig: CharacterRig): Promise<void> {
+    this.character.clearShadowCasters();
+    this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+    await this.beta.reconcile();
+    this.applyMaterialsForMode(rig);
+    this.refreshToonUniforms(rig);
+    this.beta.syncIblShadows();
   }
 
-  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
-    this.assertAlive();
-    return this.runExclusive(async () => {
-      this.assertAlive();
-      this.activeHandProp = attachment;
-      const rig = this.rig;
-      if (!rig) return;
-      await this.syncActiveHandPropToRig(rig);
-      this.character.clearShadowCasters();
-      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
-      await this.beta.reconcile();
-      this.applyMaterialsForMode(rig);
-      this.refreshToonUniforms(rig);
-      this.beta.syncIblShadows();
-    });
+  setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+    return this.sceneProps.setHandProp(attachment);
   }
+
+  setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
+    return this.sceneProps.setHeadProp(attachment);
+  }
+
+  setStageProp(attachment: StagePropAttachment | null): Promise<void> {
+    return this.sceneProps.setStageProp(attachment);
+  }
+
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
     const rig = this.requireRig("apply-plan-no-source", "플랜을 적용할 캐릭터 소스가 없습니다. loadSource 뒤에 호출하세요.");
