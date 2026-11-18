@@ -146,6 +146,43 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   }
 });
 
+test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 각각 정확히 한 번 실행한다", () => {
+  const module = "apps/api/src/modules/admin-nestjs-quality";
+  const integration = `${module}/admin-nestjs-quality.integration.test.ts`;
+  assert.ok(REQUIRED_VITEST_TARGETS.includes(module), "새 관리자 API 회귀도 모듈 단위로 필수 수집해야 합니다.");
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    `${module}/admin-nestjs-quality.test.ts`,
+    `${module}/admin-nestjs-quality.http.test.ts`,
+    "packages/contracts/src/admin-nestjs-quality.test.ts",
+    "scripts/admin-nestjs-quality-database-contract.test.mjs",
+  ]) {
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), [shardForTarget(target)],
+      `관리자 보드의 권한·입력·DB 계약 회귀는 소유 shard에서 한 번 실행해야 합니다: ${target}`);
+  }
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration), "보드의 실제 DB 검증 소유권이 필요합니다.");
+  assert.ok(resolveRequiredTargets(expandGlobTargets(execution.product)).includes(integration));
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "실제 DB 시험을 DB 없는 shard에서 skip 성공으로 집계할 수 없습니다.");
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/^ {2}database:\n([\s\S]*?)(?=^ {2}core:\n)/mu)?.[1];
+  assert.ok(database, "보호된 실제 PostgreSQL job이 필요합니다.");
+  const command = database.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(command, "실제 DB job의 Vitest 실행 명령이 필요합니다.");
+  assert.equal(command.split(/\s+/u).filter((argument) => argument === integration).length, 1,
+    "보드 통합 시험은 실제 DB 명령에서 정확히 한 번 실행해야 합니다.");
+  const runner = readFileSync(new URL("./run-postgres-integration-tests.mjs", import.meta.url), "utf8");
+  const manifest = runner.match(/export const POSTGRES_INTEGRATION_SUITES = Object\.freeze\(\[([\s\S]*?)\]\);/u)?.[1];
+  assert.ok(manifest, "일반 PostgreSQL 실행기의 정본 목록이 필요합니다.");
+  assert.equal(manifest.split(`"${integration}"`).length - 1, 1);
+});
+
 test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에서 실행한다", () => {
   const selectors = expandGlobTargets(executionTargetsByShard().product);
   const executed = resolveRequiredTargets(selectors);
@@ -285,6 +322,24 @@ test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드�
   }
   assert.ok(!executed.includes("apps/api/src/modules/traffic-analytics/traffic-analytics-parity.postgres.test.ts"),
     "opt-in PostgreSQL 비교는 비DB shard에서 실행하지 않는다");
+});
+
+test("사업계획서 저장 회귀는 DB 없는 shard에서 제외하고 필수 PostgreSQL 작업에서 실행한다", () => {
+  const integration = "apps/api/src/modules/business-plan/business-plan.integration.test.ts";
+  const unit = "apps/api/src/modules/business-plan/business-plan.test.ts";
+  const product = expandGlobTargets(executionTargetsByShard().product);
+  const resolved = resolveRequiredTargets(product);
+  assert.ok(resolved.includes(unit));
+  assert.ok(resolved.includes(integration));
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration));
+  const args = buildShardVitestArgs(product);
+  const excluded = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  assert.ok(excluded.includes(integration), "DB 없는 실행에서 skip 성공으로 처리할 수 없습니다.");
+  assert.ok(!excluded.includes(unit));
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/\n {2}database:\n([\s\S]*?)\n {2}core:/u)?.[1];
+  assert.ok(database, "필수 PostgreSQL 작업을 찾을 수 없습니다.");
+  assert.equal(database.split(integration).length - 1, 1, "필수 DB 작업에서 사업계획서 회귀를 정확히 한 번 실행해야 합니다.");
 });
 
 test("directory targets remove redundant child execution without reducing coverage", () => {

@@ -156,7 +156,9 @@ export function classifyStudioServiceWorkerRequest(
   const { pathname } = parsed;
   // 독립 관리자 문서는 온라인 권한 확인이 필요하다. 사용자 Web의 오프라인 셸로 대체하지 않는다.
   if (pathname === "/admin/platform/quality" || pathname.startsWith("/admin/platform/quality/")) return "passthrough";
+  if (pathname === "/admin/platform/ai-operations" || pathname.startsWith("/admin/platform/ai-operations/")) return "passthrough";
   if (pathname === "/admin/workspace" || pathname.startsWith("/admin/workspace/")) return "passthrough";
+  if (pathname === "/admin/growth/business-plan" || pathname.startsWith("/admin/growth/business-plan/")) return "passthrough";
   if (SW_RUNTIME_PATHS.has(pathname)) return "sw-runtime";
   // Release catalogues change independently of audio files; never replay a cached empty catalogue.
   if (pathname === "/audio/playlist.json") return "passthrough";

@@ -33,7 +33,7 @@ function fillEvidence() {
 }
 
 beforeEach(() => { localStorage.clear(); });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); window.history.replaceState(null, "", "/"); });
 
 describe("CI·QA 관리자 보드", () => {
   it("실제 결과 없이 12개 검사와 core·verify를 미확인으로 시작한다", () => {
@@ -357,4 +357,14 @@ describe("CI·QA 관리자 보드", () => {
     fireEvent.keyDown(document, { key: "Escape" }); expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(opener);
   });
+});
+
+it("의존성 검토 직접 링크가 클릭 없이 기존 탭을 열고 CI 보드로 돌아갈 수 있다", async () => {
+  window.history.replaceState(null, "", "/admin/platform/quality/?view=dependency-review");
+  show();
+  expect(screen.getByRole("button", { name: "의존성·회귀" }).getAttribute("aria-pressed")).toBe("true");
+  await screen.findByRole("button", { name: "의존성 JSON 관리" });
+  expect(screen.queryByRole("button", { name: "Vitest 결과 기록" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "검증 보드" }));
+  expect(screen.getByRole("button", { name: "Vitest 결과 기록" })).toBeTruthy();
 });

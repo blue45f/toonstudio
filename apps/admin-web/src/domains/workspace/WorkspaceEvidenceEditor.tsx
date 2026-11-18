@@ -40,6 +40,7 @@ export function WorkspaceEvidenceEditor({ record, busy, onSave, onClose }: Props
         ...base, kind, runId: text("runId"), runAttempt: Number(text("runAttempt")), event: text("event"), workflow: text("workflow"),
         job: text("job"), shard: text("shard"), testedSha: text("testedSha"), headSha: text("headSha"), baseSha: text("baseSha"),
         completedAt: text("completedAt"), conclusion: text("conclusion") as WorkspaceCiEvidence["conclusion"],
+        ...(text("startedAt") ? { startedAt: text("startedAt") } : {}),
       };
       target = { ...targetBase, kind, workflow: text("workflow"), job: text("job"), shard: text("shard"), event: text("event"), ...(reference === "pull-request" ? { headSha: text("targetHeadSha"), baseSha: text("targetBaseSha") } : {}) };
     } else {
@@ -90,6 +91,7 @@ export function WorkspaceEvidenceEditor({ record, busy, onSave, onClose }: Props
           <WorkspaceField name="headSha" label="실행 당시 PR head SHA" />
           <WorkspaceField name="baseSha" label="실행 당시 PR base SHA" />
           <WorkspaceField name="conclusion" label="실행 결과" value="unknown" options={resultOptions} />
+          <WorkspaceField name="startedAt" label="해당 회차의 실제 시작 시각 (시간대 포함)" help="최초 run 생성이나 수집 시각과 구분합니다. 모르면 빈칸으로 두며 서로 다른 실행의 선후 판정은 보류될 수 있습니다." />
           <WorkspaceField name="completedAt" label="실제 실행 완료 시각 (시간대 포함)" />
         </WorkspaceSection> : <>
           <WorkspaceSection title="배포 산출물과 적용">

@@ -1,4 +1,3 @@
-/** 소재·조명·장르 프리셋 조작을 렌더 패널의 한 섹션으로 묶는다. */
 import {
   WEBTOON_GENRE_SCENE_PRESETS,
   WEBTOON_LIGHTING_SHADOW_PRESETS,
@@ -19,6 +18,7 @@ interface RenderMaterialLightingControlsProps {
   readonly dispatch: (command: LabCommand) => void;
 }
 
+/** 장르·소재·조명 프리셋을 표시하고 기존 명령 생성 결과를 전달한다. */
 export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: RenderMaterialLightingControlsProps) {
   return (
     <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">

@@ -1,4 +1,7 @@
 import { expect, test } from "vitest";
+import { applyProtectedRecordRuntimeContracts, buildProtectedRecordCapabilitySql } from "./protected-record-database-contracts.mjs";
+import { buildAiOperationsRuntimeAclSql, buildAiOperationsCapabilitySql } from "./ai-operations-database-contract.mjs";
+import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
 
 import {
   buildAuthRuntimeAclViolationSql,
@@ -62,6 +65,8 @@ test("loads the runtime health readiness relation and cutover contract", () => {
 
 test("generated verification covers runtime capabilities and exact migration checksums", () => {
   const sql = buildProductionCapabilityVerificationSql("webdex_runtime");
+  expect(sql).toContain(buildAiOperationsCapabilitySql("webdex_runtime"));
+  expect(sql).toContain(buildCustomerSupportCapabilitySql("webdex_runtime"));
   expect(sql).toContain(
     buildCreatorAssetObjectStorageRuntimeAclViolationSql("webdex_runtime"),
   );
@@ -177,6 +182,29 @@ test("generated verification covers runtime capabilities and exact migration che
   ]) {
     expect(sql).toMatch(new RegExp(requiredFragment, "u"));
   }
+});
+
+test("보호 기록 권한 적용은 개별 SQL과 실행 순서를 보존하며 오류 시 즉시 중단한다", () => {
+  const executed = [];
+  applyProtectedRecordRuntimeContracts((sql) => executed.push(sql), "webdex_runtime");
+  expect(executed).toEqual([
+    buildAiOperationsRuntimeAclSql("webdex_runtime"), buildAiOperationsCapabilitySql("webdex_runtime"),
+    buildCustomerSupportRuntimeAclSql("webdex_runtime"), buildCustomerSupportCapabilitySql("webdex_runtime"),
+  ]);
+  const stopped = [];
+  expect(() => applyProtectedRecordRuntimeContracts((sql) => {
+    stopped.push(sql);
+    if (stopped.length === 2) throw new Error("합성 권한 검증 실패");
+  }, "webdex_runtime")).toThrow("합성 권한 검증 실패");
+  expect(stopped).toEqual(executed.slice(0, 2));
+});
+
+test("보호 기록 읽기 검증은 권한을 바꾸지 않고 잘못된 역할은 실행 전에 거부한다", () => {
+  const verification = buildProtectedRecordCapabilitySql("webdex_runtime");
+  expect(verification).not.toMatch(/\b(?:GRANT|REVOKE)\s+(?:ALL|SELECT|UPDATE|INSERT)\b/u);
+  const executed = [];
+  expect(() => applyProtectedRecordRuntimeContracts((sql) => executed.push(sql), "public")).toThrow();
+  expect(executed).toHaveLength(0);
 });
 
 test("report epoch verifier fails closed for invalid, unready, malformed-key, or wrong-predicate indexes", () => {

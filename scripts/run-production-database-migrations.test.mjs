@@ -52,10 +52,10 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(123);
+  expect(manifest).toHaveLength(128);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
-  expect(manifest.at(-1).id).toBe("0123_admin_workspace_access");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(123);
+  expect(manifest.at(-1).id).toBe("0128_admin_nestjs_quality");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(128);
 });
 
 test("음성 검수 함수 복구는 기배포 0093 원문과 체크섬을 보존한다", () => {
@@ -1395,11 +1395,23 @@ test("historical adoption requires structural evidence through 0019", () => {
 test("historical adoption and post-baseline relations exactly partition runtime readiness", () => {
   expect(POST_BASELINE_RELATIONS).toEqual([
     "account_merge",
+    "admin_ai_operations_board", "admin_ai_operations_audit", "admin_ai_operations_receipt",
     "admin_announcements",
     "admin_audit_logs",
     "admin_banned_words",
+    "admin_cloud_workboard",
+    "admin_cloud_workboard_audit",
+    "admin_cloud_workboard_receipt",
+    "admin_business_plan",
+    "admin_business_plan_access_audit",
+    "admin_business_plan_audit",
+    "admin_business_plan_grant",
+    "admin_business_plan_receipt",
+    "admin_business_plan_revision",
     "admin_content_reports",
     "admin_member_test_accounts",
+    "admin_nestjs_quality_board",
+    "admin_nestjs_quality_history",
     "admin_promos",
     "admin_security_policies",
     "admin_workspace",

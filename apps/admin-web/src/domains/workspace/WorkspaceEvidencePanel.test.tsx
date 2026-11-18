@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { createWorkspaceRecord } from "@toonstudio/contracts/admin-workspace";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -25,7 +25,7 @@ function record(): WorkspaceRecord {
     operationalState: { workStatus: "in_progress", pullRequestStatus: "unknown", ciStatus: "success", deploymentStatus: "not-deployed", approvalStatus: "pending" },
   };
 }
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("증거 패널의 현재 대상 표시", () => {
   it("정확한 main SHA·범위와 최근 관측을 표시하고 자동 조회나 승인을 실행하지 않는다", () => {
@@ -47,6 +47,47 @@ describe("증거 패널의 현재 대상 표시", () => {
     expect(screen.queryByText("저장된 관측 기준 유효")).toBeNull();
     expect(screen.getAllByText("재확인 필요").length).toBeGreaterThan(0);
     expect(screen.getByText(/과거 성공 이력은 유지됩니다/u)).toBeTruthy();
+  });
+  it("열린 화면에서도 사용자 조작 없이 main 관측 만료를 다시 계산하고 구독을 정리한다", () => {
+    vi.useFakeTimers(); vi.setSystemTime(now);
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const removeFocus = vi.spyOn(window, "removeEventListener"), removeVisibility = vi.spyOn(document, "removeEventListener");
+    const input = { ...record(), evidenceTarget: { ...target(), main: { ...target().main!, observedAt: "2026-11-18T03:00:00Z" } } };
+    const previous = structuredClone(input);
+    const { unmount } = render(<WorkspaceEvidencePanel record={input} />);
+    expect(screen.getAllByText("저장된 관측 기준 유효")).toHaveLength(2);
+    act(() => { vi.advanceTimersByTime(60_000); });
+    expect(screen.queryByText("저장된 관측 기준 유효")).toBeNull();
+    expect(screen.getAllByText("재확인 필요").length).toBeGreaterThan(0);
+    expect(screen.getByText(/업무 in_progress/u).textContent).toContain("승인 pending");
+    expect(input).toEqual(previous);
+    expect(fetch).not.toHaveBeenCalled();
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(removeFocus).toHaveBeenCalledWith("focus", expect.any(Function));
+    expect(removeVisibility).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+  });
+  it.each(["focus", "visibilitychange"] as const)("%s 복귀 시 다음 타이머를 기다리지 않고 만료를 표시한다", event => {
+    vi.useFakeTimers(); vi.setSystemTime(now);
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const input = { ...record(), evidenceTarget: { ...target(), main: { ...target().main!, observedAt: "2026-11-18T03:00:00Z" } } };
+    render(<WorkspaceEvidencePanel record={input} />);
+    expect(screen.getAllByText("저장된 관측 기준 유효")).toHaveLength(2);
+    vi.setSystemTime(new Date(now.getTime() + 1));
+    fireEvent(event === "focus" ? window : document, new Event(event));
+    expect(screen.queryByText("저장된 관측 기준 유효")).toBeNull();
+    expect(screen.getByText(/업무 in_progress/u).textContent).toContain("승인 pending");
+    expect(fetch).not.toHaveBeenCalled();
+    expect(input.operationalState?.approvalStatus).toBe("pending");
+  });
+  it("명시한 now는 고정된 대조 시각으로 유지하고 로컬 시계 구독을 만들지 않는다", () => {
+    vi.useFakeTimers(); vi.setSystemTime(now);
+    render(<WorkspaceEvidencePanel record={record()} now={now} />);
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => { vi.advanceTimersByTime(2 * 60 * 60 * 1000); });
+    fireEvent(window, new Event("focus"));
+    expect(screen.getAllByText("저장된 관측 기준 유효")).toHaveLength(2);
   });
   it("관측 main이 다른 SHA이면 최근 성공이라도 대상 불일치를 표시한다", () => {
     render(<WorkspaceEvidencePanel record={{ ...record(), evidenceTarget: { ...target(), main: { ...target().main!, sha: "b".repeat(40) } } }} now={now} />);

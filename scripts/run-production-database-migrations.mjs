@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
+import { applyProtectedRecordRuntimeContracts } from "./protected-record-database-contracts.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
 import { buildStudioVirtualSpaceRuntimeAclSql, buildStudioVirtualSpaceCapabilitySql } from "./studio-virtual-space-database-contract.mjs";
@@ -10,6 +10,7 @@ import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { psql, queryScalar } from "./production-database-connection.mjs";
 export { psql, queryScalar };
+export { validateRuntimeDatabaseRole };
 
 import { buildFortuneSnapshotRuntimeAclSql } from "./fortune-snapshot-database-contract.mjs";
 import { buildHiringCapabilitySql, buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
@@ -23,6 +24,7 @@ import {
 } from "./community-cafe-database-contract.mjs";
 import {
   validateProductionDatabaseUrl,
+  validateRuntimeDatabaseRole,
 } from "./validate-production-database-url.mjs";
 import {
   HISTORICAL_BASELINE_RELATIONS,
@@ -79,18 +81,6 @@ function expectedMigrationProvenance(migration) {
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
-}
-
-export function validateRuntimeDatabaseRole(runtimeDatabaseRole) {
-  if (
-    typeof runtimeDatabaseRole !== "string" ||
-    !/^[a-z_][a-z0-9_]{0,62}$/u.test(runtimeDatabaseRole)
-  ) {
-    fail(
-      "Runtime database role must be an explicit lowercase PostgreSQL role name",
-    );
-  }
-  return runtimeDatabaseRole;
 }
 
 export function buildAuthRuntimeAclSql(runtimeDatabaseRole) {
@@ -3636,8 +3626,7 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
       ledger = readLedger(databaseUrl);
     }
 
-    psql(databaseUrl, buildCustomerSupportRuntimeAclSql(runtimeDatabaseRole));
-    psql(databaseUrl, buildCustomerSupportCapabilitySql(runtimeDatabaseRole));
+    applyProtectedRecordRuntimeContracts((sql) => psql(databaseUrl, sql), runtimeDatabaseRole);
     psql(databaseUrl, buildAuthRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildTrafficAnalyticsRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildCreatorRoleWorkspaceRuntimeAclSql(runtimeDatabaseRole));

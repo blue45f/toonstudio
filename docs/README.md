@@ -53,6 +53,7 @@ UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 �
 
 관리자의 사업계획·운영 자료 통합은 [통합 작업실 계약](features/admin-integrated-workspace.md)에서
 화면·검증 규칙·서버 저장·기존 자료 가져오기와 운영 적용의 승인 경계를 확인한다.
+Cloudflare 모델 종료·Onpod 무료 한도 기록의 관리자 통합은 [AI·무료 플랜 운영 보드](operations/admin-ai-operations-board.md)의 현재 구현·DB 준비·가져오기·롤백 계약을 따른다.
 
 Studio는 다음 문서를 추가로 본다.
 

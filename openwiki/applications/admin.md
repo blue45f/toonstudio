@@ -16,3 +16,7 @@ src/shared    domain을 모르는 Admin 전용 primitive
 현재 `apps/web/src/domains/admin`에 남아 있는 운영 기능은 마이그레이션 부채다. route, API client,
 번역, 테스트를 capability 단위로 함께 이전한다. Admin은 Web/API source를 import하지 않는다.
 공유 DTO·schema는 실제 두 번째 소비자가 생긴 뒤에만 `packages/contracts`로 승격한다.
+
+사업계획서의 소유자·명시적 권한, 내보내기 재검증, 기존 원문이 소유자 없이 남아 있을 때의
+접근 차단 계약은 [사업계획서 비공개 접근 경계](../../docs/operations/admin-business-plan-access.md)를 따른다.
+이 문서의 migration 상태는 운영 DB 적용이나 배포 완료를 뜻하지 않는다.

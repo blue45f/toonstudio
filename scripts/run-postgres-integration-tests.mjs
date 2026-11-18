@@ -23,14 +23,18 @@ const CREATOR_MARKETPLACE_DB_VERIFIER =
   "scripts/verify-creator-marketplace-db.mts";
 
 export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
+  "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
   "scripts/production-operations-runtime-acl.integration.test.mjs",
   "scripts/production-release-compatibility.integration.test.mjs",
   "apps/api/src/modules/operation-policy/operation-policy.integration.test.ts",
   "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+  "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
+  "apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/team-workspace.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
   "scripts/bootstrap-runtime-login-gate.integration.test.mjs",
   "apps/api/src/platform/database/admin-schema.integration.test.ts",
+  "apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts",
   "tests/integration/web-api/shared/lib/__tests__/oauth-runtime.integration.test.ts",
   "apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts",
   "apps/api/src/modules/health/health-readiness.repository.integration.test.ts",

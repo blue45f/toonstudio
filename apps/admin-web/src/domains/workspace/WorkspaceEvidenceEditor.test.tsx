@@ -10,9 +10,10 @@ import type { WorkspaceCiEvidence, WorkspaceRecord } from "@toonstudio/contracts
 const now = new Date("2026-11-18T04:00:00Z"), sha = "a".repeat(40), head = "b".repeat(40), testedMerge = "c".repeat(40), repository = "sample/toonstudio";
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(now); });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
-function edit(busy = false) {
+function edit(busy = false, previousEvidence?: WorkspaceCiEvidence) {
   const record: WorkspaceRecord = { ...createWorkspaceRecord("synthetic-editor", "coordination", "operation"), status: "검토 필요",
     operationalState: { workStatus: "in_progress", pullRequestStatus: "open", ciStatus: "unknown", deploymentStatus: "not-deployed", approvalStatus: "pending" },
+    ...(previousEvidence ? { evidence: [previousEvidence] } : {}),
   };
   const save = vi.fn(async (_record: WorkspaceRecord): Promise<string | null> => null), close = vi.fn();
   render(<WorkspaceEvidenceEditor record={record} busy={busy} onSave={save} onClose={close} />);
@@ -27,7 +28,7 @@ function fillCi() {
     ["실행·배포 증거 주소", `https://github.com/${repository}/actions/runs/200/attempts/2`], ["실제로 수집한 시각 (시간대 포함)", "2026-11-18T03:50:00Z"],
     ["직접 확인한 원격 main SHA", sha], ["원격 main 확인 시각 (시간대 포함)", "2026-11-18T03:55:00Z"], ["main 관측 증거 주소", `https://github.com/${repository}/commit/${sha}`],
     ["Actions 실행 번호", "200"], ["실행 회차", "2"], ["워크플로", "core.yml"], ["Job (전체 실행이면 빈칸)", "contract"], ["Shard (해당 없으면 빈칸)", "2/3"],
-    ["실제로 테스트한 SHA", sha], ["실행 결과", "success"], ["실제 실행 완료 시각 (시간대 포함)", "2026-11-18T03:40:00Z"],
+    ["실제로 테스트한 SHA", sha], ["실행 결과", "success"], ["해당 회차의 실제 시작 시각 (시간대 포함)", "2026-11-18T03:30:00Z"], ["실제 실행 완료 시각 (시간대 포함)", "2026-11-18T03:40:00Z"],
   ];
   for (const [label, value] of fields) change(label, value);
 }
@@ -39,7 +40,7 @@ describe("수동 검증 증거 연결", () => {
     fireEvent.click(screen.getByRole("button", { name: "증거 연결 저장" }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     const submitted = save.mock.calls[0][0], evidence = submitted.evidence![0] as WorkspaceCiEvidence;
-    expect(evidence).toMatchObject({ runId: "200", runAttempt: 2, completedAt: "2026-11-18T03:40:00Z", collectedAt: "2026-11-18T03:50:00Z", testedSha: sha, conclusion: "success" });
+    expect(evidence).toMatchObject({ runId: "200", runAttempt: 2, startedAt: "2026-11-18T03:30:00Z", completedAt: "2026-11-18T03:40:00Z", collectedAt: "2026-11-18T03:50:00Z", testedSha: sha, conclusion: "success" });
     expect(submitted.evidenceTarget).toMatchObject({ targetSha: sha, scope: "core-contract", main: { sha, observedAt: "2026-11-18T03:55:00Z" } });
     expect(submitted.status).toBe(record.status);
     expect(submitted.factStatus).toBe("미확인");
@@ -52,6 +53,8 @@ describe("수동 검증 증거 연결", () => {
     ["검증 대상 SHA (40자리)", "short-sha", "전체 SHA"],
     ["실제로 수집한 시각 (시간대 포함)", "2026-11-19T03:50:00Z", "과거 또는 현재"],
     ["실행 회차", "0", "1 이상의 정수"],
+    ["해당 회차의 실제 시작 시각 (시간대 포함)", "2026-11-19T03:30:00Z", "과거 또는 현재"],
+    ["해당 회차의 실제 시작 시각 (시간대 포함)", "2026-11-18T03:45:00Z", "완료 시각보다 빠르거나 같아야"],
   ])("%s가 잘못됐으면 저장 콜백을 실행하지 않는다", async (label, value, message) => {
     const { save, close } = edit(); fillCi(); change(label, value);
     fireEvent.click(screen.getByRole("button", { name: "증거 연결 저장" }));
@@ -71,6 +74,27 @@ describe("수동 검증 증거 연결", () => {
     const submitted = save.mock.calls[0][0];
     expect(submitted.evidenceTarget).toMatchObject({ reference: "pull-request", targetSha: testedMerge, headSha: head, baseSha: sha, main: { sha } });
     expect(assessWorkspaceEvidenceSet(submitted.evidence!, submitted.evidenceTarget!, now).current).toBe(true);
+  });
+  it("기존 회차의 시작 시각은 보존하고 새 회차의 시작은 직접 입력한 값으로 연결한다", async () => {
+    const previous: WorkspaceCiEvidence = {
+      id: "previous", kind: "ci", repository, runId: "150", runAttempt: 1, event: "push", workflow: "core.yml", job: "contract", shard: "2/3", scope: "core-contract",
+      testedSha: sha, headSha: "", baseSha: "", conclusion: "success", startedAt: "2026-11-18T03:00:00Z", completedAt: "2026-11-18T03:10:00Z", collectedAt: "2026-11-18T03:15:00Z",
+      availability: "available", url: `https://github.com/${repository}/actions/runs/150`,
+    };
+    const { save } = edit(false, previous); fillCi();
+    fireEvent.click(screen.getByRole("button", { name: "증거 연결 저장" }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    const submitted = save.mock.calls[0][0];
+    expect(submitted.evidence).toHaveLength(2);
+    expect(submitted.evidence![0]).toEqual(previous);
+    expect(submitted.evidence![1]).toMatchObject({ startedAt: "2026-11-18T03:30:00Z", runId: "200", runAttempt: 2 });
+    expect(assessWorkspaceEvidenceSet(submitted.evidence!, submitted.evidenceTarget!, now)).toMatchObject({ current: true, evidenceId: submitted.evidence![1].id });
+  });
+  it("시작 시각을 모르면 수집 시각으로 채우지 않고 선택 필드를 비워 둔다", async () => {
+    const { save } = edit(); fillCi(); change("해당 회차의 실제 시작 시각 (시간대 포함)", "");
+    fireEvent.click(screen.getByRole("button", { name: "증거 연결 저장" }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0][0].evidence![0]).not.toHaveProperty("startedAt");
   });
   it("배포 증거로 전환하면 지원하지 않는 PR 대조 기준을 남기지 않는다", () => {
     edit(); change("대조 기준", "pull-request"); change("증거 종류", "deployment");

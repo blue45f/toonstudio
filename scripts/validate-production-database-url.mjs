@@ -3,6 +3,19 @@
 import { isIP } from "node:net";
 import { pathToFileURL } from "node:url";
 
+/** SQL 식별자로 사용할 명시적 런타임 역할 이름만 허용한다. */
+export function validateRuntimeDatabaseRole(runtimeDatabaseRole) {
+  if (
+    typeof runtimeDatabaseRole !== "string" ||
+    !/^[a-z_][a-z0-9_]{0,62}$/u.test(runtimeDatabaseRole)
+  ) {
+    throw new Error(
+      "Runtime database role must be an explicit lowercase PostgreSQL role name",
+    );
+  }
+  return runtimeDatabaseRole;
+}
+
 const PRODUCTION_QUERY_CONTRACT = new Map([
   ["sslmode", "verify-full"],
   ["channel_binding", "require"],

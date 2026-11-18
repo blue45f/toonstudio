@@ -1,0 +1,123 @@
+{
+  "schema": "toonstudio.blender-articulated-ik-assets.v20",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_articulated_ik_bridge_v20.py · Articulated Props & Character IK Snap Sockets SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "characterIkSocketSpec": {
+    "footRiserZ": 0.18,
+    "wristDeskZ": 0.92,
+    "elbowRailingZ": 1.1,
+    "handDoorLatchZ": 1.32
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Articulated_IK_Bridge_V20",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 289,
+        "sha256Before": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "sha256After": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 50,
+        "sha256Before": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "sha256After": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.002",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_DualGenre_Handoff_V18",
+        "objectCount": 17,
+        "sha256Before": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "sha256After": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Lumiere_Salon_V17",
+        "objectCount": 32,
+        "sha256Before": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "sha256After": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_SharedDatum_TriGenre_V19",
+        "objectCount": 23,
+        "sha256Before": "e830987fef2d99e1df90dd052c54c3d0ebefd3f6ffc49c2eeda2942eeb535a30",
+        "sha256After": "e830987fef2d99e1df90dd052c54c3d0ebefd3f6ffc49c2eeda2942eeb535a30",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-articulated-modern-sliding-terrace-v20.glb",
+      "genre": "modern",
+      "bytes": 233404,
+      "sha256": "9dba09205691e95b5187fbf5f5a8b1b387f68b578c5a15ba5af175eac3570dcc",
+      "triangles": 4296,
+      "vertices": 2192
+    },
+    {
+      "file": "webtoon-articulated-murim-lattice-moongate-v20.glb",
+      "genre": "murim",
+      "bytes": 223184,
+      "sha256": "79ea868ca734cffd5cfaef18250ce6b70ba5b0416c22ed58ca56bda41fcab8f3",
+      "triangles": 5512,
+      "vertices": 2800
+    },
+    {
+      "file": "webtoon-articulated-scifi-iris-airlock-v20.glb",
+      "genre": "scifi",
+      "bytes": 209224,
+      "sha256": "c3569dc7e990305585a68a5ffc860f69f20437c01c8510100c416ca2f5aa2e3a",
+      "triangles": 4340,
+      "vertices": 2202
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-articulated-modern-sliding-terrace-v20.png",
+      "bytes": 297212,
+      "sha256": "f7544c1d022024f5332808d262ab95bec9828c0b5401d5b9893e71a7fdad3029"
+    },
+    {
+      "file": "thumbnails/webtoon-articulated-murim-lattice-moongate-v20.png",
+      "bytes": 306233,
+      "sha256": "81c4d6980a336492b220be5e4418ef4305c216f49454a613e7973550544b77c2"
+    },
+    {
+      "file": "thumbnails/webtoon-articulated-scifi-iris-airlock-v20.png",
+      "bytes": 293383,
+      "sha256": "e0b95f05583dc4756addae64199c541c1164c780597345ee5ab9dfbb38f54ad8"
+    }
+  ]
+}

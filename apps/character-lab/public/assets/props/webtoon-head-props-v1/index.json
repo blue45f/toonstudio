@@ -1,0 +1,44 @@
+{
+  "schema": "toonstudio.character-lab.head-props/1",
+  "license": "CC0-1.0",
+  "generatedAt": "2026-11-18",
+  "generator": "Blender 5.3.0 ToonStudio Head Accessories Pipeline",
+  "props": [
+    {
+      "id": "wire-glasses",
+      "labelKo": "메탈 라운드 안경",
+      "meshName": "TS_HeadProp_wire-glasses",
+      "path": "wire-glasses.glb",
+      "bytes": 45672,
+      "sha256": "5c82ef01a3e43d04e79b08c2fb37e7b11b626c6b2dbc09a41fcb1d57c99cc053",
+      "triangles": 828
+    },
+    {
+      "id": "rofan-tiara",
+      "labelKo": "로판 황실 사파이어 티아라",
+      "meshName": "TS_HeadProp_rofan-tiara",
+      "path": "rofan-tiara.glb",
+      "bytes": 34316,
+      "sha256": "9b7426f04c2d43bf789cfc1a8d6d0b5f2cb86bfbfb5d68f58677f7e78dc48551",
+      "triangles": 512
+    },
+    {
+      "id": "tactical-headset",
+      "labelKo": "전술 홀로그램 헤드셋",
+      "meshName": "TS_HeadProp_tactical-headset",
+      "path": "tactical-headset.glb",
+      "bytes": 36880,
+      "sha256": "947e0feac84c4256974676c4f67e84742abf45c95880ad9b81fbec576a55a2c1",
+      "triangles": 560
+    },
+    {
+      "id": "pearl-earrings-pin",
+      "labelKo": "진주 드롭 귀걸이·골드 헤어핀",
+      "meshName": "TS_HeadProp_pearl-earrings-pin",
+      "path": "pearl-earrings-pin.glb",
+      "bytes": 27436,
+      "sha256": "de92d56c0fc0456d862da11c8547f8cd6d28c032abb3ae8769c45b55460f4913",
+      "triangles": 600
+    }
+  ]
+}

@@ -18,7 +18,15 @@ function syntheticWorkspace(): AdminWorkspace {
     { ...createWorkspaceRecord("synthetic-business", "business", "task"), title: "합성 비공개 이전 작업", notes: privateMarker },
   ];
   state.documents = [{ id: "synthetic-document", title: "합성 비공개 사업문서", purpose: "submission", working: { label: "합성 이전 작업본", url: "", content: privateMarker, updatedAt: fixtureTime }, submission: null, history: [] }];
-  state.imports = [{ id: "synthetic-archive", label: "합성 이전 원문", importedAt: fixtureTime, format: "native-backup", archive: { note: privateMarker } }];
+  state.imports = [{ id: "synthetic-archive", label: "합성 이전 원문", importedAt: fixtureTime, format: "native-backup", archive: { kind: "toonstudio-admin-workspace", schemaVersion: 1, records: [], note: privateMarker } }];
+  return state;
+}
+
+function syntheticMixedWorkspace(): AdminWorkspace {
+  const state = syntheticWorkspace();
+  const raw = { id: "original-1", module: "cloud", recordType: "operation", sourceId: "synthetic-cloud-board", sourceRecordId: "original-1", sourceProjectId: "synthetic-site-project", note: privateMarker };
+  state.imports[0].archive = { kind: "toonstudio-admin-workspace", schemaVersion: 1, records: [raw], note: privateMarker };
+  state.records.push({ ...createWorkspaceRecord("synthetic-imported-cloud", "cloud", "operation"), title: "합성 가져온 클라우드 승인", category: "외부 배포", approvalOnly: true, approvalReason: "합성 승인 요청만 기록", status: "승인 대기", origin: { importId: "synthetic-archive", sourceId: "synthetic-cloud-board", sourceRecordId: "original-1", raw }, changeIdentity: { source: { provider: "sites", boardId: "synthetic-site-project", recordId: "original-1" } } });
   return state;
 }
 
@@ -112,8 +120,7 @@ test("근거 없는 사실 확인과 최종 완료를 저장하지 않는다", a
 });
 
 test("혼합 백업의 비공개 원문을 운영 저장·내보내기에서 제외하고 전문 보드 기록은 읽기만 허용한다", async ({ page }) => {
-  const fixture = await workspaceFixture(page), imported = syntheticWorkspace();
-  imported.records.push({ ...createWorkspaceRecord("synthetic-imported-cloud", "cloud", "operation"), title: "합성 가져온 클라우드 승인", category: "외부 배포", approvalOnly: true, approvalReason: "합성 승인 요청만 기록", status: "승인 대기", origin: { importId: "synthetic-archive", sourceId: "synthetic-cloud-board", sourceRecordId: "original-1", raw: { note: privateMarker } }, changeIdentity: { source: { provider: "sites", boardId: "synthetic-site-project", recordId: "original-1" } } });
+  const fixture = await workspaceFixture(page), imported = syntheticMixedWorkspace();
   await page.goto(boardPath);
   await page.getByRole("button", { name: "JSON 가져오기", exact: true }).click();
   await page.getByLabel("백업 JSON 파일", { exact: true }).setInputFiles({ name: "synthetic-mixed-workspace.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });

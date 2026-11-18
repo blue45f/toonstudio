@@ -1,6 +1,6 @@
 import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "../../config/database-role-mode";
 import { dbPool } from "../../platform/database";
-import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-contract";
+import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/schema/admin.schema";
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
@@ -8,19 +8,21 @@ import type { DatabasePingRow, MigrationCatalogRow, QueryablePool } from "./heal
 
 export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
-export const HEALTH_READINESS_REPOSITORY = Symbol(
-  "HEALTH_READINESS_REPOSITORY",
-);
+export const HEALTH_READINESS_REPOSITORY = Symbol("HEALTH_READINESS_REPOSITORY");
 
 /** 기능별 영속 릴레이션을 모두 확인해 일부 기능만 빠진 호스트의 준비 완료를 막는다. */
 export const REQUIRED_DATABASE_RELATIONS = [
   "account",
   "account_merge",
+  "admin_ai_operations_board", "admin_ai_operations_audit", "admin_ai_operations_receipt",
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",
+  "admin_cloud_workboard", "admin_cloud_workboard_audit", "admin_cloud_workboard_receipt",
+  "admin_business_plan", "admin_business_plan_access_audit", "admin_business_plan_audit",
+  "admin_business_plan_grant", "admin_business_plan_receipt", "admin_business_plan_revision",
   "admin_content_reports",
-  "admin_member_test_accounts",
+  "admin_member_test_accounts", "admin_nestjs_quality_board", "admin_nestjs_quality_history",
   "admin_promos",
   "admin_security_policies",
   "admin_workspace",

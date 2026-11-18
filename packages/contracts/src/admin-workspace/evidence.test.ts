@@ -69,6 +69,40 @@ describe("운영 증거의 대상·시점 판정", () => {
     const result = assessWorkspaceEvidenceSet([old, latest], { ...ciTarget(), runId: undefined, runAttempt: undefined }, now);
     expect(result).toMatchObject({ status: "failed", current: false, evidenceId: "newer-run" });
   });
+  it.each(["pending", "failure"] as const)("옛 run이 늦게 완료돼도 이후에 시작한 %s 실행을 가리지 않는다", conclusion => {
+    const old = { ...ci(), startedAt: "2026-11-18T03:00:00Z", completedAt: "2026-11-18T03:50:00Z", collectedAt: "2026-11-18T03:59:00Z" };
+    const latest: WorkspaceCiEvidence = {
+      ...ci(), id: "newer-run", runId: "100", runAttempt: 1, conclusion,
+      startedAt: "2026-11-18T03:40:00Z", completedAt: conclusion === "pending" ? "" : "2026-11-18T03:45:00Z",
+      collectedAt: "2026-11-18T03:55:00Z", url: `https://github.com/${repo}/actions/runs/100`,
+    };
+    const target = { ...ciTarget(), runId: undefined, runAttempt: undefined };
+    for (const evidence of [[old, latest], [latest, old]]) {
+      expect(assessWorkspaceEvidenceSet(evidence, target, now)).toMatchObject({ status: conclusion === "pending" ? "incomplete" : "failed", current: false, evidenceId: latest.id, supersededEvidenceIds: [old.id] });
+    }
+  });
+  it.each(["pending", "failure"] as const)("서로 다른 run의 시작을 모르면 수집·완료 순서로 %s를 가린 성공을 추정하지 않는다", conclusion => {
+    const old = { ...ci(), completedAt: "2026-11-18T03:50:00Z", collectedAt: "2026-11-18T03:59:00Z" };
+    const other: WorkspaceCiEvidence = { ...ci(), id: "unknown-order", runId: "100", runAttempt: 1, conclusion, completedAt: conclusion === "pending" ? "" : "2026-11-18T03:45:00Z", collectedAt: "2026-11-18T03:55:00Z", url: `https://github.com/${repo}/actions/runs/100` };
+    const result = assessWorkspaceEvidenceSet([old, other], { ...ciTarget(), runId: undefined, runAttempt: undefined }, now);
+    expect(result).toMatchObject({ status: "incomplete", current: false, evidenceId: null });
+    expect(result.reasons.join(" ")).toContain("실제 시작 시각");
+  });
+  it("같은 run의 새 회차가 진행 중이면 시작 시각이 없어도 이전 성공 회차를 제외한다", () => {
+    const pending: WorkspaceCiEvidence = { ...ci(), id: "rerun-pending", runAttempt: 3, conclusion: "pending", completedAt: "", collectedAt: now.toISOString(), url: `https://github.com/${repo}/actions/runs/123/attempts/3` };
+    expect(assessWorkspaceEvidenceSet([ci(), pending], { ...ciTarget(), runAttempt: undefined }, now)).toMatchObject({ status: "incomplete", current: false, evidenceId: pending.id });
+  });
+  it("재실행 순서는 최초 run 생성이나 옛 회차가 아닌 해당 회차의 시작으로 비교한다", () => {
+    const old = { ...ci(), startedAt: "2026-11-18T03:00:00Z" };
+    const other = { ...ci(), id: "other-run", runId: "100", runAttempt: 1, startedAt: "2026-11-18T03:45:00Z", completedAt: "2026-11-18T03:50:00Z", collectedAt: "2026-11-18T03:59:00Z", url: `https://github.com/${repo}/actions/runs/100` };
+    const rerun: WorkspaceCiEvidence = { ...ci(), id: "rerun", runAttempt: 3, startedAt: "2026-11-18T03:55:00Z", conclusion: "pending", completedAt: "", collectedAt: "2026-11-18T03:56:00Z", url: `https://github.com/${repo}/actions/runs/123/attempts/3` };
+    expect(assessWorkspaceEvidenceSet([old, other, rerun], { ...ciTarget(), runId: undefined, runAttempt: undefined }, now)).toMatchObject({ current: false, evidenceId: rerun.id, status: "incomplete" });
+  });
+  it("같은 회차의 시작 시각이 서로 다르면 성공을 확정하지 않는다", () => {
+    const first = { ...ci(), startedAt: "2026-11-18T03:00:00Z" };
+    const conflict = { ...ci(), id: "conflicting-start", startedAt: "2026-11-18T03:10:00Z" };
+    expect(assessWorkspaceEvidenceSet([first, conflict], ciTarget(), now)).toMatchObject({ status: "incomplete", current: false, evidenceId: null });
+  });
   it("같은 회차의 상충 결과는 보류하고 옛 진행 스냅샷은 완료 상태를 덮어쓰지 않는다", () => {
     const pending = { ...ci(), id: "pending-snapshot", conclusion: "pending" as const, completedAt: "", collectedAt: now.toISOString() };
     expect(assessWorkspaceEvidenceSet([ci(), pending], ciTarget(), now).current).toBe(true);
@@ -88,7 +122,7 @@ describe("운영 증거의 대상·시점 판정", () => {
     expect(assessWorkspaceEvidence({ ...ci(), conclusion: "pending", completedAt: "" }, ciTarget(), now).status).toBe("incomplete");
   });
   it("다른 실행 URL·잘못된 시각·수집 전 완료·unsafe URL을 거부한다", () => {
-    for (const patch of [{ url: `https://github.com/${repo}/actions/runs/999` }, { completedAt: "2026-02-30T10:00:00Z" }, { collectedAt: "2026-11-18T02:00:00Z" }, { url: "https://user:password@example.test" }, { event: "pull_request; command" }]) {
+    for (const patch of [{ url: `https://github.com/${repo}/actions/runs/999` }, { completedAt: "2026-02-30T10:00:00Z" }, { collectedAt: "2026-11-18T02:00:00Z" }, { startedAt: "2026-11-18T03:55:00Z", completedAt: "", conclusion: "pending" }, { url: "https://user:password@example.test" }, { event: "pull_request; command" }]) {
       expect(workspaceTypedEvidenceIssues({ ...ci(), ...patch }, now).length).toBeGreaterThan(0);
     }
   });
@@ -112,6 +146,47 @@ describe("운영 증거의 대상·시점 판정", () => {
     const evidence = deploy();
     expect(workspaceTypedEvidenceIssues({ ...evidence, smoke: { ...evidence.smoke, testedAt: "2026-11-18T03:10:00Z" } }, now).length).toBeGreaterThan(0);
     expect(assessWorkspaceEvidence({ ...evidence, artifactSha: head }, deployTarget(), now)).toMatchObject({ current: false, historicalSuccess: false });
+  });
+  it.each(["smoke", "readiness"] as const)("같은 배포의 이후 %s 실패를 나중에 수집한 옛 성공이 가리지 않는다", field => {
+    const old = { ...deploy(), collectedAt: "2026-11-18T03:59:00Z" };
+    const failed: WorkspaceDeploymentEvidence = {
+      ...deploy(), id: "later-failure", collectedAt: "2026-11-18T03:50:00Z",
+      ...(field === "smoke"
+        ? { smoke: { ...deploy().smoke, status: "failed", testedAt: "2026-11-18T03:45:00Z" } }
+        : { originReadiness: { ...deploy().originReadiness, status: "not-ready", observedAt: "2026-11-18T03:45:00Z" } }),
+    };
+    for (const evidence of [[old, failed], [failed, old]]) {
+      expect(assessWorkspaceEvidenceSet(evidence, deployTarget(), now)).toMatchObject({ status: "failed", current: false, evidenceId: failed.id, supersededEvidenceIds: [old.id] });
+    }
+  });
+  it("readiness와 smoke 관측이 교차하면 더 늦은 하나만 골라 배포 성공으로 합성하지 않는다", () => {
+    const recoveredReadiness = { ...deploy(), id: "readiness-recovered", collectedAt: "2026-11-18T03:59:00Z", originReadiness: { ...deploy().originReadiness, observedAt: "2026-11-18T03:55:00Z" } };
+    const failedSmoke: WorkspaceDeploymentEvidence = { ...deploy(), id: "smoke-failed", collectedAt: "2026-11-18T03:50:00Z", smoke: { ...deploy().smoke, status: "failed", testedAt: "2026-11-18T03:45:00Z" } };
+    expect(assessWorkspaceEvidenceSet([recoveredReadiness, failedSmoke], deployTarget(), now)).toMatchObject({ status: "incomplete", current: false, evidenceId: null });
+  });
+  it("같은 실제 관측 시각의 성공·실패가 상충하면 수집 시각이 늦은 성공으로 덮지 않는다", () => {
+    const old = { ...deploy(), collectedAt: "2026-11-18T03:59:00Z" };
+    const failed: WorkspaceDeploymentEvidence = { ...deploy(), id: "conflicting-smoke", smoke: { ...deploy().smoke, status: "failed" } };
+    expect(assessWorkspaceEvidenceSet([old, failed], deployTarget(), now)).toMatchObject({ status: "incomplete", current: false, evidenceId: null });
+  });
+  it("동일 배포·아티팩트의 빌드 기록 뒤 실제 적용·readiness·smoke가 연결되면 적용 증거를 사용한다", () => {
+    const built: WorkspaceDeploymentEvidence = { ...deploy(), id: "built", phase: "image-built", appliedSha: "", appliedAt: "", originReadiness: { status: "unknown", observedAt: "", sha: "", environment: "", origin: "", url: "" }, smoke: { status: "not-run", testedAt: "", sha: "", environment: "", origin: "", scope: "", url: "" }, collectedAt: "2026-11-18T03:59:00Z" };
+    expect(assessWorkspaceEvidenceSet([built, deploy()], deployTarget(), now)).toMatchObject({ current: true, evidenceId: deploy().id });
+    expect(assessWorkspaceEvidenceSet([{ ...built, deploymentId: "different-release", artifactSha: head }, deploy()], deployTarget(), now)).toMatchObject({ current: true, evidenceId: deploy().id });
+  });
+  it("같은 서비스에 다른 SHA가 실제 적용되면 옛 대상 SHA의 성공을 현재 배포로 남기지 않는다", () => {
+    const old = { ...deploy(), collectedAt: "2026-11-18T03:59:00Z" };
+    const latest: WorkspaceDeploymentEvidence = { ...deploy(), id: "new-deploy", deploymentId: "release-2", artifactSha: head, appliedSha: head, appliedAt: "2026-11-18T03:35:00Z", originReadiness: { ...deploy().originReadiness, sha: head, observedAt: "2026-11-18T03:40:00Z" }, smoke: { ...deploy().smoke, sha: head, testedAt: "2026-11-18T03:45:00Z" } };
+    for (const evidence of [[old, latest], [latest, old]]) {
+      const result = assessWorkspaceEvidenceSet(evidence, deployTarget(), now);
+      expect(result).toMatchObject({ status: "mismatch", current: false, evidenceId: latest.id, supersededEvidenceIds: [old.id] });
+      expect(result.reasons.join(" ")).toContain("적용 SHA가 대상 SHA와 다릅니다");
+    }
+    const pendingHealth: WorkspaceDeploymentEvidence = { ...latest, originReadiness: { status: "unknown", observedAt: "", sha: "", environment: "", origin: "", url: "" }, smoke: { status: "not-run", testedAt: "", sha: "", environment: "", origin: "", scope: "", url: "" } };
+    expect(assessWorkspaceEvidenceSet([old, pendingHealth], deployTarget(), now)).toMatchObject({ status: "mismatch", current: false, evidenceId: latest.id });
+    const otherScope = { ...latest, scope: "another-smoke-scope", smoke: { ...latest.smoke, scope: "another-smoke-scope" } };
+    expect(assessWorkspaceEvidenceSet([old, otherScope], deployTarget(), now)).toMatchObject({ status: "mismatch", current: false, evidenceId: latest.id });
+    expect(assessWorkspaceEvidenceSet([old, { ...latest, environment: "staging", origin: "https://staging.example.test" }], deployTarget(), now)).toMatchObject({ current: true, evidenceId: old.id });
   });
   it("문서 버전 또는 내용 해시가 바뀌면 이전 검토 증거를 유지하면서 현재 확인을 해제한다", () => {
     const evidence: WorkspaceDocumentEvidence = { id: "doc-1", kind: "document", documentId: "proposal", version: "v2", contentHash: digest, scope: "submission", verifiedAt: "2026-11-17T04:00:00Z", collectedAt: now.toISOString(), availability: "available", url: "https://example.test/private-document" };

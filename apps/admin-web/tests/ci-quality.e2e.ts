@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { createQualityBoard } from "../src/domains/operations/ci-quality/ci-quality-model";
 import { getQualityStorageKey } from "../src/domains/operations/ci-quality/ci-quality-storage";
+import { createDependencyReviewBoard } from "../src/domains/operations/ci-quality/dependency-review/dependency-review-seed";
+import { getDependencyReviewStorageKey } from "../src/domains/operations/ci-quality/dependency-review/dependency-review-storage";
 
 const boardPath = "/admin/platform/quality/";
 
@@ -212,4 +214,94 @@ test("390px에서 화면 넘침 없이 키보드로 대화상자를 열고 닫�
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath("ci-quality-390.png"), fullPage: true });
+});
+
+test("의존성 탭의 두 원인·다섯 검사를 대조하고 기존 CI·QA 기록과 독립적으로 저장한다", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const fixture = await adminFixture(page);
+  const legacy = createQualityBoard();
+  legacy.approvals[0].note = "기존 CI·QA 승인 메모 보존";
+  const legacyJson = JSON.stringify(legacy);
+  await page.addInitScript(({ key, value }) => {
+    if (!localStorage.getItem(key)) localStorage.setItem(key, value);
+  }, { key: getQualityStorageKey("quality-admin-a"), value: legacyJson });
+  await page.goto(boardPath);
+  await page.getByRole("button", { name: "의존성·회귀", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "의존성·회귀 검토", exact: true })).toBeVisible();
+  await expect(page.locator(".dependency-cause-card")).toHaveCount(2);
+  await expect(page.locator(".dependency-check-table tbody tr")).toHaveCount(5);
+  await expect(page.locator(".dependency-check-table .dependency-status--unknown")).toHaveCount(5);
+  await expect(page.locator(".dependency-approvals .dependency-status--approval")).toHaveCount(4);
+  await page.getByLabel("원인별 보기", { exact: true }).selectOption("remotion");
+  await expect(page.locator(".dependency-check-table tbody tr")).toHaveCount(3);
+  await page.getByRole("button", { name: "작업 필터 초기화", exact: true }).click();
+
+  const build = createDependencyReviewBoard().records.find(record => record.id === "build")!;
+  await page.getByRole("button", { name: `${build.title} 기록 열기`, exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: `${build.title} 기록`, exact: true });
+  await dialog.getByLabel("작업 관리 상태", { exact: true }).selectOption("진행 중");
+  await dialog.getByLabel("메모", { exact: true }).fill("브라우저에서 저장한 수동 검토 메모");
+  await dialog.getByRole("button", { name: "검토 기록 저장", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: "의존성·회귀", exact: true }).click();
+  await page.getByRole("button", { name: `${build.title} 기록 열기`, exact: true }).click();
+  await expect(dialog.getByLabel("작업 관리 상태", { exact: true })).toHaveValue("진행 중");
+  await expect(dialog.getByLabel("메모", { exact: true })).toHaveValue("브라우저에서 저장한 수동 검토 메모");
+  await dialog.getByRole("button", { name: "대화상자 닫기", exact: true }).click();
+  expect(await page.evaluate(key => localStorage.getItem(key), getQualityStorageKey("quality-admin-a"))).toBe(legacyJson);
+  const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "null"), getDependencyReviewStorageKey("quality-admin-a"));
+  expect(stored.records.find((record: { id: string }) => record.id === "build")).toMatchObject({ status: "진행 중", result: "미확인", recordedResult: "미확인" });
+  expect(fixture.writes).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("dependency-review-desktop.png") });
+});
+
+test("390px에서 Sites 원본 완료 주장을 검토 상태로 가져오고 중복 적용을 차단한다", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const fixture = await adminFixture(page);
+  const baseline = createDependencyReviewBoard();
+  const source = {
+    title: "ToonStudio 의존성 및 CI 검증 보드",
+    exportedAt: new Date(Date.now() - 60_000).toISOString(),
+    snapshot: baseline.snapshot,
+    records: baseline.records.map(record => record.id === "build" ? {
+      ...record, status: "검증 완료", result: "통과", verifiedAt: new Date(Date.now() - 60_000).toISOString(),
+      evidence: `브라우저 가져오기 fixture · 원본 증빙 ${baseline.snapshot.sha}`,
+    } : record),
+    dependencies: baseline.dependencies, prs: baseline.prs, commands: baseline.commands,
+    history: baseline.history, policy: "수동 기록은 최신 CI 성공을 뜻하지 않습니다.",
+  };
+  await page.goto(boardPath);
+  await page.getByRole("button", { name: "의존성·회귀", exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const open = page.getByRole("button", { name: "의존성 JSON 관리", exact: true });
+  await open.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "의존성 JSON 가져오기·백업", exact: true });
+  await expect(dialog.getByRole("button", { name: "대화상자 닫기", exact: true })).toBeFocused();
+  await dialog.getByLabel("의존성 JSON 파일", { exact: true }).setInputFiles({ name: "sites.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(source)) });
+  await expect(dialog.getByRole("status")).toContainText("파일을 읽었습니다");
+  await dialog.getByRole("button", { name: "변환 검토", exact: true }).click();
+  await expect(dialog.getByRole("region", { name: "의존성 가져오기 검토 결과" })).toContainText("Sites 내보내기 · 원본 12개");
+  await expect(dialog.getByText("원본 검증 완료 / 통과 → 검토 필요", { exact: false })).toBeVisible();
+  await dialog.getByRole("button", { name: "검토한 변경 가져오기", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator(".dependency-check-table .dependency-status--review")).toHaveCount(5);
+  const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "null"), getDependencyReviewStorageKey("quality-admin-a"));
+  expect(stored.snapshot.sha).toBe(baseline.snapshot.sha);
+  expect(stored.imports).toHaveLength(1);
+  expect(stored.records.find((record: { id: string }) => record.id === "build")).toMatchObject({ status: "검토 필요", result: "미확인", sourceStatus: "검증 완료", sourceResult: "통과" });
+  await open.click();
+  await dialog.getByLabel("가져올 의존성 JSON", { exact: true }).fill(JSON.stringify(source));
+  await dialog.getByRole("button", { name: "변환 검토", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "검토한 변경 가져오기", exact: true })).toBeDisabled();
+  await expect(dialog.getByText("이미 가져온 원본입니다. 중복 적용하지 않습니다.", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await dialog.getByRole("button", { name: "가져오기 입력을 버리고 닫기", exact: true }).click();
+  await expect(open).toBeFocused();
+  await page.getByRole("button", { name: "6단계 보드", exact: true }).click();
+  await expect(page.locator(".dependency-kanban .ci-quality-kanban-column")).toHaveCount(6);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(fixture.writes).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("dependency-review-390.png") });
 });

@@ -1,4 +1,5 @@
 import { assessWorkspaceChange, assessWorkspaceEvidence, assessWorkspaceEvidenceSet, workspaceDuplicateGroups } from "@toonstudio/contracts/admin-workspace";
+import { useEffect, useState } from "react";
 
 import { workspaceDate, WorkspaceBadge, WorkspaceLink } from "./workspace-ui";
 
@@ -6,10 +7,26 @@ import type { WorkspaceRecord } from "@toonstudio/contracts/admin-workspace";
 
 const labels = { current: "저장된 관측 기준 유효", stale: "재확인 필요", mismatch: "대상 불일치", incomplete: "근거 미완성", failed: "실패", unavailable: "근거 접근 불가" } as const;
 
-export function WorkspaceEvidencePanel({ record, now = new Date() }: { record: WorkspaceRecord; now?: Date }) {
+export function WorkspaceEvidencePanel({ record, now }: { record: WorkspaceRecord; now?: Date }) {
+  const [localNow, setLocalNow] = useState(() => new Date());
+  const followLocalClock = now === undefined;
+  useEffect(() => {
+    if (!followLocalClock) return;
+    const refresh = () => setLocalNow(new Date());
+    const visible = () => { if (document.visibilityState === "visible") refresh(); };
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", visible);
+    };
+  }, [followLocalClock]);
+  const evaluatedAt = now ?? localNow;
   const target = record.evidenceTarget;
-  const summary = target ? assessWorkspaceEvidenceSet(record.evidence ?? [], target, now) : null;
-  const change = record.changeIdentity ? assessWorkspaceChange(record.changeIdentity, target && target.kind !== "document" ? target.main : undefined, now) : null;
+  const summary = target ? assessWorkspaceEvidenceSet(record.evidence ?? [], target, evaluatedAt) : null;
+  const change = record.changeIdentity ? assessWorkspaceChange(record.changeIdentity, target && target.kind !== "document" ? target.main : undefined, evaluatedAt) : null;
   return <section className="workspace-panel" aria-label="CI·배포 증거">
     <header className="workspace-panel-header"><div><h3>CI·배포 증거</h3><p>성공 이력·현재 대상·실제 배포·승인을 각각 확인합니다.</p></div></header>
     <div className="workspace-panel-body">
@@ -18,9 +35,10 @@ export function WorkspaceEvidencePanel({ record, now = new Date() }: { record: W
       {change ? <div><p>PR 기록: {change.pullRequestState} · main 반영: {change.mainInclusion === "equivalent-change-present" ? "동등 변경 존재 근거 확인" : change.mainInclusion === "merged-at-observed-main" ? "관측한 main에서 병합 확인" : "미확인"}</p>{change.supersededBy.length ? <p>대체 PR: {change.supersededBy.map(number => `#${number}`).join(", ")}</p> : null}{change.reasons.map(reason => <p key={reason} className="workspace-muted">{reason}</p>)}</div> : null}
       {record.operationalState ? <p>업무 {record.operationalState.workStatus} · CI 기록 {record.operationalState.ciStatus} · 배포 기록 {record.operationalState.deploymentStatus} · 승인 {record.operationalState.approvalStatus}</p> : null}
       {record.evidence?.length ? record.evidence.map(evidence => {
-        const assessment = target ? assessWorkspaceEvidence(evidence, target, now) : null;
+        const assessment = target ? assessWorkspaceEvidence(evidence, target, evaluatedAt) : null;
         const current = Boolean(summary?.current && summary.evidenceId === evidence.id);
-        const label = summary?.supersededEvidenceIds.includes(evidence.id) ? "이전 실행 이력" : assessment?.current && !current ? "집계 재확인 필요" : assessment ? labels[assessment.status] : "대조 대상 미입력";
+        const historyLabel = evidence.kind === "deployment" && evidence.phase === "image-built" ? "빌드 이력 · 적용 미확인" : "이전 실행 이력";
+        const label = summary?.supersededEvidenceIds.includes(evidence.id) ? historyLabel : assessment?.current && !current ? "집계 재확인 필요" : assessment ? labels[assessment.status] : "대조 대상 미입력";
         return <article key={evidence.id} className="workspace-evidence-entry">
           <div className="workspace-inline"><strong>{evidence.kind === "ci" ? `${evidence.workflow} · 실행 ${evidence.runId} / 회차 ${evidence.runAttempt}` : evidence.kind === "deployment" ? `${evidence.provider} · ${evidence.unit} · ${evidence.environment}` : `${evidence.documentId} · ${evidence.version}`}</strong><WorkspaceBadge tone={current ? "good" : assessment?.status === "failed" || assessment?.status === "mismatch" ? "bad" : "warn"}>{label}</WorkspaceBadge></div>
           <p>실제 검증·적용: {workspaceDate(evidence.kind === "ci" ? evidence.completedAt : evidence.kind === "deployment" ? evidence.appliedAt : evidence.verifiedAt)} · 수집: {workspaceDate(evidence.collectedAt)}</p>

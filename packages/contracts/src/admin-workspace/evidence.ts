@@ -9,6 +9,7 @@ interface EvidenceBase {
 export interface WorkspaceCiEvidence extends EvidenceBase {
   kind: "ci"; repository: string; runId: string; runAttempt: number; event: string; workflow: string; job: string; shard: string;
   testedSha: string; headSha: string; baseSha: string;
+  /** startedAt은 해당 runAttempt의 실제 시작 시각이다. 최초 run 생성이나 수집 시각으로 대신하지 않는다. */
   conclusion: "success" | "failure" | "cancelled" | "skipped" | "pending" | "unknown"; completedAt: string; startedAt?: string;
 }
 export interface WorkspaceDeploymentSmoke {
@@ -119,6 +120,8 @@ export function workspaceTypedEvidenceIssues(value: unknown, now = new Date()): 
       date("startedAt");
       const started = workspaceEvidenceInstant(value.startedAt), completed = workspaceEvidenceInstant(value.completedAt);
       if (started !== null && completed !== null && started > completed) issues.push("CI 시작 시각은 완료 시각보다 빠르거나 같아야 합니다.");
+      const collected = workspaceEvidenceInstant(value.collectedAt);
+      if (started !== null && collected !== null && started > collected) issues.push("CI 수집 시각은 해당 회차의 실제 시작보다 빠를 수 없습니다.");
     }
     if (value.conclusion === "pending" && value.completedAt !== "") issues.push("진행 중 CI를 완료된 실행으로 기록할 수 없습니다.");
     if (workspaceEvidenceUrl(value.url) && typeof value.repository === "string") {
@@ -254,6 +257,7 @@ export function assessWorkspaceEvidence(evidence: WorkspaceEvidence, target: Wor
     if (evidence.environment !== target.environment || !normalizeWorkspaceOrigin(target.origin) || normalizeWorkspaceOrigin(evidence.origin) !== normalizeWorkspaceOrigin(target.origin)) mismatch.push("실제 배포 환경·origin이 대상과 다릅니다.");
     if (evidence.phase !== "applied") return result("incomplete", ["이미지 빌드만으로 실제 배포 적용을 확인할 수 없습니다.", ...mismatch]);
     if (!sameSha(evidence.artifactSha, evidence.appliedSha)) mismatch.push("빌드한 아티팩트와 실제 적용 SHA가 다릅니다.");
+    if (mismatch.length) return result("mismatch", mismatch);
     if (evidence.originReadiness.status !== "ready") return result(evidence.originReadiness.status === "not-ready" ? "failed" : "incomplete", ["적용한 origin의 readiness 증거가 필요합니다.", ...mismatch]);
     if (!sameSha(evidence.originReadiness.sha, target.targetSha) || evidence.originReadiness.environment !== target.environment || normalizeWorkspaceOrigin(evidence.originReadiness.origin) !== normalizeWorkspaceOrigin(target.origin)) mismatch.push("origin readiness의 SHA·환경·origin이 대상과 다릅니다.");
     if (evidence.smoke.status !== "passed") return result(evidence.smoke.status === "failed" ? "failed" : "incomplete", ["실제 적용 환경의 통과한 스모크 증거가 필요합니다.", ...mismatch]);
@@ -270,13 +274,78 @@ export function assessWorkspaceEvidence(evidence: WorkspaceEvidence, target: Wor
   return result("current", ["관측한 대상 SHA·버전과 검증 범위가 일치합니다. 실행 승인을 뜻하지 않습니다."]);
 }
 
+interface EvidenceSelection { evidence: WorkspaceEvidence | null; reason?: string }
+const ambiguousSelection = (reason: string): EvidenceSelection => ({ evidence: null, reason });
+
+/** 같은 실제 관측의 사본만 대표 하나를 고른다. 수집 순서로 상충한 결과를 해결하지 않는다. */
+function sameObservation<T extends WorkspaceEvidence>(evidences: readonly T[], key: (evidence: T) => string): T | null {
+  if (new Set(evidences.map(key)).size !== 1) return null;
+  return [...evidences].sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)[0] ?? null;
+}
+
+function selectCiEvidence(candidates: WorkspaceCiEvidence[]): EvidenceSelection {
+  const scopes = new Set(candidates.map(evidence => JSON.stringify([evidence.event, evidence.workflow, evidence.job, evidence.shard])));
+  if (scopes.size > 1) return ambiguousSelection("여러 CI workflow·event·job·shard가 있습니다. 집계할 단일 검증 범위를 지정하세요.");
+  const attempts = new Map<string, number>();
+  for (const evidence of candidates) attempts.set(evidence.runId, Math.max(attempts.get(evidence.runId) ?? 0, evidence.runAttempt));
+  const runs: { evidence: WorkspaceCiEvidence; started: number | null; completed: number | null }[] = [];
+  for (const [runId, attempt] of attempts) {
+    const snapshots = candidates.filter(evidence => evidence.runId === runId && evidence.runAttempt === attempt);
+    const starts = [...new Set(snapshots.flatMap(evidence => evidence.startedAt === undefined ? [] : [workspaceEvidenceInstant(evidence.startedAt)!]))];
+    if (starts.length > 1) return ambiguousSelection("같은 CI 실행 회차의 시작 시각이 상충합니다. 실제 회차의 시작을 다시 확인하세요.");
+    // 같은 회차의 과거 진행 스냅샷은 확인된 완료 결과를 덮어쓰지 않는다.
+    const terminal = snapshots.filter(evidence => !["pending", "unknown"].includes(evidence.conclusion));
+    const selected = sameObservation(terminal.length ? terminal : snapshots, evidence => JSON.stringify([
+      evidence.conclusion, workspaceEvidenceInstant(evidence.completedAt), evidence.headSha.toLowerCase(), evidence.baseSha.toLowerCase(), evidence.availability,
+    ]));
+    if (!selected) return ambiguousSelection("같은 CI 실행 회차의 결과가 서로 상충합니다. 완료 시각·접근 상태를 포함해 원본 실행을 다시 확인하세요.");
+    runs.push({ evidence: selected, started: starts[0] ?? null, completed: workspaceEvidenceInstant(selected.completedAt) });
+  }
+  // run ID 숫자나 완료 순서로 시작 순서를 추정하지 않는다. 시작을 모르는 옛 run도 새 시작 전에 완료됐다면 순서를 증명할 수 있다.
+  const latest = runs.filter(run => runs.every(other => run === other || (run.started !== null
+    && (other.started ?? other.completed) !== null && run.started > (other.started ?? other.completed)!)));
+  return latest.length === 1 ? { evidence: latest[0].evidence }
+    : ambiguousSelection("서로 다른 CI 실행의 선후를 확인할 수 없습니다. 각 최신 회차의 실제 시작 시각을 확인하세요. 수집·완료 순서로 현재 성공을 추정하지 않습니다.");
+}
+
+function deploymentObservationKey(evidence: WorkspaceDeploymentEvidence): string {
+  const readiness = evidence.originReadiness, smoke = evidence.smoke;
+  return JSON.stringify([
+    evidence.deploymentId, evidence.phase, evidence.artifactSha.toLowerCase(), hash(evidence.artifactDigest), evidence.appliedSha.toLowerCase(), workspaceEvidenceInstant(evidence.appliedAt), evidence.availability,
+    readiness.status, workspaceEvidenceInstant(readiness.observedAt), readiness.sha.toLowerCase(), readiness.environment, normalizeWorkspaceOrigin(readiness.origin),
+    smoke.status, workspaceEvidenceInstant(smoke.testedAt), smoke.sha.toLowerCase(), smoke.environment, normalizeWorkspaceOrigin(smoke.origin), smoke.scope,
+  ]);
+}
+
+function selectDeploymentEvidence(candidates: WorkspaceDeploymentEvidence[]): EvidenceSelection {
+  // 대상 SHA로 먼저 거르면 같은 서비스에 적용된 새 SHA를 놓친다. 빌드 이력은 실제 적용을 대체하지 않는다.
+  const applied = candidates.filter(evidence => evidence.phase === "applied");
+  const latestAppliedAt = applied.length ? Math.max(...applied.map(evidence => workspaceEvidenceInstant(evidence.appliedAt)!)) : null;
+  const observations = latestAppliedAt === null ? candidates : applied.filter(evidence => workspaceEvidenceInstant(evidence.appliedAt) === latestAppliedAt);
+  const readinessAt = (evidence: WorkspaceDeploymentEvidence) => evidence.originReadiness.status === "unknown" ? null : workspaceEvidenceInstant(evidence.originReadiness.observedAt);
+  const smokeAt = (evidence: WorkspaceDeploymentEvidence) => ["passed", "failed"].includes(evidence.smoke.status) ? workspaceEvidenceInstant(evidence.smoke.testedAt) : null;
+  const atLeastAsRecent = (left: number | null, right: number | null) => right === null || (left !== null && left >= right);
+  const sameArtifact = (left: WorkspaceDeploymentEvidence, right: WorkspaceDeploymentEvidence) => left.deploymentId === right.deploymentId
+    && sameSha(left.artifactSha, right.artifactSha) && hash(left.artifactDigest) === hash(right.artifactDigest);
+  const latest = observations.filter(evidence => observations.every(other => {
+    if (evidence === other) return true;
+    if (evidence.phase !== "applied" || other.phase !== "applied") return deploymentObservationKey(evidence) === deploymentObservationKey(other);
+    if (!sameArtifact(evidence, other)) return false;
+    // 한 관측의 최신 smoke가 다른 관측의 이후 readiness 실패를 가리지 않게 두 실제 시각을 각각 비교한다.
+    return atLeastAsRecent(readinessAt(evidence), readinessAt(other)) && atLeastAsRecent(smokeAt(evidence), smokeAt(other));
+  }));
+  const selected = sameObservation(latest, deploymentObservationKey);
+  return selected ? { evidence: selected }
+    : ambiguousSelection("배포 적용·origin readiness·스모크 관측의 선후가 불명확하거나 결과가 상충합니다. 수집 시각으로 현재 배포 성공을 추정하지 않습니다.");
+}
+
 /** 이미 수집된 같은 범위의 새 실행이 옛 녹색 결과에 가려지지 않도록 한다. 원격의 최신 실행을 조회하는 함수는 아니다. */
 export function assessWorkspaceEvidenceSet(evidences: readonly WorkspaceEvidence[], target: WorkspaceEvidenceTarget, now = new Date()): WorkspaceEvidenceSetAssessment {
   const empty = (reasons: string[]): WorkspaceEvidenceSetAssessment => ({ status: "incomplete", current: false, historicalSuccess: false, reasons, occurredAt: "", ageHours: null, evidenceId: null, supersededEvidenceIds: [] });
   const targetIssues = workspaceEvidenceTargetIssues(target, now);
   if (targetIssues.length) return empty(targetIssues);
   const candidates = evidences.filter(evidence => {
-    if (evidence.kind !== target.kind || evidence.scope !== target.scope) return false;
+    if (evidence.kind !== target.kind || (evidence.kind !== "deployment" && evidence.scope !== target.scope)) return false;
     if (evidence.kind === "ci" && target.kind === "ci") {
       return normalizeWorkspaceRepository(evidence.repository) === normalizeWorkspaceRepository(target.repository)
         && sameSha(evidence.testedSha, target.targetSha)
@@ -285,37 +354,27 @@ export function assessWorkspaceEvidenceSet(evidences: readonly WorkspaceEvidence
     }
     if (evidence.kind === "deployment" && target.kind === "deployment") {
       return normalizeWorkspaceRepository(evidence.repository) === normalizeWorkspaceRepository(target.repository)
-        && (sameSha(evidence.appliedSha, target.targetSha) || sameSha(evidence.artifactSha, target.targetSha))
         && evidence.provider === target.provider && evidence.unit === target.unit && evidence.environment === target.environment
         && normalizeWorkspaceOrigin(evidence.origin) === normalizeWorkspaceOrigin(target.origin);
     }
     return evidence.kind === "document" && target.kind === "document" && evidence.documentId === target.documentId;
   });
   if (!candidates.length) return empty(["지정한 대상·범위에 연결된 증거가 없습니다."]);
-  let eligible = candidates;
-  const selectionTime = (evidence: WorkspaceEvidence): number => {
-    if (evidence.kind === "ci") return workspaceEvidenceInstant(evidence.completedAt) ?? workspaceEvidenceInstant(evidence.startedAt) ?? workspaceEvidenceInstant(evidence.collectedAt) ?? 0;
-    return workspaceEvidenceInstant(evidence.kind === "deployment" ? evidence.appliedAt : evidence.verifiedAt) ?? workspaceEvidenceInstant(evidence.collectedAt) ?? 0;
-  };
+  const invalid = candidates.flatMap(evidence => workspaceTypedEvidenceIssues(evidence, now));
+  if (invalid.length) return empty([...new Set(invalid)]);
+  let selection: EvidenceSelection;
   if (target.kind === "ci") {
-    const ci = candidates.filter((evidence): evidence is WorkspaceCiEvidence => evidence.kind === "ci");
-    const scopes = new Set(ci.map(evidence => JSON.stringify([evidence.event, evidence.workflow, evidence.job, evidence.shard])));
-    if (scopes.size > 1) return empty(["여러 CI workflow·event·job·shard가 있습니다. 집계할 단일 검증 범위를 지정하세요."]);
-    const attempts = new Map<string, number>();
-    for (const evidence of ci) attempts.set(evidence.runId, Math.max(attempts.get(evidence.runId) ?? 0, evidence.runAttempt));
-    const latestAttempts = ci.filter(evidence => evidence.runAttempt === attempts.get(evidence.runId));
-    for (const runId of attempts.keys()) {
-      const terminal = new Set(latestAttempts.filter(evidence => evidence.runId === runId && !["pending", "unknown"].includes(evidence.conclusion)).map(evidence => evidence.conclusion));
-      if (terminal.size > 1) return empty(["같은 CI 실행 회차의 결과가 서로 상충합니다. 원본 실행을 다시 확인하세요."]);
-    }
-    // 동일 회차의 진행 중 스냅샷은 이후의 완료 결과를 덮어쓰지 않는다.
-    eligible = latestAttempts.filter(evidence => !["pending", "unknown"].includes(evidence.conclusion)
-      || !latestAttempts.some(other => other.runId === evidence.runId && !["pending", "unknown"].includes(other.conclusion)));
+    selection = selectCiEvidence(candidates.filter((evidence): evidence is WorkspaceCiEvidence => evidence.kind === "ci"));
+  } else if (target.kind === "deployment") {
+    selection = selectDeploymentEvidence(candidates.filter((evidence): evidence is WorkspaceDeploymentEvidence => evidence.kind === "deployment"));
+  } else {
+    const documents = candidates.filter((evidence): evidence is WorkspaceDocumentEvidence => evidence.kind === "document");
+    const latestTime = Math.max(...documents.map(evidence => workspaceEvidenceInstant(evidence.verifiedAt)!));
+    const selected = sameObservation(documents.filter(evidence => workspaceEvidenceInstant(evidence.verifiedAt) === latestTime), evidence => JSON.stringify([evidence.version, hash(evidence.contentHash), evidence.availability]));
+    selection = selected ? { evidence: selected } : ambiguousSelection("같은 문서 검증 시각의 내용·접근 상태가 상충합니다. 원본 검토 기록을 확인하세요.");
   }
-  const sorted = [...eligible].sort((left, right) => selectionTime(right) - selectionTime(left)
-    || (workspaceEvidenceInstant(right.collectedAt) ?? 0) - (workspaceEvidenceInstant(left.collectedAt) ?? 0));
-  const selected = sorted[0];
-  if (!selected) return empty(["현재 검증에 사용할 실행 기록이 없습니다."]);
+  const selected = selection.evidence;
+  if (!selected) return empty([selection.reason ?? "현재 검증에 사용할 실행 기록이 없습니다."]);
   const assessment = assessWorkspaceEvidence(selected, target, now);
   return { ...assessment, evidenceId: selected.id, supersededEvidenceIds: candidates.filter(evidence => evidence.id !== selected.id).map(evidence => evidence.id) };
 }
