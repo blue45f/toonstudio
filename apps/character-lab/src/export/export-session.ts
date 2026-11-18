@@ -24,13 +24,24 @@ export type { PsdMangaFxOptions } from "./psd-plan";
 
 export const GLB_MIME = "model/gltf-binary";
 export const WEBM_MIME = "video/webm";
+export const VTT_MIME = "text/vtt;charset=utf-8";
+export const MARKDOWN_MIME = "text/markdown;charset=utf-8";
 export const SHAPER_PRESET_MIME = "text/plain;charset=utf-8";
 export const MIN_EXPORT_DIMENSION = 16;
 export const MAX_PNG_EXPORT_DIMENSION = 4096;
 export const MAX_PSD_EXPORT_DIMENSION = PSD_MAX_DIMENSION;
 export const MAX_SETTLE_STEPS = 600;
 
-export type ExportKind = "png" | "psd" | "glb" | "webm" | "recipe" | "shaper-preset" | "cutsheet";
+export type ExportKind =
+  | "png"
+  | "psd"
+  | "glb"
+  | "webm"
+  | "vtt"
+  | "storyboard-md"
+  | "recipe"
+  | "shaper-preset"
+  | "cutsheet";
 
 export interface ExportCaptureOptions {
   readonly width: number;
@@ -52,6 +63,8 @@ export interface MotionTeaserReceiptMetrics {
   readonly avgFrameMs: number;
   readonly peakRasterMb: number;
   readonly audioEvents: number;
+  readonly ambientBgm?: boolean;
+  readonly beatCount?: number;
 }
 
 export interface ExportReceipt {

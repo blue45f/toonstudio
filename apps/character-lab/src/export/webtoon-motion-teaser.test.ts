@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { failVisible } from "../contracts";
+import { createDefaultRecipe, failVisible } from "../contracts";
 import { createMockEngine } from "../testing/mock-engine";
 
 import { isWebmEbml } from "./export-session";
@@ -8,9 +8,12 @@ import {
   DEFAULT_MOTION_TEASER_FPS,
   WEBTOON_MOTION_TEASER_RESOLUTIONS,
   buildCutKineticOverlays,
+  buildMotionTeaserWebVtt,
   computeCutKineticMotionState,
   computeMotionTeaserCameraWindow,
+  exportWebtoonMotionTeaserVtt,
   exportWebtoonMotionTeaserWebm,
+  formatWebVttTimestamp,
   planMotionTeaserSchedule,
   renderMotionTeaserFrameRgba,
   synthesizeMotionTeaserAudioPcm,
@@ -37,31 +40,81 @@ describe("webtoon-motion-teaser", () => {
     expect(dramaticSchedule.frameCount).toBeGreaterThan(fastSchedule.frameCount);
     expect(fast15xSchedule.frameCount).toBeLessThan(dramaticSchedule.frameCount);
 
-    // 1컷 진입 시에는 2~4컷 말풍선 알파가 0으로 숨겨져 패닝 가독성 붕괴를 방지한다
     const earlyState = computeCutKineticMotionState(dramaticSchedule.timeline, ["pat", "kugugung", "none", "none"], 80);
     expect(earlyState.cutBubbleAlphas[0]).toBeGreaterThan(0.4);
     expect(earlyState.cutBubbleAlphas[1]).toBe(0);
     expect(earlyState.cutBubbleScales[0]).toBeGreaterThan(0.8);
 
-    // 2컷 체류 진입 구간에서는 쿠구궁 진동 오프셋이 발생한다
     const seg2Start = dramaticSchedule.timeline.segments[1].dwellStartMs;
     const rumbleState = computeCutKineticMotionState(dramaticSchedule.timeline, ["none", "kugugung", "none", "none"], seg2Start + 80);
     expect(Math.hypot(rumbleState.shakeOffsetX, rumbleState.shakeOffsetY)).toBeGreaterThan(0.1);
   });
 
-  it("synthesizeMotionTeaserAudioPcm은 6종 효과음 스탬프를 결정적 모노 PCM 파형으로 합성한다", () => {
+  it("synthesizeMotionTeaserAudioPcm은 6종 효과음 및 무드별 앰비언트 화성 BGM 패드를 클리핑 없이 2채널 믹싱한다", () => {
     const layout = clampWebtoonStripLayout(320, true);
     const schedule = planMotionTeaserSchedule(layout, ["standard", "standard", "standard"], { fps: 24, speed: 1 });
 
     const silent = synthesizeMotionTeaserAudioPcm(schedule, ["none", "none", "none", "none"], 12_000);
     expect(silent.eventCount).toBe(0);
+    expect(silent.ambientBgm).toBe(false);
     expect(silent.samples.every((s) => s === 0)).toBe(true);
 
-    const activeA = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000);
-    const activeB = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000);
-    expect(activeA.eventCount).toBe(4);
-    expect(activeA.samples.some((s) => Math.abs(s) > 0.05)).toBe(true);
-    expect(Array.from(activeA.samples.slice(0, 600))).toEqual(Array.from(activeB.samples.slice(0, 600)));
+    const bgmOnly = synthesizeMotionTeaserAudioPcm(schedule, ["none", "none", "none", "none"], 12_000, {
+      includeAmbientBgm: true,
+      moodId: "twilight-amber",
+    });
+    expect(bgmOnly.ambientBgm).toBe(true);
+    expect(bgmOnly.samples.some((s) => Math.abs(s) > 0.02)).toBe(true);
+    expect(bgmOnly.samples.every((s) => Math.abs(s) <= 0.95)).toBe(true);
+
+    const mixedA = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000, {
+      includeAmbientBgm: true,
+      moodId: "midnight-noir",
+    });
+    const mixedB = synthesizeMotionTeaserAudioPcm(schedule, ["dugeun", "seureung", "kugugung", "beonjjeok"], 12_000, {
+      includeAmbientBgm: true,
+      moodId: "midnight-noir",
+    });
+    expect(mixedA.eventCount).toBe(4);
+    expect(mixedA.samples.every((s) => Math.abs(s) <= 0.95)).toBe(true);
+    expect(Array.from(mixedA.samples.slice(0, 600))).toEqual(Array.from(mixedB.samples.slice(0, 600)));
+  });
+
+  it("buildMotionTeaserWebVtt와 exportWebtoonMotionTeaserVtt는 타임코드·다국어 보이스 태그·효과음 주석을 정확히 생성한다", () => {
+    expect(formatWebVttTimestamp(65_432)).toBe("00:01:05.432");
+    const layout = clampWebtoonStripLayout(320, true, ["compact", "dramatic-pause", "cliffhanger"]);
+    const schedule = planMotionTeaserSchedule(layout, ["compact", "dramatic-pause", "cliffhanger"], { fps: 24, speed: 1 });
+
+    const jaVtt = buildMotionTeaserWebVtt(schedule, {
+      episodeTitleKo: "1화 신전 신탁",
+      locale: "ja",
+      dialogueLines: ["神託が降りる。", "まさか！", "聖杯を見よ。", "決着だ。"],
+      bubbleShapes: ["monologue-box", "shout-burst", "oval", "oval"],
+      speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+      sfxStamps: ["pat", "none", "beonjjeok", "dugeun"],
+    });
+    expect(jaVtt.startsWith("WEBVTT\n")).toBe(true);
+    expect(jaVtt).toContain("<v モノローグ>[効果音: パッ] 神託が降りる。");
+    expect(jaVtt).toContain("<v 相手役>まさか！");
+
+    const vttOutcome = exportWebtoonMotionTeaserVtt(
+      createDefaultRecipe(),
+      {
+        stripWidth: 320,
+        playbackSpeed: 1.5,
+        mangaFx: {
+          enabled: true,
+          locale: "ko",
+          dialogueLines: ["1컷 대사", "2컷 대사", "3컷 대사", "4컷 대사"],
+          sfxStamps: ["dugeun", "none", "none", "none"],
+        },
+      },
+      { now: () => 500 },
+    );
+    expect(vttOutcome.ok).toBe(true);
+    if (!vttOutcome.ok) return;
+    expect(vttOutcome.receipt.kind).toBe("vtt");
+    expect(vttOutcome.receipt.fileName).toMatch(/-webtoon-4cut-ko-1_5x-teaser\.vtt$/u);
   });
 
   it("computeMotionTeaserCameraWindow, buildCutKineticOverlays 및 renderMotionTeaserFrameRgba는 9:16 규격 RGBA 프레임을 결정적으로 합성한다", () => {
@@ -111,11 +164,12 @@ describe("webtoon-motion-teaser", () => {
     expect(frameStart.height).toBe(160);
   });
 
-  it("exportWebtoonMotionTeaserWebm은 키네틱 오버레이·Web Audio PCM·성능 벤치마크 영수증(receipt.motion) 및 실패 코드를 검증한다", async () => {
+  it("exportWebtoonMotionTeaserWebm은 키네틱 오버레이·Web Audio PCM·앰비언트 BGM·성능 영수증(receipt.motion) 및 실패 코드를 검증한다", async () => {
     const engine = createMockEngine();
     expect(isWebmEbml(FAKE_WEBM_EBML_HEADER)).toBe(true);
 
     let capturedAudioEvents = 0;
+    let capturedAmbientBgm = false;
     let capturedOverlayCount = 0;
     let tick = 1_000;
     const okOutcome = await exportWebtoonMotionTeaserWebm(
@@ -124,6 +178,7 @@ describe("webtoon-motion-teaser", () => {
         stripWidth: 64,
         resolutionPreset: "hd-720x1280",
         playbackSpeed: 1.5,
+        includeAmbientBgm: true,
         screentones: ["classic-ink-45", "none", "cyan-noir-dots", "none"],
         mangaFx: {
           enabled: true,
@@ -133,6 +188,7 @@ describe("webtoon-motion-teaser", () => {
       },
       async (req) => {
         capturedAudioEvents = req.audioPcm?.eventCount ?? 0;
+        capturedAmbientBgm = req.audioPcm?.ambientBgm ?? false;
         capturedOverlayCount = req.kineticOverlays?.length ?? 0;
         req.onFrameProgress?.(0, req.schedule.frameCount, 0);
         tick += 48;
@@ -144,11 +200,13 @@ describe("webtoon-motion-teaser", () => {
     expect(okOutcome.ok).toBe(true);
     if (!okOutcome.ok) return;
     expect(capturedAudioEvents).toBe(2);
+    expect(capturedAmbientBgm).toBe(true);
     expect(capturedOverlayCount).toBe(4);
     expect(okOutcome.receipt.width).toBe(WEBTOON_MOTION_TEASER_RESOLUTIONS["hd-720x1280"].width);
     expect(okOutcome.receipt.motion?.audioEvents).toBe(2);
+    expect(okOutcome.receipt.motion?.ambientBgm).toBe(true);
     expect(okOutcome.receipt.motion?.peakRasterMb).toBeGreaterThan(0);
-    expect(okOutcome.receipt.fileName).toMatch(/-720x1280-webtoon-4cut-fx-tone-sfx-1_5x-teaser\.webm$/u);
+    expect(okOutcome.receipt.fileName).toMatch(/-720x1280-webtoon-4cut-fx-tone-sfx-bgm-1_5x-teaser\.webm$/u);
 
     const invalidOutcome = await exportWebtoonMotionTeaserWebm(
       engine,

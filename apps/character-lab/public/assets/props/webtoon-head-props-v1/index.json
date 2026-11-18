@@ -57,6 +57,24 @@
       "bytes": 39680,
       "sha256": "ffb96d9b4c590822fc46a9988b7f6b5d05e54fc1a6cd471d514f7fdcbd51f14b",
       "triangles": 792
+    },
+    {
+      "id": "tactical-visor-goggles",
+      "labelKo": "생존자 방풍 전술 고글",
+      "meshName": "TS_HeadProp_tactical-visor-goggles",
+      "path": "tactical-visor-goggles.glb",
+      "bytes": 28616,
+      "sha256": "b40a0f5655c9e3d0d941e8c7299145b81df739762a9e74101b82ff8fc984e393",
+      "triangles": 340
+    },
+    {
+      "id": "saintess-halo-crown",
+      "labelKo": "신전 성녀 골드 광배·코로넷",
+      "meshName": "TS_HeadProp_saintess-halo-crown",
+      "path": "saintess-halo-crown.glb",
+      "bytes": 47740,
+      "sha256": "d5c9142585e9a6482e4e7b399623264b9f8e74bb2b36504a1490c341fad77b0c",
+      "triangles": 864
     }
   ]
 }

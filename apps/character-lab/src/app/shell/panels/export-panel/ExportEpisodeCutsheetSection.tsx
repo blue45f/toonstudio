@@ -1,9 +1,10 @@
 /**
- * 주간 연재 에피소드 다중 4컷 콘티 큐시트(`.cutsheet.json`) 매니저 서브컴포넌트.
+ * 주간 연재 에피소드 다중 4컷 콘티 큐시트(`.cutsheet.json`) 매니저 및 일괄 배치 내보내기 서브컴포넌트.
  *
- * Unslop & Editor Chrome 규약 준수:
+ * Unslop · Editor Chrome · Korean Typography(IME 가드) · 5-State UI 규약 준수:
  * - 중첩 카드 테두리 대신 1px 헤어라인 구분선과 고정폭 숫자(`tabular-nums`)를 사용한다.
- * - 현재 4컷 디렉터 세션을 순서대로 스냅샷(`1~4컷`, `5~8컷`…)으로 쌓고 원클릭 복원·순서 이동·파일 저장/불러오기를 지원한다.
+ * - 한국어 한글 조합 중 엔터(`event.nativeEvent.isComposing`) 중복 등록을 원천 차단한다.
+ * - 큐시트가 비어 있을 때 1-클릭 스타터 CTA를 제공하고, 장편 `4×N`컷 원고 PNG·연속 `9:16` WebM·통합 `WebVTT`·스토리보드 `.md` 일괄 출고를 지원한다.
  */
 import { useState, useSyncExternalStore } from "react";
 
@@ -19,11 +20,16 @@ import type { StripDirectorSession, WebtoonSceneDirectorPresetId } from "../view
 
 export interface ExportEpisodeCutsheetSectionProps {
   readonly idsPrefix: string;
+  readonly engineReady: boolean;
   readonly busy: boolean;
   readonly directorSession: StripDirectorSession;
   readonly cutsheetStore: EpisodeCutsheetStore;
   readonly onSaveCutsheetJson: () => void;
   readonly onLoadCutsheetFile: (file: File | undefined) => void;
+  readonly onExportBatchLongStripPng?: () => void;
+  readonly onExportBatchMotionWebm?: () => void;
+  readonly onExportBatchWebVtt?: () => void;
+  readonly onExportStoryboardMd?: () => void;
   readonly onBeatAppliedNotice?: (messageKo: string) => void;
 }
 
@@ -77,11 +83,16 @@ function applySnapshotToSession(session: StripDirectorSession, snap: EpisodeCuts
 
 export function ExportEpisodeCutsheetSection({
   idsPrefix,
+  engineReady,
   busy,
   directorSession,
   cutsheetStore,
   onSaveCutsheetJson,
   onLoadCutsheetFile,
+  onExportBatchLongStripPng,
+  onExportBatchMotionWebm,
+  onExportBatchWebVtt,
+  onExportStoryboardMd,
   onBeatAppliedNotice,
 }: ExportEpisodeCutsheetSectionProps) {
   const cutsheetState = useSyncExternalStore(
@@ -96,6 +107,7 @@ export function ExportEpisodeCutsheetSection({
   const isAtCapacity = beatCount >= MAX_CUTSHEET_BEATS;
 
   const onAddCurrentBeat = (): void => {
+    if (busy || isAtCapacity) return;
     const current = directorSession.getState();
     const presetLabel = current.activeDirectorId
       ? (findWebtoonSceneDirectorPreset(current.activeDirectorId)?.labelKo.split("(")[0]?.trim() ?? "")
@@ -113,6 +125,13 @@ export function ExportEpisodeCutsheetSection({
     cutsheetStore.markActiveBeat(beat.beatId);
     onBeatAppliedNotice?.(`큐시트 '${beat.titleKo}' (${beat.cutRangeLabel}) 설정을 4컷 디렉터에 복원했습니다.`);
   };
+
+  const emptyReason = "먼저 '현재 4컷 씬 추가'로 최소 1개 이상의 씬 비트를 등록하세요";
+  const engineReason = !engineReady
+    ? "렌더 엔진이 준비된 뒤 일괄 원고·비디오 렌더링을 사용할 수 있습니다"
+    : beatCount === 0
+      ? emptyReason
+      : undefined;
 
   return (
     <section
@@ -145,6 +164,12 @@ export function ExportEpisodeCutsheetSection({
           placeholder="예: 법정 반대신문 클라이맥스"
           value={draftBeatTitle}
           onChange={(event) => setDraftBeatTitle(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              onAddCurrentBeat();
+            }
+          }}
         />
         <button
           type="button"
@@ -165,11 +190,7 @@ export function ExportEpisodeCutsheetSection({
           className="cl-button cl-export-nav-btn"
           data-testid="cutsheet-save-json"
           disabled={busy || beatCount === 0}
-          title={
-            beatCount === 0
-              ? "먼저 '현재 4컷 씬 추가'로 최소 1개 이상의 씬 비트를 등록하세요"
-              : "등록된 다중 4컷 에피소드 콘티 큐시트를 .cutsheet.json 파일로 저장합니다"
-          }
+          title={beatCount === 0 ? emptyReason : "등록된 다중 4컷 에피소드 콘티 큐시트를 .cutsheet.json 파일로 저장합니다"}
           onClick={onSaveCutsheetJson}
         >
           큐시트 JSON 저장
@@ -189,6 +210,57 @@ export function ExportEpisodeCutsheetSection({
             }}
           />
         </label>
+      </div>
+
+      <div className="cl-export-row" role="group" aria-label="에피소드 큐시트 일괄 출고 도구">
+        {onExportBatchLongStripPng ? (
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="cutsheet-export-batch-strip"
+            disabled={!engineReady || busy || beatCount === 0}
+            title={engineReason ?? `등록된 ${beatCount}비트(${totalCuts}컷)를 장편 세로 스크롤 웹툰 원고 PNG 한 장으로 이어 붙여 저장합니다`}
+            onClick={onExportBatchLongStripPng}
+          >
+            장편 스트립 PNG 일괄 저장
+          </button>
+        ) : null}
+        {onExportBatchMotionWebm ? (
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="cutsheet-export-batch-webm"
+            disabled={!engineReady || busy || beatCount === 0}
+            title={engineReason ?? `등록된 ${beatCount}비트(${totalCuts}컷)를 연속 9:16 숏폼 WebM 비디오 하나로 일괄 인코딩합니다`}
+            onClick={onExportBatchMotionWebm}
+          >
+            연속 9:16 WebM 일괄 저장
+          </button>
+        ) : null}
+        {onExportBatchWebVtt ? (
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="cutsheet-export-vtt"
+            disabled={busy || beatCount === 0}
+            title={beatCount === 0 ? emptyReason : `등록된 ${beatCount}비트(${totalCuts}컷)의 누적 타임코드가 동기화된 다국어 WebVTT(.vtt) 자막을 저장합니다`}
+            onClick={onExportBatchWebVtt}
+          >
+            통합 WebVTT 자막 저장
+          </button>
+        ) : null}
+        {onExportStoryboardMd ? (
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="cutsheet-export-storyboard-md"
+            disabled={busy || beatCount === 0}
+            title={beatCount === 0 ? emptyReason : "PD·배경·식자 파트 공유용 한국어 스토리보드 연출 큐시트(.storyboard.md)를 저장합니다"}
+            onClick={onExportStoryboardMd}
+          >
+            스토리보드 .md 저장
+          </button>
+        ) : null}
       </div>
 
       {beatCount > 0 ? (
@@ -252,7 +324,20 @@ export function ExportEpisodeCutsheetSection({
             );
           })}
         </ul>
-      ) : null}
+      ) : (
+        <div className="cl-export-row" data-testid="cutsheet-empty-state">
+          <span>등록된 4컷 비트가 없습니다. 현재 연출 세션을 첫 비트로 담아 장편 원고·연속 WebM·자막을 한 번에 출고하세요.</span>
+          <button
+            type="button"
+            className="cl-preset-chip"
+            data-testid="cutsheet-empty-starter-cta"
+            disabled={busy}
+            onClick={onAddCurrentBeat}
+          >
+            현재 4컷 첫 비트로 바로 시작
+          </button>
+        </div>
+      )}
     </section>
   );
 }

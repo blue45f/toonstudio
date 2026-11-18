@@ -2,15 +2,33 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_EPISODE_CUTSHEET_SNAPSHOT,
+  EPISODE_CUTSHEET_STORAGE_KEY,
   createEpisodeCutsheetStore,
   episodeCutsheetFileName,
   parseEpisodeCutsheet,
   serializeEpisodeCutsheet,
 } from "./webtoon-episode-cutsheet";
 
+import type { MinimalStorageLike } from "./webtoon-episode-cutsheet";
+
+function createMemoryStorage(): MinimalStorageLike {
+  const map = new Map<string, string>();
+  return {
+    getItem: (key) => map.get(key) ?? null,
+    setItem: (key, val) => {
+      map.set(key, val);
+    },
+    removeItem: (key) => {
+      map.delete(key);
+    },
+  };
+}
+
 describe("webtoon-episode-cutsheet", () => {
-  it("4컷 씬 비트를 추가·순서 이동·삭제하며 컷 범위(1~4컷, 5~8컷)를 자동 재계산하고 JSON 왕복 직렬화를 보장한다", () => {
-    const store = createEpisodeCutsheetStore({ episodeTitleKo: "12화 법정 반전" });
+  it("4컷 씬 비트를 추가·순서 이동·삭제하며 localStorage 초안 자동 보존 및 JSON 왕복 직렬화를 보장한다", () => {
+    const storage = createMemoryStorage();
+    const store = createEpisodeCutsheetStore({ storage });
+    store.setEpisodeTitle("12화 법정 반전");
     const baseSnap = {
       ...DEFAULT_EPISODE_CUTSHEET_SNAPSHOT,
       activeDirectorId: "director-legal-medical-tribunal",
@@ -26,6 +44,12 @@ describe("webtoon-episode-cutsheet", () => {
     });
     expect(beat1?.cutRangeLabel).toBe("1~4컷");
     expect(beat2?.cutRangeLabel).toBe("5~8컷");
+    expect(storage.getItem(EPISODE_CUTSHEET_STORAGE_KEY)).not.toBeNull();
+
+    // 새로고침 후 새 스토어 인스턴스가 동일한 storage에서 자동 복원한다
+    const reloadedStore = createEpisodeCutsheetStore({ storage });
+    expect(reloadedStore.getState().episodeTitleKo).toBe("12화 법정 반전");
+    expect(reloadedStore.getState().beats).toHaveLength(2);
 
     store.moveBeat(beat2!.beatId, "up");
     expect(store.getState().beats[0]?.titleKo).toBe("심전도 증거 제시");
@@ -45,6 +69,9 @@ describe("webtoon-episode-cutsheet", () => {
     store.removeBeat(beat2!.beatId);
     expect(store.getState().beats).toHaveLength(1);
     expect(store.getState().beats[0]?.cutRangeLabel).toBe("1~4컷");
+
+    store.reset();
+    expect(storage.getItem(EPISODE_CUTSHEET_STORAGE_KEY)).toBeNull();
   });
 
   it("빈 파일·구문 오류·잘못된 스키마에 대해 명시적 LabFailure 코드를 반환한다", () => {

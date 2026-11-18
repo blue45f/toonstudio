@@ -198,7 +198,7 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
     labelKo: "아이돌 프리즘 응원봉·마이크",
     genreHintKo: "아이돌·콘서트·연예계 무대 클로즈업 컷",
     glbUrl: "/assets/props/webtoon-hand-props-v1/idol-prism-lightstick.glb",
-    sha256: "d27ead99905d12e842fc80fff315f70bf67892a1de41001b35c5423647a170d0",
+    sha256: "ee36547fc488242e503d9f5da3fe569c095576614501b1c7eddabfc7c058282d",
     handPreset: "hand-pose/fist",
     rightArmEulerDeg: {
       upperArm: [18, 30, 52],
@@ -211,12 +211,51 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
     labelKo: "체전 에이스 농구공",
     genreHintKo: "학원 스포츠·청춘 코트 라이벌전 컷",
     glbUrl: "/assets/props/webtoon-hand-props-v1/varsity-basketball.glb",
-    sha256: "1283f60ba4e0f85fd75298655bbaef59f367698b7b7c7c9c3c333a73672e9c19",
+    sha256: "1858777e6b9752b6bae72da71ef591f6a1bc2d15b82bd41024de77227bcc298a",
     handPreset: "hand-pose/open",
     rightArmEulerDeg: {
       upperArm: [10, 22, 58],
       lowerArm: [20, 74, -16],
       hand: [8, 10, -6],
+    },
+  },
+  {
+    id: "tactical-medkit-radio",
+    labelKo: "아포칼립스 전술 무전기·응급키트",
+    genreHintKo: "아포칼립스·회귀·헌터 생존 교신 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/tactical-medkit-radio.glb",
+    sha256: "c442d3eff2cef0c94e289d216b7b215b1f4817f90e6fadbb713a9ebc0eb1da29",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [16, 28, 56],
+      lowerArm: [30, 84, -22],
+      hand: [14, 14, -8],
+    },
+  },
+  {
+    id: "artisan-drip-kettle",
+    labelKo: "공방 구리 핸드드립 포트",
+    genreHintKo: "일상·힐링·캠퍼스 로스터리 공방 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/artisan-drip-kettle.glb",
+    sha256: "6a6c865ff280369d30706e005c05728dbcb7d411d1310f552a561be2e4005d64",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [12, 24, 60],
+      lowerArm: [18, 84, -20],
+      hand: [8, 12, -8],
+    },
+  },
+  {
+    id: "sacred-chalice-wand",
+    labelKo: "성녀 신탁 성배·성광 홀",
+    genreHintKo: "성녀·신전·로맨스판타지 신탁 의식 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/sacred-chalice-wand.glb",
+    sha256: "02f948a8fd629c855c78bba7c9be261df0fd43c86b861c00ae79eb416aaff155",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [16, 28, 54],
+      lowerArm: [32, 86, -20],
+      hand: [12, 16, -8],
     },
   },
 ]);
@@ -263,6 +302,20 @@ export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze(
     genreHintKo: "로판·느와르·추리 귀족 클로즈업 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/silver-monocle.glb",
     sha256: "ffb96d9b4c590822fc46a9988b7f6b5d05e54fc1a6cd471d514f7fdcbd51f14b",
+  },
+  {
+    id: "tactical-visor-goggles",
+    labelKo: "생존자 방풍 전술 고글",
+    genreHintKo: "아포칼립스·스나이퍼·레이드 전초기지 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/tactical-visor-goggles.glb",
+    sha256: "b40a0f5655c9e3d0d941e8c7299145b81df739762a9e74101b82ff8fc984e393",
+  },
+  {
+    id: "saintess-halo-crown",
+    labelKo: "신전 성녀 골드 광배·코로넷",
+    genreHintKo: "성녀·성좌물·판타지 신탁 강림 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/saintess-halo-crown.glb",
+    sha256: "d5c9142585e9a6482e4e7b399623264b9f8e74bb2b36504a1490c341fad77b0c",
   },
 ]);
 
@@ -336,6 +389,27 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     genreHintKo: "학원 스포츠·체전 결승전 코트 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/court-hoop-stanchion.glb",
     sha256: "faa30be4490968cb8d6f770a91ccd0cc98c6cf4e7d5ef849966e88a85d5d5cce",
+  },
+  {
+    id: "apocalypse-supply-barricade",
+    labelKo: "아포칼립스 방벽·보급 크레이트",
+    genreHintKo: "아포칼립스·회귀·디펜스 전초기지 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/apocalypse-supply-barricade.glb",
+    sha256: "6d13cf313540f6748c4a2cb0b804a50b1a2e33c30e798e0924badd5ddb7ca99f",
+  },
+  {
+    id: "atelier-drip-counter",
+    labelKo: "힐링 원목 드립바·공방 카운터",
+    genreHintKo: "일상·힐링·로맨스 로스터리 공방 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/atelier-drip-counter.glb",
+    sha256: "feb5a2028357d11bf54fc667394b45d865c51d5970b0c736a02f6273ccb56b23",
+  },
+  {
+    id: "sanctuary-altar-pedestal",
+    labelKo: "신전 백대리석 성수 제단·성광 링",
+    genreHintKo: "성녀·판타지·로판 신전 성역 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/sanctuary-altar-pedestal.glb",
+    sha256: "159b21dd9e4865edb45770895c17d0efcc4bd33faf4c5490aad152ae8a36dea4",
   },
 ]);
 

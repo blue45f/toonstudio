@@ -164,12 +164,12 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setSfxStamp").at(-1)?.args[0]).toBeNull());
   });
 
-  it("웹툰 3D 소품 32종·9대 장르 씬 디렉터(법정·아이돌·스포츠 포함)·상대역 자동 캐스팅·스크린톤/무드/호흡 동기화가 엔진에 실시간 반영된다", async () => {
+  it("웹툰 3D 소품 40종·12대 완결 장르 씬 디렉터(생존자·힐링공방·성녀신탁 포함)·상대역 자동 캐스팅·스크린톤/무드/호흡 동기화가 엔진에 실시간 반영된다", async () => {
     const dispatched: LabCommand[] = [];
     const engine = renderReadyViewport((cmd) => dispatched.push(cmd));
 
     const propSelect = screen.getByTestId("viewport-hand-prop-select") as HTMLSelectElement;
-    expect(propSelect.options.length).toBe(11);
+    expect(propSelect.options.length).toBe(14);
     expect(Array.from(propSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
 
     fireEvent.change(propSelect, { target: { value: "idol-prism-lightstick" } });
@@ -197,29 +197,29 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
 
     const headSelect = screen.getByTestId("viewport-head-prop-select") as HTMLSelectElement;
-    expect(headSelect.options.length).toBe(7);
+    expect(headSelect.options.length).toBe(9);
     expect(Array.from(headSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(headSelect, { target: { value: "silver-monocle" } });
+    fireEvent.change(headSelect, { target: { value: "saintess-halo-crown" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
-        propId: "silver-monocle",
-        glbUrl: "/assets/props/webtoon-head-props-v1/silver-monocle.glb",
+        propId: "saintess-halo-crown",
+        glbUrl: "/assets/props/webtoon-head-props-v1/saintess-halo-crown.glb",
       }),
     );
 
     const stageSelect = screen.getByTestId("viewport-stage-prop-select") as HTMLSelectElement;
-    expect(stageSelect.options.length).toBe(11);
+    expect(stageSelect.options.length).toBe(14);
     expect(Array.from(stageSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(stageSelect, { target: { value: "court-hoop-stanchion" } });
+    fireEvent.change(stageSelect, { target: { value: "sanctuary-altar-pedestal" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
-        propId: "court-hoop-stanchion",
-        glbUrl: "/assets/props/webtoon-stage-props-v1/court-hoop-stanchion.glb",
+        propId: "sanctuary-altar-pedestal",
+        glbUrl: "/assets/props/webtoon-stage-props-v1/sanctuary-altar-pedestal.glb",
       }),
     );
 
     const directorSelect = screen.getByTestId("viewport-scene-director-select") as HTMLSelectElement;
-    expect(directorSelect.options.length).toBe(10);
+    expect(directorSelect.options.length).toBe(13);
     fireEvent.change(directorSelect, { target: { value: "director-idol-encore-stage" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
@@ -257,14 +257,14 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(dispatched.some((cmd) => cmd.type === "eye-gaze/set")).toBe(true);
     expect(castDuoBtn.getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.change(directorSelect, { target: { value: "director-varsity-court-rival" } });
+    fireEvent.change(directorSelect, { target: { value: "director-sanctuary-oracle" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
-        characterId: "shaper-atelier-male-lead",
-        expression: "cold-smirk",
+        characterId: "shaper-fantasy-saintess",
+        expression: "shocked",
         handProp: {
-          propId: "varsity-basketball",
-          glbUrl: "/assets/props/webtoon-hand-props-v1/varsity-basketball.glb",
+          propId: "sacred-chalice-wand",
+          glbUrl: "/assets/props/webtoon-hand-props-v1/sacred-chalice-wand.glb",
         },
       }),
     );

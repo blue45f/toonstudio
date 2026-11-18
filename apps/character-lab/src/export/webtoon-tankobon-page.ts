@@ -2,8 +2,8 @@
  * 단행본(Tankobon) 우→좌(Right-to-Left · 일본 만화/단행본 표준) 및 좌→우(Left-to-Right · 한국 단행본)
  * 2×2 출판 페이지 조판 합성기 (`webtoon-tankobon-page.ts`).
  *
- * - 동일한 4컷 연기 시퀀스·카메라 구도(더치 틸트 포함)·시간대 무드·할프톤 망점 스크린톤·다국어(일본어 세로쓰기 포함) 대사 세션을
- *   인쇄 재단선(Crop/Trim Marks · Bleed 여백)이 포함된 B5/A5 비율 단행본 대지로 원클릭 합성해 PNG로 내보낸다.
+ * - 인쇄 재단선(Crop/Trim Marks · Bleed 여백), 홀수/짝수 페이지 책등 제본 여백(`bindingSide`: `odd-recto` / `even-verso`),
+ *   하단 트림 내 결정적 비트맵 페이지 넘버(`Folio`: `P.01`..`P.999`) 인쇄를 지원한다.
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
@@ -47,10 +47,21 @@ export const TANKOBON_READING_ORDER_LABELS_KO: Readonly<Record<TankobonReadingOr
   "ltr-manhwa": "출판 좌→우 (1좌상·2우상·3좌하·4우하)",
 });
 
+export type TankobonBindingSide = "none" | "odd-recto" | "even-verso";
+export const TANKOBON_BINDING_SIDES = ["none", "odd-recto", "even-verso"] as const;
+
+export const TANKOBON_BINDING_SIDE_LABELS_KO: Readonly<Record<TankobonBindingSide, string>> = Object.freeze({
+  none: "대칭 여백 (디지털·단면)",
+  "odd-recto": "홀수 쪽 (책등 안쪽 여백 확대)",
+  "even-verso": "짝수 쪽 (맞면 대칭 여백)",
+});
+
 export interface WebtoonTankobonPageLayout {
   readonly pageWidth: number;
   readonly pageHeight: number;
   readonly bleedMarginPx: number;
+  readonly leftMarginPx: number;
+  readonly rightMarginPx: number;
   readonly trimInsetPx: number;
   readonly gutterX: number;
   readonly gutterY: number;
@@ -61,40 +72,82 @@ export interface WebtoonTankobonPageLayout {
 }
 
 export interface ExportWebtoonTankobonPageOptions extends Omit<ExportWebtoonVerticalStripOptions, "stripWidth"> {
-  /** 요청 단행본 페이지 가로 폭(px, 기본 1200px · 최대 3072px; 세로는 B5 1:1.414 비율로 결정) */
+  /** 요청 단행본 페이지 가로 폭(px, 기본 1200px · 최대 2800px; 세로는 B5 1:1.414 비율로 결정) */
   readonly pageWidth: number;
   readonly readingOrder?: TankobonReadingOrder;
   readonly includeCropMarks?: boolean;
+  /** 인쇄 하단 트림 여백에 찍을 페이지 번호(1..999; 0 또는 미지정 시 생략) */
+  readonly pageNumber?: number;
+  /** 책등 제본 여백 방향(우→좌 책은 홀수 쪽 우측이 책등, 좌→우 책은 홀수 쪽 좌측이 책등) */
+  readonly bindingSide?: TankobonBindingSide;
 }
 
 const defaultNow = (): number => Date.now();
 const MAX_TANKOBON_WIDTH = 2800;
 
+/** 결정적 3×5 비트맵 글리프(P, ., 0~9) */
+const FOLIO_GLYPHS_3X5: Readonly<Record<string, readonly [number, number, number, number, number]>> = Object.freeze({
+  P: [0b110, 0b101, 0b110, 0b100, 0b100],
+  ".": [0b000, 0b000, 0b000, 0b000, 0b010],
+  "0": [0b111, 0b101, 0b101, 0b101, 0b111],
+  "1": [0b010, 0b110, 0b010, 0b010, 0b111],
+  "2": [0b111, 0b001, 0b111, 0b100, 0b111],
+  "3": [0b111, 0b001, 0b111, 0b001, 0b111],
+  "4": [0b101, 0b101, 0b111, 0b001, 0b001],
+  "5": [0b111, 0b100, 0b111, 0b001, 0b111],
+  "6": [0b111, 0b100, 0b111, 0b101, 0b111],
+  "7": [0b111, 0b001, 0b001, 0b010, 0b010],
+  "8": [0b111, 0b101, 0b111, 0b101, 0b111],
+  "9": [0b111, 0b101, 0b111, 0b001, 0b111],
+});
+
 function toPageFailure(code: string, reasonKo: string, error: unknown, now: number): LabFailure {
   return isLabFailure(error) ? error : failVisible(code, reasonKo, error, now);
 }
 
+function resolveSpineSideIsRight(
+  readingOrder: TankobonReadingOrder,
+  bindingSide: TankobonBindingSide,
+): boolean | null {
+  if (bindingSide === "none") return null;
+  if (readingOrder === "rtl-tankobon") {
+    // 일본식 우철(Right-bound) 단행본: 홀수 쪽(1p)은 왼쪽 페이지로 우측이 책등, 짝수 쪽(2p)은 좌측이 책등
+    return bindingSide === "odd-recto";
+  }
+  // 한국·서구식 좌철(Left-bound) 단행본: 홀수 쪽(1p)은 오른쪽 페이지로 좌측이 책등, 짝수 쪽(2p)은 우측이 책등
+  return bindingSide === "even-verso";
+}
+
 /**
- * B5/A5(1 : √2 ≈ 1 : 1.414) 인쇄 판형 비율에 맞춰 재단 여백·2×2 컷 크기·말풍선 상단 안전 영역을 계산한다.
+ * B5/A5(1 : √2 ≈ 1 : 1.414) 인쇄 판형 비율에 맞춰 재단 여백·책등 제본 시프트·2×2 컷 크기·말풍선 상단 안전 영역을 계산한다.
  */
 export function clampWebtoonTankobonPageLayout(
   requestedPageWidth: number,
   includeBubbleSafeZone = true,
+  bindingSide: TankobonBindingSide = "none",
+  readingOrder: TankobonReadingOrder = "rtl-tankobon",
 ): WebtoonTankobonPageLayout {
   const safePageW = Number.isFinite(requestedPageWidth)
     ? Math.min(MAX_TANKOBON_WIDTH, Math.max(MIN_EXPORT_DIMENSION * 3, Math.floor(requestedPageWidth)))
     : 1200;
 
-  const bleedMarginPx = Math.max(4, Math.round(safePageW * 0.042));
-  const trimInsetPx = Math.max(2, Math.round(safePageW * 0.022));
+  const bleedMarginPx = Math.max(6, Math.round(safePageW * 0.044));
+  const trimInsetPx = Math.max(2, Math.round(safePageW * 0.02));
   const borderPx = Math.max(1, Math.round(safePageW * 0.0028));
   const gutterX = Math.max(4, Math.round(safePageW * 0.024));
   const gutterY = Math.max(6, Math.round(safePageW * 0.032));
   const bubbleSafeTopPx = includeBubbleSafeZone ? Math.max(4, Math.round(safePageW * 0.038)) : 0;
 
-  const usableW = safePageW - bleedMarginPx * 2 - gutterX - borderPx * 4;
+  const spineShift = Math.max(2, Math.floor(bleedMarginPx * 0.28));
+  const spineIsRight = resolveSpineSideIsRight(readingOrder, bindingSide);
+  const leftMarginPx =
+    spineIsRight === null ? bleedMarginPx : spineIsRight ? bleedMarginPx - spineShift : bleedMarginPx + spineShift;
+  const rightMarginPx =
+    spineIsRight === null ? bleedMarginPx : spineIsRight ? bleedMarginPx + spineShift : bleedMarginPx - spineShift;
+
+  const usableW = safePageW - (leftMarginPx + rightMarginPx) - gutterX - borderPx * 4;
   const cutWidth = Math.max(MIN_EXPORT_DIMENSION, Math.floor(usableW / 2));
-  const effectivePageW = bleedMarginPx * 2 + gutterX + (cutWidth + borderPx * 2) * 2;
+  const effectivePageW = leftMarginPx + rightMarginPx + gutterX + (cutWidth + borderPx * 2) * 2;
 
   const targetPageH = Math.min(MAX_PNG_EXPORT_DIMENSION, Math.round(effectivePageW * 1.414));
   const fixedH = bleedMarginPx * 2 + gutterY + (borderPx * 2 + bubbleSafeTopPx) * 2;
@@ -105,6 +158,8 @@ export function clampWebtoonTankobonPageLayout(
     pageWidth: effectivePageW,
     pageHeight,
     bleedMarginPx,
+    leftMarginPx,
+    rightMarginPx,
     trimInsetPx,
     gutterX,
     gutterY,
@@ -117,8 +172,6 @@ export function clampWebtoonTankobonPageLayout(
 
 /**
  * 컷 인덱스(0..3)가 배치될 (열 col: 0=좌, 1=우 / 행 row: 0=상, 1=하) 좌표를 반환한다.
- * - `rtl-tankobon`: 1컷(0) 우상(1,0) → 2컷(1) 좌상(0,0) → 3컷(2) 우하(1,1) → 4컷(3) 좌하(0,1)
- * - `ltr-manhwa`:   1컷(0) 좌상(0,0) → 2컷(1) 우상(1,0) → 3컷(2) 좌하(0,1) → 4컷(3) 우하(1,1)
  */
 export function resolveTankobonCellGridCoord(
   cutIndex: number,
@@ -135,6 +188,7 @@ export function resolveTankobonCellGridCoord(
 function fillRect(
   rgba: Uint8ClampedArray,
   canvasW: number,
+  canvasH: number,
   x0: number,
   y0: number,
   w: number,
@@ -144,7 +198,7 @@ function fillRect(
   b: number,
 ): void {
   const xEnd = Math.min(canvasW, x0 + w);
-  const yEnd = y0 + h;
+  const yEnd = Math.min(canvasH, y0 + h);
   for (let y = Math.max(0, y0); y < yEnd; y += 1) {
     let dst = (y * canvasW + Math.max(0, x0)) * 4;
     for (let x = Math.max(0, x0); x < xEnd; x += 1) {
@@ -173,18 +227,86 @@ function drawTrimCropMarks(
   const top = trimInset;
   const bottom = pageH - 1 - trimInset;
 
-  // 좌상·우상·좌하·우하 L자 인쇄 재단선(トンボ / Crop Marks)
-  fillRect(rgba, pageW, Math.max(0, left - gap - arm), top, arm, 1, r, g, b);
-  fillRect(rgba, pageW, left, Math.max(0, top - gap - arm), 1, arm, r, g, b);
+  fillRect(rgba, pageW, pageH, Math.max(0, left - gap - arm), top, arm, 1, r, g, b);
+  fillRect(rgba, pageW, pageH, left, Math.max(0, top - gap - arm), 1, arm, r, g, b);
 
-  fillRect(rgba, pageW, Math.min(pageW - arm, right + gap), top, arm, 1, r, g, b);
-  fillRect(rgba, pageW, right, Math.max(0, top - gap - arm), 1, arm, r, g, b);
+  fillRect(rgba, pageW, pageH, Math.min(pageW - arm, right + gap), top, arm, 1, r, g, b);
+  fillRect(rgba, pageW, pageH, right, Math.max(0, top - gap - arm), 1, arm, r, g, b);
 
-  fillRect(rgba, pageW, Math.max(0, left - gap - arm), bottom, arm, 1, r, g, b);
-  fillRect(rgba, pageW, left, Math.min(pageH - arm, bottom + gap), 1, arm, r, g, b);
+  fillRect(rgba, pageW, pageH, Math.max(0, left - gap - arm), bottom, arm, 1, r, g, b);
+  fillRect(rgba, pageW, pageH, left, Math.min(pageH - arm, bottom + gap), 1, arm, r, g, b);
 
-  fillRect(rgba, pageW, Math.min(pageW - arm, right + gap), bottom, arm, 1, r, g, b);
-  fillRect(rgba, pageW, right, Math.min(pageH - arm, bottom + gap), 1, arm, r, g, b);
+  fillRect(rgba, pageW, pageH, Math.min(pageW - arm, right + gap), bottom, arm, 1, r, g, b);
+  fillRect(rgba, pageW, pageH, right, Math.min(pageH - arm, bottom + gap), 1, arm, r, g, b);
+}
+
+/**
+ * 단행본 하단 트림 안전 영역 안에 결정적 `P.01`..`P.999` 페이지 번호(Folio)를 인쇄한다.
+ */
+export function formatTankobonFolioLabel(pageNumber: number): string {
+  const clamped = Math.max(1, Math.min(999, Math.floor(pageNumber)));
+  return `P.${String(clamped).padStart(2, "0")}`;
+}
+
+function stampTankobonFolioNumber(
+  rgba: Uint8ClampedArray,
+  layout: WebtoonTankobonPageLayout,
+  pageNumber: number,
+  readingOrder: TankobonReadingOrder,
+  bindingSide: TankobonBindingSide,
+  r: number,
+  g: number,
+  b: number,
+): void {
+  if (!Number.isFinite(pageNumber) || pageNumber < 1) return;
+  const label = formatTankobonFolioLabel(pageNumber);
+  const scale = Math.max(1, Math.min(4, Math.floor(layout.bleedMarginPx / 8)));
+  const glyphW = 3 * scale;
+  const glyphH = 5 * scale;
+  const spacing = Math.max(1, scale);
+  const totalW = label.length * glyphW + (label.length - 1) * spacing;
+
+  const spineIsRight = resolveSpineSideIsRight(readingOrder, bindingSide);
+  const startX =
+    spineIsRight === null
+      ? Math.round((layout.pageWidth - totalW) * 0.5)
+      : spineIsRight
+        ? layout.leftMarginPx
+        : Math.max(0, layout.pageWidth - layout.rightMarginPx - totalW);
+
+  const footerTop = layout.pageHeight - layout.bleedMarginPx;
+  const footerBottom = layout.pageHeight - layout.trimInsetPx;
+  const startY = Math.max(
+    footerTop + 1,
+    Math.min(layout.pageHeight - glyphH - 1, Math.round((footerTop + footerBottom - glyphH) * 0.5)),
+  );
+
+  let cursorX = startX;
+  for (const ch of label) {
+    const bitmap = FOLIO_GLYPHS_3X5[ch];
+    if (bitmap) {
+      for (let row = 0; row < 5; row += 1) {
+        const rowBits = bitmap[row]!;
+        for (let col = 0; col < 3; col += 1) {
+          if (((rowBits >> (2 - col)) & 1) === 1) {
+            fillRect(
+              rgba,
+              layout.pageWidth,
+              layout.pageHeight,
+              cursorX + col * scale,
+              startY + row * scale,
+              scale,
+              scale,
+              r,
+              g,
+              b,
+            );
+          }
+        }
+      }
+    }
+    cursorX += glyphW + spacing;
+  }
 }
 
 export function composeWebtoonTankobonPage(
@@ -193,6 +315,8 @@ export function composeWebtoonTankobonPage(
   options: {
     readonly readingOrder?: TankobonReadingOrder;
     readonly includeCropMarks?: boolean;
+    readonly pageNumber?: number;
+    readonly bindingSide?: TankobonBindingSide;
     readonly mangaFx?: WebtoonStripMangaFxOptions;
     readonly manuscriptMood?: WebtoonManuscriptMoodId;
     readonly screentones?: WebtoonStripScreentones;
@@ -202,6 +326,7 @@ export function composeWebtoonTankobonPage(
     throw new Error(`단행본 4컷 조판에는 ${WEBTOON_VERTICAL_STRIP_CUTS.length}개의 컷이 필요합니다(전달됨: ${panels.length}).`);
   }
   const readingOrder = options.readingOrder ?? "rtl-tankobon";
+  const bindingSide = options.bindingSide ?? "none";
   const moodId: WebtoonManuscriptMoodId = options.manuscriptMood ?? options.mangaFx?.manuscriptMood ?? "daylight-paper";
   const moodSpec = WEBTOON_MANUSCRIPT_MOODS[moodId] ?? WEBTOON_MANUSCRIPT_MOODS["daylight-paper"];
 
@@ -209,6 +334,7 @@ export function composeWebtoonTankobonPage(
   fillRect(
     out,
     layout.pageWidth,
+    layout.pageHeight,
     0,
     0,
     layout.pageWidth,
@@ -224,6 +350,19 @@ export function composeWebtoonTankobonPage(
       layout.pageWidth,
       layout.pageHeight,
       layout.trimInsetPx,
+      moodSpec.borderRgb[0],
+      moodSpec.borderRgb[1],
+      moodSpec.borderRgb[2],
+    );
+  }
+
+  if (options.pageNumber && options.pageNumber >= 1) {
+    stampTankobonFolioNumber(
+      out,
+      layout,
+      options.pageNumber,
+      readingOrder,
+      bindingSide,
       moodSpec.borderRgb[0],
       moodSpec.borderRgb[1],
       moodSpec.borderRgb[2],
@@ -247,12 +386,13 @@ export function composeWebtoonTankobonPage(
       throw new Error(`${idx + 1}컷 크기(${panel.width}×${panel.height})가 단행본 셀 크기(${layout.cutWidth}×${layout.cutHeight})와 다릅니다.`);
     }
     const { col, row } = resolveTankobonCellGridCoord(idx, readingOrder);
-    const frameX = layout.bleedMarginPx + col * (frameW + layout.gutterX);
+    const frameX = layout.leftMarginPx + col * (frameW + layout.gutterX);
     const frameY = layout.bleedMarginPx + row * (frameH + layout.gutterY);
 
     fillRect(
       out,
       layout.pageWidth,
+      layout.pageHeight,
       frameX,
       frameY,
       frameW,
@@ -363,7 +503,14 @@ export async function exportWebtoonTankobonPagePng(
 ): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
-  const layout = clampWebtoonTankobonPageLayout(options.pageWidth, options.includeBubbleSafeZone ?? true);
+  const readingOrder = options.readingOrder ?? "rtl-tankobon";
+  const bindingSide = options.bindingSide ?? "none";
+  const layout = clampWebtoonTankobonPageLayout(
+    options.pageWidth,
+    options.includeBubbleSafeZone ?? true,
+    bindingSide,
+    readingOrder,
+  );
   if (layout.pageWidth > MAX_PNG_EXPORT_DIMENSION || layout.pageHeight > MAX_PNG_EXPORT_DIMENSION) {
     return {
       ok: false,
@@ -458,12 +605,14 @@ export async function exportWebtoonTankobonPagePng(
   }
 
   try {
-    const readingOrder = options.readingOrder ?? "rtl-tankobon";
     const effectiveMood = options.manuscriptMood ?? options.mangaFx?.manuscriptMood ?? "daylight-paper";
     const effectiveScreentones = options.screentones ?? options.mangaFx?.screentones;
+    const pageNum = options.pageNumber && options.pageNumber >= 1 ? Math.min(999, Math.floor(options.pageNumber)) : 0;
     const composed = composeWebtoonTankobonPage(panels, layout, {
       readingOrder,
       includeCropMarks: options.includeCropMarks ?? true,
+      ...(pageNum > 0 ? { pageNumber: pageNum } : {}),
+      bindingSide,
       ...(options.mangaFx ? { mangaFx: options.mangaFx } : {}),
       manuscriptMood: effectiveMood,
       ...(effectiveScreentones ? { screentones: effectiveScreentones } : {}),
@@ -473,7 +622,8 @@ export async function exportWebtoonTankobonPagePng(
     const orderTag = readingOrder === "rtl-tankobon" ? "-rtl" : "-ltr";
     const toneTag = effectiveScreentones?.some((t) => t !== "none") ? "-tone" : "";
     const fxTag = options.mangaFx?.enabled ? "-fx" : "";
-    const fileName = baseName.replace(/\.png$/u, `-tankobon${orderTag}${fxTag}${toneTag}-page.png`);
+    const folioTag = pageNum > 0 ? `-p${String(pageNum).padStart(2, "0")}` : "";
+    const fileName = baseName.replace(/\.png$/u, `-tankobon${orderTag}${fxTag}${toneTag}${folioTag}-page.png`);
     return {
       ok: true,
       bytes,

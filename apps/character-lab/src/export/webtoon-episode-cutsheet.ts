@@ -1,8 +1,8 @@
 /**
- * 에피소드 단위 다중 4컷 씬 디렉터 큐시트(`.cutsheet.json`) 직렬화·검증·반응형 스토어 모듈.
+ * 에피소드 단위 다중 4컷 씬 디렉터 큐시트(`.cutsheet.json`) 직렬화·검증·`localStorage` 자동 초안 보존·반응형 스토어 모듈.
  *
  * 주간 연재 회차(60~80컷) 제작 시 여러 개의 4컷 디렉터 스냅샷(장르 프리셋·연기·구도·여백 호흡·무드·스크린톤·다국어 대사)을
- * 순서대로 큐시트에 쌓아 전환·재정렬하고 결정적 JSON 파일로 저장/복원한다.
+ * 순서대로 큐시트에 쌓아 전환·재정렬하고 결정적 JSON 파일로 저장/복원하며, 새로고침(`Cmd+R`) 시에도 초안을 안전하게 유지한다.
  */
 import { failVisible } from "../contracts";
 import { stripUtf8Bom } from "../shared/json-safety";
@@ -52,11 +52,18 @@ import type {
 } from "./webtoon-strip-composer";
 
 export const EPISODE_CUTSHEET_SCHEMA = "toonstudio.character-lab.episode-cutsheet/1";
+export const EPISODE_CUTSHEET_STORAGE_KEY = "toonstudio.character-lab.episode-cutsheet.v1";
 export const CUTSHEET_FILE_SUFFIX = ".cutsheet.json";
 export const CUTSHEET_MIME = "application/json;charset=utf-8";
 export const MAX_CUTSHEET_BEATS = 32;
 
 export type TankobonReadingOrder = "rtl-tankobon" | "ltr-manhwa";
+
+export interface MinimalStorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
 
 export interface EpisodeCutsheetDirectorSnapshot {
   readonly activeDirectorId: string;
@@ -350,6 +357,10 @@ export interface EpisodeCutsheetState {
   readonly activeBeatId: string | null;
 }
 
+export interface CreateEpisodeCutsheetStoreOptions extends Partial<EpisodeCutsheetState> {
+  readonly storage?: MinimalStorageLike | null;
+}
+
 export interface EpisodeCutsheetStore {
   getState(): EpisodeCutsheetState;
   setEpisodeTitle(titleKo: string): void;
@@ -362,15 +373,61 @@ export interface EpisodeCutsheetStore {
   subscribe(listener: () => void): () => void;
 }
 
-export function createEpisodeCutsheetStore(initial?: Partial<EpisodeCutsheetState>): EpisodeCutsheetStore {
-  let seq = 1;
-  let state: EpisodeCutsheetState = {
+function resolveDefaultStorage(): MinimalStorageLike | null {
+  try {
+    if (typeof globalThis !== "undefined" && "localStorage" in globalThis && globalThis.localStorage) {
+      return globalThis.localStorage;
+    }
+  } catch {
+    // 샌드박스·프라이빗 브라우징 접근 차단 시 무시
+  }
+  return null;
+}
+
+function loadPersistedState(storage: MinimalStorageLike | null): EpisodeCutsheetState | null {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(EPISODE_CUTSHEET_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = parseEpisodeCutsheet(raw);
+    if (!parsed.ok) return null;
+    return {
+      episodeTitleKo: parsed.document.episodeTitleKo,
+      beats: parsed.document.beats,
+      activeBeatId: parsed.document.beats[0]?.beatId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistStateToStorage(storage: MinimalStorageLike | null, state: EpisodeCutsheetState): void {
+  if (!storage) return;
+  try {
+    if (state.beats.length === 0) {
+      storage.removeItem(EPISODE_CUTSHEET_STORAGE_KEY);
+      return;
+    }
+    storage.setItem(EPISODE_CUTSHEET_STORAGE_KEY, serializeEpisodeCutsheet(state.episodeTitleKo, state.beats));
+  } catch {
+    // 저장소 용량 초과 시 인메모리 동작 유지
+  }
+}
+
+export function createEpisodeCutsheetStore(initial?: CreateEpisodeCutsheetStoreOptions): EpisodeCutsheetStore {
+  const storage = initial?.storage === undefined ? null : initial.storage;
+  const restored =
+    initial?.beats === undefined && initial?.episodeTitleKo === undefined ? loadPersistedState(storage) : null;
+  let seq = (restored?.beats.length ?? initial?.beats?.length ?? 0) + 1;
+  let state: EpisodeCutsheetState = restored ?? {
     episodeTitleKo: initial?.episodeTitleKo ?? "1화 콘티 큐시트",
     beats: initial?.beats ?? [],
     activeBeatId: initial?.activeBeatId ?? null,
   };
   const listeners = new Set<() => void>();
-  const notify = (): void => {
+  const commit = (next: EpisodeCutsheetState): void => {
+    state = next;
+    persistStateToStorage(storage, state);
     for (const fn of listeners) fn();
   };
   const reindex = (beats: readonly EpisodeCutsheetBeat[]): readonly EpisodeCutsheetBeat[] =>
@@ -379,8 +436,7 @@ export function createEpisodeCutsheetStore(initial?: Partial<EpisodeCutsheetStat
   return {
     getState: () => state,
     setEpisodeTitle(titleKo) {
-      state = { ...state, episodeTitleKo: titleKo };
-      notify();
+      commit({ ...state, episodeTitleKo: titleKo });
     },
     addBeat(titleKo, snapshot) {
       if (state.beats.length >= MAX_CUTSHEET_BEATS) return null;
@@ -391,22 +447,20 @@ export function createEpisodeCutsheetStore(initial?: Partial<EpisodeCutsheetStat
         cutRangeLabel: formatBeatCutRangeLabel(nextIdx),
         snapshot,
       };
-      state = {
+      commit({
         ...state,
         beats: [...state.beats, beat],
         activeBeatId: beat.beatId,
-      };
-      notify();
+      });
       return beat;
     },
     removeBeat(beatId) {
       const filtered = reindex(state.beats.filter((b) => b.beatId !== beatId));
-      state = {
+      commit({
         ...state,
         beats: filtered,
         activeBeatId: state.activeBeatId === beatId ? (filtered[0]?.beatId ?? null) : state.activeBeatId,
-      };
-      notify();
+      });
     },
     moveBeat(beatId, direction) {
       const idx = state.beats.findIndex((b) => b.beatId === beatId);
@@ -418,30 +472,27 @@ export function createEpisodeCutsheetStore(initial?: Partial<EpisodeCutsheetStat
       const b = copy[swapIdx]!;
       copy[idx] = b;
       copy[swapIdx] = a;
-      state = { ...state, beats: reindex(copy) };
-      notify();
+      commit({ ...state, beats: reindex(copy) });
     },
     markActiveBeat(beatId) {
       state = { ...state, activeBeatId: beatId };
-      notify();
+      for (const fn of listeners) fn();
     },
     replaceDocument(doc) {
       const reindexed = reindex(doc.beats);
-      state = {
+      commit({
         episodeTitleKo: doc.episodeTitleKo,
         beats: reindexed,
         activeBeatId: reindexed[0]?.beatId ?? null,
-      };
-      notify();
+      });
     },
     reset() {
       seq = 1;
-      state = {
+      commit({
         episodeTitleKo: "1화 콘티 큐시트",
         beats: [],
         activeBeatId: null,
-      };
-      notify();
+      });
     },
     subscribe(listener) {
       listeners.add(listener);
@@ -455,6 +506,6 @@ export function createEpisodeCutsheetStore(initial?: Partial<EpisodeCutsheetStat
 let defaultEpisodeCutsheetStore: EpisodeCutsheetStore | null = null;
 
 export function getDefaultEpisodeCutsheetStore(): EpisodeCutsheetStore {
-  defaultEpisodeCutsheetStore ??= createEpisodeCutsheetStore();
+  defaultEpisodeCutsheetStore ??= createEpisodeCutsheetStore({ storage: resolveDefaultStorage() });
   return defaultEpisodeCutsheetStore;
 }

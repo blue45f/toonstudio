@@ -157,6 +157,9 @@ export const HAND_PROP_IDS = [
   "medical-chart-clipboard",
   "idol-prism-lightstick",
   "varsity-basketball",
+  "tactical-medkit-radio",
+  "artisan-drip-kettle",
+  "sacred-chalice-wand",
 ] as const;
 export type HandPropId = (typeof HAND_PROP_IDS)[number];
 export type HandPropSide = "rightHand" | "leftHand";
@@ -175,6 +178,8 @@ export const HEAD_PROP_IDS = [
   "pearl-earrings-pin",
   "studio-headphones",
   "silver-monocle",
+  "tactical-visor-goggles",
+  "saintess-halo-crown",
 ] as const;
 export type HeadPropId = (typeof HEAD_PROP_IDS)[number];
 
@@ -195,6 +200,9 @@ export const STAGE_PROP_IDS = [
   "courtroom-gavel-podium",
   "concert-spotlight-mic-stand",
   "court-hoop-stanchion",
+  "apocalypse-supply-barricade",
+  "atelier-drip-counter",
+  "sanctuary-altar-pedestal",
 ] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 

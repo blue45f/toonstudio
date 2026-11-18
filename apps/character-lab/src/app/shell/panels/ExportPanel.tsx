@@ -1,7 +1,7 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립 + 단행본 우→좌/좌→우 출판 페이지 조판 + 모바일 스크롤·오토패닝 미리보기 + 키네틱 팝인·Web Audio 효과음 9:16 숏폼 WebM 모션 티저) ·
- * 에피소드 다중 4컷 콘티 큐시트(.cutsheet.json) 저장/불러오기 · 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD(만화 연출 스크린톤 망점·말풍선·대사·효과음·효과선 5단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립 + 단행본 우→좌/좌→우·쪽번호·제본 여백 출판 페이지 + 모바일 스크롤·오토패닝 미리보기 + 키네틱 팝인·효과음·무드 앰비언트 BGM 9:16 WebM 모션 티저 + 다국어 WebVTT 자막) ·
+ * 에피소드 다중 4컷 콘티 큐시트(.cutsheet.json · localStorage 초안 보존 · 장편 4×N컷 PNG · 연속 9:16 WebM · 통합 WebVTT · 스토리보드 .md 일괄 출고) ·
+ * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 · GLB · 레이어 PSD(5단 만화 연출 분리 포함) · 키보드 단축키(Ctrl/Cmd+Shift+Q/M/B).
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -18,12 +18,19 @@ import {
 import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
+import {
+  exportEpisodeCutsheetLongStripPng,
+  exportEpisodeCutsheetMotionWebm,
+  exportEpisodeCutsheetWebVtt,
+  exportEpisodeStoryboardMarkdown,
+} from "../../../export/webtoon-episode-batch";
 import { getDefaultEpisodeCutsheetStore } from "../../../export/webtoon-episode-cutsheet";
-import { exportWebtoonMotionTeaserWebm } from "../../../export/webtoon-motion-teaser";
+import { exportWebtoonMotionTeaserVtt, exportWebtoonMotionTeaserWebm } from "../../../export/webtoon-motion-teaser";
 import { encodeMotionTeaserWebmBrowser } from "../../../export/webtoon-motion-teaser.browser";
 import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { exportWebtoonTankobonPagePng } from "../../../export/webtoon-tankobon-page";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
+import { planApply } from "../../../state/apply-plan";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
   captureCharacterWorkBackup,
@@ -146,6 +153,9 @@ export function ExportPanel({
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
   const {
     tankobonOrder,
+    tankobonPageNumber,
+    tankobonBindingSide,
+    includeAmbientBgm,
     manuscriptMood,
     gutterPaces,
     includePsdMangaFx,
@@ -348,11 +358,13 @@ export function ExportPanel({
             pageWidth: width,
             readingOrder: tankobonOrder,
             includeCropMarks: true,
+            pageNumber: tankobonPageNumber,
+            bindingSide: tankobonBindingSide,
           },
           { now },
         ),
         [
-          `인쇄 재단선(Crop Marks)이 포함된 ${tankobonOrder === "rtl-tankobon" ? "우→좌" : "좌→우"} 단행본 4컷 출판 페이지 PNG를 저장했습니다.`,
+          `인쇄 재단선(Crop Marks)${tankobonPageNumber > 0 ? ` · 쪽번호 P.${String(tankobonPageNumber).padStart(2, "0")}` : ""}이 반영된 ${tankobonOrder === "rtl-tankobon" ? "우→좌" : "좌→우"} 단행본 4컷 출판 페이지 PNG를 저장했습니다.`,
         ],
       );
     });
@@ -397,13 +409,117 @@ export function ExportPanel({
             playbackSpeed,
             kineticPopIn: true,
             synthesizeAudioSfx: true,
+            includeAmbientBgm,
           },
           encodeMotionWebm,
           { now },
         ),
         [
-          `스크롤 여백 호흡(${playbackSpeed}× 배속)·컷 진입 말풍선 팝인·절차적 효과음 오디오가 동기화된 9:16 숏폼 WebM 비디오를 저장했습니다.`,
+          `스크롤 여백 호흡(${playbackSpeed}× 배속)·컷 진입 말풍선 팝인·절차적 효과음${includeAmbientBgm ? "·무드 앰비언트 BGM 패드" : ""}가 동기화된 9:16 숏폼 WebM 비디오를 저장했습니다.`,
         ],
+      );
+    });
+  };
+
+  const onWebtoonMotionVtt = (): void => {
+    void run("vtt", async () => {
+      finish(
+        "vtt",
+        exportWebtoonMotionTeaserVtt(
+          labState.recipe,
+          {
+            ...buildStripOptions(),
+            playbackSpeed: lastMotionSpeedRef.current,
+          },
+          { now },
+        ),
+        ["9:16 모션 코믹 타임코드와 다국어 발화자 태그가 동기화된 WebVTT(.vtt) 자막 파일을 저장했습니다."],
+      );
+    });
+  };
+
+  const onExportBatchLongStripPng = (): void => {
+    void run("cutsheet-long-strip", async () => {
+      const engine = requireEngine("cutsheet-long-strip");
+      if (!engine) return;
+      const cs = cutsheetStore.getState();
+      const effectiveBasePlan = applyPlan ?? planApply(labState.recipe, labState.capabilities, catalog);
+      finish(
+        "cutsheet-long-strip",
+        await exportEpisodeCutsheetLongStripPng(
+          engine,
+          cs.beats,
+          {
+            episodeTitleKo: cs.episodeTitleKo,
+            requestedStripWidth: width,
+            basePlan: effectiveBasePlan,
+            settleSteps,
+            onProgress: (step, total, labelKo) => {
+              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+            },
+          },
+          { now },
+        ),
+        [`큐시트 ${cs.beats.length}비트(총 ${cs.beats.length * 4}컷)를 장편 세로 스크롤 웹툰 원고 PNG로 일괄 저장했습니다.`],
+      );
+    });
+  };
+
+  const onExportBatchMotionWebm = (): void => {
+    void run("cutsheet-webm", async () => {
+      const engine = requireEngine("cutsheet-webm");
+      if (!engine) return;
+      const cs = cutsheetStore.getState();
+      const effectiveBasePlan = applyPlan ?? planApply(labState.recipe, labState.capabilities, catalog);
+      const resolutionPreset = width >= 720 ? "hd-720x1280" : "sd-540x960";
+      finish(
+        "cutsheet-webm",
+        await exportEpisodeCutsheetMotionWebm(
+          engine,
+          cs.beats,
+          {
+            episodeTitleKo: cs.episodeTitleKo,
+            requestedStripWidth: width,
+            resolutionPreset,
+            playbackSpeed: lastMotionSpeedRef.current,
+            includeAmbientBgm,
+            basePlan: effectiveBasePlan,
+            settleSteps,
+            onProgress: (step, total, labelKo) => {
+              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+            },
+          },
+          encodeMotionWebm,
+          { now },
+        ),
+        [`큐시트 ${cs.beats.length}비트(총 ${cs.beats.length * 4}컷)를 연속 9:16 숏폼 에피소드 WebM 비디오로 일괄 저장했습니다.`],
+      );
+    });
+  };
+
+  const onExportBatchWebVtt = (): void => {
+    void run("cutsheet-vtt", async () => {
+      const cs = cutsheetStore.getState();
+      finish(
+        "cutsheet-vtt",
+        exportEpisodeCutsheetWebVtt(
+          cs.episodeTitleKo,
+          cs.beats,
+          { requestedStripWidth: width, playbackSpeed: lastMotionSpeedRef.current },
+          { now },
+        ),
+        [`큐시트 ${cs.beats.length}비트(총 ${cs.beats.length * 4}컷)의 누적 타임코드가 동기화된 통합 WebVTT(.vtt) 자막을 저장했습니다.`],
+      );
+    });
+  };
+
+  const onExportStoryboardMd = (): void => {
+    void run("storyboard-md", async () => {
+      const cs = cutsheetStore.getState();
+      finish(
+        "storyboard-md",
+        exportEpisodeStoryboardMarkdown(cs.episodeTitleKo, cs.beats, { now }),
+        [`PD·식자 파트 협업용 '${cs.episodeTitleKo}' 스토리보드 연출 큐시트(.storyboard.md)를 저장했습니다.`],
       );
     });
   };
@@ -632,6 +748,11 @@ export function ExportPanel({
     "webtoon-reader": onOpenWebtoonReaderPreview,
     "webtoon-motion-webm": () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
     webm: () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
+    vtt: onWebtoonMotionVtt,
+    "storyboard-md": onExportStoryboardMd,
+    "cutsheet-long-strip": onExportBatchLongStripPng,
+    "cutsheet-webm": onExportBatchMotionWebm,
+    "cutsheet-vtt": onExportBatchWebVtt,
     psd: onPsd,
     glb: onGlb,
     recipe: onRecipeSave,
@@ -675,10 +796,17 @@ export function ExportPanel({
       setFailedKind(null);
       return;
     }
-    if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey && event.key.toLowerCase() === "q") {
-      if (engineReady && busyRef.current === null) {
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
+      const lower = event.key.toLowerCase();
+      if (lower === "q" && engineReady && busyRef.current === null) {
         event.preventDefault();
         onQuadSheetPng();
+      } else if (lower === "m" && engineReady && busyRef.current === null) {
+        event.preventDefault();
+        onWebtoonMotionWebm(1);
+      } else if (lower === "b" && engineReady && busyRef.current === null) {
+        event.preventDefault();
+        onWebtoonTankobonPng();
       }
     }
   };
@@ -699,7 +827,7 @@ export function ExportPanel({
       />
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
-          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB·WebM은 엔진이 준비된 뒤 사용할 수 있습니다. 레시피·큐시트 저장/불러오기는 가능합니다.
+          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB·WebM은 엔진이 준비된 뒤 사용할 수 있습니다. 레시피·큐시트·자막 저장/불러오기는 가능합니다.
         </p>
       ) : null}
       <ExportDimensionControls
@@ -716,11 +844,16 @@ export function ExportPanel({
       <ExportStripDirectorSection idsPrefix={ids} state={directorState} session={stripDirector} />
       <ExportEpisodeCutsheetSection
         idsPrefix={ids}
+        engineReady={engineReady}
         busy={busy !== null}
         directorSession={stripDirector}
         cutsheetStore={cutsheetStore}
         onSaveCutsheetJson={onSaveCutsheetJson}
         onLoadCutsheetFile={onLoadCutsheetFile}
+        onExportBatchLongStripPng={onExportBatchLongStripPng}
+        onExportBatchMotionWebm={onExportBatchMotionWebm}
+        onExportBatchWebVtt={onExportBatchWebVtt}
+        onExportStoryboardMd={onExportStoryboardMd}
         onBeatAppliedNotice={(msg) => setNotices([msg])}
       />
       <ExportActionsAndPsdSection
@@ -735,6 +868,7 @@ export function ExportPanel({
         onWebtoonTankobonPng={onWebtoonTankobonPng}
         onOpenWebtoonReaderPreview={onOpenWebtoonReaderPreview}
         onWebtoonMotionWebm={onWebtoonMotionWebm}
+        onWebtoonMotionVtt={onWebtoonMotionVtt}
         onGlb={onGlb}
         onRecipeSave={onRecipeSave}
         onShaperPresetSave={onShaperPresetSave}

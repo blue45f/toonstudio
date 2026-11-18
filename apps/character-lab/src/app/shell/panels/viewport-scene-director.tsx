@@ -62,12 +62,16 @@ export function resolveDirectorShadingProfile(current: ShadingProfile, toonShade
 }
 
 export type WebtoonTankobonOrder = "rtl-tankobon" | "ltr-manhwa";
+export type WebtoonTankobonBinding = "none" | "odd-recto" | "even-verso";
 
 export interface StripDirectorState {
   readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
   readonly locale: WebtoonDialogueLocale;
   readonly jaWritingMode: WebtoonJaWritingMode;
   readonly tankobonOrder: WebtoonTankobonOrder;
+  readonly tankobonPageNumber: number;
+  readonly tankobonBindingSide: WebtoonTankobonBinding;
+  readonly includeAmbientBgm: boolean;
   readonly manuscriptMood: WebtoonManuscriptMoodId;
   readonly gutterPaces: WebtoonStripGutterPaces;
   readonly screentones: WebtoonStripScreentones;
@@ -108,6 +112,9 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   locale: "ko",
   jaWritingMode: "horizontal",
   tankobonOrder: "rtl-tankobon",
+  tankobonPageNumber: 0,
+  tankobonBindingSide: "none",
+  includeAmbientBgm: false,
   manuscriptMood: "daylight-paper",
   gutterPaces: DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
   screentones: DEFAULT_WEBTOON_STRIP_SCREENTONES,

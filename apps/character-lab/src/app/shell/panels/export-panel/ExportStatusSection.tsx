@@ -17,6 +17,9 @@ export type ExportBusyKind =
   | "webtoon-tankobon"
   | "webtoon-reader"
   | "webtoon-motion-webm"
+  | "cutsheet-long-strip"
+  | "cutsheet-webm"
+  | "cutsheet-vtt"
   | "cutsheet-import"
   | "import"
   | "clipboard-copy"
@@ -31,6 +34,11 @@ export const BUSY_ACTION_LABELS_KO: Readonly<Record<ExportBusyKind, string>> = {
   "webtoon-reader": "모바일 스크롤·오토패닝 미리보기 생성",
   "webtoon-motion-webm": "9:16 숏폼 WebM 모션 티저 저장",
   webm: "9:16 숏폼 WebM 모션 티저 저장",
+  vtt: "9:16 모션 자막(.vtt) 저장",
+  "storyboard-md": "스토리보드 연출 큐시트(.md) 저장",
+  "cutsheet-long-strip": "장편 스트립 PNG 일괄 저장",
+  "cutsheet-webm": "연속 9:16 WebM 일괄 저장",
+  "cutsheet-vtt": "통합 WebVTT 자막 저장",
   glb: "GLB 저장",
   psd: "레이어 PSD 저장",
   recipe: "레시피 저장",
@@ -85,6 +93,15 @@ export function formatBusyProgressKo(busy: ExportBusyKind, stepDetail: string | 
       return `레시피 불러오는 중…${suffix}`;
     case "cutsheet-import":
       return `에피소드 큐시트 불러오는 중…${suffix}`;
+    case "cutsheet-long-strip":
+      return `장편 에피소드 세로 원고 일괄 합성 중…${suffix}`;
+    case "cutsheet-webm":
+      return `에피소드 연속 9:16 WebM 일괄 인코딩 중…${suffix}`;
+    case "cutsheet-vtt":
+    case "vtt":
+      return `WebVTT 자막 트랙 생성 중…${suffix}`;
+    case "storyboard-md":
+      return `스토리보드 마크다운 큐시트 생성 중…${suffix}`;
     case "turnaround":
       return `4방향 설정시트 내보내는 중…${suffix}`;
     case "quad-sheet":

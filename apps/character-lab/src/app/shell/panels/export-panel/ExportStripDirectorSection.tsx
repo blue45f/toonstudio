@@ -164,6 +164,52 @@ export function ExportStripDirectorSection({
         </select>
       </div>
 
+      <div className="cl-export-row">
+        <label htmlFor={`${idsPrefix}-tankobon-page-num`}>단행본 쪽번호(Folio)</label>
+        <input
+          id={`${idsPrefix}-tankobon-page-num`}
+          data-testid="export-tankobon-page-num"
+          type="number"
+          min={0}
+          max={999}
+          value={state.tankobonPageNumber}
+          title="0이면 쪽번호 생략, 1~999 입력 시 하단 트림 안에 P.01 형식으로 인쇄합니다"
+          onChange={(event) => {
+            const parsed = Number.parseInt(event.target.value, 10);
+            session.update({
+              tankobonPageNumber: Number.isFinite(parsed) ? Math.min(999, Math.max(0, parsed)) : 0,
+            });
+          }}
+        />
+        <label htmlFor={`${idsPrefix}-tankobon-binding`}>제본 책등 여백</label>
+        <select
+          id={`${idsPrefix}-tankobon-binding`}
+          data-testid="export-tankobon-binding"
+          value={state.tankobonBindingSide}
+          title="실물 단행본 제본 시 홀수 쪽(Recto) 또는 짝수 쪽(Verso) 책등 안쪽 여백을 자동으로 넓혀 대칭을 맞춥니다"
+          onChange={(event) => {
+            const v = event.target.value;
+            session.update({
+              tankobonBindingSide: v === "odd-recto" || v === "even-verso" ? v : "none",
+            });
+          }}
+        >
+          <option value="none">대칭 여백 (단면)</option>
+          <option value="odd-recto">홀수 쪽 (책등 확대)</option>
+          <option value="even-verso">짝수 쪽 (맞면 대칭)</option>
+        </select>
+        <label htmlFor={`${idsPrefix}-strip-ambient-bgm`}>
+          <input
+            id={`${idsPrefix}-strip-ambient-bgm`}
+            data-testid="export-strip-ambient-bgm"
+            type="checkbox"
+            checked={state.includeAmbientBgm}
+            onChange={(event) => session.update({ includeAmbientBgm: event.target.checked })}
+          />{" "}
+          무드 앰비언트 BGM 패드 믹싱
+        </label>
+      </div>
+
       <div className="cl-export-gutter-pace-row" role="group" aria-label="컷 사이 스크롤 여백 호흡">
         {GUTTER_GAPS.map((gap) => (
           <label key={gap.index} className="cl-export-gutter-pace-cell" htmlFor={`${idsPrefix}-strip-gutter-${gap.index}`}>

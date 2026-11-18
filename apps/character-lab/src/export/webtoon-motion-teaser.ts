@@ -1,15 +1,15 @@
 /**
  * 스크롤 여백 호흡(`gutterPaces`)·시간대 색온도 무드(`manuscriptMood`)·컷 진입 말풍선 팝인(`bubblePopScale`)·
- * 효과음 미세 진동(`sfxShakeOffset`)·절차적 Web Audio 사운드 파형 합성(`synthesizeMotionTeaserAudioPcm`) 연동
- * 9:16 숏폼 모션 코믹 티저(WebM) 순수 스케줄러 및 CPU 프레임 합성 모듈.
+ * 효과음 미세 진동(`sfxShakeOffset`)·절차적 Web Audio 효과음 + 무드별 앰비언트 화성 패드 BGM 2채널 믹서(`synthesizeMotionTeaserAudioPcm`) 및
+ * 다국어 `WebVTT (.vtt)` 자막 트랙(`buildMotionTeaserWebVtt`) 연동 9:16 숏폼 모션 코믹 티저(WebM) 순수 스케줄러·합성 모듈.
  *
  * 아키텍처 계약 (`src/architecture.test.ts`):
  * - DOM / MediaRecorder / AudioContext / Math.random 의존성 없이 Node·브라우저 양쪽에서 100% 결정적으로 동작한다.
  * - 실제 브라우저 스트림 인코딩(`MediaRecorder` + `captureStream` + `AudioContext`)은 `webtoon-motion-teaser.browser.ts`가 담당한다.
  */
-import { failVisible, isLabFailure } from "../contracts";
+import { failVisible, isLabFailure, recipeDigest } from "../contracts";
 
-import { WEBM_MIME, exportFileName, isWebmEbml } from "./export-session";
+import { VTT_MIME, WEBM_MIME, exportFileName, isWebmEbml } from "./export-session";
 import {
   DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
   DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
@@ -19,10 +19,12 @@ import {
   DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
   WEBTOON_MANUSCRIPT_MOODS,
   captureWebtoonVerticalStripRaster,
+  clampWebtoonStripLayout,
   computeStripAutoPanTimeline,
   renderTransparentDialogueTextLayer,
   renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
+  resolveSfxGlyphByLocale,
   sampleAutoPanScrollState,
 } from "./webtoon-strip-composer";
 
@@ -30,19 +32,36 @@ import type { ExportDeps, ExportOutcome, MotionTeaserReceiptMetrics } from "./ex
 import type {
   ExportWebtoonVerticalStripOptions,
   StripAutoPanTimeline,
+  WebtoonDialogueLocale,
   WebtoonManuscriptMoodId,
   WebtoonSfxStampOption,
+  WebtoonStripBubbleShapes,
+  WebtoonStripDialogueLines,
   WebtoonStripGutterPaces,
   WebtoonStripLayout,
   WebtoonStripMangaFxOptions,
   WebtoonStripSfxStamps,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTargets,
 } from "./webtoon-strip-composer";
-import type { CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
+import type { CapturedRaster, CharacterEngine, CharacterRecipe, LabFailure } from "../contracts";
 
 export const DEFAULT_MOTION_TEASER_FPS = 24;
 export const MIN_MOTION_TEASER_FPS = 12;
 export const MAX_MOTION_TEASER_FPS = 30;
 export const MOTION_TEASER_AUDIO_SAMPLE_RATE = 22_050;
+
+/**
+ * 시간대 원고 무드별 무저작권 절차적 앰비언트 화성 코드 패드 주파수(Hz, 4성부 보이싱).
+ */
+export const MOOD_AMBIENT_CHORD_HZ: Readonly<
+  Record<WebtoonManuscriptMoodId, readonly [number, number, number, number]>
+> = Object.freeze({
+  "daylight-paper": [174.61, 220.0, 261.63, 329.63], // Fmaj7 포근한 한낮 어쿠스틱 패드
+  "twilight-amber": [146.83, 220.0, 261.63, 329.63], // Dm9 노을빛 서정 패드
+  "midnight-noir": [130.81, 155.56, 196.0, 246.94], // Cm(maj7) 느와르 미스터리 패드
+  "backlit-awakening": [110.0, 164.81, 220.0, 246.94], // Asus2/A5 역광 각성 에테르 패드
+});
 
 export type MotionTeaserResolutionPresetId = "sd-540x960" | "hd-720x1280";
 
@@ -120,10 +139,16 @@ export interface PlanMotionTeaserOptions {
   readonly sfxStamps?: WebtoonStripSfxStamps;
 }
 
+export interface SynthesizeMotionAudioOptions {
+  readonly includeAmbientBgm?: boolean;
+  readonly moodId?: WebtoonManuscriptMoodId;
+}
+
 export interface MotionTeaserAudioTrackPcm {
   readonly sampleRate: number;
   readonly durationMs: number;
   readonly eventCount: number;
+  readonly ambientBgm: boolean;
   readonly samples: Float32Array;
 }
 
@@ -149,6 +174,20 @@ export interface ExportWebtoonMotionTeaserOptions extends ExportWebtoonVerticalS
   readonly kineticPopIn?: boolean;
   /** 외부 음원 없는 절차적 Web Audio 효과음 오디오 트랙 합성 여부(기본 true) */
   readonly synthesizeAudioSfx?: boolean;
+  /** 시간대 원고 무드 연동 절차적 앰비언트 BGM 화성 패드 믹싱 여부(기본 false) */
+  readonly includeAmbientBgm?: boolean;
+}
+
+export interface BuildMotionTeaserWebVttOptions {
+  readonly episodeTitleKo?: string;
+  readonly locale?: WebtoonDialogueLocale;
+  readonly dialogueLines?: WebtoonStripDialogueLines;
+  readonly bubbleShapes?: WebtoonStripBubbleShapes;
+  readonly speakerTargets?: WebtoonStripSpeakerTargets;
+  readonly sfxStamps?: WebtoonStripSfxStamps;
+  readonly cueOffsetMs?: number;
+  readonly cueIndexOffset?: number;
+  readonly omitHeader?: boolean;
 }
 
 const defaultNow = (): number => Date.now();
@@ -156,6 +195,11 @@ const defaultNow = (): number => Date.now();
 function clampNumber(value: number | undefined, min: number, max: number, fallback: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));
+}
+
+function softLimitSample(raw: number): number {
+  const shaped = Math.tanh(raw * 1.08) * 0.95;
+  return Math.max(-0.95, Math.min(0.95, shaped));
 }
 
 function computeDwellZoomAt(timeline: StripAutoPanTimeline, timelineElapsedMs: number): number {
@@ -284,6 +328,38 @@ export function planMotionTeaserSchedule(
   };
 }
 
+function synthesizeMoodAmbientPadBed(
+  samples: Float32Array,
+  sampleRate: number,
+  moodId: WebtoonManuscriptMoodId,
+): void {
+  const chord = MOOD_AMBIENT_CHORD_HZ[moodId] ?? MOOD_AMBIENT_CHORD_HZ["daylight-paper"];
+  const total = samples.length;
+  if (total <= 0) return;
+  const fadeInSamples = Math.max(1, Math.min(Math.floor(total * 0.2), Math.floor(sampleRate * 0.18)));
+  const fadeOutSamples = Math.max(1, Math.min(Math.floor(total * 0.25), Math.floor(sampleRate * 0.24)));
+  const voiceWeights = [0.34, 0.27, 0.22, 0.17] as const;
+
+  for (let i = 0; i < total; i += 1) {
+    const t = i / sampleRate;
+    const fadeIn = i < fadeInSamples ? 0.5 * (1 - Math.cos((Math.PI * i) / fadeInSamples)) : 1;
+    const rem = total - 1 - i;
+    const fadeOut = rem < fadeOutSamples ? 0.5 * (1 - Math.cos((Math.PI * rem) / fadeOutSamples)) : 1;
+    // 완만한 호흡 모듈레이션(0.45Hz)으로 루프 이음새 없는 따뜻한 앰비언트 패드 형성 (-18dB ≈ 0.125 peak)
+    const shimmer = 0.86 + 0.14 * Math.sin(2 * Math.PI * 0.45 * t);
+    let pad = 0;
+    for (let v = 0; v < 4; v += 1) {
+      const freq = chord[v]!;
+      const detuned = freq * (1 + (v - 1.5) * 0.0018);
+      const voice =
+        Math.sin(2 * Math.PI * freq * t + v * 0.6) * 0.68 +
+        Math.sin(2 * Math.PI * detuned * t + v * 1.1) * 0.32;
+      pad += voice * voiceWeights[v]!;
+    }
+    samples[i] = softLimitSample((samples[i] ?? 0) + pad * 0.125 * shimmer * fadeIn * fadeOut);
+  }
+}
+
 function synthesizeSingleSfxEvent(
   samples: Float32Array,
   sampleRate: number,
@@ -333,24 +409,29 @@ function synthesizeSingleSfxEvent(
       wave = cluster * env * 0.24;
     }
 
-    const next = (samples[startIdx + i] ?? 0) + wave;
-    samples[startIdx + i] = Math.max(-0.95, Math.min(0.95, next));
+    samples[startIdx + i] = softLimitSample((samples[startIdx + i] ?? 0) + wave);
   }
 }
 
 /**
- * 컷별 효과음 스탬프(`sfxStamps`)와 오토패닝 스케줄을 동기화해 결정적 모노 PCM 오디오 트랙을 합성한다.
+ * 컷별 효과음 스탬프(`sfxStamps`)·무드별 앰비언트 화성 BGM 패드(`includeAmbientBgm`)와 오토패닝 스케줄을 동기화해 결정적 모노 PCM 트랙을 합성한다.
  */
 export function synthesizeMotionTeaserAudioPcm(
   schedule: MotionTeaserSchedule,
   sfxStamps: WebtoonStripSfxStamps,
   sampleRate = MOTION_TEASER_AUDIO_SAMPLE_RATE,
+  options: SynthesizeMotionAudioOptions = {},
 ): MotionTeaserAudioTrackPcm {
   const safeRate = Math.max(8_000, Math.min(48_000, Math.floor(sampleRate)));
   const totalSamples = Math.max(256, Math.ceil((schedule.outputDurationMs / 1000) * safeRate));
   const samples = new Float32Array(totalSamples);
-  let eventCount = 0;
+  const ambientBgm = options.includeAmbientBgm === true;
 
+  if (ambientBgm) {
+    synthesizeMoodAmbientPadBed(samples, safeRate, options.moodId ?? "daylight-paper");
+  }
+
+  let eventCount = 0;
   for (let i = 0; i < 4; i += 1) {
     const cutIdx = i as 0 | 1 | 2 | 3;
     const stamp = sfxStamps[cutIdx];
@@ -365,8 +446,156 @@ export function synthesizeMotionTeaserAudioPcm(
     sampleRate: safeRate,
     durationMs: schedule.outputDurationMs,
     eventCount,
+    ambientBgm,
     samples,
   };
+}
+
+/**
+ * 밀리초 타임스탬프를 표준 `WebVTT` 시각 문자열(`HH:MM:SS.mmm`)로 변환한다.
+ */
+export function formatWebVttTimestamp(ms: number): string {
+  const clamped = Math.max(0, Math.round(Number.isFinite(ms) ? ms : 0));
+  const hours = Math.floor(clamped / 3_600_000);
+  const minutes = Math.floor((clamped % 3_600_000) / 60_000);
+  const seconds = Math.floor((clamped % 60_000) / 1_000);
+  const millis = clamped % 1_000;
+  const pad2 = (n: number): string => String(n).padStart(2, "0");
+  const pad3 = (n: number): string => String(n).padStart(3, "0");
+  return `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.${pad3(millis)}`;
+}
+
+function resolveVoiceLabelByLocale(
+  cutIndex: number,
+  speakerTarget: WebtoonStripSpeakerTarget,
+  shape: WebtoonStripBubbleShapes[number],
+  locale: WebtoonDialogueLocale,
+): string {
+  if (shape === "monologue-box") {
+    return locale === "en" ? "Narration" : locale === "ja" ? "モノローグ" : "내레이션";
+  }
+  const effectivePartner =
+    speakerTarget === "partner" || (speakerTarget === "auto" && cutIndex % 2 === 1);
+  if (locale === "en") return effectivePartner ? "Partner" : "Lead";
+  if (locale === "ja") return effectivePartner ? "相手役" : "主演";
+  return effectivePartner ? "상대역" : "주연";
+}
+
+function sanitizeVttCueText(raw: string): string {
+  return raw.replace(/-->/gu, "→").replace(/[\r\n]+/gu, " ").trim();
+}
+
+/**
+ * 9:16 모션 코믹 스케줄(`dwellStartMs`..`dwellEndMs`)과 다국어 대사·발화자·효과음을 동기화한 `WebVTT (.vtt)` 자막 문자열을 생성한다.
+ */
+export function buildMotionTeaserWebVtt(
+  schedule: MotionTeaserSchedule,
+  options: BuildMotionTeaserWebVttOptions = {},
+): string {
+  const locale = options.locale ?? "ko";
+  const lines = options.dialogueLines ?? DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES;
+  const shapes = options.bubbleShapes ?? DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES;
+  const speakers = options.speakerTargets ?? DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS;
+  const sfxStamps = options.sfxStamps ?? DEFAULT_WEBTOON_STRIP_SFX_STAMPS;
+  const speed = Math.max(0.25, schedule.speed);
+  const offsetMs = Math.max(0, Math.round(options.cueOffsetMs ?? 0));
+  const cueIdxOffset = Math.max(0, Math.floor(options.cueIndexOffset ?? 0));
+
+  const outLines: string[] = [];
+  if (!options.omitHeader) {
+    outLines.push("WEBVTT");
+    const titleNote = options.episodeTitleKo?.trim() ? ` — ${sanitizeVttCueText(options.episodeTitleKo)}` : "";
+    outLines.push(`NOTE ToonStudio 9:16 Motion Comic Subtitles (${locale.toUpperCase()})${titleNote}`);
+    outLines.push("");
+  }
+
+  let cueSeq = cueIdxOffset + 1;
+  for (let i = 0; i < 4; i += 1) {
+    const cutIdx = i as 0 | 1 | 2 | 3;
+    const seg = schedule.timeline.segments[cutIdx]!;
+    const startMs = offsetMs + Math.round(seg.dwellStartMs / speed);
+    const endMs = Math.max(startMs + 250, offsetMs + Math.round(seg.dwellEndMs / speed));
+    const shape = shapes[cutIdx];
+    const dialogue = shape !== "none" ? sanitizeVttCueText(lines[cutIdx]) : "";
+    const stamp = sfxStamps[cutIdx];
+    const sfxTag =
+      stamp !== "none"
+        ? locale === "en"
+          ? `[SFX: ${resolveSfxGlyphByLocale(stamp, "en")}]`
+          : locale === "ja"
+            ? `[効果音: ${resolveSfxGlyphByLocale(stamp, "ja")}]`
+            : `[효과음: ${resolveSfxGlyphByLocale(stamp, "ko")}]`
+        : "";
+
+    if (!dialogue && !sfxTag) continue;
+    const voice = resolveVoiceLabelByLocale(cutIdx, speakers[cutIdx], shape, locale);
+    const payload = dialogue && sfxTag ? `${sfxTag} ${dialogue}` : dialogue || sfxTag;
+
+    outLines.push(`cut-${cueSeq}`);
+    outLines.push(`${formatWebVttTimestamp(startMs)} --> ${formatWebVttTimestamp(endMs)} line:86% align:center`);
+    outLines.push(`<v ${voice}>${payload}`);
+    outLines.push("");
+    cueSeq += 1;
+  }
+
+  return `${outLines.join("\n").trimEnd()}\n`;
+}
+
+/**
+ * 엔진 캡처 없이도 현재 4컷 디렉터 설정과 여백 호흡으로부터 즉시 `WebVTT (.vtt)` 자막 트랙을 내보낸다.
+ */
+export function exportWebtoonMotionTeaserVtt(
+  recipe: CharacterRecipe,
+  options: ExportWebtoonMotionTeaserOptions,
+  deps: ExportDeps = {},
+): ExportOutcome {
+  const now = deps.now ?? defaultNow;
+  const started = now();
+  try {
+    const gutterPaces = options.gutterPaces ?? DEFAULT_WEBTOON_STRIP_GUTTER_PACES;
+    const layout = clampWebtoonStripLayout(
+      options.stripWidth,
+      options.includeBubbleSafeZone ?? true,
+      gutterPaces,
+    );
+    const sfxStamps =
+      options.mangaFx?.enabled && options.mangaFx.sfxStamps
+        ? options.mangaFx.sfxStamps
+        : DEFAULT_WEBTOON_STRIP_SFX_STAMPS;
+    const schedule = planMotionTeaserSchedule(layout, gutterPaces, {
+      ...(options.fps !== undefined ? { fps: options.fps } : {}),
+      ...(options.playbackSpeed !== undefined ? { speed: options.playbackSpeed } : {}),
+      sfxStamps,
+    });
+    const locale = options.mangaFx?.locale ?? "ko";
+    const vttText = buildMotionTeaserWebVtt(schedule, {
+      locale,
+      dialogueLines: options.mangaFx?.dialogueLines ?? DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+      bubbleShapes: options.mangaFx?.bubbleShapes ?? DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
+      speakerTargets: options.mangaFx?.speakerTargets ?? DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
+      sfxStamps,
+    });
+    const bytes = new TextEncoder().encode(vttText);
+    const digest8 = recipeDigest(recipe).slice(0, 8);
+    const speedTag = schedule.speed !== 1 ? `-${String(schedule.speed).replace(".", "_")}x` : "";
+    const fileName = `character-${digest8}-webtoon-4cut-${locale}${speedTag}-teaser.vtt`;
+    return {
+      ok: true,
+      bytes,
+      receipt: {
+        kind: "vtt",
+        fileName,
+        mime: VTT_MIME,
+        bytes: bytes.length,
+        durationMs: now() - started,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      failure: toMotionFailure("export-vtt-failed", "9:16 모션 코믹 WebVTT 자막 파일 생성에 실패했습니다.", error, started),
+    };
+  }
 }
 
 /**
@@ -658,7 +887,7 @@ function toMotionFailure(code: string, reasonKo: string, error: unknown, now: nu
 }
 
 /**
- * 4컷 웹툰 스트립을 캡처·합성한 뒤 오토패닝·말풍선 팝인·Web Audio 효과음 스케줄에 맞춰 9:16 WebM 비디오로 내보낸다.
+ * 4컷 웹툰 스트립을 캡처·합성한 뒤 오토패닝·말풍선 팝인·Web Audio 효과음/앰비언트 BGM 스케줄에 맞춰 9:16 WebM 비디오로 내보낸다.
  */
 export async function exportWebtoonMotionTeaserWebm(
   engine: CharacterEngine,
@@ -701,8 +930,16 @@ export async function exportWebtoonMotionTeaserWebm(
   });
 
   const kineticOverlays = useKineticPopIn ? buildCutKineticOverlays(captured.layout, options.mangaFx) : [];
+  const includeBgm = options.includeAmbientBgm === true;
   const audioPcm =
-    options.synthesizeAudioSfx !== false ? synthesizeMotionTeaserAudioPcm(schedule, activeSfxStamps) : null;
+    options.synthesizeAudioSfx !== false || includeBgm
+      ? synthesizeMotionTeaserAudioPcm(
+          schedule,
+          options.synthesizeAudioSfx !== false ? activeSfxStamps : ["none", "none", "none", "none"],
+          MOTION_TEASER_AUDIO_SAMPLE_RATE,
+          { includeAmbientBgm: includeBgm, moodId: captured.effectiveMood },
+        )
+      : null;
 
   const stripBytes = captured.composed.rgba.byteLength;
   const outFrameBytes = presetSpec.width * presetSpec.height * 4;
@@ -752,12 +989,14 @@ export async function exportWebtoonMotionTeaserWebm(
       avgFrameMs: Number((encodeDurationMs / Math.max(1, schedule.frameCount)).toFixed(2)),
       peakRasterMb,
       audioEvents: audioPcm?.eventCount ?? 0,
+      ...(includeBgm ? { ambientBgm: true } : {}),
     };
 
     const baseName = exportFileName("webm", captured.provenance.recipeDigest, presetSpec.width, presetSpec.height);
     const speedTag = schedule.speed !== 1 ? `-${String(schedule.speed).replace(".", "_")}x` : "";
     const sfxTag = (audioPcm?.eventCount ?? 0) > 0 ? "-sfx" : "";
-    const fileName = baseName.replace(/\.webm$/u, `${captured.suffixTags}${sfxTag}${speedTag}-teaser.webm`);
+    const bgmTag = includeBgm ? "-bgm" : "";
+    const fileName = baseName.replace(/\.webm$/u, `${captured.suffixTags}${sfxTag}${bgmTag}${speedTag}-teaser.webm`);
     return {
       ok: true,
       bytes,

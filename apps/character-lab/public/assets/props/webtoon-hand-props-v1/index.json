@@ -93,6 +93,33 @@
       "bytes": 42488,
       "sha256": "1858777e6b9752b6bae72da71ef591f6a1bc2d15b82bd41024de77227bcc298a",
       "triangles": 828
+    },
+    {
+      "id": "tactical-medkit-radio",
+      "labelKo": "아포칼립스 전술 무전기·응급키트",
+      "meshName": "TS_Prop_tactical-medkit-radio",
+      "path": "tactical-medkit-radio.glb",
+      "bytes": 22428,
+      "sha256": "c442d3eff2cef0c94e289d216b7b215b1f4817f90e6fadbb713a9ebc0eb1da29",
+      "triangles": 132
+    },
+    {
+      "id": "artisan-drip-kettle",
+      "labelKo": "공방 구리 핸드드립 포트",
+      "meshName": "TS_Prop_artisan-drip-kettle",
+      "path": "artisan-drip-kettle.glb",
+      "bytes": 18596,
+      "sha256": "6a6c865ff280369d30706e005c05728dbcb7d411d1310f552a561be2e4005d64",
+      "triangles": 220
+    },
+    {
+      "id": "sacred-chalice-wand",
+      "labelKo": "성녀 신탁 성배·성광 홀",
+      "meshName": "TS_Prop_sacred-chalice-wand",
+      "path": "sacred-chalice-wand.glb",
+      "bytes": 33644,
+      "sha256": "02f948a8fd629c855c78bba7c9be261df0fd43c86b861c00ae79eb416aaff155",
+      "triangles": 536
     }
   ]
 }

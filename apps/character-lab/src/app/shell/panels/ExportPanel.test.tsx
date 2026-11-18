@@ -889,17 +889,26 @@ describe("ExportPanel", () => {
     expect(calls[0]?.fileName).toMatch(/-webtoon-4cut-tone-strip\.png$/u);
     expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
 
-    // 단행본 우→좌 출판 페이지 PNG 저장 검증
-    fireEvent.click(screen.getByTestId("export-webtoon-tankobon-png"));
+    // 단행본 우→좌 출판 페이지(쪽번호 P.12 + 책등 여백) PNG 저장 및 단축키 Ctrl+Shift+B 검증
+    fireEvent.change(screen.getByTestId("export-tankobon-page-num"), { target: { value: "12" } });
+    fireEvent.change(screen.getByTestId("export-tankobon-binding"), { target: { value: "odd-recto" } });
+    fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "B", ctrlKey: true, shiftKey: true });
     await waitFor(() => expect(calls).toHaveLength(2));
-    expect(calls[1]?.fileName).toMatch(/-tankobon-rtl-tone-page\.png$/u);
+    expect(calls[1]?.fileName).toMatch(/-tankobon-rtl-tone-p12-page\.png$/u);
     expect(isPng(calls[1]?.bytes ?? new Uint8Array())).toBe(true);
 
-    // 에피소드 큐시트 씬 비트 추가·JSON 저장·불러오기 왕복 검증
+    // 빈 큐시트 5-State Empty 안내 확인 및 한국어 IME 조합 중 엔터 중복 등록 방지 검증
+    expect(screen.getByTestId("cutsheet-empty-state")).toBeTruthy();
     fireEvent.change(screen.getByTestId("cutsheet-episode-title"), { target: { value: "15화 앙코르 결전" } });
-    fireEvent.change(screen.getByTestId("cutsheet-beat-title"), { target: { value: "무대 오프닝" } });
-    fireEvent.click(screen.getByTestId("cutsheet-add-beat"));
+    const beatTitleInput = screen.getByTestId("cutsheet-beat-title");
+    fireEvent.change(beatTitleInput, { target: { value: "무대 오프닝" } });
+    fireEvent.keyDown(beatTitleInput, { key: "Enter", isComposing: true });
+    expect(screen.getByTestId("cutsheet-summary-count").textContent).toContain("총 0비트 · 0컷");
+
+    fireEvent.keyDown(beatTitleInput, { key: "Enter", isComposing: false });
     expect(screen.getByTestId("cutsheet-summary-count").textContent).toContain("총 1비트 · 4컷");
+    expect(screen.queryByTestId("cutsheet-empty-state")).toBeNull();
+
     fireEvent.click(screen.getByTestId("cutsheet-save-json"));
     await waitFor(() => expect(calls).toHaveLength(3));
     expect(calls[2]?.fileName).toBe("15화-앙코르-결전-4cuts.cutsheet.json");
@@ -912,27 +921,49 @@ describe("ExportPanel", () => {
     });
     await waitFor(() => expect(screen.getByTestId("cutsheet-summary-count").textContent).toContain("총 1비트 · 4컷"));
 
-    // 말풍선·효과음 활성화 후 9:16 WebM 모션 티저 내보내기 시 -sfx 접미사와 벤치마크 영수증(피크 MB) 표시
-    fireEvent.click(screen.getByTestId("export-strip-bake-fx"));
-    fireEvent.change(screen.getByTestId("export-strip-sfx-stamp-0"), { target: { value: "dugeun" } });
-    fireEvent.click(screen.getByTestId("export-webtoon-motion-webm"));
+    // 큐시트 일괄 장편 스트립 PNG · 연속 9:16 WebM · 통합 WebVTT · 스토리보드 .md 출고 검증
+    fireEvent.click(screen.getByTestId("cutsheet-export-batch-strip"));
     await waitFor(() => expect(calls).toHaveLength(4));
-    expect(calls[3]?.mime).toBe("video/webm");
-    expect(calls[3]?.fileName).toMatch(/-540x960-webtoon-4cut-fx-tone-sfx-teaser\.webm$/u);
-    expect(screen.getByTestId("export-receipt").textContent).toContain("효과음 1건");
+    expect(calls[3]?.fileName).toMatch(/^15화-앙코르-결전-4cuts-\d+x\d+-long-strip\.png$/u);
+
+    fireEvent.click(screen.getByTestId("cutsheet-export-batch-webm"));
+    await waitFor(() => expect(calls).toHaveLength(5));
+    expect(calls[4]?.fileName).toMatch(/^15화-앙코르-결전-4cuts-540x960-episode-teaser\.webm$/u);
+
+    fireEvent.click(screen.getByTestId("cutsheet-export-vtt"));
+    await waitFor(() => expect(calls).toHaveLength(6));
+    expect(calls[5]?.fileName).toBe("15화-앙코르-결전-4cuts-subtitles.vtt");
+
+    fireEvent.click(screen.getByTestId("cutsheet-export-storyboard-md"));
+    await waitFor(() => expect(calls).toHaveLength(7));
+    expect(calls[6]?.fileName).toBe("15화-앙코르-결전-4cuts.storyboard.md");
+
+    // 말풍선·효과음 + 무드 앰비언트 BGM 패드 활성화 후 단축키 Ctrl+Shift+M으로 9:16 WebM 모션 티저 내보내기
+    fireEvent.click(screen.getByTestId("export-strip-bake-fx"));
+    fireEvent.click(screen.getByTestId("export-strip-ambient-bgm"));
+    fireEvent.change(screen.getByTestId("export-strip-sfx-stamp-0"), { target: { value: "dugeun" } });
+    fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "M", ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(calls).toHaveLength(8));
+    expect(calls[7]?.mime).toBe("video/webm");
+    expect(calls[7]?.fileName).toMatch(/-540x960-webtoon-4cut-fx-tone-sfx-bgm-teaser\.webm$/u);
+    expect(screen.getByTestId("export-receipt").textContent).toContain("앰비언트 BGM");
+
+    fireEvent.click(screen.getByTestId("export-webtoon-motion-vtt"));
+    await waitFor(() => expect(calls).toHaveLength(9));
+    expect(calls[8]?.fileName).toMatch(/-webtoon-4cut-ko-teaser\.vtt$/u);
 
     // 모바일 리더 1.5× 배속 WebM 내보내기 검증
     fireEvent.click(screen.getByTestId("export-webtoon-reader-preview-btn"));
     await screen.findByTestId("export-webtoon-reader-preview");
     fireEvent.change(screen.getByTestId("webtoon-reader-speed"), { target: { value: "1.5" } });
     fireEvent.click(screen.getByTestId("webtoon-reader-export-webm"));
-    await waitFor(() => expect(calls).toHaveLength(5));
-    expect(calls[4]?.fileName).toMatch(/-540x960-webtoon-4cut-fx-tone-sfx-1_5x-teaser\.webm$/u);
+    await waitFor(() => expect(calls).toHaveLength(10));
+    expect(calls[9]?.fileName).toMatch(/-540x960-webtoon-4cut-fx-tone-sfx-bgm-1_5x-teaser\.webm$/u);
     fireEvent.click(screen.getByTestId("webtoon-reader-close"));
 
     fireEvent.click(screen.getByTestId("export-psd-manga-fx"));
     fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
-    await waitFor(() => expect(calls).toHaveLength(6));
-    expect(String.fromCharCode(...(calls[5]?.bytes.subarray(0, 4) ?? []))).toBe("8BPS");
+    await waitFor(() => expect(calls).toHaveLength(11));
+    expect(String.fromCharCode(...(calls[10]?.bytes.subarray(0, 4) ?? []))).toBe("8BPS");
   });
 });

@@ -93,6 +93,33 @@
       "bytes": 34248,
       "sha256": "faa30be4490968cb8d6f770a91ccd0cc98c6cf4e7d5ef849966e88a85d5d5cce",
       "triangles": 312
+    },
+    {
+      "id": "apocalypse-supply-barricade",
+      "labelKo": "아포칼립스 방벽·보급 크레이트",
+      "meshName": "TS_StageProp_apocalypse-supply-barricade",
+      "path": "apocalypse-supply-barricade.glb",
+      "bytes": 19560,
+      "sha256": "6d13cf313540f6748c4a2cb0b804a50b1a2e33c30e798e0924badd5ddb7ca99f",
+      "triangles": 88
+    },
+    {
+      "id": "atelier-drip-counter",
+      "labelKo": "힐링 원목 드립바·공방 카운터",
+      "meshName": "TS_StageProp_atelier-drip-counter",
+      "path": "atelier-drip-counter.glb",
+      "bytes": 20268,
+      "sha256": "feb5a2028357d11bf54fc667394b45d865c51d5970b0c736a02f6273ccb56b23",
+      "triangles": 164
+    },
+    {
+      "id": "sanctuary-altar-pedestal",
+      "labelKo": "신전 백대리석 성수 제단·성광 링",
+      "meshName": "TS_StageProp_sanctuary-altar-pedestal",
+      "path": "sanctuary-altar-pedestal.glb",
+      "bytes": 43184,
+      "sha256": "159b21dd9e4865edb45770895c17d0efcc4bd33faf4c5490aad152ae8a36dea4",
+      "triangles": 872
     }
   ]
 }

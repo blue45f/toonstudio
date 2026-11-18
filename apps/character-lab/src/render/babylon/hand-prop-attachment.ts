@@ -163,6 +163,24 @@ const PROP_GRIP_SPECS: Readonly<Record<HandPropId, GripTransformSpec>> = {
     eulerLeft: [Math.PI * 0.5, 0, 0],
     uniformScale: 0.96,
   },
+  "tactical-medkit-radio": {
+    palmDelta: [0.014, -0.03, 0.012],
+    eulerRight: [Math.PI * 0.47, 0.16, -0.1],
+    eulerLeft: [Math.PI * 0.47, -0.16, 0.1],
+    uniformScale: 1.04,
+  },
+  "artisan-drip-kettle": {
+    palmDelta: [0.016, -0.036, 0.01],
+    eulerRight: [Math.PI * 0.48, 0.08, -0.06],
+    eulerLeft: [Math.PI * 0.48, -0.08, 0.06],
+    uniformScale: 1.04,
+  },
+  "sacred-chalice-wand": {
+    palmDelta: [0.01, -0.032, 0.01],
+    eulerRight: [Math.PI * 0.5, 0.12, -0.06],
+    eulerLeft: [Math.PI * 0.5, -0.12, 0.06],
+    uniformScale: 1.05,
+  },
 };
 
 const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: readonly [number, number, number]; readonly lower: readonly [number, number, number]; readonly hand: readonly [number, number, number] }>> = {
@@ -176,6 +194,9 @@ const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: 
   "medical-chart-clipboard": { upper: [14, 24, 60], lower: [26, 80, -20], hand: [12, 12, -8] },
   "idol-prism-lightstick": { upper: [18, 30, 52], lower: [34, 88, -22], hand: [14, 16, -8] },
   "varsity-basketball": { upper: [10, 22, 58], lower: [20, 74, -16], hand: [8, 10, -6] },
+  "tactical-medkit-radio": { upper: [16, 28, 56], lower: [30, 84, -22], hand: [14, 14, -8] },
+  "artisan-drip-kettle": { upper: [12, 24, 60], lower: [18, 84, -20], hand: [8, 12, -8] },
+  "sacred-chalice-wand": { upper: [16, 28, 54], lower: [32, 86, -20], hand: [12, 16, -8] },
 };
 
 const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {

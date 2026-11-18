@@ -1,5 +1,5 @@
 /**
- * ExportPanel 액션 버튼 클러스터 · 단행본 출판 페이지 조판 · 모바일 웹툰 리더 오토패닝 미리보기 · 레이어 PSD 옵션 섹션.
+ * ExportPanel 액션 버튼 클러스터 · 단행본 출판 페이지 조판 · 모바일 웹툰 리더 오토패닝 미리보기 · WebVTT 자막 · 레이어 PSD 옵션 섹션.
  */
 import { MAX_PSD_EXPORT_DIMENSION } from "../../../../export/export-session";
 import { RECIPE_FILE_SUFFIX } from "../../../../export/recipe-file";
@@ -26,6 +26,7 @@ export interface ExportActionsAndPsdSectionProps {
   readonly onWebtoonTankobonPng: () => void;
   readonly onOpenWebtoonReaderPreview: () => void;
   readonly onWebtoonMotionWebm: (playbackSpeed?: number) => void;
+  readonly onWebtoonMotionVtt: () => void;
   readonly onGlb: () => void;
   readonly onRecipeSave: () => void;
   readonly onShaperPresetSave: () => void;
@@ -62,6 +63,7 @@ export function ExportActionsAndPsdSection({
   onWebtoonTankobonPng,
   onOpenWebtoonReaderPreview,
   onWebtoonMotionWebm,
+  onWebtoonMotionVtt,
   onGlb,
   onRecipeSave,
   onShaperPresetSave,
@@ -122,7 +124,8 @@ export function ExportActionsAndPsdSection({
         <button
           type="button"
           data-testid="export-webtoon-tankobon-png"
-          title="선택한 단행본 읽기 순서(우→좌 일본 단행본 표준 또는 좌→우 한국 단행본)와 인쇄 재단선(Crop Marks)이 포함된 B5 비율 2×2 출판 페이지 PNG를 저장합니다"
+          aria-keyshortcuts="Control+Shift+B Meta+Shift+B"
+          title="선택한 단행본 읽기 순서(우→좌 일본 단행본 표준 또는 좌→우 한국 단행본)·재단선·쪽번호(Folio)·제본 책등 여백이 반영된 B5 비율 2×2 출판 페이지 PNG를 저장합니다 (단축키 Ctrl/Cmd+Shift+B)"
           onClick={onWebtoonTankobonPng}
           disabled={!engineReady || busy}
         >
@@ -140,11 +143,21 @@ export function ExportActionsAndPsdSection({
         <button
           type="button"
           data-testid="export-webtoon-motion-webm"
-          title="컷 진입 말풍선 팝인·효과음 스탬프 미세 진동·절차적 Web Audio 효과음 오디오 트랙이 동기화된 9:16 숏폼 홍보용 WebM 모션 코믹 비디오를 저장합니다"
+          aria-keyshortcuts="Control+Shift+M Meta+Shift+M"
+          title="컷 진입 말풍선 팝인·효과음 미세 진동·절차적 효과음 및 무드 앰비언트 BGM 패드가 동기화된 9:16 숏폼 홍보용 WebM 모션 코믹 비디오를 저장합니다 (단축키 Ctrl/Cmd+Shift+M)"
           onClick={() => onWebtoonMotionWebm(1)}
           disabled={!engineReady || busy}
         >
           9:16 숏폼 WebM 모션 티저 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-motion-vtt"
+          title="9:16 숏폼 모션 티저의 컷 체류 타임코드와 다국어 발화자·효과음이 동기화된 WebVTT(.vtt) 자막 파일을 저장합니다"
+          onClick={onWebtoonMotionVtt}
+          disabled={busy}
+        >
+          9:16 모션 자막(.vtt) 저장
         </button>
         <button type="button" onClick={onGlb} disabled={!engineReady || busy}>
           GLB 저장
