@@ -1,7 +1,7 @@
 /**
  * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * GLB · 레이어 PSD(만화 연출 말풍선·대사·효과음·효과선 4단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -26,6 +26,7 @@ import {
   WEBTOON_STRIP_ACTING_ARCS,
   WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO,
   WEBTOON_STRIP_FONT_SCALE_LABELS_KO,
+  WEBTOON_STRIP_SPEAKER_LABELS_KO,
   exportWebtoonVerticalStripPng,
 } from "../../../export/webtoon-strip-composer";
 import type {
@@ -34,6 +35,7 @@ import type {
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
   WebtoonStripFxLinesKind,
+  WebtoonStripSpeakerTarget,
 } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
@@ -132,7 +134,18 @@ export function ExportPanel({
 
   const applyPlan = useApplyPlan();
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = directorState;
+  const {
+    actingArc: stripActingArc,
+    bakeStripFx,
+    stripFxLines,
+    dialogueLines,
+    bubbleShapes,
+    bubbleFontScales,
+    sfxStamps,
+    speakerTargets,
+    partnerSide,
+    includePsdMangaFx,
+  } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -324,6 +337,8 @@ export function ExportPanel({
                     bubbleShapes,
                     bubbleFontScales,
                     sfxStamps,
+                    speakerTargets,
+                    partnerSide,
                   },
                 }
               : {}),
@@ -362,6 +377,21 @@ export function ExportPanel({
             includeReferencePasses,
             splitHairLayers,
             ...(useLuminanceToAlpha ? { lineArt: { useLuminanceToAlpha: true } } : {}),
+            ...(includePsdMangaFx
+              ? {
+                  mangaFx: {
+                    enabled: true,
+                    linesKind: stripFxLines,
+                    bubbleShape: bubbleShapes[0],
+                    dialogueText: dialogueLines[0],
+                    fontScale: bubbleFontScales[0],
+                    speakerTarget: speakerTargets[0] === "auto" ? "protagonist" : speakerTargets[0],
+                    partnerSide,
+                    sfxStamp: sfxStamps[0],
+                    intensity: 0.78,
+                  },
+                }
+              : {}),
           },
           { now },
         ),
@@ -685,11 +715,24 @@ export function ExportPanel({
             <option value="none">말풍선만 (효과선 없음)</option>
           </select>
         </div>
-        <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 모양·강조·효과음·한국어 대사">
+        <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 발화자·말풍선 모양·강조·효과음·한국어 대사">
           {([0, 1, 2, 3] as const).map((cutIdx) => (
             <div key={cutIdx} className="cl-export-dialogue-item">
               <label htmlFor={`${ids}-strip-dialogue-${cutIdx}`}>{`${cutIdx + 1}컷 대사·연출`}</label>
               <div className="cl-export-cut-controls-row">
+                <select
+                  aria-label={`${cutIdx + 1}컷 발화자`}
+                  data-testid={`export-strip-speaker-${cutIdx}`}
+                  disabled={!bakeStripFx || bubbleShapes[cutIdx] === "none"}
+                  value={speakerTargets[cutIdx]}
+                  onChange={(event) => stripDirector.setSpeakerTarget(cutIdx, event.target.value as WebtoonStripSpeakerTarget)}
+                >
+                  {(Object.keys(WEBTOON_STRIP_SPEAKER_LABELS_KO) as WebtoonStripSpeakerTarget[]).map((target) => (
+                    <option key={target} value={target}>
+                      {WEBTOON_STRIP_SPEAKER_LABELS_KO[target]}
+                    </option>
+                  ))}
+                </select>
                 <select
                   aria-label={`${cutIdx + 1}컷 말풍선 모양`}
                   data-testid={`export-strip-bubble-shape-${cutIdx}`}
@@ -839,8 +882,18 @@ export function ExportPanel({
         <label htmlFor={`${ids}-lumalpha`}>
           <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
+        <label htmlFor={`${ids}-psdmangafx`}>
+          <input
+            id={`${ids}-psdmangafx`}
+            data-testid="export-psd-manga-fx"
+            type="checkbox"
+            checked={includePsdMangaFx}
+            onChange={(event) => stripDirector.update({ includePsdMangaFx: event.target.checked })}
+          />{" "}
+          만화 연출 분리 레이어 포함(말풍선·대사·효과음·효과선)
+        </label>
         {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
-        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리합니다. MSAA 공유 경계는 가시 샘플 과반 소유로 나누며 동률은 헤어에 귀속합니다. 추가 추출 주선은 기본 숨김이며, 켜면 원본 렌더 위에 선 효과가 더해집니다.</p>
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 효과선·말풍선 프레임·대사 식자·효과음 스탬프 4개 투명 레이어가 개별 저장됩니다.</p>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>

@@ -1,7 +1,8 @@
 /**
  * 장르별 원클릭 풀세트 씬 디렉터 프리셋 (`viewport-scene-director.tsx`, Unslop 규약 준수):
  * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 4대 한국 웹툰 씬 디렉터
- * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 말풍선 도형/강조/효과음 스탬프/한국어 대사까지 일괄 세팅
+ * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 발화자/말풍선 도형/강조/효과음 스탬프/한국어 대사까지 일괄 세팅
+ * - `상대역 자동 캐스팅` 버튼으로 장르에 어울리는 3D 듀오 상대역 캐릭터·표정·전용 손소품·아이컨택 시선 교환까지 즉시 배치
  * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
  */
 import {
@@ -9,9 +10,11 @@ import {
   DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
   DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
   DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
+  DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
 } from "../../../export/webtoon-strip-composer";
 import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../../presets";
 
+import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 import type {
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
@@ -22,15 +25,35 @@ import type {
   WebtoonStripDialogueLines,
   WebtoonStripFxLinesKind,
   WebtoonStripSfxStamps,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTargets,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
-import type { HandPropId, HandPropSide, HeadPropId, SfxStampId, ShadingProfile, StagePropId } from "../../../contracts";
+import type {
+  DuoPartnerExpressionPreset,
+  DuoPartnerStance,
+  HandPropId,
+  HandPropSide,
+  HeadPropId,
+  SfxStampId,
+  ShadingProfile,
+  StagePropId,
+} from "../../../contracts";
 
 export type WebtoonSceneDirectorPresetId =
   | "director-rofan-coronation"
   | "director-noir-interrogation"
   | "director-campus-cafe"
   | "director-murim-awakening";
+
+export interface WebtoonDirectorDuoCastingSpec {
+  readonly partnerId: string;
+  readonly side: DuoPartnerSide;
+  readonly distanceKey: DuoShotDistanceKey;
+  readonly stance: DuoPartnerStance;
+  readonly expression: DuoPartnerExpressionPreset;
+  readonly partnerHandPropId: HandPropId | "";
+}
 
 export interface WebtoonSceneDirectorPreset {
   readonly id: WebtoonSceneDirectorPresetId;
@@ -48,6 +71,8 @@ export interface WebtoonSceneDirectorPreset {
   readonly bubbleShapes: WebtoonStripBubbleShapes;
   readonly bubbleFontScales: WebtoonStripBubbleFontScales;
   readonly sfxStamps: WebtoonStripSfxStamps;
+  readonly speakerTargets: WebtoonStripSpeakerTargets;
+  readonly duoCasting: WebtoonDirectorDuoCastingSpec;
 }
 
 export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset[] = Object.freeze([
@@ -72,6 +97,15 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "oval"],
     bubbleFontScales: ["md", "md", "lg", "md"],
     sfxStamps: ["seureung", "none", "pat", "dugeun"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    duoCasting: {
+      partnerId: "shaper-noir-duke",
+      side: "right",
+      distanceKey: "talk",
+      stance: "attentive",
+      expression: "cold-smirk",
+      partnerHandPropId: "imperial-scroll",
+    },
   },
   {
     id: "director-noir-interrogation",
@@ -94,6 +128,15 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
     bubbleFontScales: ["md", "md", "lg", "sm"],
     sfxStamps: ["none", "pat", "kugugung", "none"],
+    speakerTargets: ["protagonist", "protagonist", "partner", "protagonist"],
+    duoCasting: {
+      partnerId: "shaper-thriller-detective",
+      side: "right",
+      distanceKey: "talk",
+      stance: "arms-crossed",
+      expression: "stern-glare",
+      partnerHandPropId: "case-folder",
+    },
   },
   {
     id: "director-campus-cafe",
@@ -116,6 +159,15 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     bubbleShapes: ["oval", "oval", "whisper-dashed", "oval"],
     bubbleFontScales: ["md", "md", "sm", "md"],
     sfxStamps: ["none", "dugeun", "dugeun", "none"],
+    speakerTargets: ["partner", "protagonist", "protagonist", "partner"],
+    duoCasting: {
+      partnerId: "shaper-office-ceo",
+      side: "right",
+      distanceKey: "close",
+      stance: "conversational",
+      expression: "warm-smile",
+      partnerHandPropId: "coffee-cup",
+    },
   },
   {
     id: "director-murim-awakening",
@@ -138,6 +190,15 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "shout-burst"],
     bubbleFontScales: ["md", "md", "lg", "lg"],
     sfxStamps: ["seureung", "none", "kugugung", "seureung"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    duoCasting: {
+      partnerId: "shaper-murim-swordmaster",
+      side: "right",
+      distanceKey: "wide",
+      stance: "arms-crossed",
+      expression: "stern-glare",
+      partnerHandPropId: "jade-folding-fan",
+    },
   },
 ]);
 
@@ -161,6 +222,9 @@ export interface StripDirectorState {
   readonly bubbleShapes: WebtoonStripBubbleShapes;
   readonly bubbleFontScales: WebtoonStripBubbleFontScales;
   readonly sfxStamps: WebtoonStripSfxStamps;
+  readonly speakerTargets: WebtoonStripSpeakerTargets;
+  readonly partnerSide: DuoPartnerSide;
+  readonly includePsdMangaFx: boolean;
 }
 
 export interface StripDirectorSession {
@@ -170,6 +234,7 @@ export interface StripDirectorSession {
   setBubbleShape(cutIndex: 0 | 1 | 2 | 3, shape: WebtoonStripBubbleShape): void;
   setBubbleFontScale(cutIndex: 0 | 1 | 2 | 3, scale: WebtoonStripBubbleFontScale): void;
   setSfxStamp(cutIndex: 0 | 1 | 2 | 3, stamp: WebtoonSfxStampOption): void;
+  setSpeakerTarget(cutIndex: 0 | 1 | 2 | 3, target: WebtoonStripSpeakerTarget): void;
   reset(): void;
   subscribe(listener: () => void): () => void;
 }
@@ -183,6 +248,9 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   bubbleShapes: DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
   bubbleFontScales: DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
   sfxStamps: DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
+  speakerTargets: DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
+  partnerSide: "right",
+  includePsdMangaFx: false,
 });
 
 export function createStripDirectorSession(initial: Partial<StripDirectorState> = {}): StripDirectorSession {
@@ -241,6 +309,17 @@ export function createStripDirectorSession(initial: Partial<StripDirectorState> 
       state = { ...state, sfxStamps: next };
       notify();
     },
+    setSpeakerTarget(cutIndex, target) {
+      const next: [WebtoonStripSpeakerTarget, WebtoonStripSpeakerTarget, WebtoonStripSpeakerTarget, WebtoonStripSpeakerTarget] = [
+        state.speakerTargets[0],
+        state.speakerTargets[1],
+        state.speakerTargets[2],
+        state.speakerTargets[3],
+      ];
+      next[cutIndex] = target;
+      state = { ...state, speakerTargets: next };
+      notify();
+    },
     reset() {
       state = INITIAL_STRIP_DIRECTOR_STATE;
       notify();
@@ -265,14 +344,18 @@ export interface ViewportSceneDirectorControlsProps {
   readonly engineReady: boolean;
   readonly busy: boolean;
   readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+  readonly duoPartnerActive?: boolean;
   readonly onSelectDirector: (presetId: WebtoonSceneDirectorPresetId | "") => void;
+  readonly onCastDuoPartner?: () => void;
 }
 
 export function ViewportSceneDirectorControls({
   engineReady,
   busy,
   activeDirectorId,
+  duoPartnerActive = false,
   onSelectDirector,
+  onCastDuoPartner,
 }: ViewportSceneDirectorControlsProps) {
   const activeSpec = activeDirectorId ? findWebtoonSceneDirectorPreset(activeDirectorId) : null;
   return (
@@ -297,6 +380,19 @@ export function ViewportSceneDirectorControls({
           </option>
         ))}
       </select>
+      {activeSpec && onCastDuoPartner ? (
+        <button
+          type="button"
+          className="cl-viewport-button"
+          data-testid="viewport-director-cast-duo"
+          aria-pressed={duoPartnerActive}
+          disabled={!engineReady || busy}
+          title="선택한 장르 디렉터에 어울리는 3D 상대역 캐릭터·표정·전용 손소품·아이컨택 시선 교환과 4컷 발화자 배치를 한 번에 세팅합니다"
+          onClick={onCastDuoPartner}
+        >
+          상대역 자동 캐스팅
+        </button>
+      ) : null}
     </span>
   );
 }

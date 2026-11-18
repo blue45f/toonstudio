@@ -1,7 +1,8 @@
 /**
  * 한국형 세로 스크롤 웹툰 4컷 콘티 스트립(등장 로우앵글 · 대화 반측면 · 감정 클로즈업 · 여운 하이앵글)
  * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김),
- * 컷별 한국어 식자 폰트 강조 배율(소형·표준·강조), 컷별 오노마토페 효과음 스탬프(스릉·두근·쿠구궁·팟),
+ * 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준, 컷별 한국어 식자 폰트 강조 배율(소형·표준·강조),
+ * 컷별 오노마토페 효과음 스탬프(스릉·두근·쿠구궁·팟), 레이어 PSD 만화 연출 투명 분리 레이어 빌더,
  * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
@@ -52,6 +53,7 @@ export type WebtoonStripFxLinesKind = "none" | "focus-radial" | "speed-diagonal"
 export type WebtoonStripBubbleShape = "oval" | "shout-burst" | "monologue-box" | "whisper-dashed" | "none";
 export type WebtoonStripBubbleFontScale = "sm" | "md" | "lg";
 export type WebtoonSfxStampOption = "none" | SfxStampId;
+export type WebtoonStripSpeakerTarget = "auto" | "protagonist" | "partner";
 
 export type WebtoonStripDialogueLines = readonly [string, string, string, string];
 export type WebtoonStripBubbleShapes = readonly [
@@ -71,6 +73,12 @@ export type WebtoonStripSfxStamps = readonly [
   WebtoonSfxStampOption,
   WebtoonSfxStampOption,
   WebtoonSfxStampOption,
+];
+export type WebtoonStripSpeakerTargets = readonly [
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
 ];
 
 export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = Object.freeze([
@@ -101,6 +109,13 @@ export const DEFAULT_WEBTOON_STRIP_SFX_STAMPS: WebtoonStripSfxStamps = Object.fr
   "none",
 ]) as WebtoonStripSfxStamps;
 
+export const DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS: WebtoonStripSpeakerTargets = Object.freeze([
+  "auto",
+  "auto",
+  "auto",
+  "auto",
+]) as WebtoonStripSpeakerTargets;
+
 export const WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO: Readonly<Record<WebtoonStripBubbleShape, string>> = Object.freeze({
   oval: "일반 타원",
   "shout-burst": "외침 가시",
@@ -115,12 +130,54 @@ export const WEBTOON_STRIP_FONT_SCALE_LABELS_KO: Readonly<Record<WebtoonStripBub
   lg: "강조 (클라이맥스)",
 });
 
+export const WEBTOON_STRIP_SPEAKER_LABELS_KO: Readonly<Record<WebtoonStripSpeakerTarget, string>> = Object.freeze({
+  auto: "자동 교차",
+  protagonist: "주연 발화",
+  partner: "상대역 발화",
+});
+
 export const WEBTOON_SFX_STAMP_KO_TEXT: Readonly<Record<SfxStampId, { readonly glyphKo: string; readonly tiltDeg: number; readonly accentRgb: readonly [number, number, number]; readonly inkRgb: readonly [number, number, number] }>> = Object.freeze({
   seureung: { glyphKo: "스릉", tiltDeg: -11, accentRgb: [92, 232, 242], inkRgb: [18, 22, 34] },
   dugeun: { glyphKo: "두근", tiltDeg: 8, accentRgb: [244, 134, 168], inkRgb: [42, 18, 28] },
   kugugung: { glyphKo: "쿠구궁", tiltDeg: -7, accentRgb: [240, 184, 86], inkRgb: [24, 19, 18] },
   pat: { glyphKo: "팟", tiltDeg: 10, accentRgb: [255, 224, 118], inkRgb: [24, 21, 28] },
 });
+
+export interface SpeakerBubblePlacement {
+  readonly placeRight: boolean;
+  readonly centerXRatio: number;
+  /** null이면 기본 교차 내측 꼬리, 숫자(0..1)면 해당 수평 비율의 발화자 머리 위치를 향해 꼬리를 조준 */
+  readonly tailTargetXRatio: number | null;
+}
+
+export function resolveSpeakerBubblePlacement(
+  cutIndex: number,
+  speakerTarget: WebtoonStripSpeakerTarget = "auto",
+  partnerSide: "left" | "right" = "right",
+): SpeakerBubblePlacement {
+  if (speakerTarget === "protagonist") {
+    const placeRight = partnerSide === "left";
+    return {
+      placeRight,
+      centerXRatio: placeRight ? 0.68 : 0.32,
+      tailTargetXRatio: placeRight ? 0.54 : 0.46,
+    };
+  }
+  if (speakerTarget === "partner") {
+    const placeRight = partnerSide === "right";
+    return {
+      placeRight,
+      centerXRatio: placeRight ? 0.72 : 0.28,
+      tailTargetXRatio: placeRight ? 0.8 : 0.2,
+    };
+  }
+  const placeRight = cutIndex % 2 === 1;
+  return {
+    placeRight,
+    centerXRatio: placeRight ? 0.72 : 0.28,
+    tailTargetXRatio: null,
+  };
+}
 
 export interface WebtoonStripMangaFxOptions {
   readonly enabled: boolean;
@@ -135,6 +192,10 @@ export interface WebtoonStripMangaFxOptions {
   readonly bubbleFontScales?: WebtoonStripBubbleFontScales;
   /** 1~4컷 개별 한국어 효과음(오노마토페) 스탬프(미지정 시 `none`) */
   readonly sfxStamps?: WebtoonStripSfxStamps;
+  /** 1~4컷 발화자 지정(주연 발화·상대역 발화·자동 교차) */
+  readonly speakerTargets?: WebtoonStripSpeakerTargets;
+  /** 3D 듀오 상대역 배치 방향(기본 `right`) — 발화자별 말풍선 위치와 꼬리 방향 결정에 사용 */
+  readonly partnerSide?: "left" | "right";
 }
 
 export interface WebtoonStripLayout {
@@ -228,11 +289,23 @@ function blendPixelRgba(
   if (x < clipX0 || x >= clipX1 || y < clipY0 || y >= clipY1 || alpha01 <= 0) return;
   const a = alpha01 >= 1 ? 1 : alpha01;
   const dst = (y * canvasWidth + x) * 4;
-  const inv = 1 - a;
-  rgba[dst] = Math.round(r * a + (rgba[dst] ?? 255) * inv);
-  rgba[dst + 1] = Math.round(g * a + (rgba[dst + 1] ?? 255) * inv);
-  rgba[dst + 2] = Math.round(b * a + (rgba[dst + 2] ?? 255) * inv);
-  rgba[dst + 3] = 255;
+  const dstAlphaByte = rgba[dst + 3] ?? 0;
+  if (dstAlphaByte === 255) {
+    const inv = 1 - a;
+    rgba[dst] = Math.round(r * a + (rgba[dst] ?? 255) * inv);
+    rgba[dst + 1] = Math.round(g * a + (rgba[dst + 1] ?? 255) * inv);
+    rgba[dst + 2] = Math.round(b * a + (rgba[dst + 2] ?? 255) * inv);
+    rgba[dst + 3] = 255;
+    return;
+  }
+  const dstA = dstAlphaByte / 255;
+  const outA = a + dstA * (1 - a);
+  if (outA <= 0.0001) return;
+  const dstWeight = dstA * (1 - a);
+  rgba[dst] = Math.round((r * a + (rgba[dst] ?? 0) * dstWeight) / outA);
+  rgba[dst + 1] = Math.round((g * a + (rgba[dst + 1] ?? 0) * dstWeight) / outA);
+  rgba[dst + 2] = Math.round((b * a + (rgba[dst + 2] ?? 0) * dstWeight) / outA);
+  rgba[dst + 3] = Math.round(outA * 255);
 }
 
 function drawClippedLineRgba(
@@ -515,26 +588,35 @@ function bakeDeterministicDialogueGlyphs(
   });
 }
 
-function bakeSpeechBubbleBalloon(
+function computeSpeechBubbleMetrics(
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+) {
+  const rx = Math.max(8, Math.round(innerWidth * 0.21));
+  const ry = Math.max(5, Math.round(innerHeight * 0.092));
+  const cx = innerX + Math.round(innerWidth * placement.centerXRatio);
+  const cy = innerY + Math.round(ry * 1.32);
+  const border = Math.max(1, Math.round(innerWidth * 0.0042));
+  return { rx, ry, cx, cy, border };
+}
+
+function bakeSpeechBubbleFrame(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
   innerX: number,
   innerY: number,
   innerWidth: number,
   innerHeight: number,
-  placeRight: boolean,
-  dialogueText?: string,
+  placement: SpeakerBubblePlacement,
   shape: WebtoonStripBubbleShape = "oval",
-  fontScale: WebtoonStripBubbleFontScale = "md",
 ): void {
   if (shape === "none") return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const rx = Math.max(8, Math.round(innerWidth * 0.21));
-  const ry = Math.max(5, Math.round(innerHeight * 0.092));
-  const cx = placeRight ? innerX + Math.round(innerWidth * 0.72) : innerX + Math.round(innerWidth * 0.28);
-  const cy = innerY + Math.round(ry * 1.32);
-  const border = Math.max(1, Math.round(innerWidth * 0.0042));
+  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement);
 
   if (shape === "monologue-box") {
     const x0 = Math.max(innerX, cx - rx - border);
@@ -619,9 +701,20 @@ function bakeSpeechBubbleBalloon(
       }
     }
 
-    const dir = placeRight ? -1 : 1;
-    const tailTipX = cx + dir * Math.round(rx * 0.72);
-    const tailTipY = cy + Math.round(ry * 1.48);
+    const fallbackDir = placement.placeRight ? -1 : 1;
+    const tailTipX =
+      placement.tailTargetXRatio !== null
+        ? innerX + Math.round(innerWidth * placement.tailTargetXRatio)
+        : cx + fallbackDir * Math.round(rx * 0.72);
+    const tailDeltaX = tailTipX - cx;
+    const tailDirSign = tailDeltaX === 0 ? fallbackDir : Math.sign(tailDeltaX);
+    const tailStartX =
+      placement.tailTargetXRatio !== null
+        ? cx + tailDirSign * Math.min(Math.round(rx * 0.4), Math.round(Math.abs(tailDeltaX) * 0.5))
+        : cx + fallbackDir * Math.round(rx * 0.34);
+    const tailStartY = cy + Math.round(ry * 0.88);
+    const tailTipY = cy + Math.round(ry * (placement.tailTargetXRatio !== null ? 1.56 : 1.48));
+
     if (!isWhisper) {
       drawClippedLineRgba(
         rgba,
@@ -630,8 +723,8 @@ function bakeSpeechBubbleBalloon(
         innerY,
         clipX1,
         clipY1,
-        cx + dir * Math.round(rx * 0.34),
-        cy + Math.round(ry * 0.88),
+        tailStartX,
+        tailStartY,
         tailTipX,
         tailTipY,
         Math.max(1, border * 0.9),
@@ -641,44 +734,76 @@ function bakeSpeechBubbleBalloon(
         0.95,
       );
     } else {
-      const dot1X = Math.round(cx + dir * rx * 0.44);
-      const dot1Y = Math.round(cy + ry * 1.12);
-      const dot2X = Math.round(cx + dir * rx * 0.62);
-      const dot2Y = Math.round(cy + ry * 1.36);
+      const dot1X = Math.round(tailStartX + (tailTipX - tailStartX) * 0.4);
+      const dot1Y = Math.round(tailStartY + (tailTipY - tailStartY) * 0.42);
+      const dot2X = Math.round(tailStartX + (tailTipX - tailStartX) * 0.82);
+      const dot2Y = Math.round(tailStartY + (tailTipY - tailStartY) * 0.84);
       drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, dot1X - 1, dot1Y, dot1X + 1, dot1Y, Math.max(1, border), 24, 21, 28, 0.85);
       drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, dot2X - 1, dot2Y, dot2X + 1, dot2Y, Math.max(1, border * 0.8), 24, 21, 28, 0.8);
     }
   }
+}
 
-  if (dialogueText && dialogueText.trim().length > 0) {
-    const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
-    const boxW = Math.max(8, Math.round(rx * 1.66));
-    const boxH = Math.max(6, Math.round(ry * 1.44));
-    const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale);
-    if (raster) {
-      const dstLeft = Math.round(cx - boxW * 0.5);
-      const dstTop = Math.round(cy - boxH * 0.5);
-      for (let ty = 0; ty < boxH; ty += 1) {
-        for (let tx = 0; tx < boxW; tx += 1) {
-          const sx = tx * 2;
-          const sy = ty * 2;
-          let aSum = 0;
-          for (let oy = 0; oy < 2; oy += 1) {
-            for (let ox = 0; ox < 2; ox += 1) {
-              const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
-              aSum += raster.data[idx + 3] ?? 0;
-            }
-          }
-          const alpha01 = aSum / (255 * 4);
-          if (alpha01 > 0.04) {
-            blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+function bakeSpeechBubbleDialogueText(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+  dialogueText: string | undefined,
+  shape: WebtoonStripBubbleShape = "oval",
+  fontScale: WebtoonStripBubbleFontScale = "md",
+): void {
+  if (shape === "none" || !dialogueText || dialogueText.trim().length === 0) return;
+  const clipX1 = innerX + innerWidth;
+  const clipY1 = innerY + innerHeight;
+  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement);
+  const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
+  const boxW = Math.max(8, Math.round(rx * 1.66));
+  const boxH = Math.max(6, Math.round(ry * 1.44));
+  const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale);
+  if (raster) {
+    const dstLeft = Math.round(cx - boxW * 0.5);
+    const dstTop = Math.round(cy - boxH * 0.5);
+    for (let ty = 0; ty < boxH; ty += 1) {
+      for (let tx = 0; tx < boxW; tx += 1) {
+        const sx = tx * 2;
+        const sy = ty * 2;
+        let aSum = 0;
+        for (let oy = 0; oy < 2; oy += 1) {
+          for (let ox = 0; ox < 2; ox += 1) {
+            const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
+            aSum += raster.data[idx + 3] ?? 0;
           }
         }
+        const alpha01 = aSum / (255 * 4);
+        if (alpha01 > 0.04) {
+          blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+        }
       }
-    } else {
-      bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2, fontScale);
     }
+  } else {
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2, fontScale);
   }
+}
+
+function bakeSpeechBubbleBalloon(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+  dialogueText?: string,
+  shape: WebtoonStripBubbleShape = "oval",
+  fontScale: WebtoonStripBubbleFontScale = "md",
+): void {
+  if (shape === "none") return;
+  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape);
+  bakeSpeechBubbleDialogueText(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, dialogueText, shape, fontScale);
 }
 
 function tryRasterizeSfxCanvas2d(
@@ -753,7 +878,6 @@ function bakePanelSfxStamp(
   const [ir, ig, ib] = spec.inkRgb;
   const stroke = Math.max(0.8, innerWidth * 0.0032);
 
-  // 역동적 배경 액센트 슬래시·섬광 마크
   drawClippedLineRgba(
     rgba,
     canvasWidth,
@@ -838,6 +962,94 @@ function bakePanelSfxStamp(
   }
 }
 
+// ---------------------------------------------------------------- 레이어 PSD 만화 연출 투명 분리 레이어 빌더
+
+export function renderTransparentActionLinesLayer(
+  width: number,
+  height: number,
+  kind: WebtoonStripFxLinesKind,
+  intensity = 0.78,
+  cutIndex = 0,
+): CapturedRaster {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  const safeIntensity = Math.min(1, Math.max(0.2, Number.isFinite(intensity) ? intensity : 0.78));
+  bakePanelActionLines(rgba, width, 0, 0, width, height, kind, safeIntensity, cutIndex);
+  return { width, height, rgba };
+}
+
+export function renderTransparentSpeechBubbleFrameLayer(
+  width: number,
+  height: number,
+  options: {
+    readonly shape?: WebtoonStripBubbleShape;
+    readonly speakerTarget?: WebtoonStripSpeakerTarget;
+    readonly partnerSide?: "left" | "right";
+    readonly cutIndex?: number;
+  } = {},
+): CapturedRaster {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  const placement = resolveSpeakerBubblePlacement(
+    options.cutIndex ?? 0,
+    options.speakerTarget ?? "auto",
+    options.partnerSide ?? "right",
+  );
+  bakeSpeechBubbleFrame(rgba, width, 0, 0, width, height, placement, options.shape ?? "oval");
+  return { width, height, rgba };
+}
+
+export function renderTransparentDialogueTextLayer(
+  width: number,
+  height: number,
+  options: {
+    readonly dialogueText?: string;
+    readonly shape?: WebtoonStripBubbleShape;
+    readonly fontScale?: WebtoonStripBubbleFontScale;
+    readonly speakerTarget?: WebtoonStripSpeakerTarget;
+    readonly partnerSide?: "left" | "right";
+    readonly cutIndex?: number;
+  } = {},
+): CapturedRaster {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  const placement = resolveSpeakerBubblePlacement(
+    options.cutIndex ?? 0,
+    options.speakerTarget ?? "auto",
+    options.partnerSide ?? "right",
+  );
+  bakeSpeechBubbleDialogueText(
+    rgba,
+    width,
+    0,
+    0,
+    width,
+    height,
+    placement,
+    options.dialogueText,
+    options.shape ?? "oval",
+    options.fontScale ?? "md",
+  );
+  return { width, height, rgba };
+}
+
+export function renderTransparentSfxStampLayer(
+  width: number,
+  height: number,
+  options: {
+    readonly stamp?: WebtoonSfxStampOption;
+    readonly speakerTarget?: WebtoonStripSpeakerTarget;
+    readonly partnerSide?: "left" | "right";
+    readonly cutIndex?: number;
+  } = {},
+): CapturedRaster {
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  const placement = resolveSpeakerBubblePlacement(
+    options.cutIndex ?? 0,
+    options.speakerTarget ?? "auto",
+    options.partnerSide ?? "right",
+  );
+  bakePanelSfxStamp(rgba, width, 0, 0, width, height, !placement.placeRight, options.stamp ?? "none");
+  return { width, height, rgba };
+}
+
 function fillRectRgba(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
@@ -881,6 +1093,7 @@ export function composeWebtoonVerticalStrip(
   const fxLinesKind: WebtoonStripFxLinesKind = fxEnabled ? (mangaFx?.linesKind ?? "focus-radial") : "none";
   const fxIncludeBubbles = fxEnabled && mangaFx?.includeSpeechBubbles !== false;
   const fxIntensity = Math.min(1, Math.max(0.2, Number.isFinite(mangaFx?.intensity) ? (mangaFx?.intensity ?? 0.75) : 0.75));
+  const partnerSide: "left" | "right" = mangaFx?.partnerSide ?? "right";
 
   for (let idx = 0; idx < panels.length; idx += 1) {
     const panel = panels[idx];
@@ -942,7 +1155,8 @@ export function composeWebtoonVerticalStrip(
       }
     }
 
-    const bubbleRight = idx % 2 === 1;
+    const cutSpeaker: WebtoonStripSpeakerTarget = mangaFx?.speakerTargets?.[idx] ?? "auto";
+    const placement = resolveSpeakerBubblePlacement(idx, cutSpeaker, partnerSide);
     if (fxIncludeBubbles) {
       const cutDialogue = mangaFx?.dialogueLines?.[idx];
       const cutShape: WebtoonStripBubbleShape = mangaFx?.bubbleShapes?.[idx] ?? "oval";
@@ -954,7 +1168,7 @@ export function composeWebtoonVerticalStrip(
         innerY,
         layout.cutWidth,
         innerHeight,
-        bubbleRight,
+        placement,
         cutDialogue,
         cutShape,
         cutFontScale,
@@ -964,7 +1178,7 @@ export function composeWebtoonVerticalStrip(
     if (fxEnabled) {
       const cutSfx: WebtoonSfxStampOption = mangaFx?.sfxStamps?.[idx] ?? "none";
       if (cutSfx !== "none") {
-        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !bubbleRight, cutSfx);
+        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !placement.placeRight, cutSfx);
       }
     }
   }

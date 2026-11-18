@@ -425,5 +425,56 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     // 경계선 픽셀은 존재해야 한다
     expect(result.plan.receipt.lineArtPixels).toBeGreaterThan(0);
   });
+
+  it("mangaFx.enabled=true일 때 캐릭터 recomposeMae 무결성을 유지하면서 최상단에 웹툰 만화 연출 4종 투명 레이어 그룹을 추가한다", () => {
+    const capture = captureResultFixture({
+      width: 128,
+      height: 128,
+      depth: { width: 128, height: 128, depth: new Float32Array(128 * 128).fill(0.5), near: 0.1, far: 10 },
+    });
+    const baseResult = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+    });
+    const fxResult = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+      mangaFx: {
+        enabled: true,
+        linesKind: "focus-radial",
+        bubbleShape: "oval",
+        dialogueText: "황실의 검과 왕관을 거둔다.",
+        fontScale: "lg",
+        speakerTarget: "protagonist",
+        partnerSide: "right",
+        sfxStamp: "seureung",
+        intensity: 0.8,
+      },
+    });
+    if (!baseResult.ok || !fxResult.ok) throw new Error("PSD 만화 연출 계획 실패");
+
+    expect(fxResult.plan.receipt.recomposeMae).toBe(baseResult.plan.receipt.recomposeMae);
+    expect(fxResult.plan.receipt.groupCount).toBe(baseResult.plan.receipt.groupCount + 1);
+    expect(fxResult.plan.receipt.layerCount).toBe(baseResult.plan.receipt.layerCount + 4);
+    expect(fxResult.plan.receipt.names.slice(-5)).toEqual([
+      "웹툰 만화 연출",
+      "웹툰 만화 연출/효과선",
+      "웹툰 만화 연출/말풍선 프레임",
+      "웹툰 만화 연출/대사 식자",
+      "웹툰 만화 연출/효과음 스탬프",
+    ]);
+
+    const fxGroup = fxResult.plan.layers.at(-1);
+    expect(fxGroup?.kind === "group" && fxGroup.opened).toBe(true);
+    expect(fxGroup?.kind === "group" && fxGroup.hidden).toBe(false);
+    const bubbleLayer = rasterLayer(fxResult.plan.layers, "말풍선 프레임");
+    const dialogueLayer = rasterLayer(fxResult.plan.layers, "대사 식자");
+    const sfxLayer = rasterLayer(fxResult.plan.layers, "효과음 스탬프");
+    expect(bubbleLayer.hidden).toBe(false);
+    expect(dialogueLayer.hidden).toBe(false);
+    expect(sfxLayer.hidden).toBe(false);
+    expect(pixelAt(bubbleLayer.raster, 64, 120)[3]).toBe(0);
+    expect(pixelAt(dialogueLayer.raster, 64, 120)[3]).toBe(0);
+  });
 });
 

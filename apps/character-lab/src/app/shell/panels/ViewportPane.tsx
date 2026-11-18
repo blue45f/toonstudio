@@ -705,6 +705,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
     setDuoShot((prev) => {
       const next = updater(prev);
+      if (next.side !== prev.side) {
+        stripDirector.update({ partnerSide: next.side });
+      }
       void syncDuoPartner3d(next, prev);
       return next;
     });
@@ -800,6 +803,33 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       setHandPropBusy(false);
     }
   };
+  const castDirectorDuoPartner = async (presetId: WebtoonSceneDirectorPresetId): Promise<void> => {
+    const preset = findWebtoonSceneDirectorPreset(presetId);
+    if (!preset) return;
+    const prevDuo = duoShot;
+    const nextDuo: DuoShotState = {
+      enabled: true,
+      render3dPartner: true,
+      partnerId: preset.duoCasting.partnerId,
+      side: preset.duoCasting.side,
+      distanceKey: preset.duoCasting.distanceKey,
+      partnerStance: preset.duoCasting.stance,
+      partnerExpression: preset.duoCasting.expression,
+      partnerHandPropId: preset.duoCasting.partnerHandPropId,
+    };
+    setDuoShot(nextDuo);
+    stripDirector.update({
+      partnerSide: preset.duoCasting.side,
+      speakerTargets: preset.speakerTargets,
+    });
+    const currentRecipe = store.getState().recipe;
+    const resolved = resolveViewportDuoShot(currentRecipe, nextDuo);
+    for (const cmd of buildDuoEyeContactCommands(currentRecipe.pose, resolved.duoEyeContact, resolved.duoPartner.labelKo)) {
+      dispatch(cmd);
+    }
+    await syncDuoPartner3d(nextDuo, prevDuo);
+    setNotice(`씬 디렉터 상대역 자동 캐스팅: ${resolved.duoPartner.labelKo} (${resolved.duoEyeContact.summaryKo})`);
+  };
   const onSelectSceneDirector = async (presetId: WebtoonSceneDirectorPresetId | ""): Promise<void> => {
     if (!presetId) {
       setHandPropId("");
@@ -839,6 +869,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       bubbleShapes: preset.bubbleShapes,
       bubbleFontScales: preset.bubbleFontScales,
       sfxStamps: preset.sfxStamps,
+      speakerTargets: preset.speakerTargets,
+      partnerSide: duoShot.enabled ? duoShot.side : preset.duoCasting.side,
     });
 
     for (const cmd of buildHandPropGripPoseCommands(labState.recipe.pose, preset.handPropId, preset.handSide)) {
@@ -856,7 +888,11 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
       if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
       if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
-      setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+      if (duoShot.enabled && duoShot.render3dPartner) {
+        await castDirectorDuoPartner(preset.id);
+      } else {
+        setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+      }
     } catch (error) {
       setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
     } finally {
@@ -893,9 +929,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         }}
         director={{
           engineReady: Boolean(engine?.setHandProp),
-          busy: handPropBusy,
+          busy: handPropBusy || duo3dBusy,
           activeDirectorId,
+          duoPartnerActive: Boolean(activeDirectorId && duoShot.enabled && duoShot.render3dPartner),
           onSelectDirector: (presetId) => void onSelectSceneDirector(presetId),
+          onCastDuoPartner: () => {
+            if (activeDirectorId) void castDirectorDuoPartner(activeDirectorId);
+          },
         }}
         handProp={{
           engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,

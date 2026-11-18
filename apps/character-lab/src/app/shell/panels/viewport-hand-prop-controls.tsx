@@ -1,8 +1,8 @@
 /**
  * 뷰포트 3D 웹툰 소품·배경·효과음 스탬프 워크벤치 바 (Unslop Warm Ink Atelier 정제 규약):
- * - 손 소품 4종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
+ * - 손 소품 6종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`, `imperial-scroll`, `jade-folding-fan`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
  * - 머리 액세서리 4종(`wire-glasses`, `rofan-tiara`, `tactical-headset`, `pearl-earrings-pin`) 실시간 head 본 부착
- * - 배경 스테이지 프롭 5종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`) 발밑·등 뒤 배치
+ * - 배경 스테이지 프롭 6종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`, `rooftop-safety-railing`) 발밑·등 뒤 배치
  * - 한국형 웹툰 3D 오노마토페 스탬프 4종(`seureung`, `dugeun`, `kugugung`, `pat`) 상단 프레임 배치
  */
 import { qNormalize } from "../../../shared/math";
@@ -141,6 +141,32 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
       hand: [-14, 18, -12],
     },
   },
+  {
+    id: "imperial-scroll",
+    labelKo: "황실 칙령·계약 두루마리",
+    genreHintKo: "로판·무협·사극 황실 조서 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/imperial-scroll.glb",
+    sha256: "77fbd9018fa4f238c75933054ffce0a5edc262fcef229f35fe7cdd6c250a915f",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [12, 26, 60],
+      lowerArm: [22, 80, -20],
+      hand: [10, 12, -8],
+    },
+  },
+  {
+    id: "jade-folding-fan",
+    labelKo: "청옥 접선 부채",
+    genreHintKo: "무협·동양풍·로판 귀족 회담 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/jade-folding-fan.glb",
+    sha256: "a540bacdad39d9234fedc31e7844a548346c94fb45203c8a55ff0bbee3ddc347",
+    handPreset: "hand-pose/relaxed",
+    rightArmEulerDeg: {
+      upperArm: [16, 28, 56],
+      lowerArm: [28, 86, -24],
+      hand: [16, 16, -10],
+    },
+  },
 ]);
 
 export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze([
@@ -209,6 +235,13 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     genreHintKo: "스릴러·느와르·추리 브리핑 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/noir-interrogation-lamp.glb",
     sha256: "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
+  },
+  {
+    id: "rooftop-safety-railing",
+    labelKo: "옥상 황혼 안전 난간·벤치",
+    genreHintKo: "학원·청춘·스릴러 옥상 독대 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/rooftop-safety-railing.glb",
+    sha256: "f18ff2d59f400a439d9d37efbc20110c5d1340635e4f698344e9df4fc11edb64",
   },
 ]);
 

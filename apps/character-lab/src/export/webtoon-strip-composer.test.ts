@@ -9,6 +9,11 @@ import {
   clampWebtoonStripLayout,
   composeWebtoonVerticalStrip,
   exportWebtoonVerticalStripPng,
+  renderTransparentActionLinesLayer,
+  renderTransparentDialogueTextLayer,
+  renderTransparentSfxStampLayer,
+  renderTransparentSpeechBubbleFrameLayer,
+  resolveSpeakerBubblePlacement,
 } from "./webtoon-strip-composer";
 import { DEFAULT_EYE_GAZE, createDefaultRecipe } from "../contracts";
 import { createMockEngine } from "../testing/mock-engine";
@@ -113,8 +118,8 @@ describe("webtoon-strip-composer", () => {
     const innerX = layout.marginX + layout.borderPx;
     const innerY = layout.marginY + layout.borderPx;
     const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
-    const bubbleCx = innerX + Math.round(layout.cutWidth * 0.26);
-    const bubbleCy = innerY + Math.round(Math.max(5, Math.round(innerHeight * 0.085)) * 1.32);
+    const bubbleCx = innerX + Math.round(layout.cutWidth * 0.28);
+    const bubbleCy = innerY + Math.round(Math.max(5, Math.round(innerHeight * 0.092)) * 1.32);
     const bubbleIdx = (bubbleCy * fxFocus.width + bubbleCx) * 4;
     expect(fxFocus.rgba[bubbleIdx]).toBeGreaterThanOrEqual(250);
     expect(fxFocus.rgba[bubbleIdx + 1]).toBeGreaterThanOrEqual(250);
@@ -222,7 +227,6 @@ describe("webtoon-strip-composer", () => {
       dialogueLines: ["숨김", "숨김", "숨김", "숨김"],
     });
     const plain = composeWebtoonVerticalStrip(panels, layout);
-    // 모든 말풍선이 none이고 효과음/효과선이 없으면 plain과 동일해야 한다
     expect(Array.from(hiddenBubbles.rgba)).toEqual(Array.from(plain.rgba));
 
     const variedShapes = composeWebtoonVerticalStrip(panels, layout, {
@@ -290,5 +294,58 @@ describe("webtoon-strip-composer", () => {
       }
     }
     expect(sfxDiff).toBeGreaterThan(120);
+  });
+
+  it("speakerTargets·partnerSide에 따라 주연/상대역 말풍선 위치와 꼬리 방향을 자동 추적하고 PSD용 투명 분리 레이어를 독립 생성한다", () => {
+    // 우측 상대역(partnerSide=right)일 때 주연은 좌측 말풍선+중앙 우향 꼬리, 상대역은 우측 말풍선+상대역 머리 우향 꼬리
+    const protagPlacement = resolveSpeakerBubblePlacement(0, "protagonist", "right");
+    expect(protagPlacement.placeRight).toBe(false);
+    expect(protagPlacement.tailTargetXRatio).toBeGreaterThan(protagPlacement.centerXRatio);
+
+    const partnerPlacement = resolveSpeakerBubblePlacement(0, "partner", "right");
+    expect(partnerPlacement.placeRight).toBe(true);
+    expect(partnerPlacement.tailTargetXRatio).toBeGreaterThan(partnerPlacement.centerXRatio);
+
+    // 좌측 상대역(partnerSide=left)으로 바꾸면 좌우 위치와 꼬리 조준 방향이 정확히 반전된다
+    const leftPartnerPlacement = resolveSpeakerBubblePlacement(0, "partner", "left");
+    expect(leftPartnerPlacement.placeRight).toBe(false);
+    expect((leftPartnerPlacement.tailTargetXRatio ?? 1)).toBeLessThan(leftPartnerPlacement.centerXRatio);
+
+    // PSD용 투명 레이어 빌더 검증: 바깥 여백은 alpha=0(완전 투명)이고 그려진 영역만 알파가 살아 있다
+    const linesLayer = renderTransparentActionLinesLayer(128, 128, "focus-radial", 0.8);
+    const frameLayer = renderTransparentSpeechBubbleFrameLayer(128, 128, {
+      shape: "oval",
+      speakerTarget: "partner",
+      partnerSide: "right",
+    });
+    const textLayer = renderTransparentDialogueTextLayer(128, 128, {
+      dialogueText: "감히 고개를 들어 내 눈을 마주 봐.",
+      shape: "oval",
+      fontScale: "lg",
+      speakerTarget: "partner",
+      partnerSide: "right",
+    });
+    const sfxLayer = renderTransparentSfxStampLayer(128, 128, {
+      stamp: "seureung",
+      speakerTarget: "partner",
+      partnerSide: "right",
+    });
+
+    const countVisiblePixels = (rgba: Uint8ClampedArray): number => {
+      let visible = 0;
+      for (let i = 3; i < rgba.length; i += 4) if ((rgba[i] ?? 0) > 0) visible += 1;
+      return visible;
+    };
+    expect(linesLayer.rgba[3]).toBeGreaterThanOrEqual(0);
+    // 말풍선 반대쪽 하단 모서리(좌측 하단)는 프레임·식자·효과음 레이어 모두 완전 투명(alpha=0)이어야 한다
+    const bottomLeftAlpha = ((120 * 128 + 8) * 4) + 3;
+    expect(frameLayer.rgba[bottomLeftAlpha]).toBe(0);
+    expect(textLayer.rgba[bottomLeftAlpha]).toBe(0);
+    expect(sfxLayer.rgba[bottomLeftAlpha]).toBe(0);
+
+    expect(countVisiblePixels(linesLayer.rgba)).toBeGreaterThan(80);
+    expect(countVisiblePixels(frameLayer.rgba)).toBeGreaterThan(150);
+    expect(countVisiblePixels(textLayer.rgba)).toBeGreaterThan(20);
+    expect(countVisiblePixels(sfxLayer.rgba)).toBeGreaterThan(40);
   });
 });

@@ -146,7 +146,14 @@ export interface JointDragHandle {
   readonly world: Vec3;
 }
 
-export const HAND_PROP_IDS = ["smartphone", "coffee-cup", "case-folder", "aether-blade"] as const;
+export const HAND_PROP_IDS = [
+  "smartphone",
+  "coffee-cup",
+  "case-folder",
+  "aether-blade",
+  "imperial-scroll",
+  "jade-folding-fan",
+] as const;
 export type HandPropId = (typeof HAND_PROP_IDS)[number];
 export type HandPropSide = "rightHand" | "leftHand";
 
@@ -172,6 +179,7 @@ export const STAGE_PROP_IDS = [
   "murim-sword-aura",
   "rofan-throne-dais",
   "noir-interrogation-lamp",
+  "rooftop-safety-railing",
 ] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 
