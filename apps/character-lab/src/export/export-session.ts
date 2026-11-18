@@ -18,7 +18,9 @@ import {
 
 import type { CameraFraming, CaptureProvenance, CaptureRequest, CharacterEngine, CharacterRecipe, LabFailure, PaintLayer, PaintPartSublayerState, RenderPassId } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
-import type { PsdPlanReceipt } from "./psd-plan";
+import type { PsdMangaFxOptions, PsdPlanReceipt } from "./psd-plan";
+
+export type { PsdMangaFxOptions } from "./psd-plan";
 
 export const GLB_MIME = "model/gltf-binary";
 export const SHAPER_PRESET_MIME = "text/plain;charset=utf-8";
@@ -42,6 +44,7 @@ export interface ExportPsdOptions extends ExportCaptureOptions {
   readonly includeReferencePasses: boolean;
   readonly splitHairLayers?: boolean;
   readonly lineArt?: Partial<LineArtOptions>;
+  readonly mangaFx?: PsdMangaFxOptions;
 }
 
 export interface ExportReceipt {
@@ -157,7 +160,7 @@ export async function exportTransparentPng(engine: CharacterEngine, options: Exp
   }
 }
 
-/** 레이어 PSD(flat·lit·normal·depth·part-id 캡처 → tone-split·line-extract·ID 마스크·페인트). */
+/** 레이어 PSD(flat·lit·normal·depth·part-id 캡처 → tone-split·line-extract·ID 마스크·페인트·만화 연출 분리). */
 export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: readonly PaintLayer[], options: ExportPsdOptions, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
@@ -179,6 +182,7 @@ export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: rea
       includeReferencePasses: options.includeReferencePasses,
       ...(options.splitHairLayers !== undefined ? { splitHairLayers: options.splitHairLayers } : {}),
       ...(options.lineArt ? { lineArt: options.lineArt } : {}),
+      ...(options.mangaFx ? { mangaFx: options.mangaFx } : {}),
     },
     started,
   );

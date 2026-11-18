@@ -1,0 +1,132 @@
+{
+  "schema": "toonstudio.blender-wind-drape-reflection.v25",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_wind_drape_reflection_v25.py · Wind Drape, Half-Mirror & Tankobon Overscan SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "windDrapePhysicsSpec": {
+    "lintelAnchorHeightM": 2.36,
+    "billowDeflectionRangeM": [
+      0.19,
+      0.54,
+      0.78
+    ],
+    "halfMirrorFresnelRangePct": [
+      29.0,
+      19.0,
+      12.0
+    ],
+    "tankobonOverscanFormats": [
+      "B5_370x263mm_350dpi",
+      "A5_302x216mm_350dpi"
+    ]
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_WindDrape_HalfMirror_V25",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-wind-drape-halfmirror-rain-15pct-v25.glb",
+      "openRatio": 0.15,
+      "fabricStyle": "linen",
+      "billowDeflectionM": 0.18,
+      "windSpeedMs": 2.2,
+      "fresnelReflectPct": 29.0,
+      "bytes": 432428,
+      "sha256": "cb51b1386e3f3f6c75aa0f08e5a74d836ce8333d66c48c7c8375ffa8e9c5c314",
+      "triangles": 10040,
+      "vertices": 5184
+    },
+    {
+      "file": "webtoon-wind-drape-rofan-velvet-65pct-v25.glb",
+      "openRatio": 0.65,
+      "fabricStyle": "velvet",
+      "billowDeflectionM": 0.53,
+      "windSpeedMs": 6.1,
+      "fresnelReflectPct": 19.0,
+      "bytes": 454568,
+      "sha256": "89d5db47f5eb52b9a30ed0f31e1c02e9a1ecc9e8ceaef0ff982217c67a1c3a6f",
+      "triangles": 11272,
+      "vertices": 5818
+    },
+    {
+      "file": "webtoon-wind-drape-tempest-cape-100pct-v25.glb",
+      "openRatio": 1.0,
+      "fabricStyle": "silk",
+      "billowDeflectionM": 0.78,
+      "windSpeedMs": 8.8,
+      "fresnelReflectPct": 12.0,
+      "bytes": 502988,
+      "sha256": "efda603ae660d5e2754b517ad12237ebf9a52e54d7cd52c8d82a1ef114b9a866",
+      "triangles": 11360,
+      "vertices": 5872
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-wind-drape-halfmirror-rain-15pct-v25.png",
+      "bytes": 338257,
+      "sha256": "d246f730e3905478705ecd9a1d81a02b08158cddfa97f8fb31cfac4dea6e7c65"
+    },
+    {
+      "file": "thumbnails/webtoon-wind-drape-rofan-velvet-65pct-v25.png",
+      "bytes": 317610,
+      "sha256": "47700b2fecc178c90616f887b2edea03b0d82db024d80570a64d9ddc9c735376"
+    },
+    {
+      "file": "thumbnails/webtoon-wind-drape-tempest-cape-100pct-v25.png",
+      "bytes": 320601,
+      "sha256": "be9ccdda7601833a2d44e30b9e3ca2f4f1a9b1890cb745d18cb37ea73641dcc6"
+    }
+  ]
+}

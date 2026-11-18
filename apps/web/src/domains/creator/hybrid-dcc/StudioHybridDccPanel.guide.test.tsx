@@ -122,6 +122,35 @@ describe("StudioHybridDccPanel first-screen guide", () => {
     const intro = document.querySelector("[data-studio-hybrid-dcc-intro]")!;
     expect(notice!.compareDocumentPosition(intro) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("filters 18 CC0 kit drawers via Hangul Choseong query and blocks corrupted GLB headers before import", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([0x00, 0x01, 0x02, 0x03]), { status: 200 }),
+    );
+    render(<StudioHybridDccPanel />);
+
+    fireEvent.click(screen.getByRole("button", { name: "큐브로 시작" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("studio-hybrid-dcc-kit-search-input")).toBeTruthy();
+    });
+
+    const searchInput = screen.getByTestId("studio-hybrid-dcc-kit-search-input");
+    fireEvent.change(searchInput, { target: { value: "ㄴㅇㄹ" } });
+    expect(screen.getByTestId("studio-hybrid-dcc-kit-search-count").textContent).toContain("건");
+    const noirButton = document.querySelector<HTMLButtonElement>(
+      '[data-studio-hybrid-dcc-kit-item="webtoon-genre-noir-venetian-detective-v30"]',
+    );
+    expect(noirButton).not.toBeNull();
+
+    fireEvent.click(noirButton!);
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      expect(screen.getAllByRole("alert").some((el) => el.textContent?.includes("GLB 2.0 바이너리 무결성 검증 실패"))).toBe(true);
+    });
+
+    fireEvent.click(screen.getByTestId("studio-hybrid-dcc-kit-search-clear"));
+    expect((searchInput as HTMLInputElement).value).toBe("");
+  });
 });
 
 describe("StudioHybridDccEnvironmentNotice", () => {

@@ -1,0 +1,173 @@
+{
+  "schema": "toonstudio.blender-vrm-pose-mannequin.v28",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_vrm_pose_mannequin_v28.py · VRM 1.0 Pose Mannequin & Joint-Limit SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "vrmHumanoidPoseSpec": {
+    "vrmSpecVersion": "1.0",
+    "humanoidBoneCount": 18,
+    "datumSnapHeightsM": [
+      1.1,
+      0.74,
+      1.32
+    ],
+    "jointAngleLimitsDeg": {
+      "elbowFlexMax": 145.0,
+      "wristDevMax": 70.0,
+      "kneeFlexMax": 140.0,
+      "spineTwistMax": 32.0
+    }
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_VRM_PoseMannequin_V28",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Reformer_Unslop_V9",
+        "objectCount": 37,
+        "sha256Before": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "sha256After": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Aftermath_Damage_V26",
+        "objectCount": 55,
+        "sha256Before": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "sha256After": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Dust_HeatHaze_V27",
+        "objectCount": 61,
+        "sha256Before": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "sha256After": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_WindDrape_HalfMirror_V25",
+        "objectCount": 53,
+        "sha256Before": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "sha256After": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-vrm-pose-desk-seated-74cm-v28.glb",
+      "poseId": "desk_seated_74cm",
+      "datumSnapHeightM": 0.74,
+      "vrmHumanoidBoneCount": 18,
+      "jointAngles": {
+        "elbowFlexDeg": 92.0,
+        "wristDevDeg": 14.0,
+        "kneeFlexDeg": 88.0,
+        "spineTwistDeg": 6.0
+      },
+      "anatomicalLimitsValid": true,
+      "bytes": 389196,
+      "sha256": "9e371c8df34fa6fad81c7ca6fc53d1ef54ebad9104476384bdae6d3c21eeacba",
+      "triangles": 10212,
+      "vertices": 5280
+    },
+    {
+      "file": "webtoon-vrm-pose-portal-stride-132cm-v28.glb",
+      "poseId": "portal_stride_132cm",
+      "datumSnapHeightM": 1.32,
+      "vrmHumanoidBoneCount": 18,
+      "jointAngles": {
+        "elbowFlexDeg": 64.0,
+        "wristDevDeg": 22.0,
+        "kneeFlexDeg": 34.0,
+        "spineTwistDeg": 21.0
+      },
+      "anatomicalLimitsValid": true,
+      "bytes": 497168,
+      "sha256": "963dc2cc0a59da10c047e5adc372916b3ece5e8d3b33ecbd46eb45a2fc82ab6a",
+      "triangles": 12748,
+      "vertices": 6634
+    },
+    {
+      "file": "webtoon-vrm-pose-railing-lean-110cm-v28.glb",
+      "poseId": "railing_lean_110cm",
+      "datumSnapHeightM": 1.1,
+      "vrmHumanoidBoneCount": 18,
+      "jointAngles": {
+        "elbowFlexDeg": 108.0,
+        "wristDevDeg": 18.0,
+        "kneeFlexDeg": 8.0,
+        "spineTwistDeg": 12.0
+      },
+      "anatomicalLimitsValid": true,
+      "bytes": 384820,
+      "sha256": "1986a864cbc67d428e836ade25e96a7b3d177bc7f05ed6e6151b06bb00c6e29e",
+      "triangles": 10212,
+      "vertices": 5280
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-vrm-pose-desk-seated-74cm-v28.png",
+      "bytes": 324487,
+      "sha256": "3fd024ef6c8c8a98e088d796bbefd529beff95fa48f117e56f4d2411380cebcd"
+    },
+    {
+      "file": "thumbnails/webtoon-vrm-pose-portal-stride-132cm-v28.png",
+      "bytes": 327104,
+      "sha256": "f59297de9a82697ab5a14a1dda0989aa13919f10fba7131d9028cc179f6f8117"
+    },
+    {
+      "file": "thumbnails/webtoon-vrm-pose-railing-lean-110cm-v28.png",
+      "bytes": 354590,
+      "sha256": "41774b06d5f586d1468e3adf546efd6a118bd9c4f74bdce143e6ab5c40c76239"
+    }
+  ]
+}

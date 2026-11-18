@@ -133,6 +133,13 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(sql).toContain("DO $connect$");
     expect(sql).toContain("creator_hiring_campaign");
     expect(sql).toContain("studio_review_policy_actor_epoch");
+    expect(sql).toContain("CREATE POLICY admin_workspace_runtime");
+    expect(sql).toContain('ON TABLE "public".admin_nestjs_quality_board');
+    expect(sql).toContain('"public".admin_nestjs_quality_history');
+    expect(sql).not.toMatch(/GRANT UPDATE[^;]*admin_nestjs_quality_history/u);
+    expect(sql).toContain("CREATE POLICY admin_cloud_workboard_runtime");
+    expect(sql).toContain(`GRANT SELECT, INSERT ON TABLE public.admin_cloud_workboard_audit, public.admin_cloud_workboard_receipt TO "${ROLE}"`);
+    expect(sql).not.toMatch(/GRANT[^;]*(?:UPDATE|DELETE|TRUNCATE)[^;]*admin_cloud_workboard_(?:audit|receipt)/u);
     expect(sql).toContain("REVOKE ALL ON SCHEMA toonspectrum_ops FROM PUBLIC");
     expect(splitDumpStatements(sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual([]);
   });
@@ -152,6 +159,8 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(bundle.sql).not.toMatch(/DROP SCHEMA|DROP EXTENSION|ALTER SCHEMA|PASSWORD\s+'/iu);
     expect(bundle.verificationSql).not.toMatch(/\b(?:INSERT|UPDATE|DELETE|CREATE)\s+(?:INTO|ALL|ON|TABLE|ROLE)/iu);
     expect(bundle.verificationSql).toContain("Supabase Data API 역할");
+    expect(bundle.verificationSql).toContain("administrator workspace schema");
+    expect(bundle.verificationSql).toContain("NestJS verification board runtime privileges");
     expect(splitDumpStatements(bundle.sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual(["BEGIN", "COMMIT"]);
     expect(bundle.verificationSql.trimEnd()).toMatch(/ROLLBACK;$/u);
     expect(bundle.verificationSql).toContain("set_config('role', current_setting('toonstudio.bootstrap_saved_role'), true)");

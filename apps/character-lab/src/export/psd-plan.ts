@@ -9,6 +9,8 @@
  *   하이라이트             tone-split highlight, screen
  *   주선(숨김)             lit에서 추가 추출한 선 효과, normal(켜면 원본 선 위에 추가)
  *   [페인트](숨김 그룹)    페인트/<부위> (UV 공간)         (칠한 픽셀이 있는 레이어만)
+ *   [헤어 분리](열림 그룹) 헤어 밑색·음영·주선              (splitHairLayers)
+ *   [웹툰 만화 연출](열림 그룹) 효과선·말풍선 프레임·대사 식자·효과음 스탬프 (mangaFx.enabled)
  * 합성(root imageData)은 원본 lit다. 기본 가시 레이어는 그 coverage를 보존하고 밑색×음영→screen 하이라이트로 재합성한다.
  */
 import { PART_ROLES, PART_ROLE_LABELS_KO, failVisible } from "../contracts";
@@ -16,9 +18,23 @@ import { PART_ROLES, PART_ROLE_LABELS_KO, failVisible } from "../contracts";
 import { extractLineArt, extractOutlinePassLuminanceToAlpha, lineArtToRaster } from "./line-extract";
 import { decodeIdPass } from "./raster-convert";
 import { multiplyByte, recompose, screenByte, splitTones } from "./tone-split";
+import {
+  renderTransparentDialogueTextLayer,
+  renderTransparentSpeechBubbleFrameLayer,
+} from "./webtoon-strip-bubbles";
+import { renderTransparentActionLinesLayer, renderTransparentSfxStampLayer } from "./webtoon-strip-manga-fx";
 
 import type { CaptureResult, CapturedDepth, CapturedRaster, LabFailure, PaintLayer, PartRole } from "../contracts";
 import type { LineArtOptions } from "./line-extract";
+import type {
+  WebtoonDialogueLocale,
+  WebtoonSfxStampOption,
+  WebtoonStripBubbleFontScale,
+  WebtoonStripBubbleShape,
+  WebtoonStripFxLinesKind,
+  WebtoonStripSpeakerTarget,
+} from "./webtoon-strip-fx-options";
+import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
 
 export type PsdBlendMode = "normal" | "multiply" | "screen";
 
@@ -68,6 +84,20 @@ export interface PsdPlan {
   readonly receipt: PsdPlanReceipt;
 }
 
+export interface PsdMangaFxOptions {
+  readonly enabled: boolean;
+  readonly locale?: WebtoonDialogueLocale;
+  readonly jaWritingMode?: WebtoonJaWritingMode;
+  readonly linesKind?: WebtoonStripFxLinesKind;
+  readonly bubbleShape?: WebtoonStripBubbleShape;
+  readonly dialogueText?: string;
+  readonly fontScale?: WebtoonStripBubbleFontScale;
+  readonly speakerTarget?: WebtoonStripSpeakerTarget;
+  readonly partnerSide?: "left" | "right";
+  readonly sfxStamp?: WebtoonSfxStampOption;
+  readonly intensity?: number;
+}
+
 export interface PsdPlanOptions {
   readonly includeIdMasks: boolean;
   readonly includeReferencePasses: boolean;
@@ -79,6 +109,11 @@ export interface PsdPlanOptions {
    * 헤어 하이라이트는 밑색에 보존하고 음영·주선은 밑색 알파에 클리핑한다.
    */
   readonly splitHairLayers?: boolean;
+  /**
+   * 포토샵·클립스튜디오 원고 식자/후보정 전용 만화 연출 분리 옵션:
+   * true이면 최상단에 "웹툰 만화 연출" 그룹(효과선·말풍선 프레임·대사 식자·효과음 스탬프)을 각각 독립 투명 레이어로 추가한다.
+   */
+  readonly mangaFx?: PsdMangaFxOptions;
 }
 
 export type PlanPsdResult = { readonly ok: true; readonly plan: PsdPlan } | { readonly ok: false; readonly failure: LabFailure };
@@ -99,6 +134,11 @@ export const PSD_LAYER_NAMES = Object.freeze({
   hairFlat: "헤어 밑색",
   hairShade: "헤어 음영",
   hairLine: "헤어 주선",
+  mangaFxGroup: "웹툰 만화 연출",
+  mangaFxLines: "효과선",
+  mangaFxBubble: "말풍선 프레임",
+  mangaFxDialogue: "대사 식자",
+  mangaFxSfx: "효과음 스탬프",
 });
 
 function raster(name: string, blendMode: PsdBlendMode, data: CapturedRaster, hidden = false, opacity = 1): PsdRasterLayerPlan {
@@ -431,6 +471,57 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
     }
   }
   const recomposeMae = visibleRgbaMae(recomposed, lit);
+
+  if (options.mangaFx?.enabled) {
+    const fx = options.mangaFx;
+    const locale: WebtoonDialogueLocale = fx.locale ?? "ko";
+    const jaWritingMode: WebtoonJaWritingMode = fx.jaWritingMode ?? "horizontal";
+    const linesKind: WebtoonStripFxLinesKind = fx.linesKind ?? "focus-radial";
+    const bubbleShape: WebtoonStripBubbleShape = fx.bubbleShape ?? "oval";
+    const dialogueText = fx.dialogueText ?? "";
+    const fontScale: WebtoonStripBubbleFontScale = fx.fontScale ?? "md";
+    const speakerTarget: WebtoonStripSpeakerTarget = fx.speakerTarget ?? "protagonist";
+    const partnerSide: "left" | "right" = fx.partnerSide ?? "right";
+    const sfxStamp: WebtoonSfxStampOption = fx.sfxStamp ?? "none";
+    const intensity = fx.intensity ?? 0.78;
+
+    const linesRaster = renderTransparentActionLinesLayer(width, height, linesKind, intensity, 0);
+    const bubbleRaster = renderTransparentSpeechBubbleFrameLayer(width, height, {
+      shape: bubbleShape,
+      speakerTarget,
+      partnerSide,
+      locale,
+      jaWritingMode,
+      dialogueText,
+      cutIndex: 0,
+    });
+    const dialogueRaster = renderTransparentDialogueTextLayer(width, height, {
+      dialogueText,
+      shape: bubbleShape === "none" ? "oval" : bubbleShape,
+      fontScale,
+      speakerTarget,
+      partnerSide,
+      locale,
+      jaWritingMode,
+      cutIndex: 0,
+    });
+    const sfxRaster = renderTransparentSfxStampLayer(width, height, {
+      stamp: sfxStamp,
+      speakerTarget,
+      partnerSide,
+      locale,
+      cutIndex: 0,
+    });
+
+    layers.push(
+      group(PSD_LAYER_NAMES.mangaFxGroup, false, [
+        raster(PSD_LAYER_NAMES.mangaFxLines, "normal", linesRaster, linesKind === "none"),
+        raster(PSD_LAYER_NAMES.mangaFxBubble, "normal", bubbleRaster, bubbleShape === "none"),
+        raster(PSD_LAYER_NAMES.mangaFxDialogue, "normal", dialogueRaster, bubbleShape === "none" || dialogueText.trim().length === 0),
+        raster(PSD_LAYER_NAMES.mangaFxSfx, "normal", sfxRaster, sfxStamp === "none"),
+      ]),
+    );
+  }
 
   const names: string[] = [];
   let layerCount = 0;

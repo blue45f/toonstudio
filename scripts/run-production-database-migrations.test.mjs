@@ -52,11 +52,13 @@ import {
 
 test("manifest lists every numbered SQL migration exactly once in order", () => {
   const manifest = loadMigrationManifest();
-  expect(manifest).toHaveLength(123);
+  expect(manifest).toHaveLength(125);
   expect(manifest[0].id).toBe("0001_studio_ai_usage_ledger");
-  expect(manifest.at(-2).id).toBe("0122_admin_workspace");
-  expect(manifest.at(-1).id).toBe("0123_admin_cloud_workboard");
-  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(123);
+  expect(manifest.at(-4).id).toBe("0122_admin_workspace");
+  expect(manifest.at(-3).id).toBe("0123_admin_business_plan");
+  expect(manifest.at(-2).id).toBe("0124_admin_nestjs_quality");
+  expect(manifest.at(-1).id).toBe("0125_admin_cloud_workboard");
+  expect(new Set(manifest.map(({ checksum }) => checksum)).size).toBe(125);
 });
 
 test("음성 검수 함수 복구는 기배포 0093 원문과 체크섬을 보존한다", () => {
@@ -1399,11 +1401,17 @@ test("historical adoption and post-baseline relations exactly partition runtime 
     "admin_announcements",
     "admin_audit_logs",
     "admin_banned_words",
+    "admin_business_plan",
+    "admin_business_plan_audit",
+    "admin_business_plan_receipt",
+    "admin_business_plan_revision",
     "admin_cloud_workboard",
     "admin_cloud_workboard_audit",
     "admin_cloud_workboard_receipt",
     "admin_content_reports",
     "admin_member_test_accounts",
+    "admin_nestjs_quality_board",
+    "admin_nestjs_quality_history",
     "admin_promos",
     "admin_security_policies",
     "admin_workspace",
@@ -1577,7 +1585,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
   ]);
   const readinessSource = readFileSync(
     new URL(
-      "../apps/api/src/modules/health/health-readiness.repository.ts",
+      "../apps/api/src/modules/health/health-readiness-inventory.ts",
       import.meta.url,
     ),
     "utf8",

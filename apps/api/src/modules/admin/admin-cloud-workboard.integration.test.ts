@@ -13,7 +13,7 @@ const target = process.env.TEST_DATABASE_URL;
 const suite = describe.skipIf(!target);
 const schema = `cloud_workboard_${randomUUID().replaceAll("-", "")}`;
 const inSchema = (sql: string) => sql.replaceAll("public.", `"${schema}".`);
-const migration = inSchema(readFileSync(new URL("../../platform/database/migrations/0123_admin_cloud_workboard.sql", import.meta.url), "utf8"));
+const migration = inSchema(readFileSync(new URL("../../platform/database/migrations/0125_admin_cloud_workboard.sql", import.meta.url), "utf8"));
 
 function request(title = "검토할 작업", expectedRevision = 0): CloudWorkboardSave {
   return {

@@ -1,7 +1,7 @@
 /**
  * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * GLB · 레이어 PSD(만화 연출 말풍선·대사·효과음·효과선 4단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -33,7 +33,9 @@ import {
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
-import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection, ExportStripDirectorControls } from "./export-panel/ExportStatusSection";
+import { ExportExperimentSummary } from "./export-panel/ExportExperimentSummary";
+import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
+import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -47,14 +49,30 @@ import {
 import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 
 import type { ExportBusyKind } from "./export-panel/ExportStatusSection";
-import type { ExportPanelProps } from "./export-panel-helpers";
+import type { StripDirectorSession } from "./viewport-scene-director";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
+import type { SaveBytesFn } from "../../../export/save-bytes";
+import type { PaintSession } from "../../../paint/paint-session";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 export { readTextFile };
-export type { ExportPanelDeps, ExportPanelProps } from "./export-panel-helpers";
+
+export interface ExportPanelDeps {
+  readonly save?: SaveBytesFn;
+  readonly now?: () => number;
+  readonly readFile?: (file: File) => Promise<string>;
+  readonly preparePsd?: () => void;
+  readonly writeClipboard?: (text: string) => Promise<void>;
+  readonly readClipboard?: () => Promise<string>;
+}
+
+export interface ExportPanelProps {
+  readonly session?: PaintSession;
+  readonly stripDirector?: StripDirectorSession;
+  readonly deps?: ExportPanelDeps;
+}
 
 function useEngineStatus(): EngineStatus {
   const engineSession = useEngineSession();
@@ -103,7 +121,23 @@ export function ExportPanel({
 
   const applyPlan = useApplyPlan();
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = directorState;
+  const {
+    locale: stripLocale,
+    jaWritingMode,
+    manuscriptMood,
+    gutterPaces,
+    actingArc: stripActingArc,
+    bakeStripFx,
+    stripFxLines,
+    dialogueLines,
+    bubbleShapes,
+    bubbleFontScales,
+    sfxStamps,
+    speakerTargets,
+    cutCameraPresets,
+    partnerSide,
+    includePsdMangaFx,
+  } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -276,6 +310,9 @@ export function ExportPanel({
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            gutterPaces,
+            manuscriptMood,
+            cutCameraPresets,
             ...(stripActingArc !== "none"
               ? {
                   actingArc: {
@@ -288,6 +325,9 @@ export function ExportPanel({
               ? {
                   mangaFx: {
                     enabled: true,
+                    locale: stripLocale,
+                    jaWritingMode,
+                    manuscriptMood,
                     linesKind: stripFxLines,
                     includeSpeechBubbles: true,
                     intensity: 0.78,
@@ -295,6 +335,8 @@ export function ExportPanel({
                     bubbleShapes,
                     bubbleFontScales,
                     sfxStamps,
+                    speakerTargets,
+                    partnerSide,
                   },
                 }
               : {}),
@@ -333,6 +375,23 @@ export function ExportPanel({
             includeReferencePasses,
             splitHairLayers,
             ...(useLuminanceToAlpha ? { lineArt: { useLuminanceToAlpha: true } } : {}),
+            ...(includePsdMangaFx
+              ? {
+                  mangaFx: {
+                    enabled: true,
+                    locale: stripLocale,
+                    jaWritingMode,
+                    linesKind: stripFxLines,
+                    bubbleShape: bubbleShapes[0],
+                    dialogueText: dialogueLines[0],
+                    fontScale: bubbleFontScales[0],
+                    speakerTarget: speakerTargets[0] === "auto" ? "protagonist" : speakerTargets[0],
+                    partnerSide,
+                    sfxStamp: sfxStamps[0],
+                    intensity: 0.78,
+                  },
+                }
+              : {}),
           },
           { now },
         ),
@@ -563,24 +622,12 @@ export function ExportPanel({
       onKeyDown={onSectionKeyDown}
     >
       <h2 id={`${ids}-title`}>내보내기</h2>
-      <div className="cl-export-experiment-summary" role="region" aria-label="현재 실험 상태 및 빠른 이동" data-testid="export-experiment-summary">
-        <div className="cl-export-experiment-meta">
-          <span className="cl-export-experiment-source" data-testid="export-active-source">
-            활성 소스: {describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
-          </span>
-          <span className="cl-export-experiment-pose" data-testid="export-active-pose">
-            실험 포즈: {describeExportPoseKo(labState.recipe)} · 레시피 #{activeDigest8}
-          </span>
-        </div>
-        <div className="cl-export-nav-actions" role="group" aria-label="실험 단계 이동">
-          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-package-tab" onClick={() => switchInspectorTabWithFocus("package")}>
-            패키지 선택 탭으로
-          </button>
-          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-pose-tab" onClick={() => switchInspectorTabWithFocus("pose")}>
-            포즈 실험 탭으로
-          </button>
-        </div>
-      </div>
+      <ExportExperimentSummary
+        sourceLabel={describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
+        poseLabel={describeExportPoseKo(labState.recipe)}
+        digest={activeDigest8}
+        onNavigate={switchInspectorTabWithFocus}
+      />
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
           엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
@@ -614,7 +661,7 @@ export function ExportPanel({
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <ExportStripDirectorControls ids={ids} directorState={directorState} stripDirector={stripDirector} />
+      <ExportStripDirectorSection idsPrefix={ids} state={directorState} session={stripDirector} />
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
@@ -710,8 +757,18 @@ export function ExportPanel({
         <label htmlFor={`${ids}-lumalpha`}>
           <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
+        <label htmlFor={`${ids}-psdmangafx`}>
+          <input
+            id={`${ids}-psdmangafx`}
+            data-testid="export-psd-manga-fx"
+            type="checkbox"
+            checked={includePsdMangaFx}
+            onChange={(event) => stripDirector.update({ includePsdMangaFx: event.target.checked })}
+          />{" "}
+          만화 연출 분리 레이어 포함(말풍선·대사·효과음·효과선)
+        </label>
         {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
-        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리합니다. MSAA 공유 경계는 가시 샘플 과반 소유로 나누며 동률은 헤어에 귀속합니다. 추가 추출 주선은 기본 숨김이며, 켜면 원본 렌더 위에 선 효과가 더해집니다.</p>
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 효과선·말풍선 프레임·대사 식자·효과음 스탬프 4개 투명 레이어가 개별 저장됩니다.</p>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>

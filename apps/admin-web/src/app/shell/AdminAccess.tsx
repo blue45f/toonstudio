@@ -3,16 +3,24 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { loadAdminIdentity, type AdminIdentity } from "../../platform/http/admin-identity";
 
 type Access = { phase: "checking" | "ready" | "denied"; actor: AdminIdentity | null; error: string };
+type AccessControls = { verified: boolean; onUnauthorized: (message: string) => void };
 
 /** 서버가 확인한 계정만 전달하고 계정·역할 변경 시 이전 화면 상태를 분리한다. */
 export function AdminAccess({ label, children, adminOnly = false }: {
   label: string;
   adminOnly?: boolean;
-  children: (actor: AdminIdentity, onAccessDenied: (message: string) => void) => ReactNode;
+  children: (actor: AdminIdentity, controls: AccessControls) => ReactNode;
 }) {
   const [access, setAccess] = useState<Access>({ phase: "checking", actor: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const sequence = useRef(0);
+  const identityRequest = useRef<AbortController | null>(null);
+
+  const onUnauthorized = useCallback((message: string) => {
+    identityRequest.current?.abort();
+    sequence.current += 1;
+    setAccess({ phase: "denied", actor: null, error: message });
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -20,6 +28,7 @@ export function AdminAccess({ label, children, adminOnly = false }: {
     const check = () => {
       controller?.abort();
       controller = new AbortController();
+      identityRequest.current = controller;
       const signal = controller.signal;
       const current = ++sequence.current;
       setAccess((previous) => ({ ...previous, phase: "checking", error: "" }));
@@ -58,11 +67,6 @@ export function AdminAccess({ label, children, adminOnly = false }: {
     };
   }, [adminOnly, attempt]);
 
-  const denyAccess = useCallback((error: string) => {
-    sequence.current += 1;
-    setAccess({ phase: "denied", actor: null, error });
-  }, []);
-
   return <section className="admin-quality-access" aria-label={label}>
     {access.phase === "checking" && <p role="status">서버에서 관리자 권한을 확인하고 있습니다.</p>}
     {access.phase === "denied" && <div className="policy-alert" role="alert">
@@ -71,7 +75,7 @@ export function AdminAccess({ label, children, adminOnly = false }: {
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>관리자 권한 다시 확인</button>
     </div>}
     {access.actor && (!adminOnly || access.actor.role === "admin") && <div key={`${access.actor.id}:${access.actor.role}`} hidden={access.phase !== "ready"}>
-      {children(access.actor, denyAccess)}
+      {children(access.actor, { verified: access.phase === "ready", onUnauthorized })}
     </div>}
   </section>;
 }

@@ -1,5 +1,6 @@
 apps/admin-web/src/app/shell/AdminApp.test.tsx
 apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx
+apps/admin-web/src/domains/operations/nestjs-quality
 apps/admin-web/src/domains/workspace
 apps/admin-web/src/platform/http/workspace-api.test.ts
 apps/api/src/config/cors.test.ts
@@ -7,13 +8,18 @@ apps/api/src/config/env.test.ts
 apps/api/src/config/security-headers.test.ts
 apps/api/src/csrf-middleware.test.ts
 apps/api/src/logging/log-safe.test.ts
+apps/api/src/modules/admin-nestjs-quality
 apps/api/src/modules/admin-workspace
+apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts
+apps/api/src/modules/admin/admin-cloud-workboard.test.ts
 apps/api/src/modules/admin/admin-traffic-d1-query.test.ts
 apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
 apps/api/src/modules/auth/anonymous-client-limit.test.ts
 apps/api/src/modules/auth/auth-client-ip.test.ts
 apps/api/src/modules/business-inquiry/business-inquiry.rate-limit.test.ts
+apps/api/src/modules/business-plan/business-plan.integration.test.ts
+apps/api/src/modules/business-plan/business-plan.test.ts
 apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts
 apps/api/src/modules/catalog/catalog-search-cache.test.ts
@@ -813,7 +819,10 @@ deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
 deploy/cloudflare-static/src/index.test.ts
 deploy/cloudflare-static/src/r2-media-assets.test.ts
+packages/contracts/src/admin-cloud-workboard.test.ts
+packages/contracts/src/admin-nestjs-quality.test.ts
 packages/contracts/src/admin-workspace
+packages/contracts/src/business-plan/business-plan.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/contracts/src/studio-legacy-pigment-archive.test.ts
 packages/contracts/src/studio-linked-3d-correction.test.ts
@@ -846,7 +855,9 @@ packages/studio-project-model/src/__tests__/world-conversation.test.ts
 packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
 scripts/__tests__/generate-third-party-notices.test.mjs
+scripts/admin-database-contract.test.mjs
 scripts/admin-database-feature-contracts.test.mjs
+scripts/admin-nestjs-quality-database-contract.test.mjs
 scripts/admin-workspace-database-contract.test.mjs
 scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs

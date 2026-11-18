@@ -138,8 +138,8 @@ tools 같은 수명주기 권위를 기준으로 구성한다. 기존 focused en
 기록한다. Drizzle 정의는 기존 Studio raster schema에 함께 두며 다른 파일·경계 상한은
 변경하지 않는다. 운영 DB 적용과 배포는 이번 코드 구현 승인에 포함되지 않는다.
 
-2026-11-18 상태: **migration — 관리자 클라우드 작업 보드 통합**. 추가형
-먼저 병합된 관리자 통합 작업실의 `0122_admin_workspace.sql`을 보존하고
-`0123_admin_cloud_workboard.sql` 하나에 대해 DB 파일 상한을 176에서 177로 기록한다.
+2026-11-18 상태: **migration — 관리자 클라우드 작업 보드 통합**. 먼저 병합된
+`0122_admin_workspace.sql`·`0123_admin_business_plan.sql`·`0124_admin_nestjs_quality.sql`을 보존하고 추가형
+`0125_admin_cloud_workboard.sql` 하나에 대해 DB 파일 상한을 177에서 178로 기록한다.
 Drizzle 모델은 기존 관리자 schema에, Admin/API 공통 검증은 contracts 공개 경계에 둔다.
 다른 파일·경계 상한은 변경하지 않는다. 운영 DB 적용·외부 배포는 승인 대기로 유지한다.

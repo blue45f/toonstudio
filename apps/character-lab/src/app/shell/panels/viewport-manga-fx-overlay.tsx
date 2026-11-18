@@ -161,6 +161,8 @@ const SFX_TILT_BY_ID: Readonly<Record<SfxStampId, number>> = Object.freeze({
   dugeun: 8,
   kugugung: -7,
   pat: 11,
+  ssaa: -6,
+  beonjjeok: 12,
 });
 
 export interface ViewportMangaFxOverlayProps {

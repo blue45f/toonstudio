@@ -1,6 +1,6 @@
 // 운영 DB 마이그레이션 러너(run-production-database-migrations.mjs)의 릴레이션 분류표.
 //
-// 준비 상태 점검의 REQUIRED_DATABASE_RELATIONS(apps/api/src/modules/health/health-readiness.repository.ts)는
+// 준비 상태 점검의 REQUIRED_DATABASE_RELATIONS(apps/api/src/modules/health/health-readiness-inventory.ts)는
 // 정확히 "0019 이전 기준선(HISTORICAL_BASELINE_RELATIONS) + 그 뒤 추가분(POST_BASELINE_RELATIONS)"으로 나뉘어야 한다.
 // 러너의 loadHistoricalBaselineRelations 가 이를 강제하고, 어긋나면 adopt 모드가 중단된다.
 // 새 테이블을 만드는 마이그레이션은 준비 상태 목록과 이 파일의 POST_BASELINE_RELATIONS 에 함께 등록한다.
@@ -72,11 +72,17 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",
+  "admin_business_plan",
+  "admin_business_plan_audit",
+  "admin_business_plan_receipt",
+  "admin_business_plan_revision",
   "admin_cloud_workboard",
   "admin_cloud_workboard_audit",
   "admin_cloud_workboard_receipt",
   "admin_content_reports",
   "admin_member_test_accounts",
+  "admin_nestjs_quality_board",
+  "admin_nestjs_quality_history",
   "admin_promos",
   "admin_security_policies",
   "admin_workspace",

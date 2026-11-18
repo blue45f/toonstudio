@@ -9,6 +9,7 @@ import { REQUIRED_CORE_GATES } from "./ci-core-gate.mjs";
 import { CORE_DATABASE_VITEST_TARGETS, SHARD_NAMES } from "./ci-core-regression-shards.mjs";
 import { fixtureGitEnvironment, sparsePatterns } from "./ci-checkout-test-helpers.mjs";
 import { assertStaticCheckoutInputContract, assertTrackedDocumentCheckoutContract } from "./ci-static-checkout-input-contract.mjs";
+import { validateAdminQaTarget } from "./seed/admin-qa-seed.mjs";
 
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 const source = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
@@ -317,6 +318,57 @@ test("protected core aggregates every lane without another checkout", () => {
   assert.ok(job("verify").includes('test "$CORE_RESULT" = success'));
 });
 
+test("admin 회귀는 bootstrap한 제한 runtime 역할을 실제 workspace DB suite에 전달한다", () => {
+  const workflow = readFileSync(
+    new URL("../.github/workflows/admin-hardening-regression.yml", import.meta.url), "utf8",
+  );
+  const steps = workflow.split(/(?=^ {6}- (?:name|uses):)/mu);
+  const bootstrap = steps.find((step) => step.includes("name: Bootstrap disposable loopback QA database\n"));
+  const regression = steps.find((step) => step.includes("name: Actual repository admin regression suite\n"));
+  assert.ok(bootstrap && regression, "실제 bootstrap과 관리자 회귀 단계가 필요합니다.");
+  const bootstrapRole = bootstrap.match(/--runtime-database-role ([a-z_][a-z0-9_]{0,62})\b/u)?.[1];
+  const runtimeRole = regression.match(/^ {10}ADMIN_WORKSPACE_TEST_RUNTIME_ROLE: ([a-z_][a-z0-9_]{0,62})$/mu)?.[1];
+  assert.ok(bootstrapRole, "격리 DB bootstrap이 제한 runtime 역할을 만들어야 합니다.");
+  assert.equal(runtimeRole, bootstrapRole, "DB suite가 bootstrap에서 만든 역할로 RLS·권한을 검사해야 합니다.");
+  const testUrl = workflow.match(/^ {6}TEST_DATABASE_URL: (\S+)$/mu)?.[1];
+  assert.ok(testUrl);
+  assert.notEqual(runtimeRole, new URL(testUrl).username, "runtime 역할은 DB 소유자와 달라야 합니다.");
+  assert.match(regression, /pnpm exec vitest run apps\/web\/src\/domains\/admin apps\/api\/src\/modules\/admin/u);
+  assert.doesNotMatch(regression, /continue-on-error|\|\| true/u);
+});
+
+test("admin 일회성 DB의 생성·연결·QA와 NestJS 격리 guard가 같은 안전한 대상을 사용한다", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/admin-hardening-regression.yml", import.meta.url), "utf8");
+  const databaseName = workflow.match(/^ {10}POSTGRES_DB: ([a-z0-9_]+)$/mu)?.[1];
+  const health = workflow.match(/pg_isready -U ([a-z0-9_]+) -d ([a-z0-9_]+)/u);
+  const urls = Object.fromEntries([...workflow.matchAll(/^\s+(DATABASE_URL|TEST_DATABASE_URL|MIGRATION_DATABASE_URL): (\S+)$/gmu)]
+    .map((match) => [match[1], match[2]]));
+  assert.ok(databaseName && health);
+  assert.deepEqual(Object.keys(urls).sort(), ["DATABASE_URL", "MIGRATION_DATABASE_URL", "TEST_DATABASE_URL"]);
+  assert.equal(health[2], databaseName);
+  for (const url of Object.values(urls)) {
+    const target = validateAdminQaTarget({ NODE_ENV: "test", DATABASE_URL: url,
+      TEST_DATABASE_URL: url, TOONSPECTRUM_ADMIN_QA_SEED: "1" });
+    assert.ok(["127.0.0.1", "[::1]"].includes(target.host));
+    assert.equal(target.databaseName, databaseName);
+    assert.equal(new URL(url).username, health[1]);
+  }
+  assert.equal(urls.DATABASE_URL, urls.TEST_DATABASE_URL);
+  assert.equal(urls.MIGRATION_DATABASE_URL, urls.TEST_DATABASE_URL);
+  assert.equal(validateAdminQaTarget({ NODE_ENV: "test", DATABASE_URL: urls.DATABASE_URL,
+    TEST_DATABASE_URL: urls.TEST_DATABASE_URL, TOONSPECTRUM_ADMIN_QA_SEED: "1" }).databaseName, databaseName);
+  const integration = readFileSync(new URL("../apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts", import.meta.url), "utf8");
+  const requiredName = integration.match(/!\/([^\n]+)\/([a-z]+)\.test\(database\.databaseName\)/u);
+  const forbiddenName = integration.match(/^\s*\|\| \/([^\n]+)\/([a-z]+)\.test\(database\.databaseName\)/mu);
+  assert.ok(requiredName && forbiddenName, "실제 NestJS 테스트의 허용·금지 이름 guard를 그대로 확인해야 합니다.");
+  const required = new RegExp(requiredName[1], requiredName[2]);
+  const forbidden = new RegExp(forbiddenName[1], forbiddenName[2]);
+  assert.equal(required.test(databaseName), true);
+  assert.equal(forbidden.test(databaseName), false);
+  assert.equal(required.test("toonspectrum_admin_qa"), false, "test 토큰 없는 기존 대상은 실제 guard를 통과하지 않습니다.");
+  assert.equal(forbidden.test("toonspectrum_production_test"), true, "운영 이름은 test 토큰이 있어도 거절해야 합니다.");
+});
+
 test("review database invariants execute with real PostgreSQL and the accepted graph triggers", () => {
   const database = job("database");
   assert.match(database, /image: postgres:16-alpine/u);
@@ -352,11 +404,17 @@ test("review database invariants execute with real PostgreSQL and the accepted g
     );
   }
 
+  const databaseCommand = database.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(databaseCommand, "실제 DB job의 Vitest 실행 명령이 필요합니다.");
+  const databaseArguments = databaseCommand.split(/\s+/u);
   for (const suite of CORE_DATABASE_VITEST_TARGETS) {
-    assert.ok(database.includes(suite), `Missing real database suite: ${suite}`);
+    assert.equal(databaseArguments.filter((argument) => argument === suite).length, 1,
+      `실제 DB suite는 보호된 실행 명령에서 정확히 한 번 실행해야 합니다: ${suite}`);
   }
   for (const suite of [
+    "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
