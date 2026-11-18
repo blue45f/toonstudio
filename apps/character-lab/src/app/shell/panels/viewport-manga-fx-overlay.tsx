@@ -246,11 +246,11 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
         {mangaFx.bubblePreset === "shout-burst" ? (
           <g data-testid="viewport-manga-speech-bubble">
             <polygon points={burstPoints} fill="#FFFDF9" stroke="#18151C" strokeWidth="3.4" strokeLinejoin="miter" />
-            <text x="245" y={line2 ? 156 : 172} textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="800">
+            <text x="245" y={line2 ? 156 : 172} textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="700">
               {line1}
             </text>
             {line2 ? (
-              <text x="245" y="190" textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="800">
+              <text x="245" y="190" textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="700">
                 {line2}
               </text>
             ) : null}

@@ -31,6 +31,11 @@ import {
   type BlenderFreestyleInkPreset,
   type BlenderNprShaderPreset,
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
+import { StudioBg3dArticulatedIkBridgeCard } from "./StudioBg3dArticulatedIkBridgeCard";
+import {
+  evaluateArticulatedPropAndIkSocketBridge,
+  type ArticulatedV20PropId,
+} from "./studio-bg3d-articulated-ik-bridge";
 import { buildBlenderPresetScenePrimitives } from "./studio-bg3d-blender-full-engine";
 import { StudioBg3dBlenderFullSections } from "./StudioBg3dBlenderFullSections";
 import {
@@ -62,6 +67,8 @@ import {
   type GenreLockModeId,
   type WebtoonCutArchetypeId,
 } from "./studio-bg3d-shot-continuity-linked-ink";
+import { StudioBg3dSlitGodRaySequenceCard } from "./StudioBg3dSlitGodRaySequenceCard";
+import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
@@ -122,6 +129,11 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [lookDevGateConfirmed, setLookDevGateConfirmed] = useState<boolean>(false);
   const [selectedDatumGenreId, setSelectedDatumGenreId] = useState<CrossGenreDatumGenreId>("murim");
   const [darkroomProofingEnabled, setDarkroomProofingEnabled] = useState<boolean>(false);
+  const [v20PropId, setV20PropId] = useState<ArticulatedV20PropId>("murim-lattice-moongate");
+  const [v20OpenRatioPct, setV20OpenRatioPct] = useState<number>(65);
+  const [v20IkSnapEnabled, setV20IkSnapEnabled] = useState<boolean>(true);
+  const [v20Follow3dSpeedlinesEnabled, setV20Follow3dSpeedlinesEnabled] = useState<boolean>(true);
+  const [interactionCutRatioPct, setInteractionCutRatioPct] = useState<number>(35);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id);
   const [customKelvin, setCustomKelvin] = useState<number>(5600);
   const [selectedShaderId, setSelectedShaderId] = useState<string>(BLENDER_NPR_SHADER_PRESETS[0]!.id);
@@ -265,6 +277,26 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const darkroomProofingState = useMemo(
     () => evaluateDarkroomProofingState(darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio),
     [darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio],
+  );
+  const articulatedIkEval = useMemo(
+    () =>
+      evaluateArticulatedPropAndIkSocketBridge({
+        propId: v20PropId,
+        openRatioPct: v20OpenRatioPct,
+        ikSnapEnabled: v20IkSnapEnabled,
+        follow3dSpeedlinesEnabled: v20Follow3dSpeedlinesEnabled,
+      }),
+    [v20PropId, v20OpenRatioPct, v20IkSnapEnabled, v20Follow3dSpeedlinesEnabled],
+  );
+  const slitGodRayEval = useMemo(
+    () =>
+      evaluateSlitGodRayAndShadowDrift({
+        openRatioPct: v20OpenRatioPct,
+        weeklyTotalCuts: 70,
+        baseWeeklyHoursSaved: verifyAiReport.weeklyEpisodeRoi.totalWeeklyHoursSaved,
+        interactionCutRatioPct,
+      }),
+    [v20OpenRatioPct, verifyAiReport.weeklyEpisodeRoi.totalWeeklyHoursSaved, interactionCutRatioPct],
   );
 
   const multiPassPlan = useMemo(
@@ -703,6 +735,31 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           onVerifyAiGate?.(score, passed);
         }}
         onStatusChange={onStatusChange}
+      />
+
+      <StudioBg3dArticulatedIkBridgeCard
+        disabled={disabled}
+        evaluation={articulatedIkEval}
+        onSelectPropId={(propId) => {
+          setV20PropId(propId);
+          onStatusChange?.(`V20 가동 파츠 전환: ${propId}`);
+        }}
+        onChangeOpenRatioPct={setV20OpenRatioPct}
+        onToggleIkSnap={setV20IkSnapEnabled}
+        onToggleFollow3dSpeedlines={setV20Follow3dSpeedlinesEnabled}
+      />
+
+      <StudioBg3dSlitGodRaySequenceCard
+        disabled={disabled}
+        evaluation={slitGodRayEval}
+        onApplySequenceBeat={(beat) => {
+          setV20OpenRatioPct(beat.openRatioPct);
+          setCustomKelvin(beat.recommendedKelvin);
+          setV20IkSnapEnabled(true);
+          setV20Follow3dSpeedlinesEnabled(true);
+          onStatusChange?.(`${beat.labelKo} 적용 (${beat.recommendedKelvin}K · 개폐 ${beat.openRatioPct}%)`);
+        }}
+        onChangeInteractionCutRatioPct={setInteractionCutRatioPct}
       />
 
       <StudioBg3dBlenderFullSections

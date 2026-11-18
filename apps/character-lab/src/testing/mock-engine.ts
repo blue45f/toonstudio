@@ -274,6 +274,12 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
     async setHandProp(attachment) {
       record("setHandProp", attachment);
     },
+    async setHeadProp(attachment) {
+      record("setHeadProp", attachment);
+    },
+    async setStageProp(attachment) {
+      record("setStageProp", attachment);
+    },
     updatePaintTexture(layer) {
       record("updatePaintTexture", layer);
       paintUploads.push(layer);

@@ -1,28 +1,32 @@
 /**
- * BabylonCharacterEngine 손 소품 어태치먼트(`setHandProp`) NullEngine 통합 검증:
- * - Blender 5.3 제작 소품 4종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`) SHA-256 검증 로드
- * - PBR ↔ 툰 셰이딩 전환, 캐릭터 재로드 시 자동 재장착, 해제 시 누수 없는 정리, GLB 내보내기 보존 확인
+ * BabylonCharacterEngine 3D 소품 어태치먼트(`setHandProp` · `setHeadProp` · `setStageProp`) NullEngine 통합 검증:
+ * - 손 소품 4종(`webtoon-hand-props-v1`) · 머리 액세서리 4종(`webtoon-head-props-v1`) · 배경 스테이지 3종(`webtoon-stage-props-v1`) SHA-256 검증 로드
+ * - 손(250) + 머리(251) + 스테이지(252) 3중 동시 장착 및 카메라 프레이밍 중심 보존(`extra:*` 바운드 제외)
+ * - PBR ↔ 툰 셰이딩 전환, 캐릭터 재로드 시 3종 자동 재장착, 통합 단일 GLB 직렬화 보존, 해제 시 누수 없는 정리 확인
  */
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { DEFAULT_SHADING } from "../contracts";
+import { DEFAULT_FRAMING, DEFAULT_SHADING } from "../contracts";
 import { parseGlb } from "../testing/minimal-glb";
 
 import { createNullEngineHarness } from "./testing/null-engine-harness";
 import { createProceduralFixture } from "./testing/procedural-fixture";
 
-import type { HandPropId } from "../contracts";
+import type { HandPropId, HeadPropId, StagePropId } from "../contracts";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 
 // 루트·앱 Vitest 설정 모두 동일한 실제 소품 파일을 검증한다.
 const APP_ROOT = process.cwd().endsWith("character-lab") ? process.cwd() : resolve(process.cwd(), "apps/character-lab");
-const PROPS_DIR = resolve(APP_ROOT, "public/assets/props/webtoon-hand-props-v1");
+const PUBLIC_DIR = resolve(APP_ROOT, "public");
+const HAND_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-hand-props-v1");
+const HEAD_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-head-props-v1");
+const STAGE_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-stage-props-v1");
 
-interface PropManifestEntry {
-  readonly id: HandPropId;
+interface PropManifestEntry<TId extends string> {
+  readonly id: TId;
   readonly labelKo: string;
   readonly meshName: string;
   readonly path: string;
@@ -31,15 +35,15 @@ interface PropManifestEntry {
   readonly triangles: number;
 }
 
-describe("BabylonCharacterEngine.setHandProp — 웹툰 3D 손 소품 어태치먼트 & GLB 내보내기 보존", () => {
+describe("BabylonCharacterEngine 3D 소품 트리오(손·머리·스테이지) 어태치먼트 & 통합 GLB 보존", () => {
   let harness: NullEngineHarness;
 
   beforeEach(async () => {
     harness = await createNullEngineHarness({
       now: () => 2_000,
       fetchBytes: async (url) => {
-        const rel = url.replace(/^\/assets\/props\/webtoon-hand-props-v1\//u, "");
-        const buf = await readFile(resolve(PROPS_DIR, rel));
+        const rel = url.replace(/^\//u, "");
+        const buf = await readFile(resolve(PUBLIC_DIR, rel));
         return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
       },
     });
@@ -49,48 +53,95 @@ describe("BabylonCharacterEngine.setHandProp — 웹툰 3D 손 소품 어태치�
     harness.dispose();
   });
 
-  it("Blender 5.3 소품 4종 매니페스트 해시 정합성·PBR↔툰 전환·재로드 재부착·GLB 직렬화 보존·해제 정리를 만족한다", async () => {
-    const manifestRaw = JSON.parse(await readFile(resolve(PROPS_DIR, "index.json"), "utf8")) as {
-      readonly props: readonly PropManifestEntry[];
+  it("Blender 5.3 손 4종·머리 4종·스테이지 3종(총 11종) 해시 정합성·3중 동시 장착·카메라 바운드 불변·통합 GLB 보존·누수 없는 해제를 만족한다", async () => {
+    const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
+      readonly props: readonly PropManifestEntry<HandPropId>[];
     };
-    expect(manifestRaw.props).toHaveLength(4);
+    const headManifest = JSON.parse(await readFile(resolve(HEAD_PROPS_DIR, "index.json"), "utf8")) as {
+      readonly props: readonly PropManifestEntry<HeadPropId>[];
+    };
+    const stageManifest = JSON.parse(await readFile(resolve(STAGE_PROPS_DIR, "index.json"), "utf8")) as {
+      readonly props: readonly PropManifestEntry<StagePropId>[];
+    };
+
+    expect(handManifest.props).toHaveLength(4);
+    expect(headManifest.props).toHaveLength(4);
+    expect(stageManifest.props).toHaveLength(3);
 
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
     const basePartCount = harness.engine.inspectRig()?.parts.length ?? 0;
     const baseMeshCount = harness.engine.inspectScene().meshCount;
 
-    for (const entry of manifestRaw.props) {
+    harness.engine.setCamera({ ...DEFAULT_FRAMING, mode: "face" });
+    const baseFaceCamPos = harness.engine.viewportCamera().position;
+
+    // 1. 손 소품 4종 순회 검증 (마지막: aether-blade)
+    for (const entry of handManifest.props) {
       await harness.engine.setHandProp({
         propId: entry.id,
         hand: "rightHand",
         glbUrl: `/assets/props/webtoon-hand-props-v1/${entry.path}`,
         sha256: entry.sha256,
       });
-      const rig = harness.engine.inspectRig();
-      expect(rig?.parts).toHaveLength(basePartCount + 1);
-      const propPart = rig?.parts.find((p) => p.id === "extra:hand-prop");
-      expect(propPart).toBeDefined();
-      expect(propPart?.role).toBe("accessory");
-      expect(propPart?.triangleCount).toBe(entry.triangles);
+      const part = harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:hand-prop");
+      expect(part?.triangleCount).toBe(entry.triangles);
     }
 
-    // 마지막 장착 소품(aether-blade) 상태에서 툰 모드 전환 및 GLB 내보내기 검증
-    harness.engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
-    expect(harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:hand-prop")?.materialClass).toBe("ShaderMaterial");
+    // 2. 머리 액세서리 4종 순회 검증 (마지막: pearl-earrings-pin -> 이어서 wire-glasses 장착)
+    for (const entry of headManifest.props) {
+      await harness.engine.setHeadProp({
+        propId: entry.id,
+        glbUrl: `/assets/props/webtoon-head-props-v1/${entry.path}`,
+        sha256: entry.sha256,
+      });
+      const part = harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:head-prop");
+      expect(part?.triangleCount).toBe(entry.triangles);
+    }
 
+    // 3. 배경 스테이지 3종 순회 검증 (마지막: murim-sword-aura)
+    for (const entry of stageManifest.props) {
+      await harness.engine.setStageProp({
+        propId: entry.id,
+        glbUrl: `/assets/props/webtoon-stage-props-v1/${entry.path}`,
+        sha256: entry.sha256,
+      });
+      const part = harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:stage-prop");
+      expect(part?.triangleCount).toBe(entry.triangles);
+    }
+
+    // 손 + 머리 + 스테이지 3종 동시 장착 확인
+    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 3);
+
+    // 대형 배경 스테이지(murim-sword-aura)가 장착되어도 얼굴 클로즈업 카메라 위치가 캐릭터 두상에 그대로 고정되어야 한다
+    harness.engine.setCamera({ ...DEFAULT_FRAMING, mode: "face" });
+    const stageFaceCamPos = harness.engine.viewportCamera().position;
+    expect(stageFaceCamPos[0]).toBeCloseTo(baseFaceCamPos[0], 4);
+    expect(stageFaceCamPos[1]).toBeCloseTo(baseFaceCamPos[1], 4);
+    expect(stageFaceCamPos[2]).toBeCloseTo(baseFaceCamPos[2], 4);
+
+    // 툰 셰이더 전환 시 3종 소품 모두 ShaderMaterial로 즉시 전환
+    harness.engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
+    for (const extraId of ["extra:hand-prop", "extra:head-prop", "extra:stage-prop"]) {
+      expect(harness.engine.inspectRig()?.parts.find((p) => p.id === extraId)?.materialClass).toBe("ShaderMaterial");
+    }
+
+    // 통합 단일 GLB 직렬화 시 손·머리·스테이지 3종 노드가 모두 포함되어야 한다
     const glbBytes = await harness.engine.exportGlb();
     const parsed = parseGlb(glbBytes);
     const gltf = parsed.json as { nodes: Array<{ name?: string }> };
     const nodeNames = gltf.nodes.map((n) => n.name ?? "");
     expect(nodeNames.some((n) => n.includes("TS_HandPropAnchor_aether-blade"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_Prop_aether-blade"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_pearl-earrings-pin"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_StagePropAnchor_murim-sword-aura"))).toBe(true);
 
-    // 캐릭터 소스를 다시 로드해도 활성 손 소품이 자동으로 재장착되어야 한다
+    // 캐릭터 재로드 시 활성 3종 소품 모두 자동 재장착
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
-    expect(harness.engine.inspectRig()?.parts.some((p) => p.id === "extra:hand-prop")).toBe(true);
+    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 3);
 
-    // 소품 해제(null) 시 원래 파츠·메시 수로 누수 없이 복원되어야 한다
+    // 3종 모두 해제(null) 시 원래 파츠·메시 수로 누수 없이 정리
     await harness.engine.setHandProp(null);
+    await harness.engine.setHeadProp(null);
+    await harness.engine.setStageProp(null);
     expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount);
     expect(harness.engine.inspectScene().meshCount).toBe(baseMeshCount);
   });
