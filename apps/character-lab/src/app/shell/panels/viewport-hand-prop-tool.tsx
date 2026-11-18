@@ -1,11 +1,12 @@
 import { useState } from "react";
 
 import {
-  ViewportHandPropControls, buildHandPropGripPoseCommands, findWebtoonHandPropSpec, toHandPropAttachment,
+  ViewportHandPropControls, buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonStagePropSpec,
+  toHandPropAttachment, toHeadPropAttachment, toStagePropAttachment,
 } from "./viewport-hand-prop-controls";
 import { failureText } from "./viewport-status-overlay";
 
-import type { CharacterEngine, HandPropId, HandPropSide, LabCommand, Pose } from "../../../contracts";
+import type { CharacterEngine, HandPropId, HandPropSide, HeadPropId, LabCommand, Pose, StagePropId } from "../../../contracts";
 
 interface ViewportHandPropToolProps {
   readonly engine: CharacterEngine | null;
@@ -14,10 +15,12 @@ interface ViewportHandPropToolProps {
   readonly onNotice: (notice: string) => void;
 }
 
-/** 손 소품의 선택·장착 대기·그립 포즈를 같은 도구 수명 안에서 관리한다. */
+/** 손·머리·스테이지 소품의 선택·공유 장착 대기·그립 포즈를 같은 도구 수명 안에서 관리한다. */
 export function ViewportHandPropTool({ engine, pose, dispatch, onNotice }: ViewportHandPropToolProps) {
   const [handPropId, setHandPropId] = useState<HandPropId | "">("");
   const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
+  const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
+  const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
   const [handPropBusy, setHandPropBusy] = useState(false);
 
   const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
@@ -49,15 +52,51 @@ export function ViewportHandPropTool({ engine, pose, dispatch, onNotice }: Viewp
     if (spec) onNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
   };
 
+  const onApplyHeadProp = async (nextHeadPropId: HeadPropId | ""): Promise<void> => {
+    setHeadPropId(nextHeadPropId);
+    if (!engine?.setHeadProp) return;
+    const attachment = nextHeadPropId ? toHeadPropAttachment(nextHeadPropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHeadProp(attachment);
+      const spec = nextHeadPropId ? findWebtoonHeadPropSpec(nextHeadPropId) : null;
+      onNotice(spec ? `머리 액세서리 장착: ${spec.labelKo}` : "머리 액세서리를 해제했습니다.");
+    } catch (error) {
+      onNotice(failureText(error, "머리 액세서리를 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+
+  const onApplyStageProp = async (nextStagePropId: StagePropId | ""): Promise<void> => {
+    setStagePropId(nextStagePropId);
+    if (!engine?.setStageProp) return;
+    const attachment = nextStagePropId ? toStagePropAttachment(nextStagePropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setStageProp(attachment);
+      const spec = nextStagePropId ? findWebtoonStagePropSpec(nextStagePropId) : null;
+      onNotice(spec ? `배경 스테이지 배치: ${spec.labelKo}` : "배경 스테이지를 해제했습니다.");
+    } catch (error) {
+      onNotice(failureText(error, "배경 스테이지를 배치하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+
   return (
     <ViewportHandPropControls
       engineReady={Boolean(engine?.setHandProp)}
       propId={handPropId}
       hand={handPropSide}
+      headPropId={headPropId}
+      stagePropId={stagePropId}
       busy={handPropBusy}
       onSelectProp={(nextPropId) => void onApplyHandProp(nextPropId, handPropSide)}
       onChangeHand={(nextSide) => void onApplyHandProp(handPropId, nextSide)}
       onApplyGripPose={onApplyHandPropGripPose}
+      onSelectHeadProp={(nextHeadPropId) => void onApplyHeadProp(nextHeadPropId)}
+      onSelectStageProp={(nextStagePropId) => void onApplyStageProp(nextStagePropId)}
     />
   );
 }

@@ -1,5 +1,6 @@
-/** 엔진의 리그·본·morph·내보내기 상태를 변경 없이 읽는 진단 경계. */
+/** 진단·셰이딩에 쓰는 리그·본·morph·내보내기 상태를 변경 없이 읽는다. */
 import { isHumanoidBoneName } from "../../contracts";
+import { qConjugate, qMultiply, qRotateVec3 } from "../../shared/math";
 import { describeSparseMorphReport } from "../glb-sparse-morph";
 import { summarizeJointOffsets } from "../joint-offsets";
 import { describeMorphTextureMode } from "../morph-limits";
@@ -31,6 +32,14 @@ export function readRigBone(rig: CharacterRig | null, name: string): BoneReading
   if (!rb) return null;
   const world = rigBoneWorld(rb);
   return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
+}
+
+/** 머리 본의 rest 대비 회전으로 얼굴 forward(+Z)·right(+X)를 구한다(패키지의 비항등 rest도 동일). */
+export function rigHeadAxes(rig: CharacterRig | null): { readonly forward: Vec3; readonly right: Vec3 } {
+  const head = rig?.humanoid.get("head");
+  if (!head) return { forward: [0, 0, 1], right: [1, 0, 0] };
+  const delta = qMultiply(rigBoneWorld(head).rotation, qConjugate(head.restWorld));
+  return { forward: qRotateVec3(delta, [0, 0, 1]), right: qRotateVec3(delta, [1, 0, 0]) };
 }
 
 /** influence > 0인 타깃을 직접 세어 attribute 모드에서 잘린 numInfluencers와 구분한다. */
