@@ -1,0 +1,294 @@
+{
+  "날짜": "2026-11-19",
+  "before": {
+    "buildId": "dcf3137e7438",
+    "treeSHA256": "5b323f8ece2d33c9e43ba2ebd9ef59793a10f4d98ea24cd596c914352138d1d2",
+    "outputFiles": 20293,
+    "outputBytes": 5269133564,
+    "verifiedServing": {
+      "index.html": "baab6cca6e242939425aa08013051021bc6150ca2e07bd50ca64e72afb1515e0",
+      "sw.js": "e1c5ac1e26db05d6d9e0ad4d945f4df2bf854cc9358e68987e1c191d0c50b6d5",
+      ".vite/build-meta.json": "f4c634c2cdcfa99f90f7c09ef47f8b865995c8ae37bb62d0e821479f1ad296d1"
+    },
+    "inputTreeUnchanged": true,
+    "outputTreeUnchanged": true,
+    "drawing": {
+      "statuses": {
+        "passed": 11,
+        "failed": 1
+      },
+      "testErrorCount": 1,
+      "runnerErrorCount": 0,
+      "wallSeconds": 90.28,
+      "pageerror": 0,
+      "crash": 1,
+      "consoleErrorCount": 60,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          43
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          17
+        ]
+      ]
+    },
+    "three": {
+      "statuses": {
+        "passed": 7,
+        "failed": 1
+      },
+      "testErrorCount": 1,
+      "runnerErrorCount": 0,
+      "wallSeconds": 169.53,
+      "pageerror": 0,
+      "crash": 0,
+      "consoleErrorCount": 36,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          28
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          8
+        ]
+      ]
+    }
+  },
+  "beforeSeparateRuns": [
+    {
+      "suite": "drawing-desktop",
+      "exitCode": 0,
+      "wallSeconds": 19.5
+    },
+    {
+      "suite": "drawing-repeat",
+      "exitCode": 0,
+      "wallSeconds": 119.48
+    },
+    {
+      "suite": "three-affected",
+      "exitCode": 0,
+      "wallSeconds": 36.51
+    }
+  ],
+  "priorDesktopRendererCrash": {
+    "epochLocal": "2026-11-19T08:03:48+09:00",
+    "annotations": {
+      "ver": "157.0.8103.79",
+      "ptype": "renderer"
+    },
+    "exceptionType": 1,
+    "exceptionFlags": 1,
+    "faultAddress": "0x8",
+    "sameFrameworkPcAndCallerAsPrior": true,
+    "sameVersionAndExceptionAsPrior": true
+  },
+  "current": {
+    "buildId": "10c22c91c07d",
+    "treeSHA256": "7a29a58187426c50c623fa029374f4ee6d68228442c1534d5596bfd2a156c838",
+    "outputFiles": 20293,
+    "outputBytes": 5269134464,
+    "verifiedServing": {
+      "index.html": "f2e995b031d4ce3c03d62e9de615c3afcaaa67c636dc4aae66c026044a1af1c3",
+      "sw.js": "a8883205f0225aa42755ae77d662f47a5b461a67561b5759369096b85c65104f",
+      ".vite/build-meta.json": "737ceebcd281fb3cc00c954d46afca9be11d6b1d197bab9daf350b87c5551097"
+    },
+    "inputTreeUnchanged": true,
+    "outputTreeUnchanged": true,
+    "drawing": {
+      "statuses": {
+        "passed": 12
+      },
+      "testErrorCount": 0,
+      "runnerErrorCount": 0,
+      "wallSeconds": 63.12,
+      "pageerror": 0,
+      "crash": 0,
+      "consoleErrorCount": 65,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          47
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          18
+        ]
+      ]
+    },
+    "three": {
+      "statuses": {
+        "passed": 8
+      },
+      "testErrorCount": 0,
+      "runnerErrorCount": 0,
+      "wallSeconds": 156.03,
+      "pageerror": 0,
+      "crash": 0,
+      "consoleErrorCount": 39,
+      "httpErrors": [
+        [
+          403,
+          "/api/analytics/traffic",
+          31
+        ],
+        [
+          403,
+          "/api/studio-realtime/tickets",
+          8
+        ]
+      ]
+    }
+  },
+  "firstRequestBefore": {
+    "base": "http://127.0.0.1:15498",
+    "first": "lost",
+    "physicalClicks": 2,
+    "chunkRequested": true,
+    "afterSecond": "opened",
+    "eventBeforeRelease": 1,
+    "dialogCount": 1
+  },
+  "firstRequestAfter": {
+    "base": "http://127.0.0.1:15499",
+    "first": "opened",
+    "physicalClicks": 1,
+    "chunkRequested": true,
+    "afterSecond": null,
+    "eventBeforeRelease": 1,
+    "listedTools": 35,
+    "bg3dSearchMatched": true,
+    "dialogCount": 1
+  },
+  "escapeWhileLoading": {
+    "base": "http://127.0.0.1:15499",
+    "first": "cancelled",
+    "physicalClicks": 2,
+    "chunkRequested": true,
+    "afterSecond": "opened",
+    "eventBeforeRelease": 1,
+    "dialogCount": 1
+  },
+  "normalUserLinks": {
+    "guest": {
+      "status": "passed",
+      "authenticated": false,
+      "sameDocument": true,
+      "pageErrors": 0,
+      "crashes": 0,
+      "visits": [
+        {
+          "step": "생성한 원고",
+          "presentation": "integrated",
+          "density": "simple",
+          "legacyAppBar": 0,
+          "eraserPressed": "true",
+          "canvas": {
+            "width": 1362,
+            "height": 860,
+            "x": 78,
+            "y": 100
+          }
+        },
+        {
+          "step": "최근 작업 카드로 다시 연 원고",
+          "presentation": "integrated",
+          "density": "simple",
+          "legacyAppBar": 0,
+          "eraserPressed": "true",
+          "canvas": {
+            "width": 1362,
+            "height": 860,
+            "x": 78,
+            "y": 100
+          }
+        }
+      ]
+    },
+    "new-account": {
+      "status": "passed",
+      "authenticated": true,
+      "sameDocument": true,
+      "pageErrors": 0,
+      "crashes": 0,
+      "visits": [
+        {
+          "step": "생성한 원고",
+          "presentation": "integrated",
+          "density": "simple",
+          "legacyAppBar": 0,
+          "eraserPressed": "true",
+          "canvas": {
+            "width": 1362,
+            "height": 860,
+            "x": 78,
+            "y": 100
+          }
+        },
+        {
+          "step": "최근 작업 카드로 다시 연 원고",
+          "presentation": "integrated",
+          "density": "simple",
+          "legacyAppBar": 0,
+          "eraserPressed": "true",
+          "canvas": {
+            "width": 1362,
+            "height": 860,
+            "x": 78,
+            "y": 100
+          }
+        }
+      ]
+    }
+  },
+  "localHttpsControl": {
+    "expectedOrigin": "https://127.0.0.1:15500",
+    "localApi": "127.0.0.1:4383",
+    "tlsVerified": true,
+    "staticFiles": [
+      {
+        "file": "index.html",
+        "sameBytes": true,
+        "sha256": "f2e995b031d4ce3c03d62e9de615c3afcaaa67c636dc4aae66c026044a1af1c3"
+      },
+      {
+        "file": "sw.js",
+        "sameBytes": true,
+        "sha256": "a8883205f0225aa42755ae77d662f47a5b461a67561b5759369096b85c65104f"
+      },
+      {
+        "file": ".vite/build-meta.json",
+        "sameBytes": true,
+        "sha256": "737ceebcd281fb3cc00c954d46afca9be11d6b1d197bab9daf350b87c5551097"
+      }
+    ],
+    "checks": [
+      {
+        "kind": "등록한 로컬 원점",
+        "session": "guest",
+        "pageViewStatus": 202,
+        "ticketStatus": 200,
+        "hasTicket": true,
+        "ticketScopeMatches": true
+      },
+      {
+        "kind": "허용 목록 밖 원점",
+        "session": "guest",
+        "pageViewStatus": 403,
+        "ticketStatus": 403,
+        "hasTicket": false,
+        "ticketScopeMatches": false
+      }
+    ],
+    "buildId": "10c22c91c07d"
+  }
+}

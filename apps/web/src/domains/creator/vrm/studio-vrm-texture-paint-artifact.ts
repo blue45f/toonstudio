@@ -1031,7 +1031,7 @@ async function decodeWithBrowserCanvas(
   } catch (cause) {
     if (cause instanceof StudioVrmTexturePaintArtifactError) throw cause;
     if (isAbortError(cause)) throw abortError();
-    fail("DECODE_FAILED", "decodedPixelsReadFailed", undefined, cause);
+    return fail("DECODE_FAILED", "decodedPixelsReadFailed", undefined, cause);
   } finally {
     bitmap.close();
     if (readCanvas) readCanvas.width = readCanvas.height = 0;
