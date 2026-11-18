@@ -55,9 +55,62 @@ try {
     "0117_studio_scoped_write_policy.sql",
     "0119_studio_review_voice_note_guard_schema.sql",
     "0121_studio_bg3d_six_pass_bundle.sql",
+    "0122_admin_workspace.sql",
+    "0123_admin_business_plan.sql",
+    "0124_admin_nestjs_quality.sql",
     "0125_admin_cloud_workboard.sql",
+    "0126_admin_ai_operations.sql",
+    "0127_admin_workspace_access.sql",
+    "0128_admin_business_plan_access.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
+  }
+  // Drizzle가 만들지 않는 불변 이력 트리거와 소유권 FK를 실제 public 스키마에서 확인한다.
+  const adminGuards = [
+    ["admin_business_plan", "admin_business_plan_delete_guard", 11, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_revision", "admin_business_plan_revision_immutable", 27, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_audit", "admin_business_plan_audit_immutable", 27, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_receipt", "admin_business_plan_receipt_immutable", 27, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan", "admin_business_plan_truncate_guard", 34, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_revision", "admin_business_plan_revision_truncate_guard", 34, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_audit", "admin_business_plan_audit_truncate_guard", 34, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_receipt", "admin_business_plan_receipt_truncate_guard", 34, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_access_audit", "admin_business_plan_access_audit_immutable", 27, "admin_business_plan_immutable_guard"],
+    ["admin_business_plan_access_audit", "admin_business_plan_access_audit_truncate_guard", 34, "admin_business_plan_immutable_guard"],
+    ["admin_nestjs_quality_history", "admin_nestjs_quality_history_immutable", 27, "admin_nestjs_quality_history_immutable"],
+  ];
+  const adminTriggers = await pool.query(`
+    SELECT relation.relname, trigger_record.tgname, trigger_record.tgtype, function_record.proname
+    FROM pg_catalog.pg_trigger trigger_record
+    JOIN pg_catalog.pg_class relation ON relation.oid=trigger_record.tgrelid
+    JOIN pg_catalog.pg_namespace relation_schema ON relation_schema.oid=relation.relnamespace
+    JOIN pg_catalog.pg_proc function_record ON function_record.oid=trigger_record.tgfoid
+    JOIN pg_catalog.pg_namespace function_schema ON function_schema.oid=function_record.pronamespace
+    WHERE relation_schema.nspname='public' AND function_schema.nspname='public'
+      AND NOT trigger_record.tgisinternal AND trigger_record.tgenabled IN ('O','A')
+      AND NOT function_record.prosecdef
+  `);
+  for (const [relation, trigger, type, fn] of adminGuards) {
+    assert(adminTriggers.rows.some((row) => row.relname === relation && row.tgname === trigger
+      && row.tgtype === type && row.proname === fn), `관리자 이력 보호가 없습니다: ${relation}.${trigger}`);
+  }
+  const ownerGuards = await pool.query(`
+    SELECT relation.relname, attribute.attname
+    FROM pg_catalog.pg_constraint constraint_record
+    JOIN pg_catalog.pg_class relation ON relation.oid=constraint_record.conrelid
+    JOIN pg_catalog.pg_namespace namespace ON namespace.oid=relation.relnamespace
+    JOIN pg_catalog.pg_attribute attribute ON attribute.attrelid=relation.oid
+      AND constraint_record.conkey=ARRAY[attribute.attnum]
+    JOIN pg_catalog.pg_attribute target ON target.attrelid=constraint_record.confrelid
+      AND constraint_record.confkey=ARRAY[target.attnum]
+    WHERE namespace.nspname='public' AND relation.relrowsecurity
+      AND constraint_record.contype='f' AND constraint_record.confdeltype='r' AND constraint_record.convalidated
+      AND NOT attribute.attnotnull AND NOT attribute.attisdropped
+      AND target.attrelid='public."user"'::regclass AND target.attname='id' AND NOT target.attisdropped
+  `);
+  for (const [relation, column] of [["admin_workspace", "business_owner_user_id"], ["admin_business_plan", "owner_user_id"]]) {
+    assert(ownerGuards.rows.some((row) => row.relname === relation && row.attname === column),
+      `관리자 비공개 자료 소유권 보호가 없습니다: ${relation}.${column}`);
   }
   const triggers = await pool.query("SELECT tgname FROM pg_trigger WHERE NOT tgisinternal AND tgname LIKE 'studio_%'");
   for (const required of ["studio_revision_immutable_update", "studio_revision_topology_revision", "studio_revision_topology_parent", "studio_artifact_revision_pointer_check", "studio_review_snapshot_check", "studio_review_reviewer_check", "studio_review_comment_anchor_check", "studio_review_comment_strokes_check", "studio_review_policy_guard_trigger", "studio_review_policy_event_guard_trigger", "studio_review_group_approval_check", "studio_pinned_review_share_immutable_update", "studio_pinned_review_feedback_immutable_update", "studio_review_delivery_guard_update", "studio_review_delivery_event_immutable_update", "studio_review_voice_note_guard_update", "studio_bg3d_revision_guard", "studio_bg3d_artifact_guard"]) {

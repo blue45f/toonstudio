@@ -142,6 +142,33 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(splitDumpStatements(sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual([]);
   });
 
+  test("공통 권한 부여 뒤 Cloud·AI 권한을 한 번씩 제한하고 감사·영수증 변조를 허용하지 않는다", () => {
+    const sql = buildManagedRuntimeAclSql(ROLE);
+    const statements = splitDumpStatements(sql);
+    const broadGrant = statements.findIndex((statement) => statement.startsWith("DO $toonspectrum_runtime_acl$"));
+    expect(broadGrant).toBeGreaterThanOrEqual(0);
+    for (const required of [
+      `REVOKE ALL ON TABLE public.admin_cloud_workboard, public.admin_cloud_workboard_audit, public.admin_cloud_workboard_receipt FROM "${ROLE}"`,
+      `GRANT SELECT, INSERT ON TABLE public.admin_cloud_workboard_audit, public.admin_cloud_workboard_receipt TO "${ROLE}"`,
+      ...["board", "audit", "receipt"].map((name) => `REVOKE ALL ON TABLE "public".admin_ai_operations_${name} FROM "${ROLE}", PUBLIC`),
+      `GRANT SELECT ON TABLE "public".admin_ai_operations_board TO "${ROLE}"`,
+      ...["audit", "receipt"].map((name) => `GRANT SELECT, INSERT ON TABLE "public".admin_ai_operations_${name} TO "${ROLE}"`),
+    ]) {
+      expect(statements.filter((statement) => statement === required)).toHaveLength(1);
+      expect(statements.indexOf(required)).toBeGreaterThan(broadGrant);
+    }
+    expect(sql).toContain("CREATE POLICY admin_cloud_workboard_runtime");
+    const historyGrants = statements.filter((statement) => /^GRANT\b/u.test(statement)
+      && /\badmin_(?:cloud_workboard|ai_operations)_(?:audit|receipt)\b/u.test(statement));
+    expect(historyGrants).toHaveLength(3);
+    for (const statement of historyGrants) expect(statement).toMatch(/^GRANT SELECT, INSERT ON TABLE\b/u);
+    expect(statements.filter((statement) => /^GRANT\b/u.test(statement)
+      && /\badmin_ai_operations_board\b/u.test(statement))).toEqual([
+      `GRANT SELECT ON TABLE "public".admin_ai_operations_board TO "${ROLE}"`,
+      `GRANT UPDATE ("revision", "payload", "updated_at") ON TABLE "public".admin_ai_operations_board TO "${ROLE}"`,
+    ]);
+  });
+
   test("단일 transaction·빈 대상 guard·Data API 차단·최종 검증·NOLOGIN 종료를 생성한다", () => {
     const bundle = prepareManagedBootstrap({ schemaDump, expectedSchemaSha256: digest(schemaDump), releaseSha: RELEASE, runtimeRole: ROLE });
     expect(bundle.report).toMatchObject({ status: "prepared-unverified", sourceDataRead: false, databaseWritesPerformed: false, migrationLedgerRows: loadBootstrapContract().manifest.length + 1 });
@@ -159,6 +186,8 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(bundle.verificationSql).toContain("Supabase Data API 역할");
     expect(bundle.verificationSql).toContain("administrator workspace schema");
     expect(bundle.verificationSql).toContain("NestJS verification board runtime privileges");
+    expect(bundle.verificationSql).toContain("cloud workboard runtime privileges");
+    expect(bundle.verificationSql).toContain("AI 운영 보드의 런타임 권한이 공용 기록·감사 보존 계약과 다릅니다");
     expect(splitDumpStatements(bundle.sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual(["BEGIN", "COMMIT"]);
     expect(bundle.verificationSql.trimEnd()).toMatch(/ROLLBACK;$/u);
     expect(bundle.verificationSql).toContain("set_config('role', current_setting('toonstudio.bootstrap_saved_role'), true)");

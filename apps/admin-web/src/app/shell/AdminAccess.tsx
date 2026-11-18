@@ -13,6 +13,7 @@ export function AdminAccess({ label, authorize, children }: {
   const [access, setAccess] = useState<Access>({ phase: "checking", actor: null, error: "" });
   const [attempt, setAttempt] = useState(0);
   const sequence = useRef(0);
+  const identityRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -20,6 +21,7 @@ export function AdminAccess({ label, authorize, children }: {
     const check = () => {
       controller?.abort();
       controller = new AbortController();
+      identityRequest.current = controller;
       const signal = controller.signal;
       const current = ++sequence.current;
       setAccess((previous) => ({ ...previous, phase: "checking", error: "" }));
@@ -58,6 +60,7 @@ export function AdminAccess({ label, authorize, children }: {
   }, [attempt, authorize]);
 
   const deny = useCallback((error: string) => {
+    identityRequest.current?.abort();
     sequence.current += 1;
     setAccess({ phase: "denied", actor: null, error });
   }, []);

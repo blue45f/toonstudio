@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CiQualityAccess } from "./CiQualityAccess";
+
+interface NestGateProps {
+  userIdentity: string; role: string; verified: boolean;
+  onUnauthorized: (message: string) => void;
+}
 
 const mocks = vi.hoisted(() => ({ identity: vi.fn(), mount: vi.fn(), cloudMount: vi.fn(), nest: vi.fn() }));
 vi.mock("../../platform/http/admin-identity", () => ({ loadAdminIdentity: mocks.identity }));
@@ -15,9 +21,13 @@ vi.mock("../../domains/operations/cloud-work/CloudWorkBoard", () => ({ CloudWork
   return <div><p>클라우드 개인 작업 기록</p><button type="button" onClick={() => onAccessDenied("보드 권한이 만료되었습니다.")}>보드 권한 만료</button></div>;
 } }));
 
-vi.mock("../../domains/operations/nestjs-quality/NestQualityBoard", () => ({ NestQualityBoard: (props: { userIdentity: string; role: string; verified: boolean; onUnauthorized: (message: string) => void }) => {
+vi.mock("../../domains/operations/nestjs-quality/NestQualityBoard", () => ({ NestQualityBoard: (props: NestGateProps) => {
+  const [draft, setDraft] = useState("");
   mocks.nest(props);
-  return <div><p>Nest 보드 사용자 {props.userIdentity} · {props.role}</p><button type="button" onClick={() => props.onUnauthorized("Nest 권한이 만료되었습니다.")}>Nest 권한 만료</button></div>;
+  return <section><p>Nest 보드 사용자 {props.userIdentity} · {props.role}</p>
+    <label>Nest 연결 초안<input value={draft} disabled={!props.verified} onChange={(event) => setDraft(event.target.value)} /></label>
+    <button type="button" onClick={() => props.onUnauthorized("Nest 권한이 만료되었습니다.")}>Nest 권한 만료</button>
+  </section>;
 } }));
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -84,6 +94,50 @@ describe("CI·QA 권한 경계", () => {
     expect(mocks.nest).toHaveBeenLastCalledWith(expect.objectContaining({ userIdentity: "operator-a", role: "operator", verified: true }));
     expect(mocks.mount).not.toHaveBeenCalled();
   });
+  it("같은 계정 재확인 중 Nest 요청을 비활성화하고 확인 후 초안을 유지한다", async () => {
+    window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "admin" });
+    render(<CiQualityAccess />);
+    await screen.findByText("Nest 보드 사용자 actor-a · admin");
+    fireEvent.change(screen.getByLabelText("Nest 연결 초안"), { target: { value: "유지할 초안" } });
+    let allow: ((value: { id: string; role: string }) => void) | undefined;
+    mocks.identity.mockReturnValueOnce(new Promise((resolve) => { allow = resolve; }));
+    fireEvent.focus(window);
+    expect(mocks.nest).toHaveBeenLastCalledWith(expect.objectContaining({ verified: false }));
+    expect(screen.getByLabelText("Nest 연결 초안").closest("[hidden]")).not.toBeNull();
+    await act(async () => { allow?.({ id: "actor-a", role: "admin" }); });
+    expect(mocks.nest).toHaveBeenLastCalledWith(expect.objectContaining({ verified: true }));
+    expect(screen.getByLabelText<HTMLInputElement>("Nest 연결 초안").value).toBe("유지할 초안");
+  });
+  it("같은 계정이 operator로 바뀌면 Nest 편집 초안을 재사용하지 않는다", async () => {
+    window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "admin" });
+    render(<CiQualityAccess />);
+    await screen.findByText("Nest 보드 사용자 actor-a · admin");
+    fireEvent.change(screen.getByLabelText("Nest 연결 초안"), { target: { value: "이전 권한 초안" } });
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "operator" });
+    fireEvent(window, new Event("toonstudio:auth-session-changed"));
+    await screen.findByText("Nest 보드 사용자 actor-a · operator");
+    expect(screen.getByLabelText<HTMLInputElement>("Nest 연결 초안").value).toBe("");
+  });
+  it("Nest API 권한 거부는 공통 게이트를 닫고 늦은 신원 응답으로 다시 열리지 않는다", async () => {
+    window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
+    mocks.identity.mockResolvedValueOnce({ id: "actor-a", role: "admin" });
+    render(<CiQualityAccess />);
+    await screen.findByText("Nest 보드 사용자 actor-a · admin");
+    let allow: ((value: { id: string; role: string }) => void) | undefined;
+    mocks.identity.mockReturnValueOnce(new Promise((resolve) => { allow = resolve; }));
+    fireEvent.focus(window);
+    const props = mocks.nest.mock.lastCall?.[0] as NestGateProps;
+    act(() => { props.onUnauthorized("합성 Nest API 권한 거부"); });
+    expect((mocks.identity.mock.calls[1]?.[0] as AbortSignal).aborted).toBe(true);
+    await act(async () => { allow?.({ id: "actor-a", role: "admin" }); });
+    expect(screen.getByRole("alert").textContent).toContain("합성 Nest API 권한 거부");
+    expect(screen.queryByLabelText("Nest 연결 초안")).toBeNull();
+    mocks.identity.mockResolvedValueOnce({ id: "actor-b", role: "operator" });
+    fireEvent.click(screen.getByRole("button", { name: "관리자 권한 다시 확인" }));
+    await screen.findByText("Nest 보드 사용자 actor-b · operator");
+  });
 });
 
 describe("클라우드 작업 관리자 전용 경계", () => {
@@ -129,6 +183,7 @@ describe("클라우드 작업 관리자 전용 경계", () => {
     mocks.identity.mockReturnValueOnce(new Promise(done => { resolve = done; }));
     fireEvent.focus(window);
     fireEvent.click(screen.getByText("보드 권한 만료"));
+    expect((mocks.identity.mock.calls[1]?.[0] as AbortSignal).aborted).toBe(true);
     await screen.findByText("보드 권한이 만료되었습니다.");
     expect(screen.queryByText("클라우드 개인 작업 기록")).toBeNull();
     resolve?.({ id: "admin-a", role: "admin" });
