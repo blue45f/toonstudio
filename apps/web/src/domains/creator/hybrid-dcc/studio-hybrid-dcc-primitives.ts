@@ -27,6 +27,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
   type StudioHybridDccPrecisionBgKitItem,
 } from "./studio-hybrid-dcc-architectural-primitives";
 import { createStudioHybridDccIdentityTransform } from "./studio-hybrid-dcc-object-transform";
@@ -44,6 +45,7 @@ export {
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
   type StudioHybridDccPrecisionBgKitItem,
 };
 

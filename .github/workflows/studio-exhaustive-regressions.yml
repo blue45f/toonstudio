@@ -18,7 +18,7 @@ on:
       - playwright.studio-qa-helpers.config.ts
       - e2e/studio-bg3d-qa-interactions.spec.mts
       - e2e/studio-qa-ux-followup.spec.mts
-      - e2e/helpers/studio-tooltip-fixture.ts
+      - e2e/helpers/studio-react-fixture.mts
       - e2e/helpers/studio-bg3d-production-workflow.ts
       - e2e/studio-3d-visual-verification.spec.ts
       - e2e/studio-bg3d-production-rotation.runtime.ts

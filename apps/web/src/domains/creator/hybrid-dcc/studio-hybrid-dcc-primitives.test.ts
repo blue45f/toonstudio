@@ -26,6 +26,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -325,6 +326,40 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(5);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 가변 슬릿 고드레이·그림자 드리프트 3연속 시퀀스 V21(3종)이 실제 GLB·썸네일·6개 보존 씬 SHA-256 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-slit-godray-v21/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      sequenceBeats?: number[];
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.sequenceBeats).toEqual([15, 65, 100]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(6);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
