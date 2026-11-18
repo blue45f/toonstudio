@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { useRef } from "react";
+import { useStudioMutationAuthorityRuntime } from "./useStudioMutationAuthorityRuntime";
 import { cleanup, renderHook } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useStudio3dToolMutationTickets, useStudioCharacterLtInsert } from "./useStudio3dToolMutationTickets";
@@ -47,6 +49,87 @@ it.each(["actor", "work", "document", "access", "page", "denied"])("권한 확�
   if (change === "denied") hook.rerender({ access: "denied" });
   hook.rerender({ access: "allowed" });
   expect(ticket.current).toBeNull();
+});
+
+interface WorkFrame {
+  actor: string | null;
+  authReady: boolean;
+  route: StudioDccRouteAccess;
+  locked: boolean;
+  workId: string | null;
+  pageId: string;
+  open: boolean;
+}
+const cold: WorkFrame = { actor: null, authReady: false, route: "pending", locked: false, workId: "work", pageId: "page-a", open: true };
+const loadingWork: WorkFrame = { ...cold, actor: "owner", authReady: true, locked: true };
+const readyWork: WorkFrame = { ...loadingWork, route: "allowed", locked: false };
+
+function openWork(initialProps: WorkFrame = cold) {
+  return renderHook((frame: WorkFrame) => {
+    const page = useRef(frame.pageId);
+    page.current = frame.pageId;
+    const authority = useStudioMutationAuthorityRuntime({
+      studioAuthUserId: frame.actor, workId: frame.workId, remixId: null,
+      collaborationDocumentLocked: frame.locked, reportError: vi.fn(),
+    });
+    const tools = useStudio3dToolMutationTickets(authority.captureStudioMutationTicket, page,
+      frame.open, frame.open, frame.open, {
+        locked: frame.locked, route: frame.route,
+        namedWork: frame.workId ? { workId: frame.workId, actorId: frame.actor, authReady: frame.authReady } : undefined,
+      });
+    const toolsTickets = [tools.poserMutationTicketRef, tools.mannequinMutationTicketRef, tools.bg3dMutationTicketRef];
+    return {
+      tickets: () => toolsTickets.map((ref) => ref.current),
+      admitted: () => toolsTickets.every((ref) => ref.current && authority.canApplyStudioMutation(ref.current)),
+      editDocument: authority.markStudioDocumentChanged,
+    };
+  }, { initialProps });
+}
+
+it("공동 원고의 인증과 편집 권한을 모두 확인한 뒤 최초 사용자에게만 세 도구의 쓰기를 허용한다", () => {
+  const hook = openWork();
+  expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  hook.rerender(loadingWork);
+  expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  hook.rerender(readyWork);
+  expect(hook.result.current.admitted()).toBe(true);
+  for (const ticket of hook.result.current.tickets()) expect(ticket?.authScopeKey).toBe("owner");
+  hook.rerender({ ...readyWork, actor: "teammate" });
+  expect(hook.result.current.admitted()).toBe(false);
+  hook.rerender({ ...readyWork, actor: "teammate", open: false });
+  hook.rerender({ ...readyWork, actor: "teammate" });
+  expect(hook.result.current.admitted()).toBe(true);
+});
+
+it.each(["actor", "work", "page", "document", "viewer", "403", "signed-out"])(
+  "공동 원고의 승인 대기 중 %s를 거친 편집기는 쓰기 티켓을 받을 수 없다", (change) => {
+    const hook = openWork();
+    if (change === "403") hook.rerender({ ...cold, route: "denied" });
+    if (change === "signed-out") hook.rerender({ ...cold, authReady: true });
+    hook.rerender(loadingWork);
+    if (change === "actor") hook.rerender({ ...loadingWork, actor: "teammate" });
+    if (change === "work") hook.rerender({ ...loadingWork, workId: "another-work" });
+    if (change === "page") hook.rerender({ ...loadingWork, pageId: "page-b" });
+    if (change === "document") hook.result.current.editDocument();
+    if (change === "viewer") hook.rerender({ ...loadingWork, route: "denied" });
+    hook.rerender(readyWork);
+    expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  },
+);
+
+it("공동 원고에서 보기 권한으로 바뀐 편집기는 권한 복구 뒤에도 다시 열어야 한다", () => {
+  const hook = openWork(readyWork);
+  expect(hook.result.current.admitted()).toBe(true);
+  hook.rerender({ ...readyWork, route: "denied" });
+  expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  hook.rerender(readyWork);
+  expect(hook.result.current.admitted()).toBe(false);
+});
+
+it("팀 작품이 없는 게스트 원고와 독립 도구는 로그인 복원 동안에도 편집할 수 있다", () => {
+  const hook = openWork({ ...cold, workId: null });
+  expect(hook.result.current.admitted()).toBe(true);
+  for (const ticket of hook.result.current.tickets()) expect(ticket?.authScopeKey).toBeNull();
 });
 
 it("LT 모듈 대기 중 취소·페이지 이동·쓰기 권한 회수·셰이퍼 재열기는 삽입하지 않는다", async () => {

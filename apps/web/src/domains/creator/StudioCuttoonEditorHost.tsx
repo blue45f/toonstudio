@@ -6259,7 +6259,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     });
   }, [documentSaveInFlightRef, editorMountedRef, studioRevisionProjectGenerationRef]);
   const { poserMutationTicketRef, poserMutationPageIdRef, bg3dMutationTicketRef, bg3dMutationPageIdRef, mannequinMutationTicketRef } =
-    useStudio3dToolMutationTickets(captureStudioMutationTicket, currentPageIdRef, poserVrmOpen || characterShaperOpen, mannequinPoserOpen, bg3dOpen, { locked: collaborationDocumentLocked, route: hybridDccRouteAccess });
+    useStudio3dToolMutationTickets(captureStudioMutationTicket, currentPageIdRef, poserVrmOpen || characterShaperOpen, mannequinPoserOpen, bg3dOpen, { locked: collaborationDocumentLocked, route: hybridDccRouteAccess, namedWork: workId && !remixId ? { workId, actorId: studioAuthUserId, authReady: studioAuthReady } : undefined });
 
   // 즐겨찾기는 프로젝트 내용이 아니라 작가 작업공간 선호다. 계정별 SQLite/OPFS 행으로 분리하고,
   // 로그인 사용자가 바뀌는 한 렌더 동안 이전 계정의 별표가 보이거나 새 키에 기록되지 않게 owner와

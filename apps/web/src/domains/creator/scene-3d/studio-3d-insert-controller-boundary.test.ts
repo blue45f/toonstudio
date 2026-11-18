@@ -183,9 +183,9 @@ describe("Studio 3D insert controller boundary", () => {
     expect(page.source).toContain("useStudio3dToolMutationTickets(captureStudioMutationTicket, currentPageIdRef");
     expect(toolTickets.source).toContain("useRef<StudioEditorMutationTicket | null>(null)");
     expect(toolTickets.source).toMatch(/if \(!open\)\s*\{\s*pageId\.current = null;\s*ticket\.current = null;\s*pending\.current = null;/u);
-    expect(toolTickets.source).toContain("pageId.current = page.current");
-    expect(toolTickets.source).toContain('if (access === "allowed") ticket.current = capture()');
-    expect(toolTickets.source).toContain('if (access !== "allowed" || page.current !== pageId.current) return');
+    expect(toolTickets.source).toContain("pageId.current = activePageId");
+    expect(toolTickets.source).toContain('access === "allowed" && (!workId || (origin?.workId === workId && origin.authScopeKey === actorId))');
+    expect(toolTickets.source).toContain('access === "denied" || activePageId !== pageId.current || current.workId !== initial.workId');
     for (const source of [page.source, mutationAuthority.source]) {
       expect(source).not.toContain("ReturnType<typeof captureStudioMutationTicket>");
     }

@@ -28,6 +28,7 @@ import {
 } from "../bg3d/studio-bg3d-editor-derivations";
 import {
   parseStudioBg3dSceneDocument,
+  STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION,
   type StudioBg3dSceneDocument,
   type StudioBg3dCameraSettings,
 } from "../bg3d/studio-bg3d-scene-document";
@@ -95,6 +96,7 @@ export interface StudioScene3dCutBg3dEditorHost {
     readonly height: number;
   };
   readonly sceneBaseDocument: StudioBg3dSceneDocument;
+  readonly initialScene?: StudioBg3dSceneDocument;
   readonly primitives: BgPrimitive[];
   readonly customModels: BgCustomModelInstance[];
   readonly storageModelIdByAttachmentIdRef: { current: Map<string, string> };
@@ -291,7 +293,7 @@ export function createStudioScene3dCutBg3dHost(
         characters: shared.map(({ elementId, label, stageTransform, scene: vrmScene }) => ({ elementId, label, stageTransform, vrmScene })) } : pinned;
       return parseStudioScene3dCutSource({ scene, characters: {}, legacyBg3d, linkedVrm });
     },
-    async applySource(sourceInput, cut, signal) {
+    async applySource(sourceInput, cut, signal, openingPinnedLayer) {
       signal.throwIfAborted();
       const reason = blockedReason();
       if (reason) throw new Error(reason);
@@ -331,9 +333,15 @@ export function createStudioScene3dCutBg3dHost(
           projection.issues[0]?.message ??
             "연결 캐릭터 원본 적용을 확인할 수 없습니다."
         );
+      // 원고의 6패스 화면에는 고정 이후 조정한 카메라·광원·출력이 포함된다.
+      const layer = h.initialScene?.output.sixPassLt ? h.initialScene : undefined;
+      const samePin = cut && layer?.pinnedVersionedCut?.id === cut.id && layer.pinnedVersionedCut.sourceHash === cut.sourceHash;
+      const rendered = openingPinnedLayer && samePin ? layer : projection.bg3d;
+      const sixPassLt = layer && (h.sceneBaseDocument.output.sixPassLt ?? layer.output.sixPassLt);
       const document = parseStudioBg3dSceneDocument(
         JSON.stringify({
-          ...projection.bg3d,
+          ...rendered,
+          ...(sixPassLt ? { version: STUDIO_BG3D_SIX_PASS_SCENE_DOCUMENT_VERSION, output: { ...rendered.output, sixPassLt } } : {}),
           ...(cut ? { pinnedVersionedCut: cut } : {}),
         })
       );

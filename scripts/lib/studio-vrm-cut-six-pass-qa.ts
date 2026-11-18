@@ -38,7 +38,7 @@ export async function verifyPaintedSixPass(options: {
     return requestPath.startsWith(base.pathname) && requestPath.endsWith("/seal") && r.request().method() === "PUT";
   }, {timeout: 120_000});
   const saveButton = dialog.getByRole("button", { name: /^고정 컷 6패스 (저장|추가)$/u });
-  const commitFailure = dialog.getByRole("alert").filter({hasText:/6패스|원본|캡처|레이어 잠금|장면이 변경/u}).first();
+  const commitFailure = dialog.getByRole("alert").filter({hasText:/6패스|원본|캡처|레이어 잠금|장면이 변경|편집 문서가 변경/u}).first();
   const [seal] = await Promise.all([Promise.race([onSeal, commitFailure.waitFor({ state: "visible", timeout: 120_000 }).then(async () => {
     throw new Error(await commitFailure.innerText());
   })]), saveButton.click()]);
@@ -113,7 +113,8 @@ export async function verifyPaintedSixPass(options: {
     const expand = page.getByRole("button", { name: /3D LT 배경.*그룹 펼치기/u }).first();
     if (await expand.isVisible()) await expand.click();
   }
-  await row.click({ position: { x: 12, y: 18 } });
+  await row.getByText("3D LT · 주선", { exact: true }).click();
+  await expect(row).toHaveAttribute("data-studio-layer-selected", "true");
   const reopened = await options.reopen();
   await expect(reopened.dialog.getByRole("button", { name: "고정 컷 6패스 저장" })).toBeVisible();
   await page.screenshot({ path: path.join(output, "six-pass-reopened.png") });

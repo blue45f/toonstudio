@@ -20,45 +20,88 @@ export function useStudioCharacterLtInsert(read: () => LtManuscript): StudioLtIn
   }, []);
 }
 
-function useToolTicket(open: boolean, capture: () => StudioEditorMutationTicket | null, page: RefObject<string>, access: StudioDccRouteAccess) {
+interface NamedWorkAccess {
+  workId: string;
+  actorId: string | null;
+  authReady: boolean;
+}
+
+function useToolTicket(open: boolean, capture: () => StudioEditorMutationTicket | null, page: RefObject<string>,
+  access: StudioDccRouteAccess, namedWork?: NamedWorkAccess) {
   const ticket = useRef<StudioEditorMutationTicket | null>(null);
   const pageId = useRef<string | null>(null);
   const pending = useRef<StudioEditorMutationTicket | null>(null);
+  const awaitingFirstActor = useRef(false);
+  const { workId, actorId, authReady } = namedWork ?? {};
+  const activePageId = page.current;
   useEffect(() => {
     if (!open) {
       pageId.current = null;
       ticket.current = null;
       pending.current = null;
+      awaitingFirstActor.current = false;
       return;
     }
     if (pageId.current === null) {
-      pageId.current = page.current;
-      if (access === "allowed") ticket.current = capture();
-      if (access === "pending") pending.current = capture();
+      pageId.current = activePageId;
+      const origin = capture();
+      if (access === "allowed" && (!workId || (origin?.workId === workId && origin.authScopeKey === actorId))) {
+        ticket.current = origin;
+      }
+      if (access === "pending") {
+        pending.current = origin;
+        awaitingFirstActor.current = Boolean(workId && !authReady && !origin?.authScopeKey);
+      }
       return;
     }
-    const initial = pending.current;
-    if (!initial || access === "pending") return;
-    pending.current = null;
-    if (access !== "allowed" || page.current !== pageId.current) return;
+    let initial = pending.current;
+    if (!initial) {
+      if (workId && (access !== "allowed" || activePageId !== pageId.current)) ticket.current = null;
+      return;
+    }
     const current = capture();
-    // 최초 권한 확인만 기다린 같은 원고에 한 번 발급한다. 이후 권한 회수·원고 교체는 기존 티켓이 거부한다.
-    if (current && current.authScopeKey === initial.authScopeKey && current.workId === initial.workId
-      && current.documentGeneration === initial.documentGeneration
-      && (current.accessGeneration === initial.accessGeneration || current.accessGeneration === initial.accessGeneration + 1)) {
+    if (!current || access === "denied" || activePageId !== pageId.current || current.workId !== initial.workId
+      || current.documentGeneration !== initial.documentGeneration) {
+      pending.current = null;
+      return;
+    }
+    // 로그인 복원 중에 연 원고는 처음 확인한 계정에만 연결한다.
+    if (awaitingFirstActor.current && current.authScopeKey) {
+      if (current.authScopeKey !== actorId || current.workId !== workId) {
+        pending.current = null;
+        return;
+      }
+      awaitingFirstActor.current = false;
+      initial = current;
+      pending.current = current;
+    }
+    if (current.authScopeKey !== initial.authScopeKey) {
+      pending.current = null;
+      return;
+    }
+    if (access === "pending") return;
+    pending.current = null;
+    if (workId && (current.workId !== workId || current.authScopeKey !== actorId)) return;
+    if (current.accessGeneration === initial.accessGeneration || current.accessGeneration === initial.accessGeneration + 1) {
       ticket.current = current;
     }
-  }, [access, capture, open, page]);
+  }, [access, activePageId, actorId, authReady, capture, open, workId]);
   return { ticket, pageId };
 }
 
 export function useStudio3dToolMutationTickets(capture: () => StudioEditorMutationTicket | null, page: RefObject<string>,
-  poserOpen: boolean, mannequinOpen: boolean, bg3dOpen: boolean, documentAccess: { locked: boolean; route: StudioDccRouteAccess }) {
-  let access: StudioDccRouteAccess = "allowed";
-  if (documentAccess.locked) access = documentAccess.route === "pending" ? "pending" : "denied";
-  const poser = useToolTicket(poserOpen, capture, page, access);
-  const mannequin = useToolTicket(mannequinOpen, capture, page, access);
-  const bg3d = useToolTicket(bg3dOpen, capture, page, access);
+  poserOpen: boolean, mannequinOpen: boolean, bg3dOpen: boolean,
+  documentAccess: { locked: boolean; route: StudioDccRouteAccess; namedWork?: NamedWorkAccess }) {
+  const { locked, route, namedWork } = documentAccess;
+  let access: StudioDccRouteAccess = namedWork ? route : "allowed";
+  if (locked) access = route === "pending" ? "pending" : "denied";
+  if (namedWork && access !== "denied") {
+    if (!namedWork.authReady) access = "pending";
+    else if (!namedWork.actorId) access = "denied";
+  }
+  const poser = useToolTicket(poserOpen, capture, page, access, namedWork);
+  const mannequin = useToolTicket(mannequinOpen, capture, page, access, namedWork);
+  const bg3d = useToolTicket(bg3dOpen, capture, page, access, namedWork);
   return { poserMutationTicketRef: poser.ticket, poserMutationPageIdRef: poser.pageId,
     mannequinMutationTicketRef: mannequin.ticket, bg3dMutationTicketRef: bg3d.ticket, bg3dMutationPageIdRef: bg3d.pageId };
 }

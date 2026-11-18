@@ -10,6 +10,7 @@ import {
   type StudioBg3dModelAttachment,
 } from "../bg3d/studio-bg3d-scene-document";
 import { adaptStudioBg3dRuntimeToDocument } from "../bg3d/studio-bg3d-scene-runtime";
+import { DEFAULT_STUDIO_BG3D_SIX_PASS_LT } from "../contracts/studio-bg3d-six-pass-settings";
 import { createStudioShared3dSceneSession } from "../studio-shared-3d-scene-bridge";
 import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
 import { createStudioScene3dVersionedCut, parseStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
@@ -102,6 +103,19 @@ describe("실제 BG3D 컷 호스트의 모델 연결 확정 경계", () => {
     await expect(createStudioScene3dCutBg3dHost(f.host).applySource(cut.source, cut, new AbortController().signal)).rejects.toThrow(/원고/);
     expect(f.replace).toHaveBeenCalledTimes(2);
   });
+  it("6패스 레이어 최초 재진입은 저장한 카메라와 출력, 명시적 컷 복귀는 원본 카메라와 6패스 출력을 사용한다", async () => {
+    const f = fixture();
+    const cut = createStudioScene3dVersionedCut({ ...f.adapter.readSource(), id: "cut-a", name: "A 컷" });
+    const initialScene = { ...f.initialDocument, camera: { ...f.initialDocument.camera, position: [2, 3, 6] as const },
+      output: { ...f.initialDocument.output, sixPassLt: DEFAULT_STUDIO_BG3D_SIX_PASS_LT }, pinnedVersionedCut: cut };
+    Object.assign(f.host, { initialScene, sceneBaseDocument: initialScene });
+    const host = createStudioScene3dCutBg3dHost(f.host);
+    await host.applySource(cut.source, cut, new AbortController().signal, true);
+    expect(f.replace.mock.lastCall?.[0].document).toMatchObject({camera: {position: [2,3,6]}, output:{sixPassLt: DEFAULT_STUDIO_BG3D_SIX_PASS_LT}});
+    await host.applySource(cut.source, cut, new AbortController().signal);
+    expect(f.replace.mock.lastCall?.[0].document).toMatchObject({camera:{position: f.initialDocument.camera.position}, output:{sixPassLt:DEFAULT_STUDIO_BG3D_SIX_PASS_LT}});
+  });
+
   it("같은 원고의 미연결 인물은 배경 컷을 막지 않고, 연결을 고른 인물과 누락된 연결은 보호한다", () => {
     const { host, adapter } = fixture();
     Object.assign(host, { sharedSceneSession: { characters: [{}] }, includeSharedCharactersInCapture: false });

@@ -35,7 +35,8 @@ export interface StudioScene3dCutHost {
   applySource(
     source: StudioScene3dCutSource,
     cut: StudioScene3dVersionedCut | null,
-    signal: AbortSignal
+    signal: AbortSignal,
+    openingPinnedLayer?: boolean,
   ): void | "applied" | "deferred" | Promise<void | "applied" | "deferred">;
 }
 export interface StudioScene3dCutSessionSnapshot {
@@ -211,7 +212,7 @@ export class StudioScene3dCutSession {
       }
       const applied =
         saved || pinned
-          ? await this.host.applySource(source, pinned ?? null, task.signal)
+          ? await this.host.applySource(source, pinned ?? null, task.signal, Boolean(pinned))
           : undefined;
       if (!task.current()) return;
       this.#timeline = new StudioScene3dCommandTimeline(project, {
