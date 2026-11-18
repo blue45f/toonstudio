@@ -52,6 +52,18 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
     harness.dispose();
   });
 
+  it("해제 직전 큐에 들어간 세 소품 작업과 해제 뒤 요청은 engine-disposed로 거부한다", async () => {
+    const pending = [harness.engine.setHandProp(null), harness.engine.setHeadProp(null), harness.engine.setStageProp(null)];
+    harness.engine.dispose();
+    for (const outcome of await Promise.allSettled(pending)) {
+      expect(outcome).toMatchObject({ status: "rejected", reason: { code: "engine-disposed" } });
+    }
+    await expect(harness.engine.setHandProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setHeadProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    await expect(harness.engine.setStageProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
+    expect(harness.disposeCount()).toBe(1);
+  });
+
   it("Blender 5.3 소품 13종(손 4·머리 4·스테이지 5) + SHAPER 3D 상대역 캐릭터 4중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
     const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<HandPropId>[];

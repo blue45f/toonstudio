@@ -1,4 +1,6 @@
-import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import type { Board } from "@toonstudio/contracts/admin-cloud-workboard";
+import { sql } from "drizzle-orm";
+import { bigint, boolean, check, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
 import { users } from "./index";
 
@@ -192,3 +194,57 @@ export const adminMemberTestAccounts = pgTable("admin_member_test_accounts", {
   updatedBy: text("updatedBy").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 }).enableRLS();
+
+// 서버가 확인한 관리자 소유자별로 분리한다. 최초 조회는 저장 행을 만들지 않는다.
+export const adminCloudWorkboard = pgTable("admin_cloud_workboard", {
+  ownerUserId: text("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  boardId: text("board_id").notNull().default("cloud-workboard-v1"),
+  revision: bigint("revision", { mode: "number" }).notNull().default(0),
+  payload: jsonb("payload").$type<Board>().notNull(),
+  storedAt: timestamp("stored_at", { withTimezone: true, mode: "date" }),
+}, (t) => [
+  primaryKey({ columns: [t.ownerUserId, t.boardId] }),
+  check("admin_cloud_workboard_id_check", sql`${t.boardId}='cloud-workboard-v1'`),
+  check("admin_cloud_workboard_revision_check", sql`${t.revision} BETWEEN 0 AND 9007199254740991`),
+  check("admin_cloud_workboard_payload_check", sql`jsonb_typeof(${t.payload})='object'
+    AND ${t.payload} ?& ARRAY['schemaVersion','snapshotAt','tasks','audit']
+    AND ${t.payload}->'schemaVersion'='1'::jsonb AND jsonb_typeof(${t.payload}->'snapshotAt')='string'
+    AND jsonb_typeof(${t.payload}->'tasks')='array' AND ${t.payload}->'audit'='[]'::jsonb`),
+  check("admin_cloud_workboard_time_check", sql`(${t.revision}=0 AND ${t.storedAt} IS NULL)
+    OR (${t.revision}>0 AND ${t.storedAt} IS NOT NULL)`),
+]).enableRLS();
+
+// 원본 메모를 복제하지 않고 서버의 행위자·변경 다이제스트·시각만 별도 보존한다.
+export const adminCloudWorkboardAudit = pgTable("admin_cloud_workboard_audit", {
+  ownerUserId: text("owner_user_id").notNull(),
+  boardId: text("board_id").notNull(),
+  revision: bigint("revision", { mode: "number" }).notNull(),
+  actorUserId: text("actor_user_id").notNull(),
+  mutationId: uuid("mutation_id").notNull(),
+  beforeDigest: text("before_digest").notNull(),
+  afterDigest: text("after_digest").notNull(),
+  taskCount: integer("task_count").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true, mode: "date" }).notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.ownerUserId, t.boardId, t.revision] }),
+  unique().on(t.ownerUserId, t.mutationId),
+  foreignKey({ columns: [t.ownerUserId, t.boardId], foreignColumns: [adminCloudWorkboard.ownerUserId, adminCloudWorkboard.boardId] }).onDelete("cascade"),
+  check("admin_cloud_workboard_audit_actor_check", sql`${t.actorUserId}=${t.ownerUserId}`),
+  check("admin_cloud_workboard_audit_revision_check", sql`${t.revision} BETWEEN 1 AND 9007199254740991`),
+  check("admin_cloud_workboard_audit_before_check", sql`${t.beforeDigest} ~ '^[a-f0-9]{64}$'`),
+  check("admin_cloud_workboard_audit_after_check", sql`${t.afterDigest} ~ '^[a-f0-9]{64}$'`),
+  check("admin_cloud_workboard_audit_count_check", sql`${t.taskCount}>=0`),
+]).enableRLS();
+
+export const adminCloudWorkboardReceipts = pgTable("admin_cloud_workboard_receipt", {
+  ownerUserId: text("owner_user_id").notNull(),
+  boardId: text("board_id").notNull(),
+  mutationId: uuid("mutation_id").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  acceptedRevision: bigint("accepted_revision", { mode: "number" }).notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.ownerUserId, t.mutationId] }),
+  foreignKey({ columns: [t.ownerUserId, t.boardId, t.acceptedRevision],
+    foreignColumns: [adminCloudWorkboardAudit.ownerUserId, adminCloudWorkboardAudit.boardId, adminCloudWorkboardAudit.revision] }).onDelete("cascade"),
+  check("admin_cloud_workboard_receipt_digest_check", sql`${t.requestDigest} ~ '^[a-f0-9]{64}$'`),
+]).enableRLS();

@@ -16,6 +16,63 @@ function roleName(role) {
   return role;
 }
 
+const cloudWorkboardRelations = Object.freeze([
+  "admin_cloud_workboard",
+  "admin_cloud_workboard_audit",
+  "admin_cloud_workboard_receipt",
+]);
+
+export function buildAdminCloudWorkboardRuntimeAclSql(role) {
+  const quotedRole = `"${roleName(role)}"`;
+  const tables = cloudWorkboardRelations.map((name) => `public.${name}`).join(", ");
+  return `
+REVOKE ALL ON TABLE ${tables} FROM PUBLIC;
+REVOKE ALL ON TABLE ${tables} FROM ${quotedRole};
+GRANT SELECT, INSERT, UPDATE ON TABLE public.admin_cloud_workboard TO ${quotedRole};
+GRANT SELECT, INSERT ON TABLE public.admin_cloud_workboard_audit, public.admin_cloud_workboard_receipt TO ${quotedRole};
+${cloudWorkboardRelations.map((name) => `ALTER TABLE public.${name} ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ${name}_runtime ON public.${name};
+CREATE POLICY ${name}_runtime ON public.${name}
+  TO ${quotedRole} USING (true) WITH CHECK (true);`).join("\n")}
+`;
+}
+
+export function buildAdminCloudWorkboardCapabilitySql(role) {
+  const safeRole = roleName(role);
+  const tables = cloudWorkboardRelations.map((name) => `('${name}')`).join(", ");
+  return `
+DO $admin_cloud_workboard_capability$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM (VALUES ${tables}) AS required(table_name)
+    CROSS JOIN unnest(ARRAY['SELECT', 'INSERT']) AS permission(privilege_name)
+    WHERE NOT pg_catalog.has_table_privilege('${safeRole}', 'public.' || table_name, privilege_name)
+  ) OR NOT pg_catalog.has_table_privilege('${safeRole}', 'public.admin_cloud_workboard', 'UPDATE')
+  THEN
+    RAISE EXCEPTION 'administrator cloud workboard runtime privileges are incomplete';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM (VALUES ${tables}) AS required(table_name)
+    JOIN pg_catalog.pg_class relation ON relation.oid = ('public.' || table_name)::regclass
+    WHERE NOT relation.relrowsecurity
+      OR pg_catalog.pg_has_role('${safeRole}', relation.relowner, 'USAGE')
+      OR pg_catalog.has_table_privilege('${safeRole}', relation.oid, 'DELETE, TRUNCATE, REFERENCES, TRIGGER')
+      OR pg_catalog.has_table_privilege(0::oid, relation.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+      OR (table_name <> 'admin_cloud_workboard' AND pg_catalog.has_table_privilege('${safeRole}', relation.oid, 'UPDATE'))
+      OR NOT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_policy policy
+        WHERE policy.polrelid=relation.oid AND policy.polname=table_name || '_runtime'
+          AND (SELECT oid FROM pg_catalog.pg_roles WHERE rolname='${safeRole}')=ANY(policy.polroles)
+      )
+  ) OR EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='${safeRole}' AND (rolsuper OR rolbypassrls))
+  THEN
+    RAISE EXCEPTION 'administrator cloud workboard history or isolation privileges are incompatible';
+  END IF;
+END
+$admin_cloud_workboard_capability$;
+`;
+}
+
 export function buildAdminRuntimeAclSql(role) {
   const quotedRole = `"${roleName(role)}"`;
   const tables = adminRelations.map((name) => `public.${name}`).join(", ");

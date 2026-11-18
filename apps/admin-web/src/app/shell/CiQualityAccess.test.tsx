@@ -4,11 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CiQualityAccess } from "./CiQualityAccess";
 
-const mocks = vi.hoisted(() => ({ identity: vi.fn(), mount: vi.fn() }));
+const mocks = vi.hoisted(() => ({ identity: vi.fn(), mount: vi.fn(), cloudMount: vi.fn() }));
 vi.mock("../../platform/http/admin-identity", () => ({ loadAdminIdentity: mocks.identity }));
 vi.mock("../../domains/operations/ci-quality/CiQualityBoard", () => ({ CiQualityBoard: ({ userIdentity }: { userIdentity: string }) => {
   mocks.mount(userIdentity);
   return <p>보드 사용자 {userIdentity}</p>;
+} }));
+vi.mock("../../domains/operations/cloud-work/CloudWorkBoard", () => ({ CloudWorkBoard: ({ onAccessDenied }: { onAccessDenied: (message: string) => void }) => {
+  mocks.cloudMount();
+  return <div><p>클라우드 개인 작업 기록</p><button type="button" onClick={() => onAccessDenied("보드 권한이 만료되었습니다.")}>보드 권한 만료</button></div>;
 } }));
 
 beforeEach(() => { vi.clearAllMocks(); });
@@ -63,5 +67,37 @@ describe("CI·QA 권한 경계", () => {
     await screen.findByText("보드 사용자 actor-b");
     resolveFirst?.({ id: "actor-a", role: "admin" });
     await waitFor(() => expect(screen.queryByText("보드 사용자 actor-a")).toBeNull());
+  });
+});
+
+describe("클라우드 작업 관리자 전용 경계", () => {
+  it("운영자에게 클라우드 모듈을 열지 않는다", async () => {
+    mocks.identity.mockResolvedValue({ id: "operator-a", role: "operator" });
+    render(<CiQualityAccess view="cloud-work" />);
+    expect((await screen.findByRole("alert")).textContent).toContain("운영자 권한으로는 열 수 없습니다");
+    expect(mocks.cloudMount).not.toHaveBeenCalled();
+    expect(mocks.mount).not.toHaveBeenCalled();
+  });
+  it("관리자 검증이 완료되기 전에는 비공개 보드를 마운트하지 않는다", async () => {
+    let resolve: ((value: { id: string; role: string }) => void) | undefined;
+    mocks.identity.mockReturnValue(new Promise(done => { resolve = done; }));
+    render(<CiQualityAccess view="cloud-work" />);
+    expect(mocks.cloudMount).not.toHaveBeenCalled();
+    resolve?.({ id: "admin-a", role: "admin" });
+    await screen.findByText("클라우드 개인 작업 기록");
+    expect(mocks.cloudMount).toHaveBeenCalled();
+  });
+  it("보드 API의 권한 거부가 비공개 UI를 제거하고 늦은 재검증 응답으로 다시 열리지 않는다", async () => {
+    mocks.identity.mockResolvedValueOnce({ id: "admin-a", role: "admin" });
+    render(<CiQualityAccess view="cloud-work" />);
+    await screen.findByText("클라우드 개인 작업 기록");
+    let resolve: ((value: { id: string; role: string }) => void) | undefined;
+    mocks.identity.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    fireEvent.focus(window);
+    fireEvent.click(screen.getByText("보드 권한 만료"));
+    await screen.findByText("보드 권한이 만료되었습니다.");
+    expect(screen.queryByText("클라우드 개인 작업 기록")).toBeNull();
+    resolve?.({ id: "admin-a", role: "admin" });
+    await waitFor(() => expect(screen.queryByText("클라우드 개인 작업 기록")).toBeNull());
   });
 });

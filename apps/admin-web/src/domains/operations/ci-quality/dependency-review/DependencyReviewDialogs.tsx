@@ -46,12 +46,12 @@ export function DependencyRecordDialog({ record, board, now, onSave, onDirtyChan
           <button type="button" aria-pressed={tab === "patch"} onClick={() => setTab("patch")}>패치·검증 초안</button>
         </div>
         <div hidden={tab !== "record"} className="ci-quality-form-grid">
-          <label className="ci-quality-full">작업 관리 상태<select value={draft.status} disabled={record.category === "approval" || record.category === "archive"} onChange={event => { setDraft(previous => ({ ...previous, status: event.target.value as WorkflowStatus })); setConfirmClose(false); }}>{workflowStatuses.map(status => <option key={status} value={status}>{status}</option>)}</select></label>
+          <label className="ci-quality-full">작업 관리 상태<select aria-label="작업 관리 상태" value={draft.status} disabled={record.category === "approval" || record.category === "archive"} onChange={event => { setDraft(previous => ({ ...previous, status: event.target.value as WorkflowStatus })); setConfirmClose(false); }}>{workflowStatuses.map(status => <option key={status} value={status}>{status}</option>)}</select></label>
           {(record.category === "approval" || record.category === "archive") && <p className="ci-quality-full">{record.category === "approval" ? "실행 항목은 승인 대기로 유지합니다. 검토 메모만 저장할 수 있습니다." : "PR #2789는 기존 완료 항목으로 보관합니다. 이번 실패로 다시 집계하지 않습니다."}</p>}
           {editableRecordFields.map(key => <label key={key} className={key === "patchDraft" || key === "evidence" ? "ci-quality-full" : undefined}>{recordFieldLabels[key]}
-            {key === "recordedResult" ? <select value={draft[key]} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }}>{["미확인", "통과", "실패", "취소", "미실행"].map(result => <option key={result} value={result}>{result}</option>)}</select>
-              : shortFields.has(key) ? <input value={draft[key]} maxLength={key === "verificationSha" ? 40 : key === "verifiedAt" ? 64 : 15000} spellCheck={key === "verificationSha" ? false : undefined} placeholder={key === "verifiedAt" ? "예: 2026-11-18T03:00:00Z" : key === "verificationSha" ? "실제 검증한 40자리 SHA" : "미확인인 내용은 비워 두세요"} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }} />
-                : <textarea rows={key === "patchDraft" ? 7 : 3} maxLength={15000} value={draft[key]} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }} />}
+            {key === "recordedResult" ? <select aria-label={recordFieldLabels[key]} value={draft[key]} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }}>{["미확인", "통과", "실패", "취소", "미실행"].map(result => <option key={result} value={result}>{result}</option>)}</select>
+              : shortFields.has(key) ? <input aria-label={recordFieldLabels[key]} value={draft[key]} maxLength={key === "verificationSha" ? 40 : key === "verifiedAt" ? 64 : 15000} spellCheck={key === "verificationSha" ? false : undefined} placeholder={key === "verifiedAt" ? "예: 2026-11-18T03:00:00Z" : key === "verificationSha" ? "실제 검증한 40자리 SHA" : "미확인인 내용은 비워 두세요"} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }} />
+                : <textarea aria-label={recordFieldLabels[key]} rows={key === "patchDraft" ? 7 : 3} maxLength={15000} value={draft[key]} onChange={event => { setDraft(previous => ({ ...previous, [key]: event.target.value })); setConfirmClose(false); }} />}
           </label>)}
           <p className="ci-quality-full">완료로 전환하려면 해당 기준 SHA의 새 확정 근거·검증일·CI 링크를 기록하세요. 확인하지 못한 검사 결과는 미확인으로 남깁니다.</p>
         </div>
@@ -155,8 +155,8 @@ export function DependencyJsonDialog({ board, recovering = false, onImport, onDi
     <div className="ci-quality-dialog-body dependency-json-dialog">
       <p className="ci-quality-warning">로컬 편집 기록은 기본으로 보존합니다. 충돌 항목별 덮어쓰기를 직접 선택해야 바뀝니다. 가져온 완료 주장은 원본에 보존하고 현재 작업은 검토 필요로 표시합니다.</p>
       {recovering && <p className="ci-quality-error">저장본을 읽지 못했습니다. 저장 원문을 먼저 백업하고, 복구할 JSON의 변환 결과를 확인하세요. 확인 후 의존성 검토 저장본을 다시 기록합니다.</p>}
-      <label>가져올 의존성 JSON<textarea className="ci-quality-json" rows={10} value={input} maxLength={REVIEW_JSON_MAX_BYTES} onChange={event => changeInput(event.target.value)} placeholder="Sites 보드의 JSON 내보내기를 붙여 넣으세요." /></label>
-      <label>의존성 JSON 파일<input type="file" accept=".json,application/json" onChange={event => { const file = event.currentTarget.files?.[0]; if (file) void readFile(file); }} /></label>
+      <label>가져올 의존성 JSON<textarea aria-label="가져올 의존성 JSON" className="ci-quality-json" rows={10} value={input} maxLength={REVIEW_JSON_MAX_BYTES} onChange={event => changeInput(event.target.value)} placeholder="Sites 보드의 JSON 내보내기를 붙여 넣으세요." /></label>
+      <label>의존성 JSON 파일<input aria-label="의존성 JSON 파일" type="file" accept=".json,application/json" onChange={event => { const file = event.currentTarget.files?.[0]; if (file) void readFile(file); }} /></label>
       {busy && <p role="status">원본과 변환 결과를 확인하고 있습니다.</p>}
       {plan && <section className="ci-quality-card dependency-import-preview" aria-label="의존성 가져오기 검토 결과">
         <h3>변환 검토 결과</h3>
@@ -171,7 +171,7 @@ export function DependencyJsonDialog({ board, recovering = false, onImport, onDi
         <p>가져오기는 기준 main을 자동 변경하거나 현재 CI 성공으로 집계하지 않습니다.</p>
       </section>}
       <div className="ci-quality-actions"><button type="button" disabled={recovering} onClick={() => exportCurrent(true)}>의존성 기록 내보내기</button><button type="button" disabled={recovering} onClick={() => exportCurrent(false)}>백업 JSON 펼치기</button></div>
-      {exportText && <label>현재 의존성 백업 JSON<textarea readOnly className="ci-quality-json" rows={8} value={exportText} /></label>}
+      {exportText && <label>현재 의존성 백업 JSON<textarea aria-label="현재 의존성 백업 JSON" readOnly className="ci-quality-json" rows={8} value={exportText} /></label>}
       {board.imports.length > 0 && <details><summary>보관된 가져오기 원본 {board.imports.length}개</summary><p>가져온 의존성·PR·명령·이력을 포함한 원문입니다. 현재 기준 표와 구분해 보관합니다.</p><ul className="dependency-import-receipts">{board.imports.map(receipt => <li key={receipt.fingerprint}><code>{receipt.snapshotSha}</code><small>{qualityDate(receipt.importedAt)} · 원본 {receipt.fingerprint.slice(0, 12)}</small><button type="button" aria-label={`가져오기 원본 ${receipt.fingerprint.slice(0, 12)} 다운로드`} onClick={() => {
         try { downloadQualityJson(`toonstudio-dependency-source-${receipt.fingerprint.slice(0, 12)}.json`, receipt.sourceJson); setNotice("가져오기 원본 JSON을 내보냈습니다."); }
         catch (cause) { setError(cause instanceof Error ? cause.message : "원본 JSON을 내보내지 못했습니다."); }
