@@ -1,3 +1,4 @@
+apps/api/src/config/api-body-parser-boundary.test.ts
 apps/api/src/config/cors.test.ts
 apps/api/src/config/env.test.ts
 apps/api/src/config/security-headers.test.ts
@@ -6,6 +7,7 @@ apps/api/src/logging/log-safe.test.ts
 apps/api/src/modules/admin/admin-traffic-d1-query.test.ts
 apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
+apps/api/src/modules/admin/ai-operations
 apps/api/src/modules/auth/anonymous-client-limit.test.ts
 apps/api/src/modules/auth/auth-client-ip.test.ts
 apps/api/src/modules/business-inquiry/business-inquiry.rate-limit.test.ts

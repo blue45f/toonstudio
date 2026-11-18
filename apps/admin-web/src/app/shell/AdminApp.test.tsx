@@ -6,9 +6,21 @@ import { AdminApp } from "./AdminApp";
 
 vi.mock("../../domains/operations/operation-policy/OperationPolicyPanel", () => ({ OperationPolicyPanel: () => <h1>운영 모드와 라이선스</h1> }));
 vi.mock("./CiQualityAccess", () => ({ CiQualityAccess: () => <p role="status">관리자 권한 확인 중</p> }));
+vi.mock("./AiOperationsAccess", () => ({ AiOperationsAccess: () => <p role="status">AI·인프라 관리자 권한 확인 중</p> }));
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
+});
+
+it.each(["/admin/platform/ai-operations", "/admin/platform/ai-operations/"])("AI 운영 화면 %s 진입은 전용 권한 확인과 메뉴를 사용한다", (pathname) => {
+  window.history.replaceState(null, "", pathname);
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("AI·인프라 관리자 권한 확인 중");
+  expect(screen.getByRole("link", { name: "AI·인프라 운영" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
+  expect(screen.queryByRole("navigation", { name: "관리 화면 이동" })).toBeNull();
 });
 
 it("identifies the actual policy surface and links back to existing web management", () => {

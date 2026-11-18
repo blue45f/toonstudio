@@ -51,6 +51,8 @@ UV 아일랜드를 한 타일로 정리하는 후속 구현은 [웹 UV 정리 �
 
 기능을 추가할 때는 [기능 확장 실무 가이드](engineering/feature-extension-guide.md)에서 모듈·상태·권한·테마·3D·협업·API/DB·자산 수명과 검증 경로를 연결한다. 개별 계약과 정책은 해당 정본 문서를 따른다.
 
+Cloudflare 모델 종료·Onpod 무료 한도 기록의 관리자 통합은 [AI·무료 플랜 운영 보드](operations/admin-ai-operations-board.md)의 현재 구현·DB 준비·가져오기·롤백 계약을 따른다.
+
 Studio는 다음 문서를 추가로 본다.
 
 1. [`architecture/studio-current-boundaries.md`](architecture/studio-current-boundaries.md)

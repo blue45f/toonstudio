@@ -1,4 +1,5 @@
 import { json, urlencoded } from "express";
+import { MAX_AI_OPERATIONS_BYTES } from "@toonstudio/contracts/ai-operations";
 
 import {
   BACKEND_CAPABILITY_GATEWAY_CONTENT_TYPE,
@@ -31,6 +32,14 @@ export function configureApiBodyParserBoundary(
   if (capabilityWorkerPolicy) {
     app.use(
       createBackendCapabilityWorkerPreBodyAdmission(capabilityWorkerPolicy),
+    );
+  } else {
+    // 운영 보드는 공백·escape·chunked 입력도 수신 본문 자체를 2 MiB로 제한한다.
+    // 스튜디오의 기존 16 MiB 입력 경계는 아래 공통 파서에 그대로 둔다.
+    app.use(
+      "/api/admin/ai-operations",
+      json({ limit: MAX_AI_OPERATIONS_BYTES, type: ["application/json", gatewayContentType] }),
+      urlencoded({ extended: true, limit: MAX_AI_OPERATIONS_BYTES }),
     );
   }
 

@@ -1,4 +1,6 @@
-import { bigint, boolean, index, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import type { BoardSnapshot } from "@toonstudio/contracts/ai-operations";
 
 import { users } from "./index";
 
@@ -192,3 +194,43 @@ export const adminMemberTestAccounts = pgTable("admin_member_test_accounts", {
   updatedBy: text("updatedBy").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 }).enableRLS();
+
+/** 공급자 운영 기록만 저장한다. 인프라 설정·계정·요금제의 실행 권한은 제공하지 않는다. */
+export const adminAiOperationsBoard = pgTable("admin_ai_operations_board", {
+  id: integer("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
+  payload: jsonb("payload").$type<BoardSnapshot>(),
+  updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }),
+}, (t) => [
+  check("admin_ai_operations_board_singleton", sql`${t.id}=1`),
+  check("admin_ai_operations_board_revision", sql`${t.revision}>=0`),
+  check("admin_ai_operations_board_state", sql`(${t.revision}=0 AND ${t.payload} IS NULL AND ${t.updatedAt} IS NULL)
+    OR (${t.revision}>0 AND ${t.payload} IS NOT NULL AND ${t.updatedAt} IS NOT NULL)`),
+  check("admin_ai_operations_board_payload", sql`${t.payload} IS NULL OR (
+    jsonb_typeof(${t.payload})='object' AND ${t.payload} ?& ARRAY['meta','items','sources']
+    AND jsonb_typeof(${t.payload}->'meta')='object'
+    AND jsonb_typeof(${t.payload}->'items')='array' AND jsonb_typeof(${t.payload}->'sources')='array'
+    AND octet_length(${t.payload}::text)<=4194304)`),
+]);
+
+export const adminAiOperationsAudit = pgTable("admin_ai_operations_audit", {
+  revision: integer("revision").primaryKey(),
+  actorUserId: text("actor_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  beforeDigest: text("before_digest").notNull(),
+  afterDigest: text("after_digest").notNull(),
+  occurredAt: timestamp("occurred_at", { mode: "date", withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  check("admin_ai_operations_audit_revision", sql`${t.revision}>0`),
+  check("admin_ai_operations_audit_before", sql`${t.beforeDigest} ~ '^[a-f0-9]{64}$'`),
+  check("admin_ai_operations_audit_after", sql`${t.afterDigest} ~ '^[a-f0-9]{64}$'`),
+]);
+
+export const adminAiOperationsReceipt = pgTable("admin_ai_operations_receipt", {
+  actorUserId: text("actor_user_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  mutationId: uuid("mutation_id").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  acceptedRevision: integer("accepted_revision").notNull().unique().references(() => adminAiOperationsAudit.revision, { onDelete: "restrict" }),
+}, (t) => [
+  primaryKey({ columns: [t.actorUserId, t.mutationId] }),
+  check("admin_ai_operations_receipt_digest", sql`${t.requestDigest} ~ '^[a-f0-9]{64}$'`),
+]);

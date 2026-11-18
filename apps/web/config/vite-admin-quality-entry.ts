@@ -1,8 +1,10 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
+export const ADMIN_AI_OPERATIONS_BASE = "/admin/platform/ai-operations/";
 
 interface AdminQualityEntryOptions {
   readonly repositoryRoot: string;
@@ -31,6 +33,11 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
           manifest: false,
         },
       });
+      // 같은 Admin 번들은 한 번 빌드하고 문서 진입점만 추가한다. 자산은 원래 base를 유지한다.
+      const adminHtml = await readFile(path.join(outputDirectory, "admin/platform/quality/index.html"), "utf8");
+      const operationsDirectory = path.join(outputDirectory, "admin/platform/ai-operations");
+      await mkdir(operationsDirectory, { recursive: true });
+      await writeFile(path.join(operationsDirectory, "index.html"), adminHtml);
     },
   };
 }

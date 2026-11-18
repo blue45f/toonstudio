@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { buildCustomerSupportRuntimeAclSql, buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
+import { applyProtectedRecordRuntimeContracts } from "./protected-record-database-contracts.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
 import { buildStudioVirtualSpaceRuntimeAclSql, buildStudioVirtualSpaceCapabilitySql } from "./studio-virtual-space-database-contract.mjs";
@@ -3636,8 +3636,7 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
       ledger = readLedger(databaseUrl);
     }
 
-    psql(databaseUrl, buildCustomerSupportRuntimeAclSql(runtimeDatabaseRole));
-    psql(databaseUrl, buildCustomerSupportCapabilitySql(runtimeDatabaseRole));
+    applyProtectedRecordRuntimeContracts((sql) => psql(databaseUrl, sql), runtimeDatabaseRole);
     psql(databaseUrl, buildAuthRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildTrafficAnalyticsRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildCreatorRoleWorkspaceRuntimeAclSql(runtimeDatabaseRole));

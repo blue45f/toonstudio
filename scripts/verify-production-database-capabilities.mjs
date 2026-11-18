@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { buildCustomerSupportCapabilitySql } from "./customer-support-database-contract.mjs";
+import { buildProtectedRecordCapabilitySql } from "./protected-record-database-contracts.mjs";
 import { buildProductionOperationsRuntimeAclViolationSql } from "./production-operations-database-contract.mjs";
 
 import { createHash } from "node:crypto";
@@ -386,7 +386,7 @@ export function buildProductionCapabilityVerificationSql(
     .join(",\n          ");
 
   return `
-${buildCustomerSupportCapabilitySql(runtimeDatabaseRole)}
+${buildProtectedRecordCapabilitySql(runtimeDatabaseRole)}
 ${buildProductionOperationCapabilitySql(runtimeDatabaseRole)}
 ${buildHiringCapabilitySql(runtimeDatabaseRole)}
 ${buildHiringAutomationCapabilitySql(runtimeDatabaseRole)}

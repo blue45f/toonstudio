@@ -128,6 +128,12 @@ function AdminCiQualityEntry() {
       >
         {t("admin.ciQuality.open")}
       </a>
+      <a
+        href="/admin/platform/ai-operations/"
+        className="ml-3 mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        AI·인프라 운영 보드
+      </a>
     </section>
   );
 }
