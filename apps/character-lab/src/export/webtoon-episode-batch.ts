@@ -29,6 +29,7 @@ import {
   planMotionTeaserSchedule,
   synthesizeMotionTeaserAudioPcm,
 } from "./webtoon-motion-teaser";
+import { encodeWebVttText } from "./webtoon-motion-teaser-subtitles";
 import {
   WEBTOON_CUT_CAMERA_PRESETS,
   WEBTOON_MANUSCRIPT_MOODS,
@@ -569,7 +570,7 @@ export function buildEpisodeCutsheetWebVtt(
   const primaryLocale = beats[0]?.snapshot.locale ?? "ko";
   const blocks: string[] = [
     "WEBVTT",
-    `NOTE ToonStudio Episode Cutsheet Subtitles — ${episodeTitleKo.trim() || "1화 콘티"} (${beats.length * 4}컷)`,
+    `NOTE ToonStudio Episode Cutsheet Subtitles — ${encodeWebVttText(episodeTitleKo.trim() || "1화 콘티")} (${beats.length * 4}컷)`,
     "",
   ];
 
@@ -594,7 +595,7 @@ export function buildEpisodeCutsheetWebVtt(
       omitHeader: true,
     });
     if (body.trim().length > 0) {
-      blocks.push(`NOTE ${beat.cutRangeLabel} · ${beat.titleKo}`);
+      blocks.push(`NOTE ${encodeWebVttText(beat.cutRangeLabel)} · ${encodeWebVttText(beat.titleKo)}`);
       blocks.push("");
       blocks.push(body.trimEnd());
       blocks.push("");

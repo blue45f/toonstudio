@@ -59,8 +59,15 @@ function resolveVoiceLabelByLocale(
   return effectivePartner ? "상대역" : "주연";
 }
 
-function sanitizeVttCueText(raw: string): string {
-  return raw.replace(/-->/gu, "→").replace(/[\r\n]+/gu, " ").trim();
+/** 사용자 텍스트를 한 줄로 정리하고 WebVTT 태그·큐 구분자로 해석되지 않게 인코딩한다. */
+export function encodeWebVttText(raw: string): string {
+  return raw
+    .replaceAll("-->", "→")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replace(/[\r\n]+/gu, " ")
+    .trim();
 }
 
 /**
@@ -82,7 +89,7 @@ export function buildMotionTeaserWebVtt(
   const outLines: string[] = [];
   if (!options.omitHeader) {
     outLines.push("WEBVTT");
-    const titleNote = options.episodeTitleKo?.trim() ? ` — ${sanitizeVttCueText(options.episodeTitleKo)}` : "";
+    const titleNote = options.episodeTitleKo?.trim() ? ` — ${encodeWebVttText(options.episodeTitleKo)}` : "";
     outLines.push(`NOTE ToonStudio 9:16 Motion Comic Subtitles (${locale.toUpperCase()})${titleNote}`);
     outLines.push("");
   }
@@ -94,7 +101,7 @@ export function buildMotionTeaserWebVtt(
     const startMs = offsetMs + Math.round(seg.dwellStartMs / speed);
     const endMs = Math.max(startMs + 250, offsetMs + Math.round(seg.dwellEndMs / speed));
     const shape = shapes[cutIdx];
-    const dialogue = shape !== "none" ? sanitizeVttCueText(lines[cutIdx]) : "";
+    const dialogue = shape !== "none" ? encodeWebVttText(lines[cutIdx]) : "";
     const stamp = sfxStamps[cutIdx];
     const sfxTag =
       stamp !== "none"
