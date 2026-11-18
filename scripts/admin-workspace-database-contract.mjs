@@ -1,12 +1,16 @@
 /** 보드 원문·감사 기록은 브라우저 Data API 역할에 공개하지 않는다. */
 export const ADMIN_WORKSPACE_RELATIONS = Object.freeze([
-  "admin_workspace", "admin_workspace_audit", "admin_workspace_receipt",
+  "admin_workspace", "admin_workspace_audit", "admin_workspace_receipt", "admin_workspace_business_grant", "admin_workspace_access_audit",
 ]);
-const WORKSPACE_WRITABLE_COLUMNS = ["revision", "payload", "payload_digest", "updated_by", "updated_at"];
+const WORKSPACE_WRITABLE_COLUMNS = ["revision", "payload", "payload_digest", "updated_by", "updated_at", "operations_revision", "operations_updated_at", "business_revision", "business_updated_at", "business_owner_user_id"];
+const GRANT_WRITABLE_COLUMNS = ["can_write", "can_export", "granted_by", "updated_at", "revoked_at"];
+const EVIDENCE_RELATIONS = ["admin_workspace_audit", "admin_workspace_receipt", "admin_workspace_access_audit"];
 const COLUMN_TYPES = {
-  admin_workspace: { id: "text", revision: "integer", payload: "jsonb", payload_digest: "text", updated_by: "text", updated_at: "timestamp with time zone" },
-  admin_workspace_audit: { board_id: "text", revision: "integer", actor_user_id: "text", action: "text", before_digest: "text", after_digest: "text", occurred_at: "timestamp with time zone" },
-  admin_workspace_receipt: { board_id: "text", actor_user_id: "text", mutation_id: "uuid", request_digest: "text", accepted_revision: "integer", accepted_at: "timestamp with time zone" },
+  admin_workspace: { id: "text", revision: "integer", payload: "jsonb", payload_digest: "text", updated_by: "text", updated_at: "timestamp with time zone", operations_revision: "integer", operations_updated_at: "timestamp with time zone", business_revision: "integer", business_updated_at: "timestamp with time zone", business_owner_user_id: "text" },
+  admin_workspace_audit: { board_id: "text", revision: "integer", actor_user_id: "text", action: "text", before_digest: "text", after_digest: "text", occurred_at: "timestamp with time zone", scope: "text", scope_revision: "integer" },
+  admin_workspace_receipt: { board_id: "text", actor_user_id: "text", mutation_id: "uuid", request_digest: "text", accepted_revision: "integer", accepted_at: "timestamp with time zone", scope: "text", accepted_scope_revision: "integer" },
+  admin_workspace_business_grant: { board_id: "text", user_id: "text", can_write: "boolean", can_export: "boolean", granted_by: "text", updated_at: "timestamp with time zone", revoked_at: "timestamp with time zone" },
+  admin_workspace_access_audit: { id: "uuid", board_id: "text", actor_user_id: "text", subject_user_id: "text", action: "text", mutation_id: "uuid", request_digest: "text", can_write: "boolean", can_export: "boolean", occurred_at: "timestamp with time zone" },
 };
 
 function identifier(value, kind) {
@@ -36,7 +40,9 @@ REVOKE ALL ON TABLE ${tables} FROM ${quotedRole};
 ${columnRevokes}
 GRANT SELECT ON TABLE ${relation("admin_workspace")} TO ${quotedRole};
 GRANT UPDATE (${WORKSPACE_WRITABLE_COLUMNS.map(name => `"${name}"`).join(", ")}) ON TABLE ${relation("admin_workspace")} TO ${quotedRole};
-GRANT SELECT, INSERT ON TABLE ${relation("admin_workspace_audit")}, ${relation("admin_workspace_receipt")} TO ${quotedRole};
+GRANT SELECT, INSERT ON TABLE ${EVIDENCE_RELATIONS.map(relation).join(", ")} TO ${quotedRole};
+GRANT SELECT, INSERT ON TABLE ${relation("admin_workspace_business_grant")} TO ${quotedRole};
+GRANT UPDATE (${GRANT_WRITABLE_COLUMNS.map(name => `"${name}"`).join(", ")}) ON TABLE ${relation("admin_workspace_business_grant")} TO ${quotedRole};
 ${policies}
 DO $admin_workspace_browser_acl$
 DECLARE browser_role text;
@@ -58,6 +64,8 @@ export function buildAdminWorkspaceCapabilitySql(role, schema = "public") {
   const names = ADMIN_WORKSPACE_RELATIONS.map(name => `('${name}')`).join(",");
   const columns = Object.entries(COLUMN_TYPES).flatMap(([table, fields]) => Object.entries(fields).map(([column, type]) => `('${table}','${column}','${type}')`)).join(",\n    ");
   const writes = WORKSPACE_WRITABLE_COLUMNS.map(name => `('${name}')`).join(",");
+  const grantWrites = GRANT_WRITABLE_COLUMNS.map(name => `('${name}')`).join(",");
+  const evidence = EVIDENCE_RELATIONS.map(name => `('${name}')`).join(",");
   return `
 DO $admin_workspace_capability$
 DECLARE browser_role text;
@@ -88,9 +96,14 @@ BEGIN
     OR pg_catalog.has_column_privilege('${safeRole}','${safeSchema}.admin_workspace','id','UPDATE')
     OR EXISTS (SELECT 1 FROM (VALUES ${writes}) AS required(column_name)
       WHERE NOT pg_catalog.has_column_privilege('${safeRole}','${safeSchema}.admin_workspace',column_name,'UPDATE'))
-    OR EXISTS (SELECT 1 FROM (VALUES ('admin_workspace_audit'),('admin_workspace_receipt')) AS required(table_name)
+    OR EXISTS (SELECT 1 FROM (VALUES ${evidence}) AS required(table_name)
       WHERE NOT pg_catalog.has_table_privilege('${safeRole}','${safeSchema}.' || table_name,'INSERT')
         OR pg_catalog.has_any_column_privilege('${safeRole}','${safeSchema}.' || table_name,'UPDATE'))
+    OR NOT pg_catalog.has_table_privilege('${safeRole}','${safeSchema}.admin_workspace_business_grant','INSERT')
+    OR pg_catalog.has_column_privilege('${safeRole}','${safeSchema}.admin_workspace_business_grant','board_id','UPDATE')
+    OR pg_catalog.has_column_privilege('${safeRole}','${safeSchema}.admin_workspace_business_grant','user_id','UPDATE')
+    OR EXISTS (SELECT 1 FROM (VALUES ${grantWrites}) AS required(column_name)
+      WHERE NOT pg_catalog.has_column_privilege('${safeRole}','${safeSchema}.admin_workspace_business_grant',column_name,'UPDATE'))
   THEN RAISE EXCEPTION 'administrator workspace write or evidence privileges are incompatible'; END IF;
   FOREACH browser_role IN ARRAY ARRAY['anon','authenticated'] LOOP
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=browser_role) THEN

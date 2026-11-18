@@ -181,7 +181,8 @@ describe("관리자 작업실 공통 계약", () => {
     const state = createAdminWorkspace();
     expect(parseAdminWorkspaceSave({ expectedRevision: 0, mutationId: "12345678-1234-1234-1234-123456789abc", state }, now).ok).toBe(true);
     expect(parseAdminWorkspaceSave({ expectedRevision: -1, mutationId: "bad", state }, now).ok).toBe(false);
-    expect(parseAdminWorkspaceSaveAck({ boardId: "toonstudio", revision: 1, updatedAt: now.toISOString(), replayed: false }).ok).toBe(true);
+    expect(parseAdminWorkspaceSaveAck({ boardId: "toonstudio", scope: "operations", revision: 1, updatedAt: now.toISOString(), replayed: false }).ok).toBe(true);
+    expect(parseAdminWorkspaceSaveAck({ boardId: "toonstudio", revision: 1, updatedAt: now.toISOString(), replayed: false }).ok).toBe(false);
     expect(parseAdminWorkspaceSaveAck({ boardId: "toonstudio", revision: 0, updatedAt: now.toISOString(), replayed: false }).ok).toBe(false);
   });
   it("숫자의 천 단위 구분을 엄격히 검사하고 잘못된 쉼표를 추측하지 않는다", () => {

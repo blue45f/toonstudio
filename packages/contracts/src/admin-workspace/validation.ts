@@ -1,8 +1,14 @@
+import { workspaceChangeIdentityIssues, workspaceOperationalStateIssues } from "./change-identity";
+import { workspaceEvidenceTargetIssues, workspaceTypedEvidenceIssues } from "./evidence";
+import { projectWorkspaceScope } from "./projection";
 import {
   MAX_WORKSPACE_BYTES, WORKSPACE_APPROVAL_TYPES, WORKSPACE_CLAIM_KINDS, WORKSPACE_FACT_STATUSES,
   WORKSPACE_MODULES, WORKSPACE_STATUSES,
 } from "./types";
 
+import type { AdminWorkspaceAccess, AdminWorkspaceAreaAccess } from "./access-types";
+import type { WorkspaceChangeIdentity, WorkspaceOperationalState } from "./change-identity";
+import type { WorkspaceEvidence, WorkspaceEvidenceTarget } from "./evidence";
 import type {
   AdminWorkspace, AdminWorkspaceSave, AdminWorkspaceSaveAck, AdminWorkspaceView, WorkspaceApproval, WorkspaceBasis,
   WorkspaceCheckItem, WorkspaceDocument, WorkspaceDocumentContent, WorkspaceImport, WorkspaceJson,
@@ -164,6 +170,22 @@ class Reader {
       freshnessDays: this.integer(item.freshnessDays, `${path}.freshnessDays`, 1, 365), localSha: sha("localSha"), remoteSha: sha("remoteSha"), mainSha: sha("mainSha"), deployedSha: sha("deployedSha"),
       approvalOnly: this.boolean(item.approvalOnly, `${path}.approvalOnly`), approvalReason: text("approvalReason"), origin: this.origin(item.origin, `${path}.origin`),
     };
+    if (item.evidence !== undefined) result.evidence = this.array(item.evidence, `${path}.evidence`, 100, (entry, entryPath) => {
+      for (const issue of workspaceTypedEvidenceIssues(entry, this.now)) this.error(entryPath, issue);
+      return entry as WorkspaceEvidence;
+    });
+    if (item.evidenceTarget !== undefined) {
+      for (const issue of workspaceEvidenceTargetIssues(item.evidenceTarget, this.now)) this.error(`${path}.evidenceTarget`, issue);
+      result.evidenceTarget = item.evidenceTarget as WorkspaceEvidenceTarget;
+    }
+    if (item.changeIdentity !== undefined) {
+      for (const issue of workspaceChangeIdentityIssues(item.changeIdentity, this.now)) this.error(`${path}.changeIdentity`, issue);
+      result.changeIdentity = item.changeIdentity as WorkspaceChangeIdentity;
+    }
+    if (item.operationalState !== undefined) {
+      for (const issue of workspaceOperationalStateIssues(item.operationalState, this.now)) this.error(`${path}.operationalState`, issue);
+      result.operationalState = item.operationalState as WorkspaceOperationalState;
+    }
     if ((result.approvalOnly || WORKSPACE_EXECUTION_CATEGORIES.has(result.category)) && result.status !== "승인 대기") this.error(path, "외부 실행 항목은 승인 대기로만 관리합니다.");
     if (WORKSPACE_EXECUTION_CATEGORIES.has(result.category) && !result.approvalOnly) this.error(path, "외부 실행 범주는 승인 전용이어야 합니다.");
     if (result.factStatus === "제외" && !result.notes.trim()) this.error(path, "제외 사유를 메모에 기록하세요.");
@@ -273,21 +295,44 @@ export function parseAdminWorkspace(value: unknown, now = new Date()): Workspace
 }
 export function parseAdminWorkspaceSave(value: unknown, now = new Date()): WorkspaceResult<AdminWorkspaceSave> {
   if (!workspaceObject(value)) return { ok: false, value: null, errors: ["저장 요청 객체가 필요합니다."] };
-  if (Object.keys(value).some(key => !["expectedRevision", "mutationId", "state"].includes(key))) return { ok: false, value: null, errors: ["저장 요청에 허용되지 않은 필드가 있습니다."] };
+  if (Object.keys(value).some(key => !["expectedRevision", "mutationId", "state", "scope", "claimBusinessOwnership"].includes(key))) return { ok: false, value: null, errors: ["저장 요청에 허용되지 않은 필드가 있습니다."] };
+  const scope = value.scope === undefined ? "operations" : value.scope;
+  if ((scope !== "operations" && scope !== "business")
+    || (value.claimBusinessOwnership !== undefined && typeof value.claimBusinessOwnership !== "boolean")
+    || (value.claimBusinessOwnership === true && scope !== "business")) return { ok: false, value: null, errors: ["저장 범위와 비공개 자료 소유권 요청을 확인해 주세요."] };
   const parsed = parseAdminWorkspace(value.state, now); if (!parsed.ok) return parsed;
   if (typeof value.expectedRevision !== "number" || !Number.isSafeInteger(value.expectedRevision) || value.expectedRevision < 0
     || typeof value.mutationId !== "string" || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/iu.test(value.mutationId)) return { ok: false, value: null, errors: ["저장 revision과 UUID mutationId가 필요합니다."] };
-  return { ok: true, value: { expectedRevision: value.expectedRevision, mutationId: value.mutationId, state: parsed.value }, errors: [] };
+  return { ok: true, value: { expectedRevision: value.expectedRevision, mutationId: value.mutationId, state: parsed.value, scope,
+    ...(value.claimBusinessOwnership === undefined ? {} : { claimBusinessOwnership: value.claimBusinessOwnership }) }, errors: [] };
 }
+
+function parseWorkspaceAccess(value: unknown): AdminWorkspaceAccess | null {
+  if (!workspaceObject(value)) return null;
+  const area = (input: unknown): AdminWorkspaceAreaAccess | null => {
+    if (!workspaceObject(input) || ["canRead", "canWrite", "canExport", "canManageAccess"].some(key => typeof input[key] !== "boolean")) return null;
+    if ((!input.canRead && (input.canWrite || input.canExport || input.canManageAccess))
+      || (input.canManageAccess && (!input.canWrite || !input.canExport))) return null;
+    return { canRead: input.canRead as boolean, canWrite: input.canWrite as boolean, canExport: input.canExport as boolean, canManageAccess: input.canManageAccess as boolean };
+  };
+  const operations = area(value.operations); const business = area(value.business);
+  return operations && business ? { operations, business } : null;
+}
+
 export function parseAdminWorkspaceView(value: unknown): WorkspaceResult<AdminWorkspaceView> {
   if (!workspaceObject(value) || value.boardId !== "toonstudio" || typeof value.revision !== "number" || !Number.isSafeInteger(value.revision) || value.revision < 0
+    || (value.scope !== "operations" && value.scope !== "business")
     || typeof value.canEdit !== "boolean" || !(value.updatedAt === null || (typeof value.updatedAt === "string" && workspaceDate(value.updatedAt) !== null))) return { ok: false, value: null, errors: ["저장 응답 형식을 확인할 수 없습니다."] };
+  const access = parseWorkspaceAccess(value.access);
+  if (!access || !access[value.scope].canRead || access[value.scope].canWrite !== value.canEdit) return { ok: false, value: null, errors: ["서버가 확인한 자료 접근 권한이 필요합니다."] };
   const parsed = value.state === null ? null : parseAdminWorkspace(value.state); if (parsed && !parsed.ok) return parsed;
-  return { ok: true, value: { boardId: "toonstudio", revision: value.revision, state: parsed?.value ?? null, updatedAt: value.updatedAt, canEdit: value.canEdit }, errors: [] };
+  if (parsed && !workspaceDataEqual(parsed.value, projectWorkspaceScope(parsed.value, value.scope))) return { ok: false, value: null, errors: ["조회 범위 밖의 비공개 자료를 표시하지 않습니다."] };
+  return { ok: true, value: { boardId: "toonstudio", revision: value.revision, state: parsed?.value ?? null, updatedAt: value.updatedAt, canEdit: value.canEdit, scope: value.scope, access }, errors: [] };
 }
 
 export function parseAdminWorkspaceSaveAck(value: unknown): WorkspaceResult<AdminWorkspaceSaveAck> {
   if (!workspaceObject(value) || value.boardId !== "toonstudio" || typeof value.revision !== "number" || !Number.isSafeInteger(value.revision) || value.revision < 1
+    || (value.scope !== "operations" && value.scope !== "business")
     || typeof value.updatedAt !== "string" || workspaceDate(value.updatedAt) === null || typeof value.replayed !== "boolean") return { ok: false, value: null, errors: ["저장 응답을 확인할 수 없습니다."] };
-  return { ok: true, value: { boardId: "toonstudio", revision: value.revision, updatedAt: value.updatedAt, replayed: value.replayed }, errors: [] };
+  return { ok: true, value: { boardId: "toonstudio", revision: value.revision, updatedAt: value.updatedAt, replayed: value.replayed, scope: value.scope }, errors: [] };
 }

@@ -26,6 +26,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_workspace",
   "admin_workspace_audit",
   "admin_workspace_receipt",
+  "admin_workspace_business_grant",
+  "admin_workspace_access_audit",
   "app_setting",
   "business_inquiry",
   "collection",

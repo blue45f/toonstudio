@@ -2,3 +2,8 @@ export * from "./types";
 export * from "./validation";
 export * from "./domain";
 export * from "./import";
+export * from "./import-review";
+export * from "./evidence";
+export * from "./change-identity";
+export * from "./access-types";
+export * from "./projection";

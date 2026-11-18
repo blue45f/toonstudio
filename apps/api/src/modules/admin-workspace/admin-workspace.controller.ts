@@ -1,5 +1,6 @@
-import { Body, Controller, ForbiddenException, Get, Header, Headers, Inject, Post } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, Header, Headers, Inject, Post, Query } from "@nestjs/common";
 
+import { requireBusinessGrant, requireWorkspaceScope } from "./admin-workspace-access";
 import { requireAdminWorkspaceSave } from "./admin-workspace.dto";
 import { AdminWorkspaceRepository } from "./admin-workspace.repository";
 
@@ -17,8 +18,26 @@ export class AdminWorkspaceController {
 
   @Get()
   @Header("Cache-Control", "private, no-store, max-age=0")
-  read(@Headers("x-user-id") userId?: string) {
-    return this.repository.read(requireActor(userId));
+  read(@Headers("x-user-id") userId?: string, @Query("scope") scope?: string) {
+    return this.repository.read(requireActor(userId), requireWorkspaceScope(scope));
+  }
+
+  @Get("export")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  export(@Headers("x-user-id") userId?: string, @Query("scope") scope?: string) {
+    return this.repository.read(requireActor(userId), requireWorkspaceScope(scope), true);
+  }
+
+  @Get("business-access")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  access(@Headers("x-user-id") userId?: string) {
+    return this.repository.listBusinessAccess(requireActor(userId));
+  }
+
+  @Post("business-access")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  changeAccess(@Body() body: unknown, @Headers("x-user-id") userId?: string) {
+    return this.repository.changeBusinessAccess(requireActor(userId), requireBusinessGrant(body));
   }
 
   @Post("save")

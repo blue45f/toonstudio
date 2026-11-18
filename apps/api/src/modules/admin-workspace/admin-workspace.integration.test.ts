@@ -2,20 +2,20 @@ import "reflect-metadata";
 
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { createAdminWorkspace, parseAdminWorkspace } from "@toonstudio/contracts/admin-workspace";
+import { createAdminWorkspace, createOperationsWorkspace, createWorkspaceRecord, parseAdminWorkspace, type AdminWorkspaceSave } from "@toonstudio/contracts/admin-workspace";
 import { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { buildAdminWorkspaceCapabilitySql, buildAdminWorkspaceRuntimeAclSql } from "../../../../../scripts/admin-workspace-database-contract.mjs";
 import { validatePostgresIntegrationUrl } from "../../../../../scripts/run-postgres-integration-tests.mjs";
-import { AdminWorkspaceRepository } from "./admin-workspace.repository";
+import { AdminWorkspaceRepository, adminWorkspaceDigest } from "./admin-workspace.repository";
 
 const target = process.env.TEST_DATABASE_URL;
 const runtimeRole = process.env.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE ?? process.env.TEST_RUNTIME_DATABASE_ROLE;
 if (process.env.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE && !target) throw new Error("관리자 보드 DB gate에는 명시적인 TEST_DATABASE_URL이 필요합니다.");
 const schema = `admin_workspace_${randomUUID().replaceAll("-", "")}`;
-const migration = readFileSync(new URL("../../platform/database/migrations/0122_admin_workspace.sql", import.meta.url), "utf8")
-  .replaceAll("public.", `"${schema}".`);
+const migrations = ["0122_admin_workspace.sql", "0123_admin_workspace_access.sql"].map(name => readFileSync(new URL(`../../platform/database/migrations/${name}`, import.meta.url), "utf8")
+  .replaceAll("public.", `"${schema}".`));
 
 /** 명시적으로 선택한 일회성 TEST_DATABASE_URL 안에서만 DDL·역할 전환을 수행한다. */
 describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
@@ -24,7 +24,8 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
   let backing: Pool;
   let runtime: Pool;
   let repository: AdminWorkspaceRepository;
-  const input = (expectedRevision = 0) => ({ state: createAdminWorkspace(), expectedRevision, mutationId: randomUUID() });
+  const input = (expectedRevision = 0): AdminWorkspaceSave => ({ state: { ...createOperationsWorkspace(), records: [{ ...createWorkspaceRecord("ops-1", "ai", "task"), title: "합성 운영 기록" }] }, expectedRevision, mutationId: randomUUID(), scope: "operations" });
+  const businessInput = (expectedRevision = 0): AdminWorkspaceSave => ({ state: createAdminWorkspace(), expectedRevision, mutationId: randomUUID(), scope: "business", ...(expectedRevision === 0 ? { claimBusinessOwnership: true } : {}) });
   async function runtimeQuery(sql: string, values?: unknown[]) {
     const client = await runtime.connect();
     try { return await client.query(sql, values); }
@@ -47,7 +48,7 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     await root.query(`CREATE SCHEMA "${schema}"`);
     owner = new Pool({ connectionString: target, max: 2, options: `-c search_path=${schema}` });
     await owner.query(`CREATE TABLE "user"(id text PRIMARY KEY,role text NOT NULL,status text NOT NULL DEFAULT 'active')`);
-    await owner.query(migration);
+    for (const migration of migrations) await owner.query(migration);
     await owner.query(`GRANT USAGE ON SCHEMA "${schema}" TO "${runtimeRole}";
       GRANT SELECT, UPDATE(status) ON "${schema}"."user" TO "${runtimeRole}"`);
     await owner.query(buildAdminWorkspaceRuntimeAclSql(runtimeRole, schema));
@@ -76,7 +77,7 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
   });
 
   it("빈 DB에 실제 원문을 넣지 않고 활성 관리자·운영자만 읽는다", async () => {
-    expect(await repository.read("admin")).toEqual({ boardId: "toonstudio", revision: 0, state: null, updatedAt: null, canEdit: true });
+    expect(await repository.read("admin")).toMatchObject({ boardId: "toonstudio", revision: 0, state: null, updatedAt: null, canEdit: true, scope: "operations" });
     expect((await repository.read("operator")).canEdit).toBe(false);
     for (const actor of ["member", "suspended", "missing"]) await expect(repository.read(actor)).rejects.toMatchObject({ status: 403 });
     await expect(repository.save("operator", input())).rejects.toMatchObject({ status: 403 });
@@ -127,7 +128,7 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
   it("migration 재적용은 기존 기록·감사·재시도 영수증을 보존한다", async () => {
     const request = input(); const ack = await repository.save("admin", request);
     const before = (await owner.query("SELECT to_jsonb(w) AS value FROM admin_workspace w")).rows;
-    await owner.query(migration);
+    for (const migration of migrations) await owner.query(migration);
     await owner.query(buildAdminWorkspaceRuntimeAclSql(runtimeRole, schema));
     await owner.query(buildAdminWorkspaceCapabilitySql(runtimeRole, schema));
     expect((await owner.query("SELECT to_jsonb(w) AS value FROM admin_workspace w")).rows).toEqual(before);
@@ -138,7 +139,9 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     await repository.save("admin", input());
     for (const sql of ["UPDATE admin_workspace_audit SET action='save'", "UPDATE admin_workspace_receipt SET accepted_revision=2",
       "DELETE FROM admin_workspace", "DELETE FROM admin_workspace_audit", "DELETE FROM admin_workspace_receipt",
-      "INSERT INTO admin_workspace(id) VALUES('another')", "UPDATE admin_workspace SET id='another'"]) {
+      "INSERT INTO admin_workspace(id) VALUES('another')", "UPDATE admin_workspace SET id='another'",
+      "UPDATE admin_workspace_access_audit SET action='read'", "DELETE FROM admin_workspace_access_audit",
+      "UPDATE admin_workspace_business_grant SET user_id='admin'", "DELETE FROM admin_workspace_business_grant"]) {
       await expect(runtimeQuery(sql)).rejects.toMatchObject({ code: "42501" });
     }
     expect(await counts()).toEqual({ revision: 1, audits: 1, receipts: 1 });
@@ -162,7 +165,7 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     expect(await counts()).toEqual({ revision: 1, audits: 1, receipts: 1 });
   });
   it("작은 JSON의 지수 숫자가 JSONB에서 커지면 400을 반환하고 숫자 원문을 바꾸지 않는다", async () => {
-    const request = input();
+    const request = businessInput();
     request.state.imports.push({
       id: "synthetic-size-import", label: "실제 사업 자료가 아닌 저장 크기 경계", format: "native-backup", importedAt: "2026-11-17",
       archive: { kind: "toonstudio-admin-workspace", schemaVersion: 1, records: [], numbers: Array.from({ length: 10 }, () => Array(5000).fill(1e308)) },
@@ -171,5 +174,76 @@ describe.skipIf(!target)("실제 PostgreSQL 관리자 작업 보드", () => {
     await expect(repository.save("admin", request)).rejects.toMatchObject({ status: 400, response: { code: "admin_workspace_invalid" } });
     expect(await counts()).toEqual({ revision: 0, audits: 0, receipts: 0 });
     expect((await repository.read("admin")).state).toBeNull();
+  });
+
+  it("사업 소유자는 빈 자료의 명시적 첫 저장으로만 정하고 다른 관리자·운영자에게 자동 공개하지 않는다", async () => {
+    const business = businessInput(); business.state.documents[0].working.content = "합성 비공개 사업 자료";
+    await expect(repository.save("operator", business)).rejects.toMatchObject({ status: 403 });
+    await expect(repository.save("admin", { ...business, claimBusinessOwnership: false })).rejects.toMatchObject({ status: 403 });
+    await repository.save("admin", business);
+    expect((await owner.query("SELECT business_owner_user_id FROM admin_workspace")).rows[0].business_owner_user_id).toBe("admin");
+    for (const actor of ["admin2", "operator"]) {
+      await expect(repository.read(actor, "business")).rejects.toMatchObject({ status: 403 });
+      const visible = await repository.read(actor);
+      expect(visible.revision).toBe(0);
+      expect(visible.updatedAt).toBeNull();
+      expect(visible.state).toBeNull();
+      expect(JSON.stringify(visible)).not.toContain("합성 비공개");
+    }
+    expect((await repository.read("admin", "business")).state).toEqual(business.state);
+  });
+  it("서로 다른 영역의 동시 저장은 각 영역 버전으로 검사하고 숨긴 자료를 보존한다", async () => {
+    await repository.save("admin", input());
+    await repository.save("admin", businessInput());
+    const op = input(1); op.state.records[0].notes = "운영 담당 변경";
+    const business = businessInput(1); business.state.documents[0].working.content = "비공개 본문 변경";
+    const results = await Promise.all([repository.save("admin2", op), repository.save("admin", business)]);
+    expect(results.map(result => [result.scope, result.revision])).toEqual([["operations", 2], ["business", 2]]);
+    expect((await repository.read("admin2")).state).toEqual(op.state);
+    expect((await repository.read("admin", "business")).state).toEqual(business.state);
+    expect(await counts()).toEqual({ revision: 4, audits: 4, receipts: 4 });
+  });
+  it("읽기·편집·내보내기 명시 권한과 회수가 실제 재전송에도 적용된다", async () => {
+    await repository.save("admin", businessInput());
+    const grant = { userId: "operator", mutationId: randomUUID(), canRead: true, canWrite: false, canExport: false };
+    await expect(repository.changeBusinessAccess("admin2", grant)).rejects.toMatchObject({ status: 403 });
+    const ack = await repository.changeBusinessAccess("admin", grant);
+    expect(await repository.changeBusinessAccess("admin", grant)).toEqual({ ...ack, replayed: true });
+    expect((await repository.read("operator", "business")).canEdit).toBe(false);
+    await expect(repository.read("operator", "business", true)).rejects.toMatchObject({ status: 403 });
+    const edit = businessInput(1);
+    await expect(repository.save("operator", edit)).rejects.toMatchObject({ status: 403 });
+    await repository.changeBusinessAccess("admin", { ...grant, mutationId: randomUUID(), canWrite: true });
+    await repository.save("operator", edit);
+    await repository.changeBusinessAccess("admin", { ...grant, mutationId: randomUUID(), canRead: false });
+    await expect(repository.read("operator", "business")).rejects.toMatchObject({ status: 403 });
+    await expect(repository.save("operator", edit)).rejects.toMatchObject({ status: 403 });
+    expect((await repository.listBusinessAccess("admin")).grants).toEqual([]);
+    await expect(repository.listBusinessAccess("admin2")).rejects.toMatchObject({ status: 403 });
+  });
+  it("기존 owner 없는 자료는 migration과 마지막 수정자 권한으로 소유권을 자동 부여하지 않는다", async () => {
+    await repository.save("admin", input());
+    const legacy = createAdminWorkspace();
+    await owner.query("UPDATE admin_workspace SET payload=$1::jsonb,payload_digest=$2 WHERE id='toonstudio'", [JSON.stringify(legacy), adminWorkspaceDigest(legacy)]);
+    for (const migration of migrations) await owner.query(migration);
+    await owner.query(buildAdminWorkspaceRuntimeAclSql(runtimeRole, schema));
+    expect((await owner.query("SELECT business_owner_user_id FROM admin_workspace")).rows[0].business_owner_user_id).toBeNull();
+    await expect(repository.read("admin", "business")).rejects.toMatchObject({ status: 403 });
+    await expect(repository.save("admin", businessInput())).rejects.toMatchObject({ status: 403 });
+    expect((await owner.query("SELECT payload FROM admin_workspace")).rows[0].payload).toEqual(legacy);
+  });
+  it("비공개 조회·내보내기·grant 감사 쓰기 실패에는 자료나 성공을 반환하지 않는다", async () => {
+    await repository.save("admin", businessInput());
+    await owner.query(`CREATE FUNCTION reject_workspace_access_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic access audit failure'; END $$;
+      CREATE TRIGGER reject_workspace_access_audit BEFORE INSERT ON admin_workspace_access_audit FOR EACH ROW EXECUTE FUNCTION reject_workspace_access_audit()`);
+    try {
+      await expect(repository.read("admin", "business")).rejects.toMatchObject({ status: 503 });
+      await expect(repository.read("admin", "business", true)).rejects.toMatchObject({ status: 503 });
+      await expect(repository.changeBusinessAccess("admin", { userId: "admin2", mutationId: randomUUID(), canRead: true, canWrite: true, canExport: true })).rejects.toMatchObject({ status: 503 });
+      expect((await owner.query("SELECT count(*)::integer AS count FROM admin_workspace_business_grant")).rows[0].count).toBe(0);
+      expect(await counts()).toEqual({ revision: 1, audits: 1, receipts: 1 });
+    } finally {
+      await owner.query("DROP TRIGGER reject_workspace_access_audit ON admin_workspace_access_audit; DROP FUNCTION reject_workspace_access_audit()");
+    }
   });
 });
