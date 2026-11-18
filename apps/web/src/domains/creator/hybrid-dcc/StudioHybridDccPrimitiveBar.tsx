@@ -11,6 +11,7 @@ import {
   PackageOpen,
   SlidersHorizontal,
   Sun,
+  Type,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -32,6 +33,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccPrecisionBgKitItem,
@@ -272,6 +274,35 @@ export function StudioHybridDccPrimitiveBar({
           </div>
         </details>
       ) : null}
+
+      <details className="group rounded-xl border border-line bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v23-zdepth-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Type size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
+              {bt(
+                `Z-심도 효과음·군중·시간대 V23 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT.length}종)`,
+                `Z-depth SFX, crowd & ToD V23 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
 
       <details className="group rounded-xl border border-line bg-canvas/35">
         <summary

@@ -1,13 +1,15 @@
 /**
- * 뷰포트 3D 웹툰 소품·배경 워크벤치 바 (Unslop Warm Ink Atelier 정제 규약):
+ * 뷰포트 3D 웹툰 소품·배경·효과음 스탬프 워크벤치 바 (Unslop Warm Ink Atelier 정제 규약):
  * - 손 소품 4종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
  * - 머리 액세서리 4종(`wire-glasses`, `rofan-tiara`, `tactical-headset`, `pearl-earrings-pin`) 실시간 head 본 부착
- * - 배경 스테이지 프롭 3종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`) 발밑·등 뒤 배치
+ * - 배경 스테이지 프롭 5종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`) 발밑·등 뒤 배치
+ * - 한국형 웹툰 3D 오노마토페 스탬프 4종(`seureung`, `dugeun`, `kugugung`, `pat`) 상단 프레임 배치
  */
 import { qNormalize } from "../../../shared/math";
 
 import { findWebtoonSceneDirectorPreset, resolveDirectorShadingProfile } from "./viewport-scene-director";
 
+import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
 import type { StripDirectorSession, WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
 import type {
   CharacterEngine,
@@ -20,6 +22,8 @@ import type {
   Pose,
   PresetId,
   Quat,
+  SfxStampAttachment,
+  SfxStampId,
   ShadingProfile,
   StagePropAttachment,
   StagePropId,
@@ -70,6 +74,16 @@ export interface WebtoonStagePropSpec {
   readonly id: StagePropId;
   readonly labelKo: string;
   readonly genreHintKo: string;
+  readonly glbUrl: string;
+  readonly sha256: string;
+}
+
+export interface WebtoonSfxStampSpec {
+  readonly id: SfxStampId;
+  readonly glyphKo: string;
+  readonly labelKo: string;
+  readonly genreHintKo: string;
+  readonly accentHex: string;
   readonly glbUrl: string;
   readonly sha256: string;
 }
@@ -204,6 +218,45 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
   },
 ]);
 
+export const WEBTOON_SFX_STAMPS: readonly WebtoonSfxStampSpec[] = Object.freeze([
+  {
+    id: "seureung",
+    glyphKo: "스릉",
+    labelKo: "스릉 (발도·검기 효과음)",
+    genreHintKo: "무협·로판·헌터 발도 컷",
+    accentHex: "#5ce8f2",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-seureung.glb",
+    sha256: "69d81ae58c47956533b3b6d4a104b1b1ec2da40613840f02a57f85c59a547b62",
+  },
+  {
+    id: "dugeun",
+    glyphKo: "두근",
+    labelKo: "두근 (로맨스·설렘 효과음)",
+    genreHintKo: "로맨스·캠퍼스·로판 아이컨택 컷",
+    accentHex: "#f486a8",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-dugeun.glb",
+    sha256: "aaac089e175b1937a33c655c26fa281254e886cb64fcbea5783e9949064cb3e6",
+  },
+  {
+    id: "kugugung",
+    glyphKo: "쿠구궁",
+    labelKo: "쿠구궁 (위압·각성 효과음)",
+    genreHintKo: "액션·각성·클라이맥스 컷",
+    accentHex: "#f0b856",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-kugugung.glb",
+    sha256: "f6e7c1c628f94b3a85155a1220e2af0a19d531d43c9d32af37ee1a80792bb11c",
+  },
+  {
+    id: "pat",
+    glyphKo: "팟",
+    labelKo: "팟 (섬광·반전 효과음)",
+    genreHintKo: "스릴러·추리·시선 반전 컷",
+    accentHex: "#ffe076",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-pat.glb",
+    sha256: "5986d529a9b8955d8d59e75b6085e25e19f67b7e7034dfa65ba6f735f78fc898",
+  },
+]);
+
 export function findWebtoonHandPropSpec(propId: string): WebtoonHandPropSpec | null {
   return WEBTOON_HAND_PROPS.find((item) => item.id === propId) ?? null;
 }
@@ -214,6 +267,10 @@ export function findWebtoonHeadPropSpec(propId: string): WebtoonHeadPropSpec | n
 
 export function findWebtoonStagePropSpec(propId: string): WebtoonStagePropSpec | null {
   return WEBTOON_STAGE_PROPS.find((item) => item.id === propId) ?? null;
+}
+
+export function findWebtoonSfxStampSpec(stampId: string): WebtoonSfxStampSpec | null {
+  return WEBTOON_SFX_STAMPS.find((item) => item.id === stampId) ?? null;
 }
 
 export function toHandPropAttachment(propId: string, hand: HandPropSide): HandPropAttachment | null {
@@ -242,6 +299,16 @@ export function toStagePropAttachment(propId: string): StagePropAttachment | nul
   if (!spec) return null;
   return {
     propId: spec.id,
+    glbUrl: spec.glbUrl,
+    sha256: spec.sha256,
+  };
+}
+
+export function toSfxStampAttachment(stampId: string): SfxStampAttachment | null {
+  const spec = findWebtoonSfxStampSpec(stampId);
+  if (!spec) return null;
+  return {
+    stampId: spec.id,
     glbUrl: spec.glbUrl,
     sha256: spec.sha256,
   };
@@ -429,6 +496,9 @@ interface ViewportPropActionInputs {
   readonly setHeadPropId: (value: HeadPropId | "") => void;
   readonly setStagePropId: (value: StagePropId | "") => void;
   readonly setHandPropBusy: (value: boolean) => void;
+  readonly mangaFx: ViewportMangaFxState;
+  readonly setMangaFx: (update: (state: ViewportMangaFxState) => ViewportMangaFxState) => void;
+  readonly setSfxBusy: (value: boolean) => void;
   readonly setNotice: (value: string | null) => void;
   readonly dispatch: (command: LabCommand) => void;
   readonly failureText: (error: unknown, fallback: string) => string;
@@ -436,9 +506,38 @@ interface ViewportPropActionInputs {
 
 /** 상태는 뷰포트가 소유한다. 같은 렌더의 선택값을 캡처하고 호출·대기·실패 정리 순서를 유지한다. */
 export function createViewportPropActions({
-  engine, pose, shading, stripDirector, handPropId, handPropSide,
+  engine, pose, shading, stripDirector, handPropId, handPropSide, mangaFx, setMangaFx, setSfxBusy,
   setHandPropId, setHandPropSide, setHeadPropId, setStagePropId, setHandPropBusy, setNotice, dispatch, failureText,
 }: ViewportPropActionInputs) {
+  const syncSfxStamp3d = async (enabled: boolean, stamp: MangaSfxStampPreset): Promise<void> => {
+    if (!engine?.setSfxStamp) return;
+    const attachment = enabled && stamp !== "none" ? toSfxStampAttachment(stamp) : null;
+    setSfxBusy(true);
+    try {
+      await engine.setSfxStamp(attachment);
+      const spec = enabled && stamp !== "none" ? findWebtoonSfxStampSpec(stamp) : null;
+      if (spec) setNotice(`웹툰 효과음 스탬프 적용: ${spec.labelKo}`);
+    } catch (error) {
+      setNotice(failureText(error, "웹툰 효과음 스탬프를 배치하지 못했습니다."));
+    } finally {
+      setSfxBusy(false);
+    }
+  };
+  const onToggleMangaFx = (): void => {
+    setMangaFx((prev) => {
+      const nextEnabled = !prev.enabled;
+      if (prev.sfxStamp !== "none") {
+        void syncSfxStamp3d(nextEnabled, prev.sfxStamp);
+      }
+      return { ...prev, enabled: nextEnabled };
+    });
+  };
+  const onChangeMangaSfxStamp = (sfxStamp: MangaSfxStampPreset): void => {
+    setMangaFx((prev) => {
+      void syncSfxStamp3d(prev.enabled, sfxStamp);
+      return { ...prev, sfxStamp };
+    });
+  };
   const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
     setHandPropId(nextPropId);
     setHandPropSide(nextSide);
@@ -501,13 +600,15 @@ export function createViewportPropActions({
       setHandPropId("");
       setHeadPropId("");
       setStagePropId("");
-      stripDirector.update({ activeDirectorId: "", actingArc: "none", bakeStripFx: false });
+      setMangaFx((prev) => ({ ...prev, sfxStamp: "none" }));
+      stripDirector.reset();
       if (!engine) return;
       setHandPropBusy(true);
       try {
         if (engine.setHandProp) await engine.setHandProp(null);
         if (engine.setHeadProp) await engine.setHeadProp(null);
         if (engine.setStageProp) await engine.setStageProp(null);
+        if (engine.setSfxStamp) await engine.setSfxStamp(null);
         setNotice("원클릭 씬 디렉터를 해제했습니다.");
       } catch (error) {
         setNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
@@ -523,12 +624,16 @@ export function createViewportPropActions({
     setHandPropSide(preset.handSide);
     setHeadPropId(preset.headPropId);
     setStagePropId(preset.stagePropId);
+    setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
     stripDirector.update({
       activeDirectorId: preset.id,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
       dialogueLines: preset.dialogueLines,
+      bubbleShapes: preset.bubbleShapes,
+      bubbleFontScales: preset.bubbleFontScales,
+      sfxStamps: preset.sfxStamps,
     });
 
     for (const cmd of buildHandPropGripPoseCommands(pose, preset.handPropId, preset.handSide)) {
@@ -545,6 +650,7 @@ export function createViewportPropActions({
       if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
       if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
       if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
+      if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
       setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
     } catch (error) {
       setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
@@ -553,5 +659,5 @@ export function createViewportPropActions({
     }
   };
 
-  return { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector };
+  return { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector, onToggleMangaFx, onChangeMangaSfxStamp };
 }

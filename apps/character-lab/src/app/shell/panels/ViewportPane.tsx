@@ -1,5 +1,6 @@
 /**
- * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭 포함) + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
+ * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭·3D 듀오 스테이지·효과음 스탬프·원클릭 씬 디렉터 포함)
+ * + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -127,6 +128,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
+  const [sfxBusy, setSfxBusy] = useState(false);
   const [handPropId, setHandPropId] = useState<HandPropId | "">("");
   const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
   const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
@@ -673,6 +675,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
   const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
+
   const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
     if (!engine?.setDuoPartner) return;
     const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
@@ -705,8 +708,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
   };
-  const { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector } = createViewportPropActions({
-    engine, pose: labState.recipe.pose, shading: labState.recipe.shading, stripDirector, handPropId, handPropSide,
+  const { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector, onToggleMangaFx, onChangeMangaSfxStamp } = createViewportPropActions({
+    engine, pose: labState.recipe.pose, shading: labState.recipe.shading, stripDirector, handPropId, handPropSide, mangaFx, setMangaFx, setSfxBusy,
     setHandPropId, setHandPropSide, setHeadPropId, setStagePropId, setHandPropBusy, setNotice, dispatch, failureText,
   });
 
@@ -726,12 +729,18 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           state: duoShot,
           update: updateDuoShotWith3dSync,
           summaryKo: duoEyeContact.summaryKo,
-          applyEyeContact: onApplyDuoEyeContact,
           duo3dSupported: Boolean(engine?.setDuoPartner),
           duo3dBusy,
+          applyEyeContact: onApplyDuoEyeContact,
         }}
-        mangaFx={{ state: mangaFx, set: setMangaFx }}
-        sceneDirector={{
+        mangaFx={{
+          state: mangaFx,
+          set: setMangaFx,
+          sfxBusy,
+          onToggle: onToggleMangaFx,
+          onChangeSfxStamp: onChangeMangaSfxStamp,
+        }}
+        director={{
           engineReady: Boolean(engine?.setHandProp),
           busy: handPropBusy,
           activeDirectorId,

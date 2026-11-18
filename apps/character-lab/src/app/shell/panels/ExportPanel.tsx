@@ -1,5 +1,5 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트) ·
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
  * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
@@ -22,7 +22,7 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
-import { WEBTOON_STRIP_ACTING_ARCS, exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
+import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
@@ -33,7 +33,7 @@ import {
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
-import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
+import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection, ExportStripDirectorControls } from "./export-panel/ExportStatusSection";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -50,7 +50,6 @@ import type { ExportBusyKind } from "./export-panel/ExportStatusSection";
 import type { ExportPanelProps } from "./export-panel-helpers";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
-import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
@@ -104,7 +103,7 @@ export function ExportPanel({
 
   const applyPlan = useApplyPlan();
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines } = directorState;
+  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -293,6 +292,9 @@ export function ExportPanel({
                     includeSpeechBubbles: true,
                     intensity: 0.78,
                     dialogueLines,
+                    bubbleShapes,
+                    bubbleFontScales,
+                    sfxStamps,
                   },
                 }
               : {}),
@@ -424,7 +426,6 @@ export function ExportPanel({
           const entry = indexResult.entries.find((item) => item.characterId === characterId);
           if (!entry) return undefined;
           if (entry.glbSha256 !== null && entry.glbSha256 !== expectedSha256) {
-            // 다른 SHA가 인덱스에 등록되어 있으면 해시 불일치 가드가 정확히 동작하도록 기존 엔트리를 반환한다.
             return { glbSha256: entry.glbSha256, capabilities: currentState.capabilities };
           }
           const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });
@@ -613,65 +614,7 @@ export function ExportPanel({
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-acting-arc`}>4컷 연기 시퀀스</label>
-          <select
-            id={`${ids}-strip-acting-arc`}
-            data-testid="export-strip-acting-arc"
-            value={stripActingArc}
-            onChange={(event) => stripDirector.update({ actingArc: event.target.value as WebtoonStripActingArcId })}
-          >
-            <option value="none">고정 표정·시선 (단일 포즈 유지)</option>
-            {WEBTOON_STRIP_ACTING_ARCS.map((arc) => (
-              <option key={arc.id} value={arc.id}>
-                {arc.labelKo}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-bake-fx`}>
-            <input
-              id={`${ids}-strip-bake-fx`}
-              data-testid="export-strip-bake-fx"
-              type="checkbox"
-              checked={bakeStripFx}
-              onChange={(event) => stripDirector.update({ bakeStripFx: event.target.checked })}
-            />{" "}
-            4컷 말풍선·효과선 베이킹
-          </label>
-          <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
-          <select
-            id={`${ids}-strip-fx-lines`}
-            data-testid="export-strip-fx-lines"
-            value={stripFxLines}
-            disabled={!bakeStripFx}
-            onChange={(event) => stripDirector.update({ stripFxLines: event.target.value as WebtoonStripFxLinesKind })}
-          >
-            <option value="focus-radial">집중선 (방사형)</option>
-            <option value="speed-diagonal">속도선 (대각선)</option>
-            <option value="romance-sparkle">로맨스 스파클</option>
-            <option value="none">말풍선만 (효과선 없음)</option>
-          </select>
-        </div>
-        <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 한국어 식자 대사">
-          {([0, 1, 2, 3] as const).map((cutIdx) => (
-            <label key={cutIdx} htmlFor={`${ids}-strip-dialogue-${cutIdx}`} className="cl-export-dialogue-item">
-              <span>{`${cutIdx + 1}컷 대사`}</span>
-              <input
-                id={`${ids}-strip-dialogue-${cutIdx}`}
-                data-testid={`export-strip-dialogue-${cutIdx}`}
-                type="text"
-                maxLength={42}
-                disabled={!bakeStripFx}
-                value={dialogueLines[cutIdx]}
-                onChange={(event) => stripDirector.setDialogueLine(cutIdx, event.target.value)}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <ExportStripDirectorControls ids={ids} directorState={directorState} stripDirector={stripDirector} />
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
