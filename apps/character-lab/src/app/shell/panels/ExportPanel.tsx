@@ -1,7 +1,7 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립 + 단행본 우→좌/좌→우·쪽번호·제본 여백 출판 페이지 + 모바일 스크롤·오토패닝 미리보기 + 키네틱 팝인·효과음·무드 앰비언트 BGM 9:16 WebM 모션 티저 + 다국어 WebVTT 자막) ·
- * 에피소드 다중 4컷 콘티 큐시트(.cutsheet.json · localStorage 초안 보존 · 장편 4×N컷 PNG · 연속 9:16 WebM · 통합 WebVTT · 스토리보드 .md 일괄 출고) ·
- * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 · GLB · 레이어 PSD(5단 만화 연출 분리 포함) · 키보드 단축키(Ctrl/Cmd+Shift+Q/M/B).
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립 + 단행본 우→좌/좌→우 4컷 내지 · 표지 · 목차 · 양면 펼침면 + 모바일 스크롤·오토패닝 미리보기 + 키네틱 팝인·효과음·무드 BGM 9:16 WebM · 무손실 WAV · 다국어 WebVTT 자막) ·
+ * 에피소드 다중 4컷 콘티 큐시트(.cutsheet.json · 12대 장르 내장 샘플 템플릿 · 제자리 덮어쓰기 · localStorage 초안 보존 · 장편 4×N컷 PNG · 연속 9:16 WebM · 통합 WAV · 통합 WebVTT · 스토리보드 .md 일괄 출고) ·
+ * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 · GLB · 레이어 PSD(5단 만화 연출 분리 포함) · 키보드 단축키(Ctrl/Cmd+Shift+Q/M/B/K).
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -328,14 +328,20 @@ export function ExportPanel({
   const {
     onWebtoonStripPng,
     onWebtoonTankobonPng,
+    onWebtoonTankobonCoverPng,
+    onWebtoonTankobonTocPng,
+    onWebtoonTankobonSpreadPng,
     onWebtoonMotionWebm,
+    onWebtoonMotionWav,
     onWebtoonMotionVtt,
     onExportBatchLongStripPng,
     onExportBatchMotionWebm,
+    onExportBatchAudioWav,
     onExportBatchWebVtt,
     onExportStoryboardMd,
   } = createWebtoonExportActions({
     width,
+    framing,
     settleSteps,
     directorState,
     labState,
@@ -598,13 +604,18 @@ export function ExportPanel({
     "quad-sheet": onQuadSheetPng,
     "webtoon-strip": onWebtoonStripPng,
     "webtoon-tankobon": onWebtoonTankobonPng,
+    "webtoon-tankobon-cover": onWebtoonTankobonCoverPng,
+    "webtoon-tankobon-toc": onWebtoonTankobonTocPng,
+    "webtoon-tankobon-spread": onWebtoonTankobonSpreadPng,
     "webtoon-reader": onOpenWebtoonReaderPreview,
     "webtoon-motion-webm": () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
     webm: () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
+    wav: onWebtoonMotionWav,
     vtt: onWebtoonMotionVtt,
     "storyboard-md": onExportStoryboardMd,
     "cutsheet-long-strip": onExportBatchLongStripPng,
     "cutsheet-webm": onExportBatchMotionWebm,
+    "cutsheet-wav": onExportBatchAudioWav,
     "cutsheet-vtt": onExportBatchWebVtt,
     psd: onPsd,
     glb: onGlb,
@@ -660,6 +671,9 @@ export function ExportPanel({
       } else if (lower === "b" && engineReady && busyRef.current === null) {
         event.preventDefault();
         onWebtoonTankobonPng();
+      } else if (lower === "k" && engineReady && busyRef.current === null) {
+        event.preventDefault();
+        onWebtoonTankobonSpreadPng();
       }
     }
   };
@@ -680,7 +694,7 @@ export function ExportPanel({
       />
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
-          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB·WebM은 엔진이 준비된 뒤 사용할 수 있습니다. 레시피·큐시트·자막 저장/불러오기는 가능합니다.
+          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB·WebM은 엔진이 준비된 뒤 사용할 수 있습니다. 레시피·큐시트·음원·자막 저장/불러오기는 가능합니다.
         </p>
       ) : null}
       <ExportDimensionControls
@@ -705,6 +719,7 @@ export function ExportPanel({
         onLoadCutsheetFile={onLoadCutsheetFile}
         onExportBatchLongStripPng={onExportBatchLongStripPng}
         onExportBatchMotionWebm={onExportBatchMotionWebm}
+        onExportBatchAudioWav={onExportBatchAudioWav}
         onExportBatchWebVtt={onExportBatchWebVtt}
         onExportStoryboardMd={onExportStoryboardMd}
         onBeatAppliedNotice={(msg) => setNotices([msg])}
@@ -719,8 +734,12 @@ export function ExportPanel({
         onQuadSheetPng={onQuadSheetPng}
         onWebtoonStripPng={onWebtoonStripPng}
         onWebtoonTankobonPng={onWebtoonTankobonPng}
+        onWebtoonTankobonCoverPng={onWebtoonTankobonCoverPng}
+        onWebtoonTankobonTocPng={onWebtoonTankobonTocPng}
+        onWebtoonTankobonSpreadPng={onWebtoonTankobonSpreadPng}
         onOpenWebtoonReaderPreview={onOpenWebtoonReaderPreview}
         onWebtoonMotionWebm={onWebtoonMotionWebm}
+        onWebtoonMotionWav={onWebtoonMotionWav}
         onWebtoonMotionVtt={onWebtoonMotionVtt}
         onGlb={onGlb}
         onRecipeSave={onRecipeSave}

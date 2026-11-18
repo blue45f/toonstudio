@@ -966,4 +966,73 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(11));
     expect(String.fromCharCode(...(calls[10]?.bytes.subarray(0, 4) ?? []))).toBe("8BPS");
   });
+
+  it("내장 12대 장르 샘플 템플릿 적재·비트 제자리 덮어쓰기·무손실 WAV(단일/통합)·단행본 표지/목차/펼침면(Ctrl+Shift+K)을 검증한다", async () => {
+    const calls: SaveCall[] = [];
+    const engine = createMockEngine();
+    render(
+      <MockLabProvider engineSession={readySession(engine)}>
+        <ExportPanel
+          session={createPaintSession({ layerSize: 8 })}
+          deps={{
+            save: fakeSave(calls),
+            now: () => 90,
+          }}
+        />
+      </MockLabProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("너비(px)"), { target: { value: "64" } });
+    fireEvent.change(screen.getByLabelText("높이(px)"), { target: { value: "64" } });
+
+    // 12대 장르 옴니버스 샘플 원클릭 적재 (12비트 · 48컷)
+    expect((screen.getByTestId("cutsheet-template-select") as HTMLSelectElement).value).toBe(
+      "template-12genre-omnibus-48cuts",
+    );
+    fireEvent.click(screen.getByTestId("cutsheet-load-template-btn"));
+    expect(screen.getByTestId("cutsheet-summary-count").textContent).toContain("총 12비트 · 48컷");
+
+    // 3막 12컷 템플릿 전환 적재 및 첫 번째 비트 제자리 덮어쓰기(updateBeat)
+    fireEvent.change(screen.getByTestId("cutsheet-template-select"), {
+      target: { value: "template-trilogy-climax-12cuts" },
+    });
+    fireEvent.click(screen.getByTestId("cutsheet-load-template-btn"));
+    expect(screen.getByTestId("cutsheet-summary-count").textContent).toContain("총 3비트 · 12컷");
+
+    fireEvent.change(screen.getByTestId("cutsheet-beat-title"), {
+      target: { value: "법정 긴급 재심문" },
+    });
+    fireEvent.click(screen.getByTestId("cutsheet-beat-update-0"));
+    expect(screen.getByTestId("cutsheet-beat-item-0").textContent).toContain("법정 긴급 재심문");
+
+    // 큐시트 통합 무손실 WAV 및 단일 4컷 무손실 WAV 저장
+    fireEvent.click(screen.getByTestId("cutsheet-export-wav"));
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.mime).toBe("audio/wav");
+    expect(calls[0]?.fileName).toMatch(/-12cuts-episode-audio\.wav$/u);
+
+    fireEvent.click(screen.getByTestId("export-webtoon-motion-wav"));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]?.mime).toBe("audio/wav");
+    expect(calls[1]?.fileName).toMatch(/-webtoon-4cut-sfx-audio\.wav$/u);
+
+    // 단행본 권수(VOL.03) · 작가명 · 표지 PNG · 목차 PNG · 양면 펼침면(Ctrl+Shift+K) 검증
+    fireEvent.change(screen.getByTestId("export-tankobon-volume-num"), { target: { value: "3" } });
+    fireEvent.change(screen.getByTestId("export-tankobon-author"), { target: { value: "툰스튜디오 아틀리에" } });
+
+    fireEvent.click(screen.getByTestId("export-webtoon-tankobon-cover-png"));
+    await waitFor(() => expect(calls).toHaveLength(3));
+    expect(calls[2]?.fileName).toMatch(/-tankobon-vol03-cover\.png$/u);
+    expect(isPng(calls[2]?.bytes ?? new Uint8Array())).toBe(true);
+
+    fireEvent.click(screen.getByTestId("export-webtoon-tankobon-toc-png"));
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(calls[3]?.fileName).toMatch(/-tankobon-vol03-toc\.png$/u);
+    expect(isPng(calls[3]?.bytes ?? new Uint8Array())).toBe(true);
+
+    fireEvent.keyDown(screen.getByRole("heading", { name: "내보내기" }), { key: "K", ctrlKey: true, shiftKey: true });
+    await waitFor(() => expect(calls).toHaveLength(5));
+    expect(calls[4]?.fileName).toMatch(/-tankobon-vol03-rtl-spread\.png$/u);
+    expect(isPng(calls[4]?.bytes ?? new Uint8Array())).toBe(true);
+  });
 });

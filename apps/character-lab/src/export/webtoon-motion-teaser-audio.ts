@@ -1,5 +1,5 @@
 /** 컷 진입 효과음과 무드별 앰비언트 BGM을 결정적 PCM 트랙으로 합성한다. */
-import type { MotionTeaserSchedule } from "./webtoon-motion-teaser";
+import type { MotionTeaserSchedule } from "./webtoon-motion-teaser-schedule";
 import type {
   WebtoonManuscriptMoodId,
   WebtoonSfxStampOption,

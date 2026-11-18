@@ -15,5 +15,7 @@ export * from "./tone-split";
 export * from "./turnaround-sheet";
 export * from "./webtoon-episode-batch";
 export * from "./webtoon-episode-cutsheet";
+export * from "./webtoon-episode-templates";
 export * from "./webtoon-motion-teaser";
+export * from "./webtoon-tankobon-booklet";
 export * from "./webtoon-tankobon-page";

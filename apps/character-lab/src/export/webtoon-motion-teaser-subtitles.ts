@@ -7,7 +7,7 @@ import {
   resolveSfxGlyphByLocale,
 } from "./webtoon-strip-composer";
 
-import type { MotionTeaserSchedule } from "./webtoon-motion-teaser";
+import type { MotionTeaserSchedule } from "./webtoon-motion-teaser-schedule";
 import type {
   WebtoonDialogueLocale,
   WebtoonStripBubbleShapes,

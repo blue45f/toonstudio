@@ -24,6 +24,7 @@ export type { PsdMangaFxOptions } from "./psd-plan";
 
 export const GLB_MIME = "model/gltf-binary";
 export const WEBM_MIME = "video/webm";
+export const WAV_MIME = "audio/wav";
 export const VTT_MIME = "text/vtt;charset=utf-8";
 export const MARKDOWN_MIME = "text/markdown;charset=utf-8";
 export const SHAPER_PRESET_MIME = "text/plain;charset=utf-8";
@@ -37,6 +38,7 @@ export type ExportKind =
   | "psd"
   | "glb"
   | "webm"
+  | "wav"
   | "vtt"
   | "storyboard-md"
   | "recipe"
