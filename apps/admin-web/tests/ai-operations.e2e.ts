@@ -58,7 +58,7 @@ test("빈 저장소는 명시적으로 시작하고 공개 근거·여섯 상태
   await page.getByRole("button", { name: "운영 배포 · 승인 기록", exact: true }).click();
   const approval = page.getByRole("dialog");
   await expect(approval.getByLabel("진행 상태", { exact: true })).toHaveValue("승인 대기");
-  await expect(approval.locator('option[value="검증 완료"]')).toBeDisabled();
+  await expect(approval.getByLabel("진행 상태", { exact: true }).locator("option").filter({ hasText: /^검증 완료$/u })).toBeDisabled();
   await expect(approval.getByLabel("운영 변경 승인 대기로 관리", { exact: true })).toBeDisabled();
   await approval.getByRole("button", { name: "닫기", exact: true }).click();
   await page.getByRole("button", { name: "통합 현황", exact: true }).click();
