@@ -13,14 +13,14 @@ import { LOOK_V2_IDENTITY, PART_ROLES, PART_ROLE_SHADE_GROUP } from "../contract
 import { toonShadeTint } from "./material-presets";
 import { TOON_RIM_EDGE0, TOON_RIM_EDGE1 } from "./toon-reference";
 
-function engineSource(): string {
+function babylonSource(fileName: "character-engine.ts" | "character-toon-values.ts"): string {
   const candidates = [
-    typeof import.meta.dirname === "string" ? path.join(import.meta.dirname, "babylon", "character-engine.ts") : "",
-    path.resolve(process.cwd(), "apps", "character-lab", "src", "render", "babylon", "character-engine.ts"),
-    path.resolve(process.cwd(), "src", "render", "babylon", "character-engine.ts"),
+    typeof import.meta.dirname === "string" ? path.join(import.meta.dirname, "babylon", fileName) : "",
+    path.resolve(process.cwd(), "apps", "character-lab", "src", "render", "babylon", fileName),
+    path.resolve(process.cwd(), "src", "render", "babylon", fileName),
   ];
   const found = candidates.find((candidate) => candidate !== "" && existsSync(candidate));
-  if (found === undefined) throw new Error(`character-engine.ts를 찾지 못했습니다(cwd=${process.cwd()}).`);
+  if (found === undefined) throw new Error(`${fileName}를 찾지 못했습니다(cwd=${process.cwd()}).`);
   return readFileSync(found, "utf8");
 }
 
@@ -38,14 +38,14 @@ describe("render: LOOK_V2_IDENTITY ↔ v2 렌더 상수", () => {
   });
 
   it("엔진 소스의 hull 폭·외곽선 색·림 색과 같다", () => {
-    const source = engineSource();
+    const source = babylonSource("character-engine.ts");
     const width = /export const TOON_OUTLINE_WIDTH = ([0-9.]+);/u.exec(source)?.[1];
     expect(width).toBeDefined();
     expect(Number(width) * 1000).toBeCloseTo(LOOK_V2_IDENTITY.line.widthMm, 12);
     const outline = /mesh\.outlineColor\.set\(([0-9.]+), ([0-9.]+), ([0-9.]+)\)/u.exec(source);
     expect(outline).not.toBeNull();
     expect(LOOK_V2_IDENTITY.line.color).toEqual({ mode: "fixed", rgb: [Number(outline?.[1]), Number(outline?.[2]), Number(outline?.[3])] });
-    const rim = /rimColor: \[([0-9.]+), ([0-9.]+), ([0-9.]+)\]/u.exec(source);
+    const rim = /rimColor: \[([0-9.]+), ([0-9.]+), ([0-9.]+)\]/u.exec(babylonSource("character-toon-values.ts"));
     expect(rim).not.toBeNull();
     expect(LOOK_V2_IDENTITY.rim.color).toEqual([Number(rim?.[1]), Number(rim?.[2]), Number(rim?.[3])]);
   });
