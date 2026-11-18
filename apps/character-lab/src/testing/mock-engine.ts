@@ -283,6 +283,9 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
     async setDuoPartner(attachment) {
       record("setDuoPartner", attachment);
     },
+    async setSfxStamp(attachment) {
+      record("setSfxStamp", attachment);
+    },
     updatePaintTexture(layer) {
       record("updatePaintTexture", layer);
       paintUploads.push(layer);

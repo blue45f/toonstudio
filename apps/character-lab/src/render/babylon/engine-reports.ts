@@ -1,14 +1,11 @@
-/** 엔진의 소스·본·HUD·장면 기능·페인트 점검을 읽기 전용 보고로 모은다. */
-import { isHumanoidBoneName } from "../../contracts";
+/** 엔진의 소스·HUD·장면 기능·페인트 점검을 읽기 전용 보고로 모은다. */
 import { describeSparseMorphReport } from "../glb-sparse-morph";
 import { describeMorphTextureMode } from "../morph-limits";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 
-import { rigBoneWorld } from "./character-rig";
-import { fromQuaternion } from "./convert";
 import { readJointOffsetState } from "./joint-offset-rig";
 
-import type { EngineBackend, EngineDiagnostics, HudSample, Quat, ShadingProfile, SourceCapabilities, Vec3 } from "../../contracts";
+import type { EngineBackend, EngineDiagnostics, HudSample, ShadingProfile, SourceCapabilities } from "../../contracts";
 import type { FullSceneFeatureReport } from "../beta-features";
 import type { FrameStats } from "../frame-stats";
 import type { SparseMorphReport } from "../glb-sparse-morph";
@@ -48,24 +45,6 @@ interface FeatureReportSource {
   readonly hud: Pick<HudProbe, "gpuTimerState">;
   readonly beta: Pick<BetaController, "report">;
   readonly lastGlbReport: SparseMorphReport | null;
-}
-
-/** `readBone` 결과 */
-export interface BoneReading {
-  readonly name: string;
-  readonly humanoid: string | null;
-  readonly position: Vec3;
-  readonly rotation: Quat;
-  readonly localRotation: Quat;
-  readonly auxiliary: boolean;
-}
-
-export function readRigBone(rig: CharacterRig | null, name: string): BoneReading | null {
-  if (!rig) return null;
-  const rb = rig.bones.get(name) ?? (isHumanoidBoneName(name) ? rig.humanoid.get(name) : undefined);
-  if (!rb) return null;
-  const world = rigBoneWorld(rb);
-  return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
 }
 
 export function readRigSourceCapabilities(rig: CharacterRig): SourceCapabilities {

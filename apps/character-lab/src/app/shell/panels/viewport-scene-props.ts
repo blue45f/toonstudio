@@ -3,32 +3,43 @@ import { useState, useSyncExternalStore } from "react";
 import { isLabFailure } from "../../../contracts";
 
 import {
-  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonStagePropSpec,
-  toHandPropAttachment, toHeadPropAttachment, toStagePropAttachment,
+  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonSfxStampSpec, findWebtoonStagePropSpec,
+  toHandPropAttachment, toHeadPropAttachment, toSfxStampAttachment, toStagePropAttachment,
 } from "./viewport-hand-prop-controls";
 import {
   findWebtoonSceneDirectorPreset, getDefaultStripDirectorSession, resolveDirectorShadingProfile,
 } from "./viewport-scene-director";
 
 import type { ViewportHandPropControlsProps } from "./viewport-hand-prop-controls";
+import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
 import type { ViewportSceneDirectorControlsProps, WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
 import type { CharacterEngine, CharacterRecipe, HandPropId, HandPropSide, HeadPropId, LabCommand, StagePropId } from "../../../contracts";
+import type { Dispatch, SetStateAction } from "react";
 
 interface ViewportScenePropsOptions {
   readonly engine: CharacterEngine | null;
   readonly recipe: Pick<CharacterRecipe, "pose" | "shading">;
   readonly dispatch: (command: LabCommand) => void;
   readonly onNotice: (notice: string) => void;
+  readonly mangaFx: ViewportMangaFxState;
+  readonly setMangaFx: Dispatch<SetStateAction<ViewportMangaFxState>>;
 }
 
 export function failureText(error: unknown, fallback: string): string {
   return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
 }
 
-/** 소품 선택과 씬 디렉터가 공유하는 장착 대기·포즈·연출 세션을 함께 관리한다. */
-export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: ViewportScenePropsOptions): {
+/** 소품·효과음 선택과 씬 디렉터가 공유하는 장착 대기·포즈·연출 세션을 함께 관리한다. */
+export function useViewportSceneProps({ engine, recipe, dispatch, onNotice, mangaFx, setMangaFx }: ViewportScenePropsOptions): {
   readonly handProp: ViewportHandPropControlsProps;
   readonly sceneDirector: ViewportSceneDirectorControlsProps;
+  readonly mangaFx: {
+    readonly state: ViewportMangaFxState;
+    readonly set: Dispatch<SetStateAction<ViewportMangaFxState>>;
+    readonly sfxBusy: boolean;
+    readonly onToggle: () => void;
+    readonly onChangeSfxStamp: (stamp: MangaSfxStampPreset) => void;
+  };
 } {
   const stripDirector = getDefaultStripDirectorSession();
   const activeDirectorId = useSyncExternalStore(
@@ -41,7 +52,37 @@ export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: Vi
   const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
   const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
   const [handPropBusy, setHandPropBusy] = useState(false);
+  const [sfxBusy, setSfxBusy] = useState(false);
 
+  const syncSfxStamp3d = async (enabled: boolean, stamp: MangaSfxStampPreset): Promise<void> => {
+    if (!engine?.setSfxStamp) return;
+    const attachment = enabled && stamp !== "none" ? toSfxStampAttachment(stamp) : null;
+    setSfxBusy(true);
+    try {
+      await engine.setSfxStamp(attachment);
+      const spec = enabled && stamp !== "none" ? findWebtoonSfxStampSpec(stamp) : null;
+      if (spec) onNotice(`웹툰 효과음 스탬프 적용: ${spec.labelKo}`);
+    } catch (error) {
+      onNotice(failureText(error, "웹툰 효과음 스탬프를 배치하지 못했습니다."));
+    } finally {
+      setSfxBusy(false);
+    }
+  };
+  const onToggleMangaFx = (): void => {
+    setMangaFx((prev) => {
+      const nextEnabled = !prev.enabled;
+      if (prev.sfxStamp !== "none") {
+        void syncSfxStamp3d(nextEnabled, prev.sfxStamp);
+      }
+      return { ...prev, enabled: nextEnabled };
+    });
+  };
+  const onChangeMangaSfxStamp = (sfxStamp: MangaSfxStampPreset): void => {
+    setMangaFx((prev) => {
+      void syncSfxStamp3d(prev.enabled, sfxStamp);
+      return { ...prev, sfxStamp };
+    });
+  };
   const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
     setHandPropId(nextPropId);
     setHandPropSide(nextSide);
@@ -104,13 +145,15 @@ export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: Vi
       setHandPropId("");
       setHeadPropId("");
       setStagePropId("");
-      stripDirector.update({ activeDirectorId: "", actingArc: "none", bakeStripFx: false });
+      setMangaFx((prev) => ({ ...prev, sfxStamp: "none" }));
+      stripDirector.reset();
       if (!engine) return;
       setHandPropBusy(true);
       try {
         if (engine.setHandProp) await engine.setHandProp(null);
         if (engine.setHeadProp) await engine.setHeadProp(null);
         if (engine.setStageProp) await engine.setStageProp(null);
+        if (engine.setSfxStamp) await engine.setSfxStamp(null);
         onNotice("원클릭 씬 디렉터를 해제했습니다.");
       } catch (error) {
         onNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
@@ -126,12 +169,16 @@ export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: Vi
     setHandPropSide(preset.handSide);
     setHeadPropId(preset.headPropId);
     setStagePropId(preset.stagePropId);
+    setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
     stripDirector.update({
       activeDirectorId: preset.id,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
       dialogueLines: preset.dialogueLines,
+      bubbleShapes: preset.bubbleShapes,
+      bubbleFontScales: preset.bubbleFontScales,
+      sfxStamps: preset.sfxStamps,
     });
 
     for (const cmd of buildHandPropGripPoseCommands(recipe.pose, preset.handPropId, preset.handSide)) {
@@ -148,6 +195,7 @@ export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: Vi
       if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
       if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
       if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
+      if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
       onNotice(`씬 디렉터 적용: ${preset.labelKo}`);
     } catch (error) {
       onNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
@@ -157,6 +205,13 @@ export function useViewportSceneProps({ engine, recipe, dispatch, onNotice }: Vi
   };
 
   return {
+    mangaFx: {
+      state: mangaFx,
+      set: setMangaFx,
+      sfxBusy,
+      onToggle: onToggleMangaFx,
+      onChangeSfxStamp: onChangeMangaSfxStamp,
+    },
     sceneDirector: {
       engineReady: Boolean(engine?.setHandProp),
       busy: handPropBusy,

@@ -1,17 +1,28 @@
 /**
  * 장르별 원클릭 풀세트 씬 디렉터 프리셋 (`viewport-scene-director.tsx`, Unslop 규약 준수):
  * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 4대 한국 웹툰 씬 디렉터
- * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 1~4컷 한국어 대사까지 일괄 세팅
+ * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 말풍선 도형/강조/효과음 스탬프/한국어 대사까지 일괄 세팅
  * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
  */
-import { DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES } from "../../../export/webtoon-strip-composer";
+import {
+  DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
+  DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
+  DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+  DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
+} from "../../../export/webtoon-strip-composer";
 import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../../presets";
 
-import type { HandPropId, HandPropSide, HeadPropId, ShadingProfile, StagePropId } from "../../../contracts";
+import type { HandPropId, HandPropSide, HeadPropId, SfxStampId, ShadingProfile, StagePropId } from "../../../contracts";
 import type {
+  WebtoonSfxStampOption,
   WebtoonStripActingArcId,
+  WebtoonStripBubbleFontScale,
+  WebtoonStripBubbleFontScales,
+  WebtoonStripBubbleShape,
+  WebtoonStripBubbleShapes,
   WebtoonStripDialogueLines,
   WebtoonStripFxLinesKind,
+  WebtoonStripSfxStamps,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
 
@@ -29,10 +40,14 @@ export interface WebtoonSceneDirectorPreset {
   readonly handSide: HandPropSide;
   readonly headPropId: HeadPropId;
   readonly stagePropId: StagePropId;
+  readonly sfxStampId: SfxStampId;
   readonly toonShaderId: ShaperToonShaderId;
   readonly actingArc: Exclude<WebtoonStripActingArcId, "none">;
   readonly fxLinesKind: WebtoonStripFxLinesKind;
   readonly dialogueLines: WebtoonStripDialogueLines;
+  readonly bubbleShapes: WebtoonStripBubbleShapes;
+  readonly bubbleFontScales: WebtoonStripBubbleFontScales;
+  readonly sfxStamps: WebtoonStripSfxStamps;
 }
 
 export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset[] = Object.freeze([
@@ -44,6 +59,7 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     handSide: "rightHand",
     headPropId: "rofan-tiara",
     stagePropId: "rofan-throne-dais",
+    sfxStampId: "seureung",
     toonShaderId: "illumination-rim",
     actingArc: "arc-confident-smirk",
     fxLinesKind: "romance-sparkle",
@@ -53,6 +69,9 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "오래 기다렸지? 이제 반격의 시간이야.",
       "내 제국에 온 걸 환영해.",
     ],
+    bubbleShapes: ["monologue-box", "oval", "shout-burst", "oval"],
+    bubbleFontScales: ["md", "md", "lg", "md"],
+    sfxStamps: ["seureung", "none", "pat", "dugeun"],
   },
   {
     id: "director-noir-interrogation",
@@ -62,6 +81,7 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     handSide: "leftHand",
     headPropId: "wire-glasses",
     stagePropId: "noir-interrogation-lamp",
+    sfxStampId: "pat",
     toonShaderId: "action-hard-cel3",
     actingArc: "arc-thriller-shock",
     fxLinesKind: "focus-radial",
@@ -71,6 +91,9 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "설마 진짜 배후가 내부에 있었다고?",
       "증거는 충분해. 여기서 끝내자.",
     ],
+    bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
+    bubbleFontScales: ["md", "md", "lg", "sm"],
+    sfxStamps: ["none", "pat", "kugugung", "none"],
   },
   {
     id: "director-campus-cafe",
@@ -80,6 +103,7 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     handSide: "rightHand",
     headPropId: "pearl-earrings-pin",
     stagePropId: "cafe-bistro-table",
+    sfxStampId: "dugeun",
     toonShaderId: "romance-soft-sdf",
     actingArc: "arc-romance-flutter",
     fxLinesKind: "romance-sparkle",
@@ -89,6 +113,9 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "왜 자꾸 그렇게 가까이서 쳐다봐…",
       "오늘 오후는 천천히 같이 걷자.",
     ],
+    bubbleShapes: ["oval", "oval", "whisper-dashed", "oval"],
+    bubbleFontScales: ["md", "md", "sm", "md"],
+    sfxStamps: ["none", "dugeun", "dugeun", "none"],
   },
   {
     id: "director-murim-awakening",
@@ -98,6 +125,7 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     handSide: "rightHand",
     headPropId: "tactical-headset",
     stagePropId: "murim-sword-aura",
+    sfxStampId: "kugugung",
     toonShaderId: "action-hard-cel3",
     actingArc: "arc-awakening-climax",
     fxLinesKind: "speed-diagonal",
@@ -107,6 +135,9 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "보인다, 모든 검로의 빈틈이.",
       "단 일검으로 승부를 매듭짓겠다.",
     ],
+    bubbleShapes: ["monologue-box", "oval", "shout-burst", "shout-burst"],
+    bubbleFontScales: ["md", "md", "lg", "lg"],
+    sfxStamps: ["seureung", "none", "kugugung", "seureung"],
   },
 ]);
 
@@ -127,12 +158,18 @@ export interface StripDirectorState {
   readonly bakeStripFx: boolean;
   readonly stripFxLines: WebtoonStripFxLinesKind;
   readonly dialogueLines: WebtoonStripDialogueLines;
+  readonly bubbleShapes: WebtoonStripBubbleShapes;
+  readonly bubbleFontScales: WebtoonStripBubbleFontScales;
+  readonly sfxStamps: WebtoonStripSfxStamps;
 }
 
 export interface StripDirectorSession {
   getState(): StripDirectorState;
   update(patch: Partial<StripDirectorState>): void;
   setDialogueLine(cutIndex: 0 | 1 | 2 | 3, text: string): void;
+  setBubbleShape(cutIndex: 0 | 1 | 2 | 3, shape: WebtoonStripBubbleShape): void;
+  setBubbleFontScale(cutIndex: 0 | 1 | 2 | 3, scale: WebtoonStripBubbleFontScale): void;
+  setSfxStamp(cutIndex: 0 | 1 | 2 | 3, stamp: WebtoonSfxStampOption): void;
   reset(): void;
   subscribe(listener: () => void): () => void;
 }
@@ -143,6 +180,9 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   bakeStripFx: false,
   stripFxLines: "focus-radial",
   dialogueLines: DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+  bubbleShapes: DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
+  bubbleFontScales: DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
+  sfxStamps: DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
 });
 
 export function createStripDirectorSession(initial: Partial<StripDirectorState> = {}): StripDirectorSession {
@@ -166,6 +206,39 @@ export function createStripDirectorSession(initial: Partial<StripDirectorState> 
       ];
       next[cutIndex] = text;
       state = { ...state, dialogueLines: next };
+      notify();
+    },
+    setBubbleShape(cutIndex, shape) {
+      const next: [WebtoonStripBubbleShape, WebtoonStripBubbleShape, WebtoonStripBubbleShape, WebtoonStripBubbleShape] = [
+        state.bubbleShapes[0],
+        state.bubbleShapes[1],
+        state.bubbleShapes[2],
+        state.bubbleShapes[3],
+      ];
+      next[cutIndex] = shape;
+      state = { ...state, bubbleShapes: next };
+      notify();
+    },
+    setBubbleFontScale(cutIndex, scale) {
+      const next: [WebtoonStripBubbleFontScale, WebtoonStripBubbleFontScale, WebtoonStripBubbleFontScale, WebtoonStripBubbleFontScale] = [
+        state.bubbleFontScales[0],
+        state.bubbleFontScales[1],
+        state.bubbleFontScales[2],
+        state.bubbleFontScales[3],
+      ];
+      next[cutIndex] = scale;
+      state = { ...state, bubbleFontScales: next };
+      notify();
+    },
+    setSfxStamp(cutIndex, stamp) {
+      const next: [WebtoonSfxStampOption, WebtoonSfxStampOption, WebtoonSfxStampOption, WebtoonSfxStampOption] = [
+        state.sfxStamps[0],
+        state.sfxStamps[1],
+        state.sfxStamps[2],
+        state.sfxStamps[3],
+      ];
+      next[cutIndex] = stamp;
+      state = { ...state, sfxStamps: next };
       notify();
     },
     reset() {
@@ -213,7 +286,7 @@ export function ViewportSceneDirectorControls({
         title={
           activeSpec
             ? `${activeSpec.labelKo}: ${activeSpec.summaryKo}`
-            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·대사를 한 번에 세팅합니다"
+            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·말풍선 모양/강조·효과음 스탬프를 한 번에 세팅합니다"
         }
         onChange={(event) => onSelectDirector(event.target.value as WebtoonSceneDirectorPresetId | "")}
       >

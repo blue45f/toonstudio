@@ -1,14 +1,18 @@
 /**
- * 웹툰 2인 투샷 구도 · 신장차(cm) 눈금자 · 실제 3D 듀오 스테이지 동시 배치 · 대화 시선 교환(아이컨택) 모듈.
+ * 웹툰 2인 투샷 구도 · 신장차(cm) 눈금자 · 실제 3D 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품 동시 장착) · 대화 시선 교환(아이컨택) 모듈.
  * 파일명을 소문자 하이픈(`viewport-duo-shot-guide.tsx`)으로 두어 `app/composition.ts` 최상위 패널 규칙을 지킨다.
  */
 import { qNormalize } from "../../../shared/math";
+
+import { WEBTOON_HAND_PROPS, findWebtoonHandPropSpec } from "./viewport-hand-prop-controls";
 
 import type {
   BodyParamKey,
   CharacterRecipe,
   DuoPartnerAttachment,
+  DuoPartnerExpressionPreset,
   DuoPartnerStance,
+  HandPropId,
   LabCommand,
   ParamValues,
   Pose,
@@ -42,6 +46,14 @@ export const DUO_PARTNER_STANCE_LABELS_KO: Readonly<Record<DuoPartnerStance, str
   conversational: "자연 대화 스탠스",
   "arms-crossed": "팔짱 대치 스탠스",
   attentive: "경청 에스코트 스탠스",
+});
+
+export const DUO_PARTNER_EXPRESSION_LABELS_KO: Readonly<Record<DuoPartnerExpressionPreset, string>> = Object.freeze({
+  neutral: "상대역 표정 · 기본",
+  "warm-smile": "상대역 표정 · 다정 미소",
+  "cold-smirk": "상대역 표정 · 냉소 비웃음",
+  shocked: "상대역 표정 · 당황 경악",
+  "stern-glare": "상대역 표정 · 단호 노려봄",
 });
 
 export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = Object.freeze([
@@ -186,6 +198,8 @@ export interface DuoShotState {
   readonly distanceKey: DuoShotDistanceKey;
   readonly render3dPartner: boolean;
   readonly partnerStance: DuoPartnerStance;
+  readonly partnerExpression: DuoPartnerExpressionPreset;
+  readonly partnerHandPropId: HandPropId | "";
 }
 
 export const DEFAULT_DUO_SHOT_STATE: DuoShotState = Object.freeze({
@@ -195,6 +209,8 @@ export const DEFAULT_DUO_SHOT_STATE: DuoShotState = Object.freeze({
   distanceKey: "talk",
   render3dPartner: false,
   partnerStance: "conversational",
+  partnerExpression: "neutral",
+  partnerHandPropId: "",
 });
 
 export function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: number): DuoPartnerAttachment | null {
@@ -202,6 +218,7 @@ export function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: n
   const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === duoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
   const safeSubjectCm = Number.isFinite(subjectHeightCm) && subjectHeightCm > 100 ? subjectHeightCm : 166;
   const heightScale = Number((partner.heightCm / safeSubjectCm).toFixed(4));
+  const partnerPropSpec = duoShot.partnerHandPropId ? findWebtoonHandPropSpec(duoShot.partnerHandPropId) : null;
   return {
     characterId: partner.id,
     glbUrl: partner.glbUrl,
@@ -210,6 +227,17 @@ export function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: n
     distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
     heightScale,
     stance: duoShot.partnerStance,
+    expression: duoShot.partnerExpression,
+    ...(partnerPropSpec
+      ? {
+          handProp: {
+            propId: partnerPropSpec.id,
+            hand: duoShot.side === "right" ? "leftHand" : "rightHand",
+            glbUrl: partnerPropSpec.glbUrl,
+            sha256: partnerPropSpec.sha256,
+          },
+        }
+      : { handProp: null }),
   };
 }
 
@@ -400,7 +428,6 @@ export function ViewportDuoShotOverlay({
 
   return (
     <div className="cl-viewport-duo-overlay" data-testid="viewport-duo-shot-overlay" aria-hidden="true" style={OVERLAY_ROOT}>
-      {/* 실제 3D 듀오 모드가 꺼져 있을 때만 2D 레퍼런스 스탠디 카드를 표시한다 */}
       {!duoShot.render3dPartner ? (
         <div
           data-testid="viewport-duo-partner-figure"
@@ -524,6 +551,8 @@ export interface ViewportDuoShotControlsProps {
   readonly onApplyEyeContact: () => void;
   readonly onToggleRender3dPartner?: () => void;
   readonly onChangePartnerStance?: (stance: DuoPartnerStance) => void;
+  readonly onChangePartnerExpression?: (expression: DuoPartnerExpressionPreset) => void;
+  readonly onChangePartnerHandProp?: (propId: HandPropId | "") => void;
 }
 
 export function ViewportDuoShotControls({
@@ -538,6 +567,8 @@ export function ViewportDuoShotControls({
   onApplyEyeContact,
   onToggleRender3dPartner,
   onChangePartnerStance,
+  onChangePartnerExpression,
+  onChangePartnerHandProp,
 }: ViewportDuoShotControlsProps) {
   return (
     <span className="cl-viewport-group" role="group" aria-label="웹툰 2인 투샷·신장차 도구" style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
@@ -620,6 +651,40 @@ export function ViewportDuoShotControls({
               {(Object.keys(DUO_PARTNER_STANCE_LABELS_KO) as DuoPartnerStance[]).map((stance) => (
                 <option key={stance} value={stance}>
                   {DUO_PARTNER_STANCE_LABELS_KO[stance]}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {duoShot.render3dPartner && onChangePartnerExpression ? (
+            <select
+              className="cl-viewport-select"
+              aria-label="상대역 3D 표정 프리셋"
+              data-testid="viewport-duo-3d-expression"
+              value={duoShot.partnerExpression}
+              disabled={duo3dBusy}
+              onChange={(event) => onChangePartnerExpression(event.target.value as DuoPartnerExpressionPreset)}
+            >
+              {(Object.keys(DUO_PARTNER_EXPRESSION_LABELS_KO) as DuoPartnerExpressionPreset[]).map((expr) => (
+                <option key={expr} value={expr}>
+                  {DUO_PARTNER_EXPRESSION_LABELS_KO[expr]}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          {duoShot.render3dPartner && onChangePartnerHandProp ? (
+            <select
+              className="cl-viewport-select"
+              aria-label="상대역 전용 손 소품"
+              data-testid="viewport-duo-3d-hand-prop"
+              value={duoShot.partnerHandPropId}
+              disabled={duo3dBusy}
+              title="상대역 3D 캐릭터의 안쪽 손에 전용 웹툰 손 소품을 장착하고 그립 팔 각도를 자동 적용합니다"
+              onChange={(event) => onChangePartnerHandProp(event.target.value as HandPropId | "")}
+            >
+              <option value="">상대역 소품 없음</option>
+              {WEBTOON_HAND_PROPS.map((prop) => (
+                <option key={prop.id} value={prop.id}>
+                  {`상대역 · ${prop.labelKo}`}
                 </option>
               ))}
             </select>

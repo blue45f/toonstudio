@@ -1,5 +1,6 @@
 /**
- * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭 포함) + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
+ * ViewportPane: 엔진 캔버스 + 도구 막대(4방향 시점·부감/앙각·투명 격자·원고 컷 매칭·3D 듀오 스테이지·효과음 스탬프·원클릭 씬 디렉터 포함)
+ * + HUD + 관절 핸들 + 형상 제어점 + 드로잉 오버레이.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
@@ -82,6 +83,7 @@ interface ControlPointDragSession {
   changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
 }
 
+
 function releaseCapture(el: Element | undefined, pointerId: number): void {
   if (el && typeof el.releasePointerCapture === "function" && el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
 }
@@ -134,6 +136,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     recipe: labState.recipe,
     dispatch,
     onNotice: setNotice,
+    mangaFx,
+    setMangaFx,
   });
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -663,6 +667,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
   const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
+
   const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
     if (!engine?.setDuoPartner) return;
     const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
@@ -712,12 +717,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           state: duoShot,
           update: updateDuoShotWith3dSync,
           summaryKo: duoEyeContact.summaryKo,
-          applyEyeContact: onApplyDuoEyeContact,
           duo3dSupported: Boolean(engine?.setDuoPartner),
           duo3dBusy,
+          applyEyeContact: onApplyDuoEyeContact,
         }}
-        mangaFx={{ state: mangaFx, set: setMangaFx }}
-        sceneDirector={sceneProps.sceneDirector}
+        mangaFx={sceneProps.mangaFx}
+        director={sceneProps.sceneDirector}
         handProp={sceneProps.handProp}
         overlay={{
           handles: { value: showHandles, set: setShowHandles },
