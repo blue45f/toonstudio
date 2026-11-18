@@ -37,17 +37,21 @@ export function DiscoverWeekdayRail({ snapshot, loading, actionLabel }: Discover
   const copy = discoverShelfCopies(bt, snapshot).weekday;
 
   return (
-    <Section
-      eyebrow={copy.eyebrow}
-      title={copy.title}
-      desc={copy.desc}
-      action={{ label: actionLabel ?? copy.action, href: shelf.href }}
-    >
-      <Rail ariaLabel={copy.title}>
-        {shelf.titles.map((item) => (
-          <TitleCard key={item.id} title={item} />
-        ))}
-      </Rail>
-    </Section>
+    <div data-ink="rise">
+      <Section
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        desc={copy.desc}
+        action={{ label: actionLabel ?? copy.action, href: shelf.href }}
+      >
+        <div data-ink-stagger="panel">
+          <Rail ariaLabel={copy.title}>
+            {shelf.titles.map((item, idx) => (
+              <TitleCard key={item.id} title={item} index={idx} rank={idx + 1} />
+            ))}
+          </Rail>
+        </div>
+      </Section>
+    </div>
   );
 }

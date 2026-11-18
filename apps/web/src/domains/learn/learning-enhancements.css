@@ -75,15 +75,65 @@
   .learn-page .learn-comparison-controls { gap: 6px; }
 }
 
-/* 학습의 모든 하위 화면은 본문을 먼저 보여 주고 영역 이동은 한 번의 명시 조작으로 연다. */
+/* 학습의 모든 하위 화면은 본문을 먼저 보여 주고 영역 이동은 조용한 인라인 진입점 하나로 연다. */
 .learn-section-layout { min-width: 0; }
-.learn-section-menu { max-width: var(--site-content-max, 82.5rem); margin: 1rem auto 0; padding-inline: var(--site-page-gutter, 1.5rem); }
-.learn-section-menu > summary { display: flex; min-height: 44px; min-width: 0; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--color-line); border-radius: 0.75rem; background: var(--color-panel); color: var(--color-fg); font-size: 0.8125rem; font-weight: 650; cursor: pointer; list-style: none; }
+.learn-section-menu {
+  max-width: var(--site-content-max, 82.5rem);
+  margin: 0.75rem auto 0;
+  padding-inline: var(--site-page-gutter, 1.5rem);
+}
+.learn-section-menu > summary {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  margin-inline-start: -0.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  transition: color 150ms var(--ink-ease, ease), background-color 150ms var(--ink-ease, ease);
+}
+.learn-section-menu > summary:hover {
+  color: var(--color-fg);
+  background: var(--color-panel);
+}
 .learn-section-menu > summary::-webkit-details-marker { display: none; }
-.learn-section-menu > summary > :last-child { margin-inline-start: auto; }
-.learn-section-menu__current { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-accent); }
-.learn-section-menu__body { padding-block: 0.75rem; }
-.learn-section-menu summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.learn-section-menu__current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-fg);
+  font-weight: 500;
+}
+.learn-section-menu__current::before {
+  content: "/";
+  margin-inline-end: 0.5rem;
+  color: var(--color-fg-3);
+}
+.learn-section-menu[open] > summary > :last-child {
+  transform: rotate(180deg);
+}
+.learn-section-menu__body {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background: var(--color-panel);
+}
+.learn-section-menu summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .learn-section-menu__body .learn-progress-strip { padding-inline: 0; }
 #main-content .learn-section-menu a,
 .learn-section-menu a { min-block-size: 44px; min-inline-size: 44px; min-height: 44px; min-width: 44px; }
+@media (prefers-reduced-motion: reduce) {
+  .learn-section-menu > summary { transition: none; }
+}

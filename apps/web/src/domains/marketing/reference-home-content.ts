@@ -45,7 +45,6 @@ export interface HomeCoreStudio {
   readonly href: string;
   readonly image: string;
   readonly imageSet: string;
-  readonly eyebrow: string;
   readonly ko: { readonly title: string; readonly body: string; readonly action: string };
   readonly en: { readonly title: string; readonly body: string; readonly action: string };
   readonly secondary: HomeLink;
@@ -58,7 +57,6 @@ export const HOME_CORE_STUDIOS: readonly HomeCoreStudio[] = [
     href: "/studio/canvas",
     image: `${HOME_ART_ROOT}/canvas-noir-640.webp`,
     imageSet: `${HOME_ART_ROOT}/canvas-noir-320.webp 320w, ${HOME_ART_ROOT}/canvas-noir-640.webp 640w`,
-    eyebrow: "DRAW",
     ko: { title: "드로잉 캔버스", body: "브러시·레이어·컷·말풍선을 한 캔버스에서.", action: "그리기 시작" },
     en: { title: "Drawing canvas", body: "Brushes, layers, panels and balloons on one canvas.", action: "Start drawing" },
     secondary: { href: "/studio/comic", ko: "컷툰 편집기", en: "Comic editor" },
@@ -68,7 +66,6 @@ export const HOME_CORE_STUDIOS: readonly HomeCoreStudio[] = [
     href: "/studio/assets/characters/new",
     image: `${HOME_ART_ROOT}/character-pink-640.webp`,
     imageSet: `${HOME_ART_ROOT}/character-pink-320.webp 320w, ${HOME_ART_ROOT}/character-pink-640.webp 640w`,
-    eyebrow: "3D",
     ko: { title: "3D 캐릭터·배경", body: "프리셋 캐릭터와 3D 배경으로 포즈와 구도를 잡아요.", action: "3D 캐릭터 만들기" },
     en: { title: "3D characters & sets", body: "Pose preset characters and frame 3D backgrounds.", action: "Create a 3D character" },
     secondary: { href: "/studio/bg3d", ko: "3D 배경 스튜디오", en: "3D background studio" },
@@ -78,7 +75,6 @@ export const HOME_CORE_STUDIOS: readonly HomeCoreStudio[] = [
     href: "/production",
     image: "/brand/workflow-20260928/collaborate-640.webp",
     imageSet: "/brand/workflow-20260928/collaborate-320.webp 320w, /brand/workflow-20260928/collaborate-640.webp 640w",
-    eyebrow: "TEAM",
     ko: { title: "협업 제작 관리", body: "담당자·마감·검토·수정 요청을 작품 단위로 관리해요.", action: "제작 관리 열기" },
     en: { title: "Team production", body: "Owners, deadlines, reviews and revisions per work.", action: "Open production" },
     secondary: { href: "/production/projects/sample-project/overview", ko: "샘플 프로젝트 체험", en: "Try a sample project" },
@@ -88,7 +84,6 @@ export const HOME_CORE_STUDIOS: readonly HomeCoreStudio[] = [
     href: "/studio/space",
     image: "/assets/virtual-studio/cinematic-v9/campus-social-480.webp",
     imageSet: "/assets/virtual-studio/cinematic-v9/campus-social-480.webp 480w, /assets/virtual-studio/cinematic-v9/campus-social-1024.webp 1024w",
-    eyebrow: "SPACE",
     ko: { title: "가상 스튜디오", body: "내 캐릭터로 걷고 만나며 함께 작업하는 공간.", action: "가상 스튜디오 입장" },
     en: { title: "Virtual studio", body: "Walk, meet and work together as your character.", action: "Enter the virtual studio" },
     secondary: { href: "/collaborate", ko: "함께할 사람 찾기", en: "Find collaborators" },

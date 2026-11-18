@@ -22,9 +22,9 @@ afterEach(() => {
 });
 
 describe("readAmbientPreferences", () => {
-  it("처음에는 은은하게·자동·위치 미설정이다", () => {
-    expect(readAmbientPreferences()).toEqual({ intensity: "subtle", effect: "auto", location: null });
-    expect(AMBIENT_DEFAULT_INTENSITY).toBe("subtle");
+  it("처음에는 끔·자동·위치 미설정이다", () => {
+    expect(readAmbientPreferences()).toEqual({ intensity: "off", effect: "auto", location: null });
+    expect(AMBIENT_DEFAULT_INTENSITY).toBe("off");
     expect(AMBIENT_DEFAULT_EFFECT).toBe("auto");
   });
 
@@ -45,7 +45,7 @@ describe("readAmbientPreferences", () => {
     localStorage.setItem(AMBIENT_STORAGE_KEYS.intensity, "ultra");
     localStorage.setItem(AMBIENT_STORAGE_KEYS.effect, "tornado");
     localStorage.setItem(AMBIENT_STORAGE_KEYS.location, "maybe");
-    expect(readAmbientPreferences()).toEqual({ intensity: "subtle", effect: "auto", location: null });
+    expect(readAmbientPreferences()).toEqual({ intensity: "off", effect: "auto", location: null });
   });
 
   it("저장소 읽기가 막혀도 예외 없이 이번 세션에 고른 값을 쓴다", () => {

@@ -1,234 +1,211 @@
-/* 공유한 원고 중심 홈 시안. 기존 4밴드와 테마 토큰은 유지한다. */
+/* 공개 홈 히어로 (2026-11-18 unslop 개편).
+ * 틀 없는 비대칭 분할: 왼쪽은 조용한 글과 행동 두 개, 오른쪽은 원고 아트 한 장이 주인공이다.
+ * 아트는 칸이 그어지듯 위에서 아래로 열리고(ink-motion panel), 3단계 흐름은 잉크 선으로 이어진다.
+ * 모든 폭은 홈 컨테이너 하나(.reference-dashboard)의 폭을 따른다. */
 .reference-dashboard :is(.rd-clarity-hero, .rd-clarity-journey, .rd-clarity-helpers) {
   width: 100%;
-  max-width: 1160px;
-  margin-inline: auto;
   min-width: 0;
 }
+
 .reference-dashboard .rd-clarity-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.04fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: clamp(32px, 5vw, 72px);
   align-items: center;
-  padding: 28px;
-  border: 1px solid var(--color-line);
-  border-radius: 24px;
-  overflow: hidden;
-  background: var(--rd-panel);
+  min-height: min(560px, calc(100svh - var(--site-header-height, 60px) - 200px));
+  padding-block: clamp(24px, 4vw, 56px) clamp(24px, 3vw, 40px);
 }
 .rd-clarity-copy { position: relative; z-index: 1; min-width: 0; }
 .reference-dashboard .rd-clarity-copy h1 {
   color: var(--color-fg);
-  font: 600 clamp(36px, 4.4vw, 54px)/1.14 var(--font-sans), sans-serif;
+  font: 600 clamp(40px, 4.6vw, 64px)/1.1 var(--font-sans), sans-serif;
   letter-spacing: -0.03em;
+  text-wrap: balance;
 }
-.rd-clarity-copy h1 > span {
-  color: var(--color-accent);
+/* 둘째 줄은 강조색 대신 한 단계 낮은 글자색으로 위계를 만든다(색 강조 헤드라인 없음). */
+.rd-clarity-copy h1 > span { color: var(--color-fg-2); }
+.reference-dashboard .rd-clarity-copy > p {
+  max-width: 34ch;
+  margin-block: 20px 32px;
+  color: var(--rd-muted);
+  font-size: 17px;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
-.reference-dashboard .rd-clarity-copy > p { margin-block: 16px 24px; color: var(--rd-muted); font-size: 16px; line-height: 1.6; }
-.rd-clarity-actions { display: grid; gap: 10px; max-width: 320px; }
+.rd-clarity-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
 .reference-dashboard .rd-clarity-actions > a {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   min-height: 48px;
-  padding: 12px 20px;
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.4;
-  transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color var(--ink-fast, 150ms) var(--ink-ease), color var(--ink-fast, 150ms) var(--ink-ease), transform var(--ink-fast, 150ms) var(--ink-ease);
 }
 .rd-clarity-actions svg, .rd-clarity-journey svg { flex: none; }
 .reference-dashboard .rd-clarity-actions > .rd-clarity-start {
   min-height: 52px;
-  border-color: transparent;
+  padding: 12px 22px;
   background: var(--color-accent);
   color: var(--color-on-accent);
 }
+.reference-dashboard .rd-clarity-actions > .rd-clarity-start:active { transform: scale(0.98); }
 .reference-dashboard .rd-clarity-actions > .rd-clarity-browse {
-  background: var(--rd-card);
+  padding: 12px 4px;
   color: var(--rd-fg);
 }
-.rd-clarity-art { position: relative; min-width: 0; height: 368px; margin: 0; }
+
+/* 원고 아트: 한 장의 칸. 테두리는 헤어라인, 그림자는 작고 중립적이다. */
+.rd-clarity-art { position: relative; min-width: 0; margin: 0; aspect-ratio: 16 / 11; max-height: 520px; }
 .rd-clarity-manuscript {
+  --ink-radius: 20px;
+  position: relative;
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 16px;
+  border-radius: 20px;
   background: var(--rd-card);
-  transition: border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 24px 48px -32px oklch(0 0 0 / 0.6);
 }
-.rd-clarity-manuscript:hover {
-  border-color: var(--color-line-strong);
+/* 3단계 여정(준비·그리기·완성) 호버 시 원고 아트의 해당 영역을 가리키는 만화 컷 크롭 프레임 */
+.rd-clarity-cropframe {
+  position: absolute;
+  inset: 14px;
+  border: 1.5px solid oklch(1 0 0 / 0.72);
+  border-radius: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scaleX(0.32) translateX(0);
+  transform-origin: left center;
+  transition: opacity 220ms var(--ink-ease), transform 360ms var(--ink-ease);
 }
+.rd-clarity-art[data-focus-step="0"] .rd-clarity-cropframe { opacity: 1; transform: translateX(0%) scaleX(0.33); }
+.rd-clarity-art[data-focus-step="1"] .rd-clarity-cropframe { opacity: 1; transform: translateX(33.5%) scaleX(0.33); }
+.rd-clarity-art[data-focus-step="2"] .rd-clarity-cropframe { opacity: 1; transform: translateX(67%) scaleX(0.33); }
 .creator-home .reference-dashboard .rd-clarity-art img { display: block; width: 100%; height: 100%; block-size: 100%; object-fit: cover; object-position: 50% 42%; }
-.rd-clarity-art > figcaption { position: absolute; right: 12px; bottom: 10px; padding: 4px 10px; border: 1px solid var(--color-line); border-radius: 8px; background: color-mix(in oklch, var(--rd-card) 92%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--rd-muted); font-size: 12px; line-height: 1.4; }
-.reference-dashboard .rd-clarity-journey { padding-top: 20px; border-top: 1px solid var(--color-line); }
-.rd-clarity-journey > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
-.rd-clarity-journey li { position: relative; min-width: 0; }
-.rd-clarity-journey li > a { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; min-height: 108px; padding: 8px 6px; border: 1px solid transparent; border-radius: 12px; color: var(--rd-fg); text-align: center; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); }
-.rd-clarity-journey-icon { display: grid; place-items: center; flex: none; width: 56px; height: 56px; overflow: hidden; border: 1px solid var(--color-line); border-radius: 14px; background: var(--rd-card); color: var(--rd-muted); }
-.creator-home .reference-dashboard .rd-clarity-journey-icon > img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rd-clarity-journey strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.4; }
-.rd-clarity-journey-connector { position: absolute; top: 26px; inset-inline-start: calc(50% + 36px); display: flex; align-items: center; width: calc(100% - 56px); color: var(--rd-muted); pointer-events: none; }
-.rd-clarity-journey-connector::before { height: 1px; flex: 1; background: var(--color-line); content: ""; }
-.reference-dashboard .rd-clarity-helpers { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr); gap: 16px; align-items: start; margin-top: 20px; }
-.rd-clarity-helpers > details { min-width: 0; border: 1px solid var(--color-line); border-radius: 16px; padding: 12px; background: var(--rd-panel); }
-.rd-v4-preset-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rd-clarity-art > figcaption { position: absolute; right: 12px; bottom: 12px; padding: 4px 10px; border-radius: 8px; background: color-mix(in oklch, var(--rd-art-scrim) 72%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--rd-on-art-2); font-size: 12px; line-height: 1.4; }
+
+/* 준비 → 그리기 → 완성: 번호 대신 의미 아이콘 하나, 단계 사이는 잉크 선이 그어진다. */
+.reference-dashboard .rd-clarity-journey { padding-block: 8px 4px; border-block: 1px solid var(--color-line); }
+.rd-clarity-journey > ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; }
+.rd-clarity-journey li { position: relative; display: flex; align-items: center; min-width: 0; }
+.rd-clarity-journey li > a {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px 16px 12px 4px;
+  border-radius: 12px;
+  color: var(--rd-fg);
+  transition: background-color var(--ink-fast, 150ms) var(--ink-ease);
+}
+.rd-clarity-journey li > a > svg:last-child { color: var(--rd-subtle); }
+.rd-clarity-journey-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: var(--rd-surface);
+  color: var(--color-accent);
+}
+.rd-clarity-journey-text { display: grid; gap: 2px; min-width: 0; }
+.rd-clarity-journey strong { display: block; font-size: 15px; font-weight: 500; line-height: 1.4; }
+.rd-clarity-journey small { display: block; color: var(--rd-muted); font-size: 13px; line-height: 1.4; }
+.rd-clarity-journey-connector { flex: 1; min-width: 24px; height: 1px; margin-inline: 4px 16px; overflow: hidden; background: var(--color-line); }
+.rd-clarity-journey-connector > i { display: block; width: 100%; height: 100%; background: var(--color-accent); transform-origin: left center; }
+
+/* 아이디어 입력과 Luna: 같은 높이의 두 칸, 바깥 상자 없이 요약 줄로 구분한다. */
+.reference-dashboard .rd-clarity-helpers { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.95fr); gap: 24px; align-items: start; margin-top: 24px; }
+.rd-clarity-helpers > details { min-width: 0; border: 1px solid var(--color-line); border-radius: 16px; padding: 8px; background: var(--rd-panel); }
+.rd-v4-preset-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 4px 4px; }
 .rd-v4-preset-chip {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 6px 12px;
   border: 1px solid var(--color-line);
-  border-radius: 10px;
-  background: var(--rd-card);
-  color: var(--rd-fg);
-  font-size: 12.5px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rd-muted);
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  transition: border-color var(--ink-fast, 150ms) var(--ink-ease), color var(--ink-fast, 150ms) var(--ink-ease), background-color var(--ink-fast, 150ms) var(--ink-ease);
 }
-.rd-v4-preset-chip:hover {
-  border-color: var(--color-line-strong);
-  background: var(--color-raised, var(--rd-panel));
-  color: var(--rd-fg);
-}
-.rd-v4-preset-chip--ai {
-  border-color: var(--color-line-strong);
-  background: var(--color-raised, var(--rd-card));
-  color: var(--color-accent);
-  font-weight: 600;
-}
+.rd-v4-preset-chip:hover { border-color: var(--color-line-strong); color: var(--rd-fg); background: var(--color-raised, var(--rd-card)); }
+.rd-v4-preset-chip--ai { color: var(--rd-fg); }
 @media (max-width: 767px) {
-  .rd-v4-preset-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-  }
-  .rd-v4-preset-chips::-webkit-scrollbar {
-    display: none;
-  }
-  .rd-v4-preset-chip {
-    flex: 0 0 auto;
-    scroll-snap-align: start;
-  }
+  .rd-v4-preset-chips { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x proximity; scrollbar-width: none; padding-bottom: 4px; }
+  .rd-v4-preset-chips::-webkit-scrollbar { display: none; }
+  .rd-v4-preset-chip { flex: 0 0 auto; scroll-snap-align: start; }
 }
-.reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border-color: var(--rd-border); background: var(--rd-panel); color: var(--rd-fg); }
-/* 포스터 밖 일반 테마 표면(.rd-clarity-helpers)에 놓인 입력 바와 루나 카드는 어두운 삽화용 고정 스크림 대신
-   현재 테마 토큰(--rd-card, --rd-panel, --rd-fg, --rd-muted)을 따라 주간·종이·별빛 테마 모두 조화롭게 읽히게 한다. */
-.reference-dashboard .rd-idea-help .rd-idea {
-  margin-top: 10px;
-  border-color: var(--color-line);
-  border-radius: 12px;
-  background: var(--rd-card);
-  color: var(--rd-fg);
-  box-shadow: none;
-}
-.reference-dashboard .rd-idea-help .rd-idea-modes {
-  border-color: var(--rd-border);
-  background: var(--rd-panel);
-}
-.reference-dashboard .rd-idea-help .rd-idea-modes > button {
-  color: var(--rd-muted);
-}
-.reference-dashboard .rd-idea-help .rd-idea-modes > button[aria-pressed="true"] {
-  background: var(--rd-accent-soft);
-  color: var(--rd-accent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--rd-accent) 38%, transparent);
-}
-.reference-dashboard .rd-idea-help .rd-idea-modes > button:not([aria-pressed="true"]):hover {
-  color: var(--rd-fg);
-}
+.reference-dashboard .rd-clarity-helpers .rd-optional-summary { min-height: 48px; border: 0; background: transparent; color: var(--rd-fg); font-weight: 500; }
+.reference-dashboard .rd-clarity-helpers .rd-optional-summary > svg:first-child { color: var(--rd-muted); }
+/* 포스터 밖 일반 테마 표면에 놓인 입력 바와 루나 카드는 현재 테마 토큰을 따른다. */
+.reference-dashboard .rd-idea-help .rd-idea { margin-top: 4px; border-color: var(--color-line); border-radius: 12px; background: var(--rd-card); color: var(--rd-fg); box-shadow: none; }
+.reference-dashboard .rd-idea-help .rd-idea-modes { border-color: var(--rd-border); background: var(--rd-panel); }
+.reference-dashboard .rd-idea-help .rd-idea-modes > button { color: var(--rd-muted); font-weight: 500; }
+.reference-dashboard .rd-idea-help .rd-idea-modes > button[aria-pressed="true"] { background: var(--color-raised, var(--rd-card)); color: var(--rd-fg); box-shadow: inset 0 0 0 1px var(--color-line-strong); }
+.reference-dashboard .rd-idea-help .rd-idea-modes > button:not([aria-pressed="true"]):hover { color: var(--rd-fg); }
 .reference-dashboard .rd-idea-help .rd-idea-modes > button,
 .reference-dashboard .rd-idea-help .rd-idea-submit,
 .reference-dashboard .rd-clarity-helpers .rd-luna-form > button { min-height: 48px; min-width: 48px; }
-:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input {
-  min-height: 48px;
-  color: var(--rd-fg) !important;
-  font-size: 16px;
-}
-:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input::placeholder {
-  color: var(--rd-muted) !important;
-}
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input { min-height: 48px; color: var(--rd-fg) !important; font-size: 16px; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-idea-help .rd-idea input::placeholder { color: var(--rd-muted) !important; }
 .reference-dashboard .rd-clarity-helpers .rd-luna-help { color: var(--rd-fg); }
-.reference-dashboard .rd-clarity-helpers .rd-luna-card {
-  border-color: var(--color-line);
-  background: var(--rd-card);
-  box-shadow: none;
-}
-.reference-dashboard .rd-clarity-helpers .rd-luna-head > strong { color: var(--rd-fg); }
-.reference-dashboard .rd-clarity-helpers .rd-luna-head > small { color: var(--rd-muted); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-card { border-color: var(--color-line); background: var(--rd-card); box-shadow: none; backdrop-filter: none; }
+.reference-dashboard .rd-clarity-helpers .rd-luna-head > strong { color: var(--rd-fg); font-weight: 500; }
+.reference-dashboard .rd-clarity-helpers .rd-luna-head > small { color: var(--rd-muted); font-weight: 500; }
+.reference-dashboard .rd-clarity-helpers .rd-luna-head > svg { color: var(--rd-muted); }
 .reference-dashboard .rd-clarity-helpers .rd-luna-msg { color: var(--rd-fg); }
-.reference-dashboard .rd-clarity-helpers .rd-luna-msg--luna {
-  border-color: var(--rd-border);
-  background: var(--rd-panel);
-}
-.reference-dashboard .rd-clarity-helpers .rd-luna-msg--user {
-  background: var(--rd-accent-soft);
-}
-.reference-dashboard .rd-clarity-helpers .rd-luna-action { color: var(--rd-accent); }
-.reference-dashboard .rd-clarity-helpers .rd-luna-chips a {
-  border-color: var(--rd-border);
-  background: var(--rd-panel);
-  color: var(--rd-fg);
-}
-.reference-dashboard .rd-clarity-helpers .rd-luna-chips a:hover {
-  border-color: var(--rd-accent);
-  background: var(--rd-accent-soft);
-}
-.reference-dashboard .rd-clarity-helpers .rd-luna-form {
-  border-color: var(--rd-border);
-  background: var(--rd-panel);
-}
-:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input {
-  min-height: 48px;
-  color: var(--rd-fg) !important;
-}
-:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input::placeholder {
-  color: var(--rd-muted) !important;
-}
+.reference-dashboard .rd-clarity-helpers .rd-luna-msg--luna { border-color: var(--rd-border); background: var(--rd-panel); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-msg--user { background: var(--color-raised, var(--rd-card)); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-action { border-color: var(--color-line-strong); color: var(--rd-fg); font-weight: 500; }
+.reference-dashboard .rd-clarity-helpers .rd-luna-chips a { border-color: var(--rd-border); border-radius: 8px; background: transparent; color: var(--rd-muted); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-chips a:hover { border-color: var(--color-line-strong); color: var(--rd-fg); background: var(--color-raised, var(--rd-card)); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-chips a > svg { color: var(--rd-muted); }
+.reference-dashboard .rd-clarity-helpers .rd-luna-form { border-color: var(--rd-border); border-radius: 12px; background: var(--rd-panel); }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input { min-height: 48px; color: var(--rd-fg) !important; }
+:is(:root, :root[data-design-theme]) .creator-home .reference-dashboard .rd-clarity-helpers .rd-luna-form input::placeholder { color: var(--rd-muted) !important; }
+
 @media (hover: hover) {
-  .rd-clarity-actions > a, .rd-clarity-journey li > a { transition: background-color 150ms ease, border-color 150ms ease; }
   .reference-dashboard .rd-clarity-actions > .rd-clarity-start:hover { background: var(--color-accent-2, var(--color-accent)); }
-  .reference-dashboard .rd-clarity-actions > .rd-clarity-browse:hover { border-color: var(--color-line-strong); background: var(--color-raised, var(--rd-panel)); }
-  .rd-clarity-journey li > a:hover { border-color: var(--color-line); background: var(--rd-panel); }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-browse:hover { color: var(--color-fg); }
+  .rd-clarity-journey li > a:hover { background: color-mix(in oklch, var(--color-fg) 4%, transparent); }
 }
+
 @media (min-width: 640px) and (max-width: 1023px) {
-  .reference-dashboard .rd-clarity-hero { grid-template-columns: minmax(0, .95fr) minmax(0, 1fr); gap: 20px; padding: 20px; }
-  .rd-clarity-art { height: 296px; }
-  .reference-dashboard .rd-clarity-copy h1 { font-size: 38px; }
-  .reference-dashboard .rd-clarity-copy > p { font-size: 15px; }
-  .rd-clarity-art > figcaption { right: 8px; font-size: 11px; }
+  .reference-dashboard .rd-clarity-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; min-height: 0; }
+  .reference-dashboard .rd-clarity-copy h1 { font-size: 40px; }
+  .reference-dashboard .rd-clarity-copy > p { font-size: 16px; }
+  .rd-clarity-journey small { display: none; }
 }
 @media (max-width: 639px) {
-  .reference-dashboard .rd-clarity-hero { display: flex; flex-direction: column; gap: 0; padding: 16px; border-radius: 20px; }
-  .reference-dashboard .rd-clarity-art { order: -1; width: 100%; height: 196px; margin-bottom: 20px; }
-  .rd-clarity-manuscript { border-radius: 12px; }
-  .rd-clarity-art > figcaption { right: 8px; bottom: 8px; font-size: 11px; }
+  .reference-dashboard .rd-clarity-hero { display: flex; flex-direction: column; gap: 24px; min-height: 0; padding-block: 16px 24px; }
+  .reference-dashboard .rd-clarity-art { order: 1; width: 100%; aspect-ratio: 4 / 3; }
+  .rd-clarity-manuscript { --ink-radius: 16px; border-radius: 16px; }
   .rd-clarity-copy { width: 100%; }
-  .reference-dashboard .rd-clarity-copy h1 { font-size: 30px; line-height: 1.22; }
-  .reference-dashboard .rd-clarity-copy > p { margin-block: 12px 20px; font-size: 15px; }
-  .rd-clarity-actions { max-width: none; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .reference-dashboard .rd-clarity-actions > .rd-clarity-start { min-height: 48px; justify-content: space-between; padding-inline: 16px; gap: 8px; }
-  .reference-dashboard .rd-clarity-actions > .rd-clarity-browse { min-height: 44px; padding: 8px 16px; }
-  .rd-clarity-browse > svg { display: none; }
-  .reference-dashboard .rd-clarity-journey { padding-top: 16px; }
-  .rd-clarity-journey > ol { gap: 8px; }
-  .rd-clarity-journey li > a { gap: 8px; min-height: 88px; }
-  .rd-clarity-journey-icon { width: 48px; height: 48px; border-radius: 12px; }
-  .rd-clarity-journey-icon > svg { width: 24px; height: 24px; }
-  .rd-clarity-journey strong { font-size: 13px; }
-  .rd-clarity-journey-connector { top: 22px; inset-inline-start: calc(50% + 28px); width: calc(100% - 48px); }
-  .reference-dashboard .rd-clarity-helpers { grid-template-columns: minmax(0, 1fr); margin-top: 16px; }
+  .reference-dashboard .rd-clarity-copy h1 { font-size: 34px; line-height: 1.18; }
+  .reference-dashboard .rd-clarity-copy > p { margin-block: 12px 20px; font-size: 16px; }
+  .rd-clarity-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-start { justify-content: space-between; }
+  .reference-dashboard .rd-clarity-actions > .rd-clarity-browse { justify-content: center; }
+  .rd-clarity-journey > ol { grid-template-columns: minmax(0, 1fr); }
+  .rd-clarity-journey li > a { flex: 1; min-height: 60px; padding-block: 8px; }
+  .rd-clarity-journey-connector { display: none; }
+  .rd-clarity-journey li + li { border-top: 1px solid var(--color-line); }
+  .reference-dashboard .rd-clarity-helpers { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 20px; }
   .reference-dashboard .rd-idea-help .rd-idea { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 8px; }
   .rd-idea-help .rd-idea-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rd-idea-help .rd-idea-modes > button { justify-content: center; padding-inline: 8px; white-space: normal; }
@@ -236,7 +213,7 @@
   .reference-dashboard .rd-idea-help .rd-idea-submit { justify-content: center; width: 100%; margin-left: 0; border-radius: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .rd-clarity-actions > a, .rd-clarity-journey li > a, .rd-clarity-manuscript { transition: none; transform: none; }
+  .rd-clarity-actions > a, .rd-clarity-journey li > a { transition: none; transform: none; }
 }
 @media (prefers-contrast: more), (forced-colors: active) {
   .rd-clarity-copy h1 > span { color: CanvasText; }
@@ -245,4 +222,5 @@
 }
 @media (forced-colors: active) {
   .reference-dashboard .rd-clarity-actions > .rd-clarity-start { background: ButtonFace; color: ButtonText; }
+  .rd-clarity-journey-connector > i { background: CanvasText; }
 }

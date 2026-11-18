@@ -44,21 +44,26 @@ describe("non-studio experience controls", () => {
     expect(scene?.getAttribute("alt")).toBe("");
     expect(scene?.getAttribute("data-theme-scene")).toBeTruthy();
   });
+  it("starts calm by default so decoration never competes with content", () => {
+    const result = frame();
+    expect(result.container.querySelector('[data-site-experience="calm"]')).not.toBeNull();
+    expect(screen.getAllByRole("button", { name: "차분한 화면" }).every((button) => button.getAttribute("aria-pressed") === "true")).toBe(true);
+  });
   it("toggles the actual context, persists it, and restores it on remount", () => {
     const first = frame();
     const buttons = screen.getAllByRole("button", { name: "차분한 화면" });
     fireEvent.click(buttons[0]);
-    expect(first.container.querySelector('[data-site-experience="calm"]')).not.toBeNull();
-    expect(localStorage.getItem(EXPERIENCE_MODE_KEY)).toBe("calm");
-    expect(buttons.every((button) => button.getAttribute("aria-pressed") === "true")).toBe(true);
+    expect(first.container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
+    expect(localStorage.getItem(EXPERIENCE_MODE_KEY)).toBe("vivid");
+    expect(buttons.every((button) => button.getAttribute("aria-pressed") === "false")).toBe(true);
     first.unmount();
-    expect(frame().container.querySelector('[data-site-experience="calm"]')).not.toBeNull();
+    expect(frame().container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
   });
   it("keeps the current session usable when writes throw", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("Blocked", "SecurityError"); });
     const result = frame();
     fireEvent.click(screen.getAllByRole("button", { name: "차분한 화면" })[0]);
-    expect(result.container.querySelector('[data-site-experience="calm"]')).not.toBeNull();
+    expect(result.container.querySelector('[data-site-experience="vivid"]')).not.toBeNull();
   });
   it("mounts no wrapper or storage effects on disabled editor surfaces", () => {
     const access = vi.spyOn(Storage.prototype, "getItem");

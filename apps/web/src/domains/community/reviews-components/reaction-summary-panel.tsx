@@ -97,16 +97,16 @@ export function ReactionSummaryPanel({
         </p>
 
         <ul className="mt-4 flex flex-col gap-2.5">
-          {CATEGORY_ORDER.map((category) => (
+          {CATEGORY_ORDER.map((category, index) => (
             <li key={category} className="flex items-center gap-3">
               <span className="w-28 shrink-0 text-xs font-medium text-fg-2">{bt(...CATEGORY_LABELS[category])}</span>
-              <span className="h-2 flex-1 overflow-hidden rounded-full bg-raised" aria-hidden="true">
+              <span className="h-2 flex-1 overflow-hidden rounded-sm bg-raised" aria-hidden="true">
                 <span
-                  className={cn("block h-full rounded-full", BAR_TONE[category])}
-                  style={{ width: `${Math.round(summary.shares[category] * 100)}%` }}
+                  className={cn("ink-bar-fill block h-full rounded-sm", BAR_TONE[category])}
+                  style={{ width: `${Math.round(summary.shares[category] * 100)}%`, "--ink-i": index } as React.CSSProperties}
                 />
               </span>
-              <span className="numeral tnum w-14 shrink-0 text-right text-xs text-fg-3">
+              <span className="w-16 shrink-0 text-right text-xs tabular-nums text-fg-3">
                 {summary.counts[category].toLocaleString("ko-KR")}
                 {bt("개", "")} · {Math.round(summary.shares[category] * 100)}%
               </span>

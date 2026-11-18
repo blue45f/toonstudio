@@ -41,7 +41,7 @@ export function FanPostCardArt({ title, images }: { title: string; images?: stri
   if (list.length === 0) return null;
   const [first, ...rest] = list;
   return (
-    <figure className="relative mb-3 overflow-hidden rounded-xl border border-line">
+    <figure className="ink-cover ink-sheen relative mb-3 overflow-hidden rounded-xl border border-line">
       <img
         src={first}
         alt={`${title} 첨부 이미지 1`}
@@ -50,7 +50,7 @@ export function FanPostCardArt({ title, images }: { title: string; images?: stri
         className="aspect-[16/10] w-full object-cover"
       />
       {rest.length > 0 ? (
-        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-semibold text-white">
+        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/65 px-2 py-1 text-[11px] font-medium tabular-nums text-white">
           <Images size={12} aria-hidden="true" />
           {`+${rest.length}`}
         </span>

@@ -1,44 +1,126 @@
-/* CommunityPage 전용 배치. 전역 내비게이션과 FanCafePanel 스타일은 변경하지 않는다. */
+/* CommunityPage 전용 배치 — 평면 잉크 레이아웃과 44px 터치 타깃 계약. */
 .community-layout-header {
-  position: relative;
-  overflow: hidden;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 1.375rem;
-  border: 1px solid color-mix(in oklch, var(--color-accent) 30%, var(--color-line));
-  border-radius: 1.5rem;
-  background: linear-gradient(
-    145deg,
-    color-mix(in oklch, var(--color-accent) 11%, var(--color-panel)),
-    color-mix(in oklch, var(--color-cool, var(--color-accent-2)) 6%, var(--color-card))
-  );
-  box-shadow:
-    inset 0 2px 0 color-mix(in oklch, var(--color-accent) 65%, var(--color-cool, var(--color-accent-2))),
-    var(--unified-shadow-soft);
+  padding: 0 0 1.25rem;
+  border-bottom: 1px solid var(--color-line);
 }
-:root[data-design-theme="contrast"] .community-layout-header {
-  border-color: var(--color-line-strong);
-  background: var(--color-panel);
-  box-shadow: none;
+
+.community-layout-header h1 {
+  margin: 0;
+  font-size: clamp(1.625rem, 3vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  word-break: keep-all;
+  text-wrap: balance;
 }
-.community-layout-header h1 { margin: .5rem 0; font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.2; letter-spacing: -0.03em; font-weight: 800; text-wrap: balance; }
-.community-layout-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
-.community-layout-disclosure { margin-top: 1rem; border: 1px solid var(--color-line, currentColor); border-radius: 1.125rem; background: color-mix(in oklch, var(--color-panel) 78%, transparent); padding: 0 1rem; }
-.community-layout-disclosure > summary { min-height: 44px; padding: .75rem 0; cursor: pointer; font-weight: 700; }
-.community-layout-disclosure-body { padding-bottom: 1rem; min-width: 0; }
-.community-layout-art { width: 100%; max-height: 22rem; object-fit: cover; border-radius: 1rem; }
+
+.community-layout-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.community-layout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.community-layout-disclosure {
+  margin-top: 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  padding: 0;
+}
+
+.community-layout-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.625rem 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fg-2);
+  transition: color 150ms var(--ink-ease, ease);
+}
+
+.community-layout-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.community-layout-disclosure > summary:hover {
+  color: var(--color-fg);
+}
+
+.community-layout-disclosure > summary::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.25rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms var(--ink-ease, ease);
+  flex-shrink: 0;
+}
+
+.community-layout-disclosure[open] > summary {
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.community-layout-disclosure[open] > summary::after {
+  transform: rotate(-135deg);
+}
+
+.community-layout-disclosure-body {
+  padding: 0.5rem 0 1.25rem;
+  min-width: 0;
+}
+
+.community-layout-art {
+  width: 100%;
+  max-height: 22rem;
+  object-fit: cover;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+}
+
 .community-layout > div[role="group"] button,
 .community-layout > div > div[role="group"] button,
 .community-layout-header a,
 .community-layout-disclosure a,
-.community-layout-disclosure button { min-height: 44px; }
-.community-layout-disclosure [data-testid="community-rea-creator-showcase-bar"] a { display: inline-flex; align-items: center; }
-.community-layout :is(a, button, summary):focus-visible { outline: 3px solid var(--color-accent, Highlight); outline-offset: 3px; }
-@media (min-width: 960px) {
-  .community-layout-header { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 1.5rem 1.75rem; }
+.community-layout-disclosure button {
+  min-height: 44px;
 }
+
+.community-layout-disclosure [data-testid="community-rea-creator-showcase-bar"] a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.community-layout :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-accent, Highlight);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .community-layout, .community-layout * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .community-layout,
+  .community-layout * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 전역 #main-content의 768px 이상 40px보다 버튼·링크·접기 대상의 44px 계약을 우선한다.
@@ -51,16 +133,65 @@
   min-inline-size: 44px;
 }
 
-/* 시안의 네 범주 입구를 작은 탐색 레일로 유지해 실제 피드를 첫 화면 가까이에 둔다. */
-.community-layout-directory { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .625rem; margin-top: 1rem; }
-.community-layout-directory-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .375rem; min-width: 0; padding: .875rem .5rem; border: 1px solid var(--color-line); border-radius: 1.125rem; background: linear-gradient(160deg, var(--color-card), var(--color-panel)); color: var(--color-fg); font-size: .75rem; font-weight: 750; text-align: center; overflow-wrap: anywhere; box-shadow: inset 0 1px 0 color-mix(in oklch, var(--color-fg) 6%, transparent); transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease; }
-.community-layout-directory-link svg { flex-shrink: 0; color: var(--color-accent); }
-.community-layout-directory-link:hover { border-color: var(--color-accent); background: var(--color-raised); transform: translateY(-2px); }
-@media (min-width: 768px) {
-  .community-layout-directory-link { flex-direction: row; gap: .75rem; padding: .875rem; font-size: .875rem; }
+/* 네 범주 입구를 평면 카드 레일로 둔다. */
+.community-layout-directory {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
+
+.community-layout-directory-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 0.75rem 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background: var(--color-card);
+  color: var(--color-fg);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  overflow-wrap: anywhere;
+  transition: border-color 150ms var(--ink-ease, ease), background-color 150ms var(--ink-ease, ease);
+}
+
+.community-layout-directory-link svg {
+  flex-shrink: 0;
+  color: var(--color-fg-2);
+}
+
+.community-layout-directory-link:hover {
+  border-color: color-mix(in oklch, var(--color-accent) 55%, var(--color-line));
+  background: var(--color-raised);
+}
+
+@media (min-width: 768px) {
+  .community-layout-directory-link {
+    flex-direction: row;
+    gap: 0.625rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+
 @media (max-width: 639px) {
-  .community-layout-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .375rem; }
-  .community-layout-actions a { min-width: 0; justify-content: center; padding-inline: .5rem; font-size: .75rem; }
-  .community-layout-header h1 { font-size: 1.5rem; }
+  .community-layout-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+  .community-layout-actions a {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 0.5rem;
+    font-size: 0.75rem;
+  }
+  .community-layout-header h1 {
+    font-size: 1.5rem;
+  }
 }

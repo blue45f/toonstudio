@@ -18,16 +18,19 @@ const STATUS_META = {
   ready: {
     label: "제작 조건 일치",
     icon: CheckCircle2,
+    dotClass: "bg-good",
     className: "border-good/35 bg-good/10 text-good",
   },
   review: {
     label: "적용 전 확인",
     icon: CircleAlert,
+    dotClass: "bg-warn",
     className: "border-warn/40 bg-warn/10 text-warn",
   },
   blocked: {
     label: "현재 조건 차단",
     icon: ShieldX,
+    dotClass: "bg-danger",
     className: "border-danger/35 bg-danger/10 text-danger",
   },
 } as const;
@@ -39,7 +42,11 @@ export function MarketProductionFitBadge({
 }: MarketProductionFitBadgeProps) {
   const { profile } = useMarketProductionProfile();
   const t = useT();
-  const fitTranslate = (key: string, fallback: string, values?: Readonly<Record<string, string | number>>) => values ? t(key, values, fallback) : t(key, fallback);
+  const fitTranslate = (
+    key: string,
+    fallback: string,
+    values?: Readonly<Record<string, string | number>>,
+  ) => (values ? t(key, values, fallback) : t(key, fallback));
   const evaluation = evaluateMarketProductionFit(record, profile, fitTranslate);
   const meta = STATUS_META[evaluation.status];
   const Icon = meta.icon;
@@ -54,15 +61,16 @@ export function MarketProductionFitBadge({
       title={title}
       aria-label={`${meta.label}. 충족 ${evaluation.passCount}개, 확인 ${evaluation.reviewCount}개, 차단 ${evaluation.blockCount}개`}
       className={cn(
-        "inline-flex min-h-6 max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex min-h-6 max-w-full items-center gap-1 rounded-[6px] border px-2 py-0.5 text-xs font-medium",
         meta.className,
         className,
       )}
     >
+      <span aria-hidden="true" className={cn("size-1.5 shrink-0 rounded-full", meta.dotClass)} />
       <Icon className="size-3 shrink-0" aria-hidden="true" />
       <span className="truncate">{meta.label}</span>
       {showCounts ? (
-        <span className="numeral tnum shrink-0 opacity-80">
+        <span className="numeral tnum shrink-0 opacity-85 tabular-nums">
           {evaluation.passCount}/{evaluation.checks.length}
         </span>
       ) : null}

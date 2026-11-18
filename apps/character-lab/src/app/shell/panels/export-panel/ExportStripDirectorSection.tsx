@@ -1,5 +1,5 @@
 /**
- * 세로 4컷 웹툰 스트립 연기·구도·스크롤 호흡·시간대 색온도·다국어(세로쓰기 포함) 식자 디렉터 서브컴포넌트.
+ * 세로 4컷 웹툰 스트립 연기·구도·스크롤 호흡·시간대 색온도·할프톤 스크린톤·다국어(세로쓰기 포함) 식자 디렉터 서브컴포넌트.
  *
  * React 19 & Editor Chrome 아키텍처 준수:
  * - 인라인 컴포넌트 선언 금지, 명시적 삼항 연산자 렌더링, 비활성 컨트롤마다 사유(title) 제공.
@@ -13,6 +13,8 @@ import {
   WEBTOON_JA_WRITING_MODE_LABELS_KO,
   WEBTOON_MANUSCRIPT_MOODS,
   WEBTOON_MANUSCRIPT_MOOD_IDS,
+  WEBTOON_SCREENTONE_IDS,
+  WEBTOON_SCREENTONE_SPECS,
   WEBTOON_STRIP_ACTING_ARCS,
   WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO,
   WEBTOON_STRIP_FONT_SCALE_LABELS_KO,
@@ -27,6 +29,7 @@ import type {
   WebtoonDialogueLocale,
   WebtoonJaWritingMode,
   WebtoonManuscriptMoodId,
+  WebtoonScreentoneId,
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
   WebtoonStripBubbleFontScale,
@@ -61,6 +64,7 @@ export function ExportStripDirectorSection({
     jaWritingMode,
     manuscriptMood,
     gutterPaces,
+    screentones,
     actingArc: stripActingArc,
     bakeStripFx,
     stripFxLines,
@@ -73,9 +77,13 @@ export function ExportStripDirectorSection({
   } = state;
 
   const isJapanese = stripLocale === "ja";
+  const uniformScreentone: WebtoonScreentoneId | "" =
+    screentones[0] === screentones[1] && screentones[1] === screentones[2] && screentones[2] === screentones[3]
+      ? screentones[0]
+      : "";
 
   return (
-    <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·구도·호흡·다국어 식자 디렉터">
+    <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·구도·호흡·스크린톤·다국어 식자 디렉터">
       <div className="cl-export-row">
         <label htmlFor={`${idsPrefix}-strip-acting-arc`}>4컷 연기 시퀀스</label>
         <select
@@ -187,9 +195,29 @@ export function ExportStripDirectorSection({
           <option value="romance-sparkle">로맨스 스파클</option>
           <option value="none">말풍선만 (효과선 없음)</option>
         </select>
+        <label htmlFor={`${idsPrefix}-strip-tone-all`}>일괄 스크린톤</label>
+        <select
+          id={`${idsPrefix}-strip-tone-all`}
+          aria-label="4컷 일괄 할프톤 스크린톤"
+          data-testid="export-strip-screentone-all"
+          value={uniformScreentone}
+          onChange={(event) => {
+            const val = event.target.value as WebtoonScreentoneId | "";
+            if (val) session.setAllScreentones(val);
+          }}
+        >
+          <option value="" disabled>
+            컷별 개별 망점 사용 중
+          </option>
+          {WEBTOON_SCREENTONE_IDS.map((toneId) => (
+            <option key={toneId} value={toneId}>
+              {WEBTOON_SCREENTONE_SPECS[toneId].labelKo}
+            </option>
+          ))}
+        </select>
       </div>
 
-      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 카메라 구도·발화자·말풍선·강조·효과음·다국어 대사">
+      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 카메라 구도·스크린톤·발화자·말풍선·강조·효과음·다국어 대사">
         {CUT_INDICES.map((cutIdx) => {
           const bubbleHidden = bubbleShapes[cutIdx] === "none";
           const textDisabled = !bakeStripFx || bubbleHidden;
@@ -216,6 +244,18 @@ export function ExportStripDirectorSection({
                 </select>
               </div>
               <div className="cl-export-cut-controls-row">
+                <select
+                  aria-label={`${cutIdx + 1}컷 할프톤 스크린톤`}
+                  data-testid={`export-strip-screentone-${cutIdx}`}
+                  value={screentones[cutIdx]}
+                  onChange={(event) => session.setScreentone(cutIdx, event.target.value as WebtoonScreentoneId)}
+                >
+                  {WEBTOON_SCREENTONE_IDS.map((toneId) => (
+                    <option key={toneId} value={toneId}>
+                      {WEBTOON_SCREENTONE_SPECS[toneId].labelKo}
+                    </option>
+                  ))}
+                </select>
                 <select
                   aria-label={`${cutIdx + 1}컷 발화자`}
                   data-testid={`export-strip-speaker-${cutIdx}`}

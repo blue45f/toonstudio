@@ -1,9 +1,9 @@
 /**
  * 뷰포트 3D 웹툰 소품·배경·효과음 스탬프 워크벤치 바 (Unslop Warm Ink Atelier 정제 규약):
- * - 손 소품 6종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`, `imperial-scroll`, `jade-folding-fan`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
- * - 머리 액세서리 4종(`wire-glasses`, `rofan-tiara`, `tactical-headset`, `pearl-earrings-pin`) 실시간 head 본 부착
- * - 배경 스테이지 프롭 6종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`, `rooftop-safety-railing`) 발밑·등 뒤 배치
- * - 한국형 웹툰 3D 오노마토페 스탬프 4종(`seureung`, `dugeun`, `kugugung`, `pat`) 상단 프레임 배치
+ * - 손 소품 8종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`, `imperial-scroll`, `jade-folding-fan`, `calling-card-rose`, `medical-chart-clipboard`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
+ * - 머리 액세서리 6종(`wire-glasses`, `rofan-tiara`, `tactical-headset`, `pearl-earrings-pin`, `studio-headphones`, `silver-monocle`) 실시간 head 본 부착
+ * - 배경 스테이지 프롭 8종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`, `rooftop-safety-railing`, `velvet-display-pedestal`, `courtroom-gavel-podium`) 발밑·등 뒤 배치
+ * - 한국형 웹툰 3D 오노마토페 스탬프 6종(`seureung`, `dugeun`, `kugugung`, `pat`, `ssaa`, `beonjjeok`) 상단 프레임 배치
  */
 import { qNormalize } from "../../../shared/math";
 
@@ -180,6 +180,19 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
       hand: [14, 18, -8],
     },
   },
+  {
+    id: "medical-chart-clipboard",
+    labelKo: "메디컬 진단 차트·클립보드",
+    genreHintKo: "메디컬·법정·오피스 전문직 브리핑 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/medical-chart-clipboard.glb",
+    sha256: "d0ab036ca3f079d3745fe2850c732f1f801c4f603ed0e6317452a6771f656d12",
+    handPreset: "hand-pose/open",
+    rightArmEulerDeg: {
+      upperArm: [14, 24, 60],
+      lowerArm: [26, 80, -20],
+      hand: [12, 12, -8],
+    },
+  },
 ]);
 
 export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze([
@@ -276,6 +289,13 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     genreHintKo: "괴도·집사·미스터리 달빛 진열실 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/velvet-display-pedestal.glb",
     sha256: "d01c1337934e7bc503ae1508b7dbe50019085c54bd2b598f6bd69fda69dddabd",
+  },
+  {
+    id: "courtroom-gavel-podium",
+    labelKo: "법정 의사봉·증인석 연단",
+    genreHintKo: "법정·메디컬·정치 진실 공방 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/courtroom-gavel-podium.glb",
+    sha256: "e2897e603bc03c1bbd0b297bd0f73f803e35ebadc3015d4ebc00ab66d36560d7",
   },
 ]);
 

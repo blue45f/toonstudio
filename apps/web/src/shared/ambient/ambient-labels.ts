@@ -73,8 +73,8 @@ const INTENSITY_NAMES: Record<AmbientIntensity, Bilingual> = {
 };
 
 const INTENSITY_DESCRIPTIONS: Record<AmbientIntensity, Bilingual> = {
-  off: { ko: "배경 효과를 모두 꺼요", en: "Turn every background effect off" },
-  subtle: { ko: "효과를 드문드문 보여 줘요 (기본)", en: "Sparse effects (default)" },
+  off: { ko: "배경 효과를 모두 꺼요 (기본)", en: "Turn every background effect off (default)" },
+  subtle: { ko: "효과를 드문드문 보여 줘요", en: "Sparse effects" },
   vivid: { ko: "더 풍성하게, 계절 효과도 곁들여요", en: "Richer, with a seasonal accent" },
 };
 

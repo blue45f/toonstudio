@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MarketCompareShelf } from "./MarketCompareShelf";
 import { MarketCompareToggle } from "./MarketCompareToggle";
-import { MarketHomeSearch } from "./MarketHomeSearch";
 import { MarketHomePresets } from "./MarketHomePresets";
+import { MarketHomeSearch } from "./MarketHomeSearch";
+import { MarketMaterialPreview } from "./MarketMaterialPreview";
 import { MarketViewToggle } from "./MarketViewToggle";
 
 import { CREATOR_MARKETPLACE_STARTER_RECORDS } from "@/shared/lib/creator-marketplace-starter-catalog";
@@ -99,5 +100,33 @@ describe("market experience controls", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(input.getAttribute("aria-invalid")).toBe("true");
     expect(screen.getByLabelText("테스트 경로").textContent).toBe("/market");
+  });
+
+  it("switches Interactive Material Swatch Desk lenses with panel cross-wipe, swatch selection, and pointer tilt", () => {
+    const { container } = render(<MemoryRouter><MarketMaterialPreview /></MemoryRouter>);
+    expect(container.textContent).not.toContain("THE ARTIST'S MATERIAL DESK");
+
+    const lensGroup = screen.getByRole("group", { name: "작업에 필요한 재료 선택" });
+    const colorLens = within(lensGroup).getByRole("button", { name: "색과 분위기" });
+    expect(colorLens.getAttribute("aria-pressed")).toBe("false");
+    expect(container.querySelector(".market-material-layer--wipe")).toBeNull();
+
+    fireEvent.click(colorLens);
+    expect(colorLens.getAttribute("aria-pressed")).toBe("true");
+    expect(container.querySelector(".market-material-layer--wipe")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "팔레트 탐색" }).getAttribute("href")).toBe("/market/browse?kind=palette");
+
+    const swatchGroup = screen.getByRole("group", { name: "세부 견본 선택" });
+    const midnightSwatch = within(swatchGroup).getByRole("button", { name: "심야 골목 네온" });
+    fireEvent.click(midnightSwatch);
+    expect(midnightSwatch.getAttribute("aria-pressed")).toBe("true");
+
+    const desk = container.querySelector("figure.ink-stage-tilt") as HTMLElement;
+    vi.spyOn(desk, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 400, 300));
+    fireEvent.pointerMove(desk, { clientX: 300, clientY: 75 });
+    expect(desk.style.getPropertyValue("--tilt-ry")).not.toBe("0deg");
+    fireEvent.pointerLeave(desk);
+    expect(desk.style.getPropertyValue("--tilt-rx")).toBe("0deg");
+    expect(desk.style.getPropertyValue("--tilt-ry")).toBe("0deg");
   });
 });

@@ -1,5 +1,6 @@
 /** 컷별 다국어 식자·발화자·말풍선·효과음 옵션과 기본 배치 규칙. */
 import type { WebtoonJaWritingMode, WebtoonManuscriptMoodId } from "./webtoon-strip-pacing-tategaki";
+import type { WebtoonStripScreentones } from "./webtoon-strip-screentone";
 import type { SfxStampId } from "../contracts";
 
 export const WEBTOON_DIALOGUE_LOCALES = ["ko", "en", "ja"] as const;
@@ -214,6 +215,8 @@ export interface WebtoonStripMangaFxOptions {
   readonly jaWritingMode?: WebtoonJaWritingMode;
   /** 시간대별 원고 배경 및 캐릭터 림라이트 색온도 무드(기본 `daylight-paper`) */
   readonly manuscriptMood?: WebtoonManuscriptMoodId;
+  /** 1~4컷 개별 흑백·컬러 할프톤 망점 스크린톤(미지정 시 `none`) */
+  readonly screentones?: WebtoonStripScreentones;
   /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 대사 4줄 */
   readonly dialogueLines?: WebtoonStripDialogueLines;
   /** 1~4컷 개별 말풍선 모양(미지정 시 4컷 모두 기본 타원 `oval`) */

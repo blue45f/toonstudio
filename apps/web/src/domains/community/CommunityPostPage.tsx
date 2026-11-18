@@ -99,14 +99,14 @@ export function CommunityPostPage() {
   if (notFound || (!post && !error)) {
     return (
       <Container size="default" className="py-16">
-        <div className="rounded-3xl border border-dashed border-line bg-card/50 px-6 py-14 text-center">
-          <MessageCircle className="mx-auto mb-3 text-fg-3" size={24} />
-          <p className="eyebrow text-accent">{translateCurrentStaticSourceText("domains.community.CommunityPostPage", "en", "COMMUNITY THREAD")}</p>
-          <h1 className="mt-2 text-2xl font-bold">{translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "토론 글을 찾을 수 없어요")}</h1>
+        <div className="rounded-2xl border border-dashed border-line bg-panel/35 px-6 py-12 text-center">
+          <MessageCircle className="mx-auto mb-3 text-fg-3" size={22} />
+          <p className="text-xs font-medium text-accent">{translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "커뮤니티 대화")}</p>
+          <h1 className="mt-1.5 text-xl font-semibold text-fg">{translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "토론 글을 찾을 수 없어요")}</h1>
           <p className="mt-2 text-sm text-fg-3">{translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "삭제됐거나 비공개 처리된 글일 수 있습니다.")}</p>
           <Link
             href="/community"
-            className="mt-6 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-on-accent"
+            className="mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-on-accent"
           >
             <ArrowLeft size={15} />
             {translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "커뮤니티로 돌아가기")}</Link>
@@ -118,12 +118,12 @@ export function CommunityPostPage() {
   if (error || !post) {
     return (
       <Container size="default" className="py-16">
-        <div className="rounded-3xl border border-bad/35 bg-bad/10 px-6 py-10 text-center">
-          <p className="text-sm font-medium text-bad">{error ?? translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "토론 글을 불러오지 못했습니다.")}</p>
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-5 py-4">
+          <p className="text-sm font-medium text-fg">{error ?? translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "토론 글을 불러오지 못했습니다.")}</p>
           <button
             type="button"
             onClick={reload}
-            className="mt-4 min-h-11 rounded-lg border border-bad/35 px-3 py-2 text-xs font-semibold text-bad"
+            className="min-h-11 rounded-lg border border-line bg-raised px-3.5 py-2 text-xs font-medium text-fg hover:border-accent/50"
           >
             {translateCurrentStaticSourceText("domains.community.CommunityPostPage", "ko", "다시 시도")}</button>
         </div>

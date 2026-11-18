@@ -75,4 +75,10 @@ describe("CoverCard 렌더링 계약 (S3-15)", () => {
     render(<CoverCard title={TITLE} rank={1} />);
     expect(screen.getByText("1", { selector: ".numeral" })).toBeTruthy();
   });
+
+  it("ink-cover·ink-sheen 래퍼와 showIndex 순번 표시를 지원한다", () => {
+    const { container } = render(<CoverCard title={TITLE} index={2} showIndex />);
+    expect(container.querySelector(".ink-cover.ink-sheen")).not.toBeNull();
+    expect(container.textContent).toContain("03");
+  });
 });

@@ -30,11 +30,11 @@ export interface MarketSentenceSearchProps {
 const NO_REMOVED: ReadonlySet<MarketSentenceFacet> = new Set();
 
 const CHIP_CLASS = cn(
-  "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-xl border border-accent/40 bg-accent-soft px-3 text-xs font-semibold text-accent",
+  "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-[8px] border border-accent/40 bg-accent-soft px-3 text-xs font-medium text-accent",
   "hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
 );
 const TEXT_BUTTON_CLASS = cn(
-  "inline-flex min-h-11 items-center rounded-xl px-2 text-xs font-semibold text-accent underline underline-offset-2",
+  "inline-flex min-h-11 items-center rounded-[8px] px-2 text-xs font-medium text-accent underline underline-offset-2",
   "hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
 );
 
@@ -168,7 +168,7 @@ export function MarketSentenceSearch({ onApply }: MarketSentenceSearchProps) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={toggle}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-accent hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-[8px] px-3 text-sm font-medium text-accent hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
       >
         <Search className="size-4" aria-hidden="true" />
         {t("문장으로 찾기", "Find by sentence")}
@@ -177,8 +177,8 @@ export function MarketSentenceSearch({ onApply }: MarketSentenceSearchProps) {
 
       <div id={panelId} hidden={!open}>
         {open ? (
-          <section aria-labelledby={titleId} className="mt-2 rounded-2xl border border-line bg-card/60 p-3 sm:p-4">
-            <h2 id={titleId} className="text-sm font-bold text-fg">{t("문장으로 조건 만들기", "Build filters from a sentence")}</h2>
+          <section aria-labelledby={titleId} className="mt-2 rounded-[14px] border border-line bg-card/60 p-3 sm:p-4">
+            <h2 id={titleId} className="text-sm font-semibold text-fg">{t("문장으로 조건 만들기", "Build filters from a sentence")}</h2>
             <p id={helpId} className="mt-1 text-xs leading-5 text-fg-3">
               {t(
                 "찾는 자료를 말하듯 적으면 종류·라이선스·태그·검색어로 바꿔 줘요. 이 마켓 안에서만 찾고, 찾기를 누르기 전에는 결과가 바뀌지 않아요.",
@@ -205,9 +205,9 @@ export function MarketSentenceSearch({ onApply }: MarketSentenceSearchProps) {
                 placeholder={t("예: 저작권 걱정 없는 학교 배경", "e.g. a school background with no copyright worries")}
                 onChange={(event) => changeDraft(event.target.value)}
                 onKeyDown={onKeyDown}
-                className="h-12 w-full min-w-0 flex-1 rounded-2xl border border-line bg-card px-4 text-sm text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50"
+                className="h-12 w-full min-w-0 flex-1 rounded-[9px] border border-line bg-card px-4 text-sm text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/50"
               />
-              <button type="submit" className={buttonClass({ variant: "solid", size: "md", className: "shrink-0 max-sm:w-full" })}>
+              <button type="submit" className={buttonClass({ variant: "solid", size: "md", className: "shrink-0 rounded-[9px] max-sm:w-full" })}>
                 {t("이 조건으로 찾기", "Apply")}
               </button>
             </form>

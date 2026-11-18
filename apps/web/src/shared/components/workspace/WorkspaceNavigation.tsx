@@ -1,4 +1,4 @@
-import { useState, type Ref } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type Ref, type RefObject } from "react";
 import { ChevronDown, Palette } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
@@ -19,45 +19,11 @@ import {
   type WorkspaceNavigationContext,
 } from "./workspace-navigation-model";
 
-const PREMIUM_NAV_ART: Readonly<Record<string, string>> = {
-  "workspace-home": "/brand/toonstudio-premium-icons/home.webp",
-  studio: "/brand/toonstudio-premium-icons/canvas.webp",
-  explore: "/brand/toonstudio-premium-icons/assets.webp",
-  community: "/brand/toonstudio-premium-icons/community.webp",
-  "all-menu": "/brand/toonstudio-premium-icons/settings.webp",
-};
-
-/**
- * 제작 바로가기 아트. 기존 프리미엄 글리프 세트에서 목적지와 뜻이 맞는 것을
- * 재사용하고(create·character·background), 겹치는 목적지(둘러보기의 사진 글리프와
- * 구분되는 작품 재료, 커뮤니티의 두 사람 실루엣과 구분되는 팀, 전용 글리프가 없던
- * 가상 스튜디오)는 같은 화풍으로 신규 생성해 세트에 편입했다.
- */
-const SHORTCUT_NAV_ART: Readonly<Record<string, string>> = {
-  "shortcut-canvas": "/brand/toonstudio-premium-icons/create.webp",
-  "shortcut-character": "/brand/toonstudio-premium-icons/character.webp",
-  "shortcut-bg3d": "/brand/toonstudio-premium-icons/background.webp",
-  "shortcut-assets": "/brand/toonstudio-premium-icons/materials.webp",
-  "shortcut-virtual-studio": "/brand/toonstudio-premium-icons/space.webp",
-  "shortcut-team": "/brand/toonstudio-premium-icons/team.webp",
-};
-
-/**
- * 내비 아트 이미지. 로드에 실패하면 스스로 물러나 CSS가 줄 아이콘 폴백을
- * 다시 보여 줄 수 있게 한다(깨진 이미지 자국을 남기지 않는다).
- */
-function WorkspaceNavArtImage({ src }: { readonly src: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return <img src={src} alt="" decoding="async" onError={() => setFailed(true)} />;
-}
-
 /**
  * 시안(s1/hub)의 좌측 메뉴가 한 목록에 두는 제작 하위 목적지.
  * 다섯 개 주 목적지 계약(TOONSTUDIO_PRIMARY_NAVIGATION)은 그대로 두고,
  * 넓은 화면에서만 별도 "제작 바로가기" 묶음으로 이어 붙인다.
- * 이름은 단일 지도(SITE_NAVIGATION_ITEMS)의 정본 라벨을 그대로 쓴다 —
- * 같은 목적지를 표면마다 다른 이름으로 부르지 않는다.
+ * 이름은 단일 지도(SITE_NAVIGATION_ITEMS)의 정본 라벨을 그대로 쓴다.
  */
 const WORKSPACE_SHORTCUTS: readonly SiteNavigationItem[] = [
   {
@@ -106,6 +72,87 @@ function workspaceShortcutActiveId(pathname: string): string | null {
   return SHORTCUT_MATCHERS.find((matcher) => matcher.test(path))?.id ?? null;
 }
 
+interface InkState {
+  readonly top: number;
+  readonly height: number;
+  readonly visible: boolean;
+}
+
+/**
+ * 좌측 레일의 현재 항목을 따라 미끄러지는 2px 수직 잉크 막대.
+ * translateY + scaleY 만 갱신해 레이아웃 재계산을 일으키지 않으며,
+ * 첫 측정 전에는 정적 표시를 유지하다가 준비된 뒤에만 전이한다.
+ */
+function useWorkspaceRailInk(
+  railRef: RefObject<HTMLDivElement | null>,
+  shortcutId: string | null,
+  primaryId: string | null,
+  expanded: boolean,
+): { readonly style: CSSProperties; readonly visible: boolean } {
+  const [ink, setInk] = useState<InkState>({ top: 0, height: 18, visible: false });
+
+  useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail || typeof window === "undefined") return undefined;
+    let frame = 0;
+    let ready = rail.getAttribute("data-ink-ready") === "true";
+
+    const measure = () => {
+      if (window.matchMedia?.("(max-width: 767px)").matches) {
+        setInk((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+        return;
+      }
+      const candidates = [shortcutId, primaryId];
+      let target: HTMLElement | null = null;
+      for (const candidate of candidates) {
+        if (!candidate) continue;
+        const el = rail.querySelector<HTMLElement>(`[data-navigation-entry="${candidate}"]`);
+        if (el && el.getClientRects().length > 0) {
+          target = el;
+          break;
+        }
+      }
+      if (!target) {
+        setInk((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+        return;
+      }
+      const railBox = rail.getBoundingClientRect();
+      const itemBox = target.getBoundingClientRect();
+      const inset = Math.min(7, Math.max(4, Math.round(itemBox.height * 0.18)));
+      const height = Math.max(14, Math.round(itemBox.height - inset * 2));
+      const top = Math.round(itemBox.top - railBox.top + inset);
+      setInk((prev) =>
+        prev.visible && prev.top === top && prev.height === height
+          ? prev
+          : { top, height, visible: true },
+      );
+      if (!ready) {
+        ready = true;
+        frame = window.requestAnimationFrame(() => rail.setAttribute("data-ink-ready", "true"));
+      }
+    };
+
+    measure();
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+    observer?.observe(rail);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [railRef, shortcutId, primaryId, expanded]);
+
+  return {
+    style: {
+      "--ink-y": `${ink.top}px`,
+      "--ink-h": String(ink.height),
+      opacity: ink.visible ? 1 : 0,
+    } as CSSProperties,
+    visible: ink.visible,
+  };
+}
+
 export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, onOpenMenu, menuOpen, menuId, navigationRef }: {
   readonly activeId?: string;
   readonly onOpenMenu?: (trigger: HTMLButtonElement) => void;
@@ -118,6 +165,7 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
 }) {
   const locale = useI18n((state) => state.lang);
   const { pathname, search } = useLocation();
+  const railRef = useRef<HTMLDivElement>(null);
   const navigationContext = context ?? workspaceNavigationContext(pathname, search);
   const shortcutActive = workspaceShortcutActiveId(pathname);
   const [shortcutsExpanded, setShortcutsExpanded] = useState(true);
@@ -130,87 +178,114 @@ export function WorkspaceNavigation({ activeId, studioHref, teamHref, context, o
   const selected = suppressedPrimary !== undefined && autoSelected === suppressedPrimary
     ? null
     : autoSelected;
+  const detailsOpen = shortcutsExpanded || shortcutActive !== null;
+  const ink = useWorkspaceRailInk(railRef, shortcutActive, selected, detailsOpen);
+
   return (
-    <>
-      <nav ref={navigationRef} className="workspace-nav" data-site-mobile-utilities={onOpenMenu ? "available" : undefined} aria-label={locale.startsWith("ko") ? "주 메뉴" : "Main navigation"}>
+    <div ref={railRef} className="workspace-nav-rail">
+      <nav
+        ref={navigationRef}
+        className="workspace-nav"
+        data-slot="workspace-nav"
+        data-site-mobile-utilities={onOpenMenu ? "available" : undefined}
+        aria-label={locale.startsWith("ko") ? "주 메뉴" : "Main navigation"}
+      >
         {TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => {
           const Icon = item.icon;
-          const art = PREMIUM_NAV_ART[item.id];
           const href = item.id === "workspace-home"
             ? studioHref ?? workspaceNavigationHref(item.href, navigationContext)
             : item.id === "workspace-team"
               ? teamHref ?? workspaceNavigationHref(item.href, navigationContext)
               : workspaceNavigationHref(item.href, navigationContext);
 
-          const content = <>
+          const content = (
+            <>
               <span className="workspace-nav-visual" aria-hidden="true">
-                <span className="workspace-nav-visual-art" />
-                {art ? <WorkspaceNavArtImage src={art} /> : null}
                 <Icon
-                  className="workspace-nav-line-icon"
-                  size={18}
-                  strokeWidth={selected === item.id ? 2.35 : 1.9}
+                  className="workspace-nav-line-icon workspace-nav-row-icon"
+                  size={17}
+                  strokeWidth={1.6}
                 />
               </span>
-              <Icon
-                className="workspace-nav-row-icon"
-                size={18}
-                strokeWidth={selected === item.id ? 2.35 : 1.9}
-                aria-hidden="true"
-              />
               <span>{siteNavigationText(item.label, locale)}</span>
-          </>;
-          if (item.id === "all-menu" && onOpenMenu) return (
-            <button key={item.id} type="button" data-navigation-entry={item.id}
-              data-site-mobile-menu-trigger="true" data-workspace-menu-trigger="true"
-              aria-haspopup="dialog" aria-expanded={menuOpen ?? false}
-              aria-controls={menuOpen ? menuId : undefined}
-              title={siteNavigationText(item.description, locale)}
-              onClick={(event) => onOpenMenu(event.currentTarget)}>{content}</button>
+            </>
           );
-          return (
-            <Link key={item.id} href={href} aria-current={selected === item.id ? "page" : undefined}
-              data-navigation-entry={item.id} title={siteNavigationText(item.description, locale)}>{content}</Link>
-          );
-        })}
-      </nav>
-      <details className="workspace-shortcut-group" open={shortcutsExpanded || shortcutActive !== null}>
-      <summary onClick={(event) => {
-        if (shortcutActive !== null) return;
-        event.preventDefault();
-        setShortcutsExpanded((prev) => !prev);
-      }}><Palette size={18} aria-hidden="true" /><span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-      <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
-        {WORKSPACE_SHORTCUTS.map((item) => {
-          const Icon = item.icon;
-          const art = SHORTCUT_NAV_ART[item.id];
-          const href = item.id === "shortcut-team"
-            ? teamHref ?? item.href
-            : item.href;
+          if (item.id === "all-menu" && onOpenMenu) {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-navigation-entry={item.id}
+                data-site-mobile-menu-trigger="true"
+                data-workspace-menu-trigger="true"
+                aria-haspopup="dialog"
+                aria-expanded={menuOpen ?? false}
+                aria-controls={menuOpen ? menuId : undefined}
+                title={siteNavigationText(item.description, locale)}
+                onClick={(event) => onOpenMenu(event.currentTarget)}
+              >
+                {content}
+              </button>
+            );
+          }
           return (
             <Link
               key={item.id}
               href={href}
-              aria-current={shortcutActive === item.id ? "page" : undefined}
+              aria-current={selected === item.id ? "page" : undefined}
               data-navigation-entry={item.id}
               title={siteNavigationText(item.description, locale)}
             >
-              <span className="workspace-nav-visual" aria-hidden="true">
-                <span className="workspace-nav-visual-art" />
-                {art ? <WorkspaceNavArtImage src={art} /> : null}
-              </span>
-              <Icon
-                className="workspace-nav-row-icon"
-                size={18}
-                strokeWidth={shortcutActive === item.id ? 2.35 : 1.9}
-                aria-hidden="true"
-              />
-              <span>{siteNavigationText(item.label, locale)}</span>
+              {content}
             </Link>
           );
         })}
       </nav>
+      <details className="workspace-shortcut-group" open={detailsOpen}>
+        <summary
+          onClick={(event) => {
+            if (shortcutActive !== null) return;
+            event.preventDefault();
+            setShortcutsExpanded((prev) => !prev);
+          }}
+        >
+          <Palette size={16} strokeWidth={1.6} aria-hidden="true" />
+          <span>{locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}</span>
+          <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" />
+        </summary>
+        <nav className="workspace-nav-shortcuts" aria-label={locale.startsWith("ko") ? "제작 바로가기" : "Creation shortcuts"}>
+          {WORKSPACE_SHORTCUTS.map((item) => {
+            const Icon = item.icon;
+            const href = item.id === "shortcut-team"
+              ? teamHref ?? item.href
+              : item.href;
+            return (
+              <Link
+                key={item.id}
+                href={href}
+                aria-current={shortcutActive === item.id ? "page" : undefined}
+                data-navigation-entry={item.id}
+                title={siteNavigationText(item.description, locale)}
+              >
+                <span className="workspace-nav-visual" aria-hidden="true">
+                  <Icon
+                    className="workspace-nav-line-icon workspace-nav-row-icon"
+                    size={17}
+                    strokeWidth={1.6}
+                  />
+                </span>
+                <span>{siteNavigationText(item.label, locale)}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </details>
-    </>
+      <span
+        className="workspace-nav-ink"
+        aria-hidden="true"
+        style={ink.style}
+        data-visible={ink.visible ? "true" : undefined}
+      />
+    </div>
   );
 }

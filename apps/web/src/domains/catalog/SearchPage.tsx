@@ -46,7 +46,7 @@ export function SearchPage() {
       <Container size="wide" className="search-page-workspace py-4 sm:py-6">
         <div className="search-page-heading-shell">
           <header className="search-page-heading search-page-heading-compact">
-            <h1 className="text-balance text-xl font-bold leading-tight text-fg sm:text-2xl">
+            <h1 data-ink="line" className="text-balance text-xl font-semibold leading-tight text-fg [word-break:keep-all] sm:text-2xl">
               {bt("작품 검색", "Search stories")}
             </h1>
             <details className="search-page-methods" data-testid="search-page-methods">
@@ -127,9 +127,9 @@ export function SearchPage() {
                     <span
                       aria-hidden="true"
                       data-testid="search-tools-art-fallback"
-                      className="hidden h-18 w-24 shrink-0 place-items-center rounded-xl border border-line bg-panel px-2 text-center text-[10px] font-bold text-fg-3 sm:grid"
+                      className="hidden h-18 w-24 shrink-0 place-items-center rounded-lg border border-line bg-panel px-2 text-center text-xs font-medium text-fg-3 sm:grid"
                     >
-                      SEARCH
+                      {bt("검색", "Search")}
                     </span>
                   ) : null}
                 </>
@@ -150,7 +150,7 @@ export function SearchPage() {
               data-testid="search-quick-keywords"
               className="flex flex-wrap items-center gap-2"
             >
-              <span className="text-xs font-bold text-fg-2">{bt("빠른 추천 검색:", "Quick searches:")}</span>
+              <span className="text-xs font-medium text-fg-2">{bt("빠른 추천 검색", "Quick searches")}</span>
               {[
                 { label: "#로맨스판타지", href: "/search?q=로맨스판타지" },
                 { label: "#사이다회귀", href: "/search?q=회귀" },
@@ -159,12 +159,12 @@ export function SearchPage() {
                 { label: "#미스터리스릴러", href: "/search?q=스릴러" },
                 { label: bt("무료·기다무 작품만", "Free and wait-free titles"), href: "/search?pricing=free" },
               ].map((chip) => (
-                <Link key={chip.href} href={chip.href} className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-3 py-1 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:bg-accent/10 hover:text-accent">
+                <Link key={chip.href} href={chip.href} className="inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-3 py-1 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg">
                   {chip.label}
                 </Link>
               ))}
             </div>
-            <Link href="/ranking" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline-offset-4 hover:underline">
+            <Link href="/ranking" className="inline-flex min-h-11 items-center text-sm font-medium text-accent underline-offset-4 hover:underline">
               {t("search.compareFromRanking")}
             </Link>
           </div>

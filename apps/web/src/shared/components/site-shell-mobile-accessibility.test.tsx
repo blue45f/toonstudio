@@ -24,9 +24,10 @@ vi.mock("../../domains/auth/components/auth-menu-shell", () => ({
 }));
 
 /**
- * 헤더 1차 메뉴 목적지 (Grand Atelier V4): 상시 노출은 제작·협업·탐색·커뮤니티·배우기·마켓 6개 핵심 축이다.
+ * 헤더 1차 메뉴 목적지 (2026-11-18 동선 재구성): 창작 여정 순서의 5개 축이다.
+ * 협업(/production)은 내 작업 패널의 "함께 만들기" 묶음으로 들어갔다.
  */
-const PRIMARY_ENTRY_HREFS = ["/studio", "/production", "/discover", "/community", "/learn", "/market"];
+const PRIMARY_ENTRY_HREFS = ["/studio", "/discover", "/market", "/learn", "/community"];
 
 const mediaMatches = new Map<string, boolean>();
 const mediaListeners = new Map<string, Set<(event: MediaQueryListEvent) => void>>();

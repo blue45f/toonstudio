@@ -92,13 +92,15 @@ class PencafeFeedBoundary extends Component<PencafeFeedBoundaryProps, PencafeFee
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="rounded-3xl border border-bad/35 bg-bad/10 px-6 py-10 text-center" role="alert">
-          <p className="text-sm font-medium text-bad">{this.props.title}</p>
-          <p className="mt-1 text-xs text-fg-3">{this.props.message}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-5 py-4" role="alert">
+          <div>
+            <p className="text-sm font-medium text-fg">{this.props.title}</p>
+            <p className="mt-1 text-xs text-fg-3">{this.props.message}</p>
+          </div>
           <button
             type="button"
             onClick={this.props.onRetry}
-            className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-bad/35 px-3 py-2 text-xs font-semibold text-bad"
+            className="inline-flex min-h-11 items-center rounded-lg border border-line bg-raised px-3.5 py-2 text-xs font-medium text-fg hover:border-accent/50"
           >
             {this.props.retryLabel}
           </button>
@@ -211,8 +213,8 @@ export function PencafePage() {
   return (
     <Container size="wide" className="relative py-6 sm:py-10">
       <SiteContextualSubNav pathnameOverride="/community/pencafe" className="mb-5" />
-      <header className="mb-4">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{shareTitle}</h1>
+      <header className="mb-5 border-b border-line pb-4">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-3xl">{shareTitle}</h1>
         <p className="mt-1 text-sm text-fg-2">{t(COPY.lede)}</p>
       </header>
 
@@ -228,24 +230,24 @@ export function PencafePage() {
         </PencafeFeedBoundary>
       </section>
       <SiteDisclosure title={pickLang("참여 · 공유 · 팬덤 도구", "Participate, share and fandom tools")} className="mt-5">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <Link
             href="/showcase"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-accent/55 hover:text-fg motion-reduce:transition-none"
           >
-            <Sparkles size={14} aria-hidden="true" className="text-accent" />
+            <Sparkles size={14} aria-hidden="true" className="text-fg-3" />
             {pickLang("창작 쇼케이스", "Creator Showcase")}
           </Link>
           <Link
             href="/collaborate"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong/75 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 text-xs font-medium text-fg-2 transition-colors duration-150 hover:border-accent/55 hover:text-fg motion-reduce:transition-none"
           >
-            <UsersRound size={14} aria-hidden="true" className="text-accent" />
+            <UsersRound size={14} aria-hidden="true" className="text-fg-3" />
             {pickLang("번역·어시 협업", "Collaborate")}
           </Link>
           <Link
             href="/create"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/45 bg-accent px-3.5 text-xs font-bold text-on-accent shadow-xs transition-colors hover:bg-accent/90"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-xs font-medium text-on-accent transition-colors duration-150 hover:bg-accent/90 motion-reduce:transition-none"
           >
             {pickLang("새 작품 시작", "Start Creating")}
             <ArrowRight size={13} aria-hidden="true" />
@@ -263,25 +265,16 @@ export function PencafePage() {
           ) : null}
         </div>
 
-      <img
-        src="/images/section-community.webp"
-        alt=""
-        loading="lazy"
-        decoding="async"
-        className="mb-6 h-36 w-full rounded-3xl border border-line/70 object-cover shadow-xs sm:h-44"
-      />
-
       <section
         data-testid="pencafe-rea-watchparty-bar"
         aria-label={pickLang("펜카페 팬덤 등급·워치파티 워크벤치", "Pencafe fandom tier and watch-party workbench")}
-        className="relative mb-5 overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card p-4 shadow-sm sm:p-5"
+        className="mb-5 rounded-xl border border-line bg-panel/45 p-4 sm:p-5"
       >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-accent via-cool to-accent-2" />
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-xs font-bold text-accent">
-            {pickLang("REA 팬덤 등급 · 라이브 워치파티 시뮬레이터", "REA Fandom Tier & Live Watch-Party Simulator")}
+          <span className="inline-flex items-center rounded-md border border-accent/30 bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+            {pickLang("팬덤 등급 · 라이브 워치파티 구성", "Fandom Tier & Live Watch-Party Setup")}
           </span>
-          <span className="rounded-full border border-line/70 bg-card/85 px-3 py-1 font-mono text-xs text-fg-3">
+          <span className="rounded-md border border-line bg-card px-2.5 py-1 font-mono text-xs text-fg-3">
             Naver Cafe · Weverse · Discord Stage · Chzzk Watch Party
           </span>
         </div>
@@ -290,7 +283,7 @@ export function PencafePage() {
           role="group"
           aria-label={pickLang("팬덤 커뮤니티 등급", "Fandom community tier")}
         >
-          <span className="text-xs font-semibold text-fg-2">
+          <span className="text-xs font-medium text-fg-2">
             {pickLang("팬덤 등급", "Fandom Tier")}
           </span>
           {FANDOM_TIER_OPTIONS.map((item) => {
@@ -304,8 +297,8 @@ export function PencafePage() {
                 onClick={() => setFandomTier(item.id)}
                 className={
                   active
-                    ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent-soft px-3.5 text-xs font-bold text-accent shadow-2xs"
-                    : "inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 text-xs font-semibold text-fg-2 hover:border-accent/45 hover:text-fg"
+                    ? "inline-flex min-h-11 items-center rounded-lg border border-accent/55 bg-accent-soft px-3 text-xs font-medium text-accent"
+                    : "inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 hover:border-accent/45 hover:text-fg"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -318,7 +311,7 @@ export function PencafePage() {
           role="group"
           aria-label={pickLang("라이브 커뮤니티 모드", "Live community mode")}
         >
-          <span className="text-xs font-semibold text-fg-2">
+          <span className="text-xs font-medium text-fg-2">
             {pickLang("라이브 모드", "Live Mode")}
           </span>
           {LIVE_MODE_OPTIONS.map((item) => {
@@ -332,8 +325,8 @@ export function PencafePage() {
                 onClick={() => setLiveMode(item.id)}
                 className={
                   active
-                    ? "inline-flex min-h-11 items-center rounded-full border border-accent bg-accent-soft px-3.5 text-xs font-bold text-accent shadow-2xs"
-                    : "inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/85 px-3.5 text-xs font-semibold text-fg-2 hover:border-accent/45 hover:text-fg"
+                    ? "inline-flex min-h-11 items-center rounded-lg border border-accent/55 bg-accent-soft px-3 text-xs font-medium text-accent"
+                    : "inline-flex min-h-11 items-center rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg-2 hover:border-accent/45 hover:text-fg"
                 }
               >
                 {pickLang(item.ko, item.en)}
@@ -344,7 +337,7 @@ export function PencafePage() {
         <p
           data-testid="pencafe-rea-status"
           aria-live="polite"
-          className="mt-3 rounded-xl border border-line/65 bg-card/85 px-3.5 py-2 font-mono text-xs text-fg"
+          className="mt-3 rounded-lg border border-line bg-canvas/55 px-3 py-2 text-xs text-fg-2"
         >
           {pickLang(
             `${activeTier.ko} + ${activeLive.ko} · ${activeTier.detailKo} (${activeLive.detailKo})`,

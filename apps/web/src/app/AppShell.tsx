@@ -1,6 +1,7 @@
 import { type ReactNode, lazy, Suspense, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+import { RouteEnterMotion } from "./RouteEnterMotion";
 import { RouteScrollRestoration } from "./RouteScrollRestoration";
 import { AppRouter } from "./routes/AppRouter";
 import { shouldShowEntryIntro } from "./entry-intro-policy";
@@ -236,6 +237,7 @@ export function AppShell({
         <Suspense fallback={null}><CreatorAdaptiveOnboardingGate /></Suspense>
       ) : null}
       <RouteScrollRestoration />
+      <RouteEnterMotion enabled={taskRoute === null && !immersiveVirtualExperience && !immersiveReader} />
       <CreatorContinuityTracker />
       {/* 진입 브랜드 인트로(단일 시스템) — 본문 위에 입력 비차단 오버레이로만 얹힌다. */}
       {shouldShowEntryIntro(pathname, search) ? <EntryIntro /> : null}

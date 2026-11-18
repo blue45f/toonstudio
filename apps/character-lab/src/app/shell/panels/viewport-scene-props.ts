@@ -213,6 +213,7 @@ export function useViewportSceneProps({
       activeDirectorId: preset.id,
       manuscriptMood: preset.manuscriptMood,
       gutterPaces: preset.gutterPaces,
+      screentones: preset.screentones,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,

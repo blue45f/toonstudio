@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 
 import type { DiscoverHomeSnapshot } from "./discover-home";
 import {
@@ -286,12 +286,20 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
     const minRatingRaw = searchParams.get("minRating");
     const minRating =
       minRatingRaw && Number.isFinite(Number(minRatingRaw)) ? Number(minRatingRaw) : undefined;
+    const yearMinRaw = searchParams.get("yearMin");
+    const yearMin =
+      yearMinRaw && Number.isFinite(Number(yearMinRaw)) ? Number(yearMinRaw) : undefined;
+    const yearMaxRaw = searchParams.get("yearMax");
+    const yearMax =
+      yearMaxRaw && Number.isFinite(Number(yearMaxRaw)) ? Number(yearMaxRaw) : undefined;
+    const idsFilter = splitCsv(searchParams.get("ids"));
     const freeOnly = searchParams.get("freeOnly") === "true" || undefined;
     const adaptedOnly = searchParams.get("adaptedOnly") === "true" || undefined;
 
     const facetMatched = searchTitles(
       titles,
       {
+        ids: idsFilter.length ? new Set(idsFilter) : undefined,
         types: types.length ? types : undefined,
         genres: genres.length ? genres : undefined,
         tags: tagFilter.length ? tagFilter : undefined,
@@ -299,15 +307,29 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
         platforms: platforms.length ? platforms : undefined,
         ageRatings: ageRatings.length ? ageRatings : undefined,
         minRating,
+        yearMin,
+        yearMax,
         freeOnly,
         adaptedOnly,
       },
       sort,
     );
     const matched = rawQ ? filterTitlesByLocalQuery(facetMatched, rawQ) : facetMatched;
-    const limit = Math.min(Math.max(Number(searchParams.get("limit")) || 24, 1), 80);
-    const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
-    const pageItems = matched.slice(offset, offset + limit);
+    const pageSize = Math.min(
+      Math.max(Math.floor(Number(searchParams.get("pageSize") ?? searchParams.get("limit")) || 24), 1),
+      80,
+    );
+    const page = Math.max(Math.floor(Number(searchParams.get("page")) || 1), 1);
+    const useLegacyOffset =
+      searchParams.has("offset") && !searchParams.has("page") && !searchParams.has("pageSize");
+    const offset = useLegacyOffset
+      ? Math.max(Math.floor(Number(searchParams.get("offset")) || 0), 0)
+      : (page - 1) * pageSize;
+    const pageItems = matched.slice(offset, offset + pageSize);
+    const total = matched.length;
+    const hasMore = useLegacyOffset
+      ? offset + pageItems.length < total
+      : page * pageSize < total;
     let webtoonCount = 0;
     let webnovelCount = 0;
     for (const item of matched) {
@@ -317,13 +339,21 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
 
     return {
       items: pageItems,
-      total: matched.length,
-      pagination: {
-        offset,
-        limit,
-        hasMore: offset + pageItems.length < matched.length,
-        nextOffset: offset + pageItems.length < matched.length ? offset + pageItems.length : null,
-      },
+      total,
+      pagination: useLegacyOffset
+        ? {
+            offset,
+            limit: pageSize,
+            hasMore,
+            nextOffset: hasMore ? offset + pageItems.length : null,
+          }
+        : {
+            page,
+            pageSize,
+            total,
+            hasMore,
+            nextPage: hasMore ? page + 1 : null,
+          },
       typeCountScope: "all",
       typeCount: {
         webtoon: webtoonCount,
@@ -339,6 +369,36 @@ export async function resolveFromLocalStaticCatalog<T>(apiUrl: string): Promise<
       topTags: tags.map((t) => t.tag),
       generatedAt,
     } as unknown as T;
+  }
+
+  if (pathname === "/api/ranking") {
+    const minRatingRaw = searchParams.get("minRating");
+    const isPrecomputedDefault =
+      (searchParams.get("period") ?? "weekly") === "weekly" &&
+      (searchParams.get("platform") ?? "all") === "all" &&
+      (searchParams.get("genre") ?? "all") === "all" &&
+      (searchParams.get("status") ?? "all") === "all" &&
+      (searchParams.get("pricing") ?? "all") === "all" &&
+      (!minRatingRaw || Number(minRatingRaw) <= 0) &&
+      searchParams.get("rising") !== "true" &&
+      searchParams.get("refresh") !== "true";
+    if (isPrecomputedDefault) {
+      const axis = searchParams.get("axis") ?? "popular";
+      const type = searchParams.get("type") ?? "all";
+      try {
+        const precomputed = await globalThis.fetch(
+          `/data/ranking/${encodeURIComponent(axis)}-${encodeURIComponent(type)}.json`,
+          { cache: "default" },
+        );
+        const ct = precomputed.headers.get("content-type") ?? "";
+        if (precomputed.ok && ct.includes("application/json")) {
+          const raw = (await precomputed.json()) as T;
+          return sanitizeCatalogApiData(pathname, raw);
+        }
+      } catch {
+        // 정적 사전 집계 파일이 없으면 아래 동적 스냅샷 엔진으로 넘어간다.
+      }
+    }
   }
 
   if (pathname === "/api/titles") {
@@ -494,11 +554,35 @@ function installLocalSearchBridgeOnWindow(targetWindow: Window & typeof globalTh
     const isSearchApi =
       parsed !== null &&
       parsed.origin === targetWindow.location.origin &&
-      (parsed.pathname === "/api/search" || parsed.pathname === "/api/titles");
+      (parsed.pathname === "/api/search" ||
+        parsed.pathname === "/api/titles" ||
+        parsed.pathname === "/api/ranking");
 
     if (!isSearchApi || !parsed) {
       return currentFetch.call(targetWindow, input, init);
     }
+
+    const buildFallbackUrl = (): string => {
+      const merged = new URLSearchParams(parsed.search);
+      if (
+        parsed.pathname === "/api/search" &&
+        (init?.method ?? "GET").toUpperCase() === "POST" &&
+        typeof init?.body === "string"
+      ) {
+        try {
+          const parsedBody = JSON.parse(init.body) as Record<string, unknown>;
+          for (const [k, v] of Object.entries(parsedBody)) {
+            if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+              merged.set(k, String(v));
+            }
+          }
+        } catch {
+          // 비정형 POST 본문은 URL 쿼리만 그대로 사용한다.
+        }
+      }
+      const qs = merged.toString();
+      return qs ? `${parsed.pathname}?${qs}` : parsed.pathname;
+    };
 
     try {
       const response = await currentFetch.call(targetWindow, input, init);
@@ -515,9 +599,7 @@ function installLocalSearchBridgeOnWindow(targetWindow: Window & typeof globalTh
           // 응답 JSON이 손상된 경우 로컬 정적 카탈로그 폴백으로 복구한다.
         }
       }
-      const fallbackData = await resolveFromLocalStaticCatalog(
-        `${parsed.pathname}${parsed.search}`,
-      );
+      const fallbackData = await resolveFromLocalStaticCatalog(buildFallbackUrl());
       if (fallbackData) {
         return new Response(JSON.stringify(fallbackData), {
           status: 200,
@@ -526,9 +608,7 @@ function installLocalSearchBridgeOnWindow(targetWindow: Window & typeof globalTh
       }
       return response;
     } catch (err) {
-      const fallbackData = await resolveFromLocalStaticCatalog(
-        `${parsed.pathname}${parsed.search}`,
-      );
+      const fallbackData = await resolveFromLocalStaticCatalog(buildFallbackUrl());
       if (fallbackData) {
         return new Response(JSON.stringify(fallbackData), {
           status: 200,
@@ -552,11 +632,12 @@ function installLocalSearchBridgeOnWindow(targetWindow: Window & typeof globalTh
 }
 
 /**
- * SearchPage(/search)에서 백엔드 `/api/search` 또는 `/api/titles` 요청이 실패할 때
- * 공유 SearchExplorer를 수정하지 않고 로컬 크롤링 풀로 안전하게 응답을 보강한다.
+ * SearchPage(/search) 및 RankingPage(/ranking)에서 백엔드 API 요청이 실패할 때
+ * 공유 탐색기·랭킹 보드를 수정하지 않고 로컬 크롤링 스냅샷으로 안전하게 응답을 보강한다.
+ * 자식 컴포넌트의 useEffect보다 먼저 브리지가 걸리도록 useLayoutEffect에서 동기 장착한다.
  */
 export function useInstallLocalSearchBridge(): void {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (typeof window === "undefined" || typeof window.fetch !== "function") return;
     const isJsdom =
       typeof navigator !== "undefined" && /jsdom/iu.test(navigator.userAgent);

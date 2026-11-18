@@ -13,14 +13,14 @@
 [data-site-experience] .public-story-hero__views button[aria-pressed="true"] { background: var(--color-accent); color: var(--color-on-accent); font-weight: 700; }
 [data-site-experience] .public-story-hero__figure figcaption div { min-width: 0; }
 [data-site-experience] .public-story-hero__figure figcaption small { display: block; margin-top: 4px; font-size: 0.75rem; letter-spacing: 0; color: oklch(0.86 0.015 80); }
-[data-site-experience] .site-creation-compass { display: flex; align-items: flex-start; gap: 20px; width: min(calc(100% - 48px), 1272px); margin: 20px auto 0; padding: 2px 18px; border: 1px solid var(--color-line); border-radius: 14px; background: linear-gradient(115deg, oklch(0.32 0.025 68 / 0.35), transparent 70%), var(--color-panel); }
+[data-site-experience] .site-creation-compass { display: flex; align-items: flex-start; gap: 20px; width: min(calc(100% - 48px), 1272px); margin: 20px auto 0; padding: 2px 16px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-panel); }
 [data-site-experience] .site-creation-compass__details { flex: 1; min-width: 0; }
-[data-site-experience] .site-creation-compass summary { display: flex; align-items: center; gap: 12px; min-height: 62px; cursor: pointer; list-style: none; color: var(--color-fg-2); }
+[data-site-experience] .site-creation-compass summary { display: flex; align-items: center; gap: 12px; min-height: 54px; cursor: pointer; list-style: none; color: var(--color-fg-2); }
 [data-site-experience] .site-creation-compass summary::-webkit-details-marker { display: none; }
-[data-site-experience] .site-creation-compass summary > span { display: grid; gap: 4px; min-width: 0; }
-[data-site-experience] .site-creation-compass summary strong { font: 600 0.61rem var(--font-display); letter-spacing: 0.12em; color: var(--color-fg); }
-[data-site-experience] .site-creation-compass summary strong > span { margin-inline: 8px; color: var(--color-accent); }
-[data-site-experience] .site-creation-compass summary > span > span { font-size: 0.75rem; line-height: 1.5; }
+[data-site-experience] .site-creation-compass summary > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+[data-site-experience] .site-creation-compass summary strong { font: 600 0.78rem var(--font-sans); letter-spacing: -0.01em; color: var(--color-fg); font-variant-numeric: tabular-nums; }
+[data-site-experience] .site-creation-compass summary strong > span { margin-inline: 4px; color: var(--color-fg-3); }
+[data-site-experience] .site-creation-compass summary > span > span { font-size: 0.75rem; line-height: 1.5; color: var(--color-fg-3); }
 [data-site-experience] .site-creation-compass summary > svg { flex-shrink: 0; }
 [data-site-experience] .site-creation-compass summary > svg:last-child { margin-left: auto; transition: transform 180ms ease; }
 [data-site-experience] .site-creation-compass details[open] summary > svg:last-child { transform: rotate(180deg); }
@@ -97,8 +97,8 @@
 @media (prefers-contrast: more), (forced-colors: active) {
   [data-site-experience="vivid"] .creator-flagship .cf-hero h1 em { background: none; color: var(--color-fg); -webkit-text-fill-color: currentColor; }
 }
-/* The lazy public journey uses the same ink-and-persimmon palette as its parent. */
-[data-site-experience] #main-content[data-public-experience="atelier"] { background: radial-gradient(ellipse at 5% 4rem, oklch(0.55 0.055 68 / 0.12), transparent 36rem), var(--color-canvas); }
+/* The lazy public journey uses the same solid ink-and-paper surface tokens as its parent. */
+[data-site-experience] #main-content[data-public-experience="atelier"] { background: var(--color-canvas); }
 [data-site-experience] #main-content .creator-flagship .cf-hero h1 em { color: var(--color-accent); -webkit-text-fill-color: currentColor; }
 [data-site-experience] #main-content .creator-flagship .cf-art-study { border-color: var(--color-line-strong); box-shadow: 0 24px 70px -40px oklch(0.65 0.055 68 / 0.4); }
 [data-site-experience] #main-content .creator-flagship .cf-tool-card { --atelier-card-accent: var(--color-accent); }

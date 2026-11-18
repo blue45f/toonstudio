@@ -178,20 +178,20 @@ export function SitemapDirectoryPage() {
       <section
         aria-labelledby="sitemap-rea-hub-title"
         data-testid="sitemap-rea-hub-architecture"
-        className="mt-6 rounded-3xl border border-line bg-card/85 p-4 shadow-sm sm:p-6"
+        className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-6"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="font-display text-xs font-extrabold uppercase tracking-[0.14em] text-accent">
-              REA ARCHITECTURE · {COMPETITOR_PLATFORM_REA_LEDGER.length} PLATFORMS ANALYZED
+            <p className="text-xs font-medium text-fg-3">
+              {bi(`서비스 동선 구조 · ${COMPETITOR_PLATFORM_REA_LEDGER.length}개 플랫폼 비교 설계`, `Service flow map · ${COMPETITOR_PLATFORM_REA_LEDGER.length} platforms studied`)}
             </p>
-            <h2 id="sitemap-rea-hub-title" className="mt-1 break-words font-display text-lg font-bold text-fg sm:text-xl">
+            <h2 id="sitemap-rea-hub-title" className="mt-1 break-words text-lg font-semibold text-fg sm:text-xl">
               {bi("6대 핵심 맥락 허브 & 6단계 창작·홍보 순환 동선", "6 Contextual Hubs & 6-Stage Creator-Promo Flow")}
             </h2>
             <p className="mt-1 text-xs leading-5 text-fg-3 sm:text-sm">
               {bi(
-                "첫 화면 밀도를 낮추기 위해 대표 허브만 먼저 펼치고, 나머지 허브와 6단계 파이프라인은 제목을 눌러 바로 펼쳐 탐색합니다.",
-                "To keep the first screen focused, the primary hub opens first while remaining hubs and the 6-stage pipeline expand on demand.",
+                "첫 화면 밀도를 낮추기 위해 대표 허브만 먼저 펼치고, 나머지 허브와 6단계 파이프라인은 제목을 눌러 바로 펼쳐 탐색합니다",
+                "To keep the first screen focused, the primary hub opens first while remaining hubs and the 6-stage pipeline expand on demand",
               )}
             </p>
           </div>
@@ -201,11 +201,11 @@ export function SitemapDirectoryPage() {
             className={buttonClass({
               variant: "outline",
               size: "md",
-              className: "h-auto min-h-11 min-w-11 shrink-0 gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold focus-visible:ring-2 focus-visible:ring-accent/70",
+              className: "ink-arrow h-auto min-h-11 min-w-11 shrink-0 gap-1.5 rounded-lg px-4 py-2 text-xs font-medium focus-visible:ring-2 focus-visible:ring-accent/70",
             })}
           >
             <span>{bi("영상 홍보관 열기", "Open Promo Hub")}</span>
-            <ArrowRight size={14} aria-hidden="true" />
+            <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </div>
 
@@ -217,19 +217,19 @@ export function SitemapDirectoryPage() {
                 key={hub.id}
                 open={hubIndex === 0}
                 data-testid={`sitemap-hub-group-${hub.id}`}
-                className="group rounded-2xl border border-line bg-panel/60 open:bg-panel/80"
+                className="group rounded-xl border border-line bg-card/70 open:bg-card"
               >
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2.5 rounded-2xl px-3.5 py-3 outline-none transition-colors hover:bg-card/55 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2.5 rounded-xl px-3.5 py-3 outline-none transition-colors hover:bg-raised/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
                   <span className="min-w-0 flex-1">
-                    <span className="block break-words text-[11px] font-extrabold uppercase tracking-wider text-accent">
-                      0{hubIndex + 1} · {hub.enTitle}
+                    <span className="block break-words font-display text-xs font-medium tabular-nums text-fg-3">
+                      0{hubIndex + 1}
                     </span>
-                    <strong id={hubTitleId} className="mt-0.5 block break-words text-sm font-bold text-fg">
+                    <strong id={hubTitleId} className="mt-0.5 block break-words text-sm font-semibold text-fg">
                       {locale === "en" ? hub.enTitle : hub.koTitle}
                     </strong>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full border border-line bg-card px-2.5 py-0.5 text-xs font-bold text-fg-3 group-open:border-accent/30 group-open:text-accent">
+                    <span className="font-display text-xs font-medium tabular-nums text-fg-3 group-open:text-accent">
                       {hub.items.length}
                     </span>
                     <span aria-hidden="true" className="text-base text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-45 group-open:text-accent">
@@ -244,7 +244,7 @@ export function SitemapDirectoryPage() {
                         <Link
                           href={item.href}
                           data-testid={`sitemap-hub-chip-${hub.id}-${item.id}`}
-                          className="inline-flex min-h-11 min-w-11 max-w-full items-center gap-1.5 rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/45 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
+                          className="inline-flex min-h-11 min-w-11 max-w-full items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
                         >
                           <span className="min-w-0 break-words">{locale === "en" ? item.enLabel : item.koLabel}</span>
                         </Link>
@@ -259,19 +259,19 @@ export function SitemapDirectoryPage() {
 
         <details
           data-testid="sitemap-pipeline-group"
-          className="group mt-4 rounded-2xl border border-line/80 bg-panel/45 open:bg-panel/65"
+          className="group mt-4 rounded-xl border border-line bg-card/70 open:bg-card"
         >
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 outline-none transition-colors hover:bg-card/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 outline-none transition-colors hover:bg-raised/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
             <span className="min-w-0 flex-1">
-              <span className="block break-words text-[11px] font-extrabold uppercase tracking-wider text-accent">
-                CREATOR WORKFLOW · 6 STEPS
+              <span className="block break-words text-xs font-medium text-fg-3">
+                {bi("창작 흐름 6단계", "6-step creation flow")}
               </span>
-              <strong id="sitemap-pipeline-title" className="mt-0.5 block break-words text-sm font-bold text-fg">
+              <strong id="sitemap-pipeline-title" className="mt-0.5 block break-words text-sm font-semibold text-fg">
                 {bi("6단계 창작-홍보 파이프라인", "6-stage creator-promo pipeline")}
               </strong>
             </span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="rounded-full border border-line bg-card px-2.5 py-0.5 text-xs font-bold text-fg-3 group-open:border-accent/30 group-open:text-accent">
+              <span className="font-display text-xs font-medium tabular-nums text-fg-3 group-open:text-accent">
                 {CREATOR_STUDIO_PIPELINE_STEPS.length}
               </span>
               <span aria-hidden="true" className="text-base text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-45 group-open:text-accent">
@@ -289,12 +289,12 @@ export function SitemapDirectoryPage() {
                   <Link
                     href={step.toonstudioHref}
                     data-testid={`sitemap-pipeline-step-${step.stepNumber}`}
-                    className="flex h-full min-h-11 min-w-11 flex-col justify-between gap-1.5 rounded-xl border border-line bg-card/80 p-3 text-xs transition-colors hover:border-accent/45 hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
+                    className="ink-frame flex h-full min-h-11 min-w-11 flex-col justify-between gap-1.5 rounded-lg border border-line bg-panel p-3 text-xs transition-colors hover:border-line-strong hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
                   >
-                    <span className="text-[10px] font-extrabold text-accent">
-                      STEP 0{step.stepNumber}
+                    <span className="font-display text-[11px] font-medium tabular-nums text-accent">
+                      0{step.stepNumber}
                     </span>
-                    <strong className="break-words font-bold text-fg">
+                    <strong className="break-words font-semibold text-fg">
                       {locale === "en" ? step.enTitle : step.koTitle}
                     </strong>
                     <span className="line-clamp-2 break-words text-[11px] text-fg-3">
@@ -311,49 +311,46 @@ export function SitemapDirectoryPage() {
 
       <section className="mt-10 sm:mt-14" aria-labelledby="sitemap-levels-title">
         <div className="max-w-3xl">
-          <p className="font-display text-xs font-bold uppercase tracking-[0.15em] text-accent">00 · PRODUCT MAP</p>
-          <h2 id="sitemap-levels-title" className="mt-2 font-display text-2xl font-bold tracking-[-0.035em] text-fg sm:text-3xl">
+          <p className="font-display text-xs font-medium tabular-nums text-fg-3">{bi("01 · 제품 계층", "01 · Product layers")}</p>
+          <h2 id="sitemap-levels-title" className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-fg sm:text-3xl" data-ink="line">
             {copy.levels}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-fg-3">{copy.levelsDescription}</p>
+          <p className="mt-3 text-sm leading-6 text-fg-2">{copy.levelsDescription}</p>
         </div>
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 lg:grid-cols-3" data-ink-stagger>
           {[
             {
               tier: "core",
               icon: Target,
               title: bi("핵심 제작", "Core production"),
               body: bi("새 작품·프로젝트·제작 관리·소재·검토·내보내기의 완결된 작업 흐름", "The complete path through new work, projects, production, assets, review and export"),
-              tone: "border-accent/35 bg-gradient-to-br from-accent-soft/80 to-card",
             },
             {
               tier: "ecosystem",
               icon: Blocks,
               title: bi("연결 생태계", "Connected ecosystem"),
               body: bi("학습·리서치·마켓·협업·커뮤니티·작품 탐색을 현재 작업에 연결", "Connect learning, research, market, collaboration, community and discovery to the current work"),
-              tone: "border-line-strong bg-card/75",
             },
             {
               tier: "labs",
               icon: FlaskConical,
               title: bi("Labs · 자료", "Labs & resources"),
               body: bi("전문 3D·개인 AI·기술 자료처럼 선택적으로 사용하는 실험·고급 도구", "Optional experimental and advanced tools such as professional 3D, personal AI and engineering resources"),
-              tone: "border-warning/35 bg-warning-soft/45",
             },
-          ].map(({ tier, icon: Icon, title, body, tone }) => (
+          ].map(({ tier, icon: Icon, title, body }) => (
             <Link
               key={tier}
               href={`/sitemap/all?tier=${tier}#sitemap-directory`}
-              className={`group flex min-h-11 flex-col rounded-3xl border p-4 transition-all motion-reduce:transition-none hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70 sm:min-h-40 sm:p-5 max-sm:flex-row max-sm:flex-wrap max-sm:items-center max-sm:gap-3 ${tone}`}
+              className="ink-frame ink-arrow group flex min-h-11 flex-col rounded-2xl border border-line bg-card p-5 transition-colors motion-reduce:transition-none hover:border-line-strong hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70 sm:min-h-40 max-sm:flex-row max-sm:flex-wrap max-sm:items-center max-sm:gap-3"
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-line bg-panel/80 text-accent">
-                <Icon size={20} aria-hidden="true" />
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-panel text-fg-2 group-hover:text-accent">
+                <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
               </span>
-              <strong className="min-w-0 flex-1 break-words font-display text-lg font-bold text-fg sm:mt-5">{title}</strong>
+              <strong className="min-w-0 flex-1 break-words text-base font-semibold text-fg sm:mt-4">{title}</strong>
               <span className="mt-2 break-words text-sm leading-6 text-fg-2 max-sm:hidden">{body}</span>
-              <span className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-bold text-accent max-sm:ml-auto max-sm:pt-0">
+              <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-xs font-medium text-fg-2 group-hover:text-fg max-sm:ml-auto max-sm:pt-0">
                 {bi("해당 단계만 보기", "View this level")}
-                <ArrowRight size={14} className="transition-transform motion-reduce:transition-none group-hover:translate-x-0.5" aria-hidden="true" />
+                <ArrowRight size={14} strokeWidth={1.5} aria-hidden="true" />
               </span>
             </Link>
           ))}
@@ -363,17 +360,17 @@ export function SitemapDirectoryPage() {
       <section className="mt-12 sm:mt-16" aria-labelledby="sitemap-core-title">
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <p className="font-display text-xs font-bold uppercase tracking-[0.15em] text-accent">{translateCurrentStaticSourceText("domains.legal.SitemapPage", "en", "01 · START HERE")}</p>
-            <h2 id="sitemap-core-title" className="mt-2 font-display text-2xl font-bold tracking-[-0.035em] text-fg sm:text-3xl">
+            <p className="font-display text-xs font-medium tabular-nums text-fg-3">{bi("02 · 핵심 목적지", "02 · Core destinations")}</p>
+            <h2 id="sitemap-core-title" className="mt-2 text-2xl font-semibold tracking-[-0.025em] text-fg sm:text-3xl" data-ink="line">
               {copy.core}
             </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-fg-3">{copy.coreDescription}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-fg-2">{copy.coreDescription}</p>
           </div>
-          <span className="hidden font-display text-xs font-semibold uppercase tracking-[0.16em] text-fg-3 sm:block">
-            {translateCurrentStaticSourceText("domains.legal.SitemapPage", "en", "Create · Learn · Discover · Connect")}</span>
+          <span className="hidden text-xs font-medium text-fg-3 sm:block">
+            {bi("만들기 · 배우기 · 작품 찾기 · 함께하기", "Create · Learn · Discover · Connect")}</span>
         </div>
 
-        <div className="mt-6 grid gap-3 lg:grid-cols-2">
+        <div className="mt-6 grid gap-3 lg:grid-cols-2" data-ink-stagger>
           {SITEMAP_CORE_DESTINATION_GROUPS.map((group, groupIndex) => {
             const titleId = formatI18nTemplate(
               translateCurrentStaticSourceText("domains.legal.SitemapPage", "en", "sitemap-{v0}"),
@@ -383,26 +380,26 @@ export function SitemapDirectoryPage() {
               <details
                 key={group.id}
                 open={groupIndex === 0}
-                className="group rounded-3xl border border-line/70 bg-panel/45 shadow-sm open:bg-panel/60"
+                className="group rounded-2xl border border-line bg-panel open:bg-panel"
               >
-                <summary className="flex min-h-24 cursor-pointer list-none items-start gap-3 rounded-3xl px-4 py-4 outline-none transition-colors hover:bg-card/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 sm:px-5 [&::-webkit-details-marker]:hidden">
-                  <span aria-hidden="true" className="pt-0.5 font-display text-xs font-bold tracking-[0.14em] text-accent">
+                <summary className="flex min-h-20 cursor-pointer list-none items-start gap-3 rounded-2xl px-4 py-4 outline-none transition-colors hover:bg-card/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/70 sm:px-5 [&::-webkit-details-marker]:hidden">
+                  <span aria-hidden="true" className="pt-0.5 font-display text-xs font-medium tabular-nums text-fg-3 group-open:text-accent">
                     {String(groupIndex + 1).padStart(2, "0")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <strong id={titleId} className="block break-words font-display text-lg font-bold text-fg">
+                    <strong id={titleId} className="block break-words text-base font-semibold text-fg">
                       {siteNavigationText(group.label, locale)}
                     </strong>
-                    <span className="mt-1 block break-words text-sm leading-6 text-fg-3">
+                    <span className="mt-1 block break-words text-sm leading-6 text-fg-2">
                       {siteNavigationText(group.description, locale)}
                     </span>
                   </span>
-                  <span className="shrink-0 rounded-full border border-line bg-card px-2.5 py-1 text-xs font-bold text-fg-3 group-open:border-accent/30 group-open:text-accent">
+                  <span className="shrink-0 font-display text-xs font-medium tabular-nums text-fg-3 group-open:text-accent">
                     {group.items.length}
                   </span>
                   <span aria-hidden="true" className="text-lg text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-45 group-open:text-accent">＋</span>
                 </summary>
-                <div className="border-t border-line/70 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+                <div className="border-t border-line px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
                   <ul className="grid gap-2 sm:grid-cols-2" aria-labelledby={titleId}>
                     {group.items.map((item) => {
                       const Icon = item.icon;
@@ -410,13 +407,13 @@ export function SitemapDirectoryPage() {
                         <li key={item.id} className="min-w-0">
                           <Link
                             href={item.href}
-                            className="group/link flex min-h-11 min-h-[5.5rem] h-full items-start gap-3 rounded-2xl border border-line bg-card/75 p-3.5 transition-all motion-reduce:transition-none hover:-translate-y-0.5 hover:border-accent/40 hover:bg-card hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
+                            className="ink-frame group/link flex h-full min-h-[5rem] items-start gap-3 rounded-xl border border-line bg-card p-3.5 transition-colors motion-reduce:transition-none hover:border-line-strong hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
                           >
-                            <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-panel text-fg-3 transition-colors group-hover/link:border-accent/30 group-hover/link:text-accent">
-                              <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                            <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-panel text-fg-3 transition-colors group-hover/link:text-accent">
+                              <Icon size={17} strokeWidth={1.5} aria-hidden="true" />
                             </span>
                             <span className="min-w-0 flex-1 pt-0.5">
-                              <strong className="block break-words text-sm font-bold text-fg transition-colors group-hover/link:text-accent">
+                              <strong className="block break-words text-sm font-medium text-fg">
                                 {siteNavigationText(item.label, locale)}
                               </strong>
                               <span className="mt-1 block break-words text-xs leading-5 text-fg-3">
@@ -437,14 +434,14 @@ export function SitemapDirectoryPage() {
       </section>
 
       <section
-        className="mt-6 rounded-3xl border border-line/70 bg-gradient-to-r from-accent-soft/70 via-panel/70 to-panel/40 p-4 sm:p-5"
+        className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5"
         aria-labelledby="sitemap-personal-title"
       >
         <div className="mb-4 flex items-center gap-3 px-1 sm:px-2">
-          <span className="grid size-9 place-items-center rounded-xl border border-accent/25 bg-card/70 text-accent">
-            <UserRound size={17} aria-hidden="true" />
+          <span className="grid size-9 place-items-center rounded-lg border border-line bg-card text-fg-2">
+            <UserRound size={17} strokeWidth={1.5} aria-hidden="true" />
           </span>
-          <h2 id="sitemap-personal-title" className="font-display text-base font-bold text-fg">{copy.personal}</h2>
+          <h2 id="sitemap-personal-title" className="text-base font-semibold text-fg">{copy.personal}</h2>
         </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {PERSONAL_DESTINATIONS.map((item) => {
@@ -454,35 +451,35 @@ export function SitemapDirectoryPage() {
                 key={item.id}
                 href={item.href}
                 title={siteNavigationText(item.description, locale)}
-                className="group flex min-h-11 min-h-16 items-center gap-3 rounded-2xl border border-line bg-card/75 px-4 py-3 text-sm font-bold text-fg-2 transition-colors hover:border-line-strong hover:bg-card hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
+                className="ink-frame ink-arrow group flex min-h-16 items-center gap-3 rounded-xl border border-line bg-card px-4 py-3 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70"
               >
-                <Icon size={17} className="shrink-0 text-fg-3 transition-colors group-hover:text-accent" aria-hidden="true" />
+                <Icon size={17} strokeWidth={1.5} className="shrink-0 text-fg-3 transition-colors group-hover:text-accent" aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className="block break-words">{siteNavigationText(item.label, locale)}</span>
+                  <span className="block break-words text-fg">{siteNavigationText(item.label, locale)}</span>
                   {/* 설명을 title 툴팁에만 두면 터치·키보드 사용자는 닿을 수 없다 — 본문에도 보인다. */}
-                  <span className="block truncate text-xs font-medium text-fg-3">{siteNavigationText(item.description, locale)}</span>
+                  <span className="block truncate text-xs font-normal text-fg-3">{siteNavigationText(item.description, locale)}</span>
                   <RouteConditionBadges href={item.href} locale={locale} />
                 </span>
-                <ArrowRight size={15} className="ml-auto shrink-0 text-fg-3" aria-hidden="true" />
+                <ArrowRight size={15} strokeWidth={1.5} className="ml-auto shrink-0 text-fg-3" aria-hidden="true" />
               </Link>
             );
           })}
         </div>
       </section>
 
-      <details className="group mt-12 border-t border-line/70 pt-8 sm:mt-16 sm:pt-10">
-        <summary className="flex min-h-20 cursor-pointer list-none items-center gap-4 rounded-3xl border border-line/70 bg-panel/45 px-5 py-4 outline-none transition-colors hover:bg-panel/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-line bg-card text-accent">
-            <Blocks size={20} aria-hidden="true" />
+      <details className="group mt-12 border-t border-line pt-8 sm:mt-16 sm:pt-10">
+        <summary className="flex min-h-20 cursor-pointer list-none items-center gap-4 rounded-2xl border border-line bg-panel px-5 py-4 outline-none transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-details-marker]:hidden">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2">
+            <Blocks size={18} strokeWidth={1.5} aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="font-display text-xs font-bold uppercase tracking-[0.15em] text-accent">02 · COMPLETE DIRECTORY</span>
-            <strong id="sitemap-extended-title" className="mt-1 block break-words font-display text-xl font-bold tracking-[-0.03em] text-fg sm:text-2xl">
+            <span className="font-display text-xs font-medium tabular-nums text-fg-3">{bi("03 · 전체 디렉터리", "03 · Complete directory")}</span>
+            <strong id="sitemap-extended-title" className="mt-1 block break-words text-xl font-semibold tracking-[-0.025em] text-fg sm:text-2xl">
               {copy.extended}
             </strong>
             <span className="mt-1 block break-words text-xs leading-5 text-fg-3 sm:text-sm">{copy.extendedDescription}</span>
           </span>
-          <span className="hidden rounded-full border border-line bg-card px-3 py-1.5 text-xs font-bold text-fg-3 sm:inline-flex">
+          <span className="hidden font-display text-xs font-medium tabular-nums text-fg-3 sm:inline-flex">
             {SITEMAP_DIRECTORY_ENTRIES.length}+
           </span>
           <span aria-hidden="true" className="text-xl text-fg-3 transition-transform motion-reduce:transition-none group-open:rotate-45 group-open:text-accent">＋</span>

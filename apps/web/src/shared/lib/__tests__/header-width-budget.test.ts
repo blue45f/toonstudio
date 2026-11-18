@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
 
 // 헤더 폭 예산 — 제품 문맥별 핵심 목적지와 전체 메뉴, 검색, 생성·계정 동작을 한 줄에 유지한다.
-// 현재 헤더는 9개 고정 링크 대신 상시 5개(제작·탐색·커뮤니티·배우기·마켓)와 협업 구역의 맥락형 1개만
-// 일반 셸의 1180px 탐색 전환부터 노출하므로, 1차 링크는 글자만 두고
+// 현재 헤더는 9개 고정 링크 대신 상시 5개(내 작업·작품 찾기·소재 찾기·배우기·커뮤니티)만
+// 일반 셸의 1180px 탐색 전환부터 노출하므로(협업은 내 작업 패널의 묶음), 1차 링크는 글자만 두고
 // 드롭다운 목적 아이콘, 텍스트 내비, 검색 트리거의 단계별 폭을 계약으로 고정한다.
 describe("header width budget", () => {
   it("keeps the purpose navigation compact and gated to the measured desktop width", () => {
@@ -15,10 +15,12 @@ describe("header width budget", () => {
     const start = header.indexOf('aria-label={bi("주요 메뉴", "Primary navigation")}');
     const end = header.indexOf("</nav>", start);
     const navigationBlock = header.slice(start, end);
-    // 항목 하나의 마크업(아이콘·강조·aria-current)은 HeaderPrimaryNavigationEntry가 그린다. 구역이 하나로 정해지므로 강조 기준은 highlighted다.
-    const entryStart = header.indexOf("function HeaderPrimaryNavigationEntry(");
-    const entryEnd = header.indexOf("\n}\n", entryStart);
-    const entryBlock = header.slice(entryStart, entryEnd);
+    // 항목 하나의 마크업(아이콘·강조·aria-current)은 별도 모듈의 HeaderPrimaryNavigationEntry가 그린다.
+    // 구역이 하나로 정해지므로 강조 기준은 highlighted다.
+    const entrySource = read("apps/web/src/shared/components/site-header-primary-entry.tsx");
+    const entryStart = entrySource.indexOf("function HeaderPrimaryNavigationEntry(");
+    const entryEnd = entrySource.indexOf("\n}\n", entryStart);
+    const entryBlock = entrySource.slice(entryStart, entryEnd);
     const primaryNavigation = `${navigationBlock}\n${entryBlock}`;
 
     expect(start).toBeGreaterThan(-1);

@@ -18,6 +18,8 @@ export interface CoverCardProps {
   priority?: boolean;
   /** 그리드 안에서의 0-base 위치 — 주면 priority를 coverGridPriority로 도출한다(S3-16: 첫 행 판정은 그리드 책임, 호출자는 priority를 임의로 정하지 않는다). */
   index?: number;
+  /** 선반·목록 순번(01, 02…)을 Space Grotesk tabular-nums로 표시할지 여부. */
+  showIndex?: boolean;
   rank?: number;
   /** 가격·라이선스 등 표지 위 배지 슬롯 (마켓). */
   badge?: ReactNode;
@@ -31,9 +33,7 @@ export interface CoverCardProps {
 /**
  * 표지 카드 (BLUEPRINT §6.2 (2)·(4), S3-15) — 표지를 콘텐츠의 기본 단위로 승격한 부품.
  * 렌더링 본체는 TitlePoster(즉시 보이는 타이포 폴백 포함)이고, 이 래퍼는
- * elevation·틴트·배지/메타 슬롯만 책임진다. 표지 로드 계약(S3-16): 그리드
- * 안에서는 index로 priority를 도출하고(첫 행만), sizes/srcset은 TitlePoster가
- * 자동 부여한다 — 호출자가 priority·sizes를 손으로 정하지 않는다.
+ * elevation·틴트·배지/메타 슬롯과 잉크 프레임·광택 모션만 책임진다.
  */
 export function CoverCard({
   title,
@@ -41,18 +41,43 @@ export function CoverCard({
   ratio = "portrait",
   priority,
   index,
+  showIndex = false,
   rank,
   badge,
   meta,
   tint,
   className,
 }: CoverCardProps) {
-  const style = tint ? ({ "--domain-tint": tint } as CSSProperties) : undefined;
+  const style: CSSProperties | undefined =
+    tint || index != null
+      ? ({
+          ...(tint ? { "--domain-tint": tint } : {}),
+          ...(index != null ? { "--ink-i": Math.min(index, 7), "--ink-radius": "12px" } : {}),
+        } as CSSProperties)
+      : undefined;
   const effectivePriority = index != null ? coverGridPriority(index) : priority;
+  const formattedIndex =
+    showIndex && index != null ? String(index + 1).padStart(2, "0") : null;
+
   return (
-    <article className={cx("cover-card", className)} data-cover-card="true" data-cover-ratio={ratio} style={style}>
+    <article
+      className={cx("cover-card ink-frame rounded-xl", className)}
+      data-cover-card="true"
+      data-cover-ratio={ratio}
+      style={style}
+    >
       {badge != null && <span className="cover-card-badge">{badge}</span>}
-      <TitlePoster title={title} size={size} rank={rank} priority={effectivePriority} className="cover-card-poster" />
+      {formattedIndex != null && rank == null && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-2 top-2 z-10 rounded-md border border-line/70 bg-canvas/75 px-1.5 py-0.5 font-display text-xs font-medium tabular-nums text-fg backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)]"
+        >
+          {formattedIndex}
+        </span>
+      )}
+      <div className="ink-cover ink-sheen rounded-xl">
+        <TitlePoster title={title} size={size} rank={rank} priority={effectivePriority} className="cover-card-poster" />
+      </div>
       {meta != null && <div className="cover-card-meta">{meta}</div>}
     </article>
   );

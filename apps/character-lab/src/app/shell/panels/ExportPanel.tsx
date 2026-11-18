@@ -1,7 +1,7 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립 + 모바일 스크롤·오토패닝 미리보기 + 9:16 숏폼 WebM 모션 티저) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD(만화 연출 말풍선·대사·효과음·효과선 4단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * GLB · 레이어 PSD(만화 연출 스크린톤 망점·말풍선·대사·효과음·효과선 5단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -22,6 +22,8 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
+import { exportWebtoonMotionTeaserWebm } from "../../../export/webtoon-motion-teaser";
+import { encodeMotionTeaserWebmBrowser } from "../../../export/webtoon-motion-teaser.browser";
 import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
@@ -33,9 +35,9 @@ import {
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
-import { ExportExperimentSummary } from "./export-panel/ExportExperimentSummary";
 import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
 import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
+import { ExportWebtoonReaderPreview } from "./export-panel/ExportWebtoonReaderPreview";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -53,6 +55,8 @@ import type { StripDirectorSession } from "./viewport-scene-director";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
+import type { EncodeMotionTeaserWebmFn } from "../../../export/webtoon-motion-teaser";
+import type { ExportWebtoonVerticalStripOptions } from "../../../export/webtoon-strip-composer";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -64,6 +68,7 @@ export interface ExportPanelDeps {
   readonly now?: () => number;
   readonly readFile?: (file: File) => Promise<string>;
   readonly preparePsd?: () => void;
+  readonly encodeMotionWebm?: EncodeMotionTeaserWebmFn;
   readonly writeClipboard?: (text: string) => Promise<void>;
   readonly readClipboard?: () => Promise<string>;
 }
@@ -72,6 +77,34 @@ export interface ExportPanelProps {
   readonly session?: PaintSession;
   readonly stripDirector?: StripDirectorSession;
   readonly deps?: ExportPanelDeps;
+}
+
+interface ReaderPreviewState {
+  readonly url: string;
+  readonly revocable: boolean;
+  readonly width: number;
+  readonly height: number;
+}
+
+function bytesToPreviewUrl(bytes: Uint8Array, mime: string): { readonly url: string; readonly revocable: boolean } {
+  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const blobUrl = URL.createObjectURL(new Blob([copy], { type: mime }));
+    if (blobUrl) return { url: blobUrl, revocable: true };
+  }
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i] ?? 0);
+  }
+  const encoded = typeof btoa === "function" ? btoa(binary) : "";
+  return { url: `data:${mime};base64,${encoded}`, revocable: false };
+}
+
+function revokePreviewState(preview: ReaderPreviewState | null): void {
+  if (preview?.revocable && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+    URL.revokeObjectURL(preview.url);
+  }
 }
 
 function useEngineStatus(): EngineStatus {
@@ -92,6 +125,7 @@ export function ExportPanel({
   const now = deps.now ?? (() => Date.now());
   const readFile = deps.readFile ?? readTextFile;
   const preparePsd = deps.preparePsd ?? installPsdBrowserCanvas;
+  const encodeMotionWebm = deps.encodeMotionWebm ?? encodeMotionTeaserWebmBrowser;
   const writeClipboard = deps.writeClipboard ?? defaultWriteClipboard;
   const readClipboard = deps.readClipboard ?? defaultReadClipboard;
   const ids = useId();
@@ -108,14 +142,18 @@ export function ExportPanel({
   const mountedRef = useRef(true);
   const busyRef = useRef<ExportBusyKind | null>(null);
   const lastImportFileRef = useRef<File | undefined>(undefined);
+  const lastMotionSpeedRef = useRef<number>(1);
   const latestRetryActionsRef = useRef<Partial<Record<ExportBusyKind, () => void>>>({});
   const failureAlertRef = useRef<HTMLParagraphElement | null>(null);
+  const readerPreviewRef = useRef<ReaderPreviewState | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       busyRef.current = null;
+      revokePreviewState(readerPreviewRef.current);
+      readerPreviewRef.current = null;
     };
   }, []);
 
@@ -126,6 +164,7 @@ export function ExportPanel({
     jaWritingMode,
     manuscriptMood,
     gutterPaces,
+    screentones,
     actingArc: stripActingArc,
     bakeStripFx,
     stripFxLines,
@@ -153,6 +192,13 @@ export function ExportPanel({
   const [failedKind, setFailedKind] = useState<ExportBusyKind | null>(null);
   const [notices, setNotices] = useState<readonly string[]>([]);
   const [preImportBackup, setPreImportBackup] = useState<CharacterWorkBackup | null>(null);
+  const [readerPreview, setReaderPreview] = useState<ReaderPreviewState | null>(null);
+
+  const replaceReaderPreview = useCallback((next: ReaderPreviewState | null): void => {
+    revokePreviewState(readerPreviewRef.current);
+    readerPreviewRef.current = next;
+    setReaderPreview(next);
+  }, []);
 
   const engineReady = engineStatus.phase === "ready";
   const hairSupport = engineSession.engine()?.psdHairLayers?.();
@@ -237,6 +283,50 @@ export function ExportPanel({
     }
   }, [now, reportFailure]);
 
+  const buildStripOptions = (): ExportWebtoonVerticalStripOptions => {
+    const effectiveBasePlan = applyPlan ?? planApply(labState.recipe, labState.capabilities, catalog);
+    return {
+      stripWidth: width,
+      includeBubbleSafeZone: true,
+      gutterPaces,
+      manuscriptMood,
+      screentones,
+      cutCameraPresets,
+      ...(stripActingArc !== "none"
+        ? {
+            actingArc: {
+              arcId: stripActingArc,
+              basePlan: effectiveBasePlan,
+            },
+          }
+        : {}),
+      ...(bakeStripFx
+        ? {
+            mangaFx: {
+              enabled: true,
+              locale: stripLocale,
+              jaWritingMode,
+              manuscriptMood,
+              screentones,
+              linesKind: stripFxLines,
+              includeSpeechBubbles: true,
+              intensity: 0.78,
+              dialogueLines,
+              bubbleShapes,
+              bubbleFontScales,
+              sfxStamps,
+              speakerTargets,
+              partnerSide,
+            },
+          }
+        : {}),
+      settleSteps,
+      onProgress: (step, total, labelKo) => {
+        if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+      },
+    };
+  };
+
   const onPng = (): void => {
     void run("png", async () => {
       const engine = requireEngine("png");
@@ -302,51 +392,54 @@ export function ExportPanel({
     void run("webtoon-strip", async () => {
       const engine = requireEngine("webtoon-strip");
       if (!engine) return;
-      const effectiveBasePlan = applyPlan ?? planApply(labState.recipe, labState.capabilities, catalog);
+      finish("webtoon-strip", await exportWebtoonVerticalStripPng(engine, buildStripOptions(), { now }));
+    });
+  };
+
+  const onOpenWebtoonReaderPreview = (): void => {
+    void run("webtoon-reader", async () => {
+      const engine = requireEngine("webtoon-reader");
+      if (!engine) return;
+      const outcome = await exportWebtoonVerticalStripPng(engine, buildStripOptions(), { now });
+      if (!outcome.ok) {
+        reportFailure(outcome.failure, "webtoon-reader");
+        return;
+      }
+      if (!mountedRef.current) return;
+      const previewUrl = bytesToPreviewUrl(outcome.bytes, outcome.receipt.mime);
+      replaceReaderPreview({
+        url: previewUrl.url,
+        revocable: previewUrl.revocable,
+        width: outcome.receipt.width ?? width,
+        height: outcome.receipt.height ?? height,
+      });
+      setFailure(null);
+      setFailedKind(null);
+      setNotices(["모바일 웹툰 리더 및 스크롤 호흡 연동 오토패닝 미리보기를 열었습니다."]);
+    });
+  };
+
+  const onWebtoonMotionWebm = (playbackSpeed = 1): void => {
+    lastMotionSpeedRef.current = playbackSpeed;
+    void run("webtoon-motion-webm", async () => {
+      const engine = requireEngine("webtoon-motion-webm");
+      if (!engine) return;
+      const resolutionPreset = width >= 720 ? "hd-720x1280" : "sd-540x960";
       finish(
-        "webtoon-strip",
-        await exportWebtoonVerticalStripPng(
+        "webtoon-motion-webm",
+        await exportWebtoonMotionTeaserWebm(
           engine,
           {
-            stripWidth: width,
-            includeBubbleSafeZone: true,
-            gutterPaces,
-            manuscriptMood,
-            cutCameraPresets,
-            ...(stripActingArc !== "none"
-              ? {
-                  actingArc: {
-                    arcId: stripActingArc,
-                    basePlan: effectiveBasePlan,
-                  },
-                }
-              : {}),
-            ...(bakeStripFx
-              ? {
-                  mangaFx: {
-                    enabled: true,
-                    locale: stripLocale,
-                    jaWritingMode,
-                    manuscriptMood,
-                    linesKind: stripFxLines,
-                    includeSpeechBubbles: true,
-                    intensity: 0.78,
-                    dialogueLines,
-                    bubbleShapes,
-                    bubbleFontScales,
-                    sfxStamps,
-                    speakerTargets,
-                    partnerSide,
-                  },
-                }
-              : {}),
-            settleSteps,
-            onProgress: (step, total, labelKo) => {
-              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
-            },
+            ...buildStripOptions(),
+            resolutionPreset,
+            playbackSpeed,
           },
+          encodeMotionWebm,
           { now },
         ),
+        [
+          `스크롤 여백 호흡(${playbackSpeed}× 배속)에 동기화된 9:16 숏폼 모션 코믹 비디오(WebM)를 생성해 저장했습니다.`,
+        ],
       );
     });
   };
@@ -381,6 +474,7 @@ export function ExportPanel({
                     enabled: true,
                     locale: stripLocale,
                     jaWritingMode,
+                    screentone: screentones[0],
                     linesKind: stripFxLines,
                     bubbleShape: bubbleShapes[0],
                     dialogueText: dialogueLines[0],
@@ -565,6 +659,9 @@ export function ExportPanel({
     turnaround: onTurnaroundPng,
     "quad-sheet": onQuadSheetPng,
     "webtoon-strip": onWebtoonStripPng,
+    "webtoon-reader": onOpenWebtoonReaderPreview,
+    "webtoon-motion-webm": () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
+    webm: () => onWebtoonMotionWebm(lastMotionSpeedRef.current),
     psd: onPsd,
     glb: onGlb,
     recipe: onRecipeSave,
@@ -622,15 +719,27 @@ export function ExportPanel({
       onKeyDown={onSectionKeyDown}
     >
       <h2 id={`${ids}-title`}>내보내기</h2>
-      <ExportExperimentSummary
-        sourceLabel={describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
-        poseLabel={describeExportPoseKo(labState.recipe)}
-        digest={activeDigest8}
-        onNavigate={switchInspectorTabWithFocus}
-      />
+      <div className="cl-export-experiment-summary" role="region" aria-label="현재 실험 상태 및 빠른 이동" data-testid="export-experiment-summary">
+        <div className="cl-export-experiment-meta">
+          <span className="cl-export-experiment-source" data-testid="export-active-source">
+            활성 소스: {describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
+          </span>
+          <span className="cl-export-experiment-pose" data-testid="export-active-pose">
+            실험 포즈: {describeExportPoseKo(labState.recipe)} · 레시피 #{activeDigest8}
+          </span>
+        </div>
+        <div className="cl-export-nav-actions" role="group" aria-label="실험 단계 이동">
+          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-package-tab" onClick={() => switchInspectorTabWithFocus("package")}>
+            패키지 선택 탭으로
+          </button>
+          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-pose-tab" onClick={() => switchInspectorTabWithFocus("pose")}>
+            포즈 실험 탭으로
+          </button>
+        </div>
+      </div>
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
-          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
+          엔진 상태: {engineStatus.phase} — PNG·PSD·GLB·WebM은 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.
         </p>
       ) : null}
       <ExportPresetRows
@@ -688,11 +797,29 @@ export function ExportPanel({
         <button
           type="button"
           data-testid="export-webtoon-strip-png"
-          title="1컷 등장 로우앵글 · 2컷 대화 반측면 · 3컷 감정 클로즈업 · 4컷 여운 하이앵글을 원고 먹선 프레임과 스크롤 호흡 간격·말풍선 안전 여백으로 합성한 세로 웹툰 콘티 스트립 PNG를 저장합니다"
+          title="1컷 등장 로우앵글 · 2컷 대화 반측면 · 3컷 감정 클로즈업 · 4컷 여운 하이앵글을 원고 먹선 프레임과 스크롤 호흡 간격·할프톤 스크린톤·말풍선 안전 여백으로 합성한 세로 웹툰 콘티 스트립 PNG를 저장합니다"
           onClick={onWebtoonStripPng}
           disabled={!engineReady || busy !== null}
         >
           세로 4컷 웹툰 스트립 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-reader-preview-btn"
+          title="세로 4컷 스트립을 합성해 모바일 스마트폰 폭 리더에서 컷간 스크롤 호흡(빠른 템포·서스펜스·클리프행어)에 맞춘 자동 패닝(Auto-Pan)을 미리 확인합니다"
+          onClick={onOpenWebtoonReaderPreview}
+          disabled={!engineReady || busy !== null}
+        >
+          모바일 스크롤·오토패닝 미리보기
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-motion-webm"
+          title="스크롤 여백 호흡(빠른 템포·서스펜스·클리프행어)과 할프톤 스크린톤·다국어 대사가 적용된 9:16 숏폼 홍보용 WebM 모션 코믹 비디오를 저장합니다"
+          onClick={() => onWebtoonMotionWebm(1)}
+          disabled={!engineReady || busy !== null}
+        >
+          9:16 숏폼 WebM 모션 티저 저장
         </button>
         <button type="button" onClick={onGlb} disabled={!engineReady || busy !== null}>
           GLB 저장
@@ -743,6 +870,18 @@ export function ExportPanel({
           />
         </label>
       </div>
+      {readerPreview ? (
+        <ExportWebtoonReaderPreview
+          stripImageUrl={readerPreview.url}
+          stripWidth={readerPreview.width}
+          stripHeight={readerPreview.height}
+          manuscriptMood={manuscriptMood}
+          gutterPaces={gutterPaces}
+          exportBusy={busy !== null}
+          onExportMotionWebm={(speed) => onWebtoonMotionWebm(speed)}
+          onClose={() => replaceReaderPreview(null)}
+        />
+      ) : null}
       <fieldset className="cl-export-psd">
         <legend>레이어 PSD (최대 {MAX_PSD_EXPORT_DIMENSION}px)</legend>
         <label htmlFor={`${ids}-idmask`}>
@@ -765,10 +904,10 @@ export function ExportPanel({
             checked={includePsdMangaFx}
             onChange={(event) => stripDirector.update({ includePsdMangaFx: event.target.checked })}
           />{" "}
-          만화 연출 분리 레이어 포함(말풍선·대사·효과음·효과선)
+          만화 연출 분리 레이어 포함(스크린톤·말풍선·대사·효과음·효과선)
         </label>
         {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
-        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 효과선·말풍선 프레임·대사 식자·효과음 스탬프 4개 투명 레이어가 개별 저장됩니다.</p>
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 스크린톤 망점·효과선·말풍선 프레임·대사 식자·효과음 스탬프 5개 투명 레이어가 개별 저장됩니다.</p>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>

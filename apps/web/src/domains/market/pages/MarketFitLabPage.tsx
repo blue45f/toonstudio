@@ -13,7 +13,6 @@ import { useSearchParams } from "react-router-dom";
 
 import { MarketFitScenePreview } from "../components/MarketFitScenePreview";
 import { MarketNavHeader } from "../components/MarketNavHeader";
-import { MarketSectionArtBanner } from "../components/MarketSectionArtBanner";
 import { MarketProductionProfileEditor } from "../components/MarketProductionProfileEditor";
 import { MarketResourceCard } from "../components/MarketResourceCard";
 import { StaleNoticeBar } from "../components/StaleNoticeBar";
@@ -30,12 +29,12 @@ import type { MarketProductionFitStatus } from "../models/market-production-fit"
 
 import { Container } from "@/shared/components/section";
 import { buttonClass } from "@/shared/components/ui/button-utils";
-import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import { useT } from "@/shared/lib/i18n";
 import {
   CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS,
   CreatorMarketplaceResourcePublisherQuerySchema,
 } from "@/shared/lib/creator-marketplace-resource-contract";
+import { useT } from "@/shared/lib/i18n";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 import {
   useDocumentTitle,
@@ -49,10 +48,10 @@ type FitFilter = "all" | MarketProductionFitStatus;
 
 function filterClass(active: boolean): string {
   return cn(
-    "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors duration-150 pointer-coarse:min-h-11",
+    "inline-flex min-h-9 items-center gap-1.5 rounded-[8px] border px-3 text-xs font-medium transition-colors duration-150 pointer-coarse:min-h-11",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
     active
-      ? "border-accent bg-accent text-on-accent shadow-sm"
+      ? "border-accent/60 bg-accent-soft text-fg"
       : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
   );
 }
@@ -84,14 +83,12 @@ export function MarketFitLabPage() {
   const [search, setSearch] = useState("");
   const [fitFilter, setFitFilter] = useState<FitFilter>("all");
   const [previewId, setPreviewId] = useState<string | null>(initialSlug);
-  const [rigPreset, setRigPreset] = useState<"ipad-m2-webgpu" | "wacom-cintiq-desktop" | "vrm-humanoid-rig" | "c2pa-commercial-audit">("ipad-m2-webgpu");
+  const [rigPreset, setRigPreset] = useState<
+    "ipad-m2-webgpu" | "wacom-cintiq-desktop" | "vrm-humanoid-rig" | "c2pa-commercial-audit"
+  >("ipad-m2-webgpu");
   const previewSectionRef = useRef<HTMLDivElement | null>(null);
-  const {
-    profile,
-    updateProfile,
-    resetProfile,
-    persistenceAvailable,
-  } = useMarketProductionProfile();
+  const { profile, updateProfile, resetProfile, persistenceAvailable } =
+    useMarketProductionProfile();
   const page = useMarketResources({ limit: PAGE_SIZE, sort: "newest" });
   const missingPreviewSlug = useMemo(() => {
     if (!previewId) return undefined;
@@ -127,82 +124,114 @@ export function MarketFitLabPage() {
     () => evaluateAndSortMarketProductionRecords(candidateItems, profile, fitTranslate),
     [candidateItems, profile, fitTranslate],
   );
-  const counts = useMemo(() => ({
-    all: evaluated.length,
-    ready: evaluated.filter((item) => item.evaluation.status === "ready").length,
-    review: evaluated.filter((item) => item.evaluation.status === "review").length,
-    blocked: evaluated.filter((item) => item.evaluation.status === "blocked").length,
-  }), [evaluated]);
+  const counts = useMemo(
+    () => ({
+      all: evaluated.length,
+      ready: evaluated.filter((item) => item.evaluation.status === "ready").length,
+      review: evaluated.filter((item) => item.evaluation.status === "review").length,
+      blocked: evaluated.filter((item) => item.evaluation.status === "blocked").length,
+    }),
+    [evaluated],
+  );
   const normalizedSearch = search.trim().toLocaleLowerCase("ko-KR");
-  const visible = useMemo(() => evaluated.filter(({ record, evaluation }) => {
-    if (fitFilter !== "all" && evaluation.status !== fitFilter) return false;
-    return normalizedSearch.length === 0
-      || marketProductionFitSearchText(record).includes(normalizedSearch);
-  }), [evaluated, fitFilter, normalizedSearch]);
+  const visible = useMemo(
+    () =>
+      evaluated.filter(({ record, evaluation }) => {
+        if (fitFilter !== "all" && evaluation.status !== fitFilter) return false;
+        return (
+          normalizedSearch.length === 0 ||
+          marketProductionFitSearchText(record).includes(normalizedSearch)
+        );
+      }),
+    [evaluated, fitFilter, normalizedSearch],
+  );
   const selectedFit =
     evaluated.find(
       (item) =>
         item.record.id === previewId || item.record.packageId === previewId,
-    )
-    ?? visible[0]
-    ?? evaluated[0];
+    ) ??
+    visible[0] ??
+    evaluated[0];
 
   const focusPreview = () => {
     const node = previewSectionRef.current;
     if (!node || typeof node.scrollIntoView !== "function") return;
-    const reduceMotion = typeof window !== "undefined"
-      && typeof window.matchMedia === "function"
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     node.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   };
 
   return (
     <div>
-      <section className="border-b border-line bg-ledger">
-        <Container size="wide" className="py-7 sm:py-10">
-          <MarketNavHeader />
-          <MarketSectionArtBanner className="mt-2" />
-          <p className="eyebrow mt-6 text-accent">Production fit lab</p>
-          <h1 className="mt-2 text-pretty text-2xl font-bold leading-tight text-fg sm:text-3xl">
-            {t("제작 적합성 랩", "Production Fit Lab")}
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fg-2">
-            {t("리소스를 획득하기 전에 현재 제작 조건과 실제 서버 manifest를 대조하세요. 조건 일치, 확인 필요, 차단 순으로 정렬하며 근거가 없는 평점이나 호환성을 만들지 않습니다.", "Compare your current production conditions against the real server manifest before acquiring a resource. Results are sorted by match, needs-review, and blocked — no invented ratings or compatibility claims.")}
-          </p>
-        </Container>
+      <section>
+        <div className="border-b border-line bg-canvas">
+          <Container size="wide" className="py-6 sm:py-9">
+            <MarketNavHeader />
+            <p className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-3">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+              {t("사전 호환성 점검", "Production fit check")}
+            </p>
+            <h1 className="mt-2 text-pretty text-2xl font-semibold leading-tight text-fg [word-break:keep-all] sm:text-3xl">
+              {t("제작 적합성 랩", "Production Fit Lab")}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fg-2 [word-break:keep-all]">
+              {t(
+                "리소스를 획득하기 전에 현재 제작 조건과 실제 서버 manifest를 대조하세요. 조건 일치, 확인 필요, 차단 순으로 정렬하며 근거가 없는 평점이나 호환성을 만들지 않습니다.",
+                "Compare your current production conditions against the real server manifest before acquiring a resource. Results are sorted by match, needs-review, and blocked — no invented ratings or compatibility claims.",
+              )}
+            </p>
+          </Container>
+        </div>
       </section>
 
       <Container size="wide" className="py-6 sm:py-8">
         <section
           aria-label={t("제작 적합성 3단계 점검 가이드", "3-step production fit check guide")}
           data-testid="market-fit-lab-guide"
-          className="mb-5 grid gap-2.5 rounded-2xl border border-line bg-card/70 p-4 sm:grid-cols-3"
+          className="mb-5 grid gap-3 rounded-[14px] border border-line bg-panel p-4 sm:grid-cols-3"
         >
-          <div className="rounded-xl border border-line bg-panel/60 p-3">
-            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 1 · 조건 지정</span>
-            <strong className="mt-1 block text-xs font-bold text-fg">
+          <div className="rounded-[10px] border border-line bg-card p-3.5">
+            <span className="text-xs font-medium text-accent tabular-nums">
+              {t("1단계 · 조건 지정", "Step 1 · Set rules")}
+            </span>
+            <strong className="mt-1 block text-xs font-semibold text-fg [word-break:keep-all]">
               {t("내 원고 환경·사용권 기준 입력", "Set your studio & license rules")}
             </strong>
-            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
-              {t("Studio 버전, 렌더러(Canvas2D/WebGPU), 상업 연재 여부와 AI 포함 허용 기준을 맞춥니다.", "Configure Studio version, renderer, commercial use, and AI policy.")}
+            <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+              {t(
+                "Studio 버전, 렌더러(Canvas2D/WebGPU), 상업 연재 여부와 AI 포함 허용 기준을 맞춥니다.",
+                "Configure Studio version, renderer, commercial use, and AI policy.",
+              )}
             </p>
           </div>
-          <div className="rounded-xl border border-line bg-panel/60 p-3">
-            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 2 · 장면 합성</span>
-            <strong className="mt-1 block text-xs font-bold text-fg">
+          <div className="rounded-[10px] border border-line bg-card p-3.5">
+            <span className="text-xs font-medium text-accent tabular-nums">
+              {t("2단계 · 장면 합성", "Step 2 · Scene layer")}
+            </span>
+            <strong className="mt-1 block text-xs font-semibold text-fg [word-break:keep-all]">
               {t("실제 컷 위에서 올려보기", "Preview on a live webtoon cut")}
             </strong>
-            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
-              {t("카드의 '올려보기' 버튼을 눌러 내 원고 구도와 색감에 어울리는지 즉시 대조합니다.", "Click 'Preview' on any card to inspect composition and color harmony.")}
+            <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+              {t(
+                "카드의 올려보기 버튼을 눌러 내 원고 구도와 색감에 어울리는지 즉시 대조합니다.",
+                "Click Preview on any card to inspect composition and color harmony.",
+              )}
             </p>
           </div>
-          <div className="rounded-xl border border-line bg-panel/60 p-3">
-            <span className="text-[0.65rem] font-black uppercase tracking-wider text-accent">STEP 3 · 안심 도입</span>
-            <strong className="mt-1 block text-xs font-bold text-fg">
-              {t("'조건 일치' 에셋만 선별 적용", "Filter by 'Matches' & apply")}
+          <div className="rounded-[10px] border border-line bg-card p-3.5">
+            <span className="text-xs font-medium text-accent tabular-nums">
+              {t("3단계 · 안심 도입", "Step 3 · Apply safely")}
+            </span>
+            <strong className="mt-1 block text-xs font-semibold text-fg [word-break:keep-all]">
+              {t("조건 일치 에셋만 선별 적용", "Filter by Matches & apply")}
             </strong>
-            <p className="mt-0.5 text-[0.7rem] leading-relaxed text-fg-3">
-              {t("서버 manifest 검증을 통과한 에셋만 골라 버전 충돌이나 저작권 위험 없이 작업실로 가져갑니다.", "Import verified resources into Studio without version or license surprises.")}
+            <p className="mt-1 text-xs leading-relaxed text-fg-2 [word-break:keep-all]">
+              {t(
+                "서버 manifest 검증을 통과한 에셋만 골라 버전 충돌이나 저작권 위험 없이 작업실로 가져갑니다.",
+                "Import verified resources into Studio without version or license surprises.",
+              )}
             </p>
           </div>
         </section>
@@ -215,15 +244,24 @@ export function MarketFitLabPage() {
         />
 
         <section
-          aria-label={t("REA 하드웨어 및 렌더 파이프라인 스트레스 벤치마크", "REA Hardware & Render Pipeline Stress Benchmark")}
+          aria-label={t(
+            "REA 하드웨어 및 렌더 파이프라인 스트레스 벤치마크",
+            "REA Hardware & Render Pipeline Stress Benchmark",
+          )}
           data-testid="market-fit-rea-benchmark-bar"
-          className="mt-5 rounded-2xl border border-line bg-card/85 p-4"
+          className="mt-5 rounded-[14px] border border-line bg-panel p-4"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-xs font-extrabold text-fg">
-              {t("ACON3D · BOOTH · Vket Store · CLO 3D · Fontworks 실기기·파이프라인 적합성 시뮬레이터", "ACON3D / BOOTH / Vket Store / CLO 3D / Fontworks Hardware & Pipeline Fit Simulator")}
+            <span className="text-xs font-semibold text-fg">
+              {t(
+                "실기기 · 렌더 파이프라인 적합성 시뮬레이터",
+                "Hardware & Render Pipeline Fit Simulator",
+              )}
             </span>
-            <span data-testid="market-fit-rea-benchmark-status" className="rounded-full bg-accent/15 px-2.5 py-0.5 font-mono text-[11px] font-bold text-accent">
+            <span
+              data-testid="market-fit-rea-benchmark-status"
+              className="rounded-[6px] border border-accent/35 bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent tabular-nums"
+            >
               {rigPreset === "ipad-m2-webgpu"
                 ? t("iPad Pro M2 8GB · WebGPU 60fps · 6-Pass LT 0.38s 통과", "iPad Pro M2 8GB · WebGPU 60fps · 6-Pass LT 0.38s Pass")
                 : rigPreset === "wacom-cintiq-desktop"
@@ -233,13 +271,19 @@ export function MarketFitLabPage() {
                     : t("C2PA 서명 매니페스트 · Cara No-AI · 상업/동인 재배포 무결성 통과", "C2PA Manifest · Cara No-AI · Commercial/Doujin Clearance Pass")}
             </span>
           </div>
-          <div className="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-label={t("하드웨어 및 파이프라인 벤치마크 프리셋", "Hardware and pipeline benchmark presets")}>
-            {([
-              ["ipad-m2-webgpu", t("iPad Pro M2 (WebGPU · 6-Pass LT)", "iPad Pro M2 (WebGPU · 6-Pass LT)")],
-              ["wacom-cintiq-desktop", t("Cintiq Pro 24 (24,000px · 350DPI CMYK)", "Cintiq Pro 24 (24,000px · 350DPI CMYK)")],
-              ["vrm-humanoid-rig", t("VRM 1.0 · Mixamo 52 표정/본 리깅", "VRM 1.0 · Mixamo 52 BlendShape Rig")],
-              ["c2pa-commercial-audit", t("C2PA · No-AI 상업 연재 감리", "C2PA · No-AI Commercial Audit")],
-            ] as const).map(([id, label]) => (
+          <div
+            className="mt-2.5 flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={t("하드웨어 및 파이프라인 벤치마크 프리셋", "Hardware and pipeline benchmark presets")}
+          >
+            {(
+              [
+                ["ipad-m2-webgpu", t("iPad Pro M2 (WebGPU · 6-Pass LT)", "iPad Pro M2 (WebGPU · 6-Pass LT)")],
+                ["wacom-cintiq-desktop", t("Cintiq Pro 24 (24,000px · 350DPI CMYK)", "Cintiq Pro 24 (24,000px · 350DPI CMYK)")],
+                ["vrm-humanoid-rig", t("VRM 1.0 · Mixamo 52 표정/본 리깅", "VRM 1.0 · Mixamo 52 BlendShape Rig")],
+                ["c2pa-commercial-audit", t("C2PA · No-AI 상업 연재 감리", "C2PA · No-AI Commercial Audit")],
+              ] as const
+            ).map(([id, label]) => (
               <button
                 key={id}
                 type="button"
@@ -263,23 +307,35 @@ export function MarketFitLabPage() {
           </div>
         ) : null}
 
-        <section aria-labelledby="market-fit-results-title" className="mt-6">
+        <section aria-labelledby="market-fit-results-title" className="mt-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="eyebrow text-accent">Evidence-ranked catalog</p>
-              <h2 id="market-fit-results-title" className="mt-1 text-xl font-bold text-fg">
+              <p className="text-xs font-medium text-accent">
+                {t("서버 검증 목록", "Server-verified results")}
+              </p>
+              <h2
+                id="market-fit-results-title"
+                data-ink="line"
+                className="mt-1 text-xl font-semibold text-fg [word-break:keep-all]"
+              >
                 {t("현재 불러온 서버 결과", "Currently loaded server results")}
               </h2>
-              <p className="mt-1 text-xs leading-relaxed text-fg-3">
-                {t("서버의 최신순 페이지 안에서 제작 적합성을 다시 계산합니다. 더 보기를 누르면 다음 서버 페이지도 같은 기준으로 재정렬합니다.", "Production fit is recalculated within the server's newest-first page. Pressing “load more” re-sorts the next server page by the same criteria.")}
+              <p className="mt-3 text-xs leading-relaxed text-fg-3 [word-break:keep-all]">
+                {t(
+                  "서버의 최신순 페이지 안에서 제작 적합성을 다시 계산합니다. 더 보기를 누르면 다음 서버 페이지도 같은 기준으로 재정렬합니다.",
+                  "Production fit is recalculated within the server's newest-first page. Pressing “load more” re-sorts the next server page by the same criteria.",
+                )}
               </p>
             </div>
-            <p className="text-xs text-fg-3" aria-live="polite">
-              {t(`${visible.length}개 표시 · 서버 결과 ${counts.all}개`, `Showing ${visible.length} · ${counts.all} server results`)}
+            <p className="text-xs text-fg-3 tabular-nums" aria-live="polite">
+              {t(
+                `${visible.length}개 표시 · 서버 결과 ${counts.all}개`,
+                `Showing ${visible.length} · ${counts.all} server results`,
+              )}
             </p>
           </div>
 
-          <div className="mt-4 grid gap-3 rounded-2xl border border-line bg-panel p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="mt-4 grid gap-3 rounded-[14px] border border-line bg-panel p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="relative">
               <label htmlFor="market-fit-search" className="sr-only">
                 {t("불러온 마켓 결과 안에서 검색", "Search within the loaded market results")}
@@ -294,22 +350,29 @@ export function MarketFitLabPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 maxLength={CREATOR_MARKETPLACE_RESOURCE_QUERY_SEARCH_MAX_CHARACTERS}
-                placeholder={t("이름·태그·배급자·렌더러·전달 방식 검색", "Search by name, tag, publisher, renderer, or delivery method")}
-                className="min-h-11 w-full appearance-none rounded-xl border border-line bg-card pl-9 pr-11 text-sm text-fg outline-none transition-colors duration-150 placeholder:text-fg-3 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-search-cancel-button]:hidden"
+                placeholder={t(
+                  "이름·태그·배급자·렌더러·전달 방식 검색",
+                  "Search by name, tag, publisher, renderer, or delivery method",
+                )}
+                className="min-h-11 w-full appearance-none rounded-[9px] border border-line bg-card pl-9 pr-11 text-sm text-fg outline-none transition-colors duration-150 placeholder:text-fg-3 focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/70 [&::-webkit-search-cancel-button]:hidden"
               />
               {search ? (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
                   aria-label={t("검색어 지우기", "Clear search")}
-                  className="absolute right-0.5 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-fg-3 transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+                  className="absolute right-0.5 top-1/2 inline-flex size-11 -translate-y-1/2 items-center justify-center rounded-[8px] text-fg-3 transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </button>
               ) : null}
             </div>
 
-            <div className="flex max-w-full gap-1.5 overflow-x-auto py-0.5" role="group" aria-label={t("제작 적합성 상태 필터", "Production fit status filter")}>
+            <div
+              className="flex max-w-full gap-1.5 overflow-x-auto py-0.5"
+              role="group"
+              aria-label={t("제작 적합성 상태 필터", "Production fit status filter")}
+            >
               {FILTERS.map((filter) => {
                 const Icon = filter.icon;
                 const active = fitFilter === filter.id;
@@ -324,8 +387,10 @@ export function MarketFitLabPage() {
                     className={filterClass(active)}
                   >
                     <Icon className="size-3.5" aria-hidden="true" />
-                    {filter.label}
-                    <span className="numeral tnum opacity-80" aria-hidden="true">{count}</span>
+                    <span>{filter.label}</span>
+                    <span className="numeral tnum opacity-80 tabular-nums" aria-hidden="true">
+                      {count}
+                    </span>
                   </button>
                 );
               })}
@@ -336,17 +401,25 @@ export function MarketFitLabPage() {
             <StaleNoticeBar
               savedAt={page.staleSavedAt ?? undefined}
               onRetry={page.reload}
-              className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2"
+              className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-fg-2"
             />
           ) : null}
 
           {page.loading ? (
             <>
-              <p role="status" className="sr-only">{t("마켓 리소스를 불러오는 중입니다.", "Loading market resources.")}</p>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-hidden="true">
+              <p role="status" className="sr-only">
+                {t("마켓 리소스를 불러오는 중입니다.", "Loading market resources.")}
+              </p>
+              <div
+                className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                aria-hidden="true"
+              >
                 {Array.from({ length: 8 }, (_, index) => (
-                  <div key={index} className="overflow-hidden rounded-xl border border-line bg-card">
-                    <div className="skeleton aspect-[16/9] w-full" />
+                  <div
+                    key={index}
+                    className="overflow-hidden rounded-[14px] border border-line bg-card"
+                  >
+                    <div className="skeleton aspect-[16/10] w-full" />
                     <div className="space-y-2 p-4">
                       <div className="skeleton h-4 w-4/5" />
                       <div className="skeleton h-3 w-1/2" />
@@ -357,24 +430,38 @@ export function MarketFitLabPage() {
               </div>
             </>
           ) : page.error ? (
-            <div role="status" className="mt-5 rounded-2xl border border-warn/40 bg-warn/10 p-8 text-center">
-              <p className="text-sm font-bold text-fg">{t("서버 마켓을 불러오지 못했습니다", "Could not load the server market")}</p>
+            <div
+              role="status"
+              className="mt-5 rounded-[16px] border border-warn/40 bg-warn/10 p-8 text-center"
+            >
+              <p className="text-sm font-semibold text-fg">
+                {t("서버 마켓을 불러오지 못했습니다", "Could not load the server market")}
+              </p>
               <p className="mt-1 text-sm text-fg-2">{page.error}</p>
               <button
                 type="button"
                 onClick={page.reload}
-                className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 gap-1.5" })}
+                className={buttonClass({
+                  variant: "outline",
+                  size: "sm",
+                  className: "mt-4 gap-1.5 rounded-[8px]",
+                })}
               >
                 <RefreshCw className="size-3.5" aria-hidden="true" />
                 {t("다시 시도", "Try again")}
               </button>
             </div>
           ) : visible.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-line bg-panel p-8 text-center">
-              <ShieldCheck className="mx-auto size-8 text-fg-3" aria-hidden="true" />
-              <p className="mt-3 text-sm font-bold text-fg">{t("선택한 조건의 결과가 없습니다", "No results for the selected conditions")}</p>
+            <div className="mt-5 rounded-[16px] border border-dashed border-line bg-panel p-8 text-center">
+              <ShieldCheck className="mx-auto size-7 text-fg-3" aria-hidden="true" />
+              <p className="mt-3 text-sm font-semibold text-fg">
+                {t("선택한 조건의 결과가 없습니다", "No results for the selected conditions")}
+              </p>
               <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-fg-2">
-                {t("검색어 또는 상태 필터를 바꾸거나 더 많은 서버 결과를 불러오세요.", "Change the search term or status filter, or load more server results.")}
+                {t(
+                  "검색어 또는 상태 필터를 바꾸거나 더 많은 서버 결과를 불러오세요.",
+                  "Change the search term or status filter, or load more server results.",
+                )}
               </p>
               <button
                 type="button"
@@ -382,25 +469,35 @@ export function MarketFitLabPage() {
                   setSearch("");
                   setFitFilter("all");
                 }}
-                className={buttonClass({ variant: "outline", size: "sm", className: "mt-4" })}
+                className={buttonClass({
+                  variant: "outline",
+                  size: "sm",
+                  className: "mt-4 rounded-[8px]",
+                })}
               >
                 {t("로컬 필터 초기화", "Reset local filters")}
               </button>
             </div>
           ) : (
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div
+              key={fitFilter}
+              data-ink-stagger="panel"
+              className="ink-cascade mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
               {visible.map(({ record, evaluation }) => {
                 const reason = marketProductionFitReasonLine(evaluation);
-                const ReasonIcon = reason.tone === "ready"
-                  ? CheckCircle2
-                  : reason.tone === "review"
-                    ? CircleAlert
-                    : ShieldX;
-                const reasonIconClass = reason.tone === "ready"
-                  ? "text-good"
-                  : reason.tone === "review"
-                    ? "text-warn"
-                    : "text-danger";
+                const ReasonIcon =
+                  reason.tone === "ready"
+                    ? CheckCircle2
+                    : reason.tone === "review"
+                      ? CircleAlert
+                      : ShieldX;
+                const reasonIconClass =
+                  reason.tone === "ready"
+                    ? "text-good"
+                    : reason.tone === "review"
+                      ? "text-warn"
+                      : "text-danger";
                 const selected = selectedFit?.record.id === record.id;
                 return (
                   <div key={record.id} className="flex flex-col gap-2">
@@ -425,17 +522,15 @@ export function MarketFitLabPage() {
                           focusPreview();
                         }}
                         className={cn(
-                          "inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full border px-2.5 text-xs font-semibold transition-colors duration-150 pointer-coarse:min-h-11",
+                          "inline-flex min-h-9 shrink-0 items-center gap-1 rounded-[8px] border px-2.5 text-xs font-medium transition-colors duration-150 pointer-coarse:min-h-11",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
                           selected
-                            ? "border-accent bg-accent/10 text-accent"
+                            ? "border-accent/60 bg-accent-soft text-accent"
                             : "border-line bg-card text-fg-2 hover:border-line-strong hover:text-fg",
                         )}
                       >
                         <Layers className="size-3.5" aria-hidden="true" />
-                        {selected
-                          ? t("올려보는 중", "On scene")
-                          : t("올려보기", "Preview")}
+                        {selected ? t("올려보는 중", "On scene") : t("올려보기", "Preview")}
                       </button>
                     </div>
                   </div>
@@ -445,12 +540,15 @@ export function MarketFitLabPage() {
           )}
 
           {page.loadMoreError ? (
-            <div role="status" className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-warn">
+            <div
+              role="status"
+              className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-warn"
+            >
               <span>{page.loadMoreError}</span>
               <button
                 type="button"
                 onClick={page.loadMore}
-                className="min-h-9 rounded-lg border border-warn/35 bg-warn/10 px-3 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warn/50 pointer-coarse:min-h-11"
+                className="min-h-9 rounded-[8px] border border-warn/35 bg-warn/10 px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warn/50 pointer-coarse:min-h-11"
               >
                 {t("다시 불러오기", "Reload")}
               </button>
@@ -463,12 +561,18 @@ export function MarketFitLabPage() {
                 type="button"
                 onClick={page.loadMore}
                 disabled={page.loadingMore}
-                className={buttonClass({ variant: "outline", size: "md", className: "min-w-36 gap-1.5" })}
+                className={buttonClass({
+                  variant: "outline",
+                  size: "md",
+                  className: "min-w-36 gap-1.5 rounded-[9px]",
+                })}
               >
                 {page.loadingMore ? (
-                  <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
+                  <RefreshCw className="size-4 motion-safe:animate-spin" aria-hidden="true" />
                 ) : null}
-                {page.loadingMore ? t("불러오는 중", "Loading") : t("서버 결과 더 보기", "Load more server results")}
+                {page.loadingMore
+                  ? t("불러오는 중", "Loading")
+                  : t("서버 결과 더 보기", "Load more server results")}
               </button>
             </div>
           ) : null}

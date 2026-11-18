@@ -1,12 +1,13 @@
-import { CalendarCheck, ClipboardList, Landmark, ListPlus, type LucideIcon } from "lucide-react";
+import { ArrowRight, ListPlus } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { SiteDisclosure } from "@/domains/legal/public/site-disclosure";
 import { SiteRail } from "@/domains/legal/public/site-rail";
-import { SiteSectionTabs, SiteTabPanel, type SiteSectionTab } from "@/domains/legal/public/site-section-tabs";
+import { SiteTabPanel } from "@/domains/legal/public/site-section-tabs";
 import { useSiteTabs } from "@/domains/legal/public/site-tabs";
 import { MotionIllustration, MotionTimeline, MotionReveal } from "@/shared/motion-assets";
+import { LearnUnderlineTabs, type LearnUnderlineTabItem } from "./LearnUnderlineTabs";
 import { LESSONS } from "./learning-content";
 import {
   CLASSROOM_TEMPLATES,
@@ -34,12 +35,6 @@ const CLASSROOM_TABS: readonly ClassroomTab[] = ["curriculum", "assignments", "r
 const CLASSROOM_TAB_PREFIX = "classroom";
 const MAX_WEEKS = 24;
 const MAX_PLAN_FILE_BYTES = 250_000;
-
-const TAB_ICONS: Readonly<Record<ClassroomTab, LucideIcon>> = {
-  curriculum: CalendarCheck,
-  assignments: ClipboardList,
-  roadmap: Landmark,
-};
 
 function browserStorage(): Storage | null {
   return typeof window === "undefined" ? null : window.localStorage;
@@ -237,27 +232,27 @@ export function LearningClassroomPage() {
   }
 
   const allWeeksOpen = plan.weeks.length > 0 && plan.weeks.every((item) => openWeeks.has(item.week));
-  const tabs: readonly SiteSectionTab<ClassroomTab>[] = [
-    { id: "curriculum", icon: TAB_ICONS.curriculum, label: "수업 설계", badge: `${plan.weeks.length}주` },
-    { id: "assignments", icon: TAB_ICONS.assignments, label: "과제", badge: plan.assignments.length ? `${assignmentsDone}/${plan.assignments.length}` : undefined },
-    { id: "roadmap", icon: TAB_ICONS.roadmap, label: "기관 확장" },
+  const tabs: readonly LearnUnderlineTabItem<ClassroomTab>[] = [
+    { id: "curriculum", label: "수업 설계", count: `${plan.weeks.length}주` },
+    { id: "assignments", label: "과제", count: plan.assignments.length ? `${assignmentsDone}/${plan.assignments.length}` : undefined },
+    { id: "roadmap", label: "기관 확장" },
   ];
 
   return (
     <div className="learn-page academy-classroom-page" lang="ko">
       <header className="academy-page-hero academy-classroom-hero">
         <div>
-          <p className="learn-eyebrow">TOONSTUDIO CLASSROOM</p>
-          <h1>강의를 모으는 데서 끝내지 않고,<br />수업과 과제로 연결합니다.</h1>
+          <p className="learn-eyebrow">교육기관용 클래스룸</p>
+          <h1>강의를 모으는 데서 끝내지 않고,<br />수업과 과제로 연결합니다</h1>
           <p className="learn-intro">강좌와 외부 공식 자료를 주차별로 엮고, 학생이 툰스튜디오에서 바로 실습하게 만드는 교육기관용 파일럿입니다.</p>
           <div className="academy-hero-actions">
-            <Link className="learn-primary" to="/learn/resources">강좌·자료 찾기 →</Link>
-            <Link className="learn-secondary" to="/research">리서치 데스크 →</Link>
+            <Link className="learn-primary ink-arrow" to="/learn/resources">강좌·자료 찾기 <ArrowRight size={16} aria-hidden="true" /></Link>
+            <Link className="learn-secondary ink-arrow" to="/research">리서치 데스크 <ArrowRight size={15} aria-hidden="true" /></Link>
           </div>
         </div>
         <aside>
           <MotionIllustration name="layers" size="lg" animated={false} />
-          <strong>{plan.weeks.length}주</strong>
+          <strong className="tabular-nums">{plan.weeks.length}주</strong>
           <span>{template.title}</span>
           <p>현재 버전은 브라우저 로컬 수업 설계입니다. 학생 명단·성적·LTI 동기화는 서버형 Classroom의 다음 단계입니다.</p>
         </aside>
@@ -266,12 +261,13 @@ export function LearningClassroomPage() {
       {warning && <p className="learn-caution" role="status">{warning}</p>}
 
       <section className="academy-classroom-tabs" aria-label="클래스룸 작업 영역">
-        <SiteSectionTabs tabs={tabs} value={activeTab} onChange={selectTab} label="클래스룸 작업 영역" idPrefix={CLASSROOM_TAB_PREFIX} />
+        <LearnUnderlineTabs tabs={tabs} value={activeTab} onChange={selectTab} label="클래스룸 작업 영역" idPrefix={CLASSROOM_TAB_PREFIX} />
 
         <SiteTabPanel idPrefix={CLASSROOM_TAB_PREFIX} id="curriculum" active={activeTab === "curriculum"} mounted={isMounted("curriculum")} className="academy-tab-panel">
+          <div className={activeTab === "curriculum" ? "ink-cascade" : undefined}>
           <section className="academy-template-picker" aria-labelledby="academy-template-title">
             <div className="learn-section-heading">
-              <div><p className="learn-eyebrow">CURRICULUM TEMPLATE</p><h2 id="academy-template-title">수업 목적에 맞는 시작점을 고르세요.</h2></div>
+              <div><p className="learn-eyebrow">수업 템플릿</p><h2 id="academy-template-title">수업 목적에 맞는 시작점을 고르세요</h2></div>
               <div className="academy-plan-file-actions">
                 <button type="button" onClick={() => importInputRef.current?.click()}>JSON 가져오기</button>
                 <button type="button" onClick={exportPlan}>JSON 내보내기</button>
@@ -287,8 +283,8 @@ export function LearningClassroomPage() {
             </div>
             <SiteRail label="수업 템플릿" className="academy-template-rail" columns="sm:grid-cols-3" itemClassName="w-[min(78vw,17rem)]">
               {CLASSROOM_TEMPLATES.map((item) => (
-                <button key={item.id} type="button" className="academy-template-card" aria-pressed={item.id === plan.templateId} onClick={() => applyTemplate(item.id)}>
-                  <span>{item.weeks.length}주 과정</span>
+                <button key={item.id} type="button" className="academy-template-card ink-frame" aria-pressed={item.id === plan.templateId} onClick={() => applyTemplate(item.id)}>
+                  <span className="tabular-nums">{item.weeks.length}주 과정</span>
                   <strong>{item.title}</strong>
                   <p>{item.description}</p>
                 </button>
@@ -306,13 +302,13 @@ export function LearningClassroomPage() {
 
           <section className="academy-week-section" aria-labelledby="academy-week-title">
             <div className="learn-section-heading">
-              <div><p className="learn-eyebrow">WEEKLY COURSE</p><h2 id="academy-week-title">강의 → 참고자료 → 실습의 한 흐름</h2></div>
+              <div><p className="learn-eyebrow">주차별 커리큘럼</p><h2 id="academy-week-title">강의 → 참고자료 → 실습의 한 흐름</h2></div>
               <div className="academy-week-heading-actions">
                 <button type="button" onClick={addWeek} disabled={plan.weeks.length >= MAX_WEEKS}>주차 추가</button>
                 <button type="button" onClick={() => setOpenWeeks(allWeeksOpen ? new Set() : new Set(plan.weeks.map((item) => item.week)))}>
                   {allWeeksOpen ? "모두 접기" : "모두 펼치기"}
                 </button>
-                <Link to="/learn/resources">강좌·자료 더 찾기 →</Link>
+                <Link className="ink-arrow" to="/learn/resources">강좌·자료 더 찾기 <ArrowRight size={14} aria-hidden="true" /></Link>
               </div>
             </div>
             <SiteDisclosure
@@ -393,13 +389,15 @@ export function LearningClassroomPage() {
               })}
             </ol>
           </section>
+          </div>
         </SiteTabPanel>
 
         <SiteTabPanel idPrefix={CLASSROOM_TAB_PREFIX} id="assignments" active={activeTab === "assignments"} mounted={isMounted("assignments")} className="academy-tab-panel">
+          <div className={activeTab === "assignments" ? "ink-cascade" : undefined}>
           <section className="academy-assignment-section" aria-labelledby="academy-assignment-title">
             <div className="learn-section-heading">
-              <div><p className="learn-eyebrow">ASSIGNMENTS</p><h2 id="academy-assignment-title">배운 내용을 바로 과제로 바꾸세요.</h2></div>
-              <p className="learn-small">현재 기기에 자동 저장됩니다. · 완료 {assignmentsDone}/{plan.assignments.length}</p>
+              <div><p className="learn-eyebrow">실습 과제</p><h2 id="academy-assignment-title">배운 내용을 바로 과제로 바꾸세요</h2></div>
+              <p className="learn-small tabular-nums">현재 기기에 자동 저장됩니다 · 완료 {assignmentsDone}/{plan.assignments.length}</p>
             </div>
             <div className="academy-assignment-layout">
               <SiteDisclosure
@@ -467,12 +465,14 @@ export function LearningClassroomPage() {
               </div>
             </div>
           </section>
+          </div>
         </SiteTabPanel>
 
         <SiteTabPanel idPrefix={CLASSROOM_TAB_PREFIX} id="roadmap" active={activeTab === "roadmap"} mounted={isMounted("roadmap")} className="academy-tab-panel">
+          <div className={activeTab === "roadmap" ? "ink-cascade" : undefined}>
           <MotionReveal>
             <section className="academy-institution-roadmap" aria-labelledby="academy-institution-title">
-              <div><p className="learn-eyebrow">INSTITUTION READY</p><h2 id="academy-institution-title">교육기관 확장을 위한 다음 연결점</h2></div>
+              <div><p className="learn-eyebrow">기관 연동 로드맵</p><h2 id="academy-institution-title">교육기관 확장을 위한 다음 연결점</h2></div>
               <MotionTimeline
                 className="mt-6"
                 items={[
@@ -484,6 +484,7 @@ export function LearningClassroomPage() {
               />
             </section>
           </MotionReveal>
+          </div>
         </SiteTabPanel>
       </section>
 
@@ -492,8 +493,8 @@ export function LearningClassroomPage() {
       </Suspense>
 
       <section className="learn-banner">
-        <div><p className="learn-eyebrow">RESOURCE HUB</p><h2>수업에 넣을 자료가 더 필요하신가요?</h2><p>자체 실습 강좌와 공식 외부 교육 자료를 직군·제작 단계별로 찾아보세요. 장면 근거가 필요하면 리서치 데스크가 이어집니다.</p></div>
-        <Link className="learn-secondary" to="/learn/resources">강좌·자료 라이브러리 →</Link>
+        <div><p className="learn-eyebrow">강좌·자료 연결</p><h2>수업에 넣을 자료가 더 필요하신가요</h2><p>자체 실습 강좌와 공식 외부 교육 자료를 직군·제작 단계별로 찾아보세요. 장면 근거가 필요하면 리서치 데스크가 이어집니다.</p></div>
+        <Link className="learn-secondary ink-arrow" to="/learn/resources">강좌·자료 라이브러리 <ArrowRight size={15} aria-hidden="true" /></Link>
       </section>
     </div>
   );

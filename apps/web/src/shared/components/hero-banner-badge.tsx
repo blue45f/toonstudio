@@ -1,10 +1,11 @@
-import { Sparkles } from "lucide-react";
+import { translateBilingualValueForActiveLocale } from "@/shared/lib/i18n-bilingual-copy";
 
 export function HeroBannerBadge() {
+  const label = translateBilingualValueForActiveLocale("hero-banner-badge", "이 주의 발견", "Featured this week");
   return (
     <div className="absolute -top-3 left-4 z-20">
-      <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1.5 text-[0.72rem] font-bold uppercase tracking-wide text-on-accent shadow-[0_6px_20px_-4px_oklch(0.7_0.19_45/0.55)] ring-2 ring-canvas">
-        <Sparkles size={13} className="shrink-0" /> 이 주의 발견
+      <span className="inline-flex items-center rounded-md border border-line-strong bg-panel px-2.5 py-1 text-xs font-medium text-fg">
+        {label}
       </span>
     </div>
   );

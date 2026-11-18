@@ -37,26 +37,25 @@ export function OpenDataPurposeFilterBar({
     <section
       aria-label={bi("창작 목적별 제공처 필터", "Archive provider filter by creative purpose")}
       data-testid="open-data-purpose-filter-bar"
-      className="relative overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-panel/90 to-card shadow-sm"
+      className="overflow-hidden rounded-xl border border-line bg-panel"
     >
-      <div aria-hidden="true" className="h-0.5 w-full bg-gradient-to-r from-accent via-cool to-accent-2" />
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/65 px-4 py-2.5">
-        <span className="inline-flex items-center gap-1.5 font-display text-[11px] font-extrabold uppercase tracking-[0.08em] text-accent">
-          <Database size={13} aria-hidden="true" />
-          <span>{bi("OPEN ARCHIVE DESK · 공공·박물관 고증 핀보드", "OPEN ARCHIVE DESK · PUBLIC & MUSEUM PINBOARD")}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent">
+          <Database size={14} aria-hidden="true" />
+          <span>{bi("공공·박물관 고증 아카이브", "Public & museum archives")}</span>
         </span>
-        <span className="numeral tnum inline-flex items-center gap-1.5 rounded-full border border-good/35 bg-good/10 px-2.5 py-0.5 text-[11px] font-semibold text-good">
-          <ShieldCheck size={12} aria-hidden="true" />
+        <span className="tabular-nums inline-flex items-center gap-1.5 rounded-md border border-good/35 bg-good/10 px-2.5 py-0.5 text-xs font-medium text-good">
+          <ShieldCheck size={13} aria-hidden="true" />
           <span>
             {bi(
               `활성 아카이브 ${matchCount}/${totalCount}곳 · CC0/레퍼런스 구분`,
-              `${matchCount}/${totalCount} Active Archives · CC0 vs Reference Split`,
+              `${matchCount}/${totalCount} active archives · CC0 vs reference`,
             )}
           </span>
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-1.5">
           {OPEN_DATA_PURPOSE_FILTERS.map((item) => (
             <button
@@ -64,14 +63,14 @@ export function OpenDataPurposeFilterBar({
               type="button"
               aria-pressed={purpose === item.id}
               onClick={() => onSelectPurpose(item.id)}
-              className="inline-flex min-h-11 items-center rounded-full border border-line-strong/70 bg-card/90 px-3.5 text-xs font-semibold text-fg-2 transition-colors hover:border-accent/55 hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-on-accent aria-pressed:shadow-xs"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line bg-canvas px-3 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:font-semibold aria-pressed:text-fg"
             >
               {bi(item.label, item.enLabel)}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-line-strong/75 bg-card/95 px-3.5 focus-within:border-accent/65 lg:w-64">
+          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-canvas px-3 focus-within:border-accent lg:w-64">
             <Search size={15} className="shrink-0 text-fg-3" aria-hidden="true" />
             <span className="sr-only">{bi("제공처·고증 키워드 필터", "Filter archives and research keywords")}</span>
             <input
@@ -86,7 +85,7 @@ export function OpenDataPurposeFilterBar({
                 type="button"
                 aria-label={bi("필터 검색어 지우기", "Clear filter query")}
                 onClick={() => onChangeQuery("")}
-                className="grid size-11 shrink-0 place-items-center rounded-full text-fg-3 hover:bg-raised hover:text-fg"
+                className="grid size-11 shrink-0 place-items-center rounded-lg text-fg-3 hover:bg-raised hover:text-fg"
               >
                 <X size={14} aria-hidden="true" />
               </button>
@@ -96,7 +95,7 @@ export function OpenDataPurposeFilterBar({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-accent/40 bg-accent-soft px-3.5 text-xs font-bold text-accent hover:border-accent"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-line bg-canvas px-3 text-xs font-medium text-fg hover:bg-raised tabular-nums"
             >
               {bi(`필터 초기화 (${matchCount}/${totalCount})`, `Reset (${matchCount}/${totalCount})`)}
             </button>

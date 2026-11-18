@@ -14,6 +14,8 @@ export type ExportBusyKind =
   | "turnaround"
   | "quad-sheet"
   | "webtoon-strip"
+  | "webtoon-reader"
+  | "webtoon-motion-webm"
   | "import"
   | "clipboard-copy"
   | "clipboard-paste";
@@ -23,6 +25,9 @@ export const BUSY_ACTION_LABELS_KO: Readonly<Record<ExportBusyKind, string>> = {
   turnaround: "4방향 설정시트 PNG 저장",
   "quad-sheet": "2×2 종합 설정시트 PNG 저장",
   "webtoon-strip": "세로 4컷 웹툰 스트립 PNG 저장",
+  "webtoon-reader": "모바일 스크롤·오토패닝 미리보기 생성",
+  "webtoon-motion-webm": "9:16 숏폼 WebM 모션 티저 저장",
+  webm: "9:16 숏폼 WebM 모션 티저 저장",
   glb: "GLB 저장",
   psd: "레이어 PSD 저장",
   recipe: "레시피 저장",
@@ -79,6 +84,11 @@ export function formatBusyProgressKo(busy: ExportBusyKind, stepDetail: string | 
       return `2×2 종합 설정시트 내보내는 중…${suffix}`;
     case "webtoon-strip":
       return `세로 4컷 웹툰 콘티 스트립 내보내는 중…${suffix}`;
+    case "webtoon-reader":
+      return `모바일 스크롤·오토패닝 미리보기 합성 중…${suffix}`;
+    case "webtoon-motion-webm":
+    case "webm":
+      return `9:16 숏폼 WebM 모션 티저 인코딩 중…${suffix}`;
     case "clipboard-copy":
       return "클립보드로 레시피 복사 중…";
     case "clipboard-paste":

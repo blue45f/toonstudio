@@ -26,10 +26,14 @@ export function SiteCreationCompass() {
     <aside className="site-creation-compass" aria-label={bi("전문 창작 여정 안내", "Professional creative journey")} data-testid="site-creation-compass">
       <details key={pathname} className="site-creation-compass__details">
         <summary aria-controls={id}>
-          <PenTool size={17} aria-hidden="true" />
-          <span><strong>TOONSTUDIO <span aria-hidden="true">/</span> {direction.chapter}</strong>
-            <span>{bi("이 페이지를 내 창작에 활용하는 방법", "Connect this page with your creative practice")}</span></span>
-          <ChevronDown size={16} aria-hidden="true" />
+          <PenTool size={16} aria-hidden="true" />
+          <span>
+            <strong>
+              {bi("창작 연결", "Creative note")} <span aria-hidden="true">·</span> {bi(direction.chapter, direction.chapterEn)}
+            </strong>
+            <span>{bi("이 페이지를 내 창작에 활용하는 방법", "Connect this page with your creative practice")}</span>
+          </span>
+          <ChevronDown size={15} aria-hidden="true" />
         </summary>
         <div id={id} className="site-creation-compass__brief">
           <div className="site-creation-compass__image"><SiteArtwork purpose={workflowVisualForPath(pathname)} image={direction.image} alt="" sizes="(max-width: 767px) calc(100vw - 58px), 150px" /></div>
