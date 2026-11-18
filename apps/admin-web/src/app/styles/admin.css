@@ -31,6 +31,7 @@ body {
 .admin-shell {
   min-height: 100dvh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   justify-items: center;
   gap: 28px;

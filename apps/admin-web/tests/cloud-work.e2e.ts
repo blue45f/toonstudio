@@ -12,7 +12,7 @@ function sampleTask(id = "TEST-001", title = "검토할 샘플 변경"): Task {
 async function fixture(page: Page, board: Board = emptyBoard()) {
   const state = { board, revision: 0, storedAt: null as string | null, role: "admin", authStatus: 200, getStatus: 200, saveStatus: 200, gets: 0, writes: [] as CloudWorkboardSave[], requests: [] as string[] };
   page.on("request", request => { if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) state.requests.push(`${request.method()} ${new URL(request.url()).pathname}`); });
-  await page.route("**/api/**", route => route.fulfill({ status: 404, json: { message: "이 브라우저 검증에는 외부 실행 API가 없습니다." } }));
+  await page.route(url => url.pathname.startsWith("/api/"), route => route.fulfill({ status: 404, json: { message: "이 브라우저 검증에는 외부 실행 API가 없습니다." } }));
   await page.route("**/api/admin/me", route => route.fulfill({ status: state.authStatus, json: state.authStatus === 200 ? { id: "cloud-admin-test", role: state.role } : { message: "관리자 권한이 만료되었습니다." } }));
   await page.route("**/api/admin/cloud-workboard", async route => {
     if (route.request().method() === "GET") {
