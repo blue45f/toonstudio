@@ -167,6 +167,19 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
       hand: [16, 16, -10],
     },
   },
+  {
+    id: "calling-card-rose",
+    labelKo: "괴도 실링왁스 예고장·장미",
+    genreHintKo: "괴도·집사·추리 예고장 클로즈업 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/calling-card-rose.glb",
+    sha256: "48728a67eb6ba193013e9f20ca6d103d5be6b8fc543235518283e009385e28f3",
+    handPreset: "hand-pose/point",
+    rightArmEulerDeg: {
+      upperArm: [18, 30, 54],
+      lowerArm: [30, 88, -22],
+      hand: [14, 18, -8],
+    },
+  },
 ]);
 
 export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze([
@@ -256,6 +269,13 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     genreHintKo: "학원·청춘·스릴러 옥상 독대 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/rooftop-safety-railing.glb",
     sha256: "f18ff2d59f400a439d9d37efbc20110c5d1340635e4f698344e9df4fc11edb64",
+  },
+  {
+    id: "velvet-display-pedestal",
+    labelKo: "박물관 벨벳 보석 진열대·레이저",
+    genreHintKo: "괴도·집사·미스터리 달빛 진열실 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/velvet-display-pedestal.glb",
+    sha256: "d01c1337934e7bc503ae1508b7dbe50019085c54bd2b598f6bd69fda69dddabd",
   },
 ]);
 

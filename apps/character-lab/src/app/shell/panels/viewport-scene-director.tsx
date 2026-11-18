@@ -1,7 +1,7 @@
 /**
  * 장르별 원클릭 풀세트 씬 디렉터 프리셋 (`viewport-scene-director.tsx`, Unslop 규약 준수):
- * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 · 옥상 황혼 독대 5대 한국·글로벌 웹툰 씬 디렉터
- * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 카메라 구도(더치 틸트 포함) + 발화자/말풍선 도형/강조/효과음 스탬프/다국어(KO·EN·JA) 대사까지 일괄 세팅
+ * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 · 옥상 황혼 독대 · 괴도 달빛 예고장 6대 한국·글로벌 웹툰 씬 디렉터
+ * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 카메라 구도(더치 틸트) + 스크롤 여백 호흡 + 시간대 색온도 무드 + 다국어(KO·EN·JA) 대사까지 일괄 세팅
  * - `상대역 자동 캐스팅` 버튼으로 장르에 어울리는 3D 듀오 상대역 캐릭터·표정·전용 손소품·아이컨택 시선 교환까지 즉시 배치
  * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
  */
@@ -11,6 +11,7 @@ import {
   DEFAULT_WEBTOON_STRIP_CUT_CAMERA_PRESETS,
   DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE,
   DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+  DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
   DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
   DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
 } from "../../../export/webtoon-strip-composer";
@@ -19,6 +20,8 @@ import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../..
 import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 import type {
   WebtoonDialogueLocale,
+  WebtoonJaWritingMode,
+  WebtoonManuscriptMoodId,
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
   WebtoonStripBubbleFontScale,
@@ -29,6 +32,8 @@ import type {
   WebtoonStripCutCameraPresets,
   WebtoonStripDialogueLines,
   WebtoonStripFxLinesKind,
+  WebtoonStripGutterPaceId,
+  WebtoonStripGutterPaces,
   WebtoonStripSfxStamps,
   WebtoonStripSpeakerTarget,
   WebtoonStripSpeakerTargets,
@@ -50,7 +55,8 @@ export type WebtoonSceneDirectorPresetId =
   | "director-noir-interrogation"
   | "director-campus-cafe"
   | "director-murim-awakening"
-  | "director-rooftop-twilight";
+  | "director-rooftop-twilight"
+  | "director-phantom-heist";
 
 export interface WebtoonDirectorDuoCastingSpec {
   readonly partnerId: string;
@@ -73,6 +79,8 @@ export interface WebtoonSceneDirectorPreset {
   readonly toonShaderId: ShaperToonShaderId;
   readonly actingArc: Exclude<WebtoonStripActingArcId, "none">;
   readonly fxLinesKind: WebtoonStripFxLinesKind;
+  readonly manuscriptMood: WebtoonManuscriptMoodId;
+  readonly gutterPaces: WebtoonStripGutterPaces;
   readonly dialogueLines: WebtoonStripDialogueLines;
   readonly dialogueByLocale: Readonly<Record<WebtoonDialogueLocale, WebtoonStripDialogueLines>>;
   readonly bubbleShapes: WebtoonStripBubbleShapes;
@@ -96,6 +104,8 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     toonShaderId: "illumination-rim",
     actingArc: "arc-confident-smirk",
     fxLinesKind: "romance-sparkle",
+    manuscriptMood: "daylight-paper",
+    gutterPaces: ["standard", "dramatic-pause", "standard"],
     dialogueLines: [
       "황실의 검과 왕관, 오늘부로 내가 거둔다.",
       "감히 고개를 들어 내 눈을 마주 봐.",
@@ -148,6 +158,8 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     toonShaderId: "action-hard-cel3",
     actingArc: "arc-thriller-shock",
     fxLinesKind: "focus-radial",
+    manuscriptMood: "midnight-noir",
+    gutterPaces: ["standard", "dramatic-pause", "cliffhanger"],
     dialogueLines: [
       "사건 기록 14페이지, 비어 있던 시간 말인데.",
       "어젯밤 11시, 그 현장에 당신도 있었지?",
@@ -200,6 +212,8 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     toonShaderId: "romance-soft-sdf",
     actingArc: "arc-romance-flutter",
     fxLinesKind: "romance-sparkle",
+    manuscriptMood: "daylight-paper",
+    gutterPaces: ["standard", "standard", "dramatic-pause"],
     dialogueLines: [
       "혹시 아까부터 여기 앉아 있었어?",
       "네가 좋아하는 로스터리 원두로 골라 봤어.",
@@ -252,6 +266,8 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     toonShaderId: "action-hard-cel3",
     actingArc: "arc-awakening-climax",
     fxLinesKind: "speed-diagonal",
+    manuscriptMood: "backlit-awakening",
+    gutterPaces: ["compact", "compact", "cliffhanger"],
     dialogueLines: [
       "봉인된 청운의 검기가 다시 깨어난다.",
       "물러서라, 지금부터는 진검승부다.",
@@ -295,7 +311,7 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
   {
     id: "director-rooftop-twilight",
     labelKo: "옥상 황혼 독대 (헤드폰·스마트폰·옥상 난간)",
-    summaryKo: "무선 네크 헤드폰 + 스마트폰 + 학원 옥상 안전 난간 + 일루미네이션 림 + 더치 틸트 황혼 진실 독대 4컷 연기",
+    summaryKo: "무선 네크 헤드폰 + 스마트폰 + 학원 옥상 안전 난간 + 황혼 3200K 무드 + 더치 틸트 진실 독대 4컷 연기",
     handPropId: "smartphone",
     handSide: "rightHand",
     headPropId: "studio-headphones",
@@ -304,6 +320,8 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
     toonShaderId: "illumination-rim",
     actingArc: "arc-thriller-shock",
     fxLinesKind: "speed-diagonal",
+    manuscriptMood: "twilight-amber",
+    gutterPaces: ["standard", "dramatic-pause", "cliffhanger"],
     dialogueLines: [
       "방과 후 옥상 난간, 발신자 미상의 음성 파일.",
       "학생회 서버에서 지워진 기록을 네가 갖고 있었군.",
@@ -344,6 +362,60 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       partnerHandPropId: "smartphone",
     },
   },
+  {
+    id: "director-phantom-heist",
+    labelKo: "괴도 달빛 예고장 (모노클·예고장·보석 진열대)",
+    summaryKo: "실버 체인 모노클 + 실링왁스 예고장·장미 + 벨벳 보석 진열대 + 심야 7800K 달빛 무드 + 여유·역전 4컷 연기",
+    handPropId: "calling-card-rose",
+    handSide: "rightHand",
+    headPropId: "silver-monocle",
+    stagePropId: "velvet-display-pedestal",
+    sfxStampId: "pat",
+    toonShaderId: "illumination-rim",
+    actingArc: "arc-confident-smirk",
+    fxLinesKind: "focus-radial",
+    manuscriptMood: "midnight-noir",
+    gutterPaces: ["standard", "dramatic-pause", "cliffhanger"],
+    dialogueLines: [
+      "자정 정각, 예고한 푸른 사파이어를 거두러 왔습니다.",
+      "보안 레이저를 전부 통과했다고? 거기 멈춰.",
+      "진품은 이미 제 손안의 장미와 바뀌었거든요.",
+      "다음 보름달 밤에 다시 뵙죠, 형사님.",
+    ],
+    dialogueByLocale: {
+      ko: [
+        "자정 정각, 예고한 푸른 사파이어를 거두러 왔습니다.",
+        "보안 레이저를 전부 통과했다고? 거기 멈춰.",
+        "진품은 이미 제 손안의 장미와 바뀌었거든요.",
+        "다음 보름달 밤에 다시 뵙죠, 형사님.",
+      ],
+      en: [
+        "Midnight sharp. I came for the star sapphire.",
+        "You bypassed every laser grid? Freeze right there.",
+        "The real gem already traded places with this rose.",
+        "Until the next full moon, Detective.",
+      ],
+      ja: [
+        "午前零時ちょうど、予告通り蒼玉を頂きに参上した。",
+        "レーザー網を抜けたのか？そこから動くな。",
+        "本物はすでに、この薔薇と入れ替わっているよ。",
+        "次の満月の夜にまた会おう、刑事さん。",
+      ],
+    },
+    bubbleShapes: ["monologue-box", "shout-burst", "oval", "whisper-dashed"],
+    bubbleFontScales: ["md", "lg", "md", "sm"],
+    sfxStamps: ["ssaa", "pat", "beonjjeok", "dugeun"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    cutCameraPresets: ["low-full", "duo-wide", "dutch-right-face", "high-bust"],
+    duoCasting: {
+      partnerId: "shaper-thriller-detective",
+      side: "right",
+      distanceKey: "talk",
+      stance: "attentive",
+      expression: "shocked",
+      partnerHandPropId: "case-folder",
+    },
+  },
 ]);
 
 export function findWebtoonSceneDirectorPreset(id: string): WebtoonSceneDirectorPreset | null {
@@ -360,6 +432,9 @@ export function resolveDirectorShadingProfile(current: ShadingProfile, toonShade
 export interface StripDirectorState {
   readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
   readonly locale: WebtoonDialogueLocale;
+  readonly jaWritingMode: WebtoonJaWritingMode;
+  readonly manuscriptMood: WebtoonManuscriptMoodId;
+  readonly gutterPaces: WebtoonStripGutterPaces;
   readonly actingArc: WebtoonStripActingArcId;
   readonly bakeStripFx: boolean;
   readonly stripFxLines: WebtoonStripFxLinesKind;
@@ -377,6 +452,9 @@ export interface StripDirectorSession {
   getState(): StripDirectorState;
   update(patch: Partial<StripDirectorState>): void;
   setLocale(locale: WebtoonDialogueLocale): void;
+  setJaWritingMode(mode: WebtoonJaWritingMode): void;
+  setManuscriptMood(mood: WebtoonManuscriptMoodId): void;
+  setGutterPace(gapIndex: 0 | 1 | 2, paceId: WebtoonStripGutterPaceId): void;
   setDialogueLine(cutIndex: 0 | 1 | 2 | 3, text: string): void;
   setBubbleShape(cutIndex: 0 | 1 | 2 | 3, shape: WebtoonStripBubbleShape): void;
   setBubbleFontScale(cutIndex: 0 | 1 | 2 | 3, scale: WebtoonStripBubbleFontScale): void;
@@ -390,6 +468,9 @@ export interface StripDirectorSession {
 export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   activeDirectorId: "",
   locale: "ko",
+  jaWritingMode: "horizontal",
+  manuscriptMood: "daylight-paper",
+  gutterPaces: DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
   actingArc: "none",
   bakeStripFx: false,
   stripFxLines: "focus-radial",
@@ -431,6 +512,24 @@ export function createStripDirectorSession(initial: Partial<StripDirectorState> 
           ? DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE[nextLocale]
           : state.dialogueLines;
       state = { ...state, locale: nextLocale, dialogueLines: nextLines };
+      notify();
+    },
+    setJaWritingMode(mode) {
+      state = { ...state, jaWritingMode: mode };
+      notify();
+    },
+    setManuscriptMood(mood) {
+      state = { ...state, manuscriptMood: mood };
+      notify();
+    },
+    setGutterPace(gapIndex, paceId) {
+      const next: [WebtoonStripGutterPaceId, WebtoonStripGutterPaceId, WebtoonStripGutterPaceId] = [
+        state.gutterPaces[0],
+        state.gutterPaces[1],
+        state.gutterPaces[2],
+      ];
+      next[gapIndex] = paceId;
+      state = { ...state, gutterPaces: next };
       notify();
     },
     setDialogueLine(cutIndex, text) {
@@ -548,7 +647,7 @@ export function ViewportSceneDirectorControls({
         title={
           activeSpec
             ? `${activeSpec.labelKo}: ${activeSpec.summaryKo}`
-            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·카메라 구도·다국어 대사를 한 번에 세팅합니다"
+            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·카메라 구도·스크롤 여백·다국어 대사를 한 번에 세팅합니다"
         }
         onChange={(event) => onSelectDirector(event.target.value as WebtoonSceneDirectorPresetId | "")}
       >

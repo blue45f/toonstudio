@@ -125,6 +125,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
+  const [tankobonGuide, setTankobonGuide] = useState(false);
   const stripDirector = getDefaultStripDirectorSession();
   const activeDirectorId = useSyncExternalStore(
     stripDirector.subscribe,
@@ -863,6 +864,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
     stripDirector.update({
       activeDirectorId: preset.id,
+      manuscriptMood: preset.manuscriptMood,
+      gutterPaces: preset.gutterPaces,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
@@ -908,9 +911,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         engineReady={Boolean(engine)}
         camera={{ framing, inputStyle: cameraInputStyle, onFraming, onResetView, setInputStyle: setCameraInputStyle }}
         composition={{
-          checkerboard, manuscriptGuide, activeYawDeg, activePitchDeg, referenceCut,
+          checkerboard, manuscriptGuide, tankobonGuide, activeYawDeg, activePitchDeg, referenceCut,
           onToggleCheckerboard: () => setCheckerboard((prev) => !prev),
           onToggleManuscriptGuide: () => setManuscriptGuide((prev) => !prev),
+          onToggleTankobonGuide: () => setTankobonGuide((prev) => !prev),
           onSelectTurnaround, onSelectPitch, onLoadReferenceFile, onChangeReferenceOpacity, onChangeReferencePlacement,
           onClearReference: () => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); },
         }}
@@ -964,7 +968,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       <ViewportStage
         containerRef={containerRef}
         canvas={{ generation: canvasGeneration, register: registerCanvas, keyShortcuts: CANVAS_KEY_SHORTCUTS }}
-        backdrop={{ checkerboard, manuscriptGuide, referenceCut }}
+        backdrop={{ checkerboard, manuscriptGuide, tankobonGuide, referenceCut }}
         duoShot={{ duoShot, subjectHeightCm: subjectHeight.heightCm, subjectEyeHeightCm: subjectHeight.eyeHeightCm, subjectLabelKo: subjectHeight.labelKo }}
         mangaFx={mangaFx}
         engineStatus={labState.engine} engineReady={Boolean(engine)} onSelectBackend={selectBackend}

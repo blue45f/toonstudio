@@ -29,6 +29,7 @@ import type { CaptureResult, CapturedDepth, CapturedRaster, LabFailure, PaintLay
 import type { LineArtOptions } from "./line-extract";
 import type {
   WebtoonDialogueLocale,
+  WebtoonJaWritingMode,
   WebtoonSfxStampOption,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
@@ -87,6 +88,7 @@ export interface PsdPlan {
 export interface PsdMangaFxOptions {
   readonly enabled: boolean;
   readonly locale?: WebtoonDialogueLocale;
+  readonly jaWritingMode?: WebtoonJaWritingMode;
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly bubbleShape?: WebtoonStripBubbleShape;
   readonly dialogueText?: string;
@@ -474,6 +476,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
   if (options.mangaFx?.enabled) {
     const fx = options.mangaFx;
     const locale: WebtoonDialogueLocale = fx.locale ?? "ko";
+    const jaWritingMode: WebtoonJaWritingMode = fx.jaWritingMode ?? "horizontal";
     const linesKind: WebtoonStripFxLinesKind = fx.linesKind ?? "focus-radial";
     const bubbleShape: WebtoonStripBubbleShape = fx.bubbleShape ?? "oval";
     const dialogueText = fx.dialogueText ?? "";
@@ -489,6 +492,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
       speakerTarget,
       partnerSide,
       locale,
+      jaWritingMode,
       dialogueText,
       cutIndex: 0,
     });
@@ -499,6 +503,7 @@ export function planCharacterPsd(capture: CaptureResult, paintLayers: readonly P
       speakerTarget,
       partnerSide,
       locale,
+      jaWritingMode,
       cutIndex: 0,
     });
     const sfxRaster = renderTransparentSfxStampLayer(width, height, {

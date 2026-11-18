@@ -153,6 +153,7 @@ export const HAND_PROP_IDS = [
   "aether-blade",
   "imperial-scroll",
   "jade-folding-fan",
+  "calling-card-rose",
 ] as const;
 export type HandPropId = (typeof HAND_PROP_IDS)[number];
 export type HandPropSide = "rightHand" | "leftHand";
@@ -187,6 +188,7 @@ export const STAGE_PROP_IDS = [
   "rofan-throne-dais",
   "noir-interrogation-lamp",
   "rooftop-safety-railing",
+  "velvet-display-pedestal",
 ] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 

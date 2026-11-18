@@ -1,6 +1,7 @@
 /**
  * SHAPER 창작자 뷰포트 구도 매칭 도구(투명 격자 배경 · 원고 컷 언더레이/오버레이 · 5:8 웹툰 원고 안전 프레임 가이드 ·
- * 0°/35°/90°/180° 4방향 시점 바 · 로우/아이레벨/하이앵글 컷 구도 프리셋) 및 온보딩·관절/형상 제어점 SVG 오버레이 보조 컴포넌트.
+ * B6 출판 단행본 재단·도련·내지 안전 가이드 · 0°/35°/90°/180° 4방향 시점 바 · 로우/아이레벨/하이앵글 컷 구도 프리셋) 및
+ * 온보딩·관절/형상 제어점 SVG 오버레이 보조 컴포넌트.
  * 파일명을 소문자 하이픈(`viewport-backdrop-overlay.tsx`)으로 두어 `app/composition.ts`의 최상위 패널 규칙을 지킨다.
  */
 import { useEffect, useId, useRef } from "react";
@@ -55,6 +56,7 @@ export function clampReferenceOpacity(value: number): number {
 export interface ViewportBackdropLayerProps {
   readonly checkerboard: boolean;
   readonly manuscriptGuide?: boolean;
+  readonly tankobonGuide?: boolean;
   readonly referenceCut: ReferenceCutState | null;
 }
 
@@ -80,8 +82,13 @@ const CHECKERBOARD_STYLE: CSSProperties = {
   backgroundPosition: "0 0, 0 12px, 12px -12px, -12px 0",
 };
 
-/** 캔버스 뒤(투명 격자·언더레이) 및 캔버스 위(오버레이·5:8 웹툰 원고 안전 프레임) 구도 매칭 레이어 */
-export function ViewportBackdropLayers({ checkerboard, manuscriptGuide = false, referenceCut }: ViewportBackdropLayerProps) {
+/** 캔버스 뒤(투명 격자·언더레이) 및 캔버스 위(오버레이·5:8 웹툰 안전 프레임·B6 단행본 판형 가이드) 구도 매칭 레이어 */
+export function ViewportBackdropLayers({
+  checkerboard,
+  manuscriptGuide = false,
+  tankobonGuide = false,
+  referenceCut,
+}: ViewportBackdropLayerProps) {
   return (
     <>
       {checkerboard ? <div className="cl-viewport-checkerboard" data-testid="viewport-checkerboard" aria-hidden="true" style={CHECKERBOARD_STYLE} /> : null}
@@ -130,6 +137,34 @@ export function ViewportBackdropLayers({ checkerboard, manuscriptGuide = false, 
           </svg>
         </div>
       ) : null}
+      {tankobonGuide ? (
+        <div
+          className="cl-viewport-tankobon-guide"
+          data-testid="viewport-tankobon-guide"
+          aria-hidden="true"
+          style={{
+            ...LAYER_BASE,
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "48px 16px 24px 16px",
+          }}
+        >
+          <svg
+            viewBox="0 0 640 910"
+            preserveAspectRatio="xMidYMid meet"
+            style={{ width: "100%", height: "100%", maxWidth: "100%", maxHeight: "100%" }}
+          >
+            <rect x="8" y="8" width="624" height="894" fill="none" stroke="rgba(244, 114, 182, 0.52)" strokeWidth="1.5" strokeDasharray="6 4" />
+            <rect x="24" y="24" width="592" height="862" fill="none" stroke="rgba(240, 201, 120, 0.86)" strokeWidth="2.4" />
+            <rect x="64" y="64" width="512" height="782" fill="none" stroke="rgba(239, 233, 222, 0.54)" strokeWidth="1.4" strokeDasharray="10 6" />
+            <text x="68" y="52" fill="rgba(240, 201, 120, 0.92)" fontSize="15" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">
+              B6 단행본 재단선 128×182mm · 내지 안전선
+            </text>
+          </svg>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -138,11 +173,13 @@ export interface ViewportCompositionBarProps {
   readonly engineReady: boolean;
   readonly checkerboard: boolean;
   readonly manuscriptGuide?: boolean;
+  readonly tankobonGuide?: boolean;
   readonly activeYawDeg: number | null;
   readonly activePitchDeg?: number | null;
   readonly referenceCut: ReferenceCutState | null;
   readonly onToggleCheckerboard: () => void;
   readonly onToggleManuscriptGuide?: () => void;
+  readonly onToggleTankobonGuide?: () => void;
   readonly onSelectTurnaround: (yawDeg: 0 | 35 | 90 | 180) => void;
   readonly onSelectPitch?: (pitchDeg: ViewportPitchDeg) => void;
   readonly onLoadReferenceFile: (file: File) => void;
@@ -155,11 +192,13 @@ export function ViewportCompositionBar({
   engineReady,
   checkerboard,
   manuscriptGuide = false,
+  tankobonGuide = false,
   activeYawDeg,
   activePitchDeg = null,
   referenceCut,
   onToggleCheckerboard,
   onToggleManuscriptGuide,
+  onToggleTankobonGuide,
   onSelectTurnaround,
   onSelectPitch,
   onLoadReferenceFile,
@@ -242,6 +281,18 @@ export function ViewportCompositionBar({
           onClick={onToggleManuscriptGuide}
         >
           원고 컷 가이드
+        </button>
+      ) : null}
+      {onToggleTankobonGuide ? (
+        <button
+          type="button"
+          className="cl-viewport-button"
+          data-testid="viewport-toggle-tankobon-guide"
+          aria-pressed={tankobonGuide}
+          title="출판 단행본(B6 128×182mm) 도련(3mm)·재단선·내지 안전 여백 가이드를 표시합니다"
+          onClick={onToggleTankobonGuide}
+        >
+          단행본 판형 가이드
         </button>
       ) : null}
       <button

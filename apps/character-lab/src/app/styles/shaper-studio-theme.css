@@ -426,19 +426,61 @@ input:not(input[type="range"]):user-valid {
   border-radius: 4px;
 }
 
+/* ---------- 한국어 타이포그래피 보호 (keep-all · 1.4 행간 · 이탤릭 배제) ---------- */
+.cl-app h1,
+.cl-app h2,
+.cl-app h3,
+.cl-button,
+.cl-viewport-button,
+.cl-inspector-tab,
+.cl-slot-tab,
+.cl-export-strip-director label {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  font-style: normal;
+  line-height: 1.4;
+}
+
 .cl-export-strip-director {
   display: grid;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 0;
   margin-block: 8px;
-  border-radius: 12px;
-  border: 1px solid var(--shaper-line);
-  background: var(--shaper-panel-2);
+  border-top: 1px solid var(--shaper-line);
+  border-bottom: 1px solid var(--shaper-line);
+  background: transparent;
 }
 
 .cl-export-strip-director select,
 .cl-export-strip-director input[type="text"] {
   border-radius: 6px;
+}
+
+.cl-export-gutter-pace-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cl-export-gutter-pace-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--shaper-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-export-gutter-pace-cell > select {
+  min-height: 28px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid var(--shaper-line-strong);
+  background: var(--shaper-panel-2);
+  color: var(--shaper-fg);
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .cl-export-dialogue-grid {
@@ -453,8 +495,8 @@ input:not(input[type="range"]):user-valid {
   gap: 4px;
   padding: 8px;
   border-radius: 8px;
-  border: 1px solid var(--shaper-line);
-  background: var(--shaper-panel);
+  border: 0;
+  background: var(--shaper-panel-2);
   font-size: 0.75rem;
   color: var(--shaper-muted);
 }
@@ -479,7 +521,7 @@ input:not(input[type="range"]):user-valid {
   padding: 2px 4px;
   border-radius: 4px;
   border: 1px solid var(--shaper-line-strong);
-  background: var(--shaper-panel-2);
+  background: var(--shaper-panel);
   color: var(--shaper-fg);
   font-size: 0.75rem;
   font-weight: 400;
@@ -497,7 +539,7 @@ input:not(input[type="range"]):user-valid {
   padding: 2px 4px;
   border-radius: 4px;
   border: 1px solid var(--shaper-line-strong);
-  background: var(--shaper-panel-2);
+  background: var(--shaper-panel);
   color: var(--shaper-fg);
   font-size: 0.75rem;
   font-weight: 400;
@@ -508,7 +550,7 @@ input:not(input[type="range"]):user-valid {
   min-height: 32px;
   border-radius: 4px;
   border: 1px solid var(--shaper-line-strong);
-  background: var(--shaper-panel-2);
+  background: var(--shaper-panel);
   color: var(--shaper-fg);
   font-size: 0.8125rem;
 }
