@@ -6,6 +6,8 @@ import { join, matchesGlob } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 
+import { validateAdminQaTarget } from "./seed/admin-qa-seed.mjs";
+
 const repositoryRoot = new URL("../", import.meta.url);
 
 function readJson(relativePath) {
@@ -208,14 +210,23 @@ describe("database integration runner CI policy", () => {
     },
   );
 
-  it("관리자 회귀는 bootstrap의 비소유자 역할을 실제 DB 테스트에도 전달한다", () => {
+  it("관리자 회귀는 안전한 테스트 DB와 bootstrap의 비소유자 역할을 실제 DB 테스트에도 전달한다", () => {
     const regression = readYaml(".github/workflows/admin-hardening-regression.yml").jobs["admin-regression"];
     const target = new URL(regression.env.TEST_DATABASE_URL);
     expect(target.hostname).toBe("127.0.0.1");
+    expect(target.pathname).toBe("/toonspectrum_admin_test");
+    expect(regression.env.DATABASE_URL).toBe(regression.env.TEST_DATABASE_URL);
+    expect(regression.services.postgres.env.POSTGRES_DB).toBe(target.pathname.slice(1));
+    expect(regression.services.postgres.options).toContain(`-d ${target.pathname.slice(1)}`);
+    expect(target.username).toBe(regression.services.postgres.env.POSTGRES_USER);
+    expect(validateAdminQaTarget({ ...regression.env, NODE_ENV: "test", TOONSPECTRUM_ADMIN_QA_SEED: "1" }))
+      .toMatchObject({ databaseName: "toonspectrum_admin_test", host: "127.0.0.1" });
     expect(regression.env.TEST_RUNTIME_DATABASE_ROLE).toBe("webdex_runtime");
     expect(regression.env.TEST_RUNTIME_DATABASE_ROLE).not.toBe(target.username);
     const commands = runCommands(regression);
     const bootstrap = commands.findIndex((command) => command.includes("bootstrap-empty-production-database.mjs"));
+    expect(regression.steps.find((step) => step.run === commands[bootstrap]).env.MIGRATION_DATABASE_URL)
+      .toBe(regression.env.TEST_DATABASE_URL);
     expect(commands[bootstrap]).toContain("--execute --allow-loopback");
     expect(commands[bootstrap]).toContain('--runtime-database-role "$TEST_RUNTIME_DATABASE_ROLE"');
     const execute = commands.findIndex((command) => command.includes("pnpm exec vitest run apps/web/src/domains/admin apps/api/src/modules/admin"));

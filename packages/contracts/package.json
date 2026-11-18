@@ -16,6 +16,11 @@
       "import": "./src/ai-operations.ts",
       "default": "./src/ai-operations.ts"
     },
+    "./business-plan": {
+      "types": "./src/business-plan.ts",
+      "import": "./src/business-plan.ts",
+      "default": "./src/business-plan.ts"
+    },
     "./customer-support": {
       "types": "./src/customer-support.ts",
       "import": "./src/customer-support.ts",
@@ -441,6 +446,16 @@
       "types": "./src/studio-linked-3d-correction.ts",
       "import": "./src/studio-linked-3d-correction.ts",
       "default": "./src/studio-linked-3d-correction.ts"
+    },
+    "./admin-nestjs-quality": {
+      "types": "./src/admin-nestjs-quality.ts",
+      "import": "./src/admin-nestjs-quality.ts",
+      "default": "./src/admin-nestjs-quality.ts"
+    },
+    "./admin-nestjs-quality-seed": {
+      "types": "./src/admin-nestjs-quality-seed.ts",
+      "import": "./src/admin-nestjs-quality-seed.ts",
+      "default": "./src/admin-nestjs-quality-seed.ts"
     },
     "./admin-workspace": {
       "types": "./src/admin-workspace/index.ts",

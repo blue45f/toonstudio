@@ -504,7 +504,9 @@ describe("bootstrap SQL and repository contract", () => {
       "0120_studio_role_pipeline_policy",
       "0121_studio_bg3d_six_pass_bundle",
       "0122_admin_workspace",
-      "0123_admin_ai_operations",
+      "0123_admin_business_plan",
+      "0124_admin_nestjs_quality",
+      "0125_admin_ai_operations",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([
@@ -513,6 +515,8 @@ describe("bootstrap SQL and repository contract", () => {
       "scripts/ai-operations-database-contract.mjs",
       "scripts/protected-record-database-contracts.mjs",
       "apps/api/src/platform/database/schema/admin-workspace.schema.ts",
+      "scripts/admin-nestjs-quality-database-contract.mjs",
+      "apps/api/src/platform/database/schema/admin.schema.ts",
       "scripts/production-database-connection.mjs",
       "apps/api/src/platform/database/creator-asset-platform.schema.ts",
       "apps/api/src/platform/database/creator-asset-processing.schema.ts",

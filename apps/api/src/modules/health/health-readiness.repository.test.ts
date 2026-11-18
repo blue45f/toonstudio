@@ -17,6 +17,14 @@ const AI_OPERATIONS_API_LOCAL_RELATIONS = [
   "admin_ai_operations_receipt",
 ] as const;
 
+// Admin README의 미적용 DB 503 계약과 business-plan.integration.test.ts의 실제 GET·저장 실패 경계를 유지한다.
+const BUSINESS_PLAN_API_LOCAL_RELATIONS = [
+  "admin_business_plan",
+  "admin_business_plan_audit",
+  "admin_business_plan_receipt",
+  "admin_business_plan_revision",
+] as const;
+
 const ASSET_PLATFORM_RELATIONS = [
   "creator_asset_artifact",
   "creator_asset_artifact_set",
@@ -68,6 +76,20 @@ function completeSchemaCatalog() {
 }
 
 describe("PostgresHealthReadinessRepository", () => {
+  it.each(["admin_nestjs_quality_board", "admin_nestjs_quality_history"])(
+    "NestJS 검증 보드의 전역 필수 테이블 %s가 없으면 readiness를 거부한다",
+    async (missingRelation) => {
+      expect(REQUIRED_DATABASE_RELATIONS).toContain(missingRelation);
+      const query = vi.fn().mockResolvedValue({ rows: [{
+        ...completeSchemaCatalog(),
+        relationNames: REQUIRED_DATABASE_RELATIONS.filter((relation) => relation !== missingRelation),
+      }] });
+      const repository = new PostgresHealthReadinessRepository({ query } as never);
+
+      await expect(repository.isSchemaReady()).resolves.toBe(false);
+    },
+  );
+
   it.each(ASSET_PLATFORM_RELATIONS)(
     "rejects otherwise complete infrastructure when %s is missing",
     async (missingRelation) => {
@@ -470,8 +492,8 @@ describe("PostgresHealthReadinessRepository", () => {
     );
   });
 
-  it("AI 보드 스키마가 없어도 전역 API readiness의 기존 필수 조건을 유지한다", async () => {
-    for (const relation of AI_OPERATIONS_API_LOCAL_RELATIONS) {
+  it("AI·사업계획서 보드 스키마가 없어도 전역 API readiness의 기존 필수 조건을 유지한다", async () => {
+    for (const relation of [...AI_OPERATIONS_API_LOCAL_RELATIONS, ...BUSINESS_PLAN_API_LOCAL_RELATIONS]) {
       expect(REQUIRED_DATABASE_RELATIONS).not.toContain(relation);
     }
     const query = vi.fn()
@@ -481,7 +503,7 @@ describe("PostgresHealthReadinessRepository", () => {
     expect(query).toHaveBeenCalledTimes(2);
   });
 
-  it("모든 선언된 테이블을 전역 필수 또는 명시된 AI 보드 전용 의존성으로 빠짐없이 추적한다", () => {
+  it("모든 선언된 테이블을 전역 필수 또는 명시된 관리자 보드 전용 의존성으로 빠짐없이 추적한다", () => {
     // db/schema.ts 는 db/schema/ 도메인 모듈들의 배럴이다 — pgTable 선언은 그 디렉터리에 있다.
     const schemaDir = new URL("../../platform/database/schema/", import.meta.url);
     const schemaFiles = [
@@ -558,6 +580,6 @@ describe("PostgresHealthReadinessRepository", () => {
       ...new Set([...schemaRelations, ...migrationRelations]),
     ].sort();
 
-    expect([...REQUIRED_DATABASE_RELATIONS, ...AI_OPERATIONS_API_LOCAL_RELATIONS].sort()).toEqual(declaredRelations);
+    expect([...REQUIRED_DATABASE_RELATIONS, ...AI_OPERATIONS_API_LOCAL_RELATIONS, ...BUSINESS_PLAN_API_LOCAL_RELATIONS].sort()).toEqual(declaredRelations);
   });
 });

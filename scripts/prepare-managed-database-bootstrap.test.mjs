@@ -124,6 +124,8 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(result.sql).toContain("INSERT INTO public.admin_workspace(id) VALUES('toonstudio') ON CONFLICT(id) DO NOTHING");
     expect(result.sql).toContain("INSERT INTO public.admin_ai_operations_board(id) VALUES(1) ON CONFLICT(id) DO NOTHING");
     expect(result.sql.split("INSERT INTO public.admin_ai_operations_board(id)")).toHaveLength(2);
+    expect(result.sql).not.toMatch(/INSERT INTO public\.admin_business_plan(?:_|\s*\()/u);
+    expect(result.sql).not.toMatch(/INSERT INTO public\.admin_nestjs_quality_/u);
     expect(result.sql).not.toContain("chatgpt.com/share/");
     expect(result.sql).not.toMatch(/INSERT INTO public\."?user"?\s/iu);
     expect(() => buildManagedInitialRows(contract, "main")).toThrow(/40자리/u);
@@ -140,6 +142,12 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(sql).toContain('GRANT UPDATE ("revision", "payload", "updated_at") ON TABLE "public".admin_ai_operations_board');
     expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "public".admin_ai_operations_audit');
     expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "public".admin_ai_operations_receipt');
+    for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt"]) {
+      expect(sql.split(`GRANT SELECT, INSERT ON TABLE public.${table} TO`)).toHaveLength(2);
+    }
+    expect(sql).toContain('REVOKE ALL ON FUNCTION public.admin_business_plan_immutable_guard() FROM PUBLIC, "toonspectrum_runtime"');
+    expect(sql.split('GRANT SELECT, INSERT ON TABLE "public".admin_nestjs_quality_board, "public".admin_nestjs_quality_history TO')).toHaveLength(2);
+    expect(sql).not.toMatch(/GRANT UPDATE[^;]*admin_nestjs_quality_history/u);
     expect(sql).toContain("REVOKE ALL ON SCHEMA toonspectrum_ops FROM PUBLIC");
     expect(splitDumpStatements(sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual([]);
   });
@@ -159,6 +167,8 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(bundle.sql).not.toMatch(/DROP SCHEMA|DROP EXTENSION|ALTER SCHEMA|PASSWORD\s+'/iu);
     expect(bundle.verificationSql).not.toMatch(/\b(?:INSERT|UPDATE|DELETE|CREATE)\s+(?:INTO|ALL|ON|TABLE|ROLE)/iu);
     expect(bundle.verificationSql).toContain("Supabase Data API 역할");
+    expect(bundle.verificationSql).toContain("administrator workspace schema");
+    expect(bundle.verificationSql).toContain("NestJS verification board runtime privileges");
     expect(splitDumpStatements(bundle.sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual(["BEGIN", "COMMIT"]);
     expect(bundle.verificationSql.trimEnd()).toMatch(/ROLLBACK;$/u);
     expect(bundle.verificationSql).toContain("set_config('role', current_setting('toonstudio.bootstrap_saved_role'), true)");

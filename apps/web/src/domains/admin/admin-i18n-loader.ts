@@ -52,6 +52,9 @@ registerI18nLocaleEntries("en", paidOperationsI18n.en);
 registerI18nEnglishSourceEntries(paidOperationsI18n.en);
 
 registerI18nLocaleEntries("ko", {
+  "admin.businessPlan.title": "사업계획서·제출 준비",
+  "admin.businessPlan.description": "보완 작업, 주장별 근거, 문서 버전, 멘토 요청과 제출 전 점검을 관리자 전용 보드에서 관리합니다.",
+  "admin.businessPlan.open": "사업계획서 보드 열기",
   "admin.workspace.title": "사업계획·운영 통합 작업실",
   "admin.workspace.description": "사업계획, 클라우드, NestJS, 의존성·CI, AI 운영 자료의 근거와 문서 버전을 함께 관리합니다. 제출 전 점검과 승인 대기 항목을 확인하세요.",
   "admin.workspace.open": "통합 작업실 열기",
@@ -64,6 +67,9 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "admin.businessPlan.title": "Business plan & submission",
+  "admin.businessPlan.description": "Manage revisions, claim evidence, document versions, mentor requests and submission checks in the administrator board.",
+  "admin.businessPlan.open": "Open business plan board",
   "admin.workspace.title": "Business and operations workspace",
   "admin.workspace.description": "Manage evidence and document versions for business planning, cloud, NestJS, dependencies and CI, and AI operations. Review submission checks and pending approvals.",
   "admin.workspace.open": "Open integrated workspace",

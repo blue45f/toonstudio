@@ -1,0 +1,146 @@
+{
+  "schema": "toonstudio.blender-dust-heathaze.v27",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_dust_heathaze_v27.py · Post-Impact Dust & Thermal Heat-Haze SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "dustAndHeatHazeSpec": {
+    "plumeLobeCounts": [
+      3,
+      6,
+      12
+    ],
+    "hazeRefractionRangePct": [
+      8.0,
+      19.0,
+      34.0
+    ],
+    "proxyLodRatio": 0.32
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Dust_HeatHaze_V27",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Reformer_Unslop_V9",
+        "objectCount": 37,
+        "sha256Before": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "sha256After": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Aftermath_Damage_V26",
+        "objectCount": 55,
+        "sha256Before": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "sha256After": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_WindDrape_HalfMirror_V25",
+        "objectCount": 53,
+        "sha256Before": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "sha256After": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-dust-fissure-drift-plume-v27.glb",
+      "aftermathStage": "cracked",
+      "plumeLobeCount": 6,
+      "hazeRefractionPct": 19.0,
+      "proxyLodTriangles": 3904,
+      "bytes": 521452,
+      "sha256": "edb8e3a14fcb637582c9bdee473d110e362156e1d0c0ea29f159276660ac1acf",
+      "triangles": 12200,
+      "vertices": 6332
+    },
+    {
+      "file": "webtoon-heathaze-calm-incense-wisp-v27.glb",
+      "aftermathStage": "intact",
+      "plumeLobeCount": 3,
+      "hazeRefractionPct": 8.0,
+      "proxyLodTriangles": 3293,
+      "bytes": 421160,
+      "sha256": "cd4be1312733360ab63cea553ec0eb756a027483983cef7efbc03c34842a58fb",
+      "triangles": 10292,
+      "vertices": 5332
+    },
+    {
+      "file": "webtoon-heathaze-tempest-aftermath-plume-v27.glb",
+      "aftermathStage": "shattered",
+      "plumeLobeCount": 12,
+      "hazeRefractionPct": 34.0,
+      "proxyLodTriangles": 4548,
+      "bytes": 619212,
+      "sha256": "fb77fcb1ff14d621ef22fb395c853f38d539d3db6272b5f2345d268d61fcf5d8",
+      "triangles": 14212,
+      "vertices": 7402
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-dust-fissure-drift-plume-v27.png",
+      "bytes": 325604,
+      "sha256": "76e20163538e390f542938e8dc8294e7d3d8cf45ca2639dcd090c21bd111bf3d"
+    },
+    {
+      "file": "thumbnails/webtoon-heathaze-calm-incense-wisp-v27.png",
+      "bytes": 348589,
+      "sha256": "ada3ea13a4716d2a2e9b149fbca62ce700b33e2c7f890300b722ba44b7fd6a48"
+    },
+    {
+      "file": "thumbnails/webtoon-heathaze-tempest-aftermath-plume-v27.png",
+      "bytes": 326795,
+      "sha256": "14b3a10e533fab0f7264f4882bc51f163cb1d1e5c545afb9b9ab07fcc6ac4d78"
+    }
+  ]
+}

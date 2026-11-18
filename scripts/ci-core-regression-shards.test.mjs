@@ -132,7 +132,9 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.equal(new Set([...staticOnly, ...routed]).size, all.length);
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
   for (const suite of [
+    "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
@@ -144,6 +146,48 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   for (const name of SHARD_NAMES.filter((name) => name !== "product")) {
     assert.ok(!buildShardVitestArgs(expandGlobTargets(executionTargetsByShard()[name])).includes("--exclude"));
   }
+});
+
+test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 각각 정확히 한 번 실행한다", () => {
+  const module = "apps/api/src/modules/admin-nestjs-quality";
+  const integration = `${module}/admin-nestjs-quality.integration.test.ts`;
+  assert.ok(REQUIRED_VITEST_TARGETS.includes(module), "새 관리자 API 회귀도 모듈 단위로 필수 수집해야 합니다.");
+  assert.ok(REQUIRED_VITEST_TARGETS.includes("apps/admin-web/src/domains/operations/nestjs-quality"),
+    "새 보드 UI 회귀도 기능 디렉터리 단위로 필수 수집해야 합니다.");
+  const execution = executionTargetsByShard();
+  const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
+    const selectors = expandGlobTargets(execution[name]);
+    const args = buildShardVitestArgs(selectors);
+    const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+    return [name, resolveRequiredTargets(selectors).filter((target) => !databaseOnly.includes(target))];
+  }));
+  for (const target of [
+    `${module}/admin-nestjs-quality.test.ts`,
+    `${module}/admin-nestjs-quality.http.test.ts`,
+    "packages/contracts/src/admin-nestjs-quality.test.ts",
+    "scripts/admin-nestjs-quality-database-contract.test.mjs",
+    "apps/admin-web/src/domains/operations/nestjs-quality/NestQualityBoard.test.tsx",
+    "apps/admin-web/src/domains/operations/nestjs-quality/nestjs-quality-api.test.ts",
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), ["product"],
+      `관리자 보드의 권한·입력·DB 계약 회귀는 소유 shard에서 한 번 실행해야 합니다: ${target}`);
+  }
+  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration), "보드의 실제 DB 검증 소유권이 필요합니다.");
+  assert.ok(resolveRequiredTargets(expandGlobTargets(execution.product)).includes(integration));
+  assert.ok(SHARD_NAMES.every((name) => !staticByShard[name].includes(integration)),
+    "실제 DB 시험을 DB 없는 shard에서 skip 성공으로 집계할 수 없습니다.");
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/^ {2}database:\n([\s\S]*?)(?=^ {2}core:\n)/mu)?.[1];
+  assert.ok(database, "보호된 실제 PostgreSQL job이 필요합니다.");
+  const command = database.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(command, "실제 DB job의 Vitest 실행 명령이 필요합니다.");
+  assert.equal(command.split(/\s+/u).filter((argument) => argument === integration).length, 1,
+    "보드 통합 시험은 실제 DB 명령에서 정확히 한 번 실행해야 합니다.");
+  const runner = readFileSync(new URL("./run-postgres-integration-tests.mjs", import.meta.url), "utf8");
+  const manifest = runner.match(/export const POSTGRES_INTEGRATION_SUITES = Object\.freeze\(\[([\s\S]*?)\]\);/u)?.[1];
+  assert.ok(manifest, "일반 PostgreSQL 실행기의 정본 목록이 필요합니다.");
+  assert.equal(manifest.split(`"${integration}"`).length - 1, 1);
 });
 
 test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에서 실행한다", () => {
@@ -196,6 +240,9 @@ test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에
 });
 
 test("통합 관리자 보드의 API·공통 계약·화면 검증을 필수 product에서 실행한다", () => {
+  for (const module of ["apps/api/src/modules/admin-workspace", "packages/contracts/src/admin-workspace", "apps/admin-web/src/domains/workspace"]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(module), `새 기능 회귀를 자동 수집할 모듈 선택자 누락: ${module}`);
+  }
   const selectors = expandGlobTargets(executionTargetsByShard().product);
   const executed = resolveRequiredTargets(selectors);
   const args = buildShardVitestArgs(selectors);
@@ -285,6 +332,52 @@ test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드�
   }
   assert.ok(!executed.includes("apps/api/src/modules/traffic-analytics/traffic-analytics-parity.postgres.test.ts"),
     "opt-in PostgreSQL 비교는 비DB shard에서 실행하지 않는다");
+});
+
+test("세 관리자 보드의 정적 계약은 shard에 유지하고 저장 회귀는 필수 PostgreSQL 작업에서 각각 한 번 실행한다", () => {
+  const product = expandGlobTargets(executionTargetsByShard().product);
+  const resolved = resolveRequiredTargets(product);
+  const args = buildShardVitestArgs(product);
+  const excluded = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const database = workflow.match(/\n {2}database:\n([\s\S]*?)\n {2}core:/u)?.[1];
+  assert.ok(database, "필수 PostgreSQL 작업을 찾을 수 없습니다.");
+  const databaseCommand = database.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(databaseCommand, "실제 DB job의 Vitest 실행 명령이 필요합니다.");
+  const databaseArguments = databaseCommand.split(/\s+/u);
+  for (const { integration, unit, contract } of [
+    {
+      integration: "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
+      unit: "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.test.ts",
+      contract: "packages/contracts/src/admin-nestjs-quality.test.ts",
+    },
+    {
+      integration: "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+      unit: "apps/api/src/modules/admin-workspace/admin-workspace.repository.test.ts",
+      contract: "packages/contracts/src/admin-workspace/admin-workspace.test.ts",
+    },
+    {
+      integration: "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
+      unit: "apps/api/src/modules/business-plan/business-plan.test.ts",
+      contract: "packages/contracts/src/business-plan/business-plan.test.ts",
+    },
+  ]) {
+    assert.ok(targetIsCovered(contract, REQUIRED_VITEST_TARGETS), `공유 계약의 필수 회귀 목록 누락: ${contract}`);
+    const contractSelectors = expandGlobTargets(executionTargetsByShard()[shardForTarget(contract)]);
+    const contractArgs = buildShardVitestArgs(contractSelectors);
+    const contractExcludes = contractArgs.flatMap((arg, index) => arg === "--exclude" ? [contractArgs[index + 1]] : []);
+    assert.ok(targetIsCovered(contract, contractSelectors), `공유 계약의 정적 실행 목록 누락: ${contract}`);
+    assert.ok(!contractExcludes.includes(contract), `공유 계약을 DB lane으로 제외할 수 없습니다: ${contract}`);
+    assert.ok(resolved.includes(unit), `단위 회귀의 필수 실행 누락: ${unit}`);
+    assert.ok(resolved.includes(integration), `통합 회귀의 필수 실행 누락: ${integration}`);
+    assert.ok(targetIsCovered(integration, REQUIRED_VITEST_TARGETS));
+    assert.equal(CORE_DATABASE_VITEST_TARGETS.filter((target) => target === integration).length, 1);
+    assert.equal(excluded.filter((target) => target === integration).length, 1,
+      `DB 없는 실행에서 skip 성공으로 처리할 수 없습니다: ${integration}`);
+    assert.ok(!excluded.includes(unit));
+    assert.equal(databaseArguments.filter((argument) => argument === integration).length, 1,
+      `필수 DB 작업에서 관리자 보드 회귀를 정확히 한 번 실행해야 합니다: ${integration}`);
+  }
 });
 
 test("directory targets remove redundant child execution without reducing coverage", () => {

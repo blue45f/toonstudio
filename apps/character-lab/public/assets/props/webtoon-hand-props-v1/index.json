@@ -39,6 +39,33 @@
       "bytes": 32900,
       "sha256": "d4f7cdf53d5ed31d9b20ae88935f68d94a60093481be9cb3ef48b6c314c2b9ab",
       "triangles": 264
+    },
+    {
+      "id": "imperial-scroll",
+      "labelKo": "황실 칙령·계약 두루마리",
+      "meshName": "TS_Prop_imperial-scroll",
+      "path": "imperial-scroll.glb",
+      "bytes": 23324,
+      "sha256": "77fbd9018fa4f238c75933054ffce0a5edc262fcef229f35fe7cdd6c250a915f",
+      "triangles": 456
+    },
+    {
+      "id": "jade-folding-fan",
+      "labelKo": "청옥 접선 부채",
+      "meshName": "TS_Prop_jade-folding-fan",
+      "path": "jade-folding-fan.glb",
+      "bytes": 33240,
+      "sha256": "a540bacdad39d9234fedc31e7844a548346c94fb45203c8a55ff0bbee3ddc347",
+      "triangles": 252
+    },
+    {
+      "id": "calling-card-rose",
+      "labelKo": "괴도 실링왁스 예고장·장미",
+      "meshName": "TS_Prop_calling-card-rose",
+      "path": "calling-card-rose.glb",
+      "bytes": 21088,
+      "sha256": "48728a67eb6ba193013e9f20ca6d103d5be6b8fc543235518283e009385e28f3",
+      "triangles": 244
     }
   ]
 }

@@ -1,0 +1,170 @@
+{
+  "schema": "toonstudio.blender-genre-expansion.v30",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_genre_expansion_v30.py · Academy, Noir & Hunter Gate Shared-Datum SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "expandedGenreSpec": {
+    "totalSupportedWebtoonGenres": 8,
+    "newGenres": [
+      "academy_rooftop",
+      "noir_detective",
+      "hunter_gate"
+    ],
+    "recommendedInkWidthsPx": [
+      1.5,
+      2.6,
+      2.4
+    ],
+    "sharedDatumHeightsM": [
+      2.4,
+      1.1,
+      0.74,
+      0.18
+    ]
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Genre_Expansion_V30",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Reformer_Unslop_V9",
+        "objectCount": 37,
+        "sha256Before": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "sha256After": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Aftermath_Damage_V26",
+        "objectCount": 55,
+        "sha256Before": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "sha256After": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Duo_EyeLine_OTS_V29",
+        "objectCount": 58,
+        "sha256Before": "31072570ee1cc0a1b63b6399e26af90abc2b42f5989c3340da52759a368b3979",
+        "sha256After": "31072570ee1cc0a1b63b6399e26af90abc2b42f5989c3340da52759a368b3979",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Dust_HeatHaze_V27",
+        "objectCount": 61,
+        "sha256Before": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "sha256After": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_VRM_PoseMannequin_V28",
+        "objectCount": 55,
+        "sha256Before": "ef72025340fc6d64fe7e863f015997182b9cae7fa3730cf504aa560f7d5f546a",
+        "sha256After": "ef72025340fc6d64fe7e863f015997182b9cae7fa3730cf504aa560f7d5f546a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_WindDrape_HalfMirror_V25",
+        "objectCount": 53,
+        "sha256Before": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "sha256After": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-genre-academy-rooftop-corridor-v30.glb",
+      "genreMode": "academy_rooftop",
+      "recommendedInkPx": 1.5,
+      "heightGapCm": 24,
+      "bytes": 411848,
+      "sha256": "1fa6e763e21901b16c3011664cc8522724e9e9a2fb68af14f541810723909cef",
+      "triangles": 10828,
+      "vertices": 5628
+    },
+    {
+      "file": "webtoon-genre-hunter-guild-gate-lobby-v30.glb",
+      "genreMode": "hunter_gate",
+      "recommendedInkPx": 2.4,
+      "heightGapCm": 6,
+      "bytes": 403348,
+      "sha256": "987c0bf42fc9694e722370678b35e346eeef5792fdd4598334d45229f8182455",
+      "triangles": 10460,
+      "vertices": 5422
+    },
+    {
+      "file": "webtoon-genre-noir-venetian-detective-v30.glb",
+      "genreMode": "noir_detective",
+      "recommendedInkPx": 2.6,
+      "heightGapCm": 14,
+      "bytes": 417208,
+      "sha256": "eb84af01245660138c5093a22971bae0e0c0f16b3a909804b5311c8278803ec2",
+      "triangles": 10816,
+      "vertices": 5618
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-genre-academy-rooftop-corridor-v30.png",
+      "bytes": 339436,
+      "sha256": "f241bf4152e5ec1b48c129b09f583b11f55d8f13499d6bb9053db62a8e6fac27"
+    },
+    {
+      "file": "thumbnails/webtoon-genre-hunter-guild-gate-lobby-v30.png",
+      "bytes": 317896,
+      "sha256": "3356fbf0602b0f89a46984e4fded509130d080fee6825f0a8bf5094f6d989ef1"
+    },
+    {
+      "file": "thumbnails/webtoon-genre-noir-venetian-detective-v30.png",
+      "bytes": 322699,
+      "sha256": "9258448e9a95d9e4fc498c858de85732e0261b46526bd27191bf9ec96081abc6"
+    }
+  ]
+}

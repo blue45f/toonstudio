@@ -6,12 +6,14 @@ import { ViewportDuoShotControls } from "./viewport-duo-shot-guide";
 import { ViewportHandPropControls } from "./viewport-hand-prop-controls";
 import { ViewportMangaFxControls, clampMangaFxIntensity } from "./viewport-manga-fx-overlay";
 import { ViewportPresetSelect } from "./viewport-preset-select";
+import { ViewportSceneDirectorControls } from "./viewport-scene-director";
 
 import type { ShaperGizmoMode } from "./shaper-control-points";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ViewportMangaFxState } from "./viewport-manga-fx-overlay";
-import type { CameraFraming } from "../../../contracts";
+import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
+import type { WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
+import type { CameraFraming, DuoPartnerExpressionPreset, DuoPartnerStance, HandPropId } from "../../../contracts";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 
 interface StateControl<T> {
@@ -31,13 +33,26 @@ interface ViewportToolbarProps {
   readonly composition: Omit<ComponentProps<typeof ViewportCompositionBar>, "engineReady">;
   readonly duoShot: {
     readonly state: DuoShotState;
-    readonly set: Dispatch<SetStateAction<DuoShotState>>;
+    readonly update: (updater: (prev: DuoShotState) => DuoShotState) => void;
     readonly summaryKo: string;
+    readonly duo3dSupported: boolean;
+    readonly duo3dBusy: boolean;
     readonly applyEyeContact: () => void;
   };
   readonly mangaFx: {
     readonly state: ViewportMangaFxState;
     readonly set: Dispatch<SetStateAction<ViewportMangaFxState>>;
+    readonly sfxBusy?: boolean;
+    readonly onToggle: () => void;
+    readonly onChangeSfxStamp: (stamp: MangaSfxStampPreset) => void;
+  };
+  readonly director: {
+    readonly engineReady: boolean;
+    readonly busy: boolean;
+    readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+    readonly duoPartnerActive?: boolean;
+    readonly onSelectDirector: (presetId: WebtoonSceneDirectorPresetId | "") => void;
+    readonly onCastDuoPartner?: () => void;
   };
   readonly handProp: ComponentProps<typeof ViewportHandPropControls>;
   readonly overlay: {
@@ -60,7 +75,7 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
 ];
 
 /** 도구막대 표시만 분리하고 상태·엔진 호출·명령 적용은 뷰포트에 둔다. */
-export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, handProp, overlay }: ViewportToolbarProps) {
+export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, director, handProp, overlay }: ViewportToolbarProps) {
   return (
     <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: 8, display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
       <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
@@ -78,19 +93,35 @@ export function ViewportToolbar({ engineReady, camera, composition, duoShot, man
       <ViewportDuoShotControls
         duoShot={duoShot.state}
         summaryKo={duoShot.summaryKo}
-        onToggleDuoShot={() => duoShot.set((prev) => ({ ...prev, enabled: !prev.enabled }))}
-        onChangePartner={(partnerId) => duoShot.set((prev) => ({ ...prev, partnerId }))}
-        onChangeSide={(side) => duoShot.set((prev) => ({ ...prev, side }))}
-        onChangeDistance={(distanceKey) => duoShot.set((prev) => ({ ...prev, distanceKey }))}
+        duo3dSupported={duoShot.duo3dSupported}
+        duo3dBusy={duoShot.duo3dBusy}
+        onToggleDuoShot={() => duoShot.update((prev) => ({ ...prev, enabled: !prev.enabled }))}
+        onChangePartner={(partnerId) => duoShot.update((prev) => ({ ...prev, partnerId }))}
+        onChangeSide={(side) => duoShot.update((prev) => ({ ...prev, side }))}
+        onChangeDistance={(distanceKey) => duoShot.update((prev) => ({ ...prev, distanceKey }))}
         onApplyEyeContact={duoShot.applyEyeContact}
+        onToggleRender3dPartner={() => duoShot.update((prev) => ({ ...prev, render3dPartner: !prev.render3dPartner }))}
+        onChangePartnerStance={(partnerStance: DuoPartnerStance) => duoShot.update((prev) => ({ ...prev, partnerStance }))}
+        onChangePartnerExpression={(partnerExpression: DuoPartnerExpressionPreset) => duoShot.update((prev) => ({ ...prev, partnerExpression }))}
+        onChangePartnerHandProp={(partnerHandPropId: HandPropId | "") => duoShot.update((prev) => ({ ...prev, partnerHandPropId }))}
       />
       <ViewportMangaFxControls
         mangaFx={mangaFx.state}
-        onToggleMangaFx={() => mangaFx.set((prev) => ({ ...prev, enabled: !prev.enabled }))}
+        {...(mangaFx.sfxBusy !== undefined ? { sfxBusy: mangaFx.sfxBusy } : {})}
+        onToggleMangaFx={mangaFx.onToggle}
         onChangeBubblePreset={(bubblePreset) => mangaFx.set((prev) => ({ ...prev, bubblePreset }))}
         onChangeLinesPreset={(linesPreset) => mangaFx.set((prev) => ({ ...prev, linesPreset }))}
+        onChangeSfxStamp={mangaFx.onChangeSfxStamp}
         onChangeDialogueText={(dialogueText) => mangaFx.set((prev) => ({ ...prev, dialogueText }))}
         onChangeIntensity={(intensity) => mangaFx.set((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
+      />
+      <ViewportSceneDirectorControls
+        engineReady={director.engineReady}
+        busy={director.busy}
+        activeDirectorId={director.activeDirectorId}
+        {...(director.duoPartnerActive !== undefined ? { duoPartnerActive: director.duoPartnerActive } : {})}
+        onSelectDirector={director.onSelectDirector}
+        {...(director.onCastDuoPartner ? { onCastDuoPartner: director.onCastDuoPartner } : {})}
       />
       <ViewportHandPropControls {...handProp} />
       <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
