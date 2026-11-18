@@ -22,6 +22,7 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
+import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
@@ -268,6 +269,28 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     });
   };
 
+  const onWebtoonStripPng = (): void => {
+    void run("webtoon-strip", async () => {
+      const engine = requireEngine("webtoon-strip");
+      if (!engine) return;
+      finish(
+        "webtoon-strip",
+        await exportWebtoonVerticalStripPng(
+          engine,
+          {
+            stripWidth: width,
+            includeBubbleSafeZone: true,
+            settleSteps,
+            onProgress: (step, total, labelKo) => {
+              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+            },
+          },
+          { now },
+        ),
+      );
+    });
+  };
+
   const onPsd = (): void => {
     void run("psd", async () => {
       const engine = requireEngine("psd");
@@ -465,6 +488,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
     png: onPng,
     turnaround: onTurnaroundPng,
     "quad-sheet": onQuadSheetPng,
+    "webtoon-strip": onWebtoonStripPng,
     psd: onPsd,
     glb: onGlb,
     recipe: onRecipeSave,
@@ -595,6 +619,15 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           disabled={!engineReady || busy !== null}
         >
           2×2 종합 설정시트 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-strip-png"
+          title="1컷 등장 로우앵글 · 2컷 대화 반측면 · 3컷 감정 클로즈업 · 4컷 여운 하이앵글을 원고 먹선 프레임과 스크롤 호흡 간격·말풍선 안전 여백으로 합성한 세로 웹툰 콘티 스트립 PNG를 저장합니다"
+          onClick={onWebtoonStripPng}
+          disabled={!engineReady || busy !== null}
+        >
+          세로 4컷 웹툰 스트립 PNG 저장
         </button>
         <button type="button" onClick={onGlb} disabled={!engineReady || busy !== null}>
           GLB 저장

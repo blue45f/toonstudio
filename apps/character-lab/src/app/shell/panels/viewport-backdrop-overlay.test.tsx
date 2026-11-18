@@ -99,7 +99,7 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(dispatched.some((cmd) => cmd.type === "expression/set")).toBe(true);
   });
 
-  it("웹툰 2인 투샷·신장차 프리뷰 토글 시 10종 상대역 스탠디·신장차 배지를 표시하고 원클릭 아이컨택 시선 맞춤을 실행한다", () => {
+  it("웹툰 2인 투샷·신장차 프리뷰 토글 시 12종 상대역 스탠디·신장차 배지를 표시하고 원클릭 아이컨택 시선 맞춤을 실행한다", () => {
     const dispatched: LabCommand[] = [];
     renderReadyViewport((cmd) => dispatched.push(cmd));
 
@@ -109,9 +109,9 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(screen.getByTestId("viewport-duo-delta-readout").textContent).toContain("신장차");
 
     const partnerSelect = screen.getByTestId("viewport-duo-partner-select") as HTMLSelectElement;
-    expect(partnerSelect.options.length).toBe(10);
-    fireEvent.change(partnerSelect, { target: { value: "shaper-apocalypse-sniper" } });
-    expect(screen.getByTestId("viewport-duo-partner-figure").getAttribute("data-partner-id")).toBe("shaper-apocalypse-sniper");
+    expect(partnerSelect.options.length).toBe(12);
+    fireEvent.change(partnerSelect, { target: { value: "shaper-thriller-detective" } });
+    expect(screen.getByTestId("viewport-duo-partner-figure").getAttribute("data-partner-id")).toBe("shaper-thriller-detective");
 
     fireEvent.change(screen.getByTestId("viewport-duo-side-select"), { target: { value: "left" } });
     expect(screen.getByTestId("viewport-duo-partner-figure").getAttribute("data-side")).toBe("left");
@@ -120,5 +120,26 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(dispatched).toHaveLength(2);
     expect(dispatched[0]?.type).toBe("pose/set");
     expect(dispatched[1]?.type).toBe("eye-gaze/set");
+  });
+
+  it("웹툰 연출·말풍선 토글 시 대화·외침·독백 말풍선과 집중선·속도선·반짝이 효과선을 실시간 오버레이한다", () => {
+    renderReadyViewport();
+    expect(screen.queryByTestId("viewport-manga-fx-overlay")).toBeNull();
+    fireEvent.click(screen.getByTestId("viewport-toggle-manga-fx"));
+    expect(screen.getByTestId("viewport-manga-fx-overlay")).toBeTruthy();
+    expect(screen.getByTestId("viewport-manga-focus-lines")).toBeTruthy();
+    expect(screen.getByTestId("viewport-manga-speech-bubble").textContent).toContain("여기서부터는 내 구역이야.");
+
+    fireEvent.change(screen.getByTestId("viewport-manga-dialogue-input"), { target: { value: "오늘 원고 마감까지 달려보자!" } });
+    expect(screen.getByTestId("viewport-manga-speech-bubble").textContent).toContain("오늘 원고 마감까지");
+
+    fireEvent.change(screen.getByTestId("viewport-manga-bubble-select"), { target: { value: "shout-burst" } });
+    expect(screen.getByTestId("viewport-manga-speech-bubble")).toBeTruthy();
+
+    fireEvent.change(screen.getByTestId("viewport-manga-lines-select"), { target: { value: "speed-diagonal" } });
+    expect(screen.getByTestId("viewport-manga-speed-lines")).toBeTruthy();
+
+    fireEvent.change(screen.getByTestId("viewport-manga-lines-select"), { target: { value: "romance-sparkle" } });
+    expect(screen.getByTestId("viewport-manga-romance-sparkles")).toBeTruthy();
   });
 });
