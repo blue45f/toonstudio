@@ -78,6 +78,21 @@ describe("StudioBg3dProfessionalReadinessPanel", () => {
     expect(within(details!).getByText("기술 무결성 정보")).toBeTruthy();
   });
 
+  it("surfaces 30fps low-memory protection label on 4GB constrained devices", () => {
+    render(
+      <StudioBg3dProfessionalReadinessPanel
+        readiness={readiness({
+          ...WEBGPU,
+          maxTextureDimension2d: 4096,
+          deviceMemoryGiB: 4,
+        })}
+      />,
+    );
+    const panel = screen.getByTestId("studio-bg3d-professional-readiness");
+    expect(panel.getAttribute("data-gpu-budget")).toBe("constrained");
+    expect(screen.getByText("저메모리 보호 (4096px · 4GB · 30fps)")).toBeTruthy();
+  });
+
   it("announces a renderer failure and authority-preserving recovery", () => {
     render(<StudioBg3dProfessionalReadinessPanel readiness={readiness(
       { ...WEBGPU, webgpu: false },

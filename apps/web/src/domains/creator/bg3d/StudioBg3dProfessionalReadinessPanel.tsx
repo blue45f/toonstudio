@@ -40,7 +40,8 @@ function formatGpuBudgetLabel(summary: StudioBg3dProfessionalRuntimeSummary): st
     : `${summary.maxTextureDimension2d}px`;
   const memPart = summary.deviceMemoryGiB !== null ? ` · ${summary.deviceMemoryGiB}GB` : "";
   if (summary.gpuBudgetStatus === "constrained") {
-    return `저메모리 보호 (${texLabel}${memPart})`;
+    const fpsPart = summary.recommendedTargetFps !== null ? ` · ${summary.recommendedTargetFps}fps` : "";
+    return `저메모리 보호 (${texLabel}${memPart}${fpsPart})`;
   }
   return `${texLabel}${memPart}`;
 }

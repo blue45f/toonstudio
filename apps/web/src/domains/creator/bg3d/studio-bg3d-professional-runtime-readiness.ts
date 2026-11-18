@@ -151,6 +151,8 @@ export interface StudioBg3dProfessionalRuntimeSummary {
   readonly maxTextureDimension2d: number | null;
   readonly deviceMemoryGiB: number | null;
   readonly gpuBudgetStatus: StudioBg3dGpuBudgetStatus;
+  readonly recommendedMaxDpr: 1.25 | 2 | null;
+  readonly recommendedTargetFps: 30 | 60 | null;
 }
 
 export interface StudioBg3dProfessionalRuntimeReadiness {
@@ -252,6 +254,18 @@ function summary(
       : null,
     deviceMemoryGiB: capabilities?.deviceMemoryGiB ?? null,
     gpuBudgetStatus: resolveGpuBudgetStatus(capabilities),
+    recommendedMaxDpr:
+      resolveGpuBudgetStatus(capabilities) === "constrained"
+        ? 1.25
+        : resolveGpuBudgetStatus(capabilities) === "optimal"
+          ? 2
+          : null,
+    recommendedTargetFps:
+      resolveGpuBudgetStatus(capabilities) === "constrained"
+        ? 30
+        : resolveGpuBudgetStatus(capabilities) === "optimal"
+          ? 60
+          : null,
   });
 }
 

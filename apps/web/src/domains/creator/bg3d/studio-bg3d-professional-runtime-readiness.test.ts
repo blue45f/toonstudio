@@ -93,6 +93,8 @@ describe("Studio BG3D professional runtime readiness", () => {
       maxTextureDimension2d: 8192,
       deviceMemoryGiB: 8,
       gpuBudgetStatus: "optimal",
+      recommendedMaxDpr: 2,
+      recommendedTargetFps: 60,
     });
     expect(result.summary.enabledPassCount).toBeGreaterThanOrEqual(8);
   });
@@ -109,6 +111,8 @@ describe("Studio BG3D professional runtime readiness", () => {
       maxTextureDimension2d: 4096,
       deviceMemoryGiB: 4,
       gpuBudgetStatus: "constrained",
+      recommendedMaxDpr: 1.25,
+      recommendedTargetFps: 30,
     });
   });
 
