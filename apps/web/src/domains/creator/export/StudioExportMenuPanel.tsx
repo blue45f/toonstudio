@@ -1,10 +1,7 @@
 import { FileImage, FileText, Layers, Loader2, Scissors, Send } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  publishStudioExportPrintBoxMm,
-  publishStudioExportResolutionDpi,
-} from "../render/studio-raster-resolution-metadata";
+import { publishStudioExportPrintBoxMm, publishStudioExportResolutionDpi } from "../render/studio-raster-resolution-metadata";
 import { CONTACT_SHEET_PAGE_PRESETS, contactSheetResultMessage, DEFAULT_CONTACT_SHEET_COLUMNS, DEFAULT_CONTACT_SHEET_ROWS, exportContactSheetPdf } from "../studio-pdf-contact-sheet";
 import type { WatermarkSettings } from "../studio-watermark";
 import { resolveStudioCbzWarning, resolveStudioInterchangeExportErrorMessage, resolveStudioOpenRasterWarning } from "./studio-interchange-display-message";
@@ -13,22 +10,10 @@ import { frozenStatusText } from "../studio-frozen-status-i18n";
 import { resolveStudioPsdExportErrorFromCause, resolveSvgExportSkipLabel } from "../status-i18n/studio-producer-error-i18n-exports";
 import { resolveStudioPdfVectorErrorFromCause } from "../status-i18n/studio-producer-error-i18n-exports-raster";
 
-import {
-  loadStudioPsdExportModule,
-  loadStudioSvgExportModule,
-  preloadStudioPsdExportModule,
-  preloadStudioSvgExportModule,
-} from "./studio-document-export-loaders";
-import {
-  canvasToBlob,
-  downloadBlob,
-  exportQuality,
-  type ExportFormat,
-} from "./studio-export";
-import {
-  readStudioExportGeometryDraft,
-  writeStudioExportGeometryDraft,
-} from "./studio-export-geometry-draft";
+import { loadStudioPsdExportModule, loadStudioSvgExportModule, preloadStudioPsdExportModule, preloadStudioSvgExportModule } from "./studio-document-export-loaders";
+import { canvasToBlob, downloadBlob, exportQuality, type ExportFormat } from "./studio-export";
+import { readStudioExportGeometryDraft, writeStudioExportGeometryDraft } from "./studio-export-geometry-draft";
+import { StudioExportEpubAndShieldHost } from "./StudioExportEpubAndShieldHost";
 import {
   planMultiPageExportCapture,
   preflightStudioExportPackage,
@@ -1452,6 +1437,14 @@ export function StudioExportMenuPanel({
       <StudioExportBookLayoutSection
         bookLayoutSpec={bookLayoutSpec}
         setBookLayoutSpec={setBookLayoutSpec}
+      />
+
+      <StudioExportEpubAndShieldHost
+        title={exportTitle}
+        pageCount={exportRangeCount}
+        disabled={!packagePreflight.canExport || isExporting || pdfBusy || presetBusy}
+        capturePages={() => capturePagesForPreset("all")}
+        setPdfPrintSpec={setPdfPrintSpec}
       />
 
       {/* 선택 범위 페이지 → PDF 한 파일 — JPG(품질 92%)로 담는 규격 무관 백업·제출·공유용. */}

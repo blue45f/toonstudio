@@ -6,30 +6,31 @@
  */
 
 import { Droplets } from "lucide-react";
-import { useId } from "react";
+import { lazy, Suspense, useId } from "react";
 
-import { BG_PRESETS, CANVAS_W, type BgPreset } from "./studio-assets";
+import { BG_PRESETS, CANVAS_W } from "./studio-assets";
 import { GRADIENT_PRESETS, gradientToBgGrad } from "./studio-gradients";
 import { normalizeSurfaceColor, surfaceGradientsMatch } from "./studio-inspector-surface-selection";
 import { MAGIC_RESIZE_DEFAULT_STRATEGY } from "./studio-magic-resize";
-import {
-  STUDIO_TEMPLATE_GUTTER_MAX,
-  STUDIO_TEMPLATE_GUTTER_MIN,
-  STUDIO_TEMPLATE_GUTTER_STEP,
-  type StudioTemplateGutterUnavailableReason,
-} from "./studio-template-gutter-layout";
+import { STUDIO_TEMPLATE_GUTTER_MAX, STUDIO_TEMPLATE_GUTTER_MIN, STUDIO_TEMPLATE_GUTTER_STEP } from "./studio-template-gutter-layout";
 import { StudioInspectorSection } from "./StudioInspectorSection";
 import { StudioMagicResizePanel } from "./StudioMagicResizePanel";
 import { StudioPaperSurfacePicker } from "./StudioPaperSurfacePicker";
 import { StudioPercentGuideControls } from "./StudioPercentGuideControls";
 
 import type { PaperGrainKind } from "./brush/studio-paper-texture";
+import type { BgPreset } from "./studio-assets";
 import type { MagicResizePreset, MagicResizeStrategy } from "./studio-magic-resize";
+import type { StudioTemplateGutterUnavailableReason } from "./studio-template-gutter-layout";
 
 import { useT } from "@/shared/lib/i18n";
 
 import "./studio-panel-status-i18n-r3c06";
 import { cn } from "@/shared/lib/utils";
+
+const StudioShiftDrawingSection = lazy(() =>
+  import("./page/StudioShiftDrawingSection").then((m) => ({ default: m.StudioShiftDrawingSection })),
+);
 
 export interface StudioInspectorUserGuide {
   readonly id: string;
@@ -133,50 +134,16 @@ const addGuideClass =
   "min-h-9 flex-1 cursor-pointer rounded border border-line bg-card text-[0.68rem] font-semibold text-fg transition-colors hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 pointer-coarse:min-h-11";
 
 export function StudioInspectorCanvasControls({
-  background,
-  backgroundGradient,
-  canvasHeight,
-  controlsDisabled,
-  controlsDisabledReason,
-  showAlignmentGuides,
-  gridSize,
-  hidden,
-  magicResizeStrategy,
-  masterEditMode,
-  panelGutter,
-  panelId,
-  panelLabelledBy,
-  paperGrainKind,
-  paperGrainVisible,
-  showGrid,
-  showWebtoonGuides,
-  snapEnabled,
-  templateGutterUnavailableReason,
-  userGuides,
-  webtoonGuides,
-  webtoonTheme,
-  onAddUserGuide,
-  onApplyBackgroundPreset,
-  onApplyMagicResizePreset,
-  onBackgroundChange,
-  onCanvasHeightDelta,
-  onClearUserGuides,
-  onDeleteUserGuide,
-  onGradientChange,
-  onGridSizeChange,
-  onMagicResizeStrategyChange,
-  onMoveUserGuide,
-  onOpenBackgroundEditor,
-  onPanelGutterChange,
-  onPaperGrainKindChange,
-  onPaperGrainVisibleChange,
-  onApplyPaperTintBackground,
-  onShowAlignmentGuidesChange,
-  onShowGridChange,
-  onShowWebtoonGuidesChange,
-  onSnapEnabledChange,
-  onWarmWebtoonGuides,
-  onWebtoonThemeChange,
+  background, backgroundGradient, canvasHeight, controlsDisabled, controlsDisabledReason,
+  showAlignmentGuides, gridSize, hidden, magicResizeStrategy, masterEditMode,
+  panelGutter, panelId, panelLabelledBy, paperGrainKind, paperGrainVisible,
+  showGrid, showWebtoonGuides, snapEnabled, templateGutterUnavailableReason, userGuides,
+  webtoonGuides, webtoonTheme, onAddUserGuide, onApplyBackgroundPreset, onApplyMagicResizePreset,
+  onBackgroundChange, onCanvasHeightDelta, onClearUserGuides, onDeleteUserGuide, onGradientChange,
+  onGridSizeChange, onMagicResizeStrategyChange, onMoveUserGuide, onOpenBackgroundEditor,
+  onPanelGutterChange, onPaperGrainKindChange, onPaperGrainVisibleChange,
+  onApplyPaperTintBackground, onShowAlignmentGuidesChange, onShowGridChange,
+  onShowWebtoonGuidesChange, onSnapEnabledChange, onWarmWebtoonGuides, onWebtoonThemeChange,
 }: StudioInspectorCanvasControlsProps) {
   const t = useT();
   const panelGutterReasonId = useId();
@@ -574,6 +541,16 @@ export function StudioInspectorCanvasControls({
           ))}
         </div>
       </StudioInspectorSection>
+
+      <Suspense fallback={null}>
+        <StudioShiftDrawingSection
+          canvasWidth={CANVAS_W}
+          canvasHeight={canvasHeight}
+          elements={[]}
+          disabled={controlsDisabled}
+          onCanvasHeightChange={(nextHeight) => onCanvasHeightDelta(nextHeight - canvasHeight)}
+        />
+      </Suspense>
     </div>
   );
 }

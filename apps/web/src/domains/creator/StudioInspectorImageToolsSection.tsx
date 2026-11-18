@@ -1,63 +1,22 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 
 import { isStudioAiConfigured } from "./ai/studio-ai-client";
 import { DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS } from "./studio-advanced-fill-settings";
-import {
-  isCropRectNoop,
-  initialCropRect,
-  cropAspectRatio,
-  applyCropAspect,
-} from "./studio-crop";
+import { isCropRectNoop, initialCropRect, cropAspectRatio, applyCropAspect } from "./studio-crop";
 import { uid } from "./studio-id";
+import { executeStudioInspectorArmedChange, executeStudioInspectorArmedToggle } from "./studio-inspector-tool-transition";
+import { LIQUIFY_RADIUS_RANGE, LIQUIFY_STRENGTH_RANGE } from "./studio-liquify-contract";
 import {
-  executeStudioInspectorArmedChange,
-  executeStudioInspectorArmedToggle,
-} from "./studio-inspector-tool-transition";
-import {
-  LIQUIFY_RADIUS_RANGE,
-  LIQUIFY_STRENGTH_RANGE,
-} from "./studio-liquify-contract";
-import {
-  StudioAiColorizePanel,
-  StudioOnnxColorizePanel,
-  StudioOnnxAnimeStylePanel,
-  StudioOnnxUpscalePanel,
-  StudioOnnxLineExtractPanel,
-  StudioColorPalettePanel,
-  StudioFloodFillPanel,
-  StudioAutoColorHintsPanel,
-  StudioLineCleanupPanel,
-  StudioImageAdjustmentsPanel,
-  StudioSelectionToolsPanel,
-  StudioQuickMaskPanel,
-  StudioSmudgePanel,
-  StudioDodgeBurnPanel,
-  StudioWetMixPanel,
-  StudioLiquifyPanel,
-  StudioHealClonePanel,
-  StudioHistoryBrushPanel,
-  StudioLayerMaskPanel,
-  StudioFilterMaskPanel,
-  StudioCropPanel,
-  StudioPuppetWarpPanel,
+  StudioAiColorizePanel, StudioOnnxColorizePanel, StudioOnnxAnimeStylePanel, StudioOnnxUpscalePanel,
+  StudioOnnxLineExtractPanel, StudioColorPalettePanel, StudioFloodFillPanel, StudioAutoColorHintsPanel,
+  StudioLineCleanupPanel, StudioImageAdjustmentsPanel, StudioSelectionToolsPanel, StudioQuickMaskPanel,
+  StudioSmudgePanel, StudioDodgeBurnPanel, StudioWetMixPanel, StudioLiquifyPanel, StudioHealClonePanel,
+  StudioHistoryBrushPanel, StudioLayerMaskPanel, StudioFilterMaskPanel, StudioCropPanel, StudioPuppetWarpPanel,
 } from "./studio-page-lazy-ui";
+import { isPuppetWarpNoop, removePuppetPin, resetPuppetPinPositions } from "./studio-puppet-warp";
 import {
-  isPuppetWarpNoop,
-  removePuppetPin,
-  resetPuppetPinPositions,
-} from "./studio-puppet-warp";
-import {
-  setSelectionFeather,
-  toggleSelectionInvert,
-  emptyPixelSelection,
-  removeLastSubpath,
-  selectAllPixels,
-  expandContractSelection,
-  rotateSelection,
-  flipSelection,
-  translateSelection,
-  scaleSelection,
-  isSelectionUsable,
+  setSelectionFeather, toggleSelectionInvert, emptyPixelSelection, removeLastSubpath, selectAllPixels,
+  expandContractSelection, rotateSelection, flipSelection, translateSelection, scaleSelection, isSelectionUsable,
 } from "./studio-selection-tools";
 import { StudioBgRemoveButton } from "./StudioBgRemoveButton";
 import { StudioRasterVectorizeButton } from "./StudioRasterVectorizeButton";
@@ -65,15 +24,15 @@ import { StudioAiColorizeExtras } from "./ai/StudioAiColorizeExtras";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 import { StudioMagicWandPanel } from "./StudioMagicWandPanel";
 import { StudioSelectionWorkbenchPanel } from "./StudioSelectionWorkbenchPanel";
-import {
-  StudioRasterToolRecoveryPanel,
-  StudioInspectorFilterLauncher,
-  StudioInspectorPixelSelectionLauncher,
-} from "./StudioRasterToolRecoveryPanel";
+import { StudioRasterToolRecoveryPanel, StudioInspectorFilterLauncher, StudioInspectorPixelSelectionLauncher } from "./StudioRasterToolRecoveryPanel";
 
 import type { El } from "./studio-element-model";
 import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
 import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
+
+const StudioAdvancedRasterTransformSection = lazy(() =>
+  import("./transform/StudioAdvancedRasterTransformSection").then((m) => ({ default: m.StudioAdvancedRasterTransformSection })),
+);
 
 
 export function StudioInspectorSelectedImageTools({
@@ -969,6 +928,13 @@ export function StudioInspectorSelectedImageTools({
                               setPuppetWarpActive(false);
                               setPuppetWarpPins([]);
                             }}
+                          />
+                          <StudioAdvancedRasterTransformSection
+                            imageWidth={selected.width}
+                            imageHeight={selected.height}
+                            imageSrc={selected.src}
+                            onCommitImageSrc={(src) => patchEl(selected.id, { src })}
+                            disabled={pixelBusy || puppetWarpBusy}
                           />
                         </>
                       ) : (

@@ -1,13 +1,20 @@
 import { Check } from "lucide-react";
+import { lazy, Suspense, useState, type ReactElement } from "react";
 
+import {
+  DEFAULT_STUDIO_ADVANCED_ERASER_SETTINGS,
+  type StudioAdvancedEraserSettings,
+} from "./brush/studio-eraser-advanced-plan";
 import {
   STUDIO_EASE,
   STUDIO_FOCUS_RING,
 } from "./studio-panel-ui";
 
-import type { ReactElement } from "react";
-
 import { cn } from "@/shared/lib/utils";
+
+const StudioEraserAdvancedSection = lazy(() =>
+  import("./brush/StudioEraserAdvancedSection").then((m) => ({ default: m.StudioEraserAdvancedSection })),
+);
 
 export type StudioEraserQuickPickerId =
   | "standard-eraser"
@@ -19,6 +26,9 @@ export interface StudioEraserQuickPickerProps {
   className?: string;
   /** Accessible name for the reusable desktop popover or mobile sheet group. */
   ariaLabel?: string;
+  /** 선택적 고급 지우개 설정 (자 스냅 · 여러 레이어 지우기 · 부드러운/거친/다이나믹 감도). */
+  advancedSettings?: Partial<StudioAdvancedEraserSettings> | null;
+  onAdvancedSettingsChange?: (next: StudioAdvancedEraserSettings) => void;
 }
 
 interface StudioEraserQuickOption {
@@ -127,7 +137,20 @@ export function StudioEraserQuickPicker({
   onSelect,
   className,
   ariaLabel = "지우개 종류 빠른 선택",
+  advancedSettings,
+  onAdvancedSettingsChange,
 }: StudioEraserQuickPickerProps): ReactElement {
+  const [fallbackAdvanced, setFallbackAdvanced] = useState<StudioAdvancedEraserSettings>(
+    DEFAULT_STUDIO_ADVANCED_ERASER_SETTINGS,
+  );
+  const resolvedAdvanced = advancedSettings ?? fallbackAdvanced;
+  const handleAdvancedChange = (next: StudioAdvancedEraserSettings): void => {
+    if (advancedSettings === undefined) {
+      setFallbackAdvanced(next);
+    }
+    onAdvancedSettingsChange?.(next);
+  };
+
   return (
     <div
       role="group"
@@ -196,6 +219,13 @@ export function StudioEraserQuickPicker({
           </button>
         );
       })}
+
+      <Suspense fallback={null}>
+        <StudioEraserAdvancedSection
+          advancedSettings={resolvedAdvanced}
+          onAdvancedSettingsChange={handleAdvancedChange}
+        />
+      </Suspense>
     </div>
   );
 }

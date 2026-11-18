@@ -1,6 +1,6 @@
 import { Activity, ChevronDown, Shuffle, Sparkles, Waves } from "lucide-react";
 
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 
 import {
   findStudioBrushGrainSourceEntryV1,
@@ -27,6 +27,10 @@ import type {
 
 import { SwitchIndicator } from "@/shared/components/ui/switch";
 import { cn } from "@/shared/lib/utils";
+
+const StudioBrushAdvancedCspSection = lazy(() =>
+  import("./StudioBrushAdvancedCspSection").then((m) => ({ default: m.StudioBrushAdvancedCspSection })),
+);
 
 interface StudioBrushDynamicsControlsProps {
   settings: NormalizedStudioBrushDynamicsSettings;
@@ -727,6 +731,22 @@ export function StudioBrushColorDynamicsControls({
             )
           }
         />
+      </div>
+      <div className="border-t border-line/70 p-2">
+        <Suspense fallback={null}>
+          <StudioBrushAdvancedCspSection
+            value={settings.cspBrushExtensions}
+            onChange={(cspBrushExtensions) => {
+              const next = { ...settings };
+              if (cspBrushExtensions === undefined) {
+                delete next.cspBrushExtensions;
+              } else {
+                next.cspBrushExtensions = cspBrushExtensions;
+              }
+              onSettingsChange(next);
+            }}
+          />
+        </Suspense>
       </div>
     </details>
   );

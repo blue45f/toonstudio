@@ -15,11 +15,15 @@
 import { FlipHorizontal2, PersonStanding, Pin, RotateCcw, Search, X } from "lucide-react";
 import { useMemo, useState, type ReactElement } from "react";
 
-import { StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
+import { STUDIO_HAND_PRESETS } from "../studio-hand-pose-scanner";
+import { STUDIO_FOCUS_RING, StudioSectionHeader, StudioToggleChip } from "../studio-panel-ui";
+import { StudioHandPosePanel } from "../StudioHandPosePanel";
 import {
   STUDIO_MANNEQUIN_POSE_CATEGORIES,
   type StudioMannequinPoseCategory,
 } from "./studio-mannequin-poses";
+
+import type { StudioHandPoseData } from "../studio-hand-pose-scanner";
 import {
   clearMannequinPosePresetRecent,
   readMannequinPosePresetFavorites,
@@ -97,6 +101,11 @@ export interface StudioMannequinPoseSectionProps {
   readonly applyDisabled?: boolean;
   readonly onMirror: () => void;
   readonly onResetJoints: () => void;
+  /** 손 포즈 스캐너·프리셋 패널 외부 제어 상태(미지정 시 내부 상태 사용). */
+  readonly handPose?: StudioHandPoseData;
+  readonly onHandPoseChange?: (pose: StudioHandPoseData) => void;
+  readonly handWebcamActive?: boolean;
+  readonly onToggleHandWebcam?: () => void;
 }
 
 export function StudioMannequinPoseSection({
@@ -107,8 +116,16 @@ export function StudioMannequinPoseSection({
   applyDisabled = false,
   onMirror,
   onResetJoints,
+  handPose,
+  onHandPoseChange,
+  handWebcamActive,
+  onToggleHandWebcam,
 }: StudioMannequinPoseSectionProps): ReactElement {
   const [query, setQuery] = useState("");
+  const [localHandPose, setLocalHandPose] = useState<StudioHandPoseData>(
+    () => STUDIO_HAND_PRESETS[0]!.pose,
+  );
+  const [localHandWebcam, setLocalHandWebcam] = useState(false);
   const [source, setSource] = useState<SourceFilter>("all");
   const [figures, setFigures] = useState<FiguresFilter>("all");
   const [mannequinFavorites, setMannequinFavorites] = useState<string[]>(() =>
@@ -471,6 +488,34 @@ export function StudioMannequinPoseSection({
           ? `적용된 포즈: ${lastApplied.label} — 위 되돌리기 버튼으로 이전 포즈로 돌아갈 수 있습니다.`
           : "아직 적용된 포즈가 없습니다. 카드를 클릭해 보세요."}
       </p>
+
+      <details className="rounded-xl border border-line bg-card/60 p-1.5 [word-break:keep-all]">
+        <summary
+          className={`flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-xs font-bold text-fg select-none hover:bg-raised/80 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none ${STUDIO_FOCUS_RING}`}
+        >
+          <span>손 포즈 프리셋</span>
+          <span className="text-[0.68rem] font-normal tabular-nums text-fg-3">
+            5손가락 세부 각도·스캐너
+          </span>
+        </summary>
+        <div className="px-2 pb-2 pt-1.5">
+          <StudioHandPosePanel
+            handPose={handPose ?? localHandPose}
+            onHandPoseChange={(nextPose) => {
+              setLocalHandPose(nextPose);
+              onHandPoseChange?.(nextPose);
+            }}
+            webcamActive={handWebcamActive ?? localHandWebcam}
+            onToggleWebcam={() => {
+              if (onToggleHandWebcam) {
+                onToggleHandWebcam();
+                return;
+              }
+              setLocalHandWebcam((prev) => !prev);
+            }}
+          />
+        </div>
+      </details>
     </div>
   );
 }

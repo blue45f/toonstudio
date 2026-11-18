@@ -8,6 +8,7 @@
  * node 테스트에서 가짜로 대체할 수 있다. 이 모듈은 이미 lazy한 Frame Animation 패널 청크
  * 뒤에만 로드된다(studio-frame-animation-export를 통해서만 재수출).
  */
+import { muxAnimatedWebpFrames } from "../animation/studio-webp-anim-muxer";
 import { assembleApng, isApngEncodeCancelled } from "../studio-apng-encoder";
 import {
   encodeGif,
@@ -23,11 +24,12 @@ import type { MotionCutImage } from "./studio-motion-export";
 export { GIF_DITHER_PRESETS } from "../studio-gif-encoder";
 export type { GifDitherMode } from "../studio-gif-encoder";
 
-export type FrameAnimMediaFormat = "apng" | "gif";
+export type FrameAnimMediaFormat = "apng" | "gif" | "webp";
 
 export const FRAME_ANIM_MEDIA_MIME: Record<FrameAnimMediaFormat, string> = {
   gif: "image/gif",
   apng: "image/apng",
+  webp: "image/webp",
 };
 
 export interface FrameAnimMediaProgress {
@@ -56,6 +58,7 @@ export interface FrameAnimMediaCanvasLike {
 export interface FrameAnimMediaDeps {
   createCanvas(width: number, height: number): FrameAnimMediaCanvasLike;
   canvasToPngBytes(canvas: FrameAnimMediaCanvasLike): Promise<Uint8Array>;
+  canvasToWebpBytes?(canvas: FrameAnimMediaCanvasLike, quality?: number): Promise<Uint8Array>;
   yieldToUi(): Promise<void>;
 }
 
@@ -77,6 +80,18 @@ export function createDefaultFrameAnimMediaDeps(): FrameAnimMediaDeps {
           }
           blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), reject);
         }, "image/png");
+      });
+    },
+    canvasToWebpBytes(canvas, quality = 0.92) {
+      const element = canvas as unknown as HTMLCanvasElement;
+      return new Promise((resolve, reject) => {
+        element.toBlob((blob) => {
+          if (!blob || blob.type !== "image/webp") {
+            reject(new Error("이 브라우저는 WebP 프레임 인코딩을 지원하지 않아요. APNG나 GIF를 선택해주세요."));
+            return;
+          }
+          blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), reject);
+        }, "image/webp", quality);
       });
     },
     yieldToUi() {
@@ -235,6 +250,43 @@ async function runFrameAnimMediaExport(
         blob: new Blob([bytes], { type: FRAME_ANIM_MEDIA_MIME.gif }),
         mimeType: FRAME_ANIM_MEDIA_MIME.gif,
         byteLength: bytes.byteLength,
+      };
+    }
+
+    if (request.format === "webp") {
+      const toWebp = deps.canvasToWebpBytes;
+      if (!toWebp) {
+        throw new Error("WebP 프레임 인코더를 사용할 수 없어요.");
+      }
+      const webpFrames: { webpBytes: Uint8Array; durationMs: number }[] = [];
+      for (let index = 0; index < totalFrames; index += 1) {
+        throwIfCancelled();
+        renderFrame(index);
+        webpFrames.push({
+          webpBytes: await toWebp(canvas, 0.92),
+          durationMs: Math.max(1, Math.round(request.frameDurations[index] ?? 0)),
+        });
+        reportRender(index);
+        await deps.yieldToUi();
+      }
+      throwIfCancelled();
+      forwardEncoderProgress({
+        phase: "assemble",
+        frameIndex: totalFrames - 1,
+        totalFrames,
+        ratio: 1,
+      });
+      const muxed = muxAnimatedWebpFrames(webpFrames, {
+        canvasWidth: width,
+        canvasHeight: height,
+        loopCount: 0,
+      });
+      const owned = new Uint8Array(muxed.byteLength);
+      owned.set(muxed);
+      return {
+        blob: new Blob([owned.buffer], { type: FRAME_ANIM_MEDIA_MIME.webp }),
+        mimeType: FRAME_ANIM_MEDIA_MIME.webp,
+        byteLength: owned.byteLength,
       };
     }
 

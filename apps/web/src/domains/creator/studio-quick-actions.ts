@@ -37,9 +37,26 @@ export const QUICK_ACTION_IDS = [
 
 export type StudioQuickActionId = (typeof QUICK_ACTION_IDS)[number];
 
+export const QUICK_ACTION_OCTANT_SLOTS = [
+  "north",
+  "northEast",
+  "east",
+  "southEast",
+  "south",
+  "southWest",
+  "west",
+  "northWest",
+] as const;
+
+export type StudioQuickActionOctantSlot = (typeof QUICK_ACTION_OCTANT_SLOTS)[number];
+
 export interface StudioQuickActionsPreferences {
   version: 1;
   slots: Record<StudioQuickActionSlot, StudioQuickActionId>;
+  /** 선택적 8방향(45° 섹터) 확장 슬롯 매핑. */
+  octantSlots?: Record<StudioQuickActionOctantSlot, StudioQuickActionId>;
+  /** 각 6방향 섹터 바깥 링에 배치되는 중첩 서브링 액션 목록(최대 3개). */
+  subRings?: Partial<Record<StudioQuickActionSlot, readonly StudioQuickActionId[]>>;
 }
 
 export interface StudioQuickActionsStorage {
@@ -124,7 +141,32 @@ export function normalizeStudioQuickActionsPreferences(raw: unknown): StudioQuic
     if (isQuickActionId(action)) slots[slot] = action;
   }
 
-  return { version: 1, slots };
+  let octantSlots: Record<StudioQuickActionOctantSlot, StudioQuickActionId> | undefined;
+  if (isRecord(parsed.octantSlots)) {
+    const fallbackOctants: Record<StudioQuickActionOctantSlot, StudioQuickActionId> = {
+      north: slots.north, northEast: slots.northEast, east: "properties", southEast: slots.southEast,
+      south: slots.south, southWest: slots.southWest, west: "add-bubble", northWest: slots.northWest,
+    };
+    for (const octant of QUICK_ACTION_OCTANT_SLOTS) {
+      const candidate = parsed.octantSlots[octant];
+      if (isQuickActionId(candidate)) fallbackOctants[octant] = candidate;
+    }
+    octantSlots = fallbackOctants;
+  }
+
+  let subRings: Partial<Record<StudioQuickActionSlot, readonly StudioQuickActionId[]>> | undefined;
+  if (isRecord(parsed.subRings)) {
+    const collected: Partial<Record<StudioQuickActionSlot, readonly StudioQuickActionId[]>> = {};
+    for (const slot of QUICK_ACTION_SLOTS) {
+      const candidate = parsed.subRings[slot];
+      if (!Array.isArray(candidate)) continue;
+      const valid = candidate.filter(isQuickActionId).slice(0, 3);
+      if (valid.length > 0) collected[slot] = valid;
+    }
+    if (Object.keys(collected).length > 0) subRings = collected;
+  }
+
+  return { version: 1, slots, ...(octantSlots ? { octantSlots } : {}), ...(subRings ? { subRings } : {}) };
 }
 
 /** 한 슬롯만 교체한 새 설정을 반환한다. 원본과 원본 slots 객체는 변경하지 않는다. */
@@ -243,4 +285,82 @@ export function saveStudioQuickActionsPreferences(
   } catch {
     // 사생활 보호 모드·용량 제한·SSR 저장소처럼 쓰기가 막힌 환경은 메모리 설정만 유지한다.
   }
+}
+
+// ── 8방향(Octant) 및 2단 중첩 서브링(Nested Radial Menu) 확장 (REA: ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68) ──
+
+export type StudioRadialMenuPresetId = "classic-6" | "pro-8-octant" | "nested-subring";
+
+export interface StudioRadialMenuPreset {
+  readonly id: StudioRadialMenuPresetId;
+  readonly label: string;
+  readonly sectorCount: 6 | 8;
+  readonly preferences: StudioQuickActionsPreferences;
+}
+
+export const STUDIO_RADIAL_MENU_PRESETS: readonly StudioRadialMenuPreset[] = Object.freeze([
+  { id: "classic-6", label: "기본 6방향 링", sectorCount: 6, preferences: DEFAULT_STUDIO_QUICK_ACTIONS },
+  {
+    id: "pro-8-octant",
+    label: "프로 8방향 원형 메뉴",
+    sectorCount: 8,
+    preferences: {
+      version: 1,
+      slots: { ...DEFAULT_STUDIO_QUICK_ACTIONS.slots },
+      octantSlots: {
+        north: "undo", northEast: "redo", east: "advanced-fill", southEast: "select",
+        south: "pen", southWest: "eraser", west: "quick-mask", northWest: "eyedropper",
+      },
+    },
+  },
+  {
+    id: "nested-subring",
+    label: "2단 중첩 서브링 프리셋",
+    sectorCount: 6,
+    preferences: {
+      version: 1,
+      slots: { ...DEFAULT_STUDIO_QUICK_ACTIONS.slots },
+      subRings: {
+        south: ["wet-mix", "dodge-burn", "advanced-fill"],
+        southEast: ["duplicate", "bring-front", "delete"],
+        northWest: ["quick-mask", "add-bubble"],
+      },
+    },
+  },
+]);
+
+export function quickActionOctantFromVector(
+  dx: number,
+  dy: number,
+  deadZonePx = 24,
+): StudioQuickActionOctantSlot | null {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || !Number.isFinite(deadZonePx) || deadZonePx < 0) return null;
+  if (Math.hypot(dx, dy) <= deadZonePx) return null;
+  const deg = (((Math.atan2(dx, -dy) * 180) / Math.PI) + 360) % 360;
+  return QUICK_ACTION_OCTANT_SLOTS[Math.floor((deg + 22.5 + 1e-12) / 45) % QUICK_ACTION_OCTANT_SLOTS.length] ?? null;
+}
+
+export function resolveNestedRadialActionFromVector(
+  dx: number,
+  dy: number,
+  preferences: StudioQuickActionsPreferences,
+  options?: { readonly deadZonePx?: number; readonly outerRingThresholdPx?: number },
+): { readonly ring: "inner" | "outer"; readonly action: StudioQuickActionId } | null {
+  const deadZone = options?.deadZonePx ?? 24;
+  const dist = Math.hypot(dx, dy);
+  if (!Number.isFinite(dist) || dist <= deadZone) return null;
+  if (preferences.octantSlots && !preferences.subRings) {
+    const oct = quickActionOctantFromVector(dx, dy, deadZone);
+    return oct ? { ring: "inner", action: preferences.octantSlots[oct] } : null;
+  }
+  const slot = quickActionSlotFromVector(dx, dy, deadZone);
+  if (!slot) return null;
+  const subList = preferences.subRings?.[slot];
+  if (dist >= (options?.outerRingThresholdPx ?? 144) && subList && subList.length > 0) {
+    const rawDeg = (((Math.atan2(dx, -dy) * 180) / Math.PI) + 360) % 360;
+    const rel = (((rawDeg - (QUICK_ACTION_SLOTS.indexOf(slot) * 60 - 30)) % 360) + 360) % 360;
+    const subIdx = Math.min(subList.length - 1, Math.max(0, Math.floor((rel / 60) * subList.length)));
+    return { ring: "outer", action: subList[subIdx]! };
+  }
+  return { ring: "inner", action: preferences.slots[slot] };
 }

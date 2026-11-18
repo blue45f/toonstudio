@@ -1,6 +1,6 @@
 import { formatI18nTemplate, translateCurrentStaticSourceText, translateBilingualValueForActiveLocale, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
 import { ArrowLeft, BookOpen, Bookmark, Bug, Check, ChevronRight, CircleHelp, Clock3, Command, ExternalLink, GraduationCap, Home, Keyboard, LifeBuoy, Search, Sparkles, Stethoscope, ThumbsDown, ThumbsUp, WifiOff, Wrench, X, type LucideIcon } from "lucide-react";
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { STUDIO_SHORTCUT_ACTIONS, formatStudioShortcutChord } from "./studio-app-settings";
@@ -14,6 +14,8 @@ import { useI18n, useT } from "@/shared/lib/i18n";
 
 import type { StudioHelpCenterSection } from "./studio-help-center-channel";
 import type { StudioHelpHubActions, StudioHelpHubTab } from "./studio-help-hub-channel";
+
+const LazyShortcutCustomizer = lazy(() => import("./workspace-layout/ShortcutCustomizer"));
 
 const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
   translateBilingualValueForActiveLocale("StudioHelpHubDialog", ko, en);
@@ -364,26 +366,12 @@ export function StudioHelpHubDialog({
     };
   }, [open]);
 
-  const selectedArticle = useMemo(
-    () => findStudioHelpArticle(selectedArticleId),
-    [selectedArticleId],
-  );
-  const currentTool = useMemo(
-    () => (toolCommandId ? buildStudioToolHelp(toolCommandId) : null),
-    [toolCommandId],
-  );
-  const recommended = useMemo(
-    () => recommendStudioHelpArticles({ toolCommandId, online, limit: 4 }),
-    [online, toolCommandId],
-  );
-  const articleResults = useMemo(
-    () => searchStudioHelpArticles(query, locale).slice(0, 12),
-    [locale, query],
-  );
+  const selectedArticle = useMemo(() => findStudioHelpArticle(selectedArticleId), [selectedArticleId]);
+  const currentTool = useMemo(() => (toolCommandId ? buildStudioToolHelp(toolCommandId) : null), [toolCommandId]);
+  const recommended = useMemo(() => recommendStudioHelpArticles({ toolCommandId, online, limit: 4 }), [online, toolCommandId]);
+  const articleResults = useMemo(() => searchStudioHelpArticles(query, locale).slice(0, 12), [locale, query]);
   const shortcutResults = useMemo(
-    () => STUDIO_SHORTCUT_ACTIONS.filter((action) =>
-      studioSearchTextMatches(query, [t(action.labelKey), action.label, action.defaultKeys]),
-    ),
+    () => STUDIO_SHORTCUT_ACTIONS.filter((action) => studioSearchTextMatches(query, [t(action.labelKey), action.label, action.defaultKeys])),
     [query, t],
   );
   const searching = query.trim().length > 0;
@@ -405,9 +393,7 @@ export function StudioHelpHubDialog({
 
   const toggleBookmark = useCallback((articleId: string) => {
     setBookmarks((current) => {
-      const next = current.includes(articleId)
-        ? current.filter((id) => id !== articleId)
-        : [...current, articleId];
+      const next = current.includes(articleId) ? current.filter((id) => id !== articleId) : [...current, articleId];
       writeStoredJson(STORAGE_KEYS.bookmarks, next);
       return next;
     });
@@ -416,9 +402,7 @@ export function StudioHelpHubDialog({
   const toggleGuideStep = useCallback((guideId: string, stepId: string) => {
     setGuideProgress((current) => {
       const completed = current[guideId] ?? [];
-      const nextCompleted = completed.includes(stepId)
-        ? completed.filter((id) => id !== stepId)
-        : [...completed, stepId];
+      const nextCompleted = completed.includes(stepId) ? completed.filter((id) => id !== stepId) : [...completed, stepId];
       const next = { ...current, [guideId]: nextCompleted };
       writeStoredJson(STORAGE_KEYS.guideProgress, next);
       return next;
@@ -435,9 +419,7 @@ export function StudioHelpHubDialog({
 
   const exitThen = useCallback((action: () => unknown) => {
     onClose();
-    window.setTimeout(() => {
-      action();
-    }, 0);
+    window.setTimeout(() => { action(); }, 0);
   }, [onClose]);
 
   const openCommandSearch = useCallback(() => {
@@ -445,9 +427,7 @@ export function StudioHelpHubDialog({
     exitThen(() => requestStudioCommandSearch());
   }, [exitThen, query, rememberSearch]);
 
-  const openManual = useCallback(() => {
-    window.open("/studio/manual", "_blank", "noopener,noreferrer");
-  }, []);
+  const openManual = useCallback(() => { window.open("/studio/manual", "_blank", "noopener,noreferrer"); }, []);
 
   const savedArticles = bookmarks
     .map((id) => findStudioHelpArticle(id))
@@ -613,8 +593,8 @@ export function StudioHelpHubDialog({
   const renderHome = () => (
     <div className="space-y-5">
       {!online ? (
-        <div className="flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-fg">
-          <WifiOff className="mt-0.5 size-5 shrink-0 text-amber-500" aria-hidden />
+        <div className="flex gap-3 rounded-xl border border-warn/40 bg-warn/10 p-3 text-fg">
+          <WifiOff className="mt-0.5 size-5 shrink-0 text-warn" aria-hidden />
           <div>
             <p className="text-sm font-semibold">{copy.offlineTitle}</p>
             <p className="mt-0.5 text-xs leading-relaxed text-fg-3">{copy.offlineBody}</p>
@@ -830,6 +810,17 @@ export function StudioHelpHubDialog({
           ))}
         </div>
       )}
+      <details className="rounded-2xl border border-line bg-card p-3">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-1 text-xs font-semibold text-fg select-none">
+          <span>{bi("단축키 · 보조키 직접 바꾸기", "Customise shortcuts and modifier keys")}</span>
+          <ChevronRight className="size-4 shrink-0 text-fg-3" aria-hidden />
+        </summary>
+        <div className="mt-3 border-t border-line/60 pt-3">
+          <Suspense fallback={<p className="text-xs text-fg-3">{bi("설정을 불러오는 중…", "Loading settings…")}</p>}>
+            <LazyShortcutCustomizer />
+          </Suspense>
+        </div>
+      </details>
     </div>
   );
 
