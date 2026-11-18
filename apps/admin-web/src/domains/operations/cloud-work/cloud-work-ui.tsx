@@ -57,7 +57,7 @@ export function WorkField({ label, hint, children, wide = false }: { label: stri
   return <label className={`cw-field${wide ? " cw-wide" : ""}`}><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>;
 }
 
-export function WorkSelect({ value, options, onChange, label }: { value: string; options: readonly string[]; onChange: (value: string) => void; label?: string }) {
+export function WorkSelect({ value, options, onChange, label }: { value: string; options: readonly string[]; onChange: (value: string) => void; label: string }) {
   return <select value={value} aria-label={label} onChange={event => onChange(event.target.value)}>{options.map(option => <option key={option}>{option}</option>)}</select>;
 }
 
