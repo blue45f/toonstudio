@@ -31,6 +31,11 @@ import {
   type BlenderFreestyleInkPreset,
   type BlenderNprShaderPreset,
 } from "../scene-3d/studio-3d-blender-npr-shader-freestyle";
+import { StudioBg3dArticulatedIkBridgeCard } from "./StudioBg3dArticulatedIkBridgeCard";
+import {
+  evaluateArticulatedPropAndIkSocketBridge,
+  type ArticulatedV20PropId,
+} from "./studio-bg3d-articulated-ik-bridge";
 import { buildBlenderPresetScenePrimitives } from "./studio-bg3d-blender-full-engine";
 import { StudioBg3dBlenderFullSections } from "./StudioBg3dBlenderFullSections";
 import {
@@ -122,6 +127,10 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [lookDevGateConfirmed, setLookDevGateConfirmed] = useState<boolean>(false);
   const [selectedDatumGenreId, setSelectedDatumGenreId] = useState<CrossGenreDatumGenreId>("murim");
   const [darkroomProofingEnabled, setDarkroomProofingEnabled] = useState<boolean>(false);
+  const [v20PropId, setV20PropId] = useState<ArticulatedV20PropId>("murim-lattice-moongate");
+  const [v20OpenRatioPct, setV20OpenRatioPct] = useState<number>(65);
+  const [v20IkSnapEnabled, setV20IkSnapEnabled] = useState<boolean>(true);
+  const [v20Follow3dSpeedlinesEnabled, setV20Follow3dSpeedlinesEnabled] = useState<boolean>(true);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id);
   const [customKelvin, setCustomKelvin] = useState<number>(5600);
   const [selectedShaderId, setSelectedShaderId] = useState<string>(BLENDER_NPR_SHADER_PRESETS[0]!.id);
@@ -265,6 +274,16 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const darkroomProofingState = useMemo(
     () => evaluateDarkroomProofingState(darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio),
     [darkroomProofingEnabled, customKelvin, lightingEvaluation.contrastRatio],
+  );
+  const articulatedIkEval = useMemo(
+    () =>
+      evaluateArticulatedPropAndIkSocketBridge({
+        propId: v20PropId,
+        openRatioPct: v20OpenRatioPct,
+        ikSnapEnabled: v20IkSnapEnabled,
+        follow3dSpeedlinesEnabled: v20Follow3dSpeedlinesEnabled,
+      }),
+    [v20PropId, v20OpenRatioPct, v20IkSnapEnabled, v20Follow3dSpeedlinesEnabled],
   );
 
   const multiPassPlan = useMemo(
@@ -703,6 +722,18 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
           onVerifyAiGate?.(score, passed);
         }}
         onStatusChange={onStatusChange}
+      />
+
+      <StudioBg3dArticulatedIkBridgeCard
+        disabled={disabled}
+        evaluation={articulatedIkEval}
+        onSelectPropId={(propId) => {
+          setV20PropId(propId);
+          onStatusChange?.(`V20 가동 파츠 전환: ${propId}`);
+        }}
+        onChangeOpenRatioPct={setV20OpenRatioPct}
+        onToggleIkSnap={setV20IkSnapEnabled}
+        onToggleFollow3dSpeedlines={setV20Follow3dSpeedlinesEnabled}
       />
 
       <StudioBg3dBlenderFullSections

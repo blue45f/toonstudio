@@ -25,6 +25,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -288,6 +289,42 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(4);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 개폐형 가동 파츠·캐릭터 IK 소켓 V20(3종)이 실제 GLB·썸네일·5개 보존 씬 SHA-256 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-articulated-ik-v20/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      characterIkSocketSpec?: { wristDeskZ?: number; elbowRailingZ?: number; handDoorLatchZ?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.characterIkSocketSpec?.wristDeskZ).toBe(0.92);
+    expect(prov.characterIkSocketSpec?.elbowRailingZ).toBe(1.1);
+    expect(prov.characterIkSocketSpec?.handDoorLatchZ).toBe(1.32);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(5);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
