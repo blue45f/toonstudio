@@ -6,6 +6,7 @@
  */
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -18,9 +19,7 @@ import { createProceduralFixture } from "./testing/procedural-fixture";
 import type { HandPropId, HeadPropId, StagePropId } from "../contracts";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 
-// 루트·앱 Vitest 설정 모두 동일한 실제 소품 파일을 검증한다.
-const APP_ROOT = process.cwd().endsWith("character-lab") ? process.cwd() : resolve(process.cwd(), "apps/character-lab");
-const PUBLIC_DIR = resolve(APP_ROOT, "public");
+const PUBLIC_DIR = fileURLToPath(new URL("../../public", import.meta.url));
 const HAND_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-hand-props-v1");
 const HEAD_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-head-props-v1");
 const STAGE_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-stage-props-v1");

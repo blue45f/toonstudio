@@ -12,12 +12,14 @@ import {
 
 import type { LabCommand, ShadingProfile, Surfaces } from "../../../contracts";
 
-/** 재질·조명·장르 프리셋의 표시와 기존 명령 생성기를 연결한다. */
-export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: {
+interface RenderMaterialLightingControlsProps {
   readonly surfaces: Surfaces;
   readonly shading: ShadingProfile;
   readonly dispatch: (command: LabCommand) => void;
-}) {
+}
+
+/** 장르·소재·조명 프리셋을 표시하고 기존 명령 생성 결과를 전달한다. */
+export function RenderMaterialLightingControls({ surfaces, shading, dispatch }: RenderMaterialLightingControlsProps) {
   return (
     <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">
       <legend>피부·의상 소재 & 툰 셰이딩·그림자 프리셋</legend>

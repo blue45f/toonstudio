@@ -3,11 +3,7 @@
  * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 선택적 말풍선·효과선(집중선/속도선/반짝이) 래스터 베이킹,
  * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
  */
-import {
-  DEFAULT_FRAMING,
-  failVisible,
-  isLabFailure,
-} from "../contracts";
+import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
@@ -23,8 +19,16 @@ import type {
   LabFailure,
 } from "../contracts";
 
-export { WEBTOON_STRIP_ACTING_ARCS, buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
-export type { WebtoonStripActingArcId, WebtoonStripActingArcSpec, WebtoonStripCutActingKeyframe } from "./webtoon-strip-acting";
+export {
+  WEBTOON_STRIP_ACTING_ARCS,
+  buildActingCutPlan,
+  findWebtoonStripActingArc,
+} from "./webtoon-strip-acting";
+export type {
+  WebtoonStripActingArcId,
+  WebtoonStripActingArcSpec,
+  WebtoonStripCutActingKeyframe,
+} from "./webtoon-strip-acting";
 
 export interface WebtoonStripCutSpec {
   readonly id: string;

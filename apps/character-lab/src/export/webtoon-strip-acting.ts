@@ -1,4 +1,4 @@
-/** 4컷 웹툰의 연기 프리셋과 컷별 포즈·표정 스냅샷을 순수 데이터로 구성한다. */
+/** 웹툰 4컷 연기 프리셋과 표정·시선·목/고개 스냅샷의 순수 계산. */
 import { eyeAnglesQuaternion, expressionToMorphWeights } from "../contracts";
 import { qNormalize } from "../shared/math";
 
