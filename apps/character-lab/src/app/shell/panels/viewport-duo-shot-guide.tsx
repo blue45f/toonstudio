@@ -117,6 +117,24 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     accentHex: "#64f58d",
     contactSheetUrl: "/assets/characters/shaper-apocalypse-sniper/contact-sheet.png",
   },
+  {
+    id: "shaper-healing-barista",
+    labelKo: "캠퍼스 힐링 아티스트 (162cm)",
+    genreKo: "일상 힐링 로맨스",
+    heightCm: 162,
+    eyeHeightCm: 151.0,
+    accentHex: "#ffc978",
+    contactSheetUrl: "/assets/characters/shaper-healing-barista/contact-sheet.png",
+  },
+  {
+    id: "shaper-thriller-detective",
+    labelKo: "느와르 강력계 형사 (185cm)",
+    genreKo: "현대 스릴러 수사물",
+    heightCm: 185,
+    eyeHeightCm: 173.4,
+    accentHex: "#f2b857",
+    contactSheetUrl: "/assets/characters/shaper-thriller-detective/contact-sheet.png",
+  },
 ]);
 
 export interface DuoShotState {

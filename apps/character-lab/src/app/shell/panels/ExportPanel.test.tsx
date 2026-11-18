@@ -655,6 +655,11 @@ describe("ExportPanel", () => {
     expect(calls[0]?.fileName).toBe("character-mock-128x48-turnaround.png");
     expect(isPng(calls[0]?.bytes ?? new Uint8Array())).toBe(true);
     expect(screen.getByTestId("export-receipt").textContent).toContain("128×48");
+
+    fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
+    await waitFor(() => expect(calls).toHaveLength(2));
+    expect(calls[1]?.fileName).toMatch(/-webtoon-4cut-strip\.png$/u);
+    expect(isPng(calls[1]?.bytes ?? new Uint8Array())).toBe(true);
   });
 
   it("2×2 종합 설정시트 PNG 저장 및 로컬 클립보드 레시피 복사·붙여넣기 왕복이 동작하고 빈 클립보드 오류를 노출한다", async () => {
