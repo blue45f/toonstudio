@@ -1,5 +1,5 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트) ·
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
  * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
@@ -120,7 +120,7 @@ export function ExportPanel({
 
   const applyPlan = useApplyPlan();
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines } = directorState;
+  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -309,6 +309,9 @@ export function ExportPanel({
                     includeSpeechBubbles: true,
                     intensity: 0.78,
                     dialogueLines,
+                    bubbleShapes,
+                    bubbleFontScales,
+                    sfxStamps,
                   },
                 }
               : {}),
@@ -440,7 +443,6 @@ export function ExportPanel({
           const entry = indexResult.entries.find((item) => item.characterId === characterId);
           if (!entry) return undefined;
           if (entry.glbSha256 !== null && entry.glbSha256 !== expectedSha256) {
-            // 다른 SHA가 인덱스에 등록되어 있으면 해시 불일치 가드가 정확히 동작하도록 기존 엔트리를 반환한다.
             return { glbSha256: entry.glbSha256, capabilities: currentState.capabilities };
           }
           const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });

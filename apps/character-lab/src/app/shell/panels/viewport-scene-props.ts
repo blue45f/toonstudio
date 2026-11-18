@@ -1,26 +1,30 @@
-/** 손·머리·무대 소품과 씬 디렉터의 상태·사용자 동작을 뷰포트에서 분리한다. */
+/** 손·머리·무대 소품·한국어 효과음과 씬 디렉터의 상태·사용자 동작을 뷰포트에서 분리한다. */
 import { useState, useSyncExternalStore } from "react";
 
 import {
-  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonStagePropSpec,
-  toHandPropAttachment, toHeadPropAttachment, toStagePropAttachment,
+  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonSfxStampSpec, findWebtoonStagePropSpec,
+  toHandPropAttachment, toHeadPropAttachment, toSfxStampAttachment, toStagePropAttachment,
 } from "./viewport-hand-prop-controls";
 import {
   findWebtoonSceneDirectorPreset, getDefaultStripDirectorSession, resolveDirectorShadingProfile,
   type WebtoonSceneDirectorPresetId,
 } from "./viewport-scene-director";
 
+import type { MangaSfxStampPreset, ViewportMangaFxState } from "./viewport-manga-fx-overlay";
 import type { CharacterEngine, CharacterRecipe, HandPropId, HandPropSide, HeadPropId, LabCommand, StagePropId } from "../../../contracts";
+import type { Dispatch, SetStateAction } from "react";
 
 interface ViewportScenePropsContext {
   readonly engine: CharacterEngine | null;
+  readonly mangaFx: ViewportMangaFxState;
+  readonly setMangaFx: Dispatch<SetStateAction<ViewportMangaFxState>>;
   readonly recipe: Pick<CharacterRecipe, "pose" | "shading">;
   readonly dispatch: (command: LabCommand) => void;
   readonly setNotice: (notice: string | null) => void;
   readonly failureText: (error: unknown, fallback: string) => string;
 }
 
-export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, failureText }: ViewportScenePropsContext) {
+export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, failureText, mangaFx, setMangaFx }: ViewportScenePropsContext) {
   const stripDirector = getDefaultStripDirectorSession();
   const activeDirectorId = useSyncExternalStore(
     stripDirector.subscribe,
@@ -32,7 +36,37 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
   const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
   const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
   const [handPropBusy, setHandPropBusy] = useState(false);
+  const [sfxBusy, setSfxBusy] = useState(false);
 
+  const syncSfxStamp3d = async (enabled: boolean, stamp: MangaSfxStampPreset): Promise<void> => {
+    if (!engine?.setSfxStamp) return;
+    const attachment = enabled && stamp !== "none" ? toSfxStampAttachment(stamp) : null;
+    setSfxBusy(true);
+    try {
+      await engine.setSfxStamp(attachment);
+      const spec = enabled && stamp !== "none" ? findWebtoonSfxStampSpec(stamp) : null;
+      if (spec) setNotice(`웹툰 효과음 스탬프 적용: ${spec.labelKo}`);
+    } catch (error) {
+      setNotice(failureText(error, "웹툰 효과음 스탬프를 배치하지 못했습니다."));
+    } finally {
+      setSfxBusy(false);
+    }
+  };
+  const onToggleMangaFx = (): void => {
+    setMangaFx((prev) => {
+      const nextEnabled = !prev.enabled;
+      if (prev.sfxStamp !== "none") {
+        void syncSfxStamp3d(nextEnabled, prev.sfxStamp);
+      }
+      return { ...prev, enabled: nextEnabled };
+    });
+  };
+  const onChangeMangaSfxStamp = (sfxStamp: MangaSfxStampPreset): void => {
+    setMangaFx((prev) => {
+      void syncSfxStamp3d(prev.enabled, sfxStamp);
+      return { ...prev, sfxStamp };
+    });
+  };
   const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
     setHandPropId(nextPropId);
     setHandPropSide(nextSide);
@@ -95,13 +129,15 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
       setHandPropId("");
       setHeadPropId("");
       setStagePropId("");
-      stripDirector.update({ activeDirectorId: "", actingArc: "none", bakeStripFx: false });
+      setMangaFx((prev) => ({ ...prev, sfxStamp: "none" }));
+      stripDirector.reset();
       if (!engine) return;
       setHandPropBusy(true);
       try {
         if (engine.setHandProp) await engine.setHandProp(null);
         if (engine.setHeadProp) await engine.setHeadProp(null);
         if (engine.setStageProp) await engine.setStageProp(null);
+        if (engine.setSfxStamp) await engine.setSfxStamp(null);
         setNotice("원클릭 씬 디렉터를 해제했습니다.");
       } catch (error) {
         setNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
@@ -117,12 +153,16 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
     setHandPropSide(preset.handSide);
     setHeadPropId(preset.headPropId);
     setStagePropId(preset.stagePropId);
+    setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
     stripDirector.update({
       activeDirectorId: preset.id,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
       dialogueLines: preset.dialogueLines,
+      bubbleShapes: preset.bubbleShapes,
+      bubbleFontScales: preset.bubbleFontScales,
+      sfxStamps: preset.sfxStamps,
     });
 
     for (const cmd of buildHandPropGripPoseCommands(recipe.pose, preset.handPropId, preset.handSide)) {
@@ -139,6 +179,7 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
       if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
       if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
       if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
+      if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
       setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
     } catch (error) {
       setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
@@ -147,9 +188,9 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
     }
   };
 
-
   return {
-    activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
+    activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy, sfxBusy,
     onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector,
+    onToggleMangaFx, onChangeMangaSfxStamp,
   };
 }

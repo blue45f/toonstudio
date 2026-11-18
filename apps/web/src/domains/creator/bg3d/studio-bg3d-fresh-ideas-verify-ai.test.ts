@@ -30,6 +30,8 @@ import {
 import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
+import { evaluateWeatherMotionAndColorScript } from "./studio-bg3d-weather-motion-colorscript";
+import { evaluateZDepthCrowdTodCompositor } from "./studio-bg3d-zdepth-crowd-tod-compositor";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
 import {
   evaluateDarkroomProofingState,
@@ -193,6 +195,40 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(bokeh100.recommendedApertureFStop).toBe(5.6);
     expect(bokeh15.foregroundCocDiameterPx).toBeGreaterThan(bokeh100.foregroundCocDiameterPx);
     expect(bokeh15.bankedEpisodesPerQuarter).toBeGreaterThan(4.2);
+
+    const v23Compositor = evaluateZDepthCrowdTodCompositor({
+      openRatioPct: 65,
+      apertureFStop: 2.8,
+      foregroundCocPx: 17.0,
+      timeOfDayId: "sunset-3200k",
+      crowdCount: 15,
+      gutterPx: 280,
+      baseBokehWeeklyHoursSaved: 27.1,
+      foregroundBokehLayerTag: "FX_FG_Bokeh_RofanPetals_f28",
+    });
+    expect(v23Compositor.zDepthSfxPlaneYM).toBe(-0.34);
+    expect(v23Compositor.darkroomProofPassed).toBe(true);
+    expect(v23Compositor.manifest.layers).toHaveLength(6);
+    expect(v23Compositor.totalWeeklyHoursV23).toBe(29.9);
+    expect(v23Compositor.quarterlyBankedEpisodesV23).toBe(4.86);
+
+    const v24Motion = evaluateWeatherMotionAndColorScript({
+      openRatioPct: 100,
+      weatherId: "abyss-storm-mist",
+      backgroundFocalMm: 24,
+      characterFocalMm: 85,
+      activeActId: "act3-climax",
+      localeId: "JA",
+      baseV23WeeklyHoursSaved: v23Compositor.totalWeeklyHoursV23,
+      layers: v23Compositor.manifest.layers,
+    });
+    expect(v24Motion.weather.indoorCeilingLeakCount).toBe(0);
+    expect(v24Motion.dualFocalFacialDistortionPct).toBeLessThan(1.2);
+    expect(v24Motion.all70CutsDarkroomCompliant).toBe(true);
+    expect(v24Motion.localizedSfxSlot.backgroundReRenderCount).toBe(0);
+    expect(v24Motion.motionManifest.tracks).toHaveLength(7);
+    expect(v24Motion.totalWeeklyHoursV24).toBe(32.7);
+    expect(v24Motion.quarterlyBankedEpisodesV24).toBe(5.31);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;
