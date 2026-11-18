@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { mobileSiteTabsForPath, resolveNavigationGroupsFor, SITE_NAVIGATION_ITEMS, SITE_UTILITY_NAVIGATION } from "./site-navigation";
+import { mobileSiteTabsForPath, resolveNavigationGroupsFor, SITE_NAVIGATION_ITEMS, SITE_UTILITY_NAVIGATION, TOONSTUDIO_PRIMARY_NAVIGATION } from "./site-navigation";
 
 const source = (relativePath: string) =>
   readFileSync(new URL(relativePath, import.meta.url), "utf8");
@@ -53,6 +53,7 @@ describe("mobile route density contract", () => {
     const menuStyles = source("./site-menu.css");
     const scene = source("./route-purpose-scene.css");
     const workspace = source("./workspace/workspace-visual-v3.css");
+    const workspaceNavigation = source("./workspace/WorkspaceNavigation.tsx");
 
     // 휴대폰 ⚙ 묶음은 고정 9rem 대신 실제 하단 탭 높이에서 계산한 기준선 위에 놓인다.
     expect(floating).toContain("max-md:bottom-[var(--site-float-base)]");
@@ -75,13 +76,17 @@ describe("mobile route density contract", () => {
     expect(trigger).not.toMatch(/(?:^|\s)(?:hidden|\S+:hidden)(?:\s|$)/u);
     // 전체 목록은 별도 목적 페이지와 정본 이름 검색으로 연결한다. 메뉴 안에 전부 쌓지 않는다.
     expect(mobileNavigation).toContain("<SiteMenuDestinations");
-    expect(menuDestinations).toContain("resolveNavigationGroupsFor().map((group)");
+    // 잉크 등장 순서용 index를 함께 받아도 목적별 정본 그룹과 링크를 그대로 순회해야 한다.
+    expect(menuDestinations).toMatch(/resolveNavigationGroupsFor\(\)\.map\(\(group(?:,\s*index)?\)\s*=>/u);
     expect(menuDestinations).toContain('href={`/sitemap/${group.id}`}');
     expect(menuDestinations).toContain("const results = searchSiteMenu(query)");
     expect(menuDestinations).toContain('type="search"');
     expect(mobileNavigation).toContain("SITE_NAVIGATION_ITEMS.allMenu");
     expect(SITE_NAVIGATION_ITEMS.allMenu.href).toBe("/sitemap");
-    expect(menuStyles).toMatch(/\.site-menu-task,\.site-menu-results a\s*\{[^}]*min-height:\s*60px/u);
+    // 2026-11-18 메뉴 개편은 목적 행과 검색 결과를 분리했다. 각 행과 모바일 바로가기의 터치 크기를 고정한다.
+    expect(menuStyles).toMatch(/\.site-menu-task\s*\{[^}]*min-height:\s*48px/u);
+    expect(menuStyles).toMatch(/\.site-menu-results a\s*\{[^}]*min-height:\s*56px/u);
+    expect(menuStyles).toMatch(/@media \(max-width: 767px\)\s*\{[\s\S]*?\.site-menu-task__sublink\s*\{\s*min-height:\s*44px/u);
     expect(menuStyles).toMatch(/\.site-menu-search__field button\s*\{[^}]*min-height:\s*44px/u);
     expect(mobileNavigation).toContain("<SiteMenuUtilities");
     const reachable = new Set([
@@ -93,7 +98,12 @@ describe("mobile route density contract", () => {
     expect(scene).toContain("min-height: 8rem");
     expect(scene).toContain(".route-purpose-scene__cards,");
     expect(workspace).toContain("grid-template-columns:repeat(5,minmax(0,1fr))");
-    expect(workspace).toContain('data-navigation-entry="all-menu"');
+    // 장식 아이콘의 CSS 선택자 대신 실제 다섯 번째 메뉴와 열기 버튼의 연결을 확인한다.
+    expect(TOONSTUDIO_PRIMARY_NAVIGATION.map((item) => item.id)).toEqual([
+      "workspace-home", "studio", "explore", "community", "all-menu",
+    ]);
+    expect(workspaceNavigation).toMatch(/if \(item\.id === "all-menu" && onOpenMenu\)[\s\S]*?<button[\s\S]*?data-navigation-entry=\{item\.id\}[\s\S]*?onClick=\{\(event\) => onOpenMenu\(event\.currentTarget\)\}/u);
+    expect(workspace).toMatch(/@media\(max-width:767px\)\{[\s\S]*?\.workspace-sidebar \.workspace-nav :is\(a,button\)\{min-height:48px/u);
   });
 
   /**

@@ -113,11 +113,12 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     },
   );
 
-  it("현재 라우트 전체(선언 316건, 구체 확장 443건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
+  it("현재 라우트 전체(선언 316건, 구체 확장 444건, 와일드카드 위임 5건)를 누락 없이 인벤토리화한다", async () => {
     const report = await auditSitewideRouteInventory(REPO_ROOT);
 
     expect(report.counts.appRouteDeclarations).toBe(316);
-    expect(report.counts.expandedRoutes).toBe(443);
+    // Studio 정본의 /studio/canvas/poser 별칭을 독립 경로로 더하고 기존 경로와 중복 제거한다.
+    expect(report.counts.expandedRoutes).toBe(444);
     expect(report.counts.wildcardExclusions).toBe(5);
     expect(report.counts.studioRegistrationsAndAliases).toBe(55);
     expect(report.counts.studioManifestRoutes).toBeGreaterThanOrEqual(45);
@@ -138,13 +139,14 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
       expect(fs.statSync(path.join(REPO_ROOT, source)).isFile()).toBe(true);
     }
 
-    expect(report.allExpandedRoutes).toHaveLength(443);
-    expect(new Set(report.allExpandedRoutes).size).toBe(443);
+    expect(report.allExpandedRoutes).toHaveLength(444);
+    expect(new Set(report.allExpandedRoutes).size).toBe(444);
 
     for (const route of report.allExpandedRoutes) {
       expect(route.startsWith("/")).toBe(true);
       expect(route.includes("*")).toBe(false);
       expect(route.includes("/:")).toBe(false);
+      expect(route).not.toMatch(/[\s|]/u);
     }
 
     const totalCategorized = report.domainBreakdown.reduce(
@@ -168,6 +170,7 @@ describe("전페이지 접근성 독립 회귀 테스트 — 라우트 인벤토
     expect(report.allExpandedRoutes).toContain("/production");
     expect(report.allExpandedRoutes).toContain("/studio");
     expect(report.allExpandedRoutes).toContain("/studio/canvas");
+    expect(report.allExpandedRoutes).toContain("/studio/canvas/poser");
     expect(report.allExpandedRoutes).toContain("/brush-lab");
     expect(report.allExpandedRoutes).toContain("/shaper");
     expect(report.allExpandedRoutes).toContain("/admin/overview");

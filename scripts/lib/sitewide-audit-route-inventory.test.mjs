@@ -88,6 +88,27 @@ test("Studio 등록·별칭·선택 surface와 관리자 resolver 별칭의 출�
   assert.ok(inventory.excluded.some((entry) => entry.pattern === "/studio/*" && entry.reason === "wildcard-owner"));
 });
 
+test("Studio 최상위 선택 경로는 한 URL로 중복 제거하면서 각 정본 선언의 출처를 보존한다", async () => {
+  const pattern = "/studio/canvas/poser | /studio/(work/:workId/)?canvas";
+  const inventory = await collectAuditRouteInventory("/unused", fixture({
+    [`${STUDIO}studio-router/studio-route-manifest.ts`]: `
+      export const STUDIO_ROUTE_MANIFEST = Object.freeze([
+        { id: "editor", pattern: "${pattern}" },
+        { id: "poser-alias", pattern: "/studio/canvas/poser" },
+      ] as const);
+    `,
+  }));
+  const studioEntries = inventory.entries.filter((entry) => entry.sources.some((source) => source.kind === "studio-manifest"));
+  assert.deepEqual(studioEntries.map((entry) => entry.path), [
+    "/studio/canvas", "/studio/canvas/poser", "/studio/work/visual-audit/canvas",
+  ]);
+  const poser = studioEntries.find((entry) => entry.path === "/studio/canvas/poser");
+  assert.deepEqual(poser.sources.map((source) => source.id), ["editor", "poser-alias"]);
+  assert.equal(poser.sources[0].pattern, pattern);
+  assert.equal(poser.usesPlaceholder, false);
+  for (const route of inventory.routes) assert.doesNotMatch(route, /[\s|]/u);
+});
+
 test("학습 상세는 실제 콘텐츠 ID로 펼치고 JSX 경로와 pathname 분기를 별도로 기록한다", async () => {
   const inventory = await collectAuditRouteInventory("/unused", fixture());
   for (const route of ["/learn", "/learn/trace", "/learn/glossary", "/learn/lessons/first-lesson", "/learn/paths/starter"]) {

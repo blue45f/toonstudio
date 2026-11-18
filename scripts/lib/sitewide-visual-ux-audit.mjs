@@ -228,6 +228,23 @@ export async function persistAuditObservation(directory, result) {
 
 /** Studio manifest의 선택 그룹과 선택 surface를 실제 감사 URL로 펼친다. */
 export function expandAuditRoutePattern(pattern) {
+  // 최상위 경로 선택자는 분리하되 work/remix·surface 괄호 안의 선택자는 기존 확장에 맡긴다.
+  const alternatives = [];
+  let groupDepth = 0;
+  let branchStart = 0;
+  for (let index = 0; index < pattern.length; index += 1) {
+    const character = pattern[index];
+    if (character === "(") groupDepth += 1;
+    else if (character === ")") groupDepth -= 1;
+    else if (character === "|" && groupDepth === 0) {
+      alternatives.push(pattern.slice(branchStart, index).trim());
+      branchStart = index + 1;
+    }
+  }
+  if (alternatives.length > 0) {
+    alternatives.push(pattern.slice(branchStart).trim());
+    return [...new Set(alternatives.flatMap((alternative) => expandAuditRoutePattern(alternative)))];
+  }
   if (!pattern.startsWith("/") || pattern.includes("*")) return [];
   const normalized = pattern.replace(/:[A-Za-z0-9_]+\(([^()]*)\)/gu, "($1)");
   const group = /\(([^()]*)\)(\?)?/u.exec(normalized);
@@ -247,7 +264,8 @@ export function expandAuditRoutePattern(pattern) {
       ...expandAuditRoutePattern(`${before}${optionalParameter[0].slice(0, -1)}${after}`),
     ])];
   }
-  return [normalized.replace(/:[A-Za-z0-9_]+\??/gu, "visual-audit").replace(/\/{2,}/gu, "/").replace(/\/$/u, "") || "/"];
+  const concrete = normalized.replace(/:[A-Za-z0-9_]+\??/gu, "visual-audit").replace(/\/{2,}/gu, "/").replace(/\/$/u, "") || "/";
+  return /[\s|]/u.test(concrete) ? [] : [concrete];
 }
 
 function declaredArrayElements(sourceText, name) {

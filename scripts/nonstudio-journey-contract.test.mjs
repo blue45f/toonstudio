@@ -19,12 +19,18 @@ test("blocked storage getters and methods never break navigation", () => {
   assert.equal(writeBrowserPreference(() => ({ getItem: blocked, setItem: blocked }), "key", "calm"), false);
   assert.equal(writeBrowserPreference(() => undefined, "key", "calm"), false);
 });
-test("available storage and strict mode parsing retain only known preferences", () => {
+test("저장한 calm과 명시적으로 선택한 vivid 화면 모드를 보존한다", () => {
   const store = new Map();
   const resolve = () => ({ getItem: (key) => store.get(key) ?? null, setItem: (key, value) => store.set(key, value) });
-  assert.equal(writeBrowserPreference(resolve, "mode", "calm"), true);
-  assert.equal(parseExperienceMode(readBrowserPreference(resolve, "mode")), "calm");
-  for (const value of [null, "", "vivid", "<script>", "false"]) assert.equal(parseExperienceMode(value), "vivid");
+  for (const mode of ["calm", "vivid"]) {
+    assert.equal(writeBrowserPreference(resolve, "mode", mode), true);
+    assert.equal(parseExperienceMode(readBrowserPreference(resolve, "mode")), mode);
+  }
+});
+test("미설정·손상된 화면 설정은 장식을 켜지 않고 calm 기본값으로 복구한다", () => {
+  for (const value of [null, "", "<script>", "false", "VIVID", " vivid "]) {
+    assert.equal(parseExperienceMode(value), "calm");
+  }
 });
 test("all editor aliases and administrative routes are excluded, including trailing slashes/case", () => {
   for (const path of ["/studio", "/studio/", "/studio/new", "/studio/work/123", "/Studio/canvas", "/shaper", "/brush-lab", "/music", "/admin/members"]) {

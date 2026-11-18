@@ -282,6 +282,8 @@ export function StudioPublishingCommandCenter({
   const recoveryAbortRef = useRef<AbortController | null>(null);
   const publishRequestIdRef = useRef(0);
   const handoffGenerationRef = useRef(0);
+  const handoffQueryRef = useRef({ params, setParams });
+  useLayoutEffect(() => { handoffQueryRef.current = { params, setParams }; }, [params, setParams]);
   const updateSafetyRef = useRef<StudioUpdateSafetySourceSnapshot>({ safe: true });
   currentScopeRef.current = { authUserId, workId };
   updateSafetyRef.current = saving || recoveryBusy
@@ -817,16 +819,15 @@ export function StudioPublishingCommandCenter({
   }, [linkedChallengeId, linkedSeriesId]);
 
   function clearHandoffQueryParam() {
+    const current = handoffQueryRef.current;
+    if (!handoffId || current.params.get("handoff") !== handoffId) return;
     handoffGenerationRef.current += 1;
     setHandoffLoading(false);
     setHandoffError(null);
     setHandoffContext(null);
-    setParams((current) => {
-      if (!current.has("handoff")) return current;
-      const next = new URLSearchParams(current);
-      next.delete("handoff");
-      return next;
-    }, { replace: true });
+    const next = new URLSearchParams(current.params);
+    next.delete("handoff");
+    current.setParams(next, { replace: true });
   }
 
   function markChanged() {
@@ -1001,6 +1002,7 @@ export function StudioPublishingCommandCenter({
 
   async function handleSave(intent: SaveIntent) {
     if (publishAbortRef.current || saving || recoveryBusy) return;
+    const handoffGeneration = handoffGenerationRef.current;
     if (intent === "publish" && !publisherConfirmed) {
       setError(frozenStatus2Text("studio.frozenStatus2.pub.confirmAccountFirst", "현재 로그인 계정과 공개 범위를 확인한 뒤 게시 확인란을 선택해 주세요."));
       setStep("review");
@@ -1012,6 +1014,7 @@ export function StudioPublishingCommandCenter({
       return;
     }
     const recordSaveFailure = (message: string) => {
+      if (handoffGenerationRef.current !== handoffGeneration) return;
       setError(message);
       setFailedSaveAttempt({ authUserId, workId, message });
     };
@@ -1137,7 +1140,7 @@ export function StudioPublishingCommandCenter({
       publishScope,
       currentScopeRef.current,
       mountedRef.current,
-    )) return;
+    ) || handoffGenerationRef.current !== handoffGeneration) return;
     const baseDocument = writeStudioPublicationCover({
       ...integrityDocument,
       format: "upload",
@@ -1254,13 +1257,16 @@ export function StudioPublishingCommandCenter({
           };
         },
       });
-      assertStudioUploadPublishScope(
-        publishScope,
-        currentScopeRef.current,
-        mountedRef.current,
-        controller.signal,
-      );
+      assertStudioUploadPublishScope(publishScope, currentScopeRef.current, mountedRef.current, controller.signal);
+      const nextMeta = publishScope.workId && sharedMetaSnapshot && saved.updatedAt
+        ? advanceStudioUploadSharedMetaAfterSave(sharedMetaSnapshot, {
+            workId: saved.workId,
+            revision: saved.revision ?? sharedMetaSnapshot.revision,
+            updatedAt: saved.updatedAt,
+          }) : null;
       if (saved.revision !== undefined) setWorkRevision(saved.revision);
+      if (nextMeta) setSharedMeta(nextMeta);
+      if (handoffGenerationRef.current !== handoffGeneration) return;
       setBaseDoc(documentSnapshot);
       if (ownerControlsPolicy) {
         setCommunityMetadata(communitySnapshot);
@@ -1279,32 +1285,23 @@ export function StudioPublishingCommandCenter({
         try {
           const { acquireStudioPublishHandoffRepository } = await import("./studio-publish-handoff");
           await acquireStudioPublishHandoffRepository().remove(handoffId);
-          setHandoffContext(null);
-          setHandoffError(null);
         } catch {
           // 서버 저장은 이미 성공했다. 인계 원고는 24시간 만료 정리가 있으므로 게시 결과 이동을 막지 않는다.
         }
       }
-      const resultKind = resolveStudioPublishResultKind(
-        intent,
-        effectiveStatus,
-        directiveSnapshot,
-      );
+      if (
+        controller.signal.aborted || handoffGenerationRef.current !== handoffGeneration ||
+        !isStudioUploadPublishScopeCurrent(publishScope, currentScopeRef.current, mountedRef.current)
+      ) return;
+      const resultKind = resolveStudioPublishResultKind(intent, effectiveStatus, directiveSnapshot);
       const resultHref = buildStudioPublishResultHref(saved.workId, resultKind);
-      if (publishScope.workId && sharedMetaSnapshot && saved.updatedAt) {
-        const nextMeta = advanceStudioUploadSharedMetaAfterSave(sharedMetaSnapshot, {
-          workId: saved.workId,
-          revision: saved.revision ?? sharedMetaSnapshot.revision,
-          updatedAt: saved.updatedAt,
-        });
-        setSharedMeta(nextMeta);
-        if (sharedMetaSnapshot.role === "owner" && intent === "publish") {
+      if (nextMeta) {
+        if (nextMeta.role === "owner" && intent === "publish") {
           navigate(resultHref);
           return;
         }
         if (handoffId) clearHandoffQueryParam();
-        const revision = saved.revision ?? sharedMetaSnapshot.revision;
-        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
+        setSuccessMessage(frozenStatus2Text("studio.frozenStatus2.pub.draftSaved", { revision: nextMeta.revision }, "초안을 버전 #{revision}로 안전하게 저장했습니다."));
       } else {
         navigate(resultHref, { replace: true });
       }
