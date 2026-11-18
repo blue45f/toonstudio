@@ -49,8 +49,8 @@ test("관리 상태·전후 증거 저장과 서버 재열기 및 변경 이력�
   await dialog.getByRole("combobox", { name: "관리 상태", exact: true }).selectOption("진행 중");
   await dialog.getByRole("textbox", { name: "메모 · 차단 요인", exact: true }).fill("합성 테스트에서 재연결 검증을 준비합니다.");
   await dialog.getByRole("button", { name: "전후 증거 · 링크", exact: true }).click();
-  await dialog.getByLabel("변경 전 증거", { exact: true }).fill("합성 기준 요청 로그 확인");
-  await dialog.getByLabel("변경 후 증거", { exact: true }).fill("미확인 · 실행 증거 없음");
+  await dialog.getByRole("textbox", { name: "변경 전 증거", exact: true }).fill("합성 기준 요청 로그 확인");
+  await dialog.getByRole("textbox", { name: "변경 후 증거", exact: true }).fill("미확인 · 실행 증거 없음");
   await dialog.getByRole("button", { name: "검증 기록 저장", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(server.posts).toHaveLength(1);
