@@ -1,8 +1,8 @@
 /**
- * BabylonCharacterEngine 3D 소품 & 2인 듀오 스테이지(`setHandProp` · `setHeadProp` · `setStageProp` · `setDuoPartner`) 통합 검증:
- * - 손 소품 4종(`webtoon-hand-props-v1`) · 머리 액세서리 4종(`webtoon-head-props-v1`) · 배경 스테이지 5종(`webtoon-stage-props-v1`) SHA-256 검증 로드
- * - 실제 SHAPER 상대역 캐릭터 GLB(`shaper-noir-duke.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, LOD0 헤어 선별 + 대화 스탠스 포즈)
- * - 손(250) + 머리(251) + 스테이지(252) + 3D 상대역(253) 4중 동시 배치 및 카메라 프레이밍 중심 불변, 툰 전환, 단일 투샷 GLB 직렬화 보존 확인
+ * BabylonCharacterEngine 3D 소품 17종 & 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) & 3D 효과음 스탬프 통합 검증:
+ * - 손 소품 4종(`webtoon-hand-props-v1`) · 머리 액세서리 4종(`webtoon-head-props-v1`) · 배경 스테이지 5종(`webtoon-stage-props-v1`) · 효과음 스탬프 4종(`webtoon-sfx-stamps-v1`) SHA-256 검증 로드
+ * - 실제 SHAPER 상대역 캐릭터 GLB(`shaper-noir-duke.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, 표정 MorphTarget + 전용 손소품 `extra:duo-partner-prop`)
+ * - 손(250) + 머리(251) + 스테이지(252) + 효과음 스탬프(254) + 3D 상대역(220.. + 249) 5중 동시 배치 및 카메라 프레이밍 불변, 툰 전환, 단일 투샷 GLB 직렬화 보존 확인
  */
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -16,13 +16,14 @@ import { parseGlb } from "../testing/minimal-glb";
 import { createNullEngineHarness } from "./testing/null-engine-harness";
 import { createProceduralFixture } from "./testing/procedural-fixture";
 
-import type { HandPropId, HeadPropId, StagePropId } from "../contracts";
+import type { HandPropId, HeadPropId, SfxStampId, StagePropId } from "../contracts";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../../public", import.meta.url));
 const HAND_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-hand-props-v1");
 const HEAD_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-head-props-v1");
 const STAGE_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-stage-props-v1");
+const SFX_STAMPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-sfx-stamps-v1");
 
 interface PropManifestEntry<TId extends string> {
   readonly id: TId;
@@ -34,7 +35,7 @@ interface PropManifestEntry<TId extends string> {
   readonly triangles: number;
 }
 
-describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어태치먼트 + 투샷 GLB 보존", () => {
+describe("BabylonCharacterEngine 3D 소품 17종 & 2인 듀오 상대역 표정/손소품 & 효과음 스탬프 + 투샷 GLB 보존", () => {
   let harness: NullEngineHarness;
 
   beforeEach(async () => {
@@ -52,7 +53,7 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
     harness.dispose();
   });
 
-  it("Blender 5.3 소품 13종(손 4·머리 4·스테이지 5) + SHAPER 3D 상대역 캐릭터 4중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
+  it("Blender 5.3 에셋 17종(손 4·머리 4·스테이지 5·효과음 4) + SHAPER 3D 상대역(표정·전용 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
     const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<HandPropId>[];
     };
@@ -62,10 +63,14 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
     const stageManifest = JSON.parse(await readFile(resolve(STAGE_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<StagePropId>[];
     };
+    const sfxManifest = JSON.parse(await readFile(resolve(SFX_STAMPS_DIR, "index.json"), "utf8")) as {
+      readonly props: readonly PropManifestEntry<SfxStampId>[];
+    };
 
     expect(handManifest.props).toHaveLength(4);
     expect(headManifest.props).toHaveLength(4);
     expect(stageManifest.props).toHaveLength(5);
+    expect(sfxManifest.props).toHaveLength(4);
 
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
     const basePartCount = harness.engine.inspectRig()?.parts.length ?? 0;
@@ -102,7 +107,17 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
       expect(harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:stage-prop")?.triangleCount).toBe(entry.triangles);
     }
 
-    // 4번째 슬롯: 실제 SHAPER 북부대공 3D 패키지 GLB를 우측 0.95m 위치에 3D 듀오 파트너로 동시 배치
+    for (const entry of sfxManifest.props) {
+      await harness.engine.setSfxStamp({
+        stampId: entry.id,
+        glbUrl: `/assets/props/webtoon-sfx-stamps-v1/${entry.path}`,
+        sha256: entry.sha256,
+      });
+      expect(harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:sfx-stamp")?.triangleCount).toBe(entry.triangles);
+    }
+
+    const folderEntry = handManifest.props.find((p) => p.id === "case-folder")!;
+    // 5번째 슬롯: 실제 SHAPER 북부대공 3D 패키지 GLB + 냉소 표정(cold-smirk) + 전용 손소품(case-folder) 동시 배치
     await harness.engine.setDuoPartner({
       characterId: "shaper-noir-duke",
       glbUrl: "/assets/characters/shaper-noir-duke/shaper-noir-duke.glb",
@@ -110,29 +125,36 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
       side: "right",
       distanceMeters: 0.95,
       heightScale: 1.12,
-      stance: "arms-crossed",
+      stance: "conversational",
+      expression: "cold-smirk",
+      handProp: {
+        propId: folderEntry.id,
+        hand: "leftHand",
+        glbUrl: `/assets/props/webtoon-hand-props-v1/${folderEntry.path}`,
+        sha256: folderEntry.sha256,
+      },
     });
 
     const duoParts = harness.engine.inspectRig()?.parts.filter((p) => p.id.startsWith("extra:duo-partner")) ?? [];
-    expect(duoParts.length).toBeGreaterThanOrEqual(6);
-    // LOD1·LOD2 헤어는 필터링되어 가시 메시 목록에 포함되지 않아야 한다
+    expect(duoParts.length).toBeGreaterThanOrEqual(7);
+    expect(duoParts.some((p) => p.id === "extra:duo-partner-prop" && p.triangleCount === folderEntry.triangles)).toBe(true);
     expect(duoParts.some((p) => p.meshNames.some((n) => n.includes("_LOD1") || n.includes("_LOD2")))).toBe(false);
-    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 3 + duoParts.length);
+    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 4 + duoParts.length);
 
-    // 4중 배치 상태에서도 얼굴 클로즈업 카메라는 주 캐릭터 두상에 그대로 고정되어야 한다
+    // 5중 배치 상태에서도 얼굴 클로즈업 카메라는 주 캐릭터 두상에 그대로 고정되어야 한다
     harness.engine.setCamera({ ...DEFAULT_FRAMING, mode: "face" });
     const stageFaceCamPos = harness.engine.viewportCamera().position;
     expect(stageFaceCamPos[0]).toBeCloseTo(baseFaceCamPos[0], 4);
     expect(stageFaceCamPos[1]).toBeCloseTo(baseFaceCamPos[1], 4);
     expect(stageFaceCamPos[2]).toBeCloseTo(baseFaceCamPos[2], 4);
 
-    // 툰 셰이딩 전환 시 4개 슬롯(다중 재질 듀오 파트너 포함) 모두 ShaderMaterial로 동기 전환
+    // 툰 셰이딩 전환 시 모든 extra 슬롯(상대역 전용 손소품·효과음 스탬프 포함)이 ShaderMaterial로 동기 전환
     harness.engine.setShading({ ...DEFAULT_SHADING, mode: "toon" });
     for (const extraPart of harness.engine.inspectRig()?.parts.filter((p) => p.id.startsWith("extra:")) ?? []) {
       expect(extraPart.materialClass).toBe("ShaderMaterial");
     }
 
-    // 단일 투샷 GLB 내보내기 시 4개 슬롯 앵커 노드가 모두 직렬화 보존된다
+    // 단일 투샷 GLB 내보내기 시 5개 슬롯 + 상대역 전용 손소품 앵커 노드가 모두 직렬화 보존된다
     const glbBytes = await harness.engine.exportGlb();
     const parsed = parseGlb(glbBytes);
     const gltf = parsed.json as { nodes: Array<{ name?: string }> };
@@ -140,16 +162,19 @@ describe("BabylonCharacterEngine 3D 소품 13종 & 2인 듀오 스테이지 어�
     expect(nodeNames.some((n) => n.includes("TS_HandPropAnchor_aether-blade"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_pearl-earrings-pin"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_StagePropAnchor_noir-interrogation-lamp"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_SfxStampAnchor_pat"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_DuoPartnerAnchor_shaper-noir-duke"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_DuoPartnerPropAnchor_case-folder"))).toBe(true);
 
-    // 주 캐릭터 재로드 시 4개 슬롯 모두 자동 재부착
+    // 주 캐릭터 재로드 시 5개 슬롯 모두 자동 재부착
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
-    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 3 + duoParts.length);
+    expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 4 + duoParts.length);
 
-    // 4개 슬롯 해제(null) 시 원래 파츠·메시 수로 누수 없이 정리
+    // 전체 슬롯 해제(null) 시 원래 파츠·메시 수로 누수 없이 정리
     await harness.engine.setHandProp(null);
     await harness.engine.setHeadProp(null);
     await harness.engine.setStageProp(null);
+    await harness.engine.setSfxStamp(null);
     await harness.engine.setDuoPartner(null);
     expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount);
     expect(harness.engine.inspectScene().meshCount).toBe(baseMeshCount);

@@ -49,14 +49,11 @@ describe("webtoon-strip-composer", () => {
     expect(strip.width).toBe(layout.stripWidth);
     expect(strip.height).toBe(layout.stripHeight);
 
-    // 좌상단 외곽 여백(0, 0)은 순백색(#FFFFFF)
     expect(Array.from(strip.rgba.slice(0, 4))).toEqual([255, 255, 255, 255]);
 
-    // 첫 번째 패널 좌상단 테두리(marginX, marginY)는 먹선(#18151C -> 24, 21, 28, 255)
     const borderIdx = (layout.marginY * strip.width + layout.marginX) * 4;
     expect(Array.from(strip.rgba.slice(borderIdx, borderIdx + 4))).toEqual([24, 21, 28, 255]);
 
-    // 첫 번째 컷의 캐릭터 중앙 픽셀 확인
     const charX = layout.marginX + layout.borderPx + Math.floor(layout.cutWidth / 2);
     const charY = layout.marginY + layout.borderPx + layout.bubbleSafeTopPx + Math.floor(layout.cutHeight / 2);
     const charIdx = (charY * strip.width + charX) * 4;
@@ -97,13 +94,11 @@ describe("webtoon-strip-composer", () => {
       intensity: 0.85,
     });
 
-    // 불투명 캐릭터 중심 픽셀은 효과선에 덮이지 않고 그대로 보존되어야 한다
     const charX = layout.marginX + layout.borderPx + Math.floor(layout.cutWidth / 2);
     const charY = layout.marginY + layout.borderPx + layout.bubbleSafeTopPx + Math.floor(layout.cutHeight / 2);
     const charIdx = (charY * fxFocus.width + charX) * 4;
     expect(Array.from(fxFocus.rgba.slice(charIdx, charIdx + 4))).toEqual([210, 55, 95, 255]);
 
-    // plain 대비 변경 픽셀 수가 충분히 발생해야 한다(효과선 + 말풍선)
     const countDiffPixels = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
       let diff = 0;
       for (let i = 0; i < a.length; i += 4) {
@@ -115,7 +110,6 @@ describe("webtoon-strip-composer", () => {
     expect(countDiffPixels(plainStrip.rgba, fxSpeed.rgba)).toBeGreaterThan(200);
     expect(countDiffPixels(plainStrip.rgba, fxSparkle.rgba)).toBeGreaterThan(100);
 
-    // 1컷 좌상단 말풍선 중심 픽셀은 밝은 아이보리(#FFFEFB 97% 알파 블렌드 -> 250 이상)로 채워진다
     const innerX = layout.marginX + layout.borderPx;
     const innerY = layout.marginY + layout.borderPx;
     const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
@@ -208,29 +202,35 @@ describe("webtoon-strip-composer", () => {
     expect(progressLabels[2]).toContain("각성 클로즈업");
 
     const applyCalls = engine.calls.filter((c) => c.method === "applyPlan");
-    // 4개 컷 스냅샷 적용 + 마지막 finally에서 basePlan 복원 = 총 5회
     expect(applyCalls).toHaveLength(5);
     expect((applyCalls[4]?.args[0] as { revision: number }).revision).toBe(basePlan.revision);
   });
 
-  it("dialogueLines 한국어 대사를 전달하면 1~4컷 말풍선 내부에 선명한 먹물 식자 픽셀을 합성하고 문구별 차이를 반영한다", () => {
-    const layout = clampWebtoonStripLayout(128, true);
+  it("dialogueLines·bubbleShapes·bubbleFontScales·sfxStamps에 따라 컷별 말풍선 모양(독백·외침·속삭임·숨김), 폰트 강조, 한국어 효과음 스탬프를 구분 합성한다", () => {
+    const layout = clampWebtoonStripLayout(144, true);
     const panels = WEBTOON_VERTICAL_STRIP_CUTS.map(() => ({
       width: layout.cutWidth,
       height: layout.cutHeight,
       rgba: new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4),
     }));
 
-    const emptyBubble = composeWebtoonVerticalStrip(panels, layout, {
+    const hiddenBubbles = composeWebtoonVerticalStrip(panels, layout, {
       enabled: true,
       linesKind: "none",
       includeSpeechBubbles: true,
-      dialogueLines: ["", "", "", ""],
+      bubbleShapes: ["none", "none", "none", "none"],
+      dialogueLines: ["숨김", "숨김", "숨김", "숨김"],
     });
-    const koreanA = composeWebtoonVerticalStrip(panels, layout, {
+    const plain = composeWebtoonVerticalStrip(panels, layout);
+    // 모든 말풍선이 none이고 효과음/효과선이 없으면 plain과 동일해야 한다
+    expect(Array.from(hiddenBubbles.rgba)).toEqual(Array.from(plain.rgba));
+
+    const variedShapes = composeWebtoonVerticalStrip(panels, layout, {
       enabled: true,
       linesKind: "none",
       includeSpeechBubbles: true,
+      bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
+      bubbleFontScales: ["md", "md", "lg", "sm"],
       dialogueLines: [
         "황실의 검과 왕관을 거둔다.",
         "감히 내 눈을 마주 봐.",
@@ -238,31 +238,57 @@ describe("webtoon-strip-composer", () => {
         "내 제국에 온 걸 환영해.",
       ],
     });
-    const koreanB = composeWebtoonVerticalStrip(panels, layout, {
+    const allOval = composeWebtoonVerticalStrip(panels, layout, {
       enabled: true,
       linesKind: "none",
       includeSpeechBubbles: true,
+      bubbleShapes: ["oval", "oval", "oval", "oval"],
+      bubbleFontScales: ["sm", "sm", "sm", "sm"],
       dialogueLines: [
-        "봉인된 청운 검기가 깨어난다.",
-        "물러서라 진검승부다.",
-        "모든 검로의 빈틈이 보인다.",
-        "단 일검으로 매듭짓겠다.",
+        "황실의 검과 왕관을 거둔다.",
+        "감히 내 눈을 마주 봐.",
+        "이제 반격의 시간이야.",
+        "내 제국에 온 걸 환영해.",
       ],
     });
 
-    const countDarkInkPixels = (rgba: Uint8ClampedArray): number => {
-      let dark = 0;
-      for (let i = 0; i < rgba.length; i += 4) {
-        if ((rgba[i] ?? 255) < 80 && (rgba[i + 1] ?? 255) < 80 && (rgba[i + 2] ?? 255) < 80) dark += 1;
+    let shapeDiff = 0;
+    for (let i = 0; i < variedShapes.rgba.length; i += 4) {
+      if (
+        variedShapes.rgba[i] !== allOval.rgba[i] ||
+        variedShapes.rgba[i + 1] !== allOval.rgba[i + 1] ||
+        variedShapes.rgba[i + 2] !== allOval.rgba[i + 2]
+      ) {
+        shapeDiff += 1;
       }
-      return dark;
-    };
-    expect(countDarkInkPixels(koreanA.rgba)).toBeGreaterThan(countDarkInkPixels(emptyBubble.rgba) + 80);
-
-    let diffAB = 0;
-    for (let i = 0; i < koreanA.rgba.length; i += 4) {
-      if (koreanA.rgba[i] !== koreanB.rgba[i]) diffAB += 1;
     }
-    expect(diffAB).toBeGreaterThan(20);
+    expect(shapeDiff).toBeGreaterThan(150);
+
+    const withSfx = composeWebtoonVerticalStrip(panels, layout, {
+      enabled: true,
+      linesKind: "none",
+      includeSpeechBubbles: true,
+      bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
+      bubbleFontScales: ["md", "md", "lg", "sm"],
+      sfxStamps: ["seureung", "dugeun", "kugugung", "pat"],
+      dialogueLines: [
+        "황실의 검과 왕관을 거둔다.",
+        "감히 내 눈을 마주 봐.",
+        "이제 반격의 시간이야.",
+        "내 제국에 온 걸 환영해.",
+      ],
+    });
+
+    let sfxDiff = 0;
+    for (let i = 0; i < withSfx.rgba.length; i += 4) {
+      if (
+        withSfx.rgba[i] !== variedShapes.rgba[i] ||
+        withSfx.rgba[i + 1] !== variedShapes.rgba[i + 1] ||
+        withSfx.rgba[i + 2] !== variedShapes.rgba[i + 2]
+      ) {
+        sfxDiff += 1;
+      }
+    }
+    expect(sfxDiff).toBeGreaterThan(120);
   });
 });

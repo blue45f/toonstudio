@@ -1,15 +1,11 @@
 /**
- * 캐릭터 3D 웹툰 소품 & 2인 듀오 스테이지 어태치먼트 로더:
- * - 손 소품(`partId = 250`, `extra:hand-prop`): `rightHand` / `leftHand` 본 아래 `TS_HandPropAnchor_*`
+ * 캐릭터 3D 웹툰 소품 · 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) · 3D 효과음 스탬프 어태치먼트 로더:
+ * - 상대역 전용 손 소품(`partId = 249`, `extra:duo-partner-prop`): 상대역 손 본 아래 `TS_DuoPartnerPropAnchor_*`
+ * - 주 캐릭터 손 소품(`partId = 250`, `extra:hand-prop`): `rightHand` / `leftHand` 본 아래 `TS_HandPropAnchor_*`
  * - 머리 액세서리(`partId = 251`, `extra:head-prop`): `head` 본 아래 `TS_HeadPropAnchor_*`
  * - 배경 스테이지 스탠드(`partId = 252`, `extra:stage-prop`): `rig.root` 아래 `TS_StagePropAnchor_*`
- * - 3D 듀오 상대역 캐릭터(`partId = 253`, `extra:duo-partner`): `rig.root` 아래 `TS_DuoPartnerAnchor_*` (LOD0 헤어 선별 + 대화 스탠스 본 포즈 자동 적용)
- *
- * 네 슬롯 모두 `rig.root` 하위 트리에 속하고 `rig.parts`(`role = "accessory"`)에 독립 등록되므로:
- * 1) 손 소품 + 머리 액세서리 + 배경 스테이지 + 3D 상대역 캐릭터 4중 동시 배치 지원
- * 2) 뷰포트 PBR 및 툰 셰이딩(외곽선·림라이트·망점 스크린톤 포함) 자동 적용
- * 3) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
- * 4) `exportGlb()` 실행 시 주 캐릭터·소품·상대역 3D 캐릭터가 단일 투샷 GLB로 통합 직렬화 보존됨
+ * - 3D 듀오 상대역 캐릭터(`partId = 220..`, `extra:duo-partner`): `rig.root` 아래 `TS_DuoPartnerAnchor_*`
+ * - 3D 웹툰 효과음 스탬프(`partId = 254`, `extra:sfx-stamp`): `rig.root` 아래 `TS_SfxStampAnchor_*`
  */
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
@@ -26,18 +22,26 @@ import { loadCharacterAssetContainer } from "./package-loader";
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
   DuoPartnerAttachment,
+  DuoPartnerExpressionPreset,
   DuoPartnerStance,
   HandPropAttachment,
   HandPropId,
   HandPropSide,
   HeadPropAttachment,
   PartRole,
+  SfxStampAttachment,
   StagePropAttachment,
 } from "../../contracts";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품·듀오 스테이지 전용 고정 partId */
+/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품·듀오 스테이지·효과음 스탬프 전용 고정 partId */
+export const DUO_PARTNER_PART_ID = 220;
+export const DUO_PARTNER_PART_KEY = "extra:duo-partner";
+
+export const DUO_PARTNER_PROP_PART_ID = 249;
+export const DUO_PARTNER_PROP_PART_KEY = "extra:duo-partner-prop";
+
 export const HAND_PROP_PART_ID = 250;
 export const HAND_PROP_PART_KEY = "extra:hand-prop";
 
@@ -47,8 +51,10 @@ export const HEAD_PROP_PART_KEY = "extra:head-prop";
 export const STAGE_PROP_PART_ID = 252;
 export const STAGE_PROP_PART_KEY = "extra:stage-prop";
 
-export const DUO_PARTNER_PART_ID = 220;
-export const DUO_PARTNER_PART_KEY = "extra:duo-partner";
+export const SFX_STAMP_PART_ID = 254;
+export const SFX_STAMP_PART_KEY = "extra:sfx-stamp";
+
+type LoadedContainer = Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
 
 export interface ScenePropLoadDeps {
   readonly scene: Scene;
@@ -74,6 +80,12 @@ export interface HeadPropHandle {
 
 export interface StagePropHandle {
   readonly attachment: StagePropAttachment;
+  readonly part: RigPart;
+  dispose(): void;
+}
+
+export interface SfxStampHandle {
+  readonly attachment: SfxStampAttachment;
   readonly part: RigPart;
   dispose(): void;
 }
@@ -118,6 +130,41 @@ const PROP_GRIP_SPECS: Readonly<Record<HandPropId, GripTransformSpec>> = {
   },
 };
 
+const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: readonly [number, number, number]; readonly lower: readonly [number, number, number]; readonly hand: readonly [number, number, number] }>> = {
+  smartphone: { upper: [14, 28, 60], lower: [32, 82, -26], hand: [18, 12, -8] },
+  "coffee-cup": { upper: [10, 24, 62], lower: [12, 86, -24], hand: [6, 14, -10] },
+  "case-folder": { upper: [12, 22, 62], lower: [24, 78, -18], hand: [10, 10, -6] },
+  "aether-blade": { upper: [-8, 32, 48], lower: [-12, 68, -18], hand: [-14, 18, -12] },
+};
+
+const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {
+  neutral: {},
+  "warm-smile": {
+    mouthSmile: 0.78,
+    eyeSquint: 0.36,
+    browInnerUp: 0.22,
+    HappyBrow: 0.58,
+  },
+  "cold-smirk": {
+    mouthSmile: 0.42,
+    eyeSquint: 0.3,
+    browDown: 0.28,
+    AngryBrow: 0.26,
+  },
+  shocked: {
+    eyeWide: 0.82,
+    jawOpen: 0.48,
+    browInnerUp: 0.68,
+    mouthFunnel: 0.26,
+  },
+  "stern-glare": {
+    mouthFrown: 0.52,
+    browDown: 0.72,
+    eyeSquint: 0.28,
+    AngryBrow: 0.68,
+  },
+};
+
 function computePalmLocalPosition(rig: CharacterRig, hand: HandPropSide, propId: HandPropId): Vector3 {
   const handBone = rig.humanoid.get(hand);
   const middleName = hand === "rightHand" ? "rightMiddleProximal" : "leftMiddleProximal";
@@ -140,12 +187,29 @@ function computePalmLocalPosition(rig: CharacterRig, hand: HandPropSide, propId:
   );
 }
 
+function computePartnerHandLocalPosition(
+  container: LoadedContainer,
+  handNode: TransformNode,
+  hand: HandPropSide,
+  propId: HandPropId,
+): Vector3 {
+  const middleNames = hand === "rightHand" ? ["mixamorig:RightHandMiddle1", "rightMiddleProximal"] : ["mixamorig:LeftHandMiddle1", "leftMiddleProximal"];
+  const middleNode = container.transformNodes.find((n) => middleNames.includes(n.name));
+  const signX = hand === "rightHand" ? -1 : 1;
+  const spec = PROP_GRIP_SPECS[propId];
+  if (middleNode && middleNode.parent === handNode && middleNode.position.length() > 0.01) {
+    const base = middleNode.position.scale(0.56);
+    return new Vector3(base.x + signX * spec.palmDelta[0], base.y + spec.palmDelta[1], base.z + spec.palmDelta[2]);
+  }
+  return new Vector3(signX * (0.062 + spec.palmDelta[0]), spec.palmDelta[1], spec.palmDelta[2]);
+}
+
 interface MountExtraGlbInput {
   readonly rig: CharacterRig;
   readonly glbUrl: string;
   readonly sha256: string | undefined;
   readonly labelId: string;
-  readonly codePrefix: "hand-prop" | "head-prop" | "stage-prop" | "duo-partner";
+  readonly codePrefix: "hand-prop" | "head-prop" | "stage-prop" | "sfx-stamp" | "duo-partner" | "duo-partner-prop";
   readonly anchorName: string;
   readonly parentNode: TransformNode;
   readonly localPosition: Vector3;
@@ -155,7 +219,7 @@ interface MountExtraGlbInput {
   readonly partKey: string;
   readonly deps: ScenePropLoadDeps;
   readonly filterPartnerMeshes?: boolean;
-  readonly onContainerMounted?: (container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>) => void;
+  readonly onContainerMounted?: (container: LoadedContainer) => void;
 }
 
 const PRIMITIVE_SUFFIX = /_primitive\d+$/u;
@@ -172,9 +236,10 @@ function degToQuat(rxDeg: number, ryDeg: number, rzDeg: number): Quaternion {
 }
 
 function applyDuoPartnerConversationalPose(
-  container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>,
+  container: LoadedContainer,
   stance: DuoPartnerStance,
   side: "left" | "right",
+  heldProp?: { readonly propId: HandPropId; readonly hand: HandPropSide } | null,
 ): void {
   const turnSign = side === "right" ? -1 : 1;
   const poseByBone = new Map<string, Quaternion>();
@@ -200,7 +265,6 @@ function applyDuoPartnerConversationalPose(
     setBone(["mixamorig:LeftArm", "leftUpperArm"], 6, -12, -68);
     setBone(["mixamorig:LeftForeArm", "leftLowerArm"], 8, -18, 6);
   } else {
-    // conversational: 자연스럽게 내린 양팔 + 주 캐릭터 방향 미세 시선·고개 회전
     setBone(["mixamorig:Hips", "hips"], 0, turnSign * 4, 0);
     setBone(["mixamorig:Spine1", "chest"], -2, turnSign * 5, 0);
     setBone(["mixamorig:Neck", "neck"], 2, turnSign * 8, 0);
@@ -211,6 +275,19 @@ function applyDuoPartnerConversationalPose(
     setBone(["mixamorig:LeftArm", "leftUpperArm"], 6, -12, -66);
     setBone(["mixamorig:LeftForeArm", "leftLowerArm"], 10, -22, 8);
     setBone(["mixamorig:LeftHand", "leftHand"], 0, -8, -6);
+  }
+
+  if (heldProp) {
+    const grip = PARTNER_GRIP_RIGHT_ARM_DEG[heldProp.propId];
+    if (heldProp.hand === "rightHand") {
+      setBone(["mixamorig:RightArm", "rightUpperArm"], grip.upper[0], grip.upper[1], grip.upper[2]);
+      setBone(["mixamorig:RightForeArm", "rightLowerArm"], grip.lower[0], grip.lower[1], grip.lower[2]);
+      setBone(["mixamorig:RightHand", "rightHand"], grip.hand[0], grip.hand[1], grip.hand[2]);
+    } else {
+      setBone(["mixamorig:LeftArm", "leftUpperArm"], grip.upper[0], -grip.upper[1], -grip.upper[2]);
+      setBone(["mixamorig:LeftForeArm", "leftLowerArm"], grip.lower[0], -grip.lower[1], -grip.lower[2]);
+      setBone(["mixamorig:LeftHand", "leftHand"], grip.hand[0], -grip.hand[1], -grip.hand[2]);
+    }
   }
 
   for (const node of container.transformNodes) {
@@ -229,6 +306,42 @@ function applyDuoPartnerConversationalPose(
   }
 }
 
+function applyDuoPartnerExpressionMorphs(container: LoadedContainer, expression: DuoPartnerExpressionPreset): void {
+  const weights = PARTNER_EXPRESSION_WEIGHTS[expression] ?? PARTNER_EXPRESSION_WEIGHTS.neutral;
+  const knownKeys = new Set<string>([
+    "mouthSmile",
+    "mouthFrown",
+    "jawOpen",
+    "mouthPucker",
+    "mouthFunnel",
+    "eyeBlinkLeft",
+    "eyeBlinkRight",
+    "eyeWide",
+    "eyeSquint",
+    "browInnerUp",
+    "browDown",
+    "cheekPuff",
+    "HappyBrow",
+    "AngryBrow",
+  ]);
+  for (const abstract of container.meshes) {
+    if (!(abstract instanceof Mesh)) continue;
+    const manager = abstract.morphTargetManager;
+    if (!manager) continue;
+    manager.useTextureToStoreTargets = true;
+    for (let i = 0; i < manager.numTargets; i += 1) {
+      const target = manager.getTarget(i);
+      const rawName = target.name;
+      const stripped = rawName.startsWith("facs:") ? rawName.slice(5) : rawName;
+      if (stripped in weights) {
+        target.influence = weights[stripped] ?? 0;
+      } else if (knownKeys.has(stripped)) {
+        target.influence = 0;
+      }
+    }
+  }
+}
+
 async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly part: RigPart; readonly dispose: () => void }> {
   const now = input.deps.now ?? Date.now();
   const bytes = await input.deps.fetchBytes(input.glbUrl);
@@ -244,7 +357,7 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     }
   }
 
-  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
+  let container: LoadedContainer;
   try {
     container = await loadCharacterAssetContainer(bytes, input.deps.scene);
   } catch (error) {
@@ -423,6 +536,29 @@ export async function attachStagePropToRig(
   return { attachment, part: mounted.part, dispose: mounted.dispose };
 }
 
+export async function attachSfxStampToRig(
+  rig: CharacterRig,
+  attachment: SfxStampAttachment,
+  deps: ScenePropLoadDeps,
+): Promise<SfxStampHandle> {
+  const mounted = await mountExtraPropPart({
+    rig,
+    glbUrl: attachment.glbUrl,
+    sha256: attachment.sha256,
+    labelId: attachment.stampId,
+    codePrefix: "sfx-stamp",
+    anchorName: `TS_SfxStampAnchor_${attachment.stampId}`,
+    parentNode: rig.root,
+    localPosition: Vector3.Zero(),
+    localRotation: Quaternion.Identity(),
+    uniformScale: 1.0,
+    partId: SFX_STAMP_PART_ID,
+    partKey: SFX_STAMP_PART_KEY,
+    deps,
+  });
+  return { attachment, part: mounted.part, dispose: mounted.dispose };
+}
+
 export async function attachDuoPartnerToRig(
   rig: CharacterRig,
   attachment: DuoPartnerAttachment,
@@ -442,7 +578,7 @@ export async function attachDuoPartnerToRig(
     }
   }
 
-  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
+  let container: LoadedContainer;
   try {
     container = await loadCharacterAssetContainer(bytes, deps.scene);
   } catch (error) {
@@ -456,6 +592,8 @@ export async function attachDuoPartnerToRig(
   const yawRad = (-sideSign * 24 * Math.PI) / 180;
   const safeScale = Number.isFinite(attachment.heightScale) ? Math.min(1.32, Math.max(0.72, attachment.heightScale)) : 1.0;
   const stance: DuoPartnerStance = attachment.stance ?? "conversational";
+  const expression: DuoPartnerExpressionPreset = attachment.expression ?? "neutral";
+  const resolvedPartnerHand: HandPropSide = attachment.handProp?.hand ?? (attachment.side === "right" ? "leftHand" : "rightHand");
 
   const anchor = new TransformNode(`TS_DuoPartnerAnchor_${attachment.characterId}`, deps.scene);
   anchor.parent = rig.root;
@@ -467,9 +605,14 @@ export async function attachDuoPartnerToRig(
     if (rootNode instanceof TransformNode) rootNode.parent = anchor;
   }
 
-  applyDuoPartnerConversationalPose(container, stance, attachment.side);
+  applyDuoPartnerConversationalPose(
+    container,
+    stance,
+    attachment.side,
+    attachment.handProp ? { propId: attachment.handProp.propId, hand: resolvedPartnerHand } : null,
+  );
+  applyDuoPartnerExpressionMorphs(container, expression);
 
-  // 서브메시별 원본 재질·텍스처(은발·피부·적안·코트·부츠)가 툰 모드에서도 각각 정확히 보존되도록 재질 단위로 RigPart를 분리 등록한다.
   const groupsByMat = new Map<unknown, { meshes: Mesh[]; outlines: Mesh[] }>();
   for (const abstract of container.meshes) {
     if (!(abstract instanceof Mesh) || abstract.getTotalVertices() === 0) continue;
@@ -536,6 +679,47 @@ export async function attachDuoPartnerToRig(
     createdParts.push(part);
     idx += 1;
   }
+
+  let partnerPropDispose: (() => void) | null = null;
+  if (attachment.handProp) {
+    const handNodeNames =
+      resolvedPartnerHand === "rightHand"
+        ? ["mixamorig:RightHand", "rightHand"]
+        : ["mixamorig:LeftHand", "leftHand"];
+    const partnerHandNode = container.transformNodes.find((n) => handNodeNames.includes(n.name)) ?? null;
+    const gripSpec = PROP_GRIP_SPECS[attachment.handProp.propId];
+    const [rx, ry, rz] = resolvedPartnerHand === "rightHand" ? gripSpec.eulerRight : gripSpec.eulerLeft;
+    try {
+      const mountedProp = await mountExtraPropPart({
+        rig,
+        glbUrl: attachment.handProp.glbUrl,
+        sha256: attachment.handProp.sha256,
+        labelId: attachment.handProp.propId,
+        codePrefix: "duo-partner-prop",
+        anchorName: `TS_DuoPartnerPropAnchor_${attachment.handProp.propId}`,
+        parentNode: partnerHandNode ?? anchor,
+        localPosition: partnerHandNode
+          ? computePartnerHandLocalPosition(container, partnerHandNode, resolvedPartnerHand, attachment.handProp.propId)
+          : new Vector3(0.24, 1.12, 0.2),
+        localRotation: Quaternion.FromEulerAngles(rx, ry, rz),
+        uniformScale: gripSpec.uniformScale,
+        partId: DUO_PARTNER_PROP_PART_ID,
+        partKey: DUO_PARTNER_PROP_PART_KEY,
+        deps,
+      });
+      createdParts.push(mountedProp.part);
+      partnerPropDispose = mountedProp.dispose;
+    } catch (error) {
+      for (const p of createdParts) {
+        detachExtraRigPart(rig, p.partId);
+        p.toon?.dispose(true, false);
+      }
+      container.dispose();
+      anchor.dispose(false, false);
+      throw error;
+    }
+  }
+
   anchor.computeWorldMatrix(true);
 
   let disposed = false;
@@ -545,7 +729,9 @@ export async function attachDuoPartnerToRig(
     dispose(): void {
       if (disposed) return;
       disposed = true;
+      partnerPropDispose?.();
       for (const p of createdParts) {
+        if (p.partId === DUO_PARTNER_PROP_PART_ID) continue;
         detachExtraRigPart(rig, p.partId);
         p.toon?.dispose(true, false);
       }

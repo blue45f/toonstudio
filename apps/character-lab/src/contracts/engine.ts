@@ -181,8 +181,27 @@ export interface StagePropAttachment {
   readonly sha256?: string;
 }
 
+export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat"] as const;
+export type SfxStampId = (typeof SFX_STAMP_IDS)[number];
+
+export interface SfxStampAttachment {
+  readonly stampId: SfxStampId;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
 export const DUO_PARTNER_STANCES = ["conversational", "arms-crossed", "attentive"] as const;
 export type DuoPartnerStance = (typeof DUO_PARTNER_STANCES)[number];
+
+export const DUO_PARTNER_EXPRESSIONS = ["neutral", "warm-smile", "cold-smirk", "shocked", "stern-glare"] as const;
+export type DuoPartnerExpressionPreset = (typeof DUO_PARTNER_EXPRESSIONS)[number];
+
+export interface DuoPartnerHandPropSpec {
+  readonly propId: HandPropId;
+  readonly hand?: HandPropSide;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
 
 export interface DuoPartnerAttachment {
   readonly characterId: string;
@@ -192,6 +211,8 @@ export interface DuoPartnerAttachment {
   readonly distanceMeters: number;
   readonly heightScale: number;
   readonly stance?: DuoPartnerStance;
+  readonly expression?: DuoPartnerExpressionPreset;
+  readonly handProp?: DuoPartnerHandPropSpec | null;
 }
 
 export interface CharacterEngine {
@@ -233,8 +254,10 @@ export interface CharacterEngine {
   setHeadProp?(attachment: HeadPropAttachment | null): Promise<void>;
   /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법·대관식 단상·취조실 조명 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
   setStageProp?(attachment: StagePropAttachment | null): Promise<void>;
-  /** 뷰포트 3D 공간에 상대역 3D 캐릭터 패키지 GLB를 실제 거리·신장비·대화 포즈로 동시 배치하거나 해제(null)한다. */
+  /** 뷰포트 3D 공간에 상대역 3D 캐릭터 패키지 GLB(표정 MorphTarget·전용 손소품 포함)를 동시 배치하거나 해제(null)한다. */
   setDuoPartner?(attachment: DuoPartnerAttachment | null): Promise<void>;
+  /** 뷰포트 3D 상단 공간에 한국형 웹툰 오노마토페(스릉·두근·쿠구궁·팟) 3D 입체 효과음 스탬프를 배치하거나 해제(null)한다. */
+  setSfxStamp?(attachment: SfxStampAttachment | null): Promise<void>;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;

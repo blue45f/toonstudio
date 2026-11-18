@@ -1,18 +1,23 @@
 /**
- * 한국형 웹툰 원고 말풍선(대화 타원·외침 가시·독백 사각 박스) 및 효과선(집중선·사선 속도선·로판 에테르 반짝이)
- * 실시간 뷰포트 연출 오버레이 모듈.
+ * 한국형 웹툰 원고 말풍선(대화 타원·외침 가시·독백 사각 박스), 효과선(집중선·사선 속도선·로판 에테르 반짝이),
+ * 및 한국어 오노마토페 효과음 스탬프(스릉·두근·쿠구궁·팟) 실시간 뷰포트 연출 오버레이 모듈.
  * 소문자 하이픈 파일명(`viewport-manga-fx-overlay.tsx`)으로 `app/composition.ts` 패널 규칙을 준수하며,
  * `Math.random` 없이 결정론적 삼각 수열만으로 선화를 생성한다.
  */
+import { WEBTOON_SFX_STAMPS, findWebtoonSfxStampSpec } from "./viewport-hand-prop-controls";
+
+import type { SfxStampId } from "../../../contracts";
 import type { CSSProperties } from "react";
 
 export type MangaBubblePreset = "dialogue-dual" | "lead-left" | "shout-burst" | "monologue-box" | "none";
 export type MangaActionLinesPreset = "none" | "focus-radial" | "speed-diagonal" | "romance-sparkle";
+export type MangaSfxStampPreset = "none" | SfxStampId;
 
 export interface ViewportMangaFxState {
   readonly enabled: boolean;
   readonly bubblePreset: MangaBubblePreset;
   readonly linesPreset: MangaActionLinesPreset;
+  readonly sfxStamp: MangaSfxStampPreset;
   readonly dialogueText: string;
   readonly intensity: number;
 }
@@ -21,6 +26,7 @@ export const DEFAULT_MANGA_FX_STATE: ViewportMangaFxState = Object.freeze({
   enabled: false,
   bubblePreset: "dialogue-dual",
   linesPreset: "focus-radial",
+  sfxStamp: "none",
   dialogueText: "여기서부터는 내 구역이야.",
   intensity: 0.75,
 });
@@ -150,6 +156,13 @@ const SPARKLE_SPOTS: ReadonlyArray<{ readonly cx: number; readonly cy: number; r
   { cx: 760, cy: 740, r: 22 },
 ]);
 
+const SFX_TILT_BY_ID: Readonly<Record<SfxStampId, number>> = Object.freeze({
+  seureung: -10,
+  dugeun: 8,
+  kugugung: -7,
+  pat: 11,
+});
+
 export interface ViewportMangaFxOverlayProps {
   readonly mangaFx: ViewportMangaFxState;
 }
@@ -161,6 +174,7 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
   const focusLines = mangaFx.linesPreset === "focus-radial" ? buildDeterministicFocusLines(safeIntensity) : [];
   const speedLines = mangaFx.linesPreset === "speed-diagonal" ? buildDeterministicSpeedLines(safeIntensity) : [];
   const burstPoints = mangaFx.bubblePreset === "shout-burst" ? buildShoutBurstPolygonPoints(245, 165, 165, 92) : "";
+  const activeSfx = mangaFx.sfxStamp !== "none" ? findWebtoonSfxStampSpec(mangaFx.sfxStamp) : null;
 
   return (
     <div className="cl-viewport-manga-fx-overlay" data-testid="viewport-manga-fx-overlay" aria-hidden="true" style={OVERLAY_STYLE}>
@@ -271,6 +285,46 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
             ) : null}
           </g>
         ) : null}
+
+        {/* 3. 한국형 웹툰 오노마토페(효과음) 스탬프 레이어 */}
+        {activeSfx ? (
+          <g
+            data-testid="viewport-manga-sfx-stamp"
+            data-sfx-id={activeSfx.id}
+            transform={`translate(790, 126) rotate(${SFX_TILT_BY_ID[activeSfx.id]})`}
+          >
+            <line x1="-108" y1="18" x2="108" y2="-18" stroke="#FFFDF8" strokeWidth="14" strokeLinecap="round" opacity="0.92" />
+            <line x1="-98" y1="16" x2="98" y2="-16" stroke={activeSfx.accentHex} strokeWidth="7" strokeLinecap="round" />
+            <text
+              x="0"
+              y="14"
+              textAnchor="middle"
+              fill={activeSfx.accentHex}
+              stroke="#FFFDF8"
+              strokeWidth="12"
+              paintOrder="stroke"
+              fontSize="54"
+              fontWeight="600"
+              letterSpacing="2"
+            >
+              {activeSfx.glyphKo}
+            </text>
+            <text
+              x="0"
+              y="14"
+              textAnchor="middle"
+              fill={activeSfx.accentHex}
+              stroke="#18151C"
+              strokeWidth="4.5"
+              paintOrder="stroke"
+              fontSize="54"
+              fontWeight="600"
+              letterSpacing="2"
+            >
+              {activeSfx.glyphKo}
+            </text>
+          </g>
+        ) : null}
       </svg>
     </div>
   );
@@ -278,18 +332,22 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
 
 export interface ViewportMangaFxControlsProps {
   readonly mangaFx: ViewportMangaFxState;
+  readonly sfxBusy?: boolean;
   readonly onToggleMangaFx: () => void;
   readonly onChangeBubblePreset: (preset: MangaBubblePreset) => void;
   readonly onChangeLinesPreset: (preset: MangaActionLinesPreset) => void;
+  readonly onChangeSfxStamp?: (stamp: MangaSfxStampPreset) => void;
   readonly onChangeDialogueText: (text: string) => void;
   readonly onChangeIntensity: (intensity: number) => void;
 }
 
 export function ViewportMangaFxControls({
   mangaFx,
+  sfxBusy = false,
   onToggleMangaFx,
   onChangeBubblePreset,
   onChangeLinesPreset,
+  onChangeSfxStamp,
   onChangeDialogueText,
   onChangeIntensity,
 }: ViewportMangaFxControlsProps) {
@@ -300,7 +358,7 @@ export function ViewportMangaFxControls({
         className="cl-viewport-button"
         data-testid="viewport-toggle-manga-fx"
         aria-pressed={mangaFx.enabled}
-        title="말풍선(대화·외침·독백)과 웹툰 효과선(집중선·속도선·반짝이)을 뷰포트 위에 겹쳐 헤어·표정 가림 여부를 즉시 점검합니다"
+        title="말풍선(대화·외침·독백), 효과선(집중선·속도선·반짝이), 한국어 효과음 스탬프를 뷰포트 위에 겹쳐 구도를 점검합니다"
         onClick={onToggleMangaFx}
       >
         웹툰 연출·말풍선
@@ -333,6 +391,24 @@ export function ViewportMangaFxControls({
               </option>
             ))}
           </select>
+          {onChangeSfxStamp ? (
+            <select
+              className="cl-viewport-select"
+              aria-label="웹툰 효과음 스탬프"
+              data-testid="viewport-manga-sfx-select"
+              value={mangaFx.sfxStamp}
+              disabled={sfxBusy}
+              title="한국 웹툰 오노마토페(스릉·두근·쿠구궁·팟)를 SVG 오버레이 및 3D 입체 스탬프로 동시 배치합니다"
+              onChange={(event) => onChangeSfxStamp(event.target.value as MangaSfxStampPreset)}
+            >
+              <option value="none">효과음 없음</option>
+              {WEBTOON_SFX_STAMPS.map((spec) => (
+                <option key={spec.id} value={spec.id}>
+                  {spec.labelKo}
+                </option>
+              ))}
+            </select>
+          ) : null}
           {mangaFx.bubblePreset !== "none" ? (
             <input
               type="text"
