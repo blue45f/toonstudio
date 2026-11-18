@@ -23,9 +23,12 @@ import {
 import {
   evaluateBlenderSceneWithVerifyAi,
   evaluateBlenderWebtoonCycleTimeBenchmark,
+  evaluateWeeklyEpisodeTeamRoi,
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
+import { evaluateGenreLockGuardrail } from "./studio-bg3d-shot-continuity-linked-ink";
 
 function createSampleSynthesisInput(): BlenderSceneVerifyAiSynthesisInput {
   const lightingPreset = BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!;
@@ -71,9 +74,10 @@ function createSampleSynthesisInput(): BlenderSceneVerifyAiSynthesisInput {
 }
 
 describe("studio-bg3d-fresh-ideas-verify-ai", () => {
-  it("generates all 5 creative remix lenses grounded in live Blender 5.3 metrics and cycle-time benchmarks", () => {
+  it("generates all 5 creative remix lenses grounded in live Blender 5.3 metrics, weekly 70-cut ROI, genre lock, and scene isolation", () => {
     const input = createSampleSynthesisInput();
-    const { headerKo, remixes, cycleTimeBenchmark } = generateBlenderWebtoonFreshIdeasRemix(input);
+    const { headerKo, remixes, cycleTimeBenchmark, weeklyEpisodeRoi } =
+      generateBlenderWebtoonFreshIdeasRemix(input);
 
     expect(headerKo).toContain("💡 Remix:");
     expect(headerKo).toContain(input.lightingPreset.nameKo);
@@ -88,6 +92,38 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
 
     expect(cycleTimeBenchmark.retouchTimeSavedPercent).toBeGreaterThan(40);
     expect(cycleTimeBenchmark.revisionLeadTimeSavedPercent).toBeGreaterThan(70);
+    expect(weeklyEpisodeRoi.weeklyTotalCuts).toBe(70);
+    expect(weeklyEpisodeRoi.totalWeeklyHoursSaved).toBeGreaterThan(15);
+
+    const highAdoptionRoi = evaluateWeeklyEpisodeTeamRoi(cycleTimeBenchmark, {
+      weeklyTotalCuts: 70,
+      bg3dAdoptionRatioPct: 70,
+      avgStoryboardRevisionsPerEpisode: 10,
+    });
+    expect(highAdoptionRoi.totalWeeklyHoursSaved).toBeGreaterThan(
+      weeklyEpisodeRoi.totalWeeklyHoursSaved,
+    );
+
+    const salonLockOk = evaluateGenreLockGuardrail({
+      lockMode: "rofan-salon-lock",
+      activeLineThicknessPx: 1.35,
+      activeKelvin: 3200,
+      activeDispersion: 0.015,
+    });
+    expect(salonLockOk.isCompliant).toBe(true);
+
+    const salonLockDrift = evaluateGenreLockGuardrail({
+      lockMode: "rofan-salon-lock",
+      activeLineThicknessPx: 2.8,
+      activeKelvin: 8500,
+      activeDispersion: 0,
+    });
+    expect(salonLockDrift.isCompliant).toBe(false);
+    expect(salonLockDrift.violationReasonKo).toContain("이탈 감지");
+
+    const isolation = evaluateBlenderSceneIsolationGuard();
+    expect(isolation.zeroCrossSceneMutation).toBe(true);
+    expect(isolation.sha256Verified).toBe(true);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

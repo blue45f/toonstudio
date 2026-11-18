@@ -21,7 +21,7 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(fireEvent.click(link)).toBe(false);
   });
 
-  it("renders all Blender 5.3 sections, 5-Lens Fresh Ideas Remix, Cycle-Time Benchmark, 1-Click Genre Playbooks, Phase 2~4, and Verify AI gate", () => {
+  it("renders Unslop 9-Pass workbench UI, Genre Lock-In guardrail, Weekly 70-Cut ROI simulator, Scene Isolation badge, and Verify AI gate", () => {
     const onApplyLightingRig = vi.fn();
     const onApplyNprShader = vi.fn();
     const onApplyFreestyleInk = vi.fn();
@@ -115,24 +115,44 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-crowd-readout").textContent,
     ).toContain("240기");
 
-    // 5B. 5-Lens Creative Remix, 정량 리드타임 벤치마크, 원클릭 로판 살롱 4단계 플레이북 검증
+    // 5B. 정량 리드타임·주간 70컷 ROI·장르 락인·씬 격리·룩데브 4단계 체크리스트 검증
     expect(
       screen.getByTestId("bg3d-blender-cycle-time-benchmark").textContent,
     ).toContain("컷당 2D 리터칭");
+    expect(
+      screen.getByTestId("bg3d-blender-scene-isolation-badge").textContent,
+    ).toContain("교차 오염 0건");
+    expect(
+      screen.getByTestId("bg3d-blender-lookdev-checklist").textContent,
+    ).toContain("1. 장르 베이스 선언");
 
+    fireEvent.change(screen.getByTestId("bg3d-blender-roi-adoption-slider"), {
+      target: { value: "60" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-weekly-roi-readout").textContent,
+    ).toContain("3D 60%");
+
+    // 원클릭 로판 살롱 플레이북 실행 시 로판 1.35px 장르 락인 정상 활성화 확인
     fireEvent.click(screen.getByTestId("bg3d-blender-playbook-rofan-salon-btn"));
     expect(onInsertScenePrimitives).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByTestId("bg3d-blender-eevee-lighting-section").textContent,
-    ).toContain("3200K");
-    expect(
-      screen.getByTestId("bg3d-blender-prs-readout").textContent,
-    ).toContain("65mm");
+      screen.getByTestId("bg3d-blender-genre-lock-status").textContent,
+    ).toContain("로판 살롱 락인 정상");
 
+    // 로판 락인 상태에서 2.8px G펜으로 수동 변경 시 이탈 경고 감지 확인
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-freestyle-fantasy-action-gpen-calligraphic"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-genre-lock-status").textContent,
+    ).toContain("이탈 감지");
+
+    // 액션 전투 세트 클릭 시 2.8px G펜 락인으로 정상 정렬 확인
     fireEvent.click(screen.getByTestId("bg3d-blender-playbook-action-gpen-btn"));
     expect(
-      screen.getByTestId("bg3d-blender-prs-readout").textContent,
-    ).toContain("22mm");
+      screen.getByTestId("bg3d-blender-genre-lock-status").textContent,
+    ).toContain("액션 전투 락인 정상");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),

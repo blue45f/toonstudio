@@ -256,6 +256,29 @@ export const STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT: readonly StudioHybridDccPr
     },
   ]);
 
+/** Blender 5.3 회차 내 듀얼 장르 브리지 V18(2종, CC0-1.0) — 2.4m 개구부 비례가 동기화된 던전 귀환 아치 게이트 & 황궁 연회장 테라스 알코브 아치. */
+export const STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-raid-return-relic-portal-gate-v18",
+      fileName: "webtoon-raid-return-relic-portal-gate-v18.glb",
+      glbUrl: "/studio-assets/blender-episode-handoff-v18/webtoon-raid-return-relic-portal-gate-v18.glb",
+      previewUrl: "/studio-assets/blender-episode-handoff-v18/thumbnails/webtoon-raid-return-relic-portal-gate-v18.png",
+      label: ["던전 귀환 성유물 아치 게이트", "Raid return relic portal gate"],
+      hint: ["2.4m 공통 개구부·현무암 아치·부유 성검·마나 화로", "2.4m shared portal, basalt arch & greatsword"],
+      triangles: 2412,
+    },
+    {
+      id: "webtoon-imperial-banquet-alcove-arch-v18",
+      fileName: "webtoon-imperial-banquet-alcove-arch-v18.glb",
+      glbUrl: "/studio-assets/blender-episode-handoff-v18/webtoon-imperial-banquet-alcove-arch-v18.glb",
+      previewUrl: "/studio-assets/blender-episode-handoff-v18/thumbnails/webtoon-imperial-banquet-alcove-arch-v18.png",
+      label: ["황궁 연회장 테라스 알코브 아치", "Imperial banquet alcove arch"],
+      hint: ["2.4m 공통 개구부·알라바스터 열주·벨벳 드레이프", "2.4m shared arch, fluted columns & velvet swag"],
+      triangles: 5740,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

@@ -1,0 +1,67 @@
+{
+  "schema": "toonstudio.blender-episode-handoff-assets.v18",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_episode_handoff_v18.py · Dual-Genre Handoff & Scene Isolation SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_DualGenre_Handoff_V18",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 289,
+        "sha256Before": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "sha256After": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 50,
+        "sha256Before": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "sha256After": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Lumiere_Salon_V17",
+        "objectCount": 32,
+        "sha256Before": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "sha256After": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-imperial-banquet-alcove-arch-v18.glb",
+      "bytes": 199232,
+      "sha256": "4b2113fae12eab6df57bc687072ee303362db62a3efe04d5dc637c34e90a22b6",
+      "triangles": 5740,
+      "vertices": 2904
+    },
+    {
+      "file": "webtoon-raid-return-relic-portal-gate-v18.glb",
+      "bytes": 122036,
+      "sha256": "e64b30ee7076e1f04093fdf1eae1ccd3aab917c6856197e78daec856b2bd93bf",
+      "triangles": 2412,
+      "vertices": 1236
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-imperial-banquet-alcove-arch-v18.png",
+      "bytes": 284931,
+      "sha256": "93e509a00490f08a529a05873ad4d95b3cd12db76b06ce31933476ebbae07467"
+    },
+    {
+      "file": "thumbnails/webtoon-raid-return-relic-portal-gate-v18.png",
+      "bytes": 291975,
+      "sha256": "7668601825321a3fb444eec8c2fec5e0362d60406335d1b64460e79daf9253c8"
+    }
+  ]
+}

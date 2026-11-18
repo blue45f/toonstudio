@@ -1,4 +1,13 @@
-import { Building2, Boxes, ChevronDown, Gem, Layers, PackageOpen, Sparkles } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Boxes,
+  Building2,
+  ChevronDown,
+  Gem,
+  Layers,
+  PackageOpen,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
@@ -14,6 +23,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccPrecisionBgKitItem,
@@ -25,7 +35,7 @@ const FOCUS_RING =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const TILE_PRESS =
-  "transition-[background-color,border-color,color,transform] duration-150 enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
+  "transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
 
 const PRIMARY_STARTER_KINDS = new Set<StudioHybridDccStarterPrimitiveKind>([
   "cube",
@@ -43,9 +53,9 @@ export interface StudioHybridDccPrimitiveBarProps {
 }
 
 /**
- * 단순하고 직관적인 4종 핵심 시작 도형을 첫 화면에 두고,
- * 건축·유기체 정밀 도형(+12종), 비파괴 프로 마감 레시피(4종), Blender 5.2 정밀 배경 베이 V14(6종) 및
- * 플래그십 스타터 V13(8종)은 점진적 공개(Progressive Disclosure) 서랍으로 분리한다.
+ * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 Hybrid DCC 도형·마감 레시피·CC0 에셋 서랍:
+ * 4px 그리드 간격, 중첩 반경(`rounded-2xl` -> `rounded-xl` -> `rounded-lg`), `16px` stroke-1.5 라인 아이콘,
+ * `tabular-nums` 수치 정렬 및 `cubic-bezier(0.22, 1, 0.36, 1)` 모션 커브를 준수한다.
  */
 export function StudioHybridDccPrimitiveBar({
   busy,
@@ -106,13 +116,13 @@ export function StudioHybridDccPrimitiveBar({
         data-studio-hybrid-dcc-primitive={spec.kind}
         onClick={() => onAddPrimitive(spec.kind, `${label} 추가`)}
         className={cn(
-          "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-2.5 py-1.5 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+          "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-3 py-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
           TILE_PRESS,
           FOCUS_RING,
         )}
       >
-        <span className="max-w-full truncate text-xs font-semibold text-fg">{label}</span>
-        <span className="max-w-full truncate text-[0.65rem] text-fg-3">{bt(spec.hint[0], spec.hint[1])}</span>
+        <span className="max-w-full truncate text-xs font-medium text-fg">{label}</span>
+        <span className="max-w-full truncate text-xs text-fg-3">{bt(spec.hint[0], spec.hint[1])}</span>
       </button>
     );
   };
@@ -131,7 +141,7 @@ export function StudioHybridDccPrimitiveBar({
           void loadBlenderKitAsset(item);
         }}
         className={cn(
-          "flex min-h-11 w-full items-center gap-2.5 rounded-lg border border-line bg-card p-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+          "flex min-h-11 w-full items-center gap-3 rounded-lg border border-line bg-card p-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
           TILE_PRESS,
           FOCUS_RING,
         )}
@@ -145,10 +155,10 @@ export function StudioHybridDccPrimitiveBar({
           className="size-10 shrink-0 rounded-md bg-canvas object-cover outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-semibold text-fg">
+          <span className="block truncate text-xs font-medium text-fg">
             {loading ? bt("불러오는 중…", "Loading…") : bt(item.label[0], item.label[1])}
           </span>
-          <span className="block truncate text-[0.65rem] tabular-nums text-fg-3">
+          <span className="block truncate font-mono text-xs tabular-nums text-fg-3">
             {bt(item.hint[0], item.hint[1])} · {item.triangles.toLocaleString("ko-KR")} tris
           </span>
         </span>
@@ -160,29 +170,29 @@ export function StudioHybridDccPrimitiveBar({
     <section
       aria-label={bt("빠른 도형·마감 레시피·스타터 에셋", "Quick primitives, finish recipes & starter assets")}
       data-studio-hybrid-dcc-primitive-bar="true"
-      className="rounded-2xl border border-line bg-panel p-2.5"
+      className="space-y-2 rounded-2xl border border-line bg-panel p-3"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 pb-2">
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-fg-2 [word-break:keep-all]">
-          <Boxes size={14} aria-hidden="true" className="shrink-0 text-accent" />
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold text-fg [word-break:keep-all]">
+          <Boxes size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-2" />
           {bt("빠른 도형 시작", "Quick shapes")}
         </span>
-        <span className="rounded-full bg-raised px-2 py-0.5 text-[0.65rem] font-medium text-fg-3">
+        <span className="rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-xs text-fg-3">
           {bt("수밀 솔리드 · Ctrl+Z 복원", "Watertight · Undoable")}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-1.5">{primarySpecs.map(renderPrimitiveButton)}</div>
+      <div className="grid grid-cols-2 gap-2">{primarySpecs.map(renderPrimitiveButton)}</div>
 
-      <details className="group mt-2 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <Layers size={14} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Layers size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 `건축·유기체 정밀 도형 (+${extendedSpecs.length}종)`,
                 `Architectural & organic (+${extendedSpecs.length})`,
@@ -190,43 +200,45 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="grid grid-cols-2 gap-1.5 border-t border-line/60 p-2">
+        <div className="grid grid-cols-2 gap-2 border-t border-line p-2">
           {extendedSpecs.map(renderPrimitiveButton)}
         </div>
       </details>
 
       {onApplyRecipe ? (
-        <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+        <details className="group rounded-xl border border-line bg-canvas/35">
           <summary
             className={cn(
-              "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+              "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
               FOCUS_RING,
             )}
           >
-            <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-              <Sparkles size={14} aria-hidden="true" className="shrink-0 text-accent" />
-              <span className="truncate">
+            <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+              <SlidersHorizontal size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+              <span className="truncate tabular-nums">
                 {bt(
                   `프로 비파괴 마감 레시피 (${STUDIO_HYBRID_DCC_MODELING_RECIPES.length}종)`,
                   `Pro finishes (${STUDIO_HYBRID_DCC_MODELING_RECIPES.length})`,
                 )}
               </span>
             </span>
-            <span className="inline-flex shrink-0 items-center gap-1 text-[0.65rem] font-normal text-fg-3 group-open:text-accent">
+            <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-fg-3">
               {hasActiveAsset ? bt("원클릭", "Ready") : bt("선택 필요", "Select")}
               <ChevronDown
-                size={14}
+                size={16}
+                strokeWidth={1.5}
                 aria-hidden="true"
-                className="shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+                className="shrink-0 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
               />
             </span>
           </summary>
-          <div className="grid grid-cols-2 gap-1.5 border-t border-line/60 p-2">
+          <div className="grid grid-cols-2 gap-2 border-t border-line p-2">
             {STUDIO_HYBRID_DCC_MODELING_RECIPES.map((recipe) => {
               const label = bt(recipe.label[0], recipe.label[1]);
               return (
@@ -237,13 +249,13 @@ export function StudioHybridDccPrimitiveBar({
                   data-studio-hybrid-dcc-recipe={recipe.id}
                   onClick={() => onApplyRecipe(recipe.id, `${label} 레시피 적용`)}
                   className={cn(
-                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-2.5 py-1.5 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
+                    "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-3 py-2 text-left hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
                     TILE_PRESS,
                     FOCUS_RING,
                   )}
                 >
-                  <span className="max-w-full truncate text-xs font-semibold text-fg">{label}</span>
-                  <span className="max-w-full truncate text-[0.65rem] text-fg-3">
+                  <span className="max-w-full truncate text-xs font-medium text-fg">{label}</span>
+                  <span className="max-w-full truncate text-xs text-fg-3">
                     {bt(recipe.hint[0], recipe.hint[1])}
                   </span>
                 </button>
@@ -253,17 +265,46 @@ export function StudioHybridDccPrimitiveBar({
         </details>
       ) : null}
 
-      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
-          data-testid="studio-hybrid-dcc-v17-salon-kit-summary"
+          data-testid="studio-hybrid-dcc-v18-handoff-kit-summary"
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <Gem size={14} aria-hidden="true" className="shrink-0 text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <ArrowLeftRight size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
+              {bt(
+                `회차 전환 듀얼 장르 브리지 V18 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT.length}종)`,
+                `Episode dual-genre bridge V18 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
+
+      <details className="group rounded-xl border border-line bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v17-salon-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Gem size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 `블렌더 5.3 뤼미에르 살롱 V17 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT.length}종)`,
                 `Blender 5.3 Lumiere salon V17 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT.length})`,
@@ -271,27 +312,28 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT.map(renderKitItemButton)}
         </div>
       </details>
 
-      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
           data-testid="studio-hybrid-dcc-v16-lumiere-kit-summary"
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <Gem size={14} aria-hidden="true" className="shrink-0 text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Gem size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 `블렌더 5.3 뤼미에르 아틀리에 V16 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.length}종)`,
                 `Blender 5.3 Lumiere atelier V16 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.length})`,
@@ -299,27 +341,28 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT.map(renderKitItemButton)}
         </div>
       </details>
 
-      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
           data-testid="studio-hybrid-dcc-v14-bg-kit-summary"
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <Building2 size={14} aria-hidden="true" className="shrink-0 text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Building2 size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 `정밀 웹툰 배경 베이 V14 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.length}종)`,
                 `Precision webtoon BG bays V14 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.length})`,
@@ -327,27 +370,28 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT.map(renderKitItemButton)}
         </div>
       </details>
 
-      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
           data-testid="studio-hybrid-dcc-v15-artisan-kit-summary"
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <Sparkles size={14} aria-hidden="true" className="shrink-0 text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Layers size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 `아티잔 아틀리에 V15 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT.length}종)`,
                 `Artisan atelier V15 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT.length})`,
@@ -355,26 +399,27 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT.map(renderKitItemButton)}
         </div>
       </details>
 
-      <details className="group mt-1.5 rounded-xl border border-line/70 bg-canvas/35">
+      <details className="group rounded-xl border border-line bg-canvas/35">
         <summary
           className={cn(
-            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
             FOCUS_RING,
           )}
         >
-          <span className="inline-flex min-w-0 items-center gap-1.5 [word-break:keep-all]">
-            <PackageOpen size={14} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-accent" />
-            <span className="truncate">
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <PackageOpen size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
               {bt(
                 "플래그십 스타터 모델 (CC0 · 8종)",
                 "Flagship starter models (CC0 · 8)",
@@ -382,18 +427,19 @@ export function StudioHybridDccPrimitiveBar({
             </span>
           </span>
           <ChevronDown
-            size={14}
+            size={16}
+            strokeWidth={1.5}
             aria-hidden="true"
-            className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 group-open:text-accent motion-reduce:transition-none"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
           />
         </summary>
-        <div className="max-h-80 space-y-1.5 overflow-y-auto overscroll-contain border-t border-line/60 p-2">
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
           {STUDIO_HYBRID_DCC_BLENDER_V13_KIT.map(renderKitItemButton)}
         </div>
       </details>
 
       {fetchError ? (
-        <p role="alert" className="mt-1.5 px-1 text-xs text-bad">
+        <p role="alert" className="px-1 text-xs text-bad">
           {fetchError}
         </p>
       ) : null}
