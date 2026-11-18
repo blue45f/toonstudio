@@ -12,7 +12,7 @@ import { buildProductionOperationCapabilitySql } from "./production-operation-da
 import { buildHiringCapabilitySql } from "./creator-hiring-database-contract.mjs";
 import { buildHiringAutomationCapabilitySql } from "./creator-hiring-automation-database-contract.mjs";
 import { buildCareerConfirmationCapabilitySql } from "./creator-career-confirmation-database-contract.mjs";
-import { buildAdminCapabilitySql } from "./admin-database-contract.mjs";
+import { buildAdminDatabaseFeatureCapabilitySql } from "./admin-database-feature-contracts.mjs";
 import { buildFeedbackCapabilitySql } from "./feedback-database-contract.mjs";
 import {
   buildAuthRuntimeAclViolationSql,
@@ -392,7 +392,7 @@ ${buildHiringCapabilitySql(runtimeDatabaseRole)}
 ${buildHiringAutomationCapabilitySql(runtimeDatabaseRole)}
 ${buildCareerConfirmationCapabilitySql(runtimeDatabaseRole)}
 ${buildFeedbackCapabilitySql(runtimeDatabaseRole)}
-${buildAdminCapabilitySql(runtimeDatabaseRole)}
+${buildAdminDatabaseFeatureCapabilitySql(runtimeDatabaseRole)}
 DO $toonspectrum_readiness$
 DECLARE
   missing_relations text[];

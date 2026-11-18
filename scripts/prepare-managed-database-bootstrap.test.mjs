@@ -121,6 +121,8 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(result.sql).toContain("'bootstrap'");
     expect(result.sql).toContain("INSERT INTO public.supporter_funding_setting");
     expect(result.sql).toContain("INSERT INTO production_operation_policy");
+    expect(result.sql).toContain("INSERT INTO public.admin_workspace(id) VALUES('toonstudio') ON CONFLICT(id) DO NOTHING");
+    expect(result.sql).not.toContain("chatgpt.com/share/");
     expect(result.sql).not.toMatch(/INSERT INTO public\."?user"?\s/iu);
     expect(() => buildManagedInitialRows(contract, "main")).toThrow(/40자리/u);
   });

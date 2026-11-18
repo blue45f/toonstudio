@@ -56,8 +56,12 @@ describe("AdminRouter access and real route transitions", () => {
     expect(link.getAttribute("href")).toBe("/admin/platform/quality/");
     expect(link.hasAttribute("target")).toBe(false);
     expect(screen.getByRole("heading", { name: "admin.ciQuality.title" })).toBeTruthy();
+    const workspaceLink = screen.getByRole("link", { name: "admin.workspace.open" });
+    expect(workspaceLink.getAttribute("href")).toBe("/admin/workspace/");
+    expect(workspaceLink.hasAttribute("target")).toBe(false);
     await screen.findByText("운영 설정 fixture 실패");
     expect(screen.getByRole("link", { name: "admin.ciQuality.open" })).toBe(link);
+    expect(screen.getByRole("link", { name: "admin.workspace.open" })).toBe(workspaceLink);
     expect(fetch.mock.calls).toEqual([["/config", "actor-a"]]);
   });
 

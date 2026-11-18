@@ -152,7 +152,7 @@ export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): r
     const cellX = fract01(px * cs - py * sn) - 0.5;
     const cellY = fract01(px * sn + py * cs) - 0.5;
     const shadowMask = clamp(1 - band, 0, 1);
-    let pat = 0;
+    let pat: number;
     if (toneKind === "halftone" || toneKind === "dots") {
       const rad = Math.sqrt(shadowMask) * 0.62;
       pat = 1 - smoothstep(rad - 0.06, rad + 0.06, Math.hypot(cellX, cellY));
