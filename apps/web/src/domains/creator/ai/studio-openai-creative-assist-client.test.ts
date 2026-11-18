@@ -1,11 +1,25 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   fetchStudioOpenAiAssistStatus,
   runStudioOpenAiCreativeAssist,
 } from "./studio-openai-creative-assist-client";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+function delayedBodyResponse(signal: AbortSignal | null | undefined, status: number): Response {
+  return new Response(new ReadableStream({
+    start(controller) {
+      const abort = () => controller.error(new DOMException("Aborted", "AbortError"));
+      signal?.addEventListener("abort", abort, { once: true });
+      if (signal?.aborted) abort();
+    },
+  }), { status });
+}
 
 describe("studio-openai-creative-assist-client", () => {
   it("서버가 연결되지 않았을 때도 오류 없이 안전한 미설정 안내 상태를 반환한다", async () => {
@@ -15,8 +29,91 @@ describe("studio-openai-creative-assist-client", () => {
     expect(status.configured).toBe(false);
     expect(status.keyLocation).toBe("server-env-only");
     expect(status.storeData).toBe(false);
+    expect(status.autoBillingDisabled).toBeNull();
+    expect(status.modelConfigurationError).toBeNull();
     expect(status.offlineFallback).toBe(true);
     expect(status.modes).toHaveLength(4);
+  });
+
+  it("구형 서버의 과금 차단 단정을 신뢰하지 않고 모델 설정 오류를 보존한다", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      configured: true,
+      model: "gpt-4.1-nano",
+      autoBillingDisabled: true,
+      modelConfigurationError: "retired",
+    }), { status: 200 }));
+
+    const status = await fetchStudioOpenAiAssistStatus({ fetchImpl: fetchMock });
+    expect(status.configured).toBe(true);
+    expect(status.autoBillingDisabled).toBeNull();
+    expect(status.modelConfigurationError).toBe("retired");
+    expect(status.model).toBe("gpt-4.1-nano");
+  });
+
+  it.each([200, 429])("HTTP %s 헤더 이후 본문이 멈춰도 전체 요청 시간 제한이 유지된다", async (status) => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async (_url, init) =>
+      delayedBodyResponse(init?.signal, status));
+    const pending = runStudioOpenAiCreativeAssist(
+      { mode: "dialogue-polish", inputText: "합성 대사 다듬기" },
+      { fetchImpl: fetchMock, timeoutMs: 100, sessionToken: "test-session" },
+    );
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await pending).toMatchObject({ ok: false, status: 504, code: "CLIENT_TIMEOUT" });
+    expect(vi.getTimerCount()).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("본문 수신 중 취소를 파싱 오류로 바꾸지 않고 요청을 중단한다", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn<typeof fetch>().mockImplementation(async (_url, init) =>
+      delayedBodyResponse(init?.signal, 200));
+    const pending = runStudioOpenAiCreativeAssist(
+      { mode: "dialogue-polish", inputText: "합성 대사 다듬기" },
+      { fetchImpl: fetchMock, signal: controller.signal, sessionToken: "test-session" },
+    );
+    await Promise.resolve();
+    controller.abort();
+
+    expect(await pending).toMatchObject({ ok: false, status: 499, code: "CLIENT_ABORTED" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("이미 취소한 요청은 서버에 보내지 않는다", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn<typeof fetch>();
+    const result = await runStudioOpenAiCreativeAssist(
+      { mode: "dialogue-polish", inputText: "합성 대사 다듬기" },
+      { fetchImpl: fetchMock, signal: controller.signal, sessionToken: "test-session" },
+    );
+    expect(result).toMatchObject({ ok: false, code: "CLIENT_ABORTED" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["OPENAI_QUOTA_EXHAUSTED", "OPENAI_SPEND_LIMIT_REACHED"])("%s 오류를 보존하고 자동 재시도하지 않는다", async (code) => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(
+      JSON.stringify({ code, message: "관리자가 크레딧과 과금 한도를 확인해야 합니다." }),
+      { status: 429 },
+    ));
+    const result = await runStudioOpenAiCreativeAssist(
+      { mode: "idea-remix", inputText: "합성 아이디어" },
+      { fetchImpl: fetchMock, sessionToken: "test-session" },
+    );
+    expect(result).toMatchObject({ ok: false, status: 429, code });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("잘못된 JSON 본문은 기존 파싱 오류로 반환하고 타이머를 정리한다", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response("not-json", { status: 200 }));
+    const result = await runStudioOpenAiCreativeAssist(
+      { mode: "idea-remix", inputText: "합성 아이디어" },
+      { fetchImpl: fetchMock, sessionToken: "test-session" },
+    );
+    expect(result).toMatchObject({ ok: false, code: "PARSE_ERROR" });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("짧거나 너무 긴 입력은 네트워크 요청 전에 자연스러운 한국어로 안내한다", async () => {

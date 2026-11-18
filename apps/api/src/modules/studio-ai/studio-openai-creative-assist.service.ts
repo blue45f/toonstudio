@@ -52,11 +52,15 @@ export class StudioOpenAiCreativeAssistService {
     return {
       configured: config.configured,
       provider: "openai" as const,
-      model: config.configured ? config.model : DEFAULT_OPENAI_MODEL,
+      model: config.configured || config.modelConfigurationError === "retired"
+        ? config.model
+        : DEFAULT_OPENAI_MODEL,
+      modelConfigurationError: config.modelConfigurationError,
       keyLocation: "server-env-only" as const,
       storeData: false as const,
       piiMasking: true as const,
-      autoBillingDisabled: true as const,
+      // 계정의 잔액·자동 충전 설정을 조회하지 않으므로 과금 차단 여부는 미확인이다.
+      autoBillingDisabled: null,
       modes: STUDIO_OPENAI_MODE_DESCRIPTORS,
       limits: {
         burstPerMinute: config.limits.burstPerMinute,
@@ -64,9 +68,11 @@ export class StudioOpenAiCreativeAssistService {
         dailyRequests: config.limits.dailyRequests,
         maxInputChars: 6_000,
       },
-      setupNoticeKo: config.configured
-        ? "서버 로컬 환경변수(OPENAI_API_KEY)가 연결되어 있습니다. 원고는 OpenAI 보관 로그에 남기지 않도록(store: false) 요청합니다."
-        : "현재 서버 로컬 환경변수에 OPENAI_API_KEY가 설정되어 있지 않습니다. 서버의 .env.local에 OPENAI_API_KEY를 설정하면 바로 사용할 수 있으며, 설정 전에도 기획·편집·내보내기 기능은 모두 그대로 작동합니다.",
+      setupNoticeKo: config.modelConfigurationError === "retired"
+        ? `설정된 OpenAI 모델(${config.model})은 서비스가 종료되어 호출을 차단했습니다. 지원 모델을 확인해 서버 설정을 변경해야 합니다.`
+        : config.configured
+          ? "서버 로컬 환경변수(OPENAI_API_KEY)가 설정되어 있습니다. 응답 저장 비활성화(store: false)로 요청하며, 계정 잔액과 자동 충전 설정은 별도로 확인해야 합니다."
+          : "현재 서버 로컬 환경변수에 OPENAI_API_KEY가 설정되어 있지 않습니다. 서버의 .env.local에 OPENAI_API_KEY를 설정하면 사용할 수 있으며, 설정 전에도 기획·편집·내보내기 기능은 모두 그대로 작동합니다.",
     };
   }
 
@@ -85,6 +91,14 @@ export class StudioOpenAiCreativeAssistService {
         code: "OPENAI_API_KEY_NOT_CONFIGURED",
         message:
           "서버에 OpenAI API 키(OPENAI_API_KEY)가 아직 설정되지 않았어요. 서버 측 .env.local에 키를 추가한 뒤 다시 실행해 주세요.",
+      });
+    }
+
+    if (config.modelConfigurationError === "retired") {
+      throw new ServiceUnavailableException({
+        code: "OPENAI_MODEL_RETIRED",
+        message:
+          "설정된 OpenAI 모델은 서비스가 종료되어 호출하지 않았어요. 지원 모델을 확인해 서버 설정을 변경해 주세요.",
       });
     }
 
@@ -138,140 +152,143 @@ export class StudioOpenAiCreativeAssistService {
     }, config.timeoutMs);
 
     const fetchFn = options.fetchImpl ?? fetch;
-    let response: Response;
     try {
-      response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: config.model,
-          store: false,
-          temperature: 0.65,
-          max_completion_tokens: MAX_OUTPUT_TOKENS,
-          messages: [
-            { role: "system", content: buildModeSystemInstruction(input.mode) },
-            { role: "user", content: userPrompt },
-          ],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: schemaSpec.name,
-              strict: true,
-              schema: schemaSpec.schema,
+      let response: Response;
+      let responseText: string;
+      try {
+        response = await fetchFn(OPENAI_CHAT_COMPLETIONS_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            model: config.model,
+            store: false,
+            temperature: 0.65,
+            max_completion_tokens: MAX_OUTPUT_TOKENS,
+            messages: [
+              { role: "system", content: buildModeSystemInstruction(input.mode) },
+              { role: "user", content: userPrompt },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: schemaSpec.name,
+                strict: true,
+                schema: schemaSpec.schema,
+              },
             },
-          },
-        }),
-        signal: controller.signal,
-      });
-    } catch {
-      quota.release();
-      clearTimeout(timer);
-      options.signal?.removeEventListener("abort", onClientAbort);
-      if (timedOut) {
-        throw new GatewayTimeoutException({
-          code: "OPENAI_TIMEOUT",
-          message: "OpenAI 응답이 지연되어 요청을 중단했어요. 입력 길이를 조금 줄여 다시 시도해 주세요.",
+          }),
+          signal: controller.signal,
+        });
+        // fetch가 헤더를 받은 뒤에도 본문 완료까지 같은 timeout/취소 신호를 유지한다.
+        responseText = await response.text();
+      } catch {
+        quota.release();
+        if (timedOut) {
+          throw new GatewayTimeoutException({
+            code: "OPENAI_TIMEOUT",
+            message: "OpenAI 응답이 지연되어 요청을 중단했어요. 입력 길이를 조금 줄여 다시 시도해 주세요.",
+          });
+        }
+        if (options.signal?.aborted) {
+          throw new HttpException(
+            { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." },
+            499,
+          );
+        }
+        throw new BadGatewayException({
+          code: "OPENAI_NETWORK_ERROR",
+          message: "OpenAI 서버와 연결하지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.",
         });
       }
-      if (options.signal?.aborted) {
-        throw new HttpException(
-          { code: "CLIENT_ABORTED", message: "요청이 취소되었어요." },
-          499,
-        );
+
+      if (!response.ok) {
+        if (response.status >= 500 || response.status === 401 || response.status === 403) {
+          quota.release();
+        }
+        const errorCode = this.readSafeOpenAiErrorCode(responseText);
+        throw this.mapUpstreamHttpError(response.status, errorCode);
       }
-      throw new BadGatewayException({
-        code: "OPENAI_NETWORK_ERROR",
-        message: "OpenAI 서버와 연결하지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.",
-      });
+
+      let payload: Record<string, unknown>;
+      try {
+        payload = JSON.parse(responseText) as Record<string, unknown>;
+      } catch {
+        quota.release();
+        throw new BadGatewayException({
+          code: "OPENAI_INVALID_JSON",
+          message: "OpenAI 응답 형식을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
+        });
+      }
+
+      const choices = Array.isArray(payload.choices) ? payload.choices : [];
+      const firstChoice = (choices[0] ?? {}) as {
+        finish_reason?: unknown;
+        message?: { content?: unknown; refusal?: unknown };
+      };
+
+      if (typeof firstChoice.message?.refusal === "string" && firstChoice.message.refusal.trim()) {
+        throw new UnprocessableEntityException({
+          code: "OPENAI_SAFETY_REFUSAL",
+          message: "안전 정책에 따라 이 내용은 변환할 수 없어요. 표현을 조금 바꾸어 다시 시도해 주세요.",
+        });
+      }
+      if (firstChoice.finish_reason === "length") {
+        throw new BadGatewayException({
+          code: "OPENAI_OUTPUT_TRUNCATED",
+          message: "답변이 길어 중간에 잘렸어요. 한 장면이나 짧은 문단 단위로 나누어 요청해 주세요.",
+        });
+      }
+
+      const rawContent = firstChoice.message?.content;
+      if (typeof rawContent !== "string" || !rawContent.trim()) {
+        quota.release();
+        throw new BadGatewayException({
+          code: "OPENAI_EMPTY_RESPONSE",
+          message: "OpenAI에서 빈 답변이 돌아왔어요. 잠시 후 다시 시도해 주세요.",
+        });
+      }
+
+      let structured: OpenAiAssistStructuredResult;
+      try {
+        structured = this.parseModeOutput(input.mode, rawContent);
+      } catch (error) {
+        quota.release();
+        throw error;
+      }
+
+      const usageRecord =
+        payload.usage && typeof payload.usage === "object"
+          ? (payload.usage as Record<string, unknown>)
+          : {};
+
+      return {
+        provider: "openai" as const,
+        model:
+          typeof payload.model === "string" && payload.model.trim()
+            ? payload.model.trim().slice(0, 120)
+            : config.model,
+        result: structured,
+        privacy: {
+          storeData: false as const,
+          piiRedactedCount,
+        },
+        quota: {
+          remainingDaily: quota.remainingDaily,
+          dailyLimit: config.limits.dailyRequests,
+        },
+        usage: {
+          promptTokens:
+            typeof usageRecord.prompt_tokens === "number" ? usageRecord.prompt_tokens : 0,
+          completionTokens:
+            typeof usageRecord.completion_tokens === "number" ? usageRecord.completion_tokens : 0,
+          totalTokens:
+            typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0,
+        },
+      };
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener("abort", onClientAbort);
     }
-
-    if (!response.ok) {
-      if (response.status >= 500 || response.status === 401 || response.status === 403) {
-        quota.release();
-      }
-      const errorCode = await this.readSafeOpenAiErrorCode(response);
-      throw this.mapUpstreamHttpError(response.status, errorCode);
-    }
-
-    let payload: Record<string, unknown>;
-    try {
-      payload = (await response.json()) as Record<string, unknown>;
-    } catch {
-      quota.release();
-      throw new BadGatewayException({
-        code: "OPENAI_INVALID_JSON",
-        message: "OpenAI 응답 형식을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
-      });
-    }
-
-    const choices = Array.isArray(payload.choices) ? payload.choices : [];
-    const firstChoice = (choices[0] ?? {}) as {
-      finish_reason?: unknown;
-      message?: { content?: unknown; refusal?: unknown };
-    };
-
-    if (typeof firstChoice.message?.refusal === "string" && firstChoice.message.refusal.trim()) {
-      throw new UnprocessableEntityException({
-        code: "OPENAI_SAFETY_REFUSAL",
-        message: "안전 정책에 따라 이 내용은 변환할 수 없어요. 표현을 조금 바꾸어 다시 시도해 주세요.",
-      });
-    }
-    if (firstChoice.finish_reason === "length") {
-      throw new BadGatewayException({
-        code: "OPENAI_OUTPUT_TRUNCATED",
-        message: "답변이 길어 중간에 잘렸어요. 한 장면이나 짧은 문단 단위로 나누어 요청해 주세요.",
-      });
-    }
-
-    const rawContent = firstChoice.message?.content;
-    if (typeof rawContent !== "string" || !rawContent.trim()) {
-      quota.release();
-      throw new BadGatewayException({
-        code: "OPENAI_EMPTY_RESPONSE",
-        message: "OpenAI에서 빈 답변이 돌아왔어요. 잠시 후 다시 시도해 주세요.",
-      });
-    }
-
-    let structured: OpenAiAssistStructuredResult;
-    try {
-      structured = this.parseModeOutput(input.mode, rawContent);
-    } catch (error) {
-      quota.release();
-      throw error;
-    }
-
-    const usageRecord =
-      payload.usage && typeof payload.usage === "object"
-        ? (payload.usage as Record<string, unknown>)
-        : {};
-
-    return {
-      provider: "openai" as const,
-      model:
-        typeof payload.model === "string" && payload.model.trim()
-          ? payload.model.trim().slice(0, 120)
-          : config.model,
-      result: structured,
-      privacy: {
-        storeData: false as const,
-        piiRedactedCount,
-      },
-      quota: {
-        remainingDaily: quota.remainingDaily,
-        dailyLimit: config.limits.dailyRequests,
-      },
-      usage: {
-        promptTokens:
-          typeof usageRecord.prompt_tokens === "number" ? usageRecord.prompt_tokens : 0,
-        completionTokens:
-          typeof usageRecord.completion_tokens === "number" ? usageRecord.completion_tokens : 0,
-        totalTokens:
-          typeof usageRecord.total_tokens === "number" ? usageRecord.total_tokens : 0,
-      },
-    };
   }
 
   private parseModeOutput(
@@ -329,9 +346,8 @@ export class StudioOpenAiCreativeAssistService {
     return { mode, data: checked.data };
   }
 
-  private async readSafeOpenAiErrorCode(response: Response): Promise<string | null> {
+  private readSafeOpenAiErrorCode(text: string): string | null {
     try {
-      const text = await response.text();
       if (!text || text.length > MAX_ERROR_BODY_BYTES) return null;
       const parsed = JSON.parse(text) as { error?: { code?: unknown; type?: unknown } };
       const raw = parsed?.error?.code ?? parsed?.error?.type;
@@ -350,12 +366,29 @@ export class StudioOpenAiCreativeAssistService {
       });
     }
     if (status === 429) {
-      if (errorCode === "insufficient_quota" || errorCode === "billing_hard_limit_reached") {
+      if (
+        errorCode === "insufficient_quota" ||
+        errorCode === "billing_hard_limit_reached" ||
+        errorCode === "credit_balance_exhausted"
+      ) {
         return new HttpException(
           {
             code: "OPENAI_QUOTA_EXHAUSTED",
             message:
-              "연결된 OpenAI 조직의 사용 가능 크레딧 또는 월 한도가 소진되었어요. 사용자 동의 없이 유료 충전을 진행하지 않았습니다.",
+              "연결된 OpenAI 조직의 사용 가능 크레딧 또는 한도가 소진되었어요. 유료 충전을 진행하지 않았습니다. 계정의 잔액과 결제 설정을 확인해 주세요.",
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      if (
+        errorCode === "project_spend_limit_exceeded" ||
+        errorCode === "organization_spend_limit_exceeded"
+      ) {
+        return new HttpException(
+          {
+            code: "OPENAI_SPEND_LIMIT_REACHED",
+            message:
+              "연결된 OpenAI 프로젝트 또는 조직의 지출 한도에 도달해 요청을 중단했어요. 계정의 지출 한도 설정을 확인해 주세요. 이 기능은 한도나 결제 설정을 변경하지 않습니다.",
           },
           HttpStatus.TOO_MANY_REQUESTS,
         );

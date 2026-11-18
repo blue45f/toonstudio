@@ -150,6 +150,8 @@ function StudioProjectAssistantPanelBody({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [statusInfo, setStatusInfo] = useState<StudioOpenAiAssistStatus | null>(null);
   const [runningOpenAi, setRunningOpenAi] = useState(false);
+  const modelRetired = statusInfo?.modelConfigurationError === "retired";
+  const openAiConfigured = statusInfo?.configured === true && !modelRetired;
   const [openAiResult, setOpenAiResult] = useState<StudioOpenAiAssistSuccess | null>(
     () => initialRestored?.lastResult ?? null,
   );
@@ -255,6 +257,7 @@ function StudioProjectAssistantPanelBody({
   };
 
   const runOpenAiAssist = async () => {
+    if (modelRetired) return;
     const trimmed = prompt.trim();
     if (!trimmed) {
       setError(
@@ -345,27 +348,31 @@ function StudioProjectAssistantPanelBody({
             data-testid="openai-assist-status-badge"
             className={cn(
               "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold",
-              statusInfo?.configured
+              openAiConfigured
                 ? "border-accent/40 bg-accent-soft text-accent"
                 : "border-line bg-card text-fg-2",
             )}
           >
             <ShieldCheck size={14} aria-hidden="true" />
-            {statusInfo?.configured
-              ? bt(`OpenAI 연결됨 (${statusInfo.model})`, `OpenAI ready (${statusInfo.model})`)
-              : bt("서버 OpenAI 키 확인 필요", "Server OpenAI key not set")}
+            {modelRetired
+              ? bt("OpenAI 모델 설정 확인 필요", "Check OpenAI model configuration")
+              : statusInfo?.configured
+                ? bt(`서버 OpenAI 키 설정됨 (${statusInfo.model})`, `Server OpenAI key set (${statusInfo.model})`)
+                : bt("서버 OpenAI 키 확인 필요", "Server OpenAI key not set")}
           </span>
         </div>
       </div>
 
-      {statusInfo && !statusInfo.configured ? (
+      {statusInfo && (!statusInfo.configured || modelRetired) ? (
         <p
           data-testid="openai-assist-key-notice"
           className="mt-3 rounded-2xl border border-line bg-card/85 px-3.5 py-2.5 text-xs leading-5 text-fg-2"
         >
           {bt(
             statusInfo.setupNoticeKo,
-            "OPENAI_API_KEY is not configured in the server local environment yet. Planning, drawing, and export continue to work normally.",
+            modelRetired
+              ? "This model is no longer available. Ask the server administrator to configure a supported model. Planning, drawing, and export remain available."
+              : "OPENAI_API_KEY is not configured in the server local environment yet. Planning, drawing, and export continue to work normally.",
           )}
         </p>
       ) : null}
@@ -479,20 +486,20 @@ function StudioProjectAssistantPanelBody({
       ) : null}
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs leading-5 text-fg-3">
+        <p data-testid="openai-assist-billing-notice" className="text-xs leading-5 text-fg-3">
           {bt(
-            "키·결제 정보는 서버 로컬 환경변수에서만 읽으며, 이메일·연락처는 전송 전 자동 마스킹되고 유료 자동 충전은 하지 않습니다.",
-            "Keys stay in server-only env vars, PII is masked before sending, store:false is enforced, and no auto-billing occurs.",
+            "API 키는 서버에 보관하고 이메일·연락처는 전송 전에 마스킹합니다. 이 기능은 유료 충전을 실행하지 않으며, 계정의 크레딧 잔액·자동 충전·과금 한도는 별도 확인이 필요합니다.",
+            "API keys stay on the server, and emails and phone numbers are masked before sending. This feature does not purchase credits. Account credit balance, auto-recharge, and spending limits require a separate check.",
           )}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={runningOpenAi}
+            disabled={runningOpenAi || modelRetired}
             onClick={() => void runOpenAiAssist()}
             data-testid="openai-assist-submit-btn"
             className={buttonClass({
-              variant: statusInfo?.configured ? "solid" : "outline",
+              variant: openAiConfigured ? "solid" : "outline",
               className: "min-h-11 gap-2",
             })}
           >
@@ -523,7 +530,7 @@ function StudioProjectAssistantPanelBody({
             type="button"
             onClick={launch}
             className={buttonClass({
-              variant: statusInfo?.configured ? "outline" : "solid",
+              variant: openAiConfigured ? "outline" : "solid",
               className: "min-h-11 gap-2",
             })}
           >

@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 
 import { HttpException, UnauthorizedException } from "@nestjs/common";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { StudioOpenAiRateLimiter } from "./openai-assist/studio-openai-guardrails";
 import { StudioOpenAiCreativeAssistController } from "./studio-openai-creative-assist.controller";
@@ -44,7 +44,43 @@ function createRequestResponseHarness(headers: Record<string, string> = {}) {
   };
 }
 
+function createDialogueResponse(): Response {
+  return new Response(JSON.stringify({
+    choices: [{
+      finish_reason: "stop",
+      message: {
+        content: JSON.stringify({
+          readabilityNote: "의미와 말투를 유지한 짧은 대안입니다.",
+          balloons: [
+            { toneLabel: "구어체", line: "많이 기다렸지?", subBubble: "", reason: "상대 반응을 묻습니다." },
+            { toneLabel: "핵심형", line: "늦어서 미안해.", subBubble: "", reason: "사과를 먼저 전합니다." },
+          ],
+        }),
+      },
+    }],
+  }), { status: 200 });
+}
+
+function createStalledBodyFetch(status: number) {
+  return vi.fn<typeof fetch>(async (_url, init) => {
+    const signal = init?.signal;
+    const body = new ReadableStream<Uint8Array>({
+      start(stream) {
+        const abortBody = () => stream.error(new Error("모의 응답 본문 중단"));
+        if (signal?.aborted) abortBody();
+        else signal?.addEventListener("abort", abortBody, { once: true });
+      },
+    });
+    return new Response(body, { status });
+  });
+}
+
 describe("StudioOpenAiCreativeAssistService & Controller", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
   it("reports unconfigured status safely without leaking keys when OPENAI_API_KEY is absent", () => {
     const service = new StudioOpenAiCreativeAssistService();
     const status = service.status({});
@@ -53,7 +89,8 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(status.keyLocation).toBe("server-env-only");
     expect(status.storeData).toBe(false);
     expect(status.piiMasking).toBe(true);
-    expect(status.autoBillingDisabled).toBe(true);
+    expect(status.autoBillingDisabled).toBeNull();
+    expect(status.modelConfigurationError).toBeNull();
     expect(status.modes.map((m) => m.id)).toEqual([
       "idea-remix",
       "script-to-cuts",
@@ -75,6 +112,7 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
 
     expect(status.configured).toBe(true);
     expect(status.model).toBe("gpt-4.1-mini");
+    expect(status.autoBillingDisabled).toBeNull();
     const serialized = JSON.stringify(status);
     expect(serialized).not.toContain(fakeKey);
     expect(serialized).not.toContain("org-unitTestOrg99");
@@ -87,7 +125,38 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
       OPENAI_MODEL: "gpt-expensive-unlisted",
     });
     expect(config.model).toBe("gpt-4o-mini");
+    expect(config.modelConfigurationError).toBeNull();
   });
+
+  it.each(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14", " GPT-4.1-NANO "])(
+    "종료 모델 %s는 기본 모델로 바꾸지 않고 호출과 쿼터 소비 전에 차단한다",
+    async (model) => {
+      const service = new StudioOpenAiCreativeAssistService();
+      const env = {
+        OPENAI_API_KEY: "test-placeholder",
+        OPENAI_MODEL: model,
+        STUDIO_OPENAI_DAILY_REQUEST_LIMIT: "1",
+      };
+      const status = service.status(env);
+      expect(status.configured).toBe(true);
+      expect(status.model).toBe(model.trim().toLowerCase());
+      expect(status.modelConfigurationError).toBe("retired");
+      expect(status.setupNoticeKo).toContain("서비스가 종료");
+
+      const fetchMock = vi.fn<typeof fetch>(async () => createDialogueResponse());
+      const input = { mode: "dialogue-polish", inputText: "늦어서 미안해. 많이 기다렸지?" } as const;
+      await expect(service.assist("user:retired-model", input, { env, fetchImpl: fetchMock }))
+        .rejects.toMatchObject({ status: 503, response: { code: "OPENAI_MODEL_RETIRED" } });
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      const result = await service.assist("user:retired-model", input, {
+        env: { ...env, OPENAI_MODEL: "gpt-4o-mini" },
+        fetchImpl: fetchMock,
+      });
+      expect(result.quota.remainingDaily).toBe(0);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("masks personal data (email, phone, +82 phone, foreign RRN, unspaced card, tokens) before upstream send", () => {
     const fakeSecret = ["sk", "live", "1234567890abcdefghij"].join("-");
@@ -202,6 +271,11 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
     expect(capturedUrl).toBe("https://api.openai.com/v1/chat/completions");
     expect(capturedHeaders.Authorization).toBe(`Bearer ${fakeKey}`);
     expect(capturedBody.store).toBe(false);
+    expect(capturedBody.max_completion_tokens).toBe(1_400);
+    expect(capturedBody.response_format).toMatchObject({
+      type: "json_schema",
+      json_schema: { name: "toonstudio_script_to_cuts", strict: true },
+    });
     expect(JSON.stringify(capturedBody)).not.toContain("test@studio.kr");
     expect(JSON.stringify(capturedBody)).toContain("[이메일 비공개]");
 
@@ -298,6 +372,95 @@ describe("StudioOpenAiCreativeAssistService & Controller", () => {
       ),
     ).rejects.toMatchObject({ status: 429 });
     expect(upstreamCalls).toBe(1);
+  });
+
+  it.each([
+    ["credit_balance_exhausted", "OPENAI_QUOTA_EXHAUSTED"],
+    ["insufficient_quota", "OPENAI_QUOTA_EXHAUSTED"],
+    ["billing_hard_limit_reached", "OPENAI_QUOTA_EXHAUSTED"],
+    ["project_spend_limit_exceeded", "OPENAI_SPEND_LIMIT_REACHED"],
+    ["organization_spend_limit_exceeded", "OPENAI_SPEND_LIMIT_REACHED"],
+    ["rate_limit_exceeded", "OPENAI_UPSTREAM_RATE_LIMITED"],
+  ])("OpenAI 429 %s를 %s로 구분하고 재호출하지 않는다", async (upstreamCode, expectedCode) => {
+    const service = new StudioOpenAiCreativeAssistService();
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(
+      JSON.stringify({ error: { code: upstreamCode } }),
+      { status: 429 },
+    ));
+    await expect(service.assist("user:billing-code", {
+      mode: "dialogue-polish",
+      inputText: "잠깐 이야기할 수 있을까?",
+    }, { env: { OPENAI_API_KEY: "test-placeholder" }, fetchImpl: fetchMock }))
+      .rejects.toMatchObject({ status: 429, response: { code: expectedCode } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([200, 429])("HTTP %s 헤더 수신 뒤 본문이 지연되어도 timeout을 유지한다", async (status) => {
+    vi.useFakeTimers();
+    const service = new StudioOpenAiCreativeAssistService();
+    const fetchMock = createStalledBodyFetch(status);
+    const signal = new AbortController().signal;
+    const removeListener = vi.spyOn(signal, "removeEventListener");
+    const pending = service.assist("user:body-timeout", {
+      mode: "dialogue-polish",
+      inputText: "오늘은 나랑 같이 가자.",
+    }, {
+      env: { OPENAI_API_KEY: "test-placeholder", STUDIO_OPENAI_TIMEOUT_MS: "5000" },
+      fetchImpl: fetchMock,
+      signal,
+    });
+    const assertion = expect(pending).rejects.toMatchObject({
+      status: 504,
+      response: { code: "OPENAI_TIMEOUT" },
+    });
+    await vi.advanceTimersByTimeAsync(5_001);
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(removeListener).toHaveBeenCalledWith("abort", expect.any(Function));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([200, 429])("HTTP %s 본문을 읽는 중 사용자 취소를 499로 보존한다", async (status) => {
+    vi.useFakeTimers();
+    const service = new StudioOpenAiCreativeAssistService();
+    const fetchMock = createStalledBodyFetch(status);
+    const controller = new AbortController();
+    const pending = service.assist("user:body-abort", {
+      mode: "dialogue-polish",
+      inputText: "오늘은 나랑 같이 가자.",
+    }, {
+      env: { OPENAI_API_KEY: "test-placeholder" },
+      fetchImpl: fetchMock,
+      signal: controller.signal,
+    });
+    const assertion = expect(pending).rejects.toMatchObject({
+      status: 499,
+      response: { code: "CLIENT_ABORTED" },
+    });
+    await vi.advanceTimersByTimeAsync(1);
+    controller.abort();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([
+    ["not-json", "OPENAI_INVALID_JSON", 502],
+    [JSON.stringify({ choices: [{ message: { refusal: "정책상 거절" } }] }), "OPENAI_SAFETY_REFUSAL", 422],
+    [JSON.stringify({ choices: [{ finish_reason: "length", message: { content: "{" } }] }), "OPENAI_OUTPUT_TRUNCATED", 502],
+    [JSON.stringify({ choices: [] }), "OPENAI_EMPTY_RESPONSE", 502],
+    [JSON.stringify({ choices: [{ message: { content: "not-json" } }] }), "OPENAI_MALFORMED_STRUCTURED_JSON", 502],
+    [JSON.stringify({ choices: [{ message: { content: "{}" } }] }), "OPENAI_SCHEMA_MISMATCH", 502],
+  ] as const)("완료된 응답 %s의 오류를 %s로 보존한다", async (body, code, status) => {
+    vi.useFakeTimers();
+    const service = new StudioOpenAiCreativeAssistService();
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(body, { status: 200 }));
+    await expect(service.assist("user:response-errors", {
+      mode: "dialogue-polish",
+      inputText: "여기서 잠깐 기다릴게.",
+    }, { env: { OPENAI_API_KEY: "test-placeholder" }, fetchImpl: fetchMock }))
+      .rejects.toMatchObject({ status, response: { code } });
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("releases rate-limiter slot when request is aborted or fails with transient error so retries succeed", async () => {
