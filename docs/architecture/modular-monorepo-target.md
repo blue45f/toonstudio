@@ -139,7 +139,7 @@ tools 같은 수명주기 권위를 기준으로 구성한다. 기존 focused en
 변경하지 않는다. 운영 DB 적용과 배포는 이번 코드 구현 승인에 포함되지 않는다.
 
 2026-11-18 상태: **migration — 관리자 클라우드 작업 보드 통합**. 추가형
-`0124_admin_cloud_workboard.sql`을 추가하며, 전체 관리자 보드 통합의 파일 수는
+`0125_admin_cloud_workboard.sql`을 추가하며, 전체 관리자 보드 통합의 파일 수는
 `ARCHITECTURE.md`의 실제 순증 7개(174→181)와 같은 기준을 사용한다.
 Drizzle 모델은 기존 관리자 schema에, Admin/API 공통 검증은 contracts 공개 경계에 둔다.
 다른 파일·경계 상한은 변경하지 않는다. 운영 DB 적용·외부 배포는 승인 대기로 유지한다.

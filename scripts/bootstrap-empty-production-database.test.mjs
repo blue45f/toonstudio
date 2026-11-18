@@ -514,12 +514,12 @@ describe("bootstrap SQL and repository contract", () => {
       "0120_studio_role_pipeline_policy",
       "0121_studio_bg3d_six_pass_bundle",
       "0122_admin_workspace",
-      "0123_admin_workspace_access",
-      "0124_admin_cloud_workboard",
-      "0125_admin_business_plan",
-      "0126_admin_business_plan_access",
-      "0127_admin_ai_operations",
-      "0128_admin_nestjs_quality",
+      "0123_admin_business_plan",
+      "0124_admin_nestjs_quality",
+      "0125_admin_cloud_workboard",
+      "0126_admin_ai_operations",
+      "0127_admin_workspace_access",
+      "0128_admin_business_plan_access",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([

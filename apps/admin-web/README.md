@@ -71,7 +71,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 
 ### 활성화·복구 조건
 
-승인된 배포 담당자가 저장소의 정식 migration 절차로 `0124_admin_cloud_workboard.sql`과
+승인된 배포 담당자가 저장소의 정식 migration 절차로 `0125_admin_cloud_workboard.sql`과
 지정 런타임 역할의 최소 ACL을 먼저 적용한 뒤 API/Admin을 배포한다. 이번 코드 머지는 이 운영 절차의 승인이 아니다.
 준비되지 않은 저장소는 503으로 표시하고 요청 처리에서 DDL이나 임의 초기화를 실행하지 않는다.
 성공 기준은 활성 관리자 조회·저장, 다른 계정 격리, 충돌 처리, migration 원장·readiness 확인이다.
@@ -98,6 +98,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
   백업과 명시적인 최신 저장본 다시 읽기를 제공한다. 서버·다른 기기와의 공동 저장 기능은 없다.
 - 코드 수정·푸시·PR 병합·배포는 승인 대기 메모만 관리한다. 패치·명령은 텍스트와 복사 기능으로만
   제공하며 GitHub 실행·설정 변경·유료 호출 기능은 없다.
+
 ## 사업계획서 고도화·제출 준비 보드
 
 - 상태: **현재 소스 구현, 운영 DB 적용·배포 전** (2026-11-18).
@@ -122,7 +123,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 
 ### DB 적용과 실패 처리
 
-`0125_admin_business_plan.sql`과 `0126_admin_business_plan_access.sql`은 보드·명시적 grant·접근 감사 구조를 추가하며 실행 이력을 보존한다. 비어 있는 보드만 명시적으로 소유권을 시작할 수 있고, 소유자가 없는 기존 자료는 공개하지 않는다.
+`0123_admin_business_plan.sql`과 `0128_admin_business_plan_access.sql`은 보드·명시적 grant·접근 감사 구조를 추가하며 실행 이력을 보존한다. 비어 있는 보드만 명시적으로 소유권을 시작할 수 있고, 소유자가 없는 기존 자료는 공개하지 않는다.
 기존 테이블이나 사용자 역할을 변경하지 않는다. 배포 담당자는 별도 승인된 SHA와 인프라 지도에 따라
 정식 migration 절차를 수행한 뒤 API·정적 웹을 배포해야 한다. 이 문서와 코드 병합은 그 실행 승인이 아니다.
 
@@ -134,6 +135,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 `pnpm exec vitest run apps/admin-web/src packages/contracts/src/business-plan apps/api/src/modules/business-plan/business-plan.test.ts`,
 `pnpm test:admin:e2e`다. API의 `business-plan.integration.test.ts`는 분리된 PostgreSQL의
 `TEST_DATABASE_URL`이 필요하며 실제 잠금·동시 저장·멱등 재시도·migration 재실행을 검증한다.
+
 ## AI·무료 플랜 운영 보드
 
 - 상태: **current — 소스 구현, 운영 DB 적용·배포 전** (2026-11-18).
@@ -148,11 +150,12 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 
 저장 스키마와 승인·가져오기·롤백 절차는 [운영 보드 계약](../../docs/operations/admin-ai-operations-board.md)을 따른다.
 `tests/ai-operations.e2e.ts`는 합성 API 응답으로 브라우저 상호작용을 검증하며 실제 DB 경쟁·권한은 별도 Postgres 통합 테스트가 검증한다.
+
 ## NestJS·API 호환성 검증 보드
 
 - 소스 구현 기준: 2026-11-18. 운영 배포와 운영 DB migration 적용은 별도 작업이다.
 - 진입 경로는 `/admin/platform/quality/?view=nestjs`다. CI·QA의 의존성·회귀 탭과 별도 화면이며, 해당 탭의 브라우저 저장본과 NestJS 서버 기록은 서로 대체하지 않는다. 같은 독립 Admin 산출물 안에서 NestJS 화면을 지연 로드하며, 기존 CI·QA의 5상태 모델과 브라우저 저장 기록은 변경하지 않는다.
-- `CiQualityAccess`가 서버 관리자 신원을 확인한 뒤 화면을 연다. `admin`만 기록을 저장하고 `operator`는 조회·내보내기만 한다. 재확인 중에는 화면을 숨기되 같은 계정의 초안을 유지한다. 계정 전환·권한 거부 뒤에는 이전 계정 기록을 닫는다.
+- `CiQualityAccess`는 작업실과 공유하는 `AdminAccess`에서 서버 관리자 신원을 확인한 뒤 화면을 연다. `admin`만 기록을 저장하고 `operator`는 조회·내보내기만 한다. 재확인 중에는 화면을 숨기되 같은 계정의 초안을 유지한다. 계정·역할 전환과 권한 거부 뒤에는 이전 편집 상태와 기록을 닫는다. 재확인 중에는 진행 중인 NestJS 요청을 취소하고, API 401/403은 공통 인증 게이트를 닫아 재인증을 요구한다.
 - 기록은 `GET /api/admin/quality/nestjs`에서 읽고 같은 경로의 CSRF 보호 `POST`로 저장한다. 서버 오류를 기본 seed나 localStorage 저장 성공으로 대체하지 않는다. 서버의 문서 버전과 mutation ID를 사용하여 충돌·통신 재시도를 처리한다.
 - 6개 관리 상태와 실제 확인 결과를 분리한다. 패키지 선언·잠금·목표 버전, PR·커밋·CI, API·Socket.IO·PostgreSQL 경로, 시나리오의 전후 증거, `WsAdapter` 적용 판정, 확인일·검증일·다음 조치를 원본 형식으로 보존한다.
 - 완료·보관 항목은 기본 작업 목록에서 숨긴다. 24시간이 지난 관측에는 재확인 안내를 표시하며 GitHub의 최신 상태로 자동 갱신했다고 표시하지 않는다.

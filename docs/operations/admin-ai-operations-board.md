@@ -70,7 +70,7 @@ UI와 API가 실제로 공유하는 계약만 `packages/contracts/src/ai-operati
 
 ## DB 준비와 배포 전제
 
-추가형 migration `0127_admin_ai_operations.sql`은 보드·감사·영수증 테이블과 빈 singleton만 만든다. 개인 자료나 운영 설정을 seed하지 않는다.
+추가형 migration `0126_admin_ai_operations.sql`은 보드·감사·영수증 테이블과 빈 singleton만 만든다. 개인 자료나 운영 설정을 seed하지 않는다.
 manifest·capability 검사·runtime 최소권한 계약에 포함하며 운영 runtime에는 필요한 조회·갱신·추가 권한만 준다.
 일반 API health의 전역 필수 테이블을 늘리지 않는다. 이 기능의 스키마가 없으면 해당 API만 실패한다.
 

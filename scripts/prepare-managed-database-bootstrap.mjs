@@ -8,7 +8,8 @@ import { pathToFileURL } from "node:url";
 import { loadBootstrapContract, buildRuntimeBootstrapAclSql } from "./bootstrap-empty-production-database.mjs";
 import * as migrations from "./run-production-database-migrations.mjs";
 import { buildProductionCapabilityVerificationSql, loadHealthReadinessContract } from "./verify-production-database-capabilities.mjs";
-import { buildAdminRuntimeAclSql } from "./admin-database-contract.mjs";
+import { buildAdminRuntimeAclSql, buildAdminCloudWorkboardRuntimeAclSql, buildAdminNestjsQualityRuntimeAclSql } from "./admin-database-contract.mjs";
+import { buildAiOperationsRuntimeAclSql } from "./ai-operations-database-contract.mjs";
 import { buildAdminWorkspaceRuntimeAclSql } from "./admin-workspace-database-contract.mjs";
 import { buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
 import { buildCommunityCafeRuntimeAclSql } from "./community-cafe-database-contract.mjs";
@@ -204,7 +205,7 @@ export function buildManagedRuntimeAclSql(role) {
     migrations.buildAuthRuntimeAclSql, migrations.buildTrafficAnalyticsRuntimeAclSql,
     migrations.buildCreatorRoleWorkspaceRuntimeAclSql, migrations.buildPersonalCloudRuntimeAclSql,
     migrations.buildCommunityCommentRuntimeAclSql, migrations.buildMessagingRuntimeAclSql,
-    buildCustomerSupportRuntimeAclSql, buildAdminRuntimeAclSql, buildAdminWorkspaceRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
+    buildCustomerSupportRuntimeAclSql, buildAiOperationsRuntimeAclSql, buildAdminRuntimeAclSql, buildAdminCloudWorkboardRuntimeAclSql, buildAdminWorkspaceRuntimeAclSql, buildAdminNestjsQualityRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
     migrations.buildRuntimeCutoverLedgerAclSql, migrations.buildMembershipRuntimeAclSql,
     buildHiringRuntimeAclSql, buildHiringAutomationRuntimeAclSql, buildFortuneSnapshotRuntimeAclSql,
     buildCareerConfirmationRuntimeAclSql, buildProductionOperationsRuntimeAclSql,

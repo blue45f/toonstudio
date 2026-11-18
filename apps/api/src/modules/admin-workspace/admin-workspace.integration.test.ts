@@ -14,7 +14,7 @@ const target = process.env.TEST_DATABASE_URL;
 const runtimeRole = process.env.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE ?? process.env.TEST_RUNTIME_DATABASE_ROLE;
 if (process.env.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE && !target) throw new Error("관리자 보드 DB gate에는 명시적인 TEST_DATABASE_URL이 필요합니다.");
 const schema = `admin_workspace_${randomUUID().replaceAll("-", "")}`;
-const migrations = ["0122_admin_workspace.sql", "0123_admin_workspace_access.sql"].map(name => readFileSync(new URL(`../../platform/database/migrations/${name}`, import.meta.url), "utf8")
+const migrations = ["0122_admin_workspace.sql", "0127_admin_workspace_access.sql"].map(name => readFileSync(new URL(`../../platform/database/migrations/${name}`, import.meta.url), "utf8")
   .replaceAll("public.", `"${schema}".`));
 
 /** 명시적으로 선택한 일회성 TEST_DATABASE_URL 안에서만 DDL·역할 전환을 수행한다. */

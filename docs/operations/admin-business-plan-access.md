@@ -43,7 +43,7 @@
 ## 적용·검증·복구
 
 기존 무료 PostgreSQL을 사용하며 새 서비스·유료 플랜·배치 동기화는 추가하지 않는다.
-`0126_admin_business_plan_access.sql`은 소유자 열, 명시적 권한 표, 불변 접근 감사 표를 추가한다.
+`0128_admin_business_plan_access.sql`은 소유자 열, 명시적 권한 표, 불변 접근 감사 표를 추가한다.
 통합 브랜치에서 migration 번호를 조정하면 manifest·통합 테스트의 경로도 함께 조정한다.
 런타임 ACL은 현재값과 권한의 지정 열만 UPDATE를 허용하고 snapshot·감사·영수증의 변경·삭제를 차단한다.
 

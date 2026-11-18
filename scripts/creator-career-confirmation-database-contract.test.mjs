@@ -8,7 +8,7 @@ test('정본 0080은 0128까지 128개 migration과 원본0078을 보존하며 �
   expect(sql).toMatch(/\nBEGIN;[\s\S]*COMMIT;\s*$/u);
   const migrations = readdirSync(new URL('../apps/api/src/platform/database/migrations/', import.meta.url)).filter((f) => /^\d{4}_.+\.sql$/u.test(f)).sort();
   expect(migrations).toHaveLength(128);
-  expect(migrations.at(-1)).toBe('0128_admin_nestjs_quality.sql');
+  expect(migrations.at(-1)).toBe('0128_admin_business_plan_access.sql');
   expect(createHash('sha256').update(read('../apps/api/src/platform/database/migrations/0078_creator_hiring_workspace.sql')).digest('hex')).toBe('c8094e53ce497dfd8f0649adb3e51ad67ae4a67f27d4547b5863484d2e8e2085');
   expect([...sql.matchAll(/CREATE TABLE (\w+)/gu)].map((m) => m[1]).sort()).toEqual(CAREER_CONFIRMATION_RELATIONS.map((r) => r.relation).sort());
   expect([...sql.matchAll(/CREATE FUNCTION (\w+)/gu)].map((m) => m[1]).sort()).toEqual([...CAREER_CONFIRMATION_FUNCTIONS].sort());
