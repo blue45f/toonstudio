@@ -145,7 +145,8 @@
 .cloud-workboard .cw-import-list { padding: 0; margin: 18px 0; list-style: none; max-height: 300px; overflow: auto; }
 .cloud-workboard .cw-import-list li { display: grid; grid-template-columns: minmax(90px, .5fr) minmax(120px, 1fr) 90px; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--cw-line); font-size: 12px; overflow-wrap: anywhere; }
 .cloud-workboard .cw-import-list li > span:last-child { color: var(--cw-accent); }
-.cloud-workboard .cw-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+/* 파일 입력에도 일반 입력의 너비보다 숨김 크기가 우선한다. */
+.cloud-workboard .cw-sr-only, .cloud-workboard input.cw-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 1150px) {
   .cloud-workboard .cw-workspace { grid-template-columns: 165px minmax(0, 1fr); }
   .cloud-workboard .cw-main { padding: 18px; }

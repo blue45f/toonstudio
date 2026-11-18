@@ -5,6 +5,22 @@ import type { Board, CloudWorkboardSave, Task } from "@toonstudio/contracts/admi
 
 const boardPath = "/admin/platform/quality/?view=cloud-work";
 
+async function expectNoHorizontalOverflow(page: Page): Promise<void> {
+  const layout = await page.evaluate(() => {
+    const viewportWidth = window.innerWidth;
+    const scrollWidth = document.documentElement.scrollWidth;
+    const overflow = scrollWidth > viewportWidth ? Array.from(document.querySelectorAll("body *"))
+      .map(element => {
+        const rect = element.getBoundingClientRect();
+        return { tag: element.tagName, className: element.getAttribute("class"), left: rect.left, right: rect.right, width: rect.width };
+      })
+      .filter(element => element.right > viewportWidth || element.left < 0)
+      .slice(0, 12) : [];
+    return { viewportWidth, scrollWidth, overflow };
+  });
+  expect(layout.scrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewportWidth);
+}
+
 function sampleTask(id = "TEST-001", title = "검토할 샘플 변경"): Task {
   return { ...blankTask(), id, title, repo: "https://example.com/repository", changeKey: "browser-fixture-change", localBranch: "review/fixture", remoteBranch: "review/fixture", localSha: "a".repeat(40), remoteSha: "b".repeat(40), nextAction: "전체 SHA와 기존 main 내용 비교" };
 }
@@ -42,16 +58,19 @@ test("새 관리자 보드는 빈 상태로 시작하고 저장소 실패와 운
   await expect(page.getByRole("alert")).toContainText("마이그레이션");
   await expect(page.getByRole("button", { name: "작업 추가", exact: true })).toBeDisabled();
   await expect(page.getByText("아직 저장된 작업이 없습니다", { exact: true })).toHaveCount(0);
+  const readsBeforeRetry = server.gets;
   server.getStatus = 200;
   await page.getByRole("button", { name: "다시 불러오기", exact: true }).click();
   await expect(page.getByRole("heading", { name: "아직 저장된 작업이 없습니다" })).toBeVisible();
+  expect(server.gets).toBe(readsBeforeRetry + 1);
   expect(server.board.tasks).toHaveLength(0);
   expect(server.requests).toEqual([]);
+  const readsBeforeRoleChange = server.gets;
   server.role = "operator";
   await page.evaluate(() => window.dispatchEvent(new Event("toonstudio:auth-session-changed")));
   await expect(page.getByRole("alert")).toContainText("운영자 권한으로는 열 수 없습니다");
   await expect(page.getByRole("heading", { name: "클라우드 작업 보드", exact: true })).toHaveCount(0);
-  expect(server.gets).toBe(2);
+  expect(server.gets).toBe(readsBeforeRoleChange);
 });
 
 test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존하며 기록 API만 호출한다", async ({ page }, testInfo) => {
@@ -179,7 +198,7 @@ test("390px에서 내용이 넘치지 않고 키보드 대화상자와 보드 �
   await fixture(page, { ...emptyBoard(), tasks: [task] });
   await page.goto(boardPath);
   await expect(page.getByRole("heading", { name: "클라우드 작업 보드", exact: true })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   const open = page.getByRole("button", { name: task.title, exact: true });
   await open.focus();
   await page.keyboard.press("Enter");
@@ -188,12 +207,12 @@ test("390px에서 내용이 넘치지 않고 키보드 대화상자와 보드 �
   await expect(dialog.getByRole("button", { name: "대화상자 닫기", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(dialog.getByRole("button", { name: "작업 기록 저장", exact: true })).toBeFocused();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(open).toBeFocused();
   await page.getByRole("button", { name: "변경 비교", exact: true }).click();
   await expect(page.locator(".cw-comparison-card")).toHaveCount(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath("cloud-work-390.png"), fullPage: true });
 });
