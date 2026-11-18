@@ -1,0 +1,17 @@
+/* 쇼케이스의 긴 제목·검색·참여 안내만 제어하고 갤러리 공용 레이아웃은 유지한다. */
+.showcase-surface { min-width: 0; }
+.showcase-surface :is(section, form, details, [role="tabpanel"]) { min-width: 0; }
+.showcase-surface :is(h1, h2, h3) { overflow-wrap: anywhere; word-break: keep-all; }
+.showcase-surface [role="search"] input { min-width: 0; }
+.showcase-surface summary { scroll-margin-top: var(--site-header-sticky-offset, 5rem); }
+.showcase-surface :is(a, button, summary, input):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.showcase-surface .ink-cover img { display: block; max-width: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .showcase-surface .ink-cover img { scale: none; }
+}
+@media (forced-colors: active) {
+  .showcase-surface :is(a, button, summary, input):focus-visible { outline-color: Highlight; }
+}

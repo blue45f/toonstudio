@@ -1,0 +1,115 @@
+/* 공개 화면의 명시적 모션 훅. 표시·초점·레이아웃은 원래 화면이 계속 소유한다. */
+:root {
+  --ink-fast: 150ms;
+  --ink-base: 240ms;
+  --ink-slow: 360ms;
+  --ink-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ink-ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.ink-frame {
+  position: relative;
+  isolation: isolate;
+}
+.ink-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--ink-radius, inherit);
+  pointer-events: none;
+  opacity: 0;
+}
+.ink-frame:is(:hover, :focus-within)::after { opacity: 0.65; }
+.ink-sheen { position: relative; isolation: isolate; }
+.ink-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 20%, rgb(255 255 255 / 12%) 45%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+}
+.ink-sheen:is(:hover, :focus-within)::after { opacity: 1; }
+.ink-bar-fill { transform-origin: left center; }
+.ink-stroke-draw { stroke-dasharray: var(--ink-dash, 600); stroke-dashoffset: 0; }
+[data-ink="line"] { position: relative; }
+[data-ink="line"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-ink-route-active="true"] :is([data-ink-enter], [data-ink]),
+  .ink-cascade > *,
+  [data-ink-stagger] > * {
+    animation: ink-cascade-in var(--ink-slow) var(--ink-ease) both;
+    animation-delay: calc(min(var(--ink-i, 0), 8) * 30ms);
+  }
+  [data-ink-route-active="true"] :is([data-ink-enter="zoom"], [data-ink="zoom"], [data-ink="settle"]) {
+    animation-name: ink-zoom-in;
+  }
+  [data-ink-route-active="true"] [data-ink="line"] { animation: none; }
+  [data-ink-route-active="true"] [data-ink="line"]::after {
+    animation: ink-line-in var(--ink-slow) var(--ink-ease-draw) both;
+  }
+  [data-ink-route-active="true"] [data-ink-enter="line"] {
+    transform-origin: left center;
+    animation-name: ink-line-in;
+  }
+  [data-ink-stagger] > :nth-child(2) { --ink-i: 1; }
+  [data-ink-stagger] > :nth-child(3) { --ink-i: 2; }
+  [data-ink-stagger] > :nth-child(4) { --ink-i: 3; }
+  [data-ink-stagger] > :nth-child(5) { --ink-i: 4; }
+  [data-ink-stagger] > :nth-child(6) { --ink-i: 5; }
+  [data-ink-stagger] > :nth-child(n + 7) { --ink-i: 6; }
+  .ink-frame::after,
+  .ink-sheen::after { transition: opacity var(--ink-base) var(--ink-ease); }
+  .ink-cover > :is(img, picture),
+  .ink-cover > picture > img { transition: scale var(--ink-slow) var(--ink-ease); }
+  .ink-arrow > svg:last-child { transition: translate var(--ink-fast) var(--ink-ease); }
+  .ink-arrow:is(:hover, :focus-visible) > svg:last-child { translate: 3px 0; }
+  .ink-bar-fill { animation: ink-line-in var(--ink-slow) var(--ink-ease-draw) both; }
+  .ink-stroke-draw { animation: ink-stroke-in 600ms var(--ink-ease-draw) both; }
+  @media (hover: hover) and (pointer: fine) {
+    .ink-cover:hover > img,
+    .ink-cover:hover > picture > img { scale: 1.025; }
+    .ink-stage-tilt {
+      transform: perspective(1000px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
+      transition: transform var(--ink-base) var(--ink-ease);
+    }
+  }
+}
+
+/* 최종 위치에서도 불투명도를 낮추지 않아 첫 프레임부터 본문 명암비를 유지한다. */
+@keyframes ink-cascade-in { from { translate: 0 6px; } to { translate: 0 0; } }
+@keyframes ink-zoom-in { from { scale: 0.985; } to { scale: 1; } }
+@keyframes ink-line-in { from { scale: 0 1; } to { scale: 1 1; } }
+@keyframes ink-stroke-in { from { stroke-dashoffset: var(--ink-dash, 600); } to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  :is([data-ink], [data-ink-enter], [data-ink-stagger] > *, .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw, .ink-stage-tilt),
+  .ink-frame::after,
+  .ink-sheen::after,
+  [data-ink="line"]::after,
+  .ink-cover :is(img, picture),
+  .ink-arrow > svg:last-child {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+:root[data-design-theme="contrast"] :is([data-ink], [data-ink-enter], [data-ink-stagger] > *, .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw, .ink-stage-tilt) {
+  animation: none !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+}
+:root[data-design-theme="contrast"] :is(.ink-frame, .ink-sheen)::after { display: none; }
+:root[data-design-theme="contrast"] [data-ink="line"]::after { animation: none; }
