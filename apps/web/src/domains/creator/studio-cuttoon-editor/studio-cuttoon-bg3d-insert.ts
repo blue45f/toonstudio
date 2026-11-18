@@ -74,15 +74,13 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     setError(null);
     setStatusNotice(null);
     const sixPass = !!result.bg3dScene.output.sixPassLt;
-    if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
-      setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
-      return false;
-    }
     const pinnedVrm = result.bg3dScene.pinnedVersionedCut?.source.linkedVrm;
-    const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
-    if (pinnedVrm && pinnedVrm.documentScope !== expectedCastScope) {
-      setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
-      return false;
+    if (pinnedVrm) {
+      const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
+      if (pinnedVrm.documentScope !== expectedCastScope) {
+        setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
+        return false;
+      }
     }
     if (pinnedVrm && workId && !sixPass) {
       const ticket = bg3dMutationTicketRef.current;
@@ -108,6 +106,10 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     }
     if (pinnedVrm && (!canStoreLocalVrmCut?.() || workId || scopedWriteRuntime?.authority || authorizedWorkAssetScopeId || sixPass)) {
       setError("연결 VRM 컷은 로컬 원고의 컬러 레이어에 저장할 수 있습니다. 팀 원고와 6패스 묶음에는 모델·페인트 원본을 아직 함께 봉인할 수 없습니다.");
+      return false;
+    }
+    if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
+      setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
       return false;
     }
     let nativeState: StudioBg3dSixPassBundleState | undefined = activePage.bg3dLtBundles;
