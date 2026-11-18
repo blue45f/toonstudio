@@ -9,9 +9,9 @@ export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 const ALLOWED_OPENAI_MODELS = new Set([
   "gpt-4o-mini",
   "gpt-4.1-mini",
-  "gpt-4.1-nano",
   "gpt-4o",
 ]);
+const RETIRED_OPENAI_MODELS = new Set(["gpt-4.1-nano", "gpt-4.1-nano-2025-04-14"]);
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_BURST_LIMIT_PER_MINUTE = 5;
@@ -37,6 +37,7 @@ export interface StudioOpenAiCreativeConfig {
   readonly configured: boolean;
   readonly apiKey: string;
   readonly model: string;
+  readonly modelConfigurationError: "retired" | null;
   readonly organizationId: string | null;
   readonly projectId: string | null;
   readonly timeoutMs: number;
@@ -69,7 +70,11 @@ export function resolveStudioOpenAiCreativeConfig(
 ): StudioOpenAiCreativeConfig {
   const apiKey = env.OPENAI_API_KEY?.trim() ?? "";
   const rawModel = env.OPENAI_MODEL?.trim().toLowerCase() ?? "";
-  const model = ALLOWED_OPENAI_MODELS.has(rawModel) ? rawModel : DEFAULT_OPENAI_MODEL;
+  const modelConfigurationError = RETIRED_OPENAI_MODELS.has(rawModel) ? "retired" : null;
+  // 종료된 모델을 다른 유료 모델로 조용히 바꾸지 않고 서비스에서 호출 전에 차단한다.
+  const model = modelConfigurationError === "retired" || ALLOWED_OPENAI_MODELS.has(rawModel)
+    ? rawModel
+    : DEFAULT_OPENAI_MODEL;
   const rawOrg = env.OPENAI_ORG_ID?.trim() ?? "";
   const rawProject = env.OPENAI_PROJECT_ID?.trim() ?? "";
 
@@ -77,6 +82,7 @@ export function resolveStudioOpenAiCreativeConfig(
     configured: apiKey.length > 0,
     apiKey,
     model,
+    modelConfigurationError,
     organizationId: ORG_ID_PATTERN.test(rawOrg) ? rawOrg : null,
     projectId: PROJECT_ID_PATTERN.test(rawProject) ? rawProject : null,
     timeoutMs: parsePositiveLimit(env.STUDIO_OPENAI_TIMEOUT_MS, DEFAULT_TIMEOUT_MS, 5_000, 60_000),
@@ -171,6 +177,7 @@ function removeSingleTimestamp(list: number[], target: number): void {
  *
  * 일시적 네트워크 오류·타임아웃·클라이언트 취소·업스트림 5xx/스키마 불일치 시에는
  * `release()`로 예약 슬롯을 되돌려 재시도 한도가 부당하게 소진되지 않게 한다.
+ * 슬롯 반환은 앱의 호출 횟수만 복원하며, 제공자 사용료의 취소·환불을 의미하지 않는다.
  */
 export class StudioOpenAiRateLimiter {
   private readonly actorWindows = new Map<string, ActorWindowState>();
@@ -209,7 +216,7 @@ export class StudioOpenAiRateLimiter {
         {
           code: "OPENAI_ASSIST_DAILY_LIMIT_REACHED",
           message:
-            "오늘 사용할 수 있는 OpenAI 보조 요청 한도에 도달했어요. 추가 과금을 막기 위해 자동으로 멈췄으며, 내일 다시 사용할 수 있어요.",
+            "오늘 사용할 수 있는 OpenAI 보조 요청 횟수에 도달했어요. 설정된 호출 한도를 넘지 않도록 중단했으며, 다음 일일 집계 구간에 다시 사용할 수 있어요.",
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

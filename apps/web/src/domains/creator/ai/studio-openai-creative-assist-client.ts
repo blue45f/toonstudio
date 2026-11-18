@@ -26,7 +26,8 @@ export interface StudioOpenAiAssistStatus {
   readonly keyLocation: "server-env-only";
   readonly storeData: false;
   readonly piiMasking: true;
-  readonly autoBillingDisabled: true;
+  readonly autoBillingDisabled: boolean | null;
+  readonly modelConfigurationError: "retired" | null;
   readonly modes: readonly StudioOpenAiModeDescriptor[];
   readonly limits: {
     readonly burstPerMinute: number;
@@ -166,7 +167,8 @@ export function createOfflineOpenAiStatusFallback(): StudioOpenAiAssistStatus {
     keyLocation: "server-env-only",
     storeData: false,
     piiMasking: true,
-    autoBillingDisabled: true,
+    autoBillingDisabled: null,
+    modelConfigurationError: null,
     modes: DEFAULT_STUDIO_OPENAI_MODES,
     limits: {
       burstPerMinute: 5,
@@ -243,7 +245,9 @@ export async function fetchStudioOpenAiAssistStatus(options: {
       keyLocation: "server-env-only",
       storeData: false,
       piiMasking: true,
-      autoBillingDisabled: true,
+      // 키 설정 상태만으로 계정의 잔액·자동 충전·후불 과금 여부를 판정하지 않는다.
+      autoBillingDisabled: null,
+      modelConfigurationError: json.modelConfigurationError === "retired" ? "retired" : null,
       modes: Array.isArray(json.modes) && json.modes.length > 0
         ? json.modes
         : DEFAULT_STUDIO_OPENAI_MODES,
@@ -322,15 +326,18 @@ export async function runStudioOpenAiCreativeAssist(
     if (!controller.signal.aborted) controller.abort();
   }, timeoutMs);
 
-  let response: Response;
+  let responseStatus: number | undefined;
   try {
+    if (options.signal?.aborted) {
+      return { ok: false, status: 499, code: "CLIENT_ABORTED", message: "요청을 취소했어요." };
+    }
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
     if (sessionToken) headers["x-user-id"] = sessionToken;
 
-    response = await fetchFn(
+    const response = await fetchFn(
       baseUrl,
       withCsrfProtection({
         method: "POST",
@@ -346,9 +353,49 @@ export async function runStudioOpenAiCreativeAssist(
         signal: controller.signal,
       }),
     );
+    responseStatus = response.status;
+
+    const text = await response.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      return {
+        ok: false,
+        status: response.status,
+        code: "PARSE_ERROR",
+        message: "서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
+      };
+    }
+
+    if (!response.ok) {
+      const details = extractErrorDetails(
+        body,
+        `요청을 처리하지 못했어요 (상태 코드 ${response.status}). 잠시 후 다시 시도해 주세요.`,
+      );
+      return {
+        ok: false,
+        status: response.status,
+        code: details.code,
+        message: details.message,
+      };
+    }
+
+    const record = asRecord(body);
+    if (!record || record.provider !== "openai" || !asRecord(record.result)) {
+      return {
+        ok: false,
+        status: 502,
+        code: "INVALID_SERVER_PAYLOAD",
+        message: "도우미 응답 형식이 올바르지 않아요. 다시 한 번 눌러 주세요.",
+      };
+    }
+
+    return {
+      ok: true,
+      data: body as StudioOpenAiAssistSuccess,
+    };
   } catch {
-    clearTimeout(timer);
-    options.signal?.removeEventListener("abort", onExternalAbort);
     if (timedOut) {
       return {
         ok: false,
@@ -365,6 +412,14 @@ export async function runStudioOpenAiCreativeAssist(
         message: "요청을 취소했어요.",
       };
     }
+    if (responseStatus !== undefined) {
+      return {
+        ok: false,
+        status: responseStatus,
+        code: "PARSE_ERROR",
+        message: "서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
+      };
+    }
     return {
       ok: false,
       status: 0,
@@ -372,48 +427,8 @@ export async function runStudioOpenAiCreativeAssist(
       message: "창작 도우미 서버에 연결하지 못했어요. 잠시 후 다시 시도하거나 편집기 도우미를 이용해 주세요.",
     };
   } finally {
+    // 헤더 수신 뒤 본문을 읽는 동안에도 취소와 타임아웃을 유지한다.
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", onExternalAbort);
   }
-
-  let body: unknown;
-  try {
-    const text = await response.text();
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    return {
-      ok: false,
-      status: response.status,
-      code: "PARSE_ERROR",
-      message: "서버 응답을 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
-    };
-  }
-
-  if (!response.ok) {
-    const details = extractErrorDetails(
-      body,
-      `요청을 처리하지 못했어요 (상태 코드 ${response.status}). 잠시 후 다시 시도해 주세요.`,
-    );
-    return {
-      ok: false,
-      status: response.status,
-      code: details.code,
-      message: details.message,
-    };
-  }
-
-  const record = asRecord(body);
-  if (!record || record.provider !== "openai" || !asRecord(record.result)) {
-    return {
-      ok: false,
-      status: 502,
-      code: "INVALID_SERVER_PAYLOAD",
-      message: "도우미 응답 형식이 올바르지 않아요. 다시 한 번 눌러 주세요.",
-    };
-  }
-
-  return {
-    ok: true,
-    data: body as StudioOpenAiAssistSuccess,
-  };
 }

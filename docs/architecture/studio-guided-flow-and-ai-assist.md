@@ -1,7 +1,7 @@
 # 스튜디오 3단계 가이드 흐름 및 창작 보조 모듈 아키텍처
 
 - 상태: **현재 권위 문서**
-- 최종 갱신: **2026-11-10**
+- 최종 갱신: **2026-11-18**
 
 ## 목적과 적용 범위
 
@@ -44,7 +44,41 @@
 - `studio-openai-creative-assist.controller.ts` 및 `studio-openai-creative-assist.dto.ts`: 전역 세션 미들웨어가 검증한 로그인 사용자(`x-user-id`) 경계와 신뢰 프록시 기반 IP 해석(`resolveRequestClientIp`) 위에서 상태 조회 및 4모드 창작 보조 실행 경로를 담당하며, 클라이언트 연결 종료 시 업스트림 `AbortController`를 즉시 중단한다.
 - `openai-assist/studio-openai-guardrails.ts`: 연락처·주민/외국인등록번호·카드번호·API 토큰을 마스킹하는 사전 컴파일 정규식과 LRU 상한·일일 버킷 자동 정리·일시 장애 슬롯 반환(`quota.release()`)을 갖춘 호출 제한기를 제공한다.
 - `openai-assist/studio-openai-prompt-catalog.ts`: 4가지 보조 모드(`idea-remix`, `script-to-cuts`, `dialogue-polish`, `export-preflight-coach`) 정의와 구조화 JSON 응답 스키마를 관리한다.
-- `studio-openai-creative-assist.service.ts`: 인증 정보를 서버 환경변수에서만 읽으며, 비저장(`store: false`) 요청 옵션·타임아웃/네트워크/스키마 오류 시 쿼터 자동 복원·한도 초과 시 과금 없는 안전 중단 규칙을 집행한다.
+- `studio-openai-creative-assist.service.ts`: 인증 정보를 서버 환경변수에서만 읽으며, `store: false` 요청 옵션과 구조화 출력 검증을 적용한다. 요청 전송부터 응답 본문 수신까지 타임아웃·사용자 취소를 유지하고, 크레딧 소진과 프로젝트·조직 지출 한도 초과를 구분해 자동 재시도 없이 오류로 반환한다. 종료된 `gpt-4.1-nano` 및 해당 스냅샷 설정은 다른 모델로 대체하지 않고 호출 전에 차단한다.
+
+### 비용·개인정보 보장의 범위
+
+- 상태 응답의 `configured`는 서버 키의 설정 여부이며, 키 유효성·조직 크레딧 잔액·모델 접근 권한을 실시간 조회한 결과가 아니다. `autoBillingDisabled: null`은 계정 과금 설정 **미확인**을 뜻하고, `modelConfigurationError: "retired"`는 종료된 모델 설정을 뜻한다.
+- 분당·시간당·일일 요청 제한은 프로세스 메모리에 저장하는 호출 횟수 제한이다. 달러 예산이나 조직 전체의 청구 한도가 아니며, 서버 재시작·복수 인스턴스 사이에 공유되지 않는다. 오류 시 `quota.release()`는 로컬 호출 슬롯만 반환한다. 이미 업스트림에서 처리한 토큰 비용이 환불되거나 취소된다는 뜻은 아니다.
+- 이 기능은 크레딧 구매나 자동 충전 설정을 변경하지 않는다. 실제 계정의 무료 크레딧·구매 잔액·자동 충전·후불 과금·지출 한도는 OpenAI 관리 화면에서 별도로 확인해야 한다. 무료 크레딧 이후 구매 잔액으로 사용이 이어질 수 있으므로, `store: false`나 요청 횟수 제한만으로 추가 과금 방지를 보장하지 않는다.
+- `store: false`는 응답 저장 옵션이다. 기본 악용 모니터링 로그까지 모두 없애는 설정은 아니며, 요청 전 마스킹은 알려진 문자열 패턴에 한정된다. [OpenAI 데이터 제어 안내](https://developers.openai.com/api/docs/guides/your-data)를 따른다.
+
+크레딧의 실제 잔액·사용액·만료 시각·적격 모델은 계정별 확인 사항이다. 프로모션의 일반 조건과 구독 종료의 관계는 [ChatGPT API 크레딧 안내](https://developers.openai.com/api/docs/guides/chatgpt-api-credits), 계정 지출 한도는 [지출 한도 안내](https://developers.openai.com/api/docs/guides/spend-limits)를 참조한다. 코드의 상태 응답은 이를 확인했다는 증빙으로 사용할 수 없다.
+
+### 제한된 합성 원고 평가
+
+`scripts/studio-openai-credit-evaluation.mts`는 실제 서비스의 프롬프트·요청 본문·JSON Schema·출력 파서를 재사용하는 일회성 평가 실행기다. 운영 API나 환경변수를 변경하지 않으며, 기본 실행은 외부 통신 없는 `dry-run`이다. 저장소 루트에서 다음과 같이 실행한다.
+
+```bash
+TSX_TSCONFIG_PATH=apps/api/tsconfig.json \
+node --import tsx scripts/studio-openai-credit-evaluation.mts --dry-run
+```
+
+고정 합성 사례는 한국어 대사 6개, 컷 분할 2개, 발상 리믹스 1개, 문구·소개글 점검 1개다. 각각 `gpt-4o-mini`와 `gpt-4.1-mini`로 비교한다. 실제 파일의 해상도·글꼴·저작권 판정이나 이미 모의 테스트가 확인하는 오류 경로를 모델 호출로 반복 검사하지 않는다.
+
+| 평가 범위 | 예정 호출 | 보수적 비용 예약 합계 |
+| --- | ---: | ---: |
+| 한국어 대사·관계·조건 보존 | 12 | $0.028015 |
+| 컷 분할·무언 장면·회상 연속성 | 4 | $0.009638 |
+| 다섯 발상의 구별과 제약 보존 | 2 | $0.004738 |
+| 문구·소개글만으로 가능한 마감 조언 | 2 | $0.004714 |
+| 합계 | 20 | $0.047105 |
+
+이 계획값은 2026-11-18의 [gpt-4o-mini](https://developers.openai.com/api/docs/models/gpt-4o-mini)·[gpt-4.1-mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini) 표준 단가를 사용하고, 전체 직렬화 요청의 UTF-8 바이트 수에 프레이밍 여유 1,024와 출력 1,400토큰을 더해 예약한다. 실제 토큰 수나 청구액이 아니며, 프롬프트·스키마가 바뀌면 dry-run으로 다시 계산해야 한다.
+
+실제 실행은 `--execute --evidence /비공개/계정확인.json`을 명시해야 한다. 실행기 계약은 실패 포함 최대 20회·크레딧 $1·추가 유료 지출 $0이다. 계정 확인 증거에는 계획 해시, 1시간 이내의 잔액·만료·적격 모델 확인, 실제 키의 해시와 조직·프로젝트 일치, 자동 충전 중지와 추가 유료 지출 차단 근거가 필요하다. 실행기는 근거의 진위를 계정에 조회하지 않으므로, 미확인 항목을 임의의 확인값으로 채우면 안 된다. 날짜만 확인한 만료는 `creditExpiresOn`에 기록하고, 그 전날 00:00Z부터 실행을 막는다. 이 보수적 실행 차단 시각은 실제 만료 시각과 구분한다.
+
+모든 호출은 한 서비스·고정 사용자 식별자로 13초 이상 간격을 두며 자동 재시도하지 않는다. 전송 전 비용 예약과 일회 실행 잠금을 Git 내부 비공개 보고서에 남긴다. 오류·누락 사용량·알 수 없는 단가·잘린 출력·구조화 계약 위반이면 즉시 중단하고, 비용이 미확정인 요청은 예약을 유지한다. 실제 반환 모델·사용량·응답 시간과 합성 출력은 보고서에 기록하지만, 한국어 자연스러움과 창작 품질의 사람 평가는 `not-performed` 상태로 별도 남긴다. 구조화 계약 통과를 품질 점수로 해석하지 않는다.
 
 ## 번들 예산 및 검증 규칙
 
