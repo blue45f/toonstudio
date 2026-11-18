@@ -151,6 +151,18 @@ const PROP_GRIP_SPECS: Readonly<Record<HandPropId, GripTransformSpec>> = {
     eulerLeft: [Math.PI * 0.47, 0.20, 0.10],
     uniformScale: 1.02,
   },
+  "idol-prism-lightstick": {
+    palmDelta: [0.012, -0.032, 0.012],
+    eulerRight: [Math.PI * 0.48, 0.12, -0.08],
+    eulerLeft: [Math.PI * 0.48, -0.12, 0.08],
+    uniformScale: 1.04,
+  },
+  "varsity-basketball": {
+    palmDelta: [0.024, -0.052, 0.028],
+    eulerRight: [Math.PI * 0.5, 0, 0],
+    eulerLeft: [Math.PI * 0.5, 0, 0],
+    uniformScale: 0.96,
+  },
 };
 
 const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: readonly [number, number, number]; readonly lower: readonly [number, number, number]; readonly hand: readonly [number, number, number] }>> = {
@@ -162,6 +174,8 @@ const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: 
   "jade-folding-fan": { upper: [16, 28, 56], lower: [28, 86, -24], hand: [16, 16, -10] },
   "calling-card-rose": { upper: [18, 30, 54], lower: [30, 88, -22], hand: [14, 18, -8] },
   "medical-chart-clipboard": { upper: [14, 24, 60], lower: [26, 80, -20], hand: [12, 12, -8] },
+  "idol-prism-lightstick": { upper: [18, 30, 52], lower: [34, 88, -22], hand: [14, 16, -8] },
+  "varsity-basketball": { upper: [10, 22, 58], lower: [20, 74, -16], hand: [8, 10, -6] },
 };
 
 const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {

@@ -147,6 +147,21 @@ export function ExportStripDirectorSection({
             </option>
           ))}
         </select>
+        <label htmlFor={`${idsPrefix}-strip-tankobon-order`}>단행본 읽기 순서</label>
+        <select
+          id={`${idsPrefix}-strip-tankobon-order`}
+          data-testid="export-strip-tankobon-order"
+          value={state.tankobonOrder}
+          title="단행본 4컷 출판 페이지 PNG 저장 시 1~4컷을 우→좌(일본 단행본 표준) 또는 좌→우(한국 단행본)로 배치합니다"
+          onChange={(event) =>
+            session.update({
+              tankobonOrder: event.target.value === "ltr-manhwa" ? "ltr-manhwa" : "rtl-tankobon",
+            })
+          }
+        >
+          <option value="rtl-tankobon">우→좌 (1우상·2좌상)</option>
+          <option value="ltr-manhwa">좌→우 (1좌상·2우상)</option>
+        </select>
       </div>
 
       <div className="cl-export-gutter-pace-row" role="group" aria-label="컷 사이 스크롤 여백 호흡">

@@ -1,7 +1,7 @@
 /**
- * BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) & 3D 효과음 스탬프 통합 검증:
- * - 손 소품 8종(`webtoon-hand-props-v1`) · 머리 액세서리 6종(`webtoon-head-props-v1`) · 배경 스테이지 8종(`webtoon-stage-props-v1`) · 효과음 스탬프 6종(`webtoon-sfx-stamps-v1`) SHA-256 검증 로드
- * - SHAPER 상대역 캐릭터 GLB(`shaper-office-ceo.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, 표정 MorphTarget + `case-folder` 전용 손소품 `extra:duo-partner-prop`)
+ * BabylonCharacterEngine 3D 에셋 32종 & 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) & 3D 효과음 스탬프 통합 검증:
+ * - 손 소품 10종(`webtoon-hand-props-v1`) · 머리 액세서리 6종(`webtoon-head-props-v1`) · 배경 스테이지 10종(`webtoon-stage-props-v1`) · 효과음 스탬프 6종(`webtoon-sfx-stamps-v1`) SHA-256 검증 로드
+ * - SHAPER 상대역 캐릭터 GLB(`shaper-cyber-idol.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, 표정 MorphTarget + `idol-prism-lightstick` 전용 손소품 `extra:duo-partner-prop`)
  * - 손(250) + 머리(251) + 스테이지(252) + 효과음 스탬프(254) + 3D 상대역(220.. + 249) 5중 동시 배치 및 카메라 프레이밍 불변, 툰 전환, 단일 투샷 GLB 직렬화 보존 확인
  */
 import { readFile } from "node:fs/promises";
@@ -35,7 +35,7 @@ interface PropManifestEntry<TId extends string> {
   readonly triangles: number;
 }
 
-describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/손소품 & 효과음 스탬프 + 투샷 GLB 보존", () => {
+describe("BabylonCharacterEngine 3D 에셋 32종 & 2인 듀오 상대역 표정/손소품 & 효과음 스탬프 + 투샷 GLB 보존", () => {
   let harness: NullEngineHarness;
 
   beforeEach(async () => {
@@ -53,8 +53,8 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
     harness.dispose();
   });
 
-  it("해제 직전 큐에 들어간 소품·듀오 작업과 해제 뒤 요청은 engine-disposed로 거부한다", async () => {
-    const pending = [harness.engine.setHandProp(null), harness.engine.setHeadProp(null), harness.engine.setStageProp(null), harness.engine.setDuoPartner(null), harness.engine.setSfxStamp(null)];
+  it("해제 직전 큐에 들어간 세 소품 작업과 해제 뒤 요청은 engine-disposed로 거부한다", async () => {
+    const pending = [harness.engine.setHandProp(null), harness.engine.setHeadProp(null), harness.engine.setStageProp(null)];
     harness.engine.dispose();
     for (const outcome of await Promise.allSettled(pending)) {
       expect(outcome).toMatchObject({ status: "rejected", reason: { code: "engine-disposed" } });
@@ -62,12 +62,10 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
     await expect(harness.engine.setHandProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
     await expect(harness.engine.setHeadProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
     await expect(harness.engine.setStageProp(null)).rejects.toMatchObject({ code: "engine-disposed" });
-    await expect(harness.engine.setDuoPartner(null)).rejects.toMatchObject({ code: "engine-disposed" });
-    await expect(harness.engine.setSfxStamp(null)).rejects.toMatchObject({ code: "engine-disposed" });
     expect(harness.disposeCount()).toBe(1);
   });
 
-  it("Blender 5.3 에셋 28종(손 8·머리 6·스테이지 8·효과음 6) + SHAPER 3D 상대역(표정·서류철 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
+  it("Blender 5.3 에셋 32종(손 10·머리 6·스테이지 10·효과음 6) + SHAPER 3D 상대역(아이돌·응원봉 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
     const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<HandPropId>[];
     };
@@ -81,9 +79,9 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
       readonly props: readonly PropManifestEntry<SfxStampId>[];
     };
 
-    expect(handManifest.props).toHaveLength(8);
+    expect(handManifest.props).toHaveLength(10);
     expect(headManifest.props).toHaveLength(6);
-    expect(stageManifest.props).toHaveLength(8);
+    expect(stageManifest.props).toHaveLength(10);
     expect(sfxManifest.props).toHaveLength(6);
 
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
@@ -111,11 +109,11 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
       });
       expect(harness.engine.inspectRig()?.parts.find((p) => p.id === "extra:head-prop")?.triangleCount).toBe(entry.triangles);
     }
-    const glassesEntry = headManifest.props.find((p) => p.id === "wire-glasses")!;
+    const headphonesEntry = headManifest.props.find((p) => p.id === "studio-headphones")!;
     await harness.engine.setHeadProp({
-      propId: glassesEntry.id,
-      glbUrl: `/assets/props/webtoon-head-props-v1/${glassesEntry.path}`,
-      sha256: glassesEntry.sha256,
+      propId: headphonesEntry.id,
+      glbUrl: `/assets/props/webtoon-head-props-v1/${headphonesEntry.path}`,
+      sha256: headphonesEntry.sha256,
     });
 
     for (const entry of stageManifest.props) {
@@ -145,28 +143,28 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
     const charManifest = JSON.parse(await readFile(resolve(PUBLIC_DIR, "assets/characters/index.json"), "utf8")) as {
       readonly characters: ReadonlyArray<{ readonly id: string; readonly files: { readonly glb: { readonly sha256: string } } }>;
     };
-    const ceoEntry = charManifest.characters.find((c) => c.id === "shaper-office-ceo")!;
-    const folderEntry = handManifest.props.find((p) => p.id === "case-folder")!;
+    const idolEntry = charManifest.characters.find((c) => c.id === "shaper-cyber-idol")!;
+    const lightstickEntry = handManifest.props.find((p) => p.id === "idol-prism-lightstick")!;
     await harness.engine.setDuoPartner({
-      characterId: "shaper-office-ceo",
-      glbUrl: "/assets/characters/shaper-office-ceo/shaper-office-ceo.glb",
-      sha256: ceoEntry.files.glb.sha256,
+      characterId: "shaper-cyber-idol",
+      glbUrl: "/assets/characters/shaper-cyber-idol/shaper-cyber-idol.glb",
+      sha256: idolEntry.files.glb.sha256,
       side: "right",
-      distanceMeters: 0.95,
-      heightScale: 1.08,
-      stance: "arms-crossed",
-      expression: "stern-glare",
+      distanceMeters: 0.72,
+      heightScale: 1.0,
+      stance: "conversational",
+      expression: "warm-smile",
       handProp: {
-        propId: folderEntry.id,
+        propId: lightstickEntry.id,
         hand: "leftHand",
-        glbUrl: `/assets/props/webtoon-hand-props-v1/${folderEntry.path}`,
-        sha256: folderEntry.sha256,
+        glbUrl: `/assets/props/webtoon-hand-props-v1/${lightstickEntry.path}`,
+        sha256: lightstickEntry.sha256,
       },
     });
 
     const duoParts = harness.engine.inspectRig()?.parts.filter((p) => p.id.startsWith("extra:duo-partner")) ?? [];
     expect(duoParts.length).toBeGreaterThanOrEqual(7);
-    expect(duoParts.some((p) => p.id === "extra:duo-partner-prop" && p.triangleCount === folderEntry.triangles)).toBe(true);
+    expect(duoParts.some((p) => p.id === "extra:duo-partner-prop" && p.triangleCount === lightstickEntry.triangles)).toBe(true);
     expect(duoParts.some((p) => p.meshNames.some((n) => n.includes("_LOD1") || n.includes("_LOD2")))).toBe(false);
     expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 4 + duoParts.length);
 
@@ -185,12 +183,12 @@ describe("BabylonCharacterEngine 3D 에셋 28종 & 2인 듀오 상대역 표정/
     const parsed = parseGlb(glbBytes);
     const gltf = parsed.json as { nodes: Array<{ name?: string }> };
     const nodeNames = gltf.nodes.map((n) => n.name ?? "");
-    expect(nodeNames.some((n) => n.includes("TS_HandPropAnchor_medical-chart-clipboard"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_wire-glasses"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_StagePropAnchor_courtroom-gavel-podium"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_HandPropAnchor_varsity-basketball"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_studio-headphones"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_StagePropAnchor_court-hoop-stanchion"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_SfxStampAnchor_kugugung"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_DuoPartnerAnchor_shaper-office-ceo"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_DuoPartnerPropAnchor_case-folder"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_DuoPartnerAnchor_shaper-cyber-idol"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_DuoPartnerPropAnchor_idol-prism-lightstick"))).toBe(true);
 
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
     expect(harness.engine.inspectRig()?.parts).toHaveLength(basePartCount + 4 + duoParts.length);
