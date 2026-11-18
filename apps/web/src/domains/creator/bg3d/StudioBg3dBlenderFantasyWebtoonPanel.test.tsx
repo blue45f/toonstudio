@@ -388,6 +388,26 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v28-roi-readout").textContent,
     ).toContain("44.8h");
 
+    // Wave 15 (V29): 2인 시선·키 차이 듀오 VRM · 초성 빠른 호출(ㄹㅍ) · 180도 연출축 위반 감지 · 오프라인 복구 큐 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-ots-card").textContent,
+    ).toContain("2인 시선 교차·키 차이 듀오 V29");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v29-cmdk-input"), {
+      target: { value: "ㄹㅍ" },
+    });
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-cmdk-apply-first"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-duo-readout").textContent,
+    ).toContain("188×164cm(키 차이 24cm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-axis-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-axis180-badge").textContent,
+    ).toContain("180도 연출축 위반 감지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v29-offline-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v29-motion-offline-readout").textContent,
+    ).toContain("유실 0컷");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );

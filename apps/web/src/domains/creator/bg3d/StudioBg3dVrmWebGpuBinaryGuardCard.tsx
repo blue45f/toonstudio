@@ -4,7 +4,14 @@ import {
   PersonStanding,
   ShieldAlert,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { StudioBg3dDuoOtsCommandCard } from "./StudioBg3dDuoOtsCommandCard";
+import {
+  evaluateDuoOtsRemotionAndOffline,
+  type CameraAxisSideId,
+  type DuoEyelinePresetId,
+} from "./studio-bg3d-duo-ots-remotion-offline";
 import {
   VRM_POSE_MANNEQUIN_PROFILES,
   type EditorChromeDensityTier,
@@ -27,6 +34,7 @@ const CHROME_TIERS: ReadonlyArray<{
 export interface StudioBg3dVrmWebGpuBinaryGuardCardProps {
   readonly disabled?: boolean;
   readonly disabledReason?: string;
+  readonly continuityDigestHex?: string;
   readonly evaluation: VrmWebGpuGuardEvaluation;
   readonly onSelectPoseId: (id: VrmMannequinPoseId) => void;
   readonly onSelectChromeTier: (tier: EditorChromeDensityTier) => void;
@@ -35,16 +43,52 @@ export interface StudioBg3dVrmWebGpuBinaryGuardCardProps {
 /**
  * Editor Chrome Design(3단 밀도 · 28/32px 행 리듬 · 1px 헤어라인 분리 · 비활성 사유 명시) +
  * Korean Typography(keep-all · tabular-nums · 기울임 금지) +
- * Unslop 9-Pass & Canvas WebGPU 3D Guard 규격이 결합된 V28 VRM 포즈·바이너리·GPU 가드 바.
+ * Unslop 9-Pass & Canvas WebGPU 3D Guard 규격이 결합된 V28 VRM 포즈·바이너리·GPU 가드 및 V29 듀오 연출 바.
  */
 export function StudioBg3dVrmWebGpuBinaryGuardCard({
   disabled = false,
   disabledReason = "작업대가 읽기 전용 상태여서 포즈와 밀도 설정을 변경할 수 없습니다",
+  continuityDigestHex = "00000000",
   evaluation,
   onSelectPoseId,
   onSelectChromeTier,
 }: StudioBg3dVrmWebGpuBinaryGuardCardProps) {
   const unavailableTitle = disabled ? disabledReason : undefined;
+  const [duoOverrideId, setDuoOverrideId] =
+    useState<DuoEyelinePresetId | null>(null);
+  const [cameraAxisSide, setCameraAxisSide] =
+    useState<CameraAxisSideId>("same-side-safe");
+  const [networkOnline, setNetworkOnline] = useState(true);
+  const [quickCommandQuery, setQuickCommandQuery] = useState("");
+
+  const resolvedDuoId: DuoEyelinePresetId =
+    duoOverrideId ??
+    (evaluation.pose.id === "railing-lean-110cm"
+      ? "rofan-gaze-24cm"
+      : evaluation.pose.id === "desk-seated-74cm"
+        ? "ots-table-dialogue"
+        : "action-standoff-clash");
+
+  const v29Evaluation = useMemo(
+    () =>
+      evaluateDuoOtsRemotionAndOffline({
+        duoId: resolvedDuoId,
+        cameraAxisSide,
+        hasNeutralBridgeCut: false,
+        networkOnline,
+        quickCommandQuery,
+        continuityDigestHex,
+        baseV28WeeklyHoursSaved: evaluation.totalWeeklyHoursV28,
+      }),
+    [
+      resolvedDuoId,
+      cameraAxisSide,
+      networkOnline,
+      quickCommandQuery,
+      continuityDigestHex,
+      evaluation.totalWeeklyHoursV28,
+    ],
+  );
 
   return (
     <div
@@ -143,7 +187,10 @@ export function StudioBg3dVrmWebGpuBinaryGuardCard({
                 disabled={disabled}
                 title={unavailableTitle}
                 data-testid={`bg3d-blender-v28-pose-${item.id}`}
-                onClick={() => onSelectPoseId(item.id)}
+                onClick={() => {
+                  setDuoOverrideId(null);
+                  onSelectPoseId(item.id);
+                }}
                 className={`min-h-8 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
@@ -194,6 +241,24 @@ export function StudioBg3dVrmWebGpuBinaryGuardCard({
           <span>{disabledReason}</span>
         </p>
       ) : null}
+
+      <StudioBg3dDuoOtsCommandCard
+        disabled={disabled}
+        cameraAxisSide={cameraAxisSide}
+        networkOnline={networkOnline}
+        quickCommandQuery={quickCommandQuery}
+        evaluation={v29Evaluation}
+        onSelectDuoId={setDuoOverrideId}
+        onToggleAxisCrossing={() =>
+          setCameraAxisSide((prev) =>
+            prev === "same-side-safe"
+              ? "crossed-axis-violation"
+              : "same-side-safe",
+          )
+        }
+        onToggleNetworkOnline={() => setNetworkOnline((prev) => !prev)}
+        onChangeQuickCommandQuery={setQuickCommandQuery}
+      />
     </div>
   );
 }

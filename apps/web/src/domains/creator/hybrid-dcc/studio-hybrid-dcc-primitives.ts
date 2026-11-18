@@ -56,6 +56,7 @@ export { STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT } from "./studio-hybrid-dcc-ble
 export { STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT } from "./studio-hybrid-dcc-blender-v26-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT } from "./studio-hybrid-dcc-blender-v27-kit";
 export { STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT } from "./studio-hybrid-dcc-blender-v28-kit";
+export { STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT } from "./studio-hybrid-dcc-blender-v29-kit";
 
 export type StudioHybridDccStarterPrimitiveKind =
   | "cube"

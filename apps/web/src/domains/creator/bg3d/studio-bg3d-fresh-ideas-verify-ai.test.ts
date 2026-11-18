@@ -28,6 +28,10 @@ import {
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { evaluateAftermathReadabilityAndVtt } from "./studio-bg3d-aftermath-readability-vtt";
+import {
+  evaluateDuoOtsRemotionAndOffline,
+  filterQuickPresetCommands,
+} from "./studio-bg3d-duo-ots-remotion-offline";
 import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
 import {
   evaluateVrmPoseAndWebGpuGuard,
@@ -351,6 +355,25 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     const truncatedGlb = inspectGlbBinaryEvidence(new Uint8Array([1, 2, 3]));
     expect(truncatedGlb.validGlb20).toBe(false);
     expect(truncatedGlb.unknownGaps.length).toBeGreaterThan(0);
+
+    expect(filterQuickPresetCommands("ㅇㅂㄷㅅㄷ")).toHaveLength(1);
+    const v29DuoSafe = evaluateDuoOtsRemotionAndOffline({
+      duoId: "rofan-gaze-24cm",
+      cameraAxisSide: "same-side-safe",
+      hasNeutralBridgeCut: false,
+      networkOnline: false,
+      quickCommandQuery: "ㄹㅍ",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      baseV28WeeklyHoursSaved: v28Vrm.totalWeeklyHoursV28,
+    });
+    expect(v29DuoSafe.duo.heightGapCm).toBe(24);
+    expect(v29DuoSafe.axis180Compliant).toBe(true);
+    expect(v29DuoSafe.motionAudit.unseededRandomCalls).toBe(0);
+    expect(v29DuoSafe.offlineQueue.unsavedCutLossCount).toBe(0);
+    expect(v29DuoSafe.matchedCommands).toHaveLength(1);
+    expect(v29DuoSafe.totalWeeklyHoursV29).toBe(38.0);
+    expect(v29DuoSafe.quarterlyHoursSavedV29).toBe(494.0);
+    expect(v29DuoSafe.quarterlyBankedEpisodesV29).toBe(6.18);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

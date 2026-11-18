@@ -201,7 +201,7 @@ export function buildBlenderLiveSceneSyncBridge(
     renderEngine: "BLENDER_EEVEE",
     syncedObjectNames: BLENDER_LIVE_SCENE_OBJECTS,
     syncedObjectCount: BLENDER_LIVE_SCENE_OBJECTS.length,
-    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794994935.png",
+    viewportSnapshotFile: "/Users/hjunkim/Pictures/Janus/Blender/snapshot_1794995682.png",
     liveSyncReady: Boolean(
       lightingPresetId &&
         shaderPresetId &&
@@ -227,7 +227,7 @@ export interface BlenderSceneIsolationGuardReport {
  * 제안 5: 멀티 프로젝트 환경에서 기존 블렌더 씬 덮어쓰기를 방지하는 SHA-256 라이브 씬 격리 검증기.
  */
 export function evaluateBlenderSceneIsolationGuard(
-  activeSceneName = "ToonStudio_VRM_PoseMannequin_V28",
+  activeSceneName = "ToonStudio_Duo_EyeLine_OTS_V29",
 ): BlenderSceneIsolationGuardReport {
   const preservedExternalScenes = Object.freeze([
     "PilatesFlow_Reformer_Unslop_V9",
@@ -244,6 +244,7 @@ export function evaluateBlenderSceneIsolationGuard(
     "ToonStudio_WindDrape_HalfMirror_V25",
     "ToonStudio_Aftermath_Damage_V26",
     "ToonStudio_Dust_HeatHaze_V27",
+    "ToonStudio_VRM_PoseMannequin_V28",
   ]);
   return Object.freeze({
     activeIsolatedScene: activeSceneName,

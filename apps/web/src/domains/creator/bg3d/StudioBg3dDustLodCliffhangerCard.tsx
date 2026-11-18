@@ -253,6 +253,7 @@ export function StudioBg3dDustLodCliffhangerCard({
 
       <StudioBg3dVrmWebGpuBinaryGuardCard
         disabled={disabled}
+        continuityDigestHex={evaluation.packManifest.continuityDigestHex}
         evaluation={v28Evaluation}
         onSelectPoseId={setSelectedPoseOverride}
         onSelectChromeTier={setChromeTier}

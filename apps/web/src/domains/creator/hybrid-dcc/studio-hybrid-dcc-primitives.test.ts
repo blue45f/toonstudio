@@ -34,6 +34,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -633,6 +634,46 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
       expect(binReport.observed.version).toBe(2);
       expect(binReport.derived.fourByteAligned).toBe(true);
       expect(binReport.observed.binChunkLength).toBeGreaterThan(0);
+
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 2인 시선 교차·키 차이·OTS 듀오 V29(3종)이 GLB 2.0 바이너리 청크·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-duo-eyeline-ots-v29/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      duoEyelineOtsSpec?: { heightGapRangeCm?: number[]; axisOfActionRuleDeg?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.duoEyelineOtsSpec?.heightGapRangeCm).toEqual([6, 14, 24]);
+    expect(prov.duoEyelineOtsSpec?.axisOfActionRuleDeg).toBe(180);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(10);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.derived.fourByteAligned).toBe(true);
 
       const imported = decodeStudioNativeGlb(bytes, "glb");
       expect(imported.ok).toBe(true);

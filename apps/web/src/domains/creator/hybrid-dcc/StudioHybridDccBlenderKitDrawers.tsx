@@ -14,6 +14,7 @@ import {
   PersonStanding,
   Sun,
   Type,
+  Users2,
   Wind,
   type LucideIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT } from "./studio-hybrid-dcc-blender-v28-kit";
+import { STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT } from "./studio-hybrid-dcc-blender-v29-kit";
 import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
@@ -58,6 +60,14 @@ interface KitDrawerGroupSpec {
 }
 
 const BLENDER_KIT_DRAWER_GROUPS: readonly KitDrawerGroupSpec[] = [
+  {
+    key: "v29-duo",
+    summaryTestId: "studio-hybrid-dcc-v29-duo-kit-summary",
+    icon: Users2,
+    titleKo: `2인 시선·키 차이·OTS 듀오 V29 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT.length}종)`,
+    titleEn: `Duo eye-line & OTS V29 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT.length})`,
+    items: STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT,
+  },
   {
     key: "v28-vrm",
     summaryTestId: "studio-hybrid-dcc-v28-vrm-kit-summary",
