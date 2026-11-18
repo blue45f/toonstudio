@@ -13,31 +13,48 @@ import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
-import {
-  WEBTOON_GENRE_SCENE_PRESETS,
-  WEBTOON_LIGHTING_SHADOW_PRESETS,
-  WEBTOON_MATERIAL_SURFACE_PRESETS,
-  buildGenreScenePresetCommands,
-  buildLightingShadowCommands,
-  buildMaterialSurfaceCommands,
-  buildResetMaterialLightingCommands,
-  isMaterialSurfacePresetActive,
-  summarizeActiveMaterialAndShadowKo,
-} from "./render-material-lighting-presets";
-import {
-  CASCADE_CHOICES, DEFAULT_RENDER_POLL_MS, OUTLINE_LABELS_KO, QUALITY_IDS, RAMP_CHOICES, TONE_LABELS_KO,
-  describeBetaState, failureMessage, isOutline, isToneMapping,
-} from "./render-panel-helpers";
-import { RenderPanelFeatureStatus } from "./render-panel-status";
+import { RenderFeatureStatus } from "./render-feature-status";
+import { RenderMaterialLightingControls } from "./render-material-lighting-controls";
 import { hudRows } from "./viewport-interactions";
 
-import type { RenderPanelProps } from "./render-panel-helpers";
-import type { HudSample, ShadingProfile } from "../../../contracts";
-import type { BetaFeatureId, BetaFeatureReport } from "../../../render/beta-features";
+import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
+import type { BetaFeatureId, BetaFeatureReport, BetaFeatureState } from "../../../render/beta-features";
 import type { SceneFeatureReport } from "../../../render/scene-features";
 import type { ChangeEvent } from "react";
 
-export { DEFAULT_RENDER_POLL_MS, describeBetaState, type RenderPanelProps } from "./render-panel-helpers";
+export interface RenderPanelProps {
+  /** HUD·기능 보고 갱신 주기(ms). 0 이하면 한 번만 읽는다. */
+  readonly pollIntervalMs?: number;
+}
+
+export const DEFAULT_RENDER_POLL_MS = 500;
+
+const QUALITY_IDS: readonly QualityPresetId[] = ["preview", "standard", "hero"];
+const TONE_LABELS_KO: Readonly<Record<ToneMapping, string>> = { "khr-pbr-neutral": "KHR PBR Neutral(기본)", aces: "ACES", none: "없음" };
+const OUTLINE_LABELS_KO = { none: "없음", hull: "외곽 셸(hull)", edge: "엣지 검출" } as const;
+const CASCADE_CHOICES = [1, 2, 3, 4] as const;
+const RAMP_CHOICES = [2, 3, 4] as const;
+
+function isToneMapping(value: string): value is ToneMapping {
+  return (TONE_MAPPINGS as readonly string[]).includes(value);
+}
+
+function isOutline(value: string): value is ShadingProfile["toon"]["outline"] {
+  return value === "none" || value === "hull" || value === "edge";
+}
+
+/** 베타 항목 한 줄 상태(한글). 요청했지만 지금은 적용되지 않는 경우(모드 불일치 등)는 오류가 아니라 '대기'다. */
+export function describeBetaState(state: BetaFeatureState): string {
+  if (state.status === "active") return state.detail ? `활성 — ${state.detail}` : "활성";
+  if (state.status === "unavailable") return `사용 불가 — ${state.reasonKo ?? "사유 없음"}`;
+  if (state.requested) return `대기 — ${state.reasonKo ?? "지금은 적용되지 않습니다."}`;
+  return state.reasonKo ? `꺼짐 — ${state.reasonKo}` : "꺼짐";
+}
+
+function failureMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && "reasonKo" in error && typeof (error as { reasonKo: unknown }).reasonKo === "string") return (error as { reasonKo: string }).reasonKo;
+  return error instanceof Error ? error.message : "알 수 없는 오류";
+}
 
 export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderPanelProps) {
   const state = useLabState();
@@ -214,72 +231,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </button>
       </div>
 
-      <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">
-        <legend>피부·의상 소재 & 툰 셰이딩·그림자 프리셋</legend>
-        <p className="cl-render-hint" data-testid="render-material-shadow-summary">
-          {summarizeActiveMaterialAndShadowKo(state.recipe.surfaces, shading)}
-        </p>
-        <div className="cl-render-row" role="group" aria-label="한국 웹툰 장르별 1-클릭 마스터 씬 프리셋" data-testid="render-webtoon-genre-scene-presets">
-          {WEBTOON_GENRE_SCENE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-genre-preset-${preset.id}`}
-              title={`[${preset.genreTagKo}] ${preset.summaryKo}`}
-              onClick={() => {
-                for (const command of buildGenreScenePresetCommands(state.recipe.surfaces, shading, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row" role="group" aria-label="피부·의상 표면 소재 프리셋" data-testid="render-surface-material-presets">
-          {WEBTOON_MATERIAL_SURFACE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-surface-preset-${preset.id}`}
-              aria-pressed={isMaterialSurfacePresetActive(state.recipe.surfaces, preset)}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildMaterialSurfaceCommands(state.recipe.surfaces, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row" role="group" aria-label="툰 셰이딩·그림자 연출 프리셋" data-testid="render-toon-shadow-presets">
-          {WEBTOON_LIGHTING_SHADOW_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-lighting-preset-${preset.id}`}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildLightingShadowCommands(shading, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row">
-          <button
-            type="button"
-            data-testid="render-reset-material-lighting-btn"
-            onClick={() => {
-              for (const command of buildResetMaterialLightingCommands(state.recipe.surfaces)) dispatch(command);
-            }}
-          >
-            기본 소재·조명 복원
-          </button>
-        </div>
-      </fieldset>
+      <RenderMaterialLightingControls surfaces={state.recipe.surfaces} shading={shading} dispatch={dispatch} />
 
       <div className="cl-render-row" role="group" aria-label="셰이딩 모드">
         <button type="button" aria-pressed={!isToon} onClick={() => set({ mode: "pbr" })}>
@@ -756,7 +708,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </p>
       </fieldset>
 
-      <RenderPanelFeatureStatus engineReady={engine !== null} features={features} />
+      <RenderFeatureStatus engineReady={Boolean(engine)} features={features} />
 
       <h3 className="cl-render-title">HUD 수치</h3>
       {hudList.length > 0 ? (

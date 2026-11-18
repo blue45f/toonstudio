@@ -19,10 +19,10 @@ import { createProceduralFixture } from "./testing/procedural-fixture";
 import type { HandPropId, HeadPropId, StagePropId } from "../contracts";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 
-const PUBLIC_DIR = fileURLToPath(new URL("../../public/", import.meta.url));
-const HAND_PROPS_DIR = fileURLToPath(new URL("../../public/assets/props/webtoon-hand-props-v1/", import.meta.url));
-const HEAD_PROPS_DIR = fileURLToPath(new URL("../../public/assets/props/webtoon-head-props-v1/", import.meta.url));
-const STAGE_PROPS_DIR = fileURLToPath(new URL("../../public/assets/props/webtoon-stage-props-v1/", import.meta.url));
+const PUBLIC_DIR = fileURLToPath(new URL("../../public", import.meta.url));
+const HAND_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-hand-props-v1");
+const HEAD_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-head-props-v1");
+const STAGE_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-stage-props-v1");
 
 interface PropManifestEntry<TId extends string> {
   readonly id: TId;

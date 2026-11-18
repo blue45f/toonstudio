@@ -1,4 +1,4 @@
-/** 웹툰 4컷 스트립의 연기 서사 프리셋과 컷별 ApplyPlan 스냅샷 변환. */
+/** 웹툰 4컷 연기 프리셋과 표정·시선·목/고개 스냅샷의 순수 계산. */
 import { eyeAnglesQuaternion, expressionToMorphWeights } from "../contracts";
 import { qNormalize } from "../shared/math";
 

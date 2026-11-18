@@ -3,13 +3,15 @@ import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS
 
 import type { SceneFeatureReport } from "../../../render/scene-features";
 
-interface RenderPanelFeatureStatusProps {
+interface RenderFeatureStatusProps {
   readonly engineReady: boolean;
   readonly features: SceneFeatureReport | null;
 }
 
-export function RenderPanelFeatureStatus({ engineReady, features }: RenderPanelFeatureStatusProps) {
+/** 엔진이 이미 보고한 기본·확장 기능 상태를 같은 표 구조로 표시한다. */
+export function RenderFeatureStatus({ engineReady, features }: RenderFeatureStatusProps) {
   const extended = readExtendedFeatures(features);
+
   return (
     <>
       <h3 className="cl-render-title">엔진 기능 상태</h3>
