@@ -60,20 +60,20 @@ describe("실제 앱 라우트의 문서 VRM과 독립 포저 경계", () => {
     const search = "?preset=illustration&room=team-a";
     render(<MemoryRouter initialEntries={[`${canvasPath}${search}`]}><ActualCreatorRoutes /></MemoryRouter>);
     await screen.findByTestId("editor");
-    fireEvent.click(screen.getByRole("button", { name: "획 추가", exact: true }));
-    fireEvent.click(screen.getByRole("button", { name: "VRM 열기", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "획 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "VRM 열기" }));
     await waitFor(() => expect(screen.getByLabelText("현재 주소").textContent).toBe(`${poserPath}${search}`));
     expect(screen.getByTestId("editor").dataset.surface).toBe("poser");
     expect(screen.queryByTestId("standalone-poser")).toBeNull();
     expect(screen.getByLabelText("문서 획 수").textContent).toBe("1");
     expect(probe.mounts).toBe(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "뒤로", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "뒤로" }));
     await waitFor(() => expect(screen.getByLabelText("현재 주소").textContent).toBe(`${canvasPath}${search}`));
     expect(screen.getByTestId("editor").dataset.surface).toBe("canvas");
     expect(screen.getByLabelText("문서 획 수").textContent).toBe("1");
 
-    fireEvent.click(screen.getByRole("button", { name: "앞으로", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "앞으로" }));
     await waitFor(() => expect(screen.getByLabelText("현재 주소").textContent).toBe(`${poserPath}${search}`));
     expect(screen.getByTestId("editor").dataset.surface).toBe("poser");
     expect(screen.getByLabelText("문서 획 수").textContent).toBe("1");
