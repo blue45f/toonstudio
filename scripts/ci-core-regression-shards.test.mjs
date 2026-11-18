@@ -132,6 +132,8 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.equal(new Set([...staticOnly, ...routed]).size, all.length);
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
   for (const suite of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
@@ -191,6 +193,29 @@ test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에
   for (const target of ["packages/studio-project-model/src/__tests__/review-pen-storage.test.ts",
     "packages/studio-project-model/src/__tests__/review-pen.test.ts"]) {
     assert.ok(foundation.includes(target), `정본 펜 첨삭 계약의 필수 실행 누락: ${target}`);
+  }
+});
+
+test("통합 관리자 보드의 API·공통 계약·화면 검증을 필수 product에서 실행한다", () => {
+  const selectors = expandGlobTargets(executionTargetsByShard().product);
+  const executed = resolveRequiredTargets(selectors);
+  const args = buildShardVitestArgs(selectors);
+  const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  for (const target of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.repository.test.ts",
+    "apps/api/src/modules/admin-workspace/admin-workspace.module.test.ts",
+    "packages/contracts/src/admin-workspace/admin-workspace.test.ts",
+    "apps/admin-web/src/domains/workspace/AdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/useAdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/WorkspaceBackup.test.tsx",
+    "apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx",
+    "apps/admin-web/src/platform/http/workspace-api.test.ts",
+    "scripts/admin-workspace-database-contract.test.mjs",
+    "scripts/admin-database-feature-contracts.test.mjs",
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.ok(executed.includes(target), `필수 관리자 보드 회귀 누락: ${target}`);
+    assert.ok(!databaseOnly.includes(target), `정적 관리자 회귀를 DB lane으로 넘길 수 없습니다: ${target}`);
   }
 });
 
@@ -263,22 +288,34 @@ test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드�
     "opt-in PostgreSQL 비교는 비DB shard에서 실행하지 않는다");
 });
 
-test("사업계획서 저장 회귀는 DB 없는 shard에서 제외하고 필수 PostgreSQL 작업에서 실행한다", () => {
-  const integration = "apps/api/src/modules/business-plan/business-plan.integration.test.ts";
-  const unit = "apps/api/src/modules/business-plan/business-plan.test.ts";
+test("두 관리자 보드의 저장 회귀는 DB 없는 shard에서 제외하고 필수 PostgreSQL 작업에서 각각 한 번 실행한다", () => {
   const product = expandGlobTargets(executionTargetsByShard().product);
   const resolved = resolveRequiredTargets(product);
-  assert.ok(resolved.includes(unit));
-  assert.ok(resolved.includes(integration));
-  assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration));
   const args = buildShardVitestArgs(product);
   const excluded = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
-  assert.ok(excluded.includes(integration), "DB 없는 실행에서 skip 성공으로 처리할 수 없습니다.");
-  assert.ok(!excluded.includes(unit));
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   const database = workflow.match(/\n {2}database:\n([\s\S]*?)\n {2}core:/u)?.[1];
   assert.ok(database, "필수 PostgreSQL 작업을 찾을 수 없습니다.");
-  assert.equal(database.split(integration).length - 1, 1, "필수 DB 작업에서 사업계획서 회귀를 정확히 한 번 실행해야 합니다.");
+  for (const { integration, unit } of [
+    {
+      integration: "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+      unit: "apps/api/src/modules/admin-workspace/admin-workspace.repository.test.ts",
+    },
+    {
+      integration: "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
+      unit: "apps/api/src/modules/business-plan/business-plan.test.ts",
+    },
+  ]) {
+    assert.ok(resolved.includes(unit), `단위 회귀의 필수 실행 누락: ${unit}`);
+    assert.ok(resolved.includes(integration), `통합 회귀의 필수 실행 누락: ${integration}`);
+    assert.ok(targetIsCovered(integration, REQUIRED_VITEST_TARGETS));
+    assert.equal(CORE_DATABASE_VITEST_TARGETS.filter((target) => target === integration).length, 1);
+    assert.equal(excluded.filter((target) => target === integration).length, 1,
+      `DB 없는 실행에서 skip 성공으로 처리할 수 없습니다: ${integration}`);
+    assert.ok(!excluded.includes(unit));
+    assert.equal(database.split(integration).length - 1, 1,
+      `필수 DB 작업에서 관리자 보드 회귀를 정확히 한 번 실행해야 합니다: ${integration}`);
+  }
 });
 
 test("directory targets remove redundant child execution without reducing coverage", () => {

@@ -322,6 +322,7 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   assert.match(database, /image: postgres:16-alpine/u);
   assert.match(database, /TEST_DATABASE_URL: postgresql:\/\/studio_review_test@127\.0\.0\.1:5432\/studio_review_integration/u);
   assert.match(database, /STUDIO_LIVE_POSTGRES_INTEGRATION_URL: postgresql:\/\/studio_review_test@127\.0\.0\.1:5432\/studio_review_integration/u);
+  assert.match(database, /ADMIN_WORKSPACE_TEST_RUNTIME_ROLE: studio_workspace_ci_runtime/u);
   assert.match(database, /node scripts\/prepare-studio-review-test-db\.mjs/u);
   assert.match(database, /pnpm exec vitest run --no-file-parallelism/u);
   assert.match(database, /studio-review-voice-note\.integration\.test\.ts/u);
@@ -330,6 +331,9 @@ test("review database invariants execute with real PostgreSQL and the accepted g
     new URL("./prepare-studio-review-test-db.mjs", import.meta.url),
     "utf8",
   );
+  assert.match(preparation, /process\.env\.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE/u);
+  assert.match(preparation, /NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS/u);
+  assert(preparation.indexOf('assert.equal(tables.rows[0].count, 0') < preparation.indexOf('CREATE ROLE'), "runtime 생성 전에 빈 테스트 DB를 확인해야 합니다.");
   const migrationFiles = [...preparation.matchAll(/"(\d{4}_[a-z0-9_]+\.sql)"/gu)]
     .map((match) => match[1]);
   assert.ok(migrationFiles.includes("0087_studio_pinned_review_share.sql"));
@@ -349,9 +353,12 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   }
 
   for (const suite of CORE_DATABASE_VITEST_TARGETS) {
-    assert.ok(database.includes(suite), `Missing real database suite: ${suite}`);
+    assert.equal(database.split(suite).length - 1, 1,
+      `필수 PostgreSQL 작업은 각 실제 DB 검증을 정확히 한 번 실행해야 합니다: ${suite}`);
   }
   for (const suite of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",

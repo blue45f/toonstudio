@@ -3,24 +3,27 @@ import { OperationPolicyPanel } from "../../domains/operations/operation-policy/
 
 import { BusinessPlanAccess } from "./BusinessPlanAccess";
 import { CiQualityAccess } from "./CiQualityAccess";
+import { WorkspaceAccess } from "./WorkspaceAccess";
 
 export function AdminApp() {
   const pathname = window.location.pathname.replace(/\/+$/u, "");
   const isQuality = pathname === "/admin/platform/quality";
   const isBusinessPlan = pathname === "/admin/growth/business-plan";
-  const isPolicy = !isQuality && !isBusinessPlan;
+  const isWorkspace = pathname === "/admin/workspace";
+  const isPolicy = !isQuality && !isBusinessPlan && !isWorkspace;
   return <main className="admin-shell">
     <header className="admin-brand" aria-label="ToonStudio 관리자">
       <a href="https://www.toonstudio.cloud/" aria-label="ToonStudio 서비스로 돌아가기">Toon<span>Studio</span></a>
-      <span className="admin-brand__label">{isBusinessPlan ? "사업계획서·제출 준비" : isQuality ? "CI·QA 검증" : "운영 정책·라이선스"}</span>
+      <span className="admin-brand__label">{isBusinessPlan ? "사업계획서·제출 준비" : isWorkspace ? "통합 작업실" : isQuality ? "CI·QA 검증" : "운영 정책·라이선스"}</span>
       <span className="admin-brand__security" data-testid="admin-edge-gate-badge">{isPolicy ? "관리자 전용" : "서버 관리자 권한 확인"}</span>
     </header>
     <nav className="admin-local-navigation" aria-label="독립 관리자 메뉴">
       <a href="/admin/platform/operations?view=policy" aria-current={isPolicy ? "page" : undefined}>운영 모드·라이선스</a>
       <a href="/admin/platform/quality/" aria-current={isQuality ? "page" : undefined}>CI·QA 검증</a>
       <a href="/admin/growth/business-plan/" aria-current={isBusinessPlan ? "page" : undefined}>사업계획서·제출 준비</a>
+      <a href="/admin/workspace/" aria-current={isWorkspace ? "page" : undefined}>통합 작업실</a>
     </nav>
-    {isBusinessPlan ? <BusinessPlanAccess /> : isQuality ? <CiQualityAccess /> : <OperationPolicyPanel />}
+    {isBusinessPlan ? <BusinessPlanAccess /> : isWorkspace ? <WorkspaceAccess /> : isQuality ? <CiQualityAccess /> : <OperationPolicyPanel />}
     {isPolicy && <details className="policy-card">
       <summary>다른 관리 업무로 이동</summary>
       <nav aria-label="관리 화면 이동">

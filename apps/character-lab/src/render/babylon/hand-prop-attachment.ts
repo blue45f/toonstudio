@@ -20,7 +20,7 @@ import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../mat
 
 import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
 import { rigMeshMetadata } from "./mesh-binding";
-import { loadCharacterGlbContainer } from "./package-loader";
+import { loadCharacterAssetContainer } from "./package-loader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
@@ -159,9 +159,9 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     }
   }
 
-  let container: Awaited<ReturnType<typeof loadCharacterGlbContainer>>;
+  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
   try {
-    container = await loadCharacterGlbContainer(bytes, input.deps.scene);
+    container = await loadCharacterAssetContainer(bytes, input.deps.scene);
   } catch (error) {
     throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 소품 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
   }

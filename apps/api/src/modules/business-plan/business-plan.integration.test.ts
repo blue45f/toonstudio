@@ -10,7 +10,7 @@ import { parseSaveBusinessPlanRequest } from "./business-plan.dto";
 
 const target = process.env.TEST_DATABASE_URL;
 const suite = describe.skipIf(!target);
-const originalMigration = readFileSync(new URL("../../platform/database/migrations/0122_admin_business_plan.sql", import.meta.url), "utf8");
+const originalMigration = readFileSync(new URL("../../platform/database/migrations/0123_admin_business_plan.sql", import.meta.url), "utf8");
 const instant = new Date("2026-01-15T03:00:00.000Z");
 
 function state(title = "격리 검증 사업계획서"): BusinessPlanState {

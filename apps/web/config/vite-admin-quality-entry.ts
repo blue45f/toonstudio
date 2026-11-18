@@ -1,9 +1,11 @@
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
 export const ADMIN_BUSINESS_PLAN_BASE = "/admin/growth/business-plan/";
+export const ADMIN_WORKSPACE_BASE = "/admin/workspace/";
 
 interface AdminQualityEntryOptions {
   readonly repositoryRoot: string;
@@ -34,6 +36,11 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
           },
         });
       }
+      // 통합 작업실은 quality 번들의 절대 자산 경로를 재사용한다.
+      // 사업계획서의 독립 자산 경로와 Web·Studio manifest는 그대로 유지한다.
+      const workspaceDirectory = path.join(outputDirectory, ADMIN_WORKSPACE_BASE.slice(1));
+      await mkdir(workspaceDirectory, { recursive: true });
+      await copyFile(path.join(outputDirectory, "admin/platform/quality/index.html"), path.join(workspaceDirectory, "index.html"));
     },
   };
 }
