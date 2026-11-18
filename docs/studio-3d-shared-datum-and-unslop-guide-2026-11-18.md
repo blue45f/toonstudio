@@ -1,7 +1,6 @@
 # ToonStudio 3D 공통 건축 기준선(Shared Datum) V19 · 광학 암실 워크벤치 디자인 시스템 & 주간 연재 ROI 표준 가이드
 
-작성일: `2026-11-18`
-
+작성일: `2026-11-18`  
 적용 범위: `apps/web/src/domains/creator/{bg3d,hybrid-dcc,scene-3d}`, `scripts/blender/generate_*_v16..v19.py`, `apps/web/public/studio-assets/blender-*-v16..v19`
 
 ## 1. 광학 암실(Optical Darkroom) 3D 워크벤치 디자인 시스템 표준
@@ -75,3 +74,5 @@
 | **3컷 (`100%`)** | `webtoon-slit-godray-climax-100pct-v21.glb` | 슬릿 `1.68 m` · 확산 `46.0°` · 단거리 림 그림자 | `8600K` 전면 할로 역광 · `2.40 m` 전신 실루엣 대비 |
 
 - **상호작용 컷 누적 주간 ROI:** 기본 70컷 리터칭·수정 절감(`19.9h`)에 상호작용 컷 `35%`(`25컷 × 14.5분 = +6.0h`) 자동화를 결합해 주당 총 **`25.9시간` (`3.24인일`)**을 확보합니다.
+
+
