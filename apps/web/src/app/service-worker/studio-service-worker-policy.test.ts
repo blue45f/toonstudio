@@ -63,13 +63,14 @@ describe("isolated path parity", () => {
 
 describe("classifyStudioServiceWorkerRequest", () => {
   it("관리자 검증 문서·자산은 오프라인 Web 셸과 캐시로 대체하지 않는다", () => {
-    for (const pathname of ["/admin/platform/quality", "/admin/platform/quality/", "/admin/platform/quality/?view=failures", "/admin/platform/quality/assets/index-fixture.js"]) {
+    for (const pathname of ["/admin/platform/quality", "/admin/platform/quality/", "/admin/platform/quality/?view=failures", "/admin/platform/quality/assets/index-fixture.js", "/admin/workspace", "/admin/workspace/", "/admin/workspace/?module=business"]) {
       const route = classifyStudioServiceWorkerRequest(facts(pathname, { mode: "navigate" }));
       expect(route).toBe("passthrough");
       expect(studioServiceWorkerStrategy(route)).toBe("network-only");
       expect(studioServiceWorkerCacheBucket(route)).toBeNull();
     }
     expect(classifyStudioServiceWorkerRequest(facts("/admin/platform/quality-help", { mode: "navigate" }))).toBe("navigation");
+    expect(classifyStudioServiceWorkerRequest(facts("/admin/workspace-help", { mode: "navigate" }))).toBe("navigation");
     expect(classifyStudioServiceWorkerRequest(facts("/admin/platform/operations", { mode: "navigate" }))).toBe("navigation");
   });
 

@@ -83,6 +83,15 @@ function isDirectoryTarget(target) {
 export function shardForTarget(target) {
   if (
     target.startsWith("apps/api/")
+    || target.startsWith("apps/admin-web/")
+    || target === "packages/contracts/src/admin-workspace"
+    || target.startsWith("packages/contracts/src/admin-workspace/")
+    || target === "scripts/admin-workspace-database-contract.test.mjs"
+    || target === "scripts/admin-database-feature-contracts.test.mjs"
+    || target === "scripts/run-postgres-integration-tests.test.mjs"
+    || target === "apps/web/config/vite-admin-quality-entry.test.ts"
+    || target === "apps/web/src/domains/admin/router/AdminRouter.test.tsx"
+    || target === "apps/web/src/domains/admin/admin-i18n-loader.test.ts"
     || target === "apps/web/src/domains/creator/production-hub"
     || target.startsWith("apps/web/src/domains/creator/production-hub/")
     || target === "packages/contracts/src/production-workflow.test.ts"

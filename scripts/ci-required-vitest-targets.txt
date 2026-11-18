@@ -1,8 +1,13 @@
+apps/admin-web/src/app/shell/AdminApp.test.tsx
+apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx
+apps/admin-web/src/domains/workspace
+apps/admin-web/src/platform/http/workspace-api.test.ts
 apps/api/src/config/cors.test.ts
 apps/api/src/config/env.test.ts
 apps/api/src/config/security-headers.test.ts
 apps/api/src/csrf-middleware.test.ts
 apps/api/src/logging/log-safe.test.ts
+apps/api/src/modules/admin-workspace
 apps/api/src/modules/admin/admin-traffic-d1-query.test.ts
 apps/api/src/modules/admin/admin-traffic-query.test.ts
 apps/api/src/modules/admin/admin-traffic.service.test.ts
@@ -118,6 +123,7 @@ apps/character-lab/src/architecture.test.ts
 apps/character-lab/src/contracts/recipe.test.ts
 apps/character-lab/src/state/apply-plan.test.ts
 apps/character-lab/src/state/history.test.ts
+apps/web/config/vite-admin-quality-entry.test.ts
 apps/web/config/vite-pigment-license-boundary.test.ts
 apps/web/src/app/app-floating-controls-startup.test.ts
 apps/web/src/app/app-shell-skip-link-visibility.test.ts
@@ -128,7 +134,9 @@ apps/web/src/app/spatial-campus/campus-route-coverage.test.ts
 apps/web/src/app/studio-cross-origin-isolation.test.ts
 apps/web/src/app/studio-immersive-shell.test.ts
 apps/web/src/domains/account/UserProfilePage.test.tsx
+apps/web/src/domains/admin/admin-i18n-loader.test.ts
 apps/web/src/domains/admin/components/AdminBusinessInquiries.test.tsx
+apps/web/src/domains/admin/router/AdminRouter.test.tsx
 apps/web/src/domains/auth/components/in-app-browser-notice.test.tsx
 apps/web/src/domains/catalog/DiscoverHubPage.test.tsx
 apps/web/src/domains/catalog/memory-finder/MemoryFinderSection.test.tsx
@@ -805,6 +813,7 @@ deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
 deploy/cloudflare-static/src/index.test.ts
 deploy/cloudflare-static/src/r2-media-assets.test.ts
+packages/contracts/src/admin-workspace
 packages/contracts/src/production-workflow.test.ts
 packages/contracts/src/studio-legacy-pigment-archive.test.ts
 packages/contracts/src/studio-linked-3d-correction.test.ts
@@ -837,6 +846,8 @@ packages/studio-project-model/src/__tests__/world-conversation.test.ts
 packages/studio-project-model/src/__tests__/world-publication.test.ts
 packages/studio-project-model/src/__tests__/world-tilemap.test.ts
 scripts/__tests__/generate-third-party-notices.test.mjs
+scripts/admin-database-feature-contracts.test.mjs
+scripts/admin-workspace-database-contract.test.mjs
 scripts/bg3d-preserving-acl-contract.test.mjs
 scripts/bootstrap-empty-production-database.test.mjs
 scripts/browser-core-entry-isolation.test.ts
@@ -890,6 +901,7 @@ scripts/provision-cloudflare-free-data-plane.test.mjs
 scripts/provision-gcp-free-data-plane.test.mjs
 scripts/rebuild-creator-bundle-local-ingest.test.mjs
 scripts/release-static-chunk-boundary.test.ts
+scripts/run-postgres-integration-tests.test.mjs
 scripts/run-production-database-migrations.test.mjs
 scripts/secretlint-files.test.mjs
 scripts/seed/persona-accounts-seed.test.mjs

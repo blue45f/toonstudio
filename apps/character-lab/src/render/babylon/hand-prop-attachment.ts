@@ -11,11 +11,9 @@
  * 3) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
  * 4) `exportGlb()` 실행 시 주 캐릭터·소품·상대역 3D 캐릭터가 단일 투샷 GLB로 통합 직렬화 보존됨
  */
-import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader.js";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
-import { GLTFLoaderAnimationStartMode, GLTFLoaderCoordinateSystemMode } from "@babylonjs/loaders/glTF/glTFFileLoader.js";
 
 import { OUTLINE_MESH_SUFFIX, failVisible, parseAuthoredHairMeshName } from "../../contracts";
 import { sha256Hex } from "../../shared/hash";
@@ -23,6 +21,7 @@ import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../mat
 
 import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
 import { rigMeshMetadata } from "./mesh-binding";
+import { loadCharacterAssetContainer } from "./package-loader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
@@ -156,7 +155,7 @@ interface MountExtraGlbInput {
   readonly partKey: string;
   readonly deps: ScenePropLoadDeps;
   readonly filterPartnerMeshes?: boolean;
-  readonly onContainerMounted?: (container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>) => void;
+  readonly onContainerMounted?: (container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>) => void;
 }
 
 const PRIMITIVE_SUFFIX = /_primitive\d+$/u;
@@ -173,7 +172,7 @@ function degToQuat(rxDeg: number, ryDeg: number, rzDeg: number): Quaternion {
 }
 
 function applyDuoPartnerConversationalPose(
-  container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>,
+  container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>,
   stance: DuoPartnerStance,
   side: "left" | "right",
 ): void {
@@ -245,22 +244,9 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     }
   }
 
-  let container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>;
+  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
   try {
-    container = await LoadAssetContainerAsync(bytes, input.deps.scene, {
-      pluginExtension: ".glb",
-      pluginOptions: {
-        gltf: {
-          coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
-          animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-          loadNodeAnimations: false,
-          compileMaterials: false,
-          createInstances: false,
-          alwaysComputeBoundingBox: true,
-          useSRGBBuffers: true,
-        },
-      },
-    });
+    container = await loadCharacterAssetContainer(bytes, input.deps.scene);
   } catch (error) {
     throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 에셋 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
   }
@@ -456,22 +442,9 @@ export async function attachDuoPartnerToRig(
     }
   }
 
-  let container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>;
+  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
   try {
-    container = await LoadAssetContainerAsync(bytes, deps.scene, {
-      pluginExtension: ".glb",
-      pluginOptions: {
-        gltf: {
-          coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
-          animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-          loadNodeAnimations: false,
-          compileMaterials: false,
-          createInstances: false,
-          alwaysComputeBoundingBox: true,
-          useSRGBBuffers: true,
-        },
-      },
-    });
+    container = await loadCharacterAssetContainer(bytes, deps.scene);
   } catch (error) {
     throw failVisible("duo-partner-glb-load-failed", `3D 상대역 GLB를 열지 못했습니다: ${attachment.glbUrl}`, error, now);
   }
