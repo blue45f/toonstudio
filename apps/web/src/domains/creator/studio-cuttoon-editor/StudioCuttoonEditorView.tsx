@@ -8,7 +8,8 @@ import { StudioColorWorkspaceProvider } from "../color/StudioColorWorkspaceConte
 import { Maximize2 } from "lucide-react";
 import { StudioLiveCollaborationProvider } from "../live/StudioLiveCollaborationProvider";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "../studio-chrome-ui";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useLayoutEffect } from "react";
+import { cancelPendingStudioAllTools } from "../studio-toolbar-channel";
 import { StudioHelpCenterHost } from "../StudioHelpCenterHost";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
@@ -84,6 +85,10 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
     workMode,
     watermarkPreferenceSnapshot,
   } = s;
+  useLayoutEffect(() => {
+    const scope = studioRootRef.current;
+    return () => { if (scope) cancelPendingStudioAllTools(scope); };
+  }, [studioRootRef, studioAuthUserId, effectiveWorkId, s.saveIntentScope?.documentKey]);
   const drawingPresentation = clarity?.presentation ?? "integrated";
   const drawingAppPresentation = drawingPresentation === "app";
   const legacyPagePigment = hasVisibleLegacyMixboxStrokes(s.elements, s.groups);

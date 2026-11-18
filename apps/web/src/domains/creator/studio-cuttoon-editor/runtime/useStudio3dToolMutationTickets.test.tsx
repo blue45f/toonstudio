@@ -117,6 +117,34 @@ it.each(["actor", "work", "page", "document", "viewer", "403", "signed-out"])(
   },
 );
 
+it.each([true, false])("같은 사용자의 서버 재확인 동안 삽입을 멈추고 같은 원고의 승인만 복원한다 · 잠금 %s", (locked) => {
+  const hook = openWork(readyWork);
+  const owner = hook.result.current.tickets()[0];
+  expect(hook.result.current.admitted()).toBe(true);
+  hook.rerender({ ...readyWork, route: "pending", locked });
+  expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  hook.rerender(readyWork);
+  const restored = hook.result.current.tickets()[0];
+  expect(hook.result.current.admitted()).toBe(true);
+  expect(restored).not.toBe(owner);
+  expect(restored).toEqual({ ...owner, accessGeneration: locked ? 2 : 0 });
+});
+
+it.each(["actor", "work", "page", "document", "viewer"])(
+  "이미 승인받은 공동 원고도 재확인 중 %s가 바뀌면 기존 창의 삽입을 복원하지 않는다", (change) => {
+    const hook = openWork(readyWork);
+    const checking: WorkFrame = { ...readyWork, route: "pending", locked: true };
+    hook.rerender(checking);
+    if (change === "actor") hook.rerender({ ...checking, actor: "teammate" });
+    if (change === "work") hook.rerender({ ...checking, workId: "another-work" });
+    if (change === "page") hook.rerender({ ...checking, pageId: "page-b" });
+    if (change === "document") hook.result.current.editDocument();
+    if (change === "viewer") hook.rerender({ ...checking, route: "denied" });
+    hook.rerender(readyWork);
+    expect(hook.result.current.tickets()).toEqual([null, null, null]);
+  },
+);
+
 it("공동 원고에서 보기 권한으로 바뀐 편집기는 권한 복구 뒤에도 다시 열어야 한다", () => {
   const hook = openWork(readyWork);
   expect(hook.result.current.admitted()).toBe(true);

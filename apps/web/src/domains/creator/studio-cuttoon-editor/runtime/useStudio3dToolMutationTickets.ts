@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
 import type { StudioEditorMutationTicket } from "../../studio-editor-scope";
 import type { StudioDccRouteAccess } from "../../studio-router/studio-dcc-workbench-navigation";
 
@@ -34,7 +34,7 @@ function useToolTicket(open: boolean, capture: () => StudioEditorMutationTicket 
   const awaitingFirstActor = useRef(false);
   const { workId, actorId, authReady } = namedWork ?? {};
   const activePageId = page.current;
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       pageId.current = null;
       ticket.current = null;
@@ -56,8 +56,14 @@ function useToolTicket(open: boolean, capture: () => StudioEditorMutationTicket 
     }
     let initial = pending.current;
     if (!initial) {
-      if (workId && (access !== "allowed" || activePageId !== pageId.current)) ticket.current = null;
-      return;
+      const issued = ticket.current;
+      if (!workId || !issued) return;
+      if (access === "allowed" && activePageId === pageId.current
+        && issued.workId === workId && issued.authScopeKey === actorId) return;
+      ticket.current = null;
+      if (access !== "pending") return;
+      // 재확인 중에는 삽입을 막고, 이 창이 이미 승인받았던 원고를 비교 기준으로 남긴다.
+      initial = issued;
     }
     const current = capture();
     if (!current || access === "denied" || activePageId !== pageId.current || current.workId !== initial.workId
@@ -75,16 +81,18 @@ function useToolTicket(open: boolean, capture: () => StudioEditorMutationTicket 
       initial = current;
       pending.current = current;
     }
-    if (current.authScopeKey !== initial.authScopeKey) {
+    if (current.authScopeKey !== initial.authScopeKey ||
+      (current.accessGeneration !== initial.accessGeneration && current.accessGeneration !== initial.accessGeneration + 1)) {
       pending.current = null;
       return;
     }
-    if (access === "pending") return;
+    if (access === "pending") {
+      pending.current ??= current;
+      return;
+    }
     pending.current = null;
     if (workId && (current.workId !== workId || current.authScopeKey !== actorId)) return;
-    if (current.accessGeneration === initial.accessGeneration || current.accessGeneration === initial.accessGeneration + 1) {
-      ticket.current = current;
-    }
+    ticket.current = current;
   }, [access, activePageId, actorId, authReady, capture, open, workId]);
   return { ticket, pageId };
 }
