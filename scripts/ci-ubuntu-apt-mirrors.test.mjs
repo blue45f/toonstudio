@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
 import { constants } from 'node:fs';
 import { MIRROR_PATH, prioritizeUbuntuAptMirrors, runUbuntuAptMirrorSetup } from './ci-ubuntu-apt-mirrors.mjs';
+
+const { test } = process.env.VITEST ? await import('vitest') : await import('node:test');
 
 const aws = 'http://us-east-2.ec2.archive.ubuntu.com/ubuntu/\tpriority:1\n';
 const canonical = 'https://archive.ubuntu.com/ubuntu/\tpriority:2\nhttps://security.ubuntu.com/ubuntu/\tpriority:3\n';
