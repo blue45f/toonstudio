@@ -1,0 +1,135 @@
+{
+  "schema": "toonstudio.blender-slit-godray-sequence.v21",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_slit_godray_sequence_v21.py · Slit God-Ray & Shadow Drift SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "sequenceBeats": [
+    15,
+    65,
+    100
+  ],
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_SlitGodRay_Sequence_V21",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 289,
+        "sha256Before": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "sha256After": "b2492fa9271256baf69699c96d11bc85bc571282d30c555cd7b3a7e8e6341d49",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 50,
+        "sha256Before": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "sha256After": "b1f8b1be616d243ba53419d047240137aec3a6fca3bd505c11bb457f91c200fe",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.002",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Articulated_IK_Bridge_V20",
+        "objectCount": 29,
+        "sha256Before": "ff2f551b2e8679a0896a42e0e90df6f0eaa0b45f233c9f4da935e616e2849fa8",
+        "sha256After": "ff2f551b2e8679a0896a42e0e90df6f0eaa0b45f233c9f4da935e616e2849fa8",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_DualGenre_Handoff_V18",
+        "objectCount": 17,
+        "sha256Before": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "sha256After": "fd5aafc438dd257233c42d64a2df3e5cfb3364ba35f27cd88cb9f0c4a4430951",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Lumiere_Salon_V17",
+        "objectCount": 32,
+        "sha256Before": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "sha256After": "76e7b921ebf61bec84de248dc4873d191140f25b9799ca5449e70db2bc28b54f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_SharedDatum_TriGenre_V19",
+        "objectCount": 23,
+        "sha256Before": "e830987fef2d99e1df90dd052c54c3d0ebefd3f6ffc49c2eeda2942eeb535a30",
+        "sha256After": "e830987fef2d99e1df90dd052c54c3d0ebefd3f6ffc49c2eeda2942eeb535a30",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-slit-godray-breakthrough-65pct-v21.glb",
+      "openRatio": 0.65,
+      "slitWidthM": 1.148,
+      "shadowReachM": 0.943,
+      "bytes": 168048,
+      "sha256": "29efc3e71beb616f8738934d24aef647fbefead15f245bf9f00f2b9efbf07524",
+      "triangles": 4496,
+      "vertices": 2292
+    },
+    {
+      "file": "webtoon-slit-godray-climax-100pct-v21.glb",
+      "openRatio": 1.0,
+      "slitWidthM": 1.68,
+      "shadowReachM": 0.74,
+      "bytes": 168008,
+      "sha256": "dd6131f29f8f912284c32d627efa90ae6ee0db469d9087c5326eeed3b68edcb4",
+      "triangles": 4496,
+      "vertices": 2292
+    },
+    {
+      "file": "webtoon-slit-godray-threshold-15pct-v21.glb",
+      "openRatio": 0.15,
+      "slitWidthM": 0.388,
+      "shadowReachM": 1.233,
+      "bytes": 168088,
+      "sha256": "f331c0cd0d03ed94388b28488bbecb134c5c78b5d031d243c5b58afc51e1797b",
+      "triangles": 4496,
+      "vertices": 2292
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-slit-godray-breakthrough-65pct-v21.png",
+      "bytes": 305226,
+      "sha256": "11bfb3fba7da112a5c6f5232eed61a1972d10c4b65300fa96d75c5a280e7cbf2"
+    },
+    {
+      "file": "thumbnails/webtoon-slit-godray-climax-100pct-v21.png",
+      "bytes": 294990,
+      "sha256": "fd6f9a4c671fbc3ce7d4b06c469ec9951b533147ad4c7170a138b9d569468abf"
+    },
+    {
+      "file": "thumbnails/webtoon-slit-godray-threshold-15pct-v21.png",
+      "bytes": 316064,
+      "sha256": "1cbdcb2bc46984f6387d53a1aa478bbff15b3011ce3d97f7c2d75bf2d6fabe80"
+    }
+  ]
+}

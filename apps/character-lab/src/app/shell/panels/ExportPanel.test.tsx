@@ -669,6 +669,14 @@ describe("ExportPanel", () => {
     await waitFor(() => expect(calls).toHaveLength(3));
     expect(calls[2]?.fileName).toMatch(/-webtoon-4cut-fx-strip\.png$/u);
     expect(isPng(calls[2]?.bytes ?? new Uint8Array())).toBe(true);
+
+    const actingSelect = screen.getByTestId("export-strip-acting-arc") as HTMLSelectElement;
+    expect(actingSelect.options.length).toBe(5);
+    fireEvent.change(actingSelect, { target: { value: "arc-awakening-climax" } });
+    fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-strip\.png$/u);
+    expect(isPng(calls[3]?.bytes ?? new Uint8Array())).toBe(true);
   });
 
   it("2×2 종합 설정시트 PNG 저장 및 로컬 클립보드 레시피 복사·붙여넣기 왕복이 동작하고 빈 클립보드 오류를 노출한다", async () => {

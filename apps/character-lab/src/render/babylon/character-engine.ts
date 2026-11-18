@@ -19,18 +19,17 @@ import { generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
 import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear } from "../material-presets";
-import { describeMorphTextureMode } from "../morph-limits";
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
-import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
+import { createFeatureReport, featureOff } from "../scene-features";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
-import { CharacterHandPropController } from "./character-hand-prop-controller";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
+import { CharacterScenePropController } from "./character-scene-prop-controller";
 import { buildCharacterToonValues } from "./character-toon-values";
 import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
@@ -47,11 +46,12 @@ import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
-import { describeGlbSparseState, describeJointOffsetState } from "./rig-feature-state";
+import { describeGlbSparseState, describeJointOffsetState, describeRigBoneTextureState, describeRigMorphTextureState } from "./rig-feature-state";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { ScenePropAttachments } from "./character-scene-prop-controller";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -66,7 +66,9 @@ import type {
   EngineBackend,
   EngineDiagnostics,
   HandPropAttachment,
+  HeadPropAttachment,
   HudSample,
+  StagePropAttachment,
   JointDragHandle,
   KitPlan,
   LabFailure,
@@ -102,7 +104,6 @@ import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial.js";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture.js";
-import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
@@ -166,13 +167,6 @@ export interface BabylonCharacterEngineDeps {
   readonly onFailure?: (failure: LabFailure) => void;
 }
 
-/** 지금 influence > 0인 morph 타깃 수. `numInfluencers`는 attribute 모드에서 8개로 잘려 있어 초과분(무시되는 타깃)을 셀 수 없다. */
-function activeMorphTargets(manager: MorphTargetManager): number {
-  let active = 0;
-  for (let index = 0; index < manager.numTargets; index += 1) if (manager.getTarget(index).influence > 0) active += 1;
-  return active;
-}
-
 export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSource, ViewportCameraSource, BetaFeaturePort, ProjectionPaintHost {
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
@@ -213,7 +207,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
-  private readonly handProps: CharacterHandPropController;
+  private readonly sceneProps: CharacterScenePropController;
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -276,12 +270,20 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       },
       deps.betaLoaders,
     );
-    this.handProps = new CharacterHandPropController({
+    this.sceneProps = new CharacterScenePropController({
       scene,
       beta: this.beta,
       fetchBytes: (url) => (deps.fetchBytes ?? fetchBytesDefault)(url),
       materialOptions: () => this.materialOptions(),
       disposePassMaterials: (partId) => this.disposePassMaterials(partId),
+      refreshRig: async (rig) => {
+        this.character.clearShadowCasters();
+        this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+        await this.beta.reconcile();
+        this.applyMaterialsForMode(rig);
+        this.refreshToonUniforms(rig);
+        this.beta.syncIblShadows();
+      },
       verifyIntegrity: deps.verifyPackageSha ?? true,
       now: this.now,
     });
@@ -366,11 +368,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
-    if (this.handProps.hasAttachment) {
+    if (this.sceneProps.hasAttachment) {
       try {
-        await this.handProps.sync(rig);
+        await this.sceneProps.sync(rig);
       } catch (error) {
-        this.reportFailure(error, "hand-prop-reattach-failed", "새 캐릭터 소스에 손 소품을 다시 부착하지 못했습니다.");
+        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
       }
     }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
@@ -579,26 +581,30 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
-    this.handProps.detach(rig);
+    this.sceneProps.detach(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
   }
 
-  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+  private async setSceneProp<K extends keyof ScenePropAttachments>(kind: K, attachment: ScenePropAttachments[K] | null): Promise<void> {
     this.assertAlive();
     return this.runExclusive(async () => {
       this.assertAlive();
-      const rig = this.rig;
-      await this.handProps.set(attachment, rig);
-      if (!rig) return;
-      this.character.clearShadowCasters();
-      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
-      await this.beta.reconcile();
-      this.applyMaterialsForMode(rig);
-      this.refreshToonUniforms(rig);
-      this.beta.syncIblShadows();
+      await this.sceneProps.set(kind, attachment, this.rig);
     });
+  }
+
+  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+    return this.setSceneProp("hand", attachment);
+  }
+
+  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
+    return this.setSceneProp("head", attachment);
+  }
+
+  async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
+    return this.setSceneProp("stage", attachment);
   }
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
@@ -1139,18 +1145,6 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     const post = this.postfx.states();
     const rig = this.rig;
     const caps = this.engine.getCaps();
-    const managers = rig
-      ? rig.parts.flatMap((part) =>
-          part.meshes.flatMap((mesh) => {
-            const manager = mesh.morphTargetManager;
-            return manager
-              ? [{ name: mesh.name, targetCount: manager.numTargets, vertexCount: mesh.getTotalVertices(), supportsNormals: manager.supportsNormals, usingTexture: manager.isUsingTextureForTargets, activeTargets: activeMorphTargets(manager) }]
-              : [];
-          }),
-        )
-      : [];
-    const morphTexture = describeMorphTextureMode(managers, { maxTextureSize: caps.maxTextureSize, maxArrayLayers: caps.texture2DArrayMaxLayerCount }, rig ? "morph 타깃이 있는 파츠가 없습니다." : "소스가 없습니다.");
-    const boneTexture = !rig?.skeleton ? featureOff(rig ? "스켈레톤이 없습니다." : "소스가 없습니다.") : rig.skeleton.isUsingTextureForMatrices ? featureActive(`${rig.skeleton.bones.length}본`) : featureUnavailable("엔진이 본 행렬 텍스처를 지원하지 않아 uniform 배열 모드로 동작합니다.");
     const base = createFeatureReport({
       cascadedShadows: this.character.shadowState(),
       subsurfaceScattering: this.character.sssState(),
@@ -1159,8 +1153,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       ssao: post.ssao,
       msaa: post.msaa,
       gpuTimer: this.hud.gpuTimerState(),
-      morphTextureMode: morphTexture,
-      boneTextureMode: boneTexture,
+      morphTextureMode: describeRigMorphTextureState(rig, { maxTextureSize: caps.maxTextureSize, maxArrayLayers: caps.texture2DArrayMaxLayerCount }),
+      boneTextureMode: describeRigBoneTextureState(rig),
     });
     return { ...base, ...this.beta.report(), jointOffsets: describeJointOffsetState(this.rig), glbMorphSparse: describeGlbSparseState(this.lastGlbReport) };
   }

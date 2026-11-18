@@ -1,11 +1,14 @@
 /**
- * 캐릭터 손 본(rightHand / leftHand) 실시간 3D 웹툰 소품(스마트폰·커피컵·서류철·에테르 단검) 탈부착 로더.
+ * 캐릭터 3D 웹툰 소품 어태치먼트 로더:
+ * - 손 소품(`partId = 250`, `extra:hand-prop`): `rightHand` / `leftHand` 본 아래 `TS_HandPropAnchor_*`
+ * - 머리 액세서리(`partId = 251`, `extra:head-prop`): `head` 본 아래 `TS_HeadPropAnchor_*`
+ * - 배경 스테이지 스탠드(`partId = 252`, `extra:stage-prop`): `rig.root` 아래 `TS_StagePropAnchor_*`
  *
- * - GLB를 Babylon `LoadAssetContainerAsync`로 열어 손 본 `TransformNode` 아래 `TS_HandPropAnchor`에 페어런팅한다.
- * - `rig.root` 하위 트리에 속하고 `rig.parts`(`partId = 250`, `role = "accessory"`)에 등록되므로:
- *   1) 뷰포트 PBR 및 툰 셰이딩(외곽선·림라이트·망점 스크린톤 포함) 자동 적용
- *   2) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
- *   3) `exportGlb()` 실행 시 캐릭터 메쉬·골격과 함께 손에 들린 3D 소품 메쉬(`TS_Prop_*`)가 그대로 직렬화 보존됨
+ * 세 슬롯 모두 `rig.root` 하위 트리에 속하고 `rig.parts`(`role = "accessory"`)에 독립 등록되므로:
+ * 1) 손 소품 + 머리 액세서리 + 배경 스테이지 프롭 3종 동시 장착 지원
+ * 2) 뷰포트 PBR 및 툰 셰이딩(외곽선·림라이트·망점 스크린톤 포함) 자동 적용
+ * 3) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
+ * 4) `exportGlb()` 실행 시 캐릭터 메쉬·골격과 함께 장착된 모든 3D 소품 메쉬가 단일 GLB로 직렬화 보존됨
  */
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
@@ -20,15 +23,28 @@ import { rigMeshMetadata } from "./mesh-binding";
 import { loadCharacterGlbContainer } from "./package-loader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
-import type { HandPropAttachment, HandPropId, HandPropSide, PartRole } from "../../contracts";
+import type {
+  HandPropAttachment,
+  HandPropId,
+  HandPropSide,
+  HeadPropAttachment,
+  PartRole,
+  StagePropAttachment,
+} from "../../contracts";
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 손 소품 전용 고정 partId */
+/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품 전용 고정 partId */
 export const HAND_PROP_PART_ID = 250;
 export const HAND_PROP_PART_KEY = "extra:hand-prop";
 
-export interface HandPropLoadDeps {
+export const HEAD_PROP_PART_ID = 251;
+export const HEAD_PROP_PART_KEY = "extra:head-prop";
+
+export const STAGE_PROP_PART_ID = 252;
+export const STAGE_PROP_PART_KEY = "extra:stage-prop";
+
+export interface ScenePropLoadDeps {
   readonly scene: Scene;
   readonly fetchBytes: (url: string) => Promise<Uint8Array>;
   readonly adaptMaterial: (role: PartRole, mesh: Mesh) => PBRMaterial;
@@ -36,16 +52,28 @@ export interface HandPropLoadDeps {
   readonly now?: number;
 }
 
+export type HandPropLoadDeps = ScenePropLoadDeps;
+
 export interface HandPropHandle {
   readonly attachment: HandPropAttachment;
   readonly part: RigPart;
   dispose(): void;
 }
 
+export interface HeadPropHandle {
+  readonly attachment: HeadPropAttachment;
+  readonly part: RigPart;
+  dispose(): void;
+}
+
+export interface StagePropHandle {
+  readonly attachment: StagePropAttachment;
+  readonly part: RigPart;
+  dispose(): void;
+}
+
 interface GripTransformSpec {
-  /** 손바닥 중심 기준 추가 로컬 오프셋 [손가락축 부호반영 X, 손바닥 안쪽 Y, 엄지 방향 Z] */
   readonly palmDelta: readonly [number, number, number];
-  /** glTF(+Y 상단, +Z 전면) 소품을 손 본 로컬 축(엄지 +Z, 손바닥 안쪽 -Y)에 맞추는 오일러 회전(rad) */
   readonly eulerRight: readonly [number, number, number];
   readonly eulerLeft: readonly [number, number, number];
   readonly uniformScale: number;
@@ -100,19 +128,31 @@ function computePalmLocalPosition(rig: CharacterRig, hand: HandPropSide, propId:
   );
 }
 
-export async function attachHandPropToRig(
-  rig: CharacterRig,
-  attachment: HandPropAttachment,
-  deps: HandPropLoadDeps,
-): Promise<HandPropHandle> {
-  const now = deps.now ?? Date.now();
-  const bytes = await deps.fetchBytes(attachment.glbUrl);
-  if ((deps.verifyIntegrity ?? true) && attachment.sha256) {
+interface MountExtraGlbInput {
+  readonly rig: CharacterRig;
+  readonly glbUrl: string;
+  readonly sha256: string | undefined;
+  readonly labelId: string;
+  readonly codePrefix: "hand-prop" | "head-prop" | "stage-prop";
+  readonly anchorName: string;
+  readonly parentNode: TransformNode;
+  readonly localPosition: Vector3;
+  readonly localRotation: Quaternion;
+  readonly uniformScale: number;
+  readonly partId: number;
+  readonly partKey: string;
+  readonly deps: ScenePropLoadDeps;
+}
+
+async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly part: RigPart; readonly dispose: () => void }> {
+  const now = input.deps.now ?? Date.now();
+  const bytes = await input.deps.fetchBytes(input.glbUrl);
+  if ((input.deps.verifyIntegrity ?? true) && input.sha256) {
     const digest = await sha256Hex(bytes);
-    if (digest !== attachment.sha256) {
+    if (digest !== input.sha256) {
       throw failVisible(
-        "hand-prop-sha-mismatch",
-        `손 소품('${attachment.propId}') GLB 해시가 일치하지 않습니다(${digest.slice(0, 8)}… ≠ ${attachment.sha256.slice(0, 8)}…).`,
+        `${input.codePrefix}-sha-mismatch`,
+        `3D 소품('${input.labelId}') GLB 해시가 일치하지 않습니다(${digest.slice(0, 8)}… ≠ ${input.sha256.slice(0, 8)}…).`,
         undefined,
         now,
       );
@@ -121,21 +161,17 @@ export async function attachHandPropToRig(
 
   let container: Awaited<ReturnType<typeof loadCharacterGlbContainer>>;
   try {
-    container = await loadCharacterGlbContainer(bytes, deps.scene);
+    container = await loadCharacterGlbContainer(bytes, input.deps.scene);
   } catch (error) {
-    throw failVisible("hand-prop-glb-load-failed", `손 소품 GLB를 열지 못했습니다: ${attachment.glbUrl}`, error, now);
+    throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 소품 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
   }
 
   container.addAllToScene();
-  const handBone = rig.humanoid.get(attachment.hand);
-  const anchor = new TransformNode(`TS_HandPropAnchor_${attachment.propId}`, deps.scene);
-  anchor.parent = handBone ? handBone.node : rig.root;
-
-  const spec = PROP_GRIP_SPECS[attachment.propId];
-  anchor.position = handBone ? computePalmLocalPosition(rig, attachment.hand, attachment.propId) : new Vector3(0.28, 1.12, 0.22);
-  const [rx, ry, rz] = attachment.hand === "rightHand" ? spec.eulerRight : spec.eulerLeft;
-  anchor.rotationQuaternion = Quaternion.FromEulerAngles(rx, ry, rz);
-  anchor.scaling.setAll(spec.uniformScale);
+  const anchor = new TransformNode(input.anchorName, input.deps.scene);
+  anchor.parent = input.parentNode;
+  anchor.position = input.localPosition;
+  anchor.rotationQuaternion = input.localRotation;
+  anchor.scaling.setAll(input.uniformScale);
 
   for (const rootNode of container.rootNodes) {
     if (rootNode instanceof TransformNode) {
@@ -152,18 +188,18 @@ export async function attachHandPropToRig(
   if (meshes.length === 0) {
     container.dispose();
     anchor.dispose(false, false);
-    throw failVisible("hand-prop-empty-mesh", `손 소품('${attachment.propId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
+    throw failVisible(`${input.codePrefix}-empty-mesh`, `3D 소품('${input.labelId}') GLB에 유효한 메쉬가 없습니다.`, undefined, now);
   }
 
   const role: PartRole = "accessory";
   const firstMesh = meshes[0]!;
-  const pbr = deps.adaptMaterial(role, firstMesh);
+  const pbr = input.deps.adaptMaterial(role, firstMesh);
   const meshPbrs: PBRMaterial[] = [];
   for (const mesh of meshes) {
-    const meshPbr = mesh === firstMesh || mesh.material === firstMesh.material ? pbr : deps.adaptMaterial(role, mesh);
+    const meshPbr = mesh === firstMesh || mesh.material === firstMesh.material ? pbr : input.deps.adaptMaterial(role, mesh);
     mesh.material = meshPbr;
     meshPbrs.push(meshPbr);
-    mesh.metadata = rigMeshMetadata(HAND_PROP_PART_ID, role, HAND_PROP_PART_ID, false);
+    mesh.metadata = rigMeshMetadata(input.partId, role, input.partId, false);
     mesh.receiveShadows = true;
   }
 
@@ -171,9 +207,9 @@ export async function attachHandPropToRig(
   const materialPreset = ROLE_DEFAULT_PRESET[role];
   const hasAlbedoTexture = meshPbrs.some((mat) => mat.albedoTexture !== null);
   const part: RigPart = {
-    id: HAND_PROP_PART_KEY,
-    partId: HAND_PROP_PART_ID,
-    materialId: HAND_PROP_PART_ID,
+    id: input.partKey,
+    partId: input.partId,
+    materialId: input.partId,
     role,
     materialPreset,
     ...(colorKey !== undefined ? { colorKey } : {}),
@@ -188,21 +224,93 @@ export async function attachHandPropToRig(
     forceHidden: false,
   };
 
-  attachExtraRigPart(rig, part);
+  attachExtraRigPart(input.rig, part);
   anchor.computeWorldMatrix(true);
   for (const mesh of meshes) mesh.computeWorldMatrix(true);
 
   let disposed = false;
   return {
-    attachment,
     part,
     dispose(): void {
       if (disposed) return;
       disposed = true;
-      detachExtraRigPart(rig, HAND_PROP_PART_ID);
+      detachExtraRigPart(input.rig, input.partId);
       part.toon?.dispose(true, false);
       container.dispose();
       anchor.dispose(false, false);
     },
   };
+}
+
+export async function attachHandPropToRig(
+  rig: CharacterRig,
+  attachment: HandPropAttachment,
+  deps: ScenePropLoadDeps,
+): Promise<HandPropHandle> {
+  const handBone = rig.humanoid.get(attachment.hand);
+  const spec = PROP_GRIP_SPECS[attachment.propId];
+  const [rx, ry, rz] = attachment.hand === "rightHand" ? spec.eulerRight : spec.eulerLeft;
+  const mounted = await mountExtraPropPart({
+    rig,
+    glbUrl: attachment.glbUrl,
+    sha256: attachment.sha256,
+    labelId: attachment.propId,
+    codePrefix: "hand-prop",
+    anchorName: `TS_HandPropAnchor_${attachment.propId}`,
+    parentNode: handBone ? handBone.node : rig.root,
+    localPosition: handBone ? computePalmLocalPosition(rig, attachment.hand, attachment.propId) : new Vector3(0.28, 1.12, 0.22),
+    localRotation: Quaternion.FromEulerAngles(rx, ry, rz),
+    uniformScale: spec.uniformScale,
+    partId: HAND_PROP_PART_ID,
+    partKey: HAND_PROP_PART_KEY,
+    deps,
+  });
+  return { attachment, part: mounted.part, dispose: mounted.dispose };
+}
+
+export async function attachHeadPropToRig(
+  rig: CharacterRig,
+  attachment: HeadPropAttachment,
+  deps: ScenePropLoadDeps,
+): Promise<HeadPropHandle> {
+  const headBone = rig.humanoid.get("head");
+  const mounted = await mountExtraPropPart({
+    rig,
+    glbUrl: attachment.glbUrl,
+    sha256: attachment.sha256,
+    labelId: attachment.propId,
+    codePrefix: "head-prop",
+    anchorName: `TS_HeadPropAnchor_${attachment.propId}`,
+    parentNode: headBone ? headBone.node : rig.root,
+    localPosition: headBone ? Vector3.Zero() : new Vector3(0, 1.48, 0),
+    localRotation: Quaternion.Identity(),
+    uniformScale: 1.0,
+    partId: HEAD_PROP_PART_ID,
+    partKey: HEAD_PROP_PART_KEY,
+    deps,
+  });
+  return { attachment, part: mounted.part, dispose: mounted.dispose };
+}
+
+export async function attachStagePropToRig(
+  rig: CharacterRig,
+  attachment: StagePropAttachment,
+  deps: ScenePropLoadDeps,
+): Promise<StagePropHandle> {
+  const mounted = await mountExtraPropPart({
+    rig,
+    glbUrl: attachment.glbUrl,
+    sha256: attachment.sha256,
+    labelId: attachment.propId,
+    codePrefix: "stage-prop",
+    anchorName: `TS_StagePropAnchor_${attachment.propId}`,
+    parentNode: rig.root,
+    localPosition: Vector3.Zero(),
+    localRotation: Quaternion.Identity(),
+    uniformScale: 1.0,
+    partId: STAGE_PROP_PART_ID,
+    partKey: STAGE_PROP_PART_KEY,
+    deps,
+  });
+  return { attachment, part: mounted.part, dispose: mounted.dispose };
 }
