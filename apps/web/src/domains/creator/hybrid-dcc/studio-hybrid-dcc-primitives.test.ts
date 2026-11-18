@@ -27,6 +27,17 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT,
+  extractKoreanChoseong,
+  matchesKitSearchQuery,
+  STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -366,6 +377,354 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
       expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
 
       const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 개폐율 연동 보케 파티클·조리개 심도 V22(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-atmospheric-bokeh-v22/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      apertureStops?: number[];
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.apertureStops).toEqual([1.8, 2.8, 5.6]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(1);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 Z-심도 3D 효과음·기준선 군중·멀티 시간대 V23(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-zdepth-sfx-crowd-v23/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      timeOfDayKelvins?: number[];
+      zDepthSandwichMeters?: { zDepthSfxPlaneYM?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.timeOfDayKelvins).toEqual([5600, 3200, 8500]);
+    expect(prov.zDepthSandwichMeters?.zDepthSfxPlaneYM).toBe(-0.34);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(4);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 건축 차폐 기상·수막 파문 V24(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-weather-occlusion-motion-v24/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      weatherOcclusionColliderSpec?: { eavesLintelHeightM?: number; indoorCeilingLeakCount?: number };
+      supportedLocalizationSlots?: string[];
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.weatherOcclusionColliderSpec?.eavesLintelHeightM).toBe(2.4);
+    expect(prov.weatherOcclusionColliderSpec?.indoorCeilingLeakCount).toBe(0);
+    expect(prov.supportedLocalizationSlots).toEqual(["KO", "EN", "JA"]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(5);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 기류 패브릭·하프 미러 반사창 V25(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-wind-drape-reflection-v25/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      windDrapePhysicsSpec?: {
+        lintelAnchorHeightM?: number;
+        halfMirrorFresnelRangePct?: number[];
+        tankobonOverscanFormats?: string[];
+      };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.windDrapePhysicsSpec?.lintelAnchorHeightM).toBe(2.36);
+    expect(prov.windDrapePhysicsSpec?.halfMirrorFresnelRangePct).toEqual([29.0, 19.0, 12.0]);
+    expect(prov.windDrapePhysicsSpec?.tankobonOverscanFormats).toContain("B5_370x263mm_350dpi");
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(6);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 3단계 소품 파손·흔적 V26(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-aftermath-damage-v26/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      aftermathDamageSpec?: { datumTableHeightM?: number; debrisShardCounts?: number[] };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.aftermathDamageSpec?.datumTableHeightM).toBe(0.74);
+    expect(prov.aftermathDamageSpec?.debrisShardCounts).toEqual([0, 14, 28]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(7);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 잔류 연무·열기 아지랑이 V27(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-dust-heathaze-v27/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      dustAndHeatHazeSpec?: { plumeLobeCounts?: number[]; proxyLodRatio?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.dustAndHeatHazeSpec?.plumeLobeCounts).toEqual([3, 6, 12]);
+    expect(prov.dustAndHeatHazeSpec?.proxyLodRatio).toBe(0.32);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(8);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 VRM 1.0 해부학 포즈 마네킹 V28(3종)이 GLB 2.0 바이너리 청크 정렬·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-vrm-pose-mannequin-v28/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      vrmHumanoidPoseSpec?: { vrmSpecVersion?: string; humanoidBoneCount?: number; datumSnapHeightsM?: number[] };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.vrmHumanoidPoseSpec?.vrmSpecVersion).toBe("1.0");
+    expect(prov.vrmHumanoidPoseSpec?.humanoidBoneCount).toBe(18);
+    expect(prov.vrmHumanoidPoseSpec?.datumSnapHeightsM).toEqual([1.1, 0.74, 1.32]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(9);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.observed.magicHex).toBe("0x46546C67");
+      expect(binReport.observed.version).toBe(2);
+      expect(binReport.derived.fourByteAligned).toBe(true);
+      expect(binReport.observed.binChunkLength).toBeGreaterThan(0);
+
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 2인 시선 교차·키 차이·OTS 듀오 V29(3종)이 GLB 2.0 바이너리 청크·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-duo-eyeline-ots-v29/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      duoEyelineOtsSpec?: { heightGapRangeCm?: number[]; axisOfActionRuleDeg?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.duoEyelineOtsSpec?.heightGapRangeCm).toEqual([6, 14, 24]);
+    expect(prov.duoEyelineOtsSpec?.axisOfActionRuleDeg).toBe(180);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(10);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.derived.fourByteAligned).toBe(true);
+
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 8대 장르 확장 세트 V30(학원·느와르·헌터 3종)과 한글 초성 통합 검색이 GLB 2.0 바이너리·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT).toHaveLength(3);
+    expect(extractKoreanChoseong("학원물 옥상")).toBe("ㅎㅇㅁ ㅇㅅ");
+    expect(matchesKitSearchQuery("ㅎㅇㅁ", ["학원물 옥상 안전난간·교실 책상 고백 베이"])).toBe(true);
+    expect(matchesKitSearchQuery("ㄴㅇㄹ", ["느와르 베네치안 블라인드 탐정실"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅎㅌ", ["헌터물 길드 육각 각성 게이트"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅎㅇ", ["한옥 배흘림기둥·처마 정자"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅈㅈㅇㄴ", ["느와르 베네치안 블라인드"])).toBe(false);
+
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-genre-expansion-v30/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      expandedGenreSpec?: { totalSupportedWebtoonGenres?: number; recommendedInkWidthsPx?: number[] };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.expandedGenreSpec?.totalSupportedWebtoonGenres).toBe(8);
+    expect(prov.expandedGenreSpec?.recommendedInkWidthsPx).toEqual([1.5, 2.6, 2.4]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(11);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.derived.fourByteAligned).toBe(true);
+
       const imported = decodeStudioNativeGlb(bytes, "glb");
       expect(imported.ok).toBe(true);
       if (!imported.ok) continue;

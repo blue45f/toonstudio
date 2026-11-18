@@ -1,7 +1,7 @@
 /**
- * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트) ·
+ * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * GLB · 레이어 PSD(만화 연출 말풍선·대사·효과음·효과선 4단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -22,7 +22,7 @@ import { installPsdBrowserCanvas } from "../../../export/psd-canvas.browser";
 import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../export/quad-reference-sheet";
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
-import { WEBTOON_STRIP_ACTING_ARCS, exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
+import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { planApply } from "../../../state/apply-plan";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
@@ -34,6 +34,7 @@ import {
 } from "../unsaved-work";
 
 import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
+import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
 import {
   FRAMING_LABELS_KO,
   applyImportedRecipeText,
@@ -44,12 +45,13 @@ import {
   describeExportSourceKo,
   readTextFile,
 } from "./export-panel-helpers";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 
 import type { ExportBusyKind } from "./export-panel/ExportStatusSection";
+import type { StripDirectorSession } from "./viewport-scene-director";
 import type { CameraFramingMode, EngineStatus, LabFailure } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
 import type { SaveBytesFn } from "../../../export/save-bytes";
-import type { WebtoonStripActingArcId, WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { CharacterWorkBackup } from "../unsaved-work";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -67,6 +69,7 @@ export interface ExportPanelDeps {
 
 export interface ExportPanelProps {
   readonly session?: PaintSession;
+  readonly stripDirector?: StripDirectorSession;
   readonly deps?: ExportPanelDeps;
 }
 
@@ -79,7 +82,11 @@ function useEngineStatus(): EngineStatus {
   );
 }
 
-export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: ExportPanelProps) {
+export function ExportPanel({
+  session = getDefaultPaintSession(),
+  stripDirector = getDefaultStripDirectorSession(),
+  deps = {},
+}: ExportPanelProps) {
   const save = deps.save ?? saveBytes;
   const now = deps.now ?? (() => Date.now());
   const readFile = deps.readFile ?? readTextFile;
@@ -112,6 +119,24 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   }, []);
 
   const applyPlan = useApplyPlan();
+  const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
+  const {
+    locale: stripLocale,
+    jaWritingMode,
+    manuscriptMood,
+    gutterPaces,
+    actingArc: stripActingArc,
+    bakeStripFx,
+    stripFxLines,
+    dialogueLines,
+    bubbleShapes,
+    bubbleFontScales,
+    sfxStamps,
+    speakerTargets,
+    cutCameraPresets,
+    partnerSide,
+    includePsdMangaFx,
+  } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -120,9 +145,6 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
   const [splitHairLayers, setSplitHairLayers] = useState(false);
   const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
-  const [stripActingArc, setStripActingArc] = useState<WebtoonStripActingArcId>("none");
-  const [bakeStripFx, setBakeStripFx] = useState(false);
-  const [stripFxLines, setStripFxLines] = useState<WebtoonStripFxLinesKind>("focus-radial");
   const [busy, setBusy] = useState<ExportBusyKind | null>(null);
   const [progressDetail, setProgressDetail] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
@@ -287,6 +309,9 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            gutterPaces,
+            manuscriptMood,
+            cutCameraPresets,
             ...(stripActingArc !== "none"
               ? {
                   actingArc: {
@@ -299,9 +324,18 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
               ? {
                   mangaFx: {
                     enabled: true,
+                    locale: stripLocale,
+                    jaWritingMode,
+                    manuscriptMood,
                     linesKind: stripFxLines,
                     includeSpeechBubbles: true,
                     intensity: 0.78,
+                    dialogueLines,
+                    bubbleShapes,
+                    bubbleFontScales,
+                    sfxStamps,
+                    speakerTargets,
+                    partnerSide,
                   },
                 }
               : {}),
@@ -340,6 +374,23 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
             includeReferencePasses,
             splitHairLayers,
             ...(useLuminanceToAlpha ? { lineArt: { useLuminanceToAlpha: true } } : {}),
+            ...(includePsdMangaFx
+              ? {
+                  mangaFx: {
+                    enabled: true,
+                    locale: stripLocale,
+                    jaWritingMode,
+                    linesKind: stripFxLines,
+                    bubbleShape: bubbleShapes[0],
+                    dialogueText: dialogueLines[0],
+                    fontScale: bubbleFontScales[0],
+                    speakerTarget: speakerTargets[0] === "auto" ? "protagonist" : speakerTargets[0],
+                    partnerSide,
+                    sfxStamp: sfxStamps[0],
+                    intensity: 0.78,
+                  },
+                }
+              : {}),
           },
           { now },
         ),
@@ -433,7 +484,6 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           const entry = indexResult.entries.find((item) => item.characterId === characterId);
           if (!entry) return undefined;
           if (entry.glbSha256 !== null && entry.glbSha256 !== expectedSha256) {
-            // 다른 SHA가 인덱스에 등록되어 있으면 해시 불일치 가드가 정확히 동작하도록 기존 엔트리를 반환한다.
             return { glbSha256: entry.glbSha256, capabilities: currentState.capabilities };
           }
           const loaded = await browserPackageLoader.loadPackage(entry, { preferredLod: 0 });
@@ -622,49 +672,7 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-acting-arc`}>4컷 연기 시퀀스</label>
-          <select
-            id={`${ids}-strip-acting-arc`}
-            data-testid="export-strip-acting-arc"
-            value={stripActingArc}
-            onChange={(event) => setStripActingArc(event.target.value as WebtoonStripActingArcId)}
-          >
-            <option value="none">고정 표정·시선 (단일 포즈 유지)</option>
-            {WEBTOON_STRIP_ACTING_ARCS.map((arc) => (
-              <option key={arc.id} value={arc.id}>
-                {arc.labelKo}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="cl-export-row">
-          <label htmlFor={`${ids}-strip-bake-fx`}>
-            <input
-              id={`${ids}-strip-bake-fx`}
-              data-testid="export-strip-bake-fx"
-              type="checkbox"
-              checked={bakeStripFx}
-              onChange={(event) => setBakeStripFx(event.target.checked)}
-            />{" "}
-            4컷 말풍선·효과선 베이킹
-          </label>
-          <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
-          <select
-            id={`${ids}-strip-fx-lines`}
-            data-testid="export-strip-fx-lines"
-            value={stripFxLines}
-            disabled={!bakeStripFx}
-            onChange={(event) => setStripFxLines(event.target.value as WebtoonStripFxLinesKind)}
-          >
-            <option value="focus-radial">집중선 (방사형)</option>
-            <option value="speed-diagonal">속도선 (대각선)</option>
-            <option value="romance-sparkle">로맨스 스파클</option>
-            <option value="none">말풍선만 (효과선 없음)</option>
-          </select>
-        </div>
-      </div>
+      <ExportStripDirectorSection idsPrefix={ids} state={directorState} session={stripDirector} />
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장
@@ -760,8 +768,18 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         <label htmlFor={`${ids}-lumalpha`}>
           <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
+        <label htmlFor={`${ids}-psdmangafx`}>
+          <input
+            id={`${ids}-psdmangafx`}
+            data-testid="export-psd-manga-fx"
+            type="checkbox"
+            checked={includePsdMangaFx}
+            onChange={(event) => stripDirector.update({ includePsdMangaFx: event.target.checked })}
+          />{" "}
+          만화 연출 분리 레이어 포함(말풍선·대사·효과음·효과선)
+        </label>
         {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
-        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리합니다. MSAA 공유 경계는 가시 샘플 과반 소유로 나누며 동률은 헤어에 귀속합니다. 추가 추출 주선은 기본 숨김이며, 켜면 원본 렌더 위에 선 효과가 더해집니다.</p>
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 효과선·말풍선 프레임·대사 식자·효과음 스탬프 4개 투명 레이어가 개별 저장됩니다.</p>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>

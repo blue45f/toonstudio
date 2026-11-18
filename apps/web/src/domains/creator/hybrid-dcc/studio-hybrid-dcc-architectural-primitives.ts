@@ -375,6 +375,38 @@ export const STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT: readonly StudioHybridDccP
     },
   ]);
 
+/** Blender 5.3 개폐율 연동 보케 파티클·피사계 심도(DoF f/1.8~f/5.6) 레이어 V22(3종, CC0-1.0) — 슬릿 집광 먼지·로판 금박 꽃잎·각성 마나 결정. */
+export const STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-bokeh-slit-dust-motes-f18-v22",
+      fileName: "webtoon-bokeh-slit-dust-motes-f18-v22.glb",
+      glbUrl: "/studio-assets/blender-atmospheric-bokeh-v22/webtoon-bokeh-slit-dust-motes-f18-v22.glb",
+      previewUrl: "/studio-assets/blender-atmospheric-bokeh-v22/thumbnails/webtoon-bokeh-slit-dust-motes-f18-v22.png",
+      label: ["15% 슬릿 스포트라이트 먼지 보케 (f/1.8)", "f/1.8 spotlight dust motes & bokeh bay"],
+      hint: ["f/1.8 대구경 보케(CoC 26.4px)·슬릿 집광 먼지", "f/1.8 shallow DoF bokeh & slit dust motes"],
+      triangles: 5888,
+    },
+    {
+      id: "webtoon-bokeh-rofan-petal-cascade-f28-v22",
+      fileName: "webtoon-bokeh-rofan-petal-cascade-f28-v22.glb",
+      glbUrl: "/studio-assets/blender-atmospheric-bokeh-v22/webtoon-bokeh-rofan-petal-cascade-f28-v22.glb",
+      previewUrl: "/studio-assets/blender-atmospheric-bokeh-v22/thumbnails/webtoon-bokeh-rofan-petal-cascade-f28-v22.png",
+      label: ["65% 로판 살롱 금박 꽃잎 보케 (f/2.8)", "f/2.8 Rofan gilded rose-petal bokeh bay"],
+      hint: ["f/2.8 중경 심도(CoC 17.0px)·금박 꽃잎 기류", "f/2.8 swirling rose-gold petals & prism"],
+      triangles: 5888,
+    },
+    {
+      id: "webtoon-bokeh-mana-ember-halo-f56-v22",
+      fileName: "webtoon-bokeh-mana-ember-halo-f56-v22.glb",
+      glbUrl: "/studio-assets/blender-atmospheric-bokeh-v22/webtoon-bokeh-mana-ember-halo-f56-v22.glb",
+      previewUrl: "/studio-assets/blender-atmospheric-bokeh-v22/thumbnails/webtoon-bokeh-mana-ember-halo-f56-v22.png",
+      label: ["100% 각성 시안 마나 결정 할로 (f/5.6)", "f/5.6 awakening mana ember halo bay"],
+      hint: ["f/5.6 팬포커스 할로(CoC 8.5px)·상승 마나 결정", "f/5.6 cyan mana crystal embers & halo"],
+      triangles: 5504,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }

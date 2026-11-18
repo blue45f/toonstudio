@@ -146,7 +146,15 @@ export interface JointDragHandle {
   readonly world: Vec3;
 }
 
-export const HAND_PROP_IDS = ["smartphone", "coffee-cup", "case-folder", "aether-blade"] as const;
+export const HAND_PROP_IDS = [
+  "smartphone",
+  "coffee-cup",
+  "case-folder",
+  "aether-blade",
+  "imperial-scroll",
+  "jade-folding-fan",
+  "calling-card-rose",
+] as const;
 export type HandPropId = (typeof HAND_PROP_IDS)[number];
 export type HandPropSide = "rightHand" | "leftHand";
 
@@ -157,7 +165,14 @@ export interface HandPropAttachment {
   readonly sha256?: string;
 }
 
-export const HEAD_PROP_IDS = ["wire-glasses", "rofan-tiara", "tactical-headset", "pearl-earrings-pin"] as const;
+export const HEAD_PROP_IDS = [
+  "wire-glasses",
+  "rofan-tiara",
+  "tactical-headset",
+  "pearl-earrings-pin",
+  "studio-headphones",
+  "silver-monocle",
+] as const;
 export type HeadPropId = (typeof HEAD_PROP_IDS)[number];
 
 export interface HeadPropAttachment {
@@ -166,13 +181,55 @@ export interface HeadPropAttachment {
   readonly sha256?: string;
 }
 
-export const STAGE_PROP_IDS = ["cafe-bistro-table", "academy-desk", "murim-sword-aura"] as const;
+export const STAGE_PROP_IDS = [
+  "cafe-bistro-table",
+  "academy-desk",
+  "murim-sword-aura",
+  "rofan-throne-dais",
+  "noir-interrogation-lamp",
+  "rooftop-safety-railing",
+  "velvet-display-pedestal",
+] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 
 export interface StagePropAttachment {
   readonly propId: StagePropId;
   readonly glbUrl: string;
   readonly sha256?: string;
+}
+
+export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat", "ssaa", "beonjjeok"] as const;
+export type SfxStampId = (typeof SFX_STAMP_IDS)[number];
+
+export interface SfxStampAttachment {
+  readonly stampId: SfxStampId;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
+export const DUO_PARTNER_STANCES = ["conversational", "arms-crossed", "attentive"] as const;
+export type DuoPartnerStance = (typeof DUO_PARTNER_STANCES)[number];
+
+export const DUO_PARTNER_EXPRESSIONS = ["neutral", "warm-smile", "cold-smirk", "shocked", "stern-glare"] as const;
+export type DuoPartnerExpressionPreset = (typeof DUO_PARTNER_EXPRESSIONS)[number];
+
+export interface DuoPartnerHandPropSpec {
+  readonly propId: HandPropId;
+  readonly hand?: HandPropSide;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
+export interface DuoPartnerAttachment {
+  readonly characterId: string;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+  readonly side: "left" | "right";
+  readonly distanceMeters: number;
+  readonly heightScale: number;
+  readonly stance?: DuoPartnerStance;
+  readonly expression?: DuoPartnerExpressionPreset;
+  readonly handProp?: DuoPartnerHandPropSpec | null;
 }
 
 export interface CharacterEngine {
@@ -212,8 +269,12 @@ export interface CharacterEngine {
   setHandProp?(attachment: HandPropAttachment | null): Promise<void>;
   /** 캐릭터 머리 본(head)에 안경·티아라·헤드셋·귀걸이 등 3D 머리 액세서리를 장착하거나 해제(null)한다. */
   setHeadProp?(attachment: HeadPropAttachment | null): Promise<void>;
-  /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
+  /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법·대관식 단상·취조실 조명 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
   setStageProp?(attachment: StagePropAttachment | null): Promise<void>;
+  /** 뷰포트 3D 공간에 상대역 3D 캐릭터 패키지 GLB(표정 MorphTarget·전용 손소품 포함)를 동시 배치하거나 해제(null)한다. */
+  setDuoPartner?(attachment: DuoPartnerAttachment | null): Promise<void>;
+  /** 뷰포트 3D 상단 공간에 한국형 웹툰 오노마토페(스릉·두근·쿠구궁·팟) 3D 입체 효과음 스탬프를 배치하거나 해제(null)한다. */
+  setSfxStamp?(attachment: SfxStampAttachment | null): Promise<void>;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;
