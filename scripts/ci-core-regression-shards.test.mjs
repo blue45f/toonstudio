@@ -132,6 +132,8 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.equal(new Set([...staticOnly, ...routed]).size, all.length);
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
   for (const suite of [
+    "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
+    "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
@@ -149,6 +151,8 @@ test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 �
   const module = "apps/api/src/modules/admin-nestjs-quality";
   const integration = `${module}/admin-nestjs-quality.integration.test.ts`;
   assert.ok(REQUIRED_VITEST_TARGETS.includes(module), "새 관리자 API 회귀도 모듈 단위로 필수 수집해야 합니다.");
+  assert.ok(REQUIRED_VITEST_TARGETS.includes("apps/admin-web/src/domains/operations/nestjs-quality"),
+    "새 보드 UI 회귀도 기능 디렉터리 단위로 필수 수집해야 합니다.");
   const execution = executionTargetsByShard();
   const staticByShard = Object.fromEntries(SHARD_NAMES.map((name) => {
     const selectors = expandGlobTargets(execution[name]);
@@ -161,8 +165,11 @@ test("NestJS 검증 보드는 정적 회귀와 보호된 PostgreSQL job에서 �
     `${module}/admin-nestjs-quality.http.test.ts`,
     "packages/contracts/src/admin-nestjs-quality.test.ts",
     "scripts/admin-nestjs-quality-database-contract.test.mjs",
+    "apps/admin-web/src/domains/operations/nestjs-quality/NestQualityBoard.test.tsx",
+    "apps/admin-web/src/domains/operations/nestjs-quality/nestjs-quality-api.test.ts",
   ]) {
-    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), [shardForTarget(target)],
+    assert.equal(shardForTarget(target), "product", target);
+    assert.deepEqual(SHARD_NAMES.filter((name) => staticByShard[name].includes(target)), ["product"],
       `관리자 보드의 권한·입력·DB 계약 회귀는 소유 shard에서 한 번 실행해야 합니다: ${target}`);
   }
   assert.ok(CORE_DATABASE_VITEST_TARGETS.includes(integration), "보드의 실제 DB 검증 소유권이 필요합니다.");
@@ -228,6 +235,32 @@ test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에
   for (const target of ["packages/studio-project-model/src/__tests__/review-pen-storage.test.ts",
     "packages/studio-project-model/src/__tests__/review-pen.test.ts"]) {
     assert.ok(foundation.includes(target), `정본 펜 첨삭 계약의 필수 실행 누락: ${target}`);
+  }
+});
+
+test("통합 관리자 보드의 API·공통 계약·화면 검증을 필수 product에서 실행한다", () => {
+  for (const module of ["apps/api/src/modules/admin-workspace", "packages/contracts/src/admin-workspace", "apps/admin-web/src/domains/workspace"]) {
+    assert.ok(REQUIRED_VITEST_TARGETS.includes(module), `새 기능 회귀를 자동 수집할 모듈 선택자 누락: ${module}`);
+  }
+  const selectors = expandGlobTargets(executionTargetsByShard().product);
+  const executed = resolveRequiredTargets(selectors);
+  const args = buildShardVitestArgs(selectors);
+  const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  for (const target of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.repository.test.ts",
+    "apps/api/src/modules/admin-workspace/admin-workspace.module.test.ts",
+    "packages/contracts/src/admin-workspace/admin-workspace.test.ts",
+    "apps/admin-web/src/domains/workspace/AdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/useAdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/WorkspaceBackup.test.tsx",
+    "apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx",
+    "apps/admin-web/src/platform/http/workspace-api.test.ts",
+    "scripts/admin-workspace-database-contract.test.mjs",
+    "scripts/admin-database-feature-contracts.test.mjs",
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.ok(executed.includes(target), `필수 관리자 보드 회귀 누락: ${target}`);
+    assert.ok(!databaseOnly.includes(target), `정적 관리자 회귀를 DB lane으로 넘길 수 없습니다: ${target}`);
   }
 });
 

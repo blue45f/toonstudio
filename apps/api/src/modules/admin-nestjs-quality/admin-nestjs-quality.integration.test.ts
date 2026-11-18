@@ -14,7 +14,7 @@ if (process.env.CI && !target) throw new Error("CI의 NestJS 검증 보드 통�
 const suite = describe.skipIf(!target);
 const schema = `nestjs_quality_${randomUUID().replaceAll("-", "")}`;
 const role = `quality_runtime_${randomUUID().replaceAll("-", "")}`;
-const migration = readFileSync(new URL("../../platform/database/migrations/0122_admin_nestjs_quality.sql", import.meta.url), "utf8")
+const migration = readFileSync(new URL("../../platform/database/migrations/0123_admin_nestjs_quality.sql", import.meta.url), "utf8")
   .replaceAll("public.", `"${schema}".`);
 
 function mutation(document = createNestBoardDocument(), expectedRevision = 0): NestBoardMutation {

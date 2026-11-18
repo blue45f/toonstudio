@@ -27,6 +27,7 @@ export const POSTGRES_INTEGRATION_SUITES = Object.freeze([
   "scripts/production-operations-runtime-acl.integration.test.mjs",
   "scripts/production-release-compatibility.integration.test.mjs",
   "apps/api/src/modules/operation-policy/operation-policy.integration.test.ts",
+  "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
   "apps/api/src/modules/production-collaboration/team-workspace.repository.integration.test.ts",
   "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
   "scripts/bootstrap-runtime-login-gate.integration.test.mjs",
@@ -405,6 +406,7 @@ export function createPostgresIntegrationEnvironment(
     NODE_ENV: "test",
     STUDIO_LIVE_POSTGRES_INTEGRATION_URL: databaseUrl,
     STUDIO_LIVE_POSTGRES_RUNTIME_ROLE: validatedRuntimeDatabaseRole,
+    ADMIN_WORKSPACE_TEST_RUNTIME_ROLE: validatedRuntimeDatabaseRole,
     STUDIO_TEAM_COMMENT_POSTGRES_INTEGRATION_URL: databaseUrl,
     TEST_DATABASE_URL: databaseUrl,
     [VITEST_VALIDATED_REMOTE_DATABASE_MARKER]: validatedRemoteDatabase

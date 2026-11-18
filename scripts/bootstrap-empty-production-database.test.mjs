@@ -503,11 +503,14 @@ describe("bootstrap SQL and repository contract", () => {
       "0119_studio_review_voice_note_guard_schema",
       "0120_studio_role_pipeline_policy",
       "0121_studio_bg3d_six_pass_bundle",
-      "0122_admin_nestjs_quality",
+      "0122_admin_workspace",
+      "0123_admin_nestjs_quality",
     ]);
     expect(contract.fingerprint).toMatch(/^[0-9a-f]{64}$/u);
     expect(contract.fingerprintPaths).toEqual(expect.arrayContaining([
       "scripts/bootstrap-forward-migration-boundary.mjs",
+      "scripts/admin-workspace-database-contract.mjs",
+      "apps/api/src/platform/database/schema/admin-workspace.schema.ts",
       "scripts/admin-nestjs-quality-database-contract.mjs",
       "apps/api/src/platform/database/schema/admin.schema.ts",
       "scripts/production-database-connection.mjs",

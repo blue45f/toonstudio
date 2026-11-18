@@ -446,6 +446,11 @@
       "types": "./src/admin-nestjs-quality-seed.ts",
       "import": "./src/admin-nestjs-quality-seed.ts",
       "default": "./src/admin-nestjs-quality-seed.ts"
+    },
+    "./admin-workspace": {
+      "types": "./src/admin-workspace/index.ts",
+      "import": "./src/admin-workspace/index.ts",
+      "default": "./src/admin-workspace/index.ts"
     }
   },
   "dependencies": {

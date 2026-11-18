@@ -28,6 +28,7 @@ import {
 } from "./validate-production-database-url.mjs";
 import { verifyProductionDatabaseCapabilities } from "./verify-production-database-capabilities.mjs";
 import { buildForwardMigrationBoundarySql } from "./bootstrap-forward-migration-boundary.mjs";
+import { BOOTSTRAP_CONTRACT_PATHS } from "./bootstrap-database-contract-paths.mjs";
 
 export { buildForwardMigrationBoundarySql };
 
@@ -57,44 +58,6 @@ const REQUIRED_PENDING_MIGRATION_IDS = Object.freeze([
   "0034_creator_marketplace_package_moderation",
   "0035_creator_marketplace_3d_asset_kind",
   "0037_creator_marketplace_3d_asset_parity",
-]);
-const DRIZZLE_SCHEMA_PATHS = Object.freeze([
-  "apps/api/drizzle.config.ts",
-  "apps/api/src/platform/database/schema/index.ts",
-  "apps/api/src/platform/database/schema/admin.schema.ts",
-  "apps/api/src/platform/database/creator-marketplace-resource.schema.ts",
-  "apps/api/src/platform/database/creator-marketplace-report.schema.ts",
-  "apps/api/src/platform/database/creator-marketplace-library.schema.ts",
-  "apps/api/src/platform/database/creator-marketplace-package-moderation.schema.ts",
-  "apps/api/src/platform/database/creator-asset-object-storage.schema.ts",
-  "apps/api/src/platform/database/creator-asset-platform.schema.ts",
-  "apps/api/src/platform/database/creator-asset-processing.schema.ts",
-  "apps/api/src/platform/database/creator-asset-rights-evidence.schema.ts",
-  "apps/api/src/platform/database/studio-crdt-raster-checkpoint.schema.ts",
-  "apps/api/src/platform/database/studio-raster-asset.schema.ts",
-  "apps/api/src/platform/database/schema/production.schema.ts",
-  "apps/api/src/platform/database/schema/team-workspace.schema.ts",
-  "apps/api/src/platform/database/schema/operation-policy.schema.ts",
-  "apps/api/src/platform/database/schema/pinned-review-share.schema.ts",
-  "apps/api/src/platform/database/schema/review-delivery.schema.ts",
-]);
-const BOOTSTRAP_CONTRACT_PATHS = Object.freeze([
-  "package.json",
-  "pnpm-lock.yaml",
-  "scripts/bootstrap-empty-production-database.mjs",
-  "scripts/bootstrap-forward-migration-boundary.mjs",
-  "scripts/production-database-migrations.manifest",
-  "scripts/production-operations-database-contract.mjs",
-  "scripts/run-production-database-migrations.mjs", "scripts/studio-bg3d-bundle-runtime-acl.mjs", "scripts/production-database-connection.mjs",
-  "scripts/validate-production-database-url.mjs",
-  "scripts/verify-production-database-capabilities.mjs",
-  "scripts/customer-support-database-contract.mjs",
-  "apps/api/src/modules/health/health-customer-support-acl.ts",
-  "scripts/admin-database-contract.mjs", "scripts/admin-nestjs-quality-database-contract.mjs",
-  "scripts/creator-hiring-database-contract.mjs",
-  "scripts/creator-hiring-automation-database-contract.mjs",
-  "scripts/creator-career-confirmation-database-contract.mjs",
-  ...DRIZZLE_SCHEMA_PATHS,
 ]);
 const DRIZZLE_CONFIG_PATH = "apps/api/drizzle.config.ts";
 const DRIZZLE_KIT_BINARY_PATH = "node_modules/drizzle-kit/bin.cjs";
