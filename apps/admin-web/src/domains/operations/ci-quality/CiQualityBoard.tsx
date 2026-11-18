@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Activity, lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import { appendQualityHistory, exportQualityBoardJson, statusLabels, summarizeQualityBoard, validateQualityBoard } from "./ci-quality-model";
 import { loadQualityBoard, saveQualityBoard } from "./ci-quality-storage";
@@ -15,7 +15,9 @@ import "./ci-quality.css";
 
 type QualityModal = { kind: "check"; id: string; tab?: "evidence" | "failure" | "json" } | { kind: "picker" | "json" | "settings" | "gate" } | { kind: "qa"; id?: string } | null;
 
-const pages: readonly [QualityPage, string][] = [["checks", "검증 보드"], ["failures", "실패 분석"], ["evidence", "근거 기록"], ["qa", "외부 QA 카탈로그"], ["approvals", "승인 대기"]];
+type WorkspacePage = QualityPage | "dependency-review";
+const DependencyReviewPanel = lazy(() => import("./dependency-review/DependencyReviewPanel").then(module => ({ default: module.DependencyReviewPanel })));
+const pages: readonly [WorkspacePage, string][] = [["checks", "검증 보드"], ["failures", "실패 분석"], ["evidence", "근거 기록"], ["qa", "외부 QA 카탈로그"], ["approvals", "승인 대기"], ["dependency-review", "의존성·회귀"]];
 
 export function CiQualityBoard({ userIdentity }: { userIdentity: string }) {
   if (!userIdentity.trim()) return <p role="alert">관리자 인증을 확인한 뒤 CI·QA 보드를 열 수 있습니다.</p>;
@@ -30,7 +32,9 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
   const [unsaved, setUnsaved] = useState(false);
   const [storageConflict, setStorageConflict] = useState(false);
   const [confirmReload, setConfirmReload] = useState(false);
-  const [page, setPage] = useState<QualityPage>("checks");
+  const [page, setPage] = useState<WorkspacePage>("checks");
+  const [dependencyVisited, setDependencyVisited] = useState(false);
+  const [dependencyDirty, setDependencyDirty] = useState(false);
   const [modal, setModal] = useState<QualityModal>(null);
   const [notice, setNotice] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -39,6 +43,13 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!dependencyDirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dependencyDirty]);
 
   function persist(next: QualityBoard): boolean {
     const result = saveQualityBoard(userIdentity, next, source.current);
@@ -106,12 +117,13 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
   return <section className="ci-quality" aria-labelledby="ci-quality-title">
     <header className="ci-quality-header">
       <div><p className="ci-quality-eyebrow">ToonStudio / 검증 운영</p><h1 id="ci-quality-title">CI·QA 검증</h1><p>무료 범위의 수동 기록 · 자동 CI 연결 없음 · 외부 작업 실행 없음</p></div>
-      <div className="ci-quality-actions"><button type="button" onClick={() => setModal({ kind: "json" })}>JSON 관리</button><button type="button" disabled={!board} onClick={() => setModal({ kind: "settings" })}>기준 커밋·최신성</button><button type="button" disabled={!board} className="ci-quality-primary" onClick={() => setModal({ kind: "picker" })}>결과 기록</button></div>
+      {page !== "dependency-review" && <div className="ci-quality-actions"><button type="button" onClick={() => setModal({ kind: "json" })}>JSON 관리</button><button type="button" disabled={!board} onClick={() => setModal({ kind: "settings" })}>기준 커밋·최신성</button><button type="button" disabled={!board} className="ci-quality-primary" onClick={() => setModal({ kind: "picker" })}>결과 기록</button></div>}
     </header>
-    {storageError && <div role="alert" className="ci-quality-error"><strong>브라우저 저장을 확인하세요.</strong><p>{storageError}</p><p>기록을 자동 초기화하지 않습니다. JSON으로 복구하거나 백업할 수 있습니다.</p><div className="ci-quality-actions">{board && unsaved && <button type="button" disabled={storageConflict} onClick={() => persist(board)}>저장 다시 시도</button>}<button type="button" onClick={() => { if (unsaved) setConfirmReload(true); else reloadStoredBoard(); }}>저장된 기록 다시 읽기</button><button type="button" onClick={() => setModal({ kind: "json" })}>복구 JSON 관리</button></div>{confirmReload && <div><p>현재 화면의 미저장 변경을 버립니다. 먼저 JSON으로 백업하세요.</p><div className="ci-quality-actions"><button type="button" onClick={reloadStoredBoard}>미저장 변경을 버리고 최신 저장본 읽기</button><button type="button" onClick={() => setConfirmReload(false)}>다시 읽기 취소</button></div></div>}</div>}
-    {notice && <p role="status" className="ci-quality-notice">{notice}</p>}
-    {board && summary ? <>
-      <nav className="ci-quality-nav" aria-label="CI·QA 보드 화면">{pages.map(([key, label]) => <button type="button" key={key} aria-pressed={page === key} onClick={() => setPage(key)}>{label}{key === "failures" ? ` ${summary.byStatus.failed}` : key === "approvals" ? " 3" : ""}</button>)}</nav>
+    <nav className="ci-quality-nav" aria-label="CI·QA 보드 화면">{pages.map(([key, label]) => <button type="button" key={key} aria-pressed={page === key} onClick={() => { if (key === "dependency-review") setDependencyVisited(true); setPage(key); }}>{label}{key === "failures" ? ` ${summary?.byStatus.failed ?? 0}` : key === "approvals" ? " 3" : ""}</button>)}</nav>
+    {dependencyVisited && <Activity mode={page === "dependency-review" ? "visible" : "hidden"}><Suspense fallback={<p role="status">의존성 검토 화면을 불러오고 있습니다.</p>}><DependencyReviewPanel userIdentity={userIdentity} onUnsavedChange={setDependencyDirty} /></Suspense></Activity>}
+    {page !== "dependency-review" && storageError && <div role="alert" className="ci-quality-error"><strong>브라우저 저장을 확인하세요.</strong><p>{storageError}</p><p>기록을 자동 초기화하지 않습니다. JSON으로 복구하거나 백업할 수 있습니다.</p><div className="ci-quality-actions">{board && unsaved && <button type="button" disabled={storageConflict} onClick={() => persist(board)}>저장 다시 시도</button>}<button type="button" onClick={() => { if (unsaved) setConfirmReload(true); else reloadStoredBoard(); }}>저장된 기록 다시 읽기</button><button type="button" onClick={() => setModal({ kind: "json" })}>복구 JSON 관리</button></div>{confirmReload && <div><p>현재 화면의 미저장 변경을 버립니다. 먼저 JSON으로 백업하세요.</p><div className="ci-quality-actions"><button type="button" onClick={reloadStoredBoard}>미저장 변경을 버리고 최신 저장본 읽기</button><button type="button" onClick={() => setConfirmReload(false)}>다시 읽기 취소</button></div></div>}</div>}
+    {page !== "dependency-review" && notice && <p role="status" className="ci-quality-notice">{notice}</p>}
+    {page !== "dependency-review" && (board && summary ? <>
       {page === "checks" && <CiQualityChecklist board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onAddGate={() => setModal({ kind: "gate" })} />}
       {page === "failures" && <CiQualityFailures board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id, tab: "failure" })} />}
       {page === "evidence" && <CiQualityEvidence board={board} now={now} onEdit={(check) => setModal({ kind: "check", id: check.id })} onJson={() => setModal({ kind: "json" })} />}
@@ -131,8 +143,8 @@ function CiQualityWorkspace({ userIdentity }: { userIdentity: string }) {
       </div>
       <div className="ci-quality-freshness-summary"><span><strong>검증 최신성</strong> · 유효 {summary.fresh}/{summary.tracked} · TTL {board.ttlHours}h</span><span>{summary.stale || summary.invalid ? `갱신 필요 · ${summary.stale + summary.invalid}개 근거를 다시 확인하세요.` : "SHA 불일치·TTL 초과·미래 시각은 유효 근거로 집계하지 않습니다."}</span></div>
       </details>
-    </> : <div className="ci-quality-card ci-quality-empty"><h2>기록을 복구한 뒤 보드를 사용할 수 있습니다.</h2><p>저장된 데이터의 읽기·검증 실패를 확인하세요. JSON 관리에서 올바른 백업을 검토 후 가져올 수 있습니다.</p></div>}
-    <footer className="ci-quality-footer"><span>현재 관리자의 브라우저 저장 · 서버·다른 기기와 자동 공유하지 않습니다.</span><span>{unsaved ? "저장되지 않은 기록 있음 · JSON 백업 필요" : "JSON 내보내기로 백업·이동 가능"}</span></footer>
+    </> : <div className="ci-quality-card ci-quality-empty"><h2>기록을 복구한 뒤 보드를 사용할 수 있습니다.</h2><p>저장된 데이터의 읽기·검증 실패를 확인하세요. JSON 관리에서 올바른 백업을 검토 후 가져올 수 있습니다.</p></div>)}
+    {page !== "dependency-review" && <footer className="ci-quality-footer"><span>현재 관리자의 브라우저 저장 · 서버·다른 기기와 자동 공유하지 않습니다.</span><span>{unsaved ? "저장되지 않은 기록 있음 · JSON 백업 필요" : "JSON 내보내기로 백업·이동 가능"}</span></footer>}
     {modal?.kind === "picker" && board && <QualityDialog title="검증 결과 기록" description="실제 결과를 기록할 검사를 선택하세요." onClose={() => setModal(null)}><div className="ci-quality-dialog-body ci-quality-picker">{board.checks.map((check) => <button type="button" key={check.id} onClick={() => setModal({ kind: "check", id: check.id })}>{check.name}<small>{statusLabels[check.status]}</small></button>)}</div></QualityDialog>}
     {modal?.kind === "check" && board && editingCheck && <CiQualityCheckEditor check={editingCheck} board={board} initialTab={modal.tab} onSave={saveCheck} onClose={() => setModal(null)} />}
     {modal?.kind === "json" && <CiQualityJsonDialog board={board} onClose={() => setModal(null)} onImport={(next) => { const { error } = commit(next, "JSON 가져오기 · 보드 전체 기록 대체"); if (!error) setModal(null); return error; }} />}

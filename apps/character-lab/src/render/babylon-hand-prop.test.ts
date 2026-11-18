@@ -5,7 +5,7 @@
  * - PBR ↔ 툰 셰이딩 전환, 캐릭터 재로드 시 3종 자동 재장착, 통합 단일 GLB 직렬화 보존, 해제 시 누수 없는 정리 확인
  */
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -19,8 +19,7 @@ import { createProceduralFixture } from "./testing/procedural-fixture";
 import type { HandPropId, HeadPropId, StagePropId } from "../contracts";
 import type { NullEngineHarness } from "./testing/null-engine-harness";
 
-const TEST_DIR = typeof import.meta.dirname === "string" ? import.meta.dirname : dirname(fileURLToPath(import.meta.url));
-const PUBLIC_DIR = resolve(TEST_DIR, "../../public");
+const PUBLIC_DIR = fileURLToPath(new URL("../../public", import.meta.url));
 const HAND_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-hand-props-v1");
 const HEAD_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-head-props-v1");
 const STAGE_PROPS_DIR = resolve(PUBLIC_DIR, "assets/props/webtoon-stage-props-v1");
