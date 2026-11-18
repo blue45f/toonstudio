@@ -793,7 +793,18 @@ jobs:
             fi
           fi
       - name: 접근성 체크아웃 입력 계약 검증
-        run: node --test scripts/ci-checkout-inputs.test.mjs scripts/ci-pigment-diagnostics.node-check.mjs
+        run: node --test scripts/ci-checkout-inputs.test.mjs scripts/ci-pigment-diagnostics.node-check.mjs scripts/ci-ubuntu-apt-mirrors.test.mjs
+      - name: AWS Ubuntu 패키지 다운로드에 공식 HTTPS 미러 우선 사용
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo env \
+            GITHUB_ACTIONS="${GITHUB_ACTIONS:?}" \
+            RUNNER_ENVIRONMENT="${RUNNER_ENVIRONMENT:?}" \
+            RUNNER_OS="${RUNNER_OS:?}" \
+            RUNNER_ARCH="${RUNNER_ARCH:?}" \
+            ImageOS="${ImageOS:?}" \
+            "$(command -v node)" scripts/ci-ubuntu-apt-mirrors.mjs
       - name: Install Chromium
         id: chromium
         run: pnpm exec playwright install --with-deps chromium

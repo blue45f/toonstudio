@@ -234,6 +234,49 @@ test("검증된 원장에서 실제 빠진 후속 항목만 pending이며 다른
   assert.equal(report.migrations.integrity, "blocked");
 });
 
+test("정상 adoption 뒤 먼저 기록한 0023 bootstrap은 후속 적용 대기 순서를 깨지 않는다", async () => {
+  for (const lastApplied of [19, 20, 21, 22]) {
+    const f = fixture();
+    f.data.entries = f.data.entries.filter(({ id }) => Number(id.slice(0, 4)) <= lastApplied
+      || id === "0023_production_migration_ledger" || id === "__managed_history_through_0019__");
+    f.data.ledgerCount.total = String(f.data.entries.length);
+    const report = await runOnpodAdminDbAudit(options, f.runtime);
+    assert.equal(report.status, "ok");
+    assert.equal(report.migrations.orderValid, true, `applied through ${lastApplied}`);
+    assert.equal(report.migrations.integrity, "verified");
+    assert.equal(report.migrations.comparisons[22].status, "applied");
+    assert.deepEqual(report.migrations.comparisons.filter(({ status }) => status === "pending").map(({ id }) => id),
+      migrations.filter(({ id }) => Number(id.slice(0, 4)) > lastApplied && id !== "0023_production_migration_ledger").map(({ id }) => id));
+  }
+});
+
+test("bootstrap 원장 행의 누락·불완전·drift는 일반 pending으로 승인하지 않는다", async () => {
+  for (const change of [null, { checksum: hash("wrong bootstrap") }, { state: "failed" },
+    { provenance: "executed" }, { releaseSha: null }, { appliedAt: null }]) {
+    const f = fixture();
+    f.data.entries = f.data.entries.filter(({ id }) => Number(id.slice(0, 4)) <= 19
+      || id === "0023_production_migration_ledger" || id === "__managed_history_through_0019__");
+    if (change === null) f.data.entries = f.data.entries.filter(({ id }) => id !== "0023_production_migration_ledger");
+    else Object.assign(f.data.entries.find(({ id }) => id === "0023_production_migration_ledger"), change);
+    f.data.ledgerCount.total = String(f.data.entries.length);
+    const report = await runOnpodAdminDbAudit(options, f.runtime);
+    assert.equal(report.migrations.integrity, "blocked");
+    assert.ok(!["pending", "applied"].includes(report.migrations.comparisons[22].status));
+  }
+});
+
+test("검증된 bootstrap 뒤의 실제 후속 SQL은 앞선 중간 누락을 감추지 않는다", async () => {
+  const f = fixture();
+  f.data.entries = f.data.entries.filter(({ id }) => ![20, 21, 22].includes(Number(id.slice(0, 4))));
+  f.data.ledgerCount.total = String(f.data.entries.length);
+  const report = await runOnpodAdminDbAudit(options, f.runtime);
+  assert.equal(report.migrations.comparisons[19].status, "pending");
+  assert.equal(report.migrations.comparisons[22].status, "applied");
+  assert.equal(report.migrations.comparisons[23].status, "applied");
+  assert.equal(report.migrations.orderValid, false);
+  assert.equal(report.migrations.integrity, "blocked");
+});
+
 test("후속 SQL이 이미 적용된 원장의 중간 누락은 정상 순서로 승인하지 않는다", async () => {
   const f = fixture();
   f.data.entries = f.data.entries.filter(({ id }) => id !== migrations[19].id);

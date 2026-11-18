@@ -242,10 +242,24 @@ test("workflow는 main 수동 실행·무료 표준 runner·단계별 secret 주
   assert.match(source, /timeout-minutes: 10\n/u);
   assert.match(source, /environment: production-deploy\n/u);
   assert.match(source, /persist-credentials: false/u);
+  assert.match(source, /fetch-depth: 1\n/u);
+  assert.match(source, /filter: blob:none\n/u);
+  assert.match(source, /sparse-checkout-cone-mode: false\n/u);
+  const checkoutPaths = source.split("          sparse-checkout: |\n")[1].split("\n\n")[0]
+    .trim().split("\n").map((line) => line.trim());
+  assert.deepEqual(checkoutPaths, [
+    "/.github/workflows/onpod-admin-readonly-audit.yml",
+    "/scripts/run-onpod-admin-readonly-audit.mjs",
+    "/scripts/run-onpod-admin-readonly-audit.test.mjs",
+    "/scripts/onpod-admin-db-audit-payload.mjs",
+    "/scripts/onpod-admin-db-audit-payload.test.mjs",
+    "/scripts/production-database-migrations.manifest",
+    "/apps/api/src/platform/database/migrations/",
+  ]);
   assert.match(source, /package-manager-cache: false/u);
   assert.match(source, /node --test scripts\/onpod-admin-db-audit-payload\.test\.mjs scripts\/run-onpod-admin-readonly-audit\.test\.mjs/u);
   assert.match(source, /onpod@0\.7\.159/u);
-  assert.match(source, /git fetch --no-tags origin main/u);
+  assert.match(source, /git fetch --no-tags --depth=1 --filter=blob:none origin main/u);
   assert.match(source, /git rev-parse FETCH_HEAD/u);
   const steps = source.split(/^ {6}- /mu);
   const secretSteps = steps.filter((step) => /\$\{\{ secrets\./u.test(step));

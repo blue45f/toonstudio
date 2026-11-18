@@ -24,6 +24,8 @@ DB 원장이 `applied`로 입증한 항목은 재적용 목록에서 뺀다. 비
 
 정본은 [production migration manifest](../../scripts/production-database-migrations.manifest)다. 전체 목록은 0001부터 연속이어야 하며, 0122 앞의 실제 미적용 항목을 건너뛰지 않는다. 진단은 0122~0128만 조회해서 앞부분이 완료됐다고 가정하지 않고, checkout에 있는 전체 SQL 파일의 SHA-256을 계산한다.
 
+원장 자체인 `0023_production_migration_ledger`는 정식 실행기가 0020 이후 순회 전에 생성·기록한다. 따라서 checksum·state·`bootstrap` provenance·release SHA·적용 시각이 정상인 0023만 일반 적용 순서 비교에서 제외한다. 0023 행이 없으면 `pending`으로 추정하지 않고 `unknown`으로 차단하며, 다른 항목의 실제 중간 누락은 계속 순서 오류다.
+
 | 순서 | 변경과 의존성 | 기존 자료·권한 조건 |
 | --- | --- | --- |
 | 0122 | 통합 작업실의 본문·감사·영수증 3개 표. 기존 사용자 표를 참조 | singleton 초기 행은 충돌 시 보존. RLS·브라우저 역할 권한 회수 조건을 확인 |

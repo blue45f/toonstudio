@@ -81,6 +81,7 @@ function auditConfiguration({ expectedMigrations, expectedRelations } = {}) {
 // 이 함수는 문자열로 직렬화하므로 외부 바인딩·사용자 SQL·외부 파일을 참조하지 않는다.
 async function collectAudit(config, runtime) {
   const markerId = "__managed_history_through_0019__";
+  const ledgerId = "0023_production_migration_ledger";
   const expectedHost = "toonstudio-db.db.onpod.local";
   const hashPattern = /^[a-f0-9]{64}$/u;
   const shaPattern = /^[a-f0-9]{40}$/u;
@@ -178,15 +179,17 @@ async function collectAudit(config, runtime) {
     const complete = !malformed && total !== null && unknown === 0 && total === entries.size && !report.migrations.truncated;
     report.migrations.comparisons = config.expectedMigrations.map(({ id, checksum }) => {
       const row = entries.get(id); let status;
-      const provenance = Number(id.slice(0, 4)) <= 19 ? "adopted" : id === "0023_production_migration_ledger" ? "bootstrap" : "executed";
-      if (!row) status = complete && markerValid && Number(id.slice(0, 4)) > 19 ? "pending" : "unknown";
+      const provenance = Number(id.slice(0, 4)) <= 19 ? "adopted" : id === ledgerId ? "bootstrap" : "executed";
+      if (!row) status = complete && markerValid && Number(id.slice(0, 4)) > 19 && id !== ledgerId ? "pending" : "unknown";
       else if (row.checksum === null) status = "incomplete";
       else if (row.checksum !== checksum) status = "checksum-drift";
       else status = row.state === "applied" && row.provenance === provenance && row.releaseSha !== null && row.appliedAt !== null ? "applied" : "incomplete";
       return { id, status };
     });
     let sawUnapplied = false;
-    report.migrations.orderValid = complete && markerValid ? report.migrations.comparisons.every(({ status }) => {
+    report.migrations.orderValid = complete && markerValid ? report.migrations.comparisons.every(({ id, status }) => {
+      // 정식 실행기는 0020 이후 순회 전에 검증된 0023 원장 자체를 기록한다.
+      if (id === ledgerId && status === "applied") return true;
       if (status !== "applied") { sawUnapplied = true; return true; }
       return !sawUnapplied;
     }) : null;
