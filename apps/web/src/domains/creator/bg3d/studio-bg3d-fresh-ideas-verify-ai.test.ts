@@ -27,6 +27,8 @@ import {
   generateBlenderWebtoonFreshIdeasRemix,
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
+import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
+import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
 import {
   evaluateDarkroomProofingState,
@@ -144,6 +146,35 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     const darkroomOn = evaluateDarkroomProofingState(true, 3200, 2.45);
     expect(darkroomOn.uiChromaticBiasDeltaE).toBe(0);
     expect(darkroomOn.contrastProofPassed).toBe(true);
+
+    const v20Modern = evaluateArticulatedPropAndIkSocketBridge({
+      propId: "modern-sliding-terrace",
+      openRatioPct: 50,
+      ikSnapEnabled: true,
+      follow3dSpeedlinesEnabled: true,
+    });
+    expect(v20Modern.activeTravelMeters).toBe(0.44);
+    expect(v20Modern.contactCalibrationMinutes).toBe(0);
+    expect(v20Modern.contactMinutesSavedPerCut).toBe(14.5);
+    expect(v20Modern.speedlineDriftPx).toBe(0);
+    expect(v20Modern.ikSockets).toHaveLength(4);
+
+    const beat15 = evaluateSlitGodRayAndShadowDrift({
+      openRatioPct: 15,
+      weeklyTotalCuts: 70,
+      baseWeeklyHoursSaved: 19.9,
+      interactionCutRatioPct: 35,
+    });
+    const beat100 = evaluateSlitGodRayAndShadowDrift({
+      openRatioPct: 100,
+      weeklyTotalCuts: 70,
+      baseWeeklyHoursSaved: 19.9,
+      interactionCutRatioPct: 35,
+    });
+    expect(beat15.slitApertureWidthM).toBe(0.39);
+    expect(beat100.slitApertureWidthM).toBe(1.68);
+    expect(beat15.floorShadowLengthM).toBeGreaterThan(beat100.floorShadowLengthM);
+    expect(beat15.combinedWeeklyHoursSaved).toBe(25.9);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;
