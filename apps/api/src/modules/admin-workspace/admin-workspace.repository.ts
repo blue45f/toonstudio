@@ -195,8 +195,9 @@ export class AdminWorkspaceRepository {
       await this.ready(client);
       const record = await this.load(client, true, now);
       const access = await this.access(client, record, userId, role);
+      // 빈 보관함도 명시적으로 만들 수 있지만, 기존 비공개 원문에는 소유자를 자동 지정하지 않는다.
       const canClaim = scope === "business" && input.claimBusinessOwnership === true && role === "admin"
-        && record.businessOwner === null && !hasPrivateWorkspaceData(record.state) && hasPrivateWorkspaceData(input.state);
+        && record.businessOwner === null && !hasPrivateWorkspaceData(record.state);
       if ((!access[scope].canWrite && !canClaim)
         || (input.claimBusinessOwnership === true && record.businessOwner !== userId && !canClaim)) throw new ForbiddenException("이 범위를 저장할 권한이 없습니다. 비공개 자료는 소유자 또는 명시적으로 허용된 담당자만 변경할 수 있습니다.");
       const current = record.scopes[scope];

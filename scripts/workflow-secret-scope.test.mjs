@@ -18,6 +18,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
  */
 const SCOPED_SECRET_WORKFLOWS = [
   ".github/workflows/cloud-production-deploy.yml",
+  ".github/workflows/onpod-admin-readonly-audit.yml",
   ".github/workflows/studio-hyper3d-live-acceptance-v2.yml",
   ".github/workflows/studio-soak-10h.yml",
 ];

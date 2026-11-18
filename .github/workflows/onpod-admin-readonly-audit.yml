@@ -1,0 +1,72 @@
+name: Onpod admin read-only audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: "진단 기준: 현재 origin/main 소문자 40자리 SHA (운영 변경 없음)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onpod-admin-readonly-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production-deploy
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.16.0
+          package-manager-cache: false
+
+      - name: Verify exact current main SHA without production secrets
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != "workflow_dispatch" || "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::운영 읽기 전용 진단은 main의 수동 실행만 허용합니다."
+            exit 1
+          fi
+          if [[ ! "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::release_sha는 소문자 40자리 SHA여야 합니다."
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          if [[ "$RELEASE_SHA" != "$GITHUB_SHA" || "$RELEASE_SHA" != "$(git rev-parse HEAD)" || "$RELEASE_SHA" != "$(git rev-parse FETCH_HEAD)" ]]; then
+            echo "::error::진단 SHA가 실행 checkout 또는 현재 origin/main과 다릅니다. 최신 main SHA로 새 실행을 시작하세요."
+            exit 1
+          fi
+
+      - name: Test read-only audit contracts without production secrets
+        run: node --test scripts/onpod-admin-db-audit-payload.test.mjs scripts/run-onpod-admin-readonly-audit.test.mjs
+
+      - name: Install pinned official onpod CLI without production secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global --prefix "$RUNNER_TEMP/onpod-readonly-cli" --no-audit --no-fund onpod@0.7.159
+          echo "$RUNNER_TEMP/onpod-readonly-cli/bin" >> "$GITHUB_PATH"
+
+      - name: Read fixed app, migration ledger, and optional Worker metadata
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          ONPOD_DEPLOY_TOKEN: ${{ secrets.ONPOD_DEPLOY_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/run-onpod-admin-readonly-audit.mjs
