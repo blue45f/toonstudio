@@ -24,6 +24,7 @@ import {
   buildPrintPdfFromPages,
   countPrintPdfOutputPages,
   rgbaToCmykBytes,
+  rgbaToMonochromePrintPdfPage,
 } from "./studio-pdf-print-export";
 import { computeBookCoverGeometry, drawBookCover, loadBookCoverFonts } from "./studio-book-cover";
 import { buildBookPrintPdf } from "./studio-book-pdf-export";
@@ -392,6 +393,21 @@ export async function renderPagesToPdf(options: PdfPagesRenderOptions): Promise<
           width,
           height,
         });
+      } else if (
+        options.print?.colorMode === "monochrome-1bit" ||
+        options.print?.colorMode === "grayscale"
+      ) {
+        const pixels = ctx.getImageData(0, 0, width, height);
+        printPages.push(
+          rgbaToMonochromePrintPdfPage(pixels.data, width, height, {
+            mode: options.print.colorMode === "grayscale" ? "grayscale" : "monochrome-1bit",
+            lpi: options.print.halftoneLpi ?? 60,
+            dpi: options.print.halftoneDpi ?? 600,
+            angleDeg: options.print.halftoneAngleDeg ?? 45,
+            spotShape: options.print.halftoneSpotShape ?? "dot",
+            solidInkThreshold: options.print.solidInkThreshold ?? 45,
+          }),
+        );
       } else if (options.book) {
         bookPages.push({
           jpegBytes: await toJpeg(flat, quality),

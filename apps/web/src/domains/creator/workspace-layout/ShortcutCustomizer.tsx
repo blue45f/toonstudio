@@ -20,12 +20,17 @@ import {
   DEFAULT_SHORTCUT_BINDINGS,
   findDuplicateShortcutKeys,
   normalizeShortcutKeys,
-  type ShortcutCommandBinding,
 } from "./shortcut-bindings";
+import { StudioModifierKeySettingsSection } from "./StudioModifierKeySettingsSection";
+
+import type { ShortcutCommandBinding } from "./shortcut-bindings";
+import type { StudioModifierKeyConfig } from "./studio-modifier-key-map";
 
 export interface ShortcutCustomizerProps {
   initialBindings?: ReadonlyArray<ShortcutCommandBinding>;
   onBindingsChange?: (bindings: ShortcutCommandBinding[]) => void;
+  initialModifierConfig?: StudioModifierKeyConfig;
+  onModifierConfigChange?: (config: StudioModifierKeyConfig) => void;
 }
 
 /** 한국어 라벨 상수 (i18n 파일 직접 수정 금지 정책에 따라 컴포넌트 내 상수). */
@@ -47,6 +52,8 @@ const LABELS = {
 export function ShortcutCustomizer({
   initialBindings = DEFAULT_SHORTCUT_BINDINGS,
   onBindingsChange,
+  initialModifierConfig,
+  onModifierConfigChange,
 }: ShortcutCustomizerProps) {
   const [bindings, setBindings] = useState<ShortcutCommandBinding[]>(() =>
     initialBindings.map((binding) => ({ ...binding })),
@@ -82,7 +89,7 @@ export function ShortcutCustomizer({
       "h-9 w-36 cursor-pointer rounded-md border bg-card px-2 text-center text-xs font-semibold tabular-nums text-fg",
       "placeholder:font-normal placeholder:text-fg-3",
       duplicated
-        ? "border-red-500/70 bg-red-500/10"
+        ? "border-destructive/70 bg-destructive/10"
         : "border-line hover:border-line-strong",
       STUDIO_FOCUS_RING,
     );
@@ -113,7 +120,7 @@ export function ShortcutCustomizer({
       </div>
 
       {duplicates.size > 0 ? (
-        <p role="alert" className="rounded-md border border-red-500/40 bg-red-500/10 px-2.5 py-2 text-[0.7rem] font-medium text-fg">
+        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[0.7rem] font-medium text-fg">
           {LABELS.duplicateSummary} ({[...duplicates].join(", ")})
         </p>
       ) : null}
@@ -150,7 +157,7 @@ export function ShortcutCustomizer({
                     className={inputClass(duplicated)}
                   />
                   {duplicated ? (
-                    <p id={`shortcut-dup-${binding.commandId}`} className="mt-0.5 text-[0.66rem] font-medium text-red-500">
+                    <p id={`shortcut-dup-${binding.commandId}`} className="mt-0.5 text-[0.66rem] font-medium text-destructive">
                       {LABELS.duplicate}
                     </p>
                   ) : null}
@@ -178,6 +185,11 @@ export function ShortcutCustomizer({
       <p role="status" aria-live="polite" className={cn("text-[0.68rem] text-fg-2", !notice && "sr-only")}>
         {notice}
       </p>
+
+      <StudioModifierKeySettingsSection
+        initialConfig={initialModifierConfig}
+        onConfigChange={onModifierConfigChange}
+      />
     </section>
   );
 }

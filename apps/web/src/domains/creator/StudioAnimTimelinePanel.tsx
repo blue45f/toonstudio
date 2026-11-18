@@ -31,15 +31,12 @@ import {
   type StudioAnimEase,
 } from "./studio-anim-tracks";
 import {
-  deriveStudioAnimTimesheet,
-  formatTimesheetFrameRange,
-  formatTimesheetSeconds,
-  renderStudioAnimTimesheetPrintHtml,
-  renderStudioAnimTimesheetSvg,
-  renderStudioAnimTimesheetText,
+  deriveStudioAnimTimesheet, formatTimesheetFrameRange, formatTimesheetSeconds,
+  renderStudioAnimTimesheetPrintHtml, renderStudioAnimTimesheetSvg, renderStudioAnimTimesheetText,
   type StudioAnimTimesheet,
 } from "./studio-anim-timesheet";
 import { StudioAnimClipExposure } from "./animation/StudioAnimClipExposure";
+import { StudioAnimProToolsDrawer } from "./animation/StudioAnimProToolsDrawer";
 import { confirmStudioDestructiveAction } from "./studio-destructive-action-preview";
 import { studioRemoveTimelineTrackRequest } from "./studio-destructive-command-catalog";
 import { MAX_FRAME_FPS, MIN_FRAME_FPS, type OnionSkinSettings } from "./studio-frame-animation";
@@ -874,6 +871,7 @@ export function StudioAnimTimelinePanel({
                 </>
               )}
             </div>
+            <StudioAnimProToolsDrawer doc={doc} activeTrackId={focusedRow.id} onDocChange={onDocChange} />
           </div>
         )}
       </div>

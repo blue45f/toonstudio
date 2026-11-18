@@ -7,6 +7,9 @@
  */
 import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import { Plus, RotateCcw, X } from "lucide-react";
+import { useState } from "react";
+
+import { DEFAULT_STUDIO_RASTER_FREEFORM_UI_STATE } from "./gradient/studio-raster-gradient";
 
 
 import {
@@ -26,6 +29,10 @@ import {
   updateGradientStop,
   type StudioGradientSpec,
 } from "./studio-gradient-engine";
+import {
+  StudioRasterFreeformGradientSection,
+  type StudioRasterFreeformGradientUiState,
+} from "./gradient/StudioRasterFreeformGradientSection";
 import {
   PANEL_LABEL_ROW,
   PANEL_RANGE_CLASS,
@@ -49,6 +56,9 @@ export type StudioGradientEnginePanelProps = {
   allowClear?: boolean;
   /** 섹션 제목 — 기본 "그라데이션". */
   title?: string;
+  /** CSP 래스터·자유형·등고선 그라데이션 보조 상태(선택 연결). */
+  rasterFreeformValue?: StudioRasterFreeformGradientUiState;
+  onRasterFreeformChange?: (next: StudioRasterFreeformGradientUiState) => void;
 };
 
 /** 프리셋 스와치 그리드 — 미적용/적용 상태 양쪽에서 재사용한다. */
@@ -95,9 +105,20 @@ export function StudioGradientEnginePanel({
   onChange,
   allowClear = true,
   title = "그라데이션",
+  rasterFreeformValue,
+  onRasterFreeformChange,
 }: StudioGradientEnginePanelProps): ReactElement {
   // 문서(localStorage)에서 온 값일 수 있으므로 항상 정규화해 다룬다 — 컨트롤이 안전한 값만 본다.
   const current = value == null ? null : normalizeGradientSpec(value);
+  const [fallbackRasterFreeform, setFallbackRasterFreeform] =
+    useState<StudioRasterFreeformGradientUiState>(DEFAULT_STUDIO_RASTER_FREEFORM_UI_STATE);
+  const resolvedRasterFreeform = rasterFreeformValue ?? fallbackRasterFreeform;
+  const handleRasterFreeformChange = (next: StudioRasterFreeformGradientUiState): void => {
+    if (rasterFreeformValue === undefined) {
+      setFallbackRasterFreeform(next);
+    }
+    onRasterFreeformChange?.(next);
+  };
 
   return (
     <div className="space-y-2">
@@ -228,6 +249,11 @@ export function StudioGradientEnginePanel({
           <PresetGrid current={current} onChange={onChange} />
         </>
       )}
+
+      <StudioRasterFreeformGradientSection
+        value={resolvedRasterFreeform}
+        onChange={handleRasterFreeformChange}
+      />
     </div>
   );
 }

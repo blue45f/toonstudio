@@ -22,6 +22,10 @@ import {
   studioDownloadVersionSuffix,
   type StudioDownloadVersionContext,
 } from "./studio-download-file-name";
+import {
+  applyExportPerturbationShield,
+  readStudioExportPerturbationShieldDraft,
+} from "./studio-export-perturbation-shield";
 
 export const EXPORT_SCALES = [1, 2, 3] as const;
 export type ExportScale = (typeof EXPORT_SCALES)[number];
@@ -212,6 +216,31 @@ export function splitPagesForExport(
 // 파일도 인쇄소 워크플로에서는 72DPI 배치로 떨어진다. 내보내기 옵션이 해상도를 게시했을 때만
 // (studio-raster-resolution-metadata) 컨테이너 태그(PNG pHYs · JPEG JFIF density)를 덧쓴다 —
 // **픽셀·색은 건드리지 않으며**, 게시된 해상도가 없으면 원본 Blob 을 그대로 돌려준다.
+function resolveShieldedExportCanvas(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  const draft = readStudioExportPerturbationShieldDraft();
+  if (!draft?.enabled || canvas.width <= 0 || canvas.height <= 0 || typeof document === "undefined") {
+    return canvas;
+  }
+  const srcCtx = typeof canvas.getContext === "function" ? canvas.getContext("2d") : null;
+  if (!srcCtx || typeof srcCtx.getImageData !== "function") return canvas;
+  const copy = document.createElement("canvas");
+  copy.width = canvas.width;
+  copy.height = canvas.height;
+  const outCtx = typeof copy.getContext === "function" ? copy.getContext("2d") : null;
+  if (!outCtx || typeof outCtx.createImageData !== "function" || typeof copy.toBlob !== "function") {
+    return canvas;
+  }
+  const img = srcCtx.getImageData(0, 0, canvas.width, canvas.height);
+  const shielded = applyExportPerturbationShield(img.data, canvas.width, canvas.height, {
+    intensity: draft.intensity,
+    seed: draft.seed,
+  });
+  const outImg = outCtx.createImageData(canvas.width, canvas.height);
+  outImg.data.set(shielded.pixels);
+  outCtx.putImageData(outImg, 0, 0);
+  return copy;
+}
+
 export async function canvasToBlob(
   canvas: HTMLCanvasElement,
   type = "image/png",
@@ -225,8 +254,9 @@ export async function canvasToBlob(
       detectedMime: null,
     });
   }
+  const targetCanvas = resolveShieldedExportCanvas(canvas);
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
+    targetCanvas.toBlob(
       (result) => {
         if (result) resolve(result);
         else reject(new Error("캔버스를 이미지로 변환하지 못했어요. 배율을 낮춰 다시 시도해주세요."));

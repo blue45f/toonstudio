@@ -45,10 +45,8 @@ import {
   type StudioVerticalRubyLayoutPlan,
 } from "../lettering/studio-dialogue-ruby-layout";
 import { buildTextPathData, isFlatTextPath, normalizeTextPath } from "../lettering/studio-text-path";
-import {
-  estimateTextGradientBBox,
-  legacyTextGradientToSpec,
-} from "../studio-gradient-engine";
+import { computeTextBoxBackgroundRect, computeTextScaleTransform, readStudioTextBoxStyleFromElement } from "../lettering/studio-text-box-style";
+import { estimateTextGradientBBox, legacyTextGradientToSpec } from "../studio-gradient-engine";
 import { isEffectivelyHidden, type LayerGroup } from "../studio-layers";
 import {
   layoutVerticalText,
@@ -331,6 +329,22 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
   const textPath = normalizeTextPath(el.textPath);
   const usesPath = el.textPath && !isFlatTextPath(textPath);
   const rubySpans = readDialogueRubySpans(el.rubySpans);
+  const boxStyle = readStudioTextBoxStyleFromElement(el);
+  const scaleSpec = computeTextScaleTransform(boxStyle);
+  const decorateBoxAndScale = (inner: string, w: number, h: number): string => {
+    const scaled =
+      scaleSpec.scaleX !== 1 || scaleSpec.scaleY !== 1
+        ? `<g transform="scale(${fmt(scaleSpec.scaleX)} ${fmt(scaleSpec.scaleY)})">${inner}</g>`
+        : inner;
+    const bg = computeTextBoxBackgroundRect(
+      { x: 0, y: 0, width: Math.max(1, w * scaleSpec.scaleX), height: Math.max(1, h * scaleSpec.scaleY) },
+      boxStyle,
+    );
+    const bgRect = bg
+      ? `<rect x="${fmt(bg.x)}" y="${fmt(bg.y)}" width="${fmt(bg.width)}" height="${fmt(bg.height)}" fill="${escapeXml(bg.hexColor)}"${bg.alpha !== 1 ? att("fill-opacity", bg.alpha) : ""}/>`
+      : "";
+    return `${bgRect}${scaled}`;
+  };
 
   // 채우기 — 그라데이션이면 로컬(0,0 원점) bbox 로 defs 생성(그룹 translate 안이라 로컬 좌표).
   const gradientSpec =
@@ -339,9 +353,7 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
       : null;
 
   if (usesPath) {
-    if (rubySpans) {
-      addSkip(ctx, el, "skipped", { code: "rubyCurvedTextUnsupported" });
-    }
+    if (rubySpans) addSkip(ctx, el, "skipped", { code: "rubyCurvedTextUnsupported" });
     const pathData = buildTextPathData(textPath, el.width, el.fontSize);
     const pathId = nextId(ctx, "stp");
     ctx.defs.push(`<path id="${pathId}" d="${escapeXml(pathData)}" fill="none"/>`);
@@ -357,21 +369,17 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
       el.stroke && (el.strokeWidth ?? 0) > 0
         ? `${att("stroke", el.stroke)}${att("stroke-width", el.strokeWidth)} paint-order="stroke" stroke-linejoin="round"`
         : "";
-    return (
-      `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>` +
+    const curvedNode =
       `<text xml:space="preserve" font-family="${escapeXml(fontFamily)}" font-size="${fmt(el.fontSize)}"` +
       `${att("font-weight", weight)}${att("font-style", style)}` +
       `${(el.letterSpacing ?? 0) !== 0 ? att("letter-spacing", el.letterSpacing ?? 0) : ""}` +
       ` fill="${escapeXml(fill)}"${strokeAttrs}${filter ? att("filter", filter) : ""}>` +
-      `<textPath href="#${pathId}" startOffset="${startOffset}" text-anchor="${anchor}">${escapeXml(el.text)}</textPath>` +
-      `</text></g>`
-    );
+      `<textPath href="#${pathId}" startOffset="${startOffset}" text-anchor="${anchor}">${escapeXml(el.text)}</textPath></text>`;
+    return `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>${decorateBoxAndScale(curvedNode, el.width, el.fontSize * 2.8)}</g>`;
   }
 
   if (el.vertical) {
-    // 세로쓰기 — studio-vertical-text 코어가 캔버스와 같은 열/런 배치를 계산하고, 여기서는
-    // 그 좌표를 그대로 <g transform> 으로 옮긴다(StudioKonvaTextNodes 세로쓰기 노드와 1:1 대응).
-    // el.width 는 CSS 논리 속성 규약대로 inline size = **열 길이 예산**으로 읽는다.
+    // 세로쓰기 — studio-vertical-text 코어가 캔버스와 같은 열/런 배치를 계산하고 <g transform> 으로 옮긴다.
     const verticalLetterSpacing = el.letterSpacing ?? 0;
     const verticalLayout = layoutVerticalText(
       {
@@ -386,13 +394,7 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
       },
       SVG_VERTICAL_MEASURER
     );
-    if (
-      verticalLayout.columns.some((column) =>
-        column.items.some(
-          (item) => item.rotation === 90 || item.form === "tate-chu-yoko",
-        ),
-      )
-    ) {
+    if (verticalLayout.columns.some((col) => col.items.some((it) => it.rotation === 90 || it.form === "tate-chu-yoko"))) {
       addSkip(ctx, el, "approximated", { code: "verticalLatinApprox" });
     }
     const verticalBlock = verticalTextBlockMarkup({
@@ -403,94 +405,46 @@ function serializeText(ctx: ExportCtx, el: SvgTextElLike): string {
       fontStyle,
       fill: (item) =>
         gradientSpec
-          ? gradientDef(
-              ctx,
-              gradientSpec,
-              // 캔버스와 동일하게 "블록 전체 bbox를 아이템 로컬 원점으로 옮긴 것"을 쓴다.
-              {
-                x: -item.x,
-                y: -item.y,
-                width: Math.max(1, verticalLayout.width),
-                height: Math.max(1, verticalLayout.height),
-              },
-              { x: 0, y: 0 }
-            )
+          ? gradientDef(ctx, gradientSpec, { x: -item.x, y: -item.y, width: Math.max(1, verticalLayout.width), height: Math.max(1, verticalLayout.height) }, { x: 0, y: 0 })
           : el.fill,
       stroke: el.stroke,
       strokeWidth: el.strokeWidth,
       filter,
     });
-    const verticalRuby = planDialogueVerticalRubyOverlayPlacements(
-      el.text,
-      rubySpans,
-      verticalLayout,
-      {
-        fontSize: el.fontSize,
-        lineHeight: el.lineHeight ?? 1.4,
-        letterSpacing: verticalLetterSpacing,
-      },
-    );
-    reportVerticalRubyPlan(ctx, el, verticalRuby);
-    const rubyBlock = verticalRubyBlockMarkup(verticalRuby, {
-      fontFamily,
-      fontStyle,
-      fill: el.fill,
+    const verticalRuby = planDialogueVerticalRubyOverlayPlacements(el.text, rubySpans, verticalLayout, {
+      fontSize: el.fontSize,
+      lineHeight: el.lineHeight ?? 1.4,
+      letterSpacing: verticalLetterSpacing,
     });
-    return `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>${verticalBlock}${rubyBlock}</g>`;
+    reportVerticalRubyPlan(ctx, el, verticalRuby);
+    const rubyBlock = verticalRubyBlockMarkup(verticalRuby, { fontFamily, fontStyle, fill: el.fill });
+    const inner = decorateBoxAndScale(`${verticalBlock}${rubyBlock}`, Math.max(1, verticalLayout.width), Math.max(1, verticalLayout.height));
+    return `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>${inner}</g>`;
   }
 
   const content = el.text;
   const lineHeight = el.lineHeight ?? 1;
   const letterSpacing = el.letterSpacing ?? 0;
   const fill = gradientSpec
-    ? gradientDef(
-        ctx,
-        gradientSpec,
-        estimateTextGradientBBox({ width: el.width, text: content, fontSize: el.fontSize, lineHeight }),
-        { x: 0, y: 0 }
-      )
+    ? gradientDef(ctx, gradientSpec, estimateTextGradientBBox({ width: el.width, text: content, fontSize: el.fontSize, lineHeight }), { x: 0, y: 0 })
     : el.fill;
   // 자동 줄바꿈은 SVG 에 없음 — 수동 줄바꿈 없이 박스 폭을 넘길 것으로 추정되면 근사 고지.
   if (content.split("\n").some((line) => estimateLineWidth(line, el.fontSize, letterSpacing) > el.width * 1.02)) {
     addSkip(ctx, el, "approximated", { code: "manualWrapOnly" });
   }
   const block = textBlockMarkup({
-    text: content,
-    x: 0,
-    y: 0,
-    boxWidth: el.width,
-    fontSize: el.fontSize,
-    lineHeight,
-    letterSpacing,
-    align: el.align ?? "left",
-    fontFamily,
-    fontStyle,
-    fill,
-    stroke: el.stroke,
-    strokeWidth: el.strokeWidth,
-    filter,
+    text: content, x: 0, y: 0, boxWidth: el.width, fontSize: el.fontSize, lineHeight, letterSpacing,
+    align: el.align ?? "left", fontFamily, fontStyle, fill, stroke: el.stroke, strokeWidth: el.strokeWidth, filter,
   });
   const horizontalRuby = rubySpans
-    ? planDialogueRubyOverlayPlacements(content, rubySpans, {
-        fontSize: el.fontSize,
-        letterSpacing,
-        textWidth: el.width,
-        align: el.align ?? "left",
-      })
+    ? planDialogueRubyOverlayPlacements(content, rubySpans, { fontSize: el.fontSize, letterSpacing, textWidth: el.width, align: el.align ?? "left" })
     : [];
-  if (horizontalRuby.length > 0) {
-    addSkip(ctx, el, "approximated", { code: "rubyPositionApprox" });
-  } else if (rubySpans) {
-    addSkip(ctx, el, "skipped", { code: "rubyRangeMissing" });
-  }
-  const rubyBlock = horizontalRubyBlockMarkup(horizontalRuby, {
-    offsetX: 0,
-    offsetY: 0,
-    fontFamily,
-    fontStyle,
-    fill: el.fill,
-  });
-  return `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>${block}${rubyBlock}</g>`;
+  if (horizontalRuby.length > 0) addSkip(ctx, el, "approximated", { code: "rubyPositionApprox" });
+  else if (rubySpans) addSkip(ctx, el, "skipped", { code: "rubyRangeMissing" });
+  const rubyBlock = horizontalRubyBlockMarkup(horizontalRuby, { offsetX: 0, offsetY: 0, fontFamily, fontStyle, fill: el.fill });
+  const estHeight = Math.max(el.fontSize, content.split("\n").length * el.fontSize * lineHeight);
+  const inner = decorateBoxAndScale(`${block}${rubyBlock}`, el.width, estHeight);
+  return `<g${transform ? att("transform", transform) : ""}${opacity !== 1 ? att("opacity", opacity) : ""}>${inner}</g>`;
 }
 
 function serializeSticker(ctx: ExportCtx, el: SvgStickerElLike): string {
