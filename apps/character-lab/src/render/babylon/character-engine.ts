@@ -17,8 +17,6 @@ import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
 import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
-import { describeSparseMorphReport } from "../glb-sparse-morph";
-import { summarizeJointOffsets } from "../joint-offsets";
 import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
 import { describeMorphTextureMode } from "../morph-limits";
@@ -48,6 +46,7 @@ import { loadPackageRig } from "./package-loader";
 import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
+import { describeGlbSparseState, describeJointOffsetState } from "./rig-feature-state";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
@@ -95,7 +94,7 @@ import type { PhysicsBridge, PhysicsReceiptLike } from "./physics-bridge";
 import type { CharacterScene } from "./scene-builder";
 import type { ReadbackLane } from "../readback";
 import type { PaintInspection, RigInspection, SceneInspection } from "../rig-inspection";
-import type { SceneFeatureSource, SceneFeatureState } from "../scene-features";
+import type { SceneFeatureSource } from "../scene-features";
 import type { ViewportCameraInfo, ViewportCameraSource } from "../viewport-camera";
 import type { ProceduralIbl } from "./lighting/ibl";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
@@ -1169,24 +1168,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       morphTextureMode: morphTexture,
       boneTextureMode: boneTexture,
     });
-    return { ...base, ...this.beta.report(), jointOffsets: this.jointOffsetState(), glbMorphSparse: this.glbSparseState() };
-  }
-
-  private jointOffsetState(): SceneFeatureState {
-    const rig = this.rig;
-    if (!rig) return featureOff("소스가 없습니다.");
-    const binding = rig.jointOffsets;
-    if (!binding) return featureOff(rig.kind === "package" ? "제작 패키지에는 체형 morph 관절 오프셋이 없습니다." : "이 소스는 관절 오프셋을 주지 않아 morph만 정점에 반영됩니다.");
-    const summary = summarizeJointOffsets(binding.table);
-    const applied = binding.snapshot().size;
-    return featureActive(`morph ${summary.morphCount}개 · 관절 ${summary.boneCount}개 · 최대 ${(summary.maxOffsetM * 1000).toFixed(0)} mm · 지금 ${applied}개 본이 옮겨짐(역바인드 재생성)`);
-  }
-
-  private glbSparseState(): SceneFeatureState {
-    const report = this.lastGlbReport;
-    if (!report) return featureActive("내보낼 때마다 변경량 0 정점의 morph를 sparse accessor로 정리합니다(아직 내보내지 않음).");
-    if (report.unchanged) return report.morphAccessors === 0 ? featureOff("마지막 내보내기: morph target가 없어 정리할 것이 없습니다.") : featureUnavailable(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
-    return featureActive(`마지막 내보내기: ${describeSparseMorphReport(report)}`);
+    return { ...base, ...this.beta.report(), jointOffsets: describeJointOffsetState(this.rig), glbMorphSparse: describeGlbSparseState(this.lastGlbReport) };
   }
 
   betaFeatures(): BetaFeatureReport {

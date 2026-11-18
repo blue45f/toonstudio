@@ -2,14 +2,13 @@
  * RenderPanel: 셰이딩 모드(PBR/툰)·품질 프리셋·톤맵·그림자(캐스케이드·PCF·접촉 경화)·후처리(FXAA·블룸·샤프닝·TAA/SSAO 베타)·IBL 세기·
  * 툰 옵션을 `shading/set`으로 바꾸고, 엔진이 보고하는 기능 가용성(CSM·SSS·IBL·TAA·SSAO·GPU 타이머·텍스처 모드)과 HUD 수치를 표로 보인다.
  */
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { QUALITY_PRESET_LABELS_KO, TONE_MAPPINGS, applyQualityPreset } from "../../../contracts";
 import { BETA_FEATURE_HINTS_KO, BETA_FEATURE_IDS, EXTENDED_FEATURE_LABELS_KO, RIG_CAPABILITY_IDS, hasBetaFeatures, readBetaFeatures, readExtendedFeatures } from "../../../render/beta-features";
 import { resolveOutlinePressureAspect } from "../../../render/outline-policy";
 import { SCENE_FEATURE_IDS, SCENE_FEATURE_LABELS_KO, SCENE_FEATURE_STATUS_LABELS_KO, readSceneFeatures } from "../../../render/scene-features";
 import { applyLabShaperGen3dLookToShading, buildLabShaperGen3dPipelineSpec, LAB_SHAPER_GEN3D_LOOK_PRESETS, type LabShaperGen3dLookId } from "../../../render/shaper-gen3d-bridge";
-import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "../../../render/style/character-verify-ai-fresh-ideas";
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
@@ -22,6 +21,7 @@ import {
   isMaterialSurfacePresetActive,
   summarizeActiveMaterialAndShadowKo,
 } from "./render-material-lighting-presets";
+import { RenderVerifyAiPanel } from "./render-verify-ai-panel";
 import { hudRows } from "./viewport-interactions";
 
 import type { HudSample, QualityPresetId, ShadingProfile, ToneMapping } from "../../../contracts";
@@ -93,28 +93,9 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
   const [tripoLookId, setTripoLookId] = useState<LabShaperGen3dLookId>("shaper-cel");
   const [tripoDelight, setTripoDelight] = useState(true);
   const [disableHairInline, setDisableHairInline] = useState(true);
-  const [selectedLensId, setSelectedLensId] = useState<CharacterLabFreshLensId>("contrarian-take");
   useEffect(() => {
     setIblDraft(shading.ibl.intensity);
   }, [shading.ibl.intensity]);
-
-  const verifyAiReport = useMemo(
-    () =>
-      evaluateCharacterLabVerifyAiGate({
-        shading,
-        lookId: tripoLookId,
-        delight: tripoDelight,
-        disableHairInline,
-      }),
-    [shading, tripoLookId, tripoDelight, disableHairInline],
-  );
-
-  const activeLensRemix = useMemo(
-    () =>
-      verifyAiReport.remixes.find((r) => r.id === selectedLensId) ??
-      verifyAiReport.remixes[0]!,
-    [verifyAiReport.remixes, selectedLensId],
-  );
 
   const poll = useCallback((): void => {
     if (!engine) {
@@ -667,56 +648,13 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         })()}
       </fieldset>
 
-      <fieldset className="cl-render-group" data-testid="character-lab-verify-ai-panel">
-        <legend>Character Labs × 5-Lens 연출 리믹스 & Verify AI 턴어라운드 품질 게이트</legend>
-        <p className="cl-render-status" data-testid="character-lab-verify-ai-badge">
-          {verifyAiReport.summaryBadgeKo}
-        </p>
-        <p className="cl-render-hint" data-testid="character-lab-remix-header">
-          {verifyAiReport.remixHeaderKo}
-        </p>
-        <div className="cl-render-row" role="group" aria-label="캐릭터 5-Lens 크리에이티브 리믹스">
-          {verifyAiReport.remixes.map((remix) => (
-            <button
-              key={remix.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`character-lab-fresh-lens-${remix.id}`}
-              aria-pressed={remix.id === activeLensRemix.id}
-              onClick={() => setSelectedLensId(remix.id)}
-            >
-              {remix.badgeKo}
-            </button>
-          ))}
-        </div>
-        <div data-testid="character-lab-fresh-lens-detail">
-          <p className="cl-render-hint">
-            <strong>{activeLensRemix.badgeKo}: {activeLensRemix.titleKo}</strong>
-          </p>
-          <p className="cl-render-hint">
-            → <strong>Angle:</strong> {activeLensRemix.angleKo}
-          </p>
-          {activeLensRemix.actionableStepsKo ? (
-            <ol className="cl-render-hint" data-testid="character-lab-fresh-lens-steps">
-              {activeLensRemix.actionableStepsKo.map((step, idx) => (
-                <li key={idx}>{step}</li>
-              ))}
-            </ol>
-          ) : null}
-        </div>
-        <div className="cl-render-row">
-          <span className="cl-render-hint" data-testid="character-lab-remediation-readout">
-            {verifyAiReport.remediationKo}
-          </span>
-          <button
-            type="button"
-            data-testid="character-lab-apply-verify-ai-patch-btn"
-            onClick={() => set(verifyAiReport.recommendedShadingPatch)}
-          >
-            Verify AI 캐릭터 툰 최적 보정 적용
-          </button>
-        </div>
-      </fieldset>
+      <RenderVerifyAiPanel
+        shading={shading}
+        lookId={tripoLookId}
+        delight={tripoDelight}
+        disableHairInline={disableHairInline}
+        onApplyShading={set}
+      />
 
       <fieldset className="cl-render-group" data-group="beta">
         <legend>
