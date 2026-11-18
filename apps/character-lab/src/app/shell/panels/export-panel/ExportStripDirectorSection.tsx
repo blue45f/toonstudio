@@ -165,6 +165,32 @@ export function ExportStripDirectorSection({
       </div>
 
       <div className="cl-export-row">
+        <label htmlFor={`${idsPrefix}-tankobon-vol-num`}>단행본 권수(VOL)</label>
+        <input
+          id={`${idsPrefix}-tankobon-vol-num`}
+          data-testid="export-tankobon-volume-num"
+          type="number"
+          min={1}
+          max={99}
+          value={state.tankobonVolumeNumber}
+          title="단행본 표지·목차·펼침면 대지에 인쇄할 권수(VOL.01..VOL.99)를 지정합니다"
+          onChange={(event) => {
+            const parsed = Number.parseInt(event.target.value, 10);
+            session.update({
+              tankobonVolumeNumber: Number.isFinite(parsed) ? Math.min(99, Math.max(1, parsed)) : 1,
+            });
+          }}
+        />
+        <label htmlFor={`${idsPrefix}-tankobon-author`}>표지 작가명</label>
+        <input
+          id={`${idsPrefix}-tankobon-author`}
+          data-testid="export-tankobon-author"
+          type="text"
+          maxLength={32}
+          value={state.tankobonAuthorKo}
+          title="단행본 표지 하단 띠지(오비) 밴드에 인쇄할 작가·스튜디오 크레딧을 입력합니다"
+          onChange={(event) => session.update({ tankobonAuthorKo: event.target.value })}
+        />
         <label htmlFor={`${idsPrefix}-tankobon-page-num`}>단행본 쪽번호(Folio)</label>
         <input
           id={`${idsPrefix}-tankobon-page-num`}

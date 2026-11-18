@@ -1,5 +1,5 @@
 /**
- * ExportPanel 액션 버튼 클러스터 · 단행본 출판 페이지 조판 · 모바일 웹툰 리더 오토패닝 미리보기 · WebVTT 자막 · 레이어 PSD 옵션 섹션.
+ * ExportPanel 액션 버튼 클러스터 · 단행본 출판 세트(4컷 내지 · 표지 · 목차 · 양면 펼침면) · 모바일 리더 · WebM / WAV / WebVTT · 레이어 PSD 옵션 섹션.
  */
 import { MAX_PSD_EXPORT_DIMENSION } from "../../../../export/export-session";
 import { RECIPE_FILE_SUFFIX } from "../../../../export/recipe-file";
@@ -24,8 +24,12 @@ export interface ExportActionsAndPsdSectionProps {
   readonly onQuadSheetPng: () => void;
   readonly onWebtoonStripPng: () => void;
   readonly onWebtoonTankobonPng: () => void;
+  readonly onWebtoonTankobonCoverPng: () => void;
+  readonly onWebtoonTankobonTocPng: () => void;
+  readonly onWebtoonTankobonSpreadPng: () => void;
   readonly onOpenWebtoonReaderPreview: () => void;
   readonly onWebtoonMotionWebm: (playbackSpeed?: number) => void;
+  readonly onWebtoonMotionWav: () => void;
   readonly onWebtoonMotionVtt: () => void;
   readonly onGlb: () => void;
   readonly onRecipeSave: () => void;
@@ -61,8 +65,12 @@ export function ExportActionsAndPsdSection({
   onQuadSheetPng,
   onWebtoonStripPng,
   onWebtoonTankobonPng,
+  onWebtoonTankobonCoverPng,
+  onWebtoonTankobonTocPng,
+  onWebtoonTankobonSpreadPng,
   onOpenWebtoonReaderPreview,
   onWebtoonMotionWebm,
+  onWebtoonMotionWav,
   onWebtoonMotionVtt,
   onGlb,
   onRecipeSave,
@@ -133,6 +141,34 @@ export function ExportActionsAndPsdSection({
         </button>
         <button
           type="button"
+          data-testid="export-webtoon-tankobon-cover-png"
+          title="단행본 권수(VOL.XX)·에피소드 제목·작가 크레딧·할프톤 망점·인쇄 재단선·ISBN 박스가 조판된 B5 단행본 표지 PNG를 저장합니다"
+          onClick={onWebtoonTankobonCoverPng}
+          disabled={!engineReady || busy}
+        >
+          단행본 표지 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-tankobon-toc-png"
+          title="에피소드 큐시트 비트 목록과 연동된 챕터 번호·점선 리더·쪽번호(P.03..)가 조판된 B5 단행본 목차 내지 PNG를 저장합니다"
+          onClick={onWebtoonTankobonTocPng}
+          disabled={!engineReady || busy}
+        >
+          단행본 목차 내지 PNG 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-tankobon-spread-png"
+          aria-keyshortcuts="Control+Shift+K Meta+Shift+K"
+          title="단행본 표지와 목차 내지를 중앙 책등 접지선(Spine Fold Marks)이 포함된 양면 펼침면 인쇄 교정 대지 PNG로 저장합니다 (단축키 Ctrl/Cmd+Shift+K)"
+          onClick={onWebtoonTankobonSpreadPng}
+          disabled={!engineReady || busy}
+        >
+          단행본 표지·목차 펼침면 PNG 저장
+        </button>
+        <button
+          type="button"
           data-testid="export-webtoon-reader-preview-btn"
           title="세로 4컷 스트립을 합성해 모바일 스마트폰 폭 리더에서 컷간 스크롤 호흡(빠른 템포·서스펜스·클리프행어)에 맞춘 자동 패닝(Auto-Pan)을 미리 확인합니다"
           onClick={onOpenWebtoonReaderPreview}
@@ -149,6 +185,15 @@ export function ExportActionsAndPsdSection({
           disabled={!engineReady || busy}
         >
           9:16 숏폼 WebM 모션 티저 저장
+        </button>
+        <button
+          type="button"
+          data-testid="export-webtoon-motion-wav"
+          title="영상 편집기(Premiere·CapCut·DaVinci) 믹싱용 무손실 16-bit RIFF WAV 효과음·무드 BGM 마스터 트랙을 단독 저장합니다"
+          onClick={onWebtoonMotionWav}
+          disabled={busy}
+        >
+          9:16 무손실 음원(.wav) 저장
         </button>
         <button
           type="button"

@@ -365,6 +365,7 @@ export interface EpisodeCutsheetStore {
   getState(): EpisodeCutsheetState;
   setEpisodeTitle(titleKo: string): void;
   addBeat(titleKo: string, snapshot: EpisodeCutsheetDirectorSnapshot): EpisodeCutsheetBeat | null;
+  updateBeat(beatId: string, snapshot: EpisodeCutsheetDirectorSnapshot, nextTitleKo?: string): boolean;
   removeBeat(beatId: string): void;
   moveBeat(beatId: string, direction: "up" | "down"): void;
   markActiveBeat(beatId: string | null): void;
@@ -453,6 +454,24 @@ export function createEpisodeCutsheetStore(initial?: CreateEpisodeCutsheetStoreO
         activeBeatId: beat.beatId,
       });
       return beat;
+    },
+    updateBeat(beatId, snapshot, nextTitleKo) {
+      const idx = state.beats.findIndex((b) => b.beatId === beatId);
+      if (idx < 0) return false;
+      const prev = state.beats[idx]!;
+      const updated: EpisodeCutsheetBeat = {
+        ...prev,
+        titleKo: nextTitleKo && nextTitleKo.trim().length > 0 ? nextTitleKo.trim().slice(0, 48) : prev.titleKo,
+        snapshot,
+      };
+      const copy = [...state.beats];
+      copy[idx] = updated;
+      commit({
+        ...state,
+        beats: reindex(copy),
+        activeBeatId: beatId,
+      });
+      return true;
     },
     removeBeat(beatId) {
       const filtered = reindex(state.beats.filter((b) => b.beatId !== beatId));

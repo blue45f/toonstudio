@@ -1,14 +1,18 @@
 /**
- * 주간 연재 에피소드 다중 4컷 콘티 큐시트(`.cutsheet.json`) 매니저 및 일괄 배치 내보내기 서브컴포넌트.
+ * 주간 연재 에피소드 다중 4컷 콘티 큐시트(`.cutsheet.json`) 매니저 · 12대 장르 샘플 템플릿 로더 · 일괄 배치 내보내기 서브컴포넌트.
  *
  * Unslop · Editor Chrome · Korean Typography(IME 가드) · 5-State UI 규약 준수:
  * - 중첩 카드 테두리 대신 1px 헤어라인 구분선과 고정폭 숫자(`tabular-nums`)를 사용한다.
  * - 한국어 한글 조합 중 엔터(`event.nativeEvent.isComposing`) 중복 등록을 원천 차단한다.
- * - 큐시트가 비어 있을 때 1-클릭 스타터 CTA를 제공하고, 장편 `4×N`컷 원고 PNG·연속 `9:16` WebM·통합 `WebVTT`·스토리보드 `.md` 일괄 출고를 지원한다.
+ * - 내장 샘플 템플릿(12대 장르 옴니버스 48컷 · 3막 12컷 · 일본어 세로쓰기 8컷) 원클릭 적재 및 활성 비트 제자리 덮어쓰기(`updateBeat`)를 지원한다.
  */
 import { useState, useSyncExternalStore } from "react";
 
 import { CUTSHEET_FILE_SUFFIX, MAX_CUTSHEET_BEATS } from "../../../../export/webtoon-episode-cutsheet";
+import {
+  EPISODE_CUTSHEET_TEMPLATES,
+  buildEpisodeCutsheetDocumentFromTemplate,
+} from "../../../../export/webtoon-episode-templates";
 import { findWebtoonSceneDirectorPreset } from "../viewport-scene-director";
 
 import type {
@@ -16,6 +20,7 @@ import type {
   EpisodeCutsheetDirectorSnapshot,
   EpisodeCutsheetStore,
 } from "../../../../export/webtoon-episode-cutsheet";
+import type { EpisodeCutsheetTemplateId } from "../../../../export/webtoon-episode-templates";
 import type { StripDirectorSession, WebtoonSceneDirectorPresetId } from "../viewport-scene-director";
 
 export interface ExportEpisodeCutsheetSectionProps {
@@ -28,6 +33,7 @@ export interface ExportEpisodeCutsheetSectionProps {
   readonly onLoadCutsheetFile: (file: File | undefined) => void;
   readonly onExportBatchLongStripPng?: () => void;
   readonly onExportBatchMotionWebm?: () => void;
+  readonly onExportBatchAudioWav?: () => void;
   readonly onExportBatchWebVtt?: () => void;
   readonly onExportStoryboardMd?: () => void;
   readonly onBeatAppliedNotice?: (messageKo: string) => void;
@@ -91,6 +97,7 @@ export function ExportEpisodeCutsheetSection({
   onLoadCutsheetFile,
   onExportBatchLongStripPng,
   onExportBatchMotionWebm,
+  onExportBatchAudioWav,
   onExportBatchWebVtt,
   onExportStoryboardMd,
   onBeatAppliedNotice,
@@ -101,6 +108,9 @@ export function ExportEpisodeCutsheetSection({
     cutsheetStore.getState,
   );
   const [draftBeatTitle, setDraftBeatTitle] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<EpisodeCutsheetTemplateId>(
+    "template-12genre-omnibus-48cuts",
+  );
 
   const beatCount = cutsheetState.beats.length;
   const totalCuts = beatCount * 4;
@@ -126,7 +136,29 @@ export function ExportEpisodeCutsheetSection({
     onBeatAppliedNotice?.(`큐시트 '${beat.titleKo}' (${beat.cutRangeLabel}) 설정을 4컷 디렉터에 복원했습니다.`);
   };
 
-  const emptyReason = "먼저 '현재 4컷 씬 추가'로 최소 1개 이상의 씬 비트를 등록하세요";
+  const onOverwriteBeat = (beat: EpisodeCutsheetBeat): void => {
+    const nextTitle = draftBeatTitle.trim() || undefined;
+    const ok = cutsheetStore.updateBeat(beat.beatId, captureSnapshotFromSession(directorSession), nextTitle);
+    if (ok) {
+      if (nextTitle) setDraftBeatTitle("");
+      onBeatAppliedNotice?.(`큐시트 '${nextTitle ?? beat.titleKo}' (${beat.cutRangeLabel}) 설정을 현재 연출로 덮어썼습니다.`);
+    }
+  };
+
+  const onLoadBuiltinTemplate = (): void => {
+    if (busy) return;
+    const doc = buildEpisodeCutsheetDocumentFromTemplate(selectedTemplateId);
+    cutsheetStore.replaceDocument(doc);
+    const first = doc.beats[0];
+    if (first) {
+      applySnapshotToSession(directorSession, first.snapshot);
+    }
+    onBeatAppliedNotice?.(
+      `'${doc.episodeTitleKo}' 내장 샘플 템플릿(${doc.beats.length}비트 · ${doc.beats.length * 4}컷)을 적재했습니다.`,
+    );
+  };
+
+  const emptyReason = "먼저 '현재 4컷 씬 추가' 또는 '샘플 템플릿 적재'로 최소 1개 이상의 씬 비트를 등록하세요";
   const engineReason = !engineReady
     ? "렌더 엔진이 준비된 뒤 일괄 원고·비디오 렌더링을 사용할 수 있습니다"
     : beatCount === 0
@@ -152,6 +184,33 @@ export function ExportEpisodeCutsheetSection({
         <span className="cl-cutsheet-summary" data-testid="cutsheet-summary-count">
           {`총 ${beatCount}비트 · ${totalCuts}컷`}
         </span>
+      </div>
+
+      <div className="cl-export-row">
+        <label htmlFor={`${idsPrefix}-cutsheet-template`}>내장 샘플 콘티</label>
+        <select
+          id={`${idsPrefix}-cutsheet-template`}
+          data-testid="cutsheet-template-select"
+          value={selectedTemplateId}
+          disabled={busy}
+          onChange={(event) => setSelectedTemplateId(event.target.value as EpisodeCutsheetTemplateId)}
+        >
+          {EPISODE_CUTSHEET_TEMPLATES.map((tpl) => (
+            <option key={tpl.id} value={tpl.id}>
+              {tpl.labelKo}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="cl-button cl-export-nav-btn"
+          data-testid="cutsheet-load-template-btn"
+          disabled={busy}
+          title="외부 파일 업로드 없이 선택된 대표 장르 큐시트 템플릿을 즉시 불러와 첫 번째 비트를 적용합니다"
+          onClick={onLoadBuiltinTemplate}
+        >
+          샘플 템플릿 적재
+        </button>
       </div>
 
       <div className="cl-export-row">
@@ -237,6 +296,18 @@ export function ExportEpisodeCutsheetSection({
             연속 9:16 WebM 일괄 저장
           </button>
         ) : null}
+        {onExportBatchAudioWav ? (
+          <button
+            type="button"
+            className="cl-button cl-export-nav-btn"
+            data-testid="cutsheet-export-wav"
+            disabled={busy || beatCount === 0}
+            title={beatCount === 0 ? emptyReason : `등록된 ${beatCount}비트(${totalCuts}컷)의 효과음과 무드 BGM을 무손실 16-bit WAV 마스터 트랙으로 저장합니다`}
+            onClick={onExportBatchAudioWav}
+          >
+            통합 음원(.wav) 저장
+          </button>
+        ) : null}
         {onExportBatchWebVtt ? (
           <button
             type="button"
@@ -293,6 +364,16 @@ export function ExportEpisodeCutsheetSection({
                   <button
                     type="button"
                     className="cl-preset-chip"
+                    data-testid={`cutsheet-beat-update-${idx}`}
+                    disabled={busy}
+                    title="현재 4컷 디렉터 설정으로 이 비트를 순서를 유지한 채 덮어씁니다"
+                    onClick={() => onOverwriteBeat(beat)}
+                  >
+                    덮어쓰기
+                  </button>
+                  <button
+                    type="button"
+                    className="cl-preset-chip"
                     data-testid={`cutsheet-beat-up-${idx}`}
                     disabled={busy || idx === 0}
                     title={idx === 0 ? "첫 번째 씬 비트입니다" : "순서를 위로 올립니다"}
@@ -326,7 +407,7 @@ export function ExportEpisodeCutsheetSection({
         </ul>
       ) : (
         <div className="cl-export-row" data-testid="cutsheet-empty-state">
-          <span>등록된 4컷 비트가 없습니다. 현재 연출 세션을 첫 비트로 담아 장편 원고·연속 WebM·자막을 한 번에 출고하세요.</span>
+          <span>등록된 4컷 비트가 없습니다. 현재 연출 세션을 첫 비트로 담거나 내장 12대 장르 샘플을 적재해 보세요.</span>
           <button
             type="button"
             className="cl-preset-chip"

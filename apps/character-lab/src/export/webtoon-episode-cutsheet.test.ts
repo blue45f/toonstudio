@@ -56,6 +56,18 @@ describe("webtoon-episode-cutsheet", () => {
     expect(store.getState().beats[0]?.cutRangeLabel).toBe("1~4컷");
     expect(store.getState().beats[1]?.cutRangeLabel).toBe("5~8컷");
 
+    // 제자리 덮어쓰기(updateBeat)로 순서를 유지한 채 스냅샷·제목을 갱신하고 존재하지 않는 ID는 false를 반환한다
+    expect(store.updateBeat("missing-beat-id", baseSnap)).toBe(false);
+    const updatedOk = store.updateBeat(
+      beat1!.beatId,
+      { ...baseSnap, manuscriptMood: "midnight-noir" },
+      "최종 변론 클라이맥스",
+    );
+    expect(updatedOk).toBe(true);
+    expect(store.getState().beats[1]?.titleKo).toBe("최종 변론 클라이맥스");
+    expect(store.getState().beats[1]?.snapshot.manuscriptMood).toBe("midnight-noir");
+    expect(store.getState().beats[1]?.cutRangeLabel).toBe("5~8컷");
+
     const jsonText = serializeEpisodeCutsheet(store.getState().episodeTitleKo, store.getState().beats, 1_700_000_000_000);
     expect(episodeCutsheetFileName("12화 법정 반전", 2)).toBe("12화-법정-반전-8cuts.cutsheet.json");
 
@@ -65,6 +77,7 @@ describe("webtoon-episode-cutsheet", () => {
     expect(parsed.document.episodeTitleKo).toBe("12화 법정 반전");
     expect(parsed.document.beats).toHaveLength(2);
     expect(parsed.document.beats[0]?.snapshot.jaWritingMode).toBe("vertical-tategaki");
+    expect(parsed.document.beats[1]?.titleKo).toBe("최종 변론 클라이맥스");
 
     store.removeBeat(beat2!.beatId);
     expect(store.getState().beats).toHaveLength(1);

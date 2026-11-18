@@ -5,6 +5,7 @@ import { createMockEngine } from "../testing/mock-engine";
 import { MAX_PNG_EXPORT_DIMENSION } from "./export-session";
 import { isPng } from "./png-encoder";
 import {
+  exportEpisodeCutsheetAudioWav,
   exportEpisodeCutsheetLongStripPng,
   exportEpisodeCutsheetMotionWebm,
   exportEpisodeCutsheetWebVtt,
@@ -12,11 +13,12 @@ import {
   resolveSafeEpisodeBatchStripWidth,
 } from "./webtoon-episode-batch";
 import { DEFAULT_EPISODE_CUTSHEET_SNAPSHOT, createEpisodeCutsheetStore } from "./webtoon-episode-cutsheet";
+import { isWavRiff } from "./webtoon-motion-teaser";
 
 const FAKE_WEBM_EBML = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01]);
 
 describe("webtoon-episode-batch", () => {
-  it("다중 4컷 큐시트를 장편 세로 스트립 PNG(MAX_PNG_EXPORT_DIMENSION 이하 자동 배율)·연속 9:16 WebM·통합 WebVTT·스토리보드 MD로 일괄 출고한다", async () => {
+  it("다중 4컷 큐시트를 장편 세로 스트립 PNG(MAX_PNG_EXPORT_DIMENSION 이하 자동 배율)·연속 9:16 WebM·통합 WAV·통합 WebVTT·스토리보드 MD로 일괄 출고한다", async () => {
     const store = createEpisodeCutsheetStore({ episodeTitleKo: "20화 성전 결전" });
     store.addBeat("성역 진입", {
       ...DEFAULT_EPISODE_CUTSHEET_SNAPSHOT,
@@ -74,6 +76,19 @@ describe("webtoon-episode-batch", () => {
     expect(webmOut.receipt.motion?.beatCount).toBe(2);
     expect(webmOut.receipt.motion?.ambientBgm).toBe(true);
     expect(webmOut.receipt.fileName).toMatch(/^20화-성전-결전-8cuts-540x960-bgm-episode-teaser\.webm$/u);
+
+    const wavOut = exportEpisodeCutsheetAudioWav(
+      "20화 성전 결전",
+      beats,
+      { requestedStripWidth: 320, includeAmbientBgm: true },
+      { now: () => 2_500 },
+    );
+    expect(wavOut.ok).toBe(true);
+    if (!wavOut.ok) return;
+    expect(isWavRiff(wavOut.bytes)).toBe(true);
+    expect(wavOut.receipt.motion?.beatCount).toBe(2);
+    expect(wavOut.receipt.motion?.audioEvents).toBe(5);
+    expect(wavOut.receipt.fileName).toBe("20화-성전-결전-8cuts-bgm-episode-audio.wav");
 
     const vttOut = exportEpisodeCutsheetWebVtt("20화 성전 결전", beats, { requestedStripWidth: 320 }, { now: () => 3_000 });
     expect(vttOut.ok).toBe(true);
