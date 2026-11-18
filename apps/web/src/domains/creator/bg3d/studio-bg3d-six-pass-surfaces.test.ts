@@ -33,6 +33,7 @@ describe("6패스 LT 지원 표면 경계", () => {
     { scope: "로컬 원고", workId: undefined, documentScope: studioCutVrmDocumentScope("other-document", "page-a") },
     { scope: "팀 페이지", workId: "work-a", documentScope: studioTeamCutVrmDocumentScope("work-a", "other-page") },
   ])("고정 VRM의 $scope 범위가 다르면 원고와 레이어 변경 전에 거부한다", async ({ workId, documentScope }) => {
+    if (!documentScope) throw new Error("고정 VRM 회귀의 문서 범위가 없습니다.");
     const commit = vi.fn(), addEl = vi.fn(), patchEl = vi.fn(), setError = vi.fn();
     const insert = bindStudioBg3dRenderedImage({ isRealtimeTeamSession: false, masterEditMode: true,
       setError, setStatusNotice: vi.fn(), commit, addEl, patchEl, workId,
