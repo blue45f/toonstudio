@@ -203,7 +203,8 @@ describe("StudioProjectAssistantPanel", () => {
           keyLocation: "server-env-only",
           storeData: false,
           piiMasking: true,
-          autoBillingDisabled: true,
+          autoBillingDisabled: null,
+          modelConfigurationError: null,
           modes: [],
           limits: { burstPerMinute: 5, hourlyRequests: 20, dailyRequests: 60, maxInputChars: 6000 },
           setupNoticeKo:
@@ -232,6 +233,32 @@ describe("StudioProjectAssistantPanel", () => {
     expect(screen.getByTestId("openai-assist-status-badge").textContent).toContain(
       "서버 OpenAI 키 확인 필요",
     );
+  });
+
+  it("종료된 모델은 실행을 막고 과금 상태와 일반 편집 기능을 구분해 안내한다", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      configured: true,
+      provider: "openai",
+      model: "gpt-4.1-nano",
+      modelConfigurationError: "retired",
+      autoBillingDisabled: null,
+      setupNoticeKo: "설정된 OpenAI 모델은 제공이 종료되었습니다. 서버의 모델 설정을 확인해 주세요.",
+    }), { status: 200 }));
+
+    render(
+      <MemoryRouter initialEntries={["/studio/p/project-12/story"]}>
+        <StudioProjectAssistantPanel projectId="project-12" section="story" locale="ko" fetchImpl={fetchMock} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("openai-assist-status-badge").textContent).toContain("모델 설정 확인 필요");
+    });
+    expect(screen.getByTestId("openai-assist-key-notice").textContent).toContain("제공이 종료");
+    expect(screen.getByTestId("openai-assist-submit-btn")).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: /편집기에서 검토/u })).toHaveProperty("disabled", false);
+    expect(screen.getByTestId("openai-assist-billing-notice").textContent).toContain("별도 확인이 필요");
+    fireEvent.click(screen.getByTestId("openai-assist-submit-btn"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("서버 OpenAI 보조 결과를 사본으로 추가하고 새 응답을 다시 받으면 추가 버튼을 재활성화한다", async () => {
@@ -298,7 +325,8 @@ describe("StudioProjectAssistantPanel", () => {
             keyLocation: "server-env-only",
             storeData: false,
             piiMasking: true,
-            autoBillingDisabled: true,
+            autoBillingDisabled: null,
+            modelConfigurationError: null,
             modes: [],
             limits: { burstPerMinute: 5, hourlyRequests: 20, dailyRequests: 60, maxInputChars: 6000 },
             setupNoticeKo: "연결됨",
@@ -322,7 +350,7 @@ describe("StudioProjectAssistantPanel", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("openai-assist-status-badge").textContent).toContain(
-        "OpenAI 연결됨",
+        "서버 OpenAI 키 설정됨",
       );
     });
 
@@ -366,7 +394,8 @@ describe("StudioProjectAssistantPanel", () => {
             keyLocation: "server-env-only",
             storeData: false,
             piiMasking: true,
-            autoBillingDisabled: true,
+            autoBillingDisabled: null,
+            modelConfigurationError: null,
             modes: [],
             limits: { burstPerMinute: 5, hourlyRequests: 20, dailyRequests: 60, maxInputChars: 6000 },
             setupNoticeKo: "연결됨",
