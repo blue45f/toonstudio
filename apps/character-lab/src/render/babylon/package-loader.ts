@@ -59,25 +59,30 @@ interface PartGroup {
   readonly hairLod: number | null;
 }
 
+/** 캐릭터와 손 소품 GLB에 같은 좌표계·애니메이션·재질 로더 설정을 적용한다. */
+export function loadGlbAssetContainer(bytes: Uint8Array, scene: Scene): ReturnType<typeof LoadAssetContainerAsync> {
+  return LoadAssetContainerAsync(bytes, scene, {
+    pluginExtension: ".glb",
+    pluginOptions: {
+      gltf: {
+        coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
+        animationStartMode: GLTFLoaderAnimationStartMode.NONE,
+        loadNodeAnimations: false,
+        compileMaterials: false,
+        createInstances: false,
+        alwaysComputeBoundingBox: true,
+        useSRGBBuffers: true,
+      },
+    },
+  });
+}
+
 export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Array, deps: PackageLoadDeps): Promise<CharacterRig> {
   const { scene } = deps;
   const now = deps.now ?? Date.now();
   let container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>;
   try {
-    container = await LoadAssetContainerAsync(bytes, scene, {
-      pluginExtension: ".glb",
-      pluginOptions: {
-        gltf: {
-          coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
-          animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-          loadNodeAnimations: false,
-          compileMaterials: false,
-          createInstances: false,
-          alwaysComputeBoundingBox: true,
-          useSRGBBuffers: true,
-        },
-      },
-    });
+    container = await loadGlbAssetContainer(bytes, scene);
   } catch (error) {
     throw new RigBindError(failVisible("package-glb-load-failed", `제작 패키지 GLB를 Babylon 로더로 열지 못했습니다: ${plan.glbUrl}`, error, now));
   }

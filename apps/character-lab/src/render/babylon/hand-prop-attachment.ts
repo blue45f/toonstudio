@@ -7,11 +7,9 @@
  *   2) 투명 PNG · 4방향 설정시트 · 2×2 시트 · 세로 4컷 웹툰 스트립 캡처 자동 포함
  *   3) `exportGlb()` 실행 시 캐릭터 메쉬·골격과 함께 손에 들린 3D 소품 메쉬(`TS_Prop_*`)가 그대로 직렬화 보존됨
  */
-import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader.js";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
 import { Mesh } from "@babylonjs/core/Meshes/mesh.js";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode.js";
-import { GLTFLoaderAnimationStartMode, GLTFLoaderCoordinateSystemMode } from "@babylonjs/loaders/glTF/glTFFileLoader.js";
 
 import { failVisible } from "../../contracts";
 import { sha256Hex } from "../../shared/hash";
@@ -19,6 +17,7 @@ import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../mat
 
 import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
 import { rigMeshMetadata } from "./mesh-binding";
+import { loadGlbAssetContainer } from "./package-loader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
 import type { HandPropAttachment, HandPropId, HandPropSide, PartRole } from "../../contracts";
@@ -120,22 +119,9 @@ export async function attachHandPropToRig(
     }
   }
 
-  let container: Awaited<ReturnType<typeof LoadAssetContainerAsync>>;
+  let container: Awaited<ReturnType<typeof loadGlbAssetContainer>>;
   try {
-    container = await LoadAssetContainerAsync(bytes, deps.scene, {
-      pluginExtension: ".glb",
-      pluginOptions: {
-        gltf: {
-          coordinateSystemMode: GLTFLoaderCoordinateSystemMode.AUTO,
-          animationStartMode: GLTFLoaderAnimationStartMode.NONE,
-          loadNodeAnimations: false,
-          compileMaterials: false,
-          createInstances: false,
-          alwaysComputeBoundingBox: true,
-          useSRGBBuffers: true,
-        },
-      },
-    });
+    container = await loadGlbAssetContainer(bytes, deps.scene);
   } catch (error) {
     throw failVisible("hand-prop-glb-load-failed", `손 소품 GLB를 열지 못했습니다: ${attachment.glbUrl}`, error, now);
   }
