@@ -157,6 +157,24 @@ export interface HandPropAttachment {
   readonly sha256?: string;
 }
 
+export const HEAD_PROP_IDS = ["wire-glasses", "rofan-tiara", "tactical-headset", "pearl-earrings-pin"] as const;
+export type HeadPropId = (typeof HEAD_PROP_IDS)[number];
+
+export interface HeadPropAttachment {
+  readonly propId: HeadPropId;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
+export const STAGE_PROP_IDS = ["cafe-bistro-table", "academy-desk", "murim-sword-aura"] as const;
+export type StagePropId = (typeof STAGE_PROP_IDS)[number];
+
+export interface StagePropAttachment {
+  readonly propId: StagePropId;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+}
+
 export interface CharacterEngine {
   readonly backend: EngineBackend;
   readonly diagnostics: EngineDiagnostics;
@@ -192,6 +210,10 @@ export interface CharacterEngine {
   psdHairLayers?(): import("./capture").HairLayerSupport;
   /** 캐릭터 손 본(rightHand / leftHand)에 웹툰 3D 손 소품을 장착하거나 해제(null)한다. */
   setHandProp?(attachment: HandPropAttachment | null): Promise<void>;
+  /** 캐릭터 머리 본(head)에 안경·티아라·헤드셋·귀걸이 등 3D 머리 액세서리를 장착하거나 해제(null)한다. */
+  setHeadProp?(attachment: HeadPropAttachment | null): Promise<void>;
+  /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
+  setStageProp?(attachment: StagePropAttachment | null): Promise<void>;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;

@@ -1,14 +1,31 @@
 /**
  * 한국형 세로 스크롤 웹툰 4컷 콘티 스트립(등장 로우앵글 · 대화 반측면 · 감정 클로즈업 · 여운 하이앵글)
- * 원고 여백·먹선 테두리·말풍선 상단 안전 여백 및 선택적 말풍선·효과선(집중선/속도선/반짝이) 래스터 베이킹 합성 모듈.
+ * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 선택적 말풍선·효과선(집중선/속도선/반짝이) 래스터 베이킹,
+ * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
  */
-import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
+import {
+  DEFAULT_FRAMING,
+  eyeAnglesQuaternion,
+  expressionToMorphWeights,
+  failVisible,
+  isLabFailure,
+} from "../contracts";
+import { qNormalize } from "../shared/math";
 
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
 
 import type { ExportDeps, ExportOutcome } from "./export-session";
-import type { CameraFramingMode, CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
+import type {
+  ApplyPlan,
+  CameraFramingMode,
+  CapturedRaster,
+  CharacterEngine,
+  ExpressionWeights,
+  LabFailure,
+  Quat,
+  Vec3,
+} from "../contracts";
 
 export interface WebtoonStripCutSpec {
   readonly id: string;
@@ -35,6 +52,251 @@ export interface WebtoonStripMangaFxOptions {
   readonly intensity?: number;
 }
 
+export type WebtoonStripActingArcId =
+  | "none"
+  | "arc-awakening-climax"
+  | "arc-romance-flutter"
+  | "arc-thriller-shock"
+  | "arc-confident-smirk";
+
+export interface WebtoonStripCutActingKeyframe {
+  readonly beatKo: string;
+  readonly expression: ExpressionWeights;
+  readonly gazeYawDeg: number;
+  readonly gazePitchDeg: number;
+  readonly neckEulerDeg: Vec3;
+  readonly headEulerDeg: Vec3;
+}
+
+export interface WebtoonStripActingArcSpec {
+  readonly id: Exclude<WebtoonStripActingArcId, "none">;
+  readonly labelKo: string;
+  readonly summaryKo: string;
+  readonly cuts: readonly [
+    WebtoonStripCutActingKeyframe,
+    WebtoonStripCutActingKeyframe,
+    WebtoonStripCutActingKeyframe,
+    WebtoonStripCutActingKeyframe,
+  ];
+}
+
+export const WEBTOON_STRIP_ACTING_ARCS: readonly WebtoonStripActingArcSpec[] = Object.freeze([
+  {
+    id: "arc-awakening-climax",
+    labelKo: "각성·결의 4단 서사 (침착 → 대사 → 각성 → 여운)",
+    summaryKo: "1컷 침착 등장 · 2컷 단호한 발화 · 3컷 안광 각성 클로즈업 · 4컷 차분한 결의",
+    cuts: [
+      {
+        beatKo: "침착 등장",
+        expression: { browDown: 0.16, mouthPress: 0.22 },
+        gazeYawDeg: 0,
+        gazePitchDeg: -4,
+        neckEulerDeg: [2, 0, 0],
+        headEulerDeg: [4, -3, 0],
+      },
+      {
+        beatKo: "단호한 발화",
+        expression: { browDown: 0.34, jawOpen: 0.24, eyeSquint: 0.18 },
+        gazeYawDeg: 10,
+        gazePitchDeg: 2,
+        neckEulerDeg: [-2, 6, -1],
+        headEulerDeg: [-3, 10, -2],
+      },
+      {
+        beatKo: "각성 클로즈업",
+        expression: { eyeWide: 0.72, browDown: 0.58, jawOpen: 0.32 },
+        gazeYawDeg: -4,
+        gazePitchDeg: 3,
+        neckEulerDeg: [4, -4, 1],
+        headEulerDeg: [6, -6, 2],
+      },
+      {
+        beatKo: "결의 여운",
+        expression: { eyeSquint: 0.32, mouthSmile: 0.24 },
+        gazeYawDeg: -10,
+        gazePitchDeg: 8,
+        neckEulerDeg: [-3, -8, 2],
+        headEulerDeg: [-4, -12, 3],
+      },
+    ],
+  },
+  {
+    id: "arc-romance-flutter",
+    labelKo: "로맨스 설렘 4단 서사 (시선 → 미소 → 두근거림 → 환한 미소)",
+    summaryKo: "1컷 고요한 마주침 · 2컷 부드러운 대화 · 3컷 설렘 클로즈업 · 4컷 따뜻한 미소",
+    cuts: [
+      {
+        beatKo: "고요한 마주침",
+        expression: { browInnerUp: 0.18, mouthSmile: 0.14 },
+        gazeYawDeg: 4,
+        gazePitchDeg: 2,
+        neckEulerDeg: [2, -3, 2],
+        headEulerDeg: [3, -5, 3],
+      },
+      {
+        beatKo: "부드러운 대화",
+        expression: { mouthSmile: 0.38, jawOpen: 0.18, browInnerUp: 0.16 },
+        gazeYawDeg: 8,
+        gazePitchDeg: 4,
+        neckEulerDeg: [0, 5, -2],
+        headEulerDeg: [-2, 8, -3],
+      },
+      {
+        beatKo: "설렘 클로즈업",
+        expression: { eyeWide: 0.54, browInnerUp: 0.46, jawOpen: 0.16, cheekPuff: 0.12 },
+        gazeYawDeg: -3,
+        gazePitchDeg: 5,
+        neckEulerDeg: [3, -2, 2],
+        headEulerDeg: [4, -4, 4],
+      },
+      {
+        beatKo: "따뜻한 미소",
+        expression: { mouthSmile: 0.74, eyeSquint: 0.34, browInnerUp: 0.14 },
+        gazeYawDeg: -8,
+        gazePitchDeg: 6,
+        neckEulerDeg: [-2, -6, 3],
+        headEulerDeg: [-3, -10, 4],
+      },
+    ],
+  },
+  {
+    id: "arc-thriller-shock",
+    labelKo: "스릴러 반전 4단 서사 (경계 → 추궁 → 충격 → 냉정한 결단)",
+    summaryKo: "1컷 서늘한 경계 · 2컷 날카로운 추궁 · 3컷 반전 경악 클로즈업 · 4컷 냉정한 결단",
+    cuts: [
+      {
+        beatKo: "서늘한 경계",
+        expression: { browDown: 0.28, eyeSquint: 0.26 },
+        gazeYawDeg: -6,
+        gazePitchDeg: -3,
+        neckEulerDeg: [3, 4, 0],
+        headEulerDeg: [5, 6, -2],
+      },
+      {
+        beatKo: "날카로운 추궁",
+        expression: { browDown: 0.48, mouthFrown: 0.28, jawOpen: 0.22 },
+        gazeYawDeg: 12,
+        gazePitchDeg: 0,
+        neckEulerDeg: [2, 8, -2],
+        headEulerDeg: [3, 12, -3],
+      },
+      {
+        beatKo: "반전 경악",
+        expression: { eyeWide: 0.86, browInnerUp: 0.68, jawOpen: 0.48 },
+        gazeYawDeg: -2,
+        gazePitchDeg: 2,
+        neckEulerDeg: [-3, -2, 0],
+        headEulerDeg: [-5, -4, 1],
+      },
+      {
+        beatKo: "냉정한 결단",
+        expression: { browDown: 0.56, mouthPress: 0.44, eyeSquint: 0.30 },
+        gazeYawDeg: -12,
+        gazePitchDeg: 6,
+        neckEulerDeg: [2, -8, 1],
+        headEulerDeg: [4, -12, 2],
+      },
+    ],
+  },
+  {
+    id: "arc-confident-smirk",
+    labelKo: "여유·역전 4단 서사 (등장 → 응수 → 확신 → 윙크 여운)",
+    summaryKo: "1컷 당당한 등장 · 2컷 여유로운 응수 · 3컷 자신감 미소 · 4컷 윙크 여운",
+    cuts: [
+      {
+        beatKo: "당당한 등장",
+        expression: { mouthSmile: 0.22, browOuterUp: 0.24 },
+        gazeYawDeg: 0,
+        gazePitchDeg: -5,
+        neckEulerDeg: [-2, -4, 2],
+        headEulerDeg: [-3, -6, 2],
+      },
+      {
+        beatKo: "여유로운 응수",
+        expression: { mouthSmile: 0.36, browOuterUp: 0.38, jawOpen: 0.16 },
+        gazeYawDeg: 9,
+        gazePitchDeg: 3,
+        neckEulerDeg: [-2, 6, -2],
+        headEulerDeg: [-3, 9, -3],
+      },
+      {
+        beatKo: "확신 클로즈업",
+        expression: { mouthSmile: 0.64, eyeSquint: 0.28, browOuterUp: 0.30 },
+        gazeYawDeg: -4,
+        gazePitchDeg: 4,
+        neckEulerDeg: [0, -4, 2],
+        headEulerDeg: [-2, -6, 3],
+      },
+      {
+        beatKo: "윙크 여운",
+        expression: { eyeBlinkLeft: 0.88, mouthSmile: 0.56, browOuterUp: 0.28 },
+        gazeYawDeg: -8,
+        gazePitchDeg: 7,
+        neckEulerDeg: [-2, -7, 3],
+        headEulerDeg: [-3, -11, 4],
+      },
+    ],
+  },
+]);
+
+export function findWebtoonStripActingArc(arcId: string): WebtoonStripActingArcSpec | null {
+  return WEBTOON_STRIP_ACTING_ARCS.find((item) => item.id === arcId) ?? null;
+}
+
+function eulerDegToQuat(deg: Vec3): Quat {
+  const rx = (deg[0] * Math.PI) / 360;
+  const ry = (deg[1] * Math.PI) / 360;
+  const rz = (deg[2] * Math.PI) / 360;
+  const cx = Math.cos(rx);
+  const sx = Math.sin(rx);
+  const cy = Math.cos(ry);
+  const sy = Math.sin(ry);
+  const cz = Math.cos(rz);
+  const sz = Math.sin(rz);
+  return qNormalize([
+    sx * cy * cz - cx * sy * sz,
+    cx * sy * cz + sx * cy * sz,
+    cx * cy * sz - sx * sy * cz,
+    cx * cy * cz + sx * sy * sz,
+  ]);
+}
+
+/**
+ * 기준 `ApplyPlan`의 체형·얼굴 파라미터 및 팔·다리 포즈는 그대로 유지하면서,
+ * 해당 컷의 감정 표정(`facs:*`)·안구 시선(`eyeGaze`)·목/고개 연기만 덮어쓴 스냅샷 `ApplyPlan`을 생성한다.
+ */
+export function buildActingCutPlan(basePlan: ApplyPlan, keyframe: WebtoonStripCutActingKeyframe, cutIndex: number): ApplyPlan {
+  const nextMorphs: Record<string, number> = {};
+  for (const [morphKey, value] of Object.entries(basePlan.morphWeights)) {
+    if (!morphKey.startsWith("facs:")) {
+      nextMorphs[morphKey] = value;
+    }
+  }
+  Object.assign(nextMorphs, expressionToMorphWeights(keyframe.expression));
+
+  const eyeAngle = { yawDeg: keyframe.gazeYawDeg, pitchDeg: keyframe.gazePitchDeg };
+  const eyeQuat = eyeAnglesQuaternion(eyeAngle);
+
+  return {
+    ...basePlan,
+    revision: basePlan.revision + 100 + cutIndex,
+    morphWeights: nextMorphs,
+    boneRotations: {
+      ...basePlan.boneRotations,
+      neck: eulerDegToQuat(keyframe.neckEulerDeg),
+      head: eulerDegToQuat(keyframe.headEulerDeg),
+      leftEye: eyeQuat,
+      rightEye: eyeQuat,
+    },
+    eyeGaze: {
+      mode: "manual",
+      symmetry: true,
+      left: eyeAngle,
+      right: eyeAngle,
+    },
+  };
+}
+
 export interface WebtoonStripLayout {
   readonly stripWidth: number;
   readonly stripHeight: number;
@@ -54,6 +316,11 @@ export interface ExportWebtoonVerticalStripOptions {
   readonly includeBubbleSafeZone?: boolean;
   /** 말풍선 풍선 프레임과 집중선·속도선·반짝이를 PNG 래스터에 직접 베이킹할지 여부(선택) */
   readonly mangaFx?: WebtoonStripMangaFxOptions;
+  /** 1~4컷마다 서로 다른 표정·시선·고개 연기가 이어지는 4컷 서사 키프레임 옵션(선택, 캡처 후 basePlan 자동 복원) */
+  readonly actingArc?: {
+    readonly arcId: Exclude<WebtoonStripActingArcId, "none">;
+    readonly basePlan: ApplyPlan;
+  };
   readonly settleSteps?: number;
   readonly onProgress?: (stepIndex: number, totalSteps: number, labelKo: string) => void;
 }
@@ -70,10 +337,6 @@ function deterministicHash01(index: number, seed: number): number {
   return raw - Math.floor(raw);
 }
 
-/**
- * 요청 가로 폭으로부터 총 세로 길이가 MAX_PNG_EXPORT_DIMENSION(4096px) 이하에 수렴하는
- * 4컷 세로 웹툰 원고 레이아웃(외곽 여백·먹선 테두리·말풍선 상단 여백·스크롤 호흡 간격)을 계산한다.
- */
 export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSafeZone = true): WebtoonStripLayout {
   const cutCount = WEBTOON_VERTICAL_STRIP_CUTS.length;
   const safeStripW = Number.isFinite(requestedWidth)
@@ -301,7 +564,6 @@ function bakeSpeechBubbleBalloon(
     }
   }
 
-  // 말풍선 꼬리(캐릭터 얼굴 방향 지향)
   const dir = placeRight ? -1 : 1;
   const tailTipX = cx + dir * Math.round(rx * 0.72);
   const tailTipY = cy + Math.round(ry * 1.48);
@@ -350,10 +612,6 @@ function fillRectRgba(
   }
 }
 
-/**
- * 캡처된 4컷 투명 캐릭터 래스터를 백색 웹툰 원고지·먹선 패널 프레임·은은한 아틀리에 배경 톤 위에 알파 합성하고,
- * 요청 시 말풍선 프레임 및 효과선(집중선/속도선/반짝이)을 함께 래스터 베이킹한다.
- */
 export function composeWebtoonVerticalStrip(
   panels: readonly CapturedRaster[],
   layout: WebtoonStripLayout,
@@ -384,14 +642,12 @@ export function composeWebtoonVerticalStrip(
     const frameX = layout.marginX;
     const frameY = layout.marginY + idx * (frameHeight + layout.gutterY);
 
-    // 1. 먹선 외곽 테두리 (#18151C)
     fillRectRgba(out, layout.stripWidth, frameX, frameY, frameWidth, frameHeight, 24, 21, 28, 255);
 
     const innerX = frameX + layout.borderPx;
     const innerY = frameY + layout.borderPx;
     const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
 
-    // 2. 패널 내부 웜 아틀리에 지면 그라디언트 (#FAF7F2 -> #EFEAE0)
     for (let py = 0; py < innerHeight; py += 1) {
       const t = innerHeight > 1 ? py / (innerHeight - 1) : 0;
       const bgR = Math.round(250 - 11 * t);
@@ -407,12 +663,10 @@ export function composeWebtoonVerticalStrip(
       }
     }
 
-    // 2-b. 선택적 배경 효과선 베이킹(캐릭터 뒤쪽에 깔려 얼굴·눈 가독성을 해치지 않음)
     if (fxLinesKind !== "none") {
       bakePanelActionLines(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, fxLinesKind, fxIntensity, idx);
     }
 
-    // 3. 캐릭터 투명 래스터 알파 블렌딩 (말풍선 안전 여백 아래에 배치)
     const cutStartY = innerY + layout.bubbleSafeTopPx;
     for (let cy = 0; cy < layout.cutHeight; cy += 1) {
       let src = cy * layout.cutWidth * 4;
@@ -436,7 +690,6 @@ export function composeWebtoonVerticalStrip(
       }
     }
 
-    // 4. 선택적 말풍선 안전 프레임 베이킹(좌상단 ↔ 우상단 교차 배치로 스크롤 리듬 형성)
     if (fxIncludeBubbles) {
       bakeSpeechBubbleBalloon(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, idx % 2 === 1);
     }
@@ -445,10 +698,6 @@ export function composeWebtoonVerticalStrip(
   return { width: layout.stripWidth, height: layout.stripHeight, rgba: out };
 }
 
-/**
- * 4개의 한국 웹툰 연출 앵글(등장 로우앵글·대화 반측면·감정 클로즈업·여운 하이앵글)을 순차 캡처하여
- * 스크롤 호흡 여백과 먹선 컷 테두리를 갖춘 세로 웹툰 콘티 스트립 PNG로 내보낸다.
- */
 export async function exportWebtoonVerticalStripPng(
   engine: CharacterEngine,
   options: ExportWebtoonVerticalStripOptions,
@@ -479,47 +728,71 @@ export async function exportWebtoonVerticalStripPng(
     }
   }
 
+  const resolvedArc = options.actingArc ? findWebtoonStripActingArc(options.actingArc.arcId) : null;
   const panels: CapturedRaster[] = [];
   let lastProvenance = undefined;
+  let appliedActingKeyframe = false;
 
-  for (let idx = 0; idx < WEBTOON_VERTICAL_STRIP_CUTS.length; idx += 1) {
-    const cut = WEBTOON_VERTICAL_STRIP_CUTS[idx];
-    if (!cut) continue;
-    options.onProgress?.(idx + 1, WEBTOON_VERTICAL_STRIP_CUTS.length, cut.labelKo);
-    try {
-      const captured = await engine.renderPasses({
-        width: layout.cutWidth,
-        height: layout.cutHeight,
-        passes: ["lit"],
-        transparentBackground: true,
-        settleSteps: 0,
-        camera: {
-          ...DEFAULT_FRAMING,
-          mode: cut.mode,
-          yawDeg: cut.yawDeg,
-          pitchDeg: cut.pitchDeg,
-          distanceScale: cut.distanceScale,
-        },
-      });
-      if (captured.width !== layout.cutWidth || captured.height !== layout.cutHeight) {
-        return {
-          ok: false,
-          failure: failVisible(
-            "export-capture-size",
-            `엔진이 컷 크기 ${layout.cutWidth}×${layout.cutHeight} 대신 ${captured.width}×${captured.height}를 반환했습니다.`,
-            undefined,
-            started,
-          ),
-        };
+  try {
+    for (let idx = 0; idx < WEBTOON_VERTICAL_STRIP_CUTS.length; idx += 1) {
+      const cut = WEBTOON_VERTICAL_STRIP_CUTS[idx];
+      if (!cut) continue;
+      const keyframe = resolvedArc?.cuts[idx];
+      const stepLabel = keyframe ? `${cut.labelKo} (${keyframe.beatKo})` : cut.labelKo;
+      options.onProgress?.(idx + 1, WEBTOON_VERTICAL_STRIP_CUTS.length, stepLabel);
+
+      if (keyframe && options.actingArc) {
+        try {
+          engine.applyPlan(buildActingCutPlan(options.actingArc.basePlan, keyframe, idx));
+          appliedActingKeyframe = true;
+        } catch (error) {
+          return { ok: false, failure: toFailure("export-acting-plan", `${stepLabel} 연기 스냅샷 적용에 실패했습니다.`, error, started) };
+        }
       }
-      const lit = captured.passes.lit;
-      if (!lit) {
-        return { ok: false, failure: failVisible("export-missing-lit", `${cut.labelKo} 캡처에 lit 패스가 없습니다.`, undefined, started) };
+
+      try {
+        const captured = await engine.renderPasses({
+          width: layout.cutWidth,
+          height: layout.cutHeight,
+          passes: ["lit"],
+          transparentBackground: true,
+          settleSteps: 0,
+          camera: {
+            ...DEFAULT_FRAMING,
+            mode: cut.mode,
+            yawDeg: cut.yawDeg,
+            pitchDeg: cut.pitchDeg,
+            distanceScale: cut.distanceScale,
+          },
+        });
+        if (captured.width !== layout.cutWidth || captured.height !== layout.cutHeight) {
+          return {
+            ok: false,
+            failure: failVisible(
+              "export-capture-size",
+              `엔진이 컷 크기 ${layout.cutWidth}×${layout.cutHeight} 대신 ${captured.width}×${captured.height}를 반환했습니다.`,
+              undefined,
+              started,
+            ),
+          };
+        }
+        const lit = captured.passes.lit;
+        if (!lit) {
+          return { ok: false, failure: failVisible("export-missing-lit", `${cut.labelKo} 캡처에 lit 패스가 없습니다.`, undefined, started) };
+        }
+        panels.push(lit);
+        lastProvenance = captured.provenance;
+      } catch (error) {
+        return { ok: false, failure: toFailure("export-capture", `웹툰 4컷 스트립(${cut.labelKo}) 캡처에 실패했습니다.`, error, started) };
       }
-      panels.push(lit);
-      lastProvenance = captured.provenance;
-    } catch (error) {
-      return { ok: false, failure: toFailure("export-capture", `웹툰 4컷 스트립(${cut.labelKo}) 캡처에 실패했습니다.`, error, started) };
+    }
+  } finally {
+    if (appliedActingKeyframe && options.actingArc) {
+      try {
+        engine.applyPlan(options.actingArc.basePlan);
+      } catch {
+        // 엔진이 해제된 경우 복원 실패는 무시한다
+      }
     }
   }
 
@@ -531,7 +804,9 @@ export async function exportWebtoonVerticalStripPng(
     const composed = composeWebtoonVerticalStrip(panels, layout, options.mangaFx);
     const bytes = await encodePng(composed, { filter: "adaptive" });
     const baseName = exportFileName("png", lastProvenance.recipeDigest, composed.width, composed.height);
-    const suffix = options.mangaFx?.enabled ? "-webtoon-4cut-fx-strip.png" : "-webtoon-4cut-strip.png";
+    const actingTag = resolvedArc ? "-acting" : "";
+    const fxTag = options.mangaFx?.enabled ? "-fx" : "";
+    const suffix = `-webtoon-4cut${actingTag}${fxTag}-strip.png`;
     const fileName = baseName.replace(/\.png$/u, suffix);
     return {
       ok: true,

@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import { MAX_PNG_EXPORT_DIMENSION } from "./export-session";
 import { isPng } from "./png-encoder";
 import {
+  WEBTOON_STRIP_ACTING_ARCS,
   WEBTOON_VERTICAL_STRIP_CUTS,
+  buildActingCutPlan,
   clampWebtoonStripLayout,
   composeWebtoonVerticalStrip,
   exportWebtoonVerticalStripPng,
 } from "./webtoon-strip-composer";
+import { DEFAULT_EYE_GAZE, createDefaultRecipe } from "../contracts";
 import { createMockEngine } from "../testing/mock-engine";
 
 describe("webtoon-strip-composer", () => {
@@ -163,5 +166,50 @@ describe("webtoon-strip-composer", () => {
     if (!fxOutcome.ok) return;
     expect(isPng(fxOutcome.bytes)).toBe(true);
     expect(fxOutcome.receipt.fileName).toMatch(/-webtoon-4cut-fx-strip\.png$/u);
+  });
+
+  it("actingArc 활성화 시 1~4컷마다 고유한 표정·시선·목/고개 ApplyPlan을 순차 적용한 뒤 basePlan을 복원하고 -acting 접미사를 붙인다", async () => {
+    const engine = createMockEngine();
+    const basePlan = {
+      revision: 7,
+      morphWeights: { "body:height": 0.35, "facs:mouthSmile": 0.1 },
+      boneRotations: { rightUpperArm: [0, 0, 0.3, 0.9539] as const },
+      parts: [],
+      eyeGaze: DEFAULT_EYE_GAZE,
+      colors: createDefaultRecipe().colors,
+      physics: { provider: "builtin-pbd" as const, settleSteps: 0 },
+      unsupported: [],
+    };
+
+    const arc = WEBTOON_STRIP_ACTING_ARCS[0]!;
+    const cut2Plan = buildActingCutPlan(basePlan, arc.cuts[2], 2);
+    expect(cut2Plan.morphWeights["body:height"]).toBe(0.35);
+    expect(cut2Plan.morphWeights["facs:mouthSmile"]).toBeUndefined();
+    expect(cut2Plan.morphWeights["facs:eyeWide"]).toBeCloseTo(0.72, 4);
+    expect(cut2Plan.boneRotations.rightUpperArm).toEqual(basePlan.boneRotations.rightUpperArm);
+    expect(cut2Plan.boneRotations.head).toBeDefined();
+
+    const progressLabels: string[] = [];
+    const outcome = await exportWebtoonVerticalStripPng(
+      engine,
+      {
+        stripWidth: 64,
+        includeBubbleSafeZone: true,
+        actingArc: { arcId: "arc-awakening-climax", basePlan },
+        mangaFx: { enabled: true, linesKind: "focus-radial", includeSpeechBubbles: true },
+        onProgress: (_step, _total, label) => progressLabels.push(label),
+      },
+      { now: () => 300 },
+    );
+
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.receipt.fileName).toMatch(/-webtoon-4cut-acting-fx-strip\.png$/u);
+    expect(progressLabels[2]).toContain("각성 클로즈업");
+
+    const applyCalls = engine.calls.filter((c) => c.method === "applyPlan");
+    // 4개 컷 스냅샷 적용 + 마지막 finally에서 basePlan 복원 = 총 5회
+    expect(applyCalls).toHaveLength(5);
+    expect((applyCalls[4]?.args[0] as { revision: number }).revision).toBe(basePlan.revision);
   });
 });
