@@ -16,6 +16,7 @@ import { sha256Hex } from "../../shared/hash";
 import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../material-presets";
 
 import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
+import { applyDuoPartnerExpressionMorphs } from "./duo-partner-expression";
 import { rigMeshMetadata } from "./mesh-binding";
 import { loadCharacterAssetContainer } from "./package-loader";
 
@@ -199,34 +200,6 @@ const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: 
   "sacred-chalice-wand": { upper: [16, 28, 54], lower: [32, 86, -20], hand: [12, 16, -8] },
 };
 
-const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {
-  neutral: {},
-  "warm-smile": {
-    mouthSmile: 0.78,
-    eyeSquint: 0.36,
-    browInnerUp: 0.22,
-    HappyBrow: 0.58,
-  },
-  "cold-smirk": {
-    mouthSmile: 0.42,
-    eyeSquint: 0.3,
-    browDown: 0.28,
-    AngryBrow: 0.26,
-  },
-  shocked: {
-    eyeWide: 0.82,
-    jawOpen: 0.48,
-    browInnerUp: 0.68,
-    mouthFunnel: 0.26,
-  },
-  "stern-glare": {
-    mouthFrown: 0.52,
-    browDown: 0.72,
-    eyeSquint: 0.28,
-    AngryBrow: 0.68,
-  },
-};
-
 function computePalmLocalPosition(rig: CharacterRig, hand: HandPropSide, propId: HandPropId): Vector3 {
   const handBone = rig.humanoid.get(hand);
   const middleName = hand === "rightHand" ? "rightMiddleProximal" : "leftMiddleProximal";
@@ -365,42 +338,6 @@ function applyDuoPartnerConversationalPose(
   for (const skeleton of container.skeletons) {
     skeleton.useTextureToStoreBoneMatrices = true;
     skeleton.prepare(true);
-  }
-}
-
-function applyDuoPartnerExpressionMorphs(container: LoadedContainer, expression: DuoPartnerExpressionPreset): void {
-  const weights = PARTNER_EXPRESSION_WEIGHTS[expression] ?? PARTNER_EXPRESSION_WEIGHTS.neutral;
-  const knownKeys = new Set<string>([
-    "mouthSmile",
-    "mouthFrown",
-    "jawOpen",
-    "mouthPucker",
-    "mouthFunnel",
-    "eyeBlinkLeft",
-    "eyeBlinkRight",
-    "eyeWide",
-    "eyeSquint",
-    "browInnerUp",
-    "browDown",
-    "cheekPuff",
-    "HappyBrow",
-    "AngryBrow",
-  ]);
-  for (const abstract of container.meshes) {
-    if (!(abstract instanceof Mesh)) continue;
-    const manager = abstract.morphTargetManager;
-    if (!manager) continue;
-    manager.useTextureToStoreTargets = true;
-    for (let i = 0; i < manager.numTargets; i += 1) {
-      const target = manager.getTarget(i);
-      const rawName = target.name;
-      const stripped = rawName.startsWith("facs:") ? rawName.slice(5) : rawName;
-      if (stripped in weights) {
-        target.influence = weights[stripped] ?? 0;
-      } else if (knownKeys.has(stripped)) {
-        target.influence = 0;
-      }
-    }
   }
 }
 
