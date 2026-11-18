@@ -7,6 +7,7 @@ import {
   CloudRain,
   Compass,
   DoorOpen,
+  Flame,
   Gem,
   Hammer,
   Layers,
@@ -40,6 +41,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   type StudioHybridDccBlenderKitItem,
   type StudioHybridDccPrecisionBgKitItem,
@@ -280,6 +282,35 @@ export function StudioHybridDccPrimitiveBar({
           </div>
         </details>
       ) : null}
+
+      <details className="group rounded-xl border border-line bg-canvas/35">
+        <summary
+          data-testid="studio-hybrid-dcc-v27-heathaze-kit-summary"
+          className={cn(
+            "flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs font-medium text-fg-2 hover:bg-raised/45 [&::-webkit-details-marker]:hidden",
+            FOCUS_RING,
+          )}
+        >
+          <span className="inline-flex min-w-0 items-center gap-2 [word-break:keep-all]">
+            <Flame size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-fg-3 group-open:text-fg" />
+            <span className="truncate tabular-nums">
+              {bt(
+                `잔류 연무·열기 아지랑이 V27 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT.length}종)`,
+                `Post-impact dust & heat-haze V27 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT.length})`,
+              )}
+            </span>
+          </span>
+          <ChevronDown
+            size={16}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="shrink-0 text-fg-3 transition-transform duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="max-h-80 space-y-2 overflow-y-auto overscroll-contain border-t border-line p-2">
+          {STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT.map(renderKitItemButton)}
+        </div>
+      </details>
 
       <details className="group rounded-xl border border-line bg-canvas/35">
         <summary

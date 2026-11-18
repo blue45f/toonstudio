@@ -5,8 +5,9 @@ import {
   Hammer,
   PenLine,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { StudioBg3dDustLodCliffhangerCard } from "./StudioBg3dDustLodCliffhangerCard";
 import {
   AFTERMATH_DAMAGE_PROFILES,
   READER_DISPLAY_MODES,
@@ -14,12 +15,20 @@ import {
   type AftermathReadabilityVttEvaluation,
   type ReaderDisplayModeId,
 } from "./studio-bg3d-aftermath-readability-vtt";
+import {
+  evaluateDustLodCliffhangerAndPack,
+  type DeviceLodTargetId,
+  type DustHeatHazePresetId,
+} from "./studio-bg3d-dust-lod-cliffhanger-pack";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
 
 export interface StudioBg3dAftermathReadabilityCardProps {
   readonly disabled?: boolean;
+  readonly locale?: "KO" | "EN" | "JA";
+  readonly tankobonFormatId?: "B5" | "A5";
+  readonly continuityDigestHex?: string;
   readonly evaluation: AftermathReadabilityVttEvaluation;
   readonly onSelectAftermathId: (id: AftermathDamageStageId) => void;
   readonly onChangeDialogueDensityPct: (pct: number) => void;
@@ -29,16 +38,58 @@ export interface StudioBg3dAftermathReadabilityCardProps {
 /**
  * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V26 실내 파손·흔적(Intact/Cracked/Shattered) ·
  * 대사 밀도 연동 배경 선화 자동 감쇠 · 독자 디스플레이(야간 OLED/색각 이상) 가독성 ·
- * .toonsubs.vtt 자막 큐시트 및 금요일 마감 10분 4채널 출고 게이트 카드.
+ * .toonsubs.vtt 자막 큐시트 · 4채널 출고 게이트 및 V27 연무/프록시 LOD/절단신공 연결 카드.
  */
 export function StudioBg3dAftermathReadabilityCard({
   disabled = false,
+  locale = "KO",
+  tankobonFormatId = "B5",
+  continuityDigestHex = "00000000",
   evaluation,
   onSelectAftermathId,
   onChangeDialogueDensityPct,
   onSelectDisplayModeId,
 }: StudioBg3dAftermathReadabilityCardProps) {
   const [showVttPreview, setShowVttPreview] = useState(false);
+  const [hazeId, setHazeId] =
+    useState<DustHeatHazePresetId>("fissure-drift-plume");
+  const [deviceId, setDeviceId] =
+    useState<DeviceLodTargetId>("mobile-midrange-60fps");
+  const [proxyLodEnabled, setProxyLodEnabled] = useState(true);
+  const [cliffhangerGutterPx, setCliffhangerGutterPx] = useState(780);
+
+  useEffect(() => {
+    if (evaluation.aftermath.id === "intact") setHazeId("calm-incense-wisp");
+    else if (evaluation.aftermath.id === "cracked")
+      setHazeId("fissure-drift-plume");
+    else setHazeId("tempest-shockwave-haze");
+  }, [evaluation.aftermath.id]);
+
+  const v27Evaluation = useMemo(
+    () =>
+      evaluateDustLodCliffhangerAndPack({
+        hazeId,
+        deviceId,
+        proxyLodEnabled,
+        cliffhangerBlackoutGutterPx: cliffhangerGutterPx,
+        locale,
+        tankobonFormatId,
+        continuityDigestHex,
+        allFourChannelsReady: evaluation.allFourChannelsReady,
+        baseV26WeeklyHoursSaved: evaluation.totalWeeklyHoursV26,
+      }),
+    [
+      hazeId,
+      deviceId,
+      proxyLodEnabled,
+      cliffhangerGutterPx,
+      locale,
+      tankobonFormatId,
+      continuityDigestHex,
+      evaluation.allFourChannelsReady,
+      evaluation.totalWeeklyHoursV26,
+    ],
+  );
 
   return (
     <div
@@ -221,6 +272,15 @@ export function StudioBg3dAftermathReadabilityCard({
           {evaluation.vttContentString}
         </pre>
       ) : null}
+
+      <StudioBg3dDustLodCliffhangerCard
+        disabled={disabled}
+        evaluation={v27Evaluation}
+        onSelectHazeId={setHazeId}
+        onSelectDeviceId={setDeviceId}
+        onToggleProxyLod={() => setProxyLodEnabled((prev) => !prev)}
+        onChangeCliffhangerGutterPx={setCliffhangerGutterPx}
+      />
     </div>
   );
 }

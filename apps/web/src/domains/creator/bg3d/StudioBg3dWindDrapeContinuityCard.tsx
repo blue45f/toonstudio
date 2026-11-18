@@ -260,6 +260,9 @@ export function StudioBg3dWindDrapeContinuityCard({
 
       <StudioBg3dAftermathReadabilityCard
         disabled={disabled}
+        locale={evaluation.audioManifest.locale}
+        tankobonFormatId={evaluation.tankobonSpec.formatId}
+        continuityDigestHex={evaluation.currentSnapshot.digestHex}
         evaluation={v26Evaluation}
         onSelectAftermathId={setAftermathId}
         onChangeDialogueDensityPct={setDialogueDensityPct}

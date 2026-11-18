@@ -339,6 +339,32 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v26-vtt-preview").textContent,
     ).toContain("toonstudio.toonsubs.v26");
 
+    // Wave 13 (V27): 잔류 연무·아지랑이·모바일 60fps 프록시 LOD 버짓 가드·절단신공 스코어러·.toonpack.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v27-dust-lod-card").textContent,
+    ).toContain("잔류 연무·아지랑이 V27");
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("60fps 정상");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-proxy-lod-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("프록시 LOD 권장");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-proxy-lod-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-lod-budget-badge").textContent,
+    ).toContain("60fps 정상");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v27-cliffhanger-slider"), {
+      target: { value: "800" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v27-cliffhanger-readout").textContent,
+    ).toContain("S등급");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v27-pack-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v27-pack-json").textContent,
+    ).toContain("toonstudio.toonpack.v27");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );

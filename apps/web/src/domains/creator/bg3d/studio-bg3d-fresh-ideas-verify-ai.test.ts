@@ -28,6 +28,7 @@ import {
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { evaluateAftermathReadabilityAndVtt } from "./studio-bg3d-aftermath-readability-vtt";
+import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
 import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
@@ -297,6 +298,38 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v26Release.totalWeeklyHoursV26).toBe(35.2);
     expect(v26Release.quarterlyHoursSavedV26).toBe(457.6);
     expect(v26Release.quarterlyBankedEpisodesV26).toBe(5.72);
+
+    const v27MobileUnproxied = evaluateDustLodCliffhangerAndPack({
+      hazeId: "tempest-shockwave-haze",
+      deviceId: "mobile-midrange-60fps",
+      proxyLodEnabled: false,
+      cliffhangerBlackoutGutterPx: 780,
+      locale: "JA",
+      tankobonFormatId: "B5",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      allFourChannelsReady: v26Release.allFourChannelsReady,
+      baseV26WeeklyHoursSaved: v26Release.totalWeeklyHoursV26,
+    });
+    expect(v27MobileUnproxied.budget60FpsPassed).toBe(false);
+
+    const v27MobileProxied = evaluateDustLodCliffhangerAndPack({
+      hazeId: "tempest-shockwave-haze",
+      deviceId: "mobile-midrange-60fps",
+      proxyLodEnabled: true,
+      cliffhangerBlackoutGutterPx: 780,
+      locale: "JA",
+      tankobonFormatId: "B5",
+      continuityDigestHex: v25Match.currentSnapshot.digestHex,
+      allFourChannelsReady: v26Release.allFourChannelsReady,
+      baseV26WeeklyHoursSaved: v26Release.totalWeeklyHoursV26,
+    });
+    expect(v27MobileProxied.budget60FpsPassed).toBe(true);
+    expect(v27MobileProxied.datumDriftMeters).toBe(0);
+    expect(v27MobileProxied.cliffhangerGrade).toBe("S");
+    expect(v27MobileProxied.packManifest.bundledArtifacts).toHaveLength(4);
+    expect(v27MobileProxied.totalWeeklyHoursV27).toBe(36.0);
+    expect(v27MobileProxied.quarterlyHoursSavedV27).toBe(468.0);
+    expect(v27MobileProxied.quarterlyBankedEpisodesV27).toBe(5.85);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;
