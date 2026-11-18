@@ -1,8 +1,10 @@
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
+export const ADMIN_WORKSPACE_BASE = "/admin/workspace/";
 
 interface AdminQualityEntryOptions {
   readonly repositoryRoot: string;
@@ -31,6 +33,11 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
           manifest: false,
         },
       });
+      // 같은 관리자 번들을 한 번만 만들고 경로별 문서 진입점을 제공한다.
+      // 절대 자산 경로는 quality/assets를 유지하므로 Web·Studio 자산과 충돌하지 않는다.
+      const workspaceDirectory = path.join(outputDirectory, "admin/workspace");
+      await mkdir(workspaceDirectory, { recursive: true });
+      await copyFile(path.join(outputDirectory, "admin/platform/quality/index.html"), path.join(workspaceDirectory, "index.html"));
     },
   };
 }
