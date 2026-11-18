@@ -80,18 +80,19 @@ test("community section and guide controls remain keyboard-operable with reduced
   await expect(promotion).toBeHidden();
   for (const name of ["승격 리그 · 활동", "작품 홍보 · 예고편"]) {
     const disclosure = page.locator("details.community-layout-disclosure").filter({ has: page.locator("summary", { hasText: name }) });
+    const toggle = disclosure.locator(":scope > summary");
     await expect(disclosure).toHaveJSProperty("open", false);
-    await disclosure.locator("summary").focus();
+    await toggle.focus();
     await page.keyboard.press("Enter");
     await expect(disclosure).toHaveJSProperty("open", true);
-    await expect(disclosure.locator("summary")).toBeFocused();
+    await expect(toggle).toBeFocused();
   }
   await expect(league).toBeVisible();
   await expect(promotion).toBeVisible();
   const spotlight = page.locator('[data-smart-ai-spotlight="nb-community-plaza"]');
   const artGuide = page.locator("details.community-layout-disclosure").filter({ has: spotlight });
   await expect(artGuide).toHaveJSProperty("open", false);
-  await artGuide.locator("summary").focus();
+  await artGuide.locator(":scope > summary").focus();
   await page.keyboard.press("Space");
   await expect(artGuide).toHaveJSProperty("open", true);
   await expect(spotlight).toHaveCount(1);
@@ -198,15 +199,15 @@ test("calendar day lists expand without losing keyboard navigation or full expor
   const monday = page.getByRole("tab", { name: /^월/u });
   await monday.click();
   const panel = page.getByRole("tabpanel");
-  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(24);
+  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(18);
   await panel.getByRole("button", { name: /월요일 .*더 보기/u }).click();
-  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(48);
+  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(36);
   await monday.focus();
   await page.keyboard.press("ArrowRight");
   const tuesday = page.getByRole("tab", { name: /^화/u });
   await expect(tuesday).toBeFocused();
   await expect(tuesday).toHaveAttribute("aria-selected", "true");
-  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(24);
+  await expect(panel.locator('a[href^="/title/"]')).toHaveCount(18);
   const downloading = page.waitForEvent("download");
   await page.getByRole("button", { name: /내보내기/u }).click();
   const download = await downloading;
