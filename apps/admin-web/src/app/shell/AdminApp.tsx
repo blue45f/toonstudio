@@ -5,17 +5,19 @@ import { CiQualityAccess } from "./CiQualityAccess";
 
 export function AdminApp() {
   const isQuality = window.location.pathname.replace(/\/+$/u, "") === "/admin/platform/quality";
+  const isCloudWork = isQuality && new URLSearchParams(window.location.search).get("view") === "cloud-work";
   return <main className="admin-shell">
     <header className="admin-brand" aria-label="ToonStudio 관리자">
       <a href="https://www.toonstudio.cloud/" aria-label="ToonStudio 서비스로 돌아가기">Toon<span>Studio</span></a>
-      <span className="admin-brand__label">{isQuality ? "CI·QA 검증" : "운영 정책·라이선스"}</span>
+      <span className="admin-brand__label">{isCloudWork ? "클라우드 작업" : isQuality ? "CI·QA 검증" : "운영 정책·라이선스"}</span>
       <span className="admin-brand__security" data-testid="admin-edge-gate-badge">{isQuality ? "서버 관리자 권한 확인" : "관리자 전용"}</span>
     </header>
     <nav className="admin-local-navigation" aria-label="독립 관리자 메뉴">
       <a href="/admin/platform/operations?view=policy" aria-current={isQuality ? undefined : "page"}>운영 모드·라이선스</a>
-      <a href="/admin/platform/quality/" aria-current={isQuality ? "page" : undefined}>CI·QA 검증</a>
+      <a href="/admin/platform/quality/" aria-current={isQuality && !isCloudWork ? "page" : undefined}>CI·QA 검증</a>
+      <a href="/admin/platform/quality/?view=cloud-work" aria-current={isCloudWork ? "page" : undefined}>클라우드 작업</a>
     </nav>
-    {isQuality ? <CiQualityAccess /> : <OperationPolicyPanel />}
+    {isQuality ? <CiQualityAccess view={isCloudWork ? "cloud-work" : "quality"} /> : <OperationPolicyPanel />}
     {!isQuality && <details className="policy-card">
       <summary>다른 관리 업무로 이동</summary>
       <nav aria-label="관리 화면 이동">

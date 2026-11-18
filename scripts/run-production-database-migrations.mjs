@@ -10,12 +10,13 @@ import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { psql, queryScalar } from "./production-database-connection.mjs";
 export { psql, queryScalar };
+export { validateRuntimeDatabaseRole };
 
 import { buildFortuneSnapshotRuntimeAclSql } from "./fortune-snapshot-database-contract.mjs";
 import { buildHiringCapabilitySql, buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
 import { buildHiringAutomationCapabilitySql, buildHiringAutomationRuntimeAclSql } from "./creator-hiring-automation-database-contract.mjs";
 import { buildCareerConfirmationCapabilitySql, buildCareerConfirmationRuntimeAclSql } from "./creator-career-confirmation-database-contract.mjs";
-import { buildAdminCapabilitySql, buildAdminRuntimeAclSql } from "./admin-database-contract.mjs";
+import { buildAdminCapabilitySql, buildAdminRuntimeAclSql, buildAdminCloudWorkboardCapabilitySql, buildAdminCloudWorkboardRuntimeAclSql } from "./admin-database-contract.mjs";
 import { buildFeedbackCapabilitySql, buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
 import {
   buildCommunityCafeCapabilitySql,
@@ -23,6 +24,7 @@ import {
 } from "./community-cafe-database-contract.mjs";
 import {
   validateProductionDatabaseUrl,
+  validateRuntimeDatabaseRole,
 } from "./validate-production-database-url.mjs";
 import {
   HISTORICAL_BASELINE_RELATIONS,
@@ -79,18 +81,6 @@ function expectedMigrationProvenance(migration) {
 
 function checksum(contents) {
   return createHash("sha256").update(contents).digest("hex");
-}
-
-export function validateRuntimeDatabaseRole(runtimeDatabaseRole) {
-  if (
-    typeof runtimeDatabaseRole !== "string" ||
-    !/^[a-z_][a-z0-9_]{0,62}$/u.test(runtimeDatabaseRole)
-  ) {
-    fail(
-      "Runtime database role must be an explicit lowercase PostgreSQL role name",
-    );
-  }
-  return runtimeDatabaseRole;
 }
 
 export function buildAuthRuntimeAclSql(runtimeDatabaseRole) {
@@ -3646,6 +3636,8 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
     psql(databaseUrl, buildMessagingRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildAdminRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildAdminCapabilitySql(runtimeDatabaseRole));
+    psql(databaseUrl, buildAdminCloudWorkboardRuntimeAclSql(runtimeDatabaseRole));
+    psql(databaseUrl, buildAdminCloudWorkboardCapabilitySql(runtimeDatabaseRole));
     psql(databaseUrl, buildFeedbackRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildFeedbackCapabilitySql(runtimeDatabaseRole));
     psql(databaseUrl, buildCommunityCafeRuntimeAclSql(runtimeDatabaseRole));

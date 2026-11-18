@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 174 |
+| API `platform/database` 파일 | 175 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -355,3 +355,10 @@ pnpm run typecheck
 두 테이블의 Drizzle 정의는 기존 `studio-raster-asset.schema.ts`에 포함하여 DB 소스 상한은
 173에서 174로 SQL 한 파일만 반영한다. Creator 직하·교차 앱·파일 크기 예산은 올리지 않는다.
 이 승인은 코드·migration 파일·분리 로컬 DB 검증에 한정하며 운영 DB 적용·배포를 허가하지 않는다.
+
+2026-11-18 관리자 클라우드 작업 보드 통합은 추가형 migration
+`0122_admin_cloud_workboard.sql` 한 파일을 더해 DB 소스 상한을 174에서 175로 기록한다.
+본문·감사 이력·저장 재시도 영수증의 Drizzle 정의는 기존 `admin.schema.ts`에 포함한다.
+공통 DTO와 검증 규칙은 Admin/API의 실제 두 소비자를 위해 contracts에 두고 앱 간 소스 참조를 만들지 않는다.
+기존 사용자별 Sites 기록은 번들에 넣지 않으며 명시적 JSON 가져오기로만 전달한다.
+이번 범위는 코드 구현·검증·원격 main 머지이며 운영 DB 적용·배포·계정 변경은 승인 대기로 남긴다.

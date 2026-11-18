@@ -8,6 +8,9 @@ export const HEALTH_READINESS_QUERY_TIMEOUT_MS = 3_000;
 
 export type QueryablePool = Pick<Pool, "query">;
 export type TimedHealthQuery = QueryConfig & { query_timeout: number };
+export interface DatabasePingRow {
+  ready: number;
+}
 
 export function timedHealthQuery(
   text: string,

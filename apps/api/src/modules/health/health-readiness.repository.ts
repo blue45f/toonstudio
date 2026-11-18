@@ -4,7 +4,7 @@ import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-c
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
-import type { QueryablePool } from "./health-readiness-query";
+import type { DatabasePingRow, QueryablePool } from "./health-readiness-query";
 
 export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
@@ -19,6 +19,9 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",
+  "admin_cloud_workboard",
+  "admin_cloud_workboard_audit",
+  "admin_cloud_workboard_receipt",
   "admin_content_reports",
   "admin_member_test_accounts",
   "admin_promos",
@@ -267,10 +270,6 @@ export const REQUIRED_DATABASE_MIGRATIONS = [
   "0051_personal_cloud_connections",
   "0059_member_messaging",
 ] as const;
-
-interface DatabasePingRow {
-  ready: number;
-}
 
 interface SchemaCatalogRow {
   relationNames: string[] | null;
