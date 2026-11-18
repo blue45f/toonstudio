@@ -29,6 +29,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V22_BOKEH_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -432,6 +433,43 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(4);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V23_ZDEPTH_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 건축 차폐 기상·수막 파문 V24(3종)이 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-weather-occlusion-motion-v24/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      weatherOcclusionColliderSpec?: { eavesLintelHeightM?: number; indoorCeilingLeakCount?: number };
+      supportedLocalizationSlots?: string[];
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.weatherOcclusionColliderSpec?.eavesLintelHeightM).toBe(2.4);
+    expect(prov.weatherOcclusionColliderSpec?.indoorCeilingLeakCount).toBe(0);
+    expect(prov.supportedLocalizationSlots).toEqual(["KO", "EN", "JA"]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(5);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V24_WEATHER_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);

@@ -5,8 +5,16 @@ import {
   Type,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { StudioBg3dWeatherMotionColorScriptCard } from "./StudioBg3dWeatherMotionColorScriptCard";
+import {
+  evaluateWeatherMotionAndColorScript,
+  type EpisodeColorScriptAct,
+  type EpisodeColorScriptActId,
+  type SfxLocalizationLocaleId,
+  type WeatherOcclusionPresetId,
+} from "./studio-bg3d-weather-motion-colorscript";
 import {
   WEBTOON_TIME_OF_DAY_PROFILES,
   type DatumCrowdPresetCount,
@@ -29,7 +37,7 @@ export interface StudioBg3dZDepthCrowdTodCardProps {
 
 /**
  * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V23 Z-심도 3D 효과음(SFX) · 기준선 군중 블로킹 ·
- * 멀티 시간대(5600K/3200K/8500K) · 세로 스크롤 페이싱 · .toonlayers.json 다중 패스 익스포터 카드.
+ * 멀티 시간대(5600K/3200K/8500K) · 세로 스크롤 페이싱 · V24 기상 차폐/컬러 스크립트/무빙툰 통합 카드.
  */
 export function StudioBg3dZDepthCrowdTodCard({
   disabled = false,
@@ -39,6 +47,55 @@ export function StudioBg3dZDepthCrowdTodCard({
   onChangeGutterPx,
 }: StudioBg3dZDepthCrowdTodCardProps) {
   const [showManifestPreview, setShowManifestPreview] = useState(false);
+  const [weatherId, setWeatherId] =
+    useState<WeatherOcclusionPresetId>("rofan-blossom-snow");
+  const [activeActId, setActiveActId] =
+    useState<EpisodeColorScriptActId>("act2-turn");
+  const [localeId, setLocaleId] = useState<SfxLocalizationLocaleId>("KO");
+  const [characterFocalMm, setCharacterFocalMm] = useState<number>(85);
+
+  useEffect(() => {
+    if (evaluation.manifest.openRatioPct <= 25) {
+      setWeatherId("eaves-rain-ripples");
+      setActiveActId("act1-setup");
+    } else if (evaluation.manifest.openRatioPct <= 75) {
+      setWeatherId("rofan-blossom-snow");
+      setActiveActId("act2-turn");
+    } else {
+      setWeatherId("abyss-storm-mist");
+      setActiveActId("act3-climax");
+    }
+  }, [evaluation.manifest.openRatioPct]);
+
+  const v24Evaluation = useMemo(
+    () =>
+      evaluateWeatherMotionAndColorScript({
+        openRatioPct: evaluation.manifest.openRatioPct,
+        weatherId,
+        backgroundFocalMm: 24,
+        characterFocalMm,
+        activeActId,
+        localeId,
+        baseV23WeeklyHoursSaved: evaluation.totalWeeklyHoursV23,
+        layers: evaluation.manifest.layers,
+      }),
+    [
+      evaluation.manifest.openRatioPct,
+      evaluation.totalWeeklyHoursV23,
+      evaluation.manifest.layers,
+      weatherId,
+      characterFocalMm,
+      activeActId,
+      localeId,
+    ],
+  );
+
+  const handleSelectAct = (act: EpisodeColorScriptAct) => {
+    setActiveActId(act.id);
+    if (act.kelvin >= 7500) onSelectTimeOfDayId("moonlight-8500k");
+    else if (act.kelvin >= 5000) onSelectTimeOfDayId("noon-5600k");
+    else onSelectTimeOfDayId("sunset-3200k");
+  };
 
   return (
     <div
@@ -199,6 +256,15 @@ export function StudioBg3dZDepthCrowdTodCard({
           {evaluation.manifestJsonString}
         </pre>
       ) : null}
+
+      <StudioBg3dWeatherMotionColorScriptCard
+        disabled={disabled}
+        evaluation={v24Evaluation}
+        onSelectWeatherId={setWeatherId}
+        onSelectAct={handleSelectAct}
+        onSelectLocaleId={setLocaleId}
+        onChangeCharacterFocalMm={setCharacterFocalMm}
+      />
     </div>
   );
 }
