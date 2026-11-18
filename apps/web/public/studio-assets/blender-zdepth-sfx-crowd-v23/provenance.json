@@ -1,0 +1,116 @@
+{
+  "schema": "toonstudio.blender-zdepth-sfx-crowd-tod.v23",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_zdepth_sfx_crowd_tod_v23.py · Z-Depth SFX, Datum Crowd & Multi-ToD SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "zDepthSandwichMeters": {
+    "foregroundBokehYM": -0.74,
+    "zDepthSfxPlaneYM": -0.34,
+    "characterIkSocketYM": 0.0,
+    "datumCrowdBackYM": 0.58,
+    "slitPortalYM": 1.05
+  },
+  "timeOfDayKelvins": [
+    5600,
+    3200,
+    8500
+  ],
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-zdepth-awakening-boom-moonlight-8500k-v23.glb",
+      "openRatio": 1.0,
+      "apertureFStop": 5.6,
+      "kelvin": 8500,
+      "zDepthSfxPlaneYM": -0.34,
+      "sfxStrokeCount": 10,
+      "crowdCount": 6,
+      "bytes": 382312,
+      "sha256": "20728bfaab81960b95361fbea70d792656fd1ffc605a14fa51dc50b95349f57d",
+      "triangles": 8432,
+      "vertices": 4348
+    },
+    {
+      "file": "webtoon-zdepth-crowd-banquet-sunset-3200k-v23.glb",
+      "openRatio": 0.65,
+      "apertureFStop": 2.8,
+      "kelvin": 3200,
+      "zDepthSfxPlaneYM": -0.34,
+      "sfxStrokeCount": 6,
+      "crowdCount": 6,
+      "bytes": 369592,
+      "sha256": "b8502dccf254cceca08658090fc966db38960d2e8ac51219bdbd0d1021c17e9b",
+      "triangles": 8816,
+      "vertices": 4536
+    },
+    {
+      "file": "webtoon-zdepth-sfx-slit-creak-noon-5600k-v23.glb",
+      "openRatio": 0.15,
+      "apertureFStop": 1.8,
+      "kelvin": 5600,
+      "zDepthSfxPlaneYM": -0.34,
+      "sfxStrokeCount": 5,
+      "crowdCount": 4,
+      "bytes": 330616,
+      "sha256": "fb663b145cf367277f6c36c7d4314d0f179807cdd81376ca5dc389906b782377",
+      "triangles": 7832,
+      "vertices": 4032
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-zdepth-awakening-boom-moonlight-8500k-v23.png",
+      "bytes": 315117,
+      "sha256": "0f05565eb555d9ab6981d601ec779ba304dddf806d31c39904db897e5aff17ab"
+    },
+    {
+      "file": "thumbnails/webtoon-zdepth-crowd-banquet-sunset-3200k-v23.png",
+      "bytes": 317826,
+      "sha256": "383bf95e1abd55f4748be8536b9eac508b3dc7788b094ed5e8c05c2441dbbcb0"
+    },
+    {
+      "file": "thumbnails/webtoon-zdepth-sfx-slit-creak-noon-5600k-v23.png",
+      "bytes": 330878,
+      "sha256": "8402fb997463cf84c2412601cf9d8ebc4632d8398fa472ae3b5de1d6071a42fb"
+    }
+  ]
+}
