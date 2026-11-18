@@ -5,8 +5,9 @@ import {
   Gauge,
   Smartphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import { StudioBg3dVrmWebGpuBinaryGuardCard } from "./StudioBg3dVrmWebGpuBinaryGuardCard";
 import {
   DEVICE_LOD_BUDGET_SPECS,
   DUST_HEATHAZE_PROFILES,
@@ -14,6 +15,11 @@ import {
   type DustHeatHazePresetId,
   type DustLodCliffhangerEvaluation,
 } from "./studio-bg3d-dust-lod-cliffhanger-pack";
+import {
+  evaluateVrmPoseAndWebGpuGuard,
+  type EditorChromeDensityTier,
+  type VrmMannequinPoseId,
+} from "./studio-bg3d-glb-binary-vrm-guard";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
@@ -30,7 +36,7 @@ export interface StudioBg3dDustLodCliffhangerCardProps {
 /**
  * Unslop 9-Pass 정밀 워크벤치 규격이 적용된 V27 잔류 연무·열기 아지랑이 ·
  * 모바일·태블릿 60fps 프록시 LOD 버짓 가드 · 엔딩 3컷 절단신공 텐션 스코어러 ·
- * .toonpack.json 통합 아카이브 번들 카드.
+ * .toonpack.json 통합 아카이브 번들 및 V28 VRM/WebGPU 가드 연결 카드.
  */
 export function StudioBg3dDustLodCliffhangerCard({
   disabled = false,
@@ -41,11 +47,39 @@ export function StudioBg3dDustLodCliffhangerCard({
   onChangeCliffhangerGutterPx,
 }: StudioBg3dDustLodCliffhangerCardProps) {
   const [showPackJson, setShowPackJson] = useState(false);
+  const [selectedPoseOverride, setSelectedPoseOverride] =
+    useState<VrmMannequinPoseId | null>(null);
+  const [chromeTier, setChromeTier] =
+    useState<EditorChromeDensityTier>("simple");
+
+  const resolvedPoseId: VrmMannequinPoseId =
+    selectedPoseOverride ??
+    (evaluation.haze.id === "calm-incense-wisp"
+      ? "desk-seated-74cm"
+      : evaluation.haze.id === "fissure-drift-plume"
+        ? "railing-lean-110cm"
+        : "portal-stride-132cm");
+
+  const v28Evaluation = useMemo(
+    () =>
+      evaluateVrmPoseAndWebGpuGuard({
+        poseId: resolvedPoseId,
+        chromeTier,
+        activeSceneTriangles: evaluation.activeSceneTriangles,
+        baseV27WeeklyHoursSaved: evaluation.totalWeeklyHoursV27,
+      }),
+    [
+      resolvedPoseId,
+      chromeTier,
+      evaluation.activeSceneTriangles,
+      evaluation.totalWeeklyHoursV27,
+    ],
+  );
 
   return (
     <div
       data-testid="bg3d-blender-v27-dust-lod-card"
-      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-3 text-xs"
+      className="flex flex-col gap-3 rounded-xl border border-line bg-card p-3 text-xs leading-[1.4] [word-break:keep-all]"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-2 font-semibold text-fg">
@@ -103,7 +137,10 @@ export function StudioBg3dDustLodCliffhangerCard({
                 type="button"
                 disabled={disabled}
                 data-testid={`bg3d-blender-v27-haze-${item.id}`}
-                onClick={() => onSelectHazeId(item.id)}
+                onClick={() => {
+                  setSelectedPoseOverride(null);
+                  onSelectHazeId(item.id);
+                }}
                 className={`min-h-9 rounded-lg border px-3 py-1 text-xs font-medium tabular-nums ${
                   active
                     ? "border-accent bg-raised text-fg"
@@ -213,6 +250,13 @@ export function StudioBg3dDustLodCliffhangerCard({
           {evaluation.packManifestJsonString}
         </pre>
       ) : null}
+
+      <StudioBg3dVrmWebGpuBinaryGuardCard
+        disabled={disabled}
+        evaluation={v28Evaluation}
+        onSelectPoseId={setSelectedPoseOverride}
+        onSelectChromeTier={setChromeTier}
+      />
     </div>
   );
 }

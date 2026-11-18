@@ -29,6 +29,10 @@ import {
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { evaluateAftermathReadabilityAndVtt } from "./studio-bg3d-aftermath-readability-vtt";
 import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
+import {
+  evaluateVrmPoseAndWebGpuGuard,
+  inspectGlbBinaryEvidence,
+} from "./studio-bg3d-glb-binary-vrm-guard";
 import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospheric-bokeh-dof";
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
@@ -330,6 +334,23 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v27MobileProxied.totalWeeklyHoursV27).toBe(36.0);
     expect(v27MobileProxied.quarterlyHoursSavedV27).toBe(468.0);
     expect(v27MobileProxied.quarterlyBankedEpisodesV27).toBe(5.85);
+
+    const v28Vrm = evaluateVrmPoseAndWebGpuGuard({
+      poseId: "portal-stride-132cm",
+      chromeTier: "pro",
+      activeSceneTriangles: v27MobileProxied.activeSceneTriangles,
+      baseV27WeeklyHoursSaved: v27MobileProxied.totalWeeklyHoursV27,
+    });
+    expect(v28Vrm.anatomicalLimitsCompliant).toBe(true);
+    expect(v28Vrm.webGpuGuard.leakedResourceCount).toBe(0);
+    expect(v28Vrm.webGpuGuard.perFrameHeapAllocs).toBe(0);
+    expect(v28Vrm.totalWeeklyHoursV28).toBe(36.8);
+    expect(v28Vrm.quarterlyHoursSavedV28).toBe(478.4);
+    expect(v28Vrm.quarterlyBankedEpisodesV28).toBe(5.98);
+
+    const truncatedGlb = inspectGlbBinaryEvidence(new Uint8Array([1, 2, 3]));
+    expect(truncatedGlb.validGlb20).toBe(false);
+    expect(truncatedGlb.unknownGaps.length).toBeGreaterThan(0);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

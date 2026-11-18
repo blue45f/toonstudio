@@ -19,6 +19,9 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     rerender(<StudioBg3dBlenderFantasyWebtoonPanel disabled />);
     expect(link.getAttribute("aria-disabled")).toBe("true");
     expect(fireEvent.click(link)).toBe(false);
+    expect(
+      screen.getByTestId("bg3d-blender-v28-disabled-reason").textContent,
+    ).toContain("읽기 전용 상태");
   });
 
   it("renders Unslop 9-Pass workbench UI, Genre Lock-In guardrail, Weekly 70-Cut ROI simulator, Scene Isolation badge, and Verify AI gate", () => {
@@ -364,6 +367,26 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-v27-pack-json").textContent,
     ).toContain("toonstudio.toonpack.v27");
+
+    // Wave 14 (V28): VRM 1.0 해부학 포즈 마네킹 · 3단 크롬 밀도(Focus/Simple/Pro) · GPU 누수 0건 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v28-vrm-webgpu-card").textContent,
+    ).toContain("VRM 1.0 해부학 포즈 마네킹 V28");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v28-pose-desk-seated-74cm"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v28-vrm-readout").textContent,
+    ).toContain("0.74m 접지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v28-tier-focus"));
+    expect(screen.queryByTestId("bg3d-blender-v28-webgpu-readout")).toBeNull();
+    fireEvent.click(screen.getByTestId("bg3d-blender-v28-tier-pro"));
+    expect(
+      screen.getByTestId("bg3d-blender-v28-webgpu-readout").textContent,
+    ).toContain("누수 0건");
+    expect(
+      screen.getByTestId("bg3d-blender-v28-roi-readout").textContent,
+    ).toContain("44.8h");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
