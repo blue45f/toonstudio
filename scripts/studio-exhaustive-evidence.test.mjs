@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 const workflow = readFileSync(new URL("../.github/workflows/main-full-qa-studio.yml", import.meta.url), "utf8");
@@ -52,12 +52,36 @@ test("exhaustive는 실패 후에도 실행하며 각 gate의 일반·native·Li
     // 임시 파일 경로도 shell 인자 경계를 유지한다.
     const quote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
     const command = `${quote(process.execPath)} ${quote(probe)}`;
+    let pathEnv = process.env.PATH ?? "";
+    if (spawnSync("bash", ["-c", "command -v timeout"], { encoding: "utf8" }).status !== 0) {
+      const binDir = join(directory, "bin");
+      mkdirSync(binDir, { recursive: true });
+      const timeoutShim = join(binDir, "timeout");
+      writeFileSync(
+        timeoutShim,
+        `#!${process.execPath}
+import { spawnSync } from "node:child_process";
+const args = process.argv.slice(2);
+while (args[0]?.startsWith("-")) args.shift();
+const rawDuration = args.shift() ?? "60s";
+const match = /^(\\d+)(ms|s|m|h)?$/u.exec(rawDuration);
+const unitMs = match?.[2] === "ms" ? 1 : match?.[2] === "m" ? 60_000 : match?.[2] === "h" ? 3_600_000 : 1_000;
+const timeoutMs = Math.max(1, Number(match?.[1] ?? 60) * unitMs);
+const res = spawnSync(args[0], args.slice(1), { stdio: "inherit", timeout: timeoutMs });
+if (res.error?.code === "ETIMEDOUT") process.exit(124);
+process.exit(res.status ?? 1);
+`,
+      );
+      chmodSync(timeoutShim, 0o755);
+      pathEnv = `${binDir}${delimiter}${pathEnv}`;
+    }
     const result = spawnSync("bash", ["-c", script], {
       cwd: directory,
       encoding: "utf8",
       timeout: 10_000,
       env: {
         ...process.env,
+        PATH: pathEnv,
         QA_LANE: "evidence-test",
         QA_COMMAND_TIMEOUT_MINUTES: "1",
         QA_COMMANDS: `failed-gate|${command} failed-gate 7\nnext-gate|${command} next-gate 0`,
