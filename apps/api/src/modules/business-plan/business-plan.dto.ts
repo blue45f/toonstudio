@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { parseBusinessPlanState, type SaveBusinessPlanRequest } from "@toonstudio/contracts/business-plan";
+import { parseBusinessPlanState, type ChangeBusinessPlanAccessRequest, type SaveBusinessPlanRequest } from "@toonstudio/contracts/business-plan";
 import { z } from "zod";
 
 const saveEnvelope = z.object({
@@ -7,6 +7,24 @@ const saveEnvelope = z.object({
   mutationId: z.string().uuid(),
   board: z.unknown(),
 }).strict();
+
+const claimEnvelope = z.object({ mutationId: z.string().uuid() }).strict();
+const accessEnvelope = claimEnvelope.extend({
+  userId: z.string().min(1).max(255).refine((value) => value.trim() === value && [...value].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127)),
+  canRead: z.boolean(), canWrite: z.boolean(), canExport: z.boolean(),
+}).strict().refine((value) => value.canRead || (!value.canWrite && !value.canExport));
+
+export function parseBusinessPlanClaim(value: unknown): { mutationId: string } {
+  const parsed = claimEnvelope.safeParse(value);
+  if (!parsed.success) throw new BadRequestException("빈 보드 소유권 요청의 요청 ID를 확인해주세요.");
+  return parsed.data;
+}
+
+export function parseBusinessPlanAccessChange(value: unknown): ChangeBusinessPlanAccessRequest {
+  const parsed = accessEnvelope.safeParse(value);
+  if (!parsed.success) throw new BadRequestException("명시적으로 지정할 계정과 읽기·수정·내보내기 권한을 확인해주세요.");
+  return parsed.data;
+}
 
 /** 전체 보드의 2MiB 한도는 공유 계약이 검사한다. Core API의 16mb 본문 한도 안에 봉투도 들어간다. */
 export function parseSaveBusinessPlanRequest(value: unknown, now = new Date()): SaveBusinessPlanRequest {

@@ -17,8 +17,8 @@ beforeEach(() => { mocks.identity.mockReset(); mocks.mount.mockReset(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe("사업계획서의 서버 관리자 권한 경계", () => {
-  it("확인 전에는 자료를 읽지 않고 operator는 거부한다", async () => {
-    mocks.identity.mockResolvedValue({ id: "operator-a", role: "operator" });
+  it("확인 전에는 자료를 읽지 않고 일반 사용자 역할은 거부한다", async () => {
+    mocks.identity.mockResolvedValue({ id: "user-a", role: "user" });
     render(<BusinessPlanAccess />);
     expect(screen.getByRole("status")).toBeTruthy();
     await screen.findByRole("alert");

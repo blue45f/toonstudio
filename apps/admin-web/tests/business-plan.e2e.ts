@@ -2,22 +2,40 @@ import { expect, test, type Page } from "@playwright/test";
 import { createEmptyBusinessPlanState } from "@toonstudio/contracts/business-plan";
 import { TOONSPECTRUM_CSRF_HEADER, TOONSPECTRUM_CSRF_HEADER_VALUE } from "@toonstudio/contracts/security/csrf";
 
-import type { BusinessPlanRecord, SaveBusinessPlanRequest } from "@toonstudio/contracts/business-plan";
+import type { BusinessPlanAccessGrant, BusinessPlanRecord, ChangeBusinessPlanAccessRequest, SaveBusinessPlanRequest } from "@toonstudio/contracts/business-plan";
 
+const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
 const boardPath = "/admin/growth/business-plan/";
 
 /** HTTP fixture로 화면을 검증한다. 실제 트랜잭션·권한 경계는 별도 PostgreSQL suite가 담당한다. */
-async function boardFixture(page: Page, initial: BusinessPlanRecord = { board: null, revision: 0, updatedAt: null }) {
+async function boardFixture(page: Page, initial: BusinessPlanRecord = { board: null, revision: 0, updatedAt: null, access: ownerAccess }) {
   let record = structuredClone(initial);
   let role = "admin";
   let nextSaveStatus = 200;
   const writes: string[] = [];
   const saves: SaveBusinessPlanRequest[] = [];
+  let grants: BusinessPlanAccessGrant[] = [];
   page.on("request", (request) => {
     if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) writes.push(new URL(request.url()).pathname);
   });
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { id: "business-plan-admin", role, permissions: { scope: "full" } } }));
   await page.route("**/api/admin/business-plan", (route) => route.fulfill({ json: record }));
+  await page.route("**/api/admin/business-plan/export", (route) => record.access.canExport ? route.fulfill({ json: record }) : route.fulfill({ status: 403, json: { message: "내보내기 권한 철회" } }));
+  await page.route("**/api/admin/business-plan/claim", (route) => {
+    if (!record.access.canClaimOwnership) return route.fulfill({ status: 403, json: { message: "소유권 설정 불가" } });
+    expect(route.request().headers()[TOONSPECTRUM_CSRF_HEADER]).toBe(TOONSPECTRUM_CSRF_HEADER_VALUE);
+    record = { ...record, access: ownerAccess };
+    return route.fulfill({ json: record });
+  });
+  await page.route("**/api/admin/business-plan/access", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { ownerUserId: "business-plan-admin", grants } });
+    const input = route.request().postDataJSON() as ChangeBusinessPlanAccessRequest;
+    expect(route.request().headers()[TOONSPECTRUM_CSRF_HEADER]).toBe(TOONSPECTRUM_CSRF_HEADER_VALUE);
+    grants = grants.filter((grant) => grant.userId !== input.userId);
+    const updatedAt = new Date().toISOString();
+    if (input.canRead) grants.push({ userId: input.userId, canRead: true, canWrite: input.canWrite, canExport: input.canExport, updatedAt });
+    return route.fulfill({ json: { updatedAt, replayed: false } });
+  });
   await page.route("**/api/admin/business-plan/save", async (route) => {
     const input = route.request().postDataJSON() as SaveBusinessPlanRequest;
     saves.push(input);
@@ -25,7 +43,7 @@ async function boardFixture(page: Page, initial: BusinessPlanRecord = { board: n
     const status = nextSaveStatus;
     nextSaveStatus = 200;
     if (status !== 200) return route.fulfill({ status, json: { message: status === 409 ? "수정 충돌" : "관리자 권한 만료" } });
-    record = { board: input.board, revision: input.expectedRevision + 1, updatedAt: new Date().toISOString() };
+    record = { board: input.board, revision: input.expectedRevision + 1, updatedAt: new Date().toISOString(), access: ownerAccess };
     return route.fulfill({ json: record });
   });
   return { writes, saves, record: () => record, role: (value: string) => { role = value; }, failSave: (status: number) => { nextSaveStatus = status; }, replace: (value: BusinessPlanRecord) => { record = value; } };
@@ -55,6 +73,38 @@ test("11개 작업·6상태·16개 미확인 주장과 4개 고정 승인 대기
   await expect(page.getByText("서버 버전 1", { exact: false })).toBeVisible();
   expect(fixture.record().board?.approvals.every((item) => item.status === "승인 대기")).toBe(true);
   expect(fixture.writes).toEqual(["/api/admin/business-plan/save"]);
+});
+
+test("빈 보드는 명시적 소유권 시작 후에만 열리고 소유자가 읽기 권한을 따로 부여한다", async ({ page }) => {
+  const fixture = await boardFixture(page, { board: null, revision: 0, updatedAt: null, access: { canRead: false, canWrite: false, canExport: false, canManageAccess: false, canClaimOwnership: true } });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(boardPath);
+  await expect(page.getByRole("button", { name: "작업 추가", exact: true })).toHaveCount(0);
+  expect(fixture.writes).toEqual([]);
+  await page.getByRole("button", { name: "이 빈 보드의 소유자로 시작", exact: true }).click();
+  await expect(page.getByRole("button", { name: "작업 추가", exact: true })).toBeVisible();
+  expect(fixture.writes).toEqual(["/api/admin/business-plan/claim"]);
+  await page.getByRole("button", { name: "사업 자료 접근 권한", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("권한을 받을 기존 계정 ID", { exact: true }).fill(`reviewer-${"a".repeat(100)}`);
+  await expect(dialog.getByLabel("수정 허용", { exact: true })).not.toBeChecked();
+  await expect(dialog.getByLabel("내보내기 허용", { exact: true })).not.toBeChecked();
+  await dialog.getByRole("button", { name: "지정 계정에 권한 부여", exact: true }).click();
+  await expect(dialog.getByText("읽기 · 수정 불가 · 내보내기 불가", { exact: true })).toBeVisible();
+  expect(await dialog.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+  expect(fixture.saves).toEqual([]);
+});
+
+test("서버에서 내보내기를 철회하면 브라우저도 초안 파일을 만들지 않고 자료를 제거한다", async ({ page }) => {
+  const fixture = await boardFixture(page);
+  await page.goto(boardPath);
+  await editTask(page, "내보내기 철회 시 제거할 비공개 초안");
+  fixture.replace({ ...fixture.record(), access: { ...ownerAccess, canManageAccess: false, canExport: false } });
+  const downloads: string[] = []; page.on("download", (download) => downloads.push(download.suggestedFilename()));
+  await page.getByRole("button", { name: "JSON 백업", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("접근 권한");
+  await expect(page.locator(".business-plan")).toHaveCount(0);
+  expect(downloads).toEqual([]);
 });
 
 test("작업 상태·담당 기록과 제출용 고정 사본을 보존하며 수정한 작업용과 구분한다", async ({ page }) => {
@@ -100,7 +150,7 @@ test("수정 충돌 시 덮어쓰기를 막고 백업·명시적 최신본 읽�
   await page.keyboard.press("Escape");
   const latest = createEmptyBusinessPlanState();
   latest.tasks[0].notes = "다른 관리자의 최신 변경";
-  fixture.replace({ board: latest, revision: 2, updatedAt: new Date().toISOString() });
+  fixture.replace({ board: latest, revision: 2, updatedAt: new Date().toISOString(), access: ownerAccess });
   await page.getByRole("button", { name: "서버 기록 다시 읽기", exact: true }).click();
   await page.getByRole("button", { name: "미저장 변경을 버리고 최신본 읽기", exact: true }).click();
   await expect(page.getByText("서버 버전 2", { exact: false })).toBeVisible();
@@ -110,11 +160,11 @@ test("수정 충돌 시 덮어쓰기를 막고 백업·명시적 최신본 읽�
   expect(fixture.saves).toHaveLength(1);
 });
 
-test("operator를 차단하고 서버 권한 거부 시 초안과 대화상자를 즉시 숨긴다", async ({ page }) => {
+test("일반 사용자 역할을 차단하고 서버 권한 거부 시 초안과 대화상자를 즉시 숨긴다", async ({ page }) => {
   const fixture = await boardFixture(page);
-  fixture.role("operator");
+  fixture.role("user");
   await page.goto(boardPath);
-  await expect(page.getByRole("alert")).toContainText("서비스 관리자만");
+  await expect(page.getByRole("alert")).toContainText("별도 권한");
   await expect(page.locator(".business-plan")).toHaveCount(0);
   fixture.role("admin");
   await page.getByRole("button", { name: "관리자 권한 다시 확인", exact: true }).click();
@@ -128,7 +178,7 @@ test("operator를 차단하고 서버 권한 거부 시 초안과 대화상자�
   await expect(page.locator(".business-plan")).toHaveCount(0);
 });
 
-test("JSON 형식 검증과 교체 전 백업을 거치며 미확인 수치를 확정하지 않는다", async ({ page }) => {
+test("JSON 형식 검증을 거치고 자동 파일 백업 없이 미확인 상태를 보존한다", async ({ page }) => {
   const fixture = await boardFixture(page);
   await page.goto(boardPath);
   await page.getByRole("button", { name: "JSON 관리", exact: true }).click();
@@ -142,9 +192,9 @@ test("JSON 형식 검증과 교체 전 백업을 거치며 미확인 수치를 �
   exported.tasks[0].notes = "이전 보드에서 가져온 기록";
   await dialog.getByLabel("JSON 파일 선택", { exact: true }).setInputFiles({ name: "board.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exported)) });
   await expect(dialog.getByText("가져오기 검토 완료", { exact: true })).toBeVisible();
-  const download = page.waitForEvent("download");
-  await dialog.getByRole("button", { name: "현재 기록 백업 후 가져오기", exact: true }).click();
-  expect((await download).suggestedFilename()).toMatch(/^business-plan-before-import-/u);
+  const downloads: string[] = []; page.on("download", (download) => downloads.push(download.suggestedFilename()));
+  await dialog.getByRole("button", { name: "검토한 기록 가져오기", exact: true }).click();
+  expect(downloads).toEqual([]);
   await expect(page.locator(".bp-table")).not.toContainText("987654");
   await page.getByRole("button", { name: "서버에 저장", exact: true }).click();
   await expect(page.getByText("서버 저장본과 동일", { exact: true })).toBeVisible();

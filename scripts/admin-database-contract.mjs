@@ -10,10 +10,12 @@ const adminRelations = Object.freeze([
 ]);
 
 const businessPlanRelations = Object.freeze([
-  ["admin_business_plan", ["revision", "payload", "updated_at"]],
+  ["admin_business_plan", ["revision", "payload", "updated_at", "owner_user_id"]],
   ["admin_business_plan_revision", []],
   ["admin_business_plan_audit", []],
   ["admin_business_plan_receipt", []],
+  ["admin_business_plan_grant", ["can_write", "can_export", "granted_by", "updated_at", "revoked_at"]],
+  ["admin_business_plan_access_audit", []],
 ]);
 
 function roleName(role) {
@@ -38,6 +40,9 @@ END $business_plan_column_acl$;
 REVOKE ALL ON TABLE public.${table} FROM PUBLIC, "${safeRole}";
 GRANT SELECT, INSERT ON TABLE public.${table} TO "${safeRole}";
 ${mutableColumns.length ? `GRANT UPDATE (${mutableColumns.map((column) => `"${column}"`).join(", ")}) ON TABLE public.${table} TO "${safeRole}";` : ""}
+ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS ${table}_runtime ON public.${table};
+CREATE POLICY ${table}_runtime ON public.${table} TO "${safeRole}" USING (true) WITH CHECK (true);
 `).join("\n") + `
 REVOKE ALL ON FUNCTION public.admin_business_plan_immutable_guard() FROM PUBLIC, "${safeRole}";
 `;
@@ -54,8 +59,14 @@ BEGIN
     WHERE to_regclass('public.' || policy.table_name) IS NULL) THEN
     RAISE EXCEPTION 'business plan storage migration is missing';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_attribute
+    WHERE attrelid=to_regclass('public.admin_business_plan') AND attname='owner_user_id'
+      AND atttypid='text'::regtype AND NOT attisdropped) THEN
+    RAISE EXCEPTION 'business plan access migration is missing';
+  END IF;
   IF EXISTS (SELECT 1 FROM (VALUES ${policies}) AS policy(table_name, mutable)
     WHERE NOT pg_catalog.has_table_privilege('${safeRole}', 'public.' || policy.table_name, 'SELECT')
+      OR NOT (SELECT relrowsecurity FROM pg_catalog.pg_class WHERE oid=to_regclass('public.' || policy.table_name))
       OR NOT pg_catalog.has_table_privilege('${safeRole}', 'public.' || policy.table_name, 'INSERT')
       OR pg_catalog.has_table_privilege('${safeRole}', 'public.' || policy.table_name, 'UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
       OR pg_catalog.has_table_privilege('${safeRole}', 'public.' || policy.table_name,
@@ -91,7 +102,9 @@ BEGIN
     ('admin_business_plan', 'admin_business_plan_truncate_guard', 34),
     ('admin_business_plan_revision', 'admin_business_plan_revision_truncate_guard', 34),
     ('admin_business_plan_audit', 'admin_business_plan_audit_truncate_guard', 34),
-    ('admin_business_plan_receipt', 'admin_business_plan_receipt_truncate_guard', 34)
+    ('admin_business_plan_receipt', 'admin_business_plan_receipt_truncate_guard', 34),
+    ('admin_business_plan_access_audit', 'admin_business_plan_access_audit_immutable', 27),
+    ('admin_business_plan_access_audit', 'admin_business_plan_access_audit_truncate_guard', 34)
   ) AS required(table_name, trigger_name, trigger_type) WHERE NOT EXISTS (
     SELECT 1 FROM pg_catalog.pg_trigger trigger_record
     WHERE trigger_record.tgrelid=to_regclass('public.' || required.table_name)

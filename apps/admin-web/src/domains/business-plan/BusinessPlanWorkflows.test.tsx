@@ -3,30 +3,34 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { createEmptyBusinessPlanState, todayKst } from "@toonstudio/contracts/business-plan";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { loadBusinessPlan, saveBusinessPlan } from "./business-plan-api";
+import { claimBusinessPlan, exportBusinessPlan, loadBusinessPlan, saveBusinessPlan } from "./business-plan-api";
 import { BusinessPlanBoard } from "./BusinessPlanBoard";
 
 import type { BusinessPlanState } from "@toonstudio/contracts/business-plan";
 
 vi.mock("./business-plan-api", async (importOriginal) => {
   const original = await importOriginal<typeof import("./business-plan-api")>();
-  return { ...original, loadBusinessPlan: vi.fn(), saveBusinessPlan: vi.fn() };
+  return { ...original, loadBusinessPlan: vi.fn(), saveBusinessPlan: vi.fn(), exportBusinessPlan: vi.fn(), claimBusinessPlan: vi.fn() };
 });
 
+const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
+
 async function show(board = createEmptyBusinessPlanState()) {
-  vi.mocked(loadBusinessPlan).mockResolvedValue({ board, revision: 1, updatedAt: new Date().toISOString() });
+  vi.mocked(loadBusinessPlan).mockResolvedValue({ board, revision: 1, updatedAt: new Date().toISOString(), access: ownerAccess });
   render(<BusinessPlanBoard userIdentity="business-plan-workflow-test" />);
   await screen.findByRole("button", { name: "작업 추가" });
 }
 function change(label: string, value: string) { fireEvent.change(within(screen.getByRole("dialog")).getByLabelText(label), { target: { value } }); }
 function apply() { fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "보드에 반영" })); }
-function currentBoard(): BusinessPlanState {
-  fireEvent.click(screen.getByRole("button", { name: "JSON 관리" }));
+async function currentBoard(): Promise<BusinessPlanState> {
+  fireEvent.click(screen.getByRole("button", { name: "JSON 관리" })); await screen.findByRole("dialog");
   const board = JSON.parse((screen.getByLabelText("사업계획서 보드 JSON") as HTMLTextAreaElement).value) as BusinessPlanState;
   fireEvent.click(screen.getByRole("button", { name: "대화상자 닫기" })); return board;
 }
 beforeEach(() => {
   vi.mocked(loadBusinessPlan).mockReset(); vi.mocked(saveBusinessPlan).mockReset();
+  vi.mocked(exportBusinessPlan).mockReset().mockResolvedValue({ board: null, revision: 0, updatedAt: null, access: ownerAccess });
+  vi.mocked(claimBusinessPlan).mockReset();
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
   const NativeUrl = URL;
   vi.stubGlobal("URL", class extends NativeUrl { static createObjectURL = vi.fn(() => "blob:workflow-test"); static revokeObjectURL = vi.fn(); });
@@ -49,7 +53,7 @@ describe("사업계획서 근거·문서·최종 점검", () => {
     apply(); expect(screen.queryByRole("dialog")).toBeNull();
     const updatedRow = screen.getByRole("button", { name: "공정별 병목과 재작업 근거 편집" }).closest("tr");
     expect(updatedRow?.textContent).toContain("0 건"); expect(updatedRow?.textContent).toContain("근거 확인");
-    expect(currentBoard().claims[4].value).toBe("0");
+    expect((await currentBoard()).claims[4].value).toBe("0");
     fireEvent.click(screen.getByRole("button", { name: "공정별 병목과 재작업 근거 편집" }));
     expect((screen.getByRole("checkbox", { name: /실제 원문을 직접 확인/ }) as HTMLInputElement).checked).toBe(false);
   });
@@ -75,7 +79,7 @@ describe("사업계획서 근거·문서·최종 점검", () => {
     change("검증 메모", "원문 재검토 예정"); fireEvent.click(screen.getByRole("button", { name: "원문·검증" }));
     expect((screen.getByLabelText("주장 검증일") as HTMLInputElement).value).toBe("2026-01-03");
     expect((screen.getByLabelText("원문 발행일") as HTMLInputElement).value).toBe("2025-12-02");
-    apply(); const result = currentBoard().claims[0];
+    apply(); const result = (await currentBoard()).claims[0];
     expect(result.verifiedAt).toBe(board.claims[0].verifiedAt); expect(result.publishedAt).toBe(board.claims[0].publishedAt);
     const row = screen.getByRole("button", { name: "문제 발생 근거 근거 편집" }).closest("tr");
     expect(row?.textContent).toContain("검증 후 변경");
@@ -89,10 +93,10 @@ describe("사업계획서 근거·문서·최종 점검", () => {
     fireEvent.click(screen.getByRole("button", { name: "작업용 편집" })); change("작업용 원문", "재검토한 문장\n공통 문장"); change("작업용 버전 이름", "작업 v2"); apply();
     expect(screen.getByText("제출용에 미반영 변경 있음")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "제출용 ↔ 작업용" }));
-    const result = currentBoard().documents[0];
+    const result = (await currentBoard()).documents[0];
     expect(result.submission?.text).toBe("새 문장\n공통 문장"); expect(result.workingText).toBe("재검토한 문장\n공통 문장"); expect(result.history.some((entry) => entry.type === "작업용" && entry.text === "새 문장\n공통 문장")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "제출용 사본 만들기" })); change("제출용 버전 이름", "제출 후보 v2"); fireEvent.click(screen.getByRole("button", { name: "제출용 사본 반영" }));
-    const replaced = currentBoard().documents[0]; expect(replaced.submission?.label).toBe("제출 후보 v2"); expect(replaced.history.some((entry) => entry.type === "제출 후보" && entry.label === "제출 후보 v1")).toBe(true);
+    const replaced = (await currentBoard()).documents[0]; expect(replaced.submission?.label).toBe("제출 후보 v2"); expect(replaced.history.some((entry) => entry.type === "제출 후보" && entry.label === "제출 후보 v1")).toBe(true);
     expect(saveBusinessPlan).not.toHaveBeenCalled();
   });
 
@@ -100,35 +104,35 @@ describe("사업계획서 근거·문서·최종 점검", () => {
     await show(); fireEvent.click(screen.getByRole("button", { name: "요청 추가" })); change("멘토 요청 제목", "테스트 피드백"); change("멘토 요청 원문", "공정 비교 근거를 보완해 주세요"); fireEvent.click(screen.getByRole("checkbox", { name: "위 근거와 문서 위치에서 반영을 확인했습니다" })); apply();
     expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toMatch(/문서|반영|근거/u);
     change("반영 문서", "DOC-01"); change("반영 페이지·문단 위치", "2장 3문단"); change("반영 근거·실제 변경 내용", "테스트 비교 조건을 본문에 추가함"); apply();
-    expect(currentBoard().mentor[0]).toMatchObject({ reflected: true, documentId: "DOC-01", location: "2장 3문단" });
+    expect((await currentBoard()).mentor[0]).toMatchObject({ reflected: true, documentId: "DOC-01", location: "2장 3문단" });
     fireEvent.click(screen.getByRole("button", { name: "공식 양식과 제출 안내 원문 대조 수동 점검 편집" })); fireEvent.click(screen.getByRole("checkbox", { name: "항목을 실제 확인했습니다" })); apply();
     expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toMatch(/메모|근거/u);
     change("실제 확인한 내용·남은 오류", "테스트 양식의 문항 순서를 대조함"); apply();
-    expect(currentBoard().checks[0].checked).toBe(true);
+    expect((await currentBoard()).checks[0].checked).toBe(true);
   });
 
   it("승인 항목은 메모만 수정하고 실행 상태를 가져오기로 우회할 수 없다", async () => {
     await show(); fireEvent.click(screen.getByRole("button", { name: "외부 제출 승인 메모 편집" })); change("승인 검토 메모", "제출 전 담당자 확인 요청"); fireEvent.click(screen.getByRole("button", { name: "승인 메모 반영" }));
-    const board = currentBoard(); expect(board.approvals.every((approval) => approval.status === "승인 대기")).toBe(true); expect(board.approvals[1].note).toBe("제출 전 담당자 확인 요청");
-    fireEvent.click(screen.getByRole("button", { name: "JSON 관리" }));
+    const board = await currentBoard(); expect(board.approvals.every((approval) => approval.status === "승인 대기")).toBe(true); expect(board.approvals[1].note).toBe("제출 전 담당자 확인 요청");
+    fireEvent.click(screen.getByRole("button", { name: "JSON 관리" })); await screen.findByRole("dialog");
     const invalid = JSON.parse(JSON.stringify(board)) as { approvals: { status: string }[] }; invalid.approvals[1].status = "제출 완료";
     change("사업계획서 보드 JSON", JSON.stringify(invalid)); fireEvent.click(screen.getByRole("button", { name: "가져오기 검토" }));
     expect(within(screen.getByRole("dialog")).getByRole("alert").textContent).toMatch(/승인 대기/u);
-    expect(screen.queryByRole("button", { name: "현재 기록 백업 후 가져오기" })).toBeNull(); expect(saveBusinessPlan).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "검토한 기록 가져오기" })).toBeNull(); expect(saveBusinessPlan).not.toHaveBeenCalled();
   });
 
-  it("가져오기를 검토하고 백업한 뒤에만 현재 화면을 교체하며 서버는 별도 저장한다", async () => {
-    await show(); fireEvent.click(screen.getByRole("button", { name: "JSON 관리" })); change("사업계획서 보드 JSON", "{broken"); fireEvent.click(screen.getByRole("button", { name: "가져오기 검토" })); expect(within(screen.getByRole("dialog")).getByRole("alert")).toBeTruthy();
+  it("가져오기는 검토 후 화면을 교체하며 자동 로컬 백업이나 서버 저장을 실행하지 않는다", async () => {
+    await show(); fireEvent.click(screen.getByRole("button", { name: "JSON 관리" })); await screen.findByRole("dialog"); change("사업계획서 보드 JSON", "{broken"); fireEvent.click(screen.getByRole("button", { name: "가져오기 검토" })); expect(within(screen.getByRole("dialog")).getByRole("alert")).toBeTruthy();
     const next = createEmptyBusinessPlanState(); next.tasks[0].nextAction = "가져온 후속 조치"; change("사업계획서 보드 JSON", JSON.stringify(next)); fireEvent.click(screen.getByRole("button", { name: "가져오기 검토" }));
     expect(screen.getByText("가져오기 검토 완료")).toBeTruthy(); expect(screen.queryByText(/담당 미지정 · 가져온 후속 조치/u)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "현재 기록 백업 후 가져오기" })); expect(screen.getByText(/담당 미지정 · 가져온 후속 조치/u)).toBeTruthy();
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(1); expect(saveBusinessPlan).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "검토한 기록 가져오기" })); expect(screen.getByText(/담당 미지정 · 가져온 후속 조치/u)).toBeTruthy();
+    expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(saveBusinessPlan).not.toHaveBeenCalled();
   });
 
   it("미확인 일정을 추측하지 않고 KST 일시·공식 출처·메모로 확인 기록을 만든다", async () => {
     await show(); fireEvent.click(screen.getByRole("button", { name: "일정·프로젝트 편집" })); expect((screen.getByLabelText("일정 1 일시 (KST)") as HTMLInputElement).value).toBe("");
     fireEvent.click(screen.getByRole("checkbox", { name: "일정 1을 공식 원문에서 확인했습니다" })); apply(); expect(within(screen.getByRole("dialog")).getByRole("alert")).toBeTruthy();
     change("일정 1 일시 (KST)", "2026-12-15T16:30"); change("일정 1 공식 출처", "https://example.com/notice"); change("일정 1 확인 메모", "테스트 공고의 마감 시각 대조"); apply();
-    expect(currentBoard().project.deadlines[0]).toMatchObject({ at: "2026-12-15T16:30:00+09:00", verified: true });
+    expect((await currentBoard()).project.deadlines[0]).toMatchObject({ at: "2026-12-15T16:30:00+09:00", verified: true });
   });
 });

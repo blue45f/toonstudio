@@ -11,6 +11,10 @@ import { parseSaveBusinessPlanRequest } from "./business-plan.dto";
 const target = process.env.TEST_DATABASE_URL;
 const suite = describe.skipIf(!target);
 const originalMigration = readFileSync(new URL("../../platform/database/migrations/0122_admin_business_plan.sql", import.meta.url), "utf8");
+const accessMigration = readFileSync(new URL("../../platform/database/migrations/0123_admin_business_plan_access.sql", import.meta.url), "utf8");
+const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
+const grantAccess = { ...ownerAccess, canManageAccess: false };
+const initialAccess = { canRead: false, canWrite: false, canExport: false, canManageAccess: false, canClaimOwnership: true };
 const instant = new Date("2026-01-15T03:00:00.000Z");
 
 function state(title = "격리 검증 사업계획서"): BusinessPlanState {
@@ -41,7 +45,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
   beforeEach(async () => {
     schema = `business_plan_${randomUUID().replaceAll("-", "")}`;
-    migration = originalMigration.replaceAll("public.", `"${schema}".`);
+    migration = (originalMigration + "\n" + accessMigration).replaceAll("public.", `"${schema}".`);
     await root.query(`CREATE SCHEMA "${schema}"`);
     pool = new Pool({ connectionString: target, max: 8, options: `-c search_path=${schema}` });
     // 기존 인증 원장만 선행 조건으로 둔다. 사업계획서 테이블은 매번 빈 상태에서 실제 migration으로 만든다.
@@ -57,6 +61,11 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
   afterAll(async () => { await root?.end(); });
 
+  async function initialize(repositoryToUse = repository) {
+    await repositoryToUse.claim("admin", randomUUID());
+    await repositoryToUse.changeAccess("admin", { mutationId: randomUUID(), userId: "admin-two", canRead: true, canWrite: true, canExport: true });
+  }
+
   async function counts() {
     return (await pool.query<{ board: number; snapshots: number; audit: number; receipts: number }>(`SELECT
       (SELECT count(*)::int FROM admin_business_plan) AS board,
@@ -66,8 +75,8 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   }
 
   it("빈 기능 테이블에 적용하고 GET은 아무 행도 생성하지 않는다", async () => {
-    expect(await repository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null });
-    expect(await repository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null });
+    expect(await repository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null, access: initialAccess });
+    expect(await repository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null, access: initialAccess });
     expect(await counts()).toEqual({ board: 0, snapshots: 0, audit: 0, receipts: 0 });
   });
 
@@ -80,6 +89,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("작업·제출 후보·이력을 정확히 보존하고 서버 시각과 원문 없는 감사를 기록한다", async () => {
+    await initialize();
     const request = input();
     const before = Date.now();
     const saved = await repository.save("admin", request);
@@ -88,7 +98,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
     expect(Date.parse(saved.updatedAt!)).toBeGreaterThanOrEqual(before - 1000);
     expect(Date.parse(saved.updatedAt!)).toBeLessThanOrEqual(Date.now() + 1000);
     expect(saved.updatedAt).not.toBe(request.board.savedAt);
-    expect(await repository.read("admin-two")).toEqual(saved);
+    expect(await repository.read("admin-two")).toEqual({ ...saved, access: grantAccess });
     expect(await counts()).toEqual({ board: 1, snapshots: 1, audit: 1, receipts: 1 });
     const audit = (await pool.query("SELECT * FROM admin_business_plan_audit")).rows[0];
     expect(audit).toMatchObject({ revision: 1, actor_user_id: "admin", before_digest: businessPlanDigest(null), after_digest: businessPlanDigest(request.board) });
@@ -97,6 +107,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("최초 동시 저장과 동일 revision 변경은 하나만 수락한다", async () => {
+    await initialize();
     const first = await Promise.allSettled([repository.save("admin", input(0, state("동시 A"))), repository.save("admin-two", input(0, state("동시 B")))]);
     expect(first.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(first.filter((result) => result.status === "rejected").map((result) => result.reason.status)).toEqual([409]);
@@ -108,6 +119,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("동일 요청 동시 재전송은 한 번 저장하고 같은 원래 응답을 돌려준다", async () => {
+    await initialize();
     const request = input();
     const responses = await Promise.all([repository.save("admin", request), repository.save("admin", request)]);
     expect(responses[0]).toEqual(responses[1]);
@@ -119,6 +131,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("요청 ID 재사용·낡은 revision은 저장 내용과 감사 이력을 바꾸지 않는다", async () => {
+    await initialize();
     const request = input();
     const saved = await repository.save("admin", request);
     await expect(repository.save("admin", { ...request, board: state("변조된 재전송") })).rejects.toMatchObject({ status: 409, response: { code: "business_plan_mutation_reused" } });
@@ -128,6 +141,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("역할을 철회한 관리자는 이전 멱등성 영수증으로 원문을 읽을 수 없다", async () => {
+    await initialize();
     const request = input();
     await repository.save("admin", request);
     await pool.query(`UPDATE "user" SET role='operator' WHERE id='admin'`);
@@ -136,8 +150,9 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("소유자도 최신값 삭제·전체 TRUNCATE 및 snapshot·감사·영수증 수정을 할 수 없다", async () => {
+    await initialize();
     await repository.save("admin", input());
-    for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt"]) {
+    for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt", "admin_business_plan_access_audit"]) {
       await expect(pool.query(`DELETE FROM ${table}`)).rejects.toMatchObject({ code: "23514" });
       await expect(pool.query(`TRUNCATE ${table} CASCADE`)).rejects.toMatchObject({ code: "23514" });
     }
@@ -148,6 +163,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("감사 기록 실패 시 최신값·snapshot·영수증도 전부 rollback한다", async () => {
+    await initialize();
     const saved = await repository.save("admin", input());
     await pool.query("ALTER TABLE admin_business_plan_audit ADD CONSTRAINT reject_test_revision CHECK (revision < 2)");
     await expect(repository.save("admin", input(1, state("실패할 변경")))).rejects.toMatchObject({ status: 503 });
@@ -163,6 +179,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("기존 계정과 저장된 보드가 있는 DB에 재적용해도 원문·revision을 보존한다", async () => {
+    await initialize();
     const saved = await repository.save("admin", input());
     await pool.query("CREATE TABLE preexisting_business_data(id text PRIMARY KEY, value text); INSERT INTO preexisting_business_data VALUES('existing','preserved')");
     await pool.query(migration);
@@ -173,6 +190,7 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
   });
 
   it("이전 snapshot 복구는 기존 이력을 유지하는 새 revision 저장이다", async () => {
+    await initialize();
     const first = await repository.save("admin", input());
     await repository.save("admin-two", input(1, state("수정 버전")));
     const previous = (await pool.query<{ payload: BusinessPlanState }>("SELECT payload FROM admin_business_plan_revision WHERE revision=1")).rows[0]!.payload;
@@ -206,14 +224,15 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
       runtimePool = new Pool({ connectionString: target, max: 4, options: `-c search_path=${schema} -c role=${role}` });
       expect((await runtimePool.query("SELECT current_user AS actor")).rows[0].actor).toBe(role);
       const runtimeRepository = new BusinessPlanRepository(runtimePool);
-      expect(await runtimeRepository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null });
+      expect(await runtimeRepository.read("admin")).toEqual({ board: null, revision: 0, updatedAt: null, access: initialAccess });
+      await initialize(runtimeRepository);
       const request = input();
       const saved = await runtimeRepository.save("admin", request);
       await runtimeRepository.save("admin-two", input(1, state("분리 역할의 후속 저장")));
       expect(await runtimeRepository.save("admin", request)).toEqual(saved);
       expect((await runtimeRepository.read("admin")).revision).toBe(2);
       await expect(runtimeRepository.read("operator")).rejects.toMatchObject({ status: 403 });
-      for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt"]) {
+      for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt", "admin_business_plan_access_audit"]) {
         await expect(runtimePool.query(`DELETE FROM ${table}`)).rejects.toMatchObject({ code: "42501" });
         await expect(runtimePool.query(`TRUNCATE ${table}`)).rejects.toMatchObject({ code: "42501" });
       }
@@ -222,6 +241,8 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
         "UPDATE admin_business_plan_revision SET payload=payload",
         "UPDATE admin_business_plan_audit SET actor_user_id=actor_user_id",
         "UPDATE admin_business_plan_receipt SET request_digest=request_digest",
+        "UPDATE admin_business_plan_access_audit SET actor_user_id=actor_user_id",
+        "UPDATE admin_business_plan_grant SET user_id=user_id",
         "ALTER TABLE admin_business_plan_revision DISABLE TRIGGER admin_business_plan_revision_immutable",
         "SELECT admin_business_plan_immutable_guard()",
         `CREATE TABLE "${schema}".unexpected_table(id text)`,
@@ -258,5 +279,90 @@ suite("실제 PostgreSQL 사업계획서 보드 저장·권한·migration", () =
       await client.query(`DROP SCHEMA IF EXISTS "${rollbackSchema}" CASCADE`);
       client.release();
     }
+  });
+
+  it("최초 소유권은 명시적으로 한 관리자에게만 부여하고 자동 저장·사업 자료 공개를 막는다", async () => {
+    await expect(repository.save("admin", input())).rejects.toMatchObject({ status: 403 });
+    await expect(repository.claim("operator", randomUUID())).rejects.toMatchObject({ status: 403 });
+    expect(await counts()).toEqual({ board: 0, snapshots: 0, audit: 0, receipts: 0 });
+    const mutationId = randomUUID();
+    const claimed = await repository.claim("admin", mutationId);
+    expect(claimed).toEqual({ board: null, revision: 0, updatedAt: null, access: ownerAccess });
+    expect(await repository.claim("admin", mutationId)).toEqual(claimed);
+    await expect(repository.claim("admin-two", randomUUID())).rejects.toMatchObject({ status: 403 });
+    await expect(repository.read("admin-two")).rejects.toMatchObject({ status: 403 });
+    expect(await counts()).toEqual({ board: 1, snapshots: 0, audit: 0, receipts: 0 });
+    const rows = (await pool.query("SELECT action FROM admin_business_plan_access_audit ORDER BY occurred_at")).rows;
+    expect(rows.map((row) => row.action)).toEqual(["claim", "read"]);
+  });
+
+  it("동시 소유권 요청은 한 계정만 수락하고 나머지 계정에 버전·원문을 노출하지 않는다", async () => {
+    const outcomes = await Promise.allSettled([repository.claim("admin", randomUUID()), repository.claim("admin-two", randomUUID())]);
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    const rejected = outcomes.find((outcome) => outcome.status === "rejected");
+    expect(rejected?.status === "rejected" && rejected.reason).toMatchObject({ status: 403 });
+    expect((await pool.query("SELECT count(*)::int AS count FROM admin_business_plan_access_audit WHERE action='claim'")).rows[0].count).toBe(1);
+  });
+
+  it("소유자 없는 기존 원문은 재마이그레이션 후에도 어느 관리자에게도 자동 귀속하지 않는다", async () => {
+    const privateBoard = state("이전 비공개 자료");
+    await pool.query("INSERT INTO admin_business_plan(id,revision,payload,updated_at) VALUES(1,1,$1::jsonb,now())", [JSON.stringify(privateBoard)]);
+    await pool.query(accessMigration.replaceAll("public.", `"${schema}".`));
+    for (const actor of ["admin", "admin-two", "operator"]) {
+      await expect(repository.read(actor)).rejects.toMatchObject({ status: 403 });
+      await expect(repository.read(actor, true)).rejects.toMatchObject({ status: 403 });
+      await expect(repository.claim(actor, randomUUID())).rejects.toMatchObject({ status: 403 });
+      await expect(repository.save(actor, input(1))).rejects.toMatchObject({ status: 403 });
+    }
+    const raw = (await pool.query("SELECT owner_user_id,payload,revision FROM admin_business_plan")).rows[0];
+    expect(raw).toEqual({ owner_user_id: null, payload: privateBoard, revision: 1 });
+    expect((await pool.query("SELECT count(*)::int AS count FROM admin_business_plan_access_audit")).rows[0].count).toBe(0);
+  });
+
+  it("읽기·수정·내보내기를 각각 명시적으로 부여하고 활성 운영자도 해당 범위만 사용한다", async () => {
+    await repository.claim("admin", randomUUID());
+    const saved = await repository.save("admin", input());
+    await expect(repository.read("admin-two")).rejects.toMatchObject({ status: 403 });
+    await repository.changeAccess("admin", { mutationId: randomUUID(), userId: "operator", canRead: true, canWrite: false, canExport: false });
+    const readOnly = await repository.read("operator");
+    expect(readOnly.board).toEqual(saved.board);
+    expect(readOnly.access).toEqual({ canRead: true, canWrite: false, canExport: false, canManageAccess: false, canClaimOwnership: false });
+    await expect(repository.save("operator", input(1))).rejects.toMatchObject({ status: 403 });
+    await expect(repository.read("operator", true)).rejects.toMatchObject({ status: 403 });
+    await expect(repository.listAccess("operator")).rejects.toMatchObject({ status: 403 });
+    await repository.changeAccess("admin", { mutationId: randomUUID(), userId: "operator", canRead: true, canWrite: false, canExport: true });
+    expect((await repository.read("operator", true)).board).toEqual(saved.board);
+    await expect(repository.save("operator", input(1))).rejects.toMatchObject({ status: 403 });
+    await repository.changeAccess("admin", { mutationId: randomUUID(), userId: "operator", canRead: true, canWrite: true, canExport: false });
+    expect((await repository.save("operator", input(1))).revision).toBe(2);
+    await expect(repository.read("operator", true)).rejects.toMatchObject({ status: 403 });
+    const access = await repository.listAccess("admin");
+    expect(access.ownerUserId).toBe("admin");
+    expect(access.grants).toEqual([expect.objectContaining({ userId: "operator", canRead: true, canWrite: true, canExport: false })]);
+  });
+
+  it("권한 철회 후에는 현재 원문·내보내기·이전 저장 응답 재전송을 모두 거절한다", async () => {
+    await initialize();
+    const request = input();
+    await repository.save("admin-two", request);
+    const revoke = { mutationId: randomUUID(), userId: "admin-two", canRead: false, canWrite: false, canExport: false };
+    const result = await repository.changeAccess("admin", revoke);
+    expect(await repository.changeAccess("admin", revoke)).toEqual({ ...result, replayed: true });
+    for (const operation of [() => repository.read("admin-two"), () => repository.read("admin-two", true), () => repository.save("admin-two", request), () => repository.listAccess("admin-two")]) {
+      await expect(operation()).rejects.toMatchObject({ status: 403 });
+    }
+    expect((await repository.listAccess("admin")).grants).toEqual([]);
+    await expect(repository.changeAccess("admin", { ...revoke, canRead: true })).rejects.toMatchObject({ status: 409 });
+    await expect(repository.changeAccess("admin-two", { ...revoke, mutationId: randomUUID(), userId: "operator", canRead: true })).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("접근 감사 실패는 원문 반환과 권한 부여를 막고 기존 권한을 보존한다", async () => {
+    await initialize(); await repository.save("admin", input());
+    await pool.query("ALTER TABLE admin_business_plan_access_audit ADD CONSTRAINT reject_test_access CHECK (action NOT IN ('read','export','grant')) NOT VALID");
+    await expect(repository.read("admin")).rejects.toMatchObject({ status: 503 });
+    await expect(repository.read("admin", true)).rejects.toMatchObject({ status: 503 });
+    await expect(repository.changeAccess("admin", { mutationId: randomUUID(), userId: "operator", canRead: true, canWrite: true, canExport: true })).rejects.toMatchObject({ status: 503 });
+    expect((await pool.query("SELECT user_id FROM admin_business_plan_grant ORDER BY user_id")).rows).toEqual([{ user_id: "admin-two" }]);
+    expect(await counts()).toEqual({ board: 1, snapshots: 1, audit: 1, receipts: 1 });
   });
 });

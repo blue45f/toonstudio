@@ -13,10 +13,12 @@ import { createCsrfProtectionMiddleware } from "../../csrf-middleware";
 import { signSession } from "../../server/session";
 import { sessionAuth } from "../../session-middleware";
 import { BusinessPlanController } from "./business-plan.controller";
-import { parseSaveBusinessPlanRequest } from "./business-plan.dto";
+import { parseBusinessPlanAccessChange, parseBusinessPlanClaim, parseSaveBusinessPlanRequest } from "./business-plan.dto";
 import { BusinessPlanRepository, businessPlanDigest } from "./business-plan.repository";
 
 vi.mock("../../server/user-lifecycle", () => ({ isSessionAllowed: vi.fn(async () => true) }));
+
+const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
 
 const now = new Date("2026-01-15T03:00:00.000Z");
 const board = () => createEmptyBusinessPlanState(now);
@@ -81,11 +83,25 @@ describe("사업계획서 저장 요청 경계", () => {
     await expect(repository.save("admin", request())).rejects.toMatchObject({ status: 503 });
     try { await repository.read("admin"); } catch (error) { expect(String(error)).not.toContain("sensitive-connection-detail"); }
   });
+
+  it("소유권·권한 요청은 명시적인 요청 ID와 최소 권한만 받고 역할·소유자 주입을 거절한다", () => {
+    const mutationId = randomUUID();
+    expect(parseBusinessPlanClaim({ mutationId })).toEqual({ mutationId });
+    expect(() => parseBusinessPlanClaim({ mutationId, ownerUserId: "someone" })).toThrow();
+    const grant = { mutationId, userId: "reviewer", canRead: true, canWrite: false, canExport: false };
+    expect(parseBusinessPlanAccessChange(grant)).toEqual(grant);
+    for (const change of [{ canRead: false, canWrite: true }, { canRead: false, canExport: true }, { canWrite: "true" }, { userId: " reviewer" }, { role: "admin" }, { canManageAccess: true }]) {
+      expect(() => parseBusinessPlanAccessChange({ ...grant, ...change })).toThrow();
+    }
+  });
 });
 
 const repository = {
-  read: vi.fn(async (_actor: string): Promise<BusinessPlanRecord> => ({ board: null, revision: 0, updatedAt: null })),
-  save: vi.fn(async (_actor: string, input: SaveBusinessPlanRequest): Promise<BusinessPlanRecord> => ({ board: input.board, revision: 1, updatedAt: now.toISOString() })),
+  read: vi.fn(async (_actor: string): Promise<BusinessPlanRecord> => ({ board: null, revision: 0, updatedAt: null, access: ownerAccess })),
+  save: vi.fn(async (_actor: string, input: SaveBusinessPlanRequest): Promise<BusinessPlanRecord> => ({ board: input.board, revision: 1, updatedAt: now.toISOString(), access: ownerAccess })),
+  claim: vi.fn(async (_actor: string, _mutationId: string): Promise<BusinessPlanRecord> => ({ board: null, revision: 0, updatedAt: null, access: ownerAccess })),
+  listAccess: vi.fn(async () => ({ ownerUserId: "verified-admin", grants: [] })),
+  changeAccess: vi.fn(async () => ({ updatedAt: now.toISOString(), replayed: false })),
 };
 
 @Module({ controllers: [BusinessPlanController], providers: [{ provide: BusinessPlanRepository, useValue: repository }] })
@@ -127,7 +143,7 @@ describe("사업계획서 실제 HTTP 인증·CSRF·본문 경계", () => {
     const response = await get({ "x-user-id": token });
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(await response.json()).toEqual({ board: null, revision: 0, updatedAt: null });
+    expect(await response.json()).toEqual({ board: null, revision: 0, updatedAt: null, access: ownerAccess });
     expect(repository.read).toHaveBeenCalledExactlyOnceWith("verified-admin");
   });
 
@@ -167,5 +183,22 @@ describe("사업계획서 실제 HTTP 인증·CSRF·본문 경계", () => {
       expect((await post({}, { "x-user-id": token }, suffix)).status).toBe(404);
     }
     expect(repository.save).not.toHaveBeenCalled();
+  });
+
+  it("내보내기는 별도 인가를 요청하고 소유권·권한 변경은 검증된 신원과 CSRF를 유지한다", async () => {
+    const response = await fetch(`${origin}/api/admin/business-plan/export`, { headers: { "x-user-id": token } });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(repository.read).toHaveBeenCalledExactlyOnceWith("verified-admin", true);
+    const mutationId = randomUUID();
+    const cookieHeaders = { Cookie: `toonstudio-auth-session=${token}`, Origin: origin };
+    expect((await post({ mutationId }, cookieHeaders, "claim")).status).toBe(403);
+    expect(repository.claim).not.toHaveBeenCalled();
+    expect((await post({ mutationId }, { ...cookieHeaders, "x-toonstudio-csrf": "1" }, "claim")).status).toBe(200);
+    expect(repository.claim).toHaveBeenCalledExactlyOnceWith("verified-admin", mutationId);
+    const grant = { mutationId: randomUUID(), userId: "reviewer", canRead: true, canWrite: false, canExport: false };
+    expect((await post({ ...grant, ownerUserId: "reviewer" }, { "x-user-id": token }, "access")).status).toBe(400);
+    expect((await post(grant, { "x-user-id": token }, "access")).status).toBe(200);
+    expect(repository.changeAccess).toHaveBeenCalledExactlyOnceWith("verified-admin", grant);
   });
 });

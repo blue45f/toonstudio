@@ -1,6 +1,8 @@
 import { todayKst } from "@toonstudio/contracts/business-plan";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { useBusinessPlanPermissions } from "./business-plan-permissions";
+
 import type { BusinessPlanState } from "@toonstudio/contracts/business-plan";
 import type { ReactNode } from "react";
 
@@ -96,27 +98,28 @@ export function BusinessPlanDialog({ title, description, children, onClose, dirt
 }
 
 export function TextField({ label, name, value = "", type = "text", maxLength = 4000, hint, required = false, full = false }: { label: string; name: string; value?: string; type?: "text" | "url" | "date" | "datetime-local" | "number"; maxLength?: number; hint?: string; required?: boolean; full?: boolean }) {
-  const id = useId();
-  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span><span id={`${id}-label`}>{label}</span>{required && <span className="bp-required" aria-hidden="true"> *</span>}</span><input id={id} name={name} type={type} defaultValue={value} maxLength={maxLength} required={required} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} />{hint && <small id={`${id}-hint`}>{hint}</small>}</label>;
+  const id = useId(); const { canWrite } = useBusinessPlanPermissions();
+  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span><span id={`${id}-label`}>{label}</span>{required && <span className="bp-required" aria-hidden="true"> *</span>}</span><input disabled={!canWrite} id={id} name={name} type={type} defaultValue={value} maxLength={maxLength} required={required} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} />{hint && <small id={`${id}-hint`}>{hint}</small>}</label>;
 }
 
 export function TextAreaField({ label, name, value = "", hint, rows = 3, maxLength = 40000, full = false, required = false }: { label: string; name: string; value?: string; hint?: string; rows?: number; maxLength?: number; full?: boolean; required?: boolean }) {
-  const id = useId();
-  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span><span id={`${id}-label`}>{label}</span>{required && <span className="bp-required" aria-hidden="true"> *</span>}</span><textarea id={id} name={name} defaultValue={value} rows={rows} maxLength={maxLength} required={required} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} />{hint && <small id={`${id}-hint`}>{hint}</small>}</label>;
+  const id = useId(); const { canWrite } = useBusinessPlanPermissions();
+  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span><span id={`${id}-label`}>{label}</span>{required && <span className="bp-required" aria-hidden="true"> *</span>}</span><textarea disabled={!canWrite} id={id} name={name} defaultValue={value} rows={rows} maxLength={maxLength} required={required} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} />{hint && <small id={`${id}-hint`}>{hint}</small>}</label>;
 }
 
 export function SelectField({ label, name, value = "", options, full = false }: { label: string; name: string; value?: string; options: readonly (string | { value: string; label: string })[]; full?: boolean }) {
-  const id = useId();
-  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span>{label}</span><select id={id} name={name} defaultValue={value}>{options.map((option) => typeof option === "string" ? <option key={option} value={option}>{option}</option> : <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
+  const id = useId(); const { canWrite } = useBusinessPlanPermissions();
+  return <label className={`bp-field ${full ? "bp-full" : ""}`} htmlFor={id}><span>{label}</span><select disabled={!canWrite} id={id} name={name} defaultValue={value}>{options.map((option) => typeof option === "string" ? <option key={option} value={option}>{option}</option> : <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
 }
 
 export function CheckField({ label, name, checked = false, hint }: { label: string; name: string; checked?: boolean; hint?: string }) {
-  const id = useId();
-  return <label className="bp-checkbox" htmlFor={id}><input id={id} name={name} type="checkbox" defaultChecked={checked} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} /><span><span id={`${id}-label`}>{label}</span>{hint && <small id={`${id}-hint`}>{hint}</small>}</span></label>;
+  const id = useId(); const { canWrite } = useBusinessPlanPermissions();
+  return <label className="bp-checkbox" htmlFor={id}><input disabled={!canWrite} id={id} name={name} type="checkbox" defaultChecked={checked} aria-labelledby={`${id}-label`} aria-describedby={hint ? `${id}-hint` : undefined} /><span><span id={`${id}-label`}>{label}</span>{hint && <small id={`${id}-hint`}>{hint}</small>}</span></label>;
 }
 
 export function BusinessPlanFormFooter({ label = "보드에 반영", children }: { label?: string; children?: ReactNode }) {
-  return <footer className="bp-dialog-footer"><span>{children ?? "반영한 내용은 상단의 ‘서버에 저장’으로 저장합니다."}</span><button type="submit" className="bp-button bp-button--primary">{label}</button></footer>;
+  const { canWrite } = useBusinessPlanPermissions();
+  return <footer className="bp-dialog-footer"><span>{children ?? "반영한 내용은 상단의 ‘서버에 저장’으로 저장합니다."}</span><button disabled={!canWrite} type="submit" className="bp-button bp-button--primary">{label}</button></footer>;
 }
 
 export function BusinessPlanLink({ url, children }: { url: string; children: ReactNode }) {

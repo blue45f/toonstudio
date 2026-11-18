@@ -1,7 +1,9 @@
 import { STATUS, todayKst } from "@toonstudio/contracts/business-plan";
 import { useState } from "react";
 
+import { useBusinessPlanPermissions } from "./business-plan-permissions";
 import { BusinessPlanDialog, BusinessPlanError, BusinessPlanFormFooter, BusinessPlanPanel, SelectField, TextAreaField, TextField, businessPlanDateInput, businessPlanId, formText } from "./business-plan-ui";
+
 
 import type { BusinessPlanCommit } from "./business-plan-ui";
 import type { BusinessPlanState, BusinessPlanTask } from "@toonstudio/contracts/business-plan";
@@ -13,6 +15,7 @@ function newTask(): BusinessPlanTask {
 }
 
 export function BusinessPlanTasks({ board, onCommit }: { board: BusinessPlanState; onCommit: BusinessPlanCommit }) {
+  const { canWrite } = useBusinessPlanPermissions();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("전체");
   const [category, setCategory] = useState("전체");
@@ -29,7 +32,7 @@ export function BusinessPlanTasks({ board, onCommit }: { board: BusinessPlanStat
     setError(onCommit({ ...board, tasks: board.tasks.map((item) => item.id === task.id ? candidate : item) }, `${task.title}: ${task.status} → ${nextStatus}`) ?? "");
   }
 
-  return <BusinessPlanPanel id="bp-tasks" title="보완 작업" eyebrow="WORKSTREAM" description="작업 상태와 주장 검증 상태를 각각 관리합니다." actions={<button type="button" className="bp-button bp-button--small" onClick={() => setEditing(newTask())}>작업 추가</button>}>
+  return <BusinessPlanPanel id="bp-tasks" title="보완 작업" eyebrow="WORKSTREAM" description="작업 상태와 주장 검증 상태를 각각 관리합니다." actions={<button type="button" className="bp-button bp-button--small" disabled={!canWrite} onClick={() => setEditing(newTask())}>작업 추가</button>}>
     <div className="bp-toolbar">
       <label className="bp-search"><span className="bp-sr-only">작업 검색</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="항목, 담당자, 다음 조치 검색" /></label>
       <label><span className="bp-sr-only">작업 분류 필터</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="전체">전체 분류</option>{taskCategories.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -40,7 +43,7 @@ export function BusinessPlanTasks({ board, onCommit }: { board: BusinessPlanStat
     {view === "list" ? <><div className="bp-task-head" aria-hidden="true"><span>항목 · 담당 작업</span><span>진행 상태</span><span>주장</span></div><div className="bp-task-list">
       {filtered.map((task) => <div className="bp-task-row" key={task.id}>
         <button type="button" className="bp-task-open" onClick={() => setEditing(task)} aria-label={`${task.title} 작업 편집`}><span className="bp-task-index">{String(board.tasks.indexOf(task) + 1).padStart(2, "0")}</span><span className="bp-task-text"><strong>{task.title}</strong><small>{task.owner || "담당 미지정"} · {task.nextAction || "다음 조치 미등록"}</small></span></button>
-        <select className="bp-task-status" aria-label={`${task.title} 진행 상태`} value={task.status} onChange={(event) => changeStatus(task, event.target.value)}>{STATUS.map((item) => <option key={item}>{item}</option>)}</select>
+        <select disabled={!canWrite} className="bp-task-status" aria-label={`${task.title} 진행 상태`} value={task.status} onChange={(event) => changeStatus(task, event.target.value)}>{STATUS.map((item) => <option key={item}>{item}</option>)}</select>
         <span className="bp-task-evidence">{board.claims.filter((claim) => claim.taskId === task.id).length}개</span>
       </div>)}
       {!filtered.length && <p className="bp-empty">검색 조건에 맞는 작업이 없습니다.</p>}

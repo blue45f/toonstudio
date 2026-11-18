@@ -19,13 +19,13 @@ it("uses read-only shared schema evidence and checks each required DML privilege
 
 it("사업계획서 최신값의 지정 열만 수정하고 snapshot·감사·영수증은 추가만 허용한다", () => {
   const sql = buildBusinessPlanRuntimeAclSql("business_plan_runtime");
-  for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt"]) {
+  for (const table of ["admin_business_plan", "admin_business_plan_revision", "admin_business_plan_audit", "admin_business_plan_receipt", "admin_business_plan_grant", "admin_business_plan_access_audit"]) {
     expect(sql).toContain(`REVOKE ALL ON TABLE public.${table} FROM PUBLIC, "business_plan_runtime"`);
     expect(sql).toContain(`GRANT SELECT, INSERT ON TABLE public.${table} TO "business_plan_runtime"`);
   }
-  expect(sql).toContain('GRANT UPDATE ("revision", "payload", "updated_at") ON TABLE public.admin_business_plan');
+  expect(sql).toContain('GRANT UPDATE ("revision", "payload", "updated_at", "owner_user_id") ON TABLE public.admin_business_plan');
   expect(sql).not.toMatch(/GRANT[^;]*(?:DELETE|TRUNCATE|WITH GRANT OPTION)/u);
-  expect(sql).not.toMatch(/GRANT UPDATE[^;]*ON TABLE public.admin_business_plan_(?:revision|audit|receipt)/u);
+  expect(sql).not.toMatch(/GRANT UPDATE[^;]*ON TABLE public.admin_business_plan_(?:revision|audit|receipt|access_audit)/u);
   expect(sql).toContain('REVOKE ALL ON FUNCTION public.admin_business_plan_immutable_guard() FROM PUBLIC, "business_plan_runtime"');
   expect(buildAdminRuntimeAclSql("business_plan_runtime")).toContain(sql);
 });

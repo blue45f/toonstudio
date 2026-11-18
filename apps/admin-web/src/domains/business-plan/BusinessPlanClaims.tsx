@@ -1,7 +1,9 @@
 import { CLAIM_KINDS, FACT_STATUS, claimIssues, effectiveFact, freshness, todayKst, validateClaim } from "@toonstudio/contracts/business-plan";
 import { useState } from "react";
 
+import { useBusinessPlanPermissions } from "./business-plan-permissions";
 import { BusinessPlanBadge, BusinessPlanDialog, BusinessPlanError, BusinessPlanFormFooter, BusinessPlanLink, BusinessPlanPanel, CheckField, SelectField, TextAreaField, TextField, businessPlanDate, businessPlanDateInput, businessPlanId, formText } from "./business-plan-ui";
+
 
 import type { BusinessPlanCommit } from "./business-plan-ui";
 import type { BusinessPlanClaim, BusinessPlanState } from "@toonstudio/contracts/business-plan";
@@ -11,6 +13,7 @@ function newClaim(taskId: string): BusinessPlanClaim {
 }
 
 export function BusinessPlanClaims({ board, onCommit, now }: { board: BusinessPlanState; onCommit: BusinessPlanCommit; now: Date }) {
+  const { canWrite } = useBusinessPlanPermissions();
   const [filter, setFilter] = useState("all");
   const [taskFilter, setTaskFilter] = useState("");
   const [editing, setEditing] = useState<BusinessPlanClaim | null>(null);
@@ -18,7 +21,7 @@ export function BusinessPlanClaims({ board, onCommit, now }: { board: BusinessPl
     const fact = effectiveFact(claim, now); const fresh = freshness(claim, now);
     return (!taskFilter || claim.taskId === taskFilter) && (filter === "all" || (filter === "unknown" && !["근거 확인", "가정·산식 검토"].includes(fact)) || (filter === "stale" && fresh.level !== "good") || (filter === "conflict" && fact === "출처 상충"));
   });
-  return <BusinessPlanPanel id="bp-claims" title="주장과 근거 검증" eyebrow="EVIDENCE REGISTER" description="필수 출처와 검증 기록을 갖추기 전에는 수치·시장 규모·비교 결과를 확정하지 않습니다." className="bp-section" actions={<button type="button" className="bp-button bp-button--small" onClick={() => setEditing(newClaim(board.tasks[0]?.id ?? ""))}>주장 추가</button>}>
+  return <BusinessPlanPanel id="bp-claims" title="주장과 근거 검증" eyebrow="EVIDENCE REGISTER" description="필수 출처와 검증 기록을 갖추기 전에는 수치·시장 규모·비교 결과를 확정하지 않습니다." className="bp-section" actions={<button type="button" className="bp-button bp-button--small" disabled={!canWrite} onClick={() => setEditing(newClaim(board.tasks[0]?.id ?? ""))}>주장 추가</button>}>
     <div className="bp-toolbar"><div className="bp-segmented" role="group" aria-label="주장 검증 필터">{[["all", "전체"], ["unknown", "미확인"], ["stale", "최신성 점검"], ["conflict", "출처 상충"]].map(([key, label]) => <button type="button" key={key} aria-pressed={filter === key} onClick={() => setFilter(key)}>{label}</button>)}</div><label><span className="bp-sr-only">연결 작업 필터</span><select value={taskFilter} onChange={(event) => setTaskFilter(event.target.value)}><option value="">전체 작업</option>{board.tasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select></label><span className="bp-muted bp-small">{claims.length}/{board.claims.length}개 주장</span></div>
     <div className="bp-table-wrap"><table className="bp-table"><caption className="bp-sr-only">주장별 사실 확인 상태, 원문 출처, 검증일과 최신성</caption><thead><tr><th scope="col">주장·확인 대상</th><th scope="col">사실 확인</th><th scope="col">원문 근거</th><th scope="col">검증일·최신성</th><th scope="col">기록</th></tr></thead><tbody>
       {claims.map((claim) => {

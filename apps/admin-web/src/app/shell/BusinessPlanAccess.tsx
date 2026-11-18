@@ -23,7 +23,7 @@ export function BusinessPlanAccess() {
       const current = ++sequence.current;
       setAccess((previous) => ({ ...previous, phase: "checking", error: "" }));
       void loadAdminIdentity(signal).then((actor) => {
-        if (actor.role !== "admin") throw new Error("사업계획서는 서비스 관리자만 열람하고 수정할 수 있습니다.");
+        if (actor.role !== "admin" && actor.role !== "operator") throw new Error("사업계획서는 활성 관리자·운영자 중 별도 권한을 받은 계정만 이용할 수 있습니다.");
         if (active && current === sequence.current && !signal.aborted) {
           setAccess({ phase: "ready", actor, error: "" });
         }
@@ -72,7 +72,7 @@ export function BusinessPlanAccess() {
       <button type="button" onClick={() => setAttempt((value) => value + 1)}>관리자 권한 다시 확인</button>
     </div>}
     {access.actor && <div hidden={access.phase !== "ready"} inert={access.phase !== "ready"}>
-      <BusinessPlanBoard key={access.actor.id} userIdentity={access.actor.id} />
+      <BusinessPlanBoard key={`${access.actor.id}:${access.actor.role}`} userIdentity={access.actor.id} />
     </div>}
   </section>;
 }

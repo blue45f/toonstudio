@@ -5,18 +5,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdminApiError } from "../../platform/http/admin-api";
 
-import { loadBusinessPlan, saveBusinessPlan } from "./business-plan-api";
+import { claimBusinessPlan, exportBusinessPlan, loadBusinessPlan, saveBusinessPlan } from "./business-plan-api";
 import { BusinessPlanBoard } from "./BusinessPlanBoard";
 
 import type { BusinessPlanRecord, BusinessPlanState } from "@toonstudio/contracts/business-plan";
 
 vi.mock("./business-plan-api", async (importOriginal) => {
   const original = await importOriginal<typeof import("./business-plan-api")>();
-  return { ...original, loadBusinessPlan: vi.fn(), saveBusinessPlan: vi.fn() };
+  return { ...original, loadBusinessPlan: vi.fn(), saveBusinessPlan: vi.fn(), exportBusinessPlan: vi.fn(), claimBusinessPlan: vi.fn() };
 });
 
+const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
+
 const load = vi.mocked(loadBusinessPlan); const save = vi.mocked(saveBusinessPlan);
-const record = (board: BusinessPlanState | null, revision = board ? 1 : 0): BusinessPlanRecord => ({ board, revision, updatedAt: board ? new Date().toISOString() : null });
+const record = (board: BusinessPlanState | null, revision = board ? 1 : 0): BusinessPlanRecord => ({ board, revision, updatedAt: board ? new Date().toISOString() : null, access: ownerAccess });
 
 async function show(board: BusinessPlanState | null = null) {
   load.mockResolvedValue(record(board));
@@ -35,8 +37,8 @@ function editFirstTask(note: string) {
   fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "보드에 반영" }));
 }
 
-function currentBoard(): BusinessPlanState {
-  fireEvent.click(screen.getByRole("button", { name: "JSON 관리" }));
+async function currentBoard(): Promise<BusinessPlanState> {
+  fireEvent.click(screen.getByRole("button", { name: "JSON 관리" })); await screen.findByRole("dialog");
   const board = JSON.parse((screen.getByLabelText("사업계획서 보드 JSON") as HTMLTextAreaElement).value) as BusinessPlanState;
   fireEvent.click(screen.getByRole("button", { name: "대화상자 닫기" }));
   return board;
@@ -44,6 +46,8 @@ function currentBoard(): BusinessPlanState {
 
 beforeEach(() => {
   load.mockReset(); save.mockReset();
+  vi.mocked(exportBusinessPlan).mockReset().mockResolvedValue(record(null));
+  vi.mocked(claimBusinessPlan).mockReset().mockResolvedValue(record(null));
   save.mockImplementation(async (request) => record(request.board, request.expectedRevision + 1));
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
   const NativeUrl = URL;
@@ -58,14 +62,14 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     expect(load).not.toHaveBeenCalled(); expect(save).not.toHaveBeenCalled();
   });
 
-  it("서버가 비어 있을 때만 일반 11개 작업과 6개 상태를 만들고 미저장으로 표시한다", async () => {
+  it("명시적 소유권이 확인된 빈 보드에 일반 작업 틀을 만들고 미저장으로 표시한다", async () => {
     await show();
     expect(screen.getByText("서버 미저장 변경 있음")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "문제 인식 진행 상태" }).children).toHaveLength(6);
-    expect(currentBoard().tasks).toHaveLength(11);
-    expect(currentBoard().claims.every((claim) => claim.factStatus === "미확인" && claim.value === "")).toBe(true);
-    expect(currentBoard().documents.every((document) => document.workingText === "")).toBe(true);
-    expect(currentBoard().mentor).toEqual([]); expect(save).not.toHaveBeenCalled();
+    expect((await currentBoard()).tasks).toHaveLength(11);
+    expect((await currentBoard()).claims.every((claim) => claim.factStatus === "미확인" && claim.value === "")).toBe(true);
+    expect((await currentBoard()).documents.every((document) => document.workingText === "")).toBe(true);
+    expect((await currentBoard()).mentor).toEqual([]); expect(save).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "칸반" }));
     expect(screen.getAllByRole("region", { name: /^(초안|검토 필요|근거 확인 중|보완 완료|승인 대기|최종 확인) 작업$/u })).toHaveLength(6);
   });
@@ -87,10 +91,9 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     render(<BusinessPlanBoard userIdentity="admin-ui-test" />);
     await screen.findByRole("alert");
     expect(screen.queryByRole("button", { name: "작업 추가" })).toBeNull();
-    expect(screen.getAllByText(/서버 버전 미확인/u).length).toBeGreaterThan(0);
-    expect((screen.getByRole("button", { name: "서버에 저장" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "서버에 저장" })).toBeNull();
     load.mockResolvedValueOnce(record(createEmptyBusinessPlanState(), 4));
-    fireEvent.click(screen.getByRole("button", { name: "서버 기록 다시 읽기" }));
+    fireEvent.click(screen.getByRole("button", { name: "접근 권한과 서버 기록 다시 확인" }));
     await screen.findByRole("button", { name: "작업 추가" });
     expect(screen.getByText(/서버 버전 4/u)).toBeTruthy(); expect(save).not.toHaveBeenCalled();
   });
@@ -100,12 +103,12 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     fireEvent.click(screen.getByRole("button", { name: "서버에 저장" }));
     await screen.findByRole("alert");
     expect(screen.getByRole("alert").textContent).toMatch(/서버에 저장하지 못했습니다/u);
-    expect(currentBoard().tasks[0].notes).toBe("첫 저장 대상");
+    expect((await currentBoard()).tasks[0].notes).toBe("첫 저장 대상");
     editFirstTask("재시도 전 추가 편집");
     fireEvent.click(screen.getByRole("button", { name: "실패한 저장 다시 시도" }));
     await screen.findByText(/이후 추가한 편집 내용은 다시 저장하세요/u);
     expect(save.mock.calls[1][0]).toEqual(save.mock.calls[0][0]);
-    expect(currentBoard().tasks[0].notes).toBe("재시도 전 추가 편집");
+    expect((await currentBoard()).tasks[0].notes).toBe("재시도 전 추가 편집");
     expect(screen.getByText("서버 미저장 변경 있음")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "서버에 저장" }));
     await screen.findByText("사업계획서 기록을 서버에 저장했습니다.");
@@ -119,14 +122,14 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     fireEvent.click(screen.getByRole("button", { name: "서버에 저장" })); await screen.findByRole("alert");
     expect(screen.getByRole("alert").textContent).toMatch(/덮어쓰기를 중단/u);
     expect((screen.getByRole("button", { name: "서버에 저장" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(currentBoard().tasks[0].notes).toBe("현재 창의 미저장 메모");
+    expect((await currentBoard()).tasks[0].notes).toBe("현재 창의 미저장 메모");
     const newest = createEmptyBusinessPlanState(); newest.tasks[0].notes = "다른 창의 저장 메모";
     load.mockResolvedValueOnce(record(newest, 2));
     fireEvent.click(screen.getByRole("button", { name: "서버 기록 다시 읽기" }));
     expect(load).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "미저장 변경을 버리고 최신본 읽기" }));
     await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
-    expect(currentBoard().tasks[0].notes).toBe("다른 창의 저장 메모");
+    expect((await currentBoard()).tasks[0].notes).toBe("다른 창의 저장 메모");
   });
 
   it("최신본 GET 중에는 기존 초안을 유지하면서 새 편집·JSON 가져오기를 막고 완료 후 재개한다", async () => {
@@ -138,8 +141,8 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     load.mockImplementationOnce(() => new Promise<BusinessPlanRecord>((resolve) => { finish = resolve; }));
     fireEvent.click(screen.getByRole("button", { name: "서버 기록 다시 읽기" }));
     fireEvent.click(screen.getByRole("button", { name: "미저장 변경을 버리고 최신본 읽기" }));
-    expect(screen.getByText(/현재 기록은 유지됩니다/u)).toBeTruthy();
-    expect(screen.getByText(/기존 후속 조치/u)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toMatch(/접근 권한/u);
+    expect(screen.getByText(/기존 후속 조치/u).closest(".bp-workspace")?.hasAttribute("hidden")).toBe(true);
     fireEvent.click(editorButton);
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(jsonButton);
@@ -151,7 +154,7 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     expect((screen.getByLabelText("작업 메모") as HTMLTextAreaElement).value).toBe("재확인한 최신 기록");
     change("작업 메모", "최신본 위에 반영할 변경");
     fireEvent.click(screen.getByRole("button", { name: "보드에 반영" }));
-    expect(currentBoard().tasks[0].notes).toBe("최신본 위에 반영할 변경");
+    expect((await currentBoard()).tasks[0].notes).toBe("최신본 위에 반영할 변경");
     expect(save).not.toHaveBeenCalled();
   });
 
@@ -167,7 +170,7 @@ describe("사업계획서 관리자 화면·서버 저장", () => {
     await act(async () => { finish?.(record(sent.board, sent.expectedRevision + 1)); });
     expect(screen.getByText(/이후 추가한 편집 내용은 다시 저장하세요/u)).toBeTruthy();
     expect(screen.getByText("서버 미저장 변경 있음")).toBeTruthy();
-    expect(currentBoard().tasks[0].notes).toBe("POST 진행 중 추가한 내용");
+    expect((await currentBoard()).tasks[0].notes).toBe("POST 진행 중 추가한 내용");
   });
 
   it.each([401, 403])("저장 %i 응답 후 실제 기록과 대화상자를 즉시 숨기고 전용 권한 이벤트를 보낸다", async (status) => {

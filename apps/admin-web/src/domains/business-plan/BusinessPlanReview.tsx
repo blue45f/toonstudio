@@ -1,7 +1,9 @@
 import { getChecks, manualComplete, mentorComplete } from "@toonstudio/contracts/business-plan";
 import { useState } from "react";
 
+import { useBusinessPlanPermissions } from "./business-plan-permissions";
 import { BusinessPlanBadge, BusinessPlanDialog, BusinessPlanError, BusinessPlanFormFooter, BusinessPlanPanel, CheckField, SelectField, TextAreaField, TextField, businessPlanDate, businessPlanId, formText } from "./business-plan-ui";
+
 
 import type { BusinessPlanCommit } from "./business-plan-ui";
 import type { BusinessPlanApproval, BusinessPlanManualCheck, BusinessPlanMentorRequest, BusinessPlanState } from "@toonstudio/contracts/business-plan";
@@ -20,11 +22,12 @@ export function BusinessPlanApprovalPanel({ board, onCommit }: { board: Business
 }
 
 export function BusinessPlanReview({ board, onCommit }: { board: BusinessPlanState; onCommit: BusinessPlanCommit }) {
+  const { canWrite } = useBusinessPlanPermissions();
   const [mentor, setMentor] = useState<BusinessPlanMentorRequest | null>(null);
   const [manual, setManual] = useState<BusinessPlanManualCheck | null>(null);
   const documentIds = new Set(board.documents.map((document) => document.id));
   return <div className="bp-review-grid bp-section">
-    <BusinessPlanPanel id="bp-mentor" title="멘토 요청사항" eyebrow="FEEDBACK CHECKLIST" description="요청 원문과 반영 문서·위치·변경 근거를 연결합니다." actions={<button type="button" className="bp-button bp-button--small" onClick={() => setMentor({ id: businessPlanId("mentor"), title: "", request: "", round: "", sourceUrl: "", taskId: "", documentId: "", location: "", reflected: false, evidence: "", note: "" })}>요청 추가</button>}>
+    <BusinessPlanPanel id="bp-mentor" title="멘토 요청사항" eyebrow="FEEDBACK CHECKLIST" description="요청 원문과 반영 문서·위치·변경 근거를 연결합니다." actions={<button type="button" className="bp-button bp-button--small" disabled={!canWrite} onClick={() => setMentor({ id: businessPlanId("mentor"), title: "", request: "", round: "", sourceUrl: "", taskId: "", documentId: "", location: "", reflected: false, evidence: "", note: "" })}>요청 추가</button>}>
       <ul className="bp-review-list">{board.mentor.map((item) => <li key={item.id}><div><strong>{item.title}</strong><small>{item.round || "회차 미등록"} · {item.location || "반영 위치 미등록"}</small><BusinessPlanBadge tone={mentorComplete(item, documentIds) ? "good" : "warn"}>{mentorComplete(item, documentIds) ? "반영 기록 완료" : "반영 검토 필요"}</BusinessPlanBadge></div><button type="button" className="bp-button bp-button--small" onClick={() => setMentor(item)} aria-label={`${item.title} 멘토 요청 편집`}>검토</button></li>)}</ul>
       {!board.mentor.length && <p className="bp-empty">등록된 멘토 요청이 없습니다.<br />실제 받은 요청을 추가해 반영 여부를 확인하세요.</p>}
     </BusinessPlanPanel>

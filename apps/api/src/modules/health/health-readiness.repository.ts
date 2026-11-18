@@ -8,9 +8,7 @@ import type { QueryablePool } from "./health-readiness-query";
 
 export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
-export const HEALTH_READINESS_REPOSITORY = Symbol(
-  "HEALTH_READINESS_REPOSITORY",
-);
+export const HEALTH_READINESS_REPOSITORY = Symbol("HEALTH_READINESS_REPOSITORY");
 
 /** 기능별 영속 릴레이션을 모두 확인해 일부 기능만 빠진 호스트의 준비 완료를 막는다. */
 export const REQUIRED_DATABASE_RELATIONS = [
@@ -19,6 +17,8 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",
+  "admin_business_plan", "admin_business_plan_access_audit", "admin_business_plan_audit",
+  "admin_business_plan_grant", "admin_business_plan_receipt", "admin_business_plan_revision",
   "admin_content_reports",
   "admin_member_test_accounts",
   "admin_promos",

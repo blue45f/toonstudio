@@ -1,3 +1,5 @@
+import type { BusinessPlanAccess } from "./access";
+
 /** 사업계획서 보드의 v1 교환 계약. 사용자 원문과 실행 권한은 기본 데이터에 포함하지 않는다. */
 export const STATUS = Object.freeze([
   "초안", "검토 필요", "근거 확인 중", "보완 완료", "승인 대기", "최종 확인",
@@ -186,6 +188,7 @@ export interface BusinessPlanRecord {
   board: BusinessPlanState | null;
   revision: number;
   updatedAt: string | null;
+  access: BusinessPlanAccess;
 }
 
 export interface SaveBusinessPlanRequest {

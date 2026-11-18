@@ -1,7 +1,7 @@
 import { Body, Controller, ForbiddenException, Get, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { getSessionAuthenticationPrincipal } from "../../session-middleware";
-import { parseSaveBusinessPlanRequest } from "./business-plan.dto";
+import { parseBusinessPlanAccessChange, parseBusinessPlanClaim, parseSaveBusinessPlanRequest } from "./business-plan.dto";
 import { BusinessPlanRepository } from "./business-plan.repository";
 
 function actor(request: Request, response: Response): string {
@@ -24,6 +24,30 @@ export class BusinessPlanController {
   @Get()
   read(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     return this.repository.read(actor(request, response));
+  }
+
+  @Get("export")
+  export(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    return this.repository.read(actor(request, response), true);
+  }
+
+  @Get("access")
+  access(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    return this.repository.listAccess(actor(request, response));
+  }
+
+  @Post("access")
+  @HttpCode(200)
+  changeAccess(@Body() body: unknown, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    const userId = actor(request, response);
+    return this.repository.changeAccess(userId, parseBusinessPlanAccessChange(body));
+  }
+
+  @Post("claim")
+  @HttpCode(200)
+  claim(@Body() body: unknown, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    const userId = actor(request, response);
+    return this.repository.claim(userId, parseBusinessPlanClaim(body).mutationId);
   }
 
   @Post("save")
