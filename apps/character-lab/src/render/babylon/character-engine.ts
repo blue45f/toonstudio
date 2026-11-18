@@ -7,12 +7,10 @@
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
-import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
-import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
+import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
-import { qConjugate, qMultiply, qRotateVec3, v3Cross, v3Length, v3Normalize, v3Sub } from "../../shared/math";
+import { qConjugate, qMultiply, qRotateVec3 } from "../../shared/math";
 import { stableStringify } from "../../shared/stable-json";
 import { BETA_FEATURE_IDS } from "../beta-features";
 import { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "../character-render-constants";
@@ -32,13 +30,14 @@ import { normalizeToonLighting } from "../toon-reference";
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
 import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
+import { inspectRigCapabilities, inspectRigPaint, inspectViewportCamera, projectRigJointHandles, readRigBone } from "./character-engine-inspection";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
-import { fromQuaternion, fromVector3, toVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
+import { HAND_PROP_PART_ID, attachHandPropToRig } from "./hand-prop-attachment";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
@@ -52,7 +51,9 @@ import { createPostProcessStack } from "./postprocess";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
+import type { BoneReading } from "./character-engine-inspection";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
+import type { HandPropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -66,6 +67,7 @@ import type {
   CharacterSource,
   EngineBackend,
   EngineDiagnostics,
+  HandPropAttachment,
   HudSample,
   JointDragHandle,
   KitPlan,
@@ -76,7 +78,6 @@ import type {
   PhysicsProviderId,
   PhysicsStatus,
   CharacterPickOptions, PickHit,
-  Quat,
   SettleReceipt,
   ShadingProfile,
   SkeletonData,
@@ -106,18 +107,9 @@ import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManage
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
+export type { BoneReading } from "./character-engine-inspection";
 
 export { FACE_SDF_SIZE, THUMBNAIL_LAYER_MASK, TOON_EDGE_EPSILON, TOON_OUTLINE_WIDTH } from "../character-render-constants";
-
-/** `readBone` 결과 */
-export interface BoneReading {
-  readonly name: string;
-  readonly humanoid: string | null;
-  readonly position: Vec3;
-  readonly rotation: Quat;
-  readonly localRotation: Quat;
-  readonly auxiliary: boolean;
-}
 
 export interface BabylonCharacterEngineDeps {
   /** 이미 초기화된 Babylon 엔진(WebGPUEngine·Engine·NullEngine) */
@@ -202,6 +194,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
+  private activeHandProp: HandPropAttachment | null = null;
+  private handPropHandle: HandPropHandle | null = null;
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -345,6 +339,13 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
+    if (this.activeHandProp) {
+      try {
+        await this.syncActiveHandPropToRig(rig);
+      } catch (error) {
+        this.reportFailure(error, "hand-prop-reattach-failed", "새 캐릭터 소스에 손 소품을 다시 부착하지 못했습니다.");
+      }
+    }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
     try {
       this.physics.bindRig(rig);
@@ -363,12 +364,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   }
 
   private sourceCapabilities(rig: CharacterRig): SourceCapabilities {
-    return {
-      capabilities: rig.capabilities,
-      morphNames: rig.morphNames,
-      boneNames: [...rig.bones.keys()],
-      partIdPalette: rig.partIdPalette,
-    };
+    return inspectRigCapabilities(rig);
   }
 
   /**
@@ -551,9 +547,49 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
+    this.detachHandPropFromRig(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
+  }
+
+  private detachHandPropFromRig(rig: CharacterRig | null): void {
+    const handle = this.handPropHandle;
+    if (!handle) return;
+    this.handPropHandle = null;
+    this.disposePassMaterials(HAND_PROP_PART_ID);
+    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
+    handle.dispose();
+  }
+
+  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
+    this.detachHandPropFromRig(rig);
+    if (!this.activeHandProp) return;
+    const materialOptions = this.materialOptions();
+    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, {
+      scene: this.character.scene,
+      fetchBytes: (url) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
+      adaptMaterial: (role, mesh) => adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
+      verifyIntegrity: this.deps.verifyPackageSha ?? true,
+      now: this.now(),
+    });
+  }
+
+  async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
+    this.assertAlive();
+    return this.runExclusive(async () => {
+      this.assertAlive();
+      this.activeHandProp = attachment;
+      const rig = this.rig;
+      if (!rig) return;
+      await this.syncActiveHandPropToRig(rig);
+      this.character.clearShadowCasters();
+      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+      await this.beta.reconcile();
+      this.applyMaterialsForMode(rig);
+      this.refreshToonUniforms(rig);
+      this.beta.syncIblShadows();
+    });
   }
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();
@@ -987,37 +1023,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   jointHandles(): readonly JointDragHandle[] {
     const rig = this.rig;
     if (this.disposed || !rig) return [];
-    const camera = this.character.camera;
-    const width = this.engine.getRenderWidth();
-    const height = this.engine.getRenderHeight();
-    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
-    const viewport = new Viewport(0, 0, width, height);
-    const handles: JointDragHandle[] = [];
-    for (const [bone, rb] of rig.humanoid) {
-      const world = rigBoneWorld(rb).position;
-      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
-      handles.push({ bone, screen: [projected.x, projected.y], world });
-    }
-    return handles;
+    return projectRigJointHandles(rig, this.character.camera, this.engine);
   }
 
   viewportCamera(): ViewportCameraInfo {
-    const camera = this.character.camera;
-    // 위치는 구면 좌표에서 직접 계산한다(ArcRotateCamera의 globalPosition은 다음 렌더 전까지 이전 값일 수 있다).
-    const target = fromVector3(camera.target);
-    const sinBeta = Math.sin(camera.beta);
-    const position: Vec3 = [
-      target[0] + camera.radius * Math.cos(camera.alpha) * sinBeta,
-      target[1] + camera.radius * Math.cos(camera.beta),
-      target[2] + camera.radius * Math.sin(camera.alpha) * sinBeta,
-    ];
-    const direction = v3Sub(target, position);
-    const forward: Vec3 = v3Length(direction) < 1e-9 ? [0, 0, -1] : v3Normalize(direction);
-    // 우수 좌표 카메라 기저: right = forward × worldUp (forward가 world up과 평행이면 +X로 대체), up = right × forward
-    const crossUp = v3Cross(forward, [0, 1, 0]);
-    const right: Vec3 = v3Length(crossUp) < 1e-6 ? [1, 0, 0] : v3Normalize(crossUp);
-    const up: Vec3 = v3Cross(right, forward);
-    return { position, forward, right, up, fovY: camera.fov, width: this.engine.getRenderWidth(), height: this.engine.getRenderHeight() };
+    return inspectViewportCamera(this.character.camera, this.engine);
   }
 
   /** 관절 드래그·IK용 포즈 프레임 스켈레톤(휴머노이드 이름, 포즈 규약별 rest). 본이 없으면 null. */
@@ -1027,23 +1037,12 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
 
   /** 본의 현재 월드 변환·로컬 회전(진단·테스트). 이름은 소스 이름 또는 휴머노이드 이름. */
   readBone(name: string): BoneReading | null {
-    const rig = this.rig;
-    if (!rig) return null;
-    const rb = rig.bones.get(name) ?? (isHumanoidBoneName(name) ? rig.humanoid.get(name) : undefined);
-    if (!rb) return null;
-    const world = rigBoneWorld(rb);
-    return { name: rb.name, humanoid: rb.humanoid, position: world.position, rotation: world.rotation, localRotation: fromQuaternion(rb.node.rotationQuaternion), auxiliary: rb.auxiliary };
+    return readRigBone(this.rig, name);
   }
 
   /** 부위별 페인트 텍스처 점검(크기·revision·invertY·decal 연결). 텍스처가 없으면 빈 배열. */
   inspectPaint(): readonly PaintInspection[] {
-    const rig = this.rig;
-    return this.paintTextures.describe().map((info) => {
-      const texture = this.paintTextures.get(info.part);
-      const parts = rig ? rig.parts.filter((part) => part.role === info.part) : [];
-      const decalMeshes = parts.reduce((sum, part) => sum + part.meshes.filter((mesh) => texture !== null && mesh.decalMap?.texture === texture).length, 0);
-      return { ...info, decalMeshes, decalEnabled: parts.length > 0 && parts.every((part) => part.pbr.decalMap?.isEnabled === true) };
-    });
+    return inspectRigPaint(this.rig, this.paintTextures);
   }
 
   /** 장면 설정 평문 보고(우수 좌표·clear 알파·톤맵·광원·그림자 생성기 등). Babylon 객체는 노출하지 않는다. */
