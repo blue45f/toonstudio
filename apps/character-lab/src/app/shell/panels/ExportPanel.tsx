@@ -1,7 +1,7 @@
 /**
  * ExportPanel: 투명 PNG(단일 컷 + 4방향 설정시트 + 2×2 4컷 종합 설정시트 + 세로 4컷 웹툰 스트립) ·
  * 레시피 저장/불러오기(6단 페인트 서브레이어 보존 · 미저장 덮어쓰기 스냅샷 복구)/로컬 클립보드 공유 ·
- * GLB · 레이어 PSD · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
+ * GLB · 레이어 PSD(만화 연출 말풍선·대사·효과음·효과선 4단 독립 분리 포함) · 동기 중복 실행 차단 · 컷별 진행/실패 후 재시도 안내 · 키보드 조작.
  */
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
@@ -120,7 +120,20 @@ export function ExportPanel({
 
   const applyPlan = useApplyPlan();
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = directorState;
+  const {
+    locale: stripLocale,
+    actingArc: stripActingArc,
+    bakeStripFx,
+    stripFxLines,
+    dialogueLines,
+    bubbleShapes,
+    bubbleFontScales,
+    sfxStamps,
+    speakerTargets,
+    cutCameraPresets,
+    partnerSide,
+    includePsdMangaFx,
+  } = directorState;
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
   const [framing, setFraming] = useState<CameraFramingMode>("full-body");
@@ -293,6 +306,7 @@ export function ExportPanel({
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            cutCameraPresets,
             ...(stripActingArc !== "none"
               ? {
                   actingArc: {
@@ -305,6 +319,7 @@ export function ExportPanel({
               ? {
                   mangaFx: {
                     enabled: true,
+                    locale: stripLocale,
                     linesKind: stripFxLines,
                     includeSpeechBubbles: true,
                     intensity: 0.78,
@@ -312,6 +327,8 @@ export function ExportPanel({
                     bubbleShapes,
                     bubbleFontScales,
                     sfxStamps,
+                    speakerTargets,
+                    partnerSide,
                   },
                 }
               : {}),
@@ -350,6 +367,22 @@ export function ExportPanel({
             includeReferencePasses,
             splitHairLayers,
             ...(useLuminanceToAlpha ? { lineArt: { useLuminanceToAlpha: true } } : {}),
+            ...(includePsdMangaFx
+              ? {
+                  mangaFx: {
+                    enabled: true,
+                    locale: stripLocale,
+                    linesKind: stripFxLines,
+                    bubbleShape: bubbleShapes[0],
+                    dialogueText: dialogueLines[0],
+                    fontScale: bubbleFontScales[0],
+                    speakerTarget: speakerTargets[0] === "auto" ? "protagonist" : speakerTargets[0],
+                    partnerSide,
+                    sfxStamp: sfxStamps[0],
+                    intensity: 0.78,
+                  },
+                }
+              : {}),
           },
           { now },
         ),
@@ -727,8 +760,18 @@ export function ExportPanel({
         <label htmlFor={`${ids}-lumalpha`}>
           <input id={`${ids}-lumalpha`} type="checkbox" checked={useLuminanceToAlpha} onChange={(event) => setUseLuminanceToAlpha(event.target.checked)} /> SHAPER 휘도 반전 선화 추출(a = 1 - r)
         </label>
+        <label htmlFor={`${ids}-psdmangafx`}>
+          <input
+            id={`${ids}-psdmangafx`}
+            data-testid="export-psd-manga-fx"
+            type="checkbox"
+            checked={includePsdMangaFx}
+            onChange={(event) => stripDirector.update({ includePsdMangaFx: event.target.checked })}
+          />{" "}
+          만화 연출 분리 레이어 포함(말풍선·대사·효과음·효과선)
+        </label>
         {splitHairLayers && hairSplitReason ? <p role="status">{hairSplitReason}</p> : null}
-        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리합니다. MSAA 공유 경계는 가시 샘플 과반 소유로 나누며 동률은 헤어에 귀속합니다. 추가 추출 주선은 기본 숨김이며, 켜면 원본 렌더 위에 선 효과가 더해집니다.</p>
+        <p>기본 PBR·툰의 불투명·컷아웃 헤어를 분리하며, 만화 연출 포함 시 최상단 &quot;웹툰 만화 연출&quot; 그룹에 효과선·말풍선 프레임·대사 식자·효과음 스탬프 4개 투명 레이어가 개별 저장됩니다.</p>
         <button type="button" onClick={onPsd} disabled={!engineReady || busy !== null || (splitHairLayers && hairSplitReason !== null)}>
           레이어 PSD 저장
         </button>

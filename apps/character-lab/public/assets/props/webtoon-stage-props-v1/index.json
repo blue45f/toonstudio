@@ -48,6 +48,15 @@
       "bytes": 24044,
       "sha256": "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
       "triangles": 240
+    },
+    {
+      "id": "rooftop-safety-railing",
+      "labelKo": "옥상 황혼 안전 난간·벤치",
+      "meshName": "TS_StageProp_rooftop-safety-railing",
+      "path": "rooftop-safety-railing.glb",
+      "bytes": 21692,
+      "sha256": "f18ff2d59f400a439d9d37efbc20110c5d1340635e4f698344e9df4fc11edb64",
+      "triangles": 296
     }
   ]
 }

@@ -34,11 +34,108 @@ import {
 
 export type StudioBg3dProfessionalRuntimeStatus = "ready" | "review" | "blocked";
 
+export type StudioBg3dGpuBudgetStatus = "optimal" | "constrained" | "unknown";
+
 export type StudioBg3dProfessionalRuntimeFailureCode =
   | "scene-adaptation-failed"
   | "scene-authority-failed"
   | "renderer-unavailable"
   | "professional-plan-failed";
+
+export interface StudioBg3dGlbBinaryAudit {
+  readonly valid: boolean;
+  readonly magicHex: string;
+  readonly version: number;
+  readonly meshCount: number;
+  readonly negativeScaleNodeCount: number;
+  readonly failureReason: string | null;
+}
+
+const GLTF_BINARY_MAGIC = 0x46546c67;
+const GLTF_JSON_CHUNK_TYPE = 0x4e4f534a;
+
+/**
+ * Zero-allocation binary .glb preflight check before WebGPU/WebGL upload.
+ * Rejects truncated binaries and flags negative node scales that invert toon outlines.
+ */
+export function inspectStudioBg3dGlbBinaryHeader(
+  buffer: ArrayBuffer,
+): StudioBg3dGlbBinaryAudit {
+  if (buffer.byteLength < 20) {
+    return Object.freeze({
+      valid: false,
+      magicHex: "0x0",
+      version: 0,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "GLB 파일 헤더가 손상되었습니다.",
+    });
+  }
+  const view = new DataView(buffer);
+  const magic = view.getUint32(0, true);
+  const version = view.getUint32(4, true);
+  const declaredLen = view.getUint32(8, true);
+  const jsonLen = view.getUint32(12, true);
+  const jsonType = view.getUint32(16, true);
+  const magicHex = `0x${magic.toString(16)}`;
+  if (
+    magic !== GLTF_BINARY_MAGIC
+    || version !== 2
+    || jsonType !== GLTF_JSON_CHUNK_TYPE
+    || declaredLen > buffer.byteLength
+    || 20 + jsonLen > buffer.byteLength
+  ) {
+    return Object.freeze({
+      valid: false,
+      magicHex,
+      version,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "유효한 glTF 2.0 바이너리 규격이 아닙니다.",
+    });
+  }
+  try {
+    const parsed = JSON.parse(
+      new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, jsonLen)),
+    ) as {
+      meshes?: unknown[];
+      nodes?: Array<{ scale?: unknown }>;
+    };
+    const meshCount = Array.isArray(parsed.meshes) ? parsed.meshes.length : 0;
+    const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
+    let negativeScaleNodeCount = 0;
+    for (const node of nodes) {
+      if (
+        Array.isArray(node.scale)
+        && node.scale.some((axis) => typeof axis === "number" && axis < 0)
+      ) {
+        negativeScaleNodeCount += 1;
+      }
+    }
+    const valid = meshCount > 0 && negativeScaleNodeCount === 0;
+    return Object.freeze({
+      valid,
+      magicHex,
+      version,
+      meshCount,
+      negativeScaleNodeCount,
+      failureReason: negativeScaleNodeCount > 0
+        ? `음수 스케일 노드(${negativeScaleNodeCount}개)가 포함되어 외곽선 노멀 반전 위험이 있습니다.`
+        : meshCount === 0
+          ? "GLB 내부에 메시 데이터가 없습니다."
+          : null,
+    });
+  } catch {
+    return Object.freeze({
+      valid: false,
+      magicHex,
+      version,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "GLB JSON 청크를 읽지 못했습니다.",
+    });
+  }
+}
 
 export interface StudioBg3dProfessionalRuntimeSummary {
   readonly authorityId: string | null;
@@ -51,6 +148,9 @@ export interface StudioBg3dProfessionalRuntimeSummary {
   readonly specialistPassCount: number;
   readonly primaryRenderer: "three-webgpu" | "three-webgl2" | null;
   readonly qualityTier: "ultra" | "high" | "balanced" | "compatibility" | null;
+  readonly maxTextureDimension2d: number | null;
+  readonly deviceMemoryGiB: number | null;
+  readonly gpuBudgetStatus: StudioBg3dGpuBudgetStatus;
 }
 
 export interface StudioBg3dProfessionalRuntimeReadiness {
@@ -78,6 +178,21 @@ function positiveFinite(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;
+}
+
+function resolveGpuBudgetStatus(
+  capabilities: StudioScene3dDeviceCapabilities | null,
+): StudioBg3dGpuBudgetStatus {
+  if (!capabilities || (!capabilities.webgpu && !capabilities.webgl2)) {
+    return "unknown";
+  }
+  if (
+    capabilities.maxTextureDimension2d < 4096
+    || (capabilities.deviceMemoryGiB !== null && capabilities.deviceMemoryGiB <= 4)
+  ) {
+    return "constrained";
+  }
+  return "optimal";
 }
 
 export function deriveStudioBg3dProfessionalDeviceCapabilities(input: {
@@ -117,6 +232,7 @@ function summary(
   authority: StudioScene3dAuthoritySnapshot | null,
   plan: StudioScene3dProfessionalPlan | null,
   revision: number,
+  capabilities: StudioScene3dDeviceCapabilities | null = null,
 ): StudioBg3dProfessionalRuntimeSummary {
   return Object.freeze({
     authorityId: authority?.authorityId ?? null,
@@ -131,6 +247,11 @@ function summary(
     ).length ?? 0,
     primaryRenderer: plan?.renderGraph.runtimePlan.primaryRenderer ?? null,
     qualityTier: plan?.renderGraph.runtimePlan.qualityTier ?? null,
+    maxTextureDimension2d: capabilities
+      ? positiveFinite(capabilities.maxTextureDimension2d, 4096)
+      : null,
+    deviceMemoryGiB: capabilities?.deviceMemoryGiB ?? null,
+    gpuBudgetStatus: resolveGpuBudgetStatus(capabilities),
   });
 }
 
@@ -140,6 +261,7 @@ function blocked(input: {
   readonly revision: number;
   readonly authority?: StudioScene3dAuthoritySnapshot | null;
   readonly recovery?: StudioScene3dRuntimeRecoveryPlan | null;
+  readonly capabilities?: StudioScene3dDeviceCapabilities | null;
   readonly blockers?: readonly string[];
   readonly warnings?: readonly string[];
 }): StudioBg3dProfessionalRuntimeReadiness {
@@ -156,7 +278,7 @@ function blocked(input: {
     message: input.message,
     blockers: Object.freeze([...new Set(blockers)]),
     warnings: Object.freeze([...new Set(input.warnings ?? [])]),
-    summary: summary(authority, null, input.revision),
+    summary: summary(authority, null, input.revision, input.capabilities ?? null),
   });
 }
 
@@ -206,8 +328,9 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
   if (!adapted.ok) {
     return blocked({
       code: "scene-adaptation-failed",
-      message: "현재 BG3D 런타임을 손실 없는 canonical SceneDocument로 투영하지 못했습니다.",
+      message: "현재 3D 배경 장면을 표준 작업 문서로 변환하지 못했습니다.",
       revision: input.revision,
+      capabilities: input.capabilities,
     });
   }
 
@@ -223,8 +346,9 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
   } catch {
     return blocked({
       code: "scene-authority-failed",
-      message: "BG3D·DCC·VRM을 하나의 SceneDocument authority로 검증하지 못했습니다.",
+      message: "배경·외부 모델·캐릭터 장면을 단일 기준으로 통합하지 못했습니다.",
       revision: input.revision,
+      capabilities: input.capabilities,
     });
   }
 
@@ -240,6 +364,7 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
       revision: input.revision,
       authority,
       recovery,
+      capabilities: input.capabilities,
       blockers: Object.freeze([
         "선택한 렌더러를 다시 시작하거나 명시적으로 다른 렌더러를 선택해야 합니다.",
       ]),
@@ -264,6 +389,7 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
       revision: input.revision,
       authority,
       recovery,
+      capabilities: input.capabilities,
     });
   }
 
@@ -288,6 +414,6 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
     message,
     blockers: plan.blockers,
     warnings: plan.warnings,
-    summary: summary(authority, plan, input.revision),
+    summary: summary(authority, plan, input.revision, input.capabilities),
   });
 }

@@ -1,6 +1,7 @@
-/** 손·머리·무대 소품, 3D 효과음 스탬프, 원클릭 씬 디렉터 상태·사용자 동작을 뷰포트에서 분리한다. */
+/** 손·머리·무대 소품, 3D 효과음 스탬프, 원클릭 씬 디렉터 및 상대역 자동 캐스팅 동작을 뷰포트에서 분리한다. */
 import { useState, useSyncExternalStore } from "react";
 
+import { buildDuoEyeContactCommands, type DuoShotState } from "./viewport-duo-shot-guide";
 import {
   buildHandPropGripPoseCommands,
   findWebtoonHandPropSpec,
@@ -19,18 +20,34 @@ import {
   resolveDirectorShadingProfile,
   type WebtoonSceneDirectorPresetId,
 } from "./viewport-scene-director";
+import { resolveViewportDuoShot } from "./viewport-stage";
 
 import type { CharacterEngine, CharacterRecipe, HandPropId, HandPropSide, HeadPropId, LabCommand, StagePropId } from "../../../contracts";
+import type { Dispatch, SetStateAction } from "react";
 
 interface ViewportScenePropsContext {
   readonly engine: CharacterEngine | null;
-  readonly recipe: Pick<CharacterRecipe, "pose" | "shading">;
+  readonly recipe: CharacterRecipe;
+  readonly getLatestRecipe: () => CharacterRecipe;
+  readonly duoShot: DuoShotState;
+  readonly setDuoShot: Dispatch<SetStateAction<DuoShotState>>;
+  readonly syncDuoPartner3d: (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState) => Promise<void>;
   readonly dispatch: (command: LabCommand) => void;
   readonly setNotice: (notice: string | null) => void;
   readonly failureText: (error: unknown, fallback: string) => string;
 }
 
-export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, failureText }: ViewportScenePropsContext) {
+export function useViewportSceneProps({
+  engine,
+  recipe,
+  getLatestRecipe,
+  duoShot,
+  setDuoShot,
+  syncDuoPartner3d,
+  dispatch,
+  setNotice,
+  failureText,
+}: ViewportScenePropsContext) {
   const stripDirector = getDefaultStripDirectorSession();
   const activeDirectorId = useSyncExternalStore(
     stripDirector.subscribe,
@@ -138,6 +155,34 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
     }
   };
 
+  const castDirectorDuoPartner = async (presetId: WebtoonSceneDirectorPresetId): Promise<void> => {
+    const preset = findWebtoonSceneDirectorPreset(presetId);
+    if (!preset) return;
+    const prevDuo = duoShot;
+    const nextDuo: DuoShotState = {
+      enabled: true,
+      render3dPartner: true,
+      partnerId: preset.duoCasting.partnerId,
+      side: preset.duoCasting.side,
+      distanceKey: preset.duoCasting.distanceKey,
+      partnerStance: preset.duoCasting.stance,
+      partnerExpression: preset.duoCasting.expression,
+      partnerHandPropId: preset.duoCasting.partnerHandPropId,
+    };
+    setDuoShot(nextDuo);
+    stripDirector.update({
+      partnerSide: preset.duoCasting.side,
+      speakerTargets: preset.speakerTargets,
+    });
+    const currentRecipe = getLatestRecipe();
+    const resolved = resolveViewportDuoShot(currentRecipe, nextDuo);
+    for (const cmd of buildDuoEyeContactCommands(currentRecipe.pose, resolved.duoEyeContact, resolved.duoPartner.labelKo)) {
+      dispatch(cmd);
+    }
+    await syncDuoPartner3d(nextDuo, prevDuo);
+    setNotice(`씬 디렉터 상대역 자동 캐스팅: ${resolved.duoPartner.labelKo} (${resolved.duoEyeContact.summaryKo})`);
+  };
+
   const onSelectSceneDirector = async (presetId: WebtoonSceneDirectorPresetId | ""): Promise<void> => {
     if (!presetId) {
       setHandPropId("");
@@ -163,6 +208,7 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
 
     const preset = findWebtoonSceneDirectorPreset(presetId);
     if (!preset) return;
+    const currentLocale = stripDirector.getState().locale;
     setHandPropId(preset.handPropId);
     setHandPropSide(preset.handSide);
     setHeadPropId(preset.headPropId);
@@ -173,10 +219,13 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
-      dialogueLines: preset.dialogueLines,
+      dialogueLines: preset.dialogueByLocale[currentLocale],
       bubbleShapes: preset.bubbleShapes,
       bubbleFontScales: preset.bubbleFontScales,
       sfxStamps: preset.sfxStamps,
+      speakerTargets: preset.speakerTargets,
+      cutCameraPresets: preset.cutCameraPresets,
+      partnerSide: duoShot.enabled ? duoShot.side : preset.duoCasting.side,
     });
 
     for (const cmd of buildHandPropGripPoseCommands(recipe.pose, preset.handPropId, preset.handSide)) {
@@ -194,7 +243,11 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
       if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
       if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
       if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
-      setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+      if (duoShot.enabled && duoShot.render3dPartner) {
+        await castDirectorDuoPartner(preset.id);
+      } else {
+        setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+      }
     } catch (error) {
       setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
     } finally {
@@ -203,8 +256,23 @@ export function useViewportSceneProps({ engine, recipe, dispatch, setNotice, fai
   };
 
   return {
-    mangaFx, setMangaFx, sfxBusy, onToggleMangaFx, onChangeMangaSfxStamp,
-    activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
-    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector,
+    stripDirector,
+    mangaFx,
+    setMangaFx,
+    sfxBusy,
+    onToggleMangaFx,
+    onChangeMangaSfxStamp,
+    activeDirectorId,
+    handPropId,
+    handPropSide,
+    headPropId,
+    stagePropId,
+    handPropBusy,
+    onApplyHandProp,
+    onApplyHandPropGripPose,
+    onApplyHeadProp,
+    onApplyStageProp,
+    castDirectorDuoPartner,
+    onSelectSceneDirector,
   };
 }

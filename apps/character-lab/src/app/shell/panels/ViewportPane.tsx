@@ -129,11 +129,42 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingBone, setDraggingBone] = useState<string | null>(null);
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
+  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
+    if (!engine?.setDuoPartner) return;
+    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
+    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
+    if (!nextAttachment && !prevAttachment) return;
+    setDuo3dBusy(true);
+    try {
+      await engine.setDuoPartner(nextAttachment);
+      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+      setNotice(
+        nextAttachment
+          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
+          : "3D 듀오 상대역 배치를 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+    } finally {
+      setDuo3dBusy(false);
+    }
+  };
   const {
-    mangaFx, setMangaFx, sfxBusy, onToggleMangaFx, onChangeMangaSfxStamp,
+    stripDirector, mangaFx, setMangaFx, sfxBusy, onToggleMangaFx, onChangeMangaSfxStamp,
     activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
-    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector,
-  } = useViewportSceneProps({ engine, recipe: labState.recipe, dispatch, setNotice, failureText });
+    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, castDirectorDuoPartner, onSelectSceneDirector,
+  } = useViewportSceneProps({
+    engine,
+    recipe: labState.recipe,
+    getLatestRecipe: () => store.getState().recipe,
+    duoShot,
+    setDuoShot,
+    syncDuoPartner3d,
+    dispatch,
+    setNotice,
+    failureText,
+  });
   const [canvasGeneration, setCanvasGeneration] = useState(0);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -662,31 +693,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const boneLinks = engine && showHandles && poseSkeleton ? computeVisibleBoneLinks(handles, poseSkeleton, { onFailure: onRenderFailure }) : [];
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
-  const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
 
-  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
-    if (!engine?.setDuoPartner) return;
-    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
-    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
-    if (!nextAttachment && !prevAttachment) return;
-    setDuo3dBusy(true);
-    try {
-      await engine.setDuoPartner(nextAttachment);
-      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
-      setNotice(
-        nextAttachment
-          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
-          : "3D 듀오 상대역 배치를 해제했습니다.",
-      );
-    } catch (error) {
-      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
-    } finally {
-      setDuo3dBusy(false);
-    }
-  };
   const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
     setDuoShot((prev) => {
       const next = updater(prev);
+      if (next.side !== prev.side) {
+        stripDirector.update({ partnerSide: next.side });
+      }
       void syncDuoPartner3d(next, prev);
       return next;
     });
@@ -726,9 +739,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         }}
         director={{
           engineReady: Boolean(engine?.setHandProp),
-          busy: handPropBusy,
+          busy: handPropBusy || duo3dBusy,
           activeDirectorId,
+          duoPartnerActive: Boolean(activeDirectorId && duoShot.enabled && duoShot.render3dPartner),
           onSelectDirector: (presetId) => void onSelectSceneDirector(presetId),
+          onCastDuoPartner: () => {
+            if (activeDirectorId) void castDirectorDuoPartner(activeDirectorId);
+          },
         }}
         handProp={{
           engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,

@@ -259,6 +259,7 @@ export function StudioBg3dZDepthCrowdTodCard({
 
       <StudioBg3dWeatherMotionColorScriptCard
         disabled={disabled}
+        openRatioPct={evaluation.manifest.openRatioPct}
         evaluation={v24Evaluation}
         onSelectWeatherId={setWeatherId}
         onSelectAct={handleSelectAct}

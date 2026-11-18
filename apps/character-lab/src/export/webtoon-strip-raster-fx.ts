@@ -1,9 +1,15 @@
 /**
- * 웹툰 4컷 스트립 픽셀 래스터 합성(집중선·속도선·스파클·말풍선 4종·한국어 식자·효과음 스탬프) 보조 모듈.
+ * 웹툰 4컷 스트립 픽셀 래스터 합성(집중선·속도선·스파클·발화자 말풍선·다국어 식자·효과음·PSD 분리 레이어) 보조 모듈.
  */
-import { WEBTOON_SFX_STAMP_KO_TEXT } from "./webtoon-strip-composer";
+import {
+  WEBTOON_SFX_STAMP_KO_TEXT,
+  resolveLocalizedBubbleAspect,
+  resolveSfxGlyphByLocale,
+} from "./webtoon-strip-composer";
 
 import type {
+  SpeakerBubblePlacement,
+  WebtoonDialogueLocale,
   WebtoonSfxStampOption,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
@@ -32,11 +38,23 @@ function blendPixelRgba(
   if (x < clipX0 || x >= clipX1 || y < clipY0 || y >= clipY1 || alpha01 <= 0) return;
   const a = alpha01 >= 1 ? 1 : alpha01;
   const dst = (y * canvasWidth + x) * 4;
-  const inv = 1 - a;
-  rgba[dst] = Math.round(r * a + (rgba[dst] ?? 255) * inv);
-  rgba[dst + 1] = Math.round(g * a + (rgba[dst + 1] ?? 255) * inv);
-  rgba[dst + 2] = Math.round(b * a + (rgba[dst + 2] ?? 255) * inv);
-  rgba[dst + 3] = 255;
+  const dstAlphaByte = rgba[dst + 3] ?? 0;
+  if (dstAlphaByte === 255) {
+    const inv = 1 - a;
+    rgba[dst] = Math.round(r * a + (rgba[dst] ?? 255) * inv);
+    rgba[dst + 1] = Math.round(g * a + (rgba[dst + 1] ?? 255) * inv);
+    rgba[dst + 2] = Math.round(b * a + (rgba[dst + 2] ?? 255) * inv);
+    rgba[dst + 3] = 255;
+    return;
+  }
+  const dstA = dstAlphaByte / 255;
+  const outA = a + dstA * (1 - a);
+  if (outA <= 0.0001) return;
+  const dstWeight = dstA * (1 - a);
+  rgba[dst] = Math.round((r * a + (rgba[dst] ?? 0) * dstWeight) / outA);
+  rgba[dst + 1] = Math.round((g * a + (rgba[dst + 1] ?? 0) * dstWeight) / outA);
+  rgba[dst + 2] = Math.round((b * a + (rgba[dst + 2] ?? 0) * dstWeight) / outA);
+  rgba[dst + 3] = Math.round(outA * 255);
 }
 
 function drawClippedLineRgba(
@@ -173,9 +191,33 @@ export function bakePanelActionLines(
   }
 }
 
-function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | null] {
+export function splitLocalizedBubbleDialogue(
+  rawText: string,
+  locale: WebtoonDialogueLocale = "ko",
+): readonly [string, string | null] {
   const cleaned = rawText.trim();
   if (!cleaned) return ["", null];
+
+  if (locale === "en") {
+    if (cleaned.length <= 20) return [cleaned, null];
+    const mid = Math.ceil(cleaned.length / 2);
+    const leftSpace = cleaned.lastIndexOf(" ", mid + 4);
+    const rightSpace = cleaned.indexOf(" ", Math.max(0, mid - 4));
+    const splitAt = leftSpace >= 5 ? leftSpace : rightSpace > 4 ? rightSpace : mid;
+    return [cleaned.slice(0, splitAt).trim(), cleaned.slice(splitAt).trim()];
+  }
+
+  if (locale === "ja") {
+    const chars = Array.from(cleaned);
+    if (chars.length <= 10) return [cleaned, null];
+    let mid = Math.ceil(chars.length / 2);
+    const kinsoku = new Set(["。", "、", "！", "？", "…", "ー", "っ", "ゃ", "ゅ", "ょ"]);
+    if (mid < chars.length - 1 && kinsoku.has(chars[mid] ?? "")) {
+      mid += 1;
+    }
+    return [chars.slice(0, mid).join(""), chars.slice(mid).join("")];
+  }
+
   if (cleaned.length <= 13) return [cleaned, null];
   const mid = Math.ceil(cleaned.length / 2);
   const spaceIdx = cleaned.lastIndexOf(" ", mid + 3);
@@ -183,6 +225,12 @@ function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | 
     return [cleaned.slice(0, spaceIdx).trim(), cleaned.slice(spaceIdx + 1).trim()];
   }
   return [cleaned.slice(0, mid), cleaned.slice(mid)];
+}
+
+function resolveFontStackByLocale(locale: WebtoonDialogueLocale): string {
+  if (locale === "en") return `"Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  if (locale === "ja") return `"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif`;
+  return `"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
 }
 
 function resolveFontScaleMultiplier(fontScale: WebtoonStripBubbleFontScale): { readonly mul: number; readonly weight: number } {
@@ -197,6 +245,7 @@ function tryRasterizeDialogueCanvas2d(
   line1: string,
   line2: string | null,
   fontScale: WebtoonStripBubbleFontScale,
+  locale: WebtoonDialogueLocale = "ko",
 ): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
   if (typeof document === "undefined" || boxWidth < 12 || boxHeight < 8) return null;
   try {
@@ -211,11 +260,12 @@ function tryRasterizeDialogueCanvas2d(
     ctx.clearRect(0, 0, w, h);
     const { mul, weight } = resolveFontScaleMultiplier(fontScale);
     const maxChars = Math.max(line1.length, line2 ? line2.length : 0, 6);
-    const fitByWidth = Math.floor((w * 0.86) / Math.max(4, maxChars * 0.9));
+    const charWidthRatio = locale === "en" ? 0.56 : 0.9;
+    const fitByWidth = Math.floor((w * 0.86) / Math.max(4, maxChars * charWidthRatio));
     const fitByHeight = Math.floor(h * (line2 ? 0.3 : 0.44));
     const basePx = Math.min(fitByWidth, fitByHeight);
     const fontPx = Math.max(9, Math.min(Math.floor(h * (line2 ? 0.42 : 0.64)), Math.round(basePx * mul)));
-    ctx.font = `${weight} ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    ctx.font = `${weight} ${fontPx}px ${resolveFontStackByLocale(locale)}`;
     ctx.fillStyle = "#18151C";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -281,7 +331,7 @@ function bakeDeterministicDialogueGlyphs(
       const gmx = (gx0 + gx1) * 0.5;
       const gmy = (gy0 + gy1) * 0.5;
 
-      if (ch === "." || ch === "," || ch === "…") {
+      if (ch === "." || ch === "," || ch === "…" || ch === "。" || ch === "、") {
         blendPixelRgba(rgba, canvasWidth, Math.round(gmx), Math.round(gy1), clipX0, clipY0, clipX1, clipY1, ir, ig, ib, 0.92);
         return;
       }
@@ -309,36 +359,65 @@ function bakeDeterministicDialogueGlyphs(
             drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gmy + stroke, gx0 + stroke, gy1, stroke, ir, ig, ib, 0.85);
           }
         }
+      } else if (code >= 0x3040 && code <= 0x9fff) {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, ir, ig, ib, 0.9);
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, ir, ig, ib, 0.88);
+        if (code % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gmy, gx1, gmy, stroke, ir, ig, ib, 0.86);
+        }
       } else {
-        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, ir, ig, ib, 0.9);
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx0, gy1, stroke, ir, ig, ib, 0.9);
         if (code % 2 === 0) {
           drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, ir, ig, ib, 0.85);
+        }
+        if (code % 3 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gmy, gx1, gmy, stroke, ir, ig, ib, 0.85);
         }
       }
     });
   });
 }
 
-export function bakeSpeechBubbleBalloon(
+function computeSpeechBubbleMetrics(
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
+) {
+  const border = Math.max(1, Math.round(innerWidth * 0.0042));
+  const aspect = resolveLocalizedBubbleAspect(locale, dialogueText);
+  const rawRx = Math.max(8, Math.round(innerWidth * 0.21 * aspect.scaleX));
+  const rawRy = Math.max(5, Math.round(innerHeight * 0.092 * aspect.scaleY));
+  const safePadX = border + 4;
+  const rx = Math.min(rawRx, Math.max(8, Math.floor(innerWidth * 0.44) - safePadX));
+  const ry = Math.min(rawRy, Math.max(5, Math.floor(innerHeight * 0.24)));
+  const rawCx = innerX + Math.round(innerWidth * placement.centerXRatio);
+  const minCx = innerX + rx + safePadX;
+  const maxCx = innerX + innerWidth - rx - safePadX;
+  const cx = minCx <= maxCx ? Math.min(maxCx, Math.max(minCx, rawCx)) : innerX + Math.round(innerWidth * 0.5);
+  const cy = innerY + Math.round(ry * 1.28);
+  return { rx, ry, cx, cy, border };
+}
+
+export function bakeSpeechBubbleFrame(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
   innerX: number,
   innerY: number,
   innerWidth: number,
   innerHeight: number,
-  placeRight: boolean,
-  dialogueText?: string,
+  placement: SpeakerBubblePlacement,
   shape: WebtoonStripBubbleShape = "oval",
-  fontScale: WebtoonStripBubbleFontScale = "md",
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
 ): void {
   if (shape === "none") return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const rx = Math.max(8, Math.round(innerWidth * 0.21));
-  const ry = Math.max(5, Math.round(innerHeight * 0.092));
-  const cx = placeRight ? innerX + Math.round(innerWidth * 0.72) : innerX + Math.round(innerWidth * 0.28);
-  const cy = innerY + Math.round(ry * 1.32);
-  const border = Math.max(1, Math.round(innerWidth * 0.0042));
+  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
 
   if (shape === "monologue-box") {
     const x0 = Math.max(innerX, cx - rx - border);
@@ -369,8 +448,8 @@ export function bakeSpeechBubbleBalloon(
       }
     }
   } else if (shape === "shout-burst") {
-    const padX = Math.ceil(rx * 1.28 + border + 1);
-    const padY = Math.ceil(ry * 1.28 + border + 1);
+    const padX = Math.ceil(rx * 1.24 + border + 1);
+    const padY = Math.ceil(ry * 1.24 + border + 1);
     const x0 = Math.max(innerX, cx - padX);
     const x1 = Math.min(clipX1 - 1, cx + padX);
     const y0 = Math.max(innerY, cy - padY);
@@ -423,9 +502,20 @@ export function bakeSpeechBubbleBalloon(
       }
     }
 
-    const dir = placeRight ? -1 : 1;
-    const tailTipX = cx + dir * Math.round(rx * 0.72);
-    const tailTipY = cy + Math.round(ry * 1.48);
+    const fallbackDir = placement.placeRight ? -1 : 1;
+    const tailTipX =
+      placement.tailTargetXRatio !== null
+        ? innerX + Math.round(innerWidth * placement.tailTargetXRatio)
+        : cx + fallbackDir * Math.round(rx * 0.72);
+    const tailDeltaX = tailTipX - cx;
+    const tailDirSign = tailDeltaX === 0 ? fallbackDir : Math.sign(tailDeltaX);
+    const tailStartX =
+      placement.tailTargetXRatio !== null
+        ? cx + tailDirSign * Math.min(Math.round(rx * 0.4), Math.round(Math.abs(tailDeltaX) * 0.5))
+        : cx + fallbackDir * Math.round(rx * 0.34);
+    const tailStartY = cy + Math.round(ry * 0.88);
+    const tailTipY = cy + Math.round(ry * (placement.tailTargetXRatio !== null ? 1.56 : 1.48));
+
     if (!isWhisper) {
       drawClippedLineRgba(
         rgba,
@@ -434,8 +524,8 @@ export function bakeSpeechBubbleBalloon(
         innerY,
         clipX1,
         clipY1,
-        cx + dir * Math.round(rx * 0.34),
-        cy + Math.round(ry * 0.88),
+        tailStartX,
+        tailStartY,
         tailTipX,
         tailTipY,
         Math.max(1, border * 0.9),
@@ -445,53 +535,88 @@ export function bakeSpeechBubbleBalloon(
         0.95,
       );
     } else {
-      const dot1X = Math.round(cx + dir * rx * 0.44);
-      const dot1Y = Math.round(cy + ry * 1.12);
-      const dot2X = Math.round(cx + dir * rx * 0.62);
-      const dot2Y = Math.round(cy + ry * 1.36);
+      const dot1X = Math.round(tailStartX + (tailTipX - tailStartX) * 0.4);
+      const dot1Y = Math.round(tailStartY + (tailTipY - tailStartY) * 0.42);
+      const dot2X = Math.round(tailStartX + (tailTipX - tailStartX) * 0.82);
+      const dot2Y = Math.round(tailStartY + (tailTipY - tailStartY) * 0.84);
       drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, dot1X - 1, dot1Y, dot1X + 1, dot1Y, Math.max(1, border), 24, 21, 28, 0.85);
       drawClippedLineRgba(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, dot2X - 1, dot2Y, dot2X + 1, dot2Y, Math.max(1, border * 0.8), 24, 21, 28, 0.8);
     }
   }
+}
 
-  if (dialogueText && dialogueText.trim().length > 0) {
-    const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
-    const boxW = Math.max(8, Math.round(rx * 1.66));
-    const boxH = Math.max(6, Math.round(ry * 1.44));
-    const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale);
-    if (raster) {
-      const dstLeft = Math.round(cx - boxW * 0.5);
-      const dstTop = Math.round(cy - boxH * 0.5);
-      for (let ty = 0; ty < boxH; ty += 1) {
-        for (let tx = 0; tx < boxW; tx += 1) {
-          const sx = tx * 2;
-          const sy = ty * 2;
-          let aSum = 0;
-          for (let oy = 0; oy < 2; oy += 1) {
-            for (let ox = 0; ox < 2; ox += 1) {
-              const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
-              aSum += raster.data[idx + 3] ?? 0;
-            }
-          }
-          const alpha01 = aSum / (255 * 4);
-          if (alpha01 > 0.04) {
-            blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+export function bakeSpeechBubbleDialogueText(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+  dialogueText: string | undefined,
+  shape: WebtoonStripBubbleShape = "oval",
+  fontScale: WebtoonStripBubbleFontScale = "md",
+  locale: WebtoonDialogueLocale = "ko",
+): void {
+  if (shape === "none" || !dialogueText || dialogueText.trim().length === 0) return;
+  const clipX1 = innerX + innerWidth;
+  const clipY1 = innerY + innerHeight;
+  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
+  const [line1, line2] = splitLocalizedBubbleDialogue(dialogueText, locale);
+  const boxW = Math.max(8, Math.round(rx * 1.66));
+  const boxH = Math.max(6, Math.round(ry * 1.44));
+  const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale, locale);
+  if (raster) {
+    const dstLeft = Math.round(cx - boxW * 0.5);
+    const dstTop = Math.round(cy - boxH * 0.5);
+    for (let ty = 0; ty < boxH; ty += 1) {
+      for (let tx = 0; tx < boxW; tx += 1) {
+        const sx = tx * 2;
+        const sy = ty * 2;
+        let aSum = 0;
+        for (let oy = 0; oy < 2; oy += 1) {
+          for (let ox = 0; ox < 2; ox += 1) {
+            const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
+            aSum += raster.data[idx + 3] ?? 0;
           }
         }
+        const alpha01 = aSum / (255 * 4);
+        if (alpha01 > 0.04) {
+          blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+        }
       }
-    } else {
-      bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2, fontScale);
     }
+  } else {
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2, fontScale);
   }
+}
+
+export function bakeSpeechBubbleBalloon(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  innerX: number,
+  innerY: number,
+  innerWidth: number,
+  innerHeight: number,
+  placement: SpeakerBubblePlacement,
+  dialogueText?: string,
+  shape: WebtoonStripBubbleShape = "oval",
+  fontScale: WebtoonStripBubbleFontScale = "md",
+  locale: WebtoonDialogueLocale = "ko",
+): void {
+  if (shape === "none") return;
+  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape, locale, dialogueText);
+  bakeSpeechBubbleDialogueText(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, dialogueText, shape, fontScale, locale);
 }
 
 function tryRasterizeSfxCanvas2d(
   boxWidth: number,
   boxHeight: number,
-  glyphKo: string,
+  glyphText: string,
   tiltDeg: number,
   accentRgb: readonly [number, number, number],
   inkRgb: readonly [number, number, number],
+  locale: WebtoonDialogueLocale = "ko",
 ): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
   if (typeof document === "undefined" || boxWidth < 14 || boxHeight < 10) return null;
   try {
@@ -507,19 +632,20 @@ function tryRasterizeSfxCanvas2d(
     ctx.save();
     ctx.translate(w * 0.5, h * 0.5);
     ctx.rotate((tiltDeg * Math.PI) / 180);
-    const fontPx = Math.max(12, Math.min(Math.floor(h * 0.58), Math.floor((w * 0.78) / Math.max(1.4, glyphKo.length * 0.92))));
-    ctx.font = `800 ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    const widthFactor = locale === "en" ? 0.62 : 0.92;
+    const fontPx = Math.max(12, Math.min(Math.floor(h * 0.58), Math.floor((w * 0.82) / Math.max(1.4, glyphText.length * widthFactor))));
+    ctx.font = `800 ${fontPx}px ${resolveFontStackByLocale(locale)}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.lineWidth = Math.max(3, Math.round(fontPx * 0.24));
     ctx.strokeStyle = "#FFFDF8";
-    ctx.strokeText(glyphKo, 0, 0);
+    ctx.strokeText(glyphText, 0, 0);
     ctx.lineWidth = Math.max(2, Math.round(fontPx * 0.12));
     ctx.strokeStyle = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
-    ctx.strokeText(glyphKo, 0, 0);
+    ctx.strokeText(glyphText, 0, 0);
     ctx.fillStyle = `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`;
-    ctx.fillText(glyphKo, 0, 0);
+    ctx.fillText(glyphText, 0, 0);
     ctx.restore();
     const img = ctx.getImageData(0, 0, w, h);
     let hasPixels = false;
@@ -544,9 +670,11 @@ export function bakePanelSfxStamp(
   innerHeight: number,
   placeRight: boolean,
   stamp: WebtoonSfxStampOption,
+  locale: WebtoonDialogueLocale = "ko",
 ): void {
   if (stamp === "none") return;
   const spec = WEBTOON_SFX_STAMP_KO_TEXT[stamp];
+  const glyphText = resolveSfxGlyphByLocale(stamp, locale);
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
   const cx = placeRight ? innerX + Math.round(innerWidth * 0.76) : innerX + Math.round(innerWidth * 0.24);
@@ -557,7 +685,6 @@ export function bakePanelSfxStamp(
   const [ir, ig, ib] = spec.inkRgb;
   const stroke = Math.max(0.8, innerWidth * 0.0032);
 
-  // 역동적 배경 액센트 슬래시·섬광 마크
   drawClippedLineRgba(
     rgba,
     canvasWidth,
@@ -593,9 +720,9 @@ export function bakePanelSfxStamp(
     0.92,
   );
 
-  const boxW = Math.max(10, Math.round(rx * 1.9));
+  const boxW = Math.max(10, Math.round(rx * 1.95));
   const boxH = Math.max(8, Math.round(ry * 1.9));
-  const raster = tryRasterizeSfxCanvas2d(boxW, boxH, spec.glyphKo, spec.tiltDeg, spec.accentRgb, spec.inkRgb);
+  const raster = tryRasterizeSfxCanvas2d(boxW, boxH, glyphText, spec.tiltDeg, spec.accentRgb, spec.inkRgb, locale);
   if (raster) {
     const dstLeft = Math.round(cx - boxW * 0.5);
     const dstTop = Math.round(cy - boxH * 0.5);
@@ -637,8 +764,8 @@ export function bakePanelSfxStamp(
       }
     }
   } else {
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx + 1, cy + 1, rx, ry, spec.glyphKo, null, "lg", [255, 253, 248]);
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, spec.glyphKo, null, "lg", [ir, ig, ib]);
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx + 1, cy + 1, rx, ry, glyphText, null, "lg", [255, 253, 248]);
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, glyphText, null, "lg", [ir, ig, ib]);
   }
 }
 

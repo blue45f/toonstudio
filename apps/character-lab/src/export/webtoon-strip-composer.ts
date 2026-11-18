@@ -1,15 +1,29 @@
 /**
- * 한국형 세로 스크롤 웹툰 4컷 콘티 스트립(등장 로우앵글 · 대화 반측면 · 감정 클로즈업 · 여운 하이앵글)
- * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김),
- * 컷별 한국어 식자 폰트 강조 배율(소형·표준·강조), 컷별 오노마토페 효과음 스탬프(스릉·두근·쿠구궁·팟),
- * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
+ * 한국형·글로벌(KO/EN/JA) 세로 스크롤 웹툰 4컷 콘티 스트립 합성 모듈:
+ * - 다국어(한국어·영어·일본어) 로컬라이징 모드에 따른 말풍선 가로세로 종횡비(rx·ry) 자동 스케일링 및 언어별 줄바꿈·폰트 스택·효과음 번역
+ * - 1~4컷 개별 카메라 구도(로우·하이·와이드 투샷) 및 더치 틸트(Dutch Tilt ±9° 쌍선형 알파 보간 회전) 디렉터
+ * - 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준
+ * - 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김), 식자 폰트 배율, 오노마토페 효과음 스탬프(6종)
+ * - 레이어 PSD 만화 연출 투명 분리 레이어 빌더 및 4컷 연기 키프레임 스냅샷 시퀀스
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
 import { buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
-import { bakePanelActionLines, bakePanelSfxStamp, bakeSpeechBubbleBalloon, fillRectRgba } from "./webtoon-strip-raster-fx";
+import {
+  renderTransparentActionLinesLayer,
+  renderTransparentDialogueTextLayer,
+  renderTransparentSfxStampLayer,
+  renderTransparentSpeechBubbleFrameLayer,
+} from "./webtoon-strip-psd-layers";
+import {
+  bakePanelActionLines,
+  bakePanelSfxStamp,
+  bakeSpeechBubbleBalloon,
+  fillRectRgba,
+  splitLocalizedBubbleDialogue,
+} from "./webtoon-strip-raster-fx";
 
 import type { ExportDeps, ExportOutcome } from "./export-session";
 import type { WebtoonStripActingArcId } from "./webtoon-strip-acting";
@@ -22,6 +36,13 @@ import type {
   SfxStampId,
 } from "../contracts";
 
+export {
+  renderTransparentActionLinesLayer,
+  renderTransparentDialogueTextLayer,
+  renderTransparentSfxStampLayer,
+  renderTransparentSpeechBubbleFrameLayer,
+  splitLocalizedBubbleDialogue,
+};
 export {
   WEBTOON_STRIP_ACTING_ARCS,
   buildActingCutPlan,
@@ -40,19 +61,90 @@ export interface WebtoonStripCutSpec {
   readonly yawDeg: number;
   readonly pitchDeg: number;
   readonly distanceScale: number;
+  readonly dutchTiltDeg?: number;
 }
 
 export const WEBTOON_VERTICAL_STRIP_CUTS: readonly WebtoonStripCutSpec[] = Object.freeze([
-  { id: "intro-low", labelKo: "1컷 · 등장 전신 로우앵글", mode: "full-body", yawDeg: 0, pitchDeg: -14, distanceScale: 1 },
-  { id: "dialogue-side", labelKo: "2컷 · 대화 상반신 반측면", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1 },
-  { id: "emotion-face", labelKo: "3컷 · 감정 클로즈업 정면", mode: "face", yawDeg: -10, pitchDeg: 0, distanceScale: 1 },
-  { id: "linger-high", labelKo: "4컷 · 여운 상반신 하이앵글", mode: "bust", yawDeg: -26, pitchDeg: 18, distanceScale: 1 },
+  { id: "intro-low", labelKo: "1컷 · 등장 전신 로우앵글", mode: "full-body", yawDeg: 0, pitchDeg: -14, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "dialogue-side", labelKo: "2컷 · 대화 상반신 반측면", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "emotion-face", labelKo: "3컷 · 감정 클로즈업 정면", mode: "face", yawDeg: -10, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "linger-high", labelKo: "4컷 · 여운 상반신 하이앵글", mode: "bust", yawDeg: -26, pitchDeg: 18, distanceScale: 1, dutchTiltDeg: 0 },
 ]);
+
+export type WebtoonStripCutCameraPresetId =
+  | "default"
+  | "low-full"
+  | "side-bust"
+  | "front-face"
+  | "high-bust"
+  | "dutch-left-bust"
+  | "dutch-right-face"
+  | "duo-wide";
+
+export interface WebtoonCutCameraPresetSpec {
+  readonly id: WebtoonStripCutCameraPresetId;
+  readonly labelKo: string;
+  readonly mode?: Exclude<CameraFramingMode, "custom">;
+  readonly yawDeg?: number;
+  readonly pitchDeg?: number;
+  readonly distanceScale?: number;
+  readonly dutchTiltDeg: number;
+}
+
+export const WEBTOON_CUT_CAMERA_PRESETS: Readonly<Record<WebtoonStripCutCameraPresetId, WebtoonCutCameraPresetSpec>> = Object.freeze({
+  default: { id: "default", labelKo: "컷 기본 앵글", dutchTiltDeg: 0 },
+  "low-full": { id: "low-full", labelKo: "전신 로우앵글 (-16°)", mode: "full-body", yawDeg: 0, pitchDeg: -16, distanceScale: 1, dutchTiltDeg: 0 },
+  "side-bust": { id: "side-bust", labelKo: "대화 반측면 (28°)", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  "front-face": { id: "front-face", labelKo: "감정 클로즈업 (정면)", mode: "face", yawDeg: -8, pitchDeg: 0, distanceScale: 0.96, dutchTiltDeg: 0 },
+  "high-bust": { id: "high-bust", labelKo: "여운 하이앵글 (+20°)", mode: "bust", yawDeg: -24, pitchDeg: 20, distanceScale: 1.04, dutchTiltDeg: 0 },
+  "dutch-left-bust": { id: "dutch-left-bust", labelKo: "스릴러 더치 틸트 (-9°)", mode: "bust", yawDeg: 18, pitchDeg: -8, distanceScale: 0.96, dutchTiltDeg: -9 },
+  "dutch-right-face": { id: "dutch-right-face", labelKo: "역동 더치 클로즈업 (+9°)", mode: "face", yawDeg: -14, pitchDeg: -6, distanceScale: 0.94, dutchTiltDeg: 9 },
+  "duo-wide": { id: "duo-wide", labelKo: "투샷 와이드 대치 (1.25×)", mode: "full-body", yawDeg: 12, pitchDeg: -6, distanceScale: 1.25, dutchTiltDeg: 0 },
+});
+
+export type WebtoonStripCutCameraPresets = readonly [
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+];
+
+export const DEFAULT_WEBTOON_STRIP_CUT_CAMERA_PRESETS: WebtoonStripCutCameraPresets = Object.freeze([
+  "default",
+  "default",
+  "default",
+  "default",
+]) as WebtoonStripCutCameraPresets;
+
+export function resolveWebtoonCutCameraSpec(cutIndex: number, presetId: WebtoonStripCutCameraPresetId = "default"): WebtoonStripCutSpec {
+  const base = WEBTOON_VERTICAL_STRIP_CUTS[cutIndex] ?? WEBTOON_VERTICAL_STRIP_CUTS[0]!;
+  if (presetId === "default") return base;
+  const preset = WEBTOON_CUT_CAMERA_PRESETS[presetId] ?? WEBTOON_CUT_CAMERA_PRESETS.default;
+  return {
+    id: `${base.id}-${preset.id}`,
+    labelKo: `${cutIndex + 1}컷 · ${preset.labelKo}`,
+    mode: preset.mode ?? base.mode,
+    yawDeg: preset.yawDeg ?? base.yawDeg,
+    pitchDeg: preset.pitchDeg ?? base.pitchDeg,
+    distanceScale: preset.distanceScale ?? base.distanceScale,
+    dutchTiltDeg: preset.dutchTiltDeg,
+  };
+}
+
+export const WEBTOON_DIALOGUE_LOCALES = ["ko", "en", "ja"] as const;
+export type WebtoonDialogueLocale = (typeof WEBTOON_DIALOGUE_LOCALES)[number];
+
+export const WEBTOON_DIALOGUE_LOCALE_LABELS: Readonly<Record<WebtoonDialogueLocale, string>> = Object.freeze({
+  ko: "한국어 (KO · 표준 타원)",
+  en: "English (EN · 와이드 가로형)",
+  ja: "日本語 (JA · 세로 확장형)",
+});
 
 export type WebtoonStripFxLinesKind = "none" | "focus-radial" | "speed-diagonal" | "romance-sparkle";
 export type WebtoonStripBubbleShape = "oval" | "shout-burst" | "monologue-box" | "whisper-dashed" | "none";
 export type WebtoonStripBubbleFontScale = "sm" | "md" | "lg";
 export type WebtoonSfxStampOption = "none" | SfxStampId;
+export type WebtoonStripSpeakerTarget = "auto" | "protagonist" | "partner";
 
 export type WebtoonStripDialogueLines = readonly [string, string, string, string];
 export type WebtoonStripBubbleShapes = readonly [
@@ -73,6 +165,12 @@ export type WebtoonStripSfxStamps = readonly [
   WebtoonSfxStampOption,
   WebtoonSfxStampOption,
 ];
+export type WebtoonStripSpeakerTargets = readonly [
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
+  WebtoonStripSpeakerTarget,
+];
 
 export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = Object.freeze([
   "여기서부터는 내 구역이야.",
@@ -80,6 +178,22 @@ export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = O
   "지금 이 순간을 전부 기억해.",
   "끝까지 함께 가자.",
 ]) as WebtoonStripDialogueLines;
+
+export const DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE: Readonly<Record<WebtoonDialogueLocale, WebtoonStripDialogueLines>> = Object.freeze({
+  ko: DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+  en: Object.freeze([
+    "From here on, this is my turf.",
+    "I was waiting to hear you say that.",
+    "Remember every second of this moment.",
+    "Let's see this through together.",
+  ]) as WebtoonStripDialogueLines,
+  ja: Object.freeze([
+    "ここからは私の領域よ。",
+    "その言葉をずっと待っていた。",
+    "この瞬間をすべて刻み込んで。",
+    "最後まで一緒に行こう。",
+  ]) as WebtoonStripDialogueLines,
+});
 
 export const DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES: WebtoonStripBubbleShapes = Object.freeze([
   "oval",
@@ -102,6 +216,13 @@ export const DEFAULT_WEBTOON_STRIP_SFX_STAMPS: WebtoonStripSfxStamps = Object.fr
   "none",
 ]) as WebtoonStripSfxStamps;
 
+export const DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS: WebtoonStripSpeakerTargets = Object.freeze([
+  "auto",
+  "auto",
+  "auto",
+  "auto",
+]) as WebtoonStripSpeakerTargets;
+
 export const WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO: Readonly<Record<WebtoonStripBubbleShape, string>> = Object.freeze({
   oval: "일반 타원",
   "shout-burst": "외침 가시",
@@ -116,26 +237,115 @@ export const WEBTOON_STRIP_FONT_SCALE_LABELS_KO: Readonly<Record<WebtoonStripBub
   lg: "강조 (클라이맥스)",
 });
 
-export const WEBTOON_SFX_STAMP_KO_TEXT: Readonly<Record<SfxStampId, { readonly glyphKo: string; readonly tiltDeg: number; readonly accentRgb: readonly [number, number, number]; readonly inkRgb: readonly [number, number, number] }>> = Object.freeze({
-  seureung: { glyphKo: "스릉", tiltDeg: -11, accentRgb: [92, 232, 242], inkRgb: [18, 22, 34] },
-  dugeun: { glyphKo: "두근", tiltDeg: 8, accentRgb: [244, 134, 168], inkRgb: [42, 18, 28] },
-  kugugung: { glyphKo: "쿠구궁", tiltDeg: -7, accentRgb: [240, 184, 86], inkRgb: [24, 19, 18] },
-  pat: { glyphKo: "팟", tiltDeg: 10, accentRgb: [255, 224, 118], inkRgb: [24, 21, 28] },
+export const WEBTOON_STRIP_SPEAKER_LABELS_KO: Readonly<Record<WebtoonStripSpeakerTarget, string>> = Object.freeze({
+  auto: "자동 교차",
+  protagonist: "주연 발화",
+  partner: "상대역 발화",
 });
+
+export interface LocalizedSfxStampSpec {
+  readonly glyphKo: string;
+  readonly glyphEn: string;
+  readonly glyphJa: string;
+  readonly tiltDeg: number;
+  readonly accentRgb: readonly [number, number, number];
+  readonly inkRgb: readonly [number, number, number];
+}
+
+export const WEBTOON_SFX_STAMP_KO_TEXT: Readonly<Record<SfxStampId, LocalizedSfxStampSpec>> = Object.freeze({
+  seureung: { glyphKo: "스릉", glyphEn: "SHING", glyphJa: "スッ", tiltDeg: -11, accentRgb: [92, 232, 242], inkRgb: [18, 22, 34] },
+  dugeun: { glyphKo: "두근", glyphEn: "THUMP", glyphJa: "ドキッ", tiltDeg: 8, accentRgb: [244, 134, 168], inkRgb: [42, 18, 28] },
+  kugugung: { glyphKo: "쿠구궁", glyphEn: "RUMBLE", glyphJa: "ゴゴゴ", tiltDeg: -7, accentRgb: [240, 184, 86], inkRgb: [24, 19, 18] },
+  pat: { glyphKo: "팟", glyphEn: "FLASH", glyphJa: "パッ", tiltDeg: 10, accentRgb: [255, 224, 118], inkRgb: [24, 21, 28] },
+  ssaa: { glyphKo: "싸아", glyphEn: "SHHH", glyphJa: "ザァァ", tiltDeg: -6, accentRgb: [147, 197, 253], inkRgb: [20, 28, 42] },
+  beonjjeok: { glyphKo: "번쩍", glyphEn: "ZAP", glyphJa: "ビカッ", tiltDeg: 12, accentRgb: [250, 204, 21], inkRgb: [36, 18, 54] },
+});
+
+export function resolveSfxGlyphByLocale(stamp: SfxStampId, locale: WebtoonDialogueLocale = "ko"): string {
+  const spec = WEBTOON_SFX_STAMP_KO_TEXT[stamp];
+  if (locale === "en") return spec.glyphEn;
+  if (locale === "ja") return spec.glyphJa;
+  return spec.glyphKo;
+}
+
+export interface LocalizedBubbleAspect {
+  readonly scaleX: number;
+  readonly scaleY: number;
+}
+
+/** 다국어(KO/EN/JA) 식자 특성과 글자 길이에 맞춰 말풍선 가로·세로 반경 배율을 자동 산출한다. */
+export function resolveLocalizedBubbleAspect(
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
+): LocalizedBubbleAspect {
+  const len = (dialogueText ?? "").trim().length;
+  if (locale === "en") {
+    const extraW = len > 24 ? Math.min(0.1, (len - 24) * 0.005) : 0;
+    return { scaleX: Number((1.18 + extraW).toFixed(3)), scaleY: 0.94 };
+  }
+  if (locale === "ja") {
+    const extraH = len > 14 ? Math.min(0.1, (len - 14) * 0.006) : 0;
+    return { scaleX: 0.86, scaleY: Number((1.18 + extraH).toFixed(3)) };
+  }
+  const extraKoW = len > 18 ? Math.min(0.08, (len - 18) * 0.004) : 0;
+  return { scaleX: Number((1 + extraKoW).toFixed(3)), scaleY: 1 };
+}
+
+export interface SpeakerBubblePlacement {
+  readonly placeRight: boolean;
+  readonly centerXRatio: number;
+  /** null이면 기본 교차 내측 꼬리, 숫자(0..1)면 해당 수평 비율의 발화자 머리 위치를 향해 꼬리를 조준 */
+  readonly tailTargetXRatio: number | null;
+}
+
+export function resolveSpeakerBubblePlacement(
+  cutIndex: number,
+  speakerTarget: WebtoonStripSpeakerTarget = "auto",
+  partnerSide: "left" | "right" = "right",
+): SpeakerBubblePlacement {
+  if (speakerTarget === "protagonist") {
+    const placeRight = partnerSide === "left";
+    return {
+      placeRight,
+      centerXRatio: placeRight ? 0.68 : 0.32,
+      tailTargetXRatio: placeRight ? 0.54 : 0.46,
+    };
+  }
+  if (speakerTarget === "partner") {
+    const placeRight = partnerSide === "right";
+    return {
+      placeRight,
+      centerXRatio: placeRight ? 0.72 : 0.28,
+      tailTargetXRatio: placeRight ? 0.8 : 0.2,
+    };
+  }
+  const placeRight = cutIndex % 2 === 1;
+  return {
+    placeRight,
+    centerXRatio: placeRight ? 0.72 : 0.28,
+    tailTargetXRatio: null,
+  };
+}
 
 export interface WebtoonStripMangaFxOptions {
   readonly enabled: boolean;
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly includeSpeechBubbles?: boolean;
   readonly intensity?: number;
-  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 한국어 대사 4줄 */
+  /** 다국어 식자 및 말풍선 가로세로 비율 로컬라이징 모드(기본 `ko`) */
+  readonly locale?: WebtoonDialogueLocale;
+  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 대사 4줄 */
   readonly dialogueLines?: WebtoonStripDialogueLines;
   /** 1~4컷 개별 말풍선 모양(미지정 시 4컷 모두 기본 타원 `oval`) */
   readonly bubbleShapes?: WebtoonStripBubbleShapes;
-  /** 1~4컷 개별 한국어 대사 폰트 강조 배율(미지정 시 `md`) */
+  /** 1~4컷 개별 대사 폰트 강조 배율(미지정 시 `md`) */
   readonly bubbleFontScales?: WebtoonStripBubbleFontScales;
-  /** 1~4컷 개별 한국어 효과음(오노마토페) 스탬프(미지정 시 `none`) */
+  /** 1~4컷 개별 오노마토페 효과음 스탬프(미지정 시 `none`) */
   readonly sfxStamps?: WebtoonStripSfxStamps;
+  /** 1~4컷 발화자 지정(주연 발화·상대역 발화·자동 교차) */
+  readonly speakerTargets?: WebtoonStripSpeakerTargets;
+  /** 3D 듀오 상대역 배치 방향(기본 `right`) — 발화자별 말풍선 위치와 꼬리 방향 결정에 사용 */
+  readonly partnerSide?: "left" | "right";
 }
 
 export interface WebtoonStripLayout {
@@ -157,6 +367,8 @@ export interface ExportWebtoonVerticalStripOptions {
   readonly includeBubbleSafeZone?: boolean;
   /** 말풍선 풍선 프레임과 집중선·속도선·반짝이·효과음 스탬프를 PNG 래스터에 직접 베이킹할지 여부(선택) */
   readonly mangaFx?: WebtoonStripMangaFxOptions;
+  /** 1~4컷 개별 카메라 구도 및 더치 틸트 프리셋(선택, 미지정 시 기본 4컷 구도) */
+  readonly cutCameraPresets?: WebtoonStripCutCameraPresets;
   /** 1~4컷마다 서로 다른 표정·시선·고개 연기가 이어지는 4컷 서사 키프레임 옵션(선택, 캡처 후 basePlan 자동 복원) */
   readonly actingArc?: {
     readonly arcId: Exclude<WebtoonStripActingArcId, "none">;
@@ -173,6 +385,62 @@ function toFailure(code: string, reasonKo: string, error: unknown, now: number):
   return isLabFailure(error) ? error : failVisible(code, reasonKo, error, now);
 }
 
+
+/** 더치 틸트(Dutch Angle) 연출을 위해 투명 배경 RGBA 패널을 중심 기준으로 쌍선형(bilinear) 회전한다. */
+export function rotateRasterBilinear(
+  source: CapturedRaster,
+  angleDeg: number,
+  zoomScale = 1.06,
+): CapturedRaster {
+  if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.05) return source;
+  const { width, height } = source;
+  const out = new Uint8ClampedArray(width * height * 4);
+  const rad = (-angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad) / Math.max(0.5, zoomScale);
+  const sinA = Math.sin(rad) / Math.max(0.5, zoomScale);
+  const cx = (width - 1) * 0.5;
+  const cy = (height - 1) * 0.5;
+  const src = source.rgba;
+
+  for (let y = 0; y < height; y += 1) {
+    const dy = y - cy;
+    for (let x = 0; x < width; x += 1) {
+      const dx = x - cx;
+      const sx = cx + dx * cosA - dy * sinA;
+      const sy = cy + dx * sinA + dy * cosA;
+      if (sx < 0 || sx > width - 1 || sy < 0 || sy > height - 1) continue;
+      const x0 = Math.floor(sx);
+      const y0 = Math.floor(sy);
+      const x1 = Math.min(width - 1, x0 + 1);
+      const y1 = Math.min(height - 1, y0 + 1);
+      const fx = sx - x0;
+      const fy = sy - y0;
+      const w00 = (1 - fx) * (1 - fy);
+      const w10 = fx * (1 - fy);
+      const w01 = (1 - fx) * fy;
+      const w11 = fx * fy;
+
+      const i00 = (y0 * width + x0) * 4;
+      const i10 = (y0 * width + x1) * 4;
+      const i01 = (y1 * width + x0) * 4;
+      const i11 = (y1 * width + x1) * 4;
+
+      const a00 = (src[i00 + 3] ?? 0) * w00;
+      const a10 = (src[i10 + 3] ?? 0) * w10;
+      const a01 = (src[i01 + 3] ?? 0) * w01;
+      const a11 = (src[i11 + 3] ?? 0) * w11;
+      const aSum = a00 + a10 + a01 + a11;
+      if (aSum <= 0.5) continue;
+
+      const dst = (y * width + x) * 4;
+      out[dst] = Math.round(((src[i00] ?? 0) * a00 + (src[i10] ?? 0) * a10 + (src[i01] ?? 0) * a01 + (src[i11] ?? 0) * a11) / aSum);
+      out[dst + 1] = Math.round(((src[i00 + 1] ?? 0) * a00 + (src[i10 + 1] ?? 0) * a10 + (src[i01 + 1] ?? 0) * a01 + (src[i11 + 1] ?? 0) * a11) / aSum);
+      out[dst + 2] = Math.round(((src[i00 + 2] ?? 0) * a00 + (src[i10 + 2] ?? 0) * a10 + (src[i01 + 2] ?? 0) * a01 + (src[i11 + 2] ?? 0) * a11) / aSum);
+      out[dst + 3] = Math.round(aSum);
+    }
+  }
+  return { width, height, rgba: out };
+}
 
 export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSafeZone = true): WebtoonStripLayout {
   const cutCount = WEBTOON_VERTICAL_STRIP_CUTS.length;
@@ -225,6 +493,8 @@ export function composeWebtoonVerticalStrip(
   const fxLinesKind: WebtoonStripFxLinesKind = fxEnabled ? (mangaFx?.linesKind ?? "focus-radial") : "none";
   const fxIncludeBubbles = fxEnabled && mangaFx?.includeSpeechBubbles !== false;
   const fxIntensity = Math.min(1, Math.max(0.2, Number.isFinite(mangaFx?.intensity) ? (mangaFx?.intensity ?? 0.75) : 0.75));
+  const partnerSide: "left" | "right" = mangaFx?.partnerSide ?? "right";
+  const locale: WebtoonDialogueLocale = mangaFx?.locale ?? "ko";
 
   for (let idx = 0; idx < panels.length; idx += 1) {
     const panel = panels[idx];
@@ -286,7 +556,8 @@ export function composeWebtoonVerticalStrip(
       }
     }
 
-    const bubbleRight = idx % 2 === 1;
+    const cutSpeaker: WebtoonStripSpeakerTarget = mangaFx?.speakerTargets?.[idx] ?? "auto";
+    const placement = resolveSpeakerBubblePlacement(idx, cutSpeaker, partnerSide);
     if (fxIncludeBubbles) {
       const cutDialogue = mangaFx?.dialogueLines?.[idx];
       const cutShape: WebtoonStripBubbleShape = mangaFx?.bubbleShapes?.[idx] ?? "oval";
@@ -298,17 +569,18 @@ export function composeWebtoonVerticalStrip(
         innerY,
         layout.cutWidth,
         innerHeight,
-        bubbleRight,
+        placement,
         cutDialogue,
         cutShape,
         cutFontScale,
+        locale,
       );
     }
 
     if (fxEnabled) {
       const cutSfx: WebtoonSfxStampOption = mangaFx?.sfxStamps?.[idx] ?? "none";
       if (cutSfx !== "none") {
-        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !bubbleRight, cutSfx);
+        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !placement.placeRight, cutSfx, locale);
       }
     }
   }
@@ -353,8 +625,8 @@ export async function exportWebtoonVerticalStripPng(
 
   try {
     for (let idx = 0; idx < WEBTOON_VERTICAL_STRIP_CUTS.length; idx += 1) {
-      const cut = WEBTOON_VERTICAL_STRIP_CUTS[idx];
-      if (!cut) continue;
+      const cutPresetId = options.cutCameraPresets?.[idx] ?? "default";
+      const cut = resolveWebtoonCutCameraSpec(idx, cutPresetId);
       const keyframe = resolvedArc?.cuts[idx];
       const stepLabel = keyframe ? `${cut.labelKo} (${keyframe.beatKo})` : cut.labelKo;
       options.onProgress?.(idx + 1, WEBTOON_VERTICAL_STRIP_CUTS.length, stepLabel);
@@ -398,7 +670,8 @@ export async function exportWebtoonVerticalStripPng(
         if (!lit) {
           return { ok: false, failure: failVisible("export-missing-lit", `${cut.labelKo} 캡처에 lit 패스가 없습니다.`, undefined, started) };
         }
-        panels.push(lit);
+        const finalPanel = cut.dutchTiltDeg ? rotateRasterBilinear(lit, cut.dutchTiltDeg) : lit;
+        panels.push(finalPanel);
         lastProvenance = captured.provenance;
       } catch (error) {
         return { ok: false, failure: toFailure("export-capture", `웹툰 4컷 스트립(${cut.labelKo}) 캡처에 실패했습니다.`, error, started) };
@@ -424,7 +697,11 @@ export async function exportWebtoonVerticalStripPng(
     const baseName = exportFileName("png", lastProvenance.recipeDigest, composed.width, composed.height);
     const actingTag = resolvedArc ? "-acting" : "";
     const fxTag = options.mangaFx?.enabled ? "-fx" : "";
-    const suffix = `-webtoon-4cut${actingTag}${fxTag}-strip.png`;
+    const localeTag =
+      options.mangaFx?.enabled && options.mangaFx.locale && options.mangaFx.locale !== "ko"
+        ? `-${options.mangaFx.locale}`
+        : "";
+    const suffix = `-webtoon-4cut${actingTag}${fxTag}${localeTag}-strip.png`;
     const fileName = baseName.replace(/\.png$/u, suffix);
     return {
       ok: true,

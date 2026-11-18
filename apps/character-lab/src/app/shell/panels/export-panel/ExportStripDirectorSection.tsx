@@ -1,17 +1,25 @@
-/** 4컷 연출·효과선·말풍선 모양·폰트 배율·효과음 스탬프·한국어 대사를 디렉터 세션에 연결한다. */
+/** 4컷 연출·카메라 구도·발화자·말풍선 모양·폰트 배율·효과음 스탬프·다국어 대사를 디렉터 세션에 연결한다. */
 import {
+  WEBTOON_CUT_CAMERA_PRESETS,
+  WEBTOON_DIALOGUE_LOCALES,
+  WEBTOON_DIALOGUE_LOCALE_LABELS,
   WEBTOON_STRIP_ACTING_ARCS,
   WEBTOON_STRIP_BUBBLE_SHAPE_LABELS_KO,
   WEBTOON_STRIP_FONT_SCALE_LABELS_KO,
+  WEBTOON_STRIP_SPEAKER_LABELS_KO,
+  resolveSfxGlyphByLocale,
 } from "../../../../export/webtoon-strip-composer";
 import { WEBTOON_SFX_STAMPS } from "../viewport-hand-prop-controls";
 
 import type {
+  WebtoonDialogueLocale,
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
+  WebtoonStripCutCameraPresetId,
   WebtoonStripFxLinesKind,
+  WebtoonStripSpeakerTarget,
 } from "../../../../export/webtoon-strip-composer";
 import type { StripDirectorSession, StripDirectorState } from "../viewport-scene-director";
 
@@ -22,9 +30,20 @@ interface ExportStripDirectorSectionProps {
 }
 
 export function ExportStripDirectorSection({ ids, state, stripDirector }: ExportStripDirectorSectionProps) {
-  const { actingArc: stripActingArc, bakeStripFx, stripFxLines, dialogueLines, bubbleShapes, bubbleFontScales, sfxStamps } = state;
+  const {
+    locale: stripLocale,
+    actingArc: stripActingArc,
+    bakeStripFx,
+    stripFxLines,
+    dialogueLines,
+    bubbleShapes,
+    bubbleFontScales,
+    sfxStamps,
+    speakerTargets,
+    cutCameraPresets,
+  } = state;
   return (
-    <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·연출 디렉터">
+    <div className="cl-export-strip-director" role="group" aria-label="세로 4컷 스트립 연기·구도·다국어 식자 디렉터">
       <div className="cl-export-row">
         <label htmlFor={`${ids}-strip-acting-arc`}>4컷 연기 시퀀스</label>
         <select
@@ -37,6 +56,19 @@ export function ExportStripDirectorSection({ ids, state, stripDirector }: Export
           {WEBTOON_STRIP_ACTING_ARCS.map((arc) => (
             <option key={arc.id} value={arc.id}>
               {arc.labelKo}
+            </option>
+          ))}
+        </select>
+        <label htmlFor={`${ids}-strip-locale`}>식자 언어·말풍선 비율</label>
+        <select
+          id={`${ids}-strip-locale`}
+          data-testid="export-strip-locale"
+          value={stripLocale}
+          onChange={(event) => stripDirector.setLocale(event.target.value as WebtoonDialogueLocale)}
+        >
+          {WEBTOON_DIALOGUE_LOCALES.map((loc) => (
+            <option key={loc} value={loc}>
+              {WEBTOON_DIALOGUE_LOCALE_LABELS[loc]}
             </option>
           ))}
         </select>
@@ -66,11 +98,38 @@ export function ExportStripDirectorSection({ ids, state, stripDirector }: Export
           <option value="none">말풍선만 (효과선 없음)</option>
         </select>
       </div>
-      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 말풍선 모양·강조·효과음·한국어 대사">
+      <div className="cl-export-dialogue-grid" role="group" aria-label="1~4컷 카메라 구도·발화자·말풍선·강조·효과음·다국어 대사">
         {([0, 1, 2, 3] as const).map((cutIdx) => (
           <div key={cutIdx} className="cl-export-dialogue-item">
-            <label htmlFor={`${ids}-strip-dialogue-${cutIdx}`}>{`${cutIdx + 1}컷 대사·연출`}</label>
+            <div className="cl-export-cut-header-row">
+              <label htmlFor={`${ids}-strip-dialogue-${cutIdx}`}>{`${cutIdx + 1}컷 구도·대사`}</label>
+              <select
+                aria-label={`${cutIdx + 1}컷 카메라 구도`}
+                data-testid={`export-strip-camera-${cutIdx}`}
+                value={cutCameraPresets[cutIdx]}
+                onChange={(event) => stripDirector.setCutCameraPreset(cutIdx, event.target.value as WebtoonStripCutCameraPresetId)}
+              >
+                {(Object.keys(WEBTOON_CUT_CAMERA_PRESETS) as WebtoonStripCutCameraPresetId[]).map((presetId) => (
+                  <option key={presetId} value={presetId}>
+                    {WEBTOON_CUT_CAMERA_PRESETS[presetId].labelKo}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="cl-export-cut-controls-row">
+              <select
+                aria-label={`${cutIdx + 1}컷 발화자`}
+                data-testid={`export-strip-speaker-${cutIdx}`}
+                disabled={!bakeStripFx || bubbleShapes[cutIdx] === "none"}
+                value={speakerTargets[cutIdx]}
+                onChange={(event) => stripDirector.setSpeakerTarget(cutIdx, event.target.value as WebtoonStripSpeakerTarget)}
+              >
+                {(Object.keys(WEBTOON_STRIP_SPEAKER_LABELS_KO) as WebtoonStripSpeakerTarget[]).map((target) => (
+                  <option key={target} value={target}>
+                    {WEBTOON_STRIP_SPEAKER_LABELS_KO[target]}
+                  </option>
+                ))}
+              </select>
               <select
                 aria-label={`${cutIdx + 1}컷 말풍선 모양`}
                 data-testid={`export-strip-bubble-shape-${cutIdx}`}
@@ -107,7 +166,7 @@ export function ExportStripDirectorSection({ ids, state, stripDirector }: Export
                 <option value="none">효과음 없음</option>
                 {WEBTOON_SFX_STAMPS.map((spec) => (
                   <option key={spec.id} value={spec.id}>
-                    {spec.glyphKo}
+                    {resolveSfxGlyphByLocale(spec.id, stripLocale)}
                   </option>
                 ))}
               </select>
@@ -116,7 +175,7 @@ export function ExportStripDirectorSection({ ids, state, stripDirector }: Export
               id={`${ids}-strip-dialogue-${cutIdx}`}
               data-testid={`export-strip-dialogue-${cutIdx}`}
               type="text"
-              maxLength={42}
+              maxLength={64}
               disabled={!bakeStripFx || bubbleShapes[cutIdx] === "none"}
               value={dialogueLines[cutIdx]}
               onChange={(event) => stripDirector.setDialogueLine(cutIdx, event.target.value)}

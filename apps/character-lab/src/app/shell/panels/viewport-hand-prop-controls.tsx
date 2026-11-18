@@ -1,8 +1,8 @@
 /**
  * 뷰포트 3D 웹툰 소품·배경·효과음 스탬프 워크벤치 바 (Unslop Warm Ink Atelier 정제 규약):
- * - 손 소품 4종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
+ * - 손 소품 6종(`smartphone`, `coffee-cup`, `case-folder`, `aether-blade`, `imperial-scroll`, `jade-folding-fan`) + 왼손/오른손 전환 + 1-클릭 그립 포즈
  * - 머리 액세서리 4종(`wire-glasses`, `rofan-tiara`, `tactical-headset`, `pearl-earrings-pin`) 실시간 head 본 부착
- * - 배경 스테이지 프롭 5종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`) 발밑·등 뒤 배치
+ * - 배경 스테이지 프롭 6종(`cafe-bistro-table`, `academy-desk`, `murim-sword-aura`, `rofan-throne-dais`, `noir-interrogation-lamp`, `rooftop-safety-railing`) 발밑·등 뒤 배치
  * - 한국형 웹툰 3D 오노마토페 스탬프 4종(`seureung`, `dugeun`, `kugugung`, `pat`) 상단 프레임 배치
  */
 import { qNormalize } from "../../../shared/math";
@@ -141,6 +141,32 @@ export const WEBTOON_HAND_PROPS: readonly WebtoonHandPropSpec[] = Object.freeze(
       hand: [-14, 18, -12],
     },
   },
+  {
+    id: "imperial-scroll",
+    labelKo: "황실 칙령·계약 두루마리",
+    genreHintKo: "로판·무협·사극 황실 조서 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/imperial-scroll.glb",
+    sha256: "77fbd9018fa4f238c75933054ffce0a5edc262fcef229f35fe7cdd6c250a915f",
+    handPreset: "hand-pose/fist",
+    rightArmEulerDeg: {
+      upperArm: [12, 26, 60],
+      lowerArm: [22, 80, -20],
+      hand: [10, 12, -8],
+    },
+  },
+  {
+    id: "jade-folding-fan",
+    labelKo: "청옥 접선 부채",
+    genreHintKo: "무협·동양풍·로판 귀족 회담 컷",
+    glbUrl: "/assets/props/webtoon-hand-props-v1/jade-folding-fan.glb",
+    sha256: "a540bacdad39d9234fedc31e7844a548346c94fb45203c8a55ff0bbee3ddc347",
+    handPreset: "hand-pose/relaxed",
+    rightArmEulerDeg: {
+      upperArm: [16, 28, 56],
+      lowerArm: [28, 86, -24],
+      hand: [16, 16, -10],
+    },
+  },
 ]);
 
 export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze([
@@ -171,6 +197,20 @@ export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze(
     genreHintKo: "로맨스·아이돌·캠퍼스 클로즈업 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/pearl-earrings-pin.glb",
     sha256: "90e889c9c6a533f0fb1f3638b3bf137e6e0ab22f84469d77abf70c83d4073eaf",
+  },
+  {
+    id: "studio-headphones",
+    labelKo: "청춘 무선 네크 헤드폰",
+    genreHintKo: "학원·청춘·아이돌 옥상 황혼 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/studio-headphones.glb",
+    sha256: "5eba8a11dcaf7f6948e8e532e89d371757431ac55b3ab54b5d44bc42dbebcb3e",
+  },
+  {
+    id: "silver-monocle",
+    labelKo: "괴도·집사 실버 체인 모노클",
+    genreHintKo: "로판·느와르·추리 귀족 클로즈업 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/silver-monocle.glb",
+    sha256: "ffb96d9b4c590822fc46a9988b7f6b5d05e54fc1a6cd471d514f7fdcbd51f14b",
   },
 ]);
 
@@ -210,6 +250,13 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     glbUrl: "/assets/props/webtoon-stage-props-v1/noir-interrogation-lamp.glb",
     sha256: "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
   },
+  {
+    id: "rooftop-safety-railing",
+    labelKo: "옥상 황혼 안전 난간·벤치",
+    genreHintKo: "학원·청춘·스릴러 옥상 독대 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/rooftop-safety-railing.glb",
+    sha256: "f18ff2d59f400a439d9d37efbc20110c5d1340635e4f698344e9df4fc11edb64",
+  },
 ]);
 
 export const WEBTOON_SFX_STAMPS: readonly WebtoonSfxStampSpec[] = Object.freeze([
@@ -248,6 +295,24 @@ export const WEBTOON_SFX_STAMPS: readonly WebtoonSfxStampSpec[] = Object.freeze(
     accentHex: "#ffe076",
     glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-pat.glb",
     sha256: "5986d529a9b8955d8d59e75b6085e25e19f67b7e7034dfa65ba6f735f78fc898",
+  },
+  {
+    id: "ssaa",
+    glyphKo: "싸아",
+    labelKo: "싸아 (정적·서늘한 밤바람 효과음)",
+    genreHintKo: "옥상 독대·스릴러·느와르 냉기 컷",
+    accentHex: "#93c5fd",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-ssaa.glb",
+    sha256: "8f3ca315f1ae0f5a3ae4a389c6cdc5ce30b93ff2b9e0efad490fd5c7642662df",
+  },
+  {
+    id: "beonjjeok",
+    glyphKo: "번쩍",
+    labelKo: "번쩍 (각성·진실 섬광 효과음)",
+    genreHintKo: "판타지·무협·추리 단서 포착 컷",
+    accentHex: "#facc15",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-beonjjeok.glb",
+    sha256: "f5627e459a8a7c8587e97ec7f243491e8cbd8ffaf08afc7c552011897b01107a",
   },
 ]);
 
