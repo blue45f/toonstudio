@@ -89,7 +89,7 @@
 .workspace-view-toggle { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--workspace-line); border-radius: 9px; }
 .admin-workspace .workspace-view-toggle button { min-height: 30px; padding: 5px 9px; font-size: 11px; border-color: transparent; background: transparent; }
 .admin-workspace .workspace-view-toggle button[aria-pressed="true"] { background: var(--workspace-raised); border-color: var(--workspace-line); }
-.workspace-table-wrap { width: 100%; max-width: 100%; overflow: auto; }
+.workspace-table-wrap { position: relative; width: 100%; max-width: 100%; overflow: auto; }
 .workspace-table { width: 100%; min-width: 720px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
 .workspace-table th { padding: 11px 14px; text-align: left; font-weight: 500; color: var(--workspace-muted); background: var(--workspace-canvas); }
 .workspace-table td { padding: 12px 14px; vertical-align: top; border-top: 1px solid var(--workspace-line); overflow-wrap: anywhere; }
