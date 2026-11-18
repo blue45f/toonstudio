@@ -6,12 +6,13 @@ import { ViewportDuoShotControls } from "./viewport-duo-shot-guide";
 import { ViewportHandPropControls } from "./viewport-hand-prop-controls";
 import { ViewportMangaFxControls, clampMangaFxIntensity } from "./viewport-manga-fx-overlay";
 import { ViewportPresetSelect } from "./viewport-preset-select";
+import { ViewportSceneDirectorControls } from "./viewport-scene-director";
 
 import type { ShaperGizmoMode } from "./shaper-control-points";
 import type { DuoShotState } from "./viewport-duo-shot-guide";
 import type { ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { ViewportMangaFxState } from "./viewport-manga-fx-overlay";
-import type { CameraFraming } from "../../../contracts";
+import type { CameraFraming, DuoPartnerStance } from "../../../contracts";
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 
 interface StateControl<T> {
@@ -31,14 +32,17 @@ interface ViewportToolbarProps {
   readonly composition: Omit<ComponentProps<typeof ViewportCompositionBar>, "engineReady">;
   readonly duoShot: {
     readonly state: DuoShotState;
-    readonly set: Dispatch<SetStateAction<DuoShotState>>;
+    readonly update: (updater: (prev: DuoShotState) => DuoShotState) => void;
     readonly summaryKo: string;
     readonly applyEyeContact: () => void;
+    readonly duo3dSupported: boolean;
+    readonly duo3dBusy: boolean;
   };
   readonly mangaFx: {
     readonly state: ViewportMangaFxState;
     readonly set: Dispatch<SetStateAction<ViewportMangaFxState>>;
   };
+  readonly sceneDirector: ComponentProps<typeof ViewportSceneDirectorControls>;
   readonly handProp: ComponentProps<typeof ViewportHandPropControls>;
   readonly overlay: {
     readonly handles: StateControl<boolean>;
@@ -60,7 +64,7 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
 ];
 
 /** 도구막대 표시만 분리하고 상태·엔진 호출·명령 적용은 뷰포트에 둔다. */
-export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, handProp, overlay }: ViewportToolbarProps) {
+export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, sceneDirector, handProp, overlay }: ViewportToolbarProps) {
   return (
     <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: 8, display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
       <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
@@ -78,11 +82,15 @@ export function ViewportToolbar({ engineReady, camera, composition, duoShot, man
       <ViewportDuoShotControls
         duoShot={duoShot.state}
         summaryKo={duoShot.summaryKo}
-        onToggleDuoShot={() => duoShot.set((prev) => ({ ...prev, enabled: !prev.enabled }))}
-        onChangePartner={(partnerId) => duoShot.set((prev) => ({ ...prev, partnerId }))}
-        onChangeSide={(side) => duoShot.set((prev) => ({ ...prev, side }))}
-        onChangeDistance={(distanceKey) => duoShot.set((prev) => ({ ...prev, distanceKey }))}
+        duo3dSupported={duoShot.duo3dSupported}
+        duo3dBusy={duoShot.duo3dBusy}
+        onToggleDuoShot={() => duoShot.update((prev) => ({ ...prev, enabled: !prev.enabled }))}
+        onChangePartner={(partnerId) => duoShot.update((prev) => ({ ...prev, partnerId }))}
+        onChangeSide={(side) => duoShot.update((prev) => ({ ...prev, side }))}
+        onChangeDistance={(distanceKey) => duoShot.update((prev) => ({ ...prev, distanceKey }))}
         onApplyEyeContact={duoShot.applyEyeContact}
+        onToggleRender3dPartner={() => duoShot.update((prev) => ({ ...prev, render3dPartner: !prev.render3dPartner }))}
+        onChangePartnerStance={(partnerStance: DuoPartnerStance) => duoShot.update((prev) => ({ ...prev, partnerStance }))}
       />
       <ViewportMangaFxControls
         mangaFx={mangaFx.state}
@@ -92,6 +100,7 @@ export function ViewportToolbar({ engineReady, camera, composition, duoShot, man
         onChangeDialogueText={(dialogueText) => mangaFx.set((prev) => ({ ...prev, dialogueText }))}
         onChangeIntensity={(intensity) => mangaFx.set((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
       />
+      <ViewportSceneDirectorControls {...sceneDirector} />
       <ViewportHandPropControls {...handProp} />
       <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
         <button type="button" className="cl-viewport-button" aria-pressed={overlay.handles.value} onClick={() => overlay.handles.set((value) => !value)}>관절 핸들</button>

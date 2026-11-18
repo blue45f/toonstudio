@@ -48,11 +48,22 @@ export const WEBTOON_VERTICAL_STRIP_CUTS: readonly WebtoonStripCutSpec[] = Objec
 
 export type WebtoonStripFxLinesKind = "none" | "focus-radial" | "speed-diagonal" | "romance-sparkle";
 
+export type WebtoonStripDialogueLines = readonly [string, string, string, string];
+
+export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = Object.freeze([
+  "여기서부터는 내 구역이야.",
+  "기다리고 있었어, 그 말.",
+  "지금 이 순간을 전부 기억해.",
+  "끝까지 함께 가자.",
+]) as WebtoonStripDialogueLines;
+
 export interface WebtoonStripMangaFxOptions {
   readonly enabled: boolean;
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly includeSpeechBubbles?: boolean;
   readonly intensity?: number;
+  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 한국어 대사 4줄 */
+  readonly dialogueLines?: WebtoonStripDialogueLines;
 }
 
 export interface WebtoonStripLayout {
@@ -287,6 +298,138 @@ function bakePanelActionLines(
   }
 }
 
+function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | null] {
+  const cleaned = rawText.trim();
+  if (!cleaned) return ["", null];
+  if (cleaned.length <= 13) return [cleaned, null];
+  const mid = Math.ceil(cleaned.length / 2);
+  const spaceIdx = cleaned.lastIndexOf(" ", mid + 3);
+  if (spaceIdx >= 3 && spaceIdx < cleaned.length - 2) {
+    return [cleaned.slice(0, spaceIdx).trim(), cleaned.slice(spaceIdx + 1).trim()];
+  }
+  return [cleaned.slice(0, mid), cleaned.slice(mid)];
+}
+
+function tryRasterizeDialogueCanvas2d(
+  boxWidth: number,
+  boxHeight: number,
+  line1: string,
+  line2: string | null,
+): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
+  if (typeof document === "undefined" || boxWidth < 12 || boxHeight < 8) return null;
+  try {
+    const scale = 2;
+    const w = Math.max(12, Math.floor(boxWidth * scale));
+    const h = Math.max(8, Math.floor(boxHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.clearRect(0, 0, w, h);
+    const maxChars = Math.max(line1.length, line2 ? line2.length : 0, 6);
+    const fitByWidth = Math.floor((w * 0.84) / Math.max(4, maxChars * 0.92));
+    const fitByHeight = Math.floor(h * (line2 ? 0.30 : 0.44));
+    const fontPx = Math.max(10, Math.min(44, fitByWidth, fitByHeight));
+    ctx.font = `600 ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    ctx.fillStyle = "#18151C";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (line2) {
+      const gap = Math.round(fontPx * 0.62);
+      ctx.fillText(line1, w * 0.5, h * 0.5 - gap, w * 0.9);
+      ctx.fillText(line2, w * 0.5, h * 0.5 + gap, w * 0.9);
+    } else {
+      ctx.fillText(line1, w * 0.5, h * 0.5, w * 0.9);
+    }
+    const img = ctx.getImageData(0, 0, w, h);
+    let nonZeroAlpha = 0;
+    for (let i = 3; i < img.data.length; i += 4) {
+      if ((img.data[i] ?? 0) > 16) {
+        nonZeroAlpha += 1;
+        break;
+      }
+    }
+    return nonZeroAlpha > 0 ? { width: w, height: h, data: img.data } : null;
+  } catch {
+    return null;
+  }
+}
+
+function bakeDeterministicDialogueGlyphs(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  line1: string,
+  line2: string | null,
+): void {
+  const lines = line2 ? [line1, line2] : [line1];
+  const maxLen = Math.max(...lines.map((l) => l.length), 1);
+  const cellW = Math.max(3, Math.min(Math.floor((rx * 1.48) / maxLen), Math.floor(ry * 0.52)));
+  const cellH = Math.max(3, Math.round(cellW * 1.05));
+  const stroke = Math.max(0.55, cellW * 0.11);
+
+  lines.forEach((line, lineIdx) => {
+    const chars = Array.from(line);
+    const totalW = chars.length * cellW;
+    const startX = cx - totalW * 0.5;
+    const baseY = lines.length === 2 ? cy + (lineIdx === 0 ? -cellH * 0.68 : cellH * 0.68) : cy;
+
+    chars.forEach((ch, idx) => {
+      if (ch.trim() === "") return;
+      const code = ch.codePointAt(0) ?? 46;
+      const gx0 = startX + idx * cellW + cellW * 0.14;
+      const gx1 = startX + (idx + 1) * cellW - cellW * 0.14;
+      const gy0 = baseY - cellH * 0.42;
+      const gy1 = baseY + cellH * 0.42;
+      const gmx = (gx0 + gx1) * 0.5;
+      const gmy = (gy0 + gy1) * 0.5;
+
+      if (ch === "." || ch === "," || ch === "…") {
+        blendPixelRgba(rgba, canvasWidth, Math.round(gmx), Math.round(gy1), clipX0, clipY0, clipX1, clipY1, 24, 21, 28, 0.92);
+        return;
+      }
+      if (code >= 0xac00 && code <= 0xd7a3) {
+        const syl = code - 0xac00;
+        const cho = Math.floor(syl / 588);
+        const jung = Math.floor((syl % 588) / 28);
+        const jong = syl % 28;
+        const topBottom = jong > 0 ? gmy : gy1;
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gmx, gy0, stroke, 24, 21, 28, 0.9);
+        if (cho % 3 !== 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx0, topBottom, stroke, 24, 21, 28, 0.88);
+        }
+        if (cho % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, (gy0 + topBottom) * 0.5, gmx, (gy0 + topBottom) * 0.5, stroke, 24, 21, 28, 0.86);
+        }
+        if (jung < 8 || jung >= 18) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx1, gy0, gx1, topBottom, stroke, 24, 21, 28, 0.92);
+        } else {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, topBottom, gx1, topBottom, stroke, 24, 21, 28, 0.92);
+        }
+        if (jong > 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gy1, gx1, gy1, stroke, 24, 21, 28, 0.9);
+          if (jong % 2 === 1) {
+            drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gmy + stroke, gx0 + stroke, gy1, stroke, 24, 21, 28, 0.85);
+          }
+        }
+      } else {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, 24, 21, 28, 0.9);
+        if (code % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, 24, 21, 28, 0.85);
+        }
+      }
+    });
+  });
+}
+
 function bakeSpeechBubbleBalloon(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
@@ -295,13 +438,14 @@ function bakeSpeechBubbleBalloon(
   innerWidth: number,
   innerHeight: number,
   placeRight: boolean,
+  dialogueText?: string,
 ): void {
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const rx = Math.max(8, Math.round(innerWidth * 0.19));
-  const ry = Math.max(5, Math.round(innerHeight * 0.085));
-  const cx = placeRight ? innerX + Math.round(innerWidth * 0.74) : innerX + Math.round(innerWidth * 0.26);
-  const cy = innerY + Math.round(ry * 1.32);
+  const rx = Math.max(8, Math.round(innerWidth * 0.21));
+  const ry = Math.max(5, Math.round(innerHeight * 0.092));
+  const cx = placeRight ? innerX + Math.round(innerWidth * 0.72) : innerX + Math.round(innerWidth * 0.28);
+  const cy = innerY + Math.round(ry * 1.30);
   const border = Math.max(1, Math.round(innerWidth * 0.0042));
 
   const x0 = Math.max(innerX, cx - rx - border - 1);
@@ -342,6 +486,36 @@ function bakeSpeechBubbleBalloon(
     28,
     0.95,
   );
+
+  if (dialogueText && dialogueText.trim().length > 0) {
+    const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
+    const boxW = Math.max(8, Math.round(rx * 1.66));
+    const boxH = Math.max(6, Math.round(ry * 1.44));
+    const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2);
+    if (raster) {
+      const dstLeft = Math.round(cx - boxW * 0.5);
+      const dstTop = Math.round(cy - boxH * 0.5);
+      for (let ty = 0; ty < boxH; ty += 1) {
+        for (let tx = 0; tx < boxW; tx += 1) {
+          const sx = tx * 2;
+          const sy = ty * 2;
+          let aSum = 0;
+          for (let oy = 0; oy < 2; oy += 1) {
+            for (let ox = 0; ox < 2; ox += 1) {
+              const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
+              aSum += raster.data[idx + 3] ?? 0;
+            }
+          }
+          const alpha01 = aSum / (255 * 4);
+          if (alpha01 > 0.04) {
+            blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+          }
+        }
+      }
+    } else {
+      bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2);
+    }
+  }
 }
 
 function fillRectRgba(
@@ -449,7 +623,8 @@ export function composeWebtoonVerticalStrip(
     }
 
     if (fxIncludeBubbles) {
-      bakeSpeechBubbleBalloon(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, idx % 2 === 1);
+      const cutDialogue = mangaFx?.dialogueLines?.[idx];
+      bakeSpeechBubbleBalloon(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, idx % 2 === 1, cutDialogue);
     }
   }
 

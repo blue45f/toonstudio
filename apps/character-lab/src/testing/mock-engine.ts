@@ -280,6 +280,9 @@ export function createMockEngine(options: MockEngineOptions = {}): MockEngine {
     async setStageProp(attachment) {
       record("setStageProp", attachment);
     },
+    async setDuoPartner(attachment) {
+      record("setDuoPartner", attachment);
+    },
     updatePaintTexture(layer) {
       record("updatePaintTexture", layer);
       paintUploads.push(layer);

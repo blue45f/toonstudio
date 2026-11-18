@@ -202,10 +202,16 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
     ).toContain("슬릿 폭 0.39m");
+    expect(
+      screen.getByTestId("bg3d-blender-bokeh-fstop-badge").textContent,
+    ).toContain("f/1.8");
     fireEvent.click(screen.getByTestId("bg3d-blender-v21-beat-100"));
     expect(
       screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
     ).toContain("슬릿 폭 1.68m");
+    expect(
+      screen.getByTestId("bg3d-blender-bokeh-fstop-badge").textContent,
+    ).toContain("f/5.6");
     fireEvent.change(screen.getByTestId("bg3d-blender-interaction-cut-slider"), {
       target: { value: "50" },
     });
@@ -213,6 +219,17 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-stacked-interaction-roi-readout")
         .textContent,
     ).toContain("상호작용 50%(35컷)");
+
+    // Wave 8 (V22): 보케 스타일 전환 및 분기별 세이브 원고 비축 시뮬레이터 검증
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v22-mote-rofan-gilded-petals"),
+    );
+    fireEvent.change(screen.getByTestId("bg3d-blender-climax-freq-slider"), {
+      target: { value: "4" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-quarterly-banked-readout").textContent,
+    ).toContain("회차당 3연속 시퀀스 4회");
 
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
