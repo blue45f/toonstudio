@@ -60,7 +60,9 @@ export type WebtoonSceneDirectorPresetId =
   | "director-murim-awakening"
   | "director-rooftop-twilight"
   | "director-phantom-heist"
-  | "director-legal-medical-tribunal";
+  | "director-legal-medical-tribunal"
+  | "director-idol-encore-stage"
+  | "director-varsity-court-rival";
 
 export interface WebtoonDirectorDuoCastingSpec {
   readonly partnerId: string;
@@ -482,6 +484,116 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       partnerHandPropId: "case-folder",
     },
   },
+  {
+    id: "director-idol-encore-stage",
+    labelKo: "아이돌 앙코르 무대 (이어링·응원봉·스탠드마이크)",
+    summaryKo: "진주 드롭 귀걸이 + 아이돌 프리즘 응원봉 + 콘서트 스탠드마이크·네온 링 + 역광 각성 무드 + 설렘 4컷 연기",
+    handPropId: "idol-prism-lightstick",
+    handSide: "rightHand",
+    headPropId: "pearl-earrings-pin",
+    stagePropId: "concert-spotlight-mic-stand",
+    sfxStampId: "dugeun",
+    toonShaderId: "illumination-rim",
+    actingArc: "arc-romance-flutter",
+    fxLinesKind: "romance-sparkle",
+    manuscriptMood: "backlit-awakening",
+    gutterPaces: ["compact", "dramatic-pause", "cliffhanger"],
+    screentones: ["rose-duotone-dots", "none", "rose-duotone-dots", "cyan-noir-dots"],
+    dialogueLines: [
+      "조명이 꺼진 뒤에도 객석의 별빛은 멈추지 않아.",
+      "마지막 곡, 센터 마이크는 네 자리야.",
+      "이 무대를 위해 수천 번을 다시 불렀어.",
+      "들리니? 우리 이름을 부르는 함성이.",
+    ],
+    dialogueByLocale: {
+      ko: [
+        "조명이 꺼진 뒤에도 객석의 별빛은 멈추지 않아.",
+        "마지막 곡, 센터 마이크는 네 자리야.",
+        "이 무대를 위해 수천 번을 다시 불렀어.",
+        "들리니? 우리 이름을 부르는 함성이.",
+      ],
+      en: [
+        "Even after blackout, the sea of lights shines on.",
+        "Final encore. Center mic belongs to you tonight.",
+        "I sang this bridge a thousand times for this moment.",
+        "Can you hear the arena calling our name?",
+      ],
+      ja: [
+        "照明が落ちても、客席の星明かりは消えない。",
+        "最後のアンコール、センターマイクは君の場所よ。",
+        "この舞台のために何千回も歌い直したんだ。",
+        "聞こえる？私たちの名前を呼ぶ歓声が。",
+      ],
+    },
+    bubbleShapes: ["monologue-box", "oval", "shout-burst", "oval"],
+    bubbleFontScales: ["md", "md", "lg", "md"],
+    sfxStamps: ["pat", "dugeun", "beonjjeok", "dugeun"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    cutCameraPresets: ["low-full", "duo-wide", "dutch-right-face", "front-face"],
+    duoCasting: {
+      partnerId: "shaper-cyber-idol",
+      side: "right",
+      distanceKey: "close",
+      stance: "conversational",
+      expression: "warm-smile",
+      partnerHandPropId: "idol-prism-lightstick",
+    },
+  },
+  {
+    id: "director-varsity-court-rival",
+    labelKo: "학원 코트 결승 라이벌전 (헤드폰·농구공·농구골대)",
+    summaryKo: "청춘 무선 헤드폰 + 체전 에이스 농구공 + 체육관 농구 골대 + 하드 셀 3단 + 결승 버저비터 4컷 연기",
+    handPropId: "varsity-basketball",
+    handSide: "rightHand",
+    headPropId: "studio-headphones",
+    stagePropId: "court-hoop-stanchion",
+    sfxStampId: "kugugung",
+    toonShaderId: "action-hard-cel3",
+    actingArc: "arc-awakening-climax",
+    fxLinesKind: "speed-diagonal",
+    manuscriptMood: "twilight-amber",
+    gutterPaces: ["compact", "compact", "cliffhanger"],
+    screentones: ["classic-ink-45", "none", "cyan-noir-dots", "shadow-fade-mono"],
+    dialogueLines: [
+      "4쿼터 종료 3초 전, 점수 차는 단 2점.",
+      "더블팀 수비야, 여기서 슛을 던진다고?",
+      "림 끝까지 궤적은 이미 머릿속에 그렸어.",
+      "버저가 울리기 전에 승부를 뒤집는다.",
+    ],
+    dialogueByLocale: {
+      ko: [
+        "4쿼터 종료 3초 전, 점수 차는 단 2점.",
+        "더블팀 수비야, 여기서 슛을 던진다고?",
+        "림 끝까지 궤적은 이미 머릿속에 그렸어.",
+        "버저가 울리기 전에 승부를 뒤집는다.",
+      ],
+      en: [
+        "Three seconds left in the fourth, down by two.",
+        "Through a double team? You are shooting from here?",
+        "The arc to the rim is already locked in.",
+        "Before the buzzer sounds, we flip this game.",
+      ],
+      ja: [
+        "第4クォーター残り3秒、点差はわずか2点。",
+        "ダブルチームの上から、ここで撃つ気か？",
+        "リングまでの軌道はもう頭の中に描けている。",
+        "ブザーが鳴る前に、勝負をひっくり返す。",
+      ],
+    },
+    bubbleShapes: ["monologue-box", "shout-burst", "oval", "shout-burst"],
+    bubbleFontScales: ["md", "lg", "md", "lg"],
+    sfxStamps: ["ssaa", "pat", "beonjjeok", "kugugung"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    cutCameraPresets: ["low-full", "duo-wide", "dutch-right-face", "dutch-left-bust"],
+    duoCasting: {
+      partnerId: "shaper-atelier-male-lead",
+      side: "right",
+      distanceKey: "wide",
+      stance: "attentive",
+      expression: "cold-smirk",
+      partnerHandPropId: "varsity-basketball",
+    },
+  },
 ]);
 
 export function findWebtoonSceneDirectorPreset(id: string): WebtoonSceneDirectorPreset | null {
@@ -493,10 +605,13 @@ export function resolveDirectorShadingProfile(current: ShadingProfile, toonShade
   return buildShaperToonShadingProfile(current, matched);
 }
 
+export type WebtoonTankobonOrder = "rtl-tankobon" | "ltr-manhwa";
+
 export interface StripDirectorState {
   readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
   readonly locale: WebtoonDialogueLocale;
   readonly jaWritingMode: WebtoonJaWritingMode;
+  readonly tankobonOrder: WebtoonTankobonOrder;
   readonly manuscriptMood: WebtoonManuscriptMoodId;
   readonly gutterPaces: WebtoonStripGutterPaces;
   readonly screentones: WebtoonStripScreentones;
@@ -536,6 +651,7 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   activeDirectorId: "",
   locale: "ko",
   jaWritingMode: "horizontal",
+  tankobonOrder: "rtl-tankobon",
   manuscriptMood: "daylight-paper",
   gutterPaces: DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
   screentones: DEFAULT_WEBTOON_STRIP_SCREENTONES,

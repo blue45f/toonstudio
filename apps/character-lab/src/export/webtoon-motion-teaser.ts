@@ -1,35 +1,48 @@
 /**
- * 스크롤 여백 호흡(`gutterPaces`)·시간대 색온도 무드(`manuscriptMood`) 연동
+ * 스크롤 여백 호흡(`gutterPaces`)·시간대 색온도 무드(`manuscriptMood`)·컷 진입 말풍선 팝인(`bubblePopScale`)·
+ * 효과음 미세 진동(`sfxShakeOffset`)·절차적 Web Audio 사운드 파형 합성(`synthesizeMotionTeaserAudioPcm`) 연동
  * 9:16 숏폼 모션 코믹 티저(WebM) 순수 스케줄러 및 CPU 프레임 합성 모듈.
  *
  * 아키텍처 계약 (`src/architecture.test.ts`):
- * - DOM / MediaRecorder / Math.random 의존성 없이 Node·브라우저 양쪽에서 100% 결정적으로 동작한다.
- * - 실제 브라우저 스트림 인코딩(`MediaRecorder` + `captureStream`)은 `webtoon-motion-teaser.browser.ts`가 담당한다.
+ * - DOM / MediaRecorder / AudioContext / Math.random 의존성 없이 Node·브라우저 양쪽에서 100% 결정적으로 동작한다.
+ * - 실제 브라우저 스트림 인코딩(`MediaRecorder` + `captureStream` + `AudioContext`)은 `webtoon-motion-teaser.browser.ts`가 담당한다.
  */
 import { failVisible, isLabFailure } from "../contracts";
 
 import { WEBM_MIME, exportFileName, isWebmEbml } from "./export-session";
 import {
+  DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
+  DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
+  DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
   DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
+  DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
+  DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
   WEBTOON_MANUSCRIPT_MOODS,
   captureWebtoonVerticalStripRaster,
   computeStripAutoPanTimeline,
+  renderTransparentDialogueTextLayer,
+  renderTransparentSfxStampLayer,
+  renderTransparentSpeechBubbleFrameLayer,
   sampleAutoPanScrollState,
 } from "./webtoon-strip-composer";
 
-import type { ExportDeps, ExportOutcome } from "./export-session";
+import type { ExportDeps, ExportOutcome, MotionTeaserReceiptMetrics } from "./export-session";
 import type {
   ExportWebtoonVerticalStripOptions,
   StripAutoPanTimeline,
   WebtoonManuscriptMoodId,
+  WebtoonSfxStampOption,
   WebtoonStripGutterPaces,
   WebtoonStripLayout,
+  WebtoonStripMangaFxOptions,
+  WebtoonStripSfxStamps,
 } from "./webtoon-strip-composer";
 import type { CapturedRaster, CharacterEngine, LabFailure } from "../contracts";
 
 export const DEFAULT_MOTION_TEASER_FPS = 24;
 export const MIN_MOTION_TEASER_FPS = 12;
 export const MAX_MOTION_TEASER_FPS = 30;
+export const MOTION_TEASER_AUDIO_SAMPLE_RATE = 22_050;
 
 export type MotionTeaserResolutionPresetId = "sd-540x960" | "hd-720x1280";
 
@@ -57,6 +70,16 @@ export const WEBTOON_MOTION_TEASER_RESOLUTIONS: Readonly<
   },
 });
 
+export interface CutKineticOverlayPlacement {
+  readonly cutIndex: 0 | 1 | 2 | 3;
+  readonly innerX: number;
+  readonly innerY: number;
+  readonly innerWidth: number;
+  readonly innerHeight: number;
+  readonly bubbleOverlay: CapturedRaster | null;
+  readonly sfxOverlay: CapturedRaster | null;
+}
+
 export interface MotionTeaserFrameSample {
   readonly frameIndex: number;
   readonly outputTimeMs: number;
@@ -65,6 +88,13 @@ export interface MotionTeaserFrameSample {
   readonly activeCutIndex: 0 | 1 | 2 | 3;
   /** 컷 체류 구간에서 미세한 포커스 호흡감을 주는 배율 (1.000..1.028) */
   readonly dwellZoom: number;
+  /** 각 컷(0..3) 말풍선 팝인 불투명도 (패닝 접근 전 0 → 체류 진입 시 1) */
+  readonly cutBubbleAlphas: readonly [number, number, number, number];
+  /** 각 컷(0..3) 말풍선 스프링 팝인 배율 (0.78 → 1.04 → 1.00) */
+  readonly cutBubbleScales: readonly [number, number, number, number];
+  /** 활성 컷 효과음 임팩트 미세 진동 오프셋(px) */
+  readonly shakeOffsetX: number;
+  readonly shakeOffsetY: number;
   readonly progress01: number;
 }
 
@@ -87,6 +117,14 @@ export interface MotionTeaserCameraWindow {
 export interface PlanMotionTeaserOptions {
   readonly fps?: number;
   readonly speed?: number;
+  readonly sfxStamps?: WebtoonStripSfxStamps;
+}
+
+export interface MotionTeaserAudioTrackPcm {
+  readonly sampleRate: number;
+  readonly durationMs: number;
+  readonly eventCount: number;
+  readonly samples: Float32Array;
 }
 
 export interface EncodeMotionTeaserWebmRequest {
@@ -96,6 +134,8 @@ export interface EncodeMotionTeaserWebmRequest {
   readonly outWidth: number;
   readonly outHeight: number;
   readonly moodId: WebtoonManuscriptMoodId;
+  readonly kineticOverlays?: readonly CutKineticOverlayPlacement[];
+  readonly audioPcm?: MotionTeaserAudioTrackPcm | null;
   readonly onFrameProgress?: (frameIndex: number, totalFrames: number, activeCutIndex: 0 | 1 | 2 | 3) => void;
 }
 
@@ -105,6 +145,10 @@ export interface ExportWebtoonMotionTeaserOptions extends ExportWebtoonVerticalS
   readonly resolutionPreset?: MotionTeaserResolutionPresetId;
   readonly fps?: number;
   readonly playbackSpeed?: number;
+  /** 컷 체류 진입 말풍선 팝인·효과음 진동 활성화 여부(기본 true) */
+  readonly kineticPopIn?: boolean;
+  /** 외부 음원 없는 절차적 Web Audio 효과음 오디오 트랙 합성 여부(기본 true) */
+  readonly synthesizeAudioSfx?: boolean;
 }
 
 const defaultNow = (): number => Date.now();
@@ -122,11 +166,74 @@ function computeDwellZoomAt(timeline: StripAutoPanTimeline, timelineElapsedMs: n
     if (t >= seg.dwellStartMs && t <= seg.dwellEndMs) {
       const span = Math.max(1, seg.dwellEndMs - seg.dwellStartMs);
       const phase = (t - seg.dwellStartMs) / span;
-      // 0 → 1 → 0 부드러운 사인 반파 호흡 (최대 +2.8% 미세 줌)
       return Number((1 + Math.sin(phase * Math.PI) * 0.028).toFixed(5));
     }
   }
   return 1;
+}
+
+/**
+ * 컷 체류(`dwellStartMs`) 진입 시 말풍선 스프링 팝인 배율·알파 및 효과음 미세 진동을 결정적으로 계산한다.
+ */
+export function computeCutKineticMotionState(
+  timeline: StripAutoPanTimeline,
+  sfxStamps: WebtoonStripSfxStamps,
+  timelineElapsedMs: number,
+): {
+  readonly cutBubbleAlphas: readonly [number, number, number, number];
+  readonly cutBubbleScales: readonly [number, number, number, number];
+  readonly shakeOffsetX: number;
+  readonly shakeOffsetY: number;
+} {
+  const alphas: [number, number, number, number] = [0, 0, 0, 0];
+  const scales: [number, number, number, number] = [0.78, 0.78, 0.78, 0.78];
+  let shakeX = 0;
+  let shakeY = 0;
+
+  for (let i = 0; i < 4; i += 1) {
+    const cutIdx = i as 0 | 1 | 2 | 3;
+    const seg = timeline.segments[cutIdx]!;
+    const dt = timelineElapsedMs - seg.dwellStartMs;
+    if (dt < 0) {
+      alphas[cutIdx] = 0;
+      scales[cutIdx] = 0.78;
+      continue;
+    }
+    const alpha01 = Math.min(1, dt / 140);
+    alphas[cutIdx] = Number(alpha01.toFixed(4));
+    if (dt < 220) {
+      const p = dt / 220;
+      const overshoot = 1 - Math.pow(1 - p, 3) * Math.cos(p * Math.PI * 1.35);
+      scales[cutIdx] = Number((0.78 + 0.22 * overshoot).toFixed(4));
+    } else {
+      scales[cutIdx] = 1;
+    }
+
+    const sfx = sfxStamps[cutIdx];
+    if (sfx !== "none" && dt >= 30 && dt <= 310) {
+      const sfxPhase = (dt - 30) / 280;
+      const decay = Math.pow(1 - sfxPhase, 1.8);
+      if (sfx === "kugugung" || sfx === "beonjjeok") {
+        shakeX = Number((Math.sin(sfxPhase * Math.PI * 11) * 3.6 * decay).toFixed(3));
+        shakeY = Number((Math.cos(sfxPhase * Math.PI * 9) * 2.8 * decay).toFixed(3));
+      } else if (sfx === "dugeun" || sfx === "pat") {
+        shakeX = 0;
+        shakeY = Number((-Math.abs(Math.sin(sfxPhase * Math.PI * 4)) * 2.2 * decay).toFixed(3));
+      } else if (sfx === "seureung") {
+        shakeX = Number((Math.sin(sfxPhase * Math.PI * 6) * 2.6 * decay).toFixed(3));
+        shakeY = Number((-Math.sin(sfxPhase * Math.PI * 6) * 1.4 * decay).toFixed(3));
+      } else {
+        shakeX = Number((Math.sin(sfxPhase * Math.PI * 3) * 1.6 * decay).toFixed(3));
+      }
+    }
+  }
+
+  return {
+    cutBubbleAlphas: alphas,
+    cutBubbleScales: scales,
+    shakeOffsetX: shakeX,
+    shakeOffsetY: shakeY,
+  };
 }
 
 /**
@@ -140,6 +247,7 @@ export function planMotionTeaserSchedule(
   const timeline = computeStripAutoPanTimeline(layout, gutterPaces);
   const fps = Math.round(clampNumber(options.fps, MIN_MOTION_TEASER_FPS, MAX_MOTION_TEASER_FPS, DEFAULT_MOTION_TEASER_FPS));
   const speed = Number(clampNumber(options.speed, 0.5, 2.0, 1.0).toFixed(2));
+  const sfxStamps = options.sfxStamps ?? DEFAULT_WEBTOON_STRIP_SFX_STAMPS;
   const outputDurationMs = Math.max(400, Math.round(timeline.totalDurationMs / speed));
   const frameCount = Math.max(8, Math.round((outputDurationMs / 1000) * fps));
 
@@ -150,6 +258,7 @@ export function planMotionTeaserSchedule(
     const timelineElapsedMs = Math.min(timeline.totalDurationMs - 0.001, progress01 * timeline.totalDurationMs);
     const sampled = sampleAutoPanScrollState(timeline, timelineElapsedMs);
     const dwellZoom = computeDwellZoomAt(timeline, timelineElapsedMs);
+    const kinetic = computeCutKineticMotionState(timeline, sfxStamps, timelineElapsedMs);
     frames.push({
       frameIndex: idx,
       outputTimeMs,
@@ -157,6 +266,10 @@ export function planMotionTeaserSchedule(
       scrollRatio01: sampled.scrollRatio01,
       activeCutIndex: sampled.activeCutIndex,
       dwellZoom,
+      cutBubbleAlphas: kinetic.cutBubbleAlphas,
+      cutBubbleScales: kinetic.cutBubbleScales,
+      shakeOffsetX: kinetic.shakeOffsetX,
+      shakeOffsetY: kinetic.shakeOffsetY,
       progress01,
     });
   }
@@ -171,6 +284,178 @@ export function planMotionTeaserSchedule(
   };
 }
 
+function synthesizeSingleSfxEvent(
+  samples: Float32Array,
+  sampleRate: number,
+  startSec: number,
+  stamp: Exclude<WebtoonSfxStampOption, "none">,
+): void {
+  const startIdx = Math.max(0, Math.floor(startSec * sampleRate));
+  const durationSec =
+    stamp === "kugugung" ? 0.44 : stamp === "dugeun" ? 0.36 : stamp === "ssaa" ? 0.40 : 0.26;
+  const count = Math.min(samples.length - startIdx, Math.floor(durationSec * sampleRate));
+  if (count <= 0) return;
+
+  for (let i = 0; i < count; i += 1) {
+    const t = i / sampleRate;
+    const u = i / count;
+    const env = Math.sin(Math.min(1, u * 8) * Math.PI * 0.5) * Math.pow(1 - u, 1.65);
+    let wave = 0;
+
+    if (stamp === "dugeun") {
+      // 두근: 심장 고동 2연타 저역 펄스
+      const beat1 = t < 0.15 ? Math.sin(2 * Math.PI * (74 - t * 90) * t) * Math.pow(1 - t / 0.15, 1.8) : 0;
+      const dt2 = t - 0.16;
+      const beat2 = dt2 >= 0 && dt2 < 0.18 ? Math.sin(2 * Math.PI * (86 - dt2 * 100) * dt2) * Math.pow(1 - dt2 / 0.18, 1.7) : 0;
+      wave = (beat1 + beat2 * 0.92) * 0.42;
+    } else if (stamp === "seureung") {
+      // 스릉: 금속성 발도 상향 FM 스윕
+      const freq = 580 + 1920 * Math.pow(u, 0.72);
+      wave = (Math.sin(2 * Math.PI * freq * t) * 0.65 + Math.sin(2 * Math.PI * freq * 2.03 * t) * 0.35) * env * 0.28;
+    } else if (stamp === "kugugung") {
+      // 쿠구궁: 저주파 지진 서브베이스 진동
+      const mod = Math.sin(2 * Math.PI * 19 * t) * 1.4;
+      wave = (Math.sin(2 * Math.PI * 52 * t + mod) * 0.7 + Math.sin(2 * Math.PI * 104 * t) * 0.3) * env * 0.38;
+    } else if (stamp === "pat") {
+      // 팟: 맑은 섬광 벨 하모닉 차임
+      wave = (Math.sin(2 * Math.PI * 1318.5 * t) * 0.6 + Math.sin(2 * Math.PI * 1975.5 * t) * 0.4) * env * 0.26;
+    } else if (stamp === "beonjjeok") {
+      // 번쩍: 각성 전기 처프 스윕
+      const chirp = 1960 - 1320 * Math.abs(u - 0.38);
+      wave = (Math.sin(2 * Math.PI * chirp * t) * 0.7 + Math.sin(2 * Math.PI * (chirp * 1.5) * t) * 0.3) * env * 0.28;
+    } else {
+      // 싸아: 서늘한 밤바람 배음 클러스터(Math.random 없는 결정적 다중 사인 합성)
+      const cluster =
+        Math.sin(2 * Math.PI * 311.1 * t) * 0.34 +
+        Math.sin(2 * Math.PI * 466.2 * t + 0.7) * 0.28 +
+        Math.sin(2 * Math.PI * 739.9 * t + 1.9) * 0.22 +
+        Math.sin(2 * Math.PI * 1174.7 * t + 3.1) * 0.16;
+      wave = cluster * env * 0.24;
+    }
+
+    const next = (samples[startIdx + i] ?? 0) + wave;
+    samples[startIdx + i] = Math.max(-0.95, Math.min(0.95, next));
+  }
+}
+
+/**
+ * 컷별 효과음 스탬프(`sfxStamps`)와 오토패닝 스케줄을 동기화해 결정적 모노 PCM 오디오 트랙을 합성한다.
+ */
+export function synthesizeMotionTeaserAudioPcm(
+  schedule: MotionTeaserSchedule,
+  sfxStamps: WebtoonStripSfxStamps,
+  sampleRate = MOTION_TEASER_AUDIO_SAMPLE_RATE,
+): MotionTeaserAudioTrackPcm {
+  const safeRate = Math.max(8_000, Math.min(48_000, Math.floor(sampleRate)));
+  const totalSamples = Math.max(256, Math.ceil((schedule.outputDurationMs / 1000) * safeRate));
+  const samples = new Float32Array(totalSamples);
+  let eventCount = 0;
+
+  for (let i = 0; i < 4; i += 1) {
+    const cutIdx = i as 0 | 1 | 2 | 3;
+    const stamp = sfxStamps[cutIdx];
+    if (stamp === "none") continue;
+    const seg = schedule.timeline.segments[cutIdx]!;
+    const startSec = (seg.dwellStartMs / Math.max(0.25, schedule.speed) + 35) / 1000;
+    synthesizeSingleSfxEvent(samples, safeRate, startSec, stamp);
+    eventCount += 1;
+  }
+
+  return {
+    sampleRate: safeRate,
+    durationMs: schedule.outputDurationMs,
+    eventCount,
+    samples,
+  };
+}
+
+/**
+ * 4컷 각각의 투명 말풍선(프레임+대사)과 투명 효과음 스탬프 오버레이 래스터를 생성한다.
+ */
+export function buildCutKineticOverlays(
+  layout: WebtoonStripLayout,
+  mangaFx?: WebtoonStripMangaFxOptions,
+): readonly CutKineticOverlayPlacement[] {
+  if (!mangaFx?.enabled) return [];
+  const innerWidth = layout.cutWidth;
+  const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
+  const frameHeight = innerHeight + layout.borderPx * 2;
+  const gutterHeights = layout.gutterHeights ?? [layout.gutterY, layout.gutterY, layout.gutterY];
+
+  const overlays: CutKineticOverlayPlacement[] = [];
+  let cursorY = layout.marginY;
+  for (let idx = 0; idx < 4; idx += 1) {
+    const cutIdx = idx as 0 | 1 | 2 | 3;
+    const innerX = layout.marginX + layout.borderPx;
+    const innerY = cursorY + layout.borderPx;
+    cursorY += frameHeight + (idx < 3 ? (gutterHeights[idx as 0 | 1 | 2] ?? layout.gutterY) : 0);
+
+    const shape = (mangaFx.bubbleShapes ?? DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES)[cutIdx];
+    const dialogueText = (mangaFx.dialogueLines ?? DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES)[cutIdx];
+    const fontScale = (mangaFx.bubbleFontScales ?? DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES)[cutIdx];
+    const speakerTarget = (mangaFx.speakerTargets ?? DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS)[cutIdx];
+    const sfx = (mangaFx.sfxStamps ?? DEFAULT_WEBTOON_STRIP_SFX_STAMPS)[cutIdx];
+
+    let bubbleOverlay: CapturedRaster | null = null;
+    if (mangaFx.includeSpeechBubbles !== false && shape !== "none") {
+      const frameLayer = renderTransparentSpeechBubbleFrameLayer(innerWidth, innerHeight, {
+        shape,
+        speakerTarget,
+        partnerSide: mangaFx.partnerSide ?? "right",
+        locale: mangaFx.locale ?? "ko",
+        jaWritingMode: mangaFx.jaWritingMode ?? "horizontal",
+        dialogueText,
+        cutIndex: cutIdx,
+      });
+      const textLayer = renderTransparentDialogueTextLayer(innerWidth, innerHeight, {
+        dialogueText,
+        shape,
+        fontScale,
+        speakerTarget,
+        partnerSide: mangaFx.partnerSide ?? "right",
+        locale: mangaFx.locale ?? "ko",
+        jaWritingMode: mangaFx.jaWritingMode ?? "horizontal",
+        cutIndex: cutIdx,
+      });
+      const merged = new Uint8ClampedArray(frameLayer.rgba);
+      for (let p = 0; p < merged.length; p += 4) {
+        const ta = (textLayer.rgba[p + 3] ?? 0) / 255;
+        if (ta <= 0) continue;
+        const ba = (merged[p + 3] ?? 0) / 255;
+        const outA = ta + ba * (1 - ta);
+        if (outA <= 0) continue;
+        merged[p] = Math.round(((textLayer.rgba[p] ?? 0) * ta + (merged[p] ?? 0) * ba * (1 - ta)) / outA);
+        merged[p + 1] = Math.round(((textLayer.rgba[p + 1] ?? 0) * ta + (merged[p + 1] ?? 0) * ba * (1 - ta)) / outA);
+        merged[p + 2] = Math.round(((textLayer.rgba[p + 2] ?? 0) * ta + (merged[p + 2] ?? 0) * ba * (1 - ta)) / outA);
+        merged[p + 3] = Math.round(outA * 255);
+      }
+      bubbleOverlay = { width: innerWidth, height: innerHeight, rgba: merged };
+    }
+
+    const sfxOverlay =
+      sfx !== "none"
+        ? renderTransparentSfxStampLayer(innerWidth, innerHeight, {
+            stamp: sfx,
+            speakerTarget,
+            partnerSide: mangaFx.partnerSide ?? "right",
+            locale: mangaFx.locale ?? "ko",
+            cutIndex: cutIdx,
+          })
+        : null;
+
+    overlays.push({
+      cutIndex: cutIdx,
+      innerX,
+      innerY,
+      innerWidth,
+      innerHeight,
+      bubbleOverlay,
+      sfxOverlay,
+    });
+  }
+  return overlays;
+}
+
 /**
  * 세로 4컷 스트립(`stripWidth × stripHeight`) 안에서 9:16 세로형 카메라가 비추는 소스 영역을 계산한다.
  */
@@ -180,16 +465,63 @@ export function computeMotionTeaserCameraWindow(
   scrollRatio01: number,
   dwellZoom = 1,
   outAspectWidthOverHeight = 9 / 16,
+  shakeOffsetX = 0,
+  shakeOffsetY = 0,
 ): MotionTeaserCameraWindow {
   const safeZoom = clampNumber(dwellZoom, 1, 1.12, 1);
   const safeRatio = clampNumber(scrollRatio01, 0, 1, 0);
   const srcWidth = Math.max(8, stripWidth / safeZoom);
   const idealHeight = srcWidth / Math.max(0.25, outAspectWidthOverHeight);
   const srcHeight = Math.min(stripHeight, Math.max(8, idealHeight));
-  const srcX = Math.max(0, (stripWidth - srcWidth) * 0.5);
+  const maxSrcX = Math.max(0, stripWidth - srcWidth);
   const maxScrollY = Math.max(0, stripHeight - srcHeight);
-  const srcY = maxScrollY * safeRatio;
+  const srcX = Math.min(maxSrcX, Math.max(0, (stripWidth - srcWidth) * 0.5 + shakeOffsetX));
+  const srcY = Math.min(maxScrollY, Math.max(0, maxScrollY * safeRatio + shakeOffsetY));
   return { srcX, srcY, srcWidth, srcHeight };
+}
+
+function compositeKineticOverlayOnStripCoord(
+  sx: number,
+  sy: number,
+  overlay: CutKineticOverlayPlacement,
+  popAlpha01: number,
+  popScale: number,
+): readonly [number, number, number, number] | null {
+  if (popAlpha01 <= 0.01) return null;
+  const cx = overlay.innerX + overlay.innerWidth * 0.5;
+  const cy = overlay.innerY + overlay.innerHeight * 0.22;
+  const invScale = 1 / Math.max(0.5, popScale);
+  const lx = cx + (sx - cx) * invScale - overlay.innerX;
+  const ly = cy + (sy - cy) * invScale - overlay.innerY;
+  if (lx < 0 || lx >= overlay.innerWidth - 1 || ly < 0 || ly >= overlay.innerHeight - 1) return null;
+  const ix = Math.round(lx);
+  const iy = Math.round(ly);
+  const idx = (iy * overlay.innerWidth + ix) * 4;
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let a = 0;
+  if (overlay.bubbleOverlay) {
+    const ba = ((overlay.bubbleOverlay.rgba[idx + 3] ?? 0) / 255) * popAlpha01;
+    if (ba > 0.01) {
+      r = overlay.bubbleOverlay.rgba[idx] ?? 0;
+      g = overlay.bubbleOverlay.rgba[idx + 1] ?? 0;
+      b = overlay.bubbleOverlay.rgba[idx + 2] ?? 0;
+      a = ba;
+    }
+  }
+  if (overlay.sfxOverlay) {
+    const sa = ((overlay.sfxOverlay.rgba[idx + 3] ?? 0) / 255) * popAlpha01;
+    if (sa > 0.01) {
+      const outA = sa + a * (1 - sa);
+      r = Math.round(((overlay.sfxOverlay.rgba[idx] ?? 0) * sa + r * a * (1 - sa)) / outA);
+      g = Math.round(((overlay.sfxOverlay.rgba[idx + 1] ?? 0) * sa + g * a * (1 - sa)) / outA);
+      b = Math.round(((overlay.sfxOverlay.rgba[idx + 2] ?? 0) * sa + b * a * (1 - sa)) / outA);
+      a = outA;
+    }
+  }
+  return a > 0.01 ? [r, g, b, a] : null;
 }
 
 /**
@@ -199,9 +531,14 @@ export function renderMotionTeaserFrameRgba(
   strip: CapturedRaster,
   outWidth: number,
   outHeight: number,
-  sample: Pick<MotionTeaserFrameSample, "scrollRatio01" | "dwellZoom" | "progress01">,
+  sample: Pick<
+    MotionTeaserFrameSample,
+    "scrollRatio01" | "dwellZoom" | "progress01"
+  > &
+    Partial<Pick<MotionTeaserFrameSample, "cutBubbleAlphas" | "cutBubbleScales" | "shakeOffsetX" | "shakeOffsetY">>,
   moodId: WebtoonManuscriptMoodId = "daylight-paper",
   includeProgressBar = true,
+  kineticOverlays: readonly CutKineticOverlayPlacement[] = [],
 ): CapturedRaster {
   const safeW = Math.max(16, Math.floor(outWidth));
   const safeH = Math.max(16, Math.floor(outHeight));
@@ -215,9 +552,10 @@ export function renderMotionTeaserFrameRgba(
     sample.scrollRatio01,
     sample.dwellZoom,
     safeW / safeH,
+    sample.shakeOffsetX ?? 0,
+    sample.shakeOffsetY ?? 0,
   );
 
-  // 스트립 높이가 9:16 창보다 짧을 경우 수직 중앙 배치
   const aspectRatio = cam.srcWidth / Math.max(1, cam.srcHeight);
   const targetAspect = safeW / safeH;
   const drawHeight = aspectRatio > targetAspect ? Math.max(1, Math.round(safeW / aspectRatio)) : safeH;
@@ -234,6 +572,8 @@ export function renderMotionTeaserFrameRgba(
   const src = strip.rgba;
   const sw = strip.width;
   const sh = strip.height;
+  const alphas = sample.cutBubbleAlphas ?? [1, 1, 1, 1];
+  const scales = sample.cutBubbleScales ?? [1, 1, 1, 1];
 
   for (let py = dstTop; py < dstBottom; py += 1) {
     const ny = drawHeight > 1 ? (py - dstTop) / (drawHeight - 1) : 0;
@@ -259,10 +599,31 @@ export function renderMotionTeaserFrameRgba(
       const i01 = (y1 * sw + x0) * 4;
       const i11 = (y1 * sw + x1) * 4;
 
+      let r = Math.round((src[i00] ?? 0) * w00 + (src[i10] ?? 0) * w10 + (src[i01] ?? 0) * w01 + (src[i11] ?? 0) * w11);
+      let g = Math.round((src[i00 + 1] ?? 0) * w00 + (src[i10 + 1] ?? 0) * w10 + (src[i01 + 1] ?? 0) * w01 + (src[i11 + 1] ?? 0) * w11);
+      let b = Math.round((src[i00 + 2] ?? 0) * w00 + (src[i10 + 2] ?? 0) * w10 + (src[i01 + 2] ?? 0) * w01 + (src[i11 + 2] ?? 0) * w11);
+
+      for (let oi = 0; oi < kineticOverlays.length; oi += 1) {
+        const ov = kineticOverlays[oi]!;
+        const sampledOv = compositeKineticOverlayOnStripCoord(
+          sx,
+          sy,
+          ov,
+          alphas[ov.cutIndex],
+          scales[ov.cutIndex],
+        );
+        if (sampledOv) {
+          const oa = sampledOv[3];
+          r = Math.round(sampledOv[0] * oa + r * (1 - oa));
+          g = Math.round(sampledOv[1] * oa + g * (1 - oa));
+          b = Math.round(sampledOv[2] * oa + b * (1 - oa));
+        }
+      }
+
       const dst = (py * safeW + px) * 4;
-      out[dst] = Math.round((src[i00] ?? 0) * w00 + (src[i10] ?? 0) * w10 + (src[i01] ?? 0) * w01 + (src[i11] ?? 0) * w11);
-      out[dst + 1] = Math.round((src[i00 + 1] ?? 0) * w00 + (src[i10 + 1] ?? 0) * w10 + (src[i01 + 1] ?? 0) * w01 + (src[i11 + 1] ?? 0) * w11);
-      out[dst + 2] = Math.round((src[i00 + 2] ?? 0) * w00 + (src[i10 + 2] ?? 0) * w10 + (src[i01 + 2] ?? 0) * w01 + (src[i11 + 2] ?? 0) * w11);
+      out[dst] = r;
+      out[dst + 1] = g;
+      out[dst + 2] = b;
       out[dst + 3] = 255;
     }
   }
@@ -297,7 +658,7 @@ function toMotionFailure(code: string, reasonKo: string, error: unknown, now: nu
 }
 
 /**
- * 4컷 웹툰 스트립을 캡처·합성한 뒤 오토패닝 타임라인 스케줄에 맞춰 9:16 WebM 비디오 바이트로 내보낸다.
+ * 4컷 웹툰 스트립을 캡처·합성한 뒤 오토패닝·말풍선 팝인·Web Audio 효과음 스케줄에 맞춰 9:16 WebM 비디오로 내보낸다.
  */
 export async function exportWebtoonMotionTeaserWebm(
   engine: CharacterEngine,
@@ -307,19 +668,53 @@ export async function exportWebtoonMotionTeaserWebm(
 ): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
-  const captured = await captureWebtoonVerticalStripRaster(engine, options, { now });
+  const useKineticPopIn = options.kineticPopIn !== false && options.mangaFx?.enabled === true;
+
+  // 키네틱 팝인 활성 시 베이스 스트립에는 배경·스크린톤·효과선·캐릭터만 굽고, 말풍선·효과음은 컷별 투명 오버레이로 분리해 팝인 애니메이션을 준다.
+  const captureOptions: ExportWebtoonVerticalStripOptions = useKineticPopIn && options.mangaFx
+    ? {
+        ...options,
+        mangaFx: {
+          ...options.mangaFx,
+          includeSpeechBubbles: false,
+          sfxStamps: ["none", "none", "none", "none"],
+        },
+      }
+    : options;
+
+  const captured = await captureWebtoonVerticalStripRaster(engine, captureOptions, { now });
   if (!captured.ok) return captured;
 
   const presetSpec =
     WEBTOON_MOTION_TEASER_RESOLUTIONS[options.resolutionPreset ?? "sd-540x960"] ??
     WEBTOON_MOTION_TEASER_RESOLUTIONS["sd-540x960"];
   const gutterPaces = options.gutterPaces ?? DEFAULT_WEBTOON_STRIP_GUTTER_PACES;
+  const activeSfxStamps: WebtoonStripSfxStamps =
+    options.mangaFx?.enabled && options.mangaFx.sfxStamps
+      ? options.mangaFx.sfxStamps
+      : DEFAULT_WEBTOON_STRIP_SFX_STAMPS;
+
   const schedule = planMotionTeaserSchedule(captured.layout, gutterPaces, {
     ...(options.fps !== undefined ? { fps: options.fps } : {}),
     ...(options.playbackSpeed !== undefined ? { speed: options.playbackSpeed } : {}),
+    sfxStamps: activeSfxStamps,
   });
 
+  const kineticOverlays = useKineticPopIn ? buildCutKineticOverlays(captured.layout, options.mangaFx) : [];
+  const audioPcm =
+    options.synthesizeAudioSfx !== false ? synthesizeMotionTeaserAudioPcm(schedule, activeSfxStamps) : null;
+
+  const stripBytes = captured.composed.rgba.byteLength;
+  const outFrameBytes = presetSpec.width * presetSpec.height * 4;
+  const overlayBytes = kineticOverlays.reduce(
+    (sum, ov) => sum + (ov.bubbleOverlay?.rgba.byteLength ?? 0) + (ov.sfxOverlay?.rgba.byteLength ?? 0),
+    0,
+  );
+  const audioBytes = audioPcm?.samples.byteLength ?? 0;
+  const peakRasterMb = Number(((stripBytes + outFrameBytes + overlayBytes + audioBytes) / (1024 * 1024)).toFixed(2));
+
   try {
+    const encodeStarted = now();
     const bytes = await encodeWebm({
       strip: captured.composed,
       layout: captured.layout,
@@ -327,6 +722,8 @@ export async function exportWebtoonMotionTeaserWebm(
       outWidth: presetSpec.width,
       outHeight: presetSpec.height,
       moodId: captured.effectiveMood,
+      ...(kineticOverlays.length > 0 ? { kineticOverlays } : {}),
+      audioPcm,
       onFrameProgress: (frameIdx, totalFrames, cutIdx) => {
         if (frameIdx === 0 || frameIdx === totalFrames - 1 || frameIdx % 8 === 0) {
           options.onProgress?.(
@@ -349,9 +746,18 @@ export async function exportWebtoonMotionTeaserWebm(
       };
     }
 
+    const encodeDurationMs = Math.max(0, now() - encodeStarted);
+    const motionMetrics: MotionTeaserReceiptMetrics = {
+      frameCount: schedule.frameCount,
+      avgFrameMs: Number((encodeDurationMs / Math.max(1, schedule.frameCount)).toFixed(2)),
+      peakRasterMb,
+      audioEvents: audioPcm?.eventCount ?? 0,
+    };
+
     const baseName = exportFileName("webm", captured.provenance.recipeDigest, presetSpec.width, presetSpec.height);
     const speedTag = schedule.speed !== 1 ? `-${String(schedule.speed).replace(".", "_")}x` : "";
-    const fileName = baseName.replace(/\.webm$/u, `${captured.suffixTags}${speedTag}-teaser.webm`);
+    const sfxTag = (audioPcm?.eventCount ?? 0) > 0 ? "-sfx" : "";
+    const fileName = baseName.replace(/\.webm$/u, `${captured.suffixTags}${sfxTag}${speedTag}-teaser.webm`);
     return {
       ok: true,
       bytes,
@@ -364,6 +770,7 @@ export async function exportWebtoonMotionTeaserWebm(
         height: presetSpec.height,
         settleSteps: captured.settleSteps,
         provenance: captured.provenance,
+        motion: motionMetrics,
         durationMs: now() - started,
       },
     };

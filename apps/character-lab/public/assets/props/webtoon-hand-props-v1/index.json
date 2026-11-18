@@ -75,6 +75,24 @@
       "bytes": 20852,
       "sha256": "d0ab036ca3f079d3745fe2850c732f1f801c4f603ed0e6317452a6771f656d12",
       "triangles": 116
+    },
+    {
+      "id": "idol-prism-lightstick",
+      "labelKo": "아이돌 프리즘 응원봉·마이크",
+      "meshName": "TS_Prop_idol-prism-lightstick",
+      "path": "idol-prism-lightstick.glb",
+      "bytes": 36640,
+      "sha256": "d27ead99905d12e842fc80fff315f70bf67892a1de41001b35c5423647a170d0",
+      "triangles": 564
+    },
+    {
+      "id": "varsity-basketball",
+      "labelKo": "체전 에이스 농구공",
+      "meshName": "TS_Prop_varsity-basketball",
+      "path": "varsity-basketball.glb",
+      "bytes": 42488,
+      "sha256": "1283f60ba4e0f85fd75298655bbaef59f367698b7b7c7c9c3c333a73672e9c19",
+      "triangles": 828
     }
   ]
 }

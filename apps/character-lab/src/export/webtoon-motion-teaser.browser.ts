@@ -1,18 +1,29 @@
 /**
- * 브라우저 전용 9:16 숏폼 모션 코믹 티저 WebM 인코더 (`MediaRecorder` + `HTMLCanvasElement.captureStream`).
+ * 브라우저 전용 9:16 숏폼 모션 코믹 티저 WebM 인코더 (`MediaRecorder` + `HTMLCanvasElement.captureStream` + `AudioContext`).
  *
  * Canvas/WebGPU Guard 준수:
- * - 인코딩 완료 또는 예외 발생 시 `finally` 블록에서 미디어 스트림 트랙을 즉시 종료하고
- *   임시 캔버스(`stripCanvas`, `outCanvas`) 크기를 `0×0`으로 되돌려 GPU/래스터 메모리를 반환한다.
+ * - 컷별 키네틱 오버레이(말풍선 팝인 + 효과음 스탬프)를 일회성 2D 캔버스로 준비해 프레임 루프 중 추가 할당을 막는다.
+ * - 절차적 Web Audio PCM 트랙이 있는 경우 `MediaStreamAudioDestinationNode`로 멀티플렉싱한다.
+ * - 완료/예외 시 `finally`에서 오디오 소스·컨텍스트, 스트림 트랙, 모든 임시 캔버스(`0×0`)를 결정적으로 해제한다.
  */
 import { failVisible } from "../contracts";
 
 import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-composer";
 import { computeMotionTeaserCameraWindow } from "./webtoon-motion-teaser";
 
-import type { EncodeMotionTeaserWebmFn, EncodeMotionTeaserWebmRequest } from "./webtoon-motion-teaser";
+import type {
+  CutKineticOverlayPlacement,
+  EncodeMotionTeaserWebmFn,
+  EncodeMotionTeaserWebmRequest,
+} from "./webtoon-motion-teaser";
 
-const WEBM_CODEC_CANDIDATES = [
+const WEBM_VIDEO_AUDIO_CODECS = [
+  "video/webm;codecs=vp9,opus",
+  "video/webm;codecs=vp8,opus",
+  "video/webm",
+] as const;
+
+const WEBM_VIDEO_ONLY_CODECS = [
   "video/webm;codecs=vp9",
   "video/webm;codecs=vp8",
   "video/webm",
@@ -26,13 +37,39 @@ type CanvasWithCaptureStream = Omit<HTMLCanvasElement, "captureStream"> & {
   captureStream?: (frameRate?: number) => MediaStream;
 };
 
-function selectSupportedWebmMime(): string | null {
+interface PreparedOverlayCanvas {
+  readonly placement: CutKineticOverlayPlacement;
+  readonly bubbleCanvas: HTMLCanvasElement | null;
+  readonly sfxCanvas: HTMLCanvasElement | null;
+}
+
+function selectSupportedWebmMime(withAudio: boolean): string | null {
   if (typeof MediaRecorder === "undefined") return null;
   if (typeof MediaRecorder.isTypeSupported !== "function") return "video/webm";
-  for (const candidate of WEBM_CODEC_CANDIDATES) {
+  const list = withAudio ? WEBM_VIDEO_AUDIO_CODECS : WEBM_VIDEO_ONLY_CODECS;
+  for (const candidate of list) {
     if (MediaRecorder.isTypeSupported(candidate)) return candidate;
   }
+  for (const fallback of WEBM_VIDEO_ONLY_CODECS) {
+    if (MediaRecorder.isTypeSupported(fallback)) return fallback;
+  }
   return null;
+}
+
+function rasterToCanvas(width: number, height: number, rgba: Uint8ClampedArray): HTMLCanvasElement | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    canvas.width = 0;
+    canvas.height = 0;
+    return null;
+  }
+  const copy = new Uint8ClampedArray(rgba.length);
+  copy.set(rgba);
+  ctx.putImageData(new ImageData(copy, width, height), 0, 0);
+  return canvas;
 }
 
 function waitMs(ms: number): Promise<void> {
@@ -47,7 +84,8 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
   if (typeof document === "undefined") {
     throw failVisible("motion-webm-unsupported", "브라우저 DOM 환경이 아니어서 WebM 비디오를 인코딩할 수 없습니다.");
   }
-  const mimeType = selectSupportedWebmMime();
+  const wantsAudio = Boolean(request.audioPcm && request.audioPcm.eventCount > 0 && typeof AudioContext !== "undefined");
+  const mimeType = selectSupportedWebmMime(wantsAudio);
   if (!mimeType) {
     throw failVisible(
       "motion-webm-unsupported",
@@ -55,10 +93,14 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
     );
   }
 
-  const { strip, schedule, outWidth, outHeight, moodId, onFrameProgress } = request;
+  const { strip, schedule, outWidth, outHeight, moodId, kineticOverlays = [], audioPcm, onFrameProgress } = request;
   const stripCanvas = document.createElement("canvas");
+  const composedStripCanvas = document.createElement("canvas");
   const outCanvas = document.createElement("canvas") as CanvasWithCaptureStream;
+  const preparedOverlays: PreparedOverlayCanvas[] = [];
   let stream: MediaStream | null = null;
+  let audioCtx: AudioContext | null = null;
+  let audioSource: AudioBufferSourceNode | null = null;
 
   try {
     stripCanvas.width = strip.width;
@@ -70,6 +112,21 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
     const imageBytes = new Uint8ClampedArray(strip.rgba.length);
     imageBytes.set(strip.rgba);
     stripCtx.putImageData(new ImageData(imageBytes, strip.width, strip.height), 0, 0);
+
+    composedStripCanvas.width = strip.width;
+    composedStripCanvas.height = strip.height;
+    const composedCtx = composedStripCanvas.getContext("2d");
+    if (!composedCtx) {
+      throw failVisible("motion-webm-canvas", "키네틱 합성용 2D 캔버스 컨텍스트를 생성하지 못했습니다.");
+    }
+
+    for (const ov of kineticOverlays) {
+      preparedOverlays.push({
+        placement: ov,
+        bubbleCanvas: ov.bubbleOverlay ? rasterToCanvas(ov.bubbleOverlay.width, ov.bubbleOverlay.height, ov.bubbleOverlay.rgba) : null,
+        sfxCanvas: ov.sfxOverlay ? rasterToCanvas(ov.sfxOverlay.width, ov.sfxOverlay.height, ov.sfxOverlay.rgba) : null,
+      });
+    }
 
     outCanvas.width = outWidth;
     outCanvas.height = outHeight;
@@ -90,12 +147,39 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
     const drawSampleFrame = (frameIdx: number): void => {
       const sample = schedule.frames[frameIdx];
       if (!sample) return;
+
+      composedCtx.clearRect(0, 0, strip.width, strip.height);
+      composedCtx.drawImage(stripCanvas, 0, 0);
+
+      for (const prep of preparedOverlays) {
+        const cutIdx = prep.placement.cutIndex;
+        const alpha = sample.cutBubbleAlphas[cutIdx];
+        const scale = sample.cutBubbleScales[cutIdx];
+        if (alpha <= 0.01) continue;
+        const pivotX = prep.placement.innerX + prep.placement.innerWidth * 0.5;
+        const pivotY = prep.placement.innerY + prep.placement.innerHeight * 0.22;
+        composedCtx.save();
+        composedCtx.globalAlpha = alpha;
+        composedCtx.translate(pivotX, pivotY);
+        composedCtx.scale(scale, scale);
+        composedCtx.translate(-pivotX, -pivotY);
+        if (prep.bubbleCanvas) {
+          composedCtx.drawImage(prep.bubbleCanvas, prep.placement.innerX, prep.placement.innerY);
+        }
+        if (prep.sfxCanvas) {
+          composedCtx.drawImage(prep.sfxCanvas, prep.placement.innerX, prep.placement.innerY);
+        }
+        composedCtx.restore();
+      }
+
       const cam = computeMotionTeaserCameraWindow(
         strip.width,
         strip.height,
         sample.scrollRatio01,
         sample.dwellZoom,
         outWidth / outHeight,
+        sample.shakeOffsetX,
+        sample.shakeOffsetY,
       );
       const srcAspect = cam.srcWidth / Math.max(1, cam.srcHeight);
       const dstAspect = outWidth / outHeight;
@@ -105,7 +189,7 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
       outCtx.fillStyle = marginFill;
       outCtx.fillRect(0, 0, outWidth, outHeight);
       outCtx.drawImage(
-        stripCanvas,
+        composedStripCanvas,
         cam.srcX,
         cam.srcY,
         cam.srcWidth,
@@ -126,6 +210,24 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
     stream = outCanvas.captureStream(schedule.fps);
     const videoTrack = (stream.getVideoTracks()[0] ?? null) as CaptureTrackWithRequestFrame | null;
 
+    if (wantsAudio && audioPcm && audioPcm.eventCount > 0) {
+      try {
+        audioCtx = new AudioContext({ sampleRate: audioPcm.sampleRate });
+        const buffer = audioCtx.createBuffer(1, audioPcm.samples.length, audioPcm.sampleRate);
+        buffer.getChannelData(0).set(audioPcm.samples);
+        const dest = audioCtx.createMediaStreamDestination();
+        audioSource = audioCtx.createBufferSource();
+        audioSource.buffer = buffer;
+        audioSource.connect(dest);
+        const audioTrack = dest.stream.getAudioTracks()[0];
+        if (audioTrack) {
+          stream.addTrack(audioTrack);
+        }
+      } catch {
+        // 브라우저 오디오 자동재생 정책 등으로 실패해도 비디오 인코딩은 중단 없이 계속 진행한다
+      }
+    }
+
     const chunks: Blob[] = [];
     const recorder = new MediaRecorder(stream, {
       mimeType,
@@ -144,6 +246,16 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
 
     const frameIntervalMs = Math.max(16, Math.round(1000 / schedule.fps));
     recorder.start(Math.max(100, frameIntervalMs * 6));
+    if (audioCtx && audioSource) {
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume().catch(() => undefined);
+      }
+      try {
+        audioSource.start(0);
+      } catch {
+        // 오디오 시작 실패 무시
+      }
+    }
 
     for (let idx = 0; idx < schedule.frames.length; idx += 1) {
       const sample = schedule.frames[idx]!;
@@ -162,13 +274,33 @@ export const encodeMotionTeaserWebmBrowser: EncodeMotionTeaserWebmFn = async (
     const arrayBuffer = await mergedBlob.arrayBuffer();
     return new Uint8Array(arrayBuffer);
   } finally {
+    try {
+      audioSource?.stop();
+    } catch {
+      // 이미 정지된 경우 무시
+    }
+    if (audioCtx) {
+      void audioCtx.close().catch(() => undefined);
+    }
     if (stream) {
       for (const track of stream.getTracks()) {
         track.stop();
       }
     }
+    for (const prep of preparedOverlays) {
+      if (prep.bubbleCanvas) {
+        prep.bubbleCanvas.width = 0;
+        prep.bubbleCanvas.height = 0;
+      }
+      if (prep.sfxCanvas) {
+        prep.sfxCanvas.width = 0;
+        prep.sfxCanvas.height = 0;
+      }
+    }
     stripCanvas.width = 0;
     stripCanvas.height = 0;
+    composedStripCanvas.width = 0;
+    composedStripCanvas.height = 0;
     outCanvas.width = 0;
     outCanvas.height = 0;
   }
