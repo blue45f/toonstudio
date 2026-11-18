@@ -11,11 +11,11 @@ import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
 import { bakeDeterministicDialogueGlyphs, splitLocalizedBubbleDialogue } from "./webtoon-strip-bubbles";
-import { gradeCharacterPixelByMood } from "./webtoon-strip-composer";
 import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-pacing-tategaki";
 import { drawClippedLineRgba } from "./webtoon-strip-raster";
 import { bakePanelHalftoneScreentone } from "./webtoon-strip-screentone";
 import {
+  blitMoodGradedCharacterFit,
   drawCornerCropMarks,
   drawOutlineBox,
   fillRectBooklet,
@@ -80,45 +80,6 @@ const defaultNow = (): number => Date.now();
 
 function toBookletFailure(code: string, reasonKo: string, error: unknown, now: number): LabFailure {
   return isLabFailure(error) ? error : failVisible(code, reasonKo, error, now);
-}
-
-function blitMoodGradedCharacterFit(
-  dstRgba: Uint8ClampedArray,
-  dstW: number,
-  dstH: number,
-  src: CapturedRaster,
-  boxX: number,
-  boxY: number,
-  boxW: number,
-  boxH: number,
-  moodId: WebtoonManuscriptMoodId,
-): void {
-  const moodSpec = WEBTOON_MANUSCRIPT_MOODS[moodId] ?? WEBTOON_MANUSCRIPT_MOODS["daylight-paper"];
-  for (let py = 0; py < boxH; py += 1) {
-    const sy = Math.min(src.height - 1, Math.floor((py / Math.max(1, boxH - 1)) * (src.height - 1)));
-    const gy = boxY + py;
-    if (gy < 0 || gy >= dstH) continue;
-    for (let px = 0; px < boxW; px += 1) {
-      const sx = Math.min(src.width - 1, Math.floor((px / Math.max(1, boxW - 1)) * (src.width - 1)));
-      const gx = boxX + px;
-      if (gx < 0 || gx >= dstW) continue;
-      const sIdx = (sy * src.width + sx) * 4;
-      const sA = src.rgba[sIdx + 3] ?? 0;
-      if (sA === 0) continue;
-      const [gr, gg, gb] = gradeCharacterPixelByMood(
-        src.rgba[sIdx] ?? 0,
-        src.rgba[sIdx + 1] ?? 0,
-        src.rgba[sIdx + 2] ?? 0,
-        moodSpec,
-      );
-      const dIdx = (gy * dstW + gx) * 4;
-      const alpha = sA / 255;
-      dstRgba[dIdx] = Math.round(gr * alpha + (dstRgba[dIdx] ?? 255) * (1 - alpha));
-      dstRgba[dIdx + 1] = Math.round(gg * alpha + (dstRgba[dIdx + 1] ?? 255) * (1 - alpha));
-      dstRgba[dIdx + 2] = Math.round(gb * alpha + (dstRgba[dIdx + 2] ?? 255) * (1 - alpha));
-      dstRgba[dIdx + 3] = 255;
-    }
-  }
 }
 
 export function buildTankobonChaptersFromBeats(

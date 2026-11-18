@@ -20,6 +20,7 @@ import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../ex
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
 import { getDefaultEpisodeCutsheetStore } from "../../../export/webtoon-episode-cutsheet";
 import { encodeMotionTeaserWebmBrowser } from "../../../export/webtoon-motion-teaser.browser";
+import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
@@ -31,8 +32,11 @@ import {
 
 import {
   buildLayeredPsdOptions,
+  buildSavedCutsheetOutcome,
   buildStripExportOptions,
+  bytesToPreviewUrl,
   ensureBrowserPackageRegistered,
+  loadAndApplyCutsheetFile,
   resolveHairSplitReasonKo,
   revokePreviewState,
 } from "./export-panel/export-cutsheet-actions";
@@ -327,7 +331,6 @@ export function ExportPanel({
     onWebtoonTankobonCoverPng,
     onWebtoonTankobonTocPng,
     onWebtoonTankobonSpreadPng,
-    onOpenWebtoonReaderPreview,
     onWebtoonMotionWebm,
     onWebtoonMotionWav,
     onWebtoonMotionVtt,
@@ -336,37 +339,85 @@ export function ExportPanel({
     onExportBatchAudioWav,
     onExportBatchWebVtt,
     onExportStoryboardMd,
-    onSaveCutsheetJson,
-    onLoadCutsheetFile,
   } = createWebtoonExportActions({
     width,
-    height,
     framing,
     settleSteps,
     directorState,
-    stripDirector,
-    cutsheetStore,
-    applyPlan,
     labState,
+    applyPlan,
     catalog,
-    now,
-    readFile,
-    encodeMotionWebm,
+    cutsheetStore,
     buildStripOptions,
-    mountedRef,
     lastMotionSpeedRef,
-    lastCutsheetFileRef,
+    encodeMotionWebm,
+    now,
     run,
-    requireEngine,
     finish,
-    reportFailure,
-    replaceReaderPreview,
-    setProgressDetail,
-    setFailure,
-    setFailedKind,
-    setNotices,
-    setReceipt,
+    requireEngine,
+    onProgress: (step, total, labelKo) => {
+      if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
+    },
   });
+
+  const onOpenWebtoonReaderPreview = (): void => {
+    void run("webtoon-reader", async () => {
+      const engine = requireEngine("webtoon-reader");
+      if (!engine) return;
+      const outcome = await exportWebtoonVerticalStripPng(engine, buildStripOptions(), { now });
+      if (!outcome.ok) {
+        reportFailure(outcome.failure, "webtoon-reader");
+        return;
+      }
+      if (!mountedRef.current) return;
+      const previewUrl = bytesToPreviewUrl(outcome.bytes, outcome.receipt.mime);
+      replaceReaderPreview({
+        url: previewUrl.url,
+        revocable: previewUrl.revocable,
+        width: outcome.receipt.width ?? width,
+        height: outcome.receipt.height ?? height,
+      });
+      setFailure(null);
+      setFailedKind(null);
+      setNotices(["모바일 웹툰 리더 및 스크롤 호흡 연동 오토패닝 미리보기를 열었습니다."]);
+    });
+  };
+
+  const onSaveCutsheetJson = (): void => {
+    void run("cutsheet", async () => {
+      const outcome = buildSavedCutsheetOutcome(cutsheetStore, now);
+      if (!outcome.ok) {
+        reportFailure(outcome.failure, "cutsheet");
+        return;
+      }
+      finish("cutsheet", outcome, [outcome.noticeKo]);
+    });
+  };
+
+  const onLoadCutsheetFile = (file: File | undefined): void => {
+    if (!file) return;
+    lastCutsheetFileRef.current = file;
+    void run("cutsheet-import", async () => {
+      if (mountedRef.current) setProgressDetail(file.name);
+      const outcome = await loadAndApplyCutsheetFile({
+        file,
+        readFile,
+        now,
+        isMounted: () => mountedRef.current,
+        cutsheetStore,
+        stripDirector,
+      });
+      if (!outcome.ok) {
+        reportFailure(outcome.failure, "cutsheet-import");
+        return;
+      }
+      if (!mountedRef.current) return;
+      setFailure(null);
+      setFailedKind(null);
+      setNotices([outcome.noticeKo]);
+      setReceipt(outcome.receipt);
+    });
+  };
 
   const onPsd = (): void => {
     void run("psd", async () => {

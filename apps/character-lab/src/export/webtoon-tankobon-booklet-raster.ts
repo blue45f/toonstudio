@@ -1,4 +1,10 @@
-/** 단행본 표지·목차의 RGBA 도형·재단선·비트맵 문자 그리기. */
+/** 단행본 조판에 쓰이는 결정적 래스터 도형·문자·인물 합성 보조 함수다. */
+import { gradeCharacterPixelByMood } from "./webtoon-strip-composer";
+import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-pacing-tategaki";
+
+import type { WebtoonManuscriptMoodId } from "./webtoon-strip-composer";
+import type { CapturedRaster } from "../contracts";
+
 /** 대문자 영문·숫자·기호 3×5 비트맵 폰트 (`VOL.01`, `CONTENTS`, `CH.01`, `P.03`, `ISBN` 표기용) */
 const ASCII_BITMAP_3X5: Readonly<Record<string, readonly [number, number, number, number, number]>> = Object.freeze({
   A: [0b010, 0b101, 0b111, 0b101, 0b101],
@@ -142,4 +148,43 @@ export function stampAsciiBitmapText(
     cursorX += glyphW + spacing;
   }
   return cursorX - Math.round(x);
+}
+
+export function blitMoodGradedCharacterFit(
+  dstRgba: Uint8ClampedArray,
+  dstW: number,
+  dstH: number,
+  src: CapturedRaster,
+  boxX: number,
+  boxY: number,
+  boxW: number,
+  boxH: number,
+  moodId: WebtoonManuscriptMoodId,
+): void {
+  const moodSpec = WEBTOON_MANUSCRIPT_MOODS[moodId] ?? WEBTOON_MANUSCRIPT_MOODS["daylight-paper"];
+  for (let py = 0; py < boxH; py += 1) {
+    const sy = Math.min(src.height - 1, Math.floor((py / Math.max(1, boxH - 1)) * (src.height - 1)));
+    const gy = boxY + py;
+    if (gy < 0 || gy >= dstH) continue;
+    for (let px = 0; px < boxW; px += 1) {
+      const sx = Math.min(src.width - 1, Math.floor((px / Math.max(1, boxW - 1)) * (src.width - 1)));
+      const gx = boxX + px;
+      if (gx < 0 || gx >= dstW) continue;
+      const sIdx = (sy * src.width + sx) * 4;
+      const sA = src.rgba[sIdx + 3] ?? 0;
+      if (sA === 0) continue;
+      const [gr, gg, gb] = gradeCharacterPixelByMood(
+        src.rgba[sIdx] ?? 0,
+        src.rgba[sIdx + 1] ?? 0,
+        src.rgba[sIdx + 2] ?? 0,
+        moodSpec,
+      );
+      const dIdx = (gy * dstW + gx) * 4;
+      const alpha = sA / 255;
+      dstRgba[dIdx] = Math.round(gr * alpha + (dstRgba[dIdx] ?? 255) * (1 - alpha));
+      dstRgba[dIdx + 1] = Math.round(gg * alpha + (dstRgba[dIdx + 1] ?? 255) * (1 - alpha));
+      dstRgba[dIdx + 2] = Math.round(gb * alpha + (dstRgba[dIdx + 2] ?? 255) * (1 - alpha));
+      dstRgba[dIdx + 3] = 255;
+    }
+  }
 }

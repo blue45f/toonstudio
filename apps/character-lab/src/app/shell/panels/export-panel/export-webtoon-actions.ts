@@ -1,7 +1,3 @@
-/**
- * 웹툰 단일·에피소드 출고 명령.
- * 상태·저장·실패·재시도 권한은 ExportPanel에서 주입받아 같은 실행 경계를 유지한다.
- */
 import {
   exportEpisodeCutsheetAudioWav,
   exportEpisodeCutsheetLongStripPng,
@@ -23,78 +19,54 @@ import {
 import { exportWebtoonTankobonPagePng } from "../../../../export/webtoon-tankobon-page";
 import { planApply } from "../../../../state/apply-plan";
 
-import { buildSavedCutsheetOutcome, bytesToPreviewUrl, loadAndApplyCutsheetFile } from "./export-cutsheet-actions";
-
-import type { ReaderPreviewState } from "./export-cutsheet-actions";
 import type { ExportBusyKind } from "./ExportStatusSection";
-import type { ApplyPlan, CameraFramingMode, CharacterEngine, LabFailure, LabState, PresetCatalog } from "../../../../contracts";
-import type { ExportOutcome, ExportReceipt } from "../../../../export/export-session";
+import type { ApplyPlan, CameraFramingMode, CharacterEngine, LabState, PresetCatalog } from "../../../../contracts";
+import type { ExportOutcome } from "../../../../export/export-session";
 import type { EpisodeCutsheetStore } from "../../../../export/webtoon-episode-cutsheet";
 import type { EncodeMotionTeaserWebmFn } from "../../../../export/webtoon-motion-teaser";
 import type { ExportWebtoonVerticalStripOptions } from "../../../../export/webtoon-strip-composer";
-import type { StripDirectorSession, StripDirectorState } from "../viewport-scene-director";
+import type { StripDirectorState } from "../viewport-scene-director";
 import type { RefObject } from "react";
 
-interface WebtoonExportActionsOptions {
+interface WebtoonExportActionsDeps {
   readonly width: number;
-  readonly height: number;
   readonly framing: CameraFramingMode;
   readonly settleSteps: number;
   readonly directorState: StripDirectorState;
-  readonly stripDirector: StripDirectorSession;
-  readonly cutsheetStore: EpisodeCutsheetStore;
-  readonly applyPlan: ApplyPlan | null | undefined;
-  readonly labState: LabState;
+  readonly labState: Pick<LabState, "recipe" | "capabilities">;
+  readonly applyPlan: ApplyPlan | null;
   readonly catalog: PresetCatalog;
-  readonly now: () => number;
-  readonly readFile: (file: File) => Promise<string>;
-  readonly encodeMotionWebm: EncodeMotionTeaserWebmFn;
+  readonly cutsheetStore: EpisodeCutsheetStore;
   readonly buildStripOptions: () => ExportWebtoonVerticalStripOptions;
-  readonly mountedRef: RefObject<boolean>;
   readonly lastMotionSpeedRef: RefObject<number>;
-  readonly lastCutsheetFileRef: RefObject<File | undefined>;
+  readonly encodeMotionWebm: EncodeMotionTeaserWebmFn;
+  readonly now: () => number;
   readonly run: (kind: ExportBusyKind, task: () => Promise<void>) => Promise<void>;
-  readonly requireEngine: (kind: ExportBusyKind) => CharacterEngine | null;
   readonly finish: (kind: ExportBusyKind, outcome: ExportOutcome, extraNotices?: readonly string[]) => boolean;
-  readonly reportFailure: (failure: LabFailure, kind: ExportBusyKind) => void;
-  readonly replaceReaderPreview: (preview: ReaderPreviewState | null) => void;
-  readonly setProgressDetail: (detail: string | null) => void;
-  readonly setFailure: (failure: LabFailure | null) => void;
-  readonly setFailedKind: (kind: ExportBusyKind | null) => void;
-  readonly setNotices: (notices: readonly string[]) => void;
-  readonly setReceipt: (receipt: ExportReceipt | null) => void;
+  readonly requireEngine: (kind: ExportBusyKind) => CharacterEngine | null;
+  readonly onProgress: (step: number, total: number, labelKo: string) => void;
 }
 
-export function createWebtoonExportActions(options: WebtoonExportActionsOptions) {
+/** 저장 액션만 조립하며, 실행 잠금·실패·재시도·마운트 상태는 ExportPanel이 관리한다. */
+export function createWebtoonExportActions(deps: WebtoonExportActionsDeps) {
   const {
     width,
-    height,
     framing,
     settleSteps,
     directorState,
-    stripDirector,
-    cutsheetStore,
-    applyPlan,
     labState,
+    applyPlan,
     catalog,
-    now,
-    readFile,
-    encodeMotionWebm,
+    cutsheetStore,
     buildStripOptions,
-    mountedRef,
     lastMotionSpeedRef,
-    lastCutsheetFileRef,
+    encodeMotionWebm,
+    now,
     run,
-    requireEngine,
     finish,
-    reportFailure,
-    replaceReaderPreview,
-    setProgressDetail,
-    setFailure,
-    setFailedKind,
-    setNotices,
-    setReceipt,
-  } = options;
+    requireEngine,
+    onProgress,
+  } = deps;
   const {
     locale: stripLocale,
     tankobonOrder,
@@ -155,9 +127,7 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
       settleSteps,
       includeCropMarks: true,
       beats: cs.beats,
-      onProgress: (step: number, total: number, labelKo: string) => {
-        if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
-      },
+      onProgress,
     };
   };
 
@@ -194,29 +164,6 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
         await exportWebtoonTankobonSpreadPng(engine, buildBookletOptions(), { now }),
         ["표지와 목차를 중앙 책등 접지선이 포함된 B5 양면 펼침면 인쇄 교정 대지 PNG로 저장했습니다."],
       );
-    });
-  };
-
-  const onOpenWebtoonReaderPreview = (): void => {
-    void run("webtoon-reader", async () => {
-      const engine = requireEngine("webtoon-reader");
-      if (!engine) return;
-      const outcome = await exportWebtoonVerticalStripPng(engine, buildStripOptions(), { now });
-      if (!outcome.ok) {
-        reportFailure(outcome.failure, "webtoon-reader");
-        return;
-      }
-      if (!mountedRef.current) return;
-      const previewUrl = bytesToPreviewUrl(outcome.bytes, outcome.receipt.mime);
-      replaceReaderPreview({
-        url: previewUrl.url,
-        revocable: previewUrl.revocable,
-        width: outcome.receipt.width ?? width,
-        height: outcome.receipt.height ?? height,
-      });
-      setFailure(null);
-      setFailedKind(null);
-      setNotices(["모바일 웹툰 리더 및 스크롤 호흡 연동 오토패닝 미리보기를 열었습니다."]);
     });
   };
 
@@ -299,9 +246,7 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
             requestedStripWidth: width,
             basePlan: effectiveBasePlan,
             settleSteps,
-            onProgress: (step, total, labelKo) => {
-              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
-            },
+            onProgress,
           },
           { now },
         ),
@@ -330,9 +275,7 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
             includeAmbientBgm,
             basePlan: effectiveBasePlan,
             settleSteps,
-            onProgress: (step, total, labelKo) => {
-              if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
-            },
+            onProgress,
           },
           encodeMotionWebm,
           { now },
@@ -389,49 +332,12 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
     });
   };
 
-  const onSaveCutsheetJson = (): void => {
-    void run("cutsheet", async () => {
-      const outcome = buildSavedCutsheetOutcome(cutsheetStore, now);
-      if (!outcome.ok) {
-        reportFailure(outcome.failure, "cutsheet");
-        return;
-      }
-      finish("cutsheet", outcome, [outcome.noticeKo]);
-    });
-  };
-
-  const onLoadCutsheetFile = (file: File | undefined): void => {
-    if (!file) return;
-    lastCutsheetFileRef.current = file;
-    void run("cutsheet-import", async () => {
-      if (mountedRef.current) setProgressDetail(file.name);
-      const outcome = await loadAndApplyCutsheetFile({
-        file,
-        readFile,
-        now,
-        isMounted: () => mountedRef.current,
-        cutsheetStore,
-        stripDirector,
-      });
-      if (!outcome.ok) {
-        reportFailure(outcome.failure, "cutsheet-import");
-        return;
-      }
-      if (!mountedRef.current) return;
-      setFailure(null);
-      setFailedKind(null);
-      setNotices([outcome.noticeKo]);
-      setReceipt(outcome.receipt);
-    });
-  };
-
   return {
     onWebtoonStripPng,
     onWebtoonTankobonPng,
     onWebtoonTankobonCoverPng,
     onWebtoonTankobonTocPng,
     onWebtoonTankobonSpreadPng,
-    onOpenWebtoonReaderPreview,
     onWebtoonMotionWebm,
     onWebtoonMotionWav,
     onWebtoonMotionVtt,
@@ -440,7 +346,5 @@ export function createWebtoonExportActions(options: WebtoonExportActionsOptions)
     onExportBatchAudioWav,
     onExportBatchWebVtt,
     onExportStoryboardMd,
-    onSaveCutsheetJson,
-    onLoadCutsheetFile,
   };
 }
