@@ -35,7 +35,6 @@ import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCa
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
-import { HAND_PROP_PART_ID, attachHandPropToRig } from "./hand-prop-attachment";
 import { createHudProbe } from "./hud";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
@@ -47,10 +46,10 @@ import { createPhysicsBridge } from "./physics-bridge";
 import { attachDecalToMesh, createPaintTextures, pickRig } from "./pick-and-paint";
 import { createPostProcessStack } from "./postprocess";
 import { createCharacterScene, inspectCharacterScene } from "./scene-builder";
+import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { HandPropHandle } from "./hand-prop-attachment";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -65,7 +64,9 @@ import type {
   EngineBackend,
   EngineDiagnostics,
   HandPropAttachment,
+  HeadPropAttachment,
   HudSample,
+  StagePropAttachment,
   JointDragHandle,
   KitPlan,
   LabFailure,
@@ -204,8 +205,15 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   private shading: ShadingProfile = DEFAULT_SHADING;
   private framing: CameraFraming = DEFAULT_FRAMING;
   private lastPlan: ApplyPlan | null = null;
-  private activeHandProp: HandPropAttachment | null = null;
-  private handPropHandle: HandPropHandle | null = null;
+  private readonly sceneProps = createScenePropController({
+    assertAlive: () => this.assertAlive(),
+    runExclusive: (operation) => this.runExclusive(operation),
+    readRig: () => this.rig,
+    loadDeps: () => this.scenePropDeps(),
+    disposePassMaterials: (partId) => this.disposePassMaterials(partId),
+    releasePart: (rig, part) => this.beta.releaseRig(rigWithParts(rig, [part])),
+    refresh: (rig) => this.finalizeRigPropRefresh(rig),
+  });
   private readonly gaze = createEyeGazeController(() => this.rig, () => this.lastPlan?.eyeGaze, () => this.viewportCamera().position);
   private disposed = false;
   private loopRunning = false;
@@ -349,11 +357,11 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     }
     this.rig = rig;
     this.kit = kit;
-    if (this.activeHandProp) {
+    if (this.sceneProps.hasActive()) {
       try {
-        await this.syncActiveHandPropToRig(rig);
+        await this.sceneProps.syncActive(rig);
       } catch (error) {
-        this.reportFailure(error, "hand-prop-reattach-failed", "새 캐릭터 소스에 손 소품을 다시 부착하지 못했습니다.");
+        this.reportFailure(error, "scene-prop-reattach-failed", "새 캐릭터 소스에 장착 중이던 3D 소품을 다시 연결하지 못했습니다.");
       }
     }
     this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
@@ -553,49 +561,43 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
     for (const material of this.idMaterials.values()) material.dispose(true, false);
     this.flatMaterials.clear();
     this.idMaterials.clear();
-    this.detachHandPropFromRig(rig);
+    this.sceneProps.detach(rig);
     this.beta.releaseRig(rig);
     this.pressureOutline.release(rig);
     rig.dispose();
   }
 
-  private detachHandPropFromRig(rig: CharacterRig | null): void {
-    const handle = this.handPropHandle;
-    if (!handle) return;
-    this.handPropHandle = null;
-    this.disposePassMaterials(HAND_PROP_PART_ID);
-    if (rig) this.beta.releaseRig(rigWithParts(rig, [handle.part]));
-    handle.dispose();
-  }
-
-  private async syncActiveHandPropToRig(rig: CharacterRig): Promise<void> {
-    this.detachHandPropFromRig(rig);
-    if (!this.activeHandProp) return;
+  private scenePropDeps() {
     const materialOptions = this.materialOptions();
-    this.handPropHandle = await attachHandPropToRig(rig, this.activeHandProp, {
+    return {
       scene: this.character.scene,
-      fetchBytes: (url) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
-      adaptMaterial: (role, mesh) => adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
+      fetchBytes: (url: string) => (this.deps.fetchBytes ?? fetchBytesDefault)(url),
+      adaptMaterial: (role: PartRole, mesh: import("@babylonjs/core/Meshes/mesh.js").Mesh) =>
+        adaptLoadedMaterial(materialOptions, mesh.material, role, `mat:${mesh.name}`).material,
       verifyIntegrity: this.deps.verifyPackageSha ?? true,
       now: this.now(),
-    });
+    };
+  }
+
+  private async finalizeRigPropRefresh(rig: CharacterRig): Promise<void> {
+    this.character.clearShadowCasters();
+    this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
+    await this.beta.reconcile();
+    this.applyMaterialsForMode(rig);
+    this.refreshToonUniforms(rig);
+    this.beta.syncIblShadows();
   }
 
   async setHandProp(attachment: HandPropAttachment | null): Promise<void> {
-    this.assertAlive();
-    return this.runExclusive(async () => {
-      this.assertAlive();
-      this.activeHandProp = attachment;
-      const rig = this.rig;
-      if (!rig) return;
-      await this.syncActiveHandPropToRig(rig);
-      this.character.clearShadowCasters();
-      this.character.addShadowCasters(rigVisibleMeshes(rig, { includeOutlines: false }));
-      await this.beta.reconcile();
-      this.applyMaterialsForMode(rig);
-      this.refreshToonUniforms(rig);
-      this.beta.syncIblShadows();
-    });
+    return this.sceneProps.setHandProp(attachment);
+  }
+
+  async setHeadProp(attachment: HeadPropAttachment | null): Promise<void> {
+    return this.sceneProps.setHeadProp(attachment);
+  }
+
+  async setStageProp(attachment: StagePropAttachment | null): Promise<void> {
+    return this.sceneProps.setStageProp(attachment);
   }
   applyPlan(plan: ApplyPlan): ApplyReceipt {
     this.assertAlive();

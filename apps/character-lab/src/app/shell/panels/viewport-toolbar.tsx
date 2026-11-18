@@ -62,7 +62,7 @@ const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; reado
 /** 도구막대 표시만 분리하고 상태·엔진 호출·명령 적용은 뷰포트에 둔다. */
 export function ViewportToolbar({ engineReady, camera, composition, duoShot, mangaFx, handProp, overlay }: ViewportToolbarProps) {
   return (
-    <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: "6px 8px", display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
+    <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: 8, display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
       <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
         {FRAMING_MODES.map((entry) => (
           <button key={entry.mode} type="button" className="cl-viewport-button" aria-pressed={camera.framing === entry.mode} disabled={!engineReady} onClick={() => camera.onFraming(entry.mode)}>{entry.label}</button>

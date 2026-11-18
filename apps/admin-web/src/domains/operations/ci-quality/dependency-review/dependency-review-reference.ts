@@ -7,8 +7,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "4.0.543",
     "resolved": "4.0.543(react-dom@19.3.1(react@19.3.1))(react@19.3.1)",
     "expected": "4.0.543; 동일 React peer 조합 1개",
-    "interpretation": "7db0437b root importer와 React 19.3.1 peer 조합으로 해석되며 player snapshot은 1개입니다. 실제 설치·실행 결과는 미확인입니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/package.json"
+    "interpretation": "91b45117 root importer와 React 19.3.1 peer 조합으로 해석되며 player snapshot은 1개입니다. 실제 설치·실행 결과는 미확인입니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/package.json"
   },
   {
     "name": "remotion",
@@ -16,8 +16,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "4.0.543",
     "resolved": "4.0.543(react-dom@19.3.1(react@19.3.1))(react@19.3.1)",
     "expected": "4.0.543; 동일 React peer 조합 1개",
-    "interpretation": "7db0437b root importer와 제품 투어 peer가 .543으로 수렴하며 .541 package/snapshot은 없습니다. 현재 빌드 결과와 구분합니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/package.json"
+    "interpretation": "91b45117 root importer와 제품 투어 peer가 .543으로 수렴하며 .541 package/snapshot은 없습니다. 현재 빌드 결과와 구분합니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/package.json"
   },
   {
     "name": "@toonstudio/product-tour-film",
@@ -25,8 +25,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "workspace:*",
     "resolved": "link:packages/product-tour-film",
     "expected": "로컬 workspace 링크",
-    "interpretation": "7db0437b의 workspace:*는 link:packages/product-tour-film으로 연결됩니다. manifest와 lock에 기록된 로컬 workspace 해석입니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/package.json"
+    "interpretation": "91b45117의 workspace:*는 link:packages/product-tour-film으로 연결됩니다. manifest와 lock에 기록된 로컬 workspace 해석입니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/package.json"
   },
   {
     "name": "remotion peer",
@@ -34,8 +34,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "4.0.543",
     "resolved": "4.0.543(react-dom@19.3.1(react@19.3.1))(react@19.3.1)",
     "expected": "root와 동일 4.0.543",
-    "interpretation": "#2797 당시 .541 고정 peer가 남았고 #2803에서 .543으로 맞췄습니다. 7db0437b 소스에도 유지되며 현재 실행은 미확인입니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/packages/product-tour-film/package.json"
+    "interpretation": "#2797 당시 .541 고정 peer가 남았고 #2803에서 .543으로 맞췄습니다. 91b45117 소스에도 유지되며 현재 실행은 미확인입니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/packages/product-tour-film/package.json"
   },
   {
     "name": "nestjs-zod",
@@ -43,8 +43,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "^5.6.0",
     "resolved": "5.6.0(@nestjs/common@12.5.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2)(zod@4.6.7)",
     "expected": "lock consumer graph 확인; deepmerge 직접 의존 전제 없음",
-    "interpretation": "7db0437b의 5.6.0 snapshot에는 @nestjs/common·rxjs·zod만 있고 deepmerge는 없습니다. 소비 그래프 확인과 실제 설치 검증을 구분합니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/apps/api/package.json"
+    "interpretation": "91b45117의 5.6.0 snapshot에는 @nestjs/common·rxjs·zod만 있고 deepmerge는 없습니다. 소비 그래프 확인과 실제 설치 검증을 구분합니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/apps/api/package.json"
   },
   {
     "name": "deepmerge",
@@ -52,8 +52,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "4.3.1+toonstudio.1 (로컬 포크); root 직접 의존성 없음",
     "resolved": "현재 package/snapshot 없음; override만 file:patches/deepmerge 보존",
     "expected": "필요 소비 경로가 있으면 보안 포크, 없으면 강제 설치 전제 금지",
-    "interpretation": "7db0437b에 로컬 보안 포크 4.3.1+toonstudio.1과 override는 보존되고 lock package/snapshot은 없습니다. 71cfafae의 강화 가드가 소비 snapshot의 deepmerge 요구 여부를 확인합니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/patches/deepmerge/package.json"
+    "interpretation": "91b45117에 로컬 보안 포크 4.3.1+toonstudio.1과 override는 보존되고 lock package/snapshot은 없습니다. 71cfafae의 강화 가드가 소비 snapshot의 deepmerge 요구 여부를 확인합니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/patches/deepmerge/package.json"
   },
   {
     "name": "@remotion/cli + remotion",
@@ -61,8 +61,8 @@ export const dependencyReviewDependencies: DependencyRow[] = [
     "declared": "4.0.514",
     "resolved": "root pnpm-lock 대상 아님; 별도 lock/실행 미확인",
     "expected": "이번 중복 추적에서 분리",
-    "interpretation": "7db0437b tools/media/brand-film 선언은 4.0.514입니다. 현행 workspace patterns 밖이고 root lock importer에도 없어 이번 .541/.543 중복 집계에서 제외합니다. 별도 설치·실행은 미확인입니다.",
-    "url": "https://github.com/blue45f/toonstudio/blob/7db0437b0cfe6e0ec9f8bbc946d624f3c2019d0d/tools/media/brand-film/package.json"
+    "interpretation": "91b45117 tools/media/brand-film 선언은 4.0.514입니다. 현행 workspace patterns 밖이고 root lock importer에도 없어 이번 .541/.543 중복 집계에서 제외합니다. 별도 설치·실행은 미확인입니다.",
+    "url": "https://github.com/blue45f/toonstudio/blob/91b45117109778f31a8c8b84cda10708349216b9/tools/media/brand-film/package.json"
   }
 ];
 
@@ -111,7 +111,7 @@ export const dependencyReviewPrs: PrComparison[] = [
       "UI·접근성·스타일·문서·관련 테스트 60파일 변경",
       "package manifest와 pnpm-lock.yaml 직접 변경 없음",
       "지정 CI head는 6d783058이며 실제 PR 합성 checkout은 7898f087",
-      "병합 커밋 2e8498ce와 기준 main 7db0437b 및 과거 성공 SHA a2cf3525를 구분"
+      "병합 커밋 2e8498ce와 기준 main 91b45117 및 과거 성공 SHA a2cf3525를 구분"
     ],
     "judgement": "#2802 이전 main b8429be8에서도 Remotion·deepmerge가 동일하게 실패했습니다. 두 의존성 원인은 기존 문제이며 discovery timeout의 원인·회귀 여부는 미확인입니다.",
     "files": "60파일",
@@ -144,10 +144,10 @@ export const dependencyReviewPrs: PrComparison[] = [
     "changes": [
       "수정 105dae4f에서 product-tour-film peer와 lock을 .543으로 수렴",
       "deepmerge 설치 소비 경로를 조건부 검증하고 로컬 보안 포크 검증 유지",
-      "기준 7db0437b는 merge a0d4b367을 포함하며 후속 71cfafae의 잠금 그래프 가드도 보존",
+      "기준 91b45117는 merge a0d4b367을 포함하며 후속 71cfafae의 잠금 그래프 가드도 보존",
       "별도 Three·WebSocket·브라우저·출고 패널 변경은 두 원인의 최소 수정 파일과 구분"
     ],
-    "judgement": "기존 수정이 기준 main 소스에 있어 재적용하지 않습니다. 아래 빌드·product 성공은 병합 이후 과거 a2cf3525 결과이며 현재 7db0437b 실행 결과는 미확인입니다.",
+    "judgement": "기존 수정이 기준 main 소스에 있어 재적용하지 않습니다. 아래 빌드·product 성공은 병합 이후 과거 a2cf3525 결과이며 현재 91b45117 실행 결과는 미확인입니다.",
     "files": "46파일; 이번 두 원인의 핵심은 peer/lock 2파일 + 보안 테스트 1파일",
     "role": "기존 해결",
     "baseSha": "2e8498cea4bc71ebd8cc2cac4bd0f10781353596",
@@ -203,28 +203,28 @@ export const dependencyReviewCommands: ValidationCommand[] = [
     "command": "node scripts/check-product-tour-remotion-chunks.mjs --json",
     "scope": "dedupe 선언 및 lock snapshot",
     "cost": "기존 Node 환경에서 소스·lock 파일 확인",
-    "limitations": "manifest가 없으면 산출물 검사는 skipped입니다. 전체 빌드 통과로 표시하지 않습니다. 현재 7db0437b의 실행 증빙은 미확인입니다."
+    "limitations": "manifest가 없으면 산출물 검사는 skipped입니다. 전체 빌드 통과로 표시하지 않습니다. 현재 91b45117의 실행 증빙은 미확인입니다."
   },
   {
     "title": "workspace importer 정합성",
     "command": "node scripts/verify-pnpm-lockfile.mjs",
     "scope": "workspace importer 누락·중복·잔재 확인",
     "cost": "기존 도구 환경에서 workspace·lock 파일 검사",
-    "limitations": "패키지 API·peer 호환성 전체를 보증하지 않습니다. 현재 7db0437b에서 이 명령을 실행한 결과를 제공하는 기록이 아닙니다."
+    "limitations": "패키지 API·peer 호환성 전체를 보증하지 않습니다. 현재 91b45117에서 이 명령을 실행한 결과를 제공하는 기록이 아닙니다."
   },
   {
     "title": "deepmerge 보안 계약 단독 검사",
     "command": "node --test scripts/deepmerge-security-compat.test.mjs",
     "scope": "소비 snapshot·누락 허용 조건 및 로컬 보안 포크 계약",
     "cost": "기존 설치가 있는 격리 checkout에서 소규모",
-    "limitations": "과거 a2cf3525 통과 이후 71cfafae에서 가드가 강화됐습니다. 현재 7db0437b의 강화된 검사 결과는 미확인이며 이 명령 표시는 실행 결과가 아닙니다."
+    "limitations": "과거 a2cf3525 통과 이후 71cfafae에서 가드가 강화됐습니다. 현재 91b45117의 강화된 검사 결과는 미확인이며 이 명령 표시는 실행 결과가 아닙니다."
   },
   {
     "title": "ProductTourPlayer 단일 파일",
     "command": "pnpm exec vitest run apps/web/src/domains/marketing/ProductTourPlayer.test.tsx --maxWorkers=1",
     "scope": "제품 투어 UI 단위 계약",
     "cost": "기존 설치를 사용하는 단일 파일",
-    "limitations": "현재 7db0437b 실행은 미확인입니다. @remotion/player mock이 있어 이 단위 검사 결과가 실제 브라우저 재생 검증을 대신하지 않습니다."
+    "limitations": "현재 91b45117 실행은 미확인입니다. @remotion/player mock이 있어 이 단위 검사 결과가 실제 브라우저 재생 검증을 대신하지 않습니다."
   },
   {
     "title": "product 샤드 대상 확인",
@@ -238,13 +238,13 @@ export const dependencyReviewCommands: ValidationCommand[] = [
     "command": "node scripts/check-product-tour-remotion-chunks.mjs --require-manifest --json",
     "scope": "같은 SHA로 생성된 기존 산출물과 잠금파일",
     "cost": "기존 정확한 SHA artifact 재사용 시 새 빌드 없음",
-    "limitations": "과거 a2cf3525 빌드 성공만 확인했습니다. 현재 7db0437b와 다른 SHA의 dist를 가져와 최신 결과로 표시하지 않습니다."
+    "limitations": "과거 a2cf3525 빌드 성공만 확인했습니다. 현재 91b45117와 다른 SHA의 dist를 가져와 최신 결과로 표시하지 않습니다."
   },
   {
     "title": "Studio discovery 브라우저 한정 검사",
     "command": "pnpm exec tsx scripts/verify-studio-discovery-ux.mts",
     "scope": "팔레트 준비·반응형 키보드·편집 통합",
     "cost": "브라우저 실행이 필요한 전용 검사",
-    "limitations": "현재 7db0437b 결과와 원인은 미확인입니다. 먼저 과거 실패 screenshot·error-context를 확인하고 전체 exhaustive 실행으로 확대하지 않습니다."
+    "limitations": "현재 91b45117 결과와 원인은 미확인입니다. 먼저 과거 실패 screenshot·error-context를 확인하고 전체 exhaustive 실행으로 확대하지 않습니다."
   }
 ];

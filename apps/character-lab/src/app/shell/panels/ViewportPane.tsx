@@ -12,7 +12,6 @@ import { readProjectionPaint } from "../../../render/projection-paint";
 import { readViewportCamera } from "../../../render/viewport-camera";
 import { applyCanvasShaperViewPreset, setCanvasCameraInputStyle } from "../../../render/viewport-controls";
 import { clientToRenderPixel, viewportPixelRatio } from "../../../render/viewport-math";
-import { describeEngineStatus } from "../engine-status-text";
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions, useUiState, useViewportRegistry } from "../lab-store-context";
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
@@ -21,28 +20,29 @@ import {
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
-import { ViewportBackdropLayers, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
+import { ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
-  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotOverlay,
-  buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
+  DEFAULT_DUO_SHOT_STATE,
+  buildDuoEyeContactCommands, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
-  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, toHandPropAttachment,
+  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonStagePropSpec,
+  toHandPropAttachment, toHeadPropAttachment, toStagePropAttachment,
 } from "./viewport-hand-prop-controls";
-import { ViewportHud } from "./viewport-hud";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
 import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxOverlay, type ViewportMangaFxState,
+  DEFAULT_MANGA_FX_STATE, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
+import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HeadPropId, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData, StagePropId } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -109,7 +109,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const toolMode = useSyncExternalStore(paint.subscribe, () => paint.getState().toolMode, () => paint.getState().toolMode);
   const paintSymmetry = useSyncExternalStore(paint.subscribe, () => paint.getState().symmetry, () => paint.getState().symmetry);
 
-  const engineText = describeEngineStatus(labState.engine);
   const engine = labState.engine.phase === "ready" ? engineSession.engine() : null;
 
   const [showHandles, setShowHandles] = useState(initialOverlays?.handles ?? false);
@@ -125,6 +124,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
   const [handPropId, setHandPropId] = useState<HandPropId | "">("");
   const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
+  const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
+  const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
   const [handPropBusy, setHandPropBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
@@ -666,16 +667,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const boneLinks = engine && showHandles && poseSkeleton ? computeVisibleBoneLinks(handles, poseSkeleton, { onFailure: onRenderFailure }) : [];
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
-  const subjectHeight = resolveSubjectHeightMetrics(labState.recipe.source, labState.recipe.body);
-  const duoPartner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === duoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
-  const duoEyeContact = computeWebtoonDuoEyeContact({
-    subjectHeightCm: subjectHeight.heightCm,
-    subjectEyeHeightCm: subjectHeight.eyeHeightCm,
-    partnerHeightCm: duoPartner.heightCm,
-    partnerEyeHeightCm: duoPartner.eyeHeightCm,
-    distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
-    side: duoShot.side,
-  });
+  const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
   const onApplyDuoEyeContact = (): void => {
     const cmds = buildDuoEyeContactCommands(labState.recipe.pose, duoEyeContact, duoPartner.labelKo);
     for (const cmd of cmds) dispatch(cmd);
@@ -708,6 +700,36 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     const spec = findWebtoonHandPropSpec(handPropId);
     if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
   };
+  const onApplyHeadProp = async (nextHeadPropId: HeadPropId | ""): Promise<void> => {
+    setHeadPropId(nextHeadPropId);
+    if (!engine?.setHeadProp) return;
+    const attachment = nextHeadPropId ? toHeadPropAttachment(nextHeadPropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHeadProp(attachment);
+      const spec = nextHeadPropId ? findWebtoonHeadPropSpec(nextHeadPropId) : null;
+      setNotice(spec ? `머리 액세서리 장착: ${spec.labelKo}` : "머리 액세서리를 해제했습니다.");
+    } catch (error) {
+      setNotice(failureText(error, "머리 액세서리를 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onApplyStageProp = async (nextStagePropId: StagePropId | ""): Promise<void> => {
+    setStagePropId(nextStagePropId);
+    if (!engine?.setStageProp) return;
+    const attachment = nextStagePropId ? toStagePropAttachment(nextStagePropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setStageProp(attachment);
+      const spec = nextStagePropId ? findWebtoonStagePropSpec(nextStagePropId) : null;
+      setNotice(spec ? `배경 스테이지 배치: ${spec.labelKo}` : "배경 스테이지를 해제했습니다.");
+    } catch (error) {
+      setNotice(failureText(error, "배경 스테이지를 배치하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -725,9 +747,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         mangaFx={{ state: mangaFx, set: setMangaFx }}
         handProp={{
           engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,
+          headPropId, stagePropId,
           onSelectProp: (nextPropId) => void onApplyHandProp(nextPropId, handPropSide),
           onChangeHand: (nextSide) => void onApplyHandProp(handPropId, nextSide),
           onApplyGripPose: onApplyHandPropGripPose,
+          onSelectHeadProp: (nextHeadPropId) => void onApplyHeadProp(nextHeadPropId),
+          onSelectStageProp: (nextStagePropId) => void onApplyStageProp(nextStagePropId),
         }}
         overlay={{
           handles: { value: showHandles, set: setShowHandles },
@@ -742,46 +767,31 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         }}
       />
 
-      <div ref={containerRef} className="cl-viewport-stage" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-        <ViewportBackdropLayers checkerboard={checkerboard} manuscriptGuide={manuscriptGuide} referenceCut={referenceCut} />
-        <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} style={{ position: "relative", zIndex: 1 }} />
-        <ViewportDuoShotOverlay duoShot={duoShot} subjectHeightCm={subjectHeight.heightCm} subjectEyeHeightCm={subjectHeight.eyeHeightCm} subjectLabelKo={subjectHeight.labelKo} />
-        <ViewportMangaFxOverlay mangaFx={mangaFx} />
+      <ViewportStage
+        containerRef={containerRef}
+        canvas={{ generation: canvasGeneration, register: registerCanvas, keyShortcuts: CANVAS_KEY_SHORTCUTS }}
+        backdrop={{ checkerboard, manuscriptGuide, referenceCut }}
+        duoShot={{ duoShot, subjectHeightCm: subjectHeight.heightCm, subjectEyeHeightCm: subjectHeight.eyeHeightCm, subjectLabelKo: subjectHeight.labelKo }}
+        mangaFx={mangaFx}
+        engineStatus={labState.engine} engineReady={Boolean(engine)} onSelectBackend={selectBackend}
+        drawing={{ enabled: ui.drawingMode, toolMode, paintSymmetry, activePart, activeSublayer, brushRadius }}
+        notice={notice} noHandleReason={noHandleReason} hud={hud}
+      >
+        {engine && (showHandles || showControlPoints) ? (
+          <ViewportSvgGizmoLayer
+            svgRef={svgRef} gizmoMode={gizmoMode} viewBox={viewBox} ratio={ratio} showHandles={showHandles} showControlPoints={showControlPoints} skeletonCorrupted={skeletonCorrupted}
+            boneLinks={boneLinks} handles={handles} activeHandle={activeHandle} draggingBone={draggingBone} controlPoints={controlPoints} draggingCp={draggingCp}
+            onHandleDown={onHandleDown} onHandleMove={onHandleMove} onHandleUp={(event) => finishDrag(event, true)} onHandleCancel={(event) => finishDrag(event, false)}
+            onHandleLostCapture={(event) => { if (dragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
+            onControlPointDown={onControlPointDown} onControlPointMove={onControlPointMove} onControlPointUp={(event) => finishControlPointDrag(event, true)} onControlPointCancel={(event) => finishControlPointDrag(event, false)}
+            onControlPointLostCapture={(event) => { if (cpDragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
+          />
+        ) : null}
 
-      {labState.engine.phase === "idle" ? <ViewportOnboardingCard onSelectBackend={selectBackend} /> : null}
-      {labState.engine.phase !== "ready" ? (
-        <p className="cl-viewport-status" role="status" data-tone={engineText.tone} style={{ position: "absolute", left: 12, right: 12, bottom: 12, margin: 0 }}>{engineText.text}</p>
-      ) : null}
-
-      {engine && (showHandles || showControlPoints) ? (
-        <ViewportSvgGizmoLayer
-          svgRef={svgRef} gizmoMode={gizmoMode} viewBox={viewBox} ratio={ratio} showHandles={showHandles} showControlPoints={showControlPoints} skeletonCorrupted={skeletonCorrupted}
-          boneLinks={boneLinks} handles={handles} activeHandle={activeHandle} draggingBone={draggingBone} controlPoints={controlPoints} draggingCp={draggingCp}
-          onHandleDown={onHandleDown} onHandleMove={onHandleMove} onHandleUp={(event) => finishDrag(event, true)} onHandleCancel={(event) => finishDrag(event, false)}
-          onHandleLostCapture={(event) => { if (dragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
-          onControlPointDown={onControlPointDown} onControlPointMove={onControlPointMove} onControlPointUp={(event) => finishControlPointDrag(event, true)} onControlPointCancel={(event) => finishControlPointDrag(event, false)}
-          onControlPointLostCapture={(event) => { if (cpDragRef.current?.pointerId === event.pointerId) cancelDrag(); }}
-        />
-      ) : null}
-
-      {engine && ui.drawingMode ? (
-        <div className="cl-viewport-draw-layer" role="application" aria-label="모델 위 드로잉 영역" style={{ ...FILL, cursor: "crosshair", touchAction: "none" }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} onPointerCancel={() => driverRef.current?.cancel()} onLostPointerCapture={() => driverRef.current?.cancel()} />
-      ) : null}
-
-      {engine && ui.drawingMode ? (
-        <p className="cl-viewport-hint" style={{ position: "absolute", top: 44, left: 8, margin: 0 }}>
-          드로잉 모드({toolMode === "eraser" ? "지우개" : "브러시"}{paintSymmetry ? " · 대칭 ON" : ""}) · 레이어 {PART_ROLE_LABELS_KO[activePart]}(L{activeSublayer}) · 브러시 {brushRadius}px — 카메라 조작은 꺼져 있습니다(드로잉을 끄면 회전·확대).
-        </p>
-      ) : null}
-
-      {notice || noHandleReason ? (
-        <p className="cl-viewport-notice" role="status" style={{ position: "absolute", left: 8, right: 8, bottom: engine ? 8 : 56, margin: 0 }}>
-          {notice ?? noHandleReason}
-        </p>
-      ) : null}
-
-      <ViewportHud hud={hud} />
-      </div>
+        {engine && ui.drawingMode ? (
+          <div className="cl-viewport-draw-layer" role="application" aria-label="모델 위 드로잉 영역" style={{ ...FILL, cursor: "crosshair", touchAction: "none" }} onPointerDown={onDrawDown} onPointerMove={onDrawMove} onPointerUp={onDrawUp} onPointerCancel={() => driverRef.current?.cancel()} onLostPointerCapture={() => driverRef.current?.cancel()} />
+        ) : null}
+      </ViewportStage>
     </div>
   );
 }
