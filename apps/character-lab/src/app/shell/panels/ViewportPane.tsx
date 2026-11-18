@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { flushSync } from "react-dom";
 
 import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
-import { formatShaperInputStyleGuide } from "../../../export/recipe-file";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
@@ -22,24 +21,28 @@ import {
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
-import { ViewportBackdropLayers, ViewportCompositionBar, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
+import { ViewportBackdropLayers, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
-  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
+  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
+  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, toHandPropAttachment,
+} from "./viewport-hand-prop-controls";
+import { ViewportHud } from "./viewport-hud";
+import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
-  handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
+  handlesKey, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
 import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxOverlay, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
-import { ViewportPresetSelect } from "./viewport-preset-select";
+import { ViewportToolbar } from "./viewport-toolbar";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -52,11 +55,6 @@ export interface ViewportPaneProps {
 }
 
 export const DEFAULT_HUD_INTERVAL_MS = 250;
-const FRAMING_MODES: ReadonlyArray<{ readonly mode: CameraFraming["mode"]; readonly label: string }> = [
-  { mode: "full-body", label: "전신" },
-  { mode: "bust", label: "상반신" },
-  { mode: "face", label: "얼굴" },
-];
 const FILL: CSSProperties = { position: "absolute", inset: 0 };
 const CANVAS_KEY_SHORTCUTS = "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0 Home";
 
@@ -125,6 +123,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
+  const [handPropId, setHandPropId] = useState<HandPropId | "">("");
+  const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
+  const [handPropBusy, setHandPropBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -654,7 +655,6 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     releaseCapture(event.currentTarget, event.pointerId);
   };
 
-  const hudList = hud ? hudRows(hud) : [];
   const viewBox = renderSize ? `0 0 ${renderSize.width} ${renderSize.height}` : undefined;
   const ratio = typeof window !== "undefined" ? viewportPixelRatio(window.devicePixelRatio) : 1;
   const noHandleReason = engine && showHandles && handles.length === 0 ? "이 소스에는 스켈레톤이 없어 표시할 관절 핸들이 없습니다." : null;
@@ -681,68 +681,66 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
   };
+  const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
+    setHandPropId(nextPropId);
+    setHandPropSide(nextSide);
+    if (!engine?.setHandProp) return;
+    const attachment = nextPropId ? toHandPropAttachment(nextPropId, nextSide) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHandProp(attachment);
+      const spec = nextPropId ? findWebtoonHandPropSpec(nextPropId) : null;
+      setNotice(
+        spec
+          ? `손 소품 장착: ${spec.labelKo} (${nextSide === "rightHand" ? "오른손" : "왼손"})`
+          : "손 소품을 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "손 소품을 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onApplyHandPropGripPose = (): void => {
+    if (!handPropId) return;
+    const cmds = buildHandPropGripPoseCommands(labState.recipe.pose, handPropId, handPropSide);
+    for (const cmd of cmds) dispatch(cmd);
+    const spec = findWebtoonHandPropSpec(handPropId);
+    if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
+  };
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: "6px 8px", display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
-        <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
-          {FRAMING_MODES.map((entry) => (
-            <button key={entry.mode} type="button" className="cl-viewport-button" aria-pressed={framing === entry.mode} disabled={!engine} onClick={() => onFraming(entry.mode)}>{entry.label}</button>
-          ))}
-          <button type="button" className="cl-viewport-button" disabled={!engine} onClick={onResetView} title="현재 프레이밍으로 시점을 되돌립니다(캔버스 더블클릭·0 키·F5 키와 같음)">시점 초기화</button>
-          <select className="cl-viewport-select" aria-label="카메라 조작 방식" value={cameraInputStyle} title={formatShaperInputStyleGuide(cameraInputStyle).camControlToolTipText} onChange={(event) => setCameraInputStyle(event.target.value as ShaperCameraInputStyle)}>
-            <option value="unity">Unity 조작</option>
-            <option value="blender">Blender 조작</option>
-            <option value="max">3ds Max 조작</option>
-          </select>
-        </span>
-        <ViewportCompositionBar
-          engineReady={Boolean(engine)}
-          checkerboard={checkerboard}
-          manuscriptGuide={manuscriptGuide}
-          activeYawDeg={activeYawDeg}
-          activePitchDeg={activePitchDeg}
-          referenceCut={referenceCut}
-          onToggleCheckerboard={() => setCheckerboard((prev) => !prev)}
-          onToggleManuscriptGuide={() => setManuscriptGuide((prev) => !prev)}
-          onSelectTurnaround={onSelectTurnaround}
-          onSelectPitch={onSelectPitch}
-          onLoadReferenceFile={onLoadReferenceFile}
-          onChangeReferenceOpacity={onChangeReferenceOpacity}
-          onChangeReferencePlacement={onChangeReferencePlacement}
-          onClearReference={() => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); }}
-        />
-        <ViewportDuoShotControls
-          duoShot={duoShot}
-          summaryKo={duoEyeContact.summaryKo}
-          onToggleDuoShot={() => setDuoShot((prev) => ({ ...prev, enabled: !prev.enabled }))}
-          onChangePartner={(partnerId) => setDuoShot((prev) => ({ ...prev, partnerId }))}
-          onChangeSide={(side) => setDuoShot((prev) => ({ ...prev, side }))}
-          onChangeDistance={(distanceKey) => setDuoShot((prev) => ({ ...prev, distanceKey }))}
-          onApplyEyeContact={onApplyDuoEyeContact}
-        />
-        <ViewportMangaFxControls
-          mangaFx={mangaFx}
-          onToggleMangaFx={() => setMangaFx((prev) => ({ ...prev, enabled: !prev.enabled }))}
-          onChangeBubblePreset={(bubblePreset) => setMangaFx((prev) => ({ ...prev, bubblePreset }))}
-          onChangeLinesPreset={(linesPreset) => setMangaFx((prev) => ({ ...prev, linesPreset }))}
-          onChangeDialogueText={(dialogueText) => setMangaFx((prev) => ({ ...prev, dialogueText }))}
-          onChangeIntensity={(intensity) => setMangaFx((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
-        />
-        <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
-          <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
-          <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
-          <button type="button" className="cl-viewport-button" aria-pressed={showControlPoints} title="SHAPER ControlPoint(초록색 구체): 3D 뷰포트에서 얼굴·체형 제어점을 직접 끌어 성형" onClick={() => setShowControlPoints((value) => !value)}>형상 제어점</button>
-          <button type="button" className="cl-viewport-button" aria-pressed={symmetryMode} disabled={!showHandles} title="SHAPER 대칭 포즈 조작(좌우 관절 대칭 회전/IK)" onClick={() => setSymmetryMode((value) => !value)}>대칭 조작</button>
-          <button type="button" className="cl-viewport-button" aria-pressed={pivotMode === "direct"} disabled={!showHandles} title="SHAPER BoneManager.pivotIKMode 전환" onClick={() => setPivotMode((mode) => (mode === "parent" ? "direct" : "parent"))}>직접 피벗</button>
-          <select className="cl-viewport-select" aria-label="기즈모 조작 모드" value={gizmoMode} disabled={!showHandles} title="SHAPER PivotManager 기즈모 모드 전환 (단축키 Q / W / E / R)" onChange={(event) => setGizmoMode(Number(event.target.value) as ShaperGizmoMode)}>
-            {SHAPER_GIZMO_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.shortLabelKo}</option>)}
-          </select>
-          <ViewportPresetSelect presetId={shaperPresetId} onSelect={applyShaperBuiltInPreset} />
-          <button type="button" className="cl-viewport-button" aria-pressed={showHud} onClick={() => setShowHud((value) => !value)}>HUD</button>
-          <button type="button" className="cl-viewport-button" aria-pressed={ui.drawingMode} disabled={!engine} onClick={() => setDrawingMode(!ui.drawingMode)}>드로잉</button>
-        </span>
-      </div>
+      <ViewportToolbar
+        engineReady={Boolean(engine)}
+        camera={{ framing, inputStyle: cameraInputStyle, onFraming, onResetView, setInputStyle: setCameraInputStyle }}
+        composition={{
+          checkerboard, manuscriptGuide, activeYawDeg, activePitchDeg, referenceCut,
+          onToggleCheckerboard: () => setCheckerboard((prev) => !prev),
+          onToggleManuscriptGuide: () => setManuscriptGuide((prev) => !prev),
+          onSelectTurnaround, onSelectPitch, onLoadReferenceFile, onChangeReferenceOpacity, onChangeReferencePlacement,
+          onClearReference: () => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); },
+        }}
+        duoShot={{ state: duoShot, set: setDuoShot, summaryKo: duoEyeContact.summaryKo, applyEyeContact: onApplyDuoEyeContact }}
+        mangaFx={{ state: mangaFx, set: setMangaFx }}
+        handProp={{
+          engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,
+          onSelectProp: (nextPropId) => void onApplyHandProp(nextPropId, handPropSide),
+          onChangeHand: (nextSide) => void onApplyHandProp(handPropId, nextSide),
+          onApplyGripPose: onApplyHandPropGripPose,
+        }}
+        overlay={{
+          handles: { value: showHandles, set: setShowHandles },
+          fingers: { value: showFingers, set: setShowFingers },
+          controlPoints: { value: showControlPoints, set: setShowControlPoints },
+          symmetry: { value: symmetryMode, set: setSymmetryMode },
+          pivot: { value: pivotMode, set: setPivotMode },
+          gizmo: { value: gizmoMode, set: setGizmoMode },
+          hud: { value: showHud, set: setShowHud },
+          preset: { value: shaperPresetId, apply: applyShaperBuiltInPreset },
+          drawing: { value: ui.drawingMode, set: setDrawingMode },
+        }}
+      />
 
       <div ref={containerRef} className="cl-viewport-stage" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
         <ViewportBackdropLayers checkerboard={checkerboard} manuscriptGuide={manuscriptGuide} referenceCut={referenceCut} />
@@ -782,16 +780,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         </p>
       ) : null}
 
-      {hudList.length > 0 ? (
-        <dl className="cl-viewport-hud" aria-label="성능 HUD" style={{ position: "absolute", top: 8, right: 8, margin: 0, pointerEvents: "none" }}>
-          {hudList.map((row) => (
-            <div key={row.key} className="cl-viewport-hud-row" data-key={row.key} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <dt>{row.label}</dt>
-              <dd style={{ margin: 0 }}>{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : null}
+      <ViewportHud hud={hud} />
       </div>
     </div>
   );

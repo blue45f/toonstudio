@@ -608,6 +608,33 @@ describe("베타 기능 토글", () => {
     fireEvent.change(screen.getByTestId("render-manga-density-slider"), { target: { value: "64" } });
     expect(store.getState().recipe.shading.look.tone.cellPerHead).toBe(64);
 
+    // 한국 웹툰 6대 장르 1-클릭 마스터 씬 프리셋 검증
+    expect(screen.getByTestId("render-webtoon-genre-scene-presets")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-rofan-twilight"));
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-silk");
+    expect(store.getState().recipe.shading.toneMapping).toBe("aces");
+    expect(store.getState().recipe.shading.toon.rampSteps).toBe(3);
+
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-noir-rain"));
+    expect(store.getState().recipe.surfaces.outer?.material).toBe("leather");
+    expect(store.getState().recipe.shading.shadows.cascades).toBe(4);
+
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-murim-moonlight"));
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-silk");
+    expect(store.getState().recipe.shading.look.rim.color).toEqual([0.56, 0.92, 0.98]);
+
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-thriller-interrogation"));
+    expect(store.getState().recipe.surfaces.bottom?.material).toBe("cloth-denim");
+    expect(store.getState().recipe.shading.look.grade.saturation).toBeCloseTo(0.72, 4);
+
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-academy-cherry"));
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-cotton");
+    expect(store.getState().recipe.shading.postfx.bloom).toBe(true);
+
+    fireEvent.click(screen.getByTestId("render-genre-preset-genre-healing-cafe"));
+    expect(store.getState().recipe.surfaces.top?.material).toBe("cloth-knit");
+    expect(store.getState().recipe.shading.look.rim.color).toEqual([1, 0.86, 0.68]);
+
     fireEvent.click(screen.getByTestId("render-reset-material-lighting-btn"));
     expect(store.getState().recipe.surfaces.top).toBeUndefined();
     expect(store.getState().recipe.shading.mode).toBe(DEFAULT_SHADING.mode);

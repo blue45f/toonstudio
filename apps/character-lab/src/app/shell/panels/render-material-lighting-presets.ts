@@ -1,5 +1,6 @@
 /**
- * RenderPanel 전용 피부·의상 표면 소재 프리셋 및 툰 셰이딩·그림자·흑백 원고 스크린톤 통합 프리셋 (P2-16+).
+ * RenderPanel 전용 피부·의상 표면 소재 프리셋, 툰 셰이딩·그림자·흑백 원고 스크린톤 통합 프리셋,
+ * 그리고 한국 웹툰 6대 장르별(로판·느와르·학원·무협·스릴러·힐링) 1-클릭 마스터 씬 프리셋 (P2-16+).
  *
  * - 피부(`skin`)·헤어(`hair`)·상의(`top`)·하의(`bottom`)·아우터(`outer`)·신발(`shoes`)·장식(`accessory`) 채널에
  *   검증된 `MaterialPresetId` 표면을 원자적 명령으로 적용한다.
@@ -37,6 +38,22 @@ export interface WebtoonLightingShadowPreset {
     | "manga-halftone-screentone";
   readonly labelKo: string;
   readonly summaryKo: string;
+  readonly buildShading: (current: ShadingProfile) => Partial<ShadingProfile>;
+  readonly lookPatch: LookPatch;
+}
+
+export interface WebtoonGenreScenePreset {
+  readonly id:
+    | "genre-rofan-twilight"
+    | "genre-noir-rain"
+    | "genre-academy-cherry"
+    | "genre-murim-moonlight"
+    | "genre-thriller-interrogation"
+    | "genre-healing-cafe";
+  readonly labelKo: string;
+  readonly genreTagKo: string;
+  readonly summaryKo: string;
+  readonly surfaces: Readonly<Partial<Record<ChannelKey, MaterialPresetId>>>;
   readonly buildShading: (current: ShadingProfile) => Partial<ShadingProfile>;
   readonly lookPatch: LookPatch;
 }
@@ -309,15 +326,198 @@ export const WEBTOON_LIGHTING_SHADOW_PRESETS: readonly WebtoonLightingShadowPres
   },
 ] as const;
 
+export const WEBTOON_GENRE_SCENE_PRESETS: readonly WebtoonGenreScenePreset[] = [
+  {
+    id: "genre-rofan-twilight",
+    labelKo: "로판 황혼 테라스 역광",
+    genreTagKo: "로맨스판타지",
+    summaryKo: "도자기 SSS 피부 · 고광택 실크 예복 · 3단 ACES 골든 림라이트 + PCSS 그림자",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-silk",
+      bottom: "cloth-silk",
+      outer: "cloth-silk",
+      shoes: "leather",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "aces",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 3, pcf: true, contactHardening: true },
+      postfx: { ...current.postfx, fxaa: true, bloom: true, sharpen: false },
+      ibl: { enabled: true, intensity: 1.38 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.24 },
+      rim: { strength: 0.66, color: [1, 0.72, 0.44], edge0: 0.56, edge1: 0.92 },
+      shade: { skin: { kind: "multiply", rgb: [0.93, 0.74, 0.7] } },
+      line: { widthMm: 2.4 },
+      grade: { saturation: 1.05, lightness: 0.01 },
+    },
+  },
+  {
+    id: "genre-noir-rain",
+    labelKo: "느와르 골목 네온 하드림",
+    genreTagKo: "액션·느와르",
+    summaryKo: "매트 울 코트/가죽 로퍼 · 칼각 2단 셀 · 4단 CSM 하드 그림자 + 네온 시안 림",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      bottom: "cloth-cotton",
+      outer: "leather",
+      shoes: "leather",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "aces",
+      toon: { ...current.toon, rampSteps: 2, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 4, pcf: false, contactHardening: true },
+      postfx: { ...current.postfx, fxaa: true, bloom: false, sharpen: true },
+      ibl: { enabled: true, intensity: 0.74 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.04 },
+      rim: { strength: 0.78, color: [0.45, 0.85, 1], edge0: 0.64, edge1: 0.9 },
+      shade: { other: { kind: "multiply", rgb: [0.4, 0.46, 0.56] } },
+      line: { widthMm: 3.2 },
+      grade: { saturation: 0.88, lightness: -0.02 },
+    },
+  },
+  {
+    id: "genre-academy-cherry",
+    labelKo: "학원물 봄날 자연광",
+    genreTagKo: "학원·청춘",
+    summaryKo: "복숭아 SSS 피부 · 매트 울 교복 · 부드러운 3단 수채 셀 + 벚꽃 핑크 림 블룸",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      bottom: "cloth-cotton",
+      outer: "cloth-cotton",
+      shoes: "leather",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "khr-pbr-neutral",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 2, pcf: true, contactHardening: false },
+      postfx: { ...current.postfx, fxaa: true, bloom: true, sharpen: false },
+      ibl: { enabled: true, intensity: 1.24 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.34 },
+      rim: { strength: 0.4, color: [1, 0.85, 0.91], edge0: 0.55, edge1: 0.93 },
+      shade: { skin: { kind: "multiply", rgb: [0.95, 0.81, 0.84] } },
+      line: { widthMm: 1.9 },
+      grade: { saturation: 1.04, lightness: 0.02 },
+    },
+  },
+  {
+    id: "genre-murim-moonlight",
+    labelKo: "무협 청운 월광 검기",
+    genreTagKo: "무협·동양판타지",
+    summaryKo: "비단 도포 · 가죽 호완/부츠 · 3단 ACES 청록 월광 림라이트 + 정밀 PCSS 그림자",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-silk",
+      bottom: "cloth-cotton",
+      outer: "cloth-silk",
+      shoes: "leather",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "aces",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 3, pcf: true, contactHardening: true },
+      postfx: { ...current.postfx, fxaa: true, bloom: true, sharpen: true },
+      ibl: { enabled: true, intensity: 1.08 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.14 },
+      rim: { strength: 0.7, color: [0.56, 0.92, 0.98], edge0: 0.58, edge1: 0.91 },
+      shade: { other: { kind: "multiply", rgb: [0.52, 0.62, 0.74] } },
+      line: { widthMm: 2.7 },
+      grade: { saturation: 0.96, lightness: 0 },
+    },
+  },
+  {
+    id: "genre-thriller-interrogation",
+    labelKo: "스릴러 취조실 집중광",
+    genreTagKo: "스릴러·추리",
+    summaryKo: "트렌치/전술 코튼 · 저채도 2단 고대비 셀 · 4단 CSM 하드 집중광 + 샤프 외곽선",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      bottom: "cloth-denim",
+      outer: "leather",
+      shoes: "leather",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "aces",
+      toon: { ...current.toon, rampSteps: 2, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 4, pcf: false, contactHardening: true },
+      postfx: { ...current.postfx, fxaa: true, bloom: false, sharpen: true },
+      ibl: { enabled: true, intensity: 0.68 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.03 },
+      rim: { strength: 0.54, color: [0.82, 0.88, 0.96], edge0: 0.66, edge1: 0.92 },
+      shade: { other: { kind: "multiply", rgb: [0.44, 0.46, 0.5] } },
+      line: { widthMm: 3.1 },
+      grade: { saturation: 0.72, lightness: -0.02 },
+    },
+  },
+  {
+    id: "genre-healing-cafe",
+    labelKo: "일상 힐링 오후 카페광",
+    genreTagKo: "일상·힐링",
+    summaryKo: "포근 니트 · 생지 데님 · 따스한 3단 앰버 라떼 림라이트 + 소프트 PCF 블룸",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-knit",
+      bottom: "cloth-denim",
+      outer: "cloth-cotton",
+      shoes: "cloth-cotton",
+      accessory: "metal",
+    },
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "khr-pbr-neutral",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 2, pcf: true, contactHardening: false },
+      postfx: { ...current.postfx, fxaa: true, bloom: true, sharpen: false },
+      ibl: { enabled: true, intensity: 1.28 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.3 },
+      rim: { strength: 0.45, color: [1, 0.86, 0.68], edge0: 0.56, edge1: 0.93 },
+      shade: { skin: { kind: "multiply", rgb: [0.95, 0.82, 0.76] } },
+      line: { widthMm: 2.0 },
+      grade: { saturation: 1.02, lightness: 0.02 },
+    },
+  },
+] as const;
+
 const MANAGED_SURFACE_CHANNELS: readonly ChannelKey[] = ["skin", "hair", "top", "bottom", "outer", "shoes", "accessory"];
 
-export function buildMaterialSurfaceCommands(
+function buildSurfaceMapCommands(
   currentSurfaces: Surfaces,
-  preset: WebtoonMaterialSurfacePreset,
-): readonly LabCommand[] {
+  targetSurfaces: Readonly<Partial<Record<ChannelKey, MaterialPresetId>>>,
+): LabCommand[] {
   const commands: LabCommand[] = [];
   for (const channel of MANAGED_SURFACE_CHANNELS) {
-    const nextMaterial = preset.surfaces[channel];
+    const nextMaterial = targetSurfaces[channel];
     const existingPattern = currentSurfaces[channel]?.pattern ?? null;
     if (nextMaterial === undefined) {
       if (currentSurfaces[channel] !== undefined) {
@@ -329,6 +529,13 @@ export function buildMaterialSurfaceCommands(
     commands.push({ type: "surface/set", channel, surface: nextSurface });
   }
   return commands;
+}
+
+export function buildMaterialSurfaceCommands(
+  currentSurfaces: Surfaces,
+  preset: WebtoonMaterialSurfacePreset,
+): readonly LabCommand[] {
+  return buildSurfaceMapCommands(currentSurfaces, preset.surfaces);
 }
 
 export function isMaterialSurfacePresetActive(currentSurfaces: Surfaces, preset: WebtoonMaterialSurfacePreset): boolean {
@@ -354,6 +561,28 @@ export function buildLightingShadowCommands(
       },
     },
   ];
+}
+
+export function buildGenreScenePresetCommands(
+  currentSurfaces: Surfaces,
+  currentShading: ShadingProfile,
+  preset: WebtoonGenreScenePreset,
+): readonly LabCommand[] {
+  const commands = buildSurfaceMapCommands(currentSurfaces, preset.surfaces);
+  const profilePatch = preset.buildShading(currentShading);
+  const normalizedPatch: LookPatch = {
+    tone: { kind: "none", strength: 0 },
+    grade: { saturation: 1, lightness: 0 },
+    ...preset.lookPatch,
+  };
+  commands.push({
+    type: "shading/set",
+    profile: {
+      ...profilePatch,
+      look: mergeLook(currentShading.look, normalizedPatch),
+    },
+  });
+  return commands;
 }
 
 export function buildResetMaterialLightingCommands(currentSurfaces: Surfaces): readonly LabCommand[] {

@@ -154,6 +154,25 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-genre-lock-status").textContent,
     ).toContain("액션 전투 락인 정상");
 
+    // Wave 5: 5대 장르 공통 건축 기준선(V19) 전환 및 무채색 암실 검수 모드 검증
+    expect(
+      screen.getByTestId("bg3d-blender-shared-datum-panel").textContent,
+    ).toContain("개구부 2.40m");
+    fireEvent.click(screen.getByTestId("bg3d-blender-datum-genre-scifi"));
+    expect(
+      screen.getByTestId("bg3d-blender-rejection-roi-readout").textContent,
+    ).toContain("SF 함교 에어락(74컷) 마감 반려율 18.5%→2.3%");
+
+    fireEvent.click(screen.getByTestId("bg3d-blender-darkroom-proofing-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-fantasy-webtoon-panel").getAttribute(
+        "data-darkroom-proofing",
+      ),
+    ).toBe("true");
+    expect(
+      screen.getByTestId("bg3d-blender-darkroom-status").textContent,
+    ).toContain("ΔE 0.0");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
