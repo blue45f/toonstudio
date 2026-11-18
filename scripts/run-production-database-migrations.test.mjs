@@ -1395,7 +1395,6 @@ test("historical adoption requires structural evidence through 0019", () => {
 test("historical adoption and post-baseline relations exactly partition runtime readiness", () => {
   expect(POST_BASELINE_RELATIONS).toEqual([
     "account_merge",
-    "admin_ai_operations_board", "admin_ai_operations_audit", "admin_ai_operations_receipt",
     "admin_announcements",
     "admin_audit_logs",
     "admin_banned_words",

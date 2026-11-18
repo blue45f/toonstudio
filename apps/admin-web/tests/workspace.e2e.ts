@@ -258,6 +258,9 @@ test("모바일·데스크톱에서 여섯 보드가 넘치지 않고 키보드 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
   await page.goto(boardPath);
+  await expect(page.getByRole("columnheader", { name: "상세", exact: true })).toHaveCount(1);
+  const tableWidth = await page.locator(".workspace-table-wrap").evaluate(element => ({ content: element.scrollWidth, visible: element.clientWidth }));
+  expect(tableWidth.content).toBeGreaterThan(tableWidth.visible);
   const open = page.getByRole("button", { name: reviewTitle + " 상세 보기", exact: true });
   await open.focus();
   await page.keyboard.press("Enter");
@@ -268,7 +271,8 @@ test("모바일·데스크톱에서 여섯 보드가 넘치지 않고 키보드 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(open).toBeFocused();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  const pageWidth = await page.evaluate(() => ({ content: document.documentElement.scrollWidth, viewport: window.innerWidth }));
+  expect(pageWidth.content).toBeLessThanOrEqual(pageWidth.viewport + 1);
   await page.screenshot({ path: testInfo.outputPath("workspace-mobile.png"), fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ colorScheme: "dark" });

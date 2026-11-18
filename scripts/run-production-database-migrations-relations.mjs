@@ -69,7 +69,6 @@ export const HISTORICAL_BASELINE_RELATIONS = Object.freeze([
 ]);
 export const POST_BASELINE_RELATIONS = Object.freeze([
   "account_merge",
-  "admin_ai_operations_board", "admin_ai_operations_audit", "admin_ai_operations_receipt",
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",
