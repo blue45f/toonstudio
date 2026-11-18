@@ -27,9 +27,7 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
-import {
-  ViewportHandPropControls, buildHandPropGripPoseCommands, findWebtoonHandPropSpec, toHandPropAttachment,
-} from "./viewport-hand-prop-controls";
+import { ViewportHandPropControls } from "./viewport-hand-prop-controls";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
@@ -38,6 +36,7 @@ import {
   DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
 import { CANVAS_KEY_SHORTCUTS, DEFAULT_HUD_INTERVAL_MS, FILL, FRAMING_MODES, failureText, releaseCapture } from "./viewport-pane-helpers";
+import { createViewportPropHandlers } from "./viewport-prop-handlers";
 import { ViewportShaperPresetSelect } from "./viewport-shaper-preset-select";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
@@ -45,7 +44,7 @@ import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from 
 import type { ControlPointDragSession, DragSession } from "./viewport-drag-types";
 import type { JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
 import type { ViewportPaneProps } from "./viewport-pane-helpers";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HeadPropId, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, Pose, StagePropId } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
 import type { PointerEvent as ReactPointerEvent } from "react";
@@ -84,6 +83,8 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
   const [handPropId, setHandPropId] = useState<HandPropId | "">("");
   const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
+  const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
+  const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
   const [handPropBusy, setHandPropBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
@@ -641,37 +642,14 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
   };
-  const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
-    setHandPropId(nextPropId);
-    setHandPropSide(nextSide);
-    if (!engine?.setHandProp) return;
-    const attachment = nextPropId ? toHandPropAttachment(nextPropId, nextSide) : null;
-    setHandPropBusy(true);
-    try {
-      await engine.setHandProp(attachment);
-      const spec = nextPropId ? findWebtoonHandPropSpec(nextPropId) : null;
-      setNotice(
-        spec
-          ? `손 소품 장착: ${spec.labelKo} (${nextSide === "rightHand" ? "오른손" : "왼손"})`
-          : "손 소품을 해제했습니다.",
-      );
-    } catch (error) {
-      setNotice(failureText(error, "손 소품을 장착하지 못했습니다."));
-    } finally {
-      setHandPropBusy(false);
-    }
-  };
-  const onApplyHandPropGripPose = (): void => {
-    if (!handPropId) return;
-    const cmds = buildHandPropGripPoseCommands(labState.recipe.pose, handPropId, handPropSide);
-    for (const cmd of cmds) dispatch(cmd);
-    const spec = findWebtoonHandPropSpec(handPropId);
-    if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
-  };
+  const { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp } = createViewportPropHandlers({
+    engine, pose: labState.recipe.pose, dispatch, handPropId, handPropSide,
+    setHandPropId, setHandPropSide, setHeadPropId, setStagePropId, setHandPropBusy, setNotice,
+  });
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: "6px 8px", display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
+      <div className="cl-viewport-toolbar" role="toolbar" aria-label="뷰포트 도구" style={{ position: "relative", flexShrink: 0, padding: 8, display: "flex", flexWrap: "wrap", gap: 4, borderBottom: "1px solid var(--lab-line)" }}>
         <span className="cl-viewport-group" role="group" aria-label="카메라 프레이밍" style={{ display: "inline-flex", gap: 4 }}>
           {FRAMING_MODES.map((entry) => (
             <button key={entry.mode} type="button" className="cl-viewport-button" aria-pressed={framing === entry.mode} disabled={!engine} onClick={() => onFraming(entry.mode)}>{entry.label}</button>
@@ -720,10 +698,14 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           engineReady={Boolean(engine?.setHandProp)}
           propId={handPropId}
           hand={handPropSide}
+          headPropId={headPropId}
+          stagePropId={stagePropId}
           busy={handPropBusy}
           onSelectProp={(nextPropId) => void onApplyHandProp(nextPropId, handPropSide)}
           onChangeHand={(nextSide) => void onApplyHandProp(handPropId, nextSide)}
           onApplyGripPose={onApplyHandPropGripPose}
+          onSelectHeadProp={(nextHeadPropId) => void onApplyHeadProp(nextHeadPropId)}
+          onSelectStageProp={(nextStagePropId) => void onApplyStageProp(nextStagePropId)}
         />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>

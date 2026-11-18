@@ -173,6 +173,47 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-darkroom-status").textContent,
     ).toContain("ΔE 0.0");
 
+    // Wave 6 (V20): 개폐형 가동 파츠 슬라이더(0~100%) & 캐릭터 IK 스냅 소켓 & follow-3d 속도선 고정 검증
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-ik-section").textContent,
+    ).toContain("5C. 개폐형 가동 파츠(V20)");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v20-prop-scifi-iris-airlock"),
+    );
+    fireEvent.change(screen.getByTestId("bg3d-blender-v20-open-slider"), {
+      target: { value: "80" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-articulated-kinematics-readout")
+        .textContent,
+    ).toContain("SF 블래스트 에어락 V20 개폐 80%");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-socket-wrist-desk").textContent,
+    ).toContain("Z 0.92m");
+    expect(
+      screen.getByTestId("bg3d-blender-ik-summary-readout").textContent,
+    ).toContain("접점 보정 0.0분");
+
+    // Wave 7 (V21): 개폐율 연동 가변 슬릿 고드레이·그림자 드리프트 & 3연속 시퀀스(15%->65%->100%) 검증
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-section").textContent,
+    ).toContain("5D. 개폐율 연동 가변 슬릿 고드레이(V21)");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v21-beat-15"));
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
+    ).toContain("슬릿 폭 0.39m");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v21-beat-100"));
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
+    ).toContain("슬릿 폭 1.68m");
+    fireEvent.change(screen.getByTestId("bg3d-blender-interaction-cut-slider"), {
+      target: { value: "50" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-stacked-interaction-roi-readout")
+        .textContent,
+    ).toContain("상호작용 50%(35컷)");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
