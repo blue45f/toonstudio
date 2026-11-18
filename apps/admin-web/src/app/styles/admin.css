@@ -31,12 +31,11 @@ body {
 .admin-shell {
   min-height: 100dvh;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   justify-items: center;
   gap: 28px;
   padding: 32px;
-  /* Keep wide descendants from expanding the mobile admin shell grid track. */
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-card {

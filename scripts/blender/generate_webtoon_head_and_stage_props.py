@@ -6,7 +6,7 @@ Blender 5.3 Procedural Generator for:
    - `tactical-headset.glb` (`TS_HeadProp_tactical-headset`): Cyberpunk/Apocalypse glowing cyan tactical visor & boom-mic headset.
    - `pearl-earrings-pin.glb` (`TS_HeadProp_pearl-earrings-pin`): Paired pearl drop earrings + gilded cross hairpins.
 
-2) 3 Korean Webtoon Stage Stand Props (`apps/character-lab/public/assets/props/webtoon-stage-props-v1/`):
+2) 5 Korean Webtoon Stage Stand Props (`apps/character-lab/public/assets/props/webtoon-stage-props-v1/`):
    - `cafe-bistro-table.glb` (`TS_StageProp_cafe-bistro-table`): Warm walnut round cafe bistro table + ceramic espresso cup & saucer.
    - `academy-desk.glb` (`TS_StageProp_academy-desk`): Korean high-school/academy classroom wood-and-steel desk + open notebook.
    - `murim-sword-aura.glb` (`TS_StageProp_murim-sword-aura`): Octagonal stone martial plinth + 6 floating azure-jade spirit blades.
@@ -343,6 +343,50 @@ def build_all_head_and_stage_props(scratch_dir: Path) -> dict[str, Any]:
             _add_box_uv(bm_au, (0.085, 0.014, 0.016), Vector((bx, by, bz - 0.18)), tilt, 0.22)
         st = _export_glb("TS_StageProp_murim-sword-aura", bm_au, au_mat, STAGE_PROP_ROOT / "murim-sword-aura.glb", smooth=False)
         stage_entries.append({"id": "murim-sword-aura", "labelKo": "무협 청운 검기 진법", "meshName": "TS_StageProp_murim-sword-aura", "path": "murim-sword-aura.glb", **st})
+
+        # STAGE PROP 4: rofan-throne-dais (로판 황실 대관식 대리석 단상 · 골드 필라)
+        rf_tex = _bake_zone_palette_tex(
+            str(scratch_dir / "rofan_throne_dais.png"),
+            [
+                (0.42, _hex_to_rgb01("#EAE4D8"), _hex_to_rgb01("#FAF7F0")),
+                (0.74, _hex_to_rgb01("#C89B3C"), _hex_to_rgb01("#FCE7A2")),
+                (1.0, _hex_to_rgb01("#6E1423"), _hex_to_rgb01("#9E1F34")),
+            ],
+        )
+        rf_mat = make_textured_pbr_material("mat_stage_rofan_dais", rf_tex, roughness=0.28, metallic=0.36)
+        bm_rf = bmesh.new()
+        _add_cyl_uv(bm_rf, 0.72, 0.68, 0.028, 28, Vector((0.0, 0.0, 0.014)), None, 0.22)
+        _add_ring_torus(bm_rf, Vector((0.0, 0.0, 0.030)), 0.66, 0.011, 28, 8, Euler((math.pi * 0.5, 0.0, 0.0)), 0.58)
+        _add_box_uv(bm_rf, (0.34, 1.24, 0.006), Vector((0.0, 0.0, 0.031)), None, 0.88)
+        for sx in (-0.48, 0.48):
+            _add_cyl_uv(bm_rf, 0.072, 0.064, 0.08, 16, Vector((sx, 0.42, 0.068)), None, 0.58)
+            _add_cyl_uv(bm_rf, 0.048, 0.044, 1.48, 16, Vector((sx, 0.42, 0.84)), None, 0.22)
+            _add_cyl_uv(bm_rf, 0.066, 0.076, 0.08, 16, Vector((sx, 0.42, 1.62)), None, 0.58)
+        st = _export_glb("TS_StageProp_rofan-throne-dais", bm_rf, rf_mat, STAGE_PROP_ROOT / "rofan-throne-dais.glb")
+        stage_entries.append({"id": "rofan-throne-dais", "labelKo": "로판 황실 대관식 대리석 단상", "meshName": "TS_StageProp_rofan-throne-dais", "path": "rofan-throne-dais.glb", **st})
+
+        # STAGE PROP 5: noir-interrogation-lamp (느와르 취조실 스틸 책상 · 펜던트 조명)
+        nr_tex = _bake_zone_palette_tex(
+            str(scratch_dir / "noir_interrogation_lamp.png"),
+            [
+                (0.45, _hex_to_rgb01("#262B34"), _hex_to_rgb01("#454E5E")),
+                (0.75, _hex_to_rgb01("#9A7B4F"), _hex_to_rgb01("#D5B47F")),
+                (1.0, _hex_to_rgb01("#F59E0B"), _hex_to_rgb01("#FEF3C7")),
+            ],
+        )
+        nr_mat = make_textured_pbr_material("mat_stage_noir_lamp", nr_tex, roughness=0.34, metallic=0.58, emission_hex="#FBBF24", emission_strength=0.24)
+        bm_nr = bmesh.new()
+        nx, ny = -0.40, -0.30
+        _add_box_uv(bm_nr, (0.58, 0.40, 0.024), Vector((nx, ny, 0.73)), None, 0.22)
+        for lx in (nx - 0.25, nx + 0.25):
+            for ly in (ny - 0.16, ny + 0.16):
+                _add_box_uv(bm_nr, (0.026, 0.026, 0.72), Vector((lx, ly, 0.36)), None, 0.22)
+        _add_box_uv(bm_nr, (0.22, 0.16, 0.012), Vector((nx + 0.05, ny + 0.02, 0.748)), Euler((0.0, 0.0, 0.22)), 0.60)
+        _add_cyl_uv(bm_nr, 0.006, 0.006, 0.38, 10, Vector((-0.14, -0.18, 2.06)), None, 0.22)
+        _add_cyl_uv(bm_nr, 0.17, 0.036, 0.12, 18, Vector((-0.14, -0.18, 1.84)), None, 0.22)
+        _add_cyl_uv(bm_nr, 0.038, 0.024, 0.048, 14, Vector((-0.14, -0.18, 1.77)), None, 0.90)
+        st = _export_glb("TS_StageProp_noir-interrogation-lamp", bm_nr, nr_mat, STAGE_PROP_ROOT / "noir-interrogation-lamp.glb")
+        stage_entries.append({"id": "noir-interrogation-lamp", "labelKo": "느와르 취조실 스틸 책상·펜던트 조명", "meshName": "TS_StageProp_noir-interrogation-lamp", "path": "noir-interrogation-lamp.glb", **st})
 
     bpy.ops.object.select_all(action="DESELECT")
     for o in prev_sel:

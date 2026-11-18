@@ -10,8 +10,8 @@ import { parseSaveBusinessPlanRequest } from "./business-plan.dto";
 
 const target = process.env.TEST_DATABASE_URL;
 const suite = describe.skipIf(!target);
-const originalMigration = readFileSync(new URL("../../platform/database/migrations/0125_admin_business_plan.sql", import.meta.url), "utf8");
-const accessMigration = readFileSync(new URL("../../platform/database/migrations/0126_admin_business_plan_access.sql", import.meta.url), "utf8");
+const originalMigration = readFileSync(new URL("../../platform/database/migrations/0123_admin_business_plan.sql", import.meta.url), "utf8");
+const accessMigration = readFileSync(new URL("../../platform/database/migrations/0128_admin_business_plan_access.sql", import.meta.url), "utf8");
 const ownerAccess = { canRead: true, canWrite: true, canExport: true, canManageAccess: true, canClaimOwnership: false };
 const grantAccess = { ...ownerAccess, canManageAccess: false };
 const initialAccess = { canRead: false, canWrite: false, canExport: false, canManageAccess: false, canClaimOwnership: true };

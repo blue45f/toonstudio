@@ -55,7 +55,7 @@ try {
     "0117_studio_scoped_write_policy.sql",
     "0119_studio_review_voice_note_guard_schema.sql",
     "0121_studio_bg3d_six_pass_bundle.sql",
-    "0124_admin_cloud_workboard.sql",
+    "0125_admin_cloud_workboard.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }

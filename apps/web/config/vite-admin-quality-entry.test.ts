@@ -5,7 +5,7 @@ import path from "node:path";
 import { build } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ADMIN_BUSINESS_PLAN_BASE, ADMIN_QUALITY_BASE, adminQualityEntryPlugin } from "./vite-admin-quality-entry";
+import { ADMIN_BUSINESS_PLAN_BASE, ADMIN_QUALITY_BASE, ADMIN_WORKSPACE_BASE, adminQualityEntryPlugin } from "./vite-admin-quality-entry";
 
 const temporaryDirectories: string[] = [];
 afterEach(async () => {
@@ -48,6 +48,7 @@ describe("관리자 검증 보드의 독립 빌드 조립", () => {
     expect(webHtml).toContain("Web fixture");
     expect(webHtml).not.toContain(ADMIN_QUALITY_BASE);
     expect(webHtml).not.toContain(ADMIN_BUSINESS_PLAN_BASE);
+    expect(webHtml).not.toContain(ADMIN_WORKSPACE_BASE);
     expect(adminHtml).toContain("Admin fixture");
     expect(adminHtml).toMatch(/src="\/admin\/platform\/quality\/assets\//u);
     expect(workspaceHtml).toBe(adminHtml);

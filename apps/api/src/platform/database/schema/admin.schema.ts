@@ -5,7 +5,7 @@ import type { Board } from "@toonstudio/contracts/admin-cloud-workboard";
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 
-import { users } from "./index";
+import { users } from "./auth.schema";
 
 // 런타임 토글/설정(key-value). 예: monetization.enabled (광고형 수익화 on/off).
 export const appSettings = pgTable("app_setting", {

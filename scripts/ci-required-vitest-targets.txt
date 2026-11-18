@@ -1,5 +1,6 @@
 apps/admin-web/src/app/shell/AdminApp.test.tsx
 apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx
+apps/admin-web/src/domains/operations/nestjs-quality
 apps/admin-web/src/domains/workspace
 apps/admin-web/src/platform/http/workspace-api.test.ts
 apps/api/src/config/api-body-parser-boundary.test.ts

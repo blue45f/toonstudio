@@ -1,0 +1,157 @@
+{
+  "schema": "toonstudio.blender-duo-eyeline-ots.v29",
+  "createdAt": "2026-11-18",
+  "creator": "ToonStudio",
+  "license": "CC0-1.0",
+  "generator": "Blender 5.3.0 (scripts/blender/generate_duo_eyeline_ots_v29.py · Duo Eye-Line & 180-Deg OTS Guard SHA-256 verified)",
+  "tool": "Blender 5.3.0",
+  "blenderVersion": "5.3.0",
+  "units": "meter",
+  "upAxis": "Y",
+  "duoEyelineOtsSpec": {
+    "heightGapRangeCm": [
+      6,
+      14,
+      24
+    ],
+    "axisOfActionRuleDeg": 180,
+    "modes": [
+      "rofan_gaze_24cm",
+      "ots_table_dialogue",
+      "action_standoff"
+    ]
+  },
+  "externalSources": [],
+  "sceneIsolationAudit": {
+    "activeIsolatedScene": "ToonStudio_Duo_EyeLine_OTS_V29",
+    "zeroCrossSceneMutation": true,
+    "preservedScenes": [
+      {
+        "sceneName": "PilatesFlow_Reformer_Unslop_V9",
+        "objectCount": 37,
+        "sha256Before": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "sha256After": "c5e2f2946b1b6512f593758bb2458751a19f5335215fa488ba9c9d7a92336b5a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "PilatesFlow_Webtoon_Atelier",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene",
+        "objectCount": 1,
+        "sha256Before": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "sha256After": "50b5e9d1033943639c181f322107ed828f38f56abd2628f73d665137792063a3",
+        "unchanged": true
+      },
+      {
+        "sceneName": "Scene.001",
+        "objectCount": 0,
+        "sha256Before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256After": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Aftermath_Damage_V26",
+        "objectCount": 55,
+        "sha256Before": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "sha256After": "ec9b77d857473f8cf98b890e1ce1ff5ed74268812ace20719f2d6627e1819fb2",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Atmospheric_Bokeh_DoF_V22",
+        "objectCount": 31,
+        "sha256Before": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "sha256After": "8fc3b1ec2b37b320ad2f29dff0a042979ee7d99099d10871058a397374d9310f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Dust_HeatHaze_V27",
+        "objectCount": 61,
+        "sha256Before": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "sha256After": "6470cd1f332c7599e2e7f9dd0fbc942c9bf7487013f7ed9d684db926414b995a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_VRM_PoseMannequin_V28",
+        "objectCount": 55,
+        "sha256Before": "ef72025340fc6d64fe7e863f015997182b9cae7fa3730cf504aa560f7d5f546a",
+        "sha256After": "ef72025340fc6d64fe7e863f015997182b9cae7fa3730cf504aa560f7d5f546a",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_Weather_Motion_ColorScript_V24",
+        "objectCount": 47,
+        "sha256Before": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "sha256After": "d01a89974611ae063a7a2e798c611efd24dff79435bed322355ed29d5bb6e21f",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_WindDrape_HalfMirror_V25",
+        "objectCount": 53,
+        "sha256Before": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "sha256After": "698e54317f54d8726d1a7002f93b50f32b1063459f6e9e0f65ce1009502c62e5",
+        "unchanged": true
+      },
+      {
+        "sceneName": "ToonStudio_ZDepth_SFX_Crowd_ToD_V23",
+        "objectCount": 41,
+        "sha256Before": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "sha256After": "fd57343d7d0509155af0b0ff41d157cc89236748c5c5cabed76063d460da41c2",
+        "unchanged": true
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "webtoon-duo-action-standoff-clash-v29.glb",
+      "duoMode": "action_standoff",
+      "heightGapCm": 6,
+      "eyelinePitchDeg": 2.7,
+      "bytes": 572428,
+      "sha256": "fa93644511ceaec1371fcc257af9099882c384792a6d01df286d197b86e1253f",
+      "triangles": 14868,
+      "vertices": 7738
+    },
+    {
+      "file": "webtoon-duo-ots-table-dialogue-v29.glb",
+      "duoMode": "ots_table_dialogue",
+      "heightGapCm": 14,
+      "eyelinePitchDeg": 5.4,
+      "bytes": 466380,
+      "sha256": "e23ef8a28fa1c8128f23fc8e4dcb8eb8a47171a6fd849824b5a31e8d49069270",
+      "triangles": 12332,
+      "vertices": 6384
+    },
+    {
+      "file": "webtoon-duo-rofan-gaze-24cm-gap-v29.glb",
+      "duoMode": "rofan_gaze_24cm",
+      "heightGapCm": 24,
+      "eyelinePitchDeg": 15.0,
+      "bytes": 461684,
+      "sha256": "9b2c27a53cf3f79114869e3c5c27a3ebd834a31a263bb76b8e371e75de098da8",
+      "triangles": 12332,
+      "vertices": 6384
+    }
+  ],
+  "thumbnails": [
+    {
+      "file": "thumbnails/webtoon-duo-action-standoff-clash-v29.png",
+      "bytes": 324634,
+      "sha256": "13f90c940fca1e7af5d5c341648d18ed0930cc26ea88ab4039115b2089057d7a"
+    },
+    {
+      "file": "thumbnails/webtoon-duo-ots-table-dialogue-v29.png",
+      "bytes": 322802,
+      "sha256": "a885883d93df15e193411790ac1aa835aecd14e38c2667ca2b2f919624e9cf3d"
+    },
+    {
+      "file": "thumbnails/webtoon-duo-rofan-gaze-24cm-gap-v29.png",
+      "bytes": 354416,
+      "sha256": "d7a95e3423ec4d328af06cf44962a0f3bc1d47324470ca4312dee9e89c223f5d"
+    }
+  ]
+}

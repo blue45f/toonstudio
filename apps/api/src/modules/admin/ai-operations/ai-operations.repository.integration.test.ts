@@ -12,7 +12,7 @@ const target = process.env.TEST_DATABASE_URL;
 const schema = `ai_operations_${randomUUID().replaceAll("-", "")}`;
 const suppliedRuntimeRole = process.env.TEST_RUNTIME_DATABASE_ROLE;
 const runtimeRole = suppliedRuntimeRole ?? `ai_operations_runtime_${randomUUID().replaceAll("-", "")}`;
-const migration = () => readFileSync(new URL("../../../platform/database/migrations/0127_admin_ai_operations.sql", import.meta.url), "utf8")
+const migration = () => readFileSync(new URL("../../../platform/database/migrations/0126_admin_ai_operations.sql", import.meta.url), "utf8")
   .replaceAll("public.", `"${schema}".`);
 const snapshot = (): BoardSnapshot => ({
   meta: { title: "합성 운영 기록", snapshotAt: "2020-01-01T00:00:00Z", mainSha: "", mainCommitUrl: "", deadline: "", noticeUrl: "", caveats: [] },

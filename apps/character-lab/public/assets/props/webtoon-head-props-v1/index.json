@@ -9,8 +9,8 @@
       "labelKo": "메탈 라운드 안경",
       "meshName": "TS_HeadProp_wire-glasses",
       "path": "wire-glasses.glb",
-      "bytes": 45672,
-      "sha256": "5c82ef01a3e43d04e79b08c2fb37e7b11b626c6b2dbc09a41fcb1d57c99cc053",
+      "bytes": 45428,
+      "sha256": "3bbb641020fe34e91f292490947392293b1b6d2d7c94ff04e7045fca5347f303",
       "triangles": 828
     },
     {
@@ -18,8 +18,8 @@
       "labelKo": "로판 황실 사파이어 티아라",
       "meshName": "TS_HeadProp_rofan-tiara",
       "path": "rofan-tiara.glb",
-      "bytes": 34316,
-      "sha256": "9b7426f04c2d43bf789cfc1a8d6d0b5f2cb86bfbfb5d68f58677f7e78dc48551",
+      "bytes": 34072,
+      "sha256": "58053ca4b8090c134141b7c5f3730dd715e9a5912378fe8c49087186e8ee1734",
       "triangles": 512
     },
     {
@@ -27,8 +27,8 @@
       "labelKo": "전술 홀로그램 헤드셋",
       "meshName": "TS_HeadProp_tactical-headset",
       "path": "tactical-headset.glb",
-      "bytes": 36880,
-      "sha256": "947e0feac84c4256974676c4f67e84742abf45c95880ad9b81fbec576a55a2c1",
+      "bytes": 36636,
+      "sha256": "7105564a2e7db203c30d1276a0da3f8a7b9083d7f01aae5014195c675bdd955c",
       "triangles": 560
     },
     {
@@ -36,9 +36,27 @@
       "labelKo": "진주 드롭 귀걸이·골드 헤어핀",
       "meshName": "TS_HeadProp_pearl-earrings-pin",
       "path": "pearl-earrings-pin.glb",
-      "bytes": 27436,
-      "sha256": "de92d56c0fc0456d862da11c8547f8cd6d28c032abb3ae8769c45b55460f4913",
+      "bytes": 27192,
+      "sha256": "90e889c9c6a533f0fb1f3638b3bf137e6e0ab22f84469d77abf70c83d4073eaf",
       "triangles": 600
+    },
+    {
+      "id": "studio-headphones",
+      "labelKo": "청춘 무선 네크 헤드폰",
+      "meshName": "TS_HeadProp_studio-headphones",
+      "path": "studio-headphones.glb",
+      "bytes": 43628,
+      "sha256": "5eba8a11dcaf7f6948e8e532e89d371757431ac55b3ab54b5d44bc42dbebcb3e",
+      "triangles": 888
+    },
+    {
+      "id": "silver-monocle",
+      "labelKo": "괴도·집사 실버 체인 모노클",
+      "meshName": "TS_HeadProp_silver-monocle",
+      "path": "silver-monocle.glb",
+      "bytes": 39680,
+      "sha256": "ffb96d9b4c590822fc46a9988b7f6b5d05e54fc1a6cd471d514f7fdcbd51f14b",
+      "triangles": 792
     }
   ]
 }

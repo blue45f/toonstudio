@@ -12,11 +12,7 @@ function sampleTask(id = "TEST-001", title = "검토할 샘플 변경"): Task {
 async function fixture(page: Page, board: Board = emptyBoard()) {
   const state = { board, revision: 0, storedAt: null as string | null, role: "admin", authStatus: 200, getStatus: 200, saveStatus: 200, gets: 0, writes: [] as CloudWorkboardSave[], requests: [] as string[] };
   page.on("request", request => { if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) state.requests.push(`${request.method()} ${new URL(request.url()).pathname}`); });
-  await page.route("**/api/**", route => {
-    // API mocks must not intercept Vite source modules under nested /api/ directories.
-    if (!new URL(route.request().url()).pathname.startsWith("/api/")) return route.fallback();
-    return route.fulfill({ status: 404, json: { message: "이 브라우저 검증에는 외부 실행 API가 없습니다." } });
-  });
+  await page.route(url => url.pathname.startsWith("/api/"), route => route.fulfill({ status: 404, json: { message: "이 브라우저 검증에는 외부 실행 API가 없습니다." } }));
   await page.route("**/api/admin/me", route => route.fulfill({ status: state.authStatus, json: state.authStatus === 200 ? { id: "cloud-admin-test", role: state.role } : { message: "관리자 권한이 만료되었습니다." } }));
   await page.route("**/api/admin/cloud-workboard", async route => {
     if (route.request().method() === "GET") {
@@ -51,11 +47,12 @@ test("새 관리자 보드는 빈 상태로 시작하고 저장소 실패와 운
   await expect(page.getByRole("heading", { name: "아직 저장된 작업이 없습니다" })).toBeVisible();
   expect(server.board.tasks).toHaveLength(0);
   expect(server.requests).toEqual([]);
+  const readsBeforeRevocation = server.gets;
   server.role = "operator";
   await page.evaluate(() => window.dispatchEvent(new Event("toonstudio:auth-session-changed")));
   await expect(page.getByRole("alert")).toContainText("운영자 권한으로는 열 수 없습니다");
   await expect(page.getByRole("heading", { name: "클라우드 작업 보드", exact: true })).toHaveCount(0);
-  expect(server.gets).toBe(2);
+  expect(server.gets).toBe(readsBeforeRevocation);
 });
 
 test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존하며 기록 API만 호출한다", async ({ page }, testInfo) => {

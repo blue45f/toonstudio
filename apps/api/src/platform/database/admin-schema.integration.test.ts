@@ -25,8 +25,8 @@ postgres("Managed administrator PostgreSQL schema", () => {
     migration = await readFile(new URL("./migrations/0043_admin_runtime_schema.sql", import.meta.url), "utf8");
     runtimeMigrations = await Promise.all([
       "0097_admin_member_test_accounts.sql",
-      "0125_admin_business_plan.sql",
-      "0126_admin_business_plan_access.sql",
+      "0123_admin_business_plan.sql",
+      "0128_admin_business_plan_access.sql",
     ].map((file) => readFile(new URL(`./migrations/${file}`, import.meta.url), "utf8")));
     legacy = await readFile(new URL("./fixtures/admin-runtime-legacy.sql", import.meta.url), "utf8");
   });
