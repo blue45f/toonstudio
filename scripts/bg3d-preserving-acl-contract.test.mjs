@@ -10,7 +10,9 @@ import { loadMigrationManifest } from "./run-production-database-migrations.mjs"
 import { BG3D_OTHER_CLIENTS_SQL, parseBg3dMigrationArguments, runBg3dPreservingAclMigration, validateBg3dMigrationOptions } from "./run-bg3d-bundle-preserving-acl-migration.mjs";
 
 const releaseSha = "534ee5b18549d154753767e402f8389ff2a96216";
-const manifest = loadMigrationManifest();
+const currentManifest = loadMigrationManifest();
+// 0121 전용 적용 경계는 당시 실제 정본 이력으로 검증하며 새 migration의 허용 범위를 늘리지 않는다.
+const manifest = currentManifest.filter((migration) => migration.sequence <= 121);
 const options = { mode: "apply", releaseSha, runtimeDatabaseRole: "app_runtime", runtimeRoleMode: "separated",
   confirmation: "APPLY-TOONSPECTRUM-PRODUCTION-MIGRATIONS", writerStateConfirmation: "NO-STUDIO-WRITERS" };
 
@@ -47,6 +49,7 @@ test.each([
 });
 
 test("원문0121을 수정하거나 향후 일반 migration에 보존 경계를 재사용할 수 없다", () => {
+  expect(() => planBg3dPreservingAclMigration(currentManifest, baseline())).toThrow(/0121/u);
   expect(() => planBg3dPreservingAclMigration([...manifest.slice(0, -1), { ...manifest.at(-1), checksum: "f".repeat(64) }], baseline())).toThrow(/0121/u);
   expect(() => planBg3dPreservingAclMigration([...manifest, { id: "0122_future" }], baseline())).toThrow(/0121/u);
 });
