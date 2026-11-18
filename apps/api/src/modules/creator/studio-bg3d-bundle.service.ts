@@ -86,7 +86,7 @@ export class StudioBg3dBundleService {
     const artifact = studioBg3dBundleExpectedArtifact(record.manifest, role);
     if (!file || !Buffer.isBuffer(file.buffer) || file.buffer.byteLength !== file.size || file.size !== artifact.byteSize || file.mimetype !== artifact.mimeType) throw new BadRequestException("6패스 출력의 크기·형식이 manifest와 다릅니다.");
     try {
-      if (role === "scene") verifyStudioBg3dSixPassBundleSceneBytes(record.manifest, file.buffer);
+      if (role === "scene") verifyStudioBg3dSixPassBundleSceneBytes(record.manifest, file.buffer, "work");
       else { verifyStudioBg3dSixPassArtifactBytes(artifact, file.buffer); assertStudioBg3dBundlePngPixels(file.buffer); }
     }
     catch { throw new BadRequestException("6패스 출력의 픽셀·장면·SHA-256을 확인하지 못했습니다."); }

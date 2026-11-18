@@ -634,6 +634,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
             <StudioBg3dGlbTexturePaintMount h={h} />
             </div>
             <StudioBg3dActionFooter
+              frozenCut={h.frozenCut} teamCut={Boolean(h.cutWorkId && h.frozenCut)}
               sceneRecoveryError={sceneRecoveryError}
               hasCloneFailure={hasCloneFailure}
               isRestoringScene={isRestoringScene && h.engineRuntime?.plan?.status === "available"}
@@ -646,7 +647,7 @@ export function StudioBg3dEditorSidebar({ h, experienceMode = "pro", onOpenPro =
               }}
               sharedStageUpdateBlockedReason={sharedStageUpdateBlockedReason}
               onOpenSharedStage={() => setActivePanelTab("layers")}
-              error={error ?? h.sixPassLtInsertUnavailableReason}
+              error={error} outputUnavailableReason={h.sixPassLtInsertUnavailableReason}
               saveNotice={librarySaveNotice}
               isCapturing={isCapturing}
               deletingModelInProgress={deletingModelId !== null}

@@ -169,6 +169,7 @@ export class StudioVirtualSpaceDecorationService {
     const updated = await db
       .update(studioVirtualSpaceDecorationLayouts)
       .set({
+        districtKey,
         presetKey: rest.presetKey,
         presentationMode: rest.presentationMode,
         placements: [...placements],

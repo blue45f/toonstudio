@@ -178,6 +178,7 @@ function plannedImage(
 async function privatePlanV2(options: {
   readonly layeredPsd?: boolean;
   readonly contactSheet?: boolean;
+  readonly squareOutput?: boolean;
 } = {}): Promise<{ readonly plan: StudioBg3dShotBatchPlan; readonly sourceRevision: string }> {
   const passes = ["beauty", "depth"] as const;
   const sourceShots = [
@@ -186,6 +187,7 @@ async function privatePlanV2(options: {
   ] as const;
   const sourceRevision = serializeStudioBg3dSceneDocument({
     ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+    ...(options.squareOutput ? { output: { ...DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT.output, exportAspectRatio: 1 } } : {}),
     shots: sourceShots.map((shot) => ({
       ...shot,
       output: {
@@ -230,7 +232,7 @@ async function privatePlanV2(options: {
       },
       shots: sourceShots.map((shot) => ({
         shotId: shot.id,
-        width: 640,
+        width: options.squareOutput ? 360 : 640,
         height: 360,
         requestedHeight: 360,
         wasReduced: false,
@@ -339,6 +341,19 @@ describe("Studio BG3D shot batch archive", () => {
     expect(text).toContain("shots/001/normal.png");
     expect(text).toContain('"encoding": "view-normal-rgba8"');
     expect(text).not.toContain('"nearIs"');
+  });
+
+  it("가로 뷰포트의 정사각 원고 비율을 복구 계획과 공개 ZIP에 동일하게 고정한다", async () => {
+    const { plan, sourceRevision } = await privatePlanV2({ squareOutput: true });
+    const manifest = await projectStudioBg3dShotBatchPlanForPublicArchive(plan, {
+      appProfileId: STUDIO_BG3D_SHOT_BATCH_APP_IMPLEMENTATION_PROFILE_V1,
+      sourceRevision,
+    });
+    expect(manifest.captureProfile).toMatchObject({ sourceWidth: 640, sourceHeight: 360, exportAspectRatio: 1 });
+    expect(manifest.shots.map(({ capture }) => [capture.width, capture.height])).toEqual([[360, 360], [360, 360]]);
+    expect(() => createStudioBg3dShotBatchPublicRenderPlan({
+      ...manifest, captureProfile: { ...manifest.captureProfile, exportAspectRatio: 16 / 9 },
+    })).toThrow();
   });
 
   it("writes a sanitized v3 public render plan without private Plan v2 recovery identity", async () => {

@@ -136,6 +136,11 @@ if (typeof window !== "undefined") {
   initializeGuestCoordination();
 }
 
+/** 저장소가 차단된 게스트 메모리 세션에는 기기 영구 저장을 약속하지 않는다. */
+export function isGuestIdentityPersisted(id: string): boolean {
+  return readStoredGuest()?.id === id;
+}
+
 /** Current guest identity, or null when this browser is not in guest mode. */
 export function getGuestIdentity(): GuestIdentity | null {
   if (cachedGuest === undefined) cachedGuest = readStoredGuest();

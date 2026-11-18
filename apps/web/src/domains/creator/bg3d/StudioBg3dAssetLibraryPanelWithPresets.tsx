@@ -49,7 +49,7 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
 
   return (
     <div ref={scopeRef}>
-      <fieldset disabled={isBuilding} className="m-0 min-w-0 border-0 p-0">
+      <fieldset disabled={isBuilding && !props.isUploading} className="m-0 min-w-0 border-0 p-0">
         <ExistingAssetLibraryPanel
           {...props}
           renderLocalImport={props.onImportFiles ? (importRights, ready, onImported) => (
@@ -75,8 +75,16 @@ export function StudioBg3dAssetLibraryPanelWithPresets(props: Props) {
         />
       </fieldset>
       <StudioBg3dEssentialPosePropPanel
+        key={props.localBlendScopeKey}
         disabled={panelDisabled}
-        onFile={handOffFile}
+        onFile={(file, entry, signal) => props.onImportFiles
+          ? props.onImportFiles([file], {
+            status: "licensed",
+            licenseName: entry.license,
+            commercialUse: true,
+            attributionRequired: false,
+          }, signal)
+          : handOffFile(file)}
         onBusyChange={setIsBuilding}
       />
       <StudioReferenceRebuildPresets

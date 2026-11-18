@@ -10,7 +10,7 @@ import { installStudioCommandExecutionBindings } from "../studio-command-executi
 import { createStudioDrawingClarityCommandBindings } from "./StudioDrawingClarityCommands";
 import { openStudioHelpCenter, requestStudioCommandSearch } from "../studio-help-center-channel";
 import { requestStudioAllTools } from "../studio-toolbar-channel";
-import { preloadStudioAssetToolPopoverBody } from "../studio-tool-belt-lazy-ui";
+import { preloadStudioAssetToolPopoverBody, preloadStudioBubbleToolPopoverBody } from "../studio-tool-belt-lazy-ui";
 import { StudioDrawingClaritySaveButton } from "./StudioDrawingClaritySaveButton";
 import { StudioDrawingClarityMobileBar } from "./StudioDrawingClarityMobileBar";
 import { StudioDrawingClarityCoreTools, StudioDrawingClarityHistory } from "./StudioDrawingClarityCoreTools";
@@ -43,13 +43,11 @@ export function StudioDrawingClarityBar({ session: s }: { readonly session: Stud
   const outputRef = useRef<HTMLElement | null>(null);
   const shareTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const clarity = useStudioDrawingClarity();
   const openShare = (trigger: HTMLButtonElement) => {
     shareTriggerRef.current = trigger;
     setShareOpen(true);
   };
   const openComments = () => {
-    clarity?.showSavedLayout();
     if (s.openStudioCommentInbox) {
       s.openStudioCommentInbox();
       return;
@@ -68,7 +66,7 @@ export function StudioDrawingClarityBar({ session: s }: { readonly session: Stud
           openCommentCount={s.openStudioCommentCount ?? 0}
           returnFocus={() => shareTriggerRef.current}
           onClose={() => setShareOpen(false)}
-          onOpenTeamPanel={() => { clarity?.showSavedLayout(); s.setTeamPanelOpen(true); }}
+          onOpenTeamPanel={() => s.setTeamPanelOpen(true)}
           onOpenComments={openComments}
           onOpenExport={() => s.setExportMenuOpen(true)}
         />
@@ -104,7 +102,6 @@ function StudioDrawingClarityDesktopBar({
     setNotice(requestStudioCommandSearch({ scope: "all" }) ? "" : bt("검색을 준비하고 있어요. 다시 눌러 주세요.", "Search is getting ready. Please try again."));
   };
   const openHistory = () => {
-    clarity.showSavedLayout();
     s.setHistoryPanelOpen?.(true);
   };
   const commentCount = s.openStudioCommentCount ?? 0;
@@ -119,8 +116,8 @@ function StudioDrawingClarityDesktopBar({
         <button type="button" className="studio-drawing-classic-menu-item" onClick={(event) => clarity.open("pages", event.currentTarget)}>{bt("컷·원고", "Cuts")}</button>
         <button type="button" className="studio-drawing-classic-menu-item" onClick={(event) => { clarity.open("layers", event.currentTarget); s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" }); }}>{bt("레이어", "Layers")}</button>
         <button type="button" className="studio-drawing-classic-menu-item" onClick={(event) => clarity.open("brush", event.currentTarget)}>{bt("브러시·필터", "Brushes")}</button>
-        <button type="button" className="studio-drawing-classic-menu-item" onClick={() => s.setBg3dOpen?.((open) => !open)}>{bt("3D·캐릭터", "3D")}</button>
-        <button type="button" className="studio-drawing-classic-menu-item" onClick={() => { clarity.showSavedLayout(); s.setTeamPanelOpen(true); }}>{bt("협업·검수", "Collab")}</button>
+        <button type="button" className="studio-drawing-classic-menu-item" onClick={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}>{bt("3D·캐릭터", "3D")}</button>
+        <button type="button" className="studio-drawing-classic-menu-item" onClick={() => s.setTeamPanelOpen(true)}>{bt("협업·검수", "Collab")}</button>
       </nav>
       <button type="button" data-studio-clarity-omnibox="true" className="studio-drawing-omnibox" onClick={(event) => openSearch(event.currentTarget)}>
         <Search size={15} aria-hidden /><span>{bt("기능·도구 검색", "Search tools & actions")}</span><kbd aria-hidden="true">⌘K</kbd>
@@ -144,16 +141,30 @@ function StudioDrawingClarityDesktopBar({
         { id: "pages", label: bt("페이지 보기", "View pages"), run: (trigger) => clarity.open("pages", trigger) },
         { id: "assets", label: bt("소재 찾기", "Find assets"), run: () => { clarity.close(); preloadStudioAssetToolPopoverBody(); s.setMenu("asset"); } },
         { id: "export", label: bt("원고 내보내기", "Export draft"), run: () => { clarity.close(); s.setExportMenuOpen(true); } },
-        { id: "team", label: bt("함께 작업", "Work together"), run: () => { clarity.showSavedLayout(); s.setTeamPanelOpen(true); } },
+        { id: "team", label: bt("함께 작업", "Work together"), run: () => s.setTeamPanelOpen(true) },
         { id: "all", label: bt("전체 도구", "All tools"), run: (trigger) => { openInspector(); requestStudioAllTools(trigger); } },
         { id: "search", label: bt("도구·기능 검색", "Search tools and features"), run: (trigger) => openSearch(trigger) },
-        { id: "windows", label: bt("프로젝트·창 도구 보기", "Show project and window tools"), run: clarity.showSavedLayout },
+        { id: "windows", label: bt("프로젝트·창 도구 배치로 전환", "Switch to project and window layout"), run: clarity.showSavedLayout },
         { id: "help", label: bt("사용 방법", "How to use"), run: () => openStudioHelpCenter({ section: "current-tool" }) },
         { id: "view", label: bt("화면과 작업 환경", "Display and workspace"), run: requestStudioShellFloatingLayoutManagerOpen },
         { id: "status", label: bt("저장·화면 문제 해결", "Save and display troubleshooting"), run: requestStudioDrawingReliability },
       ]} />
     </header>
-    <div tabIndex={-1} className="studio-drawing-clarity-context-row"><button type="button" className="studio-drawing-page-position" onClick={(event) => clarity.open("pages", event.currentTarget)}>{s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim() ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span></button><Suspense fallback={null}><LazyStudioDrawingQuickErgonomicsBar session={s} /></Suspense><div className="studio-drawing-clarity-context-actions"><StudioDrawingClarityHistory session={s} /><button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}><Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span></button></div></div>
+    <div tabIndex={-1} className="studio-drawing-clarity-context-row">
+      <button type="button" className="studio-drawing-page-position" onClick={(event) => clarity.open("pages", event.currentTarget)}>
+        {s.studioMenubarActivePageLabel.trim() && s.studioMenubarActivePageLabel.trim() !== s.title.trim()
+          ? s.studioMenubarActivePageLabel : `${bt("페이지", "Page")} ${s.activePageIndex + 1}`}<span aria-hidden>⌄</span>
+      </button>
+      <span id="studio-document-quick-mode-slot" className="shrink-0 empty:hidden" />
+      <div ref={clarity.setSelectionHost} className="studio-drawing-selection-slot" />
+      <Suspense fallback={null}><LazyStudioDrawingQuickErgonomicsBar session={s} /></Suspense>
+      <div className="studio-drawing-clarity-context-actions">
+        <StudioDrawingClarityHistory session={s} />
+        <button type="button" data-studio-clarity-find-tools="true" className="studio-drawing-clarity-button" onClick={(event) => openSearch(event.currentTarget)}>
+          <Search size={18} aria-hidden /><span>{bt("도구 찾기", "Find tools")}</span>
+        </button>
+      </div>
+    </div>
     {notice ? <p role="status" className="px-3 py-1 text-xs text-fg-2">{notice}</p> : null}
   </>;
 }
@@ -184,16 +195,15 @@ export function StudioDrawingClarityRail({ session: s }: { readonly session: Stu
         },
         onOpenCutSplit: (trigger) => clarity.open("pages", trigger),
         onOpenBubble: () => {
-          clarity.showSavedLayout();
-          requestStudioCommandSearch({ scope: "all" });
+          preloadStudioBubbleToolPopoverBody();
+          s.setMenu("bubble");
         },
-        onToggleBg3d: () => s.setBg3dOpen?.((open) => !open),
+        onToggleBg3d: () => s.studioLeftToolRailHandlers.toggleBg3dEditor(),
         onPlacePinComment: () => {
           if (s.startStudioCommentPlacementSession) {
             s.startStudioCommentPlacementSession();
             return;
           }
-          clarity.showSavedLayout();
           s.setCommentsOpen?.(true);
         },
         onOpenAllTools: (trigger) => {

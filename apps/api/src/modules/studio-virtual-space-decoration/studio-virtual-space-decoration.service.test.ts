@@ -189,6 +189,7 @@ describe("later writes use compare-and-swap", () => {
 
     const [updateSql, updateParams] = boundary.query.mock.calls[1];
     expect(updateSql).toContain("update");
+    expect(updateSql).toMatch(/set "districtKey" = \$/u);
     expect(updateSql).toMatch(/"studio_virtual_space_decoration_layout"\."revision" = \$/);
     expect(updateParams).toContain(7);
     expect(saved.revision).toBe(8);

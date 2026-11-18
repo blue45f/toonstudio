@@ -3,6 +3,7 @@
  * count, undo/redo, hold-to-compare, reset-to-baseline (confirm), save variant (named), 고급 편집
  * toggle and close. Below the tablet breakpoint the secondary actions fold into a "더 보기" panel.
  */
+import { CharacterShaperSavedVariants } from "./CharacterShaperSavedVariants";
 import { ChevronDown, Ellipsis, Eye, Redo2, RotateCcw, Save, SlidersHorizontal, Undo2, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -99,7 +100,8 @@ export function CharacterShaperSummaryBar({
   const [popover, setPopover] = useState<SummaryPopover | null>(null);
   const [saveName, setSaveName] = useState("");
   const [pendingSave, setPendingSave] = useState<string | null>(null);
-  const [savedNotice, setSavedNotice] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState<{ name: string; phase: "saving" | "saved" | "failed" } | null>(null);
+  const saveGeneration = useRef(0);
 
   const entries: readonly VrmLibraryEntry[] = Array.isArray(h.libraryEntries) ? h.libraryEntries : [];
   const activeModelId: string | null = typeof h.activeModelId === "string" ? h.activeModelId : null;
@@ -117,19 +119,30 @@ export function CharacterShaperSummaryBar({
   const previewActive = binding.previewEntryId != null;
   const canCompare = changedCount > 0 && binding.busyReason === null && !previewActive;
   const fullStateName: string = typeof h.fullStateName === "string" ? h.fullStateName : "";
-  const savedStates = h.savedFullStates as Readonly<Record<string, unknown>> | undefined;
 
   // Save flow: the host's handleSaveFullLocal reads `fullStateName` from its own render, so we
   // set the name first and only save once the host echoes it back.
   useEffect(() => {
     if (pendingSave === null || fullStateName !== pendingSave) return;
-    h.handleSaveFullLocal();
+    const generation = ++saveGeneration.current;
+    const name = pendingSave;
     setPendingSave(null);
-    setSavedNotice(pendingSave);
+    setSavedNotice({ name, phase: "saving" });
+    const settle = (ok: boolean) => {
+      if (generation === saveGeneration.current) setSavedNotice({ name, phase: ok ? "saved" : "failed" });
+    };
+    const save = async (): Promise<void> => {
+      try {
+        settle(await h.handleSaveFullLocal() === true);
+      } catch {
+        settle(false);
+      }
+    };
+    void save();
   }, [pendingSave, fullStateName, h]);
 
   useEffect(() => {
-    if (savedNotice === null) return;
+    if (savedNotice === null || savedNotice.phase === "saving") return;
     const timer = window.setTimeout(() => setSavedNotice(null), SAVED_NOTICE_MS);
     return () => window.clearTimeout(timer);
   }, [savedNotice]);
@@ -220,7 +233,7 @@ export function CharacterShaperSummaryBar({
     closePopover(true);
   };
 
-  const savedConfirmed = savedNotice !== null && savedStates !== undefined && savedNotice in savedStates;
+  const savedConfirmed = savedNotice?.phase === "saved";
 
   const modelPicker = entries.length > 0 ? (
     <div className="relative shrink-0">
@@ -283,6 +296,7 @@ export function CharacterShaperSummaryBar({
         submitSave();
       }}
     >
+      <CharacterShaperSavedVariants h={h} disabled={loading || previewActive || binding.compareActive || binding.busyReason !== null} onRestore={() => closePopover(true)} />
       <label htmlFor={saveInputId} className="text-sm font-bold text-fg">
         변형 이름
       </label>
@@ -290,7 +304,7 @@ export function CharacterShaperSummaryBar({
         id={saveInputId}
         type="text"
         value={saveName}
-        maxLength={60}
+        maxLength={24}
         autoComplete="off"
         onChange={(event) => setSaveName(event.currentTarget.value)}
         className={cn(
@@ -304,7 +318,7 @@ export function CharacterShaperSummaryBar({
         <button type="button" className={TEXT_BUTTON} onClick={() => closePopover(true)}>
           취소
         </button>
-        <button type="submit" className={PRIMARY_BUTTON} disabled={saveName.trim().length === 0}>
+        <button type="submit" className={PRIMARY_BUTTON} disabled={saveName.trim().length === 0 || Boolean(h.vrmCreativeReadOnly)}>
           <Save size={14} aria-hidden />
           저장
         </button>
@@ -451,7 +465,7 @@ export function CharacterShaperSummaryBar({
                 aria-expanded={popover === "save"}
                 title="현재 캐릭터를 이름 붙여 이 기기의 라이브러리에 저장 (PNG·PSD 파일은 아래 도크에서 저장)"
                 data-character-primary-save="true"
-                disabled={loading || h.status === "empty"}
+                disabled={loading || h.status === "empty" || Boolean(h.vrmCreativeReadOnly || binding.busyReason)}
                 onClick={(event) => openPopover("save", event.currentTarget)}
                 className={TEXT_BUTTON}
               >
@@ -494,7 +508,7 @@ export function CharacterShaperSummaryBar({
             savedConfirmed ? "border-good/40 bg-panel text-good" : "border-line bg-panel text-fg-3",
           )}
         >
-          {savedConfirmed ? `저장됨 · ${savedNotice}` : `저장 요청됨 · ${savedNotice}`}
+          {savedNotice.phase === "failed" ? `저장하지 못했습니다 · ${savedNotice.name}` : savedConfirmed ? `저장됨 · ${savedNotice.name}` : `저장 중 · ${savedNotice.name}`}
         </p>
       ) : null}
 

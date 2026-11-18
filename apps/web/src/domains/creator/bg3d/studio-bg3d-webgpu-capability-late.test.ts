@@ -49,7 +49,9 @@ describe("BG3D late native adapter settlement", () => {
     expect(onLateResult).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       supported: true, reason: "available", computeSupported: true,
     }));
-    expect(requestAdapter).toHaveBeenCalledExactlyOnceWith({ powerPreference: "high-performance" });
+    expect(requestAdapter).toHaveBeenCalledExactlyOnceWith({
+      powerPreference: "high-performance", featureLevel: "compatibility", xrCompatible: false,
+    });
     expect(vi.getTimerCount()).toBe(0);
   });
 

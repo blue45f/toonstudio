@@ -1,3 +1,6 @@
+import { WORK_VRM_CUT_MAX_ATTACHMENTS } from "@toonstudio/contracts/studio-work-vrm-cut";
+import { StudioWorkVrmCutBodyGuard } from "./studio-work-vrm-cut-body.guard";
+import type { WorkVrmCutFiles } from "./studio-work-vrm-cut-upload";
 import {
   Body,
   Controller,
@@ -11,7 +14,6 @@ import {
   Put,
   Query,
   Res,
-  StreamableFile,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -23,6 +25,7 @@ import { ZodValidationPipe } from "../../platform/http/zod-validation.pipe";
 
 import { StudioWorkAssetUploadGuard } from "./studio-asset-upload.guard";
 import {
+  StudioWorkVrmCutParamsDto, UploadStudioWorkVrmCutDto,
   DeleteStudioWorkAssetGeneratedObjectQueryDto,
   DeleteStudioWorkAssetQueryDto,
   StudioWorkAssetGeneratedParamsDto,
@@ -57,6 +60,27 @@ export class StudioWorkAssetController {
     @Inject(StudioWorkAssetService)
     private readonly service: StudioWorkAssetService
   ) {}
+
+  @Put("/creator/works/:id/vrm-cuts/:anchorId")
+  @UseGuards(StudioWorkAssetUploadGuard, StudioWorkVrmCutBodyGuard)
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: "scene", maxCount: 1 }, { name: "composite", maxCount: 1 }, { name: "attachments", maxCount: WORK_VRM_CUT_MAX_ATTACHMENTS },
+  ], { limits: { fileSize: MAX_MULTIPART_ASSET_BYTES, files: WORK_VRM_CUT_MAX_ATTACHMENTS + 2,
+    fields: 2, fieldNameSize: 64, fieldSize: 48 * 1024, parts: WORK_VRM_CUT_MAX_ATTACHMENTS + 4 } }))
+  async uploadVrmCut(
+    @Param(new ZodValidationPipe(StudioWorkVrmCutParamsDto)) params: StudioWorkVrmCutParamsDto,
+    @Body(new ZodValidationPipe(UploadStudioWorkVrmCutDto)) body: UploadStudioWorkVrmCutDto,
+    @UploadedFiles() files: WorkVrmCutFiles | undefined, @Headers("x-user-id") userId?: string,
+  ) {
+    return this.service.uploadVrmCut(authenticatedUserId(userId), params.id, params.anchorId, body.metadata, files, body.writeContext);
+  }
+
+  @Get("/creator/works/:id/vrm-cuts/:anchorId")
+  @Header("Cache-Control", "private, no-store, max-age=0")
+  getVrmCut(@Param(new ZodValidationPipe(StudioWorkVrmCutParamsDto)) params: StudioWorkVrmCutParamsDto,
+    @Headers("x-user-id") userId?: string) {
+    return this.service.getVrmCut(authenticatedUserId(userId), params.id, params.anchorId);
+  }
 
   @Put("/creator/works/:id/asset-batches/layer-lift")
   @UseGuards(StudioWorkAssetUploadGuard)
@@ -265,7 +289,7 @@ export class StudioWorkAssetController {
     @Param(new ZodValidationPipe(StudioWorkAssetParamsDto)) params: StudioWorkAssetParamsDto,
     @Query(new ZodValidationPipe(StudioWorkAssetTypeQueryDto)) query: StudioWorkAssetTypeQueryDto,
     @Headers("x-user-id") userId: string | undefined,
-    @Res({ passthrough: true }) response: Response
+    @Res() response: Response
   ) {
     const content = await this.service.getContent(
       authenticatedUserId(userId),
@@ -276,11 +300,10 @@ export class StudioWorkAssetController {
     response.setHeader("Cache-Control", "private, no-store, max-age=0");
     response.setHeader("X-Content-Type-Options", "nosniff");
     response.setHeader("ETag", `"${content.manifest.sha256}"`);
-    return new StreamableFile(Buffer.from(content.payload), {
-      type: content.manifest.mimeType,
-      length: content.manifest.byteSize,
-      disposition: "inline",
-    });
+    response.setHeader("Content-Type", content.manifest.mimeType);
+    response.setHeader("Content-Length", String(content.manifest.byteSize));
+    response.setHeader("Content-Disposition", "inline");
+    response.end(Buffer.from(content.payload));
   }
 
   /**

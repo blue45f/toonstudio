@@ -45,6 +45,7 @@ const RETURN_BUTTON_CLASS = cn(
 );
 
 export type StudioCharacterShaperProps = StudioVrmPoserProps & {
+  readonly onInsertLtLayers?: import("../lt-convert/studio-lt-raster-output").StudioLtInsertLayers;
   /** Hosts without a Studio document (the character landing) save files instead of inserting. */
   readonly outputTarget?: CharacterShaperOutputTarget;
   /**
@@ -79,14 +80,32 @@ export function StudioCharacterShaper({ recoverFromRenderFailure = true, ...prop
   );
 }
 
-function StudioCharacterShaperSurface({ outputTarget = "canvas", ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
+function StudioCharacterShaperSurface({ outputTarget = "canvas", onInsertLtLayers, ...props }: Omit<StudioCharacterShaperProps, "recoverFromRenderFailure">) {
   const { open } = props;
+  const bt = useBilingual("StudioCharacterShaper");
   const h = useStudioVrmPoserController(props);
   const [advanced, setAdvanced] = useState(false);
   const runtimeBinding = useCharacterShaperBinding(h, { runtimeOnly: true });
   const controller = useCharacterPlatformWorkbench(h, runtimeBinding, { documentAuthority: true, legacyEditing: advanced });
   const binding = controller.binding;
   const inputHost = useCharacterAuthoringInputs(h, controller.authoring, !advanced);
+  const variantHost = {
+    ...inputHost,
+    vrmCreativeReadOnly: inputHost.vrmCreativeReadOnly || !controller.authoring.hydrated,
+    handleSaveFullLocal: () => controller.authoring.hydrated && h.handleSaveFullLocal(controller.authoring.exportJson()),
+    handleLoadFullLocal: async (name: string) => {
+      const variant = h.savedFullStates?.[name];
+      if (!variant || !controller.authoring.hydrated) return;
+      if (typeof variant.characterDocumentV3 === "string") {
+        if (!await controller.authoring.importJson(variant.characterDocumentV3)) {
+          h.notify?.(bt("저장한 변형을 복원하지 못했습니다.", "Could not restore the saved look."), "error");
+        }
+      } else {
+        h.handleLoadFullLocal(name);
+        setAdvanced(true);
+      }
+    },
+  };
   const cancelPreview = binding.cancelPreview;
   const [advancedRoot, setAdvancedRoot] = useState<HTMLElement | null>(null);
   const dialogRef = h.dialogRef as RefObject<HTMLElement | null> | undefined;
@@ -132,7 +151,7 @@ function StudioCharacterShaperSurface({ outputTarget = "canvas", ...props }: Omi
         </>
       ) : (
         <>
-          <StudioCharacterShaperDialog h={inputHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
+          <StudioCharacterShaperDialog onInsertLtLayers={onInsertLtLayers} h={variantHost} binding={binding} outputTarget={outputTarget} onOpenAdvanced={() => setAdvanced(true)} />
           <CharacterRuntimeThumbnailRecorder h={h} binding={binding} />
           <CharacterPlatformWorkbench h={inputHost} binding={binding} controller={controller} />
         </>

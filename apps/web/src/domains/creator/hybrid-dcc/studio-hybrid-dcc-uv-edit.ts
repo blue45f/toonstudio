@@ -131,6 +131,10 @@ export function deriveStudioHybridDccUvEditorModel(workspace: StudioHybridDccWor
 export function createStudioHybridDccUvSelection(workspace: StudioHybridDccWorkspace, islandIds: readonly number[], cornerIds: readonly number[] = []): StudioHybridDccUvSelection {
   const model = deriveStudioHybridDccUvEditorModel(workspace);
   if (!model) throw new Error("먼저 선택한 오브젝트의 UV를 펼치세요.");
+  return selectStudioHybridDccUvElements(model, islandIds, cornerIds);
+}
+
+export function selectStudioHybridDccUvElements(model: StudioHybridDccUvEditorModel, islandIds: readonly number[], cornerIds: readonly number[]): StudioHybridDccUvSelection {
   if (!Array.isArray(islandIds) || islandIds.length > model.islands.length) throw new Error("UV 아일랜드 선택 예산을 넘었습니다.");
   if (!Array.isArray(cornerIds) || cornerIds.length > model.corners.length) throw new Error("UV 코너 선택 예산을 넘었습니다.");
   const selectedCorners = [...new Set(cornerIds)].sort((a, b) => a - b);
@@ -158,7 +162,7 @@ export function workspaceTransformUvIslands(workspace: StudioHybridDccWorkspace,
     || selection.sourceHash !== model.sourceHash || selection.sourceRevision !== model.sourceRevision || selection.uvHash !== model.uvHash) {
     throw new Error("UV 선택이 현재 문서·오브젝트·편집 버전과 다릅니다. 다시 선택하세요.");
   }
-  const admitted = createStudioHybridDccUvSelection(workspace, selection.islandIds, selection.cornerIds);
+  const admitted = selectStudioHybridDccUvElements(model, selection.islandIds, selection.cornerIds);
   if (admitted.islandIds.length === 0 && admitted.cornerIds.length === 0) throw new Error("변환할 UV 아일랜드를 먼저 선택하세요.");
   if (!request || !["translate", "rotate", "scale"].includes(request.kind)) throw new Error("UV 변환 종류가 올바르지 않습니다.");
   if (request.kind === "rotate") {

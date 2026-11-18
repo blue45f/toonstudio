@@ -27,10 +27,15 @@ import {
   type Illustrated2dWorkstationPlacement,
 } from "./studio-virtual-space-illustrated-2d-runtime";
 
+import { canvasPoint, drawWorkstationSheet, drawWorkstationStroke } from "./studio-workstation-drawing";
+import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
+import { WORKSTATION_STAGES, WORKSTATION_STAMPS, type WorkstationCutId, type WorkstationStroke } from "./studio-workstation-notebook";
+import { useWorkstationNotebook, useWorkstationOwner } from "./use-studio-workstation-notebook";
+
 export type WorkstationSuiteTab = "redline" | "kanban" | "turntable-sfx";
 
 export interface CutPipelineItem {
-  readonly id: string;
+  readonly id: WorkstationCutId;
   readonly cutNumber: number;
   readonly titleKo: string;
   readonly stage: "storyboard" | "line" | "color" | "bg3d" | "done";
@@ -47,7 +52,7 @@ const INITIAL_CUT_PIPELINE: readonly CutPipelineItem[] = [
   { id: "cut-22", cutNumber: 22, titleKo: "엔딩 클리프행어 눈빛 컷", stage: "done", assigneeId: "chief-pd", verdict: "PASS" },
 ];
 
-const STAGE_ORDER: readonly CutPipelineItem["stage"][] = ["storyboard", "line", "color", "bg3d", "done"];
+
 
 const STAGE_LABEL_KO: Readonly<Record<CutPipelineItem["stage"], string>> = {
   storyboard: "1. 콘티·연출",
@@ -109,11 +114,24 @@ export interface StudioVirtualSpaceWorkstationLiveModalProps {
   readonly onSelectStation: (stationId: string) => void;
 }
 
-export function StudioVirtualSpaceWorkstationLiveModal({
-  station,
-  onClose,
-  onSelectStation,
-}: StudioVirtualSpaceWorkstationLiveModalProps) {
+export function StudioVirtualSpaceWorkstationLiveModal(props: StudioVirtualSpaceWorkstationLiveModalProps) {
+  const owner = useWorkstationOwner(props.station.id);
+  return <WorkstationNotebookEditor key={owner.key ?? props.station.id} {...props} owner={owner} />;
+}
+
+function WorkstationNotebookEditor({ station, onClose, onSelectStation, owner }: StudioVirtualSpaceWorkstationLiveModalProps & {
+  readonly owner: ReturnType<typeof useWorkstationOwner>;
+}) {
+  const bt = useBilingual("StudioVirtualSpaceWorkstationLiveModal");
+  const { marks, status, append, retry } = useWorkstationNotebook(owner.key, owner.current);
+  const blocked = owner.waiting || status === "loading" || status === "read-error";
+  const strokes = marks.filter(mark => mark.kind === "stroke");
+  const activeStamp = marks.filter(mark => mark.kind === "stamp").at(-1)?.stamp ?? null;
+  const cuts = INITIAL_CUT_PIPELINE.map(cut => {
+    const advances = marks.filter(mark => mark.kind === "stage" && mark.cutId === cut.id).length;
+    const stage = WORKSTATION_STAGES[(WORKSTATION_STAGES.indexOf(cut.stage) + advances) % WORKSTATION_STAGES.length] ?? cut.stage;
+    return { ...cut, stage };
+  });
   const [activeTab, setActiveTab] = useState<WorkstationSuiteTab>("redline");
   const [layers, setLayers] = useState({
     storyboard: true,
@@ -122,18 +140,18 @@ export function StudioVirtualSpaceWorkstationLiveModal({
     sfx: true,
   });
   const [penColor, setPenColor] = useState<string>("#f43f5e");
-  const [activeStamp, setActiveStamp] = useState<string>("✅ 승인 PASS");
-  const [strokeCount, setStrokeCount] = useState(0);
-  const [cuts, setCuts] = useState<readonly CutPipelineItem[]>(INITIAL_CUT_PIPELINE);
   const [cameraYaw, setCameraYaw] = useState(42);
   const [cameraFov, setCameraFov] = useState<number>(35);
   const [lightingPreset, setLightingPreset] = useState<string>("사이버 네온 역광");
-  const [collabLog, setCollabLog] = useState<readonly string[]>([
-    "[로컬 스테이션 기록] 이 워크스테이션의 스케치·스탬프·공정 변경은 현재 화면에서만 동작하는 로컬 시뮬레이션입니다.",
-  ]);
-
+  const [effectNotice, setEffectNotice] = useState("");
+  const [leave, setLeave] = useState<(() => void) | null>(null);
+  const guardedLeave = (action: () => void) => {
+    if (status === "write-error" || status === "saving") setLeave(() => action);
+    else action();
+  };
+  useEffect(() => { if (status === "ready" && leave) leave(); }, [leave, status]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingRef = useRef(false);
+  const drawingRef = useRef<{ pointer: number; stroke: WorkstationStroke } | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const partnerPersona =
@@ -147,148 +165,51 @@ export function StudioVirtualSpaceWorkstationLiveModal({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Dark studio canvas background
-    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    grad.addColorStop(0, "#0b1120");
-    grad.addColorStop(1, "#1e1b4b");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 1. Storyboard perspective grid
-    if (layers.storyboard) {
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.25)";
-      ctx.lineWidth = 1;
-      for (let x = 0; x < canvas.width; x += 36) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height / 2);
-        ctx.stroke();
-      }
-      ctx.strokeRect(18, 16, canvas.width - 36, canvas.height - 32);
-    }
-
-    // 2. Color & Lighting aura
-    if (layers.color) {
-      const radial = ctx.createRadialGradient(
-        canvas.width * 0.52,
-        canvas.height * 0.48,
-        12,
-        canvas.width * 0.52,
-        canvas.height * 0.48,
-        150,
-      );
-      radial.addColorStop(0, "rgba(168, 85, 247, 0.55)");
-      radial.addColorStop(0.5, "rgba(56, 189, 248, 0.28)");
-      radial.addColorStop(1, "rgba(15, 23, 42, 0)");
-      ctx.fillStyle = radial;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    // 3. Crisp Webtoon Panel Frame & Sword Slash Line Art
-    if (layers.line) {
-      ctx.strokeStyle = "#f8fafc";
-      ctx.lineWidth = 2.6;
-      ctx.beginPath();
-      ctx.arc(canvas.width * 0.5, canvas.height * 0.48, 54, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Dynamic diagonal slash arc
-      ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(64, canvas.height - 38);
-      ctx.quadraticCurveTo(canvas.width * 0.48, 24, canvas.width - 54, 42);
-      ctx.stroke();
-    }
-
-    // 4. Webtoon Speech Bubble & Onomatopoeia SFX
-    if (layers.sfx) {
-      ctx.fillStyle = "#ffffff";
-      ctx.beginPath();
-      ctx.roundRect(32, 26, 186, 48, 16);
-      ctx.fill();
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "bold 12px Pretendard, sans-serif";
-      ctx.fillText("“이번 마감은 절대 늦지 않는다!”", 44, 54);
-
-      ctx.fillStyle = "#fbbf24";
-      ctx.font = "italic 900 24px Pretendard, sans-serif";
-      ctx.fillText("콰아앙—!! ⚡", canvas.width - 178, canvas.height - 28);
-    }
-
-    // Stamp overlay badge
-    ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
-    ctx.strokeStyle = "#34d399";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(canvas.width - 150, 22, 124, 32, 8);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#ecfdf5";
-    ctx.font = "bold 12px Pretendard, sans-serif";
-    ctx.fillText(activeStamp, canvas.width - 138, 42);
-  }, [activeStamp, layers, station.id]);
+    drawWorkstationSheet(ctx, canvas, activeStamp, layers);
+    for (const mark of marks) if (mark.kind === "stroke") drawWorkstationStroke(ctx, mark);
+    if (drawingRef.current) drawWorkstationStroke(ctx, drawingRef.current.stroke);
+  }, [activeStamp, activeTab, layers, marks, station.id]);
 
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    if (blocked || drawingRef.current || !e.isPrimary || e.button !== 0) return;
+    const canvas = e.currentTarget;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    drawingRef.current = true;
-    ctx.strokeStyle = penColor;
-    ctx.lineWidth = 3.2;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 1, y + 1);
-    ctx.stroke();
-    setStrokeCount((c) => c + 1);
+    const stroke = { kind: "stroke" as const, id: crypto.randomUUID(), color: penColor, points: [canvasPoint(e)] };
+    drawingRef.current = { pointer: e.pointerId, stroke };
+    canvas.setPointerCapture(e.pointerId);
+    drawWorkstationStroke(ctx, stroke);
     playProceduralWorkstationSfx("pen");
   };
 
   const handleCanvasPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!drawingRef.current) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    const active = drawingRef.current;
+    if (!active || active.pointer !== e.pointerId) return;
+    const point = canvasPoint(e);
+    const previous = active.stroke.points.at(-1);
+    if (!previous || (previous[0] === point[0] && previous[1] === point[1])) return;
+    active.stroke.points.push(point);
+    const ctx = e.currentTarget.getContext("2d");
+    if (ctx) drawWorkstationStroke(ctx, { ...active.stroke, points: [previous, point] });
   };
 
-  const handleCanvasPointerUp = () => {
-    drawingRef.current = false;
+  const finishStroke = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const active = drawingRef.current;
+    if (!active || active.pointer !== e.pointerId) return;
+    if (e.type === "pointerup") handleCanvasPointerMove(e);
+    drawingRef.current = null;
+    append(active.stroke);
   };
 
-  const applyVerdictStamp = (stampLabel: string) => {
-    setActiveStamp(stampLabel);
+  const applyVerdictStamp = (stamp: typeof WORKSTATION_STAMPS[number]) => {
+    append({ kind: "stamp", id: crypto.randomUUID(), stamp });
     playProceduralWorkstationSfx("stamp");
-    triggerIllustrated2dVfxBurst(stampLabel, station.accentColor);
-    setCollabLog((prev) => [
-      `[로컬 스테이션 기록] ${station.titleKo}에서 ‘${stampLabel}’ 판정 스탬프를 적용했습니다.`,
-      ...prev.slice(0, 5),
-    ]);
+    triggerIllustrated2dVfxBurst(stamp, station.accentColor);
   };
-
-  const advanceCutStage = (cutId: string) => {
-    setCuts((prev) =>
-      prev.map((item) => {
-        if (item.id !== cutId) return item;
-        const idx = STAGE_ORDER.indexOf(item.stage);
-        const nextStage = STAGE_ORDER[(idx + 1) % STAGE_ORDER.length] ?? "storyboard";
-        return { ...item, stage: nextStage };
-      }),
-    );
+  const advanceCutStage = (cutId: WorkstationCutId) => {
+    append({ kind: "stage", id: crypto.randomUUID(), cutId });
     playProceduralWorkstationSfx("handoff");
-    triggerIllustrated2dVfxBurst("로컬 공정 보드 단계 변경 ✨", 0x38bdf8);
-    setCollabLog((prev) => [`[로컬 공정 보드 단계 변경] ${cutId} 컷을 다음 공정 단계로 전환했습니다.`, ...prev.slice(0, 5)]);
+    triggerIllustrated2dVfxBurst("공정 변경", 0x38bdf8);
   };
 
   const triggerWorldSfxBurst = (
@@ -298,17 +219,17 @@ export function StudioVirtualSpaceWorkstationLiveModal({
   ) => {
     playProceduralWorkstationSfx(sfxKind);
     triggerIllustrated2dVfxBurst(label, color);
-    setCollabLog((prev) => [
-      `[로컬 스테이션 기록] ‘${label}’ — 현재 화면에 이펙트와 공간 음향을 재생했습니다.`,
-      ...prev.slice(0, 5),
-    ]);
+    setEffectNotice(label);
   };
 
-  const doneCount = cuts.filter((c) => c.stage === "done").length;
-  const progressPercent = Math.round(((doneCount + 38) / 48) * 100);
+  const doneCount = cuts.filter(c => c.stage === "done").length;
+  const progressPercent = Math.round(doneCount / cuts.length * 100);
+  const collabLog = marks.slice(-6).reverse().map(mark => mark.kind === "stroke"
+    ? bt("스케치 한 획 추가", "Stroke added") : mark.kind === "stamp" ? mark.stamp
+      : bt(`${mark.cutId.replace("cut-", "")}컷 다음 공정으로 이동`, `Cut ${mark.cutId.slice(4)} moved to its next stage`));
 
   return (
-    <Dialog.Root open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog.Root open onOpenChange={(open) => { if (!open) guardedLeave(onClose); }}>
     <Dialog.Portal>
     <Dialog.Overlay
       data-space-interactive="true"
@@ -327,7 +248,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
       data-testid="workstation-live-collab-modal"
       data-space-interactive="true"
       aria-modal="true"
-      aria-label={`${station.titleKo} 실무 협업 워크스테이션`}
+      aria-label={`${station.titleKo} 개인 작업대`}
       className="pointer-events-auto relative z-10 flex max-h-[88dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-accent bg-panel/95 text-fg shadow-2xl backdrop-blur-xl"
     >
       {/* Top Header */}
@@ -341,7 +262,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
           <div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
-                2D 실시간 협업 워크스테이션
+                개인 작업대
               </span>
               <Dialog.Title asChild><h2 className="text-sm font-bold text-fg">{station.titleKo}</h2></Dialog.Title>
             </div>
@@ -357,7 +278,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             aria-label="워크스테이션 전환"
             data-testid="workstation-live-select"
             value={station.id}
-            onChange={(e) => onSelectStation(e.target.value)}
+            onChange={(e) => { const next = e.target.value; guardedLeave(() => onSelectStation(next)); }}
             className="rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-fg"
           >
             {ILLUSTRATED_2D_WORKSTATIONS.map((item) => (
@@ -370,7 +291,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
           <button
             type="button"
             data-testid="workstation-live-close-btn"
-            onClick={onClose}
+            onClick={() => guardedLeave(onClose)}
             className="flex items-center gap-1 rounded-lg border border-line bg-card px-3 py-1.5 text-xs font-bold text-fg hover:border-accent"
           >
             <X className="h-3.5 w-3.5" />
@@ -379,6 +300,21 @@ export function StudioVirtualSpaceWorkstationLiveModal({
         </div>
       </div>
 
+      <div className="border-b border-line px-4 py-2 text-xs text-fg-2">
+        <p role={status.includes("error") ? "alert" : "status"} data-workstation-save={status}>
+          {owner.waiting || status === "loading" ? bt("작업대 기록을 여는 중…", "Opening your notebook…")
+            : status === "read-error" ? bt("기기 기록을 열지 못했습니다. 다른 탭에서 원고를 열었다면 닫고 다시 시도해 주세요.", "Could not open the notebook. Close other editor tabs and retry.")
+            : status === "write-error" ? bt("기기에 저장하지 못했습니다. 이 창에 수정 내용이 남아 있습니다.", "Could not save on this device. Your edits are still open.")
+            : status === "saving" ? bt("기기에 저장 중…", "Saving on this device…")
+            : status === "local" ? bt("임시 작업대입니다. 닫으면 기록이 사라집니다.", "Temporary notebook. Changes last until you close it.")
+            : bt("이 기기의 개인 작업대에 저장됩니다. 팀 원고와 공정표에는 전송되지 않습니다.", "Saved to your private notebook on this device. Team documents and boards are separate.")}
+          {status.includes("error") ? <button type="button" className="ml-2 underline" onClick={retry}>{bt("다시 시도", "Retry")}</button> : null}
+        </p>
+        {leave ? <div role="alert">{bt("저장 전 변경이 있습니다.", "You have unsaved edits.")}
+          <button type="button" className="ml-2 underline" onClick={() => setLeave(null)}>{bt("계속 작업", "Keep editing")}</button>
+          <button type="button" className="ml-2 underline" onClick={leave}>{bt("저장 확인 없이 이동", "Leave without waiting")}</button>
+        </div> : null}
+      </div>
       {/* Mode Tabs */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-panel/60 px-4 py-2">
         <div className="flex flex-wrap gap-1.5">
@@ -393,7 +329,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             }`}
           >
             <Palette className="h-3.5 w-3.5" />
-            1. 실시간 원고 합평 & 레드라인 보드
+            스케치·검수
           </button>
           <button
             type="button"
@@ -406,7 +342,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
-            2. 에피소드 60컷 공정 칸반 & 인계 ({progressPercent}%)
+            컷 공정 ({doneCount}/{cuts.length})
           </button>
           <button
             type="button"
@@ -419,7 +355,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             }`}
           >
             <Volume2 className="h-3.5 w-3.5" />
-            3. 3D 배경 턴테이블 & 웹툰 효과음(SFX) 스탬프
+            카메라·효과음
           </button>
         </div>
 
@@ -431,7 +367,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
       {/* Main Content Area */}
       <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-4 lg:grid-cols-12">
         <div className="space-y-3 lg:col-span-8">
-          {activeTab === "redline" ? (
+          {activeTab === "redline" && !blocked ? (
             <div className="space-y-3 rounded-xl border border-line bg-card p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -496,15 +432,17 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                   data-testid="workstation-redline-canvas"
                   onPointerDown={handleCanvasPointerDown}
                   onPointerMove={handleCanvasPointerMove}
-                  onPointerUp={handleCanvasPointerUp}
-                  className="h-[250px] w-full cursor-crosshair touch-none object-cover"
+                  onPointerUp={finishStroke}
+                  onPointerCancel={finishStroke}
+                  onLostPointerCapture={finishStroke}
+                  className="block h-auto w-full cursor-crosshair touch-none"
                 />
                 <div className="flex items-center justify-between border-t border-line bg-card/90 px-3 py-1.5 text-[11px] text-fg-2">
                   <span>
                     <MousePointerClick className="mr-1 inline h-3.5 w-3.5 text-accent" />
-                    캔버스 위에 직접 마우스/펜으로 레드라인 피드백을 그리세요 (누적 피드백 획수: {strokeCount}회)
+                    캔버스 위에 직접 마우스/펜으로 레드라인 피드백을 그리세요 (누적 피드백 획수: {strokes.length}회)
                   </span>
-                  <span className="font-bold text-accent">현재 판정: {activeStamp}</span>
+                  <span className="font-bold text-accent">현재 판정: {activeStamp ?? bt("미판정", "Unmarked")}</span>
                 </div>
               </div>
 
@@ -513,12 +451,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                   <Stamp className="h-3.5 w-3.5 text-accent" />
                   PD 검수 스탬프 날인 (2D 월드 특수효과 동시 발동):
                 </span>
-                {[
-                  "✅ 승인 PASS",
-                  "🔧 구도 리테이크",
-                  "💬 대사·식자 수정",
-                  "✨ 역광 이펙트 강화",
-                ].map((stamp) => (
+                {WORKSTATION_STAMPS.map((stamp) => (
                   <button
                     key={stamp}
                     type="button"
@@ -533,11 +466,11 @@ export function StudioVirtualSpaceWorkstationLiveModal({
             </div>
           ) : null}
 
-          {activeTab === "kanban" ? (
+          {activeTab === "kanban" && !blocked ? (
             <div className="space-y-3 rounded-xl border border-line bg-card p-3">
               <div className="flex items-center justify-between">
                 <strong className="text-xs font-bold text-fg">
-                  EP.34 실시간 원고 공정 보드 (클릭 시 다음 공정으로 즉시 인계 + 2D 월드 알림)
+                  예시 컷 공정표
                 </strong>
                 <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold text-accent">
                   마감 달성률 {progressPercent}%
@@ -582,7 +515,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                         onClick={() => advanceCutStage(cut.id)}
                         className="shrink-0 rounded-lg border border-accent bg-accent-soft px-2.5 py-1 text-[11px] font-bold text-accent hover:opacity-90"
                       >
-                        다음 공정 인계 →
+                        {cut.stage === "done" ? bt("콘티로 되돌리기", "Return to storyboard") : bt("다음 공정으로", "Advance stage")}
                       </button>
                     </div>
                   );
@@ -664,7 +597,7 @@ export function StudioVirtualSpaceWorkstationLiveModal({
                 <div className="space-y-2 rounded-xl border border-line bg-panel p-3">
                   <strong className="flex items-center gap-1.5 text-xs font-bold text-fg">
                     <Mic2 className="h-3.5 w-3.5 text-accent" />
-                    웹툰 의성어·효과음(SFX) & 2D 특수효과 발동 패드
+                    웹툰 효과음 · {effectNotice}
                   </strong>
                   <p className="text-[11px] text-fg-2">
                     클릭 시 WebAudio 실시간 효과음과 함께 2D 캐릭터 머리 위에 역동적인 코믹 SFX 스탬프·파티클이 터집니다.
@@ -763,9 +696,10 @@ export function StudioVirtualSpaceWorkstationLiveModal({
           <div className="rounded-xl border border-line bg-card p-3">
             <strong className="mb-2 flex items-center gap-1.5 text-xs font-bold text-fg">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              실시간 스튜디오 협업 로그
+              작업대 기록
             </strong>
             <ul className="space-y-1.5 text-[11px] text-fg-2">
+              {!collabLog.length ? <li>{bt("아직 스케치·검수·공정 기록이 없습니다.", "No sketches, stamps or stage changes yet.")}</li> : null}
               {collabLog.map((entry, idx) => (
                 <li
                   key={`${idx}-${entry}`}

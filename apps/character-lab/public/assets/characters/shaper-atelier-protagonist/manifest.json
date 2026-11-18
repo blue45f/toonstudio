@@ -4,13 +4,13 @@
   "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 학원 로맨스)",
   "role": "shaper-flagship",
   "license": "CC0-1.0",
-  "generatedAt": "2026-11-17",
+  "generatedAt": "2026-11-19",
   "generator": {
     "pipeline": "Blender 5.3 SHAPER Korean Webtoon Atelier Pipeline (pipelineVersion 1)",
     "blenderVersion": "5.3.0"
   },
   "pipelineRun": {
-    "pipelineManifestConfigDigest": "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
+    "pipelineManifestConfigDigest": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
     "toonstudioPackageKind": "toonstudio.character-package"
   },
   "sourceProvenance": {
@@ -22,18 +22,18 @@
   "files": {
     "glb": {
       "path": "shaper-atelier-protagonist.glb",
-      "bytes": 2601684,
-      "sha256": "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad"
+      "bytes": 3737860,
+      "sha256": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35"
     },
     "contactSheet": {
       "path": "contact-sheet.png",
-      "bytes": 1436695,
-      "sha256": "ccf2b252c9217a0ecf24259d360faba4f86f117ed1fdeb06f4484d65e63d6cc9"
+      "bytes": 1464452,
+      "sha256": "422294a63b2149df33f16ffe11cb8227864edeb8da0510c37b5b7c92597aa4c6"
     },
     "slotMapping": {
       "path": "slot-mapping.json",
       "bytes": 4257,
-      "sha256": "fa2f676dd9579ceb72ea0cdbdf1835d7de667046c998ee028d076fe994876bf2"
+      "sha256": "d35e31927f1431d5de60547420c53d48d1e2e87907315d08ec45e1d678a3baab"
     }
   },
   "skeleton": {
@@ -1025,6 +1025,258 @@
         0,
         1
       ]
+    },
+    {
+      "name": "browInnerUp_Brow_L",
+      "mesh": "TS_Shaper_Brow_L",
+      "targetIndex": 2,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 안쪽 올림",
+      "facsHint": {
+        "units": [
+          "browInnerUp"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "browOuterUp_Brow_L",
+      "mesh": "TS_Shaper_Brow_L",
+      "targetIndex": 3,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 올림",
+      "facsHint": {
+        "units": [
+          "browOuterUp"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ],
+      "generatedBy": "shaper-atelier-blender-5.3"
+    },
+    {
+      "name": "browDown_Brow_L",
+      "mesh": "TS_Shaper_Brow_L",
+      "targetIndex": 4,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 찌푸림",
+      "facsHint": {
+        "units": [
+          "browDown"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "browInnerUp_Brow_R",
+      "mesh": "TS_Shaper_Brow_R",
+      "targetIndex": 2,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 안쪽 올림",
+      "facsHint": {
+        "units": [
+          "browInnerUp"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "browOuterUp_Brow_R",
+      "mesh": "TS_Shaper_Brow_R",
+      "targetIndex": 3,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 올림",
+      "facsHint": {
+        "units": [
+          "browOuterUp"
+        ],
+        "approximate": false
+      },
+      "range": [
+        0,
+        1
+      ],
+      "generatedBy": "shaper-atelier-blender-5.3"
+    },
+    {
+      "name": "browDown_Brow_R",
+      "mesh": "TS_Shaper_Brow_R",
+      "targetIndex": 4,
+      "kind": "expression-source",
+      "meaningKo": "눈썹 찌푸림",
+      "facsHint": {
+        "units": [
+          "browDown"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkLeft_Eye",
+      "mesh": "TS_Shaper_Eye",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "왼쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkLeft"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkRight_Eye",
+      "mesh": "TS_Shaper_Eye",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "오른쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkRight"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkLeft_Highlight",
+      "mesh": "TS_Shaper_Highlight",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "왼쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkLeft"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkRight_Highlight",
+      "mesh": "TS_Shaper_Highlight",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "오른쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkRight"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkLeft_Iris",
+      "mesh": "TS_Shaper_Iris",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "왼쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkLeft"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkRight_Iris",
+      "mesh": "TS_Shaper_Iris",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "오른쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkRight"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkLeft_Lash",
+      "mesh": "TS_Shaper_Lash",
+      "targetIndex": 0,
+      "kind": "expression-source",
+      "meaningKo": "왼쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkLeft"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "eyeBlinkRight_Lash",
+      "mesh": "TS_Shaper_Lash",
+      "targetIndex": 1,
+      "kind": "expression-source",
+      "meaningKo": "오른쪽 눈 감기",
+      "facsHint": {
+        "units": [
+          "eyeBlinkRight"
+        ],
+        "approximate": false
+      },
+      "generatedBy": "shaper-atelier-blender-5.3",
+      "range": [
+        0,
+        1
+      ]
     }
   ],
   "expressions": {
@@ -1070,6 +1322,16 @@
             "mesh": "TS_Shaper_Head",
             "target": "browDown",
             "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Brow_L",
+            "target": "browDown_Brow_L",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Brow_R",
+            "target": "browDown_Brow_R",
+            "weight": 1.0
           }
         ]
       },
@@ -1092,6 +1354,26 @@
             "mesh": "TS_Shaper_Head",
             "target": "eyeBlinkLeft",
             "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Eye",
+            "target": "eyeBlinkLeft_Eye",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Highlight",
+            "target": "eyeBlinkLeft_Highlight",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Iris",
+            "target": "eyeBlinkLeft_Iris",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Lash",
+            "target": "eyeBlinkLeft_Lash",
+            "weight": 1.0
           }
         ]
       },
@@ -1102,6 +1384,26 @@
           {
             "mesh": "TS_Shaper_Head",
             "target": "eyeBlinkRight",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Eye",
+            "target": "eyeBlinkRight_Eye",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Highlight",
+            "target": "eyeBlinkRight_Highlight",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Iris",
+            "target": "eyeBlinkRight_Iris",
+            "weight": 1.0
+          },
+          {
+            "mesh": "TS_Shaper_Lash",
+            "target": "eyeBlinkRight_Lash",
             "weight": 1.0
           }
         ]
@@ -1132,8 +1434,11 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 5771,
-      "morphTargets": [],
+      "triangles": 6744,
+      "morphTargets": [
+        "shape:bangs:-",
+        "shape:bangs:+"
+      ],
       "babylonLoad": {
         "splitInto": [
           "TS_AuthoredHair_wolf-layered_LOD0"
@@ -1148,8 +1453,11 @@
       "lod": 0,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 5771,
-      "morphTargets": [],
+      "triangles": 6744,
+      "morphTargets": [
+        "shape:bangs:-",
+        "shape:bangs:+"
+      ],
       "babylonLoad": {
         "splitInto": [
           "TS_AuthoredHair_wolf-layered_LOD0_Outline"
@@ -1164,8 +1472,11 @@
       "lod": 1,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 2683,
-      "morphTargets": [],
+      "triangles": 3266,
+      "morphTargets": [
+        "shape:bangs:-",
+        "shape:bangs:+"
+      ],
       "babylonLoad": {
         "splitInto": [
           "TS_AuthoredHair_wolf-layered_LOD1"
@@ -1180,8 +1491,11 @@
       "lod": 2,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 892,
-      "morphTargets": [],
+      "triangles": 1362,
+      "morphTargets": [
+        "shape:bangs:-",
+        "shape:bangs:+"
+      ],
       "babylonLoad": {
         "splitInto": [
           "TS_AuthoredHair_wolf-layered_LOD2"
@@ -1196,7 +1510,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 1989,
+      "triangles": 9232,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1212,7 +1526,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 9842,
+      "triangles": 10176,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1228,10 +1542,13 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 26,
+      "triangles": 108,
       "morphTargets": [
         "HappyBrow",
-        "AngryBrow"
+        "AngryBrow",
+        "browInnerUp_Brow_L",
+        "browOuterUp_Brow_L",
+        "browDown_Brow_L"
       ],
       "babylonLoad": {
         "splitInto": [
@@ -1247,10 +1564,13 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 26,
+      "triangles": 108,
       "morphTargets": [
         "HappyBrow",
-        "AngryBrow"
+        "AngryBrow",
+        "browInnerUp_Brow_R",
+        "browOuterUp_Brow_R",
+        "browDown_Brow_R"
       ],
       "babylonLoad": {
         "splitInto": [
@@ -1261,32 +1581,19 @@
       }
     },
     {
-      "node": "TS_Shaper_Eye_L",
+      "node": "TS_Shaper_Eye",
       "part": "eye",
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 216,
-      "morphTargets": [],
+      "triangles": 960,
+      "morphTargets": [
+        "eyeBlinkLeft_Eye",
+        "eyeBlinkRight_Eye"
+      ],
       "babylonLoad": {
         "splitInto": [
-          "TS_Shaper_Eye_L"
-        ],
-        "parentTransformNode": null,
-        "morphTargetManagerPerPiece": false
-      }
-    },
-    {
-      "node": "TS_Shaper_Eye_R",
-      "part": "eye",
-      "lod": null,
-      "parentNode": "Armature",
-      "skinned": true,
-      "triangles": 216,
-      "morphTargets": [],
-      "babylonLoad": {
-        "splitInto": [
-          "TS_Shaper_Eye_R"
+          "TS_Shaper_Eye"
         ],
         "parentTransformNode": null,
         "morphTargetManagerPerPiece": false
@@ -1298,7 +1605,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 6440,
+      "triangles": 8342,
       "morphTargets": [
         "faceEyeSizeBig",
         "faceEyeSizeSmall",
@@ -1346,96 +1653,57 @@
       }
     },
     {
-      "node": "TS_Shaper_Highlight_L",
+      "node": "TS_Shaper_Highlight",
       "part": "highlight",
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 24,
-      "morphTargets": [],
+      "triangles": 192,
+      "morphTargets": [
+        "eyeBlinkLeft_Highlight",
+        "eyeBlinkRight_Highlight"
+      ],
       "babylonLoad": {
         "splitInto": [
-          "TS_Shaper_Highlight_L"
+          "TS_Shaper_Highlight"
         ],
         "parentTransformNode": null,
         "morphTargetManagerPerPiece": false
       }
     },
     {
-      "node": "TS_Shaper_Highlight_R",
-      "part": "highlight",
-      "lod": null,
-      "parentNode": "Armature",
-      "skinned": true,
-      "triangles": 24,
-      "morphTargets": [],
-      "babylonLoad": {
-        "splitInto": [
-          "TS_Shaper_Highlight_R"
-        ],
-        "parentTransformNode": null,
-        "morphTargetManagerPerPiece": false
-      }
-    },
-    {
-      "node": "TS_Shaper_Iris_L",
+      "node": "TS_Shaper_Iris",
       "part": "iris",
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 168,
-      "morphTargets": [],
+      "triangles": 768,
+      "morphTargets": [
+        "eyeBlinkLeft_Iris",
+        "eyeBlinkRight_Iris"
+      ],
       "babylonLoad": {
         "splitInto": [
-          "TS_Shaper_Iris_L"
+          "TS_Shaper_Iris"
         ],
         "parentTransformNode": null,
         "morphTargetManagerPerPiece": false
       }
     },
     {
-      "node": "TS_Shaper_Iris_R",
-      "part": "iris",
-      "lod": null,
-      "parentNode": "Armature",
-      "skinned": true,
-      "triangles": 168,
-      "morphTargets": [],
-      "babylonLoad": {
-        "splitInto": [
-          "TS_Shaper_Iris_R"
-        ],
-        "parentTransformNode": null,
-        "morphTargetManagerPerPiece": false
-      }
-    },
-    {
-      "node": "TS_Shaper_Lash_L",
+      "node": "TS_Shaper_Lash",
       "part": "lash",
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 52,
-      "morphTargets": [],
+      "triangles": 432,
+      "morphTargets": [
+        "eyeBlinkLeft_Lash",
+        "eyeBlinkRight_Lash"
+      ],
       "babylonLoad": {
         "splitInto": [
-          "TS_Shaper_Lash_L"
-        ],
-        "parentTransformNode": null,
-        "morphTargetManagerPerPiece": false
-      }
-    },
-    {
-      "node": "TS_Shaper_Lash_R",
-      "part": "lash",
-      "lod": null,
-      "parentNode": "Armature",
-      "skinned": true,
-      "triangles": 52,
-      "morphTargets": [],
-      "babylonLoad": {
-        "splitInto": [
-          "TS_Shaper_Lash_R"
+          "TS_Shaper_Lash"
         ],
         "parentTransformNode": null,
         "morphTargetManagerPerPiece": false
@@ -1447,7 +1715,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 2141,
+      "triangles": 2794,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1463,7 +1731,7 @@
       "lod": null,
       "parentNode": "Armature",
       "skinned": true,
-      "triangles": 5593,
+      "triangles": 12970,
       "morphTargets": [],
       "babylonLoad": {
         "splitInto": [
@@ -1484,9 +1752,9 @@
         "enabled": true,
         "style": "wolf-layered",
         "lodTriangles": [
-          5771,
-          2683,
-          892
+          6744,
+          3266,
+          1362
         ],
         "replacedSourceMeshes": []
       },

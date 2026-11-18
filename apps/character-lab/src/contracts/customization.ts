@@ -277,6 +277,8 @@ export const hairColorSchema = z
     tipMix: unit,
     /** 포인트 색(hair-accent) 위치: 없음·브릿지 줄기·안쪽 층 */
     accent: z.enum(HAIR_ACCENT_MODES),
+    /** 제작 패키지에서 직접 고른 기본 머리색. 없으면 모델의 원본 알베도를 쓴다. */
+    packageBaseTint: z.string().regex(/^#[0-9a-f]{6}$/u).optional(),
   })
   .strict()
   .refine((hair) => hair.gradient[0] <= hair.gradient[1], { message: "헤어 그라데이션 구간은 시작 ≤ 끝이어야 합니다.", path: ["gradient"] });

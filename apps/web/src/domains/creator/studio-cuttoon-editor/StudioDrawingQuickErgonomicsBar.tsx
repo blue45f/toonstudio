@@ -35,10 +35,10 @@ export type StudioDrawingErgonomicsSession = Pick<
   | "zoomLocked"
   | "viewTransformSuppressed"
   | "bg3dOpen"
-  | "setBg3dOpen"
   | "exportMenuOpen"
   | "setExportMenuOpen"
 > & {
+  readonly studioLeftToolRailHandlers: Pick<StudioCuttoonEditorViewSession["studioLeftToolRailHandlers"], "toggleBg3dEditor">;
   readonly brush?: string;
   readonly activeCatalogBrush?: {
     readonly id: string;
@@ -217,7 +217,7 @@ export function StudioDrawingQuickErgonomicsBar({
           type="button"
           className="studio-drawing-stage-pill studio-drawing-stage-pill--3d"
           aria-pressed={s.bg3dOpen}
-          onClick={() => s.setBg3dOpen((open) => !open)}
+          onClick={() => s.studioLeftToolRailHandlers.toggleBg3dEditor()}
         >
           <img
             src="/brand/luminous-atelier-20261114/icon-studio-3d-pose.webp"

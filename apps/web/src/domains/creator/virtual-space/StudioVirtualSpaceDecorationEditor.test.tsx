@@ -107,6 +107,34 @@ describe("가구 드래그 편집", () => {
     expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "편집할 가구" }).value).toBe("added-desk");
   });
 
+  it.each(["선택 (V)", "회전 (R)", "크기 (S)"])("%s 모드에서 드래그하거나 할당되지 않은 방향키를 눌러도 가구가 옮겨지지 않는다", (mode) => {
+    const onChange = vi.fn();
+    render(<StudioVirtualSpaceDecorationEditor world={world} decorations={decorations} selfPoint={selfPoint} onChange={onChange} />);
+    const desk = screen.getByRole("button", { name: /드로잉 데스크 선택/ });
+    fireEvent.click(desk);
+    fireEvent.click(screen.getByRole("button", { name: mode }));
+    fireEvent.pointerDown(desk, pointer("pointerdown", 287, 356));
+    fireEvent.pointerMove(desk, pointer("pointermove", 359, 356));
+    fireEvent.pointerUp(desk, pointer("pointerup", 359, 356));
+    fireEvent.keyDown(desk, { key: mode === "크기 (S)" ? "ArrowRight" : "ArrowUp" });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("가구 가장자리에서 잡아도 손을 놓은 위치의 이동량만 한 번 커밋한다", () => {
+    const onChange = vi.fn();
+    render(<StudioVirtualSpaceDecorationEditor world={world} decorations={decorations} selfPoint={selfPoint} onChange={onChange} />);
+    const desk = screen.getByRole("button", { name: /드로잉 데스크 선택/ });
+    fireEvent.pointerDown(desk, pointer("pointerdown", 326, 338));
+    fireEvent.pointerMove(desk, pointer("pointermove", 342, 338));
+    fireEvent.pointerUp(desk, pointer("pointerup", 374, 338));
+    const scale = Math.min(rect.width / world.width, rect.height / world.height);
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ ok: true }));
+    const state: StudioVirtualDecorationState = onChange.mock.calls[0]?.[0].state;
+    expect(state.placements.find(item => item.id === "added-desk")).toMatchObject({
+      x: Math.round((549 + 48 / scale) / 16) * 16, y: 570,
+    });
+  });
+
   it("잘못된 위치는 커밋하지 않고 기존 배치를 유지한다", () => {
     const onChange = vi.fn();
     const view = render(<StudioVirtualSpaceDecorationEditor world={world} decorations={decorations} selfPoint={selfPoint} onChange={onChange} artStyle="webtoon" />);

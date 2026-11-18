@@ -12,8 +12,7 @@
  * - pose: 필수 15본 커버리지, hand-pose: 손가락 30본 커버리지.
  * - `characterLab.slotCapabilities`(Blender 레인 slot-mapping.json 선언)는 규칙 판정을 덮어쓴다. basis로 출처를 구분한다.
  *
- * 커스터마이즈 능력(레시피 v3, 2026-10-23 A-1, `packageCustomCapabilities`): 제작 패키지는 GLB 한 개로 구운 캐릭터라 채널·파츠 형태 키·층·앵커·UV1·
- * 비례 목표를 하나도 지원하지 않는다 → `NO_CUSTOM_CAPABILITIES` + 제작 패키지 사유(계약 순서). 다른 값으로 바꾸지 않고 사유만 보인다.
+ * 제작 패키지의 파츠 형태는 선택한 LOD의 메시가 선언한 양방향 모프 쌍으로 판정한다.
  */
 import {
   ACCESSORY_ANCHORS,
@@ -37,6 +36,7 @@ import {
 import { classifyBoneNames } from "./bone-name-mapping";
 import { scopeLabelKo } from "./custom-labels";
 import { classifyMeshRoles } from "./mesh-role-mapping";
+import { packagePartShapes } from "./package-part-shapes";
 import { classifyShapeKeys, faceParamPairCoverage, facsUnitsInMap, resolveShapeKeyAlias } from "./shape-key-mapping";
 
 import type { BoneClassification } from "./bone-name-mapping";
@@ -252,8 +252,9 @@ export function compareCapabilities(rule: SlotCapabilityMap, declared: SlotCapab
   return { agreeing, divergent };
 }
 
-/** 제작 패키지의 커스터마이즈 능력: 지원 항목 없음 + 제작 패키지 사유(계약 순서: 채널 → 형태 → 층 → 앵커 → patternUv → hairFlow → proportion) */
-export function packageCustomCapabilities(manifest: CharacterPackageManifest): CustomCapabilities {
+/** 제작 패키지의 파츠 형태와 미지원 사유(계약 순서: 채널 → 형태 → 층 → 앵커 → patternUv → hairFlow → proportion) */
+export function packageCustomCapabilities(manifest: CharacterPackageManifest, hairLod = 0): CustomCapabilities {
+  const shapes = packagePartShapes(manifest, hairLod);
   const reasons: Record<string, string> = {};
   for (const key of DERIVED_CHANNEL_KEYS) {
     const label = CHANNEL_LABELS_KO[key];
@@ -264,7 +265,7 @@ export function packageCustomCapabilities(manifest: CharacterPackageManifest): C
         : `제작 패키지는 재질 채널을 나누지 않아 ${label} 채널을 따로 칠할 수 없습니다.`;
   }
   for (const scope of PART_SCOPES) {
-    reasons[customReasonKey("shape", scope)] = `제작 패키지에는 ${scopeLabelKo(scope)} 파츠 형태 키가 없습니다(셰이프 키는 얼굴·표정 파라미터에만 대응합니다).`;
+    reasons[customReasonKey("shape", scope)] = `현재 제작 패키지의 ${scopeLabelKo(scope)}에는 이 양방향 형태 키가 없습니다.`;
   }
   for (const layer of WARDROBE_LAYERS) {
     reasons[customReasonKey("layer", layer)] = `제작 패키지는 교체·겹쳐 입기 의상을 제공하지 않아 ${WARDROBE_LAYER_LABELS_KO[layer]} 층을 입힐 수 없습니다.`;
@@ -279,7 +280,7 @@ export function packageCustomCapabilities(manifest: CharacterPackageManifest): C
       ? `제작 패키지 헤어('${hair.style}')에는 흐름용 UV1 선언이 없어 끝 색·포인트를 그릴 수 없습니다.`
       : "제작 패키지에 제작 헤어 메시가 없어 헤어 색 흐름을 그릴 곳이 없습니다.";
   reasons[customReasonKey("proportion")] = "제작 패키지 소스는 비례 목표를 지원하지 않습니다.";
-  return { ...NO_CUSTOM_CAPABILITIES, reasonsKo: reasons };
+  return { ...NO_CUSTOM_CAPABILITIES, shapes, reasonsKo: reasons };
 }
 
 /** 헤어 프리셋별 판정: 패키지가 구운 스타일만 available, 나머지는 unavailable. */

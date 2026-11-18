@@ -35,6 +35,24 @@ async function activate(detail: number): Promise<void> {
 }
 
 describe("컷 패널의 responsive preference와 native 사용자 선택", () => {
+  it("새 컷 원본을 읽을 수 있을 때까지 기다린 뒤 같은 패널에서 편집을 시작한다", async () => {
+    const f = await fixture();
+    let reason: string | null = "연결한 캐릭터 원본이 필요합니다.";
+    const readSource = vi.fn(f.host.readSource);
+    const host = { ...f.host, readSource, blockedReason: () => reason };
+    const session = new StudioScene3dCutSession(host, f.repository);
+    sessions.push(session);
+    const panel = render(<StudioScene3dCutPanel session={session} />);
+    await waitFor(() => expect(session.read().phase).toBe("waiting"));
+    expect(screen.getByRole("status").textContent).toContain(reason);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(readSource).not.toHaveBeenCalled();
+    reason = null;
+    panel.rerender(<StudioScene3dCutPanel session={session} />);
+    await waitFor(() => expect(session.read().phase).toBe("ready"));
+    expect(readSource).toHaveBeenCalledOnce();
+    expect(f.rows.size).toBe(0);
+  });
   const ownershipError = "studio local sqlite unavailable: DedicatedWorker ownership lock failed: Studio OPFS SQLite is already owned by another page";
   function expectRecoverableOwnershipError(): HTMLDetailsElement {
     const alert = screen.getByRole("alert");

@@ -1,6 +1,7 @@
 /** Production WebGPU admission without allocating a GPUDevice or importing a renderer. */
 export interface StudioBg3dGpuAdapterLike {
   readonly features?: Iterable<string>;
+  requestDevice?(descriptor: GPUDeviceDescriptor): Promise<GPUDevice>;
   /** WebIDL getters need not be enumerable. */
   readonly limits?: {
     readonly maxBufferSize?: number;
@@ -10,7 +11,7 @@ export interface StudioBg3dGpuAdapterLike {
 }
 
 export interface StudioBg3dGpuLike {
-  requestAdapter(options?: { readonly powerPreference?: "low-power" | "high-performance" }):
+  requestAdapter(options?: { readonly powerPreference?: "low-power" | "high-performance"; readonly featureLevel?: "compatibility"; readonly xrCompatible?: boolean }):
     Promise<StudioBg3dGpuAdapterLike | null>;
 }
 
@@ -46,6 +47,18 @@ export interface StudioBg3dWebGpuProbeResult {
 
 export const STUDIO_BG3D_WEBGPU_MIN_BUFFER_SIZE = 128 * 1024 * 1024;
 export const STUDIO_BG3D_WEBGPU_MIN_STORAGE_BINDING_SIZE = 32 * 1024 * 1024;
+/** 장치가 늦게 응답해도 뷰포트의 전체 준비 시간 안에서는 같은 초기화를 기다린다. */
+export const STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS = 16_000;
+type AdmittedAdapter = Required<Pick<StudioBg3dGpuAdapterLike, "requestDevice">> & Pick<StudioBg3dGpuAdapterLike, "features">;
+const admittedAdapters = new WeakMap<StudioBg3dWebGpuProbeResult, AdmittedAdapter>();
+
+/** 네이티브 어댑터는 장치를 한 번만 요청할 수 있다. 직렬화되는 진단 결과에는 넣지 않는다. */
+export function takeStudioBg3dWebGpuAdapter(result: StudioBg3dWebGpuProbeResult | undefined) {
+  if (!result) return undefined;
+  const adapter = admittedAdapters.get(result);
+  admittedAdapters.delete(result);
+  return adapter;
+}
 const PROBED_LIMIT_NAMES = [
   "maxBufferSize", "maxStorageBufferBindingSize", "maxComputeWorkgroupSizeX",
 ] as const;
@@ -86,7 +99,11 @@ function classifyAdapter(adapter: StudioBg3dGpuAdapterLike | null): StudioBg3dWe
   ) {
     return probeResult(false, "insufficient-limits", features, limits);
   }
-  return probeResult(true, "available", features, limits);
+  const result = probeResult(true, "available", features, limits);
+  if (adapter.requestDevice) admittedAdapters.set(result, {
+    features, requestDevice: adapter.requestDevice.bind(adapter),
+  });
+  return result;
 }
 
 export async function probeStudioBg3dWebGpuCapability(
@@ -111,7 +128,7 @@ export async function probeStudioBg3dWebGpuCapability(
   try {
     // Preserve the native receiver and request options. Classify once, including rejection, so a
     // late native rejection is observed and never escapes as an unhandled promise rejection.
-    const adapterResult = signals.gpu.requestAdapter({ powerPreference: "high-performance" })
+    const adapterResult = signals.gpu.requestAdapter({ powerPreference: "high-performance", featureLevel: "compatibility", xrCompatible: false })
       .then(classifyAdapter)
       .catch(() => probeResult(false, "adapter-unavailable"));
     const outcome = await Promise.race([adapterResult, timeoutResult, abortResult]);

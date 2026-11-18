@@ -24,7 +24,7 @@ function twoTileEffects(): StudioTileEffectDefinition[] {
 }
 
 function renderPanel(
-  onApplySnapshot: (snapshot: StudioSpaceSnapshot) => void = () => undefined,
+  onApplySnapshot: (snapshot: StudioSpaceSnapshot) => boolean = () => true,
   tileEffects?: readonly StudioTileEffectDefinition[],
 ) {
   render(<StudioVirtualSpaceClonePanel world={DEFAULT_STUDIO_WORLD_MANIFEST} tileEffects={tileEffects} disabled={false} onApplySnapshot={onApplySnapshot} />);
@@ -61,7 +61,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
   it("previews a pasted link and hands the snapshot to the apply callback only after confirmation", async () => {
     mockClipboard();
     const applied: StudioSpaceSnapshot[] = [];
-    renderPanel((snapshot) => { applied.push(snapshot); });
+    renderPanel((snapshot) => { applied.push(snapshot); return true; });
     fireEvent.change(screen.getByLabelText("공간 이름"), { target: { value: "팀 배포 스페이스" } });
     fireEvent.change(screen.getByLabelText("구성 작성자"), { target: { value: "툰스튜디오 팀" } });
     fireEvent.click(screen.getByRole("button", { name: "복제 링크 만들기" }));
@@ -77,7 +77,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
     expect(apply.matches(":disabled")).toBe(true);
     fireEvent.click(apply);
     expect(applied).toHaveLength(0);
-    fireEvent.click(screen.getByRole("checkbox", { name: /^현재 공간 초안이/u }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^현재 공간 초안/u }));
     fireEvent.click(apply);
     expect(applied).toHaveLength(1);
     expect(applied[0]?.name).toBe("팀 배포 스페이스");
@@ -86,7 +86,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
   });
   it("rejects an invalid pasted link without touching the apply callback", async () => {
     const applied: StudioSpaceSnapshot[] = [];
-    renderPanel((snapshot) => { applied.push(snapshot); });
+    renderPanel((snapshot) => { applied.push(snapshot); return true; });
     fireEvent.change(screen.getByLabelText("복제 링크 붙여넣기"), { target: { value: "https://example.com/#clone=broken!!!" } });
     fireEvent.click(screen.getByRole("button", { name: "링크 확인" }));
     expect(await screen.findByText("링크를 해석하지 못했습니다. 복제 링크 전체를 붙여넣으세요.")).toBeTruthy();
@@ -96,7 +96,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
   it("cancels an import proposal without applying", async () => {
     mockClipboard();
     const applied: StudioSpaceSnapshot[] = [];
-    renderPanel((snapshot) => { applied.push(snapshot); });
+    renderPanel((snapshot) => { applied.push(snapshot); return true; });
     fireEvent.change(screen.getByLabelText("공간 이름"), { target: { value: "취소 테스트" } });
     fireEvent.click(screen.getByRole("button", { name: "복제 링크 만들기" }));
     const link = (await screen.findByLabelText("복제 링크") as HTMLInputElement).value;
@@ -110,7 +110,7 @@ describe("StudioVirtualSpaceClonePanel", () => {
   it("carries tile effects into the link and shows them in the import preview", async () => {
     mockClipboard();
     const applied: StudioSpaceSnapshot[] = [];
-    renderPanel((snapshot) => { applied.push(snapshot); }, twoTileEffects());
+    renderPanel((snapshot) => { applied.push(snapshot); return true; }, twoTileEffects());
     fireEvent.change(screen.getByLabelText("공간 이름"), { target: { value: "타일 효과 스페이스" } });
     fireEvent.click(screen.getByRole("button", { name: "복제 링크 만들기" }));
     const link = (await screen.findByLabelText("복제 링크") as HTMLInputElement).value;
@@ -119,13 +119,13 @@ describe("StudioVirtualSpaceClonePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "링크 확인" }));
     const preview = await screen.findByLabelText("가져오기 전 미리보기");
     expect(preview.textContent).toContain("타일 효과");
-    fireEvent.click(screen.getByRole("checkbox", { name: /^현재 공간 초안이/u }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^현재 공간 초안/u }));
     fireEvent.click(screen.getByRole("button", { name: "이 구성 적용" }));
     expect(applied).toHaveLength(1);
     expect(applied[0]?.tileEffects.map((effect) => effect.id)).toEqual(["spawn-1", "zone-1"]);
   });
-  it("states that serialization stays on this device and no server is involved", () => {
+  it("explains how recipients preview and save a local draft", () => {
     renderPanel();
-    expect(screen.getByText("잘 만든 공간을 링크로 복제·공유합니다. 직렬화·역직렬화는 이 장치에서만 일어나며 서버에 전송되지 않습니다.")).toBeTruthy();
+    expect(screen.getByText("공간과 타일 효과를 링크로 공유합니다. 링크를 받으면 구성을 확인한 뒤 내 초안에 저장할 수 있습니다.")).toBeTruthy();
   });
 });

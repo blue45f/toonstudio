@@ -1,6 +1,7 @@
+import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "./studio-shared-3d-scene-runtime";
 import { panelStatusText } from "./status-i18n/studio-panel-status-i18n-r3c06-core";
 import { Loader2 } from "lucide-react";
-import { Suspense, memo, useEffect, useMemo } from "react";
+import { lazy, Suspense, memo, useEffect, useMemo } from "react";
 
 import { isStudioAiConfigured } from "./ai/studio-ai-client";
 import { subscribeStudioAiComicComposerOpenRequest } from "./ai/studio-ai-comic-composer-intent";
@@ -74,11 +75,14 @@ type StudioThreeDPreviewPanelStackHandlers = Pick<
   | "handleTimelapseRecordingStart"
   | "insertBg3dResult"
   | "insertVrmResult"
+  | "insertCharacterLtLayers"
   | "insertMannequinResult"
   | "patchPageReview"
   | "setCurrentPageId"
   | "useBg3dFrameAsAiMethodReference"
 >;
+
+const StudioTeamVrmCutEditorGate = lazy(() => import("./scene3d/StudioTeamVrmCutEditorGate"));
 
 export type StudioThreeDPreviewPanelStackProps = Pick<
   StudioLazyPanelStackProps,
@@ -134,6 +138,9 @@ export type StudioThreeDPreviewPanelStackProps = Pick<
   | "title"
 > & {
   onOpenPrecisionModeler?: (scene: StudioBg3dSceneDocument) => void;
+  cutTeamDocument?: boolean;
+  cutWorkScope?: import("./studio-cuttoon-editor/runtime/studio-local-vrm-cut-scope").StudioLocalVrmCutHostScope["cutWorkScope"];
+  cutDocumentKey?: string;
   stableHandlers: StudioThreeDPreviewPanelStackHandlers;
 };
 
@@ -258,7 +265,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
   bg3dTargetBundleId,
   bg3dOperation,
   bg3dSixPassLtUnavailableReason,
-  bg3dBatchRecoveryScope,
+  bg3dBatchRecoveryScope, cutTeamDocument, cutDocumentKey, cutWorkScope,
   validateRecoveryAccess,
   bg3dOpen,
   bg3dMarketplaceModelId = null,
@@ -315,6 +322,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
     handleTimelapseRecordingStart,
     insertBg3dResult,
     insertVrmResult,
+    insertCharacterLtLayers,
     insertMannequinResult,
     patchPageReview,
     setCurrentPageId,
@@ -434,7 +442,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
     operation: bg3dOperation,
   });
 
-  const bg3dElement = bg3dOpen ? (
+  const backgroundEditor = bg3dOpen ? (
     <StudioBackground3D
       open={bg3dOpen}
       initialDataUrl={bg3dInitialDataUrl}
@@ -444,6 +452,7 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       seedPrimitiveKind={asBgPrimitiveKindOrNull(bg3dSeedPrimitiveKind)}
       onSeedObjectInsertConsumed={onSeedObjectInsertConsumed}
       {...(onOpenPrecisionModeler ? { onOpenPrecisionModeler } : {})}
+      cutTeamDocument={cutTeamDocument} cutWorkId={cutWorkScope?.authorized ? cutWorkScope.workId : undefined} cutDocumentKey={cutWorkScope && activePageId ? studioTeamCutVrmDocumentScope(cutWorkScope.workId, activePageId) : studioCutVrmDocumentScope(cutDocumentKey, activePageId)}
       sharedSceneSession={shared3dSceneSession}
       sharedStageResolution={masterEditMode ? undefined : shared3dStageResolution}
       sharedStageSessionScopeKey={sharedStageSessionScopeKey}
@@ -467,6 +476,9 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       onUseAsAiMethodReference={useBg3dFrameAsAiMethodReference}
     />
   ) : null;
+  const bg3dElement = backgroundEditor && cutWorkScope?.anchorId?.startsWith("vrmcut-") && activePageId
+    ? <StudioTeamVrmCutEditorGate key={JSON.stringify([cutWorkScope.actorId, cutWorkScope.workId, activePageId, cutWorkScope.anchorId])}
+        editor={backgroundEditor} authorized={cutWorkScope.authorized} workId={cutWorkScope.workId} pageId={activePageId} anchorId={cutWorkScope.anchorId} /> : backgroundEditor;
 
   return (
     <>
@@ -508,6 +520,13 @@ export const StudioThreeDPreviewPanelStack = memo(function StudioThreeDPreviewPa
       <Suspense fallback={<PoserLoadingOverlay />}>
         {characterShaperOpen ? (
           <StudioCharacterShaper
+            onInsertLtLayers={insertCharacterLtLayers && (async (layers, signal) => {
+              if (!await insertCharacterLtLayers(layers, signal) || signal.aborted) return false;
+              setCharacterShaperOpen(false);
+              setPoserInitialElementId(undefined);
+              setPoserInitialDataUrl(undefined);
+              return true;
+            })}
             open
             initialDataUrl={poserInitialDataUrl}
             initialScene={poserInitialScene}

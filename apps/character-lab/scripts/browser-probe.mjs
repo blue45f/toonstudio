@@ -450,6 +450,31 @@ async function main() {
       return ids.length >= 2 ? { detail: ids.join(", ") } : { fail: `패키지 ${ids.length}종(2종 이상 기대): ${ids.join(", ")}` };
     });
 
+    await step("기기에 저장한 체형을 새로고침 후 다시 연다", async () => {
+      const work = await context.newPage();
+      try {
+        await work.goto(server.url);
+        await work.getByRole("tab", { name: "파라미터", exact: true }).click();
+        const height = work.getByRole("spinbutton", { name: "키 숫자", exact: true });
+        await height.fill("0.67");
+        await height.blur();
+        const exportTab = work.getByRole("tab", { name: "내보내기", exact: true });
+        await exportTab.click();
+        await work.getByText("아직 이 브라우저에 저장한 작업이 없습니다.").waitFor();
+        await work.getByRole("button", { name: "이 기기에 작업 저장" }).click();
+        await work.getByText("이 브라우저에 현재 작업을 저장했습니다.").waitFor();
+        await work.reload();
+        await exportTab.click();
+        await work.getByRole("button", { name: "저장한 작업 열기" }).click();
+        await work.getByTestId("export-receipt").waitFor();
+        await work.getByRole("tab", { name: "파라미터", exact: true }).click();
+        const restored = await height.inputValue();
+        return restored === "0.67" ? { detail: "키 0.67 복원" } : { fail: `복원한 키: ${restored}` };
+      } finally {
+        await work.close();
+      }
+    });
+
     // 레시피 왕복은 슬롯 카드를 눌러야 한다. 키트 부팅(2026-10-11~)에서는 엔진이 키트 플랜을 올려 능력 맵이 정해지기 전까지
     // 모든 카드가 disabled("캐릭터 소스가 아직 로드되지 않았습니다.", lab-runtime.ts 초기 능력 = 전부 미지원)라 엔진 선택 전에는
     // 누를 카드가 하나도 없다. 그래서 백엔드가 처음 ready가 된 뒤 한 번 실행한다(단언은 그대로, 순서만 앱의 부팅 계약에 맞춘다).

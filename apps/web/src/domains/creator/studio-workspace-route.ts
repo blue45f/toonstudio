@@ -1,5 +1,6 @@
 import {
   parseStudioDocumentLocation,
+  setStudioDocument3dTool,
   studioDocumentHref,
   studioDocumentWorkspaceToLegacySurface,
   type StudioDocumentWorkspaceId,
@@ -306,7 +307,7 @@ export function studio2dPathname(
   if (workId !== null) {
     return `/studio/work/${encodeURIComponent(workId)}/${surface}`;
   }
-  // /studio/poser는 독립 데생 인형이다. 문서의 VRM은 같은 editor 라우트 안에 남긴다.
+  // /studio/poser는 독립 데생 인형 페이지다. 원고에서 연 VRM 포저는 같은 문서 호스트를 유지한다.
   if (surface === "poser") return "/studio/canvas/poser";
   return `/studio/${surface}`;
 }
@@ -390,8 +391,9 @@ export function studio2dSurfaceNavigationHref(
   surface: Studio2dWorkspaceSurface,
   search?: string | URLSearchParams,
 ): string {
-  if (route.documentWorkspace !== null && surface === "bg3d") {
+  if (route.documentWorkspace !== null && (surface === "bg3d" || surface === "poser" || surface === "character")) {
     const params = queryParams(search);
+    setStudioDocument3dTool(params, surface);
     return studioDocumentHref({
       focus: params.get("focus"),
       language: params.get("language"),
@@ -400,7 +402,7 @@ export function studio2dSurfaceNavigationHref(
       documentId: route.documentId,
       draftId: route.draftId,
       workspace: "3d",
-      search,
+      search: params,
     });
   }
   return surface === "canvas"
@@ -435,6 +437,11 @@ export function studioWorkspaceCanonicalHref(
     params.delete("draft");
     params.delete("workspace");
     params.set("workspace", route.documentWorkspace);
+    if (route.documentWorkspace === "3d" && (route.surface === "poser" || route.surface === "character")) {
+      setStudioDocument3dTool(params, route.surface);
+    } else {
+      params.delete("tool3d");
+    }
     params.sort();
     const serialized = params.toString();
     return serialized.length > 0
@@ -552,7 +559,7 @@ export function parseStudioWorkspaceRoute({
       presentation: "editor",
       projectId: documentRoute.projectId,
       remixSourceWorkId: null,
-      surface: studioDocumentWorkspaceToLegacySurface(documentRoute.workspace),
+      surface: studioDocumentWorkspaceToLegacySurface(documentRoute.workspace, search),
       valid: true,
       workId: documentRoute.documentId,
     });
@@ -571,7 +578,9 @@ export function parseStudioWorkspaceRoute({
 
   const pathIdentity = parsePathIdentity(segments);
   if ("valid" in pathIdentity) return pathIdentity;
-  const parsedSurface = parseSurface(pathIdentity.tail);
+  const parsedSurface = segments.join("/") === "studio/canvas/poser"
+    ? { dccMode: null, surface: "poser" as const }
+    : parseSurface(pathIdentity.tail);
   if (parsedSurface === null) return invalidStudioWorkspaceRoute("invalid-path");
 
   const params = queryParams(search);

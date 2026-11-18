@@ -32,8 +32,6 @@ export interface ShaperDuoPartnerProfile {
   readonly eyeHeightCm: number;
   readonly accentHex: string;
   readonly contactSheetUrl: string;
-  readonly glbUrl: string;
-  readonly glbSha256: string;
 }
 
 export const DUO_SHOT_DISTANCES: Readonly<Record<DuoShotDistanceKey, { readonly meters: number; readonly labelKo: string }>> = Object.freeze({
@@ -65,8 +63,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 173.5,
     accentHex: "#5cebff",
     contactSheetUrl: "/assets/characters/shaper-atelier-male-lead/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-atelier-male-lead/shaper-atelier-male-lead.glb",
-    glbSha256: "ac54779a30a81ab3f90af99480428019f8b5bb2180278e7048d0228d372437eb",
   },
   {
     id: "shaper-atelier-protagonist",
@@ -76,8 +72,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 152.8,
     accentHex: "#f0c978",
     contactSheetUrl: "/assets/characters/shaper-atelier-protagonist/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
-    glbSha256: "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
   },
   {
     id: "shaper-office-ceo",
@@ -87,8 +81,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 172.5,
     accentHex: "#8cc6f2",
     contactSheetUrl: "/assets/characters/shaper-office-ceo/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-office-ceo/shaper-office-ceo.glb",
-    glbSha256: "f3e7ca76e3b05c357883e49ab9f8717d9b69bd405c6cd074d5fcd8cace2c5ef9",
   },
   {
     id: "shaper-fantasy-saintess",
@@ -98,8 +90,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 154.6,
     accentHex: "#ffe082",
     contactSheetUrl: "/assets/characters/shaper-fantasy-saintess/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-fantasy-saintess/shaper-fantasy-saintess.glb",
-    glbSha256: "de7e4797657b710a6bb9d743a5da13c82d21bdadef2e01a66327ee4b34390790",
   },
   {
     id: "shaper-noir-duke",
@@ -109,8 +99,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 176.2,
     accentHex: "#ff5470",
     contactSheetUrl: "/assets/characters/shaper-noir-duke/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-noir-duke/shaper-noir-duke.glb",
-    glbSha256: "98b038f6474f966e22d1c33e211119cb4788877b2c681130d13488ba59d2abec",
   },
   {
     id: "shaper-rofan-empress",
@@ -120,8 +108,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 155.5,
     accentHex: "#ffe08a",
     contactSheetUrl: "/assets/characters/shaper-rofan-empress/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-rofan-empress/shaper-rofan-empress.glb",
-    glbSha256: "0f68d79c97be0273364d89765afaa79d0ab6d994c470d6ede4d41d6c34c2caee",
   },
   {
     id: "shaper-murim-swordmaster",
@@ -131,8 +117,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 171.6,
     accentHex: "#5ce0b8",
     contactSheetUrl: "/assets/characters/shaper-murim-swordmaster/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-murim-swordmaster/shaper-murim-swordmaster.glb",
-    glbSha256: "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed",
   },
   {
     id: "shaper-cyber-idol",
@@ -142,8 +126,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 151.8,
     accentHex: "#5cf6ff",
     contactSheetUrl: "/assets/characters/shaper-cyber-idol/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-cyber-idol/shaper-cyber-idol.glb",
-    glbSha256: "176e55649da5fba564eb914ded97d42d7ad8e49a6428a0dcc5e9d21e30979074",
   },
   {
     id: "shaper-academy-council",
@@ -153,8 +135,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 156.5,
     accentHex: "#d88cff",
     contactSheetUrl: "/assets/characters/shaper-academy-council/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-academy-council/shaper-academy-council.glb",
-    glbSha256: "a996da6c81a54328230fb0b15ebc220b300618434688010c3ff749c824725695",
   },
   {
     id: "shaper-apocalypse-sniper",
@@ -164,8 +144,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 174.4,
     accentHex: "#64f58d",
     contactSheetUrl: "/assets/characters/shaper-apocalypse-sniper/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-apocalypse-sniper/shaper-apocalypse-sniper.glb",
-    glbSha256: "8de02d95b5ed988a0f09ac903a7aab700b323219e1484c58e464818863c2bd05",
   },
   {
     id: "shaper-healing-barista",
@@ -175,8 +153,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 151.0,
     accentHex: "#ffc978",
     contactSheetUrl: "/assets/characters/shaper-healing-barista/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-healing-barista/shaper-healing-barista.glb",
-    glbSha256: "1c8eeae5508d70749fbbb306a9d1ca53ee421cd45a9e8b2d625b9b91c28dbe71",
   },
   {
     id: "shaper-thriller-detective",
@@ -186,8 +162,6 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 173.4,
     accentHex: "#f2b857",
     contactSheetUrl: "/assets/characters/shaper-thriller-detective/contact-sheet.png",
-    glbUrl: "/assets/characters/shaper-thriller-detective/shaper-thriller-detective.glb",
-    glbSha256: "add23b53e5e313ab1e2852fbccd1b3784ea39740a194f74172eaa6a8bbaafa1e",
   },
 ]);
 
@@ -213,16 +187,21 @@ export const DEFAULT_DUO_SHOT_STATE: DuoShotState = Object.freeze({
   partnerHandPropId: "",
 });
 
-export function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: number): DuoPartnerAttachment | null {
+export async function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: number): Promise<DuoPartnerAttachment | null> {
   if (!duoShot.enabled || !duoShot.render3dPartner) return null;
+  const { loadCharacterPackageIndex } = await import("../../../domains/authored/package-index.browser");
+  const index = await loadCharacterPackageIndex();
+  if (!index.ok) throw index.failure;
+  const asset = index.entries.find((entry) => entry.characterId === duoShot.partnerId);
+  if (!asset?.glbUrl || !asset.glbSha256) throw new Error("제작 패키지 목록에서 상대역의 GLB 파일과 SHA-256을 찾지 못했습니다.");
   const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === duoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
   const safeSubjectCm = Number.isFinite(subjectHeightCm) && subjectHeightCm > 100 ? subjectHeightCm : 166;
   const heightScale = Number((partner.heightCm / safeSubjectCm).toFixed(4));
   const partnerPropSpec = duoShot.partnerHandPropId ? findWebtoonHandPropSpec(duoShot.partnerHandPropId) : null;
   return {
     characterId: partner.id,
-    glbUrl: partner.glbUrl,
-    sha256: partner.glbSha256,
+    glbUrl: asset.glbUrl,
+    sha256: asset.glbSha256,
     side: duoShot.side,
     distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
     heightScale,

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { AppApiError } from "@/platform/api";
+
 import { readStudioReviewProductionAuthority } from "./studio-review-production-authority";
 import { reviewProductionFixture } from "./studio-review-production-test-fixture";
 
@@ -24,6 +26,12 @@ describe("fresh production connection authority", () => {
       if (mode === "work") f.readers.workspace.mockResolvedValue({ ...f.authority.workspace, workId: "wrong" });
       await expect(readStudioReviewProductionAuthority(f.request, mode === "actor" ? "other" : "actor", f.signal, f.readers)).rejects.toThrow();
     }
+  });
+  it.each(["workspace", "team"] as const)("구성원 권한을 잃은 %s 조회에서 권한 오류를 돌려준다", async (reader) => {
+    const f = setup();
+    f.readers[reader].mockRejectedValueOnce(new AppApiError("Forbidden", { kind: "forbidden", status: 403 }));
+    await expect(readStudioReviewProductionAuthority(f.request, "actor", f.signal, f.readers))
+      .rejects.toMatchObject({ reason: "access-denied" });
   });
   it("fails closed on graph, production or team permission loss and a read exceeding the lease", async () => {
     for (const mode of ["graph", "production", "team", "expired"]) {

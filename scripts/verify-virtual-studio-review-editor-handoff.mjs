@@ -21,12 +21,12 @@ const output = path.resolve(".qa/virtual-studio-review-editor-handoff");
 await fs.mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "ko-KR" });
-const page = await context.newPage(), errors = [], mutations = [], cases = [];
+let page;
+const errors = [], mutations = [], cases = [];
 let fixture = null, revoked = false, reads = 0, deferredRead = null, held = false;
-page.on("pageerror", (error) => errors.push(error.message));
-await page.route("**/*", async (route) => {
+await context.route("**/*", async (route) => {
   const request = route.request(), url = new URL(request.url());
-  if (!url.pathname.includes("/studio-project-graph/") && !url.pathname.endsWith("/works/work/team/document")) {
+  if (!url.pathname.startsWith("/api/") || (!url.pathname.includes("/studio-project-graph/") && !url.pathname.endsWith("/works/work/team/document"))) {
     if (url.origin !== origin.origin) return route.abort();
     return route.continue();
   }
@@ -65,6 +65,10 @@ await page.route("**/*", async (route) => {
   throw new Error(`Unexpected fixture path ${url.pathname}`);
 });
 async function load(width = 1280) {
+  // 이전 확인에서 병렬로 보낸 요청은 이미 떠난 페이지의 검증 횟수에만 속한다.
+  if (page) await page.close();
+  page = await context.newPage();
+  page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
   revoked = false; held = false; reads = 0;
   await page.goto(`${origin.origin}/tools/browser-harnesses/virtual-studio-review-editor-handoff.html`);
@@ -98,7 +102,7 @@ try {
   await unchanged(); cases.push({ case: "dirty-runtime-zero-selection", passed: true });
   await load(); revoked = true;
   await page.getByRole("button", { name: "의견 위치 선택", exact: true }).click();
-  await page.getByRole("status").filter({ hasText: /권한|다시 확인/u }).waitFor();
+  await page.getByText("현재 원고나 검수본의 편집 권한을 확인할 수 없어요.", { exact: true }).waitFor();
   await page.getByRole("button", { name: "의견 위치 선택", exact: true }).waitFor({ state: "visible" });
   await unchanged(); cases.push({ case: "revoked-source-zero-selection", passed: true });
   await load(); await page.getByRole("button", { name: "페이지 이동 거부", exact: true }).click();

@@ -7,7 +7,7 @@ import { studioUvDefaultFields, studioUvTransformRequest, type StudioUvFields } 
 import { workspacePackUvActive } from "./studio-hybrid-dcc-uv-pack-workspace";
 import { useStudioHybridDccUvAtlas } from "./useStudioHybridDccUvAtlas";
 import {
-  createStudioHybridDccUvSelection,
+  selectStudioHybridDccUvElements,
   deriveStudioHybridDccUvEditorModel,
   workspaceTransformUvIslands,
   workspaceUnwrapUvActive,
@@ -76,14 +76,15 @@ export function useStudioHybridDccUvEditor(
   }
   useEffect(() => { live.current = true; return () => { live.current = false; epoch.current += 1; }; }, []);
   const source = useMemo(() => {
+    if (!materialMode) return { model: null, error: "" };
     try { return { model: deriveStudioHybridDccUvEditorModel(workspace), error: "" }; }
     catch (cause) { return { model: null, error: cause instanceof Error ? cause.message : bt("UV 원본을 읽지 못했습니다.", "Could not read the UV source.") }; }
-  }, [bt, workspace]);
+  }, [bt, materialMode, workspace]);
   const unavailable = !run ? bt("이 화면은 읽기 전용입니다.", "This view is read-only.")
     : otherPreviewActive ? bt("다른 메시 미리보기를 적용하거나 취소한 뒤 사용하세요.", "Apply or cancel the other mesh preview first.")
       : !workspace.activeAssetId ? bt("UV를 편집할 오브젝트를 선택하세요.", "Select an object to edit its UVs.") : null;
   const sameContext = seenContext === context;
-  const selection = useMemo(() => source.model ? createStudioHybridDccUvSelection(workspace, sameContext ? islandIds : [], sameContext ? cornerIds : []) : null, [cornerIds, islandIds, sameContext, source.model, workspace]);
+  const selection = useMemo(() => source.model ? selectStudioHybridDccUvElements(source.model, sameContext ? islandIds : [], sameContext ? cornerIds : []) : null, [cornerIds, islandIds, sameContext, source.model]);
   const selectedCorners = useMemo(() => new Set([
     ...cornerIds, ...(source.model?.islands.filter(({ id }) => islandIds.includes(id)).flatMap(({ cornerIds: ids }) => ids) ?? []),
   ]), [cornerIds, islandIds, source.model]);

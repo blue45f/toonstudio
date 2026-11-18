@@ -18,7 +18,7 @@ describe("3D mannequin direct-manipulation runtime boundary", () => {
   });
 
   it("rolls direct and IK edits back when pointer ownership is cancelled", () => {
-    expect(source).toContain("group.rotation.set(...session.startRotation)");
+    expect(source).toContain("figureById(session.figureId)?.applyPose(session.startPose)");
     expect(source).toContain("const startPose = dragStartPose");
     expect(source).toContain("applyPoseToGraph(currentPose)");
     expect(source).toContain("finishPointerInteraction(event, true)");

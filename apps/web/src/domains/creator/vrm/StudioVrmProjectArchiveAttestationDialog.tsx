@@ -31,7 +31,7 @@ type ArchiveContentField = keyof Pick<
 >;
 
 export interface StudioVrmProjectArchiveAttestationDialogProps {
-  readonly plan: ReadyArchiveAttestationPlan;
+  readonly plan: ReadyArchiveAttestationPlan & { readonly destination?: "team-cut" };
   readonly queuedCount?: number;
   readonly onSubmit: (input: StudioVrmProjectArchiveUseContextInput) => void;
   readonly onCancel: () => void;
@@ -89,6 +89,7 @@ const CLASSIFICATION_OPTIONS = Object.freeze([
 }[]);
 
 function validationMessage(input: {
+  readonly team: boolean;
   readonly actorBasis: ArchiveActorBasis | null;
   readonly classifications: Partial<Record<ArchiveContentField, StudioVrmAttestedContentClassification>>;
   readonly attributionConfirmed: boolean;
@@ -108,7 +109,7 @@ function validationMessage(input: {
     return {
       ready: false,
       tone: "blocking",
-      text: vrmPanelStatusText("studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport", "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다."),
+      text: input.team ? "모든 이용 조건을 확인해야 팀에 컷을 공유할 수 있습니다." : vrmPanelStatusText("studio.vrmPanelStatus.archiveAttestation.unknownBlocksExport", "‘확인하지 못함’이 포함되어 archive 내보내기를 진행할 수 없습니다."),
     };
   }
   if (!input.attributionConfirmed) {
@@ -121,7 +122,7 @@ function validationMessage(input: {
   return {
     ready: true,
     tone: "ready",
-    text: "필수 확인이 완료되었습니다. VRM을 포함한 archive를 만들 수 있습니다.",
+    text: input.team ? "이용 조건을 확인했습니다. 팀에 컷을 저장할 수 있습니다." : "필수 확인이 완료되었습니다. VRM을 포함한 archive를 만들 수 있습니다.",
   };
 }
 
@@ -145,7 +146,7 @@ export function StudioVrmProjectArchiveAttestationDialog({
   const titleId = `${id}-title`;
   const descriptionId = `${id}-description`;
   const statusId = `${id}-status`;
-  const validation = validationMessage({ actorBasis, classifications, attributionConfirmed });
+  const validation = validationMessage({ team: plan.destination === "team-cut", actorBasis, classifications, attributionConfirmed });
 
   useStudioModalSheet({
     activeKey: `vrm-project-archive-attestation:${plan.schema}:${plan.version}`,
@@ -231,17 +232,16 @@ export function StudioVrmProjectArchiveAttestationDialog({
               ) : null}
             </div>
             <h2 id={titleId} className="mt-1.5 text-base font-bold tracking-tight text-fg sm:text-lg">
-              VRM archive 이용 조건 확인
+              {plan.destination === "team-cut" ? "작품 팀에 공유할 VRM 이용 조건" : "VRM archive 이용 조건 확인"}
             </h2>
             <p id={descriptionId} className="mt-1 max-w-[70ch] text-xs leading-relaxed text-fg-2">
-              원본 VRM 파일이 프로젝트 archive에 포함됩니다. 아래 항목은 추정하지 않고,
-              현재 프로젝트의 실제 이용 맥락을 직접 확인해야 합니다.
+              {plan.destination === "team-cut" ? "이 작품을 볼 수 있는 팀원이 원본 VRM과 채색 파일을 받아 컷을 열 수 있습니다. 작가와 이용 조건을 확인해 주세요." : "원본 VRM 파일이 프로젝트 archive에 포함됩니다. 현재 프로젝트의 실제 이용 맥락을 직접 확인해 주세요."}
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            aria-label="VRM archive 이용 조건 확인 취소"
+            aria-label={plan.destination === "team-cut" ? "팀 컷 이용 조건 확인 취소" : "VRM archive 이용 조건 확인 취소"}
             className={cn(
               "grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg-2 hover:bg-raised hover:text-fg",
               STUDIO_EASE,
@@ -352,7 +352,7 @@ export function StudioVrmProjectArchiveAttestationDialog({
 
           <section aria-labelledby={`${id}-attribution-heading`}>
             <h3 id={`${id}-attribution-heading`} className="text-sm font-bold text-fg">
-              3. archive에 보존할 정확한 크레딧
+              {plan.destination === "team-cut" ? "3. 팀원에게 표시할 크레딧" : "3. archive에 보존할 정확한 크레딧"}
             </h3>
             <p className="mt-1 text-xs leading-relaxed text-fg-3">
               아래 문자열은 모델 이용 조건에서 가져온 원문입니다. 순서와 내용을 바꾸지 않고 그대로 보존합니다.
@@ -406,7 +406,7 @@ export function StudioVrmProjectArchiveAttestationDialog({
                 className="mt-0.5 size-4 shrink-0 accent-accent"
               />
               <span className="text-xs font-semibold leading-relaxed text-fg">
-                표시된 모든 크레딧 원문을 순서와 내용 변경 없이 archive에 보존합니다.
+                {plan.destination === "team-cut" ? "표시된 크레딧을 순서와 내용 그대로 팀 컷에 보존합니다." : "표시된 모든 크레딧 원문을 순서와 내용 변경 없이 archive에 보존합니다."}
               </span>
             </label>
           </section>
@@ -456,7 +456,7 @@ export function StudioVrmProjectArchiveAttestationDialog({
                 STUDIO_FOCUS_RING,
               )}
             >
-              VRM 포함 archive 만들기
+              {plan.destination === "team-cut" ? "확인하고 팀에 저장" : "VRM 포함 archive 만들기"}
             </button>
           </div>
         </footer>

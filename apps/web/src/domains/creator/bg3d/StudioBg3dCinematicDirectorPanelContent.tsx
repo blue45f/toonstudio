@@ -12,7 +12,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useT } from "@/shared/lib/i18n";
 import "../studio-bg3d-panel-status-i18n";
@@ -47,6 +47,8 @@ import type {
   StudioBg3dCameraSettings,
   StudioBg3dShot,
 } from "./studio-bg3d-scene-document";
+
+const SCENE_SHOT_PREVIEW_INTERVAL_MS = 1_200;
 
 const DEFAULT_DIRECTOR_CAMERA: StudioBg3dCameraSettings = Object.freeze({
   position: [0, 1.6, 6] as const,
@@ -160,15 +162,18 @@ export function StudioBg3dCinematicDirectorPanel({
     [continuityReport.transitions],
   );
 
-  const applyDeckShot = useCallback((index: number) => {
+  const applyDeckShot = useCallback((index: number, startAtFirstCut = false) => {
     if (productionMode) {
       const shot = productionShots?.[index];
       if (shot) onApplyProductionShot?.(shot.id);
       return;
     }
     const bookmark = localBookmarks[index];
-    if (bookmark) onApplyShotBookmark?.(bookmark);
+    if (bookmark) onApplyShotBookmark?.(startAtFirstCut && index === 0 ? { ...bookmark, transitionSeconds: 0 } : bookmark);
   }, [localBookmarks, onApplyProductionShot, onApplyShotBookmark, productionMode, productionShots]);
+
+  const playbackApply = useRef(applyDeckShot);
+  useEffect(() => { playbackApply.current = applyDeckShot; }, [applyDeckShot]);
 
   useEffect(() => {
     if (disabled) {
@@ -176,14 +181,12 @@ export function StudioBg3dCinematicDirectorPanel({
       return undefined;
     }
     if (!isPlaying || continuityShots.length === 0) return undefined;
-    applyDeckShot(activeDeckIndex);
-    const localBookmark = productionMode ? undefined : localBookmarks[activeDeckIndex];
-    const delayMs = productionMode
-      ? 1_200
-      : Math.max(
-        300,
-        ((localBookmark?.transitionSeconds ?? 0.8) + (localBookmark?.holdSeconds ?? 1.2)) * 1_000,
-      );
+    const step = localPlaybackPlan.steps[activeDeckIndex];
+    if (!productionMode && !step) return undefined;
+    playbackApply.current(activeDeckIndex, true);
+    const delayMs = !productionMode && step
+      ? (step.holdEndSeconds - step.transitionStartSeconds) * 1_000
+      : SCENE_SHOT_PREVIEW_INTERVAL_MS;
     const timer = window.setTimeout(() => {
       if (activeDeckIndex >= continuityShots.length - 1) {
         setIsPlaying(false);
@@ -192,7 +195,7 @@ export function StudioBg3dCinematicDirectorPanel({
       setActiveDeckIndex((current) => current + 1);
     }, delayMs);
     return () => window.clearTimeout(timer);
-  }, [activeDeckIndex, applyDeckShot, continuityShots.length, disabled, isPlaying, localBookmarks, productionMode]);
+  }, [activeDeckIndex, continuityShots.length, disabled, isPlaying, localPlaybackPlan, productionMode]);
 
   useEffect(() => {
     if (activeDeckIndex < continuityShots.length) return;
@@ -322,32 +325,33 @@ export function StudioBg3dCinematicDirectorPanel({
       </div>
 
       <p className="rounded-lg border border-accent/30 bg-accent/5 px-2.5 py-2 text-[0.65rem] leading-relaxed text-fg-2">
-        영화처럼 카메라를 움직여 보세요. 먼저 아래 앵글을 고르면 3D 카메라가 즉시 이동하고,
-        마음에 들면 “현재 장면을 컷으로 저장”을 눌러 컷 덱에 기록한 뒤 ▶로 순서대로 재생합니다.
+        {productionMode
+          ? `앵글을 골라 구도를 잡고 현재 장면을 컷으로 저장하세요. 저장한 컷은 미리보기에서 ${SCENE_SHOT_PREVIEW_INTERVAL_MS / 1_000}초 간격으로 바뀝니다.`
+          : "앵글과 재생 시간을 정해 리허설 컷을 추가하세요. 첫 컷에서 시작해 저장한 순서대로 재생합니다."}
       </p>
 
       <section className="grid gap-2 rounded-lg border border-line bg-card p-2.5" aria-label="카메라 전환 설정">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[0.68rem] font-bold text-fg-2">카메라 전환</span>
+          <span className="text-[0.68rem] font-bold text-fg-2">{productionMode ? "앵글 프리셋 이동" : "리허설 컷 전환"}</span>
           <span className="numeral text-[0.6rem] text-fg-3">
             {productionMode ? `${continuityShots.length}컷` : `${localPlaybackPlan.totalSeconds.toFixed(1)}초 / ${continuityShots.length}컷`}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-2 ${productionMode ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
           <label className="text-[0.62rem] font-semibold text-fg-3">
-            이동 시간
+            {productionMode ? "앵글 이동 시간(초)" : "이동 시간"}
             <input
               type="number"
               min="0"
               max="8"
               step="0.1"
               value={transitionSeconds}
-              disabled={disabled}
+              disabled={disabled || (productionMode && !onApplyShotBookmark)}
               onChange={(event) => setTransitionSeconds(Number(event.target.value))}
               className="mt-1 min-h-8 w-full rounded border border-line bg-raised px-2 text-fg"
             />
           </label>
-          <label className="text-[0.62rem] font-semibold text-fg-3">
+          {!productionMode && <label className="text-[0.62rem] font-semibold text-fg-3">
             컷 유지
             <input
               type="number"
@@ -359,12 +363,12 @@ export function StudioBg3dCinematicDirectorPanel({
               onChange={(event) => setHoldSeconds(Number(event.target.value))}
               className="mt-1 min-h-8 w-full rounded border border-line bg-raised px-2 text-fg"
             />
-          </label>
+          </label>}
           <label className="text-[0.62rem] font-semibold text-fg-3">
-            전환 곡선
+            {productionMode ? "앵글 이동 곡선" : "전환 곡선"}
             <select
               value={easing}
-              disabled={disabled}
+              disabled={disabled || (productionMode && !onApplyShotBookmark)}
               onChange={(event) => setEasing(event.target.value as WebtoonShotTransitionEasing)}
               className="mt-1 min-h-8 w-full rounded border border-line bg-raised px-2 text-fg"
             >
@@ -406,7 +410,7 @@ export function StudioBg3dCinematicDirectorPanel({
             <button
               key={preset.kind}
               type="button"
-              disabled={disabled}
+              disabled={disabled || (productionMode && !onApplyShotBookmark)}
               title={tooltip}
               aria-pressed={selectedAngle === preset.kind}
               onClick={() => {
@@ -475,7 +479,7 @@ export function StudioBg3dCinematicDirectorPanel({
           <span className="text-[0.68rem] font-medium text-fg-3">저장된 웹툰 컷 덱</span>
           <button
             type="button"
-            disabled={disabled || continuityShots.length === 0}
+            disabled={disabled || continuityShots.length === 0 || (productionMode && !onApplyProductionShot)}
             onClick={togglePlayback}
             className="flex min-h-8 items-center gap-1 rounded border border-line bg-raised px-2 text-[0.62rem] font-bold text-fg-2 hover:text-fg disabled:opacity-45"
           >
@@ -491,6 +495,7 @@ export function StudioBg3dCinematicDirectorPanel({
             return (
               <div
                 key={shot.id}
+                aria-current={activeDeckIndex === index && isPlaying ? "step" : undefined}
                 className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-xs ${
                   activeDeckIndex === index && isPlaying
                     ? "border-accent bg-accent/10"

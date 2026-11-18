@@ -190,7 +190,8 @@ export function StudioVirtualSpaceAppHost({ installedAppIds, onOpenStore }: Stud
     setSession(null);
   };
 
-  const activeApp = activeAppId ? findStoreApp(activeAppId) : null;
+  const activeApp = installedApps.find(app => app.id === activeAppId) ?? null;
+  if (activeAppId !== null && !activeApp) closeApp();
 
   return (
     <section className="studio-vspace-app-host" aria-label={bt("설치된 앱 실행", "Launch installed apps")}>

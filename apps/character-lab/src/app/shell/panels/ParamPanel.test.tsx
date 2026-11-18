@@ -52,12 +52,19 @@ function recipeWith(patch: Partial<Pick<CharacterRecipe, "body" | "face" | "colo
   return { ...createDefaultRecipe(), ...patch };
 }
 
+function parameterControls(labelKo: string) {
+  const label = screen.getByText(labelKo, { selector: "[data-param] label" });
+  const row = label.closest<HTMLElement>("[data-param]");
+  if (!row) throw new Error(`${labelKo} 파라미터 행을 찾을 수 없습니다.`);
+  return within(row);
+}
+
 function slider(labelKo: string): HTMLInputElement {
-  return screen.getByLabelText(labelKo, { selector: "input[type=range]" }) as HTMLInputElement;
+  return parameterControls(labelKo).getByLabelText<HTMLInputElement>(labelKo, { selector: "input[type=range]" });
 }
 
 function numberInput(labelKo: string): HTMLInputElement {
-  return screen.getByLabelText(`${labelKo} 숫자`) as HTMLInputElement;
+  return parameterControls(labelKo).getByLabelText<HTMLInputElement>(`${labelKo} 숫자`, { selector: "input[type=number]" });
 }
 
 describe("ParamPanel — 슬라이더·숫자 입력·리셋", () => {
@@ -65,11 +72,14 @@ describe("ParamPanel — 슬라이더·숫자 입력·리셋", () => {
     setup();
     const body = screen.getByRole("group", { name: "체형 파라미터" });
     const face = screen.getByRole("group", { name: "얼굴 파라미터" });
-    expect(within(body).getAllByRole("slider")).toHaveLength(9);
-    expect(within(face).getAllByRole("slider")).toHaveLength(15);
-    for (const key of BODY_PARAM_KEYS) expect(slider(BODY_PARAM_LABELS_KO[key]).value).toBe("0");
-    for (const key of FACE_PARAM_KEYS) expect(slider(FACE_PARAM_LABELS_KO[key]).value).toBe("0");
-    for (const slide of screen.getAllByRole("slider")) {
+    const sliders = screen.getAllByRole<HTMLInputElement>("slider");
+    const labels = new Map(Array.from(document.querySelectorAll<HTMLLabelElement>("[data-param] label[for]"),
+      label => [label.control, label.textContent] as const));
+    const groupValues = (group: HTMLElement) => sliders.filter(input => group.contains(input))
+      .map(input => [labels.get(input), input.value]);
+    expect(groupValues(body)).toEqual(BODY_PARAM_KEYS.map(key => [BODY_PARAM_LABELS_KO[key], "0"]));
+    expect(groupValues(face)).toEqual(FACE_PARAM_KEYS.map(key => [FACE_PARAM_LABELS_KO[key], "0"]));
+    for (const slide of sliders) {
       expect(slide.getAttribute("min")).toBe("-1");
       expect(slide.getAttribute("max")).toBe("1");
     }
@@ -175,10 +185,12 @@ describe("ParamPanel — 슬라이더·숫자 입력·리셋", () => {
         <ParamPanel />
       </MockLabProvider>,
     );
-    for (const value of ["0.1", "0.2", "0.3", "0.45"]) fireEvent.change(slider("키"), { target: { value } });
+    const height = slider("키");
+    for (const value of ["0.1", "0.2", "0.3", "0.45"]) fireEvent.change(height, { target: { value } });
     expect(store.getState().recipe.body.height).toBe(0.45);
     expect(store.getState().history.depth).toBe(1);
-    expect((slider("키")).value).toBe("0.45");
+    expect(height.isConnected).toBe(true);
+    expect(height.value).toBe("0.45");
   });
 
   it("빠른 체형 프리셋 클릭은 같은 coalesceKey로 체형 파라미터를 보내 되돌리기 1단계로 병합한다", () => {

@@ -38,6 +38,7 @@ function Probe() {
   const state = useStudioDrawingClarity();
   if (!state) throw new Error("화면 선택 context가 필요합니다.");
   return <>
+    <output aria-label="편집기 셸">{state.presentation}</output>
     <output aria-label="화면">{state.active ? "간단" : "기존"}</output>
     <output aria-label="간단 화면 사용 가능">{state.available ? "가능" : "기존 유지"}</output>
     <button onClick={state.chooseSimple}>간단한 그리기</button><button onClick={state.showSavedLayout}>내 배치</button>
@@ -51,18 +52,19 @@ function Probe() {
 function tree(value: StudioDrawingClaritySession) { return <StudioDrawingClarityProvider session={value}><Probe /></StudioDrawingClarityProvider>; }
 
 describe("기본 그리기 화면의 세션 선택과 도구함", () => {
-  it.each(["android", "ios"])("Capacitor %s의 정본 네이티브 신호에서는 기존 화면을 유지한다", (platform) => {
+  it.each(["android", "ios"])("Capacitor %s의 웹뷰가 기본 원고를 모바일 웹과 같은 화면으로 연다", (platform) => {
     vi.stubGlobal("Capacitor", { isNativePlatform: () => true, getPlatform: () => platform });
-    render(tree({ ...session(), isMobile: true, mobileImmersive: true }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("기존 유지");
+    render(<StudioDrawingClarityProvider session={{ ...session(), isMobile: true, mobileImmersive: true }} presentation="app"><Probe /></StudioDrawingClarityProvider>);
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("가능");
+    expect(screen.getByLabelText("편집기 셸").textContent).toBe("integrated");
   });
 
-  it.each(["android", "ios"])("구형 브리지의 getPlatform %s 신호도 네이티브로 보존한다", (platform) => {
+  it.each(["android", "ios"])("구형 %s 브리지에서도 같은 그리기 도구를 쓸 수 있다", (platform) => {
     vi.stubGlobal("Capacitor", { getPlatform: () => platform });
     render(tree({ ...session(), isMobile: true, mobileImmersive: true }));
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
-    expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("기존 유지");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
+    expect(screen.getByLabelText("간단 화면 사용 가능").textContent).toBe("가능");
   });
 
   it.each([
@@ -189,9 +191,9 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(location.search).toContain("startTool=draw");
   });
 
-  it("탭에 기억된 드로잉 app 화면에는 추가 기본 헤더를 겹쳐 넣지 않는다", () => {
+  it("설치형 앱을 거친 탭도 같은 원고에서 간단한 그리기를 연다", () => {
     render(<StudioDrawingClarityProvider session={session()} presentation="app"><Probe /></StudioDrawingClarityProvider>);
-    expect(screen.getByLabelText("화면").textContent).toBe("기존");
+    expect(screen.getByLabelText("화면").textContent).toBe("간단");
   });
 
   it("이후 명시적으로 고른 다른 작업 배치를 이전 간단 화면 선택으로 덮지 않는다", () => {
@@ -373,7 +375,18 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "저장" }));
   });
 
-  it("저장소에 간단 화면 선택이 남아 있어도 URL에 drawingShell 또는 roleWorkspace가 명시되면 요청한 모드를 우선한다", () => {
+  it("전체 기능 링크에서 기본 그리기를 직접 선택하면 문서·룸·위치를 유지하며 링크도 바꾼다", () => {
+    const base = session();
+    const navigate = vi.fn();
+    const location = { ...base.location, search: "?room=team-a&uiMode=full&startTool=select", hash: "#page", state: { from: "library" } };
+    render(tree({ ...base, location, navigate, uiDensityMode: "full" }));
+    fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" }));
+    expect(navigate).toHaveBeenCalledExactlyOnceWith({
+      pathname: location.pathname, search: "room=team-a&uiMode=basic&startTool=select", hash: "#page",
+    }, { replace: true, state: location.state });
+  });
+
+  it("드로잉 진입 별칭은 저장한 화면을 유지하고 명시한 역할은 우선한다", () => {
     const storage = memoryStorage();
     const base = session();
     const first = render(
@@ -385,7 +398,7 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
     expect(screen.getByLabelText("화면").textContent).toBe("간단");
     first.unmount();
 
-    for (const search of ["?drawingShell=integrated", "?roleWorkspace=authoring"]) {
+    for (const [search, expected] of [["?drawingShell=integrated", "간단"], ["?drawingShell=app", "간단"], ["?roleWorkspace=authoring", "간단"], ["?roleWorkspace=lineart", "간단"], ["?roleWorkspace=review", "기존"]] as const) {
       const explicitView = render(
         <StudioDrawingClarityProvider
           session={{ ...base, location: { ...base.location, search } }}
@@ -394,7 +407,7 @@ describe("기본 그리기 화면의 세션 선택과 도구함", () => {
           <Probe />
         </StudioDrawingClarityProvider>,
       );
-      expect(screen.getByLabelText("화면").textContent).toBe("기존");
+      expect(screen.getByLabelText("화면").textContent).toBe(expected);
       explicitView.unmount();
     }
   });

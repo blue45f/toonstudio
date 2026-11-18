@@ -1,6 +1,5 @@
 "use no memo";
-// The editor exposes one mutable host bag. The assistant polls that bag and must re-render the
-// shared viewport even when the bag identity itself stays stable.
+// 호스트 객체의 참조를 유지한 채 값이 바뀌면 도우미와 공용 뷰포트를 함께 갱신한다.
 
 import {
   ArrowLeft, ArrowRight, Box, Camera, Check, CircleUserRound, Compass,
@@ -104,8 +103,9 @@ export interface StudioBg3dSceneAssistantHost extends StudioBg3dAssistantReadine
 interface StudioBg3dSceneAssistantWorkspaceProps {
   readonly h: StudioBg3dSceneAssistantHost;
   readonly onOpenProfessional: () => void;
+  readonly viewport?: ReactNode;
+  readonly onHostChange?: () => void;
 }
-
 const TRANSFORM_ACTIONS = Object.freeze([
   { id: "translate", label: "위치 옮기기", icon: Move3d },
   { id: "rotate", label: "방향 바꾸기", icon: Rotate3d },
@@ -532,8 +532,7 @@ function FinishStep({
   );
 }
 export function StudioBg3dSceneAssistantWorkspace({
-  h,
-  onOpenProfessional,
+  h, onOpenProfessional, viewport, onHostChange,
 }: StudioBg3dSceneAssistantWorkspaceProps) {
   const [, refreshMutableHost] = useReducer((revision: number) => revision + 1, 0);
   const initialContent = assistantSceneHasContent(h);
@@ -554,10 +553,10 @@ export function StudioBg3dSceneAssistantWorkspace({
       const next = readAssistantHostSnapshot(h);
       if (next === previous) return;
       previous = next;
-      refreshMutableHost();
+      (onHostChange ?? refreshMutableHost)();
     }, 180);
     return () => window.clearInterval(interval);
-  }, [h]);
+  }, [h, onHostChange]);
 
   const objectCount = (h.primitives?.length ?? 0)
     + (h.customModels?.length ?? 0)
@@ -789,7 +788,7 @@ export function StudioBg3dSceneAssistantWorkspace({
       data-testid="studio-bg3d-scene-assistant"
     >
       <div className="scene-assistant__viewport">
-        <StudioBg3dEditorViewport h={h} simplified />
+        {viewport ?? <StudioBg3dEditorViewport h={h} simplified />}
         <div className="scene-assistant__viewport-status" aria-live="polite">
           {placementActive
             ? "화면에서 배치할 위치를 선택하세요"

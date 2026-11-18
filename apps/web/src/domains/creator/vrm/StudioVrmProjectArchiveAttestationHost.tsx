@@ -31,7 +31,7 @@ import type { StudioVrmProjectArchiveAttestationDialogProps } from "./StudioVrmP
 type ReadyArchiveAttestationPlan = Extract<
   StudioVrmProjectArchiveAttestationPlan,
   { readonly ok: true }
->;
+> & { readonly destination?: "team-cut" };
 
 type ArchiveAttestationResult = StudioVrmProjectArchiveUseContextInput | null;
 type ArchiveAttestationPresenter = (

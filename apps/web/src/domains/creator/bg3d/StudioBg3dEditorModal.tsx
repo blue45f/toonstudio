@@ -3,7 +3,8 @@ import "../studio-3d-ui/studio-3d-reference-workspace.css";
 // memoization until the remaining document/session controllers stop mutating that identity.
 
 import { SlidersHorizontal, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useReducer, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { useStudio3dVisualViewport } from "../studio-3d-ui/useStudio3dVisualViewport";
 import "./studio-bg3d-mobile-workspace.css";
@@ -76,8 +77,23 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
     requestUserClose,
   } = h;
   const [experienceMode, setExperienceMode] = useState<StudioBg3dExperienceMode>("simple");
+  const [, refreshViewport] = useReducer((version: number) => version + 1, 0);
+  const [viewportMount] = useState(() => {
+    if (typeof document === "undefined") return null;
+    const node = document.createElement("div");
+    node.className = "contents";
+    node.dataset.bg3dViewportMount = "true";
+    return node;
+  });
+  const placeViewport = useCallback((anchor: HTMLSpanElement | null) => {
+    if (!viewportMount) return;
+    // 간편·정밀 전환은 배치만 바꾼다. 같은 캔버스와 그 GPU 장치는 편집기가 닫힐 때까지 유지한다.
+    if (anchor) anchor.before(viewportMount);
+    else viewportMount.remove();
+  }, [viewportMount]);
   useStudio3dVisualViewport(modalDialogRef, open);
   if (!open && !webXrRendererLifetimeRetained) return null;
+  const viewportSlot = <span hidden ref={placeViewport} />;
 
   const title = experienceMode === "simple"
     ? translateCurrentStaticSourceText(
@@ -273,13 +289,16 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
           {experienceMode === "simple" ? (
             <StudioBg3dSceneAssistantWorkspace
               h={h as unknown as StudioBg3dSceneAssistantHost}
+              viewport={viewportSlot}
+              onHostChange={refreshViewport}
               onOpenProfessional={() => setExperienceMode("pro")}
             />
           ) : (
             <StudioBg3dProfessionalWorkspace
+              cutHost={h}
               scopeKey={h.sharedStageSessionScopeKey ?? null}
               outliner={<StudioBg3dSceneOutliner controller={h.outlinerController} variant="dock" />}
-              viewport={<StudioBg3dEditorViewport h={h} />}
+              viewport={viewportSlot}
               inspector={(
                 <StudioBg3dEditorSidebar
                   h={h}
@@ -289,6 +308,7 @@ export function StudioBg3dEditorModal({ h }: StudioBg3dEditorModalProps) {
               )}
             />
           )}
+          {viewportMount && createPortal(<StudioBg3dEditorViewport h={h} simplified={experienceMode === "simple"} />, viewportMount)}
         </div>
       </div>
     </div>

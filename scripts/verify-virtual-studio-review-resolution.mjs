@@ -39,8 +39,14 @@ await page.route("**/*", async (route) => {
   }
   if (!url.pathname.startsWith("/api/")) return route.continue();
   assert(fixture);
+  if (url.pathname === "/api/studio-project-graph/works/work/review-voice-notes/query") {
+    assert.equal(request.method(), "POST");
+    assert.deepEqual(request.postDataJSON(), { subject: fixture.origin.subject });
+    reads++;
+    return route.fulfill(mode === "revoked" ? { status: 403, json: { message: "Fixture access revoked" } } : { json: { items: [] } });
+  }
   if (request.method() !== "GET") {
-    assert.equal(request.method(), "POST"); assert(url.pathname.endsWith("/review-comments/comment/resolve"), "No comment creation, capture or approval is permitted");
+    assert.equal(request.method(), "POST"); assert(url.pathname.endsWith("/review-comments/comment/resolve"), `Unexpected mutation ${url.pathname}`);
     const body = request.postDataJSON(); writes.push(body);
     assert.deepEqual(body, { resolutionRevisionId: "submission-new", status: "resolved", resolutionSourceRef: fixture.request.replacement });
     if (mode === "invalid-source") return route.fulfill({ status: 422, json: { causeCode: "review_resolution_source_mismatch" } });
@@ -80,7 +86,10 @@ async function waitHeld() {
   assert(held.length > 0, "Expected a controlled delayed authority response");
 }
 async function load(width = 1280) {
-  release(); reads = 0; writes.length = 0;
+  release();
+  // 이전 검수 화면의 저장 후 재조회가 다음 캡처 화면의 진입 요청에 섞이지 않도록 먼저 닫는다.
+  await page.goto("about:blank");
+  reads = 0; writes.length = 0;
   await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
   await page.goto(`${origin.origin}${fixturePath}`);
   const link = page.getByRole("link", { name: "원래 의견에서 수정본 확인", exact: true }); await link.waitFor();
@@ -98,11 +107,12 @@ async function load(width = 1280) {
   assert.equal(reads, 0); assert.equal(writes.length, 0);
   const href = new URL(await link.getAttribute("href"), origin);
   assert.equal(href.searchParams.get("reviewComment"), "comment"); assert.equal(href.searchParams.get("correctedReview"), "review-new");
-  await link.focus(); await page.keyboard.press("Enter"); await region().waitFor(); assert.equal(writes.length, 0);
+  await link.press("Enter"); await region().waitFor(); assert.equal(writes.length, 0);
 }
 async function compare() {
-  const button = region().getByRole("button", { name: "수정 검수본 확인", exact: true }); await button.focus(); await page.keyboard.press("Enter");
+  const button = region().getByRole("button", { name: "수정 검수본 확인", exact: true }); await button.press("Enter");
   await confirm().waitFor();
+  await region().getByRole("button", { name: "나란히 보기", exact: true }).click();
   await region().getByRole("img", { name: "비교 검수본 페이지", exact: true }).scrollIntoViewIfNeeded();
   await page.waitForFunction(() => [...document.images].filter((img) => /검수본 페이지/u.test(img.alt)).length === 2
     && [...document.images].filter((img) => /검수본 페이지/u.test(img.alt)).every((img) => img.complete && img.naturalWidth === 600));
@@ -112,12 +122,12 @@ try {
   for (const width of [1280, 390]) {
     await load(width); await compare();
     await region().getByRole("button", { name: "겹쳐 보기", exact: true }).click();
-    const opacity = region().getByRole("slider", { name: /비교본 불투명도/u }); await opacity.focus(); await page.keyboard.press("ArrowRight"); assert.equal(await opacity.inputValue(), "55");
+    const opacity = region().getByRole("slider", { name: /비교본 불투명도/u }); await opacity.press("ArrowRight"); assert.equal(await opacity.inputValue(), "55");
     await region().getByRole("button", { name: "나란히 보기", exact: true }).click();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await region().screenshot({ path: path.join(output, `comparison-${width}.png`) });
-    await confirm().focus(); await page.keyboard.press("Space"); await resolve().focus();
-    assert((await resolve().boundingBox()).height >= 44); await page.keyboard.press("Enter"); await complete();
+    await confirm().press("Space");
+    assert((await resolve().boundingBox()).height >= 44); await resolve().press("Enter"); await complete();
     assert.equal(writes.length, 1); assert.equal(fixture.origin.project.artifacts[0].approvedRevisionId, null);
     const approval = new URL(await region().getByRole("link", { name: "새 검수본에서 검토·승인", exact: true }).getAttribute("href"), origin);
     assert.equal(approval.searchParams.get("sharedReview"), "review-new");

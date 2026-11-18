@@ -2,8 +2,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
+import { Blob as NodeBlob } from "node:buffer";
+import { URL as NodeURL } from "node:url";
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { decodePng } from "image-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Box3, Vector3 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -46,6 +49,7 @@ const WEB_PUBLIC_DIR = path.resolve(import.meta.dirname, "../../../../public");
 describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it("배치 요청이 끝나도 실제 위치 확정 전에는 성공 상태를 만들지 않는다", async () => {
@@ -271,6 +275,11 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
   });
 
   it("V15 아티잔 아틀리에 카탈로그의 8개 GLB는 출처·라이선스 원장과 같은 경로·바이트·SHA를 갖는다", async () => {
+    // jsdom에는 이미지 디코더가 없다. 노드의 blob URL로 내장 PNG를 실제로 읽는다.
+    const decodeBitmap = vi.fn(async (source: Blob) => decodePng(new Uint8Array(await source.arrayBuffer())));
+    vi.stubGlobal("Blob", NodeBlob);
+    vi.stubGlobal("URL", NodeURL);
+    vi.stubGlobal("createImageBitmap", decodeBitmap);
     const entries = listStudioBg3dEssentialAssetsByCategory("blender-artisan-v15-prop-3d");
     expect(entries).toHaveLength(8);
     const root = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-artisan-v15");
@@ -292,6 +301,10 @@ describe("studio-bg3d-essential-pose-prop-catalog & panels", () => {
       expect(licenses).toContain(record.file);
       const glbScene = (await loader.parseAsync(Uint8Array.from(bytes).buffer, "")).scene;
       expect(new Box3().setFromObject(glbScene).getSize(new Vector3()).y, record.file).toBeGreaterThan(0.3);
+    }
+    expect(decodeBitmap).toHaveBeenCalledTimes(2);
+    for (const result of decodeBitmap.mock.results) {
+      expect(await result.value).toMatchObject({ width: 512, height: 256 });
     }
     for (const record of v15Provenance.thumbnails) {
       const bytes = fs.readFileSync(path.join(root, record.file));

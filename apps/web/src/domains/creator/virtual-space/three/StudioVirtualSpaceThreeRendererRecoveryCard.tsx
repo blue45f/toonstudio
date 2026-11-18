@@ -74,7 +74,7 @@ export function StudioVirtualSpaceThreeRendererRecoveryCard({
         role="status"
         data-testid="vspace-low-spec-banner"
         data-space-interactive="true"
-        className="pointer-events-auto absolute inset-x-3 bottom-20 z-20 mx-auto flex max-w-xl flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/92 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur sm:bottom-16"
+        className="studio-vspace-three-quality-notice pointer-events-auto absolute inset-x-3 bottom-20 z-20 mx-auto flex max-w-xl flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel/92 px-3 py-2 text-xs text-fg shadow-lg backdrop-blur sm:bottom-16"
       >
         <span className="font-medium">
           {bt(

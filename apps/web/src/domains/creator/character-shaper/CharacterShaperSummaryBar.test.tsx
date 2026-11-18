@@ -90,7 +90,7 @@ function installMatchMedia(width: number, height = 900, coarse = false) {
 }
 
 /** Mirrors the poser host: `handleSaveFullLocal` reads `fullStateName` from the latest render. */
-function Harness({ binding, host, onSaved }: { binding: CharacterShaperBinding; host: Record<string, unknown>; onSaved: (name: string) => void }) {
+function Harness({ binding, host, onSaved }: { binding: CharacterShaperBinding; host: Record<string, unknown>; onSaved: (name: string) => void | boolean | Promise<boolean> }) {
   const [fullStateName, setFullStateName] = useState("");
   const [savedFullStates, setSavedFullStates] = useState<Record<string, unknown>>({});
   const h: StudioVrmPoserHost = {
@@ -99,8 +99,9 @@ function Harness({ binding, host, onSaved }: { binding: CharacterShaperBinding; 
     savedFullStates,
     setFullStateName,
     handleSaveFullLocal: () => {
-      onSaved(fullStateName);
+      const receipt = onSaved(fullStateName);
       setSavedFullStates((current) => ({ ...current, [fullStateName]: {} }));
+      return receipt ?? true;
     },
   };
   return (
@@ -207,7 +208,7 @@ describe("CharacterShaperSummaryBar", () => {
     expect(screen.queryByRole("dialog", { name: "처음 상태로 되돌리기" })).toBeNull();
   });
 
-  it("saves a named variant only after the host echoes the name back", () => {
+  it("saves a named variant only after the host echoes the name back", async () => {
     const binding = makeBinding();
     const onSaved = vi.fn();
     render(<Harness binding={binding} host={baseHost()} onSaved={onSaved} />);
@@ -217,9 +218,20 @@ describe("CharacterShaperSummaryBar", () => {
     expect(input.value).toBe("루미 변형");
     fireEvent.change(input, { target: { value: "  교복 버전  " } });
     fireEvent.submit(input.closest("form")!);
+    await screen.findByText("저장됨 · 교복 버전");
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(onSaved).toHaveBeenCalledWith("교복 버전");
     expect(screen.getByRole("status").textContent).toContain("저장됨 · 교복 버전");
+  });
+
+  it("메모리에 있는 변형도 SQLite 쓰기가 실패하면 성공으로 표시하지 않는다", async () => {
+    render(<Harness binding={makeBinding()} host={baseHost()} onSaved={() => Promise.resolve(false)} />);
+    fireEvent.click(screen.getByRole("button", { name: "변형 저장" }));
+    const input = screen.getByLabelText("변형 이름") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "미완료" } });
+    fireEvent.submit(input.closest("form")!);
+    expect(await screen.findByText("저장하지 못했습니다 · 미완료")).toBeTruthy();
+    expect(screen.queryByText("저장됨 · 미완료")).toBeNull();
   });
 
   it("shows bundled model names in the active application language", () => {

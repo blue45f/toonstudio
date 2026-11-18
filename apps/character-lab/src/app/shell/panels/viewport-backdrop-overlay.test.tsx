@@ -238,12 +238,21 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("星明かり");
     getDefaultStripDirectorSession().setLocale("ko");
 
+    const catalog = JSON.stringify({
+      schema: "toonstudio.character-lab.authored-character-index/1",
+      characters: ["shaper-cyber-idol", "shaper-fantasy-saintess", "shaper-atelier-male-lead", "shaper-thriller-detective", "shaper-murim-swordmaster"].map((id) => ({
+        id, displayName: id, files: { glb: { path: `${id}/actor.glb`, sha256: "3".repeat(64) } },
+      })),
+    });
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(catalog, { headers: { "Content-Type": "application/json" } }));
     dispatched.length = 0;
     const castDuoBtn = await screen.findByTestId("viewport-director-cast-duo");
     fireEvent.click(castDuoBtn);
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
         characterId: "shaper-cyber-idol",
+        sha256: "3".repeat(64),
+        glbUrl: "/assets/characters/shaper-cyber-idol/actor.glb",
         stance: "conversational",
         expression: "warm-smile",
         handProp: {

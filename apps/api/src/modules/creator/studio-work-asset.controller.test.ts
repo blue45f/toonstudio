@@ -339,11 +339,12 @@ describe("StudioWorkAssetController", () => {
     });
     const headers = new Map<string, string>();
     const response = {
+      end: vi.fn(),
       setHeader(name: string, value: string) {
         headers.set(name, value);
       },
     };
-    const file = await controller().content(
+    await controller().content(
       { id: "work-1", assetId: "asset-1" },
       { elementType: "image" },
       "viewer",
@@ -353,13 +354,12 @@ describe("StudioWorkAssetController", () => {
     expect(headers).toEqual(new Map([
       ["Cache-Control", "private, no-store, max-age=0"],
       ["X-Content-Type-Options", "nosniff"],
+      ["Content-Type", "image/png"],
+      ["Content-Length", "3"],
+      ["Content-Disposition", "inline"],
       ["ETag", `"${"a".repeat(64)}"`],
     ]));
-    expect(file.getHeaders()).toMatchObject({
-      type: "image/png",
-      length: 3,
-      disposition: "inline",
-    });
+    expect(response.end).toHaveBeenCalledWith(Buffer.from([1, 2, 3]));
   });
 
   it("rejects unauthenticated reads and writes before service access", async () => {

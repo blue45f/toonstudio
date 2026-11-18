@@ -1,23 +1,4 @@
-/**
- * LT 변환 결과 → 레이어 문서 연동 경계.
- *
- * 현황: `domains/creator/layer/`의 레이어 명령(`studio-layer-operations.ts`)은
- * StudioPage의 document/command authority에 묶여 있어, 외부 도메인(3D 뷰)에서
- * 직접 호출할 수 있는 "ImageData → 래스터 레이어 추가" 공개 API가 없다.
- * 그래서 이 파일은 연동에 필요한 페이로드 타입과 변환 결과→페이로드 빌더만
- * 정의하고, 실제 문서 커밋은 호출 측(StudioPage 권한 영역)에서 수행한다.
- * 현재는 호출 측 연동이 없어 CharacterShaperViewportHud가 PNG 다운로드
- * 폴백으로 결과를 보존한다.
- *
- * 연동 메모(레이어 연동 담당):
- * 1. StudioPage(또는 레이어 authority 소유 영역)에서
- *    `createStudioLtConvertLayerPayloads()` 결과를 받아
- *    `ImageData` → canvas → `toDataURL()`(또는 blob URL)로 직렬화한다.
- * 2. 직렬화된 src로 `ImageEl`(`type: "image"`, `studio-element-model.ts`)을
- *    생성해 레이어 스택에 커밋한다. 레이어 이름은 페이로드의 `name`을 사용한다.
- * 3. 선화 레이어는 톤 레이어 위에 배치한다(CSP LT 변환과 동일한 순서).
- */
-
+/** 선화와 톤 출력을 원고 삽입과 PNG 저장에 공통으로 사용한다. */
 import type { StudioLtConvertResult } from "./studio-lt-convert";
 
 export type StudioLtConvertLayerKind = "lt-convert-line" | "lt-convert-tone";

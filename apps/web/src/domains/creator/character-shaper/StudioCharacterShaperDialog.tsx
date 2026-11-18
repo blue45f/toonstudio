@@ -91,7 +91,7 @@ function ShelfSkeleton() {
   );
 }
 
-export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, outputTarget = "canvas" }: StudioCharacterShaperDialogProps) {
+export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, onInsertLtLayers, outputTarget = "canvas" }: StudioCharacterShaperDialogProps) {
   const t = useT();
   useStudio3dVisualViewport(h.dialogRef as RefObject<HTMLElement | null>);
   const isDesktop = useMediaQuery(CHARACTER_SHAPER_DESKTOP_QUERY);
@@ -494,7 +494,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
         <CharacterShaperCompositionGuide framing={outputFraming} />
       </div>
       {!paintActive && !touchLandscape ? (
-        <CharacterShaperViewportHud h={h} binding={binding} compact={layout === "mobile"}
+        <CharacterShaperViewportHud h={h} binding={binding} onInsertLtLayers={onInsertLtLayers} compact={layout === "mobile"}
           onShowGuide={layout === "mobile" ? gestureGuide.show : undefined} />
       ) : null}
       {layout === "mobile" && gestureGuide.open && !paintActive ? <CharacterShaperGestureGuide onDismiss={gestureGuide.dismiss} /> : null}
@@ -620,7 +620,7 @@ export function StudioCharacterShaperDialog({ h, binding, onOpenAdvanced, output
               {activeMobileTab === "shelf" ? shelfContent : activeMobileTab === "view" ? (
                 <div data-character-shaper-view-tools="true" className="relative min-h-0">
                   <CharacterShaperCameraControls h={h} compact />
-                  <CharacterShaperViewportHud h={h} binding={binding} compact onShowGuide={gestureGuide.show} />
+                  <CharacterShaperViewportHud h={h} binding={binding} onInsertLtLayers={onInsertLtLayers} compact onShowGuide={gestureGuide.show} />
                 </div>
               ) : <div className="h-full overflow-y-auto overscroll-contain">{inspector}</div>}
               {commitNoticeNode}

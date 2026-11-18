@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import ky from "ky";
+import { toAppApiError } from "@/platform/api";
+
 import { createEmptyProductionWorkspace } from "./studio-production-workspace-runtime";
 
 import {
   loadStudioExternalReview,
+  saveStudioServerProductionWorkspace,
   StudioProductionServerContractError,
   studioProductionServerClientTestHelpers as helpers,
 } from "./studio-production-server-client";
@@ -13,11 +17,9 @@ const http = vi.hoisted(() => ({
   post: vi.fn(),
   put: vi.fn(),
 }));
-vi.mock("@/platform/api", () => ({
+vi.mock("@/platform/api", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/platform/api")>(),
   api: http,
-  isHttpError: () => false,
-  toApiError: async (error: unknown, fallback: string) =>
-    error instanceof Error ? error : new Error(fallback),
 }));
 
 const NOW = "2026-09-15T00:00:00.000Z";
@@ -56,6 +58,15 @@ function externalReview() {
 
 beforeEach(() => vi.clearAllMocks());
 describe("studio production server client contracts", () => {
+  it("공용 클라이언트가 감싼 409 응답에서 최신 리비전을 복구한다", async () => {
+    const cause = await ky.put("https://example.invalid/production", {
+      fetch: async () => Response.json({ currentRevision: 4 }, { status: 409 }), retry: 0,
+    }).catch((error: unknown) => error);
+    http.put.mockRejectedValueOnce(toAppApiError(cause, "저장 오류"));
+    const document = createEmptyProductionWorkspace("work:chapter-1", NOW);
+    await expect(saveStudioServerProductionWorkspace("chapter-1", 0, document))
+      .rejects.toMatchObject({ name: "StudioProductionServerConflictError", currentRevision: 4 });
+  });
   it("accepts a revision-matched workspace with explicit role-management authority", () => {
     const document = createEmptyProductionWorkspace("work:chapter-1", NOW);
     expect(helpers.parseServerWorkspace({

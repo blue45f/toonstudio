@@ -49,7 +49,7 @@ describe("authored/package-capability — 제작 패키지 커스터마이즈 �
     expect({ ...capabilities, reasonsKo: {} }).toEqual({ ...NO_CUSTOM_CAPABILITIES, reasonsKo: {} });
     expect(Object.keys(capabilities.reasonsKo)).toEqual(expectedOrder());
     expect(capabilities.reasonsKo["channel:top-trim"]).toBe("제작 패키지는 재질 채널을 나누지 않아 상의 단 채널을 따로 칠할 수 없습니다.");
-    expect(capabilities.reasonsKo["shape:legwear"]).toBe("제작 패키지에는 레그웨어 파츠 형태 키가 없습니다(셰이프 키는 얼굴·표정 파라미터에만 대응합니다).");
+    expect(capabilities.reasonsKo["shape:legwear"]).toBe("현재 제작 패키지의 레그웨어에는 이 양방향 형태 키가 없습니다.");
     expect(capabilities.reasonsKo["layer:inner"]).toBe("제작 패키지는 교체·겹쳐 입기 의상을 제공하지 않아 이너 층을 입힐 수 없습니다.");
     expect(capabilities.reasonsKo.hairFlow).toBe("제작 패키지 헤어('short-layered')에는 흐름용 UV1 선언이 없어 끝 색·포인트를 그릴 수 없습니다.");
     expect(capabilities.reasonsKo.proportion).toBe("제작 패키지 소스는 비례 목표를 지원하지 않습니다.");

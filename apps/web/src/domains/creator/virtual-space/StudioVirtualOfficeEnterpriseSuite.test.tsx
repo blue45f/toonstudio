@@ -12,6 +12,23 @@ import { DEFAULT_STUDIO_WORLD_MANIFEST } from "./studio-virtual-space-world-mani
 afterEach(cleanup);
 
 describe("StudioVirtualOfficeEnterpriseSuite", () => {
+  it("키보드로 마지막 도구를 열고 빈 제품 검색과 필터를 초기화한다", () => {
+    render(<StudioVirtualOfficeEnterpriseSuite />);
+    const first = screen.getByRole("tab", { name: "층 이동·회의실" });
+    fireEvent.keyDown(first, { key: "End" });
+    const last = screen.getByRole("tab", { name: "발표·일정·공간 설정" });
+    expect(document.activeElement).toBe(last);
+    expect(screen.getByRole("tabpanel", { name: "발표·일정·공간 설정" }).id).toBe(last.getAttribute("aria-controls"));
+    const search = screen.getByRole("searchbox");
+    fireEvent.click(screen.getByRole("button", { name: "Wave 2" }));
+    fireEvent.change(search, { target: { value: "결과 없는 제품명" } });
+    expect(screen.getByText("검색 조건에 맞는 제품이 없습니다.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "모든 제품 보기" }));
+    expect((search as HTMLInputElement).value).toBe("");
+    expect(screen.getByRole("button", { name: "전체 (40)" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("region", { name: "플랫폼 검색 결과" }).tabIndex).toBe(0);
+  });
+
   it("탭 1: 다층 빌딩 엘리베이터 이동, Knock-to-Enter 승인, 영구 테이블 고정, 지향성 음성 콘을 제어한다", () => {
     render(<StudioVirtualOfficeEnterpriseSuite />);
 
@@ -42,7 +59,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     render(<StudioVirtualOfficeEnterpriseSuite />);
 
     fireEvent.click(
-      screen.getByRole("tab", { name: /AI 에이전트 데스크 · 회의 메모리 · MCP 브리지/u }),
+      screen.getByRole("tab", { name: /작업 배정·회의 기록/u }),
     );
 
     expect(screen.getAllByText(/소피아 회의록·메모리 봇/u).length).toBeGreaterThan(0);
@@ -64,7 +81,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: /DCC 작업 프레즌스 · 데스크 비동기 노트 · 4화면 동시공유/u,
+        name: /작업 상태·메모·화면 공유/u,
       }),
     );
 
@@ -83,7 +100,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
     render(<StudioVirtualOfficeEnterpriseSuite />);
 
     fireEvent.click(
-      screen.getByRole("tab", { name: /호스트 관제 · 공간 미디어 핀 · 주간 인사이트/u }),
+      screen.getByRole("tab", { name: /참가자 관리·자료 고정/u }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "1F 타운홀로 전원 소환" }));
@@ -100,7 +117,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: /원격페어링 · 상태모자 · 리셉션 · 3D페데스탈/u,
+        name: /작업 페어링·방문자 안내/u,
       }),
     );
 
@@ -150,7 +167,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: /그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트/u,
+        name: /발표 준비·품평·집중 시간/u,
       }),
     );
 
@@ -194,7 +211,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: /워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭/u,
+        name: /투표·컷 의견·상영/u,
       }),
     );
 
@@ -227,7 +244,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
     fireEvent.click(
       screen.getByRole("tab", {
-        name: /플로팅PiP · AI소음번역 · 캘린더동기화 · 40대총괄/u,
+        name: /발표·일정·공간 설정/u,
       }),
     );
 
@@ -361,7 +378,7 @@ describe("StudioVirtualOfficeEnterpriseSuite", () => {
 
   it("StudioVirtualSpaceCollaborationHub 및 StudioVirtualSpaceTownProgramPanel 내부 탭으로 통합 연결된다", () => {
     render(<StudioVirtualSpaceCollaborationHub />);
-    fireEvent.click(screen.getByRole("tab", { name: "13대 가상오피스 통합관제" }));
+    fireEvent.click(screen.getByRole("tab", { name: "가상 사무실 운영" }));
     expect(screen.getByTestId("studio-virtual-office-enterprise-suite")).toBeTruthy();
     cleanup();
 

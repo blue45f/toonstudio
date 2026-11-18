@@ -2,13 +2,13 @@ import { parseStudioBg3dSixPassBundleImageReference, parseStudioBg3dSixPassArtif
   isStudioBg3dSixPassImageBlendMode } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 
 export const STUDIO_CRDT_BG3D_IMAGE_KEYS = ["blendMode", "src", "bg3dLtBundleReference", "bg3dLtBundleId", "bg3dLtRole", "bg3dLtRenderMode"] as const;
-export function validateStudioCrdtBg3dImageReference(props: Record<string, unknown>): boolean {
+export function validateStudioCrdtBg3dImageReference(props: Record<string, unknown>, elementId?: string): boolean {
   if (!Object.hasOwn(props, "bg3dLtBundleReference")) {
     if (STUDIO_CRDT_BG3D_IMAGE_KEYS.some((key) => Object.hasOwn(props, key))) throw new Error("6패스 이미지 참조가 누락되었습니다.");
     return false;
   }
   const ref = parseStudioBg3dSixPassBundleImageReference(props.bg3dLtBundleReference);
-  if (!ref || props.elementType !== "image" || props.bg3dLtBundleId !== ref.bundleId
+  if (!ref || (elementId !== undefined && ref.elementId !== elementId) || props.elementType !== "image" || props.bg3dLtBundleId !== ref.bundleId
     || props.bg3dLtRole !== ref.role || props.bg3dLtRenderMode !== "separated" || typeof props.src !== "string") {
     throw new Error("6패스 이미지의 역할·묶음 참조가 올바르지 않습니다.");
   }
@@ -17,4 +17,14 @@ export function validateStudioCrdtBg3dImageReference(props: Record<string, unkno
   if (!hash || (ref.role !== "main-line" && !props.src.startsWith("bg3d-lt-artifact://"))) throw new Error("6패스 이미지 본문 locator가 올바르지 않습니다.");
   if (props.blendMode !== undefined && !isStudioBg3dSixPassImageBlendMode(props.blendMode)) throw new Error("6패스 합성 모드가 지원되지 않습니다.");
   return true;
+}
+
+export function isStudioCrdtBg3dImageReferenceForElement(id: string, props: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(props, "bg3dLtBundleReference")) return false;
+  try {
+    return validateStudioCrdtBg3dImageReference(props, id);
+  } catch {
+    // 잘못된 참조는 일반 작업 에셋의 보호 표시를 유지한다.
+    return false;
+  }
 }

@@ -34,7 +34,7 @@ function createErgonomicsSession(
     zoomLocked: false,
     viewTransformSuppressed: false,
     bg3dOpen: false,
-    setBg3dOpen: vi.fn(),
+    studioLeftToolRailHandlers: { toggleBg3dEditor: vi.fn() },
     exportMenuOpen: false,
     setExportMenuOpen: vi.fn(),
     perspectiveRulerActive: true,

@@ -20,7 +20,7 @@ import {
 import { AiAssistLauncher } from "./ai/assist/AiAssistLauncher";
 import { STUDIO_ICON_SIZE, STUDIO_ICON_STROKE, studioChromeIconClass } from "./studio-chrome-ui";
 import {
-  subscribeStudioCommandSearchRequests,
+  registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests,
   type StudioCommandSearchRequest,
   type StudioCommandSearchScope,
 } from "./studio-help-center-channel";
@@ -137,10 +137,12 @@ export function StudioCommandSearchHost({
     };
     const unsubscribeStudio = subscribeStudioCommandSearchRequests(openRequest);
     const unsubscribeAppShell = subscribeStudioCommandSearchFromAppShell(openRequest);
+    const unregisterReady = registerStudioCommandSearchHost();
     onReadyChange?.(true);
     return () => {
       unsubscribeStudio();
       unsubscribeAppShell();
+      unregisterReady();
       onReadyChange?.(false);
     };
   }, [openSearch, onReadyChange]);

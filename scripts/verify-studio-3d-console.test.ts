@@ -46,12 +46,13 @@ describe("3D entry-mode contract", () => {
   });
   it("selects professional tools through the shipped mode switch before view diagnostics", () => {
     const source = readFileSync(new URL("./verify-studio-3d-console.mts", import.meta.url), "utf8");
-    const activate = source.indexOf("await professionalMode.click()");
-    const view = source.indexOf('backgroundDialog.getByRole("tab", { name: "보기", exact: true })');
+    const activate = source.indexOf("await openStudioBg3dProfessionalMode(backgroundDialog)");
+    const view = source.indexOf("await openStudioBg3dEnginePanel(backgroundDialog)");
     expect(activate).toBeGreaterThan(0);
     expect(view).toBeGreaterThan(activate);
-    expect(source).toContain('name: "3D 편집 모드", exact: true');
-    expect(source).toContain('professionalMode.getAttribute("aria-pressed") === "true"');
+    const controls = readFileSync(new URL("./lib/studio-bg3d-ui-interactions.ts", import.meta.url), "utf8");
+    expect(controls).toContain('name: "3D 편집 모드", exact: true');
+    expect(controls).toContain('data-studio-bg3d-experience="pro"');
   });
 });
 
@@ -188,7 +189,7 @@ describe("3D character production-preview color boundary", () => {
       "async function runBabylonStableIdOrientationParityProof(",
     );
     const threeDMenu = sourceBetween(
-      "async function openThreeDMenu(page: Page): Promise<Locator>",
+      "async function findThreeDTool(page: Page,",
       "async function closeCanvasDialog(",
     );
     const baseline = productionPreview.indexOf(
@@ -205,10 +206,12 @@ describe("3D character production-preview color boundary", () => {
       toggleOff,
     );
 
-    // 현재 그리기 셸의 실제 프로젝트·창 경로로 삽입 메뉴를 열고 정확한 이름을 확인한다.
-    // 공통 helper의 메뉴 열기 동작과 별개로 잘못 열린 메뉴는 여기서 계속 실패해야 한다.
-    expect(threeDMenu).toContain('await openStudioMainMenu(page, "insert")');
-    expect(threeDMenu).toContain('await menu.getAttribute("aria-label") !== STUDIO_INSERT_MENU_TITLE');
+    // 메뉴바 프레젠테이션(UX 감사 2026-09-02)이 3D 를 삽입 메뉴로 옮겼으므로 진입은
+    // 삽입 트리거와 삽입 드롭다운을 거친다. 항목 id·라벨은 카탈로그 그대로다.
+    expect(threeDMenu).toContain("await openStudioAllTools(page)");
+    expect(threeDMenu).toContain('button[data-studio-catalog-tool-id="${id}"]');
+    expect(threeDMenu).toContain('name: STUDIO_INSERT_MENU_TITLE, exact: true');
+    expect(threeDMenu).toContain('[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]');
     expect(verifierSource).toContain('const STUDIO_INSERT_MENU_TITLE = "삽입"');
     expect(productionPreview).toContain('name: "중립 데생 인형 보기"');
     expect(baseline).toBeGreaterThanOrEqual(0);
@@ -221,7 +224,7 @@ describe("3D character production-preview color boundary", () => {
   it("dismisses the SQLite-hydrated first-use coach before opening 3D menus", () => {
     const dismissQuickStart = sourceBetween(
       "async function dismissHydratedQuickStart(page: Page): Promise<void>",
-      "async function openThreeDMenu(page: Page): Promise<Locator>",
+      "async function findThreeDTool(page: Page,",
     );
     const productionPreview = sourceBetween(
       "async function run(page: Page, studioUrl: string): Promise<void>",
@@ -231,7 +234,7 @@ describe("3D character production-preview color boundary", () => {
       "await dismissHydratedQuickStart(page);",
     );
     const openMenuIndex = productionPreview.indexOf(
-      "const characterMenu = await openThreeDMenu(page);",
+      'const characterTool = await findThreeDTool(page, "vrm3d");',
     );
 
     expect(dismissQuickStart).toContain(

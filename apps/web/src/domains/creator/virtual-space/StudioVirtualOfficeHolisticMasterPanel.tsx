@@ -1,5 +1,6 @@
 "use client";
 
+import { StudioSpaceScrollRegion } from "./StudioSpaceScrollRegion";
 import { useMemo, useState } from "react";
 import {
   CalendarClock,
@@ -95,16 +96,13 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           <div>
             <h3 className="flex items-center gap-2 text-sm font-bold text-fg">
               <Sparkles className="h-4 w-4 text-accent" />
-              스마트 AI 스튜디오 통합 커맨드 (플로팅 PiP · AI 보이스/자막 · 일정 자동 동기화 · 데일리 다이제스트)
+              발표·일정·공간 설정
             </h3>
             <p className="mt-0.5 text-xs text-fg-2">
-              플로팅 PiP 오버더숄더 발표 · 스마트 AI 펜소음 제거(BVC) 및 4개국어 실시간 자막 보조 · 캘린더 자동 상태 전환 · 일일 스탠드업 다이제스트 보조
+              아래에서 조정할 항목을 선택하세요.
             </p>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="rounded-full border border-accent bg-accent-soft px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-              ✦ 스마트 AI 협업 보조 내재화
-            </span>
             <button
               type="button"
               onClick={() => {
@@ -121,25 +119,24 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </div>
         <div
-          role="tablist"
-          aria-label="스마트 AI 스튜디오 영역 분리 보기"
+          role="group"
+          aria-label="표시할 설정"
           className="mt-3 flex flex-wrap gap-1.5 border-t border-line/70 pt-2.5"
         >
           {(
             [
-              { id: "all", label: "전체 통합 보기" },
-              { id: "ai-collab", label: "스마트 AI 음성·발표·일정 보조" },
-              { id: "theme-cast", label: "2.5D 스튜디오 테마·캐릭터·프롭" },
-              { id: "engine", label: "차세대 물리·사운드·마감 워크벤치" },
+              { id: "all", label: "전체" },
+              { id: "ai-collab", label: "발표·음성·일정" },
+              { id: "theme-cast", label: "테마·캐릭터·소품" },
+              { id: "engine", label: "물리·음향·마감" },
             ] as const
           ).map((tab) => (
             <button
               key={tab.id}
               type="button"
-              role="tab"
-              aria-selected={sectionView === tab.id}
+              aria-pressed={sectionView === tab.id}
               onClick={() => setSectionView(tab.id)}
-              className={`rounded-full border px-3 py-1 text-[11px] font-bold transition-colors ${
+              className={`min-h-11 rounded-lg border px-3 py-1 text-[11px] font-bold transition-colors ${
                 sectionView === tab.id
                   ? "border-accent bg-accent text-canvas shadow-sm"
                   : "border-line bg-panel text-fg-2 hover:border-accent/45 hover:text-fg"
@@ -150,7 +147,9 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           ))}
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <details className="mt-3">
+          <summary className="cursor-pointer py-2 text-xs text-fg-2">참고 제품과 분석 기록</summary>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {VIRTUAL_OFFICE_WAVE5_REA_EVIDENCE_LEDGER.map((ev) => (
             <article
               key={ev.id}
@@ -171,7 +170,8 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               </div>
             </article>
           ))}
-        </div>
+          </div>
+        </details>
       </section>
 
       {(sectionView === "all" || sectionView === "ai-collab") && (
@@ -457,7 +457,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h4 className="flex items-center gap-1.5 text-xs font-bold text-fg">
             <Layers className="h-4 w-4 text-accent" />
-            전수 역공학 40대 가상 오피스 플랫폼 통합 카탈로그 (Waves 1–5)
+            참고 제품 찾아보기
           </h4>
           <div className="flex flex-wrap items-center gap-1.5">
             {(["all", 1, 2, 3, 4, 5] as const).map((w) => (
@@ -465,6 +465,7 @@ export function StudioVirtualOfficeHolisticMasterPanel({
                 key={String(w)}
                 type="button"
                 onClick={() => setWaveFilter(w)}
+                aria-pressed={waveFilter === w}
                 className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
                   waveFilter === w
                     ? "border-accent bg-accent-soft text-accent"
@@ -488,7 +489,16 @@ export function StudioVirtualOfficeHolisticMasterPanel({
           </div>
         </div>
 
-        <div className="mt-3 grid max-h-64 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-4">
+        {filteredPlatforms.length === 0 ? (
+          <div className="mt-3 space-y-1 text-xs text-fg-2">
+            <p role="status">검색 조건에 맞는 제품이 없습니다.</p>
+            <button type="button" className="min-h-11 text-accent underline" onClick={() => {
+              setPlatformQuery("");
+              setWaveFilter("all");
+            }}>모든 제품 보기</button>
+          </div>
+        ) : (
+        <StudioSpaceScrollRegion aria-label="플랫폼 검색 결과" className="mt-3 grid max-h-64 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-4">
           {filteredPlatforms.map((item) => (
             <div
               key={item.id}
@@ -505,7 +515,8 @@ export function StudioVirtualOfficeHolisticMasterPanel({
               <p className="mt-1 line-clamp-2 text-fg-2">{item.signatureFeatureKo}</p>
             </div>
           ))}
-        </div>
+        </StudioSpaceScrollRegion>
+        )}
       </section>
 
       {(sectionView === "all" || sectionView === "theme-cast") && (

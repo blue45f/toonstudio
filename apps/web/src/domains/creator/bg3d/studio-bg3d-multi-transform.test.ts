@@ -21,6 +21,16 @@ const SNAP_ON: StudioBg3dSnapSettings = {
 const deg = (value: number) => (value * Math.PI) / 180;
 
 describe("studio-bg3d-multi-transform", () => {
+  it("같은 반 바퀴 기즈모 회전의 두 부호를 하나로 저장하고 인접 각도와 이동 모드는 보존한다", () => {
+    const transform: Parameters<typeof resolveStudioBg3dModeAwareDriverTransform>[0] = {
+      position: [0, 0, 0], rotation: [-Math.PI + 1e-14, -Math.PI + 1e-6, Math.PI], scale: [1, 1, 1],
+    };
+    expect(resolveStudioBg3dModeAwareDriverTransform(transform, "rotate", false, SNAP_ON).rotation)
+      .toEqual([Math.PI, -Math.PI + 1e-6, Math.PI]);
+    expect(resolveStudioBg3dModeAwareDriverTransform(transform, "translate", false, SNAP_ON).rotation)
+      .toEqual(transform.rotation);
+  });
+
   it("스냅 켜짐 이동(translate) 시 기존 비격자 회전과 추종 오브젝트 상대 간격·회전을 그대로 보존한다", () => {
     const initialDriverLocal = {
       position: [0.13, 0.5, -0.17] as [number, number, number],

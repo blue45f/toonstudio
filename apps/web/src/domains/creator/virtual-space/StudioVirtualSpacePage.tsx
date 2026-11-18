@@ -151,11 +151,7 @@ import { studioTownDeskPodForActor, type StudioTownEvent } from "./studio-virtua
 import type { StudioUserStatus } from "./studio-virtual-space-user-status";
 import type { StudioWorkDecision } from "./studio-virtual-space-work-bridge";
 import { loadStudioVirtualSpaceWorldManifest } from "./studio-virtual-space-world-loader";
-import {
-  clearStudioWorldAuthoringDraft,
-  readStudioWorldAuthoringDraftRecord,
-  writeStudioWorldAuthoringDraft,
-} from "./studio-virtual-space-world-authoring";
+import { clearStudioWorldAuthoringDraft, readStudioWorldAuthoringDraftRecord, writeStudioWorldAuthoringDraft } from "./studio-virtual-space-world-authoring";
 import {
   DEFAULT_STUDIO_WORLD_MANIFEST,
   studioWorldPresenceState,
@@ -326,7 +322,7 @@ export function VirtualSpaceExperience({
   const decorationScope = JSON.stringify([projectId, activeWorldScope, authoringMode]);
   const [engineMode, setEngineMode] = useState<"2d" | "3d">(() => readStudioVirtualStageMode(location.search || (typeof window === "undefined" ? "" : window.location.search)) === "3d" ? "3d" : "2d");
   const stageKind = resolveStudioVirtualStageKind({ engineMode, authoringMode, search: location.search || (typeof window === "undefined" ? "" : window.location.search) });
-  const preferences = useSpacePreferences({ initialArtStyle: initialArtStyleOverride, decorationScope, notify });
+  const preferences = useSpacePreferences({ initialArtStyle: initialArtStyleOverride, decorationScope, decorationOwner: privateActorId, notify });
   const {
     artStyle, selectArtStyle, characterCustomization, selectCharacterCustomization, rewardInventory, claimReward, equipReward,
     initialExperiencePreference, experiencePreference, selectExperiencePreference, environmentPreference, selectEnvironmentPreference,
@@ -592,11 +588,13 @@ export function VirtualSpaceExperience({
     return () => globalThis.clearTimeout(timeout);
   }, [applyAuthoringManifest, authoringDraft, authoringMode, worldReady]);
 
+  const { tileEffects, cloneBinding, reloadTileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger } = useStudioTileEffectWiring({ decorationScope, engineBridge });
   const resetAuthoringManifest = useCallback(() => {
     clearStudioWorldAuthoringDraft(projectId);
+    reloadTileEffects();
     setAuthoringDraft(baselineWorldManifestRef.current);
     setDraftBaseRevision(publishedWorld?.publication.revisionId ?? null);
-  }, [projectId, publishedWorld]);
+  }, [projectId, publishedWorld, reloadTileEffects]);
 
   useEffect(() => {
     if (!worldReady) return undefined;
@@ -1408,7 +1406,6 @@ export function VirtualSpaceExperience({
   }, [proximity, setUserMicMuted]);
   const officeZones = useMemo(() => worldManifest.zones ?? [], [worldManifest]);
   const boothSilentZone = useMemo(() => recordingBoothSilentZone(boothConfig), [boothConfig]);
-  const { tileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger } = useStudioTileEffectWiring({ decorationScope, engineBridge });
   const silentZone = useStudioVirtualSpaceZoneMic({
     officeZones,
     tileZones: [boothSilentZone, ...tileSilentZones],
@@ -1832,7 +1829,7 @@ export function VirtualSpaceExperience({
       focused={atmosphere === "focus" || activity === "focused"} away={activity === "away"} /> },
     { id: "customization", visible: stageKind !== "three" && panel === "build", node: <StudioVirtualSpacePanelGate active={stageKind !== "three" && panel === "build"} preserveAfterOpen>
       <StudioVirtualSpaceCustomizationPanel artStyle={artStyle} spaceTheme={spaceTheme} onSpaceThemeChange={selectSpaceTheme} key={decorationScope} world={worldManifest} nickname={nickname}
-        character={characterCustomization} decorations={decorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lightHour}
+        character={characterCustomization} decorations={decorations} decorationSyncEnabled={preferences.decorationSyncEnabled} decorationSyncStatus={preferences.decorationSyncStatus} onRecoverDecorations={preferences.recoverDecorations} selfPoint={snapshot.self} sceneSnapshotBinding={sceneSnapshotBinding} fallbackHour={lightHour}
         tileEffects={tileEffects} onTileEffectsChange={changeTileEffects}
         placedFixtureRequests={placedFixtureRequests} onPlacedFixtureRequests={selectPlacedFixtureRequests} directPlacement={buildPlacement.panel}
         onNickname={onNicknameChange} onCharacter={selectCharacterCustomization} onDecorations={selectDecorations} onTriggerEmote={sendReaction}
@@ -1887,7 +1884,7 @@ export function VirtualSpaceExperience({
       <div className="space-hud__stage" data-studio-virtual-space="true"
         data-handedness={experiencePreference.handedness} data-control-mode={experiencePreference.controlMode}
         data-quality-preset={experiencePreference.qualityPreset} data-spotlight-active={spotlightEventId ? "true" : undefined}>
-        {worldReady ? <StudioVirtualSpaceStageSurface stageKind={stageKind} logical={{
+        {worldReady ? <StudioVirtualSpaceStageSurface workstationSpace={{ id: decorationScope, personal }} stageKind={stageKind} logical={{
           manifest: worldManifest, snapshot: chatSnapshot, bridge: engineBridge, selfDisplayName: nickname,
           onRuntimeMetrics: setRuntimeMetrics, onNpcInteract: handleEngineNpcInteract, onLocalState: handleEngineLocalState,
           onInteract: handleEngineInteract, onNearbyInteractionChange: handleNearbyInteractionChange, onPortal: handleEnginePortal,
@@ -2079,6 +2076,7 @@ export function VirtualSpaceExperience({
           basePublishedRevisionId={draftBaseRevision}
           disabled={publication.enabled && (["reading", "publishing", "preparing"].includes(publication.snapshot.phase) || !publication.snapshot.viewVerified)}
           manifest={authoringDraft}
+          clone={cloneBinding(searchParams, location.hash)}
           onChange={setAuthoringDraft}
           onReset={resetAuthoringManifest}
         /></Suspense>

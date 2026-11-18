@@ -28,7 +28,7 @@ import {
   SHARED_CHARACTER_CAPTURE_AUTHORITY_ERROR_MESSAGE,
   waitForStudioBg3dPaintFrame,
 } from "./studio-bg3d-editor-derivations";
-import { resolveStudioBg3dLtCaptureSize } from "./studio-bg3d-lt-capture-size";
+import { resolveStudioBg3dShotCaptureSize } from "./studio-bg3d-lt-capture-size";
 import {
   applyStudioBg3dShot,
   serializeStudioBg3dSceneDocument,
@@ -199,7 +199,6 @@ export function createStudioBg3dShotBatchExportRunner(
     verifySharedCharacterCaptureAuthority,
     viewportApiRef,
   } = ctx;
-
   async function exportSavedShotsAsZip() {
     if (captureInFlightRef.current) {
       setError(frozenStatus6Text("studio.frozenStatus6.shotBatch.captureBusy", "다른 3D 캡처가 진행 중입니다. 완료하거나 취소한 뒤 컷 배치 출력을 다시 실행해 주세요."));
@@ -395,9 +394,10 @@ export function createStudioBg3dShotBatchExportRunner(
         const requestedHeight = shotBatchExportHeight === "per-shot"
           ? applied.output.exportHeight
           : shotBatchExportHeight;
-        const size = resolveStudioBg3dLtCaptureSize({
+        const size = resolveStudioBg3dShotCaptureSize({
           sourceWidth: sourceSize.width,
           sourceHeight: sourceSize.height,
+          exportAspectRatio: applied.output.exportAspectRatio,
           requestedHeight,
           maxPixels,
           maxEdge: STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION,

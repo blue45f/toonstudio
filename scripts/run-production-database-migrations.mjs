@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { applyProtectedRecordRuntimeContracts } from "./protected-record-database-contracts.mjs";
+import { buildWorkVrmCutRuntimeAclSql } from "./studio-work-vrm-cut-runtime-acl.mjs";
 import { buildProductionOperationsRuntimeAclSql } from "./production-operations-database-contract.mjs";
 import { buildProductionOperationRuntimeAclSql, buildProductionOperationCapabilitySql } from "./production-operation-database-contract.mjs";
 import { buildStudioVirtualSpaceRuntimeAclSql, buildStudioVirtualSpaceCapabilitySql } from "./studio-virtual-space-database-contract.mjs";
@@ -18,10 +19,7 @@ import { buildHiringAutomationCapabilitySql, buildHiringAutomationRuntimeAclSql 
 import { buildCareerConfirmationCapabilitySql, buildCareerConfirmationRuntimeAclSql } from "./creator-career-confirmation-database-contract.mjs";
 import { applyAdminDatabaseFeatureContracts } from "./admin-database-feature-contracts.mjs";
 import { buildFeedbackCapabilitySql, buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
-import {
-  buildCommunityCafeCapabilitySql,
-  buildCommunityCafeRuntimeAclSql,
-} from "./community-cafe-database-contract.mjs";
+import { buildCommunityCafeCapabilitySql, buildCommunityCafeRuntimeAclSql } from "./community-cafe-database-contract.mjs";
 import {
   validateProductionDatabaseUrl,
   validateRuntimeDatabaseRole,
@@ -3658,10 +3656,8 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
       databaseUrl,
       buildCreatorMarketplaceRuntimeAclSql(runtimeDatabaseRole),
     );
-    psql(
-      databaseUrl,
-      buildCreatorAssetObjectStorageRuntimeAclSql(runtimeDatabaseRole),
-    );
+    psql(databaseUrl, buildCreatorAssetObjectStorageRuntimeAclSql(runtimeDatabaseRole));
+    psql(databaseUrl, buildWorkVrmCutRuntimeAclSql(runtimeDatabaseRole));
 
     process.stdout.write(
       `Production migration manifest complete: ${adopted} adopted, ${applied} applied, ${skipped} checksum-verified skips\n`,

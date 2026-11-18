@@ -30,7 +30,7 @@ export async function prepareFilterMenuWorkspace(page: Page, timeoutMs = 10_000)
   }
   invariant(await workspace.count() === 1, "필터 검증의 화면과 도움말 목적은 하나여야 합니다");
   await workspace.click({ timeout: remaining() });
-  await tools.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true }).click({ timeout: remaining() });
+  await tools.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true }).click({ timeout: remaining() });
   await tools.waitFor({ state: "hidden", timeout: remaining() });
   await page.locator('[data-studio-main-menu="true"]').waitFor({ state: "visible", timeout: remaining() });
   invariant(page.url() === originalUrl, "메뉴 배치 진입이 필터 대상 원고 URL을 바꿨습니다");

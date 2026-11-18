@@ -19,6 +19,7 @@ export const SHARED_ACTIVITY_DISTANCE = 156;
 
 export function initialPanel(search: string): StudioVirtualWorkspacePanel | null {
   const query = new URLSearchParams(search);
+  if (query.get("activity") === "people") return "people";
   if (query.get("activity") === "board") return "board";
   return query.has("session") || query.get("activity") === "sessions" ? "sessions" : null;
 }

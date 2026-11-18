@@ -52,6 +52,7 @@ export function StudioVirtualSpaceEntryCodePanel({ onEnterWithCode, initialCode 
   };
 
   const handleSubmit = async () => {
+    if (pending) return;
     const normalized = code.trim().toUpperCase();
     if (!isEntryCodeValid(normalized)) {
       setError(
@@ -75,24 +76,28 @@ export function StudioVirtualSpaceEntryCodePanel({ onEnterWithCode, initialCode 
   };
 
   return (
-    <section id={STUDIO_ENTRY_CODE_PANEL_ID} tabIndex={-1} aria-label={bt("입장코드로 입장", "Enter with code")}>
+    <form id={STUDIO_ENTRY_CODE_PANEL_ID} aria-label={bt("입장코드로 입장", "Enter with code")}
+      onSubmit={(event) => { event.preventDefault(); void handleSubmit(); }}>
       <h2>{bt("입장코드로 입장", "Enter with code")}</h2>
       <p><small>{bt("초대받은 6자리 코드를 입력하면 바로 입장해요. 가입이 필요 없어요.", "Enter the 6-digit code to join right away. No sign-up needed.")}</small></p>
       <label>{bt("입장코드", "Entry code")}
         <input
           type="text"
           value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          onChange={(event) => { setCode(event.target.value.toUpperCase()); setError(null); }}
+          readOnly={pending}
+          enterKeyHint="go"
+          aria-invalid={error && !isEntryCodeValid(code) ? true : undefined}
           maxLength={STUDIO_ENTRY_CODE_LENGTH}
           autoComplete="off"
           placeholder="ABC123"
           aria-describedby={error ? "entry-code-error" : undefined}
         />
       </label>
-      <button type="button" disabled={pending} onClick={() => void handleSubmit()}>
+      <button type="submit" disabled={pending}>
         {pending ? bt("확인 중…", "Checking…") : bt("입장하기", "Enter")}
       </button>
       {error ? <p id="entry-code-error" role="alert">{error}</p> : null}
-    </section>
+    </form>
   );
 }

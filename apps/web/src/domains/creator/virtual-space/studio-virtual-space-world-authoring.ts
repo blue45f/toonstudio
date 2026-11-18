@@ -8,18 +8,10 @@ import {
 } from "./studio-virtual-space-world-manifest";
 import { studioNpcActivityTiledProperties } from "./studio-virtual-space-npc-activity";
 
-const WORLD_DRAFT_PREFIX = "toonspectrum:virtual-studio-world-draft:v1";
-const WORLD_DRAFT_CONTRACT = "studio-world-browser-draft-v2";
-
-export interface StudioWorldAuthoringDraftRecord {
-  readonly manifest: StudioVirtualSpaceWorldManifest;
-  /** Undefined means a legacy/unbased draft; null explicitly means no server publication. */
-  readonly basePublishedRevisionId?: string | null;
-}
-function validDraftBase(value: unknown): value is string | null | undefined {
-  return value === undefined || value === null || (typeof value === "string" && value.length > 0
-    && value.length <= 240 && [...value].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127));
-}
+export {
+  clearStudioWorldAuthoringDraft, readStudioWorldAuthoringDraft, readStudioWorldAuthoringDraftRecord,
+  studioWorldDraftStorageKey, writeStudioWorldAuthoringDraft, type StudioWorldAuthoringDraftRecord,
+} from "./studio-world-draft-storage";
 
 interface TiledProperty {
   readonly name: string;
@@ -35,56 +27,6 @@ function properties(values: Record<string, unknown>): readonly TiledProperty[] {
       type: typeof value === "number" ? "float" : typeof value === "boolean" ? "bool" : "string",
       value,
     }));
-}
-
-export function studioWorldDraftStorageKey(projectId: string): string {
-  return `${WORLD_DRAFT_PREFIX}:${projectId}`;
-}
-
-export function readStudioWorldAuthoringDraftRecord(
-  projectId: string,
-): StudioWorldAuthoringDraftRecord | null {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(studioWorldDraftStorageKey(projectId));
-    if (!raw) return null;
-    const candidate = JSON.parse(raw);
-    if (candidate?.contract === WORLD_DRAFT_CONTRACT) {
-      if (!validDraftBase(candidate.basePublishedRevisionId) || validateStudioWorldManifest(candidate.manifest).length) return null;
-      return { manifest: candidate.manifest, basePublishedRevisionId: candidate.basePublishedRevisionId };
-    }
-    return validateStudioWorldManifest(candidate).length === 0 ? { manifest: candidate } : null;
-  } catch {
-    return null;
-  }
-}
-
-export function readStudioWorldAuthoringDraft(projectId: string): StudioVirtualSpaceWorldManifest | null {
-  return readStudioWorldAuthoringDraftRecord(projectId)?.manifest ?? null;
-}
-
-export function writeStudioWorldAuthoringDraft(
-  projectId: string,
-  manifest: StudioVirtualSpaceWorldManifest,
-  basePublishedRevisionId?: string | null,
-): boolean {
-  if (typeof localStorage === "undefined") return false;
-  if (validateStudioWorldManifest(manifest).length > 0 || !validDraftBase(basePublishedRevisionId)) return false;
-  try {
-    localStorage.setItem(studioWorldDraftStorageKey(projectId), JSON.stringify({ contract: WORLD_DRAFT_CONTRACT, manifest, basePublishedRevisionId }));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function clearStudioWorldAuthoringDraft(projectId: string): void {
-  if (typeof localStorage === "undefined") return;
-  try {
-    localStorage.removeItem(studioWorldDraftStorageKey(projectId));
-  } catch {
-    // Storage can be blocked in privacy-restricted contexts.
-  }
 }
 
 export function studioWorldManifestToTiledMap(

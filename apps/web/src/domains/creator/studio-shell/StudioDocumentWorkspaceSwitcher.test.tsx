@@ -87,6 +87,17 @@ describe("StudioDocumentWorkspaceSwitcher", () => {
     });
   });
 
+  it("PWA 홈을 거친 일반 원고에 퀵모드가 켜졌다고 표시하지 않는다", () => {
+    const key = "toonstudio:drawing-presentation:v1";
+    window.sessionStorage.setItem(key, "pwa-app");
+    try {
+      renderRoute("/studio/draft/remembered-home?workspace=draw");
+      expect(screen.getByRole("button", { name: "퀵모드" }).getAttribute("aria-pressed")).toBe("false");
+    } finally {
+      window.sessionStorage.removeItem(key);
+    }
+  });
+
   it("does not create a second workspace selector on legacy editor URLs", () => {
     renderRoute("/studio/work/document-1/comic");
     expect(screen.queryByRole("combobox")).toBeNull();

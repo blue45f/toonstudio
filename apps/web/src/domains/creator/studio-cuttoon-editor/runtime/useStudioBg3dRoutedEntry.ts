@@ -32,6 +32,9 @@ interface UseStudioBg3dRoutedEntryOptions {
   readonly hasAutosave: boolean;
   readonly wasOpen: () => boolean;
   readonly resetColdSource: () => void;
+  readonly coldTargetPending?: boolean;
+  readonly coldTargetSourceFailed?: boolean;
+  readonly restoreColdTarget?: () => boolean;
   readonly openEntry: () => void;
 }
 
@@ -45,14 +48,17 @@ export function useStudioBg3dRoutedEntry({
   hasAutosave,
   wasOpen,
   resetColdSource,
+  coldTargetPending = false, coldTargetSourceFailed = false, restoreColdTarget,
   openEntry,
 }: UseStudioBg3dRoutedEntryOptions): void {
   const enteredRef = useRef(false);
   const wasOpenEvent = useEffectEvent(wasOpen);
   const resetColdSourceEvent = useEffectEvent(resetColdSource);
   const openEntryEvent = useEffectEvent(openEntry);
-  const sourceReady = workHydrated && !sourceHydrationPending
-    && (remoteSource || (autosaveChecked && !hasAutosave));
+  const restoreColdTargetEvent = useEffectEvent(() => restoreColdTarget?.() ?? true);
+  // 권한 철회 등으로 원고 로딩이 끝내 실패한 경우에도 원고로 돌아가는 거부 경로는 실행한다.
+  const sourceReady = coldTargetSourceFailed || (workHydrated && !sourceHydrationPending && !coldTargetPending
+    && (remoteSource || (autosaveChecked && !hasAutosave)));
   const waitingForAutosaveDecision = workHydrated && !sourceHydrationPending
     && !remoteSource && autosaveChecked && hasAutosave;
 
@@ -71,6 +77,7 @@ export function useStudioBg3dRoutedEntry({
     enteredRef.current = true;
     setStudioBg3dRoutedStartupYielded(false);
     if (!warmEntry) resetColdSourceEvent();
+    if (!warmEntry && !restoreColdTargetEvent()) return;
     // 콜백 identity나 준비 상태가 다시 바뀌어도 같은 route의 열림을 재실행하지 않는다.
     openEntryEvent();
   }, [routedSurface, sourceReady, waitingForAutosaveDecision]);

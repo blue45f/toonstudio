@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- the pure raycast contract is tested with its null-rendering R3F transport. */
+import { isStudioBg3dReservedKeyEvent } from "./studio-bg3d-scene-keyboard";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useEffectEvent } from "react";
 import * as THREE from "three";
@@ -6,6 +7,7 @@ import * as THREE from "three";
 import {
   isStudioBg3dViewportControlTarget,
   readStudioBg3dWorldSurfaceHit,
+  isStudioBg3dPointInCameraDepth,
 } from "./studio-bg3d-camera-application";
 import { STUDIO_BG3D_PLACEMENT_MAX_WORLD_COORDINATE } from "./studio-bg3d-placement-session";
 
@@ -187,6 +189,7 @@ export function resolveStudioBg3dPlacementPointerTarget(
     for (const intersection of scratch.intersections) {
       if (!findEligibleMappedRoot(intersection.object, scratch.rootSet)) continue;
       if (!isSupportedSurfaceObject(intersection.object)) continue;
+      if (!isStudioBg3dPointInCameraDepth(camera, intersection.point)) continue;
 
       const hit = readStudioBg3dWorldSurfaceHit(intersection);
       if (!hit) return null;
@@ -207,23 +210,13 @@ export function resolveStudioBg3dPlacementPointerTarget(
     STUDIO_BG3D_FLOOR_PLANE,
     scratch.floorIntersection,
   );
-  if (!floor || !finiteWithinWorldBudget(floor.x) || !finiteWithinWorldBudget(floor.z)) return null;
+  if (!floor || !isStudioBg3dPointInCameraDepth(camera, floor) || !finiteWithinWorldBudget(floor.x) || !finiteWithinWorldBudget(floor.z)) return null;
   return Object.freeze({
     floorPoint: Object.freeze([
       Object.is(floor.x, -0) ? 0 : floor.x,
       Object.is(floor.z, -0) ? 0 : floor.z,
     ] as const),
   });
-}
-
-function isEditableKeyboardTarget(target: EventTarget | null): boolean {
-  const candidate = target as {
-    readonly isContentEditable?: boolean;
-    readonly tagName?: string;
-  } | null;
-  if (!candidate) return false;
-  if (candidate.isContentEditable) return true;
-  return candidate.tagName === "INPUT" || candidate.tagName === "TEXTAREA" || candidate.tagName === "SELECT";
 }
 
 function blockPlacementPointerDown(event: PointerEvent): void {
@@ -290,7 +283,7 @@ export function StudioBg3dPlacementPointerController({
       if (target) emitCommit(target, event.shiftKey);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (disposed) return;
+      if (disposed || isStudioBg3dReservedKeyEvent(event)) return;
       if (event.key === "Escape") {
         if (event.repeat) return;
         event.preventDefault();
@@ -301,8 +294,7 @@ export function StudioBg3dPlacementPointerController({
       if (
         event.metaKey ||
         event.ctrlKey ||
-        event.altKey ||
-        isEditableKeyboardTarget(event.target)
+        event.altKey
       ) return;
 
       const direction = event.code === "BracketLeft"

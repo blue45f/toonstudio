@@ -24,7 +24,6 @@ vi.mock("./studio-bg3d-blender-bridge", async (importOriginal) => ({
 vi.mock("./useStudioBg3dAssetRights", () => ({ useStudioBg3dAssetRights: () => ({ views: new Map(), state: "ready" }) }));
 vi.mock("./StudioBg3dAuthoredEnvironmentCyclesPanel", () => ({ StudioBg3dAuthoredEnvironmentCyclesPanel: () => null }));
 vi.mock("./StudioBg3dBundleThemePackPanel", () => ({ StudioBg3dBundleThemePackPanel: () => null }));
-vi.mock("./StudioBg3dEssentialPosePropPanel", () => ({ StudioBg3dEssentialPosePropPanel: () => null }));
 vi.mock("./StudioReferenceRebuildPresets", () => ({ StudioReferenceRebuildPresets: () => null }));
 
 const settings = { baseUrl: "http://127.0.0.1:49631", token: "x".repeat(40) };
@@ -80,7 +79,52 @@ beforeEach(() => {
   useConnection.mockReturnValue(connection());
   vi.mocked(runStudioBlenderJob).mockReset().mockResolvedValue(new File(["glTF"], "local.glb", { type: "model/gltf-binary" }));
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+describe("기본 제공 소품 가져오기", () => {
+  const importDesk = () => {
+    fireEvent.click(screen.getByTestId("bg3d-essential-pose-prop-toggle"));
+    fireEvent.change(screen.getByLabelText("포즈·소품 이름 검색"), { target: { value: "웹툰 작업 책상" } });
+    fireEvent.click(screen.getByRole("button", { name: "3D 장면에 가져오기" }));
+  };
+  const deskResponse = () => {
+    const bytes = new ArrayBuffer(24);
+    const header = new DataView(bytes);
+    header.setUint32(0, 0x46546c67, true);
+    header.setUint32(4, 2, true);
+    return new Response(bytes);
+  };
+
+  it("수동 파일의 미확인 권리 대신 카탈로그의 CC0 이용 조건으로 가져온다", async () => {
+    const importFiles = vi.fn<StudioBg3dModelImportActions["importModelFiles"]>(async () => true);
+    vi.stubGlobal("fetch", vi.fn(async () => deskResponse()));
+    const props = fixture(importFiles);
+    render(<ActualForm props={props} />);
+    importDesk();
+    await waitFor(() => expect(importFiles).toHaveBeenCalledWith(
+      [expect.objectContaining({ name: "ToonStudio-webtoon-artisan-drafting-easel-lamp-v15.glb" })],
+      { status: "licensed", licenseName: "CC0-1.0", commercialUse: true, attributionRequired: false },
+      expect.any(AbortSignal),
+    ));
+    expect(props.onFileChange).not.toHaveBeenCalled();
+    expect(screen.getByTestId("bg3d-essential-status").textContent).toContain("가져왔습니다");
+  });
+
+  it("다운로드 중 작업 대상이 바뀌면 새 장면에 소품을 넘기지 않는다", async () => {
+    let resolve!: (response: Response) => void;
+    const pending = new Promise<Response>((accept) => { resolve = accept; });
+    const download = vi.fn<typeof fetch>(() => pending);
+    vi.stubGlobal("fetch", download);
+    const importFiles = vi.fn<StudioBg3dModelImportActions["importModelFiles"]>(async () => true);
+    const props = fixture(importFiles);
+    const view = render(<ActualForm props={props} />);
+    importDesk();
+    view.rerender(<ActualForm props={{ ...props, localBlendScopeKey: "page-b/background-b" }} />);
+    expect(download.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+    await act(async () => { resolve(deskResponse()); await pending; });
+    expect(importFiles).not.toHaveBeenCalled();
+  });
+});
 
 describe("실제 로컬 Blender 패널과 기존 권리·AI 폼의 접점", () => {
   it("같은 권리·AI 답과 신호를 직접 전달하고 정상 완료 뒤 폼 초기화가 자기 신호를 취소하지 않는다", async () => {

@@ -1,10 +1,26 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { StudioVirtualSpaceEntryCodePanel } from "./StudioVirtualSpaceEntryCodePanel";
 
 describe("StudioVirtualSpaceEntryCodePanel", () => {
+  it("폼으로 재시도하면 형식 오류를 지우고 입력값을 한 번 검증한다", async () => {
+    const onEnterWithCode = vi.fn(async () => ({ ok: true }));
+    render(<StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />);
+    const form = screen.getByRole("form", { name: "입장코드로 입장" });
+    const input = screen.getByRole("textbox", { name: "입장코드" });
+    fireEvent.change(input, { target: { value: "AB" } });
+    fireEvent.submit(form);
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(onEnterWithCode).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: "k7x2p9" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    fireEvent.submit(form);
+    await waitFor(() => expect(screen.getByRole("button", { name: "입장하기" })).toBeTruthy());
+    expect(onEnterWithCode).toHaveBeenCalledExactlyOnceWith("K7X2P9");
+  });
+
   it("유효한 코드는 입장 콜백으로 전달한다", () => {
     const onEnterWithCode = vi.fn();
     render(<StudioVirtualSpaceEntryCodePanel onEnterWithCode={onEnterWithCode} />);

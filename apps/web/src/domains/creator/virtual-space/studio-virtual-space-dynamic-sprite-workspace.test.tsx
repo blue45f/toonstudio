@@ -163,7 +163,7 @@ describe("studio-virtual-space-dynamic-sprite-engine & StudioVirtualDynamicSprit
     cleanup();
     render(<StudioVirtualSpaceCollaborationHub />);
     const tabBtn = screen.getByRole("tab", {
-      name: /소두 다중프레임 스프라이트·VFX·협업/,
+      name: "캐릭터 동작·효과",
     });
     fireEvent.click(tabBtn);
     expect(

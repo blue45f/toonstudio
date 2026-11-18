@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { StudioBrushR8GrainHydrator } from "../../brush/studio-brush-r8-grain-hydrator";
 import { StudioFilterMaskSurfaceHydrator } from "../../filter/studio-filter-mask-surface-hydrator";
@@ -40,11 +40,18 @@ export function useStudioHydrationRuntime() {
     useState<StudioWorkAssetSceneReference[]>([]);
   const [studioWorkAssetLimitExceeded, setStudioWorkAssetLimitExceeded] = useState(false);
 
-  useLayoutEffect(() => () => {
-    studioBrushR8GrainHydrator.dispose();
-    studioFilterMaskSurfaceHydrator.dispose();
-    studioWorkAssetAdmissionCoordinator.dispose();
-    studioWorkAssetHydrator.dispose();
+  const lifetime = useRef({ generation: 0 });
+  useLayoutEffect(() => {
+    const owner = lifetime.current;
+    const mounted = ++owner.generation;
+    return () => queueMicrotask(() => {
+      // 같은 인스턴스에서 효과만 재설정한 경우 기존 작품의 승인된 리소스를 계속 사용한다.
+      if (owner.generation !== mounted) return;
+      studioBrushR8GrainHydrator.dispose();
+      studioFilterMaskSurfaceHydrator.dispose();
+      studioWorkAssetAdmissionCoordinator.dispose();
+      studioWorkAssetHydrator.dispose();
+    });
   }, [
     studioBrushR8GrainHydrator,
     studioFilterMaskSurfaceHydrator,

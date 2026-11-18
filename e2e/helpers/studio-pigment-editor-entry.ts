@@ -34,7 +34,7 @@ export async function waitForPigmentEditorSettled(page: Page): Promise<void> {
     }
     if (await workspace.count() !== 1) throw new Error("안료 준비의 화면과 도움말 목적은 하나여야 합니다.");
     await workspace.click({ timeout: remaining() });
-    await task.getByRole("button", { name: "프로젝트·창 도구 보기", exact: true })
+    await task.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true })
       .click({ timeout: remaining() });
     await task.waitFor({ state: "detached", timeout: remaining() });
     await clarity.waitFor({ state: "detached", timeout: remaining() });

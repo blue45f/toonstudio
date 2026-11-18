@@ -1,3 +1,4 @@
+import type { StudioLtInsertLayers } from "../lt-convert/studio-lt-raster-output";
 /**
  * Character Shaper — UI/binding contract shared by the shell, the panels, and the host binding.
  *
@@ -136,6 +137,7 @@ export interface CharacterShaperUiState {
 export type CharacterShaperOutputTarget = "canvas" | "file";
 
 export interface StudioCharacterShaperDialogProps {
+  readonly onInsertLtLayers?: StudioLtInsertLayers;
   readonly h: StudioVrmPoserHost;
   readonly binding: CharacterShaperBinding;
   /** Render the legacy builder instead (고급 편집). The shell owns the toggle button. */
@@ -225,6 +227,7 @@ export interface CharacterShaperPaintHudProps {
 }
 
 export interface CharacterShaperViewportHudProps {
+  readonly onInsertLtLayers?: StudioLtInsertLayers;
   readonly h: StudioVrmPoserHost;
   readonly binding: CharacterShaperBinding;
   readonly compact: boolean;

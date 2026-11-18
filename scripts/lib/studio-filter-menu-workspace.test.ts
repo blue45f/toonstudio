@@ -52,7 +52,7 @@ function fixture({ simple = true, moreCount = 1, workspaceCount = 1, dialogOpen 
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
       expect(role).toBe("button"); expect(query.exact).toBe(true);
       if (query.name === "원고 도구 분류로 돌아가기") return back;
-      expect(query.name).toBe("프로젝트·창 도구 보기");
+      expect(query.name).toBe("프로젝트·창 도구 배치로 전환");
       return project;
     },
   };

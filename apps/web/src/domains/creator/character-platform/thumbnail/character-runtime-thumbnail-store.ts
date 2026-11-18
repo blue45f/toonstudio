@@ -193,7 +193,7 @@ export function CharacterRuntimeThumbnailRecorder({ h, binding }: {
           } finally {
             try { releaseHelpers?.(); } finally { host.releaseVrmCaptureOperation("thumbnail"); }
           }
-          const blob = await encodeStudioVrmCapturePngBlob(rgba, size, { signal: controller.signal });
+          const blob = await encodeStudioVrmCapturePngBlob(rgba, size, { signal: controller.signal, session: host.pngSessionRef?.current ?? undefined });
           if (!isCurrent() || liveRef.current.h.captureVisualAuthorityRef?.current?.identity !== visualIdentity
             || typeof URL.createObjectURL !== "function") return;
           const url = URL.createObjectURL(blob);

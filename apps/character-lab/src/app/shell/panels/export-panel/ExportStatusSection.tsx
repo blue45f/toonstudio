@@ -25,6 +25,8 @@ export type ExportBusyKind =
   | "cutsheet-wav"
   | "cutsheet-vtt"
   | "cutsheet-import"
+  | "draft-save"
+  | "draft-load"
   | "import"
   | "clipboard-copy"
   | "clipboard-paste";
@@ -55,6 +57,8 @@ export const BUSY_ACTION_LABELS_KO: Readonly<Record<ExportBusyKind, string>> = {
   cutsheet: "에피소드 큐시트 JSON 저장",
   "cutsheet-import": "에피소드 큐시트 불러오기",
   import: "레시피 불러오기",
+  "draft-save": "기기에 저장",
+  "draft-load": "저장한 작업 열기",
   "clipboard-copy": "레시피 클립보드 복사",
   "clipboard-paste": "클립보드 레시피 붙여넣기",
 };
@@ -98,6 +102,10 @@ function handleChipGroupKeyDown(
 export function formatBusyProgressKo(busy: ExportBusyKind, stepDetail: string | null): string {
   const suffix = stepDetail ? ` (${stepDetail})` : "";
   switch (busy) {
+    case "draft-save":
+      return "기기에 저장 중…";
+    case "draft-load":
+      return "저장한 작업 여는 중…";
     case "import":
       return `레시피 불러오는 중…${suffix}`;
     case "cutsheet-import":

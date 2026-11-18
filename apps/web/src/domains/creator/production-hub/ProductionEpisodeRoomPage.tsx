@@ -66,6 +66,7 @@ import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { getCurrentUiLocale, useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { useApp } from "@/shared/lib/store";
+import { ProductionProjectSignIn } from "./ProductionProjectSignIn";
 import { cn } from "@/shared/lib/utils";
 
 type RedlineLayerId = "anatomical-pose-fix" | "balloon-tail-lead" | "lighting-continuity";
@@ -241,6 +242,7 @@ export function ProductionEpisodeRoomPage() {
 
   if (!params.projectId || !params.episodeId) return <Navigate to="/production" replace />;
   if (project.loading) return <RoomState kind="pending">{bt("회차 룸을 불러오는 중…", "Loading the episode room…")}</RoomState>;
+  if (project.requiresSignIn) return <ProductionProjectSignIn />;
   if (!project.aggregate || project.error) {
     return (
       <RoomState kind="error">

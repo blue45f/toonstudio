@@ -14,6 +14,8 @@ import type {
 } from "./studio-bg3d-shared-stage-editor-session";
 
 interface StudioBg3dActionFooterProps {
+  readonly frozenCut?: boolean;
+  readonly teamCut?: boolean;
   readonly sceneRecoveryError: string | null;
   readonly hasCloneFailure: boolean;
   readonly isRestoringScene: boolean;
@@ -24,6 +26,7 @@ interface StudioBg3dActionFooterProps {
   readonly sharedStageUpdateBlockedReason: string | null;
   readonly onOpenSharedStage: () => void;
   readonly error: string | null;
+  readonly outputUnavailableReason?: string | null;
   readonly saveNotice: string | null;
   readonly isCapturing: boolean;
   readonly deletingModelInProgress: boolean;
@@ -41,6 +44,8 @@ interface StudioBg3dActionFooterProps {
 }
 
 export function StudioBg3dActionFooter({
+  frozenCut,
+  teamCut,
   sceneRecoveryError,
   hasCloneFailure,
   isRestoringScene,
@@ -51,6 +56,7 @@ export function StudioBg3dActionFooter({
   sharedStageUpdateBlockedReason,
   onOpenSharedStage,
   error,
+  outputUnavailableReason,
   saveNotice,
   isCapturing,
   deletingModelInProgress,
@@ -67,6 +73,7 @@ export function StudioBg3dActionFooter({
   simpleMode = false,
 }: StudioBg3dActionFooterProps) {
   const t = useT();
+  const fixedCutLabel = teamCut ? "팀에 새 컷 레이어 저장" : frozenCut ? (operation === "update" ? "고정 컷 레이어 업데이트" : "고정 컷 레이어 추가") : null;
   const isPreparing = isCapturing || isRestoringScene || hasPendingClone || hasPendingSharedCharacter;
 
   return (
@@ -132,10 +139,10 @@ export function StudioBg3dActionFooter({
         </div>
       ) : null}
 
-      {error ? (
-        <div className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2 sm:mx-5">
+      {error || outputUnavailableReason ? (
+        <div role={error ? "alert" : "status"} className="mx-4 mb-2 flex items-start gap-2 rounded-lg border border-line bg-card px-3 py-2 text-xs text-fg-2 sm:mx-5">
           <AlertTriangle className="mt-0.5 shrink-0 text-accent" size={14} aria-hidden />
-          {error}
+          {error ?? outputUnavailableReason}
         </div>
       ) : null}
 
@@ -175,12 +182,13 @@ export function StudioBg3dActionFooter({
             CONTROL_BUTTON,
             "min-w-0 shrink whitespace-nowrap border-accent/60 bg-accent text-on-accent hover:bg-accent/90 min-[360px]:min-w-36",
           )}
+          aria-label={fixedCutLabel ?? undefined}
           disabled={insertDisabled}
           onClick={onInsert}
         >
           {isPreparing ? <Loader2 className="animate-spin motion-reduce:animate-none" size={14} aria-hidden /> : <ImagePlus size={14} aria-hidden />}
           <span className="max-[359px]:hidden">
-            {mutationKind === "unlink"
+            {fixedCutLabel ?? (mutationKind === "unlink"
               ? materializationKind === "detached-editable-composite"
                 ? "3D 원본 유지 · 한 장으로 정리"
                 : "연결 해제하고 배경 업데이트"
@@ -196,10 +204,10 @@ export function StudioBg3dActionFooter({
                         ? "선화만 추가"
                         : toneOutputType === "color"
                           ? "컬러 배경 추가"
-                          : "톤 배경 추가"}
+                          : "톤 배경 추가")}
           </span>
           <span className="hidden max-[359px]:inline">
-            {mutationKind === "unlink"
+            {fixedCutLabel ?? (mutationKind === "unlink"
               ? materializationKind === "detached-editable-composite"
                 ? "한 장 정리"
                 : "연결 해제"
@@ -209,7 +217,7 @@ export function StudioBg3dActionFooter({
                   ? "연결해 적용"
                   : simpleMode
                     ? operation === "update" ? "다시 적용" : "적용"
-                    : operation === "update" ? "업데이트" : "배경 추가"}
+                    : operation === "update" ? "업데이트" : "배경 추가")}
           </span>
         </button>
       </footer>

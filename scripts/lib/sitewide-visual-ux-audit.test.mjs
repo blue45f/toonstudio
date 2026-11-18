@@ -7,6 +7,7 @@ import { JSDOM } from "jsdom";
 const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
 
 import {
+  areAuditViewportImagesComplete,
   auditReadinessFindings,
   classifyAuditRouteCoverage,
   declaredArrayIds,
@@ -23,6 +24,30 @@ function documentFor(html) {
   dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({ width: 320, height: 40 });
   return dom.window.document;
 }
+
+test("화면에 드러난 미완료 이미지만 본문 이미지 대기에 포함한다", () => {
+  const image = { complete: false, checkVisibility: () => false,
+    getBoundingClientRect: () => ({ width: 80, height: 80, top: 10, bottom: 90, left: 10, right: 90 }) };
+  const root = { defaultView: { innerWidth: 390, innerHeight: 844 }, images: [image] };
+  assert.equal(areAuditViewportImagesComplete(root), true);
+  image.checkVisibility = () => true;
+  assert.equal(areAuditViewportImagesComplete(root), false);
+  root.defaultView.innerHeight = 10;
+  assert.equal(areAuditViewportImagesComplete(root), true);
+  root.defaultView.innerHeight = 844;
+  image.complete = true;
+  assert.equal(areAuditViewportImagesComplete(root), true);
+});
+
+test("표시된 로그인 요구는 권한 경계이고 일반 오류와 숨은 로그인 안내는 구분한다", () => {
+  const render = (html) => inspectAuditRouteReadiness(documentFor(`<div class="route-stage" data-route-state="ready"><h1>프로젝트</h1>${html}</div>`));
+  const guest = render('<section data-route-blocked="sign-in">로그인</section>');
+  assert.equal(guest.outcome, "blocked");
+  assert.equal(classifyAuditRouteCoverage(guest, "/production/projects/test").content, "auth-gate");
+  const error = render('<section data-route-error>오류</section><section data-route-blocked="sign-in" hidden>로그인</section>');
+  assert.equal(error.outcome, "error");
+  assert.equal(error.authGateVisible, false);
+});
 
 test("실제 본문 뒤에 브랜드·만화 인트로가 남으면 ready로 세지 않는다", () => {
   for (const intro of [
@@ -200,23 +225,22 @@ test("로그인 리다이렉트는 요청한 화면의 본문 도달이나 기�
 
 test("실제 fallback 제거와 콘텐츠 상태 전환을 기다린다", async () => {
   const root = documentFor('<div class="route-stage route-stage--settled" data-route-state="pending"><div data-route-loading-fallback></div></div>');
+  let now = 0;
   const page = {
     evaluate: async (fn) => fn(root),
-    waitForTimeout: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    waitForTimeout: async (ms) => {
+      now += ms;
+      if (now < 20 || !root.querySelector("[data-route-loading-fallback]")) return;
+      const stage = root.querySelector(".route-stage");
+      stage.setAttribute("data-route-state", "ready");
+      stage.innerHTML = '<h1>학습</h1><a href="/learn/trace">시작</a>';
+    },
   };
-  const timer = setTimeout(() => {
-    const stage = root.querySelector(".route-stage");
-    stage.setAttribute("data-route-state", "ready");
-    stage.innerHTML = '<h1>학습</h1><a href="/learn/trace">시작</a>';
-  }, 20);
-  try {
-    const result = await waitForAuditRouteReadiness(page, { timeoutMs: 300, stableMs: 10, pollMs: 5 });
-    assert.equal(result.outcome, "ready");
-    assert.equal(result.timedOut, false);
-    assert.deepEqual(result.observedStates, ["fallback", "ready"]);
-  } finally {
-    clearTimeout(timer);
-  }
+  const result = await waitForAuditRouteReadiness(page, { timeoutMs: 300, stableMs: 10, pollMs: 5, now: () => now });
+  assert.equal(result.outcome, "ready");
+  assert.equal(result.timedOut, false);
+  assert.deepEqual(result.observedStates, ["fallback", "ready"]);
+  assert.equal(result.durationMs, 30);
 });
 
 test("실제 timeout 후에도 skeleton 상태를 성공으로 바꾸지 않는다", async () => {
@@ -233,16 +257,18 @@ test("실제 timeout 후에도 skeleton 상태를 성공으로 바꾸지 않는�
 test("문서 리다이렉트의 context 전환은 다시 관측하되 브라우저 종료는 숨기지 않는다", async () => {
   const root = documentFor('<div class="route-stage" data-route-state="ready"><h1>AI 설정</h1></div>');
   let calls = 0;
+  let now = 0;
   const page = {
     evaluate: async (fn) => {
       if (calls++ === 0) throw new Error("Execution context was destroyed, most likely because of a navigation");
       return fn(root);
     },
-    waitForTimeout: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    waitForTimeout: async (ms) => { now += ms; },
   };
-  const result = await waitForAuditRouteReadiness(page, { timeoutMs: 300, stableMs: 5, pollMs: 5 });
+  const result = await waitForAuditRouteReadiness(page, { timeoutMs: 300, stableMs: 5, pollMs: 5, now: () => now });
   assert.equal(result.timedOut, false);
   assert.deepEqual(result.observedStates, ["navigation", "ready"]);
+  assert.equal(result.durationMs, 10);
   await assert.rejects(() => waitForAuditRouteReadiness({
     ...page,
     evaluate: async () => { throw new Error("Target page, context or browser has been closed"); },

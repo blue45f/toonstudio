@@ -153,6 +153,7 @@ function Workspace({ rendererReady = true, rendererGeneration = 0, materialBacke
       <StudioBg3dProfessionalWorkspace
         outliner={<span>계층</span>}
         inspector={<span>속성</span>}
+        cutHost={hostRef.current}
         viewport={<Viewport h={hostRef.current} />}
       />
     </MemoryRouter>
@@ -325,6 +326,15 @@ describe("제품 전문가 작업공간의 컷 버전 통합", () => {
     expect(load).toHaveBeenCalledTimes(1);
     expect(host().sceneBaseDocument).toBe(original);
     expect(history.historyCommandTimelineRef.current).toBeNull();
+    expect(data.size).toBe(0);
+
+    const retry = screen.getByRole<HTMLButtonElement>("button", { name: "로컬 다시 불러오기" });
+    await waitFor(() => expect(retry.disabled).toBe(false));
+    fireEvent.click(retry);
+    await screen.findByText("새 컷 프로젝트가 준비되었습니다.");
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(host().sceneBaseDocument).toBe(original);
     expect(data.size).toBe(0);
   });
 

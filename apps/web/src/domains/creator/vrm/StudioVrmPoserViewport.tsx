@@ -598,7 +598,7 @@ export function StudioVrmPoserViewport({ h, presentation = "poser" }: {
                   })}
                   <mesh ref={groundShadowRef} position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1.48, 0.82, 1]} renderOrder={-1}>
                     <circleGeometry args={[1, 72]} />
-                    <meshBasicMaterial color="var(--color-fg-2)" transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} />
+                    <meshBasicMaterial color={0x000000} transparent opacity={0.18} depthWrite={false} side={THREE.DoubleSide} />
                   </mesh>
                   <CharacterShaperOrbitControls lookAt={vrm?.lookAt} gazePaused={Boolean(webcamActive)} captureFrozen={Boolean(isCapturing || isSharingPose || isThumbnailCapturing)}
                     makeDefault

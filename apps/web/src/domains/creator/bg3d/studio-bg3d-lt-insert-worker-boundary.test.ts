@@ -19,6 +19,14 @@ function sourceBetween(startMarker: string, endMarker: string): string {
 }
 
 describe("Studio BG3D interactive LT Worker boundary", () => {
+  it("원고에 게시하기 전에 캡처 자체가 원본을 바꿔 자신의 업로드를 중단하지 않는다", () => {
+    const publish = editorSource.indexOf("const accepted = await onInsert({");
+    const release = editorSource.indexOf("ltInsertAbortRef.current = null;", publish);
+    const finish = editorSource.indexOf("setSceneBaseDocument(adapted.document);", publish);
+    expect(publish).toBeGreaterThan(0);
+    expect(release).toBeGreaterThan(publish);
+    expect(finish).toBeGreaterThan(release);
+  });
   it("snapshots capture settings and runs LT detection in the existing bounded Worker", () => {
     const insert = sourceBetween(
       "async function handleInsert()",

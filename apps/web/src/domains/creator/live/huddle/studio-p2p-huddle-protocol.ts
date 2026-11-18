@@ -10,6 +10,7 @@ export type HuddlePacket = { epoch: string } & (
   | { kind: "chat"; id: string; text: string }
   | { kind: "ack"; id: string }
   | { kind: "reaction"; id: string; emoji: HuddleReaction }
+  | { kind: "media-ready"; toEpoch: string; id: string; retry: boolean }
   | { kind: "description"; toEpoch: string; type: "offer" | "answer"; sdp: string }
   | { kind: "ice"; toEpoch: string; candidate: RTCIceCandidateInit }
 );
@@ -31,6 +32,9 @@ export function parseHuddlePacket(raw: string): HuddlePacket | null {
     case "ack": if (!validId(v.id)) return null; break;
     case "reaction":
       if (!validId(v.id) || !HUDDLE_REACTIONS.includes(v.emoji as HuddleReaction)) return null;
+      break;
+    case "media-ready":
+      if (!validId(v.toEpoch) || !validId(v.id) || typeof v.retry !== "boolean") return null;
       break;
     case "description":
       if (!validId(v.toEpoch) || (v.type !== "offer" && v.type !== "answer")

@@ -29,7 +29,7 @@ import type { PaintSession } from "../../paint/paint-session";
 
 const CANONICAL_SOURCE = Object.freeze({ kind: "procedural" as const });
 
-interface WorkCheckpoint {
+export interface WorkCheckpoint {
   readonly contentDigest: string;
   readonly paintSignature: string;
 }
@@ -71,13 +71,17 @@ function hashBytesSample(bytes: Uint8ClampedArray): string {
 }
 
 /** 페인트 세션의 합성 마스터 레이어와 6단 서브레이어(픽셀·가시성·불투명도·합성 순서) 상태를 결정적 서명으로 요약한다. */
-export function computePaintSignature(session: PaintSession): string {
+export function computePaintSignature(session: Pick<PaintSession, "layersForExport" | "sublayersForExport">): string {
+  return paintSignatureFor(session.layersForExport(), session.sublayersForExport());
+}
+
+function paintSignatureFor(layers: readonly PaintLayer[], sublayers: readonly PaintPartSublayerState[]): string {
   const parts: string[] = [];
-  for (const layer of session.layersForExport()) {
+  for (const layer of layers) {
     if (isPaintLayerEmpty(layer)) continue;
     parts.push(`L:${layer.part}:${layer.width}x${layer.height}:${hashBytesSample(layer.rgba)}`);
   }
-  for (const sub of session.sublayersForExport()) {
+  for (const sub of sublayers) {
     const slotDesc = sub.slots
       .map((slot) => {
         const px = slot.rgba ? hashBytesSample(slot.rgba) : "null";
@@ -112,7 +116,7 @@ function cloneSublayerState(sub: PaintPartSublayerState): PaintPartSublayerState
  * 스토어가 아직 편집 이력이 없는 초기 상태(`canUndo === false`)일 때 기준 체크포인트를 자동 등록한다.
  * 이미 `canUndo === true`인 상태로 주입된 스토어는 초기 기준점이 없으므로 미저장 편집이 있는 것으로 취급한다.
  */
-function resolveCheckpoint(store: LabStore, state: LabState): WorkCheckpoint | null {
+export function resolveCheckpoint(store: LabStore, state: LabState): WorkCheckpoint | null {
   const existing = checkpointsByStore.get(store);
   if (existing) return existing;
   if (!state.history.canUndo) {
@@ -173,16 +177,22 @@ export function describeUnsavedWorkKo(summary: UnsavedWorkSummary): string {
   return "변경 사항 없음";
 }
 
+/** 저장을 시작한 시점의 레이어를 기준으로 체크포인트를 만든다. */
+export function capturedWorkCheckpoint(snapshot: CharacterWorkBackup): WorkCheckpoint {
+  return { contentDigest: recipeContentDigest(snapshot.recipe), paintSignature: paintSignatureFor(snapshot.paintLayers, snapshot.paintSublayers) };
+}
+
+export function markCapturedWorkSaved(store: LabStore, checkpoint: WorkCheckpoint): void {
+  checkpointsByStore.set(store, checkpoint);
+}
+
 /** "레시피 저장" 완료 시 현재 레시피 내용과 페인트 상태를 저장 완료 기준점으로 기록한다. */
 export function markCharacterWorkSaved(
   store: LabStore,
   recipe: CharacterRecipe,
   session: PaintSession,
 ): void {
-  checkpointsByStore.set(store, {
-    contentDigest: recipeContentDigest(recipe),
-    paintSignature: computePaintSignature(session),
-  });
+  markCapturedWorkSaved(store, { contentDigest: recipeContentDigest(recipe), paintSignature: computePaintSignature(session) });
 }
 
 /** 레시피 불러오기·붙여넣기 직전에 현재 캐릭터 레시피·능력·6단 페인트 서브레이어 전체를 깊은 복사본으로 보관한다. */

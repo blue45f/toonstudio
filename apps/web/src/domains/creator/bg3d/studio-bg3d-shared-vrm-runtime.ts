@@ -366,19 +366,20 @@ async function resolveMToonMaterialType(
  */
 export async function loadStudioBg3dLinkedVrm(
   scene: StudioShared3dCharacterSource["scene"],
-  options?: { readonly materialVariant?: StudioVrmMaterialVariant },
+  options: { readonly materialVariant?: StudioVrmMaterialVariant; readonly teamCutResources?: StudioShared3dCharacterSource["teamCutResources"] } = {},
 ): Promise<VRM> {
   const mtoonMaterialType =
     await resolveMToonMaterialType(options?.materialVariant ?? "webgl-shader");
   if (scene.model.source === "bundled") {
     const url = selectableSampleVrmUrl(scene.model.id);
     if (!url) throw new Error("bundled-model-unavailable");
-    return loadStudioVrmAsset(url, { mtoonMaterialType });
+    if (!options.teamCutResources) return loadStudioVrmAsset(url, { mtoonMaterialType });
   }
-
-  const stored = await getStoredVrmModelByHash(scene.model.hash);
-  if (!stored) throw new Error("attachment-unavailable");
-  const objectUrl = URL.createObjectURL(stored.blob);
+  const remote = options.teamCutResources;
+  const blob = scene.model.source === "bundled" ? remote?.bundled?.get(scene.model.id)
+    : remote ? remote.blobs.get(scene.model.hash) : (await getStoredVrmModelByHash(scene.model.hash))?.blob;
+  if (!blob) throw new Error("attachment-unavailable");
+  const objectUrl = URL.createObjectURL(blob);
   try {
     return await loadStudioVrmAsset(objectUrl, { mtoonMaterialType });
   } finally {

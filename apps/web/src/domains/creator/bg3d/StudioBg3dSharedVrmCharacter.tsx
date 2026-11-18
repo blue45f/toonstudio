@@ -22,6 +22,7 @@ import {
   type StudioBg3dLinkedVrmRuntimeOwner,
 } from "./studio-bg3d-shared-vrm-runtime";
 import { StudioBg3dSharedVrmAppearanceRuntime } from "./StudioBg3dSharedVrmAppearanceRuntime";
+import { useStudioBg3dLinkedVrmSurfacePaint } from "./useStudioBg3dLinkedVrmSurfacePaint";
 
 import type {
   StudioShared3dCharacterRuntimeStatus,
@@ -55,6 +56,7 @@ const MAX_SURFACE_ABOVE_SUPPORT_METERS = 0.15;
 const GROUND_RAY_DISTANCE_METERS = 1.4;
 
 interface StudioBg3dSharedVrmAsset {
+  readonly modelRuntimeKey: string;
   readonly vrm: VRM;
   readonly runtimeOwner: StudioBg3dLinkedVrmRuntimeOwner;
   readonly costumeMeshes: StudioVrmCostumeMeshEntry[];
@@ -314,14 +316,16 @@ export default function StudioBg3dSharedVrmCharacter({
     (state.gl as { readonly isWebGPURenderer?: boolean }).isWebGPURenderer === true
       ? ("webgpu-node" as const)
       : ("webgl-shader" as const));
-  const [asset, setAsset] = useState<StudioBg3dSharedVrmAsset | null>(null);
+  const [loadedAsset, setAsset] = useState<StudioBg3dSharedVrmAsset | null>(null);
+  const asset = loadedAsset?.modelRuntimeKey === source.modelRuntimeKey ? loadedAsset : null;
+  const paintStatus = useStudioBg3dLinkedVrmSurfacePaint(asset?.vrm.scene ?? null, source.scene.surfacePaint, source.teamCutResources);
   const appearanceReadyIdentityRef = useRef<string | null>(null);
   const reportCurrentStatus = useEffectEvent(
     (status: StudioShared3dCharacterRuntimeStatus) =>
       onStatus(source.runtimeKey, status),
   );
   const loadCurrentModel = useEffectEvent(() =>
-    loadStudioBg3dLinkedVrm(source.scene, { materialVariant }));
+    loadStudioBg3dLinkedVrm(source.scene, { materialVariant, ...(source.teamCutResources ? { teamCutResources: source.teamCutResources } : {}) }));
   const reportCurrentGrounding = useEffectEvent(
     (result: StudioBg3dSharedCharacterGroundingResult | null) =>
       onGrounding?.(source.runtimeKey, result),
@@ -357,7 +361,7 @@ export default function StudioBg3dSharedVrmCharacter({
       }
       ownedRuntime = runtimeResult.owner;
       const costumeMeshes = collectStudioVrmCostumeMeshes(loaded);
-      setAsset({ vrm: loaded, runtimeOwner: runtimeResult.owner, costumeMeshes });
+      setAsset({ vrm: loaded, modelRuntimeKey: source.modelRuntimeKey, runtimeOwner: runtimeResult.owner, costumeMeshes });
     }).catch(() => {
       if (!cancelled) {
         if (ownedRuntime) {
@@ -394,6 +398,13 @@ export default function StudioBg3dSharedVrmCharacter({
     source.compatibility.appearanceProjection.signature,
   ]);
 
+  useLayoutEffect(() => {
+    if (!asset || paintStatus === "ready") return;
+    appearanceReadyIdentityRef.current = null;
+    reportCurrentGrounding(null);
+    reportCurrentStatus(paintStatus);
+  }, [asset, appearanceIdentityKey, paintStatus]);
+
   function handleAppearanceStatus(
     identityKey: string,
     status: StudioShared3dCharacterRuntimeStatus,
@@ -421,7 +432,7 @@ export default function StudioBg3dSharedVrmCharacter({
     reportCurrentGrounding(resolveCurrentAppearanceGrounding(asset, source, threeScene));
   }, [appearanceIdentityKey, asset, source, surfaceRevision, threeScene]);
 
-  if (!asset) return null;
+  if (!asset || paintStatus !== "ready") return null;
   const { vrm } = asset;
   const transform = studioShared3dCharacterWorldTransform(
     source.scene,
@@ -468,7 +479,7 @@ export default function StudioBg3dSharedVrmCharacter({
         >
           <boxGeometry args={[1, 1, 1]} />
           <meshBasicMaterial
-            color="#8b5cf6"
+            color={0x8b5cf6}
             depthTest={!selected}
             depthWrite={false}
             opacity={selected ? 0.72 : 0.002}

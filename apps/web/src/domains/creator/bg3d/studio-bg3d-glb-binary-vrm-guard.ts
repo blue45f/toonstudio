@@ -129,7 +129,7 @@ export function inspectGlbBinaryEvidence(
   bytes: Uint8Array,
 ): GlbBinaryEvidenceReport {
   if (bytes.byteLength < 20) {
-    return Object.freeze({
+    return Object.freeze<GlbBinaryEvidenceReport>({
       validGlb20: false,
       observed: {
         magicHex: "0x00000000",
@@ -203,7 +203,7 @@ export function inspectGlbBinaryEvidence(
     jsonType === CHUNK_JSON_LE &&
     fourByteAligned;
 
-  return Object.freeze({
+  return Object.freeze<GlbBinaryEvidenceReport>({
     validGlb20,
     observed: {
       magicHex: `0x${magic.toString(16).toUpperCase().padStart(8, "0")}`,

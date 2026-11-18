@@ -38,7 +38,7 @@ export function StudioCuttoonEditorPanels(s: StudioCuttoonEditorViewSession) {
     bg3dSeedPrimitiveKind,
     bg3dMarketplaceModelId,
   bg3dSeedTemplateId,
-    bg3dTargetBundleId,
+    bg3dTargetBundleId, cutDocumentKey,
     characterBible,
     characterBibleOpen,
     checkpointError,
@@ -222,7 +222,7 @@ export function StudioCuttoonEditorPanels(s: StudioCuttoonEditorViewSession) {
           bg3dInitialScene={bg3dInitialScene}
           bg3dOperation={bg3dInitialElementId ? "update" : "insert"}
           bg3dSixPassLtUnavailableReason={sixPassReason}
-          bg3dTargetBundleId={bg3dTargetBundleId}
+          bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={cutDocumentKey} cutTeamDocument={s.cutTeamDocument} cutWorkScope={s.cutWorkScope}
           bg3dBatchRecoveryScope={bg3dBatchRecoveryScope}
           validateRecoveryAccess={validateRecoveryAccess}
           bg3dOpen={admittedBg3dOpen}

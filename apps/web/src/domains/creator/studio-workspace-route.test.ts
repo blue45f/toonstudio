@@ -43,6 +43,7 @@ describe("studio workspace routes", () => {
   it.each([
     ["/studio/canvas", "", "canvas", null, null, "/studio/canvas"],
     ["/studio/canvas/poser", "", "poser", null, null, "/studio/canvas/poser"],
+    ["/studio/canvas/poser", "?room=team-a", "poser", null, null, "/studio/canvas/poser"],
     ["/studio/canvas?id=legacy", "?id=legacy", "canvas", "legacy", null, "/studio/work/legacy/canvas"],
     ["/studio/work/work-1", "", "canvas", "work-1", null, "/studio/work/work-1/canvas"],
     ["/studio/work/work-1/canvas", "", "canvas", "work-1", null, "/studio/work/work-1/canvas"],
@@ -198,6 +199,45 @@ describe("studio workspace routes", () => {
       .toBe(studioRouteStageKey({ pathname, search }));
     expect(studio2dSurfaceNavigationHref(bg3dRoute, "canvas", bg3dSearch))
       .toBe(`${pathname}?focus=cut%3A8&language=ko&room=team-a&uiMode=focus&version=v2&workspace=draw`);
+  });
+
+  it.each([
+    ["/studio/draft/%ED%95%9C%EA%B8%80", "poser"],
+    ["/studio/draft/draft-1", "character"],
+    ["/studio/p/project-1/d/document-1", "poser"],
+    ["/studio/p/project-1/d/document-1", "character"],
+  ] as const)("%s에서 %s를 열고 닫을 때 문서·방·캔버스 lifecycle을 보존한다", (pathname, tool) => {
+    const search = "?workspace=draw&focus=cut%3A8&language=ko&version=v2&room=team-a";
+    const canvas = parseStudioWorkspaceRoute({ pathname, search });
+    if (!canvas.valid) throw new Error("원고 경로");
+    const href = studio2dSurfaceNavigationHref(canvas, tool, search);
+    const opened = new URL(href, "https://toonstudio.test");
+    expect(opened.pathname).toBe(pathname);
+    expect(opened.searchParams.get("workspace")).toBe("3d");
+    expect(opened.searchParams.get("tool3d")).toBe(tool);
+    const route = parseStudioWorkspaceRoute(opened);
+    if (!route.valid) throw new Error("도구 경로");
+    expect(route).toMatchObject({ surface: tool, projectId: canvas.projectId, documentId: canvas.documentId, draftId: canvas.draftId });
+    expect(studioRouteStageKey(opened)).toBe(studioRouteStageKey({ pathname, search }));
+    expect(studioWorkspaceCanonicalHref(route, opened.search)).toBe(href);
+    const bg = studio2dSurfaceNavigationHref(route, "bg3d", opened.search);
+    expect(bg).not.toContain("tool3d");
+    expect(bg).toContain("workspace=3d");
+    expect(studio2dSurfaceNavigationHref(route, "canvas", opened.search)).toBe(
+      `${pathname}?focus=cut%3A8&language=ko&room=team-a&version=v2&workspace=draw`,
+    );
+  });
+
+  it.each([
+    ["workspace=3d&tool3d=poser&tool3d=character", "bg3d", "3d"],
+    ["workspace=3d&tool3d=unknown", "bg3d", "3d"],
+    ["workspace=draw&tool3d=poser", "canvas", "draw"],
+  ])("문서의 잘못되거나 오래된 3D 도구 상태를 정규화한다 (%s)", (search, surface, workspace) => {
+    const pathname = "/studio/draft/draft-1";
+    const route = parseStudioWorkspaceRoute({ pathname, search });
+    if (!route.valid) throw new Error("도구 경로");
+    expect(route.surface).toBe(surface);
+    expect(studioWorkspaceCanonicalHref(route, search)).toBe(`${pathname}?workspace=${workspace}`);
   });
 
   it("keeps one route-stage lifecycle only within the same Studio document", () => {
@@ -490,6 +530,16 @@ describe("editor surface navigation boundary", () => {
         .toBe(studio2dHref({ workId: "server-a", surface, search: "?room=team-a" }));
     },
   );
+
+  it("새 원고에서 VRM 포저를 열고 닫으면 같은 방의 캔버스로 돌아온다", () => {
+    const draft = parseStudioWorkspaceRoute({ pathname: "/studio/canvas" });
+    if (!draft.valid) throw new Error("원고 경로 오류");
+    const href = studio2dSurfaceNavigationHref(draft, "poser", "?room=team-a");
+    expect(href).toBe("/studio/canvas/poser?room=team-a");
+    const poser = parseStudioWorkspaceRoute(new URL(href, "https://studio.test"));
+    if (!poser.valid) throw new Error("포저 경로 오류");
+    expect(studio2dSurfaceNavigationHref(poser, "canvas", "?room=team-a")).toBe("/studio/canvas?room=team-a");
+  });
 
   it("리믹스 문서의 기존 3D 배경 경로를 유지한다", () => {
     const route = parseStudioWorkspaceRoute({ pathname: "/studio/remix/source-a/canvas" });

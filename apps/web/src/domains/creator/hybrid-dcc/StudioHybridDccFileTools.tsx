@@ -150,11 +150,11 @@ export function StudioHybridDccFileTools({
           if (selected) onModelFile(selected);
         }}
       />
-      {model.reading ? (
+      {model.reading || model.saving ? (
         <span role="status" className="inline-flex items-center gap-1.5 text-xs text-fg-2">
-          {bt("작업파일 읽기·검증 중", "Reading and validating workfile")}
+          {model.saving ? bt("작업파일 저장 준비 중", "Preparing workfile") : bt("작업파일 읽기·검증 중", "Reading and validating workfile")}
           <button type="button" className={BUTTON} onClick={model.cancel}>
-            {bt("파일 읽기 취소", "Cancel file reading")}
+            {model.saving ? bt("파일 저장 취소", "Cancel saving") : bt("파일 읽기 취소", "Cancel file reading")}
           </button>
         </span>
       ) : null}

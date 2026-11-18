@@ -25,11 +25,13 @@ import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { useApplyPlan, useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
   captureCharacterWorkBackup,
+  resolveCheckpoint,
   hasUnsavedCharacterWork,
   markCharacterWorkSaved,
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
+import { useRecipeStorage } from "./export-panel/DeviceDraftSection";
 import {
   buildLayeredPsdOptions,
   buildSavedCutsheetOutcome,
@@ -120,7 +122,7 @@ export function ExportPanel({
   const engineSession = useEngineSession();
   const engineStatus = useEngineStatus();
 
-  hasUnsavedCharacterWork(store, labState, session);
+  resolveCheckpoint(store, labState);
 
   const mountedRef = useRef(true);
   const busyRef = useRef<ExportBusyKind | null>(null);
@@ -459,22 +461,6 @@ export function ExportPanel({
     });
   };
 
-  const onRecipeSave = (): void => {
-    void run("recipe", async () => {
-      const ok = finish(
-        "recipe",
-        await exportRecipe(labState.recipe, session.layersForExport(), {
-          now,
-          sublayers: session.sublayersForExport(),
-        }),
-      );
-      if (ok) {
-        markCharacterWorkSaved(store, labState.recipe, session);
-        setPreImportBackup(null);
-      }
-    });
-  };
-
   const onShaperPresetSave = (): void => {
     void run("shaper-preset", async () => {
       finish("shaper-preset", exportShaperStylePreset(labState.recipe, { now }));
@@ -510,7 +496,7 @@ export function ExportPanel({
     });
   };
 
-  const applyImportWithBackup = async (text: string, sourceLabel: string, actionKind: "import" | "clipboard-paste"): Promise<void> => {
+  const applyImportWithBackup = async (text: string, sourceLabel: string, actionKind: "import" | "clipboard-paste" | "draft-load"): Promise<void> => {
     const currentState = store.getState();
     const backupIfUnsaved = hasUnsavedCharacterWork(store, currentState, session)
       ? captureCharacterWorkBackup(currentState.recipe, currentState.capabilities, session, now())
@@ -598,7 +584,19 @@ export function ExportPanel({
     });
   };
 
+  const storage = useRecipeStorage({
+    store, session, now, run,
+    saveFile: (result) => finish("recipe", result),
+    openDraft: (text) => applyImportWithBackup(text, "기기에 저장한 작업", "draft-load"),
+    onSaved: (device) => {
+      if (device) setNotices(["이 브라우저에 현재 작업을 저장했습니다."]);
+      setPreImportBackup(null);
+    },
+  });
+
   latestRetryActionsRef.current = {
+    "draft-save": storage.saveDraft,
+    "draft-load": storage.loadDraft,
     png: onPng,
     turnaround: onTurnaroundPng,
     "quad-sheet": onQuadSheetPng,
@@ -619,7 +617,7 @@ export function ExportPanel({
     "cutsheet-vtt": onExportBatchWebVtt,
     psd: onPsd,
     glb: onGlb,
-    recipe: onRecipeSave,
+    recipe: storage.saveRecipe,
     "shaper-preset": onShaperPresetSave,
     cutsheet: onSaveCutsheetJson,
     "cutsheet-import": () => onLoadCutsheetFile(lastCutsheetFileRef.current),
@@ -728,6 +726,7 @@ export function ExportPanel({
         ids={ids}
         engineReady={engineReady}
         busy={busy !== null}
+        storage={storage}
         canTriggerFileKeyDown={() => busyRef.current === null}
         onPng={onPng}
         onTurnaroundPng={onTurnaroundPng}
@@ -742,7 +741,6 @@ export function ExportPanel({
         onWebtoonMotionWav={onWebtoonMotionWav}
         onWebtoonMotionVtt={onWebtoonMotionVtt}
         onGlb={onGlb}
-        onRecipeSave={onRecipeSave}
         onShaperPresetSave={onShaperPresetSave}
         onCopyRecipeClipboard={onCopyRecipeClipboard}
         onPasteRecipeClipboard={onPasteRecipeClipboard}

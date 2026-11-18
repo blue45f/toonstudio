@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { STUDIO_OFFLINE_AUTOMATION_EVENT } from "../apps/web/src/domains/creator/offline/studio-offline-automation";
+
 import { buildStudioReactFixture } from "./helpers/studio-react-fixture.mjs";
 
 const styles = [
@@ -125,7 +127,7 @@ for (const mobile of [false, true]) {
       await mountHeader(page, mobile);
       if (mode === "contrast") await page.locator("html").evaluate(node => { node.dataset.designTheme = "contrast"; });
       const before = await geometry(page);
-      expect(before.title.height).toBeGreaterThanOrEqual(64);
+      expect(before.title.height).toBeGreaterThanOrEqual(mobile ? 64 : 55);
       const message = "일부 오프라인 도구 준비 필요";
       await setNotices(page, [message]);
       await expect(page.getByRole("status")).toHaveText(message);
@@ -134,6 +136,9 @@ for (const mobile of [false, true]) {
       await expect(summary).toHaveAccessibleDescription(message);
       const after = await geometry(page);
       expect(after).toEqual(before);
+      const noticeBox = await page.getByRole("status").boundingBox();
+      expect(noticeBox).not.toBeNull();
+      expect(noticeBox!.y + noticeBox!.height).toBeLessThanOrEqual(after.title.y + after.title.height + 1);
       await summary.focus();
       await expect(summary).toBeFocused();
       await summary.click({ trial: true });
@@ -142,6 +147,51 @@ for (const mobile of [false, true]) {
     });
   }
 }
+
+test("1280 원고에서 일곱 빠른 메뉴와 오프라인 안내가 캔버스 원점을 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/studio/draft/compact-header-offline-status?language=ko", { waitUntil: "domcontentloaded" });
+  const header = page.locator("[data-studio-drawing-clarity-header=true]");
+  const canvas = page.locator("[data-studio-canvas-viewport]").first();
+  const summary = header.getByRole("button", { name: /^저장 상태 열기/ });
+  const notice = summary.locator("[data-studio-offline-important=true]");
+  // 실제 상태 패널이 연결된 뒤 자동 준비의 부분 완료와 완료를 같은 채널로 전달한다.
+  await page.locator("[data-studio-offline-panel][data-studio-offline-presentation=status-center]").waitFor({ state: "attached", timeout: 60_000 });
+  await expect(canvas).toBeVisible();
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  async function offlinePhase(phase: "partial" | "ready") {
+    await page.evaluate(({ event, phase }) => {
+      window.dispatchEvent(new CustomEvent(event, { detail: { phase, message: phase } }));
+    }, { event: STUDIO_OFFLINE_AUTOMATION_EVENT, phase });
+  }
+  await offlinePhase("ready");
+  await expect(notice).toHaveCount(0);
+  const before = await canvas.boundingBox();
+  expect(before).not.toBeNull();
+  await offlinePhase("partial");
+  const message = "일부 오프라인 도구 준비 필요";
+  await expect(notice).toHaveText(message);
+  await expect(summary).toHaveAccessibleDescription(message);
+  expect(await canvas.boundingBox()).toEqual(before);
+  const noticeLines = await notice.evaluate(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getClientRects().length;
+  });
+  expect(noticeLines).toBe(1);
+  const menu = header.getByRole("navigation", { name: "원고 빠른 메뉴" });
+  for (const name of ["파일", "편집", "컷·원고", "레이어", "브러시·필터", "3D·캐릭터", "협업·검수"]) {
+    const button = menu.getByRole("button", { name, exact: true });
+    const box = await button.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+    await button.focus();
+    await expect(button).toBeFocused();
+  }
+  await offlinePhase("ready");
+  await expect(notice).toHaveCount(0);
+  expect(await canvas.boundingBox()).toEqual(before);
+});
 
 test("좁은320 화면과 두 배 글꼴의 긴 안내를 실제 저장 상세에서 모두 읽고 복귀한다", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });

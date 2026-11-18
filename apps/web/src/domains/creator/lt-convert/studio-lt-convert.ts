@@ -412,7 +412,9 @@ export function convertStudioLtImage(
   const luminance = new Float32Array(pixels);
   const sourceData = source.data;
   for (let index = 0; index < pixels; index += 1) {
-    luminance[index] = luminanceOf(sourceData, index * 4);
+    const offset = index * 4;
+    const alpha = (sourceData[offset + 3] ?? 255) / 255;
+    luminance[index] = 255 + (luminanceOf(sourceData, offset) - 255) * alpha;
   }
 
   const blurred = gaussianBlur3x3(luminance, width, height);
@@ -431,7 +433,7 @@ export function convertStudioLtImage(
     const isBlackFill =
       normalized.extractBlackFill && (luminance[index] ?? 255) <= blackFillLumaMax;
     if (lineMask[index] === 1 || isBlackFill) {
-      lineData[index * 4 + 3] = 255;
+      lineData[index * 4 + 3] = sourceData[index * 4 + 3] ?? 255;
     }
   }
   const lineLayer = new ImageData(lineData, width, height);
@@ -441,25 +443,22 @@ export function convertStudioLtImage(
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const index = y * width + x;
-      const level = Math.min(
-        levels - 1,
-        Math.floor(((luminance[index] ?? 0) / 255) * levels),
-      );
       const offset = index * 4;
+      const level = Math.min(levels - 1, Math.floor(luminanceOf(sourceData, offset) / 255 * levels));
       if (normalized.screentone) {
         // 하프톤: 어두울수록 도트 밀도가 높아진다. 밝은 영역은 투명.
         const coverage = 1 - level / (levels - 1);
         const bayerRow = BAYER_4X4[y % 4];
         const threshold = (((bayerRow?.[x % 4] ?? 0) + 0.5) / 16);
         if (coverage > threshold) {
-          toneData[offset + 3] = 255;
+          toneData[offset + 3] = sourceData[offset + 3] ?? 255;
         }
       } else {
         const value = Math.round((level / (levels - 1)) * 255);
         toneData[offset] = value;
         toneData[offset + 1] = value;
         toneData[offset + 2] = value;
-        toneData[offset + 3] = 255;
+        toneData[offset + 3] = sourceData[offset + 3] ?? 255;
       }
     }
   }

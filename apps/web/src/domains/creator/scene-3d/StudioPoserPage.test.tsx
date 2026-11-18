@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
@@ -14,21 +14,26 @@ afterEach(() => {
   useI18n.setState({ lang: "ko" });
 });
 
+const { applyBody } = vi.hoisted(() => ({ applyBody: vi.fn(async () => true) }));
+
 vi.mock("./StudioMannequinPoserPanel", () => ({
   StudioMannequinPoserPanel: ({
     open,
+    applyBodyRef,
     onClose,
     onInsert,
     initialPosePresetId,
     captureTarget,
   }: {
     open: boolean;
+    applyBodyRef: { current: typeof applyBody };
     onClose: () => void;
     onInsert: (result: unknown) => boolean;
     initialPosePresetId?: string;
     captureTarget?: string;
-  }) => (
-    <div
+  }) => {
+    applyBodyRef.current = applyBody;
+    return <div
       data-testid="poser-panel"
       data-open={String(open)}
       data-initial-preset={initialPosePresetId ?? ""}
@@ -43,8 +48,8 @@ vi.mock("./StudioMannequinPoserPanel", () => ({
       >
         캡처 저장
       </button>
-    </div>
-  ),
+    </div>;
+  },
 }));
 
 function LocationProbe(): React.JSX.Element {
@@ -111,7 +116,7 @@ describe("StudioPoserPage (/studio/poser)", () => {
     useToastStore.setState({ toasts: [] });
   });
 
-  it("VARCO 3D 워크벤치 & 세계관 셰이퍼 토글로 도크를 열고 체형 비율 적용 토스트를 띄운다", () => {
+  it("VARCO 3D 워크벤치 & 세계관 셰이퍼 토글로 도크를 열고 체형 비율 적용 토스트를 띄운다", async () => {
     useToastStore.setState({ toasts: [] });
     renderPage();
 
@@ -124,15 +129,21 @@ describe("StudioPoserPage (/studio/poser)", () => {
     expect(screen.getByTestId("studio-poser-varco3d-workbench-dock")).toBeTruthy();
 
     fireEvent.click(screen.getByTestId("varco3d-apply-shaper-to-mannequin"));
+    await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(1));
+    expect(applyBody).toHaveBeenCalledWith(expect.objectContaining({ heightCm: expect.any(Number), headCount: expect.any(Number) }), undefined);
     const toasts = useToastStore.getState().toasts;
     expect(toasts).toHaveLength(1);
     expect(toasts[0]?.message).toContain("세계관 체형 비율 적용됨");
 
     // Apply VARCO 3D archetype & motion preset directly to the mannequin poser
     fireEvent.click(screen.getByTestId("varco3d-apply-archetype-motion-to-mannequin"));
+    await waitFor(() => expect(useToastStore.getState().toasts).toHaveLength(2));
     const updatedToasts = useToastStore.getState().toasts;
     expect(updatedToasts).toHaveLength(2);
     expect(updatedToasts[1]?.message).toContain("로판 악녀 황후 여주인공");
+    applyBody.mockResolvedValueOnce(false);
+    fireEvent.click(screen.getByTestId("varco3d-apply-shaper-to-mannequin"));
+    await waitFor(() => expect(useToastStore.getState().toasts.at(-1)?.tone).toBe("error"));
     useToastStore.setState({ toasts: [] });
   });
 

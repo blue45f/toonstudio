@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -43,6 +43,31 @@ describe("StudioVirtualSpaceEntryLobby", () => {
     const selected = screen.getByRole("button", { name: "하늘 캐릭터 선택" });
     expect(selected.querySelector("image")?.getAttribute("href")).toBe(office2dCharacterUrl(character));
   });
+  it("3D 로비에서 입장할 모델을 직접 고르고 같은 모델 이름과 미리보기를 확인한다", async () => {
+    const choose = vi.fn();
+    const props = { stageKind: "three" as const, nickname: "작가", returning: false, personal: true,
+      projectName: "작업실", onNickname: vi.fn(), onAvatarIndex: choose, onEnter: vi.fn() };
+    const view = render(<MemoryRouter><StudioVirtualSpaceEntryLobby {...props} avatarIndex={-1} /></MemoryRouter>);
+    await act(() => vi.dynamicImportSettled());
+    const picker = screen.getByRole("group", { name: "3D 아바타" });
+    const choices = within(picker).getAllByRole("button");
+    expect(choices).toHaveLength(9);
+    expect(choices.some(button => button.getAttribute("aria-pressed") === "true")).toBe(false);
+    const selected = choices[2];
+    if (!selected) throw new Error("세 번째 VRM 슬롯이 없습니다.");
+    fireEvent.click(selected);
+    expect(choose).toHaveBeenCalledExactlyOnceWith(2);
+    view.rerender(<MemoryRouter><StudioVirtualSpaceEntryLobby {...props} avatarIndex={2} /></MemoryRouter>);
+    const chosenName = selected.textContent?.trim();
+    expect(chosenName).toBeTruthy();
+    const preview = screen.getByRole("region", { name: "입장 미리보기" });
+    const image = within(picker).getAllByRole("button")[2]?.querySelector("img");
+    if (image) expect((await within(preview).findByRole("img", { name: chosenName })).getAttribute("src")).toBe(image.getAttribute("src"));
+    else expect(await within(preview).findByText(chosenName ?? "")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "캐릭터 스타일" })).toBeNull();
+    expect(screen.getByRole("button", { name: "선택하고 입장" }).hasAttribute("disabled")).toBe(false);
+  });
+
   it("requires a direct character choice before entering without requesting media", async () => {
     const choose = vi.fn();
     const chooseStyle = vi.fn();
@@ -245,13 +270,13 @@ describe("월드 미리보기 로딩·실패 상태 (W5-T7)", () => {
 });
 
 describe("입장코드 동선 안내 (W5-T7)", () => {
-  it("코드로 들어올 수 있는 방문자에게 첫 화면에서 코드 경로를 안내하고 누르면 코드 패널로 포커스가 이동한다", () => {
+  it("코드로 들어올 수 있는 방문자에게 첫 화면에서 코드 경로를 안내하고 누르면 바로 코드를 입력할 수 있다", () => {
     render(<MemoryRouter><StudioVirtualSpaceEntryLobby avatarIndex={0} nickname="작가" returning={false}
       projectName="Project Aurora" onAvatarIndex={vi.fn()} onNickname={vi.fn()} onEnter={vi.fn()}
       onEnterWithCode={vi.fn()} /></MemoryRouter>);
     const hint = screen.getByRole("button", { name: /초대 코드가 있으면/u });
     fireEvent.click(hint);
-    expect(document.activeElement).toBe(document.getElementById("studio-vspace-entry-code"));
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "입장코드" }));
   });
 
   it("코드 콜백이 없는 방문자와 게스트 모드에서는 안내를 띄우지 않는다", () => {

@@ -48,7 +48,7 @@ export function StudioDocumentWorkspaceRoute() {
       // appends its live `?room=` id after mount, and redirecting here would swap
       // the live editor for <Navigate> and mount it a second time.
       if (!isStudioCanonicalHref(currentHref, routeResolution.canonicalHref)) {
-        return <Navigate replace state={location.state} to={routeResolution.canonicalHref} />;
+        return <Navigate replace state={location.state} to={routeResolution.canonicalHref + location.hash} />;
       }
       return (
         <StudioModeExperienceBoundary

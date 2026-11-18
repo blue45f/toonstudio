@@ -1,3 +1,4 @@
+import { canonicalStudioProjectVrmSceneLocations } from "./vrm/studio-project-vrm-scene-locations";
 import { collectStudioBundleArchiveAttachments } from "./catalog/studio-bundle-project-archive";
 import { assertStudioPsdSourceArchiveEvidence } from "./export/studio-psd-source-archive";
 import { probableStudioProjectAssetField as probableAssetField, isStudioBundleArchiveMetadata, studioProjectArchiveReferenceMode as documentReferenceMode } from "./studio-project-archive-dependencies";
@@ -1640,25 +1641,22 @@ function collectVrmSurfacePaintArchivePlan(
   const references: VrmSurfacePaintArchiveReference[] = [];
   const visitElements = (elements: readonly unknown[], basePointer: string): void => {
     elements.forEach((element, elementIndex) => {
-      if (!isRecord(element) || element.type !== "image" || element.vrmScene === undefined) return;
-      const serialized = serializeStudioVrmSceneDocument(element.vrmScene);
-      const scene = serialized ? parseStudioVrmSceneDocument(serialized) : null;
-      if (!scene) {
-        fail("PROJECT_INVALID", "vrmPaintSceneInvalid");
-      }
-      scene.surfacePaint.textures.forEach((
-        texture: StudioVrmSurfacePaintTexture,
-        textureIndex: number,
-      ) => {
-        references.push({
-          sha256: texture.hash.slice("sha256:".length),
-          bindingKey: texture.bindingKey,
-          byteSize: texture.byteSize,
-          width: texture.width,
-          height: texture.height,
-          pointer: `${basePointer}/${elementIndex}/vrmScene/surfacePaint/textures/${textureIndex}/hash`,
+      const locations = canonicalStudioProjectVrmSceneLocations(element, `${basePointer}/${elementIndex}`, () => fail("PROJECT_INVALID", "vrmPaintSceneInvalid"));
+      for (const { scene, pointer } of locations) {
+        scene.surfacePaint.textures.forEach((
+          texture: StudioVrmSurfacePaintTexture,
+          textureIndex: number,
+        ) => {
+          references.push({
+            sha256: texture.hash.slice("sha256:".length),
+            bindingKey: texture.bindingKey,
+            byteSize: texture.byteSize,
+            width: texture.width,
+            height: texture.height,
+            pointer: `${pointer}/surfacePaint/textures/${textureIndex}/hash`,
+          });
         });
-      });
+      }
     });
   };
   parsed.pagesList.forEach((page, pageIndex) => {

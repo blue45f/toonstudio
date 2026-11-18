@@ -1,4 +1,4 @@
-import { isValidElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 import { useIsMobile } from "@/shared/hooks/use-media-query";
@@ -41,6 +41,7 @@ const bi = <TKo, TEn>(ko: TKo, en: TEn): TKo =>
 interface StudioBg3dProfessionalWorkspaceProps {
   readonly outliner: ReactNode;
   readonly viewport: ReactNode;
+  readonly cutHost?: unknown;
   readonly inspector: ReactNode;
   readonly scopeKey?: string | null;
 }
@@ -81,6 +82,7 @@ function panelBounds(panel: StudioBg3dWorkspacePanel): { readonly min: number; r
 export function StudioBg3dProfessionalWorkspace({
   outliner,
   viewport,
+  cutHost,
   inspector,
   scopeKey = null,
 }: StudioBg3dProfessionalWorkspaceProps) {
@@ -223,7 +225,7 @@ export function StudioBg3dProfessionalWorkspace({
 
   return (
     <div data-bg3d-professional-workspace="true" className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {isValidElement<{ h?: unknown }>(viewport) && Boolean(viewport.props.h) && <StudioScene3dBg3dCutPanel host={viewport.props.h} preferredExpanded={!isMobile} />}
+      {cutHost != null && <StudioScene3dBg3dCutPanel host={cutHost} preferredExpanded={!isMobile} />}
       <div
         data-bg3d-stage-header="true"
         className="flex min-h-12 shrink-0 flex-wrap items-center gap-1.5 border-b border-line bg-gradient-to-r from-accent/10 via-panel/95 to-panel/95 px-2.5 py-1.5 shadow-sm"

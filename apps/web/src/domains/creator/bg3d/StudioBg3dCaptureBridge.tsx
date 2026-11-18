@@ -1,6 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect, useEffectEvent } from "react";
 
+import { bindWorkspaceVideoFrame } from "../virtual-space/studio-workspace-video-frame";
 import { registerStudioBg3dCaptureEnvironmentAdapter } from "./studio-bg3d-capture-environment-adapter";
 import { acquireStudioBg3dCaptureEnvironmentReceipt } from "./studio-bg3d-capture-environment-receipt";
 import { loadStudioBg3dThreeWebglCaptureRuntime } from "./studio-bg3d-editor-derivations";
@@ -40,6 +41,7 @@ export function CaptureBridge({
 }) {
   const { camera, gl, invalidate, scene } = useThree();
   const updateCapture = useEffectEvent(onCaptureUpdate);
+  useEffect(() => bindWorkspaceVideoFrame(gl.domElement, invalidate), [gl, invalidate]);
 
   useEffect(() => {
     let disposed = false;

@@ -260,6 +260,7 @@ export function CharacterShaperOutputDock({
           const sheet = await exportCharacterTurnaround({
             gl: capture.gl as never, scene: capture.scene as never, camera: sourceCamera,
             count: kind === "sheet4" ? 4 : 8, signal: session.signal, assertCurrent: session.assertCurrent,
+            pngSession: h.pngSessionRef?.current ?? undefined,
             onProgress: (text) => { if (aliveRef.current) setProgress(text); },
             onCaptured: () => {
               releaseHelpers?.();
@@ -285,7 +286,7 @@ export function CharacterShaperOutputDock({
           releaseHelpers = undefined;
           helperLeaseRef.current = null;
           if (aliveRef.current) setProgress("PNG 파일 압축 중");
-          blob = await encodeStudioVrmCapturePngBlob(rgba, size, { signal: session.signal });
+          blob = await encodeStudioVrmCapturePngBlob(rgba, size, { signal: session.signal, session: h.pngSessionRef?.current ?? undefined });
           receipt = { tone: "good", text: `PNG를 저장했습니다 · ${size.width}×${size.height}${transparent ? " · 투명 배경" : ""}` };
         } else {
           const result = await exportCharacterSemanticPsd({

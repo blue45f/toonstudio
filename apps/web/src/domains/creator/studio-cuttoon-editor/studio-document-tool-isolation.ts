@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useEffectEvent, useRef, type MutableRefObject } from "react";
 
 import type { DrawMode, Tool } from "../studio-editor-tool-model";
 import {
@@ -101,6 +101,7 @@ export function useStudioDocumentScopedInitialToolSync(input: {
   readonly rememberedPrimaryTool: StudioRememberedPrimaryTool | null;
   readonly requestedPrimaryTool: StudioRememberedPrimaryTool | null;
   readonly primaryToolActivatedRef: MutableRefObject<boolean>;
+  readonly activateRequestedTool: (tool: StudioRememberedPrimaryTool) => void;
   readonly setTool: (tool: Tool) => void;
   readonly setDrawMode: (mode: DrawMode) => void;
 }): StudioDocumentScopedInitialToolDecision {
@@ -147,5 +148,13 @@ export function useStudioDocumentScopedInitialToolSync(input: {
     workHydrated,
   ]);
 
+  // 같은 원고의 모드 전환은 새 도구 명령이다. 최초 복원이나 room 갱신은 수동 선택을 덮지 않는다.
+  const lastRequested = useRef(requestedPrimaryTool);
+  const activate = useEffectEvent((tool: StudioRememberedPrimaryTool) => input.activateRequestedTool(tool));
+  useEffect(() => {
+    if (requestedPrimaryTool === lastRequested.current) return;
+    lastRequested.current = requestedPrimaryTool;
+    if (requestedPrimaryTool) activate(requestedPrimaryTool);
+  }, [requestedPrimaryTool]);
   return decision;
 }

@@ -1,5 +1,5 @@
 import { CameraOff, Check, KeyRound, Lock, MicOff, Network, ShieldCheck, Sparkles, UserRound } from "lucide-react";
-import { Suspense, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useState, type ReactNode } from "react";
 
 import Link from "@/shared/navigation/router-link";
 import { RevealOnScroll } from "@/shared/components/reveal-on-scroll";
@@ -33,6 +33,8 @@ import "./studio-workspace-live.css";
 import "./hud/space-lobby.css";
 import { createStudioVirtualSpacePanel } from "./StudioVirtualSpaceOnDemandPanel";
 
+const ThreeAvatarPicker = createStudioVirtualSpacePanel(() => import("./three/ui/VirtualThreeAvatarPicker").then(module => ({ default: module.VirtualThreeAvatarPicker })));
+const ThreeAvatarPortrait = createStudioVirtualSpacePanel(() => import("./three/ui/VirtualThreeAvatarPicker").then(module => ({ default: module.VirtualThreeAvatarPortrait })));
 const StudioVirtualSpaceRtcPanel = createStudioVirtualSpacePanel(() => import("./StudioVirtualSpaceRtcPanel").then((module) => ({ default: module.StudioVirtualSpaceRtcPanel })));
 
 export type StudioVirtualSpaceEntryVariant = "entry" | "character-onboarding";
@@ -105,6 +107,7 @@ export function StudioVirtualSpaceEntryLobby({
 }) {
   const bt = useBilingual("StudioVirtualSpaceEntryLobby");
   const onboarding = variant === "character-onboarding";
+  const three = !onboarding && stageKind === "three";
   const resumeAvailable = Boolean(resumePlace && onResume) && !onboarding && !guestMode;
   const sourceCharacter = guestMode ? STUDIO_CHARACTER_SKINS[0] : STUDIO_CHARACTER_SKINS[avatarIndex];
   const characterSelected = guestMode || (Number.isInteger(avatarIndex) && Boolean(sourceCharacter));
@@ -116,6 +119,9 @@ export function StudioVirtualSpaceEntryLobby({
   // 월드 미리보기 텍스처의 도착 상태. 스타일별로 마지막 결과만 들고 있어,
   // 스타일을 바꾸면 새 텍스처가 도착할 때까지 다시 로딩으로 판정한다.
   const [previewResult, setPreviewResult] = useState<{ readonly style: StudioVirtualArtStyleKey; readonly status: "ready" | "error" } | null>(null);
+  const markCachedPreview = useCallback((img: HTMLImageElement | null) => {
+    if (img?.naturalWidth) setPreviewResult({ style: artStyle, status: "ready" });
+  }, [artStyle]);
   const previewStatus: "loading" | "ready" | "error" = onboarding
     ? "ready"
     : previewResult && previewResult.style === artStyle ? previewResult.status : "loading";
@@ -161,13 +167,8 @@ export function StudioVirtualSpaceEntryLobby({
           ? bt("게스트 세션은 24시간 동안 유효해요.", "Your guest session is valid for 24 hours.")
           : bt("닉네임·캐릭터·아트 스타일 선택은 이 브라우저에 저장돼요.", "Nickname, character and art-style choices are saved in this browser.")
       : bt("캐릭터를 직접 선택하면 다음 단계로 이동할 수 있어요.", "Choose a character to continue.");
-  // 코드로 들어오는 방문자는 캐릭터 설정을 건너뛰는 경로가 있다는 것부터 알아야 한다.
-  // 첫 화면 안내에서 카드 아래쪽 코드 패널로 바로 이동시켜 동선을 눈으로 잇는다.
-  const scrollToEntryCode = () => {
-    const panel = document.getElementById(STUDIO_ENTRY_CODE_PANEL_ID);
-    if (!panel) return;
-    if (typeof panel.scrollIntoView === "function") panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    panel.focus({ preventScroll: true });
+  const focusEntryCode = () => {
+    document.getElementById(STUDIO_ENTRY_CODE_PANEL_ID)?.querySelector("input")?.focus();
   };
 
   return <div className="studio-vspace-entry space-lobby" data-own-control-size="true" data-route-ready={onboarding ? "studio-character-onboarding" : "studio-virtual-entry"}
@@ -182,7 +183,7 @@ export function StudioVirtualSpaceEntryLobby({
         : <img className="space-lobby__scene-art" src={studioVirtualArtTextureUrl(artStyle, "world-base")} alt="" draggable={false} data-world-preview={artStyle}
           data-preview-state={previewStatus}
           style={{ objectPosition: studioVirtualLobbyPreviewObjectPosition(artStyle) }}
-          ref={(img) => { if (img && img.naturalWidth > 0) setPreviewResult({ style: artStyle, status: "ready" }); }}
+          key={artStyle} ref={markCachedPreview}
           onLoad={() => setPreviewResult({ style: artStyle, status: "ready" })}
           onError={() => setPreviewResult({ style: artStyle, status: "error" })} />}
     </div>
@@ -202,7 +203,7 @@ export function StudioVirtualSpaceEntryLobby({
             <strong>{normalizedNickname ?? bt("닉네임을 입력하세요", "Enter a nickname")}</strong>
           </p>
           {selectedCharacter
-            ? stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={guestMode ? 0 : avatarIndex} identity={identity} className="space-lobby__character" /> : <StudioVirtualCharacterPreview key={selectedCharacter.key} skin={selectedCharacter} className="space-lobby__character" />
+            ? three ? <ThreeAvatarPortrait avatarIndex={guestMode ? 0 : avatarIndex} /> : stageKind === "office2d" ? <Office2dAvatarPreview avatarIndex={guestMode ? 0 : avatarIndex} identity={identity} className="space-lobby__character" /> : <StudioVirtualCharacterPreview key={selectedCharacter.key} skin={selectedCharacter} className="space-lobby__character" />
             : <span className="space-lobby__placeholder"><UserRound size={44} aria-hidden /><small>{bt("캐릭터를 골라 주세요", "Choose a character")}</small></span>}
           <span className="space-lobby__floor" aria-hidden />
         </div>
@@ -227,7 +228,7 @@ export function StudioVirtualSpaceEntryLobby({
         <header className="space-lobby__heading">
           <h1 id="studio-vspace-entry-title">{title}</h1>
           <p>{description}</p>
-          {onEnterWithCode && !guestMode && !onboarding ? <button type="button" className="space-lobby__code-hint" onClick={scrollToEntryCode}>
+          {onEnterWithCode && !guestMode && !onboarding ? <button type="button" className="space-lobby__code-hint" onClick={focusEntryCode}>
             <KeyRound size={14} aria-hidden />
             {bt(
               "초대 코드가 있으면 캐릭터를 고르지 않아도 아래 입장코드 칸에서 바로 들어갈 수 있어요.",
@@ -278,50 +279,12 @@ export function StudioVirtualSpaceEntryLobby({
 
         {!guestMode ? <>
           <div className="space-lobby__picker">
-            <StudioVirtualThemeCharacterPicker mode="all" stageKind={stageKind} identity={identity} artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
+            {three ? <ThreeAvatarPicker entry avatarIndex={avatarIndex} onSelect={onAvatarIndex} />
+              : <StudioVirtualThemeCharacterPicker mode="all" stageKind={stageKind} identity={identity} artStyle={artStyle} avatarIndex={avatarIndex} onSelect={onAvatarIndex} />}
           </div>
           {/* LPC 픽셀 캐릭터도 이 전체 목록에서 고른다. 고르는 자리에서 바로 출처·라이선스 전문(CREDITS.md)에 닿도록 꾸미기 탭과 같은 크레딧 표면을 캐릭터 선택 바로 아래에 둔다. */}
-          <StudioLpcCreditsNotice />
-          {!onboarding ? <StudioVirtualSpaceIllustratedLobbyShowcase /> : null}
+          {!three ? <StudioLpcCreditsNotice /> : null}
         </> : null}
-
-        {!onboarding && !guestMode ? <details className="space-lobby__advanced" open={advancedOpen}
-          onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-          <summary>{personal ? bt("아트 스타일 설정", "Art style settings") : bt("아트 스타일·연결 고급 설정", "Advanced art and connection settings")}</summary>
-          {advancedOpen ? <div className="space-lobby__advanced-body">
-            <fieldset className="studio-vspace-art-style-picker space-lobby__art-styles">
-              <legend>{bt("아트 스타일", "Art direction")}</legend>
-              <p>{bt(
-                "건물·가구·바닥의 작화를 선택해요. 내 캐릭터는 직접 고른 모습을 유지해요.",
-                "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.",
-              )}</p>
-              <div className="studio-vspace-art-style-grid">
-                {STUDIO_VIRTUAL_ART_STYLES.map((style) => <button key={style.key} type="button" className="fx-press" data-art-style={style.key}
-                  aria-pressed={artStyle === style.key} title={bt(style.descriptionKo, style.descriptionEn)}
-                  onClick={() => onArtStyle?.(style.key)}>
-                  <StudioVirtualExperienceArtPreview kind="landmarks" artStyle={style.key} frame={0} preserveAspectRatio="xMidYMid slice" />
-                  <small>{bt(style.labelKo, style.labelEn)}</small>
-                </button>)}
-              </div>
-            </fieldset>
-            {!personal ? <Suspense fallback={<p role="status">{bt("연결 설정 불러오는 중…", "Loading connection settings…")}</p>}><StudioVirtualSpaceRtcPanel entryOnly /></Suspense> : null}
-          </div> : null}
-        </details> : null}
-
-        <details className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">
-            {bt("입장 전 조작법 미리보기", "Preview controls before entering")}
-            <span aria-hidden className="text-base leading-none text-fg-3">＋</span>
-          </summary>
-          <div className="border-t border-white/10 px-4 py-3">
-            <ul className="flex flex-col gap-2 text-xs leading-5 text-fg-2">
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("이동", "Move")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">WASD</kbd> · {bt("방향키 · 빈 공간 클릭 · 모바일 조이스틱", "arrow keys · click empty space · mobile joystick")}</span></li>
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("상호작용", "Interact")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">E</kbd> <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">X</kbd> · {bt("가까이 다가가 상호작용 · 모바일은 화면의 상호작용 버튼", "walk up close and interact · on-screen interact button on mobile")}</span></li>
-              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("리액션", "Reactions")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">1</kbd>–<kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">9</kbd> · {bt("바로 리액션 보내기(Z는 춤, F는 폭죽) · 모바일은 도크의 리액션 버튼", "send a reaction instantly (Z to dance, F for fireworks) · reaction button in the mobile dock")}</span></li>
-            </ul>
-            <p className="mt-2 text-[0.7rem] leading-5 text-fg-3">{bt("입장하면 3단계 미니 투어가 나타나요. 화면을 막지 않고, 직접 걷고·상호작용하고·리액션하면 다음 단계로 넘어가요. 언제든 건너뛸 수 있고, 다시 보지 않기로 저장하거나 ? 도움말에서 다시 볼 수 있어요.", "A 3-step mini tour appears after you enter. It never blocks the screen and advances as you walk, interact and react. Skip it anytime, choose not to see it again, or replay it from the ? help.")}</p>
-          </div>
-        </details>
 
         {resumeAvailable && resumePlace ? <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3" role="group"
           aria-label={bt("지난 위치에서 이어서 시작", "Resume where you left off")}>
@@ -341,6 +304,45 @@ export function StudioVirtualSpaceEntryLobby({
           {resumeAvailable ? null : <button type="button" className={buttonClass()} disabled={!canEnter} onClick={onEnter}>{enterLabel}</button>}
         </div>
         <p className="space-lobby__note" role={!canEnter ? "status" : undefined}>{note}</p>
+
+        {!onboarding && !guestMode && (!three || !personal) ? <details className="space-lobby__advanced" open={advancedOpen}
+          onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
+          <summary>{three ? bt("연결 설정", "Connection settings") : personal ? bt("아트 스타일 설정", "Art style settings") : bt("아트 스타일·연결 고급 설정", "Advanced art and connection settings")}</summary>
+          {advancedOpen ? <div className="space-lobby__advanced-body">
+            {!three ? <fieldset className="studio-vspace-art-style-picker space-lobby__art-styles">
+              <legend>{bt("아트 스타일", "Art direction")}</legend>
+              <p>{bt(
+                "건물·가구·바닥의 작화를 선택해요. 내 캐릭터는 직접 고른 모습을 유지해요.",
+                "Choose the art for buildings, furniture and floors. Your character keeps the look you chose.",
+              )}</p>
+              <div className="studio-vspace-art-style-grid">
+                {STUDIO_VIRTUAL_ART_STYLES.map((style) => <button key={style.key} type="button" className="fx-press" data-art-style={style.key}
+                  aria-pressed={artStyle === style.key} title={bt(style.descriptionKo, style.descriptionEn)}
+                  onClick={() => onArtStyle?.(style.key)}>
+                  <StudioVirtualExperienceArtPreview kind="landmarks" artStyle={style.key} frame={0} preserveAspectRatio="xMidYMid slice" />
+                  <small>{bt(style.labelKo, style.labelEn)}</small>
+                </button>)}
+              </div>
+            </fieldset> : null}
+            {!three ? <StudioVirtualSpaceIllustratedLobbyShowcase /> : null}
+            {!personal ? <Suspense fallback={<p role="status">{bt("연결 설정 불러오는 중…", "Loading connection settings…")}</p>}><StudioVirtualSpaceRtcPanel entryOnly /></Suspense> : null}
+          </div> : null}
+        </details> : null}
+
+        <details className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-black text-fg [&::-webkit-details-marker]:hidden">
+            {bt("입장 전 조작법 미리보기", "Preview controls before entering")}
+            <span aria-hidden className="text-base leading-none text-fg-3">＋</span>
+          </summary>
+          <div className="border-t border-white/10 px-4 py-3">
+            <ul className="flex flex-col gap-2 text-xs leading-5 text-fg-2">
+              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("이동", "Move")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">WASD</kbd> · {bt("방향키 · 빈 공간 클릭 · 모바일 조이스틱", "arrow keys · click empty space · mobile joystick")}</span></li>
+              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("상호작용", "Interact")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">E</kbd> <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">X</kbd> · {bt("가까이 다가가 상호작용 · 모바일은 화면의 상호작용 버튼", "walk up close and interact · on-screen interact button on mobile")}</span></li>
+              <li className="flex items-center gap-2"><strong className="w-14 shrink-0 text-fg">{bt("리액션", "Reactions")}</strong><span><kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">1</kbd>–<kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans text-[0.68rem] font-bold">9</kbd> · {bt("바로 리액션 보내기(Z는 춤, F는 폭죽) · 모바일은 도크의 리액션 버튼", "send a reaction instantly (Z to dance, F for fireworks) · reaction button in the mobile dock")}</span></li>
+            </ul>
+            <p className="mt-2 text-[0.7rem] leading-5 text-fg-3">{bt("입장하면 3단계 미니 투어가 나타나요. 화면을 막지 않고, 직접 걷고·상호작용하고·리액션하면 다음 단계로 넘어가요. 언제든 건너뛸 수 있고, 다시 보지 않기로 저장하거나 ? 도움말에서 다시 볼 수 있어요.", "A 3-step mini tour appears after you enter. It never blocks the screen and advances as you walk, interact and react. Skip it anytime, choose not to see it again, or replay it from the ? help.")}</p>
+          </div>
+        </details>
 
         {/* 입장코드는 닉네임 입장의 대체 경로라 기본 행동 아래에 둔다. 첫 화면의 주인공은 닉네임+입장 버튼이다. */}
         {onEnterWithCode ? <div className="space-lobby__entry-code">

@@ -199,7 +199,7 @@ export function evaluateWindDrapeAndContinuity(
         ? `연속성 일치 (#${currentSnapshot.digestHex} · 옥에 티 0건)`
         : `연속성 이탈 감지 (직전 #${input.lockedLedger.digestHex} ≠ 현재 #${currentSnapshot.digestHex})`;
 
-  const tankobonSpec: TankobonSpreadOverscanSpec =
+  const tankobonSpec =
     input.tankobonFormatId === "B5"
       ? Object.freeze({
           formatId: "B5" as const,

@@ -122,6 +122,14 @@ describe("quick and task-specific studio workspaces", () => {
     expect(studioTaskWorkspaceId(null, "simple", "")).toBeNull();
     expect(studioTaskWorkspaceId("3d", "simple", "")).toBe("pose-3d");
   });
+  it.each(["focus", "simple"])("원고 퀵 링크 %s에서 개인 배치의 작업공간 키를 유지한다", (mode) => {
+    const search = new URLSearchParams({ drawingShell: "app", uiMode: mode, startTool: "draw" });
+    expect(studioTaskWorkspaceId("draw", "focus", search)).toBe("lineart");
+    expect(studioTaskWorkspaceId("comic", "focus", search)).toBe("pro-comic");
+    search.set("roleWorkspace", "quick-sketch");
+    expect(studioTaskWorkspaceId("comic", "focus", search)).toBe("quick-sketch");
+  });
+
   it("uses a validated project role layout without interpreting duplicates or unknown ids", () => {
     expect(studioRoleWorkspaceId("?roleWorkspace=coloring")).toBe("coloring");
     expect(studioTaskWorkspaceId("draw", "focus", "?roleWorkspace=review")).toBe("review");

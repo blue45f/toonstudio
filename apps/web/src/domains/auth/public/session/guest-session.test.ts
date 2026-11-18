@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   endGuestSession,
   getGuestIdentity,
+  isGuestIdentityPersisted,
   GUEST_SESSION_KEY,
   guestShortId,
   startGuestSession,
@@ -25,6 +26,13 @@ afterEach(() => {
 });
 
 describe("guest-session", () => {
+  it("기기 저장이 차단되면 메모리 게스트를 재열 수 있는 소유자로 보지 않는다", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    const guest = startGuestSession();
+    expect(getGuestIdentity()?.id).toBe(guest.id);
+    expect(isGuestIdentityPersisted(guest.id)).toBe(false);
+  });
+
   it("starts with no guest identity", () => {
     expect(getGuestIdentity()).toBeNull();
   });

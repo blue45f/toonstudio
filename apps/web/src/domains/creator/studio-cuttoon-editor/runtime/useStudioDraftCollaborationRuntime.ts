@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { buildStudioLiveShareHref } from "../../creator-studio-links";
+import { studioProjectHasLocalVrmCut } from "./studio-local-vrm-cut-scope";
 
 import type {
   StudioDraftCollaborationProvisionGate,
@@ -124,7 +125,9 @@ export function useStudioDraftCollaborationRuntime({
       setDraftCollaboration({ status: "provisioning", identity, intent: "share-link" });
       await new Promise<void>((resolve) => globalThis.requestAnimationFrame(() => resolve()));
       if (controller.signal.aborted) return;
-      const snapshotJson = JSON.stringify(getProjectSnapshot());
+      const snapshot = getProjectSnapshot();
+      if (studioProjectHasLocalVrmCut(snapshot)) throw new Error("이 원고에는 기기에 보관한 VRM 컷이 있습니다. 공유하려면 원본을 .toonproject.zip으로 백업한 뒤 고정 컷 레이어를 이미지로 변환하거나 제거하세요.");
+      const snapshotJson = JSON.stringify(snapshot);
       const request = createStudioDraftCollaborationProvisionRequest({
         identity,
         actorAuthScopeKey,

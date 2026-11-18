@@ -100,6 +100,7 @@ export interface StudioWebAuthoringProjectV3 {
   readonly featureGraphs: Readonly<Record<string, StudioWebFeatureGraph>>;
   readonly shotVersions?: StudioScene3dShotVersionCollection;
   readonly legacyBg3d?: StudioScene3dCutSource["legacyBg3d"];
+  readonly linkedVrm?: StudioScene3dCutSource["linkedVrm"];
   readonly runtime: {
     readonly primaryEnvironment: "browser";
     readonly browserRequired: true;
@@ -324,6 +325,7 @@ export function validateStudioWebAuthoringProjectV3(
     ...input,
     scene: input.scene,
     ...(source.legacyBg3d ? { legacyBg3d: source.legacyBg3d } : {}),
+    ...(source.linkedVrm ? { linkedVrm: source.linkedVrm } : {}),
     characters: Object.freeze(characters),
     resources: Object.freeze(resources),
     featureGraphs: Object.freeze(featureGraphs),
@@ -341,6 +343,7 @@ export function createStudioWebAuthoringProjectV3(input: {
   readonly featureGraphs?: Readonly<Record<string, StudioWebFeatureGraph>>;
   readonly shotVersions?: StudioScene3dShotVersionCollection;
   readonly legacyBg3d?: StudioScene3dCutSource["legacyBg3d"];
+  readonly linkedVrm?: StudioScene3dCutSource["linkedVrm"];
   readonly storage?: "sqlite-wasm-opfs" | "indexeddb";
   readonly revision?: number;
   readonly now?: string;
@@ -353,6 +356,7 @@ export function createStudioWebAuthoringProjectV3(input: {
     revision: input.revision ?? 0,
     scene: input.scene,
     ...(input.legacyBg3d ? { legacyBg3d: input.legacyBg3d } : {}),
+    ...(input.linkedVrm ? { linkedVrm: input.linkedVrm } : {}),
     characters: input.characters ?? {},
     resources: input.resources ?? {},
     featureGraphs: input.featureGraphs ?? {},

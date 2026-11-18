@@ -60,7 +60,7 @@ function entry({ simple = true, taskOpen = false, category = false, backCount = 
     getByRole: (role: string, query: { name: string; exact: boolean }) => {
       expect(role).toBe("button"); expect(query.exact).toBe(true);
       if (query.name === "원고 도구 분류로 돌아가기") return back;
-      expect(query.name).toBe("프로젝트·창 도구 보기");
+      expect(query.name).toBe("프로젝트·창 도구 배치로 전환");
       if (!state.workspaceSelected) throw new Error("화면과 도움말 목적을 고르기 전에는 작업 배치를 선택할 수 없습니다.");
       return { click: showSavedLayout };
     },

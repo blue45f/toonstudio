@@ -225,6 +225,7 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "studio_virtual_space_decoration_layout",
   "studio_virtual_space_gallery_like",
   "studio_virtual_space_waitlist_entry",
+  "studio_work_vrm_cut",
   "subscription",
   "supporter_funding_setting",
   "supporter_payment",

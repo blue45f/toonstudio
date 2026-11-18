@@ -7,7 +7,7 @@
 
 import * as THREE from "three";
 
-import { readStudioBg3dWorldSurfaceHit } from "./studio-bg3d-camera-application";
+import { isStudioBg3dPointInCameraDepth, readStudioBg3dWorldSurfaceHit } from "./studio-bg3d-camera-application";
 
 import type {
   StudioBg3dInferenceCursor,
@@ -162,6 +162,7 @@ export function buildStudioBg3dInferenceRayCursor(
       scratch.raycaster.intersectObjects(scratch.roots, true, scratch.hits);
       for (const hit of scratch.hits) {
         if (!(hit.object as THREE.Mesh).isMesh || !isVisibleChain(hit.object)) continue;
+        if (!isStudioBg3dPointInCameraDepth(camera, hit.point)) continue;
         const world = readStudioBg3dWorldSurfaceHit(hit);
         if (!world) continue;
         hitSourceId = findEntityId(hit.object);

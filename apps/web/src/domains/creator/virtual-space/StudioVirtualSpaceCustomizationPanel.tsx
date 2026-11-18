@@ -132,7 +132,7 @@ const DECOR_LABELS = {
 export function StudioVirtualSpaceCustomizationPanel({
   nickname, character, decorations, selfPoint, onNickname, onCharacter, onDecorations, onSelectDistrict, world, artStyle = DEFAULT_STUDIO_VIRTUAL_ART_STYLE,
   spaceTheme, onSpaceThemeChange, tileEffects, onTileEffectsChange, placedFixtureRequests, onPlacedFixtureRequests, directPlacement, onTriggerEmote,
-  sceneSnapshotBinding, fallbackHour,
+  sceneSnapshotBinding, fallbackHour, decorationSyncEnabled = false, decorationSyncStatus, onRecoverDecorations,
 }: {
   readonly artStyle?: StudioVirtualArtStyleKey;
   readonly spaceTheme?: StudioSpaceThemeKey;
@@ -140,6 +140,9 @@ export function StudioVirtualSpaceCustomizationPanel({
   readonly nickname: string;
   readonly character: StudioVirtualCharacterCustomization;
   readonly decorations: StudioVirtualDecorationState;
+  readonly decorationSyncEnabled?: boolean;
+  readonly decorationSyncStatus?: "local" | "conflict" | null;
+  readonly onRecoverDecorations?: (choice: "retry" | "device" | "server") => void;
   readonly selfPoint: StudioVirtualSpacePoint;
   readonly onNickname: (nickname: string) => void;
   readonly onCharacter: (value: StudioVirtualCharacterCustomization) => void;
@@ -355,8 +358,18 @@ export function StudioVirtualSpaceCustomizationPanel({
     <fieldset>
       <legend>{bt("배경 장소", "Background district")}</legend>
       <p>{bt("장소마다 식생·조명·환경음·랜드마크 연출이 달라집니다.", "Each district changes foliage, lighting, ambience and landmark presentation.")}</p>
-      <p>{bt("배경 장소는 지금 장소에만 저장되고, 배경·시간대·날씨는 모든 장소에 함께 적용됩니다. 두 설정 모두 이 브라우저에만 저장되며 서버의 공유 월드 게시 권한을 대신하지 않습니다.",
-        "The background district is saved for this place only, while backdrop, time of day and weather apply across every place. Both are stored in this browser only and do not replace the server's shared-world publication permission.")}</p>
+      <p>{decorationSyncEnabled
+        ? bt("이 장소의 배경과 가구 배치는 내 계정에 저장해요. 시간대와 날씨는 이 브라우저의 모든 장소에 적용돼요.", "Your account saves this district and furniture layout. Time and weather apply to every place in this browser.")
+        : bt("이 브라우저에 장소별 배경과 가구 배치를 저장해요. 시간대와 날씨는 모든 장소에 적용돼요.", "This browser saves the district and furniture for each place. Time and weather apply to all places.")}</p>
+      {decorationSyncStatus === "conflict" && <div>
+        <p role="status">{bt("다른 기기에서 배치를 바꿨어요. 현재 보이는 배치는 이 기기의 편집본이에요.", "Another device changed the layout. You are viewing this device’s draft.")}</p>
+        <button type="button" onClick={() => onRecoverDecorations?.("server")}>{bt("서버 배치 사용", "Use server layout")}</button>
+        <button type="button" onClick={() => onRecoverDecorations?.("device")}>{bt("이 기기 배치로 저장", "Save this device’s layout")}</button>
+      </div>}
+      {decorationSyncStatus === "local" && <div>
+        <p role="status">{bt("서버 저장 대기 중이에요. 연결이 돌아오면 다시 저장해요.", "Waiting to save. The layout will sync when the connection returns.")}</p>
+        <button type="button" onClick={() => onRecoverDecorations?.("retry")}>{bt("서버 저장 다시 시도", "Retry server save")}</button>
+      </div>}
       <div className="studio-vspace-customization-districts">
         {STUDIO_TOWN_DISTRICT_IDS.map((district, index) => {
           const presentation = studioTownDistrictPresentation(district);

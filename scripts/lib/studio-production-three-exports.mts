@@ -72,8 +72,8 @@ export function studioProductionThreeModuleUrls(entryUrl: string, input: unknown
   return [...urls];
 }
 
-export function readStudioProductionThreeModuleUrls(entryUrl: string): readonly string[] {
-  const manifest: unknown = JSON.parse(readFileSync(join(DIST_DIR, ".vite", "manifest.json"), "utf8"));
+export function readStudioProductionThreeModuleUrls(entryUrl: string, distDirectory = DIST_DIR): readonly string[] {
+  const manifest: unknown = JSON.parse(readFileSync(join(distDirectory, ".vite", "manifest.json"), "utf8"));
   return studioProductionThreeModuleUrls(entryUrl, manifest);
 }
 

@@ -24,7 +24,7 @@ import { StudioMannequinWebglUnavailableError, probeStudioMannequinWebgl2Support
 import { solveStudioMannequinTwoBoneIk } from "./studio-mannequin-ik";
 import {
   buildStudioMannequinSpec, clampStudioMannequinJointRotation, getStudioMannequinJointLimit,
-  isStudioMannequinJointId, type StudioMannequinChainSpec, type StudioMannequinJointId,
+  type StudioMannequinChainSpec, type StudioMannequinJointId,
   type StudioMannequinMaterialStyle, type StudioMannequinSpec, type StudioMannequinVec3,
 } from "./studio-mannequin-model";
 import {
@@ -48,7 +48,7 @@ import {
   resolveStudioMannequinLightingPlan, type StudioMannequinLightingPlan, type StudioMannequinLightingRig,
 } from "./studio-mannequin-lighting";
 import {
-  createStudioMannequinSceneFigure, type StudioMannequinBodyMeshUserData, type StudioMannequinEffectorHandleUserData,
+  createStudioMannequinSceneFigure, resolveStudioMannequinPickedJoint, type StudioMannequinBodyMeshUserData, type StudioMannequinEffectorHandleUserData,
   type StudioMannequinFigureEcorcheState, type StudioMannequinFigureId, type StudioMannequinFigureMaterials,
   type StudioMannequinSceneFigure,
 } from "./studio-mannequin-scene-figure";
@@ -784,6 +784,7 @@ export function createStudioMannequinScene(
     startClientX: number;
     startClientY: number;
     startRotation: StudioMannequinVec3;
+    startPose: StudioMannequinPose;
     twistMode: boolean;
     didMove: boolean;
     paneWidth: number;
@@ -910,8 +911,6 @@ export function createStudioMannequinScene(
       activeTouchPointers.add(event.pointerId);
       // 모바일 2손가락 핀치 줌 전환: 아직 미세 드래그 전인 단일 관절 회전을 취소하고 OrbitControls에 제어권을 넘긴다.
       if (activeTouchPointers.size >= 2 && directDrag && !directDrag.didMove) {
-        const prevGroup = figureById(directDrag.figureId)?.joints().get(directDrag.jointId);
-        if (prevGroup) prevGroup.rotation.set(...directDrag.startRotation);
         if (renderer.domElement.hasPointerCapture(directDrag.pointerId)) {
           renderer.domElement.releasePointerCapture(directDrag.pointerId);
         }
@@ -964,10 +963,8 @@ export function createStudioMannequinScene(
 
     const bodyHits = raycaster.intersectObjects(allBodyMeshes(), false);
     const bodyHit = bodyHits[0];
-    const jointId = bodyHit
-      ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId
-      : null;
-    if (bodyHit && isStudioMannequinJointId(jointId)) {
+    const jointId = resolveStudioMannequinPickedJoint(bodyHit);
+    if (bodyHit && jointId) {
       setActiveFigureInternal(figureIdOf(bodyHit.object), true);
       selectedJointId = jointId;
       applySelectionTint();
@@ -982,6 +979,7 @@ export function createStudioMannequinScene(
           startClientX: event.clientX,
           startClientY: event.clientY,
           startRotation: [group.rotation.x, group.rotation.y, group.rotation.z],
+          startPose: activeFigure().readPose(),
           twistMode: event.altKey,
           didMove: false,
           paneWidth: paneRect.width,
@@ -1055,9 +1053,8 @@ export function createStudioMannequinScene(
     if (directDrag && event.pointerId === directDrag.pointerId) {
       const session = directDrag;
       directDrag = null;
-      const group = figureById(session.figureId)?.joints().get(session.jointId);
-      if (cancelled && group) {
-        group.rotation.set(...session.startRotation);
+      if (cancelled) {
+        figureById(session.figureId)?.applyPose(session.startPose);
         invalidate();
       } else if (session.didMove) {
         commitFigurePose(session.figureId);
@@ -1111,10 +1108,8 @@ export function createStudioMannequinScene(
     const { camera: pickCamera } = resolvePickCameraAndNdc(event);
     raycaster.setFromCamera(pointerNdc, pickCamera);
     const bodyHit = raycaster.intersectObjects(allBodyMeshes(), false)[0];
-    const jointId = bodyHit
-      ? (bodyHit.object.userData as StudioMannequinBodyMeshUserData).studioMannequinJointId
-      : null;
-    if (!bodyHit || !isStudioMannequinJointId(jointId)) return;
+    const jointId = resolveStudioMannequinPickedJoint(bodyHit);
+    if (!bodyHit || !jointId) return;
     setActiveFigureInternal(figureIdOf(bodyHit.object), true);
     const figure = activeFigure();
     const group = figure.joints().get(jointId);

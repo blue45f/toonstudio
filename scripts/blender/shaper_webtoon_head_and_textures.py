@@ -157,6 +157,10 @@ def bake_webtoon_skin_texture(
             if dgx * dgx + dgy * dgy < 1.4:
                 col = _lerp3(col, (1.0, 0.96, 0.96), math.exp(-(dgx * dgx + dgy * dgy) * 2.0) * 0.34)
 
+            # 목 아래 UV 여백. 입 안쪽만 이 띠를 써서 피부와 하나의 재질로 내보낸다.
+            if v < 0.014:
+                col = _lerp3((0.19, 0.048, 0.075), (0.66, 0.26, 0.30), _smoothstep(0.15, 0.85, u))
+
             idx = px * 4
             row[idx] = int(_clamp01(col[0]) * 255)
             row[idx + 1] = int(_clamp01(col[1]) * 255)
@@ -579,21 +583,34 @@ def build_sculpted_webtoon_bangs_bmesh(
     rx_base = 0.0775 if not is_male else 0.0795
     ry_base = 0.0815
 
-    dome_cap_styles = ("saintess-hime", "ceo-parted", "council-parted", "sniper-swept", "barista-soft", "detective-parted")
+    def protagonist_root_radii(rise: float) -> tuple[float, float]:
+        crown_curve = math.sqrt(max(0.025, 1.0 - _clamp01(rise) ** 1.72))
+        return 0.0870 * crown_curve, 0.0935 * crown_curve - 0.004 * _smoothstep(0.80, 1.0, 1.0 - rise)
+
+    dome_cap_styles = ("curtain-protagonist", "saintess-hime", "ceo-parted", "council-parted", "sniper-swept", "barista-soft", "detective-parted")
     if bang_style in dome_cap_styles:
         cap_rows = []
         for iv_c in range(6):
             tv_c = iv_c / 5.0
-            z_c = eye_z + 0.098 - 0.038 * tv_c
-            t_top_c = max(0.0, min(0.96, ((z_c - (eye_z - 0.068)) / 0.179 - 0.38) / 0.62))
-            dome_c = math.sqrt(max(0.08, 1.0 - (t_top_c ** 1.95)))
-            top_tuck = 0.009 * (1.0 - _smoothstep(0.0, 0.42, tv_c))
-            rx_c = (0.0775 if not is_male else 0.0795) * dome_c + 0.004 * math.sin(tv_c * math.pi) - top_tuck * 0.5
-            ry_c = 0.0825 * dome_c + 0.006 * math.sin(tv_c * math.pi) - top_tuck
+            if bang_style == "curtain-protagonist":
+                # 정수리 곡률을 이어받아 앞머리 밑단 뒤로 잦아드는 뿌리층.
+                rise = 1.0 - tv_c
+                z_c = eye_z + 0.054 + rise * 0.070
+                rx_c, ry_c = protagonist_root_radii(rise)
+            else:
+                z_c = eye_z + 0.098 - 0.038 * tv_c
+                t_top_c = max(0.0, min(0.96, ((z_c - (eye_z - 0.068)) / 0.179 - 0.38) / 0.62))
+                dome_c = math.sqrt(max(0.08, 1.0 - (t_top_c ** 1.95)))
+                top_tuck = 0.009 * (1.0 - _smoothstep(0.0, 0.42, tv_c))
+                rx_c = rx_base * dome_c + 0.004 * math.sin(tv_c * math.pi) - top_tuck * 0.5
+                ry_c = 0.0825 * dome_c + 0.006 * math.sin(tv_c * math.pi) - top_tuck
             crow = []
             for iu_c in range(17):
                 ang_c = math.radians(-38.0 + (iu_c / 16.0) * 76.0)
                 edge_tuck = 0.004 * (abs((iu_c / 8.0) - 1.0) ** 2.0)
+                if bang_style == "curtain-protagonist":
+                    ang_c = math.radians(-46.0 + iu_c * 92.0 / 16.0)
+                    edge_tuck += 0.001 * (0.5 + 0.5 * math.cos(ang_c * 17.0)) * math.sin(math.pi * tv_c)
                 crow.append(bm.verts.new((rx_c * math.sin(ang_c), y_cranium - (ry_c - edge_tuck) * math.cos(ang_c), z_c)))
             cap_rows.append(crow)
         for iv_c in range(5):
@@ -605,11 +622,35 @@ def build_sculpted_webtoon_bangs_bmesh(
                 fc.loops[2][uv_l].uv = (0.1 + 0.8 * ((iu_c + 1) / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
                 fc.loops[3][uv_l].uv = (0.1 + 0.8 * (iu_c / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
 
+        if bang_style == "curtain-protagonist":
+            # 두피와 앞머리 사이에 들어가는 뿌리 속면은 한 겹의 닫힌 두께를 갖는다.
+            outer_faces = list(bm.faces)
+            rim = [edge for edge in bm.edges if edge.is_boundary]
+            inside = {}
+            for vertex in list(bm.verts):
+                inward = Vector((-vertex.co.x, y_cranium - vertex.co.y, 0.0)).normalized()
+                inside[vertex] = bm.verts.new(vertex.co + 0.0014 * inward)
+            for outer in outer_faces:
+                outer_loops = list(reversed(outer.loops))
+                inner = bm.faces.new(tuple(inside[loop.vert] for loop in outer_loops))
+                inner.smooth = True
+                for inner_loop, outer_loop in zip(inner.loops, outer_loops):
+                    inner_loop[uv_l].uv = outer_loop[uv_l].uv
+            for edge in rim:
+                loop = edge.link_loops[0]
+                a, b = loop.vert, loop.link_loop_next.vert
+                wall = bm.faces.new((b, a, inside[a], inside[b]))
+                wall.smooth = True
+                for wall_loop, source in zip(wall.loops, (loop.link_loop_next, loop, loop, loop.link_loop_next)):
+                    wall_loop[uv_l].uv = source[uv_l].uv
+
     full_root = bang_style in dome_cap_styles
     n_prof = 8
     for idx_s, (a0, a1, w_half, zs, ze, bulge, cx_off) in enumerate(strands):
         n_seg = 12
         zs_adj = zs - (0.003 if full_root else 0.008)
+        if bang_style == "curtain-protagonist":
+            zs_adj = zs + (0.027 if abs(a0) < 25 else 0.021)
         rows_s: list[list[bmesh.types.BMVert]] = []
         for iseg in range(n_seg):
             t = iseg / (n_seg - 1)
@@ -627,6 +668,13 @@ def build_sculpted_webtoon_bangs_bmesh(
             arch_out = bulge * math.sin(t * math.pi * 0.82) - root_tuck
             rad_x = rx_base + arch_out * 0.45
             rad_y = ry_base + arch_out
+            if bang_style == "curtain-protagonist":
+                # 정수리에 가까워질수록 두상 곡면을 따라 뿌리를 눕힌다.
+                root_blend = 1.0 - _smoothstep(0.32, 0.64, t)
+                root_x, root_y = protagonist_root_radii((z - eye_z - 0.054) / 0.070)
+                crest = 0.0033 * _smoothstep(0.0, 0.16, t) - 0.002 * (1.0 - _smoothstep(0.0, 0.09, t))
+                rad_x += root_blend * (root_x + crest - rad_x)
+                rad_y += root_blend * (root_y + crest - rad_y)
             if z < eye_z - 0.02:
                 tuck = _smoothstep(eye_z - 0.02, eye_z - 0.11, z) * 0.010
                 rad_x -= tuck
@@ -712,15 +760,24 @@ def build_korean_webtoon_head_and_face(
         -0.022,
     )
 
-    nu, nv = 64, 48
+    # 입술·콧방울 주변 둘레만 세분해 작은 모음 구형에서도 모서리가 각지지 않게 한다.
+    ring_u = []
+    for i in range(64):
+        steps = 4 if 29 <= i < 35 else 1
+        ring_u.extend((i + j / steps) / 64 for j in range(steps))
+    nu, nv = len(ring_u), 48
+    uv_u = [*ring_u, 1.0]
     bm = bmesh.new()
     uv_layer = bm.loops.layers.uv.new("UVMap")
 
     ring_verts: list[list[bmesh.types.BMVert]] = []
     ring_zs: list[float] = []
+    mouth_row = round((z_mouth - z_neck_bot) / (z_crown - z_neck_bot) * (nv - 1))
     for iv in range(nv):
         tv = iv / (nv - 1)
         z = z_neck_bot + (z_crown - z_neck_bot) * tv
+        if iv == mouth_row:
+            z = z_mouth
         ring_zs.append(z)
 
         s = (z - z_chin) / max(1e-5, (z_crown - z_chin))
@@ -761,7 +818,7 @@ def build_korean_webtoon_head_and_face(
         neck_blend = 1.0 - _smoothstep(-0.04, 0.12, s)
         row_v: list[bmesh.types.BMVert] = []
         for iu in range(nu):
-            theta = ((iu / nu) - 0.5) * (2.0 * math.pi)
+            theta = (ring_u[iu] - 0.5) * (2.0 * math.pi)
             sin_t, cos_t = math.sin(theta), math.cos(theta)
 
             nx = neck_rx * sin_t
@@ -823,17 +880,44 @@ def build_korean_webtoon_head_and_face(
             row_v.append(bm.verts.new((x, y, z)))
         ring_verts.append(row_v)
 
+    # 입술 중심선을 상순·하순으로 나누고 두 가장자리를 구강 안쪽까지 이어 막는다.
+    # 모서리 양 끝은 공유하여 jawOpen=0에서도 볼과 입꼬리가 끊어지지 않는다.
+    upper = ring_verts[mouth_row]
+    lower = list(upper)
+    throat = list(upper)
+    left, right = ring_u.index(29 / 64), ring_u.index(35 / 64)
+    lip_half_width = abs(upper[right].co.x)
+    for col in range(left + 1, right):
+        arc = math.sin(math.pi * (col - left) / (right - left))
+        base = upper[col].co.copy()
+        lower[col] = bm.verts.new(base + Vector((0, 0, -0.00033 * arc)))
+        throat[col] = bm.verts.new(base + Vector((0, 0.009 * arc, -0.0001 * arc)))
+        upper[col].co.z += 0.00021 * arc
+    for col in range(left, right):
+        for outer, color_u in ((upper, 0.18), (lower, 0.82)):
+            rim = [outer[col], outer[col + 1], throat[col + 1], throat[col]]
+            face = bm.faces.new(tuple(dict.fromkeys(rim)))
+            face.smooth = True
+            for loop in face.loops:
+                loop[uv_layer].uv = (color_u if loop.vert in outer else 0.18, 0.007)
+
     for iv in range(nv - 1):
         v_uv0 = _landmark_v(ring_zs[iv], z_neck_bot, z_chin, z_mouth, z_nose, eye_z, z_crown)
         v_uv1 = _landmark_v(ring_zs[iv + 1], z_neck_bot, z_chin, z_mouth, z_nose, eye_z, z_crown)
         for iu in range(nu):
             iu_next = (iu + 1) % nu
-            f = bm.faces.new((ring_verts[iv][iu], ring_verts[iv][iu_next], ring_verts[iv + 1][iu_next], ring_verts[iv + 1][iu]))
+            adjacent = lower if iv + 1 == mouth_row else ring_verts[iv + 1]
+            f = bm.faces.new((ring_verts[iv][iu], ring_verts[iv][iu_next], adjacent[iu_next], adjacent[iu]))
             f.smooth = True
-            f.loops[0][uv_layer].uv = (iu / nu, v_uv0)
-            f.loops[1][uv_layer].uv = ((iu + 1) / nu, v_uv0)
-            f.loops[2][uv_layer].uv = ((iu + 1) / nu, v_uv1)
-            f.loops[3][uv_layer].uv = (iu / nu, v_uv1)
+            f.loops[0][uv_layer].uv = (uv_u[iu], v_uv0)
+            f.loops[1][uv_layer].uv = (uv_u[iu + 1], v_uv0)
+            f.loops[2][uv_layer].uv = (uv_u[iu + 1], v_uv1)
+            f.loops[3][uv_layer].uv = (uv_u[iu], v_uv1)
+
+    # 목 아래와 귀 뒤처럼 몸에 묻히는 단면도 닫아 형태 키를 바꿔도 열린 변이 생기지 않게 한다.
+    neck_cap = bm.faces.new(tuple(reversed(ring_verts[0])))
+    for loop in neck_cap.loops:
+        loop[uv_layer].uv = (0.50 + loop.vert.co.x, 0.065 + loop.vert.co.y - neck_cy)
 
     crown_pole = bm.verts.new((0.0, y_cranium, z_crown + 0.0025 * scale_z))
     top_ring = ring_verts[-1]
@@ -842,9 +926,9 @@ def build_korean_webtoon_head_and_face(
         iu_next = (iu + 1) % nu
         f = bm.faces.new((top_ring[iu], top_ring[iu_next], crown_pole))
         f.smooth = True
-        f.loops[0][uv_layer].uv = (iu / nu, v_top_ring)
-        f.loops[1][uv_layer].uv = ((iu + 1) / nu, v_top_ring)
-        f.loops[2][uv_layer].uv = ((iu + 0.5) / nu, 0.998)
+        f.loops[0][uv_layer].uv = (uv_u[iu], v_top_ring)
+        f.loops[1][uv_layer].uv = (uv_u[iu + 1], v_top_ring)
+        f.loops[2][uv_layer].uv = ((uv_u[iu] + uv_u[iu + 1]) * 0.5, 0.998)
 
     # Sculpted 3D anime C-ears with clean non-degenerate 2D UV islands!
     ear_z_mid = eye_z - 0.008 * scale_z
@@ -866,6 +950,9 @@ def build_korean_webtoon_head_and_face(
                 ez = ear_z_mid + r_maj * math.sin(ang) + 0.002 * tev
                 erow.append(bm.verts.new((ex, ey, ez)))
             ear_rings.append(erow)
+        ear_cap = bm.faces.new(tuple(ear_rings[0]))
+        for loop in ear_cap.loops:
+            loop[uv_layer].uv = (u_ear_center + loop.vert.co.y - ear_y_mid, 0.54 + loop.vert.co.z - ear_z_mid)
         for iev in range(n_ev - 1):
             v0_e = 0.51 + 0.09 * (iev / (n_ev - 1))
             v1_e = 0.51 + 0.09 * ((iev + 1) / (n_ev - 1))
@@ -999,7 +1086,16 @@ def build_korean_webtoon_head_and_face(
 
     add_head_sk("mouthSmile", lambda c: (c.x * 0.16 * mouth_inf(c), 0.0010 * mouth_inf(c), (abs(c.x) / 0.015) * 0.0040 * mouth_inf(c)))
     add_head_sk("mouthFrown", lambda c: (0.0, 0.0, -(abs(c.x) / 0.015) * 0.0036 * mouth_inf(c)))
-    add_head_sk("jawOpen", lambda c: (0.0, 0.0018 * mouth_inf(c), -0.0056 * mouth_inf(c) * (1.0 if c.z < z_mouth else 0.12)))
+    def open_jaw(co):
+        if co.y > y_cranium - 0.04 or co.z < z_chin or co.z > z_mouth + 0.007:
+            return (0, 0, 0)
+        if co.z >= z_mouth:
+            return (0, 0, 0.0012 * mouth_inf(co))
+        aperture = max(0.0, 1 - (co.x / lip_half_width) ** 2) ** 0.7
+        influence = aperture * _smoothstep(z_chin, z_mouth - 0.001, co.z)
+        return (0, 0.0018 * influence, -0.014 * influence)
+
+    add_head_sk("jawOpen", open_jaw)
     add_head_sk("mouthPucker", lambda c: (-c.x * 0.30 * mouth_inf(c), -0.0036 * mouth_inf(c), 0.0))
     add_head_sk("mouthFunnel", lambda c: (-c.x * 0.22 * mouth_inf(c), -0.0030 * mouth_inf(c), -0.0032 * mouth_inf(c) * (1.0 if c.z < z_mouth else -0.4)))
     add_head_sk("eyeBlinkLeft", lambda c: (0.0, -0.0025 * eye_inf(c)[0] if c.x > 0 else 0.0, -(c.z - (eye_z - 0.004)) * 0.85 * eye_inf(c)[0] if c.x > 0 and c.z > eye_z - 0.004 else 0.0))
@@ -1214,6 +1310,26 @@ def build_korean_webtoon_head_and_face(
         _assign_weights(o_lash, [{"mixamorig:Head": 1.0} for _ in o_lash.data.vertices])
         created[f"lash_{side_tag}"] = o_lash
 
+        # 기존 흰자, 홍채, 반사광을 피부 쪽으로 접고 속눈썹은 눈 감은 선을 남긴다.
+        blink_name = "eyeBlinkLeft" if sx > 0 else "eyeBlinkRight"
+        lash_uv = {loop.vertex_index: o_lash.data.uv_layers.active.data[loop.index].uv.y for loop in o_lash.data.loops}
+        for part in (o_eye, o_iris, o_hl, o_lash):
+            part.shape_key_add(name="Basis", from_mix=False)
+            closed = part.shape_key_add(name=f"{blink_name}_{part.name.split('_')[2]}", from_mix=False)
+            for idx, point in enumerate(closed.data):
+                dx = point.co.x - cx
+                t = min(1.0, abs(dx) / eye_w)
+                seam_z = eye_z - eye_h * (0.34 - 0.25 * t * t) + sx * dx * 0.045
+                if part == o_lash:
+                    # 원래 외곽 두께를 축소해서 남긴다. 홍채·흰자 뒤로 들어가지 않는다.
+                    rim = lash_uv[idx]
+                    seam_z += (rim - 0.45) * (0.0008 + 0.0018 * (1.0 - t * t))
+                    point.co.y = surface_y(dx, seam_z - eye_z, 0.0045)
+                else:
+                    seam_z += 0.005 * (point.co.z - eye_z)
+                    point.co.y = surface_y(dx, seam_z - eye_z, -0.0035)
+                point.co.z = seam_z
+
         # 5. Calm, Confident Korean Webtoon Eyebrow (`TS_Shaper_Brow_L/R`)
         bm_b = bmesh.new()
         uv_brw = bm_b.loops.layers.uv.new("UVMap")
@@ -1256,10 +1372,17 @@ def build_korean_webtoon_head_and_face(
         b_base = [v.co.copy() for v in o_brow.data.vertices]
         sk_hb = o_brow.shape_key_add(name="HappyBrow", from_mix=False)
         sk_ab = o_brow.shape_key_add(name="AngryBrow", from_mix=False)
+        sk_inner = o_brow.shape_key_add(name=f"browInnerUp_Brow_{side_tag}", from_mix=False)
+        sk_outer = o_brow.shape_key_add(name=f"browOuterUp_Brow_{side_tag}", from_mix=False)
+        sk_down = o_brow.shape_key_add(name=f"browDown_Brow_{side_tag}", from_mix=False)
         for idx, co in enumerate(b_base):
             outer_t = _clamp01((abs(co.x) - (eye_x - eye_w * 0.8)) / (eye_w * 2.0))
             sk_hb.data[idx].co = Vector((co.x, co.y, co.z + 0.0040 * (0.4 + 0.6 * outer_t)))
             sk_ab.data[idx].co = Vector((co.x - sx * 0.0015 * (1.0 - outer_t), co.y, co.z - 0.0042 * (1.0 - 0.65 * outer_t) + 0.0022 * outer_t))
+            # 머리 피부의 FACS 변형과 눈썹 선이 같은 방향으로 움직인다.
+            sk_inner.data[idx].co.z += 0.0055 * (1.0 - outer_t) ** 1.3
+            sk_outer.data[idx].co = sk_hb.data[idx].co
+            sk_down.data[idx].co = sk_ab.data[idx].co
         created[f"brow_{side_tag}"] = o_brow
 
     return created

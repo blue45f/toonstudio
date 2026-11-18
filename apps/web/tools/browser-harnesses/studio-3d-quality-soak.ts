@@ -3,10 +3,12 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 
+import { StudioVrmPngWorkerSession } from "../../src/domains/creator/vrm/studio-vrm-png-worker-session";
 import {
   captureStudioVrmRgbaCooperatively,
   encodeStudioVrmCapturePngBlob,
 } from "../../src/domains/creator/vrm/studio-vrm-raster-capture";
+
 
 interface SoakOptions { durationMs: number; cycleMs: number; expectedRenderer: string }
 interface ResourceCounts { textures: number; geometries: number; programs: number }
@@ -48,6 +50,7 @@ window.runStudio3dQualitySoak = async ({ durationMs, cycleMs, expectedRenderer }
   window.__studio3dSoak = report;
   let renderer: THREE.WebGLRenderer | undefined;
   let scene: THREE.Scene | undefined;
+  const session = new StudioVrmPngWorkerSession();
   let frame = 0;
   let frameError: Error | undefined;
   let running = false;
@@ -175,7 +178,7 @@ window.runStudio3dQualitySoak = async ({ durationMs, cycleMs, expectedRenderer }
       const covered = foreground(rgba);
       invariant(covered > dimensions.width * dimensions.height * 0.01 && tiles === 4, "Blank or incomplete capture");
       const encodeStart = performance.now();
-      const png = await encodeStudioVrmCapturePngBlob(rgba, dimensions);
+      const png = await encodeStudioVrmCapturePngBlob(rgba, dimensions, { session });
       const encodeMs = performance.now() - encodeStart;
       invariant(rgba.byteLength === dimensions.width * dimensions.height * 4, "PNG Worker detached caller storage");
       const bitmap = await createImageBitmap(png);
@@ -208,7 +211,7 @@ window.runStudio3dQualitySoak = async ({ durationMs, cycleMs, expectedRenderer }
       assertState();
       invariant(!gl.isContextLost() && gl.getError() === gl.NO_ERROR && report.contextLosses === 0, "GPU/context error");
       const workers = window.__studio3dWorkers;
-      invariant(Boolean(workers) && workers!.active === 0 && workers!.created === cycle && workers!.terminated === cycle,
+      invariant(Boolean(workers) && workers!.active === 1 && workers!.created === 1 && workers!.terminated === 0,
         `PNG Worker lifetime mismatch: ${JSON.stringify(workers)}`);
       const resources = resourceCounts();
       if (cycle === report.warmupCycles) {
@@ -236,6 +239,9 @@ window.runStudio3dQualitySoak = async ({ durationMs, cycleMs, expectedRenderer }
     cancelAnimationFrame(frame);
     observer.disconnect();
     try {
+      session.dispose();
+      const workers = window.__studio3dWorkers;
+      invariant(!!workers && workers.active === 0 && workers.created === workers.terminated, "PNG Worker survived disposal");
       if (scene) VRMUtils.deepDispose(scene);
       // Production captures retain Pass.js's module-shared triangle for later captures.
       // This isolated page is its sole owner; release it only after the last capture settles.

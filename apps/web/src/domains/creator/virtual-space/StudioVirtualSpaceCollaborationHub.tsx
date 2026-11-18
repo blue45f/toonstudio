@@ -1,26 +1,13 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
-import { StudioPresenceRoster } from "./StudioPresenceRoster";
+import { navigateStudioSpaceTab } from "./studio-space-tab-navigation";
+import { StudioCollaborationSessionTools } from "./StudioCollaborationSessionTools";
+import { useStudioCollaborationSpaceTarget } from "./use-studio-collaboration-space-target";
 import { StudioVirtualDynamicSpriteWorkspace } from "./StudioVirtualDynamicSpriteWorkspace";
 import { StudioVirtualOfficeEnterpriseSuite } from "./StudioVirtualOfficeEnterpriseSuite";
-import { StudioVirtualSpaceAppHost } from "./StudioVirtualSpaceAppHost";
-import { StudioVirtualSpaceAppStore } from "./StudioVirtualSpaceAppStore";
+import { StudioWorkspaceMiniApps } from "./StudioWorkspaceMiniApps";
 import { StudioVirtualSpaceBotRecorder } from "./StudioVirtualSpaceBotRecorder";
-import { StudioVirtualSpaceClonePanel } from "./StudioVirtualSpaceClonePanel";
 import { StudioVirtualSpaceGameFeelSettings } from "./StudioVirtualSpaceGameFeelSettings";
-import { StudioVirtualSpaceInviteSheet } from "./StudioVirtualSpaceInviteSheet";
-import { StudioVirtualSpacePlaceModeBanner } from "./StudioVirtualSpacePlaceModeBanner";
-import {
-  StudioVirtualSpaceScreenShareRequest,
-  type StudioShareRequestPhase,
-} from "./StudioVirtualSpaceScreenShareRequest";
-import { StudioVirtualSpaceShareIndicator } from "./StudioVirtualSpaceShareIndicator";
-import { StudioVirtualSpaceStickyNotes } from "./StudioVirtualSpaceStickyNotes";
-import { StudioVirtualSpaceWhiteboard } from "./StudioVirtualSpaceWhiteboard";
-import {
-  deriveStudioPresenceExposures,
-  type StudioPresencePeerInput,
-} from "./studio-presence-exposure-policy";
 import {
   STUDIO_AUTOTILE_CANONICAL_MASKS,
   studioAutotileFrame,
@@ -31,19 +18,11 @@ import {
   studioBrandingDisplay,
   validateStudioSpaceBranding,
 } from "./studio-virtual-space-branding";
-import type { StudioShareBandwidth } from "./studio-virtual-space-bubble-share";
-import {
-  describeStudioCoviewFocus,
-  IDLE_STUDIO_COVIEW_STATE,
-  reduceStudioCoview,
-  type StudioCoviewState,
-} from "./studio-virtual-space-coview";
 import {
   creativeZoneActionText,
   resolveCreativeZone,
   type StudioCreativeZone,
 } from "./studio-virtual-space-creative-zones";
-import { createEntryCodeRecord } from "./studio-virtual-space-entry-code";
 import {
   DEFAULT_STUDIO_VIRTUAL_GAME_FEEL,
   type StudioVirtualGameFeelPreference,
@@ -79,12 +58,6 @@ import {
 } from "./studio-virtual-space-object-feel";
 import type { StudioScreenObject } from "./studio-virtual-space-object-runtime";
 import {
-  STUDIO_P2P_BOARD_COLORS,
-  type StudioP2pBoardColor,
-  type StudioP2pBoardEntity,
-  type StudioP2pBoardPoint,
-} from "./studio-virtual-space-p2p-board";
-import {
   computeLocateGuide,
   sortLocateCandidates,
 } from "./studio-virtual-space-participant-locate";
@@ -93,7 +66,6 @@ import {
   EMPTY_PET_ADOPTION,
   type StudioPetAdoption,
 } from "./studio-virtual-space-pets";
-import type { PlaceMediaSnapshot } from "./studio-virtual-space-place-media";
 import {
   privateSpaceAudioGain,
   resolvePrivateSpace,
@@ -114,17 +86,6 @@ import {
   STUDIO_SPRITE_ASSET_REGISTRY,
   validateStudioSpriteAssetRegistry,
 } from "./studio-virtual-space-sprite-assets";
-import {
-  createStickyNote,
-  editStickyNoteText,
-  moveStickyNote,
-  recolorStickyNote,
-  removeStickyNote,
-  resizeStickyNote,
-  toggleStickyNoteDone,
-  type StudioStickyNote,
-  type StudioStickyNoteColor,
-} from "./studio-virtual-space-sticky-notes";
 import {
   findNearestUnifiedInteractTarget,
   handleUnifiedInteractKey,
@@ -147,18 +108,6 @@ type CollabSubTabId =
 
 const SELF_SESSION_ID = "session-self-01";
 
-const INITIAL_PEERS: readonly StudioPresencePeerInput[] = [
-  { sessionId: SELF_SESSION_ID, userStatus: "available" },
-  { sessionId: "session-peer-02", userStatus: "focusing" },
-  { sessionId: "session-peer-03", userStatus: "available" },
-];
-
-const INITIAL_DISPLAY_NAMES = new Map<string, string>([
-  [SELF_SESSION_ID, "수석 배경 아티스트"],
-  ["session-peer-02", "콘티 디렉터"],
-  ["session-peer-03", "라이팅 아티스트"],
-]);
-
 const INITIAL_CREATIVE_ZONES: readonly StudioCreativeZone[] = [
   { id: "zone-drawing-1", kind: "drawing", position: { x: 180, y: 200 }, radius: 85, labelKo: "메인 드로잉 존", labelEn: "Main drawing zone" },
   { id: "zone-meeting-1", kind: "meeting", position: { x: 340, y: 220 }, radius: 95, labelKo: "콘티 회의실", labelEn: "Storyboard meeting room" },
@@ -176,75 +125,13 @@ const INITIAL_SCREENS: readonly StudioScreenObject[] = [
 export function StudioVirtualSpaceCollaborationHub({
   className,
 }: StudioVirtualSpaceCollaborationHubProps) {
+  const navigationId = useId();
   const [subTab, setSubTab] = useState<CollabSubTabId>("presence-coview");
-  const [coviewState, setCoviewState] = useState<StudioCoviewState>(IDLE_STUDIO_COVIEW_STATE);
-  const [sharePhase, setSharePhase] = useState<StudioShareRequestPhase>("idle");
-  const [shareBandwidth, setShareBandwidth] = useState<StudioShareBandwidth>("balanced");
-  const [installedAppIds, setInstalledAppIds] = useState<readonly string[]>(["conte-pack", "pose-timer"]);
+  const target = useStudioCollaborationSpaceTarget();
   const [gameFeel, setGameFeel] = useState<StudioVirtualGameFeelPreference>(DEFAULT_STUDIO_VIRTUAL_GAME_FEEL);
   const [petAdoption, setPetAdoption] = useState<StudioPetAdoption>(EMPTY_PET_ADOPTION);
   const [avatarPoint, setAvatarPoint] = useState<{ readonly x: number; readonly y: number }>({ x: 190, y: 205 });
   const [voiceIntensity, setVoiceIntensity] = useState(0.38);
-
-  const [stickyNotes, setStickyNotes] = useState<readonly StudioStickyNote[]>(() => {
-    const initial = createStickyNote({
-      id: "sticky-init-1",
-      authorSessionId: SELF_SESSION_ID,
-      authorName: "수석 배경 아티스트",
-      x: 0.15,
-      y: 0.2,
-      text: "14화 옥상 야경 컷 조명 색온도 4200K 확인",
-      color: "#ffd166",
-      nowMs: 1_710_000_000_000,
-    });
-    return initial ? [initial] : [];
-  });
-
-  const [boardEntities, setBoardEntities] = useState<readonly StudioP2pBoardEntity[]>([]);
-  const [placeMedia, setPlaceMedia] = useState<PlaceMediaSnapshot>({
-    active: true,
-    kind: "conference",
-    localStream: null,
-    microphone: true,
-    camera: false,
-    speaking: false,
-    screenSharing: false,
-    screenStream: null,
-    screenShareScope: "bubble",
-    screenShareBandwidth: "balanced",
-    peers: [],
-    spotlightSessionId: null,
-    error: null,
-  });
-
-  const exposures = useMemo(
-    () =>
-      deriveStudioPresenceExposures(
-        INITIAL_PEERS,
-        coviewState.status === "active"
-          ? { sessionId: coviewState.sessionId ?? "coview-1", participantSessionIds: INITIAL_PEERS.map((p) => p.sessionId) }
-          : null,
-        SELF_SESSION_ID,
-      ),
-    [coviewState],
-  );
-
-  const entryCodeRecord = useMemo(
-    () =>
-      createEntryCodeRecord({
-        code: "TS7K9M",
-        spaceId: DEFAULT_STUDIO_WORLD_MANIFEST.id,
-        spaceName: "툰스튜디오 가상 협업 공간",
-        now: 1_710_000_000_000,
-      }) ?? {
-        code: "TS7K9M",
-        spaceId: DEFAULT_STUDIO_WORLD_MANIFEST.id,
-        spaceName: "툰스튜디오 가상 협업 공간",
-        issuedAt: 1_710_000_000_000,
-        expiresAt: 1_710_000_000_000 + 86_400_000,
-      },
-    [],
-  );
 
   const spatialTelemetry = useMemo(() => {
     const mask = studioAutotileMaskAt(
@@ -367,22 +254,6 @@ export function StudioVirtualSpaceCollaborationHub({
     };
   }, [avatarPoint, voiceIntensity]);
 
-  const handleToggleCoview = () => {
-    if (coviewState.status === "idle") {
-      setCoviewState(
-        reduceStudioCoview(coviewState, {
-          type: "start",
-          sessionId: "coview-main-1",
-          leaderSessionId: SELF_SESSION_ID,
-          leaderDisplayName: "수석 배경 아티스트",
-          startedAt: Date.now(),
-        }),
-      );
-    } else {
-      setCoviewState(reduceStudioCoview(coviewState, { type: "end" }));
-    }
-  };
-
   const handleAdoptPet = () => {
     const res = adoptStudioPet(petAdoption, {
       species: "cat",
@@ -396,33 +267,32 @@ export function StudioVirtualSpaceCollaborationHub({
     <section
       className={`space-y-4 rounded-xl border border-line bg-card p-4 text-fg ${className ?? ""}`}
       data-testid="studio-virtual-space-collaboration-hub"
-      aria-label="가상 공간 협업·소셜·미니앱 통합 허브"
+      aria-label="공간 협업"
     >
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
-        <div>
-          <h3 className="text-sm font-semibold">가상 공간 협업·소셜·미니앱 통합 허브</h3>
-          <p className="text-xs text-fg-2">
-            프레즌스·함께 보기·P2P 화이트보드·포스트잇·미니앱 스토어·봇 녹화·NPC·공간 스크립트 31종 모듈 실시간 제어
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="가상 공간 협업 하위 탭">
+        <h3 className="text-sm font-semibold">공간 협업 도구</h3>
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="공간 협업 도구">
           {(
             [
-              ["presence-coview", "프레즌스·초대·공유"],
-              ["whiteboard-sticky", "화이트보드·포스트잇"],
-              ["apps-bot-clone", "앱스토어·봇녹화·복제"],
-              ["spatial-npc-engine", "공간엔진·NPC·게임필"],
-              ["dynamic-sprite-workspace", "✨ 소두 다중프레임 스프라이트·VFX·협업"],
-              ["enterprise-virtual-office", "13대 가상오피스 통합관제"],
+              ["presence-coview", "참여자·초대·화면 공유"],
+              ["whiteboard-sticky", "보드·메모"],
+              ["apps-bot-clone", "앱·녹화·공간 복제"],
+              ["spatial-npc-engine", "공간·NPC 동작"],
+              ["dynamic-sprite-workspace", "캐릭터 동작·효과"],
+              ["enterprise-virtual-office", "가상 사무실 운영"],
             ] as const
           ).map(([id, label]) => (
             <button
               key={id}
               type="button"
               role="tab"
+              id={`${navigationId}-${id}`}
+              aria-controls={`${navigationId}-panel`}
+              tabIndex={subTab === id ? 0 : -1}
+              onKeyDown={navigateStudioSpaceTab}
               aria-selected={subTab === id}
               onClick={() => setSubTab(id)}
-              className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+              className={`min-h-11 rounded-lg border px-2.5 py-1 text-xs font-medium focus-visible:outline-accent ${
                 subTab === id
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-line bg-panel text-fg-2 hover:text-fg"
@@ -433,188 +303,17 @@ export function StudioVirtualSpaceCollaborationHub({
           ))}
         </div>
       </header>
+      <div id={`${navigationId}-panel`} role="tabpanel" aria-labelledby={`${navigationId}-${subTab}`}>
 
-      {subTab === "presence-coview" ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold">함께 보기(Co-view) & 프레즌스 명단</span>
-              <button
-                type="button"
-                onClick={handleToggleCoview}
-                className="rounded border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent"
-              >
-                {coviewState.status === "active" ? "함께 보기 종료" : "함께 보기 시작"}
-              </button>
-            </div>
-            <p className="text-xs text-fg-2">
-              상태: <strong>{coviewState.status}</strong> · 포커스: {describeStudioCoviewFocus(coviewState.focus)}
-            </p>
-            <StudioPresenceRoster
-              sessionActive={coviewState.status === "active"}
-              exposures={exposures}
-              displayNames={INITIAL_DISPLAY_NAMES}
-              selfSessionId={SELF_SESSION_ID}
-              onStartSession={handleToggleCoview}
-            />
-            <StudioVirtualSpacePlaceModeBanner
-              prompt={null}
-              banner={null}
-              session={{
-                zoneId: "zone-meeting-1",
-                zoneLabelKo: "콘티 회의실",
-                zoneLabelEn: "Storyboard meeting room",
-                mode: "conference",
-                stage: "engaged",
-                engagedAt: 1_710_000_000_000,
-              }}
-              media={placeMedia}
-              whiteboardOffer={null}
-              onConfirmJoin={() => {}}
-              onDeclineJoin={() => {}}
-              onLeaveSession={() => setPlaceMedia((prev) => ({ ...prev, active: false }))}
-              onDismissBanner={() => {}}
-              onOpenWhiteboard={() => setSubTab("whiteboard-sticky")}
-              onDismissWhiteboardOffer={() => {}}
-              onToggleMicrophone={() => setPlaceMedia((prev) => ({ ...prev, microphone: !prev.microphone }))}
-              onToggleCamera={() => setPlaceMedia((prev) => ({ ...prev, camera: !prev.camera }))}
-              onStartScreenShare={() => setSharePhase("selecting")}
-            />
-          </div>
 
-          <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
-            <StudioVirtualSpaceShareIndicator
-              sharerLabel="수석 배경 아티스트"
-              route="bubble"
-              bandwidth={shareBandwidth}
-              onBandwidthChange={setShareBandwidth}
-            />
-            <StudioVirtualSpaceScreenShareRequest
-              screens={[{ id: "screen-main-01", labelKo: "메인 리뷰 스크린", labelEn: "Main review screen", occupied: false }]}
-              phase={sharePhase}
-              pendingScreenId={sharePhase === "pending" ? "screen-main-01" : null}
-              incomingRequest={null}
-              activeShare={null}
-              denial={null}
-              onOpenSelect={() => setSharePhase("selecting")}
-              onCancelSelect={() => setSharePhase("idle")}
-              onRequest={() => setSharePhase("pending")}
-              onCancelRequest={() => setSharePhase("idle")}
-              onAcceptIncoming={() => {}}
-              onDeclineIncoming={() => {}}
-              onStopShare={() => setSharePhase("idle")}
-              onDismissDenial={() => {}}
-            />
-            <StudioVirtualSpaceInviteSheet
-              inviteLink="https://toonstudio.cloud/vspace#invite=demo-token"
-              codeRecord={entryCodeRecord}
-              spaceUrlBase="https://toonstudio.cloud/vspace"
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {subTab === "whiteboard-sticky" ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-lg border border-line bg-panel p-3">
-            <StudioVirtualSpaceWhiteboard
-              snapshot={{
-                entities: boardEntities,
-                readyPeerIds: ["session-peer-02"],
-                available: true,
-                canEdit: true,
-              }}
-              selfSessionId={SELF_SESSION_ID}
-              authorNameOf={(sessionId) => INITIAL_DISPLAY_NAMES.get(sessionId) ?? sessionId}
-              onStroke={(points: readonly StudioP2pBoardPoint[], color: StudioP2pBoardColor, width = 4) => {
-                const id = `stroke-${boardEntities.length + 1}`;
-                setBoardEntities((prev) => [
-                  ...prev,
-                  {
-                    id,
-                    kind: "stroke",
-                    ownerSessionId: SELF_SESSION_ID,
-                    ownerEpoch: "epoch-1",
-                    revision: 1,
-                    color,
-                    width,
-                    points,
-                  },
-                ]);
-                return id;
-              }}
-              onNote={(x: number, y: number, text: string, color: StudioP2pBoardColor) => {
-                const id = `bnote-${boardEntities.length + 1}`;
-                setBoardEntities((prev) => [
-                  ...prev,
-                  {
-                    id,
-                    kind: "note",
-                    ownerSessionId: SELF_SESSION_ID,
-                    ownerEpoch: "epoch-1",
-                    revision: 1,
-                    color: color ?? STUDIO_P2P_BOARD_COLORS[0],
-                    x,
-                    y,
-                    text,
-                  },
-                ]);
-                return id;
-              }}
-              onRemove={(id: string) => {
-                setBoardEntities((prev) => prev.filter((item) => item.id !== id));
-                return true;
-              }}
-              onClearOwn={() => {
-                setBoardEntities((prev) => prev.filter((item) => item.ownerSessionId !== SELF_SESSION_ID));
-              }}
-            />
-          </div>
-          <div className="rounded-lg border border-line bg-panel p-3">
-            <StudioVirtualSpaceStickyNotes
-              notes={stickyNotes}
-              canEdit
-              onCreate={({ x, y, text, color }) => {
-                const created = createStickyNote({
-                  id: `sticky-${Date.now()}`,
-                  authorSessionId: SELF_SESSION_ID,
-                  authorName: "수석 배경 아티스트",
-                  x,
-                  y,
-                  text,
-                  color,
-                });
-                if (created) setStickyNotes((prev) => [...prev, created]);
-              }}
-              onMove={(id, x, y) =>
-                setStickyNotes((prev) => prev.map((n) => (n.id === id ? moveStickyNote(n, x, y) : n)))
-              }
-              onResize={(id, w, h) =>
-                setStickyNotes((prev) => prev.map((n) => (n.id === id ? resizeStickyNote(n, w, h) : n)))
-              }
-              onEdit={(id, text) =>
-                setStickyNotes((prev) => prev.map((n) => (n.id === id ? editStickyNoteText(n, text) : n)))
-              }
-              onToggleDone={(id) =>
-                setStickyNotes((prev) => prev.map((n) => (n.id === id ? toggleStickyNoteDone(n) : n)))
-              }
-              onRemove={(id) => setStickyNotes((prev) => removeStickyNote(prev, id))}
-              onRecolor={(id, color: StudioStickyNoteColor) =>
-                setStickyNotes((prev) => prev.map((n) => (n.id === id ? recolorStickyNote(n, color) : n)))
-              }
-            />
-          </div>
-        </div>
+      {subTab === "presence-coview" || subTab === "whiteboard-sticky" ? (
+        <StudioCollaborationSessionTools target={target} board={subTab === "whiteboard-sticky"} />
       ) : null}
 
       {subTab === "apps-bot-clone" ? (
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
-            <StudioVirtualSpaceAppStore
-              installedAppIds={installedAppIds}
-              onInstalledChange={setInstalledAppIds}
-            />
-            <StudioVirtualSpaceAppHost installedAppIds={installedAppIds} />
+            <StudioWorkspaceMiniApps projectId={target.projectId} />
           </div>
           <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
             <StudioVirtualSpaceBotRecorder
@@ -624,11 +323,10 @@ export function StudioVirtualSpaceCollaborationHub({
               ]}
               defaultZoneId="zone-meeting-1"
             />
-            <StudioVirtualSpaceClonePanel
-              world={DEFAULT_STUDIO_WORLD_MANIFEST}
-              disabled={false}
-              onApplySnapshot={() => {}}
-            />
+            <a href={target.spacePath + "?worldEdit=1&clone=1"} target="_blank" rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm">
+              {target.projectId ? "프로젝트 공간 복제 열기" : "개인 공간 복제 열기"}
+            </a>
           </div>
         </div>
       ) : null}
@@ -636,7 +334,7 @@ export function StudioVirtualSpaceCollaborationHub({
       {subTab === "spatial-npc-engine" ? (
         <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
-            <h4 className="text-xs font-semibold">공간·NPC·오디오·인터랙션 19종 엔진 텔레메트리</h4>
+            <h4 className="text-xs font-semibold">이동·음성·NPC 동작 미리보기</h4>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -704,6 +402,7 @@ export function StudioVirtualSpaceCollaborationHub({
       {subTab === "dynamic-sprite-workspace" ? <StudioVirtualDynamicSpriteWorkspace /> : null}
 
       {subTab === "enterprise-virtual-office" ? <StudioVirtualOfficeEnterpriseSuite /> : null}
+      </div>
     </section>
   );
 }

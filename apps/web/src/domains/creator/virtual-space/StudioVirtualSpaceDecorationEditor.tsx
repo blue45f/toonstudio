@@ -66,7 +66,7 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
   const fieldsetRef = useRef<HTMLFieldSetElement | null>(null);
   const suppressNextMapClickRef = useRef(false);
   const suppressObjectClickRef = useRef(false);
-  const [drag, setDrag] = useState<{ id: string; pointerId: number; x: number; y: number; originX: number; originY: number; requireButtons: boolean } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; pointerId: number; x: number; y: number; originX: number; originY: number; start: StudioVirtualSpacePoint; clientStart: StudioVirtualSpacePoint; requireButtons: boolean } | null>(null);
   const state = studioVirtualDecorationStateForWorld(decorations, world);
   const selectedIds = selection?.worldId === world.id
     ? selection.ids.filter((itemId) => state.placements.some((item) => item.id === itemId))
@@ -164,7 +164,9 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
     suppressNextMapClickRef.current = false;
     suppressObjectClickRef.current = false;
     event.stopPropagation();
-    if (event.shiftKey) return;
+    if (event.button !== 0 || event.isPrimary === false || drag || event.shiftKey || buildType || manipMode !== "move") return;
+    const start = worldPoint(event.clientX, event.clientY);
+    if (!start) return;
     if (!selectedIdSet.has(item.id)) {
       choose(item.id);
     }
@@ -176,35 +178,46 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
       y: item.y,
       originX: item.x,
       originY: item.y,
+      start, clientStart: { x: event.clientX, y: event.clientY },
       requireButtons: event.buttons > 0,
     });
   };
+  const dragPosition = (event: React.PointerEvent<SVGRectElement>) => {
+    if (!drag) return null;
+    const point = worldPoint(event.clientX, event.clientY);
+    if (!point) return null;
+    if (Math.hypot(event.clientX - drag.clientStart.x, event.clientY - drag.clientStart.y) < 3) {
+      return { x: drag.originX, y: drag.originY };
+    }
+    const snap = (origin: number, delta: number) => delta === 0 ? origin : Math.round((origin + delta) / 16) * 16;
+    return { x: snap(drag.originX, point.x - drag.start.x), y: snap(drag.originY, point.y - drag.start.y) };
+  };
   const trackDrag = (event: React.PointerEvent<SVGRectElement>) => {
-    if (!drag || drag.id !== state.placements.find((entry) => entry.id === drag.id)?.id || drag.pointerId !== event.pointerId) return;
-    if (drag.requireButtons && event.buttons === 0) {
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag.requireButtons && (event.buttons & 1) === 0) {
       cancelDrag(event.currentTarget);
       return;
     }
-    const point = worldPoint(event.clientX, event.clientY);
-    if (!point) return;
+    const position = dragPosition(event);
+    if (!position || (drag.x === position.x && drag.y === position.y)) return;
     event.stopPropagation();
-    setDrag({ ...drag, x: Math.round(point.x / 16) * 16, y: Math.round(point.y / 16) * 16 });
+    setDrag({ ...drag, ...position });
   };
   const endDrag = (item: StudioVirtualDecorPlacement, event: React.PointerEvent<SVGRectElement>) => {
     if (!drag || drag.id !== item.id || drag.pointerId !== event.pointerId) return;
     event.stopPropagation();
+    const position = dragPosition(event);
+    if (!position) { cancelDrag(event.currentTarget); return; }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    const dx = drag.x - drag.originX;
-    const dy = drag.y - drag.originY;
-    const moved = dx !== 0 || dy !== 0;
+    const dx = position.x - drag.originX;
+    const dy = position.y - drag.originY;
     setDrag(null);
-    if (moved) {
-      suppressObjectClickRef.current = true;
-      if (selectedIds.length > 1 && selectedIdSet.has(item.id)) {
-        onChange(moveStudioVirtualDecorationGroup(state, selectedIds, dx, dy, world, selfPoint));
-      } else {
-        onChange(editStudioVirtualDecoration(state, item.id, { x: drag.x, y: drag.y }, world, selfPoint));
-      }
+    if (dx === 0 && dy === 0) return;
+    suppressObjectClickRef.current = true;
+    if (selectedIds.length > 1 && selectedIdSet.has(item.id)) {
+      onChange(moveStudioVirtualDecorationGroup(state, selectedIds, dx, dy, world, selfPoint));
+    } else {
+      onChange(editStudioVirtualDecoration(state, item.id, position, world, selfPoint));
     }
   };
   useEffect(() => {
@@ -234,13 +247,16 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
     if (!el) return undefined;
     const onFieldsetKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
-      if (target instanceof HTMLElement && target.closest("select, input, textarea")) return;
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      const lower = event.key.toLowerCase();
-      if (lower === "v") setManipMode("select");
-      else if (lower === "g") setManipMode("move");
-      else if (lower === "r") setManipMode("rotate");
-      else if (lower === "s") setManipMode("scale");
+      if (target instanceof Element && target.closest("select, input, textarea, [contenteditable=true]")) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return;
+      const key = event.code.startsWith("Key") ? event.code.slice(3) : event.key.toUpperCase();
+      const mode = MANIP_MODE_ITEMS.find((item) => item.keyHint === key);
+      if (!mode) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setBuildType(null);
+      setDrag(null);
+      setManipMode(mode.id);
     };
     el.addEventListener("keydown", onFieldsetKeyDown);
     return () => el.removeEventListener("keydown", onFieldsetKeyDown);
@@ -248,7 +264,7 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
   const activeModeMeta = MANIP_MODE_ITEMS.find((item) => item.id === manipMode) ?? MANIP_MODE_ITEMS[0];
   return <fieldset ref={fieldsetRef} className="studio-decoration-editor" data-decor-manip-mode={manipMode}>
     <legend>{bt("가구 배치 편집", "Edit furniture layout")}</legend>
-    <p id={`${id}-help`}>{bt("가구를 고른 뒤 지도의 빈 바닥을 누르거나 이동 버튼을 사용하세요. 화살표 키로 16px, Shift와 함께 1px씩 조정합니다.", "Select furniture, then tap an empty floor, drag it, or use the movement buttons. Arrow keys move 16 pixels; hold Shift for 1 pixel.")}</p>
+    <p id={`${id}-help`}>{bt("이동 모드에서 가구를 끌거나 빈 바닥을 누르세요. 방향키로 16px, Shift와 함께 1px씩 옮깁니다.", "In Move mode, drag furniture or tap the floor. Use the arrow keys to move 16 pixels, or hold Shift for 1 pixel.")}</p>
     <div className="studio-decoration-editor__modes flex flex-wrap items-center justify-between gap-2" role="toolbar" aria-label={bt("오브젝트 조작 모드", "Object manipulation mode")}>
       <div className="flex flex-wrap gap-1">
         {MANIP_MODE_ITEMS.map((modeItem) => (
@@ -258,6 +274,7 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
             aria-pressed={manipMode === modeItem.id && !buildType}
             data-manip-mode-btn={modeItem.id}
             onClick={() => {
+              setDrag(null);
               setBuildType(null);
               setManipMode(modeItem.id);
             }}
@@ -332,7 +349,7 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); clearSelectionAndBuild(); return; }
-        if (!selected || event.altKey || event.metaKey || event.ctrlKey) return;
+        if (!selected || buildType || event.altKey || event.metaKey || event.ctrlKey || event.nativeEvent.isComposing) return;
         if (manipMode === "rotate" && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
           event.preventDefault(); event.stopPropagation();
           rotateBy(event.key === "ArrowRight" ? 90 : 270);
@@ -343,6 +360,7 @@ export function StudioVirtualSpaceDecorationEditor({ world, decorations, selfPoi
           adjustScale(event.key === "-" || event.key === "ArrowDown" ? -0.1 : 0.1);
           return;
         }
+        if (manipMode !== "move") return;
         const movements: Readonly<Record<string, readonly [number, number]>> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
         const delta = movements[event.key];
         if (!delta) return;

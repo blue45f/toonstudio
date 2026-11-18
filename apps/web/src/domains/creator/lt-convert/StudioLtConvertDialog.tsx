@@ -57,7 +57,9 @@ export interface StudioLtConvertDialogProps {
   readonly applyError: string | null;
   /** 이미지 파일로 소스를 교체한다. */
   readonly onImportImage: (file: File) => void;
-  readonly onApply: (result: StudioLtConvertResult) => void;
+  readonly onApply?: (result: StudioLtConvertResult) => void;
+  readonly applying?: boolean;
+  readonly onDownload?: (result: StudioLtConvertResult, kind: "line" | "tone") => void;
   /**
    * 벡터 출력 실험: 지정하면 "주선을 벡터로 적용" 동작이 나타난다.
    * LT 결과의 주선만 편집 가능한 벡터 패스(VectorLayer)로 변환해 전달한다.
@@ -123,6 +125,8 @@ export function StudioLtConvertDialog({
   applyError,
   onImportImage,
   onApply,
+  onDownload,
+  applying = false,
   onApplyVectorLine,
   onCancel,
 }: StudioLtConvertDialogProps): ReactElement | null {
@@ -529,13 +533,13 @@ export function StudioLtConvertDialog({
               {vectorStatus}
             </p>
           ) : null}
-          <p className="mb-3 text-[0.7rem] leading-relaxed text-fg-3">
+          {onApply ? <p className="mb-3 text-[0.7rem] leading-relaxed text-fg-3">
             {t(
               "studio.ltConvert.applyNote",
               "적용하면 선화와 톤, 2개의 레이어가 생성됩니다.",
             )}
-          </p>
-          <div className="flex justify-end gap-2">
+          </p> : null}
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={onCancel}
@@ -561,10 +565,16 @@ export function StudioLtConvertDialog({
                 {t("studio.ltConvert.applyVectorLine", "주선을 벡터로 적용")}
               </button>
             ) : null}
-            <button
+            {onDownload ? (["line", "tone"] as const).map((kind) => <button key={kind} type="button"
+              disabled={!outcome.result} className="min-h-11 rounded-lg border border-line px-3 text-xs"
+              onClick={() => { if (outcome.result) onDownload(outcome.result, kind); }}>
+              {kind === "line" ? t("studio.ltConvert.downloadLine", "선화 PNG 저장") : t("studio.ltConvert.downloadTone", "톤 PNG 저장")}
+            </button>) : null}
+            {onApply ? <button
               type="button"
               data-autofocus="true"
-              disabled={outcome.result === null}
+              aria-busy={applying}
+              disabled={applying || outcome.result === null}
               onClick={() => {
                 if (outcome.result) onApply(outcome.result);
               }}
@@ -573,8 +583,8 @@ export function StudioLtConvertDialog({
                 STUDIO_FOCUS_RING,
               )}
             >
-              {t("studio.ltConvert.apply", "적용")}
-            </button>
+              {applying ? t("studio.ltConvert.addingLayers", "레이어 추가 중…") : t("studio.ltConvert.applyLayers", "원고에 선화·톤 추가")}
+            </button> : null}
           </div>
         </footer>
       </section>

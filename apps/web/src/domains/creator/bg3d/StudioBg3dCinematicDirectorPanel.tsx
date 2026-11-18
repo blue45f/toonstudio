@@ -220,6 +220,12 @@ export function StudioBg3dCinematicDirectorPanel(
     runtimeFinishCameraPreview,
     runtimePreviewCameraView,
   ]);
+  const applyStoredShot = useCallback((shotId: string) => {
+    // 저장한 컷으로 전환한 뒤 이전 앵글의 애니메이션 프레임이 카메라를 덮지 않게 한다.
+    cancelPreviewAnimation(true);
+    resolvedApply?.(shotId);
+  }, [cancelPreviewAnimation, resolvedApply]);
+
   const resolvedBookmark = onApplyShotBookmark ?? (
     runtimeApplyCameraView && resolvedBaseCamera ? applyRuntimeBookmark : undefined
   );
@@ -239,7 +245,7 @@ export function StudioBg3dCinematicDirectorPanel(
         {...(resolvedBaseCamera ? { baseCamera: resolvedBaseCamera } : {})}
         {...(resolvedShots ? { productionShots: resolvedShots } : {})}
         {...(resolvedCapture ? { onCaptureCurrentShot: resolvedCapture } : {})}
-        {...(resolvedApply ? { onApplyProductionShot: resolvedApply } : {})}
+        {...(resolvedApply ? { onApplyProductionShot: applyStoredShot } : {})}
         {...(resolvedMove ? { onMoveProductionShot: resolvedMove } : {})}
         {...(resolvedRemove ? { onRemoveProductionShot: resolvedRemove } : {})}
         {...(resolvedBookmark ? { onApplyShotBookmark: resolvedBookmark } : {})}

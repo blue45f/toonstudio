@@ -25,9 +25,10 @@ import {
   clampProportion,
   resolveChannelColor,
 } from "../../../contracts";
+import { packagePartShapes } from "../../../domains/authored/package-part-shapes";
 import { DEFAULT_PROPORTION_SPEC } from "../../../domains/humanoid/proportions";
 import { ART_STYLE_PACKS } from "../../../presets";
-import { useApplyPlan, useDispatch, useLabState } from "../lab-store-context";
+import { useApplyPlan, useDispatch, useLabState, usePackagePlans } from "../lab-store-context";
 
 import type {
   ArtStylePack,
@@ -73,6 +74,10 @@ export function ParamCustomizeSections() {
   const { recipe } = useLabState();
   const dispatch = useDispatch();
   const plan = useApplyPlan();
+  const packages = usePackagePlans();
+  const packagePlan = recipe.source.kind === "package" ? packages.get(recipe.source.characterId) : undefined;
+  const declaredShapes = recipe.source.kind !== "package" ? undefined
+    : packagePlan && recipe.source.sha256 === packagePlan.glbSha256 ? packagePartShapes(packagePlan.manifest, packagePlan.hairLodPolicy.preferredLod) : {};
 
   const [figure, setFigure] = useState<StyleFigure>("feminine");
   const [scope, setScope] = useState<StyleApplyScope>({
@@ -214,6 +219,7 @@ export function ParamCustomizeSections() {
                 value={currentVal}
                 aria-label={ctrl.labelKo}
                 data-testid={`part-param-slider-${ctrl.scope}-${ctrl.shape}`}
+                disabled={declaredShapes !== undefined && !declaredShapes[ctrl.scope]?.includes(ctrl.shape)}
                 onChange={(event) =>
                   dispatch({
                     type: "part-param/set",

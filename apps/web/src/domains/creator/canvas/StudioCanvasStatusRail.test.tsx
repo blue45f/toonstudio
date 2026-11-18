@@ -13,6 +13,7 @@ import {
 } from "./StudioCanvasStickyBanners";
 
 import type { ReactNode } from "react";
+import { DrawingClarityContext } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 
 const viewportState = vi.hoisted(() => ({ mobile: false }));
 
@@ -251,6 +252,31 @@ describe("StudioCanvasStatusRail", () => {
     expect(props.onRestoreAutosave).toHaveBeenCalledOnce();
     expect(screen.queryByRole("button", { name: "백업 파일 받기" })).toBeNull();
     expect(screen.queryByRole("link", { name: /새 그림 그리기/ })).toBeNull();
+  });
+
+  it("새 드로잉 화면은 선택 도구를 기존 옵션 줄에서 열고 해제하면 비운다", () => {
+    const selectionHost = document.createElement("div");
+    document.body.append(selectionHost);
+    const props = createProps();
+    const state = { active: true, available: true, panel: null, selectionHost,
+      open: vi.fn(), reveal: vi.fn(), close: vi.fn(), chooseSimple: vi.fn(), showSavedLayout: vi.fn() };
+    const editor = (selectionCount: number) => <DrawingClarityContext.Provider value={state}>
+      <StudioCanvasStatusRail {...props} selectionCount={selectionCount} />
+    </DrawingClarityContext.Provider>;
+    try {
+      const view = render(editor(0));
+      expect(selectionHost.childElementCount).toBe(0);
+      view.rerender(editor(2));
+      const group = screen.getByRole("button", { name: "선택 요소 그룹화" });
+      expect(selectionHost.contains(group)).toBe(true);
+      expect(view.container.querySelector("[data-studio-selection-command-lane]")).toBeNull();
+      fireEvent.click(group);
+      expect(props.onGroupSelection).toHaveBeenCalledOnce();
+      view.rerender(editor(0));
+      expect(selectionHost.childElementCount).toBe(0);
+    } finally {
+      selectionHost.remove();
+    }
   });
 
   it("reserves the selection command lane so selecting cannot move the canvas", () => {

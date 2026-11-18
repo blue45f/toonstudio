@@ -49,7 +49,7 @@ test.each([
 });
 
 test("원문0121을 수정하거나 향후 일반 migration에 보존 경계를 재사용할 수 없다", () => {
-  expect(currentManifest.at(-1).id).toBe("0128_admin_business_plan_access");
+  expect(currentManifest.at(-1).id).toBe("0129_studio_work_vrm_cut");
   expect(() => planBg3dPreservingAclMigration(currentManifest, baseline())).toThrow(/0121/u);
   expect(() => planBg3dPreservingAclMigration([...manifest.slice(0, -1), { ...manifest.at(-1), checksum: "f".repeat(64) }], baseline())).toThrow(/0121/u);
   expect(() => planBg3dPreservingAclMigration([...manifest, { id: "0122_future" }], baseline())).toThrow(/0121/u);

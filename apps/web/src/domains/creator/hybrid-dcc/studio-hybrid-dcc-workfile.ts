@@ -71,7 +71,7 @@ function encodePersistence(workspace: StudioHybridDccWorkspace) {
 }
 
 /** 원본·저널·파생 cache를 변경하지 않고 검증 가능한 UTF-8 파일 바이트를 만든다. */
-export function encodeStudioHybridDccWorkfile(workspace: StudioHybridDccWorkspace): Uint8Array {
+export function encodeStudioHybridDccWorkfile(workspace: StudioHybridDccWorkspace): Uint8Array<ArrayBuffer> {
   const encoded = encodePersistence(workspace);
   validateHistory(decodePersistence(encoded.bytes));
   const workfile = {

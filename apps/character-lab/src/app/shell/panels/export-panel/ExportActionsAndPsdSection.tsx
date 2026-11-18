@@ -4,8 +4,10 @@
 import { MAX_PSD_EXPORT_DIMENSION } from "../../../../export/export-session";
 import { RECIPE_FILE_SUFFIX } from "../../../../export/recipe-file";
 
+import { DeviceDraftSection } from "./DeviceDraftSection";
 import { ExportWebtoonReaderPreview } from "./ExportWebtoonReaderPreview";
 
+import type { useRecipeStorage } from "./DeviceDraftSection";
 import type { WebtoonManuscriptMoodId, WebtoonStripGutterPaces } from "../../../../export/webtoon-strip-composer";
 
 export interface ExportReaderPreviewSnapshot {
@@ -18,6 +20,7 @@ export interface ExportActionsAndPsdSectionProps {
   readonly ids: string;
   readonly engineReady: boolean;
   readonly busy: boolean;
+  readonly storage: ReturnType<typeof useRecipeStorage>;
   readonly canTriggerFileKeyDown: () => boolean;
   readonly onPng: () => void;
   readonly onTurnaroundPng: () => void;
@@ -32,7 +35,6 @@ export interface ExportActionsAndPsdSectionProps {
   readonly onWebtoonMotionWav: () => void;
   readonly onWebtoonMotionVtt: () => void;
   readonly onGlb: () => void;
-  readonly onRecipeSave: () => void;
   readonly onShaperPresetSave: () => void;
   readonly onCopyRecipeClipboard: () => void;
   readonly onPasteRecipeClipboard: () => void;
@@ -59,6 +61,7 @@ export function ExportActionsAndPsdSection({
   ids,
   engineReady,
   busy,
+  storage,
   canTriggerFileKeyDown,
   onPng,
   onTurnaroundPng,
@@ -73,7 +76,6 @@ export function ExportActionsAndPsdSection({
   onWebtoonMotionWav,
   onWebtoonMotionVtt,
   onGlb,
-  onRecipeSave,
   onShaperPresetSave,
   onCopyRecipeClipboard,
   onPasteRecipeClipboard,
@@ -207,7 +209,7 @@ export function ExportActionsAndPsdSection({
         <button type="button" onClick={onGlb} disabled={!engineReady || busy}>
           GLB 저장
         </button>
-        <button type="button" onClick={onRecipeSave} disabled={busy}>
+        <button type="button" onClick={storage.saveRecipe} disabled={busy}>
           레시피 저장
         </button>
         <button type="button" onClick={onShaperPresetSave} disabled={busy}>
@@ -253,6 +255,7 @@ export function ExportActionsAndPsdSection({
           />
         </label>
       </div>
+      <DeviceDraftSection storage={storage} busy={busy} />
       {readerPreview ? (
         <ExportWebtoonReaderPreview
           stripImageUrl={readerPreview.url}

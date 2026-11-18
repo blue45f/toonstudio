@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { registerStudioScene3dResourceOwner } from "../scene3d/studio-scene3d-resource-owner";
+import { probeStudioBg3dWebGpuCapability } from "./studio-bg3d-webgpu-capability";
 
 import {
   createStudioBg3dThreeWebGpuRenderer,
@@ -52,6 +53,17 @@ class CanvasMock {}
 function stubCanvas(): HTMLCanvasElement {
   vi.stubGlobal("HTMLCanvasElement", CanvasMock);
   return new CanvasMock() as HTMLCanvasElement;
+}
+
+function admitDevice(requestDevice: (descriptor: GPUDeviceDescriptor) => Promise<GPUDevice>) {
+  return probeStudioBg3dWebGpuCapability({
+    secureContext: true,
+    gpu: { requestAdapter: async () => ({
+      features: new Set(["timestamp-query", "unrelated-experimental-feature"]),
+      limits: { maxBufferSize: 256 << 20, maxStorageBufferBindingSize: 64 << 20 },
+      requestDevice,
+    }) },
+  });
 }
 
 describe("Studio BG3D Three WebGPU renderer", () => {
@@ -122,6 +134,62 @@ describe("Studio BG3D Three WebGPU renderer", () => {
     expect(rejection).toMatchObject({ code: "initialization-failed", cause });
     expect(rendererMock.dispose).not.toHaveBeenCalled();
     expect(rendererMock.backendDispose).toHaveBeenCalledOnce();
+  });
+
+  it("뷰포트 준비 기한 안에 도착한 느린 장치를 그대로 사용한다", async () => {
+    vi.useFakeTimers();
+    try {
+      rendererMock.initPromise = new Promise<void>((resolve) => setTimeout(resolve, 12_000));
+      const opened = expect(createStudioBg3dThreeWebGpuRenderer(stubCanvas()))
+        .resolves.toHaveProperty("renderer");
+      await vi.advanceTimersByTimeAsync(12_000);
+      await opened;
+      expect(rendererMock.backendDispose).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("승인한 어댑터에 캔버스당 한 번만 장치를 요청하고 외부 주입 장치도 해제한다", async () => {
+    const device = { destroy: vi.fn() };
+    const requestDevice = vi.fn(async () => device as unknown as GPUDevice);
+    const admission = await admitDevice(requestDevice);
+    const canvas = stubCanvas();
+    const [first, second] = await Promise.all([
+      createStudioBg3dThreeWebGpuRenderer(canvas, { admission }),
+      createStudioBg3dThreeWebGpuRenderer(canvas, { admission }),
+    ]);
+    expect(first).toBe(second);
+    expect(requestDevice).toHaveBeenCalledExactlyOnceWith({
+      requiredFeatures: ["timestamp-query"],
+      requiredLimits: { maxBufferSize: 128 << 20, maxStorageBufferBindingSize: 32 << 20 },
+    });
+    expect(rendererMock.rendererParameters?.device).toBe(device);
+    await first.dispose();
+    await second.dispose();
+    expect(device.destroy).toHaveBeenCalledOnce();
+    const next = await createStudioBg3dThreeWebGpuRenderer(stubCanvas(), { admission });
+    expect(rendererMock.rendererParameters?.device).toBeUndefined();
+    expect(requestDevice).toHaveBeenCalledOnce();
+    await next.dispose();
+  });
+
+  it("준비 기한 뒤 도착한 장치를 폐기하고 캔버스에 연결하지 않는다", async () => {
+    vi.useFakeTimers();
+    try {
+      const deferred = Promise.withResolvers<GPUDevice>();
+      const admission = await admitDevice(() => deferred.promise);
+      const result = expect(createStudioBg3dThreeWebGpuRenderer(stubCanvas(), {
+        admission, initializationTimeoutMs: 25,
+      })).rejects.toMatchObject({ code: "initialization-failed" });
+      await vi.advanceTimersByTimeAsync(25);
+      await result;
+      const destroy = vi.fn();
+      deferred.resolve({ destroy } as unknown as GPUDevice);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(destroy).toHaveBeenCalledOnce();
+      expect(rendererMock.rendererParameters).toBeNull();
+    } finally { vi.useRealTimers(); }
   });
 
   it("bounds a WebGPU initialization that never settles", async () => {

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { STUDIO_WORK_ASSET_ADMISSION_OPT_IN_TOKEN } from "@toonstudio/contracts/studio-work-asset-contract";
 import { ForbiddenException, PayloadTooLargeException } from "@nestjs/common";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -75,6 +76,20 @@ describe("saved work 6패스 전용 입장 서비스", () => {
   it("scene SHA가 맞아도 카메라·출력 hash 결박이 다르면 거부한다", async () => {
     const f = fixture(); f.read.mockResolvedValue({ ...f.record, manifest: parseStudioBg3dSixPassBundleManifest({ ...f.manifest, cameraHash: `sha256:${"0".repeat(64)}` }) });
     await expect(f.service.upload("owner", f.key, "scene", { buffer: f.scene, size: f.scene.length, mimetype: "application/json" })).rejects.toThrow(/확인하지 못/);
+    expect(f.upload).not.toHaveBeenCalled();
+  });
+  it("작품 저장에 필요한 고정 VRM 모델·페인트가 없는 장면은 봉인하지 않는다", async () => {
+    const f = fixture();
+    const bytes = Buffer.from(JSON.stringify({ ...JSON.parse(f.scene.toString("utf8")),
+      pinnedVersionedCut: { source: { linkedVrm: { characters: [{ elementId: "actor-a" }] } } },
+    }));
+    const manifest = parseStudioBg3dSixPassBundleManifest({ ...f.manifest, scene: { ...f.manifest.scene,
+      byteSize: bytes.length, contentHash: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
+    } });
+    f.read.mockResolvedValueOnce({ ...f.record, manifest, manifestHash: hashStudioBg3dSixPassBundleManifest(manifest) });
+    await expect(f.service.upload("owner", f.key, "scene", {
+      buffer: bytes, size: bytes.length, mimetype: "application/json",
+    })).rejects.toThrow(/6패스/);
     expect(f.upload).not.toHaveBeenCalled();
   });
   it("seal 영수증은 작품·원본 manifest에 결박하고 비공개 locator를 포함하지 않는다", async () => {

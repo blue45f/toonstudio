@@ -9,7 +9,7 @@ export type { StudioCuttoonEditorViewSessionRest } from "./StudioCuttoonEditorVi
 
 export type StudioCuttoonEditorViewSession =
   StudioCuttoonEditorViewSessionCore &
-  StudioCuttoonEditorViewSessionRest & {
+  StudioCuttoonEditorViewSessionRest & import("./runtime/studio-local-vrm-cut-scope").StudioLocalVrmCutHostScope & {
     scopedWriteRuntime?: import("./runtime/useStudioScopedWriteRuntime").StudioScopedWriteRuntime; scopedCanvasDrawingAvailable?: boolean; scopedSavePendingConfirmation?: boolean;
     onScopedWriteLayer?: (layerId: string | null, frameId: string | null) => void;
     toggleCanvasFlipX?: () => void;

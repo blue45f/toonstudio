@@ -273,7 +273,7 @@ export function useStudioHybridDccPersistence(
       ? hybridDccPersistenceUiState.status
       : "checking";
   const hybridDccPersistenceReceipt =
-    hybridDccPersistenceReceiptState?.scope === hybridDccWorkspaceScope
+    hybridDccPersistenceStatus === "saved" && hybridDccPersistenceReceiptState?.scope === hybridDccWorkspaceScope
       ? hybridDccPersistenceReceiptState.receipt
       : null;
   const hybridDccPersistenceCurrentScopeRef = useRef(hybridDccWorkspaceScope);
@@ -397,6 +397,10 @@ export function useStudioHybridDccPersistence(
         return persistence;
       }
       if (loaded.status === "restored") {
+        setHybridDccPersistenceReceiptState({
+          scope: hybridDccWorkspaceScope,
+          receipt: { sequence: loaded.lastSequence, sourceHash: loaded.sourceHash, documentStateHash: loaded.documentStateHash },
+        });
         setHybridDccWorkspaceState((current) => (
           current?.scope === hybridDccWorkspaceScope
             ? current
@@ -510,6 +514,9 @@ export function useStudioHybridDccPersistence(
     if (!persistencePromise || hybridDccPersistenceStatus === "session-only") return;
     if (hybridDccPersistenceTimerRef.current !== null) {
       window.clearTimeout(hybridDccPersistenceTimerRef.current);
+    }
+    if (hybridDccPersistenceStatus === "ready" || hybridDccPersistenceStatus === "saved") {
+      setHybridDccPersistenceUiState({ scope: pending.scope, status: "saving" });
     }
     const generation = ++hybridDccPersistenceGenerationRef.current;
     hybridDccPersistenceTimerRef.current = window.setTimeout(() => {

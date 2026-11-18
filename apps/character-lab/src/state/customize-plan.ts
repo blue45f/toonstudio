@@ -73,6 +73,7 @@ export interface CustomizePlanInput {
   readonly presetUnavailableReason: (capability: SlotCapability, presetId: PresetId) => string | null;
   readonly materialPresetFor: (role: PartRole, presetId: PresetId | null) => MaterialPresetId;
   readonly custom?: CustomCapabilities;
+  readonly packageShapes?: CustomCapabilities["shapes"];
 }
 
 export interface CustomizePlanFields {
@@ -125,6 +126,7 @@ function planAccessories(input: CustomizePlanInput, push: (item: UnsupportedCust
 function scopeActive(scope: PartScope, input: CustomizePlanInput, visibleInstances: ReadonlySet<string>): boolean {
   const { recipe, unsupportedSlots, capabilities, custom } = input;
   if (isAccessoryInstanceId(scope)) return visibleInstances.has(scope);
+  if (recipe.source.kind === "package" && (input.packageShapes ?? custom?.shapes)?.[scope]?.length) return true;
   if ((WARDROBE_LAYERS as readonly string[]).includes(scope)) {
     const layer = scope as WardrobeLayer;
     return recipe.wardrobe[layer] !== null && layerUnavailableReasonKo(layer, capabilities, custom) === null;
@@ -156,15 +158,16 @@ export function planCustomization(input: CustomizePlanInput): CustomizePlanField
     const values = recipe.partParams[scope];
     if (values === undefined || !scopeActive(scope, input, visibleInstances)) continue;
     let kept: Readonly<Record<string, number>> = values;
-    if (custom) {
+    const shapes = input.packageShapes ?? custom?.shapes;
+    if (shapes) {
       // 소품 인스턴스(acc-<n>)는 프리셋마다 형태 키가 달라 소스가 인스턴스 범위로 따로 보고한다.
-      const declared = new Set(custom.shapes[scope] ?? []);
+      const declared = new Set(shapes[scope] ?? []);
       const filtered: Record<string, number> = {};
       for (const name of Object.keys(values).sort()) {
         const value = values[name];
         if (value === undefined || !Number.isFinite(value) || value === 0) continue;
         if (declared.has(name)) filtered[name] = value;
-        else push({ kind: "shape", key: `${scope}/${name}`, reasonKo: reasonOf(custom, customReasonKey("shape", scope), `이 파츠(${scope})에는 형태 키 ${name}이(가) 없습니다.`) });
+        else push({ kind: "shape", key: `${scope}/${name}`, reasonKo: custom?.reasonsKo[customReasonKey("shape", scope)]?.trim() || `이 파츠(${scope})에는 형태 키 ${name}이(가) 없습니다.` });
       }
       kept = filtered;
     }

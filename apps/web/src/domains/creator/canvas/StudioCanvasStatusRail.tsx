@@ -17,6 +17,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+
+import { useStudioDrawingClarity } from "../studio-cuttoon-editor/StudioDrawingClarityContext";
 
 import { presentStudioAutosaveDocumentLeadership } from "../studio-autosave-document-leader";
 import { StudioRecoveryNotice } from "./StudioRecoveryNotice";
@@ -321,6 +324,13 @@ export interface StudioCanvasStatusRailProps {
   onCancelAdvancedFillCalculation: () => void;
 }
 
+/** 기본 그리기의 선택 명령은 같은 44px 도구줄 안에서 브러시 옵션과 자리를 바꾼다. */
+function SelectionCommandPosition({ count, children }: { count: number; children: ReactNode }) {
+  const clarity = useStudioDrawingClarity();
+  if (!clarity?.active) return children;
+  return count > 0 && clarity.selectionHost ? createPortal(children, clarity.selectionHost) : null;
+}
+
 export function StudioCanvasStatusRail({
   mobileImmersive,
   hasAutosave,
@@ -360,19 +370,8 @@ export function StudioCanvasStatusRail({
 }: StudioCanvasStatusRailProps) {
   const hasAdvancedFillPreview = advancedFillPreviewMessage !== null;
   const normalizedActiveGroupName = activeGroupName?.trim() || null;
-  /**
-   * 모바일(<lg)에는 선택 명령 레인을 **예약조차 하지 않는다.**
-   *
-   * 상시 예약은 "선택이 캔버스 기하를 바꾸지 못하게" 하려고 도입했고 그 목적은 지금도
-   * 유효하다. 다만 360×640 에서는 예약 비용이 그대로 그리기 면적 손실이다(레인 43px +
-   * mb-2 8px = 51px). 게다가 이 레인의 명령은 모바일에서 이미 중복이다 — 요소를 고르면
-   * 플로팅 "선택 항목 빠른 작업" 바가 속성·복제·앞으로·뒤로·잠금·대사 편집·삭제·해제를
-   * 엄지 영역에 띄운다.
-   *
-   * 조건이 **선택 상태가 아니라 뷰포트**라는 점이 핵심이다. 모바일에서는 선택 유무와
-   * 무관하게 항상 없으므로, 예약을 없애도 "선택 시 레이아웃 이동 0px" 불변식은 그대로다.
-   * 데스크톱(lg 이상)은 현행 상시 예약을 유지한다.
-   */
+  // 모바일의 선택 명령은 플로팅 도구가 맡는다. 데스크톱은 고정된 도구줄을 사용해
+  // 드래그 도중 선택이 바뀌어도 캔버스의 입력 좌표가 밀리지 않게 한다.
   const selectionCommandLaneMounted = !useIsMobile();
   /**
    * 후발(follower) 탭에는 **복구 버튼이 뜨면 안 된다.** 누르면 선행 탭의 문서를 메모리에
@@ -520,23 +519,9 @@ export function StudioCanvasStatusRail({
         </div>
       ) : null}
 
-      {/*
-       * 선택 명령 레인 — 높이를 **상시 예약**한다.
-       *
-       * 이 바는 캔버스 열의 흐름(flow) 안에 있고, 선택이 생길 때만 마운트되면 그 아래 캔버스
-       * 뷰포트를 통째로 밀어 내린다(실측 51px = 바 43px + mb-2 8px). 그 밀림은 보기 흉한 데서
-       * 끝나지 않는다: 요소를 눌러 선택하는 순간 바가 붙으면서 스테이지 원점이 51px 내려가는데,
-       * 이미 시작된 Konva 드래그는 누를 때 잡아 둔 원점을 계속 쓰므로 첫 move에서 요소가 정확히
-       * 51px 위로 튄다(실측). 즉 "선택 상태가 캔버스 기하를 바꾸는 것" 하나가 두 결함의 뿌리다.
-       *
-       * 오버레이(absolute)로 띄우면 흰 원고 위를 덮으므로, 이미 §select-options 스트립이 쓰고 있는
-       * 관례(빈 상태에도 자리를 잡아 두는 예약 띠)를 그대로 따른다. 선택 유무와 무관하게 레인
-       * 높이가 고정되므로 캔버스 원점 이동은 0px이고, 캔버스 콘텐츠는 아무것도 가려지지 않는다.
-       *
-       * 단, 그 예약은 **데스크톱에서만** 값을 한다 — 모바일 분기는
-       * `selectionCommandLaneMounted` 주석 참고.
-       */}
+      {/* 개인 배치는 고정 레인을 예약하고, 기본 그리기는 상단 옵션 줄을 공유한다. */}
       {selectionCommandLaneMounted ? (
+      <SelectionCommandPosition count={selectionCount}>
       <div
         data-studio-selection-command-lane="true"
         className="mb-2 h-[2.6875rem] shrink-0"
@@ -753,6 +738,7 @@ export function StudioCanvasStatusRail({
         </div>
       )}
       </div>
+      </SelectionCommandPosition>
       ) : null}
 
       {(advancedFillBusy || hasAdvancedFillPreview) && (

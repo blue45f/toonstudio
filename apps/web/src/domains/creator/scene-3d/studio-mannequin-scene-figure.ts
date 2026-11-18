@@ -23,6 +23,7 @@ import {
   STUDIO_MANNEQUIN_CHAIN_IDS,
   clampStudioMannequinFingerPose,
   clampStudioMannequinJointRotation,
+  isStudioMannequinJointId,
   type StudioMannequinChainId,
   type StudioMannequinFingerPose,
   type StudioMannequinJointId,
@@ -92,6 +93,21 @@ export interface StudioMannequinSceneFigure {
   dispose(): void;
 }
 
+/** 연속 몸통은 삼각형 안에서 보간한 스키닝 가중치로 잡은 부위의 관절을 고른다. */
+export function resolveStudioMannequinPickedJoint(hit?: THREE.Intersection): StudioMannequinJointId | null {
+  if (!hit) return null;
+  const { object, face, barycoord } = hit;
+  const joint = object.userData.studioMannequinJointId;
+  if (object.userData.studioMannequinTorsoSkinned === true && object instanceof THREE.SkinnedMesh && face && barycoord) {
+    // 몸통 빌더의 skinIndex는 모든 정점에서 골반·척추·가슴 순서다.
+    const weights = object.geometry.getAttribute("skinWeight");
+    const influence = THREE.Triangle.getInterpolatedAttribute(weights, face.a, face.b, face.c, barycoord, new THREE.Vector4());
+    if (influence.x >= influence.y && influence.x >= influence.z) return "pelvis";
+    return influence.y >= influence.z ? "spine" : "chest";
+  }
+  return isStudioMannequinJointId(joint) ? joint : null;
+}
+
 function toVec3(value: StudioMannequinVec3): THREE.Vector3 {
   return new THREE.Vector3(value[0], value[1], value[2]);
 }
@@ -149,6 +165,7 @@ export function createStudioMannequinSceneFigure(input: {
   let outlineMeshes: THREE.Mesh[] = [];
   let effectorHandles: THREE.Mesh[] = [];
   let torsoBones: [THREE.Bone, THREE.Bone, THREE.Bone] | null = null;
+  let torsoMesh: THREE.SkinnedMesh | null = null;
   let torsoSkeleton: THREE.Skeleton | null = null;
   let torsoOutlineOwnGeometry: THREE.BufferGeometry | null = null;
   let pelvisRestOffset = new THREE.Vector3();
@@ -166,6 +183,7 @@ export function createStudioMannequinSceneFigure(input: {
       torsoSkeleton = null;
     }
     torsoBones = null;
+    torsoMesh = null;
     for (const mesh of bodyMeshes) {
       mesh.geometry.dispose();
       mesh.removeFromParent();
@@ -189,7 +207,15 @@ export function createStudioMannequinSceneFigure(input: {
     }
     if (spineGroup) torsoBones[1].rotation.copy(spineGroup.rotation);
     if (chestGroup) torsoBones[2].rotation.copy(chestGroup.rotation);
-    torsoBones[0].updateMatrixWorld(true);
+    torsoBones[0].updateWorldMatrix(true, true);
+    if (torsoMesh && (torsoMesh.boundingSphere || torsoMesh.boundingBox)) {
+      // 피킹이나 프레이밍에서 이미 읽은 경계만 갱신한다. 경계 상자로부터 경계구를 구하면 정점을 다시 순회할 필요가 없다.
+      torsoMesh.updateMatrixWorld(true);
+      if (torsoMesh.boundingBox) {
+        torsoMesh.computeBoundingBox();
+        if (torsoMesh.boundingSphere) torsoMesh.boundingBox.getBoundingSphere(torsoMesh.boundingSphere);
+      } else torsoMesh.computeBoundingSphere();
+    }
   }
 
   function attachBodyMesh(
@@ -449,6 +475,7 @@ export function createStudioMannequinSceneFigure(input: {
       studioMannequinFigureId: id,
       studioMannequinTorsoSkinned: true,
     });
+    torsoMesh = skinnedMesh;
     root.add(skinnedMesh);
     bodyMeshes.push(skinnedMesh);
 

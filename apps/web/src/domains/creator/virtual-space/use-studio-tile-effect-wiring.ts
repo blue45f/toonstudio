@@ -27,10 +27,18 @@ export function useStudioTileEffectWiring(input: {
     () => (tileEffectState.scope === decorationScope ? tileEffectState.effects : readStudioTileEffects(decorationScope)),
     [tileEffectState, decorationScope],
   );
-  const changeTileEffects = useCallback((next: readonly StudioTileEffectDefinition[]) => {
+  const loadTileEffects = useCallback((next: readonly StudioTileEffectDefinition[]) => {
     setTileEffectState({ scope: decorationScope, effects: next });
-    writeStudioTileEffects(next, decorationScope);
   }, [decorationScope]);
+  const reloadTileEffects = useCallback(() => loadTileEffects(readStudioTileEffects(decorationScope)), [decorationScope, loadTileEffects]);
+  const cloneBinding = (search: URLSearchParams, hash: string) => ({
+    scope: decorationScope, effects: tileEffects, onLoad: loadTileEffects,
+    expanded: search.get("clone") === "1", incoming: hash.startsWith("#clone=") ? hash : "",
+  });
+  const changeTileEffects = useCallback((next: readonly StudioTileEffectDefinition[]) => {
+    loadTileEffects(next);
+    writeStudioTileEffects(next, decorationScope);
+  }, [decorationScope, loadTileEffects]);
   // 타일 편집기로 배치한 silent 구역도 같은 음소 파이프라인에 태운다.
   const tileSilentZones = useMemo<readonly StudioSilentZone[]>(() => tileEffects.flatMap((effect) => {
     if (effect.kind !== "zone" || effect.zoneTag !== "silent") return [];
@@ -63,5 +71,5 @@ export function useStudioTileEffectWiring(input: {
     }
   }, [engineBridge, setTileMedia]);
 
-  return { tileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger };
+  return { tileEffects, cloneBinding, reloadTileEffects, changeTileEffects, tileSilentZones, tileMedia, setTileMedia, handleTileEffectTrigger };
 }

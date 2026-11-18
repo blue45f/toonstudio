@@ -38,7 +38,7 @@ import {
 } from "../drawing/studio-csp-benchmark-scorecard";
 import { returnFromStudioEditorInBrowser } from "../studio-editor-return-navigation";
 import { StudioEditorReturnButton } from "../StudioEditorReturnButton";
-import { isStudioDraftSaveConflictMessage } from "../studio-draft-save-center-model";
+import { isStudioDraftSaveConflictMessage } from "./studio-draft-save-error";
 import { EMPTY_STUDIO_SAVE_SYNC_SIGNALS, resolveSaveSyncStatusFromSignals } from "../studio-save-sync-signals";
 
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";

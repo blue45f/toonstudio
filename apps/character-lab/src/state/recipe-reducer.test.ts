@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog, migrateRecipeV1ToV2, migrateRecipeV2ToV3 } from "../contracts";
+import { ALL_AVAILABLE_CAPABILITIES, DEFAULT_RECIPE_COLORS, createDefaultRecipe, createKitDefaultRecipe, createPresetCatalog, migrateRecipeV1ToV2, migrateRecipeV2ToV3 } from "../contracts";
 import { legacyRecipeV1Fixture, legacyRecipeV2Fixture, presetEntryFixture, samplePose, vocabularyCatalogEntries } from "../testing/recipe-fixtures";
 
+import { planApply } from "./apply-plan";
 import { RecipeCommandError, describeCommandKo, mergePoseScoped, normalizePose, reduceRecipe } from "./recipe-reducer";
 
 import type { CharacterRecipe, PresetCatalog, RecipeSource } from "../contracts";
@@ -105,6 +106,28 @@ describe("state/recipe-reducer", () => {
     expect(reduceRecipe(next, { type: "color/set", key: "skin", value: "#ffaa00" }, catalog)).toBe(next);
     expect(() => reduceRecipe(base, { type: "color/set", key: "skin", value: "red" }, catalog)).toThrowError(/#rrggbb/u);
     expect(() => reduceRecipe(base, { type: "color/set", key: "nope" as never, value: "#000000" }, catalog)).toThrowError(/색 키가 아닙니다/u);
+  });
+
+  it("패키지 원본·명시한 머리색을 구분하고 파일을 다시 열어도 키트 색을 보존한다", () => {
+    const kit = reduceRecipe(createKitDefaultRecipe(), { type: "color/set", key: "hair", value: "#241d2e" }, catalog);
+    const source = { kind: "package", characterId: "orion", sha256: "a".repeat(64) } as const;
+    const select = (recipe: CharacterRecipe, next: RecipeSource) =>
+      reduceRecipe(recipe, { type: "source/set", source: next, capabilities: ALL_AVAILABLE_CAPABILITIES }, catalog);
+    const plannedHair = (recipe: CharacterRecipe) => planApply(recipe, ALL_AVAILABLE_CAPABILITIES, catalog).colors.hair;
+    const neutral = select(kit, source);
+    expect(plannedHair(neutral)).toBe(DEFAULT_RECIPE_COLORS.hair);
+
+    const mint = reduceRecipe(neutral, { type: "color/set", key: "hair", value: "#6fbfa3" }, catalog);
+    const reopened = reduceRecipe(kit, { type: "recipe/load", recipe: JSON.parse(JSON.stringify(mint)) }, catalog);
+    expect(reopened.hairColor.packageBaseTint).toBe("#6fbfa3");
+    expect(plannedHair(reopened)).toBe("#6fbfa3");
+    expect(plannedHair(select(reopened, { ...source, characterId: "nova" }))).toBe(DEFAULT_RECIPE_COLORS.hair);
+    expect(plannedHair(select(reopened, kit.source))).toBe("#241d2e");
+
+    const restored = reduceRecipe(reopened, { type: "color/set", key: "hair", value: DEFAULT_RECIPE_COLORS.hair }, catalog);
+    expect(restored.hairColor).not.toHaveProperty("packageBaseTint");
+    expect(restored.colors).toEqual(kit.colors);
+    expect(plannedHair(restored)).toBe(DEFAULT_RECIPE_COLORS.hair);
   });
 
   it("expression/set은 merge 여부에 따라 병합·교체하고 [0,1]로 클램프한다", () => {

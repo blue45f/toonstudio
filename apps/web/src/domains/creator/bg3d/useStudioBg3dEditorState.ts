@@ -3,12 +3,13 @@
 // React Compiler 옵트아웃: 가변 호스트 백(h) 을 렌더마다 재대입해 공유하는 추출 패턴이라,
 // 컴파일러가 h 참조 동일성만 보고 JSX/계산을 캐시하면 첫 렌더에서 UI 가 영구 동결된다
 // (탭 전환 등 커밋된 상태 변경이 화면에 반영되지 않음).
+import { useStudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
+import { studioBg3dCaptureCharacterAuthorityDraft, useStudioBg3dCutVrmSession } from "./useStudioBg3dCutVrmSession";
 import * as R from "./studio-bg3d-editor-runtime-bindings";
 import type { Bg3dModelLibraryEntry, Bg3dTemplateLibraryEntry, BgCompositeCategory, BgPanelTab, BgSceneTemplateCategory, BgViewportApi, CaptureState, LtEditorSection, LtUserPresetLibraryStatus, LtUserPresetNotice, ModelRootCacheEntry, ModelThumbnailGpuLease, StudioBg3dBabylonDiagnosticState, StudioBg3dCameraSettings, StudioBg3dHistorySnapshot, StudioBg3dImmersiveStagePlan, StudioBg3dImportProgress, StudioBg3dLtPresetPayload, StudioBg3dMeasurementInferenceSuccess, StudioBg3dMeasurementVec3, StudioBg3dModalSession, StudioBg3dModelAttachment, StudioBg3dModelThumbnailCaptureController, StudioBg3dPhysicsGravityPreset, StudioBg3dPhysicsPhase, StudioBg3dPhysicsSession, StudioBg3dPhysicsTimelineWorkerSession, StudioBg3dPhysicsTransformSample, StudioBg3dPlacementPreviewAsset, StudioBg3dPlacementSessionState, StudioBg3dRigBakeReader, StudioBg3dRigSelectionState, StudioBg3dRoomSpec, StudioBg3dSectionPlaneState, StudioBg3dSharedCharacterCaptureAuthorityInput, StudioBg3dShotBatchPass, StudioBg3dShotBatchRecoveryScope, StudioBg3dShotBatchRecoverySession, StudioBg3dShotBatchRecoveryStore, StudioBg3dSnapSettings, StudioBg3dSunRigConfig, StudioBg3dWorldMeasurement, StudioGeneric3dClassification, StudioGeneric3dControlMode, StudioGeneric3dSourceFormat, StudioWebXrSessionController, StudioWebXrSessionState, StudioWebXrSupportSnapshot, TransformModeId, TransformSpace, ViewEditorSection } from "./studio-bg3d-editor-runtime-bindings";
 import type { StudioBg3dHistoryCommandTimeline } from "./studio-bg3d-history-command-adapter";
 import type { StudioBg3dKtx2Renderer } from "./studio-bg3d-ktx2-renderer-runtime";
 import { rememberStudioBg3dCameraBeforeViewportRemount } from "./studio-bg3d-camera-history-transition";
-import { useStudioBg3dCanonicalDocumentState } from "./useStudioBg3dCanonicalDocumentState";
 import { readStudioBg3dSceneMeasurements } from "./studio-bg3d-scene-measurements";
 
 export function useStudioBg3dEditorState(props: Record<string, any>) {
@@ -17,7 +18,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
   const h = hostRef.current;
   const {
     open, initialDataUrl, initialScene, seedSceneTemplateId = null, seedPrimitiveKind = null,
-    onSeedObjectInsertConsumed, sharedSceneSession, sharedStageResolution, sharedStageSessionScopeKey,
+    onSeedObjectInsertConsumed, sharedSceneSession: liveSharedSceneSession, sharedStageResolution, sharedStageSessionScopeKey, cutTeamDocument, cutDocumentKey, cutWorkId, cutWorkResources,
     sharedCharactersLinkedToOtherBackgroundCount = 0, operation = "insert", recoveryScope,
     validateRecoveryAccess, onWebXrCleanupPendingChange, onClose, onInsert, onUseAsAiMethodReference,
     documentCanvasSize, sixPassLtUnavailableReason,
@@ -37,6 +38,20 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
   const [primitiveGeometryPool] = useState(() => new StudioBg3dPrimitiveGeometryPool());
   const [adaptiveDprScale, setAdaptiveDprScale] = useState(1);
   const [engineFrameTimeMs, setEngineFrameTimeMs] = useState<number | null>(null);
+  const {
+    primitives,
+    setPrimitives,
+    customModels,
+    setCustomModels,
+    sceneBaseDocument,
+    setSceneBaseDocument,
+    canonicalRevision,
+    liveSceneRef: physicsRuntimeSourceRef,
+    replaceCanonicalDocumentState,
+  } = useStudioBg3dCanonicalDocumentState({
+    initialDocument: canonicalSceneDocument(initialScene) ?? DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
+  });
+  const { sharedSceneSession, frozenCut } = useStudioBg3dCutVrmSession(sceneBaseDocument, liveSharedSceneSession, cutDocumentKey, cutTeamDocument, cutWorkId, cutWorkResources);
   const {
     commitSharedCharacterTransform,
     effectiveSelectedSharedCharacter,
@@ -69,34 +84,12 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     initialDataUrl,
     initialScene,
     operation,
-    sceneSession: sharedSceneSession,
+    sceneSession: sharedSceneSession, frozenCut,
     stageResolution: sharedStageResolution,
   });
-  const sharedCharacterCaptureAuthorityDraft = {
-    includeCharactersInCapture: includeSharedCharactersInCapture,
-    readinessPhase: sharedCharacterCaptureReadiness.phase,
-    expectedCharacters: sharedCharacters.map((character: any) => ({
-      elementId: character.elementId,
-      runtimeKey: character.runtimeKey,
-      modelRuntimeKey: character.modelRuntimeKey,
-      placementHash: character.placementHash,
-      sourceHash: character.sourceHash,
-    })),
-    capturableElementIds: sharedCharacterCaptureReadiness.capturableElementIds,
-    previewOnlyElementIds: sharedCharacterCaptureReadiness.previewOnlyElementIds,
-    pendingElementIds: sharedCharacters.flatMap((character: any) =>
-      sharedCharacterStatuses[character.runtimeKey] === "ready"
-        ? []
-        : sharedCharacterStatuses[character.runtimeKey] === "unavailable"
-          ? []
-          : [character.elementId],
-    ),
-    unavailableElementIds: sharedCharacters.flatMap((character: any) =>
-      sharedCharacterStatuses[character.runtimeKey] === "unavailable"
-        ? [character.elementId]
-        : [],
-    ),
-  } as const;
+  const sharedCharacterCaptureAuthorityDraft = studioBg3dCaptureCharacterAuthorityDraft(
+    includeSharedCharactersInCapture, sharedCharacters, sharedCharacterCaptureReadiness, sharedCharacterStatuses,
+  );
   const sharedCharacterCaptureAuthorityPayloadKey = JSON.stringify(
     sharedCharacterCaptureAuthorityDraft,
   );
@@ -106,19 +99,6 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
   const sharedCharacterCaptureAuthorityRevisionRef = useRef(0);
   const sharedCharacterCaptureStatusFenceRef = useRef(sharedCharacterStatuses);
 
-  const {
-    primitives,
-    setPrimitives,
-    customModels,
-    setCustomModels,
-    sceneBaseDocument,
-    setSceneBaseDocument,
-    canonicalRevision,
-    liveSceneRef: physicsRuntimeSourceRef,
-    replaceCanonicalDocumentState,
-  } = useStudioBg3dCanonicalDocumentState({
-    initialDocument: canonicalSceneDocument(initialScene) ?? DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT,
-  });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [transformMode, setTransformMode] = useState<TransformModeId>("translate");
   /** Null keeps mode defaults; an explicit transform space is view-only and tool-stable. */
@@ -787,7 +767,7 @@ export function useStudioBg3dEditorState(props: Record<string, any>) {
     seedSceneTemplateId,
     seedPrimitiveKind,
     onSeedObjectInsertConsumed,
-    sharedSceneSession,
+    sharedSceneSession, liveSharedSceneSession, frozenCut, cutTeamDocument, cutDocumentKey, cutWorkId, cutWorkResources,
     sharedStageResolution,
     sharedStageSessionScopeKey,
     sharedCharactersLinkedToOtherBackgroundCount,

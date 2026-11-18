@@ -1,3 +1,4 @@
+import { verifyStudioBg3dShotBatchPublicRenderDigest } from "./studio-bg3d-shot-batch-public-digest";
 import { isStudioBg3dShotBatchNumberInRange, isStudioBg3dShotBatchIntegerInRange, STUDIO_BG3D_SHOT_BATCH_MAX_DIMENSION } from "./studio-bg3d-shot-batch-limits";
 import { STUDIO_BG3D_LT_RENDER_MAX_PIXELS } from "./studio-bg3d-lt-render";
 import { StudioBg3dShotBatchPublicPlanError } from "./studio-bg3d-shot-batch-public-plan-error";
@@ -10,14 +11,13 @@ import {
   verifyStudioBg3dOpaqueRgb8PngFile,
   verifyStudioBg3dRgba8PngFile,
 } from "./studio-bg3d-file-integrity";
-import { resolveStudioBg3dLtCaptureSize } from "./studio-bg3d-lt-capture-size";
+import { resolveStudioBg3dShotCaptureSize } from "./studio-bg3d-lt-capture-size";
 import {
   STUDIO_BG3D_SHOT_BATCH_MAX_FILES,
   STUDIO_BG3D_SHOT_BATCH_PASSES,
   STUDIO_BG3D_SHOT_BATCH_PLAN_MAX_PIXELS,
   STUDIO_BG3D_SHOT_BATCH_PLAN_MAX_SOURCE_DIMENSION,
   STUDIO_BG3D_SHOT_BATCH_PSD_ENCODING_V1,
-  computeStudioBg3dShotBatchRenderDigest,
   hydrateStudioBg3dShotBatchPlan,
   verifyStudioBg3dShotBatchSourceRevision,
   type StudioBg3dShotBatchPlan,
@@ -113,6 +113,7 @@ export interface StudioBg3dShotBatchPublicRenderImplementation {
 }
 
 export interface StudioBg3dShotBatchPublicCaptureProfile {
+  readonly exportAspectRatio?: number;
   readonly profileId: string;
   readonly ltPipelineId: string;
   readonly pngEncodingId: string;
@@ -458,7 +459,11 @@ function snapshotPublicRenderPlan(
       "deviceProfile",
       "textureScale",
       "lodBias",
+      ...(plan.captureProfile?.exportAspectRatio === undefined ? [] : ["exportAspectRatio"]),
     ]) ||
+    (plan.captureProfile.exportAspectRatio !== undefined && (
+      !Number.isFinite(plan.captureProfile.exportAspectRatio) || plan.captureProfile.exportAspectRatio <= 0 || plan.captureProfile.exportAspectRatio > 32
+    )) ||
     !PROFILE_ID_PATTERN.test(plan.captureProfile.profileId) ||
     !PROFILE_ID_PATTERN.test(plan.captureProfile.ltPipelineId) ||
     !PROFILE_ID_PATTERN.test(plan.captureProfile.pngEncodingId) ||
@@ -560,7 +565,8 @@ function snapshotPublicRenderPlan(
     ) {
       throw new StudioBg3dShotBatchArchiveError("publicPlanFrozenShotInvalid", "type");
     }
-    const resolvedSize = resolveStudioBg3dLtCaptureSize({
+    const resolvedSize = resolveStudioBg3dShotCaptureSize({
+      exportAspectRatio: plan.captureProfile.exportAspectRatio,
       sourceWidth: plan.captureProfile.sourceWidth,
       sourceHeight: plan.captureProfile.sourceHeight,
       requestedHeight: shot.capture.requestedHeight,
@@ -663,6 +669,7 @@ function snapshotPublicRenderPlan(
       deviceProfile: plan.captureProfile.deviceProfile,
       textureScale: plan.captureProfile.textureScale,
       lodBias: plan.captureProfile.lodBias,
+      ...(plan.captureProfile.exportAspectRatio === undefined ? {} : { exportAspectRatio: plan.captureProfile.exportAspectRatio }),
     },
     artifactProfiles: {
       psdProfileId: plan.artifactProfiles.psdProfileId,
@@ -740,6 +747,7 @@ export async function projectStudioBg3dShotBatchPlanForPublicArchive(
       deviceProfile: verifiedPlan.captureOwner.deviceProfile,
       textureScale: verifiedPlan.captureOwner.textureScale,
       lodBias: verifiedPlan.captureOwner.lodBias,
+      ...(verifiedPlan.captureOwner.exportAspectRatio === undefined ? {} : { exportAspectRatio: verifiedPlan.captureOwner.exportAspectRatio }),
     },
     artifactProfiles: {
       psdProfileId: verifiedPlan.captureOwner.psdEncodingId,
@@ -778,63 +786,6 @@ export async function projectStudioBg3dShotBatchPlanForPublicArchive(
       })),
     })),
   });
-}
-
-async function verifyStudioBg3dShotBatchPublicRenderDigest(
-  plan: StudioBg3dShotBatchPublicRenderPlan,
-): Promise<boolean> {
-  const digest = await computeStudioBg3dShotBatchRenderDigest({
-    sourceDigest: plan.sourceDigest,
-    captureOwner: {
-      backend: plan.implementation.backend,
-      engineId: plan.implementation.engineId,
-      engineRevision: plan.implementation.engineRevision,
-      implementationRevision: plan.implementation.adapterImplementationRevision,
-      graphicsApi: plan.implementation.graphicsApi,
-      profileId: plan.captureProfile.profileId,
-      sourceWidth: plan.captureProfile.sourceWidth,
-      sourceHeight: plan.captureProfile.sourceHeight,
-      maxPixels: plan.captureProfile.maxPixels,
-      maxEdge: plan.captureProfile.maxEdge,
-      deviceProfile: plan.captureProfile.deviceProfile,
-      textureScale: plan.captureProfile.textureScale,
-      lodBias: plan.captureProfile.lodBias,
-      ltPipelineId: plan.captureProfile.ltPipelineId,
-      pngEncodingId: plan.captureProfile.pngEncodingId,
-      psdEncodingId: plan.artifactProfiles.psdProfileId,
-    },
-    shots: plan.shots.map((shot) => ({
-      shotId: shot.shotId,
-      shotName: shot.shotName,
-      shotIndex: shot.shotIndex,
-      capture: {
-        width: shot.capture.width,
-        height: shot.capture.height,
-        requestedHeight: shot.capture.requestedHeight,
-        wasReduced: shot.capture.wasReduced,
-        includeDepth: shot.capture.includeDepth,
-        shadows: shot.capture.shadows,
-        shadowMapSize: shot.capture.shadowMapSize,
-        background: {
-          color: shot.capture.background.color,
-          alpha: shot.capture.background.alpha,
-        },
-      },
-      files: shot.files.map((file) => ({
-        key: `${file.shotId}:${file.pass}`,
-        shotId: file.shotId,
-        shotName: file.shotName,
-        shotIndex: file.shotIndex,
-        pass: file.pass,
-        path: file.path,
-      })),
-    })),
-    passes: [...plan.passes],
-    exportHeight: plan.exportHeight,
-    includeLayeredPsd: plan.artifactRequests.layeredPsd,
-    includeContactSheet: plan.artifactRequests.contactSheet,
-  });
-  return digest !== null && digest === plan.renderDigest;
 }
 
 export function isStudioBg3dShotBatchPublicRenderPlan(

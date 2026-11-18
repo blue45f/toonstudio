@@ -21,6 +21,22 @@ import type { BrowserContext, Page } from "playwright";
 
 export const STUDIO_REVIEW_HOST_TITLE = "검수 캡처 실편집기 검증";
 
+/** 격리 DB에 검증 계정을 만들고 정식 로그인으로 현재 브라우저 세션을 연다. */
+export async function createStudioReviewHostActor(context: BrowserContext, pool: Pool, origin: URL) {
+  const headers = { "x-toonstudio-csrf": "1", Origin: origin.origin, Referer: `${origin.origin}/studio` };
+  const accountId = randomUUID(), email = `qa-review-host-${accountId}@example.test`, password = `Qa-${accountId}-pw`;
+  // A new verified fixture account avoids sending external signup email. Login,
+  // session cookies and every source/collaboration ACL still use the actual API.
+  await pool.query('INSERT INTO "user" (id, name, email, "emailVerified", "passwordHash", "createdAt") VALUES ($1, $2, $3, NOW(), $4, NOW())',
+    [accountId, "검수 작가", email, await hashPassword(password)]);
+  console.log("Seeded disposable verified account.");
+  const login = await context.request.post(`${origin.origin}/api/auth/login`, { headers, data: { email, password } });
+  assert(login.ok(), `Local login returned ${login.status()}`);
+  assert.equal((await login.json()).ok, true, "Authenticate through the actual local API");
+  console.log("Authenticated through the local API.");
+  return { accountId };
+}
+
 /** Synthetic empty source/account setup; auth and source writes use actual Core endpoints. */
 export async function createStudioReviewHostFixture(context: BrowserContext, pool: Pool, origin: URL) {
   const title = STUDIO_REVIEW_HOST_TITLE;
@@ -42,17 +58,8 @@ const snapshot = {
 };
 const payload = buildStudioSavePayload({ ...snapshot, cover: "", pageImages: [], status: "draft",
   document: { ...snapshot, width: 720 } });
-  const accountId = randomUUID(), email = `qa-review-host-${accountId}@example.test`, password = `Qa-${accountId}-pw`;
-  // A new verified fixture account avoids sending external signup email. Login,
-  // session cookies and every source/collaboration ACL still use the actual API.
-  await pool.query('INSERT INTO "user" (id, name, email, "emailVerified", "passwordHash", "createdAt") VALUES ($1, $2, $3, NOW(), $4, NOW())',
-    [accountId, "검수 작가", email, await hashPassword(password)]);
-  console.log("Seeded disposable verified account.");
-  const login = await context.request.post(`${origin.origin}/api/auth/login`, { headers, data: { email, password } });
-  assert(login.ok(), `Local login returned ${login.status()}`);
-  assert.equal((await login.json()).ok, true, "Authenticate through the actual local API");
-  console.log("Authenticated through the local API.");
-  const created = await context.request.post(`${origin.origin}/api/creator/works`, { headers, data: payload });
+  const { accountId } = await createStudioReviewHostActor(context, pool, origin);
+const created = await context.request.post(`${origin.origin}/api/creator/works`, { headers, data: payload });
   assert([200, 201].includes(created.status()), `Create returned ${created.status()}: ${await created.text()}`);
   const workId = (await created.json()).id; assert.equal(typeof workId, "string");
   const source = await context.request.get(`${origin.origin}/api/creator/works/${workId}/team/document`, { headers });
@@ -72,6 +79,14 @@ export async function openStudioReviewHost(page: Page, origin: URL, workId: stri
   }
   const gate = page.getByRole("button", { name: "나중에 보기", exact: true });
   if (await gate.isVisible()) await gate.click();
+  // 미세 펜 설정과 개별 레이어 행을 검수할 수 있는 작업 화면을 실제 메뉴로 연다.
+  const layoutMenu = page.locator('[data-studio-clarity-more-trigger="true"]:visible').first();
+  if (await layoutMenu.isVisible()) {
+    await layoutMenu.click();
+    await page.getByRole("button", { name: /화면과 도움말/u }).click();
+    await page.getByRole("button", { name: "프로젝트·창 도구 배치로 전환", exact: true }).click();
+    await page.locator('[data-studio-clarity-entry="true"]:visible').first().waitFor();
+  }
 }
 
 /** Original three-pen-strokes-per-page acceptance remains unchanged. */
@@ -98,10 +113,12 @@ async function dismissStudioReviewPenObstructions(page: Page) {
   const quickStart = page.locator('button[data-studio-quickstart-dismiss="true"]:visible').first();
   const sequence = page.locator('button[data-studio-page-sequence-close="true"]:visible').first();
   for (const close of [guide, quickStart, sequence]) {
-    if (await close.isVisible()) {
+    for (let count = 0; count < 3 && await close.isVisible(); count++) {
+      const target = await close.elementHandle();
       await close.click();
-      await close.waitFor({ state: "hidden" });
+      await page.waitForFunction(element => !element?.isConnected || !element.getClientRects().length, target);
     }
+    assert(!(await close.isVisible()), "그리기 경로를 가리는 안내를 모두 닫아야 합니다.");
   }
 }
 

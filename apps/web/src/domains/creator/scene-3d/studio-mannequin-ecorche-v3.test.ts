@@ -122,6 +122,56 @@ describe("studio-mannequin-ecorche-anatomy (v5 연속 몸통 스키닝 & 능동 
     }
   });
 
+  it("흉곽은 어깨 관절 안쪽에 닿고, 가슴 볼륨 슬라이더는 앞쪽 몸통 정점만 움직인다", () => {
+    const spec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS);
+    const volume = (value: number) => {
+      const torso = buildStudioMannequinSkinnedTorsoSpec(spec, { surfaceMode: "ecorche", pectoralVolume: value });
+      if (!torso) throw new Error("몸통 로프트가 없습니다.");
+      return buildStudioMannequinSkinnedTorsoGeometry(torso);
+    };
+    const small = volume(0.75), large = volume(1.4);
+    const a = small.getAttribute("position"), b = large.getAttribute("position");
+    let changed = 0;
+    for (let i = 0; i < a.count; i++) {
+      expect(a.getX(i)).toBe(b.getX(i));
+      if (a.getZ(i) === b.getZ(i)) continue;
+      expect(a.getZ(i)).toBeGreaterThan(0);
+      expect(b.getZ(i)).toBeGreaterThan(a.getZ(i));
+      changed++;
+    }
+    expect(changed).toBeGreaterThan(20);
+    small.computeBoundingBox();
+    const socket = spec.joints.filter((joint) => joint.id === "leftShoulder" || joint.id === "leftUpperArm").reduce((x, joint) => x + joint.offset[0], 0);
+    expect(small.boundingBox?.max.x).toBeGreaterThan(socket * 0.75);
+    expect(small.boundingBox?.max.x).toBeLessThan(socket);
+    small.dispose();
+    large.dispose();
+  });
+
+  it("몸통과 팔다리의 양 끝을 바깥쪽에서 비추면 닫힌 면에 닿는다", () => {
+    const spec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS);
+    const torso = buildStudioMannequinSkinnedTorsoSpec(spec, { surfaceMode: "ecorche" });
+    const tube = buildStudioMannequinLoftTubes(spec, { surfaceMode: "ecorche" })[0];
+    if (!torso || !tube) throw new Error("데생 인형 로프트가 비었습니다.");
+    const sections = [0, 1].map((y) => ({
+      center: [0, y, 0] as const, radiusX: 0.2, radiusZ: 0.2, twistRad: 0,
+      boneWeights: [1, 0, 0] as const,
+    }));
+    const material = new THREE.MeshBasicMaterial({ side: THREE.FrontSide });
+    for (const geometry of [
+      buildStudioMannequinLoftGeometry({ ...tube, sections }),
+      buildStudioMannequinSkinnedTorsoGeometry({ ...torso, sections }),
+    ]) {
+      const mesh = new THREE.Mesh(geometry, material);
+      for (const [y, direction, expected] of [[2, -1, 1], [-1, 1, 0]]) {
+        const ray = new THREE.Raycaster(new THREE.Vector3(0.01, y, 0.02), new THREE.Vector3(0, direction, 0));
+        expect(ray.intersectObject(mesh)[0]?.point.y).toBeCloseTo(expected, 6);
+      }
+      geometry.dispose();
+    }
+    material.dispose();
+  });
+
   it("모든 6종 웹툰 원형(Archetype)과 에코르셰 모드에서 신장 불변식과 비대칭 복숭아뼈를 보장한다", () => {
     for (const id of Object.keys(STUDIO_MANNEQUIN_ARCHETYPE_PRESETS) as StudioMannequinArchetypePresetId[]) {
       const archetypeParams = resolveStudioMannequinArchetypeParams(id);

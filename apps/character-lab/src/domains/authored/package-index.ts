@@ -42,6 +42,7 @@ export interface AuthoredIndexEntry extends CharacterPackageIndexEntry {
   readonly manifestFormat: ManifestFormat;
   readonly primary: boolean;
   readonly role: string | null;
+  readonly glbUrl?: string;
   readonly glbSha256: string | null;
   readonly glbBytes: number | null;
   readonly contactSheetUrl: string | null;
@@ -101,6 +102,7 @@ export function parseCharacterPackageIndex(json: unknown, now?: number): IndexPa
         manifestFormat: "authored-character",
         primary: authored.data.primary === character.id,
         role: character.role ?? null,
+        ...(character.files?.glb?.path ? { glbUrl: join(root, character.files.glb.path) } : {}),
         glbSha256: character.files?.glb?.sha256 ?? null,
         glbBytes: character.files?.glb?.bytes ?? null,
         contactSheetUrl: character.files?.contactSheet?.path ? join(root, character.files.contactSheet.path) : null,

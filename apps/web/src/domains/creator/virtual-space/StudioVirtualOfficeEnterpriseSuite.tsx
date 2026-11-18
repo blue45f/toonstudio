@@ -1,4 +1,6 @@
+import { StudioSpaceScrollRegion } from "./StudioSpaceScrollRegion";
 import { useId, useMemo, useState, type KeyboardEvent } from "react";
+import { navigateStudioSpaceTab } from "./studio-space-tab-navigation";
 import { StudioVirtualOfficeHolisticMasterPanel } from "./StudioVirtualOfficeHolisticMasterPanel";
 import { StudioVirtualOfficePairingXrPanel } from "./StudioVirtualOfficePairingXrPanel";
 import { StudioVirtualOfficeSpatialCanvasHud } from "./StudioVirtualOfficeSpatialCanvasHud";
@@ -39,23 +41,22 @@ type EnterpriseSuiteTabId =
 const SUITE_TABS: readonly {
   readonly id: EnterpriseSuiteTabId;
   readonly labelKo: string;
-  readonly platformsBadge: string;
 }[] = [
-  { id: "spatial-floors-knock-audio", labelKo: "다층 빌딩 · 노크 · 영구 테이블 · 지향성 음향", platformsBadge: "Kumospace · Roam · oVice · Teamflow" },
-  { id: "ai-agents-memory-mcp", labelKo: "AI 에이전트 데스크 · 회의 메모리 · MCP 브리지", platformsBadge: "SoWork · Spot Virtual · Cosmos Replay" },
-  { id: "dcc-presence-aikido-multishare", labelKo: "DCC 작업 프레즌스 · 데스크 비동기 노트 · 4화면 동시공유", platformsBadge: "Tandem · Roam Aikido · Cosmos Video" },
-  { id: "host-canvas-pulse-matrix", labelKo: "호스트 관제 · 공간 미디어 핀 · 주간 인사이트", platformsBadge: "ZEP · SpatialChat · SoWork Insights" },
-  { id: "pairing-xr-floor-coaching", labelKo: "원격페어링 · 상태모자 · 리셉션 · 3D페데스탈", platformsBadge: "Teemyco · Sococo · Tuple · Pop · Nooks · FrameVR · Arthur · Virbela" },
-  { id: "stage-sprint-holo-lounge", labelKo: "그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트", platformsBadge: "Remo · Spatial.io · ENGAGE XR · Airmeet · Bramble · Focusmate · Flow Club" },
-  { id: "warroom-async-stage", labelKo: "워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭", platformsBadge: "Welo · Claap · Miro · FigJam · Discord · Kosy · Slack" },
-  { id: "holistic-master-command", labelKo: "플로팅PiP · AI소음번역 · 캘린더동기화 · 40대총괄", platformsBadge: "Whereby · Pumble · Krisp · Airtime/mmhmm · Cal.com" },
+  { id: "spatial-floors-knock-audio", labelKo: "층 이동·회의실" },
+  { id: "ai-agents-memory-mcp", labelKo: "작업 배정·회의 기록" },
+  { id: "dcc-presence-aikido-multishare", labelKo: "작업 상태·메모·화면 공유" },
+  { id: "host-canvas-pulse-matrix", labelKo: "참가자 관리·자료 고정" },
+  { id: "pairing-xr-floor-coaching", labelKo: "작업 페어링·방문자 안내" },
+  { id: "stage-sprint-holo-lounge", labelKo: "발표 준비·품평·집중 시간" },
+  { id: "warroom-async-stage", labelKo: "투표·컷 의견·상영" },
+  { id: "holistic-master-command", labelKo: "발표·일정·공간 설정" },
 ];
 
 export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualOfficeEnterpriseSuiteProps) {
   const [activeTab, setActiveTab] = useState<EnterpriseSuiteTabId>("spatial-floors-knock-audio");
   const [buildingState, setBuildingState] = useState<StudioVirtualOfficeBuildingState>(() => createDefaultVirtualOfficeBuildingState());
   const [enterpriseState, setEnterpriseState] = useState<StudioVirtualOfficeEnterpriseState>(() => createDefaultVirtualOfficeEnterpriseState());
-  const [statusNotice, setStatusNotice] = useState<string>("40개 글로벌·국내 가상 오피스 역공학 기능이 툰스튜디오 제작 워크플로에 활성화되었습니다.");
+  const [statusNotice, setStatusNotice] = useState<string>("");
 
   const [selectedRoomId, setSelectedRoomId] = useState<string>("room-2f-color-booth");
   const [knockMessageDraft, setKnockMessageDraft] = useState<string>("15화 피날레 배경 톤앤매너 조율차 입장 요청합니다.");
@@ -82,6 +83,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
   const [newPinTitleDraft, setNewPinTitleDraft] = useState<string>("15화 지하철역 공간 레퍼런스 무드보드");
   const [rouletteSeed, setRouletteSeed] = useState<number>(1);
 
+  const navigationId = useId();
   const floorTableRegionLabelId = useId();
   const agentTableRegionLabelId = useId();
 
@@ -214,37 +216,38 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
     <section
       className={`space-y-4 rounded-xl border border-line bg-card p-4 text-fg ${className ?? ""}`}
       data-testid="studio-virtual-office-enterprise-suite"
-      aria-label="13대 글로벌·국내 가상 오피스 통합 고도화 스위트"
+      aria-label="사무실 운영 연습"
     >
       <header className="space-y-2 border-b border-line pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold">13대 글로벌·국내 가상 오피스 내재화·고도화 통합 스위트</h3>
+            <h3 className="text-sm font-semibold">사무실 운영 연습</h3>
             <p className="text-xs text-fg-2">
-              Gather · ZEP · oVice · WorkAdventure · Topia · Kumospace · SoWork · Roam · SpatialChat · Teamflow · Tandem · Spot Virtual · Cosmos Video 핵심 아키텍처 내재화
+              예시 사무실에서 회의실 입장, 작업 배정, 자료 공유를 연습합니다. 이 패널을 닫으면 연습 기록이 초기화됩니다.
             </p>
           </div>
-          <span role="status" aria-live="polite" className="rounded-md border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
+          {statusNotice && <span role="status" aria-live="polite" className="rounded-md border border-accent bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent">
             {statusNotice}
-          </span>
+          </span>}
         </div>
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="가상 오피스 엔터프라이즈 기능 도메인 탭">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="사무실 운영 도구">
           {SUITE_TABS.map((tab) => (
             <button
-              key={tab.id} type="button" role="tab" id={`tab-${tab.id}`} aria-selected={activeTab === tab.id} aria-controls={`panel-${tab.id}`}
+              key={tab.id} type="button" role="tab" id={`${navigationId}-${tab.id}`} aria-selected={activeTab === tab.id} aria-controls={`${navigationId}-panel`}
+              tabIndex={activeTab === tab.id ? 0 : -1} onKeyDown={navigateStudioSpaceTab}
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${activeTab === tab.id ? "border-accent bg-accent-soft font-semibold text-accent shadow-xs" : "border-line bg-panel text-fg-2 hover:text-fg"}`}
+              className={`min-h-11 rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${activeTab === tab.id ? "border-accent bg-accent-soft font-semibold text-accent shadow-xs" : "border-line bg-panel text-fg-2 hover:text-fg"}`}
             >
-              <div>{tab.labelKo}</div>
-              <div className="text-[11px] opacity-80">{tab.platformsBadge}</div>
+              {tab.labelKo}
             </button>
           ))}
         </div>
       </header>
       <StudioVirtualOfficeSpatialCanvasHud onNavigateToTab={(tabId, msg) => { setActiveTab(tabId); setStatusNotice(msg); }} />
 
+      <div role="tabpanel" id={`${navigationId}-panel`} aria-labelledby={`${navigationId}-${activeTab}`}>
       {activeTab === "spatial-floors-knock-audio" ? (
-        <div id="panel-spatial-floors-knock-audio" role="tabpanel" aria-labelledby="tab-spatial-floors-knock-audio" className="space-y-4">
+        <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <div className="flex items-center justify-between">
@@ -267,7 +270,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
                   </button>
                 ))}
               </div>
-              <div role="region" aria-labelledby={floorTableRegionLabelId} className="overflow-x-auto rounded border border-line bg-card">
+              <StudioSpaceScrollRegion aria-labelledby={floorTableRegionLabelId} className="overflow-x-auto rounded border border-line bg-card">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
                     <tr className="border-b border-line bg-panel">
@@ -301,7 +304,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </StudioSpaceScrollRegion>
             </div>
 
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
@@ -548,11 +551,11 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
       ) : null}
 
       {activeTab === "ai-agents-memory-mcp" ? (
-        <div id="panel-ai-agents-memory-mcp" role="tabpanel" aria-labelledby="tab-ai-agents-memory-mcp" className="space-y-4">
+        <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <h4 id={agentTableRegionLabelId} className="text-xs font-semibold">AI 에이전트 상주 데스크 (Spot Virtual `/ai-agents` · SoWork `06 Agents`)</h4>
-              <div role="region" aria-labelledby={agentTableRegionLabelId} className="overflow-x-auto rounded border border-line bg-card">
+              <StudioSpaceScrollRegion aria-labelledby={agentTableRegionLabelId} className="overflow-x-auto rounded border border-line bg-card">
                 <table className="w-full border-collapse text-left text-xs">
                   <thead>
                     <tr className="border-b border-line bg-panel">
@@ -577,7 +580,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </StudioSpaceScrollRegion>
 
               <div className="space-y-2 rounded border border-line bg-card p-2.5 text-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -684,7 +687,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
       ) : null}
 
       {activeTab === "dcc-presence-aikido-multishare" ? (
-        <div id="panel-dcc-presence-aikido-multishare" role="tabpanel" aria-labelledby="tab-dcc-presence-aikido-multishare" className="space-y-4">
+        <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <h4 className="text-xs font-semibold">실시간 창작 앱 프레즌스 (Tandem · Cosmos True Status) & 비동기 데스크 노트</h4>
@@ -854,7 +857,7 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
       ) : null}
 
       {activeTab === "host-canvas-pulse-matrix" ? (
-        <div id="panel-host-canvas-pulse-matrix" role="tabpanel" aria-labelledby="tab-host-canvas-pulse-matrix" className="space-y-4">
+        <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <h4 className="text-xs font-semibold">호스트 진행 관제 (ZEP Host Controls) & 공간 레퍼런스 미디어 핀 (SpatialChat)</h4>
@@ -940,25 +943,18 @@ export function StudioVirtualOfficeEnterpriseSuite({ className }: StudioVirtualO
         </div>
       ) : null}
       {activeTab === "pairing-xr-floor-coaching" ? (
-        <div role="tabpanel" id="enterprise-tabpanel-pairing-xr-floor-coaching" aria-label="원격페어링 · 상태모자 · 리셉션 · 3D페데스탈">
-          <StudioVirtualOfficePairingXrPanel />
-        </div>
+        <StudioVirtualOfficePairingXrPanel />
       ) : null}
       {activeTab === "stage-sprint-holo-lounge" ? (
-        <div role="tabpanel" id="enterprise-tabpanel-stage-sprint-holo-lounge" aria-label="그린룸 · 품평로테이션 · 3D홀로그램 · 딥스프린트">
-          <StudioVirtualOfficeStageSprintHoloPanel />
-        </div>
+        <StudioVirtualOfficeStageSprintHoloPanel />
       ) : null}
       {activeTab === "warroom-async-stage" ? (
-        <div role="tabpanel" id="enterprise-tabpanel-warroom-async-stage" aria-label="워룸투표 · 비동기컷핀 · Go-Live시어터 · 바이오필릭">
-          <StudioVirtualOfficeWarroomAsyncStagePanel />
-        </div>
+        <StudioVirtualOfficeWarroomAsyncStagePanel />
       ) : null}
       {activeTab === "holistic-master-command" ? (
-        <div role="tabpanel" id="enterprise-tabpanel-holistic-master-command" aria-label="플로팅PiP · AI소음번역 · 캘린더동기화 · 40대총괄">
-          <StudioVirtualOfficeHolisticMasterPanel onBannerChange={setStatusNotice} />
-        </div>
+        <StudioVirtualOfficeHolisticMasterPanel onBannerChange={setStatusNotice} />
       ) : null}
+      </div>
     </section>
   );
 }

@@ -2,7 +2,7 @@
  * 소스 종류별 커스터마이즈 능력(레시피 v3, 2026-10-23 A-1) — 계약 `SourceCapabilities.custom`의 값.
  *
  * - 키트: v2 계획이면 계획이 판정한 값(`custom.capabilities`, 올린 파츠 기준), v1이면 `kitV1CustomCapabilities`.
- * - 제작 패키지: `packageCustomCapabilities`(지원 항목 없음 + 사유).
+ * - 제작 패키지: `packageCustomCapabilities`(선택한 헤어 LOD의 파츠 형태와 미지원 사유).
  * - 절차: 모델 데이터(`HumanoidModelData`)에서 판정한다 — 파츠의 채널(`channel`·`colorKey`)·영역 채널, 범위별 `shape:<이름>:±` morph,
  *   층 역할(inner·outer·legwear) 파츠. 계약 메시(`MeshPartData`)에는 UV1·앵커 부착 자리가 없어 무늬·헤어 흐름·앵커는 미지원이다.
  *   비례 목표는 절차 생성기가 지오메트리로 반영할 때만 available이다 — 모델 데이터로는 알 수 없어 조립하는 쪽이 `proceduralProportion`으로 밝힌다(기본 unavailable).
@@ -120,7 +120,7 @@ export function sourceCustomCapabilities(source: CharacterSource, options: Sourc
     case "kit":
       return isKitPlanV2(source.plan) ? source.plan.custom.capabilities : kitV1CustomCapabilities();
     case "package":
-      return packageCustomCapabilities(source.plan.manifest);
+      return packageCustomCapabilities(source.plan.manifest, source.plan.hairLodPolicy.preferredLod);
     case "procedural":
       return proceduralCustomCapabilities(source.model, options);
   }

@@ -527,7 +527,7 @@ export const ENGINEERING_FIELD_NOTES = [
     technologies: ["Three.js WebGPU", "TSL", "WebGL2", "Babylon.js", "Rapier", "three-mesh-bvh", "Manifold", "OpenCascade", "glTF", "KTX2", "meshopt"],
     evidence: [
       { kind: "document", path: "docs/studio/studio-3d-next-platform-architecture-2026-09-10.md", label: { ko: "차세대 3D 엔진·제품 권위 설계", en: "Next-generation 3D engine and product-authority design" } },
-      { kind: "code", path: "apps/web/src/domains/creator/scene3d/studio-scene3d-document.ts", label: { ko: "엔진 중립 Scene3D 문서", en: "Engine-neutral Scene3D document" } },
+      { kind: "code", path: "packages/contracts/src/studio-scene3d-document.ts", label: { ko: "엔진 중립 Scene3D 문서", en: "Engine-neutral Scene3D document" } },
       { kind: "code", path: "apps/web/src/domains/creator/bg3d/studio-bg3d-babylon-specialist-runtime.ts", label: { ko: "Babylon 지연 로드 specialist runtime", en: "Lazy Babylon specialist runtime" } },
       { kind: "code", path: "packages/studio-engine-registry/src/registry.ts", label: { ko: "엔진 capability registry", en: "Engine capability registry" } },
     ],
@@ -1067,9 +1067,9 @@ export const ENGINEERING_REFERENCE_PRODUCTS = [
 ] as const satisfies readonly EngineeringReferenceProduct[];
 
 export const ENGINEERING_IMPLEMENTATION_INVENTORY: EngineeringImplementationInventory = Object.freeze({
-  reviewedAt: "2026-11-03",
-  workerEntries: 72,
-  workerClients: 64,
+  reviewedAt: "2026-11-19",
+  workerEntries: 73,
+  workerClients: 65,
   serviceWorkerRuntimeFiles: 9,
   localInferenceRuntimes: Object.freeze(["ONNX Runtime Web", "MediaPipe Tasks Vision"]),
   blenderMcpCommands: 8,

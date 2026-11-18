@@ -640,6 +640,7 @@ export function StudioMannequinJointSection({
           {axes.map(({ axis, label, range }) => (
             <StudioSliderRow
               key={axis}
+              disabled={isSelectedLocked}
               label={label}
               min={Math.round(range[0] * RAD_TO_DEG)}
               max={Math.round(range[1] * RAD_TO_DEG)}

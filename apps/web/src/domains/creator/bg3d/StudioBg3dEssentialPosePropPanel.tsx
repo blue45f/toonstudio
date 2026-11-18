@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   STUDIO_BG3D_ESSENTIAL_ASSET_CATEGORIES,
@@ -16,7 +16,7 @@ import { cx } from "@/shared/lib/cx";
 export interface StudioBg3dEssentialPosePropPanelProps {
   readonly disabled?: boolean;
   readonly defaultExpanded?: boolean;
-  readonly onFile: (file: File) => void;
+  readonly onFile: (file: File, entry: StudioBg3dEssentialAssetEntry, signal: AbortSignal) => void | Promise<boolean>;
   readonly onBusyChange?: (busy: boolean) => void;
 }
 
@@ -64,25 +64,45 @@ export function StudioBg3dEssentialPosePropPanel({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [activeTurnaroundEntry, setActiveTurnaroundEntry] =
     useState<StudioBg3dEssentialAssetEntry | null>(null);
+  const pendingImport = useRef<AbortController | null>(null);
+  useEffect(() => () => {
+    if (pendingImport.current) {
+      pendingImport.current.abort();
+      pendingImport.current = null;
+      onBusyChange?.(false);
+    }
+  }, [onBusyChange]);
 
   const visibleAssets = searchStudioBg3dEssentialAssets(category, query);
 
   const handleImport = async (entry: StudioBg3dEssentialAssetEntry) => {
-    if (disabled || busyId !== null) return;
+    if (disabled || pendingImport.current) return;
+    const controller = new AbortController();
+    pendingImport.current = controller;
     setBusyId(entry.id);
     onBusyChange?.(true);
     setStatusMessage(`${entry.labelKo} GLB 모델을 준비하고 있습니다...`);
     try {
-      const file = await fetchStudioBg3dEssentialGlbAsFile(entry);
-      onFile(file);
-      setStatusMessage(`${entry.labelKo} 모델을 가져오기 경로로 전달했습니다.`);
+      const file = await fetchStudioBg3dEssentialGlbAsFile(entry, fetch, controller.signal);
+      if (controller.signal.aborted) return;
+      const imported = await onFile(file, entry, controller.signal);
+      if (controller.signal.aborted) return;
+      if (imported === false) {
+        setStatusMessage(`${entry.labelKo} 가져오기를 마치지 못했습니다. 모델 목록의 안내를 확인해 주세요.`);
+      } else {
+        setStatusMessage(imported ? `${entry.labelKo} 모델을 가져왔습니다.` : `${entry.labelKo} 모델을 가져오기 경로로 전달했습니다.`);
+      }
     } catch (error) {
+      if (controller.signal.aborted) return;
       setStatusMessage(
         error instanceof Error ? error.message : `${entry.labelKo} 모델을 가져오지 못했습니다.`,
       );
     } finally {
-      setBusyId(null);
-      onBusyChange?.(false);
+      if (pendingImport.current === controller) {
+        pendingImport.current = null;
+        setBusyId(null);
+        onBusyChange?.(false);
+      }
     }
   };
 

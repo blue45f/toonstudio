@@ -13,10 +13,10 @@ const results = [];
 let failure;
 try {
   for (const [width, height] of [[390, 844], [320, 568], [844, 390], [1280, 900]]) {
-    const page = await browser.newPage({ viewport: { width, height }, reducedMotion: "reduce" });
+    const page = await browser.newPage({ viewport: { width, height }, locale: "ko-KR", reducedMotion: "reduce" });
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
-    await page.goto(new URL("/tools/browser-harnesses/virtual-studio-ambient-audio.html", origin).href);
+    await page.goto(new URL("/tools/browser-harnesses/huddle-layout.html", origin).href);
     const panel = page.locator(".studio-p2p-huddle-panel");
     const close = page.getByRole("button", { name: "대화 패널 접기", exact: true });
     await page.getByRole("button", { name: "채팅·통화", exact: true }).click();

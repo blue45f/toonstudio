@@ -116,6 +116,8 @@ describe("공개 인증 세션 준비 경계", () => {
 describe("프로젝트·계정별 협업 요청 수명", () => {
   it("비로그인 실제 프로젝트는 조회하지 않고 권한을 닫는다", () => {
     const { result } = renderHook(() => useProductionProjectSession("project-a", null, demo));
+    expect(result.current.requiresSignIn).toBe(true);
+    expect(result.current.error).toBeNull();
     expect(mocks.load).not.toHaveBeenCalled(); expect(result.current.access.view).toBe(false);
   });
   it("프로젝트 이동 뒤 늦게 온 이전 응답을 새 화면에 표시하지 않는다", async () => {

@@ -16,24 +16,14 @@
  */
 
 import { ArrowLeft } from "lucide-react";
-import { useCallback, useState, type ReactElement } from "react";
+import { useCallback, useRef, useState, type ReactElement } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { StudioPageIntro } from "../page-intro/StudioPageIntro";
 
-import { getProductStudioMannequinStateSqliteRepository } from "./studio-mannequin-bg3d-preset-sqlite-repository";
-import {
-  STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
-  clampStudioMannequinBodyParams,
-} from "./studio-mannequin-model";
-import {
-  STUDIO_MANNEQUIN_POSE_PRESETS,
-  createStudioMannequinRestPose,
-  normalizeStudioMannequinPose,
-} from "./studio-mannequin-poses";
 import {
   StudioMannequinPoserPanel,
-  type StudioMannequinCaptureResult,
+  type StudioMannequinCaptureResult, type StudioMannequinApplyBody,
 } from "./StudioMannequinPoserPanel";
 import { StudioAsset3dInspectorWorkbench } from "./StudioAsset3dInspectorWorkbench";
 
@@ -75,10 +65,7 @@ export function StudioPoserPage(): ReactElement {
   const activeSolver = JOINT_SOLVERS.find((item) => item.id === jointSolver) ?? JOINT_SOLVERS[0];
   const starterPresetId = searchParams.get("starter")?.trim() || undefined;
   const [workbenchOpen, setWorkbenchOpen] = useState<boolean>(false);
-  const [appliedPosePresetId, setAppliedPosePresetId] = useState<string | undefined>(
-    starterPresetId,
-  );
-  const [mannequinRepo] = useState(getProductStudioMannequinStateSqliteRepository);
+  const applyBodyRef = useRef<StudioMannequinApplyBody>(null);
 
   const handleClose = useCallback(() => {
     navigate("/studio", { replace: true });
@@ -217,36 +204,18 @@ export function StudioPoserPage(): ReactElement {
             className="w-full"
           >
             <StudioAsset3dInspectorWorkbench
-              onApplyMannequinBodySliders={(sliders, options) => {
-                const nextParams = clampStudioMannequinBodyParams({
-                  ...STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS,
+              onApplyMannequinBodySliders={async (sliders, options) => {
+                const saved = await applyBodyRef.current?.({
                   heightCm: sliders.heightCm,
                   headCount: sliders.headCount,
                   build: sliders.build,
                   shoulderWidth: sliders.shoulderWidth,
                   pelvisWidth: sliders.hipWidth,
-                });
-                const matchedPreset = options?.posePresetId
-                  ? STUDIO_MANNEQUIN_POSE_PRESETS.find((preset) => preset.id === options.posePresetId)
-                  : undefined;
-                if (options?.posePresetId) {
-                  setAppliedPosePresetId(options.posePresetId);
+                }, options?.posePresetId);
+                if (!saved) {
+                  toast(pickLang("체형을 저장하지 못했습니다. 포저의 저장 상태를 확인해 주세요.", "Could not save the body. Check the poser’s storage status."), { tone: "error" });
+                  return;
                 }
-                void mannequinRepo
-                  .load()
-                  .then((stored) =>
-                    mannequinRepo.save({
-                      params: clampStudioMannequinBodyParams({
-                        ...(stored?.params ?? STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS),
-                        ...nextParams,
-                      }),
-                      pose: matchedPreset
-                        ? normalizeStudioMannequinPose(matchedPreset.pose)
-                        : (stored?.pose ?? createStudioMannequinRestPose()),
-                      ...(stored?.partner ? { partner: stored.partner } : {}),
-                    }),
-                  )
-                  .catch(() => undefined);
                 const detailSuffix = options?.archetypeLabelKo
                   ? ` · ${options.archetypeLabelKo}${options.motionLabelKo ? ` (${options.motionLabelKo})` : ""}`
                   : "";
@@ -264,7 +233,8 @@ export function StudioPoserPage(): ReactElement {
           presentation="page"
           onClose={handleClose}
           onInsert={handleInsert}
-          initialPosePresetId={appliedPosePresetId}
+          initialPosePresetId={starterPresetId}
+          applyBodyRef={applyBodyRef}
           captureTarget="download"
           externalCameraRequest={cameraRequest}
           externalSolverRequest={solverRequest}

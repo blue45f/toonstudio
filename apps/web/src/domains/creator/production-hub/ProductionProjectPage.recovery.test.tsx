@@ -6,6 +6,8 @@ import { ProductionProjectPage } from "./ProductionHubPage";
 import { createProductionDemoProject } from "./production-demo";
 import type { ScopeRef } from "@toonstudio/core/production";
 import { useApp } from "@/shared/lib/store";
+import { AppApiError } from "@/platform/api-error";
+import { AUTH_MODAL_REQUEST_EVENT } from "@/shared/lib/auth-modal-intent";
 import { SessionContext, persistSession, type Session } from "@/domains/auth/public/session/auth-session-store";
 
 const verifiedSession: NonNullable<Session> = {
@@ -47,6 +49,7 @@ function mount() {
 it("실제 검수 페이지 연결에서 저장 실패는 초안을 삭제하지 않는다", async () => {
   mocks.save.mockRejectedValue(new Error("검수 저장 서버 오류"));
   mount();
+  await act(() => vi.dynamicImportSettled());
   // 실제 라우트는 비동기 조회를 거친다. 질문 입력과 추가 버튼은 인계·배정·답변자까지
   // 준비된 뒤에만 열리므로, 비활성 상태로 클릭하면 저장이 아예 호출되지 않는다.
   const input = await screen.findByRole("textbox", { name: "검수 질문" });
@@ -64,8 +67,25 @@ it("계정 해제 시 실제 라우트의 비공개 원고·질문 화면을 제
   mount(); await screen.findByRole("textbox", { name: "검수 질문" });
   act(() => { persistSession(null); useApp.setState({ userId: null }); });
   await waitFor(() => expect(screen.queryByRole("textbox", { name: "검수 질문" })).toBeNull());
-  expect(screen.getByRole("alert").textContent).toContain("로그인");
+  const login = screen.getByRole("button", { name: "로그인" });
+  expect(login.closest('[data-route-blocked="sign-in"]')).toBeTruthy();
+  expect(screen.queryByRole("alert")).toBeNull();
+  const open = vi.fn();
+  window.addEventListener(AUTH_MODAL_REQUEST_EVENT, open, { once: true });
+  fireEvent.click(login);
+  expect(open).toHaveBeenCalledTimes(1);
 });
+it.each([[403, "forbidden"], [404, "not_found"], [503, "server"]] as const)(
+  "로그인한 사용자의 HTTP %i를 게스트 화면으로 숨기지 않고 다시 조회한다", async (status, kind) => {
+    mocks.load.mockRejectedValueOnce(new AppApiError(`프로젝트 조회 실패 ${status}`, { status, kind }));
+    mount();
+    const alert = await screen.findByRole("alert");
+    expect(alert.closest('[data-route-error="production-project"]')).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "로그인" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "다시 불러오기" }));
+    await screen.findByRole("textbox", { name: "검수 질문" });
+  },
+);
 it("첫 조회 실패 뒤 페이지를 떠나지 않고 다시 불러와 복구한다", async () => {
   mocks.load.mockRejectedValueOnce(new Error("일시적인 프로젝트 조회 실패"));
   mount();

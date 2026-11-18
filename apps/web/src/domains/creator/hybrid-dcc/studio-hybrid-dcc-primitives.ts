@@ -10,6 +10,8 @@ import {
   type StudioMeshVec3,
 } from "../studio-editable-half-edge-mesh";
 
+import { buildSculptQuadSphereMesh, buildSculptHeadMesh } from "./studio-hybrid-dcc-sculpt-base";
+import { buildCustomStairs, validateCustomPrimitive, type CustomPrimitive } from "./studio-hybrid-dcc-custom-primitive";
 import { hybridDccRegisterAsset } from "./studio-hybrid-dcc-document";
 import {
   buildDoorwayPortalWallMesh,
@@ -212,58 +214,6 @@ function withSmoothShading(mesh: StudioEditableMesh, smooth: boolean): StudioEdi
     ...mesh,
     faces: mesh.faces.map((face) => ({ ...face, smooth })),
   };
-}
-
-/** 극점 쏠림이 없는 균일 6면 분할 사각 구체(Quad-sphere). 조형 시작용 기본 메시. */
-function buildSculptQuadSphereMesh(radius = 0.6, divisions = 6): StudioEditableMesh {
-  const positions: StudioMeshVec3[] = [];
-  const vertexByKey = new Map<string, number>();
-  const faces: number[][] = [];
-  const patches: readonly {
-    readonly origin: readonly [number, number, number];
-    readonly uAxis: readonly [number, number, number];
-    readonly vAxis: readonly [number, number, number];
-  }[] = [
-    { origin: [-divisions, -divisions, divisions], uAxis: [2, 0, 0], vAxis: [0, 2, 0] }, // +Z
-    { origin: [divisions, -divisions, -divisions], uAxis: [-2, 0, 0], vAxis: [0, 2, 0] }, // -Z
-    { origin: [divisions, -divisions, divisions], uAxis: [0, 0, -2], vAxis: [0, 2, 0] }, // +X
-    { origin: [-divisions, -divisions, -divisions], uAxis: [0, 0, 2], vAxis: [0, 2, 0] }, // -X
-    { origin: [-divisions, divisions, divisions], uAxis: [2, 0, 0], vAxis: [0, 0, -2] }, // +Y
-    { origin: [-divisions, -divisions, -divisions], uAxis: [2, 0, 0], vAxis: [0, 0, 2] }, // -Y
-  ];
-
-  const vertexIndex = (gx: number, gy: number, gz: number): number => {
-    const key = `${gx}|${gy}|${gz}`;
-    const existing = vertexByKey.get(key);
-    if (existing !== undefined) return existing;
-    const nx = gx / divisions;
-    const ny = gy / divisions;
-    const nz = gz / divisions;
-    // 탄젠트 왜곡을 줄이는 구면 투영
-    const sx = nx * Math.sqrt(Math.max(0, 1 - (ny * ny) / 2 - (nz * nz) / 2 + (ny * ny * nz * nz) / 3));
-    const sy = ny * Math.sqrt(Math.max(0, 1 - (nz * nz) / 2 - (nx * nx) / 2 + (nz * nz * nx * nx) / 3));
-    const sz = nz * Math.sqrt(Math.max(0, 1 - (nx * nx) / 2 - (ny * ny) / 2 + (nx * nx * ny * ny) / 3));
-    const length = Math.hypot(sx, sy, sz) || 1;
-    const created = positions.length;
-    positions.push(vec((sx / length) * radius, (sy / length) * radius, (sz / length) * radius));
-    vertexByKey.set(key, created);
-    return created;
-  };
-
-  for (const patch of patches) {
-    const grid = (iu: number, iv: number): number =>
-      vertexIndex(
-        patch.origin[0] + patch.uAxis[0] * iu + patch.vAxis[0] * iv,
-        patch.origin[1] + patch.uAxis[1] * iu + patch.vAxis[1] * iv,
-        patch.origin[2] + patch.uAxis[2] * iu + patch.vAxis[2] * iv,
-      );
-    for (let iv = 0; iv < divisions; iv += 1) {
-      for (let iu = 0; iu < divisions; iu += 1) {
-        faces.push([grid(iu, iv), grid(iu + 1, iv), grid(iu + 1, iv + 1), grid(iu, iv + 1)]);
-      }
-    }
-  }
-  return withSmoothShading(createStudioEditableMeshFromPolygons(positions, faces), true);
 }
 
 function buildUvSphereMesh(radius = 0.55, lonSegs = 16, latSegs = 10): StudioEditableMesh {
@@ -627,8 +577,13 @@ function buildClassicalColumnMesh(): StudioEditableMesh {
 }
 
 export function createStudioHybridDccStarterPrimitiveMesh(
-  kind: StudioHybridDccStarterPrimitiveKind,
+  kind: StudioHybridDccStarterPrimitiveKind | CustomPrimitive,
 ): StudioEditableMesh {
+  if (typeof kind === "object") {
+    validateCustomPrimitive(kind);
+    if (kind.kind === "sculpt-head") return buildSculptHeadMesh(kind);
+    return buildCustomStairs(kind);
+  }
   switch (kind) {
     case "cube":
       return createStudioUnitCubeMesh();
@@ -683,12 +638,13 @@ function nextStarterAssetId(ws: StudioHybridDccWorkspace, prefix: string): strin
 
 export function workspaceAddStarterPrimitive(
   ws: StudioHybridDccWorkspace,
-  kind: StudioHybridDccStarterPrimitiveKind,
+  kind: StudioHybridDccStarterPrimitiveKind | CustomPrimitive,
   assetId?: string,
 ): StudioHybridDccWorkspace {
   if (kind === "cube") return workspaceAddUnitCube(ws, assetId);
-  const spec = STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.find((entry) => entry.kind === kind);
-  const prefix = spec?.assetPrefix ?? `asset-${kind}`;
+  const shape = typeof kind === "string" ? kind : kind.kind;
+  const spec = STUDIO_HYBRID_DCC_STARTER_PRIMITIVES.find((entry) => entry.kind === shape);
+  const prefix = spec?.assetPrefix ?? `asset-${shape}`;
   const resolvedId = assetId ?? nextStarterAssetId(ws, prefix);
   const existingCount = assetId === undefined ? Object.keys(ws.session.state.geometry.records).length : 0;
   const baseTransform = createStudioHybridDccIdentityTransform();

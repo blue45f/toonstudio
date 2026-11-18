@@ -1,6 +1,6 @@
 "use no memo";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { StudioScene3dCutPanel } from "./StudioScene3dCutPanel";
 import { StudioScene3dCutSession } from "./studio-scene3d-cut-session";
@@ -34,6 +34,7 @@ export function StudioScene3dBg3dCutPanel({
 }) {
   const t = useBilingual("scene3d-cut-versions");
   const [, refresh] = useReducer((value: number) => value + 1, 0);
+  const requestedRetry = useRef<StudioScene3dCutSession | null>(null);
   useEffect(() => {
     const timer = setInterval(refresh, 300);
     return () => clearInterval(timer);
@@ -60,7 +61,7 @@ export function StudioScene3dBg3dCutPanel({
     !cached ||
     cached.id !== id ||
     cached.assetSession !== host.modalAssetSessionRef?.current ||
-    (engineChanged && cached.session.canRestartForHostChange())
+    (engineChanged && cached.session.canRestartForHostChange(requestedRetry.current === cached.session))
   ) {
     if (hostPreparing) {
       if (!cached || !sameScope) return waitingPanel;
@@ -80,14 +81,23 @@ export function StudioScene3dBg3dCutPanel({
         ),
       };
       sessions.set(host, cached);
+      requestedRetry.current = null;
     }
   }
+  const session = cached.session;
   return (
     <StudioScene3dCutPanel
       key={`${id}:${cached.generation}`}
-      session={cached.session}
+      session={session}
       preferredExpanded={preferredExpanded}
       hostPreparing={hostPreparing}
+      retryStaleLoad={() => {
+        if (!sameScope || !engineChanged || hostPreparing || sessions.get(host)?.session !== session
+          || session.read().phase !== "error" || !session.canRestartForHostChange(true)) return false;
+        requestedRetry.current = session;
+        refresh();
+        return true;
+      }}
     />
   );
 }

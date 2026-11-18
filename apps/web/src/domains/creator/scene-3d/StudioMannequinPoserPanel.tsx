@@ -1,15 +1,7 @@
-/**
- * Studio 3D 데생 인형 포저 패널 (v5 에코르셰 해부학·견갑상완 리듬·무게중심 추선·2D 핸드 셋업·접촉/사면도 영속·CSP 호환 통합).
- *
- * 클립스튜디오 데생 인형을 능가하는 에코르셰 근육 면·유기 단면 로프트·아사로 다면체 모드,
- * 관절 잠금(Joint Lock), 견갑상완 리듬, 생체역학 무게중심(CoM) 자동 균형, 루미스·단축 등고선 가이드,
- * 손 접촉·콘트라포스토·사면도(Quad View)·화각 저장/복원 및 Undo/Redo·체형 변경 연동,
- * 2D 핸드 셋업 패드(벌림·쥐기·엄지 대립), 클립스튜디오 `.pep`/`.3dp` 양방향 변환을 제공한다.
- */
-
+/** 데생 인형의 체형·포즈·카메라를 편집하고 SQLite/OPFS에 저장한다. */
 import { StudioMannequinRotationControls, type StudioMannequinRotationCommand } from "./StudioMannequinRotationControls";
 import { Camera, PersonStanding, Redo2, Sliders, Sparkles, Undo2, UserRound, Wand2, X } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef, useState, type Ref, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
@@ -97,6 +89,9 @@ import {
 } from "./studio-mannequin-webcam-tracking";
 import { buildShaperLayeredPsd, SHAPER_MANNEQUIN_SUPPORTED_CATEGORIES, type ShaperPresetSelection } from "./studio-shaper-model";
 import { StudioShaperPanel } from "./StudioShaperPanel";
+import { createWebcamPreflightError, downloadTextBlob, getErrorText } from "./studio-mannequin-poser-io";
+import type { StudioAsset3dMannequinPosePresetId } from "./studio-asset3d-character-lab-diorama-catalog";
+import { resolveStudioMannequinWorkbenchPose } from "./studio-mannequin-workbench-pose";
 import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
 import "../studio-3d-ui/studio-3d-reference-workspace.css";
@@ -108,7 +103,10 @@ import { cn } from "@/shared/lib/utils";
 export { StudioMannequinBodySection, StudioMannequinCameraSection, StudioMannequinJointSection, StudioMannequinPoseSection };
 export type { StudioMannequinCaptureResult } from "./studio-mannequin-scene";
 
+export type StudioMannequinApplyBody = (patch: Partial<StudioMannequinBodyParams>, presetId?: StudioAsset3dMannequinPosePresetId) => Promise<boolean>;
+
 export interface StudioMannequinPoserPanelProps {
+  readonly applyBodyRef?: Ref<StudioMannequinApplyBody>;
   readonly open: boolean;
   readonly onClose: () => void;
   readonly onInsert: (result: StudioMannequinCaptureResult) => Promise<boolean | void> | boolean | void;
@@ -143,32 +141,11 @@ const TABS: readonly { id: MannequinTabId; label: string; icon: ReactElement }[]
   { id: "camera", label: "카메라·캡처", icon: <Camera size={13} aria-hidden /> },
 ]);
 
-function getErrorText(cause: unknown, fallback: string): string {
-  if (cause instanceof Error && cause.message.trim()) return cause.message;
-  return fallback;
-}
-
-function createWebcamPreflightError(name: string, message: string): Error {
-  const error = new Error(message);
-  error.name = name;
-  return error;
-}
-
-function downloadTextBlob(content: string, filename: string, mimeType = "application/xml"): void {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
 export function StudioMannequinPoserPanel({
   open,
   onClose,
   onInsert,
-  initialPosePresetId,
+  initialPosePresetId, applyBodyRef,
   captureTarget = "canvas",
   presentation = "modal",
   externalCameraRequest,
@@ -1028,6 +1005,18 @@ export function StudioMannequinPoserPanel({
     commitPoseWithHistory(resolveStudioMannequinWebtoonPresetPose(preset, params), {});
   }, [applyPoseToPartner, commitPoseWithHistory, params, placeDuo]);
 
+  useImperativeHandle(applyBodyRef, () => async (patch, presetId) => {
+    if (!hydrationSafeForFinalFlushRef.current) return false;
+    const next = clampStudioMannequinBodyParams({ ...stateRef.current.params, ...patch });
+    morphBaseParamsRef.current = next;
+    commitParams(next);
+    if (presetId) {
+      setLastPosePresetId(null);
+      commitPoseWithHistory(resolveStudioMannequinWorkbenchPose(presetId, next, poseRef.current), presetId === "contrapposto" ? { contrapposto: "left" } : {});
+    }
+    return persistState();
+  }, [commitParams, commitPoseWithHistory, persistState]);
+
   const starterPresetAppliedRef = useRef(false);
   useEffect(() => {
     if (!open || starterPresetAppliedRef.current) return;
@@ -1219,11 +1208,13 @@ export function StudioMannequinPoserPanel({
     handleCameraFovChange(externalCameraRequest.fovDeg);
   }, [externalCameraRequest, handleCameraFovChange, open]);
 
+  const lastSolverRequest = useRef(0);
   useEffect(() => {
-    if (!open || !externalSolverRequest || externalSolverRequest.nonce <= 0) return;
+    if (!open || !externalSolverRequest || externalSolverRequest.nonce <= lastSolverRequest.current) return;
+    lastSolverRequest.current = externalSolverRequest.nonce;
     if (externalSolverRequest.solverId === "com-gravity-balance") handleAutoBalance();
     else if (externalSolverRequest.solverId === "clavicle-auto-twist") setScapulohumeralRhythm(true);
-    else if (externalSolverRequest.solverId === "hand-grip-preset") applyPosePreset("fist");
+    else if (externalSolverRequest.solverId === "hand-grip-preset") applyPosePreset("hand-fist");
   }, [applyPosePreset, externalSolverRequest, handleAutoBalance, open]);
 
   const handleExportJson = useCallback(() => {

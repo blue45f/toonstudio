@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
@@ -15,6 +15,8 @@ import {
   type StudioVirtualCharacterCustomization,
   type StudioVirtualDecorationState,
 } from "../studio-virtual-space-customization";
+import { StudioVirtualDecorationSession } from "../studio-virtual-space-decoration-session";
+import type { StudioVirtualDecorationSyncResult } from "../studio-virtual-space-decoration-sync";
 import { studioVirtualSpaceDecorationSync, studioVirtualSpaceSyncEnabled } from "../studio-virtual-space-decoration-sync-gate";
 import {
   readStudioVirtualEnvironmentPreference,
@@ -52,11 +54,12 @@ import {
 
 /**
  * 이 브라우저에 저장하는 개인 설정(아트 스타일·캐릭터 꾸미기·보상·경험·환경·공간 꾸미기·배치 가구).
- * 저장 실패는 적용은 유지하고 notify로 알린다. 새 저장 키는 만들지 않는다.
+ * 계정 배치는 저장 대기 상태와 원본 버전까지 기기에 보관한다.
  */
-export function useSpacePreferences({ initialArtStyle, decorationScope, notify }: {
+export function useSpacePreferences({ initialArtStyle, decorationScope, decorationOwner, notify }: {
   readonly initialArtStyle?: StudioVirtualArtStyleKey;
   readonly decorationScope: string;
+  readonly decorationOwner: string | null;
   readonly notify: (message: string, tone?: "info" | "warn") => void;
 }) {
   const bt = useBilingual("StudioVirtualSpaceExperience");
@@ -116,27 +119,48 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, notify }
     return () => window.removeEventListener("toonspectrum:space-theme-change", onThemeEvent);
   }, []);
 
-  const spaceSyncEnabled = studioVirtualSpaceSyncEnabled();
+  const decorationSession = useMemo(() => decorationOwner && studioVirtualSpaceSyncEnabled()
+    ? new StudioVirtualDecorationSession(decorationScope, studioVirtualSpaceDecorationSync(), decorationOwner) : null, [decorationOwner, decorationScope]);
+  const activeSession = useRef(decorationSession);
+  useEffect(() => {
+    activeSession.current = decorationSession;
+    return () => { activeSession.current = null; decorationSession?.cancelPending(); };
+  }, [decorationSession]);
+  const viewKey = decorationSession ? JSON.stringify([decorationOwner, decorationScope]) : decorationScope;
   const [decorationDrafts, setDecorationDrafts] = useState<ReadonlyMap<string, StudioVirtualDecorationState>>(() => new Map());
-  const initialDecorations = useMemo(() => readStudioVirtualDecorationState(decorationScope), [decorationScope]);
-  const decorations = decorationDrafts.get(decorationScope) ?? initialDecorations;
+  const [syncFeedback, setSyncFeedback] = useState<{ owner: StudioVirtualDecorationSession; status: "local" | "conflict" } | null>(null);
+  const initialDecorations = useMemo(() => decorationSession?.initialState ?? readStudioVirtualDecorationState(decorationScope), [decorationScope, decorationSession]);
+  const decorations = decorationDrafts.get(viewKey) ?? initialDecorations;
+  const updateDecorationView = useCallback((next: StudioVirtualDecorationState) => {
+    setDecorationDrafts(current => new Map(current).set(viewKey, next));
+  }, [viewKey]);
+  const handleResult = useCallback((result: StudioVirtualDecorationSyncResult, edit: number, adopt: boolean) => {
+    if (!decorationSession || activeSession.current !== decorationSession || decorationSession.editCount !== edit) return;
+    if (result.status === "server") {
+      setSyncFeedback(null);
+      if (adopt && result.state.revision > 0) updateDecorationView(result.state);
+    } else if (decorationSession.hasPendingDraft) {
+      setSyncFeedback({ owner: decorationSession, status: decorationSession.hasConflict ? "conflict" : "local" });
+    }
+  }, [decorationSession, updateDecorationView]);
+  const recoverDecorations = useCallback((choice: "retry" | "device" | "server" = "retry") => {
+    if (!decorationSession) return;
+    const pending = choice === "retry" ? decorationSession.load(initialDecorations) : decorationSession.resolveConflict(choice);
+    const edit = decorationSession.editCount;
+    void pending?.then(result => handleResult(result, edit, true));
+  }, [decorationSession, initialDecorations, handleResult]);
   const selectDecorations = useCallback((next: StudioVirtualDecorationState) => {
-    setDecorationDrafts((current) => new Map(current).set(decorationScope, next));
-    if (!writeStudioVirtualDecorationState(next, decorationScope)) {
-      notify(bt("공간 변경은 적용됐지만 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.", "Space changes are applied, but could not be saved on this device. Check available storage."), "warn");
-    }
+    updateDecorationView(next);
     if (next.districtKey !== decorations.districtKey) selectEnvironmentPreference(studioDistrictEnvironment(next.districtKey));
-    if (spaceSyncEnabled) {
-      void studioVirtualSpaceDecorationSync()
-        .save(decorationScope, next.districtKey, next)
-        .then((result) => {
-          // 다른 기기가 먼저 저장했으면 조용히 덮어쓰지 않고 알려 준다.
-          if (result.status === "conflict") {
-            notify(bt("다른 기기에서 이 공간을 먼저 바꿔서 여기 저장은 하지 않았어요.", "Another device changed this space first, so this change was not saved."), "warn");
-          }
-        });
-    }
-  }, [bt, decorationScope, decorations.districtKey, notify, selectEnvironmentPreference, spaceSyncEnabled]);
+    let cached: boolean;
+    if (decorationSession) {
+      const pending = decorationSession.save(next);
+      const edit = decorationSession.editCount;
+      cached = decorationSession.cachedLocally;
+      void pending.then(result => handleResult(result, edit, false));
+    } else cached = writeStudioVirtualDecorationState(next, decorationScope);
+    if (!cached) notify(bt("공간 변경은 적용됐지만 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.", "Space changes are applied, but could not be saved on this device. Check available storage."), "warn");
+  }, [bt, decorationScope, decorations.districtKey, decorationSession, handleResult, notify, selectEnvironmentPreference, updateDecorationView]);
   // 빌드 모드로 배치한 상태 가구. 꾸미기와 달리 서버 계약이 없어 이 브라우저에만
   // 저장한다(배치 모듈이 키를 소유한다). 캔버스로 넘길 디스크립터는 여기서 파생한다.
   const [placedFixtureDrafts, setPlacedFixtureDrafts] = useState<ReadonlyMap<string, readonly StudioBuildPlacementRequest[]>>(() => new Map());
@@ -153,18 +177,17 @@ export function useSpacePreferences({ initialArtStyle, decorationScope, notify }
     [placedFixtureRequests],
   );
   useEffect(() => {
-    if (!spaceSyncEnabled) return undefined;
-    let cancelled = false;
-    void studioVirtualSpaceDecorationSync()
-      .load(decorationScope, initialDecorations.districtKey)
-      .then((result) => {
-        if (cancelled || result.status !== "server") return;
-        setDecorationDrafts((current) => new Map(current).set(decorationScope, result.state));
-      });
-    return () => { cancelled = true; };
-  }, [decorationScope, initialDecorations.districtKey, spaceSyncEnabled]);
+    if (!decorationSession) return;
+    recoverDecorations();
+    const online = () => { if (decorationSession.hasPendingDraft) recoverDecorations(); };
+    window.addEventListener("online", online);
+    return () => window.removeEventListener("online", online);
+  }, [decorationSession, recoverDecorations]);
 
   return {
+    decorationSyncEnabled: Boolean(decorationSession),
+    decorationSyncStatus: syncFeedback && syncFeedback.owner === decorationSession ? syncFeedback.status : null,
+    recoverDecorations,
     artStyle, selectArtStyle,
     characterCustomization, selectCharacterCustomization,
     rewardInventory, claimReward, equipReward,

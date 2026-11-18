@@ -1,3 +1,4 @@
+import { studioProjectVrmSceneLocations } from "./studio-project-vrm-scene-locations";
 import { STUDIO_PROJECT_ARCHIVE_LIMITS, type StudioProjectArchiveDocumentReference, type StudioProjectArchiveImportedAttachment, type StudioProjectArchiveManifest, type StudioProjectArchiveManifestAttachment, type StudioProjectArchiveAttachmentInput, type StudioProjectArchiveLimits  } from "../studio-project-archive";
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
@@ -327,7 +328,7 @@ interface MutableArtifactPlan {
 const CONTENT_HASH_PATTERN = /^sha256:[0-9a-f]{64}$/u;
 const RAW_SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const SURFACE_PAINT_POINTER_PATTERN =
-  /^\/(?:pagesList\/[0-9]+|master)\/elements\/[0-9]+\/vrmScene\/surfacePaint\/textures\/[0-9]+\/hash$/u;
+  /^\/(?:pagesList\/[0-9]+|master)\/elements\/[0-9]+\/(?:bg3dScene\/pinnedVersionedCut\/source\/linkedVrm\/characters\/[0-9]+\/)?vrmScene\/surfacePaint\/textures\/[0-9]+\/hash$/u;
 const textEncoder = new TextEncoder();
 const EMPTY_RESULT_ITEMS: readonly [] = Object.freeze([]);
 const PREPARED_TEXTURE_IMPORTS = new WeakMap<object, {
@@ -377,19 +378,13 @@ function exactKeys(value: unknown, keys: readonly string[]): value is Record<str
 }
 
 function scanStrictScene(
-  element: unknown,
+  value: unknown,
   scenePointer: string,
-): StrictSceneScan | null {
-  if (!isRecord(element) || element.type !== "image" || element.vrmScene === undefined) {
-    return null;
-  }
-  if (
-    !isRecord(element.vrmScene)
-    || element.vrmScene.kind !== STUDIO_VRM_SCENE_DOCUMENT_KIND
-  ) {
+): StrictSceneScan {
+  if (!isRecord(value) || value.kind !== STUDIO_VRM_SCENE_DOCUMENT_KIND) {
     fail("SCENE_INVALID", "scene-id-invalid", scenePointer);
   }
-  const serialized = serializeStudioVrmSceneDocument(element.vrmScene);
+  const serialized = serializeStudioVrmSceneDocument(value);
   if (!serialized) {
     fail(
       "SCENE_INVALID", "scene-not-canonical-v6",
@@ -439,15 +434,15 @@ function scanStrictProjectScenes(
     }
     for (let elementIndex = 0; elementIndex < page.elements.length; elementIndex += 1) {
       throwIfAborted(signal);
-      const pointer = `/pagesList/${pageIndex}/elements/${elementIndex}/vrmScene`;
-      append(scanStrictScene(page.elements[elementIndex], pointer));
+      for (const scene of studioProjectVrmSceneLocations(page.elements[elementIndex], `/pagesList/${pageIndex}/elements/${elementIndex}`))
+        append(scanStrictScene(scene.value, scene.pointer));
     }
   }
   if (isRecord(value.master) && Array.isArray(value.master.elements)) {
     for (let elementIndex = 0; elementIndex < value.master.elements.length; elementIndex += 1) {
       throwIfAborted(signal);
-      const pointer = `/master/elements/${elementIndex}/vrmScene`;
-      append(scanStrictScene(value.master.elements[elementIndex], pointer));
+      for (const scene of studioProjectVrmSceneLocations(value.master.elements[elementIndex], `/master/elements/${elementIndex}`))
+        append(scanStrictScene(scene.value, scene.pointer));
     }
   }
   return scenes;

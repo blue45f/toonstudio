@@ -205,7 +205,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
     authority: "poses" | "full-states",
     operation: () => Promise<unknown>,
     successMessage: string,
-  ): void {
+  ): Promise<boolean> {
     const generation = vrmCreativeMutationGenerationRef.current + 1;
     vrmCreativeMutationGenerationRef.current = generation;
     setVrmCreativePersistenceStatus("saving");
@@ -238,6 +238,7 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
         creatorStorageDetail(creatorStorageText("저장에 실패해 변경을 현재 탭에만 유지합니다. 새로고침하면 사라집니다. 저장 공간을 확인한 뒤 다시 저장해 주세요.", "Saving failed. Changes remain in this tab only and will be lost on refresh. Check device storage and save again."), caughtError),
       );
     });
+    return persisted.then(() => true, () => false);
   }
 
   function handleSavePose() {
@@ -420,27 +421,28 @@ export function useStudioVrmPoserPoseLibrary(h: StudioVrmPoserHost): void {
       }
     } catch { notify?.(t("studio.vrmPoser.notice.pasteFullStateFailed", "붙여넣기 실패"), "error"); }
   }
-  function handleSaveFullLocal() {
-    if (broadcastPreviewActive || vrmCreativeReadOnly) return;
+  function handleSaveFullLocal(characterDocumentV3?: unknown) {
+    if (broadcastPreviewActive || vrmCreativeReadOnly) return false;
     const name = (fullStateName || `full-${Date.now()}`)
       .normalize("NFKC")
       .trim()
       .replace(/\s+/gu, " ");
-    if (!name) return;
+    if (!name) return false;
     if (name.length > STUDIO_VRM_FULL_STATE_MAX_NAME_LENGTH) {
       notify?.(t("studio.vrmPoser.notice.saveFullStateNameTooLong", { maxLength: STUDIO_VRM_FULL_STATE_MAX_NAME_LENGTH }, `전체 상태 이름은 ${STUDIO_VRM_FULL_STATE_MAX_NAME_LENGTH}자 이하여야 합니다.`), "error");
-      return;
+      return false;
     }
-    const full = captureFullState();
+    const state = captureFullState();
+    const full = typeof characterDocumentV3 === "string" ? { ...state, characterDocumentV3 } : state;
     const next = { ...savedFullStatesRef.current, [name]: full };
     try {
       serializeStudioVrmFullStateLibrary(next);
     } catch (caughtError) {
       notify?.(caughtError instanceof Error ? caughtError.message : t("studio.vrmPoser.notice.saveFullStateLimitExceeded", "전체 상태 저장 한도를 초과했습니다."), "error");
-      return;
+      return false;
     }
     replaceSavedFullStates(next);
-    enqueueVrmCreativePersistence(
+    return enqueueVrmCreativePersistence(
       "full-states",
       () => creativeRepository.saveFullStates(next),
       creatorStorageText("“{name}” 설정을 이 기기에 저장했습니다.", "Saved settings “{name}” on this device.", { name }),

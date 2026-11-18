@@ -70,15 +70,7 @@ function persistPresentation(
   return next;
 }
 
-/**
- * One drawing runtime, two shells.
- *
- * `app` changes only chrome/presentation. Document identity, brush engine, layer model,
- * autosave, collaboration and export all stay on the normal Studio runtime. Standalone PWA
- * windows remember `pwa-app` across all Studio routes, while regular browser tabs scope
- * remembered `app` chrome to project/home routes so direct `/studio/canvas` entry never
- * unexpectedly switches designs.
- */
+/** 홈·설치 진입의 표시 선호를 탭에 기억한다. 원고의 도구 배치는 편집기가 문서별로 선택한다. */
 export function useStudioDrawingPresentation(): StudioDrawingPresentation {
   const { pathname, search } = useLocation();
   const explicit = useMemo(() => readExplicitPresentation(search), [search]);

@@ -34,6 +34,7 @@ import {
 import type { StudioBg3dCanonicalDocumentMutation } from "../bg3d/useStudioBg3dCanonicalDocumentState";
 import type { BgPrimitive } from "../studio-background-3d-primitives";
 import type { BgCustomModelInstance } from "../studio-background-3d-model";
+import type { StudioShared3dCharacterSource, StudioShared3dSceneSession } from "../studio-shared-3d-scene-bridge";
 
 export interface StudioScene3dCutBg3dEditorHost {
   readonly setGenericModelSourceFormats?: (
@@ -80,9 +81,15 @@ export interface StudioScene3dCutBg3dEditorHost {
   readonly placementActive?: boolean;
   readonly applyingTemplateId?: string | null;
   readonly sharedStageSessionScopeKey?: string | null;
-  readonly sharedSceneSession?: {
-    readonly characters: readonly unknown[];
-  } | null;
+  readonly sharedSceneSession?: Pick<StudioShared3dSceneSession, "characters"> | null;
+  readonly sharedCharacters?: readonly StudioShared3dCharacterSource[];
+  readonly liveSharedSceneSession?: Pick<StudioShared3dSceneSession, "characters"> | null;
+  readonly cutTeamDocument?: boolean;
+  readonly cutWorkId?: string;
+  readonly cutWorkResources?: import("./studio-team-vrm-cut-assets").StudioTeamVrmCutResources;
+  readonly cutDocumentKey?: string;
+  readonly targetHasLinkedCharacters?: boolean;
+  readonly includeSharedCharactersInCapture?: boolean;
   readonly viewportBoxSize?: {
     readonly width: number;
     readonly height: number;
@@ -170,14 +177,21 @@ export function createStudioScene3dCutBg3dHost(
 ): StudioScene3dCutHost {
   const projectId = studioScene3dCutProjectId(h);
   const assetSession = h.modalAssetSessionRef?.current;
+  const documentScope = h.cutDocumentKey, teamDocument = h.cutTeamDocument;
   const materialBackend = h.materialBackend, modelRenderer = h.modelRenderer, isMaterialBackendCurrent = h.isMaterialBackendCurrent;
-  const blockedReason = () => {
+  const invalidationReason = () => {
+    if (documentScope !== h.cutDocumentKey || teamDocument !== h.cutTeamDocument) return "원고 또는 팀 접근 범위가 바뀌어 컷 작업을 중단했습니다.";
     if (isMaterialBackendCurrent?.() === false || h.materialBackend !== materialBackend || h.modelRenderer !== modelRenderer)
       return "표시 엔진이 바뀌어 이전 컷 준비를 중단했습니다.";
     if (h.modalAssetSessionRef?.current !== assetSession)
       return "편집 세션이 바뀌어 이전 컷 작업을 중단했습니다.";
     if (studioScene3dCutProjectId(h) !== projectId)
       return "다른 편집 세션으로 이동해 이전 컷 작업을 중단했습니다.";
+    return null;
+  };
+  const blockedReason = () => {
+    const stale = invalidationReason();
+    if (stale) return stale;
     if (
       !isStudioBg3dSceneEditReady({
         open: h.open,
@@ -205,8 +219,13 @@ export function createStudioScene3dCutBg3dHost(
         isStudioBg3dPhysicsTransientPhase(h.physicsPhaseRef.current))
     )
       return "장면 복원·출력·변형 작업을 마친 뒤 컷을 편집하세요.";
-    if (h.sharedSceneSession?.characters.length)
-      return "연결 VRM의 원본·포즈를 함께 복원하는 경로가 아직 연결되지 않아 컷 고정을 시작하지 않았습니다. BG3D 모델의 포즈는 저장할 수 있습니다.";
+    // 같은 원고의 캐릭터는 연결 전에도 미리보기 후보로 나타난다. 배경만 고정할 때는 후보를 제외한다.
+    const pinned = h.sceneBaseDocument.pinnedVersionedCut?.source.linkedVrm;
+    if (pinned || h.targetHasLinkedCharacters || (h.sharedSceneSession?.characters.length && h.includeSharedCharactersInCapture !== false)) {
+      if (h.cutTeamDocument && !h.cutWorkId) return "작품 파일 저장 권한을 확인한 뒤 연결 VRM 컷을 고정하거나 복원할 수 있습니다.";
+      if (!h.cutDocumentKey || (pinned && pinned.documentScope !== h.cutDocumentKey))
+        return "연결 VRM을 고정한 원고와 페이지를 확인할 수 없습니다. 해당 원고에서 컷을 열어 주세요.";
+    }
     return null;
   };
   const aspect = () =>
@@ -216,10 +235,32 @@ export function createStudioScene3dCutBg3dHost(
   return {
     projectId,
     blockedReason,
-    readRevision: () =>
-      h.physicsRuntimeSourceRef?.current.revision ?? h.sceneBaseDocument,
+    invalidationReason,
+    readRevision: () => {
+      const revision = h.physicsRuntimeSourceRef?.current.revision ?? h.sceneBaseDocument;
+      const actors = h.sharedCharacters ?? h.sharedSceneSession?.characters;
+      return actors?.length ? hashStudioScene3dCommandState({
+        revision, actors: actors.map(({ sourceHash, placementHash }) => [sourceHash, placementHash]),
+      }) : revision;
+    },
+    async verifySources(sources, signal) {
+      const snapshots = sources.flatMap(source => source.linkedVrm ? [source.linkedVrm] : []);
+      if (!snapshots.length) return;
+      const { verifyStudioScene3dCutVrmAssets } = await import("./studio-scene3d-cut-vrm-assets");
+      const verified = new Set<string>();
+      for (const snapshot of snapshots) {
+        const reason = invalidationReason();
+        if (reason || (h.cutTeamDocument && !h.cutWorkId) || snapshot.documentScope !== h.cutDocumentKey)
+          throw new Error(reason ?? "다른 원고나 팀 원고의 고정 VRM을 현재 컷 보관함에 쓸 수 없습니다.");
+        const hash = hashStudioScene3dCommandState(snapshot);
+        if (!verified.has(hash)) await verifyStudioScene3dCutVrmAssets(snapshot, signal, h.cutWorkResources);
+        verified.add(hash);
+      }
+      const reason = invalidationReason();
+      if (reason) throw new Error(reason);
+    },
     readPinnedCut: () => h.sceneBaseDocument.pinnedVersionedCut ?? null,
-    readSource(previous) {
+    readSource(previous, refreshLinked = false) {
       const reason = blockedReason();
       if (reason) throw new Error(reason);
       const current = h.readCurrentCanonicalSceneForShot();
@@ -242,13 +283,21 @@ export function createStudioScene3dCutBg3dHost(
             hashStudioScene3dCommandState({ value: previous.legacyBg3d }))
       )
         scene = { ...scene, revision: previous.scene.revision + 1 };
-      return parseStudioScene3dCutSource({ scene, characters: {}, legacyBg3d });
+      const shared = (h.targetHasLinkedCharacters || h.includeSharedCharactersInCapture)
+        ? (refreshLinked ? h.liveSharedSceneSession?.characters : h.sharedCharacters) ?? h.sharedSceneSession?.characters ?? [] : [];
+      const pinned = refreshLinked ? undefined : current.pinnedVersionedCut?.source.linkedVrm;
+      if (!shared.length && !pinned && h.targetHasLinkedCharacters) throw new Error("연결한 VRM 원본을 찾지 못했습니다. 원고의 연결 상태를 확인하세요.");
+      const linkedVrm = shared.length ? { version: 1, documentScope: h.cutDocumentKey,
+        characters: shared.map(({ elementId, label, stageTransform, scene: vrmScene }) => ({ elementId, label, stageTransform, vrmScene })) } : pinned;
+      return parseStudioScene3dCutSource({ scene, characters: {}, legacyBg3d, linkedVrm });
     },
     async applySource(sourceInput, cut, signal) {
       signal.throwIfAborted();
       const reason = blockedReason();
       if (reason) throw new Error(reason);
       const source = parseStudioScene3dCutSource(sourceInput);
+      if (source.linkedVrm && ((h.cutTeamDocument && !h.cutWorkId) || source.linkedVrm.documentScope !== h.cutDocumentKey))
+        throw new Error("이 원고에서는 고정 VRM 원본을 복원할 수 없습니다. 고정한 로컬 원고와 페이지를 확인하세요.");
       if (source.scene.documentId !== projectId)
         throw new Error(
           "다른 장면의 컷은 현재 편집 세션에 적용할 수 없습니다."
@@ -302,6 +351,10 @@ export function createStudioScene3dCutBg3dHost(
       const inputRevision = readInputRevision();
       let prepared: StudioScene3dPreparedCutAssets | undefined;
       try {
+        if (source.linkedVrm) {
+          const { verifyStudioScene3dCutVrmAssets } = await import("./studio-scene3d-cut-vrm-assets");
+          await verifyStudioScene3dCutVrmAssets(source.linkedVrm, signal, h.cutWorkResources);
+        }
         if (document.attachments.length) {
           if (
             !modelRenderer ||

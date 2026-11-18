@@ -18,10 +18,10 @@
     },
     {
       "file": "webtoon-artisan-drafting-easel-lamp-v15.glb",
-      "bytes": 108032,
-      "sha256": "f31278300d66388f7b92b2f2000fb2ed032b44c1dbfbbd3f0eace329f47133f7",
-      "triangles": 2780,
-      "vertices": 2620
+      "bytes": 539324,
+      "sha256": "7cffebb1417a91754a07edd8c4760f3386463851782eb94fc7e04ee0f1e38ce6",
+      "triangles": 10476,
+      "vertices": 8649
     },
     {
       "file": "webtoon-celestial-ink-astrolabe-turntable-v15.glb",
@@ -74,8 +74,8 @@
     },
     {
       "file": "thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png",
-      "bytes": 291691,
-      "sha256": "cac61fc8b66e477b7d8a6b6200649908772167ad6348a75207de6a63cd45a803"
+      "bytes": 302538,
+      "sha256": "7804d4c915a65c36bd3a228e72e404f0b54b68717cdd13c75645f25458975e32"
     },
     {
       "file": "thumbnails/webtoon-celestial-ink-astrolabe-turntable-v15.png",

@@ -15,6 +15,6 @@ export function studioVirtualSpaceSyncEnabled(env: Record<string, unknown> = imp
 let cached: ReturnType<typeof createStudioVirtualDecorationSync> | null = null;
 
 export function studioVirtualSpaceDecorationSync() {
-  cached ??= createStudioVirtualDecorationSync(createDefaultStudioVirtualDecorationTransport());
+  cached ??= createStudioVirtualDecorationSync(createDefaultStudioVirtualDecorationTransport(), false);
   return cached;
 }

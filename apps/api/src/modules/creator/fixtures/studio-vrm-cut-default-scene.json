@@ -1,0 +1,112 @@
+{
+  "kind": "studio-vrm-scene",
+  "version": 6,
+  "model": {
+    "source": "bundled",
+    "id": "sample-vrm",
+    "name": "루미"
+  },
+  "pose": {
+    "bones": {},
+    "yOffset": 0,
+    "translations": {
+      "version": 1,
+      "root": [
+        0,
+        0,
+        0
+      ],
+      "hips": [
+        0,
+        0,
+        0
+      ],
+      "spine": [
+        0,
+        0,
+        0
+      ]
+    },
+    "bodyRotationY": 0,
+    "fingerOverrides": {},
+    "ikConstraints": []
+  },
+  "expressions": {},
+  "camera": {
+    "projection": "perspective",
+    "position": [
+      0,
+      1.42,
+      3.15
+    ],
+    "target": [
+      0,
+      1.22,
+      0
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "fovDegrees": 30,
+    "near": 0.1,
+    "far": 100
+  },
+  "appearance": {
+    "bodyScale": {
+      "height": 1,
+      "width": 1
+    },
+    "customColors": {},
+    "materialFx": {
+      "shadeColor": null,
+      "outlineColor": null,
+      "rimColor": null,
+      "rimIntensity": 0,
+      "emissiveColor": null,
+      "emissiveIntensity": 0
+    },
+    "mannequin": false,
+    "avatarForge": null,
+    "costume": null,
+    "wardrobe": null
+  },
+  "rig": {
+    "version": 1,
+    "jointProfile": {
+      "version": 1,
+      "purpose": "stylized-drawing-reference-only",
+      "id": "neutral"
+    },
+    "fullBodyIk": false,
+    "footPlant": false,
+    "floorHeight": 0
+  },
+  "props": null,
+  "sceneProps": null,
+  "lighting": {
+    "intensity": 1,
+    "colorTemp": 0.5,
+    "directionDeg": 45
+  },
+  "lightingTone": "morning",
+  "physics": {
+    "version": 1,
+    "stiffnessScale": 1,
+    "gravityScale": 1,
+    "windDirectionDeg": 0,
+    "windStrength": 0
+  },
+  "env": "none",
+  "render": {
+    "width": 1024,
+    "height": 1024,
+    "transparentBackground": true,
+    "backgroundColor": "#ffffff"
+  },
+  "surfacePaint": {
+    "version": 1,
+    "textures": []
+  }
+}

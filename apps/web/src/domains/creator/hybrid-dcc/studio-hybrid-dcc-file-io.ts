@@ -1,7 +1,7 @@
 import { STUDIO_HYBRID_DCC_WORKFILE_MAX_BYTES } from "./studio-hybrid-dcc-workfile";
 
 /** 파일 내용은 URL·스토리지에 쓰지 않고, 취소 가능한 브라우저 읽기로만 전달한다. */
-export function readStudioHybridDccWorkfile(file: File, signal: AbortSignal): Promise<Uint8Array> {
+export function readStudioHybridDccWorkfile(file: File, signal: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
   if (!/\.toon3d$/iu.test(file.name)) return Promise.reject(new Error(".toon3d 작업파일을 선택하세요."));
   if (file.size <= 0 || file.size > STUDIO_HYBRID_DCC_WORKFILE_MAX_BYTES) return Promise.reject(new Error("작업파일이 비어 있거나 편집기의 파일 크기 한도를 넘었습니다."));
   return new Promise((resolve, reject) => {

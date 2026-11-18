@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 
 import { CHARACTER_SLOT_KINDS } from "../../contracts";
 
+import { readGlbJsonChunk } from "./glb-json-chunk";
 import { compareCapabilities } from "./package-capability";
 import { loadAuthoredPackageFlow, loadPackageIndexFlow } from "./package-load-flow";
 import { parseVrmFromGlb } from "./vrm-extension-parser";
@@ -78,7 +79,7 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(entries[1]?.summary.skeleton).toBe(false);
     expect(entries[2]?.summary.skeleton).toBe(true);
     expect(entries[3]?.summary.skeleton).toBe(true);
-    expect(entries[3]?.summary.hairLodTriangles).toEqual([5771, 2683, 892]);
+    expect(entries[3]?.summary.hairLodTriangles).toEqual([6744, 3266, 1362]);
     expect(entries[4]?.summary.skeleton).toBe(true);
     expect(entries[4]?.summary.hairLodTriangles).toEqual([4288, 2065, 653]);
     for (const entry of entries.slice(3)) {
@@ -195,13 +196,61 @@ describe("authored/real-packages (public/assets/characters)", () => {
     expect(comparison.divergent).toEqual([]);
   });
 
+  it("주인공은 중립으로 열리고 눈·눈썹·입 FACS와 3단계 앞머리가 실제 메시를 움직인다", async () => {
+    const entry = (await loadIndexEntries()).find(({ characterId }) => characterId === "shaper-atelier-protagonist");
+    if (!entry) throw new Error("주인공 패키지 누락");
+    const loaded = await loadAuthoredPackageFlow(fsPort(), entry, { sha256 });
+    if (!loaded.ok) throw new Error(loaded.failure.reasonKo);
+    const { plan, detail } = loaded;
+    const chunk = readGlbJsonChunk(detail.glbBytes);
+    if (!chunk.ok) throw new Error(chunk.reasonKo);
+    const gltf = chunk.json as {
+      nodes: { name: string; mesh?: number; weights?: number[] }[];
+      meshes: { weights?: number[]; extras?: { targetNames: string[] }; primitives: { targets: { POSITION: number }[] }[] }[];
+      accessors: { min: number[]; max: number[] }[];
+    };
+    for (const entry of [...gltf.nodes, ...gltf.meshes]) {
+      expect(entry.weights?.some(weight => weight !== 0) ?? false).toBe(false);
+    }
+    function positionBounds(meshName: string, target: string) {
+      const index = gltf.nodes.find((node) => node.name === meshName)?.mesh;
+      if (index === undefined) throw new Error(meshName);
+      const mesh = gltf.meshes[index];
+      const i = mesh?.extras?.targetNames.indexOf(target) ?? -1;
+      const position = mesh?.primitives[0]?.targets[i]?.POSITION;
+      if (position === undefined) throw new Error(`${meshName}:${target}`);
+      const accessor = gltf.accessors[position];
+      if (!accessor) throw new Error(target);
+      return accessor;
+    }
+    function expectMotion(meshName: string, target: string, unit: string, minimumMetres: number): void {
+      expect(plan.shapeKeyMap[target]).toBe(`facs:${unit}`);
+      const { min, max } = positionBounds(meshName, target);
+      expect(Math.max(...min.map(Math.abs), ...max.map(Math.abs))).toBeGreaterThan(minimumMetres);
+    }
+    for (const [side, blink] of [["L", "eyeBlinkLeft"], ["R", "eyeBlinkRight"]] as const) {
+      for (const part of ["Eye", "Iris", "Highlight", "Lash"]) {
+        expectMotion(`TS_Shaper_${part}`, `${blink}_${part}`, blink, 0.005);
+      }
+      for (const unit of ["browInnerUp", "browOuterUp", "browDown"]) {
+        expectMotion(`TS_Shaper_Brow_${side}`, `${unit}_Brow_${side}`, unit, 0.002);
+      }
+    }
+    expectMotion("TS_Shaper_Head", "jawOpen", "jawOpen", 0.01);
+    for (const suffix of ["LOD0", "LOD0_Outline", "LOD1", "LOD2"]) {
+      const hair = `TS_AuthoredHair_wolf-layered_${suffix}`;
+      expect(positionBounds(hair, "shape:bangs:-").max[1]).toBeGreaterThan(0.015);
+      expect(positionBounds(hair, "shape:bangs:+").min[1]).toBeLessThan(-0.01);
+    }
+  });
+
   it.each([
     {
       id: "shaper-atelier-protagonist",
-      sha: "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
-      bytes: 2_601_684,
+      sha: "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35",
+      bytes: 3_737_860,
       hairStyle: "wolf-layered",
-      lod: [5771, 2683, 892],
+      lod: [6744, 3266, 1362],
     },
     {
       id: "shaper-atelier-male-lead",

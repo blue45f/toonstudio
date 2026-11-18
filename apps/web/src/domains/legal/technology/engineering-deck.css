@@ -500,8 +500,9 @@ a.deck-atlas__link:hover { border-color: var(--color-accent); }
   .deck-frame:not([data-fixed]) .deck-slide__with-art { grid-template-columns: 1fr; }
   .deck-frame:not([data-fixed]) .deck-slide__cover.deck-slide__with-art { flex-direction: column; }
   .deck-frame:not([data-fixed]) .deck-slide__art { max-width: 260px; }
+  .deck-frame:not([data-fixed]) .deck-slide__art figcaption { font-size: 12px; }
   .deck-frame:not([data-fixed]) .deck-slide__facts { min-width: 0; grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
-  .deck-frame:not([data-fixed]) .deck-slide__foot { flex-wrap: wrap; }
+  .deck-frame:not([data-fixed]) .deck-slide__foot { flex-wrap: wrap; font-size: 12px; }
   .deck-frame:not([data-fixed]) .deck-slide__host { display: none; }
 
   /* 새 레이아웃의 세로 배치: 표는 행마다 카드로, 도감 카드는 한 줄로 쌓는다. */

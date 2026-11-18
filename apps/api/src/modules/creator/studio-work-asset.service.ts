@@ -1,3 +1,9 @@
+import { isWorkVrmCutReservedAssetId } from "@toonstudio/contracts/studio-work-vrm-cut";
+import { db } from "../../platform/database";
+import { hasWorkVrmCutStorage } from "../membership-operations/work-vrm-cut-storage-usage";
+import { prepareWorkVrmCutUpload, type WorkVrmCutFiles } from "./studio-work-vrm-cut-upload";
+import { assertWorkVrmCutCanStage, readWorkVrmCut } from "./studio-work-vrm-cut.store";
+import { isVrmDocument, parseGlbJson } from "./studio-work-asset-glb";
 import { createHash } from "node:crypto";
 import type { StudioScopedWriteContext } from "@toonstudio/contracts/studio-scoped-write";
 
@@ -85,13 +91,6 @@ import type {
   StudioWorkAssetType,
 } from "@toonstudio/contracts/studio-work-asset-contract";
 
-const GLB_HEADER_BYTES = 12;
-const GLB_CHUNK_HEADER_BYTES = 8;
-const GLB_MAGIC = 0x46546c67;
-const GLB_VERSION = 2;
-const GLB_JSON_CHUNK = 0x4e4f534a;
-const GLB_BIN_CHUNK = 0x004e4942;
-const GLB_MAX_JSON_BYTES = 2 * 1024 * 1024;
 const STUDIO_WORK_ASSET_SIGNED_READ_MAX_SECONDS = 300;
 
 const IMAGE_MIME_TYPES = new Set([
@@ -362,107 +361,6 @@ export function readStudioWorkAssetImageDimensions(
   throw new Error("지원하지 않는 이미지 형식입니다.");
 }
 
-function plainRecord(value: unknown): value is Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function parseGlbJson(bytes: Uint8Array): Record<string, unknown> {
-  if (bytes.byteLength < GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES) {
-    throw new Error("3D 에셋 파일이 완전하지 않습니다.");
-  }
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (view.getUint32(0, true) !== GLB_MAGIC || view.getUint32(4, true) !== GLB_VERSION) {
-    throw new Error("GLB 2.0 형식만 사용할 수 있습니다.");
-  }
-  if (view.getUint32(8, true) !== bytes.byteLength) {
-    throw new Error("3D 에셋의 선언 길이와 실제 크기가 다릅니다.");
-  }
-  let chunkOffset = GLB_HEADER_BYTES;
-  let jsonChunks = 0;
-  let binaryChunks = 0;
-  while (chunkOffset < bytes.byteLength) {
-    if (bytes.byteLength - chunkOffset < GLB_CHUNK_HEADER_BYTES) {
-      throw new Error("3D 에셋 내부 블록이 완전하지 않습니다.");
-    }
-    const chunkLength = view.getUint32(chunkOffset, true);
-    const chunkType = view.getUint32(chunkOffset + 4, true);
-    const chunkEnd = chunkOffset + GLB_CHUNK_HEADER_BYTES + chunkLength;
-    if (chunkLength % 4 !== 0 || chunkEnd > bytes.byteLength) {
-      throw new Error("3D 에셋 내부 블록 경계가 올바르지 않습니다.");
-    }
-    if (chunkType === GLB_JSON_CHUNK) jsonChunks += 1;
-    else if (chunkType === GLB_BIN_CHUNK) binaryChunks += 1;
-    else throw new Error("지원하지 않는 3D 에셋 내부 블록이 있습니다.");
-    if (
-      jsonChunks > 1 ||
-      binaryChunks > 1 ||
-      (chunkOffset === GLB_HEADER_BYTES && chunkType !== GLB_JSON_CHUNK)
-    ) {
-      throw new Error("3D 에셋 내부 블록 구성이 올바르지 않습니다.");
-    }
-    chunkOffset = chunkEnd;
-  }
-  if (chunkOffset !== bytes.byteLength || jsonChunks !== 1) {
-    throw new Error("3D 에셋 장면 블록이 없습니다.");
-  }
-  const jsonLength = view.getUint32(GLB_HEADER_BYTES, true);
-  const jsonType = view.getUint32(GLB_HEADER_BYTES + 4, true);
-  if (
-    jsonType !== GLB_JSON_CHUNK ||
-    jsonLength < 2 ||
-    jsonLength > GLB_MAX_JSON_BYTES ||
-    GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES + jsonLength > bytes.byteLength
-  ) {
-    throw new Error("3D 에셋 장면 설명이 올바르지 않습니다.");
-  }
-  let decoded: string;
-  try {
-    decoded = new TextDecoder("utf-8", { fatal: true })
-      .decode(bytes.subarray(GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES, GLB_HEADER_BYTES + GLB_CHUNK_HEADER_BYTES + jsonLength));
-    let contentEnd = decoded.length;
-    while (contentEnd > 0) {
-      const code = decoded.charCodeAt(contentEnd - 1);
-      if (code !== 0 && code !== 32) break;
-      contentEnd -= 1;
-    }
-    decoded = decoded.slice(0, contentEnd);
-  } catch {
-    throw new Error("3D 에셋 장면 설명의 인코딩이 올바르지 않습니다.");
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(decoded);
-  } catch {
-    throw new Error("3D 에셋 장면 설명을 해석할 수 없습니다.");
-  }
-  if (!plainRecord(parsed) || !plainRecord(parsed.asset) || parsed.asset.version !== "2.0") {
-    throw new Error("GLB 2.0 장면 정보가 없습니다.");
-  }
-  for (const collectionName of ["buffers", "images"] as const) {
-    const collection = parsed[collectionName];
-    if (!Array.isArray(collection)) continue;
-    if (collection.some((entry) => plainRecord(entry) && typeof entry.uri === "string")) {
-      throw new Error("외부 리소스를 참조하는 3D 에셋은 사용할 수 없습니다.");
-    }
-  }
-  return parsed;
-}
-
-function isVrmDocument(document: Record<string, unknown>): boolean {
-  const extensionsUsed = Array.isArray(document.extensionsUsed)
-    ? document.extensionsUsed.filter((value): value is string => typeof value === "string")
-    : [];
-  const extensions = plainRecord(document.extensions) ? document.extensions : {};
-  return (
-    extensionsUsed.includes("VRM") ||
-    extensionsUsed.includes("VRMC_vrm") ||
-    Object.hasOwn(extensions, "VRM") ||
-    Object.hasOwn(extensions, "VRMC_vrm")
-  );
-}
-
 export function admitStudioWorkAssetPayload(
   elementType: StudioWorkAssetType,
   declaredMimeType: string,
@@ -602,6 +500,27 @@ export class StudioWorkAssetService {
     }
   }
 
+  async uploadVrmCut(actor: string, workId: string, anchorId: string, metadataJson: string,
+    files: WorkVrmCutFiles | undefined, writeContext?: StudioScopedWriteContext) {
+    this.assertAdmissionEnabled();
+    await this.run(() => this.repository.assertCanEditWork(actor, workId, writeContext));
+    if (!await hasWorkVrmCutStorage(db)) throw new ServiceUnavailableException("이 서버가 팀 컷 저장을 준비하고 있습니다. 현재 원고에서 다시 시도해 주세요.");
+    const { writes, seal } = prepareWorkVrmCutUpload({ workId, anchorId, metadataJson, files, admit: admitStudioWorkAssetPayload });
+    await assertWorkVrmCutCanStage(seal, writes[0]!.descriptor);
+    const storage = await this.requirePrivateObjectStorage();
+    const stored: StudioWorkAssetWrite[] = [];
+    for (const write of writes) {
+      const { object: storageObject } = await this.resolveStorageObject(storage, "source", write, workId, write.assetId);
+      stored.push({ ...write, workId, storageObject, writeContext });
+    }
+    await this.run(() => this.repository.upsertBatch(actor, stored, seal));
+    return this.getVrmCut(actor, workId, anchorId);
+  }
+
+  getVrmCut(actor: string, workId: string, anchorId: string) {
+    return this.run(() => readWorkVrmCut(this.repository, actor, workId, anchorId));
+  }
+
   async uploadLayerLiftBatch(
     actorUserId: string, workId: string,
     metadataJson: string,
@@ -615,6 +534,7 @@ export class StudioWorkAssetService {
       );
     }
     const metadata = parseLayerLiftBatchMetadata(metadataJson);
+    if (metadata.assets.some(entry => isWorkVrmCutReservedAssetId(entry.assetId))) throw new BadRequestException("팀 컷에 예약된 이미지 ID입니다.");
     const files = exactLayerLiftUploadFiles(filesValue);
     const admittedWrites = metadata.assets.map((entry, index) => {
       const file = files[index]!;
@@ -738,6 +658,7 @@ export class StudioWorkAssetService {
     if (!file || !Buffer.isBuffer(file.buffer) || file.size !== file.buffer.byteLength) {
       throw new BadRequestException("업로드할 에셋 파일이 필요합니다.");
     }
+    if (isWorkVrmCutReservedAssetId(assetId)) throw new BadRequestException("고정한 컷은 팀 컷 저장에서 추가해 주세요.");
     const descriptor = parseDescriptorJson(descriptorJson, { assetId, elementType });
     let admitted: AdmittedStudioWorkAssetPayload;
     try {

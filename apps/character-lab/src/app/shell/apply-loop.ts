@@ -11,6 +11,7 @@
  * (레시피 JSON이 복원 단일 소스, 연구 종합 §1.10 "device.lost → 레시피 복원").
  */
 import { KIT_DEFAULT_SLOTS, KIT_PART_SLOTS, failVisible, isLabFailure, isPresetId, kitGeometryKey } from "../../contracts";
+import { packagePartShapes } from "../../domains/authored/package-part-shapes";
 import { stableStringify } from "../../shared/stable-json";
 import { createApplyPlanner, layoutFromPalette } from "../../state/apply-plan";
 
@@ -145,6 +146,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
   let shadingKey: string | null = null;
   let providerKey: string | null = null;
   let loadedCapabilities: SourceCapabilities | null = null;
+  let packageShapes: ReturnType<typeof packagePartShapes> | undefined;
   /** 소스 로드와 첫 적용 단계가 끝난 엔진 */
   let settledEngine: CharacterEngine | null = null;
   /** 이 엔진에서 이미 실패한 소스(같은 키면 다시 만들지 않는다) */
@@ -226,6 +228,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       loadedEngine = engine;
       loadedSourceKey = sourceKey;
       loadedCapabilities = loaded;
+      packageShapes = source.kind === "package" ? packagePartShapes(source.plan.manifest, source.plan.hairLodPolicy.preferredLod) : undefined;
       resetForEngine();
       // 엔진이 보고한 능력 맵이 스토어와 다르면(기본 절차 소스, 레시피 불러오기로 소스가 바뀐 경우) 스토어를 맞춘다(history 밖 이벤트).
       if (!sameCapabilities(loaded.capabilities, state.capabilities)) {
@@ -275,7 +278,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
           : null;
       const basePlan = packagePaletteLayout
         ? createApplyPlanner({
-            partLayout: packagePaletteLayout,
+            partLayout: packagePaletteLayout, packageShapes,
             ...(loadedCapabilities?.custom !== undefined
               ? { custom: loadedCapabilities.custom, features: { morphNames: loadedCapabilities.morphNames, boneNames: loadedCapabilities.boneNames } }
               : {}),
@@ -346,6 +349,7 @@ export function createApplyLoop(deps: ApplyLoopDeps): ApplyLoop {
       const recipe = deps.store.getState().recipe;
       loadedEngine = engine;
       loadedCapabilities = capabilities ?? null;
+      packageShapes = source.kind === "package" ? packagePartShapes(source.plan.manifest, source.plan.hairLodPolicy.preferredLod) : undefined;
       // 절차 소스는 지금 레시피로 만든 것으로 본다(패널이 올리는 소스는 패키지뿐이고, 절차 소스는 루프만 만든다).
       loadedSourceKey = source.kind === "procedural" ? recipeSourceKey(recipe) : sourceKeyOf(source);
       resetForEngine();

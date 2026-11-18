@@ -18,7 +18,7 @@ function elementTarget(target: EventTarget | null): target is Element {
   return target !== null && "closest" in target && typeof target.closest === "function";
 }
 
-function belongsToAnotherEditor(event: KeyboardEvent): boolean {
+export function isStudioBg3dReservedKeyEvent(event: KeyboardEvent): boolean {
   if (event.defaultPrevented || event.isComposing) return true;
   if (!elementTarget(event.target)) return false;
   if (event.target.closest('[data-studio-shortcut-boundary="true"]')) return true;
@@ -29,7 +29,7 @@ function belongsToAnotherEditor(event: KeyboardEvent): boolean {
 /** refs는 이벤트 순간에 읽고, 명령은 현재 호스트에 위임한다. 등록 시점의 선택을 복사하지 않는다. */
 export function createStudioBg3dSceneKeyboardHandler(ports: StudioBg3dSceneKeyboardPorts): (event: KeyboardEvent) => void {
   return (event) => {
-    if (belongsToAnotherEditor(event) || ports.captureInFlightRef.current) return;
+    if (isStudioBg3dReservedKeyEvent(event) || ports.captureInFlightRef.current) return;
     const xr = ports.webXrSessionStateRef.current.status;
     if (xr !== "idle" && xr !== "error") return;
     if (event.key === "Delete" || event.key === "Backspace") {

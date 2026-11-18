@@ -9,6 +9,7 @@ import {
   type StudioVrmPngWorkerRequest,
 } from "./studio-vrm-png-worker-protocol";
 
+import type { StudioVrmPngWorkerSession } from "./studio-vrm-png-worker-session";
 import type { StudioBg3dLtRasterLayer } from "../bg3d/studio-bg3d-lt-render";
 
 export const STUDIO_VRM_PNG_WORKER_TIMEOUT_MS = 20_000;
@@ -32,7 +33,7 @@ export interface StudioVrmPngWorkerOptions {
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly startupTimeoutMs?: number;
-  /** Omitted creates one lazy Vite module Worker for exactly this encode request. */
+  readonly session?: StudioVrmPngWorkerSession;
   readonly workerFactory?: StudioVrmPngWorkerFactory;
 }
 
@@ -66,6 +67,14 @@ export function createStudioVrmPngModuleWorker(): StudioVrmPngWorkerLike | null 
   return new Worker(new URL("./studio-vrm-png.worker.ts", import.meta.url), {
     type: "module",
     name: "toonstudio-vrm-png",
+  });
+}
+
+function createSessionWorker(): StudioVrmPngWorkerLike | null {
+  if (typeof Worker !== "function") return null;
+  return new Worker(new URL("./studio-vrm-png.worker.ts", import.meta.url), {
+    type: "module",
+    name: "toonstudio-vrm-png-session",
   });
 }
 
@@ -191,8 +200,7 @@ async function validatePng(
 }
 
 /**
- * Defensively snapshots and transfers pass pixels to one short-lived OffscreenCanvas Worker.
- * Caller buffers are never detached, and all terminal paths remove listeners and terminate it.
+ * 호출자의 픽셀은 복사해 전송한다. 검증을 마친 세션 Worker만 후속 출력에 재사용한다.
  */
 export function encodeStudioVrmPngInWorker(
   layers: readonly StudioBg3dLtRasterLayer[],
@@ -214,6 +222,7 @@ export function encodeStudioVrmPngInWorker(
     let settled = false;
     let ready = false;
     let verifying = false;
+    let verified = false;
     let startupTimeout: ReturnType<typeof setTimeout> | null = null;
     let encodeTimeout: ReturnType<typeof setTimeout> | null = null;
     const safely = (callback: () => void) => {
@@ -223,19 +232,20 @@ export function encodeStudioVrmPngInWorker(
         // Cleanup must not be held hostage by a host-provided Worker shim.
       }
     };
-    const detachAndTerminateWorker = () => {
+    const releaseWorker = () => {
       if (!worker) return;
       safely(() => worker?.removeEventListener("message", handleMessage));
       safely(() => worker?.removeEventListener("error", handleWorkerFailure));
       safely(() => worker?.removeEventListener("messageerror", handleWorkerFailure));
-      safely(() => worker?.terminate());
+      const owned = worker;
+      safely(() => options.session ? options.session.release(owned, verified) : owned.terminate());
       worker = null;
     };
     const cleanup = () => {
       if (startupTimeout !== null) clearTimeout(startupTimeout);
       if (encodeTimeout !== null) clearTimeout(encodeTimeout);
       signal?.removeEventListener("abort", handleAbort);
-      detachAndTerminateWorker();
+      releaseWorker();
     };
     const finish = (callback: () => void) => {
       if (settled) return;
@@ -250,6 +260,17 @@ export function encodeStudioVrmPngInWorker(
     function handleWorkerFailure(event: WorkerErrorLike): void {
       event.preventDefault?.();
       fail("worker-failed");
+    }
+    function startEncoding(): void {
+      ready = true;
+      if (startupTimeout !== null) clearTimeout(startupTimeout);
+      startupTimeout = null;
+      encodeTimeout = setTimeout(() => fail("timeout"), boundedTimeout(options.timeoutMs));
+      try {
+        worker!.postMessage(request, studioVrmPngWorkerRequestTransfers(request));
+      } catch {
+        fail("worker-failed");
+      }
     }
     function handleMessage(event: WorkerMessageLike): void {
       if (settled) return;
@@ -268,15 +289,7 @@ export function encodeStudioVrmPngInWorker(
           fail("protocol");
           return;
         }
-        ready = true;
-        if (startupTimeout !== null) clearTimeout(startupTimeout);
-        startupTimeout = null;
-        encodeTimeout = setTimeout(() => fail("timeout"), boundedTimeout(options.timeoutMs));
-        try {
-          worker.postMessage(request, studioVrmPngWorkerRequestTransfers(request));
-        } catch {
-          fail("worker-failed");
-        }
+        startEncoding();
         return;
       }
       if (!ready || verifying || response.requestId !== request.requestId) {
@@ -292,11 +305,14 @@ export function encodeStudioVrmPngInWorker(
         return;
       }
       verifying = true;
-      detachAndTerminateWorker();
+      if (!options.session) releaseWorker();
       void validatePng(response.png, request.width, request.height, signal).then((valid) => {
         if (signal?.aborted) fail("aborted");
         else if (!valid) fail("protocol");
-        else finish(() => resolve(response.png));
+        else {
+          verified = true;
+          finish(() => resolve(response.png));
+        }
       }).catch(() => fail("protocol"));
     }
 
@@ -305,8 +321,15 @@ export function encodeStudioVrmPngInWorker(
       handleAbort();
       return;
     }
+    let warm = false;
     try {
-      worker = (options.workerFactory ?? createStudioVrmPngModuleWorker)();
+      if (options.session) {
+        const lease = options.session.acquire(options.workerFactory ?? createSessionWorker, handleAbort);
+        worker = lease?.worker ?? null;
+        warm = lease?.warm ?? false;
+      } else {
+        worker = (options.workerFactory ?? createStudioVrmPngModuleWorker)();
+      }
     } catch {
       fail("worker-unavailable");
       return;
@@ -316,17 +339,15 @@ export function encodeStudioVrmPngInWorker(
       return;
     }
     if (settled) {
-      detachAndTerminateWorker();
+      releaseWorker();
       return;
     }
     try {
       worker.addEventListener("message", handleMessage);
       worker.addEventListener("error", handleWorkerFailure);
       worker.addEventListener("messageerror", handleWorkerFailure);
-      startupTimeout = setTimeout(
-        () => fail("timeout"),
-        boundedStartupTimeout(options.startupTimeoutMs),
-      );
+      if (warm) startEncoding();
+      else startupTimeout = setTimeout(() => fail("timeout"), boundedStartupTimeout(options.startupTimeoutMs));
     } catch {
       fail("worker-failed");
     }

@@ -17,6 +17,7 @@ import {
 import { createStudioMannequinRestPose } from "./studio-mannequin-poses";
 import {
   createStudioMannequinSceneFigure,
+  resolveStudioMannequinPickedJoint,
   type StudioMannequinBodyMeshUserData,
   type StudioMannequinFigureMaterials,
 } from "./studio-mannequin-scene-figure";
@@ -203,6 +204,36 @@ describe("studio-mannequin-scene-materials PBR 정밀도 (이진 Metalness · Cl
 });
 
 describe("createStudioMannequinSceneFigure SubD 원주 분할 및 관절구 밀봉", () => {
+  it("포즈와 위치가 바뀐 뒤에도 몸통에서 잡은 골반·허리·가슴을 각각 고른다", () => {
+    const gradient = createStudioMannequinToonGradientTexture();
+    const palette = createStudioMannequinMaterialPalette("wood", gradient);
+    const harness = createFigureMaterialsHarness(palette);
+    const spec = buildStudioMannequinSpec(STUDIO_MANNEQUIN_DEFAULT_BODY_PARAMS);
+    const pose = createStudioMannequinRestPose();
+    const figure = createStudioMannequinSceneFigure({ id: "lead", spec, pose, materials: harness.materials });
+    try {
+      const torso = figure.bodyMeshes().find((mesh) => mesh instanceof THREE.SkinnedMesh);
+      if (!(torso instanceof THREE.SkinnedMesh)) throw new Error("몸통 스키닝 메시가 없습니다.");
+      figure.root.updateMatrixWorld(true);
+      torso.computeBoundingSphere();
+      torso.computeBoundingBox();
+      figure.applyPose({ ...pose, pelvisOffset: [0.36, 0, 0] });
+      figure.root.updateMatrixWorld(true);
+      const joints = new Set<string | null>();
+      for (let y = 0; y <= spec.heightM; y += 0.01) {
+        const ray = new THREE.Raycaster(new THREE.Vector3(0.36, y, 2), new THREE.Vector3(0, 0, -1));
+        const hit = ray.intersectObject(torso)[0];
+        if (hit) joints.add(resolveStudioMannequinPickedJoint(hit));
+      }
+      expect(joints).toEqual(new Set(["pelvis", "spine", "chest"]));
+    } finally {
+      figure.dispose();
+      harness.dispose();
+      disposeStudioMannequinMaterialPalette(palette);
+      gradient.dispose();
+    }
+  });
+
   it("사지·손가락·관절구 프리미티브가 매끄러운 원주 분할(사지 >= 26~32, 소형 마디/구 >= 16)과 소켓 인터페네트레이션을 보장한다", () => {
     const gradientMap = createStudioMannequinToonGradientTexture();
     const palette = createStudioMannequinMaterialPalette("wood", gradientMap);

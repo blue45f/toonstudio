@@ -24,7 +24,7 @@ import { parseVrmFromGlb } from "../../../domains/authored/vrm-extension-parser"
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { presetUnavailableReasonKo } from "../../../state/apply-plan";
 import { useApplyLoop, useApplyPlan, useCatalog, useDispatch, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
-import { describeUnsavedWorkKo, evaluateUnsavedCharacterWork } from "../unsaved-work";
+import { describeUnsavedWorkKo, evaluateUnsavedCharacterWork, resolveCheckpoint } from "../unsaved-work";
 
 import { KIT_BASE_LABELS_KO, KitPartsTable, KitProvenance, PackageUnsavedGuard } from "./package-panel/KitProvenanceView";
 import { PackageDetail, shortSha } from "./package-panel/PackageDetail";
@@ -128,7 +128,7 @@ export function PackagePanel({
   const applyLoop = useApplyLoop();
   const catalog = useCatalog();
   useApplyPlan();
-  evaluateUnsavedCharacterWork(store, state, session);
+  resolveCheckpoint(store, state);
 
   const ids = useId();
   const [index, setIndex] = useState<IndexState>({ phase: "idle" });

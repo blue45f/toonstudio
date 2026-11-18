@@ -36,10 +36,16 @@ export interface HuddleSnapshot extends HuddleState {
   /** 직접 연결이 failed 상태인 상대 수. 음성 우선 재시도 안내의 근거가 된다. */
   failedPeerCount: number;
 }
-type HuddleSignalPacket = Extract<HuddlePacket, { kind: "description" | "ice" }>;
+type HuddleSignalPacket = Extract<HuddlePacket, { kind: "description" | "ice" | "media-ready" }>;
+
+function sdpSessionId(sdp: string): string | undefined {
+  return /^o=\S+ (\d+) \d+ /mu.exec(sdp)?.[1];
+}
 
 interface Link {
-  pc: RTCPeerConnection; audio: RTCRtpSender; video: RTCRtpSender;
+  pc: RTCPeerConnection; audio: RTCRtpSender | null; video: RTCRtpSender | null;
+  localReadyId: string | null; remoteReadyId: string | null;
+  acceptedSdp: string | null;
   makingOffer: boolean; ignoreOffer: boolean; settingAnswer: boolean;
   pendingIce: RTCIceCandidateInit[]; queue: Promise<void>; epoch: string; pendingSignals: number;
   iceRestartAttempts: number; lastIceRestartAt: number; hasTurn: boolean;
@@ -157,6 +163,7 @@ export class StudioP2pHuddleController {
       if (!available.has(id) || this.now() - seenAt > 12_000) this.overflowSeenAt.delete(id);
     }
     for (const [id, link] of this.links) {
+      if (link.localReadyId && !link.pc.remoteDescription) this.announceMediaReady(id, link, true);
       if (link.pc.connectionState === "failed" || link.pc.connectionState === "disconnected") {
         this.restartLinkIce(id, link);
       }
@@ -185,11 +192,8 @@ export class StudioP2pHuddleController {
   }
   /** 오디오 sender에 비트레이트 상한을 건다 (C7). 미지원 연결에서는 건너뛴다. */
   private applyAudioSenderParameters(link: Link): void {
-    const sender = link.audio as RTCRtpSender & {
-      getParameters?: () => RTCRtpParameters;
-      setParameters?: (parameters: RTCRtpParameters) => Promise<void>;
-    };
-    if (!this.audioTrack || typeof sender.getParameters !== "function"
+    const sender = link.audio;
+    if (!sender || !this.audioTrack || typeof sender.getParameters !== "function"
       || typeof sender.setParameters !== "function") return;
     try {
       const parameters = sender.getParameters();
@@ -212,7 +216,7 @@ export class StudioP2pHuddleController {
     const peer = this.peers.get(id);
     if (!peer || peer.epoch !== packet.epoch) return;
     if (packet.kind === "left") { this.removePeer(id); this.emit(); return; }
-    if (packet.kind === "description" || packet.kind === "ice") {
+    if (packet.kind === "description" || packet.kind === "ice" || packet.kind === "media-ready") {
       if (packet.toEpoch === this.epoch) {
         if (this.isMediaPeerAllowed(id)) this.enqueueSignal(id, packet);
         else if (!this.conversation) this.deferSignal(id, packet);
@@ -323,8 +327,12 @@ export class StudioP2pHuddleController {
       const configuration = huddleRtcConfiguration(getStudioIceServers());
       const pc = this.deps.createPeerConnection?.(configuration)
         ?? new RTCPeerConnection(configuration);
-      const link: Link = { pc, audio: pc.addTransceiver("audio", { direction: "sendrecv" }).sender,
-        video: pc.addTransceiver("video", { direction: "sendrecv" }).sender, makingOffer: false,
+      // direct 포트의 상대 ID와 방의 자기 ID는 서로 다른 이름 공간이다.
+      // 양쪽이 주고받은 통화 epoch로 첫 offer를 한 곳에서만 만들고 응답자는 제안된 미디어 구간을 쓴다.
+      const initiates = this.epoch < peer.epoch;
+      const link: Link = { pc, audio: initiates ? pc.addTransceiver("audio", { direction: "sendrecv" }).sender : null,
+        video: initiates ? pc.addTransceiver("video", { direction: "sendrecv" }).sender : null, makingOffer: false,
+        localReadyId: initiates ? null : this.id(), remoteReadyId: null, acceptedSdp: null,
         ignoreOffer: false, settingAnswer: false, pendingIce: [], queue: Promise.resolve(), epoch: peer.epoch, pendingSignals: 0,
         iceRestartAttempts: 0, lastIceRestartAt: 0,
         hasTurn: iceServersIncludeTurn(configuration.iceServers ?? []) };
@@ -363,11 +371,19 @@ export class StudioP2pHuddleController {
           } finally { link.makingOffer = false; }
         }).catch(() => this.signalError(id, link));
       };
-      void Promise.all([link.audio.replaceTrack(this.audioTrack), link.video.replaceTrack(this.videoTrack)])
-        .then(() => this.applyAudioSenderParameters(link))
-        .catch(() => this.signalError(id, link));
+      void this.replaceLocalTracks(link).catch(() => this.signalError(id, link));
+      if (!initiates) this.announceMediaReady(id, link, false);
       return link;
     } catch { this.fail("이 브라우저에서 WebRTC 통화를 준비하지 못했습니다."); return null; }
+  }
+  private async replaceLocalTracks(link: Link): Promise<void> {
+    await Promise.all([link.audio?.replaceTrack(this.audioTrack), link.video?.replaceTrack(this.videoTrack)]);
+    this.applyAudioSenderParameters(link);
+  }
+  private announceMediaReady(id: string, link: Link, retry: boolean): void {
+    if (link.localReadyId) this.send(id, {
+      kind: "media-ready", epoch: this.epoch, toEpoch: link.epoch, id: link.localReadyId, retry,
+    });
   }
   private sendDescription(id: string, link: Link): void {
     const description = link.pc.localDescription;
@@ -465,6 +481,19 @@ export class StudioP2pHuddleController {
     link.queue = link.queue.then(async () => {
       if (this.links.get(id) !== link) return;
       const pc = link.pc;
+      if (packet.kind === "media-ready") {
+        if (link.localReadyId) return;
+        if (link.remoteReadyId !== packet.id && pc.remoteDescription) {
+          // 상대만 범위를 벗어나 연결을 닫았다가 돌아오면 기존 ICE·DTLS 세션도 교체한다.
+          this.closeLink(id);
+          const replacement = this.ensureLink(id);
+          if (replacement) replacement.remoteReadyId = packet.id;
+        } else {
+          link.remoteReadyId = packet.id;
+          if (packet.retry && pc.signalingState === "have-local-offer") this.sendDescription(id, link);
+        }
+        return;
+      }
       if (packet.kind === "ice") {
         if (link.ignoreOffer) return;
         if (!pc.remoteDescription) {
@@ -472,9 +501,24 @@ export class StudioP2pHuddleController {
         } else await pc.addIceCandidate(packet.candidate);
         return;
       }
+      const remote = pc.remoteDescription;
+      const previous = remote && sdpSessionId(remote.sdp);
+      const incoming = sdpSessionId(packet.sdp);
+      const sdpWithoutCandidates = packet.sdp.replace(/^a=(?:candidate:[^\r\n]*|end-of-candidates)\r?\n/gmu, "");
+      if (remote?.type === packet.type && link.acceptedSdp === sdpWithoutCandidates) {
+        // 같은 협상 버전은 이미 적용됐다. 응답만 재전달하고 현재 협상 상태를 보존한다.
+        if (packet.type === "offer" && pc.localDescription?.type === "answer") this.sendDescription(id, link);
+        return;
+      }
+      if (packet.type === "offer" && previous && incoming && previous !== incoming && link.localReadyId) {
+        // 제안자가 새 연결에서 보낸 offer는 이전 인증서와 ICE 자격을 가진 연결에 적용할 수 없다.
+        this.closeLink(id);
+        this.enqueueSignal(id, packet);
+        return;
+      }
       const collision = packet.type === "offer" && (link.makingOffer
         || (pc.signalingState !== "stable" && !link.settingAnswer));
-      link.ignoreOffer = this.self.sessionId < id && collision;
+      link.ignoreOffer = this.epoch < link.epoch && collision;
       if (link.ignoreOffer) {
         link.pendingIce = [];
         // The peer may have created its link after our first offer was sent (for example while a
@@ -491,8 +535,22 @@ export class StudioP2pHuddleController {
       try { await pc.setRemoteDescription({ type: packet.type, sdp: tuneStudioP2pOpusSdp(packet.sdp) }); }
       finally { link.settingAnswer = false; }
       if (this.links.get(id) !== link) return;
+      link.acceptedSdp = sdpWithoutCandidates;
       for (const candidate of link.pendingIce.splice(0)) await pc.addIceCandidate(candidate);
       if (packet.type === "offer") {
+        if (!link.audio || !link.video) {
+          if (!this.isMediaPeerAllowed(id) || !this.eligiblePeers().some((peer) => peer.sessionId === id)) return;
+          // 첫 응답에 이미 제안된 미디어 구간을 사용해야 마이크·카메라를 켤 때마다 구간이 늘지 않는다.
+          for (const transceiver of pc.getTransceivers()) {
+            const kind = transceiver.receiver.track.kind;
+            if ((kind === "audio" || kind === "video") && !link[kind] && transceiver.mid !== null) {
+              transceiver.direction = "sendrecv";
+              link[kind] = transceiver.sender;
+            }
+          }
+          await this.replaceLocalTracks(link);
+        }
+        if (this.links.get(id) !== link) return;
         await pc.setLocalDescription();
         if (this.links.get(id) === link) this.sendDescription(id, link);
       }
@@ -564,9 +622,7 @@ export class StudioP2pHuddleController {
     if (this.closed) return;
     if (tracks.length) for (const id of this.peers.keys()) this.ensureLink(id);
     for (const [id, link] of this.links) {
-      void Promise.all([link.audio.replaceTrack(this.audioTrack), link.video.replaceTrack(this.videoTrack)])
-        .then(() => this.applyAudioSenderParameters(link))
-        .catch(() => this.signalError(id, link));
+      void this.replaceLocalTracks(link).catch(() => this.signalError(id, link));
     }
     this.announce(); this.emit();
   }

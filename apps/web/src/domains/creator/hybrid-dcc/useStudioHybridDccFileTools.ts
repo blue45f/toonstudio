@@ -6,7 +6,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { createStudioHybridDccComponentSelection } from "./studio-hybrid-dcc-component-selection";
 import { downloadStudioHybridDccFile, readStudioHybridDccWorkfile, studioHybridDccDownloadName } from "./studio-hybrid-dcc-file-io";
 import { exportStudioHybridDccMeshGlb } from "./studio-hybrid-dcc-glb-export";
-import { decodeStudioHybridDccWorkfile, encodeStudioHybridDccWorkfile, STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
+import { decodeWorkfileInWorker, encodeWorkfileInWorker } from "./studio-hybrid-dcc-workfile-worker-client";
+import { STUDIO_HYBRID_DCC_WORKFILE_MIME } from "./studio-hybrid-dcc-workfile";
 import { workspaceExportActiveMesh, type StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 import { resolveStudioHybridDccExportToonMaterials } from "./materials/studio-hybrid-dcc-toon-export";
 
@@ -39,9 +40,10 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
   latest.current = { owner, workspace };
   const live = useRef(true);
   const generation = useRef(0);
-  const readController = useRef<AbortController | null>(null);
+  const fileController = useRef<AbortController | null>(null);
   const confirming = useRef(false);
   const [reading, setReading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -53,13 +55,13 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
 
   useLayoutEffect(() => {
     generation.current += 1;
-    readController.current?.abort(); readController.current = null;
-    setPending(null); setReading(false); setOpening(false); setError(""); setNotice("");
+    fileController.current?.abort(); fileController.current = null;
+    setPending(null); setReading(false); setSaving(false); setOpening(false); setError(""); setNotice("");
     confirming.current = false;
   }, [owner, workspace]);
   useEffect(() => {
     live.current = true;
-    return () => { live.current = false; generation.current += 1; readController.current?.abort(); };
+    return () => { live.current = false; generation.current += 1; fileController.current?.abort(); };
   }, []);
 
   const currentLease = () => {
@@ -69,22 +71,29 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
       && latest.current.workspace === source && getAuthSessionRevision() === authRevision && getAuthUserId() === actor;
   };
   const cancel = () => {
-    generation.current += 1; readController.current?.abort(); readController.current = null;
-    setPending(null); setReading(false); setError("");
-    setNotice(bt("파일 열기를 취소했습니다. 현재 작업은 그대로입니다.", "File opening cancelled. The current work is unchanged."));
+    generation.current += 1; fileController.current?.abort(); fileController.current = null;
+    setPending(null); setReading(false); setSaving(false); setError("");
+    setNotice(bt("파일 작업을 취소했습니다.", "File operation cancelled."));
   };
-  const save = () => {
-    if (busy || reading || opening) return;
+  const save = async () => {
+    if (busy || fileController.current || opening) return;
+    const controller = new AbortController();
+    fileController.current = controller;
+    setSaving(true); setNotice(""); setError("");
     const current = currentLease();
     try {
-      const bytes = encodeStudioHybridDccWorkfile(workspace);
+      const bytes = await encodeWorkfileInWorker(workspace, controller.signal);
       if (!current()) return;
       downloadStudioHybridDccFile(bytes, STUDIO_HYBRID_DCC_WORKFILE_MIME, studioHybridDccDownloadName(targetId, "toon3d"));
       setError(""); setNotice(bt(".toon3d 작업파일 다운로드를 요청했습니다.", "The .toon3d workfile download was requested."));
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("작업파일을 저장하지 못했습니다.", "Could not save the workfile.")); }
+    finally {
+      if (fileController.current === controller) fileController.current = null;
+      if (current()) setSaving(false);
+    }
   };
   const saveObj = () => {
-    if (busy || reading || opening) return;
+    if (busy || fileController.current || opening) return;
     const current = currentLease();
     try {
       const result = workspaceExportActiveMesh(workspace, "obj").lastExport;
@@ -95,7 +104,7 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("OBJ 파일을 저장하지 못했습니다.", "Could not save the OBJ file.")); }
   };
   const saveGlb = () => {
-    if (busy || reading || opening) return;
+    if (busy || fileController.current || opening) return;
     const current = currentLease();
     try {
       const assetId = workspace.activeAssetId;
@@ -119,7 +128,7 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("GLB 파일을 저장하지 못했습니다.", "Could not save the GLB file.")); }
   };
   const saveStl = () => {
-    if (busy || reading || opening) return;
+    if (busy || fileController.current || opening) return;
     const current = currentLease();
     try {
       const result = workspaceExportActiveMesh(workspace, "stl").lastExport;
@@ -130,25 +139,25 @@ export function useStudioHybridDccFileTools({ workspace, workspaceDocumentId, bu
     } catch (cause) { if (current()) setError(cause instanceof Error ? cause.message : bt("STL 파일을 저장하지 못했습니다.", "Could not save the STL file.")); }
   };
   return {
-    reading, opening, pending, error, notice,
-    disabled: busy || reading || opening,
+    reading, saving, opening, pending, error, notice,
+    disabled: busy || reading || saving || opening,
     canSaveObj: Boolean(workspace.activeAssetId),
     save, saveObj, saveGlb, saveStl, cancel,
     open: async (file: File) => {
-      if (busy || opening) return;
-      readController.current?.abort();
-      const controller = new AbortController(); readController.current = controller;
+      if (busy || saving || opening) return;
+      fileController.current?.abort();
+      const controller = new AbortController(); fileController.current = controller;
       const current = currentLease();
       setReading(true); setPending(null); setError(""); setNotice("");
       try {
         const bytes = await readStudioHybridDccWorkfile(file, controller.signal);
         if (!current()) return;
-        const decoded = decodeStudioHybridDccWorkfile(bytes, { documentId: targetId });
+        const decoded = await decodeWorkfileInWorker(bytes, targetId, controller.signal);
         if (current()) setPending({ name: file.name, workspace: decoded, current });
       } catch (cause) {
         if (current() && !controller.signal.aborted) setError(cause instanceof Error ? cause.message : bt("작업파일을 열지 못했습니다.", "Could not open the workfile."));
       } finally {
-        if (readController.current === controller) readController.current = null;
+        if (fileController.current === controller) fileController.current = null;
         if (current()) setReading(false);
       }
     },

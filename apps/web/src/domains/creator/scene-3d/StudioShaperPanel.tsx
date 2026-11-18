@@ -56,6 +56,7 @@ import {
   STUDIO_HEAD_RATIO_PRESETS,
   shaperBodySlidersToMannequinParams,
 } from "./studio-body-morphs";
+import { DEFAULT_ITEM_COLORS, PREVIEW_PIGMENT } from "./studio-shaper-preview-colors";
 import { StudioShaperGarmentFollowSummary } from "./StudioShaperGarmentFollowSummary";
 import {
   DEFAULT_SHAPER_EXPRESSION_SELECTION,
@@ -201,15 +202,6 @@ function readStylePackStorage(): StylePackStorageLike | null {
   }
 }
 
-/** 아이템 기본 색상 (사용자가 색상을 고르기 전 미리보기에 사용). */
-const DEFAULT_ITEM_COLORS: Record<ShaperAppearanceCategory, string> = {
-  hair: "#5b4636",
-  accessories: "#1f2937",
-  top: "#4f6fb3",
-  bottom: "#374151",
-  shoes: "#7c2d12",
-};
-
 function visualToken(category: ShaperPresetCategory, presetId: string): string {
   if (category === "face") {
     if (presetId.includes("round") || presetId.includes("chibi")) return "rounded-[45%]";
@@ -307,7 +299,7 @@ function HairThumb({ presetId, color }: { readonly presetId: string; readonly co
     return (
       <g fill={color}>
         <path d="M10 26c0-10 7-16 14-16s14 6 14 16v6c0 2-1.5 3-3 3H13c-1.5 0-3-1-3-3v-6Z" />
-        <path d="M12 26c2-6 7-9 12-9s10 3 12 9l-4 1c-2-4-5-6-8-6s-6 2-8 6l-4-1Z" fill="#00000033" />
+        <path d="M12 26c2-6 7-9 12-9s10 3 12 9l-4 1c-2-4-5-6-8-6s-6 2-8 6l-4-1Z" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.2} />
       </g>
     );
   }
@@ -408,8 +400,8 @@ function TopThumb({ presetId, color }: { readonly presetId: string; readonly col
     return (
       <g>
         {body}
-        <path d="M20 12l4 5 4-5" fill="none" stroke="#ffffffaa" strokeWidth="2" />
-        <rect x="22" y="18" width="4" height="10" rx="1.5" fill="#b91c1c" />
+        <path d="M20 12l4 5 4-5" fill="none" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="2" />
+        <rect x="22" y="18" width="4" height="10" rx="1.5" fill={PREVIEW_PIGMENT.tie} />
       </g>
     );
   }
@@ -418,7 +410,7 @@ function TopThumb({ presetId, color }: { readonly presetId: string; readonly col
       <g>
         {body}
         <path d="M17 12c1-4 4-6 7-6s6 2 7 6c-2 1-4 2-7 2s-5-1-7-2Z" fill={color} opacity="0.7" />
-        <rect x="19" y="27" width="10" height="7" rx="2" fill="#00000030" />
+        <rect x="19" y="27" width="10" height="7" rx="2" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.1882} />
       </g>
     );
   }
@@ -426,8 +418,8 @@ function TopThumb({ presetId, color }: { readonly presetId: string; readonly col
     return (
       <g>
         {body}
-        <path d="M24 12l-6 8 6 12 6-12-6-8Z" fill="#00000038" />
-        <path d="M24 12l-6 8M24 12l6 8" stroke="#ffffffaa" strokeWidth="1.6" />
+        <path d="M24 12l-6 8 6 12 6-12-6-8Z" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.2196} />
+        <path d="M24 12l-6 8M24 12l6 8" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="1.6" />
       </g>
     );
   }
@@ -435,8 +427,8 @@ function TopThumb({ presetId, color }: { readonly presetId: string; readonly col
   return (
     <g>
       {body}
-      <path d="M18 12l6 8 8-6M30 12l-6 8-8-6" fill="none" stroke="#ffffffaa" strokeWidth="2" />
-      <rect x="14" y="29" width="20" height="3" rx="1.5" fill="#00000040" />
+      <path d="M18 12l6 8 8-6M30 12l-6 8-8-6" fill="none" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="2" />
+      <rect x="14" y="29" width="20" height="3" rx="1.5" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.251} />
     </g>
   );
 }
@@ -447,9 +439,9 @@ function BottomThumb({ presetId, color }: { readonly presetId: string; readonly 
     return (
       <g>
         <path d="M16 8h16l6 26H10l6-26Z" fill={color} />
-        <line x1="21" y1="10" x2="19" y2="32" stroke="#00000030" strokeWidth="1.6" />
-        <line x1="27" y1="10" x2="29" y2="32" stroke="#00000030" strokeWidth="1.6" />
-        <line x1="24" y1="10" x2="24" y2="32" stroke="#00000030" strokeWidth="1.6" />
+        <line x1="21" y1="10" x2="19" y2="32" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
+        <line x1="27" y1="10" x2="29" y2="32" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
+        <line x1="24" y1="10" x2="24" y2="32" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
       </g>
     );
   }
@@ -464,8 +456,8 @@ function BottomThumb({ presetId, color }: { readonly presetId: string; readonly 
     return (
       <g>
         {legs(false)}
-        <rect x="17" y="10" width="5" height="6" rx="1" fill="#00000028" />
-        <rect x="26" y="10" width="5" height="6" rx="1" fill="#00000028" />
+        <rect x="17" y="10" width="5" height="6" rx="1" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.1569} />
+        <rect x="26" y="10" width="5" height="6" rx="1" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.1569} />
       </g>
     );
   }
@@ -494,8 +486,8 @@ function ShoesThumb({ presetId, color }: { readonly presetId: string; readonly c
   return (
     <g>
       <path d="M8 28c5-1 8-8 13-8 4 0 7 3 12 5 3 1 5 2 5 5H10c-1.5 0-2-1-2-2Z" fill={color} />
-      <path d="M20 22l3 3M24 20l3 3" stroke="#ffffffaa" strokeWidth="1.6" />
-      <rect x="8" y="30" width="32" height="4" rx="2" fill="#ffffffcc" />
+      <path d="M20 22l3 3M24 20l3 3" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="1.6" />
+      <rect x="8" y="30" width="32" height="4" rx="2" fill={PREVIEW_PIGMENT.highlight} fillOpacity={0.8} />
     </g>
   );
 }
@@ -536,39 +528,39 @@ function ExpressionFace({
   const eyeScale = 0.7 + t * 0.5;
   return (
     <svg viewBox="0 0 48 48" className="size-12" role="img" aria-hidden>
-      <circle cx="24" cy="24" r="17" fill="#f6d7b8" stroke="#8a5a3b" strokeWidth="2" />
+      <circle cx="24" cy="24" r="17" fill={PREVIEW_PIGMENT.skin} stroke={PREVIEW_PIGMENT.contour} strokeWidth="2" />
       {comboId === "surprised" ? (
         <g>
-          <ellipse cx="17" cy="21" rx={3.4 * eyeScale} ry={4.6 * eyeScale} fill="#fff" stroke="#3b2a20" strokeWidth="1.6" />
-          <ellipse cx="31" cy="21" rx={3.4 * eyeScale} ry={4.6 * eyeScale} fill="#fff" stroke="#3b2a20" strokeWidth="1.6" />
-          <circle cx="17" cy="22" r="1.8" fill="#3b2a20" />
-          <circle cx="31" cy="22" r="1.8" fill="#3b2a20" />
-          <ellipse cx="24" cy="34" rx={2.6 + t * 2.4} ry={mouthH} fill="#7c2d12" />
+          <ellipse cx="17" cy="21" rx={3.4 * eyeScale} ry={4.6 * eyeScale} fill={PREVIEW_PIGMENT.highlight} stroke={PREVIEW_PIGMENT.ink} strokeWidth="1.6" />
+          <ellipse cx="31" cy="21" rx={3.4 * eyeScale} ry={4.6 * eyeScale} fill={PREVIEW_PIGMENT.highlight} stroke={PREVIEW_PIGMENT.ink} strokeWidth="1.6" />
+          <circle cx="17" cy="22" r="1.8" fill={PREVIEW_PIGMENT.ink} />
+          <circle cx="31" cy="22" r="1.8" fill={PREVIEW_PIGMENT.ink} />
+          <ellipse cx="24" cy="34" rx={2.6 + t * 2.4} ry={mouthH} fill={PREVIEW_PIGMENT.mouth} />
         </g>
       ) : comboId === "angry" ? (
-        <g stroke="#3b2a20" strokeLinecap="round">
+        <g stroke={PREVIEW_PIGMENT.ink} strokeLinecap="round">
           <line x1="12" y1="15" x2="21" y2="19" strokeWidth="2.6" />
           <line x1="36" y1="15" x2="27" y2="19" strokeWidth="2.6" />
-          <circle cx="17" cy="24" r="2.4" fill="#3b2a20" stroke="none" />
-          <circle cx="31" cy="24" r="2.4" fill="#3b2a20" stroke="none" />
+          <circle cx="17" cy="24" r="2.4" fill={PREVIEW_PIGMENT.ink} stroke="none" />
+          <circle cx="31" cy="24" r="2.4" fill={PREVIEW_PIGMENT.ink} stroke="none" />
           <path d={`M17 34 Q24 ${32 - t * 3} 31 34`} fill="none" strokeWidth="2.4" />
         </g>
       ) : comboId === "sad" ? (
-        <g stroke="#3b2a20" strokeLinecap="round">
+        <g stroke={PREVIEW_PIGMENT.ink} strokeLinecap="round">
           <path d="M13 19 Q17 16 21 19" fill="none" strokeWidth="2" />
           <path d="M27 19 Q31 16 35 19" fill="none" strokeWidth="2" />
-          <circle cx="17" cy="24" r="2.2" fill="#3b2a20" stroke="none" />
-          <circle cx="31" cy="24" r="2.2" fill="#3b2a20" stroke="none" />
+          <circle cx="17" cy="24" r="2.2" fill={PREVIEW_PIGMENT.ink} stroke="none" />
+          <circle cx="31" cy="24" r="2.2" fill={PREVIEW_PIGMENT.ink} stroke="none" />
           <path d={`M18 35 Q24 ${31 - t * 3} 30 35`} fill="none" strokeWidth="2.4" />
         </g>
       ) : comboId === "neutral" ? (
-        <g stroke="#3b2a20" strokeLinecap="round">
-          <circle cx="17" cy="24" r="2.2" fill="#3b2a20" stroke="none" />
-          <circle cx="31" cy="24" r="2.2" fill="#3b2a20" stroke="none" />
+        <g stroke={PREVIEW_PIGMENT.ink} strokeLinecap="round">
+          <circle cx="17" cy="24" r="2.2" fill={PREVIEW_PIGMENT.ink} stroke="none" />
+          <circle cx="31" cy="24" r="2.2" fill={PREVIEW_PIGMENT.ink} stroke="none" />
           <line x1="19" y1="33" x2="29" y2="33" strokeWidth="2.4" />
         </g>
       ) : (
-        <g stroke="#3b2a20" strokeLinecap="round">
+        <g stroke={PREVIEW_PIGMENT.ink} strokeLinecap="round">
           <path d={`M13 ${23 - t} Q17 ${19 - t} 21 ${23 - t}`} fill="none" strokeWidth="2.2" />
           <path d={`M27 ${23 - t} Q31 ${19 - t} 35 ${23 - t}`} fill="none" strokeWidth="2.2" />
           <path d={`M16 31 Q24 ${35 + t * 4} 32 31`} fill="none" strokeWidth="2.4" />
@@ -624,17 +616,17 @@ function DressUpPreview({
         <g>
           <path d="M44 136h18v6a4 4 0 0 1-4 4H46a2 2 0 0 1-2-2v-8Z" fill={shoesColor} />
           <path d="M58 136h18v6a4 4 0 0 1-4 4H60a2 2 0 0 1-2-2v-8Z" fill={shoesColor} />
-          <rect x="44" y="142" width="18" height="3" fill="#ffffffcc" />
-          <rect x="58" y="142" width="18" height="3" fill="#ffffffcc" />
+          <rect x="44" y="142" width="18" height="3" fill={PREVIEW_PIGMENT.highlight} fillOpacity={0.8} />
+          <rect x="58" y="142" width="18" height="3" fill={PREVIEW_PIGMENT.highlight} fillOpacity={0.8} />
         </g>
       ) : null}
       {/* 하의 */}
       {bottomId === "bottom-skirt" ? (
         <g>
           <path d="M44 88h32l8 26H36l8-26Z" fill={bottomColor} />
-          <line x1="52" y1="90" x2="50" y2="112" stroke="#00000030" strokeWidth="1.6" />
-          <line x1="60" y1="90" x2="60" y2="112" stroke="#00000030" strokeWidth="1.6" />
-          <line x1="68" y1="90" x2="70" y2="112" stroke="#00000030" strokeWidth="1.6" />
+          <line x1="52" y1="90" x2="50" y2="112" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
+          <line x1="60" y1="90" x2="60" y2="112" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
+          <line x1="68" y1="90" x2="70" y2="112" stroke={PREVIEW_PIGMENT.shadow} strokeOpacity={0.1882} strokeWidth="1.6" />
         </g>
       ) : bottomId !== "bottom-none" ? (
         <g fill={bottomColor}>
@@ -655,20 +647,20 @@ function DressUpPreview({
       {/* 상의 디테일 */}
       {topId === "top-school" ? (
         <g>
-          <path d="M54 52l6 7 6-7" fill="none" stroke="#ffffffaa" strokeWidth="2" />
-          <rect x="58" y="60" width="4" height="12" rx="1.5" fill="#b91c1c" />
+          <path d="M54 52l6 7 6-7" fill="none" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="2" />
+          <rect x="58" y="60" width="4" height="12" rx="1.5" fill={PREVIEW_PIGMENT.tie} />
         </g>
       ) : topId === "top-hoodie" ? (
         <g>
           <path d="M50 52c1-6 5-9 10-9s9 3 10 9c-3 2-6 3-10 3s-7-1-10-3Z" fill={topColor} opacity="0.75" />
-          <rect x="54" y="72" width="12" height="9" rx="2.5" fill="#00000030" />
+          <rect x="54" y="72" width="12" height="9" rx="2.5" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.1882} />
         </g>
       ) : topId === "top-suit" ? (
-        <path d="M60 52l-8 12 8 16 8-16-8-12Z" fill="#00000038" />
+        <path d="M60 52l-8 12 8 16 8-16-8-12Z" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.2196} />
       ) : topId === "top-martial" ? (
         <g>
-          <path d="M52 52l8 10 8-8M68 52l-8 10-8-8" fill="none" stroke="#ffffffaa" strokeWidth="2" />
-          <rect x="46" y="78" width="28" height="3.5" rx="1.7" fill="#00000040" />
+          <path d="M52 52l8 10 8-8M68 52l-8 10-8-8" fill="none" stroke={PREVIEW_PIGMENT.highlight} strokeOpacity={0.6667} strokeWidth="2" />
+          <rect x="46" y="78" width="28" height="3.5" rx="1.7" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.251} />
         </g>
       ) : null}
       {/* 목·머리 */}
@@ -690,7 +682,7 @@ function DressUpPreview({
       ) : hairId === "hair-bob" ? (
         <g fill={hairColor}>
           <path d="M42 28c0-12 8-19 18-19s18 7 18 19v5c0 2-1.5 3-3 3H45c-1.5 0-3-1-3-3v-5Z" />
-          <path d="M45 28c2-7 8-11 15-11s13 4 15 11l-5 1c-2-5-6-8-10-8s-8 3-10 8l-5-1Z" fill="#00000033" />
+          <path d="M45 28c2-7 8-11 15-11s13 4 15 11l-5 1c-2-5-6-8-10-8s-8 3-10 8l-5-1Z" fill={PREVIEW_PIGMENT.shadow} fillOpacity={0.2} />
         </g>
       ) : hairId === "hair-long-straight" ? (
         <path d="M42 26c0-11 8-17 18-17s18 6 18 17c-4-4-10-7-18-7s-14 3-18 7Z" fill={hairColor} />
@@ -846,7 +838,7 @@ function GuideBanner({ ko, onClose }: { readonly ko: boolean; readonly onClose: 
           type="button"
           onClick={onClose}
           aria-label={ko ? "가이드 닫기" : "Dismiss guide"}
-          className="grid size-6 shrink-0 place-items-center rounded-full text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          className="grid size-11 shrink-0 place-items-center rounded-full text-fg-3 hover:bg-raised hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
         >
           <X size={13} aria-hidden />
         </button>
@@ -1232,8 +1224,8 @@ export function StudioShaperPanel({
                 );
               })}
             </div>
-            <details className="group rounded-xl border border-dashed border-line/80 bg-panel/40 px-3 py-2">
-              <summary className="flex cursor-pointer items-center gap-1.5 text-[0.62rem] font-bold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            <details className="group rounded-xl border border-dashed border-line/80 bg-panel/40 px-3 open:pb-2">
+              <summary className="flex min-h-11 cursor-pointer items-center gap-1.5 text-xs font-bold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
                 <Lock size={11} className="shrink-0 text-fg-3" aria-hidden />
                 {ko ? "VRM 전용 얼굴 옵션 (동공·입술·귀)" : "VRM-only face options (pupils, lips, ears)"}
               </summary>

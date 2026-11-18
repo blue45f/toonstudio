@@ -338,7 +338,7 @@ import {
 import { readStudioSubmissions } from "./save-first/studio-submission-store";
 import { readStudioProjectDocuments } from "./studio-project-document-reader";
 import { readStudioProjectLibrary } from "./studio-project-library-reader";
-import { parseStudio3dTool } from "./studio-background-3d-metadata";
+import { readStudioBg3dHistoryTarget, resolveStudioBg3dHistoryTarget, studioBg3dLayerEditSource } from "./studio-cuttoon-editor/runtime/studio-bg3d-layer-resume";
 import { BRAND_KIT_LOGO_MASTER_ID, placeBrandKitLogo, type BrandKit } from "./studio-brand-kit";
 import {
   BRUSH_PRESETS,
@@ -609,11 +609,13 @@ import { planStudioHokusaiNaturalMediaReplacement } from "./render/studio-hokusa
 import { createNativeBrushDocumentEditorPreparer } from "./brush/studio-native-brush-editor-bridge";
 import { useStudioHybridDccPersistence } from "./hybrid-dcc/studio-hybrid-dcc-persistence";
 import { uid } from "./studio-id";
+import { canStoreStudioLocalVrmCut } from "./studio-cuttoon-editor/runtime/studio-local-vrm-cut-scope";
 import {
   STUDIO_GPU_LIVE_INK_PROVIDER_LABEL,
   studioRejectedLiveSurfaceMessage,
   useStudioRejectedStrokeRecoveryHost,
 } from "./studio-rejected-stroke-recovery-host";
+import { useStudio3dToolMutationTickets, useStudioCharacterLtInsert } from "./studio-cuttoon-editor/runtime/useStudio3dToolMutationTickets";
 import {
   cascadeCanvasPlacementAnchor,
   createCanvasImageElement,
@@ -692,7 +694,6 @@ import {
 
 import {
   describeStudioScene3dLinkedLayerReview,
-  resolveStudioScene3dLinkedLayerEditSource,
   snapshotStudioScene3dLinkedLayerEditSource,
 } from "./scene3d/studio-scene3d-linked-layer-source";
 import type { StudioLiquifyMode } from "./studio-liquify-contract";
@@ -1321,7 +1322,7 @@ import { resolveStudioWorkspacePanelLayoutVisibility } from "./studio-workspace-
 import { useStudioViewportPanelBounds, useStudioViewportPanelMemory } from "./studio-cuttoon-editor/runtime/useStudioViewportPanelMemory";
 import type { StudioDrawingClarityBaseline } from "./studio-cuttoon-editor/StudioDrawingClarityPolicy";
 import {
-  studio2dSurfaceNavigationHref,
+  studio2dSurfaceNavigationHref, studioWorkspaceDocumentIdentity,
   type Studio2dWorkspaceSurface,
 } from "./studio-workspace-route";
 import { resolveStudioWorkspaceWidePanelToggle } from "./studio-workspace-wide-mode";
@@ -1655,7 +1656,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     uiChromeExposure,
     workMode,
   } = useStudioPreferencesRuntime({
-    episodeStage,
+    episodeStage, launchSearch: location.search,
     taskWorkspace: studioRoute.documentWorkspace,
     applyMirroredSettings: applyMirroredStudioSettings,
     closeRightPanelForFocusMode: closeStudioRightPanelForFocusMode,
@@ -2196,7 +2197,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     const observeSceneElements = (
       sceneElements: ReturnType<StudioCrdtDocument["getSceneElements"]>
     ) => {
-      const references = collectStudioWorkAssetSceneReferences(sceneElements);
+      const references = collectStudioWorkAssetSceneReferences(sceneElements, pages);
       const limitExceeded = references.length > STUDIO_WORK_ASSET_MAX_ASSETS_PER_WORK;
       setStudioWorkAssetLimitExceeded((current) =>
         current === limitExceeded ? current : limitExceeded
@@ -2220,14 +2221,14 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
         areStudioWorkAssetSceneReferencesEqual(current, references) ? current : references
       );
     };
-    if (!studioCrdtDocument || !authorizedWorkAssetScopeId) {
+    if (!authorizedWorkAssetScopeId) {
       studioWorkAssetHydrator.observe([]);
       setStudioWorkAssetReferences((current) => current.length === 0 ? current : []);
       setStudioWorkAssetLimitExceeded(false);
       return;
     }
-    observeSceneElements(studioCrdtDocument.getSceneElements({ includeDeleted: true }));
-    return studioCrdtDocument.subscribeChanges(
+    observeSceneElements(studioCrdtDocument?.getSceneElements({ includeDeleted: true }) ?? []);
+    return studioCrdtDocument?.subscribeChanges(
       (change) => observeSceneElements(change.snapshot.sceneElements),
       // Asset observation is origin-agnostic. Local upload/publish paths and remote peers must
       // converge on exactly the same active reference set even though scene reconciliation keeps
@@ -2239,7 +2240,7 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       }
     );
   }, [
-    activePage.id,
+    activePage.id, pages,
     authorizedWorkAssetScopeId,
     setStudioWorkAssetLimitExceeded,
     setStudioWorkAssetReferences,
@@ -5583,6 +5584,11 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     });
   }
 
+  function bg3dHistoryScope() {
+    return JSON.stringify([studioAuthUserId, studioWorkspaceDocumentIdentity(studioRoute), params.get("version"),
+      liveRoomQueryParam ?? (workId || remixId ? null : instantWorkId)]);
+  }
+  const bg3dHistoryTarget = readStudioBg3dHistoryTarget(location.state);
   function navigateStudio2dSurface(
     surface: Studio2dWorkspaceSurface,
     options?: { readonly force?: boolean; readonly replace?: boolean },
@@ -5592,7 +5598,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       studio2dSurfaceNavigationHref(studioRoute, surface, location.search),
       // 패널을 닫아 표면이 canvas 로 내려오는 항목은 히스토리를 쌓지 않는다 — 뒤로가기가
       // "방금 닫은 패널을 다시 여는" 계단이 되면 라우트 대칭의 의미가 없다.
-      options?.replace === true ? { replace: true } : undefined,
+      { replace: options?.replace === true, state: surface === "bg3d" && bg3dInitialElementId
+        ? { studioBg3dEditTarget: { scope: bg3dHistoryScope(), pageId: currentPageId, layerId: bg3dInitialElementId } } : null },
     );
   }
 
@@ -6251,20 +6258,8 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
       },
     });
   }, [documentSaveInFlightRef, editorMountedRef, studioRevisionProjectGenerationRef]);
-  const poserMutationTicketRef = useRef<StudioEditorMutationTicket | null>(null);
-  const bg3dMutationTicketRef = useRef<StudioEditorMutationTicket | null>(null);
-  const bg3dMutationPageIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    poserMutationTicketRef.current = poserVrmOpen ? captureStudioMutationTicket() : null;
-  }, [captureStudioMutationTicket, poserVrmOpen]);
-  const mannequinMutationTicketRef = useRef<StudioEditorMutationTicket | null>(null);
-  useEffect(() => {
-    mannequinMutationTicketRef.current = mannequinPoserOpen ? captureStudioMutationTicket() : null;
-  }, [captureStudioMutationTicket, mannequinPoserOpen]);
-  useEffect(() => {
-    bg3dMutationTicketRef.current = bg3dOpen ? captureStudioMutationTicket() : null;
-    bg3dMutationPageIdRef.current = bg3dOpen ? currentPageIdRef.current : null;
-  }, [bg3dOpen, captureStudioMutationTicket]);
+  const { poserMutationTicketRef, poserMutationPageIdRef, bg3dMutationTicketRef, bg3dMutationPageIdRef, mannequinMutationTicketRef } =
+    useStudio3dToolMutationTickets(captureStudioMutationTicket, currentPageIdRef, poserVrmOpen || characterShaperOpen, mannequinPoserOpen, bg3dOpen, { locked: collaborationDocumentLocked, route: hybridDccRouteAccess });
 
   // 즐겨찾기는 프로젝트 내용이 아니라 작가 작업공간 선호다. 계정별 SQLite/OPFS 행으로 분리하고,
   // 로그인 사용자가 바뀌는 한 렌더 동안 이전 계정의 별표가 보이거나 새 키에 기록되지 않게 owner와
@@ -6495,6 +6490,23 @@ export function StudioCuttoonEditor({ remixId, studioRoute, renderEpisodeHandoff
     resetColdSource: () => {
       setBg3dSeedTemplateId(null); setBg3dSeedPrimitiveKind(null);
       setBg3dInitialDataUrl(undefined); setBg3dInitialScene(undefined); setBg3dInitialElementId(undefined);
+    },
+    coldTargetSourceFailed: bg3dHistoryTarget !== undefined && workHydrationFailed,
+    coldTargetPending: bg3dHistoryTarget !== undefined && (!studioAuthReady || (collaborationOperationSyncPending && !collaborationReadOnly && !collaborationDocumentUnavailable)),
+    restoreColdTarget: () => {
+      if (bg3dHistoryTarget === undefined) return true;
+      const target = resolveStudioBg3dHistoryTarget(bg3dHistoryTarget, bg3dHistoryScope(), pages,
+        masterEditMode || collaborationDocumentLocked || workHydrationFailed || !persistLeadershipAllowsDraw, reviewBoundPage);
+      if (!target || !setCurrentPageId(target.pageId)) {
+        setError("3D 배경을 다시 열 수 없어요. 원고에서 레이어와 편집 권한을 확인해 주세요.");
+        navigateStudio2dSurface("canvas", { replace: true });
+        return false;
+      }
+      setSelectedId(target.layerId);
+      setBg3dInitialElementId(target.layerId);
+      setBg3dInitialScene(target.source.scene);
+      setBg3dInitialDataUrl(target.source.legacyDataUrl);
+      return true;
     },
     openEntry: () => {
       setPoserVrmOpen(false); setCharacterShaperOpen(false); setMannequinPoserOpen(false);
@@ -14368,44 +14380,9 @@ const historyBrushArmed =
 const puppetWarpArmed =
     puppetWarpActive && selected?.type === "image" && !selectedImageMutationLocked;
   const contextMenuEl = contextMenu.elId ? (elementById.get(contextMenu.elId) ?? null) : null;
-  const resolveBg3dEditSource = useCallback(
-    (
-      element: El | null
-    ): {
-      readonly scene?: StudioBg3dSceneDocument;
-      readonly legacyDataUrl?: string;
-    } | null => {
-      if (!element || element.type !== "image") return null;
-      if (element.bg3dLtBundleId) {
-        if (activePage.linked3dRender && activePage.shared3dStage) {
-          const linkedScene = resolveStudioScene3dLinkedLayerEditSource({
-            bundleId: element.bg3dLtBundleId,
-            linked3dRender: activePage.linked3dRender,
-            shared3dStage: activePage.shared3dStage,
-            elements,
-          });
-          if (!linkedScene) return null;
-          return { scene: linkedScene };
-        }
-        const anchor = elements.find(
-          (candidate): candidate is ImageEl =>
-            candidate.type === "image" &&
-            candidate.bg3dLtBundleId === element.bg3dLtBundleId &&
-            candidate.bg3dScene !== undefined
-        );
-        if (anchor?.bg3dScene) {
-          const scene = snapshotStudioScene3dLinkedLayerEditSource(anchor.bg3dScene);
-          return scene ? { scene } : null;
-        }
-      }
-      if (element.bg3dScene) {
-        const scene = snapshotStudioScene3dLinkedLayerEditSource(element.bg3dScene);
-        return scene ? { scene } : null;
-      }
-      return parseStudio3dTool(element.src) === "bg3d" ? { legacyDataUrl: element.src } : null;
-    },
-    [activePage.linked3dRender, activePage.shared3dStage, elements]
-  );
+  const { linked3dRender, shared3dStage } = activePage;
+  const resolveBg3dEditSource = useCallback((element: El | null) =>
+    studioBg3dLayerEditSource(element, { linked3dRender, shared3dStage }, elements), [linked3dRender, shared3dStage, elements]);
   // Referentially stable so the memoized inspector child doesn't re-render on unrelated commits.
   const selectedBg3dEditSource = useMemo(
     () => resolveBg3dEditSource(selected),
@@ -15825,13 +15802,13 @@ const puppetWarpArmed =
     projectId: studioRoute.projectId, documentId: studioRoute.documentId, focus: params.get("focus"),
     autosaveChecked, hasAutosave, hasElements: elements.length > 0, workHydrated,
     rememberedPrimaryTool, requestedPrimaryTool: readStudioLaunchPrimaryTool(location.search),
-    primaryToolActivatedRef, setTool, setDrawMode,
+    primaryToolActivatedRef, setTool, setDrawMode, activateRequestedTool: (next) => activatePrimaryCanvasTool(next, next === "draw" ? "pen" : undefined, false, "launch"),
   });
   useStudioInitialPrimaryTool({
     autosaveChecked, hasExistingContent: initialToolDecision.hasExistingContent, primaryToolActivatedRef,
     rememberedPrimaryTool: initialToolDecision.rememberedPrimaryTool, requestedPrimaryTool: initialToolDecision.requestedPrimaryTool,
     startDrawing: () => {
-      activatePrimaryCanvasToolRef.current("draw", "pen");
+      activatePrimaryCanvasTool("draw", "pen", false, initialToolDecision.requestedPrimaryTool ? "launch" : "command");
       if (!isMobile && uiDensityMode !== "focus") openInspectorRoute({ primary: "properties" }, null);
     },
     uiBooleanPreferencesReady, workHydrated,
@@ -17161,15 +17138,19 @@ const puppetWarpArmed =
       ...elementPatch,
     });
   }
+  const cutScope = { namedDocument: Boolean(studioRoute.draftId || studioRoute.documentId), workId, remixId,
+    shared: expectsSharedDocument, joined: joinedStudioLiveJam, draftStatus: draftCollaboration?.status };
+  const cutScopeRef = useRef(cutScope); cutScopeRef.current = cutScope;
+  const canStoreLocalVrmCut = () => canStoreStudioLocalVrmCut({ ...cutScopeRef.current, peerCount: studioLiveRoomRef.current?.getPeers().length ?? 0 });
   const applyBg3dRenderedImage = bindStudioBg3dRenderedImage({
-    setError,
+    setError, activeElementsRef,
     setStatusNotice,
     elementById,
     groups,
     patchEl,
     canvasH,
     addEl,
-    isRealtimeTeamSession, scopedWriteRuntime,
+    isRealtimeTeamSession, scopedWriteRuntime, workId, canStoreLocalVrmCut, cutDocumentKey: autosaveKey,
     elements,
     activePage,
     bg3dDccSourceRef,
@@ -22490,11 +22471,11 @@ const puppetWarpArmed =
   function activatePrimaryCanvasTool(
     nextTool: "select" | "draw",
     nextDrawMode?: DrawMode,
-    selectionWillReplaceToolSnapshot = false,
+    selectionWillReplaceToolSnapshot = false, source: "command" | "launch" = "command",
   ) {
     // 기본 도구 전이의 단일 정본이므로, "무엇을 마지막으로 썼는가"의 기록도 여기 한 곳이다.
     primaryToolActivatedRef.current = true;
-    persistStudioPrimaryTool(nextTool);
+    if (source === "command") persistStudioPrimaryTool(nextTool);
     const currentOperation = rememberedOperationForDrawMode(drawModeRef.current);
     const targetMode = nextTool === "draw"
       ? nextDrawMode ?? drawModeRef.current
@@ -23717,7 +23698,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     }
     const { waitForStudioCaptureReady } = await loadStudioCaptureReadinessRuntime();
     return waitForStudioCaptureReady({
-      pageId: page.id, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
+      pageId: page.id, workAssetHydrator: studioWorkAssetHydrator, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
       getRenderedPageId: () => {
         const committed = captureCommitRef.current;
         return committed.exporting && !committed.masterEditMode ? committed.pageId : null;
@@ -23744,7 +23725,7 @@ const beginStudioDrawLiveSurfaces = bindStudioDrawLiveSurfaces({
     } = await loadStudioCaptureReadinessRuntime();
     const renderKey = `${page.id}:${historyIndex}`;
     return waitForStudioCaptureReady({
-      pageId: renderKey, sourcePage: page, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
+      pageId: renderKey, sourcePage: page, workAssetHydrator: studioWorkAssetHydrator, getMaster: () => captureCommitRef.current.master, getDocumentGeneration: () => studioRevisionProjectGenerationRef.current, expectedDocumentGeneration: captureGeneration,
       getRenderedPageId: () => {
         const committed = captureCommitRef.current;
         return committed.timelapse && !committed.masterEditMode
@@ -27153,6 +27134,17 @@ function clearSelectionForEdit() {
     togglePageSequence: () => setPageSequenceOpen((current) => !current),
   });
 
+  const insertCharacterLtLayers = useStudioCharacterLtInsert(() => ({
+      openedPageId: poserMutationPageIdRef.current, currentPageId: currentPageIdRef.current,
+      ticket: poserMutationTicketRef.current, admit: canApplyStudioMutation, locked: pageEditLocked || masterEditMode,
+      canvas: () => ({ canvasWidth: CANVAS_W, canvasHeight: canvasH, placement: nextAssetInsertionPlacement(), uid }),
+      commit: (pair, pageId) => {
+        if (!commit([...activeElementsRef.current, ...pair], undefined, pageId)) return false;
+        setSelectedId(pair[1].id); setTool("select");
+        announceDrawingShortcut("원고에 LT 톤과 선화를 추가했어요.");
+        return true;
+      },
+  }));
   const studioLazyPanelStackHandlers = useStudioStableHandlers<StudioLazyPanelStackHandlers>({
     addPage,
     applyStudioCommentsPanelChange,
@@ -27254,9 +27246,10 @@ function clearSelectionForEdit() {
         applyRenderedImage: applyBg3dRenderedImage,
       });
     },
+    insertCharacterLtLayers,
     insertVrmResult: (result) => applyStudioVrmInsertResult({
       result,
-      mutationTicket: poserMutationTicketRef.current,
+      mutationTicket: poserMutationPageIdRef.current === currentPageIdRef.current ? poserMutationTicketRef.current : null,
       admitMutation: canApplyStudioMutation,
       targetElementId: poserInitialElementId,
       resolveTarget: (elementId) => elementById.get(elementId),
@@ -28240,7 +28233,7 @@ function clearSelectionForEdit() {
       bg3dSeedPrimitiveKind={bg3dSeedPrimitiveKind}
       bg3dMarketplaceModelId={bg3dMarketplaceModelId}
       bg3dSeedTemplateId={bg3dSeedTemplateId}
-      bg3dTargetBundleId={bg3dTargetBundleId}
+      bg3dTargetBundleId={bg3dTargetBundleId} cutDocumentKey={autosaveKey} cutTeamDocument={!canStoreLocalVrmCut()} cutWorkScope={workId ? { workId, actorId: studioAuthUserId ?? null, authorized: Boolean(studioAuthUserId && authorizedWorkAssetScopeId === workId), anchorId: bg3dInitialElementId } : undefined}
       bgGrad={bgGrad}
       bgSceneGenreFilter={bgSceneGenreFilter}
       bgSceneSearchQuery={bgSceneSearchQuery}

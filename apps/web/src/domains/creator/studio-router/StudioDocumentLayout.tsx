@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   readStudioLiveInviteRoleQuery,
@@ -67,7 +67,9 @@ export function StudioDocumentLayout({
   studioRoute,
 }: StudioDocumentLayoutProps) {
   const { documentKey } = useStudioDocumentRuntime();
-  const [params, setSearchParams] = useSearchParams();
+  const [params] = useSearchParams();
+  const { pathname, hash, state } = useLocation();
+  const navigate = useNavigate();
   useEffect(() => startStudioConnectivityRuntime(), []);
   const liveRoomParam = readStudioLiveRoomQuery(params);
   const liveInviteRoleParam = readStudioLiveInviteRoleQuery(params);
@@ -99,11 +101,8 @@ export function StudioDocumentLayout({
     // asynchronously) and is force-cleared the moment `?room=` exists — so it can never reach the
     // one frame in which this publish runs. Keeping the draft id out of the layout is what lets the
     // room query move up here without dragging the draft-provisioning state out of StudioPage.
-    setSearchParams((current) => {
-      if (readStudioLiveRoomQuery(current) === instantWorkId) return current;
-      return withStudioLiveJamRoom(current, instantWorkId);
-    }, { replace: true });
-  }, [canPublishRoom, instantWorkId, liveRoomParam, remixId, setSearchParams, workId]);
+    navigate({ pathname, search: withStudioLiveJamRoom(params, instantWorkId).toString(), hash }, { replace: true, state });
+  }, [canPublishRoom, hash, instantWorkId, liveRoomParam, navigate, params, pathname, remixId, state, workId]);
 
   const runtime: StudioDocumentLayoutRuntime = {
     documentKey,

@@ -5,6 +5,7 @@ import { reloadStudioWorldAfterDraftSave } from "./studio-world-authoring-reload
 
 // Type-only reference: the live page does not import the actual editor implementation.
 type Props = ComponentProps<typeof import("./StudioVirtualSpaceWorldAuthoringPanel")["StudioVirtualSpaceWorldAuthoringPanel"]>;
+const CloneSection = lazy(() => import("./StudioWorldCloneSection").then((module) => ({ default: module.StudioWorldCloneSection })));
 const createAttempt = (scope: string, sequence = 0) => ({ scope, sequence, Editor: lazy(loadStudioWorldAuthoring) });
 class AuthoringBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -12,7 +13,9 @@ class AuthoringBoundary extends Component<{ children: ReactNode; fallback: React
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 /** Only mounted in explicit authoring mode. Retrying never writes the parent draft or publication. */
-export function StudioWorldAuthoringEntry(props: Props) {
+export function StudioWorldAuthoringEntry({ clone, ...props }: Props & {
+  readonly clone?: import("./StudioWorldCloneSection").WorldCloneBinding;
+}) {
   const bt = useBilingual("StudioWorldAuthoringEntry");
   const scope = JSON.stringify([props.projectId, props.basePublishedRevisionId, Boolean(props.disabled)]);
   const [attempt, setAttempt] = useState(() => createAttempt(scope));
@@ -36,6 +39,7 @@ export function StudioWorldAuthoringEntry(props: Props) {
     <button type="button" className="min-h-11 rounded-lg border border-line px-3" disabled={props.disabled} onClick={saveAndReload}>{bt("공간 초안 저장 후 페이지 새로고침", "Save world draft and reload page")}</button>
     {reloadFailed ? <p role="status">{bt("초안 저장을 확인하지 못해 새로고침하지 않았습니다. 현재 입력은 이 화면에 유지됩니다.", "The draft could not be verified in storage, so the page was not reloaded. Your current input remains here.")}</p> : null}
   </section>}><Suspense fallback={<p role="status" className="rounded-lg border border-line bg-card p-4 text-sm">{bt("공간 편집 화면 불러오는 중…", "Loading world editor…")}</p>}>
+    {clone ? <CloneSection key={JSON.stringify([clone.scope, clone.incoming])} {...props} clone={clone} /> : null}
     <Editor {...props} />
   </Suspense></AuthoringBoundary>;
 }

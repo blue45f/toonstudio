@@ -1,6 +1,7 @@
 
 import type { StudioWorkAssetReference } from "./studio-work-asset-client";
 import type { StudioWorkAssetHydrationState } from "./studio-work-asset-hydrator";
+import { isStudioCrdtBg3dImageReferenceForElement } from "./live/studio-crdt-bg3d-image-reference";
 
 import {
   parseStudioWorkAssetSourceUri,
@@ -114,7 +115,8 @@ function isWorkAssetType(value: unknown): value is StudioWorkAssetReference["ele
 }
 
 export function collectStudioWorkAssetSceneReferences(
-  records: readonly StudioWorkAssetSceneRecordLike[]
+  records: readonly StudioWorkAssetSceneRecordLike[],
+  pages: readonly { id: string; elements: readonly { id: string; type: string; src?: unknown }[] }[] = [],
 ): StudioWorkAssetSceneReference[] {
   const unique = new Map<string, StudioWorkAssetSceneReference>();
   for (const record of records) {
@@ -123,7 +125,8 @@ export function collectStudioWorkAssetSceneReferences(
       record.deleted ||
       record.payload.type !== "reference" ||
       !isWorkAssetType(elementType) ||
-      Object.keys(record.payload.props).length === 1
+      Object.keys(record.payload.props).length === 1 ||
+      isStudioCrdtBg3dImageReferenceForElement(record.id, record.payload.props)
     ) {
       continue;
     }
@@ -133,6 +136,21 @@ export function collectStudioWorkAssetSceneReferences(
       orderIndex: record.orderIndex,
       reference,
     });
+  }
+  // 원고에 영수증 주소가 먼저 기록될 수 있다. 삭제나 형식 변경은 CRDT가 계속 결정한다.
+  const canonical = new Map(records.map(record => [record.id, record]));
+  for (const page of pages) {
+    for (const [orderIndex, element] of page.elements.entries()) {
+      if (element.type !== "image" || typeof element.src !== "string") continue;
+      const reference = parseStudioWorkAssetSourceUri(element.src);
+      if (reference?.elementType !== "image" || reference.assetId !== element.id) continue;
+      const key = studioWorkAssetReferenceKey(reference);
+      if (unique.has(key)) continue;
+      const record = canonical.get(element.id);
+      if (record && (record.deleted || record.pageId !== page.id || record.payload.type !== "reference" ||
+        record.payload.props.elementType !== "image" || Object.keys(record.payload.props).length !== 1)) continue;
+      unique.set(key, { reference, pageId: page.id, orderIndex });
+    }
   }
   return [...unique.values()].sort((left, right) =>
     left.pageId.localeCompare(right.pageId) ||

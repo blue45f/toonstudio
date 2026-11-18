@@ -59,7 +59,7 @@ export function StudioVirtualSpaceAppStore({ installedAppIds, onInstalledChange 
     <section className="studio-vspace-app-store" aria-label={bt("가상공간 앱 스토어", "Virtual space app store")}>
       <header>
         <h2><Store size={18} aria-hidden />{bt("앱 스토어", "App Store")}</h2>
-        <p>{bt("공간에 설치해서 함께 쓰는 미니 앱을 고르세요.", "Pick mini apps to install and use together in the space.")}</p>
+        <p>{bt("이 기기에서 현재 작업공간에 사용할 미니 앱을 고르세요.", "Choose mini apps for this workspace on this device.")}</p>
       </header>
 
       {selected ? (

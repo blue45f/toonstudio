@@ -106,6 +106,7 @@ export const characterPackageManifestSchema = z.looseObject({
     .object({
       slotCapabilities: z.partialRecord(z.enum(CHARACTER_SLOT_KINDS), slotCapabilitySchema),
       meshRoles: z.record(z.string(), z.enum(PART_ROLES)),
+      partMorphTargets: z.record(z.string(), z.array(z.string())),
       boneMap: z.record(z.string(), z.enum(HUMANOID_BONE_NAMES)),
       shapeKeyMap: z.record(z.string(), z.string()),
     })

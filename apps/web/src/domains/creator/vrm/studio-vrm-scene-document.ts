@@ -1,3 +1,5 @@
+import { hasStudioVrmV6Fields, STUDIO_VRM_HUMANOID_BONES, STUDIO_VRM_FINGER_BONES, SAFE_DATA_KEY_PATTERN, UNSAFE_REFERENCE_KEY_PATTERN,
+  UNSAFE_REFERENCE_PATTERN, FORBIDDEN_KEYS, containsControlCharacter, normalizedDataOrNull, type StudioVrmCanonicalData } from "@toonstudio/contracts/studio-vrm-scene-fields";
 import {
   canonicalizeStudioVrmTexturePaintChannel,
   studioVrmTexturePaintChannelEncoding,
@@ -84,12 +86,6 @@ function failSceneBudget(code: StudioVrmSceneDocumentBudgetErrorCode): never {
 }
 
 const MAX_WORLD_COORDINATE = 10_000;
-const MAX_DATA_DEPTH = 8;
-const MAX_DATA_NODES = 1_024;
-const MAX_DATA_ARRAY_ITEMS = 128;
-const MAX_DATA_OBJECT_KEYS = 128;
-const MAX_DATA_KEY_LENGTH = 64;
-const MAX_DATA_STRING_LENGTH = 1_024;
 const MAX_SAFE_GRAPH_DEPTH = 16;
 const MAX_SAFE_GRAPH_NODES = 8_192;
 const MAX_SAFE_GRAPH_ARRAY_ITEMS = 1_024;
@@ -101,15 +97,7 @@ const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const GLTF_MATERIAL_LOCATOR_PATTERN = /^gltf-material:(?:0|[1-9][0-9]{0,5})$/;
 const SCENE_PATH_MATERIAL_LOCATOR_PATTERN =
   /^scene-path:[A-Za-z0-9][A-Za-z0-9._-]{0,63}(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,63}){0,7}$/;
-const SAFE_DATA_KEY_PATTERN = /^[\p{L}\p{N}_. -]{1,64}$/u;
 const CSS_HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-const UNSAFE_REFERENCE_PATTERN = /^(?:data|blob|https?|file|javascript|vbscript):|^\/\//i;
-// `curl` is an Avatar Forge numeric hair control, not a URL reference. Keep the broad
-// suffix guard for keys such as `runtimeUrl` while exempting that exact canonical field.
-const UNSAFE_REFERENCE_KEY_PATTERN =
-  /(?:^|_)(?:url|uri|href|src)$|^(?!curl$).*(?:url|uri)$/i;
-const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
-
 export type StudioVrmVec3 = readonly [number, number, number];
 
 export const STUDIO_VRM_IK_EFFECTORS = [
@@ -134,67 +122,6 @@ export interface StudioVrmIkConstraint {
   readonly target: StudioVrmVec3;
   readonly pole: StudioVrmVec3 | null;
 }
-
-export const STUDIO_VRM_HUMANOID_BONES = [
-  "hips",
-  "spine",
-  "chest",
-  "upperChest",
-  "neck",
-  "head",
-  "leftEye",
-  "rightEye",
-  "jaw",
-  "leftShoulder",
-  "leftUpperArm",
-  "leftLowerArm",
-  "leftHand",
-  "rightShoulder",
-  "rightUpperArm",
-  "rightLowerArm",
-  "rightHand",
-  "leftUpperLeg",
-  "leftLowerLeg",
-  "leftFoot",
-  "leftToes",
-  "rightUpperLeg",
-  "rightLowerLeg",
-  "rightFoot",
-  "rightToes",
-] as const;
-
-export const STUDIO_VRM_FINGER_BONES = [
-  "leftThumbMetacarpal",
-  "leftThumbProximal",
-  "leftThumbDistal",
-  "leftIndexProximal",
-  "leftIndexIntermediate",
-  "leftIndexDistal",
-  "leftMiddleProximal",
-  "leftMiddleIntermediate",
-  "leftMiddleDistal",
-  "leftRingProximal",
-  "leftRingIntermediate",
-  "leftRingDistal",
-  "leftLittleProximal",
-  "leftLittleIntermediate",
-  "leftLittleDistal",
-  "rightThumbMetacarpal",
-  "rightThumbProximal",
-  "rightThumbDistal",
-  "rightIndexProximal",
-  "rightIndexIntermediate",
-  "rightIndexDistal",
-  "rightMiddleProximal",
-  "rightMiddleIntermediate",
-  "rightMiddleDistal",
-  "rightRingProximal",
-  "rightRingIntermediate",
-  "rightRingDistal",
-  "rightLittleProximal",
-  "rightLittleIntermediate",
-  "rightLittleDistal",
-] as const;
 
 export type StudioVrmHumanoidBoneName = (typeof STUDIO_VRM_HUMANOID_BONES)[number];
 export type StudioVrmFingerBoneName = (typeof STUDIO_VRM_FINGER_BONES)[number];
@@ -277,14 +204,6 @@ export interface StudioVrmMaterialFx {
   readonly emissiveColor: string | null;
   readonly emissiveIntensity: number;
 }
-
-export type StudioVrmCanonicalData =
-  | null
-  | boolean
-  | number
-  | string
-  | readonly StudioVrmCanonicalData[]
-  | { readonly [key: string]: StudioVrmCanonicalData };
 
 export interface StudioVrmAppearanceSettings {
   readonly bodyScale: StudioVrmBodyScale;
@@ -543,11 +462,6 @@ const VERSION_FIVE_ROOT_KEYS = new Set([
   ...VERSION_TWO_TO_FOUR_ROOT_KEYS,
   "surfacePaint",
 ]);
-const CURRENT_ROOT_KEYS = new Set([
-  ...VERSION_FIVE_ROOT_KEYS,
-  "lightingTone",
-]);
-
 const VERSION_ONE_POSE_KEYS = new Set([
   "bones",
   "yOffset",
@@ -648,10 +562,6 @@ const FULL_STATE_V3_FRAGMENT_KEYS = new Set([
 
 interface SafeCloneState {
   readonly seen: WeakSet<object>;
-  nodes: number;
-}
-
-interface CanonicalDataState {
   nodes: number;
 }
 
@@ -808,14 +718,6 @@ function boundedInteger(value: unknown, fallback: number, minimum: number, maxim
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-function containsControlCharacter(value: string): boolean {
-  for (const character of value) {
-    const code = character.codePointAt(0) ?? 0;
-    if (code <= 0x1f || code === 0x7f) return true;
-  }
-  return false;
 }
 
 function normalizeSafeText(value: unknown, fallback: string, maximumLength = 128): string {
@@ -1030,58 +932,6 @@ function normalizeCamera(value: unknown): StudioVrmCameraSettings {
     near,
     far,
   };
-}
-
-function normalizeCanonicalData(
-  value: unknown,
-  state: CanonicalDataState,
-  depth = 0
-): StudioVrmCanonicalData | undefined {
-  if (value === null || typeof value === "boolean") return value;
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return undefined;
-    return Object.is(value, -0) ? 0 : value;
-  }
-  if (typeof value === "string") {
-    if (
-      Array.from(value).length > MAX_DATA_STRING_LENGTH ||
-      containsControlCharacter(value) ||
-      UNSAFE_REFERENCE_PATTERN.test(value.trim())
-    ) return undefined;
-    return value;
-  }
-  if (depth >= MAX_DATA_DEPTH || state.nodes >= MAX_DATA_NODES) return undefined;
-  state.nodes += 1;
-  if (Array.isArray(value)) {
-    if (value.length > MAX_DATA_ARRAY_ITEMS) return undefined;
-    const result: StudioVrmCanonicalData[] = [];
-    for (const item of value) {
-      const normalized = normalizeCanonicalData(item, state, depth + 1);
-      if (normalized === undefined) return undefined;
-      result.push(normalized);
-    }
-    return result;
-  }
-  if (!isRecord(value)) return undefined;
-  const keys = Object.keys(value).sort();
-  if (keys.length > MAX_DATA_OBJECT_KEYS) return undefined;
-  const result: Record<string, StudioVrmCanonicalData> = {};
-  for (const key of keys) {
-    if (
-      !SAFE_DATA_KEY_PATTERN.test(key) ||
-      Array.from(key).length > MAX_DATA_KEY_LENGTH ||
-      FORBIDDEN_KEYS.has(key.toLowerCase()) ||
-      UNSAFE_REFERENCE_KEY_PATTERN.test(key)
-    ) return undefined;
-    const normalized = normalizeCanonicalData(value[key], state, depth + 1);
-    if (normalized === undefined) return undefined;
-    result[key] = normalized;
-  }
-  return result;
-}
-
-function normalizedDataOrNull(value: unknown): StudioVrmCanonicalData {
-  return normalizeCanonicalData(value, { nodes: 0 }) ?? null;
 }
 
 function normalizeCustomColors(value: unknown): Readonly<Record<string, string>> {
@@ -1410,23 +1260,7 @@ function hasStrictSurfacePaint(value: unknown): boolean {
 }
 
 function strictDecodedCurrentDocument(value: unknown): StudioVrmSceneDocument | null {
-  if (!isRecord(value)) return null;
-  const keys = Object.keys(value);
-  if (keys.length !== CURRENT_ROOT_KEYS.size || keys.some((key) => !CURRENT_ROOT_KEYS.has(key))) {
-    return null;
-  }
-  if (
-    !isRecord(value.rig)
-    || Object.keys(value.rig).length !== RIG_KEYS.size
-    || Object.keys(value.rig).some((key) => !RIG_KEYS.has(key))
-  ) return null;
-  if (
-    !isRecord(value.pose)
-    || Object.keys(value.pose).length !== CURRENT_POSE_KEYS.size
-    || Object.keys(value.pose).some((key) => !CURRENT_POSE_KEYS.has(key))
-    || !isRecord(value.pose.translations)
-    || Object.keys(value.pose.translations).length !== POSE_TRANSLATION_KEYS.size
-    || Object.keys(value.pose.translations).some((key) => !POSE_TRANSLATION_KEYS.has(key))
+  if (!hasStudioVrmV6Fields(value)
     || !hasStrictIkConstraints(value.pose.ikConstraints)
     || !hasStrictSurfacePaint(value.surfacePaint)
   ) return null;
@@ -2060,3 +1894,5 @@ export function studioVrmSceneHasContent(raw: unknown): boolean {
   if (!serialized) return false;
   return serialized !== serializeStudioVrmSceneDocument(DEFAULT_STUDIO_VRM_SCENE_DOCUMENT);
 }
+
+export { STUDIO_VRM_HUMANOID_BONES, STUDIO_VRM_FINGER_BONES, type StudioVrmCanonicalData } from "@toonstudio/contracts/studio-vrm-scene-fields";

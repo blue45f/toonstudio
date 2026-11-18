@@ -376,7 +376,7 @@ export function useStudioVrmPoserShare(h: StudioVrmPoserHost): void {
       const baseDataUrl = await encodeStudioVrmCapturePngDataUrl(
         rgba,
         { width, height },
-        { signal: controller.signal, timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS },
+        { signal: controller.signal, timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS, session: h.pngSessionRef?.current ?? undefined },
       );
       const fullDataUrl = `${baseDataUrl}#${hashPayload}`;
 

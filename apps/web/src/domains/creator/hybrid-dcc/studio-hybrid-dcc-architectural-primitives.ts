@@ -123,9 +123,9 @@ export const STUDIO_HYBRID_DCC_BLENDER_V15_ARTISAN_KIT: readonly StudioHybridDcc
       fileName: "webtoon-artisan-drafting-easel-lamp-v15.glb",
       glbUrl: "/studio-assets/blender-artisan-v15/webtoon-artisan-drafting-easel-lamp-v15.glb",
       previewUrl: "/studio-assets/blender-artisan-v15/thumbnails/webtoon-artisan-drafting-easel-lamp-v15.png",
-      label: ["아티잔 제도 이젤·작업등", "Artisan drafting easel & lamp"],
-      hint: ["원목 H-이젤·관절 황동 램프·원고지", "Oak H-frame easel & articulated lamp"],
-      triangles: 2780,
+      label: ["웹툰 작업 책상", "Webtoon drawing desk"],
+      hint: ["1.62m 참나무 상판·경사 액정 태블릿·스타일러스·황동 작업등", "1.62 m oak desk, tilted pen display, stylus & brass task lamp"],
+      triangles: 10476,
     },
     {
       id: "webtoon-rofan-imperial-tea-carriage-table-v15",

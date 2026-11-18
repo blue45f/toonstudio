@@ -105,19 +105,26 @@ describe("StudioBg3dCinematicDirectorPanel", () => {
       },
     ];
     const apply = vi.fn();
+    const applyAngle = vi.fn();
     const panel = (hidden: boolean) => (
       <div hidden={hidden}>
         <StudioBg3dCinematicDirectorPanel
           disabled={hidden}
+          onApplyShotBookmark={applyAngle}
           productionShots={shots}
           onApplyProductionShot={apply}
         />
       </div>
     );
     const { rerender } = render(panel(false));
-    fireEvent.change(screen.getByRole("spinbutton", { name: "이동 시간" }), {
+    expect(screen.queryByRole("spinbutton", { name: "컷 유지" })).toBeNull();
+    expect(screen.getByText(/1.2초 간격으로 바뀝니다/u)).toBeDefined();
+    fireEvent.change(screen.getByRole("spinbutton", { name: "앵글 이동 시간(초)" }), {
       target: { value: "2.4" },
     });
+    fireEvent.change(screen.getByRole("combobox", { name: "앵글 이동 곡선" }), { target: { value: "whip-pan" } });
+    fireEvent.click(screen.getByRole("button", { name: /하이 앵글 부감/u }));
+    expect(applyAngle).toHaveBeenLastCalledWith(expect.objectContaining({ transitionSeconds: 2.4, easing: "whip-pan" }));
     fireEvent.click(screen.getByRole("button", { name: "컷 순서 미리보기" }));
     expect(apply.mock.calls).toEqual([["shot-a"]]);
     act(() => vi.advanceTimersByTime(500));
@@ -130,7 +137,7 @@ describe("StudioBg3dCinematicDirectorPanel", () => {
     rerender(panel(false));
     act(() => vi.advanceTimersByTime(5_000));
     expect(apply.mock.calls).toEqual([["shot-a"]]);
-    expect((screen.getByRole("spinbutton", { name: "이동 시간" }) as HTMLInputElement).value)
+    expect((screen.getByRole("spinbutton", { name: "앵글 이동 시간(초)" }) as HTMLInputElement).value)
       .toBe("2.4");
 
     fireEvent.click(screen.getByRole("button", { name: "컷 순서 미리보기" }));
@@ -139,11 +146,30 @@ describe("StudioBg3dCinematicDirectorPanel", () => {
     expect(apply.mock.calls).toEqual([["shot-a"], ["shot-a"], ["shot-b"]]);
   });
 
+  it("리허설은 첫 컷부터 표시하고 각 컷의 실제 대기 시간에 맞춰 다음 컷을 적용한다", () => {
+    vi.useFakeTimers();
+    const apply = vi.fn();
+    render(<StudioBg3dCinematicDirectorPanel onApplyShotBookmark={apply} />);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "이동 시간" }), { target: { value: "2.4" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: "컷 유지" }), { target: { value: "3.6" } });
+    fireEvent.click(screen.getByRole("button", { name: "현재 설정으로 컷 추가" }));
+    expect(apply).toHaveBeenLastCalledWith(expect.objectContaining({ transitionSeconds: 2.4, holdSeconds: 3.6 }));
+    apply.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "컷 순서 미리보기" }));
+    expect(apply).toHaveBeenLastCalledWith(expect.objectContaining({ id: "cut-1", transitionSeconds: 0 }));
+    act(() => vi.advanceTimersByTime(1_199));
+    expect(apply).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(1));
+    expect(apply).toHaveBeenLastCalledWith(expect.objectContaining({ id: "cut-2" }));
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(apply).toHaveBeenLastCalledWith(expect.objectContaining({ id: "cut-3" }));
+  });
+
   it("explains the panel purpose in 10 seconds and annotates angle/shake presets", () => {
     render(<StudioBg3dCinematicDirectorPanel />);
 
     expect(
-      screen.getByText(/영화처럼 카메라를 움직여 보세요/),
+      screen.getByText(/앵글과 재생 시간을 정해 리허설 컷을 추가하세요/u),
     ).toBeDefined();
 
     const dutchButton = screen.getByRole("button", { name: /더치 앵글 사각/ });

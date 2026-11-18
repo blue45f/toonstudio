@@ -296,11 +296,14 @@ export function convertAuthoredCharacterManifest(
   }
 
   const meshRoles: Record<string, string> = {};
+  const partMorphTargets: Record<string, string[]> = {};
   const meshNodes: string[] = [];
   for (const mesh of source.partMeshes) {
     const declaredRole = mesh.part ? PART_FIELD_ROLES[mesh.part] : undefined;
     const role = declaredRole ?? classifyMeshName(mesh.node).role;
     const names = [mesh.node, ...(mesh.babylonLoad?.splitInto ?? [])];
+    const partShapes = mesh.morphTargets?.filter((name) => name.startsWith("shape:"));
+    if (partShapes?.length) partMorphTargets[mesh.node] = partShapes;
     for (const name of names) {
       if (!meshNodes.includes(name)) meshNodes.push(name);
       if (role && !(name in meshRoles)) meshRoles[name] = role;
@@ -350,6 +353,7 @@ export function convertAuthoredCharacterManifest(
     characterLab: {
       ...(slotMapping ? { slotCapabilities: slotMapping.capabilities } : {}),
       meshRoles,
+      ...(Object.keys(partMorphTargets).length ? { partMorphTargets } : {}),
       boneMap,
       shapeKeyMap,
     },

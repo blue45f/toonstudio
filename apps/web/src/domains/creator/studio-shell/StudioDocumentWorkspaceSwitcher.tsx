@@ -5,10 +5,7 @@ import {
   studioDocumentHref,
   type StudioDocumentWorkspaceId,
 } from "../studio-document-workspace";
-import {
-  useStudioDrawingPresentation,
-  withStudioDrawingPresentation,
-} from "../studio-drawing-presentation";
+import { withStudioDrawingPresentation } from "../studio-drawing-presentation";
 import { readStudioLaunchDensity } from "../studio-launch-mode";
 import { StudioDocumentWindowHub } from "./StudioDocumentWindowHub";
 
@@ -32,7 +29,6 @@ export function StudioDocumentWorkspaceSwitcher() {
   const navigate = useNavigate();
   const language = useI18n((state) => state.lang);
   const locale = localeFromLanguage(language);
-  const drawingPresentation = useStudioDrawingPresentation();
   const resolution = parseStudioDocumentLocation({
     pathname: location.pathname,
     search: location.search,
@@ -40,10 +36,8 @@ export function StudioDocumentWorkspaceSwitcher() {
 
   if (resolution.kind !== "document") return null;
 
-  // "빠른 드로잉" and the installed drawing app are deliberately the same presentation.
-  // Only the chrome changes; the document/runtime identity stays on the canonical route.
-  const quickMode = resolution.workspace === "draw"
-    && (readStudioLaunchDensity(location.search) === "focus" || drawingPresentation === "app");
+  // 설치형 홈을 거친 기록은 현재 원고의 퀵모드 선택이 아니다.
+  const quickMode = resolution.workspace === "draw" && readStudioLaunchDensity(location.search) === "focus";
   const navigateWorkspace = (
     workspace: StudioDocumentWorkspaceId,
     search: string | URLSearchParams,
@@ -57,7 +51,7 @@ export function StudioDocumentWorkspaceSwitcher() {
       language: resolution.language,
       version: resolution.version,
       search,
-    }), { state: location.state });
+    }) + location.hash, { state: location.state });
   };
   const changeWorkspace = (workspace: StudioDocumentWorkspaceId): void => {
     if (workspace === resolution.workspace) return;

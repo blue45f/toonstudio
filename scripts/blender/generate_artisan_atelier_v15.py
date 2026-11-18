@@ -500,58 +500,8 @@ def build_royal_conservatory_gazebo(scene: bpy.types.Scene) -> None:
 
 
 def build_artisan_drafting_easel(scene: bpy.types.Scene) -> None:
-    mat_oak = make_artisan_mat("V15_DraftingWarmOak", (0.54, 0.36, 0.21), roughness=0.42, coat_weight=0.20)
-    mat_frame = make_artisan_mat("V15_AnodizedGraphite", (0.14, 0.15, 0.18), roughness=0.34, metallic=0.82)
-    mat_brass = make_artisan_mat("V15_LampArticulatedBrass", (0.83, 0.66, 0.31), roughness=0.22, metallic=0.92)
-    mat_screen = make_artisan_mat("V15_CanvasPenDisplay", (0.92, 0.94, 0.97), roughness=0.16, coat_weight=0.65, emission_color=(0.76, 0.84, 0.96), emission_strength=0.45)
-    mat_ink_panel = make_artisan_mat("V15_ComicPanelAccent", (0.24, 0.42, 0.68), roughness=0.22, emission_color=(0.18, 0.36, 0.62), emission_strength=0.35)
-    mat_bulb = make_artisan_mat("V15_WarmTungstenBulb", (1.0, 0.90, 0.68), roughness=0.14, emission_color=(1.0, 0.84, 0.52), emission_strength=1.6)
-
-    bm_metal = bmesh.new()
-    for sx in (-0.64, 0.64):
-        add_beveled_box(bm_metal, (0.065, 0.72, 0.045), (sx, 0.0, 0.0225), 0.006, segments=2)
-        add_tube_segment(bm_metal, (sx, -0.26, 0.045), (sx, -0.10, 0.74), 0.026, 0.022, segments=12)
-        add_tube_segment(bm_metal, (sx, 0.26, 0.045), (sx, 0.12, 0.74), 0.026, 0.022, segments=12)
-    add_tube_segment(bm_metal, (-0.64, 0.06, 0.24), (0.64, 0.06, 0.24), 0.020, 0.020, segments=12)
-    add_beveled_box(bm_metal, (1.42, 0.48, 0.036), (0.0, 0.02, 0.755), 0.005, segments=2)
-    tilt = math.radians(24.0)
-    add_beveled_box(bm_metal, (0.78, 0.49, 0.028), (-0.12, -0.02, 0.92), 0.006, segments=2, rot_euler=(tilt, 0.0, 0.0))
-    add_lathe_solid(bm_metal, [(0.058, 0.816), (0.056, 0.832), (0.038, 0.836), (0.036, 0.850)], segments=24, center_xyz=(-0.62, -0.16, 0.0))
-    add_tube_segment(bm_metal, (-0.12, 0.12, 0.77), (-0.12, 0.04, 0.96), 0.018, 0.015, segments=10)
-    create_mesh_object(scene, "DraftingAnodizedFrame", bm_metal, mat_frame, smooth=True, weighted_normals=True)
-
-    bm_oak = bmesh.new()
-    add_beveled_box(bm_oak, (1.62, 0.82, 0.042), (0.0, 0.0, 0.795), 0.008, segments=3)
-    add_beveled_box(bm_oak, (0.82, 0.035, 0.024), (-0.12, -0.24, 0.828), 0.005, segments=2)
-    add_lathe_solid(bm_oak, [(0.056, 0.816), (0.060, 0.86), (0.052, 0.95), (0.056, 0.965)], segments=24, center_xyz=(0.54, -0.14, 0.0))
-    create_mesh_object(scene, "DraftingOakDesktop", bm_oak, mat_oak, smooth=True, weighted_normals=True)
-
-    bm_screen = bmesh.new()
-    add_beveled_box(bm_screen, (0.69, 0.41, 0.010), (-0.12, -0.026, 0.934), 0.002, segments=1, rot_euler=(tilt, 0.0, 0.0))
-    create_mesh_object(scene, "DraftingCanvasSurface", bm_screen, mat_screen, smooth=True)
-
-    bm_panels = bmesh.new()
-    add_beveled_box(bm_panels, (0.28, 0.15, 0.006), (-0.25, -0.068, 0.968), 0.0015, segments=1, rot_euler=(tilt, 0.0, 0.0))
-    add_beveled_box(bm_panels, (0.28, 0.15, 0.006), (0.05, -0.068, 0.968), 0.0015, segments=1, rot_euler=(tilt, 0.0, 0.0))
-    add_beveled_box(bm_panels, (0.58, 0.14, 0.006), (-0.10, 0.072, 0.905), 0.0015, segments=1, rot_euler=(tilt, 0.0, 0.0))
-    create_mesh_object(scene, "DraftingWebtoonPanels", bm_panels, mat_ink_panel, smooth=True)
-
-    bm_brass = bmesh.new()
-    lx, ly = 0.58, 0.22
-    add_lathe_solid(bm_brass, [(0.088, 0.816), (0.082, 0.842), (0.036, 0.865)], segments=24, center_xyz=(lx, ly, 0.0))
-    p0, p1, p2 = (lx, ly, 0.86), (lx + 0.06, ly + 0.06, 1.24), (lx - 0.24, ly - 0.14, 1.44)
-    add_tube_segment(bm_brass, p0, p1, 0.014, 0.013, segments=12)
-    add_quad_sphere(bm_brass, radius=0.024, divisions=4, center_xyz=p1)
-    add_tube_segment(bm_brass, p1, p2, 0.013, 0.011, segments=12)
-    add_quad_sphere(bm_brass, radius=0.022, divisions=4, center_xyz=p2)
-    add_lathe_solid(bm_brass, [(0.115, -0.08), (0.085, -0.02), (0.036, 0.05), (0.022, 0.08)], segments=24, center_xyz=(p2[0] - 0.05, p2[1] - 0.04, p2[2] - 0.05), rot_euler=(0.45, -0.35, 0.0))
-    for dx, dy, rx, ry in ((-0.018, 0.0, 0.14, -0.10), (0.016, -0.012, -0.10, 0.16), (0.0, 0.018, 0.18, 0.08)):
-        add_swept_tapered_curve(bm_brass, [(0.54 + dx, -0.14 + dy, 0.90), (0.54 + dx + ry * 0.16, -0.14 + dy + rx * 0.16, 1.09)], [0.007, 0.0025], ring_segments=8, flatten_xy=(1.0, 1.0))
-    create_mesh_object(scene, "DraftingBrassLampAndStylus", bm_brass, mat_brass, smooth=True, weighted_normals=True)
-
-    bm_bulb = bmesh.new()
-    add_quad_sphere(bm_bulb, radius=0.042, divisions=5, center_xyz=(p2[0] - 0.07, p2[1] - 0.06, p2[2] - 0.09))
-    create_mesh_object(scene, "DraftingWarmBulb", bm_bulb, mat_bulb, smooth=True)
+    from artisan_drafting_desk import build_drafting_desk
+    build_drafting_desk(scene, make_artisan_mat)
 
 
 def build_rofan_imperial_tea_table(scene: bpy.types.Scene) -> None:
@@ -674,7 +624,7 @@ ASSET_SPECS: list[tuple[str, str, str, str, str, Callable[[bpy.types.Scene], Non
     ("webtoon-male-lead-hunter-bust-v15", "웹툰 8등신 판타지 남주인공 헌터 흉상 (V15)", "Male Lead Hunter Sculpt Bust V15", "쉼표 레이어드 헤어·각성 시안 보석안·하이칼라 트렌치·마나 이어링 흉상", "Comma layered hair, awakened cyan iris & hunter coat bust", build_male_lead_hunter_bust),
     ("webtoon-celestial-ink-astrolabe-turntable-v15", "천구 잉크 아스트롤라베·기어 턴테이블 (V15)", "Celestial Ink Astrolabe Turntable V15", "월넛 좌대·인볼류트 황동 기어·경사 천구 링·사파이어 잉크 코어", "Walnut plinth, involute brass gears & sapphire ink core", build_celestial_ink_astrolabe),
     ("webtoon-royal-conservatory-dome-gazebo-v15", "로판 왕실 온실 돔·열주 파빌리온 (V15)", "Royal Conservatory Dome Gazebo V15", "8주 배흘림 석조 열주·16리브 브론즈 유리 돔·골드 피니얼 정자", "8 fluted columns, 16-rib bronze glass cupola & finial", build_royal_conservatory_gazebo),
-    ("webtoon-artisan-drafting-easel-lamp-v15", "작가용 틸트 드래프팅 이젤·황동 램프 (V15)", "Artisan Drafting Easel & Brass Lamp V15", "원목 드래프팅 데스크·3컷 액정 캔버스·단축 다이얼·관절 황동 램프", "Oak drafting desk, 3-panel pen display & articulated brass lamp", build_artisan_drafting_easel),
+    ("webtoon-artisan-drafting-easel-lamp-v15", "웹툰 작업 책상 · 액정 태블릿과 황동 작업등", "Webtoon Drawing Desk & Brass Task Lamp", "1.62m 참나무 책상·32도 경사 액정 태블릿·2컷 열차 콘티·스타일러스·관절 황동 작업등", "Oak desk, tilting pen display with a two-panel train storyboard, stylus and articulated brass task lamp", build_artisan_drafting_easel),
     ("webtoon-rofan-imperial-tea-carriage-table-v15", "로판 황실 티파티 테이블·3단 트레이 세트 (V15)", "Rofan Imperial Tea Table & Tiered Tray V15", "본차이나 티포트·벨벳 테이블러너·필리그리 골드 3단 디저트 트레이", "Bone-china tea set, crimson velvet runner & 3-tier gold stand", build_rofan_imperial_tea_table),
     ("webtoon-arcane-grimoire-magic-circle-pedestal-v15", "판타지 마탑 고대 마도서·부유 마법진 제단 (V15)", "Arcane Grimoire & Magic Circle Pedestal V15", "흑요석 열주 제단·가죽 양장 오픈 마도서·이중 부유 룬 마법진", "Obsidian fluted lectern, open leather grimoire & floating rune rings", build_arcane_grimoire_pedestal),
     ("webtoon-kpop-stage-crown-mic-stand-v15", "K-Pop 아이돌 크라운 스탠드 마이크·포디움 (V15)", "K-Pop Stage Crown Mic Stand & Podium V15", "로즈골드 크라운 윙 스탠드 마이크·네온 리본·미러 스타 포디움", "Rose-gold winged crown mic stand, neon ribbons & mirror podium", build_kpop_stage_crown_mic),

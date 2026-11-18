@@ -150,6 +150,7 @@ export function StudioDocumentWindowHub({
     workspace: resolution.workspace,
   });
   const chromeTarget = useStudioChromePortalTarget("studio-document-chrome-slot");
+  const quickModeTarget = useStudioChromePortalTarget("studio-document-quick-mode-slot");
   const barRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState("");
@@ -282,6 +283,20 @@ export function StudioDocumentWindowHub({
 
   // 기본 도구 줄에는 현재 작업공간만 두고, 다른 작업공간은 메뉴에서 선택한다.
   // 실제 회차 단계와 저장 결과는 각각의 상태 소유자가 제공하는 크롬 슬롯을 사용한다.
+  const quickModeLabel = quickMode ? bi("일반 모드", "Full mode") : bi("퀵모드", "Quick mode");
+  const quickModeButton = resolution.workspace === "draw" ? (
+    <button
+      type="button"
+      aria-pressed={quickMode}
+      aria-label={quickModeLabel}
+      title={quickMode ? bi("선택 도구로 돌아가기", "Return to the selection tool") : bi("펜으로 바로 그리기", "Start drawing with the pen")}
+      className={buttonClass({ variant: quickMode ? "solid" : "quiet", size: "sm", className: "min-h-11 shrink-0 gap-1 rounded-xl px-2" })}
+      onClick={onToggleQuickMode}
+    >
+      <Zap size={15} aria-hidden="true" />
+      <span className="hidden sm:inline">{quickModeLabel}</span>
+    </button>
+  ) : null;
   const workspaceBar = (
       <div
         ref={barRef}
@@ -348,29 +363,7 @@ export function StudioDocumentWindowHub({
           <div className="order-2 ml-auto flex shrink-0 items-center gap-1 xl:order-3 xl:ml-0">
             <div id="studio-mode-chrome-slot" className="shrink-0 empty:hidden" />
             <div id="studio-episode-stage-chrome-slot" className="shrink-0 empty:hidden" />
-            {resolution.workspace === "draw" ? (
-              <button
-                type="button"
-                aria-pressed={quickMode}
-                aria-label={quickMode
-                  ? bi("일반 모드", "Full mode")
-                  : bi("퀵모드", "Quick mode")}
-                title={bi("그림은 유지하고 패널 배치와 기본 도구만 바꿉니다.", "Keep the artwork and change only panel layout and the primary tool.")}
-                className={buttonClass({
-                  variant: quickMode ? "solid" : "quiet",
-                  size: "sm",
-                  className: "min-h-11 shrink-0 gap-1 rounded-xl px-2",
-                })}
-                onClick={onToggleQuickMode}
-              >
-                <Zap size={15} aria-hidden="true" />
-                <span className="hidden sm:inline">
-                  {quickMode
-                    ? bi("일반 모드", "Full mode")
-                    : bi("퀵모드", "Quick mode")}
-                </span>
-              </button>
-            ) : null}
+            {quickModeTarget ? createPortal(quickModeButton, quickModeTarget) : quickModeButton}
             <Link
               href={
                 resolution.projectId

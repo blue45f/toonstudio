@@ -681,13 +681,14 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
       }
       assertStudioBg3dCaptureEnvironmentCurrent(captured, expectedEnvironmentFingerprint);
       insertPhase = "commit";
-      setSceneBaseDocument(adapted.document);
       const linkedCharacterCapture = createStudioBg3dLinkedCharacterCapture(
         receiptAuthority.captureElementIds,
         sharedCharacters,
       );
       const accepted = await onInsert({
         kind: "separated",
+        ...(h.cutWorkId ? { cutWorkSignal: insertController.signal } : {}),
+        ...(h.cutWorkResources ? { cutWorkResources: h.cutWorkResources } : {}),
         width: rendered.width,
         height: rendered.height,
         layers: encoded.layers,
@@ -717,6 +718,7 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         setLineArtPreview(previousLineArtPreview);
         setIsCapturing(false);
       }
+      setSceneBaseDocument(adapted.document);
       clearStudioBg3dUnappliedDraft(sharedStageSessionScopeKey);
       invalidateModalAssetSession();
       onClose();
@@ -732,7 +734,9 @@ const captureSize = resolveStudioBg3dLtCaptureSize({
         return;
       }
       if (!isInsertCurrent()) return;
-      if (insertPhase === "magic-object-id") {
+      if (insertPhase === "commit" && h.cutWorkId && adapted.document.pinnedVersionedCut?.source.linkedVrm && insertFailure instanceof Error) {
+        setError(insertFailure.message);
+      } else if (insertPhase === "magic-object-id") {
         setError(
           "선택 객체를 같은 프레임에서 안전하게 분리하지 못했습니다. 원근 카메라·단색 배경·선택 상태를 확인하고 다시 시도해 주세요.",
         );

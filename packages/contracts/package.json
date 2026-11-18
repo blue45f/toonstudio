@@ -466,6 +466,56 @@
       "types": "./src/ai-operations.ts",
       "import": "./src/ai-operations.ts",
       "default": "./src/ai-operations.ts"
+    },
+    "./studio-vrm-license-metadata": {
+      "types": "./src/studio-vrm-license-metadata.ts",
+      "import": "./src/studio-vrm-license-metadata.ts",
+      "default": "./src/studio-vrm-license-metadata.ts"
+    },
+    "./studio-vrm-license-policy": {
+      "types": "./src/studio-vrm-license-policy.ts",
+      "import": "./src/studio-vrm-license-policy.ts",
+      "default": "./src/studio-vrm-license-policy.ts"
+    },
+    "./studio-vrm-archive-rights": {
+      "types": "./src/studio-vrm-archive-rights.ts",
+      "import": "./src/studio-vrm-archive-rights.ts",
+      "default": "./src/studio-vrm-archive-rights.ts"
+    },
+    "./studio-work-vrm-cut": {
+      "types": "./src/studio-work-vrm-cut.ts",
+      "import": "./src/studio-work-vrm-cut.ts",
+      "default": "./src/studio-work-vrm-cut.ts"
+    },
+    "./studio-vrm-scene-fields": {
+      "types": "./src/studio-vrm-scene-fields.ts",
+      "import": "./src/studio-vrm-scene-fields.ts",
+      "default": "./src/studio-vrm-scene-fields.ts"
+    },
+    "./studio-work-vrm-cut-scene-shape": {
+      "types": "./src/studio-work-vrm-cut-scene-shape.ts",
+      "import": "./src/studio-work-vrm-cut-scene-shape.ts",
+      "default": "./src/studio-work-vrm-cut-scene-shape.ts"
+    },
+    "./studio-work-vrm-cut-bundled": {
+      "types": "./src/studio-work-vrm-cut-bundled.ts",
+      "import": "./src/studio-work-vrm-cut-bundled.ts",
+      "default": "./src/studio-work-vrm-cut-bundled.ts"
+    },
+    "./studio-scene3d-cut-canonical": {
+      "types": "./src/studio-scene3d-cut-canonical.ts",
+      "import": "./src/studio-scene3d-cut-canonical.ts",
+      "default": "./src/studio-scene3d-cut-canonical.ts"
+    },
+    "./studio-scene3d-document": {
+      "types": "./src/studio-scene3d-document.ts",
+      "import": "./src/studio-scene3d-document.ts",
+      "default": "./src/studio-scene3d-document.ts"
+    },
+    "./studio-png-structure": {
+      "types": "./src/studio-png-structure.ts",
+      "import": "./src/studio-png-structure.ts",
+      "default": "./src/studio-png-structure.ts"
     }
   },
   "dependencies": {

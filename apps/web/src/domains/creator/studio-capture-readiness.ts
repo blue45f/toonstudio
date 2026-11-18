@@ -1,3 +1,5 @@
+import { parseStudioWorkAssetSourceUri } from "@toonstudio/contracts/studio-work-asset-contract";
+import type { StudioWorkAssetHydratorRuntime } from "./studio-work-asset-hydrator";
 import { parseStudioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 import { BrushStudioV6LegacyPigmentMigrationRequiredError, hasVisibleLegacyMixboxStrokes } from "./brush-lab/brush-studio-v6-legacy-pigment";
 import { beginStudioCaptureDiagnostics, type StudioCaptureDiagnosticFields } from "./render/studio-capture-diagnostics";
@@ -93,6 +95,7 @@ export interface StudioCaptureReadinessOptions<
   getStage: () => TStage | null;
   assetSources?: readonly string[];
   sourcePage?: TPage;
+  workAssetHydrator?: Pick<StudioWorkAssetHydratorRuntime, "get">;
   getMaster?: () => unknown;
   getDocumentGeneration?: () => number;
   expectedDocumentGeneration?: number;
@@ -474,7 +477,27 @@ export async function waitForStudioCaptureReady<
   const timeoutMs = Math.max(250, Math.min(30_000, options.timeoutMs ?? STUDIO_CAPTURE_READY_DEFAULT_TIMEOUT_MS));
   const nextFrame = options.nextFrame ?? defaultNextFrame;
   const waitForFonts = options.waitForFonts ?? defaultWaitForFonts;
-  const preloadImage = options.preloadImage ?? defaultPreloadImage;
+  const preload = options.preloadImage ?? defaultPreloadImage;
+  const projectedUrls = new Map<string, string>();
+  const readWorkImage = (src: string) => {
+    const reference = parseStudioWorkAssetSourceUri(src);
+    const state = reference && options.workAssetHydrator?.get(reference);
+    return state?.status === "ready" && state.source.type === "image" && state.resourceUrl.startsWith("blob:")
+      && state.reference.assetId === reference?.assetId && state.reference.elementType === "image"
+      ? state.resourceUrl : state?.status === "loading" ? undefined : null;
+  };
+  const preloadImage = async (src: string, signal?: AbortSignal) => {
+    if (!parseStudioWorkAssetSourceUri(src)) return preload(src, signal);
+    let url = readWorkImage(src);
+    while (url === undefined) {
+      throwIfAborted(signal);
+      await nextFrame();
+      url = readWorkImage(src);
+    }
+    if (!url) throw new Error("work-image-unavailable");
+    projectedUrls.set(src, url);
+    return preload(url, signal);
+  };
   const resolveLinked3dPassRasterSource =
     options.resolveLinked3dPassRasterSource
     ?? defaultResolveLinked3dPassRasterSource;
@@ -528,6 +551,9 @@ export async function waitForStudioCaptureReady<
       const assertCurrent = () => {
         throwIfAborted(operationSignal);
         document?.assertCurrent();
+        for (const [src, url] of projectedUrls) {
+          if (readWorkImage(src) !== url) throw new StudioCaptureReadinessError("asset-load", "작품 이미지 접근 상태가 바뀌었어요. 원고를 다시 열어 주세요.");
+        }
         if ((options.getMaster && options.getMaster() !== master)
           || (options.getDocumentGeneration && options.getDocumentGeneration() !== generation)) {
           throw new StudioCaptureReadinessError("stale-page", "캡처 준비 중 마스터 또는 원고가 바뀌어 내보내기를 중단했어요.");
@@ -650,7 +676,12 @@ export function collectStudioCaptureAssetSources(
       if (!isRecord(value)) continue;
       for (const key of ["src", "maskSrc"] as const) {
         const source = value[key];
-        if (typeof source === "string" && source.trim()) sources.push(source);
+        if (typeof source !== "string" || !source.trim()) continue;
+        const ref = parseStudioWorkAssetSourceUri(source);
+        if (ref && (key !== "src" || value.type !== "image" || ref.elementType !== "image" || value.id !== ref.assetId)) {
+          throw new StudioCaptureReadinessError("asset-load", "작품 이미지와 원고 레이어가 일치하지 않아요.");
+        }
+        sources.push(source);
       }
     }
   }

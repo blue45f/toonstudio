@@ -76,7 +76,7 @@ export function createStudioThreeActorLoader(
         return;
       }
 
-      // 기존 보조 기계팔·재질·정면·1.86m 정규화 동작을 그대로 유지한다.
+      // 보조 기계팔과 정면 방향을 정리하고 원본 재질의 색과 표면 특성을 유지한다.
       vrmScene.traverse((child) => {
         if (child.name && /robo_/i.test(child.name)) {
           child.visible = false;
@@ -93,21 +93,10 @@ export function createStudioThreeActorLoader(
         child.receiveShadow = false;
         child.frustumCulled = false;
         for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
-          if (material instanceof THREE.MeshBasicMaterial) {
-            if (material.map) {
-              material.map.colorSpace = THREE.SRGBColorSpace;
-              material.color.setRGB(0.84, 0.84, 0.88);
-            }
-            material.needsUpdate = true;
-          } else if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
-            material.envMapIntensity = 0.22;
-            material.roughness = Math.max(0.85, material.roughness);
-            material.metalness = 0;
-            if (material.map) {
-              material.map.colorSpace = THREE.SRGBColorSpace;
-              material.color.setRGB(0.82, 0.82, 0.84);
-            }
-            material.needsUpdate = true;
+          if ((material instanceof THREE.MeshBasicMaterial || material instanceof THREE.MeshStandardMaterial)
+            && material.map && material.map.colorSpace !== THREE.SRGBColorSpace) {
+            material.map.colorSpace = THREE.SRGBColorSpace;
+            material.map.needsUpdate = true;
           }
         }
       });

@@ -14,6 +14,8 @@ import {
   type StudioVrmPngWorkerRequest,
 } from "./studio-vrm-png-worker-protocol";
 
+import { StudioVrmPngWorkerSession } from "./studio-vrm-png-worker-session";
+
 import type { StudioBg3dLtRasterLayer } from "../bg3d/studio-bg3d-lt-render";
 
 interface MessageEventLike { readonly data: unknown }
@@ -420,5 +422,69 @@ describe("Studio VRM single-image PNG Worker boundary", () => {
       workerFactory,
     })).rejects.toEqual(new StudioVrmPngWorkerError("aborted"));
     expect(workerFactory).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("장면에 속한 PNG 인코더", () => {
+  it("준비된 Worker를 후속 출력에 재사용하고 장면 종료 때 한 번 회수한다", async () => {
+    const session = new StudioVrmPngWorkerSession();
+    const worker = new FakeWorker();
+    worker.performTransfer = true;
+    const options = { session, workerFactory: vi.fn(() => worker) };
+    const color = layer();
+    const first = encodeStudioVrmPngInWorker([color], options);
+    emitReady(worker);
+    worker.emit(resultFor(worker.requests[0]!));
+    await first;
+    const second = encodeStudioVrmPngInWorker([color], options);
+    expect(worker.requests).toHaveLength(2);
+    expect(worker.requests[1]!.requestId).not.toBe(worker.requests[0]!.requestId);
+    worker.emit(resultFor(worker.requests[1]!));
+    await second;
+    expect(color.data.byteLength).toBe(8);
+    expect(worker.transfers.map(([buffer]) => (buffer as ArrayBuffer).byteLength)).toEqual([0, 0]);
+    expect(options.workerFactory).toHaveBeenCalledTimes(1);
+    expect(worker.terminateCalls).toBe(0);
+    session.dispose();
+    session.dispose();
+    expect(worker.terminateCalls).toBe(1);
+    await expect(encodeStudioVrmPngInWorker([color], options)).rejects.toMatchObject({ code: "aborted" });
+    expect(options.workerFactory).toHaveBeenCalledTimes(1);
+  });
+
+  it("예열한 Worker도 인코딩 제한을 지키고 시간 초과 후 새 Worker가 준비 신호부터 다시 시작한다", async () => {
+    vi.useFakeTimers();
+    const session = new StudioVrmPngWorkerSession();
+    const firstWorker = new FakeWorker();
+    const nextWorker = new FakeWorker();
+    const options = { session, workerFactory: vi.fn().mockReturnValueOnce(firstWorker).mockReturnValueOnce(nextWorker), timeoutMs: 150 };
+    const first = encodeStudioVrmPngInWorker([layer()], options);
+    emitReady(firstWorker);
+    firstWorker.emit(resultFor(firstWorker.requests[0]!));
+    await first;
+    const expired = expect(encodeStudioVrmPngInWorker([layer()], options)).rejects.toMatchObject({ code: "timeout" });
+    await vi.advanceTimersByTimeAsync(150);
+    await expired;
+    expect(firstWorker.terminateCalls).toBe(1);
+    const retry = encodeStudioVrmPngInWorker([layer()], options);
+    expect(nextWorker.requests).toHaveLength(0);
+    emitReady(nextWorker);
+    nextWorker.emit(resultFor(nextWorker.requests[0]!));
+    await retry;
+    session.dispose();
+    expect(nextWorker.terminateCalls).toBe(1);
+  });
+
+  it("동시 출력을 격리하고 세션 종료로 시작 중인 작업과 인코딩 중인 작업을 모두 취소한다", async () => {
+    const session = new StudioVrmPngWorkerSession();
+    const workers = [new FakeWorker(), new FakeWorker()];
+    const options = { session, workerFactory: vi.fn().mockReturnValueOnce(workers[0]).mockReturnValueOnce(workers[1]) };
+    const first = encodeStudioVrmPngInWorker([layer()], options);
+    const second = encodeStudioVrmPngInWorker([layer()], options);
+    emitReady(workers[0]!);
+    session.dispose();
+    for (const promise of [first, second]) await expect(promise).rejects.toMatchObject({ code: "aborted" });
+    expect(workers.map((worker) => [worker.terminateCalls, worker.messages.size])).toEqual([[1, 0], [1, 0]]);
   });
 });

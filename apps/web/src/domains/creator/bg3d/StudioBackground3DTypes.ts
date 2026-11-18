@@ -41,6 +41,10 @@ export interface StudioBackground3DProps {
   onSeedObjectInsertConsumed?: () => void;
   /** Runtime-only page composition. Character documents remain owned by their source layers. */
   sharedSceneSession?: StudioShared3dSceneSession;
+  cutTeamDocument?: boolean;
+  cutWorkId?: string;
+  cutWorkResources?: import("../scene3d/studio-team-vrm-cut-assets").StudioTeamVrmCutResources;
+  cutDocumentKey?: string;
   /** Page-persistent association state for the exact LT bundle being edited. */
   sharedStageResolution?: StudioShared3dStageResolution;
   /** Page + target-bundle ownership boundary for runtime-only Shared Stage editor state. */

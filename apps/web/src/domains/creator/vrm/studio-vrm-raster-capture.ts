@@ -7,6 +7,7 @@ import { createStudioBg3dStraightAlphaOutputPass } from "../bg3d/studio-bg3d-str
 import { encodeStudioVrmPngInWorker } from "./studio-vrm-png-worker-client";
 import { STUDIO_VRM_PNG_MAX_OUTPUT_BYTES, STUDIO_VRM_PNG_MAX_PIXELS } from "./studio-vrm-png-worker-protocol";
 
+import type { StudioVrmPngWorkerSession } from "./studio-vrm-png-worker-session";
 import type { StudioBg3dLtRasterLayer } from "../bg3d/studio-bg3d-lt-render";
 import type { MToonMaterial } from "@pixiv/three-vrm";
 
@@ -33,6 +34,7 @@ export interface StudioVrmRasterCaptureBackground {
 }
 
 export interface StudioVrmRasterCaptureOptions {
+  readonly session?: StudioVrmPngWorkerSession;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   /** Selected once before encoding starts. Omission selects the product Worker backend. */

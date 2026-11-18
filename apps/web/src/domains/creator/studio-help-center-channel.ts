@@ -78,6 +78,16 @@ export interface StudioCommandSearchRequest {
 const helpCenterChannel = createChannel<StudioHelpCenterRequest>();
 const commandSearchChannel = createChannel<StudioCommandSearchRequest>();
 
+// 검색 요청을 대신 받는 모바일 시트와 실제 검색창이 준비된 시점을 구분한다.
+const searchHostReadiness = createChannel<boolean>();
+let mountedSearchHosts = 0;
+export const hasStudioCommandSearchHost = () => mountedSearchHosts > 0;
+export const subscribeStudioCommandSearchHostReadiness = searchHostReadiness.subscribe;
+export function registerStudioCommandSearchHost(): () => void {
+  if (++mountedSearchHosts === 1) searchHostReadiness.publish(true);
+  return () => { if (--mountedSearchHosts === 0) searchHostReadiness.publish(false); };
+}
+
 /** 도움말 센터를 연다. 구독자가 없으면 `false` — 조용히 삼키지 않는다. */
 export function openStudioHelpCenter(request: StudioHelpCenterRequest): boolean {
   return helpCenterChannel.publish(request);

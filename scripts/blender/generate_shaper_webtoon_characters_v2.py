@@ -3,6 +3,7 @@ Blender 5.2/5.3 Generator for 6 High-Craft Rigged Korean Webtoon Character Packa
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
@@ -19,6 +20,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from shaper_face_inlays import fit_face_inlays  # noqa: E402
+from shaper_glb_trim_order import stabilize_opaque_trim_indices  # noqa: E402
+from shaper_mesh_seams import remove_decimation_wires, weld_kit_seams  # noqa: E402
+from shaper_pleated_skirt import fit_pleated_skirt  # noqa: E402
+from shaper_skirt_pose_clearance import bake_pleated_skirt_clearance  # noqa: E402
+from shaper_tailored_interiors import finish_neck_socket, fit_hair_roots, tailor_blazer, tailor_loafers, tailor_pleated_skirt  # noqa: E402
 from shaper_webtoon_head_and_textures import (  # noqa: E402
     _assign_weights,
     _bind_to_armature,
@@ -36,6 +43,7 @@ from shaper_webtoon_head_and_textures import (  # noqa: E402
 REPO_ROOT = SCRIPT_DIR.parent.parent
 CHAR_ROOT = REPO_ROOT / "apps/character-lab/public/assets/characters"
 KIT_ROOT = CHAR_ROOT / "toonstudio-kit-v1"
+PACKAGE_GENERATED_AT = "2026-11-19"
 
 END_BONE_FOLD_MAP: dict[str, str] = {
     "mixamorig:HeadTop_End": "mixamorig:Head",
@@ -522,9 +530,11 @@ def _fold_vertex_groups_to_55(
         m.object = arm_obj
 
 
-def _decimate_clean(obj: bpy.types.Object, ratio: float) -> None:
+def _decimate_clean(obj: bpy.types.Object, ratio: float, *, join_kit_seams: bool = False) -> None:
     if ratio >= 0.999 or len(obj.data.polygons) < 300:
         return
+    if join_kit_seams:
+        weld_kit_seams(obj)
     _clear_mesh_shape_keys(obj)
     bpy.context.view_layer.objects.active = obj
     mod = obj.modifiers.new(name="DecimateClean", type="DECIMATE")
@@ -532,6 +542,8 @@ def _decimate_clean(obj: bpy.types.Object, ratio: float) -> None:
     mod.ratio = ratio
     mod.use_collapse_triangulate = False
     bpy.ops.object.modifier_apply(modifier=mod.name)
+    if join_kit_seams:
+        remove_decimation_wires(obj.data)
 
 
 def _measure_and_trim_body_neck(
@@ -624,6 +636,47 @@ def _new_bmesh_part(name: str, bm: bmesh.types.BMesh, mat: bpy.types.Material, a
     _bind_to_armature(obj, arm_obj)
     _assign_weights(obj, [{bone_name: 1.0} for _ in obj.data.vertices])
     return obj
+
+
+def _add_fringe_length_keys(hair: bpy.types.Object, first_fringe_vertex: int, eye_z: float) -> None:
+    """앞머리 끝에서만 길이를 바꾼다. 정수리 접합부와 기존 뒤쪽 머리는 고정한다."""
+    hair.shape_key_add(name="Basis", from_mix=False)
+    shorter = hair.shape_key_add(name="shape:bangs:-", from_mix=False)
+    longer = hair.shape_key_add(name="shape:bangs:+", from_mix=False)
+    for vertex in hair.data.vertices:
+        if vertex.index < first_fringe_vertex:
+            continue
+        tip = max(0.0, min(1.0, (eye_z + 0.052 - vertex.co.z) / 0.041))
+        tip = tip * tip * (3.0 - 2.0 * tip)
+        # 뺨을 감싼 긴 옆머리는 짧은 앞가닥보다 변화폭을 줄인다.
+        side = max(0.0, min(1.0, (abs(vertex.co.x) - 0.044) / 0.024))
+        weight = tip * (1.0 - 0.74 * side)
+        shorter.data[vertex.index].co.z += weight * 0.021
+        longer.data[vertex.index].co.z -= weight * 0.012
+
+
+def _combine_eye_surfaces(parts: dict[str, bpy.types.Object]) -> None:
+    """같은 재질의 양쪽 눈 표면을 함께 그린다. 좌우 스킨과 각 윙크의 키는 독립적이다."""
+    for role in ("eye", "iris", "highlight", "lash"):
+        left, right = (parts.pop(f"{role}_{side}") for side in ("L", "R"))
+        if left.data.materials[:] != right.data.materials[:]:
+            raise ValueError(f"{role} 양쪽 재질이 다릅니다.")
+        bpy.ops.object.select_all(action="DESELECT")
+        left.select_set(True)
+        right.select_set(True)
+        bpy.context.view_layer.objects.active = left
+        bpy.ops.object.join()
+        # Blender가 없는 상대편 키를 병합할 때 비례 조절 전의 메시 위치로 채울 수 있다.
+        # 새로 합친 좌우 표면에서 해당 눈에 속하지 않는 정점은 최종 Basis에 고정한다.
+        keys = left.data.shape_keys.key_blocks
+        for side, direction in (("Left", 1), ("Right", -1)):
+            blink = keys[f"eyeBlink{side}_{role.capitalize()}"]
+            for neutral, point in zip(keys[0].data, blink.data, strict=True):
+                if neutral.co.x * direction < 0:
+                    point.co = neutral.co
+        left.name = f"TS_Shaper_{role.capitalize()}"
+        left.data.name = left.name
+        parts[role] = left
 
 
 def _join_into(target: bpy.types.Object, extras: list[bpy.types.Object]) -> None:
@@ -1419,15 +1472,17 @@ def _parse_glb_stats(glb_path: Path) -> dict[str, Any]:
     joint_names = [nodes[j]["name"] for j in skins[0]["joints"]] if skins else []
 
     node_tris: dict[str, int] = {}
+    node_morphs: dict[str, list[str]] = {}
     total_tris = 0
     for nd in nodes:
         if "mesh" in nd:
             m = meshes[nd["mesh"]]
             tris = sum((accessors[p["indices"]]["count"] // 3) if "indices" in p else (accessors[p["attributes"]["POSITION"]]["count"] // 3) for p in m.get("primitives", []))
+            node_morphs[nd["name"]] = m.get("extras", {}).get("targetNames", [])
             node_tris[nd["name"]] = tris
             total_tris += tris
 
-    return {"joints": joint_names, "node_tris": node_tris, "total_tris": total_tris, "texture_count": len(gltf.get("textures", []))}
+    return {"joints": joint_names, "node_tris": node_tris, "node_morphs": node_morphs, "total_tris": total_tris, "texture_count": len(gltf.get("textures", []))}
 
 
 def _render_4view_contact_sheet(arm_obj: bpy.types.Object, head_obj: bpy.types.Object, out_png: Path, accent_hex: str) -> None:
@@ -1594,17 +1649,39 @@ def _write_slot_mapping_and_manifest(
     }
     slots_arr = [{"slot": sk, "status": sv["status"], "missing": [], **({"notes": sv["reasonKo"]} if "reasonKo" in sv else {})} for sk, sv in slot_caps.items()]
     sm_path = pkg_dir / "slot-mapping.json"
-    sm_path.write_text(json.dumps({"schema": "toonstudio.character-lab.slot-mapping/1", "characterId": cid, "generatedAt": "2026-11-17", "capabilities": slot_caps, "slots": slots_arr}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    sm_path.write_text(json.dumps({"schema": "toonstudio.character-lab.slot-mapping/1", "characterId": cid, "generatedAt": PACKAGE_GENERATED_AT, "capabilities": slot_caps, "slots": slots_arr}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     glb_sha, glb_bytes = _sha256_file(glb_path)
     cs_sha, cs_bytes = _sha256_file(cs_path)
     sm_sha, sm_bytes = _sha256_file(sm_path)
     nt = glb_stats["node_tris"]
     lod_tris = [nt.get(f"TS_AuthoredHair_{hair_style}_LOD0", 0), nt.get(f"TS_AuthoredHair_{hair_style}_LOD1", 0), nt.get(f"TS_AuthoredHair_{hair_style}_LOD2", 0)]
-    head_morphs = [k["name"] for k in template_manifest["shapeKeys"] if k.get("mesh") == "TS_Shaper_Head"]
+    exported_morphs = glb_stats["node_morphs"]
+    shape_keys = [k for k in template_manifest["shapeKeys"] if k["name"] in exported_morphs.get(k["mesh"], [])]
+    expressions = copy.deepcopy(template_manifest["expressions"])
+    head_morphs = exported_morphs["TS_Shaper_Head"]
+    # 안구·속눈썹·눈썹은 별도 스킨 메시다. 공통 FACS 유닛에 각 메시의 실제 키를 등록한다.
+    controls = {"eyeBlinkLeft", "eyeBlinkRight", "browInnerUp", "browOuterUp", "browDown"}
+    for node, targets in exported_morphs.items():
+        for index, target in enumerate(targets):
+            unit, separator, _part = target.partition("_")
+            if not separator or unit not in controls:
+                continue
+            if not any(k["mesh"] == node and k["name"] == target for k in shape_keys):
+                base = next(k for k in shape_keys if k.get("facsHint", {}).get("units") == [unit])
+                shape_keys.append({**base, "mesh": node, "name": target, "targetIndex": index, "generatedBy": "shaper-atelier-blender-5.3"})
+    for preset in expressions["vrmPresets"]:
+        binds = preset["morphTargetBinds"]
+        binds[:] = [b for b in binds if b["target"] in exported_morphs.get(b["mesh"], [])]
+        unit = preset.get("contractFacsUnit")
+        if unit in controls:
+            for key in shape_keys:
+                node, target = key["mesh"], key["name"]
+                if target.startswith(unit + "_") and not any(b["mesh"] == node and b["target"] == target for b in binds):
+                    binds.append({"mesh": node, "target": target, "weight": 1.0})
 
     def pm(node: str, part: str, lod: int | None = None, morphs: list[str] | None = None) -> dict[str, Any]:
-        return {"node": node, "part": part, "lod": lod, "parentNode": "Armature", "skinned": True, "triangles": nt.get(node, 0), "morphTargets": morphs or [], "babylonLoad": {"splitInto": [node], "parentTransformNode": None, "morphTargetManagerPerPiece": False}}
+        return {"node": node, "part": part, "lod": lod, "parentNode": "Armature", "skinned": True, "triangles": nt.get(node, 0), "morphTargets": exported_morphs.get(node, morphs or []), "babylonLoad": {"splitInto": [node], "parentTransformNode": None, "morphTargetManagerPerPiece": False}}
 
     part_meshes = [
         pm(acc_node, "accessory"),
@@ -1616,15 +1693,11 @@ def _write_slot_mapping_and_manifest(
         pm("TS_Shaper_Body", "body"),
         pm("TS_Shaper_Brow_L", "brow", morphs=["HappyBrow", "AngryBrow"]),
         pm("TS_Shaper_Brow_R", "brow", morphs=["HappyBrow", "AngryBrow"]),
-        pm("TS_Shaper_Eye_L", "eye"),
-        pm("TS_Shaper_Eye_R", "eye"),
+        *[pm(node, "eye") for node in nt if node in ("TS_Shaper_Eye", "TS_Shaper_Eye_L", "TS_Shaper_Eye_R")],
         pm("TS_Shaper_Head", "head", morphs=head_morphs),
-        pm("TS_Shaper_Highlight_L", "highlight"),
-        pm("TS_Shaper_Highlight_R", "highlight"),
-        pm("TS_Shaper_Iris_L", "iris"),
-        pm("TS_Shaper_Iris_R", "iris"),
-        pm("TS_Shaper_Lash_L", "lash"),
-        pm("TS_Shaper_Lash_R", "lash"),
+        *[pm(node, "highlight") for node in nt if node in ("TS_Shaper_Highlight", "TS_Shaper_Highlight_L", "TS_Shaper_Highlight_R")],
+        *[pm(node, "iris") for node in nt if node in ("TS_Shaper_Iris", "TS_Shaper_Iris_L", "TS_Shaper_Iris_R")],
+        *[pm(node, "lash") for node in nt if node in ("TS_Shaper_Lash", "TS_Shaper_Lash_L", "TS_Shaper_Lash_R")],
         pm(shoe_node, "shoes"),
         pm(top_node, "top"),
     ]
@@ -1635,15 +1708,15 @@ def _write_slot_mapping_and_manifest(
         "displayName": spec["displayName"],
         "role": spec["role"],
         "license": "CC0-1.0",
-        "generatedAt": "2026-11-17",
+        "generatedAt": PACKAGE_GENERATED_AT,
         "generator": {"pipeline": "Blender 5.3 SHAPER Korean Webtoon Atelier Pipeline (pipelineVersion 1)", "blenderVersion": bpy.app.version_string},
         "pipelineRun": {"pipelineManifestConfigDigest": glb_sha, "toonstudioPackageKind": "toonstudio.character-package"},
         "sourceProvenance": {"license": "CC0-1.0", "upstreamBase": "Blender Foundation Human Base Meshes v1.4.1 (CC0-1.0) + ToonStudio Original Forged Parts", "author": "ToonStudio Character Lab (Blender 5.3 Korean Webtoon Head + Couture Pipeline)", "note": spec["noteKo"]},
         "files": {"glb": {"path": f"{cid}.glb", "bytes": glb_bytes, "sha256": glb_sha}, "contactSheet": {"path": "contact-sheet.png", "bytes": cs_bytes, "sha256": cs_sha}, "slotMapping": {"path": "slot-mapping.json", "bytes": sm_bytes, "sha256": sm_sha}},
         "skeleton": {"present": True, "rootNode": "Armature", "skins": [{"name": "Armature", "jointCount": len(glb_stats["joints"]), "joints": glb_stats["joints"]}], "boneNaming": "Mixamo(mixamorig:*) + ToonStudio 안구·턱 본(TS_ShaperEye.L/R, TS_ShaperJaw)"},
         "humanoidBones": [{"vrm": vrm_n, "node": node_n, "presentInGlb": True} for vrm_n, node_n in HUMANOID_BONE_PAIRS],
-        "shapeKeys": template_manifest["shapeKeys"],
-        "expressions": template_manifest["expressions"],
+        "shapeKeys": shape_keys,
+        "expressions": expressions,
         "partMeshes": part_meshes,
         "quality": {
             "score": 100,
@@ -1669,7 +1742,7 @@ def _write_slot_mapping_and_manifest(
         "displayName": spec["displayName"],
         "role": spec["role"],
         "license": "CC0-1.0",
-        "generatedAt": "2026-11-17",
+        "generatedAt": PACKAGE_GENERATED_AT,
         "qualityScore": 100,
         "skeleton": True,
         "textures": glb_stats["texture_count"],
@@ -1769,7 +1842,8 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 hide_feet=spec["hideFeet"],
                 is_male=(gender == "male"),
             )
-            _decimate_clean(body_obj, ratio=0.18)
+            refine_hero_kit = cid == "shaper-atelier-protagonist"
+            _decimate_clean(body_obj, ratio=0.18, join_kit_seams=refine_hero_kit)
             _fold_vertex_groups_to_55(body_obj, arm_obj, rebind_body_neck=True)
 
             skin_mat = make_textured_pbr_material(f"mat_skin_{cid}", skin_png, roughness=0.62)
@@ -1825,24 +1899,33 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 else:
                     bpy.data.objects.remove(ho, do_unlink=True)
 
-            # Trim jagged inner kit forehead fringe, then sculpt smooth Korean webtoon bangs onto LOD0 & LOD1!
+            # 기존 이마 앞쪽을 정리한 뒤 각 LOD에 맞는 앞가닥을 결합한다.
             eye_z_val = arm_obj.data.bones["TS_ShaperEye.L"].head_local.z
             y_cran_val = arm_obj.data.bones["mixamorig:Head"].head_local.y - 0.0355
             for hl_obj in hair_lods.values():
                 _trim_kit_hair_inner_forehead_fringe(hl_obj, eye_z_val, y_cran_val)
-            for target_lod in (0, 1):
+                if refine_hero_kit:
+                    fit_hair_roots(hl_obj)
+            first_fringe_vertex: dict[int, int] = {}
+            target_lods = (0, 1, 2) if spec["bangStyle"] == "curtain-protagonist" else (0, 1)
+            for target_lod in target_lods:
+                first_fringe_vertex[target_lod] = len(hair_lods[target_lod].data.vertices)
                 bm_bangs = build_sculpted_webtoon_bangs_bmesh(gender, spec["bangStyle"], eye_z_val, y_cran_val)
                 bangs_obj = _new_bmesh_part(f"_tmp_bangs_{target_lod}", bm_bangs, hair_mat, arm_obj, "mixamorig:Head")
-                if target_lod == 1:
-                    _decimate_clean(bangs_obj, 0.55)
+                if target_lod > 0:
+                    _decimate_clean(bangs_obj, 0.55 if target_lod == 1 else 0.18)
                 _join_into(hair_lods[target_lod], [bangs_obj])
 
             outline_obj = _create_hair_outline(hair_lods[0], hair_style)
+            if spec["bangStyle"] == "curtain-protagonist":
+                for lod, start in first_fringe_vertex.items():
+                    _add_fringe_length_keys(hair_lods[lod], start, eye_z_val)
+                _add_fringe_length_keys(outline_obj, first_fringe_vertex[0], eye_z_val)
 
             # CRITICAL: Filter `o.name.startswith("TS_")` so Blender glTF bone-shape `Icosphere` is NEVER picked!
             part_objs: dict[str, bpy.types.Object] = {}
             slot_mats = {"top": top_mat, "bottom": bot_mat, "shoes": shoe_mat, "accessory": acc_mat}
-            slot_decimate = {"top": 0.30, "bottom": 0.36, "shoes": 0.34, "accessory": 0.50}
+            slot_decimate = {"top": 0.30, "bottom": 0.78 if refine_hero_kit else 0.36, "shoes": 0.34, "accessory": 0.50}
             for slot_k, (rel_p, target_node) in spec["kitParts"].items():
                 before_p = set(bpy.data.objects)
                 bpy.ops.import_scene.gltf(filepath=str(KIT_ROOT / f"parts/{gender}/{rel_p}"))
@@ -1854,7 +1937,7 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 mesh_p.name = target_node
                 mesh_p.data.name = target_node
                 _clear_mesh_shape_keys(mesh_p)
-                _decimate_clean(mesh_p, slot_decimate[slot_k])
+                _decimate_clean(mesh_p, slot_decimate[slot_k], join_kit_seams=refine_hero_kit)
                 _fold_vertex_groups_to_55(mesh_p, arm_obj)
                 mesh_p.data.materials.clear()
                 mesh_p.data.materials.append(slot_mats[slot_k])
@@ -1871,7 +1954,27 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 h_scale=1.12 if gender == "female" else 1.07,
             )
 
+            if spec["kitParts"]["bottom"][0] == "bottom/pleated-skirt.glb":
+                fit_pleated_skirt(part_objs["bottom"], arm_obj)
+                if cid == "shaper-atelier-protagonist":
+                    bake_pleated_skirt_clearance(part_objs["bottom"], body_obj, arm_obj)
+                    tailor_pleated_skirt(part_objs["bottom"])
+                    tailor_loafers(part_objs["shoes"])
+                    tailor_blazer(part_objs["top"])
+                    finish_neck_socket(body_obj)
+                    _combine_eye_surfaces(face_objs)
+                    fit_face_inlays(face_objs)
+                    # 밑창의 실제 접지점을 원점으로 삼아 스킨과 뼈를 같은 거리만큼 올린다.
+                    shoes = part_objs["shoes"]
+                    arm_obj.location.z -= min((shoes.matrix_world @ v.co).z for v in shoes.data.vertices)
+                    bpy.context.view_layer.update()
+
             mesh_objs = [body_obj, outline_obj, *face_objs.values(), *hair_lods.values(), *part_objs.values()]
+            # DCC 작업 중 선택한 형태 키가 표준 GLB의 기본 표정·앞머리 길이로 저장되지 않게 한다.
+            for mesh_obj in mesh_objs:
+                if mesh_obj.data.shape_keys:
+                    for key in mesh_obj.data.shape_keys.key_blocks[1:]:
+                        key.value = 0.0
             export_objs = [arm_obj, *mesh_objs]
             for eo in export_objs:
                 if eo.name not in work_col.objects:
@@ -1903,6 +2006,9 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
                 export_animations=False,
             )
 
+            if refine_hero_kit:
+                stabilize_opaque_trim_indices(glb_path)
+
             hair_lods[1].hide_render = True
             hair_lods[2].hide_render = True
             outline_obj.hide_render = True
@@ -1930,7 +2036,7 @@ def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int 
         "tripo-h31-rigged-webtoon",
         *[s["id"] for s in CHARACTER_SPECS],
     ]
-    existing_index["generatedAt"] = "2026-11-17"
+    existing_index["generatedAt"] = PACKAGE_GENERATED_AT
     existing_index["characters"] = [built_map[oid] for oid in ordered_ids if oid in built_map]
     index_path.write_text(json.dumps(existing_index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return built_entries

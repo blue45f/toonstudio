@@ -18,7 +18,7 @@
  */
 import { memo, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
-import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam } from "../../../contracts";
+import { BODY_PARAM_KEYS, BODY_PARAM_LABELS_KO, FACE_PARAM_KEYS, FACE_PARAM_LABELS_KO, PARAM_MAX, PARAM_MIN, clampParam, DEFAULT_RECIPE_COLORS  } from "../../../contracts";
 import { HAIR_COLORS, IRIS_COLORS, SKIN_TONES, findPaletteEntry } from "../../../domains/humanoid/palette";
 import { resolveProportions } from "../../../domains/humanoid/proportions";
 import {
@@ -216,27 +216,30 @@ const ParamRow = memo(function ParamRow({ group, paramKey, labelKo, value, reset
 });
 
 interface PaletteRowProps {
+  readonly packageHair: boolean;
   readonly spec: PaletteRowSpec;
   readonly current: string;
   readonly onPick: (key: RecipeColorKey, hex: string) => void;
 }
 
-const PaletteRow = memo(function PaletteRow({ spec, current, onPick }: PaletteRowProps) {
+const PaletteRow = memo(function PaletteRow({ spec, current, onPick, packageHair }: PaletteRowProps) {
   const matched = findPaletteEntry(spec.entries, current);
+  const original = packageHair && current === DEFAULT_RECIPE_COLORS.hair;
   return (
     <div className="cl-param-palette-row" data-color-key={spec.key}>
       <span className="cl-param-palette-label">{spec.labelKo}</span>
       <div className="cl-param-palette" role="group" aria-label={spec.labelKo}>
         {spec.entries.map((entry) => {
           const selected = entry.hex === current;
+          const label = packageHair && entry.hex === DEFAULT_RECIPE_COLORS.hair ? "패키지 원본" : entry.labelKo;
           return (
             <button
               key={entry.id}
               type="button"
               className={`cl-param-swatch${selected ? " cl-param-swatch--selected" : ""}`}
-              aria-label={`${spec.labelKo} ${entry.labelKo}`}
+              aria-label={`${spec.labelKo} ${label}`}
               aria-pressed={selected}
-              title={`${entry.labelKo} ${entry.hex}`}
+              title={label === entry.labelKo ? `${label} ${entry.hex}` : "제작자가 지정한 원본 머리색 복원"}
               data-hex={entry.hex}
               style={{ backgroundColor: entry.hex, width: 22, height: 22, borderRadius: "50%", border: selected ? "2px solid var(--lab-accent, #4c8dff)" : "1px solid var(--lab-line, #888)", padding: 0, cursor: "pointer" }}
               onClick={() => onPick(spec.key, entry.hex)}
@@ -244,7 +247,7 @@ const PaletteRow = memo(function PaletteRow({ spec, current, onPick }: PaletteRo
           );
         })}
       </div>
-      <span className="cl-param-palette-name">{matched ? `${matched.labelKo} (${matched.hex})` : `직접 지정 (${current})`}</span>
+      <span className="cl-param-palette-name">{original ? "패키지 원본" : matched ? `${matched.labelKo} (${matched.hex})` : `직접 지정 (${current})`}</span>
     </div>
   );
 });
@@ -547,7 +550,7 @@ export function ParamPanel() {
       <div className="cl-param-group" role="group" aria-label="색 팔레트">
         <h3 className="cl-param-subtitle">색 팔레트</h3>
         {PALETTE_ROWS.map((spec) => (
-          <PaletteRow key={spec.key} spec={spec} current={recipe.colors[spec.key]} onPick={onPickColor} />
+          <PaletteRow packageHair={recipe.source.kind === "package" && spec.key === "hair"} key={spec.key} spec={spec} current={recipe.source.kind === "package" && spec.key === "hair" ? recipe.hairColor.packageBaseTint ?? DEFAULT_RECIPE_COLORS.hair : recipe.colors[spec.key]} onPick={onPickColor} />
         ))}
       </div>
       <ParamCustomizeSections />

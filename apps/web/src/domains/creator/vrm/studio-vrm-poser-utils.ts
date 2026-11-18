@@ -2201,11 +2201,10 @@ export type EnvVariant = "none" | "floor" | "wall" | "room" | "outdoor";
 
 export type FullVrmState = {
   version: 3;
-  /**
-   * 이 상태를 캡처한 VRM 라이브러리 엔트리. 저장 상태의 명시적 모델 간 이식은 허용하지만,
-   * 편집 undo/redo는 이 소유권이 현재 모델과 일치할 때만 복원한다.
-   */
+  /** 명시적 모델 간 이식은 허용하지만 undo/redo는 같은 모델에서만 복원한다. */
   modelId?: string;
+  /** 셰이퍼에서 저장한 변형의 편집 원본. 기존 포저 상태에는 없다. */
+  characterDocumentV3?: string;
   poseId?: string;
   bones: PoseBoneMap;
   yOffset: number;
@@ -2257,7 +2256,7 @@ const FORBIDDEN_VRM_RUNTIME_KEYS = new Set(["__proto__", "prototype", "construct
 const FINGER_BONE_SET = new Set<string>(POSER_FINGER_BONES);
 const FULL_VRM_LIGHTING_TONE_SET = new Set<string>(STUDIO_VRM_LIGHTING_TONES);
 const FULL_VRM_STATE_KEYS = new Set([
-  "version",
+  "version", "characterDocumentV3",
   "modelId",
   "poseId",
   "bones",
@@ -2466,6 +2465,7 @@ function isBoundedFullVrmRuntimeData(
 }
 
 function hasStrictFullVrmRuntimeFields(value: Record<string, unknown>): boolean {
+  if (value.characterDocumentV3 !== undefined && (typeof value.characterDocumentV3 !== "string" || value.characterDocumentV3.length > 2 * 1024 * 1024)) return false;
   if (!isStrictFullVrmPoseBones(value.bones)) return false;
   if (value.modelId !== undefined && normalizeFullVrmModelId(value.modelId) !== value.modelId) return false;
   if (value.poseId !== undefined && !isSafeFullVrmOpaqueId(value.poseId)) return false;
@@ -2502,10 +2502,7 @@ function normalizeFullVrmYOffset(value: unknown): number {
   return Math.max(-10, Math.min(10, Object.is(value, -0) ? 0 : value));
 }
 
-/**
- * 모델 ID는 opaque storage key로 취급하되, 히스토리 소유권 비교에 부적합한 빈 값·제어문자·
- * 과도한 문자열은 보존하지 않는다.
- */
+/** 히스토리 소유권에 쓰는 모델 ID에서 빈 값·제어문자·과도한 문자열을 제외한다. */
 export function normalizeFullVrmModelId(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   if (!value || value.length > MAX_VRM_MODEL_ID_LENGTH || value !== value.trim()) return undefined;
@@ -2538,6 +2535,7 @@ export function serializeFullVrmState(
   return {
     version: 3,
     modelId: normalizeFullVrmModelId(state.modelId),
+    ...(state.characterDocumentV3 !== undefined ? { characterDocumentV3: state.characterDocumentV3 } : {}),
     poseId: state.poseId,
     bones: state.bones || {},
     yOffset: normalizeFullVrmYOffset(state.yOffset),

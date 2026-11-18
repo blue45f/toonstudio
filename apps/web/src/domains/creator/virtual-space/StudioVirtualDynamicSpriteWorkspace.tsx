@@ -1,5 +1,6 @@
 "use client";
 
+import { StudioSpaceScrollRegion } from "./StudioSpaceScrollRegion";
 import { useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -735,7 +736,8 @@ export function StudioVirtualDynamicSpriteWorkspace({
                 </button>
               </div>
 
-              <ul className="max-h-36 space-y-1 overflow-y-auto">
+              <StudioSpaceScrollRegion aria-label="캔버스에 등록된 핀" className="max-h-36 overflow-y-auto">
+              <ul className="space-y-1">
                 {ws.canvasPins.map((pin) => (
                   <li
                     key={pin.id}
@@ -750,6 +752,7 @@ export function StudioVirtualDynamicSpriteWorkspace({
                   </li>
                 ))}
               </ul>
+              </StudioSpaceScrollRegion>
             </div>
           </div>
         </div>

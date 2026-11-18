@@ -34,20 +34,18 @@ export function identityMapping(source: Uint32Array): BodyMapping {
 /** 균일 격자 최근접 탐색기(몸 정점) */
 export interface VertexGrid {
   readonly cellSize: number;
-  readonly cells: Map<number, number[]>;
+  readonly cells: Map<string, number[]>;
   readonly positions: Float32Array;
   readonly count: number;
 }
 
-const GRID_DIM = 4096;
-
-function cellKey(ix: number, iy: number, iz: number): number {
-  return ((ix + GRID_DIM / 2) * GRID_DIM + (iy + GRID_DIM / 2)) * GRID_DIM + (iz + GRID_DIM / 2);
+function cellKey(ix: number, iy: number, iz: number): string {
+  return `${ix},${iy},${iz}`;
 }
 
 export function buildVertexGrid(positions: Float32Array, cellSize = 0.05, mask?: Uint8Array): VertexGrid {
   const count = positions.length / 3;
-  const cells = new Map<number, number[]>();
+  const cells = new Map<string, number[]>();
   for (let v = 0; v < count; v += 1) {
     if (mask && mask[v] === 0) continue;
     const ix = Math.floor(positions[v * 3] / cellSize);
@@ -72,33 +70,50 @@ export function nearestVertices(grid: VertexGrid, x: number, y: number, z: numbe
   const cy = Math.floor(y / grid.cellSize);
   const cz = Math.floor(z / grid.cellSize);
   const found: Candidate[] = [];
-  const maxRing = 64;
-  let ring = 0;
-  let settledRing = -1;
-  while (ring <= maxRing) {
+  if (k <= 0 || grid.cells.size === 0) return found;
+  const collect = (bucket: readonly number[]): void => {
+    for (const index of bucket) {
+      const dx = grid.positions[index * 3] - x;
+      const dy = grid.positions[index * 3 + 1] - y;
+      const dz = grid.positions[index * 3 + 2] - z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+      let insert = found.length;
+      while (insert > 0) {
+        const prev = found[insert - 1];
+        if (prev.distSq < distSq || (prev.distSq === distSq && prev.index < index)) break;
+        insert -= 1;
+      }
+      if (insert >= k) continue;
+      found.splice(insert, 0, { index, distSq });
+      if (found.length > k) found.pop();
+    }
+  };
+
+  for (let ring = 0; ; ring += 1) {
+    // 성긴 영역이나 몸에서 멀리 떨어진 소품은 빈 셀을 계속 찾는 것보다 채워진 셀 순회가 싸다.
+    if ((ring * 2 + 1) ** 3 > grid.cells.size) {
+      found.length = 0;
+      for (const bucket of grid.cells.values()) collect(bucket);
+      return found;
+    }
     for (let ix = cx - ring; ix <= cx + ring; ix += 1) {
       for (let iy = cy - ring; iy <= cy + ring; iy += 1) {
         for (let iz = cz - ring; iz <= cz + ring; iz += 1) {
-          const onShell = Math.abs(ix - cx) === ring || Math.abs(iy - cy) === ring || Math.abs(iz - cz) === ring;
-          if (!onShell) continue;
+          if (Math.max(Math.abs(ix - cx), Math.abs(iy - cy), Math.abs(iz - cz)) !== ring) continue;
           const bucket = grid.cells.get(cellKey(ix, iy, iz));
-          if (!bucket) continue;
-          for (const v of bucket) {
-            const dx = grid.positions[v * 3] - x;
-            const dy = grid.positions[v * 3 + 1] - y;
-            const dz = grid.positions[v * 3 + 2] - z;
-            found.push({ index: v, distSq: dx * dx + dy * dy + dz * dz });
-          }
+          if (bucket) collect(bucket);
         }
       }
     }
-    if (found.length >= k && settledRing < 0) settledRing = ring;
-    // k개를 찾은 링의 다음 링까지 확인해야 경계 너머 더 가까운 정점을 놓치지 않는다
-    if (settledRing >= 0 && ring >= settledRing + 1) break;
-    ring += 1;
+    // 검사한 정육면체 밖의 점까지 가능한 최단 거리. 경계 동률은 인덱스 순서를 위해 계속 검사한다.
+    const size = grid.cellSize;
+    const boundary = Math.min(
+      x - (cx - ring) * size, (cx + ring + 1) * size - x,
+      y - (cy - ring) * size, (cy + ring + 1) * size - y,
+      z - (cz - ring) * size, (cz + ring + 1) * size - z,
+    );
+    if (found.length === k && found[k - 1].distSq < boundary * boundary) return found;
   }
-  found.sort((a, b) => a.distSq - b.distSq || a.index - b.index);
-  return found.slice(0, k);
 }
 
 /** 의상 정점마다 몸 정점 k-NN 역거리 가중 매핑 */

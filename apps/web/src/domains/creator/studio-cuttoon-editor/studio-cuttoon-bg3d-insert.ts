@@ -21,6 +21,7 @@ import { isEffectivelyLocked } from "../studio-layers";
 import { commitStudioLinked3dPreparedPass, prepareStudioLinked3dLinePass } from "../studio-linked-3d-pass-transaction";
 import { detachStudioLinked3dCorrections, materializeStudioLinked3dLinePassLocator, removeStudioLinked3dRenderLinks, upsertStudioLinked3dRenderLink } from "../studio-linked-3d-render-document";
 import { resolveStudioBg3dDetachError, resolveStudioBg3dLtLayerPlanError, resolveStudioShared3dVisibilityError } from "../status-i18n/studio-producer-error-i18n-bg3d-lt";
+import { studioCutVrmDocumentScope, studioTeamCutVrmDocumentScope } from "../studio-shared-3d-scene-runtime";
 import { studioShared3dStageEntryAsDocument } from "../studio-shared-3d-stage-collection";
 
 // The host is a mutable runtime bag by design; keep the dynamic seam isolated to this adapter.
@@ -39,7 +40,7 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     canvasH,
     addEl,
     isRealtimeTeamSession,
-    scopedWriteRuntime,
+    scopedWriteRuntime, workId, canStoreLocalVrmCut, cutDocumentKey,
     elements,
     activePage,
     bg3dDccSourceRef,
@@ -73,6 +74,38 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
     setError(null);
     setStatusNotice(null);
     const sixPass = !!result.bg3dScene.output.sixPassLt;
+    const pinnedVrm = result.bg3dScene.pinnedVersionedCut?.source.linkedVrm;
+    const expectedCastScope = workId ? studioTeamCutVrmDocumentScope(workId, activePage.id) : studioCutVrmDocumentScope(cutDocumentKey, activePage.id);
+    if (pinnedVrm && pinnedVrm.documentScope !== expectedCastScope) {
+      setError("고정한 VRM 컷과 현재 원고·페이지가 달라 적용하지 않았습니다.");
+      return false;
+    }
+    if (pinnedVrm && workId && !sixPass) {
+      const ticket = bg3dMutationTicketRef.current;
+      const current = () => Boolean(ticket && bg3dMutationTicketRef.current === ticket && canApplyStudioMutation(ticket)
+        && currentPageIdRef.current === activePage.id && studioAuthUserId && authorizedWorkAssetScopeId === workId
+        && studioCrdtOperationSyncReady && !collaborationDocumentLocked && !pageEditLocked && !masterEditMode);
+      if (!current()) { setError("작품 편집 권한과 원고 동기화를 확인한 뒤 팀 컷을 저장하세요."); return false; }
+      const previous = targetElementId ? elementById.get(targetElementId) : undefined;
+      if (targetElementId && (previous?.type !== "image" || isEffectivelyLocked(previous, groups))) { setError("원본 레이어를 찾을 수 없거나 잠겨 있습니다."); return false; }
+      try {
+        const scoped = scopedWriteRuntime?.authority;
+        const writeContext = scoped && (!scoped.snapshot?.fullEdit || scoped.mappedFullEdit) ? scoped.purposeContext() : undefined;
+        const { publishTeamVrmCutLayer } = await import("../scene3d/studio-team-vrm-cut-publish");
+        const added = await publishTeamVrmCutLayer({ workId, pageId: activePage.id, session: ticket, canvasHeight: canvasH,
+          current, existing: id => host.activeElementsRef.current.find((el: { id: string }) => el.id === id), add: addEl, result, writeContext, previous });
+        if (added) setStatusNotice("모델과 채색을 작품에 저장하고 고정 컷 레이어를 추가했습니다.");
+        return added;
+      } catch (cause) {
+        const error = cause instanceof Error ? cause : new Error("팀 컷을 저장하지 못했습니다. 권한과 연결을 확인하고 다시 시도하세요.");
+        setError(error.message);
+        throw error;
+      }
+    }
+    if (pinnedVrm && (!canStoreLocalVrmCut?.() || workId || scopedWriteRuntime?.authority || authorizedWorkAssetScopeId || sixPass)) {
+      setError("연결 VRM 컷은 로컬 원고의 컬러 레이어에 저장할 수 있습니다. 팀 원고와 6패스 묶음에는 모델·페인트 원본을 아직 함께 봉인할 수 없습니다.");
+      return false;
+    }
     if (sixPass && (masterEditMode || result.bg3dScene.attachments.length || result.bg3dScene.nodes.some((node) => node.kind !== "primitive"))) {
       setError("6패스 묶음 v1은 일반 원고의 기본 도형 장면을 지원합니다. 문서 마스터와 외부 모델 원본은 아직 지원하지 않습니다.");
       return false;
@@ -146,6 +179,13 @@ export function bindStudioBg3dRenderedImage(h: StudioBg3dInsertHost) {
       return true;
     }
 
+    if (pinnedVrm) {
+      if (targetElementId && elementById.get(targetElementId)?.bg3dLtBundleId) {
+        setError("고정 VRM을 기존 분리 레이어 묶음에 덮어쓸 수 없습니다. 원고에서 새 배경으로 열어 컬러 레이어로 보관하세요.");
+        return false;
+      }
+      return materializeBg3dMergedComposite("고정 VRM 컬러 레이어에는 매직 마스크를 함께 저장할 수 없습니다.");
+    }
     // 6패스는 봉인된 분리 본문 경로를 사용하고, 일반 LT의 기존 병합 동작을 유지한다.
     if (isRealtimeTeamSession && !sixPass) {
       const realtimePlan = planStudioBg3dRealtimeMergedApply({

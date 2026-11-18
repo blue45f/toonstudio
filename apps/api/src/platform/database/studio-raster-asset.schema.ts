@@ -1,3 +1,4 @@
+import type { WorkVrmCutAttachment, WorkVrmCutMetadata } from "@toonstudio/contracts/studio-work-vrm-cut";
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -14,7 +15,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-import { creatorWorks, users } from "./schema";
+import { creatorWorkAssets, creatorWorks, users } from "./schema";
 import type { StudioBg3dSixPassBundleManifest } from "@toonstudio/contracts/studio-bg3d-six-pass-bundle";
 import type { PrivateObjectReference } from "../adapters/private-object-storage/private-object-storage.contract";
 
@@ -123,4 +124,19 @@ export const studioBg3dBundleArtifacts = pgTable("studio_bg3d_bundle_artifact", 
   check("studio_bg3d_artifact_hash_check", sql`${table.contentHash} ~ '^sha256:[a-f0-9]{64}$'`),
   check("studio_bg3d_artifact_object_check", sql`(${table.objectReference}->>'purpose' = 'source' and ${table.objectReference}->>'digest' = ${table.contentHash} and (${table.objectReference}->>'byteLength')::bigint = ${table.byteSize}) is true`),
   check("studio_bg3d_artifact_bytes_check", sql`${table.byteSize} between 1 and 67108864 and (${table.role} <> 'scene' or ${table.byteSize} <= 327680)`),
+]);
+
+export const studioWorkVrmCuts = pgTable("studio_work_vrm_cut", {
+  workId: text("workId").notNull(),
+  anchorId: text("anchorId").notNull(),
+  pageId: text("pageId").notNull(),
+  sceneText: text("sceneText").notNull(),
+  sceneSha256: text("sceneSha256").notNull(),
+  compositeSha256: text("compositeSha256").notNull(),
+  bundledModels: jsonb("bundledModels").$type<WorkVrmCutMetadata["bundledModels"]>().notNull(),
+  attachments: jsonb("attachments").$type<readonly WorkVrmCutAttachment[]>().notNull(),
+  rights: jsonb("rights").$type<NonNullable<WorkVrmCutMetadata["rights"]>>(),
+}, (t) => [
+  primaryKey({ columns: [t.workId, t.anchorId] }),
+  foreignKey({ columns: [t.workId, t.anchorId], foreignColumns: [creatorWorkAssets.workId, creatorWorkAssets.assetId] }).onDelete("cascade"),
 ]);

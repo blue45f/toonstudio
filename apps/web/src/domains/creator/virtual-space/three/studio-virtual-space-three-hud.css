@@ -60,20 +60,44 @@
 
 /* 휴대폰·태블릿 세로: 도크는 화면 폭 전체, 오른쪽 아래는 조이스틱(약 124px)이라 '말 걸기' 위 왼쪽에 두고 조이스틱을 피해 줄을 바꾼다. */
 @media (max-width: 1023.98px) {
+  .studio-vspace-three-stage {
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 56px);
+  }
+
   .studio-vspace-three-lighting-hud {
     right: auto;
-    bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 56px);
+    bottom: var(--studio-three-controls-offset);
     left: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
     justify-content: flex-start;
     max-width: calc(100% - var(--space-gutter, 12px) * 3 - 124px - var(--space-safe-left, 0px));
   }
 
-  .space-hud:has(.space-interact-prompt, .space-status-chip, .space-focus-chip) .studio-vspace-three-lighting-hud {
-    bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 116px);
+  .space-hud:has(.space-interact-prompt, .space-status-chip, .space-focus-chip) .studio-vspace-three-stage {
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 116px);
   }
 
-  .space-hud:has(.space-context-suggestion) .studio-vspace-three-lighting-hud {
-    bottom: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 136px);
+  .space-hud:has(.space-context-suggestion) .studio-vspace-three-stage {
+    --studio-three-controls-offset: calc(var(--immersive-dock-clearance, 88px) + var(--space-gutter, 12px) + 136px);
+  }
+
+  /* 글자 크기와 줄바꿈에 맞춰 품질 안내와 시점 버튼을 서로 다른 행에 둔다. */
+  .studio-vspace-three-stage:has(> .studio-vspace-three-quality-notice) {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto 8px auto var(--studio-three-controls-offset);
+  }
+  .studio-vspace-three-stage > .studio-vspace-three-quality-notice {
+    position: relative;
+    grid-row: 2;
+    inset: auto;
+    justify-self: center;
+    margin-inline: var(--space-gutter, 12px);
+  }
+  .studio-vspace-three-stage:has(> .studio-vspace-three-quality-notice) > .studio-vspace-three-lighting-hud {
+    position: relative;
+    grid-row: 4;
+    inset: auto;
+    justify-self: start;
+    margin-inline-start: calc(var(--space-gutter, 12px) + var(--space-safe-left, 0px));
   }
 
   .studio-vspace-three-lighting-hud button {

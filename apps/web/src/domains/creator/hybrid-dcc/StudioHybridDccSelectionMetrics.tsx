@@ -74,7 +74,7 @@ export function StudioHybridDccSelectionMetrics({
             className={cn("size-1.5 rounded-full", summary.isWatertight ? "bg-good" : "bg-warn")}
           />
           {summary.isWatertight
-            ? bt("닫힌 매니폴드 · 불리언·GLB·STL 안전", "Watertight manifold · Safe for CSG, GLB & STL")
+            ? bt("열린 경계 없음", "No open boundary edges")
             : formatI18nTemplate(
                 bt(
                   "열린 경계 모서리 {count}개 · 평면/열린 셸",

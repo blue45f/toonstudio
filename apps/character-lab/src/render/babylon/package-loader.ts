@@ -113,6 +113,10 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
   const partIdPalette = allocatePartIds(ordered.map((group) => ({ role: group.role })));
   const materialIndex = new Map(container.materials.map((material, index) => [material, index]));
 
+  // 머리색을 바꿀 때 의상·본체·외곽에서 함께 사용하는 재질의 색상은 보존한다.
+  const nonHairMaterials = new Set(ordered.flatMap((group) =>
+    (group.role === "hair" ? group.outlines : [...group.meshes, ...group.outlines]).map((mesh) => mesh.material)));
+  const sharedHairMaterials = new Map<NonNullable<Mesh["material"]>, NonNullable<Mesh["material"]>>();
   const parts: RigPart[] = [];
   const morphs = new Map<string, MorphTarget[]>();
   const morphNames: string[] = [];
@@ -128,6 +132,20 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
     const firstMesh = group.meshes[0];
     if (!firstMesh) return;
     const materialId = firstMesh.material ? Math.min(255, materialIndex.get(firstMesh.material) ?? 0) : 0;
+    if (group.role === "hair") {
+      for (const mesh of group.meshes) {
+        const original = mesh.material;
+        if (!original || !nonHairMaterials.has(original)) continue;
+        let hairMaterial = sharedHairMaterials.get(original);
+        if (!hairMaterial) {
+          hairMaterial = original.clone(original.name + "_hairTint") ?? undefined;
+          if (!hairMaterial) continue;
+          sharedHairMaterials.set(original, hairMaterial);
+          container.materials.push(hairMaterial);
+        }
+        mesh.material = hairMaterial;
+      }
+    }
     const pbr = deps.adaptMaterial(group.role, firstMesh);
     const meshPbrs: PBRMaterial[] = [];
     for (const mesh of group.meshes) {
@@ -136,6 +154,8 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
       meshPbrs.push(meshPbr);
       mesh.metadata = rigMeshMetadata(partId, group.role, materialId, false);
       mesh.receiveShadows = true;
+    }
+    for (const mesh of [...group.meshes, ...group.outlines]) {
       const manager = mesh.morphTargetManager;
       if (manager) {
         manager.useTextureToStoreTargets = true;
@@ -162,6 +182,11 @@ export async function loadPackageRig(plan: AuthoredPackagePlan, bytes: Uint8Arra
       pbr,
       meshPbrs,
       hasAlbedoTexture,
+      ...(group.role === "hair" && hasAlbedoTexture ? {
+        packageHairAlbedos: [...new Set(meshPbrs)].map((material) => ({
+          material, base: [material.albedoColor.r, material.albedoColor.g, material.albedoColor.b] as const,
+        })),
+      } : {}),
       toon: null,
       colorHex: resolvePartColorHex({ materialPreset, ...(colorKey !== undefined ? { colorKey } : {}) }, null),
       visible: !forceHidden,

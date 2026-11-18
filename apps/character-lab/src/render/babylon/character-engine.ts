@@ -20,6 +20,7 @@ import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-preset
 import { generateMouthMask, MOUTH_MASK_SIZE } from "../mouth-shade";
 import { mapPresetToOpenPbr } from "../openpbr-mapping";
 import { hullOutlineAllowed, hullOutlineWidthScale } from "../outline-policy";
+import { applyPackageHairColor } from "../package-hair-color";
 import { normalizeToonLighting } from "../toon-reference";
 
 import { BABYLON_SIDE_EFFECTS_LOADED } from "./babylon-side-effects";
@@ -50,39 +51,12 @@ import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
-  ApplyPlan,
-  ApplyReceipt,
-  AuthoredPackagePlan,
-  CameraFraming,
-  CaptureRequest,
-  CaptureResult,
-  CapturedRaster,
-  CharacterEngine,
-  CharacterSource,
-  DuoPartnerAttachment,
-  EngineBackend,
-  EngineDiagnostics,
-  HandPropAttachment,
-  HeadPropAttachment,
-  HudSample,
-  SfxStampAttachment,
-  StagePropAttachment,
-  JointDragHandle,
-  KitPlan,
-  LabFailure,
-  PaintLayer,
-  PartRole,
-  PhysicsProviderFactory,
-  PhysicsProviderId,
-  PhysicsStatus,
-  CharacterPickOptions, PickHit,
-  Quat,
-  SettleReceipt,
-  ShadingProfile,
-  SkeletonData,
-  SourceCapabilities,
-  ThumbnailRequest,
-  Vec3,
+  ApplyPlan, ApplyReceipt, AuthoredPackagePlan, CameraFraming, CaptureRequest, CaptureResult,
+  CapturedRaster, CharacterEngine, CharacterPickOptions, CharacterSource, DuoPartnerAttachment,
+  EngineBackend, EngineDiagnostics, HandPropAttachment, HeadPropAttachment, HudSample,
+  JointDragHandle, KitPlan, LabFailure, PaintLayer, PartRole, PhysicsProviderFactory,
+  PhysicsProviderId, PhysicsStatus, PickHit, Quat, SettleReceipt, SfxStampAttachment,
+  ShadingProfile, SkeletonData, SourceCapabilities, StagePropAttachment, ThumbnailRequest, Vec3,
 } from "../../contracts";
 import type { BetaFeaturePort, BetaFeatureId, BetaFeatureReport, BetaFeatureState, FullSceneFeatureReport } from "../beta-features";
 import type { SparseMorphReport } from "../glb-sparse-morph";
@@ -733,7 +707,8 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
         this.beta.updateOpenPbr(part);
       },
       applyColor: (part, hex) => {
-        if (!part.hasAlbedoTexture || part.tint !== undefined) setMaterialAlbedo(part.pbr, part.materialPreset, hex);
+        if (part.packageHairAlbedos) applyPackageHairColor(part.packageHairAlbedos, hex);
+        else if (!part.hasAlbedoTexture || part.tint !== undefined) setMaterialAlbedo(part.pbr, part.materialPreset, hex);
         this.pushToon(part, rigOf());
         this.beta.updateOpenPbr(part);
         if (!trackFlatPass) return;

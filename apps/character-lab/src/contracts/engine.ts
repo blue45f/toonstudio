@@ -377,8 +377,8 @@ export interface EngineLane {
 }
 
 export const ENGINE_LANES: readonly EngineLane[] = [
-  { id: "babylon-webgpu", labelKo: "Babylon 9.31 WebGPU", status: "primary-experimental", noteKo: "주 엔진(실험, 브라우저 미검증). 사용자 명시 선택, 실패 시 failed 노출." },
-  { id: "babylon-webgl2", labelKo: "Babylon 9.31 WebGL2", status: "explicit-alternative", noteKo: "명시 대안. 자동 전환 금지." },
+  { id: "babylon-webgpu", labelKo: "Babylon WebGPU", status: "primary-experimental", noteKo: "브라우저의 WebGPU 장치로 캐릭터를 렌더링합니다." },
+  { id: "babylon-webgl2", labelKo: "Babylon WebGL2", status: "explicit-alternative", noteKo: "명시 대안. 자동 전환 금지." },
   { id: "null", labelKo: "NullEngine", status: "test-only", noteKo: "테스트 전용. readback은 provenance.synthetic=true." },
   { id: "physics-builtin-pbd", labelKo: "내장 PBD", status: "available", noteKo: "결정적 XPBD 체인·캡슐 충돌." },
   { id: "physics-rapier", labelKo: "Rapier 0.21.0", status: "available-dynamic", noteKo: "동적 import. 소품·접지용." },

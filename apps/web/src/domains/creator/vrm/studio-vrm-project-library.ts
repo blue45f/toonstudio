@@ -1,3 +1,4 @@
+import { canonicalStudioProjectVrmSceneLocations } from "./studio-project-vrm-scene-locations";
 import { parseStudioProjectFile, type StudioProjectFile } from "../studio-project-file";
 
 import {
@@ -10,10 +11,7 @@ import {
   type StudioVrmProjectArchiveUseContextReceipt,
 } from "./studio-vrm-license-product-gate";
 import {
-  parseStudioVrmSceneDocument,
-  serializeStudioVrmSceneDocument,
   type StudioVrmAttachmentModel,
-  type StudioVrmSceneDocument,
 } from "./studio-vrm-scene-document";
 import {
   canonicalizeVrmContentHash,
@@ -193,11 +191,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseCanonicalScene(value: unknown): StudioVrmSceneDocument | null {
-  const serialized = serializeStudioVrmSceneDocument(value);
-  return serialized ? parseStudioVrmSceneDocument(serialized) : null;
-}
-
 interface ProjectVrmSnapshot {
   readonly project: StudioProjectFile;
   readonly references: StudioVrmProjectArchiveReference[];
@@ -221,27 +214,24 @@ function snapshotProjectVrmReferences(project: unknown): ProjectVrmSnapshot {
     pageIndex?: number,
   ): void => {
     elements.forEach((element, elementIndex) => {
-      if (!isRecord(element) || element.type !== "image" || element.vrmScene === undefined) return;
-      const scene = parseCanonicalScene(element.vrmScene);
-      if (!scene) throw new StudioVrmProjectLibraryError("project-invalid");
-      const scenePointer = `${basePointer}/${elementIndex}/vrmScene`;
-      const serialized = serializeStudioVrmSceneDocument(scene);
-      if (!serialized) throw new StudioVrmProjectLibraryError("project-invalid");
-      sceneFingerprints.push(`${scenePointer}\u0000${serialized}`);
-      if (scene.model.source !== "attachment") return;
-      const canonicalHash = canonicalizeVrmContentHash(scene.model.hash);
-      if (!canonicalHash || canonicalHash !== scene.model.hash) {
-        throw new StudioVrmProjectLibraryError("project-invalid");
+      const locations = canonicalStudioProjectVrmSceneLocations(element, `${basePointer}/${elementIndex}`, () => { throw new StudioVrmProjectLibraryError("project-invalid"); });
+      for (const { scene, serialized, pointer: scenePointer } of locations) {
+        sceneFingerprints.push(`${scenePointer}\u0000${serialized}`);
+        if (scene.model.source !== "attachment") continue;
+        const canonicalHash = canonicalizeVrmContentHash(scene.model.hash);
+        if (!canonicalHash || canonicalHash !== scene.model.hash) {
+          throw new StudioVrmProjectLibraryError("project-invalid");
+        }
+        references.push({
+          hash: canonicalHash,
+          pointer: `${scenePointer}/model/hash`,
+          scenePointer,
+          scope,
+          ...(pageIndex === undefined ? {} : { pageIndex }),
+          elementIndex,
+          model: scene.model,
+        });
       }
-      references.push({
-        hash: canonicalHash,
-        pointer: `${scenePointer}/model/hash`,
-        scenePointer,
-        scope,
-        ...(pageIndex === undefined ? {} : { pageIndex }),
-        elementIndex,
-        model: scene.model,
-      });
     });
   };
 

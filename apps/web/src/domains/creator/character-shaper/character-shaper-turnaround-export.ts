@@ -4,6 +4,7 @@ import { captureStudioVrmRgbaCooperatively, encodeStudioVrmCapturePngBlob } from
 
 import { measureCharacterTurnaroundBounds, planCharacterTurnaround } from "./character-shaper-turnaround-plan";
 
+import type { StudioVrmPngWorkerSession } from "../vrm/studio-vrm-png-worker-session";
 import type { CharacterTurnaroundCount } from "./character-shaper-turnaround-plan";
 import type { StudioBg3dShotContactSheetImage } from "../bg3d/studio-bg3d-shot-contact-sheet-contract";
 import type { Camera, Scene, WebGLRenderer } from "three";
@@ -13,6 +14,7 @@ export interface CharacterTurnaroundExportInput {
   readonly scene: Scene;
   readonly camera: Camera;
   readonly count: CharacterTurnaroundCount;
+  readonly pngSession?: StudioVrmPngWorkerSession;
   readonly signal: AbortSignal;
   readonly assertCurrent: () => void;
   readonly onProgress?: (text: string) => void;
@@ -64,7 +66,7 @@ export async function exportCharacterTurnaround(
       ),
     });
     check();
-    const png = await dependencies.encode(rgba, CELL, { signal: input.signal });
+    const png = await dependencies.encode(rgba, CELL, { signal: input.signal, session: input.pngSession });
     check();
     bytes += png.size;
     if (bytes > MAX_SOURCE_BYTES) throw new RangeError("설정화 이미지의 메모리 예산을 초과했습니다.");

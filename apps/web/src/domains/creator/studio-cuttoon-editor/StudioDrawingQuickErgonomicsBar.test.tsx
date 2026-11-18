@@ -64,7 +64,7 @@ function createErgonomicsSession(
     zoomLocked: false,
     viewTransformSuppressed: false,
     bg3dOpen: false,
-    setBg3dOpen: vi.fn(),
+    studioLeftToolRailHandlers: { toggleBg3dEditor: vi.fn() },
     exportMenuOpen: false,
     setExportMenuOpen: vi.fn(),
     canvasFlipH: false,
@@ -101,7 +101,7 @@ describe("StudioDrawingQuickErgonomicsBar", () => {
 
     const stage3dBtn = screen.getByRole("button", { name: "④ 3D 배경" });
     fireEvent.click(stage3dBtn);
-    expect(session.setBg3dOpen).toHaveBeenCalledTimes(1);
+    expect(session.studioLeftToolRailHandlers.toggleBg3dEditor).toHaveBeenCalledTimes(1);
 
     const inkBtn = screen.getByRole("button", { name: "② 선화·펜터치" });
     expect(inkBtn.getAttribute("aria-pressed")).toBe("true");

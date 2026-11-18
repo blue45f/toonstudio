@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { createElement, createRef, type PropsWithChildren } from "react";
+import { createElement, createRef, type PropsWithChildren, type ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -10,10 +10,13 @@ import type { StudioBg3dEditorModalHost } from "./StudioBg3dEditorModal";
 import type { StudioBg3dSceneOutlinerController } from "./studio-bg3d-scene-outliner-controller";
 
 vi.mock("./studio-bg3d-editor-runtime-bindings", () => ({}));
-vi.mock("./StudioBg3dEditorViewport", () => ({ StudioBg3dEditorViewport: () => null }));
+vi.mock("./StudioBg3dEditorViewport", () => ({ StudioBg3dEditorViewport: () => <canvas data-testid="shared-viewport-canvas" /> }));
 vi.mock("./StudioBg3dEditorSidebar", () => ({ StudioBg3dEditorSidebar: () => null }));
+vi.mock("../scene3d/StudioScene3dBg3dCutPanel", () => ({
+  StudioScene3dBg3dCutPanel: ({ host }: { host: StudioBg3dEditorModalHost }) => <div data-testid="pinned-cut-host" data-open={host.open} />,
+}));
 vi.mock("./StudioBg3dSceneAssistantWorkspace", () => ({
-  StudioBg3dSceneAssistantWorkspace: () => <div data-testid="mock-scene-assistant"><input aria-label="장면 검색" /></div>,
+  StudioBg3dSceneAssistantWorkspace: ({ viewport }: { viewport: ReactNode }) => <div data-testid="mock-scene-assistant">{viewport}<input aria-label="장면 검색" /></div>,
 }));
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -96,6 +99,20 @@ describe("BG3D modal compositor boundary", () => {
     expect(dialog.getAttribute("data-studio-bg3d-workspace")).toBe("professional-v2");
     expect(screen.getByRole("dialog", { name: "정밀 3D 편집" })).toBeDefined();
     expect(screen.getByRole("button", { name: /정밀/ }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("간편·정밀 왕복은 같은 캔버스를 이동하고 편집기를 닫으면 제거한다", () => {
+    const view = renderModal(host());
+    const canvas = screen.getByTestId("shared-viewport-canvas");
+    expect(screen.getByTestId("mock-scene-assistant").contains(canvas)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: /정밀/ }));
+    expect(document.querySelector("[data-bg3d-professional-viewport]")?.contains(canvas)).toBe(true);
+    expect(screen.getByTestId("pinned-cut-host").dataset.open).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: /간편/ }));
+    expect(screen.getByTestId("mock-scene-assistant").contains(canvas)).toBe(true);
+    expect(screen.getAllByTestId("shared-viewport-canvas")).toHaveLength(1);
+    view.unmount();
+    expect(canvas.isConnected).toBe(false);
   });
 
   it("keeps the keyboard-focusable close action and its original dismissal handler", () => {

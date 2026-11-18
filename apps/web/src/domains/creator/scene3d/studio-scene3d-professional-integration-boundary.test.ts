@@ -55,9 +55,11 @@ describe("Studio Scene3D professional integration boundary", () => {
     const editorHost = source(
       "apps/web/src/domains/creator/StudioCuttoonEditorHost.tsx",
     );
-    expect(editorHost).toContain("resolveStudioScene3dLinkedLayerEditSource");
+    const layerResume = source("apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-bg3d-layer-resume.ts");
+    expect(editorHost).toContain("studioBg3dLayerEditSource(");
+    expect(layerResume).toContain("resolveStudioScene3dLinkedLayerEditSource(");
     expect(editorHost).not.toContain("studio-scene3d-linked-layer-bridge");
-    expect(editorHost).toContain("return { scene: linkedScene }");
+    expect(layerResume).toContain("return scene ? { scene } : null");
   });
 
   it("routes canonical document replacement through one atomic state owner", () => {

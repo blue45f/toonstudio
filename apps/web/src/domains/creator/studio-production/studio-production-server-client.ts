@@ -6,7 +6,7 @@ import {
   type ProductionWorkspace,
 } from "./studio-production-workspace-runtime";
 
-import { api, isHttpError, toApiError } from "@/platform/api";
+import { api, isAppApiError, isHttpError, toApiError } from "@/platform/api";
 
 const MAX_REVIEW_LINKS = 100;
 const MAX_REVIEW_FEEDBACK = 1_000;
@@ -336,8 +336,10 @@ function parseServerPersonalKit(value: unknown): StudioServerPersonalKitSnapshot
 }
 
 async function rethrowServerError(error: unknown, fallback: string): Promise<never> {
-  if (isHttpError(error) && error.response.status === 409) {
-    const data = error.data;
+  if (error instanceof StudioProductionServerContractError) throw error;
+  const source = isAppApiError(error) ? error.cause : error;
+  if (isHttpError(source) && source.response.status === 409) {
+    const data = source.data;
     if (data && typeof data === "object" && !Array.isArray(data)) {
       const revision = (data as Record<string, unknown>).currentRevision;
       if (RevisionSchema.safeParse(revision).success) {

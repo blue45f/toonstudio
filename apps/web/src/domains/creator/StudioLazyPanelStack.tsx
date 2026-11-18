@@ -1,3 +1,4 @@
+import type { StudioLocalVrmCutHostScope } from "./studio-cuttoon-editor/runtime/studio-local-vrm-cut-scope";
 import { X } from "lucide-react";
 import {
   Suspense,
@@ -51,10 +52,7 @@ import type { MotionCutImage } from "./export/studio-motion-export";
 import type {
   StudioBg3dAiMethodReferenceCapture,
 } from "./scene-3d/studio-3d-ai-reference-handoff";
-import type {
-  StudioBg3dInsertHandler,
-  StudioVrmInsertHandler,
-} from "./scene-3d/studio-3d-insert-controller";
+import type { StudioBg3dInsertHandler, StudioVrmInsertHandler } from "./scene-3d/studio-3d-insert-controller";
 import type {
   StudioAutoActionExecutionProgress,
   StudioAutoActionPlan,
@@ -178,6 +176,7 @@ export interface StudioLazyPanelStackHandlers {
   importAutoActionJson: (json: string, fileName: string) => Promise<void>;
   insertBg3dResult: StudioBg3dInsertHandler;
   insertVrmResult: StudioVrmInsertHandler;
+  insertCharacterLtLayers?: import("./lt-convert/studio-lt-raster-output").StudioLtInsertLayers;
   useBg3dFrameAsAiMethodReference: (
     capture: StudioBg3dAiMethodReferenceCapture
   ) => boolean | void | Promise<boolean | void>;
@@ -223,7 +222,7 @@ export interface StudioLazyPanelStackHandlers {
   updatePublishPackageSettings: (value: StudioPublishPackageSettings) => void;
 }
 
-export interface StudioLazyPanelStackProps {
+export interface StudioLazyPanelStackProps extends StudioLocalVrmCutHostScope {
   activeCommentAnchor: StudioCommentAnchor;
   activePage: PageState;
   aiProvenance: StudioAiProvenanceDocument;
@@ -461,7 +460,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
   bg3dInitialDataUrl,
   bg3dInitialScene,
   bg3dOperation, bg3dSixPassLtUnavailableReason,
-  bg3dTargetBundleId,
+  bg3dTargetBundleId, cutDocumentKey, cutTeamDocument, cutWorkScope,
   bg3dBatchRecoveryScope,
   validateRecoveryAccess,
   bg3dOpen,
@@ -681,6 +680,7 @@ export const StudioLazyPanelStack = memo(function StudioLazyPanelStack({
   return (
     <>
       <StudioThreeDPreviewPanelStack
+        cutTeamDocument={cutTeamDocument || Boolean(teamWorkId)} cutWorkScope={cutWorkScope} cutDocumentKey={cutDocumentKey ?? documentRuntime?.documentKey}
         activePage={activePage}
         bg3dInitialDataUrl={bg3dInitialDataUrl}
         bg3dInitialScene={bg3dInitialScene}

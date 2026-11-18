@@ -5,6 +5,8 @@ export interface DrawingClarityState {
   readonly active: boolean;
   readonly available: boolean;
   readonly presentation?: "integrated" | "app";
+  readonly selectionHost?: HTMLDivElement | null;
+  readonly setSelectionHost?: (host: HTMLDivElement | null) => void;
   readonly panel: StudioDrawingClarityPanel | null;
   readonly open: (panel: StudioDrawingClarityPanel, trigger: HTMLElement) => void;
   readonly reveal: (panel: StudioDrawingClarityPanel, trigger: HTMLElement) => void;

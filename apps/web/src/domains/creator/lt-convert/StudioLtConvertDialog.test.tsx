@@ -81,7 +81,7 @@ describe("StudioLtConvertDialog", () => {
     expect(screen.getByRole("button", { name: "원본" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "선화" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "톤" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "적용" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "원고에 선화·톤 추가" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "취소" })).toBeTruthy();
   });
 
@@ -109,7 +109,7 @@ describe("StudioLtConvertDialog", () => {
 
   it("적용을 누르면 선화·톤 ImageData 쌍이 onApply로 전달된다", () => {
     const { onApply } = renderDialog();
-    fireEvent.click(screen.getByRole("button", { name: "적용" }));
+    fireEvent.click(screen.getByRole("button", { name: "원고에 선화·톤 추가" }));
     expect(onApply).toHaveBeenCalledTimes(1);
     const result = onApply.mock.calls[0]?.[0] as StudioLtConvertResult;
     expect(result.lineLayer).toBeInstanceOf(ImageData);
@@ -120,7 +120,7 @@ describe("StudioLtConvertDialog", () => {
 
   it("소스가 준비되지 않으면 적용 버튼이 비활성화된다", () => {
     renderDialog({ source: makeSource("capturing") });
-    const applyButton = screen.getByRole("button", { name: "적용" });
+    const applyButton = screen.getByRole("button", { name: "원고에 선화·톤 추가" });
     expect((applyButton as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("소스를 불러오는 중…")).toBeTruthy();
   });

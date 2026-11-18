@@ -71,7 +71,7 @@ describe("VRM creative SQLite repository", () => {
       acquireDatabase: async () => database,
     });
     const pose = customPose();
-    const state = fullState();
+    const state = { ...fullState(), characterDocumentV3: JSON.stringify({ documentId: "lumi", revision: 3 }) };
 
     await expect(repository.loadCustomPoses()).resolves.toEqual([]);
     await expect(repository.loadFullStates()).resolves.toEqual({});

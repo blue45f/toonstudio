@@ -1,17 +1,6 @@
 /**
- * Drives the real BG3D background editor inside Korean in-app browsers.
- *
- * The route sweep in `verify-studio-inapp-browser.mts` proves every Studio *route* survives an
- * embedded WebView. It never opens the 3D editor, which is a modal launched from inside the
- * editor, so nothing until now showed that the 3D surface itself works there — and that surface is
- * exactly where the engine-selection policy has to hold: a KakaoTalk or NAVER WebView blocks WebGPU,
- * and since ADR-0018 nothing mounts WebGL2 on its own, so the artist has to select WebGL2 in the
- * 보기 tab. This verifier makes that same explicit choice, then requires the editor to render real
- * pixels on WebGL2 and keep its engine control reachable at 360px.
- *
- * Every assertion here is about the shipped UI, not a harness reimplementation: the production
- * build is served, the routed `bg3d` surface is opened the way a shared link opens it, and the
- * composited canvas is read back.
+ * 카카오톡·네이버·인스타그램의 화면 크기와 UA로 실제 배경 편집기를 검증한다.
+ * 사용자가 WebGL2를 직접 고른 뒤 캔버스 픽셀, 터치 스크롤, 조작 영역과 카메라 복원을 측정한다.
  *
  * Run:
  *   pnpm run build && pnpm exec tsx scripts/verify-studio-bg3d-inapp-editor.mts
@@ -240,6 +229,14 @@ async function verifyFramingProfile(
     };
     const baseline = await capture("before-fit");
     await dialog.getByRole("button", { name: "선택 객체 화면 맞춤", exact: true }).click();
+    const alignment = await viewport.evaluate((host) => {
+      const canvas = host.querySelector("canvas")!.getBoundingClientRect();
+      const bounds = host.getBoundingClientRect();
+      return { scroll: host.scrollTop, offset: canvas.top - bounds.top - host.clientTop };
+    });
+    if (alignment.scroll !== 0 || Math.abs(alignment.offset) > 1) {
+      throw new Error(`화면 맞춤 후 캔버스가 뷰포트에서 벗어났습니다 (스크롤 ${alignment.scroll}px, 오차 ${alignment.offset}px).`);
+    }
     const fitted = await capture("fitted");
     fitMeanPixelDelta = await compareCompositedFrames(page, baseline, fitted);
     if (fitMeanPixelDelta <= 0.5) failures.push(`Screen fit did not visibly change the tall subject (${fitMeanPixelDelta})`);
@@ -477,8 +474,15 @@ async function verifyNativeTouchScroll(
   const handle = page.locator(selector);
   diagnostics.phase = "measure";
   await handle.waitFor({ state: "visible", timeout: 10_000 });
+  await page.mouse.move(0, 0);
   await handle.scrollIntoViewIfNeeded();
-  let geometry = await readNativeTouchScrollGeometry(handle);
+  const scrollOwner = await handle.evaluateHandle((element) => {
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      if (/^(auto|scroll|overlay)$/u.test(getComputedStyle(parent).overflowY)) return parent;
+    }
+    throw new Error("3D 스크롤 손잡이의 세로 스크롤 영역을 찾지 못했습니다.");
+  });
+  let geometry = await readNativeTouchScrollGeometry(handle, scrollOwner);
   diagnostics.initialGeometry = geometry;
   if (Math.min(geometry.width, geometry.height) < MIN_TOUCH_TARGET_PX) {
     throw new Error(`3D scroll handle exposes ${geometry.width}x${geometry.height}px; requires 44x44px`);
@@ -487,7 +491,7 @@ async function verifyNativeTouchScroll(
     throw new Error("3D touch-scroll fixture has no overflow to exercise");
   }
 
-  const observation = await page.evaluateHandle((selector) => {
+  const observation = await page.evaluateHandle(({ selector, scrollOwner }) => {
     const events: NativeTouchEventSample[] = [];
     const kinds = ["touchstart", "touchmove", "touchend", "touchcancel", "pointerdown", "pointercancel"];
     const record = (event: Event) => {
@@ -500,7 +504,7 @@ async function verifyNativeTouchScroll(
         onHandle: target !== null && target.closest(selector) !== null,
         trusted: event.isTrusted, defaultPrevented: event.defaultPrevented,
         x: point?.clientX ?? null, y: point?.clientY ?? null,
-        scrollTop: document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop ?? null,
+        scrollTop: scrollOwner.scrollTop,
         timestamp: performance.now(),
       };
       events.push(sample);
@@ -514,24 +518,17 @@ async function verifyNativeTouchScroll(
         return events;
       },
     };
-  }, selector);
+  }, { selector, scrollOwner });
   const cdp = await page.context().newCDPSession(page);
   try {
-    // The earlier canvas screenshot may reveal its bottom edge. Reset through real touch input,
-    // never a scrollTop assignment or wheel event, before measuring the required upward drag.
-    if (geometry.scrollTop > 1) {
+    // 현재 위치에서 더 내려갈 수 없을 때만 실제 터치로 위로 돌아간다.
+    if (geometry.scrollTop > 1 && geometry.scrollTop + geometry.clientHeight + 2 >= geometry.scrollHeight) {
       diagnostics.phase = "reset-input";
-      await dispatchNativeTouchDrag(cdp, {
-        x: geometry.x, y: geometry.y,
-        yDistance: geometry.scrollTop + geometry.clientHeight,
-        speed: 400,
-      });
+      await dispatchNativeTouchDrag(cdp, { x: geometry.x, y: geometry.y, yDistance: geometry.scrollTop + geometry.clientHeight, speed: 400 });
       diagnostics.phase = "reset-wait";
-      await page.waitForFunction((selector) => (
-        document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop === 0
-      ), selector, { timeout: 5_000 });
+      await page.waitForFunction((owner) => owner.scrollTop === 0, scrollOwner, { timeout: 5_000 });
       diagnostics.phase = "reset-measure";
-      geometry = await readNativeTouchScrollGeometry(handle);
+      geometry = await readNativeTouchScrollGeometry(handle, scrollOwner);
       if (Math.min(geometry.width, geometry.height) < MIN_TOUCH_TARGET_PX) {
         throw new Error(`3D scroll handle exposes ${geometry.width}x${geometry.height}px; requires 44x44px`);
       }
@@ -539,7 +536,7 @@ async function verifyNativeTouchScroll(
         throw new Error("3D touch-scroll fixture has no overflow to exercise");
       }
     }
-    const scrollTopBefore = await handle.evaluate((element) => element.closest("[data-bg3d-professional-workspace]")!.scrollTop);
+    const scrollTopBefore = await scrollOwner.evaluate((owner) => owner.scrollTop);
     const touchStarted = page.evaluate((selector) => new Promise<{
       target: string; onHandle: boolean; trusted: boolean;
     } | null>((resolve) => {
@@ -572,9 +569,8 @@ async function verifyNativeTouchScroll(
         speed: 400,
       });
       diagnostics.phase = "drag-wait";
-      await page.waitForFunction(({ selector, before }) => (
-        (document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop ?? 0) > before + 1
-      ), { selector, before: scrollTopBefore }, { timeout: 5_000 });
+      await page.waitForFunction(({ scrollOwner, before }) => scrollOwner.scrollTop > before + 1,
+        { scrollOwner, before: scrollTopBefore }, { timeout: 5_000 });
     } finally {
       touchStart = await touchStarted;
     }
@@ -584,12 +580,12 @@ async function verifyNativeTouchScroll(
     diagnostics.phase = "complete";
     return {
       handleWidth: geometry.width, handleHeight: geometry.height, scrollTopBefore,
-      scrollTopAfter: await handle.evaluate((element) => element.closest("[data-bg3d-professional-workspace]")!.scrollTop),
+      scrollTopAfter: await scrollOwner.evaluate((owner) => owner.scrollTop),
       touchStartTarget: touchStart.target, trustedTouchStart: touchStart.trusted,
     };
   } finally {
     const [finalGeometry, events] = await Promise.allSettled([
-      readNativeTouchScrollGeometry(handle),
+      readNativeTouchScrollGeometry(handle, scrollOwner),
       observation.evaluate((observer) => observer.stop()),
     ]);
     if (finalGeometry.status === "fulfilled") diagnostics.finalGeometry = finalGeometry.value;
@@ -598,6 +594,7 @@ async function verifyNativeTouchScroll(
     else diagnostics.observationErrors.push(`touch events: ${String(events.reason)}`);
     await observation.dispose()
       .catch((error) => { diagnostics.observationErrors.push(`observation cleanup: ${String(error)}`); });
+    await scrollOwner.dispose();
     await cdp.detach();
   }
 }

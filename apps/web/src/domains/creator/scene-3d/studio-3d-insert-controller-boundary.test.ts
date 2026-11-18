@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 interface ModuleShape {
   readonly allImports: readonly string[];
   readonly dynamicImports: readonly string[];
+  readonly inlineTypeImports: readonly string[];
   readonly source: string;
   readonly valueImports: readonly string[];
   readonly wholeClauseTypeImports: readonly string[];
@@ -23,10 +24,14 @@ function moduleShape(relativePath: string): ModuleShape {
   );
   const allImports: string[] = [];
   const dynamicImports: string[] = [];
+  const inlineTypeImports: string[] = [];
   const valueImports: string[] = [];
   const wholeClauseTypeImports: string[] = [];
 
   function visit(node: ts.Node): void {
+    if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal)) {
+      inlineTypeImports.push(node.argument.literal.text);
+    }
     if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
       allImports.push(node.moduleSpecifier.text);
       const clause = node.importClause;
@@ -61,6 +66,7 @@ function moduleShape(relativePath: string): ModuleShape {
   return {
     allImports,
     dynamicImports,
+    inlineTypeImports,
     source,
     valueImports,
     wholeClauseTypeImports,
@@ -91,15 +97,17 @@ describe("Studio 3D insert controller boundary", () => {
     const poser = moduleShape("../vrm/StudioVrmPoser.tsx");
     const ltRender = moduleShape("../bg3d/studio-bg3d-lt-render.ts");
 
-    expect(contract.allImports).toEqual([
+    const typeDependencies = [...contract.allImports, ...contract.inlineTypeImports].sort();
+    expect(typeDependencies).toEqual([
       "../bg3d/studio-bg3d-scene-document",
+      "../scene3d/studio-team-vrm-cut-assets",
       "../studio-shared-3d-insert-contract",
       "../vrm/studio-vrm-scene-document",
     ]);
     expect(contract.wholeClauseTypeImports).toEqual(contract.allImports);
     expect(contract.valueImports).toEqual([]);
     expect(contract.dynamicImports).toEqual([]);
-    expect(contract.allImports.some((specifier) => (
+    expect(typeDependencies.some((specifier) => (
       /(?:react|konva|three|StudioBackground3D|StudioVrmPoser|studio-bg3d-lt-render)/iu
         .test(specifier)
     ))).toBe(false);
@@ -109,6 +117,16 @@ describe("Studio 3D insert controller boundary", () => {
     expect(contract.source).toContain("export type StudioVrmPoserInsertResult");
     expect(contract.source).toContain("export type StudioBg3dLtRasterLayerRole");
     expect(contract.source.trimEnd().split("\n").length).toBeLessThanOrEqual(70);
+    // 타입 쿼리는 지워져야 하고, 값 import·재수출·초기화는 하나도 남으면 안 된다.
+    const emitted = ts.transpileModule(contract.source, {
+      compilerOptions: {
+        module: ts.ModuleKind.ESNext,
+        target: ts.ScriptTarget.ESNext,
+        verbatimModuleSyntax: true,
+        removeComments: true,
+      },
+    });
+    expect(emitted.outputText.trim()).toBe("export {};");
 
     expect(background.source).toContain(
       'export type {\n  StudioBackground3DInsertResult,\n  StudioBackground3DLtLayer,\n} from "../scene-3d/studio-3d-insert-contract";'
@@ -161,9 +179,13 @@ describe("Studio 3D insert controller boundary", () => {
     expect(mutationAuthority.source).toContain(
       "ticket: StudioEditorMutationTicket,"
     );
-    expect(page.source).toContain(
-      "useRef<StudioEditorMutationTicket | null>(null)"
-    );
+    const toolTickets = moduleShape("../studio-cuttoon-editor/runtime/useStudio3dToolMutationTickets.ts");
+    expect(page.source).toContain("useStudio3dToolMutationTickets(captureStudioMutationTicket, currentPageIdRef");
+    expect(toolTickets.source).toContain("useRef<StudioEditorMutationTicket | null>(null)");
+    expect(toolTickets.source).toMatch(/if \(!open\)\s*\{\s*pageId\.current = null;\s*ticket\.current = null;\s*pending\.current = null;/u);
+    expect(toolTickets.source).toContain("pageId.current = page.current");
+    expect(toolTickets.source).toContain('if (access === "allowed") ticket.current = capture()');
+    expect(toolTickets.source).toContain('if (access !== "allowed" || page.current !== pageId.current) return');
     for (const source of [page.source, mutationAuthority.source]) {
       expect(source).not.toContain("ReturnType<typeof captureStudioMutationTicket>");
     }

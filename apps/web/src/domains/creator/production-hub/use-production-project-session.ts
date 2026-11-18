@@ -123,7 +123,7 @@ export function useProductionProjectSession(projectId: string | undefined, actor
       return () => { generation.current += 1; reads.current += 1; authority.current = null; };
     }
     setSnapshot({ scope, record: null, loading: Boolean(actorId), refreshing: false,
-      error: actorId ? null : "로그인 후 제작 프로젝트를 열어 주세요.", notice: null, saveState: "idle", roleTransition: null });
+      error: null, notice: null, saveState: "idle", roleTransition: null });
     if (!actorId || !projectId) return () => { generation.current += 1; };
     const clearRecovery = () => { unconfirmedWrite.current = null; recoveryStored.current = false; clearProductionCommandRecovery(actorId, projectId); };
     const refresh = async (explicit = false) => {
@@ -348,7 +348,8 @@ export function useProductionProjectSession(projectId: string | undefined, actor
     [scope],
   );
   return { aggregate: state.record?.aggregate ?? null, access: state.record?.access ?? NO_ACCESS,
-    loading: state.loading, error: state.error, saveState: state.saveState, notice: state.notice,
+    loading: state.loading, requiresSignIn: authReady && !isDemo && !actorId,
+    error: state.error, saveState: state.saveState, notice: state.notice,
     roleTransition: state.roleTransition, dismissRoleTransition,
     refreshing: state.refreshing, refresh, execute, executeStrict, isDemo,
     hasUnconfirmedCommand: !isDemo && state.scope === scope && unconfirmedWrite.current !== null };

@@ -7,7 +7,7 @@
  * labelled 44px button; the wrapper is pointer-transparent so orbiting the model keeps working.
  */
 import { CircleQuestionMark, Eye, EyeOff, LoaderCircle, Maximize2, PenLine, RotateCw, SunMedium, ZoomIn, ZoomOut } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StudioHudPill } from "../studio-chrome-ui";
 import { STUDIO_FOCUS_RING } from "../studio-panel-ui";
@@ -16,7 +16,9 @@ import {
   StudioLtConvertDialog,
   type StudioLtConvertDialogSource,
 } from "../lt-convert/StudioLtConvertDialog";
-import { createStudioLtConvertLayerPayloads, type StudioLtConvertLayerPayload } from "../lt-convert/studio-lt-convert-layer";
+import { createStudioLtConvertLayerPayloads } from "../lt-convert/studio-lt-convert-layer";
+import { captureCharacterShaperLt } from "./character-shaper-lt-capture";
+import { encodeStudioLtPng } from "../lt-convert/studio-lt-raster-output";
 import { decodeStudioLtSourceFile } from "../lt-convert/studio-lt-convert-source";
 import type { StudioLtConvertResult } from "../lt-convert/studio-lt-convert";
 import { resolveVrmLibraryEntryDisplayName } from "../vrm/studio-vrm-display-name";
@@ -32,7 +34,6 @@ import { useCharacterShaperSessionSettings } from "./character-shaper-session-se
 
 import type { CharacterShaperViewportHudProps } from "./character-shaper-ui-contract";
 import type { LoadStatus } from "../vrm/StudioVrmPoserTypes";
-import type { StudioVrmPoserHost } from "../vrm/StudioVrmPoserHost";
 import type { VrmLibraryEntry } from "../vrm/vrm-library";
 
 import { useI18n } from "@/shared/lib/i18n";
@@ -74,74 +75,7 @@ function statusText(input: {
   return { text: parts.join(" · "), accent: false };
 }
 
-type StudioLtViewportCapture = () =>
-  | ImageData
-  | Promise<ImageData>
-  | null
-  | undefined;
-
-type StudioLtLayerCommit = (
-  payloads: readonly StudioLtConvertLayerPayload[],
-) => void;
-
-/**
- * 호스트가 제공하는 3D 뷰 캡처 함수(선택적, `captureViewportImageData`)를 읽는다.
- * 아직 구현되지 않은 호스트에서는 null을 반환한다.
- */
-function readLtViewportCapture(
-  host: StudioVrmPoserHost,
-): StudioLtViewportCapture | null {
-  const candidate: unknown = (
-    host as { readonly captureViewportImageData?: unknown }
-  ).captureViewportImageData;
-  return typeof candidate === "function"
-    ? (candidate as StudioLtViewportCapture)
-    : null;
-}
-
-/**
- * 호스트가 제공하는 LT 레이어 커밋 함수(선택적, `commitLtConvertLayers`)를 읽는다.
- * 레이어 document authority(StudioPage) 연동 전까지는 null이다.
- */
-function readLtLayerCommit(host: StudioVrmPoserHost): StudioLtLayerCommit | null {
-  const candidate: unknown = (
-    host as { readonly commitLtConvertLayers?: unknown }
-  ).commitLtConvertLayers;
-  return typeof candidate === "function"
-    ? (candidate as StudioLtLayerCommit)
-    : null;
-}
-
-/**
- * LT 페이로드(ImageData)를 PNG 파일로 저장한다.
- * 레이어 document authority 연동 전까지 적용 버튼이 데드엔드가 되지 않도록
- * 하는 폴백 경로다. 캔버스·Blob·앵커 다운로드가 막힌 환경에서는 false를
- * 반환하고 호출 측이 안내 문구로 대체한다.
- */
-function downloadLtPayloadAsPng(payload: StudioLtConvertLayerPayload): boolean {
-  if (typeof document === "undefined") return false;
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = payload.width;
-    canvas.height = payload.height;
-    const context = canvas.getContext("2d");
-    if (!context) return false;
-    context.putImageData(payload.imageData, 0, 0);
-    const dataUrl = canvas.toDataURL("image/png");
-    const anchor = document.createElement("a");
-    anchor.href = dataUrl;
-    anchor.download = `toonstudio-${payload.kind}-${Date.now()}.png`;
-    anchor.rel = "noopener";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }: CharacterShaperViewportHudProps) {
+export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide, onInsertLtLayers }: CharacterShaperViewportHudProps) {
   const settings = useCharacterShaperSessionSettings();
   const locale = useI18n((state) => state.lang);
   const bt = useBilingual("CharacterShaperViewportHud");
@@ -175,122 +109,79 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
   });
   const lightingLabel = characterLightingToneLabel(lightingTone);
 
-  const openLtDialog = useCallback(() => {
+  const request = useRef(0);
+  const insertion = useRef<AbortController | null>(null);
+  const [applying, setApplying] = useState(false);
+  useEffect(() => () => { request.current += 1; insertion.current?.abort(); }, []);
+  const closeLt = () => {
+    request.current += 1;
+    insertion.current?.abort();
+    insertion.current = null;
+    setApplying(false);
+    setLtOpen(false);
+    setLtSource({ status: "idle", imageData: null, error: null, label: "" });
+  };
+  const openLtDialog = () => {
+    request.current += 1;
     setLtApplyError(null);
-    setLtSource({
-      status: "capturing",
-      imageData: null,
-      error: null,
-      label: "3D 뷰 캡처",
-    });
     setLtOpen(true);
-  }, []);
-
-  // 다이얼로그가 열리면 3D 뷰 캡처를 시도한다. 호스트가 아직 캡처 함수를
-  // 제공하지 않으면 소스 오류 상태로 두고, 다이얼로그의 이미지 파일
-  // 불러오기로 대체할 수 있다.
-  useEffect(() => {
-    if (!ltOpen || ltSource.status !== "capturing") return;
-    let cancelled = false;
-    const capture = readLtViewportCapture(h);
-    if (!capture) {
-      setLtSource({
-        status: "error",
-        imageData: null,
-        error: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureUnavailable", "3D 뷰 캡처를 사용할 수 없어요. 이미지 파일을 불러와 변환할 수 있습니다."),
-        label: "3D 뷰 캡처",
-      });
-      return;
+    try {
+      const imageData = captureCharacterShaperLt(h);
+      setLtSource({ status: "ready", imageData, label: "3D 뷰 캡처", error: null });
+    } catch (cause) {
+      setLtSource({ status: "error", imageData: null, label: "3D 뷰 캡처",
+        error: cause instanceof Error ? cause.message : "뷰포트를 캡처하지 못했습니다." });
     }
-    Promise.resolve()
-      .then(() => capture())
-      .then((imageData) => {
-        if (cancelled) return;
-        if (!imageData) {
-          setLtSource({
-            status: "error",
-            imageData: null,
-            error: r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureEmpty", "3D 뷰 캡처 결과가 비어 있습니다."),
-            label: "3D 뷰 캡처",
-          });
-          return;
-        }
-        setLtSource({
-          status: "ready",
-          imageData,
-          error: null,
-          label: "3D 뷰 캡처",
-        });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setLtSource({
-          status: "error",
-          imageData: null,
-          error:
-            error instanceof Error
-              ? error.message
-              : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.captureFailed", "3D 뷰 캡처에 실패했습니다."),
-          label: "3D 뷰 캡처",
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [ltOpen, ltSource.status, h]);
+  };
 
-  const handleLtImportImage = useCallback((file: File) => {
-    setLtSource({
-      status: "capturing",
-      imageData: null,
-      error: null,
-      label: file.name,
-    });
-    void decodeStudioLtSourceFile(file).then(
-      (imageData) => {
-        setLtSource({
-          status: "ready",
-          imageData,
-          error: null,
-          label: file.name,
-        });
-      },
-      (error: unknown) => {
-        setLtSource({
-          status: "error",
-          imageData: null,
-          error:
-            error instanceof Error
-              ? error.message
-              : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.imageLoadFailed", "이미지를 불러오지 못했습니다."),
-          label: file.name,
-        });
-      },
-    );
+  const handleLtImportImage = useCallback(async (file: File) => {
+    insertion.current?.abort();
+    insertion.current = null;
+    setApplying(false);
+    const token = ++request.current;
+    setLtApplyError(null);
+    setLtSource({ status: "capturing", imageData: null, error: null, label: file.name });
+    try {
+      const imageData = await decodeStudioLtSourceFile(file);
+      if (request.current === token) setLtSource({ status: "ready", imageData, error: null, label: file.name });
+    } catch (cause) {
+      if (request.current === token) setLtSource({ status: "error", imageData: null, label: file.name,
+        error: cause instanceof Error ? cause.message : "이미지를 불러오지 못했습니다." });
+    }
   }, []);
 
-  const handleLtApply = useCallback(
-    (result: StudioLtConvertResult) => {
-      const payloads = createStudioLtConvertLayerPayloads(result);
-      const commit = readLtLayerCommit(h);
-      if (!commit) {
-        // 레이어 document authority(StudioPage) 연동 전까지는 페이로드를
-        // PNG 파일로 저장해 적용 버튼이 데드엔드가 되지 않게 한다.
-        // 연동 지점은 studio-lt-convert-layer.ts 참고.
-        const saved = payloads.map(downloadLtPayloadAsPng);
-        setLtApplyError(
-          saved.every(Boolean)
-            ? r3c04StatusText("studio.r3c04Status.shaper.viewportHud.ltSavedAsPng", "레이어에 바로 넣는 기능은 준비 중이라 선화·톤 PNG 파일로 저장했어요.")
-            : r3c04StatusText("studio.r3c04Status.shaper.viewportHud.ltNotConnected", "레이어 저장을 아직 연결하지 못했어요. 잠시 후 다시 시도해 주세요."),
-        );
+  const handleLtApply = async (result: StudioLtConvertResult) => {
+    if (!onInsertLtLayers || insertion.current) return;
+    const controller = new AbortController();
+    insertion.current = controller;
+    setApplying(true);
+    try {
+      const [line, tone] = createStudioLtConvertLayerPayloads(result);
+      const committed = await onInsertLtLayers([encodeStudioLtPng(line), encodeStudioLtPng(tone)], controller.signal);
+      if (controller.signal.aborted) return;
+      if (!committed) {
+        setLtApplyError("이 페이지에 레이어를 추가할 수 없습니다. 원고의 편집 권한과 잠금 상태를 확인하세요.");
         return;
       }
-      commit(payloads);
-      setLtOpen(false);
-    },
-    [h],
-  );
+      closeLt();
+    } catch (cause) {
+      if (!controller.signal.aborted) setLtApplyError(cause instanceof Error ? cause.message : "레이어를 추가하지 못했습니다.");
+    } finally {
+      if (insertion.current === controller) { insertion.current = null; setApplying(false); }
+    }
+  };
 
+  const downloadLt = (result: StudioLtConvertResult, kind: "line" | "tone") => {
+    try {
+      const [line, tone] = createStudioLtConvertLayerPayloads(result);
+      const png = encodeStudioLtPng(kind === "line" ? line : tone);
+      const link = document.createElement("a");
+      link.href = png.src;
+      link.download = png.name + ".png";
+      link.click();
+      setLtApplyError(null);
+    } catch (cause) { setLtApplyError(cause instanceof Error ? cause.message : "PNG를 저장하지 못했습니다."); }
+  };
   return (
     <div
       data-character-shaper-hud="true"
@@ -456,8 +347,10 @@ export function CharacterShaperViewportHud({ h, binding, compact, onShowGuide }:
         source={ltSource}
         applyError={ltApplyError}
         onImportImage={handleLtImportImage}
-        onApply={handleLtApply}
-        onCancel={() => setLtOpen(false)}
+        onApply={onInsertLtLayers ? handleLtApply : undefined}
+        applying={applying}
+        onDownload={downloadLt}
+        onCancel={closeLt}
       />
     </div>
   );

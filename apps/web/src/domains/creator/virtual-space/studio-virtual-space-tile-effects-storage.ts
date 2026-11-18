@@ -13,6 +13,16 @@ import {
   type StudioTileEffectInput,
 } from "./studio-virtual-space-tile-effects";
 
+import { readStudioWorldAuthoringDraftRecord, writeStudioWorldAuthoringDraft } from "./studio-world-draft-storage";
+
+function authoringProject(scope?: string): string | null {
+  if (!scope?.startsWith("[")) return null;
+  try {
+    const fields: unknown = JSON.parse(scope);
+    return Array.isArray(fields) && fields.length === 3 && typeof fields[0] === "string" && fields[2] === true ? fields[0] : null;
+  } catch { return null; }
+}
+
 const TILE_EFFECTS_STORAGE_KEY = "toonspectrum:virtual-space-tile-effects:v1";
 
 function storageKey(scope?: string): string {
@@ -46,13 +56,21 @@ export function parseStudioTileEffects(raw: string | null): readonly StudioTileE
 }
 
 export function readStudioTileEffects(scope?: string): readonly StudioTileEffectDefinition[] {
-  return parseStudioTileEffects(safeRead(storageKey(scope)));
+  const projectId = authoringProject(scope);
+  const override = projectId && scope ? readStudioWorldAuthoringDraftRecord(projectId)?.tileEffectsByScope?.[scope] : undefined;
+  return parseStudioTileEffects(Array.isArray(override) ? JSON.stringify(override) : safeRead(storageKey(scope)));
 }
 
 /** 저장 성공 여부. 실패(용량·차단)해도 실행은 메모리 상태로 계속된다. */
 export function writeStudioTileEffects(effects: readonly StudioTileEffectDefinition[], scope?: string): boolean {
   try {
-    globalThis.localStorage?.setItem(storageKey(scope), JSON.stringify(effects));
+    const projectId = authoringProject(scope);
+    const draft = projectId && scope ? readStudioWorldAuthoringDraftRecord(projectId) : null;
+    if (projectId && scope && draft?.tileEffectsByScope?.[scope]) {
+      return writeStudioWorldAuthoringDraft(projectId, draft.manifest, draft.basePublishedRevisionId, { scope, effects });
+    }
+    if (!globalThis.localStorage) return false;
+    globalThis.localStorage.setItem(storageKey(scope), JSON.stringify(effects));
     return true;
   } catch {
     return false;

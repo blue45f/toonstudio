@@ -1,5 +1,5 @@
 const TABLES = ["studio_virtual_space_decoration_layout", "studio_virtual_space_custom_furniture"];
-const MUTABLE_LAYOUT_COLUMNS = ["presetKey", "presentationMode", "placements", "revision", "layoutWidth", "layoutHeight", "updatedAt"];
+const MUTABLE_LAYOUT_COLUMNS = ["districtKey", "presetKey", "presentationMode", "placements", "revision", "layoutWidth", "layoutHeight", "updatedAt"];
 
 function identifier(value) {
   if (typeof value !== "string" || !/^[a-z_][a-z0-9_]{0,62}$/u.test(value)) {
@@ -52,5 +52,10 @@ BEGIN
     OR has_table_privilege('${runtimeRole}', 'public.${table}', 'TRUNCATE')
     OR has_table_privilege('${runtimeRole}', 'public.${table}', 'SELECT WITH GRANT OPTION')
   THEN RAISE EXCEPTION '가상공간 최소 권한이 일치하지 않습니다'; END IF;`).join("\n")}
+  IF EXISTS (SELECT 1 FROM unnest(ARRAY[${MUTABLE_LAYOUT_COLUMNS.map(column => `'${column}'`).join(", ")}]) AS allowed(column_name)
+    WHERE NOT has_column_privilege('${runtimeRole}', 'public.studio_virtual_space_decoration_layout', allowed.column_name, 'UPDATE'))
+    OR has_column_privilege('${runtimeRole}', 'public.studio_virtual_space_decoration_layout', 'userId', 'UPDATE')
+    OR has_column_privilege('${runtimeRole}', 'public.studio_virtual_space_decoration_layout', 'scopeKey', 'UPDATE')
+  THEN RAISE EXCEPTION '배치 데이터의 수정 가능 열이 올바르지 않습니다'; END IF;
 END $capability$;`;
 }

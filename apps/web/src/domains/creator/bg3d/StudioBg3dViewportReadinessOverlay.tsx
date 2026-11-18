@@ -11,14 +11,10 @@ import {
   STUDIO_BG3D_ENGINE_PREFERENCE_LABELS,
   type StudioBg3dEngineBackend,
 } from "./studio-bg3d-engine-selection";
+import { STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS } from "./studio-bg3d-webgpu-capability";
 import type { StudioBg3dEngineRuntimeState } from "./useStudioBg3dEngineRuntime";
 
-/**
- * Bounded deadline for R3F Canvas -> renderer creation (`onCreated`).
- * Distinct from the 120s asset/capture deadlines: if a renderer instance still does not exist
- * after 6s (for example when R3F `configure` throws asynchronously inside ResizeObserver on a
- * GPU-less host), transition immediately into the explicit failed-engine state.
- */
+/** WebGL2 캔버스 마운트부터 onCreated까지의 제한. */
 export const STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS = 6_000;
 
 interface WebGlContextEventLike extends Event {
@@ -27,7 +23,7 @@ interface WebGlContextEventLike extends Event {
 
 export interface StudioBg3dViewportReadinessOverlayProps {
   readonly open: boolean;
-  readonly engineRuntime: StudioBg3dEngineRuntimeState;
+  readonly engineRuntime: Pick<StudioBg3dEngineRuntimeState, "phase" | "plan" | "canvasKey" | "reportRendererFailure">;
   readonly modelRenderer: unknown;
   readonly onClearModelRenderer: () => void;
   readonly isRestoringScene: boolean;
@@ -44,11 +40,14 @@ export function StudioBg3dViewportReadinessOverlay({
   isRestoringScene,
   viewportHostRef,
   onReturnTo2d,
-  startupTimeoutMs = STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS,
+  startupTimeoutMs,
 }: StudioBg3dViewportReadinessOverlayProps) {
   const bt = useBilingual("StudioBg3dViewportReadinessOverlay");
   const { phase, plan, canvasKey, reportRendererFailure } = engineRuntime;
   const backend: StudioBg3dEngineBackend = plan.backend;
+  const deadlineMs = startupTimeoutMs ?? (backend === "webgpu"
+    ? STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS
+    : STUDIO_BG3D_RENDERER_STARTUP_TIMEOUT_MS);
   const hasModelRenderer = modelRenderer != null;
   const hasModelRendererRef = useRef(hasModelRenderer);
 
@@ -97,7 +96,7 @@ export function StudioBg3dViewportReadinessOverlay({
           `${STUDIO_BG3D_ENGINE_PREFERENCE_LABELS[backend]} 렌더러 응답이 지연되어 초기화를 중단했습니다`,
         );
       }
-    }, startupTimeoutMs);
+    }, deadlineMs);
 
     return () => {
       host?.removeEventListener("webglcontextcreationerror", onContextCreationError, true);
@@ -107,12 +106,12 @@ export function StudioBg3dViewportReadinessOverlay({
   }, [
     backend,
     canvasKey,
+    deadlineMs,
     hasModelRenderer,
     open,
     phase,
     plan.status,
     reportRendererFailure,
-    startupTimeoutMs,
     viewportHostRef,
   ]);
 

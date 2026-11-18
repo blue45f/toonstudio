@@ -1,3 +1,4 @@
+import { WorkVrmCutAnchorSchema } from "@toonstudio/contracts/studio-work-vrm-cut";
 import { createZodDto } from "nestjs-zod";
 import { z } from "zod";
 import { StudioScopedAssetContextSchema } from "./studio-scoped-write-input";
@@ -115,3 +116,10 @@ export const UploadStudioWorkAssetLayerLiftBatchSchema = z
 export class UploadStudioWorkAssetLayerLiftBatchDto extends createZodDto(
   UploadStudioWorkAssetLayerLiftBatchSchema
 ) {}
+
+export class StudioWorkVrmCutParamsDto extends createZodDto(z.object({
+  id: StudioWorkAssetWorkParamsSchema.shape.id, anchorId: WorkVrmCutAnchorSchema,
+}).strict()) {}
+export class UploadStudioWorkVrmCutDto extends createZodDto(z.object({
+  metadata: z.string().min(2).max(48 * 1024), writeContext: StudioScopedAssetContextSchema,
+}).strict()) {}

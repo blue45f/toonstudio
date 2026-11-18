@@ -1,3 +1,4 @@
+import { readWorkVrmCutStorageBytes } from "./work-vrm-cut-storage-usage";
 import { randomUUID } from "node:crypto";
 
 import { and, eq, sql } from "drizzle-orm";
@@ -181,7 +182,7 @@ export async function readMembershipStorageUsage(
   transaction: MembershipTransaction,
   userId: string,
 ): Promise<MembershipStorageUsage> {
-  const [[workAsset], [rasterAsset], generatedResult, bg3dBundleBytes] = await Promise.all([
+  const [[workAsset], [rasterAsset], generatedResult, bg3dBundleBytes, cutSceneBytes] = await Promise.all([
     transaction
       .select({
         bytes: sql<string>`coalesce(sum(${creatorWorkAssets.byteSize}), 0)::bigint`,
@@ -212,10 +213,11 @@ export async function readMembershipStorageUsage(
       ) AS objects
     `),
     readBg3dBundleReservationBytes(transaction, userId),
+    readWorkVrmCutStorageBytes(transaction, { ownerId: userId }),
   ]);
 
   const generatedRow = (generatedResult.rows?.[0] ?? {}) as Record<string, unknown>;
-  const workAssetBytes = asSafeInt(workAsset?.bytes) + bg3dBundleBytes;
+  const workAssetBytes = asSafeInt(workAsset?.bytes) + bg3dBundleBytes + cutSceneBytes;
   const rasterAssetBytes = asSafeInt(rasterAsset?.bytes);
   const generatedObjectBytes = asSafeInt(generatedRow.bytes);
   return {

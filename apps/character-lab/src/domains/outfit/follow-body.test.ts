@@ -20,14 +20,21 @@ describe("outfit/follow-body", () => {
     for (const [x, y, z] of queries) {
       const near = nearestVertices(grid, x, y, z, 4);
       expect(near.length).toBe(4);
-      let best = Number.POSITIVE_INFINITY;
-      for (let v = 0; v < count; v += 1) {
-        const d = (body.positions[v * 3] - x) ** 2 + (body.positions[v * 3 + 1] - y) ** 2 + (body.positions[v * 3 + 2] - z) ** 2;
-        if (d < best) best = d;
-      }
-      expect(near[0].distSq).toBeCloseTo(best, 12);
-      for (let i = 1; i < near.length; i += 1) expect(near[i].distSq).toBeGreaterThanOrEqual(near[i - 1].distSq);
+      const sorted = Array.from({ length: count }, (_, index) => ({
+        index,
+        distSq: (body.positions[index * 3] - x) ** 2 + (body.positions[index * 3 + 1] - y) ** 2 + (body.positions[index * 3 + 2] - z) ** 2,
+      })).sort((a, b) => a.distSq - b.distSq || a.index - b.index);
+      expect(near).toEqual(sorted.slice(0, 4));
     }
+  });
+
+  it("영역 마스크 밖은 제외하고 멀리 놓인 소품과 같은 거리의 정점도 정확히 매핑한다", () => {
+    const points = new Float32Array([0, 0, 0, -1, 0, 0, 1, 0, 0]);
+    const mask = new Uint8Array([0, 1, 1]);
+    const grid = buildVertexGrid(points, 0.05, mask);
+    expect(nearestVertices(grid, 0, 0, 0, 4).map((v) => v.index)).toEqual([1, 2]);
+    expect(nearestVertices(grid, 10, 0, 0, 4).map((v) => v.index)).toEqual([2, 1]);
+    expect(nearestVertices(buildVertexGrid(points, 0.05, new Uint8Array(3)), 0, 0, 0, 4)).toEqual([]);
   });
 
   it("오프셋 셸은 모든 정점이 법선 방향으로 양의 오프셋을 가지며 스킨 웨이트를 항등 상속한다", () => {

@@ -10,11 +10,13 @@ export function StudioScene3dCutPanel({
   session,
   preferredExpanded,
   hostPreparing = false,
+  retryStaleLoad,
 }: {
   readonly session: StudioScene3dCutSession;
   /** 사용자 선택 전의 권장 상태다. 생략한 기존 소비자는 펼쳐진 상태를 유지한다. */
   readonly preferredExpanded?: boolean;
   readonly hostPreparing?: boolean;
+  readonly retryStaleLoad?: () => boolean;
 }) {
   const t = useBilingual("scene3d-cut-versions");
   const state = useSyncExternalStore(
@@ -43,6 +45,10 @@ export function StudioScene3dCutPanel({
       if (backupUrl.current) URL.revokeObjectURL(backupUrl.current);
     };
   }, [session]);
+  const blockedReason = session.host.blockedReason();
+  useEffect(() => {
+    if (state.phase === "waiting" && !hostPreparing && !blockedReason) void session.restore();
+  }, [blockedReason, hostPreparing, session, state.phase]);
   const operationBusy = ["loading", "saving", "applying"].includes(state.phase);
   const busy = hostPreparing || operationBusy || localActionSession === session;
   const available = Boolean(state.project) && !busy;
@@ -74,6 +80,7 @@ export function StudioScene3dCutPanel({
       if (localAction.current !== token) return;
       // 연결을 기다리는 사이 추가된 미저장 컷도 다시 불러오기로 덮지 않는다.
       if (mode === "restore" && ownershipFailed && session.read().dirty) return;
+      if (mode === "restore" && retryStaleLoad?.()) return;
       await session[mode]();
     } finally {
       if (localAction.current === token) {
@@ -147,9 +154,9 @@ export function StudioScene3dCutPanel({
             <p className="whitespace-pre-wrap break-words px-3 pb-3 text-xs text-fg-2">{state.notice}</p>
           </details>
         )}
-        {session.host.blockedReason() && (
+        {blockedReason && state.phase !== "waiting" && (
           <p role="note" className="text-xs text-fg-2">
-            {session.host.blockedReason()}
+            {blockedReason}
           </p>
         )}
         {!session.repository.supportsAtomicWrites && (
@@ -228,7 +235,7 @@ export function StudioScene3dCutPanel({
           className={BUTTON}
           disabled={
             !available ||
-            Boolean(session.host.blockedReason()) ||
+            Boolean(blockedReason) ||
             cuts.length >= 128
           }
           onClick={() =>

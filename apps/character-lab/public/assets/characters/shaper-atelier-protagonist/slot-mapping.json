@@ -1,7 +1,7 @@
 {
   "schema": "toonstudio.character-lab.slot-mapping/1",
   "characterId": "shaper-atelier-protagonist",
-  "generatedAt": "2026-11-17",
+  "generatedAt": "2026-11-19",
   "capabilities": {
     "face-shape": {
       "status": "available"

@@ -9,10 +9,9 @@
  *   pnpm run build
  *   pnpm run verify:studio-3d-console
  */
-import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { chromium, type BrowserContext, type Locator, type Page } from "playwright";
@@ -38,11 +37,13 @@ import {
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
 import { runStudioBg3dTextureGpuProof } from "./lib/studio-bg3d-texture-gpu-proof";
+import { openStudioAllTools, openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
+import { installStudioOfflinePreviewFixture } from "./lib/studio-offline-preview-fixture.mjs";
 import { isStaticPreviewReadinessUnavailable as isStudio3dStaticPreviewReadinessUnavailable } from "./lib/studio-preview-readiness";
 import { readStudioProductionThreeModuleUrls, resolveStudioProductionThreeExports } from "./lib/studio-production-three-exports.mjs";
-import { openStudioMainMenu } from "./lib/studio-shell-interactions";
-import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
+import { findFreePort, spawnVitePreview, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
+const previewDist = resolve(process.env.TOONSPECTRUM_VERIFY_DIST?.trim() || DIST_DIR);
 const QUICK_START_KEY = "toonstudio-studio-quick-start-dismissed";
 const MOBILE_HINT_KEY = "toonstudio-studio-mobile-hint-dismissed";
 const UI_DENSITY_KEY = "toonstudio-studio-ui-density:v1";
@@ -669,7 +670,7 @@ function createMagicLayerAlignmentProofScenarios():
 }
 
 function findProductionAssetFile(pattern: RegExp, label: string): string {
-  const assetsDirectory = join(DIST_DIR, "assets");
+  const assetsDirectory = join(previewDist, "assets");
   const entries = readdirSync(assetsDirectory).filter((name) => pattern.test(name));
   assertCondition(entries.length === 1, `expected one ${label}, found ${entries.length}`);
   return entries[0]!;
@@ -863,19 +864,20 @@ async function dismissHydratedQuickStart(page: Page): Promise<void> {
 /** Composite menubar title that absorbed the 3D group (studio-main-menu-presentation.ts). */
 const STUDIO_INSERT_MENU_TITLE = "삽입";
 
-/**
- * Opens the dropdown that carries the 3D rows. Simple/focus density folds the `3d` section behind
- * the title's "고급 도구 펼치기" row, so expand it like a user does (it stays expanded while the
- * menubar is mounted; `full` density has no such row). Row labels follow the shipped catalogue.
- */
-async function openThreeDMenu(page: Page): Promise<Locator> {
-  const menu = await openStudioMainMenu(page, "insert");
-  if (await menu.getAttribute("aria-label") !== STUDIO_INSERT_MENU_TITLE) {
-    throw new Error("3D 항목을 포함한 실제 삽입 메뉴가 열리지 않았습니다.");
+/** 현재 원고의 도구 카탈로그와 기존 삽입 메뉴가 제공하는 실제 실행 버튼을 찾는다. */
+async function findThreeDTool(page: Page, id: "vrm3d" | "bg3d"): Promise<Locator> {
+  const mainMenu = page.locator('[data-studio-main-menu="true"]').filter({ visible: true });
+  if (await mainMenu.count() === 0) {
+    const catalog = await openStudioAllTools(page);
+    await catalog.getByRole("searchbox", { name: "전체 도구 검색", exact: true }).fill(id);
+    return catalog.locator(`button[data-studio-catalog-tool-id="${id}"]`);
   }
+  await mainMenu.getByRole("menuitem", { name: STUDIO_INSERT_MENU_TITLE, exact: true }).click();
+  const menu = page.locator(`[role="menu"][aria-label="${STUDIO_INSERT_MENU_TITLE}"]`);
+  await menu.waitFor({ state: "visible", timeout: 5_000 });
   const fold = menu.locator('[data-studio-menu-item-id="advanced-sections-fold:insert"]');
   if (await fold.count() > 0 && await fold.getAttribute("aria-expanded") !== "true") await fold.click();
-  return menu;
+  return menu.getByRole("menuitem", { name: id === "vrm3d" ? "인물·포즈 편집" : "장면 도우미", exact: true });
 }
 
 async function closeCanvasDialog(dialog: Locator, page: Page): Promise<void> {
@@ -979,6 +981,7 @@ async function triggerObservableLiveContextLoss(dialog: Locator): Promise<{
 }
 
 async function run(page: Page, studioUrl: string): Promise<void> {
+  const offline = await installStudioOfflinePreviewFixture(page.context(), new URL(studioUrl).origin);
   const issues: string[] = [];
   const unavailableBackendObservations: string[] = [];
   const babylonSpecialistRequests: string[] = [];
@@ -998,6 +1001,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
     const type = message.type();
     const location = message.location().url;
     const value = location ? `${message.text()} @ ${location}` : message.text();
+    if (type === "error" && offline.isExpectedConsole(message.text(), location)) return;
     if (type === "error" && isStudio3dStaticPreviewReadinessUnavailable(value, studioUrl)) {
       unavailableBackendObservations.push(value);
       console.log(`[verify-studio-3d-console] static preview backend unavailable (not an API readiness pass): ${value}`);
@@ -1074,8 +1078,8 @@ async function run(page: Page, studioUrl: string): Promise<void> {
     `opening /studio/canvas eagerly requested Babylon specialist code:\n${babylonSpecialistRequests.join("\n")}`,
   );
 
-  const characterMenu = await openThreeDMenu(page);
-  await characterMenu.getByRole("menuitem", { name: "인물·포즈 편집", exact: true }).click();
+  const characterTool = await findThreeDTool(page, "vrm3d");
+  await characterTool.click();
   const characterDialog = page.locator('[data-studio-vrm-dialog="true"]');
   await characterDialog.waitFor({ state: "visible", timeout: 25_000 });
   const insertCharacterButton = characterDialog.getByRole("button", {
@@ -1165,8 +1169,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
     "VRM insertion did not start the dedicated off-main PNG encoder",
   );
 
-  const liveLossMenu = await openThreeDMenu(page);
-  await liveLossMenu.getByRole("menuitem", { name: "인물·포즈 편집", exact: true }).click();
+  await (await findThreeDTool(page, "vrm3d")).click();
   const liveLossDialog = page.locator('[data-studio-vrm-dialog="true"]');
   await liveLossDialog.waitFor({ state: "visible", timeout: 25_000 });
   await page.waitForTimeout(1_000);
@@ -1187,11 +1190,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
   }
   await closeCanvasDialog(liveLossDialog, page);
 
-  const backgroundMenu = await openThreeDMenu(page);
-  const backgroundMenuItem = backgroundMenu.getByRole("menuitem", {
-    name: "장면 도우미",
-    exact: true,
-  });
+  const backgroundMenuItem = await findThreeDTool(page, "bg3d");
   await backgroundMenuItem.hover();
   await page.waitForTimeout(350);
   await backgroundMenuItem.focus();
@@ -1211,12 +1210,8 @@ async function run(page: Page, studioUrl: string): Promise<void> {
 
   // The shipped entry defaults to the simple scene director. Choose professional controls
   // through the visible product UI before exercising engine diagnostics and imported assets.
-  const professionalMode = backgroundDialog.getByRole("group", { name: "3D 편집 모드", exact: true })
-    .getByRole("button", { name: "정밀 편집", exact: true });
-  await professionalMode.click();
-  assertCondition(await professionalMode.getAttribute("aria-pressed") === "true",
-    "the explicit professional-mode control did not activate");
-  await backgroundDialog.getByRole("tab", { name: "보기", exact: true }).click();
+  await openStudioBg3dProfessionalMode(backgroundDialog);
+  await openStudioBg3dEnginePanel(backgroundDialog);
   await page.waitForTimeout(300);
   assertCondition(
     babylonSpecialistRequests.length === 0,
@@ -1277,7 +1272,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
     "the explicit Babylon diagnostic did not load a successful Babylon runtime chunk",
   );
 
-  await backgroundDialog.getByRole("tab", { name: "에셋", exact: true }).click();
+  await selectStudioBg3dTaskTab(backgroundDialog, "models");
   const assetLibrarySection = backgroundDialog.locator(
     'section[aria-labelledby="bg3d-asset-library-title"]',
   );
@@ -1355,7 +1350,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
     timeout: 90_000,
   });
 
-  await backgroundDialog.getByRole("tab", { name: "레이어", exact: true }).click();
+  await selectStudioBg3dTaskTab(backgroundDialog, "layers");
   await backgroundDialog.locator('[data-studio-bg3d-outliner="dock"]')
     .getByRole("button", { name: `${KTX2_SMOKE_MODEL_LABEL} 1`, exact: true }).waitFor({
     state: "visible",
@@ -1407,6 +1402,7 @@ async function run(page: Page, studioUrl: string): Promise<void> {
 
   const overlayCount = await page.locator(VITE_ERROR_OVERLAY_SELECTOR).count();
   assertCondition(overlayCount === 0, `Vite/framework error overlay is present (${overlayCount})`);
+  assertCondition(!offline.unexpectedResponses.length, "정적 검증에서 예상하지 않은 인증·협업 응답을 받았습니다.");
   assertCondition(issues.length === 0, `unexpected 3D browser diagnostics:\n${issues.join("\n")}`);
   console.log(`[verify-studio-3d-console] backendUnavailableObservations=${unavailableBackendObservations.length}; API readiness not exercised by this static-only verifier`);
 }
@@ -2107,7 +2103,7 @@ async function runMagicLayerProductionAlignmentProof(
   // only this callback. Install the same verifier-only no-op used by the other browser harnesses.
   await page.evaluate("globalThis.__name ??= (target) => target");
   const threeExports = await page.evaluate(resolveStudioProductionThreeExports, {
-    moduleUrls: readStudioProductionThreeModuleUrls(assetUrl(findProductionAssetFile(THREE_MODULE_FILE_PATTERN, "Three production module"))),
+    moduleUrls: readStudioProductionThreeModuleUrls(assetUrl(findProductionAssetFile(THREE_MODULE_FILE_PATTERN, "Three production module")), previewDist),
     scenePrimitives: true,
   } satisfies Parameters<typeof resolveStudioProductionThreeExports>[0]);
   assertCondition(threeExports.scenePrimitives, "프로덕션 Three 장면 생성자를 찾지 못했습니다.");
@@ -3205,7 +3201,7 @@ async function runStudio3dWebGpuConformanceBrowserAttempt(
 async function main(): Promise<void> {
   verifyPatchedThreeRuntime();
   assertCondition(
-    existsSync(join(DIST_DIR, "index.html")),
+    existsSync(join(previewDist, "index.html")),
     'missing dist/index.html; run "pnpm run build" before the browser verifier',
   );
 
@@ -3213,11 +3209,7 @@ async function main(): Promise<void> {
   const rootUrl = `http://127.0.0.1:${port}/`;
   // /studio is the project home; the production editor now lives at its scoped route.
   const studioUrl = `${rootUrl}studio/canvas`;
-  const server: ChildProcess = spawn(
-    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
-    ["exec", "vite", "preview", "--config", "apps/web/vite.config.ts", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
-    { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] },
-  );
+  const server = spawnVitePreview({ port, runner: "node-vite-bin", outDir: previewDist });
   server.stderr?.on("data", (chunk) => {
     const value = String(chunk);
     if (value.includes("ECONNREFUSED") || value.toLowerCase().includes("proxy error")) return;

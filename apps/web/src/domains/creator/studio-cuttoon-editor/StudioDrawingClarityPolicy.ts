@@ -5,6 +5,9 @@ import {
   resolveStudioWorkspace,
 } from "../studio-workspaces";
 
+import type { StudioDocumentWorkspaceId } from "../studio-document-workspace";
+import { studioRoleWorkspaceId, studioTaskWorkspaceId } from "../studio-task-workspace";
+import { readStudioLaunchDensity } from "../studio-launch-mode";
 import type { StudioUiDensityMode } from "../studio-ui-density";
 import type { StudioWorkMode } from "../studio-work-mode";
 import type { StudioWorkspaceLoadSource, StudioWorkspaceState } from "../studio-workspaces";
@@ -109,25 +112,37 @@ export function saveStudioDrawingClarityKnownOwnerState(
   }
 }
 
+/** 같은 문서 기본 배치의 역할 링크는 원고에서 쓰던 화면을 그대로 연다. */
+export function studioDrawingRoleRequiresLayout(search: string, documentWorkspace: StudioDocumentWorkspaceId | null): boolean {
+  const role = studioRoleWorkspaceId(search);
+  return role !== null && role !== studioTaskWorkspaceId(documentWorkspace, "simple", "");
+}
+
+/** 퀵모드 링크의 집중 밀도도 같은 원고 도구를 사용한다. 직접 저장한 집중 배치는 보존한다. */
+export function studioDrawingRouteUsesClarity(density: StudioUiDensityMode, search: string, documentWorkspace: StudioDocumentWorkspaceId | null): boolean {
+  const params = new URLSearchParams(search);
+  if (density === "full" || studioDrawingRoleRequiresLayout(search, documentWorkspace)) return false;
+  if (!params.has("uiMode")) return density === "simple";
+  const launchDensity = readStudioLaunchDensity(search);
+  return launchDensity === "focus" || (launchDensity === "simple" && density === "simple");
+}
+
 /** 저장한 배치·도구 구성과 명시한 작업 목적은 기존 화면으로 보존한다. */
 export function studioDrawingClarityEligible(input: {
   readonly baseline: StudioDrawingClarityBaseline | null;
   readonly ownerScope: string;
   readonly densityMode: StudioUiDensityMode;
+  readonly documentWorkspace: StudioDocumentWorkspaceId | null;
   readonly workMode: StudioWorkMode;
   readonly search: string;
   readonly toolbarConfigured: boolean;
 }): boolean {
   const { baseline } = input;
   if (!baseline || baseline.ownerScope !== input.ownerScope || baseline.source !== "default"
-    || input.densityMode !== "simple" || input.toolbarConfigured !== false
+    || !studioDrawingRouteUsesClarity(input.densityMode, input.search, input.documentWorkspace) || input.toolbarConfigured
     || !["all", "draw", "color"].includes(input.workMode)
     || baseline.state.customWorkspaces.length > 0
     || !DRAWING_WORKSPACES.has(baseline.state.activeWorkspaceId)
     || !isUntouchedStudioDrawingLayout(baseline.state)) return false;
-  const params = new URLSearchParams(input.search);
-  const modes = params.getAll("uiMode");
-  // 기존 별칭 simple은 focus다. 중복·알 수 없는 모드와 명시한 셸/역할도 바꾸지 않는다.
-  return !params.has("roleWorkspace") && !params.has("drawingShell")
-    && (modes.length === 0 || (modes.length === 1 && ["basic", "standard"].includes(modes[0] ?? "")));
+  return true;
 }

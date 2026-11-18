@@ -193,12 +193,38 @@ describe("useStudioBg3dEngineRuntime", () => {
     expect(result.current.canvasKey).toBe("webgpu#0");
     expect(result.current.glFactory).toBeNull();
     expect(result.current.deviceLostMessage).toContain("WebGL2를 직접 선택");
+    expect(result.current.deviceLostMessage).toContain("device-lost-during-init");
     expect(result.current.deviceLostMessage).not.toContain("전환");
 
     act(() => result.current.setPreference("webgpu"));
     await waitFor(() => expect(result.current.plan.status).toBe("available"));
     expect(result.current.canvasKey).toBe("webgpu#1");
     expect(result.current.glFactory).toBeTypeOf("function");
+  });
+
+  it("교체된 캔버스의 늦은 실패는 새 캔버스에 전파하지 않고 현재 장치의 제한 시간만 안내한다", async () => {
+    const first = Promise.withResolvers<never>();
+    const timeout = new Error("WebGPU renderer initialization timed out after 10000ms.");
+    const failure = Object.assign(new Error("renderer startup", { cause: timeout }), { code: "initialization-failed" });
+    const create = vi.fn().mockImplementationOnce(() => first.promise).mockResolvedValueOnce({ renderer: {} }).mockRejectedValueOnce(failure);
+    const { result } = renderHook(() => useStudioBg3dEngineRuntime(options({ createWebGpuRenderer: create })));
+    await waitFor(() => expect(result.current.glFactory).toBeTypeOf("function"));
+    const firstCanvas = document.createElement("canvas");
+    const secondCanvas = document.createElement("canvas");
+    document.body.append(firstCanvas);
+    const pending = result.current.glFactory!({ canvas: firstCanvas });
+    firstCanvas.replaceWith(secondCanvas);
+    await result.current.glFactory!({ canvas: secondCanvas });
+    await act(async () => {
+      first.reject(failure);
+      await expect(pending).rejects.toBe(failure);
+    });
+    expect(result.current.plan.status).toBe("available");
+    expect(result.current.deviceLostMessage).toBeNull();
+    await act(async () => { await expect(result.current.glFactory!({ canvas: secondCanvas })).rejects.toBe(failure); });
+    expect(result.current.plan.status).toBe("failed");
+    expect(result.current.deviceLostMessage).toContain("10초");
+    secondCanvas.remove();
   });
 
   it("marks a live device loss failed without mounting WebGL2", async () => {

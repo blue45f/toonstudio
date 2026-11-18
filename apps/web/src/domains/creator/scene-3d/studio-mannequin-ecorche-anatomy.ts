@@ -137,6 +137,8 @@ export interface StudioMannequinLoftSection {
   readonly center: StudioMannequinVec3;
   readonly radiusX: number;
   readonly radiusZ: number;
+  /** 흉곽 앞면 양쪽의 솟은 정도(m). 몸통 스키닝과 함께 움직인다. */
+  readonly pectoralRelief?: number;
   readonly twistRad: number;
 }
 
@@ -316,22 +318,31 @@ export function buildStudioMannequinSkinnedTorsoSpec(
   const yChest = ySpine + chestOff[1];
   const torsoLen = spineOff[1] + chestOff[1] + neckOff[1];
 
+  // 쇄골 바깥쪽과 대퇴골 머리를 기준으로 흉곽·골반의 실루엣을 잡는다.
+  const shoulderSocket = (spec.joints.find((joint) => joint.id === "leftShoulder")?.offset[0] ?? 0.16 * hu)
+    + (spec.joints.find((joint) => joint.id === "leftUpperArm")?.offset[0] ?? 0.62 * hu);
+  const hipSocket = spec.joints.find((joint) => joint.id === "leftUpperLeg")?.offset[0] ?? 0.33 * hu;
+  const pecRelief = hu * 0.11 * torsoDepth * clamp(options.pectoralVolume, 0.75, 1.4, 1) * clamp(options.muscleDefinition, 0, 1.5, 1);
+  const ribHalfWidth = Math.min(shoulderSocket * 0.94, shoulderSocket * 0.83 * chestWidth * build.torsoUpper);
+  const pelvisHalfWidth = hipSocket + 0.13 * hu * build.torsoLower;
+  const waistHalfWidth = Math.min(0.89 * ribHalfWidth, (pelvisHalfWidth * 0.5 + ribHalfWidth * 0.29) * waistWidth);
+
   return {
     id: "loft-torso-skinned",
     materialRole: "body",
     superellipsePower: isPlanar ? 1.42 : 1.84,
-    radialSegments: isPlanar ? 10 : 24,
+    radialSegments: isPlanar ? 12 : 40,
     flatShaded: isPlanar,
     boneOffsets: [pelvisOff, spineOff, chestOff],
     sections: [
-      { center: [0, yPelvis - 0.15 * hu, -0.01 * hu], radiusX: 0.25 * hu * p.pelvisWidth, radiusZ: 0.19 * hu * torsoDepth * pelvisDepth, twistRad: 0, boneWeights: [1, 0, 0] },
-      { center: [0, yPelvis + 0.03 * hu, 0], radiusX: 0.38 * hu * p.pelvisWidth * build.torsoLower, radiusZ: 0.25 * hu * torsoDepth * pelvisDepth, twistRad: 0, boneWeights: [0.92, 0.08, 0] },
-      { center: [0, yPelvis + 0.52 * spineOff[1], 0.004 * hu], radiusX: 0.35 * hu * p.pelvisWidth, radiusZ: 0.23 * hu * torsoDepth, twistRad: 0, boneWeights: [0.58, 0.42, 0] },
-      { center: [0, ySpine + 0.02 * torsoLen, 0.01 * hu], radiusX: 0.28 * hu * build.torsoLower * waistWidth, radiusZ: 0.205 * hu * torsoDepth, twistRad: 0, boneWeights: [0.14, 0.76, 0.10] },
-      { center: [0, ySpine + 0.68 * chestOff[1], 0.01 * hu], radiusX: 0.33 * hu * build.torsoUpper * waistWidth, radiusZ: 0.235 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0.48, 0.52] },
-      { center: [0, yChest + 0.04 * torsoLen, 0.006 * hu], radiusX: 0.38 * hu * build.torsoUpper * chestWidth, radiusZ: 0.255 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0.14, 0.86] },
-      { center: [0, yChest + 0.17 * torsoLen, 0], radiusX: 0.46 * hu * p.shoulderWidth * chestWidth * build.torsoUpper, radiusZ: 0.27 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0, 1] },
-      { center: [0, yChest + 0.31 * torsoLen, -0.008 * hu], radiusX: 0.42 * hu * p.shoulderWidth * chestWidth, radiusZ: 0.23 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0, 1] },
+      { center: [0, yPelvis - 0.15 * hu, -0.01 * hu], radiusX: 0.67 * pelvisHalfWidth, radiusZ: 0.19 * hu * torsoDepth * pelvisDepth, twistRad: 0, boneWeights: [1, 0, 0] },
+      { center: [0, yPelvis + 0.03 * hu, 0], radiusX: pelvisHalfWidth, radiusZ: 0.25 * hu * torsoDepth * pelvisDepth, twistRad: 0, boneWeights: [0.92, 0.08, 0] },
+      { center: [0, yPelvis + 0.52 * spineOff[1], 0.004 * hu], radiusX: 0.96 * pelvisHalfWidth, radiusZ: 0.23 * hu * torsoDepth, twistRad: 0, boneWeights: [0.58, 0.42, 0] },
+      { center: [0, ySpine + 0.02 * torsoLen, 0.01 * hu], radiusX: waistHalfWidth, radiusZ: 0.205 * hu * torsoDepth, twistRad: 0, boneWeights: [0.14, 0.76, 0.10] },
+      { center: [0, ySpine + 0.68 * chestOff[1], 0.01 * hu], radiusX: 0.48 * waistHalfWidth + 0.52 * ribHalfWidth, radiusZ: 0.26 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0.48, 0.52] },
+      { center: [0, yChest + 0.04 * torsoLen, 0.006 * hu], radiusX: 0.93 * ribHalfWidth, radiusZ: 0.30 * hu * torsoDepth, pectoralRelief: 0.35 * pecRelief, twistRad: 0, boneWeights: [0, 0.14, 0.86] },
+      { center: [0, yChest + 0.17 * torsoLen, 0], radiusX: ribHalfWidth, radiusZ: 0.32 * hu * torsoDepth, pectoralRelief: pecRelief, twistRad: 0, boneWeights: [0, 0, 1] },
+      { center: [0, yChest + 0.31 * torsoLen, -0.008 * hu], radiusX: 0.91 * ribHalfWidth, radiusZ: 0.23 * hu * torsoDepth, pectoralRelief: 0.37 * pecRelief, twistRad: 0, boneWeights: [0, 0, 1] },
       { center: [0, yChest + 0.36 * torsoLen, -0.01 * hu], radiusX: 0.21 * hu, radiusZ: 0.165 * hu * torsoDepth, twistRad: 0, boneWeights: [0, 0, 1] },
     ],
   };
@@ -349,7 +360,6 @@ export function buildStudioMannequinEcorchePrimitives(
   if (mode === "standard") return [];
 
   const def = clamp(options.muscleDefinition, 0, 1.5, 1);
-  const pecVol = clamp(options.pectoralVolume, 0.75, 1.4, 1);
   const bulge = computeStudioMannequinFlexionBulge(options.pose, def);
   const hu = spec.headUnit;
   const p = spec.params;
@@ -394,14 +404,6 @@ export function buildStudioMannequinEcorchePrimitives(
     const lLegLen = spec.chains[isLeft ? "leftLeg" : "rightLeg"].lowerLength;
 
     out.push(
-      {
-        kind: "sphere",
-        jointId: "chest",
-        center: [side * 0.175 * hu * p.shoulderWidth * chestWidth, 0.21 * torsoLen, 0.19 * hu * torsoDepth],
-        radius: 0.135 * hu * build.torsoUpper * pecVol * muscleScale,
-        scale: [1.18, 0.78, 0.56 * pecVol],
-        materialRole: "body",
-      },
       {
         kind: "capsule",
         jointId: "chest",

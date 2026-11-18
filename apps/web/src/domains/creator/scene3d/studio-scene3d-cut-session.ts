@@ -25,8 +25,11 @@ import type { StudioWebAuthoringProjectV3Repository } from "../studio-web-runtim
 
 export interface StudioScene3dCutHost {
   readonly projectId: string;
-  readSource(previous?: StudioScene3dCutSource): StudioScene3dCutSource;
+  readSource(previous?: StudioScene3dCutSource, refreshLinked?: boolean): StudioScene3dCutSource;
+  verifySources?(sources: readonly StudioScene3dCutSource[], signal: AbortSignal): Promise<void>;
   blockedReason(): string | null;
+  /** 문서나 표시 엔진이 교체되면 기존 호스트는 다시 유효해질 수 없다. */
+  invalidationReason?(): string | null;
   readRevision?(): unknown;
   readPinnedCut?(): StudioScene3dVersionedCut | null;
   applySource(
@@ -36,7 +39,7 @@ export interface StudioScene3dCutHost {
   ): void | "applied" | "deferred" | Promise<void | "applied" | "deferred">;
 }
 export interface StudioScene3dCutSessionSnapshot {
-  readonly phase: "loading" | "ready" | "saving" | "applying" | "error";
+  readonly phase: "loading" | "waiting" | "ready" | "saving" | "applying" | "error";
   readonly project: StudioWebAuthoringProjectV3 | null;
   readonly selectedId: string | null;
   readonly notice: string;
@@ -71,11 +74,14 @@ export class StudioScene3dCutSession {
   ) {}
   read = () => this.#snapshot;
   /** 보존할 컷·저장 원본·작업이 없는 세션만 새 호스트 세대로 시작할 수 있다. */
-  canRestartForHostChange() {
+  canRestartForHostChange(retryFailedLoad = false) {
     const state = this.#snapshot;
+    if (retryFailedLoad && state.phase === "error" && !this.#hydrated && !state.project && !this.#requiresReload)
+      return true;
     if (this.host.readPinnedCut?.() || this.#requiresReload || this.#storedRevision !== null)
       return false;
     if (state.phase === "loading") return this.#operation === null;
+    if (state.phase === "waiting") return true;
     return state.phase === "ready" && !state.dirty && !state.canUndo && !state.canRedo
       && (state.project?.shotVersions?.cuts.length ?? 0) === 0;
   }
@@ -140,11 +146,20 @@ export class StudioScene3dCutSession {
         signal: task.signal,
       });
       if (!task.current()) return;
+      const invalidated = this.host.invalidationReason?.();
+      if (invalidated) throw new Error(invalidated);
       if (saved && this.host.readRevision?.() !== hostRevision)
         throw new Error(
           "불러오는 동안 장면이 변경되어 저장된 원본을 적용하지 않았습니다. 다시 불러오기를 선택하세요."
         );
       const pinned = this.host.readPinnedCut?.();
+      if (!saved && !pinned && !this.#snapshot.project) {
+        const reason = this.host.blockedReason();
+        if (reason) {
+          this.#publish({ phase: "waiting", notice: reason });
+          return;
+        }
+      }
       const source = pinned
         ? pinned.source
         : saved
@@ -327,7 +342,7 @@ export class StudioScene3dCutSession {
     this.#commit(
       {
         ...project,
-        ...source,
+        ...source, linkedVrm: source.linkedVrm,
         shotVersions: { version: 1, cuts: [...this.#cuts(project), cut] },
       },
       "현재 장면·카메라·포즈를 새 컷에 고정했습니다."
@@ -374,7 +389,7 @@ export class StudioScene3dCutSession {
     const project = this.#assertReady();
     return compareStudioScene3dCutSource(
       this.#cut(project, id),
-      this.host.readSource(project)
+      this.host.readSource(project, true)
     );
   }
   update(
@@ -382,7 +397,7 @@ export class StudioScene3dCutSession {
     selection: { scene: boolean; characterIds: readonly string[] }
   ) {
     const project = this.#assertReady();
-    const source = this.host.readSource(project);
+    const source = this.host.readSource(project, true);
     this.#replace(
       { ...project, ...source },
       updateStudioScene3dCutSource(this.#cut(project, id), source, selection),
@@ -486,7 +501,7 @@ export class StudioScene3dCutSession {
     const project = validateStudioWebAuthoringProjectV3({
       ...result.state,
       ...source,
-      legacyBg3d: source.legacyBg3d,
+      legacyBg3d: source.legacyBg3d, linkedVrm: source.linkedVrm,
       revision: ++this.#revision,
     });
     this.#publish({
@@ -508,11 +523,13 @@ export class StudioScene3dCutSession {
     const sourceRevision = this.host.readRevision?.();
     const candidate = validateStudioWebAuthoringProjectV3({
       ...project,
-      ...source,
+      ...source, linkedVrm: source.linkedVrm,
       revision: ++this.#revision,
     });
     const task = this.#begin("saving");
     try {
+      await this.host.verifySources?.([source, ...this.#cuts(candidate).map(cut => cut.source)], task.signal);
+      if (!task.current()) return;
       const receipt = await this.repository.save(candidate, {
         expectedStoredRevision: this.#storedRevision,
         signal: task.signal,
@@ -547,7 +564,7 @@ export class StudioScene3dCutSession {
     return serializeStudioWebAuthoringProjectV3({
       ...project,
       ...source,
-      legacyBg3d: source.legacyBg3d,
+      legacyBg3d: source.legacyBg3d, linkedVrm: source.linkedVrm,
     });
   }
   async importJson(raw: string) {
@@ -562,9 +579,21 @@ export class StudioScene3dCutSession {
     );
     const task = this.#begin("applying");
     try {
+      const source = parseStudioScene3dCutSource(imported);
+      // JSON에는 모델·페인트 바이트 대신 해시만 있으므로 로컬 파일이 모두 있는지 먼저 확인한다.
+      await this.host.verifySources?.([source, ...this.#cuts(imported).map(cut => cut.source)], task.signal);
+      if (!task.current()) return;
+      const activeCut = source.linkedVrm ? this.#cuts(imported).find(cut =>
+        hashStudioScene3dCommandState(cut.source) === hashStudioScene3dCommandState(source)) : undefined;
+      const importedSourceCut = source.linkedVrm && !activeCut ? createStudioScene3dVersionedCut({
+        ...source, id: `cut:${crypto.randomUUID()}`, name: "가져온 VRM 장면",
+      }) : undefined;
+      const restoredProject = importedSourceCut ? validateStudioWebAuthoringProjectV3({
+        ...imported, shotVersions: { version: 1, cuts: [...this.#cuts(imported), importedSourceCut] },
+      }) : imported;
       const applied = await this.host.applySource(
-        parseStudioScene3dCutSource(imported),
-        null,
+        source,
+        activeCut ?? importedSourceCut ?? null,
         task.signal
       );
       if (!task.current()) return;
@@ -574,12 +603,12 @@ export class StudioScene3dCutSession {
         imported.revision
       );
       this.#commit(
-        imported,
+        restoredProject,
         applied === "deferred"
           ? "JSON 문서를 가져왔습니다. 카메라는 뷰포트 준비 후 적용됩니다. 로컬 저장으로 확정하세요."
           : "JSON 백업을 가져왔습니다. 로컬 저장으로 확정하세요."
       );
-      this.#publish({ selectedId: imported.shotVersions?.cuts[0]?.id ?? null });
+      this.#publish({ selectedId: activeCut?.id ?? importedSourceCut?.id ?? imported.shotVersions?.cuts[0]?.id ?? null });
     } catch (error) {
       if (task.current()) this.#fail(error);
     }

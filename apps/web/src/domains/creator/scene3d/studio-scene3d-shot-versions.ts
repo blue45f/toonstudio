@@ -1,12 +1,50 @@
 import { parseStudioBg3dSceneDocument, type StudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
 import { parseCharacterDocumentV3, type CharacterDocumentV3 } from "../character-platform/document/character-document-v3";
-import { sha256HexPortable } from "../studio-sha256";
+import { hashStudioScene3dCutValue as hash } from "@toonstudio/contracts/studio-scene3d-cut-canonical";
+import { parseStudioShared3dCharacterStageTransform } from "../studio-shared-3d-scene-runtime";
+import type { StudioShared3dCharacterSource } from "../studio-shared-3d-scene-bridge";
+import { parseStudioVrmSceneDocument, serializeStudioVrmSceneDocument, type StudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
+
 import { assertStudioScene3dDocument, type StudioScene3dCamera, type StudioScene3dDocumentV1 } from "./studio-scene3d-document";
+
+export interface StudioScene3dCutLinkedVrm {
+  readonly version: 1;
+  readonly documentScope: string;
+  readonly characters: readonly {
+    readonly elementId: string;
+    readonly label: string;
+    readonly stageTransform: StudioShared3dCharacterSource["stageTransform"];
+    readonly vrmScene: StudioVrmSceneDocument;
+  }[];
+}
+
+export function parseStudioScene3dCutLinkedVrm(raw: unknown): StudioScene3dCutLinkedVrm {
+  const invalid = () => new Error("컷에 보관한 VRM 원본이나 무대 배치가 올바르지 않습니다.");
+  if (!raw || typeof raw !== "object" || !("version" in raw) || raw.version !== 1
+    || !("documentScope" in raw) || typeof raw.documentScope !== "string" || !/^sha256:[0-9a-f]{64}$/u.test(raw.documentScope)
+    || !("characters" in raw) || !Array.isArray(raw.characters) || !raw.characters.length || raw.characters.length > 12) throw invalid();
+  const ids = new Set<string>();
+  const characters = raw.characters.map((entry: unknown) => {
+    if (!entry || typeof entry !== "object"
+      || !("elementId" in entry) || typeof entry.elementId !== "string" || !/^[a-z0-9][a-z0-9._~-]{0,127}$/iu.test(entry.elementId)
+      || /^(?:constructor|prototype|__proto__)$/iu.test(entry.elementId) || ids.has(entry.elementId)
+      || !("label" in entry) || typeof entry.label !== "string" || !entry.label.trim() || Array.from(entry.label).length > 80
+      || !("stageTransform" in entry) || !("vrmScene" in entry)) throw invalid();
+    const stageTransform = parseStudioShared3dCharacterStageTransform(entry.stageTransform);
+    const serialized = serializeStudioVrmSceneDocument(entry.vrmScene);
+    const vrmScene = serialized && parseStudioVrmSceneDocument(serialized);
+    if (!stageTransform || !vrmScene) throw invalid();
+    ids.add(entry.elementId);
+    return { elementId: entry.elementId, label: entry.label, stageTransform, vrmScene };
+  });
+  return { version: 1, documentScope: raw.documentScope, characters };
+}
 
 export interface StudioScene3dCutSource {
   readonly scene: StudioScene3dDocumentV1;
   readonly characters: Readonly<Record<string, CharacterDocumentV3>>;
   readonly legacyBg3d?: StudioBg3dSceneDocument;
+  readonly linkedVrm?: StudioScene3dCutLinkedVrm;
 }
 export interface StudioScene3dCutPerformance {
   readonly pose: CharacterDocumentV3["pose"];
@@ -57,42 +95,6 @@ function freeze<T>(value: T): T {
 function owned<T>(value: T): T {
   return freeze(structuredClone(value));
 }
-function canonicalJsonValue(value: unknown, ancestors: Set<object>): string {
-  if (value === null) return "n";
-  if (typeof value === "string") return `s:${JSON.stringify(value)}`;
-  if (typeof value === "boolean") return value ? "b:1" : "b:0";
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) throw new TypeError("Studio 3D command state contains a non-finite number.");
-    return `d:${Object.is(value, -0) ? "0" : JSON.stringify(value)}`;
-  }
-  if (typeof value === "bigint") return `i:${value.toString()}`;
-  if (typeof value === "undefined") return "u";
-  if (typeof value === "function" || typeof value === "symbol") {
-    throw new TypeError("Studio 3D command state is not serializable.");
-  }
-  if (typeof value !== "object") return `x:${JSON.stringify(value)}`;
-  if (ancestors.has(value)) throw new TypeError("Studio 3D command state contains a cycle.");
-  ancestors.add(value);
-  try {
-    if (Array.isArray(value)) {
-      return `a:[${value.map((item) => canonicalJsonValue(item, ancestors)).join(",")}]`;
-    }
-    const obj = value as Record<string, unknown>;
-    const properties: string[] = [];
-    for (const key of Object.keys(obj).sort()) {
-      const item = obj[key];
-      if (typeof item === "undefined" || typeof item === "function" || typeof item === "symbol") continue;
-      properties.push(`${JSON.stringify(key)}:${canonicalJsonValue(item, ancestors)}`);
-    }
-    return `o:{${properties.join(",")}}`;
-  } finally {
-    ancestors.delete(value);
-  }
-}
-function hash(value: unknown): string {
-  return `sha256:${sha256HexPortable(new TextEncoder().encode(canonicalJsonValue({ value }, new Set())))}`;
-}
-
 export function parseStudioScene3dCutSource(value: unknown): StudioScene3dCutSource {
   if (!record(value) || !record(value.characters)) fail("원본 문서가 없습니다.");
   assertStudioScene3dDocument(value.scene);
@@ -113,7 +115,8 @@ export function parseStudioScene3dCutSource(value: unknown): StudioScene3dCutSou
     if (!parsed) fail("BG3D 원본을 복원할 수 없습니다.");
     legacyBg3d = parsed;
   }
-  return owned({ scene: value.scene, characters, ...(legacyBg3d ? { legacyBg3d } : {}) });
+  const linkedVrm = value.linkedVrm === undefined ? undefined : parseStudioScene3dCutLinkedVrm(value.linkedVrm);
+  return owned({ scene: value.scene, characters, ...(legacyBg3d ? { legacyBg3d } : {}), ...(linkedVrm ? { linkedVrm } : {}) });
 }
 
 function parseCut(value: unknown): StudioScene3dVersionedCut {
@@ -197,7 +200,8 @@ export function compareStudioScene3dCutSource(cut: StudioScene3dVersionedCut, in
   if (candidate.scene.documentId !== current.source.scene.documentId) fail("다른 장면의 원본으로 컷을 바꿀 수 없습니다.");
   const characterIds = new Set([...Object.keys(current.source.characters), ...Object.keys(candidate.characters)]);
   return owned({
-    sceneChanged: hash(current.source.scene) !== hash(candidate.scene) || hash(current.source.legacyBg3d) !== hash(candidate.legacyBg3d),
+    sceneChanged: hash(current.source.scene) !== hash(candidate.scene) || hash(current.source.legacyBg3d) !== hash(candidate.legacyBg3d)
+      || hash(current.source.linkedVrm) !== hash(candidate.linkedVrm),
     changedCharacterIds: [...characterIds].filter((key) => hash(current.source.characters[key]) !== hash(candidate.characters[key])).sort(),
     sourceHash: hash(candidate),
   });
@@ -249,7 +253,8 @@ export function updateStudioScene3dCutSource(cut: StudioScene3dVersionedCut, inp
     if (new Set(required.map(hash)).size > 1) fail("공유 asset의 버전 선택이 충돌합니다. 원본 asset을 분리하거나 같은 버전을 함께 선택하세요.");
     return required[0] ?? asset;
   });
-  const source = parseStudioScene3dCutSource({ scene: { ...baseScene, entities, assets }, characters, legacyBg3d: selection.scene ? candidate.legacyBg3d : cut.source.legacyBg3d });
+  const chosenStage = selection.scene ? candidate : cut.source;
+  const source = parseStudioScene3dCutSource({ scene: { ...baseScene, entities, assets }, characters, legacyBg3d: chosenStage.legacyBg3d, linkedVrm: chosenStage.linkedVrm });
   if (hash(source) === cut.sourceHash) return cut;
   const performances = Object.fromEntries(entities.flatMap((entity) => {
     if (entity.kind !== "character") return [];

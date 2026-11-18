@@ -1,9 +1,4 @@
-/**
- * Renderer-neutral payload contracts produced by Studio's lazy 3D editors.
- *
- * These values cross from the heavyweight Three/React capture surfaces into the document insert
- * controller. Keep this leaf type-only so insertion policy never points back at those components.
- */
+/** 지연 로드한 3D 편집기가 원고 삽입 제어기에 전달하는 타입 계약이다. 렌더러의 실행 코드는 가져오지 않는다. */
 
 import type { StudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
 import type { StudioBg3dSharedStageInsertProjection } from "../studio-shared-3d-insert-contract";
@@ -34,6 +29,9 @@ export interface StudioBackground3DMagicFilterMask {
 }
 
 export interface StudioBackground3DInsertResult extends StudioBg3dSharedStageInsertProjection {
+  /** 현재 권한으로 받은 팀 파일. 저장·공동 편집 문서로 직렬화하지 않는다. */
+  readonly cutWorkSignal?: AbortSignal;
+  readonly cutWorkResources?: import("../scene3d/studio-team-vrm-cut-assets").StudioTeamVrmCutResources;
   readonly kind: "separated";
   readonly width: number;
   readonly height: number;

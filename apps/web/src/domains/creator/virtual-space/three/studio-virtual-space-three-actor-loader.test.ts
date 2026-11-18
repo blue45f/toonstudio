@@ -211,6 +211,9 @@ describe("실제 Three actor와 지연 GLB 응답 수명", () => {
     const controller = createStudioThreeActorLoader(deferred.loader, world.actors, () => false, options);
     const first = await loadedModel("vrm0");
     const second = await loadedModel("vrm1", true);
+    first.material.color.setHex(0x91404e);
+    const unlitColor = new THREE.MeshBasicMaterial({ color: 0x72403a, map: first.texture });
+    first.gltf.scene.add(new THREE.Mesh(first.mesh.geometry, unlitColor));
     const helper = new THREE.Object3D(); helper.name = "robo_arm";
     first.gltf.scene.add(helper);
     controller.load("self", 0);
@@ -224,9 +227,11 @@ describe("실제 Three actor와 지연 GLB 응답 수명", () => {
     expect(first.mesh.castShadow).toBe(false);
     expect(first.mesh.receiveShadow).toBe(false);
     expect(first.mesh.frustumCulled).toBe(false);
-    expect(first.material.envMapIntensity).toBe(0.22);
-    expect(first.material.roughness).toBe(0.85);
-    expect(first.material.metalness).toBe(0);
+    expect(first.material.envMapIntensity).toBe(1);
+    expect(first.material.color.getHex()).toBe(0x91404e);
+    expect(unlitColor.color.getHex()).toBe(0x72403a);
+    expect(first.material.roughness).toBe(0.4);
+    expect(first.material.metalness).toBe(0.5);
     expect(first.texture.colorSpace).toBe(THREE.SRGBColorSpace);
     expect(new THREE.Box3().setFromObject(first.gltf.scene).getSize(new THREE.Vector3()).y).toBeCloseTo(1.86);
     controller.load("self", 1, true);

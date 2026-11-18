@@ -3,6 +3,17 @@ import { createHash, randomUUID } from "node:crypto";
 import { rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+/** 닫힌 상세 패널에서는 브라우저가 lazy 이미지 요청을 열 때까지 미룬다. */
+export function areAuditViewportImagesComplete(root = document) {
+  const view = root.defaultView;
+  return [...root.images].every((image) => {
+    if (image.complete || !image.checkVisibility({ visibilityProperty: true })) return true;
+    const rect = image.getBoundingClientRect();
+    return rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= view.innerHeight
+      || rect.right <= 0 || rect.left >= view.innerWidth;
+  });
+}
+
 /** 브라우저에 직렬화해 실행하므로 외부 변수나 모듈을 참조하지 않는다. */
 export function inspectAuditRouteReadiness(root = document) {
   const view = root.defaultView;
@@ -44,7 +55,8 @@ export function inspectAuditRouteReadiness(root = document) {
   ) > 0;
   const adminAccess = stage?.querySelector("[data-admin-access-state]");
   const adminAccessState = visible(adminAccess) ? adminAccess.getAttribute("data-admin-access-state") : null;
-  const authGateVisible = adminAccessState === "guest" || adminAccessState === "forbidden";
+  const authGateVisible = adminAccessState === "guest" || adminAccessState === "forbidden"
+    || count('[data-route-blocked="sign-in"]') > 0;
   const loadingFallbacks = count("[data-route-loading-fallback]");
   const pendingMarkers = count("[data-route-pending]");
   const blockedMarkers = count("[data-route-blocked]");
@@ -148,13 +160,14 @@ export async function waitForAuditRouteReadiness(page, {
   timeoutMs = 20_000,
   stableMs = 300,
   pollMs = 150,
+  now = Date.now,
 } = {}) {
-  const started = Date.now();
+  const started = now();
   const observedStates = new Set();
   let lastSignature = "";
   let stableSince = started;
   let snapshot;
-  while (Date.now() - started < timeoutMs) {
+  while (now() - started < timeoutMs) {
     try {
       snapshot = await page.evaluate(inspectAuditRouteReadiness);
     } catch (error) {
@@ -162,25 +175,25 @@ export async function waitForAuditRouteReadiness(page, {
       if (!(error instanceof Error) || !error.message.includes("Execution context was destroyed")) throw error;
       observedStates.add("navigation");
       lastSignature = "";
-      stableSince = Date.now();
-      await page.waitForTimeout(Math.min(pollMs, Math.max(1, timeoutMs - (Date.now() - started))));
+      stableSince = now();
+      await page.waitForTimeout(Math.min(pollMs, Math.max(1, timeoutMs - (now() - started))));
       continue;
     }
     observedStates.add(snapshot.outcome);
     const signature = JSON.stringify([snapshot.pathname, snapshot.outcome, snapshot.state]);
     if (signature !== lastSignature) {
       lastSignature = signature;
-      stableSince = Date.now();
+      stableSince = now();
     }
     const terminal = ["ready", "blocked", "degraded", "error"].includes(snapshot.outcome);
-    if (terminal && Date.now() - stableSince >= stableMs) {
-      return { ...snapshot, timedOut: false, durationMs: Date.now() - started, observedStates: [...observedStates] };
+    if (terminal && now() - stableSince >= stableMs) {
+      return { ...snapshot, timedOut: false, durationMs: now() - started, observedStates: [...observedStates] };
     }
-    await page.waitForTimeout(Math.min(pollMs, Math.max(1, timeoutMs - (Date.now() - started))));
+    await page.waitForTimeout(Math.min(pollMs, Math.max(1, timeoutMs - (now() - started))));
   }
   snapshot = await page.evaluate(inspectAuditRouteReadiness);
   observedStates.add(snapshot.outcome);
-  return { ...snapshot, timedOut: true, durationMs: Date.now() - started, observedStates: [...observedStates] };
+  return { ...snapshot, timedOut: true, durationMs: now() - started, observedStates: [...observedStates] };
 }
 
 export function auditReadinessFindings(readiness, requestedPath) {

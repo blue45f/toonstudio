@@ -173,7 +173,7 @@ export function useStudioBg3dSharedCharacterStatus(
       materializationKind: "editable-lt-bundle" as const,
     }));
   };
-  const includeSharedCharactersInCapture = shouldCaptureStudioShared3dStageCharacters({
+  const includeSharedCharactersInCapture = Boolean(input.frozenCut) || shouldCaptureStudioShared3dStageCharacters({
     mutationKind: sharedStageMutationKind,
     targetHasLinkedCharacters,
   });

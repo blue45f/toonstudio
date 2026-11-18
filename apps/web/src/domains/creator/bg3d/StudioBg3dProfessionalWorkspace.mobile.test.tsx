@@ -27,10 +27,9 @@ beforeEach(() => {
   vi.stubGlobal("matchMedia", (query: string): MediaQueryList => { const value = new MobileQuery(query); queries.add(value); return value; });
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); window.localStorage.clear(); });
-function Viewport({ h }: { readonly h: unknown }) { return <main data-host-present={Boolean(h)}>장면</main>; }
 function Workspace() {
   return <MemoryRouter><StudioBg3dProfessionalWorkspace scopeKey="mobile-cut-layout" outliner={<span>계층</span>}
-    viewport={<Viewport h={{}} />} inspector={<aside>속성</aside>} /></MemoryRouter>;
+    cutHost={{}} viewport={<main>장면</main>} inspector={<aside>속성</aside>} /></MemoryRouter>;
 }
 function resize(next: number): void { act(() => { width = next; queries.forEach((query) => query.changed()); }); }
 

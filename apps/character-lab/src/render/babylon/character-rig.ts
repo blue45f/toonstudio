@@ -39,6 +39,7 @@ import type {
   Vec3,
 } from "../../contracts";
 import type { WorldBounds } from "../camera-framing";
+import type { PackageHairAlbedo } from "../package-hair-color";
 import type { JointOffsetRig } from "./joint-offset-rig";
 import type { PoseConvention, RigBoneSnapshot } from "../pose-skeleton";
 import type { RigInspection, RigPartInspection } from "../rig-inspection";
@@ -66,6 +67,7 @@ export interface RigPart {
   readonly meshes: readonly Mesh[];
   /** `_Outline` 셸(패키지) — toon·hull 모드에서만 가시 */
   readonly outlineMeshes: readonly Mesh[];
+  readonly packageHairAlbedos?: readonly PackageHairAlbedo[];
   /** 원 재질(PBR). 패키지는 로더가 만든 재질, 절차는 프리셋 재질 */
   readonly pbr: PBRMaterial;
   /** 멀티 프리미티브 패키지 파츠의 서브메시별 원본 PBR 재질(없으면 모든 메시가 `pbr` 공유) */
@@ -216,7 +218,7 @@ function applyRigPartMorphs(
       const influence = Number.isFinite(weight) ? Math.min(1, Math.max(0, weight)) : 0;
       const scopedTargets: MorphTarget[] = [];
       for (const part of scopeParts) {
-        for (const mesh of part.meshes) {
+        for (const mesh of [...part.meshes, ...part.outlineMeshes]) {
           const manager = mesh.morphTargetManager;
           if (!manager) continue;
           for (let i = 0; i < manager.numTargets; i += 1) {

@@ -1,6 +1,6 @@
 {
   "schema": "toonstudio.character-lab.authored-character-index/1",
-  "generatedAt": "2026-11-17",
+  "generatedAt": "2026-11-19",
   "baseUrl": "/assets/characters/",
   "primary": "avatar-orion-authored",
   "characters": [
@@ -117,37 +117,37 @@
       "displayName": "SHAPER Atelier · Webtoon Protagonist (7.5등신 학원 로맨스)",
       "role": "shaper-flagship",
       "license": "CC0-1.0",
-      "generatedAt": "2026-11-17",
+      "generatedAt": "2026-11-19",
       "qualityScore": 100,
       "skeleton": true,
       "textures": 8,
       "semanticShapeKeys": 24,
       "hairLodTriangles": [
-        5771,
-        2683,
-        892
+        6744,
+        3266,
+        1362
       ],
-      "glbTriangles": 44310,
+      "glbTriangles": 66414,
       "files": {
         "glb": {
           "path": "shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
-          "bytes": 2601684,
-          "sha256": "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad"
+          "bytes": 3737860,
+          "sha256": "919e8d4492290cd13dd23ec42ca00b7f1b4761ded60a145652618586f3ac9b35"
         },
         "manifest": {
           "path": "shaper-atelier-protagonist/manifest.json",
-          "bytes": 37626,
-          "sha256": "84ff9875ef9425a81cfec0449cab53d0c9e3decd9605f8bd7ddba86a649c50ef"
+          "bytes": 43620,
+          "sha256": "946d8fd4b16b1fec62055d96e21d71c0b079e219f7b778e9412278a56dd72351"
         },
         "slotMapping": {
           "path": "shaper-atelier-protagonist/slot-mapping.json",
           "bytes": 4257,
-          "sha256": "fa2f676dd9579ceb72ea0cdbdf1835d7de667046c998ee028d076fe994876bf2"
+          "sha256": "d35e31927f1431d5de60547420c53d48d1e2e87907315d08ec45e1d678a3baab"
         },
         "contactSheet": {
           "path": "shaper-atelier-protagonist/contact-sheet.png",
-          "bytes": 1436695,
-          "sha256": "ccf2b252c9217a0ecf24259d360faba4f86f117ed1fdeb06f4484d65e63d6cc9"
+          "bytes": 1464452,
+          "sha256": "422294a63b2149df33f16ffe11cb8227864edeb8da0510c37b5b7c92597aa4c6"
         }
       }
     },

@@ -137,6 +137,26 @@ describe("Studio BG3D placement raycast", () => {
     expect(target?.surfaceHit?.point.every(Number.isFinite)).toBe(true);
   });
 
+  it("카메라 앞에서 잘린 벽 너머의 표면을 잡고 원경 밖의 바닥에는 배치하지 않는다", () => {
+    const camera = makeCamera([0, 0, 5], [0, 0, 0]);
+    camera.near = 2;
+    camera.far = 8;
+    camera.updateProjectionMatrix();
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshBasicMaterial());
+    const rearWall = wall.clone();
+    wall.position.z = 4;
+    wall.updateMatrixWorld(true);
+    rearWall.updateMatrixWorld(true);
+    const input = { camera, rect: VIEWPORT_RECT, clientX: 110, clientY: 70, objects: new Map([["front", wall], ["rear", rearWall]]) };
+    expect(resolveStudioBg3dPlacementPointerTarget(input)?.surfaceHit?.point).toEqual([0, 0, 0]);
+    camera.position.set(0, 20, 20);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    expect(resolveStudioBg3dPlacementPointerTarget(input)).toBeNull();
+    wall.geometry.dispose();
+    wall.material.dispose();
+  });
+
   it("falls back to the canonical y=0 floor when no mapped surface is hit", () => {
     const target = resolveStudioBg3dPlacementPointerTarget({
       camera: makeCamera(),
@@ -371,6 +391,27 @@ describe("StudioBg3dPlacementPointerController", () => {
 
     expect(onRotate.mock.calls).toEqual([["counter-clockwise"], ["clockwise"]]);
     expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("중첩 도구·입력기·텍스트 편집이 배치 취소와 회전 키를 먼저 받는다", () => {
+    const onCancel = vi.fn();
+    const onRotate = vi.fn();
+    renderController({ onCancel, onRotate });
+    const dialog = document.createElement("div");
+    dialog.dataset.studioShortcutBoundary = "true";
+    const button = document.createElement("button");
+    dialog.append(button);
+    const input = document.createElement("input");
+    document.body.append(dialog, input);
+    for (const target of [button, input]) {
+      for (const [key, code] of [["Escape", "Escape"], ["]", "BracketRight"]]) {
+        const event = new KeyboardEvent("keydown", { key, code, bubbles: true, cancelable: true });
+        expect(target.dispatchEvent(event)).toBe(true);
+      }
+    }
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", isComposing: true }));
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onRotate).not.toHaveBeenCalled();
   });
 
   it("reads the latest callbacks and object map without rebuilding stale event closures", () => {

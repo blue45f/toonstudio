@@ -28,6 +28,7 @@ import { cn } from "@/shared/lib/utils";
 
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 import { ProductionProjectLoading } from "./ProductionProjectLoading";
+import { ProductionProjectSignIn } from "./ProductionProjectSignIn";
 import type { ProductionSurfaceProps as SurfaceProps } from "./production-surface-props";
 
 export type { ProductionProjectSurface } from "./production-project-surfaces";
@@ -126,6 +127,7 @@ export function ProductionProjectPage({ surface }: { readonly surface: Productio
 
   if (!projectId) return <Navigate to="/production" replace />;
   if (project.loading) return <ProductionProjectLoading />;
+  if (project.requiresSignIn) return <ProductionProjectSignIn />;
   if (project.error || !project.aggregate) {
     return (
       <ProjectError

@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  areAuditViewportImagesComplete,
   auditReadinessFindings,
   classifyAuditRouteCoverage,
   inspectAuditPositionedOverflow,
@@ -274,13 +275,8 @@ for (const [viewportName, viewport] of viewports) {
                 sceneExpected = auditSceneCheck && await runtimeSceneExpectation();
               }
             }
-            result.visibleImagesReady = await page.waitForFunction(() => [...document.images].every((image) => {
-              const rect = image.getBoundingClientRect();
-              const style = getComputedStyle(image);
-              const inViewport = rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight
-                && rect.right > 0 && rect.left < innerWidth && style.display !== "none" && style.visibility !== "hidden";
-              return !inViewport || image.complete;
-            }), undefined, { timeout: 5_000 }).then(() => true, () => false);
+            result.visibleImagesReady = await page.waitForFunction(areAuditViewportImagesComplete, undefined,
+              { timeout: 5_000 }).then(() => true, () => false);
             const positionedOverflow = await page.evaluate(inspectAuditPositionedOverflow);
             result.metrics = await page.evaluate(({ expectedTheme, expectedScene, fixedOverflow }) => {
               const visible = (element) => {

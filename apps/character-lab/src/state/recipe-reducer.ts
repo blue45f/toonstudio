@@ -9,6 +9,7 @@
  * - 레시피 v3 커스터마이즈 명령(화풍·look·비례·채널·표면·형태·옷장·소품·헤어 색·룩 적용)은 `customize-reducer.ts`가 처리한다(2026-10-23 CORE-1).
  */
 import {
+  DEFAULT_RECIPE_COLORS,
   LEFT_FINGER_BONE_NAMES,
   PHYSICS_PROVIDER_LABELS_KO,
   RECIPE_COLOR_KEYS,
@@ -209,6 +210,14 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
       if (!COLOR_KEY_SET.has(command.key)) throw new RecipeCommandError("command-color-key", `레시피 색 키가 아닙니다: ${String(command.key)}`);
       const hex = normalizeHex(command.value);
       if (!hex) throw new RecipeCommandError("command-color-invalid", `색은 #rrggbb 형식이어야 합니다: ${command.value}`);
+      if (command.key === "hair" && recipe.source.kind === "package") {
+        const tint = hex === DEFAULT_RECIPE_COLORS.hair ? undefined : hex;
+        if (recipe.hairColor.packageBaseTint === tint) return recipe;
+        const hairColor = { ...recipe.hairColor };
+        if (tint) hairColor.packageBaseTint = tint;
+        else delete hairColor.packageBaseTint;
+        return { ...recipe, hairColor };
+      }
       if (recipe.colors[command.key] === hex) return recipe;
       return { ...recipe, colors: { ...recipe.colors, [command.key]: hex } };
     }
@@ -265,7 +274,9 @@ export function reduceRecipe(recipe: CharacterRecipe, command: RecipeCommand, ca
       // 절차·패키지 소스에서 키트로 처음 옮길 때만 키트 툰 기본값(램프 2단·림 끔, A-10)을 건다. 사용자가 이미 바꾼 값은 덮어쓰지 않고,
       // 키트 안에서 베이스·버전만 바꾸는 전환은 셰이딩을 건드리지 않는다.
       const shading = parsed.data.kind === "kit" && recipe.source.kind !== "kit" ? applyKitToonDefaults(recipe.shading) : recipe.shading;
-      return { ...recipe, source: parsed.data, shading };
+      const hairColor = { ...recipe.hairColor };
+      delete hairColor.packageBaseTint;
+      return { ...recipe, source: parsed.data, shading, hairColor };
     }
     case "recipe/load": {
       // v1·v2 레시피는 parseRecipe가 명시 마이그레이션 사슬(v1 → v2 → v3)로 연다. 라벨은 describeCommandKo가 원래 버전을 보고 알린다.

@@ -120,6 +120,13 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const stripDirector = getDefaultStripDirectorSession();
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
+  const duoRequest = useRef(0);
+  const duoShotRef = useRef(duoShot);
+  useEffect(() => { duoShotRef.current = duoShot; }, [duoShot]);
+  useEffect(() => {
+    setDuo3dBusy(false);
+    return () => { duoRequest.current += 1; };
+  }, [engine]);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
@@ -679,12 +686,14 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
   const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
     if (!engine?.setDuoPartner) return;
-    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
-    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
-    if (!nextAttachment && !prevAttachment) return;
+    if (!nextDuoShot.render3dPartner && !prevDuoShot.render3dPartner) return;
+    const request = ++duoRequest.current;
     setDuo3dBusy(true);
     try {
+      const nextAttachment = await toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
+      if (duoRequest.current !== request) return;
       await engine.setDuoPartner(nextAttachment);
+      if (duoRequest.current !== request) return;
       const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
       setNotice(
         nextAttachment
@@ -692,20 +701,21 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           : "3D 듀오 상대역 배치를 해제했습니다.",
       );
     } catch (error) {
-      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+      if (duoRequest.current === request) {
+        setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+        setDuoShot(prevDuoShot);
+      }
     } finally {
-      setDuo3dBusy(false);
+      if (duoRequest.current === request) setDuo3dBusy(false);
     }
   };
   const updateDuoShotWith3dSync = (updater: (prev: DuoShotState) => DuoShotState): void => {
-    setDuoShot((prev) => {
-      const next = updater(prev);
-      if (next.side !== prev.side) {
-        stripDirector.update({ partnerSide: next.side });
-      }
-      void syncDuoPartner3d(next, prev);
-      return next;
-    });
+    const prev = duoShotRef.current;
+    const next = updater(prev);
+    duoShotRef.current = next;
+    setDuoShot(next);
+    if (next.side !== prev.side) stripDirector.update({ partnerSide: next.side });
+    void syncDuoPartner3d(next, prev);
   };
   const onApplyDuoEyeContact = (): void => {
     const cmds = buildDuoEyeContactCommands(labState.recipe.pose, duoEyeContact, duoPartner.labelKo);

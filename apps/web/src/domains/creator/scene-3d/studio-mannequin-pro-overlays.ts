@@ -67,7 +67,10 @@ function sampleLoftRings(
       const s = Math.sin(th);
       const sc = Math.sign(c) * Math.pow(Math.abs(c), exp);
       const ss = Math.sign(s) * Math.pow(Math.abs(s), exp);
-      ring.push(center.clone().addScaledVector(bx, rx * sc).addScaledVector(bz, rz * ss));
+      const pectoralDepth = ss > 0 && sec.pectoralRelief
+        ? sec.pectoralRelief * ss ** 2 * Math.exp(-(((Math.abs(sc) - 0.44) / 0.28) ** 2))
+        : 0;
+      ring.push(center.clone().addScaledVector(bx, rx * sc).addScaledVector(bz, rz * ss + pectoralDepth));
     }
     ringPoints.push(ring);
   }
@@ -108,8 +111,8 @@ export function buildStudioMannequinLoftGeometry(
     const lastRingBase = (ringPoints.length - 1) * segs;
     for (let k = 0; k < segs; k += 1) {
       const kn = (k + 1) % segs;
-      indices.push(startCapIdx, kn, k);
-      indices.push(endCapIdx, lastRingBase + k, lastRingBase + kn);
+      indices.push(startCapIdx, k, kn);
+      indices.push(endCapIdx, lastRingBase + kn, lastRingBase + k);
     }
   }
 
@@ -179,8 +182,8 @@ export function buildStudioMannequinSkinnedTorsoGeometry(
     const lastRingBase = (ringPoints.length - 1) * segs;
     for (let k = 0; k < segs; k += 1) {
       const kn = (k + 1) % segs;
-      indices.push(startCapIdx, kn, k);
-      indices.push(endCapIdx, lastRingBase + k, lastRingBase + kn);
+      indices.push(startCapIdx, k, kn);
+      indices.push(endCapIdx, lastRingBase + kn, lastRingBase + k);
     }
   }
 

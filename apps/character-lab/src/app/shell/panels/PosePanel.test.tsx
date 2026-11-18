@@ -157,30 +157,32 @@ describe("PosePanel IK", () => {
 
   it("폴 벡터를 지정하면 팔꿈치가 폴 쪽으로 가고, 좌표가 비수치면 dispatch 없이 사유를 보여준다", () => {
     const dispatched = setup();
+    const ik = within(screen.getByRole("group", { name: "IK 목표" }));
+    const apply = ik.getByRole("button", { name: "IK 적용" });
     setTarget("0.3", "1.2", "0.25");
-    fireEvent.click(screen.getByLabelText(/폴 벡터 지정/u));
-    fireEvent.change(screen.getByLabelText("폴 X"), { target: { value: "0.3" } });
-    fireEvent.change(screen.getByLabelText("폴 Y"), { target: { value: "0.6" } });
-    fireEvent.change(screen.getByLabelText("폴 Z"), { target: { value: "0.1" } });
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.click(ik.getByLabelText(/폴 벡터 지정/u));
+    fireEvent.change(ik.getByLabelText("폴 X"), { target: { value: "0.3" } });
+    fireEvent.change(ik.getByLabelText("폴 Y"), { target: { value: "0.6" } });
+    fireEvent.change(ik.getByLabelText("폴 Z"), { target: { value: "0.1" } });
+    fireEvent.click(apply);
     const down = dispatched[0];
     if (down?.type !== "pose/set") throw new Error("pose/set 기대");
     const elbowDown = computeWorldTransforms(skeleton, down.pose).get("leftLowerArm")?.position ?? [0, 0, 0];
-    fireEvent.change(screen.getByLabelText("폴 Y"), { target: { value: "1.9" } });
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.change(ik.getByLabelText("폴 Y"), { target: { value: "1.9" } });
+    fireEvent.click(apply);
     const up = dispatched[1];
     if (up?.type !== "pose/set") throw new Error("pose/set 기대");
     const elbowUp = computeWorldTransforms(skeleton, up.pose).get("leftLowerArm")?.position ?? [0, 0, 0];
     expect(elbowUp[1]).toBeGreaterThan(elbowDown[1]);
 
-    fireEvent.change(screen.getByLabelText("폴 Z"), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    fireEvent.change(ik.getByLabelText("폴 Z"), { target: { value: "" } });
+    fireEvent.click(apply);
     expect(dispatched).toHaveLength(2);
-    expect(screen.getByText("폴 벡터 좌표가 숫자가 아닙니다.").getAttribute("data-status")).toBeNull();
-    fireEvent.change(screen.getByLabelText("목표 X"), { target: { value: "abc" } });
-    fireEvent.click(screen.getByRole("button", { name: "IK 적용" }));
+    expect(ik.getByText("폴 벡터 좌표가 숫자가 아닙니다.").getAttribute("data-status")).toBeNull();
+    fireEvent.change(ik.getByLabelText("목표 X"), { target: { value: "abc" } });
+    fireEvent.click(apply);
     expect(dispatched).toHaveLength(2);
-    expect(screen.getByText("목표 좌표가 숫자가 아닙니다.")).toBeTruthy();
+    expect(ik.getByText("목표 좌표가 숫자가 아닙니다.")).toBeTruthy();
   });
 
   it("도달 불가 목표는 최대 신장 포즈를 기록하고 사유를 표시한다", () => {

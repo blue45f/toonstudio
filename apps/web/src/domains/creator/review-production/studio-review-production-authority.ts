@@ -1,3 +1,5 @@
+import { httpStatus } from "@/platform/api";
+
 import { getStudioTeam } from "../studio-team-client";
 import { loadStudioServerProductionWorkspace } from "../studio-production/studio-production-server-client";
 import { verifyStudioVirtualSpaceReviewSubject } from "../virtual-space/studio-virtual-space-review-invitation";
@@ -21,7 +23,11 @@ export async function readStudioReviewProductionAuthority(
   if (!request || !actorId || signal.aborted) throw new StudioReviewProductionError("unavailable");
   const [verified, workspace, team] = await Promise.all([
     readers.verify(request.subject, "view"), readers.workspace(request.subject.workId, signal), readers.team(request.subject.workId, signal),
-  ]);
+  ]).catch((error: unknown) => {
+    const status = httpStatus(error);
+    if (status === 401 || status === 403) throw new StudioReviewProductionError("access-denied");
+    throw error;
+  });
   if (signal.aborted) throw new StudioReviewProductionError("context-changed");
   if (!verified.ok || !verified.project.access.edit || !workspace.capabilities.edit
     || workspace.workId !== request.subject.workId || workspace.document.scopeKey !== `work:${request.subject.workId}`

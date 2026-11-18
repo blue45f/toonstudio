@@ -4,7 +4,6 @@ import * as THREE from "three";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 
 import { STUDIO_VIRTUAL_SPACE_NEARBY_NPC_RADIUS, StudioZoneChangeTracker, type StudioVirtualSpaceNearbyNpc } from "../studio-virtual-space-engine-events";
-import { STUDIO_INTERACT_KEY_CODES } from "../studio-virtual-space-interact-prompt";
 import {
   setActiveMountedCameraPanStore,
   StudioCameraPanRuntime,
@@ -14,22 +13,22 @@ import {
   subscribeStudioSpaceSelectedObjectTarget,
 } from "../studio-virtual-space-camera-recovery";
 import {
-  bindStudioSpaceTextEntryMovementStop,
   isStudioSpaceJoystickActive,
   isStudioSpaceTextEntryTarget,
 } from "../studio-virtual-space-input-guard";
 import type { StudioVirtualSpaceFacing, StudioVirtualSpacePoint } from "../studio-virtual-space-model";
 import { studioNpcInteraction, studioNpcLabel } from "../studio-virtual-space-npc-director";
-import { nearestInteraction, studioFacingToward, studioWorldMayTakeFocus, WORLD_KEY_CODES } from "../studio-virtual-space-phaser-canvas-model";
+import { nearestInteraction, studioFacingToward } from "../studio-virtual-space-phaser-canvas-model";
 import { studioPoseSeatAnchors } from "../studio-virtual-space-pose-controller";
 import type { StudioVirtualSpaceSnapshot } from "../studio-virtual-space-presence";
 import { clampStudioWorldPoint } from "../studio-virtual-space-world-pathfinding";
 import { studioWorldInteractions, studioWorldPortals, studioWorldRoomAt, studioWorldSpawn, type StudioWorldInteractionDefinition } from "../studio-virtual-space-world-manifest";
 import { applyStudioLightingPresetToScene, createStudioThreeChromePostPipeline, createStudioThreeHdriController, findClickedWorldTarget, type ProjectedOverlayItem, type StudioThreeLightingPreset } from "./studio-virtual-space-three-dioramas";
-import { applyStudioThreeActorPose, computeStudioThreeCameraOrbitDelta, consumeAndSyncStudioThreeEmotes, isStudioThreeCameraOrbitKey, readStoredStudioThreeLightingPreset, studioThreeFillLightIntensity, writeStoredStudioThreeLightingPreset } from "./studio-virtual-space-three-motion";
+import { applyStudioThreeActorPose, computeStudioThreeCameraOrbitDelta, consumeAndSyncStudioThreeEmotes, readStoredStudioThreeLightingPreset, studioThreeFillLightIntensity, writeStoredStudioThreeLightingPreset } from "./studio-virtual-space-three-motion";
 import { createStylized3DCharacterNode, facingToYawRadians, loadStudioThreeAssets, shortestAngleLerp, STUDIO_THREE_SCALE, threeToWorld, worldToThree, type StudioThreeActorNode } from "./studio-virtual-space-three-scene";
 import { studioThreeRoomSigns } from "./studio-virtual-space-three-world-layout";
 import { StudioThreeWorldNavigation } from "./studio-virtual-space-three-navigation";
+import { bindStudioThreeKeyboardInput } from "./studio-virtual-space-three-keyboard-input";
 import { bindStudioThreePointerInput } from "./studio-virtual-space-three-pointer-input";
 import { studioThreeThemeLightingPreset } from "./studio-virtual-space-three-surface-art";
 import { StudioThreeProximityPublication, StudioThreeRuntimePublication } from "./studio-virtual-space-three-runtime-policy";
@@ -331,7 +330,14 @@ export function StudioVirtualSpaceThreeCanvas({
     resetCameraRef.current = () => bridge.cameraPan.homeView();
     bridge.setFocusHandler(() => renderer.domElement.focus({ preventScroll: true }));
 
+    const clearDestination = () => {
+      navigation.cancel();
+      moveDestination = null;
+      pendingAutoInteract = null;
+      destMarker.visible = false;
+    };
     triggerOverlayTargetRef.current = (kind, targetId) => {
+      clearDestination();
       if (kind === "workstation") {
         const target = allInteractions.find((item) => item.id === targetId);
         if (!target) return;
@@ -355,28 +361,18 @@ export function StudioVirtualSpaceThreeCanvas({
     };
 
     const haltMovementForTextInput = () => {
-      keysDown.clear(); navigation.cancel(); moveDestination = null; pendingAutoInteract = null; destMarker.visible = false;
+      keysDown.clear(); clearDestination();
       if (isStudioSpaceJoystickActive(bridge.getJoystick())) bridge.setJoystick({ x: 0, y: 0 });
       bridge.clearMovement();
     };
     const hasMovementKeyHeld = () =>
       keysDown.has("ArrowLeft") || keysDown.has("ArrowRight") || keysDown.has("ArrowUp") || keysDown.has("ArrowDown") ||
       keysDown.has("KeyA") || keysDown.has("KeyD") || keysDown.has("KeyW") || keysDown.has("KeyS");
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isStudioSpaceTextEntryTarget(event.target) || isStudioSpaceTextEntryTarget(document.activeElement)) { haltMovementForTextInput(); return; }
-      if (!studioWorldMayTakeFocus(document.activeElement, container)) return;
-      if (WORLD_KEY_CODES.has(event.code) || isStudioThreeCameraOrbitKey(event.code)) keysDown.add(event.code);
-      if (event.code === "KeyC") targetCameraYaw = 0;
-      if (STUDIO_INTERACT_KEY_CODES.has(event.code)) bridge.requestInteract();
-    };
-    const handleKeyUp = (event: KeyboardEvent) => keysDown.delete(event.code);
-    const clearKeys = () => keysDown.clear();
-    const handleVisibilityChange = () => { if (document.hidden) keysDown.clear(); };
-    const unbindTextInputStop = bindStudioSpaceTextEntryMovementStop(haltMovementForTextInput);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("blur", clearKeys);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const unbindKeyboard = bindStudioThreeKeyboardInput(container, keysDown, {
+      stop: haltMovementForTextInput,
+      home: () => bridge.cameraPan.homeView(),
+      interact: () => bridge.requestInteract(),
+    });
 
     const raycaster = new THREE.Raycaster();
     const pointerNdc = new THREE.Vector2();
@@ -395,7 +391,7 @@ export function StudioVirtualSpaceThreeCanvas({
         if (clickedTarget) {
           triggerOverlayTargetRef.current?.(clickedTarget.kind, clickedTarget.id);
         } else {
-          pendingAutoInteract = null;
+          clearDestination();
           moveDestination = clamped;
           destMarker.position.copy(worldToThree(clamped, 0.04));
           destMarker.visible = true;
@@ -440,10 +436,7 @@ export function StudioVirtualSpaceThreeCanvas({
       const destination = navigation.resolveTarget(target);
       if (!destination) return;
       currentPoint = destination;
-      navigation.cancel();
-      moveDestination = null;
-      pendingAutoInteract = null;
-      destMarker.visible = false;
+      clearDestination();
       const p3 = worldToThree(currentPoint, 0);
       selfNode.group.position.copy(p3);
       const zoomFactor = Math.max(0.65, Math.min(1.65, bridge.userZoom.get()));
@@ -467,10 +460,7 @@ export function StudioVirtualSpaceThreeCanvas({
       const stopRevision = bridge.getStopRevision();
       if (stopRevision !== lastStopRevision) {
         lastStopRevision = stopRevision;
-        navigation.cancel();
-        moveDestination = null;
-        pendingAutoInteract = null;
-        destMarker.visible = false;
+        clearDestination();
         keysDown.clear();
       }
       if (bridge.consumeUnstuck()) snapPlayerAndCamera(studioWorldSpawn(manifest).point);
@@ -480,6 +470,7 @@ export function StudioVirtualSpaceThreeCanvas({
 
       const requestedMove = bridge.consumeMoveTarget();
       if (requestedMove) {
+        clearDestination();
         const clampedTarget = clampStudioWorldPoint(manifest, requestedMove);
         const targetDist = Math.hypot(clampedTarget.x - currentPoint.x, clampedTarget.y - currentPoint.y);
         const fromZone = studioWorldRoomAt(manifest, currentPoint);
@@ -661,6 +652,7 @@ export function StudioVirtualSpaceThreeCanvas({
           nearbyNpcs.push({ id: npc.id, npc, labelKo: label.ko, labelEn: label.en, activityKo: "업무 지원 중", activityEn: "Assisting", skinKey: npc.skinKey, distance: dist, interaction: studioNpcInteraction(manifest, npc) });
         }
       }
+      nearbyNpcs.sort((a, b) => a.distance - b.distance);
       proximity.sample(closestInteraction, nearbyNpcs);
 
       if (pendingAutoInteract) {
@@ -679,8 +671,11 @@ export function StudioVirtualSpaceThreeCanvas({
         }
       }
 
+      if (!moveDestination) pendingAutoInteract = null;
+
       if (bridge.consumeInteract()) {
-        const nearestNpc = nearbyNpcs[0];
+        clearDestination();
+        const nearestNpc = nearbyNpcs.find((item) => item.interaction);
         if (nearestNpc?.interaction) callbacksRef.current.onNpcInteract?.(nearestNpc.interaction, nearestNpc.npc);
         else if (closestInteraction) callbacksRef.current.onInteract?.(closestInteraction);
         else {
@@ -718,11 +713,7 @@ export function StudioVirtualSpaceThreeCanvas({
       contextRecovery.dispose();
       applyLightingRef.current = null; resetCameraRef.current = null; triggerOverlayTargetRef.current = null; reloadActorVrmRef.current = null; selectThemeRef.current = null;
       window.cancelAnimationFrame(animFrameId);
-      unbindTextInputStop();
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", clearKeys);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      unbindKeyboard();
       window.removeEventListener("resize", handleResize);
       pointerInput.dispose();
       renderer.domElement.removeEventListener("contextmenu", handleContextMenu);

@@ -48,6 +48,11 @@ await page.route("**/*", async (route) => {
   requests.push({ method: request.method(), path: url.pathname });
   const suffix = url.pathname.split("/studio-project-graph")[1];
   if (revoked) return route.fulfill({ status: 403, json: { message: "fixture ACL revoked" } });
+  if (suffix === "/works/qa-work/review-voice-notes/query") {
+    assert.equal(request.method(), "POST");
+    assert.deepEqual(request.postDataJSON(), { subject });
+    return route.fulfill({ json: { items: [] } });
+  }
   if (request.method() === "GET") {
     if (suffix === "/projects/qa-graph") return route.fulfill({ json: project });
     if (suffix === "/reviews/qa-review") return route.fulfill({ json: review });

@@ -16,11 +16,15 @@
  */
 
 import { WebGPURenderer } from "three/webgpu";
+import { GPUFeatureName as ThreeGpuFeatures } from "three/src/renderers/webgpu/utils/WebGPUConstants.js";
 import { disposeStudioScene3dResourceOwner } from "../scene3d/studio-scene3d-resource-owner";
 
 import {
   STUDIO_BG3D_WEBGPU_MIN_BUFFER_SIZE,
   STUDIO_BG3D_WEBGPU_MIN_STORAGE_BINDING_SIZE,
+  STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS,
+  takeStudioBg3dWebGpuAdapter,
+  type StudioBg3dWebGpuProbeResult,
 } from "./studio-bg3d-webgpu-capability";
 
 export type StudioBg3dWebGpuRendererErrorCode =
@@ -29,7 +33,7 @@ export type StudioBg3dWebGpuRendererErrorCode =
   | "initialization-failed"
   | "backend-unavailable";
 
-export const STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS = 10_000;
+export { STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MS };
 const STUDIO_BG3D_WEBGPU_RENDERER_INIT_TIMEOUT_MAX_MS = 60_000;
 
 export class StudioBg3dWebGpuRendererError extends Error {
@@ -50,6 +54,7 @@ export interface StudioBg3dWebGpuDeviceLoss {
 }
 
 export interface CreateStudioBg3dThreeWebGpuRendererOptions {
+  readonly admission?: StudioBg3dWebGpuProbeResult;
   readonly antialias?: boolean;
   readonly alpha?: boolean;
   /** Testable upper bound for Three's adapter/device initialization. */
@@ -74,7 +79,7 @@ interface ThreeWebGpuBackendLifecycle {
     destroy?: () => void;
     readonly lost?: PromiseLike<{ readonly reason?: unknown; readonly message?: unknown }>;
   } | null;
-  dispose?: () => void;
+  dispose?: () => void | Promise<void>;
 }
 
 interface ThreeWebGpuRendererLifecycle {
@@ -83,9 +88,9 @@ interface ThreeWebGpuRendererLifecycle {
   readonly backend: ThreeWebGpuBackendLifecycle;
 }
 
-function disposeRejectedThreeWebGpuInitialization(backend: ThreeWebGpuBackendLifecycle): void {
+async function disposeRejectedThreeWebGpuInitialization(backend: ThreeWebGpuBackendLifecycle): Promise<void> {
   try {
-    backend.dispose?.();
+    await backend.dispose?.();
   } catch {
     // Three's public Renderer.dispose() calls async setAnimationLoop(), which retries a rejected
     // init promise when initialization never completed. Tear the owned backend down directly.
@@ -120,14 +125,13 @@ function normalizeInitializationTimeoutMs(value: number | undefined): number {
   );
 }
 
-async function initializeRendererWithTimeout(
-  renderer: WebGPURenderer,
-  backend: ThreeWebGpuBackendLifecycle,
+async function awaitInitialization<T>(
+  initialization: Promise<T>,
   timeoutMs: number,
-): Promise<void> {
+  cleanupLate: (result?: T) => unknown,
+): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
-  const initialization = Promise.resolve(renderer.init());
   const timeoutError = new Error(`WebGPU renderer initialization timed out after ${timeoutMs}ms.`);
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
@@ -136,15 +140,15 @@ async function initializeRendererWithTimeout(
     }, timeoutMs);
   });
   try {
-    await Promise.race([initialization, timeout]);
+    return await Promise.race([initialization, timeout]);
   } finally {
     if (timer !== undefined) clearTimeout(timer);
     // A timed-out init can still settle after its partial backend was torn down. Clean up again at
     // that boundary so a late-created device cannot survive outside the editor's ownership.
     if (timedOut) {
       void initialization.then(
-        () => disposeRejectedThreeWebGpuInitialization(backend),
-        () => disposeRejectedThreeWebGpuInitialization(backend),
+        cleanupLate,
+        () => cleanupLate(),
       );
     }
   }
@@ -214,40 +218,65 @@ async function initializeStudioBg3dThreeWebGpuRenderer(
   options: CreateStudioBg3dThreeWebGpuRendererOptions,
   releaseCanvas: () => void,
 ): Promise<StudioBg3dThreeWebGpuRuntime> {
-  const renderer = new WebGPURenderer({
-    canvas,
-    antialias: options.antialias ?? true,
-    alpha: options.alpha ?? true,
-    powerPreference: "high-performance",
-    requiredLimits: {
-      maxBufferSize: STUDIO_BG3D_WEBGPU_MIN_BUFFER_SIZE,
-      maxStorageBufferBindingSize: STUDIO_BG3D_WEBGPU_MIN_STORAGE_BINDING_SIZE,
-    },
-  });
+  const timeoutMs = normalizeInitializationTimeoutMs(options.initializationTimeoutMs);
+  const deadline = performance.now() + timeoutMs;
+  const adapter = takeStudioBg3dWebGpuAdapter(options.admission);
+  const requiredLimits = {
+    maxBufferSize: STUDIO_BG3D_WEBGPU_MIN_BUFFER_SIZE,
+    maxStorageBufferBindingSize: STUDIO_BG3D_WEBGPU_MIN_STORAGE_BINDING_SIZE,
+  };
+  let device: GPUDevice | undefined;
+  let renderer: WebGPURenderer;
+  const destroyOwnedDevice = () => {
+    const owned = device;
+    device = undefined;
+    owned?.destroy();
+  };
+  try {
+    if (adapter) {
+      const rendererFeatures = new Set<string>(Object.values(ThreeGpuFeatures));
+      // 브라우저가 실제 보고한 기능 중 설치된 Three가 사용하는 이름만 장치에 요청한다.
+      const requiredFeatures = Array.from(adapter.features ?? [])
+        .filter((feature): feature is GPUFeatureName => rendererFeatures.has(feature));
+      device = await awaitInitialization(adapter.requestDevice({ requiredFeatures, requiredLimits }),
+        timeoutMs, (late) => late?.destroy());
+    }
+    renderer = new WebGPURenderer({
+      canvas,
+      antialias: options.antialias ?? true,
+      alpha: options.alpha ?? true,
+      powerPreference: "high-performance",
+      requiredLimits,
+      device,
+    });
+  } catch (error) {
+    destroyOwnedDevice();
+    throw new StudioBg3dWebGpuRendererError("initialization-failed", error);
+  }
   const lifecycle = renderer as unknown as ThreeWebGpuRendererLifecycle;
   const initializationBackend = lifecycle.backend;
   if (typeof lifecycle._getFallback !== "function") {
-    disposeRejectedThreeWebGpuInitialization(initializationBackend);
+    void disposeRejectedThreeWebGpuInitialization(initializationBackend).finally(destroyOwnedDevice);
     throw new StudioBg3dWebGpuRendererError("version-contract-unsupported");
   }
   lifecycle._getFallback = null;
   try {
-    await initializeRendererWithTimeout(
-      renderer,
-      initializationBackend,
-      normalizeInitializationTimeoutMs(options.initializationTimeoutMs),
+    await awaitInitialization(
+      Promise.resolve(renderer.init()),
+      device ? Math.max(1, Math.ceil(deadline - performance.now())) : timeoutMs,
+      () => disposeRejectedThreeWebGpuInitialization(initializationBackend),
     );
   } catch (error) {
-    disposeRejectedThreeWebGpuInitialization(initializationBackend);
+    void disposeRejectedThreeWebGpuInitialization(initializationBackend).finally(destroyOwnedDevice);
     throw new StudioBg3dWebGpuRendererError("initialization-failed", error);
   }
   if (lifecycle.backend.isWebGPUBackend !== true) {
-    await renderer.dispose();
+    try { await renderer.dispose(); } finally { destroyOwnedDevice(); }
     throw new StudioBg3dWebGpuRendererError("backend-unavailable");
   }
   let disposed = false;
-  // R3F disposes the renderer directly. Cover that path as well as the runtime handle and release
-  // only this ownership entry; an old handle must never erase a newer runtime for the same node.
+  // R3F 9.6.1은 Canvas를 닫을 때 forceContextLoss()를 부른다. WebGPU에는 이 메서드가
+  // 없어 앱이 소유한 device를 명시적으로 해제해야 한다. 직접 해제와 같은 수명을 공유한다.
   const rendererDispose = renderer.dispose.bind(renderer);
   Object.defineProperty(renderer, "dispose", {
     configurable: true,
@@ -257,12 +286,16 @@ async function initializeStudioBg3dThreeWebGpuRenderer(
       disposed = true;
       disposeStudioScene3dResourceOwner(renderer);
       try {
-        return rendererDispose();
+        return device ? Promise.resolve(rendererDispose()).finally(destroyOwnedDevice) : rendererDispose();
+      } catch (error) {
+        destroyOwnedDevice();
+        throw error;
       } finally {
         releaseCanvas();
       }
     },
   });
+  Object.defineProperty(renderer, "forceContextLoss", { value: () => renderer.dispose() });
   observeDeviceLoss(lifecycle.backend, () => disposed, (loss) => {
     disposeStudioScene3dResourceOwner(renderer);
     options.onDeviceLost?.(loss);

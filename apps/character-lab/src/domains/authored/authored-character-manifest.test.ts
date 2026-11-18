@@ -4,6 +4,7 @@ import { CHARACTER_SLOT_KINDS } from "../../contracts";
 import { characterPackageManifestFixture } from "../../testing/manifest-fixtures";
 
 import { AUTHORED_CHARACTER_MANIFEST_SCHEMA_ID, AUTHORED_SLOT_MAPPING_SCHEMA_ID, convertAuthoredCharacterManifest, detectManifestFormat, parseAnyCharacterManifest, parseAuthoredSlotMapping } from "./authored-character-manifest";
+import { packagePartShapes } from "./package-part-shapes";
 
 function authoredFixture() {
   return {
@@ -131,4 +132,20 @@ describe("authored/authored-character-manifest", () => {
     const badMapping = parseAnyCharacterManifest(authoredFixture(), { schema: "nope" }, 1);
     expect(badMapping.ok === false && badMapping.failure.code).toBe("authored-slot-mapping-invalid");
   });
+});
+
+it("실제로 선택한 헤어 LOD에서 양·음 키가 같은 메시 안에 있는 형태만 활성화한다", () => {
+  const fixture = authoredFixture();
+  const shape = ["shape:bangs:-", "shape:bangs:+"];
+  const partMeshes = [
+    { node: "TS_AuthoredHair_soft-bob_LOD0", part: "hair", lod: 0, morphTargets: shape },
+    { node: "TS_AuthoredHair_soft-bob_LOD1", part: "hair", lod: 1, morphTargets: [...shape, "shape:volume:+"] },
+    { node: "TS_AuthoredHair_soft-bob_LOD2", part: "hair", lod: 2, morphTargets: ["shape:bangs:+"] },
+  ];
+  const parsed = parseAnyCharacterManifest({ ...fixture, partMeshes }, undefined, 1);
+  expect(parsed.ok).toBe(true);
+  if (!parsed.ok) return;
+  expect(packagePartShapes(parsed.manifest, 0)).toEqual({ hair: ["bangs"] });
+  expect(packagePartShapes(parsed.manifest, 1)).toEqual({ hair: ["bangs"] });
+  expect(packagePartShapes(parsed.manifest, 2)).toEqual({});
 });

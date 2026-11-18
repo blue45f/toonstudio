@@ -18,6 +18,15 @@ import type {
  * Avatar Forge compatibility inspection and wardrobe planning: StudioBackground3D needs these
  * operations immediately, while the heavier source-authority bridge is prepared by its parent.
  */
+/** 같은 로컬 원고라도 페이지가 다르면 고정 캐릭터 연결을 재사용하지 않는다. */
+export function studioCutVrmDocumentScope(documentKey: string | undefined, pageId: string | undefined): string | undefined {
+  return documentKey && pageId ? `sha256:${sha256HexPortable(new TextEncoder().encode(JSON.stringify([documentKey, pageId])))}` : undefined;
+}
+
+export function studioTeamCutVrmDocumentScope(workId: string, pageId: string): string {
+  return `sha256:${sha256HexPortable(new TextEncoder().encode(JSON.stringify(["studio-work-vrm-cut:v1", workId, pageId])))}`;
+}
+
 export const STUDIO_SHARED_3D_CHARACTER_TRANSFORM_RECEIPT_KIND =
   "toonstudio.shared-3d-character-transform-receipt" as const;
 export const STUDIO_SHARED_3D_CHARACTER_TRANSFORM_RECEIPT_VERSION = 1 as const;

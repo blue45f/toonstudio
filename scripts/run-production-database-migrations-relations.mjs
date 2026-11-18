@@ -247,6 +247,7 @@ export const POST_BASELINE_RELATIONS = Object.freeze([
   "studio_virtual_space_decoration_layout",
   "studio_virtual_space_gallery_like",
   "studio_virtual_space_waitlist_entry",
+  "studio_work_vrm_cut",
   "supporter_funding_setting",
   "supporter_payment",
   "traffic_page_view",

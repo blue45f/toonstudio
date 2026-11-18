@@ -9,7 +9,9 @@ import {
 } from "./studio-vrm-png-worker-protocol";
 
 const scope = self as DedicatedWorkerGlobalScope;
-let consumed = false;
+const reusable = scope.name === "toonstudio-vrm-png-session";
+let busy = false;
+let lastRequestId = 0;
 
 function post(response: StudioVrmPngWorkerResponse): void {
   scope.postMessage(response);
@@ -70,9 +72,10 @@ if (!supportsOffscreenCanvas2d()) {
   });
 } else {
   scope.addEventListener("message", (event: MessageEvent<unknown>) => {
-    if (consumed) return;
-    consumed = true;
     const requestId = requestIdFrom(event.data);
+    if (busy || requestId === lastRequestId) return;
+    busy = true;
+    lastRequestId = requestId;
     if (!isStudioVrmPngWorkerRequest(event.data)) {
       post({
         version: STUDIO_VRM_PNG_WORKER_PROTOCOL_VERSION,
@@ -83,14 +86,17 @@ if (!supportsOffscreenCanvas2d()) {
       return;
     }
     const request = event.data;
-    void encodePng(request).then((png) => post({
-      version: STUDIO_VRM_PNG_WORKER_PROTOCOL_VERSION,
-      kind: "result",
-      requestId: request.requestId,
-      width: request.width,
-      height: request.height,
-      png,
-    })).catch(() => post({
+    void encodePng(request).then((png) => {
+      if (reusable) busy = false;
+      post({
+        version: STUDIO_VRM_PNG_WORKER_PROTOCOL_VERSION,
+        kind: "result",
+        requestId: request.requestId,
+        width: request.width,
+        height: request.height,
+        png,
+      });
+    }).catch(() => post({
       version: STUDIO_VRM_PNG_WORKER_PROTOCOL_VERSION,
       kind: "error",
       requestId: request.requestId,

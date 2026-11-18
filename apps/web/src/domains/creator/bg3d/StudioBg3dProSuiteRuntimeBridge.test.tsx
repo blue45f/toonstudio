@@ -93,6 +93,36 @@ function createRuntime(
 describe("Studio 3D Pro Suite runtime bridge", () => {
   afterEach(() => cleanup());
 
+  it("앵글이 이동하는 도중 저장한 컷을 선택하면 이전 이동을 끝낸 뒤 컷을 적용한다", () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    const request = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((callback) => {
+      frames.set(1, callback);
+      return 1;
+    });
+    const cancel = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(id => { frames.delete(id); });
+    try {
+      const events: string[] = [];
+      const runtime = createRuntime({
+        onPreviewCameraView: vi.fn(),
+        onFinishCameraViewPreview: () => { events.push("finish"); },
+        onApplyProductionShot: (id) => { events.push(id); },
+      });
+      render(
+        <StudioBg3dProSuiteRuntimeContext.Provider value={runtime}>
+          <StudioBg3dCinematicDirectorPanel />
+        </StudioBg3dProSuiteRuntimeContext.Provider>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /하이 앵글 부감/u }));
+      expect(frames.size).toBe(1);
+      fireEvent.click(screen.getAllByRole("button", { name: "이동" })[1]!);
+      expect(events).toEqual(["finish", "shot-b"]);
+      expect(frames.size).toBe(0);
+    } finally {
+      request.mockRestore();
+      cancel.mockRestore();
+    }
+  });
+
   it("routes nested director commands to the canonical scene callbacks", () => {
     const runtime = createRuntime();
     render(

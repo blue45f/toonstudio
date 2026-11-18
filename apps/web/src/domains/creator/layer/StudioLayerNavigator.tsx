@@ -1333,7 +1333,7 @@ export function StudioLayerNavigator({
             onClick={() => setMobileMultiSelect((current) => !current)}
             aria-pressed={mobileMultiSelect}
             aria-label="다중 선택"
-            className={cn(compactControl, "shrink-0", mobileMultiSelect && "border-accent bg-accent-soft text-accent")}
+            className={cn(compactControl, "min-w-11 shrink-0", mobileMultiSelect && "border-accent bg-accent-soft text-accent")}
             title="터치에서도 여러 레이어를 선택할 수 있어요"
           >
             <ListChecks size={13} aria-hidden />
@@ -1343,7 +1343,7 @@ export function StudioLayerNavigator({
             type="button"
             onClick={() => onAction({ type: "create-group", seedIds: [...selectedIds] })}
             disabled={createGroupUnavailableReason !== undefined}
-            className={cn(compactControl, "shrink-0")}
+            className={cn(compactControl, "min-w-11 shrink-0")}
             aria-label={`새 레이어 그룹${createGroupUnavailableReason ? `, 사용 불가: ${createGroupUnavailableReason}` : ""}`}
             title={createGroupUnavailableReason ?? "선택 레이어로 새 그룹 만들기"}
           >

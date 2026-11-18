@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createStudioScene3dAuthority } from "./studio-scene3d-authority";
-import { parseStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
 import { prepareStudioScene3dCutAssets, type StudioScene3dPreparedCutAssets } from "./studio-scene3d-cut-assets";
 import { createStudioScene3dCutBg3dHost, type StudioScene3dCutBg3dEditorHost } from "./studio-scene3d-cut-bg3d-host";
 import {
@@ -11,6 +10,9 @@ import {
   type StudioBg3dModelAttachment,
 } from "../bg3d/studio-bg3d-scene-document";
 import { adaptStudioBg3dRuntimeToDocument } from "../bg3d/studio-bg3d-scene-runtime";
+import { createStudioShared3dSceneSession } from "../studio-shared-3d-scene-bridge";
+import { createStudioVrmSceneDocument } from "../vrm/studio-vrm-scene-document";
+import { createStudioScene3dVersionedCut, parseStudioScene3dCutSource } from "./studio-scene3d-shot-versions";
 
 vi.mock("./studio-scene3d-cut-assets", () => ({ prepareStudioScene3dCutAssets: vi.fn() }));
 afterEach(() => vi.clearAllMocks());
@@ -78,6 +80,39 @@ function fixture() {
 }
 
 describe("실제 BG3D 컷 호스트의 모델 연결 확정 경계", () => {
+  it("원본 레이어가 교체되거나 사라져도 A의 컷만 복귀하고 다른 원고·팀에는 적용하지 않는다", async () => {
+    const f = fixture(), scope = `sha256:${"a".repeat(64)}`;
+    const make = (id: string, label: string) => createStudioShared3dSceneSession([{ elementId: "actor", label,
+      scene: createStudioVrmSceneDocument({ source: "bundled", id, name: label }),
+      stageTransform: { position: [1, 0, 0], rotationY: 0.1 } }]);
+    const a = make("sample-vrm", "A"), b = make("other", "B");
+    Object.assign(f.host, { cutDocumentKey: scope, includeSharedCharactersInCapture: true, sharedSceneSession: a });
+    const adapter = createStudioScene3dCutBg3dHost(f.host);
+    const cut = createStudioScene3dVersionedCut({ ...adapter.readSource(), id: "cut-a", name: "A 컷" });
+    expect(cut.source.linkedVrm?.characters[0]?.vrmScene.model).toMatchObject({ id: "sample-vrm" });
+    for (const live of [b, createStudioShared3dSceneSession([])]) {
+      Object.assign(f.host, { sharedSceneSession: live });
+      await adapter.applySource(cut.source, cut, new AbortController().signal);
+      expect(f.replace.mock.lastCall?.[0].document?.pinnedVersionedCut?.source.linkedVrm?.characters[0]?.label).toBe("A");
+      expect(f.host.sharedSceneSession).toBe(live);
+    }
+    Object.assign(f.host, { cutTeamDocument: true });
+    await expect(adapter.applySource(cut.source, cut, new AbortController().signal)).rejects.toThrow(/접근 범위/);
+    Object.assign(f.host, { cutTeamDocument: false, cutDocumentKey: `sha256:${"c".repeat(64)}` });
+    await expect(createStudioScene3dCutBg3dHost(f.host).applySource(cut.source, cut, new AbortController().signal)).rejects.toThrow(/원고/);
+    expect(f.replace).toHaveBeenCalledTimes(2);
+  });
+  it("같은 원고의 미연결 인물은 배경 컷을 막지 않고, 연결을 고른 인물과 누락된 연결은 보호한다", () => {
+    const { host, adapter } = fixture();
+    Object.assign(host, { sharedSceneSession: { characters: [{}] }, includeSharedCharactersInCapture: false });
+    expect(adapter.blockedReason()).toBeNull();
+    expect(adapter.readSource().scene.entities.some((entity) => entity.kind === "character")).toBe(false);
+    Object.assign(host, { includeSharedCharactersInCapture: true });
+    expect(adapter.blockedReason()).toMatch(/연결 VRM/u);
+    Object.assign(host, { sharedSceneSession: { characters: [] }, targetHasLinkedCharacters: true });
+    expect(adapter.blockedReason()).toMatch(/연결 VRM/u);
+  });
+
   it("준비에 캡처한 backend를 전달하고 callback이 바뀌어도 이전 fence가 실패하면 commit하지 않는다", async () => {
     const value = fixture(), gate = Promise.withResolvers<StudioScene3dPreparedCutAssets>(); let current = true;
     Object.assign(value.host, { materialBackend: "webgpu", isMaterialBackendCurrent: () => current });

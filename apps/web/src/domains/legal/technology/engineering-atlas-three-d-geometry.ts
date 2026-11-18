@@ -451,7 +451,7 @@ export const COORDINATE_UNIT_ROUNDTRIP: EngineeringAtlasEntry = {
         "The document accepts no coordinate system other than meter/right/Y/-Z. Projecting a background 3D document turns Euler XYZ rotation into a quaternion and the field of view into a lens (mm) on a 24 mm vertical sensor.",
       ),
       paths: [
-        `${CREATOR_DIR}/scene3d/studio-scene3d-document.ts#assertStudioScene3dDocument`,
+        "packages/contracts/src/studio-scene3d-document.ts#assertStudioScene3dDocument",
         `${CREATOR_DIR}/scene3d/studio-scene3d-bg3d-projection.ts#projectStudioBg3dDocumentToScene3d`,
         `${CREATOR_DIR}/bg3d/studio-bg3d-lens.ts`,
       ],
@@ -679,7 +679,7 @@ export const inchModelScale = autoFitScale([100, 40, 60]); // 0.02`,
   },
   technologies: ["GLB / glTF", "Three.js", "Babylon.js", "Blender bpy", "VRM", "MediaPipe Tasks Vision", "PBR"],
   facts: [
-    { value: "meter / right / Y / −Z", label: t("Scene3D 문서가 허용하는 유일한 좌표계", "The only coordinate system the Scene3D document accepts"), source: `${CREATOR_DIR}/scene3d/studio-scene3d-document.ts` },
+    { value: "meter / right / Y / −Z", label: t("Scene3D 문서가 허용하는 유일한 좌표계", "The only coordinate system the Scene3D document accepts"), source: "packages/contracts/src/studio-scene3d-document.ts" },
     { value: "2 m", label: t("업로드 모델의 가장 긴 변을 맞추는 기준 길이", "The length an uploaded model's longest side is fitted to"), source: `${CREATOR_DIR}/bg3d/studio-bg3d-model-scale-contract.ts` },
     { value: "0.001 ~ 1000", label: t("DCC 보내기에서 역수 보정 배율이 허용되는 범위", "Range allowed for the inverse-compensated scale in a DCC hand-off"), source: `${DCC_DIR}/studio-hybrid-dcc-bg3d-handoff.ts` },
     { value: "24 mm", label: t("초점거리↔화각 환산에 쓰는 세로 센서 높이", "Vertical sensor height used to convert focal length and field of view"), source: `${CREATOR_DIR}/bg3d/studio-bg3d-lens.ts` },

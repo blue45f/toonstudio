@@ -38,7 +38,7 @@ test("메뉴를 열 때 캔버스 선택 영역을 해제하지 않는다", asyn
     <summary data-studio-clarity-more-trigger="true" onclick="document.querySelector('[data-studio-drawing-task-browser]').hidden=false">더보기</summary>
     <section data-studio-drawing-task-browser="true" hidden>
       <button data-drawing-task-category="workspace" onclick="document.querySelector('[data-studio-clarity-action]').hidden=false">화면과 도움말</button>
-      <button data-studio-clarity-action="windows" hidden onclick="document.querySelector('[data-studio-editor]').removeAttribute('data-studio-drawing-clarity');document.querySelector('[data-studio-main-menu]').hidden=false;this.closest('section').hidden=true">프로젝트·창 도구 보기</button>
+      <button data-studio-clarity-action="windows" hidden onclick="document.querySelector('[data-studio-editor]').removeAttribute('data-studio-drawing-clarity');document.querySelector('[data-studio-main-menu]').hidden=false;this.closest('section').hidden=true">프로젝트·창 도구 배치로 전환</button>
     </section>
     <nav data-studio-main-menu="true" hidden><button data-studio-main-menu-trigger="view"
       onkeydown="if(event.key==='ArrowDown'){event.preventDefault();document.querySelector('[data-studio-main-menu-panel]').hidden=false}">보기</button></nav>

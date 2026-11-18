@@ -51,10 +51,10 @@ function resolveBrowserClarityStorage(): Storage | null {
 export function StudioCuttoonEditorView(s: StudioCuttoonEditorViewSession) {
   const drawingPresentation = useStudioDrawingPresentation();
   const choiceStorage = resolveBrowserClarityStorage();
-  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation} choiceStorage={choiceStorage}><StudioCuttoonEditorViewContent {...s} drawingPresentation={drawingPresentation} /></StudioDrawingClarityProvider>;
+  return <StudioDrawingClarityProvider session={s} presentation={drawingPresentation} choiceStorage={choiceStorage}><StudioCuttoonEditorViewContent {...s} /></StudioDrawingClarityProvider>;
 }
 
-function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { readonly drawingPresentation: "integrated" | "app" }) {
+function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession) {
   const clarity = useStudioDrawingClarity();
   const {
     activePage,
@@ -84,7 +84,7 @@ function StudioCuttoonEditorViewContent(s: StudioCuttoonEditorViewSession & { re
     workMode,
     watermarkPreferenceSnapshot,
   } = s;
-  const drawingPresentation = s.drawingPresentation;
+  const drawingPresentation = clarity?.presentation ?? "integrated";
   const drawingAppPresentation = drawingPresentation === "app";
   const legacyPagePigment = hasVisibleLegacyMixboxStrokes(s.elements, s.groups);
   const legacyMasterPigment = !s.masterEditMode && !s.activePage.hideMaster && hasVisibleLegacyMixboxStrokes(s.master.elements, []);

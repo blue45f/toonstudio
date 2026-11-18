@@ -63,11 +63,11 @@ describe("새 빠른 스케치의 기본 화면 진입", () => {
     const applied = applyStudioLaunchDensity(settings, launchDensity);
     expect(applied).toBe(settings);
     expect(applied.general.densityMode).toBe("simple");
-    const workspaceId = studioTaskWorkspaceId("draw", applied.general.densityMode, search);
+    const workspaceId = studioTaskWorkspaceId(plan.document.workspace, applied.general.densityMode, search);
     expect(workspaceId).toBe("lineart");
     const state = applyStudioTaskWorkspace(createStudioWorkspaceDefaultState(null), workspaceId);
     expect(studioDrawingClarityEligible({ baseline: { ownerScope: "guest", source: "default", state },
-      ownerScope: "guest", densityMode: applied.general.densityMode, workMode: "all", search, toolbarConfigured: false })).toBe(true);
+      ownerScope: "guest", documentWorkspace: plan.document.workspace, densityMode: applied.general.densityMode, workMode: "all", search, toolbarConfigured: false })).toBe(true);
   });
 
   it.each(["simple", "focus", "full"] as const)("저장한 %s 선택을 새 스케치 URL로 덮어쓰지 않는다", (densityMode) => {

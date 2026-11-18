@@ -15,19 +15,17 @@ import { StudioBg3dPlacementPreviewBar } from "./StudioBg3dPlacementAndAxisHud";
 import type { StudioBg3dCompositionGuideMode } from "./studio-bg3d-composition-guide";
 import { StudioBg3dViewFrameClear } from "./StudioBg3dViewFrameClear";
 import { StudioBg3dViewportReadinessOverlay } from "./StudioBg3dViewportReadinessOverlay";
-import { isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
+import { acceptStudioBg3dViewportRenderer, isStudioBg3dCanvasFactoryPending } from "./studio-bg3d-canvas-renderer-admission";
 import { createStudioBg3dPointerEvents } from "./studio-bg3d-pointer-events";
 import { useStudioBg3dProSuiteHint } from "./studio-bg3d-prosuite-hint";
 import { lazyRetry } from "@/shared/lib/lazy-retry";
 
 const StudioBg3dTurntableController = lazyRetry(
-  () => import("./StudioBg3dTurntableController")
-    .then((module) => ({ default: module.StudioBg3dTurntableController })),
+  () => import("./StudioBg3dTurntableController").then((m) => ({ default: m.StudioBg3dTurntableController })),
   "StudioBg3dTurntableController",
 );
 const StudioBg3dTurntableMotion = lazyRetry(
-  () => import("./StudioBg3dTurntableMotion")
-    .then((module) => ({ default: module.StudioBg3dTurntableMotion })),
+  () => import("./StudioBg3dTurntableMotion").then((m) => ({ default: m.StudioBg3dTurntableMotion })),
   "StudioBg3dTurntableMotion",
 );
 
@@ -405,6 +403,7 @@ export function StudioBg3dEditorViewport({ h, simplified = false }: { h: Record<
                       ?? { antialias: sceneBaseDocument.render.antialias, alpha: true }
                   }
                   onCreated={({ gl }: { gl: any }) => {
+                    if (!acceptStudioBg3dViewportRenderer(viewportHostRef.current, gl)) return;
                     modelRendererRef.current = gl;
                     setModelRenderer(gl);
                     // Routes by the renderer's own brand flag so the WebGPU renderer receives the

@@ -23,6 +23,7 @@ import type { StudioUiBooleanPreferenceKey } from "../../studio-ui-preferences-s
 import { useStudioUiDensityPreference } from "./useStudioUiDensityPreference";
 
 interface UseStudioPreferencesRuntimeOptions {
+  readonly launchSearch: string;
   readonly taskWorkspace?: StudioDocumentWorkspaceId | null;
   /**
    * Current episode pipeline stage, when the host knows one. The host passes
@@ -41,17 +42,16 @@ interface UseStudioPreferencesRuntimeOptions {
  * from the current canvas document and only exposes explicit UI-setting commands.
  */
 export function useStudioPreferencesRuntime({
+  launchSearch,
   taskWorkspace = null,
   episodeStage = null,
   applyMirroredSettings,
   closeRightPanelForFocusMode,
 }: UseStudioPreferencesRuntimeOptions) {
-  // Capture an explicit launch hint once. Merge it into loaded preferences instead of
-  // persisting defaults before hydration, which would lose unrelated user settings.
-  const [launchDensity] = useState(() => readStudioLaunchDensity(typeof window === "undefined" ? "" : window.location.search));
-  const [appSettings, setAppSettings] = useState<StudioAppSettings>(
-    () => applyStudioLaunchDensity(defaultStudioAppSettings(), launchDensity),
-  );
+  const launchDensity = readStudioLaunchDensity(launchSearch);
+  const launchDensityRef = useRef(launchDensity);
+  launchDensityRef.current = launchDensity;
+  const [appSettings, setAppSettings] = useState<StudioAppSettings>(defaultStudioAppSettings);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const [appSettingsInitialTab, setAppSettingsInitialTab] =
     useState<StudioAppSettingsTab>("general");
@@ -126,8 +126,10 @@ export function useStudioPreferencesRuntime({
   effectFavoriteStateRef.current = effectFavoriteState;
 
   useEffect(() => {
-    if (launchDensity === "focus") closeRightPanelForFocusModeRef.current();
-  }, [launchDensity]);
+    const mode = launchDensity ?? appSettingsRef.current.general.densityMode;
+    setUiDensityMode(mode);
+    if (mode === "focus" && !appSettingsRef.current.general.colorPanelPinned) closeRightPanelForFocusModeRef.current();
+  }, [launchDensity, setUiDensityMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,11 +147,10 @@ export function useStudioPreferencesRuntime({
         let degraded = false;
         if (settingsResult.status === "fulfilled") {
           if (appSettingsUserRevisionRef.current === settingsRevisionAtStart) {
-            const hydrated = applyStudioLaunchDensity(settingsResult.value, launchDensity);
-            // A launch URL is a session override, not a claim that preferences were saved.
-            if (hydrated !== settingsResult.value) degraded = true;
-            appSettingsRef.current = hydrated;
-            setAppSettings(hydrated);
+            const saved = settingsResult.value;
+            const hydrated = applyStudioLaunchDensity(saved, launchDensityRef.current);
+            appSettingsRef.current = saved;
+            setAppSettings(saved);
             setUiDensityMode(hydrated.general.densityMode);
             if (hydrated.general.densityMode === "focus" && !hydrated.general.colorPanelPinned) {
               closeRightPanelForFocusModeRef.current();
@@ -204,7 +205,7 @@ export function useStudioPreferencesRuntime({
     return () => {
       cancelled = true;
     };
-  }, [launchDensity, setUiDensityMode]);
+  }, [setUiDensityMode]);
 
   const persistStudioUiBooleanPreference = useCallback((
     key: StudioUiBooleanPreferenceKey,
@@ -218,19 +219,20 @@ export function useStudioPreferencesRuntime({
 
   const commitAppSettings = useCallback((proposed: StudioAppSettings): void => {
     const stored = appSettingsRef.current;
-    const next = preserveStudioTaskToolbarPreference(stored,
-      projectStudioTaskAppSettings(stored, taskWorkspace, stored.general.densityMode), proposed);
+    const presented = projectStudioTaskAppSettings(applyStudioLaunchDensity(stored, uiDensityMode), taskWorkspace, uiDensityMode);
+    const next = preserveStudioTaskToolbarPreference(stored, presented,
+      proposed.general.densityMode === uiDensityMode ? applyStudioLaunchDensity(proposed, stored.general.densityMode) : proposed);
     appSettingsRef.current = next;
     setAppSettings(next);
     persistAppSettings(next);
-    setUiDensityMode(next.general.densityMode);
-    applyMirroredSettingsRef.current(next);
-  }, [persistAppSettings, setUiDensityMode, taskWorkspace]);
+    setUiDensityMode(proposed.general.densityMode);
+    applyMirroredSettingsRef.current(applyStudioLaunchDensity(next, proposed.general.densityMode));
+  }, [persistAppSettings, setUiDensityMode, taskWorkspace, uiDensityMode]);
 
   // Effect Events cannot cross a custom-hook boundary. The public command remains stable while the
   // callback refs above keep its host-owned side effects current without restarting hydration.
   const setStudioUiDensityFromCompanion = setStudioUiDensity;
-  const presentedSettings = projectStudioTaskAppSettings(appSettings, taskWorkspace, uiDensityMode);
+  const presentedSettings = projectStudioTaskAppSettings(applyStudioLaunchDensity(appSettings, uiDensityMode), taskWorkspace, uiDensityMode);
   const isRailToolVisible = useCallback(
     (id: StudioRailToolId): boolean => presentedSettings.toolbar.visibleIds.includes(id),
     [presentedSettings.toolbar.visibleIds],

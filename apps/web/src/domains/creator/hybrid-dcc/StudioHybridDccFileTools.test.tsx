@@ -10,7 +10,18 @@ import { createStudioHybridDccWorkspace, workspaceAddUnitCube, workspaceCommitOb
 import type { StudioHybridDccWorkspace } from "./studio-hybrid-dcc-workspace";
 import type { StudioHybridDccViewportProps } from "./StudioHybridDccViewportCore";
 
-const f = vi.hoisted(() => ({ actor: "file-owner", revision: 0, listeners: new Set<() => void>(), holdPreview: false, release: [] as Array<() => void> }));
+const f = vi.hoisted(() => ({
+  actor: "file-owner", revision: 0, listeners: new Set<() => void>(), holdPreview: false,
+  release: [] as Array<() => void>, holdEncode: false, finishEncode: undefined as (() => void) | undefined,
+}));
+vi.mock("./studio-hybrid-dcc-workfile-worker-client", () => ({
+  encodeWorkfileInWorker: async (workspace: StudioHybridDccWorkspace) => {
+    if (f.holdEncode) await new Promise<void>((resolve) => { f.finishEncode = resolve; });
+    return encodeStudioHybridDccWorkfile(workspace);
+  },
+  decodeWorkfileInWorker: async (bytes: Uint8Array, documentId: string) => decodeStudioHybridDccWorkfile(bytes, { documentId }),
+}));
+
 vi.mock("@/domains/auth/public/session/auth-session-state", () => ({ getAuthUserId: () => f.actor, getAuthSessionRevision: () => f.revision, listeners: f.listeners }));
 vi.mock("./studio-hybrid-dcc-modifier-workspace", async (load) => {
   const actual = await load<typeof import("./studio-hybrid-dcc-modifier-workspace")>();
@@ -29,6 +40,7 @@ let downloads: Array<{ blob: Blob; filename?: string }> = [];
 const modalShow = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "showModal");
 const modalClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "close");
 beforeEach(() => {
+  f.holdEncode = false; f.finishEncode = undefined;
   f.actor = "file-owner"; f.revision = 0; f.holdPreview = false; f.release = []; downloads = [];
   vi.stubGlobal("URL", class extends NativeURL {
     static createObjectURL(value: Blob | MediaSource): string {
@@ -83,14 +95,14 @@ describe("native .toon3d 파일 저장과 열기", () => {
   it("저장 버튼이 다시 검증 가능한 실제 파일을 내려받고 OBJ도 메시 본문을 내려받는다", async () => {
     await mount();
     fireEvent.click(screen.getByRole("button", { name: "작업파일 저장" }));
-    expect(downloads).toHaveLength(1);
+    await waitFor(() => expect(downloads).toHaveLength(1));
     expect(downloads[0]?.filename).toMatch(/\.toon3d$/u);
     expect(downloads[0]?.blob.type).toBe(STUDIO_HYBRID_DCC_WORKFILE_MIME);
     const first = downloads[0]; if (!first) throw new Error("작업파일 다운로드가 없습니다.");
     const decoded = decodeStudioHybridDccWorkfile(await readBlob(first.blob), { documentId: "reopened-doc" });
     expect(Object.keys(decoded.session.state.geometry.records)).toEqual(["current-cube"]);
     fireEvent.click(screen.getByRole("button", { name: "OBJ 저장" }));
-    expect(downloads).toHaveLength(2);
+    await waitFor(() => expect(downloads).toHaveLength(2));
     const obj = downloads[1]; if (!obj) throw new Error("OBJ 다운로드가 없습니다.");
     expect(obj.filename).toMatch(/\.obj$/u);
     const text = new TextDecoder().decode(await readBlob(obj.blob));
@@ -113,10 +125,10 @@ describe("native .toon3d 파일 저장과 열기", () => {
     const workspace = source("export-doc", "current-cube");
     render(<StudioHybridDccPanel initialWorkspace={workspace} workbenchMode="shot" />);
     fireEvent.click(screen.getByRole("button", { name: /^\.toon3d 작업 파일/u }));
-    expect(downloads.at(-1)?.filename).toMatch(/\.toon3d$/u);
+    await waitFor(() => expect(downloads.at(-1)?.filename).toMatch(/\.toon3d$/u));
     fireEvent.click(screen.getByText(/전문가용 전체 도구/u));
     fireEvent.click(screen.getByRole("button", { name: /^Export \.toon3d/u }));
-    expect(downloads).toHaveLength(2);
+    await waitFor(() => expect(downloads).toHaveLength(2));
     fireEvent.click(screen.getByRole("button", { name: /^Export OBJ/u }));
     expect(downloads).toHaveLength(3); expect(downloads.at(-1)?.filename).toMatch(/\.obj$/u);
   });
@@ -150,6 +162,18 @@ describe("native .toon3d 파일 저장과 열기", () => {
     choose(oversized);
     await waitFor(() => expect(fileError().textContent).toMatch(/크기 한도/u));
     expect(probe().getAttribute("data-state")).toBe(before); expect(notify.mock.calls).toHaveLength(changesBefore);
+  });
+
+  it.each(["취소", "계정 변경", "이탈"])("저장 처리 중 %s 뒤 도착한 응답은 다운로드로 이어지지 않는다", async (reason) => {
+    const { view } = await mount();
+    f.holdEncode = true;
+    fireEvent.click(screen.getByRole("button", { name: "작업파일 저장" }));
+    await waitFor(() => expect(f.finishEncode).toBeTypeOf("function"));
+    if (reason === "취소") fireEvent.click(screen.getByRole("button", { name: "파일 저장 취소" }));
+    else if (reason === "이탈") view.unmount();
+    else act(() => { f.actor = "other-owner"; f.revision++; f.listeners.forEach((listener) => listener()); });
+    await act(async () => { f.finishEncode?.(); });
+    expect(downloads).toHaveLength(0);
   });
 
   it("읽기 실패와 읽기 취소 후 늦은 완료는 현재 작업을 보존한다", async () => {

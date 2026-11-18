@@ -33,6 +33,7 @@ const sourcePaths = [
   "apps/web/src/domains/creator/vrm/studio-vrm-raster-capture.ts",
   "apps/web/src/domains/creator/vrm/studio-vrm-png-worker-client.ts",
   "apps/web/src/domains/creator/vrm/studio-vrm-png.worker.ts",
+  "apps/web/src/domains/creator/vrm/studio-vrm-png-worker-session.ts",
 ];
 const provenance = {
   head: execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPO_ROOT, encoding: "utf8" }).trim(),
@@ -43,7 +44,7 @@ const provenance = {
   requestedMinutes: minutes, cpuThrottleRate: cpuRate, profile, expectedRenderer,
   physicalMobile: false, physicalLowEnd: false,
   memoryScope: "CDP main renderer JS heap/backing storage; not process RSS, all Workers, or total GPU memory",
-  resourcePolicy: "Two complete perspective/orthographic warmup cycles, then exact stable renderer texture/geometry/program counts; every PNG Worker must terminate before its cycle ends.",
+  resourcePolicy: "Two complete perspective/orthographic warmup cycles, then exact stable renderer texture/geometry/program counts; one verified session PNG Worker across all cycles, terminated when the scene closes.",
   timingPolicy: "Informational capture/encode/frame-gap/long-task timings only; no new wall-clock performance gate.",
 };
 const server = await createServer({
@@ -96,7 +97,7 @@ try {
       private terminated = false;
       constructor(url: string | URL, options?: WorkerOptions) {
         super(url, options);
-        this.counted = options?.name === "toonstudio-vrm-png";
+        this.counted = (options?.name === "toonstudio-vrm-png" || options?.name === "toonstudio-vrm-png-session");
         if (this.counted) { receipt.created += 1; receipt.active += 1; }
       }
       override terminate() {

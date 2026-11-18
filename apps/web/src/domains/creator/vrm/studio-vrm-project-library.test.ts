@@ -7,6 +7,11 @@ import {
   type StudioProjectArchiveAttachmentInput,
 } from "../studio-project-archive";
 
+import { createDefaultStudioBg3dSceneDocument } from "../bg3d/studio-bg3d-scene-document";
+import { projectStudioBg3dDocumentToScene3d } from "../scene3d/studio-scene3d-bg3d-projection";
+import { createStudioScene3dVersionedCut } from "../scene3d/studio-scene3d-shot-versions";
+import { createStudioVrmTexturePaintArtifact } from "./studio-vrm-texture-paint-artifact";
+import { collectStudioVrmTexturePaintProjectPlan, exportStudioVrmTexturePaintProjectLibrary } from "./studio-vrm-texture-paint-project-library";
 import { STUDIO_VRM_1_PUBLIC_LICENSE_URL } from "./studio-vrm-license-metadata";
 import { createStudioVrmProjectArchiveUseContextReceipt } from "./studio-vrm-license-product-gate";
 import {
@@ -229,6 +234,44 @@ async function selfContainedArchive(
 }
 
 describe("studio VRM project library bridge", () => {
+  it("A를 B로 교체하고 인물 레이어를 삭제한 뒤에도 고정 컷의 모델·포즈·페인트를 같은 해시로 꺼낸다", async () => {
+    const blob = blobFrom(vrmBytes(17)), hash = await hashOf(blob);
+    const stored = storedRecord("source-a", blob, hash);
+    const paint = await createStudioVrmTexturePaintArtifact({
+      bindingKey: "face", source: Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNYxeDyHwAENAHuKmjE9gAAAABJRU5ErkJggg=="), char => char.charCodeAt(0)),
+    });
+    const texture = { bindingKey: "face", materialLocator: "gltf-material:0", textureSlot: "baseColor",
+      hash: paint.metadata.contentHash, mime: "image/png", byteSize: paint.metadata.byteLength, width: 1, height: 1 };
+    const vrmScene = normalizeStudioVrmSceneDocument({ ...attachmentScene(hash, blob.size, "A"), expressions: { happy: 0.7 },
+      surfacePaint: { version: 1, textures: [texture] } });
+    const bg = createDefaultStudioBg3dSceneDocument();
+    const cut = createStudioScene3dVersionedCut({ id: "cut-a", name: "고정 A", characters: {}, legacyBg3d: bg,
+      scene: projectStudioBg3dDocumentToScene3d({ documentId: "art", source: bg, viewportAspectRatio: 1 }),
+      linkedVrm: { version: 1, documentScope: `sha256:${"4".repeat(64)}`, characters: [
+        { elementId: "actor", label: "A", stageTransform: { position: [1, 0, 0], rotationY: 0.5 }, vrmScene },
+      ] } });
+    const layer = { id: "bg", type: "image", src: "", bg3dScene: { ...bg, pinnedVersionedCut: cut } };
+    const base = projectWithScenes(bundledScene());
+    for (const originals of [[{ id: "actor", type: "image", src: "", vrmScene: bundledScene() }], []]) {
+      const project = { ...base, pagesList: [{ ...base.pagesList[0], elements: [layer, ...originals] }] };
+      const modelRefs = collectStudioVrmProjectArchiveReferences(project);
+      expect(modelRefs.map(ref => ref.hash)).toEqual([hash]);
+      expect(modelRefs[0]?.pointer).toBe("/pagesList/0/elements/0/bg3dScene/pinnedVersionedCut/source/linkedVrm/characters/0/vrmScene/model/hash");
+      const models = await prepareStudioVrmProjectArchiveExport(project, { getStoredByContentHash: async () => stored }, ARCHIVE_USE_CONTEXT);
+      const paints = await exportStudioVrmTexturePaintProjectLibrary({ project, canonicalProject: project, library: { resolve: () => paint.archiveEntry.data } });
+      expect(paints.status).toBe("ready");
+      const archive = await buildStudioProjectArchive({ project, attachments: [...models.attachments, ...paints.attachments] });
+      expect(archive.isSelfContained).toBe(true);
+      const imported = await importStudioProjectArchive(archive.blob);
+      expect(collectStudioVrmProjectArchiveReferences(imported.project)[0]?.hash).toBe(hash);
+      expect((await collectStudioVrmTexturePaintProjectPlan(imported.project)).artifacts[0]?.contentHash).toBe(texture.hash);
+      expect(imported.project.pagesList[0]?.elements[0]).toMatchObject({ bg3dScene: { pinnedVersionedCut: {
+        sourceHash: cut.sourceHash, source: { linkedVrm: { characters: [{ vrmScene: { expressions: { happy: 0.7 } } }] } },
+      } } });
+      expect(archive.manifest.attachments.map(row => row.sha256).sort()).toEqual([hash.slice(7), texture.hash.slice(7)].sort());
+    }
+  });
+
   it("collects exact page/master hash pointers, preserves order, and skips bundled models", async () => {
     const blob = blobFrom(vrmBytes());
     const hash = await hashOf(blob);

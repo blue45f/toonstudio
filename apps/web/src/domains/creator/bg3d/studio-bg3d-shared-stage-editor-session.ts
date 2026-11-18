@@ -27,6 +27,7 @@ export interface StudioBg3dSharedStageEditorSessionInput {
   readonly initialScene?: StudioBg3dSceneDocument;
   readonly operation: "insert" | "update";
   readonly sceneSession?: StudioShared3dSceneSession;
+  readonly frozenCut?: boolean;
   readonly stageResolution?: StudioShared3dStageResolution;
 }
 

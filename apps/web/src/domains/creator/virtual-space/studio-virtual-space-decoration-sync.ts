@@ -47,11 +47,11 @@ function path(scopeKey: string, districtKey: string): string {
 function acceptServerState(
   value: unknown,
   scopeKey: string,
-  districtKey: StudioVirtualDistrictId,
+  districtKey?: StudioVirtualDistrictId,
 ): StudioVirtualDecorationState | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
-  if (candidate.districtKey !== districtKey) return null;
+  if (districtKey !== undefined && candidate.districtKey !== districtKey) return null;
   if (candidate.scopeKey !== scopeKey) return null;
   if (typeof candidate.revision !== "number" || !Number.isInteger(candidate.revision)) return null;
 
@@ -89,7 +89,7 @@ export function createDefaultStudioVirtualDecorationTransport(): StudioVirtualDe
     async save(scopeKey, districtKey, body) {
       let response: Response;
       try {
-        response = await apiFetch(path(scopeKey, districtKey), { method: "PUT", body: JSON.stringify(body) });
+        response = await apiFetch(path(scopeKey, districtKey), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       } catch {
         return { kind: "unavailable" };
       }
@@ -110,16 +110,18 @@ async function safeJson(response: Response): Promise<unknown> {
 
 export function createStudioVirtualDecorationSync(
   transport: StudioVirtualDecorationTransport,
+  mirrorLocal = true,
 ): {
-  load(scopeKey: string, districtKey: StudioVirtualDistrictId): Promise<StudioVirtualDecorationSyncResult>;
+  load(scopeKey: string, districtKey: StudioVirtualDistrictId, followStoredDistrict?: boolean): Promise<StudioVirtualDecorationSyncResult>;
   save(
     scopeKey: string,
     districtKey: StudioVirtualDistrictId,
     next: StudioVirtualDecorationState,
+    expectedRevision?: number,
   ): Promise<StudioVirtualDecorationSyncResult>;
 } {
   return {
-    async load(scopeKey, districtKey) {
+    async load(scopeKey, districtKey, followStoredDistrict = false) {
       const local = readStudioVirtualDecorationState(scopeKey);
       let body: unknown;
       try {
@@ -128,21 +130,22 @@ export function createStudioVirtualDecorationSync(
         return { status: "local", state: local };
       }
 
-      const accepted = acceptServerState(body, scopeKey, districtKey);
+      // 서버 행은 계정과 공간 단위이며 districtKey는 최초 빈 배치의 힌트다.
+      const accepted = acceptServerState(body, scopeKey, followStoredDistrict ? undefined : districtKey);
       if (!accepted) return { status: "local", state: local };
 
-      writeStudioVirtualDecorationState(accepted, scopeKey);
+      if (mirrorLocal) writeStudioVirtualDecorationState(accepted, scopeKey);
       return { status: "server", state: accepted };
     },
 
-    async save(scopeKey, districtKey, next) {
+    async save(scopeKey, districtKey, next, expectedRevision = next.revision) {
       const outgoing = validateStudioVirtualDecorationSave({
         scopeKey,
         districtKey,
         presetKey: next.presetKey,
         presentationMode: next.presentationMode,
         placements: next.placements,
-        expectedRevision: next.revision,
+        expectedRevision,
         layoutWidth: next.layoutWidth ?? 1280,
         layoutHeight: next.layoutHeight ?? 960,
       });
@@ -154,11 +157,11 @@ export function createStudioVirtualDecorationSync(
         presetKey: outgoing.value.presetKey,
         presentationMode: outgoing.value.presentationMode,
         placements: Object.freeze([...outgoing.value.placements]),
-        revision: outgoing.value.expectedRevision,
+        revision: next.revision,
         layoutWidth: outgoing.value.layoutWidth,
         layoutHeight: outgoing.value.layoutHeight,
       });
-      writeStudioVirtualDecorationState(optimistic, scopeKey);
+      if (mirrorLocal) writeStudioVirtualDecorationState(optimistic, scopeKey);
 
       const result = await transport.save(scopeKey, districtKey, {
         scopeKey: outgoing.value.scopeKey,
@@ -173,15 +176,23 @@ export function createStudioVirtualDecorationSync(
 
       if (result.kind === "unavailable") return { status: "local", state: optimistic };
 
+      if (result.kind === "conflict") {
+        const payload = result.body;
+        const current = payload && typeof payload === "object" && "current" in payload ? payload.current : payload;
+        let serverState = acceptServerState(current, scopeKey);
+        if (!serverState) {
+          // 최초 INSERT 경합 응답은 본문에 현재 행이 없어 한 번 조회한다.
+          try { serverState = acceptServerState(await transport.load(scopeKey, districtKey), scopeKey); }
+          catch { /* 재조회할 수 없어도 충돌 상태와 기기의 편집본을 유지한다. */ }
+          if (serverState?.revision === expectedRevision) return { status: "local", state: optimistic };
+        }
+        if (mirrorLocal && serverState) writeStudioVirtualDecorationState(serverState, scopeKey);
+        return { status: "conflict", state: optimistic, ...(serverState ? { current: serverState } : {}) };
+      }
       const serverState = acceptServerState(result.body, scopeKey, districtKey);
       if (!serverState) return { status: "local", state: optimistic };
 
-      if (result.kind === "conflict") {
-        writeStudioVirtualDecorationState(serverState, scopeKey);
-        return { status: "conflict", state: optimistic, current: serverState };
-      }
-
-      writeStudioVirtualDecorationState(serverState, scopeKey);
+      if (mirrorLocal) writeStudioVirtualDecorationState(serverState, scopeKey);
       return { status: "server", state: serverState };
     },
   };

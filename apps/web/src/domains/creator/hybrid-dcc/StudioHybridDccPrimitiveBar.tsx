@@ -10,6 +10,8 @@ import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
 import { inspectGlbBinaryEvidence } from "../bg3d/studio-bg3d-glb-binary-vrm-guard";
+import { StudioHybridDccCustomPrimitiveForm } from "./StudioHybridDccCustomPrimitiveForm";
+import type { CustomPrimitive } from "./studio-hybrid-dcc-custom-primitive";
 import { StudioHybridDccBlenderKitDrawers } from "./StudioHybridDccBlenderKitDrawers";
 import {
   STUDIO_HYBRID_DCC_MODELING_RECIPES,
@@ -40,7 +42,7 @@ export interface StudioHybridDccPrimitiveBarProps {
   readonly busy: boolean;
   readonly hasActiveAsset?: boolean;
   readonly onAddPrimitive: (
-    kind: StudioHybridDccStarterPrimitiveKind,
+    kind: StudioHybridDccStarterPrimitiveKind | CustomPrimitive,
     label: string,
   ) => void;
   readonly onApplyRecipe?: (
@@ -50,12 +52,6 @@ export interface StudioHybridDccPrimitiveBarProps {
   readonly onImportFile: (file: File) => void;
 }
 
-/**
- * Unslop 9-Pass · Editor Chrome Design · Korean Typography · React TS Architecture 규격이 적용된
- * Hybrid DCC 도형·마감 레시피·CC0 에셋 서랍:
- * 727줄이던 단일 파일을 도형/레시피 코어와 `StudioHybridDccBlenderKitDrawers`로 분리하고
- * GLB 2.0 바이너리 청크 사전 무결성 가드 및 `keep-all` 한글 조판 규칙을 일관 적용한다.
- */
 export function StudioHybridDccPrimitiveBar({
   busy,
   hasActiveAsset = false,
@@ -141,7 +137,7 @@ export function StudioHybridDccPrimitiveBar({
         disabled={disabled}
         title={busyReason}
         data-studio-hybrid-dcc-primitive={spec.kind}
-        onClick={() => onAddPrimitive(spec.kind, `${label} 추가`)}
+        onClick={() => onAddPrimitive(spec.kind, bt(`${label} 추가`, `Add ${label}`))}
         className={cn(
           "flex min-h-11 min-w-0 flex-col items-start justify-center rounded-lg border border-line bg-card px-3 py-2 text-left leading-[1.4] hover:border-accent/45 hover:bg-raised disabled:cursor-not-allowed disabled:opacity-45 [word-break:keep-all]",
           TILE_PRESS,
@@ -177,13 +173,12 @@ export function StudioHybridDccPrimitiveBar({
           />
           {bt("빠른 도형 시작", "Quick shapes")}
         </span>
-        <span className="rounded-md border border-line bg-raised px-2 py-0.5 font-mono text-xs tabular-nums text-fg-3">
-          {bt("수밀 솔리드 · Ctrl+Z 복원", "Watertight · Undoable")}
-        </span>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {primarySpecs.map(renderPrimitiveButton)}
       </div>
+
+      <StudioHybridDccCustomPrimitiveForm disabled={disabled} onAdd={onAddPrimitive} />
 
       <details className="group rounded-xl border border-line bg-canvas/35">
         <summary

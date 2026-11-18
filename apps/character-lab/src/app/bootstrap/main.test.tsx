@@ -17,6 +17,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.doUnmock("../composition");
+  vi.doUnmock("../shell/CharacterLabApp");
+  vi.doUnmock("react-dom/client");
   document.body.innerHTML = "";
 });
 
@@ -75,6 +77,15 @@ describe("app/bootstrap/main", () => {
 
   it("root 요소가 없으면 import 시점에 throw한다(저장소 앱 부트스트랩 공통 메시지, 빈 화면으로 넘어가지 않는다)", async () => {
     document.body.innerHTML = "";
+    const composeCharacterLab = vi.fn();
+    const createKitShowcaseBootRecipe = vi.fn();
+    const createRoot = vi.fn();
+    vi.doMock("../composition", () => ({ composeCharacterLab, createKitShowcaseBootRecipe }));
+    vi.doMock("../shell/CharacterLabApp", () => ({ CharacterLabApp: vi.fn() }));
+    vi.doMock("react-dom/client", () => ({ createRoot }));
     await expect(import("./main")).rejects.toThrow("Character Lab root element was not found");
+    expect(createKitShowcaseBootRecipe).not.toHaveBeenCalled();
+    expect(composeCharacterLab).not.toHaveBeenCalled();
+    expect(createRoot).not.toHaveBeenCalled();
   });
 });

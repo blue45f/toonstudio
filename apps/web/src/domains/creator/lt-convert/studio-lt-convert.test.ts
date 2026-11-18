@@ -66,6 +66,15 @@ function distinctToneValues(toneLayer: ImageData): number[] {
   return [...values].sort((a, b) => a - b);
 }
 
+it("투명한 캐릭터 배경은 선화와 톤 모두 아래 원고가 보인다", () => {
+  const source = new ImageData(new Uint8ClampedArray([0, 0, 0, 0, 0, 0, 0, 255, 40, 40, 40, 128]), 3, 1);
+  const result = convertStudioLtImage(source, { ...DEFAULT_OPTIONS, screentone: false, extractBlackFill: true });
+  expect(result.lineLayer.data[3]).toBe(0);
+  expect(result.toneLayer.data[3]).toBe(0);
+  expect(result.toneLayer.data[7]).toBe(255);
+  expect(result.toneLayer.data[11]).toBe(128);
+});
+
 describe("normalizeStudioLtConvertOptions", () => {
   it("범위 밖 값은 clamp하고 정수는 반올림한다", () => {
     const normalized = normalizeStudioLtConvertOptions({

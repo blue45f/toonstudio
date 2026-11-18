@@ -26,6 +26,7 @@ import {
   expressionToMorphWeights,
   isSlotKind,
   paramToMorphWeights,
+  DEFAULT_RECIPE_COLORS,
   pickBaseChannelColors,
   presetName,
   presetSlot,
@@ -96,6 +97,7 @@ export interface ApplyPlannerOptions {
   readonly settleSteps?: number;
   /** 소스 커스터마이즈 능력(엔진 `SourceCapabilities.custom`). 주면 미지원 커스터마이즈를 `unsupportedCustom`에 올린다(레시피 v3). */
   readonly custom?: CustomCapabilities;
+  readonly packageShapes?: CustomCapabilities["shapes"];
 }
 
 export interface PartialSlot {
@@ -390,7 +392,10 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
       boneRotations.rightEye = eyeGaze.frozenPose?.rightEye ?? eyeAnglesQuaternion(eyeGaze.right);
     }
 
-    const customization = planCustomization({ recipe, capabilities, catalog, unsupportedSlots, presetUnavailableReason: presetUnavailableReasonKo, materialPresetFor, ...(options.custom ? { custom: options.custom } : {}) });
+    const colorRecipe = recipe.source.kind === "package"
+      ? { ...recipe, colors: { ...recipe.colors, hair: recipe.hairColor.packageBaseTint ?? DEFAULT_RECIPE_COLORS.hair } }
+      : recipe;
+    const customization = planCustomization({ recipe: colorRecipe, capabilities, catalog, unsupportedSlots, packageShapes: options.packageShapes, presetUnavailableReason: presetUnavailableReasonKo, materialPresetFor, ...(options.custom ? { custom: options.custom } : {}) });
     const context: PartPlanContext = { recipe, applied, unsupportedSlots, channels: customization.channels, capabilities, custom: options.custom };
     const parts = layout.map((layoutEntry) => planPart(layoutEntry, context));
 
@@ -399,7 +404,7 @@ export function createApplyPlanner(options: ApplyPlannerOptions = {}): DetailedA
       morphWeights,
       boneRotations,
       parts,
-      colors: pickBaseChannelColors(recipe.colors),
+      colors: pickBaseChannelColors(colorRecipe.colors),
       physics: { provider: recipe.physics.provider, settleSteps },
       unsupported,
       partial,

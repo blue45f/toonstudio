@@ -1,3 +1,17 @@
+import { readWorkVrmCutStorageBytes } from "../membership-operations/work-vrm-cut-storage-usage";
+import { isWorkVrmCutReservedAssetId } from "@toonstudio/contracts/studio-work-vrm-cut";
+import { sealWorkVrmCut, type StudioWorkVrmCutSeal } from "./studio-work-vrm-cut.store";
+import {
+  StudioWorkAssetNotFoundError,
+  StudioWorkAssetForbiddenError,
+  StudioWorkAssetTypeConflictError,
+  StudioWorkAssetImmutableConflictError,
+  StudioWorkAssetQuotaError,
+  StudioWorkAssetCleanupOwnershipError,
+  StudioWorkAssetReferencedError,
+  StudioWorkAssetStorageReferenceNotFoundError,
+  StudioWorkAssetStorageReferenceConflictError,
+} from "./studio-work-asset-errors";
 import { createHash, randomUUID } from "node:crypto";
 
 import { and, asc, count, eq, inArray, ne, or, sql } from "drizzle-orm";
@@ -66,72 +80,11 @@ import type {
   StudioWorkAssetType,
 } from "@toonstudio/contracts/studio-work-asset-contract";
 
+export * from "./studio-work-asset-errors";
+
 export const STUDIO_WORK_ASSET_REPOSITORY = Symbol("STUDIO_WORK_ASSET_REPOSITORY");
 
 type DrizzleStudioWorkAssetTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-export class StudioWorkAssetNotFoundError extends Error {
-  constructor() {
-    super("studio_work_asset_not_found");
-    this.name = "StudioWorkAssetNotFoundError";
-  }
-}
-
-export class StudioWorkAssetForbiddenError extends Error {
-  constructor(readonly operation: "view" | "edit") {
-    super(`studio_work_asset_${operation}_forbidden`);
-    this.name = "StudioWorkAssetForbiddenError";
-  }
-}
-
-export class StudioWorkAssetTypeConflictError extends Error {
-  constructor() {
-    super("studio_work_asset_type_conflict");
-    this.name = "StudioWorkAssetTypeConflictError";
-  }
-}
-
-export class StudioWorkAssetImmutableConflictError extends Error {
-  constructor() {
-    super("studio_work_asset_immutable_conflict");
-    this.name = "StudioWorkAssetImmutableConflictError";
-  }
-}
-
-export class StudioWorkAssetQuotaError extends Error {
-  constructor(readonly quota: "count" | "bytes" | "tombstones") {
-    super(`studio_work_asset_${quota}_quota`);
-    this.name = "StudioWorkAssetQuotaError";
-  }
-}
-
-export class StudioWorkAssetCleanupOwnershipError extends Error {
-  constructor() {
-    super("studio_work_asset_cleanup_ownership");
-    this.name = "StudioWorkAssetCleanupOwnershipError";
-  }
-}
-
-export class StudioWorkAssetReferencedError extends Error {
-  constructor() {
-    super("studio_work_asset_referenced");
-    this.name = "StudioWorkAssetReferencedError";
-  }
-}
-
-export class StudioWorkAssetStorageReferenceNotFoundError extends Error {
-  constructor() {
-    super("studio_work_asset_storage_reference_not_found");
-    this.name = "StudioWorkAssetStorageReferenceNotFoundError";
-  }
-}
-
-export class StudioWorkAssetStorageReferenceConflictError extends Error {
-  constructor() {
-    super("studio_work_asset_storage_reference_conflict");
-    this.name = "StudioWorkAssetStorageReferenceConflictError";
-  }
-}
 
 export type StudioWorkAssetGeneratedObjectPurpose = Exclude<
   PrivateObjectPurpose,
@@ -183,7 +136,8 @@ export interface StudioWorkAssetRepository {
   upsert(actorUserId: string, input: StudioWorkAssetWrite): Promise<StudioWorkAssetManifest>;
   upsertBatch(
     actorUserId: string,
-    inputs: readonly StudioWorkAssetWrite[]
+    inputs: readonly StudioWorkAssetWrite[],
+    seal?: StudioWorkVrmCutSeal,
   ): Promise<readonly StudioWorkAssetManifest[]>;
   getManifest(
     actorUserId: string,
@@ -1035,7 +989,8 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
 
   async upsertBatch(
     actorUserId: string,
-    inputs: readonly StudioWorkAssetWrite[]
+    inputs: readonly StudioWorkAssetWrite[],
+    seal?: StudioWorkVrmCutSeal,
   ): Promise<readonly StudioWorkAssetManifest[]> {
     if (inputs.length === 0) throw new Error("studio work asset batch must not be empty");
     const sourceObjects = inputs.map(assertStudioWorkAssetSourceStorageObject);
@@ -1044,7 +999,12 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
       // This one work-row lock serializes the entire pair against every participating upload,
       // collaborator downgrade, cleanup and trusted deletion mutation for the work.
       if (inputs.some((input) => canonicalJson(input.writeContext ?? null) !== canonicalJson(inputs[0]?.writeContext ?? null))) throw new StudioWorkAssetForbiddenError("edit");
-      await authorizeStudioScopedAssetPurpose(transaction, actorUserId, workId, inputs[0]?.writeContext);
+      const authority = await authorizeStudioScopedAssetPurpose(transaction, actorUserId, workId, inputs[0]?.writeContext);
+      if (seal && (seal.workId !== workId || inputs[0]?.assetId !== seal.anchorId ||
+        (authority.context && !authority.targets.some(target => target.definition.pageId === seal.pageId)))) {
+        throw new StudioWorkAssetForbiddenError("edit");
+      }
+      if (!seal && inputs.some(input => isWorkVrmCutReservedAssetId(input.assetId))) throw new StudioWorkAssetImmutableConflictError();
       const assetIds = inputs.map(({ assetId }) => assetId);
       const reserved = await transaction
         .select({ assetId: creatorWorkAssetTombstones.assetId })
@@ -1082,22 +1042,25 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
           decodedRgbaBytes: row.decodedRgbaBytes!,
         } : null,
       }));
+      const newCut = seal && !existing.some(row => row.assetId === seal.anchorId);
+      const sceneBytes = newCut ? Buffer.byteLength(seal.sceneText, "utf8") : 0;
+      const storedSceneBytes = await readWorkVrmCutStorageBytes(transaction, { workId });
       const missing = planStudioWorkAssetBatchUpsert({
         writes: inputs,
         existing: existingForPlan,
         reservedAssetIds: new Set(reserved.map(({ assetId }) => assetId)),
         assetCount: Number(usage?.assetCount ?? 0),
-        totalBytes: Number(usage?.totalBytes ?? 0),
+        totalBytes: Number(usage?.totalBytes ?? 0) + storedSceneBytes + sceneBytes,
       });
 
       let inserted: (typeof creatorWorkAssets.$inferSelect)[] = [];
       if (missing.length > 0) {
         const incomingBytes = missing.reduce(
           (total, input) => total + input.payload.byteLength,
-          0,
+          sceneBytes,
         );
         const largestFileBytes = Math.max(
-          ...missing.map((input) => input.payload.byteLength),
+          sceneBytes, ...missing.map((input) => input.payload.byteLength),
         );
         const sourceDigest = createHash("sha256")
           .update(
@@ -1165,6 +1128,7 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
         );
       }
 
+      if (seal) await sealWorkVrmCut(transaction, seal, Boolean(newCut));
       const rowById = new Map(
         [...existing, ...inserted].map((row) => [row.assetId, row] as const)
       );
@@ -1769,6 +1733,8 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
           existing.sha256 !== expectedSha256
         ) return false;
 
+        // 봉인된 원본은 컷을 지운 뒤에도 원고 이력과 다시 열기에서 참조한다.
+        if (isWorkVrmCutReservedAssetId(assetId)) throw new StudioWorkAssetReferencedError();
         const durable = await loadStudioCrdtDocumentInTransaction(transaction, workId);
         let jsonReferenced = false;
         if (isStudioLinked3dPassServerAssetId(assetId)) {
@@ -1824,7 +1790,7 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
         if (generatedReference) {
           // The source row owns every generated reference through its composite foreign key.
           // Cascading it here would bypass the generated-object delete state machine.
-          if (isStudioLinked3dPassServerAssetId(assetId)) return false;
+          if (isStudioLinked3dPassServerAssetId(assetId) || isWorkVrmCutReservedAssetId(assetId)) return false;
           throw new StudioWorkAssetReferencedError();
         }
 
@@ -1860,7 +1826,7 @@ export class DrizzleStudioWorkAssetRepository implements StudioWorkAssetReposito
   ): Promise<boolean> {
     return db.transaction(async (transaction) => {
       await requireAccess(transaction, actorUserId, workId, "edit", true);
-      if (isStudioLinked3dPassServerAssetId(assetId)) return false;
+      if (isStudioLinked3dPassServerAssetId(assetId) || isWorkVrmCutReservedAssetId(assetId)) return false;
       const [existing] = await transaction
         .select({
           assetId: creatorWorkAssets.assetId,

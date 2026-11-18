@@ -1,3 +1,4 @@
+import { StudioLiveP2pMeshHandshake } from "./studio-live-p2p-mesh-handshake";
 import { respondStudioP2pCrdtSync } from "./studio-live-p2p-bg3d-reader";
 import { STUDIO_CRDT_READER_CAPABILITIES, studioCrdtReaderMetadata, supportsStudioCrdtReaders } from "./studio-crdt-reader-capability";
 import {
@@ -168,8 +169,7 @@ interface StudioLiveP2pPeerLink {
   participant: StudioLiveParticipant;
   connection: StudioLiveP2pRtcPeerConnection;
   channel: StudioLiveP2pRtcDataChannel | null;
-  remoteDescriptionSet: boolean;
-  pendingIce: RTCIceCandidateInit[];
+  readonly handshake: StudioLiveP2pMeshHandshake;
   /** Binary lanes this peer announced over its channel; empty until a caps message arrives. */
   peerBinaryLanes: readonly string[];
   /** Capability-scoped feature lanes advertised by this authenticated peer. */
@@ -959,6 +959,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       this.knownPeerSessionIds.add(sessionId);
       this.knownParticipants.set(sessionId, envelope.sender);
       this.ensurePeer(envelope.sender);
+      this.peers.get(sessionId)?.handshake.onPresence();
     }
   }
 
@@ -986,8 +987,11 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       participant,
       connection,
       channel: null,
-      remoteDescriptionSet: false,
-      pendingIce: [],
+      handshake: new StudioLiveP2pMeshHandshake(
+        connection, () => !this.closed && this.peers.get(sessionId)?.connection === connection, this.now,
+        (type, sdp) => this.sendMeshDescription(sessionId, type, sdp),
+        (candidate) => this.sendMeshIce(sessionId, candidate),
+      ),
       peerBinaryLanes: STUDIO_LIVE_P2P_NO_BINARY_LANES,
       peerCapabilities: Object.freeze([]),
       announcedBinaryLanes: false,
@@ -998,7 +1002,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     connection.onicecandidate = (event) => {
       const candidate = event.candidate;
       if (link.closed || !candidate?.candidate) return;
-      this.sendMeshIce(sessionId, candidate);
+      link.handshake.onLocalIce(candidate);
     };
     connection.ondatachannel = (event) => {
       if (link.closed) return;
@@ -1029,12 +1033,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
 
   private async sendMeshOffer(link: StudioLiveP2pPeerLink): Promise<void> {
     try {
-      const offer = await link.connection.createOffer();
-      if (link.closed || this.closed) return;
-      await link.connection.setLocalDescription(offer);
-      if (link.closed || this.closed) return;
-      if (typeof offer.sdp !== "string" || offer.sdp.length === 0) return;
-      this.sendMeshDescription(link.sessionId, "offer", offer.sdp);
+      await link.handshake.offer();
     } catch {
       // A rejected offer from a retired connection must not close a newer link for the peer.
       if (this.peers.get(link.sessionId) === link) {
@@ -1053,20 +1052,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
     try {
       if (envelope.kind === "webrtc:description") {
         const payload = envelope.payload as StudioLiveWebRtcDescriptionPayload;
-        await link.connection.setRemoteDescription({
-          type: payload.type,
-          sdp: payload.sdp,
-        });
-        if (link.closed || this.closed) return;
-        link.remoteDescriptionSet = true;
-        await this.flushPendingIce(link);
-        if (payload.type === "offer") {
-          const answer = await link.connection.createAnswer();
-          if (link.closed || this.closed) return;
-          await link.connection.setLocalDescription(answer);
-          if (link.closed || this.closed || typeof answer.sdp !== "string") return;
-          this.sendMeshDescription(link.sessionId, "answer", answer.sdp);
-        }
+        await link.handshake.receive(payload.type, payload.sdp);
         return;
       }
       const ice = envelope.payload as StudioLiveWebRtcIcePayload;
@@ -1076,11 +1062,7 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
         sdpMLineIndex: ice.sdpMLineIndex,
         usernameFragment: ice.usernameFragment,
       };
-      if (!link.remoteDescriptionSet) {
-        if (link.pendingIce.length < 32) link.pendingIce.push(candidate);
-        return;
-      }
-      await link.connection.addIceCandidate(candidate);
+      await link.handshake.onRemoteIce(candidate);
     } catch {
       // ICE/SDP can race a close or a stale candidate. Keep the mesh opportunistic.
     }
@@ -1389,18 +1371,6 @@ class StudioLiveP2pOverlayTransport implements StudioLiveTransport {
       }
     } catch {
       // Invalid SDP/ICE is dropped; the next presence tick can retry the mesh.
-    }
-  }
-
-  private async flushPendingIce(link: StudioLiveP2pPeerLink): Promise<void> {
-    const queued = link.pendingIce.splice(0, link.pendingIce.length);
-    for (const candidate of queued) {
-      if (link.closed) return;
-      try {
-        await link.connection.addIceCandidate(candidate);
-      } catch {
-        // Stale candidate after an ICE restart is ignored.
-      }
     }
   }
 

@@ -326,6 +326,7 @@
 .space-lobby__actions > :is(a, button) { width: 100%; min-height: 48px; justify-content: center; }
 .space-lobby__note { margin: 0; color: var(--color-fg-3); font-size: 12px; line-height: 1.5; }
 .space-lobby__code-hint {
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -347,7 +348,7 @@
 /* 입장코드 패널: 닉네임 입력과 같은 카드 문법으로 맞춘다.
    (이전에는 요소 기본 스타일 그대로 떨어져 로비 디자인과 동떨어져 보였다.) */
 .space-lobby__entry-code { border-top: 1px solid var(--color-line); padding-top: 16px; }
-.space-lobby__entry-code section { display: grid; gap: 8px; outline: none; }
+.space-lobby__entry-code form { display: grid; gap: 8px; outline: none; }
 .space-lobby__entry-code h2 { margin: 0; color: var(--color-fg); font-size: 14px; font-weight: 900; }
 .space-lobby__entry-code p { margin: 0; color: var(--color-fg-2); font-size: 12px; line-height: 1.55; }
 .space-lobby__entry-code label { display: grid; gap: 6px; color: var(--color-fg); font-size: 13px; font-weight: 800; }

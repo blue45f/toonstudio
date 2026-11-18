@@ -1,6 +1,29 @@
-import type { CDPSession, Locator } from "playwright";
+import type { CDPSession, ElementHandle, Locator } from "playwright";
 
-export async function readNativeTouchScrollGeometry(handle: Locator) {
+export async function readNativeTouchScrollGeometry(
+  handle: Locator,
+  scrollOwner?: ElementHandle<HTMLElement>,
+) {
+  if (scrollOwner) {
+    return handle.evaluate((element, section) => {
+      const box = element.getBoundingClientRect();
+      const clip = section.getBoundingClientRect();
+      const left = Math.max(box.left, clip.left, 0);
+      const top = Math.max(box.top, clip.top, 0);
+      const right = Math.min(box.right, clip.right, innerWidth);
+      const bottom = Math.min(box.bottom, clip.bottom, innerHeight);
+      return {
+        width: right - left, height: bottom - top,
+        x: (left + right) / 2, y: (top + bottom) / 2,
+        scrollTop: section.scrollTop, scrollHeight: section.scrollHeight, clientHeight: section.clientHeight,
+        viewportWidth: innerWidth, viewportHeight: innerHeight, deviceScaleFactor: devicePixelRatio,
+        visualViewportScale: visualViewport?.scale ?? 1,
+        touchAction: getComputedStyle(element).touchAction,
+        sectionTouchAction: getComputedStyle(section).touchAction,
+        sectionOverflowY: getComputedStyle(section).overflowY,
+      };
+    }, scrollOwner);
+  }
   return handle.evaluate((element) => {
     const section = element.closest("[data-bg3d-professional-workspace]");
     if (!section) throw new Error("3D scroll handle has no professional workspace scroll container");

@@ -192,6 +192,14 @@ export function readStudioBg3dObjectWorldBounds(
   });
 }
 
+/** 수동 레이캐스트는 카메라의 클리핑 면을 적용하지 않는다. 화면에 보이는 깊이만 허용한다. */
+export function isStudioBg3dPointInCameraDepth(camera: THREE.Camera, point: THREE.Vector3): boolean {
+  if (!(camera instanceof THREE.PerspectiveCamera || camera instanceof THREE.OrthographicCamera)) return false;
+  const view = camera.matrixWorldInverse.elements;
+  const depth = -(view[2] * point.x + view[6] * point.y + view[10] * point.z + view[14]);
+  return Number.isFinite(depth) && depth >= camera.near && depth <= camera.far;
+}
+
 /**
  * Converts a Three raycast's geometry-local normal into a normalized world normal. InstancedMesh
  * intersections need their instance transform in addition to object.matrixWorld.

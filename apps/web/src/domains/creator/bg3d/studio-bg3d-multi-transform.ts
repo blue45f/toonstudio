@@ -30,6 +30,13 @@ export function resolveStudioBg3dModeAwareDriverTransform(
 ): StudioBg3dThreeLocalTransform {
   const position: [number, number, number] = [...rawTransform.position];
   const rotation: [number, number, number] = [...rawTransform.rotation];
+  // 쿼터니언을 오일러로 읽으면 같은 반 바퀴도 미세한 오차로 ±π가 된다.
+  // 같은 기즈모 자세가 문서·숫자 입력·실행 취소에 서로 다른 회전으로 남지 않게 한다.
+  if (mode === "rotate") {
+    for (let axis = 0; axis < rotation.length; axis += 1) {
+      if (Math.abs(Math.abs(rotation[axis]) - Math.PI) <= 1e-10) rotation[axis] = Math.PI;
+    }
+  }
   const scale: [number, number, number] = [...rawTransform.scale];
   if (!snap || !snapSettings.enabled) {
     return { position, rotation, scale };

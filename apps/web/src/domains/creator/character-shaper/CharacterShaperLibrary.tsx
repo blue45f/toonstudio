@@ -2,6 +2,7 @@ import { Check, Plus, Search, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { resolveVrmLibraryEntryDisplayName } from "../vrm/studio-vrm-display-name";
+import { CharacterShaperSavedVariants } from "./CharacterShaperSavedVariants";
 import { discoverCharacterLibrary } from "./character-shaper-reference-model";
 
 import type { CharacterLibraryCollection } from "./character-shaper-reference-model";
@@ -52,6 +53,7 @@ export function CharacterShaperLibrary({ h, binding }: {
       </label>
     </header>
     <div className="character-library__scroll">
+      {collection === "mine" && <CharacterShaperSavedVariants h={h} disabled={locked || Boolean(binding.previewEntryId)} query={query} />}
       {visible.length ? <ul className="character-library__list">
         {visible.map((entry) => {
           const name = resolveVrmLibraryEntryDisplayName(entry, locale);

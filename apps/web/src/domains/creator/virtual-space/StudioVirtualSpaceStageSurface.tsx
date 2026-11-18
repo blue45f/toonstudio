@@ -6,8 +6,11 @@ import type { StudioVirtualSpacePhaserCanvasProps } from "./studio-virtual-space
 import type { StudioVirtualSpaceThreeStageProps } from "./three/studio-virtual-space-three-stage-props";
 import { useVirtualThreeThemeContext } from "./three/ui/virtual-three-theme-context";
 
+import { WorkstationSpaceContext, type WorkstationSpace } from "./use-studio-workstation-notebook";
+
 type LogicalStageProps = Omit<StudioVirtualSpaceThreeStageProps, "theme" | "themeRequestRevision" | "onThemePreviewChange">;
 export interface StudioVirtualSpaceStageSurfaceProps {
+  readonly workstationSpace?: WorkstationSpace;
   readonly stageKind: StudioVirtualStageKind;
   readonly logical: LogicalStageProps;
   readonly twoD: Omit<StudioVirtualSpacePhaserCanvasProps, keyof LogicalStageProps>;
@@ -24,10 +27,12 @@ function ThreeThemeStage({ logical }: Pick<StudioVirtualSpaceStageSurfaceProps, 
 }
 
 /** 각 renderer에 명시적인 논리 입력과 해당 renderer의 표현 설정만 전달한다. */
-export function StudioVirtualSpaceStageSurface({ stageKind, logical, twoD }: StudioVirtualSpaceStageSurfaceProps) {
+export function StudioVirtualSpaceStageSurface({ stageKind, logical, twoD, workstationSpace }: StudioVirtualSpaceStageSurfaceProps) {
   if (stageKind === "three") return <ThreeThemeStage logical={logical} />;
   // 저장·실행 취소 원본은 유지하고, 화면에는 이동 판정과 같은 월드 좌표를 전달한다.
   const decorations = twoD.decorations ? studioVirtualDecorationStateForWorld(twoD.decorations, logical.manifest) : undefined;
-  if (stageKind === "legacy") return <StudioVirtualSpaceLegacyStage {...twoD} {...logical} decorations={decorations} />;
-  return <StudioOffice2dCanvas {...twoD} {...logical} decorations={decorations} />;
+  return <WorkstationSpaceContext.Provider value={workstationSpace ?? null}>
+    {stageKind === "legacy" ? <StudioVirtualSpaceLegacyStage {...twoD} {...logical} decorations={decorations} />
+      : <StudioOffice2dCanvas {...twoD} {...logical} decorations={decorations} />}
+  </WorkstationSpaceContext.Provider>;
 }

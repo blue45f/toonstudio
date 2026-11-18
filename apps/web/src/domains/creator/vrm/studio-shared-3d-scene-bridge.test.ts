@@ -101,10 +101,16 @@ describe("studio shared 3D scene bridge", () => {
       "mannequin-material",
       "props",
       "scene-props",
-      "surface-paint",
       "wardrobe",
     ]);
+    expect(report.supportedPreview).toContain("저장한 기본색 페인트");
     expect(serializeStudioVrmSceneDocument(scene)).toBe(before);
+    const secondary = normalizeStudioVrmSceneDocument({
+      ...scene, surfacePaint: { version: 2, textures: scene.surfacePaint.textures.map((texture) => ({
+        ...texture, textureSlot: "roughness", bindingKey: "body-roughness", channelPacking: "grayscale", colorSpace: "linear",
+      })) },
+    });
+    expect(inspectStudioShared3dCharacterCompatibility(secondary).previewOmissions.map(({ code }) => code)).toContain("surface-paint");
   });
 
   it("plans known wardrobe and hand props as capturable once the shared runtime can project them", () => {

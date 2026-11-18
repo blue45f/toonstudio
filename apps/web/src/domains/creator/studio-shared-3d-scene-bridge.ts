@@ -88,7 +88,7 @@ export interface StudioShared3dCharacterCompatibility {
   readonly previewOmissions: readonly StudioShared3dPreviewOmission[];
 }
 
-export interface StudioShared3dCharacterSource {
+export type StudioShared3dCharacterSource = {
   readonly elementId: string;
   /** SHA-256 of the complete canonical VRM scene document. */
   readonly sourceHash: `sha256:${string}`;
@@ -104,7 +104,7 @@ export interface StudioShared3dCharacterSource {
   readonly label: string;
   readonly scene: StudioVrmSceneDocument;
   readonly compatibility: StudioShared3dCharacterCompatibility;
-}
+} & import("./scene3d/studio-team-vrm-cut-assets").TeamCutCharacterRuntime;
 
 export type StudioShared3dCharacterRuntimeStatus =
   | "loading"
@@ -233,6 +233,7 @@ const PREVIEW_SUPPORTED = Object.freeze([
   "옷장 레이어",
   "손에 든 소품",
   "기본 색·MToon 재질 효과",
+  "저장한 기본색 페인트",
 ] as const);
 
 function containsControlCharacter(value: string): boolean {
@@ -455,8 +456,7 @@ export function inspectStudioShared3dCharacterCompatibility(
   const avatarForgeOmission = inspectAvatarForgePreviewOmission(
     scene.appearance.avatarForge,
   );
-  // Face/hair is applied by StudioVrmAvatarForge on the shared stage. Only envelopes the
-  // runtime cannot reproduce stay preview-only.
+  // 공유 스테이지의 StudioVrmAvatarForge에서 재현할 수 없는 조형만 미리보기로 제한한다.
   if (avatarForgeOmission && avatarForgeOmission !== "face-or-hair") {
     omissions.push({
       code: "avatar-forge",
@@ -483,8 +483,8 @@ export function inspectStudioShared3dCharacterCompatibility(
   if (hasCanonicalContent(scene.sceneProps)) {
     omissions.push({ code: "scene-props", label: "캐릭터 포저 장면 소품" });
   }
-  if (scene.surfacePaint.textures.length > 0) {
-    omissions.push({ code: "surface-paint", label: "표면 페인트 텍스처" });
+  if (scene.surfacePaint.textures.some((texture) => texture.textureSlot !== "baseColor")) {
+    omissions.push({ code: "surface-paint", label: "재질 채널 페인트" });
   }
   if (appearanceProjection.wardrobe.status === "unsupported") {
     omissions.push({ code: "wardrobe", label: "옷장 레이어 상태" });

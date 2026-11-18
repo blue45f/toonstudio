@@ -20,6 +20,9 @@ interface FixtureProps {
   readonly warm: boolean;
   readonly onOpen: (pageId: string) => void;
   readonly onReset: () => void;
+  readonly pendingTarget?: boolean;
+  readonly failedTarget?: boolean;
+  readonly restoreTarget?: () => boolean;
 }
 
 const reportError = vi.fn();
@@ -60,6 +63,7 @@ function useFixture(props: FixtureProps) {
     hasAutosave: props.recovery,
     wasOpen: () => syncRef.current.bg3d,
     resetColdSource: () => { setSeed(null); props.onReset(); },
+    coldTargetPending: props.pendingTarget, coldTargetSourceFailed: props.failedTarget, restoreColdTarget: props.restoreTarget,
     openEntry: () => { setPeersOpen(false); setOpen(true); props.onOpen(props.pageId); },
   });
   useEffect(() => { syncRef.current.bg3d = open; }, [open]);
@@ -94,6 +98,27 @@ describe("useStudioBg3dRoutedEntry", () => {
     expect(view.result.current.canApplyCaptured()).toBe(true);
     expect(onOpen).toHaveBeenCalledExactlyOnceWith("restored-page");
     expect(onReset).toHaveBeenCalledOnce();
+  });
+
+  it("저장된 대상의 권한 결정을 기다리고 거부된 레이어를 빈 편집기로 열지 않는다", () => {
+    const restoreTarget = vi.fn(() => false), onOpen = vi.fn();
+    const initial = { ...defaults, pendingTarget: true, restoreTarget, onOpen };
+    const view = renderHook(useFixture, { initialProps: initial });
+    expect(restoreTarget).not.toHaveBeenCalled();
+    view.rerender({ ...initial, pendingTarget: false });
+    expect(restoreTarget).toHaveBeenCalledOnce();
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(view.result.current.open).toBe(false);
+    expect(view.result.current.captured().ticket).toBeNull();
+  });
+
+  it("원고를 불러오지 못한 기존 레이어는 대기 화면에 남거나 새 배경으로 열리지 않는다", () => {
+    const restoreTarget = vi.fn(() => false), onOpen = vi.fn();
+    const props = { ...defaults, hydrated: false, pending: true, remote: true, onOpen, restoreTarget };
+    const view = renderHook(useFixture, { initialProps: { ...props, failedTarget: false } });
+    view.rerender({ ...props, failedTarget: true });
+    expect(restoreTarget).toHaveBeenCalledOnce();
+    expect(onOpen).not.toHaveBeenCalled();
   });
 
   it("준비 전에 다른 route로 이동하면 늦은 복구 완료가 BG3D를 열지 않는다", () => {

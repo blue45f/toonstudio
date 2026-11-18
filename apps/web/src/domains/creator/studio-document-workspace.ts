@@ -121,7 +121,8 @@ export const STUDIO_DOCUMENT_WORKSPACES = [
 export type StudioDocumentWorkspaceDefinition =
   (typeof STUDIO_DOCUMENT_WORKSPACES)[number];
 export type StudioDocumentWorkspaceId = StudioDocumentWorkspaceDefinition["id"];
-export type StudioDocumentLegacySurface = StudioDocumentWorkspaceDefinition["legacySurface"];
+export type StudioDocument3dTool = "poser" | "character";
+export type StudioDocumentLegacySurface = StudioDocumentWorkspaceDefinition["legacySurface"] | StudioDocument3dTool;
 export type StudioDocumentRouteErrorCode =
   | "invalid-document-id"
   | "invalid-draft-id"
@@ -303,11 +304,22 @@ function normalizedDocumentState(input: StudioDocumentHrefInput): {
   return { workspace, focus, language, version };
 }
 
+function readStudioDocument3dTool(params: URLSearchParams): StudioDocument3dTool | null {
+  const tools = params.getAll("tool3d");
+  return tools.length === 1 && (tools[0] === "poser" || tools[0] === "character") ? tools[0] : null;
+}
+
+export function setStudioDocument3dTool(params: URLSearchParams, tool: StudioDocumentLegacySurface): void {
+  if (tool === "poser" || tool === "character") params.set("tool3d", tool);
+  else params.delete("tool3d");
+}
+
 function applyDocumentState(
   params: URLSearchParams,
   state: ReturnType<typeof normalizedDocumentState>,
 ): void {
   params.set("workspace", state.workspace);
+  setStudioDocument3dTool(params, studioDocumentWorkspaceToLegacySurface(state.workspace, params));
   if (state.focus) params.set("focus", state.focus);
   if (state.language) params.set("language", state.language);
   if (state.version) params.set("version", state.version);
@@ -327,7 +339,9 @@ export function studioDocumentWorkspaceById(
 
 export function studioDocumentWorkspaceToLegacySurface(
   id: StudioDocumentWorkspaceId,
+  search?: string | URLSearchParams,
 ): StudioDocumentLegacySurface {
+  if (id === "3d") return readStudioDocument3dTool(paramsFrom(search)) ?? "bg3d";
   return studioDocumentWorkspaceById(id).legacySurface;
 }
 
@@ -361,7 +375,7 @@ export function studioDocumentHref(input: StudioDocumentHrefInput): string {
 export function studioLegacyEditorHref(input: StudioDocumentHrefInput): string {
   const identity = requireDocumentMode(input);
   const state = normalizedDocumentState(input);
-  const legacySurface = studioDocumentWorkspaceToLegacySurface(state.workspace);
+  const legacySurface = studioDocumentWorkspaceToLegacySurface(state.workspace, input.search);
   const params = cleanCanonicalParams(input.search);
   applyDocumentState(params, state);
   if (identity.projectId) params.set("project", identity.projectId);
@@ -369,7 +383,7 @@ export function studioLegacyEditorHref(input: StudioDocumentHrefInput): string {
 
   const pathname = identity.documentId
     ? `/studio/work/${encodeURIComponent(identity.documentId)}/${legacySurface}`
-    : `/studio/${legacySurface}`;
+    : legacySurface === "poser" ? "/studio/canvas/poser" : `/studio/${legacySurface}`;
   return serializedHref(pathname, params);
 }
 

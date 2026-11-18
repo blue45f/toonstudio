@@ -10,11 +10,14 @@ import {
   saveStudioDrawingClarityChoice,
   saveStudioDrawingClarityKnownOwnerState,
   studioDrawingClarityEligible,
+  studioDrawingRoleRequiresLayout,
+  studioDrawingRouteUsesClarity,
   type StudioDrawingClarityBaseline,
   type StudioDrawingClarityStorage,
 } from "./StudioDrawingClarityPolicy";
 import type { StudioCuttoonEditorViewSession } from "./StudioCuttoonEditorViewSession";
 import { defaultStudioAppSettings } from "../studio-app-settings";
+import { readStudioLaunchDensity } from "../studio-launch-mode";
 import { projectStudioTaskAppSettings } from "../studio-task-tools";
 import { parseStudioWorkspaceRoute } from "../studio-workspace-route";
 
@@ -24,6 +27,7 @@ export type StudioDrawingClaritySession = Pick<StudioCuttoonEditorViewSession,
   "currentWorkspaceOwnerScope" | "isMobile" | "workspaceState" | "workMode" | "canvasOnlyMode" | "mobileImmersive"
   | "uiDensityMode" | "studioDrawingClarityBaseline" | "location" | "appSettings">
   & {
+    readonly navigate?: StudioCuttoonEditorViewSession["navigate"];
     readonly pendingSaveIntent?: StudioCuttoonEditorViewSession["pendingSaveIntent"];
     readonly studioMenubarContentHandlers: Pick<StudioCuttoonEditorViewSession["studioMenubarContentHandlers"], "setStudioUiDensity">;
   };
@@ -31,23 +35,6 @@ export type StudioDrawingClaritySession = Pick<StudioCuttoonEditorViewSession,
 function hasVisibleDialog() {
   return Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"],dialog[open]'))
     .some((node) => node.getClientRects().length > 0 && getComputedStyle(node).visibility !== "hidden");
-}
-
-/** Capacitor가 제공한 플랫폼 신호만 읽고 모바일 웹·설치형 웹은 추측하지 않는다. */
-function isNativeStudioShell(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const bridge: unknown = Reflect.get(window, "Capacitor");
-    if (!bridge || typeof bridge !== "object") return false;
-    const isNative: unknown = Reflect.get(bridge, "isNativePlatform");
-    if (typeof isNative === "function") return Reflect.apply(isNative, bridge, []) === true;
-    const getPlatform: unknown = Reflect.get(bridge, "getPlatform");
-    const platform: unknown = typeof getPlatform === "function" ? Reflect.apply(getPlatform, bridge, []) : null;
-    return platform === "android" || platform === "ios";
-  } catch {
-    // 브리지를 읽을 수 없어도 기존 웹 작업 흐름을 중단하지 않는다.
-    return false;
-  }
 }
 
 /** 원고·저장 설정을 복제하지 않는 화면 선택과 도구함 상태다. choiceStorage 주입 시 새로고침·다중 탭에서도 동일 디자인을 유지한다. */
@@ -63,6 +50,7 @@ export function StudioDrawingClarityProvider({
   readonly children: ReactNode;
 }) {
   const [choice, setChoice] = useState<{ owner: string; workspace: string; simple: boolean } | null>(null);
+  const [selectionHost, setSelectionHost] = useState<HTMLDivElement | null>(null);
   const compactViewport = useMediaQuery("(max-width: 1279px)");
   const viewportBucket = compactViewport ? "compact" : "large";
   const [openedByBucket, setOpenedByBucket] = useState<{
@@ -72,7 +60,11 @@ export function StudioDrawingClarityProvider({
   const owner = s.currentWorkspaceOwnerScope;
   const triggerRef = useRef<HTMLElement | null>(null);
   const route = parseStudioWorkspaceRoute(s.location);
-  const available = !isNativeStudioShell() && presentation === "integrated" && route.valid && ["canvas", "comic"].includes(route.surface)
+  const drawingSurface = route.valid && (route.surface === "canvas" || route.surface === "comic");
+  const editorPresentation = drawingSurface ? "integrated" : presentation;
+  const documentWorkspace = route.valid ? route.documentWorkspace ?? (route.surface === "comic" ? "comic" : "draw") : null;
+  const roleWorkspace = studioDrawingRoleRequiresLayout(s.location.search, documentWorkspace);
+  const available = drawingSurface && !roleWorkspace
     && (!s.workMode || ["all", "draw", "color"].includes(s.workMode));
   const expectedToolbar = projectStudioTaskAppSettings(defaultStudioAppSettings(), route.valid ? route.documentWorkspace : null, s.uiDensityMode).toolbar;
   const toolbar = s.appSettings.toolbar;
@@ -90,13 +82,10 @@ export function StudioDrawingClarityProvider({
       ? { ownerScope: owner, source: "default", state: s.workspaceState }
       : null;
   const effectiveBaseline = s.studioDrawingClarityBaseline ?? optimisticBaseline;
-  const explicitUrlOverridesClarity = (() => {
-    const params = new URLSearchParams(s.location.search);
-    return params.has("roleWorkspace") || params.has("drawingShell");
-  })();
-  const active = available && !explicitUrlOverridesClarity && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile) && s.uiDensityMode === "simple"
+  const active = available && !s.canvasOnlyMode && (!s.mobileImmersive || s.isMobile)
+    && studioDrawingRouteUsesClarity(s.uiDensityMode, s.location.search, documentWorkspace)
     && (selected ?? (s.workspaceState.activeWorkspaceId === effectiveBaseline?.state.activeWorkspaceId && studioDrawingClarityEligible({
-      baseline: effectiveBaseline, ownerScope: owner, densityMode: s.uiDensityMode,
+      baseline: effectiveBaseline, documentWorkspace, ownerScope: owner, densityMode: s.uiDensityMode,
       workMode: s.workMode, search: s.location.search, toolbarConfigured: personalToolbar,
     })));
   useEffect(() => {
@@ -145,12 +134,18 @@ export function StudioDrawingClarityProvider({
     setOpenedByBucket((previous) => ({ ...previous, [viewportBucket]: { owner, workspace, panel: "layers" } }));
   }, [active, owner, s.isMobile, s.pendingSaveIntent, viewportBucket, workspace]);
   const setDensity = s.studioMenubarContentHandlers.setStudioUiDensity;
+  const { location, navigate } = s;
   const chooseSimple = useCallback(() => {
-    setDensity?.("simple");
+    const launch = readStudioLaunchDensity(location.search);
+    if (!studioDrawingRouteUsesClarity("simple", location.search, documentWorkspace) && navigate) {
+      const params = new URLSearchParams(location.search);
+      params.set("uiMode", "basic");
+      navigate({ pathname: location.pathname, search: params.toString(), hash: location.hash }, { replace: true, state: location.state });
+    } else setDensity?.(launch === "focus" ? "focus" : "simple");
     setChoice({ owner, workspace, simple: true });
     saveStudioDrawingClarityChoice(choiceStorage, owner, workspace, true);
     globalThis.requestAnimationFrame?.(() => document.getElementById("studio-canvas-workspace")?.focus({ preventScroll: true }));
-  }, [choiceStorage, owner, workspace, setDensity]);
+  }, [choiceStorage, owner, workspace, documentWorkspace, setDensity, location, navigate]);
   const showSavedLayout = useCallback(() => {
     setOpenedByBucket({ compact: null, large: null });
     setChoice({ owner, workspace, simple: false });
@@ -179,6 +174,6 @@ export function StudioDrawingClarityProvider({
     return () => { observer?.disconnect(); document.removeEventListener("keydown", escape); };
   }, [panel, close]);
 
-  return <DrawingClarityContext.Provider value={{ active, available, presentation, panel, open, reveal, close, chooseSimple, showSavedLayout }}>{children}</DrawingClarityContext.Provider>;
+  return <DrawingClarityContext.Provider value={{ active, available, presentation: editorPresentation, selectionHost, setSelectionHost, panel, open, reveal, close, chooseSimple, showSavedLayout }}>{children}</DrawingClarityContext.Provider>;
 }
 

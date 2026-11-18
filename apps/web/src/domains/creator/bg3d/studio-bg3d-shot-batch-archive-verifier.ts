@@ -1,3 +1,4 @@
+import { verifyStudioBg3dShotBatchPublicRenderDigest } from "./studio-bg3d-shot-batch-public-digest";
 import { compareStudioValidationStrings } from "../studio-validation-string-order";
 
 import {
@@ -15,7 +16,6 @@ import {
 } from "./studio-bg3d-shot-batch";
 import {
   STUDIO_BG3D_SHOT_BATCH_PASSES,
-  computeStudioBg3dShotBatchRenderDigest,
   type StudioBg3dShotBatchPass,
 } from "./studio-bg3d-shot-batch-plan";
 
@@ -249,58 +249,6 @@ function validPasses(value: unknown, requireCanonicalOrder: boolean): value is S
     )) && new Set(value).size === value.length && (!requireCanonicalOrder ||
       STUDIO_BG3D_SHOT_BATCH_PASSES.filter((pass) => value.includes(pass))
         .every((pass, index) => value[index] === pass));
-}
-
-async function verifyPublicRenderDigest(plan: StudioBg3dShotBatchPublicRenderPlan): Promise<boolean> {
-  const digest = await computeStudioBg3dShotBatchRenderDigest({
-    sourceDigest: plan.sourceDigest,
-    captureOwner: {
-      backend: plan.implementation.backend,
-      engineId: plan.implementation.engineId,
-      engineRevision: plan.implementation.engineRevision,
-      implementationRevision: plan.implementation.adapterImplementationRevision,
-      graphicsApi: plan.implementation.graphicsApi,
-      profileId: plan.captureProfile.profileId,
-      sourceWidth: plan.captureProfile.sourceWidth,
-      sourceHeight: plan.captureProfile.sourceHeight,
-      maxPixels: plan.captureProfile.maxPixels,
-      maxEdge: plan.captureProfile.maxEdge,
-      deviceProfile: plan.captureProfile.deviceProfile,
-      textureScale: plan.captureProfile.textureScale,
-      lodBias: plan.captureProfile.lodBias,
-      ltPipelineId: plan.captureProfile.ltPipelineId,
-      pngEncodingId: plan.captureProfile.pngEncodingId,
-      psdEncodingId: plan.artifactProfiles.psdProfileId,
-    },
-    shots: plan.shots.map((shot) => ({
-      shotId: shot.shotId,
-      shotName: shot.shotName,
-      shotIndex: shot.shotIndex,
-      capture: {
-        width: shot.capture.width,
-        height: shot.capture.height,
-        requestedHeight: shot.capture.requestedHeight,
-        wasReduced: shot.capture.wasReduced,
-        includeDepth: shot.capture.includeDepth,
-        shadows: shot.capture.shadows,
-        shadowMapSize: shot.capture.shadowMapSize,
-        background: { ...shot.capture.background },
-      },
-      files: shot.files.map((file) => ({
-        key: `${file.shotId}:${file.pass}`,
-        shotId: file.shotId,
-        shotName: file.shotName,
-        shotIndex: file.shotIndex,
-        pass: file.pass,
-        path: file.path,
-      })),
-    })),
-    passes: [...plan.passes],
-    exportHeight: plan.exportHeight,
-    includeLayeredPsd: plan.artifactRequests.layeredPsd,
-    includeContactSheet: plan.artifactRequests.contactSheet,
-  });
-  return digest !== null && digest === plan.renderDigest;
 }
 
 interface ManifestArtifactSummary {
@@ -556,7 +504,7 @@ async function validateManifest(
     ]) || !isStudioBg3dShotBatchPublicRenderPlan(value.publicRenderPlan) ||
       !validPasses(value.producedPasses, true) || !Array.isArray(value.psdFallbacks)) return false;
     const publicPlan = value.publicRenderPlan;
-    if (!await verifyPublicRenderDigest(publicPlan)) return false;
+    if (!await verifyStudioBg3dShotBatchPublicRenderDigest(publicPlan)) return false;
     const summary = summarizeArtifacts(value.artifacts, publicPlan);
     if (!summary || !matchesProducedPasses(value.producedPasses, summary.producedPasses)) return false;
     const context: StudioBg3dShotBatchManifestContext = {

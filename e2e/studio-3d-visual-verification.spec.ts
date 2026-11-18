@@ -1,11 +1,14 @@
+import { readFile } from "node:fs/promises";
+
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { unzipSync } from "fflate";
 
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
 import { showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
 
+import { findBg3dRotationGesture } from "./helpers/bg3d-rotation-ring";
 import { verifyStudioBg3dProductionWorkflow } from "./helpers/studio-bg3d-production-workflow";
-import { readStudioBg3dRotationRing } from "./helpers/studio-bg3d-rotation-ring";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -340,10 +343,14 @@ async function forceBg3dWebGpu(page: Page): Promise<Bg3dWebGpuState> {
   // an adapter that does appear still gets the full strict precondition below and then the real
   // rotation assertions. Making SwiftShader Vulkan actually initialize on that image is a separate
   // piece of work; until it lands, this says so instead of reddening every run.
-  if (await page.locator('[data-testid="studio-bg3d-engine-unavailable"]').count() > 0) {
-    return "unavailable";
+  const unavailable = page.getByTestId("studio-bg3d-engine-unavailable");
+  await expect(backend).toHaveText(/WebGPU (사용 중|사용 불가|실행 실패)/, { timeout: 120_000 });
+  if (await unavailable.isVisible()) {
+    // 기기가 지원하지 않는 경우만 건너뛴다. 지원되는 장치의 초기화·실행 실패는 회귀다.
+    if (await backend.textContent() === "WebGPU 사용 불가") return "unavailable";
+    throw new Error(`WebGPU 뷰포트 초기화 실패: ${await unavailable.innerText()}`);
   }
-  await expect(backend).toHaveText(/WebGPU 사용 중/, { timeout: 120_000 });
+  await expect(backend).toHaveText("WebGPU 사용 중");
   // A mounted canvas is what the rotation drag needs; the badge alone has been proven to lie.
   await expect(page.locator(`${BG3D_VIEWPORT} canvas`).first()).toBeVisible({ timeout: 120_000 });
   await foldBg3dCutPanel(page);
@@ -390,11 +397,7 @@ async function dragBg3dRotationRing(
   label: "continuous" | "direct",
   steps: 1 | 24,
 ): Promise<{ capture: StableFrameCapture; values: readonly string[] }> {
-  const ring = await readStudioBg3dRotationRing(page, page.locator(BG3D_RENDER_CANVAS).first());
-  const { start, end } = ring;
-  await testInfo.attach(`${label}-y-ring-input.json`, {
-    body: Buffer.from(JSON.stringify(ring, null, 2)), contentType: "application/json",
-  });
+  const { start, end } = await findBg3dRotationGesture(page.locator(BG3D_RENDER_CANVAS).first());
   const readRotationValues = () => Promise.all(
     ["X", "Y", "Z"].map((axis) =>
       page.getByRole("spinbutton", { name: `회전 ${axis}` }).first().inputValue()
@@ -703,7 +706,18 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     await openBg3d(page);
     expect(await forceBg3dWebGpu(page), "재오픈 뒤에도 WebGPU가 유지돼야 합니다.")
       .toBe("running");
-    await page.locator('[aria-label="상자 추가"]').first().click();
+    // 다시 연 편집기는 직전 작업을 복원한다. 같은 상자를 원래 자세로 돌려 같은 장면을 비교한다.
+    const dialog = page.locator(BG3D_DIALOG);
+    await selectStudioBg3dTaskTab(dialog, "layers");
+    await expect(dialog.getByRole("button", { name: /^상자 \d+$/ })).toHaveCount(1);
+    await dialog.getByRole("button", { name: "상자 1", exact: true }).click();
+    await selectStudioBg3dTaskTab(dialog, "shapes");
+    for (const axis of ["X", "Y", "Z"]) {
+      const angle = dialog.getByRole("spinbutton", { name: `회전 ${axis}`, exact: true }).first();
+      await angle.fill("0");
+      await angle.blur();
+      await expect(angle).toHaveValue("0");
+    }
     await page.getByRole("button", { name: "회전", exact: true }).first().click();
     const direct = await dragBg3dRotationRing(page, testInfo, "direct", 1);
 
@@ -713,6 +727,8 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     const metrics = {
       threshold: 8,
       finalPeakTileDelta,
+      continuousRotationDegrees: continuous.values.map(Number),
+      directRotationDegrees: direct.values.map(Number),
       continuous: continuous.capture,
       direct: direct.capture,
     };
@@ -791,6 +807,73 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     expect(fatal).toEqual([]);
   });
 
+  test("웹툰 컷 제작에서 화각과 선화를 바꾸고 저장한 두 컷을 멀티패스 ZIP으로 출력한다", async ({ page }, testInfo) => {
+    test.setTimeout(300_000);
+    const fatal = collectFatalErrors(page);
+    await openStudio(page);
+    await openBg3d(page);
+
+    await ensureBg3dWebGl2(page);
+    await page.locator('[aria-label="상자 추가"]').first().click();
+
+    // 뷰포트 도구가 접힌 화면에서도 보기 탭에서 같은 제작 도구를 연다.
+    const dialog = page.locator(BG3D_DIALOG);
+    const quickOpen = dialog.getByTestId("bg3d-prosuite-quick-open").filter({ visible: true });
+    if (await quickOpen.count()) await quickOpen.click();
+    else {
+      await selectStudioBg3dTaskTab(dialog, "view");
+      await dialog.locator("#bg3d-view-tab-prosuite").click();
+    }
+
+    // 웹툰 프로 툴 탭 활성화 확인
+    const proTab = page.locator('#bg3d-view-tab-prosuite');
+    await expect(proTab).toHaveAttribute("aria-selected", "true");
+
+    const suite = dialog.locator("#bg3d-view-section-prosuite");
+    const lens = suite.getByRole("tabpanel", { name: "구도", exact: true });
+    await lens.getByRole("button", { name: /대화 장면 65°/ }).click();
+    await expect(lens.getByLabel("현재 화각")).toHaveText("65.0°");
+    const lineArt = lens.getByRole("button", { name: "선화 확인" });
+    await lineArt.click();
+    await expect(lineArt).toHaveAttribute("aria-pressed", "true");
+    await lens.getByRole("button", { name: "이 구도를 컷으로 저장" }).click();
+
+    await suite.getByRole("tab", { name: "컷 디렉터" }).click();
+    const director = suite.getByRole("tabpanel", { name: "컷 디렉터" });
+    await director.getByRole("combobox", { name: "컷 비율", exact: true }).selectOption("1:1");
+    await director.getByRole("button", { name: "현재 장면을 컷으로 저장" }).click();
+    await suite.getByRole("tab", { name: "원고 출력" }).click();
+    const output = suite.getByRole("tabpanel", { name: "원고 출력" });
+    const shots = output.getByRole("region", { name: "배치 출력 컷 선택" });
+    await expect(shots.getByRole("checkbox")).toHaveCount(2);
+    const zip = output.getByRole("button", { name: /선택 .*컷 .*패스.* ZIP/ });
+    await shots.getByRole("button", { name: "해제" }).click();
+    await expect(zip).toBeDisabled();
+    await shots.getByRole("button", { name: "전체" }).click();
+    await output.getByRole("button", { name: "검수", exact: true }).click();
+    const height = output.getByRole("combobox", { name: "최대 출력 높이" });
+    await height.selectOption({ index: 1 });
+    await expect(zip).toBeEnabled();
+    const [download] = await Promise.all([page.waitForEvent("download", { timeout: 120_000 }), zip.click()]);
+    const path = await download.path();
+    if (!path) throw new Error("멀티패스 ZIP을 읽을 수 없습니다.");
+    const archive = await readFile(path);
+    const entries = unzipSync(archive);
+    const images = Object.entries(entries).filter(([name]) => name.toLowerCase().endsWith(".png"));
+    const shotFiles = images.filter(([name]) => name.startsWith("shots/"));
+    expect(shotFiles).toHaveLength(4);
+    for (const [, bytes] of shotFiles) {
+      const header = Buffer.from(bytes.subarray(16, 24));
+      expect([header.readUInt32BE(0), header.readUInt32BE(4)]).toEqual([640, 640]);
+    }
+    for (const [, bytes] of images) {
+      expect(Array.from(bytes.subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    }
+    await testInfo.attach("square-shots.zip", { body: archive, contentType: "application/zip" });
+
+    expect(fatal).toEqual([]);
+  });
+
   /**
    * 이 회귀가 이 스위트를 만든 이유다. 저장된 작품 id가 없는 기본 일러스트 작업공간은
    * `?room=work-instant-…` 잼을 발행하므로 `isRealtimeTeamSession`이 참이고, 그 분기가 실패로
@@ -808,12 +891,25 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     // from the far smaller original expired mid-flight at whatever step the clock reached first.
     test.setTimeout(600_000);
     const fatal = collectFatalErrors(page);
-    // Konva Stage는 브라우저 viewport에 보이는 문서 구간만 backing canvas로 만든다. 기본
-    // 1280×720에서는 삽입된 3D 배경의 하단 변화가 clip 아래에 있어, 실제 PNG와 presentation
-    // receipt가 갱신돼도 문서 screenshot 비교가 그 픽셀을 관찰하지 못한다.
+    // 레이어 트리와 문서 캔버스를 함께 조작할 수 있는 데스크톱 레이아웃을 사용한다.
     await page.setViewportSize({ width: 1_440, height: 1_000 });
     await openStudio(page);
-    const emptyCanvas = await frameStats(page, STUDIO_DOCUMENT_SCOPE);
+    // 스크롤 영역보다 원고가 크면 locator.screenshot()이 보이지 않는 아래쪽까지 요청한다.
+    // Chrome은 그 부분에 하단 도구막대와 빈 배경을 담을 수 있으므로 실제 축소 도구로 원고 전체를 보여 준다.
+    const documentSurface = page.locator(STUDIO_DOCUMENT_SCOPE).first();
+    const zoomOut = page.getByRole("button", { name: "축소", exact: true });
+    await expect(zoomOut).toBeVisible();
+    await expect(async () => {
+      const fitsViewport = await documentSurface.evaluate((surface) => {
+        const viewport = surface.closest("[data-studio-canvas-viewport]");
+        // 아래쪽에는 캔버스 도구막대가 겹친다.
+        return viewport !== null && surface.clientWidth <= viewport.clientWidth
+          && surface.clientHeight <= viewport.clientHeight - 64;
+      });
+      if (!fitsViewport) await zoomOut.click();
+      expect(fitsViewport).toBe(true);
+    }).toPass({ timeout: 30_000 });
+    const emptyCanvas = await waitForStableDocumentFrame(page, "빈 원고 전체 보기");
     await openBg3d(page);
     // 진입 경로 자체는 엔진과 무관하다. 다만 렌더된 프레임이 없으면 "컬러 배경 추가"가
     // "캡처할 3D 장면이 아직 준비되지 않았습니다"로 닫히지 않고 남으므로 먼저 엔진을 고른다.
@@ -865,6 +961,10 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
     );
     const insertedCanvas = await waitForStableDocumentFrame(page, "3D 배경 캔버스 합성 정착");
     expect(insertedCanvas.distinctColors).toBeGreaterThan(1);
+    await testInfo.attach("inserted-document.png", {
+      body: await documentSurface.screenshot(),
+      contentType: "image/png",
+    });
 
     // 레이어 트리에서 방금 삽입한 원본을 다시 선택하고 ID를 기록한다. 업데이트가 delete +
     // reinsert로 바뀌어도 단순 count=1은 통과하므로 동일 identity를 직접 고정한다.
@@ -1046,6 +1146,7 @@ test.describe("Studio 3D 표면 실 브라우저 시각 검증", () => {
         reopenedToUpdated,
         reopenedToInserted,
         updatedToInserted,
+        sourcePngDelta: compositeDelta,
         frames: {
           inserted: [insertedCanvas.width, insertedCanvas.height],
           updated: [updatedCanvas.width, updatedCanvas.height],

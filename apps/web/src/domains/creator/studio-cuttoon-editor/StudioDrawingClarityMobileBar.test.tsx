@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultStudioAppSettings } from "../studio-app-settings";
 import { createStudioWorkspaceDefaultState } from "../studio-workspaces";
+import { registerStudioCommandSearchHost, subscribeStudioCommandSearchRequests } from "../studio-help-center-channel";
 import { subscribeStudioAllTools } from "../studio-toolbar-channel";
 import { createStudioSaveSyncSignalStore } from "../studio-save-sync-signals";
 import { MobileFullEditNotice } from "../studio-shell/MobileFullEditNotice";
@@ -31,7 +33,7 @@ function session(): MobileFixture {
     saving: false, collaborationDocumentLocked: false, sharedDocument: null, collaborationLockMessage: () => "편집 잠김",
     studioMenubarContentHandlers: { setStudioUiDensity: vi.fn(), handleSave: vi.fn<StudioDrawingClarityMobileSession["studioMenubarContentHandlers"]["handleSave"]>().mockResolvedValue(undefined) },
     studioMobileEditingDockHandlers: { openInspectorRoute: vi.fn() },
-    setMobileSheet: vi.fn(), setMenu: vi.fn(), setExportMenuOpen: vi.fn(), setTeamPanelOpen: vi.fn(), setTutorialHubOpen: vi.fn(),
+    setMobileSheet: vi.fn(), setMenu: vi.fn(), setExportMenuOpen: vi.fn(), setTeamPanelOpen: vi.fn(), mobileSheet: null, setHistoryPanelOpen: vi.fn(), setTutorialHubOpen: vi.fn(),
   };
 }
 function Surface({ value }: { value: MobileFixture }) {
@@ -138,8 +140,31 @@ describe("웹 모바일 기본 상단", () => {
     more(); fireEvent.click(screen.getByRole("button", { name: "페이지 보기" })); expect(value.setMobileSheet).toHaveBeenLastCalledWith("pages");
     more(); fireEvent.click(screen.getByRole("button", { name: "레이어·속성 보기" })); expect(value.studioMobileEditingDockHandlers.openInspectorRoute).toHaveBeenCalledWith({ primary: "layers" }, "props");
     more(); fireEvent.click(screen.getByRole("button", { name: "소재 찾기" })); expect(value.setMenu).toHaveBeenLastCalledWith("asset");
+    more(); fireEvent.click(screen.getByRole("button", { name: "수정이력" })); expect(value.setHistoryPanelOpen).toHaveBeenCalledWith(true);
+    more("drawing"); fireEvent.click(screen.getByRole("button", { name: "말풍선·대사" })); expect(value.setMenu).toHaveBeenCalledWith("bubble");
     more("output"); fireEvent.click(screen.getByRole("button", { name: "원고 내보내기" })); expect(value.setExportMenuOpen).toHaveBeenCalledWith(true);
   });
+  it("첫 검색 탭을 실제 검색창이 준비될 때 한 번 전달하고 열린 인스펙터를 닫지 않는다", () => {
+    const value = session(), received = vi.fn();
+    const unsubscribe = subscribeStudioCommandSearchRequests(received);
+    function StatefulSheet() {
+      const [mobileSheet, setMobileSheet] = useState<MobileFixture["mobileSheet"]>(null);
+      const live = { ...value, mobileSheet, setMobileSheet };
+      return <StudioDrawingClarityProvider session={live}><Surface value={live} /></StudioDrawingClarityProvider>;
+    }
+    render(<StatefulSheet />);
+    const search = () => fireEvent.click(screen.getByRole("button", { name: /^검색$/u }));
+    let unregister = () => {};
+    try {
+      search();
+      expect(received).not.toHaveBeenCalled();
+      act(() => { unregister = registerStudioCommandSearchHost(); });
+      expect(received).toHaveBeenCalledExactlyOnceWith({ scope: "all" });
+      search();
+      expect(received).toHaveBeenCalledTimes(2);
+    } finally { act(unregister); unsubscribe(); }
+  });
+
   it("전체 도구는 기존 채널에 보이는 메뉴 트리거를 전달한다", () => {
     const { container } = show(), root = container.querySelector<HTMLElement>("[data-studio-editor]");
     if (!root) throw new Error("편집 영역 누락");
@@ -155,15 +180,15 @@ describe("웹 모바일 기본 상단", () => {
     fireEvent.keyDown(dialog, { key: "Escape" }); expect(screen.queryByRole("dialog")).toBeNull(); expect(document.activeElement).toBe(trigger);
   });
   it("프로젝트·창 도구는 간결화 표시를 종료해 기존 영역을 보여 주며 다시 돌아올 수 있다", () => {
-    show(); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 보기" }));
+    show(); more("workspace"); fireEvent.click(screen.getByRole("button", { name: "프로젝트·창 도구 배치로 전환" }));
     expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
     expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "간단한 그리기" })); expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
   });
-  it("협업을 요청하면 기존 영역을 다시 표시하고 원본 팀 열기를 실행한다", () => {
+  it("함께 작업을 열어도 사용자가 고른 드로잉 배치를 유지한다", () => {
     const value = session(); show(value); more("output"); fireEvent.click(screen.getByRole("button", { name: "함께 작업" }));
-    expect(screen.getByRole("region", { name: "기존 작업 배치" })).toBeTruthy();
-    expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeNull();
+    expect(screen.getByRole("region", { name: "원고와 저장" })).toBeTruthy();
+    expect(document.querySelector('[data-studio-drawing-clarity-mobile="true"]')).toBeTruthy();
     expect(value.setTeamPanelOpen).toHaveBeenCalledExactlyOnceWith(true);
   });
   it("열린 도구 메뉴의 Escape는 메뉴만 닫고 트리거로 돌아간다", () => {

@@ -1,3 +1,4 @@
+import { StudioVrmPngWorkerSession } from "./studio-vrm-png-worker-session";
 import { encodeStudioVrmCapturePngBlob } from "./studio-vrm-raster-capture";
 import {
   STUDIO_VRM_SURFACE_PAINT_MAX_DECODED_PIXELS,
@@ -66,6 +67,7 @@ export interface StudioVrmTexturePaintPersistenceDependencies {
 }
 
 export interface StudioVrmTexturePaintPersistenceOptions {
+  readonly pngSession?: StudioVrmPngWorkerSession;
   readonly signal?: AbortSignal;
   readonly replaceDocument?: boolean;
   readonly dependencies?: Partial<StudioVrmTexturePaintPersistenceDependencies>;
@@ -246,41 +248,46 @@ export async function persistStudioVrmTexturePaintRuntime(
   ) {
     throw new StudioVrmTexturePaintPersistenceError("budget-exceeded");
   }
-  for (const target of exported.value) {
-    throwIfAborted(options.signal);
-    const firstBinding = target.bindings[0];
-    if (!firstBinding) {
-      throw new StudioVrmTexturePaintPersistenceError("binding-conflict");
-    }
-    const png = await deps.encodePng(
-      target.pixels,
-      { width: target.width, height: target.height },
-      { signal: options.signal },
-    );
-    throwIfAborted(options.signal);
-    const artifact = await deps.createArtifact({
-      bindingKey: firstBinding.bindingKey,
-      source: png,
-      expectedWidth: target.width,
-      expectedHeight: target.height,
-    }, { signal: options.signal });
-    artifacts.set(artifact.metadata.contentHash, artifact);
-    for (const binding of target.bindings) {
-      const texture = textureFromArtifact(binding, artifact);
-      const identity = bindingIdentity(binding);
-      const existing = seenBindings.get(identity);
-      if (
-        existing
-        && (
-          existing.hash !== texture.hash
-          || existing.bindingKey !== texture.bindingKey
-        )
-      ) {
+  const ownedSession = !options.pngSession && exported.value.length > 1 ? new StudioVrmPngWorkerSession() : undefined;
+  try {
+    for (const target of exported.value) {
+      throwIfAborted(options.signal);
+      const firstBinding = target.bindings[0];
+      if (!firstBinding) {
         throw new StudioVrmTexturePaintPersistenceError("binding-conflict");
       }
-      seenBindings.set(identity, texture);
-      textures.push(texture);
+      const png = await deps.encodePng(
+        target.pixels,
+        { width: target.width, height: target.height },
+        { signal: options.signal, session: options.pngSession ?? ownedSession },
+      );
+      throwIfAborted(options.signal);
+      const artifact = await deps.createArtifact({
+        bindingKey: firstBinding.bindingKey,
+        source: png,
+        expectedWidth: target.width,
+        expectedHeight: target.height,
+      }, { signal: options.signal });
+      artifacts.set(artifact.metadata.contentHash, artifact);
+      for (const binding of target.bindings) {
+        const texture = textureFromArtifact(binding, artifact);
+        const identity = bindingIdentity(binding);
+        const existing = seenBindings.get(identity);
+        if (
+          existing
+          && (
+            existing.hash !== texture.hash
+            || existing.bindingKey !== texture.bindingKey
+          )
+        ) {
+          throw new StudioVrmTexturePaintPersistenceError("binding-conflict");
+        }
+        seenBindings.set(identity, texture);
+        textures.push(texture);
+      }
     }
+  } finally {
+    ownedSession?.dispose();
   }
   textures.sort(compareTextures);
   ensureSceneBudgets(textures);

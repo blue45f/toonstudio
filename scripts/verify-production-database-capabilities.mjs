@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { buildProtectedRecordCapabilitySql } from "./protected-record-database-contracts.mjs";
+import { buildWorkVrmCutRuntimeAclViolationSql } from "./studio-work-vrm-cut-runtime-acl.mjs";
 import { buildProductionOperationsRuntimeAclViolationSql } from "./production-operations-database-contract.mjs";
 
 import { createHash } from "node:crypto";
@@ -30,19 +31,12 @@ import {
   buildStudioProjectGraphRuntimeAclViolationSql,
   loadMigrationManifest,
 } from "./run-production-database-migrations.mjs";
-import {
-  createPsqlEnvironment,
-  validateProductionDatabaseUrl,
-} from "./validate-production-database-url.mjs";
-
+import { createPsqlEnvironment, validateProductionDatabaseUrl } from "./validate-production-database-url.mjs";
 export { buildAuthRuntimeAclViolationSql } from "./run-production-database-migrations.mjs";
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = resolve(SCRIPT_DIRECTORY, "..");
-const HEALTH_READINESS_SOURCE = resolve(
-  REPOSITORY_ROOT,
-  "apps/api/src/modules/health/health-readiness-inventory.ts",
-);
+const HEALTH_READINESS_SOURCE = resolve(REPOSITORY_ROOT, "apps/api/src/modules/health/health-readiness-inventory.ts");
 const ADOPTION_MARKER_ID = "__managed_history_through_0019__";
 const ADOPTION_BASELINE_SEQUENCE = 19;
 
@@ -929,6 +923,9 @@ BEGIN
     RAISE EXCEPTION 'pg_trgm extension is missing';
   END IF;
 
+  IF ${buildWorkVrmCutRuntimeAclViolationSql(runtimeDatabaseRole)} THEN
+    RAISE EXCEPTION '작품 VRM 컷 정본 테이블 권한이 올바르지 않습니다.';
+  END IF;
   IF ${buildCreatorAssetObjectStorageRuntimeAclViolationSql(runtimeDatabaseRole)} THEN
     RAISE EXCEPTION
       'runtime role lacks the exact creator object-storage privileges';

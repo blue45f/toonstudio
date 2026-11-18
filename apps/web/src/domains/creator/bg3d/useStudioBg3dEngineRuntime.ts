@@ -61,6 +61,18 @@ export const STUDIO_BG3D_DEVICE_LOSS_NOTICE_MS = 10_000;
  */
 export const STUDIO_BG3D_ENGINE_PREFERENCE_LOAD_TIMEOUT_MS = 2_000;
 
+function webGpuStartupFailureReason(error: unknown): string {
+  if (!(error instanceof Error)) return "WebGPU 엔진을 시작하지 못했습니다";
+  const code = "code" in error ? error.code : null;
+  if (code === "backend-unavailable") return "선택한 WebGPU 백엔드를 사용할 수 없습니다";
+  if (code === "invalid-canvas") return "WebGPU를 시작할 캔버스를 찾지 못했습니다";
+  if (code === "version-contract-unsupported") return "현재 렌더러 버전은 WebGPU 전용 실행을 지원하지 않습니다";
+  const detail = error.cause instanceof Error ? error.cause.message : error.message;
+  const timeout = /^WebGPU renderer initialization timed out after (\d+)ms\.$/u.exec(detail);
+  if (timeout) return `WebGPU 장치 초기화가 ${Number(timeout[1]) / 1000}초 안에 끝나지 않았습니다`;
+  return `WebGPU 엔진을 시작하지 못했습니다 (${detail.replace(/\s+/gu, " ").slice(0, 200)})`;
+}
+
 export interface StudioBg3dEngineRuntimeState {
   readonly diagnostics: StudioScene3dGpuDiagnostics;
   readonly phase: StudioBg3dEngineRuntimePhase;
@@ -214,6 +226,8 @@ export function useStudioBg3dEngineRuntime(
   // that was already in flight cannot overwrite a choice the artist made while it loaded.
   const preferenceRevisionRef = useRef(0);
   const preferenceRef = useRef<StudioBg3dEnginePreference>(preference);
+  const webGpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => () => { webGpuCanvasRef.current = null; }, [enabled, recoveryGeneration]);
   // Distinguishes a genuine closed→open transition from an effect re-run caused by unstable deps.
   const wasEnabledRef = useRef(false);
 
@@ -429,22 +443,27 @@ export function useStudioBg3dEngineRuntime(
       return null;
     }
     return async ({ canvas }) => {
-      const create = createWebGpuRenderer ?? (
-        await import("./studio-bg3d-three-webgpu-entry")
-      ).createStudioBg3dThreeWebGpuRenderer;
+      webGpuCanvasRef.current = canvas;
+      const startedInDocument = canvas.isConnected;
+      const isCurrent = () => webGpuCanvasRef.current === canvas
+        && preferenceRef.current === "webgpu" && (!startedInDocument || canvas.isConnected);
       try {
+        const create = createWebGpuRenderer ?? (
+          await import("./studio-bg3d-three-webgpu-entry")
+        ).createStudioBg3dThreeWebGpuRenderer;
         const runtime = await create(canvas, {
           antialias,
           alpha: true,
-          onDeviceLost: (loss) => handleWebGpuFailure(loss.message),
+          admission: probe,
+          onDeviceLost: (loss) => { if (isCurrent()) handleWebGpuFailure(loss.message); },
         });
         return runtime.renderer as unknown as { render: (scene: never, camera: never) => unknown };
       } catch (error) {
-        handleWebGpuFailure("WebGPU 엔진을 시작하지 못했습니다.");
+        if (isCurrent()) handleWebGpuFailure(webGpuStartupFailureReason(error));
         throw error;
       }
     };
-  }, [enabled, phase, plan.backend, plan.status, antialias, createWebGpuRenderer, handleWebGpuFailure]);
+  }, [enabled, phase, plan.backend, plan.status, probe, antialias, createWebGpuRenderer, handleWebGpuFailure]);
 
   return {
     diagnostics,

@@ -70,6 +70,11 @@ await page.route("**/*", async (route) => {
   requests.push({ method: request.method(), path: url.pathname });
   const suffix = url.pathname.split("/studio-project-graph")[1];
   if (revoked) return route.fulfill({ status: 403, json: { message: "fixture ACL revoked" } });
+  if (suffix === "/works/qa-work/review-voice-notes/query") {
+    assert.equal(request.method(), "POST");
+    assert.deepEqual(request.postDataJSON(), { subject });
+    return route.fulfill({ json: { items: [] } });
+  }
   if (request.method() === "GET") {
     if (suffix === "/projects/qa-graph") return route.fulfill({ json: project });
     if (suffix === "/reviews/qa-review") return route.fulfill({ json: review });
@@ -150,7 +155,7 @@ try {
   await placement.getByRole("combobox", { name: "연결할 컷" }).selectOption("cut-0-2");
   await placement.getByRole("button", { name: "이 위치에 의견 연결" }).click();
   await page.getByRole("textbox", { name: "이 버전에 의견 남기기" }).fill("두 번째 컷의 색상 대비를 확인했습니다.");
-  await page.getByRole("combobox", { name: "의견 유형" }).selectOption("required");
+  await page.getByRole("combobox", { name: "중요도" }).selectOption("required");
   await page.getByRole("button", { name: "배정 가능한 팀원 확인" }).click();
   await page.getByRole("checkbox", { name: "민서 · 감독" }).check();
   await page.getByRole("checkbox", { name: "시나 · 원화" }).check();

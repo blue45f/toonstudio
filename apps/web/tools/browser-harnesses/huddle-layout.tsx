@@ -27,7 +27,8 @@ createRoot(document.getElementById("root")!).render(
         <div className="workspace-live-actions" data-space-interactive="true">
           <button type="button">사람·대화</button><button type="button">공간·꾸미기</button>
           <a data-workspace-primary-action="true" href="#new-work">새 작품 만들기</a>
-          <StudioP2pHuddleLauncher placement="inline" />
+          <div id="studio-collaboration-huddle-slot" />
+          <StudioP2pHuddleLauncher idleChromeTargetId="studio-collaboration-huddle-slot" />
         </div>
       </footer>
     </div>

@@ -125,6 +125,16 @@ describe("BG3D canvas WebGPU ownership", () => {
     expect(state.disposes).toHaveBeenCalledTimes(2);
   });
 
+  it("R3F Canvas가 닫힐 때 호출하는 forceContextLoss로 소유한 WebGPU 장치를 한 번만 해제한다", async () => {
+    const canvasElement = canvas();
+    const runtime = await createStudioBg3dThreeWebGpuRenderer(canvasElement);
+    const renderer = runtime.renderer as typeof runtime.renderer & { forceContextLoss(): Promise<void> };
+    await renderer.forceContextLoss();
+    await runtime.dispose();
+    expect(state.disposes).toHaveBeenCalledOnce();
+    expect(await createStudioBg3dThreeWebGpuRenderer(canvasElement)).not.toBe(runtime);
+  });
+
   it("keeps a failed target failed and permits an explicit new-canvas retry", async () => {
     state.failure = new Error("native initialization failed");
     const target = canvas();

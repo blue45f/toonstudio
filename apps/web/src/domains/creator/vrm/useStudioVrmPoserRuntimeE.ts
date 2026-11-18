@@ -712,7 +712,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
               .then(({ persistStudioVrmTexturePaintRuntime }) =>
                 persistStudioVrmTexturePaintRuntime(
                   currentTexturePaintRuntime,
-                  { signal: captureController.signal },
+                  { signal: captureController.signal, pngSession: h.pngSessionRef?.current ?? undefined },
                 )
               )
             : { version: 1, textures: [] };
@@ -783,7 +783,7 @@ export function useStudioVrmPoserRuntimeE(h: StudioVrmPoserHost): void {
             { width, height },
             {
               signal: captureController.signal,
-              timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS,
+              session: h.pngSessionRef?.current ?? undefined, timeoutMs: STUDIO_VRM_CAPTURE_PNG_TIMEOUT_MS,
             },
           );
           const fullDataUrl = `${baseDataUrl}#${hashPayload}`;

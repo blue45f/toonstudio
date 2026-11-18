@@ -21,6 +21,45 @@ button[data-studio-drawing-save-summary=true]>span{min-width:0;max-width:100%;di
 .studio-drawing-clarity-mobile-header{min-height:56px;gap:8px;padding:3px 8px}
 .studio-drawing-clarity-mobile-header .studio-drawing-clarity-save{min-width:64px;padding-inline:12px}
 .studio-drawing-clarity-context-row{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:8px;height:53px;min-height:53px;max-height:53px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:4px 12px;flex-shrink:0;border-bottom:1px solid color-mix(in oklch,var(--color-line) 86%,transparent);background:color-mix(in oklch,var(--color-panel) 92%,var(--color-card));backdrop-filter:blur(16px);color:var(--color-fg-2)}
+/* 선택해도 원고 원점은 고정된다. 같은 줄에 실제 선택 명령만 표시한다. */
+.studio-drawing-selection-slot:empty,
+.studio-drawing-selection-slot:not(:empty) + .studio-drawing-ergonomics-bar { display: none; }
+.studio-drawing-selection-slot:not(:empty) { flex: 1 0 auto; }
+.studio-drawing-selection-slot [data-studio-selection-command-lane] { height: 44px; margin: 0; }
+@media (min-width: 1024px) {
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) {
+    min-height: 56px;
+    padding-block: 0;
+    background: var(--color-panel);
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) .studio-drawing-clarity-title {
+    height: 55px; min-height: 55px; max-height: 55px;
+  }
+  .studio-drawing-clarity-context-row:not(.studio-drawing-clarity-mobile-context) {
+    height: 44px; min-height: 44px; max-height: 44px; padding-block: 0;
+    border: 0; background: var(--color-panel); box-shadow: inset 0 -1px var(--color-line);
+  }
+  .studio-drawing-clarity-context-row :is(.studio-drawing-stage-pills,.studio-drawing-stabilizer-group,.studio-drawing-stepper) {
+    padding-block: 0; border-block: 0;
+  }
+  .studio-drawing-clarity-context-row .studio-drawing-clarity-button { min-height: 44px; padding-block: 0; }
+  .studio-drawing-clarity-rail { overflow-y: auto; overscroll-behavior: contain; }
+}
+@media (min-width: 1024px) and (max-width: 1365px) {
+  #studio-workspace .studio-drawing-clarity-rail { flex-basis: 58px; padding-inline: 4px; }
+}
+/* 좁은 화면의 확대 글꼴·여러 저장 안내는 줄 수에 맞춰 읽을 자리를 확보한다. */
+.studio-drawing-clarity-header .studio-drawing-clarity-title:has([data-studio-connection-notice-summary]:not(:empty)) {
+  height: auto; max-height: none;
+}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)) {
+  max-height: none; overflow: visible;
+}
+.studio-drawing-clarity-title button:has([data-studio-connection-notice-summary]:not(:empty)) > span {
+  display: block; overflow-wrap: anywhere; overflow: visible;
+}
 .studio-drawing-clarity-context-row::-webkit-scrollbar{display:none}
 .studio-drawing-page-position{display:inline-flex;align-items:center;gap:8px;min-width:48px;min-height:44px;max-width:220px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 12px;border:1px solid color-mix(in oklch,var(--color-line-strong) 72%,transparent);border-radius:999px;background:color-mix(in oklch,var(--color-card) 84%,transparent);color:var(--color-fg);font-size:12px;font-weight:650;text-align:left;cursor:pointer;transition:background-color .16s ease,border-color .16s ease}
 .studio-drawing-page-position:hover{background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft));border-color:color-mix(in oklch,var(--color-accent) 40%,var(--color-line-strong))}
@@ -166,7 +205,12 @@ html:not([data-studio-canvas-only=true]):has([data-studio-device-guide-entry=can
 /* Grand Atelier V4 드로잉 상단 메뉴바 · 옴니박스 · 손떨림 슬라이더 · 웹툰 좌측 레일 */
 .studio-drawing-classic-menubar{display:none;align-items:center;gap:2px;padding:3px;border:1px solid color-mix(in oklch,var(--color-line-strong) 72%,transparent);border-radius:12px;background:color-mix(in oklch,var(--color-card) 78%,transparent)}
 @media(min-width:1260px){.studio-drawing-classic-menubar{display:inline-flex}}
-.studio-drawing-classic-menu-item{min-height:36px;padding:4px 9px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+/* 빠른 메뉴 일곱 개가 처음 펼쳐지는 폭에서는 저장 안내 한 줄이 들어갈 자리를 남긴다. */
+@media (min-width: 1260px) and (max-width: 1365px) {
+  .studio-drawing-clarity-header:not(.studio-drawing-clarity-mobile-header) { gap: 6px; }
+  .studio-drawing-omnibox > kbd { display: none; }
+}
+.studio-drawing-classic-menu-item{min-width:44px;min-height:44px;padding:4px 9px;border:0;border-radius:8px;background:transparent;color:var(--color-fg-2);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:background-color .15s ease,color .15s ease}
 .studio-drawing-classic-menu-item:hover{background:color-mix(in oklch,var(--color-raised) 88%,var(--color-accent-soft));color:var(--color-fg)}
 .studio-drawing-omnibox{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:6px 12px;border:1px solid color-mix(in oklch,var(--color-accent) 34%,var(--color-line-strong));border-radius:999px;background:color-mix(in oklch,var(--color-card) 90%,var(--color-panel));color:var(--color-fg);font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;transition:border-color .16s ease,background-color .16s ease}
 .studio-drawing-omnibox:hover{border-color:var(--color-accent);background:color-mix(in oklch,var(--color-raised) 86%,var(--color-accent-soft))}

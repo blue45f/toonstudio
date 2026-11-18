@@ -172,7 +172,7 @@ describe("200% 확대 및 키보드 전용 도구→옵션→캔버스→저장 
         zoomLocked: false,
         viewTransformSuppressed: false,
         bg3dOpen: false,
-        setBg3dOpen: vi.fn(),
+        studioLeftToolRailHandlers: { toggleBg3dEditor: vi.fn() },
         exportMenuOpen: false,
         setExportMenuOpen: vi.fn(),
       };

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { collectStudioCaptureAssetSources, waitForStudioCaptureReady } from "../studio-capture-readiness";
+
 import {
   areStudioWorkAssetSceneReferencesEqual,
   collectStudioWorkAssetSceneReferences,
@@ -10,6 +12,7 @@ import {
 } from "../studio-work-asset-render-projection";
 
 import type { StudioWorkAssetHydrationState } from "../studio-work-asset-hydrator";
+import { studioBg3dSixPassArtifactSourceUri } from "@toonstudio/contracts/studio-bg3d-six-pass-reference";
 
 const record = (overrides: Record<string, unknown> = {}) => ({
   id: "asset-1",
@@ -69,6 +72,34 @@ const ready: StudioWorkAssetHydrationState = {
 };
 
 describe("studio work asset render projection", () => {
+  it("원고가 먼저 받은 에셋을 복원하고 삭제·다른 레이어 참조는 제외한다", () => {
+    const page = { id: "page-1", elements: [ready.source] };
+    const expected = [{ pageId: page.id, orderIndex: 0, reference: ready.reference }];
+    expect(collectStudioWorkAssetSceneReferences([], [page])).toEqual(expected);
+    expect(collectStudioWorkAssetSceneReferences([record({ payload: { type: "reference", props: { elementType: "image" } } })], [page])).toEqual(expected);
+    expect(collectStudioWorkAssetSceneReferences([record({ deleted: true })], [page])).toEqual([]);
+    expect(collectStudioWorkAssetSceneReferences([], [{ ...page, elements: [{ ...ready.source, id: "other" }] }])).toEqual([]);
+  });
+
+  it("초안 캡처는 현재 작품에서 승인된 표시 URL을 기다리고 권한 변경 때 중단한다", async () => {
+    const source = ready.source.src;
+    const page = { id: "page-1", elements: [ready.source] };
+    const stage = { batchDraw() {} };
+    let state: StudioWorkAssetHydrationState | null = { status: "loading", reference: ready.reference,
+      placeholder: { ...ready.reference, label: "대기" } };
+    const urls: string[] = [];
+    const options = { pageId: page.id, sourcePage: page, assetSources: collectStudioCaptureAssetSources(page),
+      workAssetHydrator: { get: () => state }, getStage: () => stage, getRenderedPageId: () => page.id,
+      nextFrame: async () => { if (state?.status === "loading") state = ready; },
+      waitForFonts: async () => {}, preloadImage: async (url: string) => { urls.push(url); } };
+    await expect(waitForStudioCaptureReady(options)).resolves.toBe(stage);
+    expect(urls).toEqual(["blob:render-only"]);
+    expect(page.elements[0]?.src).toBe(source);
+    await expect(waitForStudioCaptureReady({ ...options, preloadImage: async () => { state = null; } })).rejects.toMatchObject({ code: "asset-load" });
+    await expect(waitForStudioCaptureReady(options)).rejects.toMatchObject({ code: "asset-load" });
+    expect(() => collectStudioCaptureAssetSources({ elements: [{ ...ready.source, id: "other" }] })).toThrow();
+  });
+
   it("keeps hydration scoped to an authenticated active document viewer", () => {
     const base = {
       workId: "work-1",
@@ -99,6 +130,23 @@ describe("studio work asset render projection", () => {
     }]);
     expect(areStudioWorkAssetSceneReferencesEqual(references, structuredClone(references)))
       .toBe(true);
+  });
+
+  it("봉인된 6패스는 CAS 원본을 표시하고 잘못된 역할·주소·요소는 일반 에셋 보호를 유지한다", () => {
+    const hash = `sha256:${"a".repeat(64)}` as const;
+    const props = { elementType: "image", bg3dLtBundleId: "bundle", bg3dLtRole: "tone", bg3dLtRenderMode: "separated",
+      bg3dLtBundleReference: { kind: "bg3d-sixpass-bundle", bundleId: "bundle", renderRevisionId: "rev",
+        manifestHash: hash, role: "tone", elementId: "asset-1" }, src: studioBg3dSixPassArtifactSourceUri(hash) };
+    const collect = (candidate: Record<string, unknown>) =>
+      collectStudioWorkAssetSceneReferences([record({ payload: { type: "reference", props: candidate } })]);
+    const references = collect(props);
+    expect(references).toEqual([]);
+    const image = { id: "asset-1", type: "image", src: props.src };
+    expect(projectStudioWorkAssetPageForRender({ pageId: "page-1", elements: [image], references,
+      resolveState: () => null, hydrationRevision: 1 })).toEqual({ elements: [image], placeholders: [] });
+    expect(collect({ ...props, bg3dLtRole: "color" })).toHaveLength(1);
+    expect(collect({ ...props, src: "data:image/png;base64,AAAA" })).toHaveLength(1);
+    expect(collect({ ...props, bg3dLtBundleReference: { ...props.bg3dLtBundleReference, elementId: "other" } })).toHaveLength(1);
   });
 
   it("leaves a topology-only legacy reference and its real local source untouched", () => {

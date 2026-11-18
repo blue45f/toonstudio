@@ -12,7 +12,7 @@ function request(): StudioVrmPngWorkerRequest {
   };
 }
 
-async function harness(options: { unavailable?: boolean; encodeFails?: boolean } = {}) {
+async function harness(options: { unavailable?: boolean; encodeFails?: boolean; session?: boolean } = {}) {
   vi.resetModules();
   const messages: StudioVrmPngWorkerResponse[] = [];
   const listeners: ((event: { data: unknown }) => void)[] = [];
@@ -34,6 +34,7 @@ async function harness(options: { unavailable?: boolean; encodeFails?: boolean }
     }
   }
   vi.stubGlobal("self", {
+    name: options.session ? "toonstudio-vrm-png-session" : "toonstudio-vrm-png",
     postMessage: (value: StudioVrmPngWorkerResponse) => messages.push(value),
     addEventListener: (_type: string, listener: (event: { data: unknown }) => void) => {
       listeners.push(listener);
@@ -97,4 +98,17 @@ describe("single-image VRM PNG worker memory and terminal behavior", () => {
     expect(host.listeners).toHaveLength(0);
     expect(host.canvases).toHaveLength(0);
   });
+});
+
+it("세션 Worker는 두 번째 출력도 인코딩하고 중복 메시지와 사용한 캔버스를 남기지 않는다", async () => {
+  const host = await harness({ session: true });
+  const first = request();
+  host.listeners[0]!({ data: first });
+  await vi.waitFor(() => expect(host.messages[1]?.kind).toBe("result"));
+  host.listeners[0]!({ data: first });
+  const second = { ...request(), requestId: first.requestId + 1 };
+  host.listeners[0]!({ data: second });
+  await vi.waitFor(() => expect(host.messages[2]).toMatchObject({ kind: "result", requestId: second.requestId }));
+  expect(host.messages).toHaveLength(3);
+  expect(host.canvases.map((canvas) => [canvas.width, canvas.height])).toEqual([[1, 1], [1, 1], [1, 1]]);
 });
