@@ -1,4 +1,8 @@
 import {
+  advanceStudioBrushDwellEmitter,
+  createStudioBrushDwellState,
+} from "./studio-brush-dwell-emitter";
+import {
   clamp,
   clamp01,
   cloneDualBrush,
@@ -30,6 +34,21 @@ import {
   type StudioDynamicBrushPlanInput,
   type StudioDynamicBrushSegmentStartFrame,
 } from "./studio-brush-dynamics-types";
+import {
+  applyStudioBrushInOutTaperToDabs,
+  isStudioBrushInOutTaperIdentity,
+} from "./studio-brush-inout-taper";
+import {
+  evaluateStudioStrokeAndSubColorRgb,
+  isStudioCspBrushExtensionsIdentity,
+  normalizeStudioCspBrushExtensions,
+} from "./studio-brush-stroke-color-dynamics";
+import {
+  planStudioPatternRibbonQuads,
+  planStudioPatternStamps,
+} from "./studio-pattern-brush";
+import { sharpenStrokeCornerSamples } from "./studio-stroke-corner-sharpen";
+import { transformStrokeWithRuledLine } from "./studio-stroke-ruled-line";
 
 const MAX_COORDINATE_ABS = 1_000_000;
 const POINT_EPSILON = 1e-6;
@@ -240,6 +259,11 @@ function settingsForPlan(
   const scatter = settings.scatterRatio === null
     ? settings.scatter.base
     : clamp(width * settings.scatterRatio, settings.scatter.min, settings.scatter.max);
+  const rawCsp = normalizedSettings?.cspBrushExtensions ?? input.settings?.cspBrushExtensions;
+  const normalizedCsp = rawCsp ? normalizeStudioCspBrushExtensions(rawCsp) : undefined;
+  const activeCsp = normalizedCsp && !isStudioCspBrushExtensionsIdentity(normalizedCsp)
+    ? normalizedCsp
+    : undefined;
   if (!detachSettings) {
     // The normalized renderer helper returns only dabs and never exposes this plan-local value.
     // Keep immutable nested settings by reference instead of cloning every mapping/tip/grain field
@@ -247,6 +271,7 @@ function settingsForPlan(
     return {
       ...settings,
       seed: uint32(input.seed, settings.seed),
+      ...(activeCsp ? { cspBrushExtensions: activeCsp } : {}),
       width: { ...settings.width, base: width },
       opacity: { ...settings.opacity, base: opacity },
       spacing: { ...settings.spacing, base: spacing },
@@ -262,6 +287,7 @@ function settingsForPlan(
     grain: { ...settings.grain },
     tipLayers: cloneTipLayers(settings.tipLayers),
     ...(settings.dualBrush ? { dualBrush: cloneDualBrush(settings.dualBrush) } : {}),
+    ...(activeCsp ? { cspBrushExtensions: activeCsp } : {}),
     width: { ...settings.width, base: width },
     opacity: { ...settings.opacity, base: opacity },
     spacing: { ...settings.spacing, base: spacing },
@@ -290,9 +316,56 @@ function planStudioDynamicBrushFromInput(
   detachSettings = true
 ): StudioDynamicBrushPlan {
   const settings = settingsForPlan(input, normalizedSettings, detachSettings);
-  const points = sanitizeStrokePoints(input.points);
+  let points = sanitizeStrokePoints(input.points);
   if (points.length === 0) {
     return { dabs: [], sourcePointCount: 0, totalLength: 0, capped: false, settings };
+  }
+  const sourcePointCount = points.length;
+  const cspExt = settings.cspBrushExtensions;
+  let dashedGapRanges: { start: number; end: number }[] | null = null;
+
+  if (cspExt) {
+    if (cspExt.sharpCorner.enabled && points.length >= 3) {
+      const sharpened = sharpenStrokeCornerSamples(
+        points.map((pt, idx) => ({
+          x: pt.x,
+          y: pt.y,
+          width: settings.width.base,
+          speedPxPerMs: Array.isArray(input.speeds) ? input.speeds[idx] : undefined,
+        })),
+        cspExt.sharpCorner,
+      );
+      if (sharpened.length >= 2) {
+        points = sharpened.map((pt, idx) => ({
+          x: pt.x,
+          y: pt.y,
+          sourceProgress: idx / (sharpened.length - 1),
+        }));
+      }
+    }
+    if (cspExt.ruledLine.mode !== "none" && points.length >= 2) {
+      const subPolys = transformStrokeWithRuledLine(points, {
+        ...cspExt.ruledLine,
+        seed: settings.seed,
+      });
+      if (cspExt.ruledLine.mode === "dashed" || cspExt.ruledLine.mode === "dotted") {
+        // 파선/점선은 간격(gap) 호길이 구간을 계산하여 실제 스탬프 배치에서 여백을 비운다.
+        const period = cspExt.ruledLine.mode === "dashed"
+          ? cspExt.ruledLine.dashLengthPx + cspExt.ruledLine.gapLengthPx
+          : Math.max(2, cspExt.ruledLine.gapLengthPx);
+        const onLen = cspExt.ruledLine.mode === "dashed"
+          ? cspExt.ruledLine.dashLengthPx
+          : Math.min(period * 0.35, Math.max(1, settings.spacing.base));
+        dashedGapRanges = [{ start: onLen, end: period }];
+      } else if (subPolys[0] && subPolys[0].length >= 2) {
+        const displaced = subPolys[0];
+        points = displaced.map((pt, idx) => ({
+          x: pt.x,
+          y: pt.y,
+          sourceProgress: idx / (displaced.length - 1),
+        }));
+      }
+    }
   }
 
   const cumulative = cumulativeLengths(points);
@@ -453,11 +526,132 @@ function planStudioDynamicBrushFromInput(
       contactLoadFromStrokeStart,
       contactFactor,
     };
-    previousSegmentFrame = FREEZE_SEGMENT_FRAMES ? Object.freeze(segmentFrame) : segmentFrame;
-    return dab;
-  });
+      previousSegmentFrame = FREEZE_SEGMENT_FRAMES ? Object.freeze(segmentFrame) : segmentFrame;
+      return dab;
+    });
 
-  return { dabs, sourcePointCount: points.length, totalLength, capped, settings };
+  let finalDabs = dabs;
+  let patternMotifId: string | undefined;
+  let patternRibbonQuadCount: number | undefined;
+
+  if (cspExt) {
+    if (dashedGapRanges && dashedGapRanges.length > 0 && totalLength > POINT_EPSILON) {
+      const gapRule = dashedGapRanges[0]!;
+      const period = gapRule.end;
+      const onSpan = gapRule.start;
+      finalDabs = finalDabs.filter((dab) => {
+        const phase = (dab.distanceFromStrokeStart ?? 0) % period;
+        return phase <= onSpan;
+      });
+    }
+
+    if (!isStudioBrushInOutTaperIdentity(cspExt.inOutTaper) && finalDabs.length > 0) {
+      finalDabs = applyStudioBrushInOutTaperToDabs(
+        finalDabs,
+        totalLength,
+        cspExt.inOutTaper,
+        Array.isArray(input.speeds) ? input.speeds : undefined,
+      );
+    }
+
+    if (cspExt.dwellBuildup.enabled && finalDabs.length > 0 && finalDabs.length < maxDabs) {
+      const tailDab = finalDabs.at(-1)!;
+      const tailPressure = sampleNumberAtProgress(
+        input.pressures,
+        1,
+        settings.fallbackPressure,
+        0,
+        1,
+      );
+      const dwellInit = createStudioBrushDwellState(tailDab.sourceX, tailDab.sourceY, 0);
+      const dwellRes = advanceStudioBrushDwellEmitter(dwellInit, cspExt.dwellBuildup, {
+        x: tailDab.sourceX,
+        y: tailDab.sourceY,
+        pressure: tailPressure,
+        timestampMs: cspExt.dwellBuildup.intervalMs * 3,
+        maxTicksPerStep: Math.max(1, maxDabs - finalDabs.length),
+      });
+      if (dwellRes.emitted.length > 0) {
+        const dwellDabs = dwellRes.emitted.map((tick, idx): StudioDynamicBrushDab => ({
+          ...tailDab,
+          index: finalDabs.length + idx,
+          distanceFromPrevious: 0,
+          flow: clamp01(tailDab.flow * tick.effectiveFlowScale),
+          opacity: clamp01(tailDab.opacity * Math.min(1, tick.effectiveFlowScale + 0.15)),
+        }));
+        finalDabs = [...finalDabs, ...dwellDabs];
+      }
+    }
+
+    if (cspExt.patternBrush.motif !== "none" && points.length >= 2) {
+      patternMotifId = cspExt.patternBrush.motif;
+      const patCfg = { ...cspExt.patternBrush, seed: settings.seed };
+      if (cspExt.patternBrush.ribbon) {
+        const quads = planStudioPatternRibbonQuads(points, patCfg);
+        patternRibbonQuadCount = quads.length;
+      } else {
+        const stamps = planStudioPatternStamps(points, patCfg);
+        if (stamps.length > 0) {
+          finalDabs = stamps.slice(0, maxDabs).map((st, idx): StudioDynamicBrushDab => {
+            const refDab = finalDabs[Math.min(idx, Math.max(0, finalDabs.length - 1))];
+            return {
+              index: idx,
+              progress: stamps.length > 1 ? idx / (stamps.length - 1) : 0,
+              sourceX: st.x,
+              sourceY: st.y,
+              x: st.x,
+              y: st.y,
+              size: st.widthPx,
+              opacity: refDab?.opacity ?? settings.opacity.base,
+              flow: refDab?.flow ?? settings.flow.base,
+              spacing: cspExt.patternBrush.spacingPx,
+              scatter: 0,
+              angle: normalizeSignedDegrees((st.tangentAngleRad * 180) / Math.PI),
+              roundness: 1,
+              patternMotifId,
+            };
+          });
+        }
+      }
+      if (cspExt.patternBrush.ribbon) {
+        finalDabs = finalDabs.map((dab) => ({ ...dab, patternMotifId }));
+      }
+    }
+
+    if (
+      cspExt.strokeColorAndScale.perStrokeColorJitter ||
+      cspExt.strokeColorAndScale.subColorMixSource !== "off"
+    ) {
+      finalDabs = finalDabs.map((dab) => {
+        const p = sampleNumberAtProgress(input.pressures, dab.progress, settings.fallbackPressure, 0, 1);
+        const spd = sampleNumberAtProgress(input.speeds, dab.progress, 0, 0, MAX_POINTER_SPEED);
+        const tx = sampleNumberAtProgress(input.tiltXs, dab.progress, 0, -90, 90);
+        const ty = sampleNumberAtProgress(input.tiltYs, dab.progress, 0, -90, 90);
+        const rgbTint = evaluateStudioStrokeAndSubColorRgb(
+          [24, 24, 24],
+          [220, 96, 64],
+          cspExt.strokeColorAndScale,
+          {
+            strokeSeed: settings.seed,
+            pressure: p,
+            speedNormalized: clamp01(spd / Math.max(0.05, settings.maxSpeed)),
+            tiltMagnitude: clamp01(Math.hypot(tx, ty) / 90),
+          },
+        );
+        return { ...dab, rgbTint };
+      });
+    }
+  }
+
+  return {
+    dabs: finalDabs,
+    sourcePointCount,
+    totalLength,
+    capped,
+    settings,
+    ...(patternMotifId ? { patternMotifId } : {}),
+    ...(patternRibbonQuadCount !== undefined ? { patternRibbonQuadCount } : {}),
+  };
 }
 
 /** Validates arbitrary settings and converts a stroke to deterministic render dabs. */

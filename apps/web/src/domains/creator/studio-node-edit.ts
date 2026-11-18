@@ -305,3 +305,63 @@ export function isPressureWidthBrush(brush: string | undefined, mode: "pen" | "e
     b === "watercolor"
   );
 }
+
+// ---------------------------------------------------------------------------
+// CSP `선 수정(Correct line)` 및 `벡터 자석(Vector magnet)` 확장 배선
+// 근거: ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68,
+//       ev_9e97a121e10ceaa075c9f4fb0b21c7bf2bd090aa4a639830aa6f070bec16e30f
+// ---------------------------------------------------------------------------
+
+export type {
+  AdjustVectorStrokeWidthOptions,
+  ConnectDrawElStrokesOptions,
+  PinchDrawElStrokeOptions,
+  RedrawVectorStrokeSegmentOptions,
+  RedrawVectorStrokeWidthOptions,
+  ToggleVectorCornerSmoothOptions,
+  VectorPinchFixEnds,
+  VectorStrokeSampleSpan,
+  VectorWidthAdjustMode,
+} from "./vector/studio-drawel-vector-correction";
+
+export type {
+  VectorMagnetEndpointEntry,
+  VectorMagnetSegmentEntry,
+  VectorMagnetSettings,
+  VectorMagnetSnapResult,
+  VectorMagnetSnapTarget,
+  VectorMagnetSpatialGrid,
+} from "./vector/studio-vector-magnet-snap";
+
+export type NodeEditVectorSurgeryTool =
+  | "pinch"
+  | "connect"
+  | "redraw-segment"
+  | "redraw-width"
+  | "adjust-width"
+  | "split"
+  | "corner-toggle";
+
+export const NODE_EDIT_VECTOR_SURGERY_TOOLS: readonly {
+  readonly id: NodeEditVectorSurgeryTool;
+  readonly label: string;
+  readonly tip: string;
+}[] = [
+  { id: "pinch", label: "벡터선 집기", tip: "선 위의 지점을 집어 주변 호길이 구간을 탄성 있게 끌어당깁니다." },
+  { id: "connect", label: "벡터선 연결", tip: "가까이 맞닿은 두 벡터 선의 끝점을 하나의 연속된 선으로 잇습니다." },
+  { id: "redraw-segment", label: "벡터선 다시 그리기", tip: "선 일부 구간만 새로 덧그려 자연스럽게 치환합니다." },
+  { id: "redraw-width", label: "선폭 다시 그리기", tip: "기존 선의 경로는 유지하고 필압 프로파일만 덧그려 바꿉니다." },
+  { id: "adjust-width", label: "선폭 수정", tip: "지정 배율로 굵게·가늘게 조정하며 1픽셀 이상 남기기를 지원합니다." },
+  { id: "split", label: "선 분할", tip: "지정한 지점에서 벡터 획을 두 개로 나눕니다." },
+  { id: "corner-toggle", label: "모서리 전환", tip: "정점을 뾰족한 각과 부드러운 곡선 사이에서 전환합니다." },
+];
+
+export type {
+  BezierHandleKind,
+  BezierPenAction,
+  BezierPenAnchor,
+  BezierPenMode,
+  BezierPenState,
+  BezierPenStatus,
+  BuildBezierDrawElOptions,
+} from "./drawing/studio-bezier-pen";

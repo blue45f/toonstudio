@@ -25,9 +25,18 @@
  * 기본값(옵션 없음·전부 기본값)이면 산출 구조는 기본 라이터와 동일하다 — 페이지 사전에
  * 박스가 추가되지 않고 콘텐츠 스트림도 이미지 배치만으로 구성되며, 회귀 테스트가 기본
  * 라이터와의 바이트 동등까지 고정한다. 순수 코어는 DOM 없이 동작한다.
+ *
+ * 역공학 근거(REA evidence_id):
+ * - ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68
+ * - ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d
  */
 
 import { PDF_PX_TO_PT } from "./studio-pdf-export";
+import { planMangaBookletImposition, planRunningMarginStamps } from "./studio-imposition-creep";
+import { rasterizePageForMonochromePrint } from "./studio-print-monochrome";
+
+import type { MangaBindingDirection, RunningMarginStampDescriptor } from "./studio-imposition-creep";
+import type { PrintHalftoneSpotShape, PrintMonochromeRasterOptions } from "./studio-print-monochrome";
 
 /** mm → pt 변환 계수 (1 inch = 25.4mm = 72pt). */
 export const PRINT_MM_TO_PT = 72 / 25.4;
@@ -46,21 +55,63 @@ export interface PdfPrintOptions {
   /** 재단 마크 렌더링 여부. 기본 false. */
   cropMarks?: boolean;
   /**
-   * 색상 모드. "rgb"(기본)는 JPEG(DeviceRGB) 페이지를, "cmyk"는 CMYK 래스터 페이지를
-   * 요구한다 — 페이지 종류와 모순되면 throw 한다.
+   * 색상 모드. "rgb"(기본)는 JPEG(DeviceRGB), "cmyk"는 CMYK 래스터,
+   * "grayscale"은 8비트 DeviceGray, "monochrome-1bit"는 1비트 망점 DeviceGray 페이지를 요구한다.
    */
-  colorMode?: "rgb" | "cmyk";
+  colorMode?: "rgb" | "cmyk" | "grayscale" | "monochrome-1bit";
   /**
    * 페이지 배열. "none"(기본)은 읽기 순서 그대로, "booklet"은 중철 제본 스프레드 배열.
    * booklet은 모든 페이지의 재단 크기가 같아야 한다.
    */
   imposition?: "none" | "booklet";
+  /** 제본 방향. "ltr"(기본, 좌철) 또는 "rtl"(일본 출판 만화식 우철). */
+  bindingDirection?: MangaBindingDirection;
+  /** 중철 제본 시 가운데 시트 최대 안쪽 당김 보정량(mm, 기본 0). */
+  creepMm?: number;
+  /** 1비트 모노크롬 망점 선수 메타(기본 60). */
+  halftoneLpi?: number;
+  /** 1비트 모노크롬 출력 해상도(DPI, 기본 600). */
+  halftoneDpi?: 600 | 1200;
+  /** 1비트 모노크롬 망점 회전각(도, 기본 45). */
+  halftoneAngleDeg?: number;
+  /** 1비트 모노크롬 망점 모양(기본 "dot"). */
+  halftoneSpotShape?: PrintHalftoneSpotShape;
+  /** 순흑 먹선 보존 밝기 임계값(0..255, 기본 45). */
+  solidInkThreshold?: number;
+  /** 바깥 여백 작품명·회차·쪽번호(논블) 스탬프 인쇄 여부(기본 false). */
+  runningStampEnabled?: boolean;
 }
 
-/** 인쇄용 PDF 한 페이지 — 색상 모드에 따라 두 종류 중 하나. */
+/** 인쇄용 PDF 한 페이지 — 색상 모드에 따라 네 종류 중 하나. */
 export type PrintPdfPage =
   | { kind: "jpeg"; jpegBytes: Uint8Array; width: number; height: number }
-  | { kind: "cmyk-raster"; cmykBytes: Uint8Array; width: number; height: number };
+  | { kind: "cmyk-raster"; cmykBytes: Uint8Array; width: number; height: number }
+  | { kind: "gray-raster"; grayBytes: Uint8Array; width: number; height: number }
+  | { kind: "mono-1bit"; packed1BitBytes: Uint8Array; width: number; height: number };
+
+/** RGBA 캔버스 래스터를 그레이스케일(BT.709) 또는 1비트 모노크롬 망점 PDF 페이지로 변환한다. */
+export function rgbaToMonochromePrintPdfPage(
+  rgba: Uint8Array | Uint8ClampedArray,
+  width: number,
+  height: number,
+  options: PrintMonochromeRasterOptions,
+): PrintPdfPage {
+  const rasterized = rasterizePageForMonochromePrint(rgba, width, height, options);
+  if (rasterized.mode === "grayscale") {
+    return {
+      kind: "gray-raster",
+      grayBytes: rasterized.grayBytes,
+      width: rasterized.width,
+      height: rasterized.height,
+    };
+  }
+  return {
+    kind: "mono-1bit",
+    packed1BitBytes: rasterized.packedDeviceGray1BitBytes,
+    width: rasterized.width,
+    height: rasterized.height,
+  };
+}
 
 export interface BuildPrintPdfOptions {
   /** 문서 정보(docinfo) 제목 — 비어 있으면 /Title을 생략한다. */
@@ -199,10 +250,14 @@ export function cropMarkSegments(layout: PrintPageLayout, spineXPt?: number): Pr
 }
 
 /** 재단 마크를 그리는 콘텐츠 스트림 조각 — 색상 연산자까지 포함한다. */
-export function buildCropMarksContent(layout: PrintPageLayout, colorMode: "rgb" | "cmyk", spineXPt?: number): string {
+export function buildCropMarksContent(
+  layout: PrintPageLayout,
+  colorMode: "rgb" | "cmyk" | "grayscale" | "monochrome-1bit",
+  spineXPt?: number,
+): string {
   const segments = cropMarkSegments(layout, spineXPt);
   if (segments.length === 0) return "";
-  // RGB 모드는 검정(gray 0), CMYK 모드는 전판(registration 100% 전 색판)으로 찍는다.
+  // RGB·흑백 모드는 검정(gray 0), CMYK 모드는 전판(registration 100% 전 색판)으로 찍는다.
   const colorOp = colorMode === "cmyk" ? "1 1 1 1 k" : "0 g";
   const paths = segments
     .map(
@@ -338,6 +393,20 @@ interface OutputImageRef {
   page: PrintPdfPage;
   /** 이 출력 페이지 안에서의 배치 영역. */
   rect: PrintRect;
+  /** 원본 입력 페이지 인덱스(0-based). */
+  sourcePageIndex: number;
+}
+
+function pdfUcs2HexNoBom(value: string): string {
+  let hex = "";
+  for (let i = 0; i < value.length; i++) {
+    hex += value.charCodeAt(i).toString(16).toUpperCase().padStart(4, "0");
+  }
+  return `<${hex}>`;
+}
+
+function pdfLiteralAscii(value: string): string {
+  return value.replace(/[\\()]/gu, (ch) => `\\${ch}`);
 }
 
 interface OutputPagePlan {
@@ -357,8 +426,16 @@ function validatePrintPage(page: PrintPdfPage, index: number): void {
     if (page.jpegBytes.length < 4 || page.jpegBytes[0] !== 0xff || page.jpegBytes[1] !== 0xd8) {
       throw new Error(`페이지 ${index + 1}의 이미지가 JPEG 형식이 아니에요. 다시 시도해주세요.`);
     }
-  } else if (page.cmykBytes.length !== widthPx * heightPx * 4) {
-    throw new Error(`페이지 ${index + 1}의 CMYK 데이터 길이가 이미지 크기와 맞지 않아요.`);
+  } else if (page.kind === "cmyk-raster") {
+    if (page.cmykBytes.length !== widthPx * heightPx * 4) {
+      throw new Error(`페이지 ${index + 1}의 CMYK 데이터 길이가 이미지 크기와 맞지 않아요.`);
+    }
+  } else if (page.kind === "gray-raster") {
+    if (page.grayBytes.length !== widthPx * heightPx) {
+      throw new Error(`페이지 ${index + 1}의 그레이스케일 데이터 길이가 이미지 크기와 맞지 않아요.`);
+    }
+  } else if (page.packed1BitBytes.length !== Math.ceil(widthPx / 8) * heightPx) {
+    throw new Error(`페이지 ${index + 1}의 1비트 모노크롬 데이터 길이가 이미지 크기와 맞지 않아요.`);
   }
 }
 
@@ -366,13 +443,13 @@ function validatePrintPage(page: PrintPdfPage, index: number): void {
 function planOutputPages(pages: PrintPdfPage[], print: Required<PdfPrintOptions>): OutputPagePlan[] {
   const layoutOpts = { bleedMm: print.bleedMm, cropMarks: print.cropMarks };
   if (print.imposition === "none") {
-    return pages.map((page) => {
+    return pages.map((page, sourcePageIndex) => {
       const layout = computePrintLayout(
         Math.round(page.width) * PDF_PX_TO_PT,
         Math.round(page.height) * PDF_PX_TO_PT,
         layoutOpts
       );
-      return { layout, images: [{ page, rect: layout.imageRect }] };
+      return { layout, images: [{ page, rect: layout.imageRect, sourcePageIndex }] };
     });
   }
   // booklet — 재단 크기가 전부 같아야 펼침면을 만들 수 있다.
@@ -384,21 +461,37 @@ function planOutputPages(pages: PrintPdfPage[], print: Required<PdfPrintOptions>
   }
   const trimWidthPt = Math.round(first.width) * PDF_PX_TO_PT;
   const trimHeightPt = Math.round(first.height) * PDF_PX_TO_PT;
-  const sheets = planBookletImposition(pages.length);
+  const sheets = planMangaBookletImposition({
+    pageCount: pages.length,
+    bindingDirection: print.bindingDirection,
+    maxCreepMm: print.creepMm > 0 ? print.creepMm : undefined,
+  });
   const plans: OutputPagePlan[] = [];
   for (const sheet of sheets) {
     for (const side of [sheet.front, sheet.back]) {
       const layout = computePrintLayout(trimWidthPt * 2, trimHeightPt, layoutOpts);
       const images: OutputImageRef[] = [];
-      const halfRect = (half: 0 | 1): PrintRect => ({
-        x: layout.marginPt - layout.bleedPt + half * trimWidthPt,
+      const halfRect = (half: 0 | 1, shiftXPt: number): PrintRect => ({
+        x: layout.marginPt - layout.bleedPt + half * trimWidthPt + shiftXPt,
         y: layout.imageRect.y,
         width: trimWidthPt + layout.bleedPt * 2,
         height: layout.imageRect.height,
       });
-      const [left, right] = side;
-      if (left !== null) images.push({ page: pages[left], rect: halfRect(0) });
-      if (right !== null) images.push({ page: pages[right], rect: halfRect(1) });
+      const [leftSlot, rightSlot] = side;
+      if (leftSlot.pageIndex !== null) {
+        images.push({
+          page: pages[leftSlot.pageIndex],
+          rect: halfRect(0, leftSlot.shiftXPt),
+          sourcePageIndex: leftSlot.pageIndex,
+        });
+      }
+      if (rightSlot.pageIndex !== null) {
+        images.push({
+          page: pages[rightSlot.pageIndex],
+          rect: halfRect(1, rightSlot.shiftXPt),
+          sourcePageIndex: rightSlot.pageIndex,
+        });
+      }
       plans.push({ layout, images, spineXPt: layout.marginPt + trimWidthPt });
     }
   }
@@ -421,6 +514,14 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
     cropMarks: opts?.print?.cropMarks ?? false,
     colorMode: opts?.print?.colorMode ?? "rgb",
     imposition: opts?.print?.imposition ?? "none",
+    bindingDirection: opts?.print?.bindingDirection ?? "ltr",
+    creepMm: opts?.print?.creepMm ?? 0,
+    halftoneLpi: opts?.print?.halftoneLpi ?? 60,
+    halftoneDpi: opts?.print?.halftoneDpi ?? 600,
+    halftoneAngleDeg: opts?.print?.halftoneAngleDeg ?? 45,
+    halftoneSpotShape: opts?.print?.halftoneSpotShape ?? "dot",
+    solidInkThreshold: opts?.print?.solidInkThreshold ?? 45,
+    runningStampEnabled: opts?.print?.runningStampEnabled ?? false,
   };
   if (!Number.isFinite(print.bleedMm) || print.bleedMm < 0 || print.bleedMm > 100) {
     throw new Error("재단 여백은 0~100mm 사이로 지정해주세요.");
@@ -432,9 +533,32 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
     if (print.colorMode === "rgb" && page.kind !== "jpeg") {
       throw new Error("RGB 모드에서는 JPEG 페이지가 필요해요.");
     }
+    if (print.colorMode === "grayscale" && page.kind !== "gray-raster") {
+      throw new Error("그레이스케일 모드에서는 그레이스케일 래스터 페이지가 필요해요.");
+    }
+    if (print.colorMode === "monochrome-1bit" && page.kind !== "mono-1bit") {
+      throw new Error("1비트 모노크롬 모드에서는 1비트 망점 페이지가 필요해요.");
+    }
   }
 
   const plans = planOutputPages(pages, print);
+  const stampByPage = new Map<number, RunningMarginStampDescriptor>();
+  let stampNeedsUnicodeFont = false;
+  if (print.runningStampEnabled) {
+    const firstTrimWidthMm = (Math.round(pages[0]!.width) * PDF_PX_TO_PT) / PRINT_MM_TO_PT;
+    const firstTrimHeightMm = (Math.round(pages[0]!.height) * PDF_PX_TO_PT) / PRINT_MM_TO_PT;
+    for (const stamp of planRunningMarginStamps({
+      pageCount: pages.length,
+      trimWidthMm: firstTrimWidthMm,
+      trimHeightMm: firstTrimHeightMm,
+      bindingDirection: print.bindingDirection,
+      storyTitle: opts?.title,
+    })) {
+      stampByPage.set(stamp.pageIndex, stamp);
+      if (/[^\x20-\x7e]/u.test(stamp.text)) stampNeedsUnicodeFont = true;
+    }
+  }
+  const hasRunningStamps = stampByPage.size > 0;
 
   const chunks: Uint8Array[] = [];
   let offset = 0;
@@ -452,8 +576,10 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
     const imageNums = plan.images.map(() => nextNum++);
     return { pageNum, contentNum, imageNums };
   });
-  const infoObjNum = nextNum;
-  const size = infoObjNum + 1;
+  const infoObjNum = nextNum++;
+  const stampFontObjNum = hasRunningStamps ? nextNum++ : 0;
+  const stampCidFontObjNum = hasRunningStamps && stampNeedsUnicodeFont ? nextNum++ : 0;
+  const size = nextNum;
 
   const objectOffsets = new Map<number, number>();
   const pushObject = (num: number, body: string): void => {
@@ -485,8 +611,10 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
     if (layout.trimBox) pageDict += ` /TrimBox ${box(layout.trimBox)}`;
     if (layout.bleedBox) pageDict += ` /BleedBox ${box(layout.bleedBox)}`;
     const xobjects = plan.images.map((_, i) => `/Im${i} ${imageNums[i]} 0 R`).join(" ");
+    const fontRes = hasRunningStamps ? ` /Font << /F1 ${stampFontObjNum} 0 R >>` : "";
+    const procSet = hasRunningStamps ? "[/PDF /Text /ImageC]" : "[/PDF /ImageC]";
     pageDict +=
-      ` /Resources << /XObject << ${xobjects} >> /ProcSet [/PDF /ImageC] >>` +
+      ` /Resources << /XObject << ${xobjects} >>${fontRes} /ProcSet ${procSet} >>` +
       ` /Contents ${contentNum} 0 R >>`;
     pushObject(pageNum, pageDict);
 
@@ -496,6 +624,17 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
       contentParts.push(
         `q\n${formatPdfNumber(r.width)} 0 0 ${formatPdfNumber(r.height)} ${formatPdfNumber(r.x)} ${formatPdfNumber(r.y)} cm\n/Im${i} Do\nQ`
       );
+      const stamp = stampByPage.get(image.sourcePageIndex);
+      if (stamp) {
+        const trimOriginX = r.x + layout.bleedPt;
+        const trimOriginY = r.y + layout.bleedPt;
+        const estWidthPt = stamp.text.length * (stampNeedsUnicodeFont ? 6.5 : 4.2);
+        const tx = trimOriginX + (stamp.align === "right" ? Math.max(4, stamp.xPt - estWidthPt) : stamp.xPt);
+        const ty = trimOriginY + stamp.yPt;
+        const colorOp = print.colorMode === "cmyk" ? "0 0 0 1 k" : "0 g";
+        const tjOperand = stampNeedsUnicodeFont ? pdfUcs2HexNoBom(stamp.text) : `(${pdfLiteralAscii(stamp.text)})`;
+        contentParts.push(`BT\n/F1 8 Tf\n${colorOp}\n${formatPdfNumber(tx)} ${formatPdfNumber(ty)} Td\n${tjOperand} Tj\nET`);
+      }
     });
     if (print.cropMarks) {
       const marks = buildCropMarksContent(layout, print.colorMode, plan.spineXPt);
@@ -505,22 +644,15 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
 
     plan.images.forEach((image, i) => {
       const page = image.page;
-      const widthPx = Math.round(page.width);
-      const heightPx = Math.round(page.height);
+      const head = `/Type /XObject /Subtype /Image /Width ${Math.round(page.width)} /Height ${Math.round(page.height)}`;
       if (page.kind === "jpeg") {
-        pushStreamObject(
-          imageNums[i],
-          `/Type /XObject /Subtype /Image /Width ${widthPx} /Height ${heightPx} ` +
-            `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`,
-          page.jpegBytes
-        );
+        pushStreamObject(imageNums[i], `${head} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, page.jpegBytes);
+      } else if (page.kind === "cmyk-raster") {
+        pushStreamObject(imageNums[i], `${head} /ColorSpace /DeviceCMYK /BitsPerComponent 8 /Filter /FlateDecode`, deflateStoredZlib(page.cmykBytes));
+      } else if (page.kind === "gray-raster") {
+        pushStreamObject(imageNums[i], `${head} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode`, deflateStoredZlib(page.grayBytes));
       } else {
-        pushStreamObject(
-          imageNums[i],
-          `/Type /XObject /Subtype /Image /Width ${widthPx} /Height ${heightPx} ` +
-            `/ColorSpace /DeviceCMYK /BitsPerComponent 8 /Filter /FlateDecode`,
-          deflateStoredZlib(page.cmykBytes)
-        );
+        pushStreamObject(imageNums[i], `${head} /ColorSpace /DeviceGray /BitsPerComponent 1 /Filter /FlateDecode`, deflateStoredZlib(page.packed1BitBytes));
       }
     });
   });
@@ -528,6 +660,14 @@ export function buildPrintPdfFromPages(pages: PrintPdfPage[], opts?: BuildPrintP
   const title = opts?.title?.trim();
   const titleEntry = title ? `/Title ${pdfHexTextString(title)} ` : "";
   pushObject(infoObjNum, `<< ${titleEntry}/Producer (ToonStudio Studio) >>`);
+  if (hasRunningStamps) {
+    if (stampNeedsUnicodeFont) {
+      pushObject(stampFontObjNum, `<< /Type /Font /Subtype /Type0 /BaseFont /HYGoThic-Medium-UniKS-UCS2-H /Encoding /UniKS-UCS2-H /DescendantFonts [${stampCidFontObjNum} 0 R] >>`);
+      pushObject(stampCidFontObjNum, "<< /Type /Font /Subtype /CIDFontType0 /BaseFont /HYGoThic-Medium /CIDSystemInfo << /Registry (Adobe) /Ordering (Korea1) /Supplement 2 >> >>");
+    } else {
+      pushObject(stampFontObjNum, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    }
+  }
 
   const xrefOffset = offset;
   pushText(`xref\n0 ${size}\n`);

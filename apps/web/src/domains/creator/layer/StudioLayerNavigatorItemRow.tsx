@@ -1,39 +1,20 @@
 import {
-  Check,
-  CircleDot,
-  CornerDownRight,
-  Eye,
-  EyeOff,
-  Film,
-  Ghost,
-  Grid2X2,
-  GripVertical,
-  Layers3,
-  Lock,
-  LockOpen,
-  MoreHorizontal,
-  ScanLine,
-  Sparkles,
-  type LucideIcon,
+  Check, CircleDot, CornerDownRight, Droplets, Eye, EyeOff, Film, Ghost,
+  Grid2X2, GripVertical, Layers3, Lock, LockOpen, MoreHorizontal, ScanLine, Sparkles,
 } from "lucide-react";
-import {
-  memo,
-  useState,
-  type DragEvent as ReactDragEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent,
-  type ReactNode,
-} from "react";
+import { memo, useState } from "react";
 
 import { StudioInlineScrubber } from "../StudioInlineScrubber";
 
 import {
-  STUDIO_LAYER_COLOR_LABELS,
-  STUDIO_LAYER_ROLE_LABELS,
-  type StudioLayerColor,
-  type StudioLayerKind,
-  type StudioLayerNavigatorItem,
-} from "./studio-layer-navigator";
+  BLUE_LINE_ROUGH_LAYER_COLOR_PRESET,
+  describeStudioLayerExpressionColorSummary,
+  evaluateLayerExpressionColor,
+  isIdentityStudioLayerExpressionColorSettings,
+  normalizeStudioLayerExpressionColorSettings,
+  STUDIO_LAYER_EXPRESSION_MODE_BADGES,
+} from "./studio-layer-expression-color";
+import { STUDIO_LAYER_COLOR_LABELS, STUDIO_LAYER_ROLE_LABELS } from "./studio-layer-navigator";
 import {
   STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
   STUDIO_LAYER_NAVIGATOR_FOCUS_RING,
@@ -45,11 +26,20 @@ import {
   STUDIO_LAYER_SEMANTIC_KIND_CLASSES,
   STUDIO_LAYER_SEMANTIC_KIND_LABELS,
   visibleStudioLayerPaletteStatuses,
-  type StudioLayerPaletteStatusKind,
 } from "./studio-layer-palette-visual";
 
 import type { LayerSelectionDropSide } from "../studio-layers";
 import type { StudioLiveLayerOwnership } from "../live/studio-live-layer-ownership";
+import type { StudioLayerExpressionColorSettings } from "./studio-layer-expression-color";
+import type { StudioLayerColor, StudioLayerKind, StudioLayerNavigatorItem } from "./studio-layer-navigator";
+import type { StudioLayerPaletteStatusKind } from "./studio-layer-palette-visual";
+import type { LucideIcon } from "lucide-react";
+import type {
+  DragEvent as ReactDragEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+} from "react";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -107,6 +97,8 @@ export interface LayerNavigatorRowHandlers {
     event: ReactMouseEvent<HTMLButtonElement>,
     itemId: string
   ) => void;
+  /** CSP 레이어 속성(`layerpropuselayercolor`) 주색·파란선 표시 빠른 토글. */
+  onToggleItemLayerColorTint?: (itemId: string, enabled: boolean) => void;
   onItemDragStart?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
   onItemDragEnd?: () => void;
   onItemDragOver?: (event: ReactDragEvent<HTMLElement>, itemId: string, key: string) => void;
@@ -115,8 +107,17 @@ export interface LayerNavigatorRowHandlers {
   registerRowRef: (key: string, node: HTMLElement | null) => void;
 }
 
+export type StudioLayerExpressionColorProp = Parameters<
+  typeof normalizeStudioLayerExpressionColorSettings
+>[0];
+
+export interface StudioLayerNavigatorItemWithExpression
+  extends StudioLayerNavigatorItem {
+  readonly expressionColor?: StudioLayerExpressionColorProp;
+}
+
 export interface StudioLayerNavigatorItemRowProps {
-  item: StudioLayerNavigatorItem;
+  item: StudioLayerNavigatorItemWithExpression;
   rowKey: string;
   level: number;
   kind: Exclude<StudioLayerKind, "all">;
@@ -137,6 +138,11 @@ export interface StudioLayerNavigatorItemRowProps {
   actionOpen: boolean;
   actionPopoverId: string;
   stableHandlers: LayerNavigatorRowHandlers;
+  /**
+   * CSP 레이어 속성(표현색·레이어 컬러·수채 경계) 투영. 생략 시 `item.expressionColor`를 읽는다.
+   * evidence_id: ev_af42bc7907f5e98eacfcb3b02c9c7f14cbf6c06dd0234d34033ff0059556946b
+   */
+  expressionColor?: StudioLayerExpressionColorProp;
   /**
    * Live collaboration ownership for this layer. Null/undefined when free or offline.
    * Peer ownership blocks local opacity/lock controls until the lease ends.
@@ -175,6 +181,7 @@ export const StudioLayerNavigatorItemRow = memo(
     actionOpen,
     actionPopoverId,
     stableHandlers,
+    expressionColor,
     liveOwnership = null,
     dragEnabled = false,
     dropSide = null,
@@ -182,6 +189,32 @@ export const StudioLayerNavigatorItemRow = memo(
   }: StudioLayerNavigatorItemRowProps) {
     const Icon = STUDIO_LAYER_NAVIGATOR_KIND_ICONS[kind];
     const peerBlocked = liveOwnership?.blocksLocalEdit === true;
+    const [localLayerColorEnabled, setLocalLayerColorEnabled] = useState<boolean | null>(null);
+    const propExpressionColor = expressionColor ?? item.expressionColor;
+    const rawExpressionColor =
+      localLayerColorEnabled === null
+        ? propExpressionColor
+        : {
+            ...propExpressionColor,
+            layerColorTint: {
+              ...(propExpressionColor?.layerColorTint ?? BLUE_LINE_ROUGH_LAYER_COLOR_PRESET),
+              enabled: localLayerColorEnabled,
+            },
+          };
+    const normalizedExpression: StudioLayerExpressionColorSettings | null =
+      rawExpressionColor && !isIdentityStudioLayerExpressionColorSettings(rawExpressionColor)
+        ? normalizeStudioLayerExpressionColorSettings(rawExpressionColor)
+        : null;
+    const previewSwatchRgb = normalizedExpression
+      ? (() => {
+          const sample = evaluateLayerExpressionColor(
+            { width: 2, height: 1, data: new Uint8ClampedArray([16, 16, 16, 255, 240, 240, 240, 255]) },
+            normalizedExpression,
+          );
+          return `rgb(${sample.data[0]}, ${sample.data[1]}, ${sample.data[2]})`;
+        })()
+      : null;
+    const expressionSummary = describeStudioLayerExpressionColorSummary(rawExpressionColor);
     const liveStatusLabel =
       liveOwnership && liveOwnership.kind !== "free"
         ? liveOwnership.statusLabel
@@ -200,6 +233,7 @@ export const StudioLayerNavigatorItemRow = memo(
       groupName ? `그룹 ${groupName}` : null,
       item.role ? `역할 ${STUDIO_LAYER_ROLE_LABELS[item.role]}` : null,
       item.color ? `색 라벨 ${STUDIO_LAYER_COLOR_LABELS[item.color]}` : null,
+      expressionSummary,
       displayedStatusLabel || null,
     ]
       .filter(Boolean)
@@ -281,6 +315,12 @@ export const StudioLayerNavigatorItemRow = memo(
           }
           data-studio-live-ownership-blocked={peerBlocked ? "true" : "false"}
           data-studio-layer-drop-side={dropSide ?? undefined}
+          data-studio-layer-expression-mode={
+            normalizedExpression?.expressionMode ?? undefined
+          }
+          data-studio-layer-color-tint={
+            normalizedExpression?.layerColorTint.enabled ? "true" : undefined
+          }
         >
           {dropSide ? (
             <span
@@ -383,13 +423,81 @@ export const StudioLayerNavigatorItemRow = memo(
                   <span className="truncate">{groupName}</span>
                 ) : null}
                 {item.role ? (
-                  <span className="shrink-0 rounded bg-raised px-1 py-0.5">
-                    {STUDIO_LAYER_ROLE_LABELS[item.role]}
+                  <span className="shrink-0 rounded bg-raised px-1 py-0.5">{STUDIO_LAYER_ROLE_LABELS[item.role]}</span>
+                ) : null}
+                {normalizedExpression && normalizedExpression.expressionMode !== "color" ? (
+                  <span
+                    data-studio-layer-expression-badge={normalizedExpression.expressionMode}
+                    className="shrink-0 rounded border border-line-strong bg-card px-1 py-0.5 font-semibold tabular-nums [word-break:keep-all]"
+                  >
+                    {STUDIO_LAYER_EXPRESSION_MODE_BADGES[normalizedExpression.expressionMode]}
+                  </span>
+                ) : null}
+                {normalizedExpression?.layerColorTint.enabled ? (
+                  <span
+                    data-studio-layer-color-tint-badge="true"
+                    data-studio-layer-expression-preview-rgb={previewSwatchRgb ?? undefined}
+                    className="inline-flex shrink-0 items-center gap-1 rounded border border-cool/35 bg-cool/10 px-1 py-0.5 text-cool [word-break:keep-all]"
+                  >
+                    <span
+                      aria-hidden
+                      className="size-2 rounded-full border border-white/25"
+                      style={{ backgroundColor: previewSwatchRgb ?? normalizedExpression.layerColorTint.mainColor }}
+                    />
+                    컬러
+                  </span>
+                ) : null}
+                {normalizedExpression?.watercolorEdge.enabled &&
+                normalizedExpression.watercolorEdge.opacity > 0 &&
+                normalizedExpression.watercolorEdge.darkness > 0 ? (
+                  <span
+                    data-studio-layer-watercolor-edge-badge="true"
+                    className="inline-flex shrink-0 items-center gap-0.5 rounded border border-accent/35 bg-accent-soft/35 px-1 py-0.5 text-accent [word-break:keep-all]"
+                  >
+                    <Droplets size={9} aria-hidden />
+                    수채
                   </span>
                 ) : null}
               </span>
             </span>
           </span>
+          <button
+            type="button"
+            tabIndex={-1}
+            data-studio-layer-color-tint-toggle="true"
+            disabled={readOnly || effectivelyLocked || peerBlocked}
+            aria-pressed={normalizedExpression?.layerColorTint.enabled === true}
+            aria-label={
+              normalizedExpression?.layerColorTint.enabled
+                ? `${item.label} 레이어 컬러 끄기`
+                : `${item.label} 레이어 컬러 켜기`
+            }
+            onClick={(event) => {
+              event.stopPropagation();
+              const nextEnabled = !(normalizedExpression?.layerColorTint.enabled === true);
+              setLocalLayerColorEnabled(nextEnabled);
+              stableHandlers.onToggleItemLayerColorTint?.(item.id, nextEnabled);
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+            className={cn(
+              "grid size-7 shrink-0 place-items-center rounded border text-[0.58rem] font-bold transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none disabled:opacity-35",
+              normalizedExpression?.layerColorTint.enabled
+                ? "border-cool/50 bg-cool/15 text-cool"
+                : "border-transparent text-fg-3 hover:bg-raised hover:text-fg",
+              STUDIO_LAYER_NAVIGATOR_COARSE_TARGET,
+              STUDIO_LAYER_NAVIGATOR_FOCUS_RING
+            )}
+          >
+            <span
+              aria-hidden
+              className="size-2.5 rounded-full border border-current"
+              style={
+                previewSwatchRgb
+                  ? { backgroundColor: previewSwatchRgb }
+                  : undefined
+              }
+            />
+          </button>
           {showLiveOwnershipBadge ? (
             <span
               data-studio-live-ownership-badge={liveOwnership!.kind}

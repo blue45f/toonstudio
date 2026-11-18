@@ -4,62 +4,21 @@
  * 페더/반전/전체선택/확장·축소/회전·뒤집기 + 부분 조정.
  */
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Circle,
-  Copy,
-  Eraser,
-  Eye,
-  FlipHorizontal2,
-  FlipVertical2,
-  Lasso,
-  Maximize2,
-  Minimize2,
-  Move,
-  Paintbrush,
-  Pentagon,
-  Pipette,
-  RotateCcw,
-  RotateCw,
-  Scissors,
-  Redo2,
-  Square,
-  Undo2,
-  WandSparkles,
-  X,
+  ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Circle, Copy, Eraser, Eye,
+  FlipHorizontal2, FlipVertical2, Lasso, Maximize2, Minimize2, Move, Paintbrush, Pentagon,
+  Pipette, RotateCcw, RotateCw, Scissors, Redo2, Square, Undo2, WandSparkles, X,
 } from "lucide-react";
-import { useState } from "react";
-
-import {
-  COLOR_RANGE_FUZZINESS_DEFAULT,
-  COLOR_RANGE_FUZZINESS_RANGE,
-  type ColorRangeSample,
-} from "./studio-color-range";
+import { useMemo, useState } from "react";
+import { evaluateShrinkAndReferenceSelectionSummary, type ShrinkTargetBackgroundMode } from "./selection/studio-shrink-selection";
+import { COLOR_RANGE_FUZZINESS_DEFAULT, COLOR_RANGE_FUZZINESS_RANGE, type ColorRangeSample } from "./studio-color-range";
 import { StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
+import { QUICK_SELECTION_TOLERANCE_DEFAULT, QUICK_SELECTION_TOLERANCE_RANGE } from "./studio-quick-selection";
 import {
-  QUICK_SELECTION_TOLERANCE_DEFAULT,
-  QUICK_SELECTION_TOLERANCE_RANGE,
-} from "./studio-quick-selection";
-import {
-  SELECTION_BRIGHTNESS_RANGE,
-  SELECTION_BRUSH_RADIUS_DEFAULT,
-  SELECTION_BRUSH_RADIUS_RANGE,
-  SELECTION_OPERATION_MODES,
-  SELECTION_EXPAND_DEFAULT,
-  SELECTION_EXPAND_RANGE,
-  SELECTION_FEATHER_RANGE,
-  SELECTION_HUE_RANGE,
-  SELECTION_ROTATE_RANGE,
-  SELECTION_TOOLS,
-  isSelectionUsable,
-  planSelectionAdjust,
-  type PixelSelection,
-  type SelectionAdjustPlan,
-  type SelectionOperationMode,
-  type SelectionContentTransform,
-  type SelectionToolKind,
+  SELECTION_BRIGHTNESS_RANGE, SELECTION_BRUSH_RADIUS_DEFAULT, SELECTION_BRUSH_RADIUS_RANGE,
+  SELECTION_OPERATION_MODES, SELECTION_EXPAND_DEFAULT, SELECTION_EXPAND_RANGE, SELECTION_FEATHER_RANGE,
+  SELECTION_HUE_RANGE, SELECTION_ROTATE_RANGE, SELECTION_TOOLS, isSelectionUsable, planSelectionAdjust,
+  type PixelSelection, type SelectionAdjustPlan, type SelectionOperationMode,
+  type SelectionContentTransform, type SelectionToolKind,
 } from "./studio-selection-tools";
 import { StudioToolHintTarget } from "./StudioToolHint";
 import { frozenStatus3Text } from "./studio-frozen3-status-i18n";
@@ -455,6 +414,11 @@ export function StudioSelectionToolsPanel({
   const [rotateAmount, setRotateAmount] = useState(15);
   const [contentScale, setContentScale] = useState(1);
   const [contentRotate, setContentRotate] = useState(15);
+  const [shrinkTargetMode, setShrinkTargetMode] = useState<ShrinkTargetBackgroundMode>("transparent-or-surrounding");
+  const [shrinkGapRadius, setShrinkGapRadius] = useState(2);
+  const shrinkSummary = useMemo(() => evaluateShrinkAndReferenceSelectionSummary({
+    normalizedOuterPoints: selection?.subpaths[0]?.points, targetMode: shrinkTargetMode, closeGapRadius: shrinkGapRadius,
+  }), [selection?.subpaths, shrinkGapRadius, shrinkTargetMode]);
 
   const usable = isSelectionUsable(selection);
   const subpathCount = selection?.subpaths.length ?? 0;
@@ -1484,6 +1448,31 @@ export function StudioSelectionToolsPanel({
             </StudioToolHintTarget>
           </div>
         ) : null}
+        <details className="rounded-lg border border-line/70 bg-card/45 px-2.5 py-1.5 text-xs [word-break:keep-all]">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            <span>축소 선택 · 참조 선화 자동 선택 기준</span>
+            <span className="tabular-nums text-xs text-fg-3">밀착 {shrinkSummary.shrunkSelectedPx}px · 구멍 {shrinkSummary.preservedHoles}개</span>
+          </summary>
+          <div className="space-y-2 border-t border-line/50 pt-2">
+            <label className="flex min-h-11 items-center justify-between gap-2 text-fg-2">
+              <span>배경 판정 기준</span>
+              <select aria-label="축소 선택 배경 판정 기준" disabled={busy} value={shrinkTargetMode} onChange={(e) => setShrinkTargetMode(e.target.value as ShrinkTargetBackgroundMode)} className="min-h-11 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45">
+                <option value="transparent-or-surrounding">투명 영역 및 시작 테두리 색</option>
+                <option value="transparent">투명 영역만 제외</option>
+                <option value="surrounding-color">시작 테두리 유사 색 제외</option>
+              </select>
+            </label>
+            <label className="flex min-h-11 items-center justify-between gap-2 text-fg-2">
+              <span>참조 선화 틈 닫기</span>
+              <select aria-label="참조 선화 틈 닫기" disabled={busy} value={shrinkGapRadius} onChange={(e) => setShrinkGapRadius(Number(e.target.value))} className="min-h-11 rounded-lg border border-line bg-card px-2 text-xs text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-45">
+                <option value={0}>사용 안 함 (0px)</option>
+                <option value={2}>표준 봉합 (2px)</option>
+                <option value={4}>넓은 틈 봉합 (4px)</option>
+              </select>
+            </label>
+            <p className="text-xs leading-relaxed text-fg-3">참조 자동 선택 판정 면적 {shrinkSummary.referenceSelectedPx}px · 닫힌 선화 내부 구멍 보존이 함께 적용됩니다.</p>
+          </div>
+        </details>
       </div>
     </section>
   );

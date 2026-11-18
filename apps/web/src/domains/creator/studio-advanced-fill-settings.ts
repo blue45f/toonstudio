@@ -6,6 +6,13 @@
  * All persisted values are untrusted and are normalized before use.
  */
 
+import type {
+  FillExpandKernelShape,
+  FillExpandType,
+  FillReferenceLayerExclusionOptions,
+  FillRgbTuple,
+} from "./fill/studio-advanced-fill-expansion";
+
 export const STUDIO_ADVANCED_FILL_REFERENCE_SCOPES = [
   "current",
   "reference",
@@ -277,4 +284,94 @@ export function saveStudioAdvancedFillSettings(
   } catch {
     // Private browsing, quota limits, and embedded contexts may expose a throwing Storage object.
   }
+}
+
+// ---------------------------------------------------------------------------
+// CSP 확장 채우기·좁은 영역 스며들기·제외 색·레이어 역할 제외 확장 설정 계약
+// 근거: ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68,
+//       ev_9e97a121e10ceaa075c9f4fb0b21c7bf2bd090aa4a639830aa6f070bec16e30f
+// 기존 v1 저장 스키마(DEFAULT_STUDIO_ADVANCED_FILL_SETTINGS)와 100% 하위 호환을 유지하기 위해
+// 보조 확장 옵션 묶음을 독립 정규화기로 노출한다.
+// ---------------------------------------------------------------------------
+
+export interface StudioAdvancedFillCspExtensionSettings extends FillReferenceLayerExclusionOptions {
+  readonly expandType: FillExpandType;
+  readonly expandKernelShape: FillExpandKernelShape;
+  readonly soakIntoNarrowArea: boolean;
+  readonly useNotStartColor: boolean;
+  readonly notStartColor: FillRgbTuple;
+  readonly notStartColorTolerance: number;
+  readonly leftoverMaxGapAreaPx: number;
+}
+
+export const DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS: Readonly<StudioAdvancedFillCspExtensionSettings> =
+  Object.freeze({
+    expandType: "expand-to-darkest-pixel",
+    expandKernelShape: "round",
+    soakIntoNarrowArea: true,
+    useNotStartColor: false,
+    notStartColor: Object.freeze([255, 0, 255]) as FillRgbTuple,
+    notStartColorTolerance: 12,
+    leftoverMaxGapAreaPx: 64,
+    excludeText: true,
+    excludeDraft: true,
+    excludeLocked: false,
+    excludePaper: true,
+  });
+
+export function normalizeStudioAdvancedFillCspExtensions(
+  raw: unknown,
+): StudioAdvancedFillCspExtensionSettings {
+  if (!isRecord(raw)) {
+    return {
+      ...DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS,
+      notStartColor: [...DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.notStartColor],
+    };
+  }
+  const expandType: FillExpandType =
+    raw.expandType === "standard" || raw.expandType === "expand-to-darkest-pixel"
+      ? raw.expandType
+      : DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.expandType;
+  const expandKernelShape: FillExpandKernelShape =
+    raw.expandKernelShape === "round" || raw.expandKernelShape === "square"
+      ? raw.expandKernelShape
+      : DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.expandKernelShape;
+  const rawRgb = Array.isArray(raw.notStartColor) && raw.notStartColor.length === 3
+    ? raw.notStartColor
+    : null;
+  const notStartColor: FillRgbTuple = rawRgb
+    ? [
+        normalizeSteppedNumber(rawRgb[0], 255, STUDIO_ADVANCED_FILL_LIMITS.tolerance),
+        normalizeSteppedNumber(rawRgb[1], 0, STUDIO_ADVANCED_FILL_LIMITS.tolerance),
+        normalizeSteppedNumber(rawRgb[2], 255, STUDIO_ADVANCED_FILL_LIMITS.tolerance),
+      ]
+    : [...DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.notStartColor];
+
+  return {
+    expandType,
+    expandKernelShape,
+    soakIntoNarrowArea: normalizeBoolean(
+      raw.soakIntoNarrowArea,
+      DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.soakIntoNarrowArea,
+    ),
+    useNotStartColor: normalizeBoolean(
+      raw.useNotStartColor,
+      DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.useNotStartColor,
+    ),
+    notStartColor,
+    notStartColorTolerance: normalizeSteppedNumber(
+      raw.notStartColorTolerance,
+      DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.notStartColorTolerance,
+      STUDIO_ADVANCED_FILL_LIMITS.tolerance,
+    ),
+    leftoverMaxGapAreaPx: normalizeSteppedNumber(
+      raw.leftoverMaxGapAreaPx,
+      DEFAULT_STUDIO_ADVANCED_FILL_CSP_EXTENSIONS.leftoverMaxGapAreaPx,
+      { min: 1, max: 4096, step: 1 },
+    ),
+    excludeText: normalizeBoolean(raw.excludeText, true),
+    excludeDraft: normalizeBoolean(raw.excludeDraft, true),
+    excludeLocked: normalizeBoolean(raw.excludeLocked, false),
+    excludePaper: normalizeBoolean(raw.excludePaper, true),
+  };
 }

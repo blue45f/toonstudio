@@ -10,8 +10,14 @@
  * 스트로크) 종료 시 한 번에 적용된다(crop/픽셀 조정과 동일한 "제스처 1회 = 커밋 1회" 관례).
  */
 import { Blend } from "lucide-react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
+import {
+  DEFAULT_STUDIO_BLEND_REFER_OPTIONS,
+  normalizeStudioBlendReferOptions,
+  type StudioBlendBrushSubMode,
+  type StudioBlendReferLayerOptions,
+} from "./brush/studio-blend-refer-layer";
 import { StudioSliderRow, StudioToggleChip } from "./studio-panel-ui";
 import { studioRetouchToolHelp } from "./studio-retouch-help";
 import { SMUDGE_RADIUS_RANGE, SMUDGE_STRENGTH_RANGE } from "./studio-smudge";
@@ -34,6 +40,9 @@ export type StudioSmudgePanelProps = {
   onRadiusChange: (value: number) => void;
   onStrengthChange: (value: number) => void;
   onOpenTutorial?: () => void;
+  /** 선택적 CSP 5.1.5 색 섞기 서브모드(문지르기/흐리기/선명화) 및 타 레이어 참조 설정. */
+  blendOptions?: Partial<StudioBlendReferLayerOptions> | null;
+  onBlendOptionsChange?: (next: StudioBlendReferLayerOptions) => void;
 };
 
 export function StudioSmudgePanel({
@@ -46,10 +55,24 @@ export function StudioSmudgePanel({
   onRadiusChange,
   onStrengthChange,
   onOpenTutorial,
+  blendOptions,
+  onBlendOptionsChange,
 }: StudioSmudgePanelProps): ReactElement {
   const titleId = useId();
   const help = studioRetouchToolHelp("smudge");
   const locked = busy || disabled;
+  const [fallbackBlend, setFallbackBlend] = useState<StudioBlendReferLayerOptions>(
+    DEFAULT_STUDIO_BLEND_REFER_OPTIONS,
+  );
+  const resolvedBlend = normalizeStudioBlendReferOptions(
+    blendOptions ?? fallbackBlend,
+  );
+  const commitBlendOptions = (next: StudioBlendReferLayerOptions): void => {
+    if (blendOptions === undefined) {
+      setFallbackBlend(next);
+    }
+    onBlendOptionsChange?.(next);
+  };
 
   return (
     <section
@@ -109,6 +132,59 @@ export function StudioSmudgePanel({
         onChange={onStrengthChange}
         readout={`${strength}%`}
       />
+
+      <details
+        data-studio-blend-refer-options="true"
+        className="rounded-lg border border-line/65 bg-canvas/50 px-2.5 py-1.5 text-xs [word-break:keep-all]"
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between font-semibold text-fg-2">
+          <span>섞기 방식 · 다른 레이어 색 참조</span>
+          <span className="text-[0.65rem] text-fg-3">
+            {resolvedBlend.subMode === "blur"
+              ? "흐리기"
+              : resolvedBlend.subMode === "sharpen"
+                ? "선명화"
+                : "문지르기"}
+          </span>
+        </summary>
+        <div className="space-y-2 border-t border-line/50 pt-2">
+          <label className="flex min-h-11 items-center justify-between gap-2">
+            <span className="text-fg-2">브러시 동작</span>
+            <select
+              aria-label="브러시 동작"
+              disabled={locked}
+              value={resolvedBlend.subMode}
+              onChange={(e) =>
+                commitBlendOptions({
+                  ...resolvedBlend,
+                  subMode: e.target.value as StudioBlendBrushSubMode,
+                })
+              }
+              className="min-h-11 rounded-lg border border-line bg-card px-2 text-xs text-fg disabled:opacity-50"
+            >
+              <option value="smudge">문질러 색 밀기</option>
+              <option value="blur">경계 부드럽게 흐리기</option>
+              <option value="sharpen">경계 또렷하게 살리기</option>
+            </select>
+          </label>
+          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-2">
+            <span className="text-fg-2">보이는 다른 레이어 색 함께 참조</span>
+            <input
+              type="checkbox"
+              aria-label="보이는 다른 레이어 색 함께 참조"
+              disabled={locked}
+              checked={resolvedBlend.referVisibleLayers}
+              onChange={(e) =>
+                commitBlendOptions({
+                  ...resolvedBlend,
+                  referVisibleLayers: e.target.checked,
+                })
+              }
+              className="size-4 accent-accent disabled:opacity-50"
+            />
+          </label>
+        </div>
+      </details>
 
       <StudioRetouchQuickGuide
         toolId="smudge"

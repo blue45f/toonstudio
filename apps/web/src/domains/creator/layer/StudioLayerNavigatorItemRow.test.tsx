@@ -4,13 +4,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { studioLayerNavigatorItemStatusLabel } from "./studio-layer-navigator-row-ui";
-import {
-  StudioLayerNavigatorItemRow,
-  type LayerNavigatorRowHandlers,
-  type StudioLayerNavigatorItemRowProps,
-} from "./StudioLayerNavigatorItemRow";
+import { StudioLayerNavigatorItemRow } from "./StudioLayerNavigatorItemRow";
 
 import type { StudioLayerNavigatorItem } from "./studio-layer-navigator";
+import type {
+  LayerNavigatorRowHandlers,
+  StudioLayerNavigatorItemRowProps,
+} from "./StudioLayerNavigatorItemRow";
 
 const ITEM: StudioLayerNavigatorItem = {
   id: "line-art",
@@ -502,5 +502,51 @@ describe("StudioLayerNavigatorItemRow", () => {
     expect(
       screen.getByRole("slider", { name: "주인공 원화 불투명도" }).getAttribute("aria-disabled")
     ).toBe("true");
+  });
+
+  it("CSP 레이어 속성(모노크롬 표현색·레이어 컬러·수채 경계) 배지와 파란선 빠른 토글을 표시한다", () => {
+    const onToggleItemLayerColorTint = vi.fn();
+    const onRowClick = vi.fn();
+    renderRow(
+      rowProps({
+        expressionColor: {
+          expressionMode: "monochrome",
+          layerColorTint: { enabled: true, mainColor: "#2563eb", subColor: "#ffffff" },
+          watercolorEdge: { enabled: true, rangePx: 4, opacity: 70, darkness: 50, blurPx: 2 },
+        },
+        stableHandlers: rowHandlers({
+          onRowClick,
+          onToggleItemLayerColorTint,
+        }),
+      })
+    );
+
+    const row = screen.getByRole("treeitem", {
+      name: /표현색 모노크롬, 레이어 컬러 #2563eb, 수채 경계/,
+    });
+    expect(row.getAttribute("data-studio-layer-expression-mode")).toBe("monochrome");
+    expect(row.getAttribute("data-studio-layer-color-tint")).toBe("true");
+    expect(
+      row.querySelector('[data-studio-layer-expression-badge="monochrome"]')?.textContent
+    ).toBe("모노");
+    expect(row.querySelector('[data-studio-layer-color-tint-badge="true"]')).not.toBeNull();
+    expect(row.querySelector('[data-studio-layer-watercolor-edge-badge="true"]')).not.toBeNull();
+
+    const toggleBtn = screen.getByRole("button", { name: "주인공 원화 레이어 컬러 끄기" });
+    expect(toggleBtn.tabIndex).toBe(-1);
+    fireEvent.click(toggleBtn);
+    expect(onToggleItemLayerColorTint).toHaveBeenCalledWith("line-art", false);
+    expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it("부모 콜백이 생략되어도 내부 상태로 레이어 컬러 토글 및 평가된 RGB 프리뷰 배지를 그린다", () => {
+    renderRow(rowProps());
+    const toggleOn = screen.getByRole("button", { name: "주인공 원화 레이어 컬러 켜기" });
+    fireEvent.click(toggleOn);
+
+    const row = screen.getByRole("treeitem", { name: /레이어 컬러 #2563eb/ });
+    const badge = row.querySelector('[data-studio-layer-color-tint-badge="true"]');
+    expect(badge).not.toBeNull();
+    expect(badge?.getAttribute("data-studio-layer-expression-preview-rgb")).toMatch(/^rgb\(/);
   });
 });

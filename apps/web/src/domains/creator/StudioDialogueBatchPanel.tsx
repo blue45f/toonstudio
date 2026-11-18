@@ -3,28 +3,13 @@
 // 순수 계산은 studio-dialogue-batch, 상태 커밋(히스토리)은 StudioPage(메인 루프)가 담당한다.
 // 자체완결 플로팅 패널: 캔버스 컨테이너(relative) 안에서 우측에 떠 있고 Esc 로 닫힌다.
 import {
-  ArrowRight,
-  ChevronDown,
-  Combine,
-  Copy,
-  Download,
-  FileText,
-  MessageCircle,
-  MoreHorizontal,
-  Pause,
-  Play,
-  Replace,
-  Search,
-  Scissors,
-  Square,
-  Type as TypeIcon,
-  Upload,
-  Volume2,
-  X,
+  ArrowRight, ChevronDown, Combine, Copy, Download, FileText, MessageCircle,
+  MoreHorizontal, Pause, Play, Replace, Search, Scissors, Square, Type as TypeIcon, Upload, Volume2, X,
 } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 
 import { downloadBlob } from "./export/studio-export";
+import { StudioStoryEditorLauncherBar } from "./lettering/StudioStoryEditorLauncherBar";
 import {
   adjacentEditableDialogueItem,
   collectDialogueItems,
@@ -1205,6 +1190,17 @@ export function StudioDialogueBatchPanel({
           </div>
         ) : null}
       </div>
+
+      <StudioStoryEditorLauncherBar
+        pages={pages}
+        currentPageId={currentPageId}
+        selectedId={selectedId}
+        onSelectElement={onSelectElement}
+        onPatchText={onPatchText}
+        onSplitText={onSplitText}
+        onMergeWithNext={onMergeWithNext}
+        onTransferElement={onTransferElement}
+      />
 
       {/* 브라우저 내장 음성으로 페이지 순서의 대사를 들어보는 비파괴 검수 도구. */}
       <section

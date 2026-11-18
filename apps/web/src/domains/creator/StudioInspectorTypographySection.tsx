@@ -11,11 +11,20 @@
  *
  * `element.typography` keeps its id: search rows and menu deep links land on the 글꼴
  * block, which is where "typography" starts.
+ *
+ * 역공학 근거(REA evidence_id):
+ * - ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68
+ * - ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d
  */
 import { Bold, Italic } from "lucide-react";
 import { Suspense, useEffect, useRef } from "react";
 
-import { normalizeTextPath, type TextPathConfig } from "./lettering/studio-text-path";
+import {
+  STUDIO_TEXT_SCALE_RATIO_RANGE,
+  readStudioTextBoxStyleFromElement,
+  toStudioTextBoxStyleElementPatch,
+} from "./lettering/studio-text-box-style";
+import { normalizeTextPath } from "./lettering/studio-text-path";
 import { BRAND_KIT_FONTS, DEFAULT_BRAND_KIT_FONT } from "./studio-brand-kit";
 import {
   StudioCustomFontsPanel,
@@ -28,6 +37,7 @@ import { StudioColorField } from "./StudioColorField";
 import { StudioInspectorSection } from "./StudioInspectorSection";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 
+import type { TextPathConfig } from "./lettering/studio-text-path";
 import type { BubbleEl, El, TextEl } from "./studio-element-model";
 
 import { cn } from "@/shared/lib/utils";
@@ -48,7 +58,12 @@ interface StudioInspectorTypographySectionProps {
 const SLIDER_CLASS = "w-24 accent-accent cursor-pointer sm:w-28 h-2";
 
 function countActiveAppearance(selected: TextEl): number {
-  return (selected.stroke ? 1 : 0) + (selected.shadowColor ? 1 : 0);
+  const boxStyle = readStudioTextBoxStyleFromElement(selected);
+  return (
+    (selected.stroke ? 1 : 0) +
+    (selected.shadowColor ? 1 : 0) +
+    (boxStyle.textBackgroundEnabled ? 1 : 0)
+  );
 }
 
 export function StudioInspectorTypographySection({
@@ -68,6 +83,7 @@ export function StudioInspectorTypographySection({
   const isBold = fsVal.includes("bold");
   const isItalic = fsVal.includes("italic");
   const text = selected.type === "text" ? selected : null;
+  const textBoxStyle = readStudioTextBoxStyleFromElement(selected);
   const lastStrokeRef = useRef({
     color: text?.stroke || "#ffffff",
     width: text?.strokeWidth && text.strokeWidth > 0 ? text.strokeWidth : 3,
@@ -208,6 +224,70 @@ export function StudioInspectorTypographySection({
             </button>
           </div>
         </div>
+        <details className="mt-2.5 rounded-lg border border-line/60 bg-card/45 p-2 [word-break:keep-all]">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none hover:text-fg">
+            <span>장평·자폭 비율</span>
+            <span className="text-[0.68rem] tabular-nums text-fg-3">
+              {textBoxStyle.textHorizontalRatio}% × {textBoxStyle.textVerticalRatio}%
+            </span>
+          </summary>
+          <div className="mt-2 space-y-2">
+            <label className="flex min-h-11 items-center justify-between gap-2 text-xs text-fg-2">
+              <span>자폭 (가로 비율)</span>
+              <span className="flex items-center gap-2">
+                <input
+                  type="range"
+                  aria-label="자폭 (가로 비율)"
+                  min={STUDIO_TEXT_SCALE_RATIO_RANGE.min}
+                  max={STUDIO_TEXT_SCALE_RATIO_RANGE.max}
+                  step={STUDIO_TEXT_SCALE_RATIO_RANGE.step}
+                  value={textBoxStyle.textHorizontalRatio}
+                  data-inspector-priority="advanced"
+                  data-inspector-control-id="typography.scale.horizontal"
+                  onChange={(e) =>
+                    patchEl(
+                      selected.id,
+                      toStudioTextBoxStyleElementPatch(selected.id, {
+                        textHorizontalRatio: Number(e.currentTarget.value),
+                      }),
+                    )
+                  }
+                  className={SLIDER_CLASS}
+                />
+                <span className="w-10 text-right tabular-nums text-fg-3">
+                  {textBoxStyle.textHorizontalRatio}%
+                </span>
+              </span>
+            </label>
+            <label className="flex min-h-11 items-center justify-between gap-2 text-xs text-fg-2">
+              <span>장평 (세로 비율)</span>
+              <span className="flex items-center gap-2">
+                <input
+                  type="range"
+                  aria-label="장평 (세로 비율)"
+                  min={STUDIO_TEXT_SCALE_RATIO_RANGE.min}
+                  max={STUDIO_TEXT_SCALE_RATIO_RANGE.max}
+                  step={STUDIO_TEXT_SCALE_RATIO_RANGE.step}
+                  value={textBoxStyle.textVerticalRatio}
+                  data-inspector-priority="advanced"
+                  data-inspector-control-id="typography.scale.vertical"
+                  onChange={(e) =>
+                    patchEl(
+                      selected.id,
+                      toStudioTextBoxStyleElementPatch(selected.id, {
+                        textVerticalRatio: Number(e.currentTarget.value),
+                      }),
+                    )
+                  }
+                  className={SLIDER_CLASS}
+                />
+                <span className="w-10 text-right tabular-nums text-fg-3">
+                  {textBoxStyle.textVerticalRatio}%
+                </span>
+              </span>
+            </label>
+          </div>
+        </details>
       </StudioInspectorSection>
 
       {text ? (
@@ -419,6 +499,88 @@ export function StudioInspectorTypographySection({
               </>
             )}
           </div>
+
+          <details className="mt-2.5 rounded-lg border border-line/60 bg-card/45 p-2 [word-break:keep-all]">
+            <summary className="flex min-h-11 cursor-pointer items-center justify-between text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none hover:text-fg">
+              <span>글자 배경 상자</span>
+              <span className="text-[0.68rem] tabular-nums text-fg-3">
+                {textBoxStyle.textBackgroundEnabled
+                  ? `${Math.round(textBoxStyle.textBackgroundAlpha * 100)}%`
+                  : "꺼짐"}
+              </span>
+            </summary>
+            <div className="mt-2 space-y-2">
+              <label className="flex min-h-11 items-center justify-between gap-2 text-xs text-fg-2">
+                <span>배경 상자 사용</span>
+                <input
+                  type="checkbox"
+                  checked={textBoxStyle.textBackgroundEnabled}
+                  aria-label="글자 배경 상자 사용"
+                  data-inspector-priority="advanced"
+                  data-inspector-control-id="typography.background.enabled"
+                  onChange={(e) =>
+                    patchEl(
+                      text.id,
+                      toStudioTextBoxStyleElementPatch(text.id, {
+                        textBackgroundEnabled: e.currentTarget.checked,
+                      }),
+                    )
+                  }
+                  className="size-4 cursor-pointer accent-accent"
+                />
+              </label>
+              {textBoxStyle.textBackgroundEnabled && (
+                <>
+                  <label className="flex min-h-11 items-center justify-between gap-2 text-xs text-fg-2">
+                    <span>배경 상자 색상</span>
+                    <input
+                      type="color"
+                      aria-label="글자 배경 상자 색상"
+                      value={textBoxStyle.textBackgroundColor}
+                      data-inspector-priority="advanced"
+                      data-inspector-control-id="typography.background.color"
+                      onChange={(e) =>
+                        patchEl(
+                          text.id,
+                          toStudioTextBoxStyleElementPatch(text.id, {
+                            textBackgroundColor: e.currentTarget.value,
+                          }),
+                        )
+                      }
+                      className="h-7 w-7 cursor-pointer rounded border border-line bg-transparent"
+                    />
+                  </label>
+                  <label className="flex min-h-11 items-center justify-between gap-2 text-xs text-fg-2">
+                    <span>배경 불투명도</span>
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        aria-label="글자 배경 불투명도"
+                        min={0.05}
+                        max={1}
+                        step={0.05}
+                        value={textBoxStyle.textBackgroundAlpha}
+                        data-inspector-priority="advanced"
+                        data-inspector-control-id="typography.background.alpha"
+                        onChange={(e) =>
+                          patchEl(
+                            text.id,
+                            toStudioTextBoxStyleElementPatch(text.id, {
+                              textBackgroundAlpha: Number(e.currentTarget.value),
+                            }),
+                          )
+                        }
+                        className={SLIDER_CLASS}
+                      />
+                      <span className="w-10 text-right tabular-nums text-fg-3">
+                        {Math.round(textBoxStyle.textBackgroundAlpha * 100)}%
+                      </span>
+                    </span>
+                  </label>
+                </>
+              )}
+            </div>
+          </details>
         </StudioInspectorSection>
       ) : null}
 

@@ -29,6 +29,9 @@ import type {
   StudioBrushTipLayerSettings,
 } from "./studio-brush-tip-composition";
 import type {
+  NormalizedStudioCspBrushExtensions,
+} from "./studio-brush-stroke-color-dynamics";
+import type {
   NormalizedStudioBrushTipSettings,
   StudioBrushTipSettings,
 } from "./studio-brush-tip-stamp";
@@ -233,6 +236,8 @@ export interface StudioBrushDynamicsSettings {
   tipLayers?: readonly StudioBrushTipLayerSettings[] | null;
   /** Secondary tip texture that modulates the primary tip at composition time (dual brush). */
   dualBrush?: StudioBrushDualBrushSettings | null;
+  /** Optional CSP 5.1.5 advanced taper, sharp corner, dwell, ruled-line, pattern & sub-color extensions. */
+  cspBrushExtensions?: NormalizedStudioCspBrushExtensions | null;
   width?: StudioBrushDynamicsPropertySettings;
   size?: StudioBrushDynamicsPropertySettings;
   opacity?: StudioBrushDynamicsPropertySettings;
@@ -543,6 +548,8 @@ export interface NormalizedStudioBrushDynamicsSettings {
    * value as identity via `normalizeStudioBrushDualBrushSettings`/`composeStudioBrushDualTipAlphaMap`.
    */
   dualBrush?: NormalizedStudioBrushDualBrushSettings;
+  /** Omitted while equal to no-op identity so legacy canonical snapshots remain byte-identical. */
+  cspBrushExtensions?: NormalizedStudioCspBrushExtensions;
   width: NormalizedStudioBrushDynamicsProperty;
   opacity: NormalizedStudioBrushDynamicsProperty;
   flow: NormalizedStudioBrushDynamicsProperty;
@@ -678,6 +685,10 @@ export interface StudioDynamicBrushDab {
   scatter: number;
   angle: number;
   roundness: number;
+  /** Optional per-dab RGB tint evaluated from CSP stroke/sub-color dynamics. */
+  rgbTint?: readonly [number, number, number];
+  /** Optional active CSP pattern brush motif identifier. */
+  patternMotifId?: string;
 }
 
 export interface StudioDynamicBrushPlan {
@@ -686,6 +697,8 @@ export interface StudioDynamicBrushPlan {
   totalLength: number;
   capped: boolean;
   settings: NormalizedStudioBrushDynamicsSettings;
+  patternMotifId?: string;
+  patternRibbonQuadCount?: number;
 }
 
 export function studioDynamicBrushContactFactor(

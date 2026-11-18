@@ -12,6 +12,19 @@
  */
 
 import {
+  beginConcentricEllipseSnapSession,
+  beginParallelCurveSnapSession,
+  createRulerFromVectorStroke,
+  snapConcentricEllipsePoint,
+  snapFigureRulerPoint,
+  snapParallelCurvePoint,
+  type ConcentricEllipseSnapSession,
+  type FigureRulerSnapSession,
+  type ParallelCurveSnapSession,
+  type SpecialRulerKind,
+  type StudioExtendedSpecialRuler,
+} from "./ruler/studio-figure-ellipse-ruler";
+import {
   beginStudioConcentricSnapSession,
   beginStudioParallelSnapSession,
   beginStudioRadialSnapSession,
@@ -30,17 +43,26 @@ import {
 import {
   beginStudioFisheyeSnapSession,
   snapStudioFisheyePoint,
+  type StudioFisheyeOutsidePolicy,
   type StudioFisheyeSnapSession,
 } from "./studio-fisheye-ruler";
 
 import type { StudioAdvancedRuler } from "./studio-advanced-ruler-document";
+
+export { createRulerFromVectorStroke };
+export type { SpecialRulerKind, StudioExtendedSpecialRuler, StudioFisheyeOutsidePolicy };
+
+export type StudioAdvancedRulerSnapInput = StudioAdvancedRuler | StudioExtendedSpecialRuler;
 
 export type StudioAdvancedRulerSnapState =
   | { type: "curve"; session: StudioCurveSnapSession }
   | { type: "fisheye"; session: StudioFisheyeSnapSession }
   | { type: "parallel"; session: StudioParallelSnapSession }
   | { type: "concentric"; session: StudioConcentricSnapSession }
-  | { type: "radial"; session: StudioRadialSnapSession };
+  | { type: "radial"; session: StudioRadialSnapSession }
+  | { type: "concentric-ellipse"; session: ConcentricEllipseSnapSession }
+  | { type: "parallel-curve"; session: ParallelCurveSnapSession }
+  | { type: "figure"; session: FigureRulerSnapSession };
 
 export interface StudioAdvancedRulerSnapResult {
   readonly state: StudioAdvancedRulerSnapState;
@@ -54,10 +76,36 @@ export interface StudioAdvancedRulerSnapResult {
  */
 export function snapStudioAdvancedRulerStrokePoint(
   state: StudioAdvancedRulerSnapState | null,
-  ruler: StudioAdvancedRuler,
+  ruler: StudioAdvancedRulerSnapInput,
   start: { x: number; y: number },
   target: { x: number; y: number }
 ): StudioAdvancedRulerSnapResult | null {
+  if (ruler.type === "concentric-ellipse") {
+    const session = state?.type === "concentric-ellipse" && state.session.ruler.id === ruler.id
+      ? state.session
+      : beginConcentricEllipseSnapSession(ruler, start);
+    if (!session) return null;
+    const transition = snapConcentricEllipsePoint(session, target);
+    if (!transition) return null;
+    return { state: { type: "concentric-ellipse", session: transition.session }, point: transition.point };
+  }
+  if (ruler.type === "parallel-curve") {
+    const session = state?.type === "parallel-curve" && state.session.ruler.id === ruler.id
+      ? state.session
+      : beginParallelCurveSnapSession(ruler, start);
+    if (!session) return null;
+    const transition = snapParallelCurvePoint(session, target);
+    if (!transition) return null;
+    return { state: { type: "parallel-curve", session: transition.session }, point: transition.point };
+  }
+  if (ruler.type === "figure") {
+    const session = state?.type === "figure" && state.session.ruler.id === ruler.id
+      ? state.session
+      : { ruler };
+    const point = snapFigureRulerPoint(session.ruler, target);
+    if (!point) return null;
+    return { state: { type: "figure", session }, point };
+  }
   if (ruler.type === "curve") {
     const session = state?.type === "curve" && state.session.ruler.id === ruler.id
       ? state.session

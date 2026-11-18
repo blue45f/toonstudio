@@ -11,6 +11,7 @@ import {
   Target,
   Trash2,
 } from "lucide-react";
+import { lazy, Suspense } from "react";
 
 import {
   STUDIO_ADVANCED_RULER_MAX_COUNT,
@@ -28,14 +29,23 @@ import {
   STUDIO_FISHEYE_MIN_RADIUS,
   STUDIO_FISHEYE_MIN_STRENGTH,
 } from "./studio-fisheye-ruler";
+import { NODE_EDIT_VECTOR_SURGERY_TOOLS } from "./studio-node-edit";
 import {
   StudioCoordinateInput,
   StudioPanelChip,
   StudioSliderRow,
 } from "./studio-panel-ui";
 
+import type { SpecialRulerKind } from "./ruler/studio-figure-ellipse-ruler";
+import type { DrawEl } from "./studio-element-model";
 import type { LucideIcon } from "lucide-react";
 import type { ReactElement } from "react";
+
+const StudioVectorSurgeryInteractiveSection = lazy(() =>
+  import("./vector/StudioVectorSurgeryInteractiveSection").then((m) => ({
+    default: m.StudioVectorSurgeryInteractiveSection,
+  })),
+);
 
 const RULER_KIND_LABELS: Record<StudioAdvancedRuler["type"], string> = {
   curve: "곡선자",
@@ -69,6 +79,14 @@ export interface StudioAdvancedRulerPanelProps {
   onRemove: (id: string) => void;
   onSelect: (id: string | null) => void;
   onSetActiveSnap: (id: string | null) => void;
+  /** CSP 특수 자(`concentric-ellipse` / `parallel-curve`) 추가 콜백(선택 연결). */
+  onAddSpecialRuler?: (kind: SpecialRulerKind) => void;
+  /** 선택된 벡터 선에서 자 작성(`layermakerulerfromvector`) 콜백(선택 연결). */
+  onCreateRulerFromSelectedVector?: () => void;
+  canCreateFromSelectedVector?: boolean;
+  /** 벡터선 수술 및 베지어 곡선 펜 대상 벡터 획 목록(선택 연결). */
+  vectorStrokes?: readonly DrawEl[];
+  onVectorStrokesChange?: (next: DrawEl[]) => void;
 }
 const NOOP_PREVIEW = (): void => undefined;
 const SELECT_CLASS = "h-8 w-full rounded-md border border-line bg-card px-2 text-[0.68rem] text-fg outline-none focus:border-accent/60 disabled:opacity-45";
@@ -125,6 +143,11 @@ export function StudioAdvancedRulerPanel({
   onRemove,
   onSelect,
   onSetActiveSnap,
+  onAddSpecialRuler,
+  onCreateRulerFromSelectedVector,
+  canCreateFromSelectedVector = false,
+  vectorStrokes,
+  onVectorStrokesChange,
 }: StudioAdvancedRulerPanelProps): ReactElement {
   const selected = selectedRuler(document);
   const atLimit = document.rulers.length >= STUDIO_ADVANCED_RULER_MAX_COUNT;
@@ -157,6 +180,47 @@ export function StudioAdvancedRulerPanel({
           </button>
         ))}
       </div>
+
+      {(onAddSpecialRuler || onCreateRulerFromSelectedVector) && (
+        <details className="rounded-lg border border-line/70 bg-card/60 px-2.5 py-1.5 [word-break:keep-all]">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+            <span>특수 타원 · 평행곡선 · 벡터 자 변환</span>
+            <span className="tabular-nums text-[0.72rem] text-fg-3">확장</span>
+          </summary>
+          <div className="grid grid-cols-2 gap-1.5 pt-1.5 pb-1">
+            {onAddSpecialRuler && (
+              <>
+                <button
+                  type="button"
+                  disabled={disabled || atLimit}
+                  onClick={() => onAddSpecialRuler("concentric-ellipse")}
+                  className="flex min-h-11 items-center justify-center gap-1 rounded-md border border-line bg-card px-2 text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none hover:bg-raised disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  동심 타원자
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled || atLimit}
+                  onClick={() => onAddSpecialRuler("parallel-curve")}
+                  className="flex min-h-11 items-center justify-center gap-1 rounded-md border border-line bg-card px-2 text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none hover:bg-raised disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                >
+                  평행 곡선자
+                </button>
+              </>
+            )}
+            {onCreateRulerFromSelectedVector && (
+              <button
+                type="button"
+                disabled={disabled || atLimit || !canCreateFromSelectedVector}
+                onClick={onCreateRulerFromSelectedVector}
+                className="col-span-2 flex min-h-11 items-center justify-center gap-1 rounded-md border border-line bg-card px-2.5 text-xs font-semibold text-fg-2 transition-[background-color,border-color,color,transform] duration-150 motion-reduce:transition-none hover:bg-raised disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                선택한 벡터 선으로 자 만들기
+              </button>
+            )}
+          </div>
+        </details>
+      )}
 
       {document.rulers.length === 0 ? (
         <p className="rounded-md border border-dashed border-line px-2 py-3 text-center text-[0.63rem] leading-relaxed text-fg-3">
@@ -462,6 +526,22 @@ export function StudioAdvancedRulerPanel({
           ) : null}
         </div>
       ) : null}
+
+      <details className="rounded-lg border border-line/70 bg-card/45 px-2.5 py-1.5 text-xs [word-break:keep-all]">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+          <span>곡선 펜 · 벡터선 다듬기 도구</span>
+          <span className="tabular-nums text-[0.72rem] text-fg-3">
+            {NODE_EDIT_VECTOR_SURGERY_TOOLS.length}종
+          </span>
+        </summary>
+        <Suspense fallback={null}>
+          <StudioVectorSurgeryInteractiveSection
+            strokes={vectorStrokes}
+            onStrokesChange={onVectorStrokesChange}
+            disabled={disabled}
+          />
+        </Suspense>
+      </details>
     </div>
   );
 }

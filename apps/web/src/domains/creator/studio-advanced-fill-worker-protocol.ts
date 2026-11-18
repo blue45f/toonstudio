@@ -1,10 +1,27 @@
 import type {
+  FillExpandKernelShape,
+  FillExpandType,
+  FillRgbTuple,
+} from "./fill/studio-advanced-fill-expansion";
+import type {
   AdvancedFillImageDataLike,
   AdvancedFillRequest,
   AdvancedFillResult,
 } from "./studio-advanced-fill";
 
 export const STUDIO_ADVANCED_FILL_WORKER_PROTOCOL_VERSION = 1 as const;
+
+export interface StudioAdvancedFillCspPostprocessOptions {
+  readonly expandPx?: number;
+  readonly expandType?: FillExpandType;
+  readonly kernelShape?: FillExpandKernelShape;
+  readonly soakIntoNarrowArea?: boolean;
+  readonly sliverRadiusPx?: number;
+  readonly useNotStartColor?: boolean;
+  readonly notStartColor?: FillRgbTuple;
+  readonly notStartColorTolerance?: number;
+  readonly fillLeftoverMaxAreaPx?: number;
+}
 
 /**
  * Worker requests intentionally omit `abort`: a running module worker is cancelled by terminating
@@ -16,6 +33,8 @@ export type StudioAdvancedFillWorkerRunRequest = Omit<AdvancedFillRequest, "abor
   /** Forces the final alpha silhouette to alphaLockSource (or target when omitted). */
   readonly enforceAlphaLock?: boolean;
   readonly alphaLockSource?: AdvancedFillImageDataLike;
+  /** Optional CSP ridge-stop expansion, narrow-area soak, and leftover Voronoi gap fill inside the worker. */
+  readonly cspOptions?: StudioAdvancedFillCspPostprocessOptions;
 };
 
 export interface StudioAdvancedFillWorkerRunMessage {

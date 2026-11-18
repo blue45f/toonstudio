@@ -302,6 +302,18 @@ class FakeContext2D {
   fillText(text: string): void {
     this.fillTexts.push(text);
   }
+
+  getImageData(_x: number, _y: number, w: number, h: number): { data: Uint8ClampedArray; width: number; height: number } {
+    const data = new Uint8ClampedArray(w * h * 4);
+    for (let i = 0; i < w * h; i += 1) {
+      const shade = i % 3 === 0 ? 18 : i % 3 === 1 ? 140 : 255;
+      data[i * 4] = shade;
+      data[i * 4 + 1] = shade;
+      data[i * 4 + 2] = shade;
+      data[i * 4 + 3] = 255;
+    }
+    return { data, width: w, height: h };
+  }
 }
 
 class FakeCanvas {
@@ -758,5 +770,46 @@ describe("renderPagesToPdf · exportPagesToPdf", () => {
     expect(downloads[0].name).toBe("toonstudio-webtoon.pdf");
     const text = latin1(new Uint8Array(await downloads[0].blob.arrayBuffer()));
     expect(text).not.toContain("/Title");
+  });
+
+  it("1비트 모노크롬 망점 및 회색조 인쇄 모드에서도 오류 없이 유효한 PDF 바이트를 내보낸다", async () => {
+    const monoDownloads: { blob: Blob; name: string }[] = [];
+    const { toJpeg } = makeToJpeg();
+    const monoRes = await exportPagesToPdf({
+      pages: [asCanvas(new FakeCanvas(64, 64)), asCanvas(new FakeCanvas(64, 64))],
+      title: "출판 원고",
+      print: {
+        colorMode: "monochrome-1bit",
+        halftoneLpi: 65,
+        halftoneDpi: 1200,
+        halftoneAngleDeg: 45,
+        halftoneSpotShape: "cross",
+        solidInkThreshold: 50,
+        runningStampEnabled: true,
+      },
+      createCanvas: (w, h) => asCanvas(new FakeCanvas(w, h)),
+      toJpeg,
+      download: (blob, name) => monoDownloads.push({ blob, name }),
+    });
+    expect(monoRes.pageCount).toBe(2);
+    const monoPdfText = latin1(new Uint8Array(await monoDownloads[0]!.blob.arrayBuffer()));
+    expect(monoPdfText.startsWith("%PDF-1.4\n")).toBe(true);
+    expect(monoPdfText).toContain("/ColorSpace /DeviceGray /BitsPerComponent 1");
+    expect(monoPdfText).toContain("BT\n/F1 8 Tf");
+    expect(monoPdfText.endsWith("%%EOF")).toBe(true);
+
+    const grayDownloads: { blob: Blob; name: string }[] = [];
+    await exportPagesToPdf({
+      pages: [asCanvas(new FakeCanvas(48, 48))],
+      title: "회색조 원고",
+      print: { colorMode: "grayscale" },
+      createCanvas: (w, h) => asCanvas(new FakeCanvas(w, h)),
+      toJpeg,
+      download: (blob, name) => grayDownloads.push({ blob, name }),
+    });
+    const grayPdfText = latin1(new Uint8Array(await grayDownloads[0]!.blob.arrayBuffer()));
+    expect(grayPdfText.startsWith("%PDF-1.4\n")).toBe(true);
+    expect(grayPdfText).toContain("/ColorSpace /DeviceGray /BitsPerComponent 8");
+    expect(grayPdfText.endsWith("%%EOF")).toBe(true);
   });
 });

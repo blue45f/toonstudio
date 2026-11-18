@@ -120,14 +120,42 @@ export function clampFrameIndex(frames: StudioAnimFrame[], index: number): numbe
   return Math.round(clamp(index, 0, frames.length - 1));
 }
 
-// ── 어니언스키닝(순수 계산 — Konva 노드는 만들지 않는다) ─────────────
+// ── 어니언스키닝 v2 (순수 계산 — Konva 노드는 만들지 않는다) ──────────
+// REA 근거: ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68,
+// ev_84e24ea66b2393d0fa57182b4de9dbe3be9c25ee54f982c2dcfc534bf63eddda
+
+export const LEGACY_MAX_ONION_SKIN_FRAMES = 3;
+export const MAX_ONION_SKIN_FRAMES = 8;
+
+export interface OnionSkinRgbColor {
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+}
+
+export type OnionSkinOpacityFalloff = "harmonic" | "linear" | "exponential";
+
+export const DEFAULT_ONION_PREV_RGB: OnionSkinRgbColor = Object.freeze({ r: 239, g: 68, b: 68 });
+export const DEFAULT_ONION_NEXT_RGB: OnionSkinRgbColor = Object.freeze({ r: 59, g: 130, b: 246 });
 
 export interface OnionSkinSettings {
   enabled: boolean;
-  prevCount: number; // 0..3
-  nextCount: number; // 0..3
+  prevCount: number; // 기본 0..3, v2(extendedRange) 또는 onionSkinLayers 직접 전달 시 최대 8
+  nextCount: number; // 기본 0..3, v2(extendedRange) 또는 onionSkinLayers 직접 전달 시 최대 8
   opacity: number; // 0..1 — 가장 가까운 인접 프레임(offset ±1)의 불투명도
-  tint: boolean; // true면 이전=빨강·다음=파랑 색조 힌트(렌더는 통합 단계 책임)
+  tint: boolean; // true면 이전=빨강·다음=파랑(또는 지정 RGB) 색조 힌트
+  /** true이면 normalize 시 최대 8프레임 범위를 허용한다. */
+  extendedRange?: boolean;
+  /** 이전 프레임 사용자 지정 RGB 색상 (0..255). */
+  prevColorRgb?: OnionSkinRgbColor;
+  /** 다음 프레임 사용자 지정 RGB 색상 (0..255). */
+  nextColorRgb?: OnionSkinRgbColor;
+  /** 단계별 불투명도 감쇠 곡선 ("harmonic" = opacity/step 기본값). */
+  opacityFalloff?: OnionSkinOpacityFalloff;
+  /** exponential 감쇠 시 단계당 곱셈 비율 (0.05..0.95, 기본 0.65). */
+  falloffRatio?: number;
+  /** 어니언스킨에서 제외할 프레임 ID 또는 0-based 인덱스 목록. */
+  excludedFrames?: readonly (string | number)[];
 }
 
 export const DEFAULT_ONION_SKIN: OnionSkinSettings = {
@@ -138,44 +166,148 @@ export const DEFAULT_ONION_SKIN: OnionSkinSettings = {
   tint: true,
 };
 
-export function normalizeOnionSkinSettings(s: Partial<OnionSkinSettings> | undefined): OnionSkinSettings {
-  const merged = { ...DEFAULT_ONION_SKIN, ...s };
+function normalizeRgbChannel(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.round(clamp(value, 0, 255));
+}
+
+export function normalizeOnionSkinRgbColor(
+  raw: Partial<OnionSkinRgbColor> | undefined,
+  fallback: OnionSkinRgbColor,
+): OnionSkinRgbColor {
+  if (!raw) return fallback;
   return {
+    r: normalizeRgbChannel(raw.r ?? fallback.r, fallback.r),
+    g: normalizeRgbChannel(raw.g ?? fallback.g, fallback.g),
+    b: normalizeRgbChannel(raw.b ?? fallback.b, fallback.b),
+  };
+}
+
+export function onionSkinRgbToHex(rgb: OnionSkinRgbColor): string {
+  const toHex = (c: number) => normalizeRgbChannel(c, 0).toString(16).padStart(2, "0");
+  return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
+}
+
+function isOnionSkinFalloff(v: unknown): v is OnionSkinOpacityFalloff {
+  return v === "harmonic" || v === "linear" || v === "exponential";
+}
+
+export function normalizeOnionSkinSettings(
+  s: Partial<OnionSkinSettings> | undefined,
+  options?: { readonly maxCount?: number },
+): OnionSkinSettings {
+  const merged = { ...DEFAULT_ONION_SKIN, ...s };
+  const maxCount =
+    options?.maxCount !== undefined
+      ? Math.round(clamp(options.maxCount, 0, MAX_ONION_SKIN_FRAMES))
+      : s?.extendedRange === true
+        ? MAX_ONION_SKIN_FRAMES
+        : LEGACY_MAX_ONION_SKIN_FRAMES;
+  const base: OnionSkinSettings = {
     enabled: !!merged.enabled,
-    prevCount: Math.round(clamp(merged.prevCount, 0, 3)),
-    nextCount: Math.round(clamp(merged.nextCount, 0, 3)),
+    prevCount: Math.round(clamp(merged.prevCount, 0, maxCount)),
+    nextCount: Math.round(clamp(merged.nextCount, 0, maxCount)),
     opacity: clamp01(merged.opacity),
     tint: !!merged.tint,
   };
+  if (s?.extendedRange !== undefined) base.extendedRange = !!s.extendedRange;
+  if (s?.prevColorRgb !== undefined) base.prevColorRgb = normalizeOnionSkinRgbColor(s.prevColorRgb, DEFAULT_ONION_PREV_RGB);
+  if (s?.nextColorRgb !== undefined) base.nextColorRgb = normalizeOnionSkinRgbColor(s.nextColorRgb, DEFAULT_ONION_NEXT_RGB);
+  if (s?.opacityFalloff !== undefined) base.opacityFalloff = isOnionSkinFalloff(s.opacityFalloff) ? s.opacityFalloff : "harmonic";
+  if (s?.falloffRatio !== undefined) base.falloffRatio = clamp(s.falloffRatio, 0.05, 0.95);
+  if (s?.excludedFrames !== undefined) {
+    base.excludedFrames = s.excludedFrames.filter(
+      (item): item is string | number =>
+        (typeof item === "string" && item.length > 0) || (typeof item === "number" && Number.isInteger(item) && item >= 0),
+    );
+  }
+  return base;
+}
+
+/** 최대 8장 범위와 색상·감쇠·제외 프레임을 함께 정규화하는 어니언스킨 v2 진입점. */
+export function normalizeOnionSkinSettingsV2(s: Partial<OnionSkinSettings> | undefined): OnionSkinSettings {
+  return normalizeOnionSkinSettings({ extendedRange: true, ...s }, { maxCount: MAX_ONION_SKIN_FRAMES });
 }
 
 export interface OnionSkinLayer {
   frame: StudioAnimFrame;
-  offset: number; // -2,-1,1,2 (음수=이전, 양수=다음)
-  opacity: number; // settings.opacity / |offset| (선형 조화 감쇠), clamp01
+  offset: number; // -8..-1, 1..8 (음수=이전, 양수=다음)
+  opacity: number; // 감쇠 적용 후 불투명도 (0..1)
   tint: "prev" | "next" | "none";
+  colorRgb?: OnionSkinRgbColor;
+}
+
+export function resolveOnionSkinLayerColorRgb(
+  layer: Pick<OnionSkinLayer, "tint" | "colorRgb">,
+  settings?: Pick<OnionSkinSettings, "prevColorRgb" | "nextColorRgb">,
+): OnionSkinRgbColor | null {
+  if (layer.tint === "none") return null;
+  if (layer.colorRgb) return layer.colorRgb;
+  return layer.tint === "prev"
+    ? normalizeOnionSkinRgbColor(settings?.prevColorRgb, DEFAULT_ONION_PREV_RGB)
+    : normalizeOnionSkinRgbColor(settings?.nextColorRgb, DEFAULT_ONION_NEXT_RGB);
+}
+
+function computeStepOpacity(
+  baseOpacity: number,
+  step: number,
+  sideCount: number,
+  settings: OnionSkinSettings,
+): number {
+  const mode = settings.opacityFalloff ?? "harmonic";
+  if (mode === "linear") {
+    const span = Math.max(1, sideCount);
+    return clamp01(baseOpacity * ((span - step + 1) / span));
+  }
+  if (mode === "exponential") {
+    const ratio = clamp(settings.falloffRatio ?? 0.65, 0.05, 0.95);
+    return clamp01(baseOpacity * Math.pow(ratio, step - 1));
+  }
+  return clamp01(baseOpacity / step);
 }
 
 /**
  * 활성 인덱스 기준 렌더할 어니언스킨 레이어(이전 쪽 가까운 순 → 다음 쪽 가까운 순). 시퀀스
- * 양끝을 넘어가면 멈춘다(래핑 없음 — 첫/마지막 프레임에서 반대쪽 끝 프레임이 유령처럼 겹쳐
- * 보이면 작화 기준이 헷갈리기 때문). enabled=false 이거나 frames.length<2 면 []. 순수.
+ * 양끝을 넘어가면 멈춘다(래핑 없음). 최대 8장 전/후 탐색 및 excludedFrames 건너뛰기 지원. 순수.
  */
 export function onionSkinLayers(frames: StudioAnimFrame[], activeIndex: number, settings: OnionSkinSettings): OnionSkinLayer[] {
   if (!settings.enabled || frames.length < 2) return [];
   const index = clampFrameIndex(frames, activeIndex);
-  const prevCount = Math.round(clamp(settings.prevCount, 0, 3));
-  const nextCount = Math.round(clamp(settings.nextCount, 0, 3));
+  const prevCount = Math.round(clamp(settings.prevCount, 0, MAX_ONION_SKIN_FRAMES));
+  const nextCount = Math.round(clamp(settings.nextCount, 0, MAX_ONION_SKIN_FRAMES));
+  const excluded = settings.excludedFrames?.length ? new Set<string | number>(settings.excludedFrames) : null;
+  const hasCustomRgb = settings.prevColorRgb !== undefined || settings.nextColorRgb !== undefined;
+  const prevRgb = hasCustomRgb ? normalizeOnionSkinRgbColor(settings.prevColorRgb, DEFAULT_ONION_PREV_RGB) : undefined;
+  const nextRgb = hasCustomRgb ? normalizeOnionSkinRgbColor(settings.nextColorRgb, DEFAULT_ONION_NEXT_RGB) : undefined;
   const layers: OnionSkinLayer[] = [];
+
   for (let step = 1; step <= prevCount; step++) {
     const i = index - step;
     if (i < 0) break;
-    layers.push({ frame: frames[i]!, offset: -step, opacity: clamp01(settings.opacity / step), tint: settings.tint ? "prev" : "none" });
+    const candidate = frames[i]!;
+    if (excluded && (excluded.has(candidate.id) || excluded.has(i))) continue;
+    const tint = settings.tint ? "prev" : "none";
+    layers.push({
+      frame: candidate,
+      offset: -step,
+      opacity: computeStepOpacity(settings.opacity, step, prevCount, settings),
+      tint,
+      ...(tint === "prev" && prevRgb ? { colorRgb: prevRgb } : {}),
+    });
   }
   for (let step = 1; step <= nextCount; step++) {
     const i = index + step;
     if (i >= frames.length) break;
-    layers.push({ frame: frames[i]!, offset: step, opacity: clamp01(settings.opacity / step), tint: settings.tint ? "next" : "none" });
+    const candidate = frames[i]!;
+    if (excluded && (excluded.has(candidate.id) || excluded.has(i))) continue;
+    const tint = settings.tint ? "next" : "none";
+    layers.push({
+      frame: candidate,
+      offset: step,
+      opacity: computeStepOpacity(settings.opacity, step, nextCount, settings),
+      tint,
+      ...(tint === "next" && nextRgb ? { colorRgb: nextRgb } : {}),
+    });
   }
   return layers;
 }

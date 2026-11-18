@@ -214,3 +214,12 @@ export function scanMagicWandRegionFromImageData(
   const mask = scanFloodRegionMask(data, w, h, startX, startY, tolerance);
   return traceMaskContours(mask, w, h, startX, startY);
 }
+
+/** CSP 축소 선택(`Shrink selection`) 및 참조 레이어 선 틈 닫기 자동 선택 타입 계약. */
+export type {
+  ReferenceAutoSelectOptions,
+  ReferenceAutoSelectResult,
+  ShrinkSelectionMaskResult,
+  ShrinkSelectionOptions,
+  ShrinkTargetBackgroundMode,
+} from "./selection/studio-shrink-selection";
