@@ -1,5 +1,6 @@
 import {
   Aperture,
+  Archive,
   ArrowLeftRight,
   Building2,
   ChevronDown,
@@ -32,6 +33,7 @@ import {
   matchesKitSearchQuery,
   STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
 } from "./studio-hybrid-dcc-blender-v30-kit";
+import { STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT } from "./studio-hybrid-dcc-blender-v31-kit";
 import {
   STUDIO_HYBRID_DCC_BLENDER_V13_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V14_BG_KIT,
@@ -68,6 +70,14 @@ interface KitDrawerGroupSpec {
 }
 
 const BLENDER_KIT_DRAWER_GROUPS: readonly KitDrawerGroupSpec[] = [
+  {
+    key: "v31-props",
+    summaryTestId: "studio-hybrid-dcc-v31-props-kit-summary",
+    icon: Archive,
+    titleKo: `세부 장르 히어로 소품: 사물함·수사보드·각성비석 V31 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT.length}종)`,
+    titleEn: `Sub-genre hero props: Locker, Pinboard & Obelisk V31 (CC0 · ${STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT.length})`,
+    items: STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT,
+  },
   {
     key: "v30-genre",
     summaryTestId: "studio-hybrid-dcc-v30-genre-kit-summary",
@@ -277,8 +287,8 @@ export function StudioHybridDccBlenderKitDrawers({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={bt(
-            "18개 에셋 서랍 초성·키워드 검색 (예: ㅎㅇㅁ, ㄴㅇㄹ, ㅎㅌ, 한옥)",
-            "Search 18 CC0 kit drawers (e.g. academy, noir, hunter)",
+            "19개 에셋 서랍 초성·키워드 검색 (예: ㅅㅁㅎ, ㄴㅇㄹ, ㅎㅌ, 한옥)",
+            "Search 19 CC0 kit drawers (e.g. locker, noir, hunter)",
           )}
           aria-label={bt(
             "CC0 에셋 서랍 초성·키워드 통합 검색",

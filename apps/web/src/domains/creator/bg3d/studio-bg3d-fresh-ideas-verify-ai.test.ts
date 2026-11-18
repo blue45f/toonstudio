@@ -33,6 +33,7 @@ import {
   filterQuickPresetCommands,
 } from "./studio-bg3d-duo-ots-remotion-offline";
 import { evaluateEpisodeMacroScenario } from "./studio-bg3d-episode-macro-scenarios";
+import { evaluateSubgenreHeroProp } from "./studio-bg3d-subgenre-hero-props";
 import { evaluateDustLodCliffhangerAndPack } from "./studio-bg3d-dust-lod-cliffhanger-pack";
 import {
   evaluateVrmPoseAndWebGpuGuard,
@@ -388,6 +389,17 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v30Macro.totalWeeklyPersonDaysV30).toBe(5.0);
     expect(v30Macro.quarterlyHoursSavedV30).toBe(520.0);
     expect(v30Macro.quarterlyBankedEpisodesV30).toBe(6.5);
+
+    const v31Prop = evaluateSubgenreHeroProp({
+      propId: "academy-locker-letter",
+      baseV30WeeklyHoursSaved: v30Macro.totalWeeklyHoursV30,
+    });
+    expect(v31Prop.totalKitDrawersCount).toBe(19);
+    expect(v31Prop.prop.datumAnchorMeters).toBe(1.32);
+    expect(v31Prop.totalWeeklyHoursV31).toBe(41.6);
+    expect(v31Prop.totalWeeklyPersonDaysV31).toBe(5.2);
+    expect(v31Prop.quarterlyHoursSavedV31).toBe(540.8);
+    expect(v31Prop.quarterlyBankedEpisodesV31).toBe(6.76);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

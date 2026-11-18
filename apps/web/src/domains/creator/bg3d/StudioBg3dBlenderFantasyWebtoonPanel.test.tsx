@@ -432,6 +432,23 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v30-macro-roi-readout").textContent,
     ).toContain("48.0h");
 
+    // Wave 17 (V31): 세부 장르 히어로 소품(사물함·수사 핀보드·각성 측정 비석) 연동 및 전환 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v31-drawer-count-badge").textContent,
+    ).toContain("19종");
+    expect(
+      screen.getByTestId("bg3d-blender-v31-prop-readout").textContent,
+    ).toContain("ㅅㅅㅂㄷ");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v31-prop-hunter-srank-obelisk"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v31-prop-readout").textContent,
+    ).toContain("ㄱㅅㅂㅅ");
+    expect(
+      screen.getByTestId("bg3d-blender-v31-prop-roi-readout").textContent,
+    ).toContain("49.6h");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );

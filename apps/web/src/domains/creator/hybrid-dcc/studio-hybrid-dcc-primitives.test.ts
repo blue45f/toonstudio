@@ -38,6 +38,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -715,6 +716,49 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(11);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.derived.fourByteAligned).toBe(true);
+
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 세부 장르 히어로 소품 V31(사물함·수사 핀보드·각성 비석 3종)이 GLB 2.0 바이너리·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT).toHaveLength(3);
+    expect(matchesKitSearchQuery("ㅅㅁㅎ", ["학원물 복도 사물함·신발장 뱅크"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅅㅅㅂㄷ", ["느와르 수사보드 V31"])).toBe(true);
+    expect(matchesKitSearchQuery("ㄱㅅㅂㅅ", ["헌터 각성비석 V31"])).toBe(true);
+
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-genre-hero-props-v31/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      heroPropsSpec?: { datumAnchorsM?: number[] };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.heroPropsSpec?.datumAnchorsM).toEqual([1.32, 1.54, 0.74]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(12);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V31_PROPS_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
