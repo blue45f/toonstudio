@@ -4,6 +4,7 @@ import type { BgPrimitive } from "../studio-background-3d-metadata";
 import { DEFAULT_STUDIO_BG3D_SCENE_DOCUMENT } from "./studio-bg3d-scene-document";
 import {
   deriveStudioBg3dProfessionalDeviceCapabilities,
+  inspectStudioBg3dGlbBinaryHeader,
   resolveStudioBg3dProfessionalRuntimeReadiness,
 } from "./studio-bg3d-professional-runtime-readiness";
 
@@ -60,6 +61,23 @@ function readiness(
   });
 }
 
+function buildMockGlb(jsonPayload: Record<string, unknown>): ArrayBuffer {
+  const raw = new TextEncoder().encode(JSON.stringify(jsonPayload));
+  const paddedLen = Math.ceil(raw.byteLength / 4) * 4;
+  const totalLen = 20 + paddedLen;
+  const buf = new ArrayBuffer(totalLen);
+  const view = new DataView(buf);
+  view.setUint32(0, 0x46546c67, true);
+  view.setUint32(4, 2, true);
+  view.setUint32(8, totalLen, true);
+  view.setUint32(12, paddedLen, true);
+  view.setUint32(16, 0x4e4f534a, true);
+  const bytes = new Uint8Array(buf, 20, paddedLen);
+  bytes.fill(0x20);
+  bytes.set(raw);
+  return buf;
+}
+
 describe("Studio BG3D professional runtime readiness", () => {
   it("projects live runtime objects into one authority before planning render passes", () => {
     const result = readiness();
@@ -92,6 +110,32 @@ describe("Studio BG3D professional runtime readiness", () => {
       deviceMemoryGiB: 4,
       gpuBudgetStatus: "constrained",
     });
+  });
+
+  it("verifies glTF 2.0 binary framing and blocks negative-scale normal inversion", () => {
+    const cleanGlb = buildMockGlb({
+      asset: { version: "2.0" },
+      meshes: [{ name: "SalonProp" }],
+      nodes: [{ mesh: 0, scale: [1, 1, 1] }],
+    });
+    expect(inspectStudioBg3dGlbBinaryHeader(cleanGlb)).toEqual({
+      valid: true,
+      magicHex: "0x46546c67",
+      version: 2,
+      meshCount: 1,
+      negativeScaleNodeCount: 0,
+      failureReason: null,
+    });
+
+    const flippedGlb = buildMockGlb({
+      asset: { version: "2.0" },
+      meshes: [{ name: "MirroredDoor" }],
+      nodes: [{ mesh: 0, scale: [-1, 1, 1] }],
+    });
+    const flippedAudit = inspectStudioBg3dGlbBinaryHeader(flippedGlb);
+    expect(flippedAudit.valid).toBe(false);
+    expect(flippedAudit.negativeScaleNodeCount).toBe(1);
+    expect(flippedAudit.failureReason).toContain("외곽선 노멀 반전");
   });
 
   it("fails closed while preserving the canonical authority receipt when the renderer is unavailable", () => {

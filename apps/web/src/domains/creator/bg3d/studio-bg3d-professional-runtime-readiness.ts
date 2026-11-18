@@ -42,6 +42,101 @@ export type StudioBg3dProfessionalRuntimeFailureCode =
   | "renderer-unavailable"
   | "professional-plan-failed";
 
+export interface StudioBg3dGlbBinaryAudit {
+  readonly valid: boolean;
+  readonly magicHex: string;
+  readonly version: number;
+  readonly meshCount: number;
+  readonly negativeScaleNodeCount: number;
+  readonly failureReason: string | null;
+}
+
+const GLTF_BINARY_MAGIC = 0x46546c67;
+const GLTF_JSON_CHUNK_TYPE = 0x4e4f534a;
+
+/**
+ * Zero-allocation binary .glb preflight check before WebGPU/WebGL upload.
+ * Rejects truncated binaries and flags negative node scales that invert toon outlines.
+ */
+export function inspectStudioBg3dGlbBinaryHeader(
+  buffer: ArrayBuffer,
+): StudioBg3dGlbBinaryAudit {
+  if (buffer.byteLength < 20) {
+    return Object.freeze({
+      valid: false,
+      magicHex: "0x0",
+      version: 0,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "GLB 파일 헤더가 손상되었습니다.",
+    });
+  }
+  const view = new DataView(buffer);
+  const magic = view.getUint32(0, true);
+  const version = view.getUint32(4, true);
+  const declaredLen = view.getUint32(8, true);
+  const jsonLen = view.getUint32(12, true);
+  const jsonType = view.getUint32(16, true);
+  const magicHex = `0x${magic.toString(16)}`;
+  if (
+    magic !== GLTF_BINARY_MAGIC
+    || version !== 2
+    || jsonType !== GLTF_JSON_CHUNK_TYPE
+    || declaredLen > buffer.byteLength
+    || 20 + jsonLen > buffer.byteLength
+  ) {
+    return Object.freeze({
+      valid: false,
+      magicHex,
+      version,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "유효한 glTF 2.0 바이너리 규격이 아닙니다.",
+    });
+  }
+  try {
+    const parsed = JSON.parse(
+      new TextDecoder("utf-8").decode(new Uint8Array(buffer, 20, jsonLen)),
+    ) as {
+      meshes?: unknown[];
+      nodes?: Array<{ scale?: unknown }>;
+    };
+    const meshCount = Array.isArray(parsed.meshes) ? parsed.meshes.length : 0;
+    const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : [];
+    let negativeScaleNodeCount = 0;
+    for (const node of nodes) {
+      if (
+        Array.isArray(node.scale)
+        && node.scale.some((axis) => typeof axis === "number" && axis < 0)
+      ) {
+        negativeScaleNodeCount += 1;
+      }
+    }
+    const valid = meshCount > 0 && negativeScaleNodeCount === 0;
+    return Object.freeze({
+      valid,
+      magicHex,
+      version,
+      meshCount,
+      negativeScaleNodeCount,
+      failureReason: negativeScaleNodeCount > 0
+        ? `음수 스케일 노드(${negativeScaleNodeCount}개)가 포함되어 외곽선 노멀 반전 위험이 있습니다.`
+        : meshCount === 0
+          ? "GLB 내부에 메시 데이터가 없습니다."
+          : null,
+    });
+  } catch {
+    return Object.freeze({
+      valid: false,
+      magicHex,
+      version,
+      meshCount: 0,
+      negativeScaleNodeCount: 0,
+      failureReason: "GLB JSON 청크를 읽지 못했습니다.",
+    });
+  }
+}
+
 export interface StudioBg3dProfessionalRuntimeSummary {
   readonly authorityId: string | null;
   readonly sourceHash: `sha256:${string}` | null;
