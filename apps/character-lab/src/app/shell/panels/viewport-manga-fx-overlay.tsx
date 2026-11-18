@@ -222,11 +222,11 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
             <ellipse cx="225" cy="158" rx="158" ry="84" fill="#FAF8F4" stroke="#18151C" strokeWidth="3.2" />
             <polygon points="315,222 382,262 342,202" fill="#FAF8F4" stroke="#18151C" strokeWidth="3.2" strokeLinejoin="round" />
             <ellipse cx="225" cy="158" rx="155" ry="81" fill="#FAF8F4" />
-            <text x="225" y={line2 ? 148 : 164} textAnchor="middle" fill="#18151C" fontSize="22" fontWeight="700">
+            <text x="225" y={line2 ? 148 : 164} textAnchor="middle" fill="#18151C" fontSize="22" fontWeight="600">
               {line1}
             </text>
             {line2 ? (
-              <text x="225" y="180" textAnchor="middle" fill="#18151C" fontSize="22" fontWeight="700">
+              <text x="225" y="180" textAnchor="middle" fill="#18151C" fontSize="22" fontWeight="600">
                 {line2}
               </text>
             ) : null}
@@ -235,7 +235,7 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
                 <ellipse cx="790" cy="240" rx="132" ry="70" fill="#FAF8F4" stroke="#18151C" strokeWidth="3" />
                 <polygon points="695,286 635,318 672,268" fill="#FAF8F4" stroke="#18151C" strokeWidth="3" strokeLinejoin="round" />
                 <ellipse cx="790" cy="240" rx="129" ry="67" fill="#FAF8F4" />
-                <text x="790" y="247" textAnchor="middle" fill="#18151C" fontSize="20" fontWeight="600">
+                <text x="790" y="247" textAnchor="middle" fill="#18151C" fontSize="20" fontWeight="500">
                   …기다리고 있었어.
                 </text>
               </g>
@@ -246,11 +246,11 @@ export function ViewportMangaFxOverlay({ mangaFx }: ViewportMangaFxOverlayProps)
         {mangaFx.bubblePreset === "shout-burst" ? (
           <g data-testid="viewport-manga-speech-bubble">
             <polygon points={burstPoints} fill="#FFFDF9" stroke="#18151C" strokeWidth="3.4" strokeLinejoin="miter" />
-            <text x="245" y={line2 ? 156 : 172} textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="700">
+            <text x="245" y={line2 ? 156 : 172} textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="600">
               {line1}
             </text>
             {line2 ? (
-              <text x="245" y="190" textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="700">
+              <text x="245" y="190" textAnchor="middle" fill="#18151C" fontSize="24" fontWeight="600">
                 {line2}
               </text>
             ) : null}

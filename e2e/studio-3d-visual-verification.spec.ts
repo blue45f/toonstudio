@@ -5,6 +5,7 @@ import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-cata
 import { showStudioProjectWindowTools } from "../scripts/lib/studio-shell-interactions";
 
 import { verifyStudioBg3dProductionWorkflow } from "./helpers/studio-bg3d-production-workflow";
+import { readStudioBg3dRotationRing } from "./helpers/studio-bg3d-rotation-ring";
 
 /**
  * 실 브라우저에서 렌더된 프레임을 근거로 하는 Studio 3D 표면 전수 검증.
@@ -389,14 +390,11 @@ async function dragBg3dRotationRing(
   label: "continuous" | "direct",
   steps: 1 | 24,
 ): Promise<{ capture: StableFrameCapture; values: readonly string[] }> {
-  const box = await page.locator(BG3D_VIEWPORT).boundingBox();
-  if (!box) throw new Error("BG3D viewport 좌표를 읽지 못했습니다.");
-  const point = ([x, y]: readonly [number, number]) => ({
-    x: box.x + box.width * x,
-    y: box.y + box.height * y,
+  const ring = await readStudioBg3dRotationRing(page, page.locator(BG3D_RENDER_CANVAS).first());
+  const { start, end } = ring;
+  await testInfo.attach(`${label}-y-ring-input.json`, {
+    body: Buffer.from(JSON.stringify(ring, null, 2)), contentType: "application/json",
   });
-  const start = point([0.618, 0.507]);
-  const end = point([0.499, 0.555]);
   const readRotationValues = () => Promise.all(
     ["X", "Y", "Z"].map((axis) =>
       page.getByRole("spinbutton", { name: `회전 ${axis}` }).first().inputValue()

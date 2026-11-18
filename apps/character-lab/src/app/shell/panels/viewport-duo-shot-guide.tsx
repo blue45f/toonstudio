@@ -1,10 +1,20 @@
 /**
- * 웹툰 2인 투샷 구도 · 신장차(cm) 눈금자 · 대화 시선 교환(아이컨택) 프리뷰 및 원클릭 시선 맞춤 모듈.
+ * 웹툰 2인 투샷 구도 · 신장차(cm) 눈금자 · 실제 3D 듀오 스테이지 동시 배치 · 대화 시선 교환(아이컨택) 모듈.
  * 파일명을 소문자 하이픈(`viewport-duo-shot-guide.tsx`)으로 두어 `app/composition.ts` 최상위 패널 규칙을 지킨다.
  */
 import { qNormalize } from "../../../shared/math";
 
-import type { BodyParamKey, CharacterRecipe, LabCommand, ParamValues, Pose, Quat, Vec3 } from "../../../contracts";
+import type {
+  BodyParamKey,
+  CharacterRecipe,
+  DuoPartnerAttachment,
+  DuoPartnerStance,
+  LabCommand,
+  ParamValues,
+  Pose,
+  Quat,
+  Vec3,
+} from "../../../contracts";
 import type { CSSProperties } from "react";
 
 export type DuoPartnerSide = "left" | "right";
@@ -18,12 +28,20 @@ export interface ShaperDuoPartnerProfile {
   readonly eyeHeightCm: number;
   readonly accentHex: string;
   readonly contactSheetUrl: string;
+  readonly glbUrl: string;
+  readonly glbSha256: string;
 }
 
 export const DUO_SHOT_DISTANCES: Readonly<Record<DuoShotDistanceKey, { readonly meters: number; readonly labelKo: string }>> = Object.freeze({
   close: { meters: 0.65, labelKo: "0.65m 밀착 투샷" },
   talk: { meters: 0.95, labelKo: "0.95m 일상 대화" },
   wide: { meters: 1.35, labelKo: "1.35m 전신 대치" },
+});
+
+export const DUO_PARTNER_STANCE_LABELS_KO: Readonly<Record<DuoPartnerStance, string>> = Object.freeze({
+  conversational: "자연 대화 스탠스",
+  "arms-crossed": "팔짱 대치 스탠스",
+  attentive: "경청 에스코트 스탠스",
 });
 
 export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = Object.freeze([
@@ -35,6 +53,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 173.5,
     accentHex: "#5cebff",
     contactSheetUrl: "/assets/characters/shaper-atelier-male-lead/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-atelier-male-lead/shaper-atelier-male-lead.glb",
+    glbSha256: "ac54779a30a81ab3f90af99480428019f8b5bb2180278e7048d0228d372437eb",
   },
   {
     id: "shaper-atelier-protagonist",
@@ -44,6 +64,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 152.8,
     accentHex: "#f0c978",
     contactSheetUrl: "/assets/characters/shaper-atelier-protagonist/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-atelier-protagonist/shaper-atelier-protagonist.glb",
+    glbSha256: "aa5f6471871c971ae3ba3c621b89d24b31db37d6d020c21544d9cdd6faa40fad",
   },
   {
     id: "shaper-office-ceo",
@@ -53,6 +75,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 172.5,
     accentHex: "#8cc6f2",
     contactSheetUrl: "/assets/characters/shaper-office-ceo/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-office-ceo/shaper-office-ceo.glb",
+    glbSha256: "f3e7ca76e3b05c357883e49ab9f8717d9b69bd405c6cd074d5fcd8cace2c5ef9",
   },
   {
     id: "shaper-fantasy-saintess",
@@ -62,6 +86,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 154.6,
     accentHex: "#ffe082",
     contactSheetUrl: "/assets/characters/shaper-fantasy-saintess/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-fantasy-saintess/shaper-fantasy-saintess.glb",
+    glbSha256: "de7e4797657b710a6bb9d743a5da13c82d21bdadef2e01a66327ee4b34390790",
   },
   {
     id: "shaper-noir-duke",
@@ -71,6 +97,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 176.2,
     accentHex: "#ff5470",
     contactSheetUrl: "/assets/characters/shaper-noir-duke/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-noir-duke/shaper-noir-duke.glb",
+    glbSha256: "98b038f6474f966e22d1c33e211119cb4788877b2c681130d13488ba59d2abec",
   },
   {
     id: "shaper-rofan-empress",
@@ -80,6 +108,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 155.5,
     accentHex: "#ffe08a",
     contactSheetUrl: "/assets/characters/shaper-rofan-empress/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-rofan-empress/shaper-rofan-empress.glb",
+    glbSha256: "0f68d79c97be0273364d89765afaa79d0ab6d994c470d6ede4d41d6c34c2caee",
   },
   {
     id: "shaper-murim-swordmaster",
@@ -89,6 +119,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 171.6,
     accentHex: "#5ce0b8",
     contactSheetUrl: "/assets/characters/shaper-murim-swordmaster/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-murim-swordmaster/shaper-murim-swordmaster.glb",
+    glbSha256: "3134019c86d3eaa1f6d46889f56df557ee489234dbdf896aaa48d86caa7854ed",
   },
   {
     id: "shaper-cyber-idol",
@@ -98,6 +130,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 151.8,
     accentHex: "#5cf6ff",
     contactSheetUrl: "/assets/characters/shaper-cyber-idol/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-cyber-idol/shaper-cyber-idol.glb",
+    glbSha256: "176e55649da5fba564eb914ded97d42d7ad8e49a6428a0dcc5e9d21e30979074",
   },
   {
     id: "shaper-academy-council",
@@ -107,6 +141,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 156.5,
     accentHex: "#d88cff",
     contactSheetUrl: "/assets/characters/shaper-academy-council/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-academy-council/shaper-academy-council.glb",
+    glbSha256: "a996da6c81a54328230fb0b15ebc220b300618434688010c3ff749c824725695",
   },
   {
     id: "shaper-apocalypse-sniper",
@@ -116,6 +152,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 174.4,
     accentHex: "#64f58d",
     contactSheetUrl: "/assets/characters/shaper-apocalypse-sniper/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-apocalypse-sniper/shaper-apocalypse-sniper.glb",
+    glbSha256: "8de02d95b5ed988a0f09ac903a7aab700b323219e1484c58e464818863c2bd05",
   },
   {
     id: "shaper-healing-barista",
@@ -125,6 +163,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 151.0,
     accentHex: "#ffc978",
     contactSheetUrl: "/assets/characters/shaper-healing-barista/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-healing-barista/shaper-healing-barista.glb",
+    glbSha256: "1c8eeae5508d70749fbbb306a9d1ca53ee421cd45a9e8b2d625b9b91c28dbe71",
   },
   {
     id: "shaper-thriller-detective",
@@ -134,6 +174,8 @@ export const SHAPER_DUO_PARTNER_PROFILES: readonly ShaperDuoPartnerProfile[] = O
     eyeHeightCm: 173.4,
     accentHex: "#f2b857",
     contactSheetUrl: "/assets/characters/shaper-thriller-detective/contact-sheet.png",
+    glbUrl: "/assets/characters/shaper-thriller-detective/shaper-thriller-detective.glb",
+    glbSha256: "add23b53e5e313ab1e2852fbccd1b3784ea39740a194f74172eaa6a8bbaafa1e",
   },
 ]);
 
@@ -142,6 +184,8 @@ export interface DuoShotState {
   readonly partnerId: string;
   readonly side: DuoPartnerSide;
   readonly distanceKey: DuoShotDistanceKey;
+  readonly render3dPartner: boolean;
+  readonly partnerStance: DuoPartnerStance;
 }
 
 export const DEFAULT_DUO_SHOT_STATE: DuoShotState = Object.freeze({
@@ -149,7 +193,25 @@ export const DEFAULT_DUO_SHOT_STATE: DuoShotState = Object.freeze({
   partnerId: "shaper-atelier-male-lead",
   side: "right",
   distanceKey: "talk",
+  render3dPartner: false,
+  partnerStance: "conversational",
 });
+
+export function toDuoPartnerAttachment(duoShot: DuoShotState, subjectHeightCm: number): DuoPartnerAttachment | null {
+  if (!duoShot.enabled || !duoShot.render3dPartner) return null;
+  const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === duoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+  const safeSubjectCm = Number.isFinite(subjectHeightCm) && subjectHeightCm > 100 ? subjectHeightCm : 166;
+  const heightScale = Number((partner.heightCm / safeSubjectCm).toFixed(4));
+  return {
+    characterId: partner.id,
+    glbUrl: partner.glbUrl,
+    sha256: partner.glbSha256,
+    side: duoShot.side,
+    distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
+    heightScale,
+    stance: duoShot.partnerStance,
+  };
+}
 
 function eulerDegToQuat(deg: Vec3): Quat {
   const rx = (deg[0] * Math.PI) / 360;
@@ -211,10 +273,6 @@ export interface WebtoonDuoEyeContactResult {
   readonly summaryKo: string;
 }
 
-/**
- * 두 인물의 눈높이 차이와 대화 거리(m), 파트너 배치 방향(좌/우)으로부터
- * 목(neck)·머리(head) 미세 기울기와 안구 시선(eyeGaze yaw/pitch)을 자연스러운 비율로 분배한다.
- */
 export function computeWebtoonDuoEyeContact(input: {
   readonly subjectHeightCm: number;
   readonly subjectEyeHeightCm: number;
@@ -229,7 +287,6 @@ export function computeWebtoonDuoEyeContact(input: {
   const rawElevDeg = (Math.atan2(eyeDeltaCm / 100, safeDistM) * 180) / Math.PI;
   const elevationDeg = Number(clampRange(rawElevDeg, -36, 36).toFixed(1));
 
-  // 모델 공간: 음수 X 회전이 위를 올려다보는 방향, 양수 Y 회전이 캐릭터 좌측(+X, 뷰어 기준 우측)을 향함
   const dirSign = input.side === "right" ? 1 : -1;
   const totalYawDeg = safeDistM <= 0.75 ? 20 : safeDistM <= 1.05 ? 16 : 12;
 
@@ -243,7 +300,8 @@ export function computeWebtoonDuoEyeContact(input: {
   const subtleRollDeg = dirSign * clampRange(elevationDeg * 0.08, -3.5, 3.5);
 
   const deltaSign = heightDeltaCm > 0 ? `+${heightDeltaCm.toFixed(1)}` : heightDeltaCm.toFixed(1);
-  const elevSign = elevationDeg > 0 ? `+${elevationDeg.toFixed(1)}° 올려보기` : elevationDeg < 0 ? `${elevationDeg.toFixed(1)}° 내려보기` : "0.0° 수평 아이레벨";
+  const elevSign =
+    elevationDeg > 0 ? `+${elevationDeg.toFixed(1)}° 올려보기` : elevationDeg < 0 ? `${elevationDeg.toFixed(1)}° 내려보기` : "0.0° 수평 아이레벨";
 
   return {
     heightDeltaCm,
@@ -295,7 +353,6 @@ const MIN_STAGE_CM = 0;
 
 function cmToStageYPercent(cm: number): number {
   const clamped = clampRange(cm, MIN_STAGE_CM, MAX_STAGE_CM);
-  // 바닥선 90%, 200cm 상단선 8%
   return 90 - (clamped / MAX_STAGE_CM) * 82;
 }
 
@@ -343,31 +400,32 @@ export function ViewportDuoShotOverlay({
 
   return (
     <div className="cl-viewport-duo-overlay" data-testid="viewport-duo-shot-overlay" aria-hidden="true" style={OVERLAY_ROOT}>
-      {/* 파트너 턴어라운드 전신 레퍼런스 스탠디 (contact-sheet 1번 전신 패널 크롭) */}
-      <div
-        data-testid="viewport-duo-partner-figure"
-        data-partner-id={partner.id}
-        data-side={duoShot.side}
-        style={{
-          position: "absolute",
-          top: `${partnerTopY}%`,
-          height: `${partnerHeightPct}%`,
-          left: duoShot.side === "right" ? "63%" : "11%",
-          width: "26%",
-          borderRadius: 10,
-          border: `1px solid ${partner.accentHex}66`,
-          backgroundColor: "rgba(18, 16, 22, 0.54)",
-          backgroundImage: `url(${partner.contactSheetUrl})`,
-          backgroundSize: "400% 100%",
-          backgroundPosition: "0% 0%",
-          backgroundRepeat: "no-repeat",
-          boxShadow: "0 12px 28px rgba(0, 0, 0, 0.38)",
-          opacity: 0.86,
-          transform: duoShot.side === "left" ? "scaleX(-1)" : undefined,
-        }}
-      />
+      {/* 실제 3D 듀오 모드가 꺼져 있을 때만 2D 레퍼런스 스탠디 카드를 표시한다 */}
+      {!duoShot.render3dPartner ? (
+        <div
+          data-testid="viewport-duo-partner-figure"
+          data-partner-id={partner.id}
+          data-side={duoShot.side}
+          style={{
+            position: "absolute",
+            top: `${partnerTopY}%`,
+            height: `${partnerHeightPct}%`,
+            left: duoShot.side === "right" ? "63%" : "11%",
+            width: "26%",
+            borderRadius: 8,
+            border: "1px solid rgba(239, 233, 222, 0.14)",
+            backgroundColor: "rgba(18, 16, 22, 0.54)",
+            backgroundImage: `url(${partner.contactSheetUrl})`,
+            backgroundSize: "400% 100%",
+            backgroundPosition: "0% 0%",
+            backgroundRepeat: "no-repeat",
+            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.38)",
+            opacity: 0.86,
+            transform: duoShot.side === "left" ? "scaleX(-1)" : undefined,
+          }}
+        />
+      ) : null}
 
-      {/* 파트너 메타 캡션 */}
       <div
         style={{
           position: "absolute",
@@ -375,44 +433,38 @@ export function ViewportDuoShotOverlay({
           left: duoShot.side === "right" ? "63%" : "11%",
           width: "26%",
           textAlign: "center",
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#f6efe4",
+          fontSize: 12,
+          fontWeight: 500,
+          color: "#efe9de",
           textShadow: "0 1px 4px rgba(0,0,0,0.85)",
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}
       >
-        {partner.labelKo} · {partner.genreKo}
+        {`${partner.labelKo} · ${duoShot.render3dPartner ? "실제 3D 스테이지" : partner.genreKo}`}
       </div>
 
-      {/* 신장 눈금자 + 두 인물 정수리/아이레벨 비교선 + 대화 시선 벡터 SVG */}
       <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-        {/* 바닥 기준선 */}
         <line x1="40" y1={floorY * 10} x2="960" y2={floorY * 10} stroke="rgba(232, 214, 184, 0.35)" strokeWidth="1.5" />
-
-        {/* 좌측 신장 눈금자 (150cm ~ 190cm) */}
         <line x1="54" y1={cmToStageYPercent(198) * 10} x2="54" y2={floorY * 10} stroke="rgba(232, 214, 184, 0.5)" strokeWidth="1.5" />
         {RULER_TICKS_CM.map((cm) => {
           const y = cmToStageYPercent(cm) * 10;
           return (
             <g key={cm}>
               <line x1="44" y1={y} x2="68" y2={y} stroke="rgba(232, 214, 184, 0.65)" strokeWidth="1.5" />
-              <text x="74" y={y + 4} fill="rgba(246, 239, 228, 0.86)" fontSize="13" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">
+              <text x="74" y={y + 4} fill="rgba(239, 233, 222, 0.86)" fontSize="13" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace">
                 {`${cm}cm`}
               </text>
             </g>
           );
         })}
 
-        {/* 현재 캐릭터 정수리 기준선 */}
         <line x1="360" y1={subjectTopY * 10} x2="640" y2={subjectTopY * 10} stroke="rgba(240, 201, 120, 0.78)" strokeWidth="1.8" strokeDasharray="6 4" />
-        <text x="500" y={subjectTopY * 10 - 8} textAnchor="middle" fill="#f0c978" fontSize="13" fontWeight="600">
+        <text x="500" y={subjectTopY * 10 - 8} textAnchor="middle" fill="#f0c978" fontSize="13" fontWeight="500">
           {`${subjectLabelKo} ${subjectHeightCm.toFixed(1)}cm`}
         </text>
 
-        {/* 파트너 정수리 기준선 */}
         <line
           x1={duoShot.side === "right" ? 620 : 100}
           y1={partnerTopY * 10}
@@ -423,7 +475,6 @@ export function ViewportDuoShotOverlay({
           strokeDasharray="6 4"
         />
 
-        {/* 아이컨택 시선 교환 레이저 벡터 */}
         <line
           x1={subjectCenterX * 10}
           y1={subjectEyeY * 10}
@@ -437,7 +488,6 @@ export function ViewportDuoShotOverlay({
         <circle cx={partnerCenterX * 10} cy={partnerEyeY * 10} r="5.5" fill={partner.accentHex} />
       </svg>
 
-      {/* 하단 투샷 신장차·시선각 계측 배지 */}
       <div
         data-testid="viewport-duo-stage-badge"
         style={{
@@ -447,16 +497,16 @@ export function ViewportDuoShotOverlay({
           transform: "translateX(-50%)",
           padding: "4px 12px",
           borderRadius: 6,
-          backgroundColor: "rgba(20, 17, 24, 0.88)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          backgroundColor: "rgba(22, 21, 19, 0.9)",
+          border: "1px solid rgba(239, 233, 222, 0.1)",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.32)",
-          color: "#f6efe4",
+          color: "#efe9de",
           fontSize: 12,
           fontVariantNumeric: "tabular-nums",
           whiteSpace: "nowrap",
         }}
       >
-        {`투샷 ${distanceInfo.labelKo} · ${contact.summaryKo}`}
+        {`${duoShot.render3dPartner ? "3D 듀오 스테이지" : "투샷"} ${distanceInfo.labelKo} · ${contact.summaryKo}`}
       </div>
     </div>
   );
@@ -465,21 +515,29 @@ export function ViewportDuoShotOverlay({
 export interface ViewportDuoShotControlsProps {
   readonly duoShot: DuoShotState;
   readonly summaryKo: string;
+  readonly duo3dSupported?: boolean;
+  readonly duo3dBusy?: boolean;
   readonly onToggleDuoShot: () => void;
   readonly onChangePartner: (partnerId: string) => void;
   readonly onChangeSide: (side: DuoPartnerSide) => void;
   readonly onChangeDistance: (distanceKey: DuoShotDistanceKey) => void;
   readonly onApplyEyeContact: () => void;
+  readonly onToggleRender3dPartner?: () => void;
+  readonly onChangePartnerStance?: (stance: DuoPartnerStance) => void;
 }
 
 export function ViewportDuoShotControls({
   duoShot,
   summaryKo,
+  duo3dSupported = false,
+  duo3dBusy = false,
   onToggleDuoShot,
   onChangePartner,
   onChangeSide,
   onChangeDistance,
   onApplyEyeContact,
+  onToggleRender3dPartner,
+  onChangePartnerStance,
 }: ViewportDuoShotControlsProps) {
   return (
     <span className="cl-viewport-group" role="group" aria-label="웹툰 2인 투샷·신장차 도구" style={{ display: "inline-flex", flexWrap: "wrap", gap: 4 }}>
@@ -488,7 +546,7 @@ export function ViewportDuoShotControls({
         className="cl-viewport-button"
         data-testid="viewport-toggle-duo-shot"
         aria-pressed={duoShot.enabled}
-        title="상대역 캐릭터와의 신장차(cm) 눈금자·전신 스탠디·대화 시선각을 뷰포트에 함께 표시합니다"
+        title="상대역 캐릭터와의 신장차(cm) 눈금자·3D 동시 배치·대화 시선각을 뷰포트에 표시합니다"
         onClick={onToggleDuoShot}
       >
         투샷·신장차
@@ -500,6 +558,7 @@ export function ViewportDuoShotControls({
             aria-label="투샷 상대역 캐릭터"
             data-testid="viewport-duo-partner-select"
             value={duoShot.partnerId}
+            disabled={duo3dBusy}
             onChange={(event) => onChangePartner(event.target.value)}
           >
             {SHAPER_DUO_PARTNER_PROFILES.map((partner) => (
@@ -513,6 +572,7 @@ export function ViewportDuoShotControls({
             aria-label="상대역 배치 방향"
             data-testid="viewport-duo-side-select"
             value={duoShot.side}
+            disabled={duo3dBusy}
             onChange={(event) => onChangeSide(event.target.value === "left" ? "left" : "right")}
           >
             <option value="right">우측 상대역</option>
@@ -523,6 +583,7 @@ export function ViewportDuoShotControls({
             aria-label="투샷 대화 거리"
             data-testid="viewport-duo-distance-select"
             value={duoShot.distanceKey}
+            disabled={duo3dBusy}
             onChange={(event) => {
               const val = event.target.value;
               if (val === "close" || val === "talk" || val === "wide") onChangeDistance(val);
@@ -534,6 +595,35 @@ export function ViewportDuoShotControls({
               </option>
             ))}
           </select>
+          {onToggleRender3dPartner ? (
+            <button
+              type="button"
+              className="cl-viewport-button"
+              data-testid="viewport-duo-3d-toggle"
+              aria-pressed={duoShot.render3dPartner}
+              disabled={!duo3dSupported || duo3dBusy}
+              title="상대역 3D 패키지 GLB를 실제 월드 거리·신장 비율로 뷰포트에 동시 배치해 단일 투샷 PNG 및 GLB로 함께 내보냅니다"
+              onClick={onToggleRender3dPartner}
+            >
+              3D 듀오 동시 배치
+            </button>
+          ) : null}
+          {duoShot.render3dPartner && onChangePartnerStance ? (
+            <select
+              className="cl-viewport-select"
+              aria-label="상대역 3D 스탠스 포즈"
+              data-testid="viewport-duo-3d-stance"
+              value={duoShot.partnerStance}
+              disabled={duo3dBusy}
+              onChange={(event) => onChangePartnerStance(event.target.value as DuoPartnerStance)}
+            >
+              {(Object.keys(DUO_PARTNER_STANCE_LABELS_KO) as DuoPartnerStance[]).map((stance) => (
+                <option key={stance} value={stance}>
+                  {DUO_PARTNER_STANCE_LABELS_KO[stance]}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <span className="cl-viewport-button" data-testid="viewport-duo-delta-readout" style={{ pointerEvents: "none", fontVariantNumeric: "tabular-nums" }}>
             {summaryKo}
           </span>

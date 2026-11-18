@@ -25,9 +25,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { chromium, type Browser, type CDPSession, type Locator, type Page } from "playwright";
+import { chromium, type Browser, type Page } from "playwright";
 
 import { openStudioBg3dEnginePanel, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab, studioBg3dSceneHistoryControl } from "./lib/studio-bg3d-ui-interactions";
+import { dispatchNativeTouchDrag, readNativeTouchScrollGeometry } from "./lib/studio-inapp-bg3d-native-touch";
 import { visibleStudioControl } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
@@ -467,50 +468,6 @@ async function readOverlayLegibility(page: Page): Promise<{
   });
 }
 
-async function readNativeTouchScrollGeometry(handle: Locator) {
-  return handle.evaluate((element) => {
-    const section = element.closest("section");
-    if (!section) throw new Error("3D scroll handle has no viewport section");
-    const box = element.getBoundingClientRect();
-    const clip = section.getBoundingClientRect();
-    const left = Math.max(box.left, clip.left, 0);
-    const top = Math.max(box.top, clip.top, 0);
-    const right = Math.min(box.right, clip.right, innerWidth);
-    const bottom = Math.min(box.bottom, clip.bottom, innerHeight);
-    return {
-      width: right - left, height: bottom - top,
-      x: (left + right) / 2, y: (top + bottom) / 2,
-      scrollTop: section.scrollTop, scrollHeight: section.scrollHeight, clientHeight: section.clientHeight,
-      viewportWidth: innerWidth, viewportHeight: innerHeight, deviceScaleFactor: devicePixelRatio,
-      visualViewportScale: visualViewport?.scale ?? 1,
-      touchAction: getComputedStyle(element).touchAction,
-      sectionTouchAction: getComputedStyle(section).touchAction,
-      sectionOverflowY: getComputedStyle(section).overflowY,
-    };
-  });
-}
-
-/** Send every native touch point; the scroll assertions still decide whether the page consumed it. */
-async function dispatchNativeTouchDrag(
-  cdp: CDPSession,
-  { x, y, yDistance, speed }: { x: number; y: number; yDistance: number; speed: number },
-): Promise<void> {
-  const steps = Math.max(1, Math.ceil(Math.abs(yDistance) / speed * 60));
-  const intervalMs = Math.abs(yDistance) / speed * 1_000 / steps;
-  const point = (nextY: number) => ({ id: 1, x, y: nextY });
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point(y)] });
-  try {
-    for (let step = 1; step <= steps; step += 1) {
-      await new Promise((resolve) => setTimeout(resolve, intervalMs));
-      await cdp.send("Input.dispatchTouchEvent", {
-        type: "touchMove", touchPoints: [point(y + yDistance * step / steps)],
-      });
-    }
-  } finally {
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-  }
-}
-
 /** Proves a finger gesture reaches the scrolling surface instead of the canvas's touch:none. */
 async function verifyNativeTouchScroll(
   page: Page,
@@ -521,7 +478,7 @@ async function verifyNativeTouchScroll(
   diagnostics.phase = "measure";
   await handle.waitFor({ state: "visible", timeout: 10_000 });
   await handle.scrollIntoViewIfNeeded();
-  const geometry = await readNativeTouchScrollGeometry(handle);
+  let geometry = await readNativeTouchScrollGeometry(handle);
   diagnostics.initialGeometry = geometry;
   if (Math.min(geometry.width, geometry.height) < MIN_TOUCH_TARGET_PX) {
     throw new Error(`3D scroll handle exposes ${geometry.width}x${geometry.height}px; requires 44x44px`);
@@ -543,7 +500,7 @@ async function verifyNativeTouchScroll(
         onHandle: target !== null && target.closest(selector) !== null,
         trusted: event.isTrusted, defaultPrevented: event.defaultPrevented,
         x: point?.clientX ?? null, y: point?.clientY ?? null,
-        scrollTop: document.querySelector(selector)?.closest("section")?.scrollTop ?? null,
+        scrollTop: document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop ?? null,
         timestamp: performance.now(),
       };
       events.push(sample);
@@ -571,10 +528,18 @@ async function verifyNativeTouchScroll(
       });
       diagnostics.phase = "reset-wait";
       await page.waitForFunction((selector) => (
-        document.querySelector(selector)?.closest("section")?.scrollTop === 0
+        document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop === 0
       ), selector, { timeout: 5_000 });
+      diagnostics.phase = "reset-measure";
+      geometry = await readNativeTouchScrollGeometry(handle);
+      if (Math.min(geometry.width, geometry.height) < MIN_TOUCH_TARGET_PX) {
+        throw new Error(`3D scroll handle exposes ${geometry.width}x${geometry.height}px; requires 44x44px`);
+      }
+      if (geometry.scrollHeight <= geometry.clientHeight + 1) {
+        throw new Error("3D touch-scroll fixture has no overflow to exercise");
+      }
     }
-    const scrollTopBefore = await handle.evaluate((element) => element.closest("section")!.scrollTop);
+    const scrollTopBefore = await handle.evaluate((element) => element.closest("[data-bg3d-professional-workspace]")!.scrollTop);
     const touchStarted = page.evaluate((selector) => new Promise<{
       target: string; onHandle: boolean; trusted: boolean;
     } | null>((resolve) => {
@@ -608,7 +573,7 @@ async function verifyNativeTouchScroll(
       });
       diagnostics.phase = "drag-wait";
       await page.waitForFunction(({ selector, before }) => (
-        (document.querySelector(selector)?.closest("section")?.scrollTop ?? 0) > before + 1
+        (document.querySelector(selector)?.closest("[data-bg3d-professional-workspace]")?.scrollTop ?? 0) > before + 1
       ), { selector, before: scrollTopBefore }, { timeout: 5_000 });
     } finally {
       touchStart = await touchStarted;
@@ -619,7 +584,7 @@ async function verifyNativeTouchScroll(
     diagnostics.phase = "complete";
     return {
       handleWidth: geometry.width, handleHeight: geometry.height, scrollTopBefore,
-      scrollTopAfter: await handle.evaluate((element) => element.closest("section")!.scrollTop),
+      scrollTopAfter: await handle.evaluate((element) => element.closest("[data-bg3d-professional-workspace]")!.scrollTop),
       touchStartTarget: touchStart.target, trustedTouchStart: touchStart.trusted,
     };
   } finally {

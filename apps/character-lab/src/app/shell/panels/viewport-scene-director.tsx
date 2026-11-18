@@ -1,0 +1,229 @@
+/**
+ * 장르별 원클릭 풀세트 씬 디렉터 프리셋 (`viewport-scene-director.tsx`, Unslop 규약 준수):
+ * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 4대 한국 웹툰 씬 디렉터
+ * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 1~4컷 한국어 대사까지 일괄 세팅
+ * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
+ */
+import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../../../presets";
+import { DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES } from "../../../export/webtoon-strip-composer";
+
+import type {
+  WebtoonStripActingArcId,
+  WebtoonStripDialogueLines,
+  WebtoonStripFxLinesKind,
+} from "../../../export/webtoon-strip-composer";
+import type { ShaperToonShaderId } from "../../../presets";
+import type { HandPropId, HandPropSide, HeadPropId, ShadingProfile, StagePropId } from "../../../contracts";
+
+export type WebtoonSceneDirectorPresetId =
+  | "director-rofan-coronation"
+  | "director-noir-interrogation"
+  | "director-campus-cafe"
+  | "director-murim-awakening";
+
+export interface WebtoonSceneDirectorPreset {
+  readonly id: WebtoonSceneDirectorPresetId;
+  readonly labelKo: string;
+  readonly summaryKo: string;
+  readonly handPropId: HandPropId;
+  readonly handSide: HandPropSide;
+  readonly headPropId: HeadPropId;
+  readonly stagePropId: StagePropId;
+  readonly toonShaderId: ShaperToonShaderId;
+  readonly actingArc: Exclude<WebtoonStripActingArcId, "none">;
+  readonly fxLinesKind: WebtoonStripFxLinesKind;
+  readonly dialogueLines: WebtoonStripDialogueLines;
+}
+
+export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset[] = Object.freeze([
+  {
+    id: "director-rofan-coronation",
+    labelKo: "로판 대관식 (티아라·단검·대리석 단상)",
+    summaryKo: "사파이어 티아라 + 마력 단검 + 황실 대리석 단상 + 일루미네이션 림 + 여유·역전 4컷 연기",
+    handPropId: "aether-blade",
+    handSide: "rightHand",
+    headPropId: "rofan-tiara",
+    stagePropId: "rofan-throne-dais",
+    toonShaderId: "illumination-rim",
+    actingArc: "arc-confident-smirk",
+    fxLinesKind: "romance-sparkle",
+    dialogueLines: [
+      "황실의 검과 왕관, 오늘부로 내가 거둔다.",
+      "감히 고개를 들어 내 눈을 마주 봐.",
+      "오래 기다렸지? 이제 반격의 시간이야.",
+      "내 제국에 온 걸 환영해.",
+    ],
+  },
+  {
+    id: "director-noir-interrogation",
+    labelKo: "느와르 취조실 (안경·서류철·펜던트 조명)",
+    summaryKo: "메탈 라운드 안경 + 수사 서류철 + 취조실 스틸 책상·펜던트 램프 + 하드 셀 3단 + 스릴러 반전 4컷 연기",
+    handPropId: "case-folder",
+    handSide: "leftHand",
+    headPropId: "wire-glasses",
+    stagePropId: "noir-interrogation-lamp",
+    toonShaderId: "action-hard-cel3",
+    actingArc: "arc-thriller-shock",
+    fxLinesKind: "focus-radial",
+    dialogueLines: [
+      "사건 기록 14페이지, 비어 있던 시간 말인데.",
+      "어젯밤 11시, 그 현장에 당신도 있었지?",
+      "설마 진짜 배후가 내부에 있었다고?",
+      "증거는 충분해. 여기서 끝내자.",
+    ],
+  },
+  {
+    id: "director-campus-cafe",
+    labelKo: "캠퍼스 카페 (진주 귀걸이·커피컵·비스트로)",
+    summaryKo: "진주 귀걸이·골드 핀 + 로스터리 커피컵 + 카페 비스트로 테이블 + 순정 소프트 SDF + 로맨스 설렘 4컷 연기",
+    handPropId: "coffee-cup",
+    handSide: "rightHand",
+    headPropId: "pearl-earrings-pin",
+    stagePropId: "cafe-bistro-table",
+    toonShaderId: "romance-soft-sdf",
+    actingArc: "arc-romance-flutter",
+    fxLinesKind: "romance-sparkle",
+    dialogueLines: [
+      "혹시 아까부터 여기 앉아 있었어?",
+      "네가 좋아하는 로스터리 원두로 골라 봤어.",
+      "왜 자꾸 그렇게 가까이서 쳐다봐…",
+      "오늘 오후는 천천히 같이 걷자.",
+    ],
+  },
+  {
+    id: "director-murim-awakening",
+    labelKo: "무협·헌터 각성 (전술 헤드셋·단검·검기 진법)",
+    summaryKo: "전술 홀로그램 헤드셋 + 에테르 단검 + 무협 청운 검기 진법 + 하드 셀 3단 + 각성·결의 4컷 연기",
+    handPropId: "aether-blade",
+    handSide: "rightHand",
+    headPropId: "tactical-headset",
+    stagePropId: "murim-sword-aura",
+    toonShaderId: "action-hard-cel3",
+    actingArc: "arc-awakening-climax",
+    fxLinesKind: "speed-diagonal",
+    dialogueLines: [
+      "봉인된 청운의 검기가 다시 깨어난다.",
+      "물러서라, 지금부터는 진검승부다.",
+      "보인다, 모든 검로의 빈틈이.",
+      "단 일검으로 승부를 매듭짓겠다.",
+    ],
+  },
+]);
+
+export function findWebtoonSceneDirectorPreset(id: string): WebtoonSceneDirectorPreset | null {
+  return WEBTOON_SCENE_DIRECTOR_PRESETS.find((item) => item.id === id) ?? null;
+}
+
+export function resolveDirectorShadingProfile(current: ShadingProfile, toonShaderId: ShaperToonShaderId): ShadingProfile {
+  const matched = SHAPER_TOON_SHADER_PRESETS.find((item) => item.id === toonShaderId) ?? SHAPER_TOON_SHADER_PRESETS[0]!;
+  return buildShaperToonShadingProfile(current, matched);
+}
+
+// ---------------------------------------------------------------- 뷰포트 ↔ 내보내기 패널 실시간 스트립 디렉터 세션
+
+export interface StripDirectorState {
+  readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+  readonly actingArc: WebtoonStripActingArcId;
+  readonly bakeStripFx: boolean;
+  readonly stripFxLines: WebtoonStripFxLinesKind;
+  readonly dialogueLines: WebtoonStripDialogueLines;
+}
+
+export interface StripDirectorSession {
+  getState(): StripDirectorState;
+  update(patch: Partial<StripDirectorState>): void;
+  setDialogueLine(cutIndex: 0 | 1 | 2 | 3, text: string): void;
+  reset(): void;
+  subscribe(listener: () => void): () => void;
+}
+
+export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
+  activeDirectorId: "",
+  actingArc: "none",
+  bakeStripFx: false,
+  stripFxLines: "focus-radial",
+  dialogueLines: DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+});
+
+export function createStripDirectorSession(initial: Partial<StripDirectorState> = {}): StripDirectorSession {
+  let state: StripDirectorState = { ...INITIAL_STRIP_DIRECTOR_STATE, ...initial };
+  const listeners = new Set<() => void>();
+  const notify = (): void => {
+    for (const listener of listeners) listener();
+  };
+  return {
+    getState: () => state,
+    update(patch) {
+      state = { ...state, ...patch };
+      notify();
+    },
+    setDialogueLine(cutIndex, text) {
+      const next: [string, string, string, string] = [
+        state.dialogueLines[0],
+        state.dialogueLines[1],
+        state.dialogueLines[2],
+        state.dialogueLines[3],
+      ];
+      next[cutIndex] = text;
+      state = { ...state, dialogueLines: next };
+      notify();
+    },
+    reset() {
+      state = INITIAL_STRIP_DIRECTOR_STATE;
+      notify();
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
+
+let defaultStripDirectorSession: StripDirectorSession | null = null;
+
+export function getDefaultStripDirectorSession(): StripDirectorSession {
+  defaultStripDirectorSession ??= createStripDirectorSession();
+  return defaultStripDirectorSession;
+}
+
+export interface ViewportSceneDirectorControlsProps {
+  readonly engineReady: boolean;
+  readonly busy: boolean;
+  readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+  readonly onSelectDirector: (presetId: WebtoonSceneDirectorPresetId | "") => void;
+}
+
+export function ViewportSceneDirectorControls({
+  engineReady,
+  busy,
+  activeDirectorId,
+  onSelectDirector,
+}: ViewportSceneDirectorControlsProps) {
+  const activeSpec = activeDirectorId ? findWebtoonSceneDirectorPreset(activeDirectorId) : null;
+  return (
+    <span className="cl-viewport-group cl-viewport-director-cluster" role="group" aria-label="장르별 원클릭 씬 디렉터">
+      <select
+        className="cl-viewport-select"
+        aria-label="원클릭 씬 디렉터 프리셋"
+        data-testid="viewport-scene-director-select"
+        value={activeDirectorId}
+        disabled={!engineReady || busy}
+        title={
+          activeSpec
+            ? `${activeSpec.labelKo}: ${activeSpec.summaryKo}`
+            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·대사를 한 번에 세팅합니다"
+        }
+        onChange={(event) => onSelectDirector(event.target.value as WebtoonSceneDirectorPresetId | "")}
+      >
+        <option value="">원클릭 씬 디렉터…</option>
+        {WEBTOON_SCENE_DIRECTOR_PRESETS.map((preset) => (
+          <option key={preset.id} value={preset.id}>
+            {preset.labelKo}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}

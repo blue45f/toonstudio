@@ -3,30 +3,32 @@
  * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 선택적 말풍선·효과선(집중선/속도선/반짝이) 래스터 베이킹,
  * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
  */
-import {
-  DEFAULT_FRAMING,
-  eyeAnglesQuaternion,
-  expressionToMorphWeights,
-  failVisible,
-  isLabFailure,
-} from "../contracts";
-import { qNormalize } from "../shared/math";
+import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
 import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, exportFileName } from "./export-session";
 import { PNG_MIME, encodePng } from "./png-encoder";
-import { blendPixelRgba, drawClippedLineRgba, fillRectRgba } from "./webtoon-strip-raster";
+import { buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
 
 import type { ExportDeps, ExportOutcome } from "./export-session";
+import type { WebtoonStripActingArcId } from "./webtoon-strip-acting";
 import type {
   ApplyPlan,
   CameraFramingMode,
   CapturedRaster,
   CharacterEngine,
-  ExpressionWeights,
   LabFailure,
-  Quat,
-  Vec3,
 } from "../contracts";
+
+export {
+  WEBTOON_STRIP_ACTING_ARCS,
+  buildActingCutPlan,
+  findWebtoonStripActingArc,
+} from "./webtoon-strip-acting";
+export type {
+  WebtoonStripActingArcId,
+  WebtoonStripActingArcSpec,
+  WebtoonStripCutActingKeyframe,
+} from "./webtoon-strip-acting";
 
 export interface WebtoonStripCutSpec {
   readonly id: string;
@@ -46,256 +48,22 @@ export const WEBTOON_VERTICAL_STRIP_CUTS: readonly WebtoonStripCutSpec[] = Objec
 
 export type WebtoonStripFxLinesKind = "none" | "focus-radial" | "speed-diagonal" | "romance-sparkle";
 
+export type WebtoonStripDialogueLines = readonly [string, string, string, string];
+
+export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = Object.freeze([
+  "여기서부터는 내 구역이야.",
+  "기다리고 있었어, 그 말.",
+  "지금 이 순간을 전부 기억해.",
+  "끝까지 함께 가자.",
+]) as WebtoonStripDialogueLines;
+
 export interface WebtoonStripMangaFxOptions {
   readonly enabled: boolean;
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly includeSpeechBubbles?: boolean;
   readonly intensity?: number;
-}
-
-export type WebtoonStripActingArcId =
-  | "none"
-  | "arc-awakening-climax"
-  | "arc-romance-flutter"
-  | "arc-thriller-shock"
-  | "arc-confident-smirk";
-
-export interface WebtoonStripCutActingKeyframe {
-  readonly beatKo: string;
-  readonly expression: ExpressionWeights;
-  readonly gazeYawDeg: number;
-  readonly gazePitchDeg: number;
-  readonly neckEulerDeg: Vec3;
-  readonly headEulerDeg: Vec3;
-}
-
-export interface WebtoonStripActingArcSpec {
-  readonly id: Exclude<WebtoonStripActingArcId, "none">;
-  readonly labelKo: string;
-  readonly summaryKo: string;
-  readonly cuts: readonly [
-    WebtoonStripCutActingKeyframe,
-    WebtoonStripCutActingKeyframe,
-    WebtoonStripCutActingKeyframe,
-    WebtoonStripCutActingKeyframe,
-  ];
-}
-
-export const WEBTOON_STRIP_ACTING_ARCS: readonly WebtoonStripActingArcSpec[] = Object.freeze([
-  {
-    id: "arc-awakening-climax",
-    labelKo: "각성·결의 4단 서사 (침착 → 대사 → 각성 → 여운)",
-    summaryKo: "1컷 침착 등장 · 2컷 단호한 발화 · 3컷 안광 각성 클로즈업 · 4컷 차분한 결의",
-    cuts: [
-      {
-        beatKo: "침착 등장",
-        expression: { browDown: 0.16, mouthPress: 0.22 },
-        gazeYawDeg: 0,
-        gazePitchDeg: -4,
-        neckEulerDeg: [2, 0, 0],
-        headEulerDeg: [4, -3, 0],
-      },
-      {
-        beatKo: "단호한 발화",
-        expression: { browDown: 0.34, jawOpen: 0.24, eyeSquint: 0.18 },
-        gazeYawDeg: 10,
-        gazePitchDeg: 2,
-        neckEulerDeg: [-2, 6, -1],
-        headEulerDeg: [-3, 10, -2],
-      },
-      {
-        beatKo: "각성 클로즈업",
-        expression: { eyeWide: 0.72, browDown: 0.58, jawOpen: 0.32 },
-        gazeYawDeg: -4,
-        gazePitchDeg: 3,
-        neckEulerDeg: [4, -4, 1],
-        headEulerDeg: [6, -6, 2],
-      },
-      {
-        beatKo: "결의 여운",
-        expression: { eyeSquint: 0.32, mouthSmile: 0.24 },
-        gazeYawDeg: -10,
-        gazePitchDeg: 8,
-        neckEulerDeg: [-3, -8, 2],
-        headEulerDeg: [-4, -12, 3],
-      },
-    ],
-  },
-  {
-    id: "arc-romance-flutter",
-    labelKo: "로맨스 설렘 4단 서사 (시선 → 미소 → 두근거림 → 환한 미소)",
-    summaryKo: "1컷 고요한 마주침 · 2컷 부드러운 대화 · 3컷 설렘 클로즈업 · 4컷 따뜻한 미소",
-    cuts: [
-      {
-        beatKo: "고요한 마주침",
-        expression: { browInnerUp: 0.18, mouthSmile: 0.14 },
-        gazeYawDeg: 4,
-        gazePitchDeg: 2,
-        neckEulerDeg: [2, -3, 2],
-        headEulerDeg: [3, -5, 3],
-      },
-      {
-        beatKo: "부드러운 대화",
-        expression: { mouthSmile: 0.38, jawOpen: 0.18, browInnerUp: 0.16 },
-        gazeYawDeg: 8,
-        gazePitchDeg: 4,
-        neckEulerDeg: [0, 5, -2],
-        headEulerDeg: [-2, 8, -3],
-      },
-      {
-        beatKo: "설렘 클로즈업",
-        expression: { eyeWide: 0.54, browInnerUp: 0.46, jawOpen: 0.16, cheekPuff: 0.12 },
-        gazeYawDeg: -3,
-        gazePitchDeg: 5,
-        neckEulerDeg: [3, -2, 2],
-        headEulerDeg: [4, -4, 4],
-      },
-      {
-        beatKo: "따뜻한 미소",
-        expression: { mouthSmile: 0.74, eyeSquint: 0.34, browInnerUp: 0.14 },
-        gazeYawDeg: -8,
-        gazePitchDeg: 6,
-        neckEulerDeg: [-2, -6, 3],
-        headEulerDeg: [-3, -10, 4],
-      },
-    ],
-  },
-  {
-    id: "arc-thriller-shock",
-    labelKo: "스릴러 반전 4단 서사 (경계 → 추궁 → 충격 → 냉정한 결단)",
-    summaryKo: "1컷 서늘한 경계 · 2컷 날카로운 추궁 · 3컷 반전 경악 클로즈업 · 4컷 냉정한 결단",
-    cuts: [
-      {
-        beatKo: "서늘한 경계",
-        expression: { browDown: 0.28, eyeSquint: 0.26 },
-        gazeYawDeg: -6,
-        gazePitchDeg: -3,
-        neckEulerDeg: [3, 4, 0],
-        headEulerDeg: [5, 6, -2],
-      },
-      {
-        beatKo: "날카로운 추궁",
-        expression: { browDown: 0.48, mouthFrown: 0.28, jawOpen: 0.22 },
-        gazeYawDeg: 12,
-        gazePitchDeg: 0,
-        neckEulerDeg: [2, 8, -2],
-        headEulerDeg: [3, 12, -3],
-      },
-      {
-        beatKo: "반전 경악",
-        expression: { eyeWide: 0.86, browInnerUp: 0.68, jawOpen: 0.48 },
-        gazeYawDeg: -2,
-        gazePitchDeg: 2,
-        neckEulerDeg: [-3, -2, 0],
-        headEulerDeg: [-5, -4, 1],
-      },
-      {
-        beatKo: "냉정한 결단",
-        expression: { browDown: 0.56, mouthPress: 0.44, eyeSquint: 0.30 },
-        gazeYawDeg: -12,
-        gazePitchDeg: 6,
-        neckEulerDeg: [2, -8, 1],
-        headEulerDeg: [4, -12, 2],
-      },
-    ],
-  },
-  {
-    id: "arc-confident-smirk",
-    labelKo: "여유·역전 4단 서사 (등장 → 응수 → 확신 → 윙크 여운)",
-    summaryKo: "1컷 당당한 등장 · 2컷 여유로운 응수 · 3컷 자신감 미소 · 4컷 윙크 여운",
-    cuts: [
-      {
-        beatKo: "당당한 등장",
-        expression: { mouthSmile: 0.22, browOuterUp: 0.24 },
-        gazeYawDeg: 0,
-        gazePitchDeg: -5,
-        neckEulerDeg: [-2, -4, 2],
-        headEulerDeg: [-3, -6, 2],
-      },
-      {
-        beatKo: "여유로운 응수",
-        expression: { mouthSmile: 0.36, browOuterUp: 0.38, jawOpen: 0.16 },
-        gazeYawDeg: 9,
-        gazePitchDeg: 3,
-        neckEulerDeg: [-2, 6, -2],
-        headEulerDeg: [-3, 9, -3],
-      },
-      {
-        beatKo: "확신 클로즈업",
-        expression: { mouthSmile: 0.64, eyeSquint: 0.28, browOuterUp: 0.30 },
-        gazeYawDeg: -4,
-        gazePitchDeg: 4,
-        neckEulerDeg: [0, -4, 2],
-        headEulerDeg: [-2, -6, 3],
-      },
-      {
-        beatKo: "윙크 여운",
-        expression: { eyeBlinkLeft: 0.88, mouthSmile: 0.56, browOuterUp: 0.28 },
-        gazeYawDeg: -8,
-        gazePitchDeg: 7,
-        neckEulerDeg: [-2, -7, 3],
-        headEulerDeg: [-3, -11, 4],
-      },
-    ],
-  },
-]);
-
-export function findWebtoonStripActingArc(arcId: string): WebtoonStripActingArcSpec | null {
-  return WEBTOON_STRIP_ACTING_ARCS.find((item) => item.id === arcId) ?? null;
-}
-
-function eulerDegToQuat(deg: Vec3): Quat {
-  const rx = (deg[0] * Math.PI) / 360;
-  const ry = (deg[1] * Math.PI) / 360;
-  const rz = (deg[2] * Math.PI) / 360;
-  const cx = Math.cos(rx);
-  const sx = Math.sin(rx);
-  const cy = Math.cos(ry);
-  const sy = Math.sin(ry);
-  const cz = Math.cos(rz);
-  const sz = Math.sin(rz);
-  return qNormalize([
-    sx * cy * cz - cx * sy * sz,
-    cx * sy * cz + sx * cy * sz,
-    cx * cy * sz - sx * sy * cz,
-    cx * cy * cz + sx * sy * sz,
-  ]);
-}
-
-/**
- * 기준 `ApplyPlan`의 체형·얼굴 파라미터 및 팔·다리 포즈는 그대로 유지하면서,
- * 해당 컷의 감정 표정(`facs:*`)·안구 시선(`eyeGaze`)·목/고개 연기만 덮어쓴 스냅샷 `ApplyPlan`을 생성한다.
- */
-export function buildActingCutPlan(basePlan: ApplyPlan, keyframe: WebtoonStripCutActingKeyframe, cutIndex: number): ApplyPlan {
-  const nextMorphs: Record<string, number> = {};
-  for (const [morphKey, value] of Object.entries(basePlan.morphWeights)) {
-    if (!morphKey.startsWith("facs:")) {
-      nextMorphs[morphKey] = value;
-    }
-  }
-  Object.assign(nextMorphs, expressionToMorphWeights(keyframe.expression));
-
-  const eyeAngle = { yawDeg: keyframe.gazeYawDeg, pitchDeg: keyframe.gazePitchDeg };
-  const eyeQuat = eyeAnglesQuaternion(eyeAngle);
-
-  return {
-    ...basePlan,
-    revision: basePlan.revision + 100 + cutIndex,
-    morphWeights: nextMorphs,
-    boneRotations: {
-      ...basePlan.boneRotations,
-      neck: eulerDegToQuat(keyframe.neckEulerDeg),
-      head: eulerDegToQuat(keyframe.headEulerDeg),
-      leftEye: eyeQuat,
-      rightEye: eyeQuat,
-    },
-    eyeGaze: {
-      mode: "manual",
-      symmetry: true,
-      left: eyeAngle,
-      right: eyeAngle,
-    },
-  };
+  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 한국어 대사 4줄 */
+  readonly dialogueLines?: WebtoonStripDialogueLines;
 }
 
 export interface WebtoonStripLayout {
@@ -370,6 +138,73 @@ export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSaf
     borderPx,
     bubbleSafeTopPx,
   };
+}
+
+function blendPixelRgba(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  x: number,
+  y: number,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  r: number,
+  g: number,
+  b: number,
+  alpha01: number,
+): void {
+  if (x < clipX0 || x >= clipX1 || y < clipY0 || y >= clipY1 || alpha01 <= 0) return;
+  const a = alpha01 >= 1 ? 1 : alpha01;
+  const dst = (y * canvasWidth + x) * 4;
+  const inv = 1 - a;
+  rgba[dst] = Math.round(r * a + (rgba[dst] ?? 255) * inv);
+  rgba[dst + 1] = Math.round(g * a + (rgba[dst + 1] ?? 255) * inv);
+  rgba[dst + 2] = Math.round(b * a + (rgba[dst + 2] ?? 255) * inv);
+  rgba[dst + 3] = 255;
+}
+
+function drawClippedLineRgba(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  radiusPx: number,
+  r: number,
+  g: number,
+  b: number,
+  opacity01: number,
+): void {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const len = Math.hypot(dx, dy);
+  if (len < 0.5) return;
+  const steps = Math.ceil(len * 1.5);
+  const pad = Math.ceil(radiusPx + 1);
+  for (let s = 0; s <= steps; s += 1) {
+    const t = s / steps;
+    const cx = x0 + dx * t;
+    const cy = y0 + dy * t;
+    const ix0 = Math.max(clipX0, Math.floor(cx - pad));
+    const ix1 = Math.min(clipX1 - 1, Math.ceil(cx + pad));
+    const iy0 = Math.max(clipY0, Math.floor(cy - pad));
+    const iy1 = Math.min(clipY1 - 1, Math.ceil(cy + pad));
+    for (let py = iy0; py <= iy1; py += 1) {
+      for (let px = ix0; px <= ix1; px += 1) {
+        const dist = Math.hypot(px + 0.5 - cx, py + 0.5 - cy);
+        if (dist <= radiusPx + 0.75) {
+          const cov = dist <= radiusPx - 0.35 ? 1 : Math.max(0, 1 - (dist - (radiusPx - 0.35)) / 1.1);
+          blendPixelRgba(rgba, canvasWidth, px, py, clipX0, clipY0, clipX1, clipY1, r, g, b, cov * opacity01);
+        }
+      }
+    }
+  }
 }
 
 function bakePanelActionLines(
@@ -463,6 +298,138 @@ function bakePanelActionLines(
   }
 }
 
+function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | null] {
+  const cleaned = rawText.trim();
+  if (!cleaned) return ["", null];
+  if (cleaned.length <= 13) return [cleaned, null];
+  const mid = Math.ceil(cleaned.length / 2);
+  const spaceIdx = cleaned.lastIndexOf(" ", mid + 3);
+  if (spaceIdx >= 3 && spaceIdx < cleaned.length - 2) {
+    return [cleaned.slice(0, spaceIdx).trim(), cleaned.slice(spaceIdx + 1).trim()];
+  }
+  return [cleaned.slice(0, mid), cleaned.slice(mid)];
+}
+
+function tryRasterizeDialogueCanvas2d(
+  boxWidth: number,
+  boxHeight: number,
+  line1: string,
+  line2: string | null,
+): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
+  if (typeof document === "undefined" || boxWidth < 12 || boxHeight < 8) return null;
+  try {
+    const scale = 2;
+    const w = Math.max(12, Math.floor(boxWidth * scale));
+    const h = Math.max(8, Math.floor(boxHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.clearRect(0, 0, w, h);
+    const maxChars = Math.max(line1.length, line2 ? line2.length : 0, 6);
+    const fitByWidth = Math.floor((w * 0.84) / Math.max(4, maxChars * 0.92));
+    const fitByHeight = Math.floor(h * (line2 ? 0.30 : 0.44));
+    const fontPx = Math.max(10, Math.min(44, fitByWidth, fitByHeight));
+    ctx.font = `600 ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    ctx.fillStyle = "#18151C";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (line2) {
+      const gap = Math.round(fontPx * 0.62);
+      ctx.fillText(line1, w * 0.5, h * 0.5 - gap, w * 0.9);
+      ctx.fillText(line2, w * 0.5, h * 0.5 + gap, w * 0.9);
+    } else {
+      ctx.fillText(line1, w * 0.5, h * 0.5, w * 0.9);
+    }
+    const img = ctx.getImageData(0, 0, w, h);
+    let nonZeroAlpha = 0;
+    for (let i = 3; i < img.data.length; i += 4) {
+      if ((img.data[i] ?? 0) > 16) {
+        nonZeroAlpha += 1;
+        break;
+      }
+    }
+    return nonZeroAlpha > 0 ? { width: w, height: h, data: img.data } : null;
+  } catch {
+    return null;
+  }
+}
+
+function bakeDeterministicDialogueGlyphs(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  line1: string,
+  line2: string | null,
+): void {
+  const lines = line2 ? [line1, line2] : [line1];
+  const maxLen = Math.max(...lines.map((l) => l.length), 1);
+  const cellW = Math.max(3, Math.min(Math.floor((rx * 1.48) / maxLen), Math.floor(ry * 0.52)));
+  const cellH = Math.max(3, Math.round(cellW * 1.05));
+  const stroke = Math.max(0.55, cellW * 0.11);
+
+  lines.forEach((line, lineIdx) => {
+    const chars = Array.from(line);
+    const totalW = chars.length * cellW;
+    const startX = cx - totalW * 0.5;
+    const baseY = lines.length === 2 ? cy + (lineIdx === 0 ? -cellH * 0.68 : cellH * 0.68) : cy;
+
+    chars.forEach((ch, idx) => {
+      if (ch.trim() === "") return;
+      const code = ch.codePointAt(0) ?? 46;
+      const gx0 = startX + idx * cellW + cellW * 0.14;
+      const gx1 = startX + (idx + 1) * cellW - cellW * 0.14;
+      const gy0 = baseY - cellH * 0.42;
+      const gy1 = baseY + cellH * 0.42;
+      const gmx = (gx0 + gx1) * 0.5;
+      const gmy = (gy0 + gy1) * 0.5;
+
+      if (ch === "." || ch === "," || ch === "…") {
+        blendPixelRgba(rgba, canvasWidth, Math.round(gmx), Math.round(gy1), clipX0, clipY0, clipX1, clipY1, 24, 21, 28, 0.92);
+        return;
+      }
+      if (code >= 0xac00 && code <= 0xd7a3) {
+        const syl = code - 0xac00;
+        const cho = Math.floor(syl / 588);
+        const jung = Math.floor((syl % 588) / 28);
+        const jong = syl % 28;
+        const topBottom = jong > 0 ? gmy : gy1;
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gmx, gy0, stroke, 24, 21, 28, 0.9);
+        if (cho % 3 !== 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx0, topBottom, stroke, 24, 21, 28, 0.88);
+        }
+        if (cho % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, (gy0 + topBottom) * 0.5, gmx, (gy0 + topBottom) * 0.5, stroke, 24, 21, 28, 0.86);
+        }
+        if (jung < 8 || jung >= 18) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx1, gy0, gx1, topBottom, stroke, 24, 21, 28, 0.92);
+        } else {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, topBottom, gx1, topBottom, stroke, 24, 21, 28, 0.92);
+        }
+        if (jong > 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gy1, gx1, gy1, stroke, 24, 21, 28, 0.9);
+          if (jong % 2 === 1) {
+            drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gmy + stroke, gx0 + stroke, gy1, stroke, 24, 21, 28, 0.85);
+          }
+        }
+      } else {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, 24, 21, 28, 0.9);
+        if (code % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, 24, 21, 28, 0.85);
+        }
+      }
+    });
+  });
+}
+
 function bakeSpeechBubbleBalloon(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
@@ -471,13 +438,14 @@ function bakeSpeechBubbleBalloon(
   innerWidth: number,
   innerHeight: number,
   placeRight: boolean,
+  dialogueText?: string,
 ): void {
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const rx = Math.max(8, Math.round(innerWidth * 0.19));
-  const ry = Math.max(5, Math.round(innerHeight * 0.085));
-  const cx = placeRight ? innerX + Math.round(innerWidth * 0.74) : innerX + Math.round(innerWidth * 0.26);
-  const cy = innerY + Math.round(ry * 1.32);
+  const rx = Math.max(8, Math.round(innerWidth * 0.21));
+  const ry = Math.max(5, Math.round(innerHeight * 0.092));
+  const cx = placeRight ? innerX + Math.round(innerWidth * 0.72) : innerX + Math.round(innerWidth * 0.28);
+  const cy = innerY + Math.round(ry * 1.30);
   const border = Math.max(1, Math.round(innerWidth * 0.0042));
 
   const x0 = Math.max(innerX, cx - rx - border - 1);
@@ -518,6 +486,62 @@ function bakeSpeechBubbleBalloon(
     28,
     0.95,
   );
+
+  if (dialogueText && dialogueText.trim().length > 0) {
+    const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
+    const boxW = Math.max(8, Math.round(rx * 1.66));
+    const boxH = Math.max(6, Math.round(ry * 1.44));
+    const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2);
+    if (raster) {
+      const dstLeft = Math.round(cx - boxW * 0.5);
+      const dstTop = Math.round(cy - boxH * 0.5);
+      for (let ty = 0; ty < boxH; ty += 1) {
+        for (let tx = 0; tx < boxW; tx += 1) {
+          const sx = tx * 2;
+          const sy = ty * 2;
+          let aSum = 0;
+          for (let oy = 0; oy < 2; oy += 1) {
+            for (let ox = 0; ox < 2; ox += 1) {
+              const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
+              aSum += raster.data[idx + 3] ?? 0;
+            }
+          }
+          const alpha01 = aSum / (255 * 4);
+          if (alpha01 > 0.04) {
+            blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+          }
+        }
+      }
+    } else {
+      bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2);
+    }
+  }
+}
+
+function fillRectRgba(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  r: number,
+  g: number,
+  b: number,
+  a = 255,
+): void {
+  const xEnd = x0 + w;
+  const yEnd = y0 + h;
+  for (let y = y0; y < yEnd; y += 1) {
+    let offset = (y * canvasWidth + x0) * 4;
+    for (let x = x0; x < xEnd; x += 1) {
+      rgba[offset] = r;
+      rgba[offset + 1] = g;
+      rgba[offset + 2] = b;
+      rgba[offset + 3] = a;
+      offset += 4;
+    }
+  }
 }
 
 export function composeWebtoonVerticalStrip(
@@ -599,7 +623,8 @@ export function composeWebtoonVerticalStrip(
     }
 
     if (fxIncludeBubbles) {
-      bakeSpeechBubbleBalloon(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, idx % 2 === 1);
+      const cutDialogue = mangaFx?.dialogueLines?.[idx];
+      bakeSpeechBubbleBalloon(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, idx % 2 === 1, cutDialogue);
     }
   }
 

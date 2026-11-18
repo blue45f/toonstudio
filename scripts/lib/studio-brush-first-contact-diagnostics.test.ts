@@ -24,12 +24,56 @@ describe("첫 접촉 CPU 표본의 시계와 증거 경계", () => {
     if (result.status !== "complete") throw new Error("진단을 완료하지 못했습니다.");
     expect(result.firstInput).toEqual(input);
     expect(result.clockAlignment.uncertaintyMs).toBe(4);
+    expect(result.clockAlignment.basis).toBe("start-only");
+    expect(result.clockBrackets).toEqual({ start: anchor, stop: null });
     const window = result.windows.find(entry => entry.id === "input-to-first-observation");
     expect(window).toMatchObject({ startMs: 130, endMs: 150, estimatedSamples: 3,
       definiteSamples: 1, possibleSamples: 3, boundaryAmbiguousSamples: 2 });
     expect(window?.topFunctions[0]).toMatchObject({ functionName: "drawInitialContact", source: "/assets/brush.js", sampleWeightMs: 18 });
     expect(JSON.stringify(result)).not.toContain("token=hidden");
     expect(result.rawProfileSaved).toBe(false);
+  });
+
+  it("종료 시각에서 profile duration을 빼 시작 범위를 좁히고 실제 입력 시각은 보존한다", () => {
+    const stop = { beforeStopMs: 222, afterStopMs: 223 };
+    const result = summarizeStudioBrushFirstContactCpu(profile, anchor, input, "pen-smoke", stop);
+    if (result.status !== "complete") throw new Error("일관된 종료 clock을 정렬하지 못했습니다.");
+    expect(result.clockBrackets).toEqual({ start: anchor, stop });
+    expect(result.clockAlignment).toMatchObject({ alignedStartLowerMs: 102, alignedStartUpperMs: 103,
+      uncertaintyMs: 1, basis: "start-stop-intersection" });
+    expect(result.firstInput).toEqual(input);
+    expect(result.windows.find(window => window.id === "input-to-first-observation"))
+      .toMatchObject({ startMs: 130, endMs: 150, definiteSamples: 3, possibleSamples: 3,
+        boundaryAmbiguousSamples: 0 });
+  });
+
+  it("종료 범위가 시작 범위를 벗어나도 일치하는 교집합만 사용한다", () => {
+    const result = summarizeStudioBrushFirstContactCpu(profile, anchor, input, "pen-smoke",
+      { beforeStopMs: 219, afterStopMs: 222 });
+    if (result.status !== "complete") throw new Error("clock 교집합을 확인하지 못했습니다.");
+    expect(result.clockAlignment).toMatchObject({ alignedStartLowerMs: 100, alignedStartUpperMs: 102,
+      uncertaintyMs: 2 });
+  });
+
+  it("시작·종료 범위가 한 시각에서 만나면 폭0의 일관된 경계를 보존한다", () => {
+    const result = summarizeStudioBrushFirstContactCpu(profile, anchor, input, "pen-smoke",
+      { beforeStopMs: 224, afterStopMs: 225 });
+    if (result.status !== "complete") throw new Error("정확히 만나는 clock 경계를 잃었습니다.");
+    expect(result.clockAlignment).toMatchObject({ alignedStartLowerMs: 104, alignedStartUpperMs: 104,
+      uncertaintyMs: 0 });
+  });
+
+  it.each([
+    { beforeStopMs: 222, afterStopMs: 221 },
+    { beforeStopMs: Number.NaN, afterStopMs: 223 },
+    { beforeStopMs: 149, afterStopMs: 223 },
+    { beforeStopMs: 225, afterStopMs: 226 },
+    { beforeStopMs: 214, afterStopMs: 219 },
+  ])("불가능하거나 시작 범위와 모순되는 종료 clock은 진단 성공으로 바꾸지 않는다: %j", stop => {
+    const result = summarizeStudioBrushFirstContactCpu(profile, anchor, input, "pen-smoke", stop);
+    expect(result.status).toBe("unavailable");
+    expect(result.clockBrackets).toEqual({ start: anchor, stop });
+    expect(result.firstInput).toEqual(input);
   });
 
   it.each([

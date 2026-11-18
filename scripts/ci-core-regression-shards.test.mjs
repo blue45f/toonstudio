@@ -132,6 +132,7 @@ test("real product selectors partition into static and mandatory PostgreSQL exec
   assert.equal(new Set([...staticOnly, ...routed]).size, all.length);
   assert.ok(routed.every((file) => file.endsWith(".integration.test.ts")));
   for (const suite of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts",
     "apps/api/src/modules/studio-project-graph/studio-review-pen-comment.integration.test.ts",
@@ -191,6 +192,29 @@ test("원고 제출·귀속·승인과 잠금 회귀는 실제 product 선택에
   for (const target of ["packages/studio-project-model/src/__tests__/review-pen-storage.test.ts",
     "packages/studio-project-model/src/__tests__/review-pen.test.ts"]) {
     assert.ok(foundation.includes(target), `정본 펜 첨삭 계약의 필수 실행 누락: ${target}`);
+  }
+});
+
+test("통합 관리자 보드의 API·공통 계약·화면 검증을 필수 product에서 실행한다", () => {
+  const selectors = expandGlobTargets(executionTargetsByShard().product);
+  const executed = resolveRequiredTargets(selectors);
+  const args = buildShardVitestArgs(selectors);
+  const databaseOnly = args.flatMap((arg, index) => arg === "--exclude" ? [args[index + 1]] : []);
+  for (const target of [
+    "apps/api/src/modules/admin-workspace/admin-workspace.repository.test.ts",
+    "apps/api/src/modules/admin-workspace/admin-workspace.module.test.ts",
+    "packages/contracts/src/admin-workspace/admin-workspace.test.ts",
+    "apps/admin-web/src/domains/workspace/AdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/useAdminWorkspace.test.tsx",
+    "apps/admin-web/src/domains/workspace/WorkspaceBackup.test.tsx",
+    "apps/admin-web/src/app/shell/WorkspaceAccess.test.tsx",
+    "apps/admin-web/src/platform/http/workspace-api.test.ts",
+    "scripts/admin-workspace-database-contract.test.mjs",
+    "scripts/admin-database-feature-contracts.test.mjs",
+  ]) {
+    assert.equal(shardForTarget(target), "product", target);
+    assert.ok(executed.includes(target), `필수 관리자 보드 회귀 누락: ${target}`);
+    assert.ok(!databaseOnly.includes(target), `정적 관리자 회귀를 DB lane으로 넘길 수 없습니다: ${target}`);
   }
 });
 

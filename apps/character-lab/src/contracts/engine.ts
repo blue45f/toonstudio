@@ -166,13 +166,32 @@ export interface HeadPropAttachment {
   readonly sha256?: string;
 }
 
-export const STAGE_PROP_IDS = ["cafe-bistro-table", "academy-desk", "murim-sword-aura"] as const;
+export const STAGE_PROP_IDS = [
+  "cafe-bistro-table",
+  "academy-desk",
+  "murim-sword-aura",
+  "rofan-throne-dais",
+  "noir-interrogation-lamp",
+] as const;
 export type StagePropId = (typeof STAGE_PROP_IDS)[number];
 
 export interface StagePropAttachment {
   readonly propId: StagePropId;
   readonly glbUrl: string;
   readonly sha256?: string;
+}
+
+export const DUO_PARTNER_STANCES = ["conversational", "arms-crossed", "attentive"] as const;
+export type DuoPartnerStance = (typeof DUO_PARTNER_STANCES)[number];
+
+export interface DuoPartnerAttachment {
+  readonly characterId: string;
+  readonly glbUrl: string;
+  readonly sha256?: string;
+  readonly side: "left" | "right";
+  readonly distanceMeters: number;
+  readonly heightScale: number;
+  readonly stance?: DuoPartnerStance;
 }
 
 export interface CharacterEngine {
@@ -212,8 +231,10 @@ export interface CharacterEngine {
   setHandProp?(attachment: HandPropAttachment | null): Promise<void>;
   /** 캐릭터 머리 본(head)에 안경·티아라·헤드셋·귀걸이 등 3D 머리 액세서리를 장착하거나 해제(null)한다. */
   setHeadProp?(attachment: HeadPropAttachment | null): Promise<void>;
-  /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
+  /** 캐릭터 루트 발밑·배경에 카페 테이블·책상·검기 진법·대관식 단상·취조실 조명 등 3D 스테이지 프롭을 배치하거나 해제(null)한다. */
   setStageProp?(attachment: StagePropAttachment | null): Promise<void>;
+  /** 뷰포트 3D 공간에 상대역 3D 캐릭터 패키지 GLB를 실제 거리·신장비·대화 포즈로 동시 배치하거나 해제(null)한다. */
+  setDuoPartner?(attachment: DuoPartnerAttachment | null): Promise<void>;
   updatePaintTexture(layer: PaintLayer): void;
   exportGlb(): Promise<Uint8Array>;
   readHud(): HudSample;
