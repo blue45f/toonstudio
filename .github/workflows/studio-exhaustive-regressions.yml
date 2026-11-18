@@ -11,17 +11,51 @@ on:
       - scripts/run-studio-exhaustive-regressions.test.mjs
       - scripts/run-studio-exhaustive-followup.mjs
       - scripts/run-studio-exhaustive-followup.test.mjs
+      - scripts/studio-stabilization-followup-cases.mjs
+      - scripts/studio-stabilization-followup-cases.test.mjs
+      - scripts/studio-exhaustive-evidence.test.mjs
+      - playwright.studio-production-followup.config.ts
       - playwright.studio-qa-helpers.config.ts
+      - e2e/studio-bg3d-qa-interactions.spec.mts
+      - e2e/studio-qa-ux-followup.spec.mts
+      - e2e/helpers/studio-react-fixture.mts
+      - e2e/helpers/studio-bg3d-production-workflow.ts
+      - e2e/helpers/studio-bg3d-rotation-ring.ts
+      - e2e/studio-3d-visual-verification.spec.ts
+      - e2e/studio-bg3d-production-rotation.runtime.ts
+      - e2e/studio-bg3d-compositor-sampler.ts
+      - playwright.bg3d-runtime.config.ts
       - e2e/studio-qa-interactions.spec.mts
       - e2e/studio-qa-shell-interactions.spec.mts
       - e2e/studio-drawing-chrome-layout.spec.mts
       - apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.css
+      - apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityBar.tsx
+      - apps/web/src/domains/creator/canvas/StudioCanvasStatusRail.tsx
+      - apps/web/src/domains/creator/canvas/studio-canvas-notice-placement.*
+      - apps/web/src/domains/creator/bg3d/studio-bg3d-mobile-workspace.css
+      - apps/web/src/domains/creator/bg3d/StudioBg3dEditorViewport.tsx
+      - apps/web/src/domains/creator/bg3d/StudioBg3dAttachedTransformControls.*
+      - apps/web/src/domains/creator/bg3d/studio-bg3d-prosuite-hint.ts
+      - apps/web/src/domains/creator/studio-workspace-route.*
+      - apps/web/src/domains/creator/studio-router/studio-route-manifest.ts
+      - apps/web/src/app/routes/groups/creator-poser-document-lifecycle.test.tsx
+      - apps/web/src/shared/components/AccessibleTooltipLayer.*
+      - apps/web/src/shared/components/accessible-tooltip-placement.*
       - apps/web/src/domains/creator/studio-shell/studio-document-chrome.css
       - apps/web/src/app/styles/sitewide-visual-ux.css
       - apps/web/src/app/styles/mobile-first-shell.css
       - apps/web/src/shared/styles/studio-route.css
       - apps/web/src/domains/creator/studio-shell/studio-visual-identity-v2.css
       - scripts/lib/studio-shell-interactions.ts
+      - scripts/lib/studio-shell-readiness.test.ts
+      - scripts/lib/studio-preview-navigation-settlement.*
+      - scripts/lib/studio-companion-request-timeline.*
+      - scripts/lib/studio-autosave-opfs-diagnostics.ts
+      - scripts/lib/studio-artist-transparent-wash-evidence.ts
+      - scripts/lib/studio-brush-latency-eraser-fixture.*
+      - scripts/lib/studio-brush-first-contact-diagnostics.*
+      - scripts/lib/studio-bg3d-rotation-ring.*
+      - scripts/fixtures/studio-bg3d-y-ring-698x743.json
       - scripts/lib/studio-primary-color-interactions.ts
       - scripts/lib/studio-brush-catalog-interactions.ts
       - scripts/lib/studio-tool-interactions.ts
@@ -35,6 +69,12 @@ on:
       - scripts/lib/repo-paths.mjs
       - scripts/qa/verify-studio-cross-browser-matrix.mjs
       - scripts/verify-studio-launch.mts
+      - scripts/verify-studio-autosave-opfs-session.mts
+      - scripts/verify-studio-living-ink-integration.mts
+      - scripts/verify-studio-bg3d-inapp-editor.mts
+      - scripts/verify-studio-bg3d-physics.mts
+      - scripts/verify-studio-hybrid-dcc-integration.mts
+      - scripts/verify-studio-3d-console.mts
       - scripts/verify-studio-lifecycle.mts
       - scripts/verify-studio-companion.mts
       - scripts/verify-studio-inspector-walkthrough.mts
@@ -91,8 +131,10 @@ on:
           - residual
           - pencil-only
           - canvas-layout
+          - interaction-followup
+          - 3d-followup
       source_mode:
-        description: 기존 산출물 재사용(20분) 또는 현재 SHA production 빌드(40분)
+        description: 기존20분 또는 fresh40분(새 interaction/3d-followup은 항상 fresh40분)
         type: choice
         default: artifact
         options:
@@ -115,7 +157,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}${{ github.event_name == 'workflow_dispatch' && format('-{0}', inputs.suite || 'regressions') || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -170,9 +212,9 @@ jobs:
 
   followup:
     name: 선택한 production Studio 후속 검사
-    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual' || inputs.suite == 'pencil-only' || inputs.suite == 'canvas-layout')
+    if: github.event_name == 'workflow_dispatch' && (inputs.suite == 'followup' || inputs.suite == 'native-representatives' || inputs.suite == 'residual' || inputs.suite == 'pencil-only' || inputs.suite == 'canvas-layout' || inputs.suite == 'interaction-followup' || inputs.suite == '3d-followup')
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.source_mode == 'fresh-source' && 40 || 20 }}
+    timeout-minutes: ${{ (inputs.source_mode == 'fresh-source' || inputs.suite == 'interaction-followup' || inputs.suite == '3d-followup') && 40 || 20 }}
     permissions:
       contents: read
       actions: read
@@ -180,7 +222,7 @@ jobs:
       CI: "1"
       NODE_OPTIONS: --max-old-space-size=8192
       STUDIO_FOLLOWUP_SUITE: ${{ inputs.suite }}
-      STUDIO_FOLLOWUP_SOURCE_MODE: ${{ inputs.source_mode || 'artifact' }}
+      STUDIO_FOLLOWUP_SOURCE_MODE: ${{ (inputs.suite == 'interaction-followup' || inputs.suite == '3d-followup') && 'fresh-source' || inputs.source_mode || 'artifact' }}
       STUDIO_FOLLOWUP_RUN_ID: ${{ inputs.producer_run_id }}
       STUDIO_FOLLOWUP_ARTIFACT_ID: ${{ inputs.artifact_id }}
       STUDIO_FOLLOWUP_SOURCE_SHA: ${{ inputs.source_sha }}
@@ -213,7 +255,7 @@ jobs:
         run: node scripts/run-studio-exhaustive-followup.mjs --init
       - name: 의존성 없는 실행·비용·산출물 계약 확인
         run: |
-          node --test scripts/run-studio-exhaustive-regressions.test.mjs scripts/run-studio-exhaustive-followup.test.mjs
+          node --test scripts/run-studio-exhaustive-regressions.test.mjs scripts/run-studio-exhaustive-followup.test.mjs scripts/studio-stabilization-followup-cases.test.mjs scripts/studio-exhaustive-evidence.test.mjs
           node scripts/run-studio-exhaustive-followup.mjs --check
       - name: 빌드 출처와 정확한 제품 소스 확인
         id: provenance
@@ -222,7 +264,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/run-studio-exhaustive-followup.mjs --provenance
       - name: 기존 production dist 한 개만 복원
-        if: inputs.source_mode != 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE != 'fresh-source'
         uses: actions/download-artifact@v8
         timeout-minutes: ${{ fromJSON(steps.provenance.outputs.download_minutes || '6') }}
         with:
@@ -232,16 +274,16 @@ jobs:
           digest-mismatch: error
           path: dist
       - name: 실제 dist SHA·manifest·SW buildId 확인
-        if: inputs.source_mode != 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE != 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --dist
       - name: fresh 빌드의 미사용 SDK 정리와 최소 20 GiB 확인
-        if: inputs.source_mode == 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'
         env:
           TOONSTUDIO_CI_RUNNER_ENVIRONMENT: ${{ runner.environment }}
           TOONSTUDIO_CI_RUNNER_OS: ${{ runner.os }}
         run: node scripts/run-studio-exhaustive-followup.mjs --prepare-disk
       - name: production 빌드에 필요한 전체 assets·vrm 복원
-        if: inputs.source_mode == 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --hydrate
       - uses: pnpm/action-setup@v6
         timeout-minutes: 1
@@ -252,10 +294,10 @@ jobs:
       - name: 전체 작업 제한 안에서 의존성 준비
         run: node scripts/run-studio-exhaustive-followup.mjs --install
       - name: 정확한 현재 SHA로 원래 production 빌드 한 번 실행
-        if: inputs.source_mode == 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --build
       - name: 새 빌드 SHA·manifest·SW와 추적 파일 동일성 확인
-        if: inputs.source_mode == 'fresh-source'
+        if: env.STUDIO_FOLLOWUP_SOURCE_MODE == 'fresh-source'
         run: node scripts/run-studio-exhaustive-followup.mjs --dist
       - name: 선택 검사에 필요한 브라우저만 준비
         run: node scripts/run-studio-exhaustive-followup.mjs --browsers

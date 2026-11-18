@@ -1,5 +1,8 @@
+import { snapStrokeWithVectorMagnet } from "./studio-vector-magnet-snap";
+
 import type { DrawEl } from "../studio-element-model";
 import type { NodeDragSession } from "../studio-node-edit";
+import type { VectorMagnetSettings, VectorMagnetSpatialGrid } from "./studio-vector-magnet-snap";
 
 export interface StudioNodeEditPointerSession {
   readonly elId: string;
@@ -8,6 +11,8 @@ export interface StudioNodeEditPointerSession {
   readonly captureTarget: Element | null;
   readonly sourcePoints: readonly number[];
   readonly sourcePressures: readonly number[];
+  readonly magnetGrid?: VectorMagnetSpatialGrid;
+  readonly magnetSettings?: VectorMagnetSettings;
 }
 
 export function studioNodeEditPointerId(event: { readonly pointerId?: number }): number {
@@ -69,4 +74,29 @@ export function cancelStudioNodeEditPointer(state: StudioNodeEditPointerState): 
   }
   state.setNodeEditDraft(null);
   releaseStudioNodeEditPointer(drag);
+}
+
+/**
+ * 노드 드래그 중 끝점 핸들(0 또는 마지막 정점)을 이동할 때 벡터 자석 격자가 연결되어 있으면
+ * Hermite 감쇠 자석 스냅을 적용한 초안 좌표를 반환한다.
+ * (근거: ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68)
+ */
+export function applyStudioNodeEditMagnetDraft(
+  drag: StudioNodeEditPointerSession,
+  source: DrawEl,
+  draftPoints: readonly number[],
+): number[] {
+  if (!drag.magnetGrid || !drag.magnetSettings?.useVectorMagnet) {
+    return [...draftPoints];
+  }
+  const n = Math.floor(draftPoints.length / 2);
+  if (n < 2 || (drag.session.pointIndex !== 0 && drag.session.pointIndex !== n - 1)) {
+    return [...draftPoints];
+  }
+  const snapped = snapStrokeWithVectorMagnet(
+    { ...source, points: [...draftPoints] },
+    drag.magnetGrid,
+    drag.magnetSettings,
+  );
+  return snapped.stroke.points;
 }

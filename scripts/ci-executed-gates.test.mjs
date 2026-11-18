@@ -326,7 +326,10 @@ test("admin 회귀는 bootstrap한 제한 runtime 역할을 실제 workspace DB 
   const bootstrap = steps.find((step) => step.includes("name: Bootstrap disposable loopback QA database\n"));
   const regression = steps.find((step) => step.includes("name: Actual repository admin regression suite\n"));
   assert.ok(bootstrap && regression, "실제 bootstrap과 관리자 회귀 단계가 필요합니다.");
-  const bootstrapRole = bootstrap.match(/--runtime-database-role ([a-z_][a-z0-9_]{0,62})\b/u)?.[1];
+  assert.match(bootstrap, /--runtime-database-role "\$TEST_RUNTIME_DATABASE_ROLE"/u,
+    "격리 DB bootstrap이 검증된 runtime 환경변수를 사용해야 합니다.");
+  const bootstrapRole = bootstrap.match(/^ {10}TEST_RUNTIME_DATABASE_ROLE: ([a-z_][a-z0-9_]{0,62})$/mu)?.[1]
+    ?? workflow.match(/^ {6}TEST_RUNTIME_DATABASE_ROLE: ([a-z_][a-z0-9_]{0,62})$/mu)?.[1];
   const runtimeRole = regression.match(/^ {10}ADMIN_WORKSPACE_TEST_RUNTIME_ROLE: ([a-z_][a-z0-9_]{0,62})$/mu)?.[1]
     ?? workflow.match(/^ {6}ADMIN_WORKSPACE_TEST_RUNTIME_ROLE: ([a-z_][a-z0-9_]{0,62})$/mu)?.[1];
   assert.ok(bootstrapRole, "격리 DB bootstrap이 제한 runtime 역할을 만들어야 합니다.");

@@ -9,126 +9,174 @@ import {
   type RefObject,
 } from "react";
 
-interface CatalogInkOptions {
+interface CatalogInkIndicatorOptions {
+  /** 현재 활성 탭/링크를 찾는 CSS 선택자 (기본: `[aria-current="page"], [aria-selected="true"]`). */
   readonly activeSelector?: string;
+  /** 호버·포커스 미리보기 대상 자식 선택자 (예: `a, [role="tab"], button`). 생략하면 활성 항목만 추적한다. */
   readonly itemSelector?: string;
+  /** 글자 폭에 맞춰 양옆에서 들여놓을 최대 여백(px). 0이면 요소 전체 폭에 맞춘다. */
   readonly maxInsetPx?: number;
 }
 
-type InkStyle = CSSProperties & { "--ink-x": string; "--ink-w": number };
+export interface CatalogInkIndicatorResult {
+  readonly style: CSSProperties;
+  readonly onPointerMove?: (event: PointerEvent<HTMLElement>) => void;
+  readonly onPointerLeave?: () => void;
+  readonly onFocusCapture?: (event: FocusEvent<HTMLElement>) => void;
+  readonly onBlurCapture?: (event: FocusEvent<HTMLElement>) => void;
+}
 
-/** 선택 의미는 기존 aria 속성에 두고, 포인터·키보드의 장식 밑줄만 측정한다. */
+/**
+ * 카탈로그 탭·요일 스트립 전용 transform 기반 슬라이딩 인디케이터 훅.
+ *
+ * width/left 레이아웃 애니메이션 없이 1px 기준 막대를 `translateX(--ink-x) scaleX(--ink-w)`로만
+ * 이동시킨다. 첫 측정 전에는 전이를 켜지 않아 초기 점프가 없고, ResizeObserver가 없는 jsdom에서도
+ * 안전하게 동작한다.
+ */
 export function useCatalogInkIndicator(
   containerRef: RefObject<HTMLElement | null>,
   activeKey: string | number,
-  {
-    activeSelector = '[aria-current="page"], [aria-current="true"]',
-    itemSelector = "a, button",
+  options: CatalogInkIndicatorOptions = {},
+): CatalogInkIndicatorResult {
+  const {
+    activeSelector = '[aria-current="page"], [aria-selected="true"], [data-ink-active="true"]',
+    itemSelector,
     maxInsetPx = 8,
-  }: CatalogInkOptions = {},
-) {
-  const [line, setLine] = useState({ x: 0, width: 0 });
-  const binding = useRef<{
+  } = options;
+
+  const [style, setStyle] = useState<CSSProperties>({ opacity: 0 });
+  const previewTargetRef = useRef<HTMLElement | null>(null);
+  const bindingRef = useRef<{
     element: HTMLElement;
     activeKey: string | number;
-    restore: () => void;
-    cleanup: () => void;
+    measureTarget: (target?: HTMLElement | null) => void;
+    cleanup: (clearReady?: boolean) => void;
   } | null>(null);
 
-  const itemFrom = useCallback((target: EventTarget | null) => {
-    const container = containerRef.current;
-    const item = target instanceof Element ? target.closest<HTMLElement>(itemSelector) : null;
-    return item && container?.contains(item) && !item.matches('[disabled], [aria-disabled="true"]')
-      ? item
-      : null;
-  }, [containerRef, itemSelector]);
-
-  const measure = useCallback((item: HTMLElement | null) => {
-    const container = containerRef.current;
-    if (!container) return;
-    const bounds = container.getBoundingClientRect();
-    const rect = item?.getBoundingClientRect();
-    const width = rect?.width ?? 0;
-    const inset = Math.min(Math.max(0, maxInsetPx), width / 4);
-    const next = {
-      x: rect ? rect.left - bounds.left + container.scrollLeft - container.clientLeft + inset : 0,
-      width: Math.max(0, width - inset * 2),
-    };
-    setLine((previous) => previous.x === next.x && previous.width === next.width ? previous : next);
-  }, [containerRef, maxInsetPx]);
-
-  const restore = useCallback(() => {
-    const container = containerRef.current;
-    const focused = itemFrom(document.activeElement);
-    measure(focused ?? container?.querySelector<HTMLElement>(activeSelector) ?? null);
-  }, [activeSelector, containerRef, itemFrom, measure]);
+  const measureTarget = useCallback(
+    (explicitTarget?: HTMLElement | null) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const target =
+        explicitTarget ??
+        previewTargetRef.current ??
+        container.querySelector<HTMLElement>(activeSelector);
+      if (!target || !container.contains(target)) {
+        setStyle((prev) => (prev.opacity === 0 ? prev : { ...prev, opacity: 0 }));
+        return;
+      }
+      const containerBox = container.getBoundingClientRect();
+      const targetBox = target.getBoundingClientRect();
+      const inset = maxInsetPx > 0 ? Math.min(maxInsetPx, targetBox.width * 0.18) : 0;
+      const width = Math.max(0, targetBox.width - inset * 2);
+      const offsetX = targetBox.left - containerBox.left + container.scrollLeft + inset;
+      setStyle({
+        "--ink-x": `${Math.round(offsetX)}px`,
+        "--ink-w": String(Math.max(1, Math.round(width))),
+        opacity: width > 0 ? 1 : 0,
+      } as CSSProperties);
+    },
+    [activeSelector, containerRef, maxInsetPx],
+  );
 
   useLayoutEffect(() => {
     const container = containerRef.current;
-    const previous = binding.current;
-    if (previous?.element === container && previous.activeKey === activeKey && previous.restore === restore) return;
-    previous?.cleanup();
-    binding.current = null;
+    const previous = bindingRef.current;
+    if (previous?.element === container && previous.activeKey === activeKey && previous.measureTarget === measureTarget) return;
+    // 같은 DOM의 선택 변경에는 기존 전이를 유지하고, 실제 분리 때만 준비 표식을 지운다.
+    previous?.cleanup(previous.element !== container);
+    bindingRef.current = null;
     if (!container) return;
+    previewTargetRef.current = null;
     let disposed = false;
-    restore();
-    const frame = requestAnimationFrame(() => {
-      container.dataset.inkReady = "true";
-    });
-    const resize = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(restore);
-    const observeItems = () => {
-      resize?.disconnect();
-      resize?.observe(container);
-      container.querySelectorAll(itemSelector).forEach((item) => resize?.observe(item));
-      restore();
+    let frame = 0;
+    measureTarget(null);
+    if (!container.hasAttribute("data-ink-ready") && typeof window !== "undefined") {
+      frame = window.requestAnimationFrame(() => {
+        if (!disposed) container.setAttribute("data-ink-ready", "true");
+      });
+    }
+    const handleResize = () => {
+      if (!disposed) measureTarget(null);
     };
-    observeItems();
-    const mutation = typeof MutationObserver === "undefined" ? null : new MutationObserver(observeItems);
-    mutation?.observe(container, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["aria-current", "aria-selected", "aria-pressed", "disabled", "aria-disabled"],
-    });
-    window.addEventListener("resize", restore);
-    container.addEventListener("scroll", restore, { passive: true });
-    void document.fonts?.ready.then(() => {
-      if (!disposed) restore();
-    });
-    const cleanup = () => {
+    const observer =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(handleResize)
+        : null;
+    observer?.observe(container);
+    window.addEventListener("resize", handleResize);
+    void document.fonts?.ready?.then(handleResize).catch(() => undefined);
+    const cleanup = (clearReady = true) => {
       disposed = true;
-      cancelAnimationFrame(frame);
-      resize?.disconnect();
-      mutation?.disconnect();
-      window.removeEventListener("resize", restore);
-      container.removeEventListener("scroll", restore);
-      delete container.dataset.inkReady;
+      if (frame) window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", handleResize);
+      if (clearReady) container.removeAttribute("data-ink-ready");
     };
-    binding.current = { element: container, activeKey, restore, cleanup };
-    // 로딩 뒤 DOM이 붙거나 빈 결과로 사라지는 경우에도 현재 ref를 확인한다.
-    // 동일한 노드·선택에는 기존 관찰자를 유지해 hover 렌더가 전이를 끊지 않는다.
+    bindingRef.current = { element: container, activeKey, measureTarget, cleanup };
+    // 로딩 후 붙거나 사라지는 ref를 매 commit 확인하되, 같은 바인딩은 재생성하지 않는다.
   });
 
   useLayoutEffect(() => () => {
-    binding.current?.cleanup();
-    binding.current = null;
+    bindingRef.current?.cleanup();
+    bindingRef.current = null;
   }, []);
 
-  const style: InkStyle = { "--ink-x": line.x + "px", "--ink-w": line.width };
+  const onPointerMove = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      if (!itemSelector || event.pointerType === "touch") return;
+      const item = (event.target as Element | null)?.closest?.(itemSelector);
+      if (item instanceof HTMLElement && containerRef.current?.contains(item)) {
+        if (previewTargetRef.current !== item) {
+          previewTargetRef.current = item;
+          measureTarget(item);
+        }
+      }
+    },
+    [containerRef, itemSelector, measureTarget],
+  );
+
+  const onPointerLeave = useCallback(() => {
+    const focused = itemSelector ? document.activeElement?.closest(itemSelector) : null;
+    previewTargetRef.current = focused instanceof HTMLElement && containerRef.current?.contains(focused)
+      ? focused
+      : null;
+    measureTarget(null);
+  }, [containerRef, itemSelector, measureTarget]);
+
+  const onFocusCapture = useCallback(
+    (event: FocusEvent<HTMLElement>) => {
+      if (!itemSelector) return;
+      const item = (event.target as Element | null)?.closest?.(itemSelector);
+      if (item instanceof HTMLElement && containerRef.current?.contains(item)) {
+        previewTargetRef.current = item;
+        measureTarget(item);
+      }
+    },
+    [containerRef, itemSelector, measureTarget],
+  );
+
+  const onBlurCapture = useCallback(
+    (event: FocusEvent<HTMLElement>) => {
+      if (!itemSelector) return;
+      const nextFocused = event.relatedTarget as Node | null;
+      if (!nextFocused || !containerRef.current?.contains(nextFocused)) {
+        previewTargetRef.current = null;
+        measureTarget(null);
+      }
+    },
+    [containerRef, itemSelector, measureTarget],
+  );
+
+  if (!itemSelector) {
+    return { style };
+  }
+
   return {
     style,
-    onPointerMove(event: PointerEvent<HTMLElement>) {
-      if (event.pointerType === "touch") return;
-      const item = itemFrom(event.target);
-      if (item) measure(item);
-      else restore();
-    },
-    onPointerLeave: restore,
-    onFocusCapture(event: FocusEvent<HTMLElement>) {
-      measure(itemFrom(event.target));
-    },
-    onBlurCapture(event: FocusEvent<HTMLElement>) {
-      measure(itemFrom(event.relatedTarget) ?? containerRef.current?.querySelector<HTMLElement>(activeSelector) ?? null);
-    },
+    onPointerMove,
+    onPointerLeave,
+    onFocusCapture,
+    onBlurCapture,
   };
 }

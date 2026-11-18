@@ -6,7 +6,7 @@
  * 실행: pnpm exec tsx scripts/verify-studio-launch.mts (프로덕션 dist 필요)
  */
 import { type ChildProcess } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -17,7 +17,7 @@ import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { STUDIO_BRUSH_LABELS } from "../apps/web/src/domains/creator/brush/studio-brush-product-model";
 
 import { clickStudioControlAfterReadiness, waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
-import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { inspectStudioMobileWorkspaceMenuDormancy, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import { isStudioStaticPreviewReadinessUnavailable } from "./lib/studio-verify-preview-errors.mjs";
 import {
   cleanScratchDir,
@@ -209,14 +209,7 @@ interface WorkspaceMenuGateContractResult {
   finalTriggerCount: number;
 }
 
-interface MobileWorkspaceMenuGateResult {
-  ok: boolean;
-  gateCount: number;
-  heavyMenuCount: number;
-  dialogCount: number;
-  triggerCount: number;
-  triggerVisible: boolean;
-}
+type MobileWorkspaceMenuGateResult = Awaited<ReturnType<typeof inspectStudioMobileWorkspaceMenuDormancy>>;
 
 interface MobileRunResult {
   ok: boolean;
@@ -483,28 +476,9 @@ async function verifyMobileWorkspaceMenuGateDormant(
   page: Page,
   label: string,
 ): Promise<MobileWorkspaceMenuGateResult> {
-  const gate = page.locator('[data-testid="studio-workspace-menu-gate"]');
-  const heavyMenu = page.locator('[data-testid="studio-workspace-menu"]');
-  const dialog = page.locator('[data-testid="studio-workspace-dialog"]');
-  const trigger = page.locator('button[aria-haspopup="dialog"][aria-label^="작업공간:"]');
-
-  await gate.waitFor({ state: "attached", timeout: 5000 });
-  const gateCount = await gate.count();
-  const heavyMenuCount = await heavyMenu.count();
-  const dialogCount = await dialog.count();
-  const triggerCount = await trigger.count();
-  const triggerVisible = await trigger.isVisible().catch(() => false);
-  const ok =
-    gateCount === 1 &&
-    heavyMenuCount === 0 &&
-    dialogCount === 0 &&
-    triggerCount === 1 &&
-    !triggerVisible;
-  log(
-    `${label} workspace-gate: gate=${gateCount} heavy=${heavyMenuCount} dialog=${dialogCount} ` +
-    `triggers=${triggerCount} triggerVisible=${triggerVisible} ok=${ok}`,
-  );
-  return { ok, gateCount, heavyMenuCount, dialogCount, triggerCount, triggerVisible };
+  const result = await inspectStudioMobileWorkspaceMenuDormancy(page);
+  log(`${label} workspace-gate: ${JSON.stringify(result)}`);
+  return result;
 }
 
 async function runOne(browser: Browser, run: number, url: string): Promise<RunResult> {
@@ -1443,11 +1417,11 @@ async function runMobileDockLayout(
   );
 
   let historyFocusReady = true;
-  for (const label of ["실행취소", "다시실행"] as const) {
+  for (const action of ["undo", "redo"] as const) {
     // Fresh documents expose the disabled-reason coach wrapper as the keyboard target while the
-    // native button is aria-hidden. Locate that wrapper through its stable child command label.
+    // native button is aria-hidden. Locate that wrapper through its stable child command identity.
     const target = primary.locator(
-      `[data-studio-tool-hint-target="true"]:has(> button[aria-label="${label}"])`,
+      `[data-studio-tool-hint-target="true"]:has(> button[data-studio-primary-action="${action}"])`,
     );
     await revealOverflowTarget(target);
     await target.focus();
@@ -1613,7 +1587,7 @@ async function main() {
   cleanScratchDir({
     directory: SCRATCH,
     filePrefix: "studio-launch-",
-    extensions: [".png", ".log"],
+    extensions: [".png", ".log", ".json"],
     ignoreListingErrors: true,
   });
   const port = await findFreePort();
@@ -1667,7 +1641,9 @@ async function main() {
         ...mobileDocks.flatMap((result) => result.sheets.map((sheet) => sheet.shot)),
       ].join(" ")}`,
     );
-    console.log(JSON.stringify({ runs: results, mobile, mobileDocks }, null, 2));
+    const report = JSON.stringify({ runs: results, mobile, mobileDocks }, null, 2);
+    writeFileSync(join(SCRATCH, "studio-launch-report.json"), `${report}\n`);
+    console.log(report);
   } catch (cause) {
     if (browser) {
       for (const [index, page] of browser.contexts().flatMap((context) => context.pages()).entries()) {

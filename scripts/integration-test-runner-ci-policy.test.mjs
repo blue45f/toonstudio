@@ -208,6 +208,27 @@ describe("database integration runner CI policy", () => {
     },
   );
 
+  it("관리자 회귀는 bootstrap의 비소유자 역할을 실제 DB 테스트에도 전달한다", () => {
+    const regression = readYaml(".github/workflows/admin-hardening-regression.yml").jobs["admin-regression"];
+    const target = new URL(regression.env.TEST_DATABASE_URL);
+    expect(target.hostname).toBe("127.0.0.1");
+    expect(regression.env.TEST_RUNTIME_DATABASE_ROLE).toBe("webdex_runtime");
+    expect(regression.env.TEST_RUNTIME_DATABASE_ROLE).not.toBe(target.username);
+    const commands = runCommands(regression);
+    const bootstrap = commands.findIndex((command) => command.includes("bootstrap-empty-production-database.mjs"));
+    expect(commands[bootstrap]).toContain("--execute --allow-loopback");
+    expect(commands[bootstrap]).toContain('--runtime-database-role "$TEST_RUNTIME_DATABASE_ROLE"');
+    const execute = commands.findIndex((command) => command.includes("pnpm exec vitest run apps/web/src/domains/admin apps/api/src/modules/admin"));
+    expect(execute).toBeGreaterThan(bootstrap);
+    const suite = regression.steps.find((step) => step.run === commands[execute]);
+    expect(suite.env.TEST_RUNTIME_DATABASE_ROLE).toBeUndefined();
+    expect(suite["continue-on-error"]).not.toBe(true);
+    expect(regression["continue-on-error"]).not.toBe(true);
+    const evidence = commands.find((command) => command.includes("Admin regression evidence must contain"));
+    expect(evidence).toContain("report.numPendingTests !== 0");
+    expect(evidence).toContain("report.numPassedTests !== report.numTotalTests");
+  });
+
   it("never forwards a standalone `--` through `pnpm run`", () => {
     const workflow = readYaml(".github/workflows/ci.yml");
 

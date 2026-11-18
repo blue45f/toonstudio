@@ -1,28 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 
-/** 공개 경로의 장식 모션만 다시 시작하며 스크롤·초점·본문 표시를 소유하지 않는다. */
+const ROUTE_ENTER_KEYFRAMES: Keyframe[] = [
+  { opacity: 0.001, transform: "translateY(12px)" },
+  { opacity: 1, transform: "none" },
+];
+
+const ROUTE_ENTER_TIMING: KeyframeAnimationOptions = {
+  duration: 360,
+  easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+};
+
+function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * 클라이언트 라우트 이동 때 본문(#main-content)만 짧게 내려앉히는 전환.
+ *
+ * - 첫 문서 로드에는 돌지 않는다(첫 페인트·LCP를 늦추지 않는다).
+ * - 같은 경로에서 검색어·해시만 바뀌면 돌지 않는다(필터·탭 조작이 깜빡이지 않게).
+ * - Web Animations API로 한 번 재생하고 채움(fill)을 남기지 않아, 끝난 뒤 본문에 transform이
+ *   남아 고정 위치 자식의 기준이 바뀌는 일이 없다.
+ * - 동작 줄이기·고대비·편집기 같은 작업 화면에서는 재생하지 않는다(enabled=false).
+ */
 export function RouteEnterMotion({ enabled }: { readonly enabled: boolean }) {
   const { pathname } = useLocation();
+  const previousPathname = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    const content = document.getElementById("main-content");
-    if (!content) return;
-    let nextFrame = 0;
-    // 두 프레임 사이에 표식을 제거해 같은 DOM을 재사용하는 경로에서도 재생한다.
-    // 표식이 없어도 콘텐츠는 항상 보이며 CSS의 reduced-motion 정책을 따른다.
-    const frame = requestAnimationFrame(() => {
-      nextFrame = requestAnimationFrame(() => {
-        content.dataset.inkRouteActive = "true";
-      });
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-      cancelAnimationFrame(nextFrame);
-      delete content.dataset.inkRouteActive;
-    };
-  }, [enabled, pathname]);
+    const previous = previousPathname.current;
+    previousPathname.current = pathname;
+    if (previous === null || previous === pathname || !enabled) return undefined;
+    if (prefersReducedMotion()) return undefined;
+    if (document.documentElement.dataset.designTheme === "contrast") return undefined;
+    const main = document.getElementById("main-content");
+    if (!main || typeof main.animate !== "function") return undefined;
+    const animation = main.animate(ROUTE_ENTER_KEYFRAMES, ROUTE_ENTER_TIMING);
+    return () => animation.cancel();
+  }, [pathname, enabled]);
 
   return null;
 }

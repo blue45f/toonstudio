@@ -47,6 +47,9 @@ import {
   type PreviewServer,
 } from "vite";
 
+
+import { observeStudioAutosaveOpfsPage } from "./lib/studio-autosave-opfs-diagnostics";
+import { observeStudioPreviewNavigationRequests, type StudioNavigationSettlementReceipt } from "./lib/studio-preview-navigation-settlement";
 import { findFreePort } from "./lib/studio-verify-preview-harness.mjs";
 
 export const STUDIO_AUTOSAVE_OPFS_BROWSER_REPORT_SCHEMA_VERSION = 1 as const;
@@ -69,6 +72,7 @@ const CSP = [
 ].join("; ");
 
 export interface StudioAutosaveOpfsBrowserDiagnostics {
+  readonly navigationSettlements?: readonly StudioNavigationSettlementReceipt[];
   readonly browserVersion: string;
   readonly contentSecurityPolicy: string;
   readonly consoleErrors: readonly string[];
@@ -887,64 +891,6 @@ async function waitForBrowserResult(page: Page): Promise<unknown> {
   );
 }
 
-function observePage(
-  page: Page,
-  browserVersion: string,
-): StudioAutosaveOpfsBrowserDiagnostics {
-  const diagnostics: {
-    browserVersion: string;
-    contentSecurityPolicy: string;
-    consoleErrors: string[];
-    consoleWarnings: string[];
-    pageErrors: string[];
-    requestFailures: string[];
-    fiveHundredResponses: string[];
-    cspViolations: Array<{ effectiveDirective: string; blockedUri: string }>;
-    requests: Array<{ method: string; resourceType: string; url: string }>;
-    responses: Array<{ status: number; url: string }>;
-  } = {
-    browserVersion,
-    contentSecurityPolicy: "",
-    consoleErrors: [],
-    consoleWarnings: [],
-    pageErrors: [],
-    requestFailures: [],
-    fiveHundredResponses: [],
-    cspViolations: [],
-    requests: [],
-    responses: [],
-  };
-  page.on("console", message => {
-    if (message.type() === "error") diagnostics.consoleErrors.push(message.text());
-    if (message.type() === "warning") diagnostics.consoleWarnings.push(message.text());
-  });
-  page.on("pageerror", error => diagnostics.pageErrors.push(error.message));
-  page.on("request", request => {
-    diagnostics.requests.push({
-      method: request.method(),
-      resourceType: request.resourceType(),
-      url: request.url(),
-    });
-  });
-  page.on("requestfailed", request => {
-    diagnostics.requestFailures.push(
-      `${request.method()} ${request.url()}: `
-      + `${request.failure()?.errorText ?? "unknown failure"}`,
-    );
-  });
-  page.on("response", response => {
-    diagnostics.responses.push({
-      status: response.status(),
-      url: response.url(),
-    });
-    if (response.status() >= 500) {
-      diagnostics.fiveHundredResponses.push(
-        `${response.status()} ${response.url()}`,
-      );
-    }
-  });
-  return diagnostics;
-}
 
 async function executeProductionBrowser(
   plan: StudioAutosaveOpfsBrowserRunPlan,
@@ -1001,6 +947,7 @@ async function executeProductionBrowser(
   let previewServer: PreviewServer | null = null;
   let browser: Browser | null = null;
   let context: BrowserContext | null = null;
+  let diagnostics: StudioAutosaveOpfsBrowserDiagnostics | null = null;
   try {
     previewServer = await preview({
       root: viteSourceDirectory,
@@ -1026,7 +973,8 @@ async function executeProductionBrowser(
     });
     context = await browser.newContext();
     const page = await context.newPage();
-    const diagnostics = observePage(page, browser.version());
+    const requests = observeStudioPreviewNavigationRequests(page, origin);
+    diagnostics = observeStudioAutosaveOpfsPage(page, browser.version(), requests.receipts);
 
     const runId = randomUUID();
     const documentKey =
@@ -1045,11 +993,13 @@ async function executeProductionBrowser(
       (await navigation?.headerValue("content-security-policy")) ?? "";
     const firstResult = record(await waitForBrowserResult(page));
     if (firstResult?.status === "reload-required") {
+      await requests.settle("checkpoint-before-reload");
       await page.reload({ waitUntil: "load", timeout: 30_000 });
     }
     const result = firstResult?.status === "reload-required"
       ? await waitForBrowserResult(page)
       : firstResult;
+    await requests.settle("complete-before-close");
     return Object.freeze({
       result,
       diagnostics,
@@ -1060,6 +1010,7 @@ async function executeProductionBrowser(
     await context?.close().catch(() => undefined);
     await browser?.close().catch(() => undefined);
     await previewServer?.close().catch(() => undefined);
+    if (diagnostics) writeJson(plan.evidence.diagnostics, diagnostics);
   }
 }
 

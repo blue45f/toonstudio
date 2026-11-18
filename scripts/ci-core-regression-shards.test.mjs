@@ -359,7 +359,7 @@ test("분석·분산 저장소의 비DB 테스트는 product shard에서 반드�
     "opt-in PostgreSQL 비교는 비DB shard에서 실행하지 않는다");
 });
 
-test("세 관리자 보드의 정적 계약은 shard에 유지하고 저장 회귀는 필수 PostgreSQL 작업에서 각각 한 번 실행한다", () => {
+test("관리자 보드의 정적 계약은 shard에 유지하고 저장 회귀는 필수 PostgreSQL 작업에서 각각 한 번 실행한다", () => {
   const product = expandGlobTargets(executionTargetsByShard().product);
   const resolved = resolveRequiredTargets(product);
   const args = buildShardVitestArgs(product);
@@ -385,6 +385,11 @@ test("세 관리자 보드의 정적 계약은 shard에 유지하고 저장 회�
       integration: "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
       unit: "apps/api/src/modules/business-plan/business-plan.test.ts",
       contract: "packages/contracts/src/business-plan/business-plan.test.ts",
+    },
+    {
+      integration: "apps/api/src/modules/admin/ai-operations/ai-operations.repository.integration.test.ts",
+      unit: "apps/api/src/modules/admin/ai-operations/ai-operations.controller.test.ts",
+      contract: "packages/contracts/src/ai-operations.test.ts",
     },
   ]) {
     assert.ok(targetIsCovered(contract, REQUIRED_VITEST_TARGETS), `공유 계약의 필수 회귀 목록 누락: ${contract}`);

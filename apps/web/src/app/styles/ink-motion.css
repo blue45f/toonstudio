@@ -1,115 +1,239 @@
-/* 공개 화면의 명시적 모션 훅. 표시·초점·레이아웃은 원래 화면이 계속 소유한다. */
+/* Ink & Panel 모션 체계 (2026-11-18 sitewide unslop 개편).
+ *
+ * 세계: 밤의 원고 책상. 칸 테두리가 펜으로 그어지듯 열리고(panel), 잉크 밑줄이 그어지며(line),
+ * 원고가 책상 위로 내려앉는다(rise). 모든 효과는 의미 있는 콘텐츠에만 붙이고 크롬은 조용히 둔다.
+ *
+ * 원칙
+ * - 가시성과 모션을 분리한다: 기본 상태가 최종 상태이며, 효과는 지원 환경에서만 얹힌다.
+ * - 투명도(opacity)로 숨기지 않는다: 첫 페인트·명암비 검사가 흔들리지 않도록 clip-path와
+ *   transform만 쓴다. 레이아웃 속성(width/height/top/left/margin)은 애니메이션하지 않는다.
+ * - 스크롤 연동은 CSS scroll-driven animation(animation-timeline: view())만 쓴다. JS가 없고,
+ *   미지원 브라우저에서는 정적 최종 상태로 보인다.
+ * - prefers-reduced-motion: reduce 와 고대비 테마에서는 모든 이동을 끈다.
+ */
 :root {
-  --ink-fast: 150ms;
-  --ink-base: 240ms;
-  --ink-slow: 360ms;
   --ink-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ink-ease-draw: cubic-bezier(0.65, 0, 0.35, 1);
+  --ink-fast: 150ms;
+  --ink-base: 220ms;
+  --ink-slow: 420ms;
+  --ink-enter: 720ms;
+  --ink-step: 70ms;
 }
 
-.ink-frame {
-  position: relative;
-  isolation: isolate;
+/* ── 스크롤 연동 등장 ─────────────────────────────────────────────── */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-ink] {
+      animation-duration: 1ms; /* 스크롤 타임라인에서는 길이가 무시되지만 Firefox 폴백 안전값 */
+      animation-timing-function: var(--ink-ease);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--ink-i, 0) * 5%) entry calc(55% + var(--ink-i, 0) * 5%);
+    }
+
+    [data-ink="rise"] { animation-name: ink-rise; }
+    [data-ink="panel"] { animation-name: ink-panel-down; }
+    [data-ink="panel-x"] { animation-name: ink-panel-across; }
+    [data-ink="settle"] { animation-name: ink-settle; }
+
+    /* 표지·장면 이미지: 칸이 열리는 동안 안쪽 그림은 살짝 멀어지며 자리를 잡는다. */
+    [data-ink="zoom"] { overflow: clip; }
+    [data-ink="zoom"] :is(img, video, picture) {
+      animation: ink-zoom-settle 1ms var(--ink-ease) both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+
+    /* 제목 아래 잉크 밑줄 */
+    [data-ink="line"] { position: relative; }
+    [data-ink="line"]::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -0.35em;
+      width: min(4.5rem, 40%);
+      height: 2px;
+      background: var(--color-accent);
+      transform-origin: left center;
+      animation: ink-line-draw 1ms var(--ink-ease-draw) both;
+      animation-timeline: view();
+      animation-range: entry 20% entry 90%;
+    }
+
+    /* 목록 스태거: 컨테이너에 data-ink-stagger, 자식은 순번에 따라 조금씩 늦게 들어온다. */
+    [data-ink-stagger] > * {
+      animation: ink-rise 1ms var(--ink-ease) both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--ink-i, 0) * 4%) entry calc(50% + var(--ink-i, 0) * 4%);
+    }
+    [data-ink-stagger="panel"] > * { animation-name: ink-panel-down; }
+  }
 }
+
+[data-ink-stagger] > :nth-child(2) { --ink-i: 1; }
+[data-ink-stagger] > :nth-child(3) { --ink-i: 2; }
+[data-ink-stagger] > :nth-child(4) { --ink-i: 3; }
+[data-ink-stagger] > :nth-child(5) { --ink-i: 4; }
+[data-ink-stagger] > :nth-child(6) { --ink-i: 5; }
+[data-ink-stagger] > :nth-child(7) { --ink-i: 6; }
+[data-ink-stagger] > :nth-child(n + 8) { --ink-i: 7; }
+
+/* ── 시간 기반 첫 등장(히어로 전용, 한 번만) ─────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  [data-ink-enter] {
+    animation-duration: var(--ink-enter);
+    animation-timing-function: var(--ink-ease);
+    animation-fill-mode: both;
+    animation-delay: calc(var(--ink-i, 0) * var(--ink-step));
+  }
+  [data-ink-enter="rise"] { animation-name: ink-rise; }
+  [data-ink-enter="panel"] { animation-name: ink-panel-down; animation-timing-function: var(--ink-ease-draw); animation-duration: 900ms; }
+  [data-ink-enter="panel-x"] { animation-name: ink-panel-across; animation-timing-function: var(--ink-ease-draw); animation-duration: 900ms; }
+  [data-ink-enter="line"] { animation-name: ink-line-draw; animation-timing-function: var(--ink-ease-draw); transform-origin: left center; }
+  [data-ink-enter="zoom"] { animation-name: ink-zoom-settle; animation-duration: 1600ms; }
+}
+
+/* ── 호버 마이크로 인터랙션 ───────────────────────────────────────── */
+/* 표지 카드: 카드는 움직이지 않고, 칸 안의 그림만 천천히 다가온다. */
+.ink-cover { overflow: clip; }
+.ink-cover :is(img, video) { transition: transform 700ms var(--ink-ease), filter 300ms var(--ink-ease); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :is(a, button, article, li, div):hover > .ink-cover :is(img, video),
+  :is(a, button, article, li, div):hover > * > .ink-cover :is(img, video),
+  .ink-cover:hover :is(img, video) { transform: scale(1.05); }
+}
+:is(a, button):focus-visible .ink-cover :is(img, video) { transform: scale(1.03); }
+
+/* 화살표가 있는 링크: 화살표만 3px 앞으로. */
+.ink-arrow > svg:last-child { transition: transform var(--ink-base) var(--ink-ease); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ink-arrow:hover > svg:last-child, .ink-arrow:focus-visible > svg:last-child { transform: translateX(3px); }
+}
+
+/* 칸 테두리 그리기: 호버하면 안쪽 1px 테두리가 강조색으로 바뀐다(글로우 없음). */
+.ink-frame { position: relative; }
 .ink-frame::after {
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid var(--color-accent);
-  border-radius: var(--ink-radius, inherit);
-  pointer-events: none;
-  opacity: 0;
-}
-.ink-frame:is(:hover, :focus-within)::after { opacity: 0.65; }
-.ink-sheen { position: relative; isolation: isolate; }
-.ink-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+  border: 1px solid transparent;
   border-radius: inherit;
-  background: linear-gradient(115deg, transparent 20%, rgb(255 255 255 / 12%) 45%, transparent 70%);
   pointer-events: none;
-  opacity: 0;
+  transition: border-color var(--ink-base) var(--ink-ease);
 }
-.ink-sheen:is(:hover, :focus-within)::after { opacity: 1; }
-.ink-bar-fill { transform-origin: left center; }
-.ink-stroke-draw { stroke-dasharray: var(--ink-dash, 600); stroke-dashoffset: 0; }
-[data-ink="line"] { position: relative; }
-[data-ink="line"]::after {
+@media (hover: hover) {
+  .ink-frame:hover::after { border-color: color-mix(in oklch, var(--color-accent) 55%, transparent); }
+}
+.ink-frame:focus-within::after { border-color: var(--color-accent); }
+
+/* 라이트 테이블 광택(sheen): 아트워크·표지 위를 스쳐 지나가는 중립 사선 빛. */
+.ink-sheen { position: relative; overflow: clip; }
+.ink-sheen::before {
   content: "";
   position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: 1px;
-  background: currentColor;
-  transform-origin: left center;
+  inset: -20%;
+  z-index: 2;
   pointer-events: none;
+  background: linear-gradient(
+    112deg,
+    transparent 38%,
+    oklch(1 0 0 / 0.14) 50%,
+    transparent 62%
+  );
+  transform: translateX(-125%);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ink-sheen:hover::before,
+  :is(a, button, article, li):hover > .ink-sheen::before {
+    transition: transform 780ms var(--ink-ease);
+    transform: translateX(125%);
+  }
 }
 
+/* 탭 전환·필터 전환 즉시 캐스케이드: 뷰포트 안 목록이 탭 변경 시 리듬감 있게 자리 잡는다. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-ink-route-active="true"] :is([data-ink-enter], [data-ink]),
-  .ink-cascade > *,
-  [data-ink-stagger] > * {
-    animation: ink-cascade-in var(--ink-slow) var(--ink-ease) both;
-    animation-delay: calc(min(var(--ink-i, 0), 8) * 30ms);
+  .ink-cascade > * {
+    animation: ink-cascade-in 380ms var(--ink-ease) both;
+    animation-delay: calc(min(var(--ink-i, 0), 9) * 42ms);
   }
-  [data-ink-route-active="true"] :is([data-ink-enter="zoom"], [data-ink="zoom"], [data-ink="settle"]) {
-    animation-name: ink-zoom-in;
-  }
-  [data-ink-route-active="true"] [data-ink="line"] { animation: none; }
-  [data-ink-route-active="true"] [data-ink="line"]::after {
-    animation: ink-line-in var(--ink-slow) var(--ink-ease-draw) both;
-  }
-  [data-ink-route-active="true"] [data-ink-enter="line"] {
+  .ink-cascade > :nth-child(2) { --ink-i: 1; }
+  .ink-cascade > :nth-child(3) { --ink-i: 2; }
+  .ink-cascade > :nth-child(4) { --ink-i: 3; }
+  .ink-cascade > :nth-child(5) { --ink-i: 4; }
+  .ink-cascade > :nth-child(6) { --ink-i: 5; }
+  .ink-cascade > :nth-child(7) { --ink-i: 6; }
+  .ink-cascade > :nth-child(8) { --ink-i: 7; }
+  .ink-cascade > :nth-child(n + 9) { --ink-i: 8; }
+
+  /* 스펙트럼·점수·진도 막대: 왼쪽 기준점(origin-left)에서 scaleX로 채워진다. */
+  .ink-bar-fill {
     transform-origin: left center;
-    animation-name: ink-line-in;
+    animation: ink-line-draw 680ms var(--ink-ease) both;
+    animation-delay: calc(min(var(--ink-i, 0), 10) * 45ms);
   }
-  [data-ink-stagger] > :nth-child(2) { --ink-i: 1; }
-  [data-ink-stagger] > :nth-child(3) { --ink-i: 2; }
-  [data-ink-stagger] > :nth-child(4) { --ink-i: 3; }
-  [data-ink-stagger] > :nth-child(5) { --ink-i: 4; }
-  [data-ink-stagger] > :nth-child(6) { --ink-i: 5; }
-  [data-ink-stagger] > :nth-child(n + 7) { --ink-i: 6; }
-  .ink-frame::after,
-  .ink-sheen::after { transition: opacity var(--ink-base) var(--ink-ease); }
-  .ink-cover > :is(img, picture),
-  .ink-cover > picture > img { transition: scale var(--ink-slow) var(--ink-ease); }
-  .ink-arrow > svg:last-child { transition: translate var(--ink-fast) var(--ink-ease); }
-  .ink-arrow:is(:hover, :focus-visible) > svg:last-child { translate: 3px 0; }
-  .ink-bar-fill { animation: ink-line-in var(--ink-slow) var(--ink-ease-draw) both; }
-  .ink-stroke-draw { animation: ink-stroke-in 600ms var(--ink-ease-draw) both; }
-  @media (hover: hover) and (pointer: fine) {
-    .ink-cover:hover > img,
-    .ink-cover:hover > picture > img { scale: 1.025; }
-    .ink-stage-tilt {
-      transform: perspective(1000px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
-      transition: transform var(--ink-base) var(--ink-ease);
-    }
+
+  /* 커리큘럼·세계관 연결선 SVG 드로잉 */
+  .ink-stroke-draw {
+    stroke-dasharray: var(--ink-dash, 240);
+    stroke-dashoffset: var(--ink-dash, 240);
+    animation: ink-stroke-in 900ms var(--ink-ease-draw) both;
+    animation-delay: calc(var(--ink-i, 0) * 90ms);
+  }
+
+  /* 3D 원고 책상 기울기(포인터 연동 변수 --tilt-rx, --tilt-ry 사용, 없으면 정지) */
+  .ink-stage-tilt {
+    transform: perspective(1100px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg));
+    transition: transform 260ms var(--ink-ease);
+    transform-style: preserve-3d;
   }
 }
 
-/* 최종 위치에서도 불투명도를 낮추지 않아 첫 프레임부터 본문 명암비를 유지한다. */
-@keyframes ink-cascade-in { from { translate: 0 6px; } to { translate: 0 0; } }
-@keyframes ink-zoom-in { from { scale: 0.985; } to { scale: 1; } }
-@keyframes ink-line-in { from { scale: 0 1; } to { scale: 1 1; } }
-@keyframes ink-stroke-in { from { stroke-dashoffset: var(--ink-dash, 600); } to { stroke-dashoffset: 0; } }
+@keyframes ink-cascade-in {
+  from { transform: translateY(14px) scale(0.985); }
+  to { transform: none; }
+}
+@keyframes ink-stroke-in {
+  to { stroke-dashoffset: 0; }
+}
 
+@keyframes ink-rise {
+  from { transform: translateY(28px); }
+  to { transform: none; }
+}
+@keyframes ink-settle {
+  from { transform: translateY(18px) scale(0.97); }
+  to { transform: none; }
+}
+@keyframes ink-panel-down {
+  from { clip-path: inset(0 0 100% 0 round var(--ink-radius, 16px)); transform: translateY(12px); }
+  to { clip-path: inset(0 0 0 0 round var(--ink-radius, 16px)); transform: none; }
+}
+@keyframes ink-panel-across {
+  from { clip-path: inset(0 100% 0 0 round var(--ink-radius, 16px)); }
+  to { clip-path: inset(0 0 0 0 round var(--ink-radius, 16px)); }
+}
+@keyframes ink-zoom-settle {
+  from { transform: scale(1.14); }
+  to { transform: scale(1); }
+}
+@keyframes ink-line-draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 @media (prefers-reduced-motion: reduce) {
-  :is([data-ink], [data-ink-enter], [data-ink-stagger] > *, .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw, .ink-stage-tilt),
-  .ink-frame::after,
-  .ink-sheen::after,
-  [data-ink="line"]::after,
-  .ink-cover :is(img, picture),
-  .ink-arrow > svg:last-child {
+  [data-ink], [data-ink] *, [data-ink]::after, [data-ink-stagger] > *, [data-ink-enter], .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw {
     animation: none !important;
-    transition: none !important;
   }
+  .ink-cover :is(img, video), .ink-arrow > svg:last-child, .ink-frame::after, .ink-sheen::before, .ink-stage-tilt { transition: none !important; transform: none !important; }
 }
-:root[data-design-theme="contrast"] :is([data-ink], [data-ink-enter], [data-ink-stagger] > *, .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw, .ink-stage-tilt) {
+
+:root[data-design-theme="contrast"] :is([data-ink], [data-ink-stagger] > *, [data-ink-enter], .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw),
+:root[data-design-theme="contrast"] [data-ink] :is(img, video),
+:root[data-design-theme="contrast"] [data-ink="line"]::after {
   animation: none !important;
-  transform: none !important;
-  translate: none !important;
-  scale: none !important;
 }
-:root[data-design-theme="contrast"] :is(.ink-frame, .ink-sheen)::after { display: none; }
-:root[data-design-theme="contrast"] [data-ink="line"]::after { animation: none; }
+
+@media (forced-colors: active) {
+  [data-ink], [data-ink-stagger] > *, [data-ink-enter], .ink-cascade > *, .ink-bar-fill, .ink-stroke-draw { animation: none !important; clip-path: none !important; }
+}

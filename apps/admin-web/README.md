@@ -98,6 +98,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
   백업과 명시적인 최신 저장본 다시 읽기를 제공한다. 서버·다른 기기와의 공동 저장 기능은 없다.
 - 코드 수정·푸시·PR 병합·배포는 승인 대기 메모만 관리한다. 패치·명령은 텍스트와 복사 기능으로만
   제공하며 GitHub 실행·설정 변경·유료 호출 기능은 없다.
+
 ## 사업계획서 고도화·제출 준비 보드
 
 - 상태: **현재 소스 구현, 운영 DB 적용·배포 전** (2026-11-18).
@@ -134,6 +135,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 `pnpm exec vitest run apps/admin-web/src packages/contracts/src/business-plan apps/api/src/modules/business-plan/business-plan.test.ts`,
 `pnpm test:admin:e2e`다. API의 `business-plan.integration.test.ts`는 분리된 PostgreSQL의
 `TEST_DATABASE_URL`이 필요하며 실제 잠금·동시 저장·멱등 재시도·migration 재실행을 검증한다.
+
 ## AI·무료 플랜 운영 보드
 
 - 상태: **current — 소스 구현, 운영 DB 적용·배포 전** (2026-11-18).
@@ -144,10 +146,11 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 - 최초 시작 자료는 공개 코드·공식 문서만 포함한다. 비공개 Sites 자료는 관리자가 JSON을 검토해 가져오며, 원래 관측 시각과 기존 승인 항목을 보존한다. 브라우저 저장소에 비공개 기록을 남기지 않는다.
 - 모델 구성과 운영 실제 사용, 알림 시각과 측정 구간, 저장 시각과 근거 관측 시각을 구분한다. 실제 트래픽·최근 24시간 알림·비용을 자동 수집하지 않으며 미확인 값을 추정하지 않는다.
 - 코드 수정·푸시·병합·배포·계정·요금제 변경을 실행하는 기능은 없다. 해당 기록은 승인 대기로 유지한다. 완료 상태에는 검증 근거가 필요하며 URL·SHA 형식 검사만으로 실제 CI나 배포 성공을 보증하지 않는다.
-- Web 빌드는 Admin 자산을 한 번 만들고 CI·QA·통합 작업실·사업계획서·AI 운영 경로의 HTML 진입점을 생성한다. 서비스 워커는 새 관리자 경로를 오프라인 Web 셸로 대체하지 않는다.
+- Web 빌드는 Admin 자산을 한 번 만들고 두 경로의 HTML 진입점을 생성한다. 서비스 워커는 새 관리자 경로를 오프라인 Web 셸로 대체하지 않는다.
 
 저장 스키마와 승인·가져오기·롤백 절차는 [운영 보드 계약](../../docs/operations/admin-ai-operations-board.md)을 따른다.
 `tests/ai-operations.e2e.ts`는 합성 API 응답으로 브라우저 상호작용을 검증하며 실제 DB 경쟁·권한은 별도 Postgres 통합 테스트가 검증한다.
+
 ## NestJS·API 호환성 검증 보드
 
 - 소스 구현 기준: 2026-11-18. 운영 배포와 운영 DB migration 적용은 별도 작업이다.

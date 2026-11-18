@@ -34,7 +34,7 @@ import {
 } from "playwright";
 
 import { openStudioBg3dEnginePanel, selectStudioBg3dTaskTab } from "./lib/studio-bg3d-ui-interactions";
-import { showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
+import { openStudioLayerNavigator, showStudioProjectWindowTools } from "./lib/studio-shell-interactions";
 import {
   findFreePort,
   stopChildProcess,
@@ -1121,10 +1121,7 @@ async function prepareStudio(page: Page, studioUrl: string): Promise<void> {
 }
 
 async function countVisibleNativeLayers(page: Page): Promise<number> {
-  const navigator = page.getByTestId("studio-inspector-navigator");
-  await navigator.waitFor({ state: "visible", timeout: 10_000 });
-  const layers = navigator.locator('[data-studio-inspector-primary-tab="layers"]');
-  if (await layers.count() > 0 && await layers.getAttribute("aria-selected") !== "true") await layers.click(); // 레이어 패널이 속성과 통합된 배치에는 탭이 없다
+  await openStudioLayerNavigator(page);
   return page.locator('[data-studio-layer-row="true"]').count();
 }
 
@@ -1541,8 +1538,8 @@ async function runVerticalSlice(
   }, undefined, { timeout: 12_000 });
   const assetId = await stats.getAttribute("data-active");
   if (!assetId || assetId === "none") block("primitive-identity", "Created cube has no stable asset ID");
-  const outlinerIdentity = panel.locator('[data-studio-hybrid-dcc-outliner="true"] button')
-    .filter({ hasText: assetId }).first();
+  const outlinerIdentity = panel.locator('[data-studio-hybrid-dcc-outliner="true"]')
+    .getByRole("button", { name: `${assetId} 숨기기`, exact: true });
   const selectionSummary = panel.locator(
     '[data-studio-hybrid-dcc-component-selection-summary="true"]',
   );

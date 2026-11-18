@@ -171,7 +171,7 @@ export function StudioDrawingClarityRail({ session: s }: { readonly session: Stu
     clarity.open("layers", trigger);
     s.studioMobileEditingDockHandlers.openInspectorRoute({ primary: "layers" });
   };
-  return <nav tabIndex={-1} className="studio-drawing-clarity-rail" aria-label={bt("기본 그리기", "Basic drawing")}>
+  return <nav tabIndex={-1} className="studio-drawing-clarity-rail" data-app-tooltip-preferred-side="right" aria-label={bt("기본 그리기", "Basic drawing")}>
     <span className="studio-drawing-rail-brand" aria-hidden><img src="/brand/luminous-atelier-20261114/icon-studio-pen-ink.webp" alt="" width={34} height={34} /></span>
     <StudioDrawingClarityCoreTools
       session={{ ...s, clarityPanel: clarity.panel }}

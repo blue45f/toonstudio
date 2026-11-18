@@ -82,17 +82,16 @@ export interface StudioFrameAnimationPanelProps {
 }
 
 function formatSeconds(sec: number): string {
-  if (sec <= 0) return "0초";
-  const rounded = Math.round(sec * 10) / 10;
-  return `${rounded}초`;
+  return sec <= 0 ? "0초" : `${Math.round(sec * 10) / 10}초`;
 }
 
-type StudioFrameAnimExportFormat = "apng" | "gif" | "webm";
+type StudioFrameAnimExportFormat = "apng" | "gif" | "webm" | "webp";
 
 const FRAME_ANIM_FORMAT_OPTIONS = [
   { id: "webm", label: "WebM 영상 (작은 용량)" },
   { id: "gif", label: "GIF 애니메이션 (어디서나 재생·256색)" },
   { id: "apng", label: "APNG (무손실·부드러운 투명)" },
+  { id: "webp", label: "WebP 애니메이션 (투명·작은 용량)" },
 ] as const satisfies readonly { id: StudioFrameAnimExportFormat; label: string }[];
 
 export function StudioFrameAnimationPanel({
@@ -252,7 +251,7 @@ export function StudioFrameAnimationPanel({
         setPreparing(false);
         const result = await handle.done;
         downloadBlob(result.blob, frameAnimMediaFileName(title, mediaFormat));
-        setDoneMsg(mediaFormat === "gif" ? frozenStatus4Text("studio.frozenStatus4.frame.savedGif", "GIF 애니메이션을 저장했어요.") : frozenStatus4Text("studio.frozenStatus4.frame.savedApng", "APNG 애니메이션을 저장했어요."));
+        setDoneMsg(mediaFormat === "gif" ? frozenStatus4Text("studio.frozenStatus4.frame.savedGif", "GIF 애니메이션을 저장했어요.") : mediaFormat === "webp" ? "WebP 애니메이션을 저장했어요." : frozenStatus4Text("studio.frozenStatus4.frame.savedApng", "APNG 애니메이션을 저장했어요."));
       }
     } catch (err) {
       if (!isMotionExportCancelled(err)) {
@@ -825,7 +824,7 @@ export function StudioFrameAnimationPanel({
                         className={buttonClass({ size: "sm", variant: "solid", className: "gap-1.5" })}
                       >
                         <Download size={14} />
-                        {format === "webm" ? "영상 내보내기" : format === "gif" ? "GIF 내보내기" : "APNG 내보내기"}
+                        {format === "webm" ? "영상 내보내기" : format === "gif" ? "GIF 내보내기" : format === "webp" ? "WebP 내보내기" : "APNG 내보내기"}
                       </button>
                     </div>
                   </div>

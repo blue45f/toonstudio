@@ -36,6 +36,8 @@ body {
   justify-items: center;
   gap: 28px;
   padding: 32px;
+  /* Keep wide descendants from expanding the mobile admin shell grid track. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .admin-card {

@@ -7,8 +7,8 @@
  */
 import { failVisible } from "../contracts";
 
-import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-composer";
 import { computeMotionTeaserCameraWindow } from "./webtoon-motion-teaser";
+import { WEBTOON_MANUSCRIPT_MOODS } from "./webtoon-strip-composer";
 
 import type { EncodeMotionTeaserWebmFn, EncodeMotionTeaserWebmRequest } from "./webtoon-motion-teaser";
 

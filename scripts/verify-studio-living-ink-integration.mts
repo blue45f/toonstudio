@@ -36,7 +36,7 @@ import { studioAutosaveKey } from "../apps/web/src/domains/creator/studio-autosa
 import { STUDIO_LIVING_INK_NEW_PHYSICAL_STROKES_ENABLED } from "../apps/web/src/domains/creator/studio-living-ink-brush-admission";
 
 import { DIST_DIR } from "./lib/repo-paths.mjs";
-import { openStudioBrushCatalogThroughUi } from "./lib/studio-brush-catalog-interactions";
+import { openStudioBrushCatalogThroughUi, waitForStudioSelectedBrushThroughUi } from "./lib/studio-brush-catalog-interactions";
 import { waitForStudioDrawingReady } from "./lib/studio-drawing-readiness";
 import { openStudioLayerNavigator } from "./lib/studio-shell-interactions";
 import { readDurableStudioAutosaveDocument } from "./lib/studio-verify-durable-autosave.mjs";
@@ -1295,11 +1295,7 @@ async function activatePenAndWatercolor(
       .getByRole("button", { name: / 닫기$/u }).click();
   }
   await catalogue.waitFor({ state: "detached" });
-  await page.waitForFunction((expectedName) => (
-    document.querySelector('[data-studio-brush-active-pill="true"]')
-      ?.getAttribute("aria-label")
-      ?.includes(expectedName) === true
-  ), BRUSH.name);
+  await waitForStudioSelectedBrushThroughUi(pickerSurface, BRUSH, mobileDockVisible);
   const controls = page.locator('[data-studio-living-ink-controls="true"]');
   if (expectedState === "retired") {
     invariant(await controls.count() === 0, "retired physical controls must remain unavailable");
@@ -2196,9 +2192,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       for (const point of points.slice(1)) await page.mouse.move(point.x, point.y);
       await page.mouse.up();
       if (mobile) {
-        const toolsToggle = page.locator('[data-studio-mobile-workspace-toggle="true"]');
-        if (await toolsToggle.getAttribute("aria-expanded") !== "true") await toolsToggle.click();
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 1);
@@ -2209,7 +2202,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       }
       await page.keyboard.press("Meta+z");
       if (mobile) {
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 0);
@@ -2219,7 +2211,6 @@ async function runRetiredAdmission(browser: Browser, studioUrl: string) {
       }
       await page.keyboard.press("Meta+Shift+z");
       if (mobile) {
-        await page.getByRole("button", { name: "작업 패널", exact: true }).click();
         await openLayerNavigator(page);
       }
       await waitForLayerCount(page, 1);

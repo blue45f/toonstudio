@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { openStudioAllTools, openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
-import { openStudioBrushCatalogThroughUi } from "../scripts/lib/studio-brush-catalog-interactions";
+import { openStudioBrushCatalogThroughUi, selectStudioBrushCatalogItemThroughUi, waitForStudioSelectedBrushThroughUi } from "../scripts/lib/studio-brush-catalog-interactions";
 import { installStudioOfflinePreviewFixture } from "../scripts/lib/studio-offline-preview-fixture.mjs";
 import { setStudioPrimaryColorThroughUi } from "../scripts/lib/studio-primary-color-interactions";
 import { clickStudioToolThroughUi } from "../scripts/lib/studio-tool-interactions";
@@ -93,6 +93,68 @@ test.describe("Studio QA의 실제 표시 UI 조작", () => {
     await expect(page.locator("#trigger")).not.toHaveAttribute("data-clicked");
     await page.locator("section").evaluate(section => section.after(section.cloneNode(true)));
     await expect(openStudioBrushCatalogThroughUi(page, page.locator("#trigger"))).rejects.toThrow(/strict mode|기대: 1개/u);
+  });
+
+  test("데스크톱 브러시 선택은 숨은 이전 pill 대신 현재 표시를 확인한다", async ({ page }) => {
+    await page.setContent(`<section id="surface">
+      <button hidden data-studio-brush-active-pill="true" aria-label="현재 도구 매끈한 펜, 6px">이전 도구</button>
+      <button data-studio-brush-active-pill="true" aria-label="현재 도구 수채 번짐, 28px">수채 번짐</button>
+    </section>`);
+    const selected = await waitForStudioSelectedBrushThroughUi(
+      page.locator("#surface"), { id: "watercolor", name: "수채 번짐" }, false,
+    );
+    await expect(selected).toHaveText("수채 번짐");
+  });
+
+  test("모바일 브러시 선택은 표시된 tray의 실제 ID로 확인한다", async ({ page }) => {
+    await page.setContent(`<button hidden data-studio-brush-active-pill="true" aria-label="현재 도구 매끈한 펜, 6px">이전 도구</button>
+      <section id="mobile"><div data-studio-brush-tray="true" data-studio-active-brush-id="watercolor">현재 브러시 수채 번짐</div></section>`);
+    const selected = await waitForStudioSelectedBrushThroughUi(
+      page.locator("#mobile"), { id: "watercolor", name: "수채 번짐" }, true,
+    );
+    await expect(selected).toHaveAttribute("data-studio-active-brush-id", "watercolor");
+    await expect(page.locator('[data-studio-brush-active-pill="true"]')).toBeHidden();
+  });
+
+  test("숨은 브러시 ID만 맞고 현재 모바일 선택이 다르면 성공하지 않는다", async ({ page }) => {
+    page.setDefaultTimeout(500);
+    await page.setContent(`<section id="mobile">
+      <div hidden data-studio-brush-tray="true" data-studio-active-brush-id="watercolor">수채 번짐</div>
+      <div data-studio-brush-tray="true" data-studio-active-brush-id="pen">매끈한 펜</div>
+    </section>`);
+    await expect(waitForStudioSelectedBrushThroughUi(
+      page.locator("#mobile"), { id: "watercolor", name: "수채 번짐" }, true,
+    )).rejects.toThrow(/Timeout/u);
+  });
+
+  test("현재 브러시 표시가 중복되면 임의의 일치 항목으로 통과하지 않는다", async ({ page }) => {
+    await page.setContent(`<section id="surface">
+      <button data-studio-brush-active-pill="true" aria-label="현재 도구 매끈한 펜, 6px">매끈한 펜</button>
+      <button data-studio-brush-active-pill="true" aria-label="현재 도구 수채 번짐, 28px">수채 번짐</button>
+    </section>`);
+    await expect(waitForStudioSelectedBrushThroughUi(
+      page.locator("#surface"), { id: "watercolor", name: "수채 번짐" }, false,
+    )).rejects.toThrow(/strict mode|기대: 1개/u);
+  });
+
+  test("가상 카탈로그는 재료 ID 대신 이름으로 좁히고 정확한 브러시 ID를 클릭한다", async ({ page }) => {
+    await page.setContent(`<section id="catalog"><input type="search" aria-label="전체 브러시 검색">
+      <button data-studio-brush-select="oil-filbert">유화 필버트 선택</button>
+      <button hidden data-studio-brush-select="oil">유화 선택</button></section><output></output>`);
+    await page.evaluate(() => {
+      const input = document.querySelector("input");
+      const oil = document.querySelector<HTMLButtonElement>('[data-studio-brush-select="oil"]');
+      input?.addEventListener("input", () => { if (oil) oil.hidden = input.value !== "유화"; });
+      for (const button of document.querySelectorAll<HTMLButtonElement>("button")) {
+        button.addEventListener("click", () => {
+          const output = document.querySelector("output");
+          if (output) output.textContent = button.dataset.studioBrushSelect ?? "";
+        });
+      }
+    });
+    await selectStudioBrushCatalogItemThroughUi(page.locator("#catalog"), { id: "oil", name: "유화" });
+    await expect(page.getByRole("searchbox")).toHaveValue("유화");
+    await expect(page.locator("output")).toHaveText("oil");
   });
 
   test("그리기 도구는 숨긴 rail을 제외한 유일한 활성 UI에서 실제 클릭한다", async ({ page }) => {

@@ -1,6 +1,6 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 
-import { openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
+import { openStudioBg3dEnginePanel, openStudioBg3dProfessionalMode, prepareStudioBg3dViewportCapture, selectStudioBg3dTaskTab } from "../scripts/lib/studio-bg3d-ui-interactions";
 import { pinStudioRailToolInCatalog } from "../scripts/lib/studio-rail-tool-catalog-pin";
 import { showStudioProjectWindowTools, visibleStudioControl } from "../scripts/lib/studio-shell-interactions";
 import {
@@ -11,6 +11,7 @@ import {
   resolveBg3dAlignedComparison,
 } from "../scripts/studio-bg3d-runtime-frame-comparison";
 
+import { readStudioBg3dRotationRing } from "./helpers/studio-bg3d-rotation-ring";
 import { createBg3dCompositorSampler } from "./studio-bg3d-compositor-sampler";
 import { test } from "./studio-bg3d-runtime-diagnostics";
 
@@ -154,6 +155,7 @@ async function stableFrame(page: Page, info: TestInfo, label: string) {
     // Only the convergence sampler uses readback optimization. Re-decode BOTH original PNGs
     // with the default backing before comparing, so resampling differences are not scene drift.
     const referencePng = await page.locator(CANVAS).screenshot();
+    await sampler.assertUnchanged();
     await info.attach(`${label}-locator-reference.png`, { body: referencePng, contentType: "image/png" });
     const { reference, peakDelta: referenceDelta } = await compareBg3dOriginalFrames(
       current.png, referencePng, (png, optimized) => decodeFrame(page, png, optimized),
@@ -216,16 +218,18 @@ async function openReadyWebGpu(page: Page, info: TestInfo, label: string): Promi
   // Reopening a viewport is not a camera reset: controls can retain a different settled
   // presentation. Establish the same real user-selected camera before both pixel oracles.
   await page.locator(DIALOG).getByRole("button", { name: "시점 초기화", exact: true }).click();
+  await prepareStudioBg3dViewportCapture(page.locator(DIALOG));
   // Keep viewport tool hints and hovered gizmos out of both baseline captures.
   await page.mouse.move(0, 0);
   await page.waitForTimeout(1_000);
 }
 
-async function dragRing(page: Page, info: TestInfo, label: "continuous" | "direct", steps: 1 | 24) {
-  const box = await page.locator(VIEWPORT).boundingBox();
-  if (!box) throw new Error("No BG3D viewport bounds");
-  const start = { x: box.x + box.width * 0.618, y: box.y + box.height * 0.507 };
-  const end = { x: box.x + box.width * 0.499, y: box.y + box.height * 0.555 };
+async function dragRing(page: Page, info: TestInfo, label: "continuous" | "direct", steps: 1 | 24, baseline: Buffer) {
+  const ring = await readStudioBg3dRotationRing(page, page.locator(CANVAS), baseline);
+  const { start, end } = ring;
+  await info.attach(`${label}-y-ring-input.json`, {
+    body: Buffer.from(JSON.stringify(ring, null, 2)), contentType: "application/json",
+  });
   const readValues = () => Promise.all(["X", "Y", "Z"].map((axis) =>
     page.getByRole("spinbutton", { name: `회전 ${axis}`, exact: true }).first().inputValue()));
   const initial = await readValues();
@@ -242,11 +246,16 @@ async function dragRing(page: Page, info: TestInfo, label: "continuous" | "direc
         await page.waitForTimeout(80);
       }
       values = await readValues();
+      await info.attach(`${label}-rotation-attempt-${attempt + 1}.json`, {
+        body: Buffer.from(JSON.stringify({ initial, values, requestedAxis: ring.axis, steps }, null, 2)),
+        contentType: "application/json",
+      });
       if (values.every((value, index) => value === initial[index])) continue;
+      expect(Math.abs(Number(values[1])), `${label}: 실제 Y 링 회전이 필요합니다.`).toBeGreaterThan(10);
       // The original PNG is an input to the aligned comparison, never published evidence: a Buffer
       // serialises to a quarter of a megabyte of JSON in the attached metrics.
       const { referencePng, ...capture } = await stableFrame(page, info, label);
-      return { values, capture, referencePng };
+      return { values, capture, referencePng, ring };
     } finally {
       await page.mouse.up();
     }
@@ -292,7 +301,7 @@ test("WebGPU 기즈모 연속 회전은 이전 실루엣을 누적하지 않는�
     // Renderer readiness precedes the asynchronous camera/control presentation. Settle the
     // unrotated scene before either gesture and retain matching baseline evidence.
     const continuousBaseline = await stableFrame(page, testInfo, "continuous-baseline");
-    const continuous = await dragRing(page, testInfo, "continuous", 24);
+    const continuous = await dragRing(page, testInfo, "continuous", 24, continuousBaseline.referencePng);
     // Scope the accessible close action to the editor; the surrounding Studio has other dialogs.
     await page.locator(DIALOG).getByRole("button", { name: "닫기", exact: true }).click();
     await expect(page.locator(DIALOG)).toHaveCount(0);
@@ -300,7 +309,10 @@ test("WebGPU 기즈모 연속 회전은 이전 실루엣을 누적하지 않는�
     const directBaseline = await stableFrame(page, testInfo, "direct-baseline");
     expect(peakDelta(continuousBaseline.frame, directBaseline.frame),
       "Both gestures must start from the same settled scene and camera").toBeLessThan(2);
-    const direct = await dragRing(page, testInfo, "direct", 1);
+    const direct = await dragRing(page, testInfo, "direct", 1, directBaseline.referencePng);
+    expect({ start: direct.ring.start, end: direct.ring.end, surface: direct.ring.surface },
+      "두 trusted 드래그는 같은 표면의 같은 시작·끝 좌표를 사용해야 합니다.")
+      .toEqual({ start: continuous.ring.start, end: continuous.ring.end, surface: continuous.ring.surface });
     // Keep the original full-frame metric as the release oracle. Cropped alignment is
     // diagnostic until independent image fixtures establish its coverage of edge defects.
     const rawContinuous = continuous.capture.frame;

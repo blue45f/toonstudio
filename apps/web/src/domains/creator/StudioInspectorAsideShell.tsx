@@ -2,16 +2,13 @@ import { r3c07StatusText } from "./studio-panel-status-i18n-r3c07";
 import "./studio-inspector-responsive.css";
 import { StudioEditTargetSummary } from "./StudioEditTargetSummary";
 import { StudioPinnedColorPanelSlot } from "./color/StudioPinnedColorPanelSlot";
-import {
-  ChevronRight,
-  Loader2,
-  Move,
-  PanelRight,
-} from "lucide-react";
-import { Suspense, useState } from "react";
+import { ChevronRight, Loader2, Move, PanelRight } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 
 import { StudioLayerBorderEffectPanel } from "./layer/StudioLayerBorderEffectPanel";
 import { StudioLayerCompsPanel } from "./layer/StudioLayerCompsPanel";
+import { EMPTY_LAYER_EFFECTS_STACK } from "./layer/studio-layer-effects-stack";
+import { buildPageElementsFromInstantiatedTemplate } from "./layer/studio-layer-template";
 import { StudioLayerTonePanel } from "./layer/StudioLayerTonePanel";
 import { StudioReferenceCanvasCard } from "./StudioReferenceCanvasCard";
 import { CANVAS_W } from "./studio-assets";
@@ -21,10 +18,9 @@ import { openStudioHelpCenter } from "./studio-help-center-channel";
 import { uid } from "./studio-id";
 import { normalizeStudioInspectorLayout } from "./studio-inspector-layout";
 import { useStudioInspectorDockSide } from "./studio-inspector-dock";
-import {
-  requestStudioInspectorFocus,
-  type StudioInspectorFocusTarget,
-} from "./studio-inspector-focus";
+import { requestStudioInspectorFocus } from "./studio-inspector-focus";
+import type { StudioLayerEffectsStack } from "./layer/studio-layer-effects-stack";
+import type { StudioInspectorFocusTarget } from "./studio-inspector-focus";
 import type { StudioInspectorTabA11y } from "./studio-inspector-tab-a11y";
 import { executeStudioInspectorRouteTransition } from "./studio-inspector-tool-transition";
 import { isEffectivelyHidden } from "./studio-layers";
@@ -55,6 +51,10 @@ import type { StudioInspectorAsideModel } from "./useStudioInspectorAsideModel";
 import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
+
+const StudioLayerEffectsStackPanel = lazy(() =>
+  import("./layer/StudioLayerEffectsStackPanel").then((m) => ({ default: m.StudioLayerEffectsStackPanel })),
+);
 
 function isDrawingInspectorFocusTarget(
   target: StudioInspectorFocusTarget,
@@ -604,6 +604,20 @@ export function StudioInspectorAsideShell({
                     onChange={(next) => patchEl(selected.id, { halftone: next } as Partial<El>)}
                   />
                 ) : null}
+                {/* 비파괴 레이어 효과 스택 (발광·그림자·부조·경계) */}
+                {selected?.type === "image" && !inspectorInteractionPolicy.global.disabled ? (
+                  <Suspense fallback={null}>
+                    <StudioLayerEffectsStackPanel
+                      stack={
+                        (selected as { readonly layerEffectsStack?: StudioLayerEffectsStack })
+                          .layerEffectsStack ?? EMPTY_LAYER_EFFECTS_STACK
+                      }
+                      onChange={(nextStack) =>
+                        patchEl(selected.id, { layerEffectsStack: nextStack } as Partial<El>)
+                      }
+                    />
+                  </Suspense>
+                ) : null}
                 {/* 레이어 콤프 */}
                 <StudioLayerCompsPanel
                   key={currentPageId}
@@ -620,6 +634,12 @@ export function StudioInspectorAsideShell({
                     groupId: element.groupId,
                   }))}
                   onApplyComp={model.onApplyLayerComp}
+                  onApplyLayerTemplate={(inst, tpl) => {
+                    setSharedDocumentNotice(null);
+                    const nextEls = buildPageElementsFromInstantiatedTemplate(inst, { width: CANVAS_W, height: canvasH });
+                    commit([...elements, ...nextEls], { groups: [...groups, ...inst.groups] });
+                    model.announceDrawingShortcut(`${tpl.name} (${inst.layers.length})`);
+                  }}
                 />
               </>
             ) : null}

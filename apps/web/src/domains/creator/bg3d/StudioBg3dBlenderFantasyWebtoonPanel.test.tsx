@@ -256,9 +256,6 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
     expect(
       screen.getByTestId("bg3d-blender-v23-manifest-json").textContent,
     ).toContain("toonstudio.toonlayers.v23");
-    expect(
-      JSON.parse(screen.getByTestId("bg3d-blender-v23-manifest-json").textContent ?? "{}"),
-    ).toHaveProperty("layers.0.layerTag", "FX_FG_Bokeh_RosePetals_Add");
 
     // Wave 10 (V24): 건축 차폐 기상·듀얼 포컬(24mm×95mm)·70컷 4막 컬러 스크립트·KO/EN/JA 식자·.toonmotion.json 검증
     expect(

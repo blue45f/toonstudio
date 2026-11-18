@@ -129,14 +129,14 @@ export function inspectGlbBinaryEvidence(
   bytes: Uint8Array,
 ): GlbBinaryEvidenceReport {
   if (bytes.byteLength < 20) {
-    return Object.freeze<GlbBinaryEvidenceReport>({
+    return Object.freeze({
       validGlb20: false,
       observed: {
         magicHex: "0x00000000",
         version: 0,
         declaredByteLength: 0,
         actualByteLength: bytes.byteLength,
-        jsonChunkOffset: 12,
+        jsonChunkOffset: 12 as const,
         jsonChunkLength: 0,
         binChunkOffset: null,
         binChunkLength: 0,
@@ -203,14 +203,14 @@ export function inspectGlbBinaryEvidence(
     jsonType === CHUNK_JSON_LE &&
     fourByteAligned;
 
-  return Object.freeze<GlbBinaryEvidenceReport>({
+  return Object.freeze({
     validGlb20,
     observed: {
       magicHex: `0x${magic.toString(16).toUpperCase().padStart(8, "0")}`,
       version,
       declaredByteLength,
       actualByteLength: bytes.byteLength,
-      jsonChunkOffset: 12,
+      jsonChunkOffset: 12 as const,
       jsonChunkLength: jsonLen,
       binChunkOffset: binOffset,
       binChunkLength: binLen,

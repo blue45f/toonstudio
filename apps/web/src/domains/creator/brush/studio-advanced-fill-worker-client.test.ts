@@ -67,6 +67,7 @@ class ApplyingWorker implements StudioAdvancedFillWorkerLike {
         result: postprocessStudioAdvancedFillWorkerResult(
           received.request,
           applyAdvancedFill(received.request),
+          received.request.cspOptions,
         ),
       };
       const returned = structuredClone(response, {
@@ -306,5 +307,70 @@ describe("runStudioAdvancedFillWorker", () => {
       }),
     ).rejects.toMatchObject({ name: "AbortError" });
     expect(factoryCalls).toBe(0);
+  });
+
+  it("executes cspOptions ridge-stop expansion and leftover gap fill across both direct and worker modes", async () => {
+    // 5x5 타깃: 중앙 1..3 영역 안쪽 (3,3)은 별도 고립 색으로 막혀 미채색 1px 틈새로 남았다가 fillLeftoverMaxAreaPx로 메워진다.
+    const makeGapRequest = (): StudioAdvancedFillWorkerRunRequest => {
+      const w = 5;
+      const h = 5;
+      const data = new Uint8ClampedArray(w * h * 4);
+      const refData = new Uint8ClampedArray(w * h * 4);
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const off = (y * w + x) * 4;
+          const isBorder = x === 0 || x === 4 || y === 0 || y === 4;
+          if (isBorder) {
+            // 검정 먹선 테두리 장벽
+            refData[off] = 10;
+            refData[off + 1] = 10;
+            refData[off + 2] = 10;
+            refData[off + 3] = 255;
+            data[off] = 10;
+            data[off + 1] = 10;
+            data[off + 2] = 10;
+            data[off + 3] = 255;
+          }
+        }
+      }
+      // (3,3)에 1px 참조 경계를 찍어 1차 채우기에서는 제외되지만 타깃에서는 투명 1px 틈새 섬으로 남게 한다.
+      const gapOff = (3 * w + 3) * 4;
+      refData[gapOff] = 250;
+      refData[gapOff + 1] = 250;
+      refData[gapOff + 2] = 250;
+      refData[gapOff + 3] = 255;
+
+      return {
+        target: { data, width: w, height: h },
+        referenceImage: { data: refData, width: w, height: h },
+        seeds: [{ x: 1, y: 1 }],
+        fill: [220, 60, 80, 255],
+        options: { tolerance: 10, contiguous: true, maxAreaRatio: 1 },
+        cspOptions: {
+          expandPx: 1,
+          expandType: "expand-to-darkest-pixel",
+          kernelShape: "round",
+          soakIntoNarrowArea: true,
+          fillLeftoverMaxAreaPx: 4,
+        },
+      };
+    };
+
+    const directOut = await runStudioAdvancedFillWorker(makeGapRequest(), {
+      executionMode: "direct",
+    });
+    expect(directOut.execution).toBe("direct");
+    // (3,3) 미채색 1px 섬까지 보로노이 틈새 채우기로 채색됨
+    expect(directOut.result.imageData.data[(3 * 5 + 3) * 4]).toBe(220);
+    // 최암부 능선 확장으로 먹선 테두리 (1,0)까지 확장됨
+    expect(directOut.result.imageData.data[(0 * 5 + 1) * 4]).toBe(220);
+
+    const worker = new ApplyingWorker();
+    const workerOut = await runStudioAdvancedFillWorker(makeGapRequest(), {
+      workerFactory: () => worker,
+    });
+    expect(workerOut.execution).toBe("worker");
+    expect(workerOut.result.imageData.data[(3 * 5 + 3) * 4]).toBe(220);
+    expect(workerOut.result.imageData.data[(0 * 5 + 1) * 4]).toBe(220);
   });
 });

@@ -19,6 +19,7 @@ import {
 import { STABILIZER_MAX } from "./studio-brush";
 
 import { cx } from "@/shared/lib/cx";
+import { resolveVectorMagnetRadiusPx } from "./vector/studio-vector-magnet-snap";
 
 export interface StudioLineCorrectionControlsProps {
   stabilizer: number;
@@ -29,6 +30,10 @@ export interface StudioLineCorrectionControlsProps {
   onPostCorrectionChange: (value: number) => void;
   preserveCorners: boolean;
   onPreserveCornersChange: (value: boolean) => void;
+  vectorMagnetEnabled?: boolean;
+  onVectorMagnetEnabledChange?: (value: boolean) => void;
+  vectorMagnetPower?: number;
+  onVectorMagnetPowerChange?: (value: number) => void;
   density?: "compact" | "touch";
   className?: string;
 }
@@ -42,6 +47,10 @@ export function StudioLineCorrectionControls({
   onPostCorrectionChange,
   preserveCorners,
   onPreserveCornersChange,
+  vectorMagnetEnabled = false,
+  onVectorMagnetEnabledChange,
+  vectorMagnetPower = 12,
+  onVectorMagnetPowerChange,
   density = "compact",
   className,
 }: StudioLineCorrectionControlsProps) {
@@ -240,6 +249,41 @@ export function StudioLineCorrectionControls({
           className={cx("shrink-0 rounded accent-accent", touch ? "size-5" : "size-4")}
         />
       </label>
+
+      {onVectorMagnetEnabledChange ? (
+        <div className="space-y-1.5 rounded-lg bg-card/45 px-2.5 py-2 text-xs text-fg-2 [word-break:keep-all]">
+          <label className="flex min-h-9 cursor-pointer items-center justify-between gap-2">
+            <span className="font-medium">벡터 끝점 자석 결합</span>
+            <input
+              type="checkbox"
+              aria-label="벡터 끝점 자석 결합"
+              checked={vectorMagnetEnabled}
+              onChange={(event) => onVectorMagnetEnabledChange(event.target.checked)}
+              className={cx("shrink-0 rounded accent-accent", touch ? "size-5" : "size-4")}
+            />
+          </label>
+          {vectorMagnetEnabled && onVectorMagnetPowerChange ? (
+            <label className="flex items-center justify-between gap-2 text-fg-3">
+              <span>자석 흡착 반경</span>
+              <span className="flex items-center gap-1.5">
+                <input
+                  type="range"
+                  aria-label="자석 흡착 반경"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={vectorMagnetPower}
+                  onChange={(event) => onVectorMagnetPowerChange(Number(event.target.value))}
+                  className="w-24 cursor-pointer accent-accent"
+                />
+                <span className="w-12 text-right tabular-nums">
+                  {Math.round(resolveVectorMagnetRadiusPx({ useVectorMagnet: vectorMagnetEnabled, magnetPower: vectorMagnetPower }))}px
+                </span>
+              </span>
+            </label>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 

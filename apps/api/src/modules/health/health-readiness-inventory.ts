@@ -3,7 +3,6 @@
 export const REQUIRED_DATABASE_RELATIONS = [
   "account",
   "account_merge",
-  "admin_ai_operations_audit", "admin_ai_operations_board", "admin_ai_operations_receipt",
   "admin_announcements",
   "admin_audit_logs",
   "admin_banned_words",

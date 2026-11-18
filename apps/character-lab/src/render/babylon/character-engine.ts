@@ -7,8 +7,6 @@
 import { Constants } from "@babylonjs/core/Engines/constants.js";
 import { Material } from "@babylonjs/core/Materials/material.js";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture.js";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
-import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
 
 import { DEFAULT_FRAMING, DEFAULT_SHADING, failVisible, isHumanoidBoneName, isLabFailure } from "../../contracts";
 import { fnv1a64Hex, sha256Hex } from "../../shared/hash";
@@ -29,9 +27,9 @@ import { createBetaController } from "./beta-controller";
 import { capturePasses, captureThumbnail } from "./capture";
 import { CharacterOutlineController } from "./character-outline-controller";
 import { applyRigPlan, computeRigBounds, inspectRig, isKitPart, partHasVertexColors, restoreRig, rigBoneWorld, rigPoseSkeleton, rigVisibleMeshes, setRigPartVisible, snapshotRig } from "./character-rig";
-import { fromQuaternion, fromVector3, toVector3 } from "./convert";
+import { fromQuaternion, fromVector3 } from "./convert";
 import { fetchBytesDefault, fetchKitBytesDefault, rigWithParts, srgb, toFailure } from "./engine-io";
-import { readEngineFeatures, readEngineHud, readPaintInspection, readRigSourceCapabilities } from "./engine-reports";
+import { readEngineFeatures, readEngineHud, readPaintInspection, readRigJointHandles, readRigSourceCapabilities } from "./engine-reports";
 import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
@@ -50,7 +48,6 @@ import { createScenePropController } from "./scene-prop-controller";
 
 import type { CaptureDeps, PassMaterialSet } from "./capture";
 import type { CharacterRig, RigMaterialHooks, RigPart } from "./character-rig";
-import type { BoneReading } from "./engine-reports";
 import type { KitRigHandle, KitUpdateReport } from "./kit-loader";
 import type {
   ApplyPlan,
@@ -79,6 +76,7 @@ import type {
   PhysicsProviderId,
   PhysicsStatus,
   CharacterPickOptions, PickHit,
+  Quat,
   SettleReceipt,
   ShadingProfile,
   SkeletonData,
@@ -107,12 +105,20 @@ import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture
 import type { Scene } from "@babylonjs/core/scene.js";
 
 export type { ReadbackLane } from "../readback";
-export type { BoneReading } from "./engine-reports";
 
 export const THUMBNAIL_LAYER_MASK = 0x10000000;
 export const FACE_SDF_SIZE = 128;
 export const TOON_OUTLINE_WIDTH = 0.004;
 export const TOON_EDGE_EPSILON = 0.95;
+
+export interface BoneReading {
+  readonly name: string;
+  readonly humanoid: string | null;
+  readonly position: Vec3;
+  readonly rotation: Quat;
+  readonly localRotation: Quat;
+  readonly auxiliary: boolean;
+}
 
 export interface BabylonCharacterEngineDeps {
   readonly engine: AbstractEngine;
@@ -900,18 +906,9 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
   jointHandles(): readonly JointDragHandle[] {
     const rig = this.rig;
     if (this.disposed || !rig) return [];
-    const camera = this.character.camera;
-    const width = this.engine.getRenderWidth();
-    const height = this.engine.getRenderHeight();
-    const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
-    const viewport = new Viewport(0, 0, width, height);
-    const handles: JointDragHandle[] = [];
-    for (const [bone, rb] of rig.humanoid) {
-      const world = rigBoneWorld(rb).position;
-      const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
-      handles.push({ bone, screen: [projected.x, projected.y], world });
-    }
-    return handles;
+    return readRigJointHandles(
+      rig, this.character.camera, this.engine.getRenderWidth(), this.engine.getRenderHeight(),
+    );
   }
 
   viewportCamera(): ViewportCameraInfo {

@@ -29,6 +29,7 @@ import { pathToFileURL } from "node:url";
 
 import { chromium, type Browser, type Page, type Request } from "playwright";
 
+import { closeStudioInAppRouteModal } from "./lib/studio-inapp-route-modal";
 import { buildStudioInAppReport, createStudioInAppCatalog, selectStudioInAppCases, studioInAppResultLine,
   type StudioInAppCase, type StudioInAppFatalFailure, type StudioInAppSelection } from "./lib/studio-inapp-selection-report.mjs";
 import { auditStudioInAppClosedDetails, createStudioInAppPreviewApiDiagnostics } from "./lib/studio-inapp-sweep-harness.mjs";
@@ -187,6 +188,7 @@ interface RouteResult {
   readonly warnings: readonly string[];
   readonly openedDetailsAudited: number;
   readonly returnDestination: string | null;
+  readonly closedRouteModal: string | null;
 }
 
 function log(message: string): void {
@@ -441,8 +443,10 @@ async function runRoute(
     warnings.push(`unnamed control: ${issue.label} ${issue.detail}`);
   }
 
+  const closedRouteModal = await closeStudioInAppRouteModal(page, route.id);
   let returnDestination: string | null = null;
   const editorReturn = page.locator('[data-studio-editor-return]').filter({ visible: true });
+  if (closedRouteModal && await editorReturn.count() === 0) hardFailures.push("closed route modal has no editor return control");
   if (await editorReturn.count() > 0) {
     if (await editorReturn.count() !== 1) hardFailures.push("editor return has multiple visible controls");
     else {
@@ -471,7 +475,7 @@ async function runRoute(
   }
 
   await context.close();
-  return { hardFailures, metrics, ok, profile: profile.id, route: route.id, shot, warnings, openedDetailsAudited, returnDestination };
+  return { hardFailures, metrics, ok, profile: profile.id, route: route.id, shot, warnings, openedDetailsAudited, returnDestination, closedRouteModal };
 }
 
 async function main(): Promise<void> {

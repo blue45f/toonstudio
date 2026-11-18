@@ -44,6 +44,7 @@ workerScope.onmessage = (event) => {
     const result = postprocessStudioAdvancedFillWorkerResult(
       message.request,
       applyAdvancedFill(message.request),
+      message.request.cspOptions,
     );
     const response: StudioAdvancedFillWorkerSuccessMessage = {
       type: "studio-advanced-fill/success",

@@ -38,9 +38,9 @@ export function NestTaskEditor({ task, isNew, canEdit, busy, error, conflict, on
   }
 
   const text = (key: "title" | "category" | "kind" | "owner" | "environment" | "result" | "commit" | "checkedAt" | "verificationDate", label: string, placeholder?: string) =>
-    <label htmlFor={`${id}-${key}`}>{label}<input id={`${id}-${key}`} aria-label={label} value={draft[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>;
+    <label htmlFor={`${id}-${key}`}>{label}<input id={`${id}-${key}`} value={draft[key]} onChange={(event) => update(key, event.target.value)} placeholder={placeholder} /></label>;
   const area = (key: "summary" | "scope" | "nextAction" | "acceptance" | "beforeEvidence" | "afterEvidence", label: string, rows = 3) =>
-    <label htmlFor={`${id}-${key}`}>{label}<textarea id={`${id}-${key}`} aria-label={label} value={draft[key]} onChange={(event) => update(key, event.target.value)} rows={rows} /></label>;
+    <label htmlFor={`${id}-${key}`}>{label}<textarea id={`${id}-${key}`} value={draft[key]} onChange={(event) => update(key, event.target.value)} rows={rows} /></label>;
 
   return <NestDialog title={noteOnly ? "승인 검토 메모" : "NestJS 검증 기록"} description={`${task.id} · 관리 상태와 실제 확인 결과를 따로 기록합니다.`} onClose={close}>
     <div className="nest-dialog-body">
@@ -60,12 +60,12 @@ export function NestTaskEditor({ task, isNew, canEdit, busy, error, conflict, on
         }} />코드 수정·PR 병합·배포 승인 필요</label>}
         <div hidden={tab !== "detail"}>
           <div className="nest-form-grid">
-            <label htmlFor={`${id}-status`}>관리 상태<select id={`${id}-status`} aria-label="관리 상태" disabled={draft.approvalRequired} value={draft.status} onChange={(event) => update("status", event.target.value as Status)}>{STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label>
-            <label htmlFor={`${id}-priority`}>우선순위<select id={`${id}-priority`} aria-label="우선순위" value={draft.priority} onChange={(event) => update("priority", event.target.value as Task["priority"])}>{["P0", "P1", "P2"].map((value) => <option key={value}>{value}</option>)}</select></label>
+            <label htmlFor={`${id}-status`}>관리 상태<select id={`${id}-status`} disabled={draft.approvalRequired} value={draft.status} onChange={(event) => update("status", event.target.value as Status)}>{STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label>
+            <label htmlFor={`${id}-priority`}>우선순위<select id={`${id}-priority`} value={draft.priority} onChange={(event) => update("priority", event.target.value as Task["priority"])}>{["P0", "P1", "P2"].map((value) => <option key={value}>{value}</option>)}</select></label>
             {text("category", "영역")}{text("kind", "근거 종류")}{text("owner", "담당")}{text("result", "실제 확인 결과", "미확인 / 통과 / 실패 / 범위 한정 확인")}
           </div>
           {area("summary", "현재 판단")}{area("scope", "변경 영향 범위")}{text("environment", "검증 환경")}{area("nextAction", "다음 조치 · 선행 조건")}
-          <label htmlFor={`${id}-steps`}>최소 검증 절차 · 한 줄에 한 단계<textarea id={`${id}-steps`} aria-label="최소 검증 절차 · 한 줄에 한 단계" rows={6} value={draft.steps.join("\n")} onChange={(event) => update("steps", event.target.value.split("\n"))} /></label>
+          <label htmlFor={`${id}-steps`}>최소 검증 절차 · 한 줄에 한 단계<textarea id={`${id}-steps`} rows={6} value={draft.steps.join("\n")} onChange={(event) => update("steps", event.target.value.split("\n"))} /></label>
           {area("acceptance", "통과 기준")}
           <label className="nest-check"><input type="checkbox" checked={draft.archived} onChange={(event) => update("archived", event.target.checked)} />보관 · 기본 미완료 목록에서 제외</label>
         </div>
@@ -76,18 +76,18 @@ export function NestTaskEditor({ task, isNew, canEdit, busy, error, conflict, on
           {area("beforeEvidence", "변경 전 증거", 5)}{area("afterEvidence", "변경 후 증거", 5)}
           <h3>근거 링크</h3>
           {draft.evidenceLinks.map((link, index) => <div className="nest-link-edit" key={index}>
-            <label>근거 {index + 1} 이름<input aria-label={`근거 ${index + 1} 이름`} value={link.label} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, label: event.target.value } : item))} /></label>
-            <label>근거 {index + 1} URL<input aria-label={`근거 ${index + 1} URL`} value={link.url} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, url: event.target.value } : item))} placeholder="https://" /></label>
-            <label>근거 {index + 1} 종류<input aria-label={`근거 ${index + 1} 종류`} value={link.type ?? ""} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, type: event.target.value } : item))} placeholder="PR / 커밋 / CI / 코드 / 릴리스" /></label>
+            <label>근거 {index + 1} 이름<input value={link.label} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, label: event.target.value } : item))} /></label>
+            <label>근거 {index + 1} URL<input value={link.url} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, url: event.target.value } : item))} placeholder="https://" /></label>
+            <label>근거 {index + 1} 종류<input value={link.type ?? ""} onChange={(event) => update("evidenceLinks", draft.evidenceLinks.map((item, at) => at === index ? { ...item, type: event.target.value } : item))} placeholder="PR / 커밋 / CI / 코드 / 릴리스" /></label>
             <button type="button" onClick={() => update("evidenceLinks", draft.evidenceLinks.filter((_, at) => at !== index))} aria-label={`근거 ${index + 1} 제거`}>제거</button>
           </div>)}
           <button type="button" onClick={() => update("evidenceLinks", [...draft.evidenceLinks, { label: "새 근거", url: "" }])}>근거 링크 추가</button>
           <p className="nest-muted">검증 완료에는 검증일·결과·후속 증거·링크가 필요합니다. main 머지 완료에는 해당 저장소의 PR과 병합 커밋도 필요합니다.</p>
         </div>
       </fieldset>
-      <label htmlFor={`${id}-notes`}>{noteOnly ? "승인 검토 메모" : "메모 · 차단 요인"}<textarea id={`${id}-notes`} aria-label={noteOnly ? "승인 검토 메모" : "메모 · 차단 요인"} rows={4} disabled={!canEdit || busy} value={draft.notes} onChange={(event) => update("notes", event.target.value)} /></label>
+      <label htmlFor={`${id}-notes`}>{noteOnly ? "승인 검토 메모" : "메모 · 차단 요인"}<textarea id={`${id}-notes`} rows={4} disabled={!canEdit || busy} value={draft.notes} onChange={(event) => update("notes", event.target.value)} /></label>
       <NestLinks links={task.evidenceLinks} />
-      {canEdit && <label htmlFor={`${id}-reason`}>변경 이유<input id={`${id}-reason`} aria-label="변경 이유" value={reason} disabled={busy} onChange={(event) => setReason(event.target.value)} /></label>}
+      {canEdit && <label htmlFor={`${id}-reason`}>변경 이유<input id={`${id}-reason`} value={reason} disabled={busy} onChange={(event) => setReason(event.target.value)} /></label>}
       {(validation || error) && <p className="nest-error" role="alert">{error || validation}</p>}
       {conflict && <div className="nest-notice"><p>서버 기록은 덮어쓰지 않았습니다. 아래의 초안 JSON 내보내기로 보관한 뒤 최신 기록을 확인하세요.</p><button type="button" onClick={() => setConfirmReload(true)}>최신 기록 읽기</button></div>}
       {confirmReload && <div className="nest-notice" role="alert"><p>현재 편집을 버리고 서버의 최신 기록을 불러옵니다.</p><button type="button" disabled={busy} onClick={() => void onReload()}>초안을 버리고 최신 기록 읽기</button><button type="button" onClick={() => setConfirmReload(false)}>계속 편집</button></div>}

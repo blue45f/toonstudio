@@ -15,9 +15,11 @@ import { createPortal } from "react-dom";
 import { confirmStudioDestructiveAction } from "../studio-destructive-action-preview";
 import { studioDiscardUnpersistedMannequinStateRequest } from "../studio-destructive-command-catalog";
 import { frozenStatus2Text } from "../status-i18n/studio-frozen2-status-i18n";
+import { STUDIO_HAND_PRESETS } from "../studio-hand-pose-scanner";
 import { STUDIO_FOCUS_RING, studioSegmentChipClass } from "../studio-panel-ui";
 import { copyStudioText } from "../studio-workbench-clipboard";
 import { StudioVrmPhotoPoseScanner, type StudioVrmPhotoPoseApplyPayload } from "../vrm/StudioVrmPhotoPoseScanner";
+import type { StudioHandPoseData } from "../studio-hand-pose-scanner";
 
 import { getWebtoonPosePresetById } from "./studio-3d-advanced-poses-library";
 import { StudioMannequinDuoFigureSwitch, StudioMannequinDuoPartnerCard } from "./StudioMannequinDuoPartnerCard";
@@ -72,23 +74,14 @@ import {
   toggleStudioMannequinJointLock, type StudioMannequinGuideVisibility, type StudioMannequinJointLockMap,
 } from "./studio-mannequin-pro-kinematics";
 import { StudioMannequinBodySection, StudioMannequinJointSection } from "./StudioMannequinProSections";
+import { StudioMagicPoserPanel, type StudioMagicPoserScene } from "./StudioMagicPoserPanel";
 import {
-  StudioMagicPoserPanel,
-  type StudioMagicPoserScene,
-} from "./StudioMagicPoserPanel";
-import {
-  createStudioPoseHistory,
-  describeStudioPoseHistory,
-  recordStudioPoseHistory,
-  type StudioMannequinPoseSemanticMeta,
-  type StudioPoseHistory,
+  createStudioPoseHistory, describeStudioPoseHistory, recordStudioPoseHistory,
+  type StudioMannequinPoseSemanticMeta, type StudioPoseHistory,
 } from "./studio-pose-history";
 import {
-  createStudioMannequinScene,
-  type StudioMannequinCameraPreset,
-  type StudioMannequinCaptureResult,
-  type StudioMannequinProjection,
-  type StudioMannequinSceneHandle,
+  createStudioMannequinScene, type StudioMannequinCameraPreset, type StudioMannequinCaptureResult,
+  type StudioMannequinProjection, type StudioMannequinSceneHandle,
 } from "./studio-mannequin-scene";
 import { StudioCompositionGenerationBriefPanel } from "../ai/StudioCompositionGenerationBriefPanel";
 import { buildStudioMannequinCompositionSnapshot } from "./studio-mannequin-composition-snapshot";
@@ -97,22 +90,12 @@ import { StudioMannequinFootGroundingToggle } from "./StudioMannequinFootGroundi
 import { useStudioMannequinFootGrounding } from "./use-studio-mannequin-foot-grounding";
 import { resolveStudioMannequinRenderFrame } from "./studio-mannequin-render-pipeline";
 import {
-  disposeStudioMannequinPoseLandmarker,
-  getStudioMannequinWebcamErrorMessage,
-  initStudioMannequinPoseLandmarker,
-  isStudioMannequinWebcamAbortError,
-  requestStudioMannequinCameraStream,
-  solvePoseToMannequinJoints,
-  stopStudioMannequinMediaStream,
-  smoothMannequinJointRotations,
-  type StudioMannequinPoseLandmarker,
-  type StudioMannequinWebcamErrorStage,
+  disposeStudioMannequinPoseLandmarker, getStudioMannequinWebcamErrorMessage, initStudioMannequinPoseLandmarker,
+  isStudioMannequinWebcamAbortError, requestStudioMannequinCameraStream, solvePoseToMannequinJoints,
+  stopStudioMannequinMediaStream, smoothMannequinJointRotations,
+  type StudioMannequinPoseLandmarker, type StudioMannequinWebcamErrorStage,
 } from "./studio-mannequin-webcam-tracking";
-import {
-  buildShaperLayeredPsd,
-  SHAPER_MANNEQUIN_SUPPORTED_CATEGORIES,
-  type ShaperPresetSelection,
-} from "./studio-shaper-model";
+import { buildShaperLayeredPsd, SHAPER_MANNEQUIN_SUPPORTED_CATEGORIES, type ShaperPresetSelection } from "./studio-shaper-model";
 import { StudioShaperPanel } from "./StudioShaperPanel";
 import { StudioMannequinPoseSection } from "./StudioMannequinPoserPoseSection";
 import "../studio-3d-ui/studio-3d-illustrated-chrome.css";
@@ -208,6 +191,7 @@ export function StudioMannequinPoserPanel({
   const [muscleDefinition, setMuscleDefinition] = useState(1);
   const [breathPhase, setBreathPhase] = useState(0);
   const [fingerPose, setFingerPose] = useState<StudioMannequinFingerPose>(() => clampStudioMannequinFingerPose(undefined));
+  const [handScannerPose, setHandScannerPose] = useState<StudioHandPoseData>(() => STUDIO_HAND_PRESETS[0]!.pose);
   const [leftSplayDeg, setLeftSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [rightSplayDeg, setRightSplayDeg] = useState<Partial<StudioMannequinFingerSplayMap>>({});
   const [jointLocks, setJointLocks] = useState<StudioMannequinJointLockMap>({});
@@ -989,25 +973,11 @@ export function StudioMannequinPoserPanel({
     });
   }, [surfaceMode, pectoralVolume, muscleDefinition, fingerPose, leftSplayDeg, rightSplayDeg]);
 
-  useEffect(() => {
-    sceneRef.current?.setJointLocks?.(jointLocks);
-  }, [jointLocks]);
-
-  useEffect(() => {
-    sceneRef.current?.setScapulohumeralRhythm?.(scapulohumeralRhythm);
-  }, [scapulohumeralRhythm]);
-
-  useEffect(() => {
-    sceneRef.current?.setGuideVisibility?.(guideVisibility);
-  }, [guideVisibility]);
-
-  useEffect(() => {
-    sceneRef.current?.setQuadView?.(quadView);
-  }, [quadView]);
-
-  useEffect(() => {
-    sceneRef.current?.setCameraFovDeg?.(cameraFovDeg);
-  }, [cameraFovDeg]);
+  useEffect(() => { sceneRef.current?.setJointLocks?.(jointLocks); }, [jointLocks]);
+  useEffect(() => { sceneRef.current?.setScapulohumeralRhythm?.(scapulohumeralRhythm); }, [scapulohumeralRhythm]);
+  useEffect(() => { sceneRef.current?.setGuideVisibility?.(guideVisibility); }, [guideVisibility]);
+  useEffect(() => { sceneRef.current?.setQuadView?.(quadView); }, [quadView]);
+  useEffect(() => { sceneRef.current?.setCameraFovDeg?.(cameraFovDeg); }, [cameraFovDeg]);
 
   useEffect(() => {
     if (poseFromSceneRef.current) {
@@ -1098,6 +1068,20 @@ export function StudioMannequinPoserPanel({
     },
     [],
   );
+
+  const handleScannerHandPoseChange = useCallback((nextHandPose: StudioHandPoseData) => {
+    setHandScannerPose(nextHandPose);
+    const handCurls: Partial<Record<StudioMannequinFingerName, readonly [number, number, number]>> = {};
+    const splay: Partial<Record<StudioMannequinFingerName, number>> = {};
+    for (const fname of STUDIO_MANNEQUIN_FINGER_NAMES) {
+      const c = Math.round(Math.max(0, Math.min(1, nextHandPose[fname].flex)) * 100);
+      handCurls[fname] = [c, c, c];
+      splay[fname] = Math.round(Math.max(-1, Math.min(1, nextHandPose[fname].spread)) * 18);
+    }
+    setFingerPose(clampStudioMannequinFingerPose({ left: handCurls, right: handCurls }));
+    setLeftSplayDeg(splay);
+    setRightSplayDeg(splay);
+  }, []);
 
   const handleBreathPhaseChange = useCallback((nextBreath: number) => {
     breathPhaseRef.current = nextBreath;
@@ -1737,6 +1721,10 @@ export function StudioMannequinPoserPanel({
                     applyDisabled={capturing}
                     onMirror={handleMirrorPose}
                     onResetJoints={() => commitPoseWithHistory(createStudioMannequinRestPose(), {})}
+                    handPose={handScannerPose}
+                    onHandPoseChange={handleScannerHandPoseChange}
+                    handWebcamActive={webcamActive && handTracking}
+                    onToggleHandWebcam={() => { if (!webcamActive) void handleToggleWebcam(); else handleToggleHandTracking(); }}
                   />
                   <StudioMannequinDuoPartnerCard duo={duo} />
                 </>

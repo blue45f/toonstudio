@@ -2,13 +2,15 @@ import { resolveDatabaseRuntimeRoleMode, type DatabaseRuntimeRoleMode } from "..
 import { dbPool } from "../../platform/database";
 import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/schema/admin.schema";
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
-import { containsEvery, timedHealthQuery } from "./health-readiness-query";
+import { containsEvery, timedHealthQuery, verifyRequiredMigrationsApplied } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
-import type { DatabasePingRow, MigrationCatalogRow, QueryablePool } from "./health-readiness-query";
-import { REQUIRED_DATABASE_MIGRATIONS, REQUIRED_DATABASE_RELATIONS, type SchemaCatalogRow } from "./health-readiness-inventory";
+import { REQUIRED_DATABASE_MIGRATIONS, REQUIRED_DATABASE_RELATIONS } from "./health-readiness-inventory";
 
-export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
+import type { SchemaCatalogRow } from "./health-readiness-inventory";
+import type { DatabasePingRow, QueryablePool } from "./health-readiness-query";
+
 export { REQUIRED_DATABASE_MIGRATIONS, REQUIRED_DATABASE_RELATIONS } from "./health-readiness-inventory";
+export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
 export const HEALTH_READINESS_REPOSITORY = Symbol("HEALTH_READINESS_REPOSITORY");
 
@@ -1367,23 +1369,7 @@ export class PostgresHealthReadinessRepository
       return false;
     }
 
-    const migrations = await this.pool.query<MigrationCatalogRow>(
-      timedHealthQuery(
-        `
-          SELECT COALESCE(
-            array_agg("id" ORDER BY "id"),
-            ARRAY[]::text[]
-          ) AS "migrationIds"
-          FROM public.toonspectrum_schema_migration
-          WHERE "id" = ANY($1::text[])
-        `,
-        [[...REQUIRED_DATABASE_MIGRATIONS]],
-      ),
-    );
-    return containsEvery(
-      migrations.rows[0]?.migrationIds ?? null,
-      REQUIRED_DATABASE_MIGRATIONS,
-    );
+    return verifyRequiredMigrationsApplied(this.pool, REQUIRED_DATABASE_MIGRATIONS);
   }
 }
 

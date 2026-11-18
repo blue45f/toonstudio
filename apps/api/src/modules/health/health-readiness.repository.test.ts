@@ -10,6 +10,13 @@ import {
 } from "./health-readiness.repository";
 import { ROLE_SEPARATION_ACL_FLAGS } from "./health-readiness-role-separation";
 
+// AI 보드는 별도 승인 migration 전까지 해당 API만 503을 반환하며 전역 readiness를 막지 않는다.
+const AI_OPERATIONS_API_LOCAL_RELATIONS = [
+  "admin_ai_operations_audit",
+  "admin_ai_operations_board",
+  "admin_ai_operations_receipt",
+] as const;
+
 const ASSET_PLATFORM_RELATIONS = [
   "creator_asset_artifact",
   "creator_asset_artifact_set",
@@ -463,7 +470,18 @@ describe("PostgresHealthReadinessRepository", () => {
     );
   });
 
-  it("tracks every relation declared across Drizzle and raw-SQL product migrations", () => {
+  it("AI 보드 스키마가 없어도 전역 API readiness의 기존 필수 조건을 유지한다", async () => {
+    for (const relation of AI_OPERATIONS_API_LOCAL_RELATIONS) {
+      expect(REQUIRED_DATABASE_RELATIONS).not.toContain(relation);
+    }
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [completeSchemaCatalog()] })
+      .mockResolvedValueOnce({ rows: [{ migrationIds: [...REQUIRED_DATABASE_MIGRATIONS] }] });
+    await expect(new PostgresHealthReadinessRepository({ query } as never).isSchemaReady()).resolves.toBe(true);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
+  it("모든 선언된 테이블을 전역 필수 또는 명시된 AI 보드 전용 의존성으로 빠짐없이 추적한다", () => {
     // db/schema.ts 는 db/schema/ 도메인 모듈들의 배럴이다 — pgTable 선언은 그 디렉터리에 있다.
     const schemaDir = new URL("../../platform/database/schema/", import.meta.url);
     const schemaFiles = [
@@ -540,6 +558,6 @@ describe("PostgresHealthReadinessRepository", () => {
       ...new Set([...schemaRelations, ...migrationRelations]),
     ].sort();
 
-    expect(REQUIRED_DATABASE_RELATIONS).toEqual(declaredRelations);
+    expect([...REQUIRED_DATABASE_RELATIONS, ...AI_OPERATIONS_API_LOCAL_RELATIONS].sort()).toEqual(declaredRelations);
   });
 });

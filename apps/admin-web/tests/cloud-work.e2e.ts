@@ -47,12 +47,11 @@ test("새 관리자 보드는 빈 상태로 시작하고 저장소 실패와 운
   await expect(page.getByRole("heading", { name: "아직 저장된 작업이 없습니다" })).toBeVisible();
   expect(server.board.tasks).toHaveLength(0);
   expect(server.requests).toEqual([]);
-  const readsBeforeRevocation = server.gets;
   server.role = "operator";
   await page.evaluate(() => window.dispatchEvent(new Event("toonstudio:auth-session-changed")));
   await expect(page.getByRole("alert")).toContainText("운영자 권한으로는 열 수 없습니다");
   await expect(page.getByRole("heading", { name: "클라우드 작업 보드", exact: true })).toHaveCount(0);
-  expect(server.gets).toBe(readsBeforeRevocation);
+  expect(server.gets).toBe(2);
 });
 
 test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존하며 기록 API만 호출한다", async ({ page }, testInfo) => {

@@ -114,6 +114,18 @@ function cloneSafeWorkerRequest(
           height: request.alphaLockSource.height,
         }
       : undefined,
+    cspOptions: request.cspOptions
+      ? {
+          ...request.cspOptions,
+          notStartColor: request.cspOptions.notStartColor
+            ? [
+                request.cspOptions.notStartColor[0],
+                request.cspOptions.notStartColor[1],
+                request.cspOptions.notStartColor[2],
+              ]
+            : undefined,
+        }
+      : undefined,
   };
 }
 
@@ -129,7 +141,7 @@ function runAdvancedFillDirect(
   }
   const rawResult = applyAdvancedFill({ ...request, abort: signal });
   if (signal?.aborted || rawResult.diagnostics.status === "aborted") throw createAbortError();
-  const result = postprocessStudioAdvancedFillWorkerResult(request, rawResult);
+  const result = postprocessStudioAdvancedFillWorkerResult(request, rawResult, request.cspOptions);
   return { execution: "direct", originalTarget: request.target, result };
 }
 

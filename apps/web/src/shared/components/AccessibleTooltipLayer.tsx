@@ -9,7 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-type TooltipSide = "top" | "bottom";
+import { resolveTooltipPlacement, tooltipArrowStyle, tooltipSideStyle, type TooltipPlacement } from "./accessible-tooltip-placement";
 
 type TooltipSource = Readonly<{
   target: HTMLElement;
@@ -19,19 +19,11 @@ type TooltipSource = Readonly<{
   reducedMotion: boolean;
 }>;
 
-type TooltipPlacement = Readonly<{
-  left: number;
-  top: number;
-  arrowOffset: number;
-  side: TooltipSide;
-}>;
-
 const SHOW_DELAY_MS = 360;
 const WARM_SHOW_DELAY_MS = 90;
 const HIDE_DELAY_MS = 120;
 const EXIT_DURATION_MS = 100;
 const VIEWPORT_PADDING = 10;
-const GAP = 10;
 const TOUCH_HOLD_DELAY_MS = 520;
 const TOUCH_MOVE_TOLERANCE_PX = 10;
 const CANDIDATE_SELECTOR = [
@@ -40,10 +32,6 @@ const CANDIDATE_SELECTOR = [
   '[role="switch"][aria-label]', '[role="checkbox"][aria-label]', '[role="radio"][aria-label]',
   '[role="option"][aria-label]',
 ].join(",");
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(Math.max(value, minimum), Math.max(minimum, maximum));
-}
 
 function cleanCopy(value: string | null | undefined): string | undefined {
   const copy = value?.replace(/\s+/gu, " ").trim();
@@ -221,57 +209,19 @@ function resolvePlacement(
   const anchor = tooltipAnchorRect(target);
   if (!anchor) return null;
 
-  const controlledPopup = controlledPopupRect(target);
-  const popup = bubble.getBoundingClientRect();
   const visualViewport = globalThis.visualViewport;
-  const viewportLeft = visualViewport?.offsetLeft ?? 0;
-  const viewportTop = visualViewport?.offsetTop ?? 0;
-  const viewportWidth = visualViewport?.width ?? globalThis.innerWidth;
-  const viewportHeight = visualViewport?.height ?? globalThis.innerHeight;
-  const viewportRight = viewportLeft + viewportWidth;
-  const viewportBottom = viewportTop + viewportHeight;
-  const popupWidth = popup.width > 0 ? popup.width : 160;
-  const popupHeight = popup.height > 0 ? popup.height : 36;
-  const topObstacle =
-    controlledPopup && controlledPopup.top < anchor.top
-      ? Math.min(anchor.top, controlledPopup.top)
-      : anchor.top;
-  const bottomObstacle =
-    controlledPopup && controlledPopup.bottom > anchor.bottom
-      ? Math.max(anchor.bottom, controlledPopup.bottom)
-      : anchor.bottom;
-  const spaceAbove = topObstacle - viewportTop - VIEWPORT_PADDING;
-  const spaceBelow = viewportBottom - VIEWPORT_PADDING - bottomObstacle;
-  const popupCoversBelow = Boolean(controlledPopup && controlledPopup.bottom > anchor.bottom);
-  const side: TooltipSide = popupCoversBelow
-    ? spaceAbove >= popupHeight + GAP
-      ? "top"
-      : "bottom"
-    : spaceBelow >= popupHeight + GAP || spaceBelow >= spaceAbove
-      ? "bottom"
-      : "top";
-  const idealLeft = anchor.left + anchor.width / 2 - popupWidth / 2;
-  const left = clamp(
-    idealLeft,
-    viewportLeft + VIEWPORT_PADDING,
-    viewportRight - popupWidth - VIEWPORT_PADDING,
-  );
-  const top = clamp(
-    side === "bottom" ? bottomObstacle + GAP : topObstacle - popupHeight - GAP,
-    viewportTop + VIEWPORT_PADDING,
-    viewportBottom - popupHeight - VIEWPORT_PADDING,
-  );
-
-  return {
-    left,
-    top,
-    side,
-    arrowOffset: clamp(
-      anchor.left + anchor.width / 2 - left,
-      14,
-      Math.max(14, popupWidth - 14),
-    ),
-  };
+  const side = target.closest("[data-app-tooltip-preferred-side]")?.getAttribute("data-app-tooltip-preferred-side");
+  return resolveTooltipPlacement({
+    anchor,
+    popup: bubble.getBoundingClientRect(),
+    controlledPopup: controlledPopupRect(target),
+    preferredSide: side === "left" || side === "right" ? side : undefined,
+    viewport: {
+      left: visualViewport?.offsetLeft ?? 0, top: visualViewport?.offsetTop ?? 0,
+      width: visualViewport?.width ?? globalThis.innerWidth,
+      height: visualViewport?.height ?? globalThis.innerHeight,
+    },
+  });
 }
 
 export function AccessibleTooltipLayer(): ReactElement | null {
@@ -743,6 +693,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
     side: "bottom" as const,
   };
   const style: CSSProperties = {
+    ...tooltipSideStyle(renderedPlacement.side),
     left: renderedPlacement.left,
     top: renderedPlacement.top,
     "--app-tooltip-arrow-offset": `${renderedPlacement.arrowOffset}px`,
@@ -762,7 +713,7 @@ export function AccessibleTooltipLayer(): ReactElement | null {
       className="pointer-events-auto fixed z-[240] w-max max-w-[min(18rem,calc(100vw-1.25rem))] rounded-lg border border-line/80 bg-panel/98 px-2.5 py-2 text-left shadow-[0_18px_48px_oklch(0.06_0.01_70/0.62)] backdrop-blur-xl"
       style={style}
     >
-      <span aria-hidden data-app-tooltip-arrow="true" />
+      <span aria-hidden data-app-tooltip-arrow="true" style={tooltipArrowStyle(renderedPlacement)} />
       <span className="flex min-w-0 items-start justify-between gap-3">
         <span className="min-w-0 text-[0.75rem] font-bold leading-snug text-fg">
           {active.title}

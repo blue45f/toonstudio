@@ -8,6 +8,10 @@
  *   1) hasCustomShape=false        → "커스텀 모양으로 전환" 버튼만 노출.
  *   2) hasCustomShape=true,  !active → 편집 시작 토글 + 되돌리기 버튼.
  *   3) hasCustomShape=true,  active  → 편집 중 안내(핸들 개수) + 편집 종료 토글 + 되돌리기.
+ *
+ * 역공학 근거(REA evidence_id):
+ * - ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68
+ * - ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d
  */
 import {
   CircleMinus,
@@ -22,13 +26,19 @@ import {
   Undo2,
 } from "lucide-react";
 
+import { lazy, Suspense, type ReactElement } from "react";
+
 import { StudioToggleChip } from "../studio-panel-ui";
 import { useT } from "@/shared/lib/i18n";
 
 import "../studio-brush-canvas-status-i18n";
 
+import type { MultiJointTailPlan } from "./studio-balloon-pen-and-tails";
 import type { BubbleQuickTransformAction } from "./studio-bubble-quick-transform";
-import type { ReactElement } from "react";
+
+const StudioBalloonPenAndTailsDrawer = lazy(() =>
+  import("./StudioBalloonPenAndTailsDrawer").then((m) => ({ default: m.StudioBalloonPenAndTailsDrawer })),
+);
 
 export type StudioBubbleShapePanelProps = {
   /** double 변형처럼 현재 커스텀 폴리곤 전환을 제공하지 않는 모양. 퀵 변형은 그대로 노출한다. */
@@ -60,6 +70,10 @@ export type StudioBubbleShapePanelProps = {
   quickTransformFlipDisabled?: boolean;
   /** 크기 한계·대칭 외곽선처럼 action별 no-op이 되는 이유. */
   quickTransformUnavailableReasons?: Partial<Record<BubbleQuickTransformAction, string | null>>;
+  /** 곡선 스플라인 윤곽 점 배열을 커스텀 다각형으로 즉시 적용한다. */
+  onApplyCurveBalloonPoints?: (customShapePoints: number[]) => void;
+  /** 다관절 대사·번개·생각 꼬리 계획을 상위 요소에 반영한다. */
+  onApplyMultiJointTail?: (plan: MultiJointTailPlan) => void;
 };
 
 const QUICK_TRANSFORMS: ReadonlyArray<{
@@ -92,6 +106,8 @@ export function StudioBubbleShapePanel({
   quickTransformDisabled = false,
   quickTransformFlipDisabled = false,
   quickTransformUnavailableReasons = {},
+  onApplyCurveBalloonPoints,
+  onApplyMultiJointTail,
 }: StudioBubbleShapePanelProps): ReactElement {
   const t = useT();
   const quickTransformStatusMessages = Array.from(
@@ -252,6 +268,19 @@ export function StudioBubbleShapePanel({
           )}
         </>
       )}
+
+          <Suspense fallback={null}>
+            <StudioBalloonPenAndTailsDrawer
+              disabled={quickTransformDisabled || pointActionsDisabled}
+              onConvert={onConvert}
+              onApplyCurveBalloonPoints={
+                onApplyCurveBalloonPoints
+                  ? (points) => onApplyCurveBalloonPoints([...points])
+                  : undefined
+              }
+              onApplyMultiJointTail={onApplyMultiJointTail}
+            />
+          </Suspense>
         </>
       )}
     </div>

@@ -16,7 +16,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import {
   captureLayerComp,
@@ -27,6 +27,7 @@ import {
   type StudioLayerCompGroupLike,
   type StudioLayerLikeItem,
 } from "./studio-layer-comps";
+import type { InstantiatedLayerTemplateResult, StudioLayerTemplate } from "./studio-layer-template";
 
 import {
   STUDIO_EASE,
@@ -39,6 +40,10 @@ import {
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { subStatusText } from "../status-i18n/studio-sub-status-i18n";
+
+const StudioLayerTemplateDrawer = lazy(() =>
+  import("./StudioLayerTemplateDrawer").then((m) => ({ default: m.StudioLayerTemplateDrawer })),
+);
 
 export interface StudioLayerCompsPanelProps<T extends StudioLayerLikeItem = StudioLayerLikeItem> {
   readonly layers: readonly T[];
@@ -55,6 +60,7 @@ export interface StudioLayerCompsPanelProps<T extends StudioLayerLikeItem = Stud
   readonly onBatchExportPlan?: (
     plan: ReturnType<typeof planLayerCompsBatchExport>,
   ) => void;
+  readonly onApplyLayerTemplate?: (instantiated: InstantiatedLayerTemplateResult, template: StudioLayerTemplate) => void;
   readonly className?: string;
   readonly disabled?: boolean;
 }
@@ -68,6 +74,7 @@ export function StudioLayerCompsPanel<T extends StudioLayerLikeItem = StudioLaye
   onCompsChange,
   onCaptureComp,
   onBatchExportPlan,
+  onApplyLayerTemplate,
   className,
   disabled = false,
 }: StudioLayerCompsPanelProps<T>) {
@@ -451,6 +458,14 @@ return (
           </button>
         </div>
       ) : null}
+
+      <Suspense fallback={null}>
+        <StudioLayerTemplateDrawer
+          layers={layers}
+          groups={groups}
+          onApplyLayerTemplate={onApplyLayerTemplate}
+        />
+      </Suspense>
     </fieldset>
   );
 }

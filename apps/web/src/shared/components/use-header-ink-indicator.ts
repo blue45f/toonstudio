@@ -1,83 +1,58 @@
 import { useLayoutEffect, useState, type CSSProperties, type RefObject } from "react";
 
-import type { HeaderSectionId } from "./site-header-navigation";
-
-interface HeaderInkGeometry {
-  readonly left: number;
-  readonly width: number;
-  readonly visible: boolean;
-}
-
-type HeaderInkStyle = CSSProperties & { readonly "--ink-x": string; readonly "--ink-w": number };
-
-/** 현재 구역의 링크를 측정한다. 키보드 초점·aria-current는 링크가 계속 소유한다. */
+/**
+ * 헤더 1차 메뉴의 잉크 밑줄 위치.
+ *
+ * 현재 구역 링크의 가로 위치와 폭을 CSS 변수(--ink-x, --ink-w)로 돌려준다. 밑줄 자체는
+ * 1px 폭 요소를 transform(translateX + scaleX)으로만 옮기므로 레이아웃을 다시 계산하지 않는다.
+ * 첫 배치는 전이 없이 놓고(data-ready 이전), 이후 구역이 바뀔 때만 그어지듯 미끄러진다.
+ * ResizeObserver가 없는 환경(jsdom 등)에서도 한 번은 측정한다.
+ */
 export function useHeaderInkIndicator(
-  navigationRef: RefObject<HTMLElement | null>,
-  currentSection: HeaderSectionId | null,
-): HeaderInkStyle {
-  const [geometry, setGeometry] = useState<HeaderInkGeometry>({ left: 0, width: 0, visible: false });
+  navRef: RefObject<HTMLElement | null>,
+  currentSection: string | null,
+): CSSProperties {
+  const [style, setStyle] = useState<CSSProperties>({});
 
   useLayoutEffect(() => {
-    const navigation = navigationRef.current;
-    if (!navigation) return;
-    let disposed = false;
-    let measureFrame = 0;
-    let readyFrame = 0;
-
+    const nav = navRef.current;
+    if (!nav) return undefined;
+    let frame = 0;
+    let ready = false;
     const measure = () => {
-      if (disposed) return;
-      const target = Array.from(navigation.querySelectorAll<HTMLElement>("[data-navigation-entry]"))
-        .find((element) => element.dataset.navigationEntry === currentSection);
-      const parentBox = navigation.getBoundingClientRect();
-      const targetBox = target?.getBoundingClientRect();
-      const visible = Boolean(currentSection && targetBox && targetBox.width > 0 && parentBox.width > 0);
-      const left = visible && targetBox ? Math.round(targetBox.left - parentBox.left + navigation.scrollLeft) : 0;
-      const width = visible && targetBox ? Math.round(targetBox.width) : 0;
-      setGeometry((previous) => previous.left === left && previous.width === width && previous.visible === visible
-        ? previous
-        : { left, width, visible });
-      // 첫 배치는 애니메이션 없이 맞추고 다음 구역부터 기존 CSS 전이를 적용한다.
-      if (visible && !navigation.hasAttribute("data-ink-ready") && !readyFrame) {
-        readyFrame = window.requestAnimationFrame(() => {
-          readyFrame = 0;
-          if (!disposed) navigation.setAttribute("data-ink-ready", "true");
-        });
+      const link = currentSection
+        ? nav.querySelector<HTMLElement>(`[data-navigation-entry="${currentSection}"]`)
+        : null;
+      if (!link) {
+        setStyle((previous) => ({ ...previous, opacity: 0 }));
+        return;
+      }
+      const navBox = nav.getBoundingClientRect();
+      const linkBox = link.getBoundingClientRect();
+      // 글자 양옆 안쪽 여백(10px)만큼 들여 글자 폭에 맞춘다.
+      const inset = Math.min(10, linkBox.width / 4);
+      const width = Math.max(0, linkBox.width - inset * 2);
+      setStyle({
+        "--ink-x": `${Math.round(linkBox.left - navBox.left + inset)}px`,
+        "--ink-w": String(Math.round(width)),
+        opacity: width > 0 ? 1 : 0,
+      } as CSSProperties);
+      if (!ready) {
+        ready = true;
+        frame = window.requestAnimationFrame(() => nav.setAttribute("data-ink-ready", "true"));
       }
     };
-    const scheduleMeasure = () => {
-      if (disposed) return;
-      window.cancelAnimationFrame(measureFrame);
-      measureFrame = window.requestAnimationFrame(measure);
-    };
-
     measure();
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
-    resizeObserver?.observe(navigation);
-    for (const link of navigation.querySelectorAll("[data-navigation-entry]")) resizeObserver?.observe(link);
-    const mutationObserver = typeof MutationObserver === "undefined" ? null : new MutationObserver(scheduleMeasure);
-    // 언어 전환으로 글자 폭이 바뀌어도 표시 위치를 다시 맞춘다. 스타일 변경은 관찰하지 않는다.
-    mutationObserver?.observe(navigation, { childList: true, characterData: true, subtree: true });
-    navigation.addEventListener("focusin", scheduleMeasure);
-    navigation.addEventListener("focusout", scheduleMeasure);
-    navigation.addEventListener("scroll", scheduleMeasure, { passive: true });
-    window.addEventListener("resize", scheduleMeasure);
-    const fonts = document.fonts;
-    fonts?.addEventListener("loadingdone", scheduleMeasure);
-    if (fonts) void fonts.ready.then(() => { if (!disposed) scheduleMeasure(); });
-
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+    observer?.observe(nav);
+    window.addEventListener("resize", measure);
+    void document.fonts?.ready.then(measure).catch(() => undefined);
     return () => {
-      disposed = true;
-      window.cancelAnimationFrame(measureFrame);
-      window.cancelAnimationFrame(readyFrame);
-      resizeObserver?.disconnect();
-      mutationObserver?.disconnect();
-      navigation.removeEventListener("focusin", scheduleMeasure);
-      navigation.removeEventListener("focusout", scheduleMeasure);
-      navigation.removeEventListener("scroll", scheduleMeasure);
-      window.removeEventListener("resize", scheduleMeasure);
-      fonts?.removeEventListener("loadingdone", scheduleMeasure);
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
     };
-  }, [navigationRef, currentSection]);
+  }, [navRef, currentSection]);
 
-  return { "--ink-x": `${geometry.left}px`, "--ink-w": geometry.width, opacity: geometry.visible ? 1 : 0 };
+  return style;
 }

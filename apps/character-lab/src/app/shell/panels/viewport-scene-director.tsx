@@ -20,6 +20,16 @@ import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../..
 
 import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 import type {
+  DuoPartnerExpressionPreset,
+  DuoPartnerStance,
+  HandPropId,
+  HandPropSide,
+  HeadPropId,
+  SfxStampId,
+  ShadingProfile,
+  StagePropId,
+} from "../../../contracts";
+import type {
   WebtoonDialogueLocale,
   WebtoonJaWritingMode,
   WebtoonManuscriptMoodId,
@@ -42,16 +52,6 @@ import type {
   WebtoonStripSpeakerTargets,
 } from "../../../export/webtoon-strip-composer";
 import type { ShaperToonShaderId } from "../../../presets";
-import type {
-  DuoPartnerExpressionPreset,
-  DuoPartnerStance,
-  HandPropId,
-  HandPropSide,
-  HeadPropId,
-  SfxStampId,
-  ShadingProfile,
-  StagePropId,
-} from "../../../contracts";
 
 export type WebtoonSceneDirectorPresetId =
   | "director-rofan-coronation"

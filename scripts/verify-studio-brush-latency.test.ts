@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { performance as nodePerformance } from "node:perf_hooks";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,15 +10,45 @@ import {
   studioBrushCompetitiveLongStrokeRequested,
 } from "./verify-studio-brush-latency.mts";
 
+import type { StudioBrushDiagnosticInputSample } from "./lib/studio-brush-first-contact-diagnostics";
 import type { Page } from "playwright";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(globalThis, "__studioBrushLatencyProbe");
   Reflect.deleteProperty(globalThis, "__studioBrushSettleProbe");
 });
 
 describe("brush latency probes with reclaimed canvas layers", () => {
+  it("기존 callback의 입력·관측 시각과 실제 픽셀 읽기 횟수만 진단에 보존한다", async () => {
+    let onInput: (() => void) | undefined;
+    const callbacks: FrameRequestCallback[] = [];
+    let reads = 0;
+    const context = { clearRect: vi.fn(), drawImage: vi.fn(), getImageData: () => ({
+      data: new Uint8ClampedArray(++reads >= 3 ? [32, 0, 0, 255, 32, 0, 0, 255] : [0, 0, 0, 255, 0, 0, 0, 255]),
+    }) };
+    const root = { querySelectorAll: () => [],
+      addEventListener: (_name: string, listener: () => void) => { onInput = listener; }, removeEventListener: vi.fn() };
+    vi.stubGlobal("document", { querySelector: () => root });
+    vi.stubGlobal("OffscreenCanvas", class { getContext() { return context; } });
+    vi.spyOn(nodePerformance, "now").mockReturnValueOnce(10).mockReturnValueOnce(11)
+      .mockReturnValueOnce(12).mockReturnValueOnce(16).mockReturnValueOnce(23);
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => callbacks.push(callback)));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    const page = { evaluate: async (callback: (argument: unknown) => unknown, argument: unknown) => callback(argument) } as unknown as Page;
+    await armInputProbe(page, "pointerdown", 0, { x: 100, y: 100 }, 48);
+    callbacks.shift()?.(11);
+    onInput?.();
+    callbacks.shift()?.(16);
+    callbacks.shift()?.(23);
+    const result = (globalThis as typeof globalThis & { __studioBrushLatencyProbe?: { result: StudioBrushDiagnosticInputSample } }).__studioBrushLatencyProbe?.result;
+    expect(result).toMatchObject({ latencyMs: 11, changedPixels: 2, maxChannelDelta: 32, timedOut: false,
+      clock: { armedAt: 10, eventTime: 12, observedAt: 23, sampleCount: 2 } });
+    expect(reads).toBe(3);
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(3);
+  });
+
   it.each(["input", "settle"] as const)("samples live pixels with the %s probe while a sibling has no bitmap", async (probe) => {
     const rect = { left: 0, top: 0, width: 400, height: 300 };
     const layers = [

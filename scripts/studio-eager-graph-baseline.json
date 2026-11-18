@@ -9,17 +9,17 @@
     "totalBytesTolerance": 0.01
   },
   "totals": {
-    "modules": 1680,
-    "bytes": 20494545
+    "modules": 1708,
+    "bytes": 20742811
   },
   "entryTotals": {
     "apps/web/src/app/main.tsx": {
-      "modules": 227,
-      "bytes": 1203639
+      "modules": 229,
+      "bytes": 1210595
     },
     "apps/web/src/domains/creator/studio-legacy-editor-adapter.tsx": {
-      "modules": 1490,
-      "bytes": 19616482
+      "modules": 1517,
+      "bytes": 19859129
     }
   },
   "forbiddenDomains": {
@@ -60,7 +60,7 @@
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 15,
-      "bytes": 260189,
+      "bytes": 260552,
       "files": [
         "apps/web/src/domains/creator/bg3d/StudioBg3dRetainedOwnerRouteBridge.tsx",
         "apps/web/src/domains/creator/bg3d/studio-bg3d-camera-orientation.ts",
@@ -280,19 +280,19 @@
   "folders": {
     "apps/web/src/app": {
       "modules": 9,
-      "bytes": 47602
+      "bytes": 50150
     },
     "apps/web/src/app/components": {
       "modules": 1,
-      "bytes": 3340
+      "bytes": 3363
     },
     "apps/web/src/app/errors": {
       "modules": 3,
       "bytes": 13865
     },
     "apps/web/src/app/routes": {
-      "modules": 47,
-      "bytes": 174961
+      "modules": 48,
+      "bytes": 175965
     },
     "apps/web/src/app/spatial-campus": {
       "modules": 3,
@@ -307,8 +307,8 @@
       "bytes": 615
     },
     "apps/web/src/domains/creator": {
-      "modules": 561,
-      "bytes": 8359588
+      "modules": 562,
+      "bytes": 8420059
     },
     "apps/web/src/domains/creator/a11y": {
       "modules": 1,
@@ -318,13 +318,17 @@
       "modules": 33,
       "bytes": 266110
     },
+    "apps/web/src/domains/creator/asset-workspace": {
+      "modules": 2,
+      "bytes": 3468
+    },
     "apps/web/src/domains/creator/assistant": {
       "modules": 3,
       "bytes": 5248
     },
     "apps/web/src/domains/creator/bg3d": {
       "modules": 15,
-      "bytes": 260189
+      "bytes": 260552
     },
     "apps/web/src/domains/creator/browser-translate": {
       "modules": 1,
@@ -332,15 +336,15 @@
     },
     "apps/web/src/domains/creator/brush": {
       "modules": 154,
-      "bytes": 2560767
+      "bytes": 2562768
     },
     "apps/web/src/domains/creator/brush-lab": {
-      "modules": 38,
-      "bytes": 362945
+      "modules": 40,
+      "bytes": 397389
     },
     "apps/web/src/domains/creator/canvas": {
-      "modules": 64,
-      "bytes": 669867
+      "modules": 65,
+      "bytes": 676830
     },
     "apps/web/src/domains/creator/catalog": {
       "modules": 3,
@@ -412,7 +416,7 @@
     },
     "apps/web/src/domains/creator/live": {
       "modules": 53,
-      "bytes": 814035
+      "bytes": 814231
     },
     "apps/web/src/domains/creator/localization": {
       "modules": 2,
@@ -454,6 +458,10 @@
       "modules": 5,
       "bytes": 25640
     },
+    "apps/web/src/domains/creator/ruler": {
+      "modules": 1,
+      "bytes": 16197
+    },
     "apps/web/src/domains/creator/save-first": {
       "modules": 8,
       "bytes": 51502
@@ -483,8 +491,8 @@
       "bytes": 69244
     },
     "apps/web/src/domains/creator/studio-cuttoon-editor": {
-      "modules": 86,
-      "bytes": 1016237
+      "modules": 103,
+      "bytes": 1112826
     },
     "apps/web/src/domains/creator/studio-production": {
       "modules": 1,
@@ -492,11 +500,11 @@
     },
     "apps/web/src/domains/creator/studio-router": {
       "modules": 5,
-      "bytes": 39301
+      "bytes": 39446
     },
     "apps/web/src/domains/creator/studio-shell": {
       "modules": 3,
-      "bytes": 7054
+      "bytes": 7216
     },
     "apps/web/src/domains/creator/template": {
       "modules": 1,
@@ -507,8 +515,8 @@
       "bytes": 510
     },
     "apps/web/src/domains/creator/vector": {
-      "modules": 2,
-      "bytes": 10773
+      "modules": 3,
+      "bytes": 23760
     },
     "apps/web/src/domains/creator/vrm": {
       "modules": 14,
@@ -552,19 +560,19 @@
     },
     "apps/web/src/shared/components": {
       "modules": 50,
-      "bytes": 212871
+      "bytes": 213537
     },
     "apps/web/src/shared/hooks": {
       "modules": 2,
-      "bytes": 11113
+      "bytes": 11320
     },
     "apps/web/src/shared/i18n": {
       "modules": 1,
-      "bytes": 114554
+      "bytes": 114655
     },
     "apps/web/src/shared/lib": {
-      "modules": 74,
-      "bytes": 280039
+      "modules": 76,
+      "bytes": 290226
     },
     "apps/web/src/shared/navigation": {
       "modules": 3,
@@ -623,6 +631,7 @@
     "apps/web/src/app/routes/app-route-title-ownership.ts": 1,
     "apps/web/src/app/routes/command-palette-event-bridge.tsx": 1,
     "apps/web/src/app/routes/creator-resource-titles.ts": 1,
+    "apps/web/src/app/routes/groups/LegacyCanvasRedirect.tsx": 1,
     "apps/web/src/app/routes/groups/account.routes.tsx": 1,
     "apps/web/src/app/routes/groups/admin.routes.tsx": 1,
     "apps/web/src/app/routes/groups/app-routes.tsx": 1,
@@ -772,6 +781,8 @@
     "apps/web/src/domains/creator/ai/studio-ai-webtoon-style-filter.ts": 2,
     "apps/web/src/domains/creator/ai/studio-scenario-candidate-workflow.ts": 2,
     "apps/web/src/domains/creator/ai/studio-scenario-image-generation.ts": 2,
+    "apps/web/src/domains/creator/asset-workspace/StudioUnifiedAssetWorkspaceSessionProvider.tsx": 2,
+    "apps/web/src/domains/creator/asset-workspace/studio-unified-asset-workspace-state.ts": 2,
     "apps/web/src/domains/creator/assistant/StudioWebtoonAssistantModal.tsx": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-document.ts": 2,
     "apps/web/src/domains/creator/assistant/studio-webtoon-assistant-loader.ts": 2,
@@ -814,6 +825,7 @@
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-showcase.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-texture.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-v8.ts": 2,
+    "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog-v9-webtoon-master.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-catalog.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-recipe-types.ts": 2,
     "apps/web/src/domains/creator/brush-lab/brush-studio-v6-topology-catalog.ts": 2,
@@ -829,6 +841,7 @@
     "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-model.generated.ts": 2,
     "apps/web/src/domains/creator/brush-lab/pigment/latent-pigment-table.ts": 2,
     "apps/web/src/domains/creator/brush-lab/pigment/vendor/open-km.ts": 2,
+    "apps/web/src/domains/creator/brush-lab/studio-brush-task-route.ts": 3,
     "apps/web/src/domains/creator/brush/StudioBrushCursor.tsx": 2,
     "apps/web/src/domains/creator/brush/StudioBrushHud.tsx": 2,
     "apps/web/src/domains/creator/brush/StudioDrawNode.tsx": 2,
@@ -984,6 +997,7 @@
     "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-host.ts": 2,
     "apps/web/src/domains/creator/brush/wet-paper/studio-wet-paper-program-ids.ts": 2,
     "apps/web/src/domains/creator/canvas/StudioAdjustmentElLazyBoundary.tsx": 2,
+    "apps/web/src/domains/creator/canvas/StudioCanvasCollaborationDisclosure.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasContextMenu.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasControls.tsx": 2,
     "apps/web/src/domains/creator/canvas/StudioCanvasGuideLayers.tsx": 2,
@@ -1292,6 +1306,7 @@
     "apps/web/src/domains/creator/review-handoff/studio-review-editor-handoff.ts": 2,
     "apps/web/src/domains/creator/review-handoff/studio-review-editor-host.ts": 2,
     "apps/web/src/domains/creator/review-handoff/studio-review-editor-route.ts": 2,
+    "apps/web/src/domains/creator/ruler/studio-figure-ellipse-ruler.ts": 2,
     "apps/web/src/domains/creator/save-first/StudioFormalSaveDialogMount.tsx": 2,
     "apps/web/src/domains/creator/save-first/backup-readiness.ts": 2,
     "apps/web/src/domains/creator/save-first/initial-recovery.ts": 2,
@@ -1449,8 +1464,16 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorView.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioCuttoonEditorWorkspace.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingAppBar.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarity.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityContext.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityEntry.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityPolicy.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioDrawingClarityTaskDialog.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioHybridDccRouteColdEntryCover.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioImportHandoffHost.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioLessonMissionBarSlot.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioMobileBackStackHost.tsx": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/StudioProjectOpenRecoveryActions.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/StudioScopedWriteTargetPicker.tsx": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-copy-guard.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/bg3d-six-pass/studio-bg3d-six-pass-history-retention.ts": 2,
@@ -1459,8 +1482,11 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/createStudioCrdtTransitionPublisher.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/loadStudioBg3dInsertRuntime.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/loadStudioWriterRoomRuntime.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-autosave-monotonic-gate.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-collaboration-access-policy.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-document-source-session.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-episode-stage-source.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-viewport-panel-layout.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/studio-work-mode-gating.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioBg3dRoutedEntry.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioCollaborationAccessRuntime.ts": 2,
@@ -1490,6 +1516,7 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioUiDensityPreference.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioUnifiedHistoryJournal.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioVectorOperationRuntime.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioViewportPanelMemory.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/runtime/useStudioWorkModePreference.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-align-selected.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-asset-library-mutations.ts": 2,
@@ -1515,15 +1542,20 @@
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers-up.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-cuttoon-stage-pointers.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-deferred-stroke-commit.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-document-tool-isolation.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-drawing-assistance-channel.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-layer-metadata-patch.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-lesson-mission-link-shape.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-live-surface-start.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-marketplace-cloud-sync-focus.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-mobile-back-stack.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-pixel-tool-sessions.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/studio-project-open-failure.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-synthetic-file-change-event.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/studio-touch-gesture-policy.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/use-studio-editor-status-notices.ts": 2,
     "apps/web/src/domains/creator/studio-cuttoon-editor/use-studio-inspector-dock-resize.ts": 2,
+    "apps/web/src/domains/creator/studio-cuttoon-editor/useStudioPerSurfaceSelectionContinuity.ts": 2,
     "apps/web/src/domains/creator/studio-deferred-stroke-postprocess.ts": 2,
     "apps/web/src/domains/creator/studio-destructive-action-preview.ts": 2,
     "apps/web/src/domains/creator/studio-destructive-command-catalog.ts": 2,
@@ -1536,6 +1568,7 @@
     "apps/web/src/domains/creator/studio-document-workspace.ts": 3,
     "apps/web/src/domains/creator/studio-dodge-burn.ts": 2,
     "apps/web/src/domains/creator/studio-draft-preview-store.ts": 2,
+    "apps/web/src/domains/creator/studio-draft-save-center-model.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-assist-handlers.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-core-tools.ts": 2,
     "apps/web/src/domains/creator/studio-drawing-practice-document.ts": 2,
@@ -1960,6 +1993,7 @@
     "apps/web/src/domains/creator/useStudioSmartShapeEditing.tsx": 2,
     "apps/web/src/domains/creator/vector/studio-node-bubble-edit-controller.ts": 2,
     "apps/web/src/domains/creator/vector/studio-node-edit-pointer-session.ts": 2,
+    "apps/web/src/domains/creator/vector/studio-vector-magnet-snap.ts": 2,
     "apps/web/src/domains/creator/vrm/StudioVrmProjectArchiveAttestationHost.tsx": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge-hair-color.ts": 2,
     "apps/web/src/domains/creator/vrm/studio-vrm-avatar-forge.ts": 2,
@@ -2018,6 +2052,7 @@
     "apps/web/src/shared/components/command-palette-host.tsx": 1,
     "apps/web/src/shared/components/container.tsx": 2,
     "apps/web/src/shared/components/entry-intro-session.ts": 1,
+    "apps/web/src/shared/components/layout/layout-site-navigation.ts": 1,
     "apps/web/src/shared/components/open-search-button.tsx": 1,
     "apps/web/src/shared/components/page-intro/PageIntro.tsx": 1,
     "apps/web/src/shared/components/page-intro/page-intro-utils.ts": 1,
@@ -2090,8 +2125,10 @@
     "apps/web/src/shared/lib/i18n-runtime-translation.ts": 3,
     "apps/web/src/shared/lib/i18n.ts": 3,
     "apps/web/src/shared/lib/lazy-retry.ts": 3,
+    "apps/web/src/shared/lib/modal-status-slot.ts": 2,
     "apps/web/src/shared/lib/navigation-memory.ts": 1,
     "apps/web/src/shared/lib/nextgen-lab-settings.ts": 1,
+    "apps/web/src/shared/lib/palette-ime-guard.ts": 2,
     "apps/web/src/shared/lib/product-identity.ts": 1,
     "apps/web/src/shared/lib/programmatic-reload-hmr.ts": 1,
     "apps/web/src/shared/lib/programmatic-reload.ts": 3,
@@ -2385,6 +2422,14 @@
       "increases": [
         "총 정적 도달 원본 +199.4 KiB",
         "앱 셸 폐포 +12.2 KiB"
+      ]
+    },
+    {
+      "date": "2026-11-18",
+      "reason": "드로잉 핫패스 도형자·벡터자석 동기 스냅 연결(28KiB) 및 53개 신규 모듈 지연 로딩 분리",
+      "increases": [
+        "총 정적 도달 원본 +242.4 KiB",
+        "앱 셸 폐포 +6.8 KiB"
       ]
     }
   ]

@@ -1,11 +1,16 @@
 /** 엔진의 소스·HUD·장면 기능·페인트 점검을 읽기 전용 보고로 모은다. */
+import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector.js";
+import { Viewport } from "@babylonjs/core/Maths/math.viewport.js";
+
 import { describeSparseMorphReport } from "../glb-sparse-morph";
 import { describeMorphTextureMode } from "../morph-limits";
 import { createFeatureReport, featureActive, featureOff, featureUnavailable } from "../scene-features";
 
+import { rigBoneWorld } from "./character-rig";
+import { toVector3 } from "./convert";
 import { readJointOffsetState } from "./joint-offset-rig";
 
-import type { EngineBackend, EngineDiagnostics, HudSample, Quat, ShadingProfile, SourceCapabilities, Vec3 } from "../../contracts";
+import type { EngineBackend, EngineDiagnostics, HudSample, JointDragHandle, ShadingProfile, SourceCapabilities } from "../../contracts";
 import type { FullSceneFeatureReport } from "../beta-features";
 import type { FrameStats } from "../frame-stats";
 import type { SparseMorphReport } from "../glb-sparse-morph";
@@ -23,16 +28,6 @@ import type { CharacterScene } from "./scene-builder";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine.js";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager.js";
 import type { Scene } from "@babylonjs/core/scene.js";
-
-/** `readBone` 결과 */
-export interface BoneReading {
-  readonly name: string;
-  readonly humanoid: string | null;
-  readonly position: Vec3;
-  readonly rotation: Quat;
-  readonly localRotation: Quat;
-  readonly auxiliary: boolean;
-}
 
 interface HudReportSource {
   readonly scene: Scene;
@@ -134,4 +129,22 @@ export function readPaintInspection(rig: CharacterRig | null, paintTextures: Pic
     const decalMeshes = parts.reduce((sum, part) => sum + part.meshes.filter((mesh) => texture !== null && mesh.decalMap?.texture === texture).length, 0);
     return { ...info, decalMeshes, decalEnabled: parts.length > 0 && parts.every((part) => part.pbr.decalMap?.isEnabled === true) };
   });
+}
+
+/** 휴머노이드 본의 월드 위치와 화면 좌표를 같은 카메라 행렬로 읽는다. */
+export function readRigJointHandles(
+  rig: CharacterRig,
+  camera: CharacterScene["camera"],
+  width: number,
+  height: number,
+): readonly JointDragHandle[] {
+  const viewProjection = camera.getViewMatrix(true).multiply(camera.getProjectionMatrix(true));
+  const viewport = new Viewport(0, 0, width, height);
+  const handles: JointDragHandle[] = [];
+  for (const [bone, rb] of rig.humanoid) {
+    const world = rigBoneWorld(rb).position;
+    const projected = Vector3.Project(toVector3(world), Matrix.IdentityReadOnly, viewProjection, viewport);
+    handles.push({ bone, screen: [projected.x, projected.y], world });
+  }
+  return handles;
 }

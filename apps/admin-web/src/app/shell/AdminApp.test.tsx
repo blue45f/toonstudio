@@ -20,8 +20,8 @@ it.each(["/admin/growth/business-plan", "/admin/growth/business-plan/", "/admin/
   expect(screen.getByRole("status").textContent).toBe("사업계획서 권한 확인 중");
   expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
   expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
 });
 
 it("identifies the actual policy surface and links back to existing web management", () => {
@@ -52,6 +52,18 @@ it.each(["/admin/platform/quality", "/admin/platform/quality/"])("검증 화면 
   expect(screen.queryByText("Edge Gate 보호")).toBeNull();
 });
 
+it("NestJS query 진입을 기존 품질 경로에서 구분하고 관리자 확인을 유지한다", () => {
+  window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("관리자 권한 확인 중");
+  expect(screen.getByRole("status").getAttribute("data-view")).toBe("nestjs");
+  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("href")).toBe("/admin/platform/quality/?view=nestjs");
+  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBeNull();
+});
+
 it.each(["/admin/workspace", "/admin/workspace/", "/admin/workspace/?view=nestjs"])("통합 작업실 %s 진입에서 독립 권한 확인과 현재 메뉴를 유지한다", (pathname) => {
   window.history.replaceState(null, "", pathname);
   render(<AdminApp />);
@@ -59,8 +71,8 @@ it.each(["/admin/workspace", "/admin/workspace/", "/admin/workspace/?view=nestjs
   expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
   expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
   expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
 });
 
 it("클라우드 작업 query가 기존 품질 경로 안에서 전용 관리자 화면을 선택한다", () => {
@@ -89,15 +101,4 @@ it.each(["/admin/platform/ai-operations", "/admin/platform/ai-operations/"])("AI
   expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
   expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
   expect(screen.queryByRole("navigation", { name: "관리 화면 이동" })).toBeNull();
-});
-it("NestJS query 진입을 기존 품질 경로에서 구분하고 관리자 확인을 유지한다", () => {
-  window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
-  render(<AdminApp />);
-  expect(screen.getByRole("status").textContent).toBe("관리자 권한 확인 중");
-  expect(screen.getByRole("status").getAttribute("data-view")).toBe("nestjs");
-  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("href")).toBe("/admin/platform/quality/?view=nestjs");
-  expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBe("page");
-  expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBeNull();
-  expect(screen.getByRole("link", { name: "사업계획서·제출 준비" }).getAttribute("aria-current")).toBeNull();
 });

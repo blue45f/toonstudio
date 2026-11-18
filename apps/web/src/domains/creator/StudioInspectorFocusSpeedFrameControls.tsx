@@ -1,31 +1,29 @@
-import { Suspense } from "react";
+/**
+ * 집중선·속도선·플래시 및 만화 컷 프레임 인스펙터 컨트롤.
+ *
+ * 역공학 근거(REA evidence_id):
+ * - ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68
+ * - ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d
+ */
+import { lazy, Suspense } from "react";
 
-import {
-  STUDIO_CUT_GUTTER_PRESETS_PX,
-  type StudioWebtoonCutAlignMode,
-} from "./canvas/studio-frame-cut-production";
-import {
-  StudioContinuityMetadataEditor,
-  StudioPanelSplitPanel,
-} from "./studio-page-lazy-ui";
+import { STUDIO_CUT_GUTTER_PRESETS_PX } from "./canvas/studio-frame-cut-production";
+import { StudioContinuityMetadataEditor, StudioPanelSplitPanel } from "./studio-page-lazy-ui";
 import { studioServerAiProviderLabel } from "./studio-server-ai-client";
-import {
-  SCENARIO_BEAT_LABELS,
-  SCENARIO_BEAT_TYPES,
-  type ScenarioBeatType,
-} from "./studio-story-beats";
+import { SCENARIO_BEAT_LABELS, SCENARIO_BEAT_TYPES } from "./studio-story-beats";
 import { StudioPanelLoading } from "./StudioLazySurfaceFallback";
 
-import type {
-  El,
-  FocusLinesEl,
-  FrameEl,
-  SpeedLinesEl,
-} from "./studio-element-model";
+import type { StudioWebtoonCutAlignMode } from "./canvas/studio-frame-cut-production";
+import type { El, FocusLinesEl, FrameEl, SpeedLinesEl } from "./studio-element-model";
+import type { ScenarioBeatType } from "./studio-story-beats";
 
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+
+const StudioComicEffectV2Drawer = lazy(() =>
+  import("./comic/StudioComicEffectV2Drawer").then((m) => ({ default: m.StudioComicEffectV2Drawer })),
+);
 
 export interface StudioInspectorFocusSpeedFrameControlsProps {
   selected: FocusLinesEl | SpeedLinesEl | FrameEl;
@@ -44,6 +42,7 @@ export interface StudioInspectorFocusSpeedFrameControlsProps {
   onQuickAlignCut?: (mode: StudioWebtoonCutAlignMode) => void;
   canUndoCutAction?: boolean;
   onUndoCutAction?: () => void;
+  onReplaceSplitFrames?: (frames: readonly [FrameEl, FrameEl]) => void;
 }
 
 export function StudioInspectorFocusSpeedFrameControls({
@@ -63,6 +62,7 @@ export function StudioInspectorFocusSpeedFrameControls({
   onQuickAlignCut,
   canUndoCutAction = false,
   onUndoCutAction,
+  onReplaceSplitFrames,
 }: StudioInspectorFocusSpeedFrameControlsProps) {
   const t = useT();
   return (
@@ -214,6 +214,15 @@ export function StudioInspectorFocusSpeedFrameControls({
               <span className="w-8 text-right text-xs tabular-nums text-fg-3">{Math.round((selected.centerYRatio ?? 0.5) * 100)}%</span>
             </span>
           </label>
+
+          <Suspense fallback={null}>
+            <StudioComicEffectV2Drawer
+              selected={selected}
+              panelGutter={panelGutter}
+              panelSplitRatio={panelSplitRatio}
+              onPatch={onPatch}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -307,6 +316,15 @@ export function StudioInspectorFocusSpeedFrameControls({
               <span className="w-8 text-right text-xs tabular-nums text-fg-3">{(selected.strokeWidth ?? 2.5).toFixed(1)}</span>
             </span>
           </label>
+
+          <Suspense fallback={null}>
+            <StudioComicEffectV2Drawer
+              selected={selected}
+              panelGutter={panelGutter}
+              panelSplitRatio={panelSplitRatio}
+              onPatch={onPatch}
+            />
+          </Suspense>
         </div>
       )}
 
@@ -626,6 +644,16 @@ export function StudioInspectorFocusSpeedFrameControls({
                 </div>
               </>
             )}
+
+            <Suspense fallback={null}>
+              <StudioComicEffectV2Drawer
+                selected={selected}
+                panelGutter={panelGutter}
+                panelSplitRatio={panelSplitRatio}
+                onPatch={onPatch}
+                onReplaceSplitFrames={onReplaceSplitFrames}
+              />
+            </Suspense>
           </div>
         </div>
       )}

@@ -1,23 +1,23 @@
 import { studioLiveAdjustmentDescriptorError } from "./contracts/studio-work-asset-contract";
 import { StudioLiveAdjustmentControls } from "./StudioLiveAdjustmentControls";
 import { ChevronDown } from "lucide-react";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
-import { isIdentityCurveChannels, normalizeCurve, type CurvePoint, type CurveRgbChannels } from "./studio-curves";
-import { createStudioEffectId, type StudioEffectFavoriteState, type StudioEffectId } from "./studio-effect-favorites";
-import {
-  isIdentityLevelsChannels,
-  normalizeLevels,
-  type LevelsParams,
-  type LevelsRgbChannels,
-} from "./studio-levels";
-import { extractFilterFields, looksResetPatch, type StudioLook } from "./studio-looks";
+import { isIdentityCurveChannels, normalizeCurve } from "./studio-curves";
+import { createStudioEffectId } from "./studio-effect-favorites";
+import { isIdentityLevelsChannels, normalizeLevels } from "./studio-levels";
+import { extractFilterFields, looksResetPatch } from "./studio-looks";
 import { applyPhotoWebtoonPreset, resetPhotoWebtoonPreset } from "./studio-photo-webtoon-preset";
 import { useStudioHistogramSource } from "./useStudioHistogramSource";
 
 import type { LayerStylePatch } from "./layer/studio-layer-styles";
 import type { ImageFilterFields } from "./render/studio-konva-filter-fields";
+import type { CurvePoint, CurveRgbChannels } from "./studio-curves";
+import type { StudioEffectFavoriteState, StudioEffectId } from "./studio-effect-favorites";
 import type { El, ImageEl } from "./studio-element-model";
+import type { LevelsParams, LevelsRgbChannels } from "./studio-levels";
+import type { StudioLook } from "./studio-looks";
+import type { ReactNode } from "react";
 
 import { useT } from "@/shared/lib/i18n";
 
@@ -25,26 +25,15 @@ function createLookEffectId(lookId: string): StudioEffectId {
   return createStudioEffectId("look", lookId);
 }
 
-const StudioCurvePanel = lazy(() =>
-  import("./StudioCurvePanel").then((mod) => ({ default: mod.StudioCurvePanel }))
-);
-const StudioSmartFiltersPanel = lazy(() =>
-  import("./StudioSmartFiltersPanel").then((mod) => ({ default: mod.StudioSmartFiltersPanel }))
-);
-const StudioImageFilterPanel = lazy(() =>
-  import("./StudioImageFilterPanel").then((mod) => ({ default: mod.StudioImageFilterPanel }))
-);
-const StudioLayerStylePanel = lazy(() =>
-  import( "./layer/StudioLayerStylePanel").then((mod) => ({ default: mod.StudioLayerStylePanel }))
-);
-const StudioLevelsPanel = lazy(() =>
-  import("./StudioLevelsPanel").then((mod) => ({ default: mod.StudioLevelsPanel }))
-);
-const StudioLooksPanel = lazy(() =>
-  import("./StudioLooksPanel").then((mod) => ({ default: mod.StudioLooksPanel }))
-);
-const StudioPhotoWebtoonPresetPanel = lazy(() =>
-  import("./StudioPhotoWebtoonPresetPanel").then((mod) => ({ default: mod.StudioPhotoWebtoonPresetPanel }))
+const StudioCurvePanel = lazy(() => import("./StudioCurvePanel").then((mod) => ({ default: mod.StudioCurvePanel })));
+const StudioSmartFiltersPanel = lazy(() => import("./StudioSmartFiltersPanel").then((mod) => ({ default: mod.StudioSmartFiltersPanel })));
+const StudioImageFilterPanel = lazy(() => import("./StudioImageFilterPanel").then((mod) => ({ default: mod.StudioImageFilterPanel })));
+const StudioLayerStylePanel = lazy(() => import("./layer/StudioLayerStylePanel").then((mod) => ({ default: mod.StudioLayerStylePanel })));
+const StudioLevelsPanel = lazy(() => import("./StudioLevelsPanel").then((mod) => ({ default: mod.StudioLevelsPanel })));
+const StudioLooksPanel = lazy(() => import("./StudioLooksPanel").then((mod) => ({ default: mod.StudioLooksPanel })));
+const StudioPhotoWebtoonPresetPanel = lazy(() => import("./StudioPhotoWebtoonPresetPanel").then((mod) => ({ default: mod.StudioPhotoWebtoonPresetPanel })));
+const StudioLineCleanupAndDustSection = lazy(() =>
+  import("./filter/StudioLineCleanupAndDustSection").then((mod) => ({ default: mod.StudioLineCleanupAndDustSection })),
 );
 
 interface StudioImageAdjustmentsPanelProps {
@@ -1012,18 +1001,20 @@ export function StudioImageAdjustmentsPanel({
         <StudioSketchSection selected={selected} onPatch={onPatch} />
       </AdjustmentSection>
 
-      <AdjustmentSection
-        title={sectionTitle.colorMatch}
-        loadingLabel={sectionLoading}
-      >
+      <AdjustmentSection title={sectionTitle.colorMatch} loadingLabel={sectionLoading}>
         <StudioColorMatchSection selected={selected} onPatch={onPatch} />
       </AdjustmentSection>
 
-      <AdjustmentSection
-        title={sectionTitle.shadingAssist}
-        loadingLabel={sectionLoading}
-      >
+      <AdjustmentSection title={sectionTitle.shadingAssist} loadingLabel={sectionLoading}>
         <StudioShadingAssistSection />
+      </AdjustmentSection>
+
+      <AdjustmentSection title="선화 정리 · 먼지 제거 · 분위기 색감" loadingLabel={sectionLoading}>
+        <StudioLineCleanupAndDustSection
+          imageSrc={selected.src}
+          onCommitImageSrc={(src) => onPatch({ src })}
+          onExtractGradientStops={(stops) => onPatch({ gradientMap: { stops: stops.map((s) => ({ pos: s.pos, color: s.color })) } })}
+        />
       </AdjustmentSection>
     </>
   );

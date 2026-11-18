@@ -6,10 +6,12 @@
 }
 /* 엔진 확인·복구 중에는 실행할 수 없는 장면 안내가 복구 조작을 덮지 않는다. */
 [data-studio-bg3d-workspace] .scene-assistant:has([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-engine-unavailable"])
-  :is(.scene-assistant__viewport-status, [data-bg3d-viewport-control]) {
+  :is(.scene-assistant__viewport-status, [data-bg3d-viewport-control]),
+[data-studio-bg3d-workspace] [data-testid="studio-bg3d-viewport"]:has([data-testid="studio-bg3d-engine-probing"], [data-testid="studio-bg3d-engine-unavailable"])
+  [data-bg3d-viewport-control] {
   display: none;
 }
-[data-studio-bg3d-workspace] .scene-assistant [data-testid="studio-bg3d-engine-unavailable"] {
+[data-studio-bg3d-workspace] [data-testid="studio-bg3d-engine-unavailable"] {
   overflow-y: auto;
   justify-content: safe center;
 }

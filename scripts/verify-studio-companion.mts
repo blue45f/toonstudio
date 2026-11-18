@@ -9,7 +9,7 @@
  * Run after `pnpm run build`:
  *   pnpm run verify:studio-companion
  */
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -22,6 +22,8 @@ import {
 import { preview, type PreviewServer } from "vite";
 
 import { createCompanionPreviewApiDiagnostics } from "./lib/studio-companion-preview-diagnostics";
+import { observeCompanionRequestTimeline, type CompanionRequestTimeline } from "./lib/studio-companion-request-timeline";
+import { observeStudioPreviewNavigationRequests, type StudioNavigationSettlementReceipt } from "./lib/studio-preview-navigation-settlement";
 import { openStudioMainMenu } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
@@ -30,9 +32,12 @@ const UI_DENSITY_KEY = "toonstudio-studio-ui-density:v1";
 const LANGUAGE_KEY = "toonstudio-lang";
 const SCRATCH =
   process.env.TOONSPECTRUM_COMPANION_VERIFY_DIR
+  ?? process.env.TOONSPECTRUM_VERIFY_DIR
   ?? join(tmpdir(), "toonstudio-studio-companion");
 
 type PageDiagnostics = {
+  navigationSettlements: readonly StudioNavigationSettlementReceipt[];
+  requestTimeline: CompanionRequestTimeline;
   consoleErrors: string[];
   failedResponses: string[];
   pageErrors: string[];
@@ -113,8 +118,12 @@ function observePage(
   page: Page,
   label: string,
   previewBaseUrl: string,
+  navigationSettlements: readonly StudioNavigationSettlementReceipt[],
+  requestTimeline: CompanionRequestTimeline,
 ): PageDiagnostics {
   const diagnostics: PageDiagnostics = {
+    navigationSettlements,
+    requestTimeline,
     consoleErrors: [],
     failedResponses: [],
     pageErrors: [],
@@ -292,6 +301,27 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
   await installStudioPreferences(context);
 
   const diagnostics: Record<string, PageDiagnostics> = {};
+  const requestsByPage = new Map<Page, ReturnType<typeof observeStudioPreviewNavigationRequests>>();
+  const timelinesByPage = new Map<Page, ReturnType<typeof observeCompanionRequestTimeline>>();
+  let phase = "setup";
+  const markPhase = (next: string) => {
+    phase = next;
+    for (const [page, observer] of timelinesByPage) if (!page.isClosed()) observer.markPhase(phase);
+  };
+  const observe = (page: Page, label: string) => {
+    const requests = observeStudioPreviewNavigationRequests(page, baseUrl);
+    const timeline = observeCompanionRequestTimeline(page, phase);
+    requestsByPage.set(page, requests);
+    timelinesByPage.set(page, timeline);
+    return observePage(page, label, baseUrl, requests.receipts, timeline.timeline);
+  };
+  const settleBeforeClose = async (page: Page, phase: string) => {
+    const requests = requestsByPage.get(page);
+    if (!requests) throw new Error(`${phase}: 관측되지 않은 창은 종료 준비를 확인할 수 없습니다.`);
+    markPhase(phase);
+    await requests.settle(phase);
+    markPhase(`${phase}:ready`);
+  };
   const screenshots: string[] = [];
   let companionConnected: boolean;
   let commandRoundTrip: boolean;
@@ -303,33 +333,39 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
 
   try {
     const primary = await context.newPage();
-    diagnostics.primary = observePage(primary, "primary", baseUrl);
+    diagnostics.primary = observe(primary, "primary");
+    markPhase("primary-goto");
     await primary.goto(`${baseUrl}/studio/canvas`, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
+    markPhase("primary-shell-ready");
     await primary.locator('[data-studio-app-menubar="true"]').filter({ visible: true }).waitFor({
       state: "visible",
       timeout: 30_000,
     });
 
+    markPhase("workspace-open");
     let workspace = await openWorkspaceCompanion(primary, (popup) => {
-      diagnostics.workspace = observePage(popup, "workspace", baseUrl);
+      diagnostics.workspace = observe(popup, "workspace");
     });
     await waitForCompanionConnection(workspace, "workspace");
     companionConnected = true;
     const originalSessionId = sessionId(workspace);
     if (!originalSessionId) throw new Error("workspace companion has no valid session");
 
+    markPhase("first-command-round-trip");
     commandRoundTrip = await verifyToolRoundTrip(primary, workspace);
 
+    markPhase("navigator-open");
     let navigator = await openNavigatorCompanion(workspace, (popup) => {
-      diagnostics.navigator = observePage(popup, "navigator", baseUrl);
+      diagnostics.navigator = observe(popup, "navigator");
     });
     await waitForCompanionConnection(navigator, "navigator");
     navigatorConnected = sessionId(navigator) === originalSessionId;
     navigatorPreviewReady = await waitForNavigatorPreview(navigator);
 
+    markPhase("initial-screenshots");
     const primaryShot = join(SCRATCH, "studio-companion-primary.png");
     const workspaceShot = join(SCRATCH, "studio-companion-workspace.png");
     const navigatorShot = join(SCRATCH, "studio-companion-navigator.png");
@@ -338,29 +374,41 @@ async function verify(baseUrl: string): Promise<VerificationResult> {
     await navigator.screenshot({ path: navigatorShot, fullPage: true });
     screenshots.push(primaryShot, workspaceShot, navigatorShot);
 
+    await settleBeforeClose(navigator, "navigator-reconnect-before-close");
+    markPhase("navigator-close");
     await navigator.close();
+    markPhase("navigator-reopen");
     navigator = await openNavigatorCompanion(workspace, (popup) => {
-      diagnostics.navigatorReopened = observePage(popup, "navigator-reopened", baseUrl);
+      diagnostics.navigatorReopened = observe(popup, "navigator-reopened");
     });
     await waitForCompanionConnection(navigator, "navigator");
     navigatorReconnected = sessionId(navigator) === originalSessionId
       && await waitForNavigatorPreview(navigator);
 
+    await settleBeforeClose(workspace, "workspace-reconnect-before-close");
+    markPhase("workspace-close");
     await workspace.close();
+    markPhase("workspace-reopen");
     workspace = await openWorkspaceCompanion(primary, (popup) => {
-      diagnostics.workspaceReopened = observePage(popup, "workspace-reopened", baseUrl);
+      diagnostics.workspaceReopened = observe(popup, "workspace-reopened");
     });
     await waitForCompanionConnection(workspace, "workspace");
     workspaceReconnected = true;
     sessionPreserved = sessionId(workspace) === originalSessionId;
+    markPhase("second-command-round-trip");
     commandRoundTrip = commandRoundTrip && await verifyToolRoundTrip(primary, workspace);
 
+    markPhase("reopened-screenshot");
     const reopenedShot = join(SCRATCH, "studio-companion-reconnected.png");
     await workspace.screenshot({ path: reopenedShot, fullPage: true });
     screenshots.push(reopenedShot);
+    await Promise.all(context.pages().map(page => settleBeforeClose(page, "complete-before-close")));
   } finally {
+    markPhase("close-context");
     await context.close();
     await browser.close();
+    for (const observer of timelinesByPage.values()) observer.dispose();
+    writeFileSync(join(SCRATCH, "studio-companion-diagnostics.json"), `${JSON.stringify(diagnostics, null, 2)}\n`);
   }
 
   return {
@@ -404,7 +452,9 @@ async function main(): Promise<void> {
       && result.workspaceReconnected
       && result.sessionPreserved
       && diagnosticsAreClean(result.diagnostics);
-    log(JSON.stringify(result, null, 2));
+    const report = JSON.stringify(result, null, 2);
+    writeFileSync(join(SCRATCH, "studio-companion-report.json"), `${report}\n`);
+    log(report);
     if (!ok) throw new Error("multi-window companion verification failed");
     log(`PASS · real popup transport, command round-trip, preview, and reconnect (${SCRATCH})`);
   } finally {

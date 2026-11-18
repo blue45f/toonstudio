@@ -39,3 +39,26 @@ export interface DatabasePingRow {
 export interface MigrationCatalogRow {
   migrationIds: string[] | null;
 }
+
+export async function verifyRequiredMigrationsApplied(
+  pool: QueryablePool,
+  requiredMigrations: readonly string[],
+): Promise<boolean> {
+  const migrations = await pool.query<MigrationCatalogRow>(
+    timedHealthQuery(
+      `
+        SELECT COALESCE(
+          array_agg("id" ORDER BY "id"),
+          ARRAY[]::text[]
+        ) AS "migrationIds"
+        FROM public.toonspectrum_schema_migration
+        WHERE "id" = ANY($1::text[])
+      `,
+      [[...requiredMigrations]],
+    ),
+  );
+  return containsEvery(
+    migrations.rows[0]?.migrationIds ?? null,
+    requiredMigrations,
+  );
+}

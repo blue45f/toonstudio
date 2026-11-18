@@ -81,6 +81,7 @@ import {
 
 
 import type { StudioDynamicBrushMaterialIdentity } from "../brush/studio-dry-media-dynamic-bridge";
+import type { StudioTextBoxStyle } from "../lettering/studio-text-box-style";
 import type { DrawEl, El } from "../studio-element-model";
 
 // ---------------------------------------------------------------------------
@@ -4011,5 +4012,29 @@ describe("결과 메타·헬퍼", () => {
     ]));
     expect(result.skipped).toEqual([]);
     expect(result.elementCount).toBe(2);
+  });
+
+  it("텍스트 배경 상자(textBackgroundEnabled)와 장평·자폭 비율(textHorizontalRatio/textVerticalRatio)을 SVG로 직렬화한다", () => {
+    const styledText: SvgExportEl & Partial<StudioTextBoxStyle> = {
+      id: "t-box-scale",
+      type: "text",
+      text: "배경·장평",
+      x: 30,
+      y: 50,
+      width: 160,
+      fontSize: 20,
+      fill: "#111111",
+      rotation: 0,
+      textBackgroundEnabled: true,
+      textBackgroundColor: "#fff4b8",
+      textBackgroundAlpha: 0.85,
+      textBackgroundPaddingPx: 6,
+      textHorizontalRatio: 125,
+      textVerticalRatio: 80,
+    };
+    const result = exportPageToSvg(page([styledText]));
+    expect(result.svg).toContain('fill="#fff4b8"');
+    expect(result.svg).toContain('fill-opacity="0.85"');
+    expect(result.svg).toContain('transform="scale(1.25 0.8)"');
   });
 });

@@ -9,7 +9,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 
 import { chromium, type Page } from "playwright";
 
-import { showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
+import { openStudioMainMenu, showStudioProjectWindowTools, visibleStudioControl } from "./lib/studio-shell-interactions";
 import { findFreePort, waitForServer } from "./lib/studio-verify-preview-harness.mjs";
 
 const QUICKSTART_KEY = "toonstudio-studio-quick-start-dismissed";
@@ -275,13 +275,12 @@ async function main() {
     }
 
     // Open a main menu and ensure chevron + items layout (items are text; chevron on trigger)
-    await page.locator('[data-studio-main-menu="true"]').getByRole("menuitem", { name: "그리기", exact: true }).click();
-    const drawMenu = page.locator('[role="menu"][aria-label="그리기"]');
+    const drawMenu = await openStudioMainMenu(page, "brush");
     await drawMenu.waitFor({ state: "visible", timeout: 4000 });
     const menuItems = await drawMenu.getByRole("menuitem").count();
     if (menuItems < 4) failures.push(`그리기 메뉴 항목 부족: ${menuItems}`);
     // Optional icons on menu items are fine either way; ensure readable text
-    const penItem = drawMenu.getByRole("menuitem", { name: "펜" });
+    const penItem = drawMenu.getByRole("menuitem", { name: "펜", exact: true });
     if (!(await penItem.isVisible())) failures.push("그리기 메뉴 펜 항목 미노출");
     await page.keyboard.press("Escape");
 

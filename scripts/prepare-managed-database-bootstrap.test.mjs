@@ -134,6 +134,7 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(sql).toContain("creator_hiring_campaign");
     expect(sql).toContain("studio_review_policy_actor_epoch");
     expect(sql).toContain("CREATE POLICY admin_workspace_runtime");
+    expect(sql).toContain("CREATE POLICY admin_cloud_workboard_runtime");
     expect(sql).toContain('ON TABLE "public".admin_nestjs_quality_board');
     expect(sql).toContain('"public".admin_nestjs_quality_history');
     expect(sql).not.toMatch(/GRANT UPDATE[^;]*admin_nestjs_quality_history/u);
