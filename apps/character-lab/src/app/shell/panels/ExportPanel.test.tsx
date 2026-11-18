@@ -12,6 +12,7 @@ import { installPsdCanvasStub } from "../../../testing/psd-canvas-stub";
 import { legacyRecipeV1Fixture } from "../../../testing/recipe-fixtures";
 
 import { ExportPanel, readTextFile } from "./ExportPanel";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 
 import type { LabCommand } from "../../../contracts";
 import type { SaveBytesResult } from "../../../export/save-bytes";
@@ -40,7 +41,10 @@ beforeAll(() => {
   installPsdCanvasStub();
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  getDefaultStripDirectorSession().reset();
+});
 
 describe("ExportPanel", () => {
   it("엔진이 없으면 PNG·PSD·GLB 버튼이 비활성이고 사유를 보여주며 레시피 저장은 가능하다", async () => {
@@ -673,6 +677,10 @@ describe("ExportPanel", () => {
     const actingSelect = screen.getByTestId("export-strip-acting-arc") as HTMLSelectElement;
     expect(actingSelect.options.length).toBe(5);
     fireEvent.change(actingSelect, { target: { value: "arc-awakening-climax" } });
+    const dialogue0 = screen.getByTestId("export-strip-dialogue-0") as HTMLInputElement;
+    expect(dialogue0.disabled).toBe(false);
+    fireEvent.change(dialogue0, { target: { value: "오늘 원고 클라이맥스 시작이다." } });
+    expect(dialogue0.value).toBe("오늘 원고 클라이맥스 시작이다.");
     fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
     await waitFor(() => expect(calls).toHaveLength(4));
     expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-strip\.png$/u);

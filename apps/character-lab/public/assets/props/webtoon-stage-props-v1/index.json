@@ -9,8 +9,8 @@
       "labelKo": "오후 카페 비스트로 테이블",
       "meshName": "TS_StageProp_cafe-bistro-table",
       "path": "cafe-bistro-table.glb",
-      "bytes": 20460,
-      "sha256": "baddc4e3de86ed82574456b824bfbe457e54979e28dbe02a3e7b56f40aca16cc",
+      "bytes": 20216,
+      "sha256": "b53f5f7947f23b4c2eb734f05f19bd2726a980528d8f2fc4b7b3c08cdf3efabd",
       "triangles": 416
     },
     {
@@ -18,8 +18,8 @@
       "labelKo": "학원물 교실 책상·노트",
       "meshName": "TS_StageProp_academy-desk",
       "path": "academy-desk.glb",
-      "bytes": 17572,
-      "sha256": "7781d63821d014a91847ec638974b7b96e759a7ccfcbac2440372572c98cbf90",
+      "bytes": 17328,
+      "sha256": "7d665228a084326822b6c3fbb73c8ed165fbf7515d65718dea7bd33d34c3a9c5",
       "triangles": 196
     },
     {
@@ -27,9 +27,27 @@
       "labelKo": "무협 청운 검기 진법",
       "meshName": "TS_StageProp_murim-sword-aura",
       "path": "murim-sword-aura.glb",
-      "bytes": 49904,
-      "sha256": "8629d4d2e8df7cad8184c245637deba56393aefa84f5a441e8d2cea5dc1053f3",
+      "bytes": 49660,
+      "sha256": "6473e234bf764d87509a7a4cf101b3e8808230119df304d5f65a4ecf6f30e8d1",
       "triangles": 488
+    },
+    {
+      "id": "rofan-throne-dais",
+      "labelKo": "로판 황실 대관식 대리석 단상",
+      "meshName": "TS_StageProp_rofan-throne-dais",
+      "path": "rofan-throne-dais.glb",
+      "bytes": 42636,
+      "sha256": "f8892e523eb8a92e522311ab3ebd7c4914fb2e6ba885468289b734a75f402eca",
+      "triangles": 956
+    },
+    {
+      "id": "noir-interrogation-lamp",
+      "labelKo": "느와르 취조실 스틸 책상·펜던트 조명",
+      "meshName": "TS_StageProp_noir-interrogation-lamp",
+      "path": "noir-interrogation-lamp.glb",
+      "bytes": 24044,
+      "sha256": "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
+      "triangles": 240
     }
   ]
 }

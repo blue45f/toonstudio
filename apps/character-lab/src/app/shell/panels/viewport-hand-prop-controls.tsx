@@ -6,7 +6,11 @@
  */
 import { qNormalize } from "../../../shared/math";
 
+import { findWebtoonSceneDirectorPreset, resolveDirectorShadingProfile } from "./viewport-scene-director";
+
+import type { StripDirectorSession, WebtoonSceneDirectorPresetId } from "./viewport-scene-director";
 import type {
+  CharacterEngine,
   HandPropAttachment,
   HandPropId,
   HandPropSide,
@@ -16,6 +20,7 @@ import type {
   Pose,
   PresetId,
   Quat,
+  ShadingProfile,
   StagePropAttachment,
   StagePropId,
   Vec3,
@@ -136,28 +141,28 @@ export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze(
     labelKo: "메탈 라운드 안경",
     genreHintKo: "오피스·학원·추리 지성파 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/wire-glasses.glb",
-    sha256: "5c82ef01a3e43d04e79b08c2fb37e7b11b626c6b2dbc09a41fcb1d57c99cc053",
+    sha256: "3bbb641020fe34e91f292490947392293b1b6d2d7c94ff04e7045fca5347f303",
   },
   {
     id: "rofan-tiara",
     labelKo: "로판 황실 사파이어 티아라",
     genreHintKo: "로맨스판타지·성녀 대관식 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/rofan-tiara.glb",
-    sha256: "9b7426f04c2d43bf789cfc1a8d6d0b5f2cb86bfbfb5d68f58677f7e78dc48551",
+    sha256: "58053ca4b8090c134141b7c5f3730dd715e9a5912378fe8c49087186e8ee1734",
   },
   {
     id: "tactical-headset",
     labelKo: "전술 홀로그램 헤드셋",
     genreHintKo: "아포칼립스·헌터·사이버 전술 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/tactical-headset.glb",
-    sha256: "947e0feac84c4256974676c4f67e84742abf45c95880ad9b81fbec576a55a2c1",
+    sha256: "7105564a2e7db203c30d1276a0da3f8a7b9083d7f01aae5014195c675bdd955c",
   },
   {
     id: "pearl-earrings-pin",
     labelKo: "진주 드롭 귀걸이·골드 헤어핀",
     genreHintKo: "로맨스·아이돌·캠퍼스 클로즈업 연출",
     glbUrl: "/assets/props/webtoon-head-props-v1/pearl-earrings-pin.glb",
-    sha256: "de92d56c0fc0456d862da11c8547f8cd6d28c032abb3ae8769c45b55460f4913",
+    sha256: "90e889c9c6a533f0fb1f3638b3bf137e6e0ab22f84469d77abf70c83d4073eaf",
   },
 ]);
 
@@ -167,21 +172,35 @@ export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freez
     labelKo: "오후 카페 비스트로 테이블",
     genreHintKo: "일상·힐링·오피스 대화 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/cafe-bistro-table.glb",
-    sha256: "baddc4e3de86ed82574456b824bfbe457e54979e28dbe02a3e7b56f40aca16cc",
+    sha256: "b53f5f7947f23b4c2eb734f05f19bd2726a980528d8f2fc4b7b3c08cdf3efabd",
   },
   {
     id: "academy-desk",
     labelKo: "학원물 교실 책상·노트",
     genreHintKo: "학원·청춘·학생회실 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/academy-desk.glb",
-    sha256: "7781d63821d014a91847ec638974b7b96e759a7ccfcbac2440372572c98cbf90",
+    sha256: "7d665228a084326822b6c3fbb73c8ed165fbf7515d65718dea7bd33d34c3a9c5",
   },
   {
     id: "murim-sword-aura",
     labelKo: "무협 청운 검기 진법",
     genreHintKo: "무협·판타지·헌터 각성 스테이지",
     glbUrl: "/assets/props/webtoon-stage-props-v1/murim-sword-aura.glb",
-    sha256: "8629d4d2e8df7cad8184c245637deba56393aefa84f5a441e8d2cea5dc1053f3",
+    sha256: "6473e234bf764d87509a7a4cf101b3e8808230119df304d5f65a4ecf6f30e8d1",
+  },
+  {
+    id: "rofan-throne-dais",
+    labelKo: "로판 황실 대관식 대리석 단상",
+    genreHintKo: "로판·황실·성녀 대관식 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/rofan-throne-dais.glb",
+    sha256: "f8892e523eb8a92e522311ab3ebd7c4914fb2e6ba885468289b734a75f402eca",
+  },
+  {
+    id: "noir-interrogation-lamp",
+    labelKo: "느와르 취조실 스틸 책상·펜던트 조명",
+    genreHintKo: "스릴러·느와르·추리 브리핑 스테이지",
+    glbUrl: "/assets/props/webtoon-stage-props-v1/noir-interrogation-lamp.glb",
+    sha256: "d704492daf28d0fd448aa7b603d2cae413a9cd7897339825642fed09a76db830",
   },
 ]);
 
@@ -395,4 +414,144 @@ export function ViewportHandPropControls({
       ) : null}
     </span>
   );
+}
+
+
+interface ViewportPropActionInputs {
+  readonly engine: CharacterEngine | null;
+  readonly pose: Pose;
+  readonly shading: ShadingProfile;
+  readonly stripDirector: StripDirectorSession;
+  readonly handPropId: HandPropId | "";
+  readonly handPropSide: HandPropSide;
+  readonly setHandPropId: (value: HandPropId | "") => void;
+  readonly setHandPropSide: (value: HandPropSide) => void;
+  readonly setHeadPropId: (value: HeadPropId | "") => void;
+  readonly setStagePropId: (value: StagePropId | "") => void;
+  readonly setHandPropBusy: (value: boolean) => void;
+  readonly setNotice: (value: string | null) => void;
+  readonly dispatch: (command: LabCommand) => void;
+  readonly failureText: (error: unknown, fallback: string) => string;
+}
+
+/** 상태는 뷰포트가 소유한다. 같은 렌더의 선택값을 캡처하고 호출·대기·실패 정리 순서를 유지한다. */
+export function createViewportPropActions({
+  engine, pose, shading, stripDirector, handPropId, handPropSide,
+  setHandPropId, setHandPropSide, setHeadPropId, setStagePropId, setHandPropBusy, setNotice, dispatch, failureText,
+}: ViewportPropActionInputs) {
+  const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
+    setHandPropId(nextPropId);
+    setHandPropSide(nextSide);
+    if (!engine?.setHandProp) return;
+    const attachment = nextPropId ? toHandPropAttachment(nextPropId, nextSide) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHandProp(attachment);
+      const spec = nextPropId ? findWebtoonHandPropSpec(nextPropId) : null;
+      setNotice(
+        spec
+          ? `손 소품 장착: ${spec.labelKo} (${nextSide === "rightHand" ? "오른손" : "왼손"})`
+          : "손 소품을 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "손 소품을 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onApplyHandPropGripPose = (): void => {
+    if (!handPropId) return;
+    const cmds = buildHandPropGripPoseCommands(pose, handPropId, handPropSide);
+    for (const cmd of cmds) dispatch(cmd);
+    const spec = findWebtoonHandPropSpec(handPropId);
+    if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
+  };
+  const onApplyHeadProp = async (nextHeadPropId: HeadPropId | ""): Promise<void> => {
+    setHeadPropId(nextHeadPropId);
+    if (!engine?.setHeadProp) return;
+    const attachment = nextHeadPropId ? toHeadPropAttachment(nextHeadPropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setHeadProp(attachment);
+      const spec = nextHeadPropId ? findWebtoonHeadPropSpec(nextHeadPropId) : null;
+      setNotice(spec ? `머리 액세서리 장착: ${spec.labelKo}` : "머리 액세서리를 해제했습니다.");
+    } catch (error) {
+      setNotice(failureText(error, "머리 액세서리를 장착하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onApplyStageProp = async (nextStagePropId: StagePropId | ""): Promise<void> => {
+    setStagePropId(nextStagePropId);
+    if (!engine?.setStageProp) return;
+    const attachment = nextStagePropId ? toStagePropAttachment(nextStagePropId) : null;
+    setHandPropBusy(true);
+    try {
+      await engine.setStageProp(attachment);
+      const spec = nextStagePropId ? findWebtoonStagePropSpec(nextStagePropId) : null;
+      setNotice(spec ? `배경 스테이지 배치: ${spec.labelKo}` : "배경 스테이지를 해제했습니다.");
+    } catch (error) {
+      setNotice(failureText(error, "배경 스테이지를 배치하지 못했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+  const onSelectSceneDirector = async (presetId: WebtoonSceneDirectorPresetId | ""): Promise<void> => {
+    if (!presetId) {
+      setHandPropId("");
+      setHeadPropId("");
+      setStagePropId("");
+      stripDirector.update({ activeDirectorId: "", actingArc: "none", bakeStripFx: false });
+      if (!engine) return;
+      setHandPropBusy(true);
+      try {
+        if (engine.setHandProp) await engine.setHandProp(null);
+        if (engine.setHeadProp) await engine.setHeadProp(null);
+        if (engine.setStageProp) await engine.setStageProp(null);
+        setNotice("원클릭 씬 디렉터를 해제했습니다.");
+      } catch (error) {
+        setNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
+      } finally {
+        setHandPropBusy(false);
+      }
+      return;
+    }
+
+    const preset = findWebtoonSceneDirectorPreset(presetId);
+    if (!preset) return;
+    setHandPropId(preset.handPropId);
+    setHandPropSide(preset.handSide);
+    setHeadPropId(preset.headPropId);
+    setStagePropId(preset.stagePropId);
+    stripDirector.update({
+      activeDirectorId: preset.id,
+      actingArc: preset.actingArc,
+      bakeStripFx: true,
+      stripFxLines: preset.fxLinesKind,
+      dialogueLines: preset.dialogueLines,
+    });
+
+    for (const cmd of buildHandPropGripPoseCommands(pose, preset.handPropId, preset.handSide)) {
+      dispatch(cmd);
+    }
+    dispatch({
+      type: "shading/set",
+      profile: resolveDirectorShadingProfile(shading, preset.toonShaderId),
+    });
+
+    if (!engine) return;
+    setHandPropBusy(true);
+    try {
+      if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
+      if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
+      if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
+      setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
+    } catch (error) {
+      setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
+    } finally {
+      setHandPropBusy(false);
+    }
+  };
+
+  return { onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, onSelectSceneDirector };
 }

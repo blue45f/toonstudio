@@ -27,6 +27,7 @@ import { kitPaintWarningsForLayers } from "../../../paint/paint-kit-warning";
 import { stripUtf8Bom } from "../../../shared/json-safety";
 import { recipeMigrationNoticeKo } from "../../../state/recipe-io";
 
+import type { StripDirectorSession } from "./viewport-scene-director";
 import type {
   CameraFramingMode,
   CharacterEngine,
@@ -42,7 +43,23 @@ import type {
   RecipeSource,
 } from "../../../contracts";
 import type { ExportReceipt } from "../../../export/export-session";
+import type { SaveBytesFn } from "../../../export/save-bytes";
 import type { PaintSession } from "../../../paint/paint-session";
+
+export interface ExportPanelDeps {
+  readonly save?: SaveBytesFn;
+  readonly now?: () => number;
+  readonly readFile?: (file: File) => Promise<string>;
+  readonly preparePsd?: () => void;
+  readonly writeClipboard?: (text: string) => Promise<void>;
+  readonly readClipboard?: () => Promise<string>;
+}
+
+export interface ExportPanelProps {
+  readonly session?: PaintSession;
+  readonly stripDirector?: StripDirectorSession;
+  readonly deps?: ExportPanelDeps;
+}
 
 export const FRAMING_LABELS_KO: Record<CameraFramingMode, string> = {
   "full-body": "전신",
