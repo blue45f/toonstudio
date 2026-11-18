@@ -442,6 +442,16 @@
       "import": "./src/studio-linked-3d-correction.ts",
       "default": "./src/studio-linked-3d-correction.ts"
     },
+    "./admin-nestjs-quality": {
+      "types": "./src/admin-nestjs-quality.ts",
+      "import": "./src/admin-nestjs-quality.ts",
+      "default": "./src/admin-nestjs-quality.ts"
+    },
+    "./admin-nestjs-quality-seed": {
+      "types": "./src/admin-nestjs-quality-seed.ts",
+      "import": "./src/admin-nestjs-quality-seed.ts",
+      "default": "./src/admin-nestjs-quality-seed.ts"
+    },
     "./admin-workspace": {
       "types": "./src/admin-workspace/index.ts",
       "import": "./src/admin-workspace/index.ts",

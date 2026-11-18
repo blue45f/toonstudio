@@ -1,0 +1,139 @@
+.nest-board { width: 100%; min-width: 0; color: var(--admin-fg); }
+.nest-board *, .nest-dialog * { box-sizing: border-box; }
+.nest-board [hidden] { display: none !important; }
+.nest-board h1 { margin: 6px 0 12px; font-size: clamp(1.65rem, 4vw, 2.5rem); letter-spacing: -.035em; }
+.nest-board h2, .nest-dialog h2 { font-size: 1.2rem; margin: 0 0 16px; letter-spacing: -.02em; }
+.nest-board h3, .nest-dialog h3 { font-size: 1rem; margin: 8px 0 12px; }
+.nest-board p, .nest-dialog p { line-height: 1.7; margin: 10px 0; }
+.nest-board a, .nest-dialog a { color: oklch(0.85 0.1 65); overflow-wrap: anywhere; text-underline-offset: 4px; }
+.nest-board code, .nest-dialog code { font-family: ui-monospace, monospace; overflow-wrap: anywhere; font-size: .88em; }
+.nest-board small, .nest-dialog small { display: block; font-size: .78rem; color: var(--admin-muted); line-height: 1.65; }
+.nest-board button, .nest-dialog button { min-height: 44px; padding: 9px 14px; border: 1px solid var(--admin-line); border-radius: 8px; color: var(--admin-fg); background: var(--admin-raised); font: inherit; font-size: .88rem; cursor: pointer; }
+.nest-board button:not(:disabled):hover, .nest-dialog button:not(:disabled):hover { border-color: var(--admin-focus); }
+.nest-board button:disabled, .nest-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+.nest-board .nest-primary, .nest-dialog .nest-primary { background: oklch(0.39 0.09 42); border-color: var(--admin-accent); font-weight: 650; }
+.nest-board :focus-visible, .nest-dialog :focus-visible { outline: 3px solid var(--admin-focus); outline-offset: 3px; }
+.nest-heading { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 24px; }
+.nest-heading > div { min-width: 0; }
+.nest-heading p { color: var(--admin-muted); }
+.nest-eyebrow { margin: 0 !important; font-size: .72rem; letter-spacing: .08em; font-weight: 650; color: var(--admin-muted); }
+.nest-toolbar, .nest-tabs, .nest-snapshot, .nest-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.nest-between { justify-content: space-between; }
+.nest-snapshot { background: var(--admin-panel); border: 1px solid var(--admin-line); padding: 14px 18px; border-radius: 10px; font-size: .82rem; gap: 12px 24px; }
+.nest-snapshot > * { min-width: 0; overflow-wrap: anywhere; }
+.nest-notice, .nest-error { border: 1px solid var(--admin-line); border-left: 3px solid var(--admin-focus); border-radius: 8px; padding: 14px 18px; background: var(--admin-panel); line-height: 1.7; margin: 16px 0; }
+.nest-error { border-color: oklch(0.68 0.14 25); background: oklch(0.24 0.045 25); }
+.nest-warning { border-left-color: oklch(0.82 0.15 80); background: oklch(0.23 0.035 80); }
+.nest-muted { color: var(--admin-muted); font-size: .88rem; }
+.nest-navigation { margin: 24px 0; border-bottom: 1px solid var(--admin-line); padding-bottom: 14px; }
+.nest-tabs button { background: var(--admin-canvas); }
+.nest-tabs button[aria-pressed=true] { border-color: var(--admin-accent); background: var(--admin-raised); color: oklch(0.9 0.09 65); }
+.nest-panel { min-width: 0; border: 1px solid var(--admin-line); border-radius: 12px; background: var(--admin-panel); padding: 22px; margin: 18px 0; }
+.nest-panel > :first-child { margin-top: 0; }
+.nest-panel > :last-child { margin-bottom: 0; }
+.nest-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.nest-grid > .nest-panel { margin: 0; }
+.nest-grid + .nest-panel { margin-top: 18px; }
+.nest-subpanel { min-width: 0; border: 1px solid var(--admin-line); border-radius: 8px; padding: 18px; background: var(--admin-canvas); }
+.nest-subpanel > code { display: block; margin-top: 8px; }
+.nest-subpanel > .nest-tag { margin-right: 10px; }
+.nest-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 20px 0; }
+.nest-metrics > button { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; text-align: left; padding: 20px; background: var(--admin-panel); border-radius: 12px; min-width: 0; }
+.nest-metrics > button > span { color: var(--admin-muted); font-size: .82rem; }
+.nest-metrics strong { font-size: 2rem; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.nest-metrics .nest-word { font-size: 1.15rem; min-height: 38px; align-content: center; overflow-wrap: anywhere; }
+.nest-task-list { display: grid; gap: 0; margin: 8px 0 16px; }
+.nest-board .nest-task-row { width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) minmax(115px, auto); text-align: left; align-items: center; gap: 12px; padding: 16px 4px; border: 0; border-bottom: 1px solid var(--admin-line); border-radius: 0; background: transparent; }
+.nest-task-title { min-width: 0; overflow-wrap: anywhere; }
+.nest-task-title strong { display: block; line-height: 1.55; font-size: .9rem; margin-bottom: 4px; }
+.nest-priority { color: var(--admin-muted); font: 600 .75rem ui-monospace, monospace; }
+.nest-status { display: inline-flex; align-items: center; padding: 4px 9px; border: 1px solid var(--admin-line); border-radius: 6px; font-size: .72rem; white-space: nowrap; line-height: 1.4; margin: 2px 0; }
+.nest-status-unknown { color: var(--admin-muted); }
+.nest-status-progress { color: oklch(0.85 0.09 240); border-color: oklch(0.58 0.08 240); background: oklch(0.25 0.04 240); }
+.nest-status-review { color: oklch(0.9 0.1 80); border-color: oklch(0.6 0.09 80); background: oklch(0.26 0.04 80); }
+.nest-status-approval { color: oklch(0.88 0.09 55); border-color: oklch(0.58 0.1 55); background: oklch(0.26 0.05 55); }
+.nest-status-verified { color: oklch(0.86 0.1 155); border-color: oklch(0.52 0.1 155); background: oklch(0.24 0.04 155); }
+.nest-status-merged { color: oklch(0.85 0.1 300); border-color: oklch(0.56 0.09 300); background: oklch(0.25 0.05 300); }
+.nest-facts { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px 14px; font-size: .88rem; }
+.nest-facts dt { color: var(--admin-muted); }
+.nest-facts dd { margin: 0; overflow-wrap: anywhere; line-height: 1.55; }
+.nest-links { margin: 14px 0; gap: 10px 16px; font-size: .82rem; }
+.nest-tag { display: inline-block; font-size: .72rem; padding: 5px 8px; border: 1px solid var(--admin-line); border-radius: 6px; color: var(--admin-muted); }
+.nest-sequence { list-style: decimal-leading-zero; margin: 0; padding-left: 24px; }
+.nest-sequence li { padding: 12px 0 18px 8px; border-bottom: 1px solid var(--admin-line); }
+.nest-sequence li:last-child { border-bottom: 0; }
+.nest-sequence p { color: var(--admin-muted); font-size: .9rem; }
+.nest-adapter { border-left: 3px solid var(--admin-good); }
+.nest-table-scroll { width: 100%; overflow-x: auto; border: 1px solid var(--admin-line); border-radius: 8px; }
+.nest-table-scroll table { width: 100%; min-width: 1040px; border-collapse: collapse; text-align: left; font-size: .84rem; }
+.nest-table-scroll th { padding: 14px; color: var(--admin-muted); background: var(--admin-canvas); border-bottom: 1px solid var(--admin-line); font-weight: 500; }
+.nest-table-scroll td { padding: 16px 14px; vertical-align: top; border-bottom: 1px solid var(--admin-line); min-width: 150px; max-width: 390px; overflow-wrap: anywhere; }
+.nest-table-scroll tr:last-child td { border-bottom: 0; }
+.nest-table-scroll p { margin-top: 0; }
+.nest-table-scroll .nest-link-button { border: 0; padding: 0; color: oklch(0.85 0.1 65); background: transparent; text-align: left; font-family: ui-monospace, monospace; }
+.nest-filters { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(120px, 1fr) minmax(130px, 1fr) auto; gap: 14px; margin: 18px 0; align-items: end; }
+.nest-board label, .nest-dialog label { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; min-width: 0; font-size: .88rem; line-height: 1.6; }
+.nest-filters label { margin: 0; }
+.nest-board input:not([type=checkbox]), .nest-board select, .nest-board textarea, .nest-dialog input:not([type=checkbox]), .nest-dialog select, .nest-dialog textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-canvas); color: var(--admin-fg); font: inherit; font-size: .9rem; }
+.nest-board textarea, .nest-dialog textarea { resize: vertical; line-height: 1.7; }
+.nest-board .nest-check, .nest-dialog .nest-check { flex-direction: row; align-items: center; gap: 10px; min-height: 44px; }
+.nest-check input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--admin-accent); }
+.nest-kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(205px, 1fr); gap: 12px; overflow-x: auto; width: 100%; padding: 4px 2px 18px; }
+.nest-kanban-column { padding: 12px; background: var(--admin-canvas); border-radius: 8px; min-width: 0; }
+.nest-kanban-column h3 { display: flex; align-items: center; gap: 10px; font-size: .85rem; }
+.nest-board .nest-kanban-card { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 12px 0; text-align: left; padding: 14px; background: var(--admin-panel); }
+.nest-kanban-card strong { line-height: 1.6; }
+.nest-kanban-card > span { font-size: .82rem; }
+.nest-empty { padding: 24px 12px; color: var(--admin-muted); text-align: center; }
+.nest-evidence-item { padding: 16px 0; border-bottom: 1px solid var(--admin-line); }
+.nest-evidence-item:last-child { border-bottom: 0; }
+.nest-evidence-item p { font-size: .88rem; color: var(--admin-muted); }
+.nest-history { margin: 0; padding: 0; list-style: none; }
+.nest-history li { padding: 18px 0; border-top: 1px solid var(--admin-line); }
+.nest-history time, .nest-history p { color: var(--admin-muted); font-size: .82rem; }
+.nest-panel summary { min-height: 44px; cursor: pointer; align-content: center; font-weight: 600; }
+.nest-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin: 28px 0 8px; padding-top: 18px; border-top: 1px solid var(--admin-line); font-size: .78rem; color: var(--admin-muted); }
+.nest-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: oklch(0 0 0 / .7); }
+.nest-dialog { display: flex; flex-direction: column; width: min(960px, 100%); max-height: calc(100dvh - 48px); min-width: 0; border: 1px solid var(--admin-line); border-radius: 14px; background: var(--admin-panel); color: var(--admin-fg); box-shadow: 0 24px 100px oklch(0 0 0 / .4); }
+.nest-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--admin-line); }
+.nest-dialog-header p { color: var(--admin-muted); font-size: .82rem; }
+.nest-dialog-header > button { flex-shrink: 0; }
+.nest-dialog-body { overflow-y: auto; overscroll-behavior: contain; padding: 22px 24px; min-height: 0; }
+.nest-dialog-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 24px; border-top: 1px solid var(--admin-line); font-size: .82rem; }
+.nest-fields { padding: 0; margin: 20px 0; border: 0; min-width: 0; }
+.nest-fields legend { color: var(--admin-muted); padding: 0; font-size: .78rem; }
+.nest-fields:disabled input, .nest-fields:disabled select, .nest-fields:disabled textarea { opacity: .8; }
+.nest-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.nest-link-edit { padding: 12px; margin: 12px 0; border: 1px solid var(--admin-line); border-radius: 8px; background: var(--admin-canvas); }
+@media (max-width: 1000px) {
+  .nest-heading { flex-direction: column; align-items: flex-start; }
+  .nest-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nest-grid { grid-template-columns: minmax(0, 1fr); }
+  .nest-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .nest-panel { padding: 16px; border-radius: 10px; }
+  .nest-metrics { gap: 10px; }
+  .nest-metrics > button { padding: 14px; }
+  .nest-metrics strong { font-size: 1.6rem; }
+  .nest-metrics .nest-word { font-size: 1rem; }
+  .nest-board .nest-task-row { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
+  .nest-task-row > span:last-child { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .nest-filters { grid-template-columns: minmax(0, 1fr); }
+  .nest-tabs { gap: 8px; }
+  .nest-navigation button { flex: 1 1 auto; padding: 9px 10px; }
+  .nest-snapshot { padding: 12px; gap: 10px; }
+  .nest-facts { grid-template-columns: 78px minmax(0, 1fr); gap: 10px; }
+  .nest-overlay { padding: 8px; }
+  .nest-dialog { max-height: calc(100dvh - 16px); border-radius: 10px; }
+  .nest-dialog-header, .nest-dialog-body, .nest-dialog-footer { padding: 16px; }
+  .nest-dialog-header { gap: 12px; }
+  .nest-dialog-header h2 { font-size: 1.1rem; }
+  .nest-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .nest-dialog-footer > .nest-toolbar { width: 100%; }
+  .nest-dialog-footer button { flex: 1; }
+}
+@media (forced-colors: active) {
+  .nest-panel, .nest-subpanel, .nest-notice, .nest-error, .nest-status, .nest-dialog, .nest-kanban-column { color: CanvasText; background: Canvas; border-color: CanvasText; }
+  .nest-board a, .nest-dialog a { color: LinkText; }
+}

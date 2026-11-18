@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMockEngine } from "../../../testing/mock-engine";
 import { MockLabProvider, createMockEngineSession } from "../../../testing/mock-store";
 
-import { ViewportPane } from "./ViewportPane";
 import { getDefaultStripDirectorSession } from "./viewport-scene-director";
+import { ViewportPane } from "./ViewportPane";
 
 import type { LabCommand } from "../../../contracts";
 

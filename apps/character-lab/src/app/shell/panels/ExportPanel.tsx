@@ -33,6 +33,7 @@ import {
   restoreCharacterWorkBackup,
 } from "../unsaved-work";
 
+import { ExportExperimentSummary } from "./export-panel/ExportExperimentSummary";
 import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
 import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
 import {
@@ -621,24 +622,12 @@ export function ExportPanel({
       onKeyDown={onSectionKeyDown}
     >
       <h2 id={`${ids}-title`}>내보내기</h2>
-      <div className="cl-export-experiment-summary" role="region" aria-label="현재 실험 상태 및 빠른 이동" data-testid="export-experiment-summary">
-        <div className="cl-export-experiment-meta">
-          <span className="cl-export-experiment-source" data-testid="export-active-source">
-            활성 소스: {describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
-          </span>
-          <span className="cl-export-experiment-pose" data-testid="export-active-pose">
-            실험 포즈: {describeExportPoseKo(labState.recipe)} · 레시피 #{activeDigest8}
-          </span>
-        </div>
-        <div className="cl-export-nav-actions" role="group" aria-label="실험 단계 이동">
-          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-package-tab" onClick={() => switchInspectorTabWithFocus("package")}>
-            패키지 선택 탭으로
-          </button>
-          <button type="button" className="cl-button cl-export-nav-btn" data-testid="export-switch-to-pose-tab" onClick={() => switchInspectorTabWithFocus("pose")}>
-            포즈 실험 탭으로
-          </button>
-        </div>
-      </div>
+      <ExportExperimentSummary
+        sourceLabel={describeExportSourceKo(labState.recipe.source, isPackageRegistered)}
+        poseLabel={describeExportPoseKo(labState.recipe)}
+        digest={activeDigest8}
+        onNavigate={switchInspectorTabWithFocus}
+      />
       {!engineReady ? (
         <p className="cl-export-hint" role="status">
           엔진 상태: {engineStatus.phase} — PNG·PSD·GLB는 엔진이 준비된 뒤 사용할 수 있습니다. 레시피 저장/불러오기는 가능합니다.

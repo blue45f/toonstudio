@@ -536,6 +536,13 @@ withPostgres("PostgreSQL review decision and comment serialization", () => {
     });
     return { ...f, reviewer, decisionManager, decider, repository, pin, definition, configure, vote };
   }
+  it("다른 지정 검토자가 있으면 소유자도 자신의 검토 요청을 승인할 수 없다", async () => {
+    const f = await fixture(), reviewer = await member(f.workId, "viewer");
+    await pool.query('INSERT INTO studio_review_reviewer ("reviewId","reviewerUserId") VALUES ($1,$2)', [f.reviewId, reviewer]);
+    await expect(graph.decideReview(f.actor, f.reviewId, { status: "approved" }))
+      .rejects.toMatchObject({ name: "StudioProjectForbiddenError", operation: "manage" });
+    expect((await graph.getReview(f.actor, f.reviewId)).status).toBe("open");
+  });
   it("다른 지정 검토자가 있으면 쿼럼 충족 후에도 요청자의 자기승인을 거절한다", async () => {
     const f = await policyFixture();
     await f.repository.command(f.actor, f.reviewId, f.vote("production", 1));
