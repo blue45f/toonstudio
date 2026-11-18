@@ -52,6 +52,9 @@ registerI18nLocaleEntries("en", paidOperationsI18n.en);
 registerI18nEnglishSourceEntries(paidOperationsI18n.en);
 
 registerI18nLocaleEntries("ko", {
+  "admin.workspace.title": "사업계획·운영 통합 작업실",
+  "admin.workspace.description": "사업계획, 클라우드, NestJS, 의존성·CI, AI 운영 자료의 근거와 문서 버전을 함께 관리합니다. 제출 전 점검과 승인 대기 항목을 확인하세요.",
+  "admin.workspace.open": "통합 작업실 열기",
   "admin.ciQuality.title": "CI·QA 검증",
   "admin.ciQuality.description": "CI 결과, 외부 QA 참고 자료와 근거의 최신성을 기록합니다. 무료 수동 기록 보드이며 코드 수정·배포·계정 설정은 실행하지 않습니다.",
   "admin.ciQuality.open": "검증 보드 열기",
@@ -61,6 +64,9 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "admin.workspace.title": "Business and operations workspace",
+  "admin.workspace.description": "Manage evidence and document versions for business planning, cloud, NestJS, dependencies and CI, and AI operations. Review submission checks and pending approvals.",
+  "admin.workspace.open": "Open integrated workspace",
   "admin.ciQuality.title": "CI & QA verification",
   "admin.ciQuality.description": "Record CI results, external QA references and evidence freshness. This free manual board does not modify code, deploy or change account settings.",
   "admin.ciQuality.open": "Open verification board",

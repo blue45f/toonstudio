@@ -273,7 +273,7 @@ Studio를 단순히 `components/hooks/utils` 형태로 평탄화하거나 `packa
 | API `server` 파일 | 28 |
 | API `platform/http` 파일 | 13 |
 | API `platform/adapters` 파일 | 78 |
-| API `platform/database` 파일 | 175 |
+| API `platform/database` 파일 | 177 |
 | `packages/core` 파일 | 148 |
 | `lint:strict` 경고 예산 (`lintStrictMaxWarnings`) | 2,189 |
 
@@ -356,8 +356,16 @@ pnpm run typecheck
 173에서 174로 SQL 한 파일만 반영한다. Creator 직하·교차 앱·파일 크기 예산은 올리지 않는다.
 이 승인은 코드·migration 파일·분리 로컬 DB 검증에 한정하며 운영 DB 적용·배포를 허가하지 않는다.
 
+2026-11-18 관리자 통합 작업실은 전용 ORM 선언 `schema/admin-workspace.schema.ts`와
+추가형 migration `0122_admin_workspace.sql` 두 파일을 더해 DB 소스 상한을 174에서 176으로 기록한다.
+작업실의 DB 접근은 `modules/admin-workspace`가 소유하며 Admin/API가 공유하는 검증 계약만
+runtime-neutral contracts에 둔다. 다른 파일 수·파일 크기·앱 경계 검사 기준은 유지한다.
+비공개 사업·운영 원문은 공개 번들에 넣지 않고 인증된 관리자 JSON 가져오기로 전달한다.
+이 범위는 소스 구현·검증·원격 main 병합이며 운영 DB 적용·배포·계정 변경을 실행하지 않는다.
+
 2026-11-18 관리자 클라우드 작업 보드 통합은 추가형 migration
-`0122_admin_cloud_workboard.sql` 한 파일을 더해 DB 소스 상한을 174에서 175로 기록한다.
+`0123_admin_cloud_workboard.sql` 한 파일을 더해 DB 소스 상한을 176에서 177로 기록한다.
+먼저 병합된 통합 작업실의 `0122_admin_workspace.sql`을 보존해 migration 번호 중복을 피한다.
 본문·감사 이력·저장 재시도 영수증의 Drizzle 정의는 기존 `admin.schema.ts`에 포함한다.
 공통 DTO와 검증 규칙은 Admin/API의 실제 두 소비자를 위해 contracts에 두고 앱 간 소스 참조를 만들지 않는다.
 기존 사용자별 Sites 기록은 번들에 넣지 않으며 명시적 JSON 가져오기로만 전달한다.

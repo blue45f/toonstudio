@@ -4,7 +4,7 @@ import { ADMIN_SCHEMA_COLUMNS_SQL } from "../../platform/database/admin-schema-c
 import { CUSTOMER_SUPPORT_ACL_READY_SQL } from "./health-customer-support-acl";
 import { containsEvery, timedHealthQuery } from "./health-readiness-query";
 import { roleSeparationAclReady } from "./health-readiness-role-separation";
-import type { DatabasePingRow, QueryablePool } from "./health-readiness-query";
+import type { DatabasePingRow, MigrationCatalogRow, QueryablePool } from "./health-readiness-query";
 
 export { HEALTH_READINESS_QUERY_TIMEOUT_MS } from "./health-readiness-query";
 
@@ -26,6 +26,9 @@ export const REQUIRED_DATABASE_RELATIONS = [
   "admin_member_test_accounts",
   "admin_promos",
   "admin_security_policies",
+  "admin_workspace",
+  "admin_workspace_audit",
+  "admin_workspace_receipt",
   "app_setting",
   "business_inquiry",
   "collection",
@@ -300,10 +303,6 @@ interface SchemaCatalogRow {
   commentMutationReanchorReady: boolean;
   commentMutationMessageNullable: boolean;
   trigramExtensionReady: boolean;
-}
-
-interface MigrationCatalogRow {
-  migrationIds: string[] | null;
 }
 
 export interface HealthReadinessRepository {

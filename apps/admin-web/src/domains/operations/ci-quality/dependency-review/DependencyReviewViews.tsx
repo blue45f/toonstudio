@@ -92,9 +92,9 @@ export function DependencyReviewWorkItems({ board, now, onEdit }: { board: Depen
   return <section id="dependency-work" aria-labelledby="dependency-work-title">
     <div className="ci-quality-section-heading"><h3 id="dependency-work-title">원인별 작업 추적</h3><div role="group" aria-label="작업 보기 방식" className="ci-quality-actions"><button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>원인별 목록</button><button type="button" aria-pressed={view === "board"} onClick={() => setView("board")}>6단계 보드</button></div></div>
     <div className="ci-quality-card dependency-filters">
-      <label>의존성 작업 검색<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="원인·검사·버전·파일" /></label>
-      <label>원인별 보기<select value={cause} onChange={event => setCause(event.target.value)}><option value="all">모든 원인</option><option value="remotion">Remotion</option><option value="deepmerge">deepmerge</option><option value="independent">별도 원인·미확인</option></select></label>
-      <label>작업 상태 필터<select value={status} onChange={event => setStatus(event.target.value)}><option value="all">모든 상태</option>{workflowStatuses.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+      <label>의존성 작업 검색<input aria-label="의존성 작업 검색" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="원인·검사·버전·파일" /></label>
+      <label>원인별 보기<select aria-label="원인별 보기" value={cause} onChange={event => setCause(event.target.value)}><option value="all">모든 원인</option><option value="remotion">Remotion</option><option value="deepmerge">deepmerge</option><option value="independent">별도 원인·미확인</option></select></label>
+      <label>작업 상태 필터<select aria-label="작업 상태 필터" value={status} onChange={event => setStatus(event.target.value)}><option value="all">모든 상태</option>{workflowStatuses.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
       <button type="button" onClick={reset}>작업 필터 초기화</button>
     </div>
     <p className="ci-quality-caption">원인·검사 {filtered.length} / {records.length}개 표시 · 승인과 완료 보관 항목은 아래에서 별도로 관리합니다.</p>

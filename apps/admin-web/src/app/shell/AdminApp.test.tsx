@@ -6,6 +6,7 @@ import { AdminApp } from "./AdminApp";
 
 vi.mock("../../domains/operations/operation-policy/OperationPolicyPanel", () => ({ OperationPolicyPanel: () => <h1>운영 모드와 라이선스</h1> }));
 vi.mock("./CiQualityAccess", () => ({ CiQualityAccess: ({ view }: { view?: string }) => <p role="status" data-view={view}>관리자 권한 확인 중</p> }));
+vi.mock("./WorkspaceAccess", () => ({ WorkspaceAccess: () => <p role="status">통합 작업실 권한 확인 중</p> }));
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
@@ -44,6 +45,16 @@ it("클라우드 작업 query가 기존 품질 경로 안에서 전용 관리자
   render(<AdminApp />);
   expect(screen.getByRole("status").getAttribute("data-view")).toBe("cloud-work");
   expect(screen.getByRole("link", { name: "클라우드 작업" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
+});
+
+it.each(["/admin/workspace", "/admin/workspace/"])("통합 작업실 %s 진입에서 독립 권한 확인과 현재 메뉴를 유지한다", (pathname) => {
+  window.history.replaceState(null, "", pathname);
+  render(<AdminApp />);
+  expect(screen.getByRole("status").textContent).toBe("통합 작업실 권한 확인 중");
+  expect(screen.getByRole("link", { name: "통합 작업실" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "운영 모드·라이선스" }).getAttribute("aria-current")).toBeNull();
   expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
   expect(screen.queryByRole("heading", { name: "운영 모드와 라이선스" })).toBeNull();
 });

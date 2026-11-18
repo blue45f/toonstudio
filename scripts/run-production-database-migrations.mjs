@@ -16,7 +16,7 @@ import { buildFortuneSnapshotRuntimeAclSql } from "./fortune-snapshot-database-c
 import { buildHiringCapabilitySql, buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
 import { buildHiringAutomationCapabilitySql, buildHiringAutomationRuntimeAclSql } from "./creator-hiring-automation-database-contract.mjs";
 import { buildCareerConfirmationCapabilitySql, buildCareerConfirmationRuntimeAclSql } from "./creator-career-confirmation-database-contract.mjs";
-import { buildAdminCapabilitySql, buildAdminRuntimeAclSql, buildAdminCloudWorkboardCapabilitySql, buildAdminCloudWorkboardRuntimeAclSql } from "./admin-database-contract.mjs";
+import { applyAdminDatabaseFeatureContracts } from "./admin-database-feature-contracts.mjs";
 import { buildFeedbackCapabilitySql, buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
 import {
   buildCommunityCafeCapabilitySql,
@@ -3634,10 +3634,7 @@ export function runProductionDatabaseMigrations({ // NOSONAR javascript:S3776
     psql(databaseUrl, buildPersonalCloudRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildCommunityCommentRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildMessagingRuntimeAclSql(runtimeDatabaseRole));
-    psql(databaseUrl, buildAdminRuntimeAclSql(runtimeDatabaseRole));
-    psql(databaseUrl, buildAdminCapabilitySql(runtimeDatabaseRole));
-    psql(databaseUrl, buildAdminCloudWorkboardRuntimeAclSql(runtimeDatabaseRole));
-    psql(databaseUrl, buildAdminCloudWorkboardCapabilitySql(runtimeDatabaseRole));
+    applyAdminDatabaseFeatureContracts((sql) => psql(databaseUrl, sql), runtimeDatabaseRole);
     psql(databaseUrl, buildFeedbackRuntimeAclSql(runtimeDatabaseRole));
     psql(databaseUrl, buildFeedbackCapabilitySql(runtimeDatabaseRole));
     psql(databaseUrl, buildCommunityCafeRuntimeAclSql(runtimeDatabaseRole));

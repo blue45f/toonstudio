@@ -230,6 +230,7 @@ describe("PostgreSQL integration test runner", () => {
     expect(childEnvironment.STUDIO_LIVE_POSTGRES_RUNTIME_ROLE).toBe(
       RUNTIME_ROLE,
     );
+    expect(childEnvironment.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE).toBe(RUNTIME_ROLE);
     expect(childEnvironment.STUDIO_TEAM_COMMENT_POSTGRES_INTEGRATION_URL).toBe(
       LOCAL_URL,
     );
@@ -242,9 +243,10 @@ describe("PostgreSQL integration test runner", () => {
     ).toBe("true");
   });
 
-  it("등록된 PostgreSQL 통합 스위트 29개를 직렬 실행한다", () => {
-    expect(POSTGRES_INTEGRATION_SUITES).toHaveLength(29);
+  it("등록된 PostgreSQL 통합 스위트 30개를 직렬 실행한다", () => {
+    expect(POSTGRES_INTEGRATION_SUITES).toHaveLength(30);
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin/admin-cloud-workboard.integration.test.ts");
+    expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-bg3d-bundle.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/creator/studio-role-pipeline-migration.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-capture-source-revision.integration.test.ts");
@@ -252,7 +254,7 @@ describe("PostgreSQL integration test runner", () => {
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/customer-support/customer-support.repository.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("scripts/production-release-compatibility.integration.test.mjs");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts");
-    expect(new Set(POSTGRES_INTEGRATION_SUITES)).toHaveProperty("size", 29);
+    expect(new Set(POSTGRES_INTEGRATION_SUITES)).toHaveProperty("size", 30);
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/platform/database/admin-schema.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-project-graph-review-race.integration.test.ts");
     expect(POSTGRES_INTEGRATION_SUITES).toContain("apps/api/src/modules/studio-project-graph/studio-review-preview-producer.integration.test.ts");

@@ -18,6 +18,13 @@ const pool = new pg.Pool({ connectionString: value, application_name: "studio-re
 try {
   const tables = await pool.query("SELECT count(*)::int AS count FROM information_schema.tables WHERE table_schema = 'public'");
   assert.equal(tables.rows[0].count, 0, "Schema preparation requires an empty test database; existing data is never reset");
+  // CI의 일회성 PG 안에서만 생성한다. 실제 최소 테이블 권한은 격리된 테스트 스키마에 한정한다.
+  const workspaceRuntimeRole = process.env.ADMIN_WORKSPACE_TEST_RUNTIME_ROLE?.trim();
+  if (workspaceRuntimeRole) {
+    assert.match(workspaceRuntimeRole, /^[a-z_][a-z0-9_]{0,62}$/u, "안전한 테스트 runtime 역할 이름이 필요합니다.");
+    assert(![url.username, "public", "postgres", "anon", "authenticated"].includes(workspaceRuntimeRole) && !workspaceRuntimeRole.startsWith("pg_"), "테스트 runtime은 DB 소유자·내장 역할과 분리해야 합니다.");
+    await pool.query(`CREATE ROLE "${workspaceRuntimeRole}" NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS`);
+  }
   await pool.query("CREATE EXTENSION IF NOT EXISTS pg_trgm");
   const { stdout, stderr } = await promisify(execFile)("pnpm", ["db:push"], {
     cwd: fileURLToPath(new URL("../", import.meta.url)),
@@ -48,7 +55,8 @@ try {
     "0117_studio_scoped_write_policy.sql",
     "0119_studio_review_voice_note_guard_schema.sql",
     "0121_studio_bg3d_six_pass_bundle.sql",
-    "0122_admin_cloud_workboard.sql",
+    "0122_admin_workspace.sql",
+    "0123_admin_cloud_workboard.sql",
   ]) {
     await pool.query(await readFile(new URL(`../apps/api/src/platform/database/migrations/${migration}`, import.meta.url), "utf8"));
   }

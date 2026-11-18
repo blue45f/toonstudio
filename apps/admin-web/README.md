@@ -28,6 +28,15 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 실제 두 번째 소비자가 생긴 뒤 `packages/contracts`로 승격한다. 기존 Web 관리자 console은 기능
 단위로 이전하며 Admin의 공유 source로 사용하지 않는다.
 
+## 사업계획·운영 통합 작업실
+
+- 상태: **migration — 소스 구현, 운영 적용은 별도 승인 대상** (2026-11-18).
+- 진입 경로: `/admin/workspace/`. 사업계획·제출, 클라우드, NestJS, 의존성·CI, AI·무료 운영을 함께 관리한다.
+- 활성 관리자는 편집하고 운영자는 조회한다. 공통 계약 검증과 revision 충돌 검사 후 서버 DB에 저장한다.
+- 주장별 근거·최신성, 작업/제출 문서 비교, 멘토 요청, 누락 점검과 승인 대기를 제공한다.
+- 기존 Sites JSON의 원문과 출처를 가져올 수 있다. 비공개 데이터는 정적 번들에 포함하지 않는다.
+- [통합 작업실 계약과 운영 반영 절차](../../docs/features/admin-integrated-workspace.md)에 저장·가져오기·권한·DB 변경 범위를 기록한다.
+
 ## CI·QA 검증 보드
 
 - 상태: **현재 소스 구현, 운영 배포 전** (2026-11-12).
@@ -81,7 +90,7 @@ Admin은 `apps/web`이나 `apps/api` source를 import하지 않는다. 실행 �
 
 ### 활성화·복구 조건
 
-승인된 배포 담당자가 저장소의 정식 migration 절차로 `0122_admin_cloud_workboard.sql`과
+승인된 배포 담당자가 저장소의 정식 migration 절차로 `0123_admin_cloud_workboard.sql`과
 지정 런타임 역할의 최소 ACL을 먼저 적용한 뒤 API/Admin을 배포한다. 이번 코드 머지는 이 운영 절차의 승인이 아니다.
 준비되지 않은 저장소는 503으로 표시하고 요청 처리에서 DDL이나 임의 초기화를 실행하지 않는다.
 성공 기준은 활성 관리자 조회·저장, 다른 계정 격리, 충돌 처리, migration 원장·readiness 확인이다.
