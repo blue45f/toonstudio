@@ -8,9 +8,10 @@ interface RenderFeatureStatusProps {
   readonly features: SceneFeatureReport | null;
 }
 
-/** 엔진이 보고한 기본·확장 기능을 표시한다. 보고 갱신과 사용자 명령은 RenderPanel이 소유한다. */
+/** 엔진이 이미 보고한 기본·확장 기능 상태를 같은 표 구조로 표시한다. */
 export function RenderFeatureStatus({ engineReady, features }: RenderFeatureStatusProps) {
   const extended = readExtendedFeatures(features);
+
   return (
     <>
       <h3 className="cl-render-title">엔진 기능 상태</h3>

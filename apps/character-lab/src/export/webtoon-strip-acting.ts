@@ -1,4 +1,4 @@
-/** 4컷 연기 프리셋과 컷별 표정·시선·고개 스냅샷 계산. 엔진 적용·복원은 composer가 소유한다. */
+/** 웹툰 4컷 연기 프리셋과 표정·시선·목/고개 스냅샷의 순수 계산. */
 import { eyeAnglesQuaternion, expressionToMorphWeights } from "../contracts";
 import { qNormalize } from "../shared/math";
 
