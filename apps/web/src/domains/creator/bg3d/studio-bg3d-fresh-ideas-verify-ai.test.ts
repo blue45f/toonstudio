@@ -28,6 +28,11 @@ import {
   type BlenderSceneVerifyAiSynthesisInput,
 } from "./studio-bg3d-fresh-ideas-verify-ai";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
+import {
+  evaluateDarkroomProofingState,
+  evaluateGenreCutDensityAndRejectionRoi,
+  SHARED_ARCHITECTURAL_DATUM_SPEC,
+} from "./studio-bg3d-shared-datum-proofing";
 import { evaluateGenreLockGuardrail } from "./studio-bg3d-shot-continuity-linked-ink";
 
 function createSampleSynthesisInput(): BlenderSceneVerifyAiSynthesisInput {
@@ -124,6 +129,21 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     const isolation = evaluateBlenderSceneIsolationGuard();
     expect(isolation.zeroCrossSceneMutation).toBe(true);
     expect(isolation.sha256Verified).toBe(true);
+    expect(isolation.preservedExternalScenes.length).toBeGreaterThanOrEqual(4);
+
+    const rofanRejectionRoi = evaluateGenreCutDensityAndRejectionRoi({
+      genreId: "rofan",
+      bg3dAdoptionRatioPct: 50,
+    });
+    expect(rofanRejectionRoi.datumSpec).toEqual(SHARED_ARCHITECTURAL_DATUM_SPEC);
+    expect(rofanRejectionRoi.baselineRejectionRatePct).toBe(18.5);
+    expect(rofanRejectionRoi.guardedRejectionRatePct).toBe(2.4);
+    expect(rofanRejectionRoi.reworkHoursSavedPerEpisode).toBeGreaterThan(2);
+    expect(rofanRejectionRoi.cameraTransferDriftMeters).toBe(0);
+
+    const darkroomOn = evaluateDarkroomProofingState(true, 3200, 2.45);
+    expect(darkroomOn.uiChromaticBiasDeltaE).toBe(0);
+    expect(darkroomOn.contrastProofPassed).toBe(true);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

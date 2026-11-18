@@ -27,13 +27,14 @@ import {
   DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
-import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
-} from "./viewport-manga-fx-overlay";
+import { ViewportHandPropAttachment } from "./viewport-hand-prop-controls";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import {
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
@@ -702,6 +703,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           onChangeLinesPreset={(linesPreset) => setMangaFx((prev) => ({ ...prev, linesPreset }))}
           onChangeDialogueText={(dialogueText) => setMangaFx((prev) => ({ ...prev, dialogueText }))}
           onChangeIntensity={(intensity) => setMangaFx((prev) => ({ ...prev, intensity: clampMangaFxIntensity(intensity) }))}
+        />
+        <ViewportHandPropAttachment
+          engine={engine}
+          pose={labState.recipe.pose}
+          dispatch={dispatch}
+          setNotice={setNotice}
         />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
