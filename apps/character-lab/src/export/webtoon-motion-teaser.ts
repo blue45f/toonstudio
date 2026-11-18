@@ -9,7 +9,8 @@
  */
 import { failVisible, isLabFailure, recipeDigest } from "../contracts";
 
-import { VTT_MIME, WEBM_MIME, exportFileName, isWebmEbml } from "./export-session";
+import { VTT_MIME, WAV_MIME, WEBM_MIME, exportFileName, isWebmEbml } from "./export-session";
+import { encodeMonoPcm16Wav } from "./webtoon-motion-teaser-audio";
 import { clampMotionTeaserNumber as clampNumber } from "./webtoon-motion-teaser-frame";
 import { buildCutKineticOverlays } from "./webtoon-motion-teaser-renderer";
 import {
@@ -26,6 +27,7 @@ import {
 } from "./webtoon-strip-composer";
 
 import type { ExportDeps, ExportOutcome, MotionTeaserReceiptMetrics } from "./export-session";
+import type { MotionTeaserAudioTrackPcm } from "./webtoon-motion-teaser-audio";
 import type { CutKineticOverlayPlacement, MotionTeaserFrameSample } from "./webtoon-motion-teaser-frame";
 import type {
   ExportWebtoonVerticalStripOptions,
@@ -43,6 +45,8 @@ import type {
 } from "./webtoon-strip-composer";
 import type { CapturedRaster, CharacterEngine, CharacterRecipe, LabFailure } from "../contracts";
 
+export { encodeMonoPcm16Wav, isWavRiff } from "./webtoon-motion-teaser-audio";
+export type { MotionTeaserAudioTrackPcm } from "./webtoon-motion-teaser-audio";
 export {
   buildCutKineticOverlays,
   computeMotionTeaserCameraWindow,
@@ -115,14 +119,6 @@ export interface PlanMotionTeaserOptions {
 export interface SynthesizeMotionAudioOptions {
   readonly includeAmbientBgm?: boolean;
   readonly moodId?: WebtoonManuscriptMoodId;
-}
-
-export interface MotionTeaserAudioTrackPcm {
-  readonly sampleRate: number;
-  readonly durationMs: number;
-  readonly eventCount: number;
-  readonly ambientBgm: boolean;
-  readonly samples: Float32Array;
 }
 
 export interface EncodeMotionTeaserWebmRequest {
@@ -562,6 +558,72 @@ export function exportWebtoonMotionTeaserVtt(
     return {
       ok: false,
       failure: toMotionFailure("export-vtt-failed", "9:16 모션 코믹 WebVTT 자막 파일 생성에 실패했습니다.", error, started),
+    };
+  }
+}
+
+/**
+ * 영상 편집기(Premiere·CapCut·DaVinci) 외부 믹싱용 무손실 16-bit `.wav` 효과음·앰비언트 BGM 마스터 트랙을 단독 출고한다.
+ */
+export function exportWebtoonMotionAudioWav(
+  recipe: CharacterRecipe,
+  options: ExportWebtoonMotionTeaserOptions,
+  deps: ExportDeps = {},
+): ExportOutcome {
+  const now = deps.now ?? defaultNow;
+  const started = now();
+  try {
+    const gutterPaces = options.gutterPaces ?? DEFAULT_WEBTOON_STRIP_GUTTER_PACES;
+    const layout = clampWebtoonStripLayout(
+      options.stripWidth,
+      options.includeBubbleSafeZone ?? true,
+      gutterPaces,
+    );
+    const sfxStamps: WebtoonStripSfxStamps =
+      options.mangaFx?.enabled && options.mangaFx.sfxStamps
+        ? options.mangaFx.sfxStamps
+        : DEFAULT_WEBTOON_STRIP_SFX_STAMPS;
+    const schedule = planMotionTeaserSchedule(layout, gutterPaces, {
+      ...(options.fps !== undefined ? { fps: options.fps } : {}),
+      ...(options.playbackSpeed !== undefined ? { speed: options.playbackSpeed } : {}),
+      sfxStamps,
+    });
+    const effectiveMood = options.manuscriptMood ?? options.mangaFx?.manuscriptMood ?? "daylight-paper";
+    const includeBgm = options.includeAmbientBgm === true;
+    const pcm = synthesizeMotionTeaserAudioPcm(
+      schedule,
+      options.synthesizeAudioSfx !== false ? sfxStamps : ["none", "none", "none", "none"],
+      MOTION_TEASER_AUDIO_SAMPLE_RATE,
+      { includeAmbientBgm: includeBgm, moodId: effectiveMood },
+    );
+    const bytes = encodeMonoPcm16Wav(pcm);
+    const digest8 = recipeDigest(recipe).slice(0, 8);
+    const sfxTag = pcm.eventCount > 0 ? "-sfx" : "";
+    const bgmTag = includeBgm ? "-bgm" : "";
+    const speedTag = schedule.speed !== 1 ? `-${String(schedule.speed).replace(".", "_")}x` : "";
+    const fileName = `character-${digest8}-webtoon-4cut${sfxTag}${bgmTag}${speedTag}-audio.wav`;
+    return {
+      ok: true,
+      bytes,
+      receipt: {
+        kind: "wav",
+        fileName,
+        mime: WAV_MIME,
+        bytes: bytes.length,
+        motion: {
+          frameCount: schedule.frameCount,
+          avgFrameMs: 0,
+          peakRasterMb: Number((bytes.byteLength / (1024 * 1024)).toFixed(2)),
+          audioEvents: pcm.eventCount,
+          ...(includeBgm ? { ambientBgm: true } : {}),
+        },
+        durationMs: now() - started,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      failure: toMotionFailure("export-wav-failed", "무손실 WAV 사운드트랙 인코딩에 실패했습니다.", error, started),
     };
   }
 }

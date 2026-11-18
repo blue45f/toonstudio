@@ -11,9 +11,12 @@ import {
   buildMotionTeaserWebVtt,
   computeCutKineticMotionState,
   computeMotionTeaserCameraWindow,
+  encodeMonoPcm16Wav,
+  exportWebtoonMotionAudioWav,
   exportWebtoonMotionTeaserVtt,
   exportWebtoonMotionTeaserWebm,
   formatWebVttTimestamp,
+  isWavRiff,
   planMotionTeaserSchedule,
   renderMotionTeaserFrameRgba,
   synthesizeMotionTeaserAudioPcm,
@@ -78,6 +81,29 @@ describe("webtoon-motion-teaser", () => {
     expect(mixedA.eventCount).toBe(4);
     expect(mixedA.samples.every((s) => Math.abs(s) <= 0.95)).toBe(true);
     expect(Array.from(mixedA.samples.slice(0, 600))).toEqual(Array.from(mixedB.samples.slice(0, 600)));
+
+    const wavBytes = encodeMonoPcm16Wav(mixedA);
+    expect(isWavRiff(wavBytes)).toBe(true);
+    expect(wavBytes.byteLength).toBe(44 + mixedA.samples.length * 2);
+
+    const wavOutcome = exportWebtoonMotionAudioWav(
+      createDefaultRecipe(),
+      {
+        stripWidth: 320,
+        includeAmbientBgm: true,
+        mangaFx: {
+          enabled: true,
+          sfxStamps: ["dugeun", "none", "kugugung", "none"],
+        },
+      },
+      { now: () => 777 },
+    );
+    expect(wavOutcome.ok).toBe(true);
+    if (wavOutcome.ok) {
+      expect(isWavRiff(wavOutcome.bytes)).toBe(true);
+      expect(wavOutcome.receipt.kind).toBe("wav");
+      expect(wavOutcome.receipt.fileName).toMatch(/-webtoon-4cut-sfx-bgm-audio\.wav$/u);
+    }
   });
 
   it("buildMotionTeaserWebVtt와 exportWebtoonMotionTeaserVtt는 타임코드·다국어 보이스 태그·효과음 주석을 정확히 생성한다", () => {

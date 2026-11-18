@@ -1,6 +1,6 @@
 /**
  * 장르별 원클릭 풀세트 씬 디렉터 세션 및 뷰포트 컨트롤 (`viewport-scene-director.tsx`, Unslop 규약 준수):
- * - 9대 웹툰 씬 디렉터 카탈로그(`viewport-scene-director-presets.ts`) 연동
+ * - 12대 웹툰 씬 디렉터 카탈로그(`viewport-scene-director-presets.ts`) 연동
  * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
  */
 import {
@@ -70,6 +70,8 @@ export interface StripDirectorState {
   readonly jaWritingMode: WebtoonJaWritingMode;
   readonly tankobonOrder: WebtoonTankobonOrder;
   readonly tankobonPageNumber: number;
+  readonly tankobonVolumeNumber: number;
+  readonly tankobonAuthorKo: string;
   readonly tankobonBindingSide: WebtoonTankobonBinding;
   readonly includeAmbientBgm: boolean;
   readonly manuscriptMood: WebtoonManuscriptMoodId;
@@ -113,6 +115,8 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   jaWritingMode: "horizontal",
   tankobonOrder: "rtl-tankobon",
   tankobonPageNumber: 0,
+  tankobonVolumeNumber: 1,
+  tankobonAuthorKo: "TOONSTUDIO ATELIER",
   tankobonBindingSide: "none",
   includeAmbientBgm: false,
   manuscriptMood: "daylight-paper",

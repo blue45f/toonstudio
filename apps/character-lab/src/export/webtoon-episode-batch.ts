@@ -15,6 +15,7 @@ import {
   MAX_PNG_EXPORT_DIMENSION,
   MIN_EXPORT_DIMENSION,
   VTT_MIME,
+  WAV_MIME,
   WEBM_MIME,
   isWebmEbml,
 } from "./export-session";
@@ -24,6 +25,7 @@ import {
   WEBTOON_MOTION_TEASER_RESOLUTIONS,
   buildCutKineticOverlays,
   buildMotionTeaserWebVtt,
+  encodeMonoPcm16Wav,
   planMotionTeaserSchedule,
   synthesizeMotionTeaserAudioPcm,
 } from "./webtoon-motion-teaser";
@@ -709,6 +711,71 @@ export function exportEpisodeStoryboardMarkdown(
       fileName: `${prefix}-${beats.length * 4}cuts.storyboard.md`,
       mime: MARKDOWN_MIME,
       bytes: bytes.length,
+      durationMs: now() - started,
+    },
+  };
+}
+
+/**
+ * 에피소드 큐시트 전체 비트(`4×N`컷)의 효과음과 무드 앰비언트 BGM 패드를 크로스페이드 합성해 무손실 16-bit `.wav` 마스터 트랙으로 내보낸다.
+ */
+export function exportEpisodeCutsheetAudioWav(
+  episodeTitleKo: string,
+  beats: readonly EpisodeCutsheetBeat[],
+  options: EpisodeWebVttOptions & { readonly includeAmbientBgm?: boolean } = {},
+  deps: ExportDeps = {},
+): ExportOutcome {
+  const now = deps.now ?? defaultNow;
+  const started = now();
+  if (beats.length === 0) {
+    return {
+      ok: false,
+      failure: failVisible("cutsheet-beats-empty", "음원으로 내보낼 큐시트 씬 비트가 없습니다.", undefined, started),
+    };
+  }
+  const stripW = options.requestedStripWidth ?? 540;
+  const includeBgm = options.includeAmbientBgm === true;
+  const tracks: MotionTeaserAudioTrackPcm[] = [];
+  let totalFrames = 0;
+
+  for (const beat of beats) {
+    const snap = beat.snapshot;
+    const layout = clampWebtoonStripLayout(stripW, true, snap.gutterPaces);
+    const sfxStamps = snap.bakeStripFx ? snap.sfxStamps : (["none", "none", "none", "none"] as const);
+    const schedule = planMotionTeaserSchedule(layout, snap.gutterPaces, {
+      ...(options.fps !== undefined ? { fps: options.fps } : {}),
+      ...(options.playbackSpeed !== undefined ? { speed: options.playbackSpeed } : {}),
+      sfxStamps,
+    });
+    totalFrames += schedule.frameCount;
+    tracks.push(
+      synthesizeMotionTeaserAudioPcm(schedule, sfxStamps, MOTION_TEASER_AUDIO_SAMPLE_RATE, {
+        includeAmbientBgm: includeBgm,
+        moodId: snap.manuscriptMood,
+      }),
+    );
+  }
+
+  const merged = concatAudioTracksWithCrossfade(tracks, MOTION_TEASER_AUDIO_SAMPLE_RATE, includeBgm);
+  const bytes = encodeMonoPcm16Wav(merged);
+  const prefix = slugifyEpisodePrefix(episodeTitleKo);
+  const bgmTag = includeBgm ? "-bgm" : "";
+  return {
+    ok: true,
+    bytes,
+    receipt: {
+      kind: "wav",
+      fileName: `${prefix}-${beats.length * 4}cuts${bgmTag}-episode-audio.wav`,
+      mime: WAV_MIME,
+      bytes: bytes.length,
+      motion: {
+        frameCount: totalFrames,
+        avgFrameMs: 0,
+        peakRasterMb: Number((bytes.byteLength / (1024 * 1024)).toFixed(2)),
+        audioEvents: merged.eventCount,
+        ...(includeBgm ? { ambientBgm: true } : {}),
+        beatCount: beats.length,
+      },
       durationMs: now() - started,
     },
   };
