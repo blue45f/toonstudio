@@ -460,3 +460,21 @@ export function rigPoseSkeleton(rig: CharacterRig): SkeletonData | null {
   if (rig.bones.size === 0) return null;
   return buildPoseFrameSkeleton(rigBoneSnapshots(rig), rig.poseConvention);
 }
+
+/** 손 소품 등 런타임 부속 RigPart를 리그의 parts 및 partById에 등록한다. */
+export function attachExtraRigPart(rig: CharacterRig, part: RigPart): void {
+  const mutableParts = rig.parts as RigPart[];
+  const existingIdx = mutableParts.findIndex((entry) => entry.id === part.id || entry.partId === part.partId);
+  if (existingIdx >= 0) mutableParts.splice(existingIdx, 1);
+  mutableParts.push(part);
+  (rig.partById as Map<number, RigPart>).set(part.partId, part);
+}
+
+/** 런타임 부속 RigPart를 리그의 parts 및 partById에서 제거한다. */
+export function detachExtraRigPart(rig: CharacterRig, partId: number): RigPart | null {
+  const mutableParts = rig.parts as RigPart[];
+  const idx = mutableParts.findIndex((entry) => entry.partId === partId);
+  const removed = idx >= 0 ? (mutableParts.splice(idx, 1)[0] ?? null) : null;
+  (rig.partById as Map<number, RigPart>).delete(partId);
+  return removed;
+}

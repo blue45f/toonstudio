@@ -13,15 +13,7 @@ import { evaluateCharacterLabVerifyAiGate, type CharacterLabFreshLensId } from "
 import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
-import {
-  WEBTOON_LIGHTING_SHADOW_PRESETS,
-  WEBTOON_MATERIAL_SURFACE_PRESETS,
-  buildLightingShadowCommands,
-  buildMaterialSurfaceCommands,
-  buildResetMaterialLightingCommands,
-  isMaterialSurfacePresetActive,
-  summarizeActiveMaterialAndShadowKo,
-} from "./render-material-lighting-presets";
+import { RenderMaterialLightingControls } from "./render-material-lighting-controls";
 import {
   CASCADE_CHOICES, DEFAULT_RENDER_POLL_MS, OUTLINE_LABELS_KO, QUALITY_IDS, RAMP_CHOICES, TONE_LABELS_KO,
   describeBetaState, failureMessage, isOutline, isToneMapping,
@@ -213,56 +205,7 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         </button>
       </div>
 
-      <fieldset className="cl-render-group" data-testid="render-material-lighting-suite">
-        <legend>피부·의상 소재 & 툰 셰이딩·그림자 프리셋</legend>
-        <p className="cl-render-hint" data-testid="render-material-shadow-summary">
-          {summarizeActiveMaterialAndShadowKo(state.recipe.surfaces, shading)}
-        </p>
-        <div className="cl-render-row" role="group" aria-label="피부·의상 표면 소재 프리셋" data-testid="render-surface-material-presets">
-          {WEBTOON_MATERIAL_SURFACE_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-surface-preset-${preset.id}`}
-              aria-pressed={isMaterialSurfacePresetActive(state.recipe.surfaces, preset)}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildMaterialSurfaceCommands(state.recipe.surfaces, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row" role="group" aria-label="툰 셰이딩·그림자 연출 프리셋" data-testid="render-toon-shadow-presets">
-          {WEBTOON_LIGHTING_SHADOW_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              className="cl-preset-chip"
-              data-testid={`render-lighting-preset-${preset.id}`}
-              title={preset.summaryKo}
-              onClick={() => {
-                for (const command of buildLightingShadowCommands(shading, preset)) dispatch(command);
-              }}
-            >
-              {preset.labelKo}
-            </button>
-          ))}
-        </div>
-        <div className="cl-render-row">
-          <button
-            type="button"
-            data-testid="render-reset-material-lighting-btn"
-            onClick={() => {
-              for (const command of buildResetMaterialLightingCommands(state.recipe.surfaces)) dispatch(command);
-            }}
-          >
-            기본 소재·조명 복원
-          </button>
-        </div>
-      </fieldset>
+      <RenderMaterialLightingControls surfaces={state.recipe.surfaces} shading={shading} dispatch={dispatch} />
 
       <div className="cl-render-row" role="group" aria-label="셰이딩 모드">
         <button type="button" aria-pressed={!isToon} onClick={() => set({ mode: "pbr" })}>
