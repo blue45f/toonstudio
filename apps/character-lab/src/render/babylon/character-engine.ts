@@ -18,7 +18,6 @@ import { BETA_FEATURE_IDS } from "../beta-features";
 import { faceSdfUniforms, generateFaceSdf } from "../face-sdf";
 import { createFrameStats } from "../frame-stats";
 import { describeSparseMorphReport } from "../glb-sparse-morph";
-import { summarizeJointOffsets } from "../joint-offsets";
 import { createKitBytesCache } from "../kit-bytes-cache";
 import { MATERIAL_PRESETS, hexToLinear, toonShadeTint } from "../material-presets";
 import { describeMorphTextureMode } from "../morph-limits";
@@ -39,6 +38,7 @@ import { applyRigEyeGaze, createEyeGazeController } from "./eye-gaze";
 import { exportRigGlbWithReport } from "./glb-exporter";
 import { hairLayerSupport } from "./hair-ownership";
 import { createHudProbe } from "./hud";
+import { readJointOffsetState } from "./joint-offset-rig";
 import { loadKitRig } from "./kit-loader";
 import { createProceduralIbl } from "./lighting/ibl";
 import { adaptLoadedMaterial, applyPresetParams, createPresetMaterial, setMaterialAlbedo } from "./materials/material-factory";
@@ -1169,17 +1169,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       morphTextureMode: morphTexture,
       boneTextureMode: boneTexture,
     });
-    return { ...base, ...this.beta.report(), jointOffsets: this.jointOffsetState(), glbMorphSparse: this.glbSparseState() };
-  }
-
-  private jointOffsetState(): SceneFeatureState {
-    const rig = this.rig;
-    if (!rig) return featureOff("소스가 없습니다.");
-    const binding = rig.jointOffsets;
-    if (!binding) return featureOff(rig.kind === "package" ? "제작 패키지에는 체형 morph 관절 오프셋이 없습니다." : "이 소스는 관절 오프셋을 주지 않아 morph만 정점에 반영됩니다.");
-    const summary = summarizeJointOffsets(binding.table);
-    const applied = binding.snapshot().size;
-    return featureActive(`morph ${summary.morphCount}개 · 관절 ${summary.boneCount}개 · 최대 ${(summary.maxOffsetM * 1000).toFixed(0)} mm · 지금 ${applied}개 본이 옮겨짐(역바인드 재생성)`);
+    return { ...base, ...this.beta.report(), jointOffsets: readJointOffsetState(this.rig), glbMorphSparse: this.glbSparseState() };
   }
 
   private glbSparseState(): SceneFeatureState {

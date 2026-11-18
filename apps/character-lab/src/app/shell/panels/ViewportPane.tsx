@@ -18,7 +18,7 @@ import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, 
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import {
-  SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, SHAPER_GIZMO_MODES, WEBTOON_SIGNATURE_POSES,
+  SHAPER_GIZMO_MODES,
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
@@ -28,12 +28,13 @@ import {
   buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
-  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
-} from "./viewport-manga-fx-overlay";
-import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
+import {
+  DEFAULT_MANGA_FX_STATE, ViewportMangaFxControls, ViewportMangaFxOverlay, clampMangaFxIntensity, type ViewportMangaFxState,
+} from "./viewport-manga-fx-overlay";
+import { ViewportPresetSelect } from "./viewport-preset-select";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
@@ -737,27 +738,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           <select className="cl-viewport-select" aria-label="기즈모 조작 모드" value={gizmoMode} disabled={!showHandles} title="SHAPER PivotManager 기즈모 모드 전환 (단축키 Q / W / E / R)" onChange={(event) => setGizmoMode(Number(event.target.value) as ShaperGizmoMode)}>
             {SHAPER_GIZMO_MODES.map((m) => <option key={m.mode} value={m.mode}>{m.shortLabelKo}</option>)}
           </select>
-          <select className="cl-viewport-select" aria-label="SHAPER 내장 프리셋" value={shaperPresetId} title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다" onChange={(event) => applyShaperBuiltInPreset(event.target.value)}>
-            <option value="">SHAPER 프리셋 적용…</option>
-            <optgroup label="한국 웹툰 시그니처 연기·액션 (포즈+손+시선+표정)">
-              {Object.values(WEBTOON_SIGNATURE_POSES).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 풀세트 아키타입 (헤어+의상+체형+포즈)">
-              {Object.values(SHAPER_BUILTIN_ARCHETYPE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 체형 (BuiltInData/body)">
-              {Object.values(SHAPER_BUILTIN_BODY_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 두상 (BuiltInData/head)">
-              {Object.values(SHAPER_BUILTIN_FACE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 이목구비 파츠 (BuiltInData/parts)">
-              {Object.values(SHAPER_BUILTIN_PART_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-            <optgroup label="SHAPER 정본 포즈 (BuiltInData/pose)">
-              {Object.values(SHAPER_BUILTIN_POSE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
-            </optgroup>
-          </select>
+          <ViewportPresetSelect presetId={shaperPresetId} onSelect={applyShaperBuiltInPreset} />
           <button type="button" className="cl-viewport-button" aria-pressed={showHud} onClick={() => setShowHud((value) => !value)}>HUD</button>
           <button type="button" className="cl-viewport-button" aria-pressed={ui.drawingMode} disabled={!engine} onClick={() => setDrawingMode(!ui.drawingMode)}>드로잉</button>
         </span>
