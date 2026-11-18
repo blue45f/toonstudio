@@ -320,6 +320,23 @@ def bake_couture_fabric_texture(
                 col = _lerp3(col, s_c, herring * 0.10)
                 if abs(((v * 20.0) % 1.0) - 0.5) < 0.024:
                     col = _lerp3(col, a_c, 0.14)
+            elif pattern == "academy-crest":
+                gx = abs(((u * 6.0) % 1.0) - 0.5)
+                gy = abs(((v * 6.0) % 1.0) - 0.5)
+                if abs(gx + gy - 0.40) < 0.024:
+                    col = _lerp3(col, a_c, 0.28)
+                if v < 0.085 or (0.105 < v < 0.125) or abs(u - 0.5) < 0.018:
+                    col = _lerp3(col, a_c, 0.76)
+            elif pattern == "tactical":
+                ripstop_x = abs(((u * 36.0) % 1.0) - 0.5)
+                ripstop_y = abs(((v * 36.0) % 1.0) - 0.5)
+                if ripstop_x < 0.06 or ripstop_y < 0.06:
+                    col = _lerp3(col, s_c, 0.22)
+                camo = 0.5 + 0.5 * math.sin(u * math.pi * 5.0 + math.cos(v * math.pi * 4.0) * 1.4)
+                if camo > 0.72:
+                    col = _lerp3(col, s_c, 0.28)
+                if v < 0.065:
+                    col = _lerp3(col, a_c, 0.64)
             else:
                 if v < 0.06:
                     col = _lerp3(col, a_c, 0.42)
@@ -500,6 +517,24 @@ def build_sculpted_webtoon_bangs_bmesh(
             (-37.0, -42.0, 0.020, eye_z + 0.088, eye_z - 0.026, 0.009, -0.002),
             (37.0, 42.0, 0.020, eye_z + 0.088, eye_z - 0.026, 0.009, 0.002),
         ]
+    elif bang_style == "council-parted":
+        strands = [
+            (-8.0, -21.0, 0.023, eye_z + 0.105, eye_z + 0.019, 0.012, -0.005),
+            (-21.0, -32.0, 0.021, eye_z + 0.100, eye_z + 0.016, 0.011, -0.005),
+            (4.0, 15.0, 0.022, eye_z + 0.105, eye_z + 0.020, 0.012, 0.004),
+            (16.0, 29.0, 0.021, eye_z + 0.101, eye_z + 0.016, 0.011, 0.005),
+            (-38.0, -43.5, 0.023, eye_z + 0.090, eye_z - 0.082, 0.010, -0.003),
+            (38.0, 43.5, 0.023, eye_z + 0.090, eye_z - 0.082, 0.010, 0.003),
+        ]
+    elif bang_style == "sniper-swept":
+        strands = [
+            (-5.0, -16.0, 0.022, eye_z + 0.105, eye_z + 0.018, 0.013, -0.005),
+            (5.0, 18.0, 0.023, eye_z + 0.105, eye_z + 0.017, 0.013, 0.006),
+            (-20.0, -32.0, 0.021, eye_z + 0.100, eye_z + 0.015, 0.011, -0.005),
+            (20.0, 32.0, 0.021, eye_z + 0.100, eye_z + 0.015, 0.011, 0.005),
+            (-38.0, -43.0, 0.020, eye_z + 0.086, eye_z - 0.048, 0.010, -0.003),
+            (38.0, 43.0, 0.020, eye_z + 0.086, eye_z - 0.048, 0.010, 0.003),
+        ]
     else:  # duke-wolf
         strands = [
             (-5.0, -14.0, 0.018, eye_z + 0.095, eye_z + 0.015, 0.012, -0.005),
@@ -513,7 +548,8 @@ def build_sculpted_webtoon_bangs_bmesh(
     rx_base = 0.0775 if not is_male else 0.0795
     ry_base = 0.0815
 
-    if bang_style in ("saintess-hime", "ceo-parted"):
+    dome_cap_styles = ("saintess-hime", "ceo-parted", "council-parted", "sniper-swept")
+    if bang_style in dome_cap_styles:
         cap_rows = []
         for iv_c in range(6):
             tv_c = iv_c / 5.0
@@ -538,7 +574,7 @@ def build_sculpted_webtoon_bangs_bmesh(
                 fc.loops[2][uv_l].uv = (0.1 + 0.8 * ((iu_c + 1) / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
                 fc.loops[3][uv_l].uv = (0.1 + 0.8 * (iu_c / 16.0), 0.96 - 0.30 * ((iv_c + 1) / 5.0))
 
-    full_root = bang_style in ("saintess-hime", "ceo-parted")
+    full_root = bang_style in dome_cap_styles
     n_prof = 8
     for idx_s, (a0, a1, w_half, zs, ze, bulge, cx_off) in enumerate(strands):
         n_seg = 12

@@ -1,12 +1,12 @@
 /**
- * RenderPanel 전용 피부·의상 표면 소재 프리셋 및 툰 셰이딩·그림자 통합 프리셋 (P2-16).
+ * RenderPanel 전용 피부·의상 표면 소재 프리셋 및 툰 셰이딩·그림자·흑백 원고 스크린톤 통합 프리셋 (P2-16+).
  *
  * - 피부(`skin`)·헤어(`hair`)·상의(`top`)·하의(`bottom`)·아우터(`outer`)·신발(`shoes`)·장식(`accessory`) 채널에
  *   검증된 `MaterialPresetId` 표면을 원자적 명령으로 적용한다.
- * - 툰 셰이딩(음영 단수·림라이트·비등방 필압 외곽선)과 그림자(CSM 캐스케이드·PCF·PCSS 접촉 경화)·IBL을
- *   웹툰 장르별 조명 연출 프리셋으로 한 번에 전환하고 기본값 복원을 지원한다.
+ * - 툰 셰이딩(음영 단수·림라이트·비등방 필압 외곽선), 그림자(CSM 캐스케이드·PCF·PCSS 접촉 경화)·IBL,
+ *   그리고 만화 출판 원고용 흑백 크로스해칭/망점 스크린톤(`look.tone` + `look.grade`)을 원클릭 전환하고 기본값 복원을 지원한다.
  */
-import { DEFAULT_SHADING, mergeLook } from "../../../contracts";
+import { DEFAULT_SHADING, cloneLook, mergeLook } from "../../../contracts";
 
 import type { ChannelKey, LabCommand, LookPatch, MaterialPresetId, ShadingProfile, Surface, Surfaces } from "../../../contracts";
 
@@ -17,7 +17,9 @@ export interface WebtoonMaterialSurfacePreset {
     | "action-leather-armor"
     | "casual-knit-denim"
     | "sanctuary-ivory-brocade"
-    | "bespoke-charcoal-suit";
+    | "bespoke-charcoal-suit"
+    | "academy-officer-wool"
+    | "tactical-ripstop-gear";
   readonly labelKo: string;
   readonly summaryKo: string;
   readonly surfaces: Readonly<Partial<Record<ChannelKey, MaterialPresetId>>>;
@@ -30,7 +32,9 @@ export interface WebtoonLightingShadowPreset {
     | "romance-soft-bloom"
     | "noir-hard-cascade4"
     | "sanctuary-ethereal-halo"
-    | "office-editorial-clean";
+    | "office-editorial-clean"
+    | "manga-ink-lineart"
+    | "manga-halftone-screentone";
   readonly labelKo: string;
   readonly summaryKo: string;
   readonly buildShading: (current: ShadingProfile) => Partial<ShadingProfile>;
@@ -115,6 +119,34 @@ export const WEBTOON_MATERIAL_SURFACE_PRESETS: readonly WebtoonMaterialSurfacePr
       top: "cloth-cotton",
       bottom: "cloth-cotton",
       outer: "cloth-cotton",
+      shoes: "leather",
+      accessory: "metal",
+    },
+  },
+  {
+    id: "academy-officer-wool",
+    labelKo: "황립 장교 울 제복 · 금장 에길레트",
+    summaryKo: "아이보리 장교 울 케이프 블레이저 + 체크 플리츠 스커트 + 순금 견장 메탈",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      bottom: "cloth-cotton",
+      outer: "cloth-silk",
+      shoes: "leather",
+      accessory: "metal",
+    },
+  },
+  {
+    id: "tactical-ripstop-gear",
+    labelKo: "택티컬 립스탑 필드기어 · 방탄 리그",
+    summaryKo: "매트 립스탑 후디 재킷 + 카고 데님 + 전술 부츠 및 바이저 메탈",
+    surfaces: {
+      skin: "skin-sss",
+      hair: "hair-aniso",
+      top: "cloth-cotton",
+      outer: "leather",
+      bottom: "cloth-denim",
       shoes: "leather",
       accessory: "metal",
     },
@@ -235,6 +267,46 @@ export const WEBTOON_LIGHTING_SHADOW_PRESETS: readonly WebtoonLightingShadowPres
       line: { widthMm: 2.3 },
     },
   },
+  {
+    id: "manga-ink-lineart",
+    labelKo: "흑백 출판 원고 · 고대비 잉크 선화",
+    summaryKo: "무채색 고대비 잉크 2단 셀 + 35° 크로스해칭 펜선 음영 + 3.4mm 필압 외곽선",
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "none",
+      toon: { ...current.toon, rampSteps: 2, faceSdfShadow: true, rim: false, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 3, pcf: false, contactHardening: false },
+      postfx: { ...current.postfx, fxaa: true, bloom: false, sharpen: true },
+      ibl: { enabled: true, intensity: 1.05 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.02 },
+      rim: { strength: 0 },
+      line: { widthMm: 3.4 },
+      tone: { kind: "crosshatch", cellPerHead: 52, angleDeg: 35, bands: [0, 0.45, 0.8], strength: 0.86, ink: "line" },
+      grade: { saturation: 0, lightness: 0.04 },
+    },
+  },
+  {
+    id: "manga-halftone-screentone",
+    labelKo: "회상·연출 컷 · 45° 망점 스크린톤",
+    summaryKo: "흑백 회상 톤 + 45° 망점(Halftone) 스크린톤 음영 + 또렷한 펜선 외곽선",
+    buildShading: (current) => ({
+      mode: "toon",
+      toneMapping: "khr-pbr-neutral",
+      toon: { ...current.toon, rampSteps: 3, faceSdfShadow: true, rim: true, outline: "hull", outlinePressure: true },
+      shadows: { enabled: true, cascades: 2, pcf: true, contactHardening: false },
+      postfx: { ...current.postfx, fxaa: true, bloom: false, sharpen: false },
+      ibl: { enabled: true, intensity: 1.1 },
+    }),
+    lookPatch: {
+      ramp: { softness: 0.08 },
+      rim: { strength: 0.35, color: [0.95, 0.95, 0.95], edge0: 0.6, edge1: 0.92 },
+      line: { widthMm: 2.8 },
+      tone: { kind: "halftone", cellPerHead: 44, angleDeg: 45, bands: [0, 0.5, 0.85], strength: 0.88, ink: "line" },
+      grade: { saturation: 0.06, lightness: 0.02 },
+    },
+  },
 ] as const;
 
 const MANAGED_SURFACE_CHANNELS: readonly ChannelKey[] = ["skin", "hair", "top", "bottom", "outer", "shoes", "accessory"];
@@ -268,12 +340,17 @@ export function buildLightingShadowCommands(
   preset: WebtoonLightingShadowPreset,
 ): readonly LabCommand[] {
   const profilePatch = preset.buildShading(currentShading);
+  const normalizedPatch: LookPatch = {
+    tone: { kind: "none", strength: 0 },
+    grade: { saturation: 1, lightness: 0 },
+    ...preset.lookPatch,
+  };
   return [
     {
       type: "shading/set",
       profile: {
         ...profilePatch,
-        look: mergeLook(currentShading.look, preset.lookPatch),
+        look: mergeLook(currentShading.look, normalizedPatch),
       },
     },
   ];
@@ -295,6 +372,7 @@ export function buildResetMaterialLightingCommands(currentSurfaces: Surfaces): r
       shadows: { ...DEFAULT_SHADING.shadows },
       postfx: { ...DEFAULT_SHADING.postfx },
       ibl: { ...DEFAULT_SHADING.ibl },
+      look: cloneLook(DEFAULT_SHADING.look),
     },
   });
   return commands;
@@ -306,8 +384,10 @@ export function summarizeActiveMaterialAndShadowKo(surfaces: Surfaces, shading: 
   const shadowDesc = shading.shadows.enabled
     ? `CSM ${shading.shadows.cascades}단 · ${shading.shadows.pcf ? "PCF" : "하드"}${shading.shadows.contactHardening ? "+PCSS" : ""}`
     : "그림자 꺼짐";
+  const toneTag = shading.look.tone.kind !== "none" && shading.look.tone.strength > 0 ? ` · 스크린톤(${shading.look.tone.kind})` : "";
+  const monoTag = shading.look.grade.saturation <= 0.15 ? " · 흑백원고" : "";
   const shadeDesc = shading.mode === "toon"
-    ? `툰 ${shading.toon.rampSteps}단 · ${shading.toon.rim ? "림 켜짐" : "림 꺼짐"}`
+    ? `툰 ${shading.toon.rampSteps}단 · ${shading.toon.rim ? "림 켜짐" : "림 꺼짐"}${toneTag}${monoTag}`
     : "PBR 조명";
   return `피부 ${skinMat} · 의상 ${topMat} · ${shadeDesc} · ${shadowDesc}`;
 }

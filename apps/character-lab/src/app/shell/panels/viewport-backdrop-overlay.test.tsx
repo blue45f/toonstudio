@@ -90,5 +90,35 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     fireEvent.change(select, { target: { value: "shaper-archetype-academy-protagonist" } });
     expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.presetId === "hair/wolf-layered")).toBe(true);
     expect(dispatched.some((cmd) => cmd.type === "pose/set")).toBe(true);
+
+    dispatched.length = 0;
+    fireEvent.change(select, { target: { value: "sig-pose-council-command" } });
+    expect(dispatched.some((cmd) => cmd.type === "pose/set")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/point")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "eye-gaze/set")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "expression/set")).toBe(true);
+  });
+
+  it("웹툰 2인 투샷·신장차 프리뷰 토글 시 10종 상대역 스탠디·신장차 배지를 표시하고 원클릭 아이컨택 시선 맞춤을 실행한다", () => {
+    const dispatched: LabCommand[] = [];
+    renderReadyViewport((cmd) => dispatched.push(cmd));
+
+    expect(screen.queryByTestId("viewport-duo-shot-overlay")).toBeNull();
+    fireEvent.click(screen.getByTestId("viewport-toggle-duo-shot"));
+    expect(screen.getByTestId("viewport-duo-shot-overlay")).toBeTruthy();
+    expect(screen.getByTestId("viewport-duo-delta-readout").textContent).toContain("신장차");
+
+    const partnerSelect = screen.getByTestId("viewport-duo-partner-select") as HTMLSelectElement;
+    expect(partnerSelect.options.length).toBe(10);
+    fireEvent.change(partnerSelect, { target: { value: "shaper-apocalypse-sniper" } });
+    expect(screen.getByTestId("viewport-duo-partner-figure").getAttribute("data-partner-id")).toBe("shaper-apocalypse-sniper");
+
+    fireEvent.change(screen.getByTestId("viewport-duo-side-select"), { target: { value: "left" } });
+    expect(screen.getByTestId("viewport-duo-partner-figure").getAttribute("data-side")).toBe("left");
+
+    fireEvent.click(screen.getByTestId("viewport-duo-apply-eyecontact"));
+    expect(dispatched).toHaveLength(2);
+    expect(dispatched[0]?.type).toBe("pose/set");
+    expect(dispatched[1]?.type).toBe("eye-gaze/set");
   });
 });

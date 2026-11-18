@@ -27,9 +27,10 @@ export {
   SHAPER_BUILTIN_ARCHETYPE_PRESETS,
   SHAPER_BUILTIN_PART_PRESETS,
   SHAPER_BUILTIN_POSE_PRESETS,
+  WEBTOON_SIGNATURE_POSES,
   buildShaperPresetCommands,
 } from "./shaper-builtin-presets";
-export type { ShaperArchetypePreset } from "./shaper-builtin-presets";
+export type { ShaperArchetypePreset, WebtoonSignaturePoseId, WebtoonSignaturePosePreset } from "./shaper-builtin-presets";
 
 // ---------------------------------------------------------------------------
 // 1. SHAPER PivotManager (0x02000050) 기즈모 모드 정의 (0:Q 선택, 1:W IK이동, 2:E 회전, 3:R 스케일)

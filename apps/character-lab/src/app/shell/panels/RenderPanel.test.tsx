@@ -590,10 +590,30 @@ describe("베타 기능 토글", () => {
     expect(store.getState().recipe.shading.toon.rampSteps).toBe(2);
     expect(store.getState().recipe.shading.postfx.sharpen).toBe(true);
 
+    fireEvent.click(screen.getByTestId("render-surface-preset-academy-officer-wool"));
+    expect(store.getState().recipe.surfaces.outer?.material).toBe("cloth-silk");
+    fireEvent.click(screen.getByTestId("render-surface-preset-tactical-ripstop-gear"));
+    expect(store.getState().recipe.surfaces.bottom?.material).toBe("cloth-denim");
+
+    fireEvent.click(screen.getByTestId("render-lighting-preset-manga-ink-lineart"));
+    expect(store.getState().recipe.shading.look.tone.kind).toBe("crosshatch");
+    expect(store.getState().recipe.shading.look.grade.saturation).toBe(0);
+    expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("스크린톤(crosshatch)");
+    expect(screen.getByTestId("render-material-shadow-summary").textContent).toContain("흑백원고");
+
+    fireEvent.click(screen.getByTestId("render-manga-mode-halftone"));
+    expect(store.getState().recipe.shading.look.tone.kind).toBe("halftone");
+    expect(store.getState().recipe.shading.look.tone.angleDeg).toBe(45);
+
+    fireEvent.change(screen.getByTestId("render-manga-density-slider"), { target: { value: "64" } });
+    expect(store.getState().recipe.shading.look.tone.cellPerHead).toBe(64);
+
     fireEvent.click(screen.getByTestId("render-reset-material-lighting-btn"));
     expect(store.getState().recipe.surfaces.top).toBeUndefined();
     expect(store.getState().recipe.shading.mode).toBe(DEFAULT_SHADING.mode);
     expect(store.getState().recipe.shading.shadows).toEqual(DEFAULT_SHADING.shadows);
+    expect(store.getState().recipe.shading.look.tone.kind).toBe("none");
+    expect(store.getState().recipe.shading.look.grade.saturation).toBe(1);
   });
 });
 

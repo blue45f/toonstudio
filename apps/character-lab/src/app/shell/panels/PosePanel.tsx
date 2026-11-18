@@ -14,6 +14,7 @@ import { hasPoseSkeleton, readPoseSkeleton } from "../../../render/pose-skeleton
 import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, useUiActions } from "../lab-store-context";
 
 import { PoseFineLimbGazeControls } from "./pose-fine-limb-gaze-controls";
+import { WEBTOON_SIGNATURE_POSES, buildShaperPresetCommands } from "./shaper-control-points";
 import {
   CoordInputs,
   HAND_SIDES,
@@ -393,6 +394,33 @@ export function PosePanel() {
             );
           })}
         </div>
+
+        <fieldset className="cl-pose-signature-group" data-testid="pose-webtoon-signature-presets">
+          <legend>한국 웹툰 시그니처 연기·액션 (포즈+손+시선+표정)</legend>
+          <div className="cl-pose-grid" role="group" aria-label="한국 웹툰 시그니처 연기 포즈">
+            {Object.values(WEBTOON_SIGNATURE_POSES).map((sig) => (
+              <button
+                key={sig.id}
+                type="button"
+                className="cl-pose-card"
+                disabled={poseBlocked}
+                data-testid={`pose-signature-card-${sig.id}`}
+                onClick={() => {
+                  if (guardCorruptedRig()) return;
+                  const batch = buildShaperPresetCommands(sig.id);
+                  if (!batch) return;
+                  intensityBasePoseRef.current = null;
+                  lastScaledPoseRef.current = null;
+                  setPoseIntensity(1);
+                  for (const cmd of batch.commands) dispatch(cmd);
+                }}
+              >
+                <span className="cl-pose-card-label">{sig.labelKo}</span>
+                <span className="cl-pose-card-meta">{sig.genreKo} · 본 {Object.keys(sig.pose).length}개 + 손·시선·표정</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="cl-pose-actions" role="group" aria-label="주요 포즈 편집 도구">
           <button type="button" onClick={resetPose} disabled={poseBlocked}>포즈 초기화</button>

@@ -699,5 +699,11 @@ describe("PosePanel P2-17 손·발·시선 개별 조정 및 관절 제한·반�
       type: "eye-gaze/set",
       gaze: { mode: "manual", symmetry: true, left: { yawDeg: 0, pitchDeg: 0 }, right: { yawDeg: 0, pitchDeg: 0 } },
     });
+
+    dispatched.length = 0;
+    const sigGroup = screen.getByTestId("pose-webtoon-signature-presets");
+    expect(within(sigGroup).getAllByRole("button")).toHaveLength(6);
+    fireEvent.click(screen.getByTestId("pose-signature-card-sig-pose-saintess-prayer"));
+    expect(dispatched.map((cmd) => cmd.type)).toEqual(["pose/set", "slot/apply", "eye-gaze/set", "expression/set"]);
   });
 });

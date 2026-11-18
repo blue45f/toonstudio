@@ -326,6 +326,58 @@ CHARACTER_SPECS: list[dict[str, Any]] = [
         },
         "noteKo": "Blender 5.3에서 7:3 가르마 시크 레이어드 헤어·스틸 블루 안구·차콜 헤링본 비스포크 수트·버건디 실크 넥타이 및 골드 타이클립·메탈 하프림 안경을 정밀 조형한 현대 로맨스 오피스 본부장 패키지.",
     },
+    {
+        "id": "shaper-academy-council",
+        "displayName": "SHAPER Atelier · Royal Academy Council President (황립 아카데미 학생회장)",
+        "role": "shaper-council",
+        "gender": "female",
+        "faceStyle": "sharp",
+        "hairStyle": "soft-bob",
+        "bangStyle": "council-parted",
+        "kitParts": {
+            "top": ("top/blazer.glb", "TS_Top_council-blazer"),
+            "bottom": ("bottom/pleated-skirt.glb", "TS_Bottom_pleated-skirt"),
+            "shoes": ("shoes/loafers.glb", "TS_Shoes_loafers"),
+            "accessory": ("accessory/ribbon.glb", "TS_Accessory_council-insignia"),
+        },
+        "hideFeet": False,
+        "couture": "academy-council",
+        "colors": {
+            "skin": "#FDE6DA", "blush": "#F396A0", "lip": "#E26076", "shadow": "#E2B6A6",
+            "irisTop": "#4E1E8A", "irisBot": "#D88CFF",
+            "hairRoot": "#121526", "hairMid": "#22294A", "hairTip": "#43528C", "hairHalo": "#C6D4FF",
+            "top1": "#F6F1EA", "top2": "#DCD3C6", "topAcc": "#D9A94E", "topPat": "academy-crest",
+            "bot1": "#6E182C", "bot2": "#450D1A", "botAcc": "#E8BE68", "botPat": "plaid",
+            "shoe": "#23171A", "acc": "#C81E45", "gold": "#F4CD78",
+        },
+        "noteKo": "Blender 5.3에서 미드나잇 네이비 소프트 보브컷·자수정 보석안·아이보리 황립 장교 블레이저와 골드 견장 에길레트(장식줄)·학생회장 완장·크림슨 체크 스커트를 정밀 조형한 황립 아카데미 학생회장 패키지.",
+    },
+    {
+        "id": "shaper-apocalypse-sniper",
+        "displayName": "SHAPER Atelier · Apocalypse Regressor Sniper (아포칼립스 회귀 스나이퍼)",
+        "role": "shaper-apocalypse",
+        "gender": "male",
+        "faceStyle": "sharp",
+        "hairStyle": "wolf-layered",
+        "bangStyle": "sniper-swept",
+        "kitParts": {
+            "top": ("top/hoodie.glb", "TS_Top_tactical-hoodie"),
+            "bottom": ("bottom/jeans.glb", "TS_Bottom_cargo-jeans"),
+            "shoes": ("shoes/boots.glb", "TS_Shoes_boots"),
+            "accessory": ("accessory/glasses.glb", "TS_Accessory_tactical-visor"),
+        },
+        "hideFeet": True,
+        "couture": "apocalypse-sniper",
+        "colors": {
+            "skin": "#F4D6C2", "blush": "#DE9084", "lip": "#C26E70", "shadow": "#D3A48E",
+            "irisTop": "#1B5E3A", "irisBot": "#9EFF78",
+            "hairRoot": "#171A18", "hairMid": "#2D3430", "hairTip": "#526058", "hairHalo": "#B8CEC0",
+            "top1": "#232924", "top2": "#141815", "topAcc": "#D98A3C", "topPat": "tactical",
+            "bot1": "#1A1E24", "bot2": "#0F1217", "botAcc": "#5E6B78", "botPat": "tactical",
+            "shoe": "#121416", "acc": "#64F58D", "gold": "#C89B54",
+        },
+        "noteKo": "Blender 5.3에서 애쉬 차콜 레이어드 헤어·에메랄드 회귀자 안구·택티컬 후디드 필드 재킷과 3D 체스트 리그 탄창 파우치·비대칭 숄더 폴드론·전술 HUD 바이저 고글을 정밀 조형한 아포칼립스 회귀 스나이퍼 패키지.",
+    },
 ]
 
 
@@ -1038,6 +1090,134 @@ def _add_bespoke_couture(
         pin_obj = _new_bmesh_part("_tmp_ceo_pin", bm_pin, gold_mat, arm_obj, "mixamorig:Spine2")
         _join_into(part_objs["accessory"], [pin_obj])
 
+    elif mode == "academy-council":
+        # Imperial officer shoulder capelet + golden aiguillette cord + double-breasted buttons
+        bm_cp = bmesh.new()
+        uv_cp = bm_cp.loops.layers.uv.new("UVMap")
+        c_rows = []
+        for iv in range(7):
+            tv = iv / 6.0
+            z = 1.378 - 0.145 * tv
+            rx, ry = 0.076 + 0.148 * (tv ** 0.78), 0.066 + 0.074 * (tv ** 0.84)
+            c_rows.append([
+                bm_cp.verts.new((
+                    rx * math.sin((iu / 24.0) * 2.0 * math.pi),
+                    -0.015 - ry * math.cos((iu / 24.0) * 2.0 * math.pi),
+                    z,
+                ))
+                for iu in range(24)
+            ])
+        for iv in range(6):
+            for iu in range(24):
+                inext = (iu + 1) % 24
+                f = bm_cp.faces.new((c_rows[iv][iu], c_rows[iv][inext], c_rows[iv + 1][inext], c_rows[iv + 1][iu]))
+                f.smooth = True
+                f.loops[0][uv_cp].uv = (iu / 24.0, 0.92 - 0.80 * (iv / 6.0))
+                f.loops[1][uv_cp].uv = ((iu + 1) / 24.0, 0.92 - 0.80 * (iv / 6.0))
+                f.loops[2][uv_cp].uv = ((iu + 1) / 24.0, 0.92 - 0.80 * ((iv + 1) / 6.0))
+                f.loops[3][uv_cp].uv = (iu / 24.0, 0.92 - 0.80 * ((iv + 1) / 6.0))
+        cape_obj = _new_bmesh_part("_tmp_council_cape", bm_cp, top_mat, arm_obj, "mixamorig:Spine2")
+
+        bm_ep = bmesh.new()
+        for sx in (-1.0, 1.0):
+            pad = bmesh.ops.create_cube(bm_ep, size=1.0)
+            bmesh.ops.scale(bm_ep, vec=(0.058, 0.032, 0.008), verts=pad["verts"])
+            bmesh.ops.rotate(bm_ep, cent=(0, 0, 0), matrix=Euler((0.0, sx * math.radians(-12.0), 0.0), "XYZ").to_matrix(), verts=pad["verts"])
+            bmesh.ops.translate(bm_ep, vec=(sx * 0.138, -0.016, 1.376), verts=pad["verts"])
+        for k in range(13):
+            t = k / 12.0
+            cd = bmesh.ops.create_uvsphere(bm_ep, u_segments=8, v_segments=6, radius=0.0040)
+            bmesh.ops.translate(
+                bm_ep,
+                vec=(-0.132 * (1.0 - t) + (-0.010) * t, -0.068 * (1.0 - t) + (-0.130) * t - 0.014 * math.sin(t * math.pi), 1.362 * (1.0 - t) + 1.295 * t - 0.042 * math.sin(t * math.pi)),
+                verts=cd["verts"],
+            )
+        for bz in (1.09, 1.155, 1.22):
+            for sx in (-0.034, 0.034):
+                btn = bmesh.ops.create_uvsphere(bm_ep, u_segments=10, v_segments=8, radius=0.0058)
+                bmesh.ops.scale(bm_ep, vec=(1.0, 0.45, 1.0), verts=btn["verts"])
+                bmesh.ops.translate(bm_ep, vec=(sx, -0.132, bz), verts=btn["verts"])
+        ep_obj = _new_bmesh_part("_tmp_council_ep", bm_ep, gold_mat, arm_obj, "mixamorig:Spine2")
+
+        # True anatomical upper-arm axis: LeftArm.head_local -> LeftForeArm.head_local!
+        p_sh = arm_obj.data.bones["mixamorig:LeftArm"].head_local.copy()
+        p_el = arm_obj.data.bones["mixamorig:LeftForeArm"].head_local.copy()
+        arm_mid = p_sh.lerp(p_el, 0.44)
+        arm_dir = (p_el - p_sh).normalized()
+        arm_u = arm_dir.cross(Vector((0.0, 1.0, 0.0))).normalized()
+        arm_v = arm_dir.cross(arm_u).normalized()
+        bm_band = bmesh.new()
+        n_bu = 20
+        r_band = 0.051
+        b_r0, b_r1 = [], []
+        for iu in range(n_bu):
+            ang = (iu / n_bu) * 2.0 * math.pi
+            radial = arm_u * (math.cos(ang) * r_band) + arm_v * (math.sin(ang) * r_band)
+            b_r0.append(bm_band.verts.new(arm_mid - arm_dir * 0.022 + radial))
+            b_r1.append(bm_band.verts.new(arm_mid + arm_dir * 0.022 + radial * 0.97))
+        for iu in range(n_bu):
+            inext = (iu + 1) % n_bu
+            fb = bm_band.faces.new((b_r0[iu], b_r0[inext], b_r1[inext], b_r1[iu]))
+            fb.smooth = True
+        bmesh.ops.solidify(bm_band, geom=list(bm_band.faces), thickness=0.0028)
+        band_obj = _new_bmesh_part("_tmp_council_band", bm_band, gem_mat, arm_obj, "mixamorig:LeftArm")
+        _join_into(part_objs["top"], [cape_obj, ep_obj, band_obj])
+
+        bm_cr = bmesh.new()
+        crest = bmesh.ops.create_uvsphere(bm_cr, u_segments=14, v_segments=10, radius=0.0115)
+        bmesh.ops.scale(bm_cr, vec=(1.05, 0.45, 1.30), verts=crest["verts"])
+        bmesh.ops.translate(bm_cr, vec=(0.0, -0.124, 1.324), verts=crest["verts"])
+        cr_obj = _new_bmesh_part("_tmp_council_crest", bm_cr, gold_mat, arm_obj, "mixamorig:Spine2")
+        _join_into(part_objs["accessory"], [cr_obj])
+
+    elif mode == "apocalypse-sniper":
+        # Low-profile contoured tactical chest rig + 3 mag pouches + shoulder-hugging harness straps
+        bm_rig = bmesh.new()
+        plate = bmesh.ops.create_cube(bm_rig, size=1.0)
+        bmesh.ops.scale(bm_rig, vec=(0.175, 0.020, 0.115), verts=plate["verts"])
+        bmesh.ops.translate(bm_rig, vec=(0.0, -0.130, 1.185), verts=plate["verts"])
+        for px_off in (-0.056, 0.0, 0.056):
+            pouch = bmesh.ops.create_cube(bm_rig, size=1.0)
+            bmesh.ops.scale(bm_rig, vec=(0.040, 0.022, 0.072), verts=pouch["verts"])
+            bmesh.ops.rotate(bm_rig, cent=(0, 0, 0), matrix=Euler((0.0, math.radians(-7.0), 0.0), "XYZ").to_matrix(), verts=pouch["verts"])
+            bmesh.ops.translate(bm_rig, vec=(px_off, -0.142, 1.175), verts=pouch["verts"])
+        for sx in (-0.074, 0.074):
+            for k in range(7):
+                t = k / 6.0
+                node_b = bmesh.ops.create_cube(bm_rig, size=1.0)
+                bmesh.ops.scale(bm_rig, vec=(0.024, 0.010, 0.026), verts=node_b["verts"])
+                bmesh.ops.translate(
+                    bm_rig,
+                    vec=(sx * (1.0 + 0.25 * t), -0.128 * (1.0 - t) + (-0.048) * t - 0.012 * math.sin(t * math.pi), 1.242 + 0.132 * t),
+                    verts=node_b["verts"],
+                )
+        rig_obj = _new_bmesh_part("_tmp_tac_rig", bm_rig, gold_mat, arm_obj, "mixamorig:Spine2")
+        rig_w = [{"mixamorig:Spine2": 0.82, "mixamorig:Spine1": 0.18} if v.co.z > 1.23 else {"mixamorig:Spine1": 0.85, "mixamorig:Spine": 0.15} for v in rig_obj.data.vertices]
+        rig_obj.vertex_groups.clear()
+        _assign_weights(rig_obj, rig_w)
+
+        p_sh_m = arm_obj.data.bones["mixamorig:LeftArm"].head_local.copy()
+        p_el_m = arm_obj.data.bones["mixamorig:LeftForeArm"].head_local.copy()
+        pauld_pos = p_sh_m.lerp(p_el_m, 0.18)
+        bm_pld = bmesh.new()
+        pld = bmesh.ops.create_uvsphere(bm_pld, u_segments=14, v_segments=10, radius=0.052)
+        bmesh.ops.scale(bm_pld, vec=(1.10, 0.90, 0.65), verts=pld["verts"])
+        bmesh.ops.rotate(bm_pld, cent=(0, 0, 0), matrix=Euler((0.0, math.radians(-18.0), 0.0), "XYZ").to_matrix(), verts=pld["verts"])
+        bmesh.ops.translate(bm_pld, vec=(pauld_pos.x, pauld_pos.y - 0.006, pauld_pos.z + 0.012), verts=pld["verts"])
+        pld_obj = _new_bmesh_part("_tmp_tac_pauldron", bm_pld, top_mat, arm_obj, "mixamorig:LeftArm")
+        _join_into(part_objs["top"], [rig_obj, pld_obj])
+
+        # Tactical rangefinder ear-pod + forehead comms sensor above brow (clear of eyes & glasses!)
+        bm_hud = bmesh.new()
+        pod = bmesh.ops.create_cone(bm_hud, cap_ends=True, cap_tris=True, segments=10, radius1=0.009, radius2=0.007, depth=0.036)
+        bmesh.ops.rotate(bm_hud, cent=(0, 0, 0), matrix=Euler((math.radians(90.0), 0.0, 0.0), "XYZ").to_matrix(), verts=pod["verts"])
+        bmesh.ops.translate(bm_hud, vec=(-0.082, -0.055, 1.522), verts=pod["verts"])
+        brow_node = bmesh.ops.create_uvsphere(bm_hud, u_segments=10, v_segments=8, radius=0.0055)
+        bmesh.ops.scale(bm_hud, vec=(1.6, 0.55, 0.75), verts=brow_node["verts"])
+        bmesh.ops.translate(bm_hud, vec=(-0.042, -0.106, 1.564), verts=brow_node["verts"])
+        hud_obj = _new_bmesh_part("_tmp_tac_hud", bm_hud, gem_mat, arm_obj, "mixamorig:Head")
+        _join_into(part_objs["accessory"], [hud_obj])
+
 
 def _parse_glb_stats(glb_path: Path) -> dict[str, Any]:
     raw = glb_path.read_bytes()
@@ -1320,7 +1500,7 @@ def _write_slot_mapping_and_manifest(
     }
 
 
-def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 8) -> list[dict[str, Any]]:
+def build_shaper_subset(tex_scratch_dir: Path, start_idx: int = 0, end_idx: int = 10) -> list[dict[str, Any]]:
     for col in list(bpy.data.collections):
         if col.name.startswith("Build_"):
             for o in list(col.objects):

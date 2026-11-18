@@ -32,7 +32,7 @@ export const CHARACTER_SHADER_UNIFORM_BUFFERS: readonly string[] = ["Scene", "Me
 /** morph normal·uv 변형을 켜는 define */
 export const CHARACTER_SHADER_DEFINES: readonly string[] = ["#define NORMAL", "#define UV1"];
 
-export const TOON_UNIFORMS: readonly string[] = ["baseColor", "shadeTint", "lightColor", "ambientColor", "toLight", "rimColor", "toonParams", "faceParams", "alphaParams"];
+export const TOON_UNIFORMS: readonly string[] = ["baseColor", "shadeTint", "lightColor", "ambientColor", "toLight", "rimColor", "toonParams", "faceParams", "alphaParams", "mangaParams", "gradeParams"];
 export const TOON_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler", "sdfSampler"];
 export const FLAT_UNIFORMS: readonly string[] = ["baseColor", "toonParams", "faceParams", "alphaParams"];
 export const FLAT_SAMPLERS: readonly string[] = ["albedoSampler", "paintSampler"];
@@ -143,6 +143,8 @@ uniform vec3 rimColor;
 uniform vec4 toonParams;
 uniform vec4 faceParams;
 uniform vec4 alphaParams;
+uniform vec4 mangaParams;
+uniform vec4 gradeParams;
 uniform sampler2D albedoSampler;
 uniform sampler2D paintSampler;
 uniform sampler2D sdfSampler;
@@ -160,7 +162,7 @@ void main(void) {
   float faceShading = mix(0.25, 0.85, faceLit);
   float shading = mix(lambert, faceShading, step(0.5, toonParams.z));
   float steps = max(2.0, toonParams.x);
-  float w = fwidth(shading) + 0.002;
+  float w = fwidth(shading) + 0.002 + gradeParams.w * 0.12;
   float acc = 0.0;
   for (int j = 1; j < 4; j++) {
     float fj = float(j);
@@ -176,6 +178,33 @@ void main(void) {
   float fresnel = pow(1.0 - max(dot(n, v), 0.0), 3.0);
   float rim = smoothstep(0.55, 0.65, fresnel) * step(0.5, toonParams.y);
   color += rimColor * rim;
+  if (mangaParams.x > 0.5 && mangaParams.y > 0.0) {
+    float cs = cos(mangaParams.w);
+    float sn = sin(mangaParams.w);
+    vec2 p = vPositionW.xy * mangaParams.z * 4.5;
+    vec2 rp = vec2(p.x * cs - p.y * sn, p.x * sn + p.y * cs);
+    vec2 cell = fract(rp) - 0.5;
+    float shadowMask = clamp(1.0 - band, 0.0, 1.0);
+    float pat = 0.0;
+    if (mangaParams.x < 1.5) {
+      float rad = sqrt(shadowMask) * 0.62;
+      pat = 1.0 - smoothstep(rad - 0.06, rad + 0.06, length(cell));
+    } else if (mangaParams.x < 2.5) {
+      float hw = shadowMask * 0.36;
+      pat = 1.0 - smoothstep(hw - 0.05, hw + 0.05, abs(cell.y));
+    } else {
+      float hw1 = shadowMask * 0.30;
+      float h1 = 1.0 - smoothstep(hw1 - 0.05, hw1 + 0.05, abs(cell.y));
+      float h2 = step(0.45, shadowMask) * (1.0 - smoothstep(hw1 * 0.8 - 0.05, hw1 * 0.8 + 0.05, abs(cell.x)));
+      pat = max(h1, h2);
+    }
+    vec3 inkCol = mix(albedo * shadeTint * 0.55, vec3(0.05, 0.04, 0.06), step(0.5, gradeParams.z));
+    color = mix(color, inkCol, pat * mangaParams.y * shadowMask);
+  }
+  if (abs(gradeParams.x - 1.0) > 1e-4 || abs(gradeParams.y) > 1e-4) {
+    float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = max(vec3(0.0), mix(vec3(luma), color, gradeParams.x) + vec3(gradeParams.y));
+  }
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -195,6 +224,8 @@ uniform rimColor: vec3f;
 uniform toonParams: vec4f;
 uniform faceParams: vec4f;
 uniform alphaParams: vec4f;
+uniform mangaParams: vec4f;
+uniform gradeParams: vec4f;
 var albedoSampler: texture_2d<f32>;
 var albedoSamplerSampler: sampler;
 var paintSampler: texture_2d<f32>;
@@ -218,7 +249,7 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let faceShading: f32 = mix(0.25, 0.85, faceLit);
   let shading: f32 = mix(lambert, faceShading, step(0.5, uniforms.toonParams.z));
   let steps: f32 = max(2.0, uniforms.toonParams.x);
-  let w: f32 = fwidth(shading) + 0.002;
+  let w: f32 = fwidth(shading) + 0.002 + uniforms.gradeParams.w * 0.12;
   var acc: f32 = 0.0;
   for (var j: i32 = 1; j < 4; j = j + 1) {
     let fj: f32 = f32(j);
@@ -234,6 +265,33 @@ fn main(input: FragmentInputs) -> FragmentOutputs {
   let fresnel: f32 = pow(1.0 - max(dot(n, v), 0.0), 3.0);
   let rim: f32 = smoothstep(0.55, 0.65, fresnel) * step(0.5, uniforms.toonParams.y);
   color = color + uniforms.rimColor * rim;
+  if (uniforms.mangaParams.x > 0.5 && uniforms.mangaParams.y > 0.0) {
+    let cs: f32 = cos(uniforms.mangaParams.w);
+    let sn: f32 = sin(uniforms.mangaParams.w);
+    let p: vec2f = fragmentInputs.vPositionW.xy * uniforms.mangaParams.z * 4.5;
+    let rp: vec2f = vec2f(p.x * cs - p.y * sn, p.x * sn + p.y * cs);
+    let cell: vec2f = fract(rp) - vec2f(0.5, 0.5);
+    let shadowMask: f32 = clamp(1.0 - band, 0.0, 1.0);
+    var pat: f32 = 0.0;
+    if (uniforms.mangaParams.x < 1.5) {
+      let rad: f32 = sqrt(shadowMask) * 0.62;
+      pat = 1.0 - smoothstep(rad - 0.06, rad + 0.06, length(cell));
+    } else if (uniforms.mangaParams.x < 2.5) {
+      let hw: f32 = shadowMask * 0.36;
+      pat = 1.0 - smoothstep(hw - 0.05, hw + 0.05, abs(cell.y));
+    } else {
+      let hw1: f32 = shadowMask * 0.30;
+      let h1: f32 = 1.0 - smoothstep(hw1 - 0.05, hw1 + 0.05, abs(cell.y));
+      let h2: f32 = step(0.45, shadowMask) * (1.0 - smoothstep(hw1 * 0.8 - 0.05, hw1 * 0.8 + 0.05, abs(cell.x)));
+      pat = max(h1, h2);
+    }
+    let inkCol: vec3f = mix(albedo * uniforms.shadeTint * 0.55, vec3f(0.05, 0.04, 0.06), step(0.5, uniforms.gradeParams.z));
+    color = mix(color, inkCol, pat * uniforms.mangaParams.y * shadowMask);
+  }
+  if (abs(uniforms.gradeParams.x - 1.0) > 1e-4 || abs(uniforms.gradeParams.y) > 1e-4) {
+    let luma: f32 = dot(color, vec3f(0.2126, 0.7152, 0.0722));
+    color = max(vec3f(0.0), mix(vec3f(luma), color, uniforms.gradeParams.x) + vec3f(uniforms.gradeParams.y));
+  }
   fragmentOutputs.color = vec4f(color, 1.0);
 }
 `;

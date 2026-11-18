@@ -18,11 +18,15 @@ import { useApplyPlan, useDispatch, useEngineSession, useLabState, useLabStore, 
 
 import { createSwitchingPaintDriver } from "./projection-paint-driver";
 import {
-  SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, SHAPER_GIZMO_MODES,
+  SHAPER_BUILTIN_ARCHETYPE_PRESETS, SHAPER_BUILTIN_PART_PRESETS, SHAPER_BUILTIN_POSE_PRESETS, SHAPER_GIZMO_MODES, WEBTOON_SIGNATURE_POSES,
   buildShaperPresetCommands, computeShaperBoneScaleDrag, computeShaperControlPointDrag, computeShaperControlPoints, computeShaperIkHandleDrag,
 } from "./shaper-control-points";
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import { ViewportBackdropLayers, ViewportCompositionBar, ViewportOnboardingCard, ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
+import {
+  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES, ViewportDuoShotControls, ViewportDuoShotOverlay,
+  buildDuoEyeContactCommands, computeWebtoonDuoEyeContact, resolveSubjectHeightMetrics, type DuoShotState,
+} from "./viewport-duo-shot-guide";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, hudRows, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
@@ -115,6 +119,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
+  const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -656,6 +661,21 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const boneLinks = engine && showHandles && poseSkeleton ? computeVisibleBoneLinks(handles, poseSkeleton, { onFailure: onRenderFailure }) : [];
   const controlPoints = engine && showControlPoints && poseSkeleton && activeCamera ? computeShaperControlPoints(poseSkeleton, plan?.boneRotations ?? labState.recipe.pose, activeCamera, { onFailure: onRenderFailure }) : [];
   const activeHandle = draggingBone ? handles.find((entry) => entry.bone === draggingBone) ?? null : null;
+  const subjectHeight = resolveSubjectHeightMetrics(labState.recipe.source, labState.recipe.body);
+  const duoPartner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === duoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+  const duoEyeContact = computeWebtoonDuoEyeContact({
+    subjectHeightCm: subjectHeight.heightCm,
+    subjectEyeHeightCm: subjectHeight.eyeHeightCm,
+    partnerHeightCm: duoPartner.heightCm,
+    partnerEyeHeightCm: duoPartner.eyeHeightCm,
+    distanceMeters: DUO_SHOT_DISTANCES[duoShot.distanceKey].meters,
+    side: duoShot.side,
+  });
+  const onApplyDuoEyeContact = (): void => {
+    const cmds = buildDuoEyeContactCommands(labState.recipe.pose, duoEyeContact, duoPartner.labelKo);
+    for (const cmd of cmds) dispatch(cmd);
+    setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
+  };
 
   return (
     <div className="cl-viewport" data-checkerboard={checkerboard ? "true" : undefined} style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -687,6 +707,15 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           onChangeReferencePlacement={onChangeReferencePlacement}
           onClearReference={() => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); }}
         />
+        <ViewportDuoShotControls
+          duoShot={duoShot}
+          summaryKo={duoEyeContact.summaryKo}
+          onToggleDuoShot={() => setDuoShot((prev) => ({ ...prev, enabled: !prev.enabled }))}
+          onChangePartner={(partnerId) => setDuoShot((prev) => ({ ...prev, partnerId }))}
+          onChangeSide={(side) => setDuoShot((prev) => ({ ...prev, side }))}
+          onChangeDistance={(distanceKey) => setDuoShot((prev) => ({ ...prev, distanceKey }))}
+          onApplyEyeContact={onApplyDuoEyeContact}
+        />
         <span className="cl-viewport-group" role="group" aria-label="오버레이" style={{ display: "inline-flex", gap: 4 }}>
           <button type="button" className="cl-viewport-button" aria-pressed={showHandles} onClick={() => setShowHandles((value) => !value)}>관절 핸들</button>
           <button type="button" className="cl-viewport-button" aria-pressed={showFingers} disabled={!showHandles} onClick={() => setShowFingers((value) => !value)}>손가락 핸들</button>
@@ -698,6 +727,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           </select>
           <select className="cl-viewport-select" aria-label="SHAPER 내장 프리셋" value={shaperPresetId} title="SHAPER BuiltInData 풀세트 아키타입·체형·두상·이목구비·포즈를 즉시 적용합니다" onChange={(event) => applyShaperBuiltInPreset(event.target.value)}>
             <option value="">SHAPER 프리셋 적용…</option>
+            <optgroup label="한국 웹툰 시그니처 연기·액션 (포즈+손+시선+표정)">
+              {Object.values(WEBTOON_SIGNATURE_POSES).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
+            </optgroup>
             <optgroup label="SHAPER 풀세트 아키타입 (헤어+의상+체형+포즈)">
               {Object.values(SHAPER_BUILTIN_ARCHETYPE_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.labelKo}</option>)}
             </optgroup>
@@ -722,6 +754,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       <div ref={containerRef} className="cl-viewport-stage" style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
         <ViewportBackdropLayers checkerboard={checkerboard} manuscriptGuide={manuscriptGuide} referenceCut={referenceCut} />
         <canvas key={canvasGeneration} ref={registerCanvas} className="cl-viewport-canvas" aria-label="캐릭터 뷰포트" aria-keyshortcuts={CANVAS_KEY_SHORTCUTS} tabIndex={0} style={{ position: "relative", zIndex: 1 }} />
+        <ViewportDuoShotOverlay duoShot={duoShot} subjectHeightCm={subjectHeight.heightCm} subjectEyeHeightCm={subjectHeight.eyeHeightCm} subjectLabelKo={subjectHeight.labelKo} />
 
       {labState.engine.phase === "idle" ? <ViewportOnboardingCard onSelectBackend={selectBackend} /> : null}
       {labState.engine.phase !== "ready" ? (

@@ -753,6 +753,7 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       [key.diffuse.r * lightScale, key.diffuse.g * lightScale, key.diffuse.b * lightScale],
       [Math.min(1, average[0] * ambientScale), Math.min(1, average[1] * ambientScale), Math.min(1, average[2] * ambientScale)],
     );
+    const look = this.shading.look;
     return {
       baseColor: srgb(part.colorHex),
       shadeTint: toonShadeTint(part.role),
@@ -768,6 +769,14 @@ export class BabylonCharacterEngine implements CharacterEngine, SceneFeatureSour
       flipU: face.flipU,
       sdfOffset: 0,
       hasAlbedo: this.usesAlbedoTexture(part),
+      mangaToneKind: look.tone.kind,
+      mangaToneStrength: look.tone.strength,
+      mangaCellPerHead: look.tone.cellPerHead,
+      mangaAngleDeg: look.tone.angleDeg,
+      mangaInk: look.tone.ink,
+      gradeSaturation: look.grade.saturation,
+      gradeLightness: look.grade.lightness,
+      rampSoftness: look.ramp.softness,
     };
   }
 

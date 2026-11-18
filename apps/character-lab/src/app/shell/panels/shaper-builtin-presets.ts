@@ -183,6 +183,181 @@ export const SHAPER_BUILTIN_POSE_PRESETS: Readonly<
   },
 };
 
+export type WebtoonSignaturePoseId =
+  | "sig-pose-saintess-prayer"
+  | "sig-pose-ceo-tie-adjust"
+  | "sig-pose-murim-iaido"
+  | "sig-pose-rofan-curtsy"
+  | "sig-pose-council-command"
+  | "sig-pose-sniper-aim";
+
+export interface WebtoonSignaturePosePreset {
+  readonly id: WebtoonSignaturePoseId;
+  readonly labelKo: string;
+  readonly genreKo: string;
+  readonly pose: Pose;
+  readonly handPosePresetId: PresetId;
+  readonly gazeYawDeg: number;
+  readonly gazePitchDeg: number;
+  readonly expressionWeights: Readonly<Record<string, number>>;
+}
+
+/**
+ * 한국 웹툰 장르별 대표 감정·액션 시그니처 연기 포즈 (전신 본 + 손 모양 + 안구 시선 + FACS 표정 1-Undo 결합)
+ */
+export const WEBTOON_SIGNATURE_POSES: Readonly<Record<WebtoonSignaturePoseId, WebtoonSignaturePosePreset>> = {
+  "sig-pose-saintess-prayer": {
+    id: "sig-pose-saintess-prayer",
+    labelKo: "신전 성녀 · 합장 기도·성광 축복",
+    genreKo: "성좌·성녀물",
+    pose: {
+      hips: eulerDegToQuat([0, -4, 1]),
+      spine: eulerDegToQuat([3, 2, -1]),
+      chest: eulerDegToQuat([4, 2, 0]),
+      neck: eulerDegToQuat([8, 0, 2]),
+      head: eulerDegToQuat([10, -2, -2]),
+      leftShoulder: eulerDegToQuat([6, 10, -4]),
+      leftUpperArm: eulerDegToQuat([-36, 32, -24]),
+      leftLowerArm: eulerDegToQuat([84, 28, -14]),
+      leftHand: eulerDegToQuat([-12, 16, 18]),
+      rightShoulder: eulerDegToQuat([6, -10, 4]),
+      rightUpperArm: eulerDegToQuat([-36, -32, 24]),
+      rightLowerArm: eulerDegToQuat([84, -28, 14]),
+      rightHand: eulerDegToQuat([-12, -16, -18]),
+      leftUpperLeg: eulerDegToQuat([-2, 4, -2]),
+      leftLowerLeg: eulerDegToQuat([5, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([3, -4, 2]),
+      rightLowerLeg: eulerDegToQuat([7, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/open",
+    gazeYawDeg: 0,
+    gazePitchDeg: -8,
+    expressionWeights: { mouthSmile: 0.42, eyeBlinkLeft: 0.65, eyeBlinkRight: 0.65, browInnerUp: 0.24 },
+  },
+  "sig-pose-ceo-tie-adjust": {
+    id: "sig-pose-ceo-tie-adjust",
+    labelKo: "오피스 본부장 · 넥타이 정리·시크 응시",
+    genreKo: "오피스 로맨스",
+    pose: {
+      hips: eulerDegToQuat([0, 9, -3]),
+      spine: eulerDegToQuat([-2, -5, 2]),
+      chest: eulerDegToQuat([-3, -4, 2]),
+      neck: eulerDegToQuat([3, 6, -3]),
+      head: eulerDegToQuat([-4, 8, -3]),
+      leftUpperArm: eulerDegToQuat([10, 6, -30]),
+      leftLowerArm: eulerDegToQuat([22, 12, 0]),
+      rightShoulder: eulerDegToQuat([4, -12, 6]),
+      rightUpperArm: eulerDegToQuat([-48, -28, 22]),
+      rightLowerArm: eulerDegToQuat([96, -24, 18]),
+      rightHand: eulerDegToQuat([8, -14, -10]),
+      leftUpperLeg: eulerDegToQuat([6, -4, 4]),
+      leftLowerLeg: eulerDegToQuat([10, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([-4, 6, -3]),
+      rightLowerLeg: eulerDegToQuat([5, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/ok",
+    gazeYawDeg: -8,
+    gazePitchDeg: 4,
+    expressionWeights: { mouthSmile: 0.24, eyeSquint: 0.2 },
+  },
+  "sig-pose-murim-iaido": {
+    id: "sig-pose-murim-iaido",
+    labelKo: "무협 청운 검존 · 발도검세·금안 살기",
+    genreKo: "정통 무협",
+    pose: {
+      hips: eulerDegToQuat([12, 28, -5]),
+      spine: eulerDegToQuat([6, -14, 3]),
+      chest: eulerDegToQuat([4, -18, 2]),
+      neck: eulerDegToQuat([-6, 16, -2]),
+      head: eulerDegToQuat([-6, 22, -4]),
+      leftUpperArm: eulerDegToQuat([18, 24, -18]),
+      leftLowerArm: eulerDegToQuat([54, 26, 0]),
+      rightUpperArm: eulerDegToQuat([-30, 26, 24]),
+      rightLowerArm: eulerDegToQuat([76, 18, -12]),
+      leftUpperLeg: eulerDegToQuat([-30, -10, -8]),
+      leftLowerLeg: eulerDegToQuat([38, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([22, 14, 10]),
+      rightLowerLeg: eulerDegToQuat([28, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/fist",
+    gazeYawDeg: 14,
+    gazePitchDeg: 5,
+    expressionWeights: { browDown: 0.56, eyeSquint: 0.3, mouthFrown: 0.18 },
+  },
+  "sig-pose-rofan-curtsy": {
+    id: "sig-pose-rofan-curtsy",
+    labelKo: "로판 황녀 · 황실 커트시·우아한 미소",
+    genreKo: "로맨스 판타지",
+    pose: {
+      hips: eulerDegToQuat([4, -10, 2]),
+      spine: eulerDegToQuat([-3, 6, -2]),
+      chest: eulerDegToQuat([-4, 5, -1]),
+      neck: eulerDegToQuat([6, -5, 3]),
+      head: eulerDegToQuat([4, -8, 3]),
+      leftUpperArm: eulerDegToQuat([-8, 14, -40]),
+      leftLowerArm: eulerDegToQuat([34, 18, -8]),
+      rightUpperArm: eulerDegToQuat([-8, -14, 40]),
+      rightLowerArm: eulerDegToQuat([34, -18, 8]),
+      leftUpperLeg: eulerDegToQuat([-14, 6, -4]),
+      leftLowerLeg: eulerDegToQuat([24, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([16, -12, 8]),
+      rightLowerLeg: eulerDegToQuat([34, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/relaxed",
+    gazeYawDeg: -6,
+    gazePitchDeg: 6,
+    expressionWeights: { mouthSmile: 0.58, browInnerUp: 0.16, cheekPuff: 0.08 },
+  },
+  "sig-pose-council-command": {
+    id: "sig-pose-council-command",
+    labelKo: "아카데미 학생회장 · 단상 지휘·위엄 시선",
+    genreKo: "아카데미 판타지",
+    pose: {
+      hips: eulerDegToQuat([0, -12, 3]),
+      spine: eulerDegToQuat([-3, 6, -2]),
+      chest: eulerDegToQuat([-4, 8, -2]),
+      neck: eulerDegToQuat([-3, -6, 2]),
+      head: eulerDegToQuat([-5, -8, -2]),
+      leftUpperArm: eulerDegToQuat([14, 18, -28]),
+      leftLowerArm: eulerDegToQuat([56, 24, 0]),
+      rightUpperArm: eulerDegToQuat([-46, -12, 22]),
+      rightLowerArm: eulerDegToQuat([24, -8, 0]),
+      leftUpperLeg: eulerDegToQuat([-4, 6, -3]),
+      leftLowerLeg: eulerDegToQuat([6, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([6, -8, 4]),
+      rightLowerLeg: eulerDegToQuat([10, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/point",
+    gazeYawDeg: 7,
+    gazePitchDeg: -5,
+    expressionWeights: { browDown: 0.24, mouthSmile: 0.18, eyeSquint: 0.16 },
+  },
+  "sig-pose-sniper-aim": {
+    id: "sig-pose-sniper-aim",
+    labelKo: "아포칼립스 스나이퍼 · 전술 조준·회귀 경계",
+    genreKo: "아포칼립스 회귀",
+    pose: {
+      hips: eulerDegToQuat([10, 22, -3]),
+      spine: eulerDegToQuat([8, -10, 2]),
+      chest: eulerDegToQuat([6, -14, 2]),
+      neck: eulerDegToQuat([-6, 12, 6]),
+      head: eulerDegToQuat([-4, 16, 8]),
+      leftUpperArm: eulerDegToQuat([-54, 24, -18]),
+      leftLowerArm: eulerDegToQuat([62, 18, -8]),
+      rightUpperArm: eulerDegToQuat([-48, -26, 26]),
+      rightLowerArm: eulerDegToQuat([88, -22, 14]),
+      leftUpperLeg: eulerDegToQuat([-22, -6, -6]),
+      leftLowerLeg: eulerDegToQuat([28, 0, 0]),
+      rightUpperLeg: eulerDegToQuat([16, 10, 8]),
+      rightLowerLeg: eulerDegToQuat([22, 0, 0]),
+    },
+    handPosePresetId: "hand-pose/fist",
+    gazeYawDeg: 10,
+    gazePitchDeg: 3,
+    expressionWeights: { browDown: 0.44, eyeBlinkLeft: 0.78, eyeSquint: 0.24 },
+  },
+};
+
 /**
  * SHAPER `BuiltInData/Presets/{eyes,nose,mouth,ears}/*.preset`에서 추출한 부위별 성형 프리셋
  */
@@ -404,6 +579,29 @@ export function buildShaperPresetCommands(presetKey: string): {
     return {
       commands: [{ type: "pose/set", pose: preset.pose, scope: "full", labelKo: preset.labelKo, coalesceKey: `shaper-pose:${preset.id}` }],
       noticeKo: `${preset.labelKo}을 적용했습니다.`,
+    };
+  }
+
+  if (presetKey in WEBTOON_SIGNATURE_POSES) {
+    const sig = WEBTOON_SIGNATURE_POSES[presetKey as WebtoonSignaturePoseId];
+    const coalesceKey = `webtoon-sig-pose:${sig.id}`;
+    return {
+      commands: [
+        { type: "pose/set", pose: sig.pose, scope: "full", labelKo: sig.labelKo, coalesceKey },
+        { type: "slot/apply", slot: "hand-pose", presetId: sig.handPosePresetId, coalesceKey },
+        {
+          type: "eye-gaze/set",
+          gaze: {
+            mode: "manual",
+            symmetry: true,
+            left: { yawDeg: sig.gazeYawDeg, pitchDeg: sig.gazePitchDeg },
+            right: { yawDeg: sig.gazeYawDeg, pitchDeg: sig.gazePitchDeg },
+          },
+          coalesceKey,
+        },
+        { type: "expression/set", weights: sig.expressionWeights, merge: false, coalesceKey },
+      ],
+      noticeKo: `${sig.labelKo} (전신 연기 포즈 + 손 포즈 + 안구 시선 + 감정 표정)을 적용했습니다.`,
     };
   }
 

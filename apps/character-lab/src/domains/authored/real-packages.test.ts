@@ -52,7 +52,7 @@ async function loadIndexEntries(): Promise<readonly AuthoredIndexEntry[]> {
 }
 
 describe("authored/real-packages (public/assets/characters)", () => {
-  it("index.json은 Orion(primary)·reference·tripo-h31·한국형 웹툰 Shaper 8종까지 열한 항목을 낸다", async () => {
+  it("index.json은 Orion(primary)·reference·tripo-h31·한국형 웹툰 Shaper 10종까지 열세 항목을 낸다", async () => {
     const entries = await loadIndexEntries();
     expect(entries.map((entry) => entry.characterId)).toEqual([
       "avatar-orion-authored",
@@ -66,6 +66,8 @@ describe("authored/real-packages (public/assets/characters)", () => {
       "shaper-noir-duke",
       "shaper-fantasy-saintess",
       "shaper-office-ceo",
+      "shaper-academy-council",
+      "shaper-apocalypse-sniper",
     ]);
     expect(entries[0]?.primary).toBe(true);
     expect(entries[0]?.manifestFormat).toBe("authored-character");
@@ -247,6 +249,20 @@ describe("authored/real-packages (public/assets/characters)", () => {
       bytes: 2_475_432,
       hairStyle: "short-layered",
       lod: [4636, 2256, 653],
+    },
+    {
+      id: "shaper-academy-council",
+      sha: "a996da6c81a54328230fb0b15ebc220b300618434688010c3ff749c824725695",
+      bytes: 2_731_736,
+      hairStyle: "soft-bob",
+      lod: [5244, 2478, 593],
+    },
+    {
+      id: "shaper-apocalypse-sniper",
+      sha: "8de02d95b5ed988a0f09ac903a7aab700b323219e1484c58e464818863c2bd05",
+      bytes: 2_451_708,
+      hairStyle: "wolf-layered",
+      lod: [5620, 2654, 848],
     },
   ])("$id: Blender 5.3 제작 한국형 웹툰 리깅 패키지(55본·24 의미축·12 FACS·3-LOD 헤어)가 unavailable 슬롯 0개·규칙 판정 불일치 0개로 로드된다", async ({ id, sha, bytes, hairStyle, lod }) => {
     const entries = await loadIndexEntries();

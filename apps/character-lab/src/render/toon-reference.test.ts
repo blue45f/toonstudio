@@ -273,5 +273,26 @@ describe("toon-reference", () => {
       expect(getShaperNextPowerOfTwo(500)).toBe(512);
       expect(getShaperNextPowerOfTwo(512)).toBe(512);
     });
+
+    it("만화 원고 흑백 보정(saturation=0) 및 망점/크로스해칭 스크린톤이 암부에서만 작동하고 기본값(LOOK_V2_IDENTITY)은 비트 단위로 보존된다", () => {
+      const baseEval = evaluateToon(PARAMS, FRAGMENT);
+      const explicitIdentity = evaluateToon(
+        { ...PARAMS, mangaToneKind: "none", mangaToneStrength: 0, gradeSaturation: 1, gradeLightness: 0, rampSoftness: 0 },
+        FRAGMENT,
+      );
+      expect(explicitIdentity).toEqual(baseEval);
+
+      const mono = evaluateToon({ ...PARAMS, gradeSaturation: 0, gradeLightness: 0 }, FRAGMENT);
+      expect(mono[0]).toBeCloseTo(mono[1]!, 9);
+      expect(mono[1]).toBeCloseTo(mono[2]!, 9);
+
+      const shadowFrag: ToonFragmentInput = { ...FRAGMENT, normalW: [-0.3, -0.8, -0.5], positionW: [0.001, 0.001, 0] };
+      const plainShadow = evaluateToon({ ...PARAMS, rim: false }, shadowFrag);
+      const halftoneShadow = evaluateToon(
+        { ...PARAMS, rim: false, mangaToneKind: "halftone", mangaToneStrength: 0.9, mangaCellPerHead: 44, mangaAngleDeg: 45, mangaInk: "line" },
+        shadowFrag,
+      );
+      expect(halftoneShadow[0]!).toBeLessThan(plainShadow[0]!);
+    });
   });
 });

@@ -160,6 +160,21 @@ export function setToonUniforms(material: ShaderMaterial, values: ToonUniformVal
   material.setColor3("rimColor", new Color3(...values.rimColor));
   material.setVector4("toonParams", new Vector4(values.rampSteps, values.rim ? 1 : 0, values.faceSdf ? 1 : 0, values.hasPaint ? 1 : 0));
   material.setVector4("faceParams", new Vector4(values.faceThreshold, values.flipU, values.sdfOffset, values.hasAlbedo ? 1 : 0));
+  const toneKind = values.mangaToneKind ?? "none";
+  const toneMode = toneKind === "halftone" || toneKind === "dots" ? 1 : toneKind === "hatch" ? 2 : toneKind === "crosshatch" ? 3 : 0;
+  const toneStrength = toneMode > 0 ? Math.min(1, Math.max(0, values.mangaToneStrength ?? 0)) : 0;
+  const cellPerHead = values.mangaCellPerHead ?? 40;
+  const angleRad = ((values.mangaAngleDeg ?? 45) * Math.PI) / 180;
+  material.setVector4("mangaParams", new Vector4(toneMode, toneStrength, cellPerHead, angleRad));
+  material.setVector4(
+    "gradeParams",
+    new Vector4(
+      values.gradeSaturation ?? 1,
+      values.gradeLightness ?? 0,
+      values.mangaInk === "line" ? 1 : 0,
+      values.rampSoftness ?? 0,
+    ),
+  );
 }
 
 export interface FlatUniformValues {

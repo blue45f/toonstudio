@@ -423,6 +423,84 @@
           "sha256": "7bccad3716c4b4469a4186792d8caaf3b99d0fe650aed749016d2a132cd7ca0e"
         }
       }
+    },
+    {
+      "id": "shaper-academy-council",
+      "displayName": "SHAPER Atelier · Royal Academy Council President (황립 아카데미 학생회장)",
+      "role": "shaper-council",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 9,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5244,
+        2478,
+        593
+      ],
+      "glbTriangles": 44396,
+      "files": {
+        "glb": {
+          "path": "shaper-academy-council/shaper-academy-council.glb",
+          "bytes": 2731736,
+          "sha256": "a996da6c81a54328230fb0b15ebc220b300618434688010c3ff749c824725695"
+        },
+        "manifest": {
+          "path": "shaper-academy-council/manifest.json",
+          "bytes": 37660,
+          "sha256": "5602ed9f30f2ff0fbc0ff0f509d25ffe8b51c9797067c9552ae340f5c94ae12b"
+        },
+        "slotMapping": {
+          "path": "shaper-academy-council/slot-mapping.json",
+          "bytes": 4281,
+          "sha256": "dde7fc2091f0e08dd3b26222465e13a95f6d68ba4c5f7877e300784afb4b0f7c"
+        },
+        "contactSheet": {
+          "path": "shaper-academy-council/contact-sheet.png",
+          "bytes": 1473842,
+          "sha256": "36167c51f1eb00447930109d428e76a5c081d603796599f1f3a43834a725f951"
+        }
+      }
+    },
+    {
+      "id": "shaper-apocalypse-sniper",
+      "displayName": "SHAPER Atelier · Apocalypse Regressor Sniper (아포칼립스 회귀 스나이퍼)",
+      "role": "shaper-apocalypse",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 9,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5620,
+        2654,
+        848
+      ],
+      "glbTriangles": 42319,
+      "files": {
+        "glb": {
+          "path": "shaper-apocalypse-sniper/shaper-apocalypse-sniper.glb",
+          "bytes": 2451708,
+          "sha256": "8de02d95b5ed988a0f09ac903a7aab700b323219e1484c58e464818863c2bd05"
+        },
+        "manifest": {
+          "path": "shaper-apocalypse-sniper/manifest.json",
+          "bytes": 37697,
+          "sha256": "97c8fba686048726bb922b2d20ed4d7f1836ab865e0f9745a140b4298d9e90d1"
+        },
+        "slotMapping": {
+          "path": "shaper-apocalypse-sniper/slot-mapping.json",
+          "bytes": 4281,
+          "sha256": "11976840cb88d6b4555b59158e95efa3920215198299ddb921a490b88675e2e8"
+        },
+        "contactSheet": {
+          "path": "shaper-apocalypse-sniper/contact-sheet.png",
+          "bytes": 1419576,
+          "sha256": "f3bb2ea88a680082c43197bcd895288f7aead833c54ef277933ab3bb6a6548fe"
+        }
+      }
     }
   ]
 }

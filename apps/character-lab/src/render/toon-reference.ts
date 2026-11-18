@@ -31,6 +31,14 @@ export interface ToonParams {
   readonly flipU: 0 | 1;
   readonly sdfOffset: number;
   readonly hasAlbedo: boolean;
+  readonly mangaToneKind?: "none" | "halftone" | "hatch" | "crosshatch" | "dots";
+  readonly mangaToneStrength?: number;
+  readonly mangaCellPerHead?: number;
+  readonly mangaAngleDeg?: number;
+  readonly mangaInk?: "shade" | "line";
+  readonly gradeSaturation?: number;
+  readonly gradeLightness?: number;
+  readonly rampSoftness?: number;
 }
 
 /** 셰이더 상수(소스 문자열과 같은 값 — `toon-reference.test.ts`가 소스에서 확인한다) */
@@ -106,13 +114,18 @@ export function toonShading(params: ToonParams, fragment: ToonFragmentInput): nu
   return mix(lambert, faceShading, step(0.5, params.faceSdf ? 1 : 0));
 }
 
+function fract01(v: number): number {
+  return v - Math.floor(v);
+}
+
 /** 툰 프래그먼트 색(선형이 아니라 셰이더가 쓰는 값 그대로, 0..∞) */
 export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): readonly [number, number, number] {
   const n = v3Normalize(fragment.normalW as Vec3);
   const albedo = toonAlbedo(params, fragment);
   const shading = toonShading(params, fragment);
   const steps = Math.max(2, params.rampSteps);
-  const w = fragment.derivativeWidth + TOON_BAND_EPSILON;
+  const softness = params.rampSoftness ?? 0;
+  const w = fragment.derivativeWidth + TOON_BAND_EPSILON + softness * 0.12;
   let acc = 0;
   for (let j = 1; j <= TOON_MAX_BOUNDARIES; j += 1) {
     if (j < steps) acc += smoothstep(j / steps - w, j / steps + w, shading);
@@ -126,6 +139,47 @@ export function evaluateToon(params: ToonParams, fragment: ToonFragmentInput): r
     const a = albedo[c] ?? 0;
     const shade = a * (params.shadeTint[c] ?? 0);
     out[c] = mix(shade, a, band) * (params.lightColor[c] ?? 0) + a * (params.ambientColor[c] ?? 0) + (params.rimColor[c] ?? 0) * rim;
+  }
+  const toneKind = params.mangaToneKind ?? "none";
+  const toneStrength = params.mangaToneStrength ?? 0;
+  if (toneKind !== "none" && toneStrength > 0) {
+    const angleRad = ((params.mangaAngleDeg ?? 45) * Math.PI) / 180;
+    const cs = Math.cos(angleRad);
+    const sn = Math.sin(angleRad);
+    const freq = (params.mangaCellPerHead ?? 40) * 4.5;
+    const px = fragment.positionW[0] * freq;
+    const py = fragment.positionW[1] * freq;
+    const cellX = fract01(px * cs - py * sn) - 0.5;
+    const cellY = fract01(px * sn + py * cs) - 0.5;
+    const shadowMask = clamp(1 - band, 0, 1);
+    let pat = 0;
+    if (toneKind === "halftone" || toneKind === "dots") {
+      const rad = Math.sqrt(shadowMask) * 0.62;
+      pat = 1 - smoothstep(rad - 0.06, rad + 0.06, Math.hypot(cellX, cellY));
+    } else if (toneKind === "hatch") {
+      const hw = shadowMask * 0.36;
+      pat = 1 - smoothstep(hw - 0.05, hw + 0.05, Math.abs(cellY));
+    } else {
+      const hw1 = shadowMask * 0.3;
+      const h1 = 1 - smoothstep(hw1 - 0.05, hw1 + 0.05, Math.abs(cellY));
+      const h2 = step(0.45, shadowMask) * (1 - smoothstep(hw1 * 0.8 - 0.05, hw1 * 0.8 + 0.05, Math.abs(cellX)));
+      pat = Math.max(h1, h2);
+    }
+    const lineInk: readonly [number, number, number] = [0.05, 0.04, 0.06];
+    const mixAmt = pat * toneStrength * shadowMask;
+    for (let c = 0; c < 3; c += 1) {
+      const shadeInk = (albedo[c] ?? 0) * (params.shadeTint[c] ?? 0) * 0.55;
+      const ink = params.mangaInk === "line" ? lineInk[c]! : shadeInk;
+      out[c] = mix(out[c]!, ink, mixAmt);
+    }
+  }
+  const sat = params.gradeSaturation ?? 1;
+  const lightShift = params.gradeLightness ?? 0;
+  if (Math.abs(sat - 1) > 1e-4 || Math.abs(lightShift) > 1e-4) {
+    const luma = out[0] * 0.2126 + out[1] * 0.7152 + out[2] * 0.0722;
+    for (let c = 0; c < 3; c += 1) {
+      out[c] = Math.max(0, mix(luma, out[c]!, sat) + lightShift);
+    }
   }
   return out;
 }
