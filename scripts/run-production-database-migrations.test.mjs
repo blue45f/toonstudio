@@ -1586,7 +1586,7 @@ test("historical adoption and post-baseline relations exactly partition runtime 
   ]);
   const readinessSource = readFileSync(
     new URL(
-      "../apps/api/src/modules/health/health-readiness.repository.ts",
+      "../apps/api/src/modules/health/health-readiness-inventory.ts",
       import.meta.url,
     ),
     "utf8",

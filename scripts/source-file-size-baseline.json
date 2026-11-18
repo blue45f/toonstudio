@@ -24,7 +24,7 @@
     "apps/api/src/modules/creator/studio-team-comment.repository.ts": 1503,
     "apps/api/src/modules/creator/studio-work-asset.repository.ts": 1923,
     "apps/api/src/modules/creator/studio-work-asset.service.ts": 1394,
-    "apps/api/src/modules/health/health-readiness.repository.ts": 1680,
+    "apps/api/src/modules/health/health-readiness.repository.ts": 1381,
     "apps/api/src/modules/integration-platform/integration-runtime.providers.ts": 918,
     "apps/api/src/modules/membership-wallet/membership-wallet.service.ts": 1884,
     "apps/api/src/modules/messaging/messaging.repository.ts": 1480,

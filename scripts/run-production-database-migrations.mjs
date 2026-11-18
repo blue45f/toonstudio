@@ -40,7 +40,7 @@ const MANIFEST_PATH = resolve(
 const MIGRATION_DIRECTORY = resolve(REPOSITORY_ROOT, "apps/api/src/platform/database/migrations");
 const HEALTH_READINESS_SOURCE = resolve(
   REPOSITORY_ROOT,
-  "apps/api/src/modules/health/health-readiness.repository.ts",
+  "apps/api/src/modules/health/health-readiness-inventory.ts",
 );
 const ADOPTION_BASELINE_SEQUENCE = 19;
 const ADOPTION_MARKER_ID = "__managed_history_through_0019__";

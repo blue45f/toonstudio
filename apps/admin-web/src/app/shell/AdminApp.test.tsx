@@ -56,6 +56,7 @@ it("NestJS query 진입을 기존 품질 경로에서 구분하고 관리자 확
   window.history.replaceState(null, "", "/admin/platform/quality/?view=nestjs");
   render(<AdminApp />);
   expect(screen.getByRole("status").textContent).toBe("관리자 권한 확인 중");
+  expect(screen.getByRole("status").getAttribute("data-view")).toBe("nestjs");
   expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("href")).toBe("/admin/platform/quality/?view=nestjs");
   expect(screen.getByRole("link", { name: "NestJS 호환성" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "CI·QA 검증" }).getAttribute("aria-current")).toBeNull();
