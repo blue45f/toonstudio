@@ -3,9 +3,9 @@ import { applyAdminDatabaseFeatureContracts, buildAdminDatabaseFeatureCapability
 
 const privilegeWrite = /\b(?:GRANT\s+|REVOKE\s+|CREATE\s+POLICY\b)/iu;
 
-// 시작·끝 작은따옴표가 있는 has_*_privilege 권한값만 제외한다. 일반 문자열·주석은 제거하지 않는다.
+// has_*_privilege의 정확한 권한값·연결 접미사만 제외한다. 일반 문자열·주석·실제 권한 명령은 남긴다.
 function withoutPrivilegeLookupValues(sql) {
-  return sql.replace(/'(?:SELECT|INSERT|UPDATE|DELETE|REFERENCES)\s+WITH\s+GRANT\s+OPTION(?:,\s*(?:SELECT|INSERT|UPDATE|DELETE|REFERENCES)\s+WITH\s+GRANT\s+OPTION)*'/giu, "''");
+  return sql.replaceAll("' WITH GRANT OPTION'", "''").replace(/'(?:SELECT|INSERT|UPDATE|DELETE|REFERENCES)\s+WITH\s+GRANT\s+OPTION(?:,\s*(?:SELECT|INSERT|UPDATE|DELETE|REFERENCES)\s+WITH\s+GRANT\s+OPTION)*'/giu, "''");
 }
 
 describe("관리자 기능 DB 연결 순서", () => {
@@ -21,10 +21,10 @@ describe("관리자 기능 DB 연결 순서", () => {
   ])("실제 권한 변경 명령을 계속 차단한다: %s", (sql) => {
     expect(withoutPrivilegeLookupValues(sql)).toMatch(privilegeWrite);
   });
-  it("관리자와 작업 보드의 권한을 각각 복구한 직후 검증한다", () => {
+  it("관리자·사업계획서·워크스페이스·NestJS 권한을 복구 직후 검증한다", () => {
     const execute = vi.fn();
     applyAdminDatabaseFeatureContracts(execute, "test_runtime");
-    expect(execute).toHaveBeenCalledTimes(4);
+    expect(execute).toHaveBeenCalledTimes(6);
     const statements = execute.mock.calls.map(([sql]) => sql);
     expect(withoutPrivilegeLookupValues(statements[0])).toMatch(privilegeWrite);
     expect(statements[0]).toContain("admin_business_plan_receipt");
@@ -32,13 +32,24 @@ describe("관리자 기능 DB 연결 순서", () => {
     expect(statements[1]).toContain("admin_business_plan_immutable_guard");
     expect(statements[2]).toContain("CREATE POLICY admin_workspace_runtime");
     expect(statements[3]).toContain("administrator workspace schema");
+    expect(statements[4]).toContain("admin_nestjs_quality_history");
+    expect(statements[4]).toContain("GRANT SELECT, INSERT");
+    expect(statements[5]).toContain("NestJS verification board runtime privileges");
+    expect(withoutPrivilegeLookupValues(statements[5])).not.toMatch(privilegeWrite);
   });
-  it("읽기 전용 검증은 두 기능의 진단만 합친다", () => {
+  it("읽기 전용 검증은 관리자·사업계획서·워크스페이스·NestJS 진단만 합친다", () => {
     const sql = buildAdminDatabaseFeatureCapabilitySql("test_runtime");
     expect(sql).toContain("admin_announcements");
     expect(sql).toContain("admin_business_plan_revision");
     expect(sql).toContain("admin_workspace_receipt");
+    expect(sql).toContain("admin_nestjs_quality_history");
+    expect(sql).toContain("' WITH GRANT OPTION'");
     expect(withoutPrivilegeLookupValues(sql)).not.toMatch(privilegeWrite);
+    for (const command of [
+      "GRANT SELECT ON TABLE public.admin_workspace TO test_runtime;",
+      "GRANT ALL ON TABLE public.admin_workspace TO test_runtime;",
+      "REVOKE GRANT OPTION FOR SELECT ON TABLE public.admin_workspace FROM test_runtime;",
+    ]) expect(withoutPrivilegeLookupValues(command)).toMatch(privilegeWrite);
   });
   it("앞선 권한 검증이 실패하면 다음 저장소 권한 변경을 실행하지 않는다", () => {
     const execute = vi.fn().mockImplementationOnce(() => undefined).mockImplementationOnce(() => { throw new Error("verification failed"); });

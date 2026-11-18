@@ -121,3 +121,4 @@ apps/api/src/platform/database/migrations/0120_studio_role_pipeline_policy.sql
 apps/api/src/platform/database/migrations/0121_studio_bg3d_six_pass_bundle.sql
 apps/api/src/platform/database/migrations/0122_admin_workspace.sql
 apps/api/src/platform/database/migrations/0123_admin_business_plan.sql
+apps/api/src/platform/database/migrations/0124_admin_nestjs_quality.sql

@@ -352,11 +352,15 @@ test("review database invariants execute with real PostgreSQL and the accepted g
     );
   }
 
+  const databaseCommand = database.match(/pnpm exec vitest run --no-file-parallelism\n((?: {10}[^\n]+\n)+)/u)?.[0];
+  assert.ok(databaseCommand, "실제 DB job의 Vitest 실행 명령이 필요합니다.");
+  const databaseArguments = databaseCommand.split(/\s+/u);
   for (const suite of CORE_DATABASE_VITEST_TARGETS) {
-    assert.equal(database.split(suite).length - 1, 1,
-      `필수 PostgreSQL 작업은 각 실제 DB 검증을 정확히 한 번 실행해야 합니다: ${suite}`);
+    assert.equal(databaseArguments.filter((argument) => argument === suite).length, 1,
+      `실제 DB suite는 보호된 실행 명령에서 정확히 한 번 실행해야 합니다: ${suite}`);
   }
   for (const suite of [
+    "apps/api/src/modules/admin-nestjs-quality/admin-nestjs-quality.integration.test.ts",
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
     "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",

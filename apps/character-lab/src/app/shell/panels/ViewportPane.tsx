@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 
-import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible, isLabFailure } from "../../../contracts";
+import { DEFAULT_FRAMING, PART_ROLE_LABELS_KO, failVisible } from "../../../contracts";
 import { clientToNdc, normalizePointerPressure } from "../../../paint/paint-bridge";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { readPoseSkeleton } from "../../../render/pose-skeleton";
@@ -27,27 +27,21 @@ import {
   buildDuoEyeContactCommands, toDuoPartnerAttachment, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
-  buildHandPropGripPoseCommands, findWebtoonHandPropSpec, findWebtoonHeadPropSpec, findWebtoonSfxStampSpec, findWebtoonStagePropSpec,
-  toHandPropAttachment, toHeadPropAttachment, toSfxStampAttachment, toStagePropAttachment,
-} from "./viewport-hand-prop-controls";
-import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
   handlesKey, jointLabelKo, resolveDragPivotWithMode, resolveShaperViewportKeyShortcut, visibleHandles,
 } from "./viewport-interactions";
 import {
-  DEFAULT_MANGA_FX_STATE, type MangaSfxStampPreset, type ViewportMangaFxState,
+  DEFAULT_MANGA_FX_STATE, type ViewportMangaFxState,
 } from "./viewport-manga-fx-overlay";
-import {
-  findWebtoonSceneDirectorPreset, getDefaultStripDirectorSession, resolveDirectorShadingProfile,
-  type WebtoonSceneDirectorPresetId,
-} from "./viewport-scene-director";
+import { getDefaultStripDirectorSession } from "./viewport-scene-director";
+import { failureText, useViewportSceneProps } from "./viewport-scene-props";
 import { ViewportStage, resolveViewportDuoShot } from "./viewport-stage";
 import { ViewportToolbar } from "./viewport-toolbar";
 
 import type { ShaperControlPointId, ShaperGizmoMode, ShaperProjectedControlPoint } from "./shaper-control-points";
 import type { ReferenceCutPlacement, ReferenceCutState, ViewportPitchDeg } from "./viewport-backdrop-overlay";
 import type { DragPivot, JointDragOutcome, ShaperCameraInputStyle, ShaperPivotMode } from "./viewport-interactions";
-import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HandPropId, HandPropSide, HeadPropId, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData, StagePropId } from "../../../contracts";
+import type { ApplyPlan, BodyParamKey, CameraFraming, CharacterEngine, EngineBackend, FaceParamKey, HudSample, HumanoidBoneName, JointDragHandle, LabFailure, ParamValues, Pose, SkeletonData } from "../../../contracts";
 import type { PointerPaintDriver } from "../../../paint/paint-bridge";
 import type { PaintSession } from "../../../paint/paint-session";
 import type { ViewportCameraInfo } from "../../../render/viewport-camera";
@@ -90,9 +84,6 @@ interface ControlPointDragSession {
   changes: ReadonlyArray<{ readonly group: "face" | "body"; readonly key: FaceParamKey | BodyParamKey; readonly value: number }>;
 }
 
-function failureText(error: unknown, fallback: string): string {
-  return isLabFailure(error) ? `${error.reasonKo} [${error.code}]` : fallback;
-}
 
 function releaseCapture(el: Element | undefined, pointerId: number): void {
   if (el && typeof el.releasePointerCapture === "function" && el.hasPointerCapture?.(pointerId)) el.releasePointerCapture(pointerId);
@@ -127,20 +118,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
   const [tankobonGuide, setTankobonGuide] = useState(false);
   const stripDirector = getDefaultStripDirectorSession();
-  const activeDirectorId = useSyncExternalStore(
-    stripDirector.subscribe,
-    () => stripDirector.getState().activeDirectorId,
-    () => stripDirector.getState().activeDirectorId,
-  );
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [mangaFx, setMangaFx] = useState<ViewportMangaFxState>(DEFAULT_MANGA_FX_STATE);
-  const [sfxBusy, setSfxBusy] = useState(false);
-  const [handPropId, setHandPropId] = useState<HandPropId | "">("");
-  const [handPropSide, setHandPropSide] = useState<HandPropSide>("rightHand");
-  const [headPropId, setHeadPropId] = useState<HeadPropId | "">("");
-  const [stagePropId, setStagePropId] = useState<StagePropId | "">("");
-  const [handPropBusy, setHandPropBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
   const [cameraInputStyle, setCameraInputStyle] = useState<ShaperCameraInputStyle>("unity");
   const [symmetryMode, setSymmetryMode] = useState(false);
@@ -154,6 +134,20 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [canvasGeneration, setCanvasGeneration] = useState(0);
+  const sceneProps = useViewportSceneProps({
+    engine,
+    recipe: labState.recipe,
+    dispatch,
+    onNotice: setNotice,
+    mangaFx,
+    setMangaFx,
+    duoShot,
+    setDuoShot,
+    duo3dBusy,
+    stripDirector,
+    getRecipe: () => store.getState().recipe,
+    syncDuoPartner3d: (next, prev) => syncDuoPartner3d(next, prev),
+  });
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
@@ -713,196 +707,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       return next;
     });
   };
-  const syncSfxStamp3d = async (enabled: boolean, stamp: MangaSfxStampPreset): Promise<void> => {
-    if (!engine?.setSfxStamp) return;
-    const attachment = enabled && stamp !== "none" ? toSfxStampAttachment(stamp) : null;
-    setSfxBusy(true);
-    try {
-      await engine.setSfxStamp(attachment);
-      const spec = enabled && stamp !== "none" ? findWebtoonSfxStampSpec(stamp) : null;
-      if (spec) setNotice(`웹툰 효과음 스탬프 적용: ${spec.labelKo}`);
-    } catch (error) {
-      setNotice(failureText(error, "웹툰 효과음 스탬프를 배치하지 못했습니다."));
-    } finally {
-      setSfxBusy(false);
-    }
-  };
-  const onToggleMangaFx = (): void => {
-    setMangaFx((prev) => {
-      const nextEnabled = !prev.enabled;
-      if (prev.sfxStamp !== "none") {
-        void syncSfxStamp3d(nextEnabled, prev.sfxStamp);
-      }
-      return { ...prev, enabled: nextEnabled };
-    });
-  };
-  const onChangeMangaSfxStamp = (sfxStamp: MangaSfxStampPreset): void => {
-    setMangaFx((prev) => {
-      void syncSfxStamp3d(prev.enabled, sfxStamp);
-      return { ...prev, sfxStamp };
-    });
-  };
   const onApplyDuoEyeContact = (): void => {
     const cmds = buildDuoEyeContactCommands(labState.recipe.pose, duoEyeContact, duoPartner.labelKo);
     for (const cmd of cmds) dispatch(cmd);
     setNotice(`투샷 아이컨택 적용: ${duoPartner.labelKo} (${duoEyeContact.summaryKo})`);
-  };
-  const onApplyHandProp = async (nextPropId: HandPropId | "", nextSide: HandPropSide): Promise<void> => {
-    setHandPropId(nextPropId);
-    setHandPropSide(nextSide);
-    if (!engine?.setHandProp) return;
-    const attachment = nextPropId ? toHandPropAttachment(nextPropId, nextSide) : null;
-    setHandPropBusy(true);
-    try {
-      await engine.setHandProp(attachment);
-      const spec = nextPropId ? findWebtoonHandPropSpec(nextPropId) : null;
-      setNotice(
-        spec
-          ? `손 소품 장착: ${spec.labelKo} (${nextSide === "rightHand" ? "오른손" : "왼손"})`
-          : "손 소품을 해제했습니다.",
-      );
-    } catch (error) {
-      setNotice(failureText(error, "손 소품을 장착하지 못했습니다."));
-    } finally {
-      setHandPropBusy(false);
-    }
-  };
-  const onApplyHandPropGripPose = (): void => {
-    if (!handPropId) return;
-    const cmds = buildHandPropGripPoseCommands(labState.recipe.pose, handPropId, handPropSide);
-    for (const cmd of cmds) dispatch(cmd);
-    const spec = findWebtoonHandPropSpec(handPropId);
-    if (spec) setNotice(`소품 그립 포즈 적용: ${spec.labelKo} (${handPropSide === "rightHand" ? "오른손" : "왼손"})`);
-  };
-  const onApplyHeadProp = async (nextHeadPropId: HeadPropId | ""): Promise<void> => {
-    setHeadPropId(nextHeadPropId);
-    if (!engine?.setHeadProp) return;
-    const attachment = nextHeadPropId ? toHeadPropAttachment(nextHeadPropId) : null;
-    setHandPropBusy(true);
-    try {
-      await engine.setHeadProp(attachment);
-      const spec = nextHeadPropId ? findWebtoonHeadPropSpec(nextHeadPropId) : null;
-      setNotice(spec ? `머리 액세서리 장착: ${spec.labelKo}` : "머리 액세서리를 해제했습니다.");
-    } catch (error) {
-      setNotice(failureText(error, "머리 액세서리를 장착하지 못했습니다."));
-    } finally {
-      setHandPropBusy(false);
-    }
-  };
-  const onApplyStageProp = async (nextStagePropId: StagePropId | ""): Promise<void> => {
-    setStagePropId(nextStagePropId);
-    if (!engine?.setStageProp) return;
-    const attachment = nextStagePropId ? toStagePropAttachment(nextStagePropId) : null;
-    setHandPropBusy(true);
-    try {
-      await engine.setStageProp(attachment);
-      const spec = nextStagePropId ? findWebtoonStagePropSpec(nextStagePropId) : null;
-      setNotice(spec ? `배경 스테이지 배치: ${spec.labelKo}` : "배경 스테이지를 해제했습니다.");
-    } catch (error) {
-      setNotice(failureText(error, "배경 스테이지를 배치하지 못했습니다."));
-    } finally {
-      setHandPropBusy(false);
-    }
-  };
-  const castDirectorDuoPartner = async (presetId: WebtoonSceneDirectorPresetId): Promise<void> => {
-    const preset = findWebtoonSceneDirectorPreset(presetId);
-    if (!preset) return;
-    const prevDuo = duoShot;
-    const nextDuo: DuoShotState = {
-      enabled: true,
-      render3dPartner: true,
-      partnerId: preset.duoCasting.partnerId,
-      side: preset.duoCasting.side,
-      distanceKey: preset.duoCasting.distanceKey,
-      partnerStance: preset.duoCasting.stance,
-      partnerExpression: preset.duoCasting.expression,
-      partnerHandPropId: preset.duoCasting.partnerHandPropId,
-    };
-    setDuoShot(nextDuo);
-    stripDirector.update({
-      partnerSide: preset.duoCasting.side,
-      speakerTargets: preset.speakerTargets,
-    });
-    const currentRecipe = store.getState().recipe;
-    const resolved = resolveViewportDuoShot(currentRecipe, nextDuo);
-    for (const cmd of buildDuoEyeContactCommands(currentRecipe.pose, resolved.duoEyeContact, resolved.duoPartner.labelKo)) {
-      dispatch(cmd);
-    }
-    await syncDuoPartner3d(nextDuo, prevDuo);
-    setNotice(`씬 디렉터 상대역 자동 캐스팅: ${resolved.duoPartner.labelKo} (${resolved.duoEyeContact.summaryKo})`);
-  };
-  const onSelectSceneDirector = async (presetId: WebtoonSceneDirectorPresetId | ""): Promise<void> => {
-    if (!presetId) {
-      setHandPropId("");
-      setHeadPropId("");
-      setStagePropId("");
-      setMangaFx((prev) => ({ ...prev, sfxStamp: "none" }));
-      stripDirector.reset();
-      if (!engine) return;
-      setHandPropBusy(true);
-      try {
-        if (engine.setHandProp) await engine.setHandProp(null);
-        if (engine.setHeadProp) await engine.setHeadProp(null);
-        if (engine.setStageProp) await engine.setStageProp(null);
-        if (engine.setSfxStamp) await engine.setSfxStamp(null);
-        setNotice("원클릭 씬 디렉터를 해제했습니다.");
-      } catch (error) {
-        setNotice(failureText(error, "씬 디렉터 해제 중 오류가 발생했습니다."));
-      } finally {
-        setHandPropBusy(false);
-      }
-      return;
-    }
-
-    const preset = findWebtoonSceneDirectorPreset(presetId);
-    if (!preset) return;
-    const currentLocale = stripDirector.getState().locale;
-    setHandPropId(preset.handPropId);
-    setHandPropSide(preset.handSide);
-    setHeadPropId(preset.headPropId);
-    setStagePropId(preset.stagePropId);
-    setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
-    stripDirector.update({
-      activeDirectorId: preset.id,
-      manuscriptMood: preset.manuscriptMood,
-      gutterPaces: preset.gutterPaces,
-      actingArc: preset.actingArc,
-      bakeStripFx: true,
-      stripFxLines: preset.fxLinesKind,
-      dialogueLines: preset.dialogueByLocale[currentLocale],
-      bubbleShapes: preset.bubbleShapes,
-      bubbleFontScales: preset.bubbleFontScales,
-      sfxStamps: preset.sfxStamps,
-      speakerTargets: preset.speakerTargets,
-      cutCameraPresets: preset.cutCameraPresets,
-      partnerSide: duoShot.enabled ? duoShot.side : preset.duoCasting.side,
-    });
-
-    for (const cmd of buildHandPropGripPoseCommands(labState.recipe.pose, preset.handPropId, preset.handSide)) {
-      dispatch(cmd);
-    }
-    dispatch({
-      type: "shading/set",
-      profile: resolveDirectorShadingProfile(labState.recipe.shading, preset.toonShaderId),
-    });
-
-    if (!engine) return;
-    setHandPropBusy(true);
-    try {
-      if (engine.setHandProp) await engine.setHandProp(toHandPropAttachment(preset.handPropId, preset.handSide));
-      if (engine.setHeadProp) await engine.setHeadProp(toHeadPropAttachment(preset.headPropId));
-      if (engine.setStageProp) await engine.setStageProp(toStagePropAttachment(preset.stagePropId));
-      if (engine.setSfxStamp && mangaFx.enabled) await engine.setSfxStamp(toSfxStampAttachment(preset.sfxStampId));
-      if (duoShot.enabled && duoShot.render3dPartner) {
-        await castDirectorDuoPartner(preset.id);
-      } else {
-        setNotice(`씬 디렉터 적용: ${preset.labelKo}`);
-      }
-    } catch (error) {
-      setNotice(failureText(error, "원클릭 씬 디렉터 소품 장착에 실패했습니다."));
-    } finally {
-      setHandPropBusy(false);
-    }
   };
 
   return (
@@ -926,32 +734,9 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
           duo3dBusy,
           applyEyeContact: onApplyDuoEyeContact,
         }}
-        mangaFx={{
-          state: mangaFx,
-          set: setMangaFx,
-          sfxBusy,
-          onToggle: onToggleMangaFx,
-          onChangeSfxStamp: onChangeMangaSfxStamp,
-        }}
-        director={{
-          engineReady: Boolean(engine?.setHandProp),
-          busy: handPropBusy || duo3dBusy,
-          activeDirectorId,
-          duoPartnerActive: Boolean(activeDirectorId && duoShot.enabled && duoShot.render3dPartner),
-          onSelectDirector: (presetId) => void onSelectSceneDirector(presetId),
-          onCastDuoPartner: () => {
-            if (activeDirectorId) void castDirectorDuoPartner(activeDirectorId);
-          },
-        }}
-        handProp={{
-          engineReady: Boolean(engine?.setHandProp), propId: handPropId, hand: handPropSide, busy: handPropBusy,
-          headPropId, stagePropId,
-          onSelectProp: (nextPropId) => void onApplyHandProp(nextPropId, handPropSide),
-          onChangeHand: (nextSide) => void onApplyHandProp(handPropId, nextSide),
-          onApplyGripPose: onApplyHandPropGripPose,
-          onSelectHeadProp: (nextHeadPropId) => void onApplyHeadProp(nextHeadPropId),
-          onSelectStageProp: (nextStagePropId) => void onApplyStageProp(nextStagePropId),
-        }}
+        mangaFx={sceneProps.mangaFx}
+        director={sceneProps.sceneDirector}
+        handProp={sceneProps.handProp}
         overlay={{
           handles: { value: showHandles, set: setShowHandles },
           fingers: { value: showFingers, set: setShowFingers },

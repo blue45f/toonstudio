@@ -23,7 +23,6 @@ import {
 } from "../../../../export/webtoon-strip-composer";
 import { WEBTOON_SFX_STAMPS } from "../viewport-hand-prop-controls";
 
-import type { StripDirectorSession, StripDirectorState } from "../viewport-scene-director";
 import type {
   WebtoonDialogueLocale,
   WebtoonJaWritingMode,
@@ -37,6 +36,7 @@ import type {
   WebtoonStripGutterPaceId,
   WebtoonStripSpeakerTarget,
 } from "../../../../export/webtoon-strip-composer";
+import type { StripDirectorSession, StripDirectorState } from "../viewport-scene-director";
 
 export interface ExportStripDirectorSectionProps {
   readonly idsPrefix: string;

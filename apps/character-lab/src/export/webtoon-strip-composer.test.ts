@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_EYE_GAZE, createDefaultRecipe } from "../contracts";
+import { createMockEngine } from "../testing/mock-engine";
+
 import { MAX_PNG_EXPORT_DIMENSION } from "./export-session";
 import { isPng } from "./png-encoder";
 import {
@@ -21,8 +24,6 @@ import {
   splitJapaneseTategakiColumns,
   splitLocalizedBubbleDialogue,
 } from "./webtoon-strip-composer";
-import { DEFAULT_EYE_GAZE, createDefaultRecipe } from "../contracts";
-import { createMockEngine } from "../testing/mock-engine";
 
 describe("webtoon-strip-composer", () => {
   it("clampWebtoonStripLayout은 800px 원고 폭·1024px 최대 폭·클리프행어 장여백에서도 4096px 이하 세로 스트립을 계산한다", () => {

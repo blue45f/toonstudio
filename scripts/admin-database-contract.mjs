@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+export { buildAdminNestjsQualityCapabilitySql, buildAdminNestjsQualityRuntimeAclSql } from "./admin-nestjs-quality-database-contract.mjs";
 
 const adminRelations = Object.freeze([
   "admin_announcements",
@@ -127,7 +128,7 @@ ${buildBusinessPlanRuntimeAclSql(role)}
 
 export function buildAdminCapabilitySql(role) {
   const safeRole = roleName(role);
-  const source = readFileSync(new URL("../apps/api/src/platform/database/admin-schema-contract.ts", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../apps/api/src/platform/database/schema/admin.schema.ts", import.meta.url), "utf8");
   const columns = /export const ADMIN_SCHEMA_COLUMNS_SQL = `([^`]+)`;/u.exec(source)?.[1];
   const indexes = /export const ADMIN_SCHEMA_INDEXES_SQL = `([^`]+)`;/u.exec(source)?.[1];
   if (!columns || !indexes) throw new Error("Managed administrator schema contract is unreadable");

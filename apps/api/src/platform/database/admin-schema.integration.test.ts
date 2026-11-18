@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { ADMIN_SCHEMA_COLUMNS_SQL } from "./admin-schema-contract";
+import { ADMIN_SCHEMA_COLUMNS_SQL } from "./schema/admin.schema";
 
 const integrationUrl = process.env.STUDIO_LIVE_POSTGRES_INTEGRATION_URL?.trim();
 if (process.env.CI && !integrationUrl) {
