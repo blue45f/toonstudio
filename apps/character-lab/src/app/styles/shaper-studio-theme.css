@@ -400,6 +400,32 @@ input:not(input[type="range"]):user-valid {
   font-size: 0.7rem;
 }
 
+/* ---------- 웹툰 3D 소품 클러스터 & 4컷 스트립 디렉터 (Unslop 4px 그리드 · 중첩 라디우스) ---------- */
+.cl-viewport-prop-cluster {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in oklab, var(--shaper-panel-2) 64%, transparent);
+}
+
+.cl-export-strip-director {
+  display: grid;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-block: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--shaper-panel-2);
+}
+
+.cl-export-strip-director select {
+  border-radius: 6px;
+}
+
 .cl-paint-swatch,
 .cl-color-swatch {
   forced-color-adjust: none;
