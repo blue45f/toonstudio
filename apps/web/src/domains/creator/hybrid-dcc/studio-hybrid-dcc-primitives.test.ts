@@ -24,6 +24,7 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V16_LUMIERE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V17_SALON_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -252,6 +253,41 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V18_HANDOFF_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 공통 건축 기준선(Shared Datum) V19(3종: 현대·무협·SF)가 실제 GLB·썸네일·SHA-256 씬 격리 프로비넌스와 일치한다", () => {
+    expect(STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT).toHaveLength(3);
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-shared-datum-v19/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      sharedArchitecturalDatum?: { portalClearanceM?: number; safetyRailingHeightM?: number };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.sharedArchitecturalDatum?.portalClearanceM).toBe(2.4);
+    expect(prov.sharedArchitecturalDatum?.safetyRailingHeightM).toBe(1.1);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(4);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V19_DATUM_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
