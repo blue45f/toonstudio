@@ -144,14 +144,14 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     expect(screen.getByTestId("viewport-manga-romance-sparkles")).toBeTruthy();
 
     const sfxSelect = screen.getByTestId("viewport-manga-sfx-select") as HTMLSelectElement;
-    expect(sfxSelect.options.length).toBe(5);
-    fireEvent.change(sfxSelect, { target: { value: "seureung" } });
-    expect(screen.getByTestId("viewport-manga-sfx-stamp").getAttribute("data-sfx-id")).toBe("seureung");
-    expect(screen.getByTestId("viewport-manga-sfx-stamp").textContent).toContain("스릉");
+    expect(sfxSelect.options.length).toBe(7);
+    fireEvent.change(sfxSelect, { target: { value: "ssaa" } });
+    expect(screen.getByTestId("viewport-manga-sfx-stamp").getAttribute("data-sfx-id")).toBe("ssaa");
+    expect(screen.getByTestId("viewport-manga-sfx-stamp").textContent).toContain("싸아");
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setSfxStamp").at(-1)?.args[0]).toMatchObject({
-        stampId: "seureung",
-        glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-seureung.glb",
+        stampId: "ssaa",
+        glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-ssaa.glb",
       }),
     );
 
@@ -160,7 +160,7 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setSfxStamp").at(-1)?.args[0]).toBeNull());
   });
 
-  it("웹툰 3D 소품 20종·원클릭 씬 디렉터 상대역 자동 캐스팅·3D 듀오 상대역 표정/전용 손소품 선택이 엔진에 실시간 반영된다", async () => {
+  it("웹툰 3D 소품 24종·5번째 옥상 황혼 씬 디렉터·상대역 자동 캐스팅·다국어 대사 동기화가 엔진에 실시간 반영된다", async () => {
     const dispatched: LabCommand[] = [];
     const engine = renderReadyViewport((cmd) => dispatched.push(cmd));
 
@@ -193,13 +193,13 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
 
     const headSelect = screen.getByTestId("viewport-head-prop-select") as HTMLSelectElement;
-    expect(headSelect.options.length).toBe(5);
+    expect(headSelect.options.length).toBe(7);
     expect(Array.from(headSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(headSelect, { target: { value: "wire-glasses" } });
+    fireEvent.change(headSelect, { target: { value: "studio-headphones" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
-        propId: "wire-glasses",
-        glbUrl: "/assets/props/webtoon-head-props-v1/wire-glasses.glb",
+        propId: "studio-headphones",
+        glbUrl: "/assets/props/webtoon-head-props-v1/studio-headphones.glb",
       }),
     );
 
@@ -214,33 +214,41 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
       }),
     );
 
-    // 원클릭 장르 씬 디렉터 선택 + 상대역 자동 캐스팅 실행 검증
+    // 원클릭 장르 씬 디렉터(5종 + 기본 옵션 = 6개) 선택 + 옥상 황혼 독대 상대역 자동 캐스팅 실행 검증
     const directorSelect = screen.getByTestId("viewport-scene-director-select") as HTMLSelectElement;
-    expect(directorSelect.options.length).toBe(5);
-    fireEvent.change(directorSelect, { target: { value: "director-rofan-coronation" } });
+    expect(directorSelect.options.length).toBe(6);
+    fireEvent.change(directorSelect, { target: { value: "director-rooftop-twilight" } });
     await waitFor(() =>
-      expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
-        propId: "rofan-throne-dais",
+      expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
+        propId: "studio-headphones",
       }),
     );
     expect(dispatched.some((cmd) => cmd.type === "shading/set")).toBe(true);
     const sessionState = getDefaultStripDirectorSession().getState();
-    expect(sessionState.actingArc).toBe("arc-confident-smirk");
-    expect(sessionState.speakerTargets).toEqual(["protagonist", "partner", "protagonist", "protagonist"]);
+    expect(sessionState.actingArc).toBe("arc-thriller-shock");
+    expect(sessionState.cutCameraPresets).toEqual(["low-full", "duo-wide", "dutch-left-bust", "front-face"]);
+    expect(sessionState.sfxStamps).toEqual(["ssaa", "none", "dugeun", "beonjjeok"]);
 
-    // 상대역 자동 캐스팅 버튼 클릭 시 3D 북부대공 + 냉소 표정 + 황실 두루마리 소품 + 아이컨택 명령이 일괄 적용된다
+    // 다국어 전환 시 활성 씬 디렉터 대사팩이 EN / JA로 자동 전환된다
+    getDefaultStripDirectorSession().setLocale("en");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("Sunset on the roof");
+    getDefaultStripDirectorSession().setLocale("ja");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("放課後の屋上フェンス");
+    getDefaultStripDirectorSession().setLocale("ko");
+
+    // 상대역 자동 캐스팅 버튼 클릭 시 학생회장(shaper-academy-council) + 단호 노려봄 + 스마트폰 소품 + 아이컨택 명령이 일괄 적용된다
     dispatched.length = 0;
     const castDuoBtn = await screen.findByTestId("viewport-director-cast-duo");
     fireEvent.click(castDuoBtn);
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
-        characterId: "shaper-noir-duke",
-        stance: "attentive",
-        expression: "cold-smirk",
+        characterId: "shaper-academy-council",
+        stance: "arms-crossed",
+        expression: "stern-glare",
         handProp: {
-          propId: "imperial-scroll",
+          propId: "smartphone",
           hand: "leftHand",
-          glbUrl: "/assets/props/webtoon-hand-props-v1/imperial-scroll.glb",
+          glbUrl: "/assets/props/webtoon-hand-props-v1/smartphone.glb",
         },
       }),
     );

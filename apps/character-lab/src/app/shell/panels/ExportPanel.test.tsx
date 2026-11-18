@@ -697,12 +697,18 @@ describe("ExportPanel", () => {
     expect((screen.getByTestId("export-strip-dialogue-3") as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByTestId("export-strip-font-scale-3") as HTMLSelectElement).disabled).toBe(true);
 
+    // 컷별 카메라 구도(더치 틸트·투샷 와이드) 및 다국어(EN/JA) 로컬라이징 전환 검증
+    fireEvent.change(screen.getByTestId("export-strip-camera-1"), { target: { value: "duo-wide" } });
+    fireEvent.change(screen.getByTestId("export-strip-camera-2"), { target: { value: "dutch-left-bust" } });
+    fireEvent.change(screen.getByTestId("export-strip-locale"), { target: { value: "en" } });
+    expect((screen.getByTestId("export-strip-sfx-stamp-0") as HTMLSelectElement).textContent).toContain("SHING");
+
     fireEvent.click(screen.getByTestId("export-webtoon-strip-png"));
     await waitFor(() => expect(calls).toHaveLength(4));
-    expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-strip\.png$/u);
+    expect(calls[3]?.fileName).toMatch(/-webtoon-4cut-acting-fx-en-strip\.png$/u);
     expect(isPng(calls[3]?.bytes ?? new Uint8Array())).toBe(true);
 
-    // 만화 연출 분리 레이어 포함 PSD 저장 시 그룹+1, 레이어+4가 추가된 유효한 8BPS 바이너리를 생성한다
+    // 만화 연출 분리 레이어 포함 PSD 저장 시 다국어 locale이 반영된 그룹+1, 레이어+4 8BPS 바이너리를 생성한다
     fireEvent.click(screen.getByTestId("export-psd-manga-fx"));
     fireEvent.click(screen.getByRole("button", { name: "레이어 PSD 저장" }));
     await waitFor(() => expect(calls).toHaveLength(5));

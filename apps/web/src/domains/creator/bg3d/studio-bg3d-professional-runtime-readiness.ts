@@ -34,6 +34,8 @@ import {
 
 export type StudioBg3dProfessionalRuntimeStatus = "ready" | "review" | "blocked";
 
+export type StudioBg3dGpuBudgetStatus = "optimal" | "constrained" | "unknown";
+
 export type StudioBg3dProfessionalRuntimeFailureCode =
   | "scene-adaptation-failed"
   | "scene-authority-failed"
@@ -51,6 +53,9 @@ export interface StudioBg3dProfessionalRuntimeSummary {
   readonly specialistPassCount: number;
   readonly primaryRenderer: "three-webgpu" | "three-webgl2" | null;
   readonly qualityTier: "ultra" | "high" | "balanced" | "compatibility" | null;
+  readonly maxTextureDimension2d: number | null;
+  readonly deviceMemoryGiB: number | null;
+  readonly gpuBudgetStatus: StudioBg3dGpuBudgetStatus;
 }
 
 export interface StudioBg3dProfessionalRuntimeReadiness {
@@ -78,6 +83,21 @@ function positiveFinite(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;
+}
+
+function resolveGpuBudgetStatus(
+  capabilities: StudioScene3dDeviceCapabilities | null,
+): StudioBg3dGpuBudgetStatus {
+  if (!capabilities || (!capabilities.webgpu && !capabilities.webgl2)) {
+    return "unknown";
+  }
+  if (
+    capabilities.maxTextureDimension2d < 4096
+    || (capabilities.deviceMemoryGiB !== null && capabilities.deviceMemoryGiB <= 4)
+  ) {
+    return "constrained";
+  }
+  return "optimal";
 }
 
 export function deriveStudioBg3dProfessionalDeviceCapabilities(input: {
@@ -117,6 +137,7 @@ function summary(
   authority: StudioScene3dAuthoritySnapshot | null,
   plan: StudioScene3dProfessionalPlan | null,
   revision: number,
+  capabilities: StudioScene3dDeviceCapabilities | null = null,
 ): StudioBg3dProfessionalRuntimeSummary {
   return Object.freeze({
     authorityId: authority?.authorityId ?? null,
@@ -131,6 +152,11 @@ function summary(
     ).length ?? 0,
     primaryRenderer: plan?.renderGraph.runtimePlan.primaryRenderer ?? null,
     qualityTier: plan?.renderGraph.runtimePlan.qualityTier ?? null,
+    maxTextureDimension2d: capabilities
+      ? positiveFinite(capabilities.maxTextureDimension2d, 4096)
+      : null,
+    deviceMemoryGiB: capabilities?.deviceMemoryGiB ?? null,
+    gpuBudgetStatus: resolveGpuBudgetStatus(capabilities),
   });
 }
 
@@ -140,6 +166,7 @@ function blocked(input: {
   readonly revision: number;
   readonly authority?: StudioScene3dAuthoritySnapshot | null;
   readonly recovery?: StudioScene3dRuntimeRecoveryPlan | null;
+  readonly capabilities?: StudioScene3dDeviceCapabilities | null;
   readonly blockers?: readonly string[];
   readonly warnings?: readonly string[];
 }): StudioBg3dProfessionalRuntimeReadiness {
@@ -156,7 +183,7 @@ function blocked(input: {
     message: input.message,
     blockers: Object.freeze([...new Set(blockers)]),
     warnings: Object.freeze([...new Set(input.warnings ?? [])]),
-    summary: summary(authority, null, input.revision),
+    summary: summary(authority, null, input.revision, input.capabilities ?? null),
   });
 }
 
@@ -206,8 +233,9 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
   if (!adapted.ok) {
     return blocked({
       code: "scene-adaptation-failed",
-      message: "현재 BG3D 런타임을 손실 없는 canonical SceneDocument로 투영하지 못했습니다.",
+      message: "현재 3D 배경 장면을 표준 작업 문서로 변환하지 못했습니다.",
       revision: input.revision,
+      capabilities: input.capabilities,
     });
   }
 
@@ -223,8 +251,9 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
   } catch {
     return blocked({
       code: "scene-authority-failed",
-      message: "BG3D·DCC·VRM을 하나의 SceneDocument authority로 검증하지 못했습니다.",
+      message: "배경·외부 모델·캐릭터 장면을 단일 기준으로 통합하지 못했습니다.",
       revision: input.revision,
+      capabilities: input.capabilities,
     });
   }
 
@@ -240,6 +269,7 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
       revision: input.revision,
       authority,
       recovery,
+      capabilities: input.capabilities,
       blockers: Object.freeze([
         "선택한 렌더러를 다시 시작하거나 명시적으로 다른 렌더러를 선택해야 합니다.",
       ]),
@@ -264,6 +294,7 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
       revision: input.revision,
       authority,
       recovery,
+      capabilities: input.capabilities,
     });
   }
 
@@ -288,6 +319,6 @@ export function resolveStudioBg3dProfessionalRuntimeReadiness(input: {
     message,
     blockers: plan.blockers,
     warnings: plan.warnings,
-    summary: summary(authority, plan, input.revision),
+    summary: summary(authority, plan, input.revision, input.capabilities),
   });
 }

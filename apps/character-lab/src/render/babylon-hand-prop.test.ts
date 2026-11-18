@@ -1,7 +1,7 @@
 /**
- * BabylonCharacterEngine 3D 에셋 20종 & 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) & 3D 효과음 스탬프 통합 검증:
- * - 손 소품 6종(`webtoon-hand-props-v1`) · 머리 액세서리 4종(`webtoon-head-props-v1`) · 배경 스테이지 6종(`webtoon-stage-props-v1`) · 효과음 스탬프 4종(`webtoon-sfx-stamps-v1`) SHA-256 검증 로드
- * - 실제 SHAPER 상대역 캐릭터 GLB(`shaper-noir-duke.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, 표정 MorphTarget + 신규 `imperial-scroll` 전용 손소품 `extra:duo-partner-prop`)
+ * BabylonCharacterEngine 3D 에셋 24종 & 2인 듀오 스테이지(상대역 표정 MorphTarget + 전용 손소품) & 3D 효과음 스탬프 통합 검증:
+ * - 손 소품 6종(`webtoon-hand-props-v1`) · 머리 액세서리 6종(`webtoon-head-props-v1`) · 배경 스테이지 6종(`webtoon-stage-props-v1`) · 효과음 스탬프 6종(`webtoon-sfx-stamps-v1`) SHA-256 검증 로드
+ * - 실제 SHAPER 상대역 캐릭터 GLB(`shaper-noir-duke.glb`) 3D 듀오 동시 배치(`extra:duo-partner`, 표정 MorphTarget + `imperial-scroll` 전용 손소품 `extra:duo-partner-prop`)
  * - 손(250) + 머리(251) + 스테이지(252) + 효과음 스탬프(254) + 3D 상대역(220.. + 249) 5중 동시 배치 및 카메라 프레이밍 불변, 툰 전환, 단일 투샷 GLB 직렬화 보존 확인
  */
 import { readFile } from "node:fs/promises";
@@ -35,7 +35,7 @@ interface PropManifestEntry<TId extends string> {
   readonly triangles: number;
 }
 
-describe("BabylonCharacterEngine 3D 에셋 20종 & 2인 듀오 상대역 표정/신규 손소품 & 효과음 스탬프 + 투샷 GLB 보존", () => {
+describe("BabylonCharacterEngine 3D 에셋 24종 & 2인 듀오 상대역 표정/손소품 & 효과음 스탬프 + 투샷 GLB 보존", () => {
   let harness: NullEngineHarness;
 
   beforeEach(async () => {
@@ -53,7 +53,7 @@ describe("BabylonCharacterEngine 3D 에셋 20종 & 2인 듀오 상대역 표정/
     harness.dispose();
   });
 
-  it("Blender 5.3 에셋 20종(손 6·머리 4·스테이지 6·효과음 4) + SHAPER 3D 상대역(표정·황실 두루마리 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
+  it("Blender 5.3 에셋 24종(손 6·머리 6·스테이지 6·효과음 6) + SHAPER 3D 상대역(표정·황실 두루마리 손소품) 5중 동시 배치·투샷 GLB 보존·누수 없는 해제를 만족한다", async () => {
     const handManifest = JSON.parse(await readFile(resolve(HAND_PROPS_DIR, "index.json"), "utf8")) as {
       readonly props: readonly PropManifestEntry<HandPropId>[];
     };
@@ -68,9 +68,9 @@ describe("BabylonCharacterEngine 3D 에셋 20종 & 2인 듀오 상대역 표정/
     };
 
     expect(handManifest.props).toHaveLength(6);
-    expect(headManifest.props).toHaveLength(4);
+    expect(headManifest.props).toHaveLength(6);
     expect(stageManifest.props).toHaveLength(6);
-    expect(sfxManifest.props).toHaveLength(4);
+    expect(sfxManifest.props).toHaveLength(6);
 
     await harness.engine.loadSource({ kind: "procedural", model: createProceduralFixture() });
     const basePartCount = harness.engine.inspectRig()?.parts.length ?? 0;
@@ -154,15 +154,15 @@ describe("BabylonCharacterEngine 3D 에셋 20종 & 2인 듀오 상대역 표정/
       expect(extraPart.materialClass).toBe("ShaderMaterial");
     }
 
-    // 단일 투샷 GLB 내보내기 시 5개 슬롯 + 신규 부채/옥상 난간/상대역 황실 두루마리 앵커 노드가 모두 직렬화 보존된다
+    // 단일 투샷 GLB 내보내기 시 5개 슬롯 + 신규 모노클·번쩍 스탬프·옥상 난간·상대역 황실 두루마리 앵커 노드가 모두 직렬화 보존된다
     const glbBytes = await harness.engine.exportGlb();
     const parsed = parseGlb(glbBytes);
     const gltf = parsed.json as { nodes: Array<{ name?: string }> };
     const nodeNames = gltf.nodes.map((n) => n.name ?? "");
     expect(nodeNames.some((n) => n.includes("TS_HandPropAnchor_jade-folding-fan"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_pearl-earrings-pin"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_HeadPropAnchor_silver-monocle"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_StagePropAnchor_rooftop-safety-railing"))).toBe(true);
-    expect(nodeNames.some((n) => n.includes("TS_SfxStampAnchor_pat"))).toBe(true);
+    expect(nodeNames.some((n) => n.includes("TS_SfxStampAnchor_beonjjeok"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_DuoPartnerAnchor_shaper-noir-duke"))).toBe(true);
     expect(nodeNames.some((n) => n.includes("TS_DuoPartnerPropAnchor_imperial-scroll"))).toBe(true);
 

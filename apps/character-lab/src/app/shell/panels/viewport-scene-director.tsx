@@ -1,13 +1,15 @@
 /**
  * 장르별 원클릭 풀세트 씬 디렉터 프리셋 (`viewport-scene-director.tsx`, Unslop 규약 준수):
- * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 4대 한국 웹툰 씬 디렉터
- * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 발화자/말풍선 도형/강조/효과음 스탬프/한국어 대사까지 일괄 세팅
+ * - 로판 대관식 · 느와르 취조실 · 캠퍼스 카페 · 무협 각성 · 옥상 황혼 독대 5대 한국·글로벌 웹툰 씬 디렉터
+ * - 버튼/셀렉터 한 번으로 손 소품 + 그립 포즈 + 머리 액세서리 + 배경 스테이지 + 웹툰 셀셰이딩 조명 + 4컷 연기 시퀀스 + 컷별 카메라 구도(더치 틸트 포함) + 발화자/말풍선 도형/강조/효과음 스탬프/다국어(KO·EN·JA) 대사까지 일괄 세팅
  * - `상대역 자동 캐스팅` 버튼으로 장르에 어울리는 3D 듀오 상대역 캐릭터·표정·전용 손소품·아이컨택 시선 교환까지 즉시 배치
  * - `stripDirectorSession` 외부 반응형 스토어를 통해 `ViewportPane`과 `ExportPanel`이 `UiState` 오염 없이 실시간 동기화된다.
  */
 import {
   DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
   DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES,
+  DEFAULT_WEBTOON_STRIP_CUT_CAMERA_PRESETS,
+  DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE,
   DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
   DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
   DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
@@ -16,12 +18,15 @@ import { SHAPER_TOON_SHADER_PRESETS, buildShaperToonShadingProfile } from "../..
 
 import type { DuoPartnerSide, DuoShotDistanceKey } from "./viewport-duo-shot-guide";
 import type {
+  WebtoonDialogueLocale,
   WebtoonSfxStampOption,
   WebtoonStripActingArcId,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleFontScales,
   WebtoonStripBubbleShape,
   WebtoonStripBubbleShapes,
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresets,
   WebtoonStripDialogueLines,
   WebtoonStripFxLinesKind,
   WebtoonStripSfxStamps,
@@ -44,7 +49,8 @@ export type WebtoonSceneDirectorPresetId =
   | "director-rofan-coronation"
   | "director-noir-interrogation"
   | "director-campus-cafe"
-  | "director-murim-awakening";
+  | "director-murim-awakening"
+  | "director-rooftop-twilight";
 
 export interface WebtoonDirectorDuoCastingSpec {
   readonly partnerId: string;
@@ -68,10 +74,12 @@ export interface WebtoonSceneDirectorPreset {
   readonly actingArc: Exclude<WebtoonStripActingArcId, "none">;
   readonly fxLinesKind: WebtoonStripFxLinesKind;
   readonly dialogueLines: WebtoonStripDialogueLines;
+  readonly dialogueByLocale: Readonly<Record<WebtoonDialogueLocale, WebtoonStripDialogueLines>>;
   readonly bubbleShapes: WebtoonStripBubbleShapes;
   readonly bubbleFontScales: WebtoonStripBubbleFontScales;
   readonly sfxStamps: WebtoonStripSfxStamps;
   readonly speakerTargets: WebtoonStripSpeakerTargets;
+  readonly cutCameraPresets: WebtoonStripCutCameraPresets;
   readonly duoCasting: WebtoonDirectorDuoCastingSpec;
 }
 
@@ -94,10 +102,31 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "오래 기다렸지? 이제 반격의 시간이야.",
       "내 제국에 온 걸 환영해.",
     ],
+    dialogueByLocale: {
+      ko: [
+        "황실의 검과 왕관, 오늘부로 내가 거둔다.",
+        "감히 고개를 들어 내 눈을 마주 봐.",
+        "오래 기다렸지? 이제 반격의 시간이야.",
+        "내 제국에 온 걸 환영해.",
+      ],
+      en: [
+        "The imperial blade and crown are mine today.",
+        "Raise your head and look me in the eye.",
+        "Kept you waiting. Time to strike back.",
+        "Welcome to my empire.",
+      ],
+      ja: [
+        "皇室の剣と王冠、今日から私が継ぐ。",
+        "顔を上げて、私の目を見なさい。",
+        "待たせたわね。反撃の時間よ。",
+        "私の帝国へようこそ。",
+      ],
+    },
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "oval"],
     bubbleFontScales: ["md", "md", "lg", "md"],
     sfxStamps: ["seureung", "none", "pat", "dugeun"],
     speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    cutCameraPresets: ["low-full", "side-bust", "dutch-right-face", "high-bust"],
     duoCasting: {
       partnerId: "shaper-noir-duke",
       side: "right",
@@ -125,10 +154,31 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "설마 진짜 배후가 내부에 있었다고?",
       "증거는 충분해. 여기서 끝내자.",
     ],
+    dialogueByLocale: {
+      ko: [
+        "사건 기록 14페이지, 비어 있던 시간 말인데.",
+        "어젯밤 11시, 그 현장에 당신도 있었지?",
+        "설마 진짜 배후가 내부에 있었다고?",
+        "증거는 충분해. 여기서 끝내자.",
+      ],
+      en: [
+        "Page fourteen of the file has a missing hour.",
+        "You were at the scene at eleven last night.",
+        "The mastermind was inside our unit all along?",
+        "We have enough proof. End this here.",
+      ],
+      ja: [
+        "調書14ページ、空白の時間のことだが。",
+        "昨夜11時、あんたも現場にいたな？",
+        "まさか黒幕が内部にいたというのか？",
+        "証拠は揃った。ここで終わらせよう。",
+      ],
+    },
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
     bubbleFontScales: ["md", "md", "lg", "sm"],
     sfxStamps: ["none", "pat", "kugugung", "none"],
     speakerTargets: ["protagonist", "protagonist", "partner", "protagonist"],
+    cutCameraPresets: ["side-bust", "duo-wide", "dutch-left-bust", "front-face"],
     duoCasting: {
       partnerId: "shaper-thriller-detective",
       side: "right",
@@ -156,10 +206,31 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "왜 자꾸 그렇게 가까이서 쳐다봐…",
       "오늘 오후는 천천히 같이 걷자.",
     ],
+    dialogueByLocale: {
+      ko: [
+        "혹시 아까부터 여기 앉아 있었어?",
+        "네가 좋아하는 로스터리 원두로 골라 봤어.",
+        "왜 자꾸 그렇게 가까이서 쳐다봐…",
+        "오늘 오후는 천천히 같이 걷자.",
+      ],
+      en: [
+        "Have you been sitting here the whole time?",
+        "I picked the roast blend you always liked.",
+        "Why do you keep looking at me so closely...",
+        "Let's walk home slowly this afternoon.",
+      ],
+      ja: [
+        "もしかして、さっきからここにいたの？",
+        "君が好きな焙煎豆を選んでみたんだ。",
+        "どうしてそんな近くで見つめるの…",
+        "今日の午後はゆっくり一緒に歩こう。",
+      ],
+    },
     bubbleShapes: ["oval", "oval", "whisper-dashed", "oval"],
     bubbleFontScales: ["md", "md", "sm", "md"],
     sfxStamps: ["none", "dugeun", "dugeun", "none"],
     speakerTargets: ["partner", "protagonist", "protagonist", "partner"],
+    cutCameraPresets: ["low-full", "side-bust", "front-face", "high-bust"],
     duoCasting: {
       partnerId: "shaper-office-ceo",
       side: "right",
@@ -187,10 +258,31 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       "보인다, 모든 검로의 빈틈이.",
       "단 일검으로 승부를 매듭짓겠다.",
     ],
+    dialogueByLocale: {
+      ko: [
+        "봉인된 청운의 검기가 다시 깨어난다.",
+        "물러서라, 지금부터는 진검승부다.",
+        "보인다, 모든 검로의 빈틈이.",
+        "단 일검으로 승부를 매듭짓겠다.",
+      ],
+      en: [
+        "The sealed azure sword aura awakens again.",
+        "Step back. From here it is a real duel.",
+        "I see every opening along your blade path.",
+        "One single strike will settle this fight.",
+      ],
+      ja: [
+        "封じられた青雲の剣気が再び目覚める。",
+        "下がれ、ここからは真剣勝負だ。",
+        "見える、すべての剣路の隙が。",
+        "ただ一太刀で決着をつける。",
+      ],
+    },
     bubbleShapes: ["monologue-box", "oval", "shout-burst", "shout-burst"],
     bubbleFontScales: ["md", "md", "lg", "lg"],
     sfxStamps: ["seureung", "none", "kugugung", "seureung"],
     speakerTargets: ["protagonist", "partner", "protagonist", "protagonist"],
+    cutCameraPresets: ["low-full", "duo-wide", "dutch-right-face", "dutch-left-bust"],
     duoCasting: {
       partnerId: "shaper-murim-swordmaster",
       side: "right",
@@ -198,6 +290,58 @@ export const WEBTOON_SCENE_DIRECTOR_PRESETS: readonly WebtoonSceneDirectorPreset
       stance: "arms-crossed",
       expression: "stern-glare",
       partnerHandPropId: "jade-folding-fan",
+    },
+  },
+  {
+    id: "director-rooftop-twilight",
+    labelKo: "옥상 황혼 독대 (헤드폰·스마트폰·옥상 난간)",
+    summaryKo: "무선 네크 헤드폰 + 스마트폰 + 학원 옥상 안전 난간 + 일루미네이션 림 + 더치 틸트 황혼 진실 독대 4컷 연기",
+    handPropId: "smartphone",
+    handSide: "rightHand",
+    headPropId: "studio-headphones",
+    stagePropId: "rooftop-safety-railing",
+    sfxStampId: "ssaa",
+    toonShaderId: "illumination-rim",
+    actingArc: "arc-thriller-shock",
+    fxLinesKind: "speed-diagonal",
+    dialogueLines: [
+      "방과 후 옥상 난간, 발신자 미상의 음성 파일.",
+      "학생회 서버에서 지워진 기록을 네가 갖고 있었군.",
+      "이 녹음이 공개되면 학원 전체가 뒤집힐 거야.",
+      "해가 지기 전에 선택해, 공범이 될지 증인이 될지.",
+    ],
+    dialogueByLocale: {
+      ko: [
+        "방과 후 옥상 난간, 발신자 미상의 음성 파일.",
+        "학생회 서버에서 지워진 기록을 네가 갖고 있었군.",
+        "이 녹음이 공개되면 학원 전체가 뒤집힐 거야.",
+        "해가 지기 전에 선택해, 공범이 될지 증인이 될지.",
+      ],
+      en: [
+        "Sunset on the roof, an unsigned audio file.",
+        "So you kept the record erased from the council.",
+        "If this recording leaks, the academy falls.",
+        "Choose before sundown: accomplice or witness.",
+      ],
+      ja: [
+        "放課後の屋上フェンス、差出人不明の音声。",
+        "生徒会サーバーから消えた記録を持っていたのね。",
+        "この録音が公開されれば学園中が覆るわ。",
+        "日が沈む前に選んで、共犯か証人か。",
+      ],
+    },
+    bubbleShapes: ["monologue-box", "oval", "shout-burst", "whisper-dashed"],
+    bubbleFontScales: ["md", "md", "lg", "sm"],
+    sfxStamps: ["ssaa", "none", "dugeun", "beonjjeok"],
+    speakerTargets: ["protagonist", "partner", "protagonist", "partner"],
+    cutCameraPresets: ["low-full", "duo-wide", "dutch-left-bust", "front-face"],
+    duoCasting: {
+      partnerId: "shaper-academy-council",
+      side: "right",
+      distanceKey: "talk",
+      stance: "arms-crossed",
+      expression: "stern-glare",
+      partnerHandPropId: "smartphone",
     },
   },
 ]);
@@ -215,6 +359,7 @@ export function resolveDirectorShadingProfile(current: ShadingProfile, toonShade
 
 export interface StripDirectorState {
   readonly activeDirectorId: WebtoonSceneDirectorPresetId | "";
+  readonly locale: WebtoonDialogueLocale;
   readonly actingArc: WebtoonStripActingArcId;
   readonly bakeStripFx: boolean;
   readonly stripFxLines: WebtoonStripFxLinesKind;
@@ -223,6 +368,7 @@ export interface StripDirectorState {
   readonly bubbleFontScales: WebtoonStripBubbleFontScales;
   readonly sfxStamps: WebtoonStripSfxStamps;
   readonly speakerTargets: WebtoonStripSpeakerTargets;
+  readonly cutCameraPresets: WebtoonStripCutCameraPresets;
   readonly partnerSide: DuoPartnerSide;
   readonly includePsdMangaFx: boolean;
 }
@@ -230,17 +376,20 @@ export interface StripDirectorState {
 export interface StripDirectorSession {
   getState(): StripDirectorState;
   update(patch: Partial<StripDirectorState>): void;
+  setLocale(locale: WebtoonDialogueLocale): void;
   setDialogueLine(cutIndex: 0 | 1 | 2 | 3, text: string): void;
   setBubbleShape(cutIndex: 0 | 1 | 2 | 3, shape: WebtoonStripBubbleShape): void;
   setBubbleFontScale(cutIndex: 0 | 1 | 2 | 3, scale: WebtoonStripBubbleFontScale): void;
   setSfxStamp(cutIndex: 0 | 1 | 2 | 3, stamp: WebtoonSfxStampOption): void;
   setSpeakerTarget(cutIndex: 0 | 1 | 2 | 3, target: WebtoonStripSpeakerTarget): void;
+  setCutCameraPreset(cutIndex: 0 | 1 | 2 | 3, presetId: WebtoonStripCutCameraPresetId): void;
   reset(): void;
   subscribe(listener: () => void): () => void;
 }
 
 export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   activeDirectorId: "",
+  locale: "ko",
   actingArc: "none",
   bakeStripFx: false,
   stripFxLines: "focus-radial",
@@ -249,9 +398,14 @@ export const INITIAL_STRIP_DIRECTOR_STATE: StripDirectorState = Object.freeze({
   bubbleFontScales: DEFAULT_WEBTOON_STRIP_BUBBLE_FONT_SCALES,
   sfxStamps: DEFAULT_WEBTOON_STRIP_SFX_STAMPS,
   speakerTargets: DEFAULT_WEBTOON_STRIP_SPEAKER_TARGETS,
+  cutCameraPresets: DEFAULT_WEBTOON_STRIP_CUT_CAMERA_PRESETS,
   partnerSide: "right",
   includePsdMangaFx: false,
 });
+
+function linesEqual(a: WebtoonStripDialogueLines, b: WebtoonStripDialogueLines): boolean {
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
+}
 
 export function createStripDirectorSession(initial: Partial<StripDirectorState> = {}): StripDirectorSession {
   let state: StripDirectorState = { ...INITIAL_STRIP_DIRECTOR_STATE, ...initial };
@@ -263,6 +417,20 @@ export function createStripDirectorSession(initial: Partial<StripDirectorState> 
     getState: () => state,
     update(patch) {
       state = { ...state, ...patch };
+      notify();
+    },
+    setLocale(nextLocale) {
+      const activePreset = state.activeDirectorId ? findWebtoonSceneDirectorPreset(state.activeDirectorId) : null;
+      const matchesPreset = activePreset
+        ? linesEqual(state.dialogueLines, activePreset.dialogueByLocale[state.locale])
+        : false;
+      const matchesDefault = linesEqual(state.dialogueLines, DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE[state.locale]);
+      const nextLines = matchesPreset && activePreset
+        ? activePreset.dialogueByLocale[nextLocale]
+        : matchesDefault
+          ? DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE[nextLocale]
+          : state.dialogueLines;
+      state = { ...state, locale: nextLocale, dialogueLines: nextLines };
       notify();
     },
     setDialogueLine(cutIndex, text) {
@@ -320,6 +488,17 @@ export function createStripDirectorSession(initial: Partial<StripDirectorState> 
       state = { ...state, speakerTargets: next };
       notify();
     },
+    setCutCameraPreset(cutIndex, presetId) {
+      const next: [WebtoonStripCutCameraPresetId, WebtoonStripCutCameraPresetId, WebtoonStripCutCameraPresetId, WebtoonStripCutCameraPresetId] = [
+        state.cutCameraPresets[0],
+        state.cutCameraPresets[1],
+        state.cutCameraPresets[2],
+        state.cutCameraPresets[3],
+      ];
+      next[cutIndex] = presetId;
+      state = { ...state, cutCameraPresets: next };
+      notify();
+    },
     reset() {
       state = INITIAL_STRIP_DIRECTOR_STATE;
       notify();
@@ -369,7 +548,7 @@ export function ViewportSceneDirectorControls({
         title={
           activeSpec
             ? `${activeSpec.labelKo}: ${activeSpec.summaryKo}`
-            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·말풍선 모양/강조·효과음 스탬프를 한 번에 세팅합니다"
+            : "손 소품·머리 액세서리·배경 스테이지·툰 조명·4컷 연기 시퀀스·카메라 구도·다국어 대사를 한 번에 세팅합니다"
         }
         onChange={(event) => onSelectDirector(event.target.value as WebtoonSceneDirectorPresetId | "")}
       >

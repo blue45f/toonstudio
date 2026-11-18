@@ -198,6 +198,20 @@ export const WEBTOON_HEAD_PROPS: readonly WebtoonHeadPropSpec[] = Object.freeze(
     glbUrl: "/assets/props/webtoon-head-props-v1/pearl-earrings-pin.glb",
     sha256: "90e889c9c6a533f0fb1f3638b3bf137e6e0ab22f84469d77abf70c83d4073eaf",
   },
+  {
+    id: "studio-headphones",
+    labelKo: "청춘 무선 네크 헤드폰",
+    genreHintKo: "학원·청춘·아이돌 옥상 황혼 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/studio-headphones.glb",
+    sha256: "5eba8a11dcaf7f6948e8e532e89d371757431ac55b3ab54b5d44bc42dbebcb3e",
+  },
+  {
+    id: "silver-monocle",
+    labelKo: "괴도·집사 실버 체인 모노클",
+    genreHintKo: "로판·느와르·추리 귀족 클로즈업 연출",
+    glbUrl: "/assets/props/webtoon-head-props-v1/silver-monocle.glb",
+    sha256: "ffb96d9b4c590822fc46a9988b7f6b5d05e54fc1a6cd471d514f7fdcbd51f14b",
+  },
 ]);
 
 export const WEBTOON_STAGE_PROPS: readonly WebtoonStagePropSpec[] = Object.freeze([
@@ -281,6 +295,24 @@ export const WEBTOON_SFX_STAMPS: readonly WebtoonSfxStampSpec[] = Object.freeze(
     accentHex: "#ffe076",
     glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-pat.glb",
     sha256: "5986d529a9b8955d8d59e75b6085e25e19f67b7e7034dfa65ba6f735f78fc898",
+  },
+  {
+    id: "ssaa",
+    glyphKo: "싸아",
+    labelKo: "싸아 (정적·서늘한 밤바람 효과음)",
+    genreHintKo: "옥상 독대·스릴러·느와르 냉기 컷",
+    accentHex: "#93c5fd",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-ssaa.glb",
+    sha256: "8f3ca315f1ae0f5a3ae4a389c6cdc5ce30b93ff2b9e0efad490fd5c7642662df",
+  },
+  {
+    id: "beonjjeok",
+    glyphKo: "번쩍",
+    labelKo: "번쩍 (각성·진실 섬광 효과음)",
+    genreHintKo: "판타지·무협·추리 단서 포착 컷",
+    accentHex: "#facc15",
+    glbUrl: "/assets/props/webtoon-sfx-stamps-v1/sfx-beonjjeok.glb",
+    sha256: "f5627e459a8a7c8587e97ec7f243491e8cbd8ffaf08afc7c552011897b01107a",
   },
 ]);
 

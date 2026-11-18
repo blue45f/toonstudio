@@ -855,6 +855,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
 
     const preset = findWebtoonSceneDirectorPreset(presetId);
     if (!preset) return;
+    const currentLocale = stripDirector.getState().locale;
     setHandPropId(preset.handPropId);
     setHandPropSide(preset.handSide);
     setHeadPropId(preset.headPropId);
@@ -865,11 +866,12 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
-      dialogueLines: preset.dialogueLines,
+      dialogueLines: preset.dialogueByLocale[currentLocale],
       bubbleShapes: preset.bubbleShapes,
       bubbleFontScales: preset.bubbleFontScales,
       sfxStamps: preset.sfxStamps,
       speakerTargets: preset.speakerTargets,
+      cutCameraPresets: preset.cutCameraPresets,
       partnerSide: duoShot.enabled ? duoShot.side : preset.duoCasting.side,
     });
 

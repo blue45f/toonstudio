@@ -164,7 +164,14 @@ export interface HandPropAttachment {
   readonly sha256?: string;
 }
 
-export const HEAD_PROP_IDS = ["wire-glasses", "rofan-tiara", "tactical-headset", "pearl-earrings-pin"] as const;
+export const HEAD_PROP_IDS = [
+  "wire-glasses",
+  "rofan-tiara",
+  "tactical-headset",
+  "pearl-earrings-pin",
+  "studio-headphones",
+  "silver-monocle",
+] as const;
 export type HeadPropId = (typeof HEAD_PROP_IDS)[number];
 
 export interface HeadPropAttachment {
@@ -189,7 +196,7 @@ export interface StagePropAttachment {
   readonly sha256?: string;
 }
 
-export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat"] as const;
+export const SFX_STAMP_IDS = ["seureung", "dugeun", "kugugung", "pat", "ssaa", "beonjjeok"] as const;
 export type SfxStampId = (typeof SFX_STAMP_IDS)[number];
 
 export interface SfxStampAttachment {

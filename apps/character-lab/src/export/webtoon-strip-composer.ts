@@ -1,9 +1,10 @@
 /**
- * 한국형 세로 스크롤 웹툰 4컷 콘티 스트립(등장 로우앵글 · 대화 반측면 · 감정 클로즈업 · 여운 하이앵글)
- * 원고 여백·먹선 테두리·말풍선 상단 안전 여백, 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김),
- * 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준, 컷별 한국어 식자 폰트 강조 배율(소형·표준·강조),
- * 컷별 오노마토페 효과음 스탬프(스릉·두근·쿠구궁·팟), 레이어 PSD 만화 연출 투명 분리 레이어 빌더,
- * 및 1~4컷 개별 표정·시선·고개 연기 키프레임 스냅샷 시퀀스 합성 모듈.
+ * 한국형·글로벌(KO/EN/JA) 세로 스크롤 웹툰 4컷 콘티 스트립 합성 모듈:
+ * - 다국어(한국어·영어·일본어) 로컬라이징 모드에 따른 말풍선 가로세로 종횡비(rx·ry) 자동 스케일링 및 언어별 줄바꿈·폰트 스택·효과음 번역
+ * - 1~4컷 개별 카메라 구도(로우·하이·와이드 투샷) 및 더치 틸트(Dutch Tilt ±9° 쌍선형 알파 보간 회전) 디렉터
+ * - 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준
+ * - 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김), 식자 폰트 배율, 오노마토페 효과음 스탬프(6종)
+ * - 레이어 PSD 만화 연출 투명 분리 레이어 빌더 및 4컷 연기 키프레임 스냅샷 시퀀스
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
@@ -40,14 +41,84 @@ export interface WebtoonStripCutSpec {
   readonly yawDeg: number;
   readonly pitchDeg: number;
   readonly distanceScale: number;
+  readonly dutchTiltDeg?: number;
 }
 
 export const WEBTOON_VERTICAL_STRIP_CUTS: readonly WebtoonStripCutSpec[] = Object.freeze([
-  { id: "intro-low", labelKo: "1컷 · 등장 전신 로우앵글", mode: "full-body", yawDeg: 0, pitchDeg: -14, distanceScale: 1 },
-  { id: "dialogue-side", labelKo: "2컷 · 대화 상반신 반측면", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1 },
-  { id: "emotion-face", labelKo: "3컷 · 감정 클로즈업 정면", mode: "face", yawDeg: -10, pitchDeg: 0, distanceScale: 1 },
-  { id: "linger-high", labelKo: "4컷 · 여운 상반신 하이앵글", mode: "bust", yawDeg: -26, pitchDeg: 18, distanceScale: 1 },
+  { id: "intro-low", labelKo: "1컷 · 등장 전신 로우앵글", mode: "full-body", yawDeg: 0, pitchDeg: -14, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "dialogue-side", labelKo: "2컷 · 대화 상반신 반측면", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "emotion-face", labelKo: "3컷 · 감정 클로즈업 정면", mode: "face", yawDeg: -10, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  { id: "linger-high", labelKo: "4컷 · 여운 상반신 하이앵글", mode: "bust", yawDeg: -26, pitchDeg: 18, distanceScale: 1, dutchTiltDeg: 0 },
 ]);
+
+export type WebtoonStripCutCameraPresetId =
+  | "default"
+  | "low-full"
+  | "side-bust"
+  | "front-face"
+  | "high-bust"
+  | "dutch-left-bust"
+  | "dutch-right-face"
+  | "duo-wide";
+
+export interface WebtoonCutCameraPresetSpec {
+  readonly id: WebtoonStripCutCameraPresetId;
+  readonly labelKo: string;
+  readonly mode?: Exclude<CameraFramingMode, "custom">;
+  readonly yawDeg?: number;
+  readonly pitchDeg?: number;
+  readonly distanceScale?: number;
+  readonly dutchTiltDeg: number;
+}
+
+export const WEBTOON_CUT_CAMERA_PRESETS: Readonly<Record<WebtoonStripCutCameraPresetId, WebtoonCutCameraPresetSpec>> = Object.freeze({
+  default: { id: "default", labelKo: "컷 기본 앵글", dutchTiltDeg: 0 },
+  "low-full": { id: "low-full", labelKo: "전신 로우앵글 (-16°)", mode: "full-body", yawDeg: 0, pitchDeg: -16, distanceScale: 1, dutchTiltDeg: 0 },
+  "side-bust": { id: "side-bust", labelKo: "대화 반측면 (28°)", mode: "bust", yawDeg: 28, pitchDeg: 0, distanceScale: 1, dutchTiltDeg: 0 },
+  "front-face": { id: "front-face", labelKo: "감정 클로즈업 (정면)", mode: "face", yawDeg: -8, pitchDeg: 0, distanceScale: 0.96, dutchTiltDeg: 0 },
+  "high-bust": { id: "high-bust", labelKo: "여운 하이앵글 (+20°)", mode: "bust", yawDeg: -24, pitchDeg: 20, distanceScale: 1.04, dutchTiltDeg: 0 },
+  "dutch-left-bust": { id: "dutch-left-bust", labelKo: "스릴러 더치 틸트 (-9°)", mode: "bust", yawDeg: 18, pitchDeg: -8, distanceScale: 0.96, dutchTiltDeg: -9 },
+  "dutch-right-face": { id: "dutch-right-face", labelKo: "역동 더치 클로즈업 (+9°)", mode: "face", yawDeg: -14, pitchDeg: -6, distanceScale: 0.94, dutchTiltDeg: 9 },
+  "duo-wide": { id: "duo-wide", labelKo: "투샷 와이드 대치 (1.25×)", mode: "full-body", yawDeg: 12, pitchDeg: -6, distanceScale: 1.25, dutchTiltDeg: 0 },
+});
+
+export type WebtoonStripCutCameraPresets = readonly [
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+  WebtoonStripCutCameraPresetId,
+];
+
+export const DEFAULT_WEBTOON_STRIP_CUT_CAMERA_PRESETS: WebtoonStripCutCameraPresets = Object.freeze([
+  "default",
+  "default",
+  "default",
+  "default",
+]) as WebtoonStripCutCameraPresets;
+
+export function resolveWebtoonCutCameraSpec(cutIndex: number, presetId: WebtoonStripCutCameraPresetId = "default"): WebtoonStripCutSpec {
+  const base = WEBTOON_VERTICAL_STRIP_CUTS[cutIndex] ?? WEBTOON_VERTICAL_STRIP_CUTS[0]!;
+  if (presetId === "default") return base;
+  const preset = WEBTOON_CUT_CAMERA_PRESETS[presetId] ?? WEBTOON_CUT_CAMERA_PRESETS.default;
+  return {
+    id: `${base.id}-${preset.id}`,
+    labelKo: `${cutIndex + 1}컷 · ${preset.labelKo}`,
+    mode: preset.mode ?? base.mode,
+    yawDeg: preset.yawDeg ?? base.yawDeg,
+    pitchDeg: preset.pitchDeg ?? base.pitchDeg,
+    distanceScale: preset.distanceScale ?? base.distanceScale,
+    dutchTiltDeg: preset.dutchTiltDeg,
+  };
+}
+
+export const WEBTOON_DIALOGUE_LOCALES = ["ko", "en", "ja"] as const;
+export type WebtoonDialogueLocale = (typeof WEBTOON_DIALOGUE_LOCALES)[number];
+
+export const WEBTOON_DIALOGUE_LOCALE_LABELS: Readonly<Record<WebtoonDialogueLocale, string>> = Object.freeze({
+  ko: "한국어 (KO · 표준 타원)",
+  en: "English (EN · 와이드 가로형)",
+  ja: "日本語 (JA · 세로 확장형)",
+});
 
 export type WebtoonStripFxLinesKind = "none" | "focus-radial" | "speed-diagonal" | "romance-sparkle";
 export type WebtoonStripBubbleShape = "oval" | "shout-burst" | "monologue-box" | "whisper-dashed" | "none";
@@ -87,6 +158,22 @@ export const DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES: WebtoonStripDialogueLines = O
   "지금 이 순간을 전부 기억해.",
   "끝까지 함께 가자.",
 ]) as WebtoonStripDialogueLines;
+
+export const DEFAULT_WEBTOON_STRIP_DIALOGUE_BY_LOCALE: Readonly<Record<WebtoonDialogueLocale, WebtoonStripDialogueLines>> = Object.freeze({
+  ko: DEFAULT_WEBTOON_STRIP_DIALOGUE_LINES,
+  en: Object.freeze([
+    "From here on, this is my turf.",
+    "I was waiting to hear you say that.",
+    "Remember every second of this moment.",
+    "Let's see this through together.",
+  ]) as WebtoonStripDialogueLines,
+  ja: Object.freeze([
+    "ここからは私の領域よ。",
+    "その言葉をずっと待っていた。",
+    "この瞬間をすべて刻み込んで。",
+    "最後まで一緒に行こう。",
+  ]) as WebtoonStripDialogueLines,
+});
 
 export const DEFAULT_WEBTOON_STRIP_BUBBLE_SHAPES: WebtoonStripBubbleShapes = Object.freeze([
   "oval",
@@ -136,12 +223,53 @@ export const WEBTOON_STRIP_SPEAKER_LABELS_KO: Readonly<Record<WebtoonStripSpeake
   partner: "상대역 발화",
 });
 
-export const WEBTOON_SFX_STAMP_KO_TEXT: Readonly<Record<SfxStampId, { readonly glyphKo: string; readonly tiltDeg: number; readonly accentRgb: readonly [number, number, number]; readonly inkRgb: readonly [number, number, number] }>> = Object.freeze({
-  seureung: { glyphKo: "스릉", tiltDeg: -11, accentRgb: [92, 232, 242], inkRgb: [18, 22, 34] },
-  dugeun: { glyphKo: "두근", tiltDeg: 8, accentRgb: [244, 134, 168], inkRgb: [42, 18, 28] },
-  kugugung: { glyphKo: "쿠구궁", tiltDeg: -7, accentRgb: [240, 184, 86], inkRgb: [24, 19, 18] },
-  pat: { glyphKo: "팟", tiltDeg: 10, accentRgb: [255, 224, 118], inkRgb: [24, 21, 28] },
+export interface LocalizedSfxStampSpec {
+  readonly glyphKo: string;
+  readonly glyphEn: string;
+  readonly glyphJa: string;
+  readonly tiltDeg: number;
+  readonly accentRgb: readonly [number, number, number];
+  readonly inkRgb: readonly [number, number, number];
+}
+
+export const WEBTOON_SFX_STAMP_KO_TEXT: Readonly<Record<SfxStampId, LocalizedSfxStampSpec>> = Object.freeze({
+  seureung: { glyphKo: "스릉", glyphEn: "SHING", glyphJa: "スッ", tiltDeg: -11, accentRgb: [92, 232, 242], inkRgb: [18, 22, 34] },
+  dugeun: { glyphKo: "두근", glyphEn: "THUMP", glyphJa: "ドキッ", tiltDeg: 8, accentRgb: [244, 134, 168], inkRgb: [42, 18, 28] },
+  kugugung: { glyphKo: "쿠구궁", glyphEn: "RUMBLE", glyphJa: "ゴゴゴ", tiltDeg: -7, accentRgb: [240, 184, 86], inkRgb: [24, 19, 18] },
+  pat: { glyphKo: "팟", glyphEn: "FLASH", glyphJa: "パッ", tiltDeg: 10, accentRgb: [255, 224, 118], inkRgb: [24, 21, 28] },
+  ssaa: { glyphKo: "싸아", glyphEn: "SHHH", glyphJa: "ザァァ", tiltDeg: -6, accentRgb: [147, 197, 253], inkRgb: [20, 28, 42] },
+  beonjjeok: { glyphKo: "번쩍", glyphEn: "ZAP", glyphJa: "ビカッ", tiltDeg: 12, accentRgb: [250, 204, 21], inkRgb: [36, 18, 54] },
 });
+
+export function resolveSfxGlyphByLocale(stamp: SfxStampId, locale: WebtoonDialogueLocale = "ko"): string {
+  const spec = WEBTOON_SFX_STAMP_KO_TEXT[stamp];
+  if (locale === "en") return spec.glyphEn;
+  if (locale === "ja") return spec.glyphJa;
+  return spec.glyphKo;
+}
+
+export interface LocalizedBubbleAspect {
+  readonly scaleX: number;
+  readonly scaleY: number;
+}
+
+/** 다국어(KO/EN/JA) 식자 특성과 글자 길이에 맞춰 말풍선 가로·세로 반경 배율을 자동 산출한다. */
+export function resolveLocalizedBubbleAspect(
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
+): LocalizedBubbleAspect {
+  const len = (dialogueText ?? "").trim().length;
+  if (locale === "en") {
+    const extraW = len > 24 ? Math.min(0.1, (len - 24) * 0.005) : 0;
+    return { scaleX: Number((1.18 + extraW).toFixed(3)), scaleY: 0.94 };
+  }
+  if (locale === "ja") {
+    const extraH = len > 14 ? Math.min(0.1, (len - 14) * 0.006) : 0;
+    return { scaleX: 0.86, scaleY: Number((1.18 + extraH).toFixed(3)) };
+  }
+  const extraKoW = len > 18 ? Math.min(0.08, (len - 18) * 0.004) : 0;
+  return { scaleX: Number((1 + extraKoW).toFixed(3)), scaleY: 1 };
+}
 
 export interface SpeakerBubblePlacement {
   readonly placeRight: boolean;
@@ -184,13 +312,15 @@ export interface WebtoonStripMangaFxOptions {
   readonly linesKind?: WebtoonStripFxLinesKind;
   readonly includeSpeechBubbles?: boolean;
   readonly intensity?: number;
-  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 한국어 대사 4줄 */
+  /** 다국어 식자 및 말풍선 가로세로 비율 로컬라이징 모드(기본 `ko`) */
+  readonly locale?: WebtoonDialogueLocale;
+  /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 대사 4줄 */
   readonly dialogueLines?: WebtoonStripDialogueLines;
   /** 1~4컷 개별 말풍선 모양(미지정 시 4컷 모두 기본 타원 `oval`) */
   readonly bubbleShapes?: WebtoonStripBubbleShapes;
-  /** 1~4컷 개별 한국어 대사 폰트 강조 배율(미지정 시 `md`) */
+  /** 1~4컷 개별 대사 폰트 강조 배율(미지정 시 `md`) */
   readonly bubbleFontScales?: WebtoonStripBubbleFontScales;
-  /** 1~4컷 개별 한국어 효과음(오노마토페) 스탬프(미지정 시 `none`) */
+  /** 1~4컷 개별 오노마토페 효과음 스탬프(미지정 시 `none`) */
   readonly sfxStamps?: WebtoonStripSfxStamps;
   /** 1~4컷 발화자 지정(주연 발화·상대역 발화·자동 교차) */
   readonly speakerTargets?: WebtoonStripSpeakerTargets;
@@ -217,6 +347,8 @@ export interface ExportWebtoonVerticalStripOptions {
   readonly includeBubbleSafeZone?: boolean;
   /** 말풍선 풍선 프레임과 집중선·속도선·반짝이·효과음 스탬프를 PNG 래스터에 직접 베이킹할지 여부(선택) */
   readonly mangaFx?: WebtoonStripMangaFxOptions;
+  /** 1~4컷 개별 카메라 구도 및 더치 틸트 프리셋(선택, 미지정 시 기본 4컷 구도) */
+  readonly cutCameraPresets?: WebtoonStripCutCameraPresets;
   /** 1~4컷마다 서로 다른 표정·시선·고개 연기가 이어지는 4컷 서사 키프레임 옵션(선택, 캡처 후 basePlan 자동 복원) */
   readonly actingArc?: {
     readonly arcId: Exclude<WebtoonStripActingArcId, "none">;
@@ -236,6 +368,62 @@ function toFailure(code: string, reasonKo: string, error: unknown, now: number):
 function deterministicHash01(index: number, seed: number): number {
   const raw = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;
   return raw - Math.floor(raw);
+}
+
+/** 더치 틸트(Dutch Angle) 연출을 위해 투명 배경 RGBA 패널을 중심 기준으로 쌍선형(bilinear) 회전한다. */
+export function rotateRasterBilinear(
+  source: CapturedRaster,
+  angleDeg: number,
+  zoomScale = 1.06,
+): CapturedRaster {
+  if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.05) return source;
+  const { width, height } = source;
+  const out = new Uint8ClampedArray(width * height * 4);
+  const rad = (-angleDeg * Math.PI) / 180;
+  const cosA = Math.cos(rad) / Math.max(0.5, zoomScale);
+  const sinA = Math.sin(rad) / Math.max(0.5, zoomScale);
+  const cx = (width - 1) * 0.5;
+  const cy = (height - 1) * 0.5;
+  const src = source.rgba;
+
+  for (let y = 0; y < height; y += 1) {
+    const dy = y - cy;
+    for (let x = 0; x < width; x += 1) {
+      const dx = x - cx;
+      const sx = cx + dx * cosA - dy * sinA;
+      const sy = cy + dx * sinA + dy * cosA;
+      if (sx < 0 || sx > width - 1 || sy < 0 || sy > height - 1) continue;
+      const x0 = Math.floor(sx);
+      const y0 = Math.floor(sy);
+      const x1 = Math.min(width - 1, x0 + 1);
+      const y1 = Math.min(height - 1, y0 + 1);
+      const fx = sx - x0;
+      const fy = sy - y0;
+      const w00 = (1 - fx) * (1 - fy);
+      const w10 = fx * (1 - fy);
+      const w01 = (1 - fx) * fy;
+      const w11 = fx * fy;
+
+      const i00 = (y0 * width + x0) * 4;
+      const i10 = (y0 * width + x1) * 4;
+      const i01 = (y1 * width + x0) * 4;
+      const i11 = (y1 * width + x1) * 4;
+
+      const a00 = (src[i00 + 3] ?? 0) * w00;
+      const a10 = (src[i10 + 3] ?? 0) * w10;
+      const a01 = (src[i01 + 3] ?? 0) * w01;
+      const a11 = (src[i11 + 3] ?? 0) * w11;
+      const aSum = a00 + a10 + a01 + a11;
+      if (aSum <= 0.5) continue;
+
+      const dst = (y * width + x) * 4;
+      out[dst] = Math.round(((src[i00] ?? 0) * a00 + (src[i10] ?? 0) * a10 + (src[i01] ?? 0) * a01 + (src[i11] ?? 0) * a11) / aSum);
+      out[dst + 1] = Math.round(((src[i00 + 1] ?? 0) * a00 + (src[i10 + 1] ?? 0) * a10 + (src[i01 + 1] ?? 0) * a01 + (src[i11 + 1] ?? 0) * a11) / aSum);
+      out[dst + 2] = Math.round(((src[i00 + 2] ?? 0) * a00 + (src[i10 + 2] ?? 0) * a10 + (src[i01 + 2] ?? 0) * a01 + (src[i11 + 2] ?? 0) * a11) / aSum);
+      out[dst + 3] = Math.round(aSum);
+    }
+  }
+  return { width, height, rgba: out };
 }
 
 export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSafeZone = true): WebtoonStripLayout {
@@ -442,9 +630,33 @@ function bakePanelActionLines(
   }
 }
 
-function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | null] {
+export function splitLocalizedBubbleDialogue(
+  rawText: string,
+  locale: WebtoonDialogueLocale = "ko",
+): readonly [string, string | null] {
   const cleaned = rawText.trim();
   if (!cleaned) return ["", null];
+
+  if (locale === "en") {
+    if (cleaned.length <= 20) return [cleaned, null];
+    const mid = Math.ceil(cleaned.length / 2);
+    const leftSpace = cleaned.lastIndexOf(" ", mid + 4);
+    const rightSpace = cleaned.indexOf(" ", Math.max(0, mid - 4));
+    const splitAt = leftSpace >= 5 ? leftSpace : rightSpace > 4 ? rightSpace : mid;
+    return [cleaned.slice(0, splitAt).trim(), cleaned.slice(splitAt).trim()];
+  }
+
+  if (locale === "ja") {
+    const chars = Array.from(cleaned);
+    if (chars.length <= 10) return [cleaned, null];
+    let mid = Math.ceil(chars.length / 2);
+    const kinsoku = new Set(["。", "、", "！", "？", "…", "ー", "っ", "ゃ", "ゅ", "ょ"]);
+    if (mid < chars.length - 1 && kinsoku.has(chars[mid] ?? "")) {
+      mid += 1;
+    }
+    return [chars.slice(0, mid).join(""), chars.slice(mid).join("")];
+  }
+
   if (cleaned.length <= 13) return [cleaned, null];
   const mid = Math.ceil(cleaned.length / 2);
   const spaceIdx = cleaned.lastIndexOf(" ", mid + 3);
@@ -452,6 +664,12 @@ function splitKoreanBubbleDialogue(rawText: string): readonly [string, string | 
     return [cleaned.slice(0, spaceIdx).trim(), cleaned.slice(spaceIdx + 1).trim()];
   }
   return [cleaned.slice(0, mid), cleaned.slice(mid)];
+}
+
+function resolveFontStackByLocale(locale: WebtoonDialogueLocale): string {
+  if (locale === "en") return `"Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  if (locale === "ja") return `"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif`;
+  return `"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
 }
 
 function resolveFontScaleMultiplier(fontScale: WebtoonStripBubbleFontScale): { readonly mul: number; readonly weight: number } {
@@ -466,6 +684,7 @@ function tryRasterizeDialogueCanvas2d(
   line1: string,
   line2: string | null,
   fontScale: WebtoonStripBubbleFontScale,
+  locale: WebtoonDialogueLocale = "ko",
 ): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
   if (typeof document === "undefined" || boxWidth < 12 || boxHeight < 8) return null;
   try {
@@ -480,11 +699,12 @@ function tryRasterizeDialogueCanvas2d(
     ctx.clearRect(0, 0, w, h);
     const { mul, weight } = resolveFontScaleMultiplier(fontScale);
     const maxChars = Math.max(line1.length, line2 ? line2.length : 0, 6);
-    const fitByWidth = Math.floor((w * 0.86) / Math.max(4, maxChars * 0.9));
+    const charWidthRatio = locale === "en" ? 0.56 : 0.9;
+    const fitByWidth = Math.floor((w * 0.86) / Math.max(4, maxChars * charWidthRatio));
     const fitByHeight = Math.floor(h * (line2 ? 0.3 : 0.44));
     const basePx = Math.min(fitByWidth, fitByHeight);
     const fontPx = Math.max(9, Math.min(Math.floor(h * (line2 ? 0.42 : 0.64)), Math.round(basePx * mul)));
-    ctx.font = `${weight} ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    ctx.font = `${weight} ${fontPx}px ${resolveFontStackByLocale(locale)}`;
     ctx.fillStyle = "#18151C";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -550,7 +770,7 @@ function bakeDeterministicDialogueGlyphs(
       const gmx = (gx0 + gx1) * 0.5;
       const gmy = (gy0 + gy1) * 0.5;
 
-      if (ch === "." || ch === "," || ch === "…") {
+      if (ch === "." || ch === "," || ch === "…" || ch === "。" || ch === "、") {
         blendPixelRgba(rgba, canvasWidth, Math.round(gmx), Math.round(gy1), clipX0, clipY0, clipX1, clipY1, ir, ig, ib, 0.92);
         return;
       }
@@ -578,10 +798,19 @@ function bakeDeterministicDialogueGlyphs(
             drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0 + stroke, gmy + stroke, gx0 + stroke, gy1, stroke, ir, ig, ib, 0.85);
           }
         }
+      } else if (code >= 0x3040 && code <= 0x9fff) {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, ir, ig, ib, 0.9);
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, ir, ig, ib, 0.88);
+        if (code % 2 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gmy, gx1, gmy, stroke, ir, ig, ib, 0.86);
+        }
       } else {
-        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gmx, gy0, gmx, gy1, stroke, ir, ig, ib, 0.9);
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx0, gy1, stroke, ir, ig, ib, 0.9);
         if (code % 2 === 0) {
           drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, ir, ig, ib, 0.85);
+        }
+        if (code % 3 === 0) {
+          drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gmy, gx1, gmy, stroke, ir, ig, ib, 0.85);
         }
       }
     });
@@ -594,12 +823,21 @@ function computeSpeechBubbleMetrics(
   innerWidth: number,
   innerHeight: number,
   placement: SpeakerBubblePlacement,
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
 ) {
-  const rx = Math.max(8, Math.round(innerWidth * 0.21));
-  const ry = Math.max(5, Math.round(innerHeight * 0.092));
-  const cx = innerX + Math.round(innerWidth * placement.centerXRatio);
-  const cy = innerY + Math.round(ry * 1.32);
   const border = Math.max(1, Math.round(innerWidth * 0.0042));
+  const aspect = resolveLocalizedBubbleAspect(locale, dialogueText);
+  const rawRx = Math.max(8, Math.round(innerWidth * 0.21 * aspect.scaleX));
+  const rawRy = Math.max(5, Math.round(innerHeight * 0.092 * aspect.scaleY));
+  const safePadX = border + 4;
+  const rx = Math.min(rawRx, Math.max(8, Math.floor(innerWidth * 0.44) - safePadX));
+  const ry = Math.min(rawRy, Math.max(5, Math.floor(innerHeight * 0.24)));
+  const rawCx = innerX + Math.round(innerWidth * placement.centerXRatio);
+  const minCx = innerX + rx + safePadX;
+  const maxCx = innerX + innerWidth - rx - safePadX;
+  const cx = minCx <= maxCx ? Math.min(maxCx, Math.max(minCx, rawCx)) : innerX + Math.round(innerWidth * 0.5);
+  const cy = innerY + Math.round(ry * 1.28);
   return { rx, ry, cx, cy, border };
 }
 
@@ -612,11 +850,13 @@ function bakeSpeechBubbleFrame(
   innerHeight: number,
   placement: SpeakerBubblePlacement,
   shape: WebtoonStripBubbleShape = "oval",
+  locale: WebtoonDialogueLocale = "ko",
+  dialogueText?: string,
 ): void {
   if (shape === "none") return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement);
+  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
 
   if (shape === "monologue-box") {
     const x0 = Math.max(innerX, cx - rx - border);
@@ -647,8 +887,8 @@ function bakeSpeechBubbleFrame(
       }
     }
   } else if (shape === "shout-burst") {
-    const padX = Math.ceil(rx * 1.28 + border + 1);
-    const padY = Math.ceil(ry * 1.28 + border + 1);
+    const padX = Math.ceil(rx * 1.24 + border + 1);
+    const padY = Math.ceil(ry * 1.24 + border + 1);
     const x0 = Math.max(innerX, cx - padX);
     const x1 = Math.min(clipX1 - 1, cx + padX);
     const y0 = Math.max(innerY, cy - padY);
@@ -755,15 +995,16 @@ function bakeSpeechBubbleDialogueText(
   dialogueText: string | undefined,
   shape: WebtoonStripBubbleShape = "oval",
   fontScale: WebtoonStripBubbleFontScale = "md",
+  locale: WebtoonDialogueLocale = "ko",
 ): void {
   if (shape === "none" || !dialogueText || dialogueText.trim().length === 0) return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement);
-  const [line1, line2] = splitKoreanBubbleDialogue(dialogueText);
+  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
+  const [line1, line2] = splitLocalizedBubbleDialogue(dialogueText, locale);
   const boxW = Math.max(8, Math.round(rx * 1.66));
   const boxH = Math.max(6, Math.round(ry * 1.44));
-  const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale);
+  const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale, locale);
   if (raster) {
     const dstLeft = Math.round(cx - boxW * 0.5);
     const dstTop = Math.round(cy - boxH * 0.5);
@@ -800,19 +1041,21 @@ function bakeSpeechBubbleBalloon(
   dialogueText?: string,
   shape: WebtoonStripBubbleShape = "oval",
   fontScale: WebtoonStripBubbleFontScale = "md",
+  locale: WebtoonDialogueLocale = "ko",
 ): void {
   if (shape === "none") return;
-  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape);
-  bakeSpeechBubbleDialogueText(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, dialogueText, shape, fontScale);
+  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape, locale, dialogueText);
+  bakeSpeechBubbleDialogueText(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, dialogueText, shape, fontScale, locale);
 }
 
 function tryRasterizeSfxCanvas2d(
   boxWidth: number,
   boxHeight: number,
-  glyphKo: string,
+  glyphText: string,
   tiltDeg: number,
   accentRgb: readonly [number, number, number],
   inkRgb: readonly [number, number, number],
+  locale: WebtoonDialogueLocale = "ko",
 ): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
   if (typeof document === "undefined" || boxWidth < 14 || boxHeight < 10) return null;
   try {
@@ -828,19 +1071,20 @@ function tryRasterizeSfxCanvas2d(
     ctx.save();
     ctx.translate(w * 0.5, h * 0.5);
     ctx.rotate((tiltDeg * Math.PI) / 180);
-    const fontPx = Math.max(12, Math.min(Math.floor(h * 0.58), Math.floor((w * 0.78) / Math.max(1.4, glyphKo.length * 0.92))));
-    ctx.font = `800 ${fontPx}px "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+    const widthFactor = locale === "en" ? 0.62 : 0.92;
+    const fontPx = Math.max(12, Math.min(Math.floor(h * 0.58), Math.floor((w * 0.82) / Math.max(1.4, glyphText.length * widthFactor))));
+    ctx.font = `800 ${fontPx}px ${resolveFontStackByLocale(locale)}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.lineWidth = Math.max(3, Math.round(fontPx * 0.24));
     ctx.strokeStyle = "#FFFDF8";
-    ctx.strokeText(glyphKo, 0, 0);
+    ctx.strokeText(glyphText, 0, 0);
     ctx.lineWidth = Math.max(2, Math.round(fontPx * 0.12));
     ctx.strokeStyle = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
-    ctx.strokeText(glyphKo, 0, 0);
+    ctx.strokeText(glyphText, 0, 0);
     ctx.fillStyle = `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`;
-    ctx.fillText(glyphKo, 0, 0);
+    ctx.fillText(glyphText, 0, 0);
     ctx.restore();
     const img = ctx.getImageData(0, 0, w, h);
     let hasPixels = false;
@@ -865,9 +1109,11 @@ function bakePanelSfxStamp(
   innerHeight: number,
   placeRight: boolean,
   stamp: WebtoonSfxStampOption,
+  locale: WebtoonDialogueLocale = "ko",
 ): void {
   if (stamp === "none") return;
   const spec = WEBTOON_SFX_STAMP_KO_TEXT[stamp];
+  const glyphText = resolveSfxGlyphByLocale(stamp, locale);
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
   const cx = placeRight ? innerX + Math.round(innerWidth * 0.76) : innerX + Math.round(innerWidth * 0.24);
@@ -913,9 +1159,9 @@ function bakePanelSfxStamp(
     0.92,
   );
 
-  const boxW = Math.max(10, Math.round(rx * 1.9));
+  const boxW = Math.max(10, Math.round(rx * 1.95));
   const boxH = Math.max(8, Math.round(ry * 1.9));
-  const raster = tryRasterizeSfxCanvas2d(boxW, boxH, spec.glyphKo, spec.tiltDeg, spec.accentRgb, spec.inkRgb);
+  const raster = tryRasterizeSfxCanvas2d(boxW, boxH, glyphText, spec.tiltDeg, spec.accentRgb, spec.inkRgb, locale);
   if (raster) {
     const dstLeft = Math.round(cx - boxW * 0.5);
     const dstTop = Math.round(cy - boxH * 0.5);
@@ -957,8 +1203,8 @@ function bakePanelSfxStamp(
       }
     }
   } else {
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx + 1, cy + 1, rx, ry, spec.glyphKo, null, "lg", [255, 253, 248]);
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, spec.glyphKo, null, "lg", [ir, ig, ib]);
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx + 1, cy + 1, rx, ry, glyphText, null, "lg", [255, 253, 248]);
+    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, glyphText, null, "lg", [ir, ig, ib]);
   }
 }
 
@@ -984,6 +1230,8 @@ export function renderTransparentSpeechBubbleFrameLayer(
     readonly shape?: WebtoonStripBubbleShape;
     readonly speakerTarget?: WebtoonStripSpeakerTarget;
     readonly partnerSide?: "left" | "right";
+    readonly locale?: WebtoonDialogueLocale;
+    readonly dialogueText?: string;
     readonly cutIndex?: number;
   } = {},
 ): CapturedRaster {
@@ -993,7 +1241,18 @@ export function renderTransparentSpeechBubbleFrameLayer(
     options.speakerTarget ?? "auto",
     options.partnerSide ?? "right",
   );
-  bakeSpeechBubbleFrame(rgba, width, 0, 0, width, height, placement, options.shape ?? "oval");
+  bakeSpeechBubbleFrame(
+    rgba,
+    width,
+    0,
+    0,
+    width,
+    height,
+    placement,
+    options.shape ?? "oval",
+    options.locale ?? "ko",
+    options.dialogueText,
+  );
   return { width, height, rgba };
 }
 
@@ -1006,6 +1265,7 @@ export function renderTransparentDialogueTextLayer(
     readonly fontScale?: WebtoonStripBubbleFontScale;
     readonly speakerTarget?: WebtoonStripSpeakerTarget;
     readonly partnerSide?: "left" | "right";
+    readonly locale?: WebtoonDialogueLocale;
     readonly cutIndex?: number;
   } = {},
 ): CapturedRaster {
@@ -1026,6 +1286,7 @@ export function renderTransparentDialogueTextLayer(
     options.dialogueText,
     options.shape ?? "oval",
     options.fontScale ?? "md",
+    options.locale ?? "ko",
   );
   return { width, height, rgba };
 }
@@ -1037,6 +1298,7 @@ export function renderTransparentSfxStampLayer(
     readonly stamp?: WebtoonSfxStampOption;
     readonly speakerTarget?: WebtoonStripSpeakerTarget;
     readonly partnerSide?: "left" | "right";
+    readonly locale?: WebtoonDialogueLocale;
     readonly cutIndex?: number;
   } = {},
 ): CapturedRaster {
@@ -1046,7 +1308,17 @@ export function renderTransparentSfxStampLayer(
     options.speakerTarget ?? "auto",
     options.partnerSide ?? "right",
   );
-  bakePanelSfxStamp(rgba, width, 0, 0, width, height, !placement.placeRight, options.stamp ?? "none");
+  bakePanelSfxStamp(
+    rgba,
+    width,
+    0,
+    0,
+    width,
+    height,
+    !placement.placeRight,
+    options.stamp ?? "none",
+    options.locale ?? "ko",
+  );
   return { width, height, rgba };
 }
 
@@ -1094,6 +1366,7 @@ export function composeWebtoonVerticalStrip(
   const fxIncludeBubbles = fxEnabled && mangaFx?.includeSpeechBubbles !== false;
   const fxIntensity = Math.min(1, Math.max(0.2, Number.isFinite(mangaFx?.intensity) ? (mangaFx?.intensity ?? 0.75) : 0.75));
   const partnerSide: "left" | "right" = mangaFx?.partnerSide ?? "right";
+  const locale: WebtoonDialogueLocale = mangaFx?.locale ?? "ko";
 
   for (let idx = 0; idx < panels.length; idx += 1) {
     const panel = panels[idx];
@@ -1172,13 +1445,14 @@ export function composeWebtoonVerticalStrip(
         cutDialogue,
         cutShape,
         cutFontScale,
+        locale,
       );
     }
 
     if (fxEnabled) {
       const cutSfx: WebtoonSfxStampOption = mangaFx?.sfxStamps?.[idx] ?? "none";
       if (cutSfx !== "none") {
-        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !placement.placeRight, cutSfx);
+        bakePanelSfxStamp(out, layout.stripWidth, innerX, innerY, layout.cutWidth, innerHeight, !placement.placeRight, cutSfx, locale);
       }
     }
   }
@@ -1223,8 +1497,8 @@ export async function exportWebtoonVerticalStripPng(
 
   try {
     for (let idx = 0; idx < WEBTOON_VERTICAL_STRIP_CUTS.length; idx += 1) {
-      const cut = WEBTOON_VERTICAL_STRIP_CUTS[idx];
-      if (!cut) continue;
+      const cutPresetId = options.cutCameraPresets?.[idx] ?? "default";
+      const cut = resolveWebtoonCutCameraSpec(idx, cutPresetId);
       const keyframe = resolvedArc?.cuts[idx];
       const stepLabel = keyframe ? `${cut.labelKo} (${keyframe.beatKo})` : cut.labelKo;
       options.onProgress?.(idx + 1, WEBTOON_VERTICAL_STRIP_CUTS.length, stepLabel);
@@ -1268,7 +1542,8 @@ export async function exportWebtoonVerticalStripPng(
         if (!lit) {
           return { ok: false, failure: failVisible("export-missing-lit", `${cut.labelKo} 캡처에 lit 패스가 없습니다.`, undefined, started) };
         }
-        panels.push(lit);
+        const finalPanel = cut.dutchTiltDeg ? rotateRasterBilinear(lit, cut.dutchTiltDeg) : lit;
+        panels.push(finalPanel);
         lastProvenance = captured.provenance;
       } catch (error) {
         return { ok: false, failure: toFailure("export-capture", `웹툰 4컷 스트립(${cut.labelKo}) 캡처에 실패했습니다.`, error, started) };
@@ -1294,7 +1569,11 @@ export async function exportWebtoonVerticalStripPng(
     const baseName = exportFileName("png", lastProvenance.recipeDigest, composed.width, composed.height);
     const actingTag = resolvedArc ? "-acting" : "";
     const fxTag = options.mangaFx?.enabled ? "-fx" : "";
-    const suffix = `-webtoon-4cut${actingTag}${fxTag}-strip.png`;
+    const localeTag =
+      options.mangaFx?.enabled && options.mangaFx.locale && options.mangaFx.locale !== "ko"
+        ? `-${options.mangaFx.locale}`
+        : "";
+    const suffix = `-webtoon-4cut${actingTag}${fxTag}${localeTag}-strip.png`;
     const fileName = baseName.replace(/\.png$/u, suffix);
     return {
       ok: true,

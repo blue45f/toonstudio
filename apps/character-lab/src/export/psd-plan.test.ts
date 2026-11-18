@@ -426,7 +426,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(result.plan.receipt.lineArtPixels).toBeGreaterThan(0);
   });
 
-  it("mangaFx.enabled=true일 때 캐릭터 recomposeMae 무결성을 유지하면서 최상단에 웹툰 만화 연출 4종 투명 레이어 그룹을 추가한다", () => {
+  it("mangaFx.enabled=true일 때 다국어(KO/EN/JA) 말풍선 종횡비를 반영하고 캐릭터 recomposeMae 무결성을 유지하면서 최상단에 웹툰 만화 연출 4종 투명 레이어 그룹을 추가한다", () => {
     const capture = captureResultFixture({
       width: 128,
       height: 128,
@@ -441,17 +441,34 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
       includeReferencePasses: false,
       mangaFx: {
         enabled: true,
+        locale: "en",
         linesKind: "focus-radial",
         bubbleShape: "oval",
-        dialogueText: "황실의 검과 왕관을 거둔다.",
+        dialogueText: "Sunset on the roof, an unsigned audio file.",
         fontScale: "lg",
         speakerTarget: "protagonist",
         partnerSide: "right",
-        sfxStamp: "seureung",
+        sfxStamp: "ssaa",
         intensity: 0.8,
       },
     });
-    if (!baseResult.ok || !fxResult.ok) throw new Error("PSD 만화 연출 계획 실패");
+    const jaResult = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+      mangaFx: {
+        enabled: true,
+        locale: "ja",
+        linesKind: "focus-radial",
+        bubbleShape: "oval",
+        dialogueText: "放課後の屋上フェンス、差出人不明の音声。",
+        fontScale: "md",
+        speakerTarget: "protagonist",
+        partnerSide: "right",
+        sfxStamp: "beonjjeok",
+        intensity: 0.8,
+      },
+    });
+    if (!baseResult.ok || !fxResult.ok || !jaResult.ok) throw new Error("PSD 만화 연출 계획 실패");
 
     expect(fxResult.plan.receipt.recomposeMae).toBe(baseResult.plan.receipt.recomposeMae);
     expect(fxResult.plan.receipt.groupCount).toBe(baseResult.plan.receipt.groupCount + 1);
@@ -468,6 +485,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(fxGroup?.kind === "group" && fxGroup.opened).toBe(true);
     expect(fxGroup?.kind === "group" && fxGroup.hidden).toBe(false);
     const bubbleLayer = rasterLayer(fxResult.plan.layers, "말풍선 프레임");
+    const jaBubbleLayer = rasterLayer(jaResult.plan.layers, "말풍선 프레임");
     const dialogueLayer = rasterLayer(fxResult.plan.layers, "대사 식자");
     const sfxLayer = rasterLayer(fxResult.plan.layers, "효과음 스탬프");
     expect(bubbleLayer.hidden).toBe(false);
@@ -475,6 +493,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(sfxLayer.hidden).toBe(false);
     expect(pixelAt(bubbleLayer.raster, 64, 120)[3]).toBe(0);
     expect(pixelAt(dialogueLayer.raster, 64, 120)[3]).toBe(0);
+    expect(Array.from(bubbleLayer.raster.rgba)).not.toEqual(Array.from(jaBubbleLayer.raster.rgba));
   });
 });
 

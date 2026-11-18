@@ -72,8 +72,26 @@ describe("Studio BG3D professional runtime readiness", () => {
       authorityId: "bg3d:document-a",
       entityCount: 1,
       primaryRenderer: "three-webgpu",
+      maxTextureDimension2d: 8192,
+      deviceMemoryGiB: 8,
+      gpuBudgetStatus: "optimal",
     });
     expect(result.summary.enabledPassCount).toBeGreaterThanOrEqual(8);
+  });
+
+  it("flags constrained GPU memory/texture budgets without mutating scene ownership", () => {
+    const lowMemCaps = deriveStudioBg3dProfessionalDeviceCapabilities({
+      enginePlan: WEBGPU_PLAN,
+      webGpuProbe: WEBGPU_PROBE,
+      deviceSignals: { deviceMemoryGb: 4 },
+      maxTextureDimension2d: 4096,
+    });
+    const result = readiness({ capabilities: lowMemCaps });
+    expect(result.summary).toMatchObject({
+      maxTextureDimension2d: 4096,
+      deviceMemoryGiB: 4,
+      gpuBudgetStatus: "constrained",
+    });
   });
 
   it("fails closed while preserving the canonical authority receipt when the renderer is unavailable", () => {
@@ -91,6 +109,7 @@ describe("Studio BG3D professional runtime readiness", () => {
       editorReady: false,
       productionReady: false,
     });
+    expect(result.summary.gpuBudgetStatus).toBe("unknown");
     expect(result.authority?.sourceHash).toMatch(/^sha256:[a-f0-9]{64}$/u);
     expect(result.recovery).toMatchObject({
       action: "offer-explicit-webgl2-switch",
