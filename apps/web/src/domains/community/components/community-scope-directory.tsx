@@ -49,45 +49,45 @@ export function CommunityScopeDirectory({ scope }: { scope: DirectoryScope }) {
 
   return (
     <section aria-label={`${COMMUNITY_SCOPE_LABEL[scope]} 대화 목록`} className="space-y-5">
-      <form onSubmit={submit} role="search" aria-label="커뮤니티 이름 검색" className="flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-panel/60 p-4 sm:p-5">
+      <form onSubmit={submit} role="search" aria-label="커뮤니티 이름 검색" className="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-panel/45 p-4">
         <div className="min-w-0 flex-1 basis-52">
-          <label htmlFor={searchId} className="mb-2 block text-xs font-semibold text-fg-2">{COMMUNITY_SCOPE_LABEL[scope]} 이름 검색</label>
+          <label htmlFor={searchId} className="mb-1.5 block text-xs font-medium text-fg-2">{COMMUNITY_SCOPE_LABEL[scope]} 이름 검색</label>
           <input id={searchId} key={`${scope}:${query}`} name="q" type="search" maxLength={120} defaultValue={query}
-            placeholder="이름을 입력하세요" className="min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent" />
+            placeholder="이름을 입력하세요" className="min-h-11 w-full rounded-lg border border-line bg-canvas px-3 text-sm text-fg focus-visible:outline-2 focus-visible:outline-accent" />
         </div>
-        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-4 text-sm font-semibold text-on-accent"><Search size={16} aria-hidden="true" />검색</button>
+        <button type="submit" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-medium text-on-accent"><Search size={16} aria-hidden="true" />검색</button>
         <div>
-          <label htmlFor={sortId} className="mb-2 block text-xs font-semibold text-fg-2">정렬</label>
-          <select id={sortId} value={sort} onChange={(event) => update("sort", event.target.value)} className="min-h-11 rounded-xl border border-line bg-canvas px-3 text-sm text-fg">
+          <label htmlFor={sortId} className="mb-1.5 block text-xs font-medium text-fg-2">정렬</label>
+          <select id={sortId} value={sort} onChange={(event) => update("sort", event.target.value)} className="min-h-11 rounded-lg border border-line bg-canvas px-3 text-sm text-fg">
             {COMMUNITY_SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </div>
-        {query && <button type="button" onClick={() => update("q", "")} className="min-h-11 rounded-xl border border-line px-4 text-sm text-fg-2">검색 지우기</button>}
+        {query && <button type="button" onClick={() => update("q", "")} className="min-h-11 rounded-lg border border-line px-4 text-sm text-fg-2">검색 지우기</button>}
       </form>
 
       {error || notFound || malformed ? <ErrorState title={communityStatusText("community.status.scope.loadFailed", "커뮤니티 목록을 불러오지 못했습니다.")}
         message={communityStatusText("community.status.scope.loadFailedMessage", "잠시 후 다시 시도해 주세요. 통합 커뮤니티와 작품 탐색은 아래 링크로 계속 이용할 수 있습니다.")} onRetry={reload} />
-        : loading ? <div role="status" className="space-y-3"><span className="sr-only">대화가 있는 커뮤니티를 찾고 있습니다…</span><div aria-hidden="true" className="space-y-3"><div className="skeleton h-20 rounded-2xl" /><div className="skeleton h-20 rounded-2xl" /><div className="skeleton h-20 rounded-2xl" /></div></div>
+        : loading ? <div role="status" className="space-y-3"><span className="sr-only">대화가 있는 커뮤니티를 찾고 있습니다…</span><div aria-hidden="true" className="space-y-3"><div className="skeleton h-20 rounded-xl" /><div className="skeleton h-20 rounded-xl" /><div className="skeleton h-20 rounded-xl" /></div></div>
           : boards.length ? <>
-            <p role="status" className="text-xs leading-relaxed text-fg-2">대화가 있는 {COMMUNITY_SCOPE_LABEL[scope]} {boards.length}개 · 최대 60개를 표시합니다. 이름으로 검색해 더 좁혀보세요.</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <p role="status" className="text-xs leading-relaxed tabular-nums text-fg-2">대화가 있는 {COMMUNITY_SCOPE_LABEL[scope]} {boards.length}개 · 최대 60개를 표시합니다. 이름으로 검색해 더 좁혀보세요.</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-ink-stagger>
               {boards.map((board) => <Link key={`${board.scope}:${board.targetId}`} href={getCommunityScopeTargetLink(board.scope, board.targetId, board.targetLabel)}
-                className="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel/60 transition-colors hover:border-accent hover:bg-card focus-visible:outline-2 focus-visible:outline-accent">
+                className="ink-frame group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-card/80 transition-colors duration-150 hover:bg-card focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none">
                 <TypographicCover title={board.targetLabel} seed={`${board.scope}:${board.targetId}`} eyebrow={COMMUNITY_SCOPE_LABEL[scope]} className="h-20 w-full shrink-0" />
-                <span className="flex min-w-0 flex-1 items-center gap-4 p-5">
-                  <MessageCircle size={21} aria-hidden="true" className="shrink-0 text-accent" />
-                  <span className="min-w-0 flex-1"><strong className="block break-words text-sm text-fg">{board.targetLabel}</strong><span className="mt-2 block text-xs text-fg-2">작품과 대화 살펴보기</span></span>
-                  <ArrowRight size={17} aria-hidden="true" className="shrink-0 text-fg-3 group-hover:text-accent" />
+                <span className="flex min-w-0 flex-1 items-center gap-3.5 p-4">
+                  <MessageCircle size={18} aria-hidden="true" className="shrink-0 text-fg-2" />
+                  <span className="min-w-0 flex-1"><strong className="block break-words text-sm font-semibold text-fg">{board.targetLabel}</strong><span className="mt-1 block text-xs text-fg-2">작품과 대화 살펴보기</span></span>
+                  <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-accent motion-reduce:transition-none" />
                 </span>
               </Link>)}
             </div>
-          </> : <div className="rounded-2xl border border-dashed border-line-strong bg-panel/40 p-8 text-center">
-            <h2 className="text-lg font-semibold text-fg">{query ? communityStatusText("community.status.scope.searchEmpty", "검색한 이름의 대화가 아직 없어요") : communityStatusText("community.status.scope.empty", "아직 등록된 대화가 없어요")}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-fg-2">{query ? "다른 이름으로 검색하거나 관심 있는 작품과 작가를 찾아보세요." : "관심 있는 작품과 작가의 페이지에서 첫 이야기를 시작해 보세요."}</p>
+          </> : <div className="rounded-xl border border-dashed border-line bg-panel/35 p-8 text-center">
+            <h2 className="text-base font-semibold text-fg">{query ? communityStatusText("community.status.scope.searchEmpty", "검색한 이름의 대화가 아직 없어요") : communityStatusText("community.status.scope.empty", "아직 등록된 대화가 없어요")}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-fg-2">{query ? "다른 이름으로 검색하거나 관심 있는 작품과 작가를 찾아보세요." : "관심 있는 작품과 작가의 페이지에서 첫 이야기를 시작해 보세요."}</p>
           </div>}
       <nav aria-label="커뮤니티 탐색 이어가기" className="flex flex-wrap gap-3">
-        <Link href={destination.href} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line px-4 text-sm font-semibold text-accent">{destination.label}<ArrowRight size={15} aria-hidden="true" /></Link>
-        <Link href="/community" className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm text-fg-2">통합 커뮤니티로 돌아가기</Link>
+        <Link href={destination.href} className="ink-arrow inline-flex min-h-11 items-center gap-2 rounded-lg border border-line px-4 text-sm font-medium text-accent hover:bg-raised">{destination.label}<ArrowRight size={15} aria-hidden="true" /></Link>
+        <Link href="/community" className="inline-flex min-h-11 items-center rounded-lg px-4 text-sm text-fg-2 hover:text-fg">통합 커뮤니티로 돌아가기</Link>
       </nav>
     </section>
   );

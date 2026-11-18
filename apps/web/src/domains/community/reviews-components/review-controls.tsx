@@ -23,13 +23,13 @@ const RATINGS: ReadonlyArray<{ readonly value: ReviewRatingFilter; readonly labe
   { value: "low", label: ["저평점 ~3★", "3★ and below"] },
 ];
 
-// 세그먼트 안의 버튼은 줄바꿈하지 않는다 — 좁은 화면에서는 바깥 레일이 가로로 스크롤된다.
-const SEGMENT_GROUP = "inline-flex w-max shrink-0 items-center gap-0.5 rounded-full border border-line bg-panel p-1";
-const SEGMENT_BUTTON = "min-h-11 shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70";
+// 동심원 반경: 바깥 10px 패딩 4px -> 안쪽 8px. 좁은 화면에서는 바깥 레일이 가로 스크롤된다.
+const SEGMENT_GROUP = "inline-flex w-max shrink-0 items-center gap-0.5 rounded-[10px] border border-line bg-panel p-1";
+const SEGMENT_BUTTON = "min-h-11 shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none";
 
 /**
  * 리뷰 정렬·평점·스포일러 컨트롤 — 다른 검색 조건을 보존한 채 주소를 갱신한다.
- * 한 번에 하나만 고르는 세그먼트는 `aria-pressed` 토글 버튼 묶음으로 알린다(탭 패널이 없으므로 tab 역할을 쓰지 않는다).
+ * 한 번에 하나만 고르는 세그먼트는 `aria-pressed` 토글 버튼 묶음으로 알린다.
  */
 export function ReviewControls() {
   const bt = useBilingual("ReviewControls");
@@ -60,7 +60,11 @@ export function ReviewControls() {
               type="button"
               aria-pressed={active}
               onClick={() => setParam("sort", option.value === "recent" ? null : option.value)}
-              className={cn(SEGMENT_BUTTON, "text-sm", active ? "bg-accent text-on-accent" : "text-fg-2 hover:text-fg")}
+              className={cn(
+                SEGMENT_BUTTON,
+                "text-[0.8125rem]",
+                active ? "bg-raised font-semibold text-fg" : "text-fg-3 hover:text-fg",
+              )}
             >
               {bt(...option.label)}
             </button>
@@ -77,7 +81,7 @@ export function ReviewControls() {
               type="button"
               aria-pressed={active}
               onClick={() => setParam("rating", option.value === "all" ? null : option.value)}
-              className={cn(SEGMENT_BUTTON, "px-3 text-[0.8rem]", active ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2")}
+              className={cn(SEGMENT_BUTTON, active ? "bg-raised font-semibold text-fg" : "text-fg-3 hover:text-fg-2")}
             >
               {bt(...option.label)}
             </button>
@@ -90,9 +94,9 @@ export function ReviewControls() {
         aria-pressed={spoilerHidden}
         onClick={() => setParam("spoiler", spoilerHidden ? null : "hide")}
         className={cn(
-          "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[0.8rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70",
+          "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 motion-reduce:transition-none",
           spoilerHidden
-            ? "border-accent/50 bg-accent-soft text-accent"
+            ? "border-accent/55 bg-accent-soft text-accent"
             : "border-line bg-panel text-fg-3 hover:text-fg-2",
         )}
       >
@@ -100,13 +104,12 @@ export function ReviewControls() {
         {bt("스포일러 숨기기", "Hide spoilers")}
       </button>
 
-      {/* 악성 댓글 방벽 (REPORT O-5): 원본 피드 대신 분류·집계한 반응 요약만 보는 모드. */}
       <div role="group" aria-label={bt("보기 방식", "View mode")} className={SEGMENT_GROUP}>
         <button
           type="button"
           aria-pressed={!summaryView}
           onClick={() => setParam("view", null)}
-          className={cn(SEGMENT_BUTTON, "px-3 text-[0.8rem]", !summaryView ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2")}
+          className={cn(SEGMENT_BUTTON, !summaryView ? "bg-raised font-semibold text-fg" : "text-fg-3 hover:text-fg-2")}
         >
           {bt("원본 피드", "Original feed")}
         </button>
@@ -114,7 +117,7 @@ export function ReviewControls() {
           type="button"
           aria-pressed={summaryView}
           onClick={() => setParam("view", "summary")}
-          className={cn(SEGMENT_BUTTON, "px-3 text-[0.8rem]", summaryView ? "bg-raised text-fg" : "text-fg-3 hover:text-fg-2")}
+          className={cn(SEGMENT_BUTTON, summaryView ? "bg-raised font-semibold text-fg" : "text-fg-3 hover:text-fg-2")}
         >
           {bt("반응 요약", "Reaction summary")}
         </button>

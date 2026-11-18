@@ -426,7 +426,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(result.plan.receipt.lineArtPixels).toBeGreaterThan(0);
   });
 
-  it("mangaFx.enabled=true일 때 다국어(KO/EN/JA) 말풍선 종횡비를 반영하고 캐릭터 recomposeMae 무결성을 유지하면서 최상단에 웹툰 만화 연출 4종 투명 레이어 그룹을 추가한다", () => {
+  it("mangaFx.enabled=true일 때 다국어(KO/EN/JA)·할프톤 스크린톤 망점을 반영하고 캐릭터 recomposeMae 무결성을 유지하면서 최상단에 웹툰 만화 연출 5종 투명 레이어 그룹을 추가한다", () => {
     const capture = captureResultFixture({
       width: 128,
       height: 128,
@@ -458,6 +458,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
       mangaFx: {
         enabled: true,
         locale: "ja",
+        screentone: "classic-ink-45",
         linesKind: "focus-radial",
         bubbleShape: "oval",
         dialogueText: "放課後の屋上フェンス、差出人不明の音声。",
@@ -475,6 +476,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
         enabled: true,
         locale: "ja",
         jaWritingMode: "vertical-tategaki",
+        screentone: "cyan-noir-dots",
         linesKind: "focus-radial",
         bubbleShape: "oval",
         dialogueText: "放課後の屋上フェンス、差出人不明の音声。",
@@ -489,9 +491,10 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
 
     expect(fxResult.plan.receipt.recomposeMae).toBe(baseResult.plan.receipt.recomposeMae);
     expect(fxResult.plan.receipt.groupCount).toBe(baseResult.plan.receipt.groupCount + 1);
-    expect(fxResult.plan.receipt.layerCount).toBe(baseResult.plan.receipt.layerCount + 4);
-    expect(fxResult.plan.receipt.names.slice(-5)).toEqual([
+    expect(fxResult.plan.receipt.layerCount).toBe(baseResult.plan.receipt.layerCount + 5);
+    expect(fxResult.plan.receipt.names.slice(-6)).toEqual([
       "웹툰 만화 연출",
+      "웹툰 만화 연출/스크린톤 망점",
       "웹툰 만화 연출/효과선",
       "웹툰 만화 연출/말풍선 프레임",
       "웹툰 만화 연출/대사 식자",
@@ -501,6 +504,12 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     const fxGroup = fxResult.plan.layers.at(-1);
     expect(fxGroup?.kind === "group" && fxGroup.opened).toBe(true);
     expect(fxGroup?.kind === "group" && fxGroup.hidden).toBe(false);
+    const noneToneLayer = rasterLayer(fxResult.plan.layers, "스크린톤 망점");
+    const inkToneLayer = rasterLayer(jaResult.plan.layers, "스크린톤 망점");
+    expect(noneToneLayer.hidden).toBe(true);
+    expect(inkToneLayer.hidden).toBe(false);
+    expect(inkToneLayer.raster.rgba.some((v, idx) => idx % 4 === 3 && v > 0)).toBe(true);
+
     const bubbleLayer = rasterLayer(fxResult.plan.layers, "말풍선 프레임");
     const jaBubbleLayer = rasterLayer(jaResult.plan.layers, "말풍선 프레임");
     const jaTategakiBubbleLayer = rasterLayer(jaTategakiResult.plan.layers, "말풍선 프레임");

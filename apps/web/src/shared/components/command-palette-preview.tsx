@@ -29,7 +29,7 @@ export function CommandPalettePreview({
     return (
       <div className="flex h-full flex-col justify-between p-6 text-fg-3">
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+          <div className="flex items-center gap-2 text-xs font-medium text-accent">
             <Sparkles size={14} />
             <span>ToonStudio ⌘K 통합 팔레트</span>
           </div>
@@ -374,7 +374,7 @@ export function CommandPalettePreview({
     return (
       <div className="flex h-full flex-col justify-between p-5 text-fg">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent">
+          <div className="flex items-center gap-2 text-xs font-medium text-accent">
             <Sparkles size={14} />
             <span>최근 검색어</span>
           </div>

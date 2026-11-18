@@ -1,13 +1,105 @@
-/* 랭킹 페이지의 보조 설명과 다음 행동만 압축하고 공용 카드에는 영향을 주지 않는다. */
+/* 랭킹 페이지 전용 스타일 — 에디토리얼 상위 3편 무대, 스펙트럼 점수 막대, 보드 크롬 정리 */
+.ranking-page-heading-wrap {
+  min-width: 0;
+}
+
+/* 상위 3편 에디토리얼 포디움 */
+.ranking-top3-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.ranking-top3-card {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: stretch;
+  padding: 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background: var(--color-card);
+  transition: border-color 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)), background-color 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.ranking-top3-card:hover {
+  border-color: var(--color-line-strong);
+  background: var(--color-raised);
+}
+.ranking-top3-card--lead {
+  background: var(--color-panel);
+}
+.ranking-top3-cover {
+  min-width: 0;
+  align-self: start;
+}
+.ranking-top3-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.ranking-score-track {
+  position: relative;
+  height: 4px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--color-line) 75%, transparent);
+}
+.ranking-score-bar {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-fg-2);
+}
+.ranking-score-bar.is-lead {
+  background: var(--color-accent);
+}
+
+@media (min-width: 768px) {
+  .ranking-top3-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+@media (min-width: 1024px) {
+  .ranking-top3-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ranking-top3-card--lead {
+    grid-template-columns: 7.75rem minmax(0, 1fr);
+    gap: 1.125rem;
+    padding: 1rem;
+  }
+}
+
+/* 공유 RankingBoard 크롬의 과한 그림자·알약을 정돈한다. */
+.ranking-page-layout #ranking-board :is(button, select) {
+  border-radius: 0.5rem;
+  box-shadow: none;
+}
+.ranking-page-layout #ranking-board .group\/row {
+  border-radius: 0.75rem;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ranking-page-layout #ranking-board .group\/row {
+    animation: ink-cascade-in 360ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  }
+  .ranking-page-layout #ranking-board div:nth-child(2) > .group\/row { animation-delay: 35ms; }
+  .ranking-page-layout #ranking-board div:nth-child(3) > .group\/row { animation-delay: 70ms; }
+  .ranking-page-layout #ranking-board div:nth-child(4) > .group\/row { animation-delay: 105ms; }
+  .ranking-page-layout #ranking-board div:nth-child(5) > .group\/row { animation-delay: 140ms; }
+  .ranking-page-layout #ranking-board div:nth-child(6) > .group\/row { animation-delay: 175ms; }
+}
+
 .ranking-page-layout .ranking-page-support {
   margin-top: 0.75rem;
-  border-radius: 0.65rem;
+  border-radius: 0.75rem;
 }
 .ranking-page-layout .ranking-page-support > summary {
   gap: 0.5rem;
   min-height: 44px;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.65rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
 }
 .ranking-page-layout .ranking-page-support > summary > span:first-child {
   width: 1.25rem;
@@ -15,13 +107,15 @@
   border: 0;
   background: transparent;
 }
-.ranking-page-layout .ranking-page-support > summary strong { font-size: 0.8125rem; }
+.ranking-page-layout .ranking-page-support > summary strong { font-size: 0.8125rem; font-weight: 500; }
 .ranking-page-layout .ranking-page-support > summary strong + span { font-size: 0.75rem; }
 .ranking-page-next-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1.25rem;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-line);
 }
 .ranking-page-next-link {
   display: inline-flex;
@@ -32,7 +126,8 @@
   padding: 0.25rem;
   color: var(--color-fg-2);
   font-size: 0.8125rem;
-  border-radius: 0.4rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
 }
 .ranking-page-next-link > svg { flex-shrink: 0; }
 .ranking-page-next-link:hover { color: var(--color-accent); }
@@ -42,7 +137,7 @@
 }
 /* 밝은 테마에서도 보드의 기존 접기 제목이 배경색과 구분되도록 한다. */
 .ranking-page-layout #ranking-board summary { color: var(--color-fg); }
-/* 연결 오류도 시안처럼 간결하게 표시하되 안내 문구와 재시도 영역을 보존한다. */
+/* 연결 오류도 간결하게 표시하되 안내 문구와 재시도 영역을 보존한다. */
 .ranking-page-layout #ranking-board [data-slot="error-state"] {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
@@ -77,5 +172,12 @@
     grid-row: 1 / span 2;
     align-self: center;
     margin-top: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ranking-top3-card,
+  .ranking-page-layout #ranking-board .group\/row {
+    animation: none !important;
+    transition: none !important;
   }
 }

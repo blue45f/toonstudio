@@ -1,4 +1,4 @@
-/* 탐색의 검색·작품 무대만 소유한다. 공통 내비게이션과 작품 카드는 바꾸지 않는다. */
+/* 탐색 허브·홈 발견 미리보기 전용 스타일 — 표지와 아트워크가 색을 담고 크롬은 조용히 물러난다. */
 .discover-hub-hero,.discover-hub-intro,.discover-hub-header,.discover-hub-spotlight {
   min-width: 0;
 }
@@ -8,79 +8,147 @@
 }
 .discover-hub-title {
   margin: 0;
-  font-size: clamp(1.5rem,3.2vw,2.25rem);
-  line-height: 1.2;
-  letter-spacing: -.035em;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 .discover-hub-search {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 .discover-hub-search-form {
-  grid-template-columns: minmax(0,1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 .discover-hub-submit {
   min-width: 3rem;
-  padding-inline: .75rem;
+  border-radius: 0.625rem !important;
+  padding-inline: 0.875rem;
+  font-weight: 500;
 }
-.discover-hub-purpose-nav {
+
+/* 목적 탭 & 선반 주제 탭 — transform 기반 슬라이딩 잉크 밑줄 */
+.discover-hub-purpose-nav,
+.discover-shelf-tabs {
+  position: relative;
   display: flex;
-  gap: .75rem;
-  margin-top: .5rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
   border-bottom: 1px solid var(--color-line);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
-.discover-hub-purpose-nav a {
-  display: flex;
+.discover-hub-purpose-nav::-webkit-scrollbar,
+.discover-shelf-tabs::-webkit-scrollbar {
+  display: none;
+}
+.discover-shelf-tabs {
+  margin-top: 0;
+}
+.discover-hub-purpose-nav a,
+.discover-shelf-tab {
+  position: relative;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
   min-width: 3rem;
-  min-height: 3rem;
-  padding-inline: .5rem;
+  min-height: 2.75rem;
+  padding-inline: 0.625rem;
+  border: 0;
+  background: transparent;
   color: var(--color-fg-2);
-  font-size: .875rem;
+  font-size: 0.875rem;
+  font-weight: 400;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--ink-fast, 150ms) var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
-.discover-hub-purpose-nav [aria-current="page"] {
+.discover-hub-purpose-nav [aria-current="page"],
+.discover-shelf-tab.is-active {
   color: var(--color-fg);
-  box-shadow: inset 0 -3px var(--color-accent);
-  font-weight: 700;
+  font-weight: 500;
 }
-.discover-hub-purpose-nav a:hover {
+.discover-hub-purpose-nav:not([data-ink-ready="true"]) [aria-current="page"],
+.discover-shelf-tabs:not([data-ink-ready="true"]) .discover-shelf-tab.is-active {
+  box-shadow: inset 0 -2px var(--color-accent);
+}
+.discover-hub-purpose-nav a:hover,
+.discover-shelf-tab:hover {
+  color: var(--color-fg);
+}
+.discover-ink-indicator {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--color-accent);
+  pointer-events: none;
+  transform-origin: left center;
+  transform: translateX(var(--ink-x, 0px)) scaleX(var(--ink-w, 0));
+}
+:is(.discover-hub-purpose-nav, .discover-shelf-tabs)[data-ink-ready="true"] > .discover-ink-indicator {
+  transition: transform 240ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)), opacity 160ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+/* 구간 우측 출구(전체 보기 · 연재 캘린더 · 평점 랭킹 보기 등) — 알약 대신 조용한 화살표 텍스트 링크 */
+[data-site-experience] .route-stage[data-theme-contract="unified"] :is(.discover-hub-page, .discover-home-preview) [data-section-action],
+:is(.discover-hub-page, .discover-home-preview) [data-section-action] {
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  padding-inline: 0.5rem;
+  color: var(--color-fg-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: none;
+}
+[data-site-experience] .route-stage[data-theme-contract="unified"] :is(.discover-hub-page, .discover-home-preview) [data-section-action]:hover,
+:is(.discover-hub-page, .discover-home-preview) [data-section-action]:hover {
+  border-color: transparent;
+  background: var(--color-raised);
   color: var(--color-accent);
 }
+:is(.discover-hub-page, .discover-home-preview) [data-section-title] {
+  font-weight: 600;
+  word-break: keep-all;
+}
+
 .discover-hub-stories {
   display: grid;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
   align-items: start;
 }
 .discover-hub-stories:empty {
   display: none;
 }
 .discover-hub-shelves {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 .discover-hub-snapshot {
-  margin-top: .75rem;
+  margin-top: 0.75rem;
 }
-/* 표지는 실제 카탈로그 그대로 사용하고, 글자 뒤 명암만 테마 토큰으로 만든다. */
+
+/* 대표 작품 무대(Spotlight) — 16px 칸 패널 + 아트워크 광택 + 시점 전환 크로스페이드 */
 .discover-spotlight {
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   background: var(--color-panel);
 }
 .discover-spotlight-stage {
   position: relative;
   isolation: isolate;
-  min-height: 15.5rem;
+  min-height: 16rem;
   overflow: hidden;
 }
-.discover-spotlight-stage>.discover-spotlight-art {
+.discover-spotlight-stage > .discover-spotlight-art {
   position: absolute;
   inset: 0 0 0 auto;
   width: 72%;
@@ -88,15 +156,40 @@
   border: 0;
   border-radius: 0;
 }
+@media (prefers-reduced-motion: no-preference) {
+  .discover-spotlight-art-fade {
+    animation: discover-art-crossfade 360ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  }
+}
+@keyframes discover-art-crossfade {
+  from {
+    transform: scale(1.035);
+  }
+  to {
+    transform: none;
+  }
+}
 .discover-spotlight-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg,var(--color-canvas) 8%,color-mix(in oklch,var(--color-canvas) 95%,transparent) 34%,color-mix(in oklch,var(--color-canvas) 68%,transparent) 68%,color-mix(in oklch,var(--color-canvas) 14%,transparent));
+  background: linear-gradient(
+    90deg,
+    var(--color-canvas) 8%,
+    color-mix(in oklch, var(--color-canvas) 95%, transparent) 34%,
+    color-mix(in oklch, var(--color-canvas) 68%, transparent) 68%,
+    color-mix(in oklch, var(--color-canvas) 14%, transparent)
+  );
 }
 @media (max-width: 639px) {
   .discover-spotlight-scrim {
-    background: linear-gradient(90deg,var(--color-canvas) 16%,color-mix(in oklch,var(--color-canvas) 94%,transparent) 52%,color-mix(in oklch,var(--color-canvas) 76%,transparent) 82%,color-mix(in oklch,var(--color-canvas) 36%,transparent));
+    background: linear-gradient(
+      90deg,
+      var(--color-canvas) 16%,
+      color-mix(in oklch, var(--color-canvas) 94%, transparent) 52%,
+      color-mix(in oklch, var(--color-canvas) 76%, transparent) 82%,
+      color-mix(in oklch, var(--color-canvas) 36%, transparent)
+    );
   }
 }
 .discover-spotlight-copy {
@@ -105,49 +198,54 @@
   flex-direction: column;
   align-items: start;
   justify-content: center;
-  min-height: 15.5rem;
+  min-height: 16rem;
   padding: 1.25rem;
-  width: 77%;
-  max-width: 29rem;
+  width: 78%;
+  max-width: 30rem;
 }
 .discover-spotlight-topline {
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 .discover-spotlight-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
   color: var(--color-accent);
-  font-size: .75rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 .discover-spotlight-rating {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
   color: var(--color-fg-2);
-  font-size: .75rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 .discover-spotlight-copy h2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin: .5rem 0 0;
+  margin: 0.5rem 0 0;
   color: var(--color-fg);
-  font-size: clamp(1.5rem,3.3vw,2.375rem);
-  font-weight: 750;
+  font-size: clamp(1.5rem, 3.1vw, 2.25rem);
+  font-weight: 600;
   line-height: 1.18;
-  letter-spacing: -.035em;
+  letter-spacing: -0.025em;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 .discover-spotlight-meta {
   max-width: 100%;
   overflow: hidden;
-  margin-top: .5rem;
+  margin-top: 0.5rem;
   color: var(--color-fg-2);
-  font-size: .75rem;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -156,72 +254,114 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-top: .625rem;
+  margin-top: 0.625rem;
   color: var(--color-fg-2);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+.discover-spotlight-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 .discover-spotlight-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .5rem;
+  gap: 0.5rem;
   min-width: 3rem;
-  min-height: 3rem;
-  margin-top: 1rem;
-  padding: .625rem 1rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
   border: 1px solid transparent;
-  border-radius: .875rem;
+  border-radius: 0.5rem;
   background: var(--color-accent);
   color: var(--color-on-accent);
-  font-size: .875rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1)), transform 150ms var(--ink-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 .discover-spotlight-action:hover {
   background: var(--color-accent-2);
 }
+.discover-spotlight-action:active {
+  transform: scale(0.98);
+}
+.discover-spotlight-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.discover-spotlight-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding-inline: 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: color-mix(in oklch, var(--color-canvas) 78%, transparent);
+  color: var(--color-fg-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 150ms var(--ink-ease), color 150ms var(--ink-ease), background-color 150ms var(--ink-ease);
+}
+.discover-spotlight-switch-btn:hover {
+  border-color: var(--color-line-strong);
+  color: var(--color-fg);
+}
+.discover-spotlight-switch-btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
 .discover-spotlight-more {
   border-top: 1px solid var(--color-line);
 }
-.discover-spotlight-more>summary {
+.discover-spotlight-more > summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: .75rem;
-  min-height: 3rem;
-  padding: .625rem 1rem;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
   color: var(--color-fg-2);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
   list-style: none;
 }
-.discover-spotlight-more>summary::-webkit-details-marker {
+.discover-spotlight-more > summary::-webkit-details-marker {
   display: none;
 }
-.discover-spotlight-more[open]>summary>span {
+.discover-spotlight-more[open] > summary > span {
   transform: rotate(45deg);
 }
 .discover-spotlight-more-list {
   display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
-  gap: .75rem;
-  padding: .25rem 1rem 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.25rem 1rem 1rem;
 }
 .discover-spotlight-more-link {
   display: flex;
   align-items: center;
-  gap: .625rem;
+  gap: 0.625rem;
   min-width: 3rem;
   min-height: 3rem;
-  border-radius: .625rem;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
 }
 .discover-spotlight-loading {
   position: relative;
-  min-height: 15.5rem;
+  min-height: 16rem;
   overflow: hidden;
   border: 1px solid var(--color-line);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   background: var(--color-panel);
 }
 .discover-spotlight-loading-art {
@@ -234,34 +374,35 @@
   width: 75%;
   padding: 3rem 1.25rem;
 }
-/* 방문 기록은 가로 목록으로 유지한다. 진도나 저장 성공으로 표시하지 않는다. */
+
+/* 방문 기록 — 가로 목록으로 유지하며 진도로 오해시키지 않는다. */
 .discover-recent-shelf {
   min-width: 0;
   border: 1px solid var(--color-line);
-  border-radius: 1.125rem;
+  border-radius: 1rem;
   background: var(--color-card);
-  padding: .5rem .875rem .75rem;
+  padding: 0.625rem 1rem 0.875rem;
 }
 .discover-recent-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: .75rem;
+  gap: 0.75rem;
   min-width: 0;
 }
 .discover-recent-heading h2 {
   color: var(--color-fg);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
-.discover-recent-heading>a {
+.discover-recent-heading > a {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
   min-width: 3rem;
-  min-height: 3rem;
+  min-height: 2.75rem;
   color: var(--color-fg-2);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   white-space: nowrap;
 }
 .discover-recent-list {
@@ -269,11 +410,12 @@
   gap: 1rem;
   min-width: 0;
   overflow-x: auto;
-  padding: .25rem;
+  overscroll-behavior-x: contain;
+  padding: 0.25rem;
   scroll-snap-type: x proximity;
-  scroll-padding-inline: .25rem;
+  scroll-padding-inline: 0.25rem;
 }
-.discover-recent-list>li {
+.discover-recent-list > li {
   min-width: 0;
   flex: 0 0 100%;
   scroll-snap-align: start;
@@ -281,10 +423,11 @@
 .discover-recent-link {
   display: flex;
   align-items: center;
-  gap: .875rem;
+  gap: 0.875rem;
   min-width: 3rem;
-  min-height: 5.75rem;
-  border-radius: .75rem;
+  min-height: 5.5rem;
+  padding: 0.25rem;
+  border-radius: 0.625rem;
 }
 .discover-recent-art {
   display: block;
@@ -292,7 +435,7 @@
   overflow: hidden;
   width: 3.5rem;
   height: 4.625rem;
-  border-radius: .625rem;
+  border-radius: 0.5rem;
   background: var(--color-panel);
 }
 .discover-recent-fallback {
@@ -300,122 +443,137 @@
   place-items: center;
   width: 100%;
   height: 100%;
-  background: linear-gradient(150deg,color-mix(in oklch,var(--color-accent) 30%,var(--color-panel)),color-mix(in oklch,var(--color-cool,var(--color-accent-2)) 20%,var(--color-canvas)));
+  background: linear-gradient(
+    150deg,
+    color-mix(in oklch, var(--color-accent) 26%, var(--color-panel)),
+    color-mix(in oklch, var(--color-cool, var(--color-accent-2)) 16%, var(--color-canvas))
+  );
   color: var(--color-fg);
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 .discover-recent-copy {
   display: flex;
   min-width: 0;
   flex: 1;
   flex-direction: column;
-  gap: .375rem;
+  gap: 0.375rem;
 }
-.discover-recent-copy>strong {
+.discover-recent-copy > strong {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--color-fg);
-  font-size: 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
-.discover-recent-copy>span {
-  display: flex;
+.discover-recent-copy > span {
+  display: inline-flex;
   align-items: center;
-  gap: .375rem;
+  gap: 0.375rem;
   color: var(--color-accent);
-  font-size: .8125rem;
+  font-size: 0.8125rem;
 }
 .discover-recent-state {
-  padding: .5rem 0;
+  padding: 0.5rem 0;
   color: var(--color-fg-2);
-  font-size: .875rem;
+  font-size: 0.875rem;
   line-height: 1.6;
 }
-.discover-recent-state>button {
+.discover-recent-state > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 3rem;
-  min-height: 3rem;
-  margin-top: .5rem;
-  padding: .5rem 1rem;
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--color-line);
-  border-radius: .75rem;
+  border-radius: 0.5rem;
   background: var(--color-panel);
   color: var(--color-fg);
 }
 .discover-recent-loading {
   display: flex;
-  gap: .75rem;
-  padding: .5rem 0;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
 }
-.discover-recent-loading>span:first-child {
+.discover-recent-loading > span:first-child {
   width: 3.5rem;
   height: 4.625rem;
-  border-radius: .625rem;
+  border-radius: 0.5rem;
 }
-.discover-recent-loading>span:last-child {
+.discover-recent-loading > span:last-child {
   width: 60%;
   height: 1.25rem;
   margin-top: 1rem;
-  border-radius: .5rem;
+  border-radius: 0.5rem;
 }
-/* 모든 장르·출처·연재 방식은 이름 있는 보조 영역에서 다시 찾을 수 있다. */
+
+/* 장르·출처·연재 방식 보조 공개 */
 .discover-hub-quick-genres {
   display: flex;
   flex-wrap: wrap;
-  gap: .5rem;
+  gap: 0.5rem;
   min-width: 0;
-  padding: .5rem 0;
+  padding: 0.5rem 0;
 }
-.discover-hub-quick-genres a,.discover-hub-catalog a,.discover-hub-genres>summary,.discover-hub-catalog>summary {
+.discover-hub-quick-genres a,
+.discover-hub-catalog a,
+.discover-hub-genres > summary,
+.discover-hub-catalog > summary {
   min-width: 3rem;
-  min-height: 3rem;
-  font-size: .875rem;
+  min-height: 2.75rem;
+  font-size: 0.875rem;
 }
-.discover-hub-catalog,.discover-hub-genres {
-  margin-top: .5rem;
+.discover-hub-catalog,
+.discover-hub-genres {
+  margin-top: 0.5rem;
   color: var(--color-fg-2);
 }
-.discover-hub-catalog>summary,.discover-hub-genres>summary {
+.discover-hub-catalog > summary,
+.discover-hub-genres > summary {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
   width: fit-content;
   cursor: pointer;
   list-style: none;
 }
-.discover-hub-catalog>summary::after,.discover-hub-genres>summary::after {
+.discover-hub-catalog > summary::after,
+.discover-hub-genres > summary::after {
   content: "+";
   color: var(--color-accent);
   font-size: 1.125rem;
 }
-.discover-hub-catalog[open]>summary::after,.discover-hub-genres[open]>summary::after {
+.discover-hub-catalog[open] > summary::after,
+.discover-hub-genres[open] > summary::after {
   content: "−";
 }
-.discover-hub-catalog>summary::-webkit-details-marker,.discover-hub-genres>summary::-webkit-details-marker {
+.discover-hub-catalog > summary::-webkit-details-marker,
+.discover-hub-genres > summary::-webkit-details-marker {
   display: none;
 }
 .discover-hub-catalog .discover-hub-snapshot {
-  margin-top: .25rem;
+  margin-top: 0.25rem;
 }
 .discover-hub-track-tabs {
   display: flex;
-  gap: .5rem;
+  gap: 0.5rem;
   min-width: 0;
   overflow-x: auto;
-  padding: .25rem;
+  overscroll-behavior-x: contain;
+  padding: 0.25rem;
 }
-.discover-hub-track-tabs>button {
+.discover-hub-track-tabs > button {
   flex: 0 0 auto;
   min-width: 5rem;
-  min-height: 3rem;
-  padding-inline: .75rem;
-  font-size: .875rem;
+  min-height: 2.75rem;
+  padding-inline: 0.75rem;
+  font-size: 0.8125rem;
   white-space: nowrap;
 }
 .discover-hub-track-disclosure .discover-hub-tracks {
@@ -426,35 +584,47 @@
 }
 .discover-hub-error {
   display: grid;
-  grid-template-columns: 1.5rem minmax(0,1fr);
+  grid-template-columns: 1.5rem minmax(0, 1fr);
   align-items: start;
-  column-gap: .75rem;
+  column-gap: 0.75rem;
   padding: 1rem;
   text-align: start;
 }
-.discover-hub-error>svg {
+.discover-hub-error > svg {
   grid-column: 1;
-  grid-row: 1/4;
+  grid-row: 1 / 4;
   margin: 0;
 }
-.discover-hub-error>p,.discover-hub-error>button {
+.discover-hub-error > p,
+.discover-hub-error > button {
   grid-column: 2;
 }
-.discover-hub-error>button {
+.discover-hub-error > button {
   justify-self: start;
-  min-height: 3rem;
-  margin-top: .75rem;
+  min-height: 2.75rem;
+  margin-top: 0.75rem;
 }
-.discover-hub-purpose-nav a:focus-visible,.discover-hub-catalog>summary:focus-visible,.discover-hub-genres>summary:focus-visible,.discover-spotlight a:focus-visible,.discover-spotlight summary:focus-visible,.discover-recent-shelf a:focus-visible,.discover-recent-shelf button:focus-visible {
+.discover-hub-purpose-nav a:focus-visible,
+.discover-shelf-tab:focus-visible,
+.discover-spotlight-switch-btn:focus-visible,
+.discover-hub-catalog > summary:focus-visible,
+.discover-hub-genres > summary:focus-visible,
+.discover-spotlight a:focus-visible,
+.discover-spotlight summary:focus-visible,
+.discover-recent-shelf a:focus-visible,
+.discover-recent-shelf button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 3px;
 }
-@media (min-width:640px) {
-  .discover-hub-purpose-nav {
+
+@media (min-width: 640px) {
+  .discover-hub-purpose-nav,
+  .discover-shelf-tabs {
     gap: 1rem;
   }
-  .discover-hub-purpose-nav a {
-    padding-inline: 1rem;
+  .discover-hub-purpose-nav a,
+  .discover-shelf-tab {
+    padding-inline: 0.875rem;
   }
   .discover-hub-submit {
     padding-inline: 1.25rem;
@@ -462,46 +632,50 @@
   .discover-spotlight-copy {
     padding: 1.75rem;
   }
-  .discover-spotlight-copy,.discover-spotlight-stage {
+  .discover-spotlight-copy,
+  .discover-spotlight-stage {
     min-height: 20rem;
   }
 }
-@media (min-width:768px) {
-  .discover-hub-stories:has(>.discover-hub-spotlight):has(>.discover-recent-shelf) {
-    grid-template-columns: minmax(0,1.5fr) minmax(15rem,1fr);
+@media (min-width: 768px) {
+  .discover-hub-stories:has(> .discover-hub-spotlight):has(> .discover-recent-shelf) {
+    grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 1fr);
   }
-  .discover-hub-stories:has(>.discover-hub-spotlight)>.discover-recent-shelf {
+  .discover-hub-stories:has(> .discover-hub-spotlight) > .discover-recent-shelf {
     align-self: start;
   }
 }
-@media (min-width:1024px) {
+@media (min-width: 1024px) {
   .discover-hub-search-form {
     max-width: 54rem;
   }
   .discover-hub-stories {
     gap: 1.5rem;
   }
-  .discover-spotlight-copy,.discover-spotlight-stage {
-    min-height: 22rem;
+  .discover-spotlight-copy,
+  .discover-spotlight-stage {
+    min-height: 21.5rem;
   }
   .discover-spotlight-copy {
     padding: 2rem;
   }
   .discover-hub-shelves {
-    margin-top: 2rem;
+    margin-top: 2.5rem;
   }
 }
-@media (max-width:359px) {
-  .discover-hub-purpose-nav {
-    gap: .25rem;
+@media (max-width: 359px) {
+  .discover-hub-purpose-nav,
+  .discover-shelf-tabs {
+    gap: 0.25rem;
   }
-  .discover-hub-purpose-nav a {
-    padding-inline: .375rem;
-    font-size: .8125rem;
+  .discover-hub-purpose-nav a,
+  .discover-shelf-tab {
+    padding-inline: 0.375rem;
+    font-size: 0.8125rem;
   }
   .discover-spotlight-copy {
     padding: 1rem;
-    width: 82%;
+    width: 84%;
   }
   .discover-spotlight-copy h2 {
     font-size: 1.5rem;
@@ -510,14 +684,20 @@
     grid-template-columns: 1fr;
   }
   .discover-spotlight-topline {
-    gap: .5rem;
+    gap: 0.5rem;
   }
 }
 :root[data-design-theme="contrast"] .discover-spotlight-scrim {
-  background: linear-gradient(90deg,var(--color-canvas) 12%,color-mix(in oklch,var(--color-canvas) 96%,transparent) 38%,color-mix(in oklch,var(--color-canvas) 65%,transparent));
+  background: linear-gradient(
+    90deg,
+    var(--color-canvas) 12%,
+    color-mix(in oklch, var(--color-canvas) 96%, transparent) 38%,
+    color-mix(in oklch, var(--color-canvas) 65%, transparent)
+  );
 }
-@media (forced-colors:active) {
-  .discover-spotlight,.discover-recent-shelf {
+@media (forced-colors: active) {
+  .discover-spotlight,
+  .discover-recent-shelf {
     border: 2px solid CanvasText;
     background: Canvas;
   }
@@ -530,9 +710,18 @@
     color: ButtonText;
   }
 }
-@media (prefers-reduced-motion:reduce) {
-  .discover-spotlight .skeleton,.discover-recent-shelf .skeleton {
+@media (prefers-reduced-motion: reduce) {
+  .discover-spotlight .skeleton,
+  .discover-recent-shelf .skeleton,
+  .discover-spotlight-art-fade {
     animation: none;
+  }
+  .discover-ink-indicator,
+  .discover-spotlight-action,
+  .discover-spotlight-switch-btn,
+  .discover-hub-purpose-nav a,
+  .discover-shelf-tab {
+    transition: none !important;
   }
   .discover-recent-list {
     scroll-behavior: auto;

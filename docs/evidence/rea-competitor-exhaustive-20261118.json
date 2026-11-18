@@ -1,0 +1,716 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-11-18",
+  "title": "ToonStudio REA MCP 경쟁 제품 전수 정밀 역공학 및 39대 기능 내재화 증거 원장",
+  "methodology": {
+    "tool": "morluto/rea (reverse-engineer-anything MCP)",
+    "nativeProvider": "ghidra (Ghidra 12.1.4, REA_ANALYSIS_PROVIDER=ghidra; Hopper 미사용)",
+    "sqliteProvider": "REA SQLite 3.53.4 offline snapshot inspector",
+    "managedProvider": "rea-dotnet-static ECMA-335 CIL inspector",
+    "epistemicSeparation": [
+      "observedFacts",
+      "inferences",
+      "unknowns"
+    ],
+    "cleanRoomPolicy": "관측된 데이터 구조·수식·행동 계약만 클린룸 TypeScript로 재구현하며 제3자 소스 코드나 독점 에셋은 일절 복제하지 않음"
+  },
+  "sessionBundle": {
+    "recordCount": 44,
+    "sessionUnknownCount": 0,
+    "unknownCount": 2,
+    "byteLength": 25482111,
+    "sha256": "597ff40e9691dcf5e11cd0ba00965c8190c09827c1b937244b9700221b1e167e"
+  },
+  "observedFactsHighlights": {
+    "clipStudioPaint5_1_5": {
+      "editImageToolColumns": 507,
+      "editImageToolNodes": 255,
+      "uxSimpleModeToolNodes": 135,
+      "brushPresetColumns": 189,
+      "mainBinaryCommandIds": 2525,
+      "ghidraDustPlugin": {
+        "sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+        "evidenceIds": [
+          "ev_f588a3f095c360460aa5e0de36a7b8211dc817c66bee6974e0fd5059d3f3baff",
+          "ev_270fe09a4b86f02295cb5bbec645491e466ac5fbc2863a78f6a06b4ff7381c20",
+          "ev_6fd83aefab5052ea9f00233291ec24ca3d34949e81c0893bd84a3dae88faa7c8",
+          "ev_15e228e28971596b30e7ed81ed1948b9b94a4f9f1077f50da55441fb336580be",
+          "ev_4f970b12670bb3db0bd75cc35c039d7a757606a7655565c3acfe41c7a8741e42"
+        ],
+        "observedBehavior": "PIDust::FillSmallArea 판정식이 픽셀 면적 합이 아니라 바운딩 박스 가로·세로(bboxWidth <= dustSize && bboxHeight <= dustSize) 조건이며, 블록 외곽 (dustSize + 1) 패딩 경계와 연결된 영역을 제외하고 4종 모드(투명 배경 제거, 흰색 배경 제거, 주변 최빈색 메우기 SearchAroundDustColor, 전경색 메우기)를 수행함"
+      },
+      "ghidraLineWidthPlugin": {
+        "sha256": "f5e31be83f75df4e48637e27d4c6498f0b359a6c5934d8158e67565ae376bd86",
+        "evidenceIds": [
+          "ev_f721ac4e8da34b5f2f970bcf9924dbabd166a835ca6e503e6426541207e351d2",
+          "ev_af42bc7907f5e98eacfcb3b02c9c7f14cbf6c06dd0234d34033ff0059556946b"
+        ],
+        "observedBehavior": "PILineWidth::FatRaster(인접 불투명 픽셀 색상 전파 SearchNearestColorPixel), PILineWidth::ThinRaster 및 PILineWidth::ThinRemainCoreLine + JudgeCorePixel(1픽셀 남기기 활성화 시 위상 골격 연결성 보존)"
+      },
+      "ghidraFlowBasedAbstractionPlugin": {
+        "sha256": "f77f35f6a1b628f15ca8b1613c34312915e3d31d9dce4fe0df3440816d9d3d45",
+        "evidenceIds": [
+          "ev_53dfebbe347acb57901a4b47fd5eab263bef953ef4938eb012a4046477fa2093"
+        ],
+        "observedBehavior": "Edge Tangent Flow(VectorFieldTracer) + 법선 방향 DoG(ApplyDoGFilterAlongNormal) + 접선 방향 가우시안(ApplyGaussianFilterAlongTangent) + Posterizer + LineCompounder 다단계 추상화"
+      }
+    }
+  },
+  "inferences": [
+    "다중 경계선 등고선 채우기(Contour Fill)와 자유형 그라데이션은 정확 O(W×H) 2차원 유클리드 거리 변환(Felzenszwalb & Huttenlocher) 비율 dA/(dA+dB) 및 라플라스 조화/역거리 가중 보간으로 웹 런타임에서 결정적으로 재구성 가능함",
+    "원격 AI 가중치에 의존하지 않는 분위기 색감 맞추기(Color Transfer)는 sRGB -> Oklab 평균·표준편차 정합과 17×17×17 삼선형 3D LUT 보간 및 5-스톱 그라데이션 추출로 즉시 실행 가능함",
+    "통계적 스크래핑 억제 보조 필터는 토러스 대역제한 블루노이즈(DoG)와 3×3 Sobel 에지 마스킹을 결합해 말풍선 흰 여백(luma >= 245)을 오염시키지 않으며, 절대적 AI 학습 방어가 아닌 보조 수단임을 투명하게 고지해야 함"
+  ],
+  "unknowns": [
+    "비공개 클라우드 인증 뒤에만 스트리밍되는 원격 AI 가중치 및 암호화된 독점 .clip 컨테이너 내부 페이지 암호화 사양은 정적 오프라인 분석 범위 밖으로 유지함",
+    "실물 펜 태블릿 하드웨어 드라이버별 지연시간 실측(PR-057 CSP 블라인드 랩)은 물리 평가자 세션이 필요한 외부 검증 영역으로 구분함"
+  ],
+  "reaEvidenceRecords": [
+    {
+      "evidence_id": "ev_05522015780fc4da1b84fa71c6485032c724106bbd54c0dd5d976cab51ed2ebc",
+      "operation": "inspect_managed_members",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-dotnet-static",
+      "provider_version": "1",
+      "subject_name": "Assembly-CSharp.dll",
+      "subject_format": "pe",
+      "subject_architecture": "x86",
+      "subject_sha256": "cfb9e2ad3aee04fe6a7beaf7e27d9ec69abc1bfd54e5adfd0fbfd4144e3c189d",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_0c6a677d38f821a7c782b943662be657510c27ee397e744fa128f63a1ca2d1fa",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "PhotoCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "6c2e17b48bc9dec6b277ac84450a650bf5619b65c64688793c293b69f05c1b96",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_8912983381797bc789277effadb3233a6cf977272b9cd73827a1902c59a26cc3"
+      ]
+    },
+    {
+      "evidence_id": "ev_15e228e28971596b30e7ed81ed1948b9b94a4f9f1077f50da55441fb336580be",
+      "operation": "procedure_pseudo_code",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_222d6b580d8698c2dbd8ee45c022267ec9ed394b564d08f97dd966ae70eedecb",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "Goodnotes.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "272e6201165dd4d0d264b8fdafab38e9074af00fd436658dabb5574b723a68ee",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_f68005502f93f961d2da7cc1a427d64694d7ae4108d75032abd130c8ffde4f17"
+      ]
+    },
+    {
+      "evidence_id": "ev_24412e9f262c1ee2d15c74342cb24a0fce37ac738aa3d0779221e049838e3ccf",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "Muse.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "6af17bb473ad7face57a9911d2c6d6d7cc0e75a324727672d729ef8bf2d6aa5a",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_82987a2e77f7bac7c3eff735f03e50cdd2263ce6e3d25416a738536eb078deb0"
+      ]
+    },
+    {
+      "evidence_id": "ev_270fe09a4b86f02295cb5bbec645491e466ac5fbc2863a78f6a06b4ff7381c20",
+      "operation": "list_procedures",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_272f7b1048fa616730cca8c0320ff59a536d0601ce3ed082575c89e4aa3290bd",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "ShaperLauncher.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "ed6154ce69990a5a3056a8638609499766b281ed69d7ab2e413ad032f22c3cac",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_b35e5877e039f1a18840042f4cf4c422d91406cbe45fcb8fd92b067becd00e79"
+      ]
+    },
+    {
+      "evidence_id": "ev_325307282dd30861c760a4442c363f73534f4b2a0f71ddd6301e47ab76bd979d",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "Assembly-CSharp.dll",
+      "subject_format": "pe",
+      "subject_architecture": "x86",
+      "subject_sha256": "cfb9e2ad3aee04fe6a7beaf7e27d9ec69abc1bfd54e5adfd0fbfd4144e3c189d",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_05522015780fc4da1b84fa71c6485032c724106bbd54c0dd5d976cab51ed2ebc"
+      ]
+    },
+    {
+      "evidence_id": "ev_36ec86156f831e65921f73d22223ab8b925191cbc8f81534f2d97fbd5061bfe6",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "LineWidth-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "f5e31be83f75df4e48637e27d4c6498f0b359a6c5934d8158e67565ae376bd86",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_f721ac4e8da34b5f2f970bcf9924dbabd166a835ca6e503e6426541207e351d2"
+      ]
+    },
+    {
+      "evidence_id": "ev_4571415adae1548e2078cdaf17fdc17fc7b43d1c9bdbbb5a58461c885bbdd64d",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "DesignCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "f96f3f05446190883cf5c9e7f84a9c1d6678841235420e9cb9d8ab68f646ddd2",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_d4606040f545b4c8ce309d9950d71b8c2925b0d64ff3d1aaf746b4d32b80cb04"
+      ]
+    },
+    {
+      "evidence_id": "ev_4f970b12670bb3db0bd75cc35c039d7a757606a7655565c3acfe41c7a8741e42",
+      "operation": "procedure_pseudo_code",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_505972c155e73d300ed318e96e6877bf8a4c73e095aede56cf1973e828084ea7",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "Blender.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "2b031d4fa6378bf62a6297ac5a3efb63b9cef3c229d51387d695f57b38b203d1",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_e880e5e894eebd8225b849b630babb63a465a451d57661d5f2981b0816a73019"
+      ]
+    },
+    {
+      "evidence_id": "ev_53dfebbe347acb57901a4b47fd5eab263bef953ef4938eb012a4046477fa2093",
+      "operation": "list_procedures",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "FlowBasedAbstraction-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "f77f35f6a1b628f15ca8b1613c34312915e3d31d9dce4fe0df3440816d9d3d45",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_53e4075a92aac9f0092d4c537af507aba108005c65b2e72ba9ead45b29268958",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "CLIP STUDIO.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "5a43d80c5576af11b40040a61c421c844f6394440eddeca30b779e9511902e59",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_7ada796c7b960b1e7061ec310c832e9733d188c7b41e1bf2d75c6f53bd0c24b5"
+      ]
+    },
+    {
+      "evidence_id": "ev_5a9485704281ac097d86eabb936951fe271cb783ef647053ac3175dd94c7d9be",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "CADCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "aff417e871231523743011f11a2f90df8d9c5404e7d7d6ec9429f5a123077802",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_76b7876e298db8773167350ad82a4bff2d29eb23213639c658f2b5211efadc54"
+      ]
+    },
+    {
+      "evidence_id": "ev_5ce895d00f569e1f57c440aa67e674e875d22d44a581e60b7d3bff4c9a3c5612",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "MixPaletteTool.todb",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "9f50415605cf72a788b7febd6b7186b88bc94976d98c90730cc5c7d3299ff39a",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_6907c85c295a0c6f3a23c6177c70cb5f28a595b919411428942754ec7024f803",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "CLIP STUDIO PAINT.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "7b5dd977124977eb919b023ad37499c66c0c0c2c67d06c2ec234836b5d4463a8",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_6fd83aefab5052ea9f00233291ec24ca3d34949e81c0893bd84a3dae88faa7c8",
+      "operation": "procedure_pseudo_code",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_76b7876e298db8773167350ad82a4bff2d29eb23213639c658f2b5211efadc54",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "CADCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "aff417e871231523743011f11a2f90df8d9c5404e7d7d6ec9429f5a123077802",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_7ad0b4b06201de2cb89fdefc0460370f81df3826372315b2bc852066043dff05",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "FigCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "d52ef4578362ca62d3672aa46a3accb27b285e243d269dc7928bd556e5114b52",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_7ada796c7b960b1e7061ec310c832e9733d188c7b41e1bf2d75c6f53bd0c24b5",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "CLIP STUDIO.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "5a43d80c5576af11b40040a61c421c844f6394440eddeca30b779e9511902e59",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_7d890c939a2d8867984fcfe5f4d2bad5c1deef33c1911db9393c175ad64766c8",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "LightCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "51b442cf31a4a0ab35650f978b5883e4390330459561e2e969f98bb38500ef3d",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_d55d8672f143de73094350d5671ac83171dad0b079800f0e0f18595e84856acc"
+      ]
+    },
+    {
+      "evidence_id": "ev_7df82725c194ca3b17ef359e65529e5556da0c7082630daa4fbf4f33f1921010",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "EffectCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "92866a35cefbb65d087903d41f21ba36e6346dc3273415a0473a69b85f604c20",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_82987a2e77f7bac7c3eff735f03e50cdd2263ce6e3d25416a738536eb078deb0",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "Muse.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "6af17bb473ad7face57a9911d2c6d6d7cc0e75a324727672d729ef8bf2d6aa5a",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_84e24ea66b2393d0fa57182b4de9dbe3be9c25ee54f982c2dcfc534bf63eddda",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "DefaultToolModifyKey.tomd",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "61b3fa517aeb42610b0a5d952da49b38d0257428766fac64e391b9078c03b627",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_853855365e8ebbed8b4f1694c57c2f224a338610827337312b0d42739c4eb4bc",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "presetMac_1.spws",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "64a169ebd6a282c0769325d46388633cabe3176b73d076c39ebeac5b6e5fc17f",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_8912983381797bc789277effadb3233a6cf977272b9cd73827a1902c59a26cc3",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "PhotoCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "6c2e17b48bc9dec6b277ac84450a650bf5619b65c64688793c293b69f05c1b96",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_90b6e4694cbb5de1b08d1057f27fef92598c0f9c7b4ab9839619f135ea73af83",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "BrushPreset.bfps",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "dfdd42c6470a2ec4c170d8bad167128e23ba09b3aa6cd62ae1e77509ca9fdf13",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_9e97a121e10ceaa075c9f4fb0b21c7bf2bd090aa4a639830aa6f070bec16e30f",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "VectorCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "097125a579115fe11af944322dbdf72c41b982f4e3de54742e78d93cc7201bb3",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_e110ab1bac8cf76cc0b991055ea27ec5ab7f4ba708e1c12e4199fc0f444c2a15"
+      ]
+    },
+    {
+      "evidence_id": "ev_af42bc7907f5e98eacfcb3b02c9c7f14cbf6c06dd0234d34033ff0059556946b",
+      "operation": "list_procedures",
+      "predicate_type": "rea.analysis",
+      "provider_id": "ghidra",
+      "provider_version": "12.1.4",
+      "subject_name": "LineWidth-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "f5e31be83f75df4e48637e27d4c6498f0b359a6c5934d8158e67565ae376bd86",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_b35e5877e039f1a18840042f4cf4c422d91406cbe45fcb8fd92b067becd00e79",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "ShaperLauncher.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "ed6154ce69990a5a3056a8638609499766b281ed69d7ab2e413ad032f22c3cac",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_b4484760c34849ce1189151ef480f5a37c399207ba9369beef4c29838de1d60e",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "FigCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "d52ef4578362ca62d3672aa46a3accb27b285e243d269dc7928bd556e5114b52",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_7ad0b4b06201de2cb89fdefc0460370f81df3826372315b2bc852066043dff05"
+      ]
+    },
+    {
+      "evidence_id": "ev_b6c149c21eaeb67716ef7272b6ee14484ffd2f9bb365003371ee5d953e5ddf20",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "EditImageTool.todb",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "85f980086503863ce2322178cea04d5dd4a79bd43c30eb9e9bb5b35851ab9d63",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_c10045d52f80466e2efbf42d666690099f787c85c31682edf4b202e78622f2f1",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "EffectCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "92866a35cefbb65d087903d41f21ba36e6346dc3273415a0473a69b85f604c20",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_7df82725c194ca3b17ef359e65529e5556da0c7082630daa4fbf4f33f1921010"
+      ]
+    },
+    {
+      "evidence_id": "ev_cfaed54c8ba0a6cdf0681a71160f0c4b7eb01f5fae8bf3c26fe2daeecc3be110",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "UXEditImageTool.todb",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "5dda57096ea61dce9501c4fb43cd9df471903ca9d02a18473a31791df38a0277",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_d4606040f545b4c8ce309d9950d71b8c2925b0d64ff3d1aaf746b4d32b80cb04",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "DesignCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "f96f3f05446190883cf5c9e7f84a9c1d6678841235420e9cb9d8ab68f646ddd2",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_d55d8672f143de73094350d5671ac83171dad0b079800f0e0f18595e84856acc",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "LightCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "51b442cf31a4a0ab35650f978b5883e4390330459561e2e969f98bb38500ef3d",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_ddb41ced2767b5780b22fb835ba93870d61c17a55583bf40f277aef4d9b6ef68",
+      "operation": "inspect_sqlite_database",
+      "predicate_type": "rea.analysis",
+      "provider_id": "sqlite",
+      "provider_version": "SQLite 3.53.4",
+      "subject_name": "EditImageTool.todb",
+      "subject_format": "file",
+      "subject_architecture": null,
+      "subject_sha256": "85f980086503863ce2322178cea04d5dd4a79bd43c30eb9e9bb5b35851ab9d63",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_e110ab1bac8cf76cc0b991055ea27ec5ab7f4ba708e1c12e4199fc0f444c2a15",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "VectorCraft.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "097125a579115fe11af944322dbdf72c41b982f4e3de54742e78d93cc7201bb3",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_e23f32d684649a26c4d8eb98c0e72d4910358fc5fb073287af02ff7addab9752",
+      "operation": "inspect_analysis_view",
+      "predicate_type": "rea.analysis-view",
+      "provider_id": "rea-analysis-view",
+      "provider_version": "1",
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "derived",
+      "authority": "shipped-artifact",
+      "evidence_links": [
+        "ev_f588a3f095c360460aa5e0de36a7b8211dc817c66bee6974e0fd5059d3f3baff"
+      ]
+    },
+    {
+      "evidence_id": "ev_e880e5e894eebd8225b849b630babb63a465a451d57661d5f2981b0816a73019",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "Blender.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "2b031d4fa6378bf62a6297ac5a3efb63b9cef3c229d51387d695f57b38b203d1",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_f588a3f095c360460aa5e0de36a7b8211dc817c66bee6974e0fd5059d3f3baff",
+      "operation": "inspect_macho",
+      "predicate_type": "rea.analysis",
+      "provider_id": "native-macos",
+      "provider_version": null,
+      "subject_name": "Dust-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "9c7835a95bb78ce45c5e0cc606ab9e0be8f3fcc7800a29b25764b9134b3e45ff",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_f68005502f93f961d2da7cc1a427d64694d7ae4108d75032abd130c8ffde4f17",
+      "operation": "inspect_desktop_application",
+      "predicate_type": "rea.analysis",
+      "provider_id": "rea-artifact-graph",
+      "provider_version": "1",
+      "subject_name": "Goodnotes.app",
+      "subject_format": "directory",
+      "subject_architecture": null,
+      "subject_sha256": "272e6201165dd4d0d264b8fdafab38e9074af00fd436658dabb5574b723a68ee",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    },
+    {
+      "evidence_id": "ev_f721ac4e8da34b5f2f970bcf9924dbabd166a835ca6e503e6426541207e351d2",
+      "operation": "inspect_macho",
+      "predicate_type": "rea.analysis",
+      "provider_id": "native-macos",
+      "provider_version": null,
+      "subject_name": "LineWidth-arm64",
+      "subject_format": "mach-o",
+      "subject_architecture": "arm64",
+      "subject_sha256": "f5e31be83f75df4e48637e27d4c6498f0b359a6c5934d8158e67565ae376bd86",
+      "confidence": "observed",
+      "authority": "shipped-artifact",
+      "evidence_links": []
+    }
+  ]
+}

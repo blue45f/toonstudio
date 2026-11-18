@@ -34,25 +34,38 @@ export function StudioProjectLibraryManagementHeader({
     : null;
   const entryActions = (
     <div className="studio-library-entry-actions" data-studio-primary-entry-actions="true">
-      <Link href={STUDIO_START_GATEWAY_HREF}
+      <Link
+        href={STUDIO_START_GATEWAY_HREF}
         data-studio-library-primary-action={recentProject ? undefined : "new"}
-        className={buttonClass({ variant: recentProject ? "outline" : "solid", className: "min-h-12 min-w-0 gap-2 whitespace-normal rounded-xl px-4" })}>
-        <Plus size={16} aria-hidden="true" />
+        className={buttonClass({
+          variant: "solid",
+          className: "min-h-11 min-w-0 gap-2 whitespace-normal rounded-lg px-4 font-semibold",
+        })}
+      >
+        <Plus size={16} strokeWidth={1.7} aria-hidden="true" />
         {bi("새 작업", "New work")}
       </Link>
-      {!recentProject ? <Link href="/studio/import" className={buttonClass({ variant: "quiet", className: "min-h-12 min-w-0 whitespace-normal rounded-xl px-3 text-fg-2" })}>
-        {bi("파일 가져오기", "Import files")}
-      </Link> : null}
+      {!recentProject ? (
+        <Link
+          href="/studio/import"
+          className={buttonClass({
+            variant: "outline",
+            className: "min-h-11 min-w-0 whitespace-normal rounded-lg border-line bg-panel px-3.5 font-medium text-fg-2 hover:border-line-strong hover:text-fg",
+          })}
+        >
+          {bi("파일 가져오기", "Import files")}
+        </Link>
+      ) : null}
     </div>
   );
   const selectionTools = (
     <div className="flex flex-wrap items-center gap-2">
-      <label className="text-xs font-semibold text-fg-3">
+      <label className="text-xs font-medium text-fg-3">
         <span className="sr-only">{bi("정렬", "Sort")}</span>
         <select
           value={sort}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => setSort(event.target.value as StudioProjectLibrarySortMode)}
-          className="min-h-[44px] rounded-xl border border-line bg-panel px-3 text-xs font-bold text-fg outline-none focus:border-accent"
+          className="min-h-[44px] rounded-lg border border-line bg-card px-3 text-xs font-medium text-fg outline-none focus:border-accent"
         >
           <option value="recent">{bi("최근 작업순", "Recently opened")}</option>
           <option value="name">{bi("이름순", "Name")}</option>
@@ -63,7 +76,7 @@ export function StudioProjectLibraryManagementHeader({
         type="button"
         disabled={visibleProjects.length === 0}
         onClick={toggleVisibleSelection}
-        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px]" })}
+        className={buttonClass({ variant: "outline", size: "sm", className: "min-h-[44px] rounded-lg tabular-nums" })}
       >
         {allVisibleSelected
           ? bi("선택 해제", "Clear selection")
@@ -81,11 +94,12 @@ export function StudioProjectLibraryManagementHeader({
     >
       <header className="studio-library-heading">
         <div className="min-w-0">
-          <h1 className="text-2xl font-black tracking-tight text-fg sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-[-0.025em] text-fg [word-break:keep-all] sm:text-3xl">
             {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[view]).en)}
           </h1>
-          <p className="studio-library-storage-note"><Laptop size={14} aria-hidden="true" />{bi("저장 위치는 작품별로 확인하세요", "Check the storage location for each work")}</p>
-          {!recentProject ? <p className="mt-1 text-sm leading-5 text-fg-2">
+          <span className="studio-library-heading-ink" data-ink-enter="line" aria-hidden="true" />
+          <p className="studio-library-storage-note"><Laptop size={14} strokeWidth={1.6} aria-hidden="true" />{bi("저장 위치는 작품별로 확인하세요", "Check the storage location for each work")}</p>
+          {!recentProject ? <p className="mt-1.5 text-sm leading-5 text-fg-2 [word-break:keep-all]">
             {view === "active" && !hasSearchQuery && !recentProject
               ? listedProjects.length > 0
                 ? bi("개인 작업은 아직 없습니다. 아래 예제를 열어 체험할 수 있어요.", "You have no personal work yet. Try an example below.")
@@ -100,21 +114,21 @@ export function StudioProjectLibraryManagementHeader({
 
       {view !== "active" ? <div className="mt-3">
         <nav className="overflow-x-auto" aria-label={bi("내 작업 보기", "My work views")}>
-          <div className="flex min-w-max gap-1 rounded-2xl border border-line bg-card p-1">
+          <div className="inline-flex min-w-max gap-1 rounded-xl border border-line bg-panel p-1">
             {(["active", "archived", "trash"] as const).map((candidate) => (
               <Link
                 key={candidate}
                 href={studioProjectLibraryManagementViewHref(candidate)}
                 aria-current={candidate === view ? "page" : undefined}
                 className={cn(
-                  "inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-bold",
+                  "inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium",
                   candidate === view
-                    ? "bg-accent text-on-accent"
+                    ? "bg-accent text-on-accent font-semibold"
                     : "text-fg-2 hover:bg-raised hover:text-fg",
                 )}
               >
                 {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate]).en)}
-                <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[0.62rem]">
+                <span className="ml-1.5 rounded bg-black/15 px-1.5 py-0.5 text-[0.68rem] tabular-nums">
                   {viewCounts[candidate]}
                 </span>
               </Link>
@@ -176,11 +190,11 @@ export function StudioProjectLibraryManagementHeader({
         </div>
       ) : null}
 
-      <section data-studio-project-search-row="true" className="studio-library-search-row mt-3" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
+      <section data-studio-project-search-row="true" className="studio-library-search-row mt-4" aria-label={bi("프로젝트 찾기와 선택", "Find and select projects")}>
         <div className="studio-library-search-controls">
           <div className="flex min-w-0 flex-1 items-center gap-2 lg:max-w-xl">
             <label className="relative block min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} aria-hidden="true" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" size={16} strokeWidth={1.6} aria-hidden="true" />
               <span className="sr-only">{bi("프로젝트 검색", "Search projects")}</span>
               <input
                 value={query}
@@ -201,14 +215,14 @@ export function StudioProjectLibraryManagementHeader({
                   }
                 }}
                 placeholder={bi("내 작품 찾기", "Find my work")}
-                className="min-h-12 w-full rounded-xl border border-line bg-panel pl-10 pr-3 text-sm text-fg outline-none focus:border-accent"
+                className="min-h-11 w-full rounded-lg border border-line bg-panel pl-9 pr-3 text-sm text-fg outline-none focus:border-accent"
               />
             </label>
             {query.trim().length > 0 ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-12 shrink-0" })}
+                className={buttonClass({ variant: "quiet", size: "sm", className: "min-h-11 shrink-0 rounded-lg" })}
               >
                 {bi("검색어 지우기", "Clear search")}
               </button>

@@ -208,7 +208,7 @@ export function StudioProjectLibraryManagementContent({
                 else setSelectionMode(true);
               }}>{selectionVisible ? bi("선택 마치기", "Finish selecting") : bi("작품 선택", "Select work")}</button>
             </div>
-            <div ref={activeGridRef} data-studio-project-grid="active" className="studio-library-compact-grid">
+            <div ref={activeGridRef} key={`${view}:${controller.sort}`} data-studio-project-grid="active" className="studio-library-compact-grid ink-cascade">
               {shownProjects.map((project) => <StudioProjectLibraryCompactCard key={project.id} {...projectCardProps(project)} />)}
             </div>
             {otherProjects.length === 0 ? <p className="studio-library-list-empty">{bi("다른 작업을 시작하면 이곳에 모여요.", "Your other work will appear here.")}</p> : null}
@@ -248,29 +248,44 @@ export function StudioProjectLibraryManagementContent({
       )}
 
       <div className="studio-library-secondary-tools">
-        {view === "active" ? <details className="studio-library-view-management rounded-xl border border-line bg-card">
-          <summary>{bi("작품 관리·가져오기", "Manage and import work")}</summary>
-          <nav className="studio-library-management-links" aria-label={bi("내 작업 보기", "My work views")}>
-            {(["active", "archived", "trash"] as const).map((candidate) => <Link key={candidate}
-              href={studioProjectLibraryManagementViewHref(candidate)} aria-current={candidate === view ? "page" : undefined}>
-              {bi(STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].ko, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].en)}
-              <span>{viewCounts[candidate]}</span>
-            </Link>)}
-            <Link href="/studio/import">{bi("파일에서 작업 열기", "Open work from file")}</Link>
-          </nav>
-        </details> : null}
-        {view === "active" && !query.trim() ? <details className="studio-library-alternative-starts group rounded-xl border border-line bg-card" data-studio-other-starts="true">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-fg-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
-              {bi("다른 작업 시작", "Start something else")}
-              <ChevronDown size={16} aria-hidden="true" className="group-open:rotate-180" />
+        {view === "active" ? (
+          <details className="studio-library-view-management group rounded-[10px] border border-line bg-panel">
+            <summary className="studio-library-disclosure-summary">
+              <span>{bi("작품 관리·가져오기", "Manage and import work")}</span>
+              <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
             </summary>
-            <StudioProjectLibraryFastStartStrip className="px-3 pb-3" />
-          </details> : null}
-        <details className="studio-library-auxiliary-management rounded-xl border border-line bg-card">
-          <summary className="min-h-12 cursor-pointer rounded-xl px-3 py-3 text-xs font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
-            {bi("저장·내보내기·제작 관리", "Save, export and production")}
+            <nav className="studio-library-management-links border-t border-line" aria-label={bi("내 작업 보기", "My work views")}>
+              {(["active", "archived", "trash"] as const).map((candidate) => (
+                <Link
+                  key={candidate}
+                  href={studioProjectLibraryManagementViewHref(candidate)}
+                  aria-current={candidate === view ? "page" : undefined}
+                >
+                  {bi(STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].ko, STUDIO_PROJECT_LIBRARY_MANAGEMENT_LABELS[candidate].en)}
+                  <span className="tabular-nums">{viewCounts[candidate]}</span>
+                </Link>
+              ))}
+              <Link href="/studio/import">{bi("파일에서 작업 열기", "Open work from file")}</Link>
+            </nav>
+          </details>
+        ) : null}
+        {view === "active" && !query.trim() ? (
+          <details className="studio-library-alternative-starts group rounded-[10px] border border-line bg-panel" data-studio-other-starts="true">
+            <summary className="studio-library-disclosure-summary">
+              <span>{bi("다른 작업 시작", "Start something else")}</span>
+              <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
+            </summary>
+            <div className="border-t border-line p-3">
+              <StudioProjectLibraryFastStartStrip />
+            </div>
+          </details>
+        ) : null}
+        <details className="studio-library-auxiliary-management group rounded-[10px] border border-line bg-panel">
+          <summary className="studio-library-disclosure-summary">
+            <span>{bi("저장·내보내기·제작 관리", "Save, export and production")}</span>
+            <ChevronDown size={15} strokeWidth={1.6} aria-hidden="true" className="shrink-0 text-fg-3 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" />
           </summary>
-          <div className="px-3 pb-3">
+          <div className="border-t border-line p-3.5">
             <p className="mb-2 text-xs leading-5 text-fg-2 sm:hidden">
               {bi((STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).ko, (STUDIO_PROJECT_LIBRARY_MANAGEMENT_DESCRIPTIONS[view]).en)}
             </p>
@@ -279,26 +294,26 @@ export function StudioProjectLibraryManagementContent({
               <p><strong>{bi("프로젝트", "Projects")}</strong> — <span>{bi("저장 설정이 있는 프로젝트입니다. 실제 저장 위치와 완료 시각은 원고에서 확인하세요.", "These projects have save settings. Check the manuscript for the actual destination and completed save time.")}</span></p>
             </div> : null}
             <nav className="flex flex-wrap items-center gap-1" aria-label={bi("저장과 배포", "Storage and distribution")}>
-              <Link href="/studio/recovery" className="inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+              <Link href="/studio/recovery" className="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium text-fg-2 hover:bg-raised hover:text-fg">
                 {bi("작업 복구", "Recover work")}
               </Link>
-              <Link href="/studio/import" className="inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+              <Link href="/studio/import" className="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium text-fg-2 hover:bg-raised hover:text-fg">
                 {bi(".toonstudio 파일 열기", "Open .toonstudio file")}
               </Link>
-              <Link href="/studio?view=storage" className="inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+              <Link href="/studio?view=storage" className="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium text-fg-2 hover:bg-raised hover:text-fg">
                 {bi("저장·백업", "Save & backup")}
               </Link>
-              <Link href="/studio?view=exports" className="inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+              <Link href="/studio?view=exports" className="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium text-fg-2 hover:bg-raised hover:text-fg">
                 {bi("내보내기", "Export")}
               </Link>
-              <Link href="/studio?view=publications" className="inline-flex min-h-12 items-center rounded-xl px-3 text-xs font-semibold text-fg-3 hover:bg-card hover:text-fg">
+              <Link href="/studio?view=publications" className="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-medium text-fg-2 hover:bg-raised hover:text-fg">
                 {bi("게시", "Publishing")}
               </Link>
             </nav>
-            <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-12 whitespace-normal" })}>
+            <Link href="/production" className={buttonClass({ variant: "quiet", className: "min-h-11 whitespace-normal rounded-lg text-xs" })}>
               {bi("제작 관리", "Production management")}
             </Link>
-            <p className="mt-3 text-xs leading-5 text-fg-3">
+            <p className="mt-2 text-xs leading-5 text-fg-3">
               {bi("임시 자동저장, 정식 저장, 백업, 내보내기와 게시를 분리해 관리합니다. 휴지통의 완전 삭제만 되돌릴 수 없습니다.", "Temporary autosave, explicit save, backup, export and publishing are managed separately. Only permanent deletion from Trash cannot be undone.")}
             </p>
           </div>
@@ -306,8 +321,12 @@ export function StudioProjectLibraryManagementContent({
       </div>
 
       {/* 접힌 안내도 마운트를 유지해 시딩과 진행 상태를 보존한다. 오류·복구 안내는 접지 않는다. */}
-      {view === "active" && !query ? <StudioExampleProjectBanner compact /> : null}
-      {view === "active" && !query ? <StudioSampleManuscriptCard compact /> : null}
+      {view === "active" && !query ? (
+        <div className="studio-library-onboarding-pair">
+          <StudioExampleProjectBanner compact />
+          <StudioSampleManuscriptCard compact />
+        </div>
+      ) : null}
     </>
   );
 }

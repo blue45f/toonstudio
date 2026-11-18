@@ -11,9 +11,11 @@ import {
   buildActingCutPlan,
   clampWebtoonStripLayout,
   composeWebtoonVerticalStrip,
+  computeStripAutoPanTimeline,
   exportWebtoonVerticalStripPng,
   renderTransparentActionLinesLayer,
   renderTransparentDialogueTextLayer,
+  renderTransparentScreentoneLayer,
   renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
   resolveLocalizedBubbleAspect,
@@ -21,6 +23,7 @@ import {
   resolveSpeakerBubblePlacement,
   resolveWebtoonCutCameraSpec,
   rotateRasterBilinear,
+  sampleAutoPanScrollState,
   splitJapaneseTategakiColumns,
   splitLocalizedBubbleDialogue,
 } from "./webtoon-strip-composer";
@@ -308,5 +311,75 @@ describe("webtoon-strip-composer", () => {
     }
     const tilted = rotateRasterBilinear({ width: 32, height: 32, rgba: bar }, -9);
     expect(tilted.rgba.some((v, idx) => idx % 4 === 3 && Math.floor(idx / 4 / 32) !== 16 && v > 32)).toBe(true);
+  });
+
+  it("컷별 할프톤 망점 스크린톤(screentones)·-tone 파일 접미사·PSD 투명 스크린톤 레이어 및 오토패닝 타임라인을 정확히 계산한다", async () => {
+    const layout = clampWebtoonStripLayout(72, true, ["compact", "dramatic-pause", "cliffhanger"]);
+    const panels = WEBTOON_VERTICAL_STRIP_CUTS.map(() => {
+      const rgba = new Uint8ClampedArray(layout.cutWidth * layout.cutHeight * 4);
+      const p = (Math.floor(layout.cutHeight / 2) * layout.cutWidth + Math.floor(layout.cutWidth / 2)) * 4;
+      rgba[p] = 220;
+      rgba[p + 1] = 45;
+      rgba[p + 2] = 75;
+      rgba[p + 3] = 255;
+      return { width: layout.cutWidth, height: layout.cutHeight, rgba };
+    });
+
+    const plainStrip = composeWebtoonVerticalStrip(panels, layout);
+    const tonedStrip = composeWebtoonVerticalStrip(
+      panels,
+      layout,
+      undefined,
+      "daylight-paper",
+      ["classic-ink-45", "shadow-fade-mono", "rose-duotone-dots", "cyan-noir-dots"],
+    );
+
+    const charX = layout.marginX + layout.borderPx + Math.floor(layout.cutWidth / 2);
+    const charY = layout.marginY + layout.borderPx + layout.bubbleSafeTopPx + Math.floor(layout.cutHeight / 2);
+    const charIdx = (charY * layout.stripWidth + charX) * 4;
+    expect(Array.from(tonedStrip.rgba.slice(charIdx, charIdx + 4))).toEqual([220, 45, 75, 255]);
+
+    let diffPixels = 0;
+    for (let i = 0; i < plainStrip.rgba.length; i += 4) {
+      if (
+        plainStrip.rgba[i] !== tonedStrip.rgba[i] ||
+        plainStrip.rgba[i + 1] !== tonedStrip.rgba[i + 1] ||
+        plainStrip.rgba[i + 2] !== tonedStrip.rgba[i + 2]
+      ) {
+        diffPixels += 1;
+      }
+    }
+    expect(diffPixels).toBeGreaterThan(300);
+
+    const noneToneLayer = renderTransparentScreentoneLayer(64, 64, "none");
+    expect(noneToneLayer.rgba.every((v) => v === 0)).toBe(true);
+    const roseToneLayer = renderTransparentScreentoneLayer(64, 64, "rose-duotone-dots", 0.85);
+    expect(roseToneLayer.rgba.some((v, idx) => idx % 4 === 3 && v > 20)).toBe(true);
+
+    const engine = createMockEngine();
+    const tonedOutcome = await exportWebtoonVerticalStripPng(
+      engine,
+      {
+        stripWidth: 64,
+        includeBubbleSafeZone: true,
+        screentones: ["classic-ink-45", "none", "cyan-noir-dots", "none"],
+      },
+      { now: () => 500 },
+    );
+    expect(tonedOutcome.ok).toBe(true);
+    if (!tonedOutcome.ok) return;
+    expect(tonedOutcome.receipt.fileName).toMatch(/-webtoon-4cut-tone-strip\.png$/u);
+
+    const timeline = computeStripAutoPanTimeline(layout, ["compact", "dramatic-pause", "cliffhanger"]);
+    expect(timeline.cutDwellMs[2]).toBeGreaterThan(timeline.cutDwellMs[0]);
+    expect(timeline.segments[2].panEndMs - timeline.segments[2].dwellEndMs).toBeGreaterThan(
+      timeline.segments[0].panEndMs - timeline.segments[0].dwellEndMs,
+    );
+    const startState = sampleAutoPanScrollState(timeline, 0);
+    expect(startState.activeCutIndex).toBe(0);
+    expect(startState.scrollRatio01).toBe(0);
+    const endState = sampleAutoPanScrollState(timeline, timeline.segments[3].dwellStartMs + 10);
+    expect(endState.activeCutIndex).toBe(3);
+    expect(endState.scrollRatio01).toBe(1);
   });
 });

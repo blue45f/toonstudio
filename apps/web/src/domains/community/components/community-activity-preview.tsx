@@ -2,17 +2,17 @@ import { communityStatusText } from "../community-status-i18n";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Flame, Image as ImageIcon, MessagesSquare, RotateCcw } from "lucide-react";
 
-import { KIND_LABEL } from "./fan-cafe-utils";
 import { CommunityUnderlineTabs } from "./community-underline-tabs";
+import { KIND_LABEL } from "./fan-cafe-utils";
 
 import type { FanCafePost } from "@/shared/lib/types";
 
 import { api, getApiErrorMessage } from "@/platform/api";
-import { TypographicCover } from "@/shared/components/typographic-cover";
 import { introItemProps } from "@/shared/components/page-intro/page-intro-utils";
+import { TypographicCover } from "@/shared/components/typographic-cover";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
-import Link from "@/shared/navigation/router-link";
 import { cn } from "@/shared/lib/utils";
+import Link from "@/shared/navigation/router-link";
 
 type PoolKey = "popular" | "recent" | "fanart" | "events";
 type ActivityTab = "recommend" | "popular" | "fresh" | "events";
@@ -25,7 +25,6 @@ interface PoolState {
 
 const POOL_KEYS: readonly PoolKey[] = ["popular", "recent", "fanart", "events"];
 
-// 통합 피드(FanCafePanel)와 같은 쿼리를 재사용한다 — scope=all, limit=20.
 const POOL_QUERIES: Record<PoolKey, string> = {
   popular: "scope=all&sort=popular&limit=20",
   recent: "scope=all&sort=recent&limit=20",
@@ -75,37 +74,39 @@ function ActivityArtCard({
     <Link
       href={`/community/post/${post.id}`}
       className={cn(
-        "group block overflow-hidden rounded-2xl border border-line bg-panel transition-colors hover:border-line-strong",
+        "ink-frame group block overflow-hidden rounded-xl border border-line bg-card/80 transition-colors duration-150 hover:bg-card motion-reduce:transition-none",
         className,
       )}
     >
       <article>
-        <div className="relative aspect-[4/3] overflow-hidden bg-raised">
+        <div className="ink-cover ink-sheen relative aspect-[4/3] overflow-hidden bg-raised">
           {cover ? (
             <img
               src={cover}
               alt=""
               loading="lazy"
               decoding="async"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              className="h-full w-full object-cover"
             />
           ) : (
             <TypographicCover title={post.title} seed={post.id} eyebrow={post.targetLabel} className="h-full w-full" />
           )}
           {badge ? (
-            <span className="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+            <span className="absolute left-2.5 top-2.5 rounded-md bg-black/65 px-2 py-0.5 text-[11px] font-medium text-white">
               {badge}
             </span>
           ) : null}
         </div>
         <div className="p-3.5">
-          <p className="truncate text-[11px] font-bold uppercase tracking-wide text-fg-3">
+          <p className="truncate text-xs font-medium text-fg-3">
             {KIND_LABEL[post.kind]} · {post.targetLabel}
           </p>
-          <h3 className="mt-1.5 line-clamp-2 min-h-10 text-sm font-bold leading-5 text-fg">{post.title}</h3>
+          <h3 className="mt-1 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-fg [word-break:keep-all]">
+            {post.title}
+          </h3>
           <p className="mt-2 flex items-center gap-2 text-xs text-fg-3">
-            <span className="truncate font-semibold text-fg-2">{post.author.name}</span>
-            <span className="inline-flex items-center gap-1">
+            <span className="truncate font-medium text-fg-2">{post.author.name}</span>
+            <span className="inline-flex items-center gap-1 tabular-nums">
               <MessagesSquare size={12} aria-hidden="true" />
               {t("댓글", "Replies")} {post.replyCount}
             </span>
@@ -120,20 +121,12 @@ function SkeletonCards({ count }: { count: number }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="skeleton h-52 rounded-2xl" />
+        <div key={index} className="skeleton h-52 rounded-xl" />
       ))}
     </div>
   );
 }
 
-/**
- * 커뮤니티 홈 활동 미리보기 — 히어로 아래에서 "지금 오가는 이야기"를 보여 준다.
- *
- * 활동 스트립(인기 글 3 + 최신 팬아트 4)과 탭 미리보기(추천/인기/신작/이벤트, 각 상위 4개)로 구성한다.
- * 데이터는 통합 피드와 같은 /community/posts 쿼리를 재사용한다.
- * 상태 규칙: 로딩은 스켈레톤, 실패는 재시도 가능한 오류로, 글이 없는 탭은 성공 빈 상태로 표시한다.
- * 활동이 전혀 없으면(전 풀 빈 결과) 섹션 자체를 숨긴다 — 빈 껍데기를 만들지 않는다.
- */
 export function CommunityActivityPreview() {
   const t = useBilingual("domains.community.CommunityActivityPreview");
   const [pools, setPools] = useState<Record<PoolKey, PoolState>>({
@@ -196,7 +189,6 @@ export function CommunityActivityPreview() {
   const totalPosts = poolList.reduce((sum, pool) => sum + pool.posts.length, 0);
   const anyLoading = poolList.some((pool) => pool.status === "loading");
 
-  // 활동이 전혀 없으면 섹션 자체를 숨긴다(빈 껍데기 금지). 실패는 빈 상태로 위장하지 않는다.
   if (allReady && totalPosts === 0) return null;
 
   const activePool = pools[TAB_POOL[tab]];
@@ -222,17 +214,17 @@ export function CommunityActivityPreview() {
   };
 
   return (
-    <section aria-label={t("커뮤니티 활동 미리보기", "Community activity preview")} className="mt-10 sm:mt-12">
+    <section aria-label={t("커뮤니티 활동 미리보기", "Community activity preview")} className="mt-8 border-t border-line pt-6 sm:mt-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="eyebrow text-accent">NOW IN THE COMMUNITY</p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+          <p className="text-xs font-medium text-accent">{t("실시간 대화 흐름", "Live conversations")}</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-fg [word-break:keep-all] sm:text-2xl">
             {t("지금 오가는 이야기", "Stories moving right now")}
           </h2>
         </div>
         <Link
           href="/community/events"
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-accent hover:text-accent-2"
+          className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-fg-2 transition-colors duration-150 hover:text-accent motion-reduce:transition-none"
         >
           <CalendarDays size={15} aria-hidden="true" />
           {t("이벤트 게시판 가기", "Go to the events board")}
@@ -240,15 +232,17 @@ export function CommunityActivityPreview() {
       </div>
 
       {allError ? (
-        <div className="mt-5 rounded-2xl border border-line bg-panel p-5 text-center" role="alert">
-          <p className="text-sm font-bold text-fg">{t("커뮤니티 활동을 불러오지 못했어요", "Couldn't load community activity")}</p>
-          <p className="mt-1 text-xs leading-5 text-fg-3">
-            {t("네트워크 상태를 확인하고 다시 시도해 주세요.", "Check your connection and try again.")}
-          </p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-4 py-4 sm:px-5" role="alert">
+          <div>
+            <p className="text-sm font-medium text-fg">{t("커뮤니티 활동을 불러오지 못했어요", "Couldn't load community activity")}</p>
+            <p className="mt-1 text-xs leading-5 text-fg-2">
+              {t("네트워크 상태를 확인하고 다시 시도해 주세요.", "Check your connection and try again.")}
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => POOL_KEYS.forEach(retryPool)}
-            className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-raised px-3.5 text-xs font-medium text-fg transition-colors duration-150 hover:border-accent/50 motion-reduce:transition-none"
           >
             <RotateCcw size={14} aria-hidden="true" />
             {t("다시 시도", "Retry")}
@@ -256,15 +250,14 @@ export function CommunityActivityPreview() {
         </div>
       ) : (
         <>
-          {/* 활동 스트립 — 인기 글 3 + 최신 팬아트 4, 모바일은 가로 스크롤 스냅 */}
           {(stripPopular.length > 0 || stripFanart.length > 0 || pools.popular.status === "loading" || pools.fanart.status === "loading") && (
             <div className="mt-6 space-y-6">
               {pools.popular.status === "loading" ? (
                 <SkeletonCards count={3} />
               ) : stripPopular.length > 0 ? (
                 <div>
-                  <h3 className="flex items-center gap-1.5 text-sm font-black text-fg">
-                    <Flame size={15} className="text-accent" aria-hidden="true" />
+                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+                    <Flame size={15} className="text-fg-2" aria-hidden="true" />
                     {t("지금 뜨는 글", "Trending now")}
                   </h3>
                   <div className="scrollbar-none -mx-1 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible">
@@ -280,12 +273,12 @@ export function CommunityActivityPreview() {
               {pools.fanart.status === "loading" ? (
                 <SkeletonCards count={4} />
               ) : pools.fanart.status === "error" ? (
-                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3" role="alert">
-                  <p className="text-sm font-bold text-fg">{t("최신 팬아트를 불러오지 못했어요", "Couldn't load the latest fan art")}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-4 py-3" role="alert">
+                  <p className="text-sm font-medium text-fg">{t("최신 팬아트를 불러오지 못했어요", "Couldn't load the latest fan art")}</p>
                   <button
                     type="button"
                     onClick={() => retryPool("fanart")}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line px-3 text-xs font-bold hover:bg-raised"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-raised px-3 text-xs font-medium text-fg hover:border-accent/50"
                   >
                     <RotateCcw size={13} aria-hidden="true" />
                     {t("다시 시도", "Retry")}
@@ -293,8 +286,8 @@ export function CommunityActivityPreview() {
                 </div>
               ) : stripFanart.length > 0 ? (
                 <div>
-                  <h3 className="flex items-center gap-1.5 text-sm font-black text-fg">
-                    <ImageIcon size={15} className="text-accent" aria-hidden="true" />
+                  <h3 className="flex items-center gap-1.5 text-sm font-semibold text-fg">
+                    <ImageIcon size={15} className="text-fg-2" aria-hidden="true" />
                     {t("최신 팬아트", "Latest fan art")}
                   </h3>
                   <div className="scrollbar-none -mx-1 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
@@ -309,8 +302,7 @@ export function CommunityActivityPreview() {
             </div>
           )}
 
-          {/* 탭 미리보기 — 추천/인기/신작/이벤트 각 상위 4개 */}
-          <div className="mt-8">
+          <div className="mt-7">
             <CommunityUnderlineTabs<ActivityTab>
               ariaLabel={t("활동 미리보기 탭", "Activity preview tabs")}
               layoutId="community-activity-tab-underline"
@@ -327,26 +319,26 @@ export function CommunityActivityPreview() {
               {activePool.status === "loading" ? (
                 <SkeletonCards count={4} />
               ) : activePool.status === "error" ? (
-                <div className="rounded-2xl border border-line bg-panel p-5 text-center" role="alert">
-                  <p className="text-sm font-bold text-fg">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-4 py-4" role="alert">
+                  <p className="text-sm font-medium text-fg">
                     {activePool.message ?? t("글을 불러오지 못했어요", "Couldn't load posts")}
                   </p>
                   <button
                     type="button"
                     onClick={() => retryPool(TAB_POOL[tab])}
-                    className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-line px-4 text-sm font-bold hover:bg-raised"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line bg-raised px-3.5 text-xs font-medium text-fg hover:border-accent/50"
                   >
                     <RotateCcw size={14} aria-hidden="true" />
                     {t("다시 시도", "Retry")}
                   </button>
                 </div>
               ) : activePosts.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-line px-4 py-8 text-center">
-                  <p className="text-sm font-bold text-fg">{tabEmptyCopy[tab].title}</p>
+                <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-fg">{tabEmptyCopy[tab].title}</p>
                   <p className="mt-1 text-xs leading-5 text-fg-3">{tabEmptyCopy[tab].description}</p>
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div key={tab} className="ink-cascade grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {activePosts.map((post, index) => (
                     <div key={post.id} {...introItemProps(index)}>
                       <ActivityArtCard post={post} className="h-full" />

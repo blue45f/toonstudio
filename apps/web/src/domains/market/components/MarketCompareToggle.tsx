@@ -42,21 +42,23 @@ export function MarketCompareToggle({
       aria-label={`${record.name} ${label}`}
       aria-pressed={selected}
       title={label}
-      className={compact
-        ? cn(
-            "flex size-11 items-center justify-center rounded-full bg-card/80 text-fg-3 shadow-sm backdrop-blur-sm transition-[color,transform] hover:scale-110 hover:text-accent motion-reduce:transform-none motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40",
-            selected && "bg-accent/15 text-accent",
-            className,
-          )
-        : buttonClass({
-            variant: "outline",
-            size: "sm",
-            className: cn(
-              "gap-1.5",
-              selected && "border-accent/45 bg-accent/10 text-accent",
+      className={
+        compact
+          ? cn(
+              "flex size-11 items-center justify-center rounded-[8px] border border-line/70 bg-canvas/85 text-fg-2 backdrop-blur-sm [-webkit-backdrop-filter:blur(4px)] transition-colors duration-150 hover:border-line-strong hover:text-accent motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:cursor-not-allowed disabled:opacity-40",
+              selected && "border-accent/55 bg-accent/15 text-accent",
               className,
-            ),
-          })}
+            )
+          : buttonClass({
+              variant: "outline",
+              size: "sm",
+              className: cn(
+                "gap-1.5 rounded-[8px]",
+                selected && "border-accent/45 bg-accent/10 text-accent",
+                className,
+              ),
+            })
+      }
     >
       <GitCompareArrows className="size-3.5" aria-hidden="true" />
       {compact ? null : <span>{selected ? "비교 중" : "비교하기"}</span>}

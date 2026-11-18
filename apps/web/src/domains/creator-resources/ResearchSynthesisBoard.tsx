@@ -154,26 +154,26 @@ export function ResearchSynthesisBoard({
   return <section id="research-synthesis" className="scroll-mt-24 space-y-5" aria-labelledby="research-synthesis-title">
     <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
       <div>
-        <p className="text-sm font-semibold text-accent">근거 → 질문 → 결정</p>
-        <h2 id="research-synthesis-title" className="mt-1 text-2xl font-bold">자료를 장면 선택으로 바꾸는 판단 노트</h2>
+        <p className="text-xs font-medium text-accent">근거 → 질문 → 결정</p>
+        <h2 id="research-synthesis-title" className="mt-1 text-2xl font-semibold">자료를 장면 선택으로 바꾸는 판단 노트</h2>
         <p className="mt-2 max-w-4xl leading-7 text-fg-2">저장 자료에서 직접 확인한 관찰, 아직 풀리지 않은 질문, 실제 장면에 반영할 결정을 분리해 기록하세요. 연결 자료는 출처 추적을 돕지만 사실이나 권리를 자동 보증하지 않습니다.</p>
       </div>
-      <span className="w-fit rounded-full border border-line bg-panel px-3 py-1 text-xs text-fg-2">브라우저 로컬 · 최대 {RESEARCH_NOTE_LIMIT}개</span>
+      <span className="w-fit rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-fg-2 tabular-nums">브라우저 로컬 · 최대 {RESEARCH_NOTE_LIMIT}개</span>
     </header>
 
     <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-      <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">전체 판단 노트</dt><dd className="mt-2 text-2xl font-bold">{summary.total}<span className="ml-1 text-sm">개</span></dd></div>
-      <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">확인한 관찰</dt><dd className="mt-2 text-2xl font-bold">{summary.observationCount}<span className="ml-1 text-sm">개</span></dd></div>
-      <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">남은 질문</dt><dd className="mt-2 text-2xl font-bold">{summary.questionCount}<span className="ml-1 text-sm">개</span></dd></div>
-      <div className="rounded-2xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">장면 결정</dt><dd className="mt-2 text-2xl font-bold">{summary.decisionCount}<span className="ml-1 text-sm">개</span></dd></div>
-      <div className="rounded-2xl border border-line bg-panel p-4 sm:col-span-2 xl:col-span-1"><dt className="text-xs text-fg-2">자료가 연결된 노트</dt><dd className="mt-2 text-2xl font-bold">{summary.linkedCount}<span className="ml-1 text-sm">개</span></dd>{summary.unlinkedDecisionCount > 0 && <dd className="mt-1 text-xs text-fg-2">근거 미연결 결정 {summary.unlinkedDecisionCount}개</dd>}</div>
+      <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">전체 판단 노트</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{summary.total}<span className="ml-1 text-sm font-normal text-fg-2">개</span></dd></div>
+      <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">확인한 관찰</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{summary.observationCount}<span className="ml-1 text-sm font-normal text-fg-2">개</span></dd></div>
+      <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">남은 질문</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{summary.questionCount}<span className="ml-1 text-sm font-normal text-fg-2">개</span></dd></div>
+      <div className="rounded-xl border border-line bg-panel p-4"><dt className="text-xs text-fg-2">장면 결정</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{summary.decisionCount}<span className="ml-1 text-sm font-normal text-fg-2">개</span></dd></div>
+      <div className="rounded-xl border border-line bg-panel p-4 sm:col-span-2 xl:col-span-1"><dt className="text-xs text-fg-2">자료가 연결된 노트</dt><dd className="mt-2 text-2xl font-semibold tabular-nums">{summary.linkedCount}<span className="ml-1 text-sm font-normal text-fg-2">개</span></dd>{summary.unlinkedDecisionCount > 0 && <dd className="mt-1 text-xs text-fg-2 tabular-nums">근거 미연결 결정 {summary.unlinkedDecisionCount}개</dd>}</div>
     </dl>
 
-    <form className="grid gap-5 rounded-3xl border border-line bg-panel p-5 sm:p-6 xl:grid-cols-5" onSubmit={submitEntry} noValidate>
+    <form className="grid gap-6 rounded-2xl border border-line bg-panel p-5 sm:p-6 xl:grid-cols-5" onSubmit={submitEntry} noValidate>
       <div className="space-y-4 xl:col-span-3">
         <div>
-          <p className="text-xs font-bold text-accent">새 판단 노트</p>
-          <h3 className="mt-1 text-lg font-bold">한 문장으로 기록하고 근거를 연결하세요</h3>
+          <p className="text-xs font-medium text-accent">새 판단 노트</p>
+          <h3 className="mt-1 text-lg font-semibold">한 문장으로 기록하고 근거를 연결하세요</h3>
         </div>
         <div className="flex flex-wrap gap-2" role="group" aria-label="판단 노트 유형">
           {RESEARCH_NOTE_KINDS.map((entry) => <button
@@ -219,14 +219,14 @@ export function ResearchSynthesisBoard({
         </div>
       </div>
 
-      <aside className="space-y-4 rounded-2xl border border-line bg-canvas p-4 xl:col-span-2" aria-labelledby="research-note-sources-title">
+      <aside className="space-y-4 border-t border-line pt-4 xl:col-span-2 xl:border-t-0 xl:border-l xl:pl-6 xl:pt-0" aria-labelledby="research-note-sources-title">
         <div>
-          <p className="text-xs font-bold text-accent">출처 연결</p>
-          <h3 id="research-note-sources-title" className="mt-1 font-bold">저장 보드의 근거 선택</h3>
+          <p className="text-xs font-medium text-accent">출처 연결</p>
+          <h3 id="research-note-sources-title" className="mt-1 font-semibold">저장 보드의 근거 선택</h3>
           <p className="mt-2 text-xs leading-5 text-fg-2">현재 저장된 자료만 연결합니다. 자료가 보드에서 삭제되어도 노트 자체는 유지됩니다.</p>
         </div>
         {resources.length ? <>
-          <label htmlFor="research-note-source-search" className="block text-sm font-semibold">연결할 저장 자료 검색
+          <label htmlFor="research-note-source-search" className="block text-sm font-medium">연결할 저장 자료 검색
             <input
               id="research-note-source-search"
               type="search"
@@ -236,8 +236,8 @@ export function ResearchSynthesisBoard({
               onChange={(event: ChangeEvent<HTMLInputElement>) => setSourceQuery(event.target.value)}
             />
           </label>
-          <div className="max-h-64 space-y-2 overflow-y-auto pr-1" aria-label="연결 가능한 저장 자료">
-            {sourceCandidates.map((resource) => <label key={resource.id} className="flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border border-line bg-panel p-3 text-sm hover:bg-raised">
+          <div className="max-h-64 space-y-1.5 overflow-y-auto overscroll-contain pr-1" aria-label="연결 가능한 저장 자료">
+            {sourceCandidates.map((resource) => <label key={resource.id} className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-line bg-canvas p-3 text-sm hover:bg-raised">
               <span className="sr-only">연결 자료 선택</span>
               <input
                 type="checkbox"
@@ -245,11 +245,11 @@ export function ResearchSynthesisBoard({
                 checked={selectedSourceIds.includes(resource.id)}
                 onChange={(event: ChangeEvent<HTMLInputElement>) => toggleSource(resource.id, event.target.checked)}
               />
-              <span className="min-w-0"><span className="block truncate font-semibold">{resource.title}</span><span className="block truncate text-xs text-fg-2">{resource.creator || resource.credit}</span></span>
+              <span className="min-w-0"><span className="block truncate font-medium">{resource.title}</span><span className="block truncate text-xs text-fg-2">{resource.creator || resource.credit}</span></span>
             </label>)}
-            {!sourceCandidates.length && <p className="rounded-xl border border-dashed border-line p-4 text-sm text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceSearchEmpty", "검색과 일치하는 저장 자료가 없습니다.")}</p>}
+            {!sourceCandidates.length && <p className="rounded-lg border border-dashed border-line p-4 text-sm text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceSearchEmpty", "검색과 일치하는 저장 자료가 없습니다.")}</p>}
           </div>
-        </> : <p className="rounded-xl border border-dashed border-line p-4 text-sm leading-6 text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceEmptyGuide", "먼저 시각 레퍼런스나 판본 자료를 저장하면 판단 노트에 출처를 연결할 수 있습니다.")}</p>}
+        </> : <p className="rounded-lg border border-dashed border-line p-4 text-sm leading-6 text-fg-2">{resourceStatusText("resources.status.researchBoard.sourceEmptyGuide", "먼저 시각 레퍼런스나 판본 자료를 저장하면 판단 노트에 출처를 연결할 수 있습니다.")}</p>}
       </aside>
       <p id="research-note-status" role="status" aria-live="polite" className="text-sm text-fg-2 xl:col-span-5">{error || notice || (!ready ? resourceStatusText("resources.status.researchBoard.notesLoading", "판단 노트를 불러오는 중입니다.") : writable ? r44ResourcesStatusText("r44cat1.creatorResources.researchBoard.localOnlyNote", "노트는 이 브라우저에만 저장되며 계정과 동기화되지 않습니다.") : "이 환경에서는 저장할 수 없어 현재 탭에서만 유지됩니다.")}</p>
     </form>
@@ -257,10 +257,10 @@ export function ResearchSynthesisBoard({
     <div className="grid gap-4 xl:grid-cols-3" aria-label="판단 노트 보드">
       {RESEARCH_NOTE_KINDS.map((lane) => {
         const entries = notebook.entries.filter((entry) => entry.kind === lane.id);
-        return <section key={lane.id} className="min-w-0 rounded-2xl border border-line bg-panel p-4" aria-labelledby={`research-note-lane-${lane.id}`}>
-          <header className="flex items-start justify-between gap-3 border-b border-line pb-4">
-            <div><p className="text-xs font-bold text-accent">{lane.eyebrow}</p><h3 id={`research-note-lane-${lane.id}`} className="mt-1 text-lg font-bold">{lane.label}</h3></div>
-            <span className="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs text-fg-2">{entries.length}</span>
+        return <section key={lane.id} className="min-w-0 rounded-xl border border-line bg-panel p-4" aria-labelledby={`research-note-lane-${lane.id}`}>
+          <header className="flex items-start justify-between gap-3 border-b border-line pb-3.5">
+            <div><p className="text-xs font-medium text-accent">{lane.eyebrow}</p><h3 id={`research-note-lane-${lane.id}`} className="mt-1 text-lg font-semibold">{lane.label}</h3></div>
+            <span className="rounded-md border border-line bg-canvas px-2 py-0.5 text-xs text-fg-2 tabular-nums">{entries.length}</span>
           </header>
           <div className="mt-4 space-y-3">
             {entries.map((entry) => {
@@ -269,18 +269,18 @@ export function ResearchSynthesisBoard({
                 .filter((resource): resource is CreatorResource => Boolean(resource));
               const missingSourceCount = entry.sourceIds.length - linkedResources.length;
               const searchQuery = researchNotebookSearchQuery(entry.text);
-              return <article key={entry.id} className="rounded-xl border border-line bg-canvas p-4">
+              return <article key={entry.id} className="rounded-lg border border-line bg-canvas p-4">
                 <p className="whitespace-pre-wrap break-words text-sm leading-6">{entry.text}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5">
                   {linkedResources.map((resource) => <a
                     key={resource.id}
                     href={resource.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="max-w-full truncate rounded-full border border-line bg-panel px-2.5 py-1 text-xs text-accent hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                    className="max-w-full truncate rounded-md border border-line bg-panel px-2.5 py-1 text-xs text-accent hover:bg-raised focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
                   >{resource.title} ↗</a>)}
-                  {missingSourceCount > 0 && <span className="rounded-full border border-line px-2.5 py-1 text-xs text-fg-2">보드에서 제거된 자료 {missingSourceCount}개</span>}
-                  {!entry.sourceIds.length && <span className="rounded-full border border-dashed border-line px-2.5 py-1 text-xs text-fg-2">근거 미연결</span>}
+                  {missingSourceCount > 0 && <span className="rounded-md border border-line px-2 py-1 text-xs text-fg-2 tabular-nums">보드에서 제거된 자료 {missingSourceCount}개</span>}
+                  {!entry.sourceIds.length && <span className="rounded-md border border-dashed border-line px-2 py-1 text-xs text-fg-2">근거 미연결</span>}
                 </div>
                 <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-line pt-3">
                   <label className="text-xs text-fg-2">유형

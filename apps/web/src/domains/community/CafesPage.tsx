@@ -25,7 +25,6 @@ import type {
 
 import { requestAuthModalOpen } from "@/domains/auth/public/session/auth-modal-intent";
 import { SitePageHeader } from "@/domains/legal/public/site-page-header";
-import { ErrorState } from "@/shared/components/feedback/error-state";
 import { LoadingState } from "@/shared/components/LoadingState";
 import { Container } from "@/shared/components/section";
 import { SiteContextualSubNav } from "@/shared/components/site-contextual-subnav";
@@ -55,6 +54,7 @@ import {
 
 const COPY = {
   docTitle: defineBilingualText("cafesPage", "docTitle", "회원 카페 · 커뮤니티", "Member cafés · Community"),
+  eyebrow: defineBilingualText("cafesPage", "eyebrow", "회원 소모임", "Member clubs"),
   pageTitle: defineBilingualText("cafesPage", "pageTitle", "회원 카페", "Member cafés"),
   listTitle: defineBilingualText("cafesPage", "listTitle", "카페 목록", "Café list"),
   resetFilters: defineBilingualText("cafesPage", "resetFilters", "필터 초기화", "Reset filters"),
@@ -280,25 +280,15 @@ export function CafesPage() {
           surface="plain"
           className="mb-6 sm:mb-8"
           icon={Coffee}
-          eyebrow="MEMBER COMMUNITIES"
+          eyebrow={t(COPY.eyebrow)}
           title={t(COPY.pageTitle)}
           description={t(COPY.heroLede)}
           actions={
-            <Link href="/community" className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 gap-1.5" })}>
+            <Link href="/community" className={buttonClass({ variant: "ghost", size: "sm", className: "min-h-11 gap-1.5 rounded-lg" })}>
               <UsersRound size={15} aria-hidden="true" />
               {t(COPY.linkUnified)}
             </Link>
           }
-          aside={
-            <img
-              src="/images/section-community.webp"
-              alt=""
-              loading="lazy"
-              decoding="async"
-              className="aspect-[4/3] w-full rounded-2xl object-cover"
-            />
-          }
-          asideClassName="hidden lg:block"
         />
 
         <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_340px]">
@@ -306,18 +296,18 @@ export function CafesPage() {
           <section className="order-2 min-w-0 lg:order-1" aria-labelledby="cafes-list-title">
             <h2 id="cafes-list-title" className="sr-only">{t(COPY.listTitle)}</h2>
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <label className="inline-flex min-h-11 min-w-0 flex-1 basis-full items-center gap-2 rounded-xl border border-line bg-canvas/40 px-3 text-xs focus-within:border-accent/50 sm:basis-56">
-                <Search size={14} className="shrink-0 text-fg-3" />
+              <label className="relative min-w-0 flex-1 basis-full sm:basis-56">
+                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fg-3" aria-hidden="true" />
                 <span className="sr-only">{t(COPY.searchAria)}</span>
                 <input
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
                   maxLength={80}
                   placeholder={t(COPY.searchPlaceholder)}
-                  className="h-full w-full min-w-0 border-none bg-transparent text-sm outline-none placeholder:text-fg-3"
+                  className="min-h-11 w-full min-w-0 rounded-lg border border-line bg-canvas pl-9 pr-3 text-sm text-fg outline-none placeholder:text-fg-3 focus:border-accent"
                 />
               </label>
-              <div className="inline-flex min-h-11 rounded-xl border border-line bg-raised/40">
+              <div className="inline-flex min-h-11 items-center gap-0.5 rounded-[10px] border border-line bg-panel p-1">
                 {SORTS.map((option) => (
                   <button
                     key={option.value}
@@ -325,8 +315,8 @@ export function CafesPage() {
                     onClick={() => setSort(option.value)}
                     aria-pressed={sort === option.value}
                     className={cn(
-                      "min-h-11 px-3 text-xs font-medium first:rounded-l-xl last:rounded-r-xl",
-                      sort === option.value ? "bg-accent text-on-accent" : "text-fg-2 hover:bg-canvas/55",
+                      "min-h-9 rounded-lg px-3 text-xs transition-colors duration-150 motion-reduce:transition-none",
+                      sort === option.value ? "bg-raised font-semibold text-fg" : "font-medium text-fg-3 hover:text-fg",
                     )}
                   >
                     {t(option.key)}
@@ -339,7 +329,7 @@ export function CafesPage() {
                   onClick={() => setMineOnly((current) => !current)}
                   aria-pressed={mineOnly}
                   className={cn(
-                    "min-h-11 rounded-xl border px-3 text-xs font-medium",
+                    "min-h-11 rounded-lg border px-3 text-xs font-medium",
                     mineOnly ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2",
                   )}
                 >
@@ -367,8 +357,8 @@ export function CafesPage() {
                   type="button"
                   onClick={() => setKind("")}
                   className={cn(
-                    "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium min-h-11",
-                    !kind ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2",
+                    "min-h-11 shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+                    !kind ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised",
                   )}
                 >
                   {t(COPY.kindAll)}
@@ -379,8 +369,8 @@ export function CafesPage() {
                     type="button"
                     onClick={() => setKind((current) => (current === value ? "" : value))}
                     className={cn(
-                      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium min-h-11",
-                      kind === value ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2",
+                      "min-h-11 shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+                      kind === value ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised",
                     )}
                   >
                     {t(CAFE_KIND_LABEL_KEYS[value])}
@@ -390,12 +380,12 @@ export function CafesPage() {
             </div>
 
             <div className="mb-5">
-              <label className="grid gap-1.5 text-xs font-bold text-fg-3 sm:hidden">
+              <label className="grid gap-1.5 text-xs font-medium text-fg-3 sm:hidden">
                 {t(COPY.genreFilterLabel)}
                 <select
                   value={genre}
                   onChange={(event) => setGenre(event.target.value)}
-                  className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-sm font-semibold text-fg outline-none focus:border-accent focus:ring-2 focus:ring-accent/30"
+                  className="min-h-11 w-full rounded-lg border border-line bg-card px-3 text-sm font-medium text-fg outline-none focus:border-accent"
                 >
                   <option value="">{t(COPY.genreAll)}</option>
                   {GENRES.map((value) => <option key={value} value={value}>{value}</option>)}
@@ -406,8 +396,8 @@ export function CafesPage() {
                   type="button"
                   onClick={() => setGenre("")}
                   className={cn(
-                    "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium min-h-11",
-                    !genre ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2",
+                    "min-h-11 shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+                    !genre ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised",
                   )}
                 >
                   {t(COPY.genreAll)}
@@ -418,8 +408,8 @@ export function CafesPage() {
                     type="button"
                     onClick={() => setGenre((current) => (current === value ? "" : value))}
                     className={cn(
-                      "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium min-h-11",
-                      genre === value ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2",
+                      "min-h-11 shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150 motion-reduce:transition-none",
+                      genre === value ? "border-accent/55 bg-accent-soft text-accent" : "border-line text-fg-2 hover:bg-raised",
                     )}
                   >
                     {value}
@@ -431,32 +421,42 @@ export function CafesPage() {
             {loading ? (
               <LoadingState variant="cards" cardCount={4} />
             ) : error ? (
-              <ErrorState
-                title={t(COPY.listErrorTitle)}
-                message={t(COPY.listErrorMessage, { detail: error })}
-                onRetry={() => setRefreshTick((tick) => tick + 1)}
-                className="py-14"
-              />
+              <div
+                role="alert"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel/50 px-4 py-4 sm:px-5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-fg">{t(COPY.listErrorTitle)}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-fg-2">{t(COPY.listErrorMessage, { detail: error })}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setRefreshTick((tick) => tick + 1)}
+                  className="min-h-11 shrink-0 rounded-lg border border-line bg-raised px-3.5 text-xs font-medium text-fg hover:border-accent/50"
+                >
+                  다시 시도
+                </button>
+              </div>
             ) : cafes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-line bg-card/45 px-6 py-14 text-center">
-                <Sparkles className="mx-auto mb-3 text-accent" size={22} />
+              <div className="rounded-xl border border-dashed border-line bg-panel/35 px-6 py-12 text-center">
+                <Sparkles className="mx-auto mb-3 text-fg-3" size={20} />
                 <p className="text-sm font-medium text-fg">{t(COPY.emptyTitle)}</p>
                 <p className="mt-1 text-xs text-fg-3">{t(COPY.emptyDescription)}</p>
                 <button
                   type="button"
                   onClick={() => { setSearchText(""); setKind(""); setGenre(""); setMineOnly(false); }}
-                  className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 min-h-11" })}
+                  className={buttonClass({ variant: "outline", size: "sm", className: "mt-4 min-h-11 rounded-lg" })}
                 >
                   {t(COPY.resetFilters)}
                 </button>
               </div>
             ) : (
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul className="grid gap-3 sm:grid-cols-2" data-ink-stagger>
                 {cafes.map((cafe, index) => (
                   <li key={cafe.id} {...introItemProps(index)}>
-                    <Link href={`/community/cafes/${encodeURIComponent(cafe.slug)}`} className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-card transition-colors hover:border-accent/45 hover:bg-raised/35">
-                      <div className="relative flex h-24 items-center justify-between gap-3 overflow-hidden bg-accent-soft/25 px-4">
-                        <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-on-accent">
+                    <Link href={`/community/cafes/${encodeURIComponent(cafe.slug)}`} className="ink-frame flex h-full flex-col overflow-hidden rounded-xl border border-line bg-card/85 transition-colors duration-150 hover:bg-card motion-reduce:transition-none">
+                      <div className="relative flex h-20 items-center justify-between gap-3 overflow-hidden border-b border-line/70 bg-panel/60 px-4">
+                        <span className="rounded-md border border-accent/35 bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
                           {t(CAFE_KIND_LABEL_KEYS[cafe.kind])}
                         </span>
                         <MotionIllustration
@@ -466,12 +466,12 @@ export function CafesPage() {
                         />
                       </div>
                       <div className="flex flex-1 flex-col gap-2 p-4">
-                        <div className="flex items-start gap-2">
-                          <span className="grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-accent-soft text-accent">
-                            {cafe.visibility === "private" ? <Lock size={16} /> : <Coffee size={16} />}
+                        <div className="flex items-start gap-2.5">
+                          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-raised text-fg-2">
+                            {cafe.visibility === "private" ? <Lock size={15} /> : <Coffee size={15} />}
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-bold text-fg">{cafe.name}</p>
+                            <p className="truncate text-sm font-semibold text-fg">{cafe.name}</p>
                             <p className="text-xs text-fg-3">{t(CAFE_KIND_LABEL_KEYS[cafe.kind])} · {cafe.genre || t(COPY.genreAny)}</p>
                           </div>
                           {cafe.viewerCanManage && <ShieldCheck size={15} className="text-accent" aria-label={t(COPY.managingAria)} />}
@@ -479,12 +479,12 @@ export function CafesPage() {
                         <p className="line-clamp-2 text-xs leading-relaxed text-fg-2">{cafe.description}</p>
                         {cafe.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1">
-                            {cafe.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-full bg-canvas/70 px-2 py-0.5 text-xs text-fg-3">#{tag}</span>)}
+                            {cafe.tags.slice(0, 4).map((tag) => <span key={tag} className="rounded-md border border-line bg-panel/60 px-2 py-0.5 text-xs text-fg-3">#{tag}</span>)}
                           </div>
                         )}
                         <p className="text-xs text-fg-3">{policySummary(t, cafe)}</p>
-                        <p className="mt-auto pt-1 text-xs text-fg-3">
-                          {t(COPY.membersLabel)} <span className="numeral text-fg-2">{cafe.memberCount}</span> · {t(COPY.postsLabel)} <span className="numeral text-fg-2">{cafe.postCount}</span> · {t(COPY.openedAt, { date: relativeDate(cafe.createdAt, undefined, pageLang) })}
+                        <p className="mt-auto pt-1 text-xs tabular-nums text-fg-3">
+                          {t(COPY.membersLabel)} <span className="font-medium text-fg-2">{cafe.memberCount}</span> · {t(COPY.postsLabel)} <span className="font-medium text-fg-2">{cafe.postCount}</span> · {t(COPY.openedAt, { date: relativeDate(cafe.createdAt, undefined, pageLang) })}
                         </p>
                       </div>
                     </Link>

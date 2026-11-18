@@ -1,5 +1,5 @@
 /**
- * 출력 오케스트레이션: ExportPanel → (settle) → engine.renderPasses(요청 해상도) → raster → PNG | PSD | GLB | 레시피.
+ * 출력 오케스트레이션: ExportPanel → (settle) → engine.renderPasses(요청 해상도) → raster → PNG | PSD | GLB | WebM | 레시피.
  * 출력 크기는 항상 옵션의 width/height다(뷰포트 크기 유도 금지). 모든 실패는 LabFailure로 돌려준다.
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure, recipeDigest } from "../contracts";
@@ -23,19 +23,19 @@ import type { PsdMangaFxOptions, PsdPlanReceipt } from "./psd-plan";
 export type { PsdMangaFxOptions } from "./psd-plan";
 
 export const GLB_MIME = "model/gltf-binary";
+export const WEBM_MIME = "video/webm";
 export const SHAPER_PRESET_MIME = "text/plain;charset=utf-8";
 export const MIN_EXPORT_DIMENSION = 16;
 export const MAX_PNG_EXPORT_DIMENSION = 4096;
 export const MAX_PSD_EXPORT_DIMENSION = PSD_MAX_DIMENSION;
 export const MAX_SETTLE_STEPS = 600;
 
-export type ExportKind = "png" | "psd" | "glb" | "recipe" | "shaper-preset";
+export type ExportKind = "png" | "psd" | "glb" | "webm" | "recipe" | "shaper-preset";
 
 export interface ExportCaptureOptions {
   readonly width: number;
   readonly height: number;
   readonly framing?: CameraFraming;
-  /** 캡처 전 물리 settle 스텝(0 = 없음) */
   readonly settleSteps?: number;
 }
 
@@ -105,6 +105,17 @@ export function isGlb(bytes: Uint8Array): boolean {
   return view.getUint32(0, true) === 0x46546c67 && view.getUint32(4, true) === 2;
 }
 
+/** Matroska / WebM EBML 컨테이너 매직 헤더 (0x1A 0x45 0xDF 0xA3) */
+export function isWebmEbml(bytes: Uint8Array): boolean {
+  return (
+    bytes.length >= 4 &&
+    bytes[0] === 0x1a &&
+    bytes[1] === 0x45 &&
+    bytes[2] === 0xdf &&
+    bytes[3] === 0xa3
+  );
+}
+
 async function capture(engine: CharacterEngine, options: ExportCaptureOptions, passes: readonly RenderPassId[], now: number, includeHairOwnership = false) {
   const request = { ...buildCaptureRequest(options, passes), ...(includeHairOwnership ? { includeHairOwnership: true } : {}) };
   if (request.settleSteps > 0) {
@@ -128,7 +139,6 @@ async function capture(engine: CharacterEngine, options: ExportCaptureOptions, p
   }
 }
 
-/** 투명 배경 PNG(lit 패스). */
 export async function exportTransparentPng(engine: CharacterEngine, options: ExportCaptureOptions, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
@@ -160,7 +170,6 @@ export async function exportTransparentPng(engine: CharacterEngine, options: Exp
   }
 }
 
-/** 레이어 PSD(flat·lit·normal·depth·part-id 캡처 → tone-split·line-extract·ID 마스크·페인트·만화 연출 분리). */
 export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: readonly PaintLayer[], options: ExportPsdOptions, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
@@ -210,7 +219,6 @@ export async function exportLayeredPsd(engine: CharacterEngine, paintLayers: rea
   }
 }
 
-/** GLB(엔진 포트 exportGlb). 매직 검사만 하고 내용은 엔진이 책임진다. */
 export async function exportGlb(engine: CharacterEngine, recipe: CharacterRecipe, deps: ExportDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
@@ -233,7 +241,6 @@ export interface ExportRecipeDeps extends ExportDeps {
   readonly sublayers?: readonly PaintPartSublayerState[];
 }
 
-/** 레시피 JSON(페인트 레이어 및 서브레이어 PNG base64 포함, UTF-8). */
 export async function exportRecipe(recipe: CharacterRecipe, paintLayers: readonly PaintLayer[], deps: ExportRecipeDeps = {}): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
@@ -251,7 +258,6 @@ export async function exportRecipe(recipe: CharacterRecipe, paintLayers: readonl
   }
 }
 
-/** SHAPER 호환 `.preset` 텍스트 파일 내보내기(HeadPartsManager::SaveStyle DSL). */
 export function exportShaperStylePreset(recipe: CharacterRecipe, deps: ExportDeps = {}): ExportOutcome {
   const now = deps.now ?? defaultNow;
   const started = now();

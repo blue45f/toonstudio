@@ -97,32 +97,32 @@ export function CreateStartContinueSection({
         <section
           aria-labelledby="create-start-continue-title"
           data-testid="create-start-continue-section"
-          className="mt-8 rounded-2xl border border-line bg-panel/45 p-5 sm:p-6"
+          className="mt-6 rounded-2xl border border-line bg-panel p-5 sm:p-6"
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
-                <Clock3 size={22} aria-hidden="true" />
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-card text-fg-2">
+                <Clock3 size={17} strokeWidth={1.6} aria-hidden="true" />
               </span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 id="create-start-continue-title" className="text-lg font-bold text-fg">
+                  <h2 id="create-start-continue-title" className="text-lg font-semibold text-fg [word-break:keep-all]">
                     {bt("이어서 작업하기", "Continue a work")}
                   </h2>
                   {recentProjects.length > 0 ? (
                     <span
                       data-testid="continue-recent-count"
-                      className="inline-flex items-center rounded-full border border-accent/30 bg-accent-soft/45 px-2.5 py-0.5 text-xs font-bold text-accent"
+                      className="inline-flex items-center rounded border border-line bg-card px-2 py-0.5 text-xs font-medium tabular-nums text-fg-2"
                     >
                       {bt(`최근 ${recentProjects.length}개`, `${recentProjects.length} recent`)}
                     </span>
                   ) : null}
                 </div>
                 {recentProjects.length > 0 ? (
-                  <p className="mt-1 text-xs leading-5 text-fg-2">
+                  <p className="mt-1 text-xs leading-5 text-fg-2 [word-break:keep-all]">
                     {bt(
-                      "카드를 누르면 마지막 원고 화면으로 바로 돌아가고, 기획·회차를 먼저 보려면 옆의 작품 홈을 여세요.",
-                      "Select a card to jump back to your last canvas, or open Overview to check story and episodes first.",
+                      "카드를 누르면 마지막 원고 화면으로 바로 돌아가고, 기획·회차를 먼저 보려면 옆의 작품 홈을 여세요",
+                      "Select a card to jump back to your last canvas, or open Overview to check story and episodes first",
                     )}
                   </p>
                 ) : null}
@@ -132,7 +132,7 @@ export function CreateStartContinueSection({
 
           {recentProjects.length > 0 ? (
             <>
-              <ul className="mt-4 space-y-2.5" data-testid="continue-recent-list">
+              <ul className="ink-cascade mt-4 space-y-2.5" data-testid="continue-recent-list">
                 {recentProjects.map((project, index) => {
                   const isMostRecent = index === 0;
                   const overviewHref = `/studio/p/${encodeURIComponent(project.id)}/overview`;
@@ -167,10 +167,10 @@ export function CreateStartContinueSection({
                       data-testid={`continue-item-${project.id}`}
                       data-most-recent={isMostRecent ? "true" : "false"}
                       className={cn(
-                        "flex flex-col gap-2 rounded-2xl border p-2 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-2.5",
+                        "ink-frame flex flex-col gap-2 rounded-[14px] border p-2 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-2.5",
                         isMostRecent
-                          ? "border-accent/45 bg-accent-soft/20 shadow-xs"
-                          : "border-line/80 bg-card/70 hover:border-accent/40",
+                          ? "border-line-strong bg-card"
+                          : "border-line bg-card/75 hover:border-line-strong",
                       )}
                     >
                       <Link
@@ -178,7 +178,7 @@ export function CreateStartContinueSection({
                         data-continue-primary-link="true"
                         onKeyDown={handlePrimaryLinkKeyDown}
                         style={{ minHeight: "44px" }}
-                        className="fx-press group flex min-h-11 min-w-0 flex-1 scroll-my-24 items-center justify-between gap-3 rounded-xl px-2 py-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="ink-arrow group flex min-h-11 min-w-0 flex-1 scroll-my-24 items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         aria-label={bt(`${project.title} 이어서 작업`, `Continue ${project.title}`)}
                       >
                         <span className="flex min-w-0 items-center gap-3">
@@ -188,22 +188,22 @@ export function CreateStartContinueSection({
                               {isMostRecent ? (
                                 <span
                                   data-testid="continue-latest-badge"
-                                  className="inline-flex shrink-0 items-center rounded-full bg-accent px-2 py-0.5 text-[0.65rem] font-extrabold text-on-accent"
+                                  className="inline-flex shrink-0 items-center rounded border border-accent/40 bg-accent-soft px-2 py-0.5 text-[0.68rem] font-semibold text-accent"
                                 >
                                   {bt("방금 작업", "Latest")}
                                 </span>
                               ) : null}
-                              <span className="truncate text-sm font-bold text-fg">
+                              <span className="truncate text-sm font-semibold text-fg">
                                 {project.title}
                               </span>
                             </span>
                             <span
                               data-testid={`continue-destination-${project.id}`}
-                              className="mt-0.5 block break-words text-xs font-medium text-fg-2 [overflow-wrap:anywhere]"
+                              className="mt-0.5 block break-words text-xs text-fg-2 [overflow-wrap:anywhere]"
                             >
                               {destinationLabel}
                             </span>
-                            <span className="mt-0.5 block text-[0.7rem] text-fg-3">
+                            <span className="mt-0.5 block text-[0.7rem] tabular-nums text-fg-3">
                               {`${studioProjectLibraryTypeLabel(project)} · ${studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}`}
                             </span>
                           </span>
@@ -211,14 +211,14 @@ export function CreateStartContinueSection({
                         <span
                           aria-hidden="true"
                           className={cn(
-                            "hidden shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none sm:inline-flex",
+                            "hidden shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium sm:inline-flex",
                             isMostRecent
                               ? "bg-accent text-on-accent"
-                              : "border border-line bg-panel/80 text-accent",
+                              : "border border-line bg-panel text-fg",
                           )}
                         >
                           {primaryActionLabel}
-                          <ArrowRight size={14} aria-hidden="true" />
+                          <ArrowRight size={14} strokeWidth={1.6} aria-hidden="true" />
                         </span>
                       </Link>
 
@@ -231,9 +231,9 @@ export function CreateStartContinueSection({
                             `${project.title} 작품 홈 열기`,
                             `Open ${project.title} overview`,
                           )}
-                          className="fx-press inline-flex min-h-11 min-w-11 shrink-0 scroll-my-24 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel/80 px-3 py-2 text-xs font-bold text-fg-2 transition-colors hover:border-accent/50 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          className="inline-flex min-h-11 min-w-11 shrink-0 scroll-my-24 items-center justify-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                         >
-                          <BookOpen size={14} aria-hidden="true" />
+                          <BookOpen size={14} strokeWidth={1.6} aria-hidden="true" />
                           <span>{bt("작품 홈", "Overview")}</span>
                         </Link>
                       ) : null}

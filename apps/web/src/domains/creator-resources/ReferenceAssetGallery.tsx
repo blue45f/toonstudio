@@ -54,28 +54,28 @@ export function AssetCard({
   const asset = item.asset;
   const date = formatReferenceDateRange(item);
   return (
-    <article data-saved={saved || undefined} data-compared={compared || undefined} className="resource-asset-card group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel transition hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg">
+    <article data-saved={saved || undefined} data-compared={compared || undefined} className="resource-asset-card ink-frame group flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-panel transition-colors hover:border-line-strong">
       <div className="relative">
         <button
           type="button"
-          className="relative block w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
+          className="ink-cover ink-sheen relative block w-full overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
           onClick={(event) => onOpen(event.currentTarget)}
           aria-label={`${item.title} 상세 보기`}
         >
-          <AssetImage fit="cover" item={item} className={`w-full transition duration-300 group-hover:scale-[1.03] ${density === "compact" ? "aspect-square" : "aspect-[4/3]"}`} />
+          <AssetImage fit="cover" item={item} className={`w-full ${density === "compact" ? "aspect-square" : "aspect-[4/3]"}`} />
         </button>
-        <span className="pointer-events-none absolute left-3 top-3 inline-flex min-h-7 items-center rounded-full border border-line bg-canvas/85 px-2.5 text-xs font-bold text-fg backdrop-blur">
+        <span className="pointer-events-none absolute left-3 top-3 inline-flex min-h-7 items-center rounded-md border border-line bg-canvas/88 px-2 text-xs font-semibold text-fg backdrop-blur">
           CC0
         </span>
         <span className="absolute right-3 top-3 flex items-center gap-1.5">
           {asset?.isHighlight ? (
-            <span className="pointer-events-none inline-flex min-h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-on-accent">
+            <span className="pointer-events-none inline-flex min-h-7 items-center gap-1 rounded-md bg-accent px-2 text-xs font-semibold text-on-accent">
               <Sparkles size={12} aria-hidden="true" /> 대표작
             </span>
           ) : null}
           <button
             type="button"
-            className={`grid size-9 place-items-center rounded-full border backdrop-blur transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${compared ? "border-accent bg-accent text-on-accent" : "border-line bg-canvas/85 text-fg hover:bg-canvas"}`}
+            className={`grid size-9 place-items-center rounded-lg border backdrop-blur transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${compared ? "border-accent bg-accent text-on-accent" : "border-line bg-canvas/88 text-fg hover:bg-canvas"}`}
             aria-pressed={compared}
             aria-label={compared ? "비교에서 제거" : "비교에 추가"}
             title={compared ? "비교에서 제거" : "비교에 추가"}
@@ -84,16 +84,16 @@ export function AssetCard({
             <Check size={16} aria-hidden="true" />
           </button>
         </span>
-        <span className="pointer-events-none absolute bottom-3 right-3 grid size-9 place-items-center rounded-full border border-line bg-canvas/85 text-fg opacity-0 backdrop-blur transition group-hover:opacity-100 group-focus-within:opacity-100">
+        <span className="pointer-events-none absolute bottom-3 right-3 grid size-9 place-items-center rounded-lg border border-line bg-canvas/88 text-fg opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <Maximize2 size={16} aria-hidden="true" />
         </span>
       </div>
-      <div className={`flex flex-1 flex-col ${density === "compact" ? "p-3.5" : "p-5"}`}>
+      <div className={`flex flex-1 flex-col ${density === "compact" ? "p-3.5" : "p-4"}`}>
         <div className="flex flex-wrap gap-1.5">
-          {asset?.department ? <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">{asset.department}</span> : null}
-          {asset?.classification ? <span className="rounded-full bg-raised px-2.5 py-1 text-xs font-semibold text-fg-2">{asset.classification}</span> : null}
+          {asset?.department ? <span className="rounded-md bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">{asset.department}</span> : null}
+          {asset?.classification ? <span className="rounded-md bg-raised px-2 py-0.5 text-xs font-medium text-fg-2">{asset.classification}</span> : null}
         </div>
-        <h3 className={`mt-3 break-words font-bold leading-snug text-fg ${density === "compact" ? "text-sm" : "text-base"}`}>{item.title}</h3>
+        <h3 className={`mt-2.5 break-words font-semibold leading-snug text-fg ${density === "compact" ? "text-sm" : "text-base"}`}>{item.title}</h3>
         <p className="mt-2 line-clamp-2 text-xs leading-5 text-fg-2">
           {item.creator || "제작자 미상"}
           {date ? ` · ${date}` : ""}

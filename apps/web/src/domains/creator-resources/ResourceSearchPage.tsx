@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Search } from "lucide-react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { RESOURCE_BUTTON, RESOURCE_INPUT } from "./navigation";
@@ -57,31 +58,31 @@ function GoogleFontPreview({ family }: { family: string }) {
 export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideTile }: { item: CreatorResource; saved: boolean; onToggle: () => void; disabled: boolean; kindLabel?: string | null; wideTile?: boolean }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(item.imageUrl) && !imageFailed;
-  return <article data-resource-card="" className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
+  return <article data-resource-card="" className="ink-frame flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-panel">
     {/* 아트 타일 — 이미지는 풀블리드로 채우고, 없거나 불러오지 못하면 타이포그래픽 커버가 자리를 지킨다.
         제공처·이용조건은 법적 고지라 지우지 않고 타일 아래 배지로 압축한다.
         kindLabel·wideTile은 종류 구분이 있는 제공처 표면(Poly Haven)만 넘긴다 — 종류 배지는
         좌상단에 고정하고, HDRI 타일은 2:1 파노라마 비율을 쓴다. */}
-    <div className={`relative w-full overflow-hidden bg-raised ${wideTile ? "aspect-[2/1]" : "aspect-[4/3]"}`}>
+    <div className={`ink-cover relative w-full overflow-hidden bg-raised ${wideTile ? "aspect-[2/1]" : "aspect-[4/3]"}`}>
       {item.provider === "googlefonts" ? <GoogleFontPreview family={item.title} />
         : showImage ? <img src={item.imageUrl} alt={item.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
         : <TypographicCover title={item.title} seed={item.id} className="absolute inset-0" />}
-      {kindLabel && <span className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{kindLabel}</span>}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/55 via-black/25 to-transparent p-3 pt-8">
-        <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{RESOURCE_LABELS[item.provider]}</span>
-        <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
+      {kindLabel && <span className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">{kindLabel}</span>}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3 pt-8">
+        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">{RESOURCE_LABELS[item.provider]}</span>
+        <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
       </div>
     </div>
     <div className="flex flex-1 flex-col space-y-3 p-5">
-      <h3 className="break-words text-lg font-bold">{item.title}</h3>
-      <p className="text-sm text-fg-2">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</p>
-      {item.description && <p className="break-words text-sm leading-6 text-fg-2">{item.description}</p>}
-      {item.provider === "bizinfo" && <div className="rounded-lg bg-raised p-3 text-sm leading-6"><p className="font-semibold">{deadlineLabel(item.deadline)}</p><p>신청 대상: {item.eligibility}</p></div>}
-      {item.isbn && <p className="text-xs text-fg-2">ISBN: {item.isbn}</p>}
-      <details className="text-base leading-7 text-fg-2"><summary className="cursor-pointer py-2">출처·이용조건·조회일</summary>
+      <h3 className="break-words text-lg font-semibold [word-break:keep-all]">{item.title}</h3>
+      <p className="text-sm text-fg-2 tabular-nums">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</p>
+      {item.description && <p className="break-words text-sm leading-6 text-fg-2 [word-break:keep-all]">{item.description}</p>}
+      {item.provider === "bizinfo" && <div className="rounded-lg border border-line bg-card p-3 text-sm leading-6"><p className="font-semibold tabular-nums">{deadlineLabel(item.deadline)}</p><p className="text-fg-2">신청 대상: {item.eligibility}</p></div>}
+      {item.isbn && <p className="text-xs text-fg-2 tabular-nums">ISBN: {item.isbn}</p>}
+      <details className="text-sm leading-6 text-fg-2"><summary className="cursor-pointer py-1.5 font-medium text-fg-3 hover:text-fg">출처·이용조건·조회일</summary>
         <p>{item.credit || "크레딧 원문 확인"}</p><p>{resourceUsageDescription(item)}</p>
         {item.licenseUrl && <a className="underline" href={item.licenseUrl} target="_blank" rel="noopener noreferrer">이용조건 확인 ↗</a>}
-        <p>조회: {item.fetchedAt}</p>
+        <p className="tabular-nums">조회: {item.fetchedAt}</p>
       </details>
       <div className="mt-auto flex flex-wrap gap-2 pt-2">
         <a href={item.sourceUrl} className={RESOURCE_BUTTON} target="_blank" rel="noopener noreferrer">원문 확인 ↗</a>
@@ -91,17 +92,12 @@ export function ResourceCard({ item, saved, onToggle, disabled, kindLabel, wideT
     </div>
   </article>;
 }
-/** 빈 상태 키 비주얼 — 검색 일러스트(장식용). */
+/** 검색 전·빈 결과용 조용한 선 아이콘 마커. */
 function EmptySearchArt() {
   return (
-    <img
-      src="/images/empty-search.webp"
-      alt=""
-      aria-hidden="true"
-      loading="lazy"
-      decoding="async"
-      className="mb-3 h-32 w-full max-w-sm rounded-2xl border border-line/60 object-cover"
-    />
+    <span aria-hidden="true" className="mb-3 grid size-10 place-items-center rounded-lg border border-line bg-card text-fg-3">
+      <Search size={18} strokeWidth={1.75} />
+    </span>
   );
 }
 
@@ -146,18 +142,18 @@ function CurationTile({ item, provider, query, onRunSearch }: { item: CreatorRes
   const showImage = Boolean(item.imageUrl) && !imageFailed;
   return (
     <button type="button" onClick={() => onRunSearch(query)} aria-label={`${item.title} — '${query}' 검색 결과 보기`}
-      className="fx-press flex min-w-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel text-left transition hover:border-accent/50">
-      <span className="relative block aspect-[4/3] w-full overflow-hidden bg-raised">
+      className="ink-frame fx-press flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-panel text-left transition hover:border-line-strong">
+      <span className="ink-cover relative block aspect-[4/3] w-full overflow-hidden bg-raised">
         {item.provider === "googlefonts" ? <GoogleFontPreview family={item.title} />
           : showImage ? <img src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
           : <TypographicCover title={item.title} seed={item.id} className="absolute inset-0" />}
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/55 via-black/25 to-transparent p-3 pt-8">
-          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm">{RESOURCE_LABELS[provider]}</span>
-          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-end gap-1.5 bg-gradient-to-t from-black/60 via-black/20 to-transparent p-3 pt-8">
+          <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">{RESOURCE_LABELS[provider]}</span>
+          <span className="rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-medium text-white/90 backdrop-blur-sm">{resourceUsageLabel(item)}</span>
         </span>
       </span>
       <span className="flex flex-1 flex-col gap-1 p-4">
-        <span className="break-words text-sm font-bold leading-5">{item.title}</span>
+        <span className="break-words text-sm font-semibold leading-5 [word-break:keep-all]">{item.title}</span>
         <span className="break-words text-xs text-fg-2">{item.creator || "저작자·기관 원문 확인"}{item.dateLabel ? ` · ${item.dateLabel}` : ""}</span>
       </span>
     </button>
@@ -172,9 +168,9 @@ function CurationTile({ item, provider, query, onRunSearch }: { item: CreatorRes
 export function ResourcePreSearchFallback({ provider, onRunSearch, apiNote }: { provider: ResourceSearchProvider; onRunSearch: (q: string) => void; apiNote: boolean }) {
   const config = RESOURCE_SEARCH_CONFIG[provider];
   return (
-    <div className="flex flex-col items-center py-4 text-center">
+    <div className="flex flex-col items-center rounded-xl border border-line bg-panel px-5 py-7 text-center">
       <EmptySearchArt />
-      <p>검색어를 입력하거나 아래 추천 키워드로 바로 검색해 보세요.</p>
+      <p className="text-fg [word-break:keep-all]">검색어를 입력하거나 아래 추천 키워드로 바로 검색해 보세요.</p>
       <div className="mt-3 flex flex-wrap justify-center gap-2">
         {config.examples.map((value) => <button key={value} type="button" className={RESOURCE_BUTTON} onClick={() => onRunSearch(value)}>{value}</button>)}
       </div>

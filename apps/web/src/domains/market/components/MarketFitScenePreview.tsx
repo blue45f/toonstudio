@@ -56,14 +56,16 @@ export function MarketFitScenePreview({ record, evaluation }: MarketFitScenePrev
   return (
     <section
       aria-labelledby="market-fit-scene-preview-title"
-      className="rounded-2xl border border-line bg-panel p-4 sm:p-5"
+      className="rounded-[16px] border border-line bg-panel p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="eyebrow text-accent">On-scene preview</p>
+          <p className="text-xs font-medium text-accent">
+            {t("장면 합성 미리보기", "On-scene composite")}
+          </p>
           <h3
             id="market-fit-scene-preview-title"
-            className="mt-1 text-base font-bold text-fg"
+            className="mt-1 text-base font-semibold text-fg"
           >
             {t("장면에 올려보기", "Preview on a scene")}
           </h3>
@@ -75,10 +77,12 @@ export function MarketFitScenePreview({ record, evaluation }: MarketFitScenePrev
           </p>
         </div>
         <div className="min-w-0 max-w-md text-right">
-          <p className="truncate text-sm font-bold text-fg" title={record.name}>
+          <p className="truncate text-sm font-semibold text-fg" title={record.name}>
             {record.name}
           </p>
-          <p className="mt-0.5 text-xs font-semibold text-fg-2">{evaluation.headline}</p>
+          <p className="mt-0.5 text-xs font-medium text-fg-2 tabular-nums">
+            {evaluation.headline}
+          </p>
           <p className="mt-0.5 text-xs leading-relaxed text-fg-3">{reason.text}</p>
         </div>
       </div>
@@ -89,7 +93,7 @@ export function MarketFitScenePreview({ record, evaluation }: MarketFitScenePrev
           `${sceneLabel} 배경에 ${record.name} 리소스를 겹친 합성 미리보기`,
           `Composite preview of ${record.name} layered over the ${sceneLabel} background`,
         )}
-        className="relative mt-4 aspect-[16/9] w-full select-none overflow-hidden rounded-xl border border-line bg-canvas"
+        className="ink-sheen relative mt-4 aspect-[16/9] w-full select-none overflow-hidden rounded-[12px] border border-line bg-canvas"
       >
         <img
           src={scene.src}

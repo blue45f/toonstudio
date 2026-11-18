@@ -704,7 +704,7 @@ export function CommandPalette({
                 forceMount
                 heading={
                   <div className="flex items-center justify-between px-2 py-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                    <span className="text-[11px] font-medium text-fg-3">
                       최근 검색어
                     </span>
                     <button
@@ -752,7 +752,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     최근 본 작품
                   </div>
                 }
@@ -789,7 +789,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     시스템 및 명령어
                   </div>
                 }
@@ -849,7 +849,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     스튜디오 도구
                   </div>
                 }
@@ -887,7 +887,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     작품 검색 결과 ({results.length})
                   </div>
                 }
@@ -934,7 +934,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     강좌 ({unifiedCourseItems.length})
                   </div>
                 }
@@ -964,7 +964,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     도움말·매뉴얼 ({unifiedHelpItems.length})
                   </div>
                 }
@@ -994,7 +994,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     소재 ({unifiedAssetItems.length})
                   </div>
                 }
@@ -1024,7 +1024,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     소재
                   </div>
                 }
@@ -1047,7 +1047,7 @@ export function CommandPalette({
               <Command.Group
                 forceMount
                 heading={
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-fg-3">
+                  <div className="px-2 py-1 text-[11px] font-medium text-fg-3">
                     페이지 바로가기
                   </div>
                 }

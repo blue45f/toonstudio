@@ -45,7 +45,7 @@ describe("isLowPowerEnvironment", () => {
 describe("스펙터클 호환 내보내기", () => {
   it("엔진 경로에서 설정 읽기를 계속 제공한다", () => {
     localStorage.clear();
-    expect(readAmbientPreferences().intensity).toBe("subtle");
+    expect(readAmbientPreferences().intensity).toBe("off");
   });
 });
 

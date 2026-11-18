@@ -555,6 +555,93 @@ input:not(input[type="range"]):user-valid {
   font-size: 0.8125rem;
 }
 
+/* ---------- 모바일 스크롤·오토패닝 웹툰 리더 미리보기 (4px 그리드 · 중첩 라디우스 12px/6px/4px) ---------- */
+.cl-webtoon-reader-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-block: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--shaper-line-strong);
+  background: var(--shaper-panel-2);
+}
+
+.cl-webtoon-reader-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cl-webtoon-reader-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cl-webtoon-reader-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--shaper-fg);
+}
+
+.cl-webtoon-reader-badge {
+  font-size: 0.75rem;
+  color: var(--shaper-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-webtoon-reader-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cl-webtoon-reader-controls > select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--shaper-line-strong);
+  background: var(--shaper-panel);
+  color: var(--shaper-fg);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-webtoon-reader-jumps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.cl-webtoon-reader-jumps > .cl-preset-chip {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.cl-webtoon-reader-viewport {
+  width: 100%;
+  max-width: 384px;
+  height: 440px;
+  margin-inline: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--shaper-line-strong);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 233, 222, 0.28) transparent;
+}
+
+.cl-webtoon-reader-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .cl-paint-swatch,
 .cl-color-swatch {
   forced-color-adjust: none;

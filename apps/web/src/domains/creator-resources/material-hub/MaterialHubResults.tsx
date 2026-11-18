@@ -172,7 +172,7 @@ function ProviderSection({ slot, state, plan, saved, saveDisabled, onSearch, onR
             <button type="button" className={RESOURCE_BUTTON} onClick={() => onRetry(slot)}>{bt("다시 시도", "Try again")}</button>
           </div>
         ) : null}
-        <ul ref={listRef} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ul ref={listRef} data-ink-stagger="panel" className="ink-cascade grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {shown.map((item) => (
             <li key={item.id} className="min-w-0">
               <MaterialHubResultCard
@@ -240,8 +240,8 @@ function MarketGroup({ plan }: { readonly plan: MaterialIntentPlan }) {
     <div className="space-y-3">
       <p className="text-sm leading-6 text-fg-2">{bt("마켓 검색은 이 화면에서 요청하지 않아요. 아래를 누르면 마켓이 열리고 이 조건이 주소 필터로 들어가요.", "The market is not queried from this page. The button opens the market with these conditions as URL filters.")}</p>
       <p className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold">{bt("적용될 조건", "Filters")}</span>
-        {chips.length > 0 ? chips.map((chip) => <span key={chip} className="inline-flex min-h-8 items-center rounded-full border border-line bg-panel px-3 text-xs">{chip}</span>) : <span className="text-fg-2">{bt("조건 없이 전체 리소스", "None — all resources")}</span>}
+        <span className="font-medium">{bt("적용될 조건", "Filters")}</span>
+        {chips.length > 0 ? chips.map((chip) => <span key={chip} className="inline-flex min-h-8 items-center rounded-md border border-line bg-panel px-2.5 text-xs">{chip}</span>) : <span className="text-fg-2">{bt("조건 없이 전체 리소스", "None — all resources")}</span>}
       </p>
       <Link className={RESOURCE_BUTTON} to={hubMarketHref(plan)}>{bt("마켓에서 찾기 →", "Open in the market →")}</Link>
     </div>
@@ -261,7 +261,7 @@ function LibraryGroup({ plan, saved, saveDisabled, onToggleSaved, onSendToStudio
     <div className="space-y-3">
       <p className="text-sm leading-6 text-fg-2">{bt("이 브라우저의 저장 보드에서만 찾아요. 네트워크 요청은 없어요.", "Searches only the saved board in this browser. No network request is made.")}</p>
       {matches.length > 0 ? (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <ul data-ink-stagger="panel" className="ink-cascade grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {matches.map((item) => (
             <li key={item.id} className="min-w-0">
               <MaterialHubResultCard item={item} saved saveDisabled={saveDisabled} studioAsset={studioDropAsset(item)} onToggleSaved={onToggleSaved} onSendToStudio={onSendToStudio} />

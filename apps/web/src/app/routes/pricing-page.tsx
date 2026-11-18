@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { BadgeCheck, Check, ChevronDown, Minus, Sparkles } from "lucide-react";
+import { BadgeCheck, Check, ChevronDown, Minus } from "lucide-react";
 
 import { MEMBERSHIP_ECONOMY_POLICY, MEMBERSHIP_PLAN_POLICIES } from "../../../../../packages/core/src/membership-wallet";
 
@@ -7,7 +7,6 @@ import { CountUp, PulseCta, TiltCard } from "@/domains/marketing/PricingPolish";
 import { LAYOUT_TOKENS } from "@/shared/components/layout/layout-tokens";
 import { HeroBlock, PageShell, SectionContainer } from "@/shared/components/layout";
 import { SectionArt } from "@/shared/components/section-art";
-import { SiteArtSurfaceSpotlight } from "@/shared/components/site-experience/SiteArtSurfaceSpotlight";
 import { buttonClass } from "@/shared/components/ui/button-utils";
 import { cx } from "@/shared/lib/cx";
 import { defineBilingualText, useBilingualI18nRevision } from "@/shared/lib/i18n-bilingual-copy";
@@ -167,8 +166,8 @@ function planFeatures(
 
 function PlanCardCta({ planId }: { planId: (typeof PLAN_ORDER)[number] }) {
   const t = useT();
-  // 결제 CTA는 두지 않는다 — Free는 시작 동선, 나머지 등급은 개설 조건을 안내하는
-  // 멤버십 정책 동선만 둔다 (Creator·Team은 특정 활동·역할로 열리는 등급).
+  // 결제 CTA는 두지 않는다 — Free만 주 행동으로 강조하고, 나머지 등급은 개설 조건을 안내하는
+  // 차분한 보조 링크만 둔다 (Creator·Team은 특정 활동·역할로 열리는 등급).
   if (planId === "free") {
     return (
       <PulseCta href="/studio/new" className="mt-6 w-full">
@@ -177,9 +176,12 @@ function PlanCardCta({ planId }: { planId: (typeof PLAN_ORDER)[number] }) {
     );
   }
   return (
-    <PulseCta href="/membership" className="mt-6 w-full">
-      {t(COPY.membershipPolicyCta)}
-    </PulseCta>
+    <Link
+      href="/membership"
+      className="ink-arrow mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-line bg-card px-4 py-2.5 text-sm font-medium text-fg-2 transition-colors hover:border-line-strong hover:bg-raised hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      <span>{t(COPY.membershipPolicyCta)}</span>
+    </Link>
   );
 }
 
@@ -202,11 +204,7 @@ export function PricingPage() {
     <PageShell
       hero={
         <HeroBlock
-          eyebrow={
-            <>
-              <Sparkles size={14} aria-hidden="true" /> {t(COPY.eyebrow)}
-            </>
-          }
+          eyebrow={t(COPY.eyebrow)}
           title={title}
           lede={description}
           media={
@@ -218,17 +216,9 @@ export function PricingPage() {
         />
       }
     >
-      {/* 히어로 하단 얇은 아트 배너 — 기존 SectionArt 브랜드 아트를 얇은 띠로만 쓴다. */}
-      <SectionArt
-        image="explore"
-        className="mt-6 aspect-[16/4] w-full rounded-2xl border border-line object-cover"
-      />
-
-      <SiteArtSurfaceSpotlight cardId="nb-trust-sanctuary" compact className="mt-6" />
-
       {!MEMBERSHIP_ECONOMY_POLICY.paymentsEnabled ? (
-        <p className="mt-8 flex items-start gap-2.5 rounded-2xl border border-line bg-panel p-5 text-sm leading-6 text-fg-2" role="note">
-          <Sparkles size={16} aria-hidden="true" className="mt-1 shrink-0 text-accent" />
+        <p className="mt-8 flex items-start gap-2.5 rounded-xl border border-line bg-panel p-4 text-sm leading-6 text-fg-2" role="note">
+          <BadgeCheck size={16} strokeWidth={1.5} aria-hidden="true" className="mt-1 shrink-0 text-accent" />
           <span>{t(COPY.betaNotice)}</span>
         </p>
       ) : null}

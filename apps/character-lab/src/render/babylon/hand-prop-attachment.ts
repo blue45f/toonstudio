@@ -35,7 +35,6 @@ import type {
 import type { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial.js";
 import type { Scene } from "@babylonjs/core/scene.js";
 
-/** 기존 캐릭터 파츠(1..32)와 충돌하지 않는 씬 소품·듀오 스테이지·효과음 스탬프 전용 고정 partId */
 export const DUO_PARTNER_PART_ID = 220;
 export const DUO_PARTNER_PART_KEY = "extra:duo-partner";
 
@@ -146,6 +145,12 @@ const PROP_GRIP_SPECS: Readonly<Record<HandPropId, GripTransformSpec>> = {
     eulerLeft: [Math.PI * 0.46, -0.18, 0.12],
     uniformScale: 1.04,
   },
+  "medical-chart-clipboard": {
+    palmDelta: [0.018, -0.028, -0.012],
+    eulerRight: [Math.PI * 0.47, -0.20, -0.10],
+    eulerLeft: [Math.PI * 0.47, 0.20, 0.10],
+    uniformScale: 1.02,
+  },
 };
 
 const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: readonly [number, number, number]; readonly lower: readonly [number, number, number]; readonly hand: readonly [number, number, number] }>> = {
@@ -156,6 +161,7 @@ const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: 
   "imperial-scroll": { upper: [12, 26, 60], lower: [22, 80, -20], hand: [10, 12, -8] },
   "jade-folding-fan": { upper: [16, 28, 56], lower: [28, 86, -24], hand: [16, 16, -10] },
   "calling-card-rose": { upper: [18, 30, 54], lower: [30, 88, -22], hand: [14, 18, -8] },
+  "medical-chart-clipboard": { upper: [14, 24, 60], lower: [26, 80, -20], hand: [12, 12, -8] },
 };
 
 const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {

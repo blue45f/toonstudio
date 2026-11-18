@@ -3,18 +3,7 @@ import {
   translateBilingualValueForActiveLocale,
   useBilingualI18nRevision,
 } from "@/shared/lib/i18n-bilingual-copy";
-import {
-  BookOpen,
-  ChevronDown,
-  GraduationCap,
-  LayoutGrid,
-  Menu,
-  Palette,
-  Search,
-  UsersRound,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { Menu, Palette, Search, X } from "lucide-react";
 import {
   lazy,
   Suspense,
@@ -26,31 +15,23 @@ import {
   type ReactNode,
 } from "react";
 
+import { HeaderPrimaryNavigationEntry } from "./site-header-primary-entry";
+import { HEADER_PRIMARY_NAVIGATION, VIRTUAL_STUDIO_PATTERN, headerSectionForPath, purposeActive } from "./site-header-navigation";
+import { useHeaderInkIndicator } from "./use-header-ink-indicator";
 import {
-  SITE_NAVIGATION_GROUPS,
   SITE_NAVIGATION_ITEMS,
-  TOONSTUDIO_PRIMARY_NAVIGATION,
   siteNavigationContextForPath,
   siteNavigationLocale,
   siteNavigationText,
-  type SiteNavigationGroup,
-  type SiteNavigationItem,
-  type SiteNavigationText,
 } from "./site-navigation";
-import { workspaceNavigationActiveId } from "./workspace/workspace-navigation-model";
 import { ToonStudioMark } from "./toonstudio-mark";
 import { ToonStudioWordmark } from "./toonstudio-brand";
-import { PublicSiteAppearanceToggle } from "./public-site-appearance-toggle";
-import {
-  isDiscoverPurposeRoute,
-  isPublicCreativeRoute,
-} from "./site-public-routes";
+import { isPublicCreativeRoute } from "./site-public-routes";
 import { useSiteHeaderHeight } from "./use-site-header-height";
 
 import { isImmersiveMobileRoute } from "@/app/routes/immersive-mobile-route";
 import { usePathname } from "@/shared/navigation/navigation";
 import Link from "@/shared/navigation/router-link";
-import { cx } from "@/shared/lib/cx";
 import { useI18n, useT } from "@/shared/lib/i18n";
 import { keepInlineText } from "@/shared/lib/text";
 import { canonicalSitePath } from "@/shared/lib/site-route-authority";
@@ -67,286 +48,12 @@ const MobileHeaderNavigation = lazy(() =>
   }))
 );
 
-const STUDIO_ASSET_PREFIXES = [
-  "/studio/assets",
-  "/studio/brushes",
-  "/studio/bg3d",
-  "/studio/poser",
-  "/studio/character",
-  "/brush-lab",
-  "/shaper",
-  "/music",
-] as const;
-const STUDIO_CREATE_PREFIXES = [
-  "/studio/new",
-  "/studio/import",
-  "/make",
-] as const;
-const STUDIO_LEARN_PREFIXES = ["/learn", "/help", "/guide", "/studio/manual", "/developers"] as const;
-const STUDIO_PUBLISH_PREFIXES = ["/studio/publish", "/publishing", "/publish", "/creator", "/automation", "/creator-support", "/cuts/studio"] as const;
-const STUDIO_WORK_EXCLUDED_PREFIXES = [
-  ...STUDIO_CREATE_PREFIXES,
-  ...STUDIO_ASSET_PREFIXES,
-  ...STUDIO_LEARN_PREFIXES,
-  ...STUDIO_PUBLISH_PREFIXES,
-  "/studio/templates",
-] as const;
-/** 협업 목적지: 제작 관리·팀·구인/의뢰. 커뮤니티·제작과 동시에 활성 표시되지 않게 분리한다. */
-const COLLABORATION_PURPOSE_PREFIXES = ["/production", "/team", "/collaborate"] as const;
-/** 개인 가상 스튜디오와 프로젝트 협업 공간. */
-const VIRTUAL_STUDIO_PATTERN = /^\/studio\/(?:space|p\/[^/]+\/space)(?:\/|$)/u;
-const COMMUNITY_PURPOSE_PREFIXES = ["/reviews", "/showcase", "/create", "/pencafe", "/events", "/newsletter", "/character-chat", "/support-creators"] as const;
-const MY_PURPOSE_PREFIXES = ["/my", "/me", "/library", "/notifications", "/messages", "/settings", "/memberships"] as const;
-
 /**
- * Canonical destinations for the header's key actions. Legacy aliases (/new, /more)
- * still redirect through the routes team, but the header links the canonical paths
- * directly so users never depend on the redirect. 작품 시작의 정문은 /create
+ * Canonical destinations for the header's key actions. 작품 시작의 정문은 /create
  * 시작 시트 하나이며, /studio/new는 시트에서 빈 작품을 골랐을 때 닿는
  * 2단계 생성 양식이라 헤더가 직접 가리키지 않는다.
  */
 const CANONICAL_CREATE_HREF = "/create";
-
-interface HeaderNavigationChild {
-  id: string;
-  href: string;
-  icon: LucideIcon;
-  label: SiteNavigationText;
-  description: SiteNavigationText;
-  /** 하위 경로 전체가 아니라 정확히 이 주소일 때만 현재 위치로 표시한다. */
-  exact?: boolean;
-}
-
-interface HeaderPrimaryNavigationItem {
-  id: string;
-  href: string;
-  label: SiteNavigationText;
-  description: SiteNavigationText;
-  exact?: boolean;
-  children?: readonly HeaderNavigationChild[];
-}
-
-/**
- * 헤더 주 메뉴는 자체 분류를 갖지 않는다 — 단일 지도(SITE_NAVIGATION_GROUPS)를 소비한다.
- *
- * 배경: 예전에는 헤더 전용 분류(제작/가상 스튜디오/협업/탐색/커뮤니티/배우기/마켓)가
- * 지도와 따로 있어, 같은 목적지가 표면마다 다른 그룹·다른 순서·다른 이름으로 나타났다
- * (UX 감사 2026-10-13, 최대 감점 요인). 모바일 전체 메뉴와 푸터는 이미 지도를 소비하고
- * 있었고, 데스크톱 헤더만 예외였다. 이제 헤더도 같은 지도를 읽는다.
- *
- * 헤더가 정하는 것은 "구성"뿐이다: 어떤 그룹·항목을 1차 메뉴로 올릴지, 드롭다운에
- * 무엇을 넣을지. 이름·설명·아이콘·주소는 전부 지도의 정본을 그대로 쓴다
- * (표면별 덮어씀 금지 — site-footer·site-header-mobile-nav와 같은 규칙).
- * 지도에 없는 헤더 전용 목적지·문구는 아래 headerExtras에 명시적으로 분리한다.
- *
- * 1차 메뉴로 올리지 않는 그룹: publish(연재·내보내기)는 제작 흐름의 후반이라
- * 전체 메뉴·푸터·스튜디오 셸이 맡고, connect(함께 보기)는 커뮤니티 항목이 대표하며,
- * rest(쉬어가기)·personal(내 기록)은 전체 메뉴와 모바일 탭이 같은 지도로 제공한다.
- * discover 그룹은 탐색 항목이, grow 그룹은 배우기·마켓 항목이 나눠 소비한다.
- *
- * S1-2 헤더 최상위 재편 (BLUEPRINT §1.1, simplicity §2): 상시 노출(primary)은
- * 제작·탐색·커뮤니티·배우기·마켓 5개까지만 둔다. 가상 스튜디오는 독립 목적지가
- * 아니라 제작 하위 도구라 1차 메뉴에서 내리고 제작 드롭다운으로 강등한다.
- * 협업은 팀·프로젝트 맥락이 없는 사용자에게 무의미하므로 상시 노출에서 빼고,
- * 협업 구역에 있을 때만 맥락형(contextual)으로 끼워 넣는다. 어느 항목도
- * 삭제하지 않는다 — 강등된 항목은 전체 메뉴의 단일 지도 그룹(만들기·함께 보기)과
- * ⌘K에서 그대로 도달할 수 있다.
- */
-
-const NAV_ITEMS = SITE_NAVIGATION_ITEMS;
-
-/** 단일 지도에서 그룹을 id로 찾는다. 없는 id를 쓰면 조용히 비우지 않고 즉시 실패한다. */
-function navGroup(id: string): SiteNavigationGroup {
-  const group = SITE_NAVIGATION_GROUPS.find((entry) => entry.id === id);
-  if (!group) throw new Error(`Unknown site navigation group: ${id}`);
-  return group;
-}
-
-/** 지도 항목 → 헤더 드롭다운 자식. 이름·설명·아이콘·주소는 지도의 정본을 쓴다. */
-function childFromNavItem(
-  item: SiteNavigationItem,
-  overrides?: Partial<HeaderNavigationChild>,
-): HeaderNavigationChild {
-  return {
-    id: item.id,
-    href: item.href,
-    icon: item.icon,
-    label: item.label,
-    description: item.description,
-    ...(item.exact ? { exact: true } : null),
-    ...overrides,
-  };
-}
-
-/** 지도 그룹의 항목들로 드롭다운 자식을 만든다. 순서는 지도의 순서를 따른다. */
-function childrenFromNavGroup(
-  groupId: string,
-  itemIds: readonly string[],
-): HeaderNavigationChild[] {
-  const group = navGroup(groupId);
-  return itemIds.map((itemId) => {
-    const item = group.items.find((entry) => entry.id === itemId);
-    if (!item) {
-      throw new Error(`Navigation item "${itemId}" is not in group "${groupId}"`);
-    }
-    return childFromNavItem(item);
-  });
-}
-
-/**
- * headerExtras — 지도에 아직 없는 헤더 전용 목적지와 문구. 여기에 있는 것만이
- * 헤더가 지도 밖에서 정의하는 내비 데이터이며, 그 경계를 코드로 드러내기 위해 모았다.
- *
- * - teamPeople(/team/people): 지도의 workspaceTeam 항목은 /team(팀 홈)까지만 있다.
- *   "팀·권한" 상세는 지도에 항목이 생기면 이쪽을 지우고 지도를 소비한다.
- * - exploreGenres(/explore): 장르 탐색 페이지는 라우트는 있으나 지도 항목이 아니다
- *   (지도의 탐색 항목은 /discover다). 지도 편입 여부는 지도 소유 작업에서 결정한다.
- * - learnClassroom(/learn/classroom)·learnGuide(/guide): 학습 하위 목적지로 지도에 없다.
- * - collaborateEntry: 맥락형 메뉴의 "협업"이라는 묶음 이름은 지도 그룹 어디에도 없다
- *   (connect 그룹은 "함께 보기"). 묶음 자체는 유지하되 문구는 여기에만 둔다.
- */
-const HEADER_EXTRA_CHILDREN = {
-  teamPeople: {
-    id: "header-team-people",
-    href: "/team/people",
-    icon: UsersRound,
-    label: { ko: "팀·권한", en: "Team & roles" },
-    description: { ko: "멤버 초대와 역할별 권한", en: "Invite members and manage roles" },
-  },
-  exploreGenres: {
-    id: "header-explore-genres",
-    href: "/explore",
-    icon: LayoutGrid,
-    label: { ko: "장르", en: "Genres" },
-    description: {
-      ko: "장르·태그·플랫폼 조건으로 작품 찾기",
-      en: "Browse stories by genre, tag and platform",
-    },
-  },
-  learnClassroom: {
-    id: "header-learn-classroom",
-    href: "/learn/classroom",
-    icon: GraduationCap,
-    label: { ko: "클래스룸", en: "Classroom" },
-    description: {
-      ko: "단계별 강좌로 창작 실력 키우기",
-      en: "Level up with step-by-step courses",
-    },
-  },
-  learnGuide: {
-    id: "header-learn-guide",
-    href: "/guide",
-    icon: BookOpen,
-    // /guide의 실제 내용은 랭킹 산식 공개 페이지다(페이지 제목 "랭킹은 이렇게 매겨집니다",
-    // 브라우저 제목·사이트맵은 "랭킹 산정 방식"). "서비스 사용법"으로 안내하면 사용법
-    // 가이드를 기대한 사용자가 통계 산식 페이지에 도착하므로, 목적지 이름과 맞춘다.
-    label: { ko: "랭킹 산정 방식", en: "How ranking works" },
-    description: {
-      ko: "순위가 계산되는 산식과 직접 검산하는 방법",
-      en: "The formula behind rankings and how to verify it",
-    },
-  },
-} as const satisfies Record<string, HeaderNavigationChild>;
-
-const HEADER_EXTRA_ENTRY_TEXT: {
-  readonly collaborate: {
-    readonly label: SiteNavigationText;
-    readonly description: SiteNavigationText;
-  };
-} = {
-  collaborate: {
-    label: { ko: "협업", en: "Collaborate" },
-    description: {
-      ko: "작품·회차·공정·원고 피드백을 팀과 함께",
-      en: "Works, episodes, stages and feedback with your team",
-    },
-  },
-};
-
-/**
- * 헤더 1차 메뉴 (Grand Atelier V4):
- * 제작(내 작업)·협업·탐색(작품 찾기)·커뮤니티·배우기·마켓(소재 찾기) 6대 핵심 축을
- * 상시 노출해 홈·스튜디오·탐색 어디서든 협업·팀·검수 동선에 1클릭으로 진입할 수 있게 한다.
- */
-const HEADER_PRIMARY_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [
-  {
-    id: "studio",
-    href: NAV_ITEMS.studio.href,
-    label: NAV_ITEMS.studio.label,
-    description: NAV_ITEMS.studio.description,
-    children: childrenFromNavGroup("create", [
-      "studio",
-      "make",
-      "comic",
-      "shaper",
-      "bg3d",
-      "virtual-studio",
-    ]),
-  },
-  {
-    id: "collaborate",
-    href: NAV_ITEMS.production.href,
-    label: HEADER_EXTRA_ENTRY_TEXT.collaborate.label,
-    description: HEADER_EXTRA_ENTRY_TEXT.collaborate.description,
-    children: [
-      childFromNavItem(NAV_ITEMS.production, { exact: undefined }),
-      HEADER_EXTRA_CHILDREN.teamPeople,
-      childFromNavItem(NAV_ITEMS.collaborate),
-    ],
-  },
-  {
-    id: "explore",
-    href: NAV_ITEMS.explore.href,
-    label: NAV_ITEMS.explore.label,
-    description: NAV_ITEMS.explore.description,
-    children: [
-      HEADER_EXTRA_CHILDREN.exploreGenres,
-      ...childrenFromNavGroup("discover", ["ranking", "calendar"]),
-    ],
-  },
-  {
-    id: "community",
-    href: NAV_ITEMS.community.href,
-    label: NAV_ITEMS.community.label,
-    description: NAV_ITEMS.community.description,
-  },
-  {
-    id: "learn",
-    href: NAV_ITEMS.learn.href,
-    label: NAV_ITEMS.learn.label,
-    description: NAV_ITEMS.learn.description,
-    children: [
-      ...childrenFromNavGroup("grow", ["research"]),
-      HEADER_EXTRA_CHILDREN.learnClassroom,
-      HEADER_EXTRA_CHILDREN.learnGuide,
-    ],
-  },
-  {
-    id: "market",
-    href: NAV_ITEMS.market.href,
-    label: NAV_ITEMS.market.label,
-    description: NAV_ITEMS.market.description,
-  },
-];
-
-const HEADER_CONTEXTUAL_NAVIGATION: readonly HeaderPrimaryNavigationItem[] = [];
-
-function matchesPrefix(pathname: string, prefix: string): boolean {
-  return pathname === prefix || pathname.startsWith(`${prefix}/`);
-}
-
-function pathMatchesAny(
-  pathname: string,
-  prefixes: readonly string[]
-): boolean {
-  return prefixes.some((prefix) => matchesPrefix(pathname, prefix));
-}
-
-/** Return whether a pathname belongs to the Studio work purpose in the header. */
-function isStudioWorkPurpose(pathname: string): boolean {
-  if (!matchesPrefix(pathname, "/studio")) return false;
-  return !pathMatchesAny(pathname, STUDIO_WORK_EXCLUDED_PREFIXES);
-}
 
 /** Exact destination state for drawer/utility items. A child page must not make
  * both its purpose hub and the child destination announce aria-current="page". 프로젝트 가상 스튜디오(/studio/p/:id/space)도 가상 스튜디오 목적지다. */
@@ -358,98 +65,6 @@ function useDestinationActive() {
     if (exact) return path === destination;
     return path === destination || path.startsWith(`${destination}/`) || (destination === "/studio/space" && VIRTUAL_STUDIO_PATTERN.test(path));
   };
-}
-
-type HeaderSectionId =
-  | "studio"
-  | "virtual-studio"
-  | "collaborate"
-  | "explore"
-  | "community"
-  | "learn"
-  | "market";
-
-/** 최상위 메뉴 목적지 → 구역. 데스크톱 주 메뉴와 모바일 하단 탭이 같은 판정을 쓴다.
- * 손으로 쓴 표가 아니라 위 구성 계획(상시 목록 + 맥락형 목록)에서 파생한다 —
- * 메뉴 구성이 바뀌면 구역 판정도 자동으로 따라간다. 맥락형 협업(/production)도
- * 구역 판정의 대상이라 여기에 포함한다. */
-const HEADER_SECTION_BY_HREF: Readonly<Record<string, HeaderSectionId>> =
-  Object.fromEntries(
-    [...HEADER_PRIMARY_NAVIGATION, ...HEADER_CONTEXTUAL_NAVIGATION].map(
-      (item) => [item.href, item.id] as const,
-    ),
-  ) as Readonly<Record<string, HeaderSectionId>>;
-
-/**
- * 현재 구역에서 실제로 렌더링할 최상위 목록. 상시 목록이 기본이고, 협업 구역일
- * 때만 맥락형 협업을 기존 순서 자리(제작 다음)에 끼워 넣는다. 따라서 상시
- * 노출은 5개를 넘지 않고, 맥락형까지 합쳐도 한 번에 6개를 넘지 않는다.
- */
-function headerNavigationForSection(
-  _currentSection: HeaderSectionId | null,
-): readonly HeaderPrimaryNavigationItem[] {
-  return HEADER_PRIMARY_NAVIGATION;
-}
-
-/**
- * 현재 경로가 속한 헤더 구역 하나를 고른다. 항목마다 따로 판정하면 경계 경로
- * (예: /studio/manual, /studio/space/…)에서 두 메뉴가 동시에 켜지므로, 우선순위 순서로
- * 한 번만 분류한다. 어느 구역에도 속하지 않는 소개·계정 화면은 null이다.
- */
-function headerSectionForPath(rawPathname: string): HeaderSectionId | null {
-  const pathname = canonicalSitePath(rawPathname);
-  // 가상 스튜디오는 S1-2부터 제작 하위 도구라 별도 구역이 아니라 제작 구역으로 본다.
-  // 제작 드롭다운 안에서 현재 위치(가상 스튜디오 자식)로 표시된다.
-  if (VIRTUAL_STUDIO_PATTERN.test(pathname)) return "studio";
-  if (pathMatchesAny(pathname, COLLABORATION_PURPOSE_PREFIXES)) return "collaborate";
-  // 리서치 데스크는 단일 지도에서도 자료·성장(grow) 그룹이라 배우기 구역으로 본다.
-  if (pathMatchesAny(pathname, STUDIO_LEARN_PREFIXES) || matchesPrefix(pathname, "/research")) return "learn";
-  if (matchesPrefix(pathname, "/market") || matchesPrefix(pathname, "/asset-points")) return "market";
-  if (
-    matchesPrefix(pathname, "/studio")
-    || pathMatchesAny(pathname, STUDIO_CREATE_PREFIXES)
-    || pathMatchesAny(pathname, STUDIO_ASSET_PREFIXES)
-    || pathMatchesAny(pathname, STUDIO_PUBLISH_PREFIXES)
-  ) return "studio";
-  // /create 정확 경로는 작품 시작 시트라 제작 문맥이다. 하위 경로는 갤러리 문맥을 유지한다.
-  if (pathname === "/create") return "studio";
-  if (matchesPrefix(pathname, "/community") || pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES)) return "community";
-  if (isDiscoverPurposeRoute(pathname) || matchesPrefix(pathname, "/cuts")) return "explore";
-  return null;
-}
-
-/** Broader state used only by the top-level purpose choices. */
-function purposeActive(
-  pathname: string,
-  href: string,
-  exact?: boolean
-): boolean {
-  const section = HEADER_SECTION_BY_HREF[href];
-  if (section) return headerSectionForPath(pathname) === section;
-  const destination = TOONSTUDIO_PRIMARY_NAVIGATION.find(
-    (item) => item.href === href
-  );
-  if (destination)
-    return workspaceNavigationActiveId(pathname) === destination.id;
-  if (href === "/studio") return isStudioWorkPurpose(pathname);
-  // 가상 스튜디오는 S1-2에서 최상위에서 내려와 구역 표(HEADER_SECTION_BY_HREF)에
-  // 없으므로, 자체 패턴으로 직접 판정한다(프로젝트 공간 경로 포함).
-  if (href === "/studio/space") return VIRTUAL_STUDIO_PATTERN.test(pathname);
-  if (href === "/studio/assets")
-    return pathMatchesAny(pathname, STUDIO_ASSET_PREFIXES);
-  if (href === "/studio/publish")
-    return pathMatchesAny(pathname, STUDIO_PUBLISH_PREFIXES);
-  if (href === "/learn") return pathMatchesAny(pathname, STUDIO_LEARN_PREFIXES);
-  if (exact || href === "/") return pathname === href;
-  if (href === "/discover") return isDiscoverPurposeRoute(pathname);
-  if (href === "/ranking") return matchesPrefix(pathname, "/ranking");
-  if (href === "/community")
-    // /create 정확 경로는 시작 시트(제작 목적)라 커뮤니티로 세지 않는다. 하위 경로는 그대로다.
-    return pathname !== "/create" && pathMatchesAny(pathname, COMMUNITY_PURPOSE_PREFIXES);
-  if (href === "/library") return matchesPrefix(pathname, "/library");
-  if (href === "/my") return pathMatchesAny(pathname, MY_PURPOSE_PREFIXES);
-  if (href === "/market") return matchesPrefix(pathname, "/market");
-  return matchesPrefix(pathname, href);
 }
 
 function matchesMobileNavigationViewport() {
@@ -481,161 +96,6 @@ function MobileNavigationFallback() {
       aria-hidden="true"
       className="fixed inset-x-0 bottom-0 z-50 h-[calc(3.75rem+env(safe-area-inset-bottom))] border-t border-line/80 bg-panel/90 backdrop-blur-xl min-[1180px]:hidden"
     />
-  );
-}
-
-/** One top-level header destination, with an optional hover/focus dropdown.
- * The panel opens on pointer hover and on keyboard focus-within, and open
- * state is mirrored in React state so the trigger exposes `aria-expanded`,
- * Escape closes the panel and returns focus to the trigger, matching the
- * mobile menu's pattern. It is `visibility: hidden` while closed so its
- * links stay out of the tab order.
- * 1차 표시는 시안처럼 글자 링크만 둔다(목적지·드롭다운은 그대로, 아이콘은 패널 안에서만). */
-function HeaderPrimaryNavigationEntry({
-  item,
-  locale,
-  currentSection,
-  isActive,
-}: {
-  item: HeaderPrimaryNavigationItem;
-  locale: string;
-  currentSection: HeaderSectionId | null;
-  isActive: (href: string, exact?: boolean) => boolean;
-}) {
-  // 구역이 하나로 정해지므로 최상위 강조도 항상 한 곳뿐이다. 하위 항목은 그 구역 안에서만 표시한다.
-  const highlighted = currentSection === item.id;
-  const activeChild = highlighted
-    ? item.children?.find((child) => isActive(child.href, child.exact))
-    : undefined;
-  const label = siteNavigationText(item.label, locale);
-  const [open, setOpen] = useState(false);
-  const submenuId = useId();
-  // Escape로 닫은 직후에는 트리거로 돌아온 포커스가 패널을 다시 열지 않게 한다.
-  const escapeClosedRef = useRef(false);
-  const entryRef = useRef<HTMLDivElement>(null);
-
-  // Escape 닫기는 래퍼 div의 키보드 핸들러가 아니라 window 리스너로 처리한다.
-  // 비네이티브 요소에 인터랙션 핸들러를 붙이지 않기 위한 것으로, 동작은 기존과
-  // 같다: 이벤트 대상이 이 항목(트리거·패널) 안일 때만 닫고 트리거로 포커스를
-  // 되돌리며, 전파를 막아 다른 Escape 처리와 겹치지 않는다.
-  useEffect(() => {
-    if (!open || !item.children) return;
-    const onWindowKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      const entry = entryRef.current;
-      if (!entry || !(event.target instanceof Node) || !entry.contains(event.target)) return;
-      event.stopPropagation();
-      escapeClosedRef.current = true;
-      setOpen(false);
-      entry.querySelector<HTMLElement>("[data-navigation-entry]")?.focus();
-    };
-    window.addEventListener("keydown", onWindowKeyDown, true);
-    return () => window.removeEventListener("keydown", onWindowKeyDown, true);
-  }, [open, item.children]);
-
-  const link = (
-    <Link
-      href={item.href}
-      aria-current={highlighted ? (isActive(item.href, true) ? "page" : "true") : undefined}
-      aria-haspopup={item.children ? "true" : undefined}
-      aria-expanded={item.children ? open : undefined}
-      aria-controls={item.children ? submenuId : undefined}
-      title={siteNavigationText(item.description, locale)}
-      data-navigation-entry={item.id}
-      className="site-header__primary-link group"
-      onKeyDown={item.children ? (e) => { if (e.key === "ArrowDown") { e.preventDefault(); escapeClosedRef.current = false; setOpen(true); entryRef.current?.querySelector<HTMLElement>("ul a")?.focus(); } } : undefined}
-    >
-      <span>{label}</span>
-      {item.children ? (
-        <ChevronDown
-          size={13}
-          aria-hidden="true"
-          className={cx("text-fg-3 transition-transform duration-150 motion-reduce:transition-none", open && "rotate-180")}
-        />
-      ) : null}
-    </Link>
-  );
-
-  if (!item.children) return link;
-
-  return (
-    <div
-      ref={entryRef}
-      className="group relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={(event) => {
-        if (
-          event.relatedTarget instanceof Element &&
-          event.relatedTarget.closest('[data-app-tooltip-layer="true"]')
-        ) {
-          return;
-        }
-        escapeClosedRef.current = false;
-        setOpen(false);
-      }}
-      onFocus={() => { if (!escapeClosedRef.current) setOpen(true); }}
-      onBlur={(event) => {
-        if (
-          event.relatedTarget instanceof Node &&
-          event.currentTarget.contains(event.relatedTarget)
-        ) {
-          return;
-        }
-        escapeClosedRef.current = false;
-        setOpen(false);
-      }}
-    >
-      {link}
-      <div
-        data-app-tooltip-exclude="true"
-        className={cx(
-          "absolute left-0 top-full z-50 w-64 pt-1 transition-[opacity,transform,visibility] duration-150 motion-reduce:transition-none",
-          open
-            ? "visible translate-y-0 opacity-100"
-            : "invisible pointer-events-none translate-y-1 opacity-0"
-        )}
-      >
-        <ul
-          id={submenuId}
-          aria-label={label}
-          className="rounded-xl border border-line bg-panel p-1.5 shadow-lg"
-        >
-          {item.children.map((child) => {
-            const childActive = activeChild?.id === child.id;
-            const ChildIcon = child.icon;
-            return (
-              <li key={child.id}>
-                <Link
-                  href={child.href}
-                  aria-current={childActive ? "page" : undefined}
-                  className={cx(
-                    "group/child flex min-h-11 items-center gap-2.5 rounded-lg px-3 py-2 text-sm [word-break:keep-all] outline-none transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                    childActive
-                      ? "bg-raised text-fg"
-                      : "text-fg-2 hover:bg-raised hover:text-fg"
-                  )}
-                >
-                  <ChildIcon
-                    size={16}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                    className={cx("size-4 shrink-0", childActive ? "text-accent" : "text-fg-3 group-hover/child:text-fg-2")}
-                  />
-                  <span className="min-w-0">
-                    <span className="block font-medium">
-                      {siteNavigationText(child.label, locale)}
-                    </span>
-                    <span className="block truncate text-xs text-fg-3">
-                      {siteNavigationText(child.description, locale)}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-    </div>
   );
 }
 
@@ -682,7 +142,8 @@ export function SiteHeader({
   const isPurposeActive = (href: string, exact?: boolean) =>
     purposeActive(pathname, href, exact);
   const currentSection = headerSectionForPath(pathname);
-  const headerNavigation = headerNavigationForSection(currentSection);
+  const primaryNavRef = useRef<HTMLElement>(null);
+  const inkStyle = useHeaderInkIndicator(primaryNavRef, currentSection);
 
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
@@ -737,10 +198,12 @@ export function SiteHeader({
             </span>
           </Link>
 
-          <nav aria-label={bi("주요 메뉴", "Primary navigation")} className="site-header__primary">
-            {headerNavigation.map((item) => (
+          <nav ref={primaryNavRef} aria-label={bi("주요 메뉴", "Primary navigation")} className="site-header__primary">
+            {HEADER_PRIMARY_NAVIGATION.map((item) => (
               <HeaderPrimaryNavigationEntry key={item.id} item={item} locale={locale} currentSection={currentSection} isActive={isActive} />
             ))}
+            {/* 현재 구역을 가리키는 잉크 밑줄 하나. 구역이 바뀌면 그 자리로 그어지듯 옮겨 간다. */}
+            <span className="site-header__ink" aria-hidden="true" style={inkStyle} data-visible={currentSection ? "true" : undefined} />
           </nav>
 
           <div className="site-header__utilities">
@@ -767,9 +230,6 @@ export function SiteHeader({
               <Palette size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
               <span className="hidden min-w-max whitespace-nowrap xl:inline-block">{keepInlineText(siteNavigationText(create.label, locale))}</span>
             </Link>
-
-            {/* 화면 분위기 전환은 홈 머리글과 설정 화면에만 둔다(하위 페이지 머리글을 가볍게). */}
-            {isHomePage && <PublicSiteAppearanceToggle locale={locale} className="site-header__appearance" />}
 
             <div className="site-header__notifications">{notificationsSlot}</div>
 

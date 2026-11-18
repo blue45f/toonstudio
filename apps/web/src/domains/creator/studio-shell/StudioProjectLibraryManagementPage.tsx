@@ -55,22 +55,22 @@ export function StudioProjectLibraryManagementPage() {
       <Container size="wide" className="min-w-0 py-3 sm:py-11">
         <StudioProjectLibraryManagementHeader controller={controller} />
         <StudioProjectLibraryManagementContent controller={controller} />
-        <div className="mt-5 flex justify-end">
-          <Suspense fallback={null}>
-            <VoiceGuideButton scriptId="studio" variant="inline" />
-          </Suspense>
-        </div>
         {controller.view === "active" ? (
-          <>
-            <details className="mt-6 min-w-0 rounded-2xl border border-line bg-card p-4">
-              <summary className="min-h-11 cursor-pointer rounded-lg py-3 text-sm font-bold text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+          <div className="studio-library-bottom-disclosures">
+            <details className="studio-library-guide-disclosure">
+              <summary className="studio-library-guide-summary">
                 {bt("시작 가이드와 추천 도구", "Getting started and recommended tools")}
               </summary>
               <StudioCreatorLobby controller={controller} />
             </details>
             <StudioLibraryPersonalizeDetails />
-          </>
+          </div>
         ) : null}
+        <div className="mt-3 flex justify-end">
+          <Suspense fallback={null}>
+            <VoiceGuideButton scriptId="studio" variant="inline" />
+          </Suspense>
+        </div>
       </Container>
       <StudioProjectLibraryManagementDialogs controller={controller} />
     </div>

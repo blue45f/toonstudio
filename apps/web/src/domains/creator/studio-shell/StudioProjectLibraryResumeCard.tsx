@@ -39,33 +39,62 @@ export function StudioProjectLibraryResumeCard({
         : bt("원고의 저장 상태 확인", "Check manuscript save status");
 
   return (
-    <article role="region" aria-label={bt("최근 작업 빠른 이어하기", "Quick resume recent work")}
-      data-studio-recent-work-bar="true" data-studio-project-card="true" data-recent-primary="true"
-      data-selected={checked || undefined} className="studio-library-resume">
-      <div className="studio-library-resume-cover">
+    <article
+      role="region"
+      aria-label={bt("최근 작업 빠른 이어하기", "Quick resume recent work")}
+      data-studio-recent-work-bar="true"
+      data-studio-project-card="true"
+      data-recent-primary="true"
+      data-selected={checked || undefined}
+      className="studio-library-resume ink-frame"
+    >
+      <div className="studio-library-resume-cover ink-cover ink-sheen">
         <StudioProjectCardThumbnail project={project} authUserId={authUserId} locale={locale} variant="cover" />
       </div>
-      <span className="studio-library-resume-eyebrow" data-studio-recent-badge="true">{bt("최근 작업", "Recent work")}</span>
+      <span className="studio-library-resume-eyebrow" data-studio-recent-badge="true">
+        {bt("최근 작업", "Recent work")}
+      </span>
       {selection ? <div className="studio-library-resume-selection">{selection}</div> : null}
       <div className="studio-library-resume-content">
-        <h2 title={project.title} data-studio-recent-work-title="true" data-studio-project-title="true" className="line-clamp-2 break-words">
-          <Link href={resumeHref} onClick={onResume} title={project.title} data-studio-card-title-link="true">{project.title}</Link>
+        <h2
+          title={project.title}
+          data-studio-recent-work-title="true"
+          data-studio-project-title="true"
+          className="line-clamp-2 break-words [word-break:keep-all]"
+        >
+          <Link href={resumeHref} onClick={onResume} title={project.title} data-studio-card-title-link="true">
+            {project.title}
+          </Link>
         </h2>
         <p>{resumeSummary || studioProjectLibraryTypeLabel(project)}</p>
-        <Link href={resumeHref} onClick={onResume} data-studio-recent-work-open="true"
-          data-studio-library-primary-action="resume" data-studio-card-continue="true" className="studio-library-resume-open">
-          {bt("이어서 작업", "Continue")}<ArrowRight size={20} aria-hidden="true" />
+        <Link
+          href={resumeHref}
+          onClick={onResume}
+          data-studio-recent-work-open="true"
+          data-studio-library-primary-action="resume"
+          data-studio-card-continue="true"
+          className="studio-library-resume-open ink-arrow"
+        >
+          <span>{bt("이어서 작업", "Continue")}</span>
+          <ArrowRight size={16} strokeWidth={1.7} aria-hidden="true" />
         </Link>
       </div>
       <div className="studio-library-resume-state">
-        <p>{bt("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}</p>
-        {attention || !management ? <Link href={`/studio?view=storage&project=${encodeURIComponent(project.id)}`}
-          data-studio-recent-save-attention={attention || undefined}>
-          {saveLabel}
-        </Link> : null}
-        {!management ? <Link href={overviewHref} data-studio-recent-work-overview="true">
-          <BookOpen size={16} aria-hidden="true" />{bt("작품 단계", "Project stages")}
-        </Link> : null}
+        <p className="tabular-nums">{bt("마지막 열기", "Last opened")} {studioProjectLibraryDateLabel(project.lastOpenedAt, locale)}</p>
+        {attention || !management ? (
+          <Link
+            href={`/studio?view=storage&project=${encodeURIComponent(project.id)}`}
+            data-studio-recent-save-attention={attention || undefined}
+          >
+            {saveLabel}
+          </Link>
+        ) : null}
+        {!management ? (
+          <Link href={overviewHref} data-studio-recent-work-overview="true">
+            <BookOpen size={15} strokeWidth={1.6} aria-hidden="true" />
+            {bt("작품 단계", "Project stages")}
+          </Link>
+        ) : null}
         {management ? <div className="studio-library-resume-management">{management}</div> : null}
       </div>
     </article>

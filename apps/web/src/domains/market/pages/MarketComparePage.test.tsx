@@ -89,9 +89,10 @@ describe("MarketComparePage", () => {
       configurable: true,
       value: { writeText },
     });
-    renderPage();
+    const { container } = renderPage();
 
     expect(screen.getByRole("rowheader", { name: /내 작업 프로필 적합성/u })).toBeTruthy();
+    expect(container.querySelectorAll(".ink-bar-fill").length).toBeGreaterThanOrEqual(4);
     expect(screen.getByRole("link", { name: "적합성 프로필 설정" }).getAttribute("href"))
       .toBe("/market/fit-lab");
 
