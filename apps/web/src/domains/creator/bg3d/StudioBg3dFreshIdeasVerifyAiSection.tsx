@@ -34,6 +34,12 @@ import type {
   BlenderSceneIsolationGuardReport,
   VerticalScrollCutPacingPlan,
 } from "./studio-bg3d-scroll-pacing-live-sync";
+import { StudioBg3dSharedDatumProofingCard } from "./StudioBg3dSharedDatumProofingCard";
+import type {
+  CrossGenreDatumGenreId,
+  DarkroomProofingState,
+  GenreCutDensityRejectionRoiResult,
+} from "./studio-bg3d-shared-datum-proofing";
 import type {
   GenreLockGuardrailEvaluation,
   GenreLockModeId,
@@ -94,6 +100,11 @@ export interface StudioBg3dFreshIdeasVerifyAiSectionProps {
   readonly bg3dAdoptionRatioPct: number;
   readonly avgRevisionsPerEpisode: number;
   readonly lookDevGateConfirmed: boolean;
+  readonly selectedDatumGenreId: CrossGenreDatumGenreId;
+  readonly rejectionRoiReport: GenreCutDensityRejectionRoiResult;
+  readonly darkroomProofingState: DarkroomProofingState;
+  readonly onSelectDatumGenreId: (genreId: CrossGenreDatumGenreId) => void;
+  readonly onToggleDarkroomProofing: (enabled: boolean) => void;
   readonly onChangeGenreLockMode: (mode: GenreLockModeId) => void;
   readonly onChangeBg3dAdoptionRatioPct: (pct: number) => void;
   readonly onChangeAvgRevisionsPerEpisode: (count: number) => void;
@@ -128,6 +139,11 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
   bg3dAdoptionRatioPct,
   avgRevisionsPerEpisode,
   lookDevGateConfirmed,
+  selectedDatumGenreId,
+  rejectionRoiReport,
+  darkroomProofingState,
+  onSelectDatumGenreId,
+  onToggleDarkroomProofing,
   onChangeGenreLockMode,
   onChangeBg3dAdoptionRatioPct,
   onChangeAvgRevisionsPerEpisode,
@@ -172,8 +188,8 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
     },
     {
       id: "step-cc0-kit",
-      stepLabelKo: "2. CC0 수밀 키트(V16~V18)",
-      detailKo: "2.4m 개구부 동기화",
+      stepLabelKo: "2. CC0 기준선 키트(V16~V19)",
+      detailKo: "2.4m·1.1m·0.74m 동기화",
       ready: rightsBomAudit.commercialPublishAllowed,
     },
     {
@@ -439,6 +455,15 @@ export function StudioBg3dFreshIdeasVerifyAiSection({
           </div>
         ))}
       </div>
+
+      <StudioBg3dSharedDatumProofingCard
+        disabled={disabled}
+        selectedDatumGenreId={selectedDatumGenreId}
+        rejectionRoiReport={rejectionRoiReport}
+        darkroomProofingState={darkroomProofingState}
+        onSelectDatumGenreId={onSelectDatumGenreId}
+        onToggleDarkroomProofing={onToggleDarkroomProofing}
+      />
 
       <p
         data-testid="bg3d-blender-remix-header"

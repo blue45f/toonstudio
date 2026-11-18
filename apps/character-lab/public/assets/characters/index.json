@@ -501,6 +501,84 @@
           "sha256": "f3bb2ea88a680082c43197bcd895288f7aead833c54ef277933ab3bb6a6548fe"
         }
       }
+    },
+    {
+      "id": "shaper-healing-barista",
+      "displayName": "SHAPER Atelier · Cozy Campus Artist (일상 힐링 캠퍼스 아티스트)",
+      "role": "shaper-healing",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 8,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        5244,
+        2478,
+        593
+      ],
+      "glbTriangles": 43704,
+      "files": {
+        "glb": {
+          "path": "shaper-healing-barista/shaper-healing-barista.glb",
+          "bytes": 2607000,
+          "sha256": "1c8eeae5508d70749fbbb306a9d1ca53ee421cd45a9e8b2d625b9b91c28dbe71"
+        },
+        "manifest": {
+          "path": "shaper-healing-barista/manifest.json",
+          "bytes": 37663,
+          "sha256": "f2abc05bb99d150652278d2060a0088a315f48a03aabbd19dd890d7f4fb79a06"
+        },
+        "slotMapping": {
+          "path": "shaper-healing-barista/slot-mapping.json",
+          "bytes": 4265,
+          "sha256": "ccc5aeca8ebdb6cff33233d1b86c536c82bbc857c0f4c522532dcdbe3c7d2f17"
+        },
+        "contactSheet": {
+          "path": "shaper-healing-barista/contact-sheet.png",
+          "bytes": 1458655,
+          "sha256": "0fee4a975d50345caec498d48cc678dfec440e324fbd35042d002c9507b64378"
+        }
+      }
+    },
+    {
+      "id": "shaper-thriller-detective",
+      "displayName": "SHAPER Atelier · Noir Detective Inspector (현대 스릴러 강력계 형사)",
+      "role": "shaper-thriller",
+      "license": "CC0-1.0",
+      "generatedAt": "2026-11-17",
+      "qualityScore": 100,
+      "skeleton": true,
+      "textures": 8,
+      "semanticShapeKeys": 24,
+      "hairLodTriangles": [
+        4636,
+        2256,
+        653
+      ],
+      "glbTriangles": 37356,
+      "files": {
+        "glb": {
+          "path": "shaper-thriller-detective/shaper-thriller-detective.glb",
+          "bytes": 2215972,
+          "sha256": "add23b53e5e313ab1e2852fbccd1b3784ea39740a194f74172eaa6a8bbaafa1e"
+        },
+        "manifest": {
+          "path": "shaper-thriller-detective/manifest.json",
+          "bytes": 37696,
+          "sha256": "c922776e8e890aadd4c8f50e30483d53fe6c0ce61b3b3118d3812a4757e6a10c"
+        },
+        "slotMapping": {
+          "path": "shaper-thriller-detective/slot-mapping.json",
+          "bytes": 4276,
+          "sha256": "48cf704921000ffd78be2200e9a58e5fe04940f2d26478ffd2723711654330fa"
+        },
+        "contactSheet": {
+          "path": "shaper-thriller-detective/contact-sheet.png",
+          "bytes": 1425510,
+          "sha256": "30c97cc7e8ff0418c9079cda526df7116879e4643985515772e9619b7950910f"
+        }
+      }
     }
   ]
 }
