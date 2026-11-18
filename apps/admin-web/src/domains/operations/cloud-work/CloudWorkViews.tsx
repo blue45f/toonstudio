@@ -78,9 +78,10 @@ function ApprovalCards({ tasks, onEdit }: Pick<Props, "tasks" | "onEdit">) {
 
 function ActivityList({ board, tasks }: Pick<Props, "board" | "tasks">) {
   const ids = new Set(tasks.map(task => task.id));
-  const entries = board.audit.filter(entry => ids.has(entry.taskId));
+  const entries = board.audit.filter(entry => entry.taskId === "cloud-workboard-v1" || ids.has(entry.taskId));
   if (!entries.length) return <WorkEmpty title="변경 이력이 없습니다" detail="이 보드에 저장한 작업 변경 이력을 서버에서 기록합니다. JSON의 과거 감사 이력은 가져오지 않습니다." />;
-  return <ol className="cw-activity-list">{entries.map(entry => <li key={entry.id}><WorkIcon name="history" /><div><strong>{entry.title}</strong><p>{entry.detail}</p><span className="cw-meta">{entry.taskId} · {formatTime(entry.at)}</span></div></li>)}</ol>;
+  return <>{entries.some(entry => entry.taskId === "cloud-workboard-v1") && <p className="cw-meta">보드 전체 저장 기록은 작업 필터와 관계없이 표시됩니다.</p>}
+    <ol className="cw-activity-list">{entries.map(entry => <li key={entry.id}><WorkIcon name="history" /><div><strong>{entry.title}</strong><p>{entry.detail}</p><span className="cw-meta">{entry.taskId === "cloud-workboard-v1" ? "보드 전체" : entry.taskId} · {formatTime(entry.at)}</span></div></li>)}</ol></>;
 }
 
 export function CloudWorkViews(props: Props) {

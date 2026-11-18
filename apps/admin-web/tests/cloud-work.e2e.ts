@@ -27,7 +27,7 @@ async function fixture(page: Page, board: Board = emptyBoard()) {
       return;
     }
     const at = new Date().toISOString();
-    state.board = { ...body.board, audit: [{ id: crypto.randomUUID(), at, taskId: body.board.tasks[0]?.id ?? "board", title: "서버 저장 이력", detail: "브라우저 검증용 서버 fixture" }, ...state.board.audit] };
+    state.board = { ...body.board, audit: [{ id: crypto.randomUUID(), at, taskId: "cloud-workboard-v1", title: "서버 저장 이력", detail: "브라우저 검증용 서버 fixture" }, ...state.board.audit] };
     state.revision += 1;
     state.storedAt = at;
     await route.fulfill({ json: { board: state.board, revision: state.revision, storedAt: at } });
@@ -98,6 +98,9 @@ test("필터·칸반·중복 비교·승인 보기와 네 편집 탭을 보존�
   expect(server.requests).toEqual(["POST /api/admin/cloud-workboard"]);
   await page.getByRole("button", { name: "활동 기록", exact: true }).click();
   await expect(page.getByText("서버 저장 이력", { exact: true })).toBeVisible();
+  await page.getByLabel("작업 검색", { exact: true }).fill("검색 결과가 없는 작업");
+  await expect(page.getByText("서버 저장 이력", { exact: true })).toBeVisible();
+  await expect(page.getByText("보드 전체 저장 기록은 작업 필터와 관계없이 표시됩니다.", { exact: true })).toBeVisible();
 });
 
 test("Sites JSON을 검토 후 병합하고 과거 감사 이력을 서버 이력으로 옮기지 않는다", async ({ page }) => {
