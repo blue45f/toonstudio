@@ -31,6 +31,10 @@ import { evaluateAtmosphericBokehAndQuarterlyRoi } from "./studio-bg3d-atmospher
 import { evaluateArticulatedPropAndIkSocketBridge } from "./studio-bg3d-articulated-ik-bridge";
 import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
 import { evaluateWeatherMotionAndColorScript } from "./studio-bg3d-weather-motion-colorscript";
+import {
+  createContinuityLedgerSnapshot,
+  evaluateWindDrapeAndContinuity,
+} from "./studio-bg3d-wind-drape-continuity";
 import { evaluateZDepthCrowdTodCompositor } from "./studio-bg3d-zdepth-crowd-tod-compositor";
 import { evaluateBlenderSceneIsolationGuard } from "./studio-bg3d-scroll-pacing-live-sync";
 import {
@@ -229,6 +233,48 @@ describe("studio-bg3d-fresh-ideas-verify-ai", () => {
     expect(v24Motion.motionManifest.tracks).toHaveLength(7);
     expect(v24Motion.totalWeeklyHoursV24).toBe(32.7);
     expect(v24Motion.quarterlyBankedEpisodesV24).toBe(5.31);
+
+    const lockedPrevEp = createContinuityLedgerSnapshot(
+      100,
+      v24Motion.indoorWetReachM,
+      v24Motion.activeAct.kelvin,
+    );
+    const v25Match = evaluateWindDrapeAndContinuity({
+      openRatioPct: 100,
+      fabricId: "tempest-silk",
+      indoorWetReachM: v24Motion.indoorWetReachM,
+      indoorRippleCount: v24Motion.indoorRippleCount,
+      kelvin: v24Motion.activeAct.kelvin,
+      locale: v24Motion.localizedSfxSlot.locale,
+      onomatopoeiaText: v24Motion.localizedSfxSlot.onomatopoeiaText,
+      lockedLedger: lockedPrevEp,
+      tankobonFormatId: "B5",
+      baseV24WeeklyHoursSaved: v24Motion.totalWeeklyHoursV24,
+    });
+    expect(v25Match.continuityCompliant).toBe(true);
+    expect(v25Match.billowDeflectionM).toBe(0.78);
+    expect(v25Match.fresnelReflectPct).toBe(12.0);
+    expect(v25Match.tankobonSpec.printPixels350Dpi).toEqual([5098, 3624]);
+    expect(v25Match.audioManifest.cues).toHaveLength(4);
+    expect(v25Match.totalWeeklyHoursV25).toBe(34.2);
+    expect(v25Match.quarterlyHoursSavedV25).toBe(444.6);
+    expect(v25Match.quarterlyBankedEpisodesV25).toBe(5.56);
+
+    const v25DriftA5 = evaluateWindDrapeAndContinuity({
+      openRatioPct: 65,
+      fabricId: "rofan-velvet",
+      indoorWetReachM: 0.77,
+      indoorRippleCount: 7,
+      kelvin: 3200,
+      locale: "KO",
+      onomatopoeiaText: "촤르륵 · 영롱",
+      lockedLedger: lockedPrevEp,
+      tankobonFormatId: "A5",
+      baseV24WeeklyHoursSaved: v24Motion.totalWeeklyHoursV24,
+    });
+    expect(v25DriftA5.continuityCompliant).toBe(false);
+    expect(v25DriftA5.continuityStatusKo).toContain("연속성 이탈 감지");
+    expect(v25DriftA5.tankobonSpec.printPixels350Dpi).toEqual([4161, 2976]);
 
     const salonLighting = findBlenderFantasyLightingRigPreset("lumiere-salon-chandelier-prism");
     const salonShader = BLENDER_NPR_SHADER_PRESETS.find((p) => p.id === "lumiere-rofan-velvet-brocade")!;

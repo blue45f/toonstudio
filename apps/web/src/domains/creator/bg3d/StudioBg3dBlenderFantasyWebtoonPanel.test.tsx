@@ -283,6 +283,31 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v24-motion-json").textContent,
     ).toContain("toonstudio.toonmotion.v24");
 
+    // Wave 11 (V25): 기류 패브릭·하프 미러 반사창·회차 간 연속성 원장·단행본(B5/A5) 오버스캔·.toonaudio.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v25-wind-drape-card").textContent,
+    ).toContain("기류 연동 패브릭·하프 미러 반사창 V25");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-fabric-rofan-velvet"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-drape-readout").textContent,
+    ).toContain("하프 미러 Fresnel");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-ledger-lock-btn"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-continuity-badge").textContent,
+    ).toContain("연속성 일치");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-act-act3-climax"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-continuity-badge").textContent,
+    ).toContain("연속성 이탈 감지");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-format-A5"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-overscan-readout").textContent,
+    ).toContain("A5 펼침면 302×216mm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v25-audio-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v25-audio-json").textContent,
+    ).toContain("toonstudio.toonaudio.v25");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
