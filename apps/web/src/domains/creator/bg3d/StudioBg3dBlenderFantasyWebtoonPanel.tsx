@@ -67,6 +67,8 @@ import {
   type GenreLockModeId,
   type WebtoonCutArchetypeId,
 } from "./studio-bg3d-shot-continuity-linked-ink";
+import { StudioBg3dSlitGodRaySequenceCard } from "./StudioBg3dSlitGodRaySequenceCard";
+import { evaluateSlitGodRayAndShadowDrift } from "./studio-bg3d-slit-godray-sequence";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
@@ -131,6 +133,7 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
   const [v20OpenRatioPct, setV20OpenRatioPct] = useState<number>(65);
   const [v20IkSnapEnabled, setV20IkSnapEnabled] = useState<boolean>(true);
   const [v20Follow3dSpeedlinesEnabled, setV20Follow3dSpeedlinesEnabled] = useState<boolean>(true);
+  const [interactionCutRatioPct, setInteractionCutRatioPct] = useState<number>(35);
   const [selectedLightingId, setSelectedLightingId] = useState<string>(BLENDER_FANTASY_LIGHTING_RIG_PRESETS[0]!.id);
   const [customKelvin, setCustomKelvin] = useState<number>(5600);
   const [selectedShaderId, setSelectedShaderId] = useState<string>(BLENDER_NPR_SHADER_PRESETS[0]!.id);
@@ -284,6 +287,16 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         follow3dSpeedlinesEnabled: v20Follow3dSpeedlinesEnabled,
       }),
     [v20PropId, v20OpenRatioPct, v20IkSnapEnabled, v20Follow3dSpeedlinesEnabled],
+  );
+  const slitGodRayEval = useMemo(
+    () =>
+      evaluateSlitGodRayAndShadowDrift({
+        openRatioPct: v20OpenRatioPct,
+        weeklyTotalCuts: 70,
+        baseWeeklyHoursSaved: verifyAiReport.weeklyEpisodeRoi.totalWeeklyHoursSaved,
+        interactionCutRatioPct,
+      }),
+    [v20OpenRatioPct, verifyAiReport.weeklyEpisodeRoi.totalWeeklyHoursSaved, interactionCutRatioPct],
   );
 
   const multiPassPlan = useMemo(
@@ -734,6 +747,19 @@ export function StudioBg3dBlenderFantasyWebtoonPanel({
         onChangeOpenRatioPct={setV20OpenRatioPct}
         onToggleIkSnap={setV20IkSnapEnabled}
         onToggleFollow3dSpeedlines={setV20Follow3dSpeedlinesEnabled}
+      />
+
+      <StudioBg3dSlitGodRaySequenceCard
+        disabled={disabled}
+        evaluation={slitGodRayEval}
+        onApplySequenceBeat={(beat) => {
+          setV20OpenRatioPct(beat.openRatioPct);
+          setCustomKelvin(beat.recommendedKelvin);
+          setV20IkSnapEnabled(true);
+          setV20Follow3dSpeedlinesEnabled(true);
+          onStatusChange?.(`${beat.labelKo} 적용 (${beat.recommendedKelvin}K · 개폐 ${beat.openRatioPct}%)`);
+        }}
+        onChangeInteractionCutRatioPct={setInteractionCutRatioPct}
       />
 
       <StudioBg3dBlenderFullSections

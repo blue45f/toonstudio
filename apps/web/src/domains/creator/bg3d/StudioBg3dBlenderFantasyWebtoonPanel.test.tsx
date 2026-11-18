@@ -194,6 +194,26 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-ik-summary-readout").textContent,
     ).toContain("접점 보정 0.0분");
 
+    // Wave 7 (V21): 개폐율 연동 가변 슬릿 고드레이·그림자 드리프트 & 3연속 시퀀스(15%->65%->100%) 검증
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-section").textContent,
+    ).toContain("5D. 개폐율 연동 가변 슬릿 고드레이(V21)");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v21-beat-15"));
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
+    ).toContain("슬릿 폭 0.39m");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v21-beat-100"));
+    expect(
+      screen.getByTestId("bg3d-blender-slit-godray-readout").textContent,
+    ).toContain("슬릿 폭 1.68m");
+    fireEvent.change(screen.getByTestId("bg3d-blender-interaction-cut-slider"), {
+      target: { value: "50" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-stacked-interaction-roi-readout")
+        .textContent,
+    ).toContain("상호작용 50%(35컷)");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );

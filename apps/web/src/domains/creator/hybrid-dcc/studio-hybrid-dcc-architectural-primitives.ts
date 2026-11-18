@@ -343,6 +343,38 @@ export const STUDIO_HYBRID_DCC_BLENDER_V20_ARTICULATED_KIT: readonly StudioHybri
     },
   ]);
 
+/** Blender 5.3 개폐율 연동 가변 슬릿 고드레이·그림자 드리프트 3연속 시퀀스 V21(3종, CC0-1.0) — 15% 칼날 슬릿·65% 프리즘 돌파·100% 전면 할로. */
+export const STUDIO_HYBRID_DCC_BLENDER_V21_GODRAY_KIT: readonly StudioHybridDccPrecisionBgKitItem[] =
+  Object.freeze([
+    {
+      id: "webtoon-slit-godray-threshold-15pct-v21",
+      fileName: "webtoon-slit-godray-threshold-15pct-v21.glb",
+      glbUrl: "/studio-assets/blender-slit-godray-v21/webtoon-slit-godray-threshold-15pct-v21.glb",
+      previewUrl: "/studio-assets/blender-slit-godray-v21/thumbnails/webtoon-slit-godray-threshold-15pct-v21.png",
+      label: ["1컷 · 도입 15% 칼날 슬릿 역광 베이", "Beat 1 (15%) razor slit god-ray bay"],
+      hint: ["0.39m 칼날 역광 슬릿·1.23m 장거리 그림자", "0.39m slit beam across 1.54m eye-line"],
+      triangles: 4496,
+    },
+    {
+      id: "webtoon-slit-godray-breakthrough-65pct-v21",
+      fileName: "webtoon-slit-godray-breakthrough-65pct-v21.glb",
+      glbUrl: "/studio-assets/blender-slit-godray-v21/webtoon-slit-godray-breakthrough-65pct-v21.glb",
+      previewUrl: "/studio-assets/blender-slit-godray-v21/thumbnails/webtoon-slit-godray-breakthrough-65pct-v21.png",
+      label: ["2컷 · 전개 65% 프리즘 돌파 베이", "Beat 2 (65%) prism breakthrough bay"],
+      hint: ["1.15m 확산 프리즘 광선·0.94m 중거리 그림자", "1.15m fanned god-ray & mid shadow drift"],
+      triangles: 4496,
+    },
+    {
+      id: "webtoon-slit-godray-climax-100pct-v21",
+      fileName: "webtoon-slit-godray-climax-100pct-v21.glb",
+      glbUrl: "/studio-assets/blender-slit-godray-v21/webtoon-slit-godray-climax-100pct-v21.glb",
+      previewUrl: "/studio-assets/blender-slit-godray-v21/thumbnails/webtoon-slit-godray-climax-100pct-v21.png",
+      label: ["3컷 · 클라이맥스 100% 전면 할로 베이", "Beat 3 (100%) climax halo flood bay"],
+      hint: ["1.68m 전면 할로 역광·0.74m 림 그림자", "1.68m full halo flood & silhouette frame"],
+      triangles: 4496,
+    },
+  ]);
+
 function vec(x: number, y: number, z: number): StudioMeshVec3 {
   return { x, y, z };
 }
