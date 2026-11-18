@@ -1,10 +1,11 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
 export const ADMIN_AI_OPERATIONS_BASE = "/admin/platform/ai-operations/";
+export const ADMIN_WORKSPACE_BASE = "/admin/workspace/";
 
 interface AdminQualityEntryOptions {
   readonly repositoryRoot: string;
@@ -33,11 +34,13 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
           manifest: false,
         },
       });
-      // 같은 Admin 번들은 한 번 빌드하고 문서 진입점만 추가한다. 자산은 원래 base를 유지한다.
-      const adminHtml = await readFile(path.join(outputDirectory, "admin/platform/quality/index.html"), "utf8");
-      const operationsDirectory = path.join(outputDirectory, "admin/platform/ai-operations");
-      await mkdir(operationsDirectory, { recursive: true });
-      await writeFile(path.join(operationsDirectory, "index.html"), adminHtml);
+      // 같은 관리자 번들을 한 번만 만들고 경로별 문서 진입점을 제공한다.
+      // 절대 자산 경로는 quality/assets를 유지하므로 Web·Studio 자산과 충돌하지 않는다.
+      for (const base of [ADMIN_AI_OPERATIONS_BASE, ADMIN_WORKSPACE_BASE]) {
+        const entryDirectory = path.join(outputDirectory, base.slice(1));
+        await mkdir(entryDirectory, { recursive: true });
+        await copyFile(path.join(outputDirectory, "admin/platform/quality/index.html"), path.join(entryDirectory, "index.html"));
+      }
     },
   };
 }

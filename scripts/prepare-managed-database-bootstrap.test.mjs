@@ -121,6 +121,10 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(result.sql).toContain("'bootstrap'");
     expect(result.sql).toContain("INSERT INTO public.supporter_funding_setting");
     expect(result.sql).toContain("INSERT INTO production_operation_policy");
+    expect(result.sql).toContain("INSERT INTO public.admin_workspace(id) VALUES('toonstudio') ON CONFLICT(id) DO NOTHING");
+    expect(result.sql).toContain("INSERT INTO public.admin_ai_operations_board(id) VALUES(1) ON CONFLICT(id) DO NOTHING");
+    expect(result.sql.split("INSERT INTO public.admin_ai_operations_board(id)")).toHaveLength(2);
+    expect(result.sql).not.toContain("chatgpt.com/share/");
     expect(result.sql).not.toMatch(/INSERT INTO public\."?user"?\s/iu);
     expect(() => buildManagedInitialRows(contract, "main")).toThrow(/40자리/u);
   });
@@ -131,6 +135,11 @@ describe("관리형 빈 DB bootstrap SQL 준비", () => {
     expect(sql).toContain("DO $connect$");
     expect(sql).toContain("creator_hiring_campaign");
     expect(sql).toContain("studio_review_policy_actor_epoch");
+    expect(sql).toContain("CREATE POLICY admin_workspace_runtime");
+    expect(sql.split('GRANT SELECT ON TABLE "public".admin_ai_operations_board')).toHaveLength(2);
+    expect(sql).toContain('GRANT UPDATE ("revision", "payload", "updated_at") ON TABLE "public".admin_ai_operations_board');
+    expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "public".admin_ai_operations_audit');
+    expect(sql).toContain('GRANT SELECT, INSERT ON TABLE "public".admin_ai_operations_receipt');
     expect(sql).toContain("REVOKE ALL ON SCHEMA toonspectrum_ops FROM PUBLIC");
     expect(splitDumpStatements(sql).filter((statement) => /^(?:BEGIN|COMMIT)$/iu.test(statement))).toEqual([]);
   });

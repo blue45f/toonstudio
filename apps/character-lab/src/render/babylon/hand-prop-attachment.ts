@@ -4,8 +4,6 @@
  * - 머리 액세서리(`partId = 251`, `extra:head-prop`): `head` 본 아래 `TS_HeadPropAnchor_*`
  * - 배경 스테이지 스탠드(`partId = 252`, `extra:stage-prop`): `rig.root` 아래 `TS_StagePropAnchor_*`
  *
- * GLB는 제작 패키지와 같은 공용 로더로 연다.
- *
  * 세 슬롯 모두 `rig.root` 하위 트리에 속하고 `rig.parts`(`role = "accessory"`)에 독립 등록되므로:
  * 1) 손 소품 + 머리 액세서리 + 배경 스테이지 프롭 3종 동시 장착 지원
  * 2) 뷰포트 PBR 및 툰 셰이딩(외곽선·림라이트·망점 스크린톤 포함) 자동 적용
@@ -22,7 +20,7 @@ import { ROLE_COLOR_KEY, ROLE_DEFAULT_PRESET, resolvePartColorHex } from "../mat
 
 import { attachExtraRigPart, detachExtraRigPart } from "./character-rig";
 import { rigMeshMetadata } from "./mesh-binding";
-import { loadGlbAssetContainer } from "./package-loader";
+import { loadCharacterAssetContainer } from "./package-loader";
 
 import type { CharacterRig, RigPart } from "./character-rig";
 import type {
@@ -161,9 +159,9 @@ async function mountExtraPropPart(input: MountExtraGlbInput): Promise<{ readonly
     }
   }
 
-  let container: Awaited<ReturnType<typeof loadGlbAssetContainer>>;
+  let container: Awaited<ReturnType<typeof loadCharacterAssetContainer>>;
   try {
-    container = await loadGlbAssetContainer(bytes, input.deps.scene);
+    container = await loadCharacterAssetContainer(bytes, input.deps.scene);
   } catch (error) {
     throw failVisible(`${input.codePrefix}-glb-load-failed`, `3D 소품 GLB를 열지 못했습니다: ${input.glbUrl}`, error, now);
   }

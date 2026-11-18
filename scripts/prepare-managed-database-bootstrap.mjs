@@ -9,6 +9,8 @@ import { loadBootstrapContract, buildRuntimeBootstrapAclSql } from "./bootstrap-
 import * as migrations from "./run-production-database-migrations.mjs";
 import { buildProductionCapabilityVerificationSql, loadHealthReadinessContract } from "./verify-production-database-capabilities.mjs";
 import { buildAdminRuntimeAclSql } from "./admin-database-contract.mjs";
+import { buildAdminWorkspaceRuntimeAclSql } from "./admin-workspace-database-contract.mjs";
+import { buildAiOperationsRuntimeAclSql } from "./ai-operations-database-contract.mjs";
 import { buildFeedbackRuntimeAclSql } from "./feedback-database-contract.mjs";
 import { buildCommunityCafeRuntimeAclSql } from "./community-cafe-database-contract.mjs";
 import { buildHiringRuntimeAclSql } from "./creator-hiring-database-contract.mjs";
@@ -177,6 +179,8 @@ export function buildManagedInitialRows(contract, releaseSha) {
   const seeds = [
     ["0071_supporter_payments", /INSERT INTO public\.supporter_funding_setting\s*\([\s\S]*?ON CONFLICT \(id\) DO NOTHING;/u],
     ["0086_production_operation_policy", /INSERT INTO production_operation_policy\(id,payload\)[\s\S]*?ON CONFLICT\(id\) DO NOTHING;/u],
+    ["0122_admin_workspace", /INSERT INTO public\.admin_workspace\(id\)[\s\S]*?ON CONFLICT\(id\) DO NOTHING;/u],
+    ["0123_admin_ai_operations", /INSERT INTO public\.admin_ai_operations_board\(id\)[\s\S]*?ON CONFLICT\(id\) DO NOTHING;/u],
   ].map(([id, expression]) => {
     const sql = expression.exec(contract.manifest.find((entry) => entry.id === id)?.contents ?? "")?.[0];
     if (!sql) fail("검토된 빈 DB 초기 설정을 추출하지 못했습니다.");
@@ -202,7 +206,7 @@ export function buildManagedRuntimeAclSql(role) {
     migrations.buildAuthRuntimeAclSql, migrations.buildTrafficAnalyticsRuntimeAclSql,
     migrations.buildCreatorRoleWorkspaceRuntimeAclSql, migrations.buildPersonalCloudRuntimeAclSql,
     migrations.buildCommunityCommentRuntimeAclSql, migrations.buildMessagingRuntimeAclSql,
-    buildCustomerSupportRuntimeAclSql, buildAdminRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
+    buildCustomerSupportRuntimeAclSql, buildAiOperationsRuntimeAclSql, buildAdminRuntimeAclSql, buildAdminWorkspaceRuntimeAclSql, buildFeedbackRuntimeAclSql, buildCommunityCafeRuntimeAclSql,
     migrations.buildRuntimeCutoverLedgerAclSql, migrations.buildMembershipRuntimeAclSql,
     buildHiringRuntimeAclSql, buildHiringAutomationRuntimeAclSql, buildFortuneSnapshotRuntimeAclSql,
     buildCareerConfirmationRuntimeAclSql, buildProductionOperationsRuntimeAclSql,

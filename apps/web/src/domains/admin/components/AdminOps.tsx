@@ -119,22 +119,34 @@ const formatDuration = (ms: number | null) => (ms == null ? "—" : `${(ms / 100
 function AdminCiQualityEntry() {
   const t = useT();
   return (
-    <section aria-labelledby="admin-ci-quality-title" className="rounded-2xl border border-line bg-card p-5">
-      <h2 id="admin-ci-quality-title" className="text-sm font-semibold text-fg">{t("admin.ciQuality.title")}</h2>
-      <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.ciQuality.description")}</p>
-      <a
-        href="/admin/platform/quality/"
-        className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        {t("admin.ciQuality.open")}
-      </a>
-      <a
-        href="/admin/platform/ai-operations/"
-        className="ml-3 mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        AI·인프라 운영 보드
-      </a>
-    </section>
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section aria-labelledby="admin-workspace-title" className="rounded-2xl border border-line bg-card p-5">
+        <h2 id="admin-workspace-title" className="text-sm font-semibold text-fg">{t("admin.workspace.title")}</h2>
+        <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.workspace.description")}</p>
+        <a
+          href="/admin/workspace/"
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t("admin.workspace.open")}
+        </a>
+      </section>
+      <section aria-labelledby="admin-ci-quality-title" className="rounded-2xl border border-line bg-card p-5">
+        <h2 id="admin-ci-quality-title" className="text-sm font-semibold text-fg">{t("admin.ciQuality.title")}</h2>
+        <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.ciQuality.description")}</p>
+        <a
+          href="/admin/platform/quality/"
+          className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {t("admin.ciQuality.open")}
+        </a>
+        <a
+          href="/admin/platform/ai-operations/"
+          className="ml-3 mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          AI·인프라 운영 보드
+        </a>
+      </section>
+    </div>
   );
 }
 
