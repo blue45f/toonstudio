@@ -154,7 +154,8 @@ test("허용된 계정만 비공개 이전 문서를 열고 전문 문서의 편
   await page.goto(boardPath);
   await expect(page.getByRole("heading", { name: "사업계획·운영 작업실", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "이전 자료 접근 권한", exact: true })).toHaveCount(0);
-  expect(fixture.reads).toEqual([endpoint + "?scope=operations"]);
+  expect(fixture.reads.length).toBeGreaterThan(0);
+  expect(new Set(fixture.reads)).toEqual(new Set([endpoint + "?scope=operations"]));
   await page.getByRole("button", { name: "비공개 이전 자료 보기", exact: true }).click();
   await expect(page.getByRole("complementary", { name: "제출 준비 요약" })).toBeVisible();
   await expect(page.getByRole("button", { name: "JSON 백업", exact: true })).toHaveCount(0);

@@ -46,8 +46,8 @@ test("기존 관리자 경로에서 전체 근거와 16개 시나리오의 실�
 test("관리 상태·전후 증거 저장과 서버 재열기 및 변경 이력을 확인한다", async ({ page }) => {
   const server = await installServer(page); await page.goto(boardPath); await openScenario(page);
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("관리 상태", { exact: true }).selectOption("진행 중");
-  await dialog.getByLabel("메모 · 차단 요인", { exact: true }).fill("합성 테스트에서 재연결 검증을 준비합니다.");
+  await dialog.getByRole("combobox", { name: "관리 상태", exact: true }).selectOption("진행 중");
+  await dialog.getByRole("textbox", { name: "메모 · 차단 요인", exact: true }).fill("합성 테스트에서 재연결 검증을 준비합니다.");
   await dialog.getByRole("button", { name: "전후 증거 · 링크", exact: true }).click();
   await dialog.getByLabel("변경 전 증거", { exact: true }).fill("합성 기준 요청 로그 확인");
   await dialog.getByLabel("변경 후 증거", { exact: true }).fill("미확인 · 실행 증거 없음");
@@ -56,7 +56,7 @@ test("관리 상태·전후 증거 저장과 서버 재열기 및 변경 이력�
   expect(server.posts).toHaveLength(1);
   expect(server.view.document.tasks.find((task) => task.id === "nest-010")).toMatchObject({ status: "진행 중", result: "미확인", verificationDate: "", beforeEvidence: "합성 기준 요청 로그 확인" });
   await page.reload(); await openScenario(page);
-  await expect(page.getByRole("dialog").getByLabel("메모 · 차단 요인", { exact: true })).toHaveValue("합성 테스트에서 재연결 검증을 준비합니다.");
+  await expect(page.getByRole("dialog").getByRole("textbox", { name: "메모 · 차단 요인", exact: true })).toHaveValue("합성 테스트에서 재연결 검증을 준비합니다.");
   await page.getByRole("button", { name: "NestJS 대화상자 닫기" }).click();
   await page.getByRole("button", { name: "근거 · 변경 이력", exact: true }).click();
   await expect(page.getByText(/기록한 관리자: nest-admin-a/u)).toBeVisible();
@@ -65,7 +65,7 @@ test("관리 상태·전후 증거 저장과 서버 재열기 및 변경 이력�
 test("operator는 읽기·내보내기만 가능하고 편집·가져오기는 열리지 않는다", async ({ page }) => {
   const server = await installServer(page, "operator"); await page.goto(boardPath); await openScenario(page);
   await expect(page.getByRole("button", { name: "검증 기록 저장", exact: true })).toHaveCount(0);
-  await expect(page.getByLabel("메모 · 차단 요인", { exact: true })).toBeDisabled();
+  await expect(page.getByRole("textbox", { name: "메모 · 차단 요인", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "NestJS 대화상자 닫기" }).click();
   await page.getByRole("button", { name: "NestJS JSON 관리" }).click();
   await expect(page.getByLabel("가져올 JSON", { exact: true })).toHaveCount(0);
@@ -74,7 +74,7 @@ test("operator는 읽기·내보내기만 가능하고 편집·가져오기는 �
 
 test("403 응답 뒤 저장된 기록을 숨기고 재인증을 요구한다", async ({ page }) => {
   const server = await installServer(page); await page.goto(boardPath); await openScenario(page);
-  await page.getByLabel("메모 · 차단 요인", { exact: true }).fill("거부 후 노출하면 안 되는 합성 초안");
+  await page.getByRole("textbox", { name: "메모 · 차단 요인", exact: true }).fill("거부 후 노출하면 안 되는 합성 초안");
   server.saveStatus = 403; server.identityStatus = 403;
   await page.getByRole("button", { name: "검증 기록 저장", exact: true }).click();
   await expect(page.getByText(/관리자 권한을 다시 확인해야 합니다/u)).toBeVisible();
@@ -86,10 +86,10 @@ test("403 응답 뒤 저장된 기록을 숨기고 재인증을 요구한다", a
 
 test("저장 충돌은 초안 내보내기와 확인 후 재읽기로 복구한다", async ({ page }) => {
   const server = await installServer(page); await page.goto(boardPath); await openScenario(page);
-  await page.getByLabel("메모 · 차단 요인", { exact: true }).fill("충돌해도 보존할 초안"); server.saveStatus = 409;
+  await page.getByRole("textbox", { name: "메모 · 차단 요인", exact: true }).fill("충돌해도 보존할 초안"); server.saveStatus = 409;
   await page.getByRole("button", { name: "검증 기록 저장", exact: true }).click();
   await expect(page.getByText(/다른 기록이 먼저 저장되었습니다/u)).toBeVisible();
-  await expect(page.getByLabel("메모 · 차단 요인", { exact: true })).toHaveValue("충돌해도 보존할 초안");
+  await expect(page.getByRole("textbox", { name: "메모 · 차단 요인", exact: true })).toHaveValue("충돌해도 보존할 초안");
   const downloadPromise = page.waitForEvent("download"); await page.getByRole("button", { name: "초안 JSON 내보내기", exact: true }).click();
   const download = await downloadPromise; const path = await download.path();
   if (!path) throw new Error("초안 다운로드 파일이 없습니다.");
@@ -129,7 +129,7 @@ test("390px에서 넘침 없이 시나리오와 키보드 편집을 제공한다
   await openScenario(page);
   await expect(page.getByRole("button", { name: "NestJS 대화상자 닫기" })).toBeFocused();
   await page.keyboard.press("Shift+Tab"); await expect(page.getByRole("button", { name: "검증 기록 저장", exact: true })).toBeFocused();
-  await page.getByLabel("메모 · 차단 요인", { exact: true }).fill("모바일 초안");
+  await page.getByRole("textbox", { name: "메모 · 차단 요인", exact: true }).fill("모바일 초안");
   await page.keyboard.press("Escape"); await expect(page.getByText("저장하지 않은 변경이 있습니다.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "계속 편집", exact: true }).click();
   await page.screenshot({ path: testInfo.outputPath("nestjs-editor-390.png"), fullPage: true });
