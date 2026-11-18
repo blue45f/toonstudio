@@ -254,6 +254,35 @@ describe("StudioBg3dBlenderFantasyWebtoonPanel", () => {
       screen.getByTestId("bg3d-blender-v23-manifest-json").textContent,
     ).toContain("toonstudio.toonlayers.v23");
 
+    // Wave 10 (V24): 건축 차폐 기상·듀얼 포컬(24mm×95mm)·70컷 4막 컬러 스크립트·KO/EN/JA 식자·.toonmotion.json 검증
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-motion-card").textContent,
+    ).toContain("건축 차폐 기상·수막 파문 V24");
+    fireEvent.click(
+      screen.getByTestId("bg3d-blender-v24-weather-eaves-rain-ripples"),
+    );
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-readout").textContent,
+    ).toContain("실내 천장 누수 0건");
+    fireEvent.change(screen.getByTestId("bg3d-blender-v24-char-focal-slider"), {
+      target: { value: "95" },
+    });
+    expect(
+      screen.getByTestId("bg3d-blender-v24-weather-readout").textContent,
+    ).toContain("24mm×95mm");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-act-act1-setup"));
+    expect(
+      screen.getByTestId("bg3d-blender-v23-tod-badge").textContent,
+    ).toContain("5600K");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-locale-EN"));
+    expect(
+      screen.getByTestId("bg3d-blender-v24-locale-readout").textContent,
+    ).toContain("[EN]");
+    fireEvent.click(screen.getByTestId("bg3d-blender-v24-motion-toggle"));
+    expect(
+      screen.getByTestId("bg3d-blender-v24-motion-json").textContent,
+    ).toContain("toonstudio.toonmotion.v24");
+
     fireEvent.click(
       screen.getByTestId("bg3d-blender-archetype-emotion-closeup"),
     );
