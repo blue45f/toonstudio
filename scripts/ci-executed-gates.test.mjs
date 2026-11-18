@@ -353,10 +353,12 @@ test("review database invariants execute with real PostgreSQL and the accepted g
   }
 
   for (const suite of CORE_DATABASE_VITEST_TARGETS) {
-    assert.ok(database.includes(suite), `Missing real database suite: ${suite}`);
+    assert.equal(database.split(suite).length - 1, 1,
+      `필수 PostgreSQL 작업은 각 실제 DB 검증을 정확히 한 번 실행해야 합니다: ${suite}`);
   }
   for (const suite of [
     "apps/api/src/modules/admin-workspace/admin-workspace.integration.test.ts",
+    "apps/api/src/modules/business-plan/business-plan.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-producer-http.integration.test.ts",
     "apps/api/src/modules/creator/studio-scoped-write-rest.integration.test.ts",
     "apps/api/src/modules/production-collaboration/production-auth-http.integration.test.ts",

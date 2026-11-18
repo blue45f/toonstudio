@@ -4,6 +4,7 @@ import path from "node:path";
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
+export const ADMIN_BUSINESS_PLAN_BASE = "/admin/growth/business-plan/";
 export const ADMIN_WORKSPACE_BASE = "/admin/workspace/";
 
 interface AdminQualityEntryOptions {
@@ -24,18 +25,20 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
     async closeBundle() {
       if (!outputDirectory) throw new Error("관리자 검증 보드의 Web 출력 경로를 확인할 수 없습니다.");
       // 별도 Vite 설정으로 빌드하므로 Web manifest와 Studio 청크 소유권을 덮어쓰지 않는다.
-      await buildAdmin({
-        configFile: path.resolve(repositoryRoot, "apps/admin-web/vite.config.ts"),
-        base: ADMIN_QUALITY_BASE,
-        build: {
-          outDir: path.join(outputDirectory, "admin/platform/quality"),
-          emptyOutDir: true,
-          manifest: false,
-        },
-      });
-      // 같은 관리자 번들을 한 번만 만들고 경로별 문서 진입점을 제공한다.
-      // 절대 자산 경로는 quality/assets를 유지하므로 Web·Studio 자산과 충돌하지 않는다.
-      const workspaceDirectory = path.join(outputDirectory, "admin/workspace");
+      for (const base of [ADMIN_QUALITY_BASE, ADMIN_BUSINESS_PLAN_BASE]) {
+        await buildAdmin({
+          configFile: path.resolve(repositoryRoot, "apps/admin-web/vite.config.ts"),
+          base,
+          build: {
+            outDir: path.join(outputDirectory, base.slice(1)),
+            emptyOutDir: true,
+            manifest: false,
+          },
+        });
+      }
+      // 통합 작업실은 quality 번들의 절대 자산 경로를 재사용한다.
+      // 사업계획서의 독립 자산 경로와 Web·Studio manifest는 그대로 유지한다.
+      const workspaceDirectory = path.join(outputDirectory, ADMIN_WORKSPACE_BASE.slice(1));
       await mkdir(workspaceDirectory, { recursive: true });
       await copyFile(path.join(outputDirectory, "admin/platform/quality/index.html"), path.join(workspaceDirectory, "index.html"));
     },
