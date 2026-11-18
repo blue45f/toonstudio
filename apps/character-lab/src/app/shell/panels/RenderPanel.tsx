@@ -14,8 +14,10 @@ import { describeAdapter } from "../engine-status-text";
 import { useDispatch, useEngineSession, useLabState } from "../lab-store-context";
 
 import {
+  WEBTOON_GENRE_SCENE_PRESETS,
   WEBTOON_LIGHTING_SHADOW_PRESETS,
   WEBTOON_MATERIAL_SURFACE_PRESETS,
+  buildGenreScenePresetCommands,
   buildLightingShadowCommands,
   buildMaterialSurfaceCommands,
   buildResetMaterialLightingCommands,
@@ -244,6 +246,22 @@ export function RenderPanel({ pollIntervalMs = DEFAULT_RENDER_POLL_MS }: RenderP
         <p className="cl-render-hint" data-testid="render-material-shadow-summary">
           {summarizeActiveMaterialAndShadowKo(state.recipe.surfaces, shading)}
         </p>
+        <div className="cl-render-row" role="group" aria-label="한국 웹툰 장르별 1-클릭 마스터 씬 프리셋" data-testid="render-webtoon-genre-scene-presets">
+          {WEBTOON_GENRE_SCENE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="cl-preset-chip"
+              data-testid={`render-genre-preset-${preset.id}`}
+              title={`[${preset.genreTagKo}] ${preset.summaryKo}`}
+              onClick={() => {
+                for (const command of buildGenreScenePresetCommands(state.recipe.surfaces, shading, preset)) dispatch(command);
+              }}
+            >
+              {preset.labelKo}
+            </button>
+          ))}
+        </div>
         <div className="cl-render-row" role="group" aria-label="피부·의상 표면 소재 프리셋" data-testid="render-surface-material-presets">
           {WEBTOON_MATERIAL_SURFACE_PRESETS.map((preset) => (
             <button

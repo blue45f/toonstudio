@@ -23,6 +23,7 @@ import { clampQuadSheetCellSize, exportQuadReferenceSheetPng } from "../../../ex
 import { RECIPE_FILE_SUFFIX } from "../../../export/recipe-file";
 import { clampTurnaroundPanelSize, exportTurnaroundSheetPng } from "../../../export/turnaround-sheet";
 import { exportWebtoonVerticalStripPng } from "../../../export/webtoon-strip-composer";
+import type { WebtoonStripFxLinesKind } from "../../../export/webtoon-strip-composer";
 import { getDefaultPaintSession } from "../../../paint/paint-session";
 import { useDispatch, useEngineSession, useKitPlans, useLabContext, useLabState, useUiActions } from "../lab-store-context";
 import {
@@ -117,6 +118,8 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
   const [includeReferencePasses, setIncludeReferencePasses] = useState(false);
   const [splitHairLayers, setSplitHairLayers] = useState(false);
   const [useLuminanceToAlpha, setUseLuminanceToAlpha] = useState(false);
+  const [bakeStripFx, setBakeStripFx] = useState(false);
+  const [stripFxLines, setStripFxLines] = useState<WebtoonStripFxLinesKind>("focus-radial");
   const [busy, setBusy] = useState<ExportBusyKind | null>(null);
   const [progressDetail, setProgressDetail] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ExportReceipt | null>(null);
@@ -280,6 +283,16 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            ...(bakeStripFx
+              ? {
+                  mangaFx: {
+                    enabled: true,
+                    linesKind: stripFxLines,
+                    includeSpeechBubbles: true,
+                    intensity: 0.78,
+                  },
+                }
+              : {}),
             settleSteps,
             onProgress: (step, total, labelKo) => {
               if (mountedRef.current) setProgressDetail(`${step}/${total} · ${labelKo}`);
@@ -596,6 +609,31 @@ export function ExportPanel({ session = getDefaultPaintSession(), deps = {} }: E
         </select>
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
+      </div>
+      <div className="cl-export-row" role="group" aria-label="세로 4컷 스트립 연출 베이킹">
+        <label htmlFor={`${ids}-strip-bake-fx`}>
+          <input
+            id={`${ids}-strip-bake-fx`}
+            data-testid="export-strip-bake-fx"
+            type="checkbox"
+            checked={bakeStripFx}
+            onChange={(event) => setBakeStripFx(event.target.checked)}
+          />{" "}
+          4컷 말풍선·효과선 베이킹
+        </label>
+        <label htmlFor={`${ids}-strip-fx-lines`}>효과선</label>
+        <select
+          id={`${ids}-strip-fx-lines`}
+          data-testid="export-strip-fx-lines"
+          value={stripFxLines}
+          disabled={!bakeStripFx}
+          onChange={(event) => setStripFxLines(event.target.value as WebtoonStripFxLinesKind)}
+        >
+          <option value="focus-radial">집중선 (방사형)</option>
+          <option value="speed-diagonal">속도선 (대각선)</option>
+          <option value="romance-sparkle">로맨스 스파클</option>
+          <option value="none">말풍선만 (효과선 없음)</option>
+        </select>
       </div>
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
