@@ -52,6 +52,9 @@ registerI18nLocaleEntries("en", paidOperationsI18n.en);
 registerI18nEnglishSourceEntries(paidOperationsI18n.en);
 
 registerI18nLocaleEntries("ko", {
+  "admin.businessPlan.title": "사업계획서·제출 준비",
+  "admin.businessPlan.description": "보완 작업, 주장별 근거, 문서 버전, 멘토 요청과 제출 전 점검을 관리자 전용 보드에서 관리합니다.",
+  "admin.businessPlan.open": "사업계획서 보드 열기",
   "admin.ciQuality.title": "CI·QA 검증",
   "admin.ciQuality.description": "CI 결과, 외부 QA 참고 자료와 근거의 최신성을 기록합니다. 무료 수동 기록 보드이며 코드 수정·배포·계정 설정은 실행하지 않습니다.",
   "admin.ciQuality.open": "검증 보드 열기",
@@ -61,6 +64,9 @@ registerI18nLocaleEntries("ko", {
 });
 
 registerI18nLocaleEntries("en", {
+  "admin.businessPlan.title": "Business plan & submission",
+  "admin.businessPlan.description": "Manage revisions, claim evidence, document versions, mentor requests and submission checks in the administrator board.",
+  "admin.businessPlan.open": "Open business plan board",
   "admin.ciQuality.title": "CI & QA verification",
   "admin.ciQuality.description": "Record CI results, external QA references and evidence freshness. This free manual board does not modify code, deploy or change account settings.",
   "admin.ciQuality.open": "Open verification board",

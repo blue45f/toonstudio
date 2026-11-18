@@ -3,6 +3,7 @@ import path from "node:path";
 import { build, type InlineConfig, type Plugin } from "vite";
 
 export const ADMIN_QUALITY_BASE = "/admin/platform/quality/";
+export const ADMIN_BUSINESS_PLAN_BASE = "/admin/growth/business-plan/";
 
 interface AdminQualityEntryOptions {
   readonly repositoryRoot: string;
@@ -22,15 +23,17 @@ export function adminQualityEntryPlugin({ repositoryRoot, buildAdmin = build }: 
     async closeBundle() {
       if (!outputDirectory) throw new Error("관리자 검증 보드의 Web 출력 경로를 확인할 수 없습니다.");
       // 별도 Vite 설정으로 빌드하므로 Web manifest와 Studio 청크 소유권을 덮어쓰지 않는다.
-      await buildAdmin({
-        configFile: path.resolve(repositoryRoot, "apps/admin-web/vite.config.ts"),
-        base: ADMIN_QUALITY_BASE,
-        build: {
-          outDir: path.join(outputDirectory, "admin/platform/quality"),
-          emptyOutDir: true,
-          manifest: false,
-        },
-      });
+      for (const base of [ADMIN_QUALITY_BASE, ADMIN_BUSINESS_PLAN_BASE]) {
+        await buildAdmin({
+          configFile: path.resolve(repositoryRoot, "apps/admin-web/vite.config.ts"),
+          base,
+          build: {
+            outDir: path.join(outputDirectory, base.slice(1)),
+            emptyOutDir: true,
+            manifest: false,
+          },
+        });
+      }
     },
   };
 }

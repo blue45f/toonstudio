@@ -9,6 +9,7 @@ apps/api/src/modules/admin/admin-traffic.service.test.ts
 apps/api/src/modules/auth/anonymous-client-limit.test.ts
 apps/api/src/modules/auth/auth-client-ip.test.ts
 apps/api/src/modules/business-inquiry/business-inquiry.rate-limit.test.ts
+apps/api/src/modules/business-plan/business-plan.test.ts
 apps/api/src/modules/catalog/catalog-pagination.test.ts
 apps/api/src/modules/catalog/catalog-public-cache.interceptor.test.ts
 apps/api/src/modules/catalog/catalog-search-cache.test.ts
@@ -805,6 +806,7 @@ deploy/cloudflare-analytics/src/index.test.ts
 deploy/cloudflare-apex-redirect/src/index.test.ts
 deploy/cloudflare-static/src/index.test.ts
 deploy/cloudflare-static/src/r2-media-assets.test.ts
+packages/contracts/src/business-plan/business-plan.test.ts
 packages/contracts/src/production-workflow.test.ts
 packages/contracts/src/studio-legacy-pigment-archive.test.ts
 packages/contracts/src/studio-linked-3d-correction.test.ts

@@ -116,9 +116,10 @@ const formatDateTime = (value: string | null | undefined) =>
 const formatDuration = (ms: number | null) => (ms == null ? "—" : `${(ms / 1000).toFixed(1)}초`);
 
 /** 독립 Admin 문서로 이동하여 사용자 Web의 라우터·번들 경계를 유지한다. */
-function AdminCiQualityEntry() {
+function AdminPreparationEntries() {
   const t = useT();
   return (
+    <>
     <section aria-labelledby="admin-ci-quality-title" className="rounded-2xl border border-line bg-card p-5">
       <h2 id="admin-ci-quality-title" className="text-sm font-semibold text-fg">{t("admin.ciQuality.title")}</h2>
       <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.ciQuality.description")}</p>
@@ -129,6 +130,14 @@ function AdminCiQualityEntry() {
         {t("admin.ciQuality.open")}
       </a>
     </section>
+    <section aria-labelledby="admin-business-plan-title" className="rounded-2xl border border-line bg-card p-5">
+      <h2 id="admin-business-plan-title" className="text-sm font-semibold text-fg">{t("admin.businessPlan.title")}</h2>
+      <p className="mt-2 text-xs leading-relaxed text-fg-3">{t("admin.businessPlan.description")}</p>
+      <a href="/admin/growth/business-plan/" className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        {t("admin.businessPlan.open")}
+      </a>
+    </section>
+    </>
   );
 }
 
@@ -492,16 +501,16 @@ export function AdminOps({ uid }: { uid: string }) {
   }, [uid]);
 
   if (configError && !config) {
-    return <div className="flex flex-col gap-6"><AdminCiQualityEntry /><AdminNotice title={t("admin.ops.loadError")} body={configError} /></div>;
+    return <div className="flex flex-col gap-6"><AdminPreparationEntries /><AdminNotice title={t("admin.ops.loadError")} body={configError} /></div>;
   }
 
   if (!config) {
-    return <div className="flex flex-col gap-6"><AdminCiQualityEntry /><AdminSpinner /></div>;
+    return <div className="flex flex-col gap-6"><AdminPreparationEntries /><AdminSpinner /></div>;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <AdminCiQualityEntry />
+      <AdminPreparationEntries />
       {configError && <AdminNotice title={t("admin.ops.loadError")} body={configError} />}
 
       <Section
