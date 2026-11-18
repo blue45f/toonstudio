@@ -1,10 +1,9 @@
 /**
- * 한국형·글로벌(KO/EN/JA) 세로 스크롤 웹툰 4컷 콘티 스트립 합성 모듈:
- * - 다국어(한국어·영어·일본어) 로컬라이징 모드에 따른 말풍선 가로세로 종횡비(rx·ry) 자동 스케일링 및 언어별 줄바꿈·폰트 스택·효과음 번역
+ * 한국형·글로벌(KO/EN/JA · 가로/세로쓰기 Tategaki) 세로 스크롤 웹툰 4컷 콘티 스트립 합성 모듈:
+ * - 다국어(한국어·영어·일본어) 로컬라이징 모드 및 일본어 세로쓰기(縦書き · 단행본식 우→좌 열 조판) 말풍선 가로세로 종횡비(rx·ry) 자동 스케일링
+ * - 1→2, 2→3, 3→4컷 개별 스크롤 여백 호흡(빠른 템포·표준·서스펜스·클리프행어) 및 시간대 원고 분위기 색온도 무드(주간·황혼·심야·역광)
  * - 1~4컷 개별 카메라 구도(로우·하이·와이드 투샷) 및 더치 틸트(Dutch Tilt ±9° 쌍선형 알파 보간 회전) 디렉터
- * - 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준
- * - 1~4컷 개별 말풍선 도형(타원·외침 가시·독백 박스·속삭임 점선·숨김), 식자 폰트 배율, 오노마토페 효과음 스탬프(6종)
- * - 레이어 PSD 만화 연출 투명 분리 레이어 빌더 및 4컷 연기 키프레임 스냅샷 시퀀스
+ * - 발화자(주연·상대역·자동 교차)별 말풍선 좌우 배치 및 꼬리 자동 조준, 레이어 PSD 만화 연출 투명 분리 레이어 빌더
  */
 import { DEFAULT_FRAMING, failVisible, isLabFailure } from "../contracts";
 
@@ -12,21 +11,43 @@ import { MAX_PNG_EXPORT_DIMENSION, MAX_SETTLE_STEPS, MIN_EXPORT_DIMENSION, expor
 import { PNG_MIME, encodePng } from "./png-encoder";
 import { buildActingCutPlan, findWebtoonStripActingArc } from "./webtoon-strip-acting";
 import {
+  DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
+  WEBTOON_JA_WRITING_MODES,
+  WEBTOON_JA_WRITING_MODE_LABELS_KO,
+  WEBTOON_MANUSCRIPT_MOODS,
+  WEBTOON_MANUSCRIPT_MOOD_IDS,
+  WEBTOON_STRIP_GUTTER_PACES,
+  WEBTOON_STRIP_GUTTER_PACE_IDS,
+  computeVariableGutterHeights,
+  gradeCharacterPixelByMood,
+  normalizeTategakiGlyph,
+  splitJapaneseTategakiColumns,
+} from "./webtoon-strip-pacing-tategaki";
+import {
+  bakePanelSfxStamp,
+  fillRectRgba,
   renderTransparentActionLinesLayer,
   renderTransparentDialogueTextLayer,
   renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
+  rotateRasterBilinear,
 } from "./webtoon-strip-psd-layers";
 import {
   bakePanelActionLines,
-  bakePanelSfxStamp,
   bakeSpeechBubbleBalloon,
-  fillRectRgba,
   splitLocalizedBubbleDialogue,
 } from "./webtoon-strip-raster-fx";
 
 import type { ExportDeps, ExportOutcome } from "./export-session";
 import type { WebtoonStripActingArcId } from "./webtoon-strip-acting";
+import type {
+  WebtoonJaWritingMode,
+  WebtoonManuscriptMoodId,
+  WebtoonStripGutterPaceId,
+  WebtoonStripGutterPaceSpec,
+  WebtoonStripGutterPaces,
+  WebtoonManuscriptMoodSpec,
+} from "./webtoon-strip-pacing-tategaki";
 import type {
   ApplyPlan,
   CameraFramingMode,
@@ -41,6 +62,7 @@ export {
   renderTransparentDialogueTextLayer,
   renderTransparentSfxStampLayer,
   renderTransparentSpeechBubbleFrameLayer,
+  rotateRasterBilinear,
   splitLocalizedBubbleDialogue,
 };
 export {
@@ -48,11 +70,32 @@ export {
   buildActingCutPlan,
   findWebtoonStripActingArc,
 } from "./webtoon-strip-acting";
+export {
+  DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
+  WEBTOON_JA_WRITING_MODES,
+  WEBTOON_JA_WRITING_MODE_LABELS_KO,
+  WEBTOON_MANUSCRIPT_MOODS,
+  WEBTOON_MANUSCRIPT_MOOD_IDS,
+  WEBTOON_STRIP_GUTTER_PACES,
+  WEBTOON_STRIP_GUTTER_PACE_IDS,
+  computeVariableGutterHeights,
+  gradeCharacterPixelByMood,
+  normalizeTategakiGlyph,
+  splitJapaneseTategakiColumns,
+};
 export type {
   WebtoonStripActingArcId,
   WebtoonStripActingArcSpec,
   WebtoonStripCutActingKeyframe,
 } from "./webtoon-strip-acting";
+export type {
+  WebtoonJaWritingMode,
+  WebtoonManuscriptMoodId,
+  WebtoonManuscriptMoodSpec,
+  WebtoonStripGutterPaceId,
+  WebtoonStripGutterPaceSpec,
+  WebtoonStripGutterPaces,
+};
 
 export interface WebtoonStripCutSpec {
   readonly id: string;
@@ -273,10 +316,11 @@ export interface LocalizedBubbleAspect {
   readonly scaleY: number;
 }
 
-/** 다국어(KO/EN/JA) 식자 특성과 글자 길이에 맞춰 말풍선 가로·세로 반경 배율을 자동 산출한다. */
+/** 다국어(KO/EN/JA) 및 일본어 세로쓰기(Tategaki) 식자 특성과 글자 길이에 맞춰 말풍선 가로·세로 반경 배율을 자동 산출한다. */
 export function resolveLocalizedBubbleAspect(
   locale: WebtoonDialogueLocale = "ko",
   dialogueText?: string,
+  jaWritingMode: WebtoonJaWritingMode = "horizontal",
 ): LocalizedBubbleAspect {
   const len = (dialogueText ?? "").trim().length;
   if (locale === "en") {
@@ -284,6 +328,10 @@ export function resolveLocalizedBubbleAspect(
     return { scaleX: Number((1.18 + extraW).toFixed(3)), scaleY: 0.94 };
   }
   if (locale === "ja") {
+    if (jaWritingMode === "vertical-tategaki") {
+      const extraTategakiH = len > 12 ? Math.min(0.12, (len - 12) * 0.006) : 0;
+      return { scaleX: 0.78, scaleY: Number((1.28 + extraTategakiH).toFixed(3)) };
+    }
     const extraH = len > 14 ? Math.min(0.1, (len - 14) * 0.006) : 0;
     return { scaleX: 0.86, scaleY: Number((1.18 + extraH).toFixed(3)) };
   }
@@ -334,6 +382,10 @@ export interface WebtoonStripMangaFxOptions {
   readonly intensity?: number;
   /** 다국어 식자 및 말풍선 가로세로 비율 로컬라이징 모드(기본 `ko`) */
   readonly locale?: WebtoonDialogueLocale;
+  /** 일본어(`ja`) 선택 시 가로쓰기(`horizontal`) vs 단행본 세로쓰기(`vertical-tategaki`) */
+  readonly jaWritingMode?: WebtoonJaWritingMode;
+  /** 시간대별 원고 배경 및 캐릭터 림라이트 색온도 무드(기본 `daylight-paper`) */
+  readonly manuscriptMood?: WebtoonManuscriptMoodId;
   /** 1~4컷 말풍선 내부에 직접 래스터 식자(타이포그래피 합성)할 대사 4줄 */
   readonly dialogueLines?: WebtoonStripDialogueLines;
   /** 1~4컷 개별 말풍선 모양(미지정 시 4컷 모두 기본 타원 `oval`) */
@@ -356,6 +408,7 @@ export interface WebtoonStripLayout {
   readonly marginX: number;
   readonly marginY: number;
   readonly gutterY: number;
+  readonly gutterHeights?: readonly [number, number, number];
   readonly borderPx: number;
   readonly bubbleSafeTopPx: number;
 }
@@ -365,6 +418,10 @@ export interface ExportWebtoonVerticalStripOptions {
   readonly stripWidth: number;
   /** 각 컷 상단에 말풍선 배치용 안전 여백을 확보할지 여부(기본 true) */
   readonly includeBubbleSafeZone?: boolean;
+  /** 1→2, 2→3, 3→4컷 사이의 스크롤 여백 호흡 프리셋(선택) */
+  readonly gutterPaces?: WebtoonStripGutterPaces;
+  /** 시간대 원고 분위기·색온도 무드(mangaFx 비활성 시에도 단독 적용 가능) */
+  readonly manuscriptMood?: WebtoonManuscriptMoodId;
   /** 말풍선 풍선 프레임과 집중선·속도선·반짝이·효과음 스탬프를 PNG 래스터에 직접 베이킹할지 여부(선택) */
   readonly mangaFx?: WebtoonStripMangaFxOptions;
   /** 1~4컷 개별 카메라 구도 및 더치 틸트 프리셋(선택, 미지정 시 기본 4컷 구도) */
@@ -386,63 +443,11 @@ function toFailure(code: string, reasonKo: string, error: unknown, now: number):
 }
 
 
-/** 더치 틸트(Dutch Angle) 연출을 위해 투명 배경 RGBA 패널을 중심 기준으로 쌍선형(bilinear) 회전한다. */
-export function rotateRasterBilinear(
-  source: CapturedRaster,
-  angleDeg: number,
-  zoomScale = 1.06,
-): CapturedRaster {
-  if (!Number.isFinite(angleDeg) || Math.abs(angleDeg) < 0.05) return source;
-  const { width, height } = source;
-  const out = new Uint8ClampedArray(width * height * 4);
-  const rad = (-angleDeg * Math.PI) / 180;
-  const cosA = Math.cos(rad) / Math.max(0.5, zoomScale);
-  const sinA = Math.sin(rad) / Math.max(0.5, zoomScale);
-  const cx = (width - 1) * 0.5;
-  const cy = (height - 1) * 0.5;
-  const src = source.rgba;
-
-  for (let y = 0; y < height; y += 1) {
-    const dy = y - cy;
-    for (let x = 0; x < width; x += 1) {
-      const dx = x - cx;
-      const sx = cx + dx * cosA - dy * sinA;
-      const sy = cy + dx * sinA + dy * cosA;
-      if (sx < 0 || sx > width - 1 || sy < 0 || sy > height - 1) continue;
-      const x0 = Math.floor(sx);
-      const y0 = Math.floor(sy);
-      const x1 = Math.min(width - 1, x0 + 1);
-      const y1 = Math.min(height - 1, y0 + 1);
-      const fx = sx - x0;
-      const fy = sy - y0;
-      const w00 = (1 - fx) * (1 - fy);
-      const w10 = fx * (1 - fy);
-      const w01 = (1 - fx) * fy;
-      const w11 = fx * fy;
-
-      const i00 = (y0 * width + x0) * 4;
-      const i10 = (y0 * width + x1) * 4;
-      const i01 = (y1 * width + x0) * 4;
-      const i11 = (y1 * width + x1) * 4;
-
-      const a00 = (src[i00 + 3] ?? 0) * w00;
-      const a10 = (src[i10 + 3] ?? 0) * w10;
-      const a01 = (src[i01 + 3] ?? 0) * w01;
-      const a11 = (src[i11 + 3] ?? 0) * w11;
-      const aSum = a00 + a10 + a01 + a11;
-      if (aSum <= 0.5) continue;
-
-      const dst = (y * width + x) * 4;
-      out[dst] = Math.round(((src[i00] ?? 0) * a00 + (src[i10] ?? 0) * a10 + (src[i01] ?? 0) * a01 + (src[i11] ?? 0) * a11) / aSum);
-      out[dst + 1] = Math.round(((src[i00 + 1] ?? 0) * a00 + (src[i10 + 1] ?? 0) * a10 + (src[i01 + 1] ?? 0) * a01 + (src[i11 + 1] ?? 0) * a11) / aSum);
-      out[dst + 2] = Math.round(((src[i00 + 2] ?? 0) * a00 + (src[i10 + 2] ?? 0) * a10 + (src[i01 + 2] ?? 0) * a01 + (src[i11 + 2] ?? 0) * a11) / aSum);
-      out[dst + 3] = Math.round(aSum);
-    }
-  }
-  return { width, height, rgba: out };
-}
-
-export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSafeZone = true): WebtoonStripLayout {
+export function clampWebtoonStripLayout(
+  requestedWidth: number,
+  includeBubbleSafeZone = true,
+  gutterPaces: WebtoonStripGutterPaces = DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
+): WebtoonStripLayout {
   const cutCount = WEBTOON_VERTICAL_STRIP_CUTS.length;
   const safeStripW = Number.isFinite(requestedWidth)
     ? Math.min(MAX_STRIP_WIDTH, Math.max(MIN_EXPORT_DIMENSION + 8, Math.floor(requestedWidth)))
@@ -455,9 +460,11 @@ export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSaf
 
   const marginY = Math.max(2, Math.round(safeStripW * 0.038));
   const gutterY = Math.max(4, Math.round(safeStripW * 0.065));
+  const gutterHeights = computeVariableGutterHeights(gutterY, gutterPaces);
+  const totalGutterHeight = gutterHeights[0] + gutterHeights[1] + gutterHeights[2];
   const bubbleSafeTopPx = includeBubbleSafeZone ? Math.max(4, Math.round(safeStripW * 0.052)) : 0;
 
-  const fixedVerticalOverhead = marginY * 2 + gutterY * (cutCount - 1) + cutCount * (borderPx * 2 + bubbleSafeTopPx);
+  const fixedVerticalOverhead = marginY * 2 + totalGutterHeight + cutCount * (borderPx * 2 + bubbleSafeTopPx);
   const maxCutHeight = Math.floor((MAX_PNG_EXPORT_DIMENSION - fixedVerticalOverhead) / cutCount);
   const idealCutHeight = Math.round(cutWidth * 1.12);
   const cutHeight = Math.max(MIN_EXPORT_DIMENSION, Math.min(maxCutHeight, idealCutHeight));
@@ -471,6 +478,7 @@ export function clampWebtoonStripLayout(requestedWidth: number, includeBubbleSaf
     marginX,
     marginY,
     gutterY,
+    gutterHeights,
     borderPx,
     bubbleSafeTopPx,
   };
@@ -480,22 +488,40 @@ export function composeWebtoonVerticalStrip(
   panels: readonly CapturedRaster[],
   layout: WebtoonStripLayout,
   mangaFx?: WebtoonStripMangaFxOptions,
+  manuscriptMoodOverride?: WebtoonManuscriptMoodId,
 ): CapturedRaster {
   if (panels.length !== WEBTOON_VERTICAL_STRIP_CUTS.length) {
     throw new Error(`웹툰 4컷 스트립 합성에는 ${WEBTOON_VERTICAL_STRIP_CUTS.length}개의 컷이 필요합니다(전달됨: ${panels.length}).`);
   }
+  const moodId: WebtoonManuscriptMoodId = manuscriptMoodOverride ?? mangaFx?.manuscriptMood ?? "daylight-paper";
+  const moodSpec = WEBTOON_MANUSCRIPT_MOODS[moodId] ?? WEBTOON_MANUSCRIPT_MOODS["daylight-paper"];
+
   const out = new Uint8ClampedArray(layout.stripWidth * layout.stripHeight * 4);
-  out.fill(255);
+  fillRectRgba(
+    out,
+    layout.stripWidth,
+    0,
+    0,
+    layout.stripWidth,
+    layout.stripHeight,
+    moodSpec.stripMarginRgb[0],
+    moodSpec.stripMarginRgb[1],
+    moodSpec.stripMarginRgb[2],
+    255,
+  );
 
   const frameWidth = layout.cutWidth + layout.borderPx * 2;
   const frameHeight = layout.bubbleSafeTopPx + layout.cutHeight + layout.borderPx * 2;
+  const gutterHeights = layout.gutterHeights ?? [layout.gutterY, layout.gutterY, layout.gutterY];
   const fxEnabled = mangaFx?.enabled === true;
   const fxLinesKind: WebtoonStripFxLinesKind = fxEnabled ? (mangaFx?.linesKind ?? "focus-radial") : "none";
   const fxIncludeBubbles = fxEnabled && mangaFx?.includeSpeechBubbles !== false;
   const fxIntensity = Math.min(1, Math.max(0.2, Number.isFinite(mangaFx?.intensity) ? (mangaFx?.intensity ?? 0.75) : 0.75));
   const partnerSide: "left" | "right" = mangaFx?.partnerSide ?? "right";
   const locale: WebtoonDialogueLocale = mangaFx?.locale ?? "ko";
+  const jaWritingMode: WebtoonJaWritingMode = mangaFx?.jaWritingMode ?? "horizontal";
 
+  let cursorY = layout.marginY;
   for (let idx = 0; idx < panels.length; idx += 1) {
     const panel = panels[idx];
     if (!panel) continue;
@@ -506,19 +532,33 @@ export function composeWebtoonVerticalStrip(
     }
 
     const frameX = layout.marginX;
-    const frameY = layout.marginY + idx * (frameHeight + layout.gutterY);
+    const frameY = cursorY;
+    cursorY += frameHeight + (idx < 3 ? (gutterHeights[idx as 0 | 1 | 2] ?? layout.gutterY) : 0);
 
-    fillRectRgba(out, layout.stripWidth, frameX, frameY, frameWidth, frameHeight, 24, 21, 28, 255);
+    fillRectRgba(
+      out,
+      layout.stripWidth,
+      frameX,
+      frameY,
+      frameWidth,
+      frameHeight,
+      moodSpec.borderRgb[0],
+      moodSpec.borderRgb[1],
+      moodSpec.borderRgb[2],
+      255,
+    );
 
     const innerX = frameX + layout.borderPx;
     const innerY = frameY + layout.borderPx;
     const innerHeight = layout.bubbleSafeTopPx + layout.cutHeight;
 
+    const [topR, topG, topB] = moodSpec.panelTopRgb;
+    const [botR, botG, botB] = moodSpec.panelBottomRgb;
     for (let py = 0; py < innerHeight; py += 1) {
       const t = innerHeight > 1 ? py / (innerHeight - 1) : 0;
-      const bgR = Math.round(250 - 11 * t);
-      const bgG = Math.round(247 - 13 * t);
-      const bgB = Math.round(242 - 18 * t);
+      const bgR = Math.round(topR + (botR - topR) * t);
+      const bgG = Math.round(topG + (botG - topG) * t);
+      const bgB = Math.round(topB + (botB - topB) * t);
       let dst = ((innerY + py) * layout.stripWidth + innerX) * 4;
       for (let px = 0; px < layout.cutWidth; px += 1) {
         out[dst] = bgR;
@@ -540,15 +580,27 @@ export function composeWebtoonVerticalStrip(
       for (let cx = 0; cx < layout.cutWidth; cx += 1) {
         const srcA = panel.rgba[src + 3] ?? 0;
         if (srcA === 255) {
-          out[dst] = panel.rgba[src] ?? 0;
-          out[dst + 1] = panel.rgba[src + 1] ?? 0;
-          out[dst + 2] = panel.rgba[src + 2] ?? 0;
+          const [gr, gg, gb] = gradeCharacterPixelByMood(
+            panel.rgba[src] ?? 0,
+            panel.rgba[src + 1] ?? 0,
+            panel.rgba[src + 2] ?? 0,
+            moodSpec,
+          );
+          out[dst] = gr;
+          out[dst + 1] = gg;
+          out[dst + 2] = gb;
         } else if (srcA > 0) {
+          const [gr, gg, gb] = gradeCharacterPixelByMood(
+            panel.rgba[src] ?? 0,
+            panel.rgba[src + 1] ?? 0,
+            panel.rgba[src + 2] ?? 0,
+            moodSpec,
+          );
           const alpha = srcA / 255;
           const inv = 1 - alpha;
-          out[dst] = Math.round((panel.rgba[src] ?? 0) * alpha + (out[dst] ?? 255) * inv);
-          out[dst + 1] = Math.round((panel.rgba[src + 1] ?? 0) * alpha + (out[dst + 1] ?? 255) * inv);
-          out[dst + 2] = Math.round((panel.rgba[src + 2] ?? 0) * alpha + (out[dst + 2] ?? 255) * inv);
+          out[dst] = Math.round(gr * alpha + (out[dst] ?? 255) * inv);
+          out[dst + 1] = Math.round(gg * alpha + (out[dst + 1] ?? 255) * inv);
+          out[dst + 2] = Math.round(gb * alpha + (out[dst + 2] ?? 255) * inv);
         }
         out[dst + 3] = 255;
         src += 4;
@@ -574,6 +626,7 @@ export function composeWebtoonVerticalStrip(
         cutShape,
         cutFontScale,
         locale,
+        jaWritingMode,
       );
     }
 
@@ -595,7 +648,11 @@ export async function exportWebtoonVerticalStripPng(
 ): Promise<ExportOutcome> {
   const now = deps.now ?? defaultNow;
   const started = now();
-  const layout = clampWebtoonStripLayout(options.stripWidth, options.includeBubbleSafeZone ?? true);
+  const layout = clampWebtoonStripLayout(
+    options.stripWidth,
+    options.includeBubbleSafeZone ?? true,
+    options.gutterPaces ?? DEFAULT_WEBTOON_STRIP_GUTTER_PACES,
+  );
 
   if (layout.stripHeight > MAX_PNG_EXPORT_DIMENSION || layout.stripWidth > MAX_PNG_EXPORT_DIMENSION) {
     return {
@@ -692,7 +749,8 @@ export async function exportWebtoonVerticalStripPng(
   }
 
   try {
-    const composed = composeWebtoonVerticalStrip(panels, layout, options.mangaFx);
+    const effectiveMood = options.manuscriptMood ?? options.mangaFx?.manuscriptMood ?? "daylight-paper";
+    const composed = composeWebtoonVerticalStrip(panels, layout, options.mangaFx, effectiveMood);
     const bytes = await encodePng(composed, { filter: "adaptive" });
     const baseName = exportFileName("png", lastProvenance.recipeDigest, composed.width, composed.height);
     const actingTag = resolvedArc ? "-acting" : "";
@@ -701,7 +759,11 @@ export async function exportWebtoonVerticalStripPng(
       options.mangaFx?.enabled && options.mangaFx.locale && options.mangaFx.locale !== "ko"
         ? `-${options.mangaFx.locale}`
         : "";
-    const suffix = `-webtoon-4cut${actingTag}${fxTag}${localeTag}-strip.png`;
+    const tategakiTag =
+      options.mangaFx?.enabled && options.mangaFx.locale === "ja" && options.mangaFx.jaWritingMode === "vertical-tategaki"
+        ? "-tategaki"
+        : "";
+    const suffix = `-webtoon-4cut${actingTag}${fxTag}${localeTag}${tategakiTag}-strip.png`;
     const fileName = baseName.replace(/\.png$/u, suffix);
     return {
       ok: true,

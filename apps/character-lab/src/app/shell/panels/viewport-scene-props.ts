@@ -1,7 +1,13 @@
 /** 손·머리·무대 소품, 3D 효과음 스탬프, 원클릭 씬 디렉터 및 상대역 자동 캐스팅 동작을 뷰포트에서 분리한다. */
 import { useState, useSyncExternalStore } from "react";
 
-import { buildDuoEyeContactCommands, type DuoShotState } from "./viewport-duo-shot-guide";
+import {
+  DUO_SHOT_DISTANCES,
+  SHAPER_DUO_PARTNER_PROFILES,
+  buildDuoEyeContactCommands,
+  toDuoPartnerAttachment,
+  type DuoShotState,
+} from "./viewport-duo-shot-guide";
 import {
   buildHandPropGripPoseCommands,
   findWebtoonHandPropSpec,
@@ -29,9 +35,10 @@ interface ViewportScenePropsContext {
   readonly engine: CharacterEngine | null;
   readonly recipe: CharacterRecipe;
   readonly getLatestRecipe: () => CharacterRecipe;
+  readonly subjectHeightCm: number;
   readonly duoShot: DuoShotState;
   readonly setDuoShot: Dispatch<SetStateAction<DuoShotState>>;
-  readonly syncDuoPartner3d: (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState) => Promise<void>;
+  readonly setDuo3dBusy: Dispatch<SetStateAction<boolean>>;
   readonly dispatch: (command: LabCommand) => void;
   readonly setNotice: (notice: string | null) => void;
   readonly failureText: (error: unknown, fallback: string) => string;
@@ -41,13 +48,34 @@ export function useViewportSceneProps({
   engine,
   recipe,
   getLatestRecipe,
+  subjectHeightCm,
   duoShot,
   setDuoShot,
-  syncDuoPartner3d,
+  setDuo3dBusy,
   dispatch,
   setNotice,
   failureText,
 }: ViewportScenePropsContext) {
+  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
+    if (!engine?.setDuoPartner) return;
+    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeightCm);
+    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeightCm);
+    if (!nextAttachment && !prevAttachment) return;
+    setDuo3dBusy(true);
+    try {
+      await engine.setDuoPartner(nextAttachment);
+      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
+      setNotice(
+        nextAttachment
+          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
+          : "3D 듀오 상대역 배치를 해제했습니다.",
+      );
+    } catch (error) {
+      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
+    } finally {
+      setDuo3dBusy(false);
+    }
+  };
   const stripDirector = getDefaultStripDirectorSession();
   const activeDirectorId = useSyncExternalStore(
     stripDirector.subscribe,
@@ -216,6 +244,8 @@ export function useViewportSceneProps({
     setMangaFx((prev) => ({ ...prev, sfxStamp: preset.sfxStampId }));
     stripDirector.update({
       activeDirectorId: preset.id,
+      manuscriptMood: preset.manuscriptMood,
+      gutterPaces: preset.gutterPaces,
       actingArc: preset.actingArc,
       bakeStripFx: true,
       stripFxLines: preset.fxLinesKind,
@@ -274,5 +304,6 @@ export function useViewportSceneProps({
     onApplyStageProp,
     castDirectorDuoPartner,
     onSelectSceneDirector,
+    syncDuoPartner3d,
   };
 }

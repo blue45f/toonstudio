@@ -1,27 +1,29 @@
 /**
- * 웹툰 4컷 스트립 픽셀 래스터 합성(집중선·속도선·스파클·발화자 말풍선·다국어 식자·효과음·PSD 분리 레이어) 보조 모듈.
+ * 웹툰 4컷 스트립 픽셀 래스터 합성(집중선·속도선·스파클·발화자 말풍선·다국어 가로/세로쓰기 식자) 보조 모듈.
  */
 import {
-  WEBTOON_SFX_STAMP_KO_TEXT,
   resolveLocalizedBubbleAspect,
-  resolveSfxGlyphByLocale,
 } from "./webtoon-strip-composer";
+import {
+  splitJapaneseTategakiColumns,
+  tryRasterizeJapaneseTategakiCanvas2d,
+} from "./webtoon-strip-pacing-tategaki";
 
 import type {
   SpeakerBubblePlacement,
   WebtoonDialogueLocale,
-  WebtoonSfxStampOption,
   WebtoonStripBubbleFontScale,
   WebtoonStripBubbleShape,
   WebtoonStripFxLinesKind,
 } from "./webtoon-strip-composer";
+import type { WebtoonJaWritingMode } from "./webtoon-strip-pacing-tategaki";
 
 function deterministicHash01(index: number, seed: number): number {
   const raw = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;
   return raw - Math.floor(raw);
 }
 
-function blendPixelRgba(
+export function blendPixelRgba(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
   x: number,
@@ -57,7 +59,7 @@ function blendPixelRgba(
   rgba[dst + 3] = Math.round(outA * 255);
 }
 
-function drawClippedLineRgba(
+export function drawClippedLineRgba(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
   clipX0: number,
@@ -191,6 +193,8 @@ export function bakePanelActionLines(
   }
 }
 
+const JA_KINSOKU_INLINE = new Set(["。", "、", "！", "？", "…", "ー", "っ", "ゃ", "ゅ", "ょ"]);
+
 export function splitLocalizedBubbleDialogue(
   rawText: string,
   locale: WebtoonDialogueLocale = "ko",
@@ -211,8 +215,7 @@ export function splitLocalizedBubbleDialogue(
     const chars = Array.from(cleaned);
     if (chars.length <= 10) return [cleaned, null];
     let mid = Math.ceil(chars.length / 2);
-    const kinsoku = new Set(["。", "、", "！", "？", "…", "ー", "っ", "ゃ", "ゅ", "ょ"]);
-    if (mid < chars.length - 1 && kinsoku.has(chars[mid] ?? "")) {
+    if (mid < chars.length - 1 && JA_KINSOKU_INLINE.has(chars[mid] ?? "")) {
       mid += 1;
     }
     return [chars.slice(0, mid).join(""), chars.slice(mid).join("")];
@@ -227,7 +230,7 @@ export function splitLocalizedBubbleDialogue(
   return [cleaned.slice(0, mid), cleaned.slice(mid)];
 }
 
-function resolveFontStackByLocale(locale: WebtoonDialogueLocale): string {
+export function resolveFontStackByLocale(locale: WebtoonDialogueLocale): string {
   if (locale === "en") return `"Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
   if (locale === "ja") return `"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif`;
   return `"Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
@@ -248,13 +251,13 @@ function tryRasterizeDialogueCanvas2d(
   locale: WebtoonDialogueLocale = "ko",
 ): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
   if (typeof document === "undefined" || boxWidth < 12 || boxHeight < 8) return null;
+  const scale = 2;
+  const w = Math.max(12, Math.floor(boxWidth * scale));
+  const h = Math.max(8, Math.floor(boxHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
   try {
-    const scale = 2;
-    const w = Math.max(12, Math.floor(boxWidth * scale));
-    const h = Math.max(8, Math.floor(boxHeight * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.clearRect(0, 0, w, h);
@@ -287,10 +290,72 @@ function tryRasterizeDialogueCanvas2d(
     return nonZeroAlpha > 0 ? { width: w, height: h, data: img.data } : null;
   } catch {
     return null;
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
   }
 }
 
-function bakeDeterministicDialogueGlyphs(
+function bakeDeterministicTategakiColumns(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  clipX0: number,
+  clipY0: number,
+  clipX1: number,
+  clipY1: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  columns: readonly string[],
+  fontScale: WebtoonStripBubbleFontScale = "md",
+  inkRgb: readonly [number, number, number] = [24, 21, 28],
+): void {
+  if (columns.length === 0) return;
+  const { mul } = resolveFontScaleMultiplier(fontScale);
+  const maxRow = Math.max(...columns.map((c) => Array.from(c).length), 1);
+  const colCount = columns.length;
+  const baseCellH = Math.max(3, Math.min(Math.floor((ry * 1.56) / maxRow), Math.floor((rx * 1.35) / Math.max(1, colCount))));
+  const cellH = Math.max(2, Math.round(baseCellH * mul));
+  const cellW = Math.max(2, Math.round(cellH * 0.96));
+  const stepX = Math.max(cellW + 2, Math.round(cellW * 1.36));
+  const stroke = Math.max(0.5, cellW * 0.12);
+  const [ir, ig, ib] = inkRgb;
+
+  const totalColsW = (colCount - 1) * stepX;
+  const rightmostX = cx + totalColsW * 0.5;
+
+  columns.forEach((col, colIdx) => {
+    const chars = Array.from(col);
+    const colX = rightmostX - colIdx * stepX;
+    const startY = cy - ((chars.length - 1) * cellH) * 0.5;
+
+    chars.forEach((ch, rowIdx) => {
+      if (ch.trim() === "") return;
+      const charCy = startY + rowIdx * cellH;
+      const gx0 = colX - cellW * 0.34;
+      const gx1 = colX + cellW * 0.34;
+      const gy0 = charCy - cellH * 0.34;
+      const gy1 = charCy + cellH * 0.34;
+
+      if (ch === "。" || ch === "、") {
+        blendPixelRgba(rgba, canvasWidth, Math.round(gx1), Math.round(gy0), clipX0, clipY0, clipX1, clipY1, ir, ig, ib, 0.92);
+        return;
+      }
+      if (ch === "｜" || ch === "⋮") {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, colX, gy0, colX, gy1, stroke, ir, ig, ib, 0.9);
+        return;
+      }
+      drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, gy0, gx1, gy0, stroke, ir, ig, ib, 0.9);
+      drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, colX, gy0, colX, gy1, stroke, ir, ig, ib, 0.88);
+      if ((ch.codePointAt(0) ?? 0) % 2 === 0) {
+        drawClippedLineRgba(rgba, canvasWidth, clipX0, clipY0, clipX1, clipY1, gx0, charCy, gx1, charCy, stroke, ir, ig, ib, 0.85);
+      }
+    });
+  });
+}
+
+export function bakeDeterministicDialogueGlyphs(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
   clipX0: number,
@@ -386,14 +451,15 @@ function computeSpeechBubbleMetrics(
   placement: SpeakerBubblePlacement,
   locale: WebtoonDialogueLocale = "ko",
   dialogueText?: string,
+  jaWritingMode: WebtoonJaWritingMode = "horizontal",
 ) {
   const border = Math.max(1, Math.round(innerWidth * 0.0042));
-  const aspect = resolveLocalizedBubbleAspect(locale, dialogueText);
+  const aspect = resolveLocalizedBubbleAspect(locale, dialogueText, jaWritingMode);
   const rawRx = Math.max(8, Math.round(innerWidth * 0.21 * aspect.scaleX));
   const rawRy = Math.max(5, Math.round(innerHeight * 0.092 * aspect.scaleY));
   const safePadX = border + 4;
   const rx = Math.min(rawRx, Math.max(8, Math.floor(innerWidth * 0.44) - safePadX));
-  const ry = Math.min(rawRy, Math.max(5, Math.floor(innerHeight * 0.24)));
+  const ry = Math.min(rawRy, Math.max(5, Math.floor(innerHeight * 0.26)));
   const rawCx = innerX + Math.round(innerWidth * placement.centerXRatio);
   const minCx = innerX + rx + safePadX;
   const maxCx = innerX + innerWidth - rx - safePadX;
@@ -413,11 +479,21 @@ export function bakeSpeechBubbleFrame(
   shape: WebtoonStripBubbleShape = "oval",
   locale: WebtoonDialogueLocale = "ko",
   dialogueText?: string,
+  jaWritingMode: WebtoonJaWritingMode = "horizontal",
 ): void {
   if (shape === "none") return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
+  const { rx, ry, cx, cy, border } = computeSpeechBubbleMetrics(
+    innerX,
+    innerY,
+    innerWidth,
+    innerHeight,
+    placement,
+    locale,
+    dialogueText,
+    jaWritingMode,
+  );
 
   if (shape === "monologue-box") {
     const x0 = Math.max(innerX, cx - rx - border);
@@ -545,6 +621,40 @@ export function bakeSpeechBubbleFrame(
   }
 }
 
+function downsample2xAlphaRasterOnto(
+  rgba: Uint8ClampedArray,
+  canvasWidth: number,
+  innerX: number,
+  innerY: number,
+  clipX1: number,
+  clipY1: number,
+  cx: number,
+  cy: number,
+  boxW: number,
+  boxH: number,
+  raster: { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray },
+): void {
+  const dstLeft = Math.round(cx - boxW * 0.5);
+  const dstTop = Math.round(cy - boxH * 0.5);
+  for (let ty = 0; ty < boxH; ty += 1) {
+    for (let tx = 0; tx < boxW; tx += 1) {
+      const sx = tx * 2;
+      const sy = ty * 2;
+      let aSum = 0;
+      for (let oy = 0; oy < 2; oy += 1) {
+        for (let ox = 0; ox < 2; ox += 1) {
+          const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
+          aSum += raster.data[idx + 3] ?? 0;
+        }
+      }
+      const alpha01 = aSum / (255 * 4);
+      if (alpha01 > 0.04) {
+        blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
+      }
+    }
+  }
+}
+
 export function bakeSpeechBubbleDialogueText(
   rgba: Uint8ClampedArray,
   canvasWidth: number,
@@ -557,35 +667,40 @@ export function bakeSpeechBubbleDialogueText(
   shape: WebtoonStripBubbleShape = "oval",
   fontScale: WebtoonStripBubbleFontScale = "md",
   locale: WebtoonDialogueLocale = "ko",
+  jaWritingMode: WebtoonJaWritingMode = "horizontal",
 ): void {
   if (shape === "none" || !dialogueText || dialogueText.trim().length === 0) return;
   const clipX1 = innerX + innerWidth;
   const clipY1 = innerY + innerHeight;
-  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(innerX, innerY, innerWidth, innerHeight, placement, locale, dialogueText);
-  const [line1, line2] = splitLocalizedBubbleDialogue(dialogueText, locale);
+  const { rx, ry, cx, cy } = computeSpeechBubbleMetrics(
+    innerX,
+    innerY,
+    innerWidth,
+    innerHeight,
+    placement,
+    locale,
+    dialogueText,
+    jaWritingMode,
+  );
   const boxW = Math.max(8, Math.round(rx * 1.66));
-  const boxH = Math.max(6, Math.round(ry * 1.44));
+  const boxH = Math.max(6, Math.round(ry * 1.52));
+
+  if (locale === "ja" && jaWritingMode === "vertical-tategaki") {
+    const columns = splitJapaneseTategakiColumns(dialogueText);
+    const { mul, weight } = resolveFontScaleMultiplier(fontScale);
+    const raster = tryRasterizeJapaneseTategakiCanvas2d(boxW, boxH, columns, mul, weight, resolveFontStackByLocale("ja"));
+    if (raster) {
+      downsample2xAlphaRasterOnto(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, boxW, boxH, raster);
+    } else {
+      bakeDeterministicTategakiColumns(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, columns, fontScale);
+    }
+    return;
+  }
+
+  const [line1, line2] = splitLocalizedBubbleDialogue(dialogueText, locale);
   const raster = tryRasterizeDialogueCanvas2d(boxW, boxH, line1, line2, fontScale, locale);
   if (raster) {
-    const dstLeft = Math.round(cx - boxW * 0.5);
-    const dstTop = Math.round(cy - boxH * 0.5);
-    for (let ty = 0; ty < boxH; ty += 1) {
-      for (let tx = 0; tx < boxW; tx += 1) {
-        const sx = tx * 2;
-        const sy = ty * 2;
-        let aSum = 0;
-        for (let oy = 0; oy < 2; oy += 1) {
-          for (let ox = 0; ox < 2; ox += 1) {
-            const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
-            aSum += raster.data[idx + 3] ?? 0;
-          }
-        }
-        const alpha01 = aSum / (255 * 4);
-        if (alpha01 > 0.04) {
-          blendPixelRgba(rgba, canvasWidth, dstLeft + tx, dstTop + ty, innerX, innerY, clipX1, clipY1, 24, 21, 28, alpha01);
-        }
-      }
-    }
+    downsample2xAlphaRasterOnto(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, boxW, boxH, raster);
   } else {
     bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, line1, line2, fontScale);
   }
@@ -603,195 +718,22 @@ export function bakeSpeechBubbleBalloon(
   shape: WebtoonStripBubbleShape = "oval",
   fontScale: WebtoonStripBubbleFontScale = "md",
   locale: WebtoonDialogueLocale = "ko",
+  jaWritingMode: WebtoonJaWritingMode = "horizontal",
 ): void {
   if (shape === "none") return;
-  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape, locale, dialogueText);
-  bakeSpeechBubbleDialogueText(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, dialogueText, shape, fontScale, locale);
-}
-
-function tryRasterizeSfxCanvas2d(
-  boxWidth: number,
-  boxHeight: number,
-  glyphText: string,
-  tiltDeg: number,
-  accentRgb: readonly [number, number, number],
-  inkRgb: readonly [number, number, number],
-  locale: WebtoonDialogueLocale = "ko",
-): { readonly width: number; readonly height: number; readonly data: Uint8ClampedArray } | null {
-  if (typeof document === "undefined" || boxWidth < 14 || boxHeight < 10) return null;
-  try {
-    const scale = 2;
-    const w = Math.max(14, Math.floor(boxWidth * scale));
-    const h = Math.max(10, Math.floor(boxHeight * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    ctx.clearRect(0, 0, w, h);
-    ctx.save();
-    ctx.translate(w * 0.5, h * 0.5);
-    ctx.rotate((tiltDeg * Math.PI) / 180);
-    const widthFactor = locale === "en" ? 0.62 : 0.92;
-    const fontPx = Math.max(12, Math.min(Math.floor(h * 0.58), Math.floor((w * 0.82) / Math.max(1.4, glyphText.length * widthFactor))));
-    ctx.font = `800 ${fontPx}px ${resolveFontStackByLocale(locale)}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = Math.max(3, Math.round(fontPx * 0.24));
-    ctx.strokeStyle = "#FFFDF8";
-    ctx.strokeText(glyphText, 0, 0);
-    ctx.lineWidth = Math.max(2, Math.round(fontPx * 0.12));
-    ctx.strokeStyle = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
-    ctx.strokeText(glyphText, 0, 0);
-    ctx.fillStyle = `rgb(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]})`;
-    ctx.fillText(glyphText, 0, 0);
-    ctx.restore();
-    const img = ctx.getImageData(0, 0, w, h);
-    let hasPixels = false;
-    for (let i = 3; i < img.data.length; i += 4) {
-      if ((img.data[i] ?? 0) > 16) {
-        hasPixels = true;
-        break;
-      }
-    }
-    return hasPixels ? { width: w, height: h, data: img.data } : null;
-  } catch {
-    return null;
-  }
-}
-
-export function bakePanelSfxStamp(
-  rgba: Uint8ClampedArray,
-  canvasWidth: number,
-  innerX: number,
-  innerY: number,
-  innerWidth: number,
-  innerHeight: number,
-  placeRight: boolean,
-  stamp: WebtoonSfxStampOption,
-  locale: WebtoonDialogueLocale = "ko",
-): void {
-  if (stamp === "none") return;
-  const spec = WEBTOON_SFX_STAMP_KO_TEXT[stamp];
-  const glyphText = resolveSfxGlyphByLocale(stamp, locale);
-  const clipX1 = innerX + innerWidth;
-  const clipY1 = innerY + innerHeight;
-  const cx = placeRight ? innerX + Math.round(innerWidth * 0.76) : innerX + Math.round(innerWidth * 0.24);
-  const cy = innerY + Math.round(innerHeight * 0.13);
-  const rx = Math.max(8, Math.round(innerWidth * 0.145));
-  const ry = Math.max(5, Math.round(innerHeight * 0.064));
-  const [ar, ag, ab] = spec.accentRgb;
-  const [ir, ig, ib] = spec.inkRgb;
-  const stroke = Math.max(0.8, innerWidth * 0.0032);
-
-  drawClippedLineRgba(
+  bakeSpeechBubbleFrame(rgba, canvasWidth, innerX, innerY, innerWidth, innerHeight, placement, shape, locale, dialogueText, jaWritingMode);
+  bakeSpeechBubbleDialogueText(
     rgba,
     canvasWidth,
     innerX,
     innerY,
-    clipX1,
-    clipY1,
-    cx - rx * 0.92,
-    cy + ry * 0.42,
-    cx + rx * 0.92,
-    cy - ry * 0.42,
-    stroke * 2.4,
-    255,
-    253,
-    248,
-    0.94,
+    innerWidth,
+    innerHeight,
+    placement,
+    dialogueText,
+    shape,
+    fontScale,
+    locale,
+    jaWritingMode,
   );
-  drawClippedLineRgba(
-    rgba,
-    canvasWidth,
-    innerX,
-    innerY,
-    clipX1,
-    clipY1,
-    cx - rx * 0.86,
-    cy + ry * 0.38,
-    cx + rx * 0.86,
-    cy - ry * 0.38,
-    stroke * 1.45,
-    ar,
-    ag,
-    ab,
-    0.92,
-  );
-
-  const boxW = Math.max(10, Math.round(rx * 1.95));
-  const boxH = Math.max(8, Math.round(ry * 1.9));
-  const raster = tryRasterizeSfxCanvas2d(boxW, boxH, glyphText, spec.tiltDeg, spec.accentRgb, spec.inkRgb, locale);
-  if (raster) {
-    const dstLeft = Math.round(cx - boxW * 0.5);
-    const dstTop = Math.round(cy - boxH * 0.5);
-    for (let ty = 0; ty < boxH; ty += 1) {
-      for (let tx = 0; tx < boxW; tx += 1) {
-        const sx = tx * 2;
-        const sy = ty * 2;
-        let rSum = 0;
-        let gSum = 0;
-        let bSum = 0;
-        let aSum = 0;
-        for (let oy = 0; oy < 2; oy += 1) {
-          for (let ox = 0; ox < 2; ox += 1) {
-            const idx = ((sy + oy) * raster.width + (sx + ox)) * 4;
-            const a = raster.data[idx + 3] ?? 0;
-            rSum += (raster.data[idx] ?? 0) * a;
-            gSum += (raster.data[idx + 1] ?? 0) * a;
-            bSum += (raster.data[idx + 2] ?? 0) * a;
-            aSum += a;
-          }
-        }
-        if (aSum > 40) {
-          const alpha01 = aSum / (255 * 4);
-          blendPixelRgba(
-            rgba,
-            canvasWidth,
-            dstLeft + tx,
-            dstTop + ty,
-            innerX,
-            innerY,
-            clipX1,
-            clipY1,
-            Math.round(rSum / aSum),
-            Math.round(gSum / aSum),
-            Math.round(bSum / aSum),
-            alpha01,
-          );
-        }
-      }
-    }
-  } else {
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx + 1, cy + 1, rx, ry, glyphText, null, "lg", [255, 253, 248]);
-    bakeDeterministicDialogueGlyphs(rgba, canvasWidth, innerX, innerY, clipX1, clipY1, cx, cy, rx, ry, glyphText, null, "lg", [ir, ig, ib]);
-  }
 }
-
-export function fillRectRgba(
-  rgba: Uint8ClampedArray,
-  canvasWidth: number,
-  x0: number,
-  y0: number,
-  w: number,
-  h: number,
-  r: number,
-  g: number,
-  b: number,
-  a = 255,
-): void {
-  const xEnd = x0 + w;
-  const yEnd = y0 + h;
-  for (let y = y0; y < yEnd; y += 1) {
-    let offset = (y * canvasWidth + x0) * 4;
-    for (let x = x0; x < xEnd; x += 1) {
-      rgba[offset] = r;
-      rgba[offset + 1] = g;
-      rgba[offset + 2] = b;
-      rgba[offset + 3] = a;
-      offset += 4;
-    }
-  }
-}
-

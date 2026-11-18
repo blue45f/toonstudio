@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useBilingual } from "@/shared/lib/i18n-bilingual-copy";
 import { cn } from "@/shared/lib/utils";
 
+import { inspectGlbBinaryEvidence } from "../bg3d/studio-bg3d-glb-binary-vrm-guard";
 import { StudioHybridDccBlenderKitDrawers } from "./StudioHybridDccBlenderKitDrawers";
 import {
   STUDIO_HYBRID_DCC_MODELING_RECIPES,
@@ -53,7 +54,7 @@ export interface StudioHybridDccPrimitiveBarProps {
  * Unslop 9-Pass · Editor Chrome Design · Korean Typography · React TS Architecture 규격이 적용된
  * Hybrid DCC 도형·마감 레시피·CC0 에셋 서랍:
  * 727줄이던 단일 파일을 도형/레시피 코어와 `StudioHybridDccBlenderKitDrawers`로 분리하고
- * 비활성 상태 사유(`title`) 및 `keep-all` 한글 조판 규칙을 일관 적용한다.
+ * GLB 2.0 바이너리 청크 사전 무결성 가드 및 `keep-all` 한글 조판 규칙을 일관 적용한다.
  */
 export function StudioHybridDccPrimitiveBar({
   busy,
@@ -83,6 +84,15 @@ export function StudioHybridDccPrimitiveBar({
         );
       }
       const bytes = await response.arrayBuffer();
+      const binaryEvidence = inspectGlbBinaryEvidence(new Uint8Array(bytes));
+      if (!binaryEvidence.validGlb20) {
+        throw new Error(
+          bt(
+            `GLB 2.0 바이너리 무결성 검증 실패 (${binaryEvidence.unknownGaps[0] ?? "손상된 헤더"}).`,
+            `GLB 2.0 binary verification failed (${binaryEvidence.unknownGaps[0] ?? "invalid header"}).`,
+          ),
+        );
+      }
       const file = new File([bytes], item.fileName, {
         type: "model/gltf-binary",
       });

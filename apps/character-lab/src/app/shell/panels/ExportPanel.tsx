@@ -36,14 +36,8 @@ import {
 import { BUSY_ACTION_LABELS_KO, ExportPresetRows, ExportStatusSection } from "./export-panel/ExportStatusSection";
 import { ExportStripDirectorSection } from "./export-panel/ExportStripDirectorSection";
 import {
-  FRAMING_LABELS_KO,
-  applyImportedRecipeText,
-  clampExportInt,
-  defaultReadClipboard,
-  defaultWriteClipboard,
-  describeExportPoseKo,
-  describeExportSourceKo,
-  readTextFile,
+  FRAMING_LABELS_KO, applyImportedRecipeText, clampExportInt, defaultReadClipboard, defaultWriteClipboard,
+  describeExportPoseKo, describeExportSourceKo, readTextFile, resolveHairSplitReasonKo,
 } from "./export-panel-helpers";
 import { getDefaultStripDirectorSession } from "./viewport-scene-director";
 
@@ -122,6 +116,9 @@ export function ExportPanel({
   const directorState = useSyncExternalStore(stripDirector.subscribe, stripDirector.getState, stripDirector.getState);
   const {
     locale: stripLocale,
+    jaWritingMode,
+    manuscriptMood,
+    gutterPaces,
     actingArc: stripActingArc,
     bakeStripFx,
     stripFxLines,
@@ -151,11 +148,7 @@ export function ExportPanel({
   const [preImportBackup, setPreImportBackup] = useState<CharacterWorkBackup | null>(null);
 
   const engineReady = engineStatus.phase === "ready";
-  const hairSupport = engineSession.engine()?.psdHairLayers?.();
-  const hairSplitReason =
-    hairSupport?.status === "available"
-      ? null
-      : hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
+  const hairSplitReason = resolveHairSplitReasonKo(engineSession.engine()?.psdHairLayers?.());
   const framingValue = { ...DEFAULT_FRAMING, mode: framing };
   const activeDigest8 = recipeDigest(labState.recipe).slice(0, 8);
 
@@ -306,6 +299,8 @@ export function ExportPanel({
           {
             stripWidth: width,
             includeBubbleSafeZone: true,
+            gutterPaces,
+            manuscriptMood,
             cutCameraPresets,
             ...(stripActingArc !== "none"
               ? {
@@ -320,6 +315,8 @@ export function ExportPanel({
                   mangaFx: {
                     enabled: true,
                     locale: stripLocale,
+                    jaWritingMode,
+                    manuscriptMood,
                     linesKind: stripFxLines,
                     includeSpeechBubbles: true,
                     intensity: 0.78,
@@ -372,6 +369,7 @@ export function ExportPanel({
                   mangaFx: {
                     enabled: true,
                     locale: stripLocale,
+                    jaWritingMode,
                     linesKind: stripFxLines,
                     bubbleShape: bubbleShapes[0],
                     dialogueText: dialogueLines[0],
@@ -664,7 +662,7 @@ export function ExportPanel({
         <label htmlFor={`${ids}-settle`}>물리 settle 스텝</label>
         <input id={`${ids}-settle`} type="number" min={0} max={MAX_SETTLE_STEPS} value={settleSteps} onChange={(event) => setSettleSteps(clampExportInt(event.target.value, 0, MAX_SETTLE_STEPS, 0))} />
       </div>
-      <ExportStripDirectorSection ids={ids} state={directorState} stripDirector={stripDirector} />
+      <ExportStripDirectorSection idsPrefix={ids} state={directorState} session={stripDirector} />
       <div className="cl-export-actions">
         <button type="button" onClick={onPng} disabled={!engineReady || busy !== null}>
           투명 PNG 저장

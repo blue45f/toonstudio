@@ -39,6 +39,10 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     fireEvent.click(screen.getByTestId("viewport-toggle-manuscript-guide"));
     expect(screen.getByTestId("viewport-manuscript-guide")).toBeTruthy();
 
+    expect(screen.queryByTestId("viewport-tankobon-guide")).toBeNull();
+    fireEvent.click(screen.getByTestId("viewport-toggle-tankobon-guide"));
+    expect(screen.getByTestId("viewport-tankobon-guide")).toBeTruthy();
+
     fireEvent.click(screen.getByTestId("viewport-turnaround-35"));
     expect(screen.getByTestId("viewport-turnaround-35").getAttribute("aria-pressed")).toBe("true");
     const lastSetCamera = engine.calls.filter((call) => call.method === "setCamera").at(-1);
@@ -160,20 +164,20 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setSfxStamp").at(-1)?.args[0]).toBeNull());
   });
 
-  it("웹툰 3D 소품 24종·5번째 옥상 황혼 씬 디렉터·상대역 자동 캐스팅·다국어 대사 동기화가 엔진에 실시간 반영된다", async () => {
+  it("웹툰 3D 소품 26종·6번째 괴도 달빛 예고장 씬 디렉터·상대역 자동 캐스팅·무드/호흡 동기화가 엔진에 실시간 반영된다", async () => {
     const dispatched: LabCommand[] = [];
     const engine = renderReadyViewport((cmd) => dispatched.push(cmd));
 
     const propSelect = screen.getByTestId("viewport-hand-prop-select") as HTMLSelectElement;
-    expect(propSelect.options.length).toBe(7);
+    expect(propSelect.options.length).toBe(8);
     expect(Array.from(propSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
 
-    fireEvent.change(propSelect, { target: { value: "imperial-scroll" } });
+    fireEvent.change(propSelect, { target: { value: "calling-card-rose" } });
     const firstCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
     expect(firstCall?.args[0]).toMatchObject({
-      propId: "imperial-scroll",
+      propId: "calling-card-rose",
       hand: "rightHand",
-      glbUrl: "/assets/props/webtoon-hand-props-v1/imperial-scroll.glb",
+      glbUrl: "/assets/props/webtoon-hand-props-v1/calling-card-rose.glb",
     });
 
     const sideSelect = await screen.findByTestId("viewport-hand-prop-side");
@@ -181,13 +185,13 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     await waitFor(() => expect((screen.getByTestId("viewport-hand-prop-grip-pose") as HTMLButtonElement).disabled).toBe(false));
     const sideCall = engine.calls.filter((c) => c.method === "setHandProp").at(-1);
     expect(sideCall?.args[0]).toMatchObject({
-      propId: "imperial-scroll",
+      propId: "calling-card-rose",
       hand: "leftHand",
     });
 
     fireEvent.click(screen.getByTestId("viewport-hand-prop-grip-pose"));
     expect(dispatched.some((cmd) => cmd.type === "pose/set")).toBe(true);
-    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/fist")).toBe(true);
+    expect(dispatched.some((cmd) => cmd.type === "slot/apply" && cmd.slot === "hand-pose" && cmd.presetId === "hand-pose/point")).toBe(true);
 
     fireEvent.change(propSelect, { target: { value: "" } });
     await waitFor(() => expect(engine.calls.filter((c) => c.method === "setHandProp").at(-1)?.args[0]).toBeNull());
@@ -195,60 +199,60 @@ describe("ViewportPane — SHAPER 투명 격자·원고 컷 구도 매칭·4방�
     const headSelect = screen.getByTestId("viewport-head-prop-select") as HTMLSelectElement;
     expect(headSelect.options.length).toBe(7);
     expect(Array.from(headSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(headSelect, { target: { value: "studio-headphones" } });
+    fireEvent.change(headSelect, { target: { value: "silver-monocle" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
-        propId: "studio-headphones",
-        glbUrl: "/assets/props/webtoon-head-props-v1/studio-headphones.glb",
+        propId: "silver-monocle",
+        glbUrl: "/assets/props/webtoon-head-props-v1/silver-monocle.glb",
       }),
     );
 
     const stageSelect = screen.getByTestId("viewport-stage-prop-select") as HTMLSelectElement;
-    expect(stageSelect.options.length).toBe(7);
+    expect(stageSelect.options.length).toBe(8);
     expect(Array.from(stageSelect.options).every((opt) => !/[\u{1F300}-\u{1FAFF}]/u.test(opt.textContent ?? ""))).toBe(true);
-    fireEvent.change(stageSelect, { target: { value: "rooftop-safety-railing" } });
+    fireEvent.change(stageSelect, { target: { value: "velvet-display-pedestal" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setStageProp").at(-1)?.args[0]).toMatchObject({
-        propId: "rooftop-safety-railing",
-        glbUrl: "/assets/props/webtoon-stage-props-v1/rooftop-safety-railing.glb",
+        propId: "velvet-display-pedestal",
+        glbUrl: "/assets/props/webtoon-stage-props-v1/velvet-display-pedestal.glb",
       }),
     );
 
-    // 원클릭 장르 씬 디렉터(5종 + 기본 옵션 = 6개) 선택 + 옥상 황혼 독대 상대역 자동 캐스팅 실행 검증
+    // 원클릭 장르 씬 디렉터(6종 + 기본 옵션 = 7개) 선택 + 괴도 달빛 예고장 상대역 자동 캐스팅 실행 검증
     const directorSelect = screen.getByTestId("viewport-scene-director-select") as HTMLSelectElement;
-    expect(directorSelect.options.length).toBe(6);
-    fireEvent.change(directorSelect, { target: { value: "director-rooftop-twilight" } });
+    expect(directorSelect.options.length).toBe(7);
+    fireEvent.change(directorSelect, { target: { value: "director-phantom-heist" } });
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setHeadProp").at(-1)?.args[0]).toMatchObject({
-        propId: "studio-headphones",
+        propId: "silver-monocle",
       }),
     );
     expect(dispatched.some((cmd) => cmd.type === "shading/set")).toBe(true);
     const sessionState = getDefaultStripDirectorSession().getState();
-    expect(sessionState.actingArc).toBe("arc-thriller-shock");
-    expect(sessionState.cutCameraPresets).toEqual(["low-full", "duo-wide", "dutch-left-bust", "front-face"]);
-    expect(sessionState.sfxStamps).toEqual(["ssaa", "none", "dugeun", "beonjjeok"]);
+    expect(sessionState.manuscriptMood).toBe("midnight-noir");
+    expect(sessionState.gutterPaces).toEqual(["standard", "dramatic-pause", "cliffhanger"]);
+    expect(sessionState.cutCameraPresets).toEqual(["low-full", "duo-wide", "dutch-right-face", "high-bust"]);
 
-    // 다국어 전환 시 활성 씬 디렉터 대사팩이 EN / JA로 자동 전환된다
+    // 다국어 전환 시 괴도 달빛 예고장 대사팩이 EN / JA로 자동 전환된다
     getDefaultStripDirectorSession().setLocale("en");
-    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("Sunset on the roof");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("Midnight sharp");
     getDefaultStripDirectorSession().setLocale("ja");
-    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("放課後の屋上フェンス");
+    expect(getDefaultStripDirectorSession().getState().dialogueLines[0]).toContain("午前零時ちょうど");
     getDefaultStripDirectorSession().setLocale("ko");
 
-    // 상대역 자동 캐스팅 버튼 클릭 시 학생회장(shaper-academy-council) + 단호 노려봄 + 스마트폰 소품 + 아이컨택 명령이 일괄 적용된다
+    // 상대역 자동 캐스팅 버튼 클릭 시 강력계 형사(shaper-thriller-detective) + 당황 경악 + 서류철 소품이 일괄 적용된다
     dispatched.length = 0;
     const castDuoBtn = await screen.findByTestId("viewport-director-cast-duo");
     fireEvent.click(castDuoBtn);
     await waitFor(() =>
       expect(engine.calls.filter((c) => c.method === "setDuoPartner").at(-1)?.args[0]).toMatchObject({
-        characterId: "shaper-academy-council",
-        stance: "arms-crossed",
-        expression: "stern-glare",
+        characterId: "shaper-thriller-detective",
+        stance: "attentive",
+        expression: "shocked",
         handProp: {
-          propId: "smartphone",
+          propId: "case-folder",
           hand: "leftHand",
-          glbUrl: "/assets/props/webtoon-hand-props-v1/smartphone.glb",
+          glbUrl: "/assets/props/webtoon-hand-props-v1/case-folder.glb",
         },
       }),
     );

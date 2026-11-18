@@ -140,6 +140,12 @@ const PROP_GRIP_SPECS: Readonly<Record<HandPropId, GripTransformSpec>> = {
     eulerLeft: [Math.PI * 0.44, -0.24, 0.14],
     uniformScale: 1.06,
   },
+  "calling-card-rose": {
+    palmDelta: [0.014, -0.024, 0.014],
+    eulerRight: [Math.PI * 0.46, 0.18, -0.12],
+    eulerLeft: [Math.PI * 0.46, -0.18, 0.12],
+    uniformScale: 1.04,
+  },
 };
 
 const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: readonly [number, number, number]; readonly lower: readonly [number, number, number]; readonly hand: readonly [number, number, number] }>> = {
@@ -149,6 +155,7 @@ const PARTNER_GRIP_RIGHT_ARM_DEG: Readonly<Record<HandPropId, { readonly upper: 
   "aether-blade": { upper: [-8, 32, 48], lower: [-12, 68, -18], hand: [-14, 18, -12] },
   "imperial-scroll": { upper: [12, 26, 60], lower: [22, 80, -20], hand: [10, 12, -8] },
   "jade-folding-fan": { upper: [16, 28, 56], lower: [28, 86, -24], hand: [16, 16, -10] },
+  "calling-card-rose": { upper: [18, 30, 54], lower: [30, 88, -22], hand: [14, 18, -8] },
 };
 
 const PARTNER_EXPRESSION_WEIGHTS: Readonly<Record<DuoPartnerExpressionPreset, Readonly<Record<string, number>>>> = {

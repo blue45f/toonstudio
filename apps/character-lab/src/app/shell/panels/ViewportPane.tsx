@@ -23,8 +23,7 @@ import {
 import { diagnoseSkeletonData, postSkeletonFailureOnce } from "./skeleton-boundary-guard";
 import { ViewportSvgGizmoLayer, clampReferenceOpacity } from "./viewport-backdrop-overlay";
 import {
-  DEFAULT_DUO_SHOT_STATE, DUO_SHOT_DISTANCES, SHAPER_DUO_PARTNER_PROFILES,
-  buildDuoEyeContactCommands, toDuoPartnerAttachment, type DuoShotState,
+  DEFAULT_DUO_SHOT_STATE, buildDuoEyeContactCommands, type DuoShotState,
 } from "./viewport-duo-shot-guide";
 import {
   SHAPER_BUILTIN_BODY_PRESETS, SHAPER_BUILTIN_FACE_PRESETS, applySymmetryToPose, computeJointDrag, computeVisibleBoneLinks,
@@ -115,6 +114,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [activePitchDeg, setActivePitchDeg] = useState<ViewportPitchDeg | null>(null);
   const [checkerboard, setCheckerboard] = useState(false);
   const [manuscriptGuide, setManuscriptGuide] = useState(false);
+  const [tankobonGuide, setTankobonGuide] = useState(false);
   const [duoShot, setDuoShot] = useState<DuoShotState>(DEFAULT_DUO_SHOT_STATE);
   const [duo3dBusy, setDuo3dBusy] = useState(false);
   const [referenceCut, setReferenceCut] = useState<ReferenceCutState | null>(null);
@@ -130,37 +130,18 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
   const [draggingCp, setDraggingCp] = useState<ShaperControlPointId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { subjectHeight, duoPartner, duoEyeContact } = resolveViewportDuoShot(labState.recipe, duoShot);
-  const syncDuoPartner3d = async (nextDuoShot: DuoShotState, prevDuoShot: DuoShotState): Promise<void> => {
-    if (!engine?.setDuoPartner) return;
-    const nextAttachment = toDuoPartnerAttachment(nextDuoShot, subjectHeight.heightCm);
-    const prevAttachment = toDuoPartnerAttachment(prevDuoShot, subjectHeight.heightCm);
-    if (!nextAttachment && !prevAttachment) return;
-    setDuo3dBusy(true);
-    try {
-      await engine.setDuoPartner(nextAttachment);
-      const partner = SHAPER_DUO_PARTNER_PROFILES.find((item) => item.id === nextDuoShot.partnerId) ?? SHAPER_DUO_PARTNER_PROFILES[0]!;
-      setNotice(
-        nextAttachment
-          ? `3D 듀오 스테이지 배치: ${partner.labelKo} (${DUO_SHOT_DISTANCES[nextDuoShot.distanceKey].labelKo})`
-          : "3D 듀오 상대역 배치를 해제했습니다.",
-      );
-    } catch (error) {
-      setNotice(failureText(error, "3D 듀오 상대역 캐릭터를 배치하지 못했습니다."));
-    } finally {
-      setDuo3dBusy(false);
-    }
-  };
   const {
     stripDirector, mangaFx, setMangaFx, sfxBusy, onToggleMangaFx, onChangeMangaSfxStamp,
     activeDirectorId, handPropId, handPropSide, headPropId, stagePropId, handPropBusy,
-    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, castDirectorDuoPartner, onSelectSceneDirector,
+    onApplyHandProp, onApplyHandPropGripPose, onApplyHeadProp, onApplyStageProp, castDirectorDuoPartner, onSelectSceneDirector, syncDuoPartner3d,
   } = useViewportSceneProps({
     engine,
     recipe: labState.recipe,
     getLatestRecipe: () => store.getState().recipe,
+    subjectHeightCm: subjectHeight.heightCm,
     duoShot,
     setDuoShot,
-    syncDuoPartner3d,
+    setDuo3dBusy,
     dispatch,
     setNotice,
     failureText,
@@ -716,9 +697,10 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
         engineReady={Boolean(engine)}
         camera={{ framing, inputStyle: cameraInputStyle, onFraming, onResetView, setInputStyle: setCameraInputStyle }}
         composition={{
-          checkerboard, manuscriptGuide, activeYawDeg, activePitchDeg, referenceCut,
+          checkerboard, manuscriptGuide, tankobonGuide, activeYawDeg, activePitchDeg, referenceCut,
           onToggleCheckerboard: () => setCheckerboard((prev) => !prev),
           onToggleManuscriptGuide: () => setManuscriptGuide((prev) => !prev),
+          onToggleTankobonGuide: () => setTankobonGuide((prev) => !prev),
           onSelectTurnaround, onSelectPitch, onLoadReferenceFile, onChangeReferenceOpacity, onChangeReferencePlacement,
           onClearReference: () => { setReferenceCut(null); setNotice("원고 컷 참조를 해제했습니다."); },
         }}
@@ -772,7 +754,7 @@ export function ViewportPane({ paintSession, hudIntervalMs = DEFAULT_HUD_INTERVA
       <ViewportStage
         containerRef={containerRef}
         canvas={{ generation: canvasGeneration, register: registerCanvas, keyShortcuts: CANVAS_KEY_SHORTCUTS }}
-        backdrop={{ checkerboard, manuscriptGuide, referenceCut }}
+        backdrop={{ checkerboard, manuscriptGuide, tankobonGuide, referenceCut }}
         duoShot={{ duoShot, subjectHeightCm: subjectHeight.heightCm, subjectEyeHeightCm: subjectHeight.eyeHeightCm, subjectLabelKo: subjectHeight.labelKo }}
         mangaFx={mangaFx}
         engineStatus={labState.engine} engineReady={Boolean(engine)} onSelectBackend={selectBackend}

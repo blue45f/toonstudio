@@ -101,6 +101,13 @@ export function clampExportInt(value: string, min: number, max: number, fallback
   return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
 }
 
+export function resolveHairSplitReasonKo(
+  hairSupport: ReturnType<NonNullable<CharacterEngine["psdHairLayers"]>> | undefined,
+): string | null {
+  if (hairSupport?.status === "available") return null;
+  return hairSupport?.reasonKo ?? "현재 엔진은 기하학적 헤어 분리를 지원하지 않습니다. 헤어 분리를 끄고 일반 PSD로 저장할 수 있습니다.";
+}
+
 export async function defaultWriteClipboard(text: string): Promise<void> {
   if (typeof navigator === "undefined" || !navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
     throw failVisible("clipboard-unavailable", "현재 브라우저 환경에서는 클립보드 쓰기 API를 사용할 수 없습니다.");

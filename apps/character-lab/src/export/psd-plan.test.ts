@@ -468,7 +468,24 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
         intensity: 0.8,
       },
     });
-    if (!baseResult.ok || !fxResult.ok || !jaResult.ok) throw new Error("PSD 만화 연출 계획 실패");
+    const jaTategakiResult = planCharacterPsd(capture, [], {
+      includeIdMasks: false,
+      includeReferencePasses: false,
+      mangaFx: {
+        enabled: true,
+        locale: "ja",
+        jaWritingMode: "vertical-tategaki",
+        linesKind: "focus-radial",
+        bubbleShape: "oval",
+        dialogueText: "放課後の屋上フェンス、差出人不明の音声。",
+        fontScale: "md",
+        speakerTarget: "protagonist",
+        partnerSide: "right",
+        sfxStamp: "beonjjeok",
+        intensity: 0.8,
+      },
+    });
+    if (!baseResult.ok || !fxResult.ok || !jaResult.ok || !jaTategakiResult.ok) throw new Error("PSD 만화 연출 계획 실패");
 
     expect(fxResult.plan.receipt.recomposeMae).toBe(baseResult.plan.receipt.recomposeMae);
     expect(fxResult.plan.receipt.groupCount).toBe(baseResult.plan.receipt.groupCount + 1);
@@ -486,6 +503,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(fxGroup?.kind === "group" && fxGroup.hidden).toBe(false);
     const bubbleLayer = rasterLayer(fxResult.plan.layers, "말풍선 프레임");
     const jaBubbleLayer = rasterLayer(jaResult.plan.layers, "말풍선 프레임");
+    const jaTategakiBubbleLayer = rasterLayer(jaTategakiResult.plan.layers, "말풍선 프레임");
     const dialogueLayer = rasterLayer(fxResult.plan.layers, "대사 식자");
     const sfxLayer = rasterLayer(fxResult.plan.layers, "효과음 스탬프");
     expect(bubbleLayer.hidden).toBe(false);
@@ -494,6 +512,7 @@ describe("키트 역할 (underwear 추가, 계약 문서 8.3절)", () => {
     expect(pixelAt(bubbleLayer.raster, 64, 120)[3]).toBe(0);
     expect(pixelAt(dialogueLayer.raster, 64, 120)[3]).toBe(0);
     expect(Array.from(bubbleLayer.raster.rgba)).not.toEqual(Array.from(jaBubbleLayer.raster.rgba));
+    expect(Array.from(jaBubbleLayer.raster.rgba)).not.toEqual(Array.from(jaTategakiBubbleLayer.raster.rgba));
   });
 });
 

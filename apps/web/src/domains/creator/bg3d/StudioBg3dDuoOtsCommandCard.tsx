@@ -5,13 +5,19 @@ import {
   Users2,
   WifiOff,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { StudioBg3dEpisodeMacroScenarioBar } from "./StudioBg3dEpisodeMacroScenarioBar";
 import {
   DUO_EYELINE_PRESETS,
   type CameraAxisSideId,
   type DuoEyelinePresetId,
   type DuoOtsRemotionOfflineEvaluation,
 } from "./studio-bg3d-duo-ots-remotion-offline";
+import {
+  evaluateEpisodeMacroScenario,
+  type EpisodeMacroScenarioId,
+} from "./studio-bg3d-episode-macro-scenarios";
 
 const MOTION_PRESS =
   "transition-[background-color,border-color,color,opacity,transform] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:transform-none";
@@ -32,7 +38,7 @@ export interface StudioBg3dDuoOtsCommandCardProps {
 /**
  * Unslop 9-Pass · Editor Chrome Design · Korean Typography 규격이 결합된
  * V29 2인 시선 교차·키 차이 듀오 마네킹 · 180도 연출축 가드 · 결정론적 무빙툰 ·
- * 오프라인 로컬 복구 큐 · Cmd+K 초성 빠른 프리셋 브리지 바.
+ * 오프라인 로컬 복구 큐 · Cmd+K 초성 빠른 프리셋 브리지 & V30 원클릭 회차 시나리오 바.
  */
 export function StudioBg3dDuoOtsCommandCard({
   disabled = false,
@@ -47,6 +53,19 @@ export function StudioBg3dDuoOtsCommandCard({
   onChangeQuickCommandQuery,
 }: StudioBg3dDuoOtsCommandCardProps) {
   const unavailableTitle = disabled ? disabledReason : undefined;
+  const [selectedScenarioId, setSelectedScenarioId] =
+    useState<EpisodeMacroScenarioId>("academy-sunset-confession");
+  const [executedRunCount, setExecutedRunCount] = useState(0);
+
+  const v30MacroEvaluation = useMemo(
+    () =>
+      evaluateEpisodeMacroScenario({
+        scenarioId: selectedScenarioId,
+        executedRunCount,
+        baseV29WeeklyHoursSaved: evaluation.totalWeeklyHoursV29,
+      }),
+    [selectedScenarioId, executedRunCount, evaluation.totalWeeklyHoursV29],
+  );
 
   return (
     <div
@@ -219,6 +238,16 @@ export function StudioBg3dDuoOtsCommandCard({
           {evaluation.roiSummaryKo}
         </span>
       </div>
+
+      <StudioBg3dEpisodeMacroScenarioBar
+        disabled={disabled}
+        evaluation={v30MacroEvaluation}
+        onSelectScenarioId={setSelectedScenarioId}
+        onRunScenario={(scenario) => {
+          setExecutedRunCount((prev) => prev + 1);
+          onSelectDuoId(scenario.targetDuoId);
+        }}
+      />
     </div>
   );
 }

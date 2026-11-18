@@ -33,8 +33,11 @@ import {
   STUDIO_HYBRID_DCC_BLENDER_V25_DRAPE_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V26_AFTERMATH_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V27_HEATHAZE_KIT,
+  extractKoreanChoseong,
+  matchesKitSearchQuery,
   STUDIO_HYBRID_DCC_BLENDER_V28_VRM_KIT,
   STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT,
+  STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT,
   STUDIO_HYBRID_DCC_STARTER_PRIMITIVES,
   workspaceAddStarterPrimitive,
 } from "./studio-hybrid-dcc-primitives";
@@ -665,6 +668,53 @@ describe("studio-hybrid-dcc-primitives & pro finish recipes", () => {
     expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(10);
 
     for (const item of STUDIO_HYBRID_DCC_BLENDER_V29_DUO_KIT) {
+      const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
+      const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
+      expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
+      expect(fs.existsSync(thumbPath), item.previewUrl).toBe(true);
+
+      const bytes = new Uint8Array(fs.readFileSync(glbPath));
+      const binReport = inspectGlbBinaryEvidence(bytes);
+      expect(binReport.validGlb20, item.id).toBe(true);
+      expect(binReport.derived.fourByteAligned).toBe(true);
+
+      const imported = decodeStudioNativeGlb(bytes, "glb");
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) continue;
+      let totalTris = 0;
+      for (const asset of imported.value.assets) {
+        expect(validateStudioEditableMeshSerializableAuthority(asset.mesh).ok).toBe(true);
+        const summary = computeStudioHybridDccMeshQualitySummary(asset.mesh);
+        expect(summary.hasUv).toBe(true);
+        expect(summary.faceCount).toBeGreaterThan(0);
+        totalTris += summary.triangleEstimate;
+      }
+      expect(totalTris).toBe(item.triangles);
+    }
+  });
+
+  it("Blender 5.3 8대 장르 확장 세트 V30(학원·느와르·헌터 3종)과 한글 초성 통합 검색이 GLB 2.0 바이너리·수밀 메시·SHA-256 프로비넌스를 통과한다", async () => {
+    const { inspectGlbBinaryEvidence } = await import("../bg3d/studio-bg3d-glb-binary-vrm-guard");
+    expect(STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT).toHaveLength(3);
+    expect(extractKoreanChoseong("학원물 옥상")).toBe("ㅎㅇㅁ ㅇㅅ");
+    expect(matchesKitSearchQuery("ㅎㅇㅁ", ["학원물 옥상 안전난간·교실 책상 고백 베이"])).toBe(true);
+    expect(matchesKitSearchQuery("ㄴㅇㄹ", ["느와르 베네치안 블라인드 탐정실"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅎㅌ", ["헌터물 길드 육각 각성 게이트"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅎㅇ", ["한옥 배흘림기둥·처마 정자"])).toBe(true);
+    expect(matchesKitSearchQuery("ㅈㅈㅇㄴ", ["느와르 베네치안 블라인드"])).toBe(false);
+
+    const provPath = path.join(WEB_PUBLIC_DIR, "studio-assets/blender-genre-expansion-v30/provenance.json");
+    expect(fs.existsSync(provPath)).toBe(true);
+    const prov = JSON.parse(fs.readFileSync(provPath, "utf-8")) as {
+      expandedGenreSpec?: { totalSupportedWebtoonGenres?: number; recommendedInkWidthsPx?: number[] };
+      sceneIsolationAudit?: { zeroCrossSceneMutation?: boolean; preservedScenes?: unknown[] };
+    };
+    expect(prov.expandedGenreSpec?.totalSupportedWebtoonGenres).toBe(8);
+    expect(prov.expandedGenreSpec?.recommendedInkWidthsPx).toEqual([1.5, 2.6, 2.4]);
+    expect(prov.sceneIsolationAudit?.zeroCrossSceneMutation).toBe(true);
+    expect((prov.sceneIsolationAudit?.preservedScenes ?? []).length).toBeGreaterThanOrEqual(11);
+
+    for (const item of STUDIO_HYBRID_DCC_BLENDER_V30_GENRE_KIT) {
       const glbPath = path.join(WEB_PUBLIC_DIR, item.glbUrl.replace(/^\//u, ""));
       const thumbPath = path.join(WEB_PUBLIC_DIR, item.previewUrl.replace(/^\//u, ""));
       expect(fs.existsSync(glbPath), item.glbUrl).toBe(true);
